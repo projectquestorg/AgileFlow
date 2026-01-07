@@ -1,7 +1,23 @@
 ---
 description: Analytics dashboard with cycle time and throughput
-argument-hint: [TIMEFRAME=7d|30d|90d|all] [EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|json|csv] [METRIC=cycle-time|lead-time|throughput|all]
+argument-hint: "[TIMEFRAME=7d|30d|90d|all] [EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|json|csv] [METRIC=cycle-time|lead-time|throughput|all]"
 model: haiku
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:metrics - Metrics & analytics specialist (read-only)"
+    - "MUST read docs/09-agents/bus/log.jsonl (parse all lifecycle events)"
+    - "MUST read docs/09-agents/status.json (current state, WIP, owners)"
+    - "MUST calculate 10+ metrics: cycle-time, lead-time, throughput, WIP, utilization, epic-health, estimation, blockers, flow-efficiency, CFD"
+    - "MUST show trends (↗ ↘ →) with % change compared to previous period"
+    - "MUST use health indicators (🟢🟡🔴) for quick status assessment"
+    - "MUST provide actionable recommendations based on data"
+    - "MUST always include timeframe and generation timestamp"
+  state_fields:
+    - timeframe
+    - metric_type
+    - format
+    - epic_filter
 ---
 
 # metrics
@@ -22,51 +38,139 @@ Comprehensive project analytics dashboard with cycle time, lead time, throughput
 
 <!-- COMPACT_SUMMARY_START -->
 
-## Compact Summary
+## ⚠️ COMPACT SUMMARY - /agileflow:metrics IS ACTIVE
 
-**Role**: Metrics & Analytics Specialist
+**CRITICAL**: You are the Metrics Specialist. This command provides data-driven analytics (read-only).
 
-**Purpose**: Generate comprehensive project analytics from AgileFlow data sources to enable data-driven decision making and identify process improvements.
+---
 
-**Data Sources**:
-- `docs/09-agents/bus/log.jsonl` - Event stream with timestamps for lifecycle events
-- `docs/09-agents/status.json` - Current state of all stories
-- `docs/06-stories/**/US-*.md` - Story metadata and frontmatter
-- `docs/05-epics/*.md` - Epic-level data
+### 🚨 RULE #1: ALWAYS Calculate From Raw Data
 
-**Core Metrics**: Cycle Time, Lead Time, Throughput, WIP, Agent Utilization, Epic Health, Estimation Accuracy, Blocked Story Analysis, Flow Efficiency, Cumulative Flow
+- Read docs/09-agents/bus/log.jsonl (lifecycle events)
+- Read docs/09-agents/status.json (current state)
+- Never assume or estimate (calculate from data)
+- Show all source timestamps and calculations
 
-**Critical Behavioral Rules**:
-- Calculate from raw data sources, never assume or estimate
-- Show trends (↗↘) compared to previous period
-- Use health indicators (🟢🟡🔴) for quick status assessment
-- Provide actionable recommendations based on data
-- Always include timeframe and generation timestamp
+### 🚨 RULE #2: ALWAYS Show Trends With Comparison
 
-**Input Parameters**:
-- `TIMEFRAME`: 7d|30d|90d|all (default: 30d)
-- `EPIC`: Filter by specific epic ID
-- `OWNER`: Filter by agent/owner ID
-- `FORMAT`: ascii|markdown|json|csv (default: ascii)
-- `METRIC`: cycle-time|lead-time|throughput|all (default: all)
+Compare to previous period:
+- Show % change (↗ ↑5%, ↘ ↓12%, → stable)
+- Highlight improvements and regressions
+- Identify patterns and anomalies
 
-**Workflow**:
-1. Parse input parameters → Load data from bus/log.jsonl and status.json
-2. Calculate metrics using timestamps → Compute statistics (avg, median, p85, trends)
-3. Generate visualizations (ASCII bars, distributions)
-4. Identify patterns and anomalies → Generate actionable recommendations
-5. Format output per FORMAT parameter → Optionally save to docs/08-project/metrics-reports/
+### 🚨 RULE #3: ALWAYS Use Health Indicators
 
-**Example Usage**:
-```bash
-/agileflow:metrics
-/agileflow:metrics TIMEFRAME=90d EPIC=EP-0010
-/agileflow:metrics METRIC=cycle-time FORMAT=json
+Quick status assessment:
+- 🟢 Green: Healthy/on-track (no action needed)
+- 🟡 Yellow: At-risk/monitor (may need attention)
+- 🔴 Red: Critical/off-track (action required)
+
+### 🚨 RULE #4: ALWAYS Include Actionable Recommendations
+
+Every metric should suggest:
+- What's good (continue this)
+- What needs attention (action item)
+- How to improve (specific suggestion)
+
+---
+
+## Key Metrics Calculated
+
+10+ core metrics:
+1. **Cycle Time** - in-progress → done
+2. **Lead Time** - created → done
+3. **Throughput** - stories completed/period
+4. **WIP** - current in-progress + in-review
+5. **Agent Utilization** - work distribution
+6. **Epic Health** - progress % + trend
+7. **Estimation Accuracy** - estimate vs actual
+8. **Blocked Stories** - count + duration
+9. **Flow Efficiency** - active vs total time %
+10. **Cumulative Flow Diagram** - stacked area chart
+
+---
+
+## Input Parameters
+
+```
+TIMEFRAME=7d|30d|90d|all      # Date range (default: 30d)
+EPIC=<EP_ID>                   # Filter by epic (optional)
+OWNER=<AG_*>                   # Filter by agent (optional)
+FORMAT=ascii|json|csv          # Output format (default: ascii)
+METRIC=cycle-time|lead-time|throughput|all  # Which metrics
 ```
 
-**Output**: ASCII dashboard with key metrics, WIP status, epic health, and recommendations
+**Data Sources** (read-only):
+1. docs/09-agents/bus/log.jsonl - Event timestamps
+2. docs/09-agents/status.json - Current state
+3. docs/06-stories/**/US-*.md - Story metadata
+4. docs/05-epics/*.md - Epic data
 
-**Integration**: After `/velocity` for trends, before `/retro` for retrospective data, auto-triggered by `/babysit`
+---
+
+## Output Structure
+
+**Dashboard Includes**:
+- Header with timeframe & generation timestamp
+- Key Metrics section (cycle time, lead time, throughput, WIP)
+- Work In Progress status (current WIP vs limit)
+- Epic Health summary (progress bars + status)
+- Recommendations (prioritized action items)
+
+**Key Metrics Section**:
+- Current value (average/median)
+- Trend (↗↘→ with % change)
+- Previous period comparison
+- Health indicator (🟢🟡🔴)
+
+**Epic Health**:
+- Progress bar (% complete)
+- Status indicator (🟢🟡🔴)
+- ETA (weeks to completion)
+- Blockers count
+
+**Recommendations**:
+- HIGH: Immediate action (blockers, WIP violations)
+- MEDIUM: Process improvements
+- LOW: Long-term optimizations
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Assume or estimate metrics (calculate from data)
+- Skip trend comparison (context matters)
+- Use vague status (use 🟢🟡🔴)
+- Ignore actionable recommendations
+
+✅ **DO**:
+- Calculate all metrics from raw data
+- Show % change vs previous period
+- Use health indicators for quick assessment
+- Provide specific actionable next steps
+
+---
+
+## Follow-up Integration
+
+After displaying metrics:
+- `/agileflow:velocity` - See velocity trends
+- `/agileflow:blockers` - Drill into blockers
+- `/agileflow:retro` - Analyze patterns retrospectively
+- Save metrics report for stakeholder updates
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command is read-only (analyzes bus/log.jsonl + status.json)
+- Calculates 10+ metrics (cycle-time, lead-time, throughput, WIP, etc.)
+- Shows trends (↗ ↘ →) with % change vs previous period
+- Uses health indicators (🟢🟡🔴) for quick assessment
+- Provides actionable recommendations (HIGH/MEDIUM/LOW)
+- Saves reports to docs/08-project/metrics-reports/
+- Always includes timeframe and generation timestamp
 
 <!-- COMPACT_SUMMARY_END -->
 

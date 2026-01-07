@@ -1,5 +1,21 @@
 ---
 description: Collect and process agent feedback
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "SCOPE (story|epic|sprint) optional - default is story"
+    - "STORY or EPIC may be REQUIRED depending on SCOPE"
+    - "Feedback is OPTIONAL - never block workflow"
+    - "Collect ratings (1-5 scale) and free-form comments"
+    - "Save to docs/08-project/feedback/<YYYYMMDD>-<ID>.md"
+    - "Analyze patterns across feedback for recurring issues"
+    - "Generate improvement stories for recurring problems"
+    - "Track metrics: clarity score, estimate accuracy, blocker frequency"
+  state_fields:
+    - scope
+    - story_id
+    - epic_id
+    - anonymous_flag
 ---
 
 # agent-feedback
@@ -14,73 +30,75 @@ If the user confirms they want the full details, continue. Otherwise, stop here.
 Collect feedback from agents and humans for continuous process improvement.
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Collect feedback on stories, agents, and processes for continuous improvement
+## ⚠️ COMPACT SUMMARY - /agileflow:agent-feedback IS ACTIVE
 
-**Quick Usage**:
-```bash
-/agileflow:agent-feedback SCOPE=story STORY=US-0042
-/agileflow:agent-feedback SCOPE=epic EPIC=EP-0010
-/agileflow:agent-feedback SCOPE=sprint
-```
+**CRITICAL**: You are collecting feedback for continuous improvement. Feedback is OPTIONAL - never force it.
 
-**What It Does**:
-1. Prompts for feedback at trigger points (story done, epic complete, sprint end)
-2. Collects structured feedback (ratings 1-5, comments, blockers)
-3. Saves feedback to `docs/08-project/feedback/` (markdown format)
-4. Analyzes patterns and generates insights
-5. Suggests improvement stories for recurring issues
-6. Tracks metrics over time (clarity, estimates, blockers)
+**ROLE**: Feedback Collector & Retrospective Facilitator
 
-**Required Inputs**:
-- `SCOPE`: story|epic|sprint (default: story)
+---
 
-**Optional Inputs**:
-- `STORY`: <US-ID> (required if SCOPE=story)
-- `EPIC`: <EP-ID> (required if SCOPE=epic)
-- `ANONYMOUS`: yes|no (default: no)
+### 🚨 RULE #1: FEEDBACK IS ALWAYS OPTIONAL
 
-**Data Sources** (parsing required):
-1. Story frontmatter files (US-*.md) - YAML extraction for dates, estimates
-2. status.json - Story metadata (JSON parsing)
-3. bus/log.jsonl - Activity logs for pattern detection (JSON line parsing)
-4. Feedback files (markdown parsing for metrics extraction)
+**NEVER require or force feedback collection.** Always ask: "Provide feedback now? (YES/NO/LATER)"
 
-**Feedback Collection**:
-- **Story Completion**: AC clarity, dependencies resolved, estimate accuracy, smoothness (1-5 scale)
-- **Agent Performance**: Completion rate, test coverage, reliability metrics
-- **Epic Retrospective**: Success metrics, wins, challenges, learnings
-- **Sprint Retrospective**: Continue/Stop/Start, experiments, blockers
+- YES: Collect feedback interactively
+- NO: Skip, don't ask again for this story
+- LATER: Add reminder to bus log, ask again at next trigger
 
-**Metrics Tracked**:
-- Avg story clarity score (target: >4.0)
-- Estimate accuracy (target: within 50%)
-- Blocker frequency (target: <20% of stories)
-- Test coverage avg
-- Completion velocity
+Feedback should feel helpful, not burdensome.
 
-**Workflow**:
-1. Auto-prompt at trigger (story→done, epic complete, sprint end)
-2. Present feedback form with pre-filled context
-3. Ask: "Provide feedback now? (YES/NO/LATER)"
-4. Collect ratings (1-5 scale) and free-form comments
-5. Save to docs/08-project/feedback/<YYYYMMDD>-<ID>.md
-6. Analyze patterns across feedback (pattern matching for recurring themes)
-7. Suggest improvement stories for recurring issues
+---
 
-**Analysis** (pattern detection):
-- Scan all feedback for patterns: "unclear AC" → improve template
-- Calculate metrics: avg clarity score, estimate variance, blocker frequency
-- Track trends over time (metrics comparison)
-- Generate actionable recommendations
+### 🚨 RULE #2: SCOPE DETERMINES INPUTS
 
-**Output Files**:
-- Feedback notes: `docs/08-project/feedback/<YYYYMMDD>-<ID>.md`
-- Summary log: `docs/08-project/retrospectives.md`
-- Optional: Auto-generated improvement stories for issues
+| SCOPE | Required Inputs | Example |
+|-------|-----------------|---------|
+| `story` | STORY=<US-ID> | Feedback on story completion |
+| `epic` | EPIC=<EP-ID> | Retrospective on epic |
+| `sprint` | None | Sprint retrospective |
 
-**Example Story Feedback**:
+Ask user if SCOPE not provided or required inputs missing.
+
+---
+
+### 🚨 RULE #3: FEEDBACK FORM SECTIONS
+
+For each feedback type, use appropriate form:
+
+**Story Feedback** (after story marked "done"):
+- AC clarity (1-5)
+- Dependencies resolved (1-5)
+- Estimate accuracy (1-5)
+- Implementation smoothness (1-5)
+- What went well? (free-form)
+- What could improve? (free-form)
+- Blockers? (list)
+- Learnings? (optional)
+
+**Epic Retrospective** (after epic 100% complete):
+- Success metrics (from epic definition)
+- What went well? (bullets)
+- What didn't go well? (bullets)
+- Surprises/learnings? (bullets)
+- Actions for next epic? (checklist)
+
+**Sprint Retrospective** (sprint end):
+- Continue (what to keep doing)
+- Stop (what to stop doing)
+- Start (new practices to try)
+- Experiments (things to test next sprint)
+- Blockers removed (what was unblocked)
+- Recurring issues (what needs addressing)
+
+---
+
+### 🚨 RULE #4: SAVE FEEDBACK TO FILE
+
+Always save to: `docs/08-project/feedback/<YYYYMMDD>-<ID>.md`
+
+Example:
 ```markdown
 ## Story Feedback: US-0042
 
@@ -88,19 +106,121 @@ Collect feedback from agents and humans for continuous process improvement.
 **Date**: 2025-12-22
 
 ### Ratings (1-5)
-- AC clarity: 5 (crystal clear)
-- Dependencies resolved: 4 (one minor blocker)
-- Estimate accuracy: 5 (spot on)
-- Implementation smoothness: 4 (smooth)
+- AC clarity: 5
+- Dependencies: 4
+- Estimate accuracy: 5
+- Smoothness: 4
 
 ### What Went Well
-- Clear acceptance criteria with examples
-- All tests passed on first run
+- Clear AC with examples
+- All tests passed
 - Good documentation
 
-### What Could Be Improved
-- Database schema migration took longer than expected
+### Improvements
+- Database migration took longer
 ```
+
+---
+
+### 🚨 RULE #5: ANALYZE PATTERNS & GENERATE INSIGHTS
+
+After collecting feedback, scan for patterns:
+
+**Pattern Detection:**
+- 5+ stories with "unclear AC" → Improve story template
+- 3+ stories blocked by missing tests → Enforce test stubs early
+- Estimates off by 2x → Revise estimation guidelines
+
+**Generate Improvement Stories:**
+```
+Issue: 5 stories had "unclear AC" (score <3)
+Suggested Story: "US-XXXX: Improve story template with AC examples"
+```
+
+**Track Metrics:**
+- Avg AC clarity (target: >4.0)
+- Avg estimate accuracy (target: within 50%)
+- Blocker frequency (target: <20%)
+
+---
+
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Force feedback - make it optional
+❌ Collect feedback but don't analyze it
+❌ Ignore patterns - let issues repeat
+❌ Use vague forms - make it specific
+❌ Save feedback but don't show insights
+❌ Create improvement stories without pattern data
+
+### DO THESE INSTEAD
+
+✅ Ask "Provide feedback? (YES/NO/LATER)"
+✅ Use structured forms with 1-5 ratings
+✅ Analyze patterns across feedback
+✅ Suggest improvement stories for recurring issues
+✅ Track metrics over time
+✅ Show insights to user
+
+---
+
+### WORKFLOW
+
+1. **Trigger Check**: Story done? Epic complete? Sprint end?
+2. **Ask Permission**: "Provide feedback now? (YES/NO/LATER)"
+3. **If YES**: Show feedback form with pre-filled context
+4. **Collect**: Get ratings, comments, blockers
+5. **Save**: To `docs/08-project/feedback/<YYYYMMDD>-<ID>.md`
+6. **Analyze**: Scan for patterns and metrics
+7. **Suggest**: Show insights and improvement stories
+8. **Optional**: Create stories if user approves
+
+---
+
+### TOOL USAGE EXAMPLES
+
+**TodoWrite** (to track feedback process):
+```xml
+<invoke name="TodoWrite">
+<parameter name="content">1. Determine scope and required inputs
+2. Ask for feedback (optional)
+3. If YES: Show form with pre-filled context
+4. Collect ratings and comments
+5. Save to docs/08-project/feedback/
+6. Analyze patterns
+7. Suggest improvements</parameter>
+<parameter name="status">in-progress</parameter>
+</invoke>
+```
+
+**AskUserQuestion** (for feedback permission):
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Provide feedback on US-0042 completion?",
+  "header": "Optional Feedback",
+  "multiSelect": false,
+  "options": [
+    {"label": "Yes, provide feedback", "description": "Take 2-3 min to share insights"},
+    {"label": "Not now", "description": "Skip feedback"},
+    {"label": "Remind me later", "description": "Ask again next time"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:agent-feedback` IS ACTIVE
+- Feedback is OPTIONAL - never force it
+- SCOPE determines inputs (story/epic/sprint)
+- Use 1-5 rating scales for consistency
+- Save to docs/08-project/feedback/
+- Analyze patterns and suggest improvements
+- Track metrics: clarity, estimates, blockers
+
 <!-- COMPACT_SUMMARY_END -->
 
 ## Prompt

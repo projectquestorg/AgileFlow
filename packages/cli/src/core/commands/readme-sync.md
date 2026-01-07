@@ -1,6 +1,22 @@
 ---
 description: Synchronize a folder's README.md with its current contents
 argument-hint: FOLDER=<path> | FOLDER=all
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "FOLDER is REQUIRED or ask user (single folder or 'all')"
+    - "Spawn readme-updater agent to do actual work"
+    - "If FOLDER=all, spawn agent for each docs/* subfolder in parallel"
+    - "List all files and subdirectories with descriptions"
+    - "Build '## Contents' section with file descriptions"
+    - "Always show diff/preview FIRST, wait for YES/NO BEFORE updating"
+    - "Only update '## Contents' section - preserve other sections"
+    - "Use Edit tool to update README only after approval"
+  state_fields:
+    - folder_path
+    - all_folders_flag
+    - files_count
+    - updated_flag
 ---
 
 # readme-sync

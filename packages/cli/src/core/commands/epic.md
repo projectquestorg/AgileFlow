@@ -1,6 +1,21 @@
 ---
 description: Create a new epic with stories
 argument-hint: EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text> [STORIES=<list>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:epic-new - Epic creator for feature planning"
+    - "MUST create TodoWrite task list immediately (6 steps: parse, create epic, create stories, merge status, append bus, confirm)"
+    - "MUST show file previews before confirming writes"
+    - "MUST use Edit tool or jq for JSON operations (never echo/cat > status.json)"
+    - "MUST validate JSON after every modification"
+    - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
+    - "STORIES format: 'US-ID|title|owner,US-ID2|title2|owner2' (comma-separated triplets)"
+  state_fields:
+    - epic_id
+    - owner
+    - story_count
+    - creation_timestamp
 ---
 
 # epic-new
@@ -20,94 +35,154 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 Create a new epic with optional child stories.
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Create structured epics with associated user stories for feature planning.
+## ⚠️ COMPACT SUMMARY - /agileflow:epic-new IS ACTIVE
 
-**Role**: Epic Creator - Analyzes requirements, structures epics, creates stories, manages dependencies.
+**CRITICAL**: You are the Epic Creator. This command creates new epics with associated stories. Follow every rule.
 
-**Critical Behavioral Rules**:
-- ALWAYS use TodoWrite tool IMMEDIATELY to track epic creation steps
-- ALWAYS show previews before writing any files
-- ALWAYS wait for YES/NO confirmation before executing writes
-- NEVER create files without explicit user confirmation
-- ALWAYS merge entries into status.json (never overwrite)
-- ALWAYS append to bus/log.jsonl (never overwrite)
-- Parse all required inputs: EPIC, TITLE, OWNER, GOAL
-- Parse optional STORIES input (comma-separated triplets)
+---
 
-**Key Workflow Steps**:
-1. Create todo list with TodoWrite (6 steps: parse, create epic, create stories, merge status, append bus, confirm)
-2. Parse inputs: EPIC=<ID>, TITLE=<text>, OWNER=<id>, GOAL=<text>, STORIES=<list>
-3. Create docs/05-epics/<EPIC>.md from epic-template.md
-   - Status: active
-   - Created/updated: current timestamp
-4. For each story in STORIES (format: "US_ID|title|owner"):
-   - Create docs/06-stories/<EPIC>/<US_ID>-<slug>.md from story-template.md
-   - Status: ready, estimate: 0.5d, deps: []
-5. Merge into docs/09-agents/status.json:
-   - Add/update epic entry (id, owner, status, summary, last_update)
-   - Add/update story entries (id, owner, status, branch, summary, last_update)
-6. Append assign lines to docs/09-agents/bus/log.jsonl:
-   - Format: {"timestamp":"ISO","type":"assign","epic":"EP-ID","owner":"name"}
-   - For each story: {"timestamp":"ISO","type":"assign","story":"US-ID","owner":"name"}
+### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
 
-**Input Format**:
-- EPIC=<ID> (e.g., EP-0001)
-- TITLE=<Epic title>
-- OWNER=<name or agent-id>
-- GOAL=<outcome/metric>
-- STORIES=<optional> (format: "US-0001|Story Title|owner,US-0002|Another Story|owner2")
-
-**Output Format Requirements**:
-- Epic file: docs/05-epics/<EPIC>.md (use epic-template.md structure)
-- Story files: docs/06-stories/<EPIC>/<US_ID>-<slug>.md (use story-template.md structure)
-- Status.json: Merge entries (preserve existing data)
-- Bus log: Append JSONL entries (one per epic/story assignment)
-
-**Templates Used**:
-- packages/cli/src/core/templates/epic-template.md
-- packages/cli/src/core/templates/story-template.md
-
-**Confirmation Flow**:
-1. Show epic preview (file path, title, owner, goal, status)
-2. Show story previews (file paths, titles, owners, estimates)
-3. Show status.json merge preview
-4. Show bus/log.jsonl append preview
-5. Ask: "Proceed with epic creation? (YES/NO)"
-6. On YES: Execute all writes
-7. On NO: Abort without changes
-
-**Tool Usage Examples**:
-
-TodoWrite:
+Create a 6-step task list IMMEDIATELY:
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">1. Parse inputs (EPIC, TITLE, OWNER, GOAL, STORIES)
 2. Create epic file from template
-3. For each story: create docs/06-stories/
-4. Merge into status.json
-5. Append assign events to bus log
-6. Show preview and wait for confirmation</parameter>
+3. For each story: create docs/06-stories/<EPIC>/<US_ID>-<slug>.md
+4. Merge entries into status.json
+5. Append assign events to bus/log.jsonl
+6. Show preview and confirm with user</parameter>
 <parameter name="status">in-progress</parameter>
 </invoke>
 ```
+Mark each step complete as you finish it.
 
-AskUserQuestion:
+### 🚨 RULE #2: NEVER Create Files Without Preview + Confirmation
+
+**Workflow** (ALWAYS follow this order):
+1. Parse and validate all inputs
+2. Create epic file from template
+3. Create story files from template
+4. Prepare status.json merge
+5. Prepare bus/log.jsonl append
+6. Show unified DIFF preview (all files + status.json + bus log)
+7. Ask user YES/NO/CANCEL confirmation
+8. Only on YES: Execute writes and update status
+
+### 🚨 RULE #3: NEVER Use echo/cat > For JSON Operations
+
+**ALWAYS use one of**:
+- Edit tool for small changes
+- jq for complex merges
+- JSON validation after every write:
+```bash
+if ! jq empty docs/09-agents/status.json 2>/dev/null; then
+  echo "❌ ERROR: status.json is now invalid JSON!"
+  exit 1
+fi
+```
+
+### 🚨 RULE #4: ALWAYS Validate JSON After Modifications
+
+After ANY change to status.json:
+```bash
+jq empty docs/09-agents/status.json 2>/dev/null || {
+  echo "❌ VALIDATION FAILED: status.json is corrupt"
+  exit 1
+}
+```
+
+---
+
+## Key Files & Formats
+
+**Input Parameters**:
+```
+EPIC=<EP-ID>           # e.g., EP-0001 (required)
+TITLE=<text>           # Epic title (required)
+OWNER=<id>             # Agent or person name (required)
+GOAL=<outcome>         # Epic goal/metric (required)
+STORIES=<list>         # Comma-separated triplets (optional)
+  Format: "US-0001|Story One|owner,US-0002|Story Two|owner2"
+```
+
+**Output Files Created**:
+| File | Purpose | Template |
+|------|---------|----------|
+| docs/05-epics/EP-<ID>.md | Epic definition | epic-template.md |
+| docs/06-stories/EP-<ID>/US-<ID>-<slug>.md | Child stories | story-template.md |
+| docs/09-agents/status.json | Merged entries | jq merge |
+| docs/09-agents/bus/log.jsonl | Appended events | JSONL lines |
+
+**Merge into status.json**:
+- Epic entry: {id, owner, status: "active", summary, created, updated}
+- Story entries: {id, owner, status: "ready", epic, estimate: "0.5d", deps: [], created, updated}
+
+**Append to bus/log.jsonl**:
+```json
+{"ts":"ISO","type":"assign","from":"SYSTEM","to":"<owner>","epic":"<EPIC>","text":"Epic created"}
+{"ts":"ISO","type":"assign","from":"SYSTEM","to":"<owner>","story":"<US-ID>","text":"Story created"}
+```
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Ask user to "type" story list (use structured format)
+- Create files without showing preview
+- Overwrite status.json (always merge)
+- Skip JSON validation after edits
+- Create stories without linking to epic
+
+✅ **DO**:
+- Show file previews for all 3-5 files being created
+- Use proper STORIES format with pipes and commas
+- Merge entries into existing JSON (preserve data)
+- Validate JSON after every modification
+- Link all stories to epic in status.json
+
+---
+
+## Confirmation Flow
+
+1. **Show preview box** with all files being created
+   - Epic file path and frontmatter
+   - Story file paths and frontmatter
+   - status.json changes (diff format)
+   - bus/log.jsonl lines to append
+
+2. **Ask confirmation**:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Create epic EP-0010: Authentication with 3 stories?",
+  "question": "Create epic EP-0010 with 3 stories?",
   "header": "Confirm Epic Creation",
   "multiSelect": false,
   "options": [
-    {"label": "Yes, create epic", "description": "Create epic and all stories"},
-    {"label": "No, revise", "description": "Modify before creating"},
+    {"label": "Yes, create", "description": "Write all files"},
+    {"label": "No, edit", "description": "Modify details"},
     {"label": "Cancel", "description": "Don't create"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+3. **On YES**: Execute all writes (files, merge, append)
+4. **On NO/CANCEL**: Abort without changes
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command creates epics + child stories in one operation
+- ALWAYS parse and validate STORIES input (triplet format)
+- ALWAYS preview before confirming (prevents mistakes)
+- ALWAYS validate JSON after merge (prevents corruption)
+- Use TodoWrite for step tracking (6 steps)
+- Files: epic file, N story files, status.json, bus/log.jsonl
+
 <!-- COMPACT_SUMMARY_END -->
 
 ## Prompt
@@ -148,3 +223,51 @@ ACTIONS
 4) Append "assign" lines to docs/09-agents/bus/log.jsonl.
 
 Always show previews; YES/NO before writing.
+
+---
+
+## POST-CREATION ACTIONS
+
+After successfully creating the epic, offer next steps:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Epic <EPIC> created with <N> stories! What would you like to do next?",
+  "header": "Next Steps",
+  "multiSelect": false,
+  "options": [
+    {"label": "Add more stories (Recommended)", "description": "Epic may need additional work items"},
+    {"label": "Start working on first story", "description": "Begin implementation immediately"},
+    {"label": "Plan sprint for this epic", "description": "Schedule stories with /agileflow:sprint"},
+    {"label": "View epic details", "description": "See full epic with /agileflow:epic:view"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Add more stories"**:
+- Re-run `/agileflow:story EPIC=<EPIC>` with next story ID
+
+**If "Start working on first story"**:
+1. Show ready stories in this epic
+2. Let user pick one
+3. Run `/agileflow:status <STORY> STATUS=in_progress`
+4. Ask: "Enter plan mode to explore implementation?"
+
+**If "Plan sprint"**:
+- Run `/agileflow:sprint` with this epic's stories
+
+**If "View epic details"**:
+- Run `/agileflow:epic:view EPIC=<EPIC>`
+
+---
+
+## Related Commands
+
+- `/agileflow:epic:list` - View all epics with progress
+- `/agileflow:epic:view` - View epic details with all stories
+- `/agileflow:story` - Create story in epic
+- `/agileflow:story:list` - View all stories
+- `/agileflow:sprint` - Plan sprint with epic stories
+- `/agileflow:board` - Visual kanban board

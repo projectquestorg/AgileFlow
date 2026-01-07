@@ -1,11 +1,146 @@
 ---
 description: Verify a skill works correctly by testing its activation and functionality
 argument-hint: [SKILL_NAME] (optional)
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:skill:test - Validates skill structure and functionality"
+    - "MUST list available skills if SKILL_NAME not provided"
+    - "MUST run structure validation checks (file existence, frontmatter, sizes)"
+    - "MUST run content validation checks (section presence, file references)"
+    - "MUST offer optional activation test with sample prompts"
+    - "MUST generate test report with pass/fail/warning indicators"
+    - "MUST suggest fixes for validation failures"
+  state_fields:
+    - selected_skill
+    - validation_results
+    - test_report_generated
 ---
 
 # /agileflow:skill:test
 
 Test a skill to verify it activates correctly and produces expected results.
+
+---
+
+<!-- COMPACT_SUMMARY_START -->
+
+## 🚨 COMPACT SUMMARY - /agileflow:skill:test IS ACTIVE
+
+**CRITICAL**: This command validates skills through structure, content, and optional activation testing.
+
+### 🚨 RULE #1: Select Skill
+If SKILL_NAME not provided:
+```bash
+ls -d .claude/skills/*/ | xargs -I {} basename {}
+```
+Show options and ask user which to test.
+
+### 🚨 RULE #2: Run Structure Validation
+Check these in order:
+```
+✅ SKILL.md exists (file present)
+✅ Frontmatter has name and description
+✅ references.md exists
+⚠️  cookbook/ directory (ok if missing for simple skills)
+⚠️  .mcp.json (ok if MCP not configured)
+```
+
+### 🚨 RULE #3: Run Content Validation
+Check these in order:
+```
+✅ "When to Use" section present
+✅ Description under 1024 characters
+✅ SKILL.md under 500 lines
+✅ All cookbook files referenced in SKILL.md actually exist
+```
+
+### 🚨 RULE #4: Show Validation Results
+Display in report format:
+```
+🧪 Testing: skill-name
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Structure:     ✅ PASS (5/5 checks)
+Content:       ✅ PASS (4/4 checks)
+MCP Config:    ⚠️  NOT CONFIGURED
+
+Overall: ✅ SKILL IS FUNCTIONAL
+```
+
+### 🚨 RULE #5: Offer Activation Test (Optional)
+Ask after structure/content validation:
+```
+Would you like to test skill activation with sample prompts?
+- Yes, test activation (Recommended)
+- Skip activation test
+- View SKILL.md content
+```
+
+### 🚨 RULE #6: Run Activation Test (if requested)
+1. Extract sample triggers from "When to Use" section
+2. Present 2-3 test prompts to user
+3. Ask user to pick one or provide custom
+4. Execute skill by reading SKILL.md and following instructions
+5. Report activation results
+
+### 🚨 RULE #7: Generate Final Report
+Report MUST include:
+- Structure validation pass/fail
+- Content validation pass/fail
+- Activation test pass/fail (if run)
+- Issues found (if any)
+- Recommendations (if any)
+- Overall status: PASS/WARNINGS/FAIL
+
+### Validation Checks Table
+| Category | Check | Pass Condition |
+|----------|-------|----------------|
+| Structure | SKILL.md exists | File present |
+| Structure | Frontmatter valid | Has name + description |
+| Structure | references.md | File exists (optional) |
+| Structure | cookbook/ | Directory exists (optional) |
+| Content | When to Use | Section present with triggers |
+| Content | Description | Under 1024 characters |
+| Content | SKILL.md size | Under 500 lines |
+| Content | Cookbook refs | All files exist |
+| MCP | JSON valid | Parses without errors |
+| MCP | mcpServers | Object present |
+
+### Test Report Format
+```
+🧪 Skill Test Report: <skill-name>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE VALIDATION
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid
+  ⚠️  references.md exists
+  ✅ cookbook/ directory
+
+CONTENT VALIDATION
+  ✅ "When to Use" section
+  ✅ Description < 1024 chars (456)
+  ✅ SKILL.md < 500 lines (287)
+  ✅ Cookbook refs valid
+
+OVERALL: ✅ PASS
+```
+
+### Anti-Patterns
+- ❌ DON'T skip structure validation (foundation of quality)
+- ❌ DON'T fail on missing optional files (warn instead)
+- ❌ DON'T run activation test without user consent
+- ❌ DON'T generate complex test prompts (keep simple)
+- ❌ DON'T forget to suggest fixes for failures
+
+### REMEMBER AFTER COMPACTION
+- Test has 2-3 phases: Structure → Content → [Activation if requested]
+- Always generate full report with pass/fail indicators
+- Activation test is optional (ask first)
+- Warn on optional files missing, fail on required files
+- Suggest fixes for any validation failures
+
+<!-- COMPACT_SUMMARY_END -->
 
 ---
 

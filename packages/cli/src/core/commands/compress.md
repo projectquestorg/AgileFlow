@@ -1,6 +1,24 @@
 ---
 description: Compress status.json by removing verbose fields and keeping only tracking metadata
 argument-hint: (no arguments)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:compress - Status.json compression utility"
+    - "CRITICAL: Operates on docs/09-agents/status.json ONLY"
+    - "CRITICAL: Creates backup (status.json.backup) BEFORE writing"
+    - "MUST remove verbose fields: description, AC, architectureContext, technicalNotes, testingStrategy, devAgentRecord"
+    - "MUST keep only tracking: story_id, epic, title, owner, status, estimate, timestamps, dependencies, branch, summary"
+    - "MUST validate JSON before/after compression"
+    - "MUST calculate and show token estimate (target: <25000 tokens)"
+    - "MUST show before/after stats and savings percentage"
+    - "Combine with archival for best results (archive old completed stories first, then compress)"
+  state_fields:
+    - file_path
+    - before_size
+    - after_size
+    - savings_percentage
+    - token_estimate
 ---
 
 # compress

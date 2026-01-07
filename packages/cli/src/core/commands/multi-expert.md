@@ -1,11 +1,88 @@
 ---
 description: Deploy multiple domain experts on the same problem for higher confidence
 argument-hint: <question or task>
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:multi-expert - Parallel expert orchestration"
+    - "CRITICAL: Deploy ALL experts in SINGLE message with multiple Task tool calls (not sequential)"
+    - "MUST wait for all experts via TaskOutput with block=true before synthesis"
+    - "MUST analyze agreement: 3+ experts agree = HIGH confidence, 2 agree = MEDIUM, 1 = unique insight"
+    - "MUST detect domain keywords from user question to select 3-5 experts"
+    - "Synthesis format: Key Findings (agreement) | Unique Insights (single expert) | Disagreements (needs review)"
+  state_fields:
+    - selected_experts
+    - user_question
+    - expert_results
+    - confidence_scores
 ---
 
 # /agileflow-multi-expert
 
 Deploy multiple Agent Experts on the same problem. Each expert validates independently, then results are synthesized for higher confidence answers.
+
+<!-- COMPACT_SUMMARY_START -->
+## Compact Summary
+
+**Command**: `/agileflow:multi-expert` - Deploy 3-5 domain experts in parallel for high-confidence analysis
+
+**Quick Usage**:
+```
+/agileflow:multi-expert Is our authentication implementation secure?
+```
+
+**What It Does**: Analyze question for domains → Select 3-5 experts → Deploy in PARALLEL → Collect results → Synthesize with confidence scoring
+
+**Experts Available**: Security, API, Testing, Database, Performance, CI/CD, DevOps, Accessibility, Architecture
+
+**Critical Rules**:
+- 🚨 Deploy ALL experts in ONE message with multiple Task calls (not sequential)
+- 🚨 Wait for all results before synthesis (use TaskOutput with block=true)
+- 🚨 Confidence: HIGH (3+ agree) | MEDIUM (2 agree) | UNIQUE INSIGHT (1 expert with evidence)
+- Detect domain keywords to select 3-5 experts (max 5 to avoid overhead)
+
+**Output Format**: Key Findings (high confidence) | Unique Insights (single expert) | Disagreements (needs review) | Recommended Actions
+
+**Tool Usage Examples**:
+
+**Task** (deploy expert in parallel):
+```xml
+<invoke name="Task">
+<parameter name="description">[Domain] analysis of: {question}</parameter>
+<parameter name="prompt">EXPERTISE FIRST: Read packages/cli/src/core/experts/{domain}/expertise.yaml
+
+QUESTION: {user_question}
+
+Analyze from your {domain} perspective:
+1. What do you observe in your domain?
+2. What concerns or issues do you see?
+3. What recommendations do you have?
+4. Confidence level (High/Medium/Low) and why?
+
+Be specific with file paths and code references.</parameter>
+<parameter name="subagent_type">agileflow-{domain}</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+```
+
+**TaskOutput** (collect all results):
+```xml
+<invoke name="TaskOutput">
+<parameter name="task_id">{expert_task_id}</parameter>
+<parameter name="block">true</parameter>
+</invoke>
+```
+
+**Domain Detection Keywords**:
+| Domain | Keywords |
+|--------|----------|
+| Security | auth, JWT, OAuth, vulnerability, XSS, CSRF, secure, encrypt |
+| API | endpoint, REST, GraphQL, route, controller, backend |
+| Testing | test, spec, coverage, mock, assertion |
+| Database | schema, table, query, migration, SQL, model |
+| Performance | optimize, cache, latency, profiling, slow |
+
+<!-- COMPACT_SUMMARY_END -->
 
 ## When to Use
 

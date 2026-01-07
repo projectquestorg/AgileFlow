@@ -1,6 +1,23 @@
 ---
 description: Create a user story with acceptance criteria
 argument-hint: EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id> [ESTIMATE=<pts>] [AC=<list>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:story-new - Story creator with acceptance criteria"
+    - "MUST create TodoWrite task list immediately (6 steps: parse, create story, create test stub, merge status, append bus, confirm)"
+    - "MUST show file previews before confirming writes"
+    - "MUST use Edit tool or jq for JSON operations (never echo/cat > status.json)"
+    - "MUST validate JSON after every modification"
+    - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
+    - "MUST create test stub in docs/07-testing/test-cases/<STORY>.md referencing AC"
+    - "AC format: Given/When/Then bullets (user story format)"
+  state_fields:
+    - story_id
+    - epic_id
+    - owner
+    - estimate
+    - ac_count
 ---
 
 # story-new
@@ -18,50 +35,16 @@ node .agileflow/scripts/obtain-context.js story
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Story Creator - Creates structured user stories with acceptance criteria, test stubs, and status tracking
+## ⚠️ COMPACT SUMMARY - /agileflow:story-new IS ACTIVE
 
-**Role**: Story Creator agent responsible for creating well-structured user stories following AgileFlow conventions
+**CRITICAL**: You are the Story Creator. This command creates user stories with acceptance criteria. Follow every rule.
 
-**Critical Rules**:
-- MUST use TodoWrite to track all 6 steps (parse, create story, create test stub, update status.json, append to bus/log.jsonl, confirm)
-- MUST show preview before creating files (use AskUserQuestion with proper XML invoke format)
-- NEVER ask users to "type" - always use proper options format
-- MUST use story-template.md as the base structure
-- MUST create test stub referencing acceptance criteria
-- MUST update both status.json and bus/log.jsonl
-- Story files go in: docs/06-stories/<EPIC>/<STORY>-<slug>.md
-- Test stubs go in: docs/07-testing/test-cases/<STORY>.md
+---
 
-**Required Inputs**:
-- EPIC=<EP-ID> - Epic identifier (e.g., EP-0001)
-- STORY=<US-ID> - Story identifier (e.g., US-0007)
-- TITLE=<text> - Story title
-- OWNER=<id> - Owner name or agent ID
-- ESTIMATE=<pts> - Time estimate (e.g., 0.5d, 2h)
-- AC=<list> - Acceptance criteria (Given/When/Then format)
-- DEPENDENCIES=[...] - Optional array of dependent story IDs
+### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
 
-**Workflow Steps**:
-1. Parse all inputs and validate format
-2. Create story file from template with frontmatter
-3. Create test case stub referencing AC
-4. Merge story into status.json
-5. Append assign event to bus/log.jsonl
-6. Show preview and get user confirmation
-
-**Template Location**: packages/cli/src/core/templates/story-template.md
-
-**Output Files**:
-- Story: docs/06-stories/<EPIC>/<STORY>-<slug>.md
-- Test: docs/07-testing/test-cases/<STORY>.md
-- Status: docs/09-agents/status.json (merged)
-- Log: docs/09-agents/bus/log.jsonl (appended)
-
-**Tool Usage Examples**:
-
-TodoWrite:
+Create a 6-step task list IMMEDIATELY:
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">1. Parse inputs (EPIC, STORY, TITLE, OWNER, ESTIMATE, AC)
@@ -73,30 +56,154 @@ TodoWrite:
 <parameter name="status">in-progress</parameter>
 </invoke>
 ```
+Mark each step complete as you finish it.
 
-AskUserQuestion (XML invoke):
+### 🚨 RULE #2: NEVER Create Files Without Preview + Confirmation
+
+**Workflow** (ALWAYS follow this order):
+1. Parse and validate all inputs (EPIC, STORY, TITLE, OWNER, ESTIMATE, AC, DEPENDENCIES)
+2. Create story file from template with frontmatter
+3. Create test stub file linking to acceptance criteria
+4. Prepare status.json merge (story entry with epic, estimate, deps)
+5. Prepare bus/log.jsonl append
+6. Show unified DIFF preview (story + test + status.json + bus log)
+7. Ask user YES/NO/CANCEL confirmation
+8. Only on YES: Execute all writes
+
+### 🚨 RULE #3: ACCEPTANCE CRITERIA Format
+
+AC must be Given/When/Then bullets:
+```
+Given: [initial context]
+When: [user action]
+Then: [expected result]
+```
+
+Example:
+```
+Given user is on login page
+When user enters valid credentials
+Then user sees dashboard
+```
+
+### 🚨 RULE #4: TEST STUB REFERENCING
+
+Test stub MUST reference AC:
+- Create docs/07-testing/test-cases/<STORY>.md
+- Include link to story file
+- Map each test to an AC bullet
+- Use BDD format (describe, test cases for each AC)
+
+### 🚨 RULE #5: NEVER Use echo/cat > For JSON Operations
+
+**ALWAYS use**:
+- Edit tool for small changes
+- jq for complex merges
+- Validate after every write
+
+---
+
+## Key Files & Formats
+
+**Input Parameters**:
+```
+EPIC=<EP-ID>               # e.g., EP-0001 (required)
+STORY=<US-ID>              # e.g., US-0007 (required)
+TITLE=<text>               # Story title (required)
+OWNER=<id>                 # Agent or person name (required)
+ESTIMATE=<time>            # e.g., 0.5d, 2h (optional, default: 1d)
+AC=<bullets>               # Given/When/Then format (optional)
+DEPENDENCIES=[<list>]      # Dependent story IDs (optional)
+```
+
+**Output Files Created**:
+| File | Purpose | Template |
+|------|---------|----------|
+| docs/06-stories/EP-<ID>/US-<ID>-<slug>.md | Story with AC | story-template.md |
+| docs/07-testing/test-cases/US-<ID>.md | Test stub | BDD format |
+| docs/09-agents/status.json | Story entry | jq merge |
+| docs/09-agents/bus/log.jsonl | Assign event | JSONL line |
+
+**Story Entry in status.json**:
+```json
+"US-0042": {
+  "id": "US-0042",
+  "epic": "EP-0010",
+  "owner": "AG-UI",
+  "status": "ready",
+  "estimate": "1d",
+  "deps": ["US-0041"],
+  "summary": "Login form with validation",
+  "created": "ISO-date",
+  "updated": "ISO-date"
+}
+```
+
+**Append to bus/log.jsonl**:
+```json
+{"ts":"ISO","type":"assign","from":"SYSTEM","to":"<owner>","story":"<US-ID>","text":"Story created"}
+```
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Ask user to "type" AC (use structured Given/When/Then)
+- Create files without showing preview
+- Create story without test stub
+- Overwrite status.json (always merge)
+- Skip JSON validation after edits
+- Forget to link story to epic in status.json
+
+✅ **DO**:
+- Use Given/When/Then format for AC
+- Show file previews before confirming
+- Create test stub with BDD structure
+- Merge entries into status.json (preserve data)
+- Validate JSON after every modification
+- Link story to epic in status.json entry
+
+---
+
+## Confirmation Flow
+
+1. **Show preview box** with all files being created
+   - Story file path and content
+   - Test stub file path and structure
+   - status.json changes (diff format)
+   - bus/log.jsonl append line
+
+2. **Ask confirmation**:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Create story US-0042: Login Form with these files?",
+  "question": "Create story US-0042: Login Form?",
   "header": "Confirm Story Creation",
   "multiSelect": false,
   "options": [
-    {"label": "Yes, create story", "description": "Write files and update status.json"},
-    {"label": "No, revise first", "description": "Modify before creating"},
+    {"label": "Yes, create", "description": "Write all files"},
+    {"label": "No, edit", "description": "Modify details"},
     {"label": "Cancel", "description": "Don't create"}
   ]
 }]</parameter>
 </invoke>
 ```
 
-**Success Criteria**:
-- All 6 todo items marked complete
-- Story file created with proper frontmatter
-- Test stub created and linked to AC
-- status.json updated with new story
-- bus/log.jsonl has assign event
-- User confirmed creation
+3. **On YES**: Execute all writes
+4. **On NO/CANCEL**: Abort without changes
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Creates story file + test stub + status.json entry + bus log event
+- ALWAYS validate AC format (Given/When/Then)
+- ALWAYS create test stub referencing AC
+- ALWAYS preview before confirming (prevents mistakes)
+- ALWAYS validate JSON after merge (prevents corruption)
+- Use TodoWrite for step tracking (6 steps)
+- Files: story file, test file, status.json, bus/log.jsonl
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -171,3 +278,49 @@ ACTIONS
 }]</parameter>
 </invoke>
 ```
+
+---
+
+## POST-CREATION ACTIONS
+
+After successfully creating the story, offer next steps:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Story <STORY> created! What would you like to do next?",
+  "header": "Next Steps",
+  "multiSelect": false,
+  "options": [
+    {"label": "Start working on it now (Recommended)", "description": "Mark as in_progress and begin implementation"},
+    {"label": "Validate story completeness", "description": "Check AC and dependencies before starting"},
+    {"label": "Create another story", "description": "Add more stories to this epic"},
+    {"label": "View all stories", "description": "See story list with /agileflow:story:list"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Start working on it now"**:
+1. Run `/agileflow:status <STORY> STATUS=in_progress`
+2. Then ask: "Enter plan mode to explore implementation approach?"
+   - If yes: `EnterPlanMode` and run `obtain-context.js`
+
+**If "Validate story completeness"**:
+- Run `/agileflow:story-validate STORY=<STORY>`
+
+**If "Create another story"**:
+- Re-run `/agileflow:story EPIC=<same epic>`
+
+**If "View all stories"**:
+- Run `/agileflow:story:list EPIC=<epic>`
+
+---
+
+## Related Commands
+
+- `/agileflow:story:list` - View all stories with filters
+- `/agileflow:story:view` - View story details with contextual actions
+- `/agileflow:story-validate` - Validate story completeness
+- `/agileflow:status` - Update story status
+- `/agileflow:epic` - Create parent epic

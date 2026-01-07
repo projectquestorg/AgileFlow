@@ -2,6 +2,22 @@
 description: Validate expertise files for drift and staleness
 argument-hint: "[DOMAIN]"
 model: haiku
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "DOMAIN is OPTIONAL - if not provided, validate ALL expertise files"
+    - "Run 4 validation checks: file path drift, stale learnings, file size, required sections"
+    - "File Path Drift CRITICAL - detect referenced files that no longer exist"
+    - "Stale Learnings - flag expertise not updated in 30+ days"
+    - "File Size Check - warn if expertise.yaml exceeds 200 lines"
+    - "Required Sections - verify domain, mental_models, learnings, key_files, patterns"
+    - "Non-destructive (read-only) - report issues but don't auto-fix"
+    - "Prioritize drift detection (most critical issue)"
+  state_fields:
+    - domain_filter
+    - total_checks
+    - pass_count
+    - fail_count
 ---
 
 # validate-expertise

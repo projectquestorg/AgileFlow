@@ -1,0 +1,106 @@
+# Skill Learnings Template
+# Copy this file and rename to match your skill (e.g., commit.yaml)
+#
+# This file stores learned user preferences for a skill.
+# It mirrors the expertise.yaml pattern used by agent experts.
+
+# Skill identifier (matches the skill filename without extension)
+skill: skill-name
+
+# Schema version for migrations
+version: 1
+
+# Last time this file was updated
+last_updated: 2026-01-06T00:00:00.000Z
+
+# =============================================================================
+# PREFERENCES
+# =============================================================================
+# Explicit preferences learned from user corrections.
+# Each entry captures: what triggered the learning, what was learned, and confidence.
+
+preferences:
+  # Example: High confidence from explicit correction
+  # - signal: "User said 'no AI attribution in commits'"
+  #   learning: "Never add AI footers or Co-Authored-By lines"
+  #   confidence: high
+  #   captured: 2026-01-06T10:30:00.000Z
+
+  # Example: Medium confidence from approval
+  # - signal: "User approved 'feat(api): add user endpoint'"
+  #   learning: "Use conventional commits with scope in parentheses"
+  #   confidence: medium
+  #   captured: 2026-01-06T11:00:00.000Z
+
+  # Example: Low confidence from observation
+  # - signal: "User shortened message from 60 to 45 chars"
+  #   learning: "User may prefer shorter commit messages"
+  #   confidence: low
+  #   captured: 2026-01-06T11:30:00.000Z
+
+# =============================================================================
+# CONVENTIONS
+# =============================================================================
+# Established patterns this skill should always follow.
+# These are high-confidence learnings that have been validated.
+
+conventions:
+  # - "Use imperative mood in commit subject"
+  # - "Keep subject line under 50 characters"
+  # - "Separate subject from body with blank line"
+
+# =============================================================================
+# ANTI-PATTERNS
+# =============================================================================
+# Things this skill should never do.
+# These are typically from explicit "never do X" corrections.
+
+anti_patterns:
+  # - "Don't add emojis unless user explicitly requests"
+  # - "Don't use past tense in commit messages"
+  # - "Don't include issue numbers without prefix"
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+# Project-specific context the skill has learned.
+# This helps the skill understand the environment it's operating in.
+
+context:
+  # project_type: nodejs
+  # primary_language: typescript
+  # framework: next.js
+  # style_guide: conventional-commits
+
+# =============================================================================
+# EXAMPLES
+# =============================================================================
+# Good examples the skill has learned from.
+# Can be referenced when generating new output.
+
+examples:
+  # good:
+  #   - "feat(auth): add OAuth2 login flow"
+  #   - "fix(api): handle null response from external service"
+  #
+  # bad:
+  #   - "Added stuff"  # Too vague
+  #   - "fixed bug"    # No scope, past tense
+
+# =============================================================================
+# METADATA
+# =============================================================================
+# Tracking information for the learnings file.
+
+metadata:
+  # Total number of corrections captured
+  corrections_count: 0
+
+  # Total number of approvals captured
+  approvals_count: 0
+
+  # When the file was first created
+  created: 2026-01-06T00:00:00.000Z
+
+  # Sessions that contributed to learnings
+  sessions: []

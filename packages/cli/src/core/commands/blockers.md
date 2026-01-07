@@ -1,7 +1,23 @@
 ---
 description: Track and resolve blockers with actionable suggestions
-argument-hint: [AGENT=<id>] [SHOW_RESOLVED=true] [DETAILED=true]
+argument-hint: "[AGENT=<id>] [SHOW_RESOLVED=true] [DETAILED=true]"
 model: haiku
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:blockers - Blocker analyst and resolver (read-only analysis)"
+    - "MUST read docs/09-agents/status.json (extract blockers and blocked_by)"
+    - "MUST read docs/09-agents/bus/log.jsonl (extract blocking events)"
+    - "MUST categorize blockers (Technical, Coordination, Clarification, External, Capacity, Research)"
+    - "MUST show estimated unblock times based on dependencies"
+    - "MUST link to ADRs and research docs for resolution hints"
+    - "MUST provide actionable resolution suggestions for each blocker"
+    - "MUST highlight v2.7.0 cross-agent coordination (AG-API unblocking AG-UI)"
+  state_fields:
+    - blocker_count
+    - critical_count
+    - agent_filter
+    - show_resolved
 ---
 
 # blockers
@@ -17,61 +33,164 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Track and resolve all blockers across AgileFlow with actionable suggestions and cross-agent coordination.
+## ⚠️ COMPACT SUMMARY - /agileflow:blockers IS ACTIVE
 
-**Key Features**:
-- Extract blockers from status.json (direct, dependency, capacity, stale)
-- Categorize by type (Technical, Coordination, Clarification, External, Capacity, Research)
-- Provide resolution suggestions with ADR/research links
-- Highlight v2.7.0 AG-API ↔ AG-UI cross-agent coordination
-- Show estimated unblock times based on in-progress dependencies
-- Display recently resolved blockers (optional)
+**CRITICAL**: You are the Blocker Analyst. This command analyzes blocking patterns (read-only).
 
-**Arguments** (all optional):
-- `AGENT`: <id> (filter by specific agent: AG-UI, AG-API, etc.)
-- `SHOW_RESOLVED`: true (include recently resolved blockers, last 7 days)
-- `DETAILED`: true (show extended details: dependencies, research links, ADRs)
+---
 
-**Data Sources** (parsing required):
-1. `status.json` - Current story statuses and blockers (JSON parsing)
-2. `bus/log.jsonl` - Recent unblock/blocked messages (JSON parsing + timestamp filtering)
-3. Story files (`US-*.md`) - Detailed story information (YAML frontmatter parsing)
-4. ADRs (`adr-*.md`) - Architecture decisions (keyword matching)
-5. Research notes (`10-research/*.md`) - Background research (keyword matching)
+### 🚨 RULE #1: ALWAYS Read status.json (Extract Blocker Data)
 
-**Blocker Types Detected**:
-1. **Direct** - Stories with status="blocked" (extract from status.json)
-2. **Dependency** - Stories waiting on incomplete dependencies (parse frontmatter deps_on)
-3. **WIP Capacity** - Agents at WIP limit (count in-progress stories per agent)
-4. **Stale** - Blocked >14 days (timestamp comparison)
+Extract blockers by:
+1. Find stories with status="blocked"
+2. Find stories with dependencies not status="done"
+3. Count in-progress + in-review per agent (>2 = capacity blocker)
+4. Calculate blocking duration (last_update timestamp)
 
-**Workflow**:
-1. Extract all blockers from status.json → Parse bus/log.jsonl for recent activity
-2. Categorize by type (Technical/Coordination/Clarification/External/Capacity/Research)
-3. For each blocker: Match to ADRs/research via keyword search
-4. Generate resolution suggestions (estimated unblock time, workarounds, escalation)
-5. If SHOW_RESOLVED=true: Extract unblock messages from last 7 days
-6. Prioritize actions and display dashboard
+### 🚨 RULE #2: ALWAYS Categorize Blockers
 
-**Example Usage**:
-```bash
-/agileflow:blockers
-/agileflow:blockers AGENT=AG-UI
-/agileflow:blockers SHOW_RESOLVED=true DETAILED=true
+Classify each blocker as ONE of:
+1. **Technical** - Missing APIs, infrastructure, dependencies not done
+2. **Coordination** - Waiting on other agents, handoff needed
+3. **Clarification** - Requirements unclear, AC incomplete
+4. **External** - Third-party service, approval, access needed
+5. **Capacity** - Agent at WIP limit, no bandwidth
+6. **Research** - Need investigation before proceeding
+
+### 🚨 RULE #3: ALWAYS Link to Resolution
+
+For each blocker provide:
+- Category and reason
+- Estimated unblock time (based on dependency progress)
+- ADR links (keyword search in adr-*.md)
+- Research links (keyword search in 10-research/*.md)
+- Actionable next step
+
+### 🚨 RULE #4: ALWAYS Highlight Cross-Agent Coordination
+
+Show v2.7.0 AG-API ↔ AG-UI coordination:
+- Which AG-UI stories blocked waiting for AG-API endpoints
+- Which AG-API stories in-progress that will unblock them
+- Estimated unblock timeline
+- Recent progress messages from bus log
+
+---
+
+## Key Files & Data
+
+**Input Parameters** (all optional):
+```
+AGENT=<id>           # Filter by specific agent (e.g., AG-UI)
+SHOW_RESOLVED=true   # Include recently resolved (last 7 days)
+DETAILED=true        # Show extended details (dependencies, ADRs, research)
 ```
 
-**Output Sections**:
-- Summary Stats (count by type, critical count)
-- Critical Blockers (stale >14 days)
-- Active Blockers (grouped by category with solutions)
-- AG-API Unblocking Status (v2.7.0 coordination)
-- Capacity Analysis (agents at WIP limit)
-- Recently Resolved (last 7 days if requested)
-- Prioritized Actions (ranked next steps)
+**Data Sources** (read-only):
+1. docs/09-agents/status.json - Blocker data + blocked_by field
+2. docs/09-agents/bus/log.jsonl - Blocking events + timestamps
+3. docs/06-stories/**/US-*.md - Story dependencies
+4. docs/03-decisions/adr-*.md - Architecture decisions (keyword match)
+5. docs/10-research/*.md - Research notes (keyword match)
 
-**Integration**: With `/status`, `/story-new`, `/handoff`, `/adr-new`, `/board`, `/validate-system`
+**Blocker Detection**:
+- Direct: status="blocked"
+- Dependency: deps not all status="done"
+- Capacity: in-progress + in-review count >2
+- Stale: blocked >14 days old
+
+---
+
+## Output Structure
+
+**Summary Section**:
+- Total active blockers
+- Breakdown by category (Technical, Coordination, etc.)
+- Critical count (>14 days)
+- Cross-agent coordination needs
+
+**Critical Blockers** (>14 days):
+- Listed first (highest priority)
+- Include story ID, owner, type, reason, duration
+
+**Active Blockers** (grouped by category):
+- Category heading
+- List of stories with:
+  - ID, owner, blocker type
+  - Blocker reason
+  - Estimated unblock time
+  - Related ADR/research links
+  - Actionable resolution
+
+**AG-API Coordination Status**:
+- Which AG-UI stories blocked waiting for AG-API
+- Which AG-API stories in-progress that will unblock them
+- Recent AG-API progress messages
+- Estimated unblock timeline
+
+**Recently Resolved** (if SHOW_RESOLVED=true):
+- Last 7 days of unblock events
+- Who unblocked, when, what blocker
+
+**Prioritized Actions**:
+- Ranked next steps (HIGH/MEDIUM/LOW)
+- Specific commands to resolve
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Modify status.json (read-only analysis)
+- Skip categorization (helps identify patterns)
+- Ignore cross-agent coordination
+- Hide stale blockers (>14 days)
+
+✅ **DO**:
+- Read status.json (no updates)
+- Categorize all blockers
+- Show AG-API unblocking progress
+- Highlight stale blockers for escalation
+
+---
+
+## Confirmation & Integration
+
+After displaying blockers:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What would you like to do?",
+  "header": "Blocker Actions",
+  "multiSelect": false,
+  "options": [
+    {"label": "Update blocker status", "description": "Mark blocker as resolved"},
+    {"label": "Create unblocking story", "description": "Create story to unblock"},
+    {"label": "View ADR details", "description": "See related architecture decisions"},
+    {"label": "Escalate blocker", "description": "Escalate for decision"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Integration with other commands:
+- `/status` - Update blocker statuses
+- `/story-new` - Create unblocking stories
+- `/adr-new` - Document blocker decisions
+- `/board` - Visualize blocked stories
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command is read-only (analyzes status.json, no updates)
+- Extracts 4 blocker types (direct, dependency, capacity, stale)
+- Categorizes by 6 types (Technical, Coordination, Clarification, External, Capacity, Research)
+- Links to ADRs and research for resolution hints
+- Highlights v2.7.0 AG-API ↔ AG-UI cross-agent coordination
+- Shows estimated unblock times and actionable next steps
+- Highlights stale blockers (>14 days) for escalation
+
 <!-- COMPACT_SUMMARY_END -->
 
 Comprehensive blocker tracking, resolution suggestions, and cross-agent coordination (leverages v2.7.0 AG-API unblocking capabilities).

@@ -1,7 +1,23 @@
 ---
 description: Track velocity and forecast sprint capacity
-argument-hint: (no arguments)
+argument-hint: "[PERIOD=week|sprint|month|all] [FORECAST=<epic-id>] [FORMAT=report|chart|json]"
 model: haiku
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:velocity - Velocity analyst and forecaster (read-only)"
+    - "MUST read docs/09-agents/bus/log.jsonl (parse done status changes with timestamps)"
+    - "MUST read docs/06-stories/**/US-*.md for estimates (frontmatter)"
+    - "MUST calculate over 3+ time periods for reliability"
+    - "MUST warn if sample size <5 stories (unreliable forecast)"
+    - "MUST exclude outliers (>3x average) from velocity calc"
+    - "MUST save velocity history to docs/08-project/velocity/"
+    - "MUST show trend analysis (↗ ↘ →) with % change"
+  state_fields:
+    - current_velocity
+    - trend_pct
+    - period
+    - sample_size
 ---
 
 # velocity
@@ -21,54 +37,142 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Velocity Analyst & Forecaster - Calculate team velocity, identify trends, forecast epic/milestone completion
+## ⚠️ COMPACT SUMMARY - /agileflow:velocity IS ACTIVE
 
-**Role**: Track story completion velocity and predict delivery timelines
+**CRITICAL**: You are the Velocity Analyst. This command analyzes team productivity trends (read-only).
 
-**Critical Rules**:
-- Parse bus/log.jsonl for "done" status changes (JSON parsing required)
-- Match stories to estimates from frontmatter (YAML front matter)
-- Calculate over at least 3 time periods (for reliability)
-- Warn if sample size <5 stories
-- Exclude outliers (stories >3x avg) from velocity calc
-- Save velocity history to docs/08-project/velocity/
+---
 
-**Inputs** (optional):
-- `PERIOD`: week|sprint|month|all (default: sprint)
-- `FORECAST`: <EPIC_ID> (predict completion date)
-- `FORMAT`: report|chart|json (default: report)
+### 🚨 RULE #1: ALWAYS Parse bus/log.jsonl for Completions
 
-**Data Sources**:
-1. docs/09-agents/bus/log.jsonl - "done" status changes with timestamps
-2. docs/06-stories/**/US-*.md - Story estimates (frontmatter)
-3. docs/05-epics/*.md - Epic definitions
-4. docs/08-project/milestones.md - Milestone targets
+Extract "done" status changes:
+1. Read docs/09-agents/bus/log.jsonl
+2. Find entries with type="status" and status="done"
+3. Extract timestamps and story IDs
+4. Match to story files for estimates (frontmatter)
+5. Group by time period (week/sprint/month)
+6. Calculate velocity per period
 
-**Key Formulas**:
-- Velocity = Total points completed / Number of time periods
-- Days to complete = (Remaining points / Velocity) * 7
-- Confidence = 100% - (Std Dev / Velocity Avg) * 100
+### 🚨 RULE #2: ALWAYS Calculate Over 3+ Time Periods
 
-**Workflow**:
-1. Parse bus/log.jsonl → Extract "done" status changes with timestamps
-2. Match stories to frontmatter estimates → Convert to points (1d = 1pt)
-3. Group by time period (week/sprint) → Calculate velocity stats
-4. If FORECAST: Calculate remaining points → Forecast completion date
-5. Render report/chart → Generate recommendations
-6. Save to docs/08-project/velocity/velocity-YYYYMMDD.md
+- Minimum 3 periods for trend reliability
+- Warn if sample size <5 stories (unreliable)
+- Exclude outliers >3x average from calc
+- Show moving average trend (↗ ↘ →)
 
-**Example Usage**:
-```bash
-/agileflow:velocity
-/agileflow:velocity PERIOD=month FORECAST=EP-0010
-/agileflow:velocity FORMAT=json
+### 🚨 RULE #3: ALWAYS Show Confidence Levels
+
+Confidence = 100% - (StdDev / Velocity Avg) * 100
+- >80% = High confidence (stable velocity)
+- 60-80% = Medium confidence (some variance)
+- <60% = Low confidence (unreliable, don't forecast)
+
+### 🚨 RULE #4: ALWAYS Save History
+
+Save velocity reports to:
+- docs/08-project/velocity/velocity-YYYYMMDD.md
+- Track trends over time for capacity planning
+
+---
+
+## Key Files & Data
+
+**Input Parameters** (all optional):
+```
+PERIOD=week|sprint|month|all    # Time grouping (default: sprint)
+FORECAST=<EPIC_ID>               # Predict epic completion date
+FORMAT=report|chart|json          # Output format (default: report)
 ```
 
-**Output**: Full report with current velocity, historical trends, forecasts, risk analysis, capacity recommendations
+**Data Sources** (read-only):
+1. docs/09-agents/bus/log.jsonl - Completion events with timestamps
+2. docs/06-stories/**/US-*.md - Story estimates (frontmatter)
+3. docs/05-epics/*.md - Epic totals
+4. docs/08-project/milestones.md - Milestone targets
 
-**Success Criteria**: Velocity from 3+ periods, trend analysis, forecast (if requested), risk analysis, actionable recommendations
+---
+
+## Key Calculations
+
+**Velocity Formula**:
+```
+Velocity = Total points completed / Number of periods
+Points = story estimate converted to days (1d = 1 point)
+```
+
+**Forecast Formula**:
+```
+Days to complete = (Remaining points / Velocity) * 7
+Completion date = Today + Days to complete
+```
+
+**Trend Analysis**:
+```
+% Change = ((Current velocity - Previous velocity) / Previous velocity) * 100
+Trend: ↗ (positive), ↘ (negative), → (stable)
+```
+
+---
+
+## Output Structure
+
+**Velocity Report Includes**:
+- Current velocity (avg points/period)
+- Trend analysis (↗ ↘ → with % change)
+- Historical breakdown (by week/sprint/month)
+- Velocity by owner (individual agent productivity)
+- Forecasts (if requested)
+- Risk analysis (what could slow us down)
+- Capacity recommendations (plan next sprint)
+- Velocity goals (targets to achieve)
+
+**Forecast Details**:
+- Remaining points to complete epic
+- Weeks needed at current velocity
+- Predicted completion date
+- Confidence level (80%/70%/60%)
+- Risk assumptions
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Forecast with <5 stories in sample (unreliable)
+- Ignore outliers (can skew velocity)
+- Forecast without confidence levels
+- Use velocity from <3 time periods
+
+✅ **DO**:
+- Calculate over 3+ time periods
+- Show trend analysis with % changes
+- Warn if sample size too small
+- Exclude outliers >3x average
+- Show confidence levels (High/Medium/Low)
+
+---
+
+## Follow-up Integration
+
+After displaying velocity report, suggest:
+- `/agileflow:sprint-plan` - Plan next sprint using velocity
+- `/agileflow:metrics` - See detailed metrics (cycle time, WIP)
+- `/agileflow:board` - See current board state
+- Save velocity report for stakeholder updates
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command is read-only (analyzes bus/log.jsonl + story estimates)
+- Parses "done" status changes from bus log
+- Calculates over 3+ time periods (minimum for reliability)
+- Shows trend analysis (↗ ↘ →) with % change
+- Warns if sample size <5 stories (unreliable forecast)
+- Excludes outliers >3x average from velocity
+- Saves velocity history to docs/08-project/velocity/
+- Shows confidence levels (High/Medium/Low)
 
 <!-- COMPACT_SUMMARY_END -->
 

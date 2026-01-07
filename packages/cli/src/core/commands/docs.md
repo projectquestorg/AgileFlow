@@ -1,6 +1,21 @@
 ---
 description: Synchronize documentation with code changes
 argument-hint: [BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=yes|no]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Compare BRANCH against BASE using git diff"
+    - "Categorize changes: API, UI, services, config, database"
+    - "Generate gap report: missing, outdated, up-to-date docs"
+    - "NEVER delete docs without explicit approval"
+    - "ALWAYS use diff-first, YES/NO pattern before writing"
+    - "PRESERVE custom content - use managed section markers"
+    - "INFER docs from TypeScript types, JSDoc, OpenAPI, tests"
+    - "Optional AUTO_CREATE mode auto-generates all missing docs"
+  state_fields:
+    - branch_name
+    - base_branch
+    - auto_create_flag
 ---
 
 # docs-sync
@@ -18,76 +33,180 @@ node .agileflow/scripts/obtain-context.js docs
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Automatically detect code changes and synchronize documentation to prevent drift.
+## ⚠️ COMPACT SUMMARY - /agileflow:docs-sync IS ACTIVE
 
-**Core Workflow**:
-1. Activate command using STEP 0 registration script
-2. Compare branch against base using git diff
-3. Categorize changes (API, UI, services, config, database)
-4. Map code changes to expected documentation locations
-5. Analyze gaps (missing docs, outdated docs, deprecated references)
-6. Generate gap report with status indicators (❌ missing, ⚠️ incomplete, ✅ up-to-date)
-7. Preview suggested documentation updates
-8. Get explicit user approval before making changes
+**CRITICAL**: You are detecting code changes and synchronizing documentation. Goal: prevent documentation drift.
 
-**Critical Rules**:
-- NEVER delete documentation without explicit user approval
-- ALWAYS use diff-first, YES/NO pattern for all modifications
-- PRESERVE custom content - don't overwrite manually written sections
-- USE managed section markers: `<!-- MANAGED:section-id --> ... <!-- /MANAGED -->`
-- LINK docs to source files for traceability
-- INFER documentation from TypeScript types, JSDoc, OpenAPI decorators, test files
+**ROLE**: Documentation Synchronizer
 
-**Expected Documentation Mapping**:
-- API endpoints → `docs/04-architecture/api.md` or OpenAPI spec
-- UI components → `docs/04-architecture/components.md` or Storybook
-- Services/utilities → `docs/04-architecture/services.md`
-- Configuration → `docs/02-practices/configuration.md`
-- Database migrations → `docs/04-architecture/database.md`
+---
 
-**Smart Inference Sources**:
-- TypeScript types and interfaces
-- JSDoc comments and annotations
-- OpenAPI/Swagger decorators
-- Function signatures and parameters
-- Test files as usage examples
+### 🚨 RULE #1: COMPARE BRANCHES AND DETECT CHANGES
 
-**Auto-Create Mode** (AUTO_CREATE=yes):
-- Creates all missing documentation automatically
-- Marks sections with "TODO: Add details" for manual review
-- Commits with message: "docs: sync with codebase changes"
+Use git diff to compare BRANCH against BASE:
 
-**Integration Features**:
-- Create tracking story for significant doc gaps
-- Log to agent bus: `{"type":"docs-sync","missing":N,"outdated":N}`
-- Suggest PR checklist item: "- [ ] Documentation updated"
-- Recommend CI integration for automated checks
-
-**Gap Report Format**:
-```markdown
-# Documentation Sync Report
-**Branch**: <name> | **Base**: <branch> | **Generated**: <timestamp>
-
-## Missing Documentation
-### API Endpoints (N)
-- ❌ POST /endpoint (src/path/file.ts)
-
-## Outdated Documentation
-- 📄 Deprecated references to removed code
-
-## Up-to-Date
-- ✅ Correctly documented components
+```bash
+git diff <BASE>...<BRANCH> --name-status
 ```
 
-**Output Deliverables**:
-- Markdown gap report with categorized findings
-- List of recommended actions with previews
-- Optional: Pull request with documentation updates (if approved)
+Categorize changes:
+- **API endpoints**: src/api/, src/routes/, src/controllers/
+- **UI components**: src/components/, src/pages/
+- **Services**: src/services/, src/utils/
+- **Config**: *.config.js, *.yml, .env.example
+- **Database**: migrations/, schema/
 
-**Tool Usage Example**:
-When asking for approval before creating docs:
+---
+
+### 🚨 RULE #2: MAP TO EXPECTED DOCUMENTATION
+
+For each changed file, map to expected docs:
+
+| Code Change | Expected Doc Location | Gap Status |
+|-------------|----------------------|-----------|
+| New API endpoint | docs/04-architecture/api.md | Check section exists |
+| New UI component | docs/04-architecture/components.md | Check section exists |
+| New service/utility | docs/04-architecture/services.md | Check section exists |
+| Config change | docs/02-practices/configuration.md | Check referenced |
+| Database migration | docs/04-architecture/database.md | Check documented |
+
+---
+
+### 🚨 RULE #3: GENERATE GAP REPORT
+
+Always create gap report showing status for each change:
+
+```markdown
+# Documentation Sync Report
+**Branch**: feature/auth | **Base**: main | **Generated**: 2025-12-22T10:30Z
+
+## Missing Documentation (3)
+- ❌ POST /api/auth/login (src/api/auth/login.ts)
+- ❌ LoginForm component (src/components/LoginForm.tsx)
+- ❌ JWT_SECRET env var (.env.example)
+
+## Outdated Documentation (1)
+- 📄 Mentions /api/v1/login (removed in this branch)
+
+## Up-to-Date (2)
+- ✅ UserAvatar component documented
+- ✅ Database schema up-to-date
+```
+
+---
+
+### 🚨 RULE #4: NEVER DELETE WITHOUT APPROVAL
+
+**CRITICAL**: When docs are removed or changed:
+1. Show diff to user
+2. Ask explicit approval: "Delete this section? (YES/NO)"
+3. Only delete if user approves
+
+❌ WRONG: Remove outdated docs without asking
+✅ RIGHT: Show diff, ask approval, delete only if approved
+
+---
+
+### 🚨 RULE #5: DIFF-FIRST, YES/NO PATTERN
+
+**ALWAYS follow this pattern:**
+
+1. Generate all proposed changes in memory (don't write)
+2. Show diff/preview to user
+3. Ask: "Create missing documentation? (YES/NO)"
+4. Only write files if user says YES
+
+---
+
+### 🚨 RULE #6: SMART INFERENCE
+
+Infer documentation from code sources:
+
+**From TypeScript**:
+```typescript
+// Code:
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+// Generated doc:
+## User Interface
+- id (string) - Unique user identifier
+- email (string) - User email address
+- name (string) - User full name
+```
+
+**From JSDoc**:
+```typescript
+/**
+ * Authenticates user with email and password
+ * @returns JWT token and user profile
+ */
+export async function login(email: string, password: string)
+
+// Generated doc:
+POST /api/auth/login
+Authenticates user with email and password.
+Returns JWT token and user profile.
+```
+
+---
+
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Delete docs without approval
+❌ Skip diff-first pattern
+❌ Overwrite manually written sections
+❌ Create vague doc stubs ("TODO: Add details")
+❌ Ignore outdated documentation
+❌ Skip gap report
+
+### DO THESE INSTEAD
+
+✅ Always ask before deleting
+✅ Show diffs for user approval
+✅ Preserve custom content
+✅ Generate complete doc stubs from code
+✅ Flag outdated docs clearly
+✅ Create comprehensive gap report
+
+---
+
+### WORKFLOW
+
+1. **Get Diff**: Compare BRANCH vs BASE with git diff
+2. **Categorize**: Group changes by type (API, UI, services, etc.)
+3. **Map**: For each change, identify expected doc location
+4. **Analyze**: Check if docs exist, are current, or are missing
+5. **Report**: Generate gap report with status indicators
+6. **Preview**: Show all proposed changes to user
+7. **Ask**: "Create missing documentation? (YES/NO)"
+8. **Create**: Only if user approves - generate stubs from code
+9. **Commit**: If AUTO_CREATE=yes, commit with message "docs: sync with codebase changes"
+
+---
+
+### TOOL USAGE EXAMPLES
+
+**TodoWrite** (to track sync process):
+```xml
+<invoke name="TodoWrite">
+<parameter name="content">1. Get git diff between BASE and BRANCH
+2. Categorize changes (API, UI, services, config, DB)
+3. Map to expected documentation locations
+4. Analyze gaps (missing, outdated, current)
+5. Generate gap report
+6. Preview proposed changes
+7. Get user approval
+8. Create docs if approved</parameter>
+<parameter name="status">in-progress</parameter>
+</invoke>
+```
+
+**AskUserQuestion** (for approval):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -95,13 +214,26 @@ When asking for approval before creating docs:
   "header": "Documentation Sync",
   "multiSelect": false,
   "options": [
-    {"label": "Create all missing docs", "description": "Auto-generate stubs for all missing documentation"},
-    {"label": "Review each one first", "description": "Preview each change before creating"},
+    {"label": "Create all missing docs", "description": "Auto-generate stubs from code"},
+    {"label": "Review each one first", "description": "Preview changes before creating"},
     {"label": "Skip documentation", "description": "Don't create docs now"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:docs-sync` IS ACTIVE
+- Compare BRANCH vs BASE with git diff
+- Categorize changes (API, UI, services, etc.)
+- Generate gap report (missing, outdated, current)
+- Never delete docs without approval
+- Use diff-first, YES/NO pattern
+- Infer docs from code (TypeScript, JSDoc, tests)
+- Optional AUTO_CREATE auto-generates all missing docs
 
 <!-- COMPACT_SUMMARY_END -->
 

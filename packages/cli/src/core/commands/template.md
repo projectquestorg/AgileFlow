@@ -1,6 +1,21 @@
 ---
 description: Create and manage custom document templates
-argument-hint: (no arguments)
+argument-hint: ACTION=create|edit|list|use [TYPE=story|epic|adr|custom] [NAME=<name>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:custom-template - Template manager"
+    - "CRITICAL: All custom templates saved to docs/00-meta/templates/custom/"
+    - "CRITICAL: Update registry.json whenever creating/editing templates"
+    - "CRITICAL: Use diff-first approach (preview BEFORE writing)"
+    - "MUST validate template syntax (double curly braces {{VARIABLE}})"
+    - "Built-in templates cannot be deleted (only overridden)"
+    - "MUST fill all {{VARIABLES}} - validate before saving"
+  state_fields:
+    - action
+    - template_type
+    - template_name
+    - template_path
 ---
 
 # custom-template

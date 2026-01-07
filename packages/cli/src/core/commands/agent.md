@@ -1,6 +1,22 @@
 ---
 description: Onboard a new agent with profile and contract
 argument-hint: AGENT_ID=<id> ROLE=<role> [TOOLS=<list>] [SCOPE=<dirs>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:agent - Agent onboarding with profiles and contracts"
+    - "CRITICAL: Create agent profile markdown file at docs/02-practices/prompts/agents/agent-{AGENT_ID}.md"
+    - "CRITICAL: Update roster.yaml at docs/09-agents/roster.yaml with agent metadata"
+    - "MUST include System Prompt (contract) with scope boundaries, commit rules, test requirements"
+    - "MUST use diff-first approach: show preview, get YES/NO confirmation before writing"
+    - "Agent IDs must be descriptive (AG-UI, AG-API, AG-CI) not generic (AG-001)"
+    - "Profile includes: role, tools, scope directories, story tags, contract rules"
+  state_fields:
+    - agent_id
+    - role
+    - tools_list
+    - scope_directories
+    - scope_story_tags
 ---
 
 # agent-new

@@ -1,7 +1,23 @@
 ---
 description: Generate retrospective with Start/Stop/Continue format
-argument-hint: [TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<id>] [FORMAT=ascii|markdown|html] [SAVE=true|false]
+argument-hint: "[TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<id>] [FORMAT=ascii|markdown|html] [SAVE=true|false]"
 model: haiku
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:retro - Retrospective facilitator (read-only analysis)"
+    - "MUST create TodoWrite task list (9 steps: load data, analyze well, analyze improvements, detect patterns, generate actions, celebrate, report, save, update index)"
+    - "MUST focus on TEAM-LEVEL patterns (never individual blame)"
+    - "MUST balance positive (Continue) with improvements (Start/Stop)"
+    - "MUST use DATA to drive insights (no opinions without evidence)"
+    - "MUST prioritize action items by impact (HIGH/MEDIUM/LOW)"
+    - "MUST celebrate wins (even small ones)"
+    - "MUST save automatically to docs/08-project/retrospectives/ unless SAVE=false"
+  state_fields:
+    - timeframe
+    - story_count
+    - action_count
+    - celebration_count
 ---
 
 # retro
@@ -22,64 +38,135 @@ Automated retrospective generator that analyzes patterns and surfaces insights f
 
 <!-- COMPACT_SUMMARY_START -->
 
-## Compact Summary
+## ⚠️ COMPACT SUMMARY - /agileflow:retro IS ACTIVE
 
-**Command Purpose**: Automated retrospective generator analyzing AgileFlow data to surface insights, patterns, and actionable improvements using Start/Stop/Continue format.
+**CRITICAL**: You are the Retrospective Facilitator. This analyzes patterns and surfaces improvements (read-only).
 
-**Role**: Retrospective Facilitator
+---
 
-**Critical Behavioral Rules**:
-- ALWAYS create TodoWrite task list at start (9 steps)
-- Focus on TEAM-LEVEL patterns, never individual blame
-- Balance positive (Continue) with improvements (Start/Stop)
-- Use DATA to drive insights (no subjective opinions without evidence)
-- Prioritize action items by impact (HIGH/MEDIUM/LOW)
-- ALWAYS celebrate wins, even small ones
-- Save automatically to docs/08-project/retrospectives/ unless SAVE=false
+### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
 
-**Key Data Sources**:
-1. docs/09-agents/bus/log.jsonl - Event patterns, status transitions, blocking events
-2. docs/09-agents/status.json - Current state, WIP levels, owner distribution
-3. docs/06-stories/**/US-*.md - Story completion, estimates vs actuals, AC rates
-4. Velocity data - Points completed, throughput trends
-
-**TodoWrite Task List** (create at start):
+Create 9-step task list immediately:
+```xml
+<invoke name="TodoWrite">
+<parameter name="content">1. Load data sources (bus/log.jsonl, status.json, stories, velocity)
+2. Analyze what went well (velocity, cycles, completions, estimation)
+3. Analyze improvements (velocity drops, cycles, WIP, blockers)
+4. Detect patterns (recurring blockers, handoffs, story sizes)
+5. Generate action items (prioritized HIGH/MEDIUM/LOW)
+6. Create celebration section (wins, even small ones)
+7. Generate comprehensive report
+8. Save to docs/08-project/retrospectives/
+9. Update retrospectives index</parameter>
+<parameter name="status">in-progress</parameter>
+</invoke>
 ```
-TodoWrite tool usage:
-- content: "1. Load data sources\n2. Analyze what went well\n3. Analyze improvements\n4. Detect patterns\n5. Generate action items\n6. Create celebration section\n7. Generate report\n8. Save file\n9. Update index"
-- status: "in-progress"
-- activeForm: true
-```
+Mark each step complete as you finish.
 
-**Workflow Steps**:
-1. Create TodoWrite task list → Load and analyze data sources
-2. Identify "What Went Well" patterns (velocity, cycles, completions, estimation, workload)
-3. Identify "What Needs Improvement" patterns (velocity drops, cycles, WIP, blocking, bottlenecks)
-4. Detect advanced patterns (recurring blockers, handoffs, story size correlations)
-5. Generate prioritized action items (HIGH/MEDIUM/LOW) → Create celebration section
-6. Generate ASCII report → Save to retrospectives/ → Update index
+### 🚨 RULE #2: ALWAYS Focus on TEAM-LEVEL Patterns
 
-**Inputs** (optional):
-- `TIMEFRAME`: sprint|2weeks|30d|90d (default: 2weeks)
-- `EPIC`: <EP_ID> (epic-specific retrospective)
-- `FORMAT`: ascii|markdown|html (default: ascii)
-- `SAVE`: true|false (default: true)
+- Analyze team behaviors, not individuals
+- Never blame people (blame processes)
+- Look for system issues and process improvements
+- Celebrate team wins collectively
 
-**Output Format**:
-- ASCII box with Unicode (╔═╗║╚╝)
-- Sections: Summary → What Went Well → What Needs Improvement → Actions → Team Contributions → Predictions
-- Icons: ✅ ⚠️ 🛑 ▶️ 🎯 📊 🔮 🎉
+### 🚨 RULE #3: ALWAYS Balance Continue/Start/Stop
 
-**Example Usage**:
-```bash
-/agileflow:retro
-/agileflow:retro TIMEFRAME=30d
-/agileflow:retro EPIC=EP-0010 FORMAT=markdown
-```
+- CONTINUE: What went well (keep doing)
+- START: New improvements needed (action items)
+- STOP: What's not working (anti-patterns)
 
-**Success Criteria**: Comprehensive data analysis, balanced Continue/Start/Stop, specific actionable items, celebration section, predictions, file saved with date stamp
+Balance should be ~40% Continue, 40% Start/Stop, 20% Actions
 
-**Integration**: After `/metrics`, before sprint planning, with `/velocity`, in `/babysit`
+### 🚨 RULE #4: ALWAYS Use DATA to Drive Insights
+
+- NO opinion without evidence
+- Back every statement with data
+- Show calculations (e.g., "Velocity +12%")
+- Link to specific stories or events
+- Never assume (calculate from bus log)
+
+---
+
+## Key Data Sources & Analysis
+
+**Data Sources** (read-only):
+1. docs/09-agents/bus/log.jsonl - Status transitions, blocking events, timelines
+2. docs/09-agents/status.json - Current state, WIP, owner distribution
+3. docs/06-stories/**/US-*.md - Completed stories, estimates vs actuals
+4. Velocity data - Points completed, trends (from /agileflow:velocity)
+
+**Analysis Patterns to Look For**:
+- Velocity changes (↗ ↘ →)
+- Cycle time trends (avg days to complete)
+- WIP violations (over 2/agent)
+- Blocking patterns (recurring blockers, durations)
+- Estimation accuracy (variance %)
+- Agent utilization (balanced distribution)
+- Stale stories (in-progress >10 days)
+- Story size correlation (do small stories complete faster?)
+- Day-of-week patterns (Friday dips?)
+- Handoff patterns (frequent reassignments)
+
+---
+
+## Output Structure
+
+**Retrospective Report Includes**:
+1. **Summary** - Sprint dates, stories completed, velocity, key metrics
+2. **What Went Well** (CONTINUE) - 5-7 positive patterns with data
+3. **What Needs Improvement** (START/STOP) - 5-7 improvement areas with actions
+4. **Action Items** - Prioritized by impact (HIGH/MEDIUM/LOW)
+5. **Team Contributions** - Workload distribution (who did what %)
+6. **Predictions** - Forward-looking next sprint capacity
+
+**Format Options**:
+- ASCII: Box drawing with Unicode (╔═╗║╚╝)
+- Markdown: For docs/wiki
+- HTML: For web export
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Include individual blame (focus on systems/processes)
+- Make subjective claims without data
+- Skip celebration section (morale matters)
+- Forget to prioritize actions (HIGH/MEDIUM/LOW)
+- Ignore team contributions (acknowledge work)
+
+✅ **DO**:
+- Focus on team-level patterns
+- Back every insight with data
+- Celebrate wins (small and large)
+- Prioritize action items by impact
+- Acknowledge individual contributions
+- Provide specific, actionable next steps
+
+---
+
+## Integration & Follow-up
+
+After displaying retrospective:
+- `/agileflow:sprint-plan` - Use learnings for next sprint
+- `/agileflow:metrics` - See detailed metrics supporting insights
+- `/agileflow:velocity` - See velocity trends over longer horizon
+- Update retrospectives/ index for historical tracking
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command is read-only (analyzes data, no updates)
+- Creates 9-step TodoWrite task list (tracks progress)
+- Focuses on TEAM-LEVEL patterns (never individual blame)
+- Balances Continue/Start/Stop with data evidence
+- Generates retrospective report with Start/Stop/Continue format
+- Prioritizes action items by impact (HIGH/MEDIUM/LOW)
+- Celebrates team wins (morale building)
+- Saves to docs/08-project/retrospectives/ (historical tracking)
+- Uses data to drive all insights (no subjective opinions)
 
 <!-- COMPACT_SUMMARY_END -->
 

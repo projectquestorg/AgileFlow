@@ -17,11 +17,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd $(git rev-parse --show-toplevel) && node scripts/agileflow-welcome.js"
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/agileflow-welcome.js"
           },
           {
             "type": "command",
-            "command": "cd $(git rev-parse --show-toplevel) && bash scripts/archive-completed-stories.sh --quiet"
+            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/archive-completed-stories.sh --quiet"
           }
         ]
       }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd $(git rev-parse --show-toplevel) && bash scripts/precompact-context.sh"
+            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/precompact-context.sh"
           }
         ]
       }
@@ -43,11 +43,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd $(git rev-parse --show-toplevel) && node scripts/ralph-loop.js 2>/dev/null || true"
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/ralph-loop.js 2>/dev/null || true"
           },
           {
             "type": "command",
-            "command": "cd $(git rev-parse --show-toplevel) && node scripts/auto-self-improve.js 2>/dev/null || true"
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/auto-self-improve.js 2>/dev/null || true"
           }
         ]
       }
@@ -55,7 +55,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "cd $(git rev-parse --show-toplevel) && bash scripts/agileflow-statusline.sh",
+    "command": "bash /home/coder/AgileFlow/.agileflow/scripts/agileflow-statusline.sh",
     "padding": 0
   }
 }

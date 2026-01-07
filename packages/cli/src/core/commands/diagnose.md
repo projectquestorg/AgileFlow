@@ -1,5 +1,21 @@
 ---
 description: System health diagnostics
+compact_context:
+  priority: high
+  preserve_rules:
+    - "No arguments required - runs full system diagnostics automatically"
+    - "Run 4 validation checks: JSON files, auto-archival, hooks system, file sizes"
+    - "JSON Validation CRITICAL - validate status.json, metadata, settings with jq empty"
+    - "Auto-Archival System - check script executable and hook configuration"
+    - "Hooks System - validate .claude/settings.json structure"
+    - "File Size Analysis - warn if status.json exceeds 100KB"
+    - "Report issues with indicators: ✅ (pass), ❌ (fail), ⚠️ (warn), ℹ️ (info)"
+    - "Exit code 0 (healthy) or 1 (issues found)"
+  state_fields:
+    - total_checks
+    - passed_checks
+    - warning_count
+    - failure_count
 ---
 
 # diagnose

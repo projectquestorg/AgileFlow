@@ -1,10 +1,40 @@
 ---
 description: Show what's new in AgileFlow
+argument-hint: (no arguments)
+compact_context:
+  priority: low
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:whats-new - Version reporter (display-only)"
+    - "MUST display current version, last 3-5 versions from CHANGELOG.md"
+    - "MUST check for updates via npm view agileflow version"
+    - "MUST show GitHub link for full changelog"
+    - "Display-only command (never writes files)"
+  state_fields:
+    - current_version
+    - latest_available_version
 ---
 
 # /agileflow:whats-new
 
 Display recent AgileFlow updates and version history.
+
+<!-- COMPACT_SUMMARY_START -->
+## Compact Summary
+
+**Command**: `/agileflow:whats-new` - Show version history and updates (display-only)
+
+**Quick Usage**:
+```
+/agileflow:whats-new
+```
+
+**What It Does**: Read CHANGELOG.md → Show last 3-5 versions → Check for updates → Display GitHub link
+
+**Output**: Markdown display with version history (no file writes)
+
+**Tool Usage**: None (display-only command)
+
+<!-- COMPACT_SUMMARY_END -->
 
 ---
 

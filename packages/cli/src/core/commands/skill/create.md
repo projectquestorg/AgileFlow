@@ -1,6 +1,21 @@
 ---
 description: Generate a custom skill with web research, cookbook pattern, and MCP integration
 argument-hint: [SKILL_NAME] (optional)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:skill:create - Generates custom research-backed skills"
+    - "MUST enter Plan Mode FIRST to research THREE sources: web docs, local docs, codebase patterns"
+    - "MUST output to .claude/skills/<skill-name>/ (directly usable by Claude Code)"
+    - "MUST include references.md linking web docs, local docs, and codebase patterns"
+    - "MUST use cookbook pattern for complex skills (2+ use cases)"
+    - "NEVER copy entire docs - reference URLs instead"
+    - "CRITICAL: Ask for approval of plan before generating skill files"
+  state_fields:
+    - skill_name
+    - research_sources
+    - use_cases_count
+    - mcp_server_found
 ---
 
 # /agileflow:skill:create
@@ -11,27 +26,67 @@ Generate dynamic, research-backed skills that combine web documentation, user's 
 
 <!-- COMPACT_SUMMARY_START -->
 
-## Compact Summary
+## 🚨 COMPACT SUMMARY - /agileflow:skill:create IS ACTIVE
 
-**ROLE**: Skill Generator - creates custom skills via comprehensive research.
+**CRITICAL**: This command creates custom skills by researching THREE sources and building research-backed workflows.
 
-### Critical Rules
-1. **ALWAYS use Plan Mode** - Enter plan mode to explore before generating
-2. **Research THREE sources**: Web docs, user's local docs, user's codebase
-3. **Link to external docs** - Reference URLs, don't copy entire docs
-4. **Reference local patterns** - Point to user's existing practices and code
-5. **Use cookbook pattern** for multi-use-case skills
-6. **Output to `.claude/skills/<skill-name>/`** - directly usable by Claude Code
-
-### Generated Skill Structure
+### 🚨 RULE #1: Enter Plan Mode First
+ALWAYS start with Plan Mode to explore before generating ANY skill files.
 ```
-.claude/skills/<skill-name>/
-├── SKILL.md              # Pivot file with references to all sources
-├── cookbook/             # Per-use-case workflows
-├── references.md         # Links to web docs + local docs + code patterns
-├── tools/                # Executable scripts (optional)
-└── .mcp.json             # MCP server config (if applicable)
+EnterPlanMode
 ```
+This prevents wasted generations and gets user approval on research findings.
+
+### 🚨 RULE #2: Research Three Sources
+In Plan Mode, research and collect (DON'T generate):
+1. **Web docs**: Official documentation URLs, API reference URLs, best practices links
+2. **Local docs**: Files in `docs/02-practices/`, `docs/04-architecture/`, `docs/03-decisions/`
+3. **Codebase patterns**: Existing code using Glob/Grep to find patterns
+
+### 🚨 RULE #3: Link, Never Copy
+- Link to external docs with URLs (don't copy entire docs)
+- Point to local files that exist (don't reference user's docs/02-practices/ directly)
+- Show codebase patterns with file locations and code snippets
+
+### 🚨 RULE #4: Output Structure
+Output ALWAYS goes to `.claude/skills/<skill-name>/` with:
+- `SKILL.md` (main file with activation triggers and cookbook references)
+- `references.md` (all documentation links)
+- `cookbook/` directory (one .md per use case)
+- `.mcp.json` (if MCP server found)
+
+### 🚨 RULE #5: Cookbook Pattern
+- **Simple skill** (1 use case): SKILL.md only
+- **Complex skill** (2+ use cases): SKILL.md + cookbook/ directory with per-use-case files
+
+### 🚨 RULE #6: Get Approval Before Writing
+After research and plan creation:
+1. Show plan findings to user
+2. Ask for approval
+3. Exit Plan Mode with approval
+4. THEN write the skill files
+
+### Critical Files Generated
+| File | Purpose | Required? |
+|------|---------|-----------|
+| SKILL.md | Main skill file with activation triggers | Yes |
+| references.md | Links to all web/local/codebase docs | Yes |
+| cookbook/<use-case>.md | Per-use-case workflow | If 2+ cases |
+| .mcp.json | MCP server configuration | If found |
+
+### Anti-Patterns
+- ❌ DON'T write skill files without Plan Mode approval
+- ❌ DON'T copy entire external documentation
+- ❌ DON'T reference docs/02-practices/ that user hasn't created
+- ❌ DON'T skip cookbook pattern for complex skills
+- ❌ DON'T forget references.md (critical for user context)
+
+### REMEMBER AFTER COMPACTION
+- Skill creation is 5 phases: Requirements → Plan Mode Research → Get Approval → Generate → Write Files
+- Plan Mode research finds URLs and local patterns (don't generate from plan)
+- User must approve plan before ANY files are written
+- Complex skills need cookbook/ for each use case
+- references.md is the pivot file linking all sources
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -564,3 +619,46 @@ If validation fails:
 # With skill name hint
 /agileflow:skill:create supabase-swift
 ```
+
+---
+
+## POST-CREATION ACTIONS
+
+After successfully creating a skill, offer next steps:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Skill '<skill-name>' created! What would you like to do next?",
+  "header": "Next Steps",
+  "multiSelect": false,
+  "options": [
+    {"label": "Test the skill (Recommended)", "description": "Verify the skill works correctly"},
+    {"label": "View all skills", "description": "See full skill inventory with /agileflow:skill:list"},
+    {"label": "Create another skill", "description": "Build another custom skill"},
+    {"label": "Done", "description": "Exit"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Test the skill"**:
+- Run `/agileflow:skill:test SKILL=<skill-name>`
+- Provide sample input scenarios
+- Verify output matches expectations
+
+**If "View all skills"**:
+- Run `/agileflow:skill:list`
+
+**If "Create another skill"**:
+- Re-run `/agileflow:skill:create`
+
+---
+
+## Related Commands
+
+- `/agileflow:skill:list` - View all installed skills
+- `/agileflow:skill:test` - Test a skill with sample inputs
+- `/agileflow:skill:edit` - Modify an existing skill
+- `/agileflow:skill:delete` - Remove a skill
+- `/agileflow:skill:upgrade` - Update skill with new patterns

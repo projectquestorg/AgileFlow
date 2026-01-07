@@ -1,6 +1,15 @@
 ---
 description: Display AgileFlow system overview and commands
 argument-hint: (no arguments)
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:help - System guide (display-only, no file writes)"
+    - "MUST output markdown (never writes files)"
+    - "MUST show folder map, concepts, daily workflow, all commands"
+    - "Include dynamic injection: <!-- {{COMMAND_LIST}} -->"
+  state_fields:
+    - display_mode
 ---
 
 # system-help

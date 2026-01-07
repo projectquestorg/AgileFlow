@@ -1,6 +1,22 @@
 ---
 description: Validate story completeness before development
 argument-hint: STORY=<US-ID>
+compact_context:
+  priority: high
+  preserve_rules:
+    - "STORY ID is REQUIRED - always ask if missing"
+    - "Read story file FIRST from docs/06-stories/"
+    - "Run 7 validation checks: sections, AC, architecture context, completeness, dev record, insights, cross-story"
+    - "Architecture Context CRITICAL - must have real citations [Source: architecture/file.md#section]"
+    - "AC format CRITICAL - strict Given/When/Then required (not bullet points)"
+    - "Dev Agent Record: structure only (content placeholders OK at draft/ready stage)"
+    - "Generate report with passed/failed/warnings sections"
+    - "Determine if story 'ready for development' (YES/NO)"
+  state_fields:
+    - story_id
+    - validation_passed
+    - validation_warnings
+    - validation_failures
 ---
 
 # story-validate
@@ -319,4 +335,88 @@ When invoked:
 3. Load story file
 4. Run all validation checks
 5. Generate comprehensive report
-6. Provide next steps
+6. Provide next steps with connected actions
+
+---
+
+## POST-VALIDATION ACTIONS
+
+After validation completes, offer context-aware next steps:
+
+### If Story PASSES (Ready for Development)
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Story <STORY> passed validation! What would you like to do?",
+  "header": "Next Steps",
+  "multiSelect": false,
+  "options": [
+    {"label": "Start working on it (Recommended)", "description": "Mark as in_progress and begin implementation"},
+    {"label": "View story details", "description": "See full story with /agileflow:story:view"},
+    {"label": "Validate another story", "description": "Check another story in this epic"},
+    {"label": "Done", "description": "Exit"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Start working on it"**:
+1. Run `/agileflow:status <STORY> STATUS=in_progress`
+2. Ask: "Enter plan mode to explore implementation?"
+
+### If Story HAS WARNINGS
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Story <STORY> has <N> warnings. What would you like to do?",
+  "header": "Next Steps",
+  "multiSelect": false,
+  "options": [
+    {"label": "Fix warnings now", "description": "I'll help you address each warning"},
+    {"label": "Start anyway", "description": "Warnings are acceptable, begin work"},
+    {"label": "View story file", "description": "See the story content to edit manually"},
+    {"label": "Done", "description": "Exit and fix later"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Fix warnings now"**:
+- Walk through each warning
+- Suggest specific edits
+- Re-validate after fixes
+
+### If Story FAILS (Critical Issues)
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Story <STORY> has <N> critical issues that must be fixed. What would you like to do?",
+  "header": "Fix Issues",
+  "multiSelect": false,
+  "options": [
+    {"label": "Fix issues now (Recommended)", "description": "I'll help address each critical issue"},
+    {"label": "View story file", "description": "See the story content to edit manually"},
+    {"label": "Delete and recreate", "description": "Start fresh with /agileflow:story"},
+    {"label": "Done", "description": "Exit and fix later"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Fix issues now"**:
+- Present each issue with suggested fix
+- Apply fixes with user confirmation
+- Re-validate after all fixes applied
+
+---
+
+## Related Commands
+
+- `/agileflow:story:view` - View story details with contextual actions
+- `/agileflow:story:list` - View all stories
+- `/agileflow:story` - Create new story
+- `/agileflow:status` - Update story status
+- `/agileflow:assign` - Assign story to owner

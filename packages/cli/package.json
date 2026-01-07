@@ -51,6 +51,8 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.10.1",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
@@ -58,6 +60,9 @@
     "js-yaml": "^4.1.0",
     "ora": "^5.4.1",
     "semver": "^7.6.3"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

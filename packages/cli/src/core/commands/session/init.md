@@ -1,6 +1,19 @@
 ---
 description: Initialize session harness with test verification
 argument-hint: (no arguments)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:session:init - Initialize session tracking"
+    - "Creates `.agileflow/sessions/` directory and `registry.json` if missing"
+    - "Registers current directory as active session with lock file"
+    - "Runs automatically via SessionStart hook on session begin"
+    - "Safe to run multiple times (idempotent operation)"
+    - "If registry.json exists, validates schema before use"
+  state_fields:
+    - session_id
+    - registry_status
+    - active_session_count
 ---
 
 # /agileflow:session:init
@@ -82,3 +95,106 @@ If session is already registered:
 
 - `/agileflow:session:status` - View all sessions
 - `/agileflow:session:new` - Create parallel session
+
+---
+
+<!-- COMPACT_SUMMARY_START -->
+
+## ⚠️ COMPACT SUMMARY - /agileflow:session:init IS ACTIVE
+
+**CRITICAL**: This command sets up session tracking infrastructure. It MUST run before any session management features work.
+
+---
+
+### 🚨 RULE #1: IDEMPOTENT OPERATION
+
+This command is **safe to run multiple times**. It:
+- Creates `.agileflow/sessions/` if missing
+- Creates `registry.json` with schema if missing
+- Registers current directory if not already registered
+- Updates lock file if already registered
+
+**No data is lost, no conflicts occur on repeated runs.**
+
+---
+
+### 🚨 RULE #2: AUTOMATIC INVOCATION
+
+This command runs automatically via **SessionStart hook**. You typically don't call it manually unless:
+- Debugging session tracking
+- Setting up manually without hook
+- Recovering from corrupted session state
+
+---
+
+### 🚨 RULE #3: REGISTRY SCHEMA
+
+The generated `registry.json` has this structure:
+```json
+{
+  "version": "1.0",
+  "sessions": [
+    {
+      "id": 1,
+      "path": "/home/user/project",
+      "branch": "main",
+      "created": "2025-12-20T10:00:00Z",
+      "last_active": "2025-12-20T10:30:00Z",
+      "is_main": true,
+      "nickname": null,
+      "status": "active"
+    }
+  ]
+}
+```
+
+---
+
+### 🚨 RULE #4: LOCK FILE MANAGEMENT
+
+Session tracking uses lock files at `.agileflow/sessions/{id}.lock`:
+- Lock file = session is **active** (has running Claude process)
+- No lock file = session is **inactive** (can be resumed)
+- Lock files are created on init, removed on `/agileflow:session:end`
+
+---
+
+### KEY FILES TO REMEMBER
+
+| File | Purpose |
+|------|---------|
+| `.agileflow/sessions/` | Session directory (created by init) |
+| `.agileflow/sessions/registry.json` | Master registry of all sessions |
+| `.agileflow/sessions/{id}.lock` | Lock file marking session active |
+| `.agileflow/scripts/session-manager.js` | Script that does the work |
+
+---
+
+### TYPICAL WORKFLOW
+
+1. **First time in project**:
+   - SessionStart hook runs → `/agileflow:session:init` called automatically
+   - Creates infrastructure, registers main session
+   - You never see this happening
+
+2. **Debugging session state**:
+   - Run `/agileflow:session:init` manually
+   - Check `.agileflow/sessions/registry.json` for current state
+   - Use `/agileflow:session:status` to view readable output
+
+3. **Manual setup**:
+   - If hook is disabled, run this to initialize
+   - Then use other session commands
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:session:init` IS ACTIVE
+- Creates `.agileflow/sessions/` directory and registry
+- Runs automatically via SessionStart hook
+- Safe to run multiple times (idempotent)
+- Lock files track active vs inactive sessions
+- Check `registry.json` for current session state
+
+<!-- COMPACT_SUMMARY_END -->

@@ -1,6 +1,22 @@
 ---
 description: Generate stakeholder progress report
-argument-hint: (no arguments)
+argument-hint: [PERIOD=week|sprint|month|quarter] [AUDIENCE=exec|client|team|board] [FORMAT=email|markdown]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:stakeholder-update - Stakeholder communication generator"
+    - "CRITICAL: Aggregate data from 10 sources (status, epics, stories, roadmap, risks, git, bus, ADRs, milestones, releases)"
+    - "CRITICAL: PREVIEW before sending (diff-first, YES/NO/EDIT)"
+    - "CRITICAL: Always HONEST about blockers and risks (never hide problems)"
+    - "MUST focus on business value, not technical jargon (for exec/client audiences)"
+    - "MUST save all updates to docs/08-project/updates/ for historical record"
+    - "MUST include specific metrics with trends (velocity, coverage, bugs, test coverage)"
+    - "Update structure: Executive Summary | Progress | Upcoming | Metrics | Blockers | Decisions | Resources"
+  state_fields:
+    - period
+    - audience
+    - format
+    - date_range
 ---
 
 # stakeholder-update

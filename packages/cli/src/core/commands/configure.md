@@ -1,6 +1,22 @@
 ---
 description: Configure advanced AgileFlow features (git, hooks, archival, CI, status line)
 argument-hint: [--profile=full|basic|minimal|none] [--enable/--disable=features] [--migrate] [--upgrade] [--repair] [--version] [--list-scripts]
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:configure - Configuration manager for AgileFlow features"
+    - "CRITICAL: ALWAYS run --detect FIRST to check status before anything else"
+    - "CRITICAL: If ⚠️ INVALID FORMAT shown → offer --migrate BEFORE other options"
+    - "CRITICAL: If 🔄 OUTDATED shown → offer --upgrade to re-deploy latest scripts"
+    - "MUST backup created on migrate: .claude/settings.json.backup"
+    - "MUST show RED RESTART banner after ANY changes (quit, wait 5s, restart)"
+    - "Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate"
+    - "Stop hooks (ralphloop, selfimprove) run when Claude completes or pauses"
+  state_fields:
+    - detection_status
+    - has_format_issues
+    - has_outdated_scripts
+    - enabled_features
 ---
 
 <!-- COMPACT_SUMMARY_START -->

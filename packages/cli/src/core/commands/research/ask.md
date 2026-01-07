@@ -1,6 +1,24 @@
 ---
 description: Generate detailed research prompt for web AI tools (ChatGPT, Perplexity, etc.)
 argument-hint: TOPIC=<text> [DETAILS=<constraints>] [ERROR=<error message>]
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:research:ask - Generate research prompt for external AI"
+    - "MUST generate 200+ lines minimum (FAIL and regenerate if shorter)"
+    - "MUST include 50+ lines of ACTUAL code from user's codebase (not pseudo-code)"
+    - "MUST include exact error messages verbatim if troubleshooting"
+    - "MUST list 2+ approaches already tried with detailed results"
+    - "MUST ask 3+ specific questions (not vague)"
+    - "NO FILE WRITES - output only, user will copy/paste to external AI"
+    - "Validation required before output: length, code snippets, error details, attempts, questions"
+    - "If validation fails: gather missing info and regenerate"
+  state_fields:
+    - topic
+    - error_message
+    - codebase_context
+    - attempts_tried
+    - prompt_generated
 ---
 
 # /agileflow:research:ask
@@ -22,26 +40,332 @@ When you need external research (from ChatGPT, Perplexity, Claude web, Gemini), 
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Command**: `/agileflow:research:ask TOPIC="your topic"`
-**Purpose**: Generate 200+ line research prompt with full context for web AI tools
+## ⚠️ COMPACT SUMMARY - /agileflow:research:ask IS ACTIVE
 
-### Critical Rules
-- **MUST generate 200+ lines** - fail and regenerate if shorter
-- **MUST include actual code snippets** (50+ lines from codebase)
-- **MUST include exact error messages** if troubleshooting
-- **MUST list what was already tried** if fixing an issue
-- **MUST ask 3+ specific questions**
-- **NO file writes** - output prompt only
+**CRITICAL**: You are running `/agileflow:research:ask`. Generate detailed research prompts for external AI tools.
 
-### Quality Validation
-Before outputting, verify:
-- Length ≥200 lines
-- Code snippets ≥50 lines
-- Error verbatim if applicable
-- ≥2 tried approaches listed
-- ≥3 specific questions
+**ROLE**: Generate 200+ line research prompt with actual code, errors, attempts, and specific questions.
+
+---
+
+### 🚨 RULE #1: MINIMUM 200 LINES REQUIRED
+
+**Every research prompt MUST be 200+ lines. If it's shorter, gather more context and regenerate.**
+
+```
+❌ WRONG: "How do I implement OAuth in Next.js?" (too short)
+✅ RIGHT: [200+ line detailed prompt with code, error, attempts, questions]
+```
+
+**Why**: Vague short prompts get vague short answers. Detailed prompts get actionable results.
+
+**Validation step (BEFORE outputting):**
+- Count lines in the generated prompt
+- If < 200 lines: gather more context and regenerate
+- Do NOT output incomplete prompts
+
+---
+
+### 🚨 RULE #2: INCLUDE 50+ LINES OF ACTUAL CODE
+
+**Include actual code from the user's codebase, not pseudo-code or summaries.**
+
+```
+❌ WRONG:
+```typescript
+// User authentication logic
+```
+
+✅ RIGHT:
+```typescript
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+  },
+});
+```
+
+**How to get code:**
+- Read relevant source files using Read tool
+- Extract 50+ lines from actual implementation
+- Include imports, configuration, any relevant code
+
+---
+
+### 🚨 RULE #3: INCLUDE EXACT ERROR MESSAGES
+
+**If troubleshooting, include the EXACT error verbatim. Not a summary, not paraphrased.**
+
+```
+❌ WRONG: "I'm getting an authentication error"
+✅ RIGHT:
+```
+[auth][error] CallbackRouteError: Read more at https://errors.authjs.dev#callbackrouteerror
+[auth][cause]: Error: unauthorized_client
+```
+```
+
+**Include:**
+- Full error message (copy-pasted exactly)
+- Complete stack trace if available
+- When it occurs (which endpoint, which action)
+- Steps to reproduce
+
+---
+
+### 🚨 RULE #4: LIST WHAT WAS ALREADY TRIED (2+ APPROACHES)
+
+**Document what approaches were already attempted and why they didn't work.**
+
+Format:
+```
+## What We've Already Tried
+
+### Attempt 1: [Description]
+**What we did**: [Detailed explanation]
+**Result**: [What happened]
+**Why it didn't work**: [Analysis of why this approach failed]
+
+### Attempt 2: [Description]
+**What we did**: [Detailed explanation]
+**Result**: [What happened]
+**Why it didn't work**: [Analysis]
+```
+
+**This helps external AI:**
+- Avoid suggesting same solutions
+- Understand what's been ruled out
+- Provide alternative approaches
+
+---
+
+### 🚨 RULE #5: ASK 3+ SPECIFIC QUESTIONS
+
+**Ask specific, answerable questions. NOT vague ones.**
+
+```
+❌ WRONG:
+- How do I fix OAuth?
+- What should I do?
+- Why isn't this working?
+
+✅ RIGHT:
+1. Why does next-auth 5.0.0-beta.4 throw unauthorized_client when credentials are verified correct?
+2. Is there additional configuration needed for Google OAuth with Next.js 14 App Router?
+3. What's the correct format for authorized redirect URIs in Google Console for next-auth v5?
+4. Are there known issues with next-auth 5.0.0-beta.4 and the Google provider?
+```
+
+**Good questions:**
+- Reference specific libraries/versions
+- Ask about trade-offs ("Should we use X or Y?")
+- Ask about configuration details
+- Ask about known issues
+
+---
+
+### 🚨 RULE #6: MANDATORY SECTIONS (IN ORDER)
+
+Every research prompt MUST have:
+
+1. **Project Context** - Framework, versions, dependencies
+2. **Current Implementation** - 50+ lines of actual code
+3. **The Problem** - Error message, expected vs actual behavior
+4. **What We've Tried** - 2+ approaches with results
+5. **Specific Questions** - 3+ detailed questions
+6. **What We Need** - Expected response format
+7. **Environment Details** - Versions, OS, setup
+
+---
+
+### 🚨 RULE #7: NO FILE WRITES
+
+**This command outputs a prompt only. User will copy/paste to ChatGPT/Claude/Perplexity.**
+
+```
+❌ WRONG: Write prompt to file
+✅ RIGHT: Output prompt in code block, instruct user to copy
+```
+
+---
+
+### VALIDATION CHECKLIST (BEFORE OUTPUT)
+
+**Before outputting, verify ALL:**
+
+| Check | Requirement | If Fail |
+|-------|-------------|---------|
+| Length | ≥200 lines | Add more context and regenerate |
+| Code | ≥50 lines actual code | Read more files and extract code |
+| Error | Verbatim message present | Ask user for exact error message |
+| Tried | ≥2 approaches listed | Ask what was already attempted |
+| Questions | ≥3 specific questions | Add more detailed questions |
+
+**If ANY check fails:**
+1. Do NOT output the prompt
+2. Gather the missing information
+3. Regenerate with complete content
+
+---
+
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Generate short vague prompts ("How do I do X?")
+❌ Include pseudo-code instead of actual code
+❌ Summarize errors instead of including verbatim
+❌ List no or vague attempted solutions
+❌ Ask generic questions without context
+❌ Output prompt shorter than 200 lines
+❌ Save prompt to file instead of displaying for copy/paste
+❌ Skip validation before outputting
+
+### DO THESE INSTEAD
+
+✅ Generate detailed 200+ line prompts
+✅ Include 50+ lines of actual code from codebase
+✅ Include exact error messages verbatim
+✅ List 2+ specific attempts with detailed results
+✅ Ask 3+ specific, contextualized questions
+✅ Validate prompt quality before outputting
+✅ Display prompt in code block for user copy/paste
+✅ Instruct user where to paste results back
+
+---
+
+### WORKFLOW
+
+**Phase 1: Gather Context**
+1. Read package.json / pyproject.toml for versions
+2. Read relevant source files for code snippets
+3. Get project overview from README/CLAUDE.md
+
+**Phase 2: Extract Information**
+4. Get error message (if ERROR argument provided)
+5. Identify what was already tried
+6. Understand the tech stack
+
+**Phase 3: Generate Prompt**
+7. Create structured prompt with mandatory sections
+8. Include 50+ lines of actual code
+9. Include exact error messages
+10. List 2+ attempted approaches
+11. Ask 3+ specific questions
+
+**Phase 4: Validate Quality**
+12. Check length ≥200 lines
+13. Verify code snippets ≥50 lines
+14. Verify error details if applicable
+15. Verify 2+ attempts listed
+16. Verify 3+ specific questions
+17. If any check fails: gather more info and regenerate
+
+**Phase 5: Output**
+18. Display prompt in code block
+19. Instruct user: "Copy this prompt and paste into ChatGPT/Claude/Perplexity"
+20. Provide post-answer instructions: "When you get results, use /agileflow:research:import to save"
+
+---
+
+### KEY FILES
+
+| File | Purpose |
+|------|---------|
+| `package.json` | Dependency versions, framework info |
+| `README.md` / `CLAUDE.md` | Project overview |
+| Source files | Code to extract for snippets |
+
+---
+
+### PROMPT TEMPLATE
+
+```markdown
+# Research Request: [TOPIC]
+
+## Project Context
+
+**Framework**: [e.g., Next.js 14.0.4 with App Router]
+**Key Dependencies**:
+- [dependency]: [version]
+- [dependency]: [version]
+
+---
+
+## Current Implementation
+
+### File: [path/to/file.ts]
+
+[50+ lines of actual code]
+
+---
+
+## The Problem
+
+### Error Message
+[EXACT error, copied verbatim]
+
+### Expected vs Actual
+Expected: [What should happen]
+Actual: [What actually happens]
+
+---
+
+## What We've Already Tried
+
+### Attempt 1: [Description]
+**What**: [Details]
+**Result**: [What happened]
+
+### Attempt 2: [Description]
+**What**: [Details]
+**Result**: [What happened]
+
+---
+
+## Specific Questions
+
+1. **[Specific question with context]**
+2. **[Specific question with context]**
+3. **[Specific question with context]**
+
+---
+
+## What We Need
+
+1. Root cause analysis
+2. Step-by-step solution
+3. Complete code examples
+4. Testing approach
+```
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:research:ask` IS ACTIVE - you're generating research prompts
+- MUST generate 200+ lines minimum
+- MUST include 50+ lines of actual code (not pseudo-code)
+- MUST include exact error messages verbatim if applicable
+- MUST list 2+ attempts with detailed results
+- MUST ask 3+ specific questions
+- Validate all checks BEFORE outputting
+- NO file writes - output for user to copy/paste
+- After user gets results, they use /agileflow:research:import to save
+
 <!-- COMPACT_SUMMARY_END -->
 
 ---
@@ -448,6 +772,7 @@ After clicking "Sign in with Google", immediately get unauthorized_client error.
 
 ## Related Commands
 
+- `/agileflow:research:analyze` - Analyze existing research for implementation
 - `/agileflow:research:import` - Import research results back
 - `/agileflow:research:list` - Show research notes index
 - `/agileflow:research:view` - Read specific research note

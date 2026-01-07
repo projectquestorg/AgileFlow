@@ -1,6 +1,23 @@
 ---
 description: Auto-generate stories from PRDs, mockups, or specs
-argument-hint: (no arguments)
+argument-hint: SOURCE=<path|url> [EPIC=<id>] [OWNER=<agent>] [AUTO_CREATE=yes|no]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:auto-story - Auto-generate stories from product artifacts"
+    - "CRITICAL: Use TodoWrite to track 10-step generation process immediately"
+    - "CRITICAL: Always preview BEFORE creating (AUTO_CREATE=no default)"
+    - "MUST generate stories with Given/When/Then Acceptance Criteria format"
+    - "MUST estimate using INVEST: 0.5d (simple) | 1d (standard) | 1.5d (complex) | 2d (refactor)"
+    - "Stories >2d MUST be split into smaller stories"
+    - "MUST create story files, test stubs, update status.json, and bus log"
+    - "Supported sources: PRDs (.md/.pdf), mockups (Figma/PNG), API docs (OpenAPI/Swagger), flows (Mermaid)"
+  state_fields:
+    - source_file
+    - source_type
+    - epic_id
+    - owner_agent
+    - stories_generated
 ---
 
 # auto-story

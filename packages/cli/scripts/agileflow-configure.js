@@ -23,7 +23,7 @@
  *   --detect                            Show current status
  *   --help                              Show help
  *
- * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate
+ * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol
  */
 
 const fs = require('fs');
@@ -76,6 +76,11 @@ const FEATURES = {
   archival: { script: 'archive-completed-stories.sh', requiresHook: 'sessionstart' },
   statusline: { script: 'agileflow-statusline.sh' },
   autoupdate: { metadataOnly: true }, // Stored in metadata.updates.autoUpdate
+  damagecontrol: {
+    preToolUseHooks: true,
+    scripts: ['damage-control-bash.js', 'damage-control-edit.js', 'damage-control-write.js'],
+    patternsFile: 'damage-control-patterns.yaml',
+  },
 };
 
 // Complete registry of all scripts that may need repair
@@ -87,6 +92,9 @@ const ALL_SCRIPTS = {
   'auto-self-improve.js': { feature: 'selfimprove', required: true },
   'archive-completed-stories.sh': { feature: 'archival', required: true },
   'agileflow-statusline.sh': { feature: 'statusline', required: true },
+  'damage-control-bash.js': { feature: 'damagecontrol', required: true },
+  'damage-control-edit.js': { feature: 'damagecontrol', required: true },
+  'damage-control-write.js': { feature: 'damagecontrol', required: true },
 
   // Support scripts (used by commands/agents)
   'obtain-context.js': { usedBy: ['/babysit', '/mentor', '/sprint'] },
@@ -215,6 +223,7 @@ function detectConfig() {
       selfimprove: { enabled: false, valid: true, issues: [], version: null, outdated: false },
       archival: { enabled: false, threshold: null, version: null, outdated: false },
       statusline: { enabled: false, valid: true, issues: [], version: null, outdated: false },
+      damagecontrol: { enabled: false, valid: true, issues: [], version: null, outdated: false, level: null, patternCount: 0 },
     },
     metadata: { exists: false, version: null },
     currentVersion: VERSION,
@@ -298,6 +307,32 @@ function detectConfig() {
             }
           }
         }
+
+        // PreToolUse hooks (damage control)
+        if (settings.hooks.PreToolUse) {
+          if (Array.isArray(settings.hooks.PreToolUse) && settings.hooks.PreToolUse.length > 0) {
+            // Check for damage-control hooks by looking for damage-control scripts
+            const hasBashHook = settings.hooks.PreToolUse.some(
+              h => h.matcher === 'Bash' && h.hooks?.some(hk => hk.command?.includes('damage-control'))
+            );
+            const hasEditHook = settings.hooks.PreToolUse.some(
+              h => h.matcher === 'Edit' && h.hooks?.some(hk => hk.command?.includes('damage-control'))
+            );
+            const hasWriteHook = settings.hooks.PreToolUse.some(
+              h => h.matcher === 'Write' && h.hooks?.some(hk => hk.command?.includes('damage-control'))
+            );
+
+            if (hasBashHook || hasEditHook || hasWriteHook) {
+              status.features.damagecontrol.enabled = true;
+              // Count how many of the 3 hooks are present
+              const hookCount = [hasBashHook, hasEditHook, hasWriteHook].filter(Boolean).length;
+              if (hookCount < 3) {
+                status.features.damagecontrol.valid = false;
+                status.features.damagecontrol.issues.push(`Only ${hookCount}/3 hooks configured`);
+              }
+            }
+          }
+        }
       }
 
       // StatusLine
@@ -324,6 +359,11 @@ function detectConfig() {
       if (meta.archival?.enabled) {
         status.features.archival.enabled = true;
         status.features.archival.threshold = meta.archival.threshold_days;
+      }
+
+      // Damage control metadata
+      if (meta.features?.damagecontrol?.enabled) {
+        status.features.damagecontrol.level = meta.features.damagecontrol.protectionLevel || 'standard';
       }
 
       // Read feature versions from metadata and check if outdated
@@ -401,6 +441,22 @@ function printStatus(status) {
   );
 
   printFeature('statusline', 'Status Line');
+
+  // Damage Control (special display with level info)
+  const dc = status.features.damagecontrol;
+  if (dc.enabled) {
+    let dcStatusText = 'enabled';
+    if (dc.level) dcStatusText += ` (${dc.level})`;
+    if (!dc.valid) dcStatusText = 'INCOMPLETE';
+    const dcIcon = dc.enabled && dc.valid ? '🛡️' : '⚠️';
+    const dcColor = dc.enabled && dc.valid ? c.green : c.yellow;
+    log(`  ${dcIcon} Damage Control: ${dcStatusText}`, dcColor);
+    if (dc.issues?.length > 0) {
+      dc.issues.forEach(issue => log(`     └─ ${issue}`, c.yellow));
+    }
+  } else {
+    log(`  ❌ Damage Control: disabled`, c.dim);
+  }
 
   // Metadata
   if (status.metadata.exists) {
@@ -685,6 +741,79 @@ function enableFeature(feature, options = {}) {
     return true; // Skip settings.json write for this feature
   }
 
+  // Handle damage control (PreToolUse hooks)
+  if (feature === 'damagecontrol') {
+    const level = options.protectionLevel || 'standard';
+
+    // Verify all required scripts exist
+    const requiredScripts = ['damage-control-bash.js', 'damage-control-edit.js', 'damage-control-write.js'];
+    for (const script of requiredScripts) {
+      if (!scriptExists(script)) {
+        error(`Script not found: ${getScriptPath(script)}`);
+        info('Run "npx agileflow update" to reinstall scripts');
+        return false;
+      }
+    }
+
+    // Deploy patterns file if not exists
+    const patternsDir = path.join(process.cwd(), '.agileflow', 'config');
+    const patternsDest = path.join(patternsDir, 'damage-control-patterns.yaml');
+    if (!fs.existsSync(patternsDest)) {
+      ensureDir(patternsDir);
+      // Try to copy from templates
+      const templatePath = path.join(process.cwd(), '.agileflow', 'templates', 'damage-control-patterns.yaml');
+      if (fs.existsSync(templatePath)) {
+        fs.copyFileSync(templatePath, patternsDest);
+        success('Deployed damage control patterns');
+      } else {
+        warn('No patterns template found - hooks will use defaults');
+      }
+    }
+
+    // Initialize PreToolUse array if not exists
+    if (!settings.hooks.PreToolUse) {
+      settings.hooks.PreToolUse = [];
+    }
+
+    // Helper to add or update a PreToolUse hook
+    const addPreToolUseHook = (matcher, scriptName) => {
+      const scriptPath = path.join(process.cwd(), '.agileflow', 'scripts', scriptName);
+
+      // Remove existing hook for this matcher if present
+      settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(h => h.matcher !== matcher);
+
+      // Add new hook
+      settings.hooks.PreToolUse.push({
+        matcher,
+        hooks: [{ type: 'command', command: `node ${scriptPath}`, timeout: 5 }],
+      });
+    };
+
+    // Add hooks for Bash, Edit, Write tools
+    addPreToolUseHook('Bash', 'damage-control-bash.js');
+    addPreToolUseHook('Edit', 'damage-control-edit.js');
+    addPreToolUseHook('Write', 'damage-control-write.js');
+
+    success('Damage control PreToolUse hooks enabled');
+
+    // Update metadata with protection level
+    updateMetadata({
+      features: {
+        damagecontrol: {
+          enabled: true,
+          protectionLevel: level,
+          version: VERSION,
+          at: new Date().toISOString(),
+        },
+      },
+    });
+
+    writeJSON('.claude/settings.json', settings);
+    updateGitignore();
+
+    return true;
+  }
+
   writeJSON('.claude/settings.json', settings);
   updateMetadata({
     features: { [feature]: { enabled: true, version: VERSION, at: new Date().toISOString() } },
@@ -762,6 +891,45 @@ function disableFeature(feature) {
     });
     success('Auto-update disabled');
     return true; // Skip settings.json write for this feature
+  }
+
+  // Disable damage control (PreToolUse hooks)
+  if (feature === 'damagecontrol') {
+    if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
+      const before = settings.hooks.PreToolUse.length;
+
+      // Remove damage-control hooks (Bash, Edit, Write matchers with damage-control scripts)
+      settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(h => {
+        const isDamageControlHook = h.hooks?.some(hk => hk.command?.includes('damage-control'));
+        return !isDamageControlHook;
+      });
+
+      const after = settings.hooks.PreToolUse.length;
+
+      if (before > after) {
+        success(`Removed ${before - after} damage control PreToolUse hook(s)`);
+      }
+
+      // If no more PreToolUse hooks, remove the entire array
+      if (settings.hooks.PreToolUse.length === 0) {
+        delete settings.hooks.PreToolUse;
+      }
+    }
+
+    // Update metadata
+    updateMetadata({
+      features: {
+        damagecontrol: {
+          enabled: false,
+          version: VERSION,
+          at: new Date().toISOString(),
+        },
+      },
+    });
+
+    writeJSON('.claude/settings.json', settings);
+    success('Damage control disabled');
+    return true;
   }
 
   writeJSON('.claude/settings.json', settings);
@@ -1228,9 +1396,10 @@ ${c.cyan}Feature Control:${c.reset}
   --enable=<list>     Enable features (comma-separated)
   --disable=<list>    Disable features (comma-separated)
 
-  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline
+  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol
 
   Stop hooks (ralphloop, selfimprove) run when Claude completes/pauses
+  Damage control (damagecontrol) uses PreToolUse hooks to block dangerous commands
 
 ${c.cyan}Statusline Components:${c.reset}
   --show=<list>       Show statusline components (comma-separated)
@@ -1293,6 +1462,9 @@ ${c.cyan}Examples:${c.reset}
 
   # Repair scripts for a specific feature
   node .agileflow/scripts/agileflow-configure.js --repair=statusline
+
+  # Enable damage control (PreToolUse hooks to block dangerous commands)
+  node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
 `);
 }
 

@@ -1,7 +1,23 @@
 ---
 description: Data-driven sprint planning with velocity forecasting
-argument-hint: [SPRINT=<id>] [DURATION=<days>] [AGENTS=<list>] [MODE=suggest|commit] [FOCUS_EPIC=<id>]
+argument-hint: "[SPRINT=<id>] [DURATION=<days>] [AGENTS=<list>] [MODE=suggest|commit] [FOCUS_EPIC=<id>]"
 model: haiku
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:sprint-plan - Sprint planner with capacity analysis"
+    - "MUST create TodoWrite task list immediately (8 steps: load knowledge, analyze capacity, calculate velocity, select stories, assess risks, generate report, commit if MODE=commit)"
+    - "MUST calculate historical velocity from last 30 days (bus/log.jsonl)"
+    - "MUST respect WIP limits (max 2 in-progress per agent)"
+    - "MUST validate dependencies resolved (only select stories with all deps status=done)"
+    - "MUST show diff preview before committing (MODE=commit)"
+    - "MUST assess risks (dependency chains, cross-agent coordination, epic staleness)"
+    - "MODE=suggest shows preview; MODE=commit updates status.json + milestones.md"
+  state_fields:
+    - sprint_id
+    - velocity_calculated
+    - story_count
+    - capacity_days
 ---
 
 <!-- COMPACT_SUMMARY_START

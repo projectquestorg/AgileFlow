@@ -346,6 +346,67 @@ function checkPreCompact(rootDir) {
   return result;
 }
 
+function checkDamageControl(rootDir) {
+  const result = { configured: false, level: null, patternCount: 0, scriptsOk: true };
+
+  try {
+    // Check if PreToolUse hooks are configured in settings
+    const settingsPath = path.join(rootDir, '.claude/settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
+        // Check for damage-control hooks
+        const hasDamageControlHooks = settings.hooks.PreToolUse.some(
+          h => h.hooks?.some(hk => hk.command?.includes('damage-control'))
+        );
+        if (hasDamageControlHooks) {
+          result.configured = true;
+
+          // Count how many hooks are present (should be 3: Bash, Edit, Write)
+          const dcHooks = settings.hooks.PreToolUse.filter(h =>
+            h.hooks?.some(hk => hk.command?.includes('damage-control'))
+          );
+          result.hooksCount = dcHooks.length;
+
+          // Check if all required scripts exist
+          const scriptsDir = path.join(rootDir, '.agileflow', 'scripts');
+          const requiredScripts = [
+            'damage-control-bash.js',
+            'damage-control-edit.js',
+            'damage-control-write.js',
+          ];
+          for (const script of requiredScripts) {
+            if (!fs.existsSync(path.join(scriptsDir, script))) {
+              result.scriptsOk = false;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Get protection level and pattern count from metadata
+    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+    if (fs.existsSync(metadataPath)) {
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+      if (metadata.features?.damagecontrol) {
+        result.level = metadata.features.damagecontrol.protectionLevel || 'standard';
+      }
+    }
+
+    // Count patterns in config file
+    const patternsPath = path.join(rootDir, '.agileflow', 'config', 'damage-control-patterns.yaml');
+    if (fs.existsSync(patternsPath)) {
+      const content = fs.readFileSync(patternsPath, 'utf8');
+      // Count pattern entries (lines starting with "  - pattern:")
+      const patternMatches = content.match(/^\s*-\s*pattern:/gm);
+      result.patternCount = patternMatches ? patternMatches.length : 0;
+    }
+  } catch (e) {}
+
+  return result;
+}
+
 // Compare semantic versions: returns -1 if a < b, 0 if equal, 1 if a > b
 function compareVersions(a, b) {
   if (!a || !b) return 0;
@@ -611,7 +672,8 @@ function formatTable(
   precompact,
   parallelSessions,
   updateInfo = {},
-  expertise = {}
+  expertise = {},
+  damageControl = {}
 ) {
   const W = 58; // inner width
   const R = W - 24; // right column width (34 chars)
@@ -783,6 +845,20 @@ function formatTable(
     }
   }
 
+  // Damage control status (PreToolUse hooks for dangerous command protection)
+  if (damageControl && damageControl.configured) {
+    if (!damageControl.scriptsOk) {
+      lines.push(row('Damage control', '⚠️ scripts missing', c.coral, c.coral));
+    } else {
+      const levelStr = damageControl.level || 'standard';
+      const patternStr = damageControl.patternCount > 0 ? `${damageControl.patternCount} patterns` : '';
+      const dcStatus = `🛡️ ${levelStr}${patternStr ? ` (${patternStr})` : ''}`;
+      lines.push(row('Damage control', dcStatus, c.lavender, c.mintGreen));
+    }
+  } else {
+    lines.push(row('Damage control', 'not configured', c.slate, c.slate));
+  }
+
   lines.push(divider());
 
   // Current story (colorful like obtain-context)
@@ -816,6 +892,7 @@ async function main() {
   const precompact = checkPreCompact(rootDir);
   const parallelSessions = checkParallelSessions(rootDir);
   const expertise = validateExpertise(rootDir);
+  const damageControl = checkDamageControl(rootDir);
 
   // Check for updates (async, cached)
   let updateInfo = {};
@@ -840,7 +917,7 @@ async function main() {
   }
 
   console.log(
-    formatTable(info, archival, session, precompact, parallelSessions, updateInfo, expertise)
+    formatTable(info, archival, session, precompact, parallelSessions, updateInfo, expertise, damageControl)
   );
 
   // Show warning and tip if other sessions are active (vibrant colors)

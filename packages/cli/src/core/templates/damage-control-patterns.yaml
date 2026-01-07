@@ -1,0 +1,234 @@
+# AgileFlow Damage Control - Security Rules
+# Protects your codebase from destructive agent commands
+#
+# Configuration: /agileflow:configure → Damage Control
+# Documentation: See research/20260106-claude-code-damage-control-hooks.md
+#
+# Schema Version: 1.0.0
+
+version: "1.0.0"
+
+# =====================================================
+# BLOCKED BASH COMMANDS - Always blocked (exit code 2)
+# =====================================================
+# Regex patterns matched against the full bash command
+# These commands are considered too dangerous to ever run
+
+bashToolPatterns:
+  # ─── File System Destruction ───
+  - pattern: '\brm\s+(-[rRf]+\s+)*/'
+    reason: "rm with absolute path - could delete system files"
+
+  - pattern: '\brm\s+-[rRf]*\s+\.\.'
+    reason: "rm with parent directory - could escape project"
+
+  - pattern: '\brm\s+-rf\s+'
+    reason: "Recursive force delete - extremely dangerous"
+
+  - pattern: '\brmdir\s+(-p\s+)*/'
+    reason: "rmdir with absolute path"
+
+  # ─── Git Destructive Operations ───
+  - pattern: '\bgit\s+push\s+.*--force'
+    reason: "Force push can destroy remote history"
+
+  - pattern: '\bgit\s+push\s+.*-f\b'
+    reason: "Force push can destroy remote history"
+
+  - pattern: '\bgit\s+reset\s+--hard'
+    reason: "Hard reset discards uncommitted changes"
+
+  - pattern: '\bgit\s+clean\s+-fd'
+    reason: "Git clean with force deletes untracked files"
+
+  - pattern: '\bgit\s+branch\s+-D'
+    reason: "Force delete branch without merge check"
+
+  # ─── Database Destructive Operations ───
+  - pattern: 'DROP\s+(TABLE|DATABASE|INDEX|VIEW|SCHEMA)'
+    reason: "DROP commands are destructive"
+    flags: "i"
+
+  - pattern: 'TRUNCATE\s+TABLE'
+    reason: "TRUNCATE removes all data without logging"
+    flags: "i"
+
+  - pattern: 'DELETE\s+FROM\s+\w+\s*;'
+    reason: "DELETE without WHERE clause deletes all rows"
+    flags: "i"
+
+  # ─── System Modification ───
+  - pattern: '\bsudo\s+'
+    reason: "Sudo commands require manual execution"
+
+  - pattern: '\bchmod\s+777'
+    reason: "World-writable permissions are dangerous"
+
+  - pattern: '\bchown\s+-R'
+    reason: "Recursive ownership change"
+
+  - pattern: '\bchmod\s+-R'
+    reason: "Recursive permission change"
+
+  # ─── Disk Operations ───
+  - pattern: '\bdd\s+if='
+    reason: "dd can overwrite disks"
+
+  - pattern: '\bmkfs\.'
+    reason: "Filesystem creation"
+
+  - pattern: '\bfdisk\b'
+    reason: "Disk partitioning"
+
+  # ─── Process Control ───
+  - pattern: '\bkill\s+-9'
+    reason: "Force kill processes"
+
+  - pattern: '\bkillall\b'
+    reason: "Kill all matching processes"
+
+  - pattern: '\bpkill\s+-9'
+    reason: "Force kill by pattern"
+
+  # ─── Network/System ───
+  - pattern: '\biptables\s+'
+    reason: "Firewall modification"
+
+  - pattern: '\bsystemctl\s+(stop|disable|mask)'
+    reason: "System service modification"
+
+  # ─── Credential Exposure ───
+  - pattern: '\bcat\s+.*\.pem'
+    reason: "Displaying private keys"
+
+  - pattern: '\bcat\s+.*id_rsa'
+    reason: "Displaying SSH private keys"
+
+# =====================================================
+# ASK PATTERNS - Require user confirmation
+# =====================================================
+# Risky but sometimes valid - ask first before executing
+
+askPatterns:
+  - pattern: 'DELETE\s+FROM\s+\w+\s+WHERE'
+    reason: "Deleting specific records - please confirm"
+    flags: "i"
+
+  - pattern: '\bnpm\s+publish'
+    reason: "Publishing to npm - please confirm"
+
+  - pattern: '\bgit\s+push\s+origin\s+(main|master)'
+    reason: "Pushing to main branch - please confirm"
+
+  - pattern: '\brm\s+-[rRf]*\s+node_modules'
+    reason: "Removing node_modules - please confirm"
+
+  - pattern: '\baws\s+.*delete'
+    reason: "AWS delete operation - please confirm"
+    flags: "i"
+
+  - pattern: '\bgcloud\s+.*delete'
+    reason: "GCloud delete operation - please confirm"
+    flags: "i"
+
+  - pattern: '\baz\s+.*delete'
+    reason: "Azure delete operation - please confirm"
+    flags: "i"
+
+  - pattern: '\bnpx\s+.*--force'
+    reason: "Force npx operation - please confirm"
+
+  - pattern: 'UPDATE\s+\w+\s+SET.*WHERE'
+    reason: "Database update - please confirm"
+    flags: "i"
+
+# =====================================================
+# PATH PROTECTION - File/directory access controls
+# =====================================================
+
+# Zero access - cannot read, write, edit, or delete
+# These paths are completely off-limits
+zeroAccessPaths:
+  - "~/.ssh/"
+  - "~/.aws/"
+  - "~/.gnupg/"
+  - "~/.config/gh/"
+  - ".env.production"
+  - ".env.local"
+  - ".env.secrets"
+  - "credentials.json"
+  - "secrets.yaml"
+  - "secrets.json"
+  - "*.pem"
+  - "*.key"
+  - "id_rsa"
+  - "id_ed25519"
+
+# Read-only - can read but not modify
+# Safe to view, but changes should be manual
+readOnlyPaths:
+  - "~/.bashrc"
+  - "~/.zshrc"
+  - "~/.gitconfig"
+  - "/etc/"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "pnpm-lock.yaml"
+
+# No delete - can read and modify but not delete
+# Important files that shouldn't be removed
+noDeletePaths:
+  - ".claude/"
+  - ".agileflow/"
+  - "docs/09-agents/status.json"
+  - ".git/"
+  - "CLAUDE.md"
+  - "README.md"
+  - "package.json"
+  - "tsconfig.json"
+
+# =====================================================
+# AGILEFLOW-SPECIFIC PROTECTIONS
+# =====================================================
+# Additional rules specific to AgileFlow projects
+
+agileflowProtections:
+  - pattern: '\brm\s+.*status\.json'
+    reason: "status.json tracks story progress - protected"
+
+  - pattern: '\brm\s+.*\.claude/'
+    reason: "Claude Code configuration - protected"
+
+  - pattern: '\brm\s+.*\.agileflow/'
+    reason: "AgileFlow installation - protected"
+
+  - pattern: '\brm\s+.*session-state\.json'
+    reason: "Session state tracking - protected"
+
+  - pattern: '\brm\s+.*expertise\.yaml'
+    reason: "Agent expertise files - protected"
+
+# =====================================================
+# NOTES
+# =====================================================
+#
+# Exit Codes:
+#   0 = Allow command to proceed
+#   2 = Block command (show error message)
+#
+# Ask Pattern JSON Output:
+#   { "result": "ask", "message": "Confirm this action?" }
+#
+# Flags:
+#   "i" = case-insensitive matching
+#
+# Customization:
+#   Add project-specific patterns below this line
+#   Run /agileflow:configure → Damage Control to reconfigure
+#
+# =====================================================
+
+# ─── Project-Specific Patterns (add yours below) ───
+# customPatterns:
+#   - pattern: 'your-pattern-here'
+#     reason: "Your reason"

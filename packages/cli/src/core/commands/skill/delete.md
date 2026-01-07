@@ -1,11 +1,128 @@
 ---
 description: Remove an installed skill from .claude/skills/
 argument-hint: [SKILL_NAME] (optional)
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:skill:delete - Removes installed skills"
+    - "MUST list available skills if SKILL_NAME not provided"
+    - "MUST show exactly what will be deleted (tree view of files)"
+    - "MUST ask for explicit confirmation before deletion (no undo)"
+    - "MUST offer backup option before deletion"
+    - "MUST create backup in .claude/skills-backup/ if requested"
+    - "NEVER delete without explicit user confirmation"
+  state_fields:
+    - selected_skill_for_deletion
+    - backup_created
 ---
 
 # /agileflow:skill:delete
 
 Remove a skill from `.claude/skills/`.
+
+---
+
+<!-- COMPACT_SUMMARY_START -->
+
+## 🚨 COMPACT SUMMARY - /agileflow:skill:delete IS ACTIVE
+
+**CRITICAL**: This command deletes skills with full safety features and backup options.
+
+### 🚨 RULE #1: Select Skill
+If SKILL_NAME not provided:
+```bash
+ls -d .claude/skills/*/ | xargs -I {} basename {}
+```
+Show options and ask user which to delete.
+
+### 🚨 RULE #2: Show Exactly What Will Be Deleted
+Display complete tree view:
+```
+⚠️  About to delete: skill-name
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This will permanently remove:
+  .claude/skills/skill-name/
+  ├── SKILL.md
+  ├── references.md
+  ├── cookbook/
+  │   ├── use-case-1.md
+  │   └── use-case-2.md
+  └── .mcp.json
+
+Total: 5 files in 2 directories
+```
+
+### 🚨 RULE #3: Ask for Confirmation
+Multiple confirmation levels:
+1. **First ask**: "Are you sure?" (show file tree)
+2. **Options**:
+   - "Yes, delete permanently" - Proceed with deletion
+   - "No, keep it" - Cancel
+   - "Export first" - Create backup first
+
+### 🚨 RULE #4: Handle Backup Request
+If user chooses "Export first":
+```bash
+mkdir -p .claude/skills-backup/
+cp -r .claude/skills/<skill> .claude/skills-backup/<skill>-$(date +%Y%m%d-%H%M%S)/
+```
+Show backup location, then return to confirmation.
+
+### 🚨 RULE #5: Execute Deletion
+After confirmed deletion:
+```bash
+rm -rf .claude/skills/<skill>/
+```
+Show confirmation message with success emoji.
+
+### 🚨 RULE #6: Offer Next Actions
+After deletion, ask:
+```
+What would you like to do next?
+- Delete another skill
+- Create new skill
+- List remaining skills
+- Done
+```
+
+### Safety Features
+| Feature | Purpose |
+|---------|---------|
+| Show file tree | User sees EXACTLY what's deleted |
+| Explicit confirmation | Can't accidentally delete |
+| Backup option | Can recover if needed |
+| One at a time | No batch delete accidents |
+| Timestamp in backup | Identify which version backed up |
+
+### Backup Location
+```
+.claude/skills-backup/<skill>-<YYYYMMDD-HHMMSS>/
+```
+
+Example:
+```
+.claude/skills-backup/supabase-swift-20251227-143052/
+├── SKILL.md
+├── references.md
+├── cookbook/
+└── .mcp.json
+```
+
+### Anti-Patterns
+- ❌ DON'T delete without showing file tree
+- ❌ DON'T proceed without explicit confirmation
+- ❌ DON'T skip backup option offer
+- ❌ DON'T allow batch/wildcard deletes (one at a time)
+- ❌ DON'T delete without confirming again if backup created
+
+### REMEMBER AFTER COMPACTION
+- Delete is always: Select → Show tree → Ask confirm → [Backup if requested] → Delete → Show next actions
+- NEVER delete without explicit confirmation
+- Always offer backup option before deletion
+- Backup goes to .claude/skills-backup/ with timestamp
+- One skill at a time (no batch delete)
+
+<!-- COMPACT_SUMMARY_END -->
 
 ---
 

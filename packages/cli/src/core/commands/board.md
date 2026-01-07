@@ -1,7 +1,23 @@
 ---
 description: Display visual kanban board with WIP limits
-argument-hint: (no arguments)
+argument-hint: "[EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|markdown|html] [GROUP_BY=status|owner|epic]"
 model: haiku
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:board - Kanban board visualizer (read-only)"
+    - "MUST read docs/09-agents/status.json (do NOT modify)"
+    - "MUST organize stories by status (ready, in-progress, in-review, done, blocked)"
+    - "MUST show WIP limits (2 stories per agent)"
+    - "MUST highlight blockers and WIP violations"
+    - "MUST provide ASCII art board visualization"
+    - "MUST show statistics (throughput, velocity, completion %)"
+    - "MUST suggest next actions based on board state"
+  state_fields:
+    - epic_filter
+    - owner_filter
+    - format
+    - group_by
 ---
 
 # board
@@ -17,82 +33,133 @@ node .agileflow/scripts/obtain-context.js board
 This gathers git status, stories/epics, session state, and registers for PreCompact.
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Command**: `board`
-**Purpose**: Generate visual kanban board from current story statuses
+## ⚠️ COMPACT SUMMARY - /agileflow:board IS ACTIVE
 
-**Quick Usage**:
+**CRITICAL**: You are the Board Visualizer. This command displays project state (read-only).
+
+---
+
+### 🚨 RULE #1: ALWAYS Read status.json (NEVER Modify)
+
+- Read-only operation (visualization only)
+- NEVER update status.json from this command
+- Extract story data and calculate WIP metrics
+- No file writes, no state changes
+
+### 🚨 RULE #2: ALWAYS Show Four Columns
+
+**Column Layout** (by default):
+1. **READY** (status="ready")
+2. **IN PROGRESS** (status="in-progress")
+3. **IN REVIEW** (status="in-review")
+4. **DONE** (status="done")
+
+Special handling:
+- Separate BLOCKED stories (show with 🔴 red)
+- Show WIP limits per agent (max 2 in-progress + in-review)
+
+### 🚨 RULE #3: ALWAYS Calculate & Show WIP Violations
+
+- Count in-progress + in-review per agent
+- Highlight if >2 stories (WIP limit exceeded)
+- Show with ⚠️ warning icon
+- Suggest unblocking action
+
+### 🚨 RULE #4: ALWAYS Include Statistics
+
+Show these stats:
+- Total stories in each status
+- WIP status per agent
+- Blockers count and reasons
+- Throughput (stories completed this week)
+- Velocity trend (↗ ↘ →)
+
+---
+
+## Key Parameters & Output
+
+**Input Parameters**:
 ```
-/agileflow:board
-/agileflow:board EPIC=EP-0010
-/agileflow:board OWNER=AG-UI FORMAT=markdown
-/agileflow:board GROUP_BY=owner
+EPIC=<EP_ID>           # Filter by specific epic (optional)
+OWNER=<agent_id>       # Filter by owner (optional)
+FORMAT=ascii|markdown|html  # Output format (default: ascii)
+GROUP_BY=status|owner|epic  # Grouping method (default: status)
 ```
 
-**What It Does**:
-1. Reads `docs/09-agents/status.json` for story data
-2. Organizes stories by status (or owner/epic if specified)
-3. Calculates WIP limits and identifies violations
-4. Renders visual board with color coding
-5. Shows statistics (throughput, velocity, blockers)
-6. Suggests actions based on board state
+**Output Formats**:
+| Format | Use Case | Visual |
+|--------|----------|--------|
+| ascii | Terminal viewing | Box drawing chars (╔╗╚╝) |
+| markdown | Documentation/wiki | Markdown tables |
+| html | Web export | Full HTML page |
 
-**Input Options**:
-- `EPIC=<EP_ID>` - Filter by specific epic
-- `OWNER=<agent_id>` - Filter by owner
-- `FORMAT=ascii|markdown|html` - Output format (default: ascii)
-- `GROUP_BY=status|owner|epic` - Grouping method (default: status)
+**Data Source**:
+- Read: docs/09-agents/status.json
+- Extract: story status, owner, epic, estimate
 
-**Board Layout** (ASCII):
+---
+
+## Board Visualization Rules
+
+**ASCII Format** (default):
+- Box drawing characters (╔═╗║╚╝├┤┬┴┼)
+- Columns for each status
+- Story cards with ID, title, owner, estimate, epic
+- Color coded via emoji (🟢🟡🔵⚪🔴)
+- Max 80 char width for terminal viewing
+
+**Card Contents**:
 ```
-╔══════════════════════════════════════════════════════════════╗
-║                   AGILEFLOW KANBAN BOARD                      ║
-║                  Updated: 2025-12-22 14:30                    ║
-╠══════════════════════════════════════════════════════════════╣
-║ 📊 Summary: 15 stories | 3 ready | 4 in-progress | 6 done   ║
-║ ⚠️  WIP Limit: 2/agent (AG-UI: 2/2 ⚠️, AG-API: 1/2 ✓)       ║
-╚══════════════════════════════════════════════════════════════╝
-
-┌──────────────┬──────────────┬──────────────┬──────────────┐
-│ 📋 READY (3) │ 🔄 IN PROG   │ 👀 REVIEW    │ ✅ DONE (6)  │
-│              │ (4) WIP: 4/6 │ (2)          │              │
-├──────────────┼──────────────┼──────────────┼──────────────┤
-│ 🟢 US-0042   │ 🟡 US-0038   │ 🔵 US-0035   │ ⚪ US-0030   │
-│ Login form   │ OAuth flow   │ Pwd reset    │ User reg     │
-│ AG-UI · 1d   │ AG-API · 1.5d│ AG-API · 1d  │ AG-API · 1d  │
-└──────────────┴──────────────┴──────────────┴──────────────┘
+🟢 US-0042
+Login form
+AG-UI · 1d
+EP-0010
 ```
 
-**Color Coding**:
-- 🟢 Green: High priority / ready to start
-- 🟡 Yellow: In progress / medium priority
-- 🔵 Blue: In review / low priority
-- ⚪ White: Done
-- 🔴 Red: Blocked
-- ⚠️ Warning: WIP limit exceeded
+**WIP Indicator**:
+```
+🔄 IN PROGRESS (4)
+WIP: 4/6 ⚠️ (at limit)
+```
 
-**Statistics Provided**:
-- Throughput (stories completed per week)
-- Velocity (points per week)
-- Status distribution
-- Owner workload
-- Blockers and warnings
+**Blocked Indicator**:
+```
+🔴 BLOCKED (1)
+US-0041: Waiting on API keys
+```
 
-**Action Suggestions**:
+---
+
+## Action Suggestions
+
+After displaying board, suggest actions:
 - "AG-UI at WIP limit. Complete US-0038 before starting new work."
-- "US-0041 blocked. Unblock by reviewing US-0035?"
+- "US-0041 blocked >3 days. Escalate for API access?"
 - "3 stories ready. Which should we prioritize?"
+- "AG-DEVOPS has no work. Assign unblocking tasks?"
 
-**Best Practices**:
-- Review board daily to identify bottlenecks
-- Keep WIP limits respected (default: 2/agent)
-- Export board snapshots to track velocity over time
-- Use GROUP_BY=owner to balance workload
+---
 
-**Tool Usage Examples**:
+## Anti-Patterns & Correct Usage
 
-AskUserQuestion (for actions after displaying board):
+❌ **DON'T**:
+- Modify status.json (read-only command)
+- Hide blockers or WIP violations
+- Skip statistics and trend data
+- Make board too wide (>80 chars)
+
+✅ **DO**:
+- Read status.json (no updates)
+- Highlight WIP violations clearly
+- Include statistics and trends
+- Suggest next actions based on board state
+
+---
+
+## Confirmation & Follow-up
+
+After displaying board:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -100,14 +167,25 @@ AskUserQuestion (for actions after displaying board):
   "header": "Board Actions",
   "multiSelect": false,
   "options": [
-    {"label": "Update a story status", "description": "Change story status on board"},
-    {"label": "Export board", "description": "Save board snapshot to file"},
-    {"label": "View story details", "description": "See full story information"},
-    {"label": "Filter board", "description": "Filter by epic/owner"}
+    {"label": "Update story status", "description": "Change status on board"},
+    {"label": "View blockers", "description": "See blocker details"},
+    {"label": "Filter board", "description": "Filter by epic/owner"},
+    {"label": "Export snapshot", "description": "Save board to file"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Command is read-only (displays status.json, doesn't modify)
+- Shows kanban board with 4 columns (ready, in-progress, in-review, done)
+- Highlights blockers and WIP violations
+- Includes statistics (throughput, velocity, trends)
+- Suggests actionable next steps
+- No file writes, no state changes
 
 <!-- COMPACT_SUMMARY_END -->
 

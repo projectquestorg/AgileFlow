@@ -1,6 +1,22 @@
 ---
 description: Update story status and progress
 argument-hint: STORY=<US-ID> STATUS=<status> [SUMMARY=<text>] [PR=<url>] [TO=<agent-id>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:status - Status updater broadcasting to message bus"
+    - "MUST update docs/09-agents/status.json (use jq or Edit tool, never echo/cat >)"
+    - "MUST validate JSON after modification (jq empty check)"
+    - "MUST append bus message to docs/09-agents/bus/log.jsonl"
+    - "MUST use AskUserQuestion for user confirmation (YES/NO format)"
+    - "MUST show diff preview before confirming (diff-first pattern)"
+    - "Status values: ready|in-progress|blocked|in-review|done"
+    - "MUST escape user text automatically (jq handles escaping)"
+  state_fields:
+    - story_id
+    - current_status
+    - new_status
+    - pr_url
 ---
 
 # status
@@ -33,30 +49,112 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
-- **Command**: /agileflow:status
-- **Purpose**: Update story status and broadcast to agents
-- **Arguments**: STORY=<US-ID> STATUS=<status> [SUMMARY=<text>] [PR=<url>] [TO=<agent-id>]
-- **Status Values**: in-progress, blocked, in-review, done
-- **Key Actions**:
-  1. Update docs/09-agents/status.json (status, summary, last_update, pr)
-  2. Validate JSON after update using jq
-  3. Append bus line to docs/09-agents/bus/log.jsonl
-- **JSON Safety**: ALWAYS use jq or Edit tool (never echo/cat > status.json)
-- **Validation**: Run jq empty check after ANY modification
-- **Bus Message**: {ts, from, to, type:"status", story, text}
-- **Backup**: Restore from docs/09-agents/status.json.backup if validation fails
-- **Output**: Diff-first, then YES/NO confirmation
-- **Critical**: User text automatically escaped by jq
-- **Related**: docs/09-agents/status.json, bus/log.jsonl
 
-**Tool Usage Examples**:
+## ⚠️ COMPACT SUMMARY - /agileflow:status IS ACTIVE
 
-AskUserQuestion:
+**CRITICAL**: You update story status and broadcast to agents. This command updates core project state.
+
+---
+
+### 🚨 RULE #1: ALWAYS Use jq or Edit Tool (NEVER echo/cat >)
+
+**REQUIRED**:
+- ALWAYS use jq for status.json updates (prevents corruption)
+- ALWAYS validate after modification:
+```bash
+if ! jq empty docs/09-agents/status.json 2>/dev/null; then
+  echo "❌ ERROR: status.json is now invalid JSON!"
+  exit 1
+fi
+```
+
+### 🚨 RULE #2: ALWAYS Show Diff Preview Before Confirming
+
+**Workflow**:
+1. Parse inputs (STORY, STATUS, SUMMARY, PR, TO)
+2. Prepare status.json update
+3. Show diff of changes
+4. Ask YES/NO confirmation
+5. Only on YES: Execute update + append bus message
+
+### 🚨 RULE #3: VALID STATUS VALUES ONLY
+
+Status must be one of:
+- `ready` - Story ready to start
+- `in-progress` - Currently being worked on
+- `blocked` - Waiting on dependency
+- `in-review` - Code review/PR in progress
+- `done` - Completed and verified
+
+---
+
+## Key Files & Actions
+
+**Input Parameters**:
+```
+STORY=<US-ID>           # e.g., US-0042 (required)
+STATUS=<status>         # ready|in-progress|blocked|in-review|done (required)
+SUMMARY=<text>          # 1-2 lines explaining status (optional)
+PR=<url>                # Pull request URL for in-review (optional)
+TO=<agent-id>           # Recipient agent for bus message (optional)
+```
+
+**Update status.json**:
+```json
+{
+  "stories": {
+    "US-0042": {
+      "status": "in-progress",
+      "summary": "Started work on login form",
+      "pr": "https://github.com/.../pull/42",
+      "last_update": "ISO-timestamp"
+    }
+  }
+}
+```
+
+**Append to bus/log.jsonl**:
+```json
+{"ts":"ISO-timestamp","from":"SYSTEM","to":"<TO or ALL>","type":"status","story":"<STORY>","status":"<STATUS>","text":"<SUMMARY>"}
+```
+
+---
+
+## Anti-Patterns & Correct Usage
+
+❌ **DON'T**:
+- Use echo or cat to write to status.json
+- Skip validation after JSON changes
+- Use invalid status values (e.g., "in_progress")
+- Forget to show diff before confirming
+- Let user text corrupt JSON (use jq escaping)
+
+✅ **DO**:
+- Use jq for all JSON operations
+- Validate with `jq empty` after every write
+- Use only valid status values
+- Show diff preview before confirmation
+- Let jq handle text escaping automatically
+
+---
+
+## Confirmation Flow
+
+1. **Show diff preview**:
+```
+docs/09-agents/status.json
+
+- "status": "ready",
++ "status": "in-progress",
++ "summary": "Started work on login form",
++ "pr": "https://github.com/.../pull/42",
+```
+
+2. **Ask confirmation**:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Update US-0042 to in-review?",
+  "question": "Update US-0042 to in-progress?",
   "header": "Confirm Status Update",
   "multiSelect": false,
   "options": [
@@ -66,6 +164,20 @@ AskUserQuestion:
 }]</parameter>
 </invoke>
 ```
+
+3. **On YES**: Execute update + validate JSON + append bus message
+4. **On NO**: Abort without changes
+
+---
+
+## REMEMBER AFTER COMPACTION
+
+- Updates status.json (uses jq for safety)
+- Broadcasts to agents via bus/log.jsonl
+- ALWAYS validate JSON after modification
+- ALWAYS show diff before confirming
+- Status values: ready, in-progress, blocked, in-review, done
+- Text escaping handled automatically by jq
 
 <!-- COMPACT_SUMMARY_END -->
 
