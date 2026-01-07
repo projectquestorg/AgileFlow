@@ -1,6 +1,20 @@
 ---
 description: Set up automated deployment pipeline
 argument-hint: (no arguments)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Auto-detect project type (static, full-stack, mobile, containers, serverless)"
+    - "Recommend deployment platform based on project (Vercel for Next.js, Netlify for static, Railway for containers)"
+    - "ALWAYS show configuration preview and wait for YES/NO before creating files"
+    - "Generate platform-specific config (vercel.json, netlify.toml, Dockerfile, etc.)"
+    - "Create .env.example template with all required secrets (never commit actual secrets)"
+    - "Create CI/CD workflow (.github/workflows/deploy.yml) with staging+production environments"
+  state_fields:
+    - project_type
+    - detected_platform
+    - environments_configured
+    - secrets_template_created
 ---
 
 # setup-deployment
@@ -15,89 +29,218 @@ If the user confirms they want the full details, continue. Otherwise, stop here.
 Automatically set up deployment pipeline for the project.
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Auto-configure CI/CD deployment pipeline for your project type
+## ⚠️ COMPACT SUMMARY - /agileflow:setup-deployment IS ACTIVE
 
-**Quick Usage**:
+**CRITICAL**: You are configuring deployment pipeline for production. Auto-detection determines platform; always show preview before creating files.
+
+**ROLE**: Deployment Configurator - Auto-detect project type, recommend platform, generate configs, create CI/CD workflow
+
+---
+
+### 🚨 RULE #1: AUTO-DETECT PROJECT TYPE
+
+Always detect first (before prompting for platform):
+- **Static**: package.json + only build script (no server)
+- **Full-stack**: Express/FastAPI/Next.js API routes
+- **Mobile**: expo config or react-native
+- **Containers**: Dockerfile present
+- **Serverless**: Lambda functions or serverless.yml
+
+If unclear, ask user: "Is this [static/full-stack/containers]?"
+
+---
+
+### 🚨 RULE #2: PLATFORM RECOMMENDATIONS
+
+| Project Type | Recommended | Reason |
+|---|---|---|
+| Next.js | **Vercel** | Built for Next.js, no config needed |
+| React SPA | **Netlify** | Static + built-in redirects |
+| Node.js server | **Railway** | Cheap, Docker-based, easy |
+| Docker container | **Fly.io** | Native container support |
+| Expo/React Native | **EAS** | Official Expo deployment |
+| AWS preference | **Lambda + API Gateway** | FaaS with full control |
+
+---
+
+### 🚨 RULE #3: DIFF-FIRST PATTERN
+
+ALWAYS preview all generated files before creating:
+
 ```
-/agileflow:setup-deployment PLATFORM=auto ENV=both AUTO_DEPLOY=no
+Deployment Setup for: Next.js web app
+Recommended platform: Vercel
+
+Will create:
+✓ vercel.json (deployment config)
+✓ .github/workflows/deploy.yml (CI/CD)
+✓ .env.example (secrets template)
+✓ docs/02-practices/deployment.md (guide)
+
+Environments:
+• Staging: staging.example.com (branch: staging)
+• Production: example.com (branch: main)
+
+Proceed? (YES/NO)
 ```
 
-**What It Does**:
-1. Detects project type (static, full-stack, mobile, containers, serverless)
-2. Recommends deployment platform based on project
-3. Generates platform-specific configuration files
-4. Creates CI/CD workflow file
-5. Creates .env.example and secrets management docs
-6. Shows configuration preview
-7. Creates files after YES/NO confirmation
-8. Displays next steps (add secrets, connect repo, test deploy)
+Then ask: "Create deployment configuration? (YES/NO)"
 
-**Required Inputs**:
-- None (all optional with auto-detection)
+---
 
-**Optional Inputs**:
-- `PLATFORM=auto|vercel|netlify|heroku|aws|gcp|docker|eas` (default: auto)
-- `ENV=staging|production|both` (default: both)
-- `AUTO_DEPLOY=yes|no` (default: no, manual trigger)
+### 🚨 RULE #4: ENVIRONMENT CONFIGURATION
 
-**Output Files**:
-- Platform config (vercel.json, netlify.toml, Dockerfile, etc.)
-- `.github/workflows/deploy.yml` - CI/CD workflow
-- `.env.example` - Secrets template
-- `docs/02-practices/deployment.md` - Deployment guide
-- `docs/02-practices/secrets-management.md` - Secrets guide
+Always create BOTH environments (unless ENV=production specified):
 
-**Platform Recommendations**:
-- Next.js / React → Vercel
-- Static sites → Netlify
-- Node.js server → Railway, Heroku
-- Docker apps → Fly.io
-- Mobile (Expo) → EAS
-- Serverless → AWS Lambda, Vercel Functions
+**Staging**:
+- Branch: staging
+- URL: staging.example.com or staging.vercel.app
+- Database: Staging DB
+- Secrets from: STAGING_* variables
 
-**Tools Used**:
-- TodoWrite: Track 8-step deployment setup workflow
+**Production**:
+- Branch: main
+- URL: example.com
+- Database: Production DB
+- Secrets from: PROD_* variables
 
-**TodoWrite Example**:
+Both workflows deploy automatically on push.
+
+---
+
+### 🚨 RULE #5: SECRETS MANAGEMENT
+
+**NEVER** commit actual secrets to git:
+1. Create `.env.example` with placeholder values
+2. Create `docs/02-practices/secrets-management.md` with instructions
+3. Show user how to add secrets to platform:
+   - Vercel: `vercel env add DATABASE_URL`
+   - Heroku: `heroku config:set DATABASE_URL=...`
+   - GitHub Actions: Settings → Secrets → Actions
+
+---
+
+### 🚨 RULE #6: USE TodoWrite FOR TRACKING
+
+Track all 8 steps explicitly:
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">
-1. Detect project type (static, full-stack, mobile, containers, serverless)
-2. Recommend platform based on project type
-3. Generate deployment configuration files
-4. Create CI/CD workflow file
-5. Create .env.example and secrets management docs
-6. Show configuration preview
-7. Create files after YES/NO confirmation
-8. Display next steps (add secrets, connect repo, test deploy)
+1. Detect project type
+2. Recommend platform
+3. Generate config files
+4. Create CI/CD workflow
+5. Create .env.example
+6. Create deployment docs
+7. Show preview + confirm
+8. Display next steps
 </parameter>
 <parameter name="status">in-progress</parameter>
 </invoke>
 ```
 
-**Workflow**:
-1. Detect project type from package.json, Dockerfile, etc.
-2. Recommend deployment platform
-3. Generate platform-specific config files
-4. Create CI/CD workflow (staging + production)
-5. Create environment management templates
-6. Show preview of all files
-7. Ask: "Create deployment configuration? (YES/NO)"
-8. If YES: Write files and show next steps
+---
 
-**Example Next Steps**:
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Skip platform detection, use user's first choice
+❌ Create files without preview
+❌ Hardcode secrets in config files
+❌ Only create production environment
+❌ Forget to create .env.example template
+❌ Create deployment docs without next steps
+
+### DO THESE INSTEAD
+
+✅ Auto-detect project type first
+✅ Show full preview before creating
+✅ Use .env.example with placeholders
+✅ Create staging + production (unless specified)
+✅ Create .env.example + secrets management guide
+✅ Display clear next steps checklist
+
+---
+
+### WORKFLOW PHASES
+
+**Phase 1: Detection (Steps 1-2)**
+- Scan for package.json, Dockerfile, etc.
+- Detect project type
+- Recommend platform
+
+**Phase 2: Generation (Steps 3-6)**
+- Generate platform-specific config
+- Generate CI/CD workflow with both envs
+- Generate .env.example with all required vars
+- Generate deployment guide
+
+**Phase 3: Preview & Confirm (Step 7)**
+- Display all files side-by-side
+- Ask: "Create deployment configuration? (YES/NO)"
+
+**Phase 4: Complete (Step 8)**
+- Write all files
+- Display next steps checklist
+
+---
+
+### NEXT STEPS TO DISPLAY
+
 ```
 ✅ Deployment configured for Vercel!
 
 Next steps:
-1. Add secrets: vercel env add DATABASE_URL
-2. Link repo: vercel link
-3. Test deploy: git push origin staging
-4. Check logs: vercel logs
-5. Deploy prod: merge staging → main
+
+1. Add secrets to Vercel:
+   vercel env add DATABASE_URL production
+   vercel env add API_KEY production
+   [... more secrets from .env.example]
+
+2. Link repository to Vercel:
+   vercel link
+
+3. Test staging deploy:
+   git checkout -b staging
+   git push origin staging
+   Check: https://staging.vercel.app
+
+4. Test production deploy:
+   git push origin main
+   Check: https://example.com
+
+5. Set up custom domain (if needed):
+   vercel domains add example.com
+
+Documentation: docs/02-practices/deployment.md
+Secrets guide: docs/02-practices/secrets-management.md
 ```
+
+---
+
+### KEY FILES TO REMEMBER
+
+| File | Purpose |
+|------|---------|
+| `vercel.json` (or platform equivalent) | Deployment configuration |
+| `.github/workflows/deploy.yml` | CI/CD workflow for both environments |
+| `.env.example` | Template for all required secrets |
+| `docs/02-practices/deployment.md` | Team deployment guide |
+| `docs/02-practices/secrets-management.md` | How to add secrets |
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:setup-deployment` IS ACTIVE - configure deployment
+- Always auto-detect project type first
+- Recommend appropriate platform based on type
+- ALWAYS show preview before creating files
+- Create BOTH staging and production (unless specified)
+- Create .env.example template (never commit actual secrets)
+- Use TodoWrite to track 8 steps
+- Display next steps with exact commands
+
 <!-- COMPACT_SUMMARY_END -->
 
 ## Prompt

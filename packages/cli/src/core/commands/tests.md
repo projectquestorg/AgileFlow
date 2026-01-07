@@ -1,6 +1,22 @@
 ---
 description: Set up automated testing infrastructure
 argument-hint: (no arguments)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Auto-detect language/runtime and testing framework (Node.js→Jest, Python→pytest, Ruby→RSpec, etc.)"
+    - "MUST use TodoWrite to track all 10 steps (detect, check existing, install, config, examples, structure, scripts, CI, docs, run)"
+    - "Always show diff-first preview before creating files"
+    - "Create working example tests (unit, integration, E2E if requested) - not just config"
+    - "Set reasonable coverage thresholds (70%, not 100%)"
+    - "Integrate with CI immediately (.github/workflows/ci.yml update)"
+    - "Create docs/02-practices/testing.md documentation"
+    - "Run test suite after setup to verify it works"
+  state_fields:
+    - framework_detected
+    - example_tests_created
+    - ci_integrated
+    - coverage_threshold_set
 ---
 
 # setup-tests
@@ -18,76 +34,18 @@ node .agileflow/scripts/obtain-context.js tests
 ---
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Test Infrastructure Bootstrapper - Automatically set up testing framework, config, example tests, and CI integration
+## ⚠️ COMPACT SUMMARY - /agileflow:setup-tests IS ACTIVE
 
-**Role**: Test Infrastructure Bootstrapper responsible for detecting project type and installing appropriate testing framework
+**CRITICAL**: You are bootstrapping test infrastructure. All 10 steps must complete to have working test suite.
 
-**Critical Rules**:
-- MUST use TodoWrite to track all 10 steps (detect language, check existing setup, install deps, create config, create examples, create structure, add scripts, integrate CI, create docs, run tests)
-- MUST preview all changes (diff-first, YES/NO)
-- MUST create working examples, not just config
-- MUST run test suite after setup to verify
-- MUST integrate with CI immediately
-- Set reasonable coverage thresholds (70%, not 100%)
-- Create docs/02-practices/testing.md documentation
+**ROLE**: Test Infrastructure Bootstrapper - Auto-detect language, install framework, create examples, integrate CI
 
-**Inputs** (optional):
-- FRAMEWORK=auto|jest|mocha|pytest|rspec|go-test|cargo-test (default: auto-detect)
-- COVERAGE=yes|no (default: yes)
-- E2E=yes|no (default: no, ask if needed)
+---
 
-**Project Detection**:
-- Node.js: package.json → Jest/Mocha
-- Python: requirements.txt, pyproject.toml → pytest
-- Ruby: Gemfile → RSpec
-- Go: go.mod → go test
-- Rust: Cargo.toml → cargo test
-- Java: pom.xml, build.gradle → JUnit
-- .NET: *.csproj → xUnit/NUnit
+### 🚨 RULE #1: ALWAYS USE TodoWrite FOR 10 STEPS
 
-**Directory Structure Created**:
-```
-tests/
-├── unit/           # Unit tests (isolated functions/classes)
-├── integration/    # Integration tests (multiple components)
-├── e2e/           # End-to-end tests (full user flows) [if E2E=yes]
-├── fixtures/      # Test data
-└── helpers/       # Test utilities
-```
-
-**Workflow Steps**:
-1. Detect language/runtime and framework
-2. Check existing test setup
-3. Install testing framework dependencies
-4. Create test configuration files (jest.config.js, pytest.ini, etc.)
-5. Create example tests (unit, integration, E2E if requested)
-6. Create test directory structure
-7. Add test scripts to package.json/equivalent
-8. Integrate with CI workflow (.github/workflows/ci.yml)
-9. Create docs/02-practices/testing.md documentation
-10. Run tests to verify setup
-
-**Output Files**:
-- Config: jest.config.js / pytest.ini / .rspec / etc.
-- Examples: tests/unit/example.test.ts, tests/integration/api.test.ts
-- CI: .github/workflows/ci.yml (test job added)
-- Docs: docs/02-practices/testing.md
-- Scripts: package.json updated with test commands
-
-**Success Criteria**:
-- All 10 todo items marked complete
-- Test framework installed and configured
-- Example tests created and passing
-- CI integration added
-- Documentation created
-- User confirmed via YES/NO prompt
-
-**Tools Used**:
-- TodoWrite: Track 10-step test infrastructure setup
-
-**TodoWrite Example**:
+Track all steps explicitly:
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">
@@ -105,6 +63,210 @@ tests/
 <parameter name="status">in-progress</parameter>
 </invoke>
 ```
+
+Mark each step complete. This ensures comprehensive setup.
+
+---
+
+### 🚨 RULE #2: FRAMEWORK AUTO-DETECTION
+
+Detect from manifest files:
+- **Node.js**: package.json → **Jest** (or Mocha if configured)
+- **Python**: requirements.txt/pyproject.toml → **pytest**
+- **Ruby**: Gemfile → **RSpec**
+- **Go**: go.mod → **go test**
+- **Rust**: Cargo.toml → **cargo test**
+- **Java**: pom.xml/build.gradle → **JUnit**
+- **.NET**: *.csproj → **xUnit/NUnit**
+
+If unclear, ask: "Detected Node.js. Use Jest?"
+
+---
+
+### 🚨 RULE #3: WORKING EXAMPLES, NOT JUST CONFIG
+
+**NEVER** create config without example tests:
+- Create `tests/unit/example.test.ts` (passes immediately)
+- Create `tests/integration/api.test.ts` (passes immediately)
+- Create `tests/e2e/flow.spec.ts` (only if E2E=yes)
+
+Examples MUST pass on first run:
+```typescript
+describe('Example Test Suite', () => {
+  it('should pass this example test', () => {
+    expect(true).toBe(true);
+  });
+});
+```
+
+---
+
+### 🚨 RULE #4: COVERAGE THRESHOLD
+
+Always set REASONABLE thresholds (not perfectionistic):
+
+```javascript
+coverageThreshold: {
+  global: {
+    branches: 70,      // Don't require 100%
+    functions: 70,     // Realistic goals
+    lines: 70,
+    statements: 70
+  }
+}
+```
+
+Don't enforce >80% initially. Users will increase over time.
+
+---
+
+### 🚨 RULE #5: CI INTEGRATION MANDATORY
+
+Always update/create `.github/workflows/ci.yml` with test job:
+
+```yaml
+test:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+    - run: npm install
+    - run: npm test -- --coverage
+    - uses: codecov/codecov-action@v3
+```
+
+If .github/workflows/ci.yml exists, add test job. Don't replace.
+
+---
+
+### 🚨 RULE #6: DIFF-FIRST PATTERN
+
+Always show preview:
+
+```
+Will set up testing for: Node.js (Jest)
+
+Will create:
+✓ jest.config.js (test configuration)
+✓ tests/unit/example.test.ts (example unit test)
+✓ tests/integration/api.test.ts (example integration test)
+✓ tests/fixtures/ directory
+✓ Update .github/workflows/ci.yml
+
+Will install:
+✓ jest @types/jest ts-jest
+
+Proceed? (YES/NO)
+```
+
+Then ask: "Proceed with test setup? (YES/NO)"
+
+---
+
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Create jest.config.js but no example tests
+❌ Set coverage threshold to 100%
+❌ Forget to integrate with CI
+❌ Skip running tests after setup
+❌ Create config without docs
+❌ Hardcode framework (don't auto-detect)
+
+### DO THESE INSTEAD
+
+✅ Create config AND working example tests
+✅ Set realistic thresholds (70%)
+✅ Add test job to CI immediately
+✅ Run tests after setup to verify
+✅ Create docs/02-practices/testing.md
+✅ Auto-detect language/framework first
+
+---
+
+### WORKFLOW PHASES
+
+**Phase 1: Detection (Steps 1-2)**
+- Scan for package.json, Gemfile, go.mod, etc.
+- Detect language/runtime
+- Check if tests already exist
+
+**Phase 2: Installation (Step 3)**
+- Install framework deps (jest, pytest, etc.)
+- Install coverage tools if needed
+
+**Phase 3: Configuration (Step 4)**
+- Create config file (jest.config.js, pytest.ini, etc.)
+- Set coverage thresholds (70%)
+
+**Phase 4: Examples (Steps 5-6)**
+- Create working example tests
+- Create test directory structure
+
+**Phase 5: Integration (Steps 7-8)**
+- Add test scripts to package.json
+- Add test job to CI workflow
+
+**Phase 6: Documentation (Step 9)**
+- Create docs/02-practices/testing.md
+
+**Phase 7: Verification (Step 10)**
+- Run tests to verify everything works
+- Show test output
+
+---
+
+### OUTPUT STRUCTURE
+
+Always create:
+```
+tests/
+├── unit/           # Fast, isolated tests
+├── integration/    # Slower, multi-component tests
+├── e2e/           # Slow, full-flow tests (if E2E=yes)
+├── fixtures/      # Test data files
+└── helpers/       # Test utilities (mocks, factories)
+```
+
+---
+
+### SCRIPTS TO ADD
+
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "playwright test"
+  }
+}
+```
+
+---
+
+### KEY FILES TO REMEMBER
+
+| File | Purpose |
+|------|---------|
+| `jest.config.js` (or equivalent) | Test framework configuration |
+| `tests/unit/example.test.ts` | Working example test |
+| `docs/02-practices/testing.md` | How to write and run tests |
+| `.github/workflows/ci.yml` | CI test job |
+| `.gitignore` entry | Exclude coverage/ from git |
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:setup-tests` IS ACTIVE - bootstrap test infrastructure
+- Auto-detect language/framework (Node.js→Jest, Python→pytest, etc.)
+- ALWAYS create working example tests (not just config)
+- Set reasonable coverage (70%, not 100%)
+- Run tests after setup to verify they pass
+- Use TodoWrite to track 10 steps
+- Integrate with CI immediately
+- Create docs/02-practices/testing.md
 
 <!-- COMPACT_SUMMARY_END -->
 

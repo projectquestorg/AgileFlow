@@ -1,5 +1,20 @@
 ---
 description: Auto-generate changelog from commit history
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Auto-detect version from latest git tag if VERSION not provided"
+    - "Parse conventional commits (feat:→Added, fix:→Fixed, perf:→Changed, security:→Security)"
+    - "Detect BREAKING CHANGES (! suffix or BREAKING CHANGE: footer)"
+    - "Follow Keep a Changelog format strictly (standard markdown structure)"
+    - "Include PR/issue numbers for traceability (#123)"
+    - "ALWAYS show diff-first preview before updating CHANGELOG.md"
+    - "Suggest semantic version bump based on changes (major/minor/patch)"
+    - "Never remove old changelog entries"
+  state_fields:
+    - next_version
+    - version_suggestion_accepted
+    - changelog_updated
 ---
 
 # generate-changelog

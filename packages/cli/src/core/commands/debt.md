@@ -1,5 +1,22 @@
 ---
 description: Track and prioritize technical debt items
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "Scan for debt indicators: TODOs, complexity >10, functions >50 lines, duplication, coverage <70%"
+    - "Parse story tags: tech-debt: true, blocked by debt, 'refactor' or 'cleanup' in title"
+    - "Check ADRs for deprecated status and negative consequences"
+    - "Analyze git history: high churn files, unclear ownership"
+    - "Score each item (0-100): Severity × Scope × Pain / 10"
+    - "Categorize: Architecture/CodeQuality/Documentation/Testing/Security/Performance/Dependencies"
+    - "NEVER auto-create stories without user approval"
+    - "Provide realistic effort estimates (err on high side)"
+    - "Show debt trend analysis and recommendations for reduction"
+  state_fields:
+    - debt_items_found
+    - critical_count
+    - high_count
+    - stories_created
 ---
 
 # tech-debt

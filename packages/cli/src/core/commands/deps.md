@@ -2,6 +2,21 @@
 description: Visualize dependency graph with critical path detection
 argument-hint: [SCOPE=story|epic|all] [EPIC=<id>] [STORY=<id>] [FORMAT=ascii|mermaid|graphviz|json] [ANALYSIS=critical-path|circular|blocking|all]
 model: haiku
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Parse dependencies from TWO sources: 1) Story frontmatter (depends_on/blocks fields), 2) Bus log (implicit blocked events)"
+    - "Build adjacency list graph and run DFS for critical path analysis"
+    - "Detect circular dependencies as ERRORS (cannot complete - flag prominently)"
+    - "Calculate blocking impact: stories that block multiple others are bottlenecks"
+    - "Generate ASCII tree with legend, critical path highlighted, blocking stories marked"
+    - "Support multiple formats: ascii (default), mermaid, graphviz, json"
+    - "Provide actionable recommendations: work on blockers first, parallelize independent stories"
+  state_fields:
+    - scope_analyzed
+    - circular_deps_detected
+    - critical_path_calculated
+    - blocking_stories_identified
 ---
 
 # dependencies

@@ -1,6 +1,18 @@
 ---
 description: Bootstrap CI/CD workflow with testing and quality checks
 argument-hint: (no arguments)
+compact_context:
+  priority: high
+  preserve_rules:
+    - "CI setup creates .github/workflows/ci.yml with lint/typecheck/test jobs"
+    - "MUST parse OWNERS input (comma-separated GitHub handles or team names)"
+    - "MUST create CODEOWNERS file with owner mappings for src/ and docs/03-decisions/"
+    - "ALWAYS show diff-first preview before creating files (YES/NO confirmation required)"
+    - "Concurrency control and minimal permissions are required for security"
+  state_fields:
+    - owners_input
+    - workflow_created
+    - codeowners_created
 ---
 
 # ci-setup
@@ -15,92 +27,190 @@ If the user confirms they want the full details, continue. Otherwise, stop here.
 Bootstrap minimal CI workflow and CODEOWNERS.
 
 <!-- COMPACT_SUMMARY_START -->
-## Compact Summary
 
-**Purpose**: Bootstrap minimal CI/CD workflow with testing and quality checks
+## ⚠️ COMPACT SUMMARY - /agileflow:ci-setup IS ACTIVE
 
-**Quick Usage**:
-```
-/agileflow:ci-setup OWNERS=@username,@team
-```
+**CRITICAL**: You are bootstrapping CI/CD workflow. All steps must complete to create production-ready CI.
 
-**What It Does**:
-1. Creates `.github/workflows/ci.yml` with lint/typecheck/test jobs
-2. Creates `CODEOWNERS` file with owner mappings
-3. Shows preview and waits for YES/NO confirmation
-4. Provides notes for enabling required checks in GitHub
+**ROLE**: CI Bootstrapper - Create GitHub Actions workflow with quality gates (lint/typecheck/test) and code ownership rules
 
-**Required Inputs**:
-- `OWNERS=<@handles>` - GitHub usernames or team handles (comma-separated)
+---
 
-**Optional Inputs**:
-- None
+### 🚨 RULE #1: ALWAYS USE TodoWrite FOR TRACKING
 
-**Output Files**:
-- `.github/workflows/ci.yml` - GitHub Actions workflow
-- `CODEOWNERS` - Code ownership mappings
-
-**CI Jobs Created**:
-- Lint job (generic placeholder for ESLint, Prettier, etc.)
-- Typecheck job (TypeScript, Flow, mypy, etc.)
-- Test job (Jest, pytest, cargo test, etc.)
-- Minimal permissions (contents: read)
-- Concurrency control (cancel in-progress runs)
-
-**CODEOWNERS Mappings**:
-```
-/src/ @owners
-/docs/03-decisions/ @owners
-```
-
-**Tools Used**:
-- TodoWrite: Track 5-step setup workflow
-
-**TodoWrite Example**:
+Track all 5 steps explicitly:
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">
-1. Parse input (OWNERS)
-2. Create .github/workflows/ci.yml with lint/typecheck/test jobs
-3. Create CODEOWNERS file with owner mappings
-4. Show preview and wait for YES/NO confirmation
-5. Print notes for enabling required checks
+1. Parse OWNERS input (required, comma-separated)
+2. Generate .github/workflows/ci.yml with 3 jobs
+3. Generate CODEOWNERS file with mappings
+4. Show diff preview (both files side-by-side)
+5. Create files after YES/NO confirmation
 </parameter>
 <parameter name="status">in-progress</parameter>
 </invoke>
 ```
 
-**Workflow**:
-1. Parse OWNERS input
-2. Generate CI workflow with generic job placeholders
-3. Generate CODEOWNERS file
-4. Show preview of both files
-5. Ask: "Create these files? (YES/NO)"
-6. If YES: Write files
-7. Display notes for enabling required checks
+Mark each step complete as you finish. This ensures nothing is forgotten.
 
-**Next Steps**:
-- Customize job commands for your project
-- Enable branch protection in GitHub settings
-- Add required status checks
-- Configure merge queue (optional)
+---
 
-**Example CI Workflow**:
-```yaml
+### 🚨 RULE #2: REQUIRED PARAMETERS
+
+`OWNERS` is required (no default):
+- Format: `@username` or `@org/team-name`
+- Multiple: Comma-separated, no spaces
+- Example: `OWNERS=@alice,@dev-team,@bob`
+
+If missing:
+```
+❌ Missing OWNERS parameter
+
+Usage: /agileflow:ci-setup OWNERS=@username,@team
+
+Examples:
+  /agileflow:ci-setup OWNERS=@alice
+  /agileflow:ci-setup OWNERS=@alice,@bob,@dev-team
+```
+
+---
+
+### 🚨 RULE #3: DIFF-FIRST PATTERN
+
+ALWAYS show preview of BOTH files before creating:
+
+```
+Preview of files to create:
+
+========== .github/workflows/ci.yml ==========
 name: CI
 on: [push, pull_request]
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm run lint
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm test
+... [full YAML preview]
+
+========== CODEOWNERS ==========
+/src/ @alice @dev-team
+/docs/03-decisions/ @alice @dev-team
 ```
+
+Then ask: "Create these files? (YES/NO)"
+
+---
+
+### 🚨 RULE #4: JOBS REQUIRED
+
+Always generate these 3 jobs (generic placeholders OK):
+1. **lint**: `npm run lint` (or project equivalent)
+2. **typecheck**: `npm run typecheck` (or project equivalent)
+3. **test**: `npm test` (or project equivalent)
+
+Each job:
+- `runs-on: ubuntu-latest`
+- `permissions: { contents: read }` (minimal security)
+- `concurrency: { group: ... cancel-in-progress: true }` (cost control)
+
+---
+
+### 🚨 RULE #5: CODEOWNERS MAPPINGS
+
+Required mappings:
+```
+/src/ @owners  # All source code
+/docs/03-decisions/ @owners  # ADRs require owner review
+```
+
+Both paths MUST include the parsed OWNERS.
+
+---
+
+### ANTI-PATTERNS (DON'T DO THESE)
+
+❌ Skip diff preview - go directly to file creation
+❌ Hardcode owners instead of parsing input
+❌ Create workflow without concurrency control
+❌ Forget to validate OWNERS parameter format
+❌ Create CODEOWNERS without /src/ and /docs/03-decisions/ mappings
+❌ Use overly permissive permissions (contents: write)
+
+### DO THESE INSTEAD
+
+✅ ALWAYS show diff preview first
+✅ Parse OWNERS parameter, validate format
+✅ Include concurrency with cancel-in-progress
+✅ Use minimal permissions (contents: read)
+✅ Include both required path mappings
+✅ Track with TodoWrite for safety
+
+---
+
+### WORKFLOW PHASES
+
+**Phase 1: Validate Input (Step 1)**
+- Parse OWNERS parameter
+- Validate format (looks like @username or @org/team)
+- If invalid: show error and ask for correction
+
+**Phase 2: Generate Files (Steps 2-3)**
+- Create workflow YAML with 3 jobs
+- Create CODEOWNERS with owner mappings
+
+**Phase 3: Preview & Confirm (Step 4)**
+- Display both files in unified diff
+- Ask: "Create these files? (YES/NO)"
+
+**Phase 4: Complete (Step 5)**
+- Write .github/workflows/ci.yml
+- Write CODEOWNERS
+- Display next steps note
+
+---
+
+### NEXT STEPS TO DISPLAY
+
+```
+✅ CI setup complete!
+
+Next steps:
+1. Customize job commands for your project:
+   - Update lint command (currently: npm run lint)
+   - Update typecheck command
+   - Update test command
+
+2. Enable branch protection in GitHub:
+   - Settings → Branches → Branch protection rules
+   - Require "ci" status check
+   - Require branches to be up-to-date
+
+3. Optional: Configure merge queue
+   - Settings → Branches → Branch protection
+   - Enable merge queue for faster merges
+
+4. Optional: Add required checks
+   - Each job can be marked as required
+```
+
+---
+
+### KEY FILES TO REMEMBER
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/ci.yml` | GitHub Actions workflow with 3 jobs |
+| `CODEOWNERS` | Code ownership rules for PR reviews |
+| Parsed `OWNERS` | Critical - determines who gets PRs routed |
+
+---
+
+### REMEMBER AFTER COMPACTION
+
+- `/agileflow:ci-setup` IS ACTIVE - create CI workflow
+- OWNERS parameter is required (validate format)
+- ALWAYS show diff-first before creating files
+- Include lint, typecheck, test jobs
+- Map both /src/ and /docs/03-decisions/ in CODEOWNERS
+- Use TodoWrite to track 5 steps
+- Display next steps for GitHub configuration
+
 <!-- COMPACT_SUMMARY_END -->
 
 ## Prompt

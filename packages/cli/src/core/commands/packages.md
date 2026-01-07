@@ -1,5 +1,21 @@
 ---
 description: Manage dependencies with updates and security audits
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Auto-detect package manager (npm, pip, cargo, etc.) from manifest files"
+    - "MUST use TodoWrite to track 8-step workflow (inputs, detect, analyze, generate, preview, confirm, apply, save)"
+    - "ALWAYS show diff-first before applying updates (YES/NO confirmation)"
+    - "Prioritize security updates - run ACTION=audit first if vulnerabilities suspected"
+    - "For major updates: Create stories, don't auto-update (may require code changes)"
+    - "NEVER auto-update without approval (AUTO_PR default is no)"
+    - "Update/create reports in docs/08-project/ (dependencies-dashboard.md, dependency-report-*.md)"
+    - "If critical CVEs found, create story: 'US-XXXX: Fix security vulnerabilities in dependencies'"
+  state_fields:
+    - package_manager_detected
+    - vulnerabilities_found
+    - updates_applied
+    - report_saved
 ---
 
 # packages

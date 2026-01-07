@@ -1,6 +1,22 @@
 ---
 description: Analyze change impact across codebase
 argument-hint: [FILES=<paths>] [BASE=<branch>] [RUN_TESTS=yes|no]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "Auto-detect changed files from git diff if FILES not specified"
+    - "Build dependency graph: direct + indirect imports (2 levels max)"
+    - "Find related tests: unit, integration, E2E (pattern matching + coverage mapping)"
+    - "Detect breaking changes (function signature changes, type modifications)"
+    - "Calculate risk scores: critical (impact now) / recommended (test anyway) / optional (low risk)"
+    - "Show affected files with line numbers of callers"
+    - "Generate clear impact report with actionable test recommendations"
+    - "Optionally run affected tests (RUN_TESTS=yes default if tests found)"
+  state_fields:
+    - changed_files_count
+    - affected_files_count
+    - tests_to_run_count
+    - breaking_changes_detected
 ---
 
 # impact-analysis

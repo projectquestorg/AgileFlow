@@ -1,6 +1,20 @@
 ---
 description: Run project tests and update story test status
 argument-hint: [story_id] (optional)
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS run STEP 0 context activation before any other action"
+    - "Exit code is AUTHORITATIVE (0=passing, non-zero=failing) - trust over output parsing"
+    - "Read environment.json for test_command and test_timeout_ms config"
+    - "Update ONLY test-related fields in status.json - preserve all other fields"
+    - "If no STORY specified, update ALL in_progress stories"
+    - "Generate clear visual reports with ✅/❌ indicators"
+    - "Best-effort output parsing (Jest/Pytest/Cargo/Go) but exit code is final authority"
+  state_fields:
+    - test_status (passing/failing)
+    - test_results (with passed/failed counts and exit code)
+    - baseline_verified
 ---
 
 # Verify Project Tests

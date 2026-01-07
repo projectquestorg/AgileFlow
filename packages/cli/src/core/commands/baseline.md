@@ -1,6 +1,20 @@
 ---
 description: Mark current state as verified baseline
 argument-hint: [message] (optional)
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS run STEP 0 context activation first"
+    - "Check 4 prerequisites: session harness initialized, tests passing, git clean, story tests passing"
+    - "If ANY prerequisite fails, show error and exit (don't force baseline creation)"
+    - "Create git tag with timestamp format: agileflow-baseline-YYYYMMDD-HHMMSS"
+    - "Update BOTH environment.json AND session-state.json AND story metadata"
+    - "Show comprehensive baseline report with tag, commit, message, test counts, stories"
+    - "Display command to push baseline to remote: git push origin <tag>"
+  state_fields:
+    - baseline_commit (SHA)
+    - baseline_established (ISO timestamp)
+    - baseline_tag (agileflow-baseline-*)
 ---
 
 # Establish Baseline
