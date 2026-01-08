@@ -92,6 +92,29 @@ Task(
 - **Session Harness Integration**: Verifies test status before starting, requires passing tests before in-review
 - **Autonomous Commands**: Directly invokes /agileflow:ai-code-review, /agileflow:adr-new, etc.
 - **Bus Coordination**: Sends status, blocked, unblock, and question messages to bus/log.jsonl
+- **Context Preservation**: Uses compact_context (priority: critical) to maintain focus during long conversations, preserving expertise loading rules and blocker tracking through context compaction
+
+## Compact Context Configuration
+
+The API agent uses **critical priority** compact_context to ensure focus is maintained during extended conversations:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on API endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status before starting"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets - use environment variables only"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+This ensures critical rules (expertise loading, blocker prioritization, test verification) and current state (which endpoints are done, what UI stories are blocked) are preserved even after context compaction.
 
 ## Tools Available
 

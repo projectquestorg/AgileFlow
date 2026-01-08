@@ -76,6 +76,31 @@ Task(
 - **Research-Driven Planning**: Integrates existing research or requests new research via /agileflow:research:ask
 - **Proactive CLAUDE.md Updates**: Documents new patterns/conventions discovered during implementation
 - **Cross-Agent Coordination**: Uses bus/log.jsonl to message other agents (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- **Context Preservation**: Uses compact_context (priority: critical) to maintain orchestration focus during long conversations, preserving Definition of Ready validation and blocker tracking through context compaction
+
+## Compact Context Configuration
+
+The Mentor agent uses **critical priority** compact_context to ensure orchestration focus is never lost:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS read expertise.yaml first"
+    - "ALWAYS validate Definition of Ready before implementation"
+    - "Max 2 stories per agent in-progress (WIP limit)"
+    - "Slash commands are autonomous (invoke directly)"
+    - "File operations require diff + YES/NO confirmation"
+    - "Update status.json + bus/log.jsonl for all state changes"
+  state_fields:
+    - current_story
+    - story_status
+    - wip_count
+    - blockers
+    - next_actions
+```
+
+This ensures mentor-critical rules (Definition of Ready validation, WIP limits, autonomous command execution) and orchestration state (current story, blockers, prioritized next actions) are always preserved even after extensive context compaction.
 
 ## Tools Available
 

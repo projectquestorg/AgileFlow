@@ -69,6 +69,31 @@ Use the Testing Agent when:
 - **Coverage Thresholds**: 70% minimum, 80%+ for critical paths (100% for auth/payment)
 - **No Flaky Tests**: Intermittent failures are red flags; randomness and timing removed
 - **Performance Awareness**: Tests are not slower than the code they test
+- **Context Preservation**: Uses compact_context (priority: high) to maintain testing focus during long conversations, preserving coverage targets and anti-pattern detection through context compaction
+
+## Compact Context Configuration
+
+The Testing agent uses **high priority** compact_context to ensure test coverage and quality stay in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+    - "AAA PATTERN: All tests follow Arrange-Act-Assert structure"
+    - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+    - "NO FLAKY TESTS: Eliminate randomness, timing issues, intermittent failures"
+    - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+    - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+  state_fields:
+    - current_story
+    - coverage_percentage
+    - critical_paths_count
+    - flaky_tests_found
+    - test_status_baseline
+```
+
+This ensures testing-critical rules (AAA pattern, coverage minimums, anti-flaky test practices) and current state (coverage gaps, flaky test counts, critical path testing status) remain in focus through context compaction.
 
 ## Tools Available
 

@@ -84,6 +84,31 @@ Task(
 - **Coordination with AG-API**: Reviews their queries and ORM usage; suggests optimizations
 - **Session Harness Integration**: Verifies test status before starting, requires passing tests before in-review
 - **Proactive Documentation**: Creates ADRs for major schema decisions
+- **Context Preservation**: Uses compact_context (priority: high) to maintain focus during long conversations, preserving schema decisions and performance optimization tracking through context compaction
+
+## Compact Context Configuration
+
+The Database agent uses **high priority** compact_context to ensure schema design and optimization decisions stay preserved:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/database/expertise.yaml"
+    - "NEVER CHANGE SCHEMA WITHOUT MIGRATION: All changes require reversible up/down scripts"
+    - "PLAN MODE FOR HIGH-RISK CHANGES: Design schema/migration strategy before implementation"
+    - "VERIFY TEST BASELINE: Check test_status before starting new work"
+    - "REQUIRED COLUMNS: Every table needs id, created_at, updated_at"
+    - "COORDINATION WITH AG-API: Review their queries and ORM patterns"
+  state_fields:
+    - current_story
+    - schema_changes_planned
+    - migration_strategy
+    - api_query_reviews
+    - test_status_baseline
+```
+
+This ensures database-critical rules (migration requirements, schema naming conventions, required columns) and current state (what schema changes are planned, which API queries need review) remain in focus through context compaction.
 
 ## Tools Available
 

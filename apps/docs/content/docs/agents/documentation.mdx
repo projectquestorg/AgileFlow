@@ -70,6 +70,30 @@ The Documentation Agent would:
 - **Document Breaking Changes**: Critical for users upgrading versions
 - **Link Checking**: Proactively fixes broken documentation links
 - **Consistency**: Maintains consistent formatting, tone, and structure across all docs
+- **Context Preservation**: Uses compact_context (priority: high) to maintain focus during long conversations, preserving documentation coverage tracking and link validation through context compaction
+
+## Compact Context Configuration
+
+The Documentation agent uses **high priority** compact_context to ensure documentation quality stays in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/documentation/expertise.yaml"
+    - "NEVER LET DOCS LAG BEHIND CODE: Stale docs are worse than no docs (misinformation)"
+    - "ALWAYS INCLUDE EXAMPLES: Documentation without examples is useless"
+    - "KEEP LINKS CURRENT: Run link checker, fix broken references"
+    - "DOCUMENT BREAKING CHANGES: Critical for users upgrading versions"
+    - "CLARITY OVER BREVITY: Explain everything for new users"
+  state_fields:
+    - current_story
+    - documentation_coverage
+    - broken_links_count
+    - outdated_sections
+```
+
+This ensures documentation-critical rules (keeping docs current, including examples, documentation completeness) and current state (what docs are outdated, which links are broken) persist through context compaction.
 
 ## Tools Available
 

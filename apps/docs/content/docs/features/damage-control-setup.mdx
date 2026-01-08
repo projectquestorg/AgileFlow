@@ -1,0 +1,535 @@
+---
+title: Damage Control Setup Guide
+description: Step-by-step guide to enable and configure Damage Control for your project.
+---
+
+# Damage Control Setup Guide
+
+This guide walks you through setting up Damage Control from start to finish.
+
+## Prerequisites
+
+- AgileFlow v2.78.0 or later
+- Claude Code (latest version recommended)
+- Project with `.agileflow` directory installed
+- Permission to modify `.claude/settings.json`
+
+## Quick Start (2 minutes)
+
+### Option 1: Interactive Setup
+
+```bash
+# Run the interactive configuration wizard
+/agileflow:configure damagecontrol
+```
+
+This launches a guided setup that asks:
+1. What protection level? (Standard or Enhanced)
+2. Any custom protections needed?
+3. Creates all necessary files
+4. Provides restart instructions
+
+### Option 2: Command Line
+
+```bash
+# Enable with default settings
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+Then restart Claude Code completely.
+
+## Detailed Setup Steps
+
+### Step 1: Verify Installation
+
+First, check that AgileFlow is properly installed:
+
+```bash
+ls -la .agileflow/scripts/damage-control*.js
+
+# Should show:
+# damage-control-bash.js
+# damage-control-edit.js
+# damage-control-write.js
+```
+
+### Step 2: Choose Protection Level
+
+Decide which protection level you need:
+
+**Standard (Recommended)**
+- Fast pattern matching only
+- 0ms latency added to commands
+- Blocks 40+ dangerous patterns
+- Perfect for most projects
+- No additional AI evaluation
+
+**Enhanced**
+- Standard patterns + AI evaluation
+- AI reviews unknown threats
+- 50-100ms latency added
+- Better for highly sensitive code
+- Experimental feature
+
+### Step 3: Enable Damage Control
+
+Using the interactive command:
+
+```bash
+/agileflow:configure damagecontrol
+```
+
+Or with command line:
+
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+### Step 4: Verify Configuration
+
+After enabling, check that everything was installed:
+
+```bash
+# Verify patterns file exists
+ls -la .agileflow/config/damage-control-patterns.yaml
+
+# Check hooks are configured
+grep -A 5 "PreToolUse" .claude/settings.json
+
+# Verify metadata
+cat docs/00-meta/agileflow-metadata.json | grep damagecontrol
+```
+
+### Step 5: Restart Claude Code
+
+This is critical - hooks only take effect after restart:
+
+**macOS/Linux:**
+```bash
+# Quit completely
+pkill -9 "Claude Code"  # or similar
+
+# Wait 5 seconds
+sleep 5
+
+# Reopen Claude Code
+open -a "Claude Code"  # or use your IDE
+```
+
+**Windows:**
+```
+Close Claude Code completely
+Wait 5 seconds
+Reopen Claude Code
+```
+
+### Step 6: Test
+
+After restarting, verify protection is working:
+
+```bash
+# This should be blocked
+rm -rf /
+
+# You should see:
+# [BLOCKED] rm with absolute path - could delete system files
+```
+
+## Configuration Files
+
+### `.agileflow/config/damage-control-patterns.yaml`
+
+Contains all protection rules. You can customize this file:
+
+```yaml
+# Default patterns - should not remove these
+bashToolPatterns:
+  - pattern: '\brm\s+-rf\s+'
+    reason: "Recursive force delete"
+
+# Add your own patterns here
+customPatterns:
+  - pattern: 'YOUR_PATTERN'
+    reason: "Your reason"
+```
+
+### `.claude/settings.json`
+
+Contains the hook configuration:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node /path/to/.agileflow/scripts/damage-control-bash.js",
+          "timeout": 5
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node /path/to/.agileflow/scripts/damage-control-edit.js",
+          "timeout": 5
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node /path/to/.agileflow/scripts/damage-control-write.js",
+          "timeout": 5
+        }]
+      }
+    ]
+  }
+}
+```
+
+Do not modify this file manually - use `/agileflow:configure damagecontrol` instead.
+
+## Common Setup Scenarios
+
+### Scenario 1: New Project
+
+Protect everything from the start:
+
+```bash
+# Enable with standard protection
+/agileflow:configure damagecontrol
+
+# Optional: Add custom patterns
+vi .agileflow/config/damage-control-patterns.yaml
+
+# Restart Claude Code
+```
+
+### Scenario 2: Existing Project
+
+Add damage control to an existing project:
+
+```bash
+# Check current state
+node .agileflow/scripts/agileflow-configure.js --detect
+
+# Enable damage control
+/agileflow:configure damagecontrol
+
+# Review existing patterns
+cat .agileflow/config/damage-control-patterns.yaml
+
+# Add project-specific rules
+vi .agileflow/config/damage-control-patterns.yaml
+
+# Restart Claude Code
+```
+
+### Scenario 3: Production Protection Only
+
+Protect production but allow dev operations:
+
+```yaml
+# In damage-control-patterns.yaml
+askPatterns:
+  - pattern: '\bgit\s+push\s+origin\s+main'
+    reason: "Pushing to main branch - please confirm"
+
+  - pattern: '\bnpm\s+publish'
+    reason: "Publishing to npm - please confirm"
+
+  - pattern: 'DELETE\s+FROM\s+users'
+    reason: "Deleting users - requires confirmation"
+    flags: "i"
+
+customPatterns:
+  - pattern: '\bpg_restore\s+.*prod'
+    reason: "Production restore blocked - use staging"
+```
+
+### Scenario 4: Team Project
+
+Protect shared resources:
+
+```yaml
+zeroAccessPaths:
+  - ".env.production"
+  - "config/secrets/"
+  - "~/.aws/"
+
+noDeletePaths:
+  - "infrastructure/"
+  - "kubernetes/"
+  - "terraform/"
+
+bashToolPatterns:
+  - pattern: '\bterraform\s+destroy'
+    reason: "Terraform destroy requires manual review"
+
+  - pattern: '\bkubectl\s+delete\s+(namespace|cluster)'
+    reason: "K8s deletion requires manual process"
+```
+
+## Customization
+
+### Adding Custom Bash Patterns
+
+Edit `.agileflow/config/damage-control-patterns.yaml`:
+
+```yaml
+customPatterns:
+  - pattern: '\bpython\s+.*--admin'
+    reason: "Admin scripts require manual execution"
+
+  - pattern: '\bcurl\s+.*-X\s+DELETE'
+    reason: "HTTP DELETE requests - please confirm"
+
+  - pattern: 'GRANT\s+.*ON\s+\*'
+    reason: "Granting all permissions - please confirm"
+    flags: "i"
+```
+
+### Adding Custom Paths
+
+```yaml
+zeroAccessPaths:
+  - "/app/secrets/"
+  - "private/"
+  - ".env.*.local"
+
+readOnlyPaths:
+  - "docker-compose.prod.yml"
+  - ".github/workflows/deploy.yml"
+
+noDeletePaths:
+  - "database/migrations/"
+  - "infrastructure/"
+```
+
+### Regex Patterns Explained
+
+Patterns use JavaScript regular expressions:
+
+```javascript
+// Simple pattern - exact match
+'\brm\s+-rf'           // Word boundary, literal "rm", space, "-rf"
+
+// Multiple options - use |
+'(DROP|TRUNCATE)\s+TABLE'   // Matches DROP TABLE or TRUNCATE TABLE
+
+// Character class
+'[Dd]elete\s+from'     // Matches "Delete from" or "delete from"
+
+// Escaped special characters
+'\*\.pem'              // Matches *.pem
+
+// Anchors
+'^sudo\s+'             // Only at start of command
+```
+
+**Common flags:**
+- `i` - Case insensitive matching
+- No flags - Case sensitive (default)
+
+### Testing Custom Patterns
+
+Before deploying, test your regex:
+
+```bash
+# Test in Node.js
+node -e "
+const pattern = /\brm\s+-rf\s+/;
+console.log(pattern.test('rm -rf /'));     // Should be: true
+console.log(pattern.test('rm -f file'));   // Should be: false
+"
+```
+
+## Troubleshooting Setup
+
+### Issue: "Scripts not found"
+
+Error: `Script not found: .agileflow/scripts/damage-control-bash.js`
+
+**Solution:**
+```bash
+# Reinstall AgileFlow scripts
+npx agileflow@latest update
+
+# Or repair damaged scripts
+node .agileflow/scripts/agileflow-configure.js --repair
+```
+
+### Issue: "Settings.json invalid"
+
+Error: `Cannot parse .claude/settings.json`
+
+**Solution:**
+```bash
+# Backup the broken file
+cp .claude/settings.json .claude/settings.json.broken
+
+# Try to auto-migrate
+node .agileflow/scripts/agileflow-configure.js --migrate
+
+# If that fails, start fresh
+rm .claude/settings.json
+/agileflow:configure damagecontrol
+```
+
+### Issue: "Hooks not working after restart"
+
+Problem: Commands run despite damage control being enabled
+
+**Solution:**
+1. Verify hooks are in settings.json:
+   ```bash
+   grep -c "damage-control" .claude/settings.json
+   ```
+   Should show 3 (bash, edit, write hooks)
+
+2. Check patterns file exists:
+   ```bash
+   ls -la .agileflow/config/damage-control-patterns.yaml
+   ```
+
+3. Restart Claude Code again (sometimes needs 2 restarts)
+
+4. Test with a simple command:
+   ```bash
+   rm -rf /
+   # Should see [BLOCKED] message
+   ```
+
+### Issue: "Command is blocked but shouldn't be"
+
+Problem: Legitimate command is being blocked
+
+**Solution:**
+1. Find the blocking pattern:
+   ```bash
+   grep -n "pattern.*:" .agileflow/config/damage-control-patterns.yaml | head -20
+   ```
+
+2. Test the pattern that matched:
+   ```bash
+   node -e "
+   const cmd = 'your-command-here';
+   const pattern = /your-pattern-here/;
+   console.log(pattern.test(cmd));
+   "
+   ```
+
+3. Make pattern more specific or move to askPatterns
+4. Restart Claude Code
+
+## Managing Damage Control
+
+### View Current Status
+
+```bash
+# Show all protection settings
+node .agileflow/scripts/agileflow-configure.js --detect
+```
+
+Output includes:
+- Protection level (Standard/Enhanced)
+- Number of patterns by type
+- Protected paths count
+- Configuration file locations
+
+### Update Patterns
+
+Edit and save `.agileflow/config/damage-control-patterns.yaml`:
+
+```bash
+# Edit patterns
+vi .agileflow/config/damage-control-patterns.yaml
+
+# No restart needed - patterns are reloaded on each command
+```
+
+### Temporarily Disable
+
+```bash
+# Disable all damage control
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+
+# Restart Claude Code
+
+# Re-enable later
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+### Disable Single Hook
+
+Edit `.claude/settings.json` and remove the specific matcher:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      // Remove the Bash hook
+      // But keep Edit and Write hooks
+    ]
+  }
+}
+```
+
+## Best Practices
+
+### Before Production
+
+- [ ] Test all blocked patterns with actual commands
+- [ ] Review protected paths are correct
+- [ ] Document why each pattern exists
+- [ ] Commit patterns to version control
+- [ ] Test with team members
+- [ ] Create runbook for disabling if needed
+
+### During Operation
+
+- [ ] Monitor what gets blocked
+- [ ] Review blocks weekly
+- [ ] Adjust overly broad patterns
+- [ ] Keep patterns documented
+- [ ] Share patterns with team
+- [ ] Update as threats evolve
+
+### Maintenance
+
+- [ ] Quarterly pattern review
+- [ ] Remove obsolete patterns
+- [ ] Add new threats as discovered
+- [ ] Test new patterns before deploying
+- [ ] Keep AgileFlow updated
+- [ ] Backup patterns to git
+
+## Next Steps
+
+After setup is complete:
+
+1. **Verify protection**: Test blocking a dangerous command
+2. **Customize patterns**: Add project-specific rules
+3. **Document**: Record what's protected and why
+4. **Team communication**: Explain to team what's protected
+5. **Monitor**: Watch for patterns that need adjustment
+
+See [Damage Control Reference](/features/damage-control) for complete documentation.
+
+## Getting Help
+
+If you encounter issues:
+
+1. Check [Damage Control troubleshooting](/features/damage-control#troubleshooting)
+2. Review your patterns file for issues
+3. Run with `--help` to see all options:
+   ```bash
+   node .agileflow/scripts/agileflow-configure.js --help
+   ```
+4. Check logs:
+   ```bash
+   cat .claude/hook.log
+   ```

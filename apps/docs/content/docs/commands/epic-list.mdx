@@ -1,0 +1,197 @@
+---
+title: /epic:list
+description: List all epics with status and progress tracking
+---
+
+# /epic:list
+
+Display all epics with status, progress tracking, and quick action options.
+
+## Quick Start
+
+```bash
+/agileflow:epic:list
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STATUS` | No | - | Filter by status: `active`, `complete`, `on-hold` |
+
+## Examples
+
+### List All Epics
+
+```bash
+/agileflow:epic:list
+```
+
+Shows all epics with their status and story completion percentage.
+
+### List Only Active Epics
+
+```bash
+/agileflow:epic:list STATUS=active
+```
+
+Filters to show only epics currently in progress.
+
+### List Only Completed Epics
+
+```bash
+/agileflow:epic:list STATUS=complete
+```
+
+Shows epics that have all stories completed.
+
+## Output Format
+
+The command displays epics in a structured table:
+
+```markdown
+## Epics
+
+| Epic | Title | Status | Progress | Owner |
+|------|-------|--------|----------|-------|
+| EP-0003 | User Dashboard | active | 2/5 (40%) | AG-UI |
+| EP-0002 | Authentication | active | 4/6 (67%) | AG-API |
+| EP-0001 | Core Setup | complete | 3/3 (100%) | AG-DEVOPS |
+
+---
+**Summary**: 3 epics (2 active, 1 complete)
+**Stories**: 9/14 complete (64%)
+```
+
+## Status Definitions
+
+| Status | Meaning | Progress Bar | Action |
+|--------|---------|------|--------|
+| **active** | In progress, accepting new stories | Partial fill | Continue work, add stories |
+| **complete** | All stories done | Full (100%) | View summary, possibly reopen |
+| **on-hold** | Paused, not currently worked on | Frozen | Resume or close |
+
+## Progress Visualization
+
+Progress is shown as:
+- **Numerator**: Completed stories
+- **Denominator**: Total stories in epic
+- **Percentage**: Overall completion
+
+Example: `4/6 (67%)` = 4 stories done, 2 remaining, 67% complete
+
+## Quick Actions
+
+After displaying the list, you can:
+
+### View Epic Details
+
+Select an epic to see:
+- All stories grouped by status (in_progress, ready, done)
+- Progress visualization
+- Owner and goal
+- Related research and ADRs
+
+```bash
+/agileflow:epic:view EPIC=EP-0003
+```
+
+### Add Story to Epic
+
+Create a new story under an existing epic:
+
+```bash
+/agileflow:story EPIC=EP-0003 ...
+```
+
+### Create New Epic
+
+Start a new feature epic:
+
+```bash
+/agileflow:epic TITLE="..." ...
+```
+
+## Workflow Integration
+
+### Sprint Planning
+
+```bash
+/agileflow:epic:list STATUS=active
+# See which epics are in progress
+/agileflow:epic:view EPIC=EP-0003
+# Review stories and their status
+/agileflow:sprint
+# Plan which stories to work on
+```
+
+### Quarterly Planning
+
+```bash
+/agileflow:epic:list
+# See all epics and their progress
+# Identify bottlenecks (epics with <50% progress)
+# Decide which epics to prioritize next
+```
+
+### Completion Tracking
+
+```bash
+/agileflow:epic:list STATUS=active
+# Work on remaining stories in in-progress epics
+/agileflow:epic:list STATUS=complete
+# Review what was shipped
+```
+
+### On-Hold Epics
+
+```bash
+/agileflow:epic:list STATUS=on-hold
+# Check if any on-hold epics can be resumed
+/agileflow:epic:view EPIC=EP-0002
+# Understand why it's on hold
+```
+
+## Interpreting Results
+
+### High Progress (>80%)
+
+```
+EP-0002 | Authentication | active | 5/6 (83%) | AG-API
+```
+
+- Epic is nearly complete
+- Focus on finishing last story
+- Plan next epic to start
+- Don't close until 100%
+
+### Medium Progress (40-80%)
+
+```
+EP-0003 | User Dashboard | active | 3/7 (43%) | AG-UI
+```
+
+- Epic is in mid-sprint
+- May need additional stories
+- Check if stories are blocked
+- Consider adding resources
+
+### Low Progress (<40%)
+
+```
+EP-0001 | Onboarding Flow | active | 1/8 (12%) | AG-UI
+```
+
+- Epic just started
+- Ramp-up in progress
+- Monitor for blockers
+- May want to add more stories
+
+## Related Commands
+
+- [`/epic:view`](/commands/epic-view) - View epic details with all stories
+- [`/epic`](/commands/epic) - Create new epic
+- [`/story:list`](/commands/story-list) - View all stories with filters
+- [`/board`](/commands/board) - Visual kanban board view
+- [`/sprint`](/commands/sprint) - Sprint planning
+- [`/metrics`](/commands/metrics) - Progress analytics

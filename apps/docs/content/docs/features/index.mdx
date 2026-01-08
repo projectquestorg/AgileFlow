@@ -1,0 +1,216 @@
+---
+title: Features
+description: Learn about AgileFlow features for protecting and automating your development workflow.
+---
+
+# Features
+
+AgileFlow includes powerful features to protect your codebase, automate workflows, and keep your team productive.
+
+## Protection & Safety
+
+### Damage Control
+
+Prevent destructive or dangerous commands from running automatically. Uses Claude Code's PreToolUse hooks to validate commands before execution.
+
+- **Bash command validation** - Block dangerous patterns like `rm -rf /`, `git push --force`
+- **File access control** - Protect secrets, keys, and critical files
+- **Customizable rules** - Add project-specific protection patterns
+- **Ask-first mode** - Require confirmation for risky (but valid) operations
+
+[Learn about Damage Control](/features/damage-control)
+
+[Setup Guide](/features/damage-control-setup)
+
+## Workflow Automation
+
+### Status Line
+
+Display your current work in progress, project status, and cost tracking in Claude Code's status bar.
+
+- **Real-time updates** - Shows current story, WIP count, completion percentage
+- **Customizable components** - Show/hide metrics you care about
+- **Git integration** - Display branch status and changes
+- **Cost tracking** - Monitor API costs if enabled
+
+Configure with `/agileflow:configure --enable=statusline`
+
+### Archival System
+
+Automatically manage your project status by archiving completed stories.
+
+- **Auto-archival** - Stories completed 7+ days ago are automatically archived
+- **Organized history** - Archives organized by month
+- **Performance** - Keeps `status.json` small and fast
+- **Preserves data** - All archives remain accessible
+
+Configure with `/agileflow:configure --enable=archival`
+
+### Session Management
+
+Create isolated work sessions with automatic context management.
+
+- **Session isolation** - Work on multiple epics in parallel
+- **Git worktrees** - Automatic branch management
+- **State tracking** - Remember what you were doing
+- **Session history** - Review past sessions
+
+Start with `/agileflow:session:new EPIC=EP-0001`
+
+## Development Hooks
+
+### SessionStart Hook
+
+Runs when Claude Code starts, giving you project status and environment info.
+
+- **Welcome message** - See project name and description
+- **Environment check** - Verify Node.js, git, required tools
+- **Status summary** - View project health and active work
+- **Customizable** - Add your own startup routines
+
+Enable with `/agileflow:configure --enable=sessionstart`
+
+### PreCompact Hook
+
+Runs before context compression, preserving important state.
+
+- **State preservation** - Keeps story status during compression
+- **Selective compression** - Remove only verbose data
+- **Automatic** - Runs without manual intervention
+
+Enable with `/agileflow:configure --enable=precompact`
+
+### Stop Hooks
+
+Run when Claude Code pauses or completes.
+
+**RalphLoop** - Auto-improve conversation patterns
+**SelfImprove** - Update agent expertise after work
+
+Enable with `/agileflow:configure --enable=ralphloop,selfimprove`
+
+## Data Management
+
+### Context Export
+
+Export full project context for sharing, backup, or external processing.
+
+- **Complete export** - All stories, epics, decisions, research
+- **Multiple formats** - JSON, Markdown, or structured output
+- **Selective** - Choose what to include
+- **Portable** - Use in other systems
+
+Use with `/agileflow:context:export`
+
+### Research System
+
+Maintain a research knowledge base alongside development.
+
+- **Organized notes** - Research organized by date
+- **Searchable** - Find previous research quickly
+- **Indexed** - Links to related stories and epics
+- **Exportable** - Share research with team
+
+Use with `/agileflow:research:ask` and `/agileflow:research:import`
+
+## Skills & Knowledge
+
+### Custom Skills System
+
+Create, manage, and continuously improve custom AI prompts that learn from your feedback.
+
+- **Research-backed creation** - Generated from web docs, local documentation, and your codebase
+- **Cookbook workflows** - Multiple use-case specific guides in a single skill
+- **Self-improving** - Skills learn from your corrections and refine automatically
+- **MCP integration** - Connect to Model Context Protocol servers for tool access
+- **Team shareable** - Commit to git and share institutional knowledge
+
+[Learn about Skills System](/features/skills)
+
+Use with `/agileflow:skill:create`, `/agileflow:skill:list`, `/agileflow:skill:edit`, `/agileflow:skill:test`, and `/agileflow:skill:upgrade`
+
+## Project Intelligence
+
+### Metrics & Analytics
+
+Track your project's health and velocity.
+
+- **Story metrics** - Count, completion rate, time to completion
+- **Velocity tracking** - Stories per sprint
+- **Quality metrics** - Test coverage, bug counts
+- **Trend analysis** - See improvement over time
+
+View with `/agileflow:metrics`
+
+### Impact Analysis
+
+Understand how changes affect your system.
+
+- **Dependency mapping** - See what depends on what
+- **Risk assessment** - Identify high-impact changes
+- **Scope estimation** - Better understand feature size
+- **Breaking change detection** - Warn about incompatibilities
+
+Analyze with `/agileflow:impact`
+
+## Configuration
+
+All features are configured through the `/agileflow:configure` command:
+
+```bash
+/agileflow:configure              # Interactive configuration wizard
+/agileflow:configure --detect     # See current settings
+/agileflow:configure --upgrade    # Update to latest versions
+```
+
+### Feature Management
+
+Enable individual features:
+
+```bash
+# Enable specific features
+--enable=damagecontrol,statusline,archival
+
+# Disable features
+--disable=statusline
+
+# Apply preset profiles
+--profile=full     # All features
+--profile=basic    # Essential only
+--profile=minimal  # SessionStart + archival
+--profile=none     # Disable all
+```
+
+### Customization
+
+Customize feature behavior:
+
+```bash
+# Archival settings
+--archival-days=30
+
+# Status line components
+--show=story,wip,context
+--hide=model,cost,git
+```
+
+## Quick Reference
+
+| Feature | Enable Command | Purpose |
+|---------|---|---------|
+| Damage Control | `--enable=damagecontrol` | Block dangerous commands |
+| Status Line | `--enable=statusline` | Show project status |
+| Archival | `--enable=archival` | Auto-archive completed stories |
+| SessionStart | `--enable=sessionstart` | Welcome message & status |
+| PreCompact | `--enable=precompact` | State preservation |
+| RalphLoop | `--enable=ralphloop` | Auto-improve patterns |
+| SelfImprove | `--enable=selfimprove` | Update expertise |
+
+## Next Steps
+
+1. **Start with Damage Control** - Protect your codebase immediately
+2. **Enable Status Line** - Get real-time project visibility
+3. **Configure Archival** - Keep your status organized
+4. **Customize** - Adjust settings for your workflow
+
+See individual feature pages for setup and usage details.

@@ -11,8 +11,65 @@ AgileFlow includes **27 specialized agents**, each an expert in their domain. Ag
 
 1. **Expertise-First**: Each agent loads their expertise file to understand your codebase patterns
 2. **Context-Aware**: Agents read project docs, status.json, and recent changes
-3. **Collaborative**: Agents communicate via the message bus and update story status
-4. **Self-Improving**: Agents update their expertise after completing work
+3. **Context Preservation**: Enhanced agents use compact_context configuration to preserve critical knowledge during conversation compaction
+4. **Collaborative**: Agents communicate via the message bus and update story status
+5. **Self-Improving**: Agents update their expertise after completing work
+
+## Compact Context Feature
+
+To maintain focus during long conversations, AgileFlow agents use **compact_context** configuration to preserve critical information when context is automatically compacted. This ensures agents don't lose important rules, state, and priorities mid-conversation.
+
+### How It Works
+
+Each agent has a `compact_context` configuration with three components:
+
+**Priority Level**: Determines how aggressively the agent's context is preserved
+- `critical` - Always preserved (highest priority agents like mentor, api, ui)
+- `high` - Preserved in most compactions (important agents)
+- `medium` - Preserved when possible (standard agents)
+- `low` - First to be removed (rare, used for advisory agents)
+
+**Preserve Rules**: Core behavioral rules that must never be lost
+- Agent identity and role
+- Critical constraints and safety rules
+- Must-follow procedures (e.g., "Load expertise first")
+- State management requirements
+- Coordination protocols
+
+**State Fields**: Dynamic state that changes during work
+- Current story being implemented (US-#### ID)
+- Task progress and completion percentage
+- Known blockers and dependencies
+- Next prioritized actions
+- Test/build status
+
+### Example Configuration
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Read packages/cli/src/core/experts/api/expertise.yaml"
+    - "VERIFY TEST BASELINE: Check test_status before starting"
+    - "PRIORITIZE AG-UI BLOCKERS: Unblock UI stories waiting on API endpoints"
+    - "DIFF-FIRST APPROACH: Show edits with confirmation before applying"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+When Claude Code compresses context, it preserves these rules and state fields for all agents, ensuring continuity even after multiple rounds of conversation compaction.
+
+### Agent Priority Distribution
+
+- **Critical** (2 agents): mentor, api
+- **High** (8 agents): ui, database, ci, devops, testing, security, documentation, performance
+- **Medium** (15 agents): database, datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater
+- **Low** (2 agents): epic-planner, orchestrator
+
+This tiered approach ensures the most critical agents always maintain focus while others gracefully degrade context when needed.
 
 ## Agent Categories
 

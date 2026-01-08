@@ -1,0 +1,243 @@
+---
+title: /epic:view
+description: View epic details with stories and contextual actions
+---
+
+# /epic:view
+
+View full epic details including all stories grouped by status and context-aware actions.
+
+## Quick Start
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID (e.g., EP-0001) |
+
+## Examples
+
+### View Specific Epic
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+Displays complete epic information with all stories and context-aware actions.
+
+### Interactive Selection
+
+```bash
+/agileflow:epic:view
+```
+
+Without EPIC parameter, shows recent epics and asks you to select one.
+
+## Output Format
+
+### Epic Overview
+
+```markdown
+## EP-0002: Authentication System
+
+**Status**: active
+**Owner**: AG-API
+**Goal**: Implement secure user authentication with OAuth and sessions
+**Created**: 2024-12-20
+**Updated**: 2024-12-28
+
+**Progress**: 4/6 stories complete (67%)
+
+███████████████░░░░░░░ 67%
+```
+
+### Stories Grouped by Status
+
+```markdown
+### In Progress (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0012 | Session management | AG-API | 4h |
+
+### Ready (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0013 | Remember me feature | AG-UI | 2h |
+
+### Done (4)
+| Story | Title | Owner | Completed |
+|-------|-------|-------|-----------|
+| US-0011 | OAuth Google login | AG-API | 2024-12-27 |
+| US-0010 | Login form UI | AG-UI | 2024-12-26 |
+| US-0009 | User model | AG-API | 2024-12-25 |
+| US-0008 | Auth API setup | AG-API | 2024-12-24 |
+```
+
+### Related Documentation
+
+```markdown
+### Related
+- **Research**: [OAuth Best Practices](../10-research/20241220-oauth.md)
+- **ADR**: [ADR-0002: Use NextAuth](../03-decisions/adr-0002.md)
+```
+
+## Context-Aware Actions
+
+Actions change based on epic progress:
+
+### For Low Progress Epics (<50%)
+
+When progress is below 50%:
+
+```
+This epic is 40% complete. What would you like to do?
+```
+
+Options:
+- **Add more stories**: Epic may need additional work items
+- **Start work on a ready story**: Begin implementing
+- **Plan sprint for this epic**: Schedule stories
+- **Back to epic list**: Return to full list
+
+### For Medium Progress Epics (50-99%)
+
+When progress is between 50% and 99%:
+
+```
+This epic is 67% complete. What would you like to do?
+```
+
+Options:
+- **Work on remaining stories** (Recommended): Focus on completing
+- **View story details**: Check specific story
+- **Add more stories**: Epic scope may have grown
+- **Mark epic as complete**: If remaining work is deferred
+
+### For Completed Epics (100%)
+
+When all stories are done:
+
+```
+This epic is 100% complete! What would you like to do?
+```
+
+Options:
+- **Close epic** (Recommended): Mark as complete in status.json
+- **View completion summary**: See what was delivered
+- **Add follow-up stories**: Epic needs more work after all
+- **Back to epic list**: Return to /agileflow:epic:list
+
+### For On-Hold Epics
+
+When epic is paused:
+
+```
+This epic is on hold. What would you like to do?
+```
+
+Options:
+- **Resume epic**: Change status back to active
+- **View why it's on hold**: Check blockers or notes
+- **Close epic**: No longer needed
+- **Back to epic list**: Return to /agileflow:epic:list
+
+## Typical Workflows
+
+### Continue Working on Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 67% complete)
+2. Select "Work on remaining stories"
+3. See ready stories
+4. Select a story
+5. /agileflow:story:view STORY=<selected>
+6. Start implementation
+```
+
+### Finish Epic at End of Sprint
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 95% complete)
+2. Work through remaining stories
+3. When all done:
+4. Select "Close epic"
+5. Epic marked as complete
+6. Start next epic
+```
+
+### Unblock On-Hold Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0003
+   (Epic is on-hold)
+2. Check blockers
+3. If resolved: "Resume epic"
+4. Epic changed back to active
+5. Continue work
+```
+
+### Expand Epic with More Work
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 85% complete)
+2. Realize more work is needed
+3. Select "Add more stories"
+4. /agileflow:story EPIC=EP-0002 ...
+5. Create new stories
+6. Update epic progress
+```
+
+## Story Status Meanings
+
+In the epic view, stories are grouped by status:
+
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| **in_progress** | Currently being worked on | Continue work or mark as blocked |
+| **ready** | Ready to start | Pick one and begin implementation |
+| **done** | Completed and tested | Move to next epic |
+
+## Progress Interpretation
+
+### What the percentage means
+
+```
+4/6 (67%) = 4 stories done, 2 remaining, 67% complete
+```
+
+- 0-25%: Epic just started
+- 25-50%: Ramping up, mid-sprint
+- 50-75%: Most work identified
+- 75-100%: Final push to completion
+
+### When to Add More Stories
+
+Consider adding stories if:
+- Progress is plateauing (stuck at same percentage)
+- Team is blocked waiting for dependencies
+- New requirements emerged
+
+### When to Close Epic
+
+Close when:
+- All stories are marked as `done`
+- Acceptance criteria are met
+- Ready to move to next epic
+
+## Related Commands
+
+- [`/epic:list`](/commands/epic-list) - View all epics
+- [`/epic`](/commands/epic) - Create new epic
+- [`/story:list`](/commands/story-list) - View all stories
+- [`/story:view`](/commands/story-view) - View story details
+- [`/story`](/commands/story) - Create story in epic
+- [`/status`](/commands/status) - Update story status
+- [`/sprint`](/commands/sprint) - Sprint planning
+- [`/board`](/commands/board) - Kanban view

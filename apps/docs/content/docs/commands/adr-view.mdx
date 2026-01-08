@@ -1,0 +1,236 @@
+---
+title: /adr:view
+description: View ADR details with contextual actions based on ADR status
+---
+
+# /adr:view
+
+View full ADR details and take context-aware actions based on the ADR's current status.
+
+## Quick Start
+
+```bash
+/agileflow:adr:view NUMBER=0042
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | ADR number (4-digit, e.g., 0042) |
+
+## Examples
+
+### View Specific ADR
+
+```bash
+/agileflow:adr:view NUMBER=0003
+```
+
+Displays the full content of ADR-0003 and offers context-aware actions.
+
+### Interactive Selection
+
+```bash
+/agileflow:adr:view
+```
+
+Without NUMBER parameter, shows recent ADRs and asks you to select one.
+
+## Output Format
+
+Each ADR view includes:
+
+### Header Information
+
+```markdown
+## ADR-0042: Use PostgreSQL for Persistence
+
+**Status**: accepted
+**Date**: 2024-12-28
+**Tags**: database, architecture
+```
+
+### Sections
+
+1. **Context**: Explains why this decision was needed
+   - Problem or constraint that triggered the decision
+   - Business drivers and technical requirements
+   - Alternative options that were considered
+
+2. **Decision**: What was chosen and why
+   - Clear statement of the decision
+   - Rationale for this choice over alternatives
+   - Specific versions or configurations if relevant
+
+3. **Consequences**: Trade-offs and impacts
+   - **Positive**: Benefits and improvements
+   - **Negative**: Costs, risks, learning curve
+   - Mitigation strategies if applicable
+
+4. **Related**: Links to research, stories, other ADRs
+   - Research that led to this decision
+   - Implementation stories created from this ADR
+   - Other ADRs this supersedes or is superseded by
+
+## Context-Aware Actions
+
+Actions change based on ADR status:
+
+### For Proposed ADRs
+
+When an ADR is still `proposed`, you can:
+- **Accept this ADR**: Mark as `accepted` and in effect
+- **Request changes**: Modify the proposal
+- **Reject this ADR**: Mark as `rejected` with reason
+
+### For Accepted ADRs (Recommended)
+
+When an ADR is `accepted`, you can:
+- **Create implementation stories**: Turn decision into actionable work
+- **Supersede with new ADR**: Replace with updated decision
+- **Deprecate this ADR**: Mark as no longer applicable
+- **View related research**: See research that led to decision
+
+### For Deprecated ADRs
+
+When an ADR is `deprecated`, you can:
+- **View deprecation history**: See why it was deprecated
+- **Reactivate this ADR**: Mark as `accepted` again if context changes
+- **View replacement ADR**: See what superseded this
+- **Back to ADR list**: Return to full list
+
+### For Superseded ADRs
+
+When an ADR is `superseded`, you can:
+- **View replacement ADR**: See the ADR that replaced this one
+- **View decision evolution**: Understand how this decision evolved
+- **Back to ADR list**: Return to full list
+
+## Typical Workflows
+
+### Approve Proposed Decision
+
+```
+1. /agileflow:adr:view NUMBER=0045
+   (See proposed architecture decision)
+2. Select "Accept this ADR"
+3. ADR status changes to accepted
+4. Select "Create implementation stories"
+5. Stories created in docs/06-stories/
+```
+
+### Implement Accepted Decision
+
+```
+1. /agileflow:adr:view NUMBER=0042
+   (See accepted architecture decision)
+2. Select "Create implementation stories"
+3. Stories created for implementing this decision
+4. Work on stories with /agileflow:babysit
+```
+
+### Track Decision Evolution
+
+```
+1. /agileflow:adr:view NUMBER=0010
+   (Old approach)
+2. See "Superseded by ADR-0035"
+3. Select "View replacement ADR"
+4. See how decision evolved over time
+```
+
+### Reconsider Deprecated Decision
+
+```
+1. /agileflow:adr:view NUMBER=0015
+   (Deprecated approach)
+2. Check why it was deprecated
+3. If context changed: "Reactivate this ADR"
+4. Mark as accepted again
+```
+
+## Example ADR Display
+
+```markdown
+## ADR-0042: Use PostgreSQL for Persistence
+
+**Status**: accepted
+**Date**: 2024-12-28
+**Tags**: database, architecture
+
+---
+
+### Context
+
+We need a reliable database with ACID guarantees for user data and transactions.
+The application handles financial transactions requiring strong consistency.
+Current SQLite implementation cannot scale to multiple servers.
+
+---
+
+### Decision
+
+We will use PostgreSQL as our primary database because:
+- Mature, well-tested ACID compliance
+- Excellent tooling and ecosystem
+- Team has existing experience
+- Supports advanced features (JSONB, full-text search)
+
+---
+
+### Consequences
+
+**Positive:**
+- Strong data integrity guarantees
+- Better performance at scale
+- Rich query capabilities
+- Team familiarity reduces learning curve
+
+**Negative:**
+- Requires managed database service or self-hosting
+- Team needs PostgreSQL-specific training
+- Migration effort from SQLite
+- Slightly higher operational complexity than NoSQL
+
+---
+
+### Related
+
+- [Research: Database Selection](../10-research/20241225-database-selection.md)
+- [US-0050: Database migration story](../06-stories/EP-0005/US-0050.md)
+- Supersedes: ADR-0010 (Use SQLite)
+```
+
+## Best Practices
+
+### When Reviewing an ADR
+
+- Read Context first to understand the problem
+- Review both positive and negative Consequences
+- Check Related section for implementation work
+- Look at decision evolution (if superseded)
+
+### When Deciding Whether to Implement
+
+Ask these questions:
+1. Is this ADR in `accepted` status?
+2. Do Positive consequences match our current needs?
+3. Are we prepared for Negative consequences?
+4. Do we have implementation capacity?
+
+### When ADR Status Changes
+
+Always use `/agileflow:adr:update` to document:
+- Why the status is changing
+- What triggered the change
+- Reference to replacement ADR (if superseded)
+
+## Related Commands
+
+- [`/adr:list`](/commands/adr-list) - View all ADRs
+- [`/adr`](/commands/adr) - Create new ADR
+- [`/adr:update`](/commands/adr-update) - Update ADR status
+- [`/epic`](/commands/epic) - Create implementation epic
+- [`/story`](/commands/story) - Create implementation story
+- [`/research:view`](/commands/research-view) - View related research

@@ -99,6 +99,31 @@ Task(
 - **Autonomous Commands**: Directly invokes /agileflow:impact-analysis, /agileflow:adr-new, etc.
 - **Bus Coordination**: Sends blocked message to AG-API if endpoint missing
 - **README Updates**: Proactively updates documentation after significant changes
+- **Context Preservation**: Uses compact_context (priority: high) to maintain focus during long conversations, preserving design system detection and API dependency tracking through context compaction
+
+## Compact Context Configuration
+
+The UI agent uses **high priority** compact_context to ensure design system and API dependencies stay in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ui/expertise.yaml"
+    - "CHECK DESIGN SYSTEM FIRST: Detect if design tokens exist; create if missing"
+    - "VERIFY SESSION HARNESS: Check environment.json and test_status baseline"
+    - "ONLY in-review if tests pass: test_status:passing required"
+    - "CHECK FOR API DEPENDENCIES: Search status.json for blocked UI stories"
+    - "APPLY UX LAWS: Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End, Doherty"
+    - "ACCESSIBILITY REQUIRED: WCAG 2.1 AA minimum"
+  state_fields:
+    - current_story
+    - design_system_status
+    - api_dependencies
+    - test_status_baseline
+```
+
+This ensures UI-critical rules (design system detection, accessibility standards, API blocker checking) and current state (which design tokens exist, what API endpoints are needed) persist through context compaction.
 
 ## Tools Available
 

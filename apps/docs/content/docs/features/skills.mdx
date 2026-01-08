@@ -1,0 +1,510 @@
+---
+title: Skills System
+description: Create, manage, and continuously improve custom AI prompts that learn from your feedback
+---
+
+# Skills System
+
+The Skills system lets you create and manage custom AI prompts that learn and improve over time. Skills are reusable, research-backed templates that combine your project's best practices, external documentation, and codebase patterns into focused, actionable guides for Claude.
+
+## What Are Skills?
+
+A **skill** is a structured prompt template that teaches Claude how to handle specific tasks in your project context. Skills are:
+
+- **Research-backed** - Generated from web docs, local documentation, and your codebase
+- **Self-improving** - Learn from your corrections and refine automatically
+- **Cookbook-based** - Multiple use-case workflows in a single skill
+- **Integrable** - Can include Model Context Protocol (MCP) servers for tool access
+
+### Example Skills
+
+You might create skills for:
+
+- **Database operations**: "Supabase Swift" - How to work with Supabase in your iOS app
+- **API patterns**: "REST API clients" - Best practices for your project's API integration pattern
+- **Component development**: "React components with accessibility" - How to build components following your standards
+- **Deployment**: "GitHub Actions CI/CD" - Your team's deployment and testing workflow
+- **Domain expertise**: "Machine Learning with TensorFlow" - Best practices specific to your ML projects
+
+## Core Concepts
+
+### Skill Structure
+
+Each skill contains:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file with activation triggers and instructions
+├── references.md         # Links to web docs, local docs, and code patterns
+├── cookbook/             # Per-use-case workflows
+│   ├── use-case-1.md
+│   └── use-case-2.md
+└── .mcp.json            # Optional MCP server configuration
+```
+
+### How Skills Work
+
+1. **Activation**: When you ask Claude about a topic matching a skill's triggers, the skill activates
+2. **Execution**: Claude reads SKILL.md and follows the instructions
+3. **Learning**: When you correct Claude, the skill learns your preferences
+4. **Evolution**: Each correction updates the learnings file, making the skill smarter
+
+### Learnings System
+
+Skills can improve automatically through a learnings system:
+
+```
+.agileflow/skills/_learnings/
+├── supabase-swift.yaml
+├── api-client.yaml
+└── react-components.yaml
+```
+
+Each learnings file tracks:
+- **Preferences** - What users prefer (formatting, style, approach)
+- **Conventions** - Project-specific patterns and standards
+- **Anti-patterns** - What to avoid
+- **Examples** - Good and bad examples from corrections
+
+## Creating Skills
+
+### Quick Start
+
+Create a skill with intelligent research:
+
+```bash
+/agileflow:skill:create
+```
+
+Or provide a hint:
+
+```bash
+/agileflow:skill:create supabase-swift
+```
+
+### How Creation Works
+
+The `/agileflow:skill:create` command performs comprehensive research:
+
+**Phase 1: Requirements**
+- You describe what you need (technology, use cases, framework)
+
+**Phase 2: Research**
+- **Web documentation** - Official docs, API references, tutorials
+- **Local documentation** - Your project's docs, architecture decisions, practices
+- **Codebase patterns** - Existing code examples and conventions
+- **MCP servers** - Available tools for the technology
+
+**Phase 3: Generation**
+The command generates:
+- **SKILL.md** - Main skill with activation triggers and cookbook
+- **references.md** - Documentation links and code patterns
+- **cookbook/** - Workflows for different use cases
+- **.mcp.json** - Server config (if applicable)
+
+**Phase 4: Confirmation**
+You see the generated structure and can create, edit, or cancel.
+
+## Managing Skills
+
+### List All Skills
+
+View your installed skills:
+
+```bash
+/agileflow:skill:list
+```
+
+Shows:
+- Skill names and descriptions
+- Supported use cases
+- MCP integration status
+- File count
+
+### Edit Skills
+
+Modify an existing skill:
+
+```bash
+/agileflow:skill:edit <skill-name>
+```
+
+You can:
+- Update SKILL.md instructions
+- Add new cookbook entries
+- Update references and documentation links
+- Rename the skill
+- Do a full rewrite with fresh research
+
+### Test Skills
+
+Verify a skill works correctly:
+
+```bash
+/agileflow:skill:test <skill-name>
+```
+
+Tests:
+- **Structure validation** - All required files present
+- **Content validation** - Proper formatting and size
+- **Activation test** - Skill activates on sample prompts
+- **MCP configuration** - Valid server setup
+
+### Delete Skills
+
+Remove a skill when no longer needed:
+
+```bash
+/agileflow:skill:delete <skill-name>
+```
+
+### Upgrade Skills
+
+Add learning capability to older skills:
+
+```bash
+/agileflow:skill:upgrade <skill-name>
+```
+
+Or upgrade all at once:
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+Creates a learnings file that tracks corrections and improvements.
+
+## The Learnings System
+
+### What Skills Learn
+
+When you use a skill and correct Claude's output, the skill learns:
+
+1. **Explicit corrections** - High confidence learnings from direct feedback
+2. **Approved responses** - Medium confidence learnings from approvals
+3. **Patterns** - Low confidence observations for review
+
+### Learning File Format
+
+Each skill has an optional learnings file at `.agileflow/skills/_learnings/<skill>.yaml`:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-08T10:30:00Z
+
+preferences:
+  code_style: "swift-concurrency"
+  error_handling: "Result<T, Error>"
+  async_patterns: "async/await"
+
+conventions:
+  naming: "camelCase for variables, PascalCase for types"
+  structure: "Separate data, service, and UI layers"
+  testing: "Unit tests required for all public APIs"
+
+anti_patterns:
+  - "Avoid callback patterns (use async/await instead)"
+  - "Never hardcode API keys in code"
+
+examples:
+  good:
+    - "let user = try await supabase.auth.user()"
+  bad:
+    - "var apiKey = 'sk-...' // Never do this"
+
+metadata:
+  corrections_count: 12
+  approvals_count: 8
+  last_correction: 2025-01-08T10:30:00Z
+```
+
+### How Self-Improvement Works
+
+**On invocation:**
+1. Claude checks if a learnings file exists
+2. Reads preferences, conventions, and anti-patterns
+3. Applies them while executing the skill
+
+**On correction:**
+1. You provide feedback or correction
+2. Claude extracts the signal (what to change)
+3. Determines confidence level (high/medium/low)
+4. Updates the learnings file
+5. Next invocation uses the updated preferences
+
+## Best Practices
+
+### Creating Effective Skills
+
+1. **Use specific names** - `supabase-swift` not just `database`
+2. **Include multiple use cases** - Add cookbook entries for different scenarios
+3. **Link to project patterns** - Reference your codebase conventions
+4. **Add troubleshooting** - Anticipate and address common issues
+5. **Keep it focused** - One domain per skill, not too broad
+
+### Maintaining Skills
+
+1. **Test regularly** - Use `/agileflow:skill:test` to verify quality
+2. **Review learnings** - Check what the skill learned from corrections
+3. **Update references** - Keep documentation links current
+4. **Archive unused skills** - Clean up skills you no longer use
+5. **Share improvements** - Commit learnings to git for team consistency
+
+### Organizing Skills
+
+**Suggested skill categories:**
+
+- **Data layer** - Database operations, migrations, queries
+- **API layer** - REST clients, GraphQL, webhooks, authentication
+- **UI layer** - Components, styling, accessibility, animations
+- **Infrastructure** - Deployment, CI/CD, monitoring, security
+- **Workflows** - Testing, code review, debugging, profiling
+- **Domain** - ML models, image processing, payment processing
+
+## Cookbook Workflows
+
+### What Is a Cookbook?
+
+A cookbook entry is a step-by-step guide for a specific use case within a skill.
+
+### Cookbook Template
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```language
+   code example
+   ```
+
+2. **Step 2**: Next step
+   ```language
+   code example
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### When to Add Cookbooks
+
+Add cookbook entries when:
+- Multiple common use cases exist
+- Different workflows apply
+- Setup differs between scenarios
+- Users frequently ask for step-by-step guidance
+
+## MCP Integration
+
+Skills can integrate with Model Context Protocol servers for tool access.
+
+### What Is MCP?
+
+MCP servers extend Claude's capabilities by providing:
+- Real-time data access
+- Tool execution (file operations, network calls)
+- System integration (APIs, databases)
+- Specialized knowledge (documentation, code tools)
+
+### Using MCP in Skills
+
+If an MCP server is found during creation, the skill includes `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+The skill then documents:
+- Tools provided by the server
+- Setup instructions
+- Environment variables needed
+- Integration examples
+
+## Skill Lifecycle
+
+### Creation
+
+1. Run `/agileflow:skill:create`
+2. Describe what you need
+3. Command researches best practices
+4. Review generated skill
+5. Create the skill
+
+### Usage
+
+1. Work on tasks matching the skill's domain
+2. Claude activates the skill automatically
+3. Skill provides guidance and examples
+4. You execute the skill's recommendations
+
+### Improvement
+
+1. When Claude's output misses something, correct it
+2. Skill learns from the correction
+3. Next time, skill provides better guidance
+4. Use `/agileflow:skill:upgrade` to enable learning
+
+### Evolution
+
+1. Over time, skills become more tailored
+2. Learnings file captures project-specific patterns
+3. New team members inherit the knowledge
+4. Skills become institutional memory
+
+## Sharing Skills
+
+### Export a Skill
+
+Copy a skill directory to share:
+
+```bash
+cp -r .claude/skills/my-skill /path/to/share/
+```
+
+### Import a Skill
+
+Copy to your skills directory:
+
+```bash
+cp -r /path/to/skill .claude/skills/
+```
+
+### Version Control
+
+Commit skills to git (include learnings):
+
+```bash
+git add .claude/skills/
+git add .agileflow/skills/_learnings/
+git commit -m "Add supabase-swift skill with learnings"
+```
+
+Team members automatically get the skill and learnings.
+
+## Troubleshooting
+
+### Skill Not Activating
+
+**Problem**: You ask about the skill's topic but Claude doesn't activate it.
+
+**Solution**:
+1. Check the "When to Use" section in SKILL.md
+2. Make sure your question matches the activation triggers
+3. Use `/agileflow:skill:test` to verify the skill structure
+4. Edit the skill to add more keywords if needed
+
+### MCP Server Not Found
+
+**Problem**: During creation, "MCP server not found" appears.
+
+**Solution**:
+1. You can create the skill without MCP and add it later
+2. Manually set up `.mcp.json` after creation
+3. Check if the server is published (npm, GitHub, etc.)
+
+### Learnings File Missing
+
+**Problem**: Skill doesn't improve even after corrections.
+
+**Solution**:
+1. Run `/agileflow:skill:upgrade <skill-name>`
+2. This creates the learnings file
+3. Future corrections will be tracked
+
+### Skill Validation Fails
+
+**Problem**: `/agileflow:skill:test` shows failures.
+
+**Solution**:
+1. Read the validation report for specific issues
+2. Use `/agileflow:skill:edit` to fix problems
+3. Test again to verify fixes
+
+## Advanced Usage
+
+### Creating Domain-Specific Skills
+
+Create multiple specialized skills for complex domains:
+
+```bash
+# Data layer skills
+/agileflow:skill:create postgresql-queries
+/agileflow:skill:create database-migrations
+
+# API layer skills
+/agileflow:skill:create rest-error-handling
+/agileflow:skill:create graphql-schema-design
+
+# UI layer skills
+/agileflow:skill:create accessibility-wcag
+/agileflow:skill:create react-performance
+```
+
+### Skill Composition
+
+Reference other skills within a skill:
+
+In SKILL.md:
+```markdown
+## Related Skills
+
+This skill works best with:
+- [REST API clients](/skills/api-client)
+- [Error handling patterns](/skills/error-handling)
+```
+
+### Customizing Learnings
+
+Manually edit the learnings file for advanced customization:
+
+```bash
+.agileflow/skills/_learnings/my-skill.yaml
+```
+
+Add project-specific conventions that don't require corrections.
+
+## Related Commands
+
+- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
+- [`/agileflow:skill:list`](/commands/skill-list) - View all installed skills
+- [`/agileflow:skill:edit`](/commands/skill-edit) - Modify an existing skill
+- [`/agileflow:skill:test`](/commands/skill-test) - Verify a skill works
+- [`/agileflow:skill:delete`](/commands/skill-delete) - Remove a skill
+- [`/agileflow:skill:upgrade`](/commands/skill-upgrade) - Add learning capability
+
+## Next Steps
+
+1. **Create your first skill** - Start with a technology you use frequently
+2. **Test it** - Use `/agileflow:skill:test` to verify it works
+3. **Use it** - Work on tasks and let the skill activate
+4. **Improve it** - Correct Claude's output to teach the skill
+5. **Share it** - Commit to git and team members get it
+
+Skills are your project's institutional memory. Over time, they encode your best practices and project-specific knowledge, making Claude more effective at helping you build.
