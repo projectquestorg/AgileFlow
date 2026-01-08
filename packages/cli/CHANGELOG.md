@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.78.0] - 2026-01-08
+
+### Added
+- Enhanced compact context preservation with damage control hooks
+
 ## [2.77.0] - 2026-01-01
 
 ### Added
