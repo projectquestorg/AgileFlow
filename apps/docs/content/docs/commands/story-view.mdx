@@ -1,0 +1,279 @@
+---
+title: /story:view
+description: View story details with contextual actions based on story status
+---
+
+# /story:view
+
+View full story details including acceptance criteria, tests, and dependencies with context-aware actions.
+
+## Quick Start
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0042) |
+
+## Examples
+
+### View Specific Story
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+Displays complete story information and offers context-aware actions.
+
+### Interactive Selection
+
+```bash
+/agileflow:story:view
+```
+
+Without STORY parameter, shows recent stories and asks you to select one.
+
+## Output Format
+
+### Story Overview
+
+```markdown
+## US-0042: User Login Form
+
+**Epic**: EP-0001 (Authentication System)
+**Status**: in_progress
+**Owner**: AG-UI
+**Estimate**: 3h
+**Created**: 2024-12-28
+**Updated**: 2024-12-30
+```
+
+### Acceptance Criteria
+
+```markdown
+### Acceptance Criteria
+
+- [x] Given a user on the login page
+      When they enter valid credentials
+      Then they are redirected to dashboard
+
+- [ ] Given a user on the login page
+      When they enter invalid credentials
+      Then they see an error message
+
+- [ ] Given a user on the login page
+      When they click "Forgot Password"
+      Then they are taken to password reset flow
+```
+
+### Dependencies
+
+```markdown
+### Dependencies
+
+- US-0040: API authentication endpoint (done)
+- US-0041: Session management (ready) ⚠️ Not started yet
+```
+
+### Test Status
+
+```markdown
+### Test Status
+
+| Test | Status |
+|------|--------|
+| Unit: LoginForm.test.tsx | passing |
+| Integration: auth-flow.test.ts | pending |
+| E2E: login.spec.ts | not created |
+```
+
+### Progress Notes
+
+```markdown
+### Progress Notes
+
+- 2024-12-30: Started form implementation
+- 2024-12-29: Design approved
+```
+
+## Context-Aware Actions
+
+Actions change based on story status:
+
+### For Ready Stories
+
+When a story is `ready` to start:
+
+```
+This story is ready to start. What would you like to do?
+```
+
+Options:
+- **Start working on this story** (Recommended): Mark as in_progress
+- **Validate story first**: Check if AC and dependencies are complete
+- **View related research**: Find research notes for this epic
+- **Back to story list**: Return to /agileflow:story:list
+
+### For In-Progress Stories
+
+When you're actively working on a story:
+
+```
+This story is in progress. What would you like to do?
+```
+
+Options:
+- **Mark as complete**: All AC done, move to done status
+- **Mark as blocked**: Hit a blocker, need help
+- **View/run tests**: Check test status for this story
+- **Add progress note**: Document current progress
+
+### For Blocked Stories
+
+When a story is blocked:
+
+```
+This story is blocked. What would you like to do?
+```
+
+Options:
+- **View blocker details**: See what's blocking this story
+- **Unblock and resume**: Blocker resolved, continue work
+- **Reassign story**: Assign to different owner
+- **Create research task**: Need to research the blocker
+
+### For Completed Stories
+
+When a story is done:
+
+```
+This story is complete. What would you like to do?
+```
+
+Options:
+- **View completion summary**: See what was delivered
+- **Reopen story**: Found issue, needs more work
+- **View next story in epic**: Continue with related work
+- **Back to story list**: Return to /agileflow:story:list
+
+## Typical Workflows
+
+### Start Implementation
+
+```
+1. /agileflow:story:view STORY=US-0042
+2. Review acceptance criteria
+3. Check dependencies (all done?)
+4. Select "Start working on this story"
+5. Story marked as in_progress
+6. Begin implementation with /agileflow:babysit
+```
+
+### Continue Work
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Story is in_progress)
+2. See current progress notes
+3. Review tests needing completion
+4. Continue implementation
+5. When done: Select "Mark as complete"
+```
+
+### Handle Blocker
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Blocked)
+2. See blocker details
+3. Create task to resolve (e.g., waiting for API)
+4. When resolved: Select "Unblock and resume"
+5. Continue work
+```
+
+### Reopen Story
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Story is done)
+2. In testing, found issue
+3. Select "Reopen story"
+4. Story changed back to in_progress
+5. Fix the issue
+6. Mark as complete again
+```
+
+## Understanding Story Dependencies
+
+The Dependencies section shows:
+
+- ✅ **done**: Dependency complete, can proceed
+- ⏳ **in_progress**: Dependency being worked on, check with owner
+- 🔶 **ready**: Dependency ready to start, may want to wait
+- 🚫 **blocked**: Dependency is blocked, can't proceed
+
+**Rule**: Don't start a story if its dependencies are blocked.
+
+## Test Status Interpretation
+
+### Passing Tests ✅
+
+```
+Unit: LoginForm.test.tsx | passing
+```
+
+Tests pass - feature is working correctly.
+
+### Pending Tests ⏳
+
+```
+Integration: auth-flow.test.ts | pending
+```
+
+Tests exist but haven't been run yet. Run with `/agileflow:verify`.
+
+### Missing Tests 🔴
+
+```
+E2E: login.spec.ts | not created
+```
+
+Tests need to be created. Add them during implementation.
+
+## Best Practices
+
+### Before Starting Work
+
+- [ ] Read all acceptance criteria
+- [ ] Verify all dependencies are done
+- [ ] Check if there's related research
+- [ ] Review progress notes from planning
+
+### During Work
+
+- [ ] Write/update tests as you code
+- [ ] Add progress notes periodically
+- [ ] Mark as blocked if you hit issues
+- [ ] Update AC checkboxes as you complete them
+
+### When Complete
+
+- [ ] All AC are checked
+- [ ] All new tests pass
+- [ ] Updated existing tests if needed
+- [ ] Consider creating next story if epic continues
+
+## Related Commands
+
+- [`/story:list`](/commands/story-list) - View all stories
+- [`/story`](/commands/story) - Create new story
+- [`/story-validate`](/commands/story-validate) - Validate story completeness
+- [`/status`](/commands/status) - Update story status
+- [`/babysit`](/commands/babysit) - Get help implementing
+- [`/verify`](/commands/verify) - Run and update test status
+- [`/blockers`](/commands/blockers) - Resolve blockers
+- [`/epic:view`](/commands/epic-view) - View parent epic

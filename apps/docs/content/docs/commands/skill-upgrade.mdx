@@ -1,0 +1,418 @@
+---
+title: /skill:upgrade
+description: Upgrade existing skills with self-improving learning capability
+---
+
+# /skill:upgrade
+
+Add self-improving capability to existing skills, enabling them to learn from corrections and user preferences.
+
+## Quick Start
+
+```bash
+/agileflow:skill:upgrade my-api-skill
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SKILL_NAME` | No | - | Name of the skill to upgrade (will prompt if not provided) |
+
+## Examples
+
+### Upgrade Specific Skill
+
+```bash
+/agileflow:skill:upgrade my-api-skill
+```
+
+Adds learning capability to the "my-api-skill" skill.
+
+### Interactive Selection
+
+```bash
+/agileflow:skill:upgrade
+```
+
+Without SKILL_NAME, lists available skills and asks you to select one.
+
+### Batch Upgrade All Skills
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+Upgrades all non-upgraded skills in one operation.
+
+## What Gets Added
+
+When you upgrade a skill, the command:
+
+1. **Creates learnings file**: `.agileflow/skills/_learnings/<skill>.yaml`
+2. **Adds learning section**: "Self-Improving Learnings" to SKILL.md
+3. **Updates instructions**: Prepends learning workflow steps
+4. **Preserves existing content**: Never deletes or replaces
+
+## The Learnings File
+
+Each upgraded skill gets a learnings file that stores:
+
+```yaml
+skill: my-api-skill
+version: 1
+last_updated: 2025-01-08T12:00:00Z
+
+preferences:
+  # User preferences learned from corrections
+
+conventions:
+  # Code patterns and conventions extracted from corrections
+
+anti_patterns:
+  # Things to avoid learned from corrections
+
+context:
+  # Project-specific learnings
+
+examples:
+  good: []
+  bad: []
+
+metadata:
+  corrections_count: 0
+  approvals_count: 0
+  created: 2025-01-08T12:00:00Z
+  sessions: []
+```
+
+### How Learnings Are Built
+
+1. **On Invocation**: Skill reads `.agileflow/skills/_learnings/<skill>.yaml`
+2. **Apply Learning**: Skill uses learned preferences and conventions
+3. **On Correction**: When you correct output, the signal is captured
+4. **Update File**: Learnings file is updated with the preference
+
+Over time, the skill becomes more personalized to your preferences.
+
+## Workflow
+
+### Step 1: Select Skill
+
+If not provided, lists available skills:
+
+```
+Which skill would you like to upgrade with self-improving capability?
+
+- my-api-skill - Generate API documentation from code
+- ui-components - Document React component APIs
+- database-schema - Create database schema docs
+```
+
+Select one to continue.
+
+### Step 2: Check Status
+
+The command checks if the skill is already upgraded:
+
+```
+✅ Skill "my-api-skill" already has self-improving capability!
+
+Learnings file: .agileflow/skills/_learnings/my-api-skill.yaml
+- 5 corrections recorded
+- 2 conventions learned
+- 1 anti-pattern identified
+```
+
+If already upgraded, shows current learnings and exits.
+
+### Step 3: Preview Changes
+
+Shows what will be added:
+
+```
+📦 Upgrade: my-api-skill
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Changes to be made:
+
+1. SKILL.md - Add sections:
+   - ## Self-Improving Learnings
+   - Update ## Instructions to include learning workflow
+
+2. Create new file:
+   - .agileflow/skills/_learnings/my-api-skill.yaml
+```
+
+### Step 4: Confirm
+
+Asks for confirmation:
+
+```
+Proceed with upgrade?
+
+- Yes, upgrade skill
+- Preview changes first (Recommended)
+- Cancel
+```
+
+### Step 5: Apply Upgrade
+
+Creates the learnings file and updates SKILL.md:
+
+```
+✅ Skill upgraded successfully!
+
+Modified: .claude/skills/my-api-skill/SKILL.md
+Created:  .agileflow/skills/_learnings/my-api-skill.yaml
+
+The skill will now:
+• Load learned preferences on each invocation
+• Extract signals from your corrections
+• Build up conventions over time
+• Avoid learned anti-patterns
+```
+
+## What Changed in SKILL.md
+
+### New Section Added
+
+```markdown
+## Self-Improving Learnings
+
+This skill learns from your corrections and preferences.
+
+**On invocation**:
+1. Check if `.agileflow/skills/_learnings/my-api-skill.yaml` exists
+2. If exists, read and apply learned preferences
+3. Follow conventions and avoid anti-patterns from learnings
+
+**On correction**:
+1. When user corrects output, extract the signal
+2. Determine confidence level:
+   - **high**: Explicit correction ("never do X", "always do Y")
+   - **medium**: User approved or pattern worked well
+   - **low**: Observation to review later
+3. Update the learnings file with new preference
+```
+
+### Instructions Section Updated
+
+The Instructions section now starts with learning workflow:
+
+```markdown
+## Instructions
+
+Step-by-step guidance for Claude:
+
+1. **Load learnings** (if exists):
+   - Read `.agileflow/skills/_learnings/my-api-skill.yaml`
+   - Apply preferences, conventions, and anti-patterns
+   - Skip if file doesn't exist (first run)
+
+2. **Execute skill**:
+   - Follow the instructions below with learned preferences applied
+   [... existing instructions ...]
+
+3. **If user corrects**:
+   - Extract signal from correction
+   - Update learnings file
+   - Continue with corrected approach
+```
+
+## How Skills Learn
+
+### Example: API Documentation Skill
+
+**Initial behavior** (no learnings):
+```
+Output format: JSON with all details
+Response includes private fields
+Includes all parameters even if rarely used
+```
+
+**After corrections:**
+```
+User corrects 3 times: "Don't include private fields"
+→ Preference added: "exclude: private_fields"
+
+User corrects: "Use simpler format, less verbose"
+→ Preference added: "format: concise"
+
+User approves: "Good, include examples this time"
+→ Convention added: "always_include_examples"
+```
+
+**Updated behavior** (with learnings):
+- Skill automatically excludes private fields
+- Uses concise format
+- Includes examples
+- Remembers these preferences next invocation
+
+## Batch Upgrade Mode
+
+To upgrade all skills at once:
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+This will:
+1. List all skills in `.claude/skills/`
+2. Filter out already-upgraded skills
+3. Ask for confirmation: "Upgrade N skills?"
+4. Apply upgrade to each
+5. Show summary: "Upgraded N skills"
+
+## Preview Mode
+
+Before upgrading, preview exact changes:
+
+```
+Skill MD changes:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ## When to Use
+  ...existing content...
+
++ ## Self-Improving Learnings
++
++ This skill learns from your corrections and preferences.
++ ...
+```
+
+## Checking Learned Preferences
+
+After using an upgraded skill with corrections, check learnings:
+
+```bash
+cat .agileflow/skills/_learnings/my-api-skill.yaml
+```
+
+Shows:
+- **preferences**: What the skill has learned
+- **conventions**: Consistent patterns
+- **anti_patterns**: What to avoid
+- **metadata**: How many corrections, sessions tracked
+
+## Practical Examples
+
+### Example 1: Documentation Skill
+
+**Initial request**:
+```
+Generate API docs for getUserById function
+```
+
+**First output** (no learnings):
+```
+Very verbose, includes all details, complex structure
+```
+
+**User corrects** 3 times with specific feedback
+
+**Learnings file updated** with preferences:
+```yaml
+preferences:
+  - "Use concise format, avoid verbose descriptions"
+  - "Exclude private fields from output"
+  - "Include practical examples"
+```
+
+**Future invocations**:
+- Skill automatically applies these preferences
+- Documentation is more polished from the start
+- Less back-and-forth with corrections
+
+### Example 2: Code Quality Skill
+
+**Initial request**:
+```
+Review this code for issues
+```
+
+**Skill learns over time**:
+- "Only mention high-priority issues"
+- "Focus on architecture, not style"
+- "Include suggested fixes, not just problems"
+
+**Result**: Each review becomes more targeted to your needs.
+
+## Best Practices
+
+### When to Upgrade
+
+- **Now**: Skill has been created and you're using it regularly
+- **Later**: Skill is new and still evolving
+- **Immediately**: Using same skill across multiple projects
+
+### Getting Most Value
+
+1. Use the skill regularly
+2. Provide clear corrections when output isn't right
+3. Approve good outputs (trains positive examples)
+4. Review learnings periodically
+5. Update learnings manually if needed
+
+### Reviewing Learnings
+
+```bash
+cat .agileflow/skills/_learnings/my-api-skill.yaml
+```
+
+Check for:
+- ✅ Preferences match your actual preferences
+- ✅ Conventions are accurate
+- ✅ Anti-patterns are real issues you've identified
+- ⚠️ Any corrections that weren't right (manually fix)
+
+## Related Commands
+
+- [`/skill:list`](/commands/skill-list) - View all skills
+- [`/skill:create`](/commands/skill-create) - Create new skill
+- [`/skill:edit`](/commands/skill-edit) - Edit existing skill
+- [`/skill:test`](/commands/skill-test) - Test skill output
+- [`/skill:delete`](/commands/skill-delete) - Remove skill
+
+## Troubleshooting
+
+### Skill Already Upgraded
+
+```
+✅ Skill "my-skill" already has self-improving capability!
+```
+
+Run `/skill:list` to see all skills and their status.
+
+### Learnings File Not Found
+
+```
+⚠️ Learnings file not created. Check directory permissions.
+```
+
+Ensure `.agileflow/skills/_learnings/` directory exists and is writable.
+
+### Can't Edit SKILL.md
+
+```
+❌ Cannot update SKILL.md - check file permissions
+```
+
+Ensure the skill file is readable and writable.
+
+## Migration from Older Skills
+
+Skills created before the learning system was introduced don't have learnings. This command adds that capability:
+
+```bash
+# Before: Old skill without learning
+.claude/skills/my-skill/SKILL.md
+  (no learnings file)
+
+# After: Upgraded skill with learning
+.claude/skills/my-skill/SKILL.md
+  (updated with learning section)
+.agileflow/skills/_learnings/my-skill.yaml
+  (new learnings file)
+```
+
+All existing skill content is preserved. Learning is purely additive.

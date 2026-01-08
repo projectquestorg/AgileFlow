@@ -24,6 +24,18 @@ Prevent destructive or dangerous commands from running automatically. Uses Claud
 
 ## Workflow Automation
 
+### Compact Context Preservation
+
+Preserve critical agent knowledge and state during automatic context compaction.
+
+- **Context-aware compaction** - Critical agent rules and state preserved when Claude Code compresses context
+- **Priority-based preservation** - Critical agents always preserved, others degrade gracefully
+- **State continuity** - Current story, blockers, and progress maintained through compaction
+- **Long conversation support** - Sustained agent focus over days of development work
+- **Zero-overhead** - Automatic, no manual configuration needed
+
+[Learn about Compact Context](/features/compact-context)
+
 ### Status Line
 
 Display your current work in progress, project status, and cost tracking in Claude Code's status bar.
@@ -198,6 +210,7 @@ Customize feature behavior:
 
 | Feature | Enable Command | Purpose |
 |---------|---|---------|
+| Compact Context | Built-in | Preserve agent knowledge during context compaction |
 | Damage Control | `--enable=damagecontrol` | Block dangerous commands |
 | Status Line | `--enable=statusline` | Show project status |
 | Archival | `--enable=archival` | Auto-archive completed stories |

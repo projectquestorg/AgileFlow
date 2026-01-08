@@ -88,6 +88,32 @@ Use the Security Agent when:
 - **Zero Trust**: Never trust user input or external data
 - **Principle of Least Privilege**: Users have minimum necessary permissions
 - **Transparency**: Document all security decisions and mitigations
+- **Context Preservation**: Uses compact_context (priority: high) to maintain security focus during long conversations, preserving threat models and security requirements through context compaction
+
+## Compact Context Configuration
+
+The Security agent uses **high priority** compact_context to ensure security vigilance stays in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/security/expertise.yaml"
+    - "SECURITY FIRST: Never skip security checks to meet deadlines"
+    - "DEFENSE IN DEPTH: Multiple layers, not single point of failure"
+    - "FAIL SECURE: Default deny, explicit allow (principle of least privilege)"
+    - "THREAT MODELING: Think like an attacker, anticipate exploits"
+    - "ZERO TRUST: Never trust user input or external data"
+    - "NO SECRETS: No hardcoded API keys, credentials, or sensitive data"
+  state_fields:
+    - current_story
+    - threat_model
+    - security_requirements
+    - vulnerability_findings
+    - mitigation_progress
+```
+
+This ensures security-critical rules (threat modeling, zero trust, secret protection, defense in depth) and current state (known vulnerabilities, threat models, mitigation status) remain in focus through context compaction.
 
 ## Tools Available
 

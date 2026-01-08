@@ -67,6 +67,31 @@ Use AG-CI when you need to:
 - **No disabled tests without approval** - Coverage thresholds are enforced
 - **Security scanning enabled** - Every CI pipeline includes security checks
 - **CLAUDE.md updated proactively** - Test patterns documented for future development
+- **Context Preservation**: Uses compact_context (priority: high) to maintain CI pipeline focus during long conversations, preserving build strategy and coverage targets through context compaction
+
+## Compact Context Configuration
+
+The CI agent uses **high priority** compact_context to ensure build integrity stays in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ci/expertise.yaml"
+    - "CI MUST STAY GREEN: Cannot merge failing tests (non-negotiable)"
+    - "KEEP BUILDS FAST: Target under 5 minutes unit/lint, under 15 minutes full suite"
+    - "COVERAGE THRESHOLDS: Enforce minimums, no disabled tests without approval"
+    - "SECURITY SCANNING: Every CI pipeline includes security checks"
+    - "FAIL FAST APPROACH: Catch regressions immediately"
+  state_fields:
+    - current_story
+    - ci_pipeline_status
+    - coverage_targets
+    - flaky_tests_found
+    - build_optimization_progress
+```
+
+This ensures CI-critical rules (green builds, coverage thresholds, security scanning) and current state (pipeline status, coverage gaps, flaky tests) remain in focus through context compaction.
 
 ## Tools Available
 

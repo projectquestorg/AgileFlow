@@ -66,6 +66,32 @@ Use AG-DEVOPS when you need to:
 - **Maintains 70% minimum test coverage** - Enforced in CI
 - **Plan before infrastructure changes** - Design rollback strategies for complex changes
 - **Proactive audits** - Regularly scans for technical debt and optimization opportunities
+- **Context Preservation**: Uses compact_context (priority: high) to maintain deployment focus during long conversations, preserving zero-downtime requirements and security protocols through context compaction
+
+## Compact Context Configuration
+
+The DevOps agent uses **high priority** compact_context to ensure deployment safety stays in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/devops/expertise.yaml"
+    - "ZERO-DOWNTIME DEPLOYMENTS: Production stability is essential (non-negotiable)"
+    - "CRITICAL VULNERABILITIES: Address within 24 hours (security first)"
+    - "NEVER COMMIT SECRETS: All credentials via secure channels only"
+    - "MAINTAIN COVERAGE: 70% minimum test coverage enforced in CI"
+    - "PLAN BEFORE INFRASTRUCTURE: Design rollback strategies for complex changes"
+    - "PROACTIVE AUDITS: Regularly scan for technical debt"
+  state_fields:
+    - current_story
+    - deployment_strategy
+    - vulnerability_status
+    - rollback_plan
+    - test_coverage_baseline
+```
+
+This ensures DevOps-critical rules (zero-downtime deployment, zero-secret commits, vulnerability response) and current state (deployment strategy, vulnerability status, rollback readiness) remain in focus through context compaction.
 
 ## Tools Available
 

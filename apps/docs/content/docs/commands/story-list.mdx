@@ -1,0 +1,270 @@
+---
+title: /story:list
+description: List all stories with status and filtering options
+---
+
+# /story:list
+
+Display all user stories with filtering options and quick action features.
+
+## Quick Start
+
+```bash
+/agileflow:story:list
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | No | - | Filter by epic (e.g., EP-0001) |
+| `STATUS` | No | - | Filter by status: `ready`, `in_progress`, `blocked`, `done` |
+| `OWNER` | No | - | Filter by owner (e.g., AG-UI) |
+
+## Examples
+
+### List All Stories
+
+```bash
+/agileflow:story:list
+```
+
+Shows all stories organized by epic with their status.
+
+### List Stories for Specific Epic
+
+```bash
+/agileflow:story:list EPIC=EP-0001
+```
+
+Shows only stories in the Authentication epic.
+
+### List Ready Stories
+
+```bash
+/agileflow:story:list STATUS=ready
+```
+
+Shows all stories ready to start work on.
+
+### List Stories in Progress
+
+```bash
+/agileflow:story:list STATUS=in_progress
+```
+
+Shows current work items.
+
+### List Stories by Owner
+
+```bash
+/agileflow:story:list OWNER=AG-UI
+```
+
+Shows all stories assigned to the UI agent.
+
+### Combined Filters
+
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+```
+
+Shows ready stories only in the Authentication epic.
+
+```bash
+/agileflow:story:list STATUS=blocked OWNER=AG-API
+```
+
+Shows API stories that are currently blocked.
+
+## Output Format
+
+Stories are organized by epic with status columns:
+
+```markdown
+## Stories
+
+### EP-0001: Authentication System
+| Story | Title | Status | Owner | Estimate |
+|-------|-------|--------|-------|----------|
+| US-0001 | Login form | done | AG-UI | 2h |
+| US-0002 | Password reset | in_progress | AG-API | 3h |
+| US-0003 | Session management | ready | AG-API | 4h |
+
+### EP-0002: User Dashboard
+| Story | Title | Status | Owner | Estimate |
+|-------|-------|--------|-------|----------|
+| US-0004 | Dashboard layout | ready | AG-UI | 2h |
+| US-0005 | Activity feed | ready | AG-UI | 3h |
+
+---
+**Summary**: 5 stories (1 done, 1 in_progress, 3 ready)
+```
+
+## Status Definitions
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **ready** | Ready to start, no blockers | Start work / view details |
+| **in_progress** | Currently being worked on | Continue work / mark blocked if needed |
+| **blocked** | Waiting for dependency or clarification | Resolve blocker / unblock when ready |
+| **done** | Completed and tested | Move to next story |
+
+## Quick Actions
+
+After displaying the list, you can:
+
+### View Story Details
+
+Select a story to see:
+- Full acceptance criteria
+- Test status
+- Dependencies
+- Blockers (if any)
+- Progress notes
+
+```bash
+/agileflow:story:view STORY=US-0003
+```
+
+### Start Working on a Story
+
+Pick a ready story and mark it as in_progress:
+
+```bash
+/agileflow:status US-0003 STATUS=in_progress
+```
+
+### Create New Story
+
+Add a story to an epic:
+
+```bash
+/agileflow:story EPIC=EP-0001 ...
+```
+
+## Workflow Integration
+
+### Daily Standup
+
+```bash
+/agileflow:story:list STATUS=in_progress
+# See what's being worked on
+/agileflow:story:list STATUS=blocked
+# See what's blocked
+```
+
+### Sprint Planning
+
+```bash
+/agileflow:story:list STATUS=ready
+# See available work
+/agileflow:epic:list
+# See epic status
+# Select stories for sprint
+```
+
+### Unblocking Workflow
+
+```bash
+/agileflow:story:list STATUS=blocked
+# See all blocked stories
+# Resolve dependencies
+/agileflow:story:view STORY=<blocked>
+# See blocker details
+/agileflow:status <story> STATUS=ready
+# When unblocked, mark ready again
+```
+
+### Completion Tracking
+
+```bash
+/agileflow:story:list STATUS=done
+# See what was completed
+/agileflow:story:list STATUS=in_progress
+# See what's being worked on
+/agileflow:story:list STATUS=ready
+# See what's queued up
+```
+
+## Filtering Strategies
+
+### By Epic
+```bash
+/agileflow:story:list EPIC=EP-0001
+# Focus on one feature
+```
+
+### By Status
+```bash
+/agileflow:story:list STATUS=ready
+# Find available work
+```
+
+```bash
+/agileflow:story:list STATUS=blocked
+# Find blockers to resolve
+```
+
+### By Owner
+```bash
+/agileflow:story:list OWNER=AG-API
+# See what an agent is working on
+```
+
+### By Status + Epic
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+# Ready stories in specific epic
+```
+
+### By Status + Owner
+```bash
+/agileflow:story:list STATUS=in_progress OWNER=AG-UI
+# Current work for specific agent
+```
+
+## Interpreting Results
+
+### Healthy Story Distribution
+
+```
+5 stories (1 done, 2 in_progress, 2 ready)
+```
+
+- ✅ People have work to do
+- ✅ Work is flowing
+- ✅ Backlog is ready
+
+### Potential Issues
+
+**Too many in_progress (>3)**
+```
+5 stories (0 done, 4 in_progress, 1 ready)
+```
+- Consider reducing WIP (work in progress)
+- Focus on completing stories
+
+**No ready stories**
+```
+5 stories (2 done, 2 in_progress, 0 ready)
+```
+- Need to plan more stories
+- Create `/agileflow:story` for next work items
+
+**Lots of blocked**
+```
+7 stories (1 done, 1 in_progress, 3 blocked, 2 ready)
+```
+- Address blockers urgently
+- May need to unblock dependencies
+
+## Related Commands
+
+- [`/story:view`](/commands/story-view) - View story details
+- [`/story`](/commands/story) - Create new story
+- [`/story-validate`](/commands/story-validate) - Validate story completeness
+- [`/status`](/commands/status) - Update story status
+- [`/epic:list`](/commands/epic-list) - View epics
+- [`/board`](/commands/board) - Visual kanban board
+- [`/blockers`](/commands/blockers) - Find and resolve blockers
