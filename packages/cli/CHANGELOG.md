@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.79.0] - 2026-01-09
+
+### Added
+- Damage Control protection, Visual Mode, and self-improving skills
+
 ## [2.78.0] - 2026-01-08
 
 ### Added
