@@ -26,6 +26,7 @@ const https = require('https');
 
 // Shared utilities
 const { getProjectRoot } = require('../lib/paths');
+const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
 
 // Debug mode
 const DEBUG = process.env.DEBUG_UPDATE === '1';
@@ -40,22 +41,19 @@ function debugLog(message, data = null) {
 function getInstalledVersion(rootDir) {
   // First check .agileflow/package.json (installed version)
   const agileflowPkg = path.join(rootDir, '.agileflow', 'package.json');
-  if (fs.existsSync(agileflowPkg)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(agileflowPkg, 'utf8'));
-      if (pkg.version) return pkg.version;
-    } catch (e) {
-      debugLog('Error reading .agileflow/package.json', e.message);
-    }
+  const agileflowResult = safeReadJSON(agileflowPkg);
+  if (agileflowResult.ok && agileflowResult.data?.version) {
+    return agileflowResult.data.version;
+  }
+  if (!agileflowResult.ok && agileflowResult.error) {
+    debugLog('Error reading .agileflow/package.json', agileflowResult.error);
   }
 
   // Fallback: check if this is the AgileFlow dev repo
   const cliPkg = path.join(rootDir, 'packages/cli/package.json');
-  if (fs.existsSync(cliPkg)) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(cliPkg, 'utf8'));
-      if (pkg.name === 'agileflow' && pkg.version) return pkg.version;
-    } catch (e) {}
+  const cliResult = safeReadJSON(cliPkg);
+  if (cliResult.ok && cliResult.data?.name === 'agileflow' && cliResult.data?.version) {
+    return cliResult.data.version;
   }
 
   return null;
@@ -72,16 +70,16 @@ function getUpdateConfig(rootDir) {
     latestVersion: null,
   };
 
-  try {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-      if (metadata.updates) {
-        return { ...defaults, ...metadata.updates };
-      }
-    }
-  } catch (e) {
-    debugLog('Error reading update config', e.message);
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (!result.ok) {
+    debugLog('Error reading update config', result.error);
+    return defaults;
+  }
+
+  if (result.data?.updates) {
+    return { ...defaults, ...result.data.updates };
   }
 
   return defaults;
@@ -89,21 +87,22 @@ function getUpdateConfig(rootDir) {
 
 // Save update configuration
 function saveUpdateConfig(rootDir, config) {
-  try {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    let metadata = {};
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
 
-    if (fs.existsSync(metadataPath)) {
-      metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-    }
+  // Read existing metadata
+  const readResult = safeReadJSON(metadataPath, { defaultValue: {} });
+  const metadata = readResult.ok ? readResult.data : {};
 
-    metadata.updates = config;
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
-    return true;
-  } catch (e) {
-    debugLog('Error saving update config', e.message);
+  // Update and write
+  metadata.updates = config;
+  const writeResult = safeWriteJSON(metadataPath, metadata, { createDir: true });
+
+  if (!writeResult.ok) {
+    debugLog('Error saving update config', writeResult.error);
     return false;
   }
+
+  return true;
 }
 
 // Check if cache is still valid

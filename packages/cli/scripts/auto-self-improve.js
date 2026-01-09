@@ -24,6 +24,7 @@ const { execSync } = require('child_process');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
+const { safeReadJSON, safeReadFile, safeWriteFile } = require('../lib/errors');
 
 // Agents that have expertise files
 const AGENTS_WITH_EXPERTISE = [
@@ -70,12 +71,8 @@ const DOMAIN_PATTERNS = {
 // Read session state
 function getSessionState(rootDir) {
   const statePath = path.join(rootDir, 'docs/09-agents/session-state.json');
-  try {
-    if (fs.existsSync(statePath)) {
-      return JSON.parse(fs.readFileSync(statePath, 'utf8'));
-    }
-  } catch (e) {}
-  return {};
+  const result = safeReadJSON(statePath, { defaultValue: {} });
+  return result.ok ? result.data : {};
 }
 
 // Get git diff summary
@@ -214,26 +211,25 @@ function getExpertisePath(rootDir, agent) {
 
 // Append learning to expertise file
 function appendLearning(expertisePath, learning) {
-  try {
-    let content = fs.readFileSync(expertisePath, 'utf8');
+  const readResult = safeReadFile(expertisePath);
+  if (!readResult.ok) return false;
 
-    // Find the learnings section
-    const learningsMatch = content.match(/^learnings:\s*$/m);
+  let content = readResult.data;
 
-    if (!learningsMatch) {
-      // No learnings section, add it at the end
-      content += `\n\nlearnings:\n${learning}`;
-    } else {
-      // Find where to insert (after "learnings:" line)
-      const insertPos = learningsMatch.index + learningsMatch[0].length;
-      content = content.slice(0, insertPos) + '\n' + learning + content.slice(insertPos);
-    }
+  // Find the learnings section
+  const learningsMatch = content.match(/^learnings:\s*$/m);
 
-    fs.writeFileSync(expertisePath, content);
-    return true;
-  } catch (e) {
-    return false;
+  if (!learningsMatch) {
+    // No learnings section, add it at the end
+    content += `\n\nlearnings:\n${learning}`;
+  } else {
+    // Find where to insert (after "learnings:" line)
+    const insertPos = learningsMatch.index + learningsMatch[0].length;
+    content = content.slice(0, insertPos) + '\n' + learning + content.slice(insertPos);
   }
+
+  const writeResult = safeWriteFile(expertisePath, content);
+  return writeResult.ok;
 }
 
 // Format learning as YAML

@@ -16,6 +16,7 @@ const { execSync, spawnSync } = require('child_process');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
+const { safeReadJSON } = require('../lib/errors');
 
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(ROOT, '.agileflow', 'sessions');
@@ -141,17 +142,16 @@ function getCurrentBranch() {
 
 // Get current story from status.json
 function getCurrentStory() {
-  try {
-    const statusPath = path.join(ROOT, 'docs', '09-agents', 'status.json');
-    if (!fs.existsSync(statusPath)) return null;
+  const statusPath = path.join(ROOT, 'docs', '09-agents', 'status.json');
+  const result = safeReadJSON(statusPath, { defaultValue: null });
 
-    const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-    for (const [id, story] of Object.entries(status.stories || {})) {
-      if (story.status === 'in_progress') {
-        return { id, title: story.title };
-      }
+  if (!result.ok || !result.data) return null;
+
+  for (const [id, story] of Object.entries(result.data.stories || {})) {
+    if (story.status === 'in_progress') {
+      return { id, title: story.title };
     }
-  } catch (e) {}
+  }
   return null;
 }
 

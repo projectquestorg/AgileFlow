@@ -35,57 +35,43 @@ const { execSync, spawnSync } = require('child_process');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
+const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
 
 // Read session state
 function getSessionState(rootDir) {
   const statePath = path.join(rootDir, 'docs/09-agents/session-state.json');
-  try {
-    if (fs.existsSync(statePath)) {
-      return JSON.parse(fs.readFileSync(statePath, 'utf8'));
-    }
-  } catch (e) {}
-  return {};
+  const result = safeReadJSON(statePath, { defaultValue: {} });
+  return result.ok ? result.data : {};
 }
 
 // Write session state
 function saveSessionState(rootDir, state) {
   const statePath = path.join(rootDir, 'docs/09-agents/session-state.json');
-  const dir = path.dirname(statePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(statePath, JSON.stringify(state, null, 2) + '\n');
+  safeWriteJSON(statePath, state, { createDir: true });
 }
 
 // Read status.json for stories
 function getStatus(rootDir) {
   const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
-  try {
-    if (fs.existsSync(statusPath)) {
-      return JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-    }
-  } catch (e) {}
-  return { stories: {}, epics: {} };
+  const result = safeReadJSON(statusPath, { defaultValue: { stories: {}, epics: {} } });
+  return result.ok ? result.data : { stories: {}, epics: {} };
 }
 
 // Save status.json
 function saveStatus(rootDir, status) {
   const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
-  fs.writeFileSync(statusPath, JSON.stringify(status, null, 2) + '\n');
+  safeWriteJSON(statusPath, status);
 }
 
 // Get test command from package.json or metadata
 function getTestCommand(rootDir) {
   // Check agileflow metadata first
-  try {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-      if (metadata.ralph_loop?.test_command) {
-        return metadata.ralph_loop.test_command;
-      }
-    }
-  } catch (e) {}
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (result.ok && result.data?.ralph_loop?.test_command) {
+    return result.data.ralph_loop.test_command;
+  }
 
   // Default to npm test
   return 'npm test';
