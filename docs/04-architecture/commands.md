@@ -1,6 +1,6 @@
 # Commands Reference
 
-AgileFlow provides **68 slash commands** for agile development workflows.
+AgileFlow provides **71 slash commands** for agile development workflows.
 
 ---
 
