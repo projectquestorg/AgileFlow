@@ -149,6 +149,10 @@ class Installer {
       spinner.text = 'Installing scripts...';
       await this.installScripts(directory, { force: effectiveForce });
 
+      // Copy lib/ directory (shared utilities used by scripts)
+      spinner.text = 'Installing shared libraries...';
+      await this.installLib(directory, { force: effectiveForce });
+
       // Create config.yaml
       spinner.text = 'Creating configuration...';
       await this.createConfig(agileflowDir, userName, agileflowFolder, { force: effectiveForce });
@@ -617,6 +621,30 @@ class Installer {
 
     // Copy all scripts recursively
     await this.copyScriptsRecursive(scriptsSourceDir, scriptsDestDir, force);
+  }
+
+  /**
+   * Copy lib/ directory to user's project
+   * Scripts in .agileflow/scripts/ require ../lib/ for shared utilities
+   * @param {string} directory - Project directory
+   * @param {Object} options - Installation options
+   * @param {boolean} options.force - Overwrite existing files
+   */
+  async installLib(directory, options = {}) {
+    const { force = false } = options;
+    const libSourceDir = path.join(this.packageRoot, 'lib');
+    const libDestDir = path.join(directory, '.agileflow', 'lib');
+
+    // Skip if source lib directory doesn't exist
+    if (!(await fs.pathExists(libSourceDir))) {
+      return;
+    }
+
+    // Ensure destination lib directory exists
+    await fs.ensureDir(libDestDir);
+
+    // Copy all lib files recursively (reuse scripts copy logic)
+    await this.copyScriptsRecursive(libSourceDir, libDestDir, force);
   }
 
   /**
