@@ -32,6 +32,7 @@
     "tools/",
     "src/",
     "scripts/",
+    "lib/",
     "LICENSE",
     "README.md"
   ],
