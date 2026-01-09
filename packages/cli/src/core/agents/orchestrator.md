@@ -48,6 +48,22 @@ RULE #3: DEPENDENCY DETECTION
 | Same domain, different experts | PARALLEL | Security + Performance analyzing same code |
 | Best-of-N comparison | PARALLEL | Expert1 vs Expert2 vs Expert3 approaches |
 
+RULE #3b: JOIN STRATEGIES (for parallel deployment)
+| Strategy | When | Behavior |
+|----------|------|----------|
+| `all` | Full implementation | Wait for all, fail if any fails |
+| `first` | Racing approaches | Take first completion |
+| `any` | Fallback patterns | Take first success |
+| `any-N` | Multiple perspectives | Take first N successes |
+| `majority` | High-stakes decisions | Take consensus (2+ agree) |
+
+RULE #3c: FAILURE POLICIES
+| Policy | When | Behavior |
+|--------|------|----------|
+| `fail-fast` | Critical work (default) | Stop on first failure |
+| `continue` | Analysis/review | Run all, report failures |
+| `ignore` | Optional enrichments | Skip failures silently |
+
 RULE #4: SYNTHESIS REQUIREMENTS
 - NEVER give final answer without all expert results
 - Flag conflicts explicitly: "Expert A recommends X (rationale: ...), Expert B recommends Y (rationale: ...)"
@@ -238,11 +254,114 @@ TaskOutput(task_id: "<ui_expert_id>", block: true)
 
 ---
 
+## JOIN STRATEGIES
+
+When spawning parallel experts, specify how to handle results:
+
+| Strategy | Behavior | Use Case |
+|----------|----------|----------|
+| `all` | Wait for all, fail if any fails | Full feature implementation |
+| `first` | Take first result, cancel others | Racing alternative approaches |
+| `any` | Take first success, ignore failures | Fallback patterns |
+| `any-N` | Take first N successes | Get multiple perspectives |
+| `majority` | Take consensus result | High-stakes decisions |
+
+### Failure Policies
+
+Combine with strategies to handle errors gracefully:
+
+| Policy | Behavior | Use Case |
+|--------|----------|----------|
+| `fail-fast` | Stop all on first failure (default) | Critical operations |
+| `continue` | Run all to completion, report failures | Comprehensive analysis |
+| `ignore` | Skip failed branches silently | Optional enrichments |
+
+**Usage:**
+```
+Deploy parallel (strategy: all, on-fail: continue):
+  - agileflow-security (may fail if no vulnerabilities)
+  - agileflow-performance (may fail if no issues)
+  - agileflow-testing
+
+Run all to completion. Report any failures at end.
+```
+
+**When to use each policy:**
+
+| Scenario | Recommended Policy |
+|----------|-------------------|
+| Implementation work | `fail-fast` (need all parts) |
+| Code review/analysis | `continue` (want all perspectives) |
+| Optional enrichments | `ignore` (nice-to-have) |
+
+### Strategy: all (Default)
+
+Wait for all experts to complete. Report all results in synthesis.
+
+```
+Deploy parallel (strategy: all):
+  - agileflow-api (endpoint)
+  - agileflow-ui (component)
+
+Collect ALL results before synthesizing.
+If ANY expert fails → report failure with details.
+```
+
+### Strategy: first
+
+Take the first expert that completes. Useful for racing approaches.
+
+```
+Deploy parallel (strategy: first):
+  - Expert A (approach: caching)
+  - Expert B (approach: pagination)
+  - Expert C (approach: batching)
+
+First to complete wins → use that approach.
+Cancel/ignore other results.
+
+Use case: Finding ANY working solution when multiple approaches are valid.
+```
+
+### Strategy: any
+
+Take first successful result. Ignore failures. Useful for fallbacks.
+
+```
+Deploy parallel (strategy: any):
+  - Expert A (primary approach)
+  - Expert B (fallback approach)
+
+First SUCCESS wins → use that result.
+If A fails but B succeeds → use B.
+If all fail → report all failures.
+
+Use case: Resilient operations where any working solution is acceptable.
+```
+
+### Strategy: majority
+
+Multiple experts analyze same thing. Take consensus.
+
+```
+Deploy parallel (strategy: majority):
+  - Security Expert 1
+  - Security Expert 2
+  - Security Expert 3
+
+If 2+ agree → use consensus recommendation.
+If no consensus → report conflict, request decision.
+
+Use case: High-stakes security reviews, architecture decisions.
+```
+
+---
+
 ## PARALLEL PATTERNS
 
 ### Full-Stack Feature
 ```
-Parallel:
+Parallel (strategy: all):
   - agileflow-api (endpoint)
   - agileflow-ui (component)
 Then:
@@ -251,22 +370,32 @@ Then:
 
 ### Code Review/Analysis
 ```
-Parallel (analyze same code):
+Parallel (strategy: all):
   - agileflow-security
   - agileflow-performance
   - agileflow-testing
 Then:
-  - Synthesize findings
+  - Synthesize all findings
 ```
 
-### Best-of-N
+### Best-of-N (Racing)
 ```
-Parallel (same task, different approaches):
+Parallel (strategy: first):
   - Expert A (approach 1)
   - Expert B (approach 2)
   - Expert C (approach 3)
 Then:
-  - Compare and select best
+  - Use first completion
+```
+
+### Consensus Decision
+```
+Parallel (strategy: majority):
+  - Security Expert 1
+  - Security Expert 2
+  - Security Expert 3
+Then:
+  - Take consensus recommendation
 ```
 
 ---

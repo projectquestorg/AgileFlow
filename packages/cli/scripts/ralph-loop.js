@@ -129,6 +129,190 @@ function getCoverageReportPath(rootDir) {
   return 'coverage/coverage-summary.json';
 }
 
+// ===== DISCRETION MARKERS =====
+// Semantic conditions wrapped in **...**
+// These are evaluated by the loop to determine completion
+
+/**
+ * Built-in discretion conditions that can be evaluated programmatically
+ * Format: condition key -> evaluation function
+ */
+const DISCRETION_CONDITIONS = {
+  // Test-related conditions
+  'all tests passing': (rootDir, _ctx) => {
+    const testCommand = getTestCommand(rootDir);
+    const result = runTests(rootDir, testCommand);
+    return {
+      passed: result.passed,
+      message: result.passed
+        ? 'All tests passing'
+        : `Tests failing: ${result.output.split('\n').slice(-3).join(' ').substring(0, 100)}`,
+    };
+  },
+
+  'tests pass': (rootDir, _ctx) => {
+    const testCommand = getTestCommand(rootDir);
+    const result = runTests(rootDir, testCommand);
+    return {
+      passed: result.passed,
+      message: result.passed ? 'Tests pass' : 'Tests failing',
+    };
+  },
+
+  // Coverage conditions (requires threshold in context)
+  'coverage above threshold': (rootDir, ctx) => {
+    const threshold = ctx.coverageThreshold || 80;
+    const result = verifyCoverage(rootDir, threshold);
+    return {
+      passed: result.passed,
+      message: `Coverage: ${result.coverage?.toFixed(1) || 0}% (threshold: ${threshold}%)`,
+    };
+  },
+
+  // Lint conditions
+  'no linting errors': (rootDir, _ctx) => {
+    try {
+      execSync('npm run lint', {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 120000,
+      });
+      return { passed: true, message: 'No linting errors' };
+    } catch (e) {
+      return { passed: false, message: 'Linting errors found' };
+    }
+  },
+
+  // Type checking conditions
+  'no type errors': (rootDir, _ctx) => {
+    try {
+      execSync('npx tsc --noEmit', {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 120000,
+      });
+      return { passed: true, message: 'No type errors' };
+    } catch (e) {
+      return { passed: false, message: 'Type errors found' };
+    }
+  },
+
+  // Build conditions
+  'build succeeds': (rootDir, _ctx) => {
+    try {
+      execSync('npm run build', {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 300000,
+      });
+      return { passed: true, message: 'Build succeeds' };
+    } catch (e) {
+      return { passed: false, message: 'Build failed' };
+    }
+  },
+
+  // Screenshot/visual conditions
+  'all screenshots verified': (rootDir, _ctx) => {
+    const result = verifyScreenshots(rootDir);
+    return {
+      passed: result.passed,
+      message: result.passed
+        ? 'All screenshots verified'
+        : `${result.unverified?.length || 0} unverified screenshots`,
+    };
+  },
+
+  // AC conditions (checks story acceptance criteria in status.json)
+  'all acceptance criteria verified': (rootDir, ctx) => {
+    const storyId = ctx.currentStoryId;
+    if (!storyId) {
+      return { passed: false, message: 'No story ID in context' };
+    }
+    const status = getStatus(rootDir);
+    const story = status.stories?.[storyId];
+    if (!story) {
+      return { passed: false, message: `Story ${storyId} not found` };
+    }
+    // Check if story has AC and if they're marked complete
+    const ac = story.acceptance_criteria || story.ac || [];
+    if (!Array.isArray(ac) || ac.length === 0) {
+      return { passed: true, message: 'No AC defined (assuming complete)' };
+    }
+    // Check for ac_status field or assume AC are verified if tests pass
+    const acStatus = story.ac_status || {};
+    const allVerified = ac.every((_, i) => acStatus[i] === 'verified' || acStatus[i] === true);
+    return {
+      passed: allVerified,
+      message: allVerified
+        ? 'All AC verified'
+        : `${Object.values(acStatus).filter(v => v === 'verified' || v === true).length}/${ac.length} AC verified`,
+    };
+  },
+};
+
+/**
+ * Parse discretion condition from string
+ * @param {string} condition - e.g., "**all tests passing**" or "**coverage above 80%**"
+ * @returns {object} { key, threshold? }
+ */
+function parseDiscretionCondition(condition) {
+  // Remove ** markers
+  const cleaned = condition.replace(/\*\*/g, '').trim().toLowerCase();
+
+  // Check for threshold patterns like "coverage above 80%"
+  const coverageMatch = cleaned.match(/coverage (?:above|>=?) (\d+)%?/);
+  if (coverageMatch) {
+    return { key: 'coverage above threshold', threshold: parseInt(coverageMatch[1]) };
+  }
+
+  return { key: cleaned };
+}
+
+/**
+ * Evaluate a discretion condition
+ * @param {string} condition - The condition string (with or without ** markers)
+ * @param {string} rootDir - Project root
+ * @param {object} ctx - Context (currentStoryId, coverageThreshold, etc.)
+ * @returns {object} { passed: boolean, message: string }
+ */
+function evaluateDiscretionCondition(condition, rootDir, ctx = {}) {
+  const parsed = parseDiscretionCondition(condition);
+
+  // Set threshold in context if parsed from condition
+  if (parsed.threshold) {
+    ctx.coverageThreshold = parsed.threshold;
+  }
+
+  const evaluator = DISCRETION_CONDITIONS[parsed.key];
+  if (!evaluator) {
+    return {
+      passed: false,
+      message: `Unknown condition: "${parsed.key}". Available: ${Object.keys(DISCRETION_CONDITIONS).join(', ')}`,
+    };
+  }
+
+  return evaluator(rootDir, ctx);
+}
+
+/**
+ * Get discretion conditions from metadata
+ * @param {string} rootDir
+ * @returns {string[]} Array of condition strings
+ */
+function getDiscretionConditions(rootDir) {
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (result.ok && result.data?.ralph_loop?.conditions) {
+    return result.data.ralph_loop.conditions;
+  }
+
+  return [];
+}
+
 // Parse coverage report (Jest/NYC format)
 function parseCoverageReport(rootDir) {
   const reportPath = getCoverageReportPath(rootDir);
@@ -351,8 +535,10 @@ function handleLoop(rootDir) {
   const visualMode = loop.visual_mode || false;
   const coverageMode = loop.coverage_mode || false;
   const coverageThreshold = loop.coverage_threshold || 80;
-  // Visual and Coverage modes require at least 2 iterations for confirmation
-  const minIterations = visualMode || coverageMode ? 2 : 1;
+  const discretionConditions = loop.conditions || getDiscretionConditions(rootDir);
+  // Visual, Coverage, and Discretion modes require at least 2 iterations for confirmation
+  const hasDiscretionConditions = discretionConditions.length > 0;
+  const minIterations = visualMode || coverageMode || hasDiscretionConditions ? 2 : 1;
 
   console.log('');
   console.log(
@@ -361,6 +547,7 @@ function handleLoop(rootDir) {
   let modeLabel = '';
   if (visualMode) modeLabel += ' [VISUAL]';
   if (coverageMode) modeLabel += ` [COVERAGE ≥${coverageThreshold}%]`;
+  if (hasDiscretionConditions) modeLabel += ` [${discretionConditions.length} CONDITIONS]`;
   console.log(
     `${c.brand}${c.bold}  RALPH LOOP - Iteration ${iteration}/${maxIterations}${modeLabel}${c.reset}`
   );
@@ -368,6 +555,8 @@ function handleLoop(rootDir) {
     `${c.brand}${c.bold}══════════════════════════════════════════════════════════${c.reset}`
   );
   console.log('');
+  // State Narration: Loop iteration marker
+  console.log(`🔄 Iteration ${iteration}/${maxIterations}`);
 
   // Check iteration limit
   if (iteration > maxIterations) {
@@ -392,9 +581,8 @@ function handleLoop(rootDir) {
     return;
   }
 
-  console.log(
-    `${c.cyan}Current Story:${c.reset} ${currentStoryId} - ${currentStory.title || 'Untitled'}`
-  );
+  // State Narration: Current position marker
+  console.log(`📍 Working on: ${currentStoryId} - ${currentStory.title || 'Untitled'}`);
   console.log('');
 
   // Run tests
@@ -475,11 +663,38 @@ function handleLoop(rootDir) {
       return;
     }
 
+    // Evaluate discretion conditions
+    let discretionResults = [];
+    if (hasDiscretionConditions) {
+      console.log('');
+      console.log(`${c.blue}Evaluating discretion conditions...${c.reset}`);
+      const ctx = { currentStoryId, coverageThreshold };
+
+      for (const condition of discretionConditions) {
+        const result = evaluateDiscretionCondition(condition, rootDir, ctx);
+        discretionResults.push({ condition, ...result });
+        const marker = result.passed ? `${c.green}✓` : `${c.yellow}⏳`;
+        console.log(`  ${marker} **${condition.replace(/\*\*/g, '')}**: ${result.message}${c.reset}`);
+      }
+
+      // Track which conditions have been verified
+      const allConditionsPassed = discretionResults.every(r => r.passed);
+      state.ralph_loop.conditions_verified = allConditionsPassed;
+      state.ralph_loop.condition_results = discretionResults.map(r => ({
+        condition: r.condition,
+        passed: r.passed,
+        message: r.message,
+      }));
+    }
+
     // Check if all verification modes passed
+    const allDiscretionPassed =
+      !hasDiscretionConditions || discretionResults.every(r => r.passed);
     const canComplete =
       testResult.passed &&
       (!visualMode || screenshotResult.passed) &&
-      (!coverageMode || coverageResult.passed);
+      (!coverageMode || coverageResult.passed) &&
+      allDiscretionPassed;
 
     if (!canComplete) {
       // Something not verified yet
@@ -499,12 +714,21 @@ function handleLoop(rootDir) {
         console.log(`${c.dim}  Target: ${coverageThreshold}%${c.reset}`);
         console.log(`${c.dim}  Write more tests to cover uncovered code paths.${c.reset}`);
       }
+      if (hasDiscretionConditions && !allDiscretionPassed) {
+        const failedConditions = discretionResults.filter(r => !r.passed);
+        console.log(`${c.cyan}▶ Fix failing conditions:${c.reset}`);
+        for (const fc of failedConditions) {
+          console.log(`${c.dim}  - ${fc.condition.replace(/\*\*/g, '')}: ${fc.message}${c.reset}`);
+        }
+      }
       return;
     }
     console.log('');
 
     // Mark story complete
     markStoryComplete(rootDir, currentStoryId);
+    // State Narration: Completion marker
+    console.log(`✅ Story complete: ${currentStoryId}`);
     console.log(`${c.green}✓ Marked ${currentStoryId} as completed${c.reset}`);
 
     // Get next story
@@ -558,6 +782,8 @@ function handleLoop(rootDir) {
     }
   } else {
     // Tests failed - feed back to Claude
+    // State Narration: Error marker
+    console.log(`⚠️ Error: Test failure - ${(testResult.duration / 1000).toFixed(1)}s`);
     console.log(`${c.red}✗ Tests failed${c.reset} (${(testResult.duration / 1000).toFixed(1)}s)`);
     console.log('');
 
@@ -597,6 +823,8 @@ function handleCLI() {
       if (loop.visual_mode) modeLabel += ` ${c.cyan}[VISUAL]${c.reset}`;
       if (loop.coverage_mode)
         modeLabel += ` ${c.magenta}[COVERAGE ≥${loop.coverage_threshold}%]${c.reset}`;
+      if (loop.conditions?.length > 0)
+        modeLabel += ` ${c.blue}[${loop.conditions.length} CONDITIONS]${c.reset}`;
       console.log(`${c.green}Ralph Loop: active${c.reset}${modeLabel}`);
       console.log(`  Epic: ${loop.epic}`);
       console.log(`  Current Story: ${loop.current_story}`);
@@ -615,6 +843,16 @@ function handleCLI() {
           `  Coverage: ${(loop.coverage_current || 0).toFixed(1)}% / ${loop.coverage_threshold}% (Verified: ${verified})`
         );
         console.log(`  Baseline: ${(loop.coverage_baseline || 0).toFixed(1)}%`);
+      }
+      if (loop.conditions?.length > 0) {
+        const verified = loop.conditions_verified
+          ? `${c.green}yes${c.reset}`
+          : `${c.yellow}no${c.reset}`;
+        console.log(`  Discretion Conditions: ${loop.conditions.length} (All Verified: ${verified})`);
+        for (const result of loop.condition_results || []) {
+          const mark = result.passed ? `${c.green}✓${c.reset}` : `${c.yellow}⏳${c.reset}`;
+          console.log(`    ${mark} ${result.condition.replace(/\*\*/g, '')}`);
+        }
       }
     }
     return true;
@@ -647,6 +885,9 @@ function handleCLI() {
     const maxArg = args.find(a => a.startsWith('--max='));
     const visualArg = args.includes('--visual') || args.includes('-v');
     const coverageArg = args.find(a => a.startsWith('--coverage='));
+    // Parse conditions (--condition="**all tests passing**" or -c "...")
+    const conditionArgs = args.filter(a => a.startsWith('--condition=') || a.startsWith('-c='));
+    const conditions = conditionArgs.map(a => a.split('=').slice(1).join('=').replace(/"/g, ''));
 
     if (!epicArg) {
       console.log(`${c.red}Error: --epic=EP-XXXX is required${c.reset}`);
@@ -711,6 +952,10 @@ function handleCLI() {
       }
     }
 
+    // Get conditions from metadata if not provided via CLI
+    const allConditions =
+      conditions.length > 0 ? conditions : getDiscretionConditions(rootDir);
+
     // Initialize loop state
     const state = getSessionState(rootDir);
     state.ralph_loop = {
@@ -726,6 +971,9 @@ function handleCLI() {
       coverage_baseline: coverageBaseline,
       coverage_current: coverageBaseline,
       coverage_verified: false,
+      conditions: allConditions,
+      conditions_verified: false,
+      condition_results: [],
       started_at: new Date().toISOString(),
     };
     saveSessionState(rootDir, state);
@@ -750,7 +998,13 @@ function handleCLI() {
       );
       console.log(`  Baseline: ${coverageBaseline.toFixed(1)}%`);
     }
-    if (visualMode || coverageMode) {
+    if (allConditions.length > 0) {
+      console.log(`  Conditions: ${c.blue}${allConditions.length} discretion conditions${c.reset}`);
+      for (const cond of allConditions) {
+        console.log(`    - **${cond.replace(/\*\*/g, '')}**`);
+      }
+    }
+    if (visualMode || coverageMode || allConditions.length > 0) {
       console.log(`  Min Iterations: 2 (for confirmation)`);
     }
     console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
@@ -783,15 +1037,17 @@ ${c.bold}Usage:${c.reset}
   node scripts/ralph-loop.js --init --epic=EP-XXX             Initialize loop for epic
   node scripts/ralph-loop.js --init --epic=EP-XXX --visual    Initialize with Visual Mode
   node scripts/ralph-loop.js --init --epic=EP-XXX --coverage=80  Initialize with Coverage Mode
+  node scripts/ralph-loop.js --init --epic=EP-XXX --condition="**all tests passing**"
   node scripts/ralph-loop.js --status                         Check loop status
   node scripts/ralph-loop.js --stop                           Stop the loop
   node scripts/ralph-loop.js --reset                          Reset loop state
 
 ${c.bold}Options:${c.reset}
-  --epic=EP-XXXX    Epic ID to process (required for --init)
-  --max=N           Max iterations (default: 20)
-  --visual, -v      Enable Visual Mode (screenshot verification)
-  --coverage=N      Enable Coverage Mode (iterate until N% coverage)
+  --epic=EP-XXXX      Epic ID to process (required for --init)
+  --max=N             Max iterations (default: 20)
+  --visual, -v        Enable Visual Mode (screenshot verification)
+  --coverage=N        Enable Coverage Mode (iterate until N% coverage)
+  --condition="..."   Add discretion condition (can use multiple times)
 
 ${c.bold}Visual Mode:${c.reset}
   When --visual is enabled, the loop also verifies that all screenshots
@@ -813,6 +1069,30 @@ ${c.bold}Coverage Mode:${c.reset}
     2. Coverage checked → must meet threshold
     3. Minimum 2 iterations → confirms coverage is stable
     4. Only then → story marked complete
+
+${c.bold}Discretion Conditions:${c.reset}
+  Semantic conditions that must pass before story completion.
+  Use --condition multiple times for multiple conditions.
+
+  Built-in conditions:
+    **all tests passing**            Tests must pass
+    **tests pass**                   Tests must pass (alias)
+    **coverage above 80%**           Coverage must meet threshold
+    **no linting errors**            npm run lint must pass
+    **no type errors**               npx tsc --noEmit must pass
+    **build succeeds**               npm run build must pass
+    **all screenshots verified**     Screenshots need verified- prefix
+    **all acceptance criteria verified**  AC marked complete in status.json
+
+  Configure in docs/00-meta/agileflow-metadata.json:
+    {
+      "ralph_loop": {
+        "conditions": [
+          "**all tests passing**",
+          "**no linting errors**"
+        ]
+      }
+    }
 
 ${c.bold}How it works:${c.reset}
   1. Start loop with /agileflow:babysit EPIC=EP-XXX MODE=loop COVERAGE=80

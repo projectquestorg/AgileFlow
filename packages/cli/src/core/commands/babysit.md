@@ -63,6 +63,7 @@ When invoked with `MODE=loop`, babysit runs autonomously through an epic's stori
 | `MAX` | No | Max iterations (default: 20) |
 | `VISUAL` | No | Enable Visual Mode for UI development (screenshot verification) |
 | `COVERAGE` | No | Enable Coverage Mode - iterate until N% test coverage reached |
+| `CONDITIONS` | No | Semantic conditions for story completion (configured in metadata) |
 
 ### To Start Loop Mode
 
@@ -99,6 +100,36 @@ Or manually write to session-state.json:
   }
 }
 ```
+
+### Discretion Conditions Mode
+
+Configure semantic conditions in `docs/00-meta/agileflow-metadata.json`:
+
+```json
+{
+  "ralph_loop": {
+    "conditions": [
+      "**all tests passing**",
+      "**no linting errors**",
+      "**no type errors**"
+    ]
+  }
+}
+```
+
+**Available conditions:**
+- `**all tests passing**` - Tests must pass
+- `**coverage above N%**` - Coverage threshold (e.g., `**coverage above 80%**`)
+- `**no linting errors**` - `npm run lint` must pass
+- `**no type errors**` - `npx tsc --noEmit` must pass
+- `**build succeeds**` - `npm run build` must pass
+- `**all screenshots verified**` - Screenshots need `verified-` prefix
+- `**all acceptance criteria verified**` - AC marked complete in status.json
+
+**Benefits:**
+- Natural language conditions that read like requirements
+- Multiple conditions can be combined
+- Extensible - add custom conditions as needed
 
 ### Coverage Mode
 
@@ -491,6 +522,59 @@ Task(
 
 ---
 
+#### Retry with Backoff for Expert Spawning
+
+When an expert task fails, apply retry logic before giving up:
+
+**Retry Strategy:**
+```
+Attempt 1: Immediate retry
+Attempt 2: Wait 5 seconds, then retry
+Attempt 3: Wait 15 seconds, then retry (final)
+```
+
+**When to retry:**
+- Expert returns error or timeout
+- TaskOutput shows failure state
+- Expert reports "unable to complete"
+
+**When NOT to retry:**
+- User explicitly asked to stop
+- Expert completed but result was wrong (need different approach)
+- Multiple experts all failed same way (systemic issue)
+
+**Example retry flow:**
+```
+📍 Spawning agileflow-api expert...
+⚠️ Expert failed (timeout after 2 min)
+
+🔄 Retry 1/3: Retrying immediately...
+⚠️ Expert failed (same error)
+
+🔄 Retry 2/3: Waiting 5s, then retrying...
+⚠️ Expert failed (connection error)
+
+🔄 Retry 3/3: Waiting 15s, then retrying...
+✅ Expert succeeded!
+```
+
+**On final failure:**
+```
+⚠️ Error: Expert agileflow-api failed after 3 retries
+
+Last error: Connection timeout after 120s
+Attempts: 3
+
+Options:
+1. Try a different approach
+2. Check network/service status
+3. Manually implement the task
+
+[Present options via AskUserQuestion]
+```
+
+---
+
 ### KEY FILES TO REMEMBER
 
 | File | Purpose |
@@ -558,6 +642,18 @@ Based on your project state:
 
 ---
 
+### STATE NARRATION (emit in responses)
+
+| Marker | When |
+|--------|------|
+| 📍 | Working on story/phase |
+| 🔀 | Spawning parallel experts |
+| 🔄 | Loop iterations |
+| ⚠️ | Errors |
+| ✅ | Completions |
+
+---
+
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
@@ -565,8 +661,44 @@ Based on your project state:
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
+- Use state narration markers (📍🔀🔄⚠️✅) for visibility
 
 <!-- COMPACT_SUMMARY_END -->
+
+---
+
+## STATE NARRATION PROTOCOL
+
+In long sessions, track execution state visibly using emoji markers. This makes state scannable after compaction.
+
+### Markers
+
+| Marker | Meaning | Example |
+|--------|---------|---------|
+| 📍 | Execution position | `📍 Working on: US-0042 - Add login form` |
+| 📦 | Context/variables | `📦 Context: { auth: "complete", api: "pending" }` |
+| 🔀 | Parallel status | `🔀 Parallel: API (done), UI (in progress)` |
+| 🔄 | Loop iteration | `🔄 Iteration 3/10` |
+| ⚠️ | Error state | `⚠️ Error: Test failure in auth.spec.ts` |
+| ✅ | Completion | `✅ Story complete: US-0042` |
+| 🔒 | Blocked | `🔒 Blocked: Waiting for API schema` |
+
+### When to Emit Markers
+
+- **Start of story**: `📍 Starting: US-0042`
+- **Phase transitions**: `📍 Phase: Execution (plan approved)`
+- **Expert spawn**: `🔀 Spawned: agileflow-api (background)`
+- **Expert complete**: `✅ Expert done: agileflow-api`
+- **Loop iterations**: `🔄 Ralph Loop: 3/10`
+- **Errors**: `⚠️ Test failure: 2 tests failed`
+- **Completion**: `✅ Story complete: US-0042`
+
+### Benefits
+
+- **Visibility**: State is inline, not hidden in files
+- **Debugging**: Scan conversation for state changes
+- **Resumability**: Markers help restore context after compact
+- **Progress**: Clear indication of where work stands
 
 ---
 
