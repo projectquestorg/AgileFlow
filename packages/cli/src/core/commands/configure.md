@@ -1,17 +1,15 @@
 ---
-description: Configure advanced AgileFlow features (git, hooks, archival, CI, status line)
-argument-hint: [--profile=full|basic|minimal|none] [--enable/--disable=features] [--migrate] [--upgrade] [--repair] [--version] [--list-scripts]
+description: Configure AgileFlow features, hooks, and project infrastructure (Visual E2E, CI, git)
+argument-hint: [--profile=<name>] [--save-profile=<name>] [--list-profiles] [--export-profile=<name>] [--import-profile=<file>] [--enable/--disable=features]
 compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:configure - Configuration manager for AgileFlow features"
-    - "CRITICAL: ALWAYS run --detect FIRST to check status before anything else"
-    - "CRITICAL: If ⚠️ INVALID FORMAT shown → offer --migrate BEFORE other options"
-    - "CRITICAL: If 🔄 OUTDATED shown → offer --upgrade to re-deploy latest scripts"
-    - "MUST backup created on migrate: .claude/settings.json.backup"
-    - "MUST show RED RESTART banner after ANY changes (quit, wait 5s, restart)"
-    - "Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, askuserquestion"
-    - "Stop hooks (ralphloop, selfimprove) run when Claude completes or pauses"
+    - "CRITICAL: Max 4 options per AskUserQuestion - use hierarchical menus"
+    - "CRITICAL: Run --detect FIRST, handle issues, then show Main Menu"
+    - "Main Menu (4 categories): Profiles | Features | Infrastructure | Maintenance"
+    - "Each category has its own sub-menu with max 4 options"
+    - "MUST show RED RESTART banner after ANY changes"
   state_fields:
     - detection_status
     - has_format_issues
@@ -23,45 +21,43 @@ compact_context:
 
 ## Compact Summary
 
-Configuration management with **profiles**, **enable/disable**, **format migration**, and **upgrade detection**.
+Configuration management with **hierarchical menus** (4 options max per question).
 
 ### Workflow (MUST FOLLOW)
 
 1. **Run detection**: `node .agileflow/scripts/agileflow-configure.js --detect`
-2. **If ⚠️ INVALID FORMAT shown**: Ask user to fix with `--migrate` BEFORE anything else
-3. **If 🔄 OUTDATED shown**: Ask user to upgrade with `--upgrade`
-4. **Present options**: Profiles, enable/disable, or check status
+2. **Handle issues**: If ⚠️ INVALID FORMAT → migrate. If 🔄 OUTDATED → upgrade.
+3. **Main menu** (4 categories): Profiles | Features | Infrastructure | Maintenance
+4. **Sub-menu**: Based on selection, show category-specific options
+
+### Menu Flow
+
+```
+Main Menu → "What would you like to configure?"
+├─ Profiles       → Apply preset | Apply custom | Save current | Manage
+│                   ├─ Presets: Full | Basic | Minimal | None
+│                   └─ Custom: Save, Export, Import, Delete
+├─ Features       → Enable | Disable | View status
+│                   └─ Hooks (4) + Other Features (4)
+├─ Infrastructure → Visual E2E | Damage Control | CI/CD
+└─ Maintenance    → Fix format | Upgrade | Repair | Check status
+```
 
 ### Quick Commands
 
 ```bash
-node .agileflow/scripts/agileflow-configure.js --detect             # Check status
-node .agileflow/scripts/agileflow-configure.js --migrate            # Fix format issues
-node .agileflow/scripts/agileflow-configure.js --upgrade            # Update outdated scripts
-node .agileflow/scripts/agileflow-configure.js --profile=full       # Enable all
-node .agileflow/scripts/agileflow-configure.js --profile=none       # Disable all
-node .agileflow/scripts/agileflow-configure.js --enable=sessionstart  # Enable specific
-node .agileflow/scripts/agileflow-configure.js --disable=archival   # Disable specific
-node .agileflow/scripts/agileflow-configure.js --list-scripts       # Show all scripts status
-node .agileflow/scripts/agileflow-configure.js --version            # Version info
-node .agileflow/scripts/agileflow-configure.js --repair             # Fix missing scripts
-node .agileflow/scripts/agileflow-configure.js --repair=statusline  # Fix specific feature
+node .agileflow/scripts/agileflow-configure.js --detect        # Check status
+node .agileflow/scripts/agileflow-configure.js --profile=full  # Enable all
+node .agileflow/scripts/agileflow-configure.js --migrate       # Fix format
+node .agileflow/scripts/agileflow-configure.js --upgrade       # Update scripts
+node .agileflow/scripts/agileflow-configure.js --repair        # Restore missing
 ```
-
-**Note:** All scripts are located in `.agileflow/scripts/` - no files in project root `scripts/`.
-
-### Features
-
-`sessionstart`, `precompact`, `ralphloop`, `selfimprove`, `archival`, `statusline`, `autoupdate`, `askuserquestion`
-
-**Stop hooks** (ralphloop, selfimprove) run when Claude completes or pauses work.
 
 ### Critical Rules
 
-- **Check for format issues FIRST** - offer to fix before other options
-- **Check for outdated scripts** - offer to upgrade if versions differ
-- **Backup created** on migrate: `.claude/settings.json.backup`
-- **Restart required** - always show red banner after changes
+- **Max 4 options per AskUserQuestion** - use hierarchical menus
+- **Run detection FIRST** - show current state before changes
+- **Restart required** - show red banner after any changes
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -123,60 +119,282 @@ If user says yes:
 node .agileflow/scripts/agileflow-configure.js --upgrade
 ```
 
-## STEP 3: Configuration Options
+## STEP 3: Main Menu
 
-After fixing issues (or if no issues), present main options:
+After handling issues (or if none), present the main category menu:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do?",
+  "question": "What would you like to configure?",
   "header": "Configure",
   "multiSelect": false,
   "options": [
-    {"label": "Quick setup (full profile)", "description": "Enable all features: hooks, archival, status line"},
-    {"label": "Basic setup", "description": "SessionStart + PreCompact + Archival"},
-    {"label": "Enable specific features", "description": "Choose which features to enable"},
-    {"label": "Disable specific features", "description": "Choose which features to disable"},
-    {"label": "Check current status only", "description": "Already done - no changes needed"}
+    {"label": "Profiles", "description": "Quick setup with preset configurations (full, basic, minimal)"},
+    {"label": "Features", "description": "Enable or disable individual hooks and features"},
+    {"label": "Infrastructure", "description": "Set up Visual E2E, Damage Control, or CI/CD"},
+    {"label": "Maintenance", "description": "Fix issues, repair scripts, or check status"}
   ]
 }]</parameter>
 </invoke>
 ```
 
-## Profile Commands
+---
 
-**Use a profile:**
+## STEP 4: Sub-menus
 
-```bash
-# Full - all features
-node .agileflow/scripts/agileflow-configure.js --profile=full
+### If "Profiles" selected
 
-# Basic - essential hooks + archival
-node .agileflow/scripts/agileflow-configure.js --profile=basic
-
-# Minimal - welcome + archival
-node .agileflow/scripts/agileflow-configure.js --profile=minimal
-
-# None - disable all AgileFlow features
-node .agileflow/scripts/agileflow-configure.js --profile=none
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What would you like to do with profiles?",
+  "header": "Profiles",
+  "multiSelect": false,
+  "options": [
+    {"label": "Apply preset profile", "description": "Full, Basic, Minimal, or None"},
+    {"label": "Apply custom profile", "description": "Use one of your saved profiles"},
+    {"label": "Save current as profile", "description": "Save current feature settings as reusable profile"},
+    {"label": "Manage profiles", "description": "View, export, import, or delete profiles"}
+  ]
+}]</parameter>
+</invoke>
 ```
 
-**Option B: Enable/disable specific features**
+#### If "Apply preset profile" selected
 
-```bash
-# Enable features
-node .agileflow/scripts/agileflow-configure.js --enable=sessionstart,precompact
-
-# Disable features
-node .agileflow/scripts/agileflow-configure.js --disable=statusline
-
-# Both at once
-node .agileflow/scripts/agileflow-configure.js --enable=statusline --disable=archival
-
-# With custom archival days
-node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days=14
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which preset?",
+  "header": "Preset",
+  "multiSelect": false,
+  "options": [
+    {"label": "Full (Recommended)", "description": "All features: hooks, archival, status line, AskUserQuestion"},
+    {"label": "Basic", "description": "SessionStart + PreCompact + Archival + AskUserQuestion"},
+    {"label": "Minimal", "description": "SessionStart + Archival only"},
+    {"label": "None", "description": "Disable all AgileFlow features"}
+  ]
+}]</parameter>
+</invoke>
 ```
+
+Then run:
+- "Full" → `node .agileflow/scripts/agileflow-configure.js --profile=full`
+- "Basic" → `node .agileflow/scripts/agileflow-configure.js --profile=basic`
+- "Minimal" → `node .agileflow/scripts/agileflow-configure.js --profile=minimal`
+- "None" → `node .agileflow/scripts/agileflow-configure.js --profile=none`
+
+#### If "Apply custom profile" selected
+
+First, check if custom profiles exist:
+```bash
+node .agileflow/scripts/agileflow-configure.js --list-profiles
+```
+
+If no profiles: "No custom profiles saved yet. Create one with 'Save current as profile'."
+
+If profiles exist, list them (max 4 at a time):
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which custom profile?",
+  "header": "Custom",
+  "multiSelect": false,
+  "options": [
+    {"label": "my-backend-setup", "description": "Backend dev - no UI features"},
+    {"label": "ui-heavy", "description": "UI development with visual verification"},
+    {"label": "ci-mode", "description": "Minimal for CI/CD pipelines"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Then run: `node .agileflow/scripts/agileflow-configure.js --profile=<selected-name>`
+
+#### If "Save current as profile" selected
+
+Ask for profile name and description:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What should we name this profile?",
+  "header": "Name",
+  "multiSelect": false,
+  "options": [
+    {"label": "my-setup", "description": "Generic name for personal setup"},
+    {"label": "backend-dev", "description": "For backend development work"},
+    {"label": "ui-dev", "description": "For UI/frontend development"},
+    {"label": "ci-mode", "description": "Minimal config for CI pipelines"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+User can select or type custom name via "Other".
+
+Then run:
+```bash
+node .agileflow/scripts/agileflow-configure.js --save-profile=<name> --description="<description>"
+```
+
+#### If "Manage profiles" selected
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What would you like to do?",
+  "header": "Manage",
+  "multiSelect": false,
+  "options": [
+    {"label": "View all profiles", "description": "See details of all saved profiles"},
+    {"label": "Export profile", "description": "Export a profile to share with others"},
+    {"label": "Import profile", "description": "Import a profile from file"},
+    {"label": "Delete profile", "description": "Remove a saved custom profile"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Commands:
+- View: `node .agileflow/scripts/agileflow-configure.js --list-profiles --verbose`
+- Export: `node .agileflow/scripts/agileflow-configure.js --export-profile=<name> --output=profile.json`
+- Import: `node .agileflow/scripts/agileflow-configure.js --import-profile=profile.json`
+- Delete: `node .agileflow/scripts/agileflow-configure.js --delete-profile=<name>`
+
+---
+
+### If "Features" selected
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What do you want to do?",
+  "header": "Features",
+  "multiSelect": false,
+  "options": [
+    {"label": "Enable features", "description": "Turn on specific hooks and features"},
+    {"label": "Disable features", "description": "Turn off specific hooks and features"},
+    {"label": "View current status", "description": "See what's currently enabled/disabled"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+#### If "Enable features" or "Disable features" selected
+
+First, ask about hooks:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which hooks?",
+  "header": "Hooks",
+  "multiSelect": true,
+  "options": [
+    {"label": "SessionStart", "description": "Welcome display with project status on session start"},
+    {"label": "PreCompact", "description": "Context preservation when conversation compacts"},
+    {"label": "RalphLoop", "description": "Stop hook: autonomous story loop with tests"},
+    {"label": "SelfImprove", "description": "Stop hook: auto-update agent expertise from work"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Then ask about other features:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which other features?",
+  "header": "Features",
+  "multiSelect": true,
+  "options": [
+    {"label": "Archival", "description": "Auto-archive completed stories older than threshold"},
+    {"label": "Status Line", "description": "Custom status bar showing story/epic info"},
+    {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"},
+    {"label": "AskUserQuestion Mode", "description": "End responses with guided options"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Map selections to commands:
+- SessionStart → `sessionstart`
+- PreCompact → `precompact`
+- RalphLoop → `ralphloop`
+- SelfImprove → `selfimprove`
+- Archival → `archival`
+- Status Line → `statusline`
+- Auto-Update → `autoupdate`
+- AskUserQuestion Mode → `askuserquestion`
+
+Then run:
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=feature1,feature2
+# or
+node .agileflow/scripts/agileflow-configure.js --disable=feature1,feature2
+```
+
+---
+
+### If "Infrastructure" selected
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What infrastructure to set up?",
+  "header": "Setup",
+  "multiSelect": false,
+  "options": [
+    {"label": "Visual E2E Testing", "description": "Playwright + screenshot verification workflow"},
+    {"label": "Damage Control", "description": "Block destructive commands, protect sensitive paths"},
+    {"label": "CI/CD Workflow", "description": "GitHub Actions for automated testing"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Spawn the appropriate configuration agent:
+
+```javascript
+// Visual E2E
+Task({ subagent_type: "configuration-visual-e2e", description: "Configure Visual E2E", prompt: "..." })
+
+// Damage Control
+Task({ subagent_type: "configuration-damage-control", description: "Configure Damage Control", prompt: "..." })
+
+// CI/CD
+Task({ subagent_type: "configuration-ci", description: "Configure CI/CD", prompt: "..." })
+```
+
+---
+
+### If "Maintenance" selected
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What maintenance task?",
+  "header": "Maintenance",
+  "multiSelect": false,
+  "options": [
+    {"label": "Fix format issues", "description": "Migrate invalid settings to correct format"},
+    {"label": "Upgrade scripts", "description": "Update features to latest AgileFlow version"},
+    {"label": "Repair missing scripts", "description": "Restore accidentally deleted scripts"},
+    {"label": "Check status", "description": "View current configuration (already shown above)"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Then run:
+- "Fix format issues" → `node .agileflow/scripts/agileflow-configure.js --migrate`
+- "Upgrade scripts" → `node .agileflow/scripts/agileflow-configure.js --upgrade`
+- "Repair missing scripts" → `node .agileflow/scripts/agileflow-configure.js --repair`
+- "Check status" → Already shown in Step 1, no action needed
+
+---
 
 ## Profile Details
 
@@ -187,61 +405,115 @@ node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days
 | `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ 30 days | ❌ | ❌ |
 | `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-## Interactive Mode (via /configure command)
+## CLI Commands Reference
 
-When user runs `/configure` without arguments, present options:
+```bash
+# Preset Profiles
+node .agileflow/scripts/agileflow-configure.js --profile=full
+node .agileflow/scripts/agileflow-configure.js --profile=basic
+node .agileflow/scripts/agileflow-configure.js --profile=minimal
+node .agileflow/scripts/agileflow-configure.js --profile=none
 
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What would you like to do?",
-  "header": "Configure",
-  "multiSelect": false,
-  "options": [
-    {"label": "Quick setup (full profile)", "description": "Enable all features: hooks, archival, status line"},
-    {"label": "Basic setup", "description": "SessionStart + PreCompact + Archival"},
-    {"label": "Fix format issues", "description": "Migrate old/invalid settings formats"},
-    {"label": "Enable specific features", "description": "Choose which features to enable"},
-    {"label": "Disable specific features", "description": "Choose which features to disable"},
-    {"label": "Check current status", "description": "See what's currently configured"}
-  ]
-}]</parameter>
-</invoke>
+# Custom Profiles
+node .agileflow/scripts/agileflow-configure.js --profile=my-custom-profile    # Apply custom
+node .agileflow/scripts/agileflow-configure.js --save-profile=my-setup        # Save current
+node .agileflow/scripts/agileflow-configure.js --list-profiles                # List all
+node .agileflow/scripts/agileflow-configure.js --list-profiles --verbose      # With details
+node .agileflow/scripts/agileflow-configure.js --delete-profile=my-setup      # Delete
+
+# Export/Import Profiles (for sharing)
+node .agileflow/scripts/agileflow-configure.js --export-profile=my-setup --output=my-setup.json
+node .agileflow/scripts/agileflow-configure.js --import-profile=my-setup.json
+
+# Enable/disable features
+node .agileflow/scripts/agileflow-configure.js --enable=sessionstart,precompact
+node .agileflow/scripts/agileflow-configure.js --disable=statusline
+node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days=14
+
+# Maintenance
+node .agileflow/scripts/agileflow-configure.js --detect
+node .agileflow/scripts/agileflow-configure.js --migrate
+node .agileflow/scripts/agileflow-configure.js --upgrade
+node .agileflow/scripts/agileflow-configure.js --repair
+node .agileflow/scripts/agileflow-configure.js --list-scripts
+node .agileflow/scripts/agileflow-configure.js --version
 ```
 
-Based on selection, run appropriate command.
+## Custom Profiles
 
-## Feature Selection (when Enable/Disable selected)
+Custom profiles let you save and reuse your preferred feature combinations.
 
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "Which features?",
-  "header": "Features",
-  "multiSelect": true,
-  "options": [
-    {"label": "SessionStart Hook", "description": "Welcome display with project status"},
-    {"label": "PreCompact Hook", "description": "Context preservation on compact"},
-    {"label": "RalphLoop (Stop Hook)", "description": "Autonomous story loop - runs tests, advances stories"},
-    {"label": "SelfImprove (Stop Hook)", "description": "Auto-update agent expertise from work"},
-    {"label": "Archival", "description": "Auto-archive old completed stories"},
-    {"label": "Status Line", "description": "Custom status bar"},
-    {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"},
-    {"label": "AskUserQuestion Mode", "description": "End all responses with AskUserQuestion tool for guided interaction"}
-  ]
-}]</parameter>
-</invoke>
+### Data Model
+
+Profiles are stored in `docs/00-meta/agileflow-metadata.json`:
+
+```json
+{
+  "version": "2.78.0",
+  "profiles": {
+    "my-backend-setup": {
+      "description": "Backend development - no UI features",
+      "created": "2026-01-09T10:00:00.000Z",
+      "features": {
+        "sessionstart": true,
+        "precompact": true,
+        "ralphloop": true,
+        "selfimprove": false,
+        "archival": true,
+        "statusline": false,
+        "autoupdate": true,
+        "askuserquestion": false
+      }
+    },
+    "ui-heavy": {
+      "description": "UI development with visual verification",
+      "created": "2026-01-09T10:00:00.000Z",
+      "features": {
+        "sessionstart": true,
+        "precompact": true,
+        "ralphloop": true,
+        "selfimprove": false,
+        "archival": true,
+        "statusline": true,
+        "autoupdate": false,
+        "askuserquestion": true
+      }
+    }
+  },
+  "features": { ... }
+}
 ```
 
-Map selections:
-- "SessionStart Hook" → `sessionstart`
-- "PreCompact Hook" → `precompact`
-- "RalphLoop (Stop Hook)" → `ralphloop`
-- "SelfImprove (Stop Hook)" → `selfimprove`
-- "Archival" → `archival`
-- "Status Line" → `statusline`
-- "Auto-Update" → `autoupdate`
-- "AskUserQuestion Mode" → `askuserquestion`
+### Export Format
+
+Exported profiles use this format (for sharing):
+
+```json
+{
+  "name": "my-backend-setup",
+  "description": "Backend development - no UI features",
+  "agileflow_version": "2.78.0",
+  "exported": "2026-01-09T10:00:00.000Z",
+  "features": {
+    "sessionstart": true,
+    "precompact": true,
+    "ralphloop": true,
+    "selfimprove": false,
+    "archival": true,
+    "statusline": false,
+    "autoupdate": true,
+    "askuserquestion": false
+  }
+}
+```
+
+### Sharing Profiles
+
+1. **Export**: `--export-profile=my-setup --output=my-setup.json`
+2. **Share**: Send the JSON file to teammate
+3. **Import**: `--import-profile=my-setup.json`
+
+Imported profiles are added to the local metadata with the same name.
 
 ## Auto-Update Configuration
 

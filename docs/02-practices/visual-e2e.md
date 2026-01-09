@@ -21,7 +21,7 @@ Visual E2E with screenshot verification catches these issues.
 ```mermaid
 flowchart TB
     subgraph Setup["Setup Phase"]
-        A["/agileflow:setup:visual-e2e"] --> B["Install Playwright"]
+        A["/agileflow:configure → Visual E2E"] --> B["Install Playwright"]
         B --> C["Create playwright.config.ts"]
         C --> D["Create tests/e2e/"]
         D --> E["Create screenshots/"]
@@ -83,8 +83,10 @@ screenshots/
 ### 1. Run Setup Command
 
 ```
-/agileflow:setup:visual-e2e
+/agileflow:configure
 ```
+
+Then select **"Set up Visual E2E testing"** from the menu.
 
 This creates:
 - `playwright.config.ts` with webServer config
@@ -343,7 +345,7 @@ Visual Mode enforces minimum 2 iterations automatically
 
 | Command | Purpose |
 |---------|---------|
-| `/agileflow:setup:visual-e2e` | Set up Playwright and screenshots directory |
+| `/agileflow:configure` | Set up Visual E2E (select "Set up Visual E2E testing") |
 | `/agileflow:babysit VISUAL=true` | Enable Visual Mode in Ralph Loop |
 | `/agileflow:verify` | Run tests and update story status |
 

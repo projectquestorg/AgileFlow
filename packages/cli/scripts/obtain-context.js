@@ -19,12 +19,13 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { c: C, box } = require('../lib/colors');
+const { isValidCommandName } = require('../lib/validate');
 
 const DISPLAY_LIMIT = 30000; // Claude Code's Bash tool display limit
 
 // Optional: Register command for PreCompact context preservation
 const commandName = process.argv[2];
-if (commandName) {
+if (commandName && isValidCommandName(commandName)) {
   const sessionStatePath = 'docs/09-agents/session-state.json';
   if (fs.existsSync(sessionStatePath)) {
     try {
@@ -378,7 +379,61 @@ function generateFullContent() {
     content += `${C.dim}No session-state.json found${C.reset}\n`;
   }
 
-  // 4. INTERACTION MODE (AskUserQuestion guidance)
+  // 4. SESSION CONTEXT (multi-session awareness)
+  content += `\n${C.skyBlue}${C.bold}═══ Session Context ═══${C.reset}\n`;
+  const sessionManagerPath = path.join(__dirname, 'session-manager.js');
+  const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
+
+  if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
+    const managerPath = fs.existsSync(sessionManagerPath)
+      ? sessionManagerPath
+      : altSessionManagerPath;
+    const sessionStatus = safeExec(`node "${managerPath}" status`);
+
+    if (sessionStatus) {
+      try {
+        const statusData = JSON.parse(sessionStatus);
+        if (statusData.current) {
+          const session = statusData.current;
+          const isMain = session.is_main === true;
+
+          if (isMain) {
+            content += `Session: ${C.mintGreen}Main project${C.reset} (Session ${session.id || 1})\n`;
+          } else {
+            // NON-MAIN SESSION - Show prominent banner
+            const sessionName = session.nickname
+              ? `${session.id} "${session.nickname}"`
+              : `${session.id}`;
+            content += `${C.teal}${C.bold}🔀 SESSION ${sessionName} (worktree)${C.reset}\n`;
+            content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
+            content += `Path: ${C.dim}${session.path || process.cwd()}${C.reset}\n`;
+
+            // Calculate relative path to main
+            const mainPath = process.cwd().replace(/-[^/]+$/, ''); // Heuristic: strip session suffix
+            content += `Main project: ${C.dim}${mainPath}${C.reset}\n`;
+
+            // Remind about merge flow
+            content += `${C.lavender}💡 When done: /agileflow:session:end → merge to main${C.reset}\n`;
+          }
+
+          // Show other active sessions
+          if (statusData.otherActive > 0) {
+            content += `${C.peach}⚠️ ${statusData.otherActive} other session(s) active${C.reset}\n`;
+          }
+        } else {
+          content += `${C.dim}No session registered${C.reset}\n`;
+        }
+      } catch (e) {
+        content += `${C.dim}Session manager available but status parse failed${C.reset}\n`;
+      }
+    } else {
+      content += `${C.dim}Session manager available${C.reset}\n`;
+    }
+  } else {
+    content += `${C.dim}Multi-session not configured${C.reset}\n`;
+  }
+
+  // 5. INTERACTION MODE (AskUserQuestion guidance)
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
   const askUserQuestionConfig = metadata?.features?.askUserQuestion;
 

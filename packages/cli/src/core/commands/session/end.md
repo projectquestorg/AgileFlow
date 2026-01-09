@@ -1,30 +1,32 @@
 ---
-description: Cleanly end session and record summary
+description: Cleanly end session with optional merge to main
 argument-hint: (no arguments)
 compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:session:end - Terminate current session"
-    - "Gets current session, prompts for end/delete/cancel options"
-    - "Only deletes worktree if not main session (is_main: false)"
-    - "Updates registry to mark session inactive, removes lock file"
-    - "Main session can only be marked inactive, not deleted"
-    - "Use AskUserQuestion to let user choose option"
+    - "For NON-MAIN sessions: 4 options (merge/end/delete/cancel)"
+    - "For MAIN sessions: 2 options (end/cancel)"
+    - "Merge flow: check uncommitted → preview → check conflicts → strategy → confirm → execute"
+    - "Main session can only be marked inactive, not deleted or merged"
+    - "Use AskUserQuestion for all user choices"
   state_fields:
     - current_session
     - is_main_session
     - user_choice
+    - merge_strategy
 ---
 
 # /agileflow:session:end
 
-End the current session and optionally clean up the worktree.
+End the current session and optionally merge your work back to main.
 
 ---
 
 ## Purpose
 
 When you're done with a session, this command:
+- **Merges your changes** to main (recommended for non-main sessions)
 - Removes the session's lock file (marks it inactive)
 - Optionally removes the git worktree directory
 - Updates the registry with last active timestamp
@@ -41,12 +43,30 @@ If no current session is registered, display message and exit.
 
 ### Step 2: Present Options with AskUserQuestion
 
+**For MAIN session** (2 options - cannot merge main into itself):
+
+```
+AskUserQuestion:
+  question: "End Session 1 (main)?"
+  header: "End session"
+  multiSelect: false
+  options:
+    - label: "Yes, end session"
+      description: "Mark session inactive (keep project for later)"
+    - label: "Cancel"
+      description: "Keep session active"
+```
+
+**For NON-MAIN session** (4 options):
+
 ```
 AskUserQuestion:
   question: "End Session {id}?"
   header: "End session"
   multiSelect: false
   options:
+    - label: "Complete & merge to main (Recommended)"
+      description: "Merge your changes to main and clean up"
     - label: "Yes, end session"
       description: "Mark session inactive (keep worktree for later)"
     - label: "End and delete worktree"
@@ -55,9 +75,11 @@ AskUserQuestion:
       description: "Keep session active"
 ```
 
-Note: Don't show "delete worktree" option for main session (is_main: true).
+### Step 3a: If "Complete & merge to main" Selected
 
-### Step 3a: If "End session" Selected
+Follow the **MERGE FLOW** below.
+
+### Step 3b: If "End session" Selected
 
 ```bash
 node .agileflow/scripts/session-manager.js unregister {session_id}
@@ -74,7 +96,7 @@ Display:
 To resume later: cd {path} && claude
 ```
 
-### Step 3b: If "End and delete worktree" Selected
+### Step 3c: If "End and delete worktree" Selected
 
 ```bash
 node .agileflow/scripts/session-manager.js delete {session_id} --remove-worktree
@@ -91,22 +113,218 @@ Display:
    git branch -d {branch}
 ```
 
-### Step 3c: If "Cancel" Selected
+### Step 3d: If "Cancel" Selected
 
 ```
 Session remains active.
 ```
+
+---
+
+## MERGE FLOW (for "Complete & merge to main")
+
+### Merge Step 1: Check for Uncommitted Changes
+
+```bash
+node .agileflow/scripts/session-manager.js check-merge {session_id}
+```
+
+If response contains `reason: "uncommitted_changes"`:
+
+```
+⚠️ You have uncommitted changes in this session.
+
+Please commit your changes before merging:
+  git add .
+  git commit -m "your message"
+
+Or discard changes:
+  git checkout -- .
+
+Then run /agileflow:session:end again.
+```
+
+**Exit the flow here.** Do not continue to merge.
+
+### Merge Step 2: Get Merge Preview
+
+```bash
+node .agileflow/scripts/session-manager.js merge-preview {session_id}
+```
+
+Display preview:
+
+```
+📊 Merge Preview
+
+Session {id} "{nickname}" → {mainBranch}
+
+Commits to merge: {commitCount}
+┌─────────────────────────────────────────────────────────────┐
+│ {commit_1}                                                   │
+│ {commit_2}                                                   │
+│ ...                                                          │
+└─────────────────────────────────────────────────────────────┘
+
+Files changed: {fileCount}
+  {file_1}
+  {file_2}
+  ...
+```
+
+If `commitCount: 0`:
+```
+ℹ️ No commits to merge. Your branch is already up to date with main.
+
+Would you like to just end the session instead?
+```
+
+Then show simplified options (end/delete/cancel).
+
+### Merge Step 3: Check Mergeability
+
+From the `check-merge` response, check `hasConflicts`:
+
+If `hasConflicts: true`:
+
+```
+⚠️ Merge conflicts detected!
+
+This branch has conflicts with {mainBranch} that need to be resolved manually.
+```
+
+Then show conflict options:
+
+```
+AskUserQuestion:
+  question: "How would you like to proceed?"
+  header: "Merge conflicts"
+  multiSelect: false
+  options:
+    - label: "Resolve manually"
+      description: "Keep session active and resolve conflicts yourself"
+    - label: "End session without merging"
+      description: "Keep worktree for later resolution"
+    - label: "Cancel"
+      description: "Keep session as-is"
+```
+
+If "Resolve manually" selected, show instructions:
+```
+To resolve conflicts manually:
+
+1. Make sure you're on main:
+   cd {mainPath}
+   git checkout {mainBranch}
+
+2. Start the merge:
+   git merge {branchName}
+
+3. Resolve conflicts in your editor
+
+4. Complete the merge:
+   git add .
+   git commit
+
+5. Then delete the session worktree:
+   git worktree remove {sessionPath}
+
+Session remains active for now.
+```
+
+### Merge Step 4: Choose Merge Strategy (if clean)
+
+If `mergeable: true`:
+
+```
+AskUserQuestion:
+  question: "How should the commits be merged?"
+  header: "Merge strategy"
+  multiSelect: false
+  options:
+    - label: "Squash into single commit (Recommended)"
+      description: "Combines all {commitCount} commits into one clean commit"
+    - label: "Merge with commit history"
+      description: "Preserves all {commitCount} individual commits"
+```
+
+### Merge Step 5: Confirm and Choose Cleanup
+
+```
+AskUserQuestion:
+  question: "Merge session to {mainBranch}?"
+  header: "Confirm merge"
+  multiSelect: false
+  options:
+    - label: "Yes, merge and clean up (Recommended)"
+      description: "Merge changes, delete branch and worktree"
+    - label: "Merge but keep branch"
+      description: "Merge changes but preserve the branch for reference"
+    - label: "Cancel"
+      description: "Don't merge"
+```
+
+### Merge Step 6: Execute Merge
+
+Based on user choices:
+
+```bash
+# If "merge and clean up":
+node .agileflow/scripts/session-manager.js integrate {session_id} --strategy={squash|merge} --deleteBranch=true --deleteWorktree=true
+
+# If "merge but keep branch":
+node .agileflow/scripts/session-manager.js integrate {session_id} --strategy={squash|merge} --deleteBranch=false --deleteWorktree=true
+```
+
+### Merge Step 7: Display Result
+
+If successful:
+
+```
+✓ Session {id} "{nickname}" merged to {mainBranch}!
+
+Summary:
+  Strategy:    {Squash|Merge} ({commitCount} commits → 1)
+  Message:     {commitMessage}
+  Branch:      {branchName} (deleted|kept)
+  Worktree:    {sessionPath} (removed)
+
+┌─────────────────────────────────────────────────────────────┐
+│ You're now back on {mainBranch}. Your changes are live!     │
+│                                                             │
+│   cd {mainPath}                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+💡 To push your changes: git push
+```
+
+If failed:
+
+```
+✗ Merge failed
+
+Error: {error_message}
+
+Your session is still active. Try:
+  • Resolve conflicts manually
+  • Run /agileflow:session:end again after fixing issues
+```
+
+---
 
 ## Main Session Warning
 
 If current session is the main project (is_main: true):
 
 ```
-⚠️ This is the main project session.
+ℹ️ This is the main project session.
 
-You can only end this session (mark inactive), not delete the directory.
-The main project is not a worktree and cannot be removed.
+You can only end this session (mark inactive), not merge or delete.
+The main project is not a worktree.
 ```
+
+Then show the 2-option prompt (end or cancel).
 
 ## Related Commands
 
@@ -120,24 +338,23 @@ The main project is not a worktree and cannot be removed.
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:session:end IS ACTIVE
 
-**CRITICAL**: This command terminates the current session. It MUST handle three cases: main session / non-main session / cancel.
+**CRITICAL**: This command terminates the current session. For non-main sessions, offers merge to main as the recommended option.
 
 ---
 
 ### 🚨 RULE #1: CHECK IF MAIN SESSION FIRST
 
-Before doing anything, determine if current session is main:
 ```bash
 node .agileflow/scripts/session-manager.js status
-# If is_main: true → can only mark inactive
-# If is_main: false → can delete worktree
+# If is_main: true → 2 options (end / cancel)
+# If is_main: false → 4 options (merge / end / delete / cancel)
 ```
 
 ---
 
-### 🚨 RULE #2: USE AskUserQuestion FOR OPTIONS
+### 🚨 RULE #2: OPTIONS BY SESSION TYPE
 
-**For MAIN session** (only 2 options):
+**MAIN session** (2 options):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -154,7 +371,7 @@ node .agileflow/scripts/session-manager.js status
 </invoke>
 ```
 
-**For NON-MAIN session** (3 options):
+**NON-MAIN session** (4 options):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -162,6 +379,8 @@ node .agileflow/scripts/session-manager.js status
   "header": "End session",
   "multiSelect": false,
   "options": [
+    {"label": "Complete & merge to main (Recommended)",
+     "description": "Merge your changes to main and clean up"},
     {"label": "Yes, end session",
      "description": "Mark session inactive (keep worktree for later)"},
     {"label": "End and delete worktree",
@@ -175,137 +394,147 @@ node .agileflow/scripts/session-manager.js status
 
 ---
 
-### 🚨 RULE #3: HANDLE EACH USER CHOICE
+### 🚨 RULE #3: MERGE FLOW (if "Complete & merge" selected)
 
-**If "Yes, end session" selected:**
+**Step 1: Check uncommitted changes**
+```bash
+node .agileflow/scripts/session-manager.js check-merge {session_id}
+```
+If `reason: "uncommitted_changes"` → Show commit instructions → EXIT
+
+**Step 2: Get preview**
+```bash
+node .agileflow/scripts/session-manager.js merge-preview {session_id}
+```
+Display commits and files to be merged.
+
+**Step 3: Check conflicts**
+If `hasConflicts: true` → Show conflict options → EXIT or manual resolution
+
+**Step 4: Choose strategy**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "How should the commits be merged?",
+  "header": "Merge strategy",
+  "multiSelect": false,
+  "options": [
+    {"label": "Squash into single commit (Recommended)",
+     "description": "Combines all commits into one clean commit"},
+    {"label": "Merge with commit history",
+     "description": "Preserves all individual commits"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Step 5: Confirm cleanup**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Merge session to main?",
+  "header": "Confirm merge",
+  "multiSelect": false,
+  "options": [
+    {"label": "Yes, merge and clean up (Recommended)",
+     "description": "Merge changes, delete branch and worktree"},
+    {"label": "Merge but keep branch",
+     "description": "Merge changes but preserve the branch"},
+    {"label": "Cancel",
+     "description": "Don't merge"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Step 6: Execute**
+```bash
+node .agileflow/scripts/session-manager.js integrate {id} --strategy={squash|merge} --deleteBranch={true|false} --deleteWorktree=true
+```
+
+**Step 7: Display success**
+```
+✓ Session {id} merged to main!
+  cd {mainPath}
+💡 To push: git push
+```
+
+---
+
+### 🚨 RULE #4: HANDLE OTHER OPTIONS
+
+**"End session":**
 ```bash
 node .agileflow/scripts/session-manager.js unregister {session_id}
 ```
-Display:
-```
-✓ Session {id} ended
 
-  Branch: {branch}
-  Story:  {story_id} (status unchanged)
-  Worktree kept at: {path}
-
-To resume later: cd {path} && claude
-```
-
-**If "End and delete worktree" selected** (non-main only):
+**"End and delete worktree":**
 ```bash
 node .agileflow/scripts/session-manager.js delete {session_id} --remove-worktree
 ```
-Display:
-```
-✓ Session {id} ended and removed
 
-  Branch: {branch}
-  Worktree removed: {path}
-
-💡 The branch still exists. To delete it:
-   git branch -d {branch}
-```
-
-**If "Cancel" selected:**
+**"Cancel":**
 ```
 Session remains active.
 ```
 
 ---
 
-### 🚨 RULE #4: MAIN SESSION WARNING
-
-If session is main (is_main: true):
-```
-⚠️ This is the main project session.
-
-You can only end this session (mark inactive), not delete the directory.
-The main project is not a worktree and cannot be removed.
-```
-
-Then show the 2-option prompt (end or cancel).
-
----
-
-### 🚨 RULE #5: BRANCH MANAGEMENT NOTE
-
-When deleting worktree, remind user the branch persists:
-```
-💡 The branch still exists. To delete it:
-   git branch -d {branch}
-```
-
-This is important because users might want to keep branch history.
-
----
-
-### KEY FILES TO REMEMBER
+### KEY FILES
 
 | File | Purpose |
 |------|---------|
 | `.agileflow/sessions/registry.json` | Session registry |
 | `.agileflow/sessions/{id}.lock` | Removed when session ends |
-| `.agileflow/scripts/session-manager.js` | Unregister and delete |
+| `.agileflow/scripts/session-manager.js` | All session operations |
 
 ---
 
-### WORKFLOW
+### WORKFLOW SUMMARY
 
-1. **Get current session** → `session-manager.js status`
-2. **Check is_main** → Determine option set
-3. **If main** → Show warning + 2 options
-4. **If not main** → Show no warning + 3 options
-5. **User selects** → Handle choice
-6. **Execute** → Call manager script
-7. **Display result** → Show success/failure
-
----
-
-### SESSION DATA STRUCTURE
-
-From `session-manager.js status`:
-```json
-{
-  "id": 1,
-  "path": "/home/user/project",
-  "branch": "main",
-  "status": "active",
-  "is_main": true,
-  "is_current": true,
-  "created": "2025-12-20T10:00:00Z",
-  "last_active": "2025-12-20T10:30:00Z"
-}
+```
+1. Get session status
+2. Check is_main
+3. Show options (4 for non-main, 2 for main)
+4. If merge selected:
+   a. Check uncommitted → block if dirty
+   b. Preview commits/files
+   c. Check conflicts → offer alternatives if conflicts
+   d. Choose strategy (squash/merge)
+   e. Confirm cleanup
+   f. Execute integrate
+   g. Show success with cd command
+5. If end/delete → Execute and show result
 ```
 
 ---
 
-### ANTI-PATTERNS (DON'T DO THESE)
+### ANTI-PATTERNS
 
-❌ Show delete option for main session
-❌ Unregister without checking is_main
-❌ Don't warn about main session status
-❌ Don't mention branch deletion after worktree removal
-❌ Use different prompts for main vs non-main
+❌ Show merge option for main session
+❌ Skip uncommitted check before merge
+❌ Merge without showing preview
+❌ Merge when conflicts exist without warning
+❌ Delete worktree before merge completes
 
-### DO THESE INSTEAD
+### DO THESE
 
 ✅ Always check is_main first
-✅ Show appropriate options (2 for main, 3 for non-main)
-✅ Warn if main session
-✅ Remind about branch deletion
-✅ Use consistent prompt format
+✅ Check uncommitted changes before anything
+✅ Show preview before merge
+✅ Handle conflicts gracefully
+✅ Squash as default strategy
+✅ Show cd command after successful merge
 
 ---
 
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:session:end` IS ACTIVE
-- ALWAYS check is_main before prompting
-- Main: 2 options (end / cancel)
-- Non-main: 3 options (end / delete / cancel)
-- Warn if main session
-- Remind about branch deletion after worktree removal
-- Use AskUserQuestion for all options
+- Non-main: 4 options (merge first!)
+- Main: 2 options only
+- Merge flow: uncommitted → preview → conflicts → strategy → confirm → execute
+- Default strategy: squash
+- Always show cd command to return to main
 
 <!-- COMPACT_SUMMARY_END -->

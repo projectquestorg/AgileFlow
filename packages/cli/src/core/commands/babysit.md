@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<id>] [MODE=loop] [MAX=<iterations>] [VISUAL=true]"
+argument-hint: "[EPIC=<id>] [MODE=loop] [MAX=<iterations>] [VISUAL=true] [COVERAGE=<percent>]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -62,6 +62,7 @@ When invoked with `MODE=loop`, babysit runs autonomously through an epic's stori
 | `MODE` | Yes | Must be `loop` for autonomous mode |
 | `MAX` | No | Max iterations (default: 20) |
 | `VISUAL` | No | Enable Visual Mode for UI development (screenshot verification) |
+| `COVERAGE` | No | Enable Coverage Mode - iterate until N% test coverage reached |
 
 ### To Start Loop Mode
 
@@ -73,6 +74,9 @@ node scripts/ralph-loop.js --init --epic=EP-0042 --max=20
 
 # With Visual Mode for UI development
 node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --visual
+
+# With Coverage Mode - iterate until 80% coverage
+node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --coverage=80
 ```
 
 Or manually write to session-state.json:
@@ -86,7 +90,43 @@ Or manually write to session-state.json:
     "iteration": 0,
     "max_iterations": 20,
     "visual_mode": false,
-    "screenshots_verified": false
+    "screenshots_verified": false,
+    "coverage_mode": false,
+    "coverage_threshold": 80,
+    "coverage_baseline": 0,
+    "coverage_current": 0,
+    "coverage_verified": false
+  }
+}
+```
+
+### Coverage Mode
+
+When `COVERAGE=<percent>` is specified, the loop adds test coverage verification:
+
+```
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+**Coverage Mode behavior:**
+1. After tests pass, runs coverage check command
+2. Parses `coverage/coverage-summary.json` (Jest/NYC format)
+3. Compares line coverage to threshold
+4. Requires minimum 2 iterations before completion
+5. Story completes only when coverage ≥ threshold AND confirmed
+
+**When to use Coverage Mode:**
+- Test-driven epics where coverage matters
+- "Write tests until X% coverage" goals
+- Batch test generation overnight
+
+**Configuration** (optional):
+Add to `docs/00-meta/agileflow-metadata.json`:
+```json
+{
+  "ralph_loop": {
+    "coverage_command": "npm run test:coverage",
+    "coverage_report_path": "coverage/coverage-summary.json"
   }
 }
 ```
@@ -111,7 +151,7 @@ When `VISUAL=true` is specified, the loop adds screenshot verification:
 - Any work where visual appearance matters
 
 **Setup requirement:**
-Run `/agileflow:setup:visual-e2e` first to install Playwright and create e2e tests.
+Run `/agileflow:configure` and select "Set up Visual E2E testing" to install Playwright and create e2e tests.
 
 ### Loop Control Commands
 
@@ -200,7 +240,7 @@ Analysis/Review                   → /agileflow:multi-expert or Task(subagent_t
 - `agileflow-api` - Endpoints, business logic
 - `agileflow-ui` - Components, styling
 - `agileflow-testing` - Tests, coverage
-- `agileflow-orchestrator` - Multi-domain coordination
+- `agileflow-orchestrator` - Multi-domain coordination (supports nested loops for quality gates)
 
 ---
 
@@ -353,6 +393,23 @@ Task(
 )
 ```
 
+**🧪 EXPERIMENTAL: Nested Loops with Quality Gates**
+
+When you need agents to iterate until quality gates pass (coverage ≥ 80%, tests pass, etc.), the orchestrator can use **nested agent loops**. Each agent runs its own isolated loop.
+
+```
+Task(
+  description: "Profile feature with quality gates",
+  prompt: "Implement profile with quality enforcement:
+    1. API: /api/profile with COVERAGE >= 80% (agent loop)
+    2. UI: ProfilePage with VISUAL verification (agent loop)
+    Use agent-loop.js for isolated quality iterations.",
+  subagent_type: "agileflow-orchestrator"
+)
+```
+
+See `orchestrator.md` → "NESTED LOOP MODE" section for full details.
+
 ---
 
 #### Pattern 3: Parallel Execution (Manual Coordination)
@@ -441,8 +498,6 @@ Task(
 | `docs/09-agents/status.json` | Story tracking, WIP status |
 | `docs/09-agents/session-state.json` | Session state, active command |
 | `CLAUDE.md` | Project conventions (included in full above) |
-| `docs/02-practices/*.md` | Implementation patterns |
-| `docs/04-architecture/*.md` | System design docs |
 
 ---
 
@@ -916,15 +971,6 @@ After loading context, analyze and present ranked options:
 - Epics/stories from status.json
 - Session state, current story
 - Docs structure, research notes
-
-**Read manually for deep dives:**
-
-| Domain | Docs |
-|--------|------|
-| Database | `docs/04-architecture/database-*.md` |
-| API | `docs/04-architecture/api-*.md` |
-| UI | `docs/02-practices/styling.md` |
-| Testing | `docs/02-practices/testing.md` |
 
 **State files:**
 - `docs/09-agents/status.json` - Story tracking

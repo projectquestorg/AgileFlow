@@ -17,6 +17,7 @@ const { execSync, spawnSync } = require('child_process');
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
+const { isValidBranchName, isValidSessionNickname } = require('../lib/validate');
 
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(ROOT, '.agileflow', 'sessions');
@@ -225,6 +226,23 @@ function createSession(options = {}) {
   const nickname = options.nickname || null;
   const branchName = options.branch || `session-${sessionId}`;
   const dirName = nickname || sessionId;
+
+  // SECURITY: Validate branch name to prevent command injection
+  if (!isValidBranchName(branchName)) {
+    return {
+      success: false,
+      error: `Invalid branch name: "${branchName}". Use only letters, numbers, hyphens, underscores, and forward slashes.`,
+    };
+  }
+
+  // SECURITY: Validate nickname if provided
+  if (nickname && !isValidSessionNickname(nickname)) {
+    return {
+      success: false,
+      error: `Invalid nickname: "${nickname}". Use only letters, numbers, hyphens, and underscores.`,
+    };
+  }
+
   const worktreePath = path.resolve(ROOT, '..', `${projectName}-${dirName}`);
 
   // Check if directory already exists
@@ -235,27 +253,42 @@ function createSession(options = {}) {
     };
   }
 
-  // Create branch if it doesn't exist
-  try {
-    execSync(`git show-ref --verify --quiet refs/heads/${branchName}`, { cwd: ROOT });
-  } catch (e) {
+  // Create branch if it doesn't exist (using spawnSync for safety)
+  const checkRef = spawnSync(
+    'git',
+    ['show-ref', '--verify', '--quiet', `refs/heads/${branchName}`],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
+
+  if (checkRef.status !== 0) {
     // Branch doesn't exist, create it
-    try {
-      execSync(`git branch ${branchName}`, { cwd: ROOT, encoding: 'utf8' });
-    } catch (e2) {
-      return { success: false, error: `Failed to create branch: ${e2.message}` };
+    const createBranch = spawnSync('git', ['branch', branchName], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+
+    if (createBranch.status !== 0) {
+      return {
+        success: false,
+        error: `Failed to create branch: ${createBranch.stderr || 'unknown error'}`,
+      };
     }
   }
 
-  // Create worktree
-  try {
-    execSync(`git worktree add "${worktreePath}" ${branchName}`, {
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
-  } catch (e) {
-    return { success: false, error: `Failed to create worktree: ${e.message}` };
+  // Create worktree (using spawnSync for safety)
+  const createWorktree = spawnSync('git', ['worktree', 'add', worktreePath, branchName], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (createWorktree.status !== 0) {
+    return {
+      success: false,
+      error: `Failed to create worktree: ${createWorktree.stderr || 'unknown error'}`,
+    };
   }
 
   // Register session
@@ -346,6 +379,298 @@ function deleteSession(sessionId, removeWorktree = false) {
   return { success: true };
 }
 
+// Get main branch name (main or master)
+function getMainBranch() {
+  const checkMain = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/main'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (checkMain.status === 0) return 'main';
+
+  const checkMaster = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/master'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (checkMaster.status === 0) return 'master';
+
+  return 'main'; // Default fallback
+}
+
+// Check if session branch is mergeable to main
+function checkMergeability(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (session.is_main) {
+    return { success: false, error: 'Cannot merge main session' };
+  }
+
+  const branchName = session.branch;
+  const mainBranch = getMainBranch();
+
+  // Check for uncommitted changes in the session worktree
+  const statusResult = spawnSync('git', ['status', '--porcelain'], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  if (statusResult.stdout && statusResult.stdout.trim()) {
+    return {
+      success: true,
+      mergeable: false,
+      reason: 'uncommitted_changes',
+      details: statusResult.stdout.trim(),
+      branchName,
+      mainBranch,
+    };
+  }
+
+  // Check if branch has commits ahead of main
+  const aheadBehind = spawnSync(
+    'git',
+    ['rev-list', '--left-right', '--count', `${mainBranch}...${branchName}`],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+    }
+  );
+
+  const [behind, ahead] = (aheadBehind.stdout || '0\t0').trim().split('\t').map(Number);
+
+  if (ahead === 0) {
+    return {
+      success: true,
+      mergeable: false,
+      reason: 'no_changes',
+      details: 'Branch has no commits ahead of main',
+      branchName,
+      mainBranch,
+      commitsAhead: 0,
+      commitsBehind: behind,
+    };
+  }
+
+  // Try merge --no-commit --no-ff to check for conflicts (dry run)
+  // First, stash any changes in ROOT and ensure we're on main
+  const currentBranch = getCurrentBranch();
+
+  // Checkout main in ROOT for the test merge
+  const checkoutMain = spawnSync('git', ['checkout', mainBranch], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (checkoutMain.status !== 0) {
+    return {
+      success: false,
+      error: `Failed to checkout ${mainBranch}: ${checkoutMain.stderr}`,
+    };
+  }
+
+  // Try the merge
+  const testMerge = spawnSync('git', ['merge', '--no-commit', '--no-ff', branchName], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  const hasConflicts = testMerge.status !== 0;
+
+  // Abort the test merge
+  spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
+
+  // Go back to original branch if different
+  if (currentBranch && currentBranch !== mainBranch) {
+    spawnSync('git', ['checkout', currentBranch], { cwd: ROOT, encoding: 'utf8' });
+  }
+
+  return {
+    success: true,
+    mergeable: !hasConflicts,
+    branchName,
+    mainBranch,
+    commitsAhead: ahead,
+    commitsBehind: behind,
+    hasConflicts,
+    conflictDetails: hasConflicts ? testMerge.stderr : null,
+  };
+}
+
+// Get merge preview (commits and files to be merged)
+function getMergePreview(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (session.is_main) {
+    return { success: false, error: 'Cannot preview merge for main session' };
+  }
+
+  const branchName = session.branch;
+  const mainBranch = getMainBranch();
+
+  // Get commits that would be merged
+  const logResult = spawnSync('git', ['log', '--oneline', `${mainBranch}..${branchName}`], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  const commits = (logResult.stdout || '').trim().split('\n').filter(Boolean);
+
+  // Get files changed
+  const diffResult = spawnSync('git', ['diff', '--name-status', `${mainBranch}...${branchName}`], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  const filesChanged = (diffResult.stdout || '').trim().split('\n').filter(Boolean);
+
+  return {
+    success: true,
+    branchName,
+    mainBranch,
+    nickname: session.nickname,
+    commits,
+    commitCount: commits.length,
+    filesChanged,
+    fileCount: filesChanged.length,
+  };
+}
+
+// Execute merge operation
+function integrateSession(sessionId, options = {}) {
+  const {
+    strategy = 'squash',
+    deleteBranch = true,
+    deleteWorktree = true,
+    message = null,
+  } = options;
+
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (session.is_main) {
+    return { success: false, error: 'Cannot merge main session' };
+  }
+
+  const branchName = session.branch;
+  const mainBranch = getMainBranch();
+
+  // Ensure we're on main branch in ROOT
+  const checkoutMain = spawnSync('git', ['checkout', mainBranch], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (checkoutMain.status !== 0) {
+    return { success: false, error: `Failed to checkout ${mainBranch}: ${checkoutMain.stderr}` };
+  }
+
+  // Pull latest main (optional, for safety) - ignore errors for local-only repos
+  spawnSync('git', ['pull', '--ff-only'], { cwd: ROOT, encoding: 'utf8' });
+
+  // Build commit message
+  const commitMessage =
+    message ||
+    `Merge session ${sessionId}${session.nickname ? ` "${session.nickname}"` : ''}: ${branchName}`;
+
+  // Execute merge based on strategy
+  let mergeResult;
+
+  if (strategy === 'squash') {
+    mergeResult = spawnSync('git', ['merge', '--squash', branchName], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+
+    if (mergeResult.status === 0) {
+      // Create the squash commit
+      const commitResult = spawnSync('git', ['commit', '-m', commitMessage], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+
+      if (commitResult.status !== 0) {
+        return { success: false, error: `Failed to create squash commit: ${commitResult.stderr}` };
+      }
+    }
+  } else {
+    // Regular merge commit
+    mergeResult = spawnSync('git', ['merge', '--no-ff', '-m', commitMessage, branchName], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+  }
+
+  if (mergeResult.status !== 0) {
+    // Abort if merge failed
+    spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
+    return { success: false, error: `Merge failed: ${mergeResult.stderr}`, hasConflicts: true };
+  }
+
+  const result = {
+    success: true,
+    merged: true,
+    strategy,
+    branchName,
+    mainBranch,
+    commitMessage,
+    mainPath: ROOT,
+  };
+
+  // Delete worktree first (before branch, as worktree holds ref)
+  if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
+    try {
+      execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+      result.worktreeDeleted = true;
+    } catch (e) {
+      try {
+        execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+        result.worktreeDeleted = true;
+      } catch (e2) {
+        result.worktreeDeleted = false;
+        result.worktreeError = e2.message;
+      }
+    }
+  }
+
+  // Delete branch if requested
+  if (deleteBranch) {
+    const deleteBranchResult = spawnSync('git', ['branch', '-d', branchName], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    result.branchDeleted = deleteBranchResult.status === 0;
+    if (!result.branchDeleted) {
+      // Try force delete if normal delete fails
+      const forceDelete = spawnSync('git', ['branch', '-D', branchName], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+      result.branchDeleted = forceDelete.status === 0;
+    }
+  }
+
+  // Remove from registry
+  removeLock(sessionId);
+  delete registry.sessions[sessionId];
+  saveRegistry(registry);
+
+  return result;
+}
+
 // Format sessions for display
 function formatSessionsTable(sessions) {
   const lines = [];
@@ -394,10 +719,24 @@ function main() {
 
     case 'create': {
       const options = {};
-      for (let i = 1; i < args.length; i += 2) {
-        const key = args[i].replace('--', '');
-        const value = args[i + 1];
-        options[key] = value;
+      // SECURITY: Only accept whitelisted option keys
+      const allowedKeys = ['nickname', 'branch'];
+      for (let i = 1; i < args.length; i++) {
+        const arg = args[i];
+        if (arg.startsWith('--')) {
+          const key = arg.slice(2).split('=')[0];
+          if (!allowedKeys.includes(key)) {
+            console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
+            return;
+          }
+          // Handle --key=value or --key value formats
+          const eqIndex = arg.indexOf('=');
+          if (eqIndex !== -1) {
+            options[key] = arg.slice(eqIndex + 1);
+          } else if (args[i + 1] && !args[i + 1].startsWith('--')) {
+            options[key] = args[++i];
+          }
+        }
       }
       const result = createSession(options);
       console.log(JSON.stringify(result));
@@ -447,6 +786,65 @@ function main() {
       break;
     }
 
+    case 'check-merge': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const result = checkMergeability(sessionId);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
+    case 'merge-preview': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const result = getMergePreview(sessionId);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
+    case 'integrate': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const options = {};
+      const allowedKeys = ['strategy', 'deleteBranch', 'deleteWorktree', 'message'];
+      for (let i = 2; i < args.length; i++) {
+        const arg = args[i];
+        if (arg.startsWith('--')) {
+          const eqIndex = arg.indexOf('=');
+          let key, value;
+          if (eqIndex !== -1) {
+            key = arg.slice(2, eqIndex);
+            value = arg.slice(eqIndex + 1);
+          } else {
+            key = arg.slice(2);
+            value = args[++i];
+          }
+          if (!allowedKeys.includes(key)) {
+            console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
+            return;
+          }
+          // Convert boolean strings
+          if (key === 'deleteBranch' || key === 'deleteWorktree') {
+            options[key] = value !== 'false';
+          } else {
+            options[key] = value;
+          }
+        }
+      }
+      const result = integrateSession(sessionId, options);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
     case 'help':
     default:
       console.log(`
@@ -460,13 +858,24 @@ ${c.cyan}Commands:${c.reset}
   count                   Count other active sessions
   delete <id> [--remove-worktree]  Delete session
   status                  Get current session status
+  check-merge <id>        Check if session is mergeable to main
+  merge-preview <id>      Preview commits/files to be merged
+  integrate <id> [opts]   Merge session to main and cleanup
   help                    Show this help
+
+${c.cyan}Integrate Options:${c.reset}
+  --strategy=squash|merge   Merge strategy (default: squash)
+  --deleteBranch=true|false Delete branch after merge (default: true)
+  --deleteWorktree=true|false Delete worktree after merge (default: true)
+  --message="..."           Custom commit message
 
 ${c.cyan}Examples:${c.reset}
   node session-manager.js register
   node session-manager.js create --nickname auth
   node session-manager.js list
   node session-manager.js delete 2 --remove-worktree
+  node session-manager.js check-merge 2
+  node session-manager.js integrate 2 --strategy=squash
 `);
   }
 }
@@ -483,6 +892,11 @@ module.exports = {
   deleteSession,
   isSessionActive,
   cleanupStaleLocks,
+  // Merge operations
+  getMainBranch,
+  checkMergeability,
+  getMergePreview,
+  integrateSession,
 };
 
 // Run CLI if executed directly

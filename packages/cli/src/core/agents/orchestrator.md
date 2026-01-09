@@ -90,6 +90,7 @@ RULE #4: SYNTHESIS REQUIREMENTS
 3. Collect ALL results before synthesizing
 4. Always flag conflicts in final answer
 5. Provide recommendation with rationale
+6. 🧪 EXPERIMENTAL: For quality gates (coverage ≥ X%, tests pass), use nested loops - see "NESTED LOOP MODE" section
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -325,4 +326,169 @@ These are independent — deploying in parallel.
 3. Add validation
 
 Proceed with integration?
+```
+
+---
+
+## NESTED LOOP MODE (Experimental)
+
+When agents need to iterate until quality gates pass, use **nested loops**. Each agent runs its own isolated loop with quality verification.
+
+### When to Use
+
+| Scenario | Use Nested Loops? |
+|----------|-------------------|
+| Simple implementation | No - single expert spawn |
+| Need coverage threshold | Yes - agent loops until coverage met |
+| Need visual verification | Yes - agent loops until screenshots verified |
+| Complex multi-gate feature | Yes - each domain gets its own loop |
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ORCHESTRATOR                              │
+│                                                              │
+│  ┌──────────────────┐  ┌──────────────────┐                 │
+│  │ API Agent        │  │ UI Agent         │  (parallel)     │
+│  │ Loop: coverage   │  │ Loop: visual     │                 │
+│  │ Max: 5 iter      │  │ Max: 5 iter      │  ← ISOLATED     │
+│  └──────────────────┘  └──────────────────┘                 │
+│           ↓                    ↓                             │
+│      TaskOutput           TaskOutput                        │
+│           ↓                    ↓                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              SYNTHESIS + VERIFICATION                 │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Spawning with Agent Loops
+
+**Step 1: Generate loop ID and include in prompt**
+
+```
+Task(
+  description: "API with coverage loop",
+  prompt: `Implement /api/profile endpoint.
+
+  ## AGENT LOOP ACTIVE
+
+  You have a quality gate to satisfy:
+  - Gate: coverage >= 80%
+  - Max iterations: 5
+  - Loop ID: abc12345
+
+  ## Workflow
+
+  1. Implement the feature
+  2. Run the gate check:
+     node .agileflow/scripts/agent-loop.js --check --loop-id=abc12345
+  3. If check returns exit code 2 (running), iterate and improve
+  4. If check returns exit code 0 (passed), you're done
+  5. If check returns exit code 1 (failed), report the failure
+
+  Continue iterating until the gate passes or max iterations reached.`,
+  subagent_type: "agileflow-api",
+  run_in_background: true
+)
+```
+
+**Step 2: Initialize the loop before spawning**
+
+Before spawning the agent, the orchestrator should document that loops are being used. The agent will initialize its own loop using:
+
+```bash
+node .agileflow/scripts/agent-loop.js --init --gate=coverage --threshold=80 --max=5 --agent=agileflow-api --loop-id=abc12345
+```
+
+### Available Quality Gates
+
+| Gate | Flag | Description |
+|------|------|-------------|
+| `tests` | `--gate=tests` | Run test command, pass on exit 0 |
+| `coverage` | `--gate=coverage --threshold=80` | Run coverage, pass when >= threshold |
+| `visual` | `--gate=visual` | Check screenshots have verified- prefix |
+| `lint` | `--gate=lint` | Run lint command, pass on exit 0 |
+| `types` | `--gate=types` | Run tsc --noEmit, pass on exit 0 |
+
+### Monitoring Progress
+
+Read the event bus for loop status:
+
+```bash
+# Events emitted to: docs/09-agents/bus/log.jsonl
+
+{"type":"agent_loop","event":"init","loop_id":"abc12345","agent":"agileflow-api","gate":"coverage","threshold":80}
+{"type":"agent_loop","event":"iteration","loop_id":"abc12345","iter":1,"value":65,"passed":false}
+{"type":"agent_loop","event":"iteration","loop_id":"abc12345","iter":2,"value":72,"passed":false}
+{"type":"agent_loop","event":"passed","loop_id":"abc12345","final_value":82,"iterations":3}
+```
+
+### Safety Limits
+
+| Limit | Value | Enforced By |
+|-------|-------|-------------|
+| Max iterations per agent | 5 | agent-loop.js |
+| Max concurrent loops | 3 | agent-loop.js |
+| Timeout per loop | 10 min | agent-loop.js |
+| Regression abort | 2 consecutive | agent-loop.js |
+| Stall abort | 5 min no progress | agent-loop.js |
+
+### Example: Full Feature with Quality Gates
+
+```
+Request: "Implement user profile with API at 80% coverage and UI with visual verification"
+
+Parallel spawn:
+- agileflow-api with coverage loop (threshold: 80%)
+- agileflow-ui with visual loop
+
+## Agent Loop Status
+
+### API Expert (agileflow-api)
+- Gate: coverage >= 80%
+- Iterations: 3
+- Progress: 65% → 72% → 82% ✓
+- Status: PASSED
+
+### UI Expert (agileflow-ui)
+- Gate: visual (screenshots verified)
+- Iterations: 2
+- Progress: 0/3 → 3/3 verified ✓
+- Status: PASSED
+
+## Synthesis
+
+Both quality gates satisfied. Feature implementation complete.
+
+Files created:
+- src/routes/profile.ts (API)
+- src/components/ProfilePage.tsx (UI)
+- tests/profile.test.ts (coverage)
+- screenshots/verified-profile-*.png (visual)
+```
+
+### Abort Handling
+
+If an agent loop fails:
+
+1. **Max iterations reached**: Report which gate wasn't satisfied
+2. **Regression detected**: Note that quality went down twice
+3. **Stalled**: Note no progress for 5+ minutes
+4. **Timeout**: Note 10-minute limit exceeded
+
+```markdown
+## Agent Loop FAILED
+
+### API Expert (agileflow-api)
+- Gate: coverage >= 80%
+- Final: 72%
+- Status: FAILED (max_iterations)
+- Reason: Couldn't reach 80% coverage in 5 iterations
+
+### Recommendation
+- Review uncovered code paths
+- Consider if 80% is achievable
+- May need to reduce threshold or add more test cases
 ```

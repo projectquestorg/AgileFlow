@@ -15,23 +15,13 @@
  * Usage: Configured as PreToolUse hook in .claude/settings.json
  */
 
-const fs = require('fs');
-const path = require('path');
-const { c } = require('../lib/colors');
-
-/**
- * Find project root by looking for .agileflow directory
- */
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== '/') {
-    if (fs.existsSync(path.join(dir, '.agileflow'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
+const {
+  findProjectRoot,
+  loadPatterns,
+  outputBlocked,
+  runDamageControlHook,
+  c,
+} = require('./lib/damage-control-utils');
 
 /**
  * Parse simplified YAML for damage control patterns
@@ -92,31 +82,6 @@ function parseSimpleYAML(content) {
 }
 
 /**
- * Load patterns configuration from YAML file
- */
-function loadPatterns(projectRoot) {
-  const configPaths = [
-    path.join(projectRoot, '.agileflow/config/damage-control-patterns.yaml'),
-    path.join(projectRoot, '.agileflow/config/damage-control-patterns.yml'),
-    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml'),
-  ];
-
-  for (const configPath of configPaths) {
-    if (fs.existsSync(configPath)) {
-      try {
-        const content = fs.readFileSync(configPath, 'utf8');
-        return parseSimpleYAML(content);
-      } catch (e) {
-        // Continue to next path
-      }
-    }
-  }
-
-  // Return empty config if no file found (fail-open)
-  return { bashToolPatterns: [], askPatterns: [], agileflowProtections: [] };
-}
-
-/**
  * Test command against a single pattern rule
  */
 function matchesPattern(command, rule) {
@@ -163,76 +128,18 @@ function validateCommand(command, config) {
   return { action: 'allow' };
 }
 
-/**
- * Main function - read input and validate
- */
-function main() {
-  const projectRoot = findProjectRoot();
-  let inputData = '';
+// Run the hook
+const projectRoot = findProjectRoot();
+const defaultConfig = { bashToolPatterns: [], askPatterns: [], agileflowProtections: [] };
 
-  process.stdin.setEncoding('utf8');
-
-  process.stdin.on('data', chunk => {
-    inputData += chunk;
-  });
-
-  process.stdin.on('end', () => {
-    try {
-      // Parse tool input from Claude Code
-      const input = JSON.parse(inputData);
-      const command = input.command || input.tool_input?.command || '';
-
-      if (!command) {
-        // No command to validate - allow
-        process.exit(0);
-      }
-
-      // Load patterns and validate
-      const config = loadPatterns(projectRoot);
-      const result = validateCommand(command, config);
-
-      switch (result.action) {
-        case 'block':
-          // Output error message and block
-          console.error(`${c.coral}[BLOCKED]${c.reset} ${result.reason}`);
-          console.error(
-            `${c.dim}Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}${c.reset}`
-          );
-          process.exit(2);
-          break;
-
-        case 'ask':
-          // Output JSON to trigger user confirmation
-          console.log(
-            JSON.stringify({
-              result: 'ask',
-              message: result.reason,
-            })
-          );
-          process.exit(0);
-          break;
-
-        case 'allow':
-        default:
-          // Allow command to proceed
-          process.exit(0);
-      }
-    } catch (e) {
-      // Parse error or other issue - fail open
-      // This ensures broken config doesn't block all commands
-      process.exit(0);
-    }
-  });
-
-  // Handle no stdin (direct invocation)
-  process.stdin.on('error', () => {
-    process.exit(0);
-  });
-
-  // Set timeout to prevent hanging
-  setTimeout(() => {
-    process.exit(0);
-  }, 4000);
-}
-
-main();
+runDamageControlHook({
+  getInputValue: input => input.command || input.tool_input?.command,
+  loadConfig: () => loadPatterns(projectRoot, parseSimpleYAML, defaultConfig),
+  validate: validateCommand,
+  onBlock: (result, command) => {
+    outputBlocked(
+      result.reason,
+      `Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}`
+    );
+  },
+});

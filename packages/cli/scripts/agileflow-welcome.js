@@ -207,6 +207,12 @@ function checkParallelSessions(rootDir) {
     otherActive: 0,
     currentId: null,
     cleaned: 0,
+    // Extended session info for non-main sessions
+    isMain: true,
+    nickname: null,
+    branch: null,
+    sessionPath: null,
+    mainPath: rootDir,
   };
 
   try {
@@ -246,6 +252,24 @@ function checkParallelSessions(rootDir) {
       result.otherActive = countData.count || 0;
     } catch (e) {
       // Count failed
+    }
+
+    // Get detailed status for current session (for banner display)
+    try {
+      const statusOutput = execSync(`node "${scriptPath}" status`, {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const statusData = JSON.parse(statusOutput);
+      if (statusData.current) {
+        result.isMain = statusData.current.is_main === true;
+        result.nickname = statusData.current.nickname;
+        result.branch = statusData.current.branch;
+        result.sessionPath = statusData.current.path;
+      }
+    } catch (e) {
+      // Status failed
     }
   } catch (e) {
     // Session system not available
@@ -849,6 +873,41 @@ function formatTable(
   return lines.join('\n');
 }
 
+// Format session banner for non-main sessions
+function formatSessionBanner(parallelSessions) {
+  if (!parallelSessions.available || parallelSessions.isMain) {
+    return null;
+  }
+
+  const W = 62; // banner width
+  const lines = [];
+
+  // Get display name
+  const sessionName = parallelSessions.nickname
+    ? `SESSION ${parallelSessions.currentId} "${parallelSessions.nickname}"`
+    : `SESSION ${parallelSessions.currentId}`;
+
+  lines.push(`${c.dim}${box.tl}${box.h.repeat(W)}${box.tr}${c.reset}`);
+  lines.push(
+    `${c.dim}${box.v}${c.reset} ${c.teal}${c.bold}${pad(sessionName, W - 2)}${c.reset} ${c.dim}${box.v}${c.reset}`
+  );
+  lines.push(
+    `${c.dim}${box.v}${c.reset}    ${c.slate}Branch:${c.reset} ${pad(parallelSessions.branch || 'unknown', W - 13)} ${c.dim}${box.v}${c.reset}`
+  );
+
+  // Show relative path to main
+  if (parallelSessions.sessionPath) {
+    const relPath = path.relative(parallelSessions.sessionPath, parallelSessions.mainPath) || '.';
+    lines.push(
+      `${c.dim}${box.v}${c.reset}    ${c.slate}Main at:${c.reset} ${pad(relPath, W - 14)} ${c.dim}${box.v}${c.reset}`
+    );
+  }
+
+  lines.push(`${c.dim}${box.bl}${box.h.repeat(W)}${box.br}${c.reset}`);
+
+  return lines.join('\n');
+}
+
 // Main
 async function main() {
   const rootDir = getProjectRoot();
@@ -880,6 +939,12 @@ async function main() {
     }
   } catch (e) {
     // Update check failed - continue without it
+  }
+
+  // Show session banner FIRST if in a non-main session
+  const sessionBanner = formatSessionBanner(parallelSessions);
+  if (sessionBanner) {
+    console.log(sessionBanner);
   }
 
   console.log(

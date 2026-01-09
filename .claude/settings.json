@@ -11,6 +11,35 @@
     "ask": []
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-bash.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-edit.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-write.js"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",

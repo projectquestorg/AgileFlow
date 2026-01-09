@@ -36,6 +36,7 @@ const { execSync, spawnSync } = require('child_process');
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
 const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
+const { isValidEpicId, parseIntBounded } = require('../lib/validate');
 
 // Read session state
 function getSessionState(rootDir) {
@@ -97,6 +98,101 @@ function runTests(rootDir, testCommand) {
     if (e.message) {
       result.output += '\n' + e.message;
     }
+  }
+
+  result.duration = Date.now() - startTime;
+  return result;
+}
+
+// Get coverage command from metadata or default
+function getCoverageCommand(rootDir) {
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (result.ok && result.data?.ralph_loop?.coverage_command) {
+    return result.data.ralph_loop.coverage_command;
+  }
+
+  // Default: try common coverage commands
+  return 'npm run test:coverage || npm test -- --coverage';
+}
+
+// Get coverage report path from metadata or default
+function getCoverageReportPath(rootDir) {
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (result.ok && result.data?.ralph_loop?.coverage_report_path) {
+    return result.data.ralph_loop.coverage_report_path;
+  }
+
+  return 'coverage/coverage-summary.json';
+}
+
+// Parse coverage report (Jest/NYC format)
+function parseCoverageReport(rootDir) {
+  const reportPath = getCoverageReportPath(rootDir);
+  const fullPath = path.join(rootDir, reportPath);
+  const report = safeReadJSON(fullPath, { defaultValue: null });
+
+  if (!report.ok || !report.data) {
+    return { passed: false, coverage: 0, error: 'Coverage report not found at ' + reportPath };
+  }
+
+  // Jest/NYC format: { total: { lines: { pct: 80 }, statements: { pct: 80 } } }
+  const total = report.data.total;
+  if (!total) {
+    return { passed: false, coverage: 0, error: 'Invalid coverage report format' };
+  }
+
+  const coverage = total.lines?.pct || total.statements?.pct || 0;
+
+  return { passed: true, coverage, raw: report.data };
+}
+
+// Verify coverage meets threshold
+function verifyCoverage(rootDir, threshold) {
+  const result = parseCoverageReport(rootDir);
+
+  if (!result.passed) {
+    return {
+      passed: false,
+      coverage: 0,
+      message: `${c.red}✗ ${result.error}${c.reset}`,
+    };
+  }
+
+  const met = result.coverage >= threshold;
+
+  return {
+    passed: met,
+    coverage: result.coverage,
+    threshold: threshold,
+    message: met
+      ? `${c.green}✓ Coverage ${result.coverage.toFixed(1)}% ≥ ${threshold}%${c.reset}`
+      : `${c.yellow}⏳ Coverage ${result.coverage.toFixed(1)}% < ${threshold}% (need ${(threshold - result.coverage).toFixed(1)}% more)${c.reset}`,
+  };
+}
+
+// Run coverage command
+function runCoverage(rootDir) {
+  const coverageCmd = getCoverageCommand(rootDir);
+  const result = { passed: false, output: '', duration: 0 };
+  const startTime = Date.now();
+
+  try {
+    const output = execSync(coverageCmd, {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 300000, // 5 minute timeout
+    });
+    result.passed = true;
+    result.output = output;
+  } catch (e) {
+    // Coverage command might fail but still generate report
+    result.passed = true; // We'll check the report
+    result.output = e.stdout || '' + '\n' + (e.stderr || '');
   }
 
   result.duration = Date.now() - startTime;
@@ -253,13 +349,18 @@ function handleLoop(rootDir) {
   const iteration = (loop.iteration || 0) + 1;
   const maxIterations = loop.max_iterations || 20;
   const visualMode = loop.visual_mode || false;
-  const minIterations = visualMode ? 2 : 1; // Visual mode requires at least 2 iterations
+  const coverageMode = loop.coverage_mode || false;
+  const coverageThreshold = loop.coverage_threshold || 80;
+  // Visual and Coverage modes require at least 2 iterations for confirmation
+  const minIterations = visualMode || coverageMode ? 2 : 1;
 
   console.log('');
   console.log(
     `${c.brand}${c.bold}══════════════════════════════════════════════════════════${c.reset}`
   );
-  const modeLabel = visualMode ? ' [VISUAL MODE]' : '';
+  let modeLabel = '';
+  if (visualMode) modeLabel += ' [VISUAL]';
+  if (coverageMode) modeLabel += ` [COVERAGE ≥${coverageThreshold}%]`;
   console.log(
     `${c.brand}${c.bold}  RALPH LOOP - Iteration ${iteration}/${maxIterations}${modeLabel}${c.reset}`
   );
@@ -333,11 +434,34 @@ function handleLoop(rootDir) {
       }
     }
 
-    // Visual Mode: Enforce minimum iterations
-    if (visualMode && iteration < minIterations) {
+    // Coverage Mode: Run coverage and verify threshold
+    let coverageResult = { passed: true };
+    if (coverageMode) {
+      console.log('');
+      console.log(`${c.blue}Running coverage check...${c.reset}`);
+      runCoverage(rootDir);
+      coverageResult = verifyCoverage(rootDir, coverageThreshold);
+      console.log(coverageResult.message);
+
+      // Update state with current coverage
+      state.ralph_loop.coverage_current = coverageResult.coverage;
+
+      if (coverageResult.passed) {
+        state.ralph_loop.coverage_verified = true;
+      } else {
+        state.ralph_loop.coverage_verified = false;
+      }
+    }
+
+    // Enforce minimum iterations for Visual and Coverage modes
+    if ((visualMode || coverageMode) && iteration < minIterations) {
+      const modeNames = [];
+      if (visualMode) modeNames.push('Visual');
+      if (coverageMode) modeNames.push('Coverage');
+
       console.log('');
       console.log(
-        `${c.yellow}⚠ Visual Mode requires ${minIterations}+ iterations for confirmation${c.reset}`
+        `${c.yellow}⚠ ${modeNames.join(' + ')} Mode requires ${minIterations}+ iterations for confirmation${c.reset}`
       );
       console.log(
         `${c.dim}Current: iteration ${iteration}. Let loop run once more to confirm.${c.reset}`
@@ -347,23 +471,34 @@ function handleLoop(rootDir) {
       saveSessionState(rootDir, state);
 
       console.log('');
-      console.log(`${c.brand}▶ Continue reviewing. Loop will verify again.${c.reset}`);
+      console.log(`${c.brand}▶ Continue working. Loop will verify again.${c.reset}`);
       return;
     }
 
-    // Check if both tests AND screenshots (in visual mode) passed
-    const canComplete = testResult.passed && (!visualMode || screenshotResult.passed);
+    // Check if all verification modes passed
+    const canComplete =
+      testResult.passed &&
+      (!visualMode || screenshotResult.passed) &&
+      (!coverageMode || coverageResult.passed);
 
     if (!canComplete) {
-      // Screenshots not verified yet
+      // Something not verified yet
       state.ralph_loop.iteration = iteration;
       saveSessionState(rootDir, state);
 
       console.log('');
-      console.log(`${c.cyan}▶ Review unverified screenshots:${c.reset}`);
-      console.log(`${c.dim}  1. View each screenshot in screenshots/ directory${c.reset}`);
-      console.log(`${c.dim}  2. Rename verified files with 'verified-' prefix${c.reset}`);
-      console.log(`${c.dim}  3. Loop will re-verify when you stop${c.reset}`);
+      if (visualMode && !screenshotResult.passed) {
+        console.log(`${c.cyan}▶ Review unverified screenshots:${c.reset}`);
+        console.log(`${c.dim}  1. View each screenshot in screenshots/ directory${c.reset}`);
+        console.log(`${c.dim}  2. Rename verified files with 'verified-' prefix${c.reset}`);
+        console.log(`${c.dim}  3. Loop will re-verify when you stop${c.reset}`);
+      }
+      if (coverageMode && !coverageResult.passed) {
+        console.log(`${c.cyan}▶ Increase test coverage:${c.reset}`);
+        console.log(`${c.dim}  Current: ${coverageResult.coverage?.toFixed(1) || 0}%${c.reset}`);
+        console.log(`${c.dim}  Target: ${coverageThreshold}%${c.reset}`);
+        console.log(`${c.dim}  Write more tests to cover uncovered code paths.${c.reset}`);
+      }
       return;
     }
     console.log('');
@@ -458,7 +593,10 @@ function handleCLI() {
     if (!loop || !loop.enabled) {
       console.log(`${c.dim}Ralph Loop: not active${c.reset}`);
     } else {
-      const modeLabel = loop.visual_mode ? ` ${c.cyan}[VISUAL]${c.reset}` : '';
+      let modeLabel = '';
+      if (loop.visual_mode) modeLabel += ` ${c.cyan}[VISUAL]${c.reset}`;
+      if (loop.coverage_mode)
+        modeLabel += ` ${c.magenta}[COVERAGE ≥${loop.coverage_threshold}%]${c.reset}`;
       console.log(`${c.green}Ralph Loop: active${c.reset}${modeLabel}`);
       console.log(`  Epic: ${loop.epic}`);
       console.log(`  Current Story: ${loop.current_story}`);
@@ -468,6 +606,15 @@ function handleCLI() {
           ? `${c.green}yes${c.reset}`
           : `${c.yellow}no${c.reset}`;
         console.log(`  Screenshots Verified: ${verified}`);
+      }
+      if (loop.coverage_mode) {
+        const verified = loop.coverage_verified
+          ? `${c.green}yes${c.reset}`
+          : `${c.yellow}no${c.reset}`;
+        console.log(
+          `  Coverage: ${(loop.coverage_current || 0).toFixed(1)}% / ${loop.coverage_threshold}% (Verified: ${verified})`
+        );
+        console.log(`  Baseline: ${(loop.coverage_baseline || 0).toFixed(1)}%`);
       }
     }
     return true;
@@ -499,6 +646,7 @@ function handleCLI() {
     const epicArg = args.find(a => a.startsWith('--epic='));
     const maxArg = args.find(a => a.startsWith('--max='));
     const visualArg = args.includes('--visual') || args.includes('-v');
+    const coverageArg = args.find(a => a.startsWith('--coverage='));
 
     if (!epicArg) {
       console.log(`${c.red}Error: --epic=EP-XXXX is required${c.reset}`);
@@ -506,8 +654,27 @@ function handleCLI() {
     }
 
     const epicId = epicArg.split('=')[1];
-    const maxIterations = maxArg ? parseInt(maxArg.split('=')[1]) : 20;
+
+    // Validate epic ID format
+    if (!isValidEpicId(epicId)) {
+      console.log(`${c.red}Error: Invalid epic ID "${epicId}". Expected format: EP-XXXX${c.reset}`);
+      return true;
+    }
+
+    // Validate and bound max iterations (1-100)
+    const maxIterations = parseIntBounded(maxArg ? maxArg.split('=')[1] : null, 20, 1, 100);
     const visualMode = visualArg;
+
+    // Parse coverage threshold (0-100)
+    let coverageMode = false;
+    let coverageThreshold = 80;
+    if (coverageArg) {
+      coverageMode = true;
+      const threshold = parseFloat(coverageArg.split('=')[1]);
+      if (!isNaN(threshold)) {
+        coverageThreshold = Math.max(0, Math.min(100, threshold));
+      }
+    }
 
     // Find first ready story in epic
     const status = getStatus(rootDir);
@@ -532,6 +699,18 @@ function handleCLI() {
     // Mark first story as in_progress
     markStoryInProgress(rootDir, storyId);
 
+    // Get baseline coverage if coverage mode is enabled
+    let coverageBaseline = 0;
+    if (coverageMode) {
+      console.log(`${c.dim}Running baseline coverage check...${c.reset}`);
+      runCoverage(rootDir);
+      const baseline = parseCoverageReport(rootDir);
+      if (baseline.passed) {
+        coverageBaseline = baseline.coverage;
+        console.log(`${c.dim}Baseline coverage: ${coverageBaseline.toFixed(1)}%${c.reset}`);
+      }
+    }
+
     // Initialize loop state
     const state = getSessionState(rootDir);
     state.ralph_loop = {
@@ -542,6 +721,11 @@ function handleCLI() {
       max_iterations: maxIterations,
       visual_mode: visualMode,
       screenshots_verified: false,
+      coverage_mode: coverageMode,
+      coverage_threshold: coverageThreshold,
+      coverage_baseline: coverageBaseline,
+      coverage_current: coverageBaseline,
+      coverage_verified: false,
       started_at: new Date().toISOString(),
     };
     saveSessionState(rootDir, state);
@@ -549,7 +733,9 @@ function handleCLI() {
     const progress = getEpicProgress(status, epicId);
 
     console.log('');
-    const modeLabel = visualMode ? ` ${c.cyan}[VISUAL MODE]${c.reset}` : '';
+    let modeLabel = '';
+    if (visualMode) modeLabel += ` ${c.cyan}[VISUAL]${c.reset}`;
+    if (coverageMode) modeLabel += ` ${c.magenta}[COVERAGE ≥${coverageThreshold}%]${c.reset}`;
     console.log(`${c.green}${c.bold}Ralph Loop Initialized${c.reset}${modeLabel}`);
     console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
     console.log(`  Epic: ${c.cyan}${epicId}${c.reset}`);
@@ -557,6 +743,14 @@ function handleCLI() {
     console.log(`  Max Iterations: ${maxIterations}`);
     if (visualMode) {
       console.log(`  Visual Mode: ${c.cyan}enabled${c.reset} (screenshot verification)`);
+    }
+    if (coverageMode) {
+      console.log(
+        `  Coverage Mode: ${c.magenta}enabled${c.reset} (threshold: ${coverageThreshold}%)`
+      );
+      console.log(`  Baseline: ${coverageBaseline.toFixed(1)}%`);
+    }
+    if (visualMode || coverageMode) {
       console.log(`  Min Iterations: 2 (for confirmation)`);
     }
     console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
@@ -585,17 +779,19 @@ function handleCLI() {
 ${c.brand}${c.bold}ralph-loop.js${c.reset} - Autonomous Story Processing
 
 ${c.bold}Usage:${c.reset}
-  node scripts/ralph-loop.js                              Run loop check (Stop hook)
-  node scripts/ralph-loop.js --init --epic=EP-XXX         Initialize loop for epic
-  node scripts/ralph-loop.js --init --epic=EP-XXX --visual Initialize with Visual Mode
-  node scripts/ralph-loop.js --status                     Check loop status
-  node scripts/ralph-loop.js --stop                       Stop the loop
-  node scripts/ralph-loop.js --reset                      Reset loop state
+  node scripts/ralph-loop.js                                  Run loop check (Stop hook)
+  node scripts/ralph-loop.js --init --epic=EP-XXX             Initialize loop for epic
+  node scripts/ralph-loop.js --init --epic=EP-XXX --visual    Initialize with Visual Mode
+  node scripts/ralph-loop.js --init --epic=EP-XXX --coverage=80  Initialize with Coverage Mode
+  node scripts/ralph-loop.js --status                         Check loop status
+  node scripts/ralph-loop.js --stop                           Stop the loop
+  node scripts/ralph-loop.js --reset                          Reset loop state
 
 ${c.bold}Options:${c.reset}
   --epic=EP-XXXX    Epic ID to process (required for --init)
   --max=N           Max iterations (default: 20)
   --visual, -v      Enable Visual Mode (screenshot verification)
+  --coverage=N      Enable Coverage Mode (iterate until N% coverage)
 
 ${c.bold}Visual Mode:${c.reset}
   When --visual is enabled, the loop also verifies that all screenshots
@@ -604,16 +800,24 @@ ${c.bold}Visual Mode:${c.reset}
   This ensures Claude actually looks at UI screenshots before declaring
   completion. Requires minimum 2 iterations for confirmation.
 
+${c.bold}Coverage Mode:${c.reset}
+  When --coverage=N is enabled, the loop verifies test coverage meets
+  the threshold N% before completing stories.
+
+  Coverage is read from coverage/coverage-summary.json (Jest/NYC format).
+  Configure in docs/00-meta/agileflow-metadata.json:
+    { "ralph_loop": { "coverage_command": "npm run test:coverage" } }
+
   Workflow:
     1. Tests run → must pass
-    2. Screenshots verified → all must have 'verified-' prefix
-    3. Minimum 2 iterations → prevents premature completion
+    2. Coverage checked → must meet threshold
+    3. Minimum 2 iterations → confirms coverage is stable
     4. Only then → story marked complete
 
 ${c.bold}How it works:${c.reset}
-  1. Start loop with /agileflow:babysit EPIC=EP-XXX MODE=loop VISUAL=true
+  1. Start loop with /agileflow:babysit EPIC=EP-XXX MODE=loop COVERAGE=80
   2. Work on the current story
-  3. When you stop, this hook runs tests (and screenshot verification in Visual Mode)
+  3. When you stop, this hook runs tests and verifications
   4. If all pass → story marked complete, next story loaded
   5. If any fail → failures shown, you continue fixing
   6. Loop repeats until epic done or max iterations

@@ -12,34 +12,13 @@
  * Usage: Configured as PreToolUse hook in .claude/settings.json
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { c } = require('../lib/colors');
-
-/**
- * Find project root by looking for .agileflow directory
- */
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== '/') {
-    if (fs.existsSync(path.join(dir, '.agileflow'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
-
-/**
- * Expand ~ to home directory
- */
-function expandPath(p) {
-  if (p.startsWith('~/')) {
-    return path.join(os.homedir(), p.slice(2));
-  }
-  return p;
-}
+const {
+  findProjectRoot,
+  loadPatterns,
+  pathMatches,
+  outputBlocked,
+  runDamageControlHook,
+} = require('./lib/damage-control-utils');
 
 /**
  * Parse simplified YAML for path patterns
@@ -80,79 +59,6 @@ function parseSimpleYAML(content) {
 }
 
 /**
- * Load patterns configuration from YAML file
- */
-function loadPatterns(projectRoot) {
-  const configPaths = [
-    path.join(projectRoot, '.agileflow/config/damage-control-patterns.yaml'),
-    path.join(projectRoot, '.agileflow/config/damage-control-patterns.yml'),
-    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml'),
-  ];
-
-  for (const configPath of configPaths) {
-    if (fs.existsSync(configPath)) {
-      try {
-        const content = fs.readFileSync(configPath, 'utf8');
-        return parseSimpleYAML(content);
-      } catch (e) {
-        // Continue to next path
-      }
-    }
-  }
-
-  // Return empty config if no file found (fail-open)
-  return { zeroAccessPaths: [], readOnlyPaths: [], noDeletePaths: [] };
-}
-
-/**
- * Check if a file path matches any of the protected patterns
- */
-function pathMatches(filePath, patterns) {
-  if (!filePath) return null;
-
-  const normalizedPath = path.resolve(filePath);
-  const relativePath = path.relative(process.cwd(), normalizedPath);
-
-  for (const pattern of patterns) {
-    const expandedPattern = expandPath(pattern);
-
-    // Check if pattern is a directory prefix
-    if (pattern.endsWith('/')) {
-      const patternDir = expandedPattern.slice(0, -1);
-      if (normalizedPath.startsWith(patternDir)) {
-        return pattern;
-      }
-    }
-
-    // Check exact match
-    if (normalizedPath === expandedPattern) {
-      return pattern;
-    }
-
-    // Check if normalized path ends with pattern (for filenames like "id_rsa")
-    if (normalizedPath.endsWith(pattern) || relativePath.endsWith(pattern)) {
-      return pattern;
-    }
-
-    // Check if pattern appears in path (for patterns like "*.pem")
-    if (pattern.startsWith('*')) {
-      const ext = pattern.slice(1);
-      if (normalizedPath.endsWith(ext) || relativePath.endsWith(ext)) {
-        return pattern;
-      }
-    }
-
-    // Check if path contains pattern (for things like ".env.production")
-    const patternBase = path.basename(pattern);
-    if (path.basename(normalizedPath) === patternBase) {
-      return pattern;
-    }
-  }
-
-  return null;
-}
-
-/**
  * Validate file path for write operation
  */
 function validatePath(filePath, config) {
@@ -180,58 +86,15 @@ function validatePath(filePath, config) {
   return { action: 'allow' };
 }
 
-/**
- * Main function - read input and validate
- */
-function main() {
-  const projectRoot = findProjectRoot();
-  let inputData = '';
+// Run the hook
+const projectRoot = findProjectRoot();
+const defaultConfig = { zeroAccessPaths: [], readOnlyPaths: [], noDeletePaths: [] };
 
-  process.stdin.setEncoding('utf8');
-
-  process.stdin.on('data', chunk => {
-    inputData += chunk;
-  });
-
-  process.stdin.on('end', () => {
-    try {
-      // Parse tool input from Claude Code
-      const input = JSON.parse(inputData);
-      const filePath = input.file_path || input.tool_input?.file_path || '';
-
-      if (!filePath) {
-        // No path to validate - allow
-        process.exit(0);
-      }
-
-      // Load patterns and validate
-      const config = loadPatterns(projectRoot);
-      const result = validatePath(filePath, config);
-
-      if (result.action === 'block') {
-        console.error(`${c.coral}[BLOCKED]${c.reset} ${result.reason}`);
-        console.error(`${c.dim}${result.detail}${c.reset}`);
-        console.error(`${c.dim}File: ${filePath}${c.reset}`);
-        process.exit(2);
-      }
-
-      // Allow
-      process.exit(0);
-    } catch (e) {
-      // Parse error or other issue - fail open
-      process.exit(0);
-    }
-  });
-
-  // Handle no stdin
-  process.stdin.on('error', () => {
-    process.exit(0);
-  });
-
-  // Set timeout to prevent hanging
-  setTimeout(() => {
-    process.exit(0);
-  }, 4000);
-}
-
-main();
+runDamageControlHook({
+  getInputValue: input => input.file_path || input.tool_input?.file_path,
+  loadConfig: () => loadPatterns(projectRoot, parseSimpleYAML, defaultConfig),
+  validate: validatePath,
+  onBlock: (result, filePath) => {
+    outputBlocked(result.reason, result.detail, `File: ${filePath}`);
+  },
+});

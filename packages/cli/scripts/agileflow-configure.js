@@ -29,6 +29,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { isValidProfileName, isValidFeatureName, parseIntBounded } = require('../lib/validate');
 
 // ============================================================================
 // CONFIGURATION
@@ -1623,7 +1624,8 @@ function main() {
         .split('=')[1]
         .split(',')
         .map(s => s.trim().toLowerCase());
-    else if (arg.startsWith('--archival-days=')) archivalDays = parseInt(arg.split('=')[1]) || 30;
+    else if (arg.startsWith('--archival-days='))
+      archivalDays = parseIntBounded(arg.split('=')[1], 30, 1, 365);
     else if (arg === '--migrate') migrate = true;
     else if (arg === '--detect' || arg === '--validate') detect = true;
     else if (arg === '--upgrade') upgrade = true;
