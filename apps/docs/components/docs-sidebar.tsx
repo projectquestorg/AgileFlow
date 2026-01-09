@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronRight } from "lucide-react"
@@ -33,21 +34,48 @@ export function DocsSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { tree: typeof source.pageTree }) {
   const pathname = usePathname()
+  const [openSections, setOpenSections] = React.useState<Set<string>>(new Set())
 
-  // Helper to check if a section is active (current page is within it)
+  // Helper to check if a section contains the current page
   const isSectionActive = (url: string) => {
     if (url === "/") return pathname === "/"
     return pathname.startsWith(url)
   }
 
+  // Auto-open active section when pathname changes
+  React.useEffect(() => {
+    tree.children.forEach((item) => {
+      if (item.type === "folder") {
+        const sectionUrl = `/${item.name.toLowerCase()}`
+        if (isSectionActive(sectionUrl) && item.$id) {
+          setOpenSections((prev) => new Set([...prev, item.$id!]))
+        }
+      }
+    })
+  }, [pathname])
+
+  // Toggle section open/closed
+  const toggleSection = (id: string, isActive: boolean) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        // Only allow closing if not the active section
+        if (!isActive) {
+          next.delete(id)
+        }
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
   // Helper to render pages within a folder, handling separators
   const renderFolderContents = (children: typeof tree.children) => {
-    let currentGroup: string | null = null
     const elements: React.ReactNode[] = []
 
     children.forEach((item, index) => {
       if (item.type === "separator") {
-        currentGroup = item.name
         elements.push(
           <div
             key={`sep-${index}`}
@@ -60,12 +88,13 @@ export function DocsSidebar({
         if (!showMcpDocs && item.url?.includes("/mcp")) {
           return
         }
+        const isCurrentPage = item.url === pathname
         elements.push(
           <SidebarMenuSubItem key={item.url}>
             <SidebarMenuSubButton
               asChild
-              isActive={item.url === pathname}
-              className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent h-7 text-[0.8rem]"
+              isActive={isCurrentPage}
+              className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent data-[active=true]:font-medium h-7 text-[0.8rem]"
             >
               <Link href={item.url}>
                 <span>{item.name}</span>
@@ -135,6 +164,7 @@ export function DocsSidebar({
 
                 const sectionUrl = `/${item.name.toLowerCase()}`
                 const isActive = isSectionActive(sectionUrl)
+                const isOpen = openSections.has(item.$id ?? "") || isActive
                 const hasIndex = item.children.some(
                   child => child.type === "page" && child.url === sectionUrl
                 )
@@ -143,7 +173,8 @@ export function DocsSidebar({
                   <Collapsible
                     key={item.$id}
                     asChild
-                    defaultOpen={isActive}
+                    open={isOpen}
+                    onOpenChange={() => toggleSection(item.$id ?? "", isActive)}
                     className="group/collapsible"
                   >
                     <SidebarMenuItem>
@@ -164,7 +195,7 @@ export function DocsSidebar({
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={pathname === sectionUrl}
-                                className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent h-7 text-[0.8rem]"
+                                className="text-muted-foreground data-[active=true]:text-foreground data-[active=true]:bg-accent data-[active=true]:font-medium h-7 text-[0.8rem]"
                               >
                                 <Link href={sectionUrl}>
                                   <span>Overview</span>
