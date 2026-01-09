@@ -118,6 +118,36 @@ export function MobileNav({
         sideOffset={14}
       >
         <div className="flex flex-col gap-4 overflow-auto px-6 py-6">
+          {/* External links */}
+          <div className="flex flex-col gap-2">
+            <a
+              href="https://agileflow.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+            >
+              Website
+            </a>
+            <a
+              href="https://github.com/projectquestorg/AgileFlow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://www.npmjs.com/package/agileflow"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+            >
+              npm
+            </a>
+          </div>
+
+          <div className="border-t border-border/40" />
+
           {/* Navigation */}
           <div className="flex flex-col gap-1">
             {/* Direct links */}
