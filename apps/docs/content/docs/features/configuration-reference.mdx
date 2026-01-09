@@ -1,0 +1,444 @@
+---
+title: Configuration Reference
+description: Quick reference guide for all 9 AgileFlow configuration agents
+---
+
+# Configuration Reference
+
+Quick lookup tables and command reference for AgileFlow's 9 configuration agents.
+
+## Agent Summary
+
+| Agent | Command | Purpose | Key Feature | Requires |
+|-------|---------|---------|-------------|----------|
+| git-config | Configure → Git Repository | Initialize git and remote | SSH/HTTPS remote support | None |
+| hooks | Configure → Hooks System | Event-driven automation | Multi-hook support | None |
+| precompact | Configure → PreCompact | Context preservation | Active command tracking | Hooks configured |
+| status-line | Configure → Status Line | Custom status bar | Customizable components | None |
+| archival | Configure → Archival | Auto-manage status.json | Threshold-based archival | None |
+| attribution | Configure → Attribution | Git commit attribution | Policy enforcement | None |
+| ci | Configure → CI/CD | Automated testing | Multi-provider support | None |
+| damage-control | Configure → Damage Control | Destructive command protection | Pattern-based blocking | None |
+| verify | Configure → Verify | Test configurations | Token management | None |
+
+## Configuration Order
+
+### Recommended Flow
+```
+1. git-config        (Foundation - enable version control)
+2. attribution       (Establish policy early)
+3. hooks             (Enable automation)
+4. damage-control    (Protect immediately)
+5. verify            (Validate setup)
+6. archival          (Prevent token limit issues)
+7. status-line       (Get visibility)
+8. ci                (Automated testing)
+9. precompact        (Long-term support)
+```
+
+### Time Required
+- **Foundation** (steps 1-3): 10-15 minutes
+- **Safety** (steps 4-5): 5-10 minutes
+- **Productivity** (steps 6-9): 15-20 minutes
+- **Total**: 30-45 minutes for full setup
+
+## Agent File Changes
+
+### Files Created or Modified by Each Agent
+
+#### git-config
+```
+Created:    .git/
+            docs/00-meta/agileflow-metadata.json
+
+Modified:   .claude/settings.local.json (if token saved)
+```
+
+#### hooks
+```
+Created:    .claude/settings.json
+            .claude/settings.local.example.json
+            scripts/agileflow-welcome.js
+            scripts/precompact-context.sh
+            scripts/agileflow-stop.sh
+            scripts/get-env.js
+
+Modified:   .gitignore
+```
+
+#### precompact
+```
+Modified:   scripts/precompact-context.sh
+            .claude/settings.json (adds PreCompact hook)
+            docs/00-meta/agileflow-metadata.json
+
+Changed:    CLAUDE.md (added PreCompact docs)
+```
+
+#### status-line
+```
+Created:    scripts/agileflow-statusline.sh
+
+Modified:   .claude/settings.json (statusLine config)
+            docs/00-meta/agileflow-metadata.json
+            CLAUDE.md
+```
+
+#### archival
+```
+Created:    scripts/archive-completed-stories.sh
+            scripts/compress-status.sh
+
+Modified:   docs/00-meta/agileflow-metadata.json
+            .claude/settings.json (adds SessionStart hook if new)
+            CLAUDE.md
+```
+
+#### attribution
+```
+Created:    CLAUDE.md (if new)
+
+Modified:   CLAUDE.md (if exists - adds attribution policy)
+            .gitignore (ensures CLAUDE.md tracked)
+```
+
+#### ci
+```
+Created:    .github/workflows/ci.yml
+            OR .gitlab-ci.yml
+            OR .circleci/config.yml
+
+Modified:   CLAUDE.md
+```
+
+#### damage-control
+```
+Created:    .agileflow/config/damage-control-patterns.yaml
+
+Modified:   .claude/settings.json (adds PreToolUse hooks)
+            docs/00-meta/agileflow-metadata.json
+```
+
+#### verify
+```
+Modified:   .claude/settings.local.json (if token saved)
+
+Tested:     YAML syntax
+            Script execution
+            Remote connections
+```
+
+## Configuration Options Quick Ref
+
+### git-config
+```
+Initialize git:           Yes / No
+Remote protocol:          SSH / HTTPS
+Private repo:             Yes / No
+Save token:               Yes / No
+Verify connection:        Yes / No
+```
+
+### hooks
+```
+SessionStart:             Enable / Disable
+PreCompact:               Enable / Disable
+Stop:                     Enable / Disable
+UserPromptSubmit:         Enable / Disable
+```
+
+### precompact
+Options are auto-detected from hooks config.
+
+### status-line
+```
+Display components:       story, epic, wip, context, cost, git (multiselect)
+Show git branch:          Yes / No
+Test before finish:       Yes / No
+```
+
+### archival
+```
+Archival threshold:       3 / 7 / 14 / 30 days (custom via "Other")
+Manual commands:          archive / compress
+View archives:            ls -lh docs/09-agents/status*.json
+```
+
+### attribution
+```
+Disable AI attribution:   Yes / No
+Create CLAUDE.md:         Auto (if needed)
+```
+
+### ci
+```
+CI provider:              GitHub Actions / GitLab CI / CircleCI
+Project type:             Auto-detected (Node.js / Python / Rust / Go)
+Commands to run:          install, test, lint, type-check, build (multiselect)
+Test locally:             Yes / No
+Trigger remote CI:        Yes / No
+```
+
+### damage-control
+```
+Protection level:         Standard / Enhanced / Minimal
+Custom protections:       Prod DB / Cloud CLI / Env files (multiselect)
+View current config:      Already configured options
+```
+
+### verify
+```
+Verify what:              Hooks / Git remote / CI workflow (multiselect)
+Test locally:             Yes / No
+Provide token:            Yes / No
+Save token:               Yes / No
+```
+
+## Common Commands
+
+### Start Configuration
+```bash
+# Interactive wizard
+/agileflow:configure
+
+# Detect current config
+/agileflow:configure --detect
+
+# Enable specific features
+/agileflow:configure --enable=damage-control
+/agileflow:configure --enable=status-line,archival
+
+# Upgrade configurations
+/agileflow:configure --upgrade
+```
+
+### Manual Operations After Configuration
+
+#### Archival
+```bash
+# Run archival with default threshold
+bash scripts/archive-completed-stories.sh
+
+# Run with custom threshold (days)
+bash scripts/archive-completed-stories.sh 7
+
+# Compress (remove verbose fields)
+bash scripts/compress-status.sh
+
+# Check file sizes
+ls -lh docs/09-agents/status*.json
+```
+
+#### Hooks (after enabling)
+```bash
+# Test SessionStart hook
+node scripts/agileflow-welcome.js
+
+# Test PreCompact hook
+bash scripts/precompact-context.sh
+
+# Test Stop hook
+bash scripts/agileflow-stop.sh
+
+# Test environment variable helper
+node scripts/get-env.js USER_NAME "DefaultUser"
+```
+
+#### CI/CD
+```bash
+# View workflow
+cat .github/workflows/ci.yml
+
+# Run tests locally
+npm test
+
+# Run linter
+npm run lint
+
+# Run type check
+npm run type-check
+
+# Build
+npm run build
+```
+
+#### Damage Control (after enabling)
+```bash
+# View current patterns
+cat .agileflow/config/damage-control-patterns.yaml
+
+# Try blocked command (will be prevented)
+rm -rf /
+
+# Try protected file edit (will be prevented)
+# Try writing to protected path (will be prevented)
+```
+
+## Token Locations and Scopes
+
+### GitHub Token (ghp_xxx)
+**Location**: `.claude/settings.local.json` under `env.GITHUB_TOKEN`
+
+**Required scopes**:
+- `repo` - Full control of private repositories
+- `workflow` - Manage GitHub Action workflows
+
+**Create at**: https://github.com/settings/tokens/new
+
+**Lifespan**: No expiration by default, but can be revoked
+
+### GitLab Token (glpat_xxx)
+**Location**: `.claude/settings.local.json` under `env.GITLAB_TOKEN`
+
+**Required scopes**:
+- `api` - Access API
+- `read_repository` - Read repositories
+- `write_repository` - Write repositories
+
+**Create at**: https://gitlab.com/-/profile/personal_access_tokens
+
+### CircleCI Token
+**Location**: `.claude/settings.local.json` under `env.CIRCLECI_TOKEN`
+
+**Scope**: Full access
+
+**Create at**: https://app.circleci.com/settings/user/tokens
+
+## Troubleshooting Matrix
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Configuration not taking effect | Claude Code not restarted | Quit (Cmd+Q) and restart |
+| Token auth fails | Expired or invalid token | Check/regenerate at provider |
+| YAML syntax error in CI | Invalid workflow file | Validate with yamllint or Python yaml |
+| status.json too large | Files exceed token limit | Enable archival with 3-7 day threshold |
+| Remote connection fails | SSH/HTTPS auth issue | Check SSH keys or token permissions |
+| Hooks don't run | Settings.json invalid | Check JSON syntax with `jq` |
+| Damage control blocks valid command | Too strict patterns | Review/edit damage-control-patterns.yaml |
+| Status line doesn't appear | Script not executable | Run `chmod +x scripts/agileflow-statusline.sh` |
+
+## Restart Requirement
+
+These agents require **Claude Code restart** after configuration:
+
+1. **hooks** - New .claude/settings.json with hooks definitions
+2. **precompact** - Adds PreCompact hook to settings
+3. **status-line** - Adds statusLine to settings
+4. **damage-control** - Adds PreToolUse hooks to settings
+
+**How to restart**:
+```bash
+# Complete quit (important - not just closing window)
+Cmd+Q (Mac) or Ctrl+Q (Windows/Linux)
+
+# Wait 5 seconds
+
+# Reopen Claude Code
+```
+
+## Dependencies Between Agents
+
+```
+git-config
+  └─ No dependencies (can run first)
+
+hooks
+  └─ No dependencies
+
+precompact
+  └─ Requires: hooks (needs .claude/settings.json)
+
+status-line
+  └─ Requires: .claude/settings.json (but agent creates if missing)
+
+archival
+  └─ Requires: docs/09-agents/ directory (created during setup)
+
+attribution
+  └─ No dependencies
+
+ci
+  └─ No dependencies (but git-config recommended first)
+
+damage-control
+  └─ Requires: .claude/settings.json (but agent creates if missing)
+
+verify
+  └─ No strict dependencies
+     - Optional: ci (to verify workflow)
+     - Optional: git-config (to verify remote)
+     - Optional: hooks (to verify scripts)
+```
+
+## Best Practices
+
+### When Adding Configurations
+1. Run `--detect` first to see what's already configured
+2. Follow recommended order (git → hooks → safety → productivity)
+3. Verify after each configuration
+4. Commit configuration files to git (except .local.json files)
+5. Test in development before using in production
+
+### Token Security
+1. **Never commit tokens** - Always use `.claude/settings.local.json`
+2. **Set proper permissions** - File should be `chmod 600`
+3. **Provide templates** - Create `.claude/settings.local.example.json` for team
+4. **Rotate regularly** - Treat like other credentials
+5. **Check scopes** - Ensure token only has needed permissions
+
+### Configuration as Code
+1. Commit `.claude/settings.json` (team configuration)
+2. Commit `.claude/settings.local.example.json` (template)
+3. Add to `.gitignore`: `.claude/settings.local.json` (user-specific)
+4. Commit CLAUDE.md (project policy)
+5. Commit workflow files (CI/CD)
+6. Commit .agileflow/config/*.yaml (safety patterns)
+
+## Rollback Procedures
+
+### If Configuration Breaks Something
+
+```bash
+# 1. Restore from git if committed
+git checkout .claude/settings.json
+
+# 2. Remove problematic hook
+jq 'del(.hooks.HookName)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+
+# 3. Restart Claude Code
+# Cmd+Q, wait 5 seconds, reopen
+
+# 4. Re-run configuration to fix
+/agileflow:configure --detect
+```
+
+### Disable Individual Features
+```bash
+# Disable damage control (remove PreToolUse hooks)
+jq 'del(.hooks.PreToolUse)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+
+# Disable status line
+jq 'del(.statusLine)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+
+# Disable hooks completely
+jq 'del(.hooks)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+```
+
+## Support & Resources
+
+### Documentation
+- [Full Configuration Guide](/features/configuration)
+- [Individual Agent Guides](/docs/features)
+- [Architecture Decisions](/docs/decisions)
+
+### Quick Links
+- **GitHub Issues**: https://github.com/projectquestorg/AgileFlow/issues
+- **AgileFlow Home**: https://agileflow.dev
+- **Claude Code Docs**: https://claude.ai/docs
+
+### Getting Help
+1. Check agent logs: `.claude/hook.log`
+2. Validate JSON: `jq empty .claude/settings.json`
+3. Check syntax: `bash -n scripts/agileflow-*.sh`
+4. Run verification: `/agileflow:configure --detect`
+5. Check documentation: `/features/configuration`

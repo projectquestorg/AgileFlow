@@ -125,7 +125,36 @@ Maintain a research knowledge base alongside development.
 
 Use with `/agileflow:research:ask` and `/agileflow:research:import`
 
+## IDE Support
+
+### IDE Integrations
+
+Install and configure AgileFlow for your favorite IDE with automatic command, agent, and skill installation.
+
+- **Multiple IDEs** - Claude Code, Cursor, Windsurf, OpenAI Codex CLI
+- **Auto-detection** - Detect which IDEs are configured in your project
+- **Damage Control** - Optional safety system for Claude Code (PreToolUse hooks)
+- **Dynamic content** - Commands and agents automatically injected on install
+- **Multi-IDE support** - Use the same project across multiple IDEs
+- **Plugin extensible** - Add support for new IDEs with custom handlers
+
+[Learn about IDE Integrations](/features/ide-integrations)
+
+Setup with `npx agileflow setup --ide claude-code` or `--ide all`
+
 ## Skills & Knowledge
+
+### Agent Expertise System
+
+Enable self-improving agents that maintain domain knowledge and accelerate task execution.
+
+- **Expertise files** - Agents maintain mental models of their domain
+- **Three-step workflow** - Plan (with expertise) → Build → Self-Improve
+- **Automatic learning** - Expertise updates as agents work and make changes
+- **Validation & metrics** - Tools to ensure expertise stays accurate and current
+- **Focused domains** - Specialized knowledge for database, API, UI, testing, CI/CD, and more
+
+[Learn about Agent Expertise System](/features/agent-expertise-system)
 
 ### Custom Skills System
 
@@ -167,13 +196,29 @@ Analyze with `/agileflow:impact`
 
 ## Configuration
 
-All features are configured through the `/agileflow:configure` command:
+All features are configured through the `/agileflow:configure` command with 9 specialized configuration agents:
 
 ```bash
 /agileflow:configure              # Interactive configuration wizard
 /agileflow:configure --detect     # See current settings
 /agileflow:configure --upgrade    # Update to latest versions
 ```
+
+### The 9 Configuration Agents
+
+AgileFlow provides specialized agents for each configuration domain:
+
+- **git-config** - Initialize git repository and remote connection
+- **hooks** - Event-driven automation (SessionStart, PreCompact, Stop)
+- **precompact** - Preserve context during conversation compacts
+- **status-line** - Custom status bar in Claude Code
+- **archival** - Auto-manage status.json file size
+- **attribution** - Control AI attribution in git commits
+- **ci** - CI/CD workflow setup (GitHub Actions, GitLab, CircleCI)
+- **damage-control** - Protect against destructive commands
+- **verify** - Test and validate configurations
+
+[Learn about all configuration agents](/features/configuration)
 
 ### Feature Management
 
@@ -218,6 +263,7 @@ Customize feature behavior:
 | PreCompact | `--enable=precompact` | State preservation |
 | RalphLoop | `--enable=ralphloop` | Auto-improve patterns |
 | SelfImprove | `--enable=selfimprove` | Update expertise |
+| Agent Expertise | Built-in | Self-improving agents with domain knowledge |
 
 ## Next Steps
 

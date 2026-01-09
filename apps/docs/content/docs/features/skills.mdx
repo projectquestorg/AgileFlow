@@ -7,6 +7,24 @@ description: Create, manage, and continuously improve custom AI prompts that lea
 
 The Skills system lets you create and manage custom AI prompts that learn and improve over time. Skills are reusable, research-backed templates that combine your project's best practices, external documentation, and codebase patterns into focused, actionable guides for Claude.
 
+## Quick Start
+
+Create your first skill in 30 seconds:
+
+```bash
+/agileflow:skill:create
+```
+
+Answer a few questions about what you need, and Claude will research best practices and generate a ready-to-use skill.
+
+Then use it:
+
+```bash
+/agileflow:skill:list              # See all your skills
+/agileflow:skill:test my-skill     # Verify it works
+/agileflow:skill:upgrade my-skill  # Add learning capability
+```
+
 ## What Are Skills?
 
 A **skill** is a structured prompt template that teaches Claude how to handle specific tasks in your project context. Skills are:
@@ -492,12 +510,12 @@ Add project-specific conventions that don't require corrections.
 
 ## Related Commands
 
-- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
-- [`/agileflow:skill:list`](/commands/skill-list) - View all installed skills
-- [`/agileflow:skill:edit`](/commands/skill-edit) - Modify an existing skill
-- [`/agileflow:skill:test`](/commands/skill-test) - Verify a skill works
-- [`/agileflow:skill:delete`](/commands/skill-delete) - Remove a skill
-- [`/agileflow:skill:upgrade`](/commands/skill-upgrade) - Add learning capability
+- [`/skill:create`](/features/skill-create) - Generate a new skill with research
+- [`/skill:list`](/features/skill-list) - View all installed skills
+- [`/skill:edit`](/features/skill-edit) - Modify an existing skill
+- [`/skill:test`](/features/skill-test) - Verify a skill works correctly
+- [`/skill:delete`](/features/skill-delete) - Remove a skill
+- [`/skill:upgrade`](/features/skill-upgrade) - Add self-improving capability
 
 ## Next Steps
 

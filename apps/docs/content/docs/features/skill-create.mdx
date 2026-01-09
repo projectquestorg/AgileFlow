@@ -1,0 +1,380 @@
+---
+title: /skill:create
+description: Generate a custom skill with web research, cookbook pattern, and MCP integration
+---
+
+# /skill:create
+
+Generate dynamic, research-backed skills that combine web documentation, your local docs, and codebase patterns.
+
+## Quick Start
+
+```bash
+# Interactive mode (recommended)
+/agileflow:skill:create
+
+# With skill name hint
+/agileflow:skill:create supabase-swift
+```
+
+## What It Does
+
+The `/skill:create` command creates custom skills by researching three sources and building research-backed workflows:
+
+1. **Web Documentation** - Official docs, API references, tutorials
+2. **Local Project Documentation** - Your practices, architecture decisions
+3. **Codebase Patterns** - Existing code examples and conventions
+
+It then generates:
+- **SKILL.md** - Main skill file with activation triggers
+- **references.md** - Links to all documentation sources
+- **cookbook/** - Step-by-step workflows for different use cases
+- **.mcp.json** - Optional MCP server configuration
+
+## How It Works
+
+### Phase 1: Requirements
+
+You describe what skill you need:
+
+```xml
+Skill categories:
+- Database integration (Supabase, PostgreSQL, MongoDB)
+- API integration (REST, GraphQL, webhooks)
+- UI/Frontend (Components, styling, design system)
+- Development workflow (Testing, deployment, CI/CD)
+- Custom description (describe what you need)
+```
+
+### Phase 2: Research
+
+The command enters Plan Mode and researches:
+
+- **Web docs**: Official documentation URLs, tutorials, guides
+- **Local docs**: Files in your `docs/` directory matching the skill's domain
+- **Codebase patterns**: Existing code showing how you do things
+- **MCP servers**: Available tools for the technology
+
+It collects URLs and patterns without copying content.
+
+### Phase 3: Generation
+
+Based on research findings, it generates:
+
+- **SKILL.md** with activation triggers and cookbook references
+- **references.md** linking all web/local/codebase sources
+- **cookbook/** directory with one file per use case
+- **.mcp.json** if an MCP server was found
+
+### Phase 4: Confirmation
+
+You see the generated structure, can preview content, and approve creation.
+
+## Parameters
+
+This command has no parameters - it's entirely interactive.
+
+```bash
+/agileflow:skill:create              # Interactive mode
+/agileflow:skill:create my-skill     # Optional: suggest skill name
+```
+
+## Examples
+
+### Example 1: Create a Supabase Skill
+
+```bash
+/agileflow:skill:create
+```
+
+**Your responses:**
+```
+What skill would you like to create?
+> [Select "Database integration"]
+
+Which database?
+> Supabase
+
+What language/framework?
+> Swift iOS app
+
+What use cases?
+> Authentication, CRUD operations, Real-time subscriptions
+```
+
+**Generated structure:**
+```
+.claude/skills/supabase-swift/
+├── SKILL.md (activation triggers, cookbook references)
+├── references.md (links to Supabase docs, local patterns)
+├── cookbook/
+│   ├── authentication.md (sign up, sign in, sign out)
+│   ├── crud-operations.md (create, read, update, delete)
+│   └── realtime-subscriptions.md (listen to changes)
+└── .mcp.json (Supabase MCP server config)
+```
+
+### Example 2: Create a React Components Skill
+
+```bash
+/agileflow:skill:create ui-components
+```
+
+**Interactive prompts:**
+```
+Describe what you need:
+> Building reusable React components with accessibility and Tailwind CSS
+
+Frameworks/libraries:
+> React 18, TypeScript, Tailwind CSS, shadcn/ui
+
+Use cases:
+> Creating new components, styling patterns, making accessible
+```
+
+**Generated files include:**
+- References to React docs, Tailwind docs, accessibility guidelines
+- Codebase patterns from `src/components/`
+- Cookbook entries for common component types
+
+## Output
+
+The command shows you:
+
+1. **Research Summary** - What it found in each source
+2. **Skill Structure** - Files that will be created
+3. **Preview** - First 50 lines of SKILL.md
+4. **Confirmation** - YES/NO to create
+
+Example output:
+
+```
+📚 Research Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web Docs:
+  ✓ Supabase Swift SDK docs
+  ✓ API reference
+  ✓ Authentication guide
+
+Local Documentation:
+  ✓ docs/02-practices/database.md
+  ⚠ No local patterns found
+
+Codebase Patterns:
+  ✓ src/lib/supabase.ts (client setup)
+  ✓ src/services/auth/ (auth service)
+
+MCP Server:
+  ✓ @supabase/mcp-server available
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Will create:
+.claude/skills/supabase-swift/
+├── SKILL.md
+├── references.md
+├── cookbook/
+│   ├── authentication.md
+│   ├── crud-operations.md
+│   └── realtime-subscriptions.md
+└── .mcp.json
+
+Create this skill? (Yes/No)
+```
+
+## Best Practices
+
+### Naming Skills
+
+Use specific, descriptive names with hyphens:
+
+- ✅ `supabase-swift` - Clear technology and context
+- ✅ `react-components-accessible` - Framework and key feature
+- ✅ `rest-api-error-handling` - Domain and focus
+- ❌ `database` - Too vague
+- ❌ `api` - Too generic
+- ❌ `my_skill` - Use hyphens, not underscores
+
+### Creating Effective Skills
+
+1. **Use specific domains** - One technology per skill, not too broad
+2. **Include multiple use cases** - Add cookbook entries for different scenarios
+3. **Link to project patterns** - The references.md should point to your actual code
+4. **Add troubleshooting** - Anticipate and address common issues
+5. **Keep focused** - 2-4 cookbook entries per skill
+
+### When to Create New Skills
+
+Create a skill when:
+- You use a technology frequently
+- Your team has patterns for something
+- You want to encode best practices
+- You need step-by-step guidance
+
+Don't create if:
+- The topic is too narrow (one cookbook entry)
+- You use it rarely
+- External docs are sufficient
+
+## Cookbook Entries
+
+Cookbooks are step-by-step guides for specific use cases. Each skill can have multiple cookbooks.
+
+### Cookbook Structure
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```language
+   code example
+   ```
+
+2. **Step 2**: Next step
+   ```language
+   code example
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### Cookbook Examples
+
+Each cookbook entry should address a specific, common task:
+
+- **Supabase skill**:
+  - `authentication.md` - Sign up, sign in, sign out
+  - `crud-operations.md` - Create, read, update, delete
+  - `realtime-subscriptions.md` - Listen to database changes
+
+- **React components skill**:
+  - `create-component.md` - Build a new component
+  - `styling-patterns.md` - Apply consistent styles
+  - `accessibility.md` - Make it accessible
+
+## MCP Integration
+
+If your skill's technology has an MCP server available, the command includes `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+This allows Claude to use MCP tools when working with the skill. You'll need to set environment variables for the tools to work.
+
+## Error Handling
+
+### Web Search Returns No Results
+
+If documentation isn't found online:
+- The command creates the skill with generic patterns
+- You can manually add URLs to `references.md` later
+- Use `/agileflow:skill:edit` to enhance it
+
+### MCP Server Not Found
+
+If no MCP server exists for your technology:
+- The skill is created without `.mcp.json`
+- You can add MCP later if a server becomes available
+- Manual MCP setup instructions are provided
+
+### Validation Errors
+
+Before writing, the command validates:
+- Skill name contains only letters, numbers, hyphens
+- Description is under 1024 characters
+- SKILL.md is under 500 lines
+- All cookbook files are referenced
+
+If validation fails, you'll be asked to fix before proceeding.
+
+## After Creation
+
+Once the skill is created:
+
+1. **Test it**:
+   ```bash
+   /agileflow:skill:test supabase-swift
+   ```
+
+2. **Use it** - Work on tasks and the skill will activate automatically
+
+3. **Add learning** - Enable self-improvement:
+   ```bash
+   /agileflow:skill:upgrade supabase-swift
+   ```
+
+4. **Improve it** - Correct Claude's output and the skill learns:
+   ```bash
+   /agileflow:skill:edit supabase-swift
+   ```
+
+## Troubleshooting
+
+### Skill Not Working
+
+If a newly created skill doesn't seem to activate:
+
+1. Check "When to Use" section in SKILL.md
+2. Make sure your question matches the activation triggers
+3. Run `/agileflow:skill:test` to verify the structure
+4. Edit with `/agileflow:skill:edit` to adjust triggers
+
+### Missing Local Documentation
+
+If the command can't find your local practices:
+
+1. Create documentation in `docs/02-practices/` or `docs/04-architecture/`
+2. Edit the skill to reference what you create
+3. Use more specific keywords in your skill description
+
+### Cookbook Entries Not Shown
+
+If cookbook entries aren't visible in Claude Code:
+
+1. Run `/agileflow:skill:test` to verify files exist
+2. Check that SKILL.md references them correctly
+3. Ensure cookbook files are valid Markdown
+
+## Related Commands
+
+- [`/skill:list`](/features/skill-list) - View all installed skills
+- [`/skill:edit`](/features/skill-edit) - Modify an existing skill
+- [`/skill:test`](/features/skill-test) - Verify a skill works
+- [`/skill:delete`](/features/skill-delete) - Remove a skill
+- [`/skill:upgrade`](/features/skill-upgrade) - Add learning capability
+
+## Next Steps
+
+1. Create your first skill: `/agileflow:skill:create`
+2. Test it works: `/agileflow:skill:test`
+3. Use it in your work - it will activate automatically
+4. Improve it with `/agileflow:skill:upgrade`

@@ -2,12 +2,27 @@
   "title": "Features",
   "pages": [
     "index",
+    "---Skills System---",
     "skills",
-    "compact-context",
+    "skill-create",
+    "skill-list",
+    "skill-edit",
+    "skill-test",
+    "skill-delete",
+    "skill-upgrade",
+    "---Agent System---",
+    "agent-expertise-system",
+    "---Configuration---",
+    "configuration",
+    "configuration-reference",
+    "---IDE Integrations---",
+    "ide-integrations",
     "---Damage Control---",
     "damage-control",
     "damage-control-setup",
     "damage-control-architecture",
-    "damage-control-faq"
+    "damage-control-faq",
+    "---Other---",
+    "compact-context"
   ]
 }
