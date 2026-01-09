@@ -1,0 +1,234 @@
+---
+title: /agileflow:research:ask
+description: Generate detailed research prompts for ChatGPT, Claude web, Perplexity, or Gemini
+---
+
+# /agileflow:research:ask
+
+Generate a comprehensive, context-rich research prompt for external AI tools when you need expert help.
+
+## Quick Start
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"
+```
+
+Example for troubleshooting:
+
+```bash
+/agileflow:research:ask TOPIC="next-auth Google OAuth" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+```
+
+## Purpose
+
+When you're stuck on a problem or need expert guidance, this command generates a **detailed 200+ line prompt** that includes:
+
+- Your current codebase context and code snippets
+- Exact error messages and stack traces
+- What you've already tried
+- Specific questions to answer
+
+The generated prompt is designed to get actionable, specific answers from AI tools.
+
+## Parameters
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | What you're researching (e.g., "OAuth 2.0 with Google") |
+| DETAILS | No | Constraints, deadlines, or specific requirements |
+| ERROR | No | Exact error message if troubleshooting |
+
+## What Gets Generated
+
+The command creates a structured prompt with these sections:
+
+### 1. Project Context
+Framework version, dependencies, and relevant files from your codebase.
+
+### 2. Current Implementation
+**50+ lines of actual code** from your project—not pseudo-code or summaries.
+
+### 3. The Problem
+- Exact error messages (verbatim)
+- Full stack trace if available
+- Expected vs actual behavior
+- Steps to reproduce
+
+### 4. What We've Already Tried
+At least **2 approaches** with detailed results and analysis of why they didn't work.
+
+### 5. Specific Questions
+**3+ targeted questions** that are answerable and specific to your situation.
+
+### 6. What I Need
+- Root cause analysis
+- Step-by-step solution
+- Complete code examples
+- Gotchas and edge cases
+- Testing approach
+
+### 7. Environment Details
+Node.js version, OS, and relevant tool versions.
+
+## Quality Requirements
+
+The command validates the generated prompt before outputting:
+
+| Check | Requirement |
+|-------|-------------|
+| Length | ≥200 lines |
+| Code snippets | ≥50 lines of actual code |
+| Error details | Verbatim message if troubleshooting |
+| Tried section | ≥2 approaches documented |
+| Questions | ≥3 specific questions |
+
+If any check fails, the command gathers more context and regenerates.
+
+## Workflow
+
+```
+Step 1: Run the command
+/agileflow:research:ask TOPIC="..." ERROR="..."
+
+Step 2: Copy the generated prompt
+
+Step 3: Paste into ChatGPT, Claude web, Perplexity, or Gemini
+
+Step 4: Get expert analysis
+
+Step 5: Import results back
+/agileflow:research:import TOPIC="..."
+(paste the response when prompted)
+
+Step 6: Results saved to docs/10-research/
+```
+
+## Example Output
+
+A good prompt looks like this (abbreviated):
+
+```markdown
+# Research Request: next-auth Google OAuth unauthorized_client Error
+
+## Project Context
+
+**Framework**: Next.js 14.0.4 with App Router
+**Key Dependencies**:
+- next-auth: 5.0.0-beta.4
+- next: 14.0.4
+- typescript: 5.3.3
+
+---
+
+## Current Implementation
+
+### File: src/app/api/auth/[...nextauth]/route.ts
+
+```typescript
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  // ... 40+ more lines of actual code
+});
+```
+
+---
+
+## The Problem
+
+### Error Message
+```
+[auth][error] CallbackRouteError: Read more at https://errors.authjs.dev#callbackrouteerror
+[auth][cause]: Error: unauthorized_client
+```
+
+### Expected Behavior
+User should be redirected to Google login, authenticate, and return to the app.
+
+### Actual Behavior
+After clicking "Sign in with Google", immediately get unauthorized_client error.
+
+---
+
+## What We've Already Tried
+
+### Attempt 1: Verify credentials
+**What we did**: Double-checked GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+**Result**: Credentials match exactly
+**Why it didn't work**: Issue persists
+
+### Attempt 2: Check redirect URIs
+**What we did**: Added localhost:3000/api/auth/callback/google to Google Console
+**Result**: Still getting unauthorized_client
+
+---
+
+## Specific Questions
+
+1. **Why does next-auth 5.0.0-beta.4 throw unauthorized_client when credentials are verified?**
+2. **Is there additional configuration needed for Google OAuth with App Router?**
+3. **What's the correct redirect URI format for next-auth v5?**
+4. **Are there known issues with next-auth 5.0.0-beta.4 and the Google provider?**
+
+---
+
+## What I Need
+
+1. **Root cause analysis**: Why is this happening?
+2. **Step-by-step solution** with exact code changes
+3. **Complete code examples** that I can copy-paste
+4. **Gotchas and edge cases** to watch for
+5. **Testing approach** to verify the fix works
+```
+
+## Anti-Patterns
+
+**Don't generate short, vague prompts:**
+
+```
+❌ "How do I fix OAuth in Next.js?"
+❌ "Getting an error with authentication, how to fix?"
+❌ "Help with Google login"
+```
+
+**Always generate detailed prompts with:**
+
+```
+✅ 200+ lines with full context
+✅ Actual code from your codebase
+✅ Exact error messages
+✅ What you've already tried
+✅ Specific questions
+```
+
+## Integration with babysit
+
+When [`/agileflow:babysit`](/commands/babysit) detects you're stuck on a problem, it suggests:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+## Tips for Better Results
+
+1. **Be specific with TOPIC** - Include framework versions and error types
+2. **Include ERROR messages** - Full stack traces help tremendously
+3. **Let the command read your code** - It extracts actual implementation
+4. **Don't skip validation** - The checks ensure quality responses
+
+## Related Commands
+
+- [`/agileflow:research`](/commands/research) - Overview of research system
+- [`/agileflow:research:import`](/commands/research-import) - Import research results
+- [`/agileflow:research:list`](/commands/research-list) - View all research notes
+- [`/agileflow:research:view`](/commands/research-view) - Read specific research note

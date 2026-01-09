@@ -1,0 +1,252 @@
+---
+title: /agileflow:research:import
+description: Import research results from ChatGPT, Claude, Perplexity, or external content into your research folder
+---
+
+# /agileflow:research:import
+
+Import research results from external AI tools or content into your project's research folder with structured formatting.
+
+## Quick Start
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup"
+```
+
+Then paste the content when prompted. Or provide it inline:
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+```
+
+## Purpose
+
+After using [`/agileflow:research:ask`](/commands/research-ask) to get answers from external AI, this command:
+
+- Formats the results into structured markdown
+- Saves to `docs/10-research/YYYYMMDD-topic-slug.md`
+- Updates the research index automatically
+- Optionally links to ADRs, Epics, or Stories
+
+## Parameters
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Name for the research file (e.g., "OAuth 2.0 Setup") |
+| CONTENT | Yes* | Research results to import (*can be pasted after command) |
+| SOURCE | No | Original source URL for attribution |
+
+## What It Imports
+
+Works with content from:
+
+- ChatGPT responses
+- Claude web conversations
+- Perplexity research results
+- YouTube video transcripts
+- Blog posts and articles
+- Conference talk notes
+- Documentation pages
+- Meeting notes
+
+## Workflow
+
+The command follows a structured workflow:
+
+### Phase 1: Validate Inputs
+
+1. Check TOPIC is provided (asks if missing)
+2. Check CONTENT is provided (prompts to paste if missing)
+
+### Phase 2: Analyze & Format
+
+3. Extract key findings and summary
+4. Identify code snippets (preserved exactly)
+5. Generate action items
+6. Create story suggestions if applicable
+
+### Phase 3: Preview (Diff-First)
+
+7. Show formatted result before saving
+8. Ask for confirmation
+
+### Phase 4: Save & Index
+
+9. Save to `docs/10-research/YYYYMMDD-topic-slug.md`
+10. Update `docs/10-research/README.md` index
+
+### Phase 5: Offer Analysis (Optional)
+
+11. Ask if you want implementation analysis
+12. If yes, enter plan mode and explore your codebase
+13. Suggest appropriate artifact (ADR, Epic, Story, Practice doc)
+
+## Output Format
+
+The imported research is structured as:
+
+```markdown
+# [Topic Title]
+
+**Import Date**: YYYY-MM-DD
+**Topic**: [original topic]
+**Source**: [URL or "ChatGPT/Claude/Perplexity research"]
+**Content Type**: research
+
+---
+
+## Summary
+
+[2-3 paragraph executive summary]
+
+---
+
+## Key Findings
+
+- [Main point 1 with details]
+- [Main point 2 with details]
+- [Main point 3 with details]
+
+---
+
+## Implementation Approach
+
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+
+---
+
+## Code Snippets
+
+[ALL code snippets preserved exactly as provided]
+
+---
+
+## Action Items
+
+- [ ] [Action 1 - concrete next step]
+- [ ] [Action 2 - concrete next step]
+
+---
+
+## Risks & Gotchas
+
+- [Risk 1]
+- [Risk 2]
+
+---
+
+## Story Suggestions
+
+[If content suggests feature work]
+
+---
+
+## References
+
+- Source: [URL]
+- Import date: YYYY-MM-DD
+```
+
+## File Location
+
+Research is saved with ISO date prefix:
+
+```
+docs/10-research/YYYYMMDD-topic-slug.md
+
+Examples:
+- docs/10-research/20250101-oauth-setup.md
+- docs/10-research/20241231-stripe-webhooks.md
+```
+
+## Index Update
+
+Every import automatically updates `docs/10-research/README.md`:
+
+```markdown
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+| [older entries...] |
+```
+
+## Implementation Analysis
+
+After saving, you're offered implementation analysis:
+
+```
+Would you like me to analyze how this research could be implemented in your project?
+
+1. Yes - Enter plan mode and explore (Recommended)
+2. No - Just save the research
+3. Link to existing Epic/Story
+```
+
+If you choose "Yes", the command:
+
+1. Enters plan mode
+2. Gathers your project context
+3. Shows benefits and implementation steps
+4. Recommends the appropriate artifact type:
+
+| Research Type | Artifact |
+|---------------|----------|
+| Architecture/tech decision | ADR |
+| Large feature (5+ steps) | Epic + Stories |
+| Single focused task | Story |
+| Best practices/guidelines | Practice doc |
+| Code quality improvement | Tech debt item |
+
+## Example Usage
+
+### Full Workflow
+
+```bash
+# Step 1: Get help from ChatGPT
+/agileflow:research:ask TOPIC="next-auth OAuth setup"
+# Copy the generated prompt, paste into ChatGPT
+
+# Step 2: Import the response
+/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+# Paste ChatGPT's response when prompted
+
+# Step 3: Review and confirm
+# Command shows formatted preview
+# You confirm to save
+
+# Step 4: Optionally analyze for implementation
+# Choose "Yes" to enter plan mode
+# Get specific recommendations for your codebase
+```
+
+### Import YouTube Transcript
+
+```bash
+/agileflow:research:import TOPIC="React 18 Streaming SSR" SOURCE="https://youtube.com/watch?v=..."
+# Paste the transcript
+```
+
+### Import Blog Post
+
+```bash
+/agileflow:research:import TOPIC="Vercel Edge Functions" SOURCE="https://vercel.com/blog/..."
+# Paste relevant sections
+```
+
+## Best Practices
+
+1. **Always cite the source** - Include the SOURCE argument
+2. **Preserve code exactly** - Don't modify examples from AI responses
+3. **Extract key findings** - Don't just paste raw content
+4. **Generate action items** - Make the research actionable
+5. **Link to decisions** - Reference from ADRs, Epics, Stories
+
+## Related Commands
+
+- [`/agileflow:research`](/commands/research) - Overview of research system
+- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompts
+- [`/agileflow:research:list`](/commands/research-list) - View all research notes
+- [`/agileflow:research:view`](/commands/research-view) - Read specific research note
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyze existing research

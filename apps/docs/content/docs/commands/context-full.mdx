@@ -1,0 +1,201 @@
+---
+title: /agileflow:context:full
+description: Generate or refresh the comprehensive project context brief for web AI tools
+---
+
+# /agileflow:context:full
+
+Generate or refresh the comprehensive context brief for web AI tools.
+
+## Quick Start
+
+```bash
+/agileflow:context:full
+```
+
+## Purpose
+
+Creates or updates `docs/context.md` with managed sections containing:
+
+- What we're building and current focus
+- Feature map and tech/tooling summary
+- Key decisions (ADRs) and architecture snapshot
+- Testing & CI status
+- Recent progress (last 10 bus messages)
+- Risks and next steps
+
+This file is designed to be pasted into ChatGPT, Perplexity, Gemini, or Claude web to give external AI tools full project context.
+
+## How It Works
+
+### Step 1: Gather Sources
+
+The command reads information from multiple project files:
+
+| Source | Purpose |
+|--------|---------|
+| `docs/09-agents/status.json` | Current story/epic status |
+| `docs/09-agents/bus/log.jsonl` | Last 10 progress messages |
+| `docs/05-epics/*.md` | Epic details |
+| `docs/06-stories/*/*.md` | Story details |
+| `docs/03-decisions/*.md` | Architecture Decision Records |
+| `docs/02-practices/*.md` | Development practices |
+| `docs/04-architecture/*.md` | System architecture |
+| `package.json` | Project manifest and dependencies |
+| `.github/workflows/*.yml` | CI configuration |
+| `CHANGELOG.md` | Recent changes |
+
+### Step 2: Generate Managed Sections
+
+The command creates or updates these sections:
+
+```markdown
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+[Project description from package.json or README]
+
+## Current Focus
+[Active epics/stories from status.json]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+[One line per epic]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: tech -->
+## Tech Stack
+- Framework: [from package.json]
+- Key dependencies: [list major deps]
+- Testing: [from scripts or CI]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: decisions -->
+## Key Decisions (ADRs)
+[List of ADRs with titles and status]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: progress -->
+## Recent Progress
+[Last 10 entries from bus/log.jsonl]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: next -->
+## Next Steps
+[Stories in READY status]
+<!-- END_MANAGED -->
+```
+
+### Step 3: Diff-First Confirmation
+
+Before writing changes, the command shows a diff and asks for confirmation:
+
+```diff
+- [old content]
++ [new content]
+```
+
+Changes are only applied after you confirm.
+
+## Section Limits
+
+To keep the context brief readable:
+
+| Section | Max Lines |
+|---------|-----------|
+| overview | 10 |
+| features | 20 |
+| tech | 15 |
+| decisions | 15 |
+| progress | 30 |
+| next | 20 |
+
+## Managed vs User Content
+
+The command distinguishes between:
+
+**Managed sections** (between markers):
+```markdown
+<!-- MANAGED_SECTION: overview -->
+[Content here - OK to update]
+<!-- END_MANAGED -->
+```
+
+**User-written sections** (no markers):
+```markdown
+## My Custom Section
+[Content here - NEVER touched]
+```
+
+User content outside managed markers is always preserved.
+
+## Missing Files
+
+If source files don't exist, the command adapts gracefully:
+
+| Missing File | Action |
+|--------------|--------|
+| `docs/context.md` | Create new file with all sections |
+| `status.json` | Skip features/next sections, use placeholders |
+| `bus/log.jsonl` | Skip progress section |
+| ADR files | Skip decisions section |
+| CI config | Skip CI details from tech section |
+
+## Example Output
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents...
+
+## Current Focus
+
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+<!-- END_MANAGED -->
+
+[...additional sections...]
+```
+
+## When to Use
+
+- **After major milestones** - Capture completed work
+- **Before web AI sessions** - Ensure context is current
+- **After architecture changes** - Record new decisions
+- **During sprint planning** - Update focus areas
+
+## Workflow
+
+```bash
+# 1. Generate or refresh context
+/agileflow:context:full
+
+# 2. Export for web AI (read-only)
+/agileflow:context:export
+
+# 3. Copy and paste into ChatGPT/Perplexity/Gemini
+```
+
+## Related Commands
+
+- [`/agileflow:context`](/commands/context) - Overview of context commands
+- [`/agileflow:context:export`](/commands/context-export) - Export concise excerpt
+- [`/agileflow:context:note`](/commands/context-note) - Add timestamped note
+- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompt

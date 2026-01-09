@@ -1,0 +1,196 @@
+---
+title: /agileflow:context:note
+description: Add a timestamped note to your project context file
+---
+
+# /agileflow:context:note
+
+Append a timestamped note to the project context file.
+
+## Quick Start
+
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+## Purpose
+
+Quickly add a note to `docs/context.md` under the "Notes" section. Useful for recording:
+
+- Decisions and rationale
+- Observations during development
+- Reminders for future sessions
+- Team communications
+- Technical discoveries
+
+## Parameters
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| NOTE | Yes | 1-5 line note text to append |
+
+## Example Usage
+
+```bash
+# Record a decision
+/agileflow:context:note NOTE="Decided to use JWT instead of sessions"
+
+# Document an issue
+/agileflow:context:note NOTE="User reported auth bug in production, investigating"
+
+# Sprint planning note
+/agileflow:context:note NOTE="Sprint planning: focusing on US-0042 and US-0045 this week"
+
+# Technical discovery
+/agileflow:context:note NOTE="Performance issue fixed: reduced API response time by 40%"
+
+# Stakeholder feedback
+/agileflow:context:note NOTE="Stakeholder meeting: new feature request added to backlog"
+```
+
+## Note Format
+
+Notes are appended with ISO 8601 timestamps:
+
+```markdown
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Decided to use JWT instead of sessions
+- **[2024-12-31T15:45:00Z]**: User reported auth bug in production
+- **[2025-01-01T09:00:00Z]**: Sprint planning: focusing on US-0042 this week
+```
+
+## Workflow
+
+### Step 1: Provide Note Text
+
+If NOTE argument is missing, you'll be prompted:
+
+```
+What note would you like to add to docs/context.md?
+```
+
+### Step 2: Diff-First Confirmation
+
+Before writing, the command shows what will change:
+
+```diff
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Old note here
++ - **[2025-01-07T14:22:00Z]**: New note being added
+```
+
+### Step 3: Confirm
+
+You must approve the change before it's applied.
+
+## Auto-Creation
+
+### If docs/context.md doesn't exist
+
+The command creates it with a Notes section:
+
+```markdown
+# Project Context
+
+<!-- MANAGED_SECTION: placeholder -->
+Run /agileflow:context:full to populate project context.
+<!-- END_MANAGED -->
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+### If Notes section doesn't exist
+
+The command adds it at the end of the file:
+
+```markdown
+[existing content...]
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+## Timestamp Format
+
+All timestamps use ISO 8601 format (UTC):
+
+```
+YYYY-MM-DDTHH:MM:SSZ
+```
+
+Examples:
+- `2024-12-31T10:30:00Z` - correct
+- `2025-01-07T15:45:30Z` - correct
+
+This ensures:
+- Consistent sorting
+- Universal time reference
+- Machine-readable format
+- Easy chronological ordering
+
+## Chronological Order
+
+Notes appear in the order they were added:
+
+- **Oldest** notes at the top
+- **Newest** notes at the bottom
+
+This provides a chronological history of decisions and discoveries.
+
+## Good Note Examples
+
+```bash
+# Technical decisions
+/agileflow:context:note NOTE="Switched from REST to GraphQL for complex queries"
+
+# Bug tracking
+/agileflow:context:note NOTE="Fixed race condition in user auth - PR #245"
+
+# Team coordination
+/agileflow:context:note NOTE="API team ready for integration - contact @john"
+
+# Environment changes
+/agileflow:context:note NOTE="Upgraded Node.js to v20 in CI - all tests passing"
+
+# External dependencies
+/agileflow:context:note NOTE="Stripe API v2 deprecation - migrate by March 2025"
+```
+
+## When to Use
+
+- **After making decisions** - Document the reasoning
+- **When encountering issues** - Track problems and solutions
+- **During planning** - Record sprint goals and focus areas
+- **After deployments** - Note version releases
+- **When blocked** - Document blockers for context
+
+## Note vs ADR
+
+| Use Note for | Use ADR for |
+|--------------|-------------|
+| Quick observations | Major architecture decisions |
+| Temporary reminders | Long-term technical choices |
+| Day-to-day tracking | Decisions needing justification |
+| Team communications | Choices with alternatives considered |
+
+For significant technical decisions, use [`/agileflow:adr`](/commands/adr) instead.
+
+## Viewing Notes
+
+Notes are visible when you:
+
+1. View `docs/context.md` directly
+2. Run `/agileflow:context:export` (if space allows)
+3. Run `/agileflow:context:full` to refresh context
+
+## Related Commands
+
+- [`/agileflow:context`](/commands/context) - Overview of context commands
+- [`/agileflow:context:full`](/commands/context-full) - Generate full context
+- [`/agileflow:context:export`](/commands/context-export) - Export concise excerpt
+- [`/agileflow:adr`](/commands/adr) - Create architecture decision records

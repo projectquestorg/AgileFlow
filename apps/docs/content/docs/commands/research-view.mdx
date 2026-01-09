@@ -1,0 +1,145 @@
+---
+title: /agileflow:research:view
+description: Read and display the full content of a specific research note
+---
+
+# /agileflow:research:view
+
+Display the complete content of a research note from your research folder.
+
+## Quick Start
+
+```bash
+/agileflow:research:view FILE=20250101-oauth-setup.md
+```
+
+## Purpose
+
+Read and review research notes to find:
+
+- Code snippets from past research
+- Action items and their status
+- Key findings and recommendations
+- Implementation approaches
+
+This is a **read-only command**—no files are modified.
+
+## Parameters
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| FILE | Yes | Filename of the research note |
+
+## Usage
+
+```bash
+# View specific research
+/agileflow:research:view FILE=20250101-oauth-setup.md
+
+# View another note
+/agileflow:research:view FILE=20241231-typescript-perf.md
+```
+
+## Interactive Selection
+
+If you run the command without FILE, you'll be prompted to select:
+
+```
+Which research note would you like to view?
+
+1. 20250106-oauth-setup.md - OAuth 2.0 Setup
+2. 20250105-next-patterns.md - Next.js Best Practices
+3. Show full list
+```
+
+## Output
+
+Displays the **complete research file**—never truncated or summarized:
+
+```markdown
+# OAuth 2.0 Setup
+
+**Import Date**: 2025-01-01
+**Topic**: OAuth 2.0 Setup
+**Source**: https://chatgpt.com
+
+---
+
+## Summary
+
+[Full executive summary...]
+
+---
+
+## Key Findings
+
+- [Complete list of findings...]
+
+---
+
+## Implementation Approach
+
+1. [All implementation steps...]
+
+---
+
+## Code Snippets
+
+[All code blocks exactly as imported...]
+
+---
+
+## Action Items
+
+- [x] Completed action
+- [ ] Pending action
+
+---
+
+## Risks & Gotchas
+
+[Full risk assessment...]
+```
+
+## After Viewing
+
+You're offered next actions:
+
+```
+What would you like to do with this research?
+
+1. Analyze for implementation (Recommended)
+2. View another research note
+3. Done
+```
+
+**Analyze for implementation** enters plan mode and explores how to apply this research to your specific codebase.
+
+## Finding the Right File
+
+Don't know the filename? Use list first:
+
+```bash
+/agileflow:research:list
+# Shows all files with correct names
+
+/agileflow:research:view FILE=<filename from list>
+```
+
+## Missing File Handling
+
+If the file doesn't exist:
+
+```
+Research note not found: [FILENAME]
+
+Use /agileflow:research:list to see all available research notes.
+```
+
+## Related Commands
+
+- [`/agileflow:research`](/commands/research) - Overview of research system
+- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompts
+- [`/agileflow:research:import`](/commands/research-import) - Import research results
+- [`/agileflow:research:list`](/commands/research-list) - View all research notes
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyze for implementation

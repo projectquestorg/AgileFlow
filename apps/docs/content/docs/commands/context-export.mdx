@@ -1,0 +1,158 @@
+---
+title: /agileflow:context:export
+description: Export a concise context excerpt for pasting into web AI tools
+---
+
+# /agileflow:context:export
+
+Export a concise context excerpt for pasting into web AI tools.
+
+## Quick Start
+
+```bash
+/agileflow:context:export
+```
+
+## Purpose
+
+Reads `docs/context.md` and outputs a condensed excerpt (≤300 lines) ready to paste into ChatGPT, Perplexity, Gemini, or Claude web.
+
+**This is a read-only command** - no files are written.
+
+## Output Format
+
+The command outputs a markdown code block for easy copying:
+
+```markdown
+# Project Context Brief
+Last updated: 2025-12-24
+
+## What We're Building
+AgileFlow is a comprehensive project management system...
+
+## Current Focus
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+
+## Tech Stack
+- Framework: Next.js 16, TypeScript
+- UI: React, Tailwind CSS, shadcn/ui
+- Testing: Jest, Playwright
+
+## Key Decisions
+- ADR-001: Use TypeScript for type safety (Accepted)
+- ADR-002: Use React component library (Accepted)
+
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+
+## Next Steps
+- US-0043: Visual Mode documentation (ready)
+- US-0044: Session commands docs (ready)
+
+---
+**Paste this into**: ChatGPT, Perplexity, Gemini, or Claude web
+**Purpose**: Load full project context for AI assistance
+**Limit**: This excerpt is ≤300 lines for easy pasting
+```
+
+## Sections Included
+
+The export includes only these sections (to stay under 300 lines):
+
+| Section | Max Lines | Purpose |
+|---------|-----------|---------|
+| Header | 2 | Title and timestamp |
+| What We're Building | 5 | Project overview |
+| Current Focus | 5 | Active work |
+| Tech Stack | 8 | Technologies |
+| Key Decisions | 10 | ADR titles only |
+| Feature Map | 15 | One line per epic |
+| Next Steps | 15 | Ready stories |
+| Footer | 3 | Paste instructions |
+
+## Sections Excluded
+
+To stay within the 300-line limit, these are skipped:
+
+- **Recent Progress** - Too verbose
+- **Notes section** - Too long
+- **Detailed story descriptions** - Not needed for context
+- **Full ADR content** - Only titles included
+
+## Content Condensing
+
+When extracting, content is condensed:
+
+| Element | Full Size | Condensed |
+|---------|-----------|-----------|
+| ADRs | Full description | Title + status only |
+| Stories | Title + description | Title + status |
+| Tech | Full list + versions | Framework + key deps |
+| Epics | Title + stories list | Title + count + status |
+| Decisions | Full context | One-liner |
+
+## Requirements
+
+**docs/context.md must exist** before exporting.
+
+If missing, you'll see:
+
+```
+Error: docs/context.md not found.
+
+To create it, run: /agileflow:context:full
+
+Then you can export with: /agileflow:context:export
+```
+
+## Usage Workflow
+
+```bash
+# 1. Generate context (if needed)
+/agileflow:context:full
+
+# 2. Export concise version
+/agileflow:context:export
+
+# 3. Copy the output
+# 4. Paste into ChatGPT, Perplexity, Gemini, or Claude web
+# 5. Ask questions with full project context
+```
+
+## Why 300 Lines?
+
+Web AI tools have context window limits. A 300-line excerpt:
+
+- Fits comfortably in most AI tool context windows
+- Provides enough detail for informed assistance
+- Leaves room for your actual questions
+- Is quick to paste and process
+
+## When to Use
+
+- **Before web AI sessions** - Load project context
+- **When switching AI tools** - Transfer context between tools
+- **After context updates** - Get fresh concise version
+- **For team sharing** - Quick project overview
+
+## No Confirmation Needed
+
+This is a read-only command:
+
+- ✓ Read docs/context.md
+- ✓ Extract and format
+- ✓ Output to code block
+- ✗ NO file writes
+- ✗ NO confirmation needed
+- ✗ NO state changes
+
+## Related Commands
+
+- [`/agileflow:context`](/commands/context) - Overview of context commands
+- [`/agileflow:context:full`](/commands/context-full) - Generate full context
+- [`/agileflow:context:note`](/commands/context-note) - Add timestamped note
+- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompt

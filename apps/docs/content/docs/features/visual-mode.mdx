@@ -1,0 +1,404 @@
+---
+title: Visual Mode
+description: Screenshot verification system for UI development with verified-prefix protocol
+---
+
+# Visual Mode
+
+Visual Mode is a screenshot verification system for UI development that ensures all visual outputs are reviewed and approved before a story is marked complete.
+
+## Overview
+
+When developing UI components, tests alone may not catch visual issues like:
+- Layout problems
+- Styling inconsistencies
+- Responsive design issues
+- Visual regressions
+
+Visual Mode addresses this by requiring all screenshots to be **verified** (prefixed with `verified-`) before proceeding.
+
+## How It Works
+
+### The Verified-Prefix Protocol
+
+1. During UI development, screenshots are saved to `screenshots/` directory
+2. New screenshots are saved without a prefix (e.g., `login-form.png`)
+3. After visual review, approved screenshots are renamed with `verified-` prefix
+4. Visual Mode checks that ALL screenshots have the `verified-` prefix
+5. If any unverified screenshots exist, the loop pauses for review
+
+```mermaid
+flowchart LR
+    A[Take Screenshot] --> B[login-form.png]
+    B --> C{Review}
+    C -->|Approved| D[verified-login-form.png]
+    C -->|Issues Found| E[Fix & Retake]
+    E --> B
+    D --> F[Loop Continues]
+```
+
+## Quick Start
+
+Enable Visual Mode in Loop Mode:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+Or run the verifier directly:
+
+```bash
+node .agileflow/scripts/screenshot-verifier.js
+```
+
+## Screenshot Workflow
+
+### 1. Take Screenshots During Development
+
+When implementing UI components, save screenshots:
+
+```typescript
+// In your test or component
+await page.screenshot({ path: 'screenshots/user-profile.png' });
+```
+
+Or manually with browser dev tools.
+
+### 2. Review Screenshots
+
+Visual Mode pauses when unverified screenshots are found:
+
+```
+⚠️ Visual Mode: Unverified screenshots found
+
+Unverified:
+  - screenshots/user-profile.png
+  - screenshots/settings-modal.png
+
+Please review these screenshots and rename with 'verified-' prefix
+when approved, or delete if issues found.
+```
+
+### 3. Verify or Fix
+
+**If the screenshot looks correct:**
+```bash
+mv screenshots/user-profile.png screenshots/verified-user-profile.png
+```
+
+**If issues are found:**
+- Fix the UI code
+- Retake the screenshot
+- Review again
+
+### 4. Continue
+
+Once all screenshots are verified, the loop continues automatically.
+
+## Verifier Script
+
+### Usage
+
+```bash
+# Check all screenshots
+node .agileflow/scripts/screenshot-verifier.js
+
+# Check specific directory
+node .agileflow/scripts/screenshot-verifier.js --dir=tests/screenshots
+
+# Verbose output
+node .agileflow/scripts/screenshot-verifier.js --verbose
+```
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | All screenshots verified |
+| 1 | Unverified screenshots found |
+| 2 | Error during verification |
+
+### Output Examples
+
+**All Verified:**
+```
+✅ Visual Mode: All screenshots verified
+
+Verified: 5
+  - verified-login-form.png
+  - verified-user-profile.png
+  - verified-settings-modal.png
+  - verified-dashboard.png
+  - verified-error-state.png
+```
+
+**Unverified Found:**
+```
+❌ Visual Mode: 2 unverified screenshots
+
+Verified: 3
+Unverified: 2
+  - new-feature.png
+  - updated-header.png
+
+Action required: Review and verify or delete unverified screenshots.
+```
+
+## Configuration
+
+### In Session State
+
+Visual Mode configuration in `session-state.json`:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "mode": "visual",
+    "visual_config": {
+      "screenshots_dir": "screenshots",
+      "verified_prefix": "verified-",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"]
+    }
+  }
+}
+```
+
+### In Metadata
+
+Default settings in `agileflow-metadata.json`:
+
+```json
+{
+  "visual_mode": {
+    "enabled": false,
+    "screenshots_dir": "screenshots",
+    "verified_prefix": "verified-",
+    "auto_cleanup": true
+  }
+}
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `screenshots_dir` | `screenshots` | Directory to scan for screenshots |
+| `verified_prefix` | `verified-` | Prefix required for verified screenshots |
+| `extensions` | `[".png", ".jpg", ".jpeg", ".webp"]` | Image file extensions to check |
+| `auto_cleanup` | `true` | Remove verified screenshots after epic completion |
+
+## Integration with Loop Mode
+
+Visual Mode works as an additional verification step in [Loop Mode](/features/loop-mode):
+
+```mermaid
+flowchart TB
+    A[Claude Stops] --> B[Run Tests]
+    B --> C{Tests Pass?}
+    C -->|No| D[Show Test Failures]
+    C -->|Yes| E{Visual Mode?}
+    E -->|No| F[Mark Complete]
+    E -->|Yes| G[Check Screenshots]
+    G --> H{All Verified?}
+    H -->|Yes| F
+    H -->|No| I[Pause for Review]
+    I --> J[User Verifies]
+    J --> K[Continue Loop]
+    D --> K
+```
+
+## When to Use Visual Mode
+
+### Good For
+
+- ✅ UI component development
+- ✅ Design system implementations
+- ✅ Responsive layout work
+- ✅ Visual regression prevention
+- ✅ Accessibility visual checks
+- ✅ Theming and styling work
+
+### Not Good For
+
+- ❌ Backend/API development
+- ❌ Database migrations
+- ❌ CI/CD configuration
+- ❌ Non-visual features
+- ❌ Automated testing only workflows
+
+## Best Practices
+
+### 1. Consistent Screenshot Naming
+
+Use descriptive, consistent names:
+
+```
+✅ Good:
+  - login-form-default.png
+  - login-form-error.png
+  - login-form-loading.png
+
+❌ Bad:
+  - screenshot1.png
+  - test.png
+  - final-final-v2.png
+```
+
+### 2. Capture Multiple States
+
+Screenshot all component states:
+
+```typescript
+// Default state
+await page.screenshot({ path: 'screenshots/button-default.png' });
+
+// Hover state
+await button.hover();
+await page.screenshot({ path: 'screenshots/button-hover.png' });
+
+// Disabled state
+await page.setContent('<button disabled>Click</button>');
+await page.screenshot({ path: 'screenshots/button-disabled.png' });
+```
+
+### 3. Include Context
+
+Screenshot enough context to understand the component:
+
+```typescript
+// Too narrow - just the button
+await button.screenshot({ path: 'screenshots/button.png' });
+
+// Better - button with surrounding context
+await page.screenshot({
+  path: 'screenshots/button-in-form.png',
+  clip: { x: 0, y: 100, width: 400, height: 200 }
+});
+```
+
+### 4. Clean Up After Verification
+
+Remove old verified screenshots when stories complete:
+
+```bash
+# Manual cleanup
+rm screenshots/verified-*.png
+
+# Or enable auto_cleanup in config
+```
+
+### 5. Document Expected Appearance
+
+Add notes about what the screenshot should show:
+
+```markdown
+## Screenshots
+
+### verified-login-form.png
+- Form with email and password fields
+- Blue submit button
+- "Forgot password?" link below
+- No error states visible
+```
+
+## Troubleshooting
+
+### Screenshots Not Detected
+
+1. Check directory path:
+   ```bash
+   ls screenshots/
+   ```
+
+2. Verify file extensions are correct:
+   ```bash
+   file screenshots/*.png
+   ```
+
+3. Check config path in session-state.json
+
+### Verification Not Running
+
+1. Ensure Visual Mode is enabled:
+   ```bash
+   cat docs/09-agents/session-state.json | grep visual
+   ```
+
+2. Check Loop Mode is active:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+### False Positives
+
+If screenshots are being flagged incorrectly:
+
+1. Check prefix spelling: `verified-` (note the hyphen)
+2. Check for hidden characters in filename
+3. Verify file is actually an image
+
+## Example Workflow
+
+### UI Story: Add User Avatar Component
+
+**1. Story starts, Claude implements component:**
+```typescript
+// src/components/Avatar.tsx
+export function Avatar({ src, name, size = 'md' }) {
+  return (
+    <img
+      src={src}
+      alt={name}
+      className={`avatar avatar-${size}`}
+    />
+  );
+}
+```
+
+**2. Claude takes screenshots:**
+```bash
+screenshots/
+  avatar-small.png
+  avatar-medium.png
+  avatar-large.png
+  avatar-fallback.png
+```
+
+**3. Visual Mode pauses:**
+```
+⚠️ Visual Mode: 4 unverified screenshots
+
+Please review and verify:
+  - avatar-small.png
+  - avatar-medium.png
+  - avatar-large.png
+  - avatar-fallback.png
+```
+
+**4. You review and verify:**
+```bash
+# All look good
+for f in screenshots/avatar-*.png; do
+  mv "$f" "screenshots/verified-$(basename $f)"
+done
+```
+
+**5. Loop continues to next story**
+
+## Related Features
+
+- [Loop Mode](/features/loop-mode) - Autonomous story processing
+- [Damage Control](/features/damage-control) - Protection against destructive operations
+- [`/agileflow:verify`](/commands/verify) - Manual verification command
+
+## Architecture
+
+| Component | Purpose |
+|-----------|---------|
+| `screenshot-verifier.js` | Main verification script |
+| `ralph-loop.js` | Orchestrates Visual Mode checks |
+| `session-state.json` | Stores Visual Mode configuration |
+| `screenshots/` | Default screenshot directory |
+
+Visual Mode integrates with Loop Mode's stop hook to provide visual verification alongside automated testing.

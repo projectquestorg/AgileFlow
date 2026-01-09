@@ -1,0 +1,355 @@
+---
+title: Configuration Agents
+description: Specialized agents for setting up and configuring AgileFlow features
+---
+
+# Configuration Agents
+
+Configuration agents are specialized agents that help set up and configure various AgileFlow features. They're invoked through the `/agileflow:configure` command.
+
+## Overview
+
+When you run `/agileflow:configure`, you're presented with a menu of configuration options. Each option spawns a dedicated configuration agent that guides you through setup.
+
+```bash
+/agileflow:configure
+```
+
+## Available Configuration Agents
+
+### Hooks System
+
+**Agent**: `configuration-hooks`
+
+Configures Claude Code's hooks system for event-driven automation.
+
+**What it configures:**
+- SessionStart hook - Welcome display, project status
+- PreCompact hook - Context preservation
+- Stop hook - Session wrap-up, uncommitted changes warning
+- UserPromptSubmit hook - Activity logging
+
+**Files created:**
+- `.claude/settings.json` - Hooks configuration
+- `scripts/agileflow-welcome.js` - Welcome display
+- `scripts/precompact-context.sh` - Context preservation
+- `scripts/agileflow-stop.sh` - Session wrap-up
+- `scripts/get-env.js` - Environment variable helper
+
+---
+
+### PreCompact Context
+
+**Agent**: `configuration-precompact`
+
+Configures the PreCompact hook to preserve critical context when conversations are compacted.
+
+**What it preserves:**
+- Project version, git branch, active stories
+- Active command rules (e.g., babysit's AskUserQuestion requirement)
+- Key conventions from CLAUDE.md
+- Recent progress from bus/log.jsonl
+
+**Multi-command support (v2.40.0+):**
+Multiple commands can be active simultaneously. The PreCompact hook reads all active commands from `session-state.json` and preserves their behavioral rules.
+
+---
+
+### Auto-Archival
+
+**Agent**: `configuration-archival`
+
+Configures automatic archival of old completed stories to keep `status.json` small.
+
+**Why it matters:**
+As projects grow, `status.json` can exceed Claude Code's 25k token limit, causing agents to fail. Auto-archival moves old completed stories to `status-archive.json`.
+
+**Configuration options:**
+- 30 days (recommended)
+- 14 days
+- 7 days
+- 3 days (aggressive)
+
+**Files created:**
+- `docs/00-meta/agileflow-metadata.json` - Threshold configuration
+- `scripts/archive-completed-stories.sh` - Archival script
+- SessionStart hook entry - Runs archival automatically
+
+---
+
+### Git Attribution
+
+**Agent**: `configuration-attribution`
+
+Configures whether Claude Code adds AI attribution to git commits.
+
+**Options:**
+- **Disable attribution** - Clean commits, no AI footers (professional use)
+- **Keep attribution** - Include "Generated with Claude Code" footer
+
+**What it does:**
+- Creates or updates `CLAUDE.md` with attribution policy
+- Adds CRITICAL section that Claude follows
+
+---
+
+### Status Line
+
+**Agent**: `configuration-status-line`
+
+Configures the custom status bar displayed in Claude Code.
+
+**What it shows:**
+- Git branch (color-coded by type)
+- Current story ID and title
+- WIP count (yellow if >1, red if >3)
+- Completion percentage
+
+**Example output:**
+```
+[main] US-0007: Status Line | WIP: 2 | Done: 85%
+```
+
+---
+
+### CI Pipeline
+
+**Agent**: `configuration-ci`
+
+Configures CI/CD workflow for automated testing and quality checks.
+
+**What it creates:**
+- GitHub Actions workflow file
+- Test commands
+- Linting configuration
+- Coverage thresholds
+
+---
+
+### Git Configuration
+
+**Agent**: `configuration-git-config`
+
+Configures git repository initialization and remote setup.
+
+**What it does:**
+- Initializes git repository if needed
+- Sets up remote origin
+- Configures default branch
+- Sets up .gitignore
+
+---
+
+### Damage Control
+
+**Agent**: `configuration-damage-control`
+
+Configures the Damage Control system to protect against destructive commands.
+
+**Protection levels:**
+- **Standard** - Blocks common destructive patterns
+- **Strict** - More aggressive blocking
+- **Permissive** - Minimal blocking
+
+**What it blocks:**
+- `rm -rf /` and variants
+- Force pushes to protected branches
+- Database drops without confirmation
+- Mass file deletions
+
+See [Damage Control](/features/damage-control) for full documentation.
+
+---
+
+### Verify Configuration
+
+**Agent**: `configuration-verify`
+
+Verifies that all AgileFlow configuration is correct and working.
+
+**What it checks:**
+- Hooks system properly configured
+- Required directories exist
+- Scripts are executable
+- JSON files are valid
+- Git hooks are installed
+
+## Usage
+
+### Interactive Configuration
+
+```bash
+/agileflow:configure
+```
+
+You'll see options like:
+```
+Which feature would you like to configure?
+
+1. Hooks System (Recommended)
+2. Auto-Archival
+3. Git Attribution
+4. Status Line
+5. CI Pipeline
+6. Damage Control
+7. Verify Configuration
+```
+
+### Direct Agent Invocation
+
+You can also invoke configuration agents directly through the Task tool:
+
+```javascript
+Task(
+  description: "Configure hooks system",
+  prompt: "Set up the hooks system with SessionStart and PreCompact",
+  subagent_type: "configuration-hooks"
+)
+```
+
+## Configuration Files
+
+### .claude/settings.json
+
+Main hooks configuration file. Committed to git.
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/agileflow-welcome.js"
+      }]
+    }],
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### docs/00-meta/agileflow-metadata.json
+
+Feature configuration and version tracking.
+
+```json
+{
+  "version": "2.78.0",
+  "created": "2025-01-01T00:00:00Z",
+  "updated": "2025-01-09T00:00:00Z",
+  "archival": {
+    "threshold_days": 30,
+    "enabled": true
+  },
+  "features": {
+    "hooks": {
+      "enabled": true,
+      "configured_version": "2.41.0"
+    },
+    "precompact": {
+      "enabled": true,
+      "configured_version": "2.40.0"
+    }
+  }
+}
+```
+
+### .claude/settings.local.json
+
+User-specific overrides. Gitignored.
+
+```json
+{
+  "env": {
+    "USER_NAME": "Your Name"
+  }
+}
+```
+
+## Best Practices
+
+### 1. Start with Hooks System
+
+The hooks system is foundational. Configure it first, then add other features.
+
+```bash
+/agileflow:configure
+# Select: Hooks System
+```
+
+### 2. Enable Auto-Archival Early
+
+For projects with many stories, enable auto-archival to prevent status.json from growing too large.
+
+### 3. Restart After Configuration
+
+Most configuration changes require restarting Claude Code:
+
+```
+RESTART CLAUDE CODE NOW!
+Quit completely (Cmd+Q), wait 5 seconds, restart
+Hooks ONLY load on startup!
+```
+
+### 4. Verify Configuration
+
+After making changes, run verification:
+
+```bash
+/agileflow:configure
+# Select: Verify Configuration
+```
+
+### 5. Test Scripts Manually
+
+Before relying on hooks, test scripts manually:
+
+```bash
+# Test welcome display
+node scripts/agileflow-welcome.js
+
+# Test context preservation
+bash scripts/precompact-context.sh
+
+# Test session wrap-up
+bash scripts/agileflow-stop.sh
+```
+
+## Troubleshooting
+
+### Hooks Not Running
+
+1. Verify `.claude/settings.json` exists and is valid JSON
+2. Check the hooks array format (must use `matcher` + `hooks` format)
+3. Restart Claude Code completely
+
+### Old Format Detected
+
+If you see "Old hooks format detected", your settings.json uses the deprecated format. Run `/agileflow:configure` → Hooks System to migrate.
+
+### Scripts Not Found
+
+Ensure scripts are in the correct location:
+- `scripts/agileflow-welcome.js`
+- `scripts/precompact-context.sh`
+- `scripts/get-env.js`
+
+### Permission Denied
+
+Make scripts executable:
+```bash
+chmod +x scripts/*.js scripts/*.sh
+```
+
+## Related Documentation
+
+- [Hooks System Architecture](/features/hooks-system) - Detailed hooks documentation
+- [Compact Context](/features/compact-context) - Context preservation
+- [Damage Control](/features/damage-control) - Protection system
+- [`/agileflow:configure`](/commands/configure) - Configuration command

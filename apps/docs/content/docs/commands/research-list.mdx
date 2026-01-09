@@ -1,0 +1,92 @@
+---
+title: /agileflow:research:list
+description: Display the index of all research notes in your project
+---
+
+# /agileflow:research:list
+
+Display all research notes stored in your project with a quick overview.
+
+## Quick Start
+
+```bash
+/agileflow:research:list
+```
+
+No arguments needed—shows all research notes.
+
+## Purpose
+
+Shows research notes stored in `docs/10-research/` with:
+
+- Date
+- Topic
+- Filename
+- One-line summary (if available)
+
+This is a **read-only command**—no files are written.
+
+## Output
+
+```
+## Research Notes
+
+| Date       | Topic                  | File                        |
+|------------|------------------------|-----------------------------|
+| 2025-01-07 | OAuth Integration       | 20250107-oauth.md           |
+| 2025-01-06 | Performance Tips        | 20250106-perf.md            |
+| 2025-01-05 | Database Migrations     | 20250105-migrations.md      |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=<filename> - Read a specific note
+- /agileflow:research:analyze FILE=<filename> - Analyze for implementation
+- /agileflow:research:ask TOPIC="new topic" - Create new research prompt
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## When No Research Exists
+
+If no research notes are found:
+
+```
+No research notes found.
+
+Quick start:
+- /agileflow:research:ask TOPIC="your topic" - Generate research prompt for ChatGPT/Claude
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## How It Works
+
+1. Reads `docs/10-research/README.md` for the index table
+2. If README doesn't exist, lists files from the directory
+3. If directory doesn't exist, shows helpful message
+4. Suggests next actions
+
+## Quick Actions
+
+After viewing the list, you can:
+
+| Action | Command |
+|--------|---------|
+| Read a note | `/agileflow:research:view FILE=<filename>` |
+| Analyze for implementation | `/agileflow:research:analyze FILE=<filename>` |
+| Create new research | `/agileflow:research:ask TOPIC="..."` |
+| Import content | `/agileflow:research:import TOPIC="..."` |
+
+## When to Use
+
+- **Before implementing** - Find past research on a topic
+- **Looking for code snippets** - Remember where you researched something
+- **Check action items** - See what tasks came from research
+- **Team knowledge sharing** - Browse what's been researched
+
+## Related Commands
+
+- [`/agileflow:research`](/commands/research) - Overview of research system
+- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompts
+- [`/agileflow:research:import`](/commands/research-import) - Import research results
+- [`/agileflow:research:view`](/commands/research-view) - Read specific research note
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyze for implementation

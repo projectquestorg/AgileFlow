@@ -1,0 +1,310 @@
+---
+title: /agileflow:setup:visual-e2e
+description: Set up Visual E2E testing infrastructure with Playwright and screenshot verification
+---
+
+# /agileflow:setup:visual-e2e
+
+Set up Visual E2E testing infrastructure with Playwright and screenshot verification workflow.
+
+## Quick Start
+
+```bash
+/agileflow:setup:visual-e2e
+```
+
+## Purpose
+
+Sets up a complete Visual E2E testing infrastructure including:
+
+- Playwright installation with browser dependencies
+- `playwright.config.ts` with webServer auto-start
+- Example E2E test with screenshot capture
+- Screenshots directory for visual verification
+- npm scripts for running tests
+
+## Why Visual E2E?
+
+**The problem**: Tests pass but UI is broken.
+
+Functional tests verify behavior but not visual appearance. A button can "work" but be:
+- Wrong color
+- Wrong position
+- Overlapping other elements
+- Missing entirely (replaced by error state)
+
+Visual E2E with screenshot verification catches these issues.
+
+## What Gets Created
+
+### playwright.config.ts
+
+Playwright configuration with webServer to auto-start your dev server:
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    screenshot: 'on',
+    trace: 'on-first-retry',
+  },
+
+  // Auto-start dev server
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+});
+```
+
+### Example Test
+
+`tests/e2e/visual-example.spec.ts`:
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Visual Verification Examples', () => {
+  test('homepage loads correctly', async ({ page }) => {
+    await page.goto('/');
+
+    // Capture full-page screenshot for visual verification
+    await page.screenshot({
+      path: 'screenshots/homepage-full.png',
+      fullPage: true,
+    });
+
+    // Basic assertions
+    await expect(page).toHaveTitle(/./);
+  });
+});
+```
+
+### Directory Structure
+
+```
+your-project/
+├── playwright.config.ts
+├── tests/
+│   └── e2e/
+│       └── visual-example.spec.ts
+├── screenshots/
+│   ├── homepage-full.png          # After test runs
+│   └── verified-homepage-full.png # After visual review
+└── package.json                   # Updated with test:e2e scripts
+```
+
+### npm Scripts
+
+Added to `package.json`:
+
+```json
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
+  }
+}
+```
+
+## Setup Steps
+
+The command performs these 8 steps:
+
+1. **Check package.json** - Verify project has npm setup
+2. **Install Playwright** - `npm install --save-dev @playwright/test`
+3. **Install browser** - `npx playwright install --with-deps chromium`
+4. **Create config** - `playwright.config.ts` with webServer
+5. **Create test directory** - `tests/e2e/`
+6. **Create screenshots directory** - `screenshots/`
+7. **Create example test** - Test with screenshot capture
+8. **Add npm scripts** - `test:e2e` scripts
+9. **Run verification** - Execute example test
+
+## Visual Verification Workflow
+
+After tests run, screenshots need visual review:
+
+### 1. Run Tests
+
+```bash
+npm run test:e2e
+```
+
+Tests generate screenshots in `screenshots/` directory.
+
+### 2. Review Screenshots
+
+Claude reviews each screenshot to verify the UI looks correct.
+
+### 3. Verify and Rename
+
+Approved screenshots are renamed with `verified-` prefix:
+
+```bash
+mv screenshots/homepage.png screenshots/verified-homepage.png
+```
+
+### 4. Run Verifier
+
+```bash
+node scripts/screenshot-verifier.js --path ./screenshots
+```
+
+This ensures all screenshots have been reviewed before marking work complete.
+
+## Integration with Loop Mode
+
+Visual E2E integrates with [Loop Mode](/features/loop-mode) for autonomous UI development:
+
+```bash
+# Initialize loop with Visual Mode
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+In Visual Mode, the loop checks:
+1. Tests pass
+2. All screenshots have `verified-` prefix
+3. Minimum 2 iterations completed
+
+This prevents premature completion of UI work.
+
+## Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| DEV_CMD | `npm run dev` | Dev server command |
+| PORT | `3000` | Dev server port |
+| BROWSER | `chromium` | Browser to install (chromium is smallest, ~300MB) |
+
+## Running Tests
+
+After setup:
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI (interactive mode)
+npm run test:e2e:ui
+
+# Run with visible browser
+npm run test:e2e:headed
+
+# Run specific test
+npx playwright test tests/e2e/visual-example.spec.ts
+```
+
+## Best Practices
+
+### 1. Capture Full Pages
+
+For visual verification, capture full pages:
+
+```typescript
+await page.screenshot({
+  path: 'screenshots/homepage.png',
+  fullPage: true,
+});
+```
+
+### 2. Capture Components
+
+For component-specific tests:
+
+```typescript
+const header = page.locator('header').first();
+await header.screenshot({
+  path: 'screenshots/header.png',
+});
+```
+
+### 3. Name Screenshots Descriptively
+
+```
+screenshots/
+├── login-form-empty.png
+├── login-form-filled.png
+├── login-form-error.png
+└── dashboard-loaded.png
+```
+
+### 4. Test Different States
+
+```typescript
+// Empty state
+await page.screenshot({ path: 'screenshots/list-empty.png' });
+
+// Loading state
+await page.goto('/users');
+await page.screenshot({ path: 'screenshots/list-loading.png' });
+
+// Loaded state
+await page.waitForSelector('[data-testid="user-list"]');
+await page.screenshot({ path: 'screenshots/list-loaded.png' });
+```
+
+## Troubleshooting
+
+### Browser Not Found
+
+If Playwright can't find the browser:
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+### Dev Server Not Starting
+
+Check your `package.json` has the correct dev command:
+
+```json
+{
+  "scripts": {
+    "dev": "next dev"  // or your dev command
+  }
+}
+```
+
+### Screenshots Directory Missing
+
+Ensure the directory exists before running tests:
+
+```bash
+mkdir -p screenshots
+```
+
+### Tests Timing Out
+
+Increase webServer timeout in config:
+
+```typescript
+webServer: {
+  command: 'npm run dev',
+  timeout: 180000,  // 3 minutes
+}
+```
+
+## Related
+
+- [Visual Mode](/features/visual-mode) - Screenshot verification system
+- [Loop Mode](/features/loop-mode) - Autonomous story processing
+- [`/agileflow:verify`](/commands/verify) - Run tests and verification
+- [`/agileflow:tests`](/commands/tests) - Testing infrastructure setup

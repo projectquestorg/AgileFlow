@@ -1,0 +1,382 @@
+---
+title: Loop Mode
+description: Autonomous story processing with Ralph Loop for hands-off epic completion
+---
+
+# Loop Mode
+
+Loop Mode enables autonomous story processing through AgileFlow's **Ralph Loop** system. Named after the "Ralph Wiggum" pattern from Anthropic's research on agentic workflows, it automatically processes stories in an epic without manual intervention.
+
+Loop Mode is activated through the [`/agileflow:babysit`](/commands/babysit) command with special parameters. Babysit orchestrates the entire process while Ralph Loop handles the automation.
+
+## Overview
+
+When enabled, Loop Mode:
+
+1. Picks the first "ready" story from an epic
+2. Marks it "in_progress" and begins implementation
+3. When Claude stops, runs tests automatically
+4. If tests pass → marks story complete, loads next story
+5. Continues until epic complete or max iterations reached
+
+This enables **overnight batch processing** of well-defined epics with clear acceptance criteria.
+
+## Quick Start
+
+```bash
+# Start loop mode for an epic
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+
+# Or initialize directly via script
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+```
+
+## How It Works
+
+### The Stop Hook
+
+Loop Mode uses Claude Code's stop hook system. When Claude stops responding:
+
+1. The `ralph-loop.js` script runs automatically
+2. It executes the configured test command (default: `npm test`)
+3. Based on results, it either advances to the next story or prompts for fixes
+
+```mermaid
+flowchart TB
+    A[Claude Stops] --> B[Stop Hook Triggers]
+    B --> C[ralph-loop.js Runs]
+    C --> D[Run Tests]
+    D --> E{Tests Pass?}
+    E -->|Yes| F[Mark Story Complete]
+    E -->|No| G[Show Failures]
+    F --> H{More Stories?}
+    H -->|Yes| I[Load Next Story]
+    H -->|No| J[Epic Complete!]
+    I --> K[Continue Working]
+    G --> K
+```
+
+### Session State
+
+Loop configuration is stored in `docs/09-agents/session-state.json`:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 3,
+    "max_iterations": 20,
+    "test_command": "npm test",
+    "mode": "normal"
+  }
+}
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
+| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MAX` | No | 20 | Maximum iterations before stopping |
+
+## CLI Commands
+
+```bash
+# Initialize loop for an epic
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# Check current loop status
+node .agileflow/scripts/ralph-loop.js --status
+
+# Stop the loop gracefully
+node .agileflow/scripts/ralph-loop.js --stop
+
+# Reset loop state completely
+node .agileflow/scripts/ralph-loop.js --reset
+
+# Run one iteration manually
+node .agileflow/scripts/ralph-loop.js --run
+```
+
+## Loop Modes
+
+### Normal Mode (Default)
+
+Standard test-based verification:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+```
+
+- Runs `npm test` after each Claude stop
+- Passes if all tests succeed
+- Fails if any test fails
+
+### Visual Mode
+
+For UI-focused epics requiring screenshot verification:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+- Checks `screenshots/` directory for images
+- All screenshots must have `verified-` prefix
+- Useful for UI component development
+
+See [Visual Mode](/features/visual-mode) for details.
+
+### Coverage Mode
+
+For test coverage requirements:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+- Runs tests with coverage reporting
+- Verifies coverage meets threshold (e.g., 80%)
+- Fails if coverage drops below threshold
+
+## Story Selection
+
+Loop Mode selects stories in this priority order:
+
+1. **Current story** - If one is already in progress
+2. **Ready stories** - Stories with status "ready" (all dependencies met)
+3. **Blocked stories** - Skipped until unblocked
+
+Stories must have:
+- Clear acceptance criteria
+- All dependencies resolved
+- Status set to "ready" or "pending"
+
+## Configuration
+
+### Test Command
+
+Configure the test command in `agileflow-metadata.json`:
+
+```json
+{
+  "loop": {
+    "test_command": "npm test",
+    "coverage_threshold": 70,
+    "max_iterations": 20
+  }
+}
+```
+
+### Stop Hook Setup
+
+Loop Mode requires the stop hook in `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agileflow/scripts/ralph-loop.js --run"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## When to Use Loop Mode
+
+### Good For
+
+- ✅ Well-defined epics with clear stories
+- ✅ Test-driven development (tests define "done")
+- ✅ Batch processing multiple stories overnight
+- ✅ Repetitive implementation tasks (CRUD endpoints, components)
+- ✅ Stories with automated acceptance criteria
+
+### Not Good For
+
+- ❌ Exploratory work without clear acceptance criteria
+- ❌ Stories requiring human review before proceeding
+- ❌ Complex multi-domain work needing coordination
+- ❌ First-time implementations without patterns
+- ❌ Stories with external dependencies (APIs, services)
+
+## Example Workflow
+
+### 1. Prepare the Epic
+
+Ensure all stories have clear acceptance criteria:
+
+```markdown
+## US-0015: Add User List Component
+
+**Acceptance Criteria:**
+- [ ] Component renders list of users from API
+- [ ] Loading state shown while fetching
+- [ ] Error state displayed on failure
+- [ ] Empty state when no users
+
+**Tests:** src/components/UserList.test.tsx
+```
+
+### 2. Start Loop Mode
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=15
+```
+
+### 3. Monitor Progress
+
+Check status periodically:
+
+```bash
+node .agileflow/scripts/ralph-loop.js --status
+```
+
+Output:
+```
+Loop Status:
+  Epic: EP-0042
+  Current Story: US-0017
+  Iteration: 5 of 15
+  Mode: normal
+  Stories Completed: 4
+  Stories Remaining: 3
+```
+
+### 4. Handle Failures
+
+If tests fail, Loop Mode shows the failures and continues working:
+
+```
+❌ Tests failed for US-0017
+
+Failures:
+  - UserList.test.tsx: Expected 3 users, got 2
+
+Continue fixing or run /agileflow:babysit --stop to pause.
+```
+
+### 5. Complete the Epic
+
+When all stories complete:
+
+```
+✅ Epic EP-0042 Complete!
+
+Summary:
+  - Stories Completed: 7
+  - Total Iterations: 12
+  - Time Elapsed: 2h 34m
+
+All tests passing. Ready for review.
+```
+
+## Troubleshooting
+
+### Loop Not Starting
+
+1. Check session state exists:
+   ```bash
+   cat docs/09-agents/session-state.json
+   ```
+
+2. Verify stop hook is configured:
+   ```bash
+   cat .claude/settings.json | grep -A5 "Stop"
+   ```
+
+3. Initialize manually:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042
+   ```
+
+### Tests Always Failing
+
+1. Run tests manually first:
+   ```bash
+   npm test
+   ```
+
+2. Check test command in config:
+   ```bash
+   cat docs/00-meta/agileflow-metadata.json | grep test_command
+   ```
+
+3. Ensure tests exist for current story
+
+### Loop Stuck on Same Story
+
+1. Check iteration count:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+2. If approaching max iterations, either:
+   - Fix the blocking issue
+   - Skip the story: Update status to "blocked"
+   - Increase max: `--max=30`
+
+### Stopping Unexpectedly
+
+Loop stops when:
+- Max iterations reached
+- Epic complete
+- Manual stop command
+- Critical error in test execution
+
+Check logs for details:
+```bash
+cat .agileflow/logs/ralph-loop.log
+```
+
+## Best Practices
+
+### 1. Start with Small Epics
+
+Test Loop Mode on a 3-5 story epic first before larger batches.
+
+### 2. Write Tests First
+
+Loop Mode works best with TDD - tests define when a story is "done".
+
+### 3. Keep Stories Focused
+
+Each story should be completable in 1-3 iterations. Large stories → more failures.
+
+### 4. Monitor Periodically
+
+Check status every 30-60 minutes during long runs.
+
+### 5. Use Visual Mode for UI
+
+For UI work, enable Visual Mode to catch rendering issues tests might miss.
+
+## Related Features
+
+- [Visual Mode](/features/visual-mode) - Screenshot verification for UI development
+- [Compact Context](/features/compact-context) - Context preservation during long sessions
+- [`/agileflow:babysit`](/commands/babysit) - The mentor command that orchestrates Loop Mode
+- [`/agileflow:verify`](/commands/verify) - Manual test verification
+
+## Architecture
+
+Loop Mode consists of:
+
+| Component | Purpose |
+|-----------|---------|
+| `ralph-loop.js` | Main loop orchestration script |
+| `screenshot-verifier.js` | Visual Mode screenshot checking |
+| `session-state.json` | Loop configuration and state |
+| Stop hook | Claude Code integration point |
+
+The name "Ralph" comes from Anthropic's research paper on agentic workflows, where "Ralph Wiggum" was used as a code name for autonomous task completion patterns.
