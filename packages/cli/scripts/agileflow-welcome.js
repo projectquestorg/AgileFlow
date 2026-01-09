@@ -171,6 +171,7 @@ function clearActiveCommands(rootDir) {
     const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
     result.ran = true;
 
+    // Handle new array format (active_commands)
     if (state.active_commands && state.active_commands.length > 0) {
       result.cleared = state.active_commands.length;
       // Capture command names before clearing
@@ -179,11 +180,14 @@ function clearActiveCommands(rootDir) {
       }
       state.active_commands = [];
     }
+
+    // Handle legacy singular format (active_command) - only capture if not already in array
     if (state.active_command !== undefined) {
-      result.cleared++;
-      // Capture single command name
-      if (state.active_command.name) {
-        result.commandNames.push(state.active_command.name);
+      const legacyName = state.active_command.name;
+      // Only add to count/names if not already captured from array (avoid duplicates)
+      if (legacyName && !result.commandNames.includes(legacyName)) {
+        result.cleared++;
+        result.commandNames.push(legacyName);
       }
       delete state.active_command;
     }

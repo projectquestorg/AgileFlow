@@ -44,8 +44,10 @@ if (commandName) {
         state: {},
       });
 
-      // Keep backwards compatibility - also set singular active_command to most recent
-      state.active_command = state.active_commands[state.active_commands.length - 1];
+      // Remove legacy active_command field (only use active_commands array now)
+      if (state.active_command !== undefined) {
+        delete state.active_command;
+      }
 
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     } catch (e) {
