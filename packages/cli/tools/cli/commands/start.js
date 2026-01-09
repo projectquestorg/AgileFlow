@@ -10,21 +10,7 @@
 
 const path = require('path');
 const fs = require('fs');
-
-// ANSI color codes
-const colors = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  cyan: '\x1b[36m',
-  magenta: '\x1b[35m',
-  orange: '\x1b[38;2;232;104;58m',
-  bgYellow: '\x1b[43m',
-  bgRed: '\x1b[41m',
-};
+const { c: colors } = require('../../../lib/colors');
 
 function showBetaWarning() {
   console.log('');

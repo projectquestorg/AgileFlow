@@ -54,6 +54,13 @@ const c = {
 
   // Brand color (#e8683a - burnt orange/terracotta)
   brand: '\x1b[38;2;232;104;58m',
+  orange: '\x1b[38;2;232;104;58m',  // Alias for brand color
+
+  // Background colors
+  bgRed: '\x1b[41m',
+  bgGreen: '\x1b[42m',
+  bgYellow: '\x1b[43m',
+  bgBlue: '\x1b[44m',
 };
 
 /**

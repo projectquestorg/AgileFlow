@@ -1,11 +1,11 @@
 ---
-title: /agileflow:skill:list
+title: /skill:list
 description: List all installed skills with their descriptions and status
 ---
 
-# /agileflow:skill:list
+# /skill:list
 
-Display all skills installed in `.claude/skills/` with their metadata and file structure.
+Display all skills installed in `.claude/skills/` with their metadata and file information.
 
 ## Quick Start
 
@@ -13,167 +13,116 @@ Display all skills installed in `.claude/skills/` with their metadata and file s
 /agileflow:skill:list
 ```
 
-## How It Works
+Shows all installed skills with descriptions, file counts, and MCP status.
 
-This command scans your `.claude/skills/` directory and displays:
+## What It Does
 
-1. **Skill names and descriptions** - From SKILL.md frontmatter
-2. **File counts** - How many supporting files each skill has
-3. **Cookbook entries** - Available workflows for each skill
-4. **MCP status** - Whether a skill has MCP integration
-5. **Next action prompts** - Quick access to other skill commands
+Scans your installed skills and displays:
 
-## Example Output
+- **Skill names** - Identifier from SKILL.md
+- **Descriptions** - Purpose and use cases
+- **File count** - How many files in each skill
+- **Cookbook entries** - Use-case workflows included
+- **MCP status** - Whether MCP is configured
+- **Action recommendations** - What to do next
+
+## Parameters
+
+This command has no parameters.
+
+```bash
+/agileflow:skill:list
+```
+
+## Output Format
+
+Example output with multiple skills:
 
 ```
-📦 Installed Skills (3 total)
+📦 Installed Skills (4 total)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-supabase-swift                                     MCP: ✓
-  Supabase database operations for Swift apps
-  └─ 4 files: cookbook/crud.md, cookbook/auth.md, references.md, .mcp.json
+supabase-swift
+  Supabase database operations for Swift iOS apps
+  └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
+     cookbook/crud.md, .mcp.json
+  MCP: ✓ Configured
 
 ui-components
   React component patterns with accessibility
-  └─ 3 files: cookbook/create.md, cookbook/styling.md, references.md
+  └─ 4 files: SKILL.md, references.md, cookbook/create.md,
+     cookbook/styling.md
 
-api-integration
-  REST API client patterns with error handling
+api-error-handling
+  REST API error handling patterns
+  └─ 3 files: SKILL.md, references.md, cookbook/http-errors.md
+
+typescript-patterns
+  TypeScript best practices and type patterns
   └─ 2 files: SKILL.md, references.md
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## What's Displayed
+## Understanding the Output
 
-For each skill, you'll see:
+### Skill Entry
 
-| Item | Description |
-|------|-------------|
-| **Skill Name** | Directory name from `.claude/skills/` |
-| **Description** | From `description:` in SKILL.md frontmatter |
-| **MCP Status** | Shows "MCP: ✓" if `.mcp.json` is present |
-| **File Count** | Total number of supporting files |
-| **Files Listed** | Cookbook entries and other supporting files |
+Each skill shows:
 
-## How the Command Works
+1. **Name** - Identifier for the skill (e.g., `supabase-swift`)
+2. **Description** - From the skill's frontmatter
+3. **Files** - Breakdown of included files:
+   - `SKILL.md` - Main skill file (always present)
+   - `references.md` - Documentation links (usually present)
+   - `cookbook/*.md` - Use-case workflows
+   - `.mcp.json` - MCP server config (if applicable)
+4. **MCP Status** - "✓" if `.mcp.json` exists and is configured
 
-### Step 1: Check for Skills Directory
+### File Information
 
-Checks if `.claude/skills/` exists and contains skill directories:
+The file count includes:
+
+- **SKILL.md** - 1 file
+- **references.md** - 1 file (if exists)
+- **cookbook/** - Multiple files (one per use case)
+- **.mcp.json** - 1 file (if configured)
+
+Example breakdown:
+```
+5 files total:
+  - SKILL.md (main)
+  - references.md (links)
+  - cookbook/crud-operations.md (workflow)
+  - cookbook/authentication.md (workflow)
+  - .mcp.json (MCP config)
+```
+
+## Examples
+
+### List All Skills
 
 ```bash
-ls -la .claude/skills/ 2>/dev/null
+/agileflow:skill:list
 ```
 
-If the directory doesn't exist or is empty:
-
+**Response:**
 ```
-No skills installed yet.
+📦 Installed Skills (2 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-To create a skill, run: /agileflow:skill:create
-```
+python-fastapi
+  FastAPI REST API patterns with validation and error handling
+  └─ 3 files: SKILL.md, references.md, cookbook/crud.md
 
-### Step 2: Scan Each Skill Directory
-
-For each subdirectory in `.claude/skills/`:
-
-1. **Read SKILL.md frontmatter** to extract:
-   - `name` - Skill identifier
-   - `description` - Purpose of the skill
-
-2. **Count supporting files**:
-   - `cookbook/*.md` - Workflow entries
-   - `tools/` - Executable scripts
-   - `.mcp.json` - MCP configuration
-   - `references.md` - Documentation links
-
-3. **Check for MCP integration**:
-   - If `.mcp.json` exists, note "MCP: ✓"
-
-### Step 3: Format Output
-
-Displays all skills in a formatted table with:
-- Skill names and descriptions
-- File counts
-- Cookbook entry names
-- MCP status
-
-### Step 4: Offer Next Actions
-
-After listing, you can:
-
-```
-What would you like to do?
-  • Create new skill
-  • Edit a skill
-  • Delete a skill
-  • Test a skill
-  • Done
+react-hooks
+  Custom React hooks patterns and best practices
+  └─ 2 files: SKILL.md, references.md
 ```
 
-## Skill Metadata Format
+### No Skills Installed
 
-Each skill's metadata comes from `SKILL.md` frontmatter:
-
-```yaml
----
-name: supabase-swift
-description: Use when building Swift apps with Supabase database operations
----
-```
-
-The command extracts this with:
-
-```bash
-head -10 .claude/skills/<skill>/SKILL.md | grep -E "^(name|description):"
-```
-
-## Skill File Structure Reference
-
-A fully configured skill contains:
-
-```
-.claude/skills/<skill-name>/
-├── SKILL.md              # Required - Main skill file
-├── references.md         # Recommended - Documentation links
-├── cookbook/             # Optional - Use-case workflows
-│   ├── workflow-1.md
-│   └── workflow-2.md
-├── tools/                # Optional - Executable scripts
-└── .mcp.json            # Optional - MCP configuration
-```
-
-## Understanding Skill Status
-
-### Complete Skills
-
-Have all recommended files:
-- SKILL.md
-- references.md
-- cookbook/ directory with 2+ entries
-- .mcp.json (if applicable)
-
-### Basic Skills
-
-Have minimal setup:
-- SKILL.md only
-- references.md
-- No cookbook or MCP
-
-### Example
-
-```
-✅ Complete: supabase-swift
-   Has SKILL.md, references.md, 4 cookbook entries, .mcp.json
-
-⚠️ Minimal: quick-tips
-   Has SKILL.md, references.md only
-```
-
-## Error Handling
-
-### No Skills Directory
+If you haven't created any skills yet:
 
 ```
 📦 No skills installed yet.
@@ -184,60 +133,168 @@ Skills are stored in .claude/skills/ and can be created with:
 This will research best practices and generate a contextual skill.
 ```
 
-### Missing SKILL.md
+## Next Actions
 
-If a directory exists but has no SKILL.md:
-
-```
-⚠️ Skipped: my-skill/ (missing SKILL.md)
-```
-
-### Corrupted Frontmatter
-
-If frontmatter can't be parsed:
+After listing skills, you're offered options:
 
 ```
-⚠️ my-skill: Could not parse frontmatter
+What would you like to do?
+
+[1] Create new skill
+    Generate a new skill with web research and cookbook pattern
+
+[2] Edit a skill
+    Modify an existing skill's content or structure
+
+[3] Delete a skill
+    Remove a skill you no longer need
+
+[4] Test a skill
+    Verify a skill works correctly and validate structure
+
+[5] Done
+    Exit skill management
 ```
 
-## Next Steps After Listing
+### Select an Action
 
-From the list, you can:
+Choose an option to:
 
-1. **Create a new skill**
+- **Create new skill** → `/agileflow:skill:create`
+- **Edit a skill** → `/agileflow:skill:edit`
+- **Delete a skill** → `/agileflow:skill:delete`
+- **Test a skill** → `/agileflow:skill:test`
+- **Done** → Exit
+
+## Skill Structure
+
+Each skill directory contains:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file (required)
+│   └─ Activation triggers, instructions, cookbook references
+├── references.md         # Documentation links (recommended)
+│   └─ Web docs, local docs, codebase patterns
+├── cookbook/             # Use-case workflows (optional)
+│   ├── use-case-1.md
+│   ├── use-case-2.md
+│   └── use-case-3.md
+└── .mcp.json            # MCP server config (optional)
+    └─ Tools for the skill's technology
+```
+
+## Checking Skill Details
+
+To see more details about a specific skill:
+
+```bash
+# Edit the skill to view/modify
+/agileflow:skill:edit <skill-name>
+
+# Test the skill to validate
+/agileflow:skill:test <skill-name>
+
+# View SKILL.md directly
+cat .claude/skills/<skill-name>/SKILL.md
+```
+
+## MCP Status
+
+The MCP indicator shows whether a skill is configured for tool access:
+
+- **✓ Configured** - `.mcp.json` exists and MCP tools are available
+- *No indicator* - No MCP configured (still usable without tools)
+
+To add MCP to a skill:
+
+```bash
+# Edit the skill
+/agileflow:skill:edit <skill-name>
+
+# Or upgrade it
+/agileflow:skill:upgrade <skill-name>
+```
+
+## Best Practices
+
+### Organizing Skills
+
+Group related skills by domain:
+
+- **Data layer**: `supabase-swift`, `postgresql-queries`, `mongodb-patterns`
+- **API layer**: `rest-api-errors`, `graphql-schema`, `webhooks`
+- **UI layer**: `react-components`, `accessibility-wcag`, `tailwind-patterns`
+- **DevOps**: `github-actions`, `docker-deployment`, `kubernetes`
+
+### Regular Audits
+
+Periodically run `/skill:list` to:
+
+1. Check for unused skills
+2. Verify MCP configuration
+3. Identify skills that need updating
+4. See total skill count
+
+### Cleaning Up
+
+Delete skills you no longer use:
+
+```bash
+/agileflow:skill:delete old-skill-name
+```
+
+This keeps your skills directory focused and easier to manage.
+
+## Troubleshooting
+
+### Skills Directory Missing
+
+If you see "No skills installed yet" and expected skills:
+
+1. Check if `.claude/skills/` exists:
    ```bash
-   /agileflow:skill:create <name>
+   ls -la .claude/skills/
    ```
 
-2. **Edit an existing skill**
+2. Verify SKILL.md files exist in subdirectories:
    ```bash
-   /agileflow:skill:edit <name>
+   find .claude/skills -name "SKILL.md"
    ```
 
-3. **Delete a skill**
+3. Ensure proper read permissions on the directory
+
+### Incomplete Skill Information
+
+If a skill shows incomplete metadata:
+
+1. The SKILL.md file may have corrupt frontmatter
+2. Run `/agileflow:skill:test` to diagnose
+3. Edit with `/agileflow:skill:edit` to fix
+
+### MCP Not Showing
+
+If you expect MCP but don't see "✓ Configured":
+
+1. Check if `.mcp.json` exists:
    ```bash
-   /agileflow:skill:delete <name>
+   ls .claude/skills/<skill-name>/.mcp.json
    ```
 
-4. **Test a skill**
-   ```bash
-   /agileflow:skill:test <name>
-   ```
-
-## Tips for Managing Skills
-
-- **Review regularly** - Run `/agileflow:skill:list` to see what's available
-- **Clean up unused skills** - Delete skills you no longer need
-- **Check MCP status** - See which skills have server integration
-- **Update outdated skills** - Use `/agileflow:skill:edit` to improve them
+2. Verify it has valid JSON syntax
+3. Upgrade or edit the skill to fix MCP configuration
 
 ## Related Commands
 
-- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
-- [`/agileflow:skill:edit`](/commands/skill-edit) - Modify an existing skill
-- [`/agileflow:skill:delete`](/commands/skill-delete) - Remove a skill
-- [`/agileflow:skill:test`](/commands/skill-test) - Verify a skill works
+- [`/skill:create`](/commands/skill-create) - Generate a new skill
+- [`/skill:edit`](/commands/skill-edit) - Modify an existing skill
+- [`/skill:test`](/commands/skill-test) - Verify a skill works
+- [`/skill:delete`](/commands/skill-delete) - Remove a skill
+- [`/skill:upgrade`](/commands/skill-upgrade) - Add learning capability
 
-## Learn More
+## Next Steps
 
-For comprehensive information about the Skills system, see the [Skills Feature Documentation](/features/skills).
+1. **List your skills**: `/agileflow:skill:list`
+2. **Create more skills**: `/agileflow:skill:create`
+3. **Test a skill**: `/agileflow:skill:test <skill-name>`
+4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`

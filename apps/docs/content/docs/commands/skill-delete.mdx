@@ -1,171 +1,325 @@
 ---
-title: /agileflow:skill:delete
+title: /skill:delete
 description: Remove an installed skill from .claude/skills/
 ---
 
-# /agileflow:skill:delete
+# /skill:delete
 
-Safely remove a skill from `.claude/skills/` with optional backup before deletion.
+Safely remove a skill from `.claude/skills/` with full safety features including preview, confirmation, and optional backup.
 
 ## Quick Start
 
 ```bash
-# Interactive mode - select which skill to delete
+# Interactive mode
 /agileflow:skill:delete
 
-# Delete a specific skill
+# Delete specific skill
 /agileflow:skill:delete supabase-swift
 ```
 
-## How It Works
+## What It Does
 
-This command safely removes skills with built-in safeguards:
+The delete command:
 
-1. **Select which skill** to delete
-2. **Show contents** - Display what will be removed
-3. **Confirm deletion** - Multiple confirmation steps
-4. **Optional export** - Backup before deleting
-5. **Delete skill** - Remove the directory
-6. **Verify deletion** - Confirm successful removal
+1. **Shows what will be deleted** - Tree view of all files
+2. **Confirms with you** - Requires explicit approval
+3. **Offers backup option** - Save a copy before deleting
+4. **Permanently removes** - Deletes the skill directory
+5. **Suggests next actions** - What to do after deletion
+
+## Safety Features
+
+This command has multiple safety layers:
+
+- **No accidental deletion** - Always confirm before removing
+- **Tree view preview** - See exactly what's deleted
+- **Backup option** - Export skill before deletion
+- **One at a time** - Delete individual skills (no batch delete)
+- **Clear confirmation** - Explicit YES/NO choice
 
 ## Workflow
 
-### Step 1: Select Skill to Delete
+### Step 1: Select Skill
 
-If you don't provide a skill name, the command lists available skills:
+If you don't specify a skill:
 
+```bash
+/agileflow:skill:delete
+```
+
+**Choose from available skills:**
 ```
 Which skill would you like to delete?
-  • supabase-swift - Supabase database operations for Swift
-  • ui-components - React component patterns
-  • api-integration - REST API client patterns
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components (deprecated)
+    Old component patterns (no longer using)
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 2
 ```
 
-### Step 2: Show Skill Contents
+### Step 2: Preview What Will Be Deleted
 
-Before deletion, the command displays exactly what will be removed:
+The command shows exactly what's in the skill:
 
 ```
-⚠️  About to delete: supabase-swift
+⚠️  About to delete: ui-components
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 This will permanently remove:
-  .claude/skills/supabase-swift/
+
+  .claude/skills/ui-components/
   ├── SKILL.md
   ├── references.md
   ├── cookbook/
-  │   ├── crud-operations.md
-  │   └── authentication.md
+  │   ├── create-component.md
+  │   ├── styling-patterns.md
+  │   └── accessibility.md
   └── .mcp.json
 
-Total: 5 files in 2 directories
+Total: 6 files in 2 directories
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ### Step 3: Confirm Deletion
 
-The command requires explicit confirmation:
-
 ```
-Are you sure you want to delete this skill? This cannot be undone.
-  • Yes, delete permanently
-  • No, keep it
-  • Export first (save a backup before deleting)
+Are you sure you want to delete this skill?
+This cannot be undone.
+
+[1] Yes, delete permanently
+    Remove the skill and all its files
+
+[2] No, keep it
+    Cancel and return
+
+[3] Export first
+    Save a backup before deleting
+
+Select: 3
 ```
 
-### Step 4: Handle Export (if requested)
+### Step 4: Create Backup (If Requested)
 
 If you choose "Export first":
 
-1. Creates backup directory: `.claude/skills-backup/`
-2. Copies skill with timestamp:
-   ```bash
-   cp -r .claude/skills/<skill> .claude/skills-backup/<skill>-20251227-143052/
-   ```
-3. Shows backup location:
-   ```
-   ✅ Backed up: .claude/skills-backup/supabase-swift-20251227-143052/
+```
+📦 Creating backup...
 
-   You can restore this later by copying the backup folder back to .claude/skills/
-   ```
-4. Returns to deletion confirmation
+Backup saved to:
+  .claude/skills-backup/ui-components-20251209-143052/
 
-### Step 5: Delete Skill
+This contains a copy of everything. You can restore it later
+if needed, or just delete the backup directory.
 
-Once confirmed:
-
-```bash
-rm -rf .claude/skills/<skill>/
+Ready to delete? (Yes/No)
 ```
 
-### Step 6: Confirm Deletion
+Backup location:
+```
+.claude/skills-backup/
+└── ui-components-20251209-143052/
+    ├── SKILL.md
+    ├── references.md
+    ├── cookbook/
+    └── .mcp.json
+```
 
-Shows success message:
+### Step 5: Delete Confirmed
 
 ```
-✅ Deleted: supabase-swift
+✅ Deleted: ui-components
 
 The skill has been permanently removed from .claude/skills/
 ```
 
-### Step 7: Offer Next Actions
+### Step 6: Next Actions
 
-After deletion:
+After deletion, you're offered options:
 
 ```
 What would you like to do next?
-  • Delete another skill
-  • Create new skill
-  • List remaining skills
-  • Done
+
+[1] Delete another skill
+    Remove more skills
+
+[2] Create new skill
+    Generate a replacement skill
+
+[3] List remaining skills
+    See what's still installed
+
+[4] Done
+    Exit skill management
+
+Select: 4
 ```
 
-## Backup Location
+## Examples
 
-Backups are stored in `.claude/skills-backup/` with timestamps:
-
-```
-.claude/skills-backup/supabase-swift-20251227-143052/
-├── SKILL.md
-├── references.md
-├── cookbook/
-│   ├── crud-operations.md
-│   └── authentication.md
-└── .mcp.json
-```
-
-**Timestamp format**: `YYYY-MM-DD-HHMMSS`
-
-### Restoring a Backup
-
-To restore a deleted skill:
+### Example 1: Delete Deprecated Skill
 
 ```bash
-# List available backups
+/agileflow:skill:delete old-pattern
+```
+
+**Response:**
+```
+⚠️  About to delete: old-pattern
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+  .claude/skills/old-pattern/
+  ├── SKILL.md
+  └── references.md
+
+Total: 2 files
+
+Are you sure? (Yes/No/Export first)
+> Yes
+
+✅ Deleted: old-pattern
+```
+
+### Example 2: Delete with Backup
+
+```bash
+/agileflow:skill:delete supabase-swift
+```
+
+**Response:**
+```
+⚠️  About to delete: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+  .claude/skills/supabase-swift/
+  ├── SKILL.md
+  ├── references.md
+  ├── cookbook/ (3 files)
+  └── .mcp.json
+
+Total: 6 files
+
+Are you sure? (Yes/No/Export first)
+> Export first
+
+📦 Creating backup...
+
+Backup saved to:
+  .claude/skills-backup/supabase-swift-20251209-150000/
+
+Ready to delete? (Yes/No)
+> Yes
+
+✅ Deleted: supabase-swift
+```
+
+### Example 3: Interactive Selection
+
+```bash
+/agileflow:skill:delete
+```
+
+**Response:**
+```
+Which skill would you like to delete?
+
+[1] api-integration
+[2] database-queries
+[3] react-components
+
+Select: 2
+
+⚠️  About to delete: database-queries
+...
+```
+
+## Backup Management
+
+### Backup Location
+
+Backups are saved with timestamp:
+
+```
+.claude/skills-backup/
+├── ui-components-20251208-093000/
+├── api-client-20251208-103500/
+└── database-20251209-150000/
+```
+
+Format: `<skill-name>-<YYYYMMDD-HHMMSS>/`
+
+### Restore from Backup
+
+If you delete a skill and want it back:
+
+```bash
+# Copy from backup
+cp -r .claude/skills-backup/supabase-swift-20251209-150000 \
+      .claude/skills/supabase-swift
+
+# Verify it works
+/agileflow:skill:test supabase-swift
+```
+
+### Clean Old Backups
+
+Periodically remove old backups:
+
+```bash
+# List backups
 ls -la .claude/skills-backup/
 
-# Restore a specific backup
-cp -r .claude/skills-backup/supabase-swift-20251227-143052 .claude/skills/supabase-swift
+# Remove old backup
+rm -rf .claude/skills-backup/old-skill-20250101-120000/
 ```
 
-Or use a single command:
+## When to Delete
 
-```bash
-# Find and restore the most recent backup of a skill
-cp -r $(ls -td .claude/skills-backup/supabase-swift-* | head -1) .claude/skills/supabase-swift
-```
+Delete skills when:
 
-## Safety Features
+- **No longer needed** - Technology is deprecated
+- **Outdated** - Better alternative exists
+- **Duplicated** - Consolidated into one skill
+- **Low quality** - Skill isn't helpful
+- **Organization** - Too many similar skills
 
-The command includes multiple safety mechanisms:
+## Before Deleting
 
-1. **Always confirm** - Never deletes without explicit confirmation
-2. **Show contents** - Displays exactly what will be removed
-3. **Export option** - Allow backup before deletion
-4. **One at a time** - No batch delete to prevent accidents
-5. **Timestamp backups** - Never overwrites previous backups
-6. **Clear messages** - Explicit success/failure feedback
+Consider:
+
+1. **Are you sure?** - Deletion is permanent
+2. **Document why** - Note in git commit
+3. **Backup first** - Use "Export first" option
+4. **Create replacement** - If consolidating skills
+5. **Notify team** - If shared in git
+
+## Alternative to Delete
+
+Instead of deleting, you could:
+
+1. **Rename** to indicate deprecated:
+   ```bash
+   /agileflow:skill:edit <skill-name>
+   # Select "Rename skill"
+   # Rename to: deprecated-<old-name>
+   ```
+
+2. **Archive** by moving out of active skills:
+   ```bash
+   mv .claude/skills/old-skill .claude/skills-archive/
+   ```
+
+3. **Mark in documentation**:
+   - Edit SKILL.md to add deprecation notice
+   - Still available but marked as obsolete
 
 ## Error Handling
 
@@ -175,123 +329,111 @@ The command includes multiple safety mechanisms:
 ❌ Skill "<name>" not found.
 
 Available skills:
+  - supabase-swift
   - ui-components
-  - api-integration
+  - api-error-handling
 
 Use /agileflow:skill:list to see all skills.
 ```
 
-### No Skills Installed
+**Fix**: Check the skill name spelling, or list available skills.
+
+### No Skills to Delete
 
 ```
 ❌ No skills to delete.
 
 No skills are currently installed in .claude/skills/
+
+Create a skill first: /agileflow:skill:create
 ```
+
+**Fix**: Create a skill before trying to delete one.
 
 ### Delete Failed
 
 ```
-❌ Failed to delete skill: <error message>
+❌ Failed to delete skill: Permission denied
 
 The skill directory may be in use or have permission issues.
 Try manually: rm -rf .claude/skills/<skill>/
 ```
 
-## Delete Scenarios
-
-### Scenario 1: Delete and Keep Backup
-
+**Fix**: Check file permissions:
 ```bash
-/agileflow:skill:delete supabase-swift
-# Choose: Export first
-# Choose: Yes, delete permanently
-# Result: Skill deleted, backup saved in .claude/skills-backup/
+ls -la .claude/skills/<skill>/
+chmod -R u+w .claude/skills/<skill>/
+rm -rf .claude/skills/<skill>/
 ```
 
-### Scenario 2: Delete Without Backup
+### Backup Creation Failed
 
-```bash
-/agileflow:skill:delete ui-components
-# Choose: Yes, delete permanently
-# Result: Skill deleted immediately
+```
+⚠️  Could not create backup.
+
+Check permissions for:
+  .claude/skills-backup/
+
+Manual backup:
+  cp -r .claude/skills/<skill> .claude/skills-backup/
 ```
 
-### Scenario 3: Cancel Deletion
-
+**Fix**: Ensure backup directory is writable:
 ```bash
-/agileflow:skill:delete api-integration
-# Choose: No, keep it
-# Result: No changes, skill remains
+mkdir -p .claude/skills-backup/
+chmod u+w .claude/skills-backup/
 ```
 
-## Backing Up All Skills
+## Best Practices
 
-Before deleting or updating multiple skills, backup your entire skills directory:
+### Deletion Workflow
 
-```bash
-# Create complete backup
-cp -r .claude/skills .claude/skills-backup-complete-$(date +%Y%m%d)
+1. **Use `/skill:list`** to see all skills
+2. **Test before deleting** if unsure:
+   ```bash
+   /agileflow:skill:test <skill-name>
+   ```
+3. **Use "Export first"** option for backup
+4. **Confirm deletion** explicitly
+5. **Note in git** why skill was deleted
 
-# This creates: .claude/skills-backup-complete-20251227/
-```
+### Backup Strategy
 
-## Cleanup
+1. **Always export** for skills created over a month ago
+2. **Keep backups** for 30 days minimum
+3. **Document** which skills are backed up
+4. **Test restores** periodically
 
-### Remove Old Backups
+### Team Workflow
 
-To save space, clean up old backups:
+If sharing skills in git:
 
-```bash
-# Remove backups older than 30 days
-find .claude/skills-backup -type d -mtime +30 -exec rm -rf {} \;
-```
+1. **Commit deletion** with reason:
+   ```bash
+   git commit -m "Remove: deprecated-api-client skill - \
+   consolidated into api-integration skill"
+   ```
 
-### Remove All Backups
+2. **Notify team** of deletion
 
-If you're sure you don't need any backups:
-
-```bash
-# Remove entire backup directory
-rm -rf .claude/skills-backup
-
-# Or remove only backups for a specific skill
-rm -rf .claude/skills-backup/supabase-swift-*
-```
-
-## When to Delete Skills
-
-Consider deleting a skill when:
-
-- **No longer needed** - Your project no longer uses this technology
-- **Replaced by newer skill** - You created an improved version
-- **Consolidating** - Merging multiple similar skills
-- **Cleaning up** - Removing experimental or test skills
-- **Freeing space** - Skills aren't being used or referenced
-
-## Alternative to Deletion
-
-Instead of deleting, you can:
-
-1. **Archive skills** - Move unused skills to a separate directory
-2. **Rename skills** - Prefix with "archived-" using `/agileflow:skill:edit`
-3. **Disable in SKILL.md** - Add deprecation notice
-4. **Create new version** - Keep old, create improved version
+3. **Keep backup** in git branch (optional):
+   ```bash
+   git checkout -b backup-deprecated-skills
+   git checkout main
+   ```
 
 ## Related Commands
 
-- [`/agileflow:skill:list`](/commands/skill-list) - View all installed skills
-- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
-- [`/agileflow:skill:edit`](/commands/skill-edit) - Modify a skill
-- [`/agileflow:skill:test`](/commands/skill-test) - Verify a skill works
+- [`/skill:list`](/commands/skill-list) - See all skills before deleting
+- [`/skill:create`](/commands/skill-create) - Create replacement skill
+- [`/skill:edit`](/commands/skill-edit) - Rename instead of delete
+- [`/skill:test`](/commands/skill-test) - Verify before deletion
+- [`/skill:upgrade`](/commands/skill-upgrade) - Improve existing skills
 
-## Learn More
+## Next Steps
 
-For comprehensive information about the Skills system, see the [Skills Feature Documentation](/features/skills).
-
-## Tips
-
-- **Export before deleting** - You can always restore backups
-- **Batch backup first** - Backup all skills before major changes
-- **Document why** - Note why you deleted something for team clarity
-- **Check git** - If skills are version controlled, commit before deleting
+1. **List skills**: `/agileflow:skill:list`
+2. **Identify obsolete**: Which ones aren't used?
+3. **Backup first**: Use "Export first" option
+4. **Delete carefully**: Confirm each deletion
+5. **Clean backups**: Remove old backups periodically

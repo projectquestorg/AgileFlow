@@ -10,15 +10,7 @@
 const { execSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
-
-// ANSI color codes for terminal output
-const colors = {
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[36m',
-  dim: '\x1b[2m',
-  reset: '\x1b[0m',
-};
+const { c: colors } = require('../lib/colors');
 
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);

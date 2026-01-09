@@ -1,57 +1,66 @@
 ---
-title: /agileflow:skill:edit
+title: /skill:edit
 description: Edit an existing skill's SKILL.md, cookbook entries, or references
 ---
 
-# /agileflow:skill:edit
+# /skill:edit
 
-Modify an existing skill in `.claude/skills/` with support for various editing modes.
+Modify an existing skill in `.claude/skills/` - update instructions, add cookbook entries, change references, or completely rewrite with fresh research.
 
 ## Quick Start
 
 ```bash
-# Interactive mode - select which skill to edit
+# Interactive mode
 /agileflow:skill:edit
 
-# Edit a specific skill
+# Edit specific skill
 /agileflow:skill:edit supabase-swift
 ```
 
-## How It Works
+## What It Does
 
-This command allows you to update any part of an installed skill:
+Allows you to modify any aspect of a skill:
 
-1. **Select which skill** to edit (or provide skill name)
-2. **Choose what to edit** (SKILL.md, references, cookbook, etc.)
-3. **Select edit mode** (describe changes, full rewrite, etc.)
-4. **Preview changes** before saving
-5. **Confirm and save**
+- **SKILL.md** - Update activation triggers and instructions
+- **references.md** - Add or update documentation links
+- **Cookbook entries** - Edit specific use-case workflows
+- **Add new cookbook** - Create workflows for new use cases
+- **MCP configuration** - Update MCP server settings
+- **Rename skill** - Change the skill name and folder
 
 ## Workflow
 
-### Step 1: Select Skill to Edit
+### Step 1: Select Skill
 
-If you don't provide a skill name, the command lists available skills:
+If you don't provide a skill name, you'll choose from available skills:
 
+```bash
+/agileflow:skill:edit
+```
+
+**Interactive selection:**
 ```
 Which skill would you like to edit?
-  • supabase-swift
-  • ui-components
-  • api-integration
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
 ```
 
-The selection prompt shows:
-- Skill name
-- Description from SKILL.md
-- Checkbox for each option
+### Step 2: View Skill Structure
 
-### Step 2: Show Skill Structure
-
-The command displays the current skill's files:
+The editor shows you what you're working with:
 
 ```
 📝 Editing: supabase-swift
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Files:
   1. SKILL.md (main skill file)
@@ -60,218 +69,336 @@ Files:
   4. cookbook/authentication.md
   5. .mcp.json (MCP configuration)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 ### Step 3: Choose What to Edit
 
 ```
 What would you like to modify?
-  • SKILL.md - Edit main skill instructions
-  • references.md - Update documentation links
-  • Cookbook entry - Edit a specific workflow
-  • Add new cookbook - Create a new workflow
-  • MCP configuration - Modify MCP server settings
-  • Rename skill - Change skill name and folder
+
+[1] SKILL.md
+    Edit main skill instructions
+
+[2] references.md
+    Update documentation links
+
+[3] Cookbook entry
+    Edit a specific workflow
+
+[4] Add new cookbook
+    Create a new workflow
+
+[5] MCP configuration
+    Modify MCP server settings
+
+[6] Rename skill
+    Change skill name and folder
+
+Select: 1
 ```
 
-### Step 4: Select Edit Mode
+### Step 4: Make Changes
 
-For the chosen file, select how to edit:
+Based on your selection:
 
+**For SKILL.md or references.md:**
 ```
 How would you like to modify this file?
-  • Describe changes - Tell me what to change and I'll update it
-  • Add content - Append new sections or examples
-  • Replace section - Rewrite a specific section
-  • Full rewrite - Regenerate with research (Recommended)
-  • Cancel - Return without changes
+
+[1] Describe changes
+    Tell me what to change and I'll update it
+
+[2] Add content
+    Append new sections or examples
+
+[3] Replace section
+    Rewrite a specific section
+
+[4] Full rewrite
+    Regenerate with fresh research (Recommended)
+
+[5] Cancel
+    Return without changes
+
+Select: 1
 ```
 
-#### Describe Changes
+**Then provide details:**
+```
+Describe what you'd like to change:
+> Update the "When to Use" section to include GraphQL queries
+> Add a new cookbook entry for Pagination
+> Fix the authentication workflow steps
+```
 
-- You describe what to modify
-- Command reads current file
-- Applies your described modifications
-- Shows diff preview
+### Step 5: Preview Changes
 
-#### Add Content
-
-- Appends new sections or examples
-- Preserves existing content
-- Good for adding cookbook entries or examples
-
-#### Replace Section
-
-- You specify which section to rewrite
-- Replaces only that part
-- Keeps rest of file intact
-
-#### Full Rewrite
-
-- Enters plan mode to research
-- Gathers updated web docs, local docs, codebase patterns
-- Regenerates file with new research
-- Best for major updates
-
-### Step 5: Show Diff and Confirm
-
-The command displays what will change:
+The editor shows you exactly what will change:
 
 ```
 📝 Changes to SKILL.md:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- old line content
-+ new line content
-- another old line
-+ updated content here
+- ## When to Use
++ ## When to Use
++
++ This skill activates when:
++ - You're working with Supabase databases
++ - Keywords: "Supabase", "database", "query"
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+  ## Instructions
 
-Then asks for confirmation:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-```
 Apply these changes?
-  • Yes, save changes
-  • No, discard
-  • Edit more
+
+[1] Yes, save changes
+    Write the updated file
+
+[2] No, discard
+    Cancel without saving
+
+[3] Edit more
+    Make additional changes first
+
+Select: 1
 ```
 
-### Step 6: Write Changes
+### Step 6: Confirm and Save
 
-If confirmed:
-- Writes updated file
-- Shows success message
-- Offers to edit more or perform other actions
+Changes are written only after you confirm:
 
-## Special Edits
+```
+✅ Updated: .claude/skills/supabase-swift/SKILL.md
 
-### Rename Skill
+Your changes have been saved. The skill will use the updated
+instructions on next use.
+```
 
-To rename a skill:
+## Examples
 
-1. Choose "Rename skill" option
-2. Provide new name (letters, numbers, hyphens only)
-3. Confirm the change
-4. Command creates new directory and updates SKILL.md
-5. Deletes old directory
-
-Example:
+### Example 1: Update Activation Triggers
 
 ```bash
-/agileflow:skill:edit my-skill
-# Choose: Rename skill
-# New name: my-improved-skill
-# ✅ Skill renamed to: my-improved-skill
+/agileflow:skill:edit supabase-swift
 ```
 
-### Add Cookbook Entry
+**Selections:**
+1. Choose "SKILL.md"
+2. Select "Replace section"
+3. Choose section: "When to Use"
+4. Provide new trigger keywords
 
-To add a new workflow to a skill:
+**Before:**
+```markdown
+## When to Use
 
+This skill activates when:
+- You're working with Supabase
+- Keywords: "supabase", "database"
+```
+
+**After:**
+```markdown
+## When to Use
+
+This skill activates when:
+- You're working with Supabase in iOS Swift
+- You need database operations, auth, or real-time
+- Keywords: "supabase", "database", "auth", "realtime", "swift"
+```
+
+### Example 2: Add New Cookbook Entry
+
+```bash
+/agileflow:skill:edit supabase-swift
+```
+
+**Selections:**
 1. Choose "Add new cookbook"
-2. Provide use case name
-3. Command creates from template: `cookbook/<use-case>.md`
-4. Updates SKILL.md to reference new entry
-5. Shows diff and asks for confirmation
+2. Enter use case name: "pagination"
+
+**Generated:**
+```
+cookbook/pagination.md
+├─ # Pagination with Supabase
+├─ Prerequisites
+├─ Instructions (step-by-step)
+├─ Example
+└─ Troubleshooting
+```
+
+The editor automatically updates SKILL.md to reference the new cookbook.
+
+### Example 3: Update Documentation Links
+
+```bash
+/agileflow:skill:edit api-error-handling
+```
+
+**Selections:**
+1. Choose "references.md"
+2. Select "Add content"
+3. Provide new resources
+
+**Result:**
+```markdown
+# References for API Error Handling
+
+## External Documentation
+
+- RFC 7231 HTTP Status Codes: https://tools.ietf.org/html/rfc7231
+- HTTP Status Codes Guide: https://httpwg.org/specs/rfc7231.html
+- Your Project API Design: /docs/04-architecture/api-design.md
+```
+
+### Example 4: Rename Skill
+
+```bash
+/agileflow:skill:edit
+```
+
+**Selections:**
+1. Choose skill to edit
+2. Select "Rename skill"
+3. Enter new name: `supabase-ios` (was `supabase-swift`)
+
+**Actions:**
+1. Creates new directory with new name
+2. Copies all files
+3. Updates SKILL.md frontmatter
+4. Deletes old directory
+
+**Result:**
+```bash
+# Before
+.claude/skills/supabase-swift/
+
+# After
+.claude/skills/supabase-ios/
+```
+
+## Special Edit Operations
+
+### Full Rewrite (Recommended for Major Changes)
+
+When you select "Full rewrite":
+
+1. **Enter Plan Mode** - Command researches current best practices
+2. **Collect new sources**:
+   - Updated web documentation
+   - New local documentation
+   - Current codebase patterns
+3. **Show updated plan** - You approve changes
+4. **Regenerate** - Creates fresh version with new research
+5. **Preserve history** - Old version is backed up
+
+This is ideal when:
+- Technology version has major updates
+- Your project patterns have evolved
+- You want to refresh all content
+
+### Add New Cookbook Entry
+
+When you select "Add new cookbook":
+
+1. **Name the use case** - e.g., "pagination", "bulk-operations"
+2. **Choose template** - Cookbook structure is auto-filled
+3. **Update SKILL.md** - References are added automatically
+4. **Edit if needed** - Refine the generated content
+
+### Update MCP Configuration
+
+When you select "MCP configuration":
+
+1. **View current .mcp.json**
+2. **Edit server settings**
+3. **Add/remove environment variables**
+4. **Test configuration** - Verify syntax
+
+## Before & After Comparison
+
+The editor always shows differences before saving:
+
+```diff
+## Cookbook
+
+Based on context, select the appropriate workflow:
+
+- ### Retrieve Data
+- If you need to get data from Supabase:
+- Then read cookbook/crud-operations.md
+
++ ### Query Data
++ If you need to retrieve rows from Supabase:
++ Then read cookbook/queries.md
+
++ ### Paginate Results
++ If you need to paginate large result sets:
++ Then read cookbook/pagination.md
+```
 
 ## Cookbook Template
 
-When creating new cookbook entries, they follow this structure:
+When adding a new cookbook entry, it auto-fills:
 
-~~~markdown
-# {Use Case Title}
+```markdown
+# [Use Case Title]
 
-{Brief description of this workflow.}
+[Brief description of this workflow.]
 
 ## Prerequisites
 
-- {Prerequisite 1}
-- {Prerequisite 2}
+- [Prerequisite 1]
+- [Prerequisite 2]
 
 ## Instructions
 
-1. **{Step 1}**:
-   {Details}
+1. **[Step 1]**:
+   [Details]
 
-2. **{Step 2}**:
-   ```{language}
-   {code example}
-   ```
+2. **[Step 2]**:
+   [language]
+   [code example]
 
-3. **{Step 3}**:
-   {Details}
+3. **[Step 3]**:
+   [Details]
 
 ## Example
 
-**Input**: {sample}
-**Output**: {result}
+**Input**: [sample]
+**Output**: [result]
 
 ## Troubleshooting
 
-- **{Problem}**: {Solution}
-~~~
+- **[Problem]**: [Solution]
+```
 
-## What You Can Edit
+## Best Practices
 
-### SKILL.md
+### When to Edit
 
-The main skill file containing:
-- Name and description
-- Activation triggers ("When to Use")
-- Project context
-- Cookbook guide
-- Quick reference
-- MCP integration
-- Common mistakes
+Edit a skill when:
+- Technology version updates
+- Your team discovers new patterns
+- New use cases emerge
+- Documentation changes
+- Errors need fixing
 
-Good for:
-- Updating activation triggers
-- Adding common mistakes
-- Improving descriptions
-- Refining cookbook references
+### Keeping Skills Current
 
-### references.md
+1. **Regular audits** - Test skills quarterly
+2. **User feedback** - Edit based on what Claude gets wrong
+3. **Pattern evolution** - Update as your code patterns evolve
+4. **Docs updates** - Keep external doc links current
 
-Documentation links file containing:
-- External documentation URLs
-- Local project documentation references
-- Codebase patterns with examples
-- MCP server information
+### Making Effective Changes
 
-Good for:
-- Updating outdated URLs
-- Adding new documentation links
-- Including new codebase patterns
-- Fixing broken references
-
-### Cookbook Entries
-
-Use-case specific workflows containing:
-- Prerequisites
-- Step-by-step instructions
-- Code examples
-- Troubleshooting
-
-Good for:
-- Adding new use cases
-- Improving step clarity
-- Adding more examples
-- Fixing troubleshooting sections
-
-### MCP Configuration
-
-.mcp.json file containing:
-- MCP server settings
-- Command and arguments
-- Environment variables
-
-Good for:
-- Updating server package version
-- Adding environment variables
-- Changing command parameters
+1. **Small, focused changes** - Update one thing at a time
+2. **Always preview** - Check diffs before saving
+3. **Test after editing** - Run `/skill:test` after major changes
+4. **Document why** - Add comments explaining changes
 
 ## Error Handling
 
@@ -287,51 +414,67 @@ Available skills:
 Use /agileflow:skill:list to see all skills.
 ```
 
-### No Skills Installed
+**Fix**: Check the skill name spelling, or list available skills.
+
+### Cannot Parse Frontmatter
 
 ```
-❌ No skills installed yet.
+⚠️ Could not parse SKILL.md frontmatter.
 
-Create a skill first: /agileflow:skill:create
+The skill file may have formatting issues.
+Would you like me to try anyway, or edit manually?
 ```
 
-### Invalid File Selection
-
-If the selected file doesn't exist:
-
-```
-❌ File not found: cookbook/nonexistent.md
-
-Available files in <skill-name>:
-  - SKILL.md
-  - references.md
-  - cookbook/crud.md
+**Fix**: Check SKILL.md has valid YAML frontmatter:
+```yaml
+---
+name: skill-name
+description: Skill purpose
+---
 ```
 
-## Best Practices
+### Write Permission Error
 
-1. **Use "Full rewrite" for major updates** - Ensures research is current
-2. **Use "Describe changes" for small fixes** - Faster for minor edits
-3. **Preview before confirming** - Always review diffs
-4. **Keep descriptions concise** - Under 1024 characters
-5. **Update references when changing technology** - Keep URLs current
-6. **Add troubleshooting sections** - Anticipate user problems
-7. **Include multiple cookbook entries** - Different use cases need different workflows
+```
+❌ Cannot write to skill file.
+
+Check permissions for: .claude/skills/<skill>/
+```
+
+**Fix**: Verify directory permissions:
+```bash
+chmod -R u+w .claude/skills/<skill>/
+```
+
+## After Editing
+
+Once changes are saved:
+
+1. **Test the skill**:
+   ```bash
+   /agileflow:skill:test <skill-name>
+   ```
+
+2. **Use immediately** - Changes take effect next use
+
+3. **If errors** - Use `/skill:edit` again to fix
+
+4. **Enable learning** - If you haven't already:
+   ```bash
+   /agileflow:skill:upgrade <skill-name>
+   ```
 
 ## Related Commands
 
-- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
-- [`/agileflow:skill:list`](/commands/skill-list) - View all installed skills
-- [`/agileflow:skill:delete`](/commands/skill-delete) - Remove a skill
-- [`/agileflow:skill:test`](/commands/skill-test) - Verify changes work
+- [`/skill:create`](/commands/skill-create) - Generate a new skill
+- [`/skill:list`](/commands/skill-list) - View all skills
+- [`/skill:test`](/commands/skill-test) - Verify changes worked
+- [`/skill:delete`](/commands/skill-delete) - Remove a skill
+- [`/skill:upgrade`](/commands/skill-upgrade) - Add learning capability
 
-## Learn More
+## Next Steps
 
-For comprehensive information about the Skills system, see the [Skills Feature Documentation](/features/skills).
-
-## Tips
-
-- **Edit frequently** - Keep skills current with your project
-- **Add cookbook entries** - Complex skills benefit from multiple workflows
-- **Share updates** - Commit edited skills to version control
-- **Document changes** - Note why you updated something for team clarity
+1. **List skills**: `/agileflow:skill:list`
+2. **Edit one**: `/agileflow:skill:edit <skill-name>`
+3. **Test changes**: `/agileflow:skill:test <skill-name>`
+4. **Use it**: Your changes are live immediately

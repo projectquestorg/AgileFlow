@@ -8,6 +8,7 @@ Use `/agileflow:research:ask` to generate research prompts for web AI, then `/ag
 
 | Date | Topic | Path | Summary |
 |------|-------|------|---------|
+| 2026-01-09 | Ralph Wiggum Autonomous AI Loops | [20260109-ralph-wiggum-autonomous-ai-loops.md](./20260109-ralph-wiggum-autonomous-ai-loops.md) | Jeffrey Huntley's autonomous loop technique: bash while loop + prompt.md, file system as memory. Philosophy: define outcomes not steps, failures are data. Key: always set max_iterations, don't use for security/architecture/exploration. |
 | 2026-01-09 | Context Engineering Principles | [20260109-context-engineering-principles.md](./20260109-context-engineering-principles.md) | Core principles for AI coding workflows: progressive disclosure, 70% attention budget rule, file format efficiency (YAML>MD>XML>JSON), sub-agent isolation, structured note-taking. Key: workflows must be project-specific. |
 | 2026-01-09 | Ralph Loop + TDD for UI | [20260109-ralph-loop-tdd-ui-workflow.md](./20260109-ralph-loop-tdd-ui-workflow.md) | TDD + Ralph Loop workflow for Shadcn UI development. Screenshot verification protocol with "verified-" prefix. Key: multi-iteration confirmation prevents premature completion promise. |
 | 2026-01-06 | AutoClaude Framework | [20260106-autoclaude-framework.md](./20260106-autoclaude-framework.md) | Autonomous multi-agent coding framework extending Claude Code with visual Kanban UI, up to 12 parallel agents, spec-driven development, model fallback, memory layer (Graphite/Ollama), and GitHub/GitLab integration. Free and open-source. |

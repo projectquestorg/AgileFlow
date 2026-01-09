@@ -1,356 +1,474 @@
 ---
-title: /agileflow:skill:test
+title: /skill:test
 description: Verify a skill works correctly by testing its activation and functionality
 ---
 
-# /agileflow:skill:test
+# /skill:test
 
-Test a skill to verify it activates correctly and produces expected results.
+Test a skill to verify it activates correctly, has proper structure, and produces expected results.
 
 ## Quick Start
 
 ```bash
-# Interactive mode - select which skill to test
+# Interactive mode
 /agileflow:skill:test
 
-# Test a specific skill
+# Test specific skill
 /agileflow:skill:test supabase-swift
 ```
 
-## How It Works
+## What It Does
 
-This command validates that a skill:
+The test command validates skills through three phases:
 
-1. **Has correct structure** - All required files present
-2. **Has valid metadata** - Frontmatter is properly formatted
-3. **Activates correctly** - Triggers on appropriate prompts
-4. **Produces expected output** - Returns properly formatted results
+1. **Structure Validation** - Files exist and are properly formatted
+2. **Content Validation** - Required sections present, no broken links
+3. **Activation Test** (optional) - Verify skill triggers on sample prompts
 
 ## Workflow
 
-### Step 1: Select Skill to Test
+### Phase 1: Select Skill
 
-If you don't provide a skill name, the command lists available skills:
+If you don't specify a skill:
 
+```bash
+/agileflow:skill:test
+```
+
+**Choose from available skills:**
 ```
 Which skill would you like to test?
-  • supabase-swift - Supabase database operations for Swift
-  • ui-components - React component patterns
-  • api-integration - REST API client patterns
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
 ```
 
-### Step 2: Read Skill Metadata
+### Phase 2: Structure Validation
 
-The command reads SKILL.md and extracts:
-- Skill name and description
-- "When to Use" section (activation triggers)
-- Cookbook entries (if any)
-- Quick reference section
-- Any warnings or limitations
-
-### Step 3: Run Validation Checks
-
-The command performs structure and content validation:
+The test runs automated checks:
 
 ```
 🧪 Testing: supabase-swift
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Structure Validation:
+STRUCTURE VALIDATION
   ✅ SKILL.md exists
-  ✅ Frontmatter has name and description
+  ✅ Frontmatter valid (name: supabase-swift, description: present)
   ✅ references.md exists
   ✅ cookbook/ directory found (2 entries)
-  ⚠️ No .mcp.json (MCP not configured)
+  ⚠️  No .mcp.json (MCP not configured)
 
-Content Validation:
+CONTENT VALIDATION
   ✅ "When to Use" section present
-  ✅ Description under 1024 characters (342 chars)
-  ✅ SKILL.md under 500 lines (current: 287)
-  ✅ All cookbook files referenced in SKILL.md
+  ✅ Description under 1024 characters (467 chars)
+  ✅ SKILL.md under 500 lines (287 lines)
+  ✅ All cookbook files referenced in SKILL.md exist
+  ✅ No broken file references
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Step 4: Test Activation (Optional)
+### Phase 3: Optional Activation Test
 
-The command asks if you want to test activation:
+After structure validation:
 
 ```
 Would you like to test skill activation with a sample prompt?
-  • Yes, test activation (Recommended)
-  • Skip activation test
-  • View SKILL.md content
+
+[1] Yes, test activation (Recommended)
+    I'll simulate using the skill
+
+[2] Skip activation test
+    Structure validation is enough
+
+[3] View SKILL.md content
+    Read the full skill instructions
+
+Select: 1
 ```
 
-If you choose "Yes, test activation":
+If you choose activation test:
 
-1. **Extracts sample triggers** from "When to Use" section
-2. **Presents test prompts** based on triggers:
-   ```
-   Sample prompts that should activate this skill:
+```
+Sample prompts that should activate this skill:
 
-   1. "Help me set up Supabase authentication in Swift"
-   2. "Create CRUD operations for my database"
-   3. "How do I query Supabase from iOS?"
-   ```
-3. **Asks which to test** or let you provide a custom prompt
-4. **Executes the skill** by reading SKILL.md and following instructions
-5. **Reports results**
+[1] "Help me set up Supabase authentication in my iOS app"
+[2] "Create CRUD operations for my user database"
+[3] "How do I query Supabase from Swift?"
 
-### Step 5: Show Test Results
+Which would you like to test? (or enter custom prompt)
+> 1
+```
+
+### Phase 4: Test Results
 
 ```
 🧪 Test Results: supabase-swift
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Structure:     ✅ PASS (5/5 checks)
-Content:       ✅ PASS (4/4 checks)
-Activation:    ✅ PASS (skill triggered correctly)
-MCP Config:    ⚠️ NOT CONFIGURED
+STRUCTURE VALIDATION
+  ✅ PASS (5/5 checks)
 
-Overall: ✅ SKILL IS FUNCTIONAL
+CONTENT VALIDATION
+  ✅ PASS (5/5 checks)
 
+ACTIVATION TEST
+  ✅ PASS - Skill triggered on test prompt
+  ✅ Response includes cookbook references
+  ✅ All referenced files are accessible
+
+MCP CONFIGURATION
+  ⚠️  NOT CONFIGURED - Skills work without MCP
+
+OVERALL: ✅ SKILL IS FUNCTIONAL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-### Step 6: Offer Next Actions
-
-```
-What would you like to do?
-  • Test another skill
-  • Edit this skill
-  • Use this skill now
-  • Done
 ```
 
 ## Validation Checks
 
 ### Structure Checks
 
-| Check | Pass Condition | Example |
-|-------|----------------|---------|
-| SKILL.md exists | File present in skill directory | `.claude/skills/supabase-swift/SKILL.md` |
-| Frontmatter valid | Has `name:` and `description:` | Both required fields present |
-| references.md | File exists (recommended) | `.claude/skills/supabase-swift/references.md` |
-| cookbook/ | Directory exists if referenced | Files match SKILL.md references |
-| .mcp.json | Valid JSON if present | Parses without errors |
+| Check | What It Verifies |
+|-------|------------------|
+| **SKILL.md exists** | Main skill file is present |
+| **Frontmatter valid** | Has `name:` and `description:` |
+| **references.md** | Documentation links file (recommended) |
+| **cookbook/ directory** | Workflows exist (if referenced) |
+| **.mcp.json valid** | JSON syntax correct (if present) |
 
 ### Content Checks
 
-| Check | Pass Condition | Notes |
-|-------|----------------|-------|
-| When to Use | Section present with activation triggers | Describes when skill is useful |
-| Description length | Under 1024 characters | Brief but complete description |
-| SKILL.md size | Under 500 lines | Keeps skills maintainable |
-| Cookbook references | All referenced files exist | No broken links |
-| No broken links | All local file references valid | Points to actual files |
+| Check | What It Verifies |
+|-------|------------------|
+| **"When to Use" section** | Activation triggers defined |
+| **Description length** | Under 1024 characters |
+| **SKILL.md size** | Under 500 lines |
+| **Cookbook references** | All files in SKILL.md exist |
+| **No broken links** | Local file paths are valid |
 
-### MCP Checks (if .mcp.json exists)
+### Indicators
 
-| Check | Pass Condition | Notes |
-|-------|----------------|-------|
-| Valid JSON | Parses without errors | Proper JSON syntax |
-| Has mcpServers | Contains mcpServers object | Root-level mcpServers key |
-| Command exists | Command is npx or valid executable | Runnable command path |
-| Env vars documented | Any `${VAR}` has comments | Explains environment variables |
+- **✅ PASS** - Check passed
+- **⚠️ WARNING** - Optional file missing (not required)
+- **❌ FAIL** - Required check failed
 
-## Test Report Format
+## Examples
 
-Complete test report includes:
+### Example 1: Test Passing Skill
 
-```
-🧪 Skill Test Report: <skill-name>
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-STRUCTURE VALIDATION
-  [✅|❌] SKILL.md exists
-  [✅|❌] Frontmatter valid (name, description)
-  [✅|⚠️] references.md exists
-  [✅|⚠️] cookbook/ directory
-  [✅|⚠️] .mcp.json present
-
-CONTENT VALIDATION
-  [✅|❌] "When to Use" section
-  [✅|❌] Description < 1024 chars (342 chars)
-  [✅|❌] SKILL.md < 500 lines (287 lines)
-  [✅|❌] All cookbook files exist
-
-ACTIVATION TEST
-  [✅|❌] Skill triggered on test prompt
-  [✅|❌] Produced expected output format
-
-ISSUES FOUND
-  - No MCP configuration
-
-RECOMMENDATIONS
-  - Add .mcp.json if this skill supports MCP servers
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Overall: ✅ PASS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-## Test Results Explained
-
-### ✅ PASS
-
-All checks passed. The skill is:
-- Properly structured
-- Correctly formatted
-- Ready to use
-- May have optional features (like MCP) not configured
-
-### ⚠️ WARNINGS
-
-Some optional checks failed. The skill still works but:
-- Missing optional features (like MCP)
-- Could be improved with additional files
-- Consider adding recommended content
-
-### ❌ FAIL
-
-Critical checks failed. The skill:
-- Cannot be used until fixed
-- Missing required files or metadata
-- Needs editing before use
-
-## Common Issues and Fixes
-
-### Issue: Missing "When to Use" Section
-
-**Error**:
-```
-❌ "When to Use" section not found
-```
-
-**Fix**:
 ```bash
-/agileflow:skill:edit <skill-name>
-# Add "When to Use" section to SKILL.md
+/agileflow:skill:test react-components
 ```
 
-### Issue: Description Too Long
-
-**Error**:
+**Output:**
 ```
-❌ Description exceeds 1024 characters (1523)
+🧪 Test Results: react-components
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ✅ PASS (all 5 checks)
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ✅ FULLY FUNCTIONAL
 ```
 
-**Fix**:
+### Example 2: Skill with Warnings
+
 ```bash
-/agileflow:skill:edit <skill-name>
-# Choose: Replace section
-# Shorten the description in SKILL.md frontmatter
+/agileflow:skill:test api-basic
 ```
 
-### Issue: Cookbook File Referenced But Missing
-
-**Error**:
+**Output:**
 ```
-❌ cookbook/crud.md referenced but not found
+🧪 Test Results: api-basic
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ⚠️  WARNINGS (3/5 checks)
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid
+  ⚠️  No references.md (recommended but not required)
+  ⚠️  No cookbook/ directory
+  ✅ No .mcp.json (simple skill)
+
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ⚠️  FUNCTIONAL WITH RECOMMENDATIONS
+
+Recommendations:
+  - Add references.md to link external documentation
+  - Consider adding cookbook/ entries for multiple use cases
 ```
 
-**Fix**:
+### Example 3: Skill with Failures
+
 ```bash
-/agileflow:skill:edit <skill-name>
-# Choose: Add new cookbook
-# Create the missing cookbook file
+/agileflow:skill:test broken-skill
 ```
 
-### Issue: Invalid JSON in .mcp.json
-
-**Error**:
+**Output:**
 ```
-❌ Invalid JSON in .mcp.json
+🧪 Test Results: broken-skill
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ❌ FAIL (1/5 checks)
+  ❌ SKILL.md missing or corrupt
+  ❌ Cannot parse frontmatter
+  ⚠️  references.md exists
+  ⚠️  No cookbook/
+  ⚠️  No .mcp.json
+
+CONTENT:       ⚠️  SKIPPED (structure issues)
+ACTIVATION:    ❌ FAIL (cannot test without valid SKILL.md)
+
+Overall: ❌ SKILL NEEDS FIXING
+
+Issues Found:
+  1. SKILL.md frontmatter is invalid
+  2. Missing "When to Use" section
+  3. Description exceeds 1024 characters
+
+Fix With: /agileflow:skill:edit broken-skill
 ```
 
-**Fix**:
+## Next Actions After Testing
+
+### If Test Passes
+
+```
+✅ Skill is working perfectly!
+
+What would you like to do?
+
+[1] Test another skill
+[2] Use this skill now
+[3] Upgrade with learning capability
+    /agileflow:skill:upgrade <skill-name>
+[4] Done
+```
+
+### If Test Has Warnings
+
+```
+⚠️  Skill works but could be improved.
+
+What would you like to do?
+
+[1] Edit skill to fix issues
+    /agileflow:skill:edit <skill-name>
+[2] Ignore warnings and continue
+[3] View detailed report
+[4] Done
+```
+
+### If Test Fails
+
+```
+❌ Skill has issues that need fixing.
+
+What would you like to do?
+
+[1] Edit skill to fix problems
+    /agileflow:skill:edit <skill-name>
+[2] Delete and recreate skill
+    /agileflow:skill:delete <skill-name>
+[3] View detailed report
+[4] Done
+```
+
+## Interpreting Results
+
+### Structure Issues
+
+**Problem**: "SKILL.md missing"
+- **Cause**: Skill directory doesn't contain SKILL.md
+- **Fix**: Verify directory exists: `ls .claude/skills/<name>/SKILL.md`
+- **Solution**: Use `/skill:edit` to recreate
+
+**Problem**: "Frontmatter invalid"
+- **Cause**: SKILL.md YAML is malformed
+- **Fix**: Check first 5 lines have valid YAML:
+  ```yaml
+  ---
+  name: skill-name
+  description: Purpose
+  ---
+  ```
+- **Solution**: Use `/skill:edit` to fix frontmatter
+
+**Problem**: "No 'When to Use' section"
+- **Cause**: Activation triggers not defined
+- **Fix**: Add section to SKILL.md:
+  ```markdown
+  ## When to Use
+
+  This skill activates when:
+  - Condition 1
+  - Keywords: "keyword1", "keyword2"
+  ```
+- **Solution**: Use `/skill:edit` to add section
+
+### Content Issues
+
+**Problem**: "Description exceeds 1024 characters"
+- **Cause**: Skill description is too long
+- **Fix**: Shorten the description in SKILL.md frontmatter
+- **Solution**: Use `/skill:edit` to reduce length
+
+**Problem**: "SKILL.md exceeds 500 lines"
+- **Cause**: Skill is too large/complex
+- **Fix**: Move content to cookbook/ files
+- **Solution**: Use `/skill:edit` to reorganize
+
+**Problem**: "Broken link: cookbook/missing.md referenced but not found"
+- **Cause**: Cookbook file reference without actual file
+- **Fix**: Either create the file or remove the reference
+- **Solution**: Use `/skill:edit` to fix
+
+### MCP Issues
+
+**Problem**: "Invalid JSON in .mcp.json"
+- **Cause**: Syntax error in MCP configuration
+- **Fix**: Check JSON syntax is valid
+- **Solution**: Use `/skill:edit` to fix JSON
+
+**Problem**: "No mcpServers object"
+- **Cause**: .mcp.json missing required structure
+- **Fix**: Add proper structure:
+  ```json
+  {
+    "mcpServers": {
+      "name": { ... }
+    }
+  }
+  ```
+- **Solution**: Use `/skill:edit` to update
+
+## Testing Workflow
+
+### Quick Test (Structure Only)
+
 ```bash
-/agileflow:skill:edit <skill-name>
-# Choose: MCP configuration
-# Fix the JSON syntax
+/agileflow:skill:test supabase-swift
+# When asked: select "Skip activation test"
 ```
 
-## Error Handling
+Takes seconds to verify file structure and content.
 
-### Skill Not Found
+### Full Test (Structure + Activation)
 
-```
-❌ Skill "<name>" not found.
-
-Available skills:
-  - ui-components
-  - api-integration
-
-Use /agileflow:skill:list to see all skills.
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "Yes, test activation"
+# When asked: pick or enter test prompt
 ```
 
-### No Skills Installed
+Tests that skill actually activates on relevant prompts.
 
-```
-❌ No skills to test.
+### Detailed Test (Structure + Activation + View Content)
 
-Create a skill first: /agileflow:skill:create
-```
-
-### Validation Failed
-
-```
-❌ Skill "<name>" has issues:
-
-  ❌ Missing SKILL.md frontmatter
-  ❌ Description exceeds 1024 characters (1523)
-  ⚠️ No "When to Use" section
-
-Fix with: /agileflow:skill:edit <name>
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "View SKILL.md content"
+# Then manually review the skill
 ```
 
-## When to Test Skills
-
-Test skills when:
-
-- **Creating a new skill** - Verify it's correctly structured
-- **Editing a skill** - Ensure changes didn't break anything
-- **Before sharing** - Validate before sharing with team
-- **After major changes** - Test after significant edits
-- **Periodic maintenance** - Regular validation of installed skills
-- **Troubleshooting** - When skill doesn't seem to work
+Helps understand what the skill does before using it.
 
 ## Best Practices
 
-1. **Test after creation** - New skills should always be tested
-2. **Test after editing** - Verify changes don't break functionality
-3. **Test before sharing** - Validate with team members
-4. **Keep tests documented** - Note what was tested and results
-5. **Fix issues immediately** - Don't use broken skills
-6. **Archive if failing** - Move unusable skills to backup
+### Test After Creation
 
-## Using Tested Skills
+Always test a skill right after creating it:
 
-After a successful test:
+```bash
+/agileflow:skill:create my-skill
+/agileflow:skill:test my-skill  # ← Right after creation
+```
 
-1. **Use in projects** - Skill is ready for development
-2. **Share with team** - Copy skill to other projects
-3. **Document locally** - Link to in project documentation
-4. **Version control** - Commit if skills are tracked
-5. **Monitor updates** - Retest after major changes
+### Test After Editing
+
+Test after making changes:
+
+```bash
+/agileflow:skill:edit my-skill
+/agileflow:skill:test my-skill  # ← Verify changes worked
+```
+
+### Regular Audits
+
+Test all skills periodically:
+
+```bash
+/agileflow:skill:list
+# For each skill:
+/agileflow:skill:test <skill-name>
+```
+
+### Test New Triggers
+
+When you add new activation triggers:
+
+```bash
+/agileflow:skill:edit my-skill  # Add trigger keywords
+/agileflow:skill:test my-skill  # Test with those keywords
+```
+
+## Troubleshooting
+
+### Test Hangs
+
+If the test seems to hang:
+
+1. **Wait up to 30 seconds** - Activation testing can take time
+2. **Check internet connection** - If testing web sources
+3. **Cancel (Ctrl+C)** and try again
+4. **Skip activation test** - Try structure-only test
+
+### Inconsistent Results
+
+If test results vary:
+
+1. **Network issues** - Some sources may be temporarily unavailable
+2. **Race conditions** - Try testing again
+3. **Check file system** - Ensure files are readable:
+   ```bash
+   ls -la .claude/skills/<skill>/
+   ```
+
+### Activation Test Fails
+
+If "Skill triggered correctly" shows as failed:
+
+1. Update activation triggers:
+   ```bash
+   /agileflow:skill:edit <skill-name>
+   # Edit "When to Use" section
+   ```
+
+2. Test with different prompts
+
+3. Check if keywords are specific enough
 
 ## Related Commands
 
-- [`/agileflow:skill:create`](/commands/skill-create) - Generate a new skill
-- [`/agileflow:skill:list`](/commands/skill-list) - View all installed skills
-- [`/agileflow:skill:edit`](/commands/skill-edit) - Modify a skill
-- [`/agileflow:skill:delete`](/commands/skill-delete) - Remove a skill
+- [`/skill:create`](/commands/skill-create) - Generate a new skill
+- [`/skill:list`](/commands/skill-list) - View all skills
+- [`/skill:edit`](/commands/skill-edit) - Fix skill issues
+- [`/skill:delete`](/commands/skill-delete) - Remove a skill
+- [`/skill:upgrade`](/commands/skill-upgrade) - Add learning capability
 
-## Learn More
+## Next Steps
 
-For comprehensive information about the Skills system, see the [Skills Feature Documentation](/features/skills).
-
-## Tips
-
-- **Test first, use second** - Always validate skills
-- **Keep validation output** - Save test reports for reference
-- **Fix warnings** - Address even optional issues
-- **Update references** - Keep external links current
-- **Add examples** - Make skills more useful with examples
+1. **Test a skill**: `/agileflow:skill:test <skill-name>`
+2. **If passes**: Use the skill in your work
+3. **If fails**: Edit with `/agileflow:skill:edit`
+4. **After fixing**: Test again to verify

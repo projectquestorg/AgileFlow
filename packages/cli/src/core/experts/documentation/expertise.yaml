@@ -150,3 +150,28 @@ learnings:
     total_lines: 2009
     source: "packages/cli/src/core/commands/*.md"
     notes: "All files follow consistent documentation template: frontmatter, quick start, purpose, parameters table, examples with explanations, workflow steps, output/files, and related commands"
+
+  - date: 2026-01-09
+    context: "Created IDE Integrations documentation for AgileFlow"
+    insight: "IDE handler system supports 4 IDEs (Claude Code, Cursor, Windsurf, Codex CLI) through plugin architecture. Each IDE has custom config directory (.claude/, .cursor/, .windsurf/, .codex/) and different installation models. Claude Code most advanced (damage control, spawnable agents), Codex CLI unique (per-repo skills, user-level prompts, AGENTS.md instructions)"
+    created_files:
+      - "apps/docs/content/docs/features/ide-integrations.mdx (700+ lines)"
+      - "apps/docs/content/docs/features/index.mdx (updated with IDE section)"
+    total_lines: 700
+    source: "packages/cli/tools/cli/installers/ide/ (_base-ide.js, claude-code.js, cursor.js, windsurf.js, codex.js, manager.js)"
+    coverage:
+      - "IDE overview table with config dirs, types, status"
+      - "Quick start for Claude Code (default IDE)"
+      - "Multi-IDE installation instructions"
+      - "Detailed setup for each IDE with directory structure"
+      - "Command access patterns by IDE"
+      - "Claude Code subagent spawning, damage control hooks"
+      - "Cursor unique features, differences from Claude Code"
+      - "Windsurf workflow management, VSCode integration"
+      - "Codex CLI dual installation model (per-repo skills, user-level prompts, AGENTS.md)"
+      - "Dynamic IDE handler system, extensibility guide"
+      - "Content injection system explanation"
+      - "Troubleshooting guide for common issues"
+      - "Best practices for IDE selection and multi-IDE usage"
+      - "Configuration management and version control"
+    notes: "Comprehensive 700+ line documentation covering all 4 IDEs with detailed setup, command access, and unique features. Includes handler architecture for IDE developers extending with new IDEs."

@@ -15,13 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-
-// Color codes for output
-const c = {
-  red: '\x1b[38;5;203m',
-  reset: '\x1b[0m',
-  dim: '\x1b[2m'
-};
+const { c } = require('../lib/colors');
 
 /**
  * Find project root by looking for .agileflow directory
@@ -215,7 +209,7 @@ function main() {
       const result = validatePath(filePath, config);
 
       if (result.action === 'block') {
-        console.error(`${c.red}[BLOCKED]${c.reset} ${result.reason}`);
+        console.error(`${c.coral}[BLOCKED]${c.reset} ${result.reason}`);
         console.error(`${c.dim}${result.detail}${c.reset}`);
         console.error(`${c.dim}File: ${filePath}${c.reset}`);
         process.exit(2);

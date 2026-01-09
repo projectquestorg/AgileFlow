@@ -10,7 +10,7 @@ compact_context:
     - "CRITICAL: If 🔄 OUTDATED shown → offer --upgrade to re-deploy latest scripts"
     - "MUST backup created on migrate: .claude/settings.json.backup"
     - "MUST show RED RESTART banner after ANY changes (quit, wait 5s, restart)"
-    - "Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate"
+    - "Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, askuserquestion"
     - "Stop hooks (ralphloop, selfimprove) run when Claude completes or pauses"
   state_fields:
     - detection_status
@@ -52,7 +52,7 @@ node .agileflow/scripts/agileflow-configure.js --repair=statusline  # Fix specif
 
 ### Features
 
-`sessionstart`, `precompact`, `ralphloop`, `selfimprove`, `archival`, `statusline`, `autoupdate`
+`sessionstart`, `precompact`, `ralphloop`, `selfimprove`, `archival`, `statusline`, `autoupdate`, `askuserquestion`
 
 **Stop hooks** (ralphloop, selfimprove) run when Claude completes or pauses work.
 
@@ -180,12 +180,12 @@ node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days
 
 ## Profile Details
 
-| Profile | SessionStart | PreCompact | RalphLoop | SelfImprove | Archival | StatusLine |
-|---------|-------------|------------|-----------|-------------|----------|------------|
-| `full` | ✅ | ✅ | ✅ | ✅ | ✅ 30 days | ✅ |
-| `basic` | ✅ | ✅ | ❌ | ❌ | ✅ 30 days | ❌ |
-| `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ 30 days | ❌ |
-| `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Profile | SessionStart | PreCompact | RalphLoop | SelfImprove | Archival | StatusLine | AskUserQuestion |
+|---------|-------------|------------|-----------|-------------|----------|------------|-----------------|
+| `full` | ✅ | ✅ | ✅ | ✅ | ✅ 30 days | ✅ | ✅ |
+| `basic` | ✅ | ✅ | ❌ | ❌ | ✅ 30 days | ❌ | ✅ |
+| `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ 30 days | ❌ | ❌ |
+| `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ## Interactive Mode (via /configure command)
 
@@ -226,7 +226,8 @@ Based on selection, run appropriate command.
     {"label": "SelfImprove (Stop Hook)", "description": "Auto-update agent expertise from work"},
     {"label": "Archival", "description": "Auto-archive old completed stories"},
     {"label": "Status Line", "description": "Custom status bar"},
-    {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"}
+    {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"},
+    {"label": "AskUserQuestion Mode", "description": "End all responses with AskUserQuestion tool for guided interaction"}
   ]
 }]</parameter>
 </invoke>
@@ -240,6 +241,7 @@ Map selections:
 - "Archival" → `archival`
 - "Status Line" → `statusline`
 - "Auto-Update" → `autoupdate`
+- "AskUserQuestion Mode" → `askuserquestion`
 
 ## Auto-Update Configuration
 
@@ -262,6 +264,41 @@ node .agileflow/scripts/agileflow-configure.js --enable=autoupdate
 ```
 
 **Check frequencies:** `hourly`, `daily`, `weekly`, `never`
+
+## AskUserQuestion Mode
+
+Enable AskUserQuestion to have all commands end with guided options:
+
+```bash
+# Enable AskUserQuestion mode
+node .agileflow/scripts/agileflow-configure.js --enable=askuserquestion
+
+# Disable AskUserQuestion mode
+node .agileflow/scripts/agileflow-configure.js --disable=askuserquestion
+```
+
+**What it does:**
+- When enabled: All commands end with AskUserQuestion tool call (guided options)
+- When disabled: Commands can end with natural text questions
+
+**Storage in metadata:**
+```json
+{
+  "features": {
+    "askUserQuestion": {
+      "enabled": true,
+      "mode": "all"
+    }
+  }
+}
+```
+
+**Modes:**
+- `all`: All commands use AskUserQuestion (default)
+- `interactive`: Only interactive commands (babysit, mentor, configure, epic-planner)
+- `none`: Disabled
+
+The guidance is injected via `obtain-context.js` when commands run.
 
 ## Stop Hook Features
 

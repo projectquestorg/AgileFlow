@@ -23,7 +23,7 @@
  *   --detect                            Show current status
  *   --help                              Show help
  *
- * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol
+ * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol, askuserquestion
  */
 
 const fs = require('fs');
@@ -81,6 +81,7 @@ const FEATURES = {
     scripts: ['damage-control-bash.js', 'damage-control-edit.js', 'damage-control-write.js'],
     patternsFile: 'damage-control-patterns.yaml',
   },
+  askuserquestion: { metadataOnly: true }, // Stored in metadata.features.askUserQuestion
 };
 
 // Complete registry of all scripts that may need repair
@@ -131,24 +132,24 @@ const STATUSLINE_COMPONENTS = [
 const PROFILES = {
   full: {
     description: 'All features enabled (including experimental Stop hooks)',
-    enable: ['sessionstart', 'precompact', 'archival', 'statusline', 'ralphloop', 'selfimprove'],
+    enable: ['sessionstart', 'precompact', 'archival', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion'],
     archivalDays: 30,
   },
   basic: {
     description: 'Essential hooks + archival (SessionStart + PreCompact + Archival)',
-    enable: ['sessionstart', 'precompact', 'archival'],
+    enable: ['sessionstart', 'precompact', 'archival', 'askuserquestion'],
     disable: ['statusline', 'ralphloop', 'selfimprove'],
     archivalDays: 30,
   },
   minimal: {
     description: 'SessionStart + archival only',
     enable: ['sessionstart', 'archival'],
-    disable: ['precompact', 'statusline', 'ralphloop', 'selfimprove'],
+    disable: ['precompact', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion'],
     archivalDays: 30,
   },
   none: {
     description: 'Disable all AgileFlow features',
-    disable: ['sessionstart', 'precompact', 'archival', 'statusline', 'ralphloop', 'selfimprove'],
+    disable: ['sessionstart', 'precompact', 'archival', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion'],
   },
 };
 
@@ -224,6 +225,7 @@ function detectConfig() {
       archival: { enabled: false, threshold: null, version: null, outdated: false },
       statusline: { enabled: false, valid: true, issues: [], version: null, outdated: false },
       damagecontrol: { enabled: false, valid: true, issues: [], version: null, outdated: false, level: null, patternCount: 0 },
+      askuserquestion: { enabled: false, valid: true, issues: [], version: null, outdated: false, mode: null },
     },
     metadata: { exists: false, version: null },
     currentVersion: VERSION,
@@ -366,14 +368,26 @@ function detectConfig() {
         status.features.damagecontrol.level = meta.features.damagecontrol.protectionLevel || 'standard';
       }
 
+      // AskUserQuestion metadata
+      if (meta.features?.askUserQuestion?.enabled) {
+        status.features.askuserquestion.enabled = true;
+        status.features.askuserquestion.mode = meta.features.askUserQuestion.mode || 'all';
+      }
+
       // Read feature versions from metadata and check if outdated
       if (meta.features) {
+        // Map metadata keys to status keys (handle camelCase differences)
+        const featureKeyMap = {
+          askUserQuestion: 'askuserquestion',
+        };
         Object.entries(meta.features).forEach(([feature, data]) => {
-          if (status.features[feature] && data.version) {
-            status.features[feature].version = data.version;
+          // Use mapped key if exists, otherwise lowercase
+          const statusKey = featureKeyMap[feature] || feature.toLowerCase();
+          if (status.features[statusKey] && data.version) {
+            status.features[statusKey].version = data.version;
             // Check if feature version differs from current VERSION
-            if (data.version !== VERSION && status.features[feature].enabled) {
-              status.features[feature].outdated = true;
+            if (data.version !== VERSION && status.features[statusKey].enabled) {
+              status.features[statusKey].outdated = true;
               status.hasOutdated = true;
             }
           }
@@ -456,6 +470,16 @@ function printStatus(status) {
     }
   } else {
     log(`  ❌ Damage Control: disabled`, c.dim);
+  }
+
+  // AskUserQuestion
+  const auq = status.features.askuserquestion;
+  if (auq.enabled) {
+    let auqStatusText = 'enabled';
+    if (auq.mode) auqStatusText += ` (mode: ${auq.mode})`;
+    log(`  💬 AskUserQuestion: ${auqStatusText}`, c.green);
+  } else {
+    log(`  ❌ AskUserQuestion: disabled`, c.dim);
   }
 
   // Metadata
@@ -741,6 +765,24 @@ function enableFeature(feature, options = {}) {
     return true; // Skip settings.json write for this feature
   }
 
+  // Handle askuserquestion (metadata only, no hooks needed)
+  if (feature === 'askuserquestion') {
+    const mode = options.mode || 'all';
+    updateMetadata({
+      features: {
+        askUserQuestion: {
+          enabled: true,
+          mode: mode,
+          version: VERSION,
+          at: new Date().toISOString(),
+        },
+      },
+    });
+    success(`AskUserQuestion enabled (mode: ${mode})`);
+    info('All commands will end with AskUserQuestion tool for guided interaction');
+    return true; // Skip settings.json write for this feature
+  }
+
   // Handle damage control (PreToolUse hooks)
   if (feature === 'damagecontrol') {
     const level = options.protectionLevel || 'standard';
@@ -890,6 +932,22 @@ function disableFeature(feature) {
       },
     });
     success('Auto-update disabled');
+    return true; // Skip settings.json write for this feature
+  }
+
+  // Disable askuserquestion
+  if (feature === 'askuserquestion') {
+    updateMetadata({
+      features: {
+        askUserQuestion: {
+          enabled: false,
+          version: VERSION,
+          at: new Date().toISOString(),
+        },
+      },
+    });
+    success('AskUserQuestion disabled');
+    info('Commands will end with natural text questions instead of AskUserQuestion tool');
     return true; // Skip settings.json write for this feature
   }
 
@@ -1396,10 +1454,11 @@ ${c.cyan}Feature Control:${c.reset}
   --enable=<list>     Enable features (comma-separated)
   --disable=<list>    Disable features (comma-separated)
 
-  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol
+  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol, askuserquestion
 
   Stop hooks (ralphloop, selfimprove) run when Claude completes/pauses
   Damage control (damagecontrol) uses PreToolUse hooks to block dangerous commands
+  AskUserQuestion (askuserquestion) makes all commands end with guided options
 
 ${c.cyan}Statusline Components:${c.reset}
   --show=<list>       Show statusline components (comma-separated)
@@ -1465,6 +1524,12 @@ ${c.cyan}Examples:${c.reset}
 
   # Enable damage control (PreToolUse hooks to block dangerous commands)
   node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+
+  # Enable AskUserQuestion (all commands end with guided options)
+  node .agileflow/scripts/agileflow-configure.js --enable=askuserquestion
+
+  # Disable AskUserQuestion (commands end with natural text questions)
+  node .agileflow/scripts/agileflow-configure.js --disable=askuserquestion
 `);
 }
 

@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { c: C, box } = require('../lib/colors');
 
 const DISPLAY_LIMIT = 30000; // Claude Code's Bash tool display limit
 
@@ -55,33 +56,6 @@ if (commandName) {
     }
   }
 }
-
-// ANSI colors
-const C = {
-  reset: '\x1b[0m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  magenta: '\x1b[35m',
-  blue: '\x1b[34m',
-  brightCyan: '\x1b[96m',
-  brightYellow: '\x1b[93m',
-  brightGreen: '\x1b[92m',
-  brand: '\x1b[38;2;232;104;58m', // AgileFlow brand orange
-
-  // Vibrant 256-color palette (modern, sleek look)
-  mintGreen: '\x1b[38;5;158m',    // Healthy/success states
-  peach: '\x1b[38;5;215m',        // Warning states
-  coral: '\x1b[38;5;203m',        // Critical/error states
-  lightGreen: '\x1b[38;5;194m',   // Session healthy
-  lightYellow: '\x1b[38;5;228m',  // Session warning
-  skyBlue: '\x1b[38;5;117m',      // Directories/paths
-  lavender: '\x1b[38;5;147m',     // Model info
-  softGold: '\x1b[38;5;222m',     // Cost/money
-};
 
 function safeRead(filePath) {
   try {
@@ -398,7 +372,36 @@ function generateFullContent() {
     content += `${C.dim}No session-state.json found${C.reset}\n`;
   }
 
-  // 4. DOCS STRUCTURE (using vibrant 256-color palette)
+  // 4. INTERACTION MODE (AskUserQuestion guidance)
+  const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
+  const askUserQuestionConfig = metadata?.features?.askUserQuestion;
+
+  if (askUserQuestionConfig?.enabled) {
+    content += `\n${C.brand}${C.bold}═══ ⚡ INTERACTION MODE: AskUserQuestion ENABLED ═══${C.reset}\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+    content += `${C.bold}CRITICAL RULE:${C.reset} End ${C.skyBlue}EVERY${C.reset} response with the AskUserQuestion tool.\n\n`;
+    content += `${C.mintGreen}✓ CORRECT:${C.reset} Call the actual AskUserQuestion tool\n`;
+    content += `${C.coral}✗ WRONG:${C.reset} Text like "Want me to continue?" or "What's next?"\n\n`;
+    content += `${C.lavender}Required format:${C.reset}\n`;
+    content += `${C.dim}\`\`\`xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What would you like to do next?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "Option A (Recommended)", "description": "Why this is best"},
+    {"label": "Option B", "description": "Alternative approach"},
+    {"label": "Pause", "description": "Stop here for now"}
+  ]
+}]</parameter>
+</invoke>
+\`\`\`${C.reset}\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+    content += `${C.dim}Mode: ${askUserQuestionConfig.mode || 'all'} | Configure: /agileflow:configure${C.reset}\n\n`;
+  }
+
+  // 5. DOCS STRUCTURE (using vibrant 256-color palette)
   content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
   const docsDir = 'docs';
   const docFolders = safeLs(docsDir).filter(f => {
@@ -422,7 +425,7 @@ function generateFullContent() {
     });
   }
 
-  // 5. RESEARCH NOTES - List + Full content of most recent (using vibrant 256-color palette)
+  // 6. RESEARCH NOTES - List + Full content of most recent (using vibrant 256-color palette)
   content += `\n${C.skyBlue}${C.bold}═══ Research Notes ═══${C.reset}\n`;
   const researchDir = 'docs/10-research';
   const researchFiles = safeLs(researchDir).filter(f => f.endsWith('.md') && f !== 'README.md');
@@ -445,7 +448,7 @@ function generateFullContent() {
     content += `${C.dim}No research notes${C.reset}\n`;
   }
 
-  // 6. BUS MESSAGES (using vibrant 256-color palette)
+  // 7. BUS MESSAGES (using vibrant 256-color palette)
   content += `\n${C.skyBlue}${C.bold}═══ Recent Agent Messages ═══${C.reset}\n`;
   const busPath = 'docs/09-agents/bus/log.jsonl';
   const busContent = safeRead(busPath);
@@ -469,7 +472,7 @@ function generateFullContent() {
     content += `${C.dim}No bus log found${C.reset}\n`;
   }
 
-  // 7. KEY FILES - Full content
+  // 8. KEY FILES - Full content
   content += `\n${C.cyan}${C.bold}═══ Key Context Files (Full Content) ═══${C.reset}\n`;
 
   const keyFilesToRead = [
@@ -495,7 +498,7 @@ function generateFullContent() {
   const settingsExists = fs.existsSync('.claude/settings.json');
   content += `\n  ${settingsExists ? `${C.green}✓${C.reset}` : `${C.dim}○${C.reset}`} .claude/settings.json\n`;
 
-  // 8. EPICS FOLDER
+  // 9. EPICS FOLDER
   content += `\n${C.cyan}${C.bold}═══ Epic Files ═══${C.reset}\n`;
   const epicFiles = safeLs('docs/05-epics').filter(f => f.endsWith('.md') && f !== 'README.md');
   if (epicFiles.length > 0) {

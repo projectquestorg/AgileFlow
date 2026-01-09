@@ -17,14 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
-
-// Color codes for output
-const c = {
-  red: '\x1b[38;5;203m',
-  yellow: '\x1b[38;5;215m',
-  reset: '\x1b[0m',
-  dim: '\x1b[2m'
-};
+const { c } = require('../lib/colors');
 
 /**
  * Find project root by looking for .agileflow directory
@@ -192,7 +185,7 @@ function main() {
       switch (result.action) {
         case 'block':
           // Output error message and block
-          console.error(`${c.red}[BLOCKED]${c.reset} ${result.reason}`);
+          console.error(`${c.coral}[BLOCKED]${c.reset} ${result.reason}`);
           console.error(`${c.dim}Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}${c.reset}`);
           process.exit(2);
           break;
