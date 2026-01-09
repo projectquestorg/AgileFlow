@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     'AgileFlow turns your repo into an AI-friendly agile system with commands, agents, ADRs, and docs-as-code — built for Claude Code, Cursor, Windsurf, and more.',
   metadataBase: new URL('https://agileflow.dev'),
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
     apple: '/logo.png',
   },
   openGraph: {
