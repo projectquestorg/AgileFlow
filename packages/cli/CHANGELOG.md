@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.82.2] - 2026-01-09
 
-### Added
-- Fix installer to copy lib directory for script dependencies
+### Fixed
+- Installer now copies lib/ directory to .agileflow/lib/ for script dependencies
 
 ## [2.82.1] - 2026-01-09
 
