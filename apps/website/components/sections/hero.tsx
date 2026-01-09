@@ -18,7 +18,7 @@ interface HeroProps {
 
 export function Hero({ content, version, stats }: HeroProps) {
   return (
-    <section id="product" className="scroll-mt-24 py-12 sm:py-24 md:py-28">
+    <section id="product" className="scroll-mt-20 py-6 sm:py-10 md:py-12">
       <Container>
         <div className="grid items-start gap-12 lg:grid-cols-12">
           <div className="lg:col-span-6">

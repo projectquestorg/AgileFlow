@@ -22,7 +22,7 @@ export default async function Page() {
       <ScrollDepthTracker />
       <PageWrapper version={content.version}>
         <BackgroundTexture />
-        <main id="content" className="pt-28">
+        <main id="content" className="pt-20">
           <Hero
             content={content.hero}
             version={content.version}
