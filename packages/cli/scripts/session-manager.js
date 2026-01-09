@@ -13,30 +13,9 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
 
-// ANSI colors
-const c = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-  brand: '\x1b[38;2;232;104;58m',
-};
-
-// Find project root (has .agileflow or .git)
-function getProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== '/') {
-    if (fs.existsSync(path.join(dir, '.agileflow')) || fs.existsSync(path.join(dir, '.git'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
+// Shared utilities
+const { c } = require('../lib/colors');
+const { getProjectRoot } = require('../lib/paths');
 
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(ROOT, '.agileflow', 'sessions');

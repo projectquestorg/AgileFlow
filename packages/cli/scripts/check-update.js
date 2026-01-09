@@ -24,6 +24,9 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
+// Shared utilities
+const { getProjectRoot } = require('../lib/paths');
+
 // Debug mode
 const DEBUG = process.env.DEBUG_UPDATE === '1';
 
@@ -31,15 +34,6 @@ function debugLog(message, data = null) {
   if (DEBUG) {
     console.error(`[check-update] ${message}`, data ? JSON.stringify(data) : '');
   }
-}
-
-// Find project root (has .agileflow directory)
-function getProjectRoot() {
-  let dir = process.cwd();
-  while (!fs.existsSync(path.join(dir, '.agileflow')) && dir !== '/') {
-    dir = path.dirname(dir);
-  }
-  return dir !== '/' ? dir : process.cwd();
 }
 
 // Get installed AgileFlow version

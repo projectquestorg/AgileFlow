@@ -15,6 +15,10 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
 
+// Shared utilities
+const { c, box } = require('../lib/colors');
+const { getProjectRoot } = require('../lib/paths');
+
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
 
@@ -24,68 +28,6 @@ try {
   updateChecker = require('./check-update.js');
 } catch (e) {
   // Update checker not available
-}
-
-// ANSI color codes
-const c = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-
-  // Standard ANSI colors
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-
-  brightBlack: '\x1b[90m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightCyan: '\x1b[96m',
-
-  // Vibrant 256-color palette (modern, sleek look)
-  mintGreen: '\x1b[38;5;158m',    // Healthy/success states
-  peach: '\x1b[38;5;215m',        // Warning states
-  coral: '\x1b[38;5;203m',        // Critical/error states
-  lightGreen: '\x1b[38;5;194m',   // Session healthy
-  lightYellow: '\x1b[38;5;228m',  // Session warning
-  lightPink: '\x1b[38;5;210m',    // Session critical
-  skyBlue: '\x1b[38;5;117m',      // Directories/paths
-  lavender: '\x1b[38;5;147m',     // Model info, story IDs
-  softGold: '\x1b[38;5;222m',     // Cost/money
-  teal: '\x1b[38;5;80m',          // Ready/pending states
-  slate: '\x1b[38;5;103m',        // Secondary info
-  rose: '\x1b[38;5;211m',         // Blocked/critical accent
-  amber: '\x1b[38;5;214m',        // WIP/in-progress accent
-  powder: '\x1b[38;5;153m',       // Labels/headers
-
-  // Brand color (#e8683a)
-  brand: '\x1b[38;2;232;104;58m',
-};
-
-// Box drawing characters
-const box = {
-  tl: '╭',
-  tr: '╮',
-  bl: '╰',
-  br: '╯',
-  h: '─',
-  v: '│',
-  lT: '├',
-  rT: '┤',
-  tT: '┬',
-  bT: '┴',
-  cross: '┼',
-};
-
-function getProjectRoot() {
-  let dir = process.cwd();
-  while (!fs.existsSync(path.join(dir, '.agileflow')) && dir !== '/') {
-    dir = path.dirname(dir);
-  }
-  return dir !== '/' ? dir : process.cwd();
 }
 
 function getProjectInfo(rootDir) {

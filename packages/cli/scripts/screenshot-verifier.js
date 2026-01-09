@@ -21,17 +21,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// ANSI colors
-const c = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  brand: '\x1b[38;2;232;104;58m',
-};
+// Shared utilities
+const { c } = require('../lib/colors');
 
 // Parse command line arguments
 function parseArgs() {
