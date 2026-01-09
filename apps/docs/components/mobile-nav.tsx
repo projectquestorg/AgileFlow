@@ -16,23 +16,11 @@ import {
 } from "@/registry/new-york-v4/ui/popover"
 
 const TOP_LEVEL_SECTIONS = [
-  { name: "Get Started", href: "/installation" },
-  {
-    name: "Commands",
-    href: "/commands",
-  },
-  {
-    name: "Agents",
-    href: "/agents",
-  },
-  {
-    name: "Workflows",
-    href: "/workflows",
-  },
-  {
-    name: "Configuration",
-    href: "/configuration",
-  },
+  { name: "Introduction", href: "/" },
+  { name: "Installation", href: "/installation" },
+  { name: "Features", href: "/features" },
+  { name: "Commands", href: "/commands" },
+  { name: "Agents", href: "/agents" },
 ]
 
 export function MobileNav({
