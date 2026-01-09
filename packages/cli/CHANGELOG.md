@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.82.1] - 2026-01-09
+
+### Fixed
+- Fix npm package missing lib directory
+
 ## [2.82.0] - 2026-01-09
 
 ### Added
