@@ -12,6 +12,7 @@ AgileFlow provides **68 slash commands** for agile development workflows.
 | `/agileflow:babysit` | Interactive mentor for end-to-end implementation |
 | `/agileflow:configure` | Interactive configuration menu for all AgileFlow features |
 | `/agileflow:diagnose` | System health diagnostics and troubleshooting |
+| `/agileflow:ideate` | Brainstorm and generate feature ideas |
 
 ---
 
@@ -20,10 +21,17 @@ AgileFlow provides **68 slash commands** for agile development workflows.
 | Command | Description |
 |---------|-------------|
 | `/agileflow:epic` | Create a new epic with stories |
+| `/agileflow:epic:list` | List all epics with status summary |
+| `/agileflow:epic:view` | View detailed epic information |
 | `/agileflow:story` | Create a user story with acceptance criteria |
+| `/agileflow:story:list` | List stories with filtering options |
+| `/agileflow:story:view` | View detailed story information |
 | `/agileflow:story-validate` | Validate story completeness before development |
 | `/agileflow:sprint` | Data-driven sprint planning with velocity forecasting |
 | `/agileflow:adr` | Create an Architecture Decision Record |
+| `/agileflow:adr:list` | List all ADRs with status |
+| `/agileflow:adr:view` | View specific ADR details |
+| `/agileflow:adr:update` | Update ADR status or content |
 | `/agileflow:agent` | Onboard a new agent with profile and contract |
 
 ---
@@ -60,11 +68,26 @@ AgileFlow provides **68 slash commands** for agile development workflows.
 | `/agileflow:session:init` | Initialize session harness with test verification |
 | `/agileflow:session:resume` | Resume session with environment verification and context |
 | `/agileflow:session:status` | View current session state and activity |
-| `/agileflow:session:end` | Cleanly end session and record summary |
+| `/agileflow:session:end` | End session with optional merge to main |
 | `/agileflow:session:history` | View past session history and metrics |
 | `/agileflow:session:new` | Create a parallel session with git worktree |
 
 See [Session Harness](./session-harness.md) for details.
+
+---
+
+## Skills System
+
+| Command | Description |
+|---------|-------------|
+| `/agileflow:skill:create` | Create a new custom skill |
+| `/agileflow:skill:list` | List all available skills |
+| `/agileflow:skill:edit` | Edit an existing skill |
+| `/agileflow:skill:delete` | Delete a custom skill |
+| `/agileflow:skill:test` | Test a skill before deployment |
+| `/agileflow:skill:upgrade` | Upgrade skill to latest format |
+
+See [Skills](./skills.md) for details.
 
 ---
 
@@ -109,6 +132,7 @@ See [Session Harness](./session-harness.md) for details.
 | `/agileflow:research:import` | Import results from web AI tools |
 | `/agileflow:research:list` | View research notes index |
 | `/agileflow:research:view` | Read specific research note |
+| `/agileflow:research:analyze` | Analyze research notes for patterns and insights |
 | `/agileflow:whats-new` | Show recent AgileFlow updates and version history |
 
 ---
@@ -134,6 +158,8 @@ Most commands accept parameters in `KEY=value` format:
 /agileflow:status STORY=US-0001 STATUS=in-progress SUMMARY="Started implementation"
 
 /agileflow:research:ask TOPIC="JWT best practices"
+
+/agileflow:skill:create NAME=my-skill DESCRIPTION="Custom automation"
 ```
 
 ---
@@ -141,5 +167,6 @@ Most commands accept parameters in `KEY=value` format:
 ## Related Documentation
 
 - [Subagents](./subagents.md) - 29 specialized agents
+- [Skills](./skills.md) - Dynamic skill generation
 - [AgileFlow CLI Overview](./agileflow-cli-overview.md) - System architecture
 - [Command & Agent Flow](./command-agent-flow.md) - How commands and agents work together
