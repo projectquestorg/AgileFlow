@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<id>] [MODE=loop] [MAX=<iterations>]"
+argument-hint: "[EPIC=<id>] [MODE=loop] [MAX=<iterations>] [VISUAL=true]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -61,6 +61,7 @@ When invoked with `MODE=loop`, babysit runs autonomously through an epic's stori
 | `EPIC` | Yes | Epic ID to process (e.g., EP-0042) |
 | `MODE` | Yes | Must be `loop` for autonomous mode |
 | `MAX` | No | Max iterations (default: 20) |
+| `VISUAL` | No | Enable Visual Mode for UI development (screenshot verification) |
 
 ### To Start Loop Mode
 
@@ -69,6 +70,9 @@ After running the context script, if EPIC and MODE=loop are specified:
 ```bash
 # Initialize the loop
 node scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# With Visual Mode for UI development
+node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --visual
 ```
 
 Or manually write to session-state.json:
@@ -80,10 +84,34 @@ Or manually write to session-state.json:
     "epic": "EP-0042",
     "current_story": "US-0015",
     "iteration": 0,
-    "max_iterations": 20
+    "max_iterations": 20,
+    "visual_mode": false,
+    "screenshots_verified": false
   }
 }
 ```
+
+### Visual Mode
+
+When `VISUAL=true` is specified, the loop adds screenshot verification:
+
+```
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+**Visual Mode behavior:**
+1. After tests pass, runs `screenshot-verifier.js`
+2. Checks all screenshots in `screenshots/` have `verified-` prefix
+3. Requires minimum 2 iterations before completion
+4. Prevents premature completion for UI work
+
+**When to use Visual Mode:**
+- UI-focused epics (components, styling, layouts)
+- Shadcn/UI development
+- Any work where visual appearance matters
+
+**Setup requirement:**
+Run `/agileflow:setup:visual-e2e` first to install Playwright and create e2e tests.
 
 ### Loop Control Commands
 

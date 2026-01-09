@@ -7,11 +7,17 @@
  * It runs as a Stop hook and handles:
  *   1. Checking if loop mode is enabled
  *   2. Running test validation
- *   3. Updating story status on success
- *   4. Feeding context back for next iteration
- *   5. Tracking iterations and enforcing limits
+ *   3. Running screenshot verification (Visual Mode)
+ *   4. Updating story status on success
+ *   5. Feeding context back for next iteration
+ *   6. Tracking iterations and enforcing limits
  *
  * Named after the "Ralph Wiggum" pattern from Anthropic.
+ *
+ * Visual Mode:
+ *   When visual_mode is enabled, the loop also verifies that all
+ *   screenshots have been reviewed (verified- prefix). This ensures
+ *   Claude actually looks at UI screenshots before declaring completion.
  *
  * Usage (as Stop hook):
  *   node scripts/ralph-loop.js
@@ -129,6 +135,73 @@ function runTests(rootDir, testCommand) {
   return result;
 }
 
+// Get screenshots directory from metadata or default
+function getScreenshotsDir(rootDir) {
+  try {
+    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+    if (fs.existsSync(metadataPath)) {
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+      if (metadata.ralph_loop?.screenshots_dir) {
+        return metadata.ralph_loop.screenshots_dir;
+      }
+    }
+  } catch (e) {}
+  return './screenshots';
+}
+
+// Run screenshot verification (Visual Mode)
+function verifyScreenshots(rootDir) {
+  const result = { passed: false, output: '', total: 0, verified: 0, unverified: [] };
+  const screenshotsDir = getScreenshotsDir(rootDir);
+  const fullPath = path.resolve(rootDir, screenshotsDir);
+
+  // Check if directory exists
+  if (!fs.existsSync(fullPath)) {
+    result.passed = true; // No screenshots = nothing to verify
+    result.output = 'No screenshots directory found';
+    return result;
+  }
+
+  // Get all image files
+  const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+  let files;
+  try {
+    files = fs.readdirSync(fullPath).filter((file) => {
+      const ext = path.extname(file).toLowerCase();
+      return imageExtensions.includes(ext);
+    });
+  } catch (e) {
+    result.output = `Error reading screenshots directory: ${e.message}`;
+    return result;
+  }
+
+  if (files.length === 0) {
+    result.passed = true;
+    result.output = 'No screenshots found in directory';
+    return result;
+  }
+
+  // Check each file for verified- prefix
+  for (const file of files) {
+    if (file.startsWith('verified-')) {
+      result.verified++;
+    } else {
+      result.unverified.push(file);
+    }
+  }
+
+  result.total = files.length;
+  result.passed = result.unverified.length === 0;
+
+  if (result.passed) {
+    result.output = `All ${result.total} screenshots verified`;
+  } else {
+    result.output = `${result.unverified.length} screenshots missing 'verified-' prefix`;
+  }
+
+  return result;
+}
+
 // Get next ready story in epic
 function getNextStory(status, epicId, currentStoryId) {
   const stories = status.stories || {};
@@ -211,13 +284,16 @@ function handleLoop(rootDir) {
   const status = getStatus(rootDir);
   const iteration = (loop.iteration || 0) + 1;
   const maxIterations = loop.max_iterations || 20;
+  const visualMode = loop.visual_mode || false;
+  const minIterations = visualMode ? 2 : 1; // Visual mode requires at least 2 iterations
 
   console.log('');
   console.log(
     `${c.brand}${c.bold}══════════════════════════════════════════════════════════${c.reset}`
   );
+  const modeLabel = visualMode ? ' [VISUAL MODE]' : '';
   console.log(
-    `${c.brand}${c.bold}  RALPH LOOP - Iteration ${iteration}/${maxIterations}${c.reset}`
+    `${c.brand}${c.bold}  RALPH LOOP - Iteration ${iteration}/${maxIterations}${modeLabel}${c.reset}`
   );
   console.log(
     `${c.brand}${c.bold}══════════════════════════════════════════════════════════${c.reset}`
@@ -261,6 +337,61 @@ function handleLoop(rootDir) {
 
   if (testResult.passed) {
     console.log(`${c.green}✓ Tests passed${c.reset} (${(testResult.duration / 1000).toFixed(1)}s)`);
+
+    // Visual Mode: Also verify screenshots
+    let screenshotResult = { passed: true };
+    if (visualMode) {
+      console.log('');
+      console.log(`${c.blue}Verifying screenshots...${c.reset}`);
+      screenshotResult = verifyScreenshots(rootDir);
+
+      if (screenshotResult.passed) {
+        console.log(`${c.green}✓ ${screenshotResult.output}${c.reset}`);
+        state.ralph_loop.screenshots_verified = true;
+      } else {
+        console.log(`${c.yellow}⚠ ${screenshotResult.output}${c.reset}`);
+        if (screenshotResult.unverified.length > 0) {
+          console.log(`${c.dim}Unverified screenshots:${c.reset}`);
+          screenshotResult.unverified.slice(0, 5).forEach((file) => {
+            console.log(`  ${c.yellow}- ${file}${c.reset}`);
+          });
+          if (screenshotResult.unverified.length > 5) {
+            console.log(`  ${c.dim}... and ${screenshotResult.unverified.length - 5} more${c.reset}`);
+          }
+        }
+        state.ralph_loop.screenshots_verified = false;
+      }
+    }
+
+    // Visual Mode: Enforce minimum iterations
+    if (visualMode && iteration < minIterations) {
+      console.log('');
+      console.log(`${c.yellow}⚠ Visual Mode requires ${minIterations}+ iterations for confirmation${c.reset}`);
+      console.log(`${c.dim}Current: iteration ${iteration}. Let loop run once more to confirm.${c.reset}`);
+
+      state.ralph_loop.iteration = iteration;
+      saveSessionState(rootDir, state);
+
+      console.log('');
+      console.log(`${c.brand}▶ Continue reviewing. Loop will verify again.${c.reset}`);
+      return;
+    }
+
+    // Check if both tests AND screenshots (in visual mode) passed
+    const canComplete = testResult.passed && (!visualMode || screenshotResult.passed);
+
+    if (!canComplete) {
+      // Screenshots not verified yet
+      state.ralph_loop.iteration = iteration;
+      saveSessionState(rootDir, state);
+
+      console.log('');
+      console.log(`${c.cyan}▶ Review unverified screenshots:${c.reset}`);
+      console.log(`${c.dim}  1. View each screenshot in screenshots/ directory${c.reset}`);
+      console.log(`${c.dim}  2. Rename verified files with 'verified-' prefix${c.reset}`);
+      console.log(`${c.dim}  3. Loop will re-verify when you stop${c.reset}`);
+      return;
+    }
     console.log('');
 
     // Mark story complete
@@ -353,10 +484,15 @@ function handleCLI() {
     if (!loop || !loop.enabled) {
       console.log(`${c.dim}Ralph Loop: not active${c.reset}`);
     } else {
-      console.log(`${c.green}Ralph Loop: active${c.reset}`);
+      const modeLabel = loop.visual_mode ? ` ${c.cyan}[VISUAL]${c.reset}` : '';
+      console.log(`${c.green}Ralph Loop: active${c.reset}${modeLabel}`);
       console.log(`  Epic: ${loop.epic}`);
       console.log(`  Current Story: ${loop.current_story}`);
       console.log(`  Iteration: ${loop.iteration || 0}/${loop.max_iterations || 20}`);
+      if (loop.visual_mode) {
+        const verified = loop.screenshots_verified ? `${c.green}yes${c.reset}` : `${c.yellow}no${c.reset}`;
+        console.log(`  Screenshots Verified: ${verified}`);
+      }
     }
     return true;
   }
@@ -386,6 +522,7 @@ function handleCLI() {
   if (args.some(a => a.startsWith('--init'))) {
     const epicArg = args.find(a => a.startsWith('--epic='));
     const maxArg = args.find(a => a.startsWith('--max='));
+    const visualArg = args.includes('--visual') || args.includes('-v');
 
     if (!epicArg) {
       console.log(`${c.red}Error: --epic=EP-XXXX is required${c.reset}`);
@@ -394,6 +531,7 @@ function handleCLI() {
 
     const epicId = epicArg.split('=')[1];
     const maxIterations = maxArg ? parseInt(maxArg.split('=')[1]) : 20;
+    const visualMode = visualArg;
 
     // Find first ready story in epic
     const status = getStatus(rootDir);
@@ -426,6 +564,8 @@ function handleCLI() {
       current_story: storyId,
       iteration: 0,
       max_iterations: maxIterations,
+      visual_mode: visualMode,
+      screenshots_verified: false,
       started_at: new Date().toISOString(),
     };
     saveSessionState(rootDir, state);
@@ -433,11 +573,16 @@ function handleCLI() {
     const progress = getEpicProgress(status, epicId);
 
     console.log('');
-    console.log(`${c.green}${c.bold}Ralph Loop Initialized${c.reset}`);
+    const modeLabel = visualMode ? ` ${c.cyan}[VISUAL MODE]${c.reset}` : '';
+    console.log(`${c.green}${c.bold}Ralph Loop Initialized${c.reset}${modeLabel}`);
     console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
     console.log(`  Epic: ${c.cyan}${epicId}${c.reset}`);
     console.log(`  Stories: ${progress.ready} ready, ${progress.total} total`);
     console.log(`  Max Iterations: ${maxIterations}`);
+    if (visualMode) {
+      console.log(`  Visual Mode: ${c.cyan}enabled${c.reset} (screenshot verification)`);
+      console.log(`  Min Iterations: 2 (for confirmation)`);
+    }
     console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
     console.log('');
     console.log(`${c.brand}▶ Starting Story:${c.reset} ${storyId}`);
@@ -464,22 +609,37 @@ function handleCLI() {
 ${c.brand}${c.bold}ralph-loop.js${c.reset} - Autonomous Story Processing
 
 ${c.bold}Usage:${c.reset}
-  node scripts/ralph-loop.js                          Run loop check (Stop hook)
-  node scripts/ralph-loop.js --init --epic=EP-XXX     Initialize loop for epic
-  node scripts/ralph-loop.js --status                 Check loop status
-  node scripts/ralph-loop.js --stop                   Stop the loop
-  node scripts/ralph-loop.js --reset                  Reset loop state
+  node scripts/ralph-loop.js                              Run loop check (Stop hook)
+  node scripts/ralph-loop.js --init --epic=EP-XXX         Initialize loop for epic
+  node scripts/ralph-loop.js --init --epic=EP-XXX --visual Initialize with Visual Mode
+  node scripts/ralph-loop.js --status                     Check loop status
+  node scripts/ralph-loop.js --stop                       Stop the loop
+  node scripts/ralph-loop.js --reset                      Reset loop state
 
 ${c.bold}Options:${c.reset}
   --epic=EP-XXXX    Epic ID to process (required for --init)
   --max=N           Max iterations (default: 20)
+  --visual, -v      Enable Visual Mode (screenshot verification)
+
+${c.bold}Visual Mode:${c.reset}
+  When --visual is enabled, the loop also verifies that all screenshots
+  in the screenshots/ directory have been reviewed (verified- prefix).
+
+  This ensures Claude actually looks at UI screenshots before declaring
+  completion. Requires minimum 2 iterations for confirmation.
+
+  Workflow:
+    1. Tests run → must pass
+    2. Screenshots verified → all must have 'verified-' prefix
+    3. Minimum 2 iterations → prevents premature completion
+    4. Only then → story marked complete
 
 ${c.bold}How it works:${c.reset}
-  1. Start loop with /agileflow:babysit EPIC=EP-XXX MODE=loop
+  1. Start loop with /agileflow:babysit EPIC=EP-XXX MODE=loop VISUAL=true
   2. Work on the current story
-  3. When you stop, this hook runs tests
-  4. If tests pass → story marked complete, next story loaded
-  5. If tests fail → failures shown, you continue fixing
+  3. When you stop, this hook runs tests (and screenshot verification in Visual Mode)
+  4. If all pass → story marked complete, next story loaded
+  5. If any fail → failures shown, you continue fixing
   6. Loop repeats until epic done or max iterations
 `);
     return true;
