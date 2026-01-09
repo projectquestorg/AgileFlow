@@ -9,6 +9,7 @@ Project-specific practices, conventions, and standards for YOUR codebase.
 - **releasing.md**: Release process and versioning
 - **security.md**: Security practices and guidelines
 - **ci.md**: CI/CD configuration and workflows
+- **context-engineering.md**: Managing AI context windows effectively (70% rule, file formats, sub-agents)
 - **diagrams.md**: Mermaid diagram generation with light/dark themes
 - **ask-user-question.md**: Using the AskUserQuestion tool effectively
 - **async-agent-spawning.md**: Launch, monitor, and retrieve background agents
