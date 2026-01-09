@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.81.0] - 2026-01-09
+
+### Added
+- Input validation, damage control refactor, and session merge flow
+
 ## [2.80.0] - 2026-01-09
 
 ### Added

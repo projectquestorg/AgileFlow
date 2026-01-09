@@ -1,6 +1,6 @@
 # Commands Reference
 
-AgileFlow provides **69 slash commands** for agile development workflows.
+AgileFlow provides **68 slash commands** for agile development workflows.
 
 ---
 
@@ -140,6 +140,6 @@ Most commands accept parameters in `KEY=value` format:
 
 ## Related Documentation
 
-- [Subagents](./subagents.md) - 28 specialized agents
+- [Subagents](./subagents.md) - 29 specialized agents
 - [AgileFlow CLI Overview](./agileflow-cli-overview.md) - System architecture
 - [Command & Agent Flow](./command-agent-flow.md) - How commands and agents work together
