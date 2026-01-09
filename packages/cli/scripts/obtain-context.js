@@ -28,11 +28,25 @@ if (commandName) {
   if (fs.existsSync(sessionStatePath)) {
     try {
       const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
-      state.active_command = {
+
+      // Initialize active_commands array if not present
+      if (!Array.isArray(state.active_commands)) {
+        state.active_commands = [];
+      }
+
+      // Remove any existing entry for this command (avoid duplicates)
+      state.active_commands = state.active_commands.filter(c => c.name !== commandName);
+
+      // Add the new command
+      state.active_commands.push({
         name: commandName,
         activated_at: new Date().toISOString(),
         state: {},
-      };
+      });
+
+      // Keep backwards compatibility - also set singular active_command to most recent
+      state.active_command = state.active_commands[state.active_commands.length - 1];
+
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     } catch (e) {
       // Silently continue if session state can't be updated
@@ -370,7 +384,12 @@ function generateFullContent() {
     } else {
       content += `${C.dim}No active session${C.reset}\n`;
     }
-    if (sessionState.active_command) {
+    // Show all active commands (array)
+    if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
+      const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
+      content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
+    } else if (sessionState.active_command) {
+      // Backwards compatibility for old format
       content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
     }
   } else {

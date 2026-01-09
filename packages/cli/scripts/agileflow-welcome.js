@@ -347,7 +347,7 @@ function checkPreCompact(rootDir) {
 }
 
 function checkDamageControl(rootDir) {
-  const result = { configured: false, level: null, patternCount: 0, scriptsOk: true };
+  const result = { configured: false, level: 'standard', patternCount: 0, scriptsOk: true };
 
   try {
     // Check if PreToolUse hooks are configured in settings
@@ -368,15 +368,23 @@ function checkDamageControl(rootDir) {
           );
           result.hooksCount = dcHooks.length;
 
-          // Check if all required scripts exist
-          const scriptsDir = path.join(rootDir, '.agileflow', 'scripts');
+          // Check for enhanced mode (has prompt hook)
+          const hasPromptHook = settings.hooks.PreToolUse.some(
+            h => h.hooks?.some(hk => hk.type === 'prompt')
+          );
+          if (hasPromptHook) {
+            result.level = 'enhanced';
+          }
+
+          // Check if all required scripts exist (in .claude/hooks/damage-control/)
+          const hooksDir = path.join(rootDir, '.claude', 'hooks', 'damage-control');
           const requiredScripts = [
-            'damage-control-bash.js',
-            'damage-control-edit.js',
-            'damage-control-write.js',
+            'bash-tool-damage-control.js',
+            'edit-tool-damage-control.js',
+            'write-tool-damage-control.js',
           ];
           for (const script of requiredScripts) {
-            if (!fs.existsSync(path.join(scriptsDir, script))) {
+            if (!fs.existsSync(path.join(hooksDir, script))) {
               result.scriptsOk = false;
               break;
             }
@@ -385,22 +393,19 @@ function checkDamageControl(rootDir) {
       }
     }
 
-    // Get protection level and pattern count from metadata
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-      if (metadata.features?.damagecontrol) {
-        result.level = metadata.features.damagecontrol.protectionLevel || 'standard';
+    // Count patterns in patterns.yaml
+    const patternsLocations = [
+      path.join(rootDir, '.claude', 'hooks', 'damage-control', 'patterns.yaml'),
+      path.join(rootDir, '.agileflow', 'scripts', 'damage-control', 'patterns.yaml'),
+    ];
+    for (const patternsPath of patternsLocations) {
+      if (fs.existsSync(patternsPath)) {
+        const content = fs.readFileSync(patternsPath, 'utf8');
+        // Count pattern entries (lines starting with "  - pattern:")
+        const patternMatches = content.match(/^\s*-\s*pattern:/gm);
+        result.patternCount = patternMatches ? patternMatches.length : 0;
+        break;
       }
-    }
-
-    // Count patterns in config file
-    const patternsPath = path.join(rootDir, '.agileflow', 'config', 'damage-control-patterns.yaml');
-    if (fs.existsSync(patternsPath)) {
-      const content = fs.readFileSync(patternsPath, 'utf8');
-      // Count pattern entries (lines starting with "  - pattern:")
-      const patternMatches = content.match(/^\s*-\s*pattern:/gm);
-      result.patternCount = patternMatches ? patternMatches.length : 0;
     }
   } catch (e) {}
 
