@@ -674,7 +674,9 @@ function handleLoop(rootDir) {
         const result = evaluateDiscretionCondition(condition, rootDir, ctx);
         discretionResults.push({ condition, ...result });
         const marker = result.passed ? `${c.green}✓` : `${c.yellow}⏳`;
-        console.log(`  ${marker} **${condition.replace(/\*\*/g, '')}**: ${result.message}${c.reset}`);
+        console.log(
+          `  ${marker} **${condition.replace(/\*\*/g, '')}**: ${result.message}${c.reset}`
+        );
       }
 
       // Track which conditions have been verified
@@ -688,8 +690,7 @@ function handleLoop(rootDir) {
     }
 
     // Check if all verification modes passed
-    const allDiscretionPassed =
-      !hasDiscretionConditions || discretionResults.every(r => r.passed);
+    const allDiscretionPassed = !hasDiscretionConditions || discretionResults.every(r => r.passed);
     const canComplete =
       testResult.passed &&
       (!visualMode || screenshotResult.passed) &&
@@ -848,7 +849,9 @@ function handleCLI() {
         const verified = loop.conditions_verified
           ? `${c.green}yes${c.reset}`
           : `${c.yellow}no${c.reset}`;
-        console.log(`  Discretion Conditions: ${loop.conditions.length} (All Verified: ${verified})`);
+        console.log(
+          `  Discretion Conditions: ${loop.conditions.length} (All Verified: ${verified})`
+        );
         for (const result of loop.condition_results || []) {
           const mark = result.passed ? `${c.green}✓${c.reset}` : `${c.yellow}⏳${c.reset}`;
           console.log(`    ${mark} ${result.condition.replace(/\*\*/g, '')}`);
@@ -953,8 +956,7 @@ function handleCLI() {
     }
 
     // Get conditions from metadata if not provided via CLI
-    const allConditions =
-      conditions.length > 0 ? conditions : getDiscretionConditions(rootDir);
+    const allConditions = conditions.length > 0 ? conditions : getDiscretionConditions(rootDir);
 
     // Initialize loop state
     const state = getSessionState(rootDir);
