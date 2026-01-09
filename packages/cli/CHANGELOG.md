@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.82.0] - 2026-01-09
+
+### Added
+- Multi-agent orchestration patterns with batch, workflow, and choose commands
+
 ## [2.81.0] - 2026-01-09
 
 ### Added
