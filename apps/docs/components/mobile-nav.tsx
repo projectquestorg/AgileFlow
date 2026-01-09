@@ -121,7 +121,7 @@ export function MobileNav({
           {/* External links */}
           <div className="flex flex-col gap-2">
             <a
-              href="https://agileflow.dev"
+              href="https://agileflow.projectquestorg.com"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
@@ -154,14 +154,14 @@ export function MobileNav({
             <MobileLink
               href="/"
               onOpenChange={setOpen}
-              className="text-xl font-medium"
+              className="py-1 text-xl font-medium"
             >
               Introduction
             </MobileLink>
             <MobileLink
               href="/installation"
               onOpenChange={setOpen}
-              className="text-xl font-medium"
+              className="py-1 text-xl font-medium"
             >
               Installation
             </MobileLink>
