@@ -1,0 +1,118 @@
+# Learnings for agileflow-code-review skill
+# This file accumulates user preferences for code review criteria.
+
+skill: code-review
+version: 1
+last_updated: 2026-01-09T00:00:00.000Z
+
+# =============================================================================
+# PREFERENCES
+# =============================================================================
+preferences:
+  # Initial preferences from project conventions
+  - signal: "Project code review standards"
+    learning: "Use 6-category analysis with severity-based prioritization"
+    confidence: high
+    captured: 2026-01-09T00:00:00.000Z
+
+# =============================================================================
+# CONVENTIONS
+# =============================================================================
+conventions:
+  - "Be constructive, not critical - frame feedback helpfully"
+  - "Always show BAD and GOOD code examples"
+  - "Include Positive Observations section"
+  - "Calculate code quality score (0-100)"
+  - "Never auto-fix without explicit approval"
+  - "Save report to docs/08-project/code-reviews/"
+
+# =============================================================================
+# ANTI-PATTERNS
+# =============================================================================
+anti_patterns:
+  - "Don't use harsh language or blame developers"
+  - "Don't only show bad examples - show fixes too"
+  - "Don't auto-commit fixes without approval"
+  - "Don't treat MEDIUM issues as CRITICAL"
+  - "Don't skip the Positive Observations section"
+
+# =============================================================================
+# SEVERITY_THRESHOLDS
+# =============================================================================
+# Custom severity mappings learned from user feedback
+severity_thresholds:
+  # Default thresholds (can be overridden by learnings)
+  cyclomatic_complexity:
+    acceptable: 10
+    warning: 15
+    critical: 20
+
+  function_length:
+    acceptable: 50
+    warning: 100
+    critical: 150
+
+  file_length:
+    acceptable: 500
+    warning: 1000
+    critical: 1500
+
+  test_coverage:
+    acceptable: 80
+    warning: 60
+    critical: 40
+
+# =============================================================================
+# CUSTOM_RULES
+# =============================================================================
+# Project-specific rules learned from corrections
+custom_rules:
+  # Example: rules that would be learned from corrections
+  # - pattern: "console.log"
+  #   severity: "HIGH"
+  #   reason: "No console.log in production code"
+  #   confidence: high
+  #   captured: 2026-01-09T00:00:00.000Z
+
+# =============================================================================
+# FOCUS_AREAS
+# =============================================================================
+# Weighted focus areas (higher = more important)
+focus_areas:
+  security: 1.5
+  performance: 1.2
+  code_quality: 1.0
+  best_practices: 1.0
+  testing: 1.2
+  documentation: 0.8
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+context:
+  report_location: docs/08-project/code-reviews/
+  score_threshold_block: 60
+  score_threshold_warn: 80
+
+# =============================================================================
+# EXAMPLES
+# =============================================================================
+examples:
+  good_feedback:
+    - "This could be improved by using parameterized queries to prevent SQL injection"
+    - "Consider extracting this into a helper function for reusability"
+    - "Good use of TypeScript strict mode"
+
+  bad_feedback:
+    - "This code is terrible"
+    - "Wrong"
+    - "Fix this"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+metadata:
+  corrections_count: 0
+  approvals_count: 0
+  created: 2026-01-09T00:00:00.000Z
+  sessions: []

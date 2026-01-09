@@ -1,0 +1,71 @@
+# Learnings for agileflow-story-writer skill
+# This file accumulates user preferences for user story formatting.
+
+skill: story-writer
+version: 1
+last_updated: 2026-01-09T00:00:00.000Z
+
+# =============================================================================
+# PREFERENCES
+# =============================================================================
+preferences:
+  # Initial preferences from project conventions
+  - signal: "Project uses AgileFlow story template"
+    learning: "Use standard AgileFlow user story format with frontmatter"
+    confidence: high
+    captured: 2026-01-09T00:00:00.000Z
+
+# =============================================================================
+# CONVENTIONS
+# =============================================================================
+conventions:
+  - "Use 'As a [role], I want [action], So that [benefit]' format"
+  - "Include 2-5 acceptance criteria with Given/When/Then"
+  - "Use P0/P1/P2/P3 priority levels"
+  - "Use Fibonacci estimation (1,2,3,5,8,13)"
+  - "Assign owner based on work type (AG-UI, AG-API, AG-CI, AG-DEVOPS)"
+  - "Include Technical Notes section for implementation guidance"
+  - "Include Definition of Done checklist"
+  - "File naming: US-####-descriptive-name.md"
+
+# =============================================================================
+# ANTI-PATTERNS
+# =============================================================================
+anti_patterns:
+  - "Don't create stories > 13 points (split into multiple)"
+  - "Don't skip acceptance criteria"
+  - "Don't use vague descriptions ('implement feature')"
+  - "Don't forget to update status.json"
+  - "Don't skip the diff-first/YES-NO pattern"
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+context:
+  story_location: docs/06-stories/
+  status_file: docs/09-agents/status.json
+  test_stub_location: docs/07-testing/test-cases/
+  index_file: docs/06-stories/README.md
+
+# =============================================================================
+# EXAMPLES
+# =============================================================================
+examples:
+  good:
+    - "US-0042: User Login Form (clear, specific, testable)"
+    - "US-0015: Add pagination to user list (scoped, estimable)"
+    - "US-0023: Database connection pooling (technical, well-defined)"
+
+  bad:
+    - "US-0099: Implement stuff (vague)"
+    - "US-0100: Fix all bugs (not specific)"
+    - "US-0101: Make it work better (no acceptance criteria)"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+metadata:
+  corrections_count: 0
+  approvals_count: 0
+  created: 2026-01-09T00:00:00.000Z
+  sessions: []
