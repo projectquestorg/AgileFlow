@@ -31,11 +31,16 @@ export function FileTree({ className, children }: FileTreeProps) {
   return (
     <div
       className={cn(
-        "my-6 rounded-lg border bg-muted/30 p-4 font-mono text-sm overflow-x-auto",
+        "not-prose group relative my-4 overflow-hidden rounded-xl border border-border/50 bg-zinc-950 text-sm dark:bg-zinc-900",
         className
       )}
     >
-      <div className="flex flex-col gap-1 min-w-max">{children}</div>
+      <div className="border-b border-border/50 bg-zinc-900/50 px-4 py-2 text-xs text-zinc-400">
+        <span>Project Structure</span>
+      </div>
+      <div className="overflow-x-auto p-4 font-mono text-[13px] leading-relaxed">
+        <div className="flex flex-col gap-0.5 min-w-max">{children}</div>
+      </div>
     </div>
   )
 }
@@ -43,15 +48,15 @@ export function FileTree({ className, children }: FileTreeProps) {
 export function Folder({ name, children, comment }: FolderProps) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2 py-0.5">
-        <FolderIcon className="h-4 w-4 flex-shrink-0 text-[#e8683a]" />
-        <span className="text-foreground whitespace-nowrap">{name}</span>
+      <div className="flex items-center gap-2 py-px">
+        <FolderIcon className="h-3.5 w-3.5 flex-shrink-0 text-[#e8683a]" />
+        <span className="text-zinc-200 whitespace-nowrap">{name}</span>
         {comment && (
-          <span className="text-muted-foreground/50 text-xs ml-2 whitespace-nowrap"># {comment}</span>
+          <span className="text-zinc-500 text-xs whitespace-nowrap">— {comment}</span>
         )}
       </div>
       {children && (
-        <div className="ml-4 flex flex-col gap-0.5 border-l border-muted-foreground/20 pl-3">
+        <div className="ml-3 flex flex-col gap-0 border-l border-zinc-700/50 pl-3">
           {children}
         </div>
       )}
@@ -61,11 +66,11 @@ export function Folder({ name, children, comment }: FolderProps) {
 
 export function File({ name, comment }: FileProps) {
   return (
-    <div className="flex items-center gap-2 py-0.5">
-      <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground/60" />
-      <span className="text-muted-foreground whitespace-nowrap">{name}</span>
+    <div className="flex items-center gap-2 py-px">
+      <FileIcon className="h-3.5 w-3.5 flex-shrink-0 text-zinc-500" />
+      <span className="text-zinc-400 whitespace-nowrap">{name}</span>
       {comment && (
-        <span className="text-muted-foreground/50 text-xs ml-2 whitespace-nowrap"># {comment}</span>
+        <span className="text-zinc-600 text-xs whitespace-nowrap">— {comment}</span>
       )}
     </div>
   )
@@ -90,11 +95,10 @@ export function MoreFiles({ files, totalRemaining, batchSize = 10 }: MoreFilesPr
       {(remainingToReveal > 0 || actualRemaining > files.length) && (
         <button
           onClick={handleExpand}
-          className="flex items-center gap-2 py-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer group"
+          className="flex items-center gap-2 py-px text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer group"
         >
-          <ChevronRight className="h-4 w-4 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
-          <span className="whitespace-nowrap">...</span>
-          <span className="text-xs ml-2 whitespace-nowrap text-muted-foreground/50"># {actualRemaining}+ more</span>
+          <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          <span className="whitespace-nowrap text-zinc-500">+{actualRemaining} more</span>
         </button>
       )}
     </>

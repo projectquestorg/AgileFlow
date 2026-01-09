@@ -37,132 +37,22 @@ npx agileflow@latest update
 
 ## What Gets Installed
 
-### Directory Structure
-
 <FileTree>
-  <Folder name="your-project">
-    <Folder name=".agileflow">
-      <File name="config.json" comment="AgileFlow settings" />
-      <Folder name="agents">
-        <File name="ui.md" />
-        <File name="api.md" />
-        <File name="database.md" />
-        <MoreFiles
-          files={["testing.md", "security.md", "devops.md", "ci.md", "performance.md", "documentation.md", "research.md", "mentor.md", "epic-planner.md", "mobile.md", "analytics.md", "monitoring.md", "integrations.md", "compliance.md", "accessibility.md", "design.md", "datamigration.md", "refactor.md", "qa.md", "adr-writer.md", "readme-updater.md", "product.md"]}
-          totalRemaining={22}
-        />
-      </Folder>
-      <Folder name="commands">
-        <File name="epic.md" />
-        <File name="story.md" />
-        <File name="board.md" />
-        <Folder name="session" comment="Session management commands">
-          <File name="init.md" />
-          <File name="new.md" />
-          <File name="resume.md" />
-          <File name="status.md" />
-          <File name="history.md" />
-          <File name="end.md" />
-        </Folder>
-        <Folder name="context" comment="Context management">
-          <File name="full.md" />
-          <File name="export.md" />
-          <File name="note.md" />
-        </Folder>
-        <Folder name="research" comment="Research commands">
-          <File name="ask.md" />
-          <File name="view.md" />
-          <File name="list.md" />
-          <File name="import.md" />
-        </Folder>
-        <Folder name="skill" comment="Skill management">
-          <File name="create.md" />
-          <File name="list.md" />
-          <File name="edit.md" />
-          <File name="test.md" />
-          <File name="delete.md" />
-        </Folder>
-        <MoreFiles
-          files={["status.md", "sprint.md", "deps.md", "blockers.md", "metrics.md", "velocity.md", "babysit.md", "verify.md", "review.md", "pr.md", "impact.md", "ci.md", "deploy.md", "changelog.md", "packages.md", "tests.md", "adr.md", "docs.md", "readme-sync.md", "assign.md", "handoff.md", "update.md", "retro.md", "feedback.md", "multi-expert.md", "agent.md", "configure.md", "diagnose.md", "validate-expertise.md", "auto.md", "compress.md", "help.md", "baseline.md", "debt.md", "template.md", "whats-new.md", "story-validate.md"]}
-          totalRemaining={37}
-        />
-      </Folder>
-      <Folder name="templates">
-        <File name="story.md" />
-        <File name="epic.md" />
-        <File name="adr.md" />
-        <MoreFiles
-          files={["research.md", "retrospective.md", "sprint-plan.md", "release-notes.md", "test-plan.md"]}
-          totalRemaining={5}
-          batchSize={5}
-        />
-      </Folder>
-    </Folder>
-    <Folder name=".claude">
-      <Folder name="commands">
-        <Folder name="agileflow">
-          <File name="epic.md" />
-          <File name="story.md" />
-          <File name="board.md" />
-          <MoreFiles
-            files={["status.md", "sprint.md", "deps.md", "blockers.md", "metrics.md", "velocity.md", "babysit.md", "verify.md", "review.md", "pr.md"]}
-            totalRemaining={37}
-          />
-        </Folder>
-        <Folder name="agents">
-          <File name="ui.md" />
-          <File name="api.md" />
-          <File name="database.md" />
-          <MoreFiles
-            files={["testing.md", "security.md", "devops.md", "ci.md", "performance.md", "documentation.md", "research.md", "mentor.md", "epic-planner.md", "mobile.md"]}
-            totalRemaining={22}
-          />
-        </Folder>
-      </Folder>
-    </Folder>
-    <Folder name="docs">
-      <Folder name="00-meta" comment="Templates, conventions">
-        <File name="agileflow-metadata.json" />
-        <File name="conventions.md" />
-      </Folder>
-      <Folder name="01-brainstorming" comment="Ideas and sketches">
-        <File name="README.md" />
-      </Folder>
-      <Folder name="02-practices" comment="Testing, git, CI practices">
-        <File name="README.md" />
-      </Folder>
-      <Folder name="03-decisions" comment="ADRs">
-        <File name="README.md" />
-        <File name="ADR-0001-template.md" />
-      </Folder>
-      <Folder name="04-architecture" comment="Architecture documentation">
-        <File name="README.md" />
-      </Folder>
-      <Folder name="05-epics" comment="Epic definitions">
-        <File name="README.md" />
-        <File name="EP-0001.md" comment="Example epic" />
-      </Folder>
-      <Folder name="06-stories" comment="User stories">
-        <File name="README.md" />
-        <File name="US-0001.md" comment="Example story" />
-      </Folder>
-      <Folder name="07-testing" comment="Test cases">
-        <File name="README.md" />
-      </Folder>
-      <Folder name="08-project" comment="Roadmap, backlog">
-        <File name="README.md" />
-        <File name="roadmap.md" />
-      </Folder>
-      <Folder name="09-agents" comment="Agent status, message bus">
-        <File name="status.json" />
-        <Folder name="bus">
-          <File name="log.jsonl" />
-        </Folder>
-      </Folder>
-      <Folder name="10-research" comment="Research notes">
-        <File name="README.md" />
-      </Folder>
-    </Folder>
+  <Folder name=".agileflow" comment="Core installation">
+    <File name="config.json" />
+    <Folder name="agents" comment="28 domain experts" />
+    <Folder name="commands" comment="69 slash commands" />
+    <Folder name="templates" comment="Story, epic, ADR templates" />
+  </Folder>
+  <Folder name=".claude" comment="Claude Code integration">
+    <Folder name="commands/agileflow" comment="Slash commands" />
+  </Folder>
+  <Folder name="docs" comment="Project documentation">
+    <Folder name="03-decisions" comment="ADRs" />
+    <Folder name="05-epics" comment="Epic definitions" />
+    <Folder name="06-stories" comment="User stories" />
+    <Folder name="09-agents" comment="Status tracking" />
+    <Folder name="10-research" comment="Research notes" />
   </Folder>
 </FileTree>
 
