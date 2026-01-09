@@ -23,11 +23,9 @@ import {
 
 export function MobileNav({
   tree,
-  items,
   className,
 }: {
   tree: typeof source.pageTree
-  items: { href: string; label: string }[]
   className?: string
 }) {
   const [open, setOpen] = React.useState(false)
@@ -119,23 +117,9 @@ export function MobileNav({
         alignOffset={16}
         sideOffset={14}
       >
-        <div className="flex flex-col gap-6 overflow-auto px-6 py-6">
-          {/* Header links */}
-          <div className="flex flex-col gap-3">
-            <MobileLink href="/" onOpenChange={setOpen}>
-              Home
-            </MobileLink>
-            {items.map((item, index) => (
-              <MobileLink key={index} href={item.href} onOpenChange={setOpen}>
-                {item.label}
-              </MobileLink>
-            ))}
-          </div>
-
-          <div className="border-t border-border/40" />
-
+        <div className="flex flex-col gap-4 overflow-auto px-6 py-6">
           {/* Navigation */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {/* Direct links */}
             <MobileLink
               href="/"

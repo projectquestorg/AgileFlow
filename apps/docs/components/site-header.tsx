@@ -47,7 +47,6 @@ export function SiteHeader() {
             {/* Mobile menu - hamburger only, on the right */}
             <MobileNav
               tree={pageTree}
-              items={siteConfig.navItems}
               className="flex lg:hidden"
             />
           </div>
