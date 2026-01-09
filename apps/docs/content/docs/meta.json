@@ -1,8 +1,12 @@
 {
   "root": true,
+  "title": "AgileFlow",
   "pages": [
     "index",
     "installation",
+    "---Getting Started---",
+    "features",
+    "---Reference---",
     "commands",
     "agents"
   ]
