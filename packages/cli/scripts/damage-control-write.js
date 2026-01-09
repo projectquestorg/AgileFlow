@@ -48,7 +48,7 @@ function parseSimpleYAML(content) {
   const config = {
     zeroAccessPaths: [],
     readOnlyPaths: [],
-    noDeletePaths: []
+    noDeletePaths: [],
   };
 
   let currentSection = null;
@@ -86,7 +86,7 @@ function loadPatterns(projectRoot) {
   const configPaths = [
     path.join(projectRoot, '.agileflow/config/damage-control-patterns.yaml'),
     path.join(projectRoot, '.agileflow/config/damage-control-patterns.yml'),
-    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml')
+    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml'),
   ];
 
   for (const configPath of configPaths) {
@@ -162,7 +162,7 @@ function validatePath(filePath, config) {
     return {
       action: 'block',
       reason: `Zero-access path: ${zeroMatch}`,
-      detail: 'This file is protected and cannot be accessed'
+      detail: 'This file is protected and cannot be accessed',
     };
   }
 
@@ -172,7 +172,7 @@ function validatePath(filePath, config) {
     return {
       action: 'block',
       reason: `Read-only path: ${readOnlyMatch}`,
-      detail: 'This file is read-only and cannot be written to'
+      detail: 'This file is read-only and cannot be written to',
     };
   }
 

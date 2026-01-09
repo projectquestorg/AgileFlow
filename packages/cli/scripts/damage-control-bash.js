@@ -41,7 +41,7 @@ function parseSimpleYAML(content) {
   const config = {
     bashToolPatterns: [],
     askPatterns: [],
-    agileflowProtections: []
+    agileflowProtections: [],
   };
 
   let currentSection = null;
@@ -69,13 +69,22 @@ function parseSimpleYAML(content) {
       currentPattern = null;
     } else if (trimmed.startsWith('- pattern:') && currentSection) {
       // New pattern entry
-      const patternValue = trimmed.replace('- pattern:', '').trim().replace(/^["']|["']$/g, '');
+      const patternValue = trimmed
+        .replace('- pattern:', '')
+        .trim()
+        .replace(/^["']|["']$/g, '');
       currentPattern = { pattern: patternValue };
       config[currentSection].push(currentPattern);
     } else if (trimmed.startsWith('reason:') && currentPattern) {
-      currentPattern.reason = trimmed.replace('reason:', '').trim().replace(/^["']|["']$/g, '');
+      currentPattern.reason = trimmed
+        .replace('reason:', '')
+        .trim()
+        .replace(/^["']|["']$/g, '');
     } else if (trimmed.startsWith('flags:') && currentPattern) {
-      currentPattern.flags = trimmed.replace('flags:', '').trim().replace(/^["']|["']$/g, '');
+      currentPattern.flags = trimmed
+        .replace('flags:', '')
+        .trim()
+        .replace(/^["']|["']$/g, '');
     }
   }
 
@@ -89,7 +98,7 @@ function loadPatterns(projectRoot) {
   const configPaths = [
     path.join(projectRoot, '.agileflow/config/damage-control-patterns.yaml'),
     path.join(projectRoot, '.agileflow/config/damage-control-patterns.yml'),
-    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml')
+    path.join(projectRoot, '.agileflow/templates/damage-control-patterns.yaml'),
   ];
 
   for (const configPath of configPaths) {
@@ -128,14 +137,14 @@ function validateCommand(command, config) {
   // Check blocked patterns (bashToolPatterns + agileflowProtections)
   const blockedPatterns = [
     ...(config.bashToolPatterns || []),
-    ...(config.agileflowProtections || [])
+    ...(config.agileflowProtections || []),
   ];
 
   for (const rule of blockedPatterns) {
     if (matchesPattern(command, rule)) {
       return {
         action: 'block',
-        reason: rule.reason || 'Command blocked by damage control'
+        reason: rule.reason || 'Command blocked by damage control',
       };
     }
   }
@@ -145,7 +154,7 @@ function validateCommand(command, config) {
     if (matchesPattern(command, rule)) {
       return {
         action: 'ask',
-        reason: rule.reason || 'Please confirm this command'
+        reason: rule.reason || 'Please confirm this command',
       };
     }
   }
@@ -186,16 +195,20 @@ function main() {
         case 'block':
           // Output error message and block
           console.error(`${c.coral}[BLOCKED]${c.reset} ${result.reason}`);
-          console.error(`${c.dim}Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}${c.reset}`);
+          console.error(
+            `${c.dim}Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}${c.reset}`
+          );
           process.exit(2);
           break;
 
         case 'ask':
           // Output JSON to trigger user confirmation
-          console.log(JSON.stringify({
-            result: 'ask',
-            message: result.reason
-          }));
+          console.log(
+            JSON.stringify({
+              result: 'ask',
+              message: result.reason,
+            })
+          );
           process.exit(0);
           break;
 

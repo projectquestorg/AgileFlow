@@ -64,7 +64,9 @@ describe('ClaudeCodeSetup', () => {
 
       expect(result.success).toBe(true);
       expect(await fs.pathExists(path.join(tempDir, '.claude'))).toBe(true);
-      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'agileflow'))).toBe(true);
+      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'agileflow'))).toBe(
+        true
+      );
     });
 
     it('installs commands from agileflow directory', async () => {
@@ -104,14 +106,18 @@ describe('ClaudeCodeSetup', () => {
     it('handles nested command directories', async () => {
       // Create nested command structure
       await fs.ensureDir(path.join(agileflowDir, 'commands', 'session'));
-      await fs.writeFile(
-        path.join(agileflowDir, 'commands', 'session', 'new.md'),
-        '# Session New'
-      );
+      await fs.writeFile(path.join(agileflowDir, 'commands', 'session', 'new.md'), '# Session New');
 
       await claudeSetup.setup(tempDir, agileflowDir, { skipDamageControl: true });
 
-      const nestedPath = path.join(tempDir, '.claude', 'commands', 'agileflow', 'session', 'new.md');
+      const nestedPath = path.join(
+        tempDir,
+        '.claude',
+        'commands',
+        'agileflow',
+        'session',
+        'new.md'
+      );
       expect(await fs.pathExists(nestedPath)).toBe(true);
     });
   });
@@ -133,10 +139,7 @@ describe('ClaudeCodeSetup', () => {
         path.join(damageControlDir, 'write-tool-damage-control.js'),
         '// write damage control'
       );
-      await fs.writeFile(
-        path.join(damageControlDir, 'patterns.yaml'),
-        'bashToolPatterns: []'
-      );
+      await fs.writeFile(path.join(damageControlDir, 'patterns.yaml'), 'bashToolPatterns: []');
     });
 
     it('copies damage control scripts to .claude/hooks', async () => {
@@ -208,9 +211,7 @@ describe('ClaudeCodeSetup', () => {
 
       await claudeSetup.setupDamageControlHooks(claudeDir);
 
-      const settings = JSON.parse(
-        await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8')
-      );
+      const settings = JSON.parse(await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
 
       const matchers = settings.hooks.PreToolUse.map(h => h.matcher);
       expect(matchers).toContain('Bash');
@@ -228,9 +229,7 @@ describe('ClaudeCodeSetup', () => {
 
       await claudeSetup.setupDamageControlHooks(claudeDir);
 
-      const settings = JSON.parse(
-        await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8')
-      );
+      const settings = JSON.parse(await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
       expect(settings.existingKey).toBe('value');
       expect(settings.hooks).toBeDefined();
     });
@@ -243,9 +242,7 @@ describe('ClaudeCodeSetup', () => {
       await claudeSetup.setupDamageControlHooks(claudeDir);
       await claudeSetup.setupDamageControlHooks(claudeDir);
 
-      const settings = JSON.parse(
-        await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8')
-      );
+      const settings = JSON.parse(await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
 
       // Should only have 3 PreToolUse entries, not 6
       expect(settings.hooks.PreToolUse).toHaveLength(3);
@@ -259,9 +256,7 @@ describe('ClaudeCodeSetup', () => {
       // Should not throw, should create valid settings
       await expect(claudeSetup.setupDamageControlHooks(claudeDir)).resolves.not.toThrow();
 
-      const settings = JSON.parse(
-        await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8')
-      );
+      const settings = JSON.parse(await fs.readFile(path.join(claudeDir, 'settings.json'), 'utf8'));
       expect(settings.hooks).toBeDefined();
     });
   });
@@ -274,8 +269,12 @@ describe('ClaudeCodeSetup', () => {
 
       await claudeSetup.cleanup(tempDir);
 
-      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'agileflow'))).toBe(false);
-      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'AgileFlow'))).toBe(false);
+      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'agileflow'))).toBe(
+        false
+      );
+      expect(await fs.pathExists(path.join(tempDir, '.claude', 'commands', 'AgileFlow'))).toBe(
+        false
+      );
     });
   });
 

@@ -37,24 +37,24 @@ const c = {
   brightWhite: '\x1b[97m',
 
   // 256-color palette (vibrant, modern look)
-  mintGreen: '\x1b[38;5;158m',    // Healthy/success states
-  peach: '\x1b[38;5;215m',        // Warning states
-  coral: '\x1b[38;5;203m',        // Critical/error states
-  lightGreen: '\x1b[38;5;194m',   // Session healthy
-  lightYellow: '\x1b[38;5;228m',  // Session warning
-  lightPink: '\x1b[38;5;210m',    // Session critical
-  skyBlue: '\x1b[38;5;117m',      // Directories/paths, ready states
-  lavender: '\x1b[38;5;147m',     // Model info, story IDs
-  softGold: '\x1b[38;5;222m',     // Cost/money
-  teal: '\x1b[38;5;80m',          // Pending states
-  slate: '\x1b[38;5;103m',        // Secondary info
-  rose: '\x1b[38;5;211m',         // Blocked/critical accent
-  amber: '\x1b[38;5;214m',        // WIP/in-progress accent
-  powder: '\x1b[38;5;153m',       // Labels/headers
+  mintGreen: '\x1b[38;5;158m', // Healthy/success states
+  peach: '\x1b[38;5;215m', // Warning states
+  coral: '\x1b[38;5;203m', // Critical/error states
+  lightGreen: '\x1b[38;5;194m', // Session healthy
+  lightYellow: '\x1b[38;5;228m', // Session warning
+  lightPink: '\x1b[38;5;210m', // Session critical
+  skyBlue: '\x1b[38;5;117m', // Directories/paths, ready states
+  lavender: '\x1b[38;5;147m', // Model info, story IDs
+  softGold: '\x1b[38;5;222m', // Cost/money
+  teal: '\x1b[38;5;80m', // Pending states
+  slate: '\x1b[38;5;103m', // Secondary info
+  rose: '\x1b[38;5;211m', // Blocked/critical accent
+  amber: '\x1b[38;5;214m', // WIP/in-progress accent
+  powder: '\x1b[38;5;153m', // Labels/headers
 
   // Brand color (#e8683a - burnt orange/terracotta)
   brand: '\x1b[38;2;232;104;58m',
-  orange: '\x1b[38;2;232;104;58m',  // Alias for brand color
+  orange: '\x1b[38;2;232;104;58m', // Alias for brand color
 
   // Background colors
   bgRed: '\x1b[41m',
@@ -68,27 +68,27 @@ const c = {
  */
 const box = {
   // Corners (rounded)
-  tl: '╭',  // top-left
-  tr: '╮',  // top-right
-  bl: '╰',  // bottom-left
-  br: '╯',  // bottom-right
+  tl: '╭', // top-left
+  tr: '╮', // top-right
+  bl: '╰', // bottom-left
+  br: '╯', // bottom-right
 
   // Lines
-  h: '─',   // horizontal
-  v: '│',   // vertical
+  h: '─', // horizontal
+  v: '│', // vertical
 
   // T-junctions
-  lT: '├',  // left T
-  rT: '┤',  // right T
-  tT: '┬',  // top T
-  bT: '┴',  // bottom T
+  lT: '├', // left T
+  rT: '┤', // right T
+  tT: '┬', // top T
+  bT: '┴', // bottom T
 
   // Cross
   cross: '┼',
 
   // Double line variants
-  dh: '═',  // double horizontal
-  dv: '║',  // double vertical
+  dh: '═', // double horizontal
+  dv: '║', // double vertical
 };
 
 /**

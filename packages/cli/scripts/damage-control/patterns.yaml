@@ -20,87 +20,87 @@
 bashToolPatterns:
   # Recursive/force deletion
   - pattern: '\brm\s+-[rRf]'
-    reason: "rm with recursive or force flags can destroy entire directories"
+    reason: 'rm with recursive or force flags can destroy entire directories'
 
   - pattern: '\brm\s+.*--no-preserve-root'
-    reason: "rm with --no-preserve-root is catastrophically dangerous"
+    reason: 'rm with --no-preserve-root is catastrophically dangerous'
 
   - pattern: '\brm\s+-rf\s+/'
-    reason: "rm -rf on root directory would destroy the entire system"
+    reason: 'rm -rf on root directory would destroy the entire system'
 
   # SQL destructive commands without WHERE clause
   - pattern: 'DELETE\s+FROM\s+\w+\s*;'
-    reason: "DELETE without WHERE clause would delete all records"
+    reason: 'DELETE without WHERE clause would delete all records'
 
   - pattern: 'TRUNCATE\s+(TABLE\s+)?\w+'
-    reason: "TRUNCATE removes all data from table"
+    reason: 'TRUNCATE removes all data from table'
 
   - pattern: 'DROP\s+(TABLE|DATABASE|SCHEMA|INDEX)'
-    reason: "DROP commands permanently destroy database objects"
+    reason: 'DROP commands permanently destroy database objects'
 
   # Git force operations
   - pattern: 'git\s+push\s+.*--force'
-    reason: "Force push can overwrite remote history"
+    reason: 'Force push can overwrite remote history'
     ask: true
 
   - pattern: 'git\s+push\s+.*-f\b'
-    reason: "Force push can overwrite remote history"
+    reason: 'Force push can overwrite remote history'
     ask: true
 
   - pattern: 'git\s+reset\s+--hard'
-    reason: "Hard reset discards uncommitted changes"
+    reason: 'Hard reset discards uncommitted changes'
     ask: true
 
   # Format/wipe operations
   - pattern: '\bmkfs\b'
-    reason: "mkfs formats filesystems, destroying all data"
+    reason: 'mkfs formats filesystems, destroying all data'
 
   - pattern: '\bdd\s+.*of=/dev/'
-    reason: "dd writing to device can destroy disk data"
+    reason: 'dd writing to device can destroy disk data'
 
   - pattern: '\bshred\b'
-    reason: "shred permanently destroys file data"
+    reason: 'shred permanently destroys file data'
 
   # Credential/secret exposure
   - pattern: 'cat\s+.*\.env'
-    reason: "Displaying .env may expose secrets"
+    reason: 'Displaying .env may expose secrets'
     ask: true
 
   - pattern: 'cat\s+.*/\.ssh/'
-    reason: "Displaying SSH keys is a security risk"
+    reason: 'Displaying SSH keys is a security risk'
 
   - pattern: 'cat\s+.*/credentials'
-    reason: "Displaying credentials files is a security risk"
+    reason: 'Displaying credentials files is a security risk'
 
   # Cloud CLI destructive operations
   - pattern: 'aws\s+s3\s+rm\s+--recursive'
-    reason: "Recursive S3 delete can destroy entire buckets"
+    reason: 'Recursive S3 delete can destroy entire buckets'
     ask: true
 
   - pattern: 'aws\s+ec2\s+terminate-instances'
-    reason: "Terminating EC2 instances is irreversible"
+    reason: 'Terminating EC2 instances is irreversible'
     ask: true
 
   - pattern: 'gcloud\s+.*delete'
-    reason: "GCloud delete operations may be destructive"
+    reason: 'GCloud delete operations may be destructive'
     ask: true
 
   # Docker cleanup commands
   - pattern: 'docker\s+system\s+prune\s+-a'
-    reason: "Docker prune -a removes all unused images"
+    reason: 'Docker prune -a removes all unused images'
     ask: true
 
   - pattern: 'docker\s+volume\s+rm'
-    reason: "Docker volume removal may delete persistent data"
+    reason: 'Docker volume removal may delete persistent data'
     ask: true
 
   # npm/package manager dangerous commands
   - pattern: 'npm\s+unpublish'
-    reason: "npm unpublish can break dependent packages"
+    reason: 'npm unpublish can break dependent packages'
     ask: true
 
   - pattern: 'npm\s+deprecate'
-    reason: "npm deprecate affects package visibility"
+    reason: 'npm deprecate affects package visibility'
     ask: true
 
 # ============================================================================
@@ -110,19 +110,19 @@ bashToolPatterns:
 
 askPatterns:
   - pattern: 'DELETE\s+FROM\s+\w+\s+WHERE'
-    reason: "Deleting specific records - confirm data is correct"
+    reason: 'Deleting specific records - confirm data is correct'
 
   - pattern: 'UPDATE\s+\w+\s+SET'
-    reason: "Updating records - confirm scope is correct"
+    reason: 'Updating records - confirm scope is correct'
 
   - pattern: 'npm\s+publish'
-    reason: "Publishing to npm is permanent"
+    reason: 'Publishing to npm is permanent'
 
   - pattern: 'git\s+tag\s+-d'
-    reason: "Deleting git tags"
+    reason: 'Deleting git tags'
 
   - pattern: 'kubectl\s+delete'
-    reason: "Kubernetes delete operations"
+    reason: 'Kubernetes delete operations'
 
 # ============================================================================
 # PATH PROTECTION
@@ -193,17 +193,17 @@ noDeletePaths:
 agileflowPatterns:
   # Protect AgileFlow infrastructure
   - pattern: 'rm.*\.agileflow'
-    reason: "Deleting .agileflow would break AgileFlow installation"
+    reason: 'Deleting .agileflow would break AgileFlow installation'
 
   - pattern: 'rm.*\.claude'
-    reason: "Deleting .claude would break Claude Code configuration"
+    reason: 'Deleting .claude would break Claude Code configuration'
 
   - pattern: 'rm.*status\.json'
-    reason: "Deleting status.json would lose story tracking data"
+    reason: 'Deleting status.json would lose story tracking data'
 
   # Dangerous npm operations in AgileFlow context
   - pattern: 'npm\s+uninstall\s+agileflow'
-    reason: "Uninstalling AgileFlow - confirm this is intentional"
+    reason: 'Uninstalling AgileFlow - confirm this is intentional'
     ask: true
 
 # ============================================================================
@@ -224,4 +224,4 @@ config:
 
   # Enable/disable prompt hooks (AI-based evaluation)
   promptHooksEnabled: false
-  promptHookMessage: "Evaluate if this command could cause irreversible damage. Block if dangerous."
+  promptHookMessage: 'Evaluate if this command could cause irreversible damage. Block if dangerous.'

@@ -9,7 +9,8 @@ const fs = require('fs');
 
 class Dashboard {
   constructor(options = {}) {
-    this.statusPath = options.statusPath || path.join(process.cwd(), 'docs', '09-agents', 'status.json');
+    this.statusPath =
+      options.statusPath || path.join(process.cwd(), 'docs', '09-agents', 'status.json');
     this.data = null;
   }
 
@@ -29,9 +30,7 @@ class Dashboard {
 
   getStories() {
     if (!this.data) return [];
-    return Object.values(this.data).filter(
-      s => s && typeof s === 'object' && (s.id || s.story_id)
-    );
+    return Object.values(this.data).filter(s => s && typeof s === 'object' && (s.id || s.story_id));
   }
 
   getStats() {

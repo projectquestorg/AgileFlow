@@ -14,7 +14,9 @@ const { c: colors } = require('../../../lib/colors');
 
 function showBetaWarning() {
   console.log('');
-  console.log(`${colors.bgYellow}${colors.bold}  BETA  ${colors.reset} ${colors.yellow}This feature is in beta and not yet stable${colors.reset}`);
+  console.log(
+    `${colors.bgYellow}${colors.bold}  BETA  ${colors.reset} ${colors.yellow}This feature is in beta and not yet stable${colors.reset}`
+  );
   console.log(`${colors.dim}        Expect bugs and incomplete features${colors.reset}`);
   console.log('');
 }
@@ -77,13 +79,17 @@ async function showDashboard() {
   const status = await loadStatus();
 
   if (!status) {
-    console.log(`${colors.dim}  No status.json found. Run /agileflow:story to create stories.${colors.reset}`);
+    console.log(
+      `${colors.dim}  No status.json found. Run /agileflow:story to create stories.${colors.reset}`
+    );
     console.log('');
     return;
   }
 
   // Count stories by status
-  const stories = Object.values(status).filter(s => s && typeof s === 'object' && (s.id || s.story_id));
+  const stories = Object.values(status).filter(
+    s => s && typeof s === 'object' && (s.id || s.story_id)
+  );
   const counts = {
     in_progress: stories.filter(s => ['in_progress', 'in-progress'].includes(s.status)).length,
     blocked: stories.filter(s => s.status === 'blocked').length,
@@ -97,7 +103,9 @@ async function showDashboard() {
   // Summary
   console.log(`${colors.bold}  Summary${colors.reset}`);
   console.log(`  ────────────────────────────────────────────`);
-  console.log(`  ${colors.yellow}In Progress:${colors.reset} ${counts.in_progress}   ${colors.red}Blocked:${colors.reset} ${counts.blocked}   ${colors.cyan}Ready:${colors.reset} ${counts.ready}   ${colors.green}Done:${colors.reset} ${counts.completed}`);
+  console.log(
+    `  ${colors.yellow}In Progress:${colors.reset} ${counts.in_progress}   ${colors.red}Blocked:${colors.reset} ${counts.blocked}   ${colors.cyan}Ready:${colors.reset} ${counts.ready}   ${colors.green}Done:${colors.reset} ${counts.completed}`
+  );
   console.log(`  ${colors.dim}Completion: ${completionPct}%${colors.reset}`);
   console.log('');
 
@@ -126,7 +134,9 @@ async function showDashboard() {
   // Ready Stories (up to 5)
   const readyStories = stories.filter(s => s.status === 'ready').slice(0, 5);
   if (readyStories.length > 0) {
-    console.log(`${colors.bold}  ${colors.cyan}Ready for Work${colors.reset} ${colors.dim}(showing ${readyStories.length} of ${counts.ready})${colors.reset}`);
+    console.log(
+      `${colors.bold}  ${colors.cyan}Ready for Work${colors.reset} ${colors.dim}(showing ${readyStories.length} of ${counts.ready})${colors.reset}`
+    );
     console.log(`  ────────────────────────────────────────────`);
     readyStories.forEach(story => {
       console.log(formatStory(story));
@@ -151,7 +161,9 @@ async function main() {
     console.log('  npx agileflow start           Show dashboard');
     console.log('  npx agileflow start --help    Show this help');
     console.log('');
-    console.log(`${colors.dim}This is a beta feature. For stable commands, use Claude Code slash commands.${colors.reset}`);
+    console.log(
+      `${colors.dim}This is a beta feature. For stable commands, use Claude Code slash commands.${colors.reset}`
+    );
     return;
   }
 

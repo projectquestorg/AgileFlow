@@ -165,8 +165,10 @@ describe('obtain-context.js', () => {
         fs.readFileSync(path.join(testDir, 'docs', '09-agents', 'session-state.json'), 'utf8')
       );
 
-      expect(updated.active_command).toBeDefined();
-      expect(updated.active_command.name).toBe('mentor');
+      // Uses active_commands array (not legacy active_command object)
+      expect(updated.active_commands).toBeDefined();
+      expect(Array.isArray(updated.active_commands)).toBe(true);
+      expect(updated.active_commands.some(c => c.name === 'mentor')).toBe(true);
     });
   });
 

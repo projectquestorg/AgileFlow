@@ -97,7 +97,7 @@ function getImageFiles(dir) {
 
   try {
     const files = fs.readdirSync(dir);
-    return files.filter((file) => {
+    return files.filter(file => {
       const ext = path.extname(file).toLowerCase();
       return imageExtensions.includes(ext);
     });
@@ -172,7 +172,9 @@ function formatResult(result, options) {
 
   if (result.success) {
     console.log(`${c.green}${c.bold}All screenshots verified${c.reset}`);
-    console.log(`${c.dim}${result.verified}/${result.total} screenshots have 'verified-' prefix${c.reset}`);
+    console.log(
+      `${c.dim}${result.verified}/${result.total} screenshots have 'verified-' prefix${c.reset}`
+    );
   } else {
     console.log(`${c.red}${c.bold}Unverified screenshots found${c.reset}`);
     console.log(`${c.dim}${result.verified}/${result.total} verified${c.reset}`);

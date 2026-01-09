@@ -114,27 +114,9 @@ function parsePathRules(content) {
  */
 function getDefaultPathRules() {
   return {
-    zeroAccessPaths: [
-      '~/.ssh/',
-      '~/.aws/credentials',
-      '.env',
-      '.env.local',
-      '.env.production',
-    ],
-    readOnlyPaths: [
-      '/etc/',
-      '~/.bashrc',
-      '~/.zshrc',
-      'package-lock.json',
-      'yarn.lock',
-      '.git/',
-    ],
-    noDeletePaths: [
-      '.agileflow/',
-      '.claude/',
-      'docs/09-agents/status.json',
-      'CLAUDE.md',
-    ],
+    zeroAccessPaths: ['~/.ssh/', '~/.aws/credentials', '.env', '.env.local', '.env.production'],
+    readOnlyPaths: ['/etc/', '~/.bashrc', '~/.zshrc', 'package-lock.json', 'yarn.lock', '.git/'],
+    noDeletePaths: ['.agileflow/', '.claude/', 'docs/09-agents/status.json', 'CLAUDE.md'],
   };
 }
 
@@ -247,9 +229,7 @@ function main() {
   }
 
   // Resolve to absolute path
-  const absolutePath = path.isAbsolute(filePath)
-    ? filePath
-    : path.join(projectDir, filePath);
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(projectDir, filePath);
 
   // Load rules
   const rules = loadPathRules(projectDir);

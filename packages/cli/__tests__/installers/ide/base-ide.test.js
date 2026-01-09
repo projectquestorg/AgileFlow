@@ -209,10 +209,7 @@ describe('BaseIdeSetup', () => {
     });
 
     it('returns empty array for non-existing directory', async () => {
-      const results = await baseSetup.scanDirectory(
-        path.join(tempDir, 'non-existing'),
-        '.md'
-      );
+      const results = await baseSetup.scanDirectory(path.join(tempDir, 'non-existing'), '.md');
       expect(results).toEqual([]);
     });
 
@@ -240,11 +237,7 @@ describe('BaseIdeSetup', () => {
       await fs.writeFile(path.join(sourceDir, 'cmd1.md'), '# Command 1');
       await fs.writeFile(path.join(sourceDir, 'cmd2.md'), '# Command 2');
 
-      const result = await baseSetup.installCommandsRecursive(
-        sourceDir,
-        targetDir,
-        agileflowDir
-      );
+      const result = await baseSetup.installCommandsRecursive(sourceDir, targetDir, agileflowDir);
 
       expect(result.commands).toBe(2);
       expect(await fs.pathExists(path.join(targetDir, 'cmd1.md'))).toBe(true);
@@ -261,11 +254,7 @@ describe('BaseIdeSetup', () => {
       await fs.writeFile(path.join(sourceDir, 'root.md'), '# Root');
       await fs.writeFile(path.join(sourceDir, 'subdir', 'nested.md'), '# Nested');
 
-      const result = await baseSetup.installCommandsRecursive(
-        sourceDir,
-        targetDir,
-        agileflowDir
-      );
+      const result = await baseSetup.installCommandsRecursive(sourceDir, targetDir, agileflowDir);
 
       expect(result.commands).toBe(2);
       expect(result.subdirs).toBe(1);
@@ -311,11 +300,7 @@ describe('BaseIdeSetup', () => {
       await fs.writeFile(path.join(sourceDir, 'cmd.md'), '# Command');
       await fs.writeFile(path.join(sourceDir, 'ignore.txt'), 'ignored');
 
-      const result = await baseSetup.installCommandsRecursive(
-        sourceDir,
-        targetDir,
-        agileflowDir
-      );
+      const result = await baseSetup.installCommandsRecursive(sourceDir, targetDir, agileflowDir);
 
       expect(result.commands).toBe(1);
       expect(await fs.pathExists(path.join(targetDir, 'ignore.txt'))).toBe(false);

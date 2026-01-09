@@ -302,8 +302,8 @@ function checkDamageControl(rootDir) {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
         // Check for damage-control hooks
-        const hasDamageControlHooks = settings.hooks.PreToolUse.some(
-          h => h.hooks?.some(hk => hk.command?.includes('damage-control'))
+        const hasDamageControlHooks = settings.hooks.PreToolUse.some(h =>
+          h.hooks?.some(hk => hk.command?.includes('damage-control'))
         );
         if (hasDamageControlHooks) {
           result.configured = true;
@@ -315,8 +315,8 @@ function checkDamageControl(rootDir) {
           result.hooksCount = dcHooks.length;
 
           // Check for enhanced mode (has prompt hook)
-          const hasPromptHook = settings.hooks.PreToolUse.some(
-            h => h.hooks?.some(hk => hk.type === 'prompt')
+          const hasPromptHook = settings.hooks.PreToolUse.some(h =>
+            h.hooks?.some(hk => hk.type === 'prompt')
           );
           if (hasPromptHook) {
             result.level = 'enhanced';
@@ -684,14 +684,24 @@ function formatTable(
   // Show update available notification (using vibrant colors)
   if (updateInfo.available && updateInfo.latest && !updateInfo.justUpdated) {
     lines.push(fullDivider());
-    lines.push(fullRow(`${c.amber}↑${c.reset} Update available: ${c.softGold}v${updateInfo.latest}${c.reset}`, ''));
+    lines.push(
+      fullRow(
+        `${c.amber}↑${c.reset} Update available: ${c.softGold}v${updateInfo.latest}${c.reset}`,
+        ''
+      )
+    );
     lines.push(fullRow(`  Run: ${c.skyBlue}npx agileflow update${c.reset}`, ''));
   }
 
   // Show "just updated" changelog
   if (updateInfo.justUpdated && updateInfo.changelog && updateInfo.changelog.length > 0) {
     lines.push(fullDivider());
-    lines.push(fullRow(`${c.mintGreen}✨${c.reset} What's new in ${c.softGold}v${info.version}${c.reset}:`, ''));
+    lines.push(
+      fullRow(
+        `${c.mintGreen}✨${c.reset} What's new in ${c.softGold}v${info.version}${c.reset}:`,
+        ''
+      )
+    );
     for (const entry of updateInfo.changelog.slice(0, 2)) {
       lines.push(fullRow(`  ${c.teal}•${c.reset} ${truncate(entry, W - 6)}`, ''));
     }
@@ -750,7 +760,9 @@ function formatTable(
 
   // Session cleanup
   const sessionStatus = session.cleared > 0 ? `cleared ${session.cleared} command(s)` : `clean`;
-  lines.push(row('Session state', sessionStatus, c.lavender, session.cleared > 0 ? c.mintGreen : c.dim));
+  lines.push(
+    row('Session state', sessionStatus, c.lavender, session.cleared > 0 ? c.mintGreen : c.dim)
+  );
 
   // PreCompact status with version check
   if (precompact.configured && precompact.scriptExists) {
@@ -802,7 +814,8 @@ function formatTable(
       lines.push(row('Damage control', '⚠️ scripts missing', c.coral, c.coral));
     } else {
       const levelStr = damageControl.level || 'standard';
-      const patternStr = damageControl.patternCount > 0 ? `${damageControl.patternCount} patterns` : '';
+      const patternStr =
+        damageControl.patternCount > 0 ? `${damageControl.patternCount} patterns` : '';
       const dcStatus = `🛡️ ${levelStr}${patternStr ? ` (${patternStr})` : ''}`;
       lines.push(row('Damage control', dcStatus, c.lavender, c.mintGreen));
     }
@@ -827,7 +840,9 @@ function formatTable(
   }
 
   // Last commit (colorful like obtain-context)
-  lines.push(row('Last commit', `${c.peach}${info.commit}${c.reset} ${info.lastCommit}`, c.lavender, ''));
+  lines.push(
+    row('Last commit', `${c.peach}${info.commit}${c.reset} ${info.lastCommit}`, c.lavender, '')
+  );
 
   lines.push(bottomBorder);
 
@@ -868,15 +883,28 @@ async function main() {
   }
 
   console.log(
-    formatTable(info, archival, session, precompact, parallelSessions, updateInfo, expertise, damageControl)
+    formatTable(
+      info,
+      archival,
+      session,
+      precompact,
+      parallelSessions,
+      updateInfo,
+      expertise,
+      damageControl
+    )
   );
 
   // Show warning and tip if other sessions are active (vibrant colors)
   if (parallelSessions.otherActive > 0) {
     console.log('');
     console.log(`${c.amber}⚠️  Other Claude session(s) active in this repo.${c.reset}`);
-    console.log(`${c.slate}   Run ${c.skyBlue}/agileflow:session:status${c.reset}${c.slate} to see all sessions.${c.reset}`);
-    console.log(`${c.slate}   Run ${c.skyBlue}/agileflow:session:new${c.reset}${c.slate} to create isolated workspace.${c.reset}`);
+    console.log(
+      `${c.slate}   Run ${c.skyBlue}/agileflow:session:status${c.reset}${c.slate} to see all sessions.${c.reset}`
+    );
+    console.log(
+      `${c.slate}   Run ${c.skyBlue}/agileflow:session:new${c.reset}${c.slate} to create isolated workspace.${c.reset}`
+    );
   }
 }
 

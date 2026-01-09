@@ -111,7 +111,11 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     await this.ensureDir(damageControlTarget);
 
     // Copy hook scripts
-    const scripts = ['bash-tool-damage-control.js', 'edit-tool-damage-control.js', 'write-tool-damage-control.js'];
+    const scripts = [
+      'bash-tool-damage-control.js',
+      'edit-tool-damage-control.js',
+      'write-tool-damage-control.js',
+    ];
     for (const script of scripts) {
       const src = path.join(damageControlSource, script);
       const dest = path.join(damageControlTarget, script);
@@ -162,28 +166,37 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     const damageControlHooks = [
       {
         matcher: 'Bash',
-        hooks: [{
-          type: 'command',
-          command: 'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/bash-tool-damage-control.js',
-          timeout: 5000
-        }]
+        hooks: [
+          {
+            type: 'command',
+            command:
+              'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/bash-tool-damage-control.js',
+            timeout: 5000,
+          },
+        ],
       },
       {
         matcher: 'Edit',
-        hooks: [{
-          type: 'command',
-          command: 'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/edit-tool-damage-control.js',
-          timeout: 5000
-        }]
+        hooks: [
+          {
+            type: 'command',
+            command:
+              'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/edit-tool-damage-control.js',
+            timeout: 5000,
+          },
+        ],
       },
       {
         matcher: 'Write',
-        hooks: [{
-          type: 'command',
-          command: 'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/write-tool-damage-control.js',
-          timeout: 5000
-        }]
-      }
+        hooks: [
+          {
+            type: 'command',
+            command:
+              'node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/write-tool-damage-control.js',
+            timeout: 5000,
+          },
+        ],
+      },
     ];
 
     // Merge with existing hooks (don't duplicate)
@@ -199,8 +212,8 @@ class ClaudeCodeSetup extends BaseIdeSetup {
 
         // Check if damage control hook already exists
         const dcHook = newHook.hooks[0];
-        const hasDcHook = existing.hooks.some(h =>
-          h.type === 'command' && h.command && h.command.includes('damage-control')
+        const hasDcHook = existing.hooks.some(
+          h => h.type === 'command' && h.command && h.command.includes('damage-control')
         );
 
         if (!hasDcHook) {

@@ -156,12 +156,12 @@ function formatOutput(info, asJson = false, compact = false) {
     brand: '\x1b[38;2;232;104;58m', // #e8683a - AgileFlow brand orange
 
     // Vibrant 256-color palette (modern, sleek look)
-    mintGreen: '\x1b[38;5;158m',    // Healthy/success states
-    peach: '\x1b[38;5;215m',        // Warning states
-    coral: '\x1b[38;5;203m',        // Critical/error states
-    lightGreen: '\x1b[38;5;194m',   // Session healthy
-    skyBlue: '\x1b[38;5;117m',      // Directories/paths
-    lavender: '\x1b[38;5;147m',     // Model info
+    mintGreen: '\x1b[38;5;158m', // Healthy/success states
+    peach: '\x1b[38;5;215m', // Warning states
+    coral: '\x1b[38;5;203m', // Critical/error states
+    lightGreen: '\x1b[38;5;194m', // Session healthy
+    skyBlue: '\x1b[38;5;117m', // Directories/paths
+    lavender: '\x1b[38;5;147m', // Model info
   };
 
   // Beautiful compact colorful format (using vibrant 256-color palette)

@@ -134,7 +134,7 @@ function verifyScreenshots(rootDir) {
   const imageExtensions = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
   let files;
   try {
-    files = fs.readdirSync(fullPath).filter((file) => {
+    files = fs.readdirSync(fullPath).filter(file => {
       const ext = path.extname(file).toLowerCase();
       return imageExtensions.includes(ext);
     });
@@ -320,11 +320,13 @@ function handleLoop(rootDir) {
         console.log(`${c.yellow}⚠ ${screenshotResult.output}${c.reset}`);
         if (screenshotResult.unverified.length > 0) {
           console.log(`${c.dim}Unverified screenshots:${c.reset}`);
-          screenshotResult.unverified.slice(0, 5).forEach((file) => {
+          screenshotResult.unverified.slice(0, 5).forEach(file => {
             console.log(`  ${c.yellow}- ${file}${c.reset}`);
           });
           if (screenshotResult.unverified.length > 5) {
-            console.log(`  ${c.dim}... and ${screenshotResult.unverified.length - 5} more${c.reset}`);
+            console.log(
+              `  ${c.dim}... and ${screenshotResult.unverified.length - 5} more${c.reset}`
+            );
           }
         }
         state.ralph_loop.screenshots_verified = false;
@@ -334,8 +336,12 @@ function handleLoop(rootDir) {
     // Visual Mode: Enforce minimum iterations
     if (visualMode && iteration < minIterations) {
       console.log('');
-      console.log(`${c.yellow}⚠ Visual Mode requires ${minIterations}+ iterations for confirmation${c.reset}`);
-      console.log(`${c.dim}Current: iteration ${iteration}. Let loop run once more to confirm.${c.reset}`);
+      console.log(
+        `${c.yellow}⚠ Visual Mode requires ${minIterations}+ iterations for confirmation${c.reset}`
+      );
+      console.log(
+        `${c.dim}Current: iteration ${iteration}. Let loop run once more to confirm.${c.reset}`
+      );
 
       state.ralph_loop.iteration = iteration;
       saveSessionState(rootDir, state);
@@ -458,7 +464,9 @@ function handleCLI() {
       console.log(`  Current Story: ${loop.current_story}`);
       console.log(`  Iteration: ${loop.iteration || 0}/${loop.max_iterations || 20}`);
       if (loop.visual_mode) {
-        const verified = loop.screenshots_verified ? `${c.green}yes${c.reset}` : `${c.yellow}no${c.reset}`;
+        const verified = loop.screenshots_verified
+          ? `${c.green}yes${c.reset}`
+          : `${c.yellow}no${c.reset}`;
         console.log(`  Screenshots Verified: ${verified}`);
       }
     }

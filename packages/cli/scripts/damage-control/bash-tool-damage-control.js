@@ -139,7 +139,11 @@ function getDefaultPatterns() {
       { pattern: 'DROP\\s+(TABLE|DATABASE)', reason: 'DROP commands are destructive' },
       { pattern: 'DELETE\\s+FROM\\s+\\w+\\s*;', reason: 'DELETE without WHERE clause' },
       { pattern: 'TRUNCATE\\s+(TABLE\\s+)?\\w+', reason: 'TRUNCATE removes all data' },
-      { pattern: 'git\\s+push\\s+.*--force', reason: 'Force push can overwrite history', ask: true },
+      {
+        pattern: 'git\\s+push\\s+.*--force',
+        reason: 'Force push can overwrite history',
+        ask: true,
+      },
       { pattern: 'git\\s+reset\\s+--hard', reason: 'Hard reset discards changes', ask: true },
     ],
     askPatterns: [
@@ -159,10 +163,7 @@ function getDefaultPatterns() {
  */
 function checkCommand(command, patterns) {
   // Combine all pattern sources
-  const allPatterns = [
-    ...(patterns.bashToolPatterns || []),
-    ...(patterns.agileflowPatterns || []),
-  ];
+  const allPatterns = [...(patterns.bashToolPatterns || []), ...(patterns.agileflowPatterns || [])];
 
   // Check block/ask patterns
   for (const p of allPatterns) {
@@ -181,7 +182,7 @@ function checkCommand(command, patterns) {
   }
 
   // Check ask-only patterns
-  for (const p of (patterns.askPatterns || [])) {
+  for (const p of patterns.askPatterns || []) {
     try {
       const regex = new RegExp(p.pattern, 'i');
       if (regex.test(command)) {
