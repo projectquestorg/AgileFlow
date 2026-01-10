@@ -184,6 +184,47 @@ When `VISUAL=true` is specified, the loop adds screenshot verification:
 **Setup requirement:**
 Run `/agileflow:configure` and select "Set up Visual E2E testing" to install Playwright and create e2e tests.
 
+### Visual Mode Auto-Detection (IMPORTANT)
+
+**Check the context output** from `obtain-context.js` for Visual E2E status.
+
+**If "📸 VISUAL E2E TESTING: ENABLED" appears:**
+
+When presenting task options for UI-focused work, **proactively suggest VISUAL mode**:
+
+```
+This epic involves UI work. Visual E2E is configured.
+
+Suggested command:
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+
+Visual Mode ensures:
+- Screenshots are captured and verified
+- Minimum 2 iterations (prevents premature completion)
+- Both tests AND visual verification must pass
+```
+
+**Detection criteria for suggesting VISUAL=true:**
+| Indicator | Suggest VISUAL? |
+|-----------|-----------------|
+| Epic mentions "UI", "component", "styling" | Yes |
+| Stories have owner: AG-UI | Yes |
+| Files involve src/components/, *.css, *.tsx | Yes |
+| Work is API/backend only | No |
+| Work is CLI/scripts only | No |
+
+**If "VISUAL E2E TESTING: NOT CONFIGURED" appears:**
+
+For UI work, suggest setup:
+```
+This is UI work. Visual E2E not configured.
+
+To enable screenshot verification:
+/agileflow:configure → Visual E2E testing
+
+This helps catch visual issues that tests miss (wrong colors, broken layouts).
+```
+
 ### Loop Control Commands
 
 ```bash

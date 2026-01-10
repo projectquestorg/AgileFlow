@@ -215,7 +215,35 @@ Add to package.json scripts:
 npm run test:e2e
 ```
 
-### Step 10: Show Completion Summary
+### Step 10: Update Metadata
+
+Update `docs/00-meta/agileflow-metadata.json` to register Visual E2E as enabled:
+
+```javascript
+// Read existing metadata
+const metadataPath = 'docs/00-meta/agileflow-metadata.json';
+const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+
+// Add visual_e2e feature
+metadata.features = metadata.features || {};
+metadata.features.visual_e2e = {
+  enabled: true,
+  version: "2.83.0",
+  at: new Date().toISOString(),
+  screenshots_dir: "screenshots/",
+  playwright_config: "playwright.config.ts"
+};
+
+// Update the updated timestamp
+metadata.updated = new Date().toISOString();
+
+// Write back
+fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
+```
+
+This enables automatic detection by `obtain-context.js` so agents know Visual E2E is available.
+
+### Step 11: Show Completion Summary
 
 ```
 Visual E2E Setup Complete

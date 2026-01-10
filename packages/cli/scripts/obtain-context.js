@@ -433,8 +433,37 @@ function generateFullContent() {
     content += `${C.dim}Multi-session not configured${C.reset}\n`;
   }
 
-  // 5. INTERACTION MODE (AskUserQuestion guidance)
+  // 5. VISUAL E2E STATUS (detect from metadata or filesystem)
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
+  const visualE2eConfig = metadata?.features?.visual_e2e;
+  const playwrightExists = fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
+  const screenshotsExists = fs.existsSync('screenshots');
+  const testsE2eExists = fs.existsSync('tests/e2e');
+
+  // Determine visual e2e status
+  const visualE2eEnabled = visualE2eConfig?.enabled || (playwrightExists && screenshotsExists);
+
+  if (visualE2eEnabled) {
+    content += `\n${C.brand}${C.bold}═══ 📸 VISUAL E2E TESTING: ENABLED ═══${C.reset}\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+    content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ E2E Tests:${C.reset} ${testsE2eExists ? 'tests/e2e/' : 'not found'}\n\n`;
+    content += `${C.bold}FOR UI WORK:${C.reset} Use ${C.skyBlue}VISUAL=true${C.reset} flag with babysit:\n`;
+    content += `${C.dim}  /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true${C.reset}\n\n`;
+    content += `${C.lavender}Screenshot Verification Workflow:${C.reset}\n`;
+    content += `  1. E2E tests capture screenshots to ${C.skyBlue}screenshots/${C.reset}\n`;
+    content += `  2. Review each screenshot visually (Claude reads image files)\n`;
+    content += `  3. Rename verified: ${C.dim}mv file.png verified-file.png${C.reset}\n`;
+    content += `  4. All screenshots must have ${C.mintGreen}verified-${C.reset} prefix before completion\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
+  } else {
+    content += `\n${C.dim}═══ 📸 VISUAL E2E TESTING: NOT CONFIGURED ═══${C.reset}\n`;
+    content += `${C.dim}For UI work with screenshot verification:${C.reset}\n`;
+    content += `${C.dim}  /agileflow:configure → Visual E2E testing${C.reset}\n\n`;
+  }
+
+  // 6. INTERACTION MODE (AskUserQuestion guidance)
   const askUserQuestionConfig = metadata?.features?.askUserQuestion;
 
   if (askUserQuestionConfig?.enabled) {

@@ -1123,6 +1123,56 @@ Before marking in-review, verify:
 - [ ] Visual regression tests (or manual screenshots)
 - [ ] Tests cover happy path + edge cases + error states
 
+VISUAL E2E TESTING (Check Context Output)
+
+**IMPORTANT**: Check the `obtain-context.js` output at the start of your session for Visual E2E status.
+
+**If "📸 VISUAL E2E TESTING: ENABLED" appears in context:**
+
+1. **Suggest VISUAL mode** for UI-focused work:
+   ```
+   This is UI work. Visual E2E is configured.
+   Recommend: /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true
+   ```
+
+2. **Capture screenshots** in E2E tests:
+   ```typescript
+   await page.screenshot({ path: 'screenshots/component-name.png' });
+   ```
+
+3. **Before marking story complete**:
+   - Read each screenshot in `screenshots/` directory
+   - Visually verify: layout correct, colors right, no artifacts
+   - Rename verified: `mv screenshots/x.png screenshots/verified-x.png`
+   - All screenshots must have `verified-` prefix
+
+4. **Visual Mode behavior** (when `VISUAL=true`):
+   - Tests must pass AND all screenshots verified
+   - Minimum 2 iterations required
+   - Prevents premature completion for UI work
+
+**If "VISUAL E2E TESTING: NOT CONFIGURED" appears:**
+
+- Visual verification not available for this project
+- Standard testing workflow applies
+- Suggest setup if user wants visual verification:
+  ```
+  Visual E2E not configured. To enable screenshot verification:
+  /agileflow:configure → Visual E2E testing
+  ```
+
+**When to suggest Visual Mode:**
+| Work Type | Suggest VISUAL? |
+|-----------|-----------------|
+| New component styling | Yes |
+| Layout/responsive changes | Yes |
+| Shadcn/UI work | Yes |
+| Color/theme updates | Yes |
+| API integration only | No |
+| Logic/state changes | No |
+| Bug fix (visual) | Yes |
+| Bug fix (behavioral) | No |
+
 DEPENDENCY HANDLING (Critical for AG-UI)
 
 **Common AG-UI Blockers**:
