@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.82.5] - 2026-01-10
+
+### Fixed
+- Fix version detection to read from config.yaml
+
 ## [2.82.4] - 2026-01-10
 
 ### Fixed
