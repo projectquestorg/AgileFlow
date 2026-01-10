@@ -34,7 +34,8 @@
     "scripts/",
     "lib/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "postinstall": "node tools/postinstall.js",

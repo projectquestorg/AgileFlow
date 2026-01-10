@@ -50,9 +50,9 @@ Read the AgileFlow CHANGELOG.md:
 cat .agileflow/CHANGELOG.md 2>/dev/null || echo "Changelog not found"
 ```
 
-Also check the installed version:
+Also check the installed version from config.yaml:
 ```bash
-cat .agileflow/package.json 2>/dev/null | grep '"version"' || echo "Version unknown"
+cat .agileflow/config.yaml 2>/dev/null | grep 'version:' | head -1 || echo "Version unknown"
 ```
 
 **STEP 2: Parse and display**

@@ -153,6 +153,10 @@ class Installer {
       spinner.text = 'Installing shared libraries...';
       await this.installLib(directory, { force: effectiveForce });
 
+      // Copy CHANGELOG.md for /agileflow:whats-new command
+      spinner.text = 'Installing changelog...';
+      await this.installChangelog(agileflowDir, { force: effectiveForce });
+
       // Create config.yaml
       spinner.text = 'Creating configuration...';
       await this.createConfig(agileflowDir, userName, agileflowFolder, { force: effectiveForce });
@@ -597,6 +601,38 @@ class Installer {
     }
 
     return counts;
+  }
+
+  /**
+   * Copy CHANGELOG.md to .agileflow/ for /agileflow:whats-new command
+   * @param {string} agileflowDir - AgileFlow installation directory
+   * @param {Object} options - Installation options
+   * @param {boolean} options.force - Overwrite existing file
+   */
+  async installChangelog(agileflowDir, options = {}) {
+    const { force = false } = options;
+    const changelogSource = path.join(this.packageRoot, 'CHANGELOG.md');
+    const changelogDest = path.join(agileflowDir, 'CHANGELOG.md');
+
+    // Skip if source changelog doesn't exist
+    if (!(await fs.pathExists(changelogSource))) {
+      return;
+    }
+
+    const destExists = await fs.pathExists(changelogDest);
+
+    // If destination exists and not forcing, check if identical
+    if (destExists && !force) {
+      const srcContent = await fs.readFile(changelogSource, 'utf8');
+      const destContent = await fs.readFile(changelogDest, 'utf8');
+      if (srcContent === destContent) {
+        return; // Identical, skip
+      }
+      // Different content - always update changelog since it's managed by package
+    }
+
+    // Copy the changelog
+    await fs.copy(changelogSource, changelogDest);
   }
 
   /**
