@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.82.4] - 2026-01-10
+
+### Fixed
+- Fix whats-new command to include CHANGELOG.md in installation
+
 ## [2.82.3] - 2026-01-09
 
 ### Fixed
