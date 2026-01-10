@@ -39,14 +39,18 @@ function debugLog(message, data = null) {
 
 // Get installed AgileFlow version
 function getInstalledVersion(rootDir) {
-  // First check .agileflow/package.json (installed version)
-  const agileflowPkg = path.join(rootDir, '.agileflow', 'package.json');
-  const agileflowResult = safeReadJSON(agileflowPkg);
-  if (agileflowResult.ok && agileflowResult.data?.version) {
-    return agileflowResult.data.version;
-  }
-  if (!agileflowResult.ok && agileflowResult.error) {
-    debugLog('Error reading .agileflow/package.json', agileflowResult.error);
+  // First check .agileflow/config.yaml (installed version)
+  try {
+    const configPath = path.join(rootDir, '.agileflow', 'config.yaml');
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf8');
+      const versionMatch = content.match(/^version:\s*['"]?([0-9.]+)/m);
+      if (versionMatch) {
+        return versionMatch[1];
+      }
+    }
+  } catch (err) {
+    debugLog('Error reading .agileflow/config.yaml', err.message);
   }
 
   // Fallback: check if this is the AgileFlow dev repo

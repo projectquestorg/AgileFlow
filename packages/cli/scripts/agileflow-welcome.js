@@ -46,29 +46,34 @@ function getProjectInfo(rootDir) {
   };
 
   // Get AgileFlow version (check multiple sources in priority order)
-  // 1. AgileFlow metadata (installed user projects)
-  // 2. packages/cli/package.json (AgileFlow dev project)
-  // 3. .agileflow/package.json (fallback)
+  // 1. .agileflow/config.yaml (installed user projects - primary source)
+  // 2. AgileFlow metadata (installed user projects - legacy)
+  // 3. packages/cli/package.json (AgileFlow dev project)
   try {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-      info.version = metadata.version || info.version;
+    // Primary: .agileflow/config.yaml
+    const configPath = path.join(rootDir, '.agileflow', 'config.yaml');
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf8');
+      const versionMatch = content.match(/^version:\s*['"]?([0-9.]+)/m);
+      if (versionMatch) {
+        info.version = versionMatch[1];
+      }
     } else {
-      // Dev project: check packages/cli/package.json
-      const pkg = JSON.parse(
-        fs.readFileSync(path.join(rootDir, 'packages/cli/package.json'), 'utf8')
-      );
-      info.version = pkg.version || info.version;
+      // Fallback: metadata or dev project
+      const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+      if (fs.existsSync(metadataPath)) {
+        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+        info.version = metadata.version || info.version;
+      } else {
+        // Dev project: check packages/cli/package.json
+        const pkg = JSON.parse(
+          fs.readFileSync(path.join(rootDir, 'packages/cli/package.json'), 'utf8')
+        );
+        info.version = pkg.version || info.version;
+      }
     }
   } catch (e) {
-    // Fallback: check .agileflow/package.json
-    try {
-      const pkg = JSON.parse(
-        fs.readFileSync(path.join(rootDir, '.agileflow/package.json'), 'utf8')
-      );
-      info.version = pkg.version || info.version;
-    } catch (e2) {}
+    // Silently fail - version will remain 'unknown'
   }
 
   // Get git info
