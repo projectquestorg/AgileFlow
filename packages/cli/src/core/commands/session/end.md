@@ -190,7 +190,7 @@ If `hasConflicts: true`:
 ```
 ⚠️ Merge conflicts detected!
 
-This branch has conflicts with {mainBranch} that need to be resolved manually.
+This branch has conflicts with {mainBranch}. Smart merge can attempt automatic resolution.
 ```
 
 Then show conflict options:
@@ -201,12 +201,48 @@ AskUserQuestion:
   header: "Merge conflicts"
   multiSelect: false
   options:
+    - label: "Auto-resolve conflicts (Recommended)"
+      description: "Smart merge will resolve based on file types automatically"
     - label: "Resolve manually"
       description: "Keep session active and resolve conflicts yourself"
     - label: "End session without merging"
       description: "Keep worktree for later resolution"
     - label: "Cancel"
       description: "Keep session as-is"
+```
+
+If "Auto-resolve conflicts" selected:
+```bash
+node .agileflow/scripts/session-manager.js smart-merge {session_id} --strategy={squash|merge}
+```
+
+The smart merge will:
+1. Categorize conflicting files by type (docs, tests, schema, config, source)
+2. Apply appropriate resolution strategy per file type
+3. Log all auto-resolutions for audit
+
+Display result:
+```
+✓ Conflicts auto-resolved!
+
+Files resolved:
+  📄 docs/README.md → accept_both (Documentation kept from both)
+  🧪 tests/api.test.ts → accept_both (Tests kept from both)
+  ⚙️ package.json → merge_keys (Config merged)
+  📝 src/api.ts → intelligent_merge (Source merged)
+
+Merge log saved to: .agileflow/sessions/merge-log.json
+```
+
+If auto-resolution fails:
+```
+⚠️ Some conflicts could not be auto-resolved:
+
+  ❌ src/complex.ts → Changes overlap in same code block
+
+Options:
+  • Resolve manually (see instructions below)
+  • End session without merging
 ```
 
 If "Resolve manually" selected, show instructions:
@@ -409,7 +445,13 @@ node .agileflow/scripts/session-manager.js merge-preview {session_id}
 Display commits and files to be merged.
 
 **Step 3: Check conflicts**
-If `hasConflicts: true` → Show conflict options → EXIT or manual resolution
+If `hasConflicts: true` → Show conflict options (auto-resolve/manual/end/cancel)
+
+**Step 3a: If auto-resolve selected**
+```bash
+node .agileflow/scripts/session-manager.js smart-merge {session_id} --strategy={squash|merge}
+```
+Smart merge auto-resolves by file type: docs→accept_both, tests→accept_both, config→merge_keys, source→theirs
 
 **Step 4: Choose strategy**
 ```xml

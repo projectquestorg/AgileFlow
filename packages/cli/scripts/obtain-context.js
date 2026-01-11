@@ -433,7 +433,94 @@ function generateFullContent() {
     content += `${C.dim}Multi-session not configured${C.reset}\n`;
   }
 
-  // 5. VISUAL E2E STATUS (detect from metadata or filesystem)
+  // 5. STORY CLAIMS (inter-session coordination)
+  const storyClaimingPath = path.join(__dirname, 'lib', 'story-claiming.js');
+  const altStoryClaimingPath = '.agileflow/scripts/lib/story-claiming.js';
+
+  if (fs.existsSync(storyClaimingPath) || fs.existsSync(altStoryClaimingPath)) {
+    try {
+      const claimPath = fs.existsSync(storyClaimingPath)
+        ? storyClaimingPath
+        : altStoryClaimingPath;
+      const storyClaiming = require(claimPath);
+
+      // Get stories claimed by other sessions
+      const othersResult = storyClaiming.getStoriesClaimedByOthers();
+      if (othersResult.ok && othersResult.stories && othersResult.stories.length > 0) {
+        content += `\n${C.amber}${C.bold}═══ 🔒 Claimed Stories ═══${C.reset}\n`;
+        content += `${C.dim}Stories locked by other sessions - pick a different one${C.reset}\n`;
+        othersResult.stories.forEach(story => {
+          const sessionDir = story.claimedBy?.path ? path.basename(story.claimedBy.path) : 'unknown';
+          content += `  ${C.coral}🔒${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}" ${C.dim}→ Session ${story.claimedBy?.session_id || '?'} (${sessionDir})${C.reset}\n`;
+        });
+        content += '\n';
+      }
+
+      // Get stories claimed by THIS session
+      const myResult = storyClaiming.getClaimedStoriesForSession();
+      if (myResult.ok && myResult.stories && myResult.stories.length > 0) {
+        content += `\n${C.mintGreen}${C.bold}═══ ✓ Your Claimed Stories ═══${C.reset}\n`;
+        myResult.stories.forEach(story => {
+          content += `  ${C.mintGreen}✓${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}"\n`;
+        });
+        content += '\n';
+      }
+    } catch (e) {
+      // Story claiming not available or error - silently skip
+    }
+  }
+
+  // 5b. FILE OVERLAPS (inter-session file awareness)
+  const fileTrackingPath = path.join(__dirname, 'lib', 'file-tracking.js');
+  const altFileTrackingPath = '.agileflow/scripts/lib/file-tracking.js';
+
+  if (fs.existsSync(fileTrackingPath) || fs.existsSync(altFileTrackingPath)) {
+    try {
+      const trackPath = fs.existsSync(fileTrackingPath)
+        ? fileTrackingPath
+        : altFileTrackingPath;
+      const fileTracking = require(trackPath);
+
+      // Get file overlaps with other sessions
+      const overlapsResult = fileTracking.getMyFileOverlaps();
+      if (overlapsResult.ok && overlapsResult.overlaps && overlapsResult.overlaps.length > 0) {
+        content += `\n${C.amber}${C.bold}═══ ⚠️  File Overlaps ═══${C.reset}\n`;
+        content += `${C.dim}Files also edited by other sessions - conflicts auto-resolved during merge${C.reset}\n`;
+        overlapsResult.overlaps.forEach(overlap => {
+          const sessionInfo = overlap.otherSessions.map(s => {
+            const dir = path.basename(s.path);
+            return `Session ${s.id} (${dir})`;
+          }).join(', ');
+          content += `  ${C.amber}⚠${C.reset} ${C.lavender}${overlap.file}${C.reset} ${C.dim}→ ${sessionInfo}${C.reset}\n`;
+        });
+        content += '\n';
+      }
+
+      // Show files touched by this session
+      const { getCurrentSession, getSessionFiles } = fileTracking;
+      const currentSession = getCurrentSession();
+      if (currentSession) {
+        const filesResult = getSessionFiles(currentSession.session_id);
+        if (filesResult.ok && filesResult.files && filesResult.files.length > 0) {
+          content += `\n${C.skyBlue}${C.bold}═══ 📁 Files Touched This Session ═══${C.reset}\n`;
+          content += `${C.dim}${filesResult.files.length} files tracked for conflict detection${C.reset}\n`;
+          // Show first 5 files max
+          const displayFiles = filesResult.files.slice(0, 5);
+          displayFiles.forEach(file => {
+            content += `  ${C.dim}•${C.reset} ${file}\n`;
+          });
+          if (filesResult.files.length > 5) {
+            content += `  ${C.dim}... and ${filesResult.files.length - 5} more${C.reset}\n`;
+          }
+          content += '\n';
+        }
+      }
+    } catch (e) {
+      // File tracking not available or error - silently skip
+    }
+  }
+
+  // 6. VISUAL E2E STATUS (detect from metadata or filesystem)
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
   const visualE2eConfig = metadata?.features?.visual_e2e;
   const playwrightExists = fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');

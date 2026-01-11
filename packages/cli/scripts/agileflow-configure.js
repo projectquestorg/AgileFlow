@@ -788,16 +788,14 @@ function enableFeature(feature, options = {}) {
 
   // Handle autoupdate (metadata only, no hooks needed)
   if (feature === 'autoupdate') {
-    const frequency = options.checkFrequency || 'daily';
     updateMetadata({
       updates: {
         autoUpdate: true,
-        checkFrequency: frequency,
         showChangelog: true,
       },
     });
-    success(`Auto-update enabled (check frequency: ${frequency})`);
-    info('AgileFlow will automatically update on session start');
+    success('Auto-update enabled');
+    info('AgileFlow will check for updates every session and update automatically');
     return true; // Skip settings.json write for this feature
   }
 

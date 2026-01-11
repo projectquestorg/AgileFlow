@@ -385,11 +385,11 @@ PYTHON
       SESSION_COLOR="$SESSION_GREEN"   # Light green - plenty of time
     fi
 
-    # Build compact display: "⏱2h15m" or "⏱45m"
+    # Build compact display: "~2h15m" or "~45m" (tilde indicates remaining time)
     if [ "$RH" -gt 0 ]; then
-      SESSION_DISPLAY="${SESSION_COLOR}⏱${RH}h${RM}m${RESET}"
+      SESSION_DISPLAY="${SESSION_COLOR}~${RH}h${RM}m${RESET}"
     else
-      SESSION_DISPLAY="${SESSION_COLOR}⏱${RM}m${RESET}"
+      SESSION_DISPLAY="${SESSION_COLOR}~${RM}m${RESET}"
     fi
   fi
 fi
@@ -521,6 +521,47 @@ if git rev-parse --git-dir > /dev/null 2>&1; then
 fi
 
 # ============================================================================
+# Session Info (Multi-session awareness)
+# ============================================================================
+# Show current session if in a non-main session
+SESSION_INFO=""
+SHOW_SESSION=true  # New component - default enabled
+
+# Check component setting
+if [ "$COMPONENTS" != "null" ] && [ -n "$COMPONENTS" ]; then
+  SHOW_SESSION=$(echo "$COMPONENTS" | jq -r '.session | if . == null then true else . end')
+fi
+
+if [ "$SHOW_SESSION" = "true" ]; then
+  REGISTRY_FILE=".agileflow/sessions/registry.json"
+  if [ -f "$REGISTRY_FILE" ]; then
+    # Get current working directory
+    CWD=$(pwd)
+
+    # Find session matching current directory
+    SESSION_DATA=$(jq -r --arg cwd "$CWD" '
+      .sessions | to_entries[] | select(.value.path == $cwd) |
+      {id: .key, nickname: .value.nickname, is_main: .value.is_main}
+    ' "$REGISTRY_FILE" 2>/dev/null)
+
+    if [ -n "$SESSION_DATA" ]; then
+      SESSION_NUM=$(echo "$SESSION_DATA" | jq -r '.id')
+      SESSION_NICK=$(echo "$SESSION_DATA" | jq -r '.nickname // empty')
+      IS_MAIN=$(echo "$SESSION_DATA" | jq -r '.is_main // false')
+
+      # Only show for non-main sessions
+      if [ "$IS_MAIN" != "true" ] && [ -n "$SESSION_NUM" ]; then
+        if [ -n "$SESSION_NICK" ] && [ "$SESSION_NICK" != "null" ]; then
+          SESSION_INFO="${DIM}[${RESET}${MAGENTA}S${SESSION_NUM}${RESET}${DIM}:${RESET}${SESSION_NICK}${DIM}]${RESET}"
+        else
+          SESSION_INFO="${DIM}[${RESET}${MAGENTA}S${SESSION_NUM}${RESET}${DIM}]${RESET}"
+        fi
+      fi
+    fi
+  fi
+fi
+
+# ============================================================================
 # Build Status Line
 # ============================================================================
 OUTPUT=""
@@ -531,6 +572,12 @@ SEP=" ${DIM}│${RESET} "
 # AgileFlow branding (if enabled)
 if [ "$SHOW_AGILEFLOW" = "true" ] && [ -n "$AGILEFLOW_DISPLAY" ]; then
   OUTPUT="${AGILEFLOW_DISPLAY}"
+fi
+
+# Session info (if in a non-main session)
+if [ "$SHOW_SESSION" = "true" ] && [ -n "$SESSION_INFO" ]; then
+  [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
+  OUTPUT="${OUTPUT}${SESSION_INFO}"
 fi
 
 # Model with subtle styling (if enabled and available)

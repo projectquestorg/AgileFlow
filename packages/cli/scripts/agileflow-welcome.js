@@ -22,6 +22,22 @@ const { getProjectRoot } = require('../lib/paths');
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
 
+// Story claiming module
+let storyClaiming;
+try {
+  storyClaiming = require('./lib/story-claiming.js');
+} catch (e) {
+  // Story claiming not available
+}
+
+// File tracking module
+let fileTracking;
+try {
+  fileTracking = require('./lib/file-tracking.js');
+} catch (e) {
+  // File tracking not available
+}
+
 // Update checker module
 let updateChecker;
 try {
@@ -481,14 +497,18 @@ function getChangelogEntries(version) {
 async function runAutoUpdate(rootDir) {
   try {
     console.log(`${c.skyBlue}Updating AgileFlow...${c.reset}`);
-    execSync('npx agileflow update', {
+    // Use --force to skip prompts for non-interactive auto-update
+    execSync('npx agileflow@latest update --force', {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: 'inherit',
+      timeout: 120000, // 2 minute timeout
     });
+    console.log(`${c.mintGreen}Update complete!${c.reset}`);
     return true;
   } catch (e) {
-    console.log(`${c.peach}Auto-update failed. Run manually: npx agileflow update${c.reset}`);
+    console.log(`${c.peach}Auto-update failed: ${e.message}${c.reset}`);
+    console.log(`${c.dim}Run manually: npx agileflow update${c.reset}`);
     return false;
   }
 }
@@ -722,16 +742,19 @@ function formatTable(
     lines.push(fullRow(`  Run: ${c.skyBlue}npx agileflow update${c.reset}`, ''));
   }
 
-  // Show "just updated" changelog
-  if (updateInfo.justUpdated && updateInfo.changelog && updateInfo.changelog.length > 0) {
+  // Always show "What's new" section with current version changelog
+  // Get changelog entries for current version (even if not just updated)
+  const changelogEntries = updateInfo.changelog && updateInfo.changelog.length > 0
+    ? updateInfo.changelog
+    : getChangelogEntries(info.version);
+
+  if (changelogEntries && changelogEntries.length > 0) {
     lines.push(fullDivider());
-    lines.push(
-      fullRow(
-        `${c.mintGreen}✨${c.reset} What's new in ${c.softGold}v${info.version}${c.reset}:`,
-        ''
-      )
-    );
-    for (const entry of updateInfo.changelog.slice(0, 2)) {
+    const headerText = updateInfo.justUpdated
+      ? `${c.mintGreen}✨${c.reset} Just updated to ${c.softGold}v${info.version}${c.reset}:`
+      : `${c.teal}📋${c.reset} What's new in ${c.softGold}v${info.version}${c.reset}:`;
+    lines.push(fullRow(headerText, ''));
+    for (const entry of changelogEntries.slice(0, 2)) {
       lines.push(fullRow(`  ${c.teal}•${c.reset} ${truncate(entry, W - 6)}`, ''));
     }
     lines.push(fullRow(`  Run ${c.skyBlue}/agileflow:whats-new${c.reset} for full changelog`, ''));
@@ -975,6 +998,56 @@ async function main() {
     console.log(
       `${c.slate}   Run ${c.skyBlue}/agileflow:session:new${c.reset}${c.slate} to create isolated workspace.${c.reset}`
     );
+  }
+
+  // Story claiming: cleanup stale claims and show warnings
+  if (storyClaiming) {
+    try {
+      // Clean up stale claims (dead PIDs, expired TTL)
+      const cleanupResult = storyClaiming.cleanupStaleClaims({ rootDir });
+      if (cleanupResult.ok && cleanupResult.cleaned > 0) {
+        console.log('');
+        console.log(
+          `${c.dim}Cleaned ${cleanupResult.cleaned} stale story claim(s)${c.reset}`
+        );
+      }
+
+      // Show stories claimed by other sessions
+      const othersResult = storyClaiming.getStoriesClaimedByOthers({ rootDir });
+      if (othersResult.ok && othersResult.stories && othersResult.stories.length > 0) {
+        console.log('');
+        console.log(storyClaiming.formatClaimedStories(othersResult.stories));
+        console.log('');
+        console.log(
+          `${c.slate}   These stories are locked - pick a different one to avoid conflicts.${c.reset}`
+        );
+      }
+    } catch (e) {
+      // Silently ignore story claiming errors
+    }
+  }
+
+  // File tracking: cleanup stale touches and show overlap warnings
+  if (fileTracking) {
+    try {
+      // Clean up stale file touches (dead PIDs, expired TTL)
+      const cleanupResult = fileTracking.cleanupStaleTouches({ rootDir });
+      if (cleanupResult.ok && cleanupResult.cleaned > 0) {
+        console.log('');
+        console.log(
+          `${c.dim}Cleaned ${cleanupResult.cleaned} stale file tracking session(s)${c.reset}`
+        );
+      }
+
+      // Show file overlaps with other sessions
+      const overlapsResult = fileTracking.getMyFileOverlaps({ rootDir });
+      if (overlapsResult.ok && overlapsResult.overlaps && overlapsResult.overlaps.length > 0) {
+        console.log('');
+        console.log(fileTracking.formatFileOverlaps(overlapsResult.overlaps));
+      }
+    } catch (e) {
+      // Silently ignore file tracking errors
+    }
   }
 }
 

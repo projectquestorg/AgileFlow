@@ -703,6 +703,7 @@ Based on your project state:
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
 - Use state narration markers (📍🔀🔄⚠️✅) for visibility
+- **STORY CLAIMING**: Claim stories before working, skip 🔒 claimed stories in suggestions
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -1134,6 +1135,82 @@ After loading context, analyze and present ranked options:
 5. New features
 
 **Present via AskUserQuestion** - limit to 5-6 options, always include "Other".
+
+---
+
+## STORY CLAIMING (Multi-Session Coordination)
+
+When multiple Claude Code sessions work in the same repo, story claiming prevents conflicts.
+
+### How It Works
+
+1. **Claim on Selection**: When user selects a story to work on, claim it:
+   ```bash
+   node .agileflow/scripts/lib/story-claiming.js claim US-0042
+   ```
+
+2. **Check Before Suggesting**: Filter out claimed stories from suggestions:
+   - Stories with 🔒 badge are claimed by OTHER sessions
+   - Stories with ✓ badge are claimed by THIS session (can continue)
+   - Stories without badge are available
+
+3. **Release on Completion**: When story is marked "done", release claim:
+   ```bash
+   node .agileflow/scripts/lib/story-claiming.js release US-0042
+   ```
+
+### Story Badges in AskUserQuestion
+
+| Badge | Meaning | Action |
+|-------|---------|--------|
+| ⭐ | Ready, available | Can select |
+| 🔒 | Claimed by other session | **DO NOT suggest** (or show as disabled) |
+| ✓ | Claimed by this session | Continue working |
+
+### Claiming Flow
+
+```
+User: "Work on US-0042"
+     ↓
+Check: Is US-0042 claimed?
+     ↓
+┌──────────────┐    ┌──────────────────┐
+│ Not claimed  │    │ Claimed by other │
+└──────────────┘    └──────────────────┘
+     ↓                      ↓
+Claim it, proceed     Show warning:
+                      "US-0042 is being worked on
+                       by Session 2 (../project-auth).
+
+                       Pick a different story to
+                       avoid merge conflicts."
+```
+
+### Commands
+
+```bash
+# Claim a story
+node .agileflow/scripts/lib/story-claiming.js claim US-0042
+
+# Release a story
+node .agileflow/scripts/lib/story-claiming.js release US-0042
+
+# Check if claimed
+node .agileflow/scripts/lib/story-claiming.js check US-0042
+
+# List stories claimed by others
+node .agileflow/scripts/lib/story-claiming.js others
+
+# Clean stale claims (dead PIDs)
+node .agileflow/scripts/lib/story-claiming.js cleanup
+```
+
+### Important Rules
+
+- **Always claim before working**: Prevents conflicts
+- **Stale claims auto-expire**: If session PID dies or 4 hours pass
+- **Force claim available**: `--force` flag overrides (use sparingly)
+- **Release on completion**: Or let auto-expiry handle it
 
 ---
 

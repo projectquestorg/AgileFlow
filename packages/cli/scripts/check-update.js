@@ -1,20 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * check-update.js - Check for AgileFlow updates with caching
+ * check-update.js - Check for AgileFlow updates
  *
- * Features:
- * - Checks npm registry for latest version
- * - Caches results to avoid excessive requests
- * - Configurable check frequency (hourly, daily, weekly)
- * - Returns structured JSON for easy parsing
+ * Simple update checker:
+ * - Always checks npm registry for latest version
+ * - Auto-updates if update is available (enabled by default)
+ * - Fast npm metadata lookup (~100-500ms)
  *
  * Usage:
- *   node check-update.js [--force] [--json]
- *
- * Options:
- *   --force  Bypass cache and check npm directly
- *   --json   Output as JSON (default is human-readable)
+ *   node check-update.js [--json]
  *
  * Environment:
  *   DEBUG_UPDATE=1  Enable debug logging
@@ -66,12 +61,9 @@ function getInstalledVersion(rootDir) {
 // Get update configuration from metadata
 function getUpdateConfig(rootDir) {
   const defaults = {
-    autoUpdate: false,
-    checkFrequency: 'daily', // hourly, daily, weekly, never
+    autoUpdate: true, // Auto-update enabled by default
     showChangelog: true,
-    lastCheck: null,
     lastSeenVersion: null,
-    latestVersion: null,
   };
 
   const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
@@ -107,34 +99,6 @@ function saveUpdateConfig(rootDir, config) {
   }
 
   return true;
-}
-
-// Check if cache is still valid
-function isCacheValid(config) {
-  if (!config.lastCheck) return false;
-
-  const now = Date.now();
-  const lastCheck = new Date(config.lastCheck).getTime();
-  const age = now - lastCheck;
-
-  // Convert frequency to milliseconds
-  const frequencies = {
-    hourly: 60 * 60 * 1000, // 1 hour
-    daily: 24 * 60 * 60 * 1000, // 24 hours
-    weekly: 7 * 24 * 60 * 60 * 1000, // 7 days
-    never: Infinity,
-  };
-
-  const maxAge = frequencies[config.checkFrequency] || frequencies.daily;
-
-  debugLog('Cache check', {
-    lastCheck: config.lastCheck,
-    ageMs: age,
-    maxAgeMs: maxAge,
-    valid: age < maxAge,
-  });
-
-  return age < maxAge;
 }
 
 // Fetch latest version from npm
@@ -205,8 +169,8 @@ function compareVersions(a, b) {
   return 0;
 }
 
-// Main check function
-async function checkForUpdates(options = {}) {
+// Main check function - always checks npm
+async function checkForUpdates() {
   const rootDir = getProjectRoot();
   const installedVersion = getInstalledVersion(rootDir);
   const config = getUpdateConfig(rootDir);
@@ -218,7 +182,6 @@ async function checkForUpdates(options = {}) {
     autoUpdate: config.autoUpdate,
     justUpdated: false,
     previousVersion: config.lastSeenVersion,
-    fromCache: false,
     error: null,
   };
 
@@ -234,21 +197,8 @@ async function checkForUpdates(options = {}) {
     result.previousVersion = config.lastSeenVersion;
   }
 
-  // Use cache if valid and not forced
-  if (!options.force && isCacheValid(config) && config.latestVersion) {
-    result.latest = config.latestVersion;
-    result.fromCache = true;
-  } else if (config.checkFrequency !== 'never') {
-    // Fetch from npm
-    result.latest = await fetchLatestVersion();
-
-    // Update cache
-    if (result.latest) {
-      config.lastCheck = new Date().toISOString();
-      config.latestVersion = result.latest;
-      saveUpdateConfig(rootDir, config);
-    }
-  }
+  // Always fetch from npm
+  result.latest = await fetchLatestVersion();
 
   // Compare versions
   if (result.latest && compareVersions(installedVersion, result.latest) < 0) {
@@ -269,7 +219,6 @@ function markVersionSeen(version) {
 // CLI interface
 async function main() {
   const args = process.argv.slice(2);
-  const force = args.includes('--force');
   const jsonOutput = args.includes('--json');
   const markSeen = args.includes('--mark-seen');
 
@@ -286,7 +235,7 @@ async function main() {
     return;
   }
 
-  const result = await checkForUpdates({ force });
+  const result = await checkForUpdates();
 
   if (jsonOutput) {
     console.log(JSON.stringify(result, null, 2));
