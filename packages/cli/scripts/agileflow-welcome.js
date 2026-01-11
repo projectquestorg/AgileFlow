@@ -693,10 +693,19 @@ function formatTable(
     return `${c.dim}${box.v}${c.reset} ${pad(contentStr, W - 1)} ${c.dim}${box.v}${c.reset}`;
   };
 
+  // Dividers for two-column sections (with cross in middle)
   const divider = () =>
     `${c.dim}${box.lT}${box.h.repeat(22)}${box.cross}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
+  // Divider for full-width sections (no middle mark)
   const fullDivider = () => `${c.dim}${box.lT}${box.h.repeat(W)}${box.rT}${c.reset}`;
-  const topBorder = `${c.dim}${box.tl}${box.h.repeat(22)}${box.tT}${box.h.repeat(W - 22)}${box.tr}${c.reset}`;
+  // Transition: full-width TO two-column (adds column split)
+  const splitDivider = () =>
+    `${c.dim}${box.lT}${box.h.repeat(22)}${box.tT}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
+  // Transition: two-column TO full-width (merges columns)
+  const mergeDivider = () =>
+    `${c.dim}${box.lT}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
+  // Borders - top is full-width (header spans full), bottom has column
+  const topBorder = `${c.dim}${box.tl}${box.h.repeat(W)}${box.tr}${c.reset}`;
   const bottomBorder = `${c.dim}${box.bl}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 22)}${box.br}${c.reset}`;
 
   // Header with version and optional update indicator
@@ -760,7 +769,8 @@ function formatTable(
     lines.push(fullRow(`  Run ${c.skyBlue}/agileflow:whats-new${c.reset} for full changelog`, ''));
   }
 
-  lines.push(divider());
+  // Transition from full-width sections to two-column stories section
+  lines.push(splitDivider());
 
   // Stories section (always colorful labels like obtain-context)
   lines.push(
