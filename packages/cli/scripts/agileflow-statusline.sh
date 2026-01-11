@@ -385,11 +385,11 @@ PYTHON
       SESSION_COLOR="$SESSION_GREEN"   # Light green - plenty of time
     fi
 
-    # Build compact display: "~2h15m" or "~45m" (tilde indicates remaining time)
+    # Build compact display: "⧗2h15m" or "⧗45m" (hourglass indicates remaining time)
     if [ "$RH" -gt 0 ]; then
-      SESSION_DISPLAY="${SESSION_COLOR}~${RH}h${RM}m${RESET}"
+      SESSION_DISPLAY="${SESSION_COLOR}⧗${RH}h${RM}m${RESET}"
     else
-      SESSION_DISPLAY="${SESSION_COLOR}~${RM}m${RESET}"
+      SESSION_DISPLAY="${SESSION_COLOR}⧗${RM}m${RESET}"
     fi
   fi
 fi
