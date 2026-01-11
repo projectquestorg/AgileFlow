@@ -688,9 +688,10 @@ function formatTable(
   };
 
   // Helper for full-width row (spans both columns)
+  // Content width = W - 2 (for the two spaces after │ and before │)
   const fullRow = (content, color = '') => {
     const contentStr = `${color}${content}${color ? c.reset : ''}`;
-    return `${c.dim}${box.v}${c.reset} ${pad(contentStr, W - 1)} ${c.dim}${box.v}${c.reset}`;
+    return `${c.dim}${box.v}${c.reset} ${pad(contentStr, W - 2)} ${c.dim}${box.v}${c.reset}`;
   };
 
   // Dividers for two-column sections (with cross in middle)
@@ -734,7 +735,7 @@ function formatTable(
       : info.branch;
 
   const header = `${c.brand}${c.bold}agileflow${c.reset} ${c.dim}${versionStr}${c.reset}  ${branchColor}${branchDisplay}${c.reset} ${c.dim}(${info.commit})${c.reset}`;
-  const headerLine = `${c.dim}${box.v}${c.reset} ${pad(header, W - 1)} ${c.dim}${box.v}${c.reset}`;
+  const headerLine = `${c.dim}${box.v}${c.reset} ${pad(header, W - 2)} ${c.dim}${box.v}${c.reset}`;
 
   lines.push(topBorder);
   lines.push(headerLine);
