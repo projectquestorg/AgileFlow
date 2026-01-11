@@ -675,8 +675,8 @@ function formatTable(
   expertise = {},
   damageControl = {}
 ) {
-  const W = 58; // inner width
-  const R = W - 24; // right column width (34 chars)
+  const W = 58; // inner width (total table = W + 2 = 60)
+  const R = W - 25; // right column width (33 chars) to match total of 60
   const lines = [];
 
   // Helper to create a row (auto-truncates right content to fit)
@@ -694,20 +694,20 @@ function formatTable(
     return `${c.dim}${box.v}${c.reset} ${pad(contentStr, W - 2)} ${c.dim}${box.v}${c.reset}`;
   };
 
-  // Dividers for two-column sections (with cross in middle)
+  // Two-column dividers: ├ + 22 dashes + ┼ + 35 dashes + ┤ = 60 total
   const divider = () =>
-    `${c.dim}${box.lT}${box.h.repeat(22)}${box.cross}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
-  // Divider for full-width sections (no middle mark)
+    `${c.dim}${box.lT}${box.h.repeat(22)}${box.cross}${box.h.repeat(W - 23)}${box.rT}${c.reset}`;
+  // Full-width divider: ├ + 58 dashes + ┤ = 60 total
   const fullDivider = () => `${c.dim}${box.lT}${box.h.repeat(W)}${box.rT}${c.reset}`;
-  // Transition: full-width TO two-column (adds column split)
+  // Transition: full-width TO two-column
   const splitDivider = () =>
-    `${c.dim}${box.lT}${box.h.repeat(22)}${box.tT}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
-  // Transition: two-column TO full-width (merges columns)
+    `${c.dim}${box.lT}${box.h.repeat(22)}${box.tT}${box.h.repeat(W - 23)}${box.rT}${c.reset}`;
+  // Transition: two-column TO full-width
   const mergeDivider = () =>
-    `${c.dim}${box.lT}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 22)}${box.rT}${c.reset}`;
-  // Borders - top is full-width (header spans full), bottom has column
+    `${c.dim}${box.lT}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 23)}${box.rT}${c.reset}`;
+  // Borders
   const topBorder = `${c.dim}${box.tl}${box.h.repeat(W)}${box.tr}${c.reset}`;
-  const bottomBorder = `${c.dim}${box.bl}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 22)}${box.br}${c.reset}`;
+  const bottomBorder = `${c.dim}${box.bl}${box.h.repeat(22)}${box.bT}${box.h.repeat(W - 23)}${box.br}${c.reset}`;
 
   // Header with version and optional update indicator
   // Use vibrant colors for branch
