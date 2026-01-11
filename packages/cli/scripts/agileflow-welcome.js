@@ -495,18 +495,36 @@ function getChangelogEntries(version) {
 
 // Run auto-update if enabled
 async function runAutoUpdate(rootDir) {
-  try {
-    console.log(`${c.skyBlue}Updating AgileFlow...${c.reset}`);
-    // Use --force to skip prompts for non-interactive auto-update
+  const runUpdate = () => {
     execSync('npx agileflow@latest update --force', {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: 'inherit',
       timeout: 120000, // 2 minute timeout
     });
+  };
+
+  try {
+    console.log(`${c.skyBlue}Updating AgileFlow...${c.reset}`);
+    // Use --force to skip prompts for non-interactive auto-update
+    runUpdate();
     console.log(`${c.mintGreen}Update complete!${c.reset}`);
     return true;
   } catch (e) {
+    // Check if this is a stale npm cache issue (ETARGET = version not found)
+    if (e.message && (e.message.includes('ETARGET') || e.message.includes('notarget'))) {
+      console.log(`${c.dim}Clearing npm cache and retrying...${c.reset}`);
+      try {
+        execSync('npm cache clean --force', { stdio: 'pipe', timeout: 30000 });
+        runUpdate();
+        console.log(`${c.mintGreen}Update complete!${c.reset}`);
+        return true;
+      } catch (retryError) {
+        console.log(`${c.peach}Auto-update failed after cache clean: ${retryError.message}${c.reset}`);
+        console.log(`${c.dim}Run manually: npx agileflow update${c.reset}`);
+        return false;
+      }
+    }
     console.log(`${c.peach}Auto-update failed: ${e.message}${c.reset}`);
     console.log(`${c.dim}Run manually: npx agileflow update${c.reset}`);
     return false;
