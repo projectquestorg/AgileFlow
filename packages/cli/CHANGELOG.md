@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.84.0] - 2026-01-11
+
+### Added
+- File awareness, smart merge, and simplified auto-update
+
 ## [2.83.0] - 2026-01-10
 
 ### Changed
