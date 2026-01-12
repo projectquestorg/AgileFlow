@@ -20,6 +20,7 @@ const {
 } = require('../lib/ui');
 const { IdeManager } = require('../installers/ide/manager');
 const { getCurrentVersion } = require('../lib/version-checker');
+const { ErrorHandler } = require('../lib/error-handler');
 
 const installer = new Installer();
 
@@ -306,11 +307,13 @@ module.exports = {
 
       process.exit(issues > 0 ? 1 : 0);
     } catch (err) {
-      console.error(chalk.red('Error:'), err.message);
-      if (process.env.DEBUG) {
-        console.error(err.stack);
-      }
-      process.exit(1);
+      const handler = new ErrorHandler('doctor');
+      handler.critical(
+        'Diagnostics failed',
+        'Check permissions and installation',
+        'npx agileflow setup',
+        err
+      );
     }
   },
 };

@@ -10,6 +10,7 @@ const fs = require('fs-extra');
 const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
 const { displayLogo, displaySection, success, warning, error, confirm } = require('../lib/ui');
+const { ErrorHandler } = require('../lib/error-handler');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -138,11 +139,13 @@ module.exports = {
 
       process.exit(0);
     } catch (err) {
-      console.error(chalk.red('Uninstall failed:'), err.message);
-      if (process.env.DEBUG) {
-        console.error(err.stack);
-      }
-      process.exit(1);
+      const handler = new ErrorHandler('uninstall');
+      handler.critical(
+        'Uninstall failed',
+        'Check file permissions',
+        'sudo npx agileflow uninstall --force',
+        err
+      );
     }
   },
 };

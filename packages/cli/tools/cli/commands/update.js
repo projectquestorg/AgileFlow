@@ -22,6 +22,7 @@ const {
 } = require('../lib/ui');
 const { createDocsStructure, getDocsFolderName } = require('../lib/docs-setup');
 const { getLatestVersion } = require('../lib/npm-utils');
+const { ErrorHandler } = require('../lib/error-handler');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -76,9 +77,12 @@ module.exports = {
       const status = await installer.getStatus(directory);
 
       if (!status.installed) {
-        warning('No AgileFlow installation found');
-        console.log(chalk.dim(`\nRun 'npx agileflow setup' to set up AgileFlow\n`));
-        process.exit(1);
+        const handler = new ErrorHandler('update');
+        handler.warning(
+          'No AgileFlow installation found',
+          'Initialize AgileFlow first',
+          'npx agileflow setup'
+        );
       }
 
       displaySection('Updating AgileFlow', `Current version: ${status.version}`);
@@ -179,8 +183,12 @@ module.exports = {
       const coreResult = await installer.install(config, { force: options.force });
 
       if (!coreResult.success) {
-        error('Update failed');
-        process.exit(1);
+        const handler = new ErrorHandler('update');
+        handler.warning(
+          'Update failed',
+          'Try running doctor to diagnose issues',
+          'npx agileflow doctor --fix'
+        );
       }
 
       success('Updated core content');
@@ -237,11 +245,13 @@ module.exports = {
 
       process.exit(0);
     } catch (err) {
-      console.error(chalk.red('Update failed:'), err.message);
-      if (process.env.DEBUG) {
-        console.error(err.stack);
-      }
-      process.exit(1);
+      const handler = new ErrorHandler('update');
+      handler.critical(
+        'Update failed',
+        'Check network connection and disk space',
+        'npx agileflow doctor',
+        err
+      );
     }
   },
 };

@@ -11,6 +11,7 @@ const yaml = require('js-yaml');
 const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
 const { displayLogo, displaySection, success, warning, error, info } = require('../lib/ui');
+const { ErrorHandler } = require('../lib/error-handler');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -33,9 +34,12 @@ module.exports = {
 
       if (!status.installed) {
         displayLogo();
-        warning('No AgileFlow installation found');
-        console.log(chalk.dim(`\nRun 'npx agileflow setup' to set up AgileFlow\n`));
-        process.exit(1);
+        const handler = new ErrorHandler('config');
+        handler.warning(
+          'No AgileFlow installation found',
+          'Initialize AgileFlow first',
+          'npx agileflow setup'
+        );
       }
 
       const manifestPath = path.join(status.path, '_cfg', 'manifest.yaml');
@@ -76,11 +80,13 @@ module.exports = {
 
       process.exit(0);
     } catch (err) {
-      console.error(chalk.red('Error:'), err.message);
-      if (process.env.DEBUG) {
-        console.error(err.stack);
-      }
-      process.exit(1);
+      const handler = new ErrorHandler('config');
+      handler.critical(
+        'Configuration operation failed',
+        'Check manifest file integrity',
+        'npx agileflow doctor --fix',
+        err
+      );
     }
   },
 };
@@ -121,17 +127,24 @@ async function handleList(status) {
  * Handle get subcommand
  */
 async function handleGet(status, key) {
+  const handler = new ErrorHandler('config');
+
   if (!key) {
-    error('Missing key. Usage: npx agileflow config get <key>');
-    process.exit(1);
+    handler.warning(
+      'Missing key',
+      'Provide a config key to get',
+      'npx agileflow config get <key>'
+    );
   }
 
   const validKeys = ['userName', 'ides', 'agileflowFolder', 'docsFolder', 'version'];
 
   if (!validKeys.includes(key)) {
-    error(`Invalid key: ${key}`);
-    console.log(chalk.dim(`Valid keys: ${validKeys.join(', ')}\n`));
-    process.exit(1);
+    handler.warning(
+      `Invalid key: ${key}`,
+      `Valid keys: ${validKeys.join(', ')}`,
+      'npx agileflow config list'
+    );
   }
 
   let value;
@@ -160,17 +173,24 @@ async function handleGet(status, key) {
  * Handle set subcommand
  */
 async function handleSet(directory, status, manifestPath, key, value) {
+  const handler = new ErrorHandler('config');
+
   if (!key || value === undefined) {
-    error('Missing arguments. Usage: npx agileflow config set <key> <value>');
-    process.exit(1);
+    handler.warning(
+      'Missing arguments',
+      'Provide both key and value',
+      'npx agileflow config set <key> <value>'
+    );
   }
 
   const validKeys = ['userName', 'ides', 'agileflowFolder', 'docsFolder'];
 
   if (!validKeys.includes(key)) {
-    error(`Invalid key: ${key}`);
-    console.log(chalk.dim(`Valid keys: ${validKeys.join(', ')}\n`));
-    process.exit(1);
+    handler.warning(
+      `Invalid key: ${key}`,
+      `Valid keys: ${validKeys.join(', ')}`,
+      'npx agileflow config list'
+    );
   }
 
   displayLogo();
@@ -198,9 +218,11 @@ async function handleSet(directory, status, manifestPath, key, value) {
       // Validate IDEs
       for (const ide of newIdes) {
         if (!validIdes.includes(ide)) {
-          error(`Invalid IDE: ${ide}`);
-          console.log(chalk.dim(`Valid IDEs: ${validIdes.join(', ')}\n`));
-          process.exit(1);
+          handler.warning(
+            `Invalid IDE: ${ide}`,
+            `Valid IDEs: ${validIdes.join(', ')}`,
+            'npx agileflow config set ides "claude-code,cursor"'
+          );
         }
       }
 

@@ -22,6 +22,7 @@ const {
 } = require('../lib/ui');
 const { createDocsStructure } = require('../lib/docs-setup');
 const { getLatestVersion } = require('../lib/npm-utils');
+const { ErrorHandler } = require('../lib/error-handler');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -101,8 +102,12 @@ module.exports = {
       const coreResult = await installer.install(config);
 
       if (!coreResult.success) {
-        error('Core setup failed');
-        process.exit(1);
+        const handler = new ErrorHandler('setup');
+        handler.warning(
+          'Core setup failed',
+          'Check directory permissions',
+          'npx agileflow doctor'
+        );
       }
 
       success(`Installed ${coreResult.counts.agents} agents`);
@@ -144,11 +149,13 @@ module.exports = {
 
       process.exit(0);
     } catch (err) {
-      console.error(chalk.red('\nSetup failed:'), err.message);
-      if (process.env.DEBUG) {
-        console.error(err.stack);
-      }
-      process.exit(1);
+      const handler = new ErrorHandler('setup');
+      handler.critical(
+        'Setup failed',
+        'Check directory exists and has write permissions',
+        'npx agileflow doctor',
+        err
+      );
     }
   },
 };
