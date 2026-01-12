@@ -440,9 +440,7 @@ function generateFullContent() {
 
   if (fs.existsSync(storyClaimingPath) || fs.existsSync(altStoryClaimingPath)) {
     try {
-      const claimPath = fs.existsSync(storyClaimingPath)
-        ? storyClaimingPath
-        : altStoryClaimingPath;
+      const claimPath = fs.existsSync(storyClaimingPath) ? storyClaimingPath : altStoryClaimingPath;
       const storyClaiming = require(claimPath);
 
       // Get stories claimed by other sessions
@@ -451,7 +449,9 @@ function generateFullContent() {
         content += `\n${C.amber}${C.bold}═══ 🔒 Claimed Stories ═══${C.reset}\n`;
         content += `${C.dim}Stories locked by other sessions - pick a different one${C.reset}\n`;
         othersResult.stories.forEach(story => {
-          const sessionDir = story.claimedBy?.path ? path.basename(story.claimedBy.path) : 'unknown';
+          const sessionDir = story.claimedBy?.path
+            ? path.basename(story.claimedBy.path)
+            : 'unknown';
           content += `  ${C.coral}🔒${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}" ${C.dim}→ Session ${story.claimedBy?.session_id || '?'} (${sessionDir})${C.reset}\n`;
         });
         content += '\n';
@@ -477,9 +477,7 @@ function generateFullContent() {
 
   if (fs.existsSync(fileTrackingPath) || fs.existsSync(altFileTrackingPath)) {
     try {
-      const trackPath = fs.existsSync(fileTrackingPath)
-        ? fileTrackingPath
-        : altFileTrackingPath;
+      const trackPath = fs.existsSync(fileTrackingPath) ? fileTrackingPath : altFileTrackingPath;
       const fileTracking = require(trackPath);
 
       // Get file overlaps with other sessions
@@ -488,10 +486,12 @@ function generateFullContent() {
         content += `\n${C.amber}${C.bold}═══ ⚠️  File Overlaps ═══${C.reset}\n`;
         content += `${C.dim}Files also edited by other sessions - conflicts auto-resolved during merge${C.reset}\n`;
         overlapsResult.overlaps.forEach(overlap => {
-          const sessionInfo = overlap.otherSessions.map(s => {
-            const dir = path.basename(s.path);
-            return `Session ${s.id} (${dir})`;
-          }).join(', ');
+          const sessionInfo = overlap.otherSessions
+            .map(s => {
+              const dir = path.basename(s.path);
+              return `Session ${s.id} (${dir})`;
+            })
+            .join(', ');
           content += `  ${C.amber}⚠${C.reset} ${C.lavender}${overlap.file}${C.reset} ${C.dim}→ ${sessionInfo}${C.reset}\n`;
         });
         content += '\n';
@@ -524,7 +524,8 @@ function generateFullContent() {
   // 6. VISUAL E2E STATUS (detect from metadata or filesystem)
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
   const visualE2eConfig = metadata?.features?.visual_e2e;
-  const playwrightExists = fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
+  const playwrightExists =
+    fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
   const screenshotsExists = fs.existsSync('screenshots');
   const testsE2eExists = fs.existsSync('tests/e2e');
 

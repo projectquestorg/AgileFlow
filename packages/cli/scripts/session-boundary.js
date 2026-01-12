@@ -61,8 +61,9 @@ function isInsideSession(filePath, sessionPath) {
   const normalizedFile = path.resolve(filePath);
   const normalizedSession = path.resolve(sessionPath);
 
-  return normalizedFile.startsWith(normalizedSession + path.sep) ||
-         normalizedFile === normalizedSession;
+  return (
+    normalizedFile.startsWith(normalizedSession + path.sep) || normalizedFile === normalizedSession
+  );
 }
 
 // Output blocked message
@@ -117,7 +118,6 @@ function main() {
       // File is OUTSIDE active session - BLOCK
       outputBlocked(filePath, activeSession);
       process.exit(2);
-
     } catch (e) {
       // Parse error or other issue - fail open
       process.exit(0);

@@ -666,7 +666,9 @@ async function runAutoUpdate(rootDir, fromVersion, toVersion) {
   };
 
   try {
-    console.log(`${c.skyBlue}Updating AgileFlow${c.reset} ${c.dim}v${fromVersion} → v${toVersion}${c.reset}`);
+    console.log(
+      `${c.skyBlue}Updating AgileFlow${c.reset} ${c.dim}v${fromVersion} → v${toVersion}${c.reset}`
+    );
     // Use --force to skip prompts for non-interactive auto-update
     runUpdate();
     console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
@@ -732,7 +734,9 @@ function getExpertiseCountFast(rootDir) {
             const lastUpdatedMatch = content.match(/^last_updated:\s*['"]?(\d{4}-\d{2}-\d{2})/m);
             if (lastUpdatedMatch) {
               const lastDate = new Date(lastUpdatedMatch[1]);
-              const daysSince = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+              const daysSince = Math.floor(
+                (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
               if (daysSince > 30) {
                 result.warnings++;
                 result.issues.push(`${domain.name}: stale (${daysSince}d)`);
@@ -1000,9 +1004,10 @@ function formatTable(
 
   // Always show "What's new" section with current version changelog
   // Get changelog entries for current version (even if not just updated)
-  const changelogEntries = updateInfo.changelog && updateInfo.changelog.length > 0
-    ? updateInfo.changelog
-    : getChangelogEntries(info.version);
+  const changelogEntries =
+    updateInfo.changelog && updateInfo.changelog.length > 0
+      ? updateInfo.changelog
+      : getChangelogEntries(info.version);
 
   if (changelogEntries && changelogEntries.length > 0) {
     lines.push(fullDivider());
@@ -1279,9 +1284,7 @@ async function main() {
       const cleanupResult = storyClaiming.cleanupStaleClaims({ rootDir });
       if (cleanupResult.ok && cleanupResult.cleaned > 0) {
         console.log('');
-        console.log(
-          `${c.dim}Cleaned ${cleanupResult.cleaned} stale story claim(s)${c.reset}`
-        );
+        console.log(`${c.dim}Cleaned ${cleanupResult.cleaned} stale story claim(s)${c.reset}`);
       }
 
       // Show stories claimed by other sessions

@@ -1186,7 +1186,7 @@ function smartMerge(sessionId, options = {}) {
   }
 
   // Categorize and plan resolutions
-  const resolutions = conflictFiles.files.map((file) => {
+  const resolutions = conflictFiles.files.map(file => {
     const category = categorizeFile(file);
     const strategyInfo = getMergeStrategy(category);
     return {
@@ -1295,7 +1295,10 @@ function smartMerge(sessionId, options = {}) {
         result.worktreeDeleted = true;
       } catch (e) {
         try {
-          execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+          execSync(`git worktree remove --force "${session.path}"`, {
+            cwd: ROOT,
+            encoding: 'utf8',
+          });
           result.worktreeDeleted = true;
         } catch (e2) {
           result.worktreeDeleted = false;
@@ -1395,7 +1398,7 @@ function getConflictingFiles(sessionId) {
   const branchSet = new Set((branchFiles.stdout || '').trim().split('\n').filter(Boolean));
 
   // Find intersection (files changed in both)
-  const conflicting = [...mainSet].filter((f) => branchSet.has(f));
+  const conflicting = [...mainSet].filter(f => branchSet.has(f));
 
   return { success: true, files: conflicting };
 }

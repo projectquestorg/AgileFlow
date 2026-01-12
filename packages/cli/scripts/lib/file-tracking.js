@@ -376,7 +376,7 @@ function getMyFileOverlaps(options = {}) {
     for (const file of sessionData.files || []) {
       if (myFiles.has(file)) {
         // Find or create overlap entry
-        let overlap = overlaps.find((o) => o.file === file);
+        let overlap = overlaps.find(o => o.file === file);
         if (!overlap) {
           overlap = { file, otherSessions: [] };
           overlaps.push(overlap);
@@ -499,13 +499,15 @@ function formatFileOverlaps(overlaps) {
 
     // Format session info
     const sessionInfo = overlap.otherSessions
-      .map((s) => {
+      .map(s => {
         const dir = path.basename(s.path);
         return `Session ${s.id} (${dir})`;
       })
       .join(', ');
 
-    lines.push(`  ${prefix} ${c.lavender}${overlap.file}${c.reset} ${c.dim}→ Also edited by ${sessionInfo}${c.reset}`);
+    lines.push(
+      `  ${prefix} ${c.lavender}${overlap.file}${c.reset} ${c.dim}→ Also edited by ${sessionInfo}${c.reset}`
+    );
   }
 
   lines.push(`  ${c.dim}Tip: Conflicts will be auto-resolved during session merge${c.reset}`);
