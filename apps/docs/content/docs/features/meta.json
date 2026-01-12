@@ -2,24 +2,17 @@
   "title": "Features",
   "pages": [
     "index",
-    "---Skills System---",
+    "---Core Features---",
     "skills",
-    "---Agent System---",
     "agent-expertise-system",
-    "---Autonomous Execution---",
+    "parallel-sessions",
+    "---Automation---",
     "loop-mode",
     "visual-mode",
-    "---Configuration---",
+    "compact-context",
+    "---Setup & Safety---",
     "configuration",
-    "configuration-reference",
-    "---IDE Integrations---",
     "ide-integrations",
-    "---Damage Control---",
-    "damage-control",
-    "damage-control-setup",
-    "damage-control-architecture",
-    "damage-control-faq",
-    "---Other---",
-    "compact-context"
+    "damage-control"
   ]
 }

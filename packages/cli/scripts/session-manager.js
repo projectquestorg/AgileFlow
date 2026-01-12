@@ -786,6 +786,79 @@ function main() {
       break;
     }
 
+    // PERFORMANCE: Combined command for welcome script (saves ~200ms from 3 subprocess calls)
+    case 'full-status': {
+      const nickname = args[1] || null;
+      const cwd = process.cwd();
+
+      // Register in single pass (combines register + count + status)
+      const registry = loadRegistry();
+      const cleaned = cleanupStaleLocks(registry);
+      const branch = getCurrentBranch();
+      const story = getCurrentStory();
+      const pid = process.ppid || process.pid;
+
+      // Find or create session
+      let sessionId = null;
+      let isNew = false;
+      for (const [id, session] of Object.entries(registry.sessions)) {
+        if (session.path === cwd) {
+          sessionId = id;
+          break;
+        }
+      }
+
+      if (sessionId) {
+        // Update existing
+        registry.sessions[sessionId].branch = branch;
+        registry.sessions[sessionId].story = story ? story.id : null;
+        registry.sessions[sessionId].last_active = new Date().toISOString();
+        if (nickname) registry.sessions[sessionId].nickname = nickname;
+        writeLock(sessionId, pid);
+      } else {
+        // Create new
+        sessionId = String(registry.next_id);
+        registry.next_id++;
+        registry.sessions[sessionId] = {
+          path: cwd,
+          branch,
+          story: story ? story.id : null,
+          nickname: nickname || null,
+          created: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+          is_main: cwd === ROOT,
+        };
+        writeLock(sessionId, pid);
+        isNew = true;
+      }
+      saveRegistry(registry);
+
+      // Build session list and counts
+      const sessions = [];
+      let otherActive = 0;
+      for (const [id, session] of Object.entries(registry.sessions)) {
+        const active = isSessionActive(id);
+        const isCurrent = session.path === cwd;
+        sessions.push({ id, ...session, active, current: isCurrent });
+        if (active && !isCurrent) otherActive++;
+      }
+
+      const current = sessions.find(s => s.current) || null;
+
+      console.log(
+        JSON.stringify({
+          registered: true,
+          id: sessionId,
+          isNew,
+          current,
+          otherActive,
+          total: sessions.length,
+          cleaned,
+        })
+      );
+      break;
+    }
+
     case 'check-merge': {
       const sessionId = args[1];
       if (!sessionId) {
@@ -888,6 +961,29 @@ function main() {
       break;
     }
 
+    case 'switch': {
+      const sessionIdOrNickname = args[1];
+      if (!sessionIdOrNickname) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID or nickname required' }));
+        return;
+      }
+      const result = switchSession(sessionIdOrNickname);
+      console.log(JSON.stringify(result, null, 2));
+      break;
+    }
+
+    case 'active': {
+      const result = getActiveSession();
+      console.log(JSON.stringify(result, null, 2));
+      break;
+    }
+
+    case 'clear-active': {
+      const result = clearActiveSession();
+      console.log(JSON.stringify(result));
+      break;
+    }
+
     case 'help':
     default:
       console.log(`
@@ -901,6 +997,10 @@ ${c.cyan}Commands:${c.reset}
   count                   Count other active sessions
   delete <id> [--remove-worktree]  Delete session
   status                  Get current session status
+  full-status             Combined register+count+status (optimized)
+  switch <id|nickname>    Switch active session context (for /add-dir)
+  active                  Get currently switched session (if any)
+  clear-active            Clear switched session (back to main)
   check-merge <id>        Check if session is mergeable to main
   merge-preview <id>      Preview commits/files to be merged
   integrate <id> [opts]   Merge session to main and cleanup
@@ -1392,6 +1492,126 @@ function getMergeHistory() {
   }
 }
 
+// Session state file path
+const SESSION_STATE_PATH = path.join(ROOT, 'docs', '09-agents', 'session-state.json');
+
+/**
+ * Switch active session context (for use with /add-dir).
+ * Updates session-state.json with active_session info.
+ *
+ * @param {string} sessionIdOrNickname - Session ID or nickname to switch to
+ * @returns {{ success: boolean, session?: object, path?: string, error?: string }}
+ */
+function switchSession(sessionIdOrNickname) {
+  const registry = loadRegistry();
+
+  // Find session by ID or nickname
+  let targetSession = null;
+  let targetId = null;
+
+  for (const [id, session] of Object.entries(registry.sessions)) {
+    if (id === sessionIdOrNickname || session.nickname === sessionIdOrNickname) {
+      targetSession = session;
+      targetId = id;
+      break;
+    }
+  }
+
+  if (!targetSession) {
+    return { success: false, error: `Session "${sessionIdOrNickname}" not found` };
+  }
+
+  // Verify the session path exists
+  if (!fs.existsSync(targetSession.path)) {
+    return {
+      success: false,
+      error: `Session directory does not exist: ${targetSession.path}`,
+    };
+  }
+
+  // Load or create session-state.json
+  let sessionState = {};
+  if (fs.existsSync(SESSION_STATE_PATH)) {
+    try {
+      sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8'));
+    } catch (e) {
+      // Start fresh
+    }
+  }
+
+  // Update active_session
+  sessionState.active_session = {
+    id: targetId,
+    nickname: targetSession.nickname,
+    path: targetSession.path,
+    branch: targetSession.branch,
+    switched_at: new Date().toISOString(),
+    original_cwd: ROOT,
+  };
+
+  // Save session-state.json
+  const stateDir = path.dirname(SESSION_STATE_PATH);
+  if (!fs.existsSync(stateDir)) {
+    fs.mkdirSync(stateDir, { recursive: true });
+  }
+  fs.writeFileSync(SESSION_STATE_PATH, JSON.stringify(sessionState, null, 2) + '\n');
+
+  // Update session last_active
+  registry.sessions[targetId].last_active = new Date().toISOString();
+  saveRegistry(registry);
+
+  return {
+    success: true,
+    session: {
+      id: targetId,
+      nickname: targetSession.nickname,
+      path: targetSession.path,
+      branch: targetSession.branch,
+    },
+    path: targetSession.path,
+    addDirCommand: `/add-dir ${targetSession.path}`,
+  };
+}
+
+/**
+ * Clear active session (switch back to main/original).
+ * @returns {{ success: boolean }}
+ */
+function clearActiveSession() {
+  if (!fs.existsSync(SESSION_STATE_PATH)) {
+    return { success: true };
+  }
+
+  try {
+    const sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8'));
+    delete sessionState.active_session;
+    fs.writeFileSync(SESSION_STATE_PATH, JSON.stringify(sessionState, null, 2) + '\n');
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Get current active session (if switched).
+ * @returns {{ active: boolean, session?: object }}
+ */
+function getActiveSession() {
+  if (!fs.existsSync(SESSION_STATE_PATH)) {
+    return { active: false };
+  }
+
+  try {
+    const sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8'));
+    if (sessionState.active_session) {
+      return { active: true, session: sessionState.active_session };
+    }
+    return { active: false };
+  } catch (e) {
+    return { active: false };
+  }
+}
+
 // Export for use as module
 module.exports = {
   loadRegistry,
@@ -1415,6 +1635,10 @@ module.exports = {
   categorizeFile,
   getMergeStrategy,
   getMergeHistory,
+  // Session switching
+  switchSession,
+  clearActiveSession,
+  getActiveSession,
 };
 
 // Run CLI if executed directly

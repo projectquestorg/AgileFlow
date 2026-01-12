@@ -133,25 +133,37 @@ Then create with specified branch:
 node .agileflow/scripts/session-manager.js create --branch {branch_name}
 ```
 
-### Step 5: Display Success Message
+### Step 5: Display Success with Switch Command
 
-Show the created session details and the command to start working:
+After session creation succeeds:
+
+1. First, activate boundary protection for the new session:
+```bash
+node .agileflow/scripts/session-manager.js switch {new_session_id}
+```
+
+2. Then show the `/add-dir` command for the user to switch:
 
 ```
-✓ Created Session {id} "{nickname}"
+✅ Created Session {id} "{nickname}"
 
-  Workspace: ../project-{name}
-  Branch:    session-{id}-{name}
+┌───────────┬────────────────────────────────────────────┐
+│ Session   │ {id} "{nickname}"                          │
+│ Workspace │ {path}                                     │
+│ Branch    │ {branch}                                   │
+└───────────┴────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────┐
-│ To start working in this session, run:                  │
-│                                                         │
-│   cd ../project-{name} && claude                        │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+To switch to this session, run:
 
-💡 Tip: Use /agileflow:session:resume to see all sessions
+  /add-dir {path}
+
+💡 Use /agileflow:session:resume to list all sessions
 ```
+
+**WHY /add-dir instead of cd && claude:**
+- Stays in the same terminal and conversation
+- One short command to type
+- Immediately enables file access to the new session directory
 
 ## Error Handling
 
@@ -228,21 +240,26 @@ If user selects "Auto-create":
 node .agileflow/scripts/session-manager.js create
 ```
 
-Display:
+Parse JSON result, then activate boundary protection:
+```bash
+node .agileflow/scripts/session-manager.js switch {new_id}
 ```
-✓ Created Session {id}
 
-  Workspace: ../project-{id}
-  Branch:    session-{id}
+Then display:
+```
+✅ Created Session {id}
 
-┌─────────────────────────────────────────────────────────┐
-│ To start working in this session, run:                  │
-│                                                         │
-│   cd ../project-{id} && claude                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌───────────┬────────────────────────────────────────────┐
+│ Session   │ {id}                                       │
+│ Workspace │ {path}                                     │
+│ Branch    │ {branch}                                   │
+└───────────┴────────────────────────────────────────────┘
 
-💡 Tip: Use /agileflow:session:resume to see all sessions
+To switch to this session, run:
+
+  /add-dir {path}
+
+💡 Use /agileflow:session:resume to list all sessions
 ```
 
 ---
@@ -274,21 +291,26 @@ Then create:
 node .agileflow/scripts/session-manager.js create --nickname {name}
 ```
 
-Display:
+Parse JSON result, then activate boundary protection:
+```bash
+node .agileflow/scripts/session-manager.js switch {new_id}
 ```
-✓ Created Session {id} "{name}"
 
-  Workspace: ../project-{name}
-  Branch:    session-{id}-{name}
+Then display:
+```
+✅ Created Session {id} "{name}"
 
-┌─────────────────────────────────────────────────────────┐
-│ To start working in this session, run:                  │
-│                                                         │
-│   cd ../project-{name} && claude                        │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌───────────┬────────────────────────────────────────────┐
+│ Session   │ {id} "{name}"                              │
+│ Workspace │ {path}                                     │
+│ Branch    │ {branch}                                   │
+└───────────┴────────────────────────────────────────────┘
 
-💡 Tip: Use /agileflow:session:resume to see all sessions
+To switch to this session, run:
+
+  /add-dir {path}
+
+💡 Use /agileflow:session:resume to list all sessions
 ```
 
 ---
@@ -327,7 +349,12 @@ git branch --format='%(refname:short)'
 node .agileflow/scripts/session-manager.js create --branch {branch_name}
 ```
 
-Display success as above.
+5. Parse JSON result, then activate boundary protection:
+```bash
+node .agileflow/scripts/session-manager.js switch {new_id}
+```
+
+6. Display success as above with `/add-dir` command.
 
 ---
 
@@ -365,20 +392,22 @@ Try running: git status
 
 All three options show same format:
 ```
-✓ Created Session {id} ["{nickname}" OR empty]
+✅ Created Session {id} ["{nickname}" OR empty]
 
-  Workspace: ../project-{path}
-  Branch:    {branch_name}
+┌───────────┬────────────────────────────────────────────┐
+│ Session   │ {id} ["{nickname}" or empty]               │
+│ Workspace │ {path}                                     │
+│ Branch    │ {branch}                                   │
+└───────────┴────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────┐
-│ To start working in this session, run:                  │
-│                                                         │
-│   {cd_command}                                          │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+To switch to this session, run:
 
-💡 Tip: Use /agileflow:session:resume to see all sessions
+  /add-dir {path}
+
+💡 Use /agileflow:session:resume to list all sessions
 ```
+
+**Use /add-dir instead of cd && claude** - stays in same terminal/conversation.
 
 ---
 
@@ -400,7 +429,8 @@ All three options show same format:
 4. **User selects** → Option 1, 2, or 3
 5. **Handle selection** → Different flow for each
 6. **Create session** → Call manager script
-7. **Show success** → Display cd command
+7. **Activate boundary** → `session-manager.js switch {new_id}`
+8. **Show success** → Display `/add-dir {path}` command for user to run
 
 ---
 
@@ -420,7 +450,7 @@ All three options show same format:
 ❌ Don't show more/fewer than 3 initial options
 ❌ Don't create session without explicit user choice
 ❌ Don't skip error handling (directory exists, branch conflict)
-❌ Don't forget cd command in success message
+❌ Don't show old "cd && claude" command - use /add-dir instead
 ❌ Show different success formats for different methods
 
 ### DO THESE INSTEAD
@@ -429,7 +459,7 @@ All three options show same format:
 ✅ Always show exactly 3 options
 ✅ Wait for user to select before creating
 ✅ Handle all error cases gracefully
-✅ Always show cd command in success
+✅ Show `/add-dir {path}` command for user to switch
 ✅ Use consistent success format
 
 ---
@@ -442,7 +472,8 @@ All three options show same format:
 - Each option leads to different flow
 - Use AskUserQuestion for user selections
 - Handle all error cases (directory, branch, git)
-- Return success with cd command
+- **Run `session-manager.js switch {new_id}` AFTER creating session** (enables boundary protection)
+- Show `/add-dir {path}` command for user to switch (NOT cd && claude)
 - Show tip to use /agileflow:session:resume
 
 <!-- COMPACT_SUMMARY_END -->

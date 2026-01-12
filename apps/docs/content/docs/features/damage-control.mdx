@@ -1,19 +1,25 @@
 ---
-title: Overview
-description: Protect your codebase from destructive agent commands using PreToolUse hooks.
+title: Damage Control
+description: Protect your codebase from destructive commands using PreToolUse hooks
 ---
 
 # Damage Control
 
-Damage Control is a safety system that prevents AI agents from running destructive or dangerous commands. It uses Claude Code's **PreToolUse hooks** to validate commands before they execute, protecting your codebase from accidental or malicious changes.
+Damage Control is a safety system that prevents AI agents from running destructive or dangerous commands. It uses Claude Code's **PreToolUse hooks** to validate commands before execution.
 
-## Overview
+## Quick Start
 
-Damage Control operates as a defense-in-depth system with three protection layers:
+```bash
+# Enable with interactive wizard
+/agileflow:configure damagecontrol
 
-1. **Bash Tool Hook** - Validates bash commands against dangerous patterns
-2. **Edit Tool Hook** - Enforces file access controls
-3. **Write Tool Hook** - Prevents writes to protected locations
+# Or command line
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+
+# Then restart Claude Code (Cmd+Q / Ctrl+Q)
+```
+
+## How It Works
 
 ```mermaid
 flowchart TD
@@ -23,11 +29,19 @@ flowchart TD
     B -->|Allowed| E[Execute Tool]
 ```
 
+Damage Control uses three separate hooks:
+
+| Hook | File | Protects Against |
+|------|------|------------------|
+| **Bash** | `damage-control-bash.js` | Dangerous shell commands |
+| **Edit** | `damage-control-edit.js` | Edits to protected files |
+| **Write** | `damage-control-write.js` | Writes to protected locations |
+
+---
+
 ## Protection Layers
 
 ### Bash Command Patterns
-
-The bash hook blocks or asks for confirmation on dangerous commands:
 
 **Automatically Blocked:**
 - Destructive deletions: `rm -rf /`, `rm -rf ..`, recursive deletes
@@ -39,519 +53,362 @@ The bash hook blocks or asks for confirmation on dangerous commands:
 - Force kill: `kill -9`, `killall`, `pkill -9`
 - And 30+ more patterns
 
-**Requires Confirmation:**
-- Database deletes with WHERE clause: `DELETE FROM table WHERE ...`
-- Publishing to npm: `npm publish`
-- Pushing to main branch: `git push origin main`
+**Requires Confirmation (Ask Patterns):**
+- Database deletes with WHERE: `DELETE FROM table WHERE ...`
+- Publishing: `npm publish`
+- Pushing to main: `git push origin main`
 - Cloud CLI deletes: `aws delete`, `gcloud delete`, `az delete`
 - Database updates: `UPDATE ... SET ... WHERE`
 - Removing node_modules: `rm -rf node_modules`
 
 ### Path Protection Levels
 
-Damage Control protects files and directories at three levels:
-
 | Level | Read | Write | Edit | Delete |
 |-------|------|-------|------|--------|
-| **Zero Access** | ❌ No | ❌ No | ❌ No | ❌ No |
-| **Read-Only** | ✅ Yes | ❌ No | ❌ No | ❌ No |
-| **No Delete** | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
+| **Zero Access** | No | No | No | No |
+| **Read-Only** | Yes | No | No | No |
+| **No Delete** | Yes | Yes | Yes | No |
 
-**Zero Access Paths** (completely protected):
+**Zero Access Paths:**
 - SSH keys: `~/.ssh/`, `id_rsa`, `id_ed25519`
 - Cloud credentials: `~/.aws/`, `~/.gnupg/`, `~/.config/gh/`
 - Production secrets: `.env.production`, `.env.local`, `.env.secrets`
-- Private keys: `*.pem`, `*.key`, `credentials.json`, `secrets.yaml`
+- Private keys: `*.pem`, `*.key`, `credentials.json`
 
-**Read-Only Paths** (can view, not modify):
+**Read-Only Paths:**
 - Shell config: `~/.bashrc`, `~/.zshrc`, `~/.gitconfig`
-- Lock files: `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
+- Lock files: `package-lock.json`, `yarn.lock`
 - System: `/etc/`
 
-**No Delete Paths** (can read and modify, but not remove):
+**No Delete Paths:**
 - AgileFlow core: `.agileflow/`, `.claude/`
 - Project status: `docs/09-agents/status.json`
 - Source control: `.git/`
-- Project roots: `README.md`, `package.json`, `tsconfig.json`
+- Project roots: `README.md`, `package.json`
 
-## Enabling Damage Control
+---
 
-### Quick Enable
+## Setup Guide
+
+### Prerequisites
+
+- AgileFlow v2.78.0+
+- Claude Code (latest)
+- `.agileflow` directory installed
+
+### Step 1: Choose Protection Level
+
+**Standard (Recommended)**
+- Fast pattern matching only
+- 0ms latency added
+- 40+ dangerous patterns blocked
+- Perfect for most projects
+
+**Enhanced**
+- Standard + AI evaluation for unknown threats
+- 50-100ms latency added
+- Better for highly sensitive code
+- Experimental feature
+
+**Minimal**
+- Path protection only
+- No bash command patterns
+
+### Step 2: Enable
 
 ```bash
 /agileflow:configure damagecontrol
 ```
 
-This launches an interactive configuration that lets you:
-1. Choose protection level (Standard or Enhanced)
-2. Select additional custom protections
-3. Deploy patterns and hooks
-4. Restart Claude Code to activate
-
-### Command Line
+Or:
 
 ```bash
 node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
 ```
 
-### Configuration Steps
+### Step 3: Verify
 
-1. **Choose Protection Level:**
-   - **Standard** (recommended): Fast pattern matching, 0ms latency
-   - **Enhanced**: Standard + AI evaluation for unknown threats
+```bash
+# Check patterns file
+ls -la .agileflow/config/damage-control-patterns.yaml
 
-2. **Optional Custom Protections:**
-   - Production database protection
-   - Cloud CLI destructive operations
-   - Extra environment file protection
+# Check hooks configured
+grep -A 5 "PreToolUse" .claude/settings.json
 
-3. **Files Created:**
-   - `.agileflow/config/damage-control-patterns.yaml` - Pattern definitions
-   - `.claude/settings.json` - PreToolUse hook configuration
-
-4. **Restart Required:**
-   - Must completely quit and restart Claude Code
-   - Hooks only take effect after restart
-
-## How It Works
-
-### PreToolUse Hooks
-
-When you (or an agent) try to run a command, Claude Code intercepts it and runs the PreToolUse hook:
-
+# Test (should be blocked)
+rm -rf /
 ```
-User/Agent wants to run: bash command
-                    ↓
-      [PreToolUse Hook Invoked]
-                    ↓
-   damage-control-bash.js executes
-                    ↓
-  Command matched against patterns
-                    ↓
-    ├─ Blocked Pattern → Prevent execution
-    ├─ Ask Pattern → Request user confirmation
-    └─ No match → Allow execution
+
+### Step 4: Restart Claude Code
+
+**Important:** Hooks only take effect after restart.
+
+```bash
+# Complete quit (Cmd+Q / Ctrl+Q)
+# Wait 5 seconds
+# Reopen Claude Code
+```
+
+---
+
+## Architecture
+
+### System Flow
+
+```mermaid
+flowchart TD
+    A["Tool called<br/>(Bash, Edit, Write)"] -->|Before execution| B["Claude Code<br/>PreToolUse Hook"]
+    B -->|Passes input| C["Damage Control<br/>Script"]
+    C -->|Reads| D["damage-control-patterns.yaml"]
+    C -->|Tests| E["Pattern Matching"]
+    E -->|Match found| F{Pattern Type?}
+    F -->|bashToolPatterns| G["BLOCKED<br/>Exit 2"]
+    F -->|askPatterns| H["ASK USER"]
+    F -->|No match| I["ALLOWED<br/>Exit 0"]
+```
+
+### Bash Hook Example
+
+```javascript
+// Input: { command: "rm -rf /" }
+// Pattern: /\brm\s+-rf\s+/
+// Test: pattern.test("rm -rf /") = true
+// Result: BLOCKED (exit code 2)
+```
+
+### Edit Hook Example
+
+```javascript
+// Input: { file_path: "/Users/me/.ssh/id_rsa" }
+// Protected: zeroAccessPaths: ["~/.ssh/"]
+// Test: path.startsWith(expandedPath)
+// Result: BLOCKED (exit code 2)
 ```
 
 ### Exit Codes
 
-The hooks communicate with Claude Code using exit codes:
-
-- **Exit 0** - Command is safe, allow execution
-- **Exit 2** - Command is blocked, prevent execution
-- **JSON output** - For "ask" patterns, output JSON to trigger confirmation
-
-### Pattern Matching
-
-Patterns use **regular expressions** for flexible matching:
-
-```yaml
-bashToolPatterns:
-  - pattern: '\brm\s+-rf\s+'
-    reason: "Recursive force delete - extremely dangerous"
-    flags: ""              # Optional: "i" for case-insensitive
-
-  - pattern: 'DROP\s+(TABLE|DATABASE|INDEX|VIEW)'
-    reason: "DROP commands are destructive"
-    flags: "i"             # Case-insensitive matching
-```
-
-## Configuration File
-
-The patterns configuration lives in `.agileflow/config/damage-control-patterns.yaml`:
-
-```yaml
-version: "1.0.0"
-
-# BLOCKED BASH COMMANDS
-bashToolPatterns:
-  - pattern: '\brm\s+-rf\s+'
-    reason: "Recursive force delete"
-
-  - pattern: '\bgit\s+push\s+.*--force'
-    reason: "Force push can destroy remote history"
-
-# PATTERNS REQUIRING CONFIRMATION
-askPatterns:
-  - pattern: 'DELETE\s+FROM\s+\w+\s+WHERE'
-    reason: "Deleting specific records - please confirm"
-    flags: "i"
-
-  - pattern: '\bnpm\s+publish'
-    reason: "Publishing to npm - please confirm"
-
-# FILE/DIRECTORY PROTECTION
-zeroAccessPaths:
-  - "~/.ssh/"
-  - ".env.production"
-  - "*.pem"
-
-readOnlyPaths:
-  - "~/.bashrc"
-  - "package-lock.json"
-
-noDeletePaths:
-  - ".agileflow/"
-  - "docs/09-agents/status.json"
-
-# AGILEFLOW-SPECIFIC RULES
-agileflowProtections:
-  - pattern: '\brm\s+.*status\.json'
-    reason: "status.json tracks story progress"
-```
-
-## Customizing Damage Control
-
-### Add Custom Patterns
-
-Edit `.agileflow/config/damage-control-patterns.yaml` and add your own patterns:
-
-```yaml
-# ─── Project-Specific Patterns ───
-customPatterns:
-  - pattern: '\bpg_restore\s+'
-    reason: "Database restore - requires manual execution"
-
-  - pattern: '\bexport\s+PROD_KEY'
-    reason: "Production key export - protected"
-
-  - pattern: 'INSERT\s+INTO\s+users'
-    reason: "User table insertion - please confirm"
-    flags: "i"
-```
-
-### Add Protected Paths
-
-Add paths to the appropriate protection level:
-
-```yaml
-zeroAccessPaths:
-  - "/api/keys/"
-  - "secrets/"
-  - "private/"
-
-readOnlyPaths:
-  - ".github/workflows/"
-  - "docker-compose.prod.yml"
-
-noDeletePaths:
-  - "infrastructure/"
-  - "database/migrations/"
-```
-
-## Testing Damage Control
-
-### Test a Blocked Pattern
-
-Try running a blocked command - it should fail immediately:
-
-```bash
-# This will be blocked
-rm -rf /
-
-# Output:
-# [BLOCKED] rm with absolute path - could delete system files
-# Command: rm -rf /
-```
-
-### Test Path Protection
-
-Try editing a protected file:
-
-```bash
-# This will be blocked (zero access)
-/agileflow:edit ~/.ssh/id_rsa
-
-# This will be blocked (read-only)
-/agileflow:edit package-lock.json
-
-# This will succeed (no delete protection)
-/agileflow:edit docs/09-agents/status.json
-```
-
-### Test Ask Patterns
-
-Some commands ask for confirmation:
-
-```bash
-npm publish
-
-# Output:
-# Confirm: Publishing to npm - please confirm?
-# [Allow] [Cancel]
-```
-
-## Viewing Current Configuration
-
-```bash
-# Show all active protections
-node .agileflow/scripts/agileflow-configure.js --detect
-
-# List all configured patterns
-cat .agileflow/config/damage-control-patterns.yaml
-```
-
-## Disabling Damage Control
-
-If you need to disable damage control temporarily:
-
-```bash
-node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
-```
-
-This removes all PreToolUse hooks but keeps the patterns file for re-enabling later.
-
-## How Patterns Are Evaluated
-
-### Bash Command Matching
-
-When you run a bash command, damage control:
-
-1. **Extracts the command** from the tool input
-2. **Tests against each pattern** using regex matching
-3. **Stops at first match** (order matters)
-4. **Returns action**: block, ask, or allow
-
-Example matching:
-
-```javascript
-// Command: "rm -rf node_modules"
-// Pattern: /\brm\s+-rf\s+/
-
-// Step 1: Extract "rm -rf node_modules"
-// Step 2: Test regex against command
-// Step 3: Match found at position 0
-// Step 4: Return action: "block"
-// Step 5: Block command, show reason
-```
-
-### Path Matching
-
-For file operations, damage control:
-
-1. **Normalizes the path** (expands `~`, resolves `.`)
-2. **Tests against each protected pattern**
-3. **Checks multiple match types:**
-   - Exact path match
-   - Directory prefix match
-   - Filename match
-   - Extension match
-   - Basename match
-
-Example matching:
-
-```javascript
-// File: "/Users/me/.ssh/id_rsa"
-// Protected: ["~/.ssh/"]
-
-// Step 1: Normalize "/Users/me/.ssh/id_rsa"
-// Step 2: Normalize "~/.ssh/" to "/Users/me/.ssh"
-// Step 3: Check if file starts with "/Users/me/.ssh"
-// Step 4: Match found - is directory prefix
-// Step 5: Return action: "block"
-```
-
-## Safety Design
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Allow | Tool executes normally |
+| 2 | Block | Tool execution prevented |
 
 ### Fail-Open Philosophy
 
-If damage control encounters an error, it **allows the command**:
+If the patterns file is corrupted or missing, commands are **allowed** (not blocked). This ensures a broken safety system doesn't block all operations.
 
-- Invalid YAML in patterns file? Command is allowed
-- Missing patterns file? Commands are allowed
-- Script crash? Command is allowed
+---
 
-This ensures that a broken safety system doesn't block all operations.
+## Configuration
 
-### Performance
+### Patterns File
 
-- Pattern matching: < 1ms per command
-- No external API calls
-- No AI evaluation (unless Enhanced mode)
-- Timeout: 4 seconds per check
+Location: `.agileflow/config/damage-control-patterns.yaml`
 
-### Scope
+```yaml
+# Blocked bash commands
+bashToolPatterns:
+  - pattern: 'rm\s+-rf\s+/'
+    reason: "Recursive delete from root"
+  - pattern: 'git\s+push\s+--force'
+    reason: "Force push blocked"
 
-Damage Control protects:
-- **Read** - Edit tool file reading (zero-access only)
-- **Write** - Write tool file creation
-- **Edit** - Edit tool file modifications
-- **Bash** - All bash commands
+# Requires confirmation
+askPatterns:
+  - pattern: 'npm\s+publish'
+    reason: "Publishing to npm"
+  - pattern: 'git\s+push\s+origin\s+main'
+    reason: "Pushing to main"
 
-Does NOT protect:
-- Python, Ruby, Node.js scripts
-- Interactive sessions
-- IDE built-in operations
-- File browser operations
+# Zero access (no read/write/edit)
+zeroAccessPaths:
+  - '~/.ssh/'
+  - '.env'
 
-## Common Issues
+# Read-only (can read, not modify)
+readOnlyPaths:
+  - '~/.bashrc'
+  - 'package-lock.json'
 
-### Hooks Not Working
+# No delete (can read/write, not delete)
+noDeletePaths:
+  - '.agileflow/'
+  - '.git/'
+```
 
-**Issue**: Commands run even though they should be blocked.
+### Adding Custom Patterns
 
-**Solution**:
-1. Verify hooks are configured: `node .agileflow/scripts/agileflow-configure.js --detect`
-2. Check patterns file exists: `cat .agileflow/config/damage-control-patterns.yaml`
-3. Restart Claude Code completely (Cmd+Q, wait 5s, reopen)
+Edit the patterns file directly:
 
-### False Positives
+```yaml
+# Add to bashToolPatterns
+bashToolPatterns:
+  # ... existing patterns ...
+  - pattern: 'my-dangerous-command'
+    reason: "Custom block reason"
 
-**Issue**: Legitimate commands are being blocked.
+# Add to askPatterns
+askPatterns:
+  # ... existing patterns ...
+  - pattern: 'deploy\s+production'
+    reason: "Production deployment"
+```
 
-**Solution**:
-1. Review the blocked pattern in the patterns file
-2. Edit the pattern to be more specific
-3. Use regex alternation to exclude cases: `pattern: '(rm -rf)(?!node_modules)'`
+### Hooks Configuration
 
-### Modifying Protected Files
+In `.claude/settings.json`:
 
-**Issue**: Need to edit a file in a protected path.
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-bash.js"
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-edit.js"
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-write.js"
+        }]
+      }
+    ]
+  }
+}
+```
 
-**Solution**:
-1. Edit `.agileflow/config/damage-control-patterns.yaml`
-2. Move path from `zeroAccessPaths` to `readOnlyPaths` or `noDeletePaths`
-3. Save and restart Claude Code
+---
+
+## FAQ & Troubleshooting
+
+### General Questions
+
+**Q: Does Damage Control slow down commands?**
+
+A: No, it adds less than 5ms per command. Pattern matching is optimized.
+
+**Q: Can I disable it temporarily?**
+
+A: Yes:
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+```
+Then restart Claude Code. Re-enable with `--enable=damagecontrol`.
+
+**Q: What if it blocks something that should be allowed?**
+
+A: Edit `.agileflow/config/damage-control-patterns.yaml`:
+1. Make the pattern more specific
+2. Move it from `bashToolPatterns` to `askPatterns`
+3. Remove it if not needed
+
+Then restart Claude Code.
+
+**Q: Does it protect against human mistakes too?**
+
+A: Yes. All commands go through hooks, whether from you or AI.
+
+**Q: Can patterns be bypassed?**
+
+A: Not easily. Patterns match actual command strings. Simple workarounds like `r m -rf` create syntax errors.
+
+### Setup Issues
+
+**Q: Hooks aren't working after enabling.**
+
+A: Most common cause - you haven't restarted Claude Code:
+1. Close completely (Cmd+Q / Ctrl+Q)
+2. Wait 5 seconds
+3. Reopen
+4. Test with `rm -rf /`
+
+**Q: How do I know if it's working?**
+
+A: Test a blocked command:
+```bash
+rm -rf /
+# Should see: [BLOCKED] rm with absolute path
+```
+
+**Q: Can't find patterns file.**
+
+A: Create it:
+```bash
+mkdir -p .agileflow/config
+cp .agileflow/templates/damage-control-patterns.yaml .agileflow/config/
+```
+
+**Q: settings.json got corrupted.**
+
+A: Fix it:
+```bash
+cp .claude/settings.json .claude/settings.json.broken
+node .agileflow/scripts/agileflow-configure.js --migrate
+# If that fails:
+rm .claude/settings.json
+/agileflow:configure damagecontrol
+```
+
+### Troubleshooting Matrix
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Hooks don't run | Not restarted | Quit and restart Claude Code |
+| All commands blocked | Patterns too broad | Edit YAML, make patterns specific |
+| Valid command blocked | False positive | Move to askPatterns or remove |
+| Patterns file missing | Not created | Run `/agileflow:configure damagecontrol` |
+| JSON parse error | Invalid settings | Validate with `jq empty .claude/settings.json` |
+
+### Disabling
+
+**Temporarily disable:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+# Restart Claude Code
+```
+
+**Remove specific hook:**
+```bash
+jq 'del(.hooks.PreToolUse)' .claude/settings.json > tmp.json
+mv tmp.json .claude/settings.json
+# Restart Claude Code
+```
+
+**Re-enable:**
+```bash
+/agileflow:configure damagecontrol
+# Restart Claude Code
+```
+
+---
 
 ## Best Practices
 
-### Security
+### Do's
+- Enable Damage Control on all projects
+- Use Standard protection (Enhanced is experimental)
+- Test with `rm -rf /` after setup
+- Keep patterns file in version control
+- Review blocked operations in logs
 
-- **Keep default protections** - They exist for good reasons
-- **Review custom patterns** - Ensure they don't unintentionally block valid operations
-- **Version control patterns** - Commit `.agileflow/config/damage-control-patterns.yaml` to git
-- **Team alignment** - Discuss what should be protected with your team
+### Don'ts
+- Don't disable without good reason
+- Don't make patterns too broad (false positives)
+- Don't forget to restart after changes
+- Don't ignore blocked command warnings
 
-### Development
-
-- **Use ask patterns** - For risky but valid operations
-- **Document patterns** - Add comments explaining why patterns exist
-- **Test patterns** - Verify patterns work as expected
-- **Review logs** - Check what was blocked and why
-
-### Operations
-
-- **Don't disable lightly** - Only disable when necessary
-- **Re-enable quickly** - Don't leave damage control disabled for long
-- **Monitor blocks** - Watch for patterns that block legitimate work
-- **Adjust as needed** - Refine patterns based on real usage
-
-## Examples
-
-### Protect Production Database
-
-```yaml
-bashToolPatterns:
-  - pattern: '\bpsql\s+.*production'
-    reason: "Production database access blocked - use staging only"
-
-  - pattern: '\bmysql\s+.*-h\s+.*prod'
-    reason: "Production MySQL access blocked"
-
-askPatterns:
-  - pattern: 'DELETE\s+FROM\s+users'
-    reason: "Deleting from users table - please confirm"
-    flags: "i"
-```
-
-### Protect API Keys
-
-```yaml
-zeroAccessPaths:
-  - ".env.production"
-  - "config/api-keys/"
-  - "secrets/"
-  - "~/.aws/"
-  - "~/.gcp/"
-
-readOnlyPaths:
-  - ".env.example"
-  - "config/"
-```
-
-### Protect Infrastructure
-
-```yaml
-noDeletePaths:
-  - "terraform/"
-  - "kubernetes/"
-  - "docker-compose.yml"
-
-bashToolPatterns:
-  - pattern: '\bterraform\s+destroy'
-    reason: "Terraform destroy - use manual process"
-
-  - pattern: '\bkubectl\s+delete\s+(namespace|cluster)'
-    reason: "Kubernetes deletion - manual review required"
-```
-
-## Reference
-
-### Environment Variables
-
-No environment variables needed - patterns are always read from:
-```
-.agileflow/config/damage-control-patterns.yaml
-.agileflow/config/damage-control-patterns.yml
-.agileflow/templates/damage-control-patterns.yaml
-```
-
-### Related Documentation
-
-- [Configure Command](/commands/configure) - Enable/disable features
-- [PreToolUse Hooks](https://docs.claudeai.com/tools/hooks) - Claude Code hook system
-- [Security Best Practices](/features/security) - General security guidelines
-
-### Scripts
-
-- `.agileflow/scripts/damage-control-bash.js` - Bash command validation
-- `.agileflow/scripts/damage-control-edit.js` - File edit validation
-- `.agileflow/scripts/damage-control-write.js` - File write validation
-
-## Troubleshooting
-
-### Commands not being blocked
-
-1. Check patterns are loaded:
-   ```bash
-   head -20 .agileflow/config/damage-control-patterns.yaml
-   ```
-
-2. Verify regex is correct:
-   ```bash
-   # Test regex in Node.js
-   node -e "console.log(/\brm\s+-rf\s+/.test('rm -rf /'))"
-   # Should output: true
-   ```
-
-3. Restart Claude Code completely
-
-### Too restrictive
-
-1. Review which patterns are firing:
-   ```bash
-   grep -n "pattern:" .agileflow/config/damage-control-patterns.yaml
-   ```
-
-2. Comment out overly broad patterns
-3. Use more specific regex (add anchors, character classes)
-4. Restart Claude Code
-
-### Performance issues
-
-1. Damage control should add < 5ms to each command
-2. If experiencing slowness, check:
-   - Number of patterns (keep under 100)
-   - Regex complexity (avoid nested quantifiers)
-   - File size (patterns file should be < 100KB)
-
-## Next Steps
-
-After enabling Damage Control:
-
-1. **Test it**: Try running blocked commands
-2. **Customize it**: Add project-specific patterns
-3. **Document it**: Record what's protected and why
-4. **Share it**: Commit patterns to git and share with team
-
-Use `/agileflow:help` to learn about other security features.
+### For Teams
+- Commit `.agileflow/config/damage-control-patterns.yaml`
+- Document custom patterns with comments
+- Test patterns before deploying to team
+- Review and update patterns periodically

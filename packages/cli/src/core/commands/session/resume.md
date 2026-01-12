@@ -71,18 +71,25 @@ AskUserQuestion:
 
 **If user selects a different session:**
 
-Display the command to switch:
+First, update the active session context for boundary protection:
+
+```bash
+node .agileflow/scripts/session-manager.js switch {session_id}
+```
+
+Then display the `/add-dir` command to switch:
 
 ```
-To resume Session 2 "auth":
+To switch to Session 2 "auth":
 
-┌─────────────────────────────────────────────────────────┐
-│   cd ../project-auth && claude --resume                 │
-└─────────────────────────────────────────────────────────┘
+  /add-dir ../project-auth
 
 Session info:
-  Branch: session-2
-  Story:  US-0038 (in-progress)
+┌──────────┬──────────────────────────┐
+│ Branch   │ session-2                │
+│ Story    │ US-0038 (in-progress)    │
+│ Path     │ ../project-auth          │
+└──────────┴──────────────────────────┘
 ```
 
 **If user selects current session:**
@@ -97,6 +104,11 @@ You're already in Session 1!
 Run /agileflow:session:new to create a new parallel workspace.
 ```
 
+**WHY /add-dir instead of cd && claude:**
+- Stays in the same terminal and conversation
+- One short command to type
+- Immediately enables file access to the session directory
+
 ## Related Commands
 
 - `/agileflow:session:new` - Create new session
@@ -109,7 +121,7 @@ Run /agileflow:session:new to create a new parallel workspace.
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:session:resume IS ACTIVE
 
-**CRITICAL**: This command is the primary way to **switch between parallel sessions**. User selects, you display the cd command.
+**CRITICAL**: This command is the primary way to **switch between parallel sessions**. User selects, you display the `/add-dir` command.
 
 ---
 
@@ -152,22 +164,32 @@ You're already in Session 1!
 ```
 
 **If user selects different session:**
-```
-To resume Session 2 "auth":
 
-┌─────────────────────────────────────────────────────────┐
-│   cd ../project-auth && claude --resume                 │
-└─────────────────────────────────────────────────────────┘
+1. First, run switch command (enables boundary protection):
+```bash
+node .agileflow/scripts/session-manager.js switch {session_id}
+```
+
+2. Then show the /add-dir command:
+```
+To switch to Session 2 "auth":
+
+  /add-dir ../project-auth
 
 Session info:
-  Branch: session-2
-  Story:  US-0038 (in-progress)
+┌──────────┬──────────────────────────┐
+│ Branch   │ session-2                │
+│ Story    │ US-0038 (in-progress)    │
+│ Path     │ ../project-auth          │
+└──────────┴──────────────────────────┘
 ```
 
 **If user selects "Create new session":**
 ```
 Run /agileflow:session:new to create a new parallel workspace.
 ```
+
+**Use /add-dir instead of cd && claude** - stays in same terminal/conversation.
 
 ---
 
@@ -223,7 +245,8 @@ Use these fields to build readable labels.
 2. **Parse JSON** → Extract id, branch, nickname, status, path
 3. **Build options** → Create readable labels with status
 4. **Show AskUserQuestion** → Let user select
-5. **Handle selection** → Show cd command or appropriate response
+5. **Activate boundary** → `session-manager.js switch {selected_id}` (if different session)
+6. **Handle selection** → Show `/add-dir` command or appropriate response
 
 ---
 
@@ -252,6 +275,7 @@ Use these fields to build readable labels.
 - Format labels clearly: `Session {id}: {nickname/branch} {(current)}`
 - Show status in description: `Active now` OR `Inactive (N days ago)`
 - Handle each case: current / different / create new
-- Return cd command when user selects different session
+- **Run `session-manager.js switch {id}` BEFORE showing /add-dir** (enables boundary protection)
+- Show `/add-dir {path}` command when user selects different session (NOT cd && claude)
 
 <!-- COMPACT_SUMMARY_END -->

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.85.0] - 2026-01-12
+
+### Added
+- Parallel sessions with git worktrees and session boundary protection
+
 ## [2.84.2] - 2026-01-11
 
 ### Fixed

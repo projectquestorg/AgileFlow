@@ -7,142 +7,19 @@ description: Learn about AgileFlow features for protecting and automating your d
 
 AgileFlow includes powerful features to protect your codebase, automate workflows, and keep your team productive.
 
-## Protection & Safety
+## Core Features
 
-### Damage Control
+### Skills System
 
-Prevent destructive or dangerous commands from running automatically. Uses Claude Code's PreToolUse hooks to validate commands before execution.
+Create, manage, and continuously improve custom AI prompts that learn from your feedback.
 
-- **Bash command validation** - Block dangerous patterns like `rm -rf /`, `git push --force`
-- **File access control** - Protect secrets, keys, and critical files
-- **Customizable rules** - Add project-specific protection patterns
-- **Ask-first mode** - Require confirmation for risky (but valid) operations
+- **Research-backed creation** - Generated from web docs, local documentation, and your codebase
+- **Cookbook workflows** - Multiple use-case specific guides in a single skill
+- **Self-improving** - Skills learn from your corrections and refine automatically
+- **MCP integration** - Connect to Model Context Protocol servers for tool access
+- **Team shareable** - Commit to git and share institutional knowledge
 
-[Learn about Damage Control](/features/damage-control)
-
-[Setup Guide](/features/damage-control-setup)
-
-## Workflow Automation
-
-### Compact Context Preservation
-
-Preserve critical agent knowledge and state during automatic context compaction.
-
-- **Context-aware compaction** - Critical agent rules and state preserved when Claude Code compresses context
-- **Priority-based preservation** - Critical agents always preserved, others degrade gracefully
-- **State continuity** - Current story, blockers, and progress maintained through compaction
-- **Long conversation support** - Sustained agent focus over days of development work
-- **Zero-overhead** - Automatic, no manual configuration needed
-
-[Learn about Compact Context](/features/compact-context)
-
-### Status Line
-
-Display your current work in progress, project status, and cost tracking in Claude Code's status bar.
-
-- **Real-time updates** - Shows current story, WIP count, completion percentage
-- **Customizable components** - Show/hide metrics you care about
-- **Git integration** - Display branch status and changes
-- **Cost tracking** - Monitor API costs if enabled
-
-Configure with `/agileflow:configure --enable=statusline`
-
-### Archival System
-
-Automatically manage your project status by archiving completed stories.
-
-- **Auto-archival** - Stories completed 7+ days ago are automatically archived
-- **Organized history** - Archives organized by month
-- **Performance** - Keeps `status.json` small and fast
-- **Preserves data** - All archives remain accessible
-
-Configure with `/agileflow:configure --enable=archival`
-
-### Session Management
-
-Create isolated work sessions with automatic context management.
-
-- **Session isolation** - Work on multiple epics in parallel
-- **Git worktrees** - Automatic branch management
-- **State tracking** - Remember what you were doing
-- **Session history** - Review past sessions
-
-Start with `/agileflow:session:new EPIC=EP-0001`
-
-## Development Hooks
-
-### SessionStart Hook
-
-Runs when Claude Code starts, giving you project status and environment info.
-
-- **Welcome message** - See project name and description
-- **Environment check** - Verify Node.js, git, required tools
-- **Status summary** - View project health and active work
-- **Customizable** - Add your own startup routines
-
-Enable with `/agileflow:configure --enable=sessionstart`
-
-### PreCompact Hook
-
-Runs before context compression, preserving important state.
-
-- **State preservation** - Keeps story status during compression
-- **Selective compression** - Remove only verbose data
-- **Automatic** - Runs without manual intervention
-
-Enable with `/agileflow:configure --enable=precompact`
-
-### Stop Hooks
-
-Run when Claude Code pauses or completes.
-
-**RalphLoop** - Auto-improve conversation patterns
-**SelfImprove** - Update agent expertise after work
-
-Enable with `/agileflow:configure --enable=ralphloop,selfimprove`
-
-## Data Management
-
-### Context Export
-
-Export full project context for sharing, backup, or external processing.
-
-- **Complete export** - All stories, epics, decisions, research
-- **Multiple formats** - JSON, Markdown, or structured output
-- **Selective** - Choose what to include
-- **Portable** - Use in other systems
-
-Use with `/agileflow:context:export`
-
-### Research System
-
-Maintain a research knowledge base alongside development.
-
-- **Organized notes** - Research organized by date
-- **Searchable** - Find previous research quickly
-- **Indexed** - Links to related stories and epics
-- **Exportable** - Share research with team
-
-Use with `/agileflow:research:ask` and `/agileflow:research:import`
-
-## IDE Support
-
-### IDE Integrations
-
-Install and configure AgileFlow for your favorite IDE with automatic command, agent, and skill installation.
-
-- **Multiple IDEs** - Claude Code, Cursor, Windsurf, OpenAI Codex CLI
-- **Auto-detection** - Detect which IDEs are configured in your project
-- **Damage Control** - Optional safety system for Claude Code (PreToolUse hooks)
-- **Dynamic content** - Commands and agents automatically injected on install
-- **Multi-IDE support** - Use the same project across multiple IDEs
-- **Plugin extensible** - Add support for new IDEs with custom handlers
-
-[Learn about IDE Integrations](/features/ide-integrations)
-
-Setup with `npx agileflow setup --ide claude-code` or `--ide all`
-
-## Skills & Knowledge
+[Learn about Skills](/docs/features/skills)
 
 ### Agent Expertise System
 
@@ -154,122 +31,119 @@ Enable self-improving agents that maintain domain knowledge and accelerate task 
 - **Validation & metrics** - Tools to ensure expertise stays accurate and current
 - **Focused domains** - Specialized knowledge for database, API, UI, testing, CI/CD, and more
 
-[Learn about Agent Expertise System](/features/agent-expertise-system)
+[Learn about Agent Expertise](/docs/features/agent-expertise-system)
 
-### Custom Skills System
+### Parallel Sessions
 
-Create, manage, and continuously improve custom AI prompts that learn from your feedback.
+Work on multiple features, bugs, or experiments simultaneously with isolated workspaces and boundary protection.
 
-- **Research-backed creation** - Generated from web docs, local documentation, and your codebase
-- **Cookbook workflows** - Multiple use-case specific guides in a single skill
-- **Self-improving** - Skills learn from your corrections and refine automatically
-- **MCP integration** - Connect to Model Context Protocol servers for tool access
-- **Team shareable** - Commit to git and share institutional knowledge
+- **Git worktrees** - Each session gets its own directory and branch
+- **Boundary protection** - Edit/Write hooks prevent accidental cross-session edits
+- **Easy switching** - Use `/add-dir` to switch sessions in the same terminal
+- **Session tracking** - AgileFlow tracks all sessions with status and activity
+- **Independent context** - Each session maintains its own story and progress
 
-[Learn about Skills System](/features/skills)
+[Learn about Parallel Sessions](/docs/features/parallel-sessions)
 
-Use with `/agileflow:skill:create`, `/agileflow:skill:list`, `/agileflow:skill:edit`, `/agileflow:skill:test`, and `/agileflow:skill:upgrade`
+---
 
-## Project Intelligence
+## Automation
 
-### Metrics & Analytics
+### Loop Mode
 
-Track your project's health and velocity.
+Run Claude autonomously with continuous task execution until completion.
 
-- **Story metrics** - Count, completion rate, time to completion
-- **Velocity tracking** - Stories per sprint
-- **Quality metrics** - Test coverage, bug counts
-- **Trend analysis** - See improvement over time
+- **Autonomous execution** - Claude works through tasks without interruption
+- **Configurable limits** - Set iteration limits and timeouts
+- **Progress tracking** - See what's happening at each step
+- **Safe fallbacks** - Built-in safety checks prevent runaway loops
 
-View with `/agileflow:metrics`
+[Learn about Loop Mode](/docs/features/loop-mode)
 
-### Impact Analysis
+### Visual Mode
 
-Understand how changes affect your system.
+Let Claude see and interact with visual interfaces through screenshots and browser automation.
 
-- **Dependency mapping** - See what depends on what
-- **Risk assessment** - Identify high-impact changes
-- **Scope estimation** - Better understand feature size
-- **Breaking change detection** - Warn about incompatibilities
+- **Screenshot analysis** - Claude can analyze visual content
+- **Browser automation** - Playwright integration for web testing
+- **UI verification** - Validate visual changes automatically
+- **Cross-platform** - Works on any OS with browser support
 
-Analyze with `/agileflow:impact`
+[Learn about Visual Mode](/docs/features/visual-mode)
 
-## Configuration
+### Compact Context Preservation
 
-All features are configured through the `/agileflow:configure` command with 9 specialized configuration agents:
+Preserve critical agent knowledge and state during automatic context compaction.
 
-```bash
-/agileflow:configure              # Interactive configuration wizard
-/agileflow:configure --detect     # See current settings
-/agileflow:configure --upgrade    # Update to latest versions
-```
+- **Context-aware compaction** - Critical rules preserved when Claude Code compresses context
+- **Priority-based preservation** - Critical agents always preserved
+- **State continuity** - Current story, blockers, and progress maintained
+- **Long conversation support** - Sustained agent focus over days of work
+- **Zero-overhead** - Automatic, no manual configuration needed
 
-### The 9 Configuration Agents
+[Learn about Compact Context](/docs/features/compact-context)
 
-AgileFlow provides specialized agents for each configuration domain:
+---
 
-- **git-config** - Initialize git repository and remote connection
-- **hooks** - Event-driven automation (SessionStart, PreCompact, Stop)
-- **precompact** - Preserve context during conversation compacts
-- **status-line** - Custom status bar in Claude Code
-- **archival** - Auto-manage status.json file size
-- **attribution** - Control AI attribution in git commits
-- **ci** - CI/CD workflow setup (GitHub Actions, GitLab, CircleCI)
-- **damage-control** - Protect against destructive commands
-- **verify** - Test and validate configurations
+## Setup & Safety
 
-[Learn about all configuration agents](/features/configuration)
+### Configuration System
 
-### Feature Management
+9 specialized agents for setting up and customizing your development workflow.
 
-Enable individual features:
+- **Git setup** - Initialize repository and remote connections
+- **Hooks system** - Event-driven automation (SessionStart, PreCompact, Stop)
+- **Status line** - Custom status bar in Claude Code
+- **Archival** - Auto-manage status.json file size
+- **CI/CD** - Automated testing with GitHub Actions, GitLab, CircleCI
+- **Attribution** - Control AI disclosure in git commits
+- **And more** - PreCompact context, verification, token management
 
-```bash
-# Enable specific features
---enable=damagecontrol,statusline,archival
+[Learn about Configuration](/docs/features/configuration)
 
-# Disable features
---disable=statusline
+### IDE Integrations
 
-# Apply preset profiles
---profile=full     # All features
---profile=basic    # Essential only
---profile=minimal  # SessionStart + archival
---profile=none     # Disable all
-```
+Install and configure AgileFlow for your favorite IDE with automatic command, agent, and skill installation.
 
-### Customization
+- **Multiple IDEs** - Claude Code, Cursor, Windsurf, OpenAI Codex CLI
+- **Auto-detection** - Detect which IDEs are configured in your project
+- **Damage Control** - Optional safety system for Claude Code
+- **Dynamic content** - Commands and agents automatically injected on install
+- **Multi-IDE support** - Use the same project across multiple IDEs
 
-Customize feature behavior:
+[Learn about IDE Integrations](/docs/features/ide-integrations)
 
-```bash
-# Archival settings
---archival-days=30
+### Damage Control
 
-# Status line components
---show=story,wip,context
---hide=model,cost,git
-```
+Protect your codebase from destructive commands using PreToolUse hooks.
+
+- **Bash command validation** - Block dangerous patterns like `rm -rf /`, `git push --force`
+- **File access control** - Protect secrets, keys, and critical files
+- **Customizable rules** - Add project-specific protection patterns
+- **Ask-first mode** - Require confirmation for risky operations
+- **Three protection layers** - Bash, Edit, and Write tool validation
+
+[Learn about Damage Control](/docs/features/damage-control)
+
+---
 
 ## Quick Reference
 
-| Feature | Enable Command | Purpose |
-|---------|---|---------|
-| Compact Context | Built-in | Preserve agent knowledge during context compaction |
-| Damage Control | `--enable=damagecontrol` | Block dangerous commands |
-| Status Line | `--enable=statusline` | Show project status |
-| Archival | `--enable=archival` | Auto-archive completed stories |
-| SessionStart | `--enable=sessionstart` | Welcome message & status |
-| PreCompact | `--enable=precompact` | State preservation |
-| RalphLoop | `--enable=ralphloop` | Auto-improve patterns |
-| SelfImprove | `--enable=selfimprove` | Update expertise |
-| Agent Expertise | Built-in | Self-improving agents with domain knowledge |
+| Feature | Purpose | Get Started |
+|---------|---------|-------------|
+| **Skills** | Custom AI prompts that learn | `/agileflow:skill:create` |
+| **Agent Expertise** | Self-improving domain knowledge | Built-in |
+| **Parallel Sessions** | Work on multiple features | `/agileflow:session:new` |
+| **Loop Mode** | Autonomous task execution | `/agileflow:loop` |
+| **Visual Mode** | Screenshot and browser automation | `/agileflow:visual` |
+| **Compact Context** | Preserve state through compression | Built-in |
+| **Configuration** | Setup and customize workflow | `/agileflow:configure` |
+| **IDE Integrations** | Multi-IDE support | `npx agileflow setup` |
+| **Damage Control** | Block dangerous commands | `/agileflow:configure damagecontrol` |
 
 ## Next Steps
 
-1. **Start with Damage Control** - Protect your codebase immediately
-2. **Enable Status Line** - Get real-time project visibility
-3. **Configure Archival** - Keep your status organized
-4. **Customize** - Adjust settings for your workflow
-
-See individual feature pages for setup and usage details.
+1. **Start with Setup** - Run `/agileflow:configure` to set up your project
+2. **Enable Safety** - Configure Damage Control to protect your codebase
+3. **Learn Skills** - Create custom prompts for your workflow
+4. **Try Parallel Sessions** - Work on multiple features simultaneously

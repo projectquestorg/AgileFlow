@@ -21,7 +21,10 @@ const { execSync } = require('child_process');
 const { c: C, box } = require('../lib/colors');
 const { isValidCommandName } = require('../lib/validate');
 
-const DISPLAY_LIMIT = 30000; // Claude Code's Bash tool display limit
+// Claude Code's Bash tool truncates around 30K chars, but ANSI codes and
+// box-drawing characters (╭╮╰╯─│) are multi-byte UTF-8, so we need buffer.
+// Summary table should be the LAST thing visible before truncation.
+const DISPLAY_LIMIT = 29200;
 
 // Optional: Register command for PreCompact context preservation
 const commandName = process.argv[2];
@@ -300,8 +303,6 @@ function generateSummary() {
   );
 
   summary += bottomBorder;
-  summary += '\n';
-  summary += `${C.dim}Full context continues below (Claude sees all)...${C.reset}\n\n`;
 
   return summary;
 }
@@ -706,11 +707,11 @@ if (fullContent.length <= cutoffPoint) {
   console.log(fullContent);
   console.log(summary);
 } else {
-  // Split: content before cutoff + summary + content after cutoff
+  // Output content up to cutoff, then summary as the LAST visible thing.
+  // Don't output contentAfter - it would bleed into visible area before truncation,
+  // and Claude only sees ~30K chars from Bash anyway.
   const contentBefore = fullContent.substring(0, cutoffPoint);
-  const contentAfter = fullContent.substring(cutoffPoint);
 
   console.log(contentBefore);
   console.log(summary);
-  console.log(contentAfter);
 }
