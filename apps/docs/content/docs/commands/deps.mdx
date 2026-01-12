@@ -115,29 +115,10 @@ Circular Dependencies: None detected ✅
 
 ### Mermaid Diagram Format
 
-```mermaid
-graph TD
-    US0030[US-0030: Database schema ✅]
-    US0031[US-0031: User model ✅]
-    US0032[US-0032: Login endpoint 🟡]
-    US0033[US-0033: Login UI 🟢]
-    US0045[US-0045: Password reset ⚪]
-
-    US0030 --> US0031
-    US0031 --> US0032
-    US0032 --> US0033
-    US0032 --> US0045
-
-    classDef done fill:#90EE90
-    classDef ready fill:#D3D3D3
-    classDef inProgress fill:#FFD700
-    classDef blocked fill:#FFCCCB
-
-    class US0030,US0031 done
-    class US0033 ready
-    class US0032 inProgress
-    class US0045 blocked
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/deps-graph.dark.svg" />
+  <img alt="Dependency Graph Example" src="images/deps-graph.light.svg" />
+</picture>
 
 ## Analysis Types
 

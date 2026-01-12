@@ -41,20 +41,10 @@ Loop Mode uses Claude Code's stop hook system. When Claude stops responding:
 2. It executes the configured test command (default: `npm test`)
 3. Based on results, it either advances to the next story or prompts for fixes
 
-```mermaid
-flowchart TB
-    A[Claude Stops] --> B[Stop Hook Triggers]
-    B --> C[ralph-loop.js Runs]
-    C --> D[Run Tests]
-    D --> E{Tests Pass?}
-    E -->|Yes| F[Mark Story Complete]
-    E -->|No| G[Show Failures]
-    F --> H{More Stories?}
-    H -->|Yes| I[Load Next Story]
-    H -->|No| J[Epic Complete!]
-    I --> K[Continue Working]
-    G --> K
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/loop-mode-flow.dark.svg" />
+  <img alt="Loop Mode Flow" src="images/loop-mode-flow.light.svg" />
+</picture>
 
 ### Session State
 

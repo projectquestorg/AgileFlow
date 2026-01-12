@@ -600,28 +600,10 @@ If expertise hasn't been updated in 30 days, either:
 
 ## Architecture Diagram
 
-```mermaid
-flowchart TB
-    subgraph session["Session: Agent Working"]
-        A["1. Load Expertise<br/>(expertise.yaml)"] --> B["2. Validate<br/>(compare to code)"]
-        B --> C["3. Plan<br/>(detailed steps)"]
-        C --> D["4. Build<br/>(execute plan)"]
-        D --> E["5. Capture Diff<br/>(git diff)"]
-    end
-
-    subgraph improve["Self-Improve"]
-        E --> F["6. Analyze Changes<br/>(what was added/modified)"]
-        F --> G["7. Update Expertise<br/>(add learnings)"]
-        G --> H["8. Save File<br/>(expertise.yaml updated)"]
-    end
-
-    H -->|Next Session| A
-
-    style A fill:#e8f4f8
-    style D fill:#f0e8f8
-    style G fill:#f8e8e8
-    style H fill:#f8e8e8
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/agent-expertise-arch.dark.svg" />
+  <img alt="Agent Expertise Architecture" src="images/agent-expertise-arch.light.svg" />
+</picture>
 
 > The closed-loop workflow: experts load knowledge, validate it, build with it, and automatically learn from what they do.
 

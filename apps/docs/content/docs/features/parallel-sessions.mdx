@@ -16,29 +16,10 @@ When working on complex projects, you often need to:
 
 Parallel Sessions solve this by creating isolated workspaces using **git worktrees**, each tracked by AgileFlow with automatic boundary protection.
 
-```mermaid
-flowchart TB
-    subgraph Main["Session 1: Main Project"]
-        M1["/home/user/project"]
-        M2["Branch: main"]
-        M3["Story: US-0042"]
-    end
-
-    subgraph S2["Session 2: Bug Fix"]
-        B1["../project-bugfix"]
-        B2["Branch: session-2-bugfix"]
-        B3["Story: US-0038"]
-    end
-
-    subgraph S3["Session 3: Experiment"]
-        E1["../project-experiment"]
-        E2["Branch: session-3-experiment"]
-        E3["No story assigned"]
-    end
-
-    Main -.->|"git worktree"| S2
-    Main -.->|"git worktree"| S3
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/parallel-sessions-overview.dark.svg" />
+  <img alt="Parallel Sessions Overview" src="images/parallel-sessions-overview.light.svg" />
+</picture>
 
 ## Key Features
 
@@ -54,30 +35,10 @@ flowchart TB
 
 ### Architecture
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant C as Claude
-    participant SM as Session Manager
-    participant SB as Session Boundary Hook
-    participant FS as File System
-
-    U->>C: /agileflow:session:new
-    C->>SM: create --nickname "bugfix"
-    SM->>FS: git worktree add ../project-bugfix
-    SM-->>C: {id: 2, path: "../project-bugfix"}
-    C->>SM: switch 2
-    SM->>FS: Update session-state.json
-    C-->>U: Run: /add-dir ../project-bugfix
-
-    Note over U,FS: Later, when editing files...
-
-    U->>C: Edit file outside session
-    C->>SB: PreToolUse:Edit hook
-    SB->>FS: Read session-state.json
-    SB-->>C: BLOCKED (exit 2)
-    C-->>U: Edit blocked - wrong session
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/parallel-sessions-arch.dark.svg" />
+  <img alt="Parallel Sessions Architecture" src="images/parallel-sessions-arch.light.svg" />
+</picture>
 
 ### Session State Management
 
@@ -122,16 +83,10 @@ Sessions are tracked in two files:
 
 The session boundary hook runs on every Edit and Write operation:
 
-```mermaid
-flowchart TD
-    A[Edit/Write Tool Called] --> B{Read session-state.json}
-    B -->|No active session| C[ALLOW - Normal behavior]
-    B -->|Has active session| D{File inside session path?}
-    D -->|Yes| E[ALLOW - Exit 0]
-    D -->|No| F[BLOCK - Exit 2]
-    F --> G[Show error message]
-    G --> H["Use /agileflow:session:resume to switch"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/parallel-sessions-boundary.dark.svg" />
+  <img alt="Session Boundary Protection Flow" src="images/parallel-sessions-boundary.light.svg" />
+</picture>
 
 **Protection Logic:**
 ```javascript

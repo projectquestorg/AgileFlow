@@ -21,13 +21,10 @@ node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
 
 ## How It Works
 
-```mermaid
-flowchart TD
-    A[Tool Execution] --> B{PreToolUse Hook}
-    B -->|Blocked Pattern| C[BLOCKED - Error message]
-    B -->|Ask Pattern| D[ASK - User confirmation]
-    B -->|Allowed| E[Execute Tool]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/damage-control-flow.dark.svg" />
+  <img alt="Damage Control Flow" src="images/damage-control-flow.light.svg" />
+</picture>
 
 Damage Control uses three separate hooks:
 
@@ -155,17 +152,10 @@ rm -rf /
 
 ### System Flow
 
-```mermaid
-flowchart TD
-    A["Tool called<br/>(Bash, Edit, Write)"] -->|Before execution| B["Claude Code<br/>PreToolUse Hook"]
-    B -->|Passes input| C["Damage Control<br/>Script"]
-    C -->|Reads| D["damage-control-patterns.yaml"]
-    C -->|Tests| E["Pattern Matching"]
-    E -->|Match found| F{Pattern Type?}
-    F -->|bashToolPatterns| G["BLOCKED<br/>Exit 2"]
-    F -->|askPatterns| H["ASK USER"]
-    F -->|No match| I["ALLOWED<br/>Exit 0"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/damage-control-arch.dark.svg" />
+  <img alt="Damage Control Architecture" src="images/damage-control-arch.light.svg" />
+</picture>
 
 ### Bash Hook Example
 
