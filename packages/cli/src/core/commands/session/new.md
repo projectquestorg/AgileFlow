@@ -80,8 +80,9 @@ Parse the JSON result. Display:
 ```
 ✓ Created Session {id}
 
-  Workspace: {path}
-  Branch:    {branch}
+  Workspace:   {path}
+  Branch:      {branch}
+  Thread Type: parallel
 
 ┌─────────────────────────────────────────────────────────┐
 │ To start working in this session, run:                  │
@@ -90,6 +91,8 @@ Parse the JSON result. Display:
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
+
+Note: Worktree sessions default to "parallel" thread type. See docs/02-practices/thread-based-engineering.md for thread type definitions.
 
 ### Step 4b: If "Name this session" Selected
 
@@ -147,11 +150,12 @@ node .agileflow/scripts/session-manager.js switch {new_session_id}
 ```
 ✅ Created Session {id} "{nickname}"
 
-┌───────────┬────────────────────────────────────────────┐
-│ Session   │ {id} "{nickname}"                          │
-│ Workspace │ {path}                                     │
-│ Branch    │ {branch}                                   │
-└───────────┴────────────────────────────────────────────┘
+┌────────────┬────────────────────────────────────────────┐
+│ Session    │ {id} "{nickname}"                          │
+│ Workspace  │ {path}                                     │
+│ Branch     │ {branch}                                   │
+│ Thread     │ parallel                                   │
+└────────────┴────────────────────────────────────────────┘
 
 To switch to this session, run:
 
@@ -249,11 +253,12 @@ Then display:
 ```
 ✅ Created Session {id}
 
-┌───────────┬────────────────────────────────────────────┐
-│ Session   │ {id}                                       │
-│ Workspace │ {path}                                     │
-│ Branch    │ {branch}                                   │
-└───────────┴────────────────────────────────────────────┘
+┌────────────┬────────────────────────────────────────────┐
+│ Session    │ {id}                                       │
+│ Workspace  │ {path}                                     │
+│ Branch     │ {branch}                                   │
+│ Thread     │ parallel                                   │
+└────────────┴────────────────────────────────────────────┘
 
 To switch to this session, run:
 
@@ -300,11 +305,12 @@ Then display:
 ```
 ✅ Created Session {id} "{name}"
 
-┌───────────┬────────────────────────────────────────────┐
-│ Session   │ {id} "{name}"                              │
-│ Workspace │ {path}                                     │
-│ Branch    │ {branch}                                   │
-└───────────┴────────────────────────────────────────────┘
+┌────────────┬────────────────────────────────────────────┐
+│ Session    │ {id} "{name}"                              │
+│ Workspace  │ {path}                                     │
+│ Branch     │ {branch}                                   │
+│ Thread     │ parallel                                   │
+└────────────┴────────────────────────────────────────────┘
 
 To switch to this session, run:
 
@@ -394,11 +400,12 @@ All three options show same format:
 ```
 ✅ Created Session {id} ["{nickname}" OR empty]
 
-┌───────────┬────────────────────────────────────────────┐
-│ Session   │ {id} ["{nickname}" or empty]               │
-│ Workspace │ {path}                                     │
-│ Branch    │ {branch}                                   │
-└───────────┴────────────────────────────────────────────┘
+┌────────────┬────────────────────────────────────────────┐
+│ Session    │ {id} ["{nickname}" or empty]               │
+│ Workspace  │ {path}                                     │
+│ Branch     │ {branch}                                   │
+│ Thread     │ parallel                                   │
+└────────────┴────────────────────────────────────────────┘
 
 To switch to this session, run:
 
@@ -408,6 +415,7 @@ To switch to this session, run:
 ```
 
 **Use /add-dir instead of cd && claude** - stays in same terminal/conversation.
+**Thread type**: Worktree sessions default to "parallel". See [Thread-Based Engineering](../../02-practices/thread-based-engineering.md).
 
 ---
 

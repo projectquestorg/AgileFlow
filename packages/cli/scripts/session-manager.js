@@ -156,8 +156,21 @@ function getCurrentStory() {
   return null;
 }
 
+// Thread type enum values
+const THREAD_TYPES = ['base', 'parallel', 'chained', 'fusion', 'big', 'long'];
+
+// Auto-detect thread type from context
+function detectThreadType(session, isWorktree = false) {
+  // Worktree sessions are parallel threads
+  if (isWorktree || (session && !session.is_main)) {
+    return 'parallel';
+  }
+  // Default to base
+  return 'base';
+}
+
 // Register current session (called on startup)
-function registerSession(nickname = null) {
+function registerSession(nickname = null, threadType = null) {
   const registry = loadRegistry();
   const cwd = process.cwd();
   const branch = getCurrentBranch();
@@ -179,6 +192,10 @@ function registerSession(nickname = null) {
     registry.sessions[existingId].story = story ? story.id : null;
     registry.sessions[existingId].last_active = new Date().toISOString();
     if (nickname) registry.sessions[existingId].nickname = nickname;
+    // Update thread_type if explicitly provided
+    if (threadType && THREAD_TYPES.includes(threadType)) {
+      registry.sessions[existingId].thread_type = threadType;
+    }
 
     writeLock(existingId, pid);
     saveRegistry(registry);
@@ -190,6 +207,11 @@ function registerSession(nickname = null) {
   const sessionId = String(registry.next_id);
   registry.next_id++;
 
+  const isMain = cwd === ROOT;
+  const detectedType = threadType && THREAD_TYPES.includes(threadType)
+    ? threadType
+    : detectThreadType(null, !isMain);
+
   registry.sessions[sessionId] = {
     path: cwd,
     branch,
@@ -197,13 +219,14 @@ function registerSession(nickname = null) {
     nickname: nickname || null,
     created: new Date().toISOString(),
     last_active: new Date().toISOString(),
-    is_main: cwd === ROOT,
+    is_main: isMain,
+    thread_type: detectedType,
   };
 
   writeLock(sessionId, pid);
   saveRegistry(registry);
 
-  return { id: sessionId, isNew: true };
+  return { id: sessionId, isNew: true, thread_type: detectedType };
 }
 
 // Unregister session (called on exit)
@@ -291,7 +314,7 @@ function createSession(options = {}) {
     };
   }
 
-  // Register session
+  // Register session - worktree sessions are always parallel threads
   registry.next_id++;
   registry.sessions[sessionId] = {
     path: worktreePath,
@@ -301,6 +324,7 @@ function createSession(options = {}) {
     created: new Date().toISOString(),
     last_active: new Date().toISOString(),
     is_main: false,
+    thread_type: options.thread_type || 'parallel', // Worktrees default to parallel
   };
 
   saveRegistry(registry);
@@ -310,6 +334,7 @@ function createSession(options = {}) {
     sessionId,
     path: worktreePath,
     branch: branchName,
+    thread_type: registry.sessions[sessionId].thread_type,
     command: `cd "${worktreePath}" && claude`,
   };
 }
@@ -814,11 +839,16 @@ function main() {
         registry.sessions[sessionId].story = story ? story.id : null;
         registry.sessions[sessionId].last_active = new Date().toISOString();
         if (nickname) registry.sessions[sessionId].nickname = nickname;
+        // Ensure thread_type exists (migration for old sessions)
+        if (!registry.sessions[sessionId].thread_type) {
+          registry.sessions[sessionId].thread_type = registry.sessions[sessionId].is_main ? 'base' : 'parallel';
+        }
         writeLock(sessionId, pid);
       } else {
         // Create new
         sessionId = String(registry.next_id);
         registry.next_id++;
+        const isMain = cwd === ROOT;
         registry.sessions[sessionId] = {
           path: cwd,
           branch,
@@ -826,7 +856,8 @@ function main() {
           nickname: nickname || null,
           created: new Date().toISOString(),
           last_active: new Date().toISOString(),
-          is_main: cwd === ROOT,
+          is_main: isMain,
+          thread_type: isMain ? 'base' : 'parallel',
         };
         writeLock(sessionId, pid);
         isNew = true;
@@ -984,6 +1015,26 @@ function main() {
       break;
     }
 
+    case 'thread-type': {
+      const subCommand = args[1];
+      if (subCommand === 'set') {
+        const sessionId = args[2];
+        const threadType = args[3];
+        if (!sessionId || !threadType) {
+          console.log(JSON.stringify({ success: false, error: 'Usage: thread-type set <sessionId> <type>' }));
+          return;
+        }
+        const result = setSessionThreadType(sessionId, threadType);
+        console.log(JSON.stringify(result));
+      } else {
+        // Default: get thread type
+        const sessionId = args[1] || null;
+        const result = getSessionThreadType(sessionId);
+        console.log(JSON.stringify(result));
+      }
+      break;
+    }
+
     case 'help':
     default:
       console.log(`
@@ -1001,6 +1052,8 @@ ${c.cyan}Commands:${c.reset}
   switch <id|nickname>    Switch active session context (for /add-dir)
   active                  Get currently switched session (if any)
   clear-active            Clear switched session (back to main)
+  thread-type [id]        Get thread type for session (default: current)
+  thread-type set <id> <type>  Set thread type (base|parallel|chained|fusion|big|long)
   check-merge <id>        Check if session is mergeable to main
   merge-preview <id>      Preview commits/files to be merged
   integrate <id> [opts]   Merge session to main and cleanup
@@ -1615,6 +1668,65 @@ function getActiveSession() {
   }
 }
 
+/**
+ * Get thread type for a session.
+ * @param {string} sessionId - Session ID (or null for current session)
+ * @returns {{ success: boolean, thread_type?: string, error?: string }}
+ */
+function getSessionThreadType(sessionId = null) {
+  const registry = loadRegistry();
+  const cwd = process.cwd();
+
+  // Find session
+  let targetId = sessionId;
+  if (!targetId) {
+    // Find current session by path
+    for (const [id, session] of Object.entries(registry.sessions)) {
+      if (session.path === cwd) {
+        targetId = id;
+        break;
+      }
+    }
+  }
+
+  if (!targetId || !registry.sessions[targetId]) {
+    return { success: false, error: 'Session not found' };
+  }
+
+  const session = registry.sessions[targetId];
+  // Return thread_type or auto-detect for legacy sessions
+  const threadType = session.thread_type || (session.is_main ? 'base' : 'parallel');
+
+  return {
+    success: true,
+    thread_type: threadType,
+    session_id: targetId,
+    is_main: session.is_main,
+  };
+}
+
+/**
+ * Update thread type for a session.
+ * @param {string} sessionId - Session ID
+ * @param {string} threadType - New thread type
+ * @returns {{ success: boolean, error?: string }}
+ */
+function setSessionThreadType(sessionId, threadType) {
+  if (!THREAD_TYPES.includes(threadType)) {
+    return { success: false, error: `Invalid thread type: ${threadType}. Valid: ${THREAD_TYPES.join(', ')}` };
+  }
+
+  const registry = loadRegistry();
+  if (!registry.sessions[sessionId]) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  registry.sessions[sessionId].thread_type = threadType;
+  saveRegistry(registry);
+
+  return { success: true, thread_type: threadType };
+}
+
 // Export for use as module
 module.exports = {
   loadRegistry,
@@ -1642,6 +1754,11 @@ module.exports = {
   switchSession,
   clearActiveSession,
   getActiveSession,
+  // Thread type tracking
+  THREAD_TYPES,
+  detectThreadType,
+  getSessionThreadType,
+  setSessionThreadType,
 };
 
 // Run CLI if executed directly

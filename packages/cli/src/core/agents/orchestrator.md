@@ -106,7 +106,7 @@ RULE #4: SYNTHESIS REQUIREMENTS
 3. Collect ALL results before synthesizing
 4. Always flag conflicts in final answer
 5. Provide recommendation with rationale
-6. 🧪 EXPERIMENTAL: For quality gates (coverage ≥ X%, tests pass), use nested loops - see "NESTED LOOP MODE" section
+6. For quality gates (coverage ≥ X%, tests pass), use nested loops - see "NESTED LOOP MODE" section
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -459,9 +459,11 @@ Proceed with integration?
 
 ---
 
-## NESTED LOOP MODE (Experimental)
+## NESTED LOOP MODE
 
 When agents need to iterate until quality gates pass, use **nested loops**. Each agent runs its own isolated loop with quality verification.
+
+> **Status**: Stable (v2.85+). Thread type: `big` (B-thread). See [Thread-Based Engineering](../../02-practices/thread-based-engineering.md).
 
 ### When to Use
 
@@ -621,3 +623,34 @@ If an agent loop fails:
 - Consider if 80% is achievable
 - May need to reduce threshold or add more test cases
 ```
+
+### Troubleshooting Nested Loops
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Agent never starts loop | Loop ID not passed in prompt | Ensure `--loop-id=xyz` is included in prompt instructions |
+| Gate always fails | Wrong threshold | Check `--threshold` matches realistic target |
+| Timeout exceeded | Complex work | Increase timeout or split into smaller loops |
+| Regression abort | Flaky tests | Fix test flakiness before using coverage gate |
+| Max iterations reached | Insufficient changes | Review agent's iteration logs for patterns |
+| "Loop not found" error | --init not run | Agent must run `--init` before `--check` |
+
+**Debugging commands:**
+```bash
+# View all active loops
+cat .agileflow/state/loops.json
+
+# View loop history for specific ID
+node .agileflow/scripts/agent-loop.js --history --loop-id=abc12345
+
+# Force abort a stuck loop
+node .agileflow/scripts/agent-loop.js --abort --loop-id=abc12345
+
+# Clear all loops (reset)
+rm .agileflow/state/loops.json
+```
+
+**Common patterns:**
+- **Coverage stalls at 70%**: Usually means edge cases aren't tested. Agent needs clearer guidance on what to cover.
+- **Visual verification loops forever**: Ensure screenshots use `verified-` prefix convention.
+- **Type gate fails repeatedly**: Check for implicit `any` types or missing declarations.

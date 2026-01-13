@@ -119,7 +119,7 @@ This:
 
 ## Session State
 
-Stored in `docs/09-agents/session-state.json`:
+Stored in `docs/09-agents/session-state.json` (schema v3):
 
 ```json
 {
@@ -128,7 +128,10 @@ Stored in `docs/09-agents/session-state.json`:
     "last_activity": "2025-01-15T14:30:00Z",
     "stories_touched": ["US-0042", "US-0043"],
     "tests_run": 3,
-    "tests_passed": 3
+    "tests_passed": 3,
+    "thread_type": "base",
+    "thread_complexity": "routine",
+    "expected_duration_minutes": null
   },
   "active_commands": ["babysit"],
   "baselines": [
@@ -140,6 +143,16 @@ Stored in `docs/09-agents/session-state.json`:
   ]
 }
 ```
+
+### Thread Type Fields (v3)
+
+| Field | Type | Values | Description |
+|-------|------|--------|-------------|
+| `thread_type` | enum | base, parallel, chained, fusion, big, long | Thread pattern being used |
+| `thread_complexity` | enum | trivial, routine, complex, exploratory | Complexity classification |
+| `expected_duration_minutes` | number/null | Any positive number | Expected session duration |
+
+See [Thread-Based Engineering](../02-practices/thread-based-engineering.md) for thread type definitions.
 
 ---
 

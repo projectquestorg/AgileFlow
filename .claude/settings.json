@@ -27,6 +27,10 @@
           {
             "type": "command",
             "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-edit.js"
+          },
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/session-boundary.js"
           }
         ]
       },
@@ -36,6 +40,10 @@
           {
             "type": "command",
             "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-write.js"
+          },
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/session-boundary.js"
           }
         ]
       }

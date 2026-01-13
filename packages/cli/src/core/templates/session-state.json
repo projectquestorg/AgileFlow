@@ -1,15 +1,20 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "description": "AgileFlow session state tracking",
-  "schema_version": 2,
+  "schema_version": 3,
   "current_session": {
     "id": "sess-20251206-100000",
     "started_at": "2025-12-06T10:00:00Z",
     "baseline_verified": false,
     "initial_test_status": "not_run",
     "current_story": null,
-    "active_agent": null
+    "active_agent": null,
+    "thread_type": "base",
+    "thread_complexity": "routine",
+    "expected_duration_minutes": null
   },
+  "_thread_type_enum": ["base", "parallel", "chained", "fusion", "big", "long"],
+  "_thread_complexity_enum": ["trivial", "routine", "complex", "exploratory"],
   "active_command": {
     "_comment": "Tracks which command (babysit, etc.) is currently active for context preservation across compacts",
     "name": null,

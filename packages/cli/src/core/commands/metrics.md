@@ -76,17 +76,18 @@ Every metric should suggest:
 
 ## Key Metrics Calculated
 
-10+ core metrics:
+11 core metrics:
 1. **Cycle Time** - in-progress → done
 2. **Lead Time** - created → done
 3. **Throughput** - stories completed/period
 4. **WIP** - current in-progress + in-review
 5. **Agent Utilization** - work distribution
-6. **Epic Health** - progress % + trend
-7. **Estimation Accuracy** - estimate vs actual
-8. **Blocked Stories** - count + duration
-9. **Flow Efficiency** - active vs total time %
-10. **Cumulative Flow Diagram** - stacked area chart
+6. **Thread Distribution** - session breakdown by thread type
+7. **Epic Health** - progress % + trend
+8. **Estimation Accuracy** - estimate vs actual
+9. **Blocked Stories** - count + duration
+10. **Flow Efficiency** - active vs total time %
+11. **Cumulative Flow Diagram** - stacked area chart
 
 ---
 
@@ -164,10 +165,11 @@ After displaying metrics:
 
 ## REMEMBER AFTER COMPACTION
 
-- Command is read-only (analyzes bus/log.jsonl + status.json)
-- Calculates 10+ metrics (cycle-time, lead-time, throughput, WIP, etc.)
+- Command is read-only (analyzes bus/log.jsonl + status.json + session registry)
+- Calculates 11 metrics (cycle-time, lead-time, throughput, WIP, thread-distribution, etc.)
 - Shows trends (↗ ↘ →) with % change vs previous period
 - Uses health indicators (🟢🟡🔴) for quick assessment
+- Thread Distribution shows session breakdown by thread type (base/parallel/chained/fusion/big/long)
 - Provides actionable recommendations (HIGH/MEDIUM/LOW)
 - Saves reports to docs/08-project/metrics-reports/
 - Always includes timeframe and generation timestamp
@@ -366,7 +368,48 @@ Balance Score: 78/100 (Good distribution)
 Recommendation: Consider assigning more work to AG-DEVOPS
 ```
 
-### 6. Epic Health
+### 6. Thread Distribution
+**Definition**: Distribution of work by thread type (see docs/02-practices/thread-based-engineering.md)
+
+```bash
+# Get thread type from session registry
+for session in sessions; do
+  thread_type=$(node .agileflow/scripts/session-manager.js thread-type $session)
+  stories_completed=$(count_stories_completed_in_session $session)
+  duration=$(calculate_session_duration $session)
+  echo "$thread_type: $stories_completed stories, $duration hours"
+done
+```
+
+**Output**:
+```
+Thread Distribution (30 days)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sessions by Thread Type:
+  base       ████████████████████░░ 65%  (13 sessions)
+  parallel   ████████░░            25%  (5 sessions)
+  chained    ██░░                  5%   (1 session)
+  fusion     ██░░                  5%   (1 session)
+  big        ░░                    0%   (0 sessions)
+  long       ░░                    0%   (0 sessions)
+
+Avg Duration by Type:
+  base:       45 min avg    8 stories/session
+  parallel:   2.5 hours avg  12 stories/session
+  chained:    3 hours avg    15 stories/session
+  fusion:     30 min avg     1 decision/session
+
+Success Rate by Type:
+  base:       85% stories completed
+  parallel:   92% stories completed  ← Highest
+  chained:    78% stories completed
+  fusion:     N/A (advisory only)
+
+Trend (vs last month): ↗ +15% parallel usage
+Recommendation: Consider using parallel sessions for independent tasks
+```
+
+### 7. Epic Health (was 6)
 **Definition**: Progress and health indicators for epics
 
 ```bash
@@ -641,6 +684,16 @@ EXPORT FORMATS
       "limit": 6,
       "pct": 67,
       "blocked": 2
+    },
+    "thread_distribution": {
+      "base": {"count": 13, "pct": 65, "avg_duration_min": 45, "stories_per_session": 8},
+      "parallel": {"count": 5, "pct": 25, "avg_duration_min": 150, "stories_per_session": 12},
+      "chained": {"count": 1, "pct": 5, "avg_duration_min": 180, "stories_per_session": 15},
+      "fusion": {"count": 1, "pct": 5, "avg_duration_min": 30, "decisions_per_session": 1},
+      "big": {"count": 0, "pct": 0},
+      "long": {"count": 0, "pct": 0},
+      "trend": "parallel_increasing",
+      "change_pct": 15
     }
   },
   "epics": [...],
