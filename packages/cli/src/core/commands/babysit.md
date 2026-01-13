@@ -5,16 +5,21 @@ compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow-babysit - Mentor mode with expert delegation"
+    - "🔔 MANDATORY: Call AskUserQuestion tool at END of EVERY response - especially after completing tasks"
+    - "NEVER end with text like 'Done!' or 'What's next?' - ALWAYS use AskUserQuestion tool instead"
     - "MUST use EnterPlanMode FIRST for ANY non-trivial task (explore codebase, design approach, get approval)"
     - "MUST delegate complex work to domain experts (don't do everything yourself)"
-    - "MUST use AskUserQuestion for decisions, TodoWrite for tracking"
     - "Simple task → do yourself | Complex single-domain → spawn expert | Multi-domain → spawn orchestrator"
     - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with 200+ line detailed prompt"
     - "Research prompts MUST include: 50+ lines actual code, exact error, what was tried, 3+ specific questions"
+    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js claim <id>' IMMEDIATELY after user selects story"
+    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js others' BEFORE suggesting stories, exclude 🔒 claimed"
+    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js release <id>' when story marked done"
   state_fields:
     - current_story
     - current_epic
     - delegation_mode
+    - claimed_story_id
 ---
 
 # /agileflow-babysit
@@ -224,6 +229,17 @@ node scripts/ralph-loop.js --reset    # Reset loop state
 
 **EVERY response MUST end with the AskUserQuestion tool.** Not text like "Want me to...?" - the ACTUAL TOOL CALL.
 
+**This applies (natural pause points):**
+- ✅ After completing a task (ESPECIALLY important - don't leave user hanging)
+- ✅ After spawning an agent and receiving results
+- ✅ When presenting options or decisions
+- ✅ Even when you think you're "done" - ask what's next
+
+**Don't be annoying - DON'T ask for:**
+- ❌ Permission to read files, spawn experts, or do routine work
+- ❌ Confirmation of obvious next steps you should just do
+- ❌ Every micro-step in a workflow
+
 **Required format:**
 ```xml
 <function_calls>
@@ -242,8 +258,8 @@ node scripts/ralph-loop.js --reset    # Reset loop state
 </function_calls>
 ```
 
-**❌ WRONG:** "Want me to continue?" / "Should I proceed?" / "Let me know what you think"
-**✅ RIGHT:** Call the AskUserQuestion tool with actual options
+**❌ WRONG:** "Want me to continue?" / "Should I proceed?" / "Done! Let me know what's next"
+**✅ RIGHT:** Call the AskUserQuestion tool with actual options - NEVER end without it
 
 ---
 
@@ -320,23 +336,32 @@ Use TodoWrite for any task with 3+ steps. Update status as you complete each ste
 
 **Phase 1: Context & Task Selection**
 1. Run context script (obtain-context.js babysit)
-2. Present task options using AskUserQuestion
-3. User selects task
+2. Check for stories claimed by OTHER sessions (filter from suggestions)
+3. Present task options using AskUserQuestion (with 🔒 badges for claimed)
+4. User selects task
+5. **CLAIM THE STORY immediately after selection:**
+   ```bash
+   node .agileflow/scripts/lib/story-claiming.js claim <story-id>
+   ```
 
 **Phase 2: Plan Mode (for non-trivial tasks)**
-4. Call `EnterPlanMode` tool
-5. Explore codebase with Glob, Grep, Read
-6. Design approach, write to plan file
-7. Call `ExitPlanMode` for user approval
+6. Call `EnterPlanMode` tool
+7. Explore codebase with Glob, Grep, Read
+8. Design approach, write to plan file
+9. Call `ExitPlanMode` for user approval
 
 **Phase 3: Execution**
-8. Delegate to experts based on scope
-9. Collect results if async (TaskOutput)
-10. Verify tests pass
+10. Delegate to experts based on scope
+11. Collect results if async (TaskOutput)
+12. Verify tests pass
 
 **Phase 4: Completion**
-11. Update status.json
-12. Present next steps via AskUserQuestion
+13. Update status.json (mark story done)
+14. **RELEASE THE STORY claim:**
+    ```bash
+    node .agileflow/scripts/lib/story-claiming.js release <story-id>
+    ```
+15. Present next steps via AskUserQuestion
 
 ---
 
@@ -352,11 +377,34 @@ Use TodoWrite for any task with 3+ steps. Update status as you complete each ste
 
 ### SUGGESTIONS PRIORITY (for task selection)
 
+**BEFORE suggesting stories, check for claims:**
+```bash
+node .agileflow/scripts/lib/story-claiming.js others
+```
+
+**Story badges in suggestions:**
+| Badge | Meaning | Include in suggestions? |
+|-------|---------|------------------------|
+| ⭐ | Ready, available | YES - prioritize these |
+| 🔒 | Claimed by other session | NO - exclude or show disabled |
+| ✓ | Claimed by this session | YES - show as "continue" |
+
+**Priority order (for unclaimed stories):**
 1. ⭐ READY stories (all AC complete, no blockers)
 2. Blocked with simple unblock
 3. Near-complete epics (80%+ done)
 4. README TODOs
 5. New features
+
+**Example with claim filtering:**
+```json
+[
+  {"label": "US-0042: Auth API ⭐ (Recommended)", "description": "Ready to implement"},
+  {"label": "US-0038: User Profile ✓", "description": "Continue your work"},
+  {"label": "US-0041: Settings 🔒", "description": "Claimed by Session 2 - skip"},
+  {"label": "Other", "description": "Tell me what you want"}
+]
+```
 
 Present top 3-5 via AskUserQuestion, always include "Other" option.
 
@@ -377,12 +425,17 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
-- ALWAYS end with AskUserQuestion tool (not text questions)
+- **🔔 AskUserQuestion AFTER EVERY RESPONSE** - especially after task completion!
+  - Don't say "Done!" and stop - call AskUserQuestion with next step options
+  - Don't leave user waiting - proactively suggest what to do next
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
 - Use state narration markers (📍🔀🔄⚠️✅) for visibility
-- **STORY CLAIMING**: Claim stories before working, skip 🔒 claimed stories in suggestions
+- **STORY CLAIMING - CRITICAL:**
+  1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
+  2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
+  3. WHEN done: `node .agileflow/scripts/lib/story-claiming.js release <id>`
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -795,12 +848,19 @@ User: "Fix the typo in README"
 - Initial task selection
 - Choosing between approaches
 - Architectural decisions
-- End of every response
+- End of every response (to keep user engaged)
+- After completing a task (offer next steps)
 
-**DON'T use for:**
-- Routine operations (just do them)
-- Spawning experts (just spawn)
-- Obvious next steps
+**DON'T use for (avoid being annoying):**
+- Routine operations ("Can I read this file?" → just read it)
+- Spawning experts ("Should I spawn the API expert?" → just spawn it)
+- Obvious next steps that don't need confirmation
+- Asking the same question repeatedly
+- Interrupting workflow when you already know what to do
+- Asking permission for every small action
+
+**Balance:**
+Use AskUserQuestion at natural pause points (task completion, decision needed) but NOT for every micro-step. If you know the next action, do it. Ask only when user input genuinely helps.
 
 **Format:**
 ```xml

@@ -386,6 +386,67 @@ function generateFullContent() {
   content += `${C.lavender}${C.bold}${title}${C.reset}\n`;
   content += `${C.dim}Generated: ${new Date().toISOString()}${C.reset}\n`;
 
+  // 0.5 SESSION CONTEXT BANNER (FIRST - before everything else)
+  // This is critical for multi-session awareness - agents need to know which session they're in
+  const sessionManagerPath = path.join(__dirname, 'session-manager.js');
+  const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
+
+  if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
+    const managerPath = fs.existsSync(sessionManagerPath)
+      ? sessionManagerPath
+      : altSessionManagerPath;
+    const sessionStatus = safeExec(`node "${managerPath}" status`);
+
+    if (sessionStatus) {
+      try {
+        const statusData = JSON.parse(sessionStatus);
+        if (statusData.current) {
+          const session = statusData.current;
+          const isMain = session.is_main === true;
+          const sessionName = session.nickname
+            ? `Session ${session.id} "${session.nickname}"`
+            : `Session ${session.id}`;
+
+          content += `\n${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
+          content += `${C.teal}${C.bold}📍 SESSION CONTEXT${C.reset}\n`;
+          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
+
+          if (isMain) {
+            content += `${C.mintGreen}${C.bold}${sessionName}${C.reset} ${C.dim}(main project)${C.reset}\n`;
+          } else {
+            content += `${C.peach}${C.bold}🔀 ${sessionName}${C.reset} ${C.dim}(worktree)${C.reset}\n`;
+            content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
+            content += `${C.dim}Path: ${session.path || process.cwd()}${C.reset}\n`;
+          }
+
+          // Show other active sessions prominently
+          if (statusData.otherActive > 0) {
+            content += `${C.amber}⚠️ ${statusData.otherActive} other active session(s)${C.reset} - check story claims below\n`;
+          }
+
+          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n\n`;
+        }
+      } catch (e) {
+        // Silently ignore session parse errors - will still show detailed session context later
+      }
+    }
+  }
+
+  // 0.7 INTERACTION MODE (AskUserQuestion) - EARLY for visibility
+  // This MUST appear before other content to ensure Claude sees it
+  const earlyMetadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
+  const askUserQuestionConfig = earlyMetadata?.features?.askUserQuestion;
+
+  if (askUserQuestionConfig?.enabled) {
+    content += `${C.coral}${C.bold}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${C.reset}\n`;
+    content += `${C.coral}${C.bold}┃ 🔔 MANDATORY: AskUserQuestion After EVERY Response      ┃${C.reset}\n`;
+    content += `${C.coral}${C.bold}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${C.reset}\n`;
+    content += `${C.bold}After completing ANY task${C.reset} (implementation, fix, etc.):\n`;
+    content += `${C.mintGreen}→ ALWAYS${C.reset} call ${C.skyBlue}AskUserQuestion${C.reset} tool to offer next steps\n`;
+    content += `${C.coral}→ NEVER${C.reset} end with text like "Done!" or "What's next?"\n\n`;
+    content += `${C.dim}Balance: Use at natural pause points. Don't ask permission for routine work.${C.reset}\n\n`;
+  }
+
   // 0. PROGRESSIVE DISCLOSURE (section activation)
   if (activeSections.length > 0) {
     content += `\n${C.cyan}${C.bold}═══ 📖 Progressive Disclosure: Active Sections ═══${C.reset}\n`;
@@ -490,58 +551,35 @@ function generateFullContent() {
     content += `${C.dim}No session-state.json found${C.reset}\n`;
   }
 
-  // 4. SESSION CONTEXT (multi-session awareness)
-  content += `\n${C.skyBlue}${C.bold}═══ Session Context ═══${C.reset}\n`;
-  const sessionManagerPath = path.join(__dirname, 'session-manager.js');
-  const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
+  // 4. SESSION CONTEXT (details - banner shown above)
+  // Note: Prominent SESSION CONTEXT banner is shown at the top of output
+  // This section provides additional details for non-main sessions
+  const sessionMgrPath = path.join(__dirname, 'session-manager.js');
+  const altSessionMgrPath = '.agileflow/scripts/session-manager.js';
 
-  if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
-    const managerPath = fs.existsSync(sessionManagerPath)
-      ? sessionManagerPath
-      : altSessionManagerPath;
-    const sessionStatus = safeExec(`node "${managerPath}" status`);
+  if (fs.existsSync(sessionMgrPath) || fs.existsSync(altSessionMgrPath)) {
+    const mgrPath = fs.existsSync(sessionMgrPath) ? sessionMgrPath : altSessionMgrPath;
+    const sessionStatusStr = safeExec(`node "${mgrPath}" status`);
 
-    if (sessionStatus) {
+    if (sessionStatusStr) {
       try {
-        const statusData = JSON.parse(sessionStatus);
-        if (statusData.current) {
+        const statusData = JSON.parse(sessionStatusStr);
+        if (statusData.current && !statusData.current.is_main) {
+          // Only show additional details for non-main sessions
+          content += `\n${C.skyBlue}${C.bold}═══ Session Details ═══${C.reset}\n`;
           const session = statusData.current;
-          const isMain = session.is_main === true;
 
-          if (isMain) {
-            content += `Session: ${C.mintGreen}Main project${C.reset} (Session ${session.id || 1})\n`;
-          } else {
-            // NON-MAIN SESSION - Show prominent banner
-            const sessionName = session.nickname
-              ? `${session.id} "${session.nickname}"`
-              : `${session.id}`;
-            content += `${C.teal}${C.bold}🔀 SESSION ${sessionName} (worktree)${C.reset}\n`;
-            content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
-            content += `Path: ${C.dim}${session.path || process.cwd()}${C.reset}\n`;
+          // Calculate relative path to main
+          const mainPath = process.cwd().replace(/-[^/]+$/, ''); // Heuristic: strip session suffix
+          content += `Main project: ${C.dim}${mainPath}${C.reset}\n`;
 
-            // Calculate relative path to main
-            const mainPath = process.cwd().replace(/-[^/]+$/, ''); // Heuristic: strip session suffix
-            content += `Main project: ${C.dim}${mainPath}${C.reset}\n`;
-
-            // Remind about merge flow
-            content += `${C.lavender}💡 When done: /agileflow:session:end → merge to main${C.reset}\n`;
-          }
-
-          // Show other active sessions
-          if (statusData.otherActive > 0) {
-            content += `${C.peach}⚠️ ${statusData.otherActive} other session(s) active${C.reset}\n`;
-          }
-        } else {
-          content += `${C.dim}No session registered${C.reset}\n`;
+          // Remind about merge flow
+          content += `${C.lavender}💡 When done: /agileflow:session:end → merge to main${C.reset}\n`;
         }
       } catch (e) {
-        content += `${C.dim}Session manager available but status parse failed${C.reset}\n`;
+        // Silently ignore - banner above has basic info
       }
-    } else {
-      content += `${C.dim}Session manager available${C.reset}\n`;
     }
-  } else {
-    content += `${C.dim}Multi-session not configured${C.reset}\n`;
   }
 
   // 5. STORY CLAIMS (inter-session coordination)
@@ -662,35 +700,7 @@ function generateFullContent() {
     content += `${C.dim}  /agileflow:configure → Visual E2E testing${C.reset}\n\n`;
   }
 
-  // 6. INTERACTION MODE (AskUserQuestion guidance)
-  const askUserQuestionConfig = metadata?.features?.askUserQuestion;
-
-  if (askUserQuestionConfig?.enabled) {
-    content += `\n${C.brand}${C.bold}═══ ⚡ INTERACTION MODE: AskUserQuestion ENABLED ═══${C.reset}\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    content += `${C.bold}CRITICAL RULE:${C.reset} End ${C.skyBlue}EVERY${C.reset} response with the AskUserQuestion tool.\n\n`;
-    content += `${C.mintGreen}✓ CORRECT:${C.reset} Call the actual AskUserQuestion tool\n`;
-    content += `${C.coral}✗ WRONG:${C.reset} Text like "Want me to continue?" or "What's next?"\n\n`;
-    content += `${C.lavender}Required format:${C.reset}\n`;
-    content += `${C.dim}\`\`\`xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What would you like to do next?",
-  "header": "Next step",
-  "multiSelect": false,
-  "options": [
-    {"label": "Option A (Recommended)", "description": "Why this is best"},
-    {"label": "Option B", "description": "Alternative approach"},
-    {"label": "Pause", "description": "Stop here for now"}
-  ]
-}]</parameter>
-</invoke>
-\`\`\`${C.reset}\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    content += `${C.dim}Mode: ${askUserQuestionConfig.mode || 'all'} | Configure: /agileflow:configure${C.reset}\n\n`;
-  }
-
-  // 5. DOCS STRUCTURE (using vibrant 256-color palette)
+  // DOCS STRUCTURE (using vibrant 256-color palette)
   content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
   const docsDir = 'docs';
   const docFolders = safeLs(docsDir).filter(f => {
