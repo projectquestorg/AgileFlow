@@ -141,5 +141,5 @@ Creates:
 
 ## Related Documentation
 
-- [Commands](./commands.md) - 71 slash commands
+- [Commands](./commands.md) - 72 slash commands
 - [Subagents](./subagents.md) - 29 specialized agents

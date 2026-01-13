@@ -231,6 +231,6 @@ See [Configuration System](./configuration-system.md) for details.
 
 ## Related Documentation
 
-- [Commands](./commands.md) - 71 slash commands
+- [Commands](./commands.md) - 72 slash commands
 - [Agent Expert System](./agent-expert-system.md) - Self-improving expertise
 - [Multi-Expert Orchestration](./multi-expert-orchestration.md) - Parallel expert analysis
