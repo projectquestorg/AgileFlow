@@ -341,6 +341,7 @@ function checkParallelSessions(rootDir) {
     otherActive: 0,
     currentId: null,
     cleaned: 0,
+    cleanedSessions: [], // Detailed info about cleaned sessions
     // Extended session info for non-main sessions
     isMain: true,
     nickname: null,
@@ -374,6 +375,7 @@ function checkParallelSessions(rootDir) {
       result.currentId = data.id;
       result.otherActive = data.otherActive || 0;
       result.cleaned = data.cleaned || 0;
+      result.cleanedSessions = data.cleanedSessions || [];
 
       if (data.current) {
         result.isMain = data.current.is_main === true;
@@ -1275,6 +1277,18 @@ async function main() {
     console.log(
       `${c.slate}   Run ${c.skyBlue}/agileflow:session:new${c.reset}${c.slate} to create isolated workspace.${c.reset}`
     );
+  }
+
+  // Show detailed message if sessions were cleaned (VISIBLE - not hidden!)
+  if (parallelSessions.cleaned > 0 && parallelSessions.cleanedSessions) {
+    console.log('');
+    console.log(`${c.amber}📋 Cleaned ${parallelSessions.cleaned} inactive session(s):${c.reset}`);
+    parallelSessions.cleanedSessions.forEach((sess) => {
+      const name = sess.nickname ? `${sess.id} "${sess.nickname}"` : `Session ${sess.id}`;
+      const reason = sess.reason === 'pid_dead' ? 'process ended' : sess.reason;
+      console.log(`   ${c.dim}└─ ${name} (${reason}, PID ${sess.pid})${c.reset}`);
+    });
+    console.log(`   ${c.slate}Sessions are cleaned when their Claude Code process is no longer running.${c.reset}`);
   }
 
   // Story claiming: cleanup stale claims and show warnings

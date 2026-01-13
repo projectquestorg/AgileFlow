@@ -117,19 +117,39 @@ function isSessionActive(sessionId) {
   return isPidAlive(parseInt(lock.pid, 10));
 }
 
-// Clean up stale locks
-function cleanupStaleLocks(registry) {
+// Clean up stale locks (with detailed tracking)
+function cleanupStaleLocks(registry, options = {}) {
+  const { verbose = false, dryRun = false } = options;
   let cleaned = 0;
+  const cleanedSessions = [];
 
   for (const [id, session] of Object.entries(registry.sessions)) {
     const lock = readLock(id);
-    if (lock && !isPidAlive(parseInt(lock.pid, 10))) {
-      removeLock(id);
-      cleaned++;
+    if (lock) {
+      const pid = parseInt(lock.pid, 10);
+      const isAlive = isPidAlive(pid);
+
+      if (!isAlive) {
+        // Track what we're cleaning and why
+        cleanedSessions.push({
+          id,
+          nickname: session.nickname,
+          branch: session.branch,
+          pid,
+          reason: 'pid_dead',
+          path: session.path,
+        });
+
+        if (!dryRun) {
+          removeLock(id);
+        }
+        cleaned++;
+      }
     }
   }
 
-  return cleaned;
+  // Return detailed info for display
+  return { count: cleaned, sessions: cleanedSessions };
 }
 
 // Get current git branch
@@ -342,7 +362,7 @@ function createSession(options = {}) {
 // Get all sessions with status
 function getSessions() {
   const registry = loadRegistry();
-  const cleaned = cleanupStaleLocks(registry);
+  const cleanupResult = cleanupStaleLocks(registry);
 
   const sessions = [];
   for (const [id, session] of Object.entries(registry.sessions)) {
@@ -357,7 +377,12 @@ function getSessions() {
   // Sort by ID (numeric)
   sessions.sort((a, b) => parseInt(a.id) - parseInt(b.id));
 
-  return { sessions, cleaned };
+  // Return count for backward compat, plus detailed info
+  return {
+    sessions,
+    cleaned: cleanupResult.count,
+    cleanedSessions: cleanupResult.sessions,
+  };
 }
 
 // Get count of active sessions (excluding current)
@@ -989,7 +1014,7 @@ function main() {
 
       // Register in single pass (combines register + count + status)
       const registry = loadRegistry();
-      const cleaned = cleanupStaleLocks(registry);
+      const cleanupResult = cleanupStaleLocks(registry);
       const branch = getCurrentBranch();
       const story = getCurrentStory();
       const pid = process.ppid || process.pid;
@@ -1055,7 +1080,8 @@ function main() {
           current,
           otherActive,
           total: sessions.length,
-          cleaned,
+          cleaned: cleanupResult.count,
+          cleanedSessions: cleanupResult.sessions,
         })
       );
       break;

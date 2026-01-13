@@ -510,8 +510,9 @@ fi
 # ============================================================================
 # Session Info (Multi-session awareness)
 # ============================================================================
-# Show current session if in a non-main session
+# Show current session info for ALL sessions (main and non-main)
 SESSION_INFO=""
+OTHER_SESSIONS=""
 SHOW_SESSION=true  # New component - default enabled
 
 # Check component setting
@@ -531,17 +532,28 @@ if [ "$SHOW_SESSION" = "true" ]; then
       {id: .key, nickname: .value.nickname, is_main: .value.is_main}
     ' "$REGISTRY_FILE" 2>/dev/null)
 
+    # Count total sessions and other active sessions (sessions with lock files)
+    TOTAL_SESSIONS=$(jq '.sessions | length' "$REGISTRY_FILE" 2>/dev/null)
+
     if [ -n "$SESSION_DATA" ]; then
       SESSION_NUM=$(echo "$SESSION_DATA" | jq -r '.id')
       SESSION_NICK=$(echo "$SESSION_DATA" | jq -r '.nickname // empty')
       IS_MAIN=$(echo "$SESSION_DATA" | jq -r '.is_main // false')
 
-      # Only show for non-main sessions
-      if [ "$IS_MAIN" != "true" ] && [ -n "$SESSION_NUM" ]; then
+      # Only show session info for non-main sessions (main is default, no need to show)
+      if [ -n "$SESSION_NUM" ] && [ "$IS_MAIN" != "true" ]; then
         if [ -n "$SESSION_NICK" ] && [ "$SESSION_NICK" != "null" ]; then
-          SESSION_INFO="${DIM}[${RESET}${MAGENTA}S${SESSION_NUM}${RESET}${DIM}:${RESET}${SESSION_NICK}${DIM}]${RESET}"
+          # With nickname
+          SESSION_INFO="${DIM}⎇${RESET} ${MAGENTA}Session ${SESSION_NUM}${RESET}${DIM}:${RESET}${SESSION_NICK}"
         else
-          SESSION_INFO="${DIM}[${RESET}${MAGENTA}S${SESSION_NUM}${RESET}${DIM}]${RESET}"
+          # Without nickname - show simple
+          SESSION_INFO="${DIM}⎇${RESET} ${MAGENTA}Session ${SESSION_NUM}${RESET}"
+        fi
+
+        # Show other sessions count if > 1 (only relevant for non-main)
+        if [ -n "$TOTAL_SESSIONS" ] && [ "$TOTAL_SESSIONS" -gt 1 ] 2>/dev/null; then
+          OTHER_COUNT=$((TOTAL_SESSIONS - 1))
+          OTHER_SESSIONS="${DIM} +${OTHER_COUNT}${RESET}"
         fi
       fi
     fi
@@ -561,10 +573,14 @@ if [ "$SHOW_AGILEFLOW" = "true" ] && [ -n "$AGILEFLOW_DISPLAY" ]; then
   OUTPUT="${AGILEFLOW_DISPLAY}"
 fi
 
-# Session info (if in a non-main session)
+# Session info (always show when available, with other sessions count)
 if [ "$SHOW_SESSION" = "true" ] && [ -n "$SESSION_INFO" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
   OUTPUT="${OUTPUT}${SESSION_INFO}"
+  # Append other sessions count if there are parallel sessions
+  if [ -n "$OTHER_SESSIONS" ]; then
+    OUTPUT="${OUTPUT}${OTHER_SESSIONS}"
+  fi
 fi
 
 # Model with subtle styling (if enabled and available)
