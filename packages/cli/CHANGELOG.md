@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.87.0] - 2026-01-13
+
+### Added
+- Multi-session visibility with cleanup notifications and status line indicators
+
 ## [2.86.0] - 2026-01-13
 
 ### Added
