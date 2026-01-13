@@ -238,6 +238,155 @@ function runDamageControlHook(options) {
   }, STDIN_TIMEOUT_MS);
 }
 
+/**
+ * Parse simplified YAML for damage control patterns
+ * Handles both pattern-based sections (with pattern/reason/flags objects)
+ * and list-based sections (with simple string arrays)
+ *
+ * @param {string} content - YAML file content
+ * @param {object} sectionConfig - Map of section names to their type ('patterns' or 'list')
+ * @returns {object} Parsed configuration
+ *
+ * @example
+ * // For bash patterns (pattern objects):
+ * parseSimpleYAML(content, {
+ *   bashToolPatterns: 'patterns',
+ *   askPatterns: 'patterns',
+ *   agileflowProtections: 'patterns',
+ * })
+ *
+ * @example
+ * // For path lists (string arrays):
+ * parseSimpleYAML(content, {
+ *   zeroAccessPaths: 'list',
+ *   readOnlyPaths: 'list',
+ *   noDeletePaths: 'list',
+ * })
+ */
+function parseSimpleYAML(content, sectionConfig) {
+  // Initialize result with empty arrays for each section
+  const config = {};
+  for (const section of Object.keys(sectionConfig)) {
+    config[section] = [];
+  }
+
+  let currentSection = null;
+  let currentPattern = null;
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+
+    // Skip empty lines and comments
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    // Check if this line is a section header we care about
+    const sectionMatch = trimmed.match(/^(\w+):$/);
+    if (sectionMatch) {
+      const sectionName = sectionMatch[1];
+      if (sectionConfig[sectionName]) {
+        currentSection = sectionName;
+        currentPattern = null;
+      } else {
+        // Section we don't care about
+        currentSection = null;
+        currentPattern = null;
+      }
+      continue;
+    }
+
+    // Skip if we're not in a tracked section
+    if (!currentSection) continue;
+
+    const sectionType = sectionConfig[currentSection];
+
+    if (sectionType === 'patterns') {
+      // Pattern-based section (objects with pattern/reason/flags)
+      if (trimmed.startsWith('- pattern:')) {
+        const patternValue = trimmed
+          .replace('- pattern:', '')
+          .trim()
+          .replace(/^["']|["']$/g, '');
+        currentPattern = { pattern: patternValue };
+        config[currentSection].push(currentPattern);
+      } else if (trimmed.startsWith('reason:') && currentPattern) {
+        currentPattern.reason = trimmed
+          .replace('reason:', '')
+          .trim()
+          .replace(/^["']|["']$/g, '');
+      } else if (trimmed.startsWith('flags:') && currentPattern) {
+        currentPattern.flags = trimmed
+          .replace('flags:', '')
+          .trim()
+          .replace(/^["']|["']$/g, '');
+      }
+    } else if (sectionType === 'list') {
+      // List-based section (simple string arrays)
+      if (trimmed.startsWith('- ')) {
+        const value = trimmed.slice(2).replace(/^["']|["']$/g, '');
+        config[currentSection].push(value);
+      }
+    }
+  }
+
+  return config;
+}
+
+/**
+ * Pre-configured parser for bash tool patterns
+ */
+function parseBashPatterns(content) {
+  return parseSimpleYAML(content, {
+    bashToolPatterns: 'patterns',
+    askPatterns: 'patterns',
+    agileflowProtections: 'patterns',
+  });
+}
+
+/**
+ * Pre-configured parser for path patterns (edit/write)
+ */
+function parsePathPatterns(content) {
+  return parseSimpleYAML(content, {
+    zeroAccessPaths: 'list',
+    readOnlyPaths: 'list',
+    noDeletePaths: 'list',
+  });
+}
+
+/**
+ * Validate file path against path patterns
+ * Used by both edit and write hooks
+ *
+ * @param {string} filePath - File path to validate
+ * @param {object} config - Parsed path patterns config
+ * @param {string} operation - Operation type ('edit' or 'write') for error messages
+ * @returns {object} Validation result { action, reason?, detail? }
+ */
+function validatePathAgainstPatterns(filePath, config, operation = 'access') {
+  // Check zero access paths - completely blocked
+  const zeroMatch = pathMatches(filePath, config.zeroAccessPaths || []);
+  if (zeroMatch) {
+    return {
+      action: 'block',
+      reason: `Zero-access path: ${zeroMatch}`,
+      detail: 'This file is protected and cannot be accessed',
+    };
+  }
+
+  // Check read-only paths - cannot edit/write
+  const readOnlyMatch = pathMatches(filePath, config.readOnlyPaths || []);
+  if (readOnlyMatch) {
+    return {
+      action: 'block',
+      reason: `Read-only path: ${readOnlyMatch}`,
+      detail: `This file is read-only and cannot be ${operation === 'edit' ? 'edited' : 'written to'}`,
+    };
+  }
+
+  // Allow by default
+  return { action: 'allow' };
+}
+
 module.exports = {
   c,
   findProjectRoot,
@@ -246,6 +395,10 @@ module.exports = {
   pathMatches,
   outputBlocked,
   runDamageControlHook,
+  parseSimpleYAML,
+  parseBashPatterns,
+  parsePathPatterns,
+  validatePathAgainstPatterns,
   CONFIG_PATHS,
   STDIN_TIMEOUT_MS,
 };

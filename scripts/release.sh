@@ -30,6 +30,13 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+# Validate version format (semver: X.Y.Z where X, Y, Z are numbers)
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Error: Invalid version format '$VERSION'"
+  echo "Version must be in semver format: X.Y.Z (e.g., 2.32.0)"
+  exit 1
+fi
+
 if [ -z "$TITLE" ]; then
   echo "Error: Release title required"
   echo "Usage: ./scripts/release.sh <version> <release-title>"
@@ -126,13 +133,13 @@ else
   echo "  Warning: $CHANGELOG_FILE not found, skipping changelog update"
 fi
 
-# Step 3: Bump version in packages/cli/package.json
+# Step 3: Bump version in packages/cli/package.json (using jq for safe JSON update)
 echo "Step 3: Bumping version in packages/cli/package.json..."
-sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" packages/cli/package.json
+jq --arg v "$VERSION" '.version = $v' packages/cli/package.json > packages/cli/package.json.tmp && mv packages/cli/package.json.tmp packages/cli/package.json
 
-# Step 4: Bump version in root package.json
+# Step 4: Bump version in root package.json (using jq for safe JSON update)
 echo "Step 4: Bumping version in root package.json..."
-sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
 
 # Step 5: Commit changes
 echo ""

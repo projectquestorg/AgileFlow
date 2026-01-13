@@ -20,66 +20,9 @@ const {
   loadPatterns,
   outputBlocked,
   runDamageControlHook,
+  parseBashPatterns,
   c,
 } = require('./lib/damage-control-utils');
-
-/**
- * Parse simplified YAML for damage control patterns
- * Only parses the structure we need - not a full YAML parser
- */
-function parseSimpleYAML(content) {
-  const config = {
-    bashToolPatterns: [],
-    askPatterns: [],
-    agileflowProtections: [],
-  };
-
-  let currentSection = null;
-  let currentPattern = null;
-
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-
-    // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) continue;
-
-    // Detect section headers
-    if (trimmed === 'bashToolPatterns:') {
-      currentSection = 'bashToolPatterns';
-      currentPattern = null;
-    } else if (trimmed === 'askPatterns:') {
-      currentSection = 'askPatterns';
-      currentPattern = null;
-    } else if (trimmed === 'agileflowProtections:') {
-      currentSection = 'agileflowProtections';
-      currentPattern = null;
-    } else if (trimmed.endsWith(':') && !trimmed.startsWith('-')) {
-      // Other sections we don't care about for bash validation
-      currentSection = null;
-      currentPattern = null;
-    } else if (trimmed.startsWith('- pattern:') && currentSection) {
-      // New pattern entry
-      const patternValue = trimmed
-        .replace('- pattern:', '')
-        .trim()
-        .replace(/^["']|["']$/g, '');
-      currentPattern = { pattern: patternValue };
-      config[currentSection].push(currentPattern);
-    } else if (trimmed.startsWith('reason:') && currentPattern) {
-      currentPattern.reason = trimmed
-        .replace('reason:', '')
-        .trim()
-        .replace(/^["']|["']$/g, '');
-    } else if (trimmed.startsWith('flags:') && currentPattern) {
-      currentPattern.flags = trimmed
-        .replace('flags:', '')
-        .trim()
-        .replace(/^["']|["']$/g, '');
-    }
-  }
-
-  return config;
-}
 
 /**
  * Test command against a single pattern rule
@@ -134,7 +77,7 @@ const defaultConfig = { bashToolPatterns: [], askPatterns: [], agileflowProtecti
 
 runDamageControlHook({
   getInputValue: input => input.command || input.tool_input?.command,
-  loadConfig: () => loadPatterns(projectRoot, parseSimpleYAML, defaultConfig),
+  loadConfig: () => loadPatterns(projectRoot, parseBashPatterns, defaultConfig),
   validate: validateCommand,
   onBlock: (result, command) => {
     outputBlocked(
