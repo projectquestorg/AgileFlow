@@ -447,8 +447,46 @@ Before implementing, evaluate task complexity:
 3. Design implementation approach
 4. Present plan with file paths and steps
 5. Clarify decisions with user
-6. Get approval → `ExitPlanMode`
-7. Implement the approved plan
+6. **PLAN REVIEW CHECKPOINT** (see below)
+7. Get approval → `ExitPlanMode`
+8. Implement the approved plan
+
+### Plan Review Checkpoint (CRITICAL)
+
+**Before transitioning from plan → implement, ALWAYS display:**
+
+```markdown
+---
+
+## Plan Review Checkpoint
+
+**Leverage Reminder:**
+```
+Bad line of code        = 1 bad line
+Bad part of plan        = 100+ bad lines
+Bad line of research    = entire direction is hosed
+```
+
+Take time to review this plan. A few minutes now saves hours later.
+
+**Review Checklist:**
+- [ ] Does this approach make sense for the codebase?
+- [ ] Are there simpler alternatives?
+- [ ] Will this cause breaking changes?
+- [ ] Are edge cases covered?
+
+**Approve plan and proceed to implementation?**
+```
+
+**Why this matters:**
+- Plans are the highest-leverage checkpoint for human review
+- Catching a bad approach before coding saves 100s of lines of rework
+- This is where to invest review time (not code review)
+
+**Options to present:**
+1. **Approve** - Proceed to implementation
+2. **Iterate** - Modify the plan first
+3. **Research** - Need more context before deciding
 
 **Plan Quality Checklist**:
 - [ ] Explored relevant codebase
