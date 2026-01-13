@@ -696,6 +696,172 @@ function integrateSession(sessionId, options = {}) {
   return result;
 }
 
+// Session phases for Kanban-style visualization
+const SESSION_PHASES = {
+  TODO: 'todo',
+  CODING: 'coding',
+  REVIEW: 'review',
+  MERGED: 'merged',
+};
+
+// Detect session phase based on git state
+function getSessionPhase(session) {
+  // If merged_at field exists, session was merged
+  if (session.merged_at) {
+    return SESSION_PHASES.MERGED;
+  }
+
+  // If is_main, it's the merged/main column
+  if (session.is_main) {
+    return SESSION_PHASES.MERGED;
+  }
+
+  // Check git state for the session
+  try {
+    const sessionPath = session.path;
+    if (!fs.existsSync(sessionPath)) {
+      return SESSION_PHASES.TODO;
+    }
+
+    // Count commits since branch diverged from main
+    const mainBranch = getMainBranch();
+    const commitCount = execSync(
+      `git rev-list --count ${mainBranch}..HEAD 2>/dev/null || echo 0`,
+      { cwd: sessionPath, encoding: 'utf8' }
+    ).trim();
+
+    const commits = parseInt(commitCount, 10);
+
+    if (commits === 0) {
+      return SESSION_PHASES.TODO;
+    }
+
+    // Check for uncommitted changes
+    const status = execSync('git status --porcelain 2>/dev/null || echo ""', {
+      cwd: sessionPath,
+      encoding: 'utf8',
+    }).trim();
+
+    if (status === '') {
+      // No uncommitted changes = ready for review
+      return SESSION_PHASES.REVIEW;
+    }
+
+    // Has commits but also uncommitted changes = still coding
+    return SESSION_PHASES.CODING;
+  } catch (e) {
+    // On error, assume coding phase
+    return SESSION_PHASES.CODING;
+  }
+}
+
+// Render Kanban-style board visualization
+function renderKanbanBoard(sessions) {
+  const lines = [];
+
+  // Group sessions by phase
+  const byPhase = {
+    [SESSION_PHASES.TODO]: [],
+    [SESSION_PHASES.CODING]: [],
+    [SESSION_PHASES.REVIEW]: [],
+    [SESSION_PHASES.MERGED]: [],
+  };
+
+  for (const session of sessions) {
+    const phase = getSessionPhase(session);
+    byPhase[phase].push(session);
+  }
+
+  // Calculate column widths (min 12 chars)
+  const colWidth = 14;
+  const separator = '  ';
+
+  // Header
+  lines.push(`${c.cyan}Sessions (Kanban View):${c.reset}`);
+  lines.push('');
+
+  // Column headers
+  const headers = [
+    `${c.dim}TO DO${c.reset}`,
+    `${c.yellow}CODING${c.reset}`,
+    `${c.blue}REVIEW${c.reset}`,
+    `${c.green}MERGED${c.reset}`,
+  ];
+  lines.push(headers.map(h => h.padEnd(colWidth + 10)).join(separator)); // +10 for ANSI codes
+
+  // Top borders
+  const topBorder = `┌${'─'.repeat(colWidth)}┐`;
+  lines.push([topBorder, topBorder, topBorder, topBorder].join(separator));
+
+  // Find max rows needed
+  const maxRows = Math.max(
+    1,
+    byPhase[SESSION_PHASES.TODO].length,
+    byPhase[SESSION_PHASES.CODING].length,
+    byPhase[SESSION_PHASES.REVIEW].length,
+    byPhase[SESSION_PHASES.MERGED].length
+  );
+
+  // Render rows
+  for (let i = 0; i < maxRows; i++) {
+    const cells = [
+      SESSION_PHASES.TODO,
+      SESSION_PHASES.CODING,
+      SESSION_PHASES.REVIEW,
+      SESSION_PHASES.MERGED,
+    ].map(phase => {
+      const session = byPhase[phase][i];
+      if (!session) {
+        return `│${' '.repeat(colWidth)}│`;
+      }
+
+      // Format session info
+      const id = `[${session.id}]`;
+      const name = session.nickname || session.branch || '';
+      const truncName = name.length > colWidth - 5 ? name.slice(0, colWidth - 8) + '...' : name;
+      const content = `${id} ${truncName}`.slice(0, colWidth);
+
+      return `│${content.padEnd(colWidth)}│`;
+    });
+    lines.push(cells.join(separator));
+
+    // Second line with story
+    const storyCells = [
+      SESSION_PHASES.TODO,
+      SESSION_PHASES.CODING,
+      SESSION_PHASES.REVIEW,
+      SESSION_PHASES.MERGED,
+    ].map(phase => {
+      const session = byPhase[phase][i];
+      if (!session) {
+        return `│${' '.repeat(colWidth)}│`;
+      }
+
+      const story = session.story || '-';
+      const storyTrunc = story.length > colWidth - 2 ? story.slice(0, colWidth - 5) + '...' : story;
+
+      return `│${c.dim}${storyTrunc.padEnd(colWidth)}${c.reset}│`;
+    });
+    lines.push(storyCells.join(separator));
+  }
+
+  // Bottom borders
+  const bottomBorder = `└${'─'.repeat(colWidth)}┘`;
+  lines.push([bottomBorder, bottomBorder, bottomBorder, bottomBorder].join(separator));
+
+  // Summary
+  lines.push('');
+  const summary = [
+    `${c.dim}To Do: ${byPhase[SESSION_PHASES.TODO].length}${c.reset}`,
+    `${c.yellow}Coding: ${byPhase[SESSION_PHASES.CODING].length}${c.reset}`,
+    `${c.blue}Review: ${byPhase[SESSION_PHASES.REVIEW].length}${c.reset}`,
+    `${c.green}Merged: ${byPhase[SESSION_PHASES.MERGED].length}${c.reset}`,
+  ].join(' │ ');
+  lines.push(summary);
+
+  return lines.join('\n');
+}
+
 // Format sessions for display
 function formatSessionsTable(sessions) {
   const lines = [];
@@ -772,6 +938,11 @@ function main() {
       const { sessions, cleaned } = getSessions();
       if (args.includes('--json')) {
         console.log(JSON.stringify({ sessions, cleaned }));
+      } else if (args.includes('--kanban')) {
+        console.log(renderKanbanBoard(sessions));
+        if (cleaned > 0) {
+          console.log(`${c.dim}Cleaned ${cleaned} stale lock(s)${c.reset}`);
+        }
       } else {
         console.log(formatSessionsTable(sessions));
         if (cleaned > 0) {
@@ -1759,6 +1930,10 @@ module.exports = {
   detectThreadType,
   getSessionThreadType,
   setSessionThreadType,
+  // Kanban visualization
+  SESSION_PHASES,
+  getSessionPhase,
+  renderKanbanBoard,
 };
 
 // Run CLI if executed directly

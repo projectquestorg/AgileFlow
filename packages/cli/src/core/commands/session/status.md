@@ -1,6 +1,6 @@
 ---
 description: View current session state and activity
-argument-hint: (no arguments)
+argument-hint: [--kanban]
 compact_context:
   priority: medium
   preserve_rules:
@@ -9,6 +9,7 @@ compact_context:
     - "Shows current session, then table of other sessions"
     - "Marks active sessions with ● bullet, inactive with ○"
     - "Returns session count and active count"
+    - "--kanban flag shows Kanban-style board with phases (TO DO, CODING, REVIEW, MERGED)"
   state_fields:
     - current_session
     - all_sessions
@@ -26,16 +27,29 @@ Quick view of all sessions and their status.
 
 Display a compact overview of all registered sessions without prompting for action.
 
+## Arguments
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `--kanban` | No | Show Kanban-style board with phases instead of table |
+
 ## IMMEDIATE ACTIONS
 
 ### Step 1: Get Session Data
 
+**Standard view:**
 ```bash
 node .agileflow/scripts/session-manager.js list --json
 ```
 
-### Step 2: Display Formatted Table
+**Kanban view (if --kanban flag):**
+```bash
+node .agileflow/scripts/session-manager.js list --kanban
+```
 
+### Step 2: Display Formatted Output
+
+**Standard Table View:**
 ```
 📊 Session Status
 
@@ -52,6 +66,25 @@ Other Sessions:
 
 Total: 3 sessions │ 2 active
 ```
+
+**Kanban Board View (--kanban):**
+```
+Sessions (Kanban View):
+
+TO DO           CODING          REVIEW          MERGED
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│              │  │[2] auth      │  │[3] payments  │  │[1] main      │
+│              │  │US-0038       │  │US-0042       │  │-             │
+└──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
+
+To Do: 0 │ Coding: 1 │ Review: 1 │ Merged: 1
+```
+
+**Phase Detection Logic:**
+- **TO DO**: No commits since branch creation
+- **CODING**: Has commits, still has uncommitted changes
+- **REVIEW**: Has commits, no uncommitted changes (ready to merge)
+- **MERGED**: Main branch or merged sessions
 
 ### Step 3: Show Quick Actions
 
