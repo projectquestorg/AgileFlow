@@ -202,6 +202,80 @@ function injectContent(content, context = {}) {
   return result;
 }
 
+// =============================================================================
+// Section Processing Functions (Progressive Disclosure)
+// =============================================================================
+
+/**
+ * Extract section names from content
+ * @param {string} content - Content with section markers
+ * @returns {string[]} Array of section names
+ */
+function extractSectionNames(content) {
+  const sectionPattern = /<!-- SECTION: (\w+[-\w]*) -->/g;
+  const sections = [];
+  let match;
+  while ((match = sectionPattern.exec(content)) !== null) {
+    sections.push(match[1]);
+  }
+  return sections;
+}
+
+/**
+ * Filter content to only include specified sections
+ * Sections are marked with: <!-- SECTION: name --> ... <!-- END_SECTION -->
+ *
+ * @param {string} content - Content with section markers
+ * @param {string[]} activeSections - Sections to include (empty = include all)
+ * @returns {string} Content with only active sections
+ */
+function filterSections(content, activeSections = []) {
+  // If no active sections specified, include all content
+  if (!activeSections || activeSections.length === 0) {
+    return content;
+  }
+
+  // Pattern matches: <!-- SECTION: name --> content <!-- END_SECTION -->
+  const sectionPattern = /<!-- SECTION: (\w+[-\w]*) -->([\s\S]*?)<!-- END_SECTION -->/g;
+
+  return content.replace(sectionPattern, (match, sectionName, sectionContent) => {
+    if (activeSections.includes(sectionName)) {
+      // Keep the section content, remove the markers
+      return sectionContent;
+    }
+    // Remove the entire section
+    return '';
+  });
+}
+
+/**
+ * Remove all section markers but keep content
+ * Used when no filtering is needed but markers should be cleaned
+ *
+ * @param {string} content - Content with section markers
+ * @returns {string} Content without section markers
+ */
+function stripSectionMarkers(content) {
+  // Remove section start markers
+  let result = content.replace(/<!-- SECTION: \w+[-\w]* -->\n?/g, '');
+  // Remove section end markers
+  result = result.replace(/<!-- END_SECTION -->\n?/g, '');
+  return result;
+}
+
+/**
+ * Check if content has section markers
+ * @param {string} content - Content to check
+ * @returns {boolean} True if content has sections
+ */
+function hasSections(content) {
+  return /<!-- SECTION: \w+[-\w]* -->/.test(content);
+}
+
+// =============================================================================
+// Utility Functions
+// =============================================================================
+
 /**
  * Check if content has any template variables
  * @param {string} content - Content to check
@@ -263,4 +337,10 @@ module.exports = {
   injectContent,
   hasPlaceholders,
   getPlaceholderDocs,
+
+  // Section processing (progressive disclosure)
+  extractSectionNames,
+  filterSections,
+  stripSectionMarkers,
+  hasSections,
 };

@@ -6,12 +6,14 @@ compact_context:
   preserve_rules:
     - "map: Execute action on each item sequentially"
     - "pmap: Execute action on each item in parallel (spawn Task agents)"
+    - "pmap MODE=loop: Iterate on each item until tests pass"
     - "filter: Return items matching criteria"
     - "reduce: Aggregate items into single output"
   state_fields:
     - batch_operation
     - items_processed
     - items_total
+    - batch_loop
 ---
 
 # /agileflow:batch
@@ -44,15 +46,22 @@ node .agileflow/scripts/obtain-context.js batch
 ```
 /agileflow:batch map "docs/06-stories/*.md" validate
 /agileflow:batch pmap "src/**/*.tsx" add-tests
+/agileflow:batch pmap "src/**/*.tsx" add-tests MODE=loop  # Iterate until tests pass
 /agileflow:batch filter stories status=ready
 /agileflow:batch reduce "docs/06-stories/*.md" summary
 ```
+
+**Loop Mode** (pmap only):
+- `MODE=loop` - Iterate on each file until tests pass
+- Sequential processing with quality gates
+- Tracks progress in `batch_loop` session state
 
 **Workflow**:
 1. Parse operation and pattern
 2. Resolve pattern to item list
 3. For each item: execute action based on operation type
-4. Collect and report results
+4. (Loop mode) Run tests, iterate if failing
+5. Collect and report results
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -355,8 +364,114 @@ Batch operations update session-state.json:
 
 ---
 
+## Loop Mode (pmap with quality gates)
+
+Process items iteratively until quality gates pass. Useful for test-driven batch operations.
+
+### Usage
+
+```
+/agileflow:batch pmap "pattern" action MODE=loop [GATE=tests] [MAX=50]
+```
+
+### Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| MODE=loop | Enable loop mode | off |
+| GATE=tests | Quality gate type (v1: tests only) | tests |
+| MAX=N | Max total iterations | 50 |
+
+### How It Works
+
+1. **Initialize**: Resolve glob pattern to file list
+2. **Process**: Work on first file, implement the action
+3. **Validate**: On stop, run tests for that file
+4. **Iterate**: If tests pass → next file; if fail → continue fixing
+5. **Complete**: When all files pass or max iterations reached
+
+### Example
+
+```
+/agileflow:batch pmap "src/components/*.tsx" add-tests MODE=loop
+```
+
+**Output:**
+```
+======================================================
+  BATCH LOOP - Iteration 1/50
+======================================================
+
+🔄 Iteration 1/50
+📍 Working on: src/components/Button.tsx
+
+Running tests for: src/components/Button.tsx
+──────────────────────────────────────────────────────
+✓ Tests passed (2.3s)
+
+✅ Item complete: src/components/Button.tsx
+
+━━━ Next Item ━━━
+src/components/Input.tsx
+
+Progress: 1/8 items complete
+
+▶ Implement "add-tests" for this file
+  Run tests when ready. Loop will validate and continue.
+```
+
+### Manual Control
+
+```bash
+# Check loop status
+node scripts/batch-pmap-loop.js --status
+
+# Stop the loop
+node scripts/batch-pmap-loop.js --stop
+
+# Reset loop state
+node scripts/batch-pmap-loop.js --reset
+
+# Initialize directly (alternative to slash command)
+node scripts/batch-pmap-loop.js --init --pattern="src/**/*.tsx" --action="add-tests" --max=30
+```
+
+### Session State
+
+Loop mode tracks progress in `session-state.json`:
+
+```json
+{
+  "batch_loop": {
+    "enabled": true,
+    "pattern": "src/**/*.tsx",
+    "action": "add-tests",
+    "quality_gate": "tests",
+    "current_item": "src/components/Button.tsx",
+    "items": {
+      "src/components/Button.tsx": { "status": "completed", "iterations": 1 },
+      "src/components/Input.tsx": { "status": "in_progress", "iterations": 0 }
+    },
+    "summary": { "total": 8, "completed": 1, "pending": 7 },
+    "iteration": 2,
+    "max_iterations": 50
+  }
+}
+```
+
+### Quality Gate (V1)
+
+V1 supports **tests gate only**:
+- Runs: `npm test -- --testPathPattern="filename"`
+- Passes if tests for this file pass (or no matching tests)
+- Fails if tests for this file fail
+
+Future versions may add: coverage, lint, types gates.
+
+---
+
 ## Integration
 
 - Works with `/agileflow:babysit` for batch story processing
-- Can be used in Ralph Loop for batch operations per iteration
+- **Loop mode** enables iterative batch processing with quality gates
 - Integrates with agent system for parallel work

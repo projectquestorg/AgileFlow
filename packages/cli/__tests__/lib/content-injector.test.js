@@ -12,6 +12,10 @@ const {
   generateAgentList,
   generateCommandList,
   injectContent,
+  extractSectionNames,
+  filterSections,
+  stripSectionMarkers,
+  hasSections,
 } = require('../../tools/cli/lib/content-injector');
 
 describe('content-injector', () => {
@@ -510,6 +514,255 @@ Second: <!-- {{AGENT_LIST}} -->
       // Both should be replaced
       const matches = result.match(/\*\*AVAILABLE AGENTS/g);
       expect(matches).toHaveLength(2);
+    });
+  });
+
+  // ==========================================================================
+  // Progressive Disclosure: Section Processing Tests
+  // ==========================================================================
+
+  describe('extractSectionNames', () => {
+    it('extracts section names from content', () => {
+      const content = `
+# Header
+
+<!-- SECTION: loop-mode -->
+Loop mode content
+<!-- END_SECTION -->
+
+Some regular content
+
+<!-- SECTION: delegation -->
+Delegation content
+<!-- END_SECTION -->
+`;
+
+      const sections = extractSectionNames(content);
+
+      expect(sections).toEqual(['loop-mode', 'delegation']);
+    });
+
+    it('returns empty array when no sections', () => {
+      const content = '# Just regular content\n\nNo sections here.';
+
+      const sections = extractSectionNames(content);
+
+      expect(sections).toEqual([]);
+    });
+
+    it('handles sections with hyphens in names', () => {
+      const content = `
+<!-- SECTION: multi-session-coordination -->
+Content
+<!-- END_SECTION -->
+`;
+
+      const sections = extractSectionNames(content);
+
+      expect(sections).toEqual(['multi-session-coordination']);
+    });
+
+    it('handles multiple occurrences of same section name', () => {
+      const content = `
+<!-- SECTION: test -->
+First
+<!-- END_SECTION -->
+
+<!-- SECTION: test -->
+Second
+<!-- END_SECTION -->
+`;
+
+      const sections = extractSectionNames(content);
+
+      // Should capture both occurrences (even if duplicate)
+      expect(sections).toEqual(['test', 'test']);
+    });
+  });
+
+  describe('filterSections', () => {
+    it('keeps only specified sections', () => {
+      const content = `
+# Header
+
+<!-- SECTION: loop-mode -->
+Loop mode content here
+<!-- END_SECTION -->
+
+Regular content
+
+<!-- SECTION: delegation -->
+Delegation content here
+<!-- END_SECTION -->
+
+Footer
+`;
+
+      const result = filterSections(content, ['loop-mode']);
+
+      expect(result).toContain('Loop mode content here');
+      expect(result).not.toContain('Delegation content here');
+      expect(result).toContain('Header');
+      expect(result).toContain('Regular content');
+      expect(result).toContain('Footer');
+    });
+
+    it('removes section markers when including section', () => {
+      const content = `
+<!-- SECTION: test -->
+Content
+<!-- END_SECTION -->
+`;
+
+      const result = filterSections(content, ['test']);
+
+      expect(result).not.toContain('<!-- SECTION: test -->');
+      expect(result).not.toContain('<!-- END_SECTION -->');
+      expect(result).toContain('Content');
+    });
+
+    it('returns original content when no active sections specified', () => {
+      const content = `
+<!-- SECTION: test -->
+Content
+<!-- END_SECTION -->
+`;
+
+      const result = filterSections(content, []);
+
+      expect(result).toBe(content);
+    });
+
+    it('returns original content when null passed for active sections', () => {
+      const content = `
+<!-- SECTION: test -->
+Content
+<!-- END_SECTION -->
+`;
+
+      const result = filterSections(content, null);
+
+      expect(result).toBe(content);
+    });
+
+    it('handles multiple active sections', () => {
+      const content = `
+<!-- SECTION: a -->
+Section A
+<!-- END_SECTION -->
+
+<!-- SECTION: b -->
+Section B
+<!-- END_SECTION -->
+
+<!-- SECTION: c -->
+Section C
+<!-- END_SECTION -->
+`;
+
+      const result = filterSections(content, ['a', 'c']);
+
+      expect(result).toContain('Section A');
+      expect(result).not.toContain('Section B');
+      expect(result).toContain('Section C');
+    });
+
+    it('preserves newlines and formatting inside sections', () => {
+      const content = `
+<!-- SECTION: formatted -->
+Line 1
+  Indented line
+    Double indented
+
+Code block:
+\`\`\`js
+const x = 1;
+\`\`\`
+<!-- END_SECTION -->
+`;
+
+      const result = filterSections(content, ['formatted']);
+
+      expect(result).toContain('Line 1');
+      expect(result).toContain('  Indented line');
+      expect(result).toContain('const x = 1;');
+    });
+  });
+
+  describe('stripSectionMarkers', () => {
+    it('removes all section markers but keeps content', () => {
+      const content = `
+# Header
+
+<!-- SECTION: test -->
+Section content
+<!-- END_SECTION -->
+
+Footer
+`;
+
+      const result = stripSectionMarkers(content);
+
+      expect(result).toContain('Header');
+      expect(result).toContain('Section content');
+      expect(result).toContain('Footer');
+      expect(result).not.toContain('<!-- SECTION');
+      expect(result).not.toContain('END_SECTION');
+    });
+
+    it('handles multiple sections', () => {
+      const content = `
+<!-- SECTION: a -->
+A content
+<!-- END_SECTION -->
+<!-- SECTION: b -->
+B content
+<!-- END_SECTION -->
+`;
+
+      const result = stripSectionMarkers(content);
+
+      expect(result).toContain('A content');
+      expect(result).toContain('B content');
+      expect(result).not.toContain('<!-- SECTION');
+    });
+
+    it('returns content unchanged when no markers present', () => {
+      const content = '# No markers here\n\nJust content.';
+
+      const result = stripSectionMarkers(content);
+
+      expect(result).toBe(content);
+    });
+  });
+
+  describe('hasSections', () => {
+    it('returns true when content has sections', () => {
+      const content = `
+<!-- SECTION: test -->
+Content
+<!-- END_SECTION -->
+`;
+
+      expect(hasSections(content)).toBe(true);
+    });
+
+    it('returns false when content has no sections', () => {
+      const content = '# Just regular markdown\n\nNo sections.';
+
+      expect(hasSections(content)).toBe(false);
+    });
+
+    it('returns true for sections with hyphens', () => {
+      const content = '<!-- SECTION: multi-word-name -->';
+
+      expect(hasSections(content)).toBe(true);
+    });
+
+    it('returns false for similar-looking but invalid markers', () => {
+      const content = '<!-- SECTION -->';
+
+      expect(hasSections(content)).toBe(false);
     });
   });
 });

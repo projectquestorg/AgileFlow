@@ -26,8 +26,67 @@ const { isValidCommandName } = require('../lib/validate');
 // Summary table should be the LAST thing visible before truncation.
 const DISPLAY_LIMIT = 29200;
 
-// Optional: Register command for PreCompact context preservation
+// =============================================================================
+// Progressive Disclosure: Section Activation
+// =============================================================================
+
+/**
+ * Parse command-line arguments and determine which sections to activate.
+ * Sections are conditionally loaded based on parameters like MODE=loop.
+ *
+ * Section mapping:
+ *   - MODE=loop          → activates: loop-mode
+ *   - Multi-session env  → activates: multi-session
+ *   - (Other triggers detected at runtime by the agent)
+ *
+ * @param {string[]} args - Command-line arguments after command name
+ * @returns {Object} { activeSections: string[], params: Object }
+ */
+function parseCommandArgs(args) {
+  const activeSections = [];
+  const params = {};
+
+  for (const arg of args) {
+    // Parse KEY=VALUE arguments
+    const match = arg.match(/^([A-Z_]+)=(.+)$/i);
+    if (match) {
+      const [, key, value] = match;
+      params[key.toUpperCase()] = value;
+    }
+  }
+
+  // Activate sections based on parameters
+  if (params.MODE === 'loop') {
+    activeSections.push('loop-mode');
+  }
+
+  if (params.VISUAL === 'true') {
+    activeSections.push('visual-e2e');
+  }
+
+  // Check for multi-session environment
+  const registryPath = '.agileflow/sessions/registry.json';
+  if (fs.existsSync(registryPath)) {
+    try {
+      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+      const sessionCount = Object.keys(registry.sessions || {}).length;
+      if (sessionCount > 1) {
+        activeSections.push('multi-session');
+      }
+    } catch {
+      // Silently ignore registry read errors
+    }
+  }
+
+  return { activeSections, params };
+}
+
+// Parse arguments
 const commandName = process.argv[2];
+const commandArgs = process.argv.slice(3);
+const { activeSections, params: commandParams } = parseCommandArgs(commandArgs);
+
+// Register command for PreCompact context preservation
 if (commandName && isValidCommandName(commandName)) {
   const sessionStatePath = 'docs/09-agents/session-state.json';
   if (fs.existsSync(sessionStatePath)) {
@@ -42,11 +101,13 @@ if (commandName && isValidCommandName(commandName)) {
       // Remove any existing entry for this command (avoid duplicates)
       state.active_commands = state.active_commands.filter(c => c.name !== commandName);
 
-      // Add the new command
+      // Add the new command with active sections for progressive disclosure
       state.active_commands.push({
         name: commandName,
         activated_at: new Date().toISOString(),
         state: {},
+        active_sections: activeSections,
+        params: commandParams,
       });
 
       // Remove legacy active_command field (only use active_commands array now)
@@ -262,6 +323,13 @@ function generateSummary() {
     summary += row('⭐ Up Next', readyStories.slice(0, 3).join(', '), C.skyBlue, C.skyBlue);
   }
 
+  // Progressive disclosure: Show active sections
+  if (activeSections.length > 0) {
+    summary += divider();
+    const sectionList = activeSections.join(', ');
+    summary += row('📖 Sections', sectionList, C.cyan, C.mintGreen);
+  }
+
   summary += divider();
 
   // Key files (using vibrant 256-color palette)
@@ -317,6 +385,35 @@ function generateFullContent() {
   const title = commandName ? `AgileFlow Context [${commandName}]` : 'AgileFlow Context';
   content += `${C.lavender}${C.bold}${title}${C.reset}\n`;
   content += `${C.dim}Generated: ${new Date().toISOString()}${C.reset}\n`;
+
+  // 0. PROGRESSIVE DISCLOSURE (section activation)
+  if (activeSections.length > 0) {
+    content += `\n${C.cyan}${C.bold}═══ 📖 Progressive Disclosure: Active Sections ═══${C.reset}\n`;
+    content += `${C.dim}The following sections are activated based on command parameters.${C.reset}\n`;
+    content += `${C.dim}Look for <!-- SECTION: name --> markers in the command file.${C.reset}\n\n`;
+
+    activeSections.forEach(section => {
+      content += `  ${C.mintGreen}✓${C.reset} ${C.bold}${section}${C.reset}\n`;
+    });
+
+    // Map sections to their triggers for context
+    const sectionDescriptions = {
+      'loop-mode': 'Autonomous epic execution (MODE=loop)',
+      'multi-session': 'Multi-session coordination detected',
+      'visual-e2e': 'Visual screenshot verification (VISUAL=true)',
+      'delegation': 'Expert spawning patterns (load when spawning)',
+      'stuck': 'Research prompt guidance (load after 2 failures)',
+      'plan-mode': 'Planning workflow details (load when entering plan mode)',
+      'tools': 'Tool usage guidance (load when needed)',
+    };
+
+    content += `\n${C.dim}Section meanings:${C.reset}\n`;
+    activeSections.forEach(section => {
+      const desc = sectionDescriptions[section] || 'Conditional content';
+      content += `  ${C.dim}• ${section}: ${desc}${C.reset}\n`;
+    });
+    content += '\n';
+  }
 
   // 1. GIT STATUS (using vibrant 256-color palette)
   content += `\n${C.skyBlue}${C.bold}═══ Git Status ═══${C.reset}\n`;
@@ -375,6 +472,19 @@ function generateFullContent() {
     } else if (sessionState.active_command) {
       // Backwards compatibility for old format
       content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
+    }
+
+    // Show batch loop status if active
+    const batchLoop = sessionState.batch_loop;
+    if (batchLoop && batchLoop.enabled) {
+      content += `\n${C.skyBlue}${C.bold}── Batch Loop Active ──${C.reset}\n`;
+      content += `Pattern: ${C.cyan}${batchLoop.pattern}${C.reset}\n`;
+      content += `Action: ${C.cyan}${batchLoop.action}${C.reset}\n`;
+      content += `Current: ${C.lightYellow}${batchLoop.current_item || 'none'}${C.reset}\n`;
+      const summary = batchLoop.summary || {};
+      content += `Progress: ${C.lightGreen}${summary.completed || 0}${C.reset}/${summary.total || 0} `;
+      content += `(${C.lightYellow}${summary.in_progress || 0}${C.reset} in progress)\n`;
+      content += `Iteration: ${batchLoop.iteration || 0}/${batchLoop.max_iterations || 50}\n`;
     }
   } else {
     content += `${C.dim}No session-state.json found${C.reset}\n`;

@@ -35,6 +35,23 @@ This gathers: git status, stories/epics, session state, docs structure, research
 
 ---
 
+## QUICK DECISION TREE
+
+| Task Type | Action |
+|-----------|--------|
+| **Simple** (typo, one-liner) | Do it yourself |
+| **Complex, 1 domain** | Spawn domain expert |
+| **Complex, 2+ domains** | Spawn orchestrator |
+| **Stuck on error 2+ times** | Run `/agileflow:research:ask` |
+
+**Key Rules:**
+1. ALWAYS end responses with `AskUserQuestion` tool (not text questions)
+2. Use `EnterPlanMode` before non-trivial implementation
+3. Use `TodoWrite` to track multi-step tasks
+
+---
+
+<!-- SECTION: loop-mode -->
 ## LOOP MODE (Autonomous Execution)
 
 When invoked with `MODE=loop`, babysit runs autonomously through an epic's stories:
@@ -126,11 +143,6 @@ Configure semantic conditions in `docs/00-meta/agileflow-metadata.json`:
 - `**all screenshots verified**` - Screenshots need `verified-` prefix
 - `**all acceptance criteria verified**` - AC marked complete in status.json
 
-**Benefits:**
-- Natural language conditions that read like requirements
-- Multiple conditions can be combined
-- Extensible - add custom conditions as needed
-
 ### Coverage Mode
 
 When `COVERAGE=<percent>` is specified, the loop adds test coverage verification:
@@ -146,22 +158,6 @@ When `COVERAGE=<percent>` is specified, the loop adds test coverage verification
 4. Requires minimum 2 iterations before completion
 5. Story completes only when coverage ≥ threshold AND confirmed
 
-**When to use Coverage Mode:**
-- Test-driven epics where coverage matters
-- "Write tests until X% coverage" goals
-- Batch test generation overnight
-
-**Configuration** (optional):
-Add to `docs/00-meta/agileflow-metadata.json`:
-```json
-{
-  "ralph_loop": {
-    "coverage_command": "npm run test:coverage",
-    "coverage_report_path": "coverage/coverage-summary.json"
-  }
-}
-```
-
 ### Visual Mode
 
 When `VISUAL=true` is specified, the loop adds screenshot verification:
@@ -176,35 +172,13 @@ When `VISUAL=true` is specified, the loop adds screenshot verification:
 3. Requires minimum 2 iterations before completion
 4. Prevents premature completion for UI work
 
-**When to use Visual Mode:**
-- UI-focused epics (components, styling, layouts)
-- Shadcn/UI development
-- Any work where visual appearance matters
-
-**Setup requirement:**
-Run `/agileflow:configure` and select "Set up Visual E2E testing" to install Playwright and create e2e tests.
-
-### Visual Mode Auto-Detection (IMPORTANT)
+### Visual Mode Auto-Detection
 
 **Check the context output** from `obtain-context.js` for Visual E2E status.
 
-**If "📸 VISUAL E2E TESTING: ENABLED" appears:**
+**If "📸 VISUAL E2E TESTING: ENABLED" appears**, proactively suggest VISUAL mode for UI work.
 
-When presenting task options for UI-focused work, **proactively suggest VISUAL mode**:
-
-```
-This epic involves UI work. Visual E2E is configured.
-
-Suggested command:
-/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
-
-Visual Mode ensures:
-- Screenshots are captured and verified
-- Minimum 2 iterations (prevents premature completion)
-- Both tests AND visual verification must pass
-```
-
-**Detection criteria for suggesting VISUAL=true:**
+**Detection criteria for VISUAL=true:**
 | Indicator | Suggest VISUAL? |
 |-----------|-----------------|
 | Epic mentions "UI", "component", "styling" | Yes |
@@ -212,18 +186,6 @@ Visual Mode ensures:
 | Files involve src/components/, *.css, *.tsx | Yes |
 | Work is API/backend only | No |
 | Work is CLI/scripts only | No |
-
-**If "VISUAL E2E TESTING: NOT CONFIGURED" appears:**
-
-For UI work, suggest setup:
-```
-This is UI work. Visual E2E not configured.
-
-To enable screenshot verification:
-/agileflow:configure → Visual E2E testing
-
-This helps catch visual issues that tests miss (wrong colors, broken layouts).
-```
 
 ### Loop Control Commands
 
@@ -244,6 +206,7 @@ node scripts/ralph-loop.js --reset    # Reset loop state
 - Exploratory work without clear acceptance criteria
 - Stories requiring human review before proceeding
 - Complex multi-domain work needing coordination
+<!-- END_SECTION -->
 
 ---
 
@@ -377,252 +340,13 @@ Use TodoWrite for any task with 3+ steps. Update status as you complete each ste
 
 ---
 
-### SPAWN EXPERT EXAMPLES (DETAILED)
-
-#### Pattern 1: Single Domain Expert
-
-**When:** Task is complex but touches only ONE domain (database OR api OR ui OR testing, etc.)
-
-**Database Expert** - Schema, migrations, queries:
-```
-Task(
-  description: "Add sessions table for auth",
-  prompt: "Create a sessions table for user authentication. Include columns: id (UUID primary key), user_id (FK to users), token (unique string), ip_address, user_agent, created_at, expires_at. Follow existing schema patterns in the codebase. Add appropriate indexes.",
-  subagent_type: "agileflow-database"
-)
-```
-
-**API Expert** - Endpoints, business logic:
-```
-Task(
-  description: "Create user preferences API",
-  prompt: "Implement REST endpoints for user preferences: GET /api/preferences (return current), PUT /api/preferences (update). Include validation, error handling. Follow existing API patterns in src/api/.",
-  subagent_type: "agileflow-api"
-)
-```
-
-**UI Expert** - Components, styling:
-```
-Task(
-  description: "Build settings page component",
-  prompt: "Create a SettingsPage React component with tabs for: Profile, Notifications, Privacy. Use existing component library (shadcn/ui). Match existing styling patterns. Include loading and error states.",
-  subagent_type: "agileflow-ui"
-)
-```
-
-**Testing Expert** - Tests, coverage:
-```
-Task(
-  description: "Add auth service tests",
-  prompt: "Write comprehensive tests for src/services/auth.ts. Cover: login success/failure, token refresh, logout, session expiry. Use existing test patterns. Aim for 90%+ coverage.",
-  subagent_type: "agileflow-testing"
-)
-```
-
-**Security Expert** - Auth, vulnerabilities:
-```
-Task(
-  description: "Security audit of auth flow",
-  prompt: "Review the authentication implementation in src/auth/. Check for: SQL injection, XSS, CSRF, session fixation, token handling. Report vulnerabilities with severity and fixes.",
-  subagent_type: "agileflow-security"
-)
-```
-
----
-
-#### Pattern 2: Orchestrator (Multi-Domain)
-
-**When:** Task spans TWO OR MORE domains (API + UI, Database + API + Tests, etc.)
-
-**The orchestrator:**
-1. Spawns domain experts in parallel
-2. Collects their results
-3. Resolves conflicts between recommendations
-4. Returns unified outcome
-
-**Example - Full Feature (Database + API + UI):**
-```
-Task(
-  description: "Implement user profile feature",
-  prompt: "Implement complete user profile feature:
-    1. DATABASE: Add profile_settings table (theme, notifications, timezone)
-    2. API: Create GET/PUT /api/profile endpoints with validation
-    3. UI: Build ProfilePage with form, validation, save button
-    Coordinate experts to ensure API matches schema and UI matches API contract.",
-  subagent_type: "agileflow-orchestrator"
-)
-```
-
-**Example - API + Tests:**
-```
-Task(
-  description: "Add search endpoint with tests",
-  prompt: "Create search functionality:
-    1. API: Implement GET /api/search?q=query with pagination
-    2. TESTING: Write unit tests and integration tests for the endpoint
-    Ensure tests cover edge cases: empty query, special chars, pagination bounds.",
-  subagent_type: "agileflow-orchestrator"
-)
-```
-
-**🧪 EXPERIMENTAL: Nested Loops with Quality Gates**
-
-When you need agents to iterate until quality gates pass (coverage ≥ 80%, tests pass, etc.), the orchestrator can use **nested agent loops**. Each agent runs its own isolated loop.
-
-```
-Task(
-  description: "Profile feature with quality gates",
-  prompt: "Implement profile with quality enforcement:
-    1. API: /api/profile with COVERAGE >= 80% (agent loop)
-    2. UI: ProfilePage with VISUAL verification (agent loop)
-    Use agent-loop.js for isolated quality iterations.",
-  subagent_type: "agileflow-orchestrator"
-)
-```
-
-See `orchestrator.md` → "NESTED LOOP MODE" section for full details.
-
----
-
-#### Pattern 3: Parallel Execution (Manual Coordination)
-
-**When:** You want to coordinate parallel work yourself (not via orchestrator).
-
-**Step 1 - Spawn experts with `run_in_background: true`:**
-```
-Task(
-  description: "Create profile API endpoint",
-  prompt: "Implement GET/PUT /api/profile with user data validation",
-  subagent_type: "agileflow-api",
-  run_in_background: true
-)
-# Returns immediately with task_id (e.g., "task-abc123")
-
-Task(
-  description: "Create ProfilePage component",
-  prompt: "Build ProfilePage React component with form fields for name, email, avatar",
-  subagent_type: "agileflow-ui",
-  run_in_background: true
-)
-# Returns immediately with task_id (e.g., "task-def456")
-```
-
-**Step 2 - Collect results with TaskOutput:**
-```
-TaskOutput(task_id: "task-abc123", block: true)
-# Waits until API expert completes, returns result
-
-TaskOutput(task_id: "task-def456", block: true)
-# Waits until UI expert completes, returns result
-```
-
-**Step 3 - Synthesize and verify:**
-- Check that UI calls the correct API endpoints
-- Verify data contracts match
-- Run integration tests
-
----
-
-#### Pattern 4: Multi-Expert Analysis
-
-**When:** Need multiple perspectives on the SAME problem (security review, code review, architecture decision).
-
-**Via slash command:**
-```
-/agileflow:multi-expert Is our authentication implementation secure and following best practices?
-```
-
-**Via direct spawn:**
-```
-Task(
-  description: "Multi-expert auth review",
-  prompt: "Analyze authentication implementation from multiple perspectives:
-    - SECURITY: Vulnerabilities, token handling, session management
-    - API: Endpoint design, error handling, rate limiting
-    - TESTING: Test coverage, edge cases, integration tests
-    Synthesize findings into prioritized recommendations.",
-  subagent_type: "agileflow-multi-expert"
-)
-```
-
----
-
-#### Dependency Rules for Expert Spawning
-
-| Dependency | How to Handle |
-|------------|---------------|
-| B needs A's output | Run A first, wait for result, then spawn B |
-| A and B independent | Spawn in parallel with `run_in_background: true` |
-| Unsure | Run sequentially (safer) |
-
-**Common dependencies:**
-- Database schema → then API (API uses schema types)
-- API endpoint → then UI (UI calls the API)
-- Implementation → then tests (tests need working code)
-- All code → then security review (review complete implementation)
-
----
-
-#### Retry with Backoff for Expert Spawning
-
-When an expert task fails, apply retry logic before giving up:
-
-**Retry Strategy:**
-```
-Attempt 1: Immediate retry
-Attempt 2: Wait 5 seconds, then retry
-Attempt 3: Wait 15 seconds, then retry (final)
-```
-
-**When to retry:**
-- Expert returns error or timeout
-- TaskOutput shows failure state
-- Expert reports "unable to complete"
-
-**When NOT to retry:**
-- User explicitly asked to stop
-- Expert completed but result was wrong (need different approach)
-- Multiple experts all failed same way (systemic issue)
-
-**Example retry flow:**
-```
-📍 Spawning agileflow-api expert...
-⚠️ Expert failed (timeout after 2 min)
-
-🔄 Retry 1/3: Retrying immediately...
-⚠️ Expert failed (same error)
-
-🔄 Retry 2/3: Waiting 5s, then retrying...
-⚠️ Expert failed (connection error)
-
-🔄 Retry 3/3: Waiting 15s, then retrying...
-✅ Expert succeeded!
-```
-
-**On final failure:**
-```
-⚠️ Error: Expert agileflow-api failed after 3 retries
-
-Last error: Connection timeout after 120s
-Attempts: 3
-
-Options:
-1. Try a different approach
-2. Check network/service status
-3. Manually implement the task
-
-[Present options via AskUserQuestion]
-```
-
----
-
 ### KEY FILES TO REMEMBER
 
 | File | Purpose |
 |------|---------|
 | `docs/09-agents/status.json` | Story tracking, WIP status |
 | `docs/09-agents/session-state.json` | Session state, active command |
-| `CLAUDE.md` | Project conventions (included in full above) |
+| `CLAUDE.md` | Project conventions |
 
 ---
 
@@ -635,51 +359,6 @@ Options:
 5. New features
 
 Present top 3-5 via AskUserQuestion, always include "Other" option.
-
----
-
-### RESEARCH PROMPT REQUIREMENTS (when stuck)
-
-**MUST include in research prompt:**
-- 50+ lines of actual code from codebase
-- Exact error messages (verbatim, in code blocks)
-- Library versions involved
-- What was already tried with results
-- 3+ specific questions
-
-**Example structure:**
-```markdown
-# [Error Type] in [Technology]
-
-## Setup
-- Framework version, library versions
-
-## Current Code
-[50+ lines from codebase]
-
-## Error
-[Exact error message]
-
-## Tried
-1. [Attempt 1] - [Result]
-2. [Attempt 2] - [Result]
-
-## Questions
-1. Why does [specific thing] happen?
-2. Is there a known issue with [version]?
-3. What configuration is needed for [specific case]?
-```
-
----
-
-### FIRST MESSAGE AFTER CONTEXT
-
-```
-**AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
-
-Based on your project state:
-[Present 3-5 ranked suggestions via AskUserQuestion with "Other" option]
-```
 
 ---
 
@@ -709,42 +388,8 @@ Based on your project state:
 
 ---
 
-## STATE NARRATION PROTOCOL
-
-In long sessions, track execution state visibly using emoji markers. This makes state scannable after compaction.
-
-### Markers
-
-| Marker | Meaning | Example |
-|--------|---------|---------|
-| 📍 | Execution position | `📍 Working on: US-0042 - Add login form` |
-| 📦 | Context/variables | `📦 Context: { auth: "complete", api: "pending" }` |
-| 🔀 | Parallel status | `🔀 Parallel: API (done), UI (in progress)` |
-| 🔄 | Loop iteration | `🔄 Iteration 3/10` |
-| ⚠️ | Error state | `⚠️ Error: Test failure in auth.spec.ts` |
-| ✅ | Completion | `✅ Story complete: US-0042` |
-| 🔒 | Blocked | `🔒 Blocked: Waiting for API schema` |
-
-### When to Emit Markers
-
-- **Start of story**: `📍 Starting: US-0042`
-- **Phase transitions**: `📍 Phase: Execution (plan approved)`
-- **Expert spawn**: `🔀 Spawned: agileflow-api (background)`
-- **Expert complete**: `✅ Expert done: agileflow-api`
-- **Loop iterations**: `🔄 Ralph Loop: 3/10`
-- **Errors**: `⚠️ Test failure: 2 tests failed`
-- **Completion**: `✅ Story complete: US-0042`
-
-### Benefits
-
-- **Visibility**: State is inline, not hidden in files
-- **Debugging**: Scan conversation for state changes
-- **Resumability**: Markers help restore context after compact
-- **Progress**: Clear indication of where work stands
-
----
-
-## DELEGATION FRAMEWORK
+<!-- SECTION: delegation -->
+## DELEGATION FRAMEWORK (DETAILED)
 
 ### Decision Tree
 
@@ -770,10 +415,6 @@ In long sessions, track execution state visibly using emoji markers. This makes 
 - Involves single obvious change
 - Is coordination/status work
 - Takes less effort than delegating
-
----
-
-## EXPERT CATALOG
 
 ### Domain Experts
 
@@ -802,11 +443,7 @@ In long sessions, track execution state visibly using emoji markers. This makes 
 
 <!-- {{AGENT_LIST}} -->
 
----
-
-## HOW TO SPAWN EXPERTS
-
-### Single Expert (Complex, One Domain)
+### Single Expert Spawning
 
 ```
 Task(
@@ -816,7 +453,7 @@ Task(
 )
 ```
 
-### Orchestrator (Multi-Domain)
+### Orchestrator Spawning (Multi-Domain)
 
 ```
 Task(
@@ -832,24 +469,7 @@ The orchestrator will:
 3. Synthesize and report conflicts
 4. Return unified outcome
 
-### Multi-Expert (Analysis/Review)
-
-```
-SlashCommand("/agileflow:multi-expert Is this authentication implementation secure?")
-```
-
-Or spawn directly:
-```
-Task(
-  description: "Multi-expert security analysis",
-  prompt: "Analyze auth implementation from Security, API, and Testing perspectives",
-  subagent_type: "agileflow-multi-expert"
-)
-```
-
-### Parallel Experts (Manual Orchestration)
-
-When YOU want to coordinate parallel work:
+### Parallel Experts (Manual Coordination)
 
 ```
 # Spawn in parallel
@@ -880,50 +500,35 @@ TaskOutput(task_id: "<ui_id>", block: true)
 | A and B are independent | Run in parallel |
 | Unsure | Run sequentially (safer) |
 
-**Example dependencies:**
+**Common dependencies:**
 - Database schema → then API (API uses schema)
 - API endpoint → then UI (UI calls API)
 - Implementation → then tests (tests need code)
 
----
+### Retry with Backoff
 
-## WORKFLOW
+When an expert task fails:
 
-### Phase 1: Context & Task Selection
+```
+Attempt 1: Immediate retry
+Attempt 2: Wait 5 seconds, then retry
+Attempt 3: Wait 15 seconds, then retry (final)
+```
 
-1. **Run context script** (mandatory first action)
-2. **Present task options** using AskUserQuestion
-3. **User selects task**
+**When to retry:**
+- Expert returns error or timeout
+- TaskOutput shows failure state
 
-### Phase 2: Plan Mode (MANDATORY for non-trivial tasks)
-
-4. **Enter plan mode** - `EnterPlanMode` tool
-5. **Explore codebase** - Use Glob, Grep, Read to understand existing patterns
-6. **Design approach** - Write implementation plan to plan file
-7. **Get user approval** - `ExitPlanMode` presents plan for review
-8. **Identify scope** - Determine if simple, single-domain, or multi-domain
-
-**Skip plan mode ONLY if:**
-- Task is truly trivial (typo fix, one-liner)
-- User provides extremely detailed instructions
-- Task is pure coordination (status update, etc.)
-
-### Phase 3: Execution
-
-9. **Delegate to experts** based on delegation framework
-10. **Collect results** if async
-11. **Verify** tests pass, code works
-12. **Update status.json** as work progresses
-
-### Phase 4: Completion
-
-13. **Update story status** → in-review
-14. **Generate PR description**
-15. **Present next steps** via AskUserQuestion
+**When NOT to retry:**
+- User explicitly asked to stop
+- Expert completed but result was wrong
+- Multiple experts all failed same way
+<!-- END_SECTION -->
 
 ---
 
-## STUCK DETECTION
+<!-- SECTION: stuck -->
+## STUCK DETECTION (DETAILED)
 
 When you encounter repeated errors or problems you can't solve, **proactively suggest external research** instead of continuing to try and fail.
 
@@ -1026,10 +631,10 @@ folder and continue implementing.
 [50+ lines of actual implementation from src/app/api/auth/...]
 
 ## Error
-```
+\`\`\`
 Error: [auth] unauthorized_client
   at AuthHandler (node_modules/next-auth/src/lib/...)
-```
+\`\`\`
 
 ## What I've Tried
 1. Verified client ID/secret - credentials are correct
@@ -1049,186 +654,12 @@ When stuck detection triggers:
 2. After user returns with results, use `/agileflow:research:import` to save
 3. Link the research to the current story if applicable
 4. Continue implementing with the new knowledge
-
-### Stuck Detection in Compact Summary
-
-Add to compact_context.preserve_rules:
-- "If same error 2+ times with different fixes, suggest /agileflow:research:ask"
-- "Generate 200+ line research prompts with actual code snippets"
+<!-- END_SECTION -->
 
 ---
 
-## TOOL USAGE
-
-### AskUserQuestion
-
-**USE for:**
-- Initial task selection
-- Choosing between approaches
-- Architectural decisions
-- End of every response
-
-**DON'T use for:**
-- Routine operations (just do them)
-- Spawning experts (just spawn)
-- Obvious next steps
-
-**Format:**
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What would you like to work on?",
-  "header": "Choose task",
-  "multiSelect": false,
-  "options": [
-    {"label": "US-0042: User API (READY) ⭐", "description": "Ready to implement"},
-    {"label": "Create new story", "description": "Start something new"},
-    {"label": "Other", "description": "Tell me what you want"}
-  ]
-}]</parameter>
-</invoke>
-```
-
-### TodoWrite
-
-**USE:** Track all workflow steps. Update as you complete.
-
-```xml
-<invoke name="TodoWrite">
-<parameter name="todos">[
-  {"content": "Run context script", "status": "completed", "activeForm": "Running context"},
-  {"content": "Spawn database expert", "status": "in_progress", "activeForm": "Spawning expert"},
-  {"content": "Update status.json", "status": "pending", "activeForm": "Updating status"}
-]</parameter>
-</invoke>
-```
-
-### Task (Spawn Expert)
-
-```
-Task(
-  description: "Brief description",
-  prompt: "Detailed instructions for the expert",
-  subagent_type: "agileflow-{domain}",
-  run_in_background: true  # Optional: for parallel execution
-)
-```
-
-### TaskOutput (Collect Results)
-
-```
-TaskOutput(task_id: "<id>", block: true)   # Wait for completion
-TaskOutput(task_id: "<id>", block: false)  # Check status only
-```
-
----
-
-## SUGGESTIONS ENGINE
-
-After loading context, analyze and present ranked options:
-
-**Priority Order:**
-1. READY stories ⭐ (all AC complete, no blockers)
-2. Blocked with clear unblock (dependency is simple)
-3. Near-complete epics (80%+ done)
-4. README TODOs
-5. New features
-
-**Present via AskUserQuestion** - limit to 5-6 options, always include "Other".
-
----
-
-## STORY CLAIMING (Multi-Session Coordination)
-
-When multiple Claude Code sessions work in the same repo, story claiming prevents conflicts.
-
-### How It Works
-
-1. **Claim on Selection**: When user selects a story to work on, claim it:
-   ```bash
-   node .agileflow/scripts/lib/story-claiming.js claim US-0042
-   ```
-
-2. **Check Before Suggesting**: Filter out claimed stories from suggestions:
-   - Stories with 🔒 badge are claimed by OTHER sessions
-   - Stories with ✓ badge are claimed by THIS session (can continue)
-   - Stories without badge are available
-
-3. **Release on Completion**: When story is marked "done", release claim:
-   ```bash
-   node .agileflow/scripts/lib/story-claiming.js release US-0042
-   ```
-
-### Story Badges in AskUserQuestion
-
-| Badge | Meaning | Action |
-|-------|---------|--------|
-| ⭐ | Ready, available | Can select |
-| 🔒 | Claimed by other session | **DO NOT suggest** (or show as disabled) |
-| ✓ | Claimed by this session | Continue working |
-
-### Claiming Flow
-
-```
-User: "Work on US-0042"
-     ↓
-Check: Is US-0042 claimed?
-     ↓
-┌──────────────┐    ┌──────────────────┐
-│ Not claimed  │    │ Claimed by other │
-└──────────────┘    └──────────────────┘
-     ↓                      ↓
-Claim it, proceed     Show warning:
-                      "US-0042 is being worked on
-                       by Session 2 (../project-auth).
-
-                       Pick a different story to
-                       avoid merge conflicts."
-```
-
-### Commands
-
-```bash
-# Claim a story
-node .agileflow/scripts/lib/story-claiming.js claim US-0042
-
-# Release a story
-node .agileflow/scripts/lib/story-claiming.js release US-0042
-
-# Check if claimed
-node .agileflow/scripts/lib/story-claiming.js check US-0042
-
-# List stories claimed by others
-node .agileflow/scripts/lib/story-claiming.js others
-
-# Clean stale claims (dead PIDs)
-node .agileflow/scripts/lib/story-claiming.js cleanup
-```
-
-### Important Rules
-
-- **Always claim before working**: Prevents conflicts
-- **Stale claims auto-expire**: If session PID dies or 4 hours pass
-- **Force claim available**: `--force` flag overrides (use sparingly)
-- **Release on completion**: Or let auto-expiry handle it
-
----
-
-## KNOWLEDGE INDEX
-
-**Context script provides:**
-- Git status, branch, uncommitted changes
-- Epics/stories from status.json
-- Session state, current story
-- Docs structure, research notes
-
-**State files:**
-- `docs/09-agents/status.json` - Story tracking
-- `docs/09-agents/bus/log.jsonl` - Agent messages
-
----
-
-## PLAN MODE (CRITICAL)
+<!-- SECTION: plan-mode -->
+## PLAN MODE (DETAILED)
 
 **Plan mode is your primary tool for non-trivial tasks.** It allows you to explore the codebase, understand patterns, and design an approach BEFORE committing to implementation.
 
@@ -1351,6 +782,152 @@ User: "Fix the typo in README"
 [fixes typo directly]
 "Fixed. What's next?"
 ```
+<!-- END_SECTION -->
+
+---
+
+<!-- SECTION: tools -->
+## TOOL USAGE (DETAILED)
+
+### AskUserQuestion
+
+**USE for:**
+- Initial task selection
+- Choosing between approaches
+- Architectural decisions
+- End of every response
+
+**DON'T use for:**
+- Routine operations (just do them)
+- Spawning experts (just spawn)
+- Obvious next steps
+
+**Format:**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What would you like to work on?",
+  "header": "Choose task",
+  "multiSelect": false,
+  "options": [
+    {"label": "US-0042: User API (READY) ⭐", "description": "Ready to implement"},
+    {"label": "Create new story", "description": "Start something new"},
+    {"label": "Other", "description": "Tell me what you want"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+### TodoWrite
+
+**USE:** Track all workflow steps. Update as you complete.
+
+```xml
+<invoke name="TodoWrite">
+<parameter name="todos">[
+  {"content": "Run context script", "status": "completed", "activeForm": "Running context"},
+  {"content": "Spawn database expert", "status": "in_progress", "activeForm": "Spawning expert"},
+  {"content": "Update status.json", "status": "pending", "activeForm": "Updating status"}
+]</parameter>
+</invoke>
+```
+
+### Task (Spawn Expert)
+
+```
+Task(
+  description: "Brief description",
+  prompt: "Detailed instructions for the expert",
+  subagent_type: "agileflow-{domain}",
+  run_in_background: true  # Optional: for parallel execution
+)
+```
+
+### TaskOutput (Collect Results)
+
+```
+TaskOutput(task_id: "<id>", block: true)   # Wait for completion
+TaskOutput(task_id: "<id>", block: false)  # Check status only
+```
+<!-- END_SECTION -->
+
+---
+
+<!-- SECTION: multi-session -->
+## STORY CLAIMING (Multi-Session Coordination)
+
+When multiple Claude Code sessions work in the same repo, story claiming prevents conflicts.
+
+### How It Works
+
+1. **Claim on Selection**: When user selects a story to work on, claim it:
+   ```bash
+   node .agileflow/scripts/lib/story-claiming.js claim US-0042
+   ```
+
+2. **Check Before Suggesting**: Filter out claimed stories from suggestions:
+   - Stories with 🔒 badge are claimed by OTHER sessions
+   - Stories with ✓ badge are claimed by THIS session (can continue)
+   - Stories without badge are available
+
+3. **Release on Completion**: When story is marked "done", release claim:
+   ```bash
+   node .agileflow/scripts/lib/story-claiming.js release US-0042
+   ```
+
+### Story Badges in AskUserQuestion
+
+| Badge | Meaning | Action |
+|-------|---------|--------|
+| ⭐ | Ready, available | Can select |
+| 🔒 | Claimed by other session | **DO NOT suggest** (or show as disabled) |
+| ✓ | Claimed by this session | Continue working |
+
+### Claiming Flow
+
+```
+User: "Work on US-0042"
+     ↓
+Check: Is US-0042 claimed?
+     ↓
+┌──────────────┐    ┌──────────────────┐
+│ Not claimed  │    │ Claimed by other │
+└──────────────┘    └──────────────────┘
+     ↓                      ↓
+Claim it, proceed     Show warning:
+                      "US-0042 is being worked on
+                       by Session 2 (../project-auth).
+
+                       Pick a different story to
+                       avoid merge conflicts."
+```
+
+### Commands
+
+```bash
+# Claim a story
+node .agileflow/scripts/lib/story-claiming.js claim US-0042
+
+# Release a story
+node .agileflow/scripts/lib/story-claiming.js release US-0042
+
+# Check if claimed
+node .agileflow/scripts/lib/story-claiming.js check US-0042
+
+# List stories claimed by others
+node .agileflow/scripts/lib/story-claiming.js others
+
+# Clean stale claims (dead PIDs)
+node .agileflow/scripts/lib/story-claiming.js cleanup
+```
+
+### Important Rules
+
+- **Always claim before working**: Prevents conflicts
+- **Stale claims auto-expire**: If session PID dies or 4 hours pass
+- **Force claim available**: `--force` flag overrides (use sparingly)
+- **Release on completion**: Or let auto-expiry handle it
+<!-- END_SECTION -->
 
 ---
 
@@ -1394,57 +971,4 @@ Based on your project state:
 2. I enter plan mode to explore and design the approach
 3. You approve the plan
 4. I execute (directly or via domain experts)
-```
-
----
-
-## ANTI-PATTERNS
-
-❌ **DON'T:** Skip plan mode and start coding immediately
-```
-User: "Add user authentication"
-[immediately starts writing auth code without exploring]
-```
-
-✅ **DO:** Use plan mode first for non-trivial tasks
-```
-User: "Add user authentication"
-→ EnterPlanMode
-→ Explore existing auth patterns, session handling, user model
-→ Design approach with user approval
-→ ExitPlanMode
-→ Delegate to experts
-```
-
-❌ **DON'T:** Do multi-domain work yourself
-```
-"I'll create the API endpoint, then the UI component, then write tests..."
-```
-
-✅ **DO:** Delegate to orchestrator
-```
-"This spans API + UI. Spawning orchestrator to coordinate parallel experts..."
-Task(subagent_type: "agileflow-orchestrator", ...)
-```
-
-❌ **DON'T:** Ask permission for routine work
-```
-"Can I read the file?" / "Should I run the tests?"
-```
-
-✅ **DO:** Just do routine work, ask for decisions
-```
-[reads file, runs tests]
-"Found 2 approaches. Which do you prefer?"
-```
-
-❌ **DON'T:** Spawn expert for trivial tasks
-```
-Task(prompt: "Fix typo in README", subagent_type: "agileflow-documentation")
-```
-
-✅ **DO:** Handle trivial tasks yourself
-```
-[fixes typo directly]
-"Fixed the typo. What's next?"
 ```

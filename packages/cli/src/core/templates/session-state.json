@@ -28,5 +28,29 @@
     "final_test_status": "not_run",
     "commits": []
   },
-  "session_history": []
+  "session_history": [],
+  "batch_loop": {
+    "_comment": "State for batch pmap loop mode - iterative processing with quality gates",
+    "enabled": false,
+    "batch_id": null,
+    "pattern": null,
+    "action": null,
+    "quality_gate": "tests",
+    "current_item": null,
+    "items": {},
+    "summary": {
+      "total": 0,
+      "completed": 0,
+      "in_progress": 0,
+      "pending": 0,
+      "failed": 0
+    },
+    "iteration": 0,
+    "max_iterations": 50,
+    "started_at": null,
+    "completed_at": null,
+    "stopped_reason": null,
+    "last_failure": null
+  },
+  "_batch_item_status_enum": ["pending", "in_progress", "completed", "failed", "skipped"]
 }
