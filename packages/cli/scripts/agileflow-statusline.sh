@@ -213,18 +213,37 @@ if [ -n "$SESSION_ID" ] && [ -n "$CURRENT_DIR" ]; then
   fi
 fi
 
-# Color based on usage level (using vibrant 256-color palette)
-if [ "$PERCENT_USED" -ge 80 ]; then
-  CTX_COLOR="$CTX_RED"      # Coral red - critical
-elif [ "$PERCENT_USED" -ge 60 ]; then
-  CTX_COLOR="$CTX_ORANGE"   # Peach - high usage
+# Color based on usage level (RPI research: "dumb zone" starts at ~40%)
+# See: docs/02-practices/context-engineering-rpi.md
+#
+# | Context Utilization | Zone                  | Performance           |
+# |--------------------|-----------------------|-----------------------|
+# | 0-40%              | Smart Zone            | Full reasoning        |
+# | 40-70%             | Diminishing Returns   | Reduced quality       |
+# | 70%+               | Dumb Zone             | Significant degradation|
+#
+CTX_ZONE=""
+if [ "$PERCENT_USED" -ge 70 ]; then
+  CTX_COLOR="$CTX_RED"      # Dumb zone - significant degradation
+  CTX_ZONE="DUMB"
 elif [ "$PERCENT_USED" -ge 40 ]; then
-  CTX_COLOR="$CTX_YELLOW"   # Peach - moderate
+  CTX_COLOR="$CTX_YELLOW"   # Diminishing returns - reduced quality
+  CTX_ZONE="DIM"
 else
-  CTX_COLOR="$CTX_GREEN"    # Mint green - healthy
+  CTX_COLOR="$CTX_GREEN"    # Smart zone - full capability
+  CTX_ZONE="OK"
 fi
 
-CTX_DISPLAY="${CTX_COLOR}${PERCENT_USED}%${RESET}"
+# Build context display with optional zone indicator
+if [ "$CTX_ZONE" = "DUMB" ]; then
+  # Critical: show warning with zone label
+  CTX_DISPLAY="${CTX_RED}⚠${RESET}${CTX_COLOR}${PERCENT_USED}%${RESET}"
+elif [ "$CTX_ZONE" = "DIM" ]; then
+  # Warning: show caution indicator
+  CTX_DISPLAY="${CTX_YELLOW}↓${RESET}${CTX_COLOR}${PERCENT_USED}%${RESET}"
+else
+  CTX_DISPLAY="${CTX_COLOR}${PERCENT_USED}%${RESET}"
+fi
 
 # Generate progress bar (8 chars wide for compactness)
 CTX_BAR=$(progress_bar "$PERCENT_USED" 8)
