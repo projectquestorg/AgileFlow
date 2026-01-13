@@ -13,43 +13,11 @@
 #   .workspace.current_dir       - Current working directory
 
 # ============================================================================
-# ANSI Color Codes
+# Load Shared Color Palette
 # ============================================================================
-RESET="\033[0m"
-BOLD="\033[1m"
-DIM="\033[2m"
-
-# Foreground colors
-BLACK="\033[30m"
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-MAGENTA="\033[35m"
-CYAN="\033[36m"
-WHITE="\033[37m"
-
-# Bright foreground colors (standard ANSI)
-BRIGHT_RED="\033[91m"
-BRIGHT_GREEN="\033[92m"
-BRIGHT_YELLOW="\033[93m"
-BRIGHT_BLUE="\033[94m"
-BRIGHT_MAGENTA="\033[95m"
-BRIGHT_CYAN="\033[96m"
-
-# 256-color palette (vibrant modern colors from cc-statusline)
-# Use these for context/session indicators for better visibility
-CTX_GREEN="\033[38;5;158m"      # Mint green - healthy context
-CTX_YELLOW="\033[38;5;215m"     # Peach - moderate usage
-CTX_ORANGE="\033[38;5;215m"     # Peach/orange - high usage
-CTX_RED="\033[38;5;203m"        # Coral red - critical
-
-SESSION_GREEN="\033[38;5;194m"  # Light green - plenty of time
-SESSION_YELLOW="\033[38;5;228m" # Light yellow - getting low
-SESSION_RED="\033[38;5;210m"    # Light pink/red - critical
-
-# Brand color (burnt orange #e8683a = RGB 232,104,58)
-BRAND="\033[38;2;232;104;58m"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/colors.sh
+source "$SCRIPT_DIR/lib/colors.sh"
 
 # ============================================================================
 # Helper Functions

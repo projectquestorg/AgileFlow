@@ -9,6 +9,7 @@ const inquirer = require('inquirer');
 const path = require('node:path');
 const fs = require('node:fs');
 const { IdeManager } = require('../installers/ide/manager');
+const { BRAND_HEX } = require('../../../lib/colors');
 
 // Load package.json for version
 const packageJsonPath = path.join(__dirname, '..', '..', '..', 'package.json');
@@ -25,7 +26,7 @@ function displayLogo() {
 ██╔══██║██║   ██║██║██║     ██╔══╝  ██╔══╝  ██║     ██║   ██║██║███╗██║
 ██║  ██║╚██████╔╝██║███████╗███████╗██║     ███████╗╚██████╔╝╚███╔███╔╝
 ╚═╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝╚══════╝╚═╝     ╚══════╝ ╚═════╝  ╚══╝╚══╝ `;
-  console.log(chalk.hex('#e8683a')(logo));
+  console.log(chalk.hex(BRAND_HEX)(logo));
   console.log(chalk.dim(`  AgileFlow v${packageJson.version} - AI-Driven Agile Development\n`));
 }
 
@@ -35,7 +36,7 @@ function displayLogo() {
  * @param {string} subtitle - Optional subtitle
  */
 function displaySection(title, subtitle = null) {
-  console.log(chalk.bold.hex('#e8683a')(`\n${title}`));
+  console.log(chalk.bold.hex(BRAND_HEX)(`\n${title}`));
   if (subtitle) {
     console.log(chalk.dim(subtitle));
   }
