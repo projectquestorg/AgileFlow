@@ -245,9 +245,13 @@ function wrapSafe(fn, operationName = 'operation') {
  * Wrap an async function to catch errors and return Result
  * @param {Function} fn - Async function to wrap
  * @param {string} operationName - Name for error messages
- * @returns {Function} - Wrapped async function returning { ok, data?, error? }
+ * @param {object} [options] - Optional settings
+ * @param {boolean} [options.attachErrorCode=false] - Attach error code metadata
+ * @returns {Function} - Wrapped async function returning { ok, data?, error?, errorCode?, suggestedFix? }
  */
-function wrapSafeAsync(fn, operationName = 'operation') {
+function wrapSafeAsync(fn, operationName = 'operation', options = {}) {
+  const { attachErrorCode = false } = options;
+
   return async function (...args) {
     try {
       const result = await fn.apply(this, args);
@@ -255,7 +259,26 @@ function wrapSafeAsync(fn, operationName = 'operation') {
     } catch (err) {
       const error = `${operationName} failed: ${err.message}`;
       debugLog('wrapSafeAsync', { operationName, error: err.message });
-      return { ok: false, error };
+
+      const result = { ok: false, error };
+
+      // Optionally attach error code metadata
+      if (attachErrorCode) {
+        try {
+          const { getErrorCodeFromError } = require('./error-codes');
+          const codeData = getErrorCodeFromError(err);
+          result.errorCode = codeData.code;
+          result.severity = codeData.severity;
+          result.category = codeData.category;
+          result.recoverable = codeData.recoverable;
+          result.suggestedFix = codeData.suggestedFix;
+          result.autoFix = codeData.autoFix;
+        } catch {
+          // error-codes not available, skip
+        }
+      }
+
+      return result;
     }
   };
 }

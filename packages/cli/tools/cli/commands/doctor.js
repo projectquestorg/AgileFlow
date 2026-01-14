@@ -21,6 +21,12 @@ const {
 const { IdeManager } = require('../installers/ide/manager');
 const { getCurrentVersion } = require('../lib/version-checker');
 const { ErrorHandler } = require('../lib/error-handler');
+const {
+  ErrorCodes,
+  getErrorCodeFromError,
+  getSuggestedFix,
+  isRecoverable,
+} = require('../../../lib/error-codes');
 
 const installer = new Installer();
 
@@ -88,6 +94,7 @@ module.exports = {
         issues++;
         repairs.push({
           type: 'missing-manifest',
+          errorCode: 'ENOENT',
           message: 'Recreate missing manifest.yaml',
           fix: async () => {
             info('Recreating manifest.yaml...');
@@ -142,6 +149,7 @@ module.exports = {
           warnings++;
           repairs.push({
             type: 'invalid-file-index',
+            errorCode: 'EPARSE',
             message: 'Recreate files.json safe-update index',
             fix: async () => {
               await createProtectedFileIndex(status.path, fileIndexPath);
@@ -154,6 +162,7 @@ module.exports = {
         warnings++;
         repairs.push({
           type: 'missing-file-index',
+          errorCode: 'ENOENT',
           message: 'Create files.json safe-update index',
           fix: async () => {
             await createProtectedFileIndex(status.path, fileIndexPath);
@@ -196,6 +205,7 @@ module.exports = {
       if (missingCore) {
         repairs.push({
           type: 'missing-core',
+          errorCode: 'EEMPTYDIR',
           message: 'Reinstall missing core content',
           fix: async () => {
             info('Reinstalling core content...');
@@ -241,6 +251,7 @@ module.exports = {
             warnings++;
             repairs.push({
               type: 'missing-ide-config',
+              errorCode: 'ENODIR',
               message: `Reinstall ${ideName} configuration`,
               fix: async () => {
                 info(`Reinstalling ${ideName} configuration...`);
@@ -267,6 +278,7 @@ module.exports = {
             warnings++;
             repairs.push({
               type: 'orphaned-config',
+              errorCode: 'ECONFLICT',
               message: `Remove orphaned ${ideName} configuration`,
               fix: async () => {
                 info(`Removing orphaned ${ideName} configuration...`);
@@ -291,7 +303,13 @@ module.exports = {
           try {
             await repair.fix();
           } catch (err) {
+            // Use error codes for better diagnosis
+            const codeData = getErrorCodeFromError(err);
             error(`Failed to ${repair.message.toLowerCase()}: ${err.message}`);
+            if (codeData.code !== 'EUNKNOWN') {
+              console.log(chalk.dim(`  Error code: ${codeData.code}`));
+              console.log(chalk.dim(`  Suggestion: ${codeData.suggestedFix}`));
+            }
           }
         }
 
@@ -300,6 +318,16 @@ module.exports = {
       } else if (repairs.length > 0 && !options.fix) {
         console.log();
         info(`Found ${repairs.length} fixable issue(s). Run with --fix to auto-repair.`);
+
+        // Show summary of fixable issues with error codes
+        console.log(chalk.bold('\nFixable Issues:'));
+        for (const repair of repairs) {
+          const errorCode = repair.errorCode || 'ECONFIG';
+          const codeData = ErrorCodes[errorCode] || ErrorCodes.ECONFIG;
+          console.log(
+            `  ${chalk.yellow('!')} ${repair.message} ${chalk.dim(`[${codeData.code}]`)}`
+          );
+        }
       }
 
       // Print summary
