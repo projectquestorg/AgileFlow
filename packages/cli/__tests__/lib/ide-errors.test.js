@@ -109,7 +109,9 @@ describe('ide-errors', () => {
   describe('ContentInjectionError', () => {
     it('creates error with template file and reason', () => {
       const error = new ContentInjectionError('Claude Code', 'babysit.md', 'placeholder not found');
-      expect(error.message).toBe("Content injection failed for 'babysit.md': placeholder not found");
+      expect(error.message).toBe(
+        "Content injection failed for 'babysit.md': placeholder not found"
+      );
       expect(error.templateFile).toBe('babysit.md');
       expect(error.reason).toBe('placeholder not found');
     });
@@ -118,7 +120,9 @@ describe('ide-errors', () => {
   describe('CleanupError', () => {
     it('creates error with target path and reason', () => {
       const error = new CleanupError('Cursor', '/project/.cursor/commands/AgileFlow', 'locked');
-      expect(error.message).toBe("Cleanup failed for '/project/.cursor/commands/AgileFlow': locked");
+      expect(error.message).toBe(
+        "Cleanup failed for '/project/.cursor/commands/AgileFlow': locked"
+      );
       expect(error.targetPath).toBe('/project/.cursor/commands/AgileFlow');
       expect(error.reason).toBe('locked');
     });

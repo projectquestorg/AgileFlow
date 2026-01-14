@@ -427,8 +427,7 @@ function validatePath(inputPath, baseDir, options = {}) {
     ? normalizedBase
     : normalizedBase + path.sep;
 
-  const isWithinBase =
-    resolvedPath === normalizedBase || resolvedPath.startsWith(baseWithSep);
+  const isWithinBase = resolvedPath === normalizedBase || resolvedPath.startsWith(baseWithSep);
 
   if (!isWithinBase) {
     return {

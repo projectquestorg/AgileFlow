@@ -103,11 +103,7 @@ module.exports = {
 
       if (!coreResult.success) {
         const handler = new ErrorHandler('setup');
-        handler.warning(
-          'Core setup failed',
-          'Check directory permissions',
-          'npx agileflow doctor'
-        );
+        handler.warning('Core setup failed', 'Check directory permissions', 'npx agileflow doctor');
       }
 
       success(`Installed ${coreResult.counts.agents} agents`);

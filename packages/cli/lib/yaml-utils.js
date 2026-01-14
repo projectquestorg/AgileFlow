@@ -53,11 +53,7 @@ function safeLoadAll(content, options = {}) {
   }
 
   const documents = [];
-  yaml.loadAll(
-    content,
-    (doc) => documents.push(doc),
-    { schema: yaml.DEFAULT_SCHEMA, ...options }
-  );
+  yaml.loadAll(content, doc => documents.push(doc), { schema: yaml.DEFAULT_SCHEMA, ...options });
   return documents;
 }
 

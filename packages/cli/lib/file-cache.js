@@ -130,9 +130,10 @@ class LRUCache {
       ...this.stats,
       size: this.cache.size,
       maxSize: this.maxSize,
-      hitRate: this.stats.hits + this.stats.misses > 0
-        ? (this.stats.hits / (this.stats.hits + this.stats.misses) * 100).toFixed(1) + '%'
-        : '0%',
+      hitRate:
+        this.stats.hits + this.stats.misses > 0
+          ? ((this.stats.hits / (this.stats.hits + this.stats.misses)) * 100).toFixed(1) + '%'
+          : '0%',
     };
   }
 

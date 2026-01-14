@@ -63,8 +63,8 @@ console.log(`File Being Edited:   ${normalizedFile}`);
 console.log('');
 
 // Check if file is within active session path
-const isInsideSession = normalizedFile.startsWith(normalizedActive + path.sep) ||
-                        normalizedFile === normalizedActive;
+const isInsideSession =
+  normalizedFile.startsWith(normalizedActive + path.sep) || normalizedFile === normalizedActive;
 
 if (isInsideSession) {
   console.log('✅ ALLOWED - File is inside the active session directory');

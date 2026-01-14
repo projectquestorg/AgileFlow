@@ -10,7 +10,11 @@ const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
 
-const { Installer, getSourcePath, getPackageRoot } = require('../../../tools/cli/installers/core/installer');
+const {
+  Installer,
+  getSourcePath,
+  getPackageRoot,
+} = require('../../../tools/cli/installers/core/installer');
 
 describe('Installer', () => {
   let tempDir;
@@ -177,10 +181,7 @@ describe('Installer', () => {
         custom_setting: 'preserve_me',
         created_at: '2024-01-01T00:00:00.000Z',
       };
-      await fs.writeFile(
-        path.join(agileflowDir, 'config.yaml'),
-        yaml.dump(existingConfig)
-      );
+      await fs.writeFile(path.join(agileflowDir, 'config.yaml'), yaml.dump(existingConfig));
 
       await installer.createConfig(agileflowDir, 'NewUser', '.agileflow');
 
@@ -230,10 +231,7 @@ describe('Installer', () => {
         ides: ['cursor'],
         modules: ['core', 'custom'],
       };
-      await fs.writeFile(
-        path.join(cfgDir, 'manifest.yaml'),
-        yaml.dump(existingManifest)
-      );
+      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), yaml.dump(existingManifest));
 
       await installer.createManifest(cfgDir, {
         ides: ['claude-code'],
@@ -706,8 +704,12 @@ describe('Installer', () => {
       // Verify directory structure
       expect(await fs.pathExists(path.join(tempDir, '.agileflow'))).toBe(true);
       expect(await fs.pathExists(path.join(tempDir, '.agileflow', '_cfg'))).toBe(true);
-      expect(await fs.pathExists(path.join(tempDir, '.agileflow', '_cfg', 'manifest.yaml'))).toBe(true);
-      expect(await fs.pathExists(path.join(tempDir, '.agileflow', '_cfg', 'files.json'))).toBe(true);
+      expect(await fs.pathExists(path.join(tempDir, '.agileflow', '_cfg', 'manifest.yaml'))).toBe(
+        true
+      );
+      expect(await fs.pathExists(path.join(tempDir, '.agileflow', '_cfg', 'files.json'))).toBe(
+        true
+      );
       expect(await fs.pathExists(path.join(tempDir, '.agileflow', 'config.yaml'))).toBe(true);
     });
 
@@ -752,10 +754,7 @@ describe('Installer', () => {
       if (await fs.pathExists(agentPath)) {
         const files = await fs.readdir(agentPath);
         if (files.length > 0) {
-          await fs.writeFile(
-            path.join(agentPath, files[0]),
-            '# User modifications'
-          );
+          await fs.writeFile(path.join(agentPath, files[0]), '# User modifications');
         }
       }
 

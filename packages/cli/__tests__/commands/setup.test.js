@@ -64,7 +64,13 @@ jest.mock('../../tools/cli/installers/ide/manager', () => ({
 }));
 
 const setupCommand = require('../../tools/cli/commands/setup');
-const { promptInstall, success, error, displaySection, displayLogo } = require('../../tools/cli/lib/ui');
+const {
+  promptInstall,
+  success,
+  error,
+  displaySection,
+  displayLogo,
+} = require('../../tools/cli/lib/ui');
 const { createDocsStructure } = require('../../tools/cli/lib/docs-setup');
 
 describe('setup command', () => {

@@ -46,11 +46,14 @@ function saveSessionState(rootDir, state) {
 async function resolveGlob(pattern, rootDir) {
   // Use bash globbing for pattern expansion
   try {
-    const result = execSync(`bash -c 'shopt -s nullglob; for f in ${pattern}; do echo "$f"; done'`, {
-      cwd: rootDir,
-      encoding: 'utf8',
-      timeout: 10000,
-    });
+    const result = execSync(
+      `bash -c 'shopt -s nullglob; for f in ${pattern}; do echo "$f"; done'`,
+      {
+        cwd: rootDir,
+        encoding: 'utf8',
+        timeout: 10000,
+      }
+    );
     const files = result
       .split('\n')
       .filter(f => f.trim())
@@ -218,7 +221,9 @@ function handleBatchLoop(rootDir) {
       );
       console.log('');
       console.log(`${c.green}Pattern: ${loop.pattern}${c.reset}`);
-      console.log(`${c.dim}${summary.completed} items completed in ${iteration - 1} iterations${c.reset}`);
+      console.log(
+        `${c.dim}${summary.completed} items completed in ${iteration - 1} iterations${c.reset}`
+      );
       return;
     }
 
@@ -287,7 +292,9 @@ function handleBatchLoop(rootDir) {
       console.log(`${c.cyan}━━━ Next Item ━━━${c.reset}`);
       console.log(`${c.bold}${nextItem}${c.reset}`);
       console.log('');
-      console.log(`${c.dim}Progress: ${summary.completed}/${summary.total} items complete${c.reset}`);
+      console.log(
+        `${c.dim}Progress: ${summary.completed}/${summary.total} items complete${c.reset}`
+      );
       console.log('');
       console.log(`${c.brand}▶ Implement "${loop.action}" for this file${c.reset}`);
       console.log(`${c.dim}  Run tests when ready. Loop will validate and continue.${c.reset}`);
@@ -310,7 +317,9 @@ function handleBatchLoop(rootDir) {
       console.log('');
       console.log(`${c.green}Pattern: ${loop.pattern}${c.reset}`);
       console.log(`${c.green}Action: ${loop.action}${c.reset}`);
-      console.log(`${c.dim}${summary.completed} items completed in ${iteration} iterations${c.reset}`);
+      console.log(
+        `${c.dim}${summary.completed} items completed in ${iteration} iterations${c.reset}`
+      );
     }
   } else {
     // Tests failed - continue iterating
@@ -353,9 +362,7 @@ async function handleInit(args, rootDir) {
   }
 
   const pattern = patternArg.split('=').slice(1).join('=').replace(/"/g, '');
-  const action = actionArg
-    ? actionArg.split('=').slice(1).join('=').replace(/"/g, '')
-    : 'process';
+  const action = actionArg ? actionArg.split('=').slice(1).join('=').replace(/"/g, '') : 'process';
   const maxIterations = parseIntBounded(maxArg ? maxArg.split('=')[1] : null, 50, 1, 200);
 
   // Resolve glob pattern
@@ -432,7 +439,9 @@ function handleStatus(rootDir) {
   console.log(`  Pattern: ${loop.pattern}`);
   console.log(`  Action: ${loop.action}`);
   console.log(`  Current Item: ${loop.current_item || 'none'}`);
-  console.log(`  Progress: ${summary.completed}/${summary.total} (${summary.in_progress} in progress)`);
+  console.log(
+    `  Progress: ${summary.completed}/${summary.total} (${summary.in_progress} in progress)`
+  );
   console.log(`  Iteration: ${loop.iteration || 0}/${loop.max_iterations || 50}`);
 }
 

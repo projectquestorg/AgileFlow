@@ -55,7 +55,13 @@ jest.mock('js-yaml', () => ({
 
 const fs = require('fs-extra');
 const uninstallCommand = require('../../tools/cli/commands/uninstall');
-const { displayLogo, displaySection, success, warning, confirm } = require('../../tools/cli/lib/ui');
+const {
+  displayLogo,
+  displaySection,
+  success,
+  warning,
+  confirm,
+} = require('../../tools/cli/lib/ui');
 
 describe('uninstall command', () => {
   const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {});
@@ -154,10 +160,7 @@ describe('uninstall command', () => {
     it('prompts for confirmation', async () => {
       await uninstallCommand.action({});
 
-      expect(confirm).toHaveBeenCalledWith(
-        'Are you sure you want to uninstall AgileFlow?',
-        false
-      );
+      expect(confirm).toHaveBeenCalledWith('Are you sure you want to uninstall AgileFlow?', false);
     });
 
     it('skips confirmation with --force', async () => {

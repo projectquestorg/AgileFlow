@@ -5,7 +5,13 @@
  * and that malicious YAML payloads are rejected.
  */
 
-const { safeLoad, safeLoadAll, safeDump, isSecureConfiguration, yaml } = require('../../lib/yaml-utils');
+const {
+  safeLoad,
+  safeLoadAll,
+  safeDump,
+  isSecureConfiguration,
+  yaml,
+} = require('../../lib/yaml-utils');
 
 describe('yaml-utils', () => {
   describe('safeLoad', () => {
@@ -121,7 +127,7 @@ normal: value
 `;
       const result = safeLoad(malicious);
       // The parsed object should not pollute Object prototype
-      expect(({}).polluted).toBeUndefined();
+      expect({}.polluted).toBeUndefined();
       // The key should exist on the result itself
       expect(result.__proto__).toBeDefined();
       expect(result.normal).toBe('value');
@@ -136,7 +142,7 @@ name: test
 `;
       const result = safeLoad(malicious);
       // Should not pollute the constructor
-      expect(({}).evil).toBeUndefined();
+      expect({}.evil).toBeUndefined();
       expect(result.constructor).toBeDefined();
       expect(result.name).toBe('test');
     });
@@ -172,7 +178,7 @@ name: doc3
     it('serializes objects to YAML', () => {
       const result = safeDump({ name: 'test', version: '1.0' });
       expect(result).toContain('name: test');
-      expect(result).toContain('version: \'1.0\'');
+      expect(result).toContain("version: '1.0'");
     });
 
     it('serializes arrays to YAML', () => {

@@ -168,7 +168,8 @@ class Spinner {
     }
 
     const elapsed = this.startTime ? Date.now() - this.startTime : 0;
-    const suffix = elapsed > DOHERTY_THRESHOLD_MS ? ` ${c.dim}(${formatDuration(elapsed)})${c.reset}` : '';
+    const suffix =
+      elapsed > DOHERTY_THRESHOLD_MS ? ` ${c.dim}(${formatDuration(elapsed)})${c.reset}` : '';
 
     console.log(`${color}${symbol}${c.reset} ${message}${suffix}`);
     return this;
@@ -179,7 +180,7 @@ class Spinner {
    * @returns {boolean}
    */
   wasFast() {
-    return this.startTime && (Date.now() - this.startTime) < DOHERTY_THRESHOLD_MS;
+    return this.startTime && Date.now() - this.startTime < DOHERTY_THRESHOLD_MS;
   }
 }
 
@@ -263,7 +264,7 @@ class ProgressBar {
       return this;
     }
 
-    const percent = this.total > 0 ? (current / this.total) : 0;
+    const percent = this.total > 0 ? current / this.total : 0;
     const filled = Math.round(this.width * percent);
     const empty = this.width - filled;
 
@@ -300,7 +301,8 @@ class ProgressBar {
     }
 
     const elapsed = Date.now() - this.startTime;
-    const suffix = elapsed > DOHERTY_THRESHOLD_MS ? ` ${c.dim}(${formatDuration(elapsed)})${c.reset}` : '';
+    const suffix =
+      elapsed > DOHERTY_THRESHOLD_MS ? ` ${c.dim}(${formatDuration(elapsed)})${c.reset}` : '';
     const msg = message || `${this.label} complete`;
 
     console.log(`${c.green}✓${c.reset} ${msg} (${this.total} items)${suffix}`);

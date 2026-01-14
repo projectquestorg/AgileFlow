@@ -67,7 +67,14 @@ jest.mock('child_process', () => ({
 
 const fs = require('fs-extra');
 const doctorCommand = require('../../tools/cli/commands/doctor');
-const { displayLogo, displaySection, success, warning, error, info } = require('../../tools/cli/lib/ui');
+const {
+  displayLogo,
+  displaySection,
+  success,
+  warning,
+  error,
+  info,
+} = require('../../tools/cli/lib/ui');
 
 describe('doctor command', () => {
   const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {});
@@ -312,17 +319,13 @@ describe('doctor command', () => {
     it('uses provided directory', async () => {
       await doctorCommand.action({ directory: '/custom/path' });
 
-      expect(mockInstallerInstance.getStatus).toHaveBeenCalledWith(
-        path.resolve('/custom/path')
-      );
+      expect(mockInstallerInstance.getStatus).toHaveBeenCalledWith(path.resolve('/custom/path'));
     });
 
     it('uses current directory by default', async () => {
       await doctorCommand.action({});
 
-      expect(mockInstallerInstance.getStatus).toHaveBeenCalledWith(
-        expect.any(String)
-      );
+      expect(mockInstallerInstance.getStatus).toHaveBeenCalledWith(expect.any(String));
     });
   });
 });

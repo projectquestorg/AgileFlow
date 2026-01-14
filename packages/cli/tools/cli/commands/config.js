@@ -130,11 +130,7 @@ async function handleGet(status, key) {
   const handler = new ErrorHandler('config');
 
   if (!key) {
-    handler.warning(
-      'Missing key',
-      'Provide a config key to get',
-      'npx agileflow config get <key>'
-    );
+    handler.warning('Missing key', 'Provide a config key to get', 'npx agileflow config get <key>');
   }
 
   const validKeys = ['userName', 'ides', 'agileflowFolder', 'docsFolder', 'version'];

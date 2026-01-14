@@ -92,9 +92,7 @@ describe('docs-setup', () => {
 
       // Find the metadata.json write call
       const writeCalls = fs.writeFile.mock.calls;
-      const metadataCall = writeCalls.find(call =>
-        call[0].includes('agileflow-metadata.json')
-      );
+      const metadataCall = writeCalls.find(call => call[0].includes('agileflow-metadata.json'));
 
       expect(metadataCall).toBeDefined();
 
@@ -133,7 +131,13 @@ describe('docs-setup', () => {
       await createDocsStructure('/test/target', 'docs');
 
       const writeCalls = fs.writeFile.mock.calls;
-      const practiceFiles = ['testing.md', 'git-branching.md', 'releasing.md', 'security.md', 'ci.md'];
+      const practiceFiles = [
+        'testing.md',
+        'git-branching.md',
+        'releasing.md',
+        'security.md',
+        'ci.md',
+      ];
 
       for (const file of practiceFiles) {
         const call = writeCalls.find(c => c[0].includes(file));
@@ -148,15 +152,11 @@ describe('docs-setup', () => {
       const ensureDirCalls = fs.ensureDir.mock.calls;
 
       // Check directories use custom folder name
-      const hasCustomFolder = ensureDirCalls.some(call =>
-        call[0].includes('documentation')
-      );
+      const hasCustomFolder = ensureDirCalls.some(call => call[0].includes('documentation'));
       expect(hasCustomFolder).toBe(true);
 
       // Check files use custom folder name
-      const filesInCustomFolder = writeCalls.filter(call =>
-        call[0].includes('documentation')
-      );
+      const filesInCustomFolder = writeCalls.filter(call => call[0].includes('documentation'));
       expect(filesInCustomFolder.length).toBeGreaterThan(0);
     });
 
@@ -207,9 +207,7 @@ describe('docs-setup', () => {
 
       // Check that metadata was updated
       const writeCalls = fs.writeFile.mock.calls;
-      const metadataCall = writeCalls.find(call =>
-        call[0].includes('agileflow-metadata.json')
-      );
+      const metadataCall = writeCalls.find(call => call[0].includes('agileflow-metadata.json'));
 
       // Metadata should be written with updated version
       if (metadataCall) {
@@ -373,8 +371,8 @@ describe('docs-setup', () => {
       await createDocsStructure('/test/target', 'docs');
 
       const writeCalls = fs.writeFile.mock.calls;
-      const metaReadmeCall = writeCalls.find(call =>
-        call[0].includes('00-meta') && call[0].includes('README.md')
+      const metaReadmeCall = writeCalls.find(
+        call => call[0].includes('00-meta') && call[0].includes('README.md')
       );
 
       expect(metaReadmeCall).toBeDefined();
@@ -386,8 +384,8 @@ describe('docs-setup', () => {
       await createDocsStructure('/test/target', 'docs');
 
       const writeCalls = fs.writeFile.mock.calls;
-      const storiesReadmeCall = writeCalls.find(call =>
-        call[0].includes('06-stories') && call[0].includes('README.md')
+      const storiesReadmeCall = writeCalls.find(
+        call => call[0].includes('06-stories') && call[0].includes('README.md')
       );
 
       expect(storiesReadmeCall).toBeDefined();
@@ -398,8 +396,8 @@ describe('docs-setup', () => {
       await createDocsStructure('/test/target', 'docs');
 
       const writeCalls = fs.writeFile.mock.calls;
-      const researchReadmeCall = writeCalls.find(call =>
-        call[0].includes('10-research') && call[0].includes('README.md')
+      const researchReadmeCall = writeCalls.find(
+        call => call[0].includes('10-research') && call[0].includes('README.md')
       );
 
       expect(researchReadmeCall).toBeDefined();
@@ -412,9 +410,7 @@ describe('docs-setup', () => {
       await createDocsStructure('/test/target', 'docs');
 
       const writeCalls = fs.writeFile.mock.calls;
-      const metadataCall = writeCalls.find(call =>
-        call[0].includes('agileflow-metadata.json')
-      );
+      const metadataCall = writeCalls.find(call => call[0].includes('agileflow-metadata.json'));
 
       const metadata = JSON.parse(metadataCall[1]);
       expect(metadata.archival.threshold_days).toBe(30);
@@ -440,7 +436,9 @@ describe('docs-setup', () => {
       fs.existsSync.mockImplementation(filePath => {
         return filePath.includes('.gitignore');
       });
-      fs.readFile.mockResolvedValue('.env\nnode_modules/\ndist/\nbuild/\ncoverage/\n.DS_Store\n!.env.example\n.env.*');
+      fs.readFile.mockResolvedValue(
+        '.env\nnode_modules/\ndist/\nbuild/\ncoverage/\n.DS_Store\n!.env.example\n.env.*'
+      );
 
       await createDocsStructure('/test/target', 'docs', { updateGitignore: true });
 

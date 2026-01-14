@@ -70,7 +70,14 @@ jest.mock('node:child_process', () => ({
 const fs = require('fs-extra');
 const semver = require('semver');
 const updateCommand = require('../../tools/cli/commands/update');
-const { displayLogo, displaySection, success, warning, info, confirm } = require('../../tools/cli/lib/ui');
+const {
+  displayLogo,
+  displaySection,
+  success,
+  warning,
+  info,
+  confirm,
+} = require('../../tools/cli/lib/ui');
 const { getLatestVersion } = require('../../tools/cli/lib/npm-utils');
 const { createDocsStructure, getDocsFolderName } = require('../../tools/cli/lib/docs-setup');
 
@@ -158,7 +165,9 @@ describe('update command', () => {
     });
 
     it('includes no-self-update option', () => {
-      const selfUpdateOption = updateCommand.options.find(opt => opt[0].includes('--no-self-update'));
+      const selfUpdateOption = updateCommand.options.find(opt =>
+        opt[0].includes('--no-self-update')
+      );
       expect(selfUpdateOption).toBeTruthy();
     });
   });
@@ -252,9 +261,7 @@ describe('update command', () => {
     it('reports file operations', async () => {
       await updateCommand.action({ force: true, selfUpdated: true });
 
-      expect(info).toHaveBeenCalledWith(
-        expect.stringContaining('5 added')
-      );
+      expect(info).toHaveBeenCalledWith(expect.stringContaining('5 added'));
     });
 
     it('exits with 0', async () => {

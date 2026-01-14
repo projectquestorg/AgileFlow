@@ -195,11 +195,7 @@ class BaseIdeSetup {
                 `Permission denied: ${error.message}`
               );
             }
-            throw new CleanupError(
-              this.displayName,
-              agileflowPath,
-              error.message
-            );
+            throw new CleanupError(this.displayName, agileflowPath, error.message);
           }
         }
       }
@@ -332,11 +328,7 @@ class BaseIdeSetup {
             try {
               content = this.injectDynamicContent(content, agileflowDir);
             } catch (injectionError) {
-              throw new ContentInjectionError(
-                this.displayName,
-                sourcePath,
-                injectionError.message
-              );
+              throw new ContentInjectionError(this.displayName, sourcePath, injectionError.message);
             }
           }
 
@@ -350,12 +342,10 @@ class BaseIdeSetup {
           if (error.name && error.name.includes('Error') && error.ideName) {
             throw error;
           }
-          throw new CommandInstallationError(
-            this.displayName,
-            entry.name,
-            error.message,
-            { sourcePath, targetPath }
-          );
+          throw new CommandInstallationError(this.displayName, entry.name, error.message, {
+            sourcePath,
+            targetPath,
+          });
         }
       } else if (entry.isDirectory()) {
         // Recursively process subdirectory

@@ -1269,12 +1269,14 @@ async function main() {
   if (parallelSessions.cleaned > 0 && parallelSessions.cleanedSessions) {
     console.log('');
     console.log(`${c.amber}📋 Cleaned ${parallelSessions.cleaned} inactive session(s):${c.reset}`);
-    parallelSessions.cleanedSessions.forEach((sess) => {
+    parallelSessions.cleanedSessions.forEach(sess => {
       const name = sess.nickname ? `${sess.id} "${sess.nickname}"` : `Session ${sess.id}`;
       const reason = sess.reason === 'pid_dead' ? 'process ended' : sess.reason;
       console.log(`   ${c.dim}└─ ${name} (${reason}, PID ${sess.pid})${c.reset}`);
     });
-    console.log(`   ${c.slate}Sessions are cleaned when their Claude Code process is no longer running.${c.reset}`);
+    console.log(
+      `   ${c.slate}Sessions are cleaned when their Claude Code process is no longer running.${c.reset}`
+    );
   }
 
   // Story claiming: cleanup stale claims and show warnings

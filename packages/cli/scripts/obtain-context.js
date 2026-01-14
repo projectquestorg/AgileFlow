@@ -461,10 +461,10 @@ function generateFullContent() {
       'loop-mode': 'Autonomous epic execution (MODE=loop)',
       'multi-session': 'Multi-session coordination detected',
       'visual-e2e': 'Visual screenshot verification (VISUAL=true)',
-      'delegation': 'Expert spawning patterns (load when spawning)',
-      'stuck': 'Research prompt guidance (load after 2 failures)',
+      delegation: 'Expert spawning patterns (load when spawning)',
+      stuck: 'Research prompt guidance (load after 2 failures)',
       'plan-mode': 'Planning workflow details (load when entering plan mode)',
-      'tools': 'Tool usage guidance (load when needed)',
+      tools: 'Tool usage guidance (load when needed)',
     };
 
     content += `\n${C.dim}Section meanings:${C.reset}\n`;

@@ -73,7 +73,11 @@ describe('error-handler', () => {
     });
 
     it('formats message with action and command', () => {
-      const result = handler.formatError('Something failed', 'Check permissions', 'npx agileflow doctor');
+      const result = handler.formatError(
+        'Something failed',
+        'Check permissions',
+        'npx agileflow doctor'
+      );
       expect(result).toContain('Something failed');
       expect(result).toContain('Action:');
       expect(result).toContain('Check permissions');
@@ -229,17 +233,13 @@ describe('error-handler', () => {
     });
 
     it('reports warning issues and exits', () => {
-      handler.reportIssues([
-        { type: 'warning', message: 'Warning 1' },
-      ]);
+      handler.reportIssues([{ type: 'warning', message: 'Warning 1' }]);
       expect(mockConsoleError).toHaveBeenCalled();
       expect(mockExit).toHaveBeenCalledWith(1);
     });
 
     it('reports info issues without exiting', () => {
-      handler.reportIssues([
-        { type: 'info', message: 'Info 1' },
-      ]);
+      handler.reportIssues([{ type: 'info', message: 'Info 1' }]);
       expect(mockConsoleLog).toHaveBeenCalled();
       expect(mockExit).not.toHaveBeenCalled();
     });

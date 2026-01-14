@@ -228,9 +228,8 @@ function registerSession(nickname = null, threadType = null) {
   registry.next_id++;
 
   const isMain = cwd === ROOT;
-  const detectedType = threadType && THREAD_TYPES.includes(threadType)
-    ? threadType
-    : detectThreadType(null, !isMain);
+  const detectedType =
+    threadType && THREAD_TYPES.includes(threadType) ? threadType : detectThreadType(null, !isMain);
 
   registry.sessions[sessionId] = {
     path: cwd,
@@ -750,10 +749,10 @@ function getSessionPhase(session) {
 
     // Count commits since branch diverged from main
     const mainBranch = getMainBranch();
-    const commitCount = execSync(
-      `git rev-list --count ${mainBranch}..HEAD 2>/dev/null || echo 0`,
-      { cwd: sessionPath, encoding: 'utf8' }
-    ).trim();
+    const commitCount = execSync(`git rev-list --count ${mainBranch}..HEAD 2>/dev/null || echo 0`, {
+      cwd: sessionPath,
+      encoding: 'utf8',
+    }).trim();
 
     const commits = parseInt(commitCount, 10);
 
@@ -1037,7 +1036,9 @@ function main() {
         if (nickname) registry.sessions[sessionId].nickname = nickname;
         // Ensure thread_type exists (migration for old sessions)
         if (!registry.sessions[sessionId].thread_type) {
-          registry.sessions[sessionId].thread_type = registry.sessions[sessionId].is_main ? 'base' : 'parallel';
+          registry.sessions[sessionId].thread_type = registry.sessions[sessionId].is_main
+            ? 'base'
+            : 'parallel';
         }
         writeLock(sessionId, pid);
       } else {
@@ -1218,7 +1219,9 @@ function main() {
         const sessionId = args[2];
         const threadType = args[3];
         if (!sessionId || !threadType) {
-          console.log(JSON.stringify({ success: false, error: 'Usage: thread-type set <sessionId> <type>' }));
+          console.log(
+            JSON.stringify({ success: false, error: 'Usage: thread-type set <sessionId> <type>' })
+          );
           return;
         }
         const result = setSessionThreadType(sessionId, threadType);
@@ -1910,7 +1913,10 @@ function getSessionThreadType(sessionId = null) {
  */
 function setSessionThreadType(sessionId, threadType) {
   if (!THREAD_TYPES.includes(threadType)) {
-    return { success: false, error: `Invalid thread type: ${threadType}. Valid: ${THREAD_TYPES.join(', ')}` };
+    return {
+      success: false,
+      error: `Invalid thread type: ${threadType}. Valid: ${THREAD_TYPES.join(', ')}`,
+    };
   }
 
   const registry = loadRegistry();
