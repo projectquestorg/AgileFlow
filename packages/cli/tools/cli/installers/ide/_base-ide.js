@@ -7,6 +7,14 @@
 const path = require('node:path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
+const {
+  IdeConfigNotFoundError,
+  CommandInstallationError,
+  FilePermissionError,
+  CleanupError,
+  ContentInjectionError,
+  withPermissionHandling,
+} = require('../../lib/ide-errors');
 
 /**
  * Base class for IDE-specific setup
@@ -166,6 +174,7 @@ class BaseIdeSetup {
   /**
    * Cleanup IDE configuration
    * @param {string} projectDir - Project directory
+   * @throws {CleanupError} If cleanup fails
    */
   async cleanup(projectDir) {
     if (this.configDir) {
@@ -173,10 +182,25 @@ class BaseIdeSetup {
       for (const folderName of ['agileflow', 'AgileFlow']) {
         const agileflowPath = path.join(projectDir, this.configDir, 'commands', folderName);
         if (await fs.pathExists(agileflowPath)) {
-          await fs.remove(agileflowPath);
-          console.log(
-            chalk.dim(`  Removed old ${folderName} configuration from ${this.displayName}`)
-          );
+          try {
+            await fs.remove(agileflowPath);
+            console.log(
+              chalk.dim(`  Removed old ${folderName} configuration from ${this.displayName}`)
+            );
+          } catch (error) {
+            if (error.code === 'EACCES' || error.code === 'EPERM') {
+              throw new CleanupError(
+                this.displayName,
+                agileflowPath,
+                `Permission denied: ${error.message}`
+              );
+            }
+            throw new CleanupError(
+              this.displayName,
+              agileflowPath,
+              error.message
+            );
+          }
         }
       }
     }
@@ -204,21 +228,27 @@ class BaseIdeSetup {
   }
 
   /**
-   * Write a file
+   * Write a file with permission error handling
    * @param {string} filePath - File path
    * @param {string} content - File content
+   * @throws {FilePermissionError} If permission denied
    */
   async writeFile(filePath, content) {
-    await fs.writeFile(filePath, content, 'utf8');
+    await withPermissionHandling(this.displayName, filePath, 'write', async () => {
+      await fs.writeFile(filePath, content, 'utf8');
+    });
   }
 
   /**
-   * Read a file
+   * Read a file with permission error handling
    * @param {string} filePath - File path
    * @returns {Promise<string>} File content
+   * @throws {FilePermissionError} If permission denied
    */
   async readFile(filePath) {
-    return fs.readFile(filePath, 'utf8');
+    return withPermissionHandling(this.displayName, filePath, 'read', async () => {
+      return fs.readFile(filePath, 'utf8');
+    });
   }
 
   /**
@@ -266,6 +296,8 @@ class BaseIdeSetup {
    * @param {string} agileflowDir - AgileFlow installation directory (for dynamic content)
    * @param {boolean} injectDynamic - Whether to inject dynamic content (only for top-level commands)
    * @returns {Promise<{commands: number, subdirs: number}>} Count of installed items
+   * @throws {CommandInstallationError} If command installation fails
+   * @throws {FilePermissionError} If permission denied
    */
   async installCommandsRecursive(sourceDir, targetDir, agileflowDir, injectDynamic = false) {
     let commandCount = 0;
@@ -275,7 +307,14 @@ class BaseIdeSetup {
       return { commands: 0, subdirs: 0 };
     }
 
-    await this.ensureDir(targetDir);
+    try {
+      await this.ensureDir(targetDir);
+    } catch (error) {
+      if (error.code === 'EACCES' || error.code === 'EPERM') {
+        throw new FilePermissionError(this.displayName, targetDir, 'write');
+      }
+      throw error;
+    }
 
     const entries = await fs.readdir(sourceDir, { withFileTypes: true });
 
@@ -284,19 +323,40 @@ class BaseIdeSetup {
       const targetPath = path.join(targetDir, entry.name);
 
       if (entry.isFile() && entry.name.endsWith('.md')) {
-        // Read and process .md file
-        let content = await this.readFile(sourcePath);
+        try {
+          // Read and process .md file
+          let content = await this.readFile(sourcePath);
 
-        // Inject dynamic content if enabled (for top-level commands)
-        if (injectDynamic) {
-          content = this.injectDynamicContent(content, agileflowDir);
+          // Inject dynamic content if enabled (for top-level commands)
+          if (injectDynamic) {
+            try {
+              content = this.injectDynamicContent(content, agileflowDir);
+            } catch (injectionError) {
+              throw new ContentInjectionError(
+                this.displayName,
+                sourcePath,
+                injectionError.message
+              );
+            }
+          }
+
+          // Replace docs/ references with custom folder name
+          content = this.replaceDocsReferences(content);
+
+          await this.writeFile(targetPath, content);
+          commandCount++;
+        } catch (error) {
+          // Re-throw typed errors as-is
+          if (error.name && error.name.includes('Error') && error.ideName) {
+            throw error;
+          }
+          throw new CommandInstallationError(
+            this.displayName,
+            entry.name,
+            error.message,
+            { sourcePath, targetPath }
+          );
         }
-
-        // Replace docs/ references with custom folder name
-        content = this.replaceDocsReferences(content);
-
-        await this.writeFile(targetPath, content);
-        commandCount++;
       } else if (entry.isDirectory()) {
         // Recursively process subdirectory
         const subResult = await this.installCommandsRecursive(
