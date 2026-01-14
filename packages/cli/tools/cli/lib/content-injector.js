@@ -26,6 +26,7 @@ const path = require('path');
 
 // Use shared modules
 const { parseFrontmatter, normalizeTools } = require('../../../scripts/lib/frontmatter-parser');
+const { validatePath } = require('../../../lib/validate');
 const {
   countCommands,
   countAgents,
@@ -36,6 +37,18 @@ const {
 // =============================================================================
 // List Generation Functions
 // =============================================================================
+
+/**
+ * Validate that a file path is within the expected directory.
+ * Prevents reading files outside the expected scope.
+ * @param {string} filePath - File path to validate
+ * @param {string} baseDir - Expected base directory
+ * @returns {boolean} True if path is safe
+ */
+function isPathSafe(filePath, baseDir) {
+  const result = validatePath(filePath, baseDir, { allowSymlinks: true });
+  return result.ok;
+}
 
 /**
  * Scan agents directory and generate formatted agent list
@@ -50,6 +63,12 @@ function generateAgentList(agentsDir) {
 
   for (const file of files) {
     const filePath = path.join(agentsDir, file);
+
+    // Validate path before reading to prevent traversal via symlinks or malicious names
+    if (!isPathSafe(filePath, agentsDir)) {
+      continue;
+    }
+
     const content = fs.readFileSync(filePath, 'utf8');
     const frontmatter = parseFrontmatter(content);
 
@@ -94,6 +113,12 @@ function generateCommandList(commandsDir) {
   const mainFiles = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
   for (const file of mainFiles) {
     const filePath = path.join(commandsDir, file);
+
+    // Validate path before reading
+    if (!isPathSafe(filePath, commandsDir)) {
+      continue;
+    }
+
     const content = fs.readFileSync(filePath, 'utf8');
     const frontmatter = parseFrontmatter(content);
     const cmdName = path.basename(file, '.md');
@@ -114,10 +139,22 @@ function generateCommandList(commandsDir) {
   for (const entry of entries) {
     if (entry.isDirectory()) {
       const subDir = path.join(commandsDir, entry.name);
+
+      // Validate subdirectory path
+      if (!isPathSafe(subDir, commandsDir)) {
+        continue;
+      }
+
       const subFiles = fs.readdirSync(subDir).filter(f => f.endsWith('.md'));
 
       for (const file of subFiles) {
         const filePath = path.join(subDir, file);
+
+        // Validate file path within subdirectory
+        if (!isPathSafe(filePath, commandsDir)) {
+          continue;
+        }
+
         const content = fs.readFileSync(filePath, 'utf8');
         const frontmatter = parseFrontmatter(content);
         const cmdName = `${entry.name}:${path.basename(file, '.md')}`;

@@ -11,6 +11,7 @@ const ora = require('ora');
 const yaml = require('js-yaml');
 const { injectContent } = require('../../lib/content-injector');
 const { sha256Hex, toPosixPath, safeTimestampForPath } = require('../../lib/utils');
+const { validatePath, PathValidationError } = require('../../../../lib/validate');
 
 const TEXT_EXTENSIONS = new Set(['.md', '.yaml', '.yml', '.txt', '.json']);
 
@@ -192,6 +193,22 @@ class Installer {
   }
 
   /**
+   * Validate that a path is within the allowed installation directory.
+   * Prevents path traversal attacks when writing files.
+   *
+   * @param {string} filePath - Path to validate
+   * @param {string} baseDir - Allowed base directory
+   * @throws {PathValidationError} If path escapes base directory
+   */
+  validateInstallPath(filePath, baseDir) {
+    const result = validatePath(filePath, baseDir, { allowSymlinks: false });
+    if (!result.ok) {
+      throw result.error;
+    }
+    return result.resolvedPath;
+  }
+
+  /**
    * Copy content from source to destination with placeholder replacement
    * @param {string} source - Source directory
    * @param {string} dest - Destination directory
@@ -201,9 +218,15 @@ class Installer {
   async copyContent(source, dest, agileflowFolder, policy = null) {
     const entries = await fs.readdir(source, { withFileTypes: true });
 
+    // Get base directory for validation (agileflowDir from policy or dest itself)
+    const baseDir = policy?.agileflowDir || dest;
+
     for (const entry of entries) {
       const srcPath = path.join(source, entry.name);
       const destPath = path.join(dest, entry.name);
+
+      // Validate destination path to prevent traversal attacks via malicious filenames
+      this.validateInstallPath(destPath, baseDir);
 
       if (entry.isDirectory()) {
         await fs.ensureDir(destPath);
@@ -688,18 +711,25 @@ class Installer {
    * @param {string} srcDir - Source directory
    * @param {string} destDir - Destination directory
    * @param {boolean} force - Overwrite existing files
+   * @param {string} [baseDir] - Base directory for path validation (defaults to destDir on first call)
    */
-  async copyScriptsRecursive(srcDir, destDir, force) {
+  async copyScriptsRecursive(srcDir, destDir, force, baseDir = null) {
     const entries = await fs.readdir(srcDir, { withFileTypes: true });
+
+    // Use destDir as base for validation on first call
+    const validationBase = baseDir || destDir;
 
     for (const entry of entries) {
       const srcPath = path.join(srcDir, entry.name);
       const destPath = path.join(destDir, entry.name);
 
+      // Validate destination path to prevent traversal via malicious filenames
+      this.validateInstallPath(destPath, validationBase);
+
       if (entry.isDirectory()) {
         // Recursively copy subdirectories
         await fs.ensureDir(destPath);
-        await this.copyScriptsRecursive(srcPath, destPath, force);
+        await this.copyScriptsRecursive(srcPath, destPath, force, validationBase);
       } else {
         // Copy file
         const destExists = await fs.pathExists(destPath);
