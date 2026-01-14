@@ -80,6 +80,18 @@ cd ../..
 echo "✅ Format and lint checks passed"
 echo ""
 
+# Step 0.7: Check for npm audit vulnerabilities (high severity)
+echo "Step 0.7: Checking for high-severity npm vulnerabilities..."
+if ! npm audit --audit-level=high 2>/dev/null; then
+  echo ""
+  echo "❌ High-severity vulnerabilities found!"
+  echo "   Run 'npm audit fix' to resolve before releasing."
+  echo "   If fixes require breaking changes, consider addressing manually."
+  exit 1
+fi
+echo "✅ No high-severity vulnerabilities found"
+echo ""
+
 # Step 1: Sync README from root to CLI (root is source of truth)
 echo "Step 1: Syncing README.md from root to packages/cli/..."
 cp README.md packages/cli/README.md
