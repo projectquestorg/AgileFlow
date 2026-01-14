@@ -274,7 +274,7 @@ function runArchival(rootDir, cache = null) {
 }
 
 function clearActiveCommands(rootDir, cache = null) {
-  const result = { ran: false, cleared: 0, commandNames: [] };
+  const result = { ran: false, cleared: 0, commandNames: [], preserved: false };
 
   try {
     const sessionStatePath = path.join(rootDir, 'docs/09-agents/session-state.json');
@@ -289,6 +289,31 @@ function clearActiveCommands(rootDir, cache = null) {
       if (!fs.existsSync(sessionStatePath)) return result;
       state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
       result.ran = true;
+    }
+
+    // Check if PreCompact just ran (within last 30 seconds)
+    // If so, preserve active_commands instead of clearing them (post-compact session start)
+    if (state.last_precompact_at) {
+      const precompactTime = new Date(state.last_precompact_at).getTime();
+      const now = Date.now();
+      const secondsSincePrecompact = (now - precompactTime) / 1000;
+
+      if (secondsSincePrecompact < 30) {
+        // This is a post-compact session start - preserve active commands
+        result.preserved = true;
+        // Capture command names for display (but don't clear)
+        if (state.active_commands && state.active_commands.length > 0) {
+          for (const cmd of state.active_commands) {
+            if (cmd.name) result.commandNames.push(cmd.name);
+          }
+        }
+        // Clear the precompact timestamp so next true session start will clear
+        delete state.last_precompact_at;
+        fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+        return result;
+      }
+      // Precompact was too long ago - clear as normal
+      delete state.last_precompact_at;
     }
 
     // Handle new array format (active_commands)
@@ -1061,10 +1086,18 @@ function formatTable(
   }
 
   // Session cleanup
-  const sessionStatus = session.cleared > 0 ? `cleared ${session.cleared} command(s)` : `clean`;
-  lines.push(
-    row('Session state', sessionStatus, c.lavender, session.cleared > 0 ? c.mintGreen : c.dim)
-  );
+  let sessionStatus, sessionColor;
+  if (session.preserved) {
+    sessionStatus = `preserved ${session.commandNames.length} command(s)`;
+    sessionColor = c.mintGreen;
+  } else if (session.cleared > 0) {
+    sessionStatus = `cleared ${session.cleared} command(s)`;
+    sessionColor = c.mintGreen;
+  } else {
+    sessionStatus = `clean`;
+    sessionColor = c.dim;
+  }
+  lines.push(row('Session state', sessionStatus, c.lavender, sessionColor));
 
   // PreCompact status with version check
   if (precompact.configured && precompact.scriptExists) {

@@ -121,3 +121,17 @@ cat << EOF
 3. Review docs/02-practices/ for implementation patterns
 4. Check git log for recent changes
 EOF
+
+# Mark that PreCompact just ran - tells SessionStart to preserve active_commands
+# This prevents the welcome script from clearing commands right after compact
+if [ -f "docs/09-agents/session-state.json" ]; then
+  node -e "
+    const fs = require('fs');
+    const path = 'docs/09-agents/session-state.json';
+    try {
+      const state = JSON.parse(fs.readFileSync(path, 'utf8'));
+      state.last_precompact_at = new Date().toISOString();
+      fs.writeFileSync(path, JSON.stringify(state, null, 2) + '\n');
+    } catch (e) {}
+  " 2>/dev/null
+fi
