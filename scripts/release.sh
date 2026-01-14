@@ -62,6 +62,24 @@ if [ $? -ne 0 ]; then
 fi
 echo ""
 
+# Step 0.6: Run format and lint checks BEFORE making any changes
+echo "Step 0.6: Running format and lint checks..."
+cd packages/cli
+if ! npm run format:check 2>/dev/null; then
+  echo ""
+  echo "❌ Formatting issues found. Running prettier --write to fix..."
+  npm run format 2>/dev/null || npx prettier --write .
+  echo "✅ Formatting fixed. Files will be included in release commit."
+fi
+if ! npm run lint 2>/dev/null; then
+  echo ""
+  echo "❌ Linting errors found. Please fix before releasing."
+  exit 1
+fi
+cd ../..
+echo "✅ Format and lint checks passed"
+echo ""
+
 # Step 1: Sync README from root to CLI (root is source of truth)
 echo "Step 1: Syncing README.md from root to packages/cli/..."
 cp README.md packages/cli/README.md
