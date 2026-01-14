@@ -20,6 +20,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const { c: C, box } = require('../lib/colors');
 const { isValidCommandName } = require('../lib/validate');
+const { readJSONCached, readFileCached } = require('../lib/file-cache');
 
 // Claude Code's Bash tool truncates around 30K chars, but ANSI codes and
 // box-drawing characters (╭╮╰╯─│) are multi-byte UTF-8, so we need buffer.
@@ -131,11 +132,9 @@ function safeRead(filePath) {
 }
 
 function safeReadJSON(filePath) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch {
-    return null;
-  }
+  // Use cached read for common JSON files
+  const absPath = path.resolve(filePath);
+  return readJSONCached(absPath);
 }
 
 function safeLs(dirPath) {

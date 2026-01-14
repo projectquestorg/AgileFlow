@@ -18,6 +18,7 @@ const { execSync, spawnSync } = require('child_process');
 // Shared utilities
 const { c, box } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
+const { readJSONCached, readFileCached } = require('../lib/file-cache');
 
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
@@ -47,44 +48,29 @@ try {
 }
 
 /**
- * PERFORMANCE OPTIMIZATION: Load all project files once into cache
- * This eliminates duplicate file reads across multiple functions.
- * Estimated savings: 40-80ms
+ * PERFORMANCE OPTIMIZATION: Load all project files using LRU cache
+ * Uses file-cache module for automatic caching with 30s TTL.
+ * Files are cached across script invocations within TTL window.
+ * Estimated savings: 60-120ms on cache hits
  */
 function loadProjectFiles(rootDir) {
-  const cache = {
-    status: null,
-    metadata: null,
-    settings: null,
-    sessionState: null,
-    configYaml: null,
-    cliPackage: null,
-  };
-
   const paths = {
-    status: 'docs/09-agents/status.json',
-    metadata: 'docs/00-meta/agileflow-metadata.json',
-    settings: '.claude/settings.json',
-    sessionState: 'docs/09-agents/session-state.json',
-    configYaml: '.agileflow/config.yaml',
-    cliPackage: 'packages/cli/package.json',
+    status: path.join(rootDir, 'docs', '09-agents', 'status.json'),
+    metadata: path.join(rootDir, 'docs', '00-meta', 'agileflow-metadata.json'),
+    settings: path.join(rootDir, '.claude', 'settings.json'),
+    sessionState: path.join(rootDir, 'docs', '09-agents', 'session-state.json'),
+    configYaml: path.join(rootDir, '.agileflow', 'config.yaml'),
+    cliPackage: path.join(rootDir, 'packages', 'cli', 'package.json'),
   };
 
-  for (const [key, relPath] of Object.entries(paths)) {
-    const fullPath = path.join(rootDir, relPath);
-    try {
-      if (!fs.existsSync(fullPath)) continue;
-      if (key === 'configYaml') {
-        cache[key] = fs.readFileSync(fullPath, 'utf8');
-      } else {
-        cache[key] = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-      }
-    } catch (e) {
-      // Silently ignore - file not available or invalid
-    }
-  }
-
-  return cache;
+  return {
+    status: readJSONCached(paths.status),
+    metadata: readJSONCached(paths.metadata),
+    settings: readJSONCached(paths.settings),
+    sessionState: readJSONCached(paths.sessionState),
+    configYaml: readFileCached(paths.configYaml),
+    cliPackage: readJSONCached(paths.cliPackage),
+  };
 }
 
 /**
