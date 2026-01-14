@@ -33,6 +33,13 @@ const {
   countSkills,
   getCounts,
 } = require('../../../scripts/lib/counter');
+const {
+  sanitize,
+  sanitizeAgentData,
+  sanitizeCommandData,
+  validatePlaceholderValue,
+  detectInjectionAttempt,
+} = require('../../../lib/content-sanitizer');
 
 // =============================================================================
 // List Generation Functions
@@ -41,12 +48,14 @@ const {
 /**
  * Validate that a file path is within the expected directory.
  * Prevents reading files outside the expected scope.
+ * Security: Symlinks are NOT allowed to prevent escape attacks.
  * @param {string} filePath - File path to validate
  * @param {string} baseDir - Expected base directory
  * @returns {boolean} True if path is safe
  */
 function isPathSafe(filePath, baseDir) {
-  const result = validatePath(filePath, baseDir, { allowSymlinks: true });
+  // Security hardening (US-0104): Symlinks disabled to prevent escape attacks
+  const result = validatePath(filePath, baseDir, { allowSymlinks: false });
   return result.ok;
 }
 
@@ -76,19 +85,32 @@ function generateAgentList(agentsDir) {
       continue;
     }
 
-    agents.push({
+    // Sanitize agent data to prevent injection attacks
+    const rawAgent = {
       name: frontmatter.name || path.basename(file, '.md'),
       description: frontmatter.description || '',
       tools: normalizeTools(frontmatter.tools),
       model: frontmatter.model || 'haiku',
-    });
+    };
+
+    const sanitizedAgent = sanitizeAgentData(rawAgent);
+
+    // Skip if sanitization produced invalid data
+    if (!sanitizedAgent.name || sanitizedAgent.name === 'unknown') {
+      continue;
+    }
+
+    agents.push(sanitizedAgent);
   }
 
   agents.sort((a, b) => a.name.localeCompare(b.name));
 
-  let output = `**AVAILABLE AGENTS (${agents.length} total)**:\n\n`;
+  // Sanitize the count value
+  const safeCount = sanitize.count(agents.length);
+  let output = `**AVAILABLE AGENTS (${safeCount} total)**:\n\n`;
 
   agents.forEach((agent, index) => {
+    // All values are already sanitized by sanitizeAgentData
     output += `${index + 1}. **${agent.name}** (model: ${agent.model})\n`;
     output += `   - **Purpose**: ${agent.description}\n`;
     output += `   - **Tools**: ${agent.tools.join(', ')}\n`;
@@ -127,11 +149,19 @@ function generateCommandList(commandsDir) {
       continue;
     }
 
-    commands.push({
+    // Sanitize command data to prevent injection attacks
+    const rawCommand = {
       name: cmdName,
       description: frontmatter.description || '',
       argumentHint: frontmatter['argument-hint'] || '',
-    });
+    };
+
+    const sanitizedCommand = sanitizeCommandData(rawCommand);
+    if (!sanitizedCommand.name || sanitizedCommand.name === 'unknown') {
+      continue;
+    }
+
+    commands.push(sanitizedCommand);
   }
 
   // Scan subdirectories (e.g., session/)
@@ -163,20 +193,31 @@ function generateCommandList(commandsDir) {
           continue;
         }
 
-        commands.push({
+        // Sanitize command data
+        const rawCommand = {
           name: cmdName,
           description: frontmatter.description || '',
           argumentHint: frontmatter['argument-hint'] || '',
-        });
+        };
+
+        const sanitizedCommand = sanitizeCommandData(rawCommand);
+        if (!sanitizedCommand.name || sanitizedCommand.name === 'unknown') {
+          continue;
+        }
+
+        commands.push(sanitizedCommand);
       }
     }
   }
 
   commands.sort((a, b) => a.name.localeCompare(b.name));
 
-  let output = `Available commands (${commands.length} total):\n`;
+  // Sanitize the count value
+  const safeCount = sanitize.count(commands.length);
+  let output = `Available commands (${safeCount} total):\n`;
 
   commands.forEach(cmd => {
+    // All values are already sanitized by sanitizeCommandData
     const argHint = cmd.argumentHint ? ` ${cmd.argumentHint}` : '';
     output += `- \`/agileflow:${cmd.name}${argHint}\` - ${cmd.description}\n`;
   });
@@ -208,16 +249,28 @@ function injectContent(content, context = {}) {
     counts = getCounts(coreDir);
   }
 
+  // Validate and sanitize all placeholder values before injection
+  const safeCommandCount = validatePlaceholderValue('COMMAND_COUNT', counts.commands).sanitized;
+  const safeAgentCount = validatePlaceholderValue('AGENT_COUNT', counts.agents).sanitized;
+  const safeSkillCount = validatePlaceholderValue('SKILL_COUNT', counts.skills).sanitized;
+  const safeVersion = validatePlaceholderValue('VERSION', version).sanitized;
+  const safeDate = validatePlaceholderValue('INSTALL_DATE', new Date()).sanitized;
+  const safeAgileflowFolder = validatePlaceholderValue(
+    'agileflow_folder',
+    agileflowFolder
+  ).sanitized;
+
   // Replace count placeholders (both formats: {{X}} and <!-- {{X}} -->)
-  result = result.replace(/\{\{COMMAND_COUNT\}\}/g, String(counts.commands));
-  result = result.replace(/\{\{AGENT_COUNT\}\}/g, String(counts.agents));
-  result = result.replace(/\{\{SKILL_COUNT\}\}/g, String(counts.skills));
+  result = result.replace(/\{\{COMMAND_COUNT\}\}/g, String(safeCommandCount));
+  result = result.replace(/\{\{AGENT_COUNT\}\}/g, String(safeAgentCount));
+  result = result.replace(/\{\{SKILL_COUNT\}\}/g, String(safeSkillCount));
 
   // Replace metadata placeholders
-  result = result.replace(/\{\{VERSION\}\}/g, version);
-  result = result.replace(/\{\{INSTALL_DATE\}\}/g, new Date().toISOString().split('T')[0]);
+  result = result.replace(/\{\{VERSION\}\}/g, safeVersion);
+  result = result.replace(/\{\{INSTALL_DATE\}\}/g, safeDate);
 
   // Replace list placeholders (only if core directory available)
+  // List generation already includes sanitization via sanitizeAgentData/sanitizeCommandData
   if (coreDir && fs.existsSync(coreDir)) {
     if (result.includes('{{AGENT_LIST}}')) {
       const agentList = generateAgentList(path.join(coreDir, 'agents'));
@@ -232,8 +285,8 @@ function injectContent(content, context = {}) {
     }
   }
 
-  // Replace folder placeholders
-  result = result.replace(/\{agileflow_folder\}/g, agileflowFolder);
+  // Replace folder placeholders with sanitized values
+  result = result.replace(/\{agileflow_folder\}/g, safeAgileflowFolder);
   result = result.replace(/\{project-root\}/g, '{project-root}'); // Keep as-is for runtime
 
   return result;

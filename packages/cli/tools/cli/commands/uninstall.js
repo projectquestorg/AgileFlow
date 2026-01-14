@@ -78,12 +78,12 @@ module.exports = {
         // Update the manifest to remove this IDE
         const manifestPath = path.join(status.path, '_cfg', 'manifest.yaml');
         if (await fs.pathExists(manifestPath)) {
-          const yaml = require('js-yaml');
+          const { safeLoad, safeDump } = require('../../../lib/yaml-utils');
           const manifestContent = await fs.readFile(manifestPath, 'utf8');
-          const manifest = yaml.load(manifestContent);
+          const manifest = safeLoad(manifestContent);
           manifest.ides = (manifest.ides || []).filter(ide => ide !== ideName);
           manifest.updated_at = new Date().toISOString();
-          await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
+          await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
           success('Updated manifest');
         }
 

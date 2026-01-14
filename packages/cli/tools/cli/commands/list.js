@@ -7,7 +7,7 @@
 const chalk = require('chalk');
 const path = require('node:path');
 const fs = require('fs-extra');
-const yaml = require('js-yaml');
+const { safeLoad } = require('../../../lib/yaml-utils');
 const { Installer } = require('../installers/core/installer');
 const { displayLogo, displaySection, success, warning, info } = require('../lib/ui');
 const {
@@ -233,7 +233,7 @@ async function listExperts(agileflowPath) {
 
     try {
       const content = await fs.readFile(expertiseFile, 'utf8');
-      const parsed = yaml.load(content);
+      const parsed = safeLoad(content);
 
       experts.push({
         name: entry.name,

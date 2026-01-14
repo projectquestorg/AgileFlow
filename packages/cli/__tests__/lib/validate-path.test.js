@@ -11,6 +11,7 @@ const {
   validatePathSync,
   hasUnsafePathPatterns,
   sanitizeFilename,
+  checkSymlinkChainDepth,
 } = require('../../lib/validate');
 
 describe('Path Traversal Protection', () => {
@@ -415,6 +416,213 @@ describe('Path Traversal Protection', () => {
       // Null bytes in paths can truncate strings in some C-based systems
       const quickCheck = hasUnsafePathPatterns('valid\x00/../../../etc/passwd');
       expect(quickCheck.safe).toBe(false);
+    });
+  });
+
+  describe('checkSymlinkChainDepth', () => {
+    let symlinkTestDir;
+
+    beforeAll(() => {
+      // Create a temp directory for symlink chain tests
+      symlinkTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'symlink-chain-test-'));
+    });
+
+    afterAll(() => {
+      fs.rmSync(symlinkTestDir, { recursive: true, force: true });
+    });
+
+    it('returns depth 0 for regular files', () => {
+      const filePath = path.join(symlinkTestDir, 'regular.txt');
+      fs.writeFileSync(filePath, 'content');
+
+      const result = checkSymlinkChainDepth(filePath, 3);
+      expect(result.ok).toBe(true);
+      expect(result.depth).toBe(0);
+    });
+
+    it('returns depth 0 for non-existent files', () => {
+      const result = checkSymlinkChainDepth(path.join(symlinkTestDir, 'nonexistent'), 3);
+      expect(result.ok).toBe(true);
+      expect(result.depth).toBe(0);
+    });
+
+    // Skip symlink tests on Windows
+    const describeSymlinks = process.platform === 'win32' ? describe.skip : describe;
+
+    describeSymlinks('symlink chains (Unix only)', () => {
+      let targetFile;
+      let link1, link2, link3, link4;
+
+      beforeAll(() => {
+        // Create target file and symlink chain
+        targetFile = path.join(symlinkTestDir, 'target.txt');
+        fs.writeFileSync(targetFile, 'target content');
+
+        // Create symlink chain: link1 -> link2 -> link3 -> target
+        link3 = path.join(symlinkTestDir, 'link3');
+        fs.symlinkSync(targetFile, link3);
+
+        link2 = path.join(symlinkTestDir, 'link2');
+        fs.symlinkSync(link3, link2);
+
+        link1 = path.join(symlinkTestDir, 'link1');
+        fs.symlinkSync(link2, link1);
+
+        // Create a 4th link for depth > 3
+        link4 = path.join(symlinkTestDir, 'link4');
+        fs.symlinkSync(link1, link4);
+      });
+
+      afterAll(() => {
+        [link4, link1, link2, link3, targetFile].forEach(p => {
+          try {
+            fs.unlinkSync(p);
+          } catch {
+            // ignore
+          }
+        });
+      });
+
+      it('counts symlink depth correctly (depth 1)', () => {
+        const result = checkSymlinkChainDepth(link3, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(1);
+      });
+
+      it('counts symlink depth correctly (depth 2)', () => {
+        const result = checkSymlinkChainDepth(link2, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(2);
+      });
+
+      it('counts symlink depth correctly (depth 3)', () => {
+        const result = checkSymlinkChainDepth(link1, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(3);
+      });
+
+      it('rejects symlink chain depth > maxDepth', () => {
+        const result = checkSymlinkChainDepth(link4, 3);
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain('exceeds maximum');
+      });
+
+      it('allows chain at exactly maxDepth', () => {
+        const result = checkSymlinkChainDepth(link1, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(3);
+      });
+
+      it('rejects chain at maxDepth+1', () => {
+        const result = checkSymlinkChainDepth(link4, 3);
+        expect(result.ok).toBe(false);
+      });
+    });
+
+    describeSymlinks('circular symlinks (Unix only)', () => {
+      let circularDir;
+      let circA, circB;
+
+      beforeAll(() => {
+        circularDir = path.join(symlinkTestDir, 'circular');
+        fs.mkdirSync(circularDir);
+
+        // Create circular symlinks: A -> B -> A
+        circA = path.join(circularDir, 'circA');
+        circB = path.join(circularDir, 'circB');
+
+        // Create B first pointing to where A will be
+        fs.symlinkSync(circA, circB);
+        // Then create A pointing to B
+        fs.symlinkSync(circB, circA);
+      });
+
+      afterAll(() => {
+        try {
+          fs.unlinkSync(circA);
+          fs.unlinkSync(circB);
+          fs.rmdirSync(circularDir);
+        } catch {
+          // ignore
+        }
+      });
+
+      it('detects circular symlinks', () => {
+        const result = checkSymlinkChainDepth(circA, 10);
+        expect(result.ok).toBe(false);
+        expect(result.isCircular).toBe(true);
+        expect(result.error).toContain('Circular symlink');
+      });
+    });
+  });
+
+  describe('validatePath with maxSymlinkDepth', () => {
+    // Skip symlink tests on Windows
+    const describeSymlinks = process.platform === 'win32' ? describe.skip : describe;
+
+    describeSymlinks('symlink chain depth validation (Unix only)', () => {
+      let chainTestDir;
+      let targetFile;
+      let link1, link2, link3, link4;
+
+      beforeAll(() => {
+        chainTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'chain-depth-test-'));
+
+        // Create target and chain
+        targetFile = path.join(chainTestDir, 'target.txt');
+        fs.writeFileSync(targetFile, 'content');
+
+        link3 = path.join(chainTestDir, 'link3');
+        fs.symlinkSync(targetFile, link3);
+
+        link2 = path.join(chainTestDir, 'link2');
+        fs.symlinkSync(link3, link2);
+
+        link1 = path.join(chainTestDir, 'link1');
+        fs.symlinkSync(link2, link1);
+
+        link4 = path.join(chainTestDir, 'link4');
+        fs.symlinkSync(link1, link4);
+      });
+
+      afterAll(() => {
+        fs.rmSync(chainTestDir, { recursive: true, force: true });
+      });
+
+      it('allows symlink chain within depth limit', () => {
+        const result = validatePath('link1', chainTestDir, {
+          allowSymlinks: true,
+          maxSymlinkDepth: 3,
+        });
+        expect(result.ok).toBe(true);
+      });
+
+      it('rejects symlink chain exceeding depth limit', () => {
+        const result = validatePath('link4', chainTestDir, {
+          allowSymlinks: true,
+          maxSymlinkDepth: 3,
+        });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_chain_too_deep');
+      });
+
+      it('uses default maxSymlinkDepth of 3', () => {
+        // link4 has depth 4, default is 3
+        const result = validatePath('link4', chainTestDir, {
+          allowSymlinks: true,
+        });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_chain_too_deep');
+      });
+
+      it('allows custom maxSymlinkDepth', () => {
+        // link4 has depth 4, set limit to 5
+        const result = validatePath('link4', chainTestDir, {
+          allowSymlinks: true,
+          maxSymlinkDepth: 5,
+        });
+        expect(result.ok).toBe(true);
+      });
     });
   });
 });

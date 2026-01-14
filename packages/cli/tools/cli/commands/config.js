@@ -7,7 +7,7 @@
 const chalk = require('chalk');
 const path = require('node:path');
 const fs = require('fs-extra');
-const yaml = require('js-yaml');
+const { safeLoad, safeDump } = require('../../../lib/yaml-utils');
 const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
 const { displayLogo, displaySection, success, warning, error, info } = require('../lib/ui');
@@ -194,7 +194,7 @@ async function handleSet(directory, status, manifestPath, key, value) {
 
   // Read current manifest
   const manifestContent = await fs.readFile(manifestPath, 'utf8');
-  const manifest = yaml.load(manifestContent);
+  const manifest = safeLoad(manifestContent);
 
   // Track if we need to update IDE configs
   let needsIdeUpdate = false;
@@ -247,7 +247,7 @@ async function handleSet(directory, status, manifestPath, key, value) {
   manifest.updated_at = new Date().toISOString();
 
   // Write manifest
-  await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
+  await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
   success('Configuration updated');
 
   // Update IDE configs if needed

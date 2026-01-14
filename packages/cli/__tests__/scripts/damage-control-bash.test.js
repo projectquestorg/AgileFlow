@@ -99,10 +99,7 @@ describe('damage-control-bash', () => {
     });
 
     it('matches git force push patterns', () => {
-      const rules = [
-        { pattern: 'git\\s+push.*--force' },
-        { pattern: 'git\\s+push.*-f\\b' },
-      ];
+      const rules = [{ pattern: 'git\\s+push.*--force' }, { pattern: 'git\\s+push.*-f\\b' }];
 
       expect(matchesPattern('git push --force origin main', rules[0])).toBe(true);
       expect(matchesPattern('git push -f origin main', rules[1])).toBe(true);
@@ -177,9 +174,7 @@ describe('damage-control-bash', () => {
       const config = {
         bashToolPatterns: [],
         askPatterns: [],
-        agileflowProtections: [
-          { pattern: '\\.agileflow/', reason: 'Protected directory' },
-        ],
+        agileflowProtections: [{ pattern: '\\.agileflow/', reason: 'Protected directory' }],
       };
 
       const result = validateCommand('rm .agileflow/config.yaml', config);

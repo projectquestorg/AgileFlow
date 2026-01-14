@@ -14,7 +14,7 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('fs-extra');
 const chalk = require('chalk');
-const yaml = require('js-yaml');
+const { safeLoad, yaml } = require('../../../../lib/yaml-utils');
 const { BaseIdeSetup } = require('./_base-ide');
 const { parseFrontmatter } = require('../../../../scripts/lib/frontmatter-parser');
 
@@ -120,7 +120,7 @@ ${codexHeader}${bodyContent}`;
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
     if (frontmatterMatch) {
       try {
-        const frontmatter = yaml.load(frontmatterMatch[1]);
+        const frontmatter = safeLoad(frontmatterMatch[1]);
         if (frontmatter.description) {
           description = frontmatter.description;
         }

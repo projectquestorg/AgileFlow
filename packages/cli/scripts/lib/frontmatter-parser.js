@@ -11,7 +11,7 @@
  */
 
 const fs = require('fs');
-const yaml = require('js-yaml');
+const { safeLoad } = require('../../lib/yaml-utils');
 
 /**
  * Parse YAML frontmatter from markdown content
@@ -26,8 +26,8 @@ function parseFrontmatter(content) {
   }
 
   try {
-    const parsed = yaml.load(match[1]);
-    // Return empty object if yaml.load returns null/undefined
+    const parsed = safeLoad(match[1]);
+    // Return empty object if safeLoad returns null/undefined
     return parsed && typeof parsed === 'object' ? parsed : {};
   } catch (err) {
     // Return empty object on parse error (invalid YAML)

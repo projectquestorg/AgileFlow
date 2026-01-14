@@ -346,18 +346,85 @@ class PathValidationError extends Error {
 }
 
 /**
+ * Check the depth of a symlink chain (how many symlinks to follow to reach final target).
+ * Returns early if chain exceeds maxDepth to prevent infinite loops from circular symlinks.
+ *
+ * @param {string} filePath - Starting path to check
+ * @param {number} maxDepth - Maximum allowed symlink chain depth
+ * @returns {{ ok: boolean, depth: number, error?: string, isCircular?: boolean }}
+ */
+function checkSymlinkChainDepth(filePath, maxDepth) {
+  let current = filePath;
+  let depth = 0;
+  const seen = new Set();
+
+  // Loop until we find a non-symlink or exceed max depth
+  while (true) {
+    // Check for circular symlinks
+    if (seen.has(current)) {
+      return {
+        ok: false,
+        depth,
+        error: `Circular symlink detected at: ${current}`,
+        isCircular: true,
+      };
+    }
+    seen.add(current);
+
+    try {
+      const stats = fs.lstatSync(current);
+      if (!stats.isSymbolicLink()) {
+        // Reached a real file/directory, chain ends
+        return { ok: true, depth };
+      }
+
+      // Increment depth before checking limit
+      depth++;
+
+      // Check if we've exceeded max depth
+      if (depth > maxDepth) {
+        return {
+          ok: false,
+          depth,
+          error: `Symlink chain depth (${depth}) exceeds maximum (${maxDepth})`,
+        };
+      }
+
+      // Read symlink target
+      const target = fs.readlinkSync(current);
+
+      // Resolve target path (could be relative or absolute)
+      if (path.isAbsolute(target)) {
+        current = target;
+      } else {
+        current = path.resolve(path.dirname(current), target);
+      }
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        // Path doesn't exist, chain ends here
+        return { ok: true, depth };
+      }
+      // Other error (permission denied, etc.)
+      return { ok: true, depth };
+    }
+  }
+}
+
+/**
  * Validate that a path is safe and within the allowed base directory.
  * Prevents path traversal attacks by:
  * 1. Resolving the path to absolute form
  * 2. Ensuring it stays within the base directory
  * 3. Rejecting symbolic links (optional)
  * 4. When symlinks allowed, verifying symlink targets stay within base
+ * 5. Limiting symlink chain depth to prevent infinite loops
  *
  * @param {string} inputPath - The path to validate (can be relative or absolute)
  * @param {string} baseDir - The allowed base directory (must be absolute)
  * @param {Object} options - Validation options
  * @param {boolean} [options.allowSymlinks=false] - Allow symbolic links
  * @param {boolean} [options.mustExist=false] - Path must exist on filesystem
+ * @param {number} [options.maxSymlinkDepth=3] - Maximum symlink chain depth (when symlinks allowed)
  * @returns {{ ok: boolean, resolvedPath?: string, realPath?: string, error?: PathValidationError }}
  *
  * @example
@@ -372,9 +439,14 @@ class PathValidationError extends Error {
  * const result = validatePath('../../../etc/passwd', '/home/user/project');
  * // result.ok === false
  * // result.error.reason === 'path_traversal'
+ *
+ * @example
+ * // Reject deep symlink chains
+ * const result = validatePath('link1', baseDir, { allowSymlinks: true, maxSymlinkDepth: 3 });
+ * // If link1 -> link2 -> link3 -> link4 -> target, this fails with 'symlink_chain_too_deep'
  */
 function validatePath(inputPath, baseDir, options = {}) {
-  const { allowSymlinks = false, mustExist = false } = options;
+  const { allowSymlinks = false, mustExist = false, maxSymlinkDepth = 3 } = options;
 
   // Input validation
   if (!inputPath || typeof inputPath !== 'string') {
@@ -505,6 +577,16 @@ function validatePath(inputPath, baseDir, options = {}) {
     try {
       const stats = fs.lstatSync(resolvedPath);
       if (stats.isSymbolicLink()) {
+        // Check symlink chain depth to prevent DoS via infinite loops
+        const chainResult = checkSymlinkChainDepth(resolvedPath, maxSymlinkDepth);
+        if (!chainResult.ok) {
+          const reason = chainResult.isCircular ? 'symlink_circular' : 'symlink_chain_too_deep';
+          return {
+            ok: false,
+            error: new PathValidationError(chainResult.error, inputPath, reason),
+          };
+        }
+
         // Resolve the symlink target to its real path
         const realPath = fs.realpathSync(resolvedPath);
 
@@ -538,6 +620,16 @@ function validatePath(inputPath, baseDir, options = {}) {
         try {
           const stats = fs.lstatSync(currentPath);
           if (stats.isSymbolicLink()) {
+            // Check symlink chain depth
+            const chainResult = checkSymlinkChainDepth(currentPath, maxSymlinkDepth);
+            if (!chainResult.ok) {
+              const reason = chainResult.isCircular ? 'symlink_circular' : 'symlink_chain_too_deep';
+              return {
+                ok: false,
+                error: new PathValidationError(chainResult.error, inputPath, reason),
+              };
+            }
+
             // Resolve this symlink and check its target
             const realPath = fs.realpathSync(currentPath);
             if (!checkWithinBase(realPath)) {
@@ -674,4 +766,5 @@ module.exports = {
   validatePathSync,
   hasUnsafePathPatterns,
   sanitizeFilename,
+  checkSymlinkChainDepth,
 };

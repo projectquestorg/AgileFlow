@@ -83,9 +83,7 @@ describe('damage-control-utils', () => {
     const mockParser = content => ({ parsed: content });
 
     it('loads patterns from first existing config path', () => {
-      fs.existsSync.mockImplementation(p =>
-        p.endsWith('damage-control-patterns.yaml')
-      );
+      fs.existsSync.mockImplementation(p => p.endsWith('damage-control-patterns.yaml'));
       fs.readFileSync.mockReturnValue('test: content');
 
       const result = loadPatterns('/project', mockParser);
@@ -190,9 +188,7 @@ describe('damage-control-utils', () => {
 
     it('matches basename patterns', () => {
       const patterns = ['.env.production'];
-      expect(pathMatches('/app/config/.env.production', patterns)).toBe(
-        '.env.production'
-      );
+      expect(pathMatches('/app/config/.env.production', patterns)).toBe('.env.production');
     });
 
     it('expands ~ in patterns', () => {
@@ -204,9 +200,7 @@ describe('damage-control-utils', () => {
     it('handles relative paths', () => {
       const cwd = process.cwd();
       const patterns = ['secrets.json'];
-      expect(pathMatches(path.join(cwd, 'secrets.json'), patterns)).toBe(
-        'secrets.json'
-      );
+      expect(pathMatches(path.join(cwd, 'secrets.json'), patterns)).toBe('secrets.json');
     });
 
     it('returns first matching pattern', () => {
@@ -235,7 +229,9 @@ describe('damage-control-utils', () => {
 
     it('matches basename patterns for nested paths', () => {
       const patterns = ['credentials.json'];
-      expect(pathMatches('/home/user/.config/gcloud/credentials.json', patterns)).toBe('credentials.json');
+      expect(pathMatches('/home/user/.config/gcloud/credentials.json', patterns)).toBe(
+        'credentials.json'
+      );
     });
 
     it('matches patterns via basename when other checks fail', () => {
@@ -497,18 +493,10 @@ noDeletePaths:
         noDeletePaths: [],
       };
 
-      const editResult = validatePathAgainstPatterns(
-        '/var/log/syslog',
-        config,
-        'edit'
-      );
+      const editResult = validatePathAgainstPatterns('/var/log/syslog', config, 'edit');
       expect(editResult.detail).toContain('edited');
 
-      const writeResult = validatePathAgainstPatterns(
-        '/var/log/syslog',
-        config,
-        'write'
-      );
+      const writeResult = validatePathAgainstPatterns('/var/log/syslog', config, 'write');
       expect(writeResult.detail).toContain('written');
     });
   });
@@ -540,26 +528,18 @@ noDeletePaths:
 
     it('outputs blocked message with reason', () => {
       outputBlocked('Test reason');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[BLOCKED]')
-      );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Test reason')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[BLOCKED]'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Test reason'));
     });
 
     it('outputs detail when provided', () => {
       outputBlocked('Reason', 'Detail text');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Detail text')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Detail text'));
     });
 
     it('outputs context when provided', () => {
       outputBlocked('Reason', 'Detail', 'Context info');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Context info')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Context info'));
     });
 
     it('outputs help message', () => {
@@ -567,16 +547,12 @@ noDeletePaths:
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Damage Control blocked')
       );
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DO NOT retry')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('DO NOT retry'));
     });
 
     it('outputs disable instructions', () => {
       outputBlocked('Test');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/configure')
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('/configure'));
     });
   });
 

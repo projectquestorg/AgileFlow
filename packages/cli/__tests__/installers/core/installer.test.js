@@ -8,7 +8,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
-const yaml = require('js-yaml');
+const { safeLoad, safeDump } = require('../../../lib/yaml-utils');
 
 const {
   Installer,
@@ -161,7 +161,7 @@ describe('Installer', () => {
       expect(await fs.pathExists(configPath)).toBe(true);
 
       const content = await fs.readFile(configPath, 'utf8');
-      const config = yaml.load(content);
+      const config = safeLoad(content);
 
       expect(config.user_name).toBe('TestUser');
       expect(config.agileflow_folder).toBe('.agileflow');
@@ -181,12 +181,12 @@ describe('Installer', () => {
         custom_setting: 'preserve_me',
         created_at: '2024-01-01T00:00:00.000Z',
       };
-      await fs.writeFile(path.join(agileflowDir, 'config.yaml'), yaml.dump(existingConfig));
+      await fs.writeFile(path.join(agileflowDir, 'config.yaml'), safeDump(existingConfig));
 
       await installer.createConfig(agileflowDir, 'NewUser', '.agileflow');
 
       const content = await fs.readFile(path.join(agileflowDir, 'config.yaml'), 'utf8');
-      const config = yaml.load(content);
+      const config = safeLoad(content);
 
       expect(config.user_name).toBe('NewUser');
       expect(config.custom_setting).toBe('preserve_me');
@@ -211,7 +211,7 @@ describe('Installer', () => {
       expect(await fs.pathExists(manifestPath)).toBe(true);
 
       const content = await fs.readFile(manifestPath, 'utf8');
-      const manifest = yaml.load(content);
+      const manifest = safeLoad(content);
 
       expect(manifest.version).toBe(installer.version);
       expect(manifest.ides).toEqual(['claude-code']);
@@ -231,7 +231,7 @@ describe('Installer', () => {
         ides: ['cursor'],
         modules: ['core', 'custom'],
       };
-      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), yaml.dump(existingManifest));
+      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), safeDump(existingManifest));
 
       await installer.createManifest(cfgDir, {
         ides: ['claude-code'],
@@ -241,7 +241,7 @@ describe('Installer', () => {
       });
 
       const content = await fs.readFile(path.join(cfgDir, 'manifest.yaml'), 'utf8');
-      const manifest = yaml.load(content);
+      const manifest = safeLoad(content);
 
       expect(manifest.installed_at).toBe('2024-01-01T00:00:00.000Z');
       expect(manifest.updated_at).toBeDefined();
@@ -426,7 +426,7 @@ describe('Installer', () => {
         installed_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-02T00:00:00.000Z',
       };
-      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), yaml.dump(manifest));
+      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), safeDump(manifest));
 
       const status = await installer.getStatus(tempDir);
 
@@ -447,7 +447,7 @@ describe('Installer', () => {
         ides: ['cursor'],
         agileflow_folder: 'agileflow',
       };
-      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), yaml.dump(manifest));
+      await fs.writeFile(path.join(cfgDir, 'manifest.yaml'), safeDump(manifest));
 
       const status = await installer.getStatus(tempDir);
 
@@ -733,7 +733,7 @@ describe('Installer', () => {
       // Config should have updated_at now
       const configPath = path.join(tempDir, '.agileflow', 'config.yaml');
       const configContent = await fs.readFile(configPath, 'utf8');
-      const parsedConfig = yaml.load(configContent);
+      const parsedConfig = safeLoad(configContent);
       expect(parsedConfig.updated_at).toBeDefined();
     });
 

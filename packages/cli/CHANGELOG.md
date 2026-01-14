@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.89.3] - 2026-01-14
+
+### Added
+- Security hardening with shell injection prevention and secret redaction
+
 ## [2.89.2] - 2026-01-14
 
 ### Fixed

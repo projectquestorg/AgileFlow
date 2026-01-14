@@ -66,7 +66,9 @@ describe('file-tracking', () => {
     it('uses getProjectRoot when no rootDir provided', () => {
       getProjectRoot.mockReturnValue('/default/root');
       const result = getFileTouchesPath();
-      expect(result).toBe(path.join('/default/root', '.agileflow', 'sessions', 'file-touches.json'));
+      expect(result).toBe(
+        path.join('/default/root', '.agileflow', 'sessions', 'file-touches.json')
+      );
     });
   });
 
@@ -95,7 +97,7 @@ describe('file-tracking', () => {
         ok: true,
         data: {
           version: 1,
-          sessions: { '1': { files: ['test.js'] } },
+          sessions: { 1: { files: ['test.js'] } },
         },
       });
 
@@ -147,7 +149,7 @@ describe('file-tracking', () => {
         expect.any(String),
         expect.objectContaining({
           sessions: expect.objectContaining({
-            '1': expect.objectContaining({
+            1: expect.objectContaining({
               files: ['src/test.js'],
               pid: 12345,
             }),
@@ -169,7 +171,7 @@ describe('file-tracking', () => {
         ok: true,
         data: {
           version: 1,
-          sessions: { '1': { files: ['src/test.js'], pid: 12345 } },
+          sessions: { 1: { files: ['src/test.js'], pid: 12345 } },
         },
       });
 
@@ -230,8 +232,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['src/a.js', 'src/b.js'] },
-            '2': { files: ['src/c.js'] },
+            1: { files: ['src/a.js', 'src/b.js'] },
+            2: { files: ['src/c.js'] },
           },
         },
       });
@@ -317,8 +319,16 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['shared.js', 'only1.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['shared.js', 'only2.js'], pid: 12346, last_updated: new Date().toISOString() },
+            1: {
+              files: ['shared.js', 'only1.js'],
+              pid: 12345,
+              last_updated: new Date().toISOString(),
+            },
+            2: {
+              files: ['shared.js', 'only2.js'],
+              pid: 12346,
+              last_updated: new Date().toISOString(),
+            },
           },
         },
       });
@@ -337,8 +347,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['shared.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['shared.js'], pid: 12346, last_updated: new Date().toISOString() },
+            1: { files: ['shared.js'], pid: 12345, last_updated: new Date().toISOString() },
+            2: { files: ['shared.js'], pid: 12346, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -357,8 +367,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['shared.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['shared.js'], pid: 99999, last_updated: new Date().toISOString() }, // Dead PID
+            1: { files: ['shared.js'], pid: 12345, last_updated: new Date().toISOString() },
+            2: { files: ['shared.js'], pid: 99999, last_updated: new Date().toISOString() }, // Dead PID
           },
         },
       });
@@ -383,8 +393,17 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['shared.js', 'only1.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['shared.js', 'only2.js'], pid: 12346, path: '/project2', last_updated: new Date().toISOString() },
+            1: {
+              files: ['shared.js', 'only1.js'],
+              pid: 12345,
+              last_updated: new Date().toISOString(),
+            },
+            2: {
+              files: ['shared.js', 'only2.js'],
+              pid: 12346,
+              path: '/project2',
+              last_updated: new Date().toISOString(),
+            },
           },
         },
       });
@@ -417,7 +436,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: [], pid: 12345, last_updated: new Date().toISOString() },
+            1: { files: [], pid: 12345, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -441,8 +460,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['b.js'], pid: 99999, last_updated: new Date().toISOString() }, // Dead
+            1: { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
+            2: { files: ['b.js'], pid: 99999, last_updated: new Date().toISOString() }, // Dead
           },
         },
       });
@@ -465,8 +484,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
-            '2': { files: ['b.js'], pid: 12346, last_updated: expired }, // Expired
+            1: { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
+            2: { files: ['b.js'], pid: 12346, last_updated: expired }, // Expired
           },
         },
       });
@@ -485,7 +504,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
+            1: { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -510,8 +529,8 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345 },
-            '2': { files: ['b.js'], pid: 12346 },
+            1: { files: ['a.js'], pid: 12345 },
+            2: { files: ['b.js'], pid: 12346 },
           },
         },
       });
@@ -748,7 +767,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
+            1: { files: ['a.js'], pid: 12345, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -780,7 +799,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '2': { files: ['a.js'], pid: 12346, last_updated: new Date().toISOString() },
+            2: { files: ['a.js'], pid: 12346, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -810,7 +829,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 99999, last_updated: new Date().toISOString() },
+            1: { files: ['a.js'], pid: 99999, last_updated: new Date().toISOString() },
           },
         },
       });
@@ -844,7 +863,7 @@ describe('file-tracking', () => {
         data: {
           version: 1,
           sessions: {
-            '1': { files: ['a.js'], pid: 12345 },
+            1: { files: ['a.js'], pid: 12345 },
           },
         },
       });

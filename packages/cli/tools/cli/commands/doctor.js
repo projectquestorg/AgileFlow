@@ -27,6 +27,7 @@ const {
   getSuggestedFix,
   isRecoverable,
 } = require('../../../lib/error-codes');
+const { safeDump } = require('../../../lib/yaml-utils');
 
 const installer = new Installer();
 
@@ -102,7 +103,6 @@ module.exports = {
             const cfgDir = path.join(status.path, '_cfg');
             await fs.ensureDir(cfgDir);
 
-            const yaml = require('js-yaml');
             const manifest = {
               version: packageJson.version,
               installed_at: new Date().toISOString(),
@@ -114,7 +114,7 @@ module.exports = {
               docs_folder: 'docs',
             };
 
-            await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
+            await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
             success('Created manifest.yaml');
           },
         });

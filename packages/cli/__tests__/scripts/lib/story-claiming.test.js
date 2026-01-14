@@ -172,7 +172,7 @@ describe('story-claiming', () => {
         ok: true,
         data: {
           sessions: {
-            '1': { path: process.cwd() },
+            1: { path: process.cwd() },
           },
         },
       });
@@ -325,7 +325,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test Story',
@@ -347,7 +347,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test Story',
@@ -509,7 +509,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Story 1',
@@ -544,7 +544,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Story 1',
@@ -634,7 +634,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test Story',
@@ -657,7 +657,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test Story',
@@ -683,7 +683,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {},
         },
       });
@@ -701,7 +701,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test',
@@ -721,7 +721,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Test',
@@ -794,7 +794,7 @@ describe('story-claiming', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
-          sessions: { '1': { path: process.cwd() } },
+          sessions: { 1: { path: process.cwd() } },
           stories: {
             'US-0001': {
               title: 'Story 1',

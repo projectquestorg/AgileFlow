@@ -65,7 +65,8 @@ const ErrorCodes = {
     severity: Severity.HIGH,
     category: Category.FILESYSTEM,
     recoverable: true,
-    suggestedFix: 'Check if the file path is correct or run "npx agileflow setup" to create missing files',
+    suggestedFix:
+      'Check if the file path is correct or run "npx agileflow setup" to create missing files',
     autoFix: 'create-missing-file',
   },
 
@@ -126,7 +127,8 @@ const ErrorCodes = {
     severity: Severity.CRITICAL,
     category: Category.PERMISSION,
     recoverable: false,
-    suggestedFix: 'Check file/directory permissions. Try "chmod +rw <path>" or run with appropriate permissions',
+    suggestedFix:
+      'Check file/directory permissions. Try "chmod +rw <path>" or run with appropriate permissions',
     autoFix: null,
   },
 
@@ -157,7 +159,8 @@ const ErrorCodes = {
     severity: Severity.HIGH,
     category: Category.CONFIGURATION,
     recoverable: true,
-    suggestedFix: 'Check configuration syntax or run "npx agileflow doctor --fix" to recreate defaults',
+    suggestedFix:
+      'Check configuration syntax or run "npx agileflow doctor --fix" to recreate defaults',
     autoFix: 'recreate-config',
   },
 
@@ -167,7 +170,8 @@ const ErrorCodes = {
     severity: Severity.HIGH,
     category: Category.CONFIGURATION,
     recoverable: true,
-    suggestedFix: 'Check JSON/YAML syntax. Common issues: trailing commas, unquoted strings, invalid encoding',
+    suggestedFix:
+      'Check JSON/YAML syntax. Common issues: trailing commas, unquoted strings, invalid encoding',
     autoFix: null,
   },
 
@@ -177,7 +181,8 @@ const ErrorCodes = {
     severity: Severity.MEDIUM,
     category: Category.CONFIGURATION,
     recoverable: true,
-    suggestedFix: 'Review configuration against expected schema. Run "npx agileflow doctor" for details',
+    suggestedFix:
+      'Review configuration against expected schema. Run "npx agileflow doctor" for details',
     autoFix: 'validate-config',
   },
 
@@ -291,7 +296,8 @@ const ErrorCodes = {
     severity: Severity.HIGH,
     category: Category.STATE,
     recoverable: true,
-    suggestedFix: 'Run "npx agileflow update" to perform migration or "npx agileflow doctor --fix" to repair',
+    suggestedFix:
+      'Run "npx agileflow update" to perform migration or "npx agileflow doctor --fix" to repair',
     autoFix: 'run-migration',
   },
 

@@ -2,11 +2,13 @@
  * AgileFlow CLI - IDE Manager
  *
  * Manages IDE-specific installers and configuration.
+ * Validates handlers implement the required interface before registration.
  */
 
 const fs = require('fs-extra');
 const path = require('node:path');
 const chalk = require('chalk');
+const { validateHandler } = require('./_interface');
 
 /**
  * IDE Manager - handles IDE-specific setup
@@ -68,6 +70,19 @@ class IdeManager {
 
           if (HandlerClass && typeof HandlerClass === 'function') {
             const instance = new HandlerClass();
+
+            // Validate handler implements required interface
+            const validation = validateHandler(instance);
+
+            if (!validation.valid) {
+              console.log(
+                chalk.yellow(
+                  `  Warning: IDE handler ${file} failed validation: ${validation.errors.join(', ')}`
+                )
+              );
+              continue; // Skip invalid handlers
+            }
+
             if (instance.name) {
               this.handlers.set(instance.name, instance);
             }

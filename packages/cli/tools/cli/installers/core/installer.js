@@ -8,10 +8,15 @@ const path = require('node:path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
 const ora = require('ora');
-const yaml = require('js-yaml');
+const { safeLoad, safeDump } = require('../../../../lib/yaml-utils');
 const { injectContent } = require('../../lib/content-injector');
 const { sha256Hex, toPosixPath, safeTimestampForPath } = require('../../lib/utils');
 const { validatePath, PathValidationError } = require('../../../../lib/validate');
+const {
+  createTypedError,
+  getErrorCodeFromError,
+  attachErrorCode,
+} = require('../../../../lib/error-codes');
 
 const TEXT_EXTENSIONS = new Set(['.md', '.yaml', '.yml', '.txt', '.json']);
 
@@ -188,6 +193,14 @@ class Installer {
       };
     } catch (error) {
       spinner.fail('Installation failed');
+
+      // Convert to typed error if not already
+      if (!error.errorCode) {
+        const errorCode = getErrorCodeFromError(error);
+        attachErrorCode(error, errorCode.code);
+        error.context = { directory, agileflowFolder };
+      }
+
       throw error;
     }
   }
@@ -490,13 +503,22 @@ class Installer {
         created_at: new Date().toISOString(),
       };
 
-      await fs.writeFile(configPath, yaml.dump(config), 'utf8');
+      await fs.writeFile(configPath, safeDump(config), 'utf8');
       return;
     }
 
     try {
       const existingContent = await fs.readFile(configPath, 'utf8');
-      const loaded = yaml.load(existingContent);
+      let loaded;
+      try {
+        loaded = safeLoad(existingContent);
+      } catch (parseErr) {
+        // Attach error code for YAML parse errors
+        throw createTypedError(`Failed to parse config.yaml: ${parseErr.message}`, 'EPARSE', {
+          cause: parseErr,
+          context: { configPath },
+        });
+      }
       const existing = loaded && typeof loaded === 'object' && !Array.isArray(loaded) ? loaded : {};
 
       const next = {
@@ -508,8 +530,13 @@ class Installer {
         updated_at: new Date().toISOString(),
       };
 
-      await fs.writeFile(configPath, yaml.dump(next), 'utf8');
-    } catch {
+      await fs.writeFile(configPath, safeDump(next), 'utf8');
+    } catch (err) {
+      // If it's a typed parse error and not forcing, re-throw
+      if (err.errorCode === 'EPARSE' && !options.force) {
+        throw err;
+      }
+
       if (options.force) {
         const config = {
           version: packageJson.version,
@@ -519,7 +546,7 @@ class Installer {
           created_at: new Date().toISOString(),
         };
 
-        await fs.writeFile(configPath, yaml.dump(config), 'utf8');
+        await fs.writeFile(configPath, safeDump(config), 'utf8');
       }
     }
   }
@@ -550,13 +577,22 @@ class Installer {
         docs_folder: docsFolder || 'docs',
       };
 
-      await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
+      await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
       return;
     }
 
     try {
       const existingContent = await fs.readFile(manifestPath, 'utf8');
-      const loaded = yaml.load(existingContent);
+      let loaded;
+      try {
+        loaded = safeLoad(existingContent);
+      } catch (parseErr) {
+        // Attach error code for YAML parse errors
+        throw createTypedError(`Failed to parse manifest.yaml: ${parseErr.message}`, 'EPARSE', {
+          cause: parseErr,
+          context: { manifestPath },
+        });
+      }
       const existing = loaded && typeof loaded === 'object' && !Array.isArray(loaded) ? loaded : {};
 
       const manifest = {
@@ -571,8 +607,13 @@ class Installer {
         docs_folder: docsFolder || existing.docs_folder || 'docs',
       };
 
-      await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
-    } catch {
+      await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
+    } catch (err) {
+      // If it's a typed parse error and not forcing, re-throw
+      if (err.errorCode === 'EPARSE' && !options.force) {
+        throw err;
+      }
+
       if (options.force) {
         const manifest = {
           version: packageJson.version,
@@ -585,7 +626,7 @@ class Installer {
           docs_folder: docsFolder || 'docs',
         };
 
-        await fs.writeFile(manifestPath, yaml.dump(manifest), 'utf8');
+        await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
       }
     }
   }
@@ -790,7 +831,16 @@ class Installer {
         status.path = agileflowDir;
 
         const manifestContent = await fs.readFile(manifestPath, 'utf8');
-        const manifest = yaml.load(manifestContent);
+        let manifest;
+        try {
+          manifest = safeLoad(manifestContent);
+        } catch (parseErr) {
+          // Attach error code for YAML parse errors
+          throw createTypedError(`Failed to parse manifest.yaml: ${parseErr.message}`, 'EPARSE', {
+            cause: parseErr,
+            context: { manifestPath },
+          });
+        }
 
         status.version = manifest.version;
         status.ides = manifest.ides || [];

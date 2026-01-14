@@ -59,9 +59,27 @@ module.exports = [
       'prefer-const': 'warn',
       'no-throw-literal': 'error',
 
+      // YAML/JSON parsing consistency - use lib/yaml-utils.js instead of direct js-yaml
+      // Tests are excluded via separate config block below
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: "CallExpression[callee.name='require'][arguments.0.value='js-yaml']",
+          message:
+            "Use '../lib/yaml-utils' or '../../lib/yaml-utils' instead of direct js-yaml import for consistent YAML parsing",
+        },
+      ],
+
       // Code style (beyond Prettier)
       'no-multiple-empty-lines': ['warn', { max: 2, maxEOF: 1 }],
       'no-trailing-spaces': 'warn',
+    },
+  },
+  {
+    // Allow direct js-yaml imports in tests (for mocking) and yaml-utils.js itself
+    files: ['**/__tests__/**/*.js', '**/lib/yaml-utils.js'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
   {

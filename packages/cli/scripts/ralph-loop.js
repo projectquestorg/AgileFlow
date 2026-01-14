@@ -664,7 +664,7 @@ function handleLoop(rootDir) {
     }
 
     // Evaluate discretion conditions
-    let discretionResults = [];
+    const discretionResults = [];
     if (hasDiscretionConditions) {
       console.log('');
       console.log(`${c.blue}Evaluating discretion conditions...${c.reset}`);
