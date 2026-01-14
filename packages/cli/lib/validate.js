@@ -351,13 +351,14 @@ class PathValidationError extends Error {
  * 1. Resolving the path to absolute form
  * 2. Ensuring it stays within the base directory
  * 3. Rejecting symbolic links (optional)
+ * 4. When symlinks allowed, verifying symlink targets stay within base
  *
  * @param {string} inputPath - The path to validate (can be relative or absolute)
  * @param {string} baseDir - The allowed base directory (must be absolute)
  * @param {Object} options - Validation options
  * @param {boolean} [options.allowSymlinks=false] - Allow symbolic links
  * @param {boolean} [options.mustExist=false] - Path must exist on filesystem
- * @returns {{ ok: boolean, resolvedPath?: string, error?: PathValidationError }}
+ * @returns {{ ok: boolean, resolvedPath?: string, realPath?: string, error?: PathValidationError }}
  *
  * @example
  * // Validate a file path within project directory
@@ -421,15 +422,16 @@ function validatePath(inputPath, baseDir, options = {}) {
     resolvedPath = path.resolve(normalizedBase, inputPath);
   }
 
+  // Helper function to check if path is within base
+  const checkWithinBase = pathToCheck => {
+    const baseWithSep = normalizedBase.endsWith(path.sep)
+      ? normalizedBase
+      : normalizedBase + path.sep;
+    return pathToCheck === normalizedBase || pathToCheck.startsWith(baseWithSep);
+  };
+
   // Check for path traversal: resolved path must start with base directory
-  // Add trailing separator to prevent prefix attacks (e.g., /home/user vs /home/user2)
-  const baseWithSep = normalizedBase.endsWith(path.sep)
-    ? normalizedBase
-    : normalizedBase + path.sep;
-
-  const isWithinBase = resolvedPath === normalizedBase || resolvedPath.startsWith(baseWithSep);
-
-  if (!isWithinBase) {
+  if (!checkWithinBase(resolvedPath)) {
     return {
       ok: false,
       error: new PathValidationError(
@@ -456,8 +458,9 @@ function validatePath(inputPath, baseDir, options = {}) {
     }
   }
 
-  // Check for symbolic links (if not allowed)
+  // Check for symbolic links
   if (!allowSymlinks) {
+    // Symlinks not allowed - reject if found
     try {
       const stats = fs.lstatSync(resolvedPath);
       if (stats.isSymbolicLink()) {
@@ -489,6 +492,64 @@ function validatePath(inputPath, baseDir, options = {}) {
                 'symlink_in_path'
               ),
             };
+          }
+        } catch {
+          // Part of path doesn't exist, stop checking
+          break;
+        }
+      }
+    }
+  } else {
+    // Symlinks allowed - but we must verify the target stays within base!
+    // This prevents symlink-based escape attacks
+    try {
+      const stats = fs.lstatSync(resolvedPath);
+      if (stats.isSymbolicLink()) {
+        // Resolve the symlink target to its real path
+        const realPath = fs.realpathSync(resolvedPath);
+
+        // Verify the real path is also within base directory
+        if (!checkWithinBase(realPath)) {
+          return {
+            ok: false,
+            error: new PathValidationError(
+              `Symlink target escapes base directory: ${inputPath} -> ${realPath}`,
+              inputPath,
+              'symlink_escape'
+            ),
+          };
+        }
+
+        // Return both the resolved path and the real path
+        return {
+          ok: true,
+          resolvedPath,
+          realPath,
+        };
+      }
+    } catch {
+      // Path doesn't exist - that's okay for non-mustExist scenarios
+      // Also check parent directories for symlinks that might escape
+      const parts = path.relative(normalizedBase, resolvedPath).split(path.sep);
+      let currentPath = normalizedBase;
+
+      for (const part of parts) {
+        currentPath = path.join(currentPath, part);
+        try {
+          const stats = fs.lstatSync(currentPath);
+          if (stats.isSymbolicLink()) {
+            // Resolve this symlink and check its target
+            const realPath = fs.realpathSync(currentPath);
+            if (!checkWithinBase(realPath)) {
+              return {
+                ok: false,
+                error: new PathValidationError(
+                  `Path contains symlink escaping base: ${currentPath} -> ${realPath}`,
+                  inputPath,
+                  'symlink_escape'
+                ),
+              };
+            }
           }
         } catch {
           // Part of path doesn't exist, stop checking

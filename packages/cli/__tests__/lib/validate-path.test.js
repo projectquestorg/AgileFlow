@@ -193,10 +193,12 @@ describe('Path Traversal Protection', () => {
     describe('symlink handling', () => {
       let symlinkPath;
       let symlinkDirPath;
+      let symlinkEscapePath;
 
       beforeAll(() => {
-        // Create a symlink for testing (skip on Windows)
+        // Create symlinks for testing (skip on Windows)
         if (process.platform !== 'win32') {
+          // Symlink within base - should be allowed with allowSymlinks=true
           symlinkPath = path.join(tempDir, 'symlink.txt');
           try {
             fs.symlinkSync(path.join(tempDir, 'test.txt'), symlinkPath);
@@ -204,9 +206,18 @@ describe('Path Traversal Protection', () => {
             // Symlink creation may fail on some systems
           }
 
+          // Symlink to directory within base
           symlinkDirPath = path.join(tempDir, 'symlink-dir');
           try {
             fs.symlinkSync(path.join(tempDir, 'subdir'), symlinkDirPath);
+          } catch {
+            // Symlink creation may fail
+          }
+
+          // Symlink that escapes to outside base - should always be rejected
+          symlinkEscapePath = path.join(tempDir, 'escape-link');
+          try {
+            fs.symlinkSync('/etc/passwd', symlinkEscapePath);
           } catch {
             // Symlink creation may fail
           }
@@ -220,6 +231,9 @@ describe('Path Traversal Protection', () => {
         if (symlinkDirPath && fs.existsSync(symlinkDirPath)) {
           fs.unlinkSync(symlinkDirPath);
         }
+        if (symlinkEscapePath && fs.existsSync(symlinkEscapePath)) {
+          fs.unlinkSync(symlinkEscapePath);
+        }
       });
 
       it('rejects symlinks when allowSymlinks=false (default)', () => {
@@ -231,12 +245,33 @@ describe('Path Traversal Protection', () => {
         expect(result.error.reason).toBe('symlink_rejected');
       });
 
-      it('accepts symlinks when allowSymlinks=true', () => {
+      it('accepts symlinks to targets within base when allowSymlinks=true', () => {
         if (process.platform === 'win32' || !fs.existsSync(symlinkPath)) {
           return;
         }
         const result = validatePath('symlink.txt', tempDir, { allowSymlinks: true });
         expect(result.ok).toBe(true);
+        expect(result.resolvedPath).toBe(symlinkPath);
+        // Should also return the real path
+        expect(result.realPath).toBe(path.join(tempDir, 'test.txt'));
+      });
+
+      it('rejects symlinks escaping base even with allowSymlinks=true', () => {
+        if (process.platform === 'win32' || !fs.existsSync(symlinkEscapePath)) {
+          return;
+        }
+        const result = validatePath('escape-link', tempDir, { allowSymlinks: true });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_escape');
+      });
+
+      it('returns realPath for symlinks within base', () => {
+        if (process.platform === 'win32' || !fs.existsSync(symlinkDirPath)) {
+          return;
+        }
+        const result = validatePath('symlink-dir', tempDir, { allowSymlinks: true });
+        expect(result.ok).toBe(true);
+        expect(result.realPath).toBe(path.join(tempDir, 'subdir'));
       });
     });
   });
