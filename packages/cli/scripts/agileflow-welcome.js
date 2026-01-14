@@ -298,7 +298,8 @@ function clearActiveCommands(rootDir, cache = null) {
       const now = Date.now();
       const secondsSincePrecompact = (now - precompactTime) / 1000;
 
-      if (secondsSincePrecompact < 600) {  // 10 minutes - compacts can take a while with background tasks
+      if (secondsSincePrecompact < 600) {
+        // 10 minutes - compacts can take a while with background tasks
         // This is a post-compact session start - preserve active commands
         result.preserved = true;
         // Capture command names for display (but don't clear)
