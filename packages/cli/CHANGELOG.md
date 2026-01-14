@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.89.1] - 2026-01-14
+
+### Fixed
+- Fix active_commands preservation after conversation compact
+
 ## [2.89.0] - 2026-01-14
 
 ### Added
