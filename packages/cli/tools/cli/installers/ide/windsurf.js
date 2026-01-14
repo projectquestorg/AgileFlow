@@ -7,7 +7,6 @@
 
 const path = require('node:path');
 const fs = require('fs-extra');
-const chalk = require('chalk');
 const { BaseIdeSetup } = require('./_base-ide');
 
 /**
@@ -27,45 +26,12 @@ class WindsurfSetup extends BaseIdeSetup {
    * @param {Object} options - Setup options
    */
   async setup(projectDir, agileflowDir, options = {}) {
-    console.log(chalk.hex('#e8683a')(`  Setting up ${this.displayName}...`));
-
-    // Clean up old installation first
-    await this.cleanup(projectDir);
-
-    // Create .windsurf/workflows/agileflow directory
-    const windsurfDir = path.join(projectDir, this.configDir);
-    const workflowsDir = path.join(windsurfDir, this.workflowsDir);
-    const agileflowWorkflowsDir = path.join(workflowsDir, 'agileflow');
-
-    // Install commands using shared recursive method
-    const commandsSource = path.join(agileflowDir, 'commands');
-    const commandResult = await this.installCommandsRecursive(
-      commandsSource,
-      agileflowWorkflowsDir,
-      agileflowDir,
-      true // Inject dynamic content
-    );
-
-    // Install agents as subdirectory
-    const agentsSource = path.join(agileflowDir, 'agents');
-    const agentsTargetDir = path.join(agileflowWorkflowsDir, 'agents');
-    const agentResult = await this.installCommandsRecursive(
-      agentsSource,
-      agentsTargetDir,
-      agileflowDir,
-      false // No dynamic content for agents
-    );
-
-    console.log(chalk.green(`  ✓ ${this.displayName} configured:`));
-    console.log(chalk.dim(`    - ${commandResult.commands} workflows installed`));
-    console.log(chalk.dim(`    - ${agentResult.commands} agent workflows installed`));
-    console.log(chalk.dim(`    - Path: ${path.relative(projectDir, agileflowWorkflowsDir)}`));
-
-    return {
-      success: true,
-      commands: commandResult.commands,
-      agents: agentResult.commands,
-    };
+    return this.setupStandard(projectDir, agileflowDir, {
+      targetSubdir: this.workflowsDir,
+      agileflowFolder: 'agileflow',
+      commandLabel: 'workflows',
+      agentLabel: 'agent workflows',
+    });
   }
 
   /**

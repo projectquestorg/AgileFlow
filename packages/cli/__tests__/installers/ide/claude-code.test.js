@@ -100,7 +100,8 @@ describe('ClaudeCodeSetup', () => {
     it('returns command counts', async () => {
       const result = await claudeSetup.setup(tempDir, agileflowDir, { skipDamageControl: true });
 
-      expect(result.commands).toBeGreaterThanOrEqual(3); // 2 commands + 1 agent
+      expect(result.commands).toBeGreaterThanOrEqual(2); // At least 2 commands
+      expect(result.agents).toBeGreaterThanOrEqual(1); // At least 1 agent
     });
 
     it('handles nested command directories', async () => {

@@ -100,6 +100,70 @@ class BaseIdeSetup {
   }
 
   /**
+   * Standard setup flow shared by most IDE installers.
+   * Handles cleanup, command/agent installation, and logging.
+   *
+   * @param {string} projectDir - Project directory
+   * @param {string} agileflowDir - AgileFlow installation directory
+   * @param {Object} config - Configuration options
+   * @param {string} config.targetSubdir - Target subdirectory name under configDir (e.g., 'commands', 'workflows')
+   * @param {string} config.agileflowFolder - AgileFlow folder name (e.g., 'agileflow', 'AgileFlow')
+   * @param {string} [config.commandLabel='commands'] - Label for commands in output (e.g., 'workflows')
+   * @param {string} [config.agentLabel='agents'] - Label for agents in output
+   * @returns {Promise<{success: boolean, commands: number, agents: number}>}
+   */
+  async setupStandard(projectDir, agileflowDir, config) {
+    const {
+      targetSubdir,
+      agileflowFolder,
+      commandLabel = 'commands',
+      agentLabel = 'agents',
+    } = config;
+
+    console.log(chalk.hex('#e8683a')(`  Setting up ${this.displayName}...`));
+
+    // Clean up old installation first
+    await this.cleanup(projectDir);
+
+    // Create target directory (e.g., .cursor/commands/AgileFlow)
+    const ideDir = path.join(projectDir, this.configDir);
+    const targetDir = path.join(ideDir, targetSubdir);
+    const agileflowTargetDir = path.join(targetDir, agileflowFolder);
+
+    // Install commands using shared recursive method
+    const commandsSource = path.join(agileflowDir, 'commands');
+    const commandResult = await this.installCommandsRecursive(
+      commandsSource,
+      agileflowTargetDir,
+      agileflowDir,
+      true // Inject dynamic content
+    );
+
+    // Install agents as subdirectory
+    const agentsSource = path.join(agileflowDir, 'agents');
+    const agentsTargetDir = path.join(agileflowTargetDir, 'agents');
+    const agentResult = await this.installCommandsRecursive(
+      agentsSource,
+      agentsTargetDir,
+      agileflowDir,
+      false // No dynamic content for agents
+    );
+
+    console.log(chalk.green(`  ✓ ${this.displayName} configured:`));
+    console.log(chalk.dim(`    - ${commandResult.commands} ${commandLabel} installed`));
+    console.log(chalk.dim(`    - ${agentResult.commands} ${agentLabel} installed`));
+    console.log(chalk.dim(`    - Path: ${path.relative(projectDir, agileflowTargetDir)}`));
+
+    return {
+      success: true,
+      commands: commandResult.commands,
+      agents: agentResult.commands,
+      ideDir,
+      agileflowTargetDir,
+    };
+  }
+
+  /**
    * Cleanup IDE configuration
    * @param {string} projectDir - Project directory
    */

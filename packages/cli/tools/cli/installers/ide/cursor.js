@@ -7,7 +7,6 @@
 
 const path = require('node:path');
 const fs = require('fs-extra');
-const chalk = require('chalk');
 const { BaseIdeSetup } = require('./_base-ide');
 
 /**
@@ -27,45 +26,10 @@ class CursorSetup extends BaseIdeSetup {
    * @param {Object} options - Setup options
    */
   async setup(projectDir, agileflowDir, options = {}) {
-    console.log(chalk.hex('#e8683a')(`  Setting up ${this.displayName}...`));
-
-    // Clean up old installation first
-    await this.cleanup(projectDir);
-
-    // Create .cursor/commands/AgileFlow directory
-    const cursorDir = path.join(projectDir, this.configDir);
-    const commandsDir = path.join(cursorDir, this.commandsDir);
-    const agileflowCommandsDir = path.join(commandsDir, 'AgileFlow');
-
-    // Install commands using shared recursive method
-    const commandsSource = path.join(agileflowDir, 'commands');
-    const commandResult = await this.installCommandsRecursive(
-      commandsSource,
-      agileflowCommandsDir,
-      agileflowDir,
-      true // Inject dynamic content
-    );
-
-    // Install agents as subdirectory
-    const agentsSource = path.join(agileflowDir, 'agents');
-    const agentsTargetDir = path.join(agileflowCommandsDir, 'agents');
-    const agentResult = await this.installCommandsRecursive(
-      agentsSource,
-      agentsTargetDir,
-      agileflowDir,
-      false // No dynamic content for agents
-    );
-
-    console.log(chalk.green(`  ✓ ${this.displayName} configured:`));
-    console.log(chalk.dim(`    - ${commandResult.commands} commands installed`));
-    console.log(chalk.dim(`    - ${agentResult.commands} agents installed`));
-    console.log(chalk.dim(`    - Path: ${path.relative(projectDir, agileflowCommandsDir)}`));
-
-    return {
-      success: true,
-      commands: commandResult.commands,
-      agents: agentResult.commands,
-    };
+    return this.setupStandard(projectDir, agileflowDir, {
+      targetSubdir: this.commandsDir,
+      agileflowFolder: 'AgileFlow',
+    });
   }
 
   /**
