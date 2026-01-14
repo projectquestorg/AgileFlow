@@ -183,7 +183,7 @@ describe('ide-errors', () => {
         await withPermissionHandling('IDE', '/path', 'delete', async () => {
           throw error;
         });
-        fail('Should have thrown');
+        throw new Error('Should have thrown');
       } catch (e) {
         expect(e.operation).toBe('delete');
       }

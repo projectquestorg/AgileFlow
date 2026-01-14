@@ -256,7 +256,7 @@ describe('Path Traversal Protection', () => {
     it('throws with correct reason', () => {
       try {
         validatePathSync('../etc/passwd', tempDir);
-        fail('Should have thrown');
+        throw new Error('Should have thrown');
       } catch (error) {
         expect(error.reason).toBe('path_traversal');
       }

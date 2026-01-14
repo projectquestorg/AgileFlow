@@ -7,6 +7,7 @@
 
 const path = require('node:path');
 const fs = require('fs-extra');
+const chalk = require('chalk');
 const { BaseIdeSetup } = require('./_base-ide');
 
 /**
