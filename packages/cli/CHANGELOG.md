@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.90.1] - 2026-01-16
+
+### Added
+- TUI as CLI command with session fixes
+
 ## [2.90.0] - 2026-01-16
 
 ### Added
