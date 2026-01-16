@@ -137,7 +137,7 @@ describe('TUI Trace Panel', () => {
       try {
         getStatusColor = require('../../../scripts/tui/panels/TracePanel').getStatusColor;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           getStatusColor = null;
         } else {
           throw e;
@@ -199,7 +199,7 @@ describe('TUI Trace Panel', () => {
       try {
         getStatusSymbol = require('../../../scripts/tui/panels/TracePanel').getStatusSymbol;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           getStatusSymbol = null;
         } else {
           throw e;
@@ -259,7 +259,7 @@ describe('TUI Trace Panel', () => {
       try {
         QUALITY_GATES = require('../../../scripts/tui/panels/TracePanel').QUALITY_GATES;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           QUALITY_GATES = null;
         } else {
           throw e;

@@ -85,7 +85,7 @@ describe('TUI Session Panel', () => {
       try {
         formatSession = require('../../../scripts/tui/panels/SessionPanel').formatSession;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           formatSession = null;
         } else {
           throw e;
@@ -168,7 +168,7 @@ describe('TUI Session Panel', () => {
       try {
         getThreadColor = require('../../../scripts/tui/panels/SessionPanel').getThreadColor;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           getThreadColor = null;
         } else {
           throw e;

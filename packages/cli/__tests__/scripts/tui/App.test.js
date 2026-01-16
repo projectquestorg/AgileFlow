@@ -47,7 +47,7 @@ describe('TUI App Component', () => {
         const { App } = require('../../../scripts/tui/App');
         expect(typeof App).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           // Skip test if ink not installed
           console.log('Skipping: ink not installed');
           return;
@@ -62,7 +62,7 @@ describe('TUI App Component', () => {
         const { main } = require('../../../scripts/tui/index');
         expect(typeof main).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           // Skip test if ink not installed
           console.log('Skipping: ink not installed');
           return;

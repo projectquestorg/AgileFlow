@@ -98,7 +98,7 @@ describe('TUI Output Panel', () => {
       try {
         getAgentColor = require('../../../scripts/tui/panels/OutputPanel').getAgentColor;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           getAgentColor = null;
         } else {
           throw e;
@@ -156,7 +156,7 @@ describe('TUI Output Panel', () => {
       try {
         getStatusIndicator = require('../../../scripts/tui/panels/OutputPanel').getStatusIndicator;
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
+        if (isInkUnavailableError(e)) {
           getStatusIndicator = null;
         } else {
           throw e;
