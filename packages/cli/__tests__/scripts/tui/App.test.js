@@ -138,6 +138,9 @@ describe('TUI CLI Command', () => {
     const cmdPath = path.join(__dirname, '../../../tools/cli/commands/tui.js');
     const content = fs.readFileSync(cmdPath, 'utf8');
 
-    expect(content).toContain('scripts/tui/index.js');
+    // Uses path.join to construct the path
+    expect(content).toContain("'scripts'");
+    expect(content).toContain("'tui'");
+    expect(content).toContain("'index.js'");
   });
 });
