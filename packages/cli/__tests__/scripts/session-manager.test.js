@@ -272,6 +272,95 @@ describe('session-manager', () => {
     });
   });
 
+  describe('get command', () => {
+    test('returns specific session by ID', () => {
+      runSessionManager(['register', 'my-session']);
+
+      const result = runSessionManager(['get', '1']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(true);
+      expect(output.id).toBe('1');
+      expect(output.nickname).toBe('my-session');
+      expect(output.path).toBe(testDir);
+    });
+
+    test('returns error for non-existent session', () => {
+      const result = runSessionManager(['get', '999']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(false);
+      expect(output.error).toContain('not found');
+    });
+
+    test('returns error without session ID', () => {
+      const result = runSessionManager(['get']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(false);
+      expect(output.error).toContain('Session ID required');
+    });
+
+    test('includes active status in response', () => {
+      runSessionManager(['register']);
+
+      // Session should be active (has lock)
+      const result = runSessionManager(['get', '1']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(true);
+      // Note: active may be true or false depending on PID check
+      // The important thing is that the field exists
+      expect(typeof output.active).toBe('boolean');
+    });
+
+    test('migrates legacy session without thread_type', () => {
+      // Create a legacy session without thread_type
+      writeRegistry({
+        schema_version: '1.0.0',
+        next_id: 2,
+        project_name: 'test',
+        sessions: {
+          1: {
+            path: '/some/path',
+            branch: 'feature',
+            is_main: false,
+            // NOTE: No thread_type field (legacy)
+          },
+        },
+      });
+
+      const result = runSessionManager(['get', '1']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(true);
+      expect(output.thread_type).toBe('parallel'); // Should be auto-detected as parallel for non-main
+    });
+
+    test('migrates legacy main session without thread_type', () => {
+      // Create a legacy main session without thread_type
+      writeRegistry({
+        schema_version: '1.0.0',
+        next_id: 2,
+        project_name: 'test',
+        sessions: {
+          1: {
+            path: testDir,
+            branch: 'main',
+            is_main: true,
+            // NOTE: No thread_type field (legacy)
+          },
+        },
+      });
+
+      const result = runSessionManager(['get', '1']);
+      const output = parseOutput(result);
+
+      expect(output.success).toBe(true);
+      expect(output.thread_type).toBe('base'); // Should be auto-detected as base for main
+    });
+  });
+
   describe('delete command', () => {
     test('removes session from registry', () => {
       // Create a non-main session

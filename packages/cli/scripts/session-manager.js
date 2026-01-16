@@ -259,6 +259,23 @@ function unregisterSession(sessionId) {
   }
 }
 
+// Get session by ID
+function getSession(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+  if (!session) {
+    return null;
+  }
+  // Ensure thread_type exists (migration for legacy sessions)
+  const threadType = session.thread_type || (session.is_main ? 'base' : 'parallel');
+  return {
+    id: sessionId,
+    ...session,
+    thread_type: threadType,
+    active: isSessionActive(sessionId),
+  };
+}
+
 // Create new session with worktree
 function createSession(options = {}) {
   const registry = loadRegistry();
@@ -1006,6 +1023,22 @@ function main() {
       break;
     }
 
+    case 'get': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      // Use the exported getSession function for consistency
+      const session = getSession(sessionId);
+      if (!session) {
+        console.log(JSON.stringify({ success: false, error: `Session ${sessionId} not found` }));
+        return;
+      }
+      console.log(JSON.stringify({ success: true, ...session }));
+      break;
+    }
+
     // PERFORMANCE: Combined command for welcome script (saves ~200ms from 3 subprocess calls)
     case 'full-status': {
       const nickname = args[1] || null;
@@ -1248,6 +1281,7 @@ ${c.cyan}Commands:${c.reset}
   count                   Count other active sessions
   delete <id> [--remove-worktree]  Delete session
   status                  Get current session status
+  get <id>                Get specific session by ID
   full-status             Combined register+count+status (optimized)
   switch <id|nickname>    Switch active session context (for /add-dir)
   active                  Get currently switched session (if any)
@@ -1667,14 +1701,47 @@ function resolveConflict(resolution) {
   try {
     switch (gitStrategy) {
       case 'union':
-        // Union merge - keep both sides (works for text files)
-        execSync(`git checkout --ours "${file}" && git checkout --theirs "${file}" --`, {
-          cwd: ROOT,
-          encoding: 'utf8',
-        });
-        // Actually, use git merge-file for union
-        // For simplicity, accept theirs for now and log
-        execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+        // Union merge - concatenate both versions (works for additive files like docs/tests)
+        // Use git merge-file with --union flag for true union merge
+        // This keeps both ours and theirs changes, separated by markers only if truly conflicting
+        try {
+          // Get the base, ours, and theirs versions
+          const base = spawnSync('git', ['show', `:1:${file}`], { cwd: ROOT, encoding: 'utf8' });
+          const ours = spawnSync('git', ['show', `:2:${file}`], { cwd: ROOT, encoding: 'utf8' });
+          const theirs = spawnSync('git', ['show', `:3:${file}`], { cwd: ROOT, encoding: 'utf8' });
+
+          // If we can get all three, use merge-file with union
+          if (base.status === 0 && ours.status === 0 && theirs.status === 0) {
+            // Write temp files for merge-file
+            const tmpBase = path.join(ROOT, '.git', 'MERGE_BASE_TMP');
+            const tmpOurs = path.join(ROOT, '.git', 'MERGE_OURS_TMP');
+            const tmpTheirs = path.join(ROOT, '.git', 'MERGE_THEIRS_TMP');
+
+            fs.writeFileSync(tmpBase, base.stdout);
+            fs.writeFileSync(tmpOurs, ours.stdout);
+            fs.writeFileSync(tmpTheirs, theirs.stdout);
+
+            // Run merge-file with --union (keeps both sides for conflicts)
+            spawnSync('git', ['merge-file', '--union', tmpOurs, tmpBase, tmpTheirs], {
+              cwd: ROOT,
+              encoding: 'utf8',
+            });
+
+            // Copy merged result to working tree
+            fs.copyFileSync(tmpOurs, path.join(ROOT, file));
+
+            // Cleanup temp files
+            fs.unlinkSync(tmpBase);
+            fs.unlinkSync(tmpOurs);
+            fs.unlinkSync(tmpTheirs);
+          } else {
+            // Fallback: accept theirs for docs/tests (session's additions are more important)
+            execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+          }
+        } catch (unionError) {
+          // Fallback to theirs on any error
+          execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+        }
         break;
 
       case 'theirs':
@@ -1689,8 +1756,7 @@ function resolveConflict(resolution) {
 
       case 'recursive':
       default:
-        // Try to use git's recursive strategy
-        // For conflicts, we'll favor theirs (the session's work)
+        // For source code conflicts, favor theirs (the session's work)
         execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
         break;
     }
@@ -1936,6 +2002,7 @@ module.exports = {
   saveRegistry,
   registerSession,
   unregisterSession,
+  getSession,
   createSession,
   getSessions,
   getActiveSessionCount,
