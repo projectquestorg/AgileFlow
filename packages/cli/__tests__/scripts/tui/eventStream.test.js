@@ -9,10 +9,7 @@ const fs = require('fs');
 const os = require('os');
 
 describe('TUI Event Stream', () => {
-  const modulePath = path.join(
-    __dirname,
-    '../../../scripts/tui/lib/eventStream.js'
-  );
+  const modulePath = path.join(__dirname, '../../../scripts/tui/lib/eventStream.js');
 
   describe('File Structure', () => {
     test('eventStream.js exists', () => {
@@ -69,7 +66,7 @@ describe('TUI Event Stream', () => {
       const stream = new EventStream({
         logPath,
         pollInterval: 500,
-        maxBufferSize: 50
+        maxBufferSize: 50,
       });
 
       expect(stream).toBeInstanceOf(EventStream);
@@ -91,17 +88,17 @@ describe('TUI Event Stream', () => {
       expect(stream.isWatching).toBe(false);
     });
 
-    test('emits events when new lines are added', (done) => {
+    test('emits events when new lines are added', done => {
       const stream = new EventStream({
         logPath,
-        pollInterval: 100  // Fast polling for test
+        pollInterval: 100, // Fast polling for test
       });
 
       // Create log file with initial content
       fs.writeFileSync(logPath, '');
 
       const events = [];
-      stream.on('event', (event) => {
+      stream.on('event', event => {
         events.push(event);
 
         if (events.length === 1) {
@@ -116,18 +113,21 @@ describe('TUI Event Stream', () => {
 
       // Add line after short delay
       setTimeout(() => {
-        fs.appendFileSync(logPath, JSON.stringify({
-          type: 'test',
-          message: 'hello',
-          timestamp: new Date().toISOString()
-        }) + '\n');
+        fs.appendFileSync(
+          logPath,
+          JSON.stringify({
+            type: 'test',
+            message: 'hello',
+            timestamp: new Date().toISOString(),
+          }) + '\n'
+        );
       }, 150);
     }, 5000);
 
     test('buffers events with size limit', () => {
       const stream = new EventStream({
         logPath,
-        maxBufferSize: 3
+        maxBufferSize: 3,
       });
 
       // Add events directly to buffer
@@ -176,10 +176,10 @@ describe('TUI Event Stream', () => {
       expect(filtered.length).toBe(2);
     });
 
-    test('handles file truncation (rotation)', (done) => {
+    test('handles file truncation (rotation)', done => {
       const stream = new EventStream({
         logPath,
-        pollInterval: 50  // Fast polling for test
+        pollInterval: 50, // Fast polling for test
       });
 
       // Create log with initial content (larger so truncation is detectable)
@@ -192,7 +192,7 @@ describe('TUI Event Stream', () => {
         truncated = true;
       });
 
-      stream.on('event', (event) => {
+      stream.on('event', event => {
         if (event.type === 'new') {
           gotNewEvent = true;
         }
@@ -247,7 +247,7 @@ describe('TUI Event Stream', () => {
         agent: 'agileflow-api',
         gate: 'tests',
         max_iterations: 5,
-        timestamp: '2026-01-14T10:00:00.000Z'
+        timestamp: '2026-01-14T10:00:00.000Z',
       };
 
       const result = formatEvent(event);
@@ -264,7 +264,7 @@ describe('TUI Event Stream', () => {
         agent: 'agileflow-testing',
         iter: 3,
         value: 75,
-        passed: false
+        passed: false,
       };
 
       const result = formatEvent(event);
@@ -278,7 +278,7 @@ describe('TUI Event Stream', () => {
       const event = {
         event: 'passed',
         agent: 'agileflow-ci',
-        final_value: 100
+        final_value: 100,
       };
 
       const result = formatEvent(event);
@@ -292,7 +292,7 @@ describe('TUI Event Stream', () => {
         event: 'failed',
         agent: 'agileflow-testing',
         reason: 'max_iterations',
-        final_value: 50
+        final_value: 50,
       };
 
       const result = formatEvent(event);
@@ -305,7 +305,7 @@ describe('TUI Event Stream', () => {
       const event = {
         event: 'abort',
         agent: 'agileflow-api',
-        reason: 'user_request'
+        reason: 'user_request',
       };
 
       const result = formatEvent(event);
@@ -317,7 +317,7 @@ describe('TUI Event Stream', () => {
     test('handles unknown event types', () => {
       const event = {
         type: 'custom',
-        data: 'test'
+        data: 'test',
       };
 
       const result = formatEvent(event);

@@ -80,7 +80,8 @@ async function getLatestVersion(packageName) {
         suggestion: 'Check network connection. If error persists, try: npm cache clean --force',
       };
       if (err.code === 'CERT_HAS_EXPIRED' || err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
-        errorInfo.suggestion = 'TLS certificate error - check system time or update CA certificates';
+        errorInfo.suggestion =
+          'TLS certificate error - check system time or update CA certificates';
       }
       debugLog('Network error', errorInfo);
       resolve(null);

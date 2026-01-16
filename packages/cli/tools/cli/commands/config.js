@@ -283,4 +283,3 @@ async function handleSet(directory, status, manifestPath, key, value) {
 
   console.log();
 }
-

@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Crash Recovery - Session state persistence and recovery
  *
@@ -8,40 +6,32 @@
  * when incomplete state is detected.
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-// Get project root
-let getProjectRoot;
-try {
-  getProjectRoot = require('../../../lib/paths').getProjectRoot;
-} catch (e) {
-  getProjectRoot = () => process.cwd();
+// Get project root - fallback to process.cwd()
+function getProjectRoot() {
+  return process.cwd();
 }
 
-// Get safe JSON utilities
-let safeReadJSON, safeWriteJSON;
-try {
-  const errors = require('../../../lib/errors');
-  safeReadJSON = errors.safeReadJSON;
-  safeWriteJSON = errors.safeWriteJSON;
-} catch (e) {
-  safeReadJSON = (filePath, opts = {}) => {
-    try {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      return { ok: true, data };
-    } catch (e) {
-      return { ok: false, error: e.message, data: opts.defaultValue };
-    }
-  };
-  safeWriteJSON = (filePath, data) => {
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    return { ok: true };
-  };
+// Safe JSON read
+function safeReadJSON(filePath, opts = {}) {
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: e.message, data: opts.defaultValue };
+  }
+}
+
+// Safe JSON write
+function safeWriteJSON(filePath, data) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  return { ok: true };
 }
 
 /**
@@ -292,7 +282,7 @@ function getRecoveryStatus(sessionId = 'default') {
   };
 }
 
-module.exports = {
+export {
   getCheckpointPath,
   createCheckpoint,
   loadCheckpoint,

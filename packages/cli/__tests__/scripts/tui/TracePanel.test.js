@@ -8,10 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 describe('TUI Trace Panel', () => {
-  const panelPath = path.join(
-    __dirname,
-    '../../../scripts/tui/panels/TracePanel.js'
-  );
+  const panelPath = path.join(__dirname, '../../../scripts/tui/panels/TracePanel.js');
 
   describe('File Structure', () => {
     test('TracePanel.js exists', () => {

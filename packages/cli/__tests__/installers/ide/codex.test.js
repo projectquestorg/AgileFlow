@@ -221,8 +221,12 @@ description: API specialist
       const count = await codexSetup.installSkills(projectDir, agileflowDir);
 
       expect(count).toBe(2);
-      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-database'))).toBe(true);
-      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-api'))).toBe(true);
+      expect(
+        await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-database'))
+      ).toBe(true);
+      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-api'))).toBe(
+        true
+      );
     });
 
     it('creates SKILL.md in each skill directory', async () => {
@@ -272,8 +276,12 @@ description: Show status
       const count = await codexSetup.installPrompts(agileflowDir);
 
       expect(count).toBe(2);
-      expect(await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-board.md'))).toBe(true);
-      expect(await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-status.md'))).toBe(true);
+      expect(
+        await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-board.md'))
+      ).toBe(true);
+      expect(
+        await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-status.md'))
+      ).toBe(true);
     });
 
     it('creates proper prompt format', async () => {
@@ -409,13 +417,17 @@ description: Test agent
     it('creates skills in .codex/skills/', async () => {
       await codexSetup.setup(projectDir, agileflowDir);
 
-      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-test'))).toBe(true);
+      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-test'))).toBe(
+        true
+      );
     });
 
     it('creates prompts in CODEX_HOME/prompts/', async () => {
       await codexSetup.setup(projectDir, agileflowDir);
 
-      expect(await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-test.md'))).toBe(true);
+      expect(
+        await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-test.md'))
+      ).toBe(true);
     });
 
     it('creates AGENTS.md', async () => {
@@ -453,13 +465,17 @@ description: Test agent
     it('removes agileflow skills from .codex/skills/', async () => {
       await codexSetup.cleanup(projectDir);
 
-      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-test'))).toBe(false);
+      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'agileflow-test'))).toBe(
+        false
+      );
     });
 
     it('removes agileflow prompts from CODEX_HOME/prompts/', async () => {
       await codexSetup.cleanup(projectDir);
 
-      expect(await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-test.md'))).toBe(false);
+      expect(
+        await fs.pathExists(path.join(process.env.CODEX_HOME, 'prompts', 'agileflow-test.md'))
+      ).toBe(false);
     });
 
     it('preserves AGENTS.md by default', async () => {
@@ -483,7 +499,9 @@ description: Test agent
 
       await codexSetup.cleanup(projectDir);
 
-      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'other-skill'))).toBe(true);
+      expect(await fs.pathExists(path.join(projectDir, '.codex', 'skills', 'other-skill'))).toBe(
+        true
+      );
     });
 
     it('handles non-existent directories gracefully', async () => {

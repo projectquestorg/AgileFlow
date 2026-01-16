@@ -290,11 +290,7 @@ describe('transient-status', () => {
     it('returns function result', async () => {
       const stream = createMockStream({ isTTY: true });
 
-      const result = await withStatus(
-        'Test',
-        async () => 'expected result',
-        { stream }
-      );
+      const result = await withStatus('Test', async () => 'expected result', { stream });
 
       expect(result).toBe('expected result');
     });

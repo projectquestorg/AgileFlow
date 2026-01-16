@@ -108,7 +108,13 @@ This is a test agent.`
       expect(result.success).toBe(true);
       expect(result.commands).toBeGreaterThanOrEqual(1);
 
-      const workflowPath = path.join(testDir, '.windsurf', 'workflows', 'agileflow', 'test-workflow.md');
+      const workflowPath = path.join(
+        testDir,
+        '.windsurf',
+        'workflows',
+        'agileflow',
+        'test-workflow.md'
+      );
       expect(await fs.pathExists(workflowPath)).toBe(true);
     });
 
@@ -117,7 +123,14 @@ This is a test agent.`
 
       expect(result.agents).toBeGreaterThanOrEqual(1);
 
-      const agentPath = path.join(testDir, '.windsurf', 'workflows', 'agileflow', 'agents', 'test-agent.md');
+      const agentPath = path.join(
+        testDir,
+        '.windsurf',
+        'workflows',
+        'agileflow',
+        'agents',
+        'test-agent.md'
+      );
       expect(await fs.pathExists(agentPath)).toBe(true);
     });
 

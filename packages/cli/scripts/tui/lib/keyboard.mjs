@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Keyboard Handler - Key bindings for TUI
  *
@@ -7,7 +5,7 @@
  * and event emission for TUI components.
  */
 
-const EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
 /**
  * Default key bindings
@@ -251,7 +249,7 @@ function createKeyHandler(handler = null) {
   };
 }
 
-module.exports = {
+export {
   KeyboardHandler,
   DEFAULT_BINDINGS,
   formatBindings,

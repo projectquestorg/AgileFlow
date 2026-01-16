@@ -1,8 +1,6 @@
-'use strict';
-
-const React = require('react');
-const { Box, Text, useInput, useApp } = require('ink');
-const { KeyboardHandler, formatBindings, DEFAULT_BINDINGS } = require('./lib/keyboard');
+import React from 'react';
+import { Box, Text, useInput, useApp } from 'ink';
+import { KeyboardHandler, formatBindings, DEFAULT_BINDINGS } from './lib/keyboard.mjs';
 
 /**
  * Main TUI Application Component
@@ -107,7 +105,7 @@ function App({
             )
           )
         ),
-        React.createElement(Text, { dimColor: true }, '1-9:Sessions | AgileFlow v2.89.3')
+        React.createElement(Text, { dimColor: true }, '1-9:Sessions | AgileFlow v2.90.0')
       )
   );
 }
@@ -148,4 +146,4 @@ function HelpPanel({ bindings = DEFAULT_BINDINGS }) {
   );
 }
 
-module.exports = { App, HelpPanel };
+export { App, HelpPanel };

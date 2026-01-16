@@ -193,7 +193,15 @@ async function executeMiddleware(middlewares, ctx) {
  * @returns {Object} Commander.js compatible command object
  */
 function createCommand(definition) {
-  const { name, description, options = [], arguments: args = [], middleware: mw = [], validate, action } = definition;
+  const {
+    name,
+    description,
+    options = [],
+    arguments: args = [],
+    middleware: mw = [],
+    validate,
+    action,
+  } = definition;
 
   // Build middleware pipeline
   const pipeline = [...mw];

@@ -9,10 +9,7 @@ const fs = require('fs');
 const os = require('os');
 
 describe('TUI Loop Control', () => {
-  const modulePath = path.join(
-    __dirname,
-    '../../../scripts/tui/lib/loopControl.js'
-  );
+  const modulePath = path.join(__dirname, '../../../scripts/tui/lib/loopControl.js');
 
   describe('File Structure', () => {
     test('loopControl.js exists', () => {
@@ -130,7 +127,7 @@ describe('TUI Loop Control', () => {
     test('can create instance with custom options', () => {
       const controller = new LoopController({
         sessionId: 'test-session',
-        pollInterval: 500
+        pollInterval: 500,
       });
       expect(controller.sessionId).toBe('test-session');
       expect(controller.pollInterval).toBe(500);
@@ -156,7 +153,7 @@ describe('TUI Loop Control', () => {
       expect(controller.isWatching).toBe(false);
     });
 
-    test('emits started event when watching starts', (done) => {
+    test('emits started event when watching starts', done => {
       const controller = new LoopController({ pollInterval: 100 });
 
       controller.on('started', () => {
@@ -167,7 +164,7 @@ describe('TUI Loop Control', () => {
       controller.startWatching();
     });
 
-    test('emits stopped event when watching stops', (done) => {
+    test('emits stopped event when watching stops', done => {
       const controller = new LoopController({ pollInterval: 100 });
 
       controller.startWatching();
@@ -206,8 +203,8 @@ describe('TUI Loop Control', () => {
             epic: 'EP-0001',
             current_story: 'US-0001',
             iteration: 3,
-            max_iterations: 10
-          }
+            max_iterations: 10,
+          },
         })
       );
 

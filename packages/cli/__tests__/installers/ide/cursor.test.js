@@ -127,7 +127,14 @@ This is a test agent.`
 
       expect(result.agents).toBeGreaterThanOrEqual(1);
 
-      const agentPath = path.join(testDir, '.cursor', 'commands', 'AgileFlow', 'agents', 'test-agent.md');
+      const agentPath = path.join(
+        testDir,
+        '.cursor',
+        'commands',
+        'AgileFlow',
+        'agents',
+        'test-agent.md'
+      );
       expect(await fs.pathExists(agentPath)).toBe(true);
     });
 

@@ -224,10 +224,7 @@ describe('CommandContext', () => {
 
     it('returns true when all middleware completes', async () => {
       const completed = await executeMiddleware(
-        [
-          async (ctx, next) => await next(),
-          async (ctx, next) => await next(),
-        ],
+        [async (ctx, next) => await next(), async (ctx, next) => await next()],
         {}
       );
 

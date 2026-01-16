@@ -51,7 +51,10 @@ module.exports = {
 
         // Confirm removal
         if (!options.force) {
-          const proceed = await confirm(`Remove ${IdeRegistry.getDisplayName(ideName)} configuration?`, false);
+          const proceed = await confirm(
+            `Remove ${IdeRegistry.getDisplayName(ideName)} configuration?`,
+            false
+          );
           if (!proceed) {
             console.log(chalk.dim('\nCancelled\n'));
             process.exit(0);
@@ -150,4 +153,3 @@ module.exports = {
     }
   },
 };
-

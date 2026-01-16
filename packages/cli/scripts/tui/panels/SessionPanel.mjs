@@ -1,18 +1,25 @@
-'use strict';
+import React from 'react';
+import { Box, Text } from 'ink';
+import fs from 'fs';
+import path from 'path';
 
-const React = require('react');
-const { Box, Text } = require('ink');
-const fs = require('fs');
-const path = require('path');
+// Get project root - fallback to process.cwd()
+function getProjectRoot() {
+  return process.cwd();
+}
 
-// Get session-manager functions
-let getSessions;
-try {
-  const sessionManager = require('../../session-manager');
-  getSessions = sessionManager.getSessions;
-} catch (e) {
-  // Fallback if module not found
-  getSessions = () => ({ sessions: [], cleaned: 0 });
+// Get sessions from registry
+function getSessions() {
+  try {
+    const registryPath = path.join(getProjectRoot(), '.agileflow', 'sessions', 'registry.json');
+    if (!fs.existsSync(registryPath)) {
+      return { sessions: [], cleaned: 0 };
+    }
+    const data = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    return { sessions: data.sessions || [], cleaned: 0 };
+  } catch (e) {
+    return { sessions: [], cleaned: 0 };
+  }
 }
 
 /**
@@ -69,7 +76,7 @@ function SessionRow({ session }) {
   const threadColor = getThreadColor(fmt.threadType);
 
   // Current session indicator
-  const indicator = fmt.current ? '▶' : ' ';
+  const indicator = fmt.current ? '>' : ' ';
   const indicatorColor = fmt.current ? 'green' : 'gray';
 
   return React.createElement(
@@ -167,4 +174,4 @@ function SessionPanel({ refreshInterval = 5000 }) {
   );
 }
 
-module.exports = { SessionPanel, SessionRow, formatSession, getThreadColor };
+export { SessionPanel, SessionRow, formatSession, getThreadColor };

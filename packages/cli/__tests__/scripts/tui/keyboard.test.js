@@ -8,10 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 describe('TUI Keyboard Handler', () => {
-  const modulePath = path.join(
-    __dirname,
-    '../../../scripts/tui/lib/keyboard.js'
-  );
+  const modulePath = path.join(__dirname, '../../../scripts/tui/lib/keyboard.js');
 
   describe('File Structure', () => {
     test('keyboard.js exists', () => {
@@ -111,7 +108,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes quit key', () => {
       const handler = new KeyboardHandler();
       let quitCalled = false;
-      handler.on('quit', () => { quitCalled = true; });
+      handler.on('quit', () => {
+        quitCalled = true;
+      });
 
       const result = handler.processKey('q');
       expect(result).toEqual({ action: 'quit', key: 'q' });
@@ -121,7 +120,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes Ctrl+C as quit', () => {
       const handler = new KeyboardHandler();
       let quitCalled = false;
-      handler.on('quit', () => { quitCalled = true; });
+      handler.on('quit', () => {
+        quitCalled = true;
+      });
 
       const result = handler.processKey('c', { ctrl: true });
       expect(result.action).toBe('quit');
@@ -131,7 +132,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes start key', () => {
       const handler = new KeyboardHandler();
       let startCalled = false;
-      handler.on('start', () => { startCalled = true; });
+      handler.on('start', () => {
+        startCalled = true;
+      });
 
       const result = handler.processKey('s');
       expect(result.action).toBe('start');
@@ -141,7 +144,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes pause key', () => {
       const handler = new KeyboardHandler();
       let pauseCalled = false;
-      handler.on('pause', () => { pauseCalled = true; });
+      handler.on('pause', () => {
+        pauseCalled = true;
+      });
 
       const result = handler.processKey('p');
       expect(result.action).toBe('pause');
@@ -151,7 +156,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes resume key', () => {
       const handler = new KeyboardHandler();
       let resumeCalled = false;
-      handler.on('resume', () => { resumeCalled = true; });
+      handler.on('resume', () => {
+        resumeCalled = true;
+      });
 
       const result = handler.processKey('r');
       expect(result.action).toBe('resume');
@@ -161,7 +168,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes trace key', () => {
       const handler = new KeyboardHandler();
       let traceCalled = false;
-      handler.on('trace', () => { traceCalled = true; });
+      handler.on('trace', () => {
+        traceCalled = true;
+      });
 
       const result = handler.processKey('t');
       expect(result.action).toBe('trace');
@@ -171,7 +180,9 @@ describe('TUI Keyboard Handler', () => {
     test('processes session switching keys', () => {
       const handler = new KeyboardHandler();
       let switchedSession = null;
-      handler.on('sessionSwitch', ({ session }) => { switchedSession = session; });
+      handler.on('sessionSwitch', ({ session }) => {
+        switchedSession = session;
+      });
 
       const result = handler.processKey('3');
       expect(result.action).toBe('session3');
@@ -181,7 +192,9 @@ describe('TUI Keyboard Handler', () => {
     test('emits action event for all keys', () => {
       const handler = new KeyboardHandler();
       const actions = [];
-      handler.on('action', (action) => { actions.push(action); });
+      handler.on('action', action => {
+        actions.push(action);
+      });
 
       handler.processKey('s');
       handler.processKey('p');
@@ -194,7 +207,9 @@ describe('TUI Keyboard Handler', () => {
     test('returns null for unknown keys', () => {
       const handler = new KeyboardHandler();
       let unknownKey = null;
-      handler.on('unknownKey', ({ key }) => { unknownKey = key; });
+      handler.on('unknownKey', ({ key }) => {
+        unknownKey = key;
+      });
 
       const result = handler.processKey('x');
       expect(result).toBeNull();

@@ -298,11 +298,7 @@ describe('ValidationMiddleware', () => {
         ide: schemas.ide,
       };
 
-      const result = validateOptions(
-        { ide: 'cursor', extra: 'value' },
-        validationSchemas,
-        testDir
-      );
+      const result = validateOptions({ ide: 'cursor', extra: 'value' }, validationSchemas, testDir);
 
       expect(result.ok).toBe(true);
       expect(result.data.extra).toBe('value');

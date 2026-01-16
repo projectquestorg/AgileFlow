@@ -3,10 +3,7 @@
  */
 
 const path = require('path');
-const {
-  getLocalVersion,
-  checkSelfUpdate,
-} = require('../../tools/cli/lib/self-update');
+const { getLocalVersion, checkSelfUpdate } = require('../../tools/cli/lib/self-update');
 
 // Mock dependencies
 jest.mock('../../tools/cli/lib/npm-utils', () => ({

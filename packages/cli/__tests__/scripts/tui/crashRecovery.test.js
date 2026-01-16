@@ -9,10 +9,7 @@ const fs = require('fs');
 const os = require('os');
 
 describe('TUI Crash Recovery', () => {
-  const modulePath = path.join(
-    __dirname,
-    '../../../scripts/tui/lib/crashRecovery.js'
-  );
+  const modulePath = path.join(__dirname, '../../../scripts/tui/lib/crashRecovery.js');
 
   describe('File Structure', () => {
     test('crashRecovery.js exists', () => {
@@ -107,8 +104,8 @@ describe('TUI Crash Recovery', () => {
             current_story: 'US-0001',
             iteration: 5,
             max_iterations: 20,
-            started_at: new Date().toISOString()
-          }
+            started_at: new Date().toISOString(),
+          },
         })
       );
 
@@ -237,12 +234,12 @@ describe('TUI Crash Recovery', () => {
           epic: 'EP-0001',
           current_story: 'US-0003',
           iteration: 5,
-          max_iterations: 20
+          max_iterations: 20,
         },
         recovery_info: {
           can_resume: true,
-          last_checkpoint: new Date().toISOString()
-        }
+          last_checkpoint: new Date().toISOString(),
+        },
       };
 
       fs.writeFileSync(
@@ -298,12 +295,12 @@ describe('TUI Crash Recovery', () => {
           max_iterations: 15,
           coverage_mode: true,
           coverage_threshold: 90,
-          started_at: '2026-01-14T10:00:00.000Z'
+          started_at: '2026-01-14T10:00:00.000Z',
         },
         recovery_info: {
           can_resume: true,
-          last_checkpoint: new Date().toISOString()
-        }
+          last_checkpoint: new Date().toISOString(),
+        },
       };
 
       fs.writeFileSync(

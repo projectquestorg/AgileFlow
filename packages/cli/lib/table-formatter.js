@@ -211,7 +211,9 @@ function formatTable(headers, rows, options = {}) {
       lines.push(indent + c.bold + headerLine + c.reset);
 
       for (const row of stringRows) {
-        const rowLine = row.map((cell, i) => padString(cell, colWidths[i], align[i] || 'left')).join('  ');
+        const rowLine = row
+          .map((cell, i) => padString(cell, colWidths[i], align[i] || 'left'))
+          .join('  ');
         lines.push(indent + rowLine);
       }
     } else {
@@ -228,9 +230,7 @@ function formatTable(headers, rows, options = {}) {
 
     // Top border
     const topBorder =
-      box.topLeft +
-      paddedWidths.map(w => box.horizontal.repeat(w)).join(box.topT) +
-      box.topRight;
+      box.topLeft + paddedWidths.map(w => box.horizontal.repeat(w)).join(box.topT) + box.topRight;
     lines.push(indent + c.dim + topBorder + c.reset);
 
     // Header row
@@ -238,13 +238,20 @@ function formatTable(headers, rows, options = {}) {
       const padded = padString(h, colWidths[i], align[i] || 'left');
       return ' ' + c.bold + padded + c.reset + ' ';
     });
-    lines.push(indent + c.dim + box.vertical + c.reset + headerCells.join(c.dim + box.vertical + c.reset) + c.dim + box.vertical + c.reset);
+    lines.push(
+      indent +
+        c.dim +
+        box.vertical +
+        c.reset +
+        headerCells.join(c.dim + box.vertical + c.reset) +
+        c.dim +
+        box.vertical +
+        c.reset
+    );
 
     // Header separator
     const headerSep =
-      box.leftT +
-      paddedWidths.map(w => box.horizontal.repeat(w)).join(box.cross) +
-      box.rightT;
+      box.leftT + paddedWidths.map(w => box.horizontal.repeat(w)).join(box.cross) + box.rightT;
     lines.push(indent + c.dim + headerSep + c.reset);
 
     // Data rows
@@ -253,7 +260,16 @@ function formatTable(headers, rows, options = {}) {
         const padded = padString(cell, colWidths[i], align[i] || 'left');
         return ' ' + padded + ' ';
       });
-      lines.push(indent + c.dim + box.vertical + c.reset + cells.join(c.dim + box.vertical + c.reset) + c.dim + box.vertical + c.reset);
+      lines.push(
+        indent +
+          c.dim +
+          box.vertical +
+          c.reset +
+          cells.join(c.dim + box.vertical + c.reset) +
+          c.dim +
+          box.vertical +
+          c.reset
+      );
     }
 
     // Bottom border
@@ -314,9 +330,7 @@ function formatKeyValue(data, options = {}) {
   }
 
   // Calculate key width for alignment
-  const maxKeyWidth = alignValues
-    ? Math.max(...pairs.map(([k]) => visibleWidth(k)))
-    : 0;
+  const maxKeyWidth = alignValues ? Math.max(...pairs.map(([k]) => visibleWidth(k))) : 0;
 
   const lines = pairs.map(([key, value]) => {
     const paddedKey = alignValues ? padString(key, maxKeyWidth, 'left') : key;
@@ -453,7 +467,8 @@ function formatHeader(title, options = {}) {
   if (!isTTY()) {
     let header = `\n${title}`;
     if (subtitle) header += ` - ${subtitle}`;
-    header += '\n' + '='.repeat(Math.min(visibleWidth(title) + (subtitle ? subtitle.length + 3 : 0), 40));
+    header +=
+      '\n' + '='.repeat(Math.min(visibleWidth(title) + (subtitle ? subtitle.length + 3 : 0), 40));
     return header;
   }
 

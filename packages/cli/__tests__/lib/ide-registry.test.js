@@ -105,9 +105,7 @@ describe('IdeRegistry', () => {
     });
 
     it('returns correct base dir for cursor', () => {
-      expect(IdeRegistry.getBaseDir('cursor', projectDir)).toBe(
-        path.join(projectDir, '.cursor')
-      );
+      expect(IdeRegistry.getBaseDir('cursor', projectDir)).toBe(path.join(projectDir, '.cursor'));
     });
 
     it('returns empty string for invalid IDE', () => {

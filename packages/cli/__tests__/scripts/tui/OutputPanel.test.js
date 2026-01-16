@@ -8,10 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 describe('TUI Output Panel', () => {
-  const panelPath = path.join(
-    __dirname,
-    '../../../scripts/tui/panels/OutputPanel.js'
-  );
+  const panelPath = path.join(__dirname, '../../../scripts/tui/panels/OutputPanel.js');
 
   describe('File Structure', () => {
     test('OutputPanel.js exists', () => {

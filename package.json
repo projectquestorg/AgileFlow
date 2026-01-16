@@ -42,6 +42,10 @@
     "tailwindcss": "3.4.1"
   },
   "dependencies": {
-    "agileflow": "^2.61.0"
+    "agileflow": "^2.61.0",
+    "ink": "^4.4.1",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.2.3"
   }
 }

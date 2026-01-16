@@ -369,7 +369,6 @@ function compareVersions(a, b) {
   return 0;
 }
 
-
 /**
  * Count files in directory recursively
  * @param {string} dirPath - Directory path
@@ -402,16 +401,26 @@ function printSummary(issues, warnings) {
   if (issues === 0 && warnings === 0) {
     console.log(chalk.green.bold('No issues found.\n'));
   } else if (issues === 0) {
-    console.log(formatKeyValue({
-      Warnings: chalk.yellow(warnings),
-      Issues: chalk.green('0'),
-    }, { separator: ':', alignValues: false }));
+    console.log(
+      formatKeyValue(
+        {
+          Warnings: chalk.yellow(warnings),
+          Issues: chalk.green('0'),
+        },
+        { separator: ':', alignValues: false }
+      )
+    );
     console.log();
   } else {
-    console.log(formatKeyValue({
-      Issues: chalk.red(issues),
-      Warnings: chalk.yellow(warnings),
-    }, { separator: ':', alignValues: false }));
+    console.log(
+      formatKeyValue(
+        {
+          Issues: chalk.red(issues),
+          Warnings: chalk.yellow(warnings),
+        },
+        { separator: ':', alignValues: false }
+      )
+    );
     console.log();
   }
 }

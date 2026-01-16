@@ -36,17 +36,24 @@ module.exports = {
       }
 
       // Show installation info using formatKeyValue
-      console.log(formatKeyValue({
-        Location: status.path,
-        Version: status.version,
-      }));
+      console.log(
+        formatKeyValue({
+          Location: status.path,
+          Version: status.version,
+        })
+      );
 
       // Count installed items
       const counts = await installer.countInstalledItems(status.path);
 
-      console.log(formatKeyValue({
-        '\nCore': chalk.green('✓ Installed'),
-      }, { alignValues: false }));
+      console.log(
+        formatKeyValue(
+          {
+            '\nCore': chalk.green('✓ Installed'),
+          },
+          { alignValues: false }
+        )
+      );
       info(`${counts.agents} agents`);
       info(`${counts.commands} commands`);
       info(`${counts.skills} skills`);
@@ -92,4 +99,3 @@ module.exports = {
     }
   },
 };
-

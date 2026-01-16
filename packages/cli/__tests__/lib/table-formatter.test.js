@@ -84,7 +84,10 @@ describe('table-formatter', () => {
 
       const table = formatTable(
         ['Name', 'Value'],
-        [['foo', '1'], ['bar', '2']]
+        [
+          ['foo', '1'],
+          ['bar', '2'],
+        ]
       );
 
       expect(table).toContain('Name');
@@ -96,7 +99,10 @@ describe('table-formatter', () => {
     it('formats table with compact mode', () => {
       const table = formatTable(
         ['Name', 'Value'],
-        [['foo', '1'], ['bar', '2']],
+        [
+          ['foo', '1'],
+          ['bar', '2'],
+        ],
         { compact: true }
       );
 
@@ -112,7 +118,10 @@ describe('table-formatter', () => {
 
       const table = formatTable(
         ['Name', 'Value'],
-        [['foo', '1'], ['bar', '2']]
+        [
+          ['foo', '1'],
+          ['bar', '2'],
+        ]
       );
 
       expect(table).toBe('Name\tValue\nfoo\t1\nbar\t2');
@@ -125,11 +134,7 @@ describe('table-formatter', () => {
     });
 
     it('handles null/undefined values', () => {
-      const table = formatTable(
-        ['Name', 'Value'],
-        [[null, undefined]],
-        { compact: true }
-      );
+      const table = formatTable(['Name', 'Value'], [[null, undefined]], { compact: true });
 
       expect(table).toBeDefined();
     });
@@ -137,46 +142,29 @@ describe('table-formatter', () => {
     it('supports different box styles', () => {
       process.stdout.isTTY = true;
 
-      const singleTable = formatTable(
-        ['A'],
-        [['1']],
-        { style: 'single' }
-      );
+      const singleTable = formatTable(['A'], [['1']], { style: 'single' });
       expect(singleTable).toContain('┌');
 
-      const doubleTable = formatTable(
-        ['A'],
-        [['1']],
-        { style: 'double' }
-      );
+      const doubleTable = formatTable(['A'], [['1']], { style: 'double' });
       expect(doubleTable).toContain('╔');
 
-      const roundedTable = formatTable(
-        ['A'],
-        [['1']],
-        { style: 'rounded' }
-      );
+      const roundedTable = formatTable(['A'], [['1']], { style: 'rounded' });
       expect(roundedTable).toContain('╭');
     });
 
     it('supports column alignment', () => {
       process.stdout.isTTY = true;
 
-      const table = formatTable(
-        ['Left', 'Right', 'Center'],
-        [['a', 'b', 'c']],
-        { align: ['left', 'right', 'center'], compact: true }
-      );
+      const table = formatTable(['Left', 'Right', 'Center'], [['a', 'b', 'c']], {
+        align: ['left', 'right', 'center'],
+        compact: true,
+      });
 
       expect(table).toBeDefined();
     });
 
     it('supports indent option', () => {
-      const table = formatTable(
-        ['A', 'B'],
-        [['1', '2']],
-        { compact: true, indent: '  ' }
-      );
+      const table = formatTable(['A', 'B'], [['1', '2']], { compact: true, indent: '  ' });
 
       const lines = table.split('\n');
       expect(lines[0].startsWith('  ')).toBe(true);
@@ -210,7 +198,10 @@ describe('table-formatter', () => {
     });
 
     it('handles Map input', () => {
-      const map = new Map([['key1', 'value1'], ['key2', 'value2']]);
+      const map = new Map([
+        ['key1', 'value1'],
+        ['key2', 'value2'],
+      ]);
       const output = formatKeyValue(map);
 
       expect(output).toContain('key1');
@@ -218,7 +209,10 @@ describe('table-formatter', () => {
     });
 
     it('handles array of pairs input', () => {
-      const pairs = [['key1', 'value1'], ['key2', 'value2']];
+      const pairs = [
+        ['key1', 'value1'],
+        ['key2', 'value2'],
+      ];
       const output = formatKeyValue(pairs);
 
       expect(output).toContain('key1');
@@ -228,10 +222,7 @@ describe('table-formatter', () => {
     it('supports custom separator', () => {
       process.stdout.isTTY = false;
 
-      const output = formatKeyValue(
-        { Name: 'Test' },
-        { separator: ' =' }
-      );
+      const output = formatKeyValue({ Name: 'Test' }, { separator: ' =' });
 
       expect(output).toBe('Name = Test');
     });
@@ -239,10 +230,13 @@ describe('table-formatter', () => {
     it('aligns values when enabled', () => {
       process.stdout.isTTY = true;
 
-      const output = formatKeyValue({
-        A: '1',
-        LongKey: '2',
-      }, { alignValues: true });
+      const output = formatKeyValue(
+        {
+          A: '1',
+          LongKey: '2',
+        },
+        { alignValues: true }
+      );
 
       const lines = output.split('\n');
       // All colons should be at the same position
@@ -252,10 +246,7 @@ describe('table-formatter', () => {
     it('supports indent option', () => {
       process.stdout.isTTY = false;
 
-      const output = formatKeyValue(
-        { Key: 'Value' },
-        { indent: '  ' }
-      );
+      const output = formatKeyValue({ Key: 'Value' }, { indent: '  ' });
 
       expect(output.startsWith('  ')).toBe(true);
     });
@@ -433,7 +424,14 @@ describe('table-formatter', () => {
     });
 
     it('has required characters for each style', () => {
-      const required = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight', 'horizontal', 'vertical'];
+      const required = [
+        'topLeft',
+        'topRight',
+        'bottomLeft',
+        'bottomRight',
+        'horizontal',
+        'vertical',
+      ];
 
       for (const style of Object.keys(BOX_CHARS)) {
         for (const char of required) {
@@ -478,11 +476,7 @@ describe('table-formatter', () => {
     });
 
     it('handles special characters in values', () => {
-      const table = formatTable(
-        ['Name'],
-        [['Value with | pipe and \t tab']],
-        { compact: true }
-      );
+      const table = formatTable(['Name'], [['Value with | pipe and \t tab']], { compact: true });
       expect(table).toBeDefined();
     });
   });

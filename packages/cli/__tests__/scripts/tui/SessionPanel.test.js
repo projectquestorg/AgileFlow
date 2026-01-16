@@ -8,10 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 describe('TUI Session Panel', () => {
-  const panelPath = path.join(
-    __dirname,
-    '../../../scripts/tui/panels/SessionPanel.js'
-  );
+  const panelPath = path.join(__dirname, '../../../scripts/tui/panels/SessionPanel.js');
 
   describe('File Structure', () => {
     test('SessionPanel.js exists', () => {
@@ -101,7 +98,7 @@ describe('TUI Session Panel', () => {
         thread_type: 'base',
         active: true,
         current: true,
-        is_main: true
+        is_main: true,
       };
 
       const result = formatSession(session);
@@ -128,7 +125,7 @@ describe('TUI Session Panel', () => {
         story: null,
         thread_type: 'parallel',
         active: true,
-        current: false
+        current: false,
       };
 
       const result = formatSession(session);

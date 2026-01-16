@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Event Stream - Real-time event monitoring from agent bus
  *
@@ -7,17 +5,18 @@
  * to subscribers. Handles file rotation and truncation gracefully.
  */
 
-const fs = require('fs');
-const path = require('path');
-const EventEmitter = require('events');
+import fs from 'fs';
+import path from 'path';
+import { EventEmitter } from 'events';
+import { fileURLToPath } from 'url';
 
-// Get project root
-let getProjectRoot;
-try {
-  getProjectRoot = require('../../../lib/paths').getProjectRoot;
-} catch (e) {
-  // Fallback
-  getProjectRoot = () => process.cwd();
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Get project root - fallback to process.cwd()
+function getProjectRoot() {
+  return process.cwd();
 }
 
 /**
@@ -302,8 +301,4 @@ function formatEvent(event) {
   };
 }
 
-module.exports = {
-  EventStream,
-  getDefaultStream,
-  formatEvent,
-};
+export { EventStream, getDefaultStream, formatEvent };

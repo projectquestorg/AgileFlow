@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Agent Trace Panel - Quality gate and iteration tracking
  *
@@ -10,19 +8,19 @@
  *   - Progress bars for coverage
  */
 
-const React = require('react');
-const { Box, Text } = require('ink');
-const { getLoopStatus } = require('../lib/loopControl');
+import React from 'react';
+import { Box, Text } from 'ink';
+import { getLoopStatus } from '../lib/loopControl.mjs';
 
 /**
  * Quality gate definitions
  */
 const QUALITY_GATES = {
-  tests: { name: 'Tests', color: 'green', icon: '✓' },
+  tests: { name: 'Tests', color: 'green', icon: '+' },
   coverage: { name: 'Coverage', color: 'magenta', icon: '%' },
-  lint: { name: 'Lint', color: 'yellow', icon: '◆' },
-  types: { name: 'Types', color: 'blue', icon: '⬡' },
-  visual: { name: 'Visual', color: 'cyan', icon: '◉' },
+  lint: { name: 'Lint', color: 'yellow', icon: '*' },
+  types: { name: 'Types', color: 'blue', icon: '#' },
+  visual: { name: 'Visual', color: 'cyan', icon: '@' },
 };
 
 /**
@@ -57,28 +55,28 @@ function getStatusSymbol(status) {
     case 'passed':
     case 'complete':
     case true:
-      return '✓';
+      return '+';
     case 'failed':
     case 'error':
     case false:
-      return '✗';
+      return 'x';
     case 'running':
     case 'in_progress':
-      return '↻';
+      return '~';
     case 'pending':
     case 'waiting':
-      return '○';
+      return 'o';
     case 'paused':
-      return '⏸';
+      return '|';
     default:
-      return '•';
+      return '*';
   }
 }
 
 /**
  * Progress bar component
  */
-function ProgressBar({ value, max = 100, width = 20, fillChar = '█', emptyChar = '░' }) {
+function ProgressBar({ value, max = 100, width = 20, fillChar = '#', emptyChar = '-' }) {
   const percent = Math.min(100, Math.max(0, (value / max) * 100));
   const filled = Math.round((percent / 100) * width);
   const empty = width - filled;
@@ -104,7 +102,7 @@ function ProgressBar({ value, max = 100, width = 20, fillChar = '█', emptyChar
  * Quality gate row component
  */
 function GateRow({ gate, status, value }) {
-  const gateConfig = QUALITY_GATES[gate] || { name: gate, color: 'white', icon: '•' };
+  const gateConfig = QUALITY_GATES[gate] || { name: gate, color: 'white', icon: '*' };
   const statusColor = getStatusColor(status);
   const statusSymbol = getStatusSymbol(status);
 
@@ -176,9 +174,9 @@ function LoopTrace({ loopStatus }) {
       React.createElement(
         Text,
         { bold: true, color: paused ? 'yellow' : 'green' },
-        paused ? '⏸ PAUSED' : '▶ RUNNING'
+        paused ? '|| PAUSED' : '> RUNNING'
       ),
-      React.createElement(Text, { dimColor: true }, ` • ${epic}`)
+      React.createElement(Text, { dimColor: true }, ` * ${epic}`)
     ),
     // Current story
     React.createElement(
@@ -274,7 +272,7 @@ function CompactTrace({ loopStatus }) {
   }
 
   const { iteration, maxIterations, paused, currentStory } = loopStatus;
-  const statusIcon = paused ? '⏸' : '▶';
+  const statusIcon = paused ? '||' : '>';
   const statusColor = paused ? 'yellow' : 'green';
 
   return React.createElement(
@@ -286,7 +284,7 @@ function CompactTrace({ loopStatus }) {
   );
 }
 
-module.exports = {
+export {
   TracePanel,
   LoopTrace,
   GateRow,

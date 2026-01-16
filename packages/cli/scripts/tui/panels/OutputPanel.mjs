@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Agent Output Panel - Live updates from agent event stream
  *
@@ -7,9 +5,9 @@
  * Auto-scrolls to bottom, limits display to configurable message count.
  */
 
-const React = require('react');
-const { Box, Text, Newline } = require('ink');
-const { EventStream, formatEvent } = require('../lib/eventStream');
+import React from 'react';
+import { Box, Text } from 'ink';
+import { EventStream, formatEvent } from '../lib/eventStream.mjs';
 
 /**
  * Get color for agent type
@@ -43,17 +41,17 @@ function getAgentColor(agent) {
 function getStatusIndicator(eventType) {
   switch (eventType) {
     case 'init':
-      return { symbol: '▶', color: 'blue' };
+      return { symbol: '>', color: 'blue' };
     case 'iteration':
-      return { symbol: '↻', color: 'cyan' };
+      return { symbol: '~', color: 'cyan' };
     case 'passed':
-      return { symbol: '✓', color: 'green' };
+      return { symbol: '+', color: 'green' };
     case 'failed':
-      return { symbol: '✗', color: 'red' };
+      return { symbol: 'x', color: 'red' };
     case 'abort':
-      return { symbol: '⊘', color: 'yellow' };
+      return { symbol: '!', color: 'yellow' };
     default:
-      return { symbol: '•', color: 'gray' };
+      return { symbol: '*', color: 'gray' };
   }
 }
 
@@ -160,9 +158,9 @@ function OutputPanel({
       { marginBottom: 1 },
       React.createElement(Text, { bold: true, color: 'cyan' }, title),
       React.createElement(Text, { dimColor: true }, ` (${messages.length}/${maxMessages})`),
-      isConnected && React.createElement(Text, { color: 'green' }, ' ●'),
-      !isConnected && !error && React.createElement(Text, { color: 'yellow' }, ' ○'),
-      error && React.createElement(Text, { color: 'red' }, ' ✗')
+      isConnected && React.createElement(Text, { color: 'green' }, ' *'),
+      !isConnected && !error && React.createElement(Text, { color: 'yellow' }, ' o'),
+      error && React.createElement(Text, { color: 'red' }, ' x')
     ),
     // Messages or placeholder
     messages.length === 0
@@ -233,10 +231,4 @@ function CompactOutput({ maxLines = 5, logPath = null }) {
   );
 }
 
-module.exports = {
-  OutputPanel,
-  OutputRow,
-  CompactOutput,
-  getAgentColor,
-  getStatusIndicator,
-};
+export { OutputPanel, OutputRow, CompactOutput, getAgentColor, getStatusIndicator };

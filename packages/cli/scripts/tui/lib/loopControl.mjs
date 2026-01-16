@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Loop Control - Pause/Resume mechanism for Ralph Loop
  *
@@ -13,37 +11,33 @@
  *   - Status: Check if file exists
  */
 
-const fs = require('fs');
-const path = require('path');
-const EventEmitter = require('events');
+import fs from 'fs';
+import path from 'path';
+import { EventEmitter } from 'events';
 
-// Get project root
-let getProjectRoot;
-try {
-  getProjectRoot = require('../../../lib/paths').getProjectRoot;
-} catch (e) {
-  getProjectRoot = () => process.cwd();
+// Get project root - fallback to process.cwd()
+function getProjectRoot() {
+  return process.cwd();
 }
 
-// Get safe JSON utilities
-let safeReadJSON, safeWriteJSON;
-try {
-  const errors = require('../../../lib/errors');
-  safeReadJSON = errors.safeReadJSON;
-  safeWriteJSON = errors.safeWriteJSON;
-} catch (e) {
-  safeReadJSON = (path, opts = {}) => {
-    try {
-      const data = JSON.parse(fs.readFileSync(path, 'utf8'));
-      return { ok: true, data };
-    } catch (e) {
-      return { ok: false, error: e.message, data: opts.defaultValue };
-    }
-  };
-  safeWriteJSON = (path, data) => {
-    fs.writeFileSync(path, JSON.stringify(data, null, 2));
-    return { ok: true };
-  };
+// Safe JSON read
+function safeReadJSON(filePath, opts = {}) {
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: e.message, data: opts.defaultValue };
+  }
+}
+
+// Safe JSON write
+function safeWriteJSON(filePath, data) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  return { ok: true };
 }
 
 /**
@@ -359,7 +353,7 @@ function getDefaultController() {
   return defaultController;
 }
 
-module.exports = {
+export {
   isPaused,
   pause,
   resume,

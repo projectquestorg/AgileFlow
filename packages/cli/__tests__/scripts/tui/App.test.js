@@ -117,18 +117,12 @@ describe('TUI App Component', () => {
 
 describe('TUI Command', () => {
   test('tui.md command file exists', () => {
-    const cmdPath = path.join(
-      __dirname,
-      '../../../src/core/commands/tui.md'
-    );
+    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
     expect(fs.existsSync(cmdPath)).toBe(true);
   });
 
   test('tui.md has correct frontmatter', () => {
-    const cmdPath = path.join(
-      __dirname,
-      '../../../src/core/commands/tui.md'
-    );
+    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
     const content = fs.readFileSync(cmdPath, 'utf8');
 
     // Check frontmatter
@@ -137,10 +131,7 @@ describe('TUI Command', () => {
   });
 
   test('tui.md references the TUI script', () => {
-    const cmdPath = path.join(
-      __dirname,
-      '../../../src/core/commands/tui.md'
-    );
+    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
     const content = fs.readFileSync(cmdPath, 'utf8');
 
     expect(content).toContain('scripts/tui/index.js');

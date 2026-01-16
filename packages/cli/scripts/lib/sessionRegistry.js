@@ -637,14 +637,10 @@ class SessionRegistry extends EventEmitter {
 
     if (checkMain.status === 0) return 'main';
 
-    const checkMaster = spawnSync(
-      'git',
-      ['show-ref', '--verify', '--quiet', 'refs/heads/master'],
-      {
-        cwd: this.rootDir,
-        encoding: 'utf8',
-      }
-    );
+    const checkMaster = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/master'], {
+      cwd: this.rootDir,
+      encoding: 'utf8',
+    });
 
     if (checkMaster.status === 0) return 'master';
 

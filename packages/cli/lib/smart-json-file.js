@@ -69,28 +69,40 @@ function checkFilePermissions(mode) {
   if (worldWrite) {
     return {
       ok: false,
-      warning: 'File is world-writable (mode: ' + permissions.toString(8) + '). Security risk - others can modify.',
+      warning:
+        'File is world-writable (mode: ' +
+        permissions.toString(8) +
+        '). Security risk - others can modify.',
     };
   }
 
   if (worldRead) {
     return {
       ok: false,
-      warning: 'File is world-readable (mode: ' + permissions.toString(8) + '). May expose sensitive config.',
+      warning:
+        'File is world-readable (mode: ' +
+        permissions.toString(8) +
+        '). May expose sensitive config.',
     };
   }
 
   if (groupWrite) {
     return {
       ok: false,
-      warning: 'File is group-writable (mode: ' + permissions.toString(8) + '). Consider restricting to 0600.',
+      warning:
+        'File is group-writable (mode: ' +
+        permissions.toString(8) +
+        '). Consider restricting to 0600.',
     };
   }
 
   if (groupRead) {
     return {
       ok: false,
-      warning: 'File is group-readable (mode: ' + permissions.toString(8) + '). Consider restricting to 0600.',
+      warning:
+        'File is group-readable (mode: ' +
+        permissions.toString(8) +
+        '). Consider restricting to 0600.',
     };
   }
 
@@ -113,10 +125,14 @@ function setSecurePermissions(filePath) {
     debugLog('setSecurePermissions', { filePath, mode: SECURE_FILE_MODE.toString(8) });
     return { ok: true };
   } catch (err) {
-    const error = createTypedError(`Failed to set secure permissions on ${filePath}: ${err.message}`, 'EPERM', {
-      cause: err,
-      context: { filePath, mode: SECURE_FILE_MODE },
-    });
+    const error = createTypedError(
+      `Failed to set secure permissions on ${filePath}: ${err.message}`,
+      'EPERM',
+      {
+        cause: err,
+        context: { filePath, mode: SECURE_FILE_MODE },
+      }
+    );
     return { ok: false, error };
   }
 }
@@ -536,7 +552,10 @@ class SmartJsonFile {
       if (this.secureMode) {
         const permResult = setSecurePermissions(this.filePath);
         if (!permResult.ok) {
-          debugLog('writeSync', { status: 'warning', security: 'failed to set secure permissions' });
+          debugLog('writeSync', {
+            status: 'warning',
+            security: 'failed to set secure permissions',
+          });
         }
       }
 
@@ -616,7 +635,11 @@ function cleanupTempFiles(directory, options = {}) {
         }
 
         cleaned.push(filePath);
-        debugLog('cleanupTempFiles', { action: dryRun ? 'would delete' : 'deleted', filePath, ageHours: Math.round(age / 3600000) });
+        debugLog('cleanupTempFiles', {
+          action: dryRun ? 'would delete' : 'deleted',
+          filePath,
+          ageHours: Math.round(age / 3600000),
+        });
       } catch (err) {
         errors.push(`${filePath}: ${err.message}`);
         debugLog('cleanupTempFiles', { action: 'error', filePath, error: err.message });
