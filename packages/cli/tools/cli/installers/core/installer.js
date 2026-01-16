@@ -17,6 +17,7 @@ const {
   getErrorCodeFromError,
   attachErrorCode,
 } = require('../../../../lib/error-codes');
+const { setSecurePermissions, SECURE_FILE_MODE } = require('../../../../lib/smart-json-file');
 
 const TEXT_EXTENSIONS = new Set(['.md', '.yaml', '.yml', '.txt', '.json']);
 
@@ -504,6 +505,8 @@ class Installer {
       };
 
       await fs.writeFile(configPath, safeDump(config), 'utf8');
+      // Security: Set secure permissions (0o600) on config file
+      setSecurePermissions(configPath);
       return;
     }
 
@@ -531,6 +534,8 @@ class Installer {
       };
 
       await fs.writeFile(configPath, safeDump(next), 'utf8');
+      // Security: Set secure permissions (0o600) on config file
+      setSecurePermissions(configPath);
     } catch (err) {
       // If it's a typed parse error and not forcing, re-throw
       if (err.errorCode === 'EPARSE' && !options.force) {
@@ -547,6 +552,8 @@ class Installer {
         };
 
         await fs.writeFile(configPath, safeDump(config), 'utf8');
+        // Security: Set secure permissions (0o600) on config file
+        setSecurePermissions(configPath);
       }
     }
   }
@@ -578,6 +585,8 @@ class Installer {
       };
 
       await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
+      // Security: Set secure permissions (0o600) on manifest file
+      setSecurePermissions(manifestPath);
       return;
     }
 
@@ -608,6 +617,8 @@ class Installer {
       };
 
       await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
+      // Security: Set secure permissions (0o600) on manifest file
+      setSecurePermissions(manifestPath);
     } catch (err) {
       // If it's a typed parse error and not forcing, re-throw
       if (err.errorCode === 'EPARSE' && !options.force) {
@@ -627,6 +638,8 @@ class Installer {
         };
 
         await fs.writeFile(manifestPath, safeDump(manifest), 'utf8');
+        // Security: Set secure permissions (0o600) on manifest file
+        setSecurePermissions(manifestPath);
       }
     }
   }

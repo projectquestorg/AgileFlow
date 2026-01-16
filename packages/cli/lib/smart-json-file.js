@@ -42,6 +42,85 @@ function debugLog(operation, details) {
   }
 }
 
+// Security: Secure file permission mode for sensitive config files
+// 0o600 = owner read/write only (no group or world access)
+const SECURE_FILE_MODE = 0o600;
+
+/**
+ * Check if file permissions are too permissive (security risk)
+ * @param {number} mode - File mode (from fs.statSync)
+ * @returns {{ok: boolean, warning?: string}} Check result
+ */
+function checkFilePermissions(mode) {
+  // Skip permission checks on Windows (different permission model)
+  if (process.platform === 'win32') {
+    return { ok: true };
+  }
+
+  // Extract permission bits (last 9 bits)
+  const permissions = mode & 0o777;
+
+  // Check for group/world readable/writable (security risk)
+  const groupRead = permissions & 0o040;
+  const groupWrite = permissions & 0o020;
+  const worldRead = permissions & 0o004;
+  const worldWrite = permissions & 0o002;
+
+  if (worldWrite) {
+    return {
+      ok: false,
+      warning: 'File is world-writable (mode: ' + permissions.toString(8) + '). Security risk - others can modify.',
+    };
+  }
+
+  if (worldRead) {
+    return {
+      ok: false,
+      warning: 'File is world-readable (mode: ' + permissions.toString(8) + '). May expose sensitive config.',
+    };
+  }
+
+  if (groupWrite) {
+    return {
+      ok: false,
+      warning: 'File is group-writable (mode: ' + permissions.toString(8) + '). Consider restricting to 0600.',
+    };
+  }
+
+  if (groupRead) {
+    return {
+      ok: false,
+      warning: 'File is group-readable (mode: ' + permissions.toString(8) + '). Consider restricting to 0600.',
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Set secure permissions on a file (0o600 - owner only)
+ * @param {string} filePath - Path to the file
+ * @returns {{ok: boolean, error?: Error}}
+ */
+function setSecurePermissions(filePath) {
+  // Skip on Windows
+  if (process.platform === 'win32') {
+    return { ok: true };
+  }
+
+  try {
+    fs.chmodSync(filePath, SECURE_FILE_MODE);
+    debugLog('setSecurePermissions', { filePath, mode: SECURE_FILE_MODE.toString(8) });
+    return { ok: true };
+  } catch (err) {
+    const error = createTypedError(`Failed to set secure permissions on ${filePath}: ${err.message}`, 'EPERM', {
+      cause: err,
+      context: { filePath, mode: SECURE_FILE_MODE },
+    });
+    return { ok: false, error };
+  }
+}
+
 /**
  * Generate a unique temporary file path
  * @param {string} filePath - Original file path
@@ -78,6 +157,8 @@ class SmartJsonFile {
    * @param {number} [options.spaces=2] - JSON indentation spaces
    * @param {Function} [options.schema] - Optional validation function (throws on invalid)
    * @param {*} [options.defaultValue] - Default value if file doesn't exist
+   * @param {boolean} [options.secureMode=false] - Enforce 0o600 permissions on write
+   * @param {boolean} [options.warnInsecure=false] - Warn if file has insecure permissions on read
    */
   constructor(filePath, options = {}) {
     if (!filePath || typeof filePath !== 'string') {
@@ -99,10 +180,12 @@ class SmartJsonFile {
     this.spaces = options.spaces ?? 2;
     this.schema = options.schema ?? null;
     this.defaultValue = options.defaultValue;
+    this.secureMode = options.secureMode ?? false;
+    this.warnInsecure = options.warnInsecure ?? false;
 
     debugLog('constructor', {
       filePath,
-      options: { retries: this.retries, backoff: this.backoff },
+      options: { retries: this.retries, backoff: this.backoff, secureMode: this.secureMode },
     });
   }
 
@@ -132,6 +215,21 @@ class SmartJsonFile {
 
         // Read file
         const content = fs.readFileSync(this.filePath, 'utf8');
+
+        // Security: Check file permissions if warnInsecure is enabled
+        if (this.warnInsecure) {
+          try {
+            const stats = fs.statSync(this.filePath);
+            const permCheck = checkFilePermissions(stats.mode);
+            if (!permCheck.ok) {
+              debugLog('read', { security: 'insecure permissions', warning: permCheck.warning });
+              // Log warning to stderr (non-blocking)
+              console.error(`[Security Warning] ${this.filePath}: ${permCheck.warning}`);
+            }
+          } catch (statErr) {
+            debugLog('read', { security: 'could not check permissions', error: statErr.message });
+          }
+        }
 
         // Parse JSON
         let data;
@@ -242,6 +340,16 @@ class SmartJsonFile {
 
         // Atomic rename
         fs.renameSync(tempPath, this.filePath);
+
+        // Security: Set secure permissions if secureMode is enabled
+        if (this.secureMode) {
+          const permResult = setSecurePermissions(this.filePath);
+          if (!permResult.ok) {
+            debugLog('write', { status: 'warning', security: 'failed to set secure permissions' });
+            // Don't fail the write, just warn
+          }
+        }
+
         debugLog('write', { status: 'success' });
 
         return { ok: true };
@@ -424,6 +532,14 @@ class SmartJsonFile {
       fs.writeFileSync(tempPath, content, 'utf8');
       fs.renameSync(tempPath, this.filePath);
 
+      // Security: Set secure permissions if secureMode is enabled
+      if (this.secureMode) {
+        const permResult = setSecurePermissions(this.filePath);
+        if (!permResult.ok) {
+          debugLog('writeSync', { status: 'warning', security: 'failed to set secure permissions' });
+        }
+      }
+
       return { ok: true };
     } catch (err) {
       // Clean up temp file
@@ -446,4 +562,92 @@ class SmartJsonFile {
   }
 }
 
+// Default max age for temp files (24 hours in milliseconds)
+const DEFAULT_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Clean up orphaned temp files in a directory
+ *
+ * Removes files matching the temp file pattern that are older than maxAge.
+ * Pattern: .{basename}.{timestamp}.{random}.{ext}.tmp
+ *
+ * @param {string} directory - Directory to clean
+ * @param {Object} [options={}] - Cleanup options
+ * @param {number} [options.maxAgeMs=86400000] - Max age in ms (default: 24 hours)
+ * @param {boolean} [options.dryRun=false] - Don't delete, just report
+ * @returns {{ok: boolean, cleaned: string[], errors: string[]}}
+ */
+function cleanupTempFiles(directory, options = {}) {
+  const { maxAgeMs = DEFAULT_TEMP_MAX_AGE_MS, dryRun = false } = options;
+
+  const cleaned = [];
+  const errors = [];
+
+  try {
+    if (!fs.existsSync(directory)) {
+      return { ok: true, cleaned, errors };
+    }
+
+    const now = Date.now();
+    const entries = fs.readdirSync(directory);
+
+    // Pattern: .{basename}.{timestamp}.{random}.{ext}.tmp
+    const tempFilePattern = /^\.[^.]+\.\d+\.[a-z0-9]+\.[^.]+\.tmp$/;
+
+    for (const entry of entries) {
+      // Check if it matches temp file pattern
+      if (!tempFilePattern.test(entry)) continue;
+
+      const filePath = path.join(directory, entry);
+
+      try {
+        const stat = fs.statSync(filePath);
+
+        // Skip if not a file
+        if (!stat.isFile()) continue;
+
+        // Check age
+        const age = now - stat.mtimeMs;
+        if (age < maxAgeMs) continue;
+
+        // Delete the temp file
+        if (!dryRun) {
+          fs.unlinkSync(filePath);
+        }
+
+        cleaned.push(filePath);
+        debugLog('cleanupTempFiles', { action: dryRun ? 'would delete' : 'deleted', filePath, ageHours: Math.round(age / 3600000) });
+      } catch (err) {
+        errors.push(`${filePath}: ${err.message}`);
+        debugLog('cleanupTempFiles', { action: 'error', filePath, error: err.message });
+      }
+    }
+
+    return { ok: errors.length === 0, cleaned, errors };
+  } catch (err) {
+    errors.push(`Directory read error: ${err.message}`);
+    return { ok: false, cleaned, errors };
+  }
+}
+
+/**
+ * Clean up temp files in the directory of a specific JSON file
+ *
+ * @param {string} filePath - Path to the JSON file
+ * @param {Object} [options={}] - Cleanup options
+ * @returns {{ok: boolean, cleaned: string[], errors: string[]}}
+ */
+function cleanupTempFilesFor(filePath, options = {}) {
+  const directory = path.dirname(filePath);
+  return cleanupTempFiles(directory, options);
+}
+
 module.exports = SmartJsonFile;
+
+// Export helper functions for external use
+module.exports.SECURE_FILE_MODE = SECURE_FILE_MODE;
+module.exports.checkFilePermissions = checkFilePermissions;
+module.exports.setSecurePermissions = setSecurePermissions;
+module.exports.cleanupTempFiles = cleanupTempFiles;
+module.exports.cleanupTempFilesFor = cleanupTempFilesFor;
+module.exports.DEFAULT_TEMP_MAX_AGE_MS = DEFAULT_TEMP_MAX_AGE_MS;

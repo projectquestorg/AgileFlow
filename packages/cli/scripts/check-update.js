@@ -112,6 +112,9 @@ async function fetchLatestVersion() {
       headers: {
         'User-Agent': 'agileflow-cli',
       },
+      // Security: Explicitly enable TLS certificate validation
+      // Prevents MITM attacks on npm registry requests
+      rejectUnauthorized: true,
     };
 
     debugLog('Fetching from npm registry');
@@ -141,12 +144,22 @@ async function fetchLatestVersion() {
     });
 
     req.on('error', err => {
-      debugLog('Network error', err.message);
+      // Enhanced error logging with retry guidance
+      const errorInfo = {
+        error: err.message,
+        code: err.code,
+        suggestion: 'Check network connection. If error persists, try: npm cache clean --force',
+      };
+      if (err.code === 'CERT_HAS_EXPIRED' || err.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+        errorInfo.suggestion = 'TLS certificate error - check system time or update CA certificates';
+      }
+      debugLog('Network error', errorInfo);
       resolve(null);
     });
 
-    req.setTimeout(5000, () => {
-      debugLog('Request timeout');
+    // 10 second timeout for registry requests
+    req.setTimeout(10000, () => {
+      debugLog('Request timeout (10s)', { suggestion: 'npm registry may be slow. Retry later.' });
       req.destroy();
       resolve(null);
     });

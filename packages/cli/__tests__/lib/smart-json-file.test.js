@@ -286,4 +286,309 @@ describe('SmartJsonFile', () => {
       expect(result.error.category).toBe('configuration');
     });
   });
+
+  describe('secure permissions', () => {
+    // Skip permission tests on Windows
+    const isWindows = process.platform === 'win32';
+
+    describe('secureMode option', () => {
+      (isWindows ? it.skip : it)('sets 0o600 permissions on write when enabled', async () => {
+        const filePath = path.join(testDir, 'secure.json');
+        const file = new SmartJsonFile(filePath, { secureMode: true });
+
+        const result = await file.write({ secure: true });
+
+        expect(result.ok).toBe(true);
+        const stats = fs.statSync(filePath);
+        const perms = stats.mode & 0o777;
+        expect(perms).toBe(0o600);
+      });
+
+      (isWindows ? it.skip : it)('sets 0o600 permissions on writeSync when enabled', () => {
+        const filePath = path.join(testDir, 'secure-sync.json');
+        const file = new SmartJsonFile(filePath, { secureMode: true });
+
+        const result = file.writeSync({ secure: true });
+
+        expect(result.ok).toBe(true);
+        const stats = fs.statSync(filePath);
+        const perms = stats.mode & 0o777;
+        expect(perms).toBe(0o600);
+      });
+
+      it('does not change permissions when secureMode is false', async () => {
+        const filePath = path.join(testDir, 'insecure.json');
+        const file = new SmartJsonFile(filePath, { secureMode: false });
+
+        const result = await file.write({ secure: false });
+
+        expect(result.ok).toBe(true);
+        // Should use default permissions (not 0o600)
+        const stats = fs.statSync(filePath);
+        const perms = stats.mode & 0o777;
+        expect(perms).not.toBe(0o600);
+      });
+    });
+
+    describe('warnInsecure option', () => {
+      (isWindows ? it.skip : it)('warns on read when file has insecure permissions', async () => {
+        const filePath = path.join(testDir, 'world-readable.json');
+        fs.writeFileSync(filePath, JSON.stringify({ test: true }));
+        fs.chmodSync(filePath, 0o644); // World-readable
+
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+        const file = new SmartJsonFile(filePath, { warnInsecure: true });
+
+        const result = await file.read();
+
+        expect(result.ok).toBe(true);
+        expect(consoleSpy).toHaveBeenCalled();
+        expect(consoleSpy.mock.calls[0][0]).toContain('Security Warning');
+
+        consoleSpy.mockRestore();
+      });
+
+      (isWindows ? it.skip : it)('does not warn when file has secure permissions', async () => {
+        const filePath = path.join(testDir, 'secure-read.json');
+        fs.writeFileSync(filePath, JSON.stringify({ test: true }));
+        fs.chmodSync(filePath, 0o600); // Owner only
+
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+        const file = new SmartJsonFile(filePath, { warnInsecure: true });
+
+        const result = await file.read();
+
+        expect(result.ok).toBe(true);
+        expect(consoleSpy).not.toHaveBeenCalled();
+
+        consoleSpy.mockRestore();
+      });
+
+      it('does not warn when warnInsecure is false', async () => {
+        const filePath = path.join(testDir, 'no-warn.json');
+        fs.writeFileSync(filePath, JSON.stringify({ test: true }));
+
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+        const file = new SmartJsonFile(filePath, { warnInsecure: false });
+
+        const result = await file.read();
+
+        expect(result.ok).toBe(true);
+        expect(consoleSpy).not.toHaveBeenCalled();
+
+        consoleSpy.mockRestore();
+      });
+    });
+
+    describe('checkFilePermissions helper', () => {
+      const { checkFilePermissions } = SmartJsonFile;
+
+      (isWindows ? it.skip : it)('returns ok for 0o600', () => {
+        const result = checkFilePermissions(0o100600); // mode with file type bits
+        expect(result.ok).toBe(true);
+      });
+
+      (isWindows ? it.skip : it)('returns warning for world-writable', () => {
+        const result = checkFilePermissions(0o100666); // World readable/writable
+        expect(result.ok).toBe(false);
+        expect(result.warning).toContain('world-');
+      });
+
+      (isWindows ? it.skip : it)('returns warning for group-readable', () => {
+        const result = checkFilePermissions(0o100640); // Group readable
+        expect(result.ok).toBe(false);
+        expect(result.warning).toContain('group-readable');
+      });
+
+      (isWindows ? it.skip : it)('returns warning for world-readable', () => {
+        const result = checkFilePermissions(0o100644); // World readable
+        expect(result.ok).toBe(false);
+        expect(result.warning).toContain('world-readable');
+      });
+    });
+
+    describe('setSecurePermissions helper', () => {
+      const { setSecurePermissions } = SmartJsonFile;
+
+      (isWindows ? it.skip : it)('sets file to 0o600', () => {
+        const filePath = path.join(testDir, 'chmod-test.json');
+        fs.writeFileSync(filePath, '{}');
+        fs.chmodSync(filePath, 0o644);
+
+        const result = setSecurePermissions(filePath);
+
+        expect(result.ok).toBe(true);
+        const stats = fs.statSync(filePath);
+        expect(stats.mode & 0o777).toBe(0o600);
+      });
+
+      (isWindows ? it.skip : it)('returns error for non-existent file', () => {
+        const result = setSecurePermissions(path.join(testDir, 'nonexistent'));
+        expect(result.ok).toBe(false);
+        expect(result.error).toBeDefined();
+      });
+    });
+  });
+
+  describe('temp file cleanup', () => {
+    const { cleanupTempFiles, cleanupTempFilesFor, DEFAULT_TEMP_MAX_AGE_MS } = SmartJsonFile;
+
+    it('exports DEFAULT_TEMP_MAX_AGE_MS as 24 hours', () => {
+      expect(DEFAULT_TEMP_MAX_AGE_MS).toBe(24 * 60 * 60 * 1000);
+    });
+
+    it('does not delete non-temp files', () => {
+      const normalFile = path.join(testDir, 'normal.json');
+      const anotherFile = path.join(testDir, 'data.json');
+      fs.writeFileSync(normalFile, '{}');
+      fs.writeFileSync(anotherFile, '{}');
+
+      const result = cleanupTempFiles(testDir, { maxAgeMs: 0 });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(0);
+      expect(fs.existsSync(normalFile)).toBe(true);
+      expect(fs.existsSync(anotherFile)).toBe(true);
+    });
+
+    it('deletes temp files matching pattern', () => {
+      // Create temp file with correct pattern
+      const tempFile = path.join(testDir, '.test.1700000000000.abc123.json.tmp');
+      fs.writeFileSync(tempFile, '{}');
+
+      // Set modification time to old
+      const oldTime = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
+      fs.utimesSync(tempFile, new Date(oldTime), new Date(oldTime));
+
+      const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000 });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(1);
+      expect(fs.existsSync(tempFile)).toBe(false);
+    });
+
+    it('does not delete recent temp files', () => {
+      // Create recent temp file
+      const tempFile = path.join(testDir, '.test.1700000000000.abc123.json.tmp');
+      fs.writeFileSync(tempFile, '{}');
+      // Recent file - mtime is now
+
+      const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000 });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(0);
+      expect(fs.existsSync(tempFile)).toBe(true);
+    });
+
+    it('supports dryRun option', () => {
+      const tempFile = path.join(testDir, '.test.1700000000000.abc123.json.tmp');
+      fs.writeFileSync(tempFile, '{}');
+
+      // Set old mtime
+      const oldTime = Date.now() - 25 * 60 * 60 * 1000;
+      fs.utimesSync(tempFile, new Date(oldTime), new Date(oldTime));
+
+      const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000, dryRun: true });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(1);
+      expect(fs.existsSync(tempFile)).toBe(true); // Still exists due to dryRun
+    });
+
+    it('handles non-existent directory', () => {
+      const result = cleanupTempFiles('/nonexistent/path');
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(0);
+    });
+
+    it('cleanupTempFilesFor cleans directory of file', () => {
+      const jsonFile = path.join(testDir, 'data.json');
+      const tempFile = path.join(testDir, '.data.1700000000000.abc123.json.tmp');
+
+      fs.writeFileSync(jsonFile, '{}');
+      fs.writeFileSync(tempFile, '{}');
+
+      // Set old mtime
+      const oldTime = Date.now() - 25 * 60 * 60 * 1000;
+      fs.utimesSync(tempFile, new Date(oldTime), new Date(oldTime));
+
+      const result = cleanupTempFilesFor(jsonFile, { maxAgeMs: 24 * 60 * 60 * 1000 });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(1);
+      expect(fs.existsSync(jsonFile)).toBe(true); // Original preserved
+      expect(fs.existsSync(tempFile)).toBe(false); // Temp deleted
+    });
+
+    it('cleans multiple old temp files', () => {
+      const temps = [
+        '.a.1700000000000.abc123.json.tmp',
+        '.b.1700000000001.def456.json.tmp',
+        '.c.1700000000002.ghi789.json.tmp',
+      ];
+
+      const oldTime = Date.now() - 25 * 60 * 60 * 1000;
+
+      for (const temp of temps) {
+        const tempPath = path.join(testDir, temp);
+        fs.writeFileSync(tempPath, '{}');
+        fs.utimesSync(tempPath, new Date(oldTime), new Date(oldTime));
+      }
+
+      const result = cleanupTempFiles(testDir);
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(3);
+    });
+
+    it('does not match similar but invalid patterns', () => {
+      const invalidPatterns = [
+        'test.json.tmp', // Missing dot prefix
+        '.test.json.tmp', // Missing timestamp
+        '.test.1234.json.tmp', // Missing random suffix
+        '.test.abc.def.json.tmp', // Non-numeric timestamp
+      ];
+
+      for (const pattern of invalidPatterns) {
+        const filePath = path.join(testDir, pattern);
+        fs.writeFileSync(filePath, '{}');
+      }
+
+      const result = cleanupTempFiles(testDir, { maxAgeMs: 0 });
+
+      expect(result.ok).toBe(true);
+      expect(result.cleaned.length).toBe(0); // None should be deleted
+    });
+
+    it('reports errors for files that cannot be deleted', () => {
+      // This test is platform-dependent and may skip on Windows
+      if (process.platform === 'win32') {
+        return;
+      }
+
+      const subDir = path.join(testDir, 'locked');
+      fs.mkdirSync(subDir);
+
+      const tempFile = path.join(subDir, '.test.1700000000000.abc123.json.tmp');
+      fs.writeFileSync(tempFile, '{}');
+
+      // Make old
+      const oldTime = Date.now() - 25 * 60 * 60 * 1000;
+      fs.utimesSync(tempFile, new Date(oldTime), new Date(oldTime));
+
+      // Make directory read-only (can't delete files inside)
+      fs.chmodSync(subDir, 0o555);
+
+      try {
+        const result = cleanupTempFiles(subDir);
+
+        expect(result.ok).toBe(false);
+        expect(result.errors.length).toBeGreaterThan(0);
+      } finally {
+        // Restore permissions for cleanup
+        fs.chmodSync(subDir, 0o755);
+      }
+    });
+  });
 });

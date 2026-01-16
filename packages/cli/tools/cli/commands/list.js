@@ -13,6 +13,7 @@ const { displayLogo, displaySection, success, warning, info } = require('../lib/
 const {
   parseFrontmatter: parseYamlFrontmatter,
 } = require('../../../scripts/lib/frontmatter-parser');
+const { formatList, formatKeyValue, formatHeader, isTTY } = require('../../../lib/table-formatter');
 
 const installer = new Installer();
 
@@ -300,73 +301,84 @@ function extractFirstLine(content) {
 }
 
 /**
- * Display compact output
+ * Display compact output using formatKeyValue
  */
 function displayCompact(result, showCommands, showAgents, showSkills, showExperts) {
+  const data = {};
+
   if (showCommands && result.commands?.length > 0) {
-    console.log(chalk.bold('Commands:'), result.commands.map(c => c.name).join(', '));
+    data.Commands = result.commands.map(c => c.name).join(', ');
   }
 
   if (showAgents && result.agents?.length > 0) {
-    console.log(chalk.bold('Agents:'), result.agents.map(a => a.name).join(', '));
+    data.Agents = result.agents.map(a => a.name).join(', ');
   }
 
   if (showSkills && result.skills?.length > 0) {
-    console.log(chalk.bold('Skills:'), result.skills.map(s => s.name).join(', '));
+    data.Skills = result.skills.map(s => s.name).join(', ');
   }
 
   if (showExperts && result.experts?.length > 0) {
-    console.log(chalk.bold('Experts:'), result.experts.map(e => e.name).join(', '));
+    data.Experts = result.experts.map(e => e.name).join(', ');
+  }
+
+  if (Object.keys(data).length > 0) {
+    console.log(formatKeyValue(data, { alignValues: false }));
   }
 }
 
 /**
- * Display full output with descriptions
+ * Display full output with descriptions using formatList
  */
 function displayFull(result, showCommands, showAgents, showSkills, showExperts) {
-  if (showCommands && result.commands?.length > 0) {
-    displaySection(`Commands (${result.commands.length})`);
+  const { BRAND_HEX } = require('../../../lib/colors');
 
-    for (const cmd of result.commands) {
-      console.log(chalk.hex('#e8683a')(`  ${cmd.name}`));
-      console.log(chalk.dim(`    ${cmd.description}`));
-    }
+  if (showCommands && result.commands?.length > 0) {
+    console.log(formatHeader(`Commands (${result.commands.length})`));
+    const items = result.commands.map(cmd => ({
+      text: `${chalk.hex(BRAND_HEX)(cmd.name)}\n      ${chalk.dim(cmd.description)}`,
+      status: 'active',
+    }));
+    console.log(formatList(items, { indent: '  ' }));
   }
 
   if (showAgents && result.agents?.length > 0) {
-    displaySection(`Agents (${result.agents.length})`);
-
-    for (const agent of result.agents) {
+    console.log(formatHeader(`Agents (${result.agents.length})`));
+    const items = result.agents.map(agent => {
       const modelBadge = agent.model !== 'default' ? chalk.dim(` [${agent.model}]`) : '';
-      console.log(chalk.hex('#e8683a')(`  ${agent.name}`) + modelBadge);
-      console.log(chalk.dim(`    ${agent.description}`));
-    }
+      return {
+        text: `${chalk.hex(BRAND_HEX)(agent.name)}${modelBadge}\n      ${chalk.dim(agent.description)}`,
+        status: 'active',
+      };
+    });
+    console.log(formatList(items, { indent: '  ' }));
   }
 
   if (showSkills && result.skills?.length > 0) {
-    displaySection(`Skills (${result.skills.length})`);
-
-    for (const skill of result.skills) {
-      console.log(chalk.hex('#e8683a')(`  ${skill.name}`));
-      console.log(chalk.dim(`    ${skill.description}`));
+    console.log(formatHeader(`Skills (${result.skills.length})`));
+    const items = result.skills.map(skill => {
+      let desc = chalk.dim(skill.description);
       if (skill.triggers?.length > 0) {
-        console.log(
-          chalk.dim(
-            `    Triggers: ${skill.triggers.slice(0, 3).join(', ')}${skill.triggers.length > 3 ? '...' : ''}`
-          )
-        );
+        desc += `\n      ${chalk.dim(`Triggers: ${skill.triggers.slice(0, 3).join(', ')}${skill.triggers.length > 3 ? '...' : ''}`)}`;
       }
-    }
+      return {
+        text: `${chalk.hex(BRAND_HEX)(skill.name)}\n      ${desc}`,
+        status: 'active',
+      };
+    });
+    console.log(formatList(items, { indent: '  ' }));
   }
 
   if (showExperts && result.experts?.length > 0) {
-    displaySection(`Experts (${result.experts.length})`);
-
-    for (const expert of result.experts) {
+    console.log(formatHeader(`Experts (${result.experts.length})`));
+    const items = result.experts.map(expert => {
       const versionBadge = expert.version !== 'unknown' ? chalk.dim(` v${expert.version}`) : '';
-      console.log(chalk.hex('#e8683a')(`  ${expert.name}`) + versionBadge);
-      console.log(chalk.dim(`    ${expert.description}`));
-    }
+      return {
+        text: `${chalk.hex(BRAND_HEX)(expert.name)}${versionBadge}\n      ${chalk.dim(expert.description)}`,
+        status: 'active',
+      };
+    });
+    console.log(formatList(items, { indent: '  ' }));
   }
 
   console.log(); // Final newline

@@ -12,6 +12,7 @@ const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
 const { displayLogo, displaySection, success, warning, error, info } = require('../lib/ui');
 const { ErrorHandler } = require('../lib/error-handler');
+const { IdeRegistry } = require('../lib/ide-registry');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -209,11 +210,12 @@ async function handleSet(directory, status, manifestPath, key, value) {
 
     case 'ides': {
       const newIdes = value.split(',').map(ide => ide.trim());
-      const validIdes = ['claude-code', 'cursor', 'windsurf'];
+      const validIdes = IdeRegistry.getAll();
 
       // Validate IDEs
       for (const ide of newIdes) {
-        if (!validIdes.includes(ide)) {
+        const validation = IdeRegistry.validate(ide);
+        if (!validation.ok) {
           handler.warning(
             `Invalid IDE: ${ide}`,
             `Valid IDEs: ${validIdes.join(', ')}`,
@@ -261,10 +263,10 @@ async function handleSet(directory, status, manifestPath, key, value) {
     // Remove old IDE configs
     for (const ide of oldIdes) {
       if (!manifest.ides.includes(ide)) {
-        const configPath = getIdeConfigPath(directory, ide);
+        const configPath = IdeRegistry.getConfigPath(ide, directory);
         if (await fs.pathExists(configPath)) {
           await fs.remove(configPath);
-          info(`Removed ${formatIdeName(ide)} configuration`);
+          info(`Removed ${IdeRegistry.getDisplayName(ide)} configuration`);
         }
       }
     }
@@ -272,7 +274,7 @@ async function handleSet(directory, status, manifestPath, key, value) {
     // Add new IDE configs
     for (const ide of manifest.ides) {
       await ideManager.setup(ide, directory, status.path);
-      success(`Updated ${formatIdeName(ide)} configuration`);
+      success(`Updated ${IdeRegistry.getDisplayName(ide)} configuration`);
     }
 
     console.log();
@@ -282,28 +284,3 @@ async function handleSet(directory, status, manifestPath, key, value) {
   console.log();
 }
 
-/**
- * Get IDE config path
- */
-function getIdeConfigPath(projectDir, ide) {
-  const paths = {
-    'claude-code': '.claude/commands/agileflow',
-    cursor: '.cursor/rules/agileflow',
-    windsurf: '.windsurf/workflows/agileflow',
-  };
-
-  return path.join(projectDir, paths[ide] || '');
-}
-
-/**
- * Format IDE name for display
- */
-function formatIdeName(ide) {
-  const names = {
-    'claude-code': 'Claude Code',
-    cursor: 'Cursor',
-    windsurf: 'Windsurf',
-  };
-
-  return names[ide] || ide;
-}

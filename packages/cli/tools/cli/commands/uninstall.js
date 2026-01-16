@@ -11,6 +11,7 @@ const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
 const { displayLogo, displaySection, success, warning, error, confirm } = require('../lib/ui');
 const { ErrorHandler } = require('../lib/error-handler');
+const { IdeRegistry } = require('../lib/ide-registry');
 
 const installer = new Installer();
 const ideManager = new IdeManager();
@@ -40,17 +41,17 @@ module.exports = {
       // Check if removing just one IDE
       if (options.ide) {
         const ideName = options.ide.toLowerCase();
-        displaySection('Removing IDE Configuration', `IDE: ${formatIdeName(ideName)}`);
+        displaySection('Removing IDE Configuration', `IDE: ${IdeRegistry.getDisplayName(ideName)}`);
 
         if (!status.ides || !status.ides.includes(ideName)) {
-          warning(`${formatIdeName(ideName)} is not configured in this installation`);
+          warning(`${IdeRegistry.getDisplayName(ideName)} is not configured in this installation`);
           console.log(chalk.dim(`Configured IDEs: ${(status.ides || []).join(', ') || 'none'}\n`));
           process.exit(0);
         }
 
         // Confirm removal
         if (!options.force) {
-          const proceed = await confirm(`Remove ${formatIdeName(ideName)} configuration?`, false);
+          const proceed = await confirm(`Remove ${IdeRegistry.getDisplayName(ideName)} configuration?`, false);
           if (!proceed) {
             console.log(chalk.dim('\nCancelled\n'));
             process.exit(0);
@@ -60,10 +61,10 @@ module.exports = {
         console.log();
 
         // Remove the IDE configuration
-        const configPath = getIdeConfigPath(directory, ideName);
+        const configPath = IdeRegistry.getConfigPath(ideName, directory);
         if (await fs.pathExists(configPath)) {
           await fs.remove(configPath);
-          success(`Removed ${formatIdeName(ideName)} configuration`);
+          success(`Removed ${IdeRegistry.getDisplayName(ideName)} configuration`);
         }
 
         // Also remove spawnable agents for claude-code
@@ -87,7 +88,7 @@ module.exports = {
           success('Updated manifest');
         }
 
-        console.log(chalk.green(`\n${formatIdeName(ideName)} has been removed.\n`));
+        console.log(chalk.green(`\n${IdeRegistry.getDisplayName(ideName)} has been removed.\n`));
         if (status.ides.length > 1) {
           console.log(
             chalk.dim(`Remaining IDEs: ${status.ides.filter(i => i !== ideName).join(', ')}\n`)
@@ -114,10 +115,10 @@ module.exports = {
       // Remove IDE configurations
       if (status.ides && status.ides.length > 0) {
         for (const ide of status.ides) {
-          const configPath = getIdeConfigPath(directory, ide);
+          const configPath = IdeRegistry.getConfigPath(ide, directory);
           if (await fs.pathExists(configPath)) {
             await fs.remove(configPath);
-            success(`Removed ${formatIdeName(ide)} configuration`);
+            success(`Removed ${IdeRegistry.getDisplayName(ide)} configuration`);
           }
           // Also remove spawnable agents for claude-code
           if (ide === 'claude-code') {
@@ -150,33 +151,3 @@ module.exports = {
   },
 };
 
-/**
- * Get IDE config path
- * @param {string} projectDir - Project directory
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function getIdeConfigPath(projectDir, ide) {
-  const paths = {
-    'claude-code': '.claude/commands/agileflow',
-    cursor: '.cursor/rules/agileflow',
-    windsurf: '.windsurf/workflows/agileflow',
-  };
-
-  return path.join(projectDir, paths[ide] || '');
-}
-
-/**
- * Format IDE name for display
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function formatIdeName(ide) {
-  const names = {
-    'claude-code': 'Claude Code',
-    cursor: 'Cursor',
-    windsurf: 'Windsurf',
-  };
-
-  return names[ide] || ide;
-}

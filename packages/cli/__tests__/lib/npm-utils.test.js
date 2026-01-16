@@ -134,8 +134,77 @@ describe('npm-utils', () => {
       const version = await getLatestVersion('agileflow');
 
       expect(version).toBeNull();
-      expect(mockRequest.setTimeout).toHaveBeenCalledWith(5000, expect.any(Function));
+      expect(mockRequest.setTimeout).toHaveBeenCalledWith(10000, expect.any(Function));
       expect(mockRequest.destroy).toHaveBeenCalled();
+    });
+
+    it('uses explicit TLS certificate validation (rejectUnauthorized: true)', async () => {
+      const mockResponse = new EventEmitter();
+      mockResponse.statusCode = 200;
+
+      const mockRequest = new EventEmitter();
+      mockRequest.end = jest.fn();
+      mockRequest.destroy = jest.fn();
+      mockRequest.setTimeout = jest.fn();
+
+      https.request.mockImplementation((options, callback) => {
+        callback(mockResponse);
+        process.nextTick(() => {
+          mockResponse.emit('data', JSON.stringify({ version: '1.0.0' }));
+          mockResponse.emit('end');
+        });
+        return mockRequest;
+      });
+
+      await getLatestVersion('agileflow');
+
+      // Verify TLS certificate validation is explicitly enabled
+      expect(https.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rejectUnauthorized: true,
+        }),
+        expect.any(Function)
+      );
+    });
+
+    it('handles TLS certificate errors gracefully', async () => {
+      const mockRequest = new EventEmitter();
+      mockRequest.end = jest.fn();
+      mockRequest.destroy = jest.fn();
+      mockRequest.setTimeout = jest.fn();
+
+      https.request.mockImplementation(() => {
+        process.nextTick(() => {
+          const certError = new Error('certificate has expired');
+          certError.code = 'CERT_HAS_EXPIRED';
+          mockRequest.emit('error', certError);
+        });
+        return mockRequest;
+      });
+
+      const version = await getLatestVersion('agileflow');
+
+      expect(version).toBeNull();
+    });
+
+    it('handles UNABLE_TO_VERIFY_LEAF_SIGNATURE errors', async () => {
+      const mockRequest = new EventEmitter();
+      mockRequest.end = jest.fn();
+      mockRequest.destroy = jest.fn();
+      mockRequest.setTimeout = jest.fn();
+
+      https.request.mockImplementation(() => {
+        process.nextTick(() => {
+          const certError = new Error('unable to verify the first certificate');
+          certError.code = 'UNABLE_TO_VERIFY_LEAF_SIGNATURE';
+          mockRequest.emit('error', certError);
+        });
+        return mockRequest;
+      });
+
+      const version = await getLatestVersion('agileflow');
+
+      expect(version).toBeNull();
     });
 
     it('returns null on invalid JSON response', async () => {

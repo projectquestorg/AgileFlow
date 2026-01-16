@@ -11,6 +11,8 @@ const ora = require('ora');
 const { Installer } = require('../installers/core/installer');
 const { displayLogo, displaySection, success, warning, info } = require('../lib/ui');
 const { checkForUpdate } = require('../lib/version-checker');
+const { IdeRegistry } = require('../lib/ide-registry');
+const { formatKeyValue, formatList, isTTY } = require('../../../lib/table-formatter');
 
 const installer = new Installer();
 
@@ -33,14 +35,18 @@ module.exports = {
         process.exit(0);
       }
 
-      // Show installation info
-      console.log(chalk.bold('Location:    '), status.path);
-      console.log(chalk.bold('Version:     '), status.version);
+      // Show installation info using formatKeyValue
+      console.log(formatKeyValue({
+        Location: status.path,
+        Version: status.version,
+      }));
 
       // Count installed items
       const counts = await installer.countInstalledItems(status.path);
 
-      console.log(chalk.bold('\nCore:        '), chalk.green('✓ Installed'));
+      console.log(formatKeyValue({
+        '\nCore': chalk.green('✓ Installed'),
+      }, { alignValues: false }));
       info(`${counts.agents} agents`);
       info(`${counts.commands} commands`);
       info(`${counts.skills} skills`);
@@ -50,13 +56,13 @@ module.exports = {
         console.log(chalk.bold('\nConfigured IDEs:'));
         for (const ide of status.ides) {
           // Check if IDE config exists
-          const ideConfigPath = getIdeConfigPath(directory, ide);
+          const ideConfigPath = IdeRegistry.getConfigPath(ide, directory);
           const exists = await fs.pathExists(ideConfigPath);
 
           if (exists) {
-            success(formatIdeName(ide));
+            success(IdeRegistry.getDisplayName(ide));
           } else {
-            warning(`${formatIdeName(ide)} (config missing)`);
+            warning(`${IdeRegistry.getDisplayName(ide)} (config missing)`);
           }
         }
       }
@@ -87,33 +93,3 @@ module.exports = {
   },
 };
 
-/**
- * Get IDE config path
- * @param {string} projectDir - Project directory
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function getIdeConfigPath(projectDir, ide) {
-  const paths = {
-    'claude-code': '.claude/commands/agileflow',
-    cursor: '.cursor/rules/agileflow',
-    windsurf: '.windsurf/workflows/agileflow',
-  };
-
-  return path.join(projectDir, paths[ide] || '');
-}
-
-/**
- * Format IDE name for display
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function formatIdeName(ide) {
-  const names = {
-    'claude-code': 'Claude Code',
-    cursor: 'Cursor',
-    windsurf: 'Windsurf',
-  };
-
-  return names[ide] || ide;
-}

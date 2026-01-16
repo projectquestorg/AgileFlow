@@ -28,6 +28,8 @@ const {
   isRecoverable,
 } = require('../../../lib/error-codes');
 const { safeDump } = require('../../../lib/yaml-utils');
+const { IdeRegistry } = require('../lib/ide-registry');
+const { formatKeyValue, formatList, isTTY } = require('../../../lib/table-formatter');
 
 const installer = new Installer();
 
@@ -239,8 +241,8 @@ module.exports = {
         ideManager.setDocsFolder(status.docsFolder || 'docs');
 
         for (const ide of status.ides) {
-          const configPath = getIdeConfigPath(directory, ide);
-          const ideName = formatIdeName(ide);
+          const configPath = IdeRegistry.getConfigPath(ide, directory);
+          const ideName = IdeRegistry.getDisplayName(ide);
 
           if (await fs.pathExists(configPath)) {
             // Count files in config
@@ -265,14 +267,14 @@ module.exports = {
 
       // Check for orphaned configs
       console.log(chalk.bold('\nOrphan Check:'));
-      const allIdes = ['claude-code', 'cursor', 'windsurf'];
+      const allIdes = IdeRegistry.getAll();
       let orphansFound = false;
 
       for (const ide of allIdes) {
         if (!status.ides || !status.ides.includes(ide)) {
-          const configPath = getIdeConfigPath(directory, ide);
+          const configPath = IdeRegistry.getConfigPath(ide, directory);
           if (await fs.pathExists(configPath)) {
-            const ideName = formatIdeName(ide);
+            const ideName = IdeRegistry.getDisplayName(ide);
             warning(`${ideName}: Config exists but not in manifest`);
             orphansFound = true;
             warnings++;
@@ -367,36 +369,6 @@ function compareVersions(a, b) {
   return 0;
 }
 
-/**
- * Get IDE config path
- * @param {string} projectDir - Project directory
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function getIdeConfigPath(projectDir, ide) {
-  const paths = {
-    'claude-code': '.claude/commands/agileflow',
-    cursor: '.cursor/rules/agileflow',
-    windsurf: '.windsurf/workflows/agileflow',
-  };
-
-  return path.join(projectDir, paths[ide] || '');
-}
-
-/**
- * Format IDE name for display
- * @param {string} ide - IDE name
- * @returns {string}
- */
-function formatIdeName(ide) {
-  const names = {
-    'claude-code': 'Claude Code',
-    cursor: 'Cursor',
-    windsurf: 'Windsurf',
-  };
-
-  return names[ide] || ide;
-}
 
 /**
  * Count files in directory recursively
@@ -420,7 +392,7 @@ async function countFilesInDir(dirPath) {
 }
 
 /**
- * Print summary
+ * Print summary using formatKeyValue for consistent output
  * @param {number} issues - Issue count
  * @param {number} warnings - Warning count
  */
@@ -430,9 +402,17 @@ function printSummary(issues, warnings) {
   if (issues === 0 && warnings === 0) {
     console.log(chalk.green.bold('No issues found.\n'));
   } else if (issues === 0) {
-    console.log(chalk.yellow(`${warnings} warning(s), no critical issues.\n`));
+    console.log(formatKeyValue({
+      Warnings: chalk.yellow(warnings),
+      Issues: chalk.green('0'),
+    }, { separator: ':', alignValues: false }));
+    console.log();
   } else {
-    console.log(chalk.red(`${issues} issue(s), ${warnings} warning(s) found.\n`));
+    console.log(formatKeyValue({
+      Issues: chalk.red(issues),
+      Warnings: chalk.yellow(warnings),
+    }, { separator: ':', alignValues: false }));
+    console.log();
   }
 }
 
