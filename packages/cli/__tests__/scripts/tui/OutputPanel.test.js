@@ -268,11 +268,12 @@ describe('TUI Output Panel', () => {
 });
 
 describe('index.js Integration', () => {
-  test('index.js imports OutputPanel', () => {
+  test('index.js uses simple-tui implementation', () => {
     const indexPath = path.join(__dirname, '../../../scripts/tui/index.js');
     const content = fs.readFileSync(indexPath, 'utf8');
 
-    expect(content).toContain("require('./panels/OutputPanel')");
-    expect(content).toContain('OutputPanel');
+    // index.js uses the simple TUI (pure Node.js, no React)
+    expect(content).toContain("require('./simple-tui')");
+    expect(content).toContain('main');
   });
 });

@@ -108,38 +108,34 @@ describe('TUI App Component', () => {
     test('index.js contains required elements', () => {
       const content = fs.readFileSync(path.join(tuiDir, 'index.js'), 'utf8');
 
-      // Check for key imports
-      expect(content).toContain("require('react')");
-      expect(content).toContain("require('ink')");
-      expect(content).toContain("require('./App')");
+      // Check for simple-tui import (pure Node.js implementation)
+      expect(content).toContain("require('./simple-tui')");
 
-      // Check for render call
-      expect(content).toContain('render(');
-
-      // Check for main function
-      expect(content).toContain('function main()');
+      // Check for main function export
+      expect(content).toContain('main');
       expect(content).toContain('module.exports');
     });
   });
 });
 
-describe('TUI Command', () => {
-  test('tui.md command file exists', () => {
-    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
+describe('TUI CLI Command', () => {
+  test('tui.js CLI command file exists', () => {
+    const cmdPath = path.join(__dirname, '../../../tools/cli/commands/tui.js');
     expect(fs.existsSync(cmdPath)).toBe(true);
   });
 
-  test('tui.md has correct frontmatter', () => {
-    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
+  test('tui.js has correct structure', () => {
+    const cmdPath = path.join(__dirname, '../../../tools/cli/commands/tui.js');
     const content = fs.readFileSync(cmdPath, 'utf8');
 
-    // Check frontmatter
-    expect(content).toMatch(/^---/);
+    // Check command structure
+    expect(content).toContain("name: 'tui'");
     expect(content).toContain('description:');
+    expect(content).toContain('action:');
   });
 
-  test('tui.md references the TUI script', () => {
-    const cmdPath = path.join(__dirname, '../../../src/core/commands/tui.md');
+  test('tui.js references the TUI script', () => {
+    const cmdPath = path.join(__dirname, '../../../tools/cli/commands/tui.js');
     const content = fs.readFileSync(cmdPath, 'utf8');
 
     expect(content).toContain('scripts/tui/index.js');

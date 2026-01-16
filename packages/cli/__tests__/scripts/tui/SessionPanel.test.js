@@ -225,12 +225,12 @@ describe('TUI Session Panel', () => {
 });
 
 describe('index.js Integration', () => {
-  test('index.js imports SessionPanel', () => {
+  test('index.js uses simple-tui implementation', () => {
     const indexPath = path.join(__dirname, '../../../scripts/tui/index.js');
     const content = fs.readFileSync(indexPath, 'utf8');
 
-    expect(content).toContain("require('./panels/SessionPanel')");
-    expect(content).toContain('SessionPanel');
-    expect(content).toContain('MainLayout');
+    // index.js uses the simple TUI (pure Node.js, no React)
+    expect(content).toContain("require('./simple-tui')");
+    expect(content).toContain('main');
   });
 });
