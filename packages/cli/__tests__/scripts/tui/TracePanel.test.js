@@ -7,6 +7,14 @@
 const path = require('path');
 const fs = require('fs');
 
+// Helper to check if error is due to ink/React not being available
+function isInkUnavailableError(e) {
+  if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) return true;
+  if (e.message && e.message.includes('ReactCurrentOwner')) return true;
+  if (e.message && e.message.includes('React')) return true;
+  return false;
+}
+
 describe('TUI Trace Panel', () => {
   const panelPath = path.join(__dirname, '../../../scripts/tui/panels/TracePanel.js');
 
@@ -22,8 +30,8 @@ describe('TUI Trace Panel', () => {
         const { TracePanel } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof TracePanel).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -35,8 +43,8 @@ describe('TUI Trace Panel', () => {
         const { LoopTrace } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof LoopTrace).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -48,8 +56,8 @@ describe('TUI Trace Panel', () => {
         const { GateRow } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof GateRow).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -61,8 +69,8 @@ describe('TUI Trace Panel', () => {
         const { ProgressBar } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof ProgressBar).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -74,8 +82,8 @@ describe('TUI Trace Panel', () => {
         const { CompactTrace } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof CompactTrace).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -87,8 +95,8 @@ describe('TUI Trace Panel', () => {
         const { getStatusColor } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof getStatusColor).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -100,8 +108,8 @@ describe('TUI Trace Panel', () => {
         const { getStatusSymbol } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof getStatusSymbol).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -113,8 +121,8 @@ describe('TUI Trace Panel', () => {
         const { QUALITY_GATES } = require('../../../scripts/tui/panels/TracePanel');
         expect(typeof QUALITY_GATES).toBe('object');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;

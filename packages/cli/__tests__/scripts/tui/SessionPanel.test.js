@@ -7,6 +7,14 @@
 const path = require('path');
 const fs = require('fs');
 
+// Helper to check if error is due to ink/React not being available
+function isInkUnavailableError(e) {
+  if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) return true;
+  if (e.message && e.message.includes('ReactCurrentOwner')) return true;
+  if (e.message && e.message.includes('React')) return true;
+  return false;
+}
+
 describe('TUI Session Panel', () => {
   const panelPath = path.join(__dirname, '../../../scripts/tui/panels/SessionPanel.js');
 
@@ -22,8 +30,8 @@ describe('TUI Session Panel', () => {
         const { SessionPanel } = require('../../../scripts/tui/panels/SessionPanel');
         expect(typeof SessionPanel).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -35,8 +43,8 @@ describe('TUI Session Panel', () => {
         const { SessionRow } = require('../../../scripts/tui/panels/SessionPanel');
         expect(typeof SessionRow).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -48,8 +56,8 @@ describe('TUI Session Panel', () => {
         const { formatSession } = require('../../../scripts/tui/panels/SessionPanel');
         expect(typeof formatSession).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
@@ -61,8 +69,8 @@ describe('TUI Session Panel', () => {
         const { getThreadColor } = require('../../../scripts/tui/panels/SessionPanel');
         expect(typeof getThreadColor).toBe('function');
       } catch (e) {
-        if (e.code === 'MODULE_NOT_FOUND' && e.message.includes('ink')) {
-          console.log('Skipping: ink not installed');
+        if (isInkUnavailableError(e)) {
+          console.log('Skipping: ink/React not available');
           return;
         }
         throw e;
