@@ -164,7 +164,8 @@ function pad(str, width, align = 'left') {
   const s = String(str).slice(0, width);
   const padding = width - s.length;
   if (align === 'right') return ' '.repeat(padding) + s;
-  if (align === 'center') return ' '.repeat(Math.floor(padding / 2)) + s + ' '.repeat(Math.ceil(padding / 2));
+  if (align === 'center')
+    return ' '.repeat(Math.floor(padding / 2)) + s + ' '.repeat(Math.ceil(padding / 2));
   return s + ' '.repeat(padding);
 }
 
@@ -295,7 +296,9 @@ class SimpleTUI {
     // Header
     const title = ' AgileFlow TUI ';
     const headerPadding = Math.floor((width - title.length) / 2);
-    output.push(`${ANSI.bgCyan}${ANSI.black}${'═'.repeat(headerPadding)}${ANSI.bold}${title}${ANSI.reset}${ANSI.bgCyan}${ANSI.black}${'═'.repeat(width - headerPadding - title.length)}${ANSI.reset}`);
+    output.push(
+      `${ANSI.bgCyan}${ANSI.black}${'═'.repeat(headerPadding)}${ANSI.bold}${title}${ANSI.reset}${ANSI.bgCyan}${ANSI.black}${'═'.repeat(width - headerPadding - title.length)}${ANSI.reset}`
+    );
     output.push('');
 
     // Calculate panel widths
@@ -312,7 +315,9 @@ class SimpleTUI {
     output.push(`${ANSI.cyan}${ANSI.bold}┌─ SESSIONS ─${'─'.repeat(leftWidth - 14)}┐${ANSI.reset}`);
 
     if (sessions.length === 0) {
-      output.push(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}No active sessions${ANSI.reset}${' '.repeat(leftWidth - 21)}${ANSI.cyan}│${ANSI.reset}`);
+      output.push(
+        `${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}No active sessions${ANSI.reset}${' '.repeat(leftWidth - 21)}${ANSI.cyan}│${ANSI.reset}`
+      );
     } else {
       for (const session of sessions.slice(0, 5)) {
         const indicator = session.current ? `${ANSI.green}>` : ' ';
@@ -320,9 +325,15 @@ class SimpleTUI {
         const branch = session.branch || 'unknown';
         const story = session.story || 'none';
 
-        output.push(`${ANSI.cyan}│${ANSI.reset} ${indicator} ${ANSI.bold}${pad(name, leftWidth - 6)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
-        output.push(`${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Branch:${ANSI.reset} ${ANSI.cyan}${pad(branch, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
-        output.push(`${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Story:${ANSI.reset}  ${ANSI.yellow}${pad(story, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+        output.push(
+          `${ANSI.cyan}│${ANSI.reset} ${indicator} ${ANSI.bold}${pad(name, leftWidth - 6)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+        );
+        output.push(
+          `${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Branch:${ANSI.reset} ${ANSI.cyan}${pad(branch, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+        );
+        output.push(
+          `${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Story:${ANSI.reset}  ${ANSI.yellow}${pad(story, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+        );
       }
     }
 
@@ -330,7 +341,9 @@ class SimpleTUI {
     const usedRows = sessions.length === 0 ? 1 : Math.min(sessions.length, 5) * 3;
     const remainingRows = Math.max(0, panelHeight - usedRows - 2);
     for (let i = 0; i < remainingRows; i++) {
-      output.push(`${ANSI.cyan}│${ANSI.reset}${' '.repeat(leftWidth - 2)}${ANSI.cyan}│${ANSI.reset}`);
+      output.push(
+        `${ANSI.cyan}│${ANSI.reset}${' '.repeat(leftWidth - 2)}${ANSI.cyan}│${ANSI.reset}`
+      );
     }
 
     output.push(`${ANSI.cyan}└${'─'.repeat(leftWidth - 2)}┘${ANSI.reset}`);
@@ -338,23 +351,34 @@ class SimpleTUI {
     // Move cursor to right panel position and draw
     // For simplicity, we'll draw the right panel below the left panel
     output.push('');
-    output.push(`${ANSI.green}${ANSI.bold}┌─ AGENT OUTPUT ─${'─'.repeat(width - 19)}┐${ANSI.reset}`);
+    output.push(
+      `${ANSI.green}${ANSI.bold}┌─ AGENT OUTPUT ─${'─'.repeat(width - 19)}┐${ANSI.reset}`
+    );
 
     if (agentEvents.length === 0 && this.messages.length === 0) {
-      output.push(`${ANSI.green}│${ANSI.reset} ${ANSI.dim}Waiting for agent activity...${ANSI.reset}${' '.repeat(width - 34)}${ANSI.green}│${ANSI.reset}`);
+      output.push(
+        `${ANSI.green}│${ANSI.reset} ${ANSI.dim}Waiting for agent activity...${ANSI.reset}${' '.repeat(width - 34)}${ANSI.green}│${ANSI.reset}`
+      );
     } else {
       // Show recent events
-      const allMessages = [...agentEvents.map(e => ({
-        timestamp: e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '',
-        agent: e.agent || 'unknown',
-        message: e.message || (e.event === 'iteration' ? `Iteration ${e.iter}` : e.event || JSON.stringify(e))
-      })), ...this.messages].slice(-8);
+      const allMessages = [
+        ...agentEvents.map(e => ({
+          timestamp: e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '',
+          agent: e.agent || 'unknown',
+          message:
+            e.message ||
+            (e.event === 'iteration' ? `Iteration ${e.iter}` : e.event || JSON.stringify(e)),
+        })),
+        ...this.messages,
+      ].slice(-8);
 
       for (const msg of allMessages) {
         const line = `[${msg.timestamp}] [${ANSI.cyan}${msg.agent}${ANSI.reset}] ${msg.message}`;
         const cleanLine = `[${msg.timestamp}] [${msg.agent}] ${msg.message}`;
         const padding = width - cleanLine.length - 4;
-        output.push(`${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, padding))}${ANSI.green}│${ANSI.reset}`);
+        output.push(
+          `${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, padding))}${ANSI.green}│${ANSI.reset}`
+        );
       }
     }
 
@@ -363,13 +387,19 @@ class SimpleTUI {
     // Loop status (if active)
     if (loopStatus.active) {
       output.push('');
-      const statusIcon = loopStatus.paused ? `${ANSI.yellow}||${ANSI.reset}` : `${ANSI.green}>${ANSI.reset}`;
-      output.push(`${statusIcon} ${ANSI.bold}Loop:${ANSI.reset} ${loopStatus.epic || 'unknown'} | Story: ${loopStatus.currentStory || 'none'} | ${progressBar(loopStatus.iteration, loopStatus.maxIterations, 15)}`);
+      const statusIcon = loopStatus.paused
+        ? `${ANSI.yellow}||${ANSI.reset}`
+        : `${ANSI.green}>${ANSI.reset}`;
+      output.push(
+        `${statusIcon} ${ANSI.bold}Loop:${ANSI.reset} ${loopStatus.epic || 'unknown'} | Story: ${loopStatus.currentStory || 'none'} | ${progressBar(loopStatus.iteration, loopStatus.maxIterations, 15)}`
+      );
     }
 
     // Footer with key bindings
     output.push('');
-    output.push(`${ANSI.dim}[Q]uit  [S]tart  [P]ause  [R]esume  [T]race  [1-9]Sessions  ${ANSI.reset}${ANSI.cyan}AgileFlow v2.90.0${ANSI.reset}`);
+    output.push(
+      `${ANSI.dim}[Q]uit  [S]tart  [P]ause  [R]esume  [T]race  [1-9]Sessions  ${ANSI.reset}${ANSI.cyan}AgileFlow v2.90.0${ANSI.reset}`
+    );
 
     // Output everything
     process.stdout.write(output.join('\n'));
