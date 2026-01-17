@@ -55,6 +55,7 @@ const ANSI = {
   showCursor: '\x1b[?25h',
   saveCursor: '\x1b[s',
   restoreCursor: '\x1b[u',
+  clearLine: '\x1b[K', // Clear from cursor to end of line
 };
 
 // Get project root
@@ -213,7 +214,8 @@ class SimpleTUI {
       this.render();
     });
 
-    // Initial render
+    // Clear screen once at start, then render
+    process.stdout.write(ANSI.clear + ANSI.home);
     this.render();
 
     // Update loop
@@ -290,8 +292,8 @@ class SimpleTUI {
     const height = process.stdout.rows || 24;
     const output = [];
 
-    // Clear screen
-    output.push(ANSI.clear + ANSI.home);
+    // Move to home position (don't clear - prevents bouncing)
+    output.push(ANSI.home);
 
     // Determine layout mode based on terminal width
     const isWide = width >= 100;
@@ -317,8 +319,9 @@ class SimpleTUI {
       this.renderStacked(output, width, height, sessions, loopStatus, agentEvents, isNarrow);
     }
 
-    // Output everything
-    process.stdout.write(output.join('\n'));
+    // Output everything with line clearing to prevent artifacts
+    const outputWithClear = output.map(line => line + ANSI.clearLine);
+    process.stdout.write(outputWithClear.join('\n'));
   }
 
   renderSideBySide(output, width, height, sessions, loopStatus, agentEvents) {

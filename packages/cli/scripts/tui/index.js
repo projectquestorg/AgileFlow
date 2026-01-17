@@ -20,8 +20,7 @@
  *   1-9 - Switch session focus
  */
 
-// Ink-based TUI is disabled due to React version conflicts in monorepo
-// The simple-tui provides responsive layouts and works reliably
+// Use simple-tui (pure Node.js) - Ink has React version conflicts in monorepo
 const useInk = false;
 
 /**
@@ -46,8 +45,7 @@ async function main() {
     // Wait for exit
     await waitUntilExit();
   } else {
-    // Fallback to simple TUI (pure Node.js, no React)
-    console.log('React/Ink not available, using simple TUI...');
+    // Use simple TUI (pure Node.js, no React dependencies)
     const { main: simpleTuiMain } = require('./simple-tui');
     simpleTuiMain();
   }
