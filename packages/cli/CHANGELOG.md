@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.90.5] - 2026-01-17
+
+### Added
+- Restore static dashboard command
+
 ## [2.90.4] - 2026-01-17
 
 ### Fixed
