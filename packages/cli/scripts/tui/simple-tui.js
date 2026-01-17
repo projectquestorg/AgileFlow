@@ -293,116 +293,175 @@ class SimpleTUI {
     // Clear screen
     output.push(ANSI.clear + ANSI.home);
 
-    // Header
-    const title = ' AgileFlow TUI ';
+    // Determine layout mode based on terminal width
+    const isWide = width >= 100;
+    const isNarrow = width < 60;
+
+    // Header - compact on narrow terminals
+    const title = isNarrow ? ' TUI ' : ' AgileFlow TUI ';
     const headerPadding = Math.floor((width - title.length) / 2);
     output.push(
       `${ANSI.bgCyan}${ANSI.black}${'═'.repeat(headerPadding)}${ANSI.bold}${title}${ANSI.reset}${ANSI.bgCyan}${ANSI.black}${'═'.repeat(width - headerPadding - title.length)}${ANSI.reset}`
     );
-    output.push('');
-
-    // Calculate panel widths
-    const leftWidth = Math.floor(width * 0.4);
-    const rightWidth = width - leftWidth - 1;
-    const panelHeight = height - 6; // Leave room for header and footer
 
     // Get data
     const sessions = getSessions();
     const loopStatus = getLoopStatus();
-    const agentEvents = getAgentEvents(8);
+    const agentEvents = getAgentEvents(isNarrow ? 4 : 8);
 
-    // Build left panel (sessions)
-    output.push(`${ANSI.cyan}${ANSI.bold}┌─ SESSIONS ─${'─'.repeat(leftWidth - 14)}┐${ANSI.reset}`);
-
-    if (sessions.length === 0) {
-      output.push(
-        `${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}No active sessions${ANSI.reset}${' '.repeat(leftWidth - 21)}${ANSI.cyan}│${ANSI.reset}`
-      );
+    if (isWide) {
+      // Side-by-side layout for wide terminals
+      this.renderSideBySide(output, width, height, sessions, loopStatus, agentEvents);
     } else {
-      for (const session of sessions.slice(0, 5)) {
-        const indicator = session.current ? `${ANSI.green}>` : ' ';
-        const name = `Session ${session.id}${session.is_main ? ' [main]' : ''}`;
-        const branch = session.branch || 'unknown';
-        const story = session.story || 'none';
-
-        output.push(
-          `${ANSI.cyan}│${ANSI.reset} ${indicator} ${ANSI.bold}${pad(name, leftWidth - 6)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
-        );
-        output.push(
-          `${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Branch:${ANSI.reset} ${ANSI.cyan}${pad(branch, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
-        );
-        output.push(
-          `${ANSI.cyan}│${ANSI.reset}   ${ANSI.dim}Story:${ANSI.reset}  ${ANSI.yellow}${pad(story, leftWidth - 12)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
-        );
-      }
+      // Stacked layout for normal/narrow terminals
+      this.renderStacked(output, width, height, sessions, loopStatus, agentEvents, isNarrow);
     }
-
-    // Fill remaining space in left panel
-    const usedRows = sessions.length === 0 ? 1 : Math.min(sessions.length, 5) * 3;
-    const remainingRows = Math.max(0, panelHeight - usedRows - 2);
-    for (let i = 0; i < remainingRows; i++) {
-      output.push(
-        `${ANSI.cyan}│${ANSI.reset}${' '.repeat(leftWidth - 2)}${ANSI.cyan}│${ANSI.reset}`
-      );
-    }
-
-    output.push(`${ANSI.cyan}└${'─'.repeat(leftWidth - 2)}┘${ANSI.reset}`);
-
-    // Move cursor to right panel position and draw
-    // For simplicity, we'll draw the right panel below the left panel
-    output.push('');
-    output.push(
-      `${ANSI.green}${ANSI.bold}┌─ AGENT OUTPUT ─${'─'.repeat(width - 19)}┐${ANSI.reset}`
-    );
-
-    if (agentEvents.length === 0 && this.messages.length === 0) {
-      output.push(
-        `${ANSI.green}│${ANSI.reset} ${ANSI.dim}Waiting for agent activity...${ANSI.reset}${' '.repeat(width - 34)}${ANSI.green}│${ANSI.reset}`
-      );
-    } else {
-      // Show recent events
-      const allMessages = [
-        ...agentEvents.map(e => ({
-          timestamp: e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : '',
-          agent: e.agent || 'unknown',
-          message:
-            e.message ||
-            (e.event === 'iteration' ? `Iteration ${e.iter}` : e.event || JSON.stringify(e)),
-        })),
-        ...this.messages,
-      ].slice(-8);
-
-      for (const msg of allMessages) {
-        const line = `[${msg.timestamp}] [${ANSI.cyan}${msg.agent}${ANSI.reset}] ${msg.message}`;
-        const cleanLine = `[${msg.timestamp}] [${msg.agent}] ${msg.message}`;
-        const padding = width - cleanLine.length - 4;
-        output.push(
-          `${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, padding))}${ANSI.green}│${ANSI.reset}`
-        );
-      }
-    }
-
-    output.push(`${ANSI.green}└${'─'.repeat(width - 2)}┘${ANSI.reset}`);
-
-    // Loop status (if active)
-    if (loopStatus.active) {
-      output.push('');
-      const statusIcon = loopStatus.paused
-        ? `${ANSI.yellow}||${ANSI.reset}`
-        : `${ANSI.green}>${ANSI.reset}`;
-      output.push(
-        `${statusIcon} ${ANSI.bold}Loop:${ANSI.reset} ${loopStatus.epic || 'unknown'} | Story: ${loopStatus.currentStory || 'none'} | ${progressBar(loopStatus.iteration, loopStatus.maxIterations, 15)}`
-      );
-    }
-
-    // Footer with key bindings
-    output.push('');
-    output.push(
-      `${ANSI.dim}[Q]uit  [S]tart  [P]ause  [R]esume  [T]race  [1-9]Sessions  ${ANSI.reset}${ANSI.cyan}AgileFlow v2.90.0${ANSI.reset}`
-    );
 
     // Output everything
     process.stdout.write(output.join('\n'));
+  }
+
+  renderSideBySide(output, width, height, sessions, loopStatus, agentEvents) {
+    // Calculate panel widths: 30% sessions, 70% output
+    const leftWidth = Math.max(25, Math.floor(width * 0.3));
+    const rightWidth = width - leftWidth - 3;
+    const panelHeight = Math.max(6, height - 5);
+
+    // Build both panels line by line
+    const leftLines = this.buildSessionPanel(leftWidth, panelHeight, sessions);
+    const rightLines = this.buildOutputPanel(rightWidth, panelHeight, agentEvents);
+
+    // Combine side by side
+    for (let i = 0; i < panelHeight; i++) {
+      const left = leftLines[i] || pad('', leftWidth);
+      const right = rightLines[i] || pad('', rightWidth);
+      output.push(`${left} ${right}`);
+    }
+
+    // Status bar and footer
+    this.renderStatusBar(output, width, loopStatus);
+  }
+
+  renderStacked(output, width, height, sessions, loopStatus, agentEvents, isNarrow) {
+    // Calculate heights
+    const sessionHeight = isNarrow ? 4 : Math.min(6, sessions.length * 3 + 2);
+    const outputHeight = Math.max(4, height - sessionHeight - 5);
+
+    // Build panels
+    const sessionLines = this.buildSessionPanel(width - 2, sessionHeight, sessions);
+    const outputLines = this.buildOutputPanel(width - 2, outputHeight, agentEvents);
+
+    // Add session panel
+    for (const line of sessionLines) {
+      output.push(line);
+    }
+    output.push('');
+
+    // Add output panel
+    for (const line of outputLines) {
+      output.push(line);
+    }
+
+    // Status bar and footer
+    this.renderStatusBar(output, width, loopStatus);
+  }
+
+  buildSessionPanel(panelWidth, panelHeight, sessions) {
+    const lines = [];
+    const innerWidth = panelWidth - 2;
+
+    // Header
+    const header = `─ SESSIONS ─`;
+    lines.push(`${ANSI.cyan}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`);
+
+    if (sessions.length === 0) {
+      lines.push(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}${pad('No active sessions', innerWidth)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+    } else {
+      const maxSessions = Math.floor((panelHeight - 2) / 2);
+      for (const session of sessions.slice(0, maxSessions)) {
+        const indicator = session.current ? `${ANSI.green}▶` : ' ';
+        const name = `Session ${session.id}${session.is_main ? ' [main]' : ''}`;
+        lines.push(`${ANSI.cyan}│${ANSI.reset}${indicator} ${ANSI.bold}${pad(name, innerWidth - 2)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+
+        const info = `${session.branch || '?'}${session.story ? ' / ' + session.story : ''}`;
+        lines.push(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.dim}${pad(info, innerWidth - 1)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+      }
+    }
+
+    // Fill remaining rows
+    while (lines.length < panelHeight - 1) {
+      lines.push(`${ANSI.cyan}│${ANSI.reset}${' '.repeat(innerWidth)}${ANSI.cyan}│${ANSI.reset}`);
+    }
+
+    // Footer
+    lines.push(`${ANSI.cyan}└${'─'.repeat(innerWidth)}┘${ANSI.reset}`);
+
+    return lines;
+  }
+
+  buildOutputPanel(panelWidth, panelHeight, agentEvents) {
+    const lines = [];
+    const innerWidth = panelWidth - 2;
+
+    // Header
+    const header = `─ OUTPUT ─`;
+    lines.push(`${ANSI.green}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`);
+
+    // Combine events and messages
+    const allMessages = [
+      ...agentEvents.map(e => ({
+        time: e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : '',
+        agent: (e.agent || 'unknown').replace('agileflow-', ''),
+        msg: e.message || (e.event === 'iteration' ? `Iter ${e.iter}` : e.event || ''),
+      })),
+      ...this.messages.map(m => ({
+        time: m.timestamp || '',
+        agent: (m.agent || 'unknown').replace('agileflow-', ''),
+        msg: m.message || '',
+      })),
+    ].slice(-(panelHeight - 2));
+
+    if (allMessages.length === 0) {
+      lines.push(`${ANSI.green}│${ANSI.reset} ${ANSI.dim}${pad('Waiting for activity...', innerWidth)}${ANSI.reset}${ANSI.green}│${ANSI.reset}`);
+    } else {
+      for (const msg of allMessages) {
+        const prefix = `${msg.time} [${msg.agent}] `;
+        const maxMsgLen = Math.max(10, innerWidth - prefix.length - 1);
+        const truncatedMsg = msg.msg.length > maxMsgLen ? msg.msg.slice(0, maxMsgLen - 2) + '..' : msg.msg;
+        const line = `${ANSI.dim}${msg.time}${ANSI.reset} [${ANSI.cyan}${msg.agent}${ANSI.reset}] ${truncatedMsg}`;
+        const cleanLen = prefix.length + truncatedMsg.length;
+        lines.push(`${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, innerWidth - cleanLen - 1))}${ANSI.green}│${ANSI.reset}`);
+      }
+    }
+
+    // Fill remaining rows
+    while (lines.length < panelHeight - 1) {
+      lines.push(`${ANSI.green}│${ANSI.reset}${' '.repeat(innerWidth)}${ANSI.green}│${ANSI.reset}`);
+    }
+
+    // Footer
+    lines.push(`${ANSI.green}└${'─'.repeat(innerWidth)}┘${ANSI.reset}`);
+
+    return lines;
+  }
+
+  renderStatusBar(output, width, loopStatus) {
+    output.push('');
+
+    // Loop status
+    if (loopStatus.active) {
+      const statusIcon = loopStatus.paused ? `${ANSI.yellow}⏸${ANSI.reset}` : `${ANSI.green}▶${ANSI.reset}`;
+      const bar = progressBar(loopStatus.iteration, loopStatus.maxIterations, Math.min(15, Math.floor(width / 6)));
+      const info = `${loopStatus.epic || ''}${loopStatus.currentStory ? ' / ' + loopStatus.currentStory : ''}`;
+      output.push(`${statusIcon} ${ANSI.bold}${info}${ANSI.reset} ${bar}`);
+    }
+
+    // Key bindings - compact on narrow terminals
+    const keys = width >= 70
+      ? `${ANSI.dim}[Q]uit [S]tart [P]ause [R]esume [T]race [1-9]Sessions${ANSI.reset}`
+      : `${ANSI.dim}Q S P R T 1-9${ANSI.reset}`;
+    const version = `${ANSI.cyan}v2.90.3${ANSI.reset}`;
+    output.push(`${keys}  ${version}`);
   }
 }
 

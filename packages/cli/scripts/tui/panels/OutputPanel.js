@@ -149,8 +149,6 @@ function OutputPanel({
     Box,
     {
       flexDirection: 'column',
-      borderStyle: 'single',
-      borderColor: isConnected ? 'green' : 'gray',
       padding: 1,
       flexGrow: 1,
     },

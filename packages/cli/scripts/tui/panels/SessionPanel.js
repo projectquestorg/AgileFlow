@@ -134,7 +134,7 @@ function SessionPanel({ refreshInterval = 5000 }) {
   if (sessions.length === 0) {
     return React.createElement(
       Box,
-      { flexDirection: 'column', borderStyle: 'single', borderColor: 'gray', padding: 1 },
+      { flexDirection: 'column', padding: 1 },
       React.createElement(Text, { bold: true, color: 'cyan' }, 'SESSIONS'),
       React.createElement(Text, { dimColor: true, italic: true }, 'No active sessions')
     );
@@ -142,7 +142,7 @@ function SessionPanel({ refreshInterval = 5000 }) {
 
   return React.createElement(
     Box,
-    { flexDirection: 'column', borderStyle: 'single', borderColor: 'gray', padding: 1 },
+    { flexDirection: 'column', padding: 1 },
     // Header
     React.createElement(
       Box,
