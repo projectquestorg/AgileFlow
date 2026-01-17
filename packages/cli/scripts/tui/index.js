@@ -20,14 +20,9 @@
  *   1-9 - Switch session focus
  */
 
-// Check if we can use Ink (React-based TUI)
-let useInk = true;
-try {
-  require('react');
-  require('ink');
-} catch (e) {
-  useInk = false;
-}
+// Ink-based TUI is disabled due to React version conflicts in monorepo
+// The simple-tui provides responsive layouts and works reliably
+const useInk = false;
 
 /**
  * Main entry point
