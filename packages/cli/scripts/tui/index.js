@@ -41,9 +41,7 @@ async function main() {
     };
 
     // Render the dashboard
-    const { waitUntilExit } = render(
-      React.createElement(Dashboard, { onAction: handleAction })
-    );
+    const { waitUntilExit } = render(React.createElement(Dashboard, { onAction: handleAction }));
 
     // Wait for exit
     await waitUntilExit();

@@ -372,19 +372,27 @@ class SimpleTUI {
 
     // Header
     const header = `─ SESSIONS ─`;
-    lines.push(`${ANSI.cyan}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`);
+    lines.push(
+      `${ANSI.cyan}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`
+    );
 
     if (sessions.length === 0) {
-      lines.push(`${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}${pad('No active sessions', innerWidth)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+      lines.push(
+        `${ANSI.cyan}│${ANSI.reset} ${ANSI.dim}${pad('No active sessions', innerWidth)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+      );
     } else {
       const maxSessions = Math.floor((panelHeight - 2) / 2);
       for (const session of sessions.slice(0, maxSessions)) {
         const indicator = session.current ? `${ANSI.green}▶` : ' ';
         const name = `Session ${session.id}${session.is_main ? ' [main]' : ''}`;
-        lines.push(`${ANSI.cyan}│${ANSI.reset}${indicator} ${ANSI.bold}${pad(name, innerWidth - 2)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+        lines.push(
+          `${ANSI.cyan}│${ANSI.reset}${indicator} ${ANSI.bold}${pad(name, innerWidth - 2)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+        );
 
         const info = `${session.branch || '?'}${session.story ? ' / ' + session.story : ''}`;
-        lines.push(`${ANSI.cyan}│${ANSI.reset}  ${ANSI.dim}${pad(info, innerWidth - 1)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`);
+        lines.push(
+          `${ANSI.cyan}│${ANSI.reset}  ${ANSI.dim}${pad(info, innerWidth - 1)}${ANSI.reset}${ANSI.cyan}│${ANSI.reset}`
+        );
       }
     }
 
@@ -405,12 +413,20 @@ class SimpleTUI {
 
     // Header
     const header = `─ OUTPUT ─`;
-    lines.push(`${ANSI.green}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`);
+    lines.push(
+      `${ANSI.green}┌${header}${'─'.repeat(Math.max(0, innerWidth - header.length))}┐${ANSI.reset}`
+    );
 
     // Combine events and messages
     const allMessages = [
       ...agentEvents.map(e => ({
-        time: e.timestamp ? new Date(e.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) : '',
+        time: e.timestamp
+          ? new Date(e.timestamp).toLocaleTimeString('en-US', {
+              hour12: false,
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
         agent: (e.agent || 'unknown').replace('agileflow-', ''),
         msg: e.message || (e.event === 'iteration' ? `Iter ${e.iter}` : e.event || ''),
       })),
@@ -422,15 +438,20 @@ class SimpleTUI {
     ].slice(-(panelHeight - 2));
 
     if (allMessages.length === 0) {
-      lines.push(`${ANSI.green}│${ANSI.reset} ${ANSI.dim}${pad('Waiting for activity...', innerWidth)}${ANSI.reset}${ANSI.green}│${ANSI.reset}`);
+      lines.push(
+        `${ANSI.green}│${ANSI.reset} ${ANSI.dim}${pad('Waiting for activity...', innerWidth)}${ANSI.reset}${ANSI.green}│${ANSI.reset}`
+      );
     } else {
       for (const msg of allMessages) {
         const prefix = `${msg.time} [${msg.agent}] `;
         const maxMsgLen = Math.max(10, innerWidth - prefix.length - 1);
-        const truncatedMsg = msg.msg.length > maxMsgLen ? msg.msg.slice(0, maxMsgLen - 2) + '..' : msg.msg;
+        const truncatedMsg =
+          msg.msg.length > maxMsgLen ? msg.msg.slice(0, maxMsgLen - 2) + '..' : msg.msg;
         const line = `${ANSI.dim}${msg.time}${ANSI.reset} [${ANSI.cyan}${msg.agent}${ANSI.reset}] ${truncatedMsg}`;
         const cleanLen = prefix.length + truncatedMsg.length;
-        lines.push(`${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, innerWidth - cleanLen - 1))}${ANSI.green}│${ANSI.reset}`);
+        lines.push(
+          `${ANSI.green}│${ANSI.reset} ${line}${' '.repeat(Math.max(0, innerWidth - cleanLen - 1))}${ANSI.green}│${ANSI.reset}`
+        );
       }
     }
 
@@ -450,16 +471,23 @@ class SimpleTUI {
 
     // Loop status
     if (loopStatus.active) {
-      const statusIcon = loopStatus.paused ? `${ANSI.yellow}⏸${ANSI.reset}` : `${ANSI.green}▶${ANSI.reset}`;
-      const bar = progressBar(loopStatus.iteration, loopStatus.maxIterations, Math.min(15, Math.floor(width / 6)));
+      const statusIcon = loopStatus.paused
+        ? `${ANSI.yellow}⏸${ANSI.reset}`
+        : `${ANSI.green}▶${ANSI.reset}`;
+      const bar = progressBar(
+        loopStatus.iteration,
+        loopStatus.maxIterations,
+        Math.min(15, Math.floor(width / 6))
+      );
       const info = `${loopStatus.epic || ''}${loopStatus.currentStory ? ' / ' + loopStatus.currentStory : ''}`;
       output.push(`${statusIcon} ${ANSI.bold}${info}${ANSI.reset} ${bar}`);
     }
 
     // Key bindings - compact on narrow terminals
-    const keys = width >= 70
-      ? `${ANSI.dim}[Q]uit [S]tart [P]ause [R]esume [T]race [1-9]Sessions${ANSI.reset}`
-      : `${ANSI.dim}Q S P R T 1-9${ANSI.reset}`;
+    const keys =
+      width >= 70
+        ? `${ANSI.dim}[Q]uit [S]tart [P]ause [R]esume [T]race [1-9]Sessions${ANSI.reset}`
+        : `${ANSI.dim}Q S P R T 1-9${ANSI.reset}`;
     const version = `${ANSI.cyan}v2.90.3${ANSI.reset}`;
     output.push(`${keys}  ${version}`);
   }
