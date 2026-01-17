@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.90.7] - 2026-01-17
+
+### Fixed
+- Fix TUI bouncing with in-place rendering
+
 ## [2.90.6] - 2026-01-17
 
 ### Changed
