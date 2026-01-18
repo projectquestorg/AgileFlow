@@ -775,4 +775,5 @@ After clicking "Sign in with Google", immediately get unauthorized_client error.
 - `/agileflow:research:analyze` - Analyze existing research for implementation
 - `/agileflow:research:import` - Import research results back
 - `/agileflow:research:list` - Show research notes index
+- `/agileflow:research:synthesize` - Synthesize insights across multiple research files
 - `/agileflow:research:view` - Read specific research note

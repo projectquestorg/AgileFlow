@@ -827,4 +827,5 @@ The implementation plan is now tracked and ready to execute.
 - `/agileflow:research:analyze` - Revisit existing research for implementation analysis
 - `/agileflow:research:ask` - Generate research prompt for web AI
 - `/agileflow:research:list` - Show research notes index
+- `/agileflow:research:synthesize` - Synthesize insights across multiple research files
 - `/agileflow:research:view` - Read specific research note

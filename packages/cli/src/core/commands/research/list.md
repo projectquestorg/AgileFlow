@@ -258,4 +258,5 @@ Quick actions:
 - `/agileflow:research:analyze` - Analyze research for implementation in your project
 - `/agileflow:research:ask` - Generate research prompt for web AI
 - `/agileflow:research:import` - Import research results
+- `/agileflow:research:synthesize` - Synthesize insights across multiple research files
 - `/agileflow:research:view` - Read specific research note

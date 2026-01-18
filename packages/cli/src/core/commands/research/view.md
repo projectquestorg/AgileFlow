@@ -284,3 +284,4 @@ If "Analyze for implementation" selected, invoke:
 - `/agileflow:research:ask` - Generate research prompt for web AI
 - `/agileflow:research:import` - Import research results
 - `/agileflow:research:list` - Show research notes index
+- `/agileflow:research:synthesize` - Synthesize insights across multiple research files

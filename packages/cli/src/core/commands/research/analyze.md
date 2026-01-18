@@ -563,6 +563,7 @@ The implementation plan is now tracked and ready to execute.
 ## Related Commands
 
 - `/agileflow:research:import` - Import new research (includes analysis option)
+- `/agileflow:research:synthesize` - Synthesize insights across multiple research files
 - `/agileflow:research:view` - Read-only view of research
 - `/agileflow:research:list` - Show all research notes
 - `/agileflow:research:ask` - Generate research prompt for web AI
