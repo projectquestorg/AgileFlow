@@ -1,6 +1,6 @@
 ---
 description: Create a new epic with stories
-argument-hint: EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text> [STORIES=<list>]
+argument-hint: EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text> [STORIES=<list>] [RESEARCH=<file>]
 compact_context:
   priority: high
   preserve_rules:
@@ -11,11 +11,13 @@ compact_context:
     - "MUST validate JSON after every modification"
     - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
     - "STORIES format: 'US-ID|title|owner,US-ID2|title2|owner2' (comma-separated triplets)"
+    - "RESEARCH-FIRST: Validate research exists before creating epic; warn if missing for complex features"
   state_fields:
     - epic_id
     - owner
     - story_count
     - creation_timestamp
+    - research_validated
 ---
 
 # epic-new
@@ -105,6 +107,8 @@ OWNER=<id>             # Agent or person name (required)
 GOAL=<outcome>         # Epic goal/metric (required)
 STORIES=<list>         # Comma-separated triplets (optional)
   Format: "US-0001|Story One|owner,US-0002|Story Two|owner2"
+RESEARCH=<file>        # Research note filename (optional)
+  Format: "20260119-feature-research.md" (in docs/10-research/)
 ```
 
 **Output Files Created**:
@@ -182,6 +186,7 @@ STORIES=<list>         # Comma-separated triplets (optional)
 - ALWAYS validate JSON after merge (prevents corruption)
 - Use TodoWrite for step tracking (6 steps)
 - Files: epic file, N story files, status.json, bus/log.jsonl
+- **RESEARCH-FIRST**: For complex epics (3+ stories), validate research exists; suggest /agileflow:research:ask if missing
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -260,6 +265,92 @@ After successfully creating the epic, offer next steps:
 
 **If "View epic details"**:
 - Run `/agileflow:epic:view EPIC=<EPIC>`
+
+---
+
+## Research-First Validation (GSD Integration)
+
+Before creating an epic or starting work, validate that research exists for complex features.
+
+### Research Validation Flow
+
+**Step 1: Check for Research Field**
+
+When epic has a `research` field in status.json:
+```javascript
+const epic = status.epics["EP-0022"];
+if (epic.research) {
+  // Verify research file exists
+  const researchPath = `docs/10-research/${epic.research}`;
+  if (!fs.existsSync(researchPath)) {
+    console.warn(`⚠️  Research file not found: ${researchPath}`);
+  }
+}
+```
+
+**Step 2: Warn if No Research for Complex Epic**
+
+If epic has 3+ stories and no research field, suggest research first:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "This epic has no linked research. Complex features benefit from research-first planning. What would you like to do?",
+  "header": "Research Check",
+  "multiSelect": false,
+  "options": [
+    {"label": "Create research first (Recommended)", "description": "Run /agileflow:research:ask to gather context"},
+    {"label": "Continue without research", "description": "Proceed with epic creation"},
+    {"label": "Link existing research", "description": "Specify research file to link"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Create research first"**:
+- Suggest: `/agileflow:research:ask <topic>`
+- After research created, re-run epic creation with RESEARCH parameter
+
+**If "Link existing research"**:
+- Show list of recent research files in docs/10-research/
+- Let user select one
+- Add to epic: `research: "selected-file.md"`
+
+### Epic Schema with Research
+
+```json
+{
+  "EP-0022": {
+    "title": "GSD Integration",
+    "status": "in_progress",
+    "owner": "AG-DEVOPS",
+    "goal": "Adopt GSD workflow patterns",
+    "research": "20260119-gsd-agileflow-integration-analysis.md",
+    "research_required": false,
+    "stories": ["US-0129", "US-0130", "US-0131", "US-0132"]
+  }
+}
+```
+
+**Fields**:
+- `research` (optional): Filename of research note in docs/10-research/
+- `research_required` (optional): If true, blocks implementation until research exists
+
+### When Starting Work Without Research
+
+If user tries to start a story in an epic that has `research_required: true` but no valid research file:
+
+```
+⚠️  Research Required
+
+Epic EP-0022 requires research before implementation.
+Research file not found: 20260119-missing-research.md
+
+Suggested actions:
+1. Run /agileflow:research:ask "GSD workflow integration"
+2. Link existing research with /agileflow:epic RESEARCH=<file>
+3. Remove research_required flag if research is optional
+```
 
 ---
 
