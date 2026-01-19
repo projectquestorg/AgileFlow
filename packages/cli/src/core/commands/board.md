@@ -2,6 +2,7 @@
 description: Display visual kanban board with WIP limits
 argument-hint: "[EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|markdown|html] [GROUP_BY=status|owner|epic]"
 model: haiku
+type: output-only  # Board display - read-only visualization, not an ongoing task
 compact_context:
   priority: medium
   preserve_rules:

@@ -29,9 +29,9 @@ const PATTERNS = {
   // Examples: default, my-profile, dev_config
   profileName: /^[a-zA-Z][a-zA-Z0-9_-]*$/,
 
-  // Command name: alphanumeric with hyphens/colons, starts with letter
-  // Examples: babysit, story:list, agileflow:configure
-  commandName: /^[a-zA-Z][a-zA-Z0-9:-]*$/,
+  // Command name: alphanumeric with hyphens/colons/slashes, starts with letter
+  // Examples: babysit, story:list, agileflow:configure, research/ask
+  commandName: /^[a-zA-Z][a-zA-Z0-9:/-]*$/,
 
   // Session nickname: alphanumeric with hyphens/underscores
   // Examples: auth-work, feature_1, main

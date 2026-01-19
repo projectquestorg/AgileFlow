@@ -1,6 +1,7 @@
 ---
 description: Generate detailed research prompt for web AI tools (ChatGPT, Perplexity, etc.)
 argument-hint: TOPIC=<text> [DETAILS=<constraints>] [ERROR=<error message>]
+type: output-only  # This command generates output for user to copy - not an ongoing task
 compact_context:
   priority: critical
   preserve_rules:

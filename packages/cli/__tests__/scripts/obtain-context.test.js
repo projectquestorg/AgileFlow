@@ -320,4 +320,136 @@ describe('obtain-context.js', () => {
       expect(result.stdout).toContain('Key files');
     });
   });
+
+  describe('command type detection', () => {
+    test('registers command with type field from frontmatter', () => {
+      // Create session-state.json
+      const sessionState = {
+        current_session: {
+          started_at: new Date().toISOString(),
+        },
+      };
+      fs.writeFileSync(
+        path.join(testDir, 'docs', '09-agents', 'session-state.json'),
+        JSON.stringify(sessionState, null, 2)
+      );
+
+      // Create command file with type: output-only in frontmatter
+      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands');
+      fs.mkdirSync(commandDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(commandDir, 'my-output-cmd.md'),
+        `---
+description: Test command
+type: output-only
+---
+
+# My Output Command
+
+Content here.
+`
+      );
+
+      spawnSync('node', [scriptPath, 'my-output-cmd'], {
+        cwd: testDir,
+        encoding: 'utf8',
+        timeout: 10000,
+      });
+
+      const updated = JSON.parse(
+        fs.readFileSync(path.join(testDir, 'docs', '09-agents', 'session-state.json'), 'utf8')
+      );
+
+      // The command should be registered with type: output-only
+      expect(updated.active_commands).toBeDefined();
+      const cmd = updated.active_commands.find(c => c.name === 'my-output-cmd');
+      expect(cmd).toBeDefined();
+      expect(cmd.type).toBe('output-only');
+    });
+
+    test('defaults to interactive type when no type in frontmatter', () => {
+      // Create session-state.json
+      const sessionState = {
+        current_session: {
+          started_at: new Date().toISOString(),
+        },
+      };
+      fs.writeFileSync(
+        path.join(testDir, 'docs', '09-agents', 'session-state.json'),
+        JSON.stringify(sessionState, null, 2)
+      );
+
+      // Create command file without type field
+      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands');
+      fs.mkdirSync(commandDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(commandDir, 'my-interactive-cmd.md'),
+        `---
+description: Test command without type
+---
+
+# My Interactive Command
+
+Content here.
+`
+      );
+
+      spawnSync('node', [scriptPath, 'my-interactive-cmd'], {
+        cwd: testDir,
+        encoding: 'utf8',
+        timeout: 10000,
+      });
+
+      const updated = JSON.parse(
+        fs.readFileSync(path.join(testDir, 'docs', '09-agents', 'session-state.json'), 'utf8')
+      );
+
+      // The command should be registered with type: interactive (default)
+      expect(updated.active_commands).toBeDefined();
+      const cmd = updated.active_commands.find(c => c.name === 'my-interactive-cmd');
+      expect(cmd).toBeDefined();
+      expect(cmd.type).toBe('interactive');
+    });
+
+    test('handles nested command paths like research/ask', () => {
+      // Create session-state.json
+      const sessionState = {};
+      fs.writeFileSync(
+        path.join(testDir, 'docs', '09-agents', 'session-state.json'),
+        JSON.stringify(sessionState, null, 2)
+      );
+
+      // Create nested command file
+      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands', 'research');
+      fs.mkdirSync(commandDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(commandDir, 'ask.md'),
+        `---
+description: Research ask command
+type: output-only
+---
+
+# Research Ask
+`
+      );
+
+      // Note: The path format uses / for nested commands
+      spawnSync('node', [scriptPath, 'research/ask'], {
+        cwd: testDir,
+        encoding: 'utf8',
+        timeout: 10000,
+      });
+
+      const updated = JSON.parse(
+        fs.readFileSync(path.join(testDir, 'docs', '09-agents', 'session-state.json'), 'utf8')
+      );
+
+      // The command should be registered
+      expect(updated.active_commands).toBeDefined();
+      const cmd = updated.active_commands.find(c => c.name === 'research/ask');
+      expect(cmd).toBeDefined();
+      // Type should be detected from frontmatter
+      expect(cmd.type).toBe('output-only');
+    });
+  });
 });
