@@ -92,6 +92,7 @@ cat docs/07-testing/test-cases/<STORY>.md
 
 **Epic**: EP-0001 (Authentication System)
 **Status**: in_progress
+**Phase**: execute
 **Owner**: AG-UI
 **Estimate**: 3h
 **Created**: 2024-12-28
