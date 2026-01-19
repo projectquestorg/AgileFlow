@@ -12,11 +12,14 @@ compact_context:
     - "MUST show diff preview before confirming (diff-first pattern)"
     - "Status values: ready|in-progress|blocked|in-review|done"
     - "MUST escape user text automatically (jq handles escaping)"
+    - "PHASE HANDOFF: Prompt for summary on phase transitions (ready→in-progress, in-progress→in-review, in-review→done)"
   state_fields:
     - story_id
     - current_status
     - new_status
     - pr_url
+    - phase_from
+    - phase_to
 ---
 
 # status
@@ -178,6 +181,7 @@ docs/09-agents/status.json
 - ALWAYS show diff before confirming
 - Status values: ready, in-progress, blocked, in-review, done
 - Text escaping handled automatically by jq
+- **PHASE HANDOFF**: On phase transitions (ready→in-progress, in-progress→in-review, in-review→done), prompt for handoff summary and log to bus/log.jsonl with type "phase_handoff"
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -212,3 +216,112 @@ ACTIONS
 - If validation fails, restore from backup: docs/09-agents/status.json.backup
 
 Diff-first; YES/NO.
+
+---
+
+## Phase Handoff (GSD Integration)
+
+When status transitions indicate a phase change, prompt for a handoff summary to capture context for the next phase.
+
+### Phase Transitions
+
+| Status Change | Phase Transition | Handoff Prompt |
+|--------------|------------------|----------------|
+| ready → in-progress | plan → execute | "What's the plan for implementing this story?" |
+| in-progress → in-review | execute → audit | "What was implemented? Any issues encountered?" |
+| in-review → done | audit → complete | "Final summary: What was delivered?" |
+
+### Handoff Workflow
+
+**Step 1: Detect Phase Transition**
+
+Before updating status, check if this is a phase-changing transition:
+```javascript
+const phaseTransitions = {
+  'ready→in-progress': { from: 'plan', to: 'execute' },
+  'in-progress→in-review': { from: 'execute', to: 'audit' },
+  'in-review→done': { from: 'audit', to: 'complete' }
+};
+const key = `${currentStatus}→${newStatus}`;
+const transition = phaseTransitions[key];
+```
+
+**Step 2: Prompt for Handoff Summary**
+
+If a phase transition is detected, prompt BEFORE the status confirmation:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Phase transition: {{FROM}} → {{TO}}. Summarize what was accomplished:",
+  "header": "Handoff",
+  "multiSelect": false,
+  "options": [
+    {"label": "Enter summary", "description": "Capture context for next phase"},
+    {"label": "Skip handoff", "description": "No summary needed"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Step 3: Log Phase Handoff**
+
+If summary provided, append to bus/log.jsonl:
+```json
+{
+  "ts": "2026-01-19T12:00:00Z",
+  "type": "phase_handoff",
+  "story": "US-0130",
+  "from": "plan",
+  "to": "execute",
+  "summary": "User's handoff summary here"
+}
+```
+
+### Example Flow
+
+```
+User: /agileflow:status US-0042 STATUS=in-progress
+
+Claude:
+📋 Phase Transition Detected: plan → execute
+
+Before updating status, let's capture a handoff summary.
+
+[AskUserQuestion: "What's the plan for implementing this story?"]
+
+User: "Adding login form with email/password validation, using React Hook Form"
+
+Claude:
+✅ Handoff captured
+
+docs/09-agents/status.json
+- "status": "ready",
++ "status": "in-progress",
++ "last_update": "2026-01-19T12:00:00Z"
+
+[AskUserQuestion: "Update US-0042 to in-progress?"]
+
+User: "Yes, update"
+
+Claude:
+✅ Status updated: US-0042 → in-progress
+✅ Phase handoff logged: plan → execute
+```
+
+### Handoff Prompts by Transition
+
+**plan → execute** (ready → in-progress):
+- "What's the implementation approach?"
+- "Any architectural decisions made?"
+- "Key files to be modified?"
+
+**execute → audit** (in-progress → in-review):
+- "What was implemented?"
+- "Any issues or blockers encountered?"
+- "Tests passing? Coverage notes?"
+
+**audit → complete** (in-review → done):
+- "Final summary of what was delivered"
+- "Any technical debt introduced?"
+- "Lessons learned?"
