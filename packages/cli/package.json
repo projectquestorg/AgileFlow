@@ -53,7 +53,10 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
     "chalk": "^4.1.2",
+    "chokidar": "^4.0.3",
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
     "ink": "^3.2.0",
