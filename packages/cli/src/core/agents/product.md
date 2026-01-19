@@ -3,6 +3,12 @@ name: agileflow-product
 description: Product specialist for requirements analysis, user stories, acceptance criteria clarity, and feature validation before epic planning.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/story-format-validator.js"
 compact_context:
   priority: high
   preserve_rules:

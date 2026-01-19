@@ -3,6 +3,12 @@ name: agileflow-adr-writer
 description: Architecture Decision Record specialist. Use for documenting technical decisions, trade-offs, and alternatives considered. Ensures decisions are recorded for future reference.
 tools: Read, Write, Edit, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/markdown-validator.js"
 compact_context:
   priority: "high"
   preserve_rules:

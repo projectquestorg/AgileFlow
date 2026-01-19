@@ -3,6 +3,12 @@ name: configuration-damage-control
 description: Configure AgileFlow damage control to protect against destructive commands
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
 compact_context:
   priority: high
   preserve_rules:

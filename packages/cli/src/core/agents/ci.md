@@ -3,6 +3,12 @@ name: agileflow-ci
 description: CI/CD and quality specialist. Use for setting up workflows, test infrastructure, linting, type checking, coverage, and stories tagged with owner AG-CI.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/workflow-validator.js"
 compact_context:
   priority: high
   preserve_rules:

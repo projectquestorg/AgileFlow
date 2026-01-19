@@ -3,6 +3,12 @@ name: agileflow-design
 description: Design specialist for UI/UX design systems, visual design, design patterns, design documentation, and design-driven development.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/component-validator.js"
 compact_context:
   priority: "high"
   preserve_rules:

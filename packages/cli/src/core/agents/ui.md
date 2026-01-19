@@ -3,6 +3,12 @@ name: agileflow-ui
 description: UI/presentation layer specialist. Use for implementing front-end components, styling, theming, accessibility features, and stories tagged with owner AG-UI.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/component-validator.js"
 compact_context:
   priority: high
   preserve_rules:

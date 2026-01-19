@@ -3,6 +3,16 @@ name: agileflow-database
 description: Database specialist for schema design, migrations, query optimization, data modeling, and database-intensive features.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/migration-validator.js"
 compact_context:
   priority: high
   preserve_rules:

@@ -3,6 +3,12 @@ name: agileflow-readme-updater
 description: README specialist for auditing and updating all documentation files across project folders.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/markdown-validator.js"
 compact_context:
   priority: medium
   preserve_rules:

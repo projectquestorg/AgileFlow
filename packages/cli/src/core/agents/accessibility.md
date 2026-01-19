@@ -3,6 +3,12 @@ name: agileflow-accessibility
 description: Accessibility specialist for WCAG compliance, inclusive design, assistive technology support, and accessibility testing.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/component-validator.js"
 compact_context:
   priority: high
   preserve_rules:

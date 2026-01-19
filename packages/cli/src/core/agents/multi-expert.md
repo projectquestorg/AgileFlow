@@ -3,6 +3,12 @@ name: agileflow-multi-expert
 description: Multi-expert orchestrator that deploys 3-5 domain experts on the same problem and synthesizes results for high-confidence answers.
 tools: Read, Write, Edit, Bash, Glob, Grep, Task, TaskOutput
 model: sonnet
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
 compact_context:
   priority: "high"
   preserve_rules:

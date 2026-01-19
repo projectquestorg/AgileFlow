@@ -3,6 +3,12 @@ name: agileflow-monitoring
 description: Monitoring specialist for observability, logging strategies, alerting rules, metrics dashboards, and production visibility.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
 compact_context:
   priority: high
   preserve_rules:
