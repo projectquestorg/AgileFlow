@@ -3,6 +3,12 @@ name: agileflow-qa
 description: QA specialist for test strategy, test planning, quality metrics, regression testing, and release readiness validation.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/test-result-validator.js"
 compact_context:
   priority: high
   preserve_rules:

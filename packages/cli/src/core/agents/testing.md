@@ -3,6 +3,16 @@ name: agileflow-testing
 description: Testing specialist for test strategy, test patterns, coverage optimization, and comprehensive test suite design (different from CI infrastructure).
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/test-result-validator.js"
+  Stop:
+    - hooks:
+        - type: command
+          command: "echo 'Testing agent complete - verify test_status in status.json'"
 compact_context:
   priority: high
   preserve_rules:

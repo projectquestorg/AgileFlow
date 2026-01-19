@@ -3,6 +3,12 @@ name: agileflow-research
 description: Research specialist. Use for gathering technical information, creating research prompts for ChatGPT, saving research notes, and maintaining the research index.
 tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/markdown-validator.js"
 compact_context:
   priority: "high"
   preserve_rules:

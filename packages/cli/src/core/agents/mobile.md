@@ -3,6 +3,12 @@ name: agileflow-mobile
 description: Mobile specialist for React Native, Flutter, cross-platform mobile development, and mobile-specific features.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/component-validator.js"
 compact_context:
   priority: high
   preserve_rules:

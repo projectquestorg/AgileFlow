@@ -3,6 +3,12 @@ name: agileflow-compliance
 description: Compliance specialist for regulatory compliance, GDPR, HIPAA, SOC2, audit trails, legal requirements, and compliance documentation.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/security-validator.js"
 compact_context:
   priority: critical
   preserve_rules:

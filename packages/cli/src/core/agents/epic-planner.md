@@ -3,6 +3,12 @@ name: agileflow-epic-planner
 description: Epic and story planning specialist. Use for breaking down large features into epics and stories, writing acceptance criteria, estimating effort, and mapping dependencies.
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/story-format-validator.js"
 compact_context:
   priority: "high"
   preserve_rules:

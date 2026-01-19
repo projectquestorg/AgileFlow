@@ -3,6 +3,12 @@ name: agileflow-devops
 description: DevOps and automation specialist. Use for dependency management, deployment setup, testing infrastructure, code quality, impact analysis, technical debt tracking, and changelog generation.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 model: haiku
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
 compact_context:
   priority: high
   preserve_rules:

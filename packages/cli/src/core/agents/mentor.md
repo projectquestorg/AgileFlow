@@ -3,6 +3,12 @@ name: agileflow-mentor
 description: End-to-end implementation mentor. Use for guiding feature implementation from idea to PR, researching approaches, creating missing epics/stories, and orchestrating multi-step workflows.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+hooks:
+  PostToolUse:
+    - matcher: "Write"
+      hooks:
+        - type: command
+          command: "node .agileflow/hooks/validators/json-schema-validator.js"
 compact_context:
   priority: "critical"
   preserve_rules:
