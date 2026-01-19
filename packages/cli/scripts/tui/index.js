@@ -4,50 +4,58 @@
 /**
  * AgileFlow TUI - Terminal User Interface
  *
- * Real-time visualization for session monitoring, multi-agent orchestration,
- * and interactive loop control.
+ * Full-screen, flicker-free dashboard for session monitoring, multi-agent
+ * orchestration, and interactive workflow control.
  *
  * Usage:
  *   node scripts/tui/index.js
  *   npx agileflow tui
+ *   npx agileflow tui --fallback  (use simple ANSI version)
  *
  * Key bindings:
- *   q - Quit TUI
- *   s - Start loop on current story
- *   p - Pause active loop
- *   r - Resume paused loop
- *   t - Toggle trace panel
- *   1-9 - Switch session focus
+ *   1-3       Switch tabs (Sessions, Output, Trace)
+ *   Tab       Next tab
+ *   j/k       Navigate list items
+ *   r         Refresh data
+ *   ?/h       Toggle help overlay
+ *   q         Quit TUI
  */
 
-// Use simple-tui (pure Node.js) - Ink has React version conflicts in monorepo
-const useInk = false;
+// Check for --fallback flag
+const useFallback = process.argv.includes('--fallback') || process.argv.includes('--simple');
 
 /**
  * Main entry point
  */
 async function main() {
-  if (useInk) {
-    // Use the React/Ink-based Dashboard for modern terminals
-    const React = require('react');
-    const { render } = require('ink');
-    const { Dashboard } = require('./Dashboard');
-
-    // Handle actions from the dashboard
-    const handleAction = action => {
-      // TODO: Implement loop control actions
-      // console.log('Action:', action);
-    };
-
-    // Render the dashboard
-    const { waitUntilExit } = render(React.createElement(Dashboard, { onAction: handleAction }));
-
-    // Wait for exit
-    await waitUntilExit();
+  if (useFallback) {
+    // Use simple TUI (pure Node.js ANSI codes, no dependencies)
+    try {
+      const { main: simpleTuiMain } = require('./simple-tui');
+      simpleTuiMain();
+    } catch (err) {
+      console.error('Simple TUI Error:', err.message);
+      process.exit(1);
+    }
   } else {
-    // Use simple TUI (pure Node.js, no React dependencies)
-    const { main: simpleTuiMain } = require('./simple-tui');
-    simpleTuiMain();
+    // Use blessed TUI (professional full-screen interface)
+    try {
+      const { main: blessedMain } = require('./blessed');
+      blessedMain();
+    } catch (err) {
+      // If blessed fails (missing deps, terminal issues), fall back to simple
+      console.error('Blessed TUI failed to load:', err.message);
+      console.error('Falling back to simple TUI...\n');
+
+      try {
+        const { main: simpleTuiMain } = require('./simple-tui');
+        simpleTuiMain();
+      } catch (fallbackErr) {
+        console.error('Fallback TUI also failed:', fallbackErr.message);
+        console.error('\nTry running with: npx agileflow status');
+        process.exit(1);
+      }
+    }
   }
 }
 
