@@ -76,17 +76,17 @@ Format output as table grouped by epic:
 ## Stories
 
 ### EP-0001: Authentication System
-| Story | Title | Status | Owner | Estimate |
-|-------|-------|--------|-------|----------|
-| US-0001 | Login form | done | AG-UI | 2h |
-| US-0002 | Password reset | in_progress | AG-API | 3h |
-| US-0003 | Session management | ready | AG-API | 4h |
+| Story | Title | Status | Phase | Owner | Estimate |
+|-------|-------|--------|-------|-------|----------|
+| US-0001 | Login form | done | complete | AG-UI | 2h |
+| US-0002 | Password reset | in_progress | execute | AG-API | 3h |
+| US-0003 | Session management | ready | plan | AG-API | 4h |
 
 ### EP-0002: User Dashboard
-| Story | Title | Status | Owner | Estimate |
-|-------|-------|--------|-------|----------|
-| US-0004 | Dashboard layout | ready | AG-UI | 2h |
-| US-0005 | Activity feed | ready | AG-UI | 3h |
+| Story | Title | Status | Phase | Owner | Estimate |
+|-------|-------|--------|-------|-------|----------|
+| US-0004 | Dashboard layout | ready | plan | AG-UI | 2h |
+| US-0005 | Activity feed | ready | plan | AG-UI | 3h |
 
 ---
 **Summary**: 5 stories (1 done, 1 in_progress, 3 ready)

@@ -108,6 +108,7 @@ TO=<agent-id>           # Recipient agent for bus message (optional)
   "stories": {
     "US-0042": {
       "status": "in-progress",
+      "phase": "execute",
       "summary": "Started work on login form",
       "pr": "https://github.com/.../pull/42",
       "last_update": "ISO-timestamp"
@@ -115,6 +116,15 @@ TO=<agent-id>           # Recipient agent for bus message (optional)
   }
 }
 ```
+
+**Phase Field** (auto-set based on status):
+| Status | Phase |
+|--------|-------|
+| ready | plan |
+| in-progress | execute |
+| blocked | execute |
+| in-review | audit |
+| done | complete |
 
 **Append to bus/log.jsonl**:
 ```json
@@ -149,6 +159,7 @@ docs/09-agents/status.json
 
 - "status": "ready",
 + "status": "in-progress",
++ "phase": "execute",
 + "summary": "Started work on login form",
 + "pr": "https://github.com/.../pull/42",
 ```
@@ -196,7 +207,8 @@ STORY=<US-ID>  STATUS=in-progress|blocked|in-review|done
 SUMMARY=<1–2 lines>  PR=<url optional>  TO=<agent id optional>
 
 ACTIONS
-1) Update docs/09-agents/status.json (status,summary,last_update,pr).
+1) Update docs/09-agents/status.json (status,phase,summary,last_update,pr).
+   - Set phase based on status: ready→plan, in-progress/blocked→execute, in-review→audit, done→complete
    **CRITICAL**: Always use jq for JSON operations to prevent corruption.
 2) **Validate JSON after update**:
    ```bash
