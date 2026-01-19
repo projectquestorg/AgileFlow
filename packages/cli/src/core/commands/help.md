@@ -1,6 +1,7 @@
 ---
 description: Display AgileFlow system overview and commands
 argument-hint: (no arguments)
+type: output-only  # Display command - generates output, not an ongoing task
 compact_context:
   priority: medium
   preserve_rules:

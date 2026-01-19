@@ -42,11 +42,23 @@ if [ -d "docs/05-epics" ]; then
 fi
 
 # Detect active commands and extract their Compact Summaries
+# IMPORTANT: Skip "output-only" commands like research:ask, research:list, research:view
+# These commands generate output for the user to copy - they're not ongoing tasks.
+# If we include them in PreCompact, Claude will try to re-execute them after compact.
 COMMAND_SUMMARIES=""
 if [ -f "docs/09-agents/session-state.json" ]; then
+  # Output-only commands that should NOT be preserved during compact
+  # These commands generate output once and are done - no ongoing state
+  # Note: Commands with type: output-only in frontmatter are also filtered
+  OUTPUT_ONLY_COMMANDS="research/ask research/list research/view help metrics board"
+
   ACTIVE_COMMANDS=$(node -p "
     const s = require('./docs/09-agents/session-state.json');
-    (s.active_commands || []).map(c => c.name).join(' ');
+    const outputOnly = '$OUTPUT_ONLY_COMMANDS'.split(' ');
+    (s.active_commands || [])
+      .filter(c => !outputOnly.includes(c.name) && c.type !== 'output-only')
+      .map(c => c.name)
+      .join(' ');
   " 2>/dev/null || echo "")
 
   for ACTIVE_COMMAND in $ACTIVE_COMMANDS; do

@@ -99,6 +99,40 @@ const commandName = process.argv[2];
 const commandArgs = process.argv.slice(3);
 const { activeSections, params: commandParams } = parseCommandArgs(commandArgs);
 
+// Helper to extract command type from frontmatter
+function getCommandType(cmdName) {
+  // Handle nested command paths like "research/ask" -> "research/ask.md"
+  // The command name may contain "/" for nested commands
+  const cmdPath = cmdName.includes('/')
+    ? `${cmdName.substring(0, cmdName.lastIndexOf('/'))}/${cmdName.substring(cmdName.lastIndexOf('/') + 1)}.md`
+    : `${cmdName}.md`;
+
+  // Try to find the command file and read its frontmatter type
+  const possiblePaths = [
+    `packages/cli/src/core/commands/${cmdPath}`,
+    `.agileflow/commands/${cmdPath}`,
+    `.claude/commands/agileflow/${cmdPath}`,
+    // Also try flat path for legacy commands
+    `packages/cli/src/core/commands/${cmdName.replace(/\//g, '-')}.md`,
+  ];
+
+  for (const searchPath of possiblePaths) {
+    if (fs.existsSync(searchPath)) {
+      try {
+        const content = fs.readFileSync(searchPath, 'utf8');
+        // Extract type from YAML frontmatter
+        const match = content.match(/^---\n[\s\S]*?type:\s*(\S+)/m);
+        if (match) {
+          return match[1].replace(/['"]/g, ''); // Remove quotes if any
+        }
+      } catch {
+        // Continue to next path
+      }
+    }
+  }
+  return 'interactive'; // Default to interactive
+}
+
 // Register command for PreCompact context preservation
 if (commandName && isValidCommandName(commandName)) {
   const sessionStatePath = 'docs/09-agents/session-state.json';
@@ -114,9 +148,13 @@ if (commandName && isValidCommandName(commandName)) {
       // Remove any existing entry for this command (avoid duplicates)
       state.active_commands = state.active_commands.filter(c => c.name !== commandName);
 
+      // Get command type from frontmatter (output-only vs interactive)
+      const commandType = getCommandType(commandName);
+
       // Add the new command with active sections for progressive disclosure
       state.active_commands.push({
         name: commandName,
+        type: commandType, // Used by PreCompact to skip output-only commands
         activated_at: new Date().toISOString(),
         state: {},
         active_sections: activeSections,

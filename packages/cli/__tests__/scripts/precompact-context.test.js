@@ -284,6 +284,103 @@ describe('precompact-context.sh', () => {
     });
   });
 
+  describe('output-only command filtering', () => {
+    test('skips commands with type output-only', () => {
+      // Create two commands - one output-only, one interactive
+      createCommand('babysit', '**Babysit Summary**: Interactive command');
+
+      // Create an output-only command
+      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands');
+      const researchDir = path.join(commandDir, 'research');
+      fs.mkdirSync(researchDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(researchDir, 'ask.md'),
+        `# Research Ask
+
+<!-- COMPACT_SUMMARY_START -->
+**Research Summary**: This should NOT appear
+<!-- COMPACT_SUMMARY_END -->
+`
+      );
+
+      createSessionState([
+        { name: 'babysit', type: 'interactive', activated_at: new Date().toISOString(), state: {} },
+        { name: 'research/ask', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+      ]);
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      // Interactive command should appear
+      expect(result.stdout).toContain('ACTIVE COMMAND: /agileflow:babysit');
+      expect(result.stdout).toContain('Babysit Summary');
+      // Output-only command should NOT appear
+      expect(result.stdout).not.toContain('research/ask');
+      expect(result.stdout).not.toContain('Research Summary');
+    });
+
+    test('skips hardcoded output-only commands in blocklist', () => {
+      // Create command file for a blocklisted command
+      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands');
+      fs.mkdirSync(commandDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(commandDir, 'help.md'),
+        `# Help Command
+
+<!-- COMPACT_SUMMARY_START -->
+**Help Summary**: This should NOT appear either
+<!-- COMPACT_SUMMARY_END -->
+`
+      );
+
+      // Note: even without type: output-only, 'help' is in the blocklist
+      createSessionState([
+        { name: 'help', activated_at: new Date().toISOString(), state: {} },
+      ]);
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).not.toContain('help');
+      expect(result.stdout).not.toContain('Help Summary');
+    });
+
+    test('preserves interactive commands without type field', () => {
+      createCommand('mentor', '**Mentor Summary**: Guide implementation');
+
+      // Command without explicit type should be treated as interactive
+      createSessionState([
+        { name: 'mentor', activated_at: new Date().toISOString(), state: {} },
+      ]);
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('ACTIVE COMMAND: /agileflow:mentor');
+      expect(result.stdout).toContain('Mentor Summary');
+    });
+
+    test('filters multiple output-only commands', () => {
+      createCommand('babysit', '**Babysit Summary**: This should appear');
+
+      createSessionState([
+        { name: 'babysit', type: 'interactive', activated_at: new Date().toISOString(), state: {} },
+        { name: 'research/ask', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+        { name: 'research/list', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+        { name: 'metrics', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+      ]);
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      // Only babysit should appear
+      expect(result.stdout).toContain('ACTIVE COMMAND: /agileflow:babysit');
+      expect(result.stdout).not.toContain('research/ask');
+      expect(result.stdout).not.toContain('research/list');
+      expect(result.stdout).not.toContain('metrics');
+    });
+  });
+
   describe('key files section', () => {
     test('lists key files to check', () => {
       const result = runPrecompact();

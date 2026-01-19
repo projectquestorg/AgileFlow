@@ -2,6 +2,7 @@
 description: Analytics dashboard with cycle time and throughput
 argument-hint: "[TIMEFRAME=7d|30d|90d|all] [EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|json|csv] [METRIC=cycle-time|lead-time|throughput|all]"
 model: haiku
+type: output-only  # Analytics display - read-only, not an ongoing task
 compact_context:
   priority: medium
   preserve_rules:
