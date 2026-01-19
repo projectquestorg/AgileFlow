@@ -1,0 +1,190 @@
+# Codebase Query Expert - Domain Knowledge
+# This file is the agent's "mental model" of codebase querying
+# AUTO-UPDATED by self-improve.md after completing work
+
+domain: codebase-query
+last_updated: 2026-01-19
+version: 1.0
+
+# Query interface components
+files:
+  query_script:
+    - path: packages/cli/scripts/query-codebase.js
+      purpose: "CLI for codebase queries"
+      commands:
+        - "--build-index: Build/rebuild codebase index"
+        - "--query=<pattern>: Smart search (glob + tag + export)"
+        - "--content=<regex>: Search file content"
+        - "--tag=<tag>: Search by tag"
+        - "--export=<symbol>: Find export locations"
+        - "--deps=<file>: Show file dependencies"
+
+  indexer:
+    - path: packages/cli/lib/codebase-indexer.js
+      purpose: "Core indexing logic"
+      functions:
+        - "buildIndex(rootDir): Full index build"
+        - "updateIndex(rootDir): Incremental update"
+        - "getIndex(rootDir): Get cached or build"
+        - "queryFiles(index, pattern): Glob matching"
+        - "queryByTag(index, tag): Tag lookup"
+        - "queryByExport(index, symbol): Export search"
+        - "getDependencies(index, file): Import graph"
+
+  cache:
+    - path: .agileflow/cache/codebase-index.json
+      purpose: "Persistent index storage"
+      ttl: "60 seconds in-memory, persistent on disk"
+
+# Query type mappings
+query_types:
+  files:
+    flag: "--query"
+    description: "Smart search combining glob, tag, and export matching"
+    examples:
+      - input: "auth files"
+        translation: '--query="auth"'
+      - input: "api routes"
+        translation: '--query="src/api/**/*.ts"'
+      - input: "test files"
+        translation: '--query="**/*.test.{js,ts}"'
+
+  content:
+    flag: "--content"
+    description: "Grep-style regex content search"
+    examples:
+      - input: "files with validateToken"
+        translation: '--content="validateToken"'
+      - input: "error handling patterns"
+        translation: '--content="try.*catch|\.catch\\("'
+      - input: "React hooks usage"
+        translation: '--content="use(State|Effect|Ref|Context)"'
+
+  tag:
+    flag: "--tag"
+    description: "Search by auto-detected tag"
+    examples:
+      - input: "API endpoints"
+        translation: '--tag="api"'
+      - input: "UI components"
+        translation: '--tag="ui"'
+      - input: "database models"
+        translation: '--tag="database"'
+
+  export:
+    flag: "--export"
+    description: "Find files exporting a symbol"
+    examples:
+      - input: "where is login defined"
+        translation: '--export="login"'
+      - input: "UserService export"
+        translation: '--export="UserService"'
+
+  deps:
+    flag: "--deps"
+    description: "Show file dependencies"
+    examples:
+      - input: "what depends on auth.ts"
+        translation: '--deps="src/auth.ts"'
+      - input: "utils dependencies"
+        translation: '--deps="src/lib/utils.js"'
+
+# Available tags (auto-detected from paths)
+available_tags:
+  api:
+    patterns: ["/api/", "/routes/", "/endpoints/", "/controllers/"]
+    description: "API endpoints and routes"
+  ui:
+    patterns: ["/components/", "/ui/", "/views/", "/pages/"]
+    description: "UI components and views"
+  database:
+    patterns: ["/db/", "/database/", "/models/", "/schema/", "/migrations/"]
+    description: "Database models and migrations"
+  auth:
+    patterns: ["/auth/", "/login/", "/session/", "/jwt/", "/oauth/"]
+    description: "Authentication logic"
+  test:
+    patterns: ["/test/", "/tests/", "/__tests__/", "/spec/", "/specs/"]
+    description: "Test files"
+  config:
+    patterns: ["/config/", "/settings/", "/env/"]
+    description: "Configuration files"
+  lib:
+    patterns: ["/lib/", "/utils/", "/helpers/", "/shared/"]
+    description: "Utility libraries"
+  docs:
+    patterns: ["/docs/", "/documentation/"]
+    description: "Documentation files"
+  scripts:
+    patterns: ["/scripts/", "/bin/", "/tools/"]
+    description: "Build and utility scripts"
+  types:
+    patterns: ["/types/", "/typings/", "/interfaces/"]
+    description: "Type definitions"
+
+# Natural language patterns
+nl_patterns:
+  - pattern: "where is * defined"
+    query_type: export
+    extraction: "symbol from *"
+  - pattern: "what files use *"
+    query_type: export
+    extraction: "symbol from *"
+  - pattern: "* files"
+    query_type: query
+    extraction: "keyword from *"
+  - pattern: "files with *"
+    query_type: content
+    extraction: "regex from *"
+  - pattern: "* in the codebase"
+    query_type: query
+    extraction: "keyword from *"
+  - pattern: "dependencies of *"
+    query_type: deps
+    extraction: "file path from *"
+  - pattern: "what depends on *"
+    query_type: deps
+    extraction: "file path from *"
+
+# Fallback strategies
+fallbacks:
+  index_unavailable:
+    description: "When index cannot be built or is corrupted"
+    strategy:
+      - "Use Glob tool for file pattern matching"
+      - "Use Grep tool for content searching"
+      - "Combine results manually"
+
+  no_results:
+    description: "When query returns no matches"
+    strategy:
+      - "Try broader search terms"
+      - "Check for typos in symbol names"
+      - "Try content search instead of export search"
+      - "Suggest related tags"
+
+# Conventions
+conventions:
+  - "Always check index status before querying"
+  - "Translate natural language to structured queries"
+  - "Combine multiple query types for complex searches"
+  - "Respect token budget (default 15000 chars)"
+  - "Show file counts and truncation notices"
+  - "READ-ONLY: Never use Write/Edit tools"
+
+# Learnings from codebase exploration
+learnings:
+  - date: 2026-01-19
+    context: "Initial indexer implementation"
+    insight: "Index build takes ~6.5s for 1777 files, use incremental updates for speed"
+    source: "packages/cli/lib/codebase-indexer.js"
+
+  - date: 2026-01-19
+    context: "Tag detection"
+    insight: "9 auto-detected tags available: api, ui, database, auth, test, config, lib, docs, scripts"
+    source: "packages/cli/lib/codebase-indexer.js:TAG_PATTERNS"
+
+  - date: 2026-01-19
+    context: "Export tracking"
+    insight: "477 exports tracked across codebase, searchable via --export flag"
+    source: "query-codebase.js --build-index output"

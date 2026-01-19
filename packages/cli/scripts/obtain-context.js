@@ -21,9 +21,15 @@
  * - File overlaps: Only load if parallel sessions are active
  * - Configurable via features.lazyContext in agileflow-metadata.json
  *
+ * QUERY MODE (US-0127):
+ * - When QUERY=<pattern> provided, uses codebase index for targeted search
+ * - Falls back to full context if query returns empty
+ * - Based on RLM pattern: programmatic search instead of loading everything
+ *
  * Usage:
  *   node scripts/obtain-context.js              # Just gather context
  *   node scripts/obtain-context.js babysit      # Gather + register 'babysit'
+ *   node scripts/obtain-context.js babysit QUERY="auth files"  # Query mode
  */
 
 const fs = require('fs');
@@ -75,6 +81,11 @@ function parseCommandArgs(args) {
 
   if (params.VISUAL === 'true') {
     activeSections.push('visual-e2e');
+  }
+
+  // Query mode: QUERY=<pattern> triggers targeted codebase search (US-0127)
+  if (params.QUERY) {
+    activeSections.push('query-mode');
   }
 
   // Check for multi-session environment
@@ -1120,6 +1131,54 @@ function generateFullContent(prefetched = null) {
 }
 
 // ============================================
+// QUERY MODE: Targeted codebase search (US-0127)
+// ============================================
+
+/**
+ * Execute query mode using codebase index for targeted search.
+ * Falls back to full context if query returns no results.
+ *
+ * @param {string} query - Natural language or pattern query
+ * @returns {Object|null} Query results or null to fall back to full context
+ */
+function executeQueryMode(query) {
+  const queryScript = path.join(__dirname, 'query-codebase.js');
+
+  // Check if query script exists
+  if (!fs.existsSync(queryScript)) {
+    console.error('Query mode unavailable: query-codebase.js not found');
+    return null; // Fall back to full context
+  }
+
+  try {
+    // Execute query and capture output
+    const result = execSync(`node "${queryScript}" --query="${query}" --budget=15000`, {
+      encoding: 'utf8',
+      maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+    });
+
+    // Check if we got results
+    if (result.includes('No files found') || result.trim() === '') {
+      return null; // Fall back to full context
+    }
+
+    return {
+      mode: 'query',
+      query: query,
+      results: result.trim(),
+    };
+  } catch (err) {
+    // Exit code 2 = no results, fall back to full context
+    if (err.status === 2) {
+      return null;
+    }
+    // Exit code 1 = error, report but fall back
+    console.error(`Query error: ${err.message}`);
+    return null;
+  }
+}
+
+// ============================================
 // MAIN: Output with smart summary positioning
 // ============================================
 
@@ -1127,6 +1186,24 @@ function generateFullContent(prefetched = null) {
  * Main execution function using parallel pre-fetching for optimal performance.
  */
 async function main() {
+  // Check for query mode first (US-0127)
+  if (activeSections.includes('query-mode') && commandParams.QUERY) {
+    const queryResult = executeQueryMode(commandParams.QUERY);
+
+    if (queryResult) {
+      // Output query results instead of full context
+      console.log(`=== QUERY MODE ===`);
+      console.log(`Query: "${queryResult.query}"`);
+      console.log(`---`);
+      console.log(queryResult.results);
+      console.log(`---`);
+      console.log(`[Query mode: targeted search. Run without QUERY= for full context]`);
+      return;
+    }
+    // Fall through to full context if query returned no results
+    console.log(`[Query "${commandParams.QUERY}" returned no results, loading full context...]`);
+  }
+
   // Check for multi-session environment before prefetching
   const registryPath = '.agileflow/sessions/registry.json';
   let isMultiSession = false;
