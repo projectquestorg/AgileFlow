@@ -35,6 +35,7 @@
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 const { c: C, box } = require('../lib/colors');
 const { isValidCommandName } = require('../lib/validate');
@@ -212,6 +213,121 @@ function safeExec(cmd) {
   } catch {
     return null;
   }
+}
+
+// =============================================================================
+// Context Budget Tracking (GSD Integration)
+// =============================================================================
+
+/**
+ * Get current context usage percentage from Claude's session files.
+ * Reads token counts from the active session JSONL file.
+ *
+ * @returns {{ percent: number, tokens: number, max: number } | null}
+ */
+function getContextPercentage() {
+  try {
+    const homeDir = os.homedir();
+    const cwd = process.cwd();
+
+    // Convert current dir to Claude's session file path format
+    // e.g., /home/coder/AgileFlow -> home-coder-AgileFlow
+    const projectDir = cwd.replace(homeDir, '~').replace('~', homeDir).replace(/\//g, '-').replace(/^-/, '');
+    const sessionDir = path.join(homeDir, '.claude', 'projects', `-${projectDir}`);
+
+    if (!fs.existsSync(sessionDir)) {
+      return null;
+    }
+
+    // Find most recent .jsonl session file
+    const files = fs.readdirSync(sessionDir)
+      .filter(f => f.endsWith('.jsonl'))
+      .map(f => ({
+        name: f,
+        mtime: fs.statSync(path.join(sessionDir, f)).mtime.getTime(),
+      }))
+      .sort((a, b) => b.mtime - a.mtime);
+
+    if (files.length === 0) {
+      return null;
+    }
+
+    const sessionFile = path.join(sessionDir, files[0].name);
+    const content = fs.readFileSync(sessionFile, 'utf8');
+    const lines = content.trim().split('\n').slice(-20); // Last 20 lines
+
+    // Find latest usage entry
+    let latestTokens = 0;
+    for (const line of lines.reverse()) {
+      try {
+        const entry = JSON.parse(line);
+        if (entry?.message?.usage) {
+          const usage = entry.message.usage;
+          latestTokens = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0);
+          if (latestTokens > 0) break;
+        }
+      } catch {
+        // Skip malformed lines
+      }
+    }
+
+    if (latestTokens === 0) {
+      return null;
+    }
+
+    // Default to 200K context for modern Claude models
+    const maxContext = 200000;
+    const percent = Math.min(100, Math.round((latestTokens * 100) / maxContext));
+
+    return { percent, tokens: latestTokens, max: maxContext };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate context budget warning box if usage exceeds threshold.
+ * Based on GSD research: 50% is where quality starts degrading.
+ *
+ * @param {number} percent - Context usage percentage
+ * @returns {string} Warning box or empty string
+ */
+function generateContextWarning(percent) {
+  if (percent < 50) {
+    return ''; // No warning needed
+  }
+
+  const width = 60;
+  const topLine = `┏${'━'.repeat(width - 2)}┓`;
+  const bottomLine = `┗${'━'.repeat(width - 2)}┛`;
+
+  let color, icon, message, suggestion;
+
+  if (percent >= 70) {
+    // Critical: Dumb Zone
+    color = C.coral;
+    icon = '🔴';
+    message = `Context usage: ${percent}% (in degradation zone)`;
+    suggestion = 'Strongly recommend: compact conversation or delegate to sub-agent';
+  } else {
+    // Warning: Approaching limit (50-69%)
+    color = C.amber;
+    icon = '⚠️';
+    message = `Context usage: ${percent}% (approaching 50% threshold)`;
+    suggestion = 'Consider: delegate to sub-agent or compact conversation';
+  }
+
+  // Pad messages to fit width
+  const msgPadded = ` ${icon} ${message}`.padEnd(width - 3) + '┃';
+  const sugPadded = ` → ${suggestion}`.padEnd(width - 3) + '┃';
+
+  return [
+    `${color}${C.bold}${topLine}${C.reset}`,
+    `${color}${C.bold}┃${msgPadded}${C.reset}`,
+    `${color}${C.bold}┃${sugPadded}${C.reset}`,
+    `${color}${C.bold}${bottomLine}${C.reset}`,
+    '',
+  ].join('\n');
 }
 
 // =============================================================================
@@ -726,6 +842,13 @@ function generateFullContent(prefetched = null) {
     content += `${C.mintGreen}→ ALWAYS${C.reset} call ${C.skyBlue}AskUserQuestion${C.reset} tool to offer next steps\n`;
     content += `${C.coral}→ NEVER${C.reset} end with text like "Done!" or "What's next?"\n\n`;
     content += `${C.dim}Balance: Use at natural pause points. Don't ask permission for routine work.${C.reset}\n\n`;
+  }
+
+  // 0.6 CONTEXT BUDGET WARNING (GSD Integration)
+  // Show warning when context usage approaches 50% threshold
+  const contextUsage = getContextPercentage();
+  if (contextUsage && contextUsage.percent >= 50) {
+    content += generateContextWarning(contextUsage.percent);
   }
 
   // 0. PROGRESSIVE DISCLOSURE (section activation)
