@@ -25,7 +25,8 @@ export default defineConfig({
   // Shared settings for all the projects below
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: "http://localhost:3000",
+    // CI uses production build (port 3001), local dev uses port 3002
+    baseURL: process.env.CI ? "http://localhost:3001" : "http://localhost:3002",
     // Collect trace when retrying the failed test
     trace: "on-first-retry",
     // Take screenshot on failure
@@ -59,10 +60,10 @@ export default defineConfig({
   ],
 
   // Run your local dev server before starting the tests
-  // On CI, use production build for faster startup; locally use dev mode
+  // On CI, use production build (port 3001) for faster startup; locally use dev mode (port 3002)
   webServer: {
     command: process.env.CI ? "pnpm start" : "pnpm dev",
-    url: "http://localhost:3000",
+    url: process.env.CI ? "http://localhost:3001" : "http://localhost:3002",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     stdout: "pipe",
