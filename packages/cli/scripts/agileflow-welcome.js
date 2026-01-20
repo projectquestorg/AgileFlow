@@ -31,6 +31,14 @@ try {
   // Story claiming not available
 }
 
+// Story state machine (for epic completion check)
+let storyStateMachine;
+try {
+  storyStateMachine = require('./lib/story-state-machine.js');
+} catch (e) {
+  // Story state machine not available
+}
+
 // File tracking module
 let fileTracking;
 try {
@@ -1358,6 +1366,34 @@ async function main() {
       }
     } catch (e) {
       // Silently ignore file tracking errors
+    }
+  }
+
+  // Epic completion check: auto-complete epics where all stories are done
+  if (storyStateMachine && cache.status) {
+    try {
+      const statusPath = path.join(rootDir, 'docs', '09-agents', 'status.json');
+      const statusData = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      const incompleteEpics = storyStateMachine.findIncompleteEpics(statusData);
+
+      if (incompleteEpics.length > 0) {
+        let autoCompleted = 0;
+        for (const { epicId, completed, total } of incompleteEpics) {
+          const result = storyStateMachine.autoCompleteEpic(statusData, epicId);
+          if (result.updated) {
+            autoCompleted++;
+            console.log('');
+            console.log(
+              `${c.emerald}✅ Auto-completed ${c.bold}${epicId}${c.reset}${c.emerald} (${completed}/${total} stories done)${c.reset}`
+            );
+          }
+        }
+        if (autoCompleted > 0) {
+          fs.writeFileSync(statusPath, JSON.stringify(statusData, null, 2) + '\n');
+        }
+      }
+    } catch (e) {
+      // Silently ignore epic completion errors
     }
   }
 }

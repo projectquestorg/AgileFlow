@@ -305,6 +305,99 @@ function validateStory(story) {
   };
 }
 
+/**
+ * Check if all stories in an epic are complete
+ * @param {Object} statusData - Full status.json data
+ * @param {string} epicId - Epic ID to check
+ * @returns {{ allComplete: boolean, total: number, completed: number, remaining: Array }}
+ */
+function checkEpicCompletion(statusData, epicId) {
+  const epic = statusData.epics?.[epicId];
+  if (!epic) {
+    return { allComplete: false, total: 0, completed: 0, remaining: [] };
+  }
+
+  const storyIds = epic.stories || [];
+  const completedStatuses = ['completed', 'done', 'archived'];
+  const completed = [];
+  const remaining = [];
+
+  for (const storyId of storyIds) {
+    const story = statusData.stories?.[storyId];
+    if (story && completedStatuses.includes(story.status)) {
+      completed.push(storyId);
+    } else {
+      remaining.push(storyId);
+    }
+  }
+
+  return {
+    allComplete: remaining.length === 0 && storyIds.length > 0,
+    total: storyIds.length,
+    completed: completed.length,
+    remaining,
+  };
+}
+
+/**
+ * Auto-complete an epic if all its stories are done
+ * @param {Object} statusData - Full status.json data (will be mutated)
+ * @param {string} epicId - Epic ID to check and potentially complete
+ * @returns {{ updated: boolean, epic: Object | null, message: string }}
+ */
+function autoCompleteEpic(statusData, epicId) {
+  const epic = statusData.epics?.[epicId];
+  if (!epic) {
+    return { updated: false, epic: null, message: `Epic ${epicId} not found` };
+  }
+
+  // Already complete
+  if (epic.status === 'complete' || epic.status === 'completed') {
+    return { updated: false, epic, message: `Epic ${epicId} already complete` };
+  }
+
+  const { allComplete, total, completed } = checkEpicCompletion(statusData, epicId);
+
+  if (allComplete) {
+    epic.status = 'complete';
+    epic.completed = new Date().toISOString().split('T')[0];
+    statusData.updated = new Date().toISOString();
+    return {
+      updated: true,
+      epic,
+      message: `Epic ${epicId} auto-completed (${completed}/${total} stories done)`,
+    };
+  }
+
+  return {
+    updated: false,
+    epic,
+    message: `Epic ${epicId} not complete yet (${completed}/${total} stories done)`,
+  };
+}
+
+/**
+ * Find epics that should be marked complete but aren't
+ * @param {Object} statusData - Full status.json data
+ * @returns {Array<{ epicId: string, completed: number, total: number }>}
+ */
+function findIncompleteEpics(statusData) {
+  const incompleteEpics = [];
+
+  for (const [epicId, epic] of Object.entries(statusData.epics || {})) {
+    if (epic.status === 'complete' || epic.status === 'completed') {
+      continue;
+    }
+
+    const { allComplete, total, completed } = checkEpicCompletion(statusData, epicId);
+    if (allComplete) {
+      incompleteEpics.push({ epicId, completed, total });
+    }
+  }
+
+  return incompleteEpics;
+}
+
 module.exports = {
   // Constants
   VALID_STATUSES,
@@ -328,4 +421,9 @@ module.exports = {
 
   // Documentation
   getWorkflowDoc,
+
+  // Epic completion
+  checkEpicCompletion,
+  autoCompleteEpic,
+  findIncompleteEpics,
 };
