@@ -268,7 +268,9 @@ describe('detectTags', () => {
 
 describe('shouldIncludeFile', () => {
   test('excludes node_modules', () => {
-    expect(shouldIncludeFile('node_modules/lodash/index.js', DEFAULT_CONFIG.excludePatterns)).toBe(false);
+    expect(shouldIncludeFile('node_modules/lodash/index.js', DEFAULT_CONFIG.excludePatterns)).toBe(
+      false
+    );
   });
 
   test('excludes .git', () => {
@@ -349,7 +351,10 @@ describe('buildIndex', () => {
 
   test('excludes node_modules', () => {
     fs.mkdirSync(path.join(testDir, 'node_modules', 'lodash'), { recursive: true });
-    fs.writeFileSync(path.join(testDir, 'node_modules', 'lodash', 'index.js'), 'module.exports = {}');
+    fs.writeFileSync(
+      path.join(testDir, 'node_modules', 'lodash', 'index.js'),
+      'module.exports = {}'
+    );
     fs.writeFileSync(path.join(testDir, 'src.js'), 'export const x = 1;');
 
     const result = buildIndex(testDir);
@@ -360,7 +365,10 @@ describe('buildIndex', () => {
 
   test('builds tag index', () => {
     fs.mkdirSync(path.join(testDir, 'src', 'api'), { recursive: true });
-    fs.writeFileSync(path.join(testDir, 'src', 'api', 'users.js'), 'export const getUsers = () => {}');
+    fs.writeFileSync(
+      path.join(testDir, 'src', 'api', 'users.js'),
+      'export const getUsers = () => {}'
+    );
 
     const result = buildIndex(testDir);
     expect(result.ok).toBe(true);
@@ -620,10 +628,7 @@ describe('performance', () => {
     // Create many files
     fs.mkdirSync(path.join(testDir, 'src'), { recursive: true });
     for (let i = 0; i < 100; i++) {
-      fs.writeFileSync(
-        path.join(testDir, 'src', `file${i}.js`),
-        `export const value${i} = ${i};`
-      );
+      fs.writeFileSync(path.join(testDir, 'src', `file${i}.js`), `export const value${i} = ${i};`);
     }
 
     const start = Date.now();

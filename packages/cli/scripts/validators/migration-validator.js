@@ -19,7 +19,7 @@
  */
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -71,10 +71,19 @@ function validateMigration(command, result) {
 
   // Check for destructive operations without safeguards
   const destructivePatterns = [
-    { pattern: /DROP\s+TABLE/i, message: 'DROP TABLE detected - ensure backup exists and this is intentional' },
-    { pattern: /DROP\s+DATABASE/i, message: 'DROP DATABASE detected - this is extremely destructive!' },
+    {
+      pattern: /DROP\s+TABLE/i,
+      message: 'DROP TABLE detected - ensure backup exists and this is intentional',
+    },
+    {
+      pattern: /DROP\s+DATABASE/i,
+      message: 'DROP DATABASE detected - this is extremely destructive!',
+    },
     { pattern: /TRUNCATE/i, message: 'TRUNCATE detected - this removes all data permanently' },
-    { pattern: /DELETE\s+FROM.*WHERE\s*$/i, message: 'DELETE without WHERE clause detected - will delete all rows' },
+    {
+      pattern: /DELETE\s+FROM.*WHERE\s*$/i,
+      message: 'DELETE without WHERE clause detected - will delete all rows',
+    },
     { pattern: /--force|--skip-safe/i, message: 'Force flag used - bypassing safety checks' },
   ];
 
@@ -94,7 +103,10 @@ function validateMigration(command, result) {
     { pattern: /error.*migration/i, message: 'Migration error detected in output' },
     { pattern: /rollback.*failed/i, message: 'Rollback failure detected' },
     { pattern: /constraint.*violation/i, message: 'Database constraint violation' },
-    { pattern: /duplicate.*key/i, message: 'Duplicate key error - migration may have partially applied' },
+    {
+      pattern: /duplicate.*key/i,
+      message: 'Duplicate key error - migration may have partially applied',
+    },
     { pattern: /already exists/i, message: 'Object already exists - migration may need cleanup' },
   ];
 

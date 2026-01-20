@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -62,9 +62,11 @@ function isComponentFile(filePath) {
   // Also check for .js/.ts files in component directories
   if (['.js', '.ts'].includes(ext)) {
     const normalizedPath = filePath.toLowerCase();
-    return normalizedPath.includes('/components/') ||
-           normalizedPath.includes('/pages/') ||
-           normalizedPath.includes('/views/');
+    return (
+      normalizedPath.includes('/components/') ||
+      normalizedPath.includes('/pages/') ||
+      normalizedPath.includes('/views/')
+    );
   }
 
   return componentExtensions.includes(ext);
@@ -101,7 +103,6 @@ function validateComponent(filePath) {
 
     // General accessibility checks
     issues.push(...validateAccessibility(content));
-
   } catch (e) {
     issues.push(`Read error: ${e.message}`);
   }
@@ -113,12 +114,22 @@ function validateReactComponent(content, fileName) {
   const issues = [];
 
   // Check for component export
-  if (!content.includes('export default') && !content.includes('export function') && !content.includes('export const')) {
-    issues.push('Component should have an export (export default, export function, or export const)');
+  if (
+    !content.includes('export default') &&
+    !content.includes('export function') &&
+    !content.includes('export const')
+  ) {
+    issues.push(
+      'Component should have an export (export default, export function, or export const)'
+    );
   }
 
   // Check for React import in JSX files
-  if (content.includes('React.') && !content.includes("from 'react'") && !content.includes('from "react"')) {
+  if (
+    content.includes('React.') &&
+    !content.includes("from 'react'") &&
+    !content.includes('from "react"')
+  ) {
     issues.push('Using React. prefix but React is not imported');
   }
 
@@ -132,12 +143,18 @@ function validateReactComponent(content, fileName) {
   // Check for inline styles (prefer CSS modules or styled-components)
   const inlineStyleCount = (content.match(/style=\{\{/g) || []).length;
   if (inlineStyleCount > 5) {
-    issues.push(`Too many inline styles (${inlineStyleCount}) - consider using CSS modules or styled-components`);
+    issues.push(
+      `Too many inline styles (${inlineStyleCount}) - consider using CSS modules or styled-components`
+    );
   }
 
   // Check for console.log in production code
-  if (content.includes('console.log') && !content.includes('// debug') && !content.includes('// DEBUG')) {
-    console.log('Note: console.log found - ensure it\'s removed before production');
+  if (
+    content.includes('console.log') &&
+    !content.includes('// debug') &&
+    !content.includes('// DEBUG')
+  ) {
+    console.log("Note: console.log found - ensure it's removed before production");
   }
 
   // Check for missing key prop in map
@@ -163,7 +180,11 @@ function validateVueComponent(content) {
   }
 
   // Check for scoped styles (recommended)
-  if (content.includes('<style>') && !content.includes('<style scoped') && !content.includes('scoped>')) {
+  if (
+    content.includes('<style>') &&
+    !content.includes('<style scoped') &&
+    !content.includes('scoped>')
+  ) {
     console.log('Note: Consider using scoped styles to prevent CSS leaks');
   }
 
@@ -200,11 +221,17 @@ function validateAccessibility(content) {
   // Check for click handlers on non-interactive elements
   const clickOnDiv = content.match(/onClick[^>]*>[^<]*<\/div>/gi) || [];
   if (clickOnDiv.length > 0) {
-    issues.push('onClick on <div> detected - use <button> for interactive elements (accessibility)');
+    issues.push(
+      'onClick on <div> detected - use <button> for interactive elements (accessibility)'
+    );
   }
 
   // Check for form inputs without labels
-  if (content.includes('<input') && !content.includes('<label') && !content.includes('aria-label')) {
+  if (
+    content.includes('<input') &&
+    !content.includes('<label') &&
+    !content.includes('aria-label')
+  ) {
     console.log('Note: <input> elements should have associated <label> or aria-label');
   }
 

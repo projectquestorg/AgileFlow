@@ -14,10 +14,11 @@ import * as path from "path"
 import { glob } from "glob"
 
 // Lingva instances (free Google Translate proxies)
+// Test with: curl "https://lingva.lunar.icu/api/v1/en/es/hello"
 const LINGVA_INSTANCES = [
-  "https://lingva.ml",
   "https://lingva.lunar.icu",
-  "https://translate.plausibility.cloud",
+  "https://lingva.thedaviddelta.com",
+  "https://translate.projectsegfau.lt",
 ]
 
 // Target languages (must match lib/source.ts)
@@ -43,20 +44,28 @@ async function translateText(
   targetLang: string,
   instanceIndex = 0
 ): Promise<string> {
-  const instance = LINGVA_INSTANCES[instanceIndex % LINGVA_INSTANCES.length]
+  if (instanceIndex >= LINGVA_INSTANCES.length) {
+    throw new Error("All translation instances failed")
+  }
+
+  const instance = LINGVA_INSTANCES[instanceIndex]
   const url = `${instance}/api/v1/en/${targetLang}/${encodeURIComponent(text)}`
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
     const data = await response.json()
+    if (!data.translation) {
+      throw new Error("No translation in response")
+    }
     return data.translation
   } catch (error) {
     // Try next instance
     if (instanceIndex < LINGVA_INSTANCES.length - 1) {
-      console.log(`  Retrying with different instance...`)
+      console.log(`  Instance ${instanceIndex + 1} failed, trying next...`)
+      await sleep(500)
       return translateText(text, targetLang, instanceIndex + 1)
     }
     throw error

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Languages, Check } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { LANGUAGES } from "@/lib/source"
+import { LANGUAGES } from "@/lib/languages"
 import { useDirection } from "@/components/direction-provider"
 import { Button } from "@/registry/new-york-v4/ui/button"
 import {

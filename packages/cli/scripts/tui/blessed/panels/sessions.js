@@ -17,21 +17,21 @@ module.exports = function createSessionsPanel(grid, state) {
     tags: true,
     border: {
       type: 'line',
-      fg: 'cyan'
+      fg: 'cyan',
     },
     style: {
       fg: 'white',
       bg: 'black',
-      border: { fg: 'cyan' }
+      border: { fg: 'cyan' },
     },
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
       ch: '│',
-      style: { fg: 'cyan' }
+      style: { fg: 'cyan' },
     },
     keys: true,
-    vi: true
+    vi: true,
   });
 
   // Header row
@@ -41,11 +41,12 @@ module.exports = function createSessionsPanel(grid, state) {
     left: 0,
     width: '100%-2',
     height: 1,
-    content: '{bold}{cyan-fg}  ID          Story                              Status        Time{/}{/}',
+    content:
+      '{bold}{cyan-fg}  ID          Story                              Status        Time{/}{/}',
     tags: true,
     style: {
-      bg: '#222222'
-    }
+      bg: '#222222',
+    },
   });
 
   // Divider
@@ -57,8 +58,8 @@ module.exports = function createSessionsPanel(grid, state) {
     height: 1,
     content: '  ──────────  ─────────────────────────────────  ────────────  ──────',
     style: {
-      fg: 'gray'
-    }
+      fg: 'gray',
+    },
   });
 
   // Content area
@@ -70,8 +71,8 @@ module.exports = function createSessionsPanel(grid, state) {
     height: '100%-3',
     tags: true,
     style: {
-      fg: 'white'
-    }
+      fg: 'white',
+    },
   });
 
   let sessions = [];
@@ -117,9 +118,15 @@ module.exports = function createSessionsPanel(grid, state) {
 
   return {
     element: box,
-    show() { box.show(); },
-    hide() { box.hide(); },
-    focus() { box.focus(); },
+    show() {
+      box.show();
+    },
+    hide() {
+      box.hide();
+    },
+    focus() {
+      box.focus();
+    },
     setData(data) {
       sessions = data || [];
       render();
@@ -138,6 +145,6 @@ module.exports = function createSessionsPanel(grid, state) {
         selectedIndex--;
         render();
       }
-    }
+    },
   };
 };

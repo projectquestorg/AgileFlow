@@ -39,7 +39,7 @@ class AgileFlowTUI {
       sessions: [],
       logs: [],
       traces: [],
-      showHelp: false
+      showHelp: false,
     };
     this.components = {};
     this.watcher = null;
@@ -90,7 +90,7 @@ class AgileFlowTUI {
     });
 
     // Tab switching with number keys
-    this.screen.key(['1', '2', '3'], (ch) => {
+    this.screen.key(['1', '2', '3'], ch => {
       if (this.components.help.isVisible()) return;
       this.switchTab(parseInt(ch) - 1);
     });

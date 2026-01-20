@@ -305,7 +305,12 @@ describe('precompact-context.sh', () => {
 
       createSessionState([
         { name: 'babysit', type: 'interactive', activated_at: new Date().toISOString(), state: {} },
-        { name: 'research/ask', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+        {
+          name: 'research/ask',
+          type: 'output-only',
+          activated_at: new Date().toISOString(),
+          state: {},
+        },
       ]);
 
       const result = runPrecompact();
@@ -334,9 +339,7 @@ describe('precompact-context.sh', () => {
       );
 
       // Note: even without type: output-only, 'help' is in the blocklist
-      createSessionState([
-        { name: 'help', activated_at: new Date().toISOString(), state: {} },
-      ]);
+      createSessionState([{ name: 'help', activated_at: new Date().toISOString(), state: {} }]);
 
       const result = runPrecompact();
 
@@ -349,9 +352,7 @@ describe('precompact-context.sh', () => {
       createCommand('mentor', '**Mentor Summary**: Guide implementation');
 
       // Command without explicit type should be treated as interactive
-      createSessionState([
-        { name: 'mentor', activated_at: new Date().toISOString(), state: {} },
-      ]);
+      createSessionState([{ name: 'mentor', activated_at: new Date().toISOString(), state: {} }]);
 
       const result = runPrecompact();
 
@@ -365,8 +366,18 @@ describe('precompact-context.sh', () => {
 
       createSessionState([
         { name: 'babysit', type: 'interactive', activated_at: new Date().toISOString(), state: {} },
-        { name: 'research/ask', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
-        { name: 'research/list', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
+        {
+          name: 'research/ask',
+          type: 'output-only',
+          activated_at: new Date().toISOString(),
+          state: {},
+        },
+        {
+          name: 'research/list',
+          type: 'output-only',
+          activated_at: new Date().toISOString(),
+          state: {},
+        },
         { name: 'metrics', type: 'output-only', activated_at: new Date().toISOString(), state: {} },
       ]);
 

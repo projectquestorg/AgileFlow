@@ -1,0 +1,268 @@
+================================================================================
+  AGILEFLOW DOCUMENTATION SITE - SECURITY IMPROVEMENTS QUICK REFERENCE
+================================================================================
+
+ANALYSIS SCOPE: /home/coder/AgileFlow/apps/docs (Fumadocs + Next.js 15.5.9)
+RISK LEVEL: MEDIUM | VULNERABILITIES: 1 low (jsdiff DoS) | FINDINGS: 5 actionable
+
+================================================================================
+IMPROVEMENT #1: ADD CONTENT SECURITY POLICY (CSP) HEADERS
+================================================================================
+
+IMPACT:      High
+EFFORT:      2-4 Hours
+FILES:       middleware.ts (NEW), next.config.mjs, app/layout.tsx
+PRIORITY:    Week 1
+
+PROBLEM:
+  - No CSP headers configured
+  - Inline theme script (layout.tsx:72-85) could be intercepted
+  - Allows any inline script by default
+
+SOLUTION:
+  1. Create middleware to inject CSP headers with nonce
+  2. Restrict script sources: 'self', 'nonce-{random}', analytics
+  3. Restrict img sources: 3 approved CDNs only
+  4. Add CSP report-uri for violation tracking
+
+KEY CSP DIRECTIVES:
+  script-src 'self' 'nonce-{random}' https://analytics.vercel.com;
+  img-src 'self' https://avatars.githubusercontent.com https://images.unsplash.com https://avatar.vercel.sh;
+  default-src 'self';
+  frame-ancestors 'none';
+
+OUTCOME:
+  Prevents injection attacks via compromised CDN or malicious script injection
+
+================================================================================
+IMPROVEMENT #2: IMPLEMENT XSS PREVENTION FOR MDX CODE EXAMPLES
+================================================================================
+
+IMPACT:      High
+EFFORT:      1-2 Days
+FILES:       lib/llm.ts, mdx-components.tsx, components/code-viewer.tsx
+PRIORITY:    Week 1-2
+
+PROBLEM:
+  - llm.ts reads source files and injects into MDX without sanitization
+  - No HTML entity encoding on code blocks
+  - Could execute arbitrary JavaScript if malicious code committed
+
+SOLUTION:
+  1. HTML entity encode all code blocks
+  2. Validate ComponentPreview names (whitelist)
+  3. Sanitize Markdown HTML output
+  4. Pre-commit hook to scan code examples
+
+KEY FIX:
+  import DOMPurify from 'isomorphic-dompurify'
+  const sanitized = DOMPurify.sanitize(code, { ALLOWED_TAGS: [] })
+
+OUTCOME:
+  Code examples displayed as text, not executed; malicious payloads neutralized
+
+================================================================================
+IMPROVEMENT #3: HARDEN REMOTE IMAGE VALIDATION & SRI
+================================================================================
+
+IMPACT:      Medium
+EFFORT:      4-6 Hours
+FILES:       next.config.mjs, lib/security.ts (NEW), app/layout.tsx
+PRIORITY:    Week 2
+
+PROBLEM:
+  - No integrity verification on external resources
+  - CDN compromise = malicious content injection
+  - No image size limits = potential DoS
+  - Vercel analytics script has no hash
+
+SOLUTION:
+  1. Generate SRI hashes for external scripts
+  2. Add image size validation (5MB limit)
+  3. Implement request timeout (3s max)
+  4. Restrict domains to allowlist
+
+KEY SRI IMPLEMENTATION:
+  <script
+    src="https://cdn.vercel-analytics.com/v1/script.js"
+    integrity="sha384-xxxxx..."
+    crossOrigin="anonymous"
+  />
+
+OUTCOME:
+  Downloaded resources verified; CDN compromise attacks detected
+
+================================================================================
+IMPROVEMENT #4: RESOLVE DEPENDENCY VULNERABILITY & AUTO-SCAN
+================================================================================
+
+IMPACT:      Medium
+EFFORT:      2-3 Hours
+FILES:       package.json, .github/workflows/security-scan.yml (NEW)
+PRIORITY:    IMMEDIATE
+
+PROBLEM:
+  - jsdiff <8.0.3 has DoS vulnerability (ReDoS in parsePatch)
+  - Current audit: 1 low-severity vulnerability
+  - No automated scanning in CI
+
+SOLUTION:
+  1. Upgrade diff to >=8.0.3
+  2. Add GitHub Actions: npm audit --production
+  3. Configure Dependabot for automated PRs
+  4. Set remediation SLA: critical=1d, high=1w
+
+GITHUB ACTIONS WORKFLOW:
+  - run: npm audit --audit-level=high
+
+OUTCOME:
+  Active vulnerability fixed; future CVEs detected automatically
+
+================================================================================
+IMPROVEMENT #5: SECURE ENV CONFIGURATION & DISABLE DEBUG LEAKS
+================================================================================
+
+IMPACT:      Medium
+EFFORT:      3-4 Hours
+FILES:       lib/env.ts (NEW), next.config.mjs, app/layout.tsx
+PRIORITY:    Week 2
+
+PROBLEM:
+  - typescript.ignoreBuildErrors suppresses type safety
+  - NEXT_PUBLIC_APP_URL not validated on startup
+  - Debug info could leak in error pages
+  - Sensitive headers exposed (Server-Timing, X-Powered-By)
+
+SOLUTION:
+  1. Zod schema for environment validation
+  2. Validate on startup (fail fast)
+  3. Strip sensitive headers via middleware
+  4. Audit log of env vars at startup
+
+ZOD SCHEMA EXAMPLE:
+  const envSchema = z.object({
+    NEXT_PUBLIC_APP_URL: z.string().url().default('https://agileflow.dev'),
+    NODE_ENV: z.enum(['development', 'production', 'test']),
+  })
+  export const env = envSchema.parse(process.env)
+
+OUTCOME:
+  Invalid configurations caught before deployment; info disclosure reduced
+
+================================================================================
+PRIORITY MATRIX
+================================================================================
+
+PRIORITY     IDEA                            IMPACT  EFFORT  TIMELINE
+========================================================================
+Critical     #1: CSP Headers                 HIGH    2-4h    Week 1
+Critical     #2: XSS Prevention              HIGH    1-2d    Week 1
+Immediate    #4: Dependency Fix              MEDIUM  2-3h    NOW
+High         #3: SRI & Images                MEDIUM  4-6h    Week 2
+High         #5: Env Hardening               MEDIUM  3-4h    Week 2
+
+TOTAL EFFORT: 5.5-10 Days (can parallelize)
+
+================================================================================
+VERIFICATION CHECKLIST (BEFORE RELEASE)
+================================================================================
+
+SECURITY VERIFICATION:
+  [ ] npm audit --production passes (no high/critical)
+  [ ] CSP headers present and valid
+  [ ] No inline scripts without nonce
+  [ ] External images use allowed domains only
+  [ ] Environment variables validated on startup
+  [ ] SRI hashes present on external scripts
+  [ ] No dangerouslySetInnerHTML without sanitization
+  [ ] Security headers middleware enabled
+  [ ] Error pages don't leak system details
+  [ ] Performance monitoring doesn't expose system info
+
+================================================================================
+COMPLIANCE & STANDARDS
+================================================================================
+
+OWASP TOP 10 COVERAGE:
+  A1 (Injection):                #1, #2 - CSP + XSS prevention
+  A3 (Broken Auth):              N/A (static site)
+  A4 (Insecure Design):          #5 - Environment validation
+  A5 (Security Misconfiguration): #1, #5 - CSP + env hardening
+  A6 (Vulnerable Components):     #4 - Dependency scanning
+  A8 (Data Integrity):            #3 - SRI verification
+  A10 (Request Forgery):          N/A (no state changes)
+
+================================================================================
+CURRENT STATE BASELINE
+================================================================================
+
+Risk Level:               MEDIUM
+Active Vulnerabilities:   1 low (jsdiff ReDoS)
+CSP Configuration:        NOT CONFIGURED
+XSS Protection:           BASIC (React escaping only)
+Dependency Scanning:      MANUAL (npm audit)
+Environment Validation:   NONE
+Remote Resource SRI:      NONE
+Security Headers:         PARTIAL (Vercel default)
+
+AFTER IMPROVEMENTS:
+
+Risk Level:               LOW
+Active Vulnerabilities:   NONE
+CSP Configuration:        STRICT (nonce-based)
+XSS Protection:           HARDENED (encoding + sanitization)
+Dependency Scanning:      AUTOMATED (GitHub Actions)
+Environment Validation:   ENFORCED (Zod schema)
+Remote Resource SRI:      ALL HASHES VERIFIED
+Security Headers:         COMPLETE (CSP + HSTS + others)
+
+================================================================================
+REFERENCE FILES
+================================================================================
+
+CONFIGURATION FILES:
+  /home/coder/AgileFlow/apps/docs/next.config.mjs
+  /home/coder/AgileFlow/apps/docs/app/layout.tsx
+  /home/coder/AgileFlow/apps/docs/package.json
+  /home/coder/AgileFlow/apps/docs/.env.example
+
+SOURCE FILES TO MODIFY:
+  /home/coder/AgileFlow/apps/docs/lib/llm.ts
+  /home/coder/AgileFlow/apps/docs/mdx-components.tsx
+  /home/coder/AgileFlow/apps/docs/components/code-viewer.tsx
+
+NEW FILES TO CREATE:
+  /home/coder/AgileFlow/apps/docs/middleware.ts
+  /home/coder/AgileFlow/apps/docs/lib/env.ts
+  /home/coder/AgileFlow/apps/docs/lib/security.ts
+  /home/coder/AgileFlow/.github/workflows/security-scan.yml
+
+DOCUMENTATION:
+  /home/coder/AgileFlow/SECURITY_IMPROVEMENTS.md (full analysis)
+  /home/coder/AgileFlow/SECURITY_IMPROVEMENTS_SUMMARY.md (executive)
+
+================================================================================
+KEY CONTACTS
+================================================================================
+
+Security Specialist:     AG-SECURITY
+Analysis Date:          2026-01-19
+Framework Version:      Next.js 15.5.9
+Node Version Required:  >=20.9.0 (current: 18.20.8, consider upgrade)
+MDX Files Analyzed:     114
+Total Lines:            32,000+
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. REVIEW this analysis with team
+2. PRIORITIZE Week 1 improvements (#1, #2, #4)
+3. CREATE stories in issue tracker for each improvement
+4. ASSIGN developers based on effort estimates
+5. SET deadlines using timeline above
+6. SCHEDULE security review before release
+
+================================================================================
+END OF QUICK REFERENCE
+================================================================================

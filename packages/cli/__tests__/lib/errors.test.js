@@ -170,7 +170,77 @@ describe('errors.js', () => {
 
       const result = safeReadJSON(filePath);
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Failed to read JSON');
+      expect(result.error).toContain('Invalid JSON');
+      expect(result.errorCode).toBe('EPARSE');
+    });
+
+    it('handles empty files with defaultValue', () => {
+      const filePath = path.join(testDir, 'empty.json');
+      fs.writeFileSync(filePath, '');
+
+      const result = safeReadJSON(filePath, { defaultValue: {} });
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual({});
+    });
+
+    it('returns error for empty files without defaultValue', () => {
+      const filePath = path.join(testDir, 'empty.json');
+      fs.writeFileSync(filePath, '   \n  ');
+
+      const result = safeReadJSON(filePath);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('empty');
+      expect(result.errorCode).toBe('EPARSE');
+    });
+
+    it('hides file path when hidePathInError is true', () => {
+      const filePath = path.join(testDir, 'invalid.json');
+      fs.writeFileSync(filePath, '{ bad }');
+
+      const result = safeReadJSON(filePath, { hidePathInError: true });
+      expect(result.ok).toBe(false);
+      expect(result.error).not.toContain(filePath);
+      expect(result.error).not.toContain(testDir);
+    });
+
+    it('uses context for error messages when provided', () => {
+      const filePath = path.join(testDir, 'invalid.json');
+      fs.writeFileSync(filePath, '{ bad }');
+
+      const result = safeReadJSON(filePath, {
+        hidePathInError: true,
+        context: 'user settings',
+      });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('user settings');
+      expect(result.error).not.toContain(filePath);
+    });
+
+    it('returns ENOENT error code for missing files', () => {
+      const result = safeReadJSON(path.join(testDir, 'missing.json'));
+      expect(result.ok).toBe(false);
+      expect(result.errorCode).toBe('ENOENT');
+    });
+
+    it('handles syntax error with position info', () => {
+      const filePath = path.join(testDir, 'syntax.json');
+      fs.writeFileSync(filePath, '{"key": value}'); // missing quotes around value
+
+      const result = safeReadJSON(filePath);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain('Invalid JSON');
+      // Should include position info but not expose content
+      expect(result.error.match(/position \d+/) || result.error.includes('token')).toBeTruthy();
+    });
+
+    it('handles deeply nested valid JSON', () => {
+      const filePath = path.join(testDir, 'nested.json');
+      const data = { a: { b: { c: { d: [1, 2, { e: 'f' }] } } } };
+      fs.writeFileSync(filePath, JSON.stringify(data));
+
+      const result = safeReadJSON(filePath);
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual(data);
     });
   });
 

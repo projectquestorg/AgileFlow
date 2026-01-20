@@ -19,9 +19,33 @@ const { getProjectRoot } = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
 const { isValidBranchName, isValidSessionNickname } = require('../lib/validate');
 
+const { SessionRegistry } = require('../lib/session-registry');
+
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(ROOT, '.agileflow', 'sessions');
 const REGISTRY_PATH = path.join(SESSIONS_DIR, 'registry.json');
+
+// Injectable registry instance for testing
+let _registryInstance = null;
+
+/**
+ * Get the registry instance (singleton, injectable for testing)
+ * @returns {SessionRegistry}
+ */
+function getRegistryInstance() {
+  if (!_registryInstance) {
+    _registryInstance = new SessionRegistry(ROOT);
+  }
+  return _registryInstance;
+}
+
+/**
+ * Inject a mock registry for testing
+ * @param {SessionRegistry|null} registry - Registry to inject, or null to reset
+ */
+function injectRegistry(registry) {
+  _registryInstance = registry;
+}
 
 // Ensure sessions directory exists
 function ensureSessionsDir() {
@@ -30,35 +54,25 @@ function ensureSessionsDir() {
   }
 }
 
-// Load or create registry
+// Load or create registry (uses injectable SessionRegistry)
+// Preserves original behavior: saves default registry if file didn't exist
 function loadRegistry() {
-  ensureSessionsDir();
+  const registryInstance = getRegistryInstance();
+  const fileExistedBefore = fs.existsSync(registryInstance.registryPath);
+  const data = registryInstance.loadSync();
 
-  if (fs.existsSync(REGISTRY_PATH)) {
-    try {
-      return JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
-    } catch (e) {
-      console.error(`${c.red}Error loading registry: ${e.message}${c.reset}`);
-    }
+  // If file didn't exist, save the default to disk (original behavior)
+  if (!fileExistedBefore) {
+    registryInstance.saveSync(data);
   }
 
-  // Create default registry
-  const registry = {
-    schema_version: '1.0.0',
-    next_id: 1,
-    project_name: path.basename(ROOT),
-    sessions: {},
-  };
-
-  saveRegistry(registry);
-  return registry;
+  return data;
 }
 
-// Save registry
-function saveRegistry(registry) {
-  ensureSessionsDir();
-  registry.updated = new Date().toISOString();
-  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n');
+// Save registry (uses injectable SessionRegistry)
+function saveRegistry(registryData) {
+  const registry = getRegistryInstance();
+  return registry.saveSync(registryData);
 }
 
 // Check if PID is alive
@@ -1998,8 +2012,13 @@ function setSessionThreadType(sessionId, threadType) {
 
 // Export for use as module
 module.exports = {
+  // Registry injection (for testing)
+  injectRegistry,
+  getRegistryInstance,
+  // Registry access (backward compatible)
   loadRegistry,
   saveRegistry,
+  // Session management
   registerSession,
   unregisterSession,
   getSession,

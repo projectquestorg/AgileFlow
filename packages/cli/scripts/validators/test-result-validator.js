@@ -20,7 +20,7 @@
  */
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -28,7 +28,16 @@ process.stdin.on('end', () => {
     const result = context.result || '';
 
     // Only validate test-related commands
-    const testCommands = ['npm test', 'npm run test', 'jest', 'pytest', 'cargo test', 'go test', 'vitest', 'mocha'];
+    const testCommands = [
+      'npm test',
+      'npm run test',
+      'jest',
+      'pytest',
+      'cargo test',
+      'go test',
+      'vitest',
+      'mocha',
+    ];
     const isTestCommand = testCommands.some(tc => command.includes(tc));
 
     if (!isTestCommand) {
@@ -76,7 +85,9 @@ function validateTestResult(command, result) {
   // Check for coverage warnings (if coverage was run)
   if (resultLower.includes('coverage')) {
     // Look for coverage percentage
-    const coverageMatch = result.match(/(\d+(?:\.\d+)?)\s*%\s*(?:coverage|statements|branches|functions|lines)/i);
+    const coverageMatch = result.match(
+      /(\d+(?:\.\d+)?)\s*%\s*(?:coverage|statements|branches|functions|lines)/i
+    );
     if (coverageMatch) {
       const coverage = parseFloat(coverageMatch[1]);
       if (coverage < 70) {
@@ -86,7 +97,11 @@ function validateTestResult(command, result) {
   }
 
   // Check for "no tests" scenarios
-  if (resultLower.includes('no tests') || resultLower.includes('no test') || resultLower.includes('0 tests')) {
+  if (
+    resultLower.includes('no tests') ||
+    resultLower.includes('no test') ||
+    resultLower.includes('0 tests')
+  ) {
     issues.push('No tests were run - ensure test files exist and are properly configured');
   }
 

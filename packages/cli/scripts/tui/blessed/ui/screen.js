@@ -11,18 +11,18 @@ const blessed = require('blessed');
  */
 module.exports = function createScreen() {
   const screen = blessed.screen({
-    smartCSR: true,      // Key for flicker-free differential rendering
-    fullUnicode: true,   // Support Unicode characters
+    smartCSR: true, // Key for flicker-free differential rendering
+    fullUnicode: true, // Support Unicode characters
     title: 'AgileFlow TUI',
     cursor: {
       artificial: true,
       blink: true,
-      shape: 'line'
+      shape: 'line',
     },
     debug: false,
     warnings: false,
     autoPadding: true,
-    dockBorders: true
+    dockBorders: true,
   });
 
   // Enable synchronized output mode for atomic updates

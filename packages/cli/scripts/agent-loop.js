@@ -25,7 +25,14 @@ const crypto = require('crypto');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
-const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
+const { safeReadJSON, safeWriteJSON, debugLog } = require('../lib/errors');
+const { validateCommand, buildSpawnArgs } = require('../lib/validate-commands');
+const {
+  initializeForProject,
+  injectCorrelation,
+  startSpan,
+  getContext,
+} = require('../lib/correlation');
 
 const ROOT = getProjectRoot();
 const LOOPS_DIR = path.join(ROOT, '.agileflow', 'sessions', 'agent-loops');
@@ -85,11 +92,13 @@ function emitEvent(event) {
     fs.mkdirSync(busDir, { recursive: true });
   }
 
-  const line =
-    JSON.stringify({
-      ...event,
-      timestamp: new Date().toISOString(),
-    }) + '\n';
+  // Inject correlation IDs (trace_id, session_id, span_id)
+  const correlatedEvent = injectCorrelation({
+    ...event,
+    timestamp: new Date().toISOString(),
+  });
+
+  const line = JSON.stringify(correlatedEvent) + '\n';
 
   fs.appendFileSync(BUS_PATH, line);
 }
@@ -128,12 +137,51 @@ function getCoverageReportPath() {
   return 'coverage/coverage-summary.json';
 }
 
+/**
+ * Run a command safely using spawn with validated arguments
+ * @param {string} cmd - Command string to run
+ * @returns {{ passed: boolean, exitCode: number, error?: string, blocked?: boolean }}
+ */
 function runCommand(cmd) {
+  // Validate command against allowlist
+  const validation = buildSpawnArgs(cmd, { strict: true, logBlocked: true });
+
+  if (!validation.ok) {
+    console.error(
+      `${c.red}Command blocked: ${validation.error}${c.reset}` +
+        (validation.severity ? ` [${validation.severity}]` : '')
+    );
+    debugLog('runCommand', {
+      blocked: true,
+      command: cmd.slice(0, 50),
+      error: validation.error,
+      severity: validation.severity,
+    });
+    return { passed: false, exitCode: 1, error: validation.error, blocked: true };
+  }
+
+  const { file, args } = validation.data;
+
   try {
-    execSync(cmd, { cwd: ROOT, stdio: 'inherit' });
-    return { passed: true, exitCode: 0 };
+    // Use spawnSync with array arguments (no shell injection possible)
+    const result = spawnSync(file, args, {
+      cwd: ROOT,
+      stdio: 'inherit',
+      shell: false, // CRITICAL: Do not use shell to prevent injection
+    });
+
+    if (result.error) {
+      // spawn itself failed (e.g., command not found)
+      console.error(`${c.red}Spawn error: ${result.error.message}${c.reset}`);
+      return { passed: false, exitCode: 1, error: result.error.message };
+    }
+
+    return {
+      passed: result.status === 0,
+      exitCode: result.status || 0,
+    };
   } catch (error) {
-    return { passed: false, exitCode: error.status || 1 };
+    return { passed: false, exitCode: error.status || 1, error: error.message };
   }
 }
 
@@ -265,6 +313,9 @@ function initLoop(options) {
     parentId = null,
   } = options;
 
+  // Initialize correlation context (trace_id, session_id)
+  const { traceId, sessionId } = initializeForProject(ROOT);
+
   // Validate gate
   if (!GATES[gate]) {
     console.error(`${c.red}Invalid gate: ${gate}${c.reset}`);
@@ -295,6 +346,8 @@ function initLoop(options) {
 
   const state = {
     loop_id: loopId,
+    trace_id: traceId,
+    session_id: sessionId,
     agent_type: agentType,
     parent_orchestration: parentId,
     quality_gate: gate,
@@ -324,6 +377,7 @@ function initLoop(options) {
   console.log(`${c.green}${c.bold}Agent Loop Initialized${c.reset}`);
   console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
   console.log(`  Loop ID: ${c.cyan}${loopId}${c.reset}`);
+  console.log(`  Trace ID: ${c.dim}${traceId}${c.reset}`);
   console.log(`  Gate: ${c.magenta}${GATES[gate].name}${c.reset}`);
   console.log(`  Threshold: ${threshold > 0 ? threshold + '%' : 'pass/fail'}`);
   console.log(`  Max Iterations: ${maxIter}`);

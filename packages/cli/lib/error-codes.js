@@ -524,6 +524,48 @@ function formatError(error, options = {}) {
   return lines.join('\n');
 }
 
+/**
+ * Create an error result with standardized metadata
+ * This factory produces Result objects compatible with result-schema.js
+ * @param {string} errorCode - Error code (e.g., 'ENOENT', 'ECONFIG')
+ * @param {string} [message] - Optional custom error message
+ * @param {Object} [options] - Additional options
+ * @param {Object} [options.context] - Additional context about the error
+ * @param {Error} [options.cause] - Original error that caused this failure
+ * @returns {{ ok: false, error: string, errorCode: string, severity: string, category: string, recoverable: boolean, suggestedFix: string, autoFix: string|null, context?: Object, cause?: Error }}
+ */
+function createErrorResult(errorCode, message, options = {}) {
+  const codeData = ErrorCodes[errorCode] || ErrorCodes.EUNKNOWN;
+
+  return {
+    ok: false,
+    error: message || codeData.message,
+    errorCode: codeData.code,
+    severity: codeData.severity,
+    category: codeData.category,
+    recoverable: codeData.recoverable,
+    suggestedFix: codeData.suggestedFix,
+    autoFix: codeData.autoFix || null,
+    context: options.context,
+    cause: options.cause,
+  };
+}
+
+/**
+ * Create a success result
+ * @template T
+ * @param {T} data - The success data
+ * @param {Object} [meta] - Optional metadata
+ * @returns {{ ok: true, data: T }}
+ */
+function createSuccessResult(data, meta = {}) {
+  return {
+    ok: true,
+    data,
+    ...meta,
+  };
+}
+
 module.exports = {
   // Enums
   Severity,
@@ -541,4 +583,8 @@ module.exports = {
   getSuggestedFix,
   getAutoFix,
   formatError,
+
+  // Result factories (for result-schema.js compatibility)
+  createErrorResult,
+  createSuccessResult,
 };

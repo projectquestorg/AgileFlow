@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -77,7 +77,10 @@ function isWorkflowFile(filePath) {
   }
 
   // Azure Pipelines
-  if (normalizedPath.endsWith('azure-pipelines.yml') || normalizedPath.endsWith('azure-pipelines.yaml')) {
+  if (
+    normalizedPath.endsWith('azure-pipelines.yml') ||
+    normalizedPath.endsWith('azure-pipelines.yaml')
+  ) {
     return true;
   }
 
@@ -115,7 +118,6 @@ function validateWorkflow(filePath) {
 
     // General CI/CD security checks
     issues.push(...validateCISecurity(content));
-
   } catch (e) {
     issues.push(`Read error: ${e.message}`);
   }
@@ -181,7 +183,10 @@ function validateGitHubActions(content) {
   }
 
   // Check for potentially dangerous permissions
-  if (content.includes('permissions: write-all') || content.includes('permissions:\n  contents: write')) {
+  if (
+    content.includes('permissions: write-all') ||
+    content.includes('permissions:\n  contents: write')
+  ) {
     console.log('Note: Broad write permissions detected - ensure this is necessary');
   }
 
@@ -228,7 +233,9 @@ function validateCISecurity(content) {
 
   // Check for curl | bash pattern (security risk)
   if (content.includes('curl') && content.includes('| bash')) {
-    issues.push('curl | bash pattern detected - this is a security risk, use verified installation methods');
+    issues.push(
+      'curl | bash pattern detected - this is a security risk, use verified installation methods'
+    );
   }
 
   // Check for npm install without lockfile
