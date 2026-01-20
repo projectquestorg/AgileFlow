@@ -1,11 +1,11 @@
 ---
 title: Commands
-description: Complete reference for all 72 AgileFlow slash commands. Each command is designed for a specific task in your AI-powered development workflow.
+description: Complete reference for all 74 AgileFlow slash commands. Each command is designed for a specific task in your AI-powered development workflow.
 ---
 
 # Commands
 
-AgileFlow provides **72 slash commands** that you can use directly in Claude Code. All commands follow the pattern `/agileflow:command-name`.
+AgileFlow provides **74 slash commands** that you can use directly in Claude Code. All commands follow the pattern `/agileflow:command-name`.
 
 ## Command Categories
 
@@ -128,6 +128,31 @@ Specialized commands for complex tasks:
 # System diagnostics
 /agileflow:diagnose
 ```
+
+## Try It Yourself
+
+Explore AgileFlow commands interactively in this sandbox:
+
+<CommandPlayground
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
+/>
+
+<div className="mt-4 grid gap-4 sm:grid-cols-2">
+  <CommandPlayground
+    command="/agileflow:epic EP-0001"
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
+  />
+  <CommandPlayground
+    command="/agileflow:babysit"
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
+  />
+</div>
 
 ## Session Commands
 
