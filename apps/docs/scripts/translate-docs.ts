@@ -205,22 +205,15 @@ async function translateMdxFile(
     frontmatterWithNewline + translatedSections.join("")
   )
 
-  // Determine output path
-  const relativePath = path.relative(
-    path.join(process.cwd(), "content/docs"),
-    filePath
-  )
-  const outputPath = path.join(
-    process.cwd(),
-    "content/docs",
-    targetLang,
-    relativePath
-  )
+  // Determine output path using filename suffix format (e.g., index.es.mdx)
+  // This is the format Fumadocs expects for i18n
+  const ext = path.extname(filePath) // .mdx
+  const baseName = filePath.slice(0, -ext.length) // content/docs/index
+  const outputPath = `${baseName}.${targetLang}${ext}` // content/docs/index.es.mdx
 
   if (dryRun) {
     console.log(`  Would write: ${outputPath}`)
   } else {
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
     fs.writeFileSync(outputPath, translatedContent)
     console.log(`  Written: ${outputPath}`)
   }
@@ -250,7 +243,8 @@ async function main() {
     console.log(`Translating ${mdxFiles.length} specific files`)
   } else {
     mdxFiles = await glob("content/docs/**/*.mdx", {
-      ignore: Object.keys(LANGUAGES).map((l) => `content/docs/${l}/**`),
+      // Ignore already translated files (*.{lang}.mdx format)
+      ignore: Object.keys(LANGUAGES).map((l) => `content/docs/**/*.${l}.mdx`),
     })
     console.log(`Found ${mdxFiles.length} files to translate`)
   }
