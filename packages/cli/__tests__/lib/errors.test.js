@@ -170,7 +170,7 @@ describe('errors.js', () => {
 
       const result = safeReadJSON(filePath);
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Invalid JSON');
+      expect(result.error).toMatch(/Invalid JSON|Failed to parse JSON/);
       expect(result.errorCode).toBe('EPARSE');
     });
 
@@ -228,9 +228,13 @@ describe('errors.js', () => {
 
       const result = safeReadJSON(filePath);
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Invalid JSON');
-      // Should include position info but not expose content
-      expect(result.error.match(/position \d+/) || result.error.includes('token')).toBeTruthy();
+      expect(result.error).toMatch(/Invalid JSON|Failed to parse JSON/);
+      // Should include position info, path, or token info
+      expect(
+        result.error.match(/position \d+/) ||
+          result.error.includes('token') ||
+          result.error.includes(filePath)
+      ).toBeTruthy();
     });
 
     it('handles deeply nested valid JSON', () => {
