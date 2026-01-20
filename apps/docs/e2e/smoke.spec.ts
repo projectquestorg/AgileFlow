@@ -9,8 +9,8 @@ test.describe("Homepage", () => {
   test("should load and display title", async ({ page }) => {
     await page.goto("/")
     await expect(page).toHaveTitle(/AgileFlow|Introduction/)
-    // The page should have AgileFlow heading in the content
-    await expect(page.locator("h1")).toBeVisible()
+    // The page should have AgileFlow heading in the content (may have multiple h1s)
+    await expect(page.locator("h1").first()).toBeVisible()
   })
 
   test("should have main content area", async ({ page }) => {
@@ -39,15 +39,15 @@ test.describe("Navigation", () => {
   test("should navigate to commands page", async ({ page }) => {
     await page.goto("/commands")
     await expect(page).toHaveURL(/commands/)
-    // Should have commands content
-    await expect(page.locator("h1")).toBeVisible()
+    // Should have commands content (may have multiple h1s)
+    await expect(page.locator("h1").first()).toBeVisible()
   })
 
   test("should navigate to agents page", async ({ page }) => {
     await page.goto("/agents")
     await expect(page).toHaveURL(/agents/)
-    // Should have agents content
-    await expect(page.locator("h1")).toBeVisible()
+    // Should have agents content (may have multiple h1s)
+    await expect(page.locator("h1").first()).toBeVisible()
   })
 })
 
@@ -79,8 +79,8 @@ test.describe("Search", () => {
 test.describe("Documentation Content", () => {
   test("should display installation content", async ({ page }) => {
     await page.goto("/installation")
-    // Should have installation heading
-    const heading = page.locator("h1")
+    // Should have installation heading (may have multiple h1s)
+    const heading = page.locator("h1").first()
     await expect(heading).toBeVisible()
     // Should have some code blocks (installation commands)
     const codeBlocks = page.locator("pre, code")
@@ -90,15 +90,15 @@ test.describe("Documentation Content", () => {
 
   test("should display commands content", async ({ page }) => {
     await page.goto("/commands")
-    // Should have content about commands
-    const heading = page.locator("h1")
+    // Should have content about commands (may have multiple h1s)
+    const heading = page.locator("h1").first()
     await expect(heading).toBeVisible()
   })
 
   test("should display agents content", async ({ page }) => {
     await page.goto("/agents")
-    // Should have content about agents
-    const heading = page.locator("h1")
+    // Should have content about agents (may have multiple h1s)
+    const heading = page.locator("h1").first()
     await expect(heading).toBeVisible()
   })
 })
@@ -110,8 +110,8 @@ test.describe("Mobile Navigation", () => {
     await page.goto("/")
     // Page should load and be visible on mobile
     await expect(page.locator("body")).toBeVisible()
-    // Content should be visible
-    const heading = page.locator("h1")
+    // Content should be visible (may have multiple h1s)
+    const heading = page.locator("h1").first()
     await expect(heading).toBeVisible()
   })
 
@@ -134,8 +134,8 @@ test.describe("Mobile Navigation", () => {
 test.describe("Accessibility", () => {
   test("should have basic accessibility structure", async ({ page }) => {
     await page.goto("/")
-    // Should have a heading
-    const heading = page.locator("h1")
+    // Should have a heading (may have multiple h1s)
+    const heading = page.locator("h1").first()
     await expect(heading).toBeVisible()
 
     // Should have focusable elements
