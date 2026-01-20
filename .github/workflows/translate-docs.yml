@@ -65,22 +65,32 @@ jobs:
         run: |
           cd apps/docs
           LANG="${{ github.event.inputs.language || 'es' }}"
+          FILES="${{ steps.changed.outputs.files }}"
+
+          # Build file list argument (only for incremental updates)
+          FILE_ARGS=""
+          if [ "$FILES" != "all" ] && [ -n "$FILES" ]; then
+            FILE_ARGS=$(echo "$FILES" | tr '\n' ' ')
+            echo "Translating specific files: $FILE_ARGS"
+          else
+            echo "Translating all documentation files"
+          fi
 
           if [ "$LANG" = "all" ]; then
             # Translate to all languages (one at a time to avoid rate limits)
             for L in es zh fr de ja ko pt; do
               echo "Translating to $L..."
-              npx tsx scripts/translate-docs.ts $L || echo "Warning: $L translation had errors"
-              sleep 5
+              npx tsx scripts/translate-docs.ts $L $FILE_ARGS || echo "Warning: $L translation had errors"
+              sleep 2
             done
             # RTL languages last
             for L in ar he; do
               echo "Translating to $L..."
-              npx tsx scripts/translate-docs.ts $L || echo "Warning: $L translation had errors"
-              sleep 5
+              npx tsx scripts/translate-docs.ts $L $FILE_ARGS || echo "Warning: $L translation had errors"
+              sleep 2
             done
           else
-            npx tsx scripts/translate-docs.ts $LANG
+            npx tsx scripts/translate-docs.ts $LANG $FILE_ARGS
           fi
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'

@@ -202,24 +202,32 @@ async function translateMdxFile(
 async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes("--dry-run")
-  const targetLangs = args.filter((a) => !a.startsWith("--"))
 
-  const langsToTranslate =
-    targetLangs.length > 0
-      ? targetLangs.filter((l) => l in LANGUAGES)
-      : Object.keys(LANGUAGES)
+  // Separate languages from file paths
+  const nonFlags = args.filter((a) => !a.startsWith("--"))
+  const langs = nonFlags.filter((a) => a in LANGUAGES)
+  const specificFiles = nonFlags.filter((a) => a.endsWith(".mdx"))
+
+  const langsToTranslate = langs.length > 0 ? langs : Object.keys(LANGUAGES)
 
   if (langsToTranslate.length === 0) {
     console.log("Available languages:", Object.keys(LANGUAGES).join(", "))
     process.exit(1)
   }
 
-  // Find all English MDX files (not already in a language folder)
-  const mdxFiles = await glob("content/docs/**/*.mdx", {
-    ignore: Object.keys(LANGUAGES).map((l) => `content/docs/${l}/**`),
-  })
+  // Use specific files if provided, otherwise find all English MDX files
+  let mdxFiles: string[]
+  if (specificFiles.length > 0) {
+    // Normalize paths (remove apps/docs/ prefix if present)
+    mdxFiles = specificFiles.map((f) => f.replace(/^apps\/docs\//, ""))
+    console.log(`Translating ${mdxFiles.length} specific files`)
+  } else {
+    mdxFiles = await glob("content/docs/**/*.mdx", {
+      ignore: Object.keys(LANGUAGES).map((l) => `content/docs/${l}/**`),
+    })
+    console.log(`Found ${mdxFiles.length} files to translate`)
+  }
 
-  console.log(`Found ${mdxFiles.length} files to translate`)
   console.log(`Target languages: ${langsToTranslate.join(", ")}`)
   console.log(`Dry run: ${dryRun}\n`)
 
