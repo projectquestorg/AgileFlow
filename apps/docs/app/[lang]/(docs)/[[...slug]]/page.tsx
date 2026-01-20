@@ -23,14 +23,31 @@ export const dynamic = "force-static"
 export const dynamicParams = false
 
 export function generateStaticParams() {
-  return source.generateParams()
+  // Generate params for all languages × all English pages
+  // This ensures /es/installation works even without installation.es.mdx
+  const englishPages = source.getPages("en")
+  const languages = ["en", "es", "fr", "de", "pt", "ar"]
+
+  const params: { lang: string; slug?: string[] }[] = []
+
+  for (const lang of languages) {
+    for (const page of englishPages) {
+      params.push({
+        lang,
+        slug: page.slugs,
+      })
+    }
+  }
+
+  return params
 }
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string[]; lang: string }>
 }) {
   const params = await props.params
-  const page = source.getPage(params.slug, params.lang)
+  // Try requested language first, fall back to English if not found
+  const page = source.getPage(params.slug, params.lang) ?? source.getPage(params.slug, "en")
 
   if (!page) {
     notFound()
@@ -78,7 +95,8 @@ export default async function Page(props: {
   params: Promise<{ slug: string[]; lang: string }>
 }) {
   const params = await props.params
-  const page = source.getPage(params.slug, params.lang)
+  // Try requested language first, fall back to English if not found
+  const page = source.getPage(params.slug, params.lang) ?? source.getPage(params.slug, "en")
   if (!page) {
     notFound()
   }
