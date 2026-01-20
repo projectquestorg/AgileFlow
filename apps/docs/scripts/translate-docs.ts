@@ -195,9 +195,14 @@ async function translateMdxFile(
     }
   }
 
+  // Ensure frontmatter ends with newline before content
+  const frontmatterWithNewline = translatedFrontmatter.endsWith("\n")
+    ? translatedFrontmatter
+    : translatedFrontmatter + "\n"
+
   // Restore placeholders (JSX components, code blocks, etc.)
   const translatedContent = restorePlaceholders(
-    translatedFrontmatter + translatedSections.join("")
+    frontmatterWithNewline + translatedSections.join("")
   )
 
   // Determine output path
