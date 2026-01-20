@@ -14,7 +14,7 @@ import { source } from "@/lib/source"
 import { absoluteUrl } from "@/lib/utils"
 import { DocsCopyPage } from "@/components/docs-copy-page"
 import { DocsTableOfContents } from "@/components/docs-toc"
-import { MobileTocButton } from "@/components/mobile-toc"
+import { MobileTocInline } from "@/components/mobile-toc"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
 import { Button } from "@/registry/new-york-v4/ui/button"
 
@@ -113,6 +113,7 @@ export default async function Page(props: {
                 </h1>
                 <div className="docs-nav bg-background/80 border-border/50 fixed inset-x-0 bottom-0 isolate z-50 flex items-center gap-2 border-t px-6 py-4 backdrop-blur-sm sm:static sm:z-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pt-1.5 sm:backdrop-blur-none">
                   <DocsCopyPage page={raw} url={absoluteUrl(page.url)} />
+                  {doc.toc?.length ? <MobileTocInline toc={doc.toc} /> : null}
                   {neighbours.previous && (
                     <Button
                       variant="secondary"
@@ -206,8 +207,6 @@ export default async function Page(props: {
           </div>
         ) : null}
       </div>
-      {/* Floating TOC button for mobile */}
-      {doc.toc?.length ? <MobileTocButton toc={doc.toc} /> : null}
     </div>
   )
 }

@@ -54,7 +54,8 @@ function useActiveItem(itemIds: string[]) {
   return activeId
 }
 
-export function MobileTocButton({
+// Inline TOC button for bottom navigation bar
+export function MobileTocInline({
   toc,
   className,
 }: {
@@ -74,7 +75,6 @@ export function MobileTocButton({
 
   const handleItemClick = (url: string) => {
     setOpen(false)
-    // Small delay to ensure drawer closes before scroll
     setTimeout(() => {
       const id = url.replace("#", "")
       const element = document.getElementById(id)
@@ -89,16 +89,15 @@ export function MobileTocButton({
       <DrawerTrigger asChild>
         <Button
           variant="secondary"
-          size="icon"
+          size="sm"
           className={cn(
-            "fixed bottom-20 right-4 z-40 size-12 rounded-full shadow-lg xl:hidden",
-            "touch-manipulation",
-            "transition-transform active:scale-95",
+            "h-8 shadow-none md:h-7 md:text-[0.8rem] xl:hidden",
             className
           )}
-          aria-label="Open table of contents"
+          aria-label="On this page"
         >
-          <List className="size-5" />
+          <List className="size-4" />
+          <span className="hidden xs:inline">On this page</span>
         </Button>
       </DrawerTrigger>
       <DrawerContent
