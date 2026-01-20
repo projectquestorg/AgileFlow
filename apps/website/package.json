@@ -11,7 +11,7 @@
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.6.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.0.0",
+    "framer-motion": "^12.27.4",
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.555.0",
     "next": "^15.1.0",
