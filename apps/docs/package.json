@@ -127,7 +127,7 @@
     "@types/node": "^20",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "@typescript-eslint/parser": "^8.31.0",
+    "@typescript-eslint/parser": "^8.53.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.9",
     "prettier": "^3.4.2",
