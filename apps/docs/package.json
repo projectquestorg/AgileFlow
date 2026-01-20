@@ -84,7 +84,7 @@
     "embla-carousel-react": "8.5.2",
     "front-matter": "^4.0.2",
     "fumadocs-core": "16.0.5",
-    "fumadocs-docgen": "2.0.0",
+    "fumadocs-docgen": "3.0.5",
     "fumadocs-mdx": "13.0.2",
     "glob": "^11.0.0",
     "fumadocs-ui": "16.0.5",
