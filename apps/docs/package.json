@@ -85,7 +85,7 @@
     "front-matter": "^4.0.2",
     "fumadocs-core": "16.0.5",
     "fumadocs-docgen": "2.0.0",
-    "fumadocs-mdx": "13.0.2",
+    "fumadocs-mdx": "14.2.6",
     "glob": "^11.0.0",
     "fumadocs-ui": "16.0.5",
     "input-otp": "^1.4.2",
