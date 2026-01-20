@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -108,7 +108,6 @@ function validateMarkdown(filePath) {
     } else if (filePath.includes('/10-research/')) {
       issues.push(...validateResearchNote(content));
     }
-
   } catch (e) {
     issues.push(`Read error: ${e.message}`);
   }

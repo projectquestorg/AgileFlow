@@ -14,6 +14,8 @@ const {
   getSuggestedFix,
   getAutoFix,
   formatError,
+  createErrorResult,
+  createSuccessResult,
 } = require('../../lib/error-codes');
 
 describe('error-codes', () => {
@@ -264,6 +266,86 @@ describe('error-codes', () => {
       const formatted = formatError(error);
 
       expect(formatted).toContain('Auto-fix available');
+    });
+  });
+
+  describe('createErrorResult', () => {
+    it('creates error result with known error code', () => {
+      const result = createErrorResult('ENOENT', 'File not found');
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toBe('File not found');
+      expect(result.errorCode).toBe('ENOENT');
+      expect(result.severity).toBe(Severity.HIGH);
+      expect(result.category).toBe(Category.FILESYSTEM);
+      expect(result.recoverable).toBe(true);
+      expect(result.suggestedFix).toBeDefined();
+    });
+
+    it('uses default message from error code when message not provided', () => {
+      const result = createErrorResult('EACCES');
+
+      expect(result.error).toBe('Permission denied');
+      expect(result.errorCode).toBe('EACCES');
+    });
+
+    it('falls back to EUNKNOWN for invalid error codes', () => {
+      const result = createErrorResult('INVALID_CODE', 'Custom error');
+
+      expect(result.errorCode).toBe('EUNKNOWN');
+      expect(result.error).toBe('Custom error');
+    });
+
+    it('includes context when provided', () => {
+      const result = createErrorResult('ENOENT', 'Missing file', {
+        context: { path: '/test/file.json', operation: 'read' },
+      });
+
+      expect(result.context).toEqual({ path: '/test/file.json', operation: 'read' });
+    });
+
+    it('includes cause when provided', () => {
+      const cause = new Error('Original error');
+      const result = createErrorResult('ECONFIG', 'Config failed', { cause });
+
+      expect(result.cause).toBe(cause);
+    });
+
+    it('sets autoFix to null when error code has no autoFix', () => {
+      const result = createErrorResult('EACCES');
+
+      expect(result.autoFix).toBeNull();
+    });
+
+    it('includes autoFix when error code has one', () => {
+      const result = createErrorResult('ENOENT');
+
+      expect(result.autoFix).toBe('create-missing-file');
+    });
+  });
+
+  describe('createSuccessResult', () => {
+    it('creates success result with data', () => {
+      const result = createSuccessResult({ id: 1, name: 'test' });
+
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual({ id: 1, name: 'test' });
+    });
+
+    it('handles primitive data types', () => {
+      expect(createSuccessResult(42).data).toBe(42);
+      expect(createSuccessResult('hello').data).toBe('hello');
+      expect(createSuccessResult(true).data).toBe(true);
+      expect(createSuccessResult(null).data).toBeNull();
+    });
+
+    it('includes optional metadata', () => {
+      const result = createSuccessResult('data', { cached: true, timestamp: 12345 });
+
+      expect(result.ok).toBe(true);
+      expect(result.data).toBe('data');
+      expect(result.cached).toBe(true);
+      expect(result.timestamp).toBe(12345);
     });
   });
 });

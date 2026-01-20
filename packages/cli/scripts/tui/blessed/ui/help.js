@@ -18,7 +18,7 @@ module.exports = function createHelpOverlay(screen, state) {
     style: {
       fg: 'white',
       bg: 'black',
-      border: { fg: 'yellow' }
+      border: { fg: 'yellow' },
     },
     label: ' {yellow-fg}Help{/yellow-fg} ',
     hidden: true,
@@ -44,7 +44,7 @@ module.exports = function createHelpOverlay(screen, state) {
   {cyan-fg}q{/}         Quit TUI
   {cyan-fg}Ctrl+C{/}    Force quit
 
-{gray-fg}Press Escape or ? to close{/gray-fg}`
+{gray-fg}Press Escape or ? to close{/gray-fg}`,
   });
 
   // Close help on various keys
@@ -72,6 +72,6 @@ module.exports = function createHelpOverlay(screen, state) {
     },
     isVisible() {
       return !help.hidden;
-    }
+    },
   };
 };

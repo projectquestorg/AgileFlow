@@ -16,21 +16,21 @@ module.exports = function createTracePanel(grid, state) {
     tags: true,
     border: {
       type: 'line',
-      fg: 'yellow'
+      fg: 'yellow',
     },
     style: {
       fg: 'white',
       bg: 'black',
-      border: { fg: 'yellow' }
+      border: { fg: 'yellow' },
     },
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
       ch: '│',
-      style: { fg: 'yellow' }
+      style: { fg: 'yellow' },
     },
     keys: true,
-    vi: true
+    vi: true,
   });
 
   let traces = [];
@@ -76,9 +76,15 @@ module.exports = function createTracePanel(grid, state) {
 
   return {
     element: box,
-    show() { box.show(); },
-    hide() { box.hide(); },
-    focus() { box.focus(); },
+    show() {
+      box.show();
+    },
+    hide() {
+      box.hide();
+    },
+    focus() {
+      box.focus();
+    },
     setData(data) {
       traces = data || [];
       render();
@@ -86,6 +92,6 @@ module.exports = function createTracePanel(grid, state) {
     addStep(action, status = 'running', details = '') {
       traces.push({ action, status, details, duration: '--' });
       render();
-    }
+    },
   };
 };

@@ -1,0 +1,270 @@
+---
+title: Codebase Query
+description: Intelligent codebase search using programmatic queries instead of RAG. Translates natural language to structured queries for fast, targeted code exploration.
+---
+
+# Codebase Query Agent
+
+The Codebase Query Agent is your specialist in fast, targeted codebase exploration using programmatic search (RLM pattern). This agent translates natural language questions into structured queries, enabling efficient code discovery without loading entire files into context.
+
+## Capabilities
+
+- **Natural Language Translation**: Convert questions like "where is auth handled?" into structured queries
+- **File Pattern Search**: Find files by glob patterns and naming conventions
+- **Content Search**: Grep-style searches for code patterns, function names, and text
+- **Tag-Based Search**: Find files by semantic tags (api, ui, auth, database, test)
+- **Export Discovery**: Locate where symbols are exported and used
+- **Dependency Mapping**: Show what files import/are imported by a given file
+- **Token Budget Management**: Respect context limits by truncating large results
+
+## When to Use
+
+Use this agent when you need to:
+
+- Find files related to a feature (authentication, API, database, etc.)
+- Locate function definitions or exports
+- Discover file dependencies and import chains
+- Search code content without reading entire files
+- Explore an unfamiliar codebase quickly
+- Build context for implementing a feature
+
+## How It Works
+
+### Query Translation
+
+The agent translates natural language into structured queries:
+
+| User Says | Query Type | Translation |
+|-----------|------------|-------------|
+| "Where is authentication handled?" | tag + query | `--tag="auth"` + `--query="auth"` |
+| "What files use the login function?" | export | `--export="login"` |
+| "Find files with error handling" | content | `--content="try.*catch"` |
+| "Show me API routes" | tag | `--tag="api"` |
+| "What does user.ts depend on?" | deps | `--deps="src/user.ts"` |
+| "Database schema files" | tag + query | `--tag="database"` + `--query="schema"` |
+| "React components using hooks" | content | `--content="use(State\|Effect\|Ref)"` |
+| "All test files" | tag | `--tag="test"` |
+
+### Available Tags
+
+| Tag | Matches |
+|-----|---------|
+| api | `/api/`, `/routes/`, `/controllers/` |
+| ui | `/components/`, `/views/`, `/pages/` |
+| auth | `/auth/`, `/login/`, `/jwt/` |
+| database | `/db/`, `/models/`, `/migrations/` |
+| test | `/test/`, `/__tests__/`, `/spec/` |
+| config | `/config/`, `/settings/` |
+| lib | `/lib/`, `/utils/`, `/helpers/` |
+
+### Workflow
+
+1. **Parse Query**: Understand what the user is looking for
+2. **Translate**: Convert natural language to structured query types
+3. **Check Index**: Ensure codebase index is available (build if needed)
+4. **Execute Query**: Run query with appropriate flags
+5. **Format Results**: Return file paths with context
+6. **Truncate if Needed**: Respect token budget limits
+
+## Example
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Where is authentication handled in this codebase?"
+```
+
+The Codebase Query Agent would:
+1. Translate to: `--tag="auth"` + `--query="auth"`
+2. Check/build index
+3. Search files matching auth patterns
+4. Return structured results:
+```
+Query: "authentication files"
+Translation: --tag="auth" + --query="auth"
+Found: 8 files
+
+Files:
+- src/api/auth.ts (api, auth)
+- src/middleware/auth.ts (auth)
+- src/lib/jwt.ts (auth, lib)
+- src/hooks/useAuth.ts (ui, auth)
+...
+
+[Context: Searched for files tagged 'auth' and matching 'auth' pattern]
+```
+
+## Key Behaviors
+
+- **READ-ONLY**: This agent cannot write, edit, or modify files
+- **Index-First**: Always checks/builds codebase index before querying
+- **Token-Aware**: Truncates results to stay within budget (default: 15000 chars)
+- **Structured Output**: Returns consistent format with query, translation, and results
+- **Fallback Strategy**: Uses Glob/Grep directly if index unavailable
+
+## Tools Available
+
+This agent has access to:
+- **Read**: Browse files to understand context
+- **Glob**: Pattern-based file discovery
+- **Grep**: Content-based search
+
+**Notably Missing** (READ-ONLY agent):
+- No Write tool
+- No Edit tool
+- No Bash tool (except for running query script)
+
+## Query Types
+
+### Pattern/Keyword Query
+```bash
+--query="auth"
+```
+Smart search combining glob patterns, tag matching, and export search.
+
+### Content Search
+```bash
+--content="validateToken"
+```
+Grep-style search for text within files.
+
+### Tag Search
+```bash
+--tag="api"
+```
+Find files matching semantic tag patterns.
+
+### Export Search
+```bash
+--export="login"
+```
+Find files that export a specific symbol.
+
+### Dependency Search
+```bash
+--deps="src/auth.js"
+```
+Show what the file imports and what imports it.
+
+### Build Index
+```bash
+--build-index
+```
+Rebuild codebase index (when stale or missing).
+
+## Output Format
+
+Standard response format:
+
+```
+Query: "[original natural language query]"
+Translation: [query flags used]
+Index Status: [built/stale/missing]
+Found: [N] files
+
+Files:
+- path/to/file.ts (tags)
+- path/to/other.ts (tags)
+...
+
+[Context: explanation of what was searched]
+```
+
+For content searches, includes matching lines:
+```
+Matches in path/to/file.ts:
+  42: const token = validateToken(input);
+  85: if (!validateToken(refreshToken)) {
+```
+
+## Token Budget Management
+
+The agent respects token limits:
+- Default budget: 15000 characters
+- Use `--budget=5000` for smaller results
+- Large results are truncated with notice
+- Shows total count even when truncated
+
+## Fallback Behavior
+
+If the query script or index is unavailable:
+
+1. **File Patterns**: Use Glob tool for pattern matching
+2. **Content Search**: Use Grep tool for text search
+3. **Combine Results**: Deduplicate and format manually
+
+## Integration with Other Agents
+
+The Codebase Query Agent is typically invoked by:
+
+- **MENTOR**: Find relevant code for feature implementation
+- **AG-API**: Locate existing API implementations
+- **REFACTOR**: Find code patterns to update
+- **AG-DEVOPS**: Find configuration files
+- **EPIC-PLANNER**: Understand codebase structure
+
+Results are returned directly (no bus messaging needed for read-only queries).
+
+## RLM Pattern
+
+This agent implements the Repository-Level Modeling (RLM) pattern:
+
+- **Programmatic Search**: Query codebase via structured API, not RAG
+- **Index-Based**: Uses pre-built index for fast lookups
+- **Token-Efficient**: Returns only relevant results, not entire files
+- **Deterministic**: Same query always returns same results
+
+Benefits over RAG:
+- Faster (no embedding computation)
+- More precise (exact matches)
+- Lower cost (smaller context)
+- Deterministic (no hallucinations)
+
+## Common Patterns
+
+**Find Implementation Files**
+```
+"Where is [feature] implemented?"
+→ --tag="[relevant-tag]" + --query="[feature]"
+```
+
+**Find Usage Sites**
+```
+"What uses [function/class]?"
+→ --export="[symbol]"
+```
+
+**Find Configuration**
+```
+"Where is [setting] configured?"
+→ --tag="config" + --content="[setting]"
+```
+
+**Map Dependencies**
+```
+"What does [file] depend on?"
+→ --deps="[file-path]"
+```
+
+## Related Agents
+
+- [`research`](/agents/research) - For deeper technical research beyond code
+- [`mentor`](/agents/mentor) - Often invokes codebase-query for context
+- [`refactor`](/agents/refactor) - Uses query results to plan refactoring
+- [`devops`](/agents/devops) - Finds configuration and infrastructure code
+
+## Anti-Patterns
+
+**DON'T:**
+- Use Write/Edit tools (you are READ-ONLY)
+- Load entire codebase into context
+- Ignore index status (check/build first)
+- Return raw file contents (return structured results)
+- Exceed token budget (truncate with notice)
+
+**DO:**
+- Translate natural language to query types
+- Check index status before querying
+- Combine query types for complex searches
+- Show match count and file paths
+- Explain what was searched and how

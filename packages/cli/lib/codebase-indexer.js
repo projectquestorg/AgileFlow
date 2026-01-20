@@ -69,9 +69,7 @@ function loadConfig(projectRoot) {
   return {
     ...DEFAULT_CONFIG,
     // Convert ttl_hours to ttlMs if provided
-    ttlMs: userConfig.ttl_hours
-      ? userConfig.ttl_hours * 60 * 60 * 1000
-      : DEFAULT_CONFIG.ttlMs,
+    ttlMs: userConfig.ttl_hours ? userConfig.ttl_hours * 60 * 60 * 1000 : DEFAULT_CONFIG.ttlMs,
     excludePatterns: userConfig.exclude_patterns || DEFAULT_CONFIG.excludePatterns,
     includePatterns: userConfig.include_patterns || DEFAULT_CONFIG.includePatterns,
     maxFileSizeKb: userConfig.max_file_size_kb || DEFAULT_CONFIG.maxFileSizeKb,
@@ -302,11 +300,11 @@ function shouldIncludeFile(relativePath, excludePatterns) {
     // Handle ** (matches any path segments including none)
     // Handle * (matches within a single path segment)
     let regexPattern = pattern
-      .replace(/\./g, '\\.')          // Escape dots
+      .replace(/\./g, '\\.') // Escape dots
       .replace(/\*\*/g, '<<<GLOB>>>') // Temp placeholder for **
-      .replace(/\*/g, '[^/]*')        // Single * = any chars except /
-      .replace(/<<<GLOB>>>/g, '.*')   // ** = any chars including /
-      .replace(/\?/g, '.');           // ? = any single char
+      .replace(/\*/g, '[^/]*') // Single * = any chars except /
+      .replace(/<<<GLOB>>>/g, '.*') // ** = any chars including /
+      .replace(/\?/g, '.'); // ? = any single char
 
     // Support patterns that should match the start of path
     const regex = new RegExp(`^${regexPattern}`);
@@ -397,7 +395,12 @@ function buildIndex(projectRoot, options = {}) {
     const index = createEmptyIndex(projectRoot);
 
     // Scan for files
-    const files = scanDirectory(projectRoot, projectRoot, config.excludePatterns, config.maxFileSizeKb);
+    const files = scanDirectory(
+      projectRoot,
+      projectRoot,
+      config.excludePatterns,
+      config.maxFileSizeKb
+    );
     index.stats.total_files = files.length;
 
     // Process each file
@@ -564,7 +567,12 @@ function updateIndex(projectRoot, options = {}) {
     const startTime = Date.now();
 
     // Scan for current files
-    const currentFiles = scanDirectory(projectRoot, projectRoot, config.excludePatterns, config.maxFileSizeKb);
+    const currentFiles = scanDirectory(
+      projectRoot,
+      projectRoot,
+      config.excludePatterns,
+      config.maxFileSizeKb
+    );
     const currentFilePaths = new Set(currentFiles.map(f => f.path));
 
     // Track changes
@@ -713,14 +721,14 @@ function queryFiles(index, pattern) {
   // Order matters: handle ** before * to avoid double processing
   let regexPattern = pattern
     // First, use placeholders to protect multi-char patterns
-    .replace(/\*\*\//g, '<<<GLOBSLASH>>>')  // **/ placeholder
-    .replace(/\*\*/g, '<<<GLOB>>>')         // ** placeholder
-    .replace(/\./g, '\\.')                  // Escape dots
-    .replace(/\?/g, '.')                    // ? = any single char
-    .replace(/\*/g, '[^/]*')                // Single * = any chars except /
+    .replace(/\*\*\//g, '<<<GLOBSLASH>>>') // **/ placeholder
+    .replace(/\*\*/g, '<<<GLOB>>>') // ** placeholder
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/\?/g, '.') // ? = any single char
+    .replace(/\*/g, '[^/]*') // Single * = any chars except /
     // Now restore placeholders with actual patterns
     .replace(/<<<GLOBSLASH>>>/g, '(?:.+/)?') // **/ = optionally any path + /
-    .replace(/<<<GLOB>>>/g, '.*');           // ** alone = any chars including /
+    .replace(/<<<GLOB>>>/g, '.*'); // ** alone = any chars including /
 
   const regex = new RegExp(`^${regexPattern}$`, 'i');
 

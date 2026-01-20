@@ -50,8 +50,8 @@ class DataWatcher {
       usePolling: false,
       awaitWriteFinish: {
         stabilityThreshold: 100,
-        pollInterval: 50
-      }
+        pollInterval: 50,
+      },
     });
 
     this.watcher.on('change', filePath => {
@@ -85,20 +85,22 @@ class DataWatcher {
             story: s.id || s.title || 'Unknown',
             status: 'active',
             duration: this.formatDuration(s.started_at),
-            progress: s.progress || '--'
+            progress: s.progress || '--',
           }));
 
         // If no active stories, show all stories summary
         if (this.state.sessions.length === 0) {
           const ready = stories.filter(s => s.status === 'ready').length;
           const completed = stories.filter(s => s.status === 'completed').length;
-          this.state.sessions = [{
-            id: '--',
-            story: `${ready} ready, ${completed} completed`,
-            status: 'idle',
-            duration: '--',
-            progress: '--'
-          }];
+          this.state.sessions = [
+            {
+              id: '--',
+              story: `${ready} ready, ${completed} completed`,
+              status: 'idle',
+              duration: '--',
+              progress: '--',
+            },
+          ];
         }
       }
     } catch (err) {
@@ -138,7 +140,7 @@ class DataWatcher {
             action: cmd.command || cmd,
             status: 'running',
             duration: '--',
-            details: cmd.args || ''
+            details: cmd.args || '',
           }));
         }
       }

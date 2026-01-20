@@ -336,6 +336,180 @@ function readProjectFiles(rootDir, options = {}) {
   };
 }
 
+// =============================================================================
+// Command Caching (for git and other shell commands)
+// =============================================================================
+
+const { execSync } = require('child_process');
+
+// Separate cache for command output with shorter TTL
+const commandCache = new LRUCache({
+  maxSize: 50,
+  ttlMs: 30000, // 30 seconds default
+});
+
+/**
+ * Execute and cache a shell command
+ * @param {string} command - Shell command to execute
+ * @param {Object} [options]
+ * @param {string} [options.cwd] - Working directory
+ * @param {boolean} [options.force=false] - Skip cache and force execution
+ * @param {number} [options.ttlMs] - Custom TTL for this command
+ * @param {string} [options.cacheKey] - Custom cache key (default: auto-generated)
+ * @returns {{ ok: boolean, data?: string, error?: string, cached?: boolean }}
+ */
+function execCached(command, options = {}) {
+  const { cwd = process.cwd(), force = false, ttlMs, cacheKey } = options;
+  const key = cacheKey || `cmd:${command}:${cwd}`;
+
+  // Check cache first (unless force)
+  if (!force) {
+    const cached = commandCache.get(key);
+    if (cached !== undefined) {
+      return { ok: true, data: cached, cached: true };
+    }
+  }
+
+  // Execute command
+  try {
+    const output = execSync(command, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 10000, // 10 second timeout
+    }).trim();
+
+    // Cache the result
+    commandCache.set(key, output, ttlMs);
+
+    return { ok: true, data: output, cached: false };
+  } catch (error) {
+    // Cache errors briefly to avoid repeated failures
+    const errMsg = error.message || 'Command failed';
+    return { ok: false, error: errMsg, cached: false };
+  }
+}
+
+/**
+ * Execute and cache a git command
+ * Helper with git-specific cache key format
+ * @param {string} gitCommand - Git subcommand (e.g., 'status --short')
+ * @param {Object} [options]
+ * @param {string} [options.cwd] - Working directory
+ * @param {boolean} [options.force=false] - Skip cache
+ * @param {number} [options.ttlMs=30000] - TTL (default 30s)
+ * @returns {{ ok: boolean, data?: string, error?: string, cached?: boolean }}
+ */
+function gitCached(gitCommand, options = {}) {
+  const { cwd = process.cwd(), ttlMs = 30000, force = false } = options;
+  const command = `git ${gitCommand}`;
+  const cacheKey = `git:${gitCommand}:${cwd}`;
+
+  return execCached(command, {
+    cwd,
+    force,
+    ttlMs,
+    cacheKey,
+  });
+}
+
+/**
+ * Common git commands with caching
+ */
+const gitCommands = {
+  /**
+   * Get current branch name (cached)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  branch(cwd, options = {}) {
+    return gitCached('branch --show-current', { cwd, ...options });
+  },
+
+  /**
+   * Get short status (cached)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  status(cwd, options = {}) {
+    return gitCached('status --short', { cwd, ...options });
+  },
+
+  /**
+   * Get recent commits (cached)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @param {number} [options.count=5] - Number of commits
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  log(cwd, options = {}) {
+    const { count = 5, ...rest } = options;
+    return gitCached(`log -${count} --oneline`, { cwd, ...rest });
+  },
+
+  /**
+   * Get diff summary (cached with shorter TTL)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  diff(cwd, options = {}) {
+    return gitCached('diff --stat', { cwd, ttlMs: 15000, ...options });
+  },
+
+  /**
+   * Get last commit short hash (cached)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  commitHash(cwd, options = {}) {
+    return gitCached('log -1 --format="%h"', { cwd, ...options });
+  },
+
+  /**
+   * Get last commit message (cached)
+   * @param {string} [cwd] - Working directory
+   * @param {Object} [options]
+   * @returns {{ ok: boolean, data?: string, cached?: boolean }}
+   */
+  commitMessage(cwd, options = {}) {
+    return gitCached('log -1 --format="%s"', { cwd, ...options });
+  },
+};
+
+/**
+ * Invalidate all git caches for a directory
+ * Call this after git operations that modify state
+ * @param {string} [cwd] - Working directory
+ */
+function invalidateGitCache(cwd = process.cwd()) {
+  const prefix = `git:`;
+  const suffix = `:${cwd}`;
+  for (const key of commandCache.cache.keys()) {
+    if (key.startsWith(prefix) && key.endsWith(suffix)) {
+      commandCache.delete(key);
+    }
+  }
+}
+
+/**
+ * Get command cache statistics
+ * @returns {Object} Cache stats
+ */
+function getCommandCacheStats() {
+  return commandCache.getStats();
+}
+
+/**
+ * Clear command cache
+ */
+function clearCommandCache() {
+  commandCache.clear();
+}
+
 module.exports = {
   // Core LRU Cache class (for custom usage)
   LRUCache,
@@ -356,4 +530,12 @@ module.exports = {
   readMetadata,
   readRegistry,
   readProjectFiles,
+
+  // Command caching
+  execCached,
+  gitCached,
+  gitCommands,
+  invalidateGitCache,
+  getCommandCacheStats,
+  clearCommandCache,
 };

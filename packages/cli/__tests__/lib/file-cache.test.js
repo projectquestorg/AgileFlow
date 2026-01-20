@@ -20,6 +20,12 @@ const {
   readMetadata,
   readRegistry,
   readProjectFiles,
+  execCached,
+  gitCached,
+  gitCommands,
+  invalidateGitCache,
+  getCommandCacheStats,
+  clearCommandCache,
 } = require('../../lib/file-cache');
 
 describe('file-cache', () => {
@@ -419,6 +425,153 @@ describe('file-cache', () => {
       expect(result.sessionState).toBeNull();
       expect(result.metadata).toBeNull();
       expect(result.registry).toBeNull();
+    });
+  });
+
+  describe('command caching', () => {
+    beforeEach(() => {
+      clearCommandCache();
+    });
+
+    describe('execCached', () => {
+      it('executes and caches a command', () => {
+        const result1 = execCached('echo "test"');
+        expect(result1.ok).toBe(true);
+        expect(result1.data).toContain('test');
+        expect(result1.cached).toBe(false);
+
+        // Second call should be cached
+        const result2 = execCached('echo "test"');
+        expect(result2.ok).toBe(true);
+        expect(result2.cached).toBe(true);
+      });
+
+      it('returns error for failing commands', () => {
+        const result = execCached('nonexistent-command-xyz');
+        expect(result.ok).toBe(false);
+        expect(result.error).toBeDefined();
+      });
+
+      it('respects force option', () => {
+        const result1 = execCached('echo "test"');
+        expect(result1.cached).toBe(false);
+
+        const result2 = execCached('echo "test"', { force: true });
+        expect(result2.cached).toBe(false);
+      });
+
+      it('uses custom cache key', () => {
+        const result1 = execCached('echo "test"', { cacheKey: 'custom:key' });
+        expect(result1.cached).toBe(false);
+
+        const result2 = execCached('echo "test"', { cacheKey: 'custom:key' });
+        expect(result2.cached).toBe(true);
+
+        // Different key should miss
+        const result3 = execCached('echo "test"', { cacheKey: 'other:key' });
+        expect(result3.cached).toBe(false);
+      });
+    });
+
+    describe('gitCached', () => {
+      it('executes git commands', () => {
+        const result = gitCached('--version');
+        expect(result.ok).toBe(true);
+        expect(result.data).toContain('git version');
+      });
+
+      it('uses git-specific cache key format', () => {
+        const result1 = gitCached('--version');
+        expect(result1.cached).toBe(false);
+
+        const result2 = gitCached('--version');
+        expect(result2.cached).toBe(true);
+      });
+    });
+
+    describe('gitCommands helpers', () => {
+      it('gitCommands.branch returns current branch', () => {
+        const result = gitCommands.branch();
+        expect(result.ok).toBe(true);
+        expect(typeof result.data).toBe('string');
+        expect(result.data.length).toBeGreaterThan(0);
+      });
+
+      it('gitCommands.status returns status', () => {
+        const result = gitCommands.status();
+        expect(result.ok).toBe(true);
+        // Status might be empty string if working tree is clean
+        expect(typeof result.data).toBe('string');
+      });
+
+      it('gitCommands.commitHash returns short hash', () => {
+        const result = gitCommands.commitHash();
+        expect(result.ok).toBe(true);
+        // Hash should be 7-12 characters (short hash)
+        expect(result.data.length).toBeGreaterThanOrEqual(7);
+        expect(result.data.length).toBeLessThanOrEqual(12);
+      });
+
+      it('gitCommands.log returns recent commits', () => {
+        const result = gitCommands.log(undefined, { count: 3 });
+        expect(result.ok).toBe(true);
+        // Should have multiple lines
+        expect(result.data.split('\n').length).toBeLessThanOrEqual(3);
+      });
+    });
+
+    describe('cache management', () => {
+      it('invalidateGitCache clears git caches', () => {
+        // Populate cache
+        gitCommands.branch();
+        gitCommands.status();
+
+        const stats1 = getCommandCacheStats();
+        expect(stats1.size).toBeGreaterThan(0);
+
+        // Invalidate
+        invalidateGitCache();
+
+        // Should be cleared
+        const stats2 = getCommandCacheStats();
+        expect(stats2.size).toBe(0);
+      });
+
+      it('getCommandCacheStats returns statistics', () => {
+        clearCommandCache();
+
+        execCached('echo "stats-test"');
+        execCached('echo "stats-test"'); // Cache hit
+
+        const stats = getCommandCacheStats();
+        expect(stats.hits).toBeGreaterThanOrEqual(1);
+        expect(stats.misses).toBeGreaterThanOrEqual(1);
+        expect(stats.size).toBeGreaterThanOrEqual(1);
+      });
+
+      it('clearCommandCache removes all entries', () => {
+        execCached('echo "test1"');
+        execCached('echo "test2"');
+
+        const stats1 = getCommandCacheStats();
+        expect(stats1.size).toBe(2);
+
+        clearCommandCache();
+
+        const stats2 = getCommandCacheStats();
+        expect(stats2.size).toBe(0);
+      });
+    });
+
+    describe('cache key format', () => {
+      it('uses git:<command>:<cwd> format for git commands', () => {
+        clearCommandCache();
+        gitCached('--version');
+
+        // We can verify the cache works by checking stats
+        const stats = getCommandCacheStats();
+        expect(stats.size).toBe(1);
+      });
     });
   });
 });

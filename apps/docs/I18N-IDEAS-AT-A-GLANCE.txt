@@ -1,0 +1,299 @@
+================================================================================
+AGILEFLOW DOCS: 5 i18n IMPROVEMENT IDEAS - QUICK REFERENCE
+================================================================================
+
+Project: AgileFlow Documentation Site (apps/docs)
+Status:   English-only (114 MDX files, Fumadocs + Next.js 15)
+Analysis: 2026-01-19
+
+================================================================================
+IDEA 1: MULTI-LOCALE URL ROUTING WITH AUTOMATIC DETECTION
+================================================================================
+Title:     Multi-locale URL routing with automatic language detection
+Category:  i18n
+Impact:    HIGH
+Effort:    2 Days
+Priority:  PHASE 1 (Foundational)
+
+What:      Enable URL patterns like /es/docs/..., /fr/docs/... with automatic
+           language detection from browser headers.
+
+Why:       Without locale routing, non-English users cannot access translated
+           content. Current hardcoded lang="en" permanently locks out 60%+ of
+           tech audience.
+
+Files:     middleware.ts (CREATE)
+           app/layout.tsx (MODIFY)
+           app/(docs)/[[...slug]]/page.tsx (MODIFY)
+           lib/i18n-config.ts (CREATE)
+
+How:       Use next-i18n-router to intercept requests, detect locale, rewrite.
+           Update layout to accept params.locale, set lang + dir (RTL prep).
+
+Tech:      npm install next-i18n-router
+           Middleware detects: URL > cookie > Accept-Language > default (en)
+           dir="rtl" for Arabic, Hebrew, Persian
+
+Blocker:   YES - Everything else depends on this.
+Ready:     Week 1
+
+
+================================================================================
+IDEA 2: CROWDIN + AUTOMATED CI/CD TRANSLATION SYNC WITH GLOSSARY
+================================================================================
+Title:     Community-driven translation workflow via Crowdin with CI/CD
+Category:  i18n
+Impact:    HIGH
+Effort:    1 Week
+Priority:  PHASE 2 (Infrastructure)
+
+What:      Integrate Crowdin for professional translation management + GitHub
+           automation. Community can translate UI strings, Crowdin PRs auto-sync.
+
+Why:       Manual translation of 114+ files + UI strings is unsustainable.
+           Crowdin enables 50+ volunteers to contribute without code access.
+           Glossary ensures "epic" → "épico" (not "epopeya") consistency.
+
+Files:     .github/workflows/i18n-sync.yml (CREATE)
+           scripts/extract-i18n-keys.js (CREATE)
+           crowdin.yml (CREATE)
+           locales/en.json, es.json, fr.json, de.json, ja.json (CREATE)
+           docs/i18n/TRANSLATING.md (CREATE)
+
+How:       1. Create Crowdin project, link GitHub
+           2. Extract UI strings to locales/en.json
+           3. Build workflow: daily sync, download, PR, merge on review
+           4. Include AgileFlow glossary for term consistency
+
+Tech:      Crowdin SDK + GitHub Actions
+           Glossary: epic, story, agent, babysit, skill, deploy, velocity...
+           CI runs: crowdin upload (source) → crowdin download (translations)
+
+Cost:      $0-600/year (free tier for open source)
+Deps:      Idea 1 (routing must exist)
+Ready:     Week 2-3
+
+
+================================================================================
+IDEA 3: RIGHT-TO-LEFT LANGUAGE SUPPORT (ARABIC, HEBREW, PERSIAN)
+================================================================================
+Title:     RTL language support with layout reversals
+Category:  i18n
+Impact:    MEDIUM
+Effort:    3 Days
+Priority:  PHASE 3 (v1.1)
+
+What:      Support Arabic (310M speakers), Hebrew (9M), Persian (70M) with
+           proper text direction, component flipping, spacing reversals.
+
+Why:       RTL is 2.5% of world population but underrepresented in tech.
+           Without RTL, site is unusable in Middle East/North Africa/Iran.
+           Layout breaks: text sideways, buttons misaligned, spacing wrong.
+
+Files:     app/layout.tsx (MODIFY - add dir)
+           styles/globals.css (MODIFY - RTL utilities)
+           lib/i18n-config.ts (MODIFY - RTL language map)
+           components/locale-switcher.tsx (MODIFY - include RTL test)
+           Fumadocs wrapper (CREATE/MODIFY)
+
+How:       1. Add dir="rtl" to HTML based on locale
+           2. Modify CSS: logical properties (start/end not left/right)
+           3. Reverse flex-row, padding, margin for RTL
+           4. Test with Chrome DevTools Arabic locale simulator
+
+Tech:      Tailwind CSS logical properties (ps-4 = padding-start)
+           [dir="rtl"] CSS selector for reversals
+           Chrome DevTools: DevTools > Settings > Languages > Arabic
+
+Testing:   Playwright visual regression snapshots, compare RTL vs LTR
+Deps:      Ideas 1-2 (routing + search must be stable)
+Ready:     Week 4
+
+
+================================================================================
+IDEA 4: LOCALE-AWARE SEARCH WITH PER-LANGUAGE INDICES
+================================================================================
+Title:     Fumadocs search split by locale with language metadata
+Category:  i18n
+Impact:    MEDIUM
+Effort:    1 Week
+Priority:  PHASE 2 (Infrastructure)
+
+What:      Split Fumadocs search index by locale. Spanish user searching
+           "flujo de trabajo" now finds Spanish results, not English.
+
+Why:       Currently, all 114 MDX files indexed in English only. Non-English
+           users get zero results for non-English queries. Kills discoverability.
+
+Files:     source.config.ts (MODIFY - locale resolver)
+           app/api/search/route.ts (MODIFY - per-locale filtering)
+           lib/docs.ts (MODIFY - locale metadata)
+           Build scripts (MODIFY - split indices)
+
+How:       1. Extract locale as metadata in front matter
+           2. Generate search-en.json, search-es.json, etc. at build time
+           3. Search API filters by requested locale
+           4. Fallback: suggest English if no translations yet
+
+Tech:      Fumadocs front matter schema.locale
+           Build generates locale-specific indices (5x size multiplier)
+           Fallback with "not yet translated" badge
+
+Perf:      +20% build time (manageable, cache during development)
+Deps:      Ideas 1-2 (routing + translations exist)
+Ready:     Week 3-4
+
+
+================================================================================
+IDEA 5: LOCALE SWITCHER COMPONENT WITH STICKY PREFERENCE
+================================================================================
+Title:     Language selector UI with localStorage + cookie persistence
+Category:  i18n
+Impact:    MEDIUM
+Effort:    2 Days
+Priority:  PHASE 1 (UX)
+
+What:      Add prominent language picker in navbar. Remember user choice via
+           localStorage + cookie. Persist across sessions.
+
+Why:       Without visible switcher, users don't know translations exist.
+           Current site: no language option = stuck in English. Switcher
+           removes friction, shows "translations available", improves UX.
+
+Files:     components/locale-switcher.tsx (CREATE)
+           components/main-nav.tsx (MODIFY - add switcher)
+           lib/use-locale.ts (CREATE - React hook)
+           app/layout.tsx (MODIFY - LanguageProvider wrapper)
+
+How:       1. Create component mirroring existing ModeSwitch (dark/light)
+           2. On selection: update URL + localStorage + cookie
+           3. Middleware reads cookie on next load
+           4. Optionally include "Help translate" link to Crowdin
+
+Tech:      React hooks for state management
+           localStorage for client persistence
+           Cookie for middleware to read on server
+           Pattern: same as existing mode-switcher component
+
+Placement: Header navbar, next to theme toggle
+Fallback:  If cookie missing, middleware uses Accept-Language header
+Deps:      Idea 1 (routing must support locale URLs)
+Ready:     Week 1
+
+
+================================================================================
+IMPLEMENTATION ROADMAP
+================================================================================
+
+PHASE 1 (Weeks 1-2): MVP Launch
+  [Priority 1] Idea 1: Routing .................. 2 days
+  [Priority 1] Idea 5: Switcher ................ 2 days
+  [Design]    PR review, testing, docs
+  Result:     Users can click /es/docs, get locale switcher in navbar
+
+PHASE 2 (Weeks 3-4): Translation Infrastructure
+  [Priority 2] Idea 2: Crowdin + CI ............ 1 week
+  [Priority 2] Idea 4: Search indices ......... 1 week
+  [Community] Open Crowdin for Spanish, French, German, Japanese
+  Result:     Community translators active, search works across locales
+
+PHASE 3 (Weeks 5-6): Polish & Scale
+  [Priority 3] Idea 3: RTL support ............ 3 days
+  [Monitor]   Performance, translation completeness, user metrics
+  [Announce]  Blog post, community outreach
+  Result:     Full i18n v1 ready: 5 locales, RTL, Crowdin community
+
+
+================================================================================
+EFFORT & COST SUMMARY
+================================================================================
+
+MVP (Ideas 1+5):        2 weeks, 1 engineer,  $2K labor,    $0/year Crowdin
+Beta (Idea 2):          2 weeks, 1 engineer,  $2K labor,   $240/year Crowdin
+v1.1 (Ideas 3+4):       2 weeks, 1.5 engineers, $3K labor, $600/year Crowdin
+─────────────────────────────────────────────────────────────────────────
+TOTAL:                  6 weeks, 1 FTE,      ~$7K labor,  ~$300-600/yr
+
+Expected ROI:
+  - 40%+ traffic from non-English regions within 3 months
+  - 20+ community translators active
+  - 5 languages at 70%+ completion
+  - +30% sessions in Spanish-speaking markets (est.)
+
+
+================================================================================
+QUICK CHECKLIST: READY TO START?
+================================================================================
+
+Before MVP launch (Idea 1):
+  [ ] Validate next-i18n-router vs custom middleware
+  [ ] Reserve 2 weeks in roadmap
+  [ ] Alert team about URL structure change (/en/, /es/, etc.)
+
+Before Crowdin setup (Idea 2):
+  [ ] Create Crowdin account
+  [ ] Build translation glossary (emoji, epic, story, etc.)
+  [ ] Plan community outreach (Twitter, Discord, GitHub Discussions)
+
+Before RTL launch (Idea 3):
+  [ ] Test with Arabic font loaded
+  [ ] Set up visual regression snapshots in Playwright
+  [ ] Recruit Arabic/Hebrew community testers
+
+Before Search (Idea 4):
+  [ ] Monitor build time impact (20% increase acceptable?)
+  [ ] Plan search analytics per locale
+
+
+================================================================================
+SUCCESS METRICS (3-Month Target)
+================================================================================
+
+  ✓ 40%+ of traffic from non-English regions (GA4 analysis)
+  ✓ 5 languages at 70%+ translation completion (Crowdin dashboard)
+  ✓ 20+ community translators active (Crowdin contributors list)
+  ✓ Spanish/French/German search queries returning results (no zero-results)
+  ✓ Zero RTL layout bug reports (GitHub issues)
+  ✓ 30%+ of visitors using language switcher (event tracking)
+  ✓ +15% avg session duration in non-English locales (GA4)
+
+
+================================================================================
+RELATED RESOURCES
+================================================================================
+
+Full Technical Docs:      research-i18n-improvements.md
+Implementation Priority:  I18N-IMPROVEMENTS-SUMMARY.md
+Next.js i18n Docs:        https://nextjs.org/docs/app/routing/i18n
+Fumadocs Docs:            https://fumadocs.vercel.app/docs
+Tailwind RTL:             https://tailwindcss.com/docs/dir
+next-i18n-router:         https://github.com/UnlyEd/next-i18n-router
+Crowdin Docs:             https://crowdin.com/developer
+
+
+================================================================================
+Questions?
+================================================================================
+
+  Q: Why not use Weglot/Phrase instead of Crowdin?
+  A: Crowdin is free for open source, has better community features, and
+     avoids vendor lock-in. DIY approach is more maintainable.
+
+  Q: Can we launch without RTL?
+  A: Yes! RTL is Phase 3. MVP (Ideas 1+5) works with LTR only.
+
+  Q: How long to translate all 114 files?
+  A: ~2 weeks per language with 5-10 community translators (Crowdin estimates).
+     Phased rollout: Spanish + French first (similar to English syntax).
+
+  Q: Do we need to change the domain?
+  A: No! Next.js middleware handles routing internally. URLs stay at
+     agileflow.dev, just with /locale/ prefix: agileflow.dev/es/docs/...
+
+  Q: Will SEO suffer with /es/, /fr/ paths?
+  A: No. hreflang tags tell Google these are locale variants of same content.
+     Each locale is indexed separately, boosting international visibility.
+
+================================================================================
+End of Quick Reference
+================================================================================

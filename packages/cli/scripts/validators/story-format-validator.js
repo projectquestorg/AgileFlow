@@ -23,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -110,7 +110,6 @@ function validateStoryFormat(filePath) {
         }
       }
     }
-
   } catch (e) {
     if (e instanceof SyntaxError) {
       issues.push(`Invalid JSON: ${e.message}`);
@@ -132,7 +131,9 @@ function validateSingleStory(story, index) {
   } else {
     // ID format validation (US-XXXX or EP-XXXX)
     if (!/^(US|EP|TECH|BUG)-\d{4}$/.test(story.id)) {
-      issues.push(`Story ${storyRef}: ID should match pattern US-XXXX, EP-XXXX, TECH-XXXX, or BUG-XXXX`);
+      issues.push(
+        `Story ${storyRef}: ID should match pattern US-XXXX, EP-XXXX, TECH-XXXX, or BUG-XXXX`
+      );
     }
   }
 
@@ -141,22 +142,47 @@ function validateSingleStory(story, index) {
   }
 
   // Status validation
-  const validStatuses = ['pending', 'ready', 'in_progress', 'in-progress', 'in_review', 'in-review', 'completed', 'blocked', 'archived'];
+  const validStatuses = [
+    'pending',
+    'ready',
+    'in_progress',
+    'in-progress',
+    'in_review',
+    'in-review',
+    'completed',
+    'blocked',
+    'archived',
+  ];
   if (story.status && !validStatuses.includes(story.status)) {
-    issues.push(`Story ${storyRef}: invalid status "${story.status}". Valid: ${validStatuses.join(', ')}`);
+    issues.push(
+      `Story ${storyRef}: invalid status "${story.status}". Valid: ${validStatuses.join(', ')}`
+    );
   }
 
   // Priority validation
   const validPriorities = ['critical', 'high', 'medium', 'low'];
   if (story.priority && !validPriorities.includes(story.priority)) {
-    issues.push(`Story ${storyRef}: invalid priority "${story.priority}". Valid: ${validPriorities.join(', ')}`);
+    issues.push(
+      `Story ${storyRef}: invalid priority "${story.priority}". Valid: ${validPriorities.join(', ')}`
+    );
   }
 
   // Owner validation (if present)
   if (story.owner) {
-    const validOwners = ['AG-UI', 'AG-API', 'AG-CI', 'AG-DB', 'AG-TEST', 'AG-DOC', 'AG-SEC', 'human'];
+    const validOwners = [
+      'AG-UI',
+      'AG-API',
+      'AG-CI',
+      'AG-DB',
+      'AG-TEST',
+      'AG-DOC',
+      'AG-SEC',
+      'human',
+    ];
     if (!validOwners.includes(story.owner)) {
-      issues.push(`Story ${storyRef}: unknown owner "${story.owner}". Valid: ${validOwners.join(', ')}`);
+      issues.push(
+        `Story ${storyRef}: unknown owner "${story.owner}". Valid: ${validOwners.join(', ')}`
+      );
     }
   }
 

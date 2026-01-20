@@ -236,10 +236,13 @@ function getCharName(char) {
  * @param {string} filePath - Absolute path to JSON file
  * @param {object} options - Optional settings
  * @param {*} options.defaultValue - Value to return if file doesn't exist (makes missing file not an error)
- * @returns {{ ok: boolean, data?: any, error?: string }}
+ * @param {boolean} options.hidePathInError - Hide file path in error messages (security: default false)
+ * @param {string} options.context - Context for error messages (alternative to exposing path)
+ * @returns {{ ok: boolean, data?: any, error?: string, errorCode?: string }}
  */
 function safeReadJSON(filePath, options = {}) {
-  const { defaultValue } = options;
+  const { defaultValue, hidePathInError = false, context } = options;
+  const pathDisplay = hidePathInError ? context || 'configuration file' : filePath;
 
   try {
     if (!fs.existsSync(filePath)) {
@@ -247,19 +250,58 @@ function safeReadJSON(filePath, options = {}) {
         debugLog('safeReadJSON', { filePath, status: 'missing, using default' });
         return { ok: true, data: defaultValue };
       }
-      const error = `File not found: ${filePath}`;
+      const error = `File not found: ${pathDisplay}`;
       debugLog('safeReadJSON', { filePath, error });
-      return { ok: false, error };
+      return { ok: false, error, errorCode: 'ENOENT' };
     }
 
     const content = fs.readFileSync(filePath, 'utf8');
+
+    // Handle empty files gracefully
+    if (!content.trim()) {
+      if (defaultValue !== undefined) {
+        debugLog('safeReadJSON', { filePath, status: 'empty, using default' });
+        return { ok: true, data: defaultValue };
+      }
+      const error = `File is empty: ${pathDisplay}`;
+      debugLog('safeReadJSON', { filePath, error: 'empty file' });
+      return { ok: false, error, errorCode: 'EPARSE' };
+    }
+
     const data = JSON.parse(content);
     debugLog('safeReadJSON', { filePath, status: 'success' });
     return { ok: true, data };
   } catch (err) {
-    const error = `Failed to read JSON from ${filePath}: ${err.message}`;
+    // Detect specific JSON parse errors
+    let errorCode = 'EPARSE';
+    let errorMessage = `Failed to parse JSON`;
+
+    if (err.code === 'EACCES' || err.code === 'EPERM') {
+      errorCode = 'EACCES';
+      errorMessage = `Permission denied reading file`;
+    } else if (err.message && err.message.includes('Unexpected')) {
+      // JSON syntax error - don't expose full content
+      errorMessage = `Invalid JSON syntax`;
+      if (err.message.includes('position')) {
+        // Extract position info but not content
+        const posMatch = err.message.match(/position (\d+)/);
+        if (posMatch) {
+          errorMessage = `Invalid JSON syntax near position ${posMatch[1]}`;
+        }
+      }
+    } else if (err.message && err.message.includes('token')) {
+      errorMessage = `Invalid JSON: unexpected token`;
+    }
+
+    // Add context if not hiding path
+    if (!hidePathInError) {
+      errorMessage = `${errorMessage} in ${pathDisplay}`;
+    } else if (context) {
+      errorMessage = `${errorMessage} in ${context}`;
+    }
+
     debugLog('safeReadJSON', { filePath, error: err.message });
-    return { ok: false, error };
+    return { ok: false, error: errorMessage, errorCode };
   }
 }
 

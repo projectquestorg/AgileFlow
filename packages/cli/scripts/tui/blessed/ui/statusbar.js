@@ -16,8 +16,8 @@ module.exports = function createStatusBar(screen, state) {
     tags: true,
     style: {
       fg: 'white',
-      bg: 'blue'
-    }
+      bg: 'blue',
+    },
   });
 
   // Always-visible key hints (nano-style for user-friendliness)
@@ -27,7 +27,7 @@ module.exports = function createStatusBar(screen, state) {
     '{bold}j/k{/bold}:Nav',
     '{bold}r{/bold}:Refresh',
     '{bold}?{/bold}:Help',
-    '{bold}q{/bold}:Quit'
+    '{bold}q{/bold}:Quit',
   ];
 
   const hintText = ' ' + hints.join('  ');
@@ -37,15 +37,11 @@ module.exports = function createStatusBar(screen, state) {
     element: statusBar,
     setStatus(text) {
       // Show custom status with key hints
-      const shortHints = [
-        '{bold}r{/bold}:Refresh',
-        '{bold}?{/bold}:Help',
-        '{bold}q{/bold}:Quit'
-      ];
+      const shortHints = ['{bold}r{/bold}:Refresh', '{bold}?{/bold}:Help', '{bold}q{/bold}:Quit'];
       statusBar.setContent(` ${text}  |  ${shortHints.join('  ')}`);
     },
     resetHints() {
       statusBar.setContent(hintText);
-    }
+    },
   };
 };

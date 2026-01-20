@@ -42,6 +42,18 @@ const {
   sanitizeFilename,
 } = require('./validate-paths');
 
+// Re-export command validators
+const {
+  ALLOWED_COMMANDS,
+  DANGEROUS_PATTERNS,
+  validateCommand,
+  buildSpawnArgs,
+  isAllowedCommand,
+  getAllowedCommandList,
+  parseCommand,
+  checkArgSafety,
+} = require('./validate-commands');
+
 module.exports = {
   // Patterns and basic validators (from validate-names.js)
   PATTERNS,
@@ -67,4 +79,14 @@ module.exports = {
   hasUnsafePathPatterns,
   sanitizeFilename,
   checkSymlinkChainDepth,
+
+  // Command validation (from validate-commands.js)
+  ALLOWED_COMMANDS,
+  DANGEROUS_PATTERNS,
+  validateCommand,
+  buildSpawnArgs,
+  isAllowedCommand,
+  getAllowedCommandList,
+  parseCommand,
+  checkArgSafety,
 };

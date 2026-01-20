@@ -1,0 +1,104 @@
+name: Auto-translate Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/docs/content/docs/**/*.mdx'
+      - '!apps/docs/content/docs/es/**'
+      - '!apps/docs/content/docs/zh/**'
+      - '!apps/docs/content/docs/ar/**'
+      - '!apps/docs/content/docs/fr/**'
+      - '!apps/docs/content/docs/de/**'
+      - '!apps/docs/content/docs/ja/**'
+      - '!apps/docs/content/docs/ko/**'
+      - '!apps/docs/content/docs/pt/**'
+      - '!apps/docs/content/docs/he/**'
+  workflow_dispatch:
+    inputs:
+      language:
+        description: 'Language to translate to (es, zh, ar, fr, de, ja, ko, pt, he, or "all")'
+        required: false
+        default: 'all'
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    # Don't run on commits from this workflow (prevents infinite loop)
+    if: "!contains(github.event.head_commit.message, '[skip-translate]') && !contains(github.event.head_commit.message, 'chore: auto-translate')"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: apps/docs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd apps/docs && pnpm install --frozen-lockfile
+
+      - name: Get changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "files=all" >> $GITHUB_OUTPUT
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' | grep -v '/es/\|/zh/\|/ar/\|/fr/\|/de/\|/ja/\|/ko/\|/pt/\|/he/' || true)
+            echo "files<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Translate documentation
+        if: steps.changed.outputs.files != ''
+        run: |
+          cd apps/docs
+          LANG="${{ github.event.inputs.language || 'es' }}"
+
+          if [ "$LANG" = "all" ]; then
+            # Translate to all languages (one at a time to avoid rate limits)
+            for L in es zh fr de ja ko pt; do
+              echo "Translating to $L..."
+              npx tsx scripts/translate-docs.ts $L || echo "Warning: $L translation had errors"
+              sleep 5
+            done
+            # RTL languages last
+            for L in ar he; do
+              echo "Translating to $L..."
+              npx tsx scripts/translate-docs.ts $L || echo "Warning: $L translation had errors"
+              sleep 5
+            done
+          else
+            npx tsx scripts/translate-docs.ts $LANG
+          fi
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Check for changes
+        id: check
+        run: |
+          if [ -n "$(git status --porcelain apps/docs/content/docs/)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit translations
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add apps/docs/content/docs/
+          git commit -m "chore: auto-translate documentation [skip-translate]"
+          git push

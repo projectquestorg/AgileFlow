@@ -55,10 +55,11 @@ describe('obtain-context.js performance', () => {
     10000
   );
 
-  it('async prefetch functions are exported (module structure)', () => {
-    // Read the script and verify it contains async prefetch function
+  it('async prefetch functions are in loader module', () => {
+    // After US-0148 refactoring, these are in context-loader.js
     const fs = require('fs');
-    const content = fs.readFileSync(scriptPath, 'utf8');
+    const loaderPath = path.join(__dirname, '..', '..', 'scripts', 'lib', 'context-loader.js');
+    const content = fs.readFileSync(loaderPath, 'utf8');
 
     expect(content).toContain('async function prefetchAllData');
     expect(content).toContain('Promise.all');
@@ -66,9 +67,10 @@ describe('obtain-context.js performance', () => {
     expect(content).toContain('safeExecAsync');
   });
 
-  it('parallel git commands are configured', () => {
+  it('parallel git commands are configured in loader', () => {
     const fs = require('fs');
-    const content = fs.readFileSync(scriptPath, 'utf8');
+    const loaderPath = path.join(__dirname, '..', '..', 'scripts', 'lib', 'context-loader.js');
+    const content = fs.readFileSync(loaderPath, 'utf8');
 
     // Verify git commands are defined for parallel execution
     expect(content).toContain("branch: 'git branch --show-current'");
@@ -76,14 +78,34 @@ describe('obtain-context.js performance', () => {
     expect(content).toContain("status: 'git status --short'");
   });
 
-  it('prefetched data is used when available', () => {
+  it('prefetched data is used in formatter module', () => {
     const fs = require('fs');
-    const content = fs.readFileSync(scriptPath, 'utf8');
+    const formatterPath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'scripts',
+      'lib',
+      'context-formatter.js'
+    );
+    const content = fs.readFileSync(formatterPath, 'utf8');
 
     // Verify prefetched data fallback pattern
     expect(content).toContain('prefetched?.git?.branch ??');
     expect(content).toContain('prefetched?.json?.statusJson ??');
     expect(content).toContain('prefetched?.text?.busLog ??');
     expect(content).toContain('prefetched?.text?.[prefetchKey]');
+  });
+
+  it('orchestrator imports loader and formatter modules', () => {
+    const fs = require('fs');
+    const content = fs.readFileSync(scriptPath, 'utf8');
+
+    // Verify proper module imports in orchestrator
+    expect(content).toContain("require('./lib/context-loader')");
+    expect(content).toContain("require('./lib/context-formatter')");
+    expect(content).toContain('prefetchAllData');
+    expect(content).toContain('generateSummary');
+    expect(content).toContain('generateFullContent');
   });
 });

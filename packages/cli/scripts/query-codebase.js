@@ -135,7 +135,14 @@ function queryContent(projectRoot, pattern, budget) {
         if (totalChars + resultChars > budget) {
           results.push({
             file: '...',
-            matches: [{ line: 0, context: [{ lineNumber: 0, content: `[Truncated: budget exceeded]`, isMatch: false }] }],
+            matches: [
+              {
+                line: 0,
+                context: [
+                  { lineNumber: 0, content: `[Truncated: budget exceeded]`, isMatch: false },
+                ],
+              },
+            ],
           });
           break;
         }
@@ -293,9 +300,7 @@ async function main() {
         process.exit(2);
       }
 
-      const output = args.json
-        ? JSON.stringify(files, null, 2)
-        : formatResults(files, 'files');
+      const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
     }
@@ -340,9 +345,7 @@ async function main() {
         process.exit(2);
       }
 
-      const output = args.json
-        ? JSON.stringify(files, null, 2)
-        : formatResults(files, 'files');
+      const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
     }
@@ -364,9 +367,7 @@ async function main() {
         process.exit(2);
       }
 
-      const output = args.json
-        ? JSON.stringify(files, null, 2)
-        : formatResults(files, 'files');
+      const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
     }
@@ -388,9 +389,7 @@ async function main() {
         process.exit(2);
       }
 
-      const output = args.json
-        ? JSON.stringify(deps, null, 2)
-        : formatResults(deps, 'deps');
+      const output = args.json ? JSON.stringify(deps, null, 2) : formatResults(deps, 'deps');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
     }

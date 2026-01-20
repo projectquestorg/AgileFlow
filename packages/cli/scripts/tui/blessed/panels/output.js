@@ -16,22 +16,22 @@ module.exports = function createOutputPanel(grid, state) {
     tags: true,
     border: {
       type: 'line',
-      fg: 'green'
+      fg: 'green',
     },
     style: {
       fg: 'white',
       bg: 'black',
-      border: { fg: 'green' }
+      border: { fg: 'green' },
     },
     scrollable: true,
     alwaysScroll: true,
     scrollbar: {
       ch: '│',
-      style: { fg: 'green' }
+      style: { fg: 'green' },
     },
     keys: true,
     vi: true,
-    mouse: true
+    mouse: true,
   });
 
   let logs = [];
@@ -75,9 +75,15 @@ module.exports = function createOutputPanel(grid, state) {
 
   return {
     element: box,
-    show() { box.show(); },
-    hide() { box.hide(); },
-    focus() { box.focus(); },
+    show() {
+      box.show();
+    },
+    hide() {
+      box.hide();
+    },
+    focus() {
+      box.focus();
+    },
     setData(data) {
       logs = data || [];
       render();
@@ -90,6 +96,6 @@ module.exports = function createOutputPanel(grid, state) {
     clear() {
       logs = [];
       render();
-    }
+    },
   };
 };

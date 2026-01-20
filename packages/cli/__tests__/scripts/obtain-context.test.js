@@ -420,7 +420,15 @@ Content here.
       );
 
       // Create nested command file
-      const commandDir = path.join(testDir, 'packages', 'cli', 'src', 'core', 'commands', 'research');
+      const commandDir = path.join(
+        testDir,
+        'packages',
+        'cli',
+        'src',
+        'core',
+        'commands',
+        'research'
+      );
       fs.mkdirSync(commandDir, { recursive: true });
       fs.writeFileSync(
         path.join(commandDir, 'ask.md'),

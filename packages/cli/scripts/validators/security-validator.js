@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -60,7 +60,21 @@ process.stdin.on('end', () => {
 });
 
 function isBinaryFile(filePath) {
-  const binaryExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.pdf', '.zip', '.tar', '.gz'];
+  const binaryExtensions = [
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.ico',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.eot',
+    '.pdf',
+    '.zip',
+    '.tar',
+    '.gz',
+  ];
   const ext = path.extname(filePath).toLowerCase();
   return binaryExtensions.includes(ext);
 }
@@ -93,7 +107,6 @@ function validateSecurity(filePath) {
 
     // Check for insecure randomness
     issues.push(...checkInsecureRandom(content));
-
   } catch (e) {
     issues.push(`Read error: ${e.message}`);
   }
@@ -114,15 +127,33 @@ function checkSecrets(content, fileName) {
     { pattern: /['"]sk-[a-zA-Z0-9]{20,}['"]/, message: 'Possible OpenAI API key detected' },
     { pattern: /['"]AIza[a-zA-Z0-9_-]{35}['"]/, message: 'Possible Google API key detected' },
     { pattern: /['"]AKIA[A-Z0-9]{16}['"]/, message: 'Possible AWS access key detected' },
-    { pattern: /['"]ghp_[a-zA-Z0-9]{36}['"]/, message: 'Possible GitHub personal access token detected' },
+    {
+      pattern: /['"]ghp_[a-zA-Z0-9]{36}['"]/,
+      message: 'Possible GitHub personal access token detected',
+    },
     { pattern: /['"]npm_[a-zA-Z0-9]{36}['"]/, message: 'Possible npm token detected' },
 
     // Generic patterns
-    { pattern: /password\s*[:=]\s*['"][^'"${\s]{8,}['"](?!\s*;?\s*\/\/\s*example)/i, message: 'Possible hardcoded password detected' },
-    { pattern: /api[_-]?key\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]/i, message: 'Possible hardcoded API key detected' },
-    { pattern: /secret\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]/i, message: 'Possible hardcoded secret detected' },
-    { pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/, message: 'Private key detected in source code' },
-    { pattern: /-----BEGIN\s+CERTIFICATE-----/, message: 'Certificate detected in source code (verify this is intentional)' },
+    {
+      pattern: /password\s*[:=]\s*['"][^'"${\s]{8,}['"](?!\s*;?\s*\/\/\s*example)/i,
+      message: 'Possible hardcoded password detected',
+    },
+    {
+      pattern: /api[_-]?key\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]/i,
+      message: 'Possible hardcoded API key detected',
+    },
+    {
+      pattern: /secret\s*[:=]\s*['"][a-zA-Z0-9]{20,}['"]/i,
+      message: 'Possible hardcoded secret detected',
+    },
+    {
+      pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/,
+      message: 'Private key detected in source code',
+    },
+    {
+      pattern: /-----BEGIN\s+CERTIFICATE-----/,
+      message: 'Certificate detected in source code (verify this is intentional)',
+    },
   ];
 
   for (const { pattern, message } of secretPatterns) {
@@ -144,11 +175,27 @@ function checkSqlInjection(content, ext) {
 
   // Check for string concatenation in SQL
   const sqlInjectionPatterns = [
-    { pattern: /['"`]\s*SELECT\s+.*\+\s*\w+/i, message: 'Possible SQL injection: string concatenation in SELECT query' },
-    { pattern: /['"`]\s*INSERT\s+.*\+\s*\w+/i, message: 'Possible SQL injection: string concatenation in INSERT query' },
-    { pattern: /['"`]\s*UPDATE\s+.*\+\s*\w+/i, message: 'Possible SQL injection: string concatenation in UPDATE query' },
-    { pattern: /['"`]\s*DELETE\s+.*\+\s*\w+/i, message: 'Possible SQL injection: string concatenation in DELETE query' },
-    { pattern: /\$\{[^}]+\}.*WHERE/i, message: 'Possible SQL injection: template literal in WHERE clause - use parameterized queries' },
+    {
+      pattern: /['"`]\s*SELECT\s+.*\+\s*\w+/i,
+      message: 'Possible SQL injection: string concatenation in SELECT query',
+    },
+    {
+      pattern: /['"`]\s*INSERT\s+.*\+\s*\w+/i,
+      message: 'Possible SQL injection: string concatenation in INSERT query',
+    },
+    {
+      pattern: /['"`]\s*UPDATE\s+.*\+\s*\w+/i,
+      message: 'Possible SQL injection: string concatenation in UPDATE query',
+    },
+    {
+      pattern: /['"`]\s*DELETE\s+.*\+\s*\w+/i,
+      message: 'Possible SQL injection: string concatenation in DELETE query',
+    },
+    {
+      pattern: /\$\{[^}]+\}.*WHERE/i,
+      message:
+        'Possible SQL injection: template literal in WHERE clause - use parameterized queries',
+    },
   ];
 
   for (const { pattern, message } of sqlInjectionPatterns) {
@@ -169,11 +216,23 @@ function checkXss(content, ext) {
   }
 
   const xssPatterns = [
-    { pattern: /innerHTML\s*=\s*[^'"`]/, message: 'Direct innerHTML assignment detected - sanitize content or use textContent' },
-    { pattern: /dangerouslySetInnerHTML/, message: 'dangerouslySetInnerHTML used - ensure content is sanitized' },
-    { pattern: /document\.write\s*\(/, message: 'document.write() is dangerous - use DOM manipulation instead' },
+    {
+      pattern: /innerHTML\s*=\s*[^'"`]/,
+      message: 'Direct innerHTML assignment detected - sanitize content or use textContent',
+    },
+    {
+      pattern: /dangerouslySetInnerHTML/,
+      message: 'dangerouslySetInnerHTML used - ensure content is sanitized',
+    },
+    {
+      pattern: /document\.write\s*\(/,
+      message: 'document.write() is dangerous - use DOM manipulation instead',
+    },
     { pattern: /v-html\s*=/, message: 'v-html directive detected - ensure content is sanitized' },
-    { pattern: /\{@html\s+/, message: 'Svelte @html directive detected - ensure content is sanitized' },
+    {
+      pattern: /\{@html\s+/,
+      message: 'Svelte @html directive detected - ensure content is sanitized',
+    },
   ];
 
   for (const { pattern, message } of xssPatterns) {
@@ -196,14 +255,32 @@ function checkCommandInjection(content, ext) {
 
   const cmdInjectionPatterns = [
     // JavaScript/Node
-    { pattern: /exec\s*\(\s*[`'"]\s*\$\{/, message: 'Possible command injection: template literal in exec()' },
-    { pattern: /exec\s*\(\s*\w+\s*\+/, message: 'Possible command injection: string concatenation in exec()' },
-    { pattern: /execSync\s*\(\s*[`'"]\s*\$\{/, message: 'Possible command injection: template literal in execSync()' },
-    { pattern: /spawn\s*\(\s*[`'"]\s*\$\{/, message: 'Possible command injection: template literal in spawn()' },
+    {
+      pattern: /exec\s*\(\s*[`'"]\s*\$\{/,
+      message: 'Possible command injection: template literal in exec()',
+    },
+    {
+      pattern: /exec\s*\(\s*\w+\s*\+/,
+      message: 'Possible command injection: string concatenation in exec()',
+    },
+    {
+      pattern: /execSync\s*\(\s*[`'"]\s*\$\{/,
+      message: 'Possible command injection: template literal in execSync()',
+    },
+    {
+      pattern: /spawn\s*\(\s*[`'"]\s*\$\{/,
+      message: 'Possible command injection: template literal in spawn()',
+    },
 
     // Python
-    { pattern: /os\.system\s*\(\s*f['"]/, message: 'Possible command injection: f-string in os.system()' },
-    { pattern: /subprocess\.(call|run|Popen)\s*\(\s*f['"]/, message: 'Possible command injection: f-string in subprocess - use list args instead' },
+    {
+      pattern: /os\.system\s*\(\s*f['"]/,
+      message: 'Possible command injection: f-string in os.system()',
+    },
+    {
+      pattern: /subprocess\.(call|run|Popen)\s*\(\s*f['"]/,
+      message: 'Possible command injection: f-string in subprocess - use list args instead',
+    },
   ];
 
   for (const { pattern, message } of cmdInjectionPatterns) {
@@ -224,9 +301,18 @@ function checkPathTraversal(content, ext) {
   }
 
   const pathTraversalPatterns = [
-    { pattern: /path\.join\s*\([^)]*req\.(params|query|body)/, message: 'Possible path traversal: user input in path.join()' },
-    { pattern: /readFile(Sync)?\s*\([^)]*req\.(params|query|body)/, message: 'Possible path traversal: user input in file read' },
-    { pattern: /open\s*\(\s*f['"].*\{.*\}/, message: 'Possible path traversal: user input in file open (Python)' },
+    {
+      pattern: /path\.join\s*\([^)]*req\.(params|query|body)/,
+      message: 'Possible path traversal: user input in path.join()',
+    },
+    {
+      pattern: /readFile(Sync)?\s*\([^)]*req\.(params|query|body)/,
+      message: 'Possible path traversal: user input in file read',
+    },
+    {
+      pattern: /open\s*\(\s*f['"].*\{.*\}/,
+      message: 'Possible path traversal: user input in file open (Python)',
+    },
   ];
 
   for (const { pattern, message } of pathTraversalPatterns) {
@@ -242,10 +328,22 @@ function checkInsecureCrypto(content) {
   const issues = [];
 
   const insecureCryptoPatterns = [
-    { pattern: /createHash\s*\(\s*['"]md5['"]\s*\)/, message: 'MD5 is insecure for cryptographic use - use SHA-256 or better' },
-    { pattern: /createHash\s*\(\s*['"]sha1['"]\s*\)/, message: 'SHA-1 is deprecated - use SHA-256 or better' },
-    { pattern: /hashlib\.md5\s*\(/, message: 'MD5 is insecure for cryptographic use - use SHA-256 or better' },
-    { pattern: /DES|3DES|RC4/, message: 'Insecure encryption algorithm detected - use AES-256-GCM' },
+    {
+      pattern: /createHash\s*\(\s*['"]md5['"]\s*\)/,
+      message: 'MD5 is insecure for cryptographic use - use SHA-256 or better',
+    },
+    {
+      pattern: /createHash\s*\(\s*['"]sha1['"]\s*\)/,
+      message: 'SHA-1 is deprecated - use SHA-256 or better',
+    },
+    {
+      pattern: /hashlib\.md5\s*\(/,
+      message: 'MD5 is insecure for cryptographic use - use SHA-256 or better',
+    },
+    {
+      pattern: /DES|3DES|RC4/,
+      message: 'Insecure encryption algorithm detected - use AES-256-GCM',
+    },
     { pattern: /ECB/, message: 'ECB mode is insecure - use GCM or CBC with proper IV' },
   ];
 
@@ -262,8 +360,14 @@ function checkInsecureRandom(content) {
   const issues = [];
 
   const insecureRandomPatterns = [
-    { pattern: /Math\.random\s*\(\s*\).*(?:token|key|secret|password|auth|session)/i, message: 'Math.random() used for security-sensitive value - use crypto.randomBytes()' },
-    { pattern: /random\.random\s*\(\s*\).*(?:token|key|secret|password|auth|session)/i, message: 'random.random() is not cryptographically secure - use secrets module' },
+    {
+      pattern: /Math\.random\s*\(\s*\).*(?:token|key|secret|password|auth|session)/i,
+      message: 'Math.random() used for security-sensitive value - use crypto.randomBytes()',
+    },
+    {
+      pattern: /random\.random\s*\(\s*\).*(?:token|key|secret|password|auth|session)/i,
+      message: 'random.random() is not cryptographically secure - use secrets module',
+    },
   ];
 
   for (const { pattern, message } of insecureRandomPatterns) {

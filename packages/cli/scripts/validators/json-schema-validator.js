@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 let input = '';
-process.stdin.on('data', chunk => input += chunk);
+process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   try {
     const context = JSON.parse(input);
@@ -85,7 +85,6 @@ function validateJson(filePath) {
     } else if (fileName === 'tsconfig.json') {
       issues.push(...validateTsConfig(data));
     }
-
   } catch (e) {
     if (e instanceof SyntaxError) {
       issues.push(`Invalid JSON syntax: ${e.message}`);
@@ -132,7 +131,21 @@ function validateStatusJson(data) {
         if (!story.title && !story.name) {
           issues.push(`Story ${story.id || index} missing 'title' or 'name' field`);
         }
-        if (story.status && !['pending', 'in_progress', 'completed', 'done', 'blocked', 'ready', 'in-progress', 'in_review', 'in-review', 'archived'].includes(story.status)) {
+        if (
+          story.status &&
+          ![
+            'pending',
+            'in_progress',
+            'completed',
+            'done',
+            'blocked',
+            'ready',
+            'in-progress',
+            'in_review',
+            'in-review',
+            'archived',
+          ].includes(story.status)
+        ) {
           issues.push(`Story ${story.id || index} has invalid status: ${story.status}`);
         }
       });
@@ -142,7 +155,21 @@ function validateStatusJson(data) {
         if (!story.title && !story.name) {
           issues.push(`Story ${storyId} missing 'title' or 'name' field`);
         }
-        if (story.status && !['pending', 'in_progress', 'completed', 'done', 'blocked', 'ready', 'in-progress', 'in_review', 'in-review', 'archived'].includes(story.status)) {
+        if (
+          story.status &&
+          ![
+            'pending',
+            'in_progress',
+            'completed',
+            'done',
+            'blocked',
+            'ready',
+            'in-progress',
+            'in_review',
+            'in-review',
+            'archived',
+          ].includes(story.status)
+        ) {
           issues.push(`Story ${storyId} has invalid status: ${story.status}`);
         }
       });

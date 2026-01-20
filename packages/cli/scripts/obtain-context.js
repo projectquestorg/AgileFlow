@@ -2,29 +2,16 @@
 /**
  * obtain-context.js
  *
- * Gathers all project context in a single execution for any AgileFlow command or agent.
+ * Orchestrator for gathering all project context in a single execution.
+ * Refactored in US-0148 to separate concerns:
+ *   - context-loader.js: Data loading operations
+ *   - context-formatter.js: Output formatting
+ *   - obtain-context.js: Orchestration (this file, ~180 lines)
  *
  * SMART OUTPUT STRATEGY:
  * - Calculates summary character count dynamically
  * - Shows (30K - summary_chars) of full content first
  * - Then shows the summary (so user sees it at their display cutoff)
- * - Then shows rest of full content (for Claude)
- *
- * PERFORMANCE OPTIMIZATION (US-0092):
- * - Pre-fetches all file/JSON data in parallel before building content
- * - Uses Promise.all() to parallelize independent I/O operations
- * - Reduces context gathering time by 60-75% (400ms -> 100-150ms)
- *
- * LAZY EVALUATION (US-0093):
- * - Research notes: Only load full content for research-related commands
- * - Session claims: Only load if multi-session environment detected
- * - File overlaps: Only load if parallel sessions are active
- * - Configurable via features.lazyContext in agileflow-metadata.json
- *
- * QUERY MODE (US-0127):
- * - When QUERY=<pattern> provided, uses codebase index for targeted search
- * - Falls back to full context if query returns empty
- * - Based on RLM pattern: programmatic search instead of loading everything
  *
  * Usage:
  *   node scripts/obtain-context.js              # Just gather context
@@ -33,1229 +20,92 @@
  */
 
 const fs = require('fs');
-const fsPromises = require('fs').promises;
 const path = require('path');
-const os = require('os');
 const { execSync } = require('child_process');
-const { c: C, box } = require('../lib/colors');
-const { isValidCommandName } = require('../lib/validate');
-const { readJSONCached, readFileCached } = require('../lib/file-cache');
 
-// Claude Code's Bash tool truncates around 30K chars, but ANSI codes and
-// box-drawing characters (╭╮╰╯─│) are multi-byte UTF-8, so we need buffer.
-// Summary table should be the LAST thing visible before truncation.
+// Import loader and formatter modules
+const {
+  parseCommandArgs,
+  getCommandType,
+  safeReadJSON,
+  prefetchAllData,
+  determineSectionsToLoad,
+  isMultiSessionEnvironment,
+} = require('./lib/context-loader');
+
+const { generateSummary, generateFullContent } = require('./lib/context-formatter');
+
+// Import validation
+let isValidCommandName;
+try {
+  isValidCommandName = require('../lib/validate').isValidCommandName;
+} catch {
+  isValidCommandName = name => /^[a-z][a-z0-9-]*$/i.test(name);
+}
+
+// Claude Code's Bash tool truncates around 30K chars
 const DISPLAY_LIMIT = 29200;
 
 // =============================================================================
-// Progressive Disclosure: Section Activation
+// Parse Arguments
 // =============================================================================
 
-/**
- * Parse command-line arguments and determine which sections to activate.
- * Sections are conditionally loaded based on parameters like MODE=loop.
- *
- * Section mapping:
- *   - MODE=loop          → activates: loop-mode
- *   - Multi-session env  → activates: multi-session
- *   - (Other triggers detected at runtime by the agent)
- *
- * @param {string[]} args - Command-line arguments after command name
- * @returns {Object} { activeSections: string[], params: Object }
- */
-function parseCommandArgs(args) {
-  const activeSections = [];
-  const params = {};
-
-  for (const arg of args) {
-    // Parse KEY=VALUE arguments
-    const match = arg.match(/^([A-Z_]+)=(.+)$/i);
-    if (match) {
-      const [, key, value] = match;
-      params[key.toUpperCase()] = value;
-    }
-  }
-
-  // Activate sections based on parameters
-  if (params.MODE === 'loop') {
-    activeSections.push('loop-mode');
-  }
-
-  if (params.VISUAL === 'true') {
-    activeSections.push('visual-e2e');
-  }
-
-  // Query mode: QUERY=<pattern> triggers targeted codebase search (US-0127)
-  if (params.QUERY) {
-    activeSections.push('query-mode');
-  }
-
-  // Check for multi-session environment
-  const registryPath = '.agileflow/sessions/registry.json';
-  if (fs.existsSync(registryPath)) {
-    try {
-      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-      const sessionCount = Object.keys(registry.sessions || {}).length;
-      if (sessionCount > 1) {
-        activeSections.push('multi-session');
-      }
-    } catch {
-      // Silently ignore registry read errors
-    }
-  }
-
-  return { activeSections, params };
-}
-
-// Parse arguments
 const commandName = process.argv[2];
 const commandArgs = process.argv.slice(3);
 const { activeSections, params: commandParams } = parseCommandArgs(commandArgs);
 
-// Helper to extract command type from frontmatter
-function getCommandType(cmdName) {
-  // Handle nested command paths like "research/ask" -> "research/ask.md"
-  // The command name may contain "/" for nested commands
-  const cmdPath = cmdName.includes('/')
-    ? `${cmdName.substring(0, cmdName.lastIndexOf('/'))}/${cmdName.substring(cmdName.lastIndexOf('/') + 1)}.md`
-    : `${cmdName}.md`;
+// =============================================================================
+// Command Registration (for PreCompact context preservation)
+// =============================================================================
 
-  // Try to find the command file and read its frontmatter type
-  const possiblePaths = [
-    `packages/cli/src/core/commands/${cmdPath}`,
-    `.agileflow/commands/${cmdPath}`,
-    `.claude/commands/agileflow/${cmdPath}`,
-    // Also try flat path for legacy commands
-    `packages/cli/src/core/commands/${cmdName.replace(/\//g, '-')}.md`,
-  ];
-
-  for (const searchPath of possiblePaths) {
-    if (fs.existsSync(searchPath)) {
-      try {
-        const content = fs.readFileSync(searchPath, 'utf8');
-        // Extract type from YAML frontmatter
-        const match = content.match(/^---\n[\s\S]*?type:\s*(\S+)/m);
-        if (match) {
-          return match[1].replace(/['"]/g, ''); // Remove quotes if any
-        }
-      } catch {
-        // Continue to next path
-      }
-    }
+function registerCommand() {
+  if (!commandName || !isValidCommandName(commandName)) {
+    return;
   }
-  return 'interactive'; // Default to interactive
-}
 
-// Register command for PreCompact context preservation
-if (commandName && isValidCommandName(commandName)) {
   const sessionStatePath = 'docs/09-agents/session-state.json';
-  if (fs.existsSync(sessionStatePath)) {
-    try {
-      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
-
-      // Initialize active_commands array if not present
-      if (!Array.isArray(state.active_commands)) {
-        state.active_commands = [];
-      }
-
-      // Remove any existing entry for this command (avoid duplicates)
-      state.active_commands = state.active_commands.filter(c => c.name !== commandName);
-
-      // Get command type from frontmatter (output-only vs interactive)
-      const commandType = getCommandType(commandName);
-
-      // Add the new command with active sections for progressive disclosure
-      state.active_commands.push({
-        name: commandName,
-        type: commandType, // Used by PreCompact to skip output-only commands
-        activated_at: new Date().toISOString(),
-        state: {},
-        active_sections: activeSections,
-        params: commandParams,
-      });
-
-      // Remove legacy active_command field (only use active_commands array now)
-      if (state.active_command !== undefined) {
-        delete state.active_command;
-      }
-
-      fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
-    } catch (e) {
-      // Silently continue if session state can't be updated
-    }
+  if (!fs.existsSync(sessionStatePath)) {
+    return;
   }
-}
 
-function safeRead(filePath) {
   try {
-    return fs.readFileSync(filePath, 'utf8');
-  } catch {
-    return null;
-  }
-}
+    const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
 
-function safeReadJSON(filePath) {
-  // Use cached read for common JSON files
-  const absPath = path.resolve(filePath);
-  return readJSONCached(absPath);
-}
-
-function safeLs(dirPath) {
-  try {
-    return fs.readdirSync(dirPath);
-  } catch {
-    return [];
-  }
-}
-
-function safeExec(cmd) {
-  try {
-    return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-  } catch {
-    return null;
-  }
-}
-
-// =============================================================================
-// Context Budget Tracking (GSD Integration)
-// =============================================================================
-
-/**
- * Get current context usage percentage from Claude's session files.
- * Reads token counts from the active session JSONL file.
- *
- * @returns {{ percent: number, tokens: number, max: number } | null}
- */
-function getContextPercentage() {
-  try {
-    const homeDir = os.homedir();
-    const cwd = process.cwd();
-
-    // Convert current dir to Claude's session file path format
-    // e.g., /home/coder/AgileFlow -> home-coder-AgileFlow
-    const projectDir = cwd.replace(homeDir, '~').replace('~', homeDir).replace(/\//g, '-').replace(/^-/, '');
-    const sessionDir = path.join(homeDir, '.claude', 'projects', `-${projectDir}`);
-
-    if (!fs.existsSync(sessionDir)) {
-      return null;
+    // Initialize active_commands array if not present
+    if (!Array.isArray(state.active_commands)) {
+      state.active_commands = [];
     }
 
-    // Find most recent .jsonl session file
-    const files = fs.readdirSync(sessionDir)
-      .filter(f => f.endsWith('.jsonl'))
-      .map(f => ({
-        name: f,
-        mtime: fs.statSync(path.join(sessionDir, f)).mtime.getTime(),
-      }))
-      .sort((a, b) => b.mtime - a.mtime);
-
-    if (files.length === 0) {
-      return null;
-    }
-
-    const sessionFile = path.join(sessionDir, files[0].name);
-    const content = fs.readFileSync(sessionFile, 'utf8');
-    const lines = content.trim().split('\n').slice(-20); // Last 20 lines
-
-    // Find latest usage entry
-    let latestTokens = 0;
-    for (const line of lines.reverse()) {
-      try {
-        const entry = JSON.parse(line);
-        if (entry?.message?.usage) {
-          const usage = entry.message.usage;
-          latestTokens = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0);
-          if (latestTokens > 0) break;
-        }
-      } catch {
-        // Skip malformed lines
-      }
-    }
-
-    if (latestTokens === 0) {
-      return null;
-    }
-
-    // Default to 200K context for modern Claude models
-    const maxContext = 200000;
-    const percent = Math.min(100, Math.round((latestTokens * 100) / maxContext));
-
-    return { percent, tokens: latestTokens, max: maxContext };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Generate context budget warning box if usage exceeds threshold.
- * Based on GSD research: 50% is where quality starts degrading.
- *
- * @param {number} percent - Context usage percentage
- * @returns {string} Warning box or empty string
- */
-function generateContextWarning(percent) {
-  if (percent < 50) {
-    return ''; // No warning needed
-  }
-
-  const width = 60;
-  const topLine = `┏${'━'.repeat(width - 2)}┓`;
-  const bottomLine = `┗${'━'.repeat(width - 2)}┛`;
-
-  let color, icon, message, suggestion;
-
-  if (percent >= 70) {
-    // Critical: Dumb Zone
-    color = C.coral;
-    icon = '🔴';
-    message = `Context usage: ${percent}% (in degradation zone)`;
-    suggestion = 'Strongly recommend: compact conversation or delegate to sub-agent';
-  } else {
-    // Warning: Approaching limit (50-69%)
-    color = C.amber;
-    icon = '⚠️';
-    message = `Context usage: ${percent}% (approaching 50% threshold)`;
-    suggestion = 'Consider: delegate to sub-agent or compact conversation';
-  }
-
-  // Pad messages to fit width
-  const msgPadded = ` ${icon} ${message}`.padEnd(width - 3) + '┃';
-  const sugPadded = ` → ${suggestion}`.padEnd(width - 3) + '┃';
-
-  return [
-    `${color}${C.bold}${topLine}${C.reset}`,
-    `${color}${C.bold}┃${msgPadded}${C.reset}`,
-    `${color}${C.bold}┃${sugPadded}${C.reset}`,
-    `${color}${C.bold}${bottomLine}${C.reset}`,
-    '',
-  ].join('\n');
-}
-
-// =============================================================================
-// Lazy Evaluation Configuration (US-0093)
-// =============================================================================
-
-/**
- * Commands that need full research notes content
- */
-const RESEARCH_COMMANDS = ['research', 'ideate', 'mentor', 'rpi'];
-
-/**
- * Determine which sections need to be loaded based on command and environment.
- *
- * @param {string} cmdName - Command name being executed
- * @param {Object} lazyConfig - Lazy context configuration from metadata
- * @param {boolean} isMultiSession - Whether multiple sessions are detected
- * @returns {Object} Sections to load { researchContent, sessionClaims, fileOverlaps }
- */
-function determineSectionsToLoad(cmdName, lazyConfig, isMultiSession) {
-  // If lazy loading is disabled, load everything
-  if (!lazyConfig?.enabled) {
-    return {
-      researchContent: true,
-      sessionClaims: true,
-      fileOverlaps: true,
-    };
-  }
-
-  // Research notes: load for research-related commands or if 'always'
-  const needsResearch =
-    lazyConfig.researchNotes === 'always' ||
-    (lazyConfig.researchNotes === 'conditional' && RESEARCH_COMMANDS.includes(cmdName));
-
-  // Session claims: load if multi-session environment or if 'always'
-  const needsClaims =
-    lazyConfig.sessionClaims === 'always' ||
-    (lazyConfig.sessionClaims === 'conditional' && isMultiSession);
-
-  // File overlaps: load if multi-session environment or if 'always'
-  const needsOverlaps =
-    lazyConfig.fileOverlaps === 'always' ||
-    (lazyConfig.fileOverlaps === 'conditional' && isMultiSession);
-
-  return {
-    researchContent: needsResearch,
-    sessionClaims: needsClaims,
-    fileOverlaps: needsOverlaps,
-  };
-}
-
-// =============================================================================
-// Async I/O Functions for Parallel Pre-fetching
-// =============================================================================
-
-async function safeReadAsync(filePath) {
-  try {
-    return await fsPromises.readFile(filePath, 'utf8');
-  } catch {
-    return null;
-  }
-}
-
-async function safeReadJSONAsync(filePath) {
-  try {
-    const content = await fsPromises.readFile(filePath, 'utf8');
-    return JSON.parse(content);
-  } catch {
-    return null;
-  }
-}
-
-async function safeLsAsync(dirPath) {
-  try {
-    return await fsPromises.readdir(dirPath);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Execute a command asynchronously using child_process.exec
- * @param {string} cmd - Command to execute
- * @returns {Promise<string|null>} Command output or null on error
- */
-async function safeExecAsync(cmd) {
-  const { exec } = require('child_process');
-  return new Promise(resolve => {
-    exec(cmd, { encoding: 'utf8' }, (error, stdout) => {
-      if (error) {
-        resolve(null);
-      } else {
-        resolve(stdout.trim());
-      }
-    });
-  });
-}
-
-/**
- * Pre-fetch all required data in parallel for optimal performance.
- * This dramatically reduces I/O wait time by overlapping file reads and git commands.
- *
- * Lazy loading (US-0093): Only fetches content based on sectionsToLoad parameter.
- *
- * @param {Object} options - Options for prefetching
- * @param {Object} options.sectionsToLoad - Which sections need full content
- * @returns {Object} Pre-fetched data for content generation
- */
-async function prefetchAllData(options = {}) {
-  const sectionsToLoad = options.sectionsToLoad || {
-    researchContent: true,
-    sessionClaims: true,
-    fileOverlaps: true,
-  };
-  // Define all files to read
-  const jsonFiles = {
-    metadata: 'docs/00-meta/agileflow-metadata.json',
-    statusJson: 'docs/09-agents/status.json',
-    sessionState: 'docs/09-agents/session-state.json',
-  };
-
-  const textFiles = {
-    busLog: 'docs/09-agents/bus/log.jsonl',
-    claudeMd: 'CLAUDE.md',
-    readmeMd: 'README.md',
-    archReadme: 'docs/04-architecture/README.md',
-    practicesReadme: 'docs/02-practices/README.md',
-    roadmap: 'docs/08-project/roadmap.md',
-  };
-
-  const directories = {
-    docs: 'docs',
-    research: 'docs/10-research',
-    epics: 'docs/05-epics',
-  };
-
-  // Git commands to run in parallel
-  const gitCommands = {
-    branch: 'git branch --show-current',
-    commitShort: 'git log -1 --format="%h"',
-    commitMsg: 'git log -1 --format="%s"',
-    commitFull: 'git log -1 --format="%h %s"',
-    status: 'git status --short',
-  };
-
-  // Create all promises for parallel execution
-  const jsonPromises = Object.entries(jsonFiles).map(async ([key, filePath]) => {
-    const data = await safeReadJSONAsync(filePath);
-    return [key, data];
-  });
-
-  const textPromises = Object.entries(textFiles).map(async ([key, filePath]) => {
-    const data = await safeReadAsync(filePath);
-    return [key, data];
-  });
-
-  const dirPromises = Object.entries(directories).map(async ([key, dirPath]) => {
-    const files = await safeLsAsync(dirPath);
-    return [key, files];
-  });
-
-  const gitPromises = Object.entries(gitCommands).map(async ([key, cmd]) => {
-    const data = await safeExecAsync(cmd);
-    return [key, data];
-  });
-
-  // Execute all I/O operations in parallel
-  const [jsonResults, textResults, dirResults, gitResults] = await Promise.all([
-    Promise.all(jsonPromises),
-    Promise.all(textPromises),
-    Promise.all(dirPromises),
-    Promise.all(gitPromises),
-  ]);
-
-  // Convert arrays back to objects
-  const json = Object.fromEntries(jsonResults);
-  const text = Object.fromEntries(textResults);
-  const dirs = Object.fromEntries(dirResults);
-  const git = Object.fromEntries(gitResults);
-
-  // Determine most recent research file
-  const researchFiles = dirs.research
-    .filter(f => f.endsWith('.md') && f !== 'README.md')
-    .sort()
-    .reverse();
-
-  // Lazy loading (US-0093): Only fetch research content if needed
-  let mostRecentResearch = null;
-  if (sectionsToLoad.researchContent && researchFiles.length > 0) {
-    mostRecentResearch = await safeReadAsync(path.join('docs/10-research', researchFiles[0]));
-  }
-
-  return {
-    json,
-    text,
-    dirs,
-    git,
-    researchFiles,
-    mostRecentResearch,
-    sectionsToLoad, // Pass through for content generation
-  };
-}
-
-// ============================================
-// GENERATE SUMMARY (calculated first for positioning)
-// ============================================
-
-/**
- * Generate summary content using pre-fetched data.
- * @param {Object} prefetched - Pre-fetched data from prefetchAllData()
- * @returns {string} Summary content
- */
-function generateSummary(prefetched = null) {
-  // Box drawing characters
-  const box = {
-    tl: '╭',
-    tr: '╮',
-    bl: '╰',
-    br: '╯',
-    h: '─',
-    v: '│',
-    lT: '├',
-    rT: '┤',
-    tT: '┬',
-    bT: '┴',
-    cross: '┼',
-  };
-
-  const W = 58; // Total inner width (matches welcome script)
-  const L = 20; // Left column width
-  const R = W - 24; // Right column width (34 chars) - matches welcome
-
-  // Pad string to length, accounting for ANSI codes
-  function pad(str, len) {
-    const stripped = str.replace(/\x1b\[[0-9;]*m/g, '');
-    const diff = len - stripped.length;
-    if (diff <= 0) return str;
-    return str + ' '.repeat(diff);
-  }
-
-  // Truncate string to max length, respecting ANSI codes
-  function truncate(str, maxLen, suffix = '..') {
-    const stripped = str.replace(/\x1b\[[0-9;]*m/g, '');
-    if (stripped.length <= maxLen) return str;
-
-    const targetLen = maxLen - suffix.length;
-    let visibleCount = 0;
-    let cutIndex = 0;
-    let inEscape = false;
-
-    for (let i = 0; i < str.length; i++) {
-      if (str[i] === '\x1b') {
-        inEscape = true;
-      } else if (inEscape && str[i] === 'm') {
-        inEscape = false;
-      } else if (!inEscape) {
-        visibleCount++;
-        if (visibleCount >= targetLen) {
-          cutIndex = i + 1;
-          break;
-        }
-      }
-    }
-    return str.substring(0, cutIndex) + suffix;
-  }
-
-  // Create a row with auto-truncation
-  function row(left, right, leftColor = '', rightColor = '') {
-    const leftStr = `${leftColor}${left}${leftColor ? C.reset : ''}`;
-    const rightTrunc = truncate(right, R);
-    const rightStr = `${rightColor}${rightTrunc}${rightColor ? C.reset : ''}`;
-    return `${C.dim}${box.v}${C.reset} ${pad(leftStr, L)} ${C.dim}${box.v}${C.reset} ${pad(rightStr, R)} ${C.dim}${box.v}${C.reset}\n`;
-  }
-
-  // All borders use same width formula: 22 dashes + separator + 36 dashes = 61 total chars
-  const divider = () =>
-    `${C.dim}${box.lT}${box.h.repeat(L + 2)}${box.cross}${box.h.repeat(W - L - 2)}${box.rT}${C.reset}\n`;
-  const headerTopBorder = `${C.dim}${box.tl}${box.h.repeat(L + 2)}${box.tT}${box.h.repeat(W - L - 2)}${box.tr}${C.reset}\n`;
-  const headerDivider = `${C.dim}${box.lT}${box.h.repeat(L + 2)}${box.tT}${box.h.repeat(W - L - 2)}${box.rT}${C.reset}\n`;
-  const bottomBorder = `${C.dim}${box.bl}${box.h.repeat(L + 2)}${box.bT}${box.h.repeat(W - L - 2)}${box.br}${C.reset}\n`;
-
-  // Gather data - use prefetched when available, fallback to sync reads
-  const branch = prefetched?.git?.branch ?? safeExec('git branch --show-current') ?? 'unknown';
-  const lastCommitShort =
-    prefetched?.git?.commitShort ?? safeExec('git log -1 --format="%h"') ?? '?';
-  const lastCommitMsg =
-    prefetched?.git?.commitMsg ?? safeExec('git log -1 --format="%s"') ?? 'no commits';
-  const statusLines = (prefetched?.git?.status ?? safeExec('git status --short') ?? '')
-    .split('\n')
-    .filter(Boolean);
-  const statusJson = prefetched?.json?.statusJson ?? safeReadJSON('docs/09-agents/status.json');
-  const sessionState =
-    prefetched?.json?.sessionState ?? safeReadJSON('docs/09-agents/session-state.json');
-  const researchFiles =
-    prefetched?.researchFiles ??
-    safeLs('docs/10-research')
-      .filter(f => f.endsWith('.md') && f !== 'README.md')
-      .sort()
-      .reverse();
-  const epicFiles =
-    prefetched?.dirs?.epics?.filter(f => f.endsWith('.md') && f !== 'README.md') ??
-    safeLs('docs/05-epics').filter(f => f.endsWith('.md') && f !== 'README.md');
-
-  // Count stories by status
-  const byStatus = {};
-  const readyStories = [];
-  if (statusJson && statusJson.stories) {
-    Object.entries(statusJson.stories).forEach(([id, story]) => {
-      const s = story.status || 'unknown';
-      byStatus[s] = (byStatus[s] || 0) + 1;
-      if (s === 'ready') readyStories.push(id);
-    });
-  }
-
-  // Session info
-  let sessionDuration = null;
-  let currentStory = null;
-  if (sessionState && sessionState.current_session && sessionState.current_session.started_at) {
-    const started = new Date(sessionState.current_session.started_at);
-    sessionDuration = Math.round((Date.now() - started.getTime()) / 60000);
-    currentStory = sessionState.current_session.current_story;
-  }
-
-  // Build table
-  let summary = '\n';
-  summary += headerTopBorder;
-
-  // Header row (full width, no column divider)
-  const title = commandName ? `Context [${commandName}]` : 'Context Summary';
-  const branchColor =
-    branch === 'main' ? C.mintGreen : branch.startsWith('fix') ? C.coral : C.skyBlue;
-  const maxBranchLen = 20;
-  const branchDisplay =
-    branch.length > maxBranchLen ? branch.substring(0, maxBranchLen - 2) + '..' : branch;
-  const header = `${C.brand}${C.bold}${title}${C.reset}  ${branchColor}${branchDisplay}${C.reset} ${C.dim}(${lastCommitShort})${C.reset}`;
-  summary += `${C.dim}${box.v}${C.reset} ${pad(header, W - 1)} ${C.dim}${box.v}${C.reset}\n`;
-
-  summary += headerDivider;
-
-  // Story counts with vibrant 256-color palette
-  summary += row(
-    'In Progress',
-    byStatus['in-progress'] ? `${byStatus['in-progress']}` : '0',
-    C.peach,
-    byStatus['in-progress'] ? C.peach : C.dim
-  );
-  summary += row(
-    'Blocked',
-    byStatus['blocked'] ? `${byStatus['blocked']}` : '0',
-    C.coral,
-    byStatus['blocked'] ? C.coral : C.dim
-  );
-  summary += row(
-    'Ready',
-    byStatus['ready'] ? `${byStatus['ready']}` : '0',
-    C.skyBlue,
-    byStatus['ready'] ? C.skyBlue : C.dim
-  );
-  const completedColor = `${C.bold}${C.mintGreen}`;
-  summary += row(
-    'Completed',
-    byStatus['done'] ? `${byStatus['done']}` : '0',
-    completedColor,
-    byStatus['done'] ? completedColor : C.dim
-  );
-
-  summary += divider();
-
-  // Git status (using vibrant 256-color palette)
-  const uncommittedStatus =
-    statusLines.length > 0 ? `${statusLines.length} uncommitted` : '✓ clean';
-  summary += row('Git', uncommittedStatus, C.blue, statusLines.length > 0 ? C.peach : C.mintGreen);
-
-  // Session
-  const sessionText = sessionDuration !== null ? `${sessionDuration} min active` : 'no session';
-  summary += row('Session', sessionText, C.blue, sessionDuration !== null ? C.lightGreen : C.dim);
-
-  // Current story
-  const storyText = currentStory ? currentStory : 'none';
-  summary += row('Working on', storyText, C.blue, currentStory ? C.lightYellow : C.dim);
-
-  // Ready stories (if any)
-  if (readyStories.length > 0) {
-    summary += row('⭐ Up Next', readyStories.slice(0, 3).join(', '), C.skyBlue, C.skyBlue);
-  }
-
-  // Progressive disclosure: Show active sections
-  if (activeSections.length > 0) {
-    summary += divider();
-    const sectionList = activeSections.join(', ');
-    summary += row('📖 Sections', sectionList, C.cyan, C.mintGreen);
-  }
-
-  summary += divider();
-
-  // Key files (using vibrant 256-color palette)
-  const keyFileChecks = [
-    { path: 'CLAUDE.md', label: 'CLAUDE' },
-    { path: 'README.md', label: 'README' },
-    { path: 'docs/04-architecture/README.md', label: 'arch' },
-    { path: 'docs/02-practices/README.md', label: 'practices' },
-  ];
-  const keyFileStatus = keyFileChecks
-    .map(f => {
-      const exists = fs.existsSync(f.path);
-      return exists ? `${C.mintGreen}✓${C.reset}${f.label}` : `${C.dim}○${f.label}${C.reset}`;
-    })
-    .join(' ');
-  summary += row('Key files', keyFileStatus, C.lavender, '');
-
-  // Research
-  const researchText = researchFiles.length > 0 ? `${researchFiles.length} notes` : 'none';
-  summary += row(
-    'Research',
-    researchText,
-    C.lavender,
-    researchFiles.length > 0 ? C.skyBlue : C.dim
-  );
-
-  // Epics
-  const epicText = epicFiles.length > 0 ? `${epicFiles.length} epics` : 'none';
-  summary += row('Epics', epicText, C.lavender, epicFiles.length > 0 ? C.skyBlue : C.dim);
-
-  summary += divider();
-
-  // Last commit (using vibrant 256-color palette)
-  summary += row(
-    'Last commit',
-    `${C.peach}${lastCommitShort}${C.reset} ${lastCommitMsg}`,
-    C.dim,
-    ''
-  );
-
-  summary += bottomBorder;
-
-  return summary;
-}
-
-// ============================================
-// GENERATE FULL CONTENT
-// ============================================
-
-/**
- * Generate full content using pre-fetched data.
- * @param {Object} prefetched - Pre-fetched data from prefetchAllData()
- * @returns {string} Full content
- */
-function generateFullContent(prefetched = null) {
-  let content = '';
-
-  const title = commandName ? `AgileFlow Context [${commandName}]` : 'AgileFlow Context';
-  content += `${C.lavender}${C.bold}${title}${C.reset}\n`;
-  content += `${C.dim}Generated: ${new Date().toISOString()}${C.reset}\n`;
-
-  // 0.5 SESSION CONTEXT BANNER (FIRST - before everything else)
-  // This is critical for multi-session awareness - agents need to know which session they're in
-  const sessionManagerPath = path.join(__dirname, 'session-manager.js');
-  const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
-
-  if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
-    const managerPath = fs.existsSync(sessionManagerPath)
-      ? sessionManagerPath
-      : altSessionManagerPath;
-    const sessionStatus = safeExec(`node "${managerPath}" status`);
-
-    if (sessionStatus) {
-      try {
-        const statusData = JSON.parse(sessionStatus);
-        if (statusData.current) {
-          const session = statusData.current;
-          const isMain = session.is_main === true;
-          const sessionName = session.nickname
-            ? `Session ${session.id} "${session.nickname}"`
-            : `Session ${session.id}`;
-
-          content += `\n${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
-          content += `${C.teal}${C.bold}📍 SESSION CONTEXT${C.reset}\n`;
-          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
-
-          if (isMain) {
-            content += `${C.mintGreen}${C.bold}${sessionName}${C.reset} ${C.dim}(main project)${C.reset}\n`;
-          } else {
-            content += `${C.peach}${C.bold}🔀 ${sessionName}${C.reset} ${C.dim}(worktree)${C.reset}\n`;
-            content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
-            content += `${C.dim}Path: ${session.path || process.cwd()}${C.reset}\n`;
-          }
-
-          // Show other active sessions prominently
-          if (statusData.otherActive > 0) {
-            content += `${C.amber}⚠️ ${statusData.otherActive} other active session(s)${C.reset} - check story claims below\n`;
-          }
-
-          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n\n`;
-        }
-      } catch (e) {
-        // Silently ignore session parse errors - will still show detailed session context later
-      }
-    }
-  }
-
-  // 0.7 INTERACTION MODE (AskUserQuestion) - EARLY for visibility
-  // This MUST appear before other content to ensure Claude sees it
-  const earlyMetadata =
-    prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
-  const askUserQuestionConfig = earlyMetadata?.features?.askUserQuestion;
-
-  if (askUserQuestionConfig?.enabled) {
-    content += `${C.coral}${C.bold}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${C.reset}\n`;
-    content += `${C.coral}${C.bold}┃ 🔔 MANDATORY: AskUserQuestion After EVERY Response      ┃${C.reset}\n`;
-    content += `${C.coral}${C.bold}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${C.reset}\n`;
-    content += `${C.bold}After completing ANY task${C.reset} (implementation, fix, etc.):\n`;
-    content += `${C.mintGreen}→ ALWAYS${C.reset} call ${C.skyBlue}AskUserQuestion${C.reset} tool to offer next steps\n`;
-    content += `${C.coral}→ NEVER${C.reset} end with text like "Done!" or "What's next?"\n\n`;
-    content += `${C.dim}Balance: Use at natural pause points. Don't ask permission for routine work.${C.reset}\n\n`;
-  }
-
-  // 0.6 CONTEXT BUDGET WARNING (GSD Integration)
-  // Show warning when context usage approaches 50% threshold
-  const contextUsage = getContextPercentage();
-  if (contextUsage && contextUsage.percent >= 50) {
-    content += generateContextWarning(contextUsage.percent);
-  }
-
-  // 0. PROGRESSIVE DISCLOSURE (section activation)
-  if (activeSections.length > 0) {
-    content += `\n${C.cyan}${C.bold}═══ 📖 Progressive Disclosure: Active Sections ═══${C.reset}\n`;
-    content += `${C.dim}The following sections are activated based on command parameters.${C.reset}\n`;
-    content += `${C.dim}Look for <!-- SECTION: name --> markers in the command file.${C.reset}\n\n`;
-
-    activeSections.forEach(section => {
-      content += `  ${C.mintGreen}✓${C.reset} ${C.bold}${section}${C.reset}\n`;
+    // Remove any existing entry for this command (avoid duplicates)
+    state.active_commands = state.active_commands.filter(c => c.name !== commandName);
+
+    // Get command type from frontmatter
+    const commandType = getCommandType(commandName);
+
+    // Add the new command with active sections
+    state.active_commands.push({
+      name: commandName,
+      type: commandType,
+      activated_at: new Date().toISOString(),
+      state: {},
+      active_sections: activeSections,
+      params: commandParams,
     });
 
-    // Map sections to their triggers for context
-    const sectionDescriptions = {
-      'loop-mode': 'Autonomous epic execution (MODE=loop)',
-      'multi-session': 'Multi-session coordination detected',
-      'visual-e2e': 'Visual screenshot verification (VISUAL=true)',
-      delegation: 'Expert spawning patterns (load when spawning)',
-      stuck: 'Research prompt guidance (load after 2 failures)',
-      'plan-mode': 'Planning workflow details (load when entering plan mode)',
-      tools: 'Tool usage guidance (load when needed)',
-    };
-
-    content += `\n${C.dim}Section meanings:${C.reset}\n`;
-    activeSections.forEach(section => {
-      const desc = sectionDescriptions[section] || 'Conditional content';
-      content += `  ${C.dim}• ${section}: ${desc}${C.reset}\n`;
-    });
-    content += '\n';
-  }
-
-  // 1. GIT STATUS (using vibrant 256-color palette)
-  content += `\n${C.skyBlue}${C.bold}═══ Git Status ═══${C.reset}\n`;
-  const branch = prefetched?.git?.branch ?? safeExec('git branch --show-current') ?? 'unknown';
-  const status = prefetched?.git?.status ?? safeExec('git status --short') ?? '';
-  const statusLines = status.split('\n').filter(Boolean);
-  const lastCommit =
-    prefetched?.git?.commitFull ?? safeExec('git log -1 --format="%h %s"') ?? 'no commits';
-
-  content += `Branch: ${C.mintGreen}${branch}${C.reset}\n`;
-  content += `Last commit: ${C.dim}${lastCommit}${C.reset}\n`;
-  if (statusLines.length > 0) {
-    content += `Uncommitted: ${C.peach}${statusLines.length} file(s)${C.reset}\n`;
-    statusLines.slice(0, 10).forEach(line => (content += `  ${C.dim}${line}${C.reset}\n`));
-    if (statusLines.length > 10)
-      content += `  ${C.dim}... and ${statusLines.length - 10} more${C.reset}\n`;
-  } else {
-    content += `Uncommitted: ${C.mintGreen}clean${C.reset}\n`;
-  }
-
-  // 2. STATUS.JSON - Full Content (using vibrant 256-color palette)
-  content += `\n${C.skyBlue}${C.bold}═══ Status.json (Full Content) ═══${C.reset}\n`;
-  const statusJsonPath = 'docs/09-agents/status.json';
-  const statusJson = prefetched?.json?.statusJson ?? safeReadJSON(statusJsonPath);
-
-  if (statusJson) {
-    content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
-    content +=
-      JSON.stringify(statusJson, null, 2)
-        .split('\n')
-        .map(l => `  ${l}`)
-        .join('\n') + '\n';
-    content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
-  } else {
-    content += `${C.dim}No status.json found${C.reset}\n`;
-  }
-
-  // 3. SESSION STATE (using vibrant 256-color palette)
-  content += `\n${C.skyBlue}${C.bold}═══ Session State ═══${C.reset}\n`;
-  const sessionState =
-    prefetched?.json?.sessionState ?? safeReadJSON('docs/09-agents/session-state.json');
-  if (sessionState) {
-    const current = sessionState.current_session;
-    if (current && current.started_at) {
-      const started = new Date(current.started_at);
-      const duration = Math.round((Date.now() - started.getTime()) / 60000);
-      content += `Active session: ${C.lightGreen}${duration} min${C.reset}\n`;
-      if (current.current_story) {
-        content += `Working on: ${C.lightYellow}${current.current_story}${C.reset}\n`;
-      }
-    } else {
-      content += `${C.dim}No active session${C.reset}\n`;
-    }
-    // Show all active commands (array)
-    if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
-      const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
-      content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
-    } else if (sessionState.active_command) {
-      // Backwards compatibility for old format
-      content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
+    // Remove legacy active_command field
+    if (state.active_command !== undefined) {
+      delete state.active_command;
     }
 
-    // Show batch loop status if active
-    const batchLoop = sessionState.batch_loop;
-    if (batchLoop && batchLoop.enabled) {
-      content += `\n${C.skyBlue}${C.bold}── Batch Loop Active ──${C.reset}\n`;
-      content += `Pattern: ${C.cyan}${batchLoop.pattern}${C.reset}\n`;
-      content += `Action: ${C.cyan}${batchLoop.action}${C.reset}\n`;
-      content += `Current: ${C.lightYellow}${batchLoop.current_item || 'none'}${C.reset}\n`;
-      const summary = batchLoop.summary || {};
-      content += `Progress: ${C.lightGreen}${summary.completed || 0}${C.reset}/${summary.total || 0} `;
-      content += `(${C.lightYellow}${summary.in_progress || 0}${C.reset} in progress)\n`;
-      content += `Iteration: ${batchLoop.iteration || 0}/${batchLoop.max_iterations || 50}\n`;
-    }
-  } else {
-    content += `${C.dim}No session-state.json found${C.reset}\n`;
+    fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+  } catch {
+    // Silently continue if session state can't be updated
   }
-
-  // 4. SESSION CONTEXT (details - banner shown above)
-  // Note: Prominent SESSION CONTEXT banner is shown at the top of output
-  // This section provides additional details for non-main sessions
-  const sessionMgrPath = path.join(__dirname, 'session-manager.js');
-  const altSessionMgrPath = '.agileflow/scripts/session-manager.js';
-
-  if (fs.existsSync(sessionMgrPath) || fs.existsSync(altSessionMgrPath)) {
-    const mgrPath = fs.existsSync(sessionMgrPath) ? sessionMgrPath : altSessionMgrPath;
-    const sessionStatusStr = safeExec(`node "${mgrPath}" status`);
-
-    if (sessionStatusStr) {
-      try {
-        const statusData = JSON.parse(sessionStatusStr);
-        if (statusData.current && !statusData.current.is_main) {
-          // Only show additional details for non-main sessions
-          content += `\n${C.skyBlue}${C.bold}═══ Session Details ═══${C.reset}\n`;
-          const session = statusData.current;
-
-          // Calculate relative path to main
-          const mainPath = process.cwd().replace(/-[^/]+$/, ''); // Heuristic: strip session suffix
-          content += `Main project: ${C.dim}${mainPath}${C.reset}\n`;
-
-          // Remind about merge flow
-          content += `${C.lavender}💡 When done: /agileflow:session:end → merge to main${C.reset}\n`;
-        }
-      } catch (e) {
-        // Silently ignore - banner above has basic info
-      }
-    }
-  }
-
-  // 5. STORY CLAIMS (inter-session coordination)
-  // Lazy loading (US-0093): Only load if sectionsToLoad.sessionClaims is true
-  const shouldLoadClaims = prefetched?.sectionsToLoad?.sessionClaims !== false;
-
-  if (shouldLoadClaims) {
-    const storyClaimingPath = path.join(__dirname, 'lib', 'story-claiming.js');
-    const altStoryClaimingPath = '.agileflow/scripts/lib/story-claiming.js';
-
-    if (fs.existsSync(storyClaimingPath) || fs.existsSync(altStoryClaimingPath)) {
-      try {
-        const claimPath = fs.existsSync(storyClaimingPath)
-          ? storyClaimingPath
-          : altStoryClaimingPath;
-        const storyClaiming = require(claimPath);
-
-        // Get stories claimed by other sessions
-        const othersResult = storyClaiming.getStoriesClaimedByOthers();
-        if (othersResult.ok && othersResult.stories && othersResult.stories.length > 0) {
-          content += `\n${C.amber}${C.bold}═══ 🔒 Claimed Stories ═══${C.reset}\n`;
-          content += `${C.dim}Stories locked by other sessions - pick a different one${C.reset}\n`;
-          othersResult.stories.forEach(story => {
-            const sessionDir = story.claimedBy?.path
-              ? path.basename(story.claimedBy.path)
-              : 'unknown';
-            content += `  ${C.coral}🔒${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}" ${C.dim}→ Session ${story.claimedBy?.session_id || '?'} (${sessionDir})${C.reset}\n`;
-          });
-          content += '\n';
-        }
-
-        // Get stories claimed by THIS session
-        const myResult = storyClaiming.getClaimedStoriesForSession();
-        if (myResult.ok && myResult.stories && myResult.stories.length > 0) {
-          content += `\n${C.mintGreen}${C.bold}═══ ✓ Your Claimed Stories ═══${C.reset}\n`;
-          myResult.stories.forEach(story => {
-            content += `  ${C.mintGreen}✓${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}"\n`;
-          });
-          content += '\n';
-        }
-      } catch (e) {
-        // Story claiming not available or error - silently skip
-      }
-    }
-  }
-
-  // 5b. FILE OVERLAPS (inter-session file awareness)
-  // Lazy loading (US-0093): Only load if sectionsToLoad.fileOverlaps is true
-  const shouldLoadOverlaps = prefetched?.sectionsToLoad?.fileOverlaps !== false;
-
-  if (shouldLoadOverlaps) {
-    const fileTrackingPath = path.join(__dirname, 'lib', 'file-tracking.js');
-    const altFileTrackingPath = '.agileflow/scripts/lib/file-tracking.js';
-
-    if (fs.existsSync(fileTrackingPath) || fs.existsSync(altFileTrackingPath)) {
-      try {
-        const trackPath = fs.existsSync(fileTrackingPath) ? fileTrackingPath : altFileTrackingPath;
-        const fileTracking = require(trackPath);
-
-        // Get file overlaps with other sessions
-        const overlapsResult = fileTracking.getMyFileOverlaps();
-        if (overlapsResult.ok && overlapsResult.overlaps && overlapsResult.overlaps.length > 0) {
-          content += `\n${C.amber}${C.bold}═══ ⚠️  File Overlaps ═══${C.reset}\n`;
-          content += `${C.dim}Files also edited by other sessions - conflicts auto-resolved during merge${C.reset}\n`;
-          overlapsResult.overlaps.forEach(overlap => {
-            const sessionInfo = overlap.otherSessions
-              .map(s => {
-                const dir = path.basename(s.path);
-                return `Session ${s.id} (${dir})`;
-              })
-              .join(', ');
-            content += `  ${C.amber}⚠${C.reset} ${C.lavender}${overlap.file}${C.reset} ${C.dim}→ ${sessionInfo}${C.reset}\n`;
-          });
-          content += '\n';
-        }
-
-        // Show files touched by this session
-        const { getCurrentSession, getSessionFiles } = fileTracking;
-        const currentSession = getCurrentSession();
-        if (currentSession) {
-          const filesResult = getSessionFiles(currentSession.session_id);
-          if (filesResult.ok && filesResult.files && filesResult.files.length > 0) {
-            content += `\n${C.skyBlue}${C.bold}═══ 📁 Files Touched This Session ═══${C.reset}\n`;
-            content += `${C.dim}${filesResult.files.length} files tracked for conflict detection${C.reset}\n`;
-            // Show first 5 files max
-            const displayFiles = filesResult.files.slice(0, 5);
-            displayFiles.forEach(file => {
-              content += `  ${C.dim}•${C.reset} ${file}\n`;
-            });
-            if (filesResult.files.length > 5) {
-              content += `  ${C.dim}... and ${filesResult.files.length - 5} more${C.reset}\n`;
-            }
-            content += '\n';
-          }
-        }
-      } catch (e) {
-        // File tracking not available or error - silently skip
-      }
-    }
-  }
-
-  // 6. VISUAL E2E STATUS (detect from metadata or filesystem)
-  const metadata =
-    prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
-  const visualE2eConfig = metadata?.features?.visual_e2e;
-  const playwrightExists =
-    fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
-  const screenshotsExists = fs.existsSync('screenshots');
-  const testsE2eExists = fs.existsSync('tests/e2e');
-
-  // Determine visual e2e status
-  const visualE2eEnabled = visualE2eConfig?.enabled || (playwrightExists && screenshotsExists);
-
-  if (visualE2eEnabled) {
-    content += `\n${C.brand}${C.bold}═══ 📸 VISUAL E2E TESTING: ENABLED ═══${C.reset}\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ E2E Tests:${C.reset} ${testsE2eExists ? 'tests/e2e/' : 'not found'}\n\n`;
-    content += `${C.bold}FOR UI WORK:${C.reset} Use ${C.skyBlue}VISUAL=true${C.reset} flag with babysit:\n`;
-    content += `${C.dim}  /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true${C.reset}\n\n`;
-    content += `${C.lavender}Screenshot Verification Workflow:${C.reset}\n`;
-    content += `  1. E2E tests capture screenshots to ${C.skyBlue}screenshots/${C.reset}\n`;
-    content += `  2. Review each screenshot visually (Claude reads image files)\n`;
-    content += `  3. Rename verified: ${C.dim}mv file.png verified-file.png${C.reset}\n`;
-    content += `  4. All screenshots must have ${C.mintGreen}verified-${C.reset} prefix before completion\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
-  } else {
-    content += `\n${C.dim}═══ 📸 VISUAL E2E TESTING: NOT CONFIGURED ═══${C.reset}\n`;
-    content += `${C.dim}For UI work with screenshot verification:${C.reset}\n`;
-    content += `${C.dim}  /agileflow:configure → Visual E2E testing${C.reset}\n\n`;
-  }
-
-  // DOCS STRUCTURE (using vibrant 256-color palette)
-  content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
-  const docsDir = 'docs';
-  const docFolders = (prefetched?.dirs?.docs ?? safeLs(docsDir)).filter(f => {
-    try {
-      return fs.statSync(path.join(docsDir, f)).isDirectory();
-    } catch {
-      return false;
-    }
-  });
-
-  if (docFolders.length > 0) {
-    docFolders.forEach(folder => {
-      const folderPath = path.join(docsDir, folder);
-      const files = safeLs(folderPath);
-      const mdFiles = files.filter(f => f.endsWith('.md'));
-      const jsonFiles = files.filter(f => f.endsWith('.json') || f.endsWith('.jsonl'));
-      const info = [];
-      if (mdFiles.length > 0) info.push(`${mdFiles.length} md`);
-      if (jsonFiles.length > 0) info.push(`${jsonFiles.length} json`);
-      content += `  ${C.dim}${folder}/${C.reset} ${info.length > 0 ? `(${info.join(', ')})` : ''}\n`;
-    });
-  }
-
-  // 6. RESEARCH NOTES - List + Full content of most recent (using vibrant 256-color palette)
-  // Lazy loading (US-0093): Full content only loaded for research-related commands
-  const shouldLoadResearch = prefetched?.sectionsToLoad?.researchContent !== false;
-  content += `\n${C.skyBlue}${C.bold}═══ Research Notes ═══${C.reset}\n`;
-  const researchDir = 'docs/10-research';
-  const researchFiles =
-    prefetched?.researchFiles ??
-    safeLs(researchDir)
-      .filter(f => f.endsWith('.md') && f !== 'README.md')
-      .sort()
-      .reverse();
-  if (researchFiles.length > 0) {
-    content += `${C.dim}───${C.reset} Available Research Notes\n`;
-    researchFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
-
-    const mostRecentFile = researchFiles[0];
-    const mostRecentPath = path.join(researchDir, mostRecentFile);
-    const mostRecentContent =
-      prefetched?.mostRecentResearch ?? (shouldLoadResearch ? safeRead(mostRecentPath) : null);
-
-    if (mostRecentContent) {
-      content += `\n${C.mintGreen}📄 Most Recent: ${mostRecentFile}${C.reset}\n`;
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-      content += mostRecentContent + '\n';
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    } else if (!shouldLoadResearch) {
-      content += `\n${C.dim}📄 Content deferred (lazy loading). Use /agileflow:research to access.${C.reset}\n`;
-    }
-  } else {
-    content += `${C.dim}No research notes${C.reset}\n`;
-  }
-
-  // 7. BUS MESSAGES (using vibrant 256-color palette)
-  content += `\n${C.skyBlue}${C.bold}═══ Recent Agent Messages ═══${C.reset}\n`;
-  const busPath = 'docs/09-agents/bus/log.jsonl';
-  const busContent = prefetched?.text?.busLog ?? safeRead(busPath);
-  if (busContent) {
-    const lines = busContent.trim().split('\n').filter(Boolean);
-    const recent = lines.slice(-5);
-    if (recent.length > 0) {
-      recent.forEach(line => {
-        try {
-          const msg = JSON.parse(line);
-          const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '?';
-          content += `  ${C.dim}[${time}]${C.reset} ${msg.from || '?'}: ${msg.type || msg.message || '?'}\n`;
-        } catch {
-          content += `  ${C.dim}${line.substring(0, 80)}...${C.reset}\n`;
-        }
-      });
-    } else {
-      content += `${C.dim}No messages${C.reset}\n`;
-    }
-  } else {
-    content += `${C.dim}No bus log found${C.reset}\n`;
-  }
-
-  // 8. KEY FILES - Full content
-  content += `\n${C.cyan}${C.bold}═══ Key Context Files (Full Content) ═══${C.reset}\n`;
-
-  // Map file paths to prefetched keys
-  const prefetchedKeyMap = {
-    'CLAUDE.md': 'claudeMd',
-    'README.md': 'readmeMd',
-    'docs/04-architecture/README.md': 'archReadme',
-    'docs/02-practices/README.md': 'practicesReadme',
-    'docs/08-project/roadmap.md': 'roadmap',
-  };
-
-  const keyFilesToRead = [
-    { path: 'CLAUDE.md', label: 'CLAUDE.md (Project Instructions)' },
-    { path: 'README.md', label: 'README.md (Project Overview)' },
-    { path: 'docs/04-architecture/README.md', label: 'Architecture Index' },
-    { path: 'docs/02-practices/README.md', label: 'Practices Index' },
-    { path: 'docs/08-project/roadmap.md', label: 'Roadmap' },
-  ];
-
-  keyFilesToRead.forEach(({ path: filePath, label }) => {
-    const prefetchKey = prefetchedKeyMap[filePath];
-    const fileContent = prefetched?.text?.[prefetchKey] ?? safeRead(filePath);
-    if (fileContent) {
-      content += `\n${C.green}✓ ${label}${C.reset} ${C.dim}(${filePath})${C.reset}\n`;
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-      content += fileContent + '\n';
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    } else {
-      content += `${C.dim}○ ${label} (not found)${C.reset}\n`;
-    }
-  });
-
-  const settingsExists = fs.existsSync('.claude/settings.json');
-  content += `\n  ${settingsExists ? `${C.green}✓${C.reset}` : `${C.dim}○${C.reset}`} .claude/settings.json\n`;
-
-  // 9. EPICS FOLDER
-  content += `\n${C.cyan}${C.bold}═══ Epic Files ═══${C.reset}\n`;
-  const epicFiles =
-    prefetched?.dirs?.epics?.filter(f => f.endsWith('.md') && f !== 'README.md') ??
-    safeLs('docs/05-epics').filter(f => f.endsWith('.md') && f !== 'README.md');
-  if (epicFiles.length > 0) {
-    epicFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
-  } else {
-    content += `${C.dim}No epic files${C.reset}\n`;
-  }
-
-  // FOOTER
-  content += `\n${C.dim}─────────────────────────────────────────${C.reset}\n`;
-  content += `${C.dim}Context gathered in single execution. Claude has full context.${C.reset}\n`;
-
-  return content;
 }
 
-// ============================================
-// QUERY MODE: Targeted codebase search (US-0127)
-// ============================================
+// =============================================================================
+// Query Mode (US-0127)
+// =============================================================================
 
 /**
  * Execute query mode using codebase index for targeted search.
@@ -1267,22 +117,19 @@ function generateFullContent(prefetched = null) {
 function executeQueryMode(query) {
   const queryScript = path.join(__dirname, 'query-codebase.js');
 
-  // Check if query script exists
   if (!fs.existsSync(queryScript)) {
     console.error('Query mode unavailable: query-codebase.js not found');
-    return null; // Fall back to full context
+    return null;
   }
 
   try {
-    // Execute query and capture output
     const result = execSync(`node "${queryScript}" --query="${query}" --budget=15000`, {
       encoding: 'utf8',
-      maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+      maxBuffer: 50 * 1024 * 1024,
     });
 
-    // Check if we got results
     if (result.includes('No files found') || result.trim() === '') {
-      return null; // Fall back to full context
+      return null;
     }
 
     return {
@@ -1291,30 +138,27 @@ function executeQueryMode(query) {
       results: result.trim(),
     };
   } catch (err) {
-    // Exit code 2 = no results, fall back to full context
     if (err.status === 2) {
-      return null;
+      return null; // No results, fall back
     }
-    // Exit code 1 = error, report but fall back
     console.error(`Query error: ${err.message}`);
     return null;
   }
 }
 
-// ============================================
-// MAIN: Output with smart summary positioning
-// ============================================
+// =============================================================================
+// Main Execution
+// =============================================================================
 
-/**
- * Main execution function using parallel pre-fetching for optimal performance.
- */
 async function main() {
+  // Register command for PreCompact
+  registerCommand();
+
   // Check for query mode first (US-0127)
   if (activeSections.includes('query-mode') && commandParams.QUERY) {
     const queryResult = executeQueryMode(commandParams.QUERY);
 
     if (queryResult) {
-      // Output query results instead of full context
       console.log(`=== QUERY MODE ===`);
       console.log(`Query: "${queryResult.query}"`);
       console.log(`---`);
@@ -1323,56 +167,44 @@ async function main() {
       console.log(`[Query mode: targeted search. Run without QUERY= for full context]`);
       return;
     }
-    // Fall through to full context if query returned no results
     console.log(`[Query "${commandParams.QUERY}" returned no results, loading full context...]`);
   }
 
-  // Check for multi-session environment before prefetching
-  const registryPath = '.agileflow/sessions/registry.json';
-  let isMultiSession = false;
-  if (fs.existsSync(registryPath)) {
-    try {
-      const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
-      const sessionCount = Object.keys(registry.sessions || {}).length;
-      isMultiSession = sessionCount > 1;
-    } catch {
-      // Ignore registry read errors
-    }
-  }
+  // Check for multi-session environment
+  const isMultiSession = isMultiSessionEnvironment();
 
-  // Load lazy context configuration from metadata
+  // Load lazy context configuration
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
   const lazyConfig = metadata?.features?.lazyContext;
 
   // Determine which sections need full content (US-0093)
   const sectionsToLoad = determineSectionsToLoad(commandName, lazyConfig, isMultiSession);
 
-  // Pre-fetch all file data in parallel with lazy loading options
+  // Pre-fetch all data in parallel
   const prefetched = await prefetchAllData({ sectionsToLoad });
 
-  // Generate content using pre-fetched data
-  const summary = generateSummary(prefetched);
-  const fullContent = generateFullContent(prefetched);
+  // Generate formatted output
+  const formatOptions = { commandName, activeSections };
+  const summary = generateSummary(prefetched, formatOptions);
+  const fullContent = generateFullContent(prefetched, formatOptions);
 
+  // Smart output positioning
   const summaryLength = summary.length;
   const cutoffPoint = DISPLAY_LIMIT - summaryLength;
 
   if (fullContent.length <= cutoffPoint) {
-    // Full content fits before summary - just output everything
+    // Full content fits before summary
     console.log(fullContent);
     console.log(summary);
   } else {
-    // Output content up to cutoff, then summary as the LAST visible thing.
-    // Don't output contentAfter - it would bleed into visible area before truncation,
-    // and Claude only sees ~30K chars from Bash anyway.
+    // Output content up to cutoff, then summary as the LAST visible thing
     const contentBefore = fullContent.substring(0, cutoffPoint);
-
     console.log(contentBefore);
     console.log(summary);
   }
 }
 
-// Execute main function
+// Execute
 main().catch(err => {
   console.error('Error gathering context:', err.message);
   process.exit(1);

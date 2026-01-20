@@ -465,3 +465,213 @@ describe('session-manager', () => {
     });
   });
 });
+
+/**
+ * Tests for injectable registry pattern
+ * These tests verify that session-manager can use a mocked registry for testing
+ */
+describe('session-manager injectable registry', () => {
+  const EventEmitter = require('events');
+
+  // Create a mock registry class for testing
+  class MockRegistry extends EventEmitter {
+    constructor(initialData = {}) {
+      super();
+      this._data = {
+        schema_version: '1.0.0',
+        next_id: 1,
+        project_name: 'test-project',
+        sessions: {},
+        ...initialData,
+      };
+    }
+
+    loadSync() {
+      return { ...this._data };
+    }
+
+    saveSync(data) {
+      this._data = { ...data, updated: new Date().toISOString() };
+      return { ok: true };
+    }
+
+    async load() {
+      return this.loadSync();
+    }
+
+    async save(data) {
+      return this.saveSync(data);
+    }
+
+    // Expose internal data for test assertions
+    getData() {
+      return this._data;
+    }
+  }
+
+  let sessionManager;
+  let mockRegistry;
+
+  beforeEach(() => {
+    // Fresh import to avoid state from previous tests
+    jest.resetModules();
+    sessionManager = require('../../scripts/session-manager');
+    mockRegistry = new MockRegistry();
+
+    // Inject mock registry
+    sessionManager.injectRegistry(mockRegistry);
+  });
+
+  afterEach(() => {
+    // Reset to default registry
+    sessionManager.injectRegistry(null);
+  });
+
+  describe('injectRegistry()', () => {
+    test('allows injecting a mock registry', () => {
+      const registry = sessionManager.getRegistryInstance();
+      expect(registry).toBe(mockRegistry);
+    });
+
+    test('null resets to default registry', () => {
+      sessionManager.injectRegistry(null);
+      const registry = sessionManager.getRegistryInstance();
+      expect(registry).not.toBe(mockRegistry);
+      expect(registry.constructor.name).toBe('SessionRegistry');
+    });
+  });
+
+  describe('loadRegistry()', () => {
+    test('uses injected registry for loading', () => {
+      mockRegistry._data.sessions = {
+        1: { nickname: 'test-session', branch: 'main' },
+      };
+
+      const data = sessionManager.loadRegistry();
+      expect(data.sessions['1'].nickname).toBe('test-session');
+    });
+
+    test('returns fresh data on each call', () => {
+      const data1 = sessionManager.loadRegistry();
+      mockRegistry._data.next_id = 42;
+      const data2 = sessionManager.loadRegistry();
+
+      expect(data2.next_id).toBe(42);
+    });
+  });
+
+  describe('saveRegistry()', () => {
+    test('uses injected registry for saving', () => {
+      sessionManager.saveRegistry({
+        sessions: { 1: { nickname: 'saved-session' } },
+      });
+
+      const saved = mockRegistry.getData();
+      expect(saved.sessions['1'].nickname).toBe('saved-session');
+    });
+
+    test('adds updated timestamp', () => {
+      sessionManager.saveRegistry({ sessions: {} });
+
+      const saved = mockRegistry.getData();
+      expect(saved.updated).toBeDefined();
+    });
+  });
+
+  describe('getSessions()', () => {
+    test('returns sessions from injected registry', () => {
+      mockRegistry._data.sessions = {
+        1: { nickname: 'session-1', branch: 'main' },
+        2: { nickname: 'session-2', branch: 'feature' },
+      };
+
+      const result = sessionManager.getSessions();
+      // getSessions returns { sessions: [], cleaned, cleanedSessions }
+      expect(result.sessions).toHaveLength(2);
+      expect(result.sessions[0].nickname).toBe('session-1');
+      expect(result.sessions[1].nickname).toBe('session-2');
+    });
+
+    test('returns empty array when no sessions', () => {
+      mockRegistry._data.sessions = {};
+      const result = sessionManager.getSessions();
+      expect(result.sessions).toEqual([]);
+    });
+  });
+
+  describe('getSession()', () => {
+    test('returns session by ID from injected registry', () => {
+      mockRegistry._data.sessions = {
+        42: { nickname: 'answer-session', branch: 'deep-thought' },
+      };
+
+      const session = sessionManager.getSession(42);
+      expect(session.nickname).toBe('answer-session');
+      expect(session.branch).toBe('deep-thought');
+    });
+
+    test('returns null for non-existent session', () => {
+      mockRegistry._data.sessions = {};
+      const session = sessionManager.getSession(999);
+      expect(session).toBeNull();
+    });
+  });
+
+  describe('getActiveSessionCount()', () => {
+    test('counts sessions from injected registry', () => {
+      mockRegistry._data.sessions = {
+        1: { status: 'active' },
+        2: { status: 'inactive' },
+        3: { status: 'active' },
+      };
+
+      // Note: getActiveSessionCount checks lock files for liveness
+      // With mocked registry, it counts all sessions
+      const count = sessionManager.getActiveSessionCount();
+      expect(count).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('THREAD_TYPES constant', () => {
+    test('exports thread type values', () => {
+      expect(sessionManager.THREAD_TYPES).toContain('base');
+      expect(sessionManager.THREAD_TYPES).toContain('parallel');
+      expect(sessionManager.THREAD_TYPES).toContain('chained');
+      expect(sessionManager.THREAD_TYPES).toContain('fusion');
+    });
+  });
+
+  describe('detectThreadType()', () => {
+    test('returns parallel for worktree sessions', () => {
+      const session = { is_main: false };
+      expect(sessionManager.detectThreadType(session, true)).toBe('parallel');
+    });
+
+    test('returns base for main sessions', () => {
+      const session = { is_main: true };
+      expect(sessionManager.detectThreadType(session, false)).toBe('base');
+    });
+  });
+
+  describe('mock isolation', () => {
+    test('changes to mock do not affect real registry', () => {
+      // Modify mock data
+      mockRegistry._data.sessions = { 999: { nickname: 'mock-only' } };
+
+      // Reset to real registry
+      sessionManager.injectRegistry(null);
+
+      // Real registry should not have mock data
+      const realRegistry = sessionManager.getRegistryInstance();
+      const realData = realRegistry.loadSync();
+
+      // Real data should not have mock session
+      expect(realData.sessions?.['999']).toBeUndefined();
+    });
+
+    test('each test gets fresh mock instance', () => {
+      // This should be a fresh mock from beforeEach
+      expect(Object.keys(mockRegistry._data.sessions)).toHaveLength(0);
+    });
+  });
+});

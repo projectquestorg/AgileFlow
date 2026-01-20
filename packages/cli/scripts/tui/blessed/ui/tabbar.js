@@ -14,8 +14,8 @@ module.exports = function createTabBar(screen, state) {
     width: '100%',
     height: 3,
     style: {
-      bg: 'black'
-    }
+      bg: 'black',
+    },
   });
 
   // Logo/title
@@ -28,8 +28,8 @@ module.exports = function createTabBar(screen, state) {
     content: '{bold}{#e8683a-fg}▄▀▄ AgileFlow{/}',
     tags: true,
     style: {
-      bg: 'black'
-    }
+      bg: 'black',
+    },
   });
 
   // Tab container
@@ -40,8 +40,8 @@ module.exports = function createTabBar(screen, state) {
     width: '100%-20',
     height: 3,
     style: {
-      bg: 'black'
-    }
+      bg: 'black',
+    },
   });
 
   // Create styled tabs
@@ -56,8 +56,8 @@ module.exports = function createTabBar(screen, state) {
       tags: true,
       style: {
         fg: 'white',
-        bg: 'black'
-      }
+        bg: 'black',
+      },
     });
     return tab;
   });
@@ -72,8 +72,8 @@ module.exports = function createTabBar(screen, state) {
     content: '{gray-fg}v2.90.7{/}',
     tags: true,
     style: {
-      bg: 'black'
-    }
+      bg: 'black',
+    },
   });
 
   return {
@@ -94,6 +94,6 @@ module.exports = function createTabBar(screen, state) {
           tab.setContent(`[${i + 1}] ${state.tabs[i]}`);
         }
       });
-    }
+    },
   };
 };
