@@ -14,6 +14,7 @@ import { source } from "@/lib/source"
 import { absoluteUrl } from "@/lib/utils"
 import { DocsCopyPage } from "@/components/docs-copy-page"
 import { DocsTableOfContents } from "@/components/docs-toc"
+import { MobileTocButton } from "@/components/mobile-toc"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
 import { Button } from "@/registry/new-york-v4/ui/button"
 
@@ -205,6 +206,8 @@ export default async function Page(props: {
           </div>
         ) : null}
       </div>
+      {/* Floating TOC button for mobile */}
+      {doc.toc?.length ? <MobileTocButton toc={doc.toc} /> : null}
     </div>
   )
 }

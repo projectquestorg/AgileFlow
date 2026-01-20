@@ -1,0 +1,199 @@
+---
+title: RTL Language Support
+description: Support for right-to-left languages like Arabic, Hebrew, Persian, and Urdu.
+---
+
+# RTL Language Support
+
+AgileFlow documentation supports right-to-left (RTL) languages including Arabic, Hebrew, Persian, and Urdu. This guide covers how to use RTL support and how to contribute translations.
+
+## Using RTL Mode
+
+### Language Switcher
+
+Click the language/globe icon in the site header to switch between LTR and RTL modes. The site will automatically adjust:
+
+- Text direction
+- Layout mirroring
+- Navigation alignment
+- Component positioning
+
+### Automatic Detection
+
+If your browser is set to an RTL language, the site will automatically start in RTL mode. Supported RTL languages:
+
+- Arabic (ar)
+- Hebrew (he)
+- Persian/Farsi (fa)
+- Urdu (ur)
+
+## RTL-Aware CSS
+
+The site uses Tailwind CSS with RTL variants. Use the `rtl:` prefix for RTL-specific styles:
+
+```css
+/* Example RTL styles */
+.my-element {
+  margin-left: 1rem;   /* LTR default */
+}
+
+[dir="rtl"] .my-element {
+  margin-left: 0;
+  margin-right: 1rem;  /* RTL override */
+}
+
+/* Using Tailwind rtl: variant */
+<div className="ml-4 rtl:ml-0 rtl:mr-4">
+  Content
+</div>
+```
+
+### Logical Properties
+
+For most cases, prefer CSS logical properties which automatically handle direction:
+
+```css
+/* Instead of this */
+margin-left: 1rem;
+padding-right: 2rem;
+text-align: left;
+
+/* Use this */
+margin-inline-start: 1rem;
+padding-inline-end: 2rem;
+text-align: start;
+```
+
+Tailwind equivalents:
+- `ms-*` = margin-inline-start
+- `me-*` = margin-inline-end
+- `ps-*` = padding-inline-start
+- `pe-*` = padding-inline-end
+- `start-*` = inset-inline-start
+- `end-*` = inset-inline-end
+
+## Translation Workflow
+
+### Adding a New Language
+
+1. Create translation files in `/locales/{lang}/`:
+
+```
+locales/
+├── en/
+│   ├── common.json
+│   └── docs.json
+├── ar/
+│   ├── common.json
+│   └── docs.json
+└── he/
+    ├── common.json
+    └── docs.json
+```
+
+2. Add the language to `LANGUAGES` in `components/language-switcher.tsx`:
+
+```typescript
+const LANGUAGES: Language[] = [
+  { code: "en", name: "English", nativeName: "English", direction: "ltr" },
+  { code: "ar", name: "Arabic", nativeName: "العربية", direction: "rtl" },
+  // Add new language here
+]
+```
+
+3. Create translated MDX files:
+
+```
+content/docs/
+├── index.mdx           # English (default)
+└── ar/
+    └── index.mdx       # Arabic translation
+```
+
+### Translation Guidelines
+
+1. **Preserve formatting**: Keep code blocks, links, and components intact
+2. **Translate alt text**: Image alt attributes should be translated
+3. **Keep URLs**: Don't translate URL slugs unless absolutely necessary
+4. **Review technical terms**: Some technical terms may stay in English
+
+### Sample RTL Content
+
+Here's sample Arabic text to test RTL layout:
+
+```arabic
+مرحبًا بكم في توثيق AgileFlow. هذا النص باللغة العربية لاختبار دعم اللغات من اليمين إلى اليسار.
+```
+
+```hebrew
+ברוכים הבאים לתיעוד AgileFlow. זהו טקסט בעברית לבדיקת תמיכה בשפות מימין לשמאל.
+```
+
+## Testing RTL Layout
+
+1. Toggle to RTL mode using the language switcher
+2. Check these areas for correct mirroring:
+   - Navigation sidebar (should be on right)
+   - Search icon alignment
+   - Code block scroll direction
+   - Progress bars
+   - Icons (some should flip, others shouldn't)
+
+### Icons That Should NOT Flip
+
+- Search icon
+- External link icon
+- Checkmark
+- Plus/minus
+- Close (X)
+
+### Icons That SHOULD Flip
+
+- Arrow left/right
+- Chevron left/right
+- Indent/outdent
+- Reply/forward
+
+## Technical Implementation
+
+### DirectionProvider
+
+The `DirectionProvider` component manages direction state:
+
+```tsx
+import { useDirection } from "@/components/direction-provider"
+
+function MyComponent() {
+  const { direction, setDirection, isRTL } = useDirection()
+
+  return (
+    <div className={isRTL ? "text-right" : "text-left"}>
+      Current direction: {direction}
+    </div>
+  )
+}
+```
+
+### Accessing Direction in CSS
+
+The `dir` attribute is set on the `<html>` element:
+
+```css
+/* CSS selector */
+[dir="rtl"] .my-element {
+  /* RTL styles */
+}
+
+/* Tailwind */
+<div className="rtl:flex-row-reverse">
+```
+
+## Contributing
+
+Want to help translate AgileFlow? We welcome contributions!
+
+1. Check existing translations in `/locales/`
+2. Create a new folder for your language
+3. Submit a PR with your translations
+
+For questions, open an issue on GitHub.

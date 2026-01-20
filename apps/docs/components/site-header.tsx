@@ -4,6 +4,7 @@ import { ArrowRightIcon } from "lucide-react"
 
 import { siteConfig } from "@/lib/config"
 import { source } from "@/lib/source"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { MainNav } from "@/components/main-nav"
 import { MobileNav } from "@/components/mobile-nav"
 import { ModeSwitcher } from "@/components/mode-switcher"
@@ -33,6 +34,7 @@ export function SiteHeader() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ModeSwitcher />
             <Button
               asChild

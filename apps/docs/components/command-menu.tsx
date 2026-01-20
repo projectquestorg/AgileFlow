@@ -9,13 +9,16 @@ import { CornerDownLeftIcon, SquareDashedIcon } from "lucide-react"
 
 import { type Color, type ColorPalette } from "@/lib/colors"
 import { trackEvent } from "@/lib/events"
+import { fuzzyMatch, highlightMatches } from "@/lib/fuzzy-match"
 import { showMcpDocs } from "@/lib/flags"
 import { type source } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import { useConfig } from "@/hooks/use-config"
 import { useMutationObserver } from "@/hooks/use-mutation-observer"
+import { useRecentSearches } from "@/hooks/use-recent-searches"
 import { copyToClipboardWithMeta } from "@/components/copy-button"
 import { Button } from "@/registry/new-york-v4/ui/button"
+import { Badge } from "@/registry/new-york-v4/ui/badge"
 import {
   Command,
   CommandEmpty,
@@ -55,10 +58,14 @@ export function CommandMenu({
     "color" | "page" | "component" | "block" | null
   >(null)
   const [copyPayload, setCopyPayload] = React.useState("")
+  const [resultCount, setResultCount] = React.useState(0)
 
   const { search, setSearch, query } = useDocsSearch({
     type: "fetch",
   })
+
+  // Recent searches hook
+  const { recentSearches, addSearch, removeSearch } = useRecentSearches()
   const packageManager = config.packageManager || "npm"
 
   // Track search queries with debouncing to avoid excessive tracking.
@@ -138,10 +145,17 @@ export function CommandMenu({
     [setSelectedType, setCopyPayload, packageManager]
   )
 
-  const runCommand = React.useCallback((command: () => unknown) => {
-    setOpen(false)
-    command()
-  }, [])
+  const runCommand = React.useCallback(
+    (command: () => unknown) => {
+      // Save search to recent history when executing a command
+      if (search.trim()) {
+        addSearch(search.trim())
+      }
+      setOpen(false)
+      command()
+    },
+    [search, addSearch]
+  )
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -220,9 +234,18 @@ export function CommandMenu({
           filter={(value, search, keywords) => {
             handleSearchChange(search)
             const extendValue = value + " " + (keywords?.join(" ") || "")
+
+            // Exact match (highest priority)
             if (extendValue.toLowerCase().includes(search.toLowerCase())) {
               return 1
             }
+
+            // Fuzzy match for typo tolerance
+            const score = fuzzyMatch(search, extendValue, 2)
+            if (score > 0.3) {
+              return score
+            }
+
             return 0
           }}
         >
@@ -234,10 +257,69 @@ export function CommandMenu({
               </div>
             )}
           </div>
-          <CommandList className="no-scrollbar min-h-80 scroll-pt-2 scroll-pb-1.5">
+          <CommandList
+            className="no-scrollbar min-h-80 scroll-pt-2 scroll-pb-1.5"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <CommandEmpty className="text-muted-foreground py-12 text-center text-sm">
-              {query.isLoading ? "Searching..." : "No results found."}
+              {query.isLoading ? (
+                "Searching..."
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <span>No results found.</span>
+                  <span className="text-xs">
+                    Try different keywords or check for typos
+                  </span>
+                </div>
+              )}
             </CommandEmpty>
+
+            {/* Recent Searches - show when no active search */}
+            {!search.trim() && recentSearches.length > 0 && (
+              <CommandGroup
+                heading={
+                  <div className="flex items-center justify-between">
+                    <span>Recent Searches</span>
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0"
+                    >
+                      {recentSearches.length}
+                    </Badge>
+                  </div>
+                }
+                className="!p-0 [&_[cmdk-group-heading]]:!p-3 [&_[cmdk-group-heading]]:!pb-1"
+              >
+                {recentSearches.map((recent) => (
+                  <CommandMenuItem
+                    key={recent.query}
+                    value={`recent:${recent.query}`}
+                    onHighlight={() => {
+                      setSelectedType("page")
+                      setCopyPayload("")
+                    }}
+                    onSelect={() => {
+                      setSearch(recent.query)
+                    }}
+                  >
+                    <IconArrowRight className="rotate-180 opacity-50" />
+                    <span className="flex-1">{recent.query}</span>
+                    <button
+                      className="text-muted-foreground hover:text-foreground ml-auto rounded p-0.5 opacity-0 transition-opacity group-data-[selected=true]:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeSearch(recent.query)
+                      }}
+                      aria-label={`Remove ${recent.query} from history`}
+                    >
+                      <span className="text-xs">×</span>
+                    </button>
+                  </CommandMenuItem>
+                ))}
+              </CommandGroup>
+            )}
+
             {navItems && navItems.length > 0 && (
               <CommandGroup
                 heading="Pages"
@@ -382,7 +464,24 @@ export function CommandMenu({
               setOpen={setOpen}
               query={query}
               search={search}
+              onResultsChange={setResultCount}
             />
+
+            {/* Screen reader announcement for search results */}
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="sr-only"
+            >
+              {search.trim() && !query.isLoading && (
+                <>
+                  {resultCount > 0
+                    ? `${resultCount} result${resultCount === 1 ? "" : "s"} found for "${search}"`
+                    : `No results found for "${search}"`}
+                </>
+              )}
+            </div>
           </CommandList>
         </Command>
         <div className="text-muted-foreground absolute inset-x-0 bottom-0 z-20 flex h-10 items-center gap-2 rounded-b-xl border-t border-t-neutral-100 bg-neutral-50 px-4 text-xs font-medium dark:border-t-neutral-700 dark:bg-neutral-800">
@@ -467,11 +566,13 @@ function SearchResults({
   setOpen,
   query,
   search,
+  onResultsChange,
 }: {
   open: boolean
   setOpen: (open: boolean) => void
   query: Query
   search: string
+  onResultsChange?: (count: number) => void
 }) {
   const router = useRouter()
 
@@ -485,6 +586,11 @@ function SearchResults({
             ) && index === self.findIndex((t) => t.content === item.content)
         )
       : []
+
+  // Report result count for accessibility announcements
+  React.useEffect(() => {
+    onResultsChange?.(uniqueResults.length)
+  }, [uniqueResults.length, onResultsChange])
 
   if (!search.trim()) {
     return null
@@ -501,9 +607,19 @@ function SearchResults({
   return (
     <CommandGroup
       className="!px-0 [&_[cmdk-group-heading]]:scroll-mt-16 [&_[cmdk-group-heading]]:!p-3 [&_[cmdk-group-heading]]:!pb-1"
-      heading="Search Results"
+      heading={
+        <div className="flex items-center justify-between">
+          <span>Search Results</span>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            {uniqueResults.length}
+          </Badge>
+        </div>
+      }
     >
       {uniqueResults.map((item) => {
+        // Highlight matching portions
+        const segments = highlightMatches(item.content, search)
+
         return (
           <CommandItem
             key={item.id}
@@ -512,11 +628,31 @@ function SearchResults({
               router.push(item.url)
               setOpen(false)
             }}
-            className="data-[selected=true]:border-input data-[selected=true]:bg-input/50 h-9 rounded-md border border-transparent !px-3 font-normal"
+            className="data-[selected=true]:border-input data-[selected=true]:bg-input/50 h-auto min-h-9 rounded-md border border-transparent !px-3 py-2 font-normal"
             keywords={[item.content]}
             value={`${item.content} ${item.type}`}
           >
-            <div className="line-clamp-1 text-sm">{item.content}</div>
+            <div className="flex flex-col gap-0.5">
+              <div className="line-clamp-1 text-sm">
+                {segments.map((segment, i) =>
+                  segment.isMatch ? (
+                    <mark
+                      key={i}
+                      className="bg-primary/20 text-foreground rounded px-0.5"
+                    >
+                      {segment.text}
+                    </mark>
+                  ) : (
+                    <span key={i}>{segment.text}</span>
+                  )
+                )}
+              </div>
+              {item.type === "text" && (
+                <span className="text-muted-foreground text-xs line-clamp-1">
+                  {item.url}
+                </span>
+              )}
+            </div>
           </CommandItem>
         )
       })}

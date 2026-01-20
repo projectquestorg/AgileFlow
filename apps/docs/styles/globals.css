@@ -18,6 +18,9 @@
 @custom-variant dark (&:is(.dark *));
 @custom-variant fixed (&:is(.layout-fixed *));
 
+/* RTL support - applies when html[dir="rtl"] */
+@custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
+
 @theme inline {
   --breakpoint-3xl: 1600px;
   --breakpoint-4xl: 2000px;
