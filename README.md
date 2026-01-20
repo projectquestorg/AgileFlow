@@ -3,8 +3,8 @@
 </p>
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
-[![Commands](https://img.shields.io/badge/commands-72-blue)](docs/04-architecture/commands.md)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-29-orange)](docs/04-architecture/subagents.md)
+[![Commands](https://img.shields.io/badge/commands-74-blue)](docs/04-architecture/commands.md)
+[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-30-orange)](docs/04-architecture/subagents.md)
 [![Skills](https://img.shields.io/badge/skills-dynamic-purple)](docs/04-architecture/skills.md)
 
 **AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex CLI, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
@@ -65,8 +65,8 @@ AgileFlow combines three proven methodologies:
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| [Commands](docs/04-architecture/commands.md) | 72 | Slash commands for agile workflows |
-| [Agents/Experts](docs/04-architecture/subagents.md) | 29 | Specialized agents with self-improving knowledge bases |
+| [Commands](docs/04-architecture/commands.md) | 74 | Slash commands for agile workflows |
+| [Agents/Experts](docs/04-architecture/subagents.md) | 30 | Specialized agents with self-improving knowledge bases |
 | [Skills](docs/04-architecture/skills.md) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
 
 ---
@@ -76,8 +76,8 @@ AgileFlow combines three proven methodologies:
 Full documentation lives in [`docs/04-architecture/`](docs/04-architecture/):
 
 ### Reference
-- [Commands](docs/04-architecture/commands.md) - All 72 slash commands
-- [Agents/Experts](docs/04-architecture/subagents.md) - 29 specialized agents with self-improving knowledge
+- [Commands](docs/04-architecture/commands.md) - All 74 slash commands
+- [Agents/Experts](docs/04-architecture/subagents.md) - 30 specialized agents with self-improving knowledge
 - [Skills](docs/04-architecture/skills.md) - Dynamic skill generator with MCP integration
 
 ### Architecture

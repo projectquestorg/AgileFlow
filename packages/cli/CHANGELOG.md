@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.91.0] - 2026-01-20
+
+### Added
+- GSD workflow integration, codebase query interface, and docs improvements
+
 ## [2.90.7] - 2026-01-17
 
 ### Fixed

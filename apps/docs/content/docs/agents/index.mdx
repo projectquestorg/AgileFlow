@@ -1,11 +1,11 @@
 ---
 title: Agents
-description: 29 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
+description: 30 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
 ---
 
 # Agents
 
-AgileFlow includes **29 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
+AgileFlow includes **30 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
 
 ## How Agents Work
 
@@ -65,8 +65,8 @@ When Claude Code compresses context, it preserves these rules and state fields f
 ### Agent Priority Distribution
 
 - **Critical** (2 agents): mentor, api
-- **High** (8 agents): ui, database, ci, devops, testing, security, documentation, performance
-- **Medium** (15 agents): database, datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater
+- **High** (9 agents): ui, database, ci, devops, testing, security, documentation, performance, codebase-query
+- **Medium** (15 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater
 - **Low** (2 agents): epic-planner, orchestrator
 
 This tiered approach ensures the most critical agents always maintain focus while others gracefully degrade context when needed.
@@ -118,6 +118,7 @@ Agents for knowledge management:
 | [`research`](/agents/research) | Gathering information, research notes, best practices |
 | [`adr-writer`](/agents/adr-writer) | Architecture Decision Records |
 | [`readme-updater`](/agents/readme-updater) | Auditing and updating documentation files |
+| [`codebase-query`](/agents/codebase-query) | Intelligent codebase search using programmatic queries |
 
 ### Specialized Domains
 
