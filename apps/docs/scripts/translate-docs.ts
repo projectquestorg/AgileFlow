@@ -72,41 +72,60 @@ async function translateText(
   }
 }
 
+// Placeholder map for preserving untranslatable content
+const placeholders: Map<string, string> = new Map()
+let placeholderIndex = 0
+
+function createPlaceholder(content: string): string {
+  const id = `__NOTRANSLATE_${placeholderIndex++}__`
+  placeholders.set(id, content)
+  return id
+}
+
+function restorePlaceholders(text: string): string {
+  let result = text
+  for (const [id, original] of placeholders) {
+    result = result.replace(new RegExp(id, "g"), original)
+  }
+  return result
+}
+
 function extractTranslatableContent(mdx: string): {
   frontmatter: string
   sections: { type: "code" | "text"; content: string }[]
 } {
+  // Reset placeholders for each file
+  placeholders.clear()
+  placeholderIndex = 0
+
   // Extract frontmatter
   const frontmatterMatch = mdx.match(/^---\n([\s\S]*?)\n---/)
   const frontmatter = frontmatterMatch ? frontmatterMatch[0] : ""
-  const content = frontmatter ? mdx.slice(frontmatter.length) : mdx
+  let content = frontmatter ? mdx.slice(frontmatter.length) : mdx
 
-  // Split into code blocks and text sections
+  // Step 1: Replace code blocks with placeholders
+  content = content.replace(/```[\s\S]*?```/g, (match) => createPlaceholder(match))
+
+  // Step 2: Replace inline code with placeholders
+  content = content.replace(/`[^`\n]+`/g, (match) => createPlaceholder(match))
+
+  // Step 3: Replace JSX components with placeholders (handles nested)
+  // Match opening tags, closing tags, and self-closing tags
+  content = content.replace(/<[A-Z][a-zA-Z]*[^>]*\/?>/g, (match) => createPlaceholder(match))
+  content = content.replace(/<\/[A-Z][a-zA-Z]*>/g, (match) => createPlaceholder(match))
+
+  // Step 4: Replace markdown links/images URLs (keep link text translatable)
+  content = content.replace(/\]\([^)]+\)/g, (match) => createPlaceholder(match))
+
+  // Step 5: Replace import statements
+  content = content.replace(/^import\s+.*$/gm, (match) => createPlaceholder(match))
+
+  // Now split remaining content into sections
   const sections: { type: "code" | "text"; content: string }[] = []
-  const codeBlockRegex = /(```[\s\S]*?```|`[^`\n]+`|<[A-Z][^>]*>[\s\S]*?<\/[A-Z][^>]*>|<[A-Z][^>]*\/>)/g
 
-  let lastIndex = 0
-  let match
-
-  while ((match = codeBlockRegex.exec(content)) !== null) {
-    // Add text before code block
-    if (match.index > lastIndex) {
-      const text = content.slice(lastIndex, match.index)
-      if (text.trim()) {
-        sections.push({ type: "text", content: text })
-      }
-    }
-    // Add code block (don't translate)
-    sections.push({ type: "code", content: match[0] })
-    lastIndex = match.index + match[0].length
-  }
-
-  // Add remaining text
-  if (lastIndex < content.length) {
-    const text = content.slice(lastIndex)
-    if (text.trim()) {
-      sections.push({ type: "text", content: text })
-    }
+  // Check if there's any text content left
+  if (content.trim()) {
+    sections.push({ type: "text", content })
   }
 
   return { frontmatter, sections }
@@ -176,7 +195,10 @@ async function translateMdxFile(
     }
   }
 
-  const translatedContent = translatedFrontmatter + translatedSections.join("")
+  // Restore placeholders (JSX components, code blocks, etc.)
+  const translatedContent = restorePlaceholders(
+    translatedFrontmatter + translatedSections.join("")
+  )
 
   // Determine output path
   const relativePath = path.relative(
