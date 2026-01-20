@@ -58,7 +58,7 @@
     "chalk": "^4.1.2",
     "chokidar": "^4.0.3",
     "commander": "^12.1.0",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.3",
     "ink": "^3.2.0",
     "inquirer": "^8.2.6",
     "js-yaml": "^4.1.0",
@@ -79,9 +79,9 @@
     "@eslint/js": "^9.39.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-prettier": "^5.5.5",
     "globals": "^16.5.0",
     "jest": "^30.2.0",
-    "prettier": "^3.7.4"
+    "prettier": "^3.8.0"
   }
 }
