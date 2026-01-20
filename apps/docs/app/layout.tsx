@@ -1,19 +1,23 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import { META_THEME_COLORS, siteConfig } from "@/lib/config"
+import { env } from "@/lib/env"
 import { fontVariables } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { LayoutProvider } from "@/hooks/use-layout"
 import { ActiveThemeProvider } from "@/components/active-theme"
 import { Analytics } from "@/components/analytics"
+import { DirectionProvider } from "@/components/direction-provider"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/registry/bases/radix/ui/sonner"
 
 import "@/styles/globals.css"
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://agileflow.dev"
+// Use validated environment variables
+const APP_URL = env.NEXT_PUBLIC_APP_URL
 
 export const metadata: Metadata = {
   title: {
@@ -61,15 +65,20 @@ export const metadata: Metadata = {
   manifest: `${siteConfig.url}/site.webmanifest`,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Get the nonce from middleware for CSP-compliant inline scripts
+  const headersList = await headers()
+  const nonce = headersList.get("x-nonce") ?? undefined
+
   return (
     <html lang="en" suppressHydrationWarning className={fontVariables}>
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -91,16 +100,18 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider>
-          <LayoutProvider>
-            <ActiveThemeProvider>
-              <NuqsAdapter>
-                {children}
-                <Toaster position="top-center" />
-              </NuqsAdapter>
-              <TailwindIndicator />
-              <Analytics />
-            </ActiveThemeProvider>
-          </LayoutProvider>
+          <DirectionProvider>
+            <LayoutProvider>
+              <ActiveThemeProvider>
+                <NuqsAdapter>
+                  {children}
+                  <Toaster position="top-center" />
+                </NuqsAdapter>
+                <TailwindIndicator />
+                <Analytics />
+              </ActiveThemeProvider>
+            </LayoutProvider>
+          </DirectionProvider>
         </ThemeProvider>
       </body>
     </html>

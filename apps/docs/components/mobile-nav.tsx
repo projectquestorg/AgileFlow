@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import Link, { type LinkProps } from "next/link"
-import { useRouter } from "next/navigation"
-import { ChevronRight } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
+import { ChevronRight, List } from "lucide-react"
 
 import { PAGES_NEW } from "@/lib/docs"
 import { showMcpDocs } from "@/lib/flags"
@@ -16,10 +16,50 @@ import {
   CollapsibleTrigger,
 } from "@/registry/new-york-v4/ui/collapsible"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/registry/new-york-v4/ui/popover"
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+  DrawerTitle,
+} from "@/registry/new-york-v4/ui/drawer"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+
+const SCROLL_POSITION_KEY = "agileflow-nav-scroll"
+
+// Hook for persisting scroll position across navigation
+function useScrollPersistence(open: boolean, contentRef: React.RefObject<HTMLDivElement | null>) {
+  const pathname = usePathname()
+
+  // Restore scroll position when drawer opens
+  React.useEffect(() => {
+    if (open && contentRef.current) {
+      try {
+        const saved = sessionStorage.getItem(SCROLL_POSITION_KEY)
+        if (saved) {
+          const positions = JSON.parse(saved) as Record<string, number>
+          const position = positions[pathname] ?? 0
+          contentRef.current.scrollTop = position
+        }
+      } catch {
+        // Ignore sessionStorage errors
+      }
+    }
+  }, [open, pathname, contentRef])
+
+  // Save scroll position on scroll
+  const handleScroll = React.useCallback(() => {
+    if (!contentRef.current) return
+    try {
+      const saved = sessionStorage.getItem(SCROLL_POSITION_KEY)
+      const positions = saved ? JSON.parse(saved) : {}
+      positions[pathname] = contentRef.current.scrollTop
+      sessionStorage.setItem(SCROLL_POSITION_KEY, JSON.stringify(positions))
+    } catch {
+      // Ignore sessionStorage errors
+    }
+  }, [pathname, contentRef])
+
+  return handleScroll
+}
 
 export function MobileNav({
   tree,
@@ -29,6 +69,8 @@ export function MobileNav({
   className?: string
 }) {
   const [open, setOpen] = React.useState(false)
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const handleScroll = useScrollPersistence(open, contentRef)
 
   // Helper to render pages within a folder, handling separators
   const renderFolderContents = (
@@ -83,8 +125,8 @@ export function MobileNav({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -92,6 +134,7 @@ export function MobileNav({
             "extend-touch-target size-8 touch-manipulation hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 active:bg-transparent dark:hover:bg-transparent",
             className
           )}
+          aria-label="Open navigation menu"
         >
           <div className="relative size-5">
             <span
@@ -109,15 +152,21 @@ export function MobileNav({
           </div>
           <span className="sr-only">Toggle Menu</span>
         </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="bg-background/90 no-scrollbar h-(--radix-popper-available-height) w-(--radix-popper-available-width) overflow-y-auto rounded-none border-none p-0 shadow-none backdrop-blur duration-100"
-        align="end"
-        side="bottom"
-        alignOffset={16}
-        sideOffset={14}
+      </DrawerTrigger>
+      <DrawerContent
+        className="max-h-[85vh] focus:outline-none"
+        aria-describedby={undefined}
       >
-        <div className="flex flex-col gap-4 overflow-auto px-6 py-6">
+        <VisuallyHidden>
+          <DrawerTitle>Navigation Menu</DrawerTitle>
+        </VisuallyHidden>
+        <nav
+          ref={contentRef}
+          onScroll={handleScroll}
+          className="flex flex-col gap-4 overflow-y-auto overscroll-contain px-6 py-4"
+          aria-label="Main navigation"
+          role="navigation"
+        >
           {/* External links */}
           <div className="flex flex-col gap-2">
             <a
@@ -209,9 +258,9 @@ export function MobileNav({
               )
             })}
           </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </nav>
+      </DrawerContent>
+    </Drawer>
   )
 }
 

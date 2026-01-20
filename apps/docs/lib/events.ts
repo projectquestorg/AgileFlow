@@ -17,6 +17,8 @@ const eventSchema = z.object({
     "copy_color",
     "set_layout",
     "search_query",
+    "search_result_click",
+    "search_recent_used",
     "create_app",
     "copy_create_share_url",
   ]),

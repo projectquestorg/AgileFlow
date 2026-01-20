@@ -1,0 +1,230 @@
+---
+title: Component Specification Templates
+description: Standardized templates for documenting UI components with props, accessibility, and usage examples.
+---
+
+import { ComponentSpec, CopyComponent } from "@/components/component-spec"
+
+# Component Specification Templates
+
+This guide covers how to document UI components using the standardized specification templates provided by AgileFlow.
+
+## Overview
+
+Each component should have:
+- **Props table** - Auto-generated from TypeScript types
+- **Import statement** - How to import the component
+- **Usage example** - Basic code example
+- **Accessibility checklist** - WCAG compliance status
+- **Copy button** - One-click component copying
+
+## Example Component Spec
+
+Here's an example of a fully documented component:
+
+<ComponentSpec
+  name="Button"
+  description="A versatile button component supporting multiple variants and sizes."
+  importStatement={`import { Button } from "@/components/ui/button"`}
+  props={[
+    {
+      name: "variant",
+      type: '"default" | "destructive" | "outline" | "secondary" | "ghost" | "link"',
+      description: "The visual style of the button",
+      default: '"default"',
+    },
+    {
+      name: "size",
+      type: '"default" | "sm" | "lg" | "icon"',
+      description: "The size of the button",
+      default: '"default"',
+    },
+    {
+      name: "asChild",
+      type: "boolean",
+      description: "Render as child component (for composition)",
+      default: "false",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description: "Whether the button is disabled",
+      default: "false",
+    },
+  ]}
+  usageExample={`<Button variant="default" size="sm">
+  Click me
+</Button>
+
+<Button variant="destructive" disabled>
+  Delete
+</Button>
+
+<Button asChild>
+  <a href="/docs">Go to Docs</a>
+</Button>`}
+  accessibility={[
+    {
+      label: "Keyboard accessible",
+      status: "pass",
+      description: "Can be activated with Enter or Space key",
+    },
+    {
+      label: "Focus visible",
+      status: "pass",
+      description: "Has visible focus ring for keyboard users",
+    },
+    {
+      label: "Disabled state announced",
+      status: "pass",
+      description: "Screen readers announce disabled state",
+    },
+    {
+      label: "Touch target size",
+      status: "pass",
+      description: "Meets 44x44px minimum for mobile",
+    },
+    {
+      label: "Loading state",
+      status: "warn",
+      description: "Consider adding aria-busy for async actions",
+    },
+  ]}
+/>
+
+## Using the Templates
+
+### In MDX Files
+
+Import the `ComponentSpec` component:
+
+```tsx
+import { ComponentSpec, CopyComponent } from "@/components/component-spec"
+
+<ComponentSpec
+  name="MyComponent"
+  description="Component description"
+  importStatement={'import { MyComponent } from "@/components/my-component"'}
+  props={[
+    {
+      name: "propName",
+      type: "string",
+      description: "What the prop does",
+      required: true,
+    },
+  ]}
+  usageExample={'<MyComponent propName="value" />'}
+  accessibility={[
+    { label: "Check 1", status: "pass" },
+    { label: "Check 2", status: "warn", description: "Details" },
+  ]}
+/>
+```
+
+### Props Table Schema
+
+```typescript
+interface PropDefinition {
+  name: string       // Prop name
+  type: string       // TypeScript type
+  description: string // What the prop does
+  required?: boolean // Is it required?
+  default?: string   // Default value
+}
+```
+
+### Accessibility Checklist Schema
+
+```typescript
+interface AccessibilityItem {
+  label: string              // Check name
+  status: "pass" | "warn" | "info"
+  description?: string       // Additional details
+}
+```
+
+## Standard Accessibility Checks
+
+Use these common checks for consistency:
+
+### Interactive Components
+- Keyboard accessible (Enter/Space)
+- Focus visible
+- Focus order logical
+- Touch target >= 44x44px
+
+### Form Components
+- Labels associated
+- Error messages announced
+- Required fields indicated
+- Invalid state conveyed
+
+### Content Components
+- Color contrast >= 4.5:1
+- Text resizable
+- Motion reduceable
+- Alt text present
+
+## One-Click Copy Feature
+
+Add a copy button for the full component code:
+
+<CopyComponent
+  name="Button"
+  code={`import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center...",
+  {
+    variants: {
+      variant: { default: "...", destructive: "..." },
+      size: { default: "...", sm: "...", lg: "..." },
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }`}
+/>
+
+## Best Practices
+
+1. **Keep props minimal** - Only document public API props
+2. **Use accurate types** - Copy types from source code
+3. **Test accessibility** - Verify claims before marking pass
+4. **Update regularly** - Keep specs in sync with code
+5. **Link to source** - Reference GitHub source when possible
+
+## Migration Guide
+
+To apply this template to existing docs:
+
+1. Import `ComponentSpec` at the top of the MDX file
+2. Extract props from component TypeScript
+3. Add usage example from existing code
+4. Run accessibility audit
+5. Replace old documentation with `<ComponentSpec />`
+
+See [Button](/components/button), [Card](/components/card), [Input](/components/input), [Dialog](/components/dialog), and [Select](/components/select) for live examples.
