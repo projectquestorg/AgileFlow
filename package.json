@@ -21,7 +21,9 @@
     "sync-counts:check": "node scripts/sync-counts.js --check",
     "validate-docs": "node scripts/validate-docs.js",
     "validate-docs:ci": "node scripts/validate-docs.js --ci",
-    "validate": "npm run sync-counts:check && npm run validate-docs:ci"
+    "validate": "npm run sync-counts:check && npm run validate-docs:ci",
+    "check": "bash packages/cli/scripts/pre-push-check.sh",
+    "precheck": "cd packages/cli && npm run lint && npm test"
   },
   "repository": {
     "type": "git",
