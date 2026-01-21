@@ -155,6 +155,11 @@ class SessionRegistry extends EventEmitter {
    * @returns {Object} Registry data
    */
   loadSync() {
+    // Return cached data if within TTL (performance optimization)
+    if (this._cache && Date.now() - this._cacheTime < this.cacheTTL) {
+      return this._cache;
+    }
+
     this._ensureDir();
     const result = this._jsonFile.readSync();
 
@@ -165,6 +170,14 @@ class SessionRegistry extends EventEmitter {
     }
 
     return this._createDefaultRegistry();
+  }
+
+  /**
+   * Invalidate cache (call after external modifications)
+   */
+  invalidateCache() {
+    this._cache = null;
+    this._cacheTime = 0;
   }
 
   /**
