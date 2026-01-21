@@ -806,4 +806,311 @@ describe('PlaceholderRegistry', () => {
       expect(content).toContain("emit('pluginLoaded'");
     });
   });
+
+  describe('Schema Versioning', () => {
+    let PlaceholderRegistry, SCHEMA_VERSION, SCHEMA_MIGRATIONS;
+    let registry;
+
+    beforeAll(() => {
+      const mod = require('../../lib/placeholder-registry');
+      PlaceholderRegistry = mod.PlaceholderRegistry;
+      SCHEMA_VERSION = mod.SCHEMA_VERSION;
+      SCHEMA_MIGRATIONS = mod.SCHEMA_MIGRATIONS;
+    });
+
+    beforeEach(() => {
+      registry = new PlaceholderRegistry();
+    });
+
+    test('exports SCHEMA_VERSION constant', () => {
+      expect(typeof SCHEMA_VERSION).toBe('number');
+      expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(1);
+    });
+
+    test('exports SCHEMA_MIGRATIONS object', () => {
+      expect(typeof SCHEMA_MIGRATIONS).toBe('object');
+    });
+
+    test('getSchemaVersion returns current version', () => {
+      expect(PlaceholderRegistry.getSchemaVersion()).toBe(SCHEMA_VERSION);
+    });
+
+    describe('serialize()', () => {
+      test('returns serializable configuration', () => {
+        registry.register('TEST', () => 'value', {
+          type: 'string',
+          description: 'Test placeholder',
+        });
+
+        const serialized = registry.serialize();
+
+        expect(serialized.schemaVersion).toBe(SCHEMA_VERSION);
+        expect(serialized.registryOptions).toBeDefined();
+        expect(serialized.placeholders).toBeDefined();
+        expect(serialized.placeholders.TEST).toBeDefined();
+        expect(serialized.placeholders.TEST.name).toBe('TEST');
+        expect(serialized.placeholders.TEST.type).toBe('string');
+      });
+
+      test('includes registry options', () => {
+        const r = new PlaceholderRegistry({
+          cache: false,
+          strict: false,
+          secure: false,
+        });
+
+        const serialized = r.serialize();
+
+        expect(serialized.registryOptions.cacheEnabled).toBe(false);
+        expect(serialized.registryOptions.strictMode).toBe(false);
+        expect(serialized.registryOptions.secureByDefault).toBe(false);
+      });
+
+      test('includes plugin list', () => {
+        registry.extend('myplugin', {
+          register: api => {
+            api.register('VALUE', () => 'test', { type: 'string' });
+          },
+        });
+
+        const serialized = registry.serialize();
+
+        expect(serialized.plugins).toContain('myplugin');
+      });
+    });
+
+    describe('toJSON()', () => {
+      test('returns valid JSON string', () => {
+        registry.register('TEST', () => 'value', { type: 'string' });
+
+        const json = registry.toJSON();
+
+        expect(typeof json).toBe('string');
+        expect(() => JSON.parse(json)).not.toThrow();
+      });
+
+      test('respects spaces parameter', () => {
+        registry.register('TEST', () => 'value', { type: 'string' });
+
+        const compact = registry.toJSON(0);
+        const pretty = registry.toJSON(2);
+
+        expect(pretty.length).toBeGreaterThan(compact.length);
+      });
+    });
+
+    describe('validateConfig()', () => {
+      test('returns valid for correct config', () => {
+        const config = {
+          schemaVersion: SCHEMA_VERSION,
+          placeholders: {
+            TEST: { name: 'TEST', type: 'string' },
+          },
+        };
+
+        const result = PlaceholderRegistry.validateConfig(config);
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+      });
+
+      test('returns invalid for non-object', () => {
+        expect(PlaceholderRegistry.validateConfig(null).valid).toBe(false);
+        expect(PlaceholderRegistry.validateConfig('string').valid).toBe(false);
+      });
+
+      test('returns error for future schema version', () => {
+        const config = {
+          schemaVersion: SCHEMA_VERSION + 100,
+        };
+
+        const result = PlaceholderRegistry.validateConfig(config);
+
+        expect(result.valid).toBe(false);
+        expect(result.errors[0]).toContain('newer than supported');
+      });
+
+      test('returns error for missing placeholder name', () => {
+        const config = {
+          placeholders: {
+            TEST: { type: 'string' },
+          },
+        };
+
+        const result = PlaceholderRegistry.validateConfig(config);
+
+        expect(result.valid).toBe(false);
+        expect(result.errors[0]).toContain('missing required field: name');
+      });
+
+      test('returns error for invalid placeholder type', () => {
+        const config = {
+          placeholders: {
+            TEST: { name: 'TEST', type: 'invalid_type' },
+          },
+        };
+
+        const result = PlaceholderRegistry.validateConfig(config);
+
+        expect(result.valid).toBe(false);
+        expect(result.errors[0]).toContain('invalid type');
+      });
+    });
+
+    describe('migrateConfig()', () => {
+      test('returns same config if already current version', () => {
+        const config = { schemaVersion: SCHEMA_VERSION, data: 'test' };
+
+        const migrated = PlaceholderRegistry.migrateConfig(config);
+
+        expect(migrated.schemaVersion).toBe(SCHEMA_VERSION);
+        expect(migrated.data).toBe('test');
+      });
+
+      test('applies migration for v1 config', () => {
+        const config = { schemaVersion: 1, name: 'TEST' };
+
+        const migrated = PlaceholderRegistry.migrateConfig(config);
+
+        expect(migrated.schemaVersion).toBe(SCHEMA_VERSION);
+        expect(migrated.contextMetadata).toBeDefined();
+        expect(migrated.validatorName).toBeNull();
+      });
+
+      test('migrates config without schemaVersion (assumes v1)', () => {
+        const config = { name: 'TEST' };
+
+        const migrated = PlaceholderRegistry.migrateConfig(config);
+
+        expect(migrated.schemaVersion).toBe(SCHEMA_VERSION);
+      });
+    });
+
+    describe('needsMigration()', () => {
+      test('returns true for old version', () => {
+        expect(PlaceholderRegistry.needsMigration({ schemaVersion: 1 })).toBe(true);
+      });
+
+      test('returns false for current version', () => {
+        expect(PlaceholderRegistry.needsMigration({ schemaVersion: SCHEMA_VERSION })).toBe(false);
+      });
+
+      test('assumes v1 for missing schemaVersion', () => {
+        expect(PlaceholderRegistry.needsMigration({})).toBe(true);
+      });
+    });
+
+    describe('deserialize()', () => {
+      test('creates registry from serialized config', () => {
+        const config = {
+          schemaVersion: SCHEMA_VERSION,
+          registryOptions: {
+            cacheEnabled: false,
+          },
+          placeholders: {
+            TEST: {
+              name: 'TEST',
+              type: 'string',
+              description: 'Test placeholder',
+            },
+          },
+        };
+
+        const resolvers = {
+          TEST: () => 'test value',
+        };
+
+        const newRegistry = PlaceholderRegistry.deserialize(config, resolvers);
+
+        expect(newRegistry.has('TEST')).toBe(true);
+        expect(newRegistry.resolve('TEST')).toBe('test value');
+      });
+
+      test('throws on invalid config', () => {
+        expect(() => PlaceholderRegistry.deserialize(null)).toThrow('Invalid configuration');
+      });
+
+      test('migrates old config automatically', () => {
+        const config = {
+          schemaVersion: 1,
+          placeholders: {
+            TEST: {
+              name: 'TEST',
+              type: 'count',
+            },
+          },
+        };
+
+        const resolvers = {
+          TEST: () => 42,
+        };
+
+        const newRegistry = PlaceholderRegistry.deserialize(config, resolvers);
+
+        expect(newRegistry.has('TEST')).toBe(true);
+      });
+
+      test('skips placeholders without resolvers', () => {
+        const config = {
+          schemaVersion: SCHEMA_VERSION,
+          placeholders: {
+            TEST: { name: 'TEST', type: 'string' },
+          },
+        };
+
+        const newRegistry = PlaceholderRegistry.deserialize(config, {});
+
+        expect(newRegistry.has('TEST')).toBe(false);
+      });
+    });
+
+    describe('fromJSON()', () => {
+      test('parses JSON and creates registry', () => {
+        const config = {
+          schemaVersion: SCHEMA_VERSION,
+          placeholders: {
+            TEST: { name: 'TEST', type: 'string' },
+          },
+        };
+
+        const resolvers = { TEST: () => 'value' };
+        const json = JSON.stringify(config);
+
+        const newRegistry = PlaceholderRegistry.fromJSON(json, resolvers);
+
+        expect(newRegistry.has('TEST')).toBe(true);
+      });
+
+      test('throws on invalid JSON', () => {
+        expect(() => PlaceholderRegistry.fromJSON('invalid json', {})).toThrow();
+      });
+    });
+
+    describe('round-trip serialization', () => {
+      test('serialize and deserialize preserves configuration', () => {
+        registry.register('COUNT', () => 42, {
+          type: 'count',
+          description: 'A counter',
+        });
+        registry.register('TEXT', () => 'hello', {
+          type: 'string',
+          description: 'A text value',
+          cacheable: false,
+        });
+
+        const serialized = registry.serialize();
+        const resolvers = {
+          COUNT: () => 42,
+          TEXT: () => 'hello',
+        };
+
+        const restored = PlaceholderRegistry.deserialize(serialized, resolvers);
+
+        expect(restored.has('COUNT')).toBe(true);
+        expect(restored.has('TEXT')).toBe(true);
+        expect(restored.resolve('COUNT')).toBe(42);
+        expect(restored.resolve('TEXT')).toBe('hello');
+      });
+    });
+  });
 });

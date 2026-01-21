@@ -40,6 +40,29 @@ const {
  */
 
 /**
+ * Schema version for serialization compatibility
+ * Increment when making breaking changes to serialized format
+ *
+ * Version history:
+ * - 1: Initial schema with name, type, description, secure, cacheable, source
+ * - 2: Added validator serialization support, context metadata
+ */
+const SCHEMA_VERSION = 2;
+
+/**
+ * Schema migrations for upgrading old configurations
+ */
+const SCHEMA_MIGRATIONS = {
+  // Migrate from v1 to v2
+  1: config => ({
+    ...config,
+    schemaVersion: 2,
+    contextMetadata: config.contextMetadata || {},
+    validatorName: config.validatorName || null,
+  }),
+};
+
+/**
  * Default resolver types with their sanitization rules
  */
 const RESOLVER_TYPES = {
@@ -470,6 +493,186 @@ class PlaceholderRegistry extends EventEmitter {
     // Could be extended to include context hash
     return name;
   }
+
+  // ===========================================================================
+  // Schema Versioning and Serialization
+  // ===========================================================================
+
+  /**
+   * Get current schema version
+   * @returns {number}
+   */
+  static getSchemaVersion() {
+    return SCHEMA_VERSION;
+  }
+
+  /**
+   * Serialize registry configuration for persistence
+   * @returns {Object} Serializable configuration
+   */
+  serialize() {
+    const configs = {};
+
+    for (const [name, config] of this._resolvers) {
+      configs[name] = {
+        schemaVersion: SCHEMA_VERSION,
+        name: config.name,
+        description: config.description,
+        type: config.type,
+        secure: config.secure,
+        cacheable: config.cacheable,
+        source: config.source,
+        contextMetadata: config.contextMetadata || {},
+        validatorName: config.validatorName || null,
+        // Note: resolver function cannot be serialized - must be re-registered
+      };
+    }
+
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      registryOptions: {
+        cacheEnabled: this.cacheEnabled,
+        strictMode: this.strictMode,
+        secureByDefault: this.secureByDefault,
+      },
+      placeholders: configs,
+      plugins: Array.from(this._plugins.keys()),
+    };
+  }
+
+  /**
+   * Export configuration as JSON string
+   * @param {number} [spaces=2] - JSON indentation
+   * @returns {string}
+   */
+  toJSON(spaces = 2) {
+    return JSON.stringify(this.serialize(), null, spaces);
+  }
+
+  /**
+   * Migrate configuration to current schema version
+   * @param {Object} config - Configuration to migrate
+   * @returns {Object} Migrated configuration
+   */
+  static migrateConfig(config) {
+    let migrated = { ...config };
+    let version = config.schemaVersion || 1;
+
+    // Apply migrations sequentially
+    while (version < SCHEMA_VERSION) {
+      const migration = SCHEMA_MIGRATIONS[version];
+      if (migration) {
+        migrated = migration(migrated);
+      }
+      version++;
+    }
+
+    return migrated;
+  }
+
+  /**
+   * Validate configuration against current schema
+   * @param {Object} config - Configuration to validate
+   * @returns {{valid: boolean, errors: string[]}}
+   */
+  static validateConfig(config) {
+    const errors = [];
+
+    if (!config || typeof config !== 'object') {
+      return { valid: false, errors: ['Configuration must be an object'] };
+    }
+
+    // Check schema version
+    if (config.schemaVersion && config.schemaVersion > SCHEMA_VERSION) {
+      errors.push(
+        `Configuration schema version ${config.schemaVersion} is newer than supported ${SCHEMA_VERSION}`
+      );
+    }
+
+    // Validate required fields for placeholder configs
+    if (config.placeholders) {
+      for (const [name, placeholder] of Object.entries(config.placeholders)) {
+        if (!placeholder.name) {
+          errors.push(`Placeholder "${name}" missing required field: name`);
+        }
+        if (!placeholder.type) {
+          errors.push(`Placeholder "${name}" missing required field: type`);
+        }
+        if (placeholder.type && !RESOLVER_TYPES[placeholder.type]) {
+          errors.push(`Placeholder "${name}" has invalid type: ${placeholder.type}`);
+        }
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  /**
+   * Load configuration from serialized data
+   * Note: Only loads metadata - resolvers must be re-registered
+   * @param {Object} data - Serialized configuration
+   * @param {Object} [resolvers={}] - Map of resolver functions by name
+   * @returns {PlaceholderRegistry} New registry instance
+   */
+  static deserialize(data, resolvers = {}) {
+    // Validate
+    const validation = PlaceholderRegistry.validateConfig(data);
+    if (!validation.valid) {
+      throw new Error(`Invalid configuration: ${validation.errors.join(', ')}`);
+    }
+
+    // Migrate if needed
+    const migrated = PlaceholderRegistry.migrateConfig(data);
+
+    // Create registry with options
+    const options = migrated.registryOptions || {};
+    const registry = new PlaceholderRegistry({
+      cache: options.cacheEnabled,
+      strict: options.strictMode,
+      secure: options.secureByDefault,
+    });
+
+    // Register placeholders with provided resolvers
+    if (migrated.placeholders) {
+      for (const [name, config] of Object.entries(migrated.placeholders)) {
+        const resolver = resolvers[name];
+        if (resolver) {
+          registry.register(name, resolver, {
+            description: config.description,
+            type: config.type,
+            secure: config.secure,
+            cacheable: config.cacheable,
+            source: config.source,
+            contextMetadata: config.contextMetadata,
+            validatorName: config.validatorName,
+          });
+        }
+      }
+    }
+
+    return registry;
+  }
+
+  /**
+   * Parse JSON configuration and create registry
+   * @param {string} json - JSON string
+   * @param {Object} [resolvers={}] - Map of resolver functions by name
+   * @returns {PlaceholderRegistry}
+   */
+  static fromJSON(json, resolvers = {}) {
+    const data = JSON.parse(json);
+    return PlaceholderRegistry.deserialize(data, resolvers);
+  }
+
+  /**
+   * Check if configuration needs migration
+   * @param {Object} config - Configuration to check
+   * @returns {boolean}
+   */
+  static needsMigration(config) {
+    const version = config.schemaVersion || 1;
+    return version < SCHEMA_VERSION;
+  }
 }
 
 // =============================================================================
@@ -608,6 +811,8 @@ function resetRegistry() {
 module.exports = {
   PlaceholderRegistry,
   RESOLVER_TYPES,
+  SCHEMA_VERSION,
+  SCHEMA_MIGRATIONS,
   createCountResolver,
   createListResolver,
   createStaticResolver,
