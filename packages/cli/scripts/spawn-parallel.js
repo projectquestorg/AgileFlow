@@ -306,7 +306,13 @@ function spawn(args) {
     console.log(warning('tmux not found, screen support not yet implemented.'));
     outputCommands(createdSessions, { init, dangerous, prompt });
   } else {
-    console.log(warning('Neither tmux nor screen found.'));
+    console.log(warning('Neither tmux nor screen found. Outputting manual commands.'));
+    console.log(dim('  Tip: Install tmux for automatic session management:'));
+    console.log(dim('    • macOS: brew install tmux'));
+    console.log(dim('    • Ubuntu/Debian: sudo apt install tmux'));
+    console.log(dim('    • Fedora/RHEL: sudo dnf install tmux'));
+    console.log(dim('    • No sudo? Try: conda install -c conda-forge tmux'));
+    console.log('');
     outputCommands(createdSessions, { init, dangerous, prompt });
   }
 
