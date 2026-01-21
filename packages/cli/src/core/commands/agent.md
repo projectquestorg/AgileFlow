@@ -124,3 +124,123 @@ ACTIONS
 3) Print a persona snippet to paste as that terminal's system prompt.
 
 Diff-first; YES/NO.
+
+---
+
+## Expected Output
+
+### Successful Agent Onboarding
+
+```
+📋 Onboarding New Agent: AG-UI
+
+AGENT_ID: AG-UI
+ROLE: Frontend Developer
+TOOLS: Read, Write, Edit, Bash, Glob
+SCOPE:
+  - Directories: src/components/, src/pages/
+  - Story Tags: frontend, ui, ux
+
+Files to create:
+───────────────────────────────────────────────
+1. docs/02-practices/prompts/agents/agent-AG-UI.md
+
+Preview:
+─────────────────────────────────────────────
+---
+agent_id: AG-UI
+role: Frontend Developer
+tools: [Read, Write, Edit, Bash, Glob]
+scope:
+  directories: [src/components/, src/pages/]
+  story_tags: [frontend, ui, ux]
+---
+
+# AG-UI: Frontend Developer Agent
+
+## Responsibilities
+Build and maintain user interface components, pages, and styling.
+
+## System Prompt (Contract)
+**Scope**: Only modify files in src/components/ and src/pages/
+**Testing**: Run `npm test` before committing
+**Commits**: Prefix with "feat(ui):" or "fix(ui):"
+**Status**: Update status.json after completing stories
+─────────────────────────────────────────────
+
+2. docs/09-agents/roster.yaml (update)
+
+   + agents:
+   +   - id: AG-UI
+   +     role: Frontend Developer
+   +     tools: [Read, Write, Edit, Bash, Glob]
+   +     scope:
+   +       directories: [src/components/, src/pages/]
+   +       story_tags: [frontend, ui, ux]
+
+[AskUserQuestion: "Create this agent profile?"]
+
+✅ Agent onboarded successfully!
+   Profile: docs/02-practices/prompts/agents/agent-AG-UI.md
+   Roster: docs/09-agents/roster.yaml updated
+
+📝 System Prompt Snippet (paste into terminal):
+
+You are AG-UI, a Frontend Developer agent.
+Your scope is limited to: src/components/, src/pages/
+You work on stories tagged: frontend, ui, ux
+Always run tests before committing.
+Always update status.json after completing work.
+```
+
+### Missing Required Inputs
+
+```
+❌ Missing required inputs
+
+Please provide:
+  • AGENT_ID - Agent identifier (e.g., AG-UI, AG-API)
+  • ROLE - Agent role description (e.g., "Frontend Developer")
+
+Optional:
+  • TOOLS - Available tools (default: Read, Write, Edit, Bash, Glob)
+  • SCOPE - Directories and story tags
+
+Usage:
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Edit,Bash,Glob" SCOPE="src/components/,frontend"
+```
+
+### Agent Already Exists
+
+```
+⚠️ Agent already exists: AG-UI
+
+Existing agent profile: docs/02-practices/prompts/agents/agent-AG-UI.md
+
+Options:
+  1. Update existing agent profile
+  2. Create new agent with different ID
+  3. Cancel
+
+[AskUserQuestion: "How to proceed?"]
+```
+
+### Roster File Created
+
+```
+📋 Onboarding New Agent: AG-API
+
+Note: docs/09-agents/roster.yaml does not exist.
+Creating new roster file.
+
+Files to create:
+───────────────────────────────────────────────
+1. docs/02-practices/prompts/agents/agent-AG-API.md
+2. docs/09-agents/roster.yaml (NEW)
+
+[AskUserQuestion: "Create agent profile and roster?"]
+
+✅ Agent onboarded successfully!
+   Profile: docs/02-practices/prompts/agents/agent-AG-API.md
+   Roster: docs/09-agents/roster.yaml created
+```
