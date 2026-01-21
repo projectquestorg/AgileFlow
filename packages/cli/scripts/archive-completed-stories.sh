@@ -12,6 +12,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Source JSON utilities if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/lib/json-utils.sh" ]]; then
+  source "$SCRIPT_DIR/lib/json-utils.sh"
+fi
+
 # Default paths (relative to project root)
 DOCS_DIR="docs"
 STATUS_FILE="$DOCS_DIR/09-agents/status.json"
@@ -45,12 +51,17 @@ THRESHOLD_DAYS=7
 ENABLED=true
 
 if [[ -f "$METADATA_FILE" ]]; then
-  if command -v jq &> /dev/null; then
+  # Use safeJsonParse if available (from json-utils.sh), otherwise fallback
+  if declare -f safeJsonParse > /dev/null; then
+    ENABLED=$(safeJsonParse "$METADATA_FILE" ".archival.enabled" "true")
+    THRESHOLD_DAYS=$(safeJsonParse "$METADATA_FILE" ".archival.threshold_days" "7")
+  elif command -v jq &> /dev/null; then
     ENABLED=$(jq -r '.archival.enabled // true' "$METADATA_FILE")
     THRESHOLD_DAYS=$(jq -r '.archival.threshold_days // 7' "$METADATA_FILE")
   elif command -v node &> /dev/null; then
-    ENABLED=$(node -pe "JSON.parse(require('fs').readFileSync('$METADATA_FILE', 'utf8')).archival?.enabled ?? true")
-    THRESHOLD_DAYS=$(node -pe "JSON.parse(require('fs').readFileSync('$METADATA_FILE', 'utf8')).archival?.threshold_days ?? 7")
+    # Security: Pass file path via environment variable, not string interpolation
+    ENABLED=$(METADATA_PATH="$METADATA_FILE" node -pe "JSON.parse(require('fs').readFileSync(process.env.METADATA_PATH, 'utf8')).archival?.enabled ?? true" 2>/dev/null || echo "true")
+    THRESHOLD_DAYS=$(METADATA_PATH="$METADATA_FILE" node -pe "JSON.parse(require('fs').readFileSync(process.env.METADATA_PATH, 'utf8')).archival?.threshold_days ?? 7" 2>/dev/null || echo "7")
   fi
 fi
 
@@ -63,6 +74,15 @@ echo -e "${BLUE}Starting auto-archival (threshold: $THRESHOLD_DAYS days)...${NC}
 
 # Create archive directory if needed
 mkdir -p "$ARCHIVE_DIR"
+
+# Security: Validate archive directory is not a symlink pointing outside project
+if [[ -L "$ARCHIVE_DIR" ]]; then
+  RESOLVED_ARCHIVE=$(readlink -f "$ARCHIVE_DIR" 2>/dev/null || realpath "$ARCHIVE_DIR" 2>/dev/null)
+  if [[ ! "$RESOLVED_ARCHIVE" == "$PROJECT_ROOT"* ]]; then
+    echo -e "${RED}Error: Archive directory symlink points outside project. Aborting.${NC}"
+    exit 1
+  fi
+fi
 
 # Calculate cutoff date (threshold days ago)
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -118,6 +138,12 @@ for (const [storyId, story] of Object.entries(toArchive)) {
   const date = new Date(story.completed_at);
   const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
+  // Security: Validate monthKey matches expected format (YYYY-MM) to prevent path traversal
+  if (!/^\d{4}-\d{2}$/.test(monthKey)) {
+    console.error(`\x1b[31mSkipping story ${storyId}: invalid date format\x1b[0m`);
+    continue;
+  }
+
   if (!byMonth[monthKey]) {
     byMonth[monthKey] = {
       month: monthKey,
@@ -133,10 +159,22 @@ for (const [storyId, story] of Object.entries(toArchive)) {
 for (const [monthKey, archiveData] of Object.entries(byMonth)) {
   const archiveFile = path.join(archiveDir, `${monthKey}.json`);
 
+  // Security: Verify resolved path stays within archive directory
+  const resolvedPath = path.resolve(archiveFile);
+  const resolvedArchiveDir = path.resolve(archiveDir);
+  if (!resolvedPath.startsWith(resolvedArchiveDir + path.sep) && resolvedPath !== resolvedArchiveDir) {
+    console.error(`\x1b[31mSecurity: Archive path ${archiveFile} escapes archive directory. Skipping.\x1b[0m`);
+    continue;
+  }
+
   // Merge with existing archive if it exists
   if (fs.existsSync(archiveFile)) {
-    const existing = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
-    archiveData.stories = { ...existing.stories, ...archiveData.stories };
+    try {
+      const existing = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
+      archiveData.stories = { ...existing.stories, ...archiveData.stories };
+    } catch (e) {
+      console.error(`\x1b[31mWarning: Could not parse existing ${monthKey}.json, will overwrite\x1b[0m`);
+    }
   }
 
   fs.writeFileSync(archiveFile, JSON.stringify(archiveData, null, 2));

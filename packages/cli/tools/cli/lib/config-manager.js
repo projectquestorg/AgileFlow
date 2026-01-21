@@ -13,6 +13,7 @@
 const path = require('path');
 const fs = require('fs-extra');
 const { safeLoad, safeDump } = require('../../../lib/yaml-utils');
+const { hasUnsafePathPatterns } = require('../../../lib/validate-paths');
 
 /**
  * Configuration schema definition
@@ -50,13 +51,27 @@ const CONFIG_SCHEMA = {
     type: 'string',
     default: '.agileflow',
     required: true,
-    validate: v => typeof v === 'string' && v.length > 0 && !v.includes('..'),
+    // Security: Use proper path validation instead of simple string check
+    validate: v => {
+      if (typeof v !== 'string' || v.length === 0) return false;
+      // Must be a relative path without unsafe patterns
+      if (path.isAbsolute(v)) return false;
+      const check = hasUnsafePathPatterns(v);
+      return check.safe;
+    },
   },
   docsFolder: {
     type: 'string',
     default: 'docs',
     required: true,
-    validate: v => typeof v === 'string' && v.length > 0 && !v.includes('..'),
+    // Security: Use proper path validation instead of simple string check
+    validate: v => {
+      if (typeof v !== 'string' || v.length === 0) return false;
+      // Must be a relative path without unsafe patterns
+      if (path.isAbsolute(v)) return false;
+      const check = hasUnsafePathPatterns(v);
+      return check.safe;
+    },
   },
   installedAt: {
     type: 'string',

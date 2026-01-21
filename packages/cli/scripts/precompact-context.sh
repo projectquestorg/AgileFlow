@@ -74,16 +74,29 @@ if [ -f "docs/09-agents/session-state.json" ]; then
     fi
 
     if [ ! -z "$COMMAND_FILE" ]; then
-      SUMMARY=$(node -e "
-        const fs = require('fs');
-        const content = fs.readFileSync('$COMMAND_FILE', 'utf8');
-        const match = content.match(/<!-- COMPACT_SUMMARY_START[\\s\\S]*?-->([\\s\\S]*?)<!-- COMPACT_SUMMARY_END -->/);
-        if (match) {
-          console.log('## ACTIVE COMMAND: /agileflow:${ACTIVE_COMMAND}');
-          console.log('');
-          console.log(match[1].trim());
-        }
-      " 2>/dev/null || echo "")
+      # Security: Validate COMMAND_FILE contains only safe characters (alphanumeric, /, -, _, .)
+      # and doesn't contain path traversal sequences
+      if [[ "$COMMAND_FILE" =~ ^[a-zA-Z0-9/_.-]+$ ]] && [[ ! "$COMMAND_FILE" =~ \.\. ]]; then
+        SUMMARY=$(COMMAND_FILE_PATH="$COMMAND_FILE" ACTIVE_CMD="$ACTIVE_COMMAND" node -e "
+          const fs = require('fs');
+          const filePath = process.env.COMMAND_FILE_PATH;
+          const activeCmd = process.env.ACTIVE_CMD;
+          // Double-check: only allow paths within expected directories
+          const allowedPrefixes = ['packages/cli/src/core/commands/', '.agileflow/commands/', '.claude/commands/agileflow/'];
+          if (!allowedPrefixes.some(p => filePath.startsWith(p))) {
+            process.exit(1);
+          }
+          try {
+            const content = fs.readFileSync(filePath, 'utf8');
+            const match = content.match(/<!-- COMPACT_SUMMARY_START[\\s\\S]*?-->([\\s\\S]*?)<!-- COMPACT_SUMMARY_END -->/);
+            if (match) {
+              console.log('## ACTIVE COMMAND: /agileflow:' + activeCmd);
+              console.log('');
+              console.log(match[1].trim());
+            }
+          } catch (e) {}
+        " 2>/dev/null || echo "")
+      fi
 
       if [ ! -z "$SUMMARY" ]; then
         COMMAND_SUMMARIES="${COMMAND_SUMMARIES}
