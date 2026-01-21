@@ -471,6 +471,25 @@ function createSession(options = {}) {
     }
   }
 
+  // Copy Claude Code and AgileFlow config folders (gitignored contents won't copy with worktree)
+  // Note: The folder may exist with some tracked files, but gitignored subfolders (commands/, agents/) won't be there
+  const configFolders = ['.claude', '.agileflow'];
+  const copiedFolders = [];
+  for (const folder of configFolders) {
+    const src = path.join(ROOT, folder);
+    const dest = path.join(worktreePath, folder);
+    if (fs.existsSync(src)) {
+      try {
+        // Use force to overwrite existing files, recursive for subdirs
+        fs.cpSync(src, dest, { recursive: true, force: true });
+        copiedFolders.push(folder);
+      } catch (e) {
+        // Non-fatal: log but continue
+        console.warn(`Warning: Could not copy ${folder}: ${e.message}`);
+      }
+    }
+  }
+
   // Register session - worktree sessions are always parallel threads
   registry.next_id++;
   registry.sessions[sessionId] = {
@@ -494,6 +513,7 @@ function createSession(options = {}) {
     thread_type: registry.sessions[sessionId].thread_type,
     command: `cd "${worktreePath}" && claude`,
     envFilesCopied: copiedEnvFiles,
+    foldersCopied: copiedFolders,
   };
 }
 

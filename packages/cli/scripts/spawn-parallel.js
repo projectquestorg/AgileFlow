@@ -267,12 +267,16 @@ function spawn(args) {
       branch: result.branch,
       nickname: sessionSpec.nickname,
       envFilesCopied: result.envFilesCopied || [],
+      foldersCopied: result.foldersCopied || [],
     });
 
-    const envInfo = result.envFilesCopied?.length
-      ? dim(` (copied: ${result.envFilesCopied.join(', ')})`)
-      : '';
-    console.log(success(`  ✓ Session ${result.sessionId}: ${sessionSpec.nickname}${envInfo}`));
+    // Show what was copied
+    const copied = [
+      ...(result.envFilesCopied || []),
+      ...(result.foldersCopied || []),
+    ];
+    const copyInfo = copied.length ? dim(` (copied: ${copied.join(', ')})`) : '';
+    console.log(success(`  ✓ Session ${result.sessionId}: ${sessionSpec.nickname}${copyInfo}`));
   }
 
   if (createdSessions.length === 0) {
