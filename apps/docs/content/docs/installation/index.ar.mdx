@@ -1,0 +1,181 @@
+---
+title: تثبيت
+description: احصل على إعداد AgileFlow في مشروعك في أقل من دقيقة.
+---
+
+# تثبيت
+
+يتم توزيع AgileFlow كحزمة npm يتم تثبيتها مباشرة في مشروعك، مع إضافة أوامر الشرطة المائلة والوكلاء وبنية المشروع.
+
+## المتطلبات الأساسية
+
+- **Node.js** 18.0 أو أعلى
+- **Claude Code**, **Cursor**, **Windsurf**، أو **OpenAI Codex CLI**
+- مستودع Git لمشروعك
+
+## التثبيت السريع
+
+```bash
+npx agileflow@latest setup
+```
+
+هذا كل شيء! ال `npx` يجلب الأمر دائمًا أحدث إصدار، لذلك لا داعي للقلق أبدًا بشأن عمليات التثبيت القديمة.
+
+### التحديثات
+
+```bash
+npx agileflow@latest update
+```
+
+## بعد الإعداد
+
+```bash
+/agileflow:help              # View all commands
+/agileflow:configure         # Configure hooks, status line, etc.
+/agileflow:babysit           # Interactive mentor for implementation
+```
+
+## ما الذي يتم تثبيته
+
+<FileTree>
+  <Folder name=".agileflow" comment="Core installation">
+    <File name="config.json" />
+    <Folder name="agents" comment="30 domain experts" />
+    <Folder name="commands" comment="74 slash commands" />
+    <Folder name="templates" comment="Story, epic, ADR templates" />
+  </Folder>
+  <Folder name=".claude" comment="Claude Code integration">
+    <Folder name="commands/agileflow" comment="Slash commands" />
+  </Folder>
+  <Folder name="docs" comment="Project documentation">
+    <Folder name="03-decisions" comment="ADRs" />
+    <Folder name="05-epics" comment="Epic definitions" />
+    <Folder name="06-stories" comment="User stories" />
+    <Folder name="09-agents" comment="Status tracking" />
+    <Folder name="10-research" comment="Research notes" />
+  </Folder>
+</FileTree>
+
+### الأوامر المثبتة
+
+جميع الأوامر تصبح متاحة كما `/agileflow:command-name` في كلود كود:
+
+| Command | Description |
+|---------|-------------|
+| `/agileflow:epic` | Create a new epic |
+| `/agileflow:story` | Create a user story |
+| `/agileflow:status` | Update story status |
+| `/agileflow:board` | View kanban board |
+| `/agileflow:babysit` | Start guided implementation |
+
+انظر [مرجع الأمر الكامل](/commands) لجميع الأوامر 72.
+
+## التحقق من التثبيت
+
+بعد التثبيت، تأكد من إعداد كل شيء بشكل صحيح:
+
+```bash
+# In Claude Code, run:
+/agileflow:help
+```
+
+يجب أن تشاهد قائمة تعليمات AgileFlow التي تحتوي على جميع الأوامر المتاحة.
+
+## دعم بيئة تطوير متكاملة
+
+يعمل AgileFlow مع عدة بيئات تطوير متكاملة مدعومة بالذكاء الاصطناعي:
+
+| IDE | Status | Config Location |
+|-----|--------|-----------------|
+| Claude Code | Supported | `.claude/commands/agileflow/` |
+| Cursor | Supported | `.cursor/commands/agileflow/` |
+| Windsurf | Supported | `.windsurf/workflows/agileflow/` |
+| OpenAI Codex CLI | Supported | `.codex/skills/` and `~/.codex/prompts/` |
+
+### الإعداد الخاص بـ IDE
+
+```bash
+# Claude Code (default)
+agileflow setup
+
+# Cursor
+agileflow setup --ide cursor
+
+# Windsurf
+agileflow setup --ide windsurf
+
+# OpenAI Codex CLI
+agileflow setup --ide codex
+```
+
+## إعدادات
+
+بعد التثبيت، يمكنك تخصيص سلوك AgileFlow:
+
+```bash
+/agileflow:configure
+```
+
+يتيح لك هذا الأمر التفاعلي:
+
+- تمكين/تعطيل الميزات
+- تعيين المالكين الافتراضيين للقصص
+- تكوين الخطافات والأتمتة
+- ضبط عرض خط الحالة
+
+يرى [إعدادات](/configuration) لجميع الخيارات.
+
+## تحديث
+
+لتحديث AgileFlow إلى الإصدار الأحدث:
+
+```bash
+npx agileflow@latest setup
+```
+
+يتم الاحتفاظ ببيانات مشروعك الحالي (الملاحم والقصص والحالة).
+
+## إلغاء التثبيت
+
+لإزالة AgileFlow من مشروعك:
+
+```bash
+# Remove AgileFlow directories
+rm -rf .agileflow
+rm -rf .claude/commands/agileflow
+
+# Optionally remove docs (contains your project data)
+rm -rf docs
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### عدم ظهور الأوامر
+
+تأكد من تشغيل Claude Code من جذر المشروع الخاص بك حيث تم تثبيت AgileFlow.
+
+### أخطاء الأذونات
+
+تأكد من أن لديك حق الوصول للكتابة إلى دليل المشروع:
+
+```bash
+chmod -R u+w .agileflow .claude docs
+```
+
+### مشاكل إصدار العقدة
+
+يتطلب AgileFlow الإصدار 18+ من Node.js:
+
+```bash
+node --version  # Should be v18.0.0 or higher
+```
+
+## الخطوات التالية
+
+الآن بعد تثبيت AgileFlow:
+
+1. **Create your first epic**: `/agileflow:epic EPIC=EP-0001 TITLE="My Feature"`
+2. **Break it into stories**: `/agileflow:story EPIC=EP-0001 STORY=US-0001 TITLE="First task"`
+3. **Start working**: `/agileflow:babysit`
+
+يستخدم `/agileflow:help` لرؤية كافة الأوامر المتاحة.

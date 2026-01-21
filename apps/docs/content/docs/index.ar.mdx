@@ -1,0 +1,136 @@
+---
+title: مقدمة
+description: إطار إدارة المشروع المدعوم بالذكاء الاصطناعي لـ Claude Code. قم بتبسيط سير عمل التطوير الخاص بك مع الوكلاء الأذكياء والتخطيط الآلي والتعاون السلس بين أعضاء الفريق.
+---
+
+# تدفق سريع
+
+AgileFlow هو **AI-powered project management framework** مصممة خصيصا ل [كلود كود](https://claude.ai/code). فهو يوفر سير عمل رشيق منظم ووكلاء أذكياء وإدارة مشروع المستندات كتعليمات برمجية مباشرة في بيئة التطوير الخاصة بك.
+
+## لماذا AgileFlow؟
+
+أدوات إدارة المشاريع التقليدية تخلق احتكاكًا بين التخطيط والتنفيذ. يعمل AgileFlow على القضاء على هذه الفجوة عن طريق دمج إدارة المشروع مباشرة في سير عمل البرمجة بمساعدة الذكاء الاصطناعي.
+
+- **No context switching** - إدارة الملاحم والقصص والحالة دون مغادرة جهازك
+- **AI-native workflows** - مصمم خصيصًا لإمكانيات كلود كود
+- **Docs-as-code** - جميع قطع المشروع الأثرية تعيش في المستودع الخاص بك
+- **Intelligent agents** - وكلاء الذكاء الاصطناعي المتخصصون في مجالات مختلفة
+
+## الميزات الرئيسية
+
+### 74 أوامر القطع
+
+يوفر AgileFlow مكتبة أوامر شاملة لكل جانب من جوانب إدارة المشروع:
+
+| Category | Commands |
+|----------|----------|
+| **Planning** | `/epic`, `/story`, `/sprint`, `/deps` |
+| **Tracking** | `/status`, `/board`, `/blockers`, `/metrics` |
+| **Development** | `/babysit`, `/verify`, `/review`, `/pr` |
+| **Operations** | `/ci`, `/deploy`, `/changelog`, `/packages` |
+| **Research** | `/research:ask`, `/research:import`, `/context:full`, `/context:export`, `/multi-expert` |
+
+### 30 وكلاء متخصصون
+
+كل وكيل هو خبير في مجاله، وعلى استعداد للمساعدة في مهام محددة:
+
+- **mentor** - إرشادات التنفيذ الشاملة
+- **epic-planner** - تقسيم الميزات إلى قصص
+- **database** - تصميم المخطط والهجرات
+- **api** - الخدمات الخلفية وطبقة البيانات
+- **ui** - مكونات الواجهة الأمامية والتصميم
+- **security** - تحليل نقاط الضعف والامتثال
+- **testing** - استراتيجية الاختبار والتغطية
+- **devops** - CI/CD والنشر
+
+### بنية المستندات كرمز
+
+يتم تخزين كافة عناصر إدارة المشروع كملفات منظمة في المستودع الخاص بك:
+
+<FileTree>
+  <Folder name="docs">
+    <Folder name="05-epics">
+      <File name="EP-0001.md" comment="Epic definitions" />
+    </Folder>
+    <Folder name="06-stories">
+      <File name="US-0001.md" comment="User stories" />
+    </Folder>
+    <Folder name="09-agents">
+      <File name="status.json" comment="Real-time project status" />
+      <Folder name="bus">
+        <File name="log.jsonl" comment="Agent communication" />
+      </Folder>
+    </Folder>
+    <Folder name="03-decisions">
+      <File name="ADR-0001.md" comment="Architecture Decision Records" />
+    </Folder>
+  </Folder>
+</FileTree>
+
+### لوحة كانبان المرئية
+
+```text
+View your project status at a glance with the /board command:
+
+/agileflow:board
+
+┌────────────────────────────────────────────────────────────────┐
+│                         KANBAN BOARD                          │
+├──────────────┬──────────────┬──────────────┬──────────────────┤
+│   BACKLOG    │  IN PROGRESS │   REVIEW     │    COMPLETED     │
+├──────────────┼──────────────┼──────────────┼──────────────────┤
+│ US-0012      │ US-0015      │ US-0014      │ US-0001 ✓       │
+│ Add auth     │ API layer    │ Unit tests   │ US-0002 ✓       │
+│              │              │              │ US-0003 ✓       │
+└──────────────┴──────────────┴──────────────┴──────────────────┘
+```
+
+## مثال سريع
+
+إليك كيف يبدو سير عمل AgileFlow النموذجي:
+
+```bash
+# 1. Create an epic for a new feature
+/epic EPIC=EP-0001 TITLE="User Authentication" GOAL="Secure user login system"
+
+# 2. Break it down into stories
+/story EPIC=EP-0001 STORY=US-0001 TITLE="Login form" OWNER=AG-UI
+
+# 3. Start working on a story
+/status STORY=US-0001 STATUS=in-progress
+
+# 4. Get AI-guided implementation
+/babysit
+
+# 5. Verify your implementation
+/verify US-0001
+
+# 6. Generate a PR
+/pr STORY=US-0001
+```
+
+## كيف يعمل
+
+1. **Install AgileFlow** - أمر واحد يضيف كافة الإمكانيات إلى مشروعك
+2. **Plan with AI** - استخدم الوكلاء لتقسيم الميزات إلى قصص قابلة للتنفيذ
+3. **Track Progress** - تحديثات الحالة في الوقت الحقيقي `status.json`
+4. **Collaborate** - يتواصل الوكلاء عبر ناقل الرسائل
+5. **Ship** - إنشاء العلاقات العامة الآلي وتحديثات سجل التغيير
+
+## فلسفة
+
+تم بناء AgileFlow على هذه المبادئ:
+
+- **Convention over configuration** - الافتراضات المعقولة التي تعمل فقط
+- **Transparency** - جميع البيانات عبارة عن نص عادي، ويتم التحكم في إصدارها
+- **Composability** - استخدم فقط ما تحتاجه
+- **AI-first** - مصممة للتعاون بين الإنسان والذكاء الاصطناعي
+- **Internationalization** - الوثائق متاحة بخمس لغات (الإسبانية، الفرنسية، الألمانية، البرتغالية، العربية)
+
+## الخطوات التالية
+
+هل أنت مستعد للبدء؟
+
+1. **Quick setup**: يجري `npx agileflow@latest setup` لتثبيت
+2. **Interactive tutorial**: اتبع لدينا [ابدء](/getting-started) معالج
+3. **Deep dive**: التحقق من [تثبيت](/installation) دليل لجميع الخيارات
