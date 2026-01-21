@@ -212,3 +212,148 @@ ACTIONS
 **JSON Safety**: Always use jq or Edit tool (never echo/cat > status.json). Validate after modifications.
 
 Preview changes; YES/NO.
+
+---
+
+## Expected Output
+
+### Successful Assignment
+
+```
+📋 Assigning Story: US-0042
+
+Current state:
+  Owner: unassigned
+  Status: ready
+
+New assignment:
+  Owner: AG-UI
+  Status: in-progress
+
+Files to update:
+───────────────────────────────────────────────
+1. docs/06-stories/EP-0010/US-0042-login-form.md
+
+   Frontmatter changes:
+   -owner: unassigned
+   +owner: AG-UI
+   -status: ready
+   +status: in-progress
+   +updated: 2026-01-21T14:30:00Z
+
+2. docs/09-agents/status.json
+
+   "US-0042": {
+     -"owner": "unassigned",
+     +"owner": "AG-UI",
+     -"status": "ready",
+     +"status": "in-progress",
+     +"last_update": "2026-01-21T14:30:00Z"
+   }
+
+3. docs/09-agents/bus/log.jsonl (append)
+
+   + {"ts":"2026-01-21T14:30:00Z","type":"assign","from":"SYSTEM","to":"AG-UI","story":"US-0042","status":"in-progress"}
+
+[AskUserQuestion: "Assign US-0042 to AG-UI as in-progress?"]
+
+✅ Assignment complete!
+   Story: US-0042
+   New owner: AG-UI
+   Status: in-progress
+   Bus message sent: assign → AG-UI
+```
+
+### Story Not Found
+
+```
+❌ Story not found: US-9999
+
+Searched:
+  - docs/06-stories/**/US-9999*.md
+  - docs/09-agents/status.json
+
+Available stories:
+  - US-0042: Login form (ready)
+  - US-0043: Profile page (ready)
+  - US-0044: Dashboard (in-progress)
+
+Usage:
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI
+```
+
+### WIP Limit Warning
+
+```
+⚠️ WIP Limit Warning
+
+AG-UI currently has 2 stories in-progress:
+  - US-0038: OAuth flow (in-progress, 3 days)
+  - US-0041: Session management (in-progress, 1 day)
+
+Assigning US-0042 would exceed WIP limit (max 2 per agent).
+
+Options:
+  1. Complete US-0038 or US-0041 first
+  2. Reassign one story to another agent
+  3. Proceed anyway (override WIP limit)
+
+[AskUserQuestion: "How to proceed?"]
+  - Complete existing story first (Recommended)
+  - Assign to different agent
+  - Proceed (override WIP limit)
+```
+
+### Invalid Status Transition
+
+```
+❌ Invalid status transition
+
+Story: US-0042
+Current status: done
+Requested status: in-progress
+
+Cannot transition from 'done' to 'in-progress'.
+
+Valid transitions from 'done':
+  - No valid transitions (story is complete)
+
+To reopen this story:
+  1. Create a new story for follow-up work
+  2. Or use /agileflow:status STORY=US-0042 STATUS=ready FORCE=yes
+```
+
+### Reassignment (Owner Change)
+
+```
+📋 Reassigning Story: US-0042
+
+Current owner: AG-API
+New owner: AG-UI
+Status: in-progress (unchanged)
+
+Reason: "Frontend specialist needed for UI work"
+
+Files to update:
+───────────────────────────────────────────────
+1. docs/06-stories/EP-0010/US-0042-login-form.md
+   -owner: AG-API
+   +owner: AG-UI
+
+2. docs/09-agents/status.json
+   "US-0042": {
+     -"owner": "AG-API",
+     +"owner": "AG-UI",
+   }
+
+3. docs/09-agents/bus/log.jsonl (append)
+   + {"type":"reassign","from":"AG-API","to":"AG-UI","story":"US-0042","text":"Frontend specialist needed"}
+
+[AskUserQuestion: "Reassign US-0042 from AG-API to AG-UI?"]
+
+✅ Reassignment complete!
+   Story: US-0042
+   Previous owner: AG-API
+   New owner: AG-UI
+   Notification sent to both agents
+```

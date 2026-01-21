@@ -433,3 +433,121 @@ OUTPUT
 - Changelog entry preview
 - Updated CHANGELOG.md (if approved)
 - Optional: Git tag and release creation
+
+---
+
+## Expected Output
+
+### Successful Changelog Generation
+
+```
+📋 Generating Changelog
+
+Detecting version...
+✅ Current version: v2.4.0
+✅ Last release: v2.4.0 (2026-01-15)
+
+Collecting changes since v2.4.0...
+Found: 12 commits, 8 PRs merged
+
+Categorizing changes...
+───────────────────────────────────────────────
+### Added
+- OAuth2 authentication support for Google and GitHub providers (#123)
+- Dark mode toggle in user preferences (#137)
+- User profile settings page with avatar upload (#135)
+
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints to RESTful structure (#126)
+  See migration guide at docs/migration-v2.md
+- Improved user query performance by 50% with database indexing (#125)
+
+### Fixed
+- Crash when user object is null in login endpoint (#124)
+- Memory leak in WebSocket connection handler (#139)
+- Incorrect timezone display in activity logs (#140)
+
+### Security
+- Patched XSS vulnerability in comment rendering (#131)
+───────────────────────────────────────────────
+
+📊 Change Summary:
+  - Added: 3
+  - Changed: 2 (1 breaking)
+  - Fixed: 3
+  - Security: 1
+
+💡 Suggested version: 2.5.0 (MAJOR due to breaking change)
+
+[AskUserQuestion: "Update CHANGELOG.md with these changes?"]
+
+✅ CHANGELOG.md updated
+✅ Commit created: "chore(release): update CHANGELOG for v2.5.0"
+
+Next steps:
+1. Create git tag: git tag -a v2.5.0 -m "Release v2.5.0"
+2. Create GitHub release: gh release create v2.5.0 --generate-notes
+```
+
+### No Changes Detected
+
+```
+📋 Generating Changelog
+
+Detecting version...
+✅ Current version: v2.4.0
+✅ Last release: v2.4.0 (2026-01-15)
+
+Collecting changes since v2.4.0...
+Found: 0 commits
+
+ℹ️  No changes detected since v2.4.0
+
+Nothing to add to changelog.
+```
+
+### Unclear Commits (Manual Categorization)
+
+```
+📋 Generating Changelog
+
+Found 3 commits that need manual categorization:
+
+Unclear commits:
+1. "update stuff" (abc1234)
+2. "fix things" (def5678)
+3. "misc changes" (ghi9012)
+
+[AskUserQuestion: "How should 'update stuff' be categorized?"]
+  - Added (new feature)
+  - Changed (modification)
+  - Fixed (bug fix)
+  - Skip (don't include)
+
+User selected: Changed
+
+[Continuing with remaining commits...]
+```
+
+### Version Suggestion
+
+```
+📊 Version Analysis
+
+Changes detected:
+- 3 Added (feat:)
+- 5 Fixed (fix:)
+- 1 BREAKING (feat!:)
+
+Version calculation:
+  Current: 1.5.2
+  Breaking change detected → Major bump required
+
+💡 Suggested: 2.0.0 (MAJOR - breaking change)
+
+[AskUserQuestion: "Accept version 2.0.0?"]
+  - Yes, use 2.0.0 (Recommended)
+  - Use minor: 1.6.0
+  - Use patch: 1.5.3
+  - Enter custom version
+```

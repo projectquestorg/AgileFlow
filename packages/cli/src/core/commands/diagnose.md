@@ -277,3 +277,117 @@ fi
 - Display file sizes and story counts
 - Provide actionable recommendations for issues
 - Exit with code 0 if healthy, code 1 if issues found
+
+---
+
+## Expected Output
+
+### Healthy System
+
+```
+🔍 AgileFlow System Diagnostics
+================================
+
+📋 JSON File Validation
+----------------------
+  ✅ docs/00-meta/agileflow-metadata.json (2KB)
+  ✅ docs/09-agents/status.json (45KB)
+  ℹ️  docs/09-agents/status-archive.json - not found (optional)
+  ✅ .claude/settings.json (8KB)
+
+📦 Auto-Archival System
+----------------------
+  ✅ Archive script exists and is executable
+  ✅ Auto-archival hook configured
+  ✅ Archival threshold: 7 days
+
+🪝 Hooks System
+---------------
+  ✅ .claude/settings.json is valid JSON
+  ℹ️  SessionStart hooks: 3
+  ℹ️  UserPromptSubmit hooks: 1
+  ℹ️  Stop hooks: 0
+
+📏 File Size Analysis
+---------------------
+  status.json: 45KB (127 stories)
+  ✅ status.json size is healthy
+
+📊 Diagnostic Summary
+=====================
+✅ All checks passed! System is healthy.
+```
+
+### System with Issues
+
+```
+🔍 AgileFlow System Diagnostics
+================================
+
+📋 JSON File Validation
+----------------------
+  ✅ docs/00-meta/agileflow-metadata.json (2KB)
+  ✅ docs/09-agents/status.json (156KB)
+     ⚠️  WARNING: status.json is large (156KB). Consider running archival.
+  ℹ️  docs/09-agents/status-archive.json - not found (optional)
+  ❌ .claude/settings.json - INVALID JSON
+     Error details:
+     parse error: Invalid numeric literal at line 42, column 15
+
+📦 Auto-Archival System
+----------------------
+  ⚠️  Archive script exists but is NOT executable
+     Fix: chmod +x scripts/archive-completed-stories.sh
+
+🪝 Hooks System
+---------------
+  ❌ .claude/settings.json is INVALID JSON
+
+📏 File Size Analysis
+---------------------
+  status.json: 156KB (423 stories)
+  ⚠️  WARNING: status.json exceeds 100KB
+     Recommendation: Run archival to reduce file size
+     Command: bash .agileflow/scripts/archive-completed-stories.sh 7
+
+📊 Diagnostic Summary
+=====================
+⚠️  Found 4 issue(s) that need attention.
+
+Next steps:
+1. Fix JSON validation errors using: jq empty <file> to check, then repair manually
+2. Make archive script executable: chmod +x scripts/archive-completed-stories.sh
+3. Run archival: bash .agileflow/scripts/archive-completed-stories.sh
+4. Re-run diagnostics: /agileflow:diagnose
+```
+
+### Missing Critical Files
+
+```
+🔍 AgileFlow System Diagnostics
+================================
+
+📋 JSON File Validation
+----------------------
+  ❌ docs/00-meta/agileflow-metadata.json - NOT FOUND (CRITICAL)
+  ❌ docs/09-agents/status.json - NOT FOUND (CRITICAL)
+  ℹ️  docs/09-agents/status-archive.json - not found (optional)
+  ℹ️  .claude/settings.json - not found (optional)
+
+📦 Auto-Archival System
+----------------------
+  ❌ Archive script NOT found (scripts/archive-completed-stories.sh)
+
+🪝 Hooks System
+---------------
+  ⚠️  Hooks system not configured
+
+📊 Diagnostic Summary
+=====================
+⚠️  Found 4 issue(s) that need attention.
+
+Next steps:
+1. Run AgileFlow setup: npx agileflow setup
+2. Verify installation completed successfully
+3. Re-run diagnostics: /agileflow:diagnose
+```

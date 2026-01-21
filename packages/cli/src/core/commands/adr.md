@@ -269,6 +269,120 @@ After successfully creating the ADR, offer next steps:
 
 ---
 
+## Expected Output
+
+### Successful ADR Creation
+
+```
+📋 Creating ADR: ADR-0042
+
+Checking existing ADRs...
+✅ Next sequential number: 0042
+
+Title: Use PostgreSQL for persistence
+Status: accepted
+
+Files to create:
+───────────────────────────────────
+1. docs/03-decisions/adr-0042-postgresql.md
+
+Preview:
+─────────────────────────────────────────────
+---
+number: 0042
+title: Use PostgreSQL for persistence
+date: 2026-01-21
+status: accepted
+tags: [database, architecture]
+---
+
+# ADR-0042: Use PostgreSQL for persistence
+
+## Context
+Need reliable ACID-compliant database for financial transactions.
+Evaluated MongoDB (eventual consistency), Redis (memory limits),
+and PostgreSQL (full ACID with JSON support).
+
+## Decision
+Use PostgreSQL 16 with native JSON support for document storage
+while maintaining ACID guarantees.
+
+## Consequences
+### Positive
+- Full ACID compliance for financial data
+- Native JSON/JSONB for flexible schemas
+- Mature ecosystem and tooling
+
+### Negative
+- Team needs PostgreSQL training
+- Slightly more complex operational setup
+- Vertical scaling limitations
+
+## Related
+- [ADR-0041](adr-0041-db-evaluation.md)
+- [US-0055](../06-stories/US-0055.md)
+─────────────────────────────────────────────
+
+[AskUserQuestion: "Create this ADR? (YES/NO)"]
+
+✅ ADR-0042 created successfully!
+   docs/03-decisions/adr-0042-postgresql.md
+
+[AskUserQuestion: "What would you like to do next?"]
+```
+
+### Missing Required Inputs
+
+```
+❌ Missing required inputs
+
+The following inputs are required:
+  • NUMBER - 4-digit sequential ID (e.g., 0042)
+  • TITLE - Decision title
+  • CONTEXT - Why this decision is needed
+  • DECISION - What was chosen
+  • CONSEQUENCES - Trade-offs (positive and negative)
+
+Usage:
+/agileflow:adr NUMBER=0042 TITLE="Use PostgreSQL" CONTEXT="Need ACID..." DECISION="PostgreSQL chosen" CONSEQUENCES="Better integrity, learning curve"
+```
+
+### Non-Sequential Number Warning
+
+```
+⚠️ Non-sequential ADR number
+
+Requested: ADR-0100
+Last ADR: ADR-0042
+Next expected: ADR-0043
+
+Do you want to:
+  1. Use sequential number (0043) - Recommended
+  2. Keep requested number (0100)
+  3. Cancel
+
+[AskUserQuestion: Select option]
+```
+
+### ADR Already Exists
+
+```
+❌ ADR-0042 already exists
+
+Existing ADR:
+  Title: Use PostgreSQL for persistence
+  Date: 2026-01-15
+  Status: accepted
+
+To update this ADR:
+  /agileflow:adr:update NUMBER=0042 STATUS=superseded
+
+To create a new ADR:
+  /agileflow:adr NUMBER=0043 TITLE="..."
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:adr:list` - View all ADRs with status
