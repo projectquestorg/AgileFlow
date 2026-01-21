@@ -8,6 +8,8 @@ estimate: {{ESTIMATE}}
 created: {{CREATED}}
 updated: {{UPDATED}}
 dependencies: {{DEPENDENCIES}}
+tdd_mode: {{TDD_MODE}}
+test_file: {{TEST_FILE}}
 ---
 
 # {{STORY_ID}}: {{TITLE}}
@@ -15,6 +17,7 @@ dependencies: {{DEPENDENCIES}}
 **Epic**: {{EPIC_ID}}
 **Owner**: {{OWNER}}
 **Estimate**: {{ESTIMATE}}
+{{TDD_BADGE}}
 
 ## Description
 {{DESCRIPTION}}
@@ -50,6 +53,7 @@ dependencies: {{DEPENDENCIES}}
 
 ## Testing Strategy
 See: `docs/07-testing/test-cases/{{STORY_ID}}.md`
+{{TDD_TEST_FILE_REF}}
 
 ## Dependencies
 {{DEPENDENCIES}}

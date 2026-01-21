@@ -1,6 +1,6 @@
 ---
 description: Create a user story with acceptance criteria
-argument-hint: EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id> [ESTIMATE=<pts>] [AC=<list>]
+argument-hint: EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id> [ESTIMATE=<pts>] [AC=<list>] [TDD=true]
 compact_context:
   priority: high
   preserve_rules:
@@ -12,12 +12,17 @@ compact_context:
     - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
     - "MUST create test stub in docs/07-testing/test-cases/<STORY>.md referencing AC"
     - "AC format: Given/When/Then bullets (user story format)"
+    - "TDD=true: Generate framework-specific test code BEFORE implementation"
+    - "TDD=true: Parse Given/When/Then into describe/it blocks (Jest) or test functions (pytest)"
+    - "TDD=true: All tests start as .skip or @pytest.mark.skip (pending)"
+    - "TDD=true: Add tdd_mode:true and test_file fields to status.json entry"
   state_fields:
     - story_id
     - epic_id
     - owner
     - estimate
     - ac_count
+    - tdd_mode
 ---
 
 # story-new
@@ -44,7 +49,7 @@ node .agileflow/scripts/obtain-context.js story
 
 ### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
 
-Create a 6-step task list IMMEDIATELY:
+Create a task list IMMEDIATELY (7 steps if TDD=true, 6 steps otherwise):
 ```xml
 <invoke name="TodoWrite">
 <parameter name="content">1. Parse inputs (EPIC, STORY, TITLE, OWNER, ESTIMATE, AC)
@@ -94,7 +99,45 @@ Test stub MUST reference AC:
 - Map each test to an AC bullet
 - Use BDD format (describe, test cases for each AC)
 
-### 🚨 RULE #5: NEVER Use echo/cat > For JSON Operations
+### 🚨 RULE #5: TDD MODE (Smart Defaults)
+
+**Smart TDD defaults based on OWNER:**
+| Owner | Default | Rationale |
+|-------|---------|-----------|
+| AG-API, AG-UI, AG-DATABASE | TDD=true | Code-focused, tests critical |
+| AG-TESTING, AG-SECURITY, AG-PERFORMANCE | TDD=true | Quality-focused |
+| AG-DOCUMENTATION, AG-RESEARCH, AG-PRODUCT | TDD=false | Non-code work |
+| AG-DEVOPS, AG-CI | TDD=false | Infrastructure, config |
+| Other/Custom | TDD=false | Explicit opt-in |
+
+**Override:** User can always specify `TDD=true` or `TDD=false` explicitly.
+
+When TDD mode is active, generate framework-specific test code:
+
+**Workflow:**
+1. Detect test framework from `environment.json` or `package.json`
+2. Parse AC into Given/When/Then structure
+3. Generate test file using `tdd-test-template.js`
+4. Create test in `__tests__/<STORY>.test.ts` (Jest) or `tests/test_<STORY>.py` (pytest)
+5. All tests start as `.skip` (pending)
+6. Add `tdd_mode: true` and `test_file` to status.json entry
+7. Add TDD badge to story file
+
+**Test File Location:**
+- Jest/Vitest: `__tests__/<STORY_ID>.test.ts`
+- pytest: `tests/test_<STORY_ID>.py`
+- Go: `<package>/<STORY_ID>_test.go`
+
+**Status.json Entry (TDD mode):**
+```json
+{
+  "tdd_mode": true,
+  "test_file": "__tests__/US-0042.test.ts",
+  "test_status": "not_run"
+}
+```
+
+### 🚨 RULE #6: NEVER Use echo/cat > For JSON Operations
 
 **ALWAYS use**:
 - Edit tool for small changes
@@ -114,6 +157,7 @@ OWNER=<id>                 # Agent or person name (required)
 ESTIMATE=<time>            # e.g., 0.5d, 2h (optional, default: 1d)
 AC=<bullets>               # Given/When/Then format (optional)
 DEPENDENCIES=[<list>]      # Dependent story IDs (optional)
+TDD=true|false             # TDD mode (smart default: true for code owners, false for docs/research)
 ```
 
 **Output Files Created**:
@@ -121,6 +165,7 @@ DEPENDENCIES=[<list>]      # Dependent story IDs (optional)
 |------|---------|----------|
 | docs/06-stories/EP-<ID>/US-<ID>-<slug>.md | Story with AC | story-template.md |
 | docs/07-testing/test-cases/US-<ID>.md | Test stub | BDD format |
+| __tests__/US-<ID>.test.ts | TDD test code (if TDD=true) | tdd-test-template.js |
 | docs/09-agents/status.json | Story entry | jq merge |
 | docs/09-agents/bus/log.jsonl | Assign event | JSONL line |
 
@@ -202,8 +247,9 @@ DEPENDENCIES=[<list>]      # Dependent story IDs (optional)
 - ALWAYS create test stub referencing AC
 - ALWAYS preview before confirming (prevents mistakes)
 - ALWAYS validate JSON after merge (prevents corruption)
-- Use TodoWrite for step tracking (6 steps)
+- Use TodoWrite for step tracking (6 steps, or 7 if TDD=true)
 - Files: story file, test file, status.json, bus/log.jsonl
+- **TDD=true**: Also create framework-specific test code in `__tests__/` with pending tests
 
 <!-- COMPACT_SUMMARY_END -->
 
