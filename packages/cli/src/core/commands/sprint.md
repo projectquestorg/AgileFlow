@@ -563,6 +563,28 @@ Committed: X stories, Y.Z estimated days (Y% of capacity)
    - Has 1 story in review (US-0038) likely to complete soon
    - If US-0038 completes early, can pick up deferred US-0055
 
+🔀 PARALLELIZATION ANALYSIS
+---------------------------
+Stories grouped by execution phase for multi-session workflows:
+
+Phase 1 (Sequential - Foundation):
+  These must complete first - no dependencies, prerequisite for others.
+  - US-0043: POST /auth/login endpoint (AG-API)
+
+Phase 2 (Parallel-eligible):
+  Can run in separate Claude Code sessions simultaneously.
+  All depend only on Phase 1 completion.
+  - US-0042: User login form (Session A)
+  - US-0045: User profile page (Session B)
+  └─ Run `/agileflow:session:new` for each parallel task
+
+Phase 3 (Integration - Sequential):
+  Must wait for Phase 2 completion.
+  - US-0050: E2E tests for auth flow (depends on Phase 2)
+
+💡 For multi-session work, create plan.md with:
+   `/agileflow:templates/plan-template.md` or copy from templates/
+
 💡 RECOMMENDATIONS
 ------------------
 1. Sequence stories: US-0043 (AG-API) → US-0042 (AG-UI) → US-0050 (AG-CI)
