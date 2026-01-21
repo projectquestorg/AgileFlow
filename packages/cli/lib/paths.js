@@ -2,10 +2,42 @@
  * AgileFlow CLI - Shared Path Utilities
  *
  * Centralized path resolution functions used across scripts.
+ *
+ * NOTE: This module delegates to PathResolver for the implementation.
+ * Functions accept optional rootDir for backwards compatibility, but
+ * if not provided, use PathResolver's manifest-aware auto-detection.
+ *
+ * For new code, prefer using PathResolver directly:
+ *   const { PathResolver, getDefaultResolver } = require('./path-resolver');
+ *   const resolver = getDefaultResolver();
+ *   const statusPath = resolver.getStatusPath();
  */
 
-const fs = require('fs');
+const { PathResolver, getDefaultResolver } = require('./path-resolver');
 const path = require('path');
+
+// Cache for resolvers by rootDir
+const resolverCache = new Map();
+
+/**
+ * Get a PathResolver for the given rootDir.
+ * Uses singleton for default (no rootDir) case, caches others.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {PathResolver}
+ * @private
+ */
+function getResolver(rootDir) {
+  if (!rootDir) {
+    return getDefaultResolver();
+  }
+
+  // Cache resolvers by rootDir to avoid repeated construction
+  if (!resolverCache.has(rootDir)) {
+    resolverCache.set(rootDir, new PathResolver(rootDir, { autoDetect: false }));
+  }
+  return resolverCache.get(rootDir);
+}
 
 /**
  * Find the project root by looking for .agileflow directory.
@@ -15,11 +47,8 @@ const path = require('path');
  * @returns {string} Project root path, or startDir if not found
  */
 function getProjectRoot(startDir = process.cwd()) {
-  let dir = startDir;
-  while (!fs.existsSync(path.join(dir, '.agileflow')) && dir !== '/') {
-    dir = path.dirname(dir);
-  }
-  return dir !== '/' ? dir : startDir;
+  const resolver = new PathResolver(startDir, { autoDetect: true });
+  return resolver.getProjectRoot();
 }
 
 /**
@@ -29,8 +58,7 @@ function getProjectRoot(startDir = process.cwd()) {
  * @returns {string} Path to .agileflow directory
  */
 function getAgileflowDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, '.agileflow');
+  return getResolver(rootDir).getAgileflowDir();
 }
 
 /**
@@ -40,8 +68,7 @@ function getAgileflowDir(rootDir) {
  * @returns {string} Path to .claude directory
  */
 function getClaudeDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, '.claude');
+  return getResolver(rootDir).getClaudeDir();
 }
 
 /**
@@ -51,8 +78,7 @@ function getClaudeDir(rootDir) {
  * @returns {string} Path to docs directory
  */
 function getDocsDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs');
+  return getResolver(rootDir).getDocsDir();
 }
 
 /**
@@ -62,8 +88,7 @@ function getDocsDir(rootDir) {
  * @returns {string} Path to status.json
  */
 function getStatusPath(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '09-agents', 'status.json');
+  return getResolver(rootDir).getStatusPath();
 }
 
 /**
@@ -73,8 +98,7 @@ function getStatusPath(rootDir) {
  * @returns {string} Path to session-state.json
  */
 function getSessionStatePath(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '09-agents', 'session-state.json');
+  return getResolver(rootDir).getSessionStatePath();
 }
 
 /**
@@ -84,8 +108,7 @@ function getSessionStatePath(rootDir) {
  * @returns {string} Path to agileflow-metadata.json
  */
 function getMetadataPath(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '00-meta', 'agileflow-metadata.json');
+  return getResolver(rootDir).getMetadataPath();
 }
 
 /**
@@ -95,8 +118,7 @@ function getMetadataPath(rootDir) {
  * @returns {string} Path to bus/log.jsonl
  */
 function getBusLogPath(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '09-agents', 'bus', 'log.jsonl');
+  return getResolver(rootDir).getBusLogPath();
 }
 
 /**
@@ -106,8 +128,7 @@ function getBusLogPath(rootDir) {
  * @returns {string} Path to epics directory
  */
 function getEpicsDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '05-epics');
+  return getResolver(rootDir).getEpicsDir();
 }
 
 /**
@@ -117,8 +138,7 @@ function getEpicsDir(rootDir) {
  * @returns {string} Path to stories directory
  */
 function getStoriesDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '06-stories');
+  return getResolver(rootDir).getStoriesDir();
 }
 
 /**
@@ -128,19 +148,17 @@ function getStoriesDir(rootDir) {
  * @returns {string} Path to archive directory
  */
 function getArchiveDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '09-agents', 'archive');
+  return getResolver(rootDir).getArchiveDir();
 }
 
 /**
- * Get the agents directory path.
+ * Get the agents directory path (docs/09-agents).
  *
  * @param {string} [rootDir] - Project root (auto-detected if not provided)
  * @returns {string} Path to agents directory (docs/09-agents)
  */
 function getAgentsDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '09-agents');
+  return getResolver(rootDir).getDocsAgentsDir();
 }
 
 /**
@@ -150,8 +168,7 @@ function getAgentsDir(rootDir) {
  * @returns {string} Path to decisions directory
  */
 function getDecisionsDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '03-decisions');
+  return getResolver(rootDir).getDecisionsDir();
 }
 
 /**
@@ -161,19 +178,81 @@ function getDecisionsDir(rootDir) {
  * @returns {string} Path to research directory
  */
 function getResearchDir(rootDir) {
-  const root = rootDir || getProjectRoot();
-  return path.join(root, 'docs', '10-research');
+  return getResolver(rootDir).getResearchDir();
 }
 
 /**
  * Check if we're in an AgileFlow project.
+ * Walks up from dir to find .agileflow directory.
  *
- * @param {string} [dir=process.cwd()] - Directory to check
- * @returns {boolean} True if .agileflow directory exists
+ * @param {string} [dir=process.cwd()] - Directory to check from
+ * @returns {boolean} True if .agileflow directory exists in dir or any parent
  */
 function isAgileflowProject(dir = process.cwd()) {
-  const root = getProjectRoot(dir);
-  return fs.existsSync(path.join(root, '.agileflow'));
+  // Use auto-detection to walk up and find project root
+  const resolver = new PathResolver(dir, { autoDetect: true });
+  return resolver.isAgileflowProject();
+}
+
+// ============================================================================
+// New functions (added in ConfigResolver consolidation)
+// ============================================================================
+
+/**
+ * Get the .claude/settings.json path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to settings.json
+ */
+function getSettingsPath(rootDir) {
+  return getResolver(rootDir).getSettingsPath();
+}
+
+/**
+ * Get the .claude/settings.local.json path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to settings.local.json
+ */
+function getSettingsLocalPath(rootDir) {
+  return getResolver(rootDir).getSettingsLocalPath();
+}
+
+/**
+ * Get the skills directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to skills directory
+ */
+function getSkillsDir(rootDir) {
+  return getResolver(rootDir).getSkillsDir();
+}
+
+/**
+ * Get the scripts directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to scripts directory
+ */
+function getScriptsDir(rootDir) {
+  return getResolver(rootDir).getScriptsDir();
+}
+
+/**
+ * Get the commands directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to commands directory
+ */
+function getCommandsDir(rootDir) {
+  return getResolver(rootDir).getCommandsDir();
+}
+
+/**
+ * Clear the resolver cache (useful for testing or after config changes).
+ */
+function clearResolverCache() {
+  resolverCache.clear();
 }
 
 module.exports = {
@@ -197,6 +276,16 @@ module.exports = {
   getDecisionsDir,
   getResearchDir,
 
+  // Configuration files (new in ConfigResolver consolidation)
+  getSettingsPath,
+  getSettingsLocalPath,
+
+  // AgileFlow subdirectories (new in ConfigResolver consolidation)
+  getSkillsDir,
+  getScriptsDir,
+  getCommandsDir,
+
   // Utilities
   isAgileflowProject,
+  clearResolverCache,
 };

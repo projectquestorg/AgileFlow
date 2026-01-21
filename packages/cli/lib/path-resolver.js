@@ -48,11 +48,17 @@ class PathResolver {
     this._defaultDocsFolder = docsFolder;
 
     // Find project root
-    if (projectRoot) {
+    if (projectRoot && autoDetect) {
+      // Auto-detect from provided starting directory
+      this._projectRoot = this._findProjectRoot(projectRoot);
+    } else if (projectRoot) {
+      // Use provided directory directly (no auto-detection)
       this._projectRoot = projectRoot;
     } else if (autoDetect) {
+      // Auto-detect from current working directory
       this._projectRoot = this._findProjectRoot(process.cwd());
     } else {
+      // Use current working directory directly
       this._projectRoot = process.cwd();
     }
 
@@ -256,11 +262,131 @@ class PathResolver {
   }
 
   /**
-   * Get the agents directory path
+   * Get the agents directory path (.agileflow/agents)
    * @returns {string}
    */
   getAgentsDir() {
     return path.join(this.getAgileflowDir(), 'agents');
+  }
+
+  /**
+   * Get the skills directory path
+   * @returns {string}
+   */
+  getSkillsDir() {
+    return path.join(this.getAgileflowDir(), 'skills');
+  }
+
+  /**
+   * Get the _cfg directory path
+   * @returns {string}
+   */
+  getCfgDir() {
+    return path.join(this.getAgileflowDir(), '_cfg');
+  }
+
+  // ============================================================================
+  // Claude Settings Paths (new in ConfigResolver pattern)
+  // ============================================================================
+
+  /**
+   * Get the .claude/settings.json path
+   * @returns {string}
+   */
+  getSettingsPath() {
+    return path.join(this.getClaudeDir(), 'settings.json');
+  }
+
+  /**
+   * Get the .claude/settings.local.json path
+   * @returns {string}
+   */
+  getSettingsLocalPath() {
+    return path.join(this.getClaudeDir(), 'settings.local.json');
+  }
+
+  /**
+   * Get the .claude/settings.local.example.json path
+   * @returns {string}
+   */
+  getSettingsLocalExamplePath() {
+    return path.join(this.getClaudeDir(), 'settings.local.example.json');
+  }
+
+  // ============================================================================
+  // Docs Subdirectory Paths (new in ConfigResolver pattern)
+  // ============================================================================
+
+  /**
+   * Get the docs/09-agents directory path
+   * @returns {string}
+   */
+  getDocsAgentsDir() {
+    return path.join(this.getDocsDir(), '09-agents');
+  }
+
+  /**
+   * Get the bus log path (docs/09-agents/bus/log.jsonl)
+   * @returns {string}
+   */
+  getBusLogPath() {
+    return path.join(this.getDocsAgentsDir(), 'bus', 'log.jsonl');
+  }
+
+  /**
+   * Get the archive directory path (docs/09-agents/archive)
+   * @returns {string}
+   */
+  getArchiveDir() {
+    return path.join(this.getDocsAgentsDir(), 'archive');
+  }
+
+  /**
+   * Get the epics directory path (docs/05-epics)
+   * @returns {string}
+   */
+  getEpicsDir() {
+    return path.join(this.getDocsDir(), '05-epics');
+  }
+
+  /**
+   * Get the stories directory path (docs/06-stories)
+   * @returns {string}
+   */
+  getStoriesDir() {
+    return path.join(this.getDocsDir(), '06-stories');
+  }
+
+  /**
+   * Get the decisions (ADR) directory path (docs/03-decisions)
+   * @returns {string}
+   */
+  getDecisionsDir() {
+    return path.join(this.getDocsDir(), '03-decisions');
+  }
+
+  /**
+   * Get the research directory path (docs/10-research)
+   * @returns {string}
+   */
+  getResearchDir() {
+    return path.join(this.getDocsDir(), '10-research');
+  }
+
+  /**
+   * Get the testing directory path (docs/07-testing)
+   * @returns {string}
+   */
+  getTestingDir() {
+    return path.join(this.getDocsDir(), '07-testing');
+  }
+
+  /**
+   * Get the architecture directory path (docs/04-architecture)
+   * @returns {string}
+   */
+  getArchitectureDir() {
+    return path.join(this.getDocsDir(), '04-architecture');
   }
 
   /**
@@ -269,18 +395,40 @@ class PathResolver {
    */
   getAllPaths() {
     return {
+      // Project root and main directories
       projectRoot: this.getProjectRoot(),
       agileflowDir: this.getAgileflowDir(),
       docsDir: this.getDocsDir(),
       claudeDir: this.getClaudeDir(),
-      statusPath: this.getStatusPath(),
-      sessionStatePath: this.getSessionStatePath(),
-      metadataPath: this.getMetadataPath(),
-      configPath: this.getConfigPath(),
-      manifestPath: this.getManifestPath(),
+
+      // AgileFlow subdirectories
       scriptsDir: this.getScriptsDir(),
       commandsDir: this.getCommandsDir(),
       agentsDir: this.getAgentsDir(),
+      skillsDir: this.getSkillsDir(),
+      cfgDir: this.getCfgDir(),
+
+      // Configuration files
+      configPath: this.getConfigPath(),
+      manifestPath: this.getManifestPath(),
+      settingsPath: this.getSettingsPath(),
+      settingsLocalPath: this.getSettingsLocalPath(),
+
+      // Status and state files
+      statusPath: this.getStatusPath(),
+      sessionStatePath: this.getSessionStatePath(),
+      metadataPath: this.getMetadataPath(),
+      busLogPath: this.getBusLogPath(),
+
+      // Docs subdirectories
+      docsAgentsDir: this.getDocsAgentsDir(),
+      archiveDir: this.getArchiveDir(),
+      epicsDir: this.getEpicsDir(),
+      storiesDir: this.getStoriesDir(),
+      decisionsDir: this.getDecisionsDir(),
+      researchDir: this.getResearchDir(),
+      testingDir: this.getTestingDir(),
+      architectureDir: this.getArchitectureDir(),
     };
   }
 
