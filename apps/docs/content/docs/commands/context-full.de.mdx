@@ -1,0 +1,200 @@
+---
+title: /agileflow:context:full
+description: Generieren oder aktualisieren Sie die umfassende Projektkontextbeschreibung für Web-KI-Tools
+---
+# /agileflow:context:full
+
+Generieren oder aktualisieren Sie die umfassende Kontextbeschreibung für Web-KI-Tools.
+
+## Schnellstart
+
+```bash
+/agileflow:context:full
+```
+
+## Zweck
+
+Erstellt oder aktualisiert `docs/context.md` mit verwalteten Abschnitten, die Folgendes enthalten:
+
+- Was wir aufbauen und aktueller Schwerpunkt
+- Funktionskarte und Zusammenfassung der Technik/Werkzeuge
+- Schlüsselentscheidungen (ADRs) und Architektur-Snapshot
+- Tests und CI-Status
+- Aktueller Fortschritt (letzte 10 Busnachrichten)
+- Risiken und nächste Schritte
+
+Diese Datei kann in ChatGPT, Perplexity, Gemini oder Claude Web eingefügt werden, um externen KI-Tools den vollständigen Projektkontext bereitzustellen.
+
+## Wie es funktioniert
+
+### Schritt 1: Quellen sammeln
+
+Der Befehl liest Informationen aus mehreren Projektdateien:
+
+| Quelle | Zweck |
+|--------|---------|
+| `docs/09-agents/status.json` | Aktueller Story-/epischer Status |
+| `docs/09-agents/bus/log.jsonl` | Letzte 10 Fortschrittsmeldungen |
+| `docs/05-epics/*.md` | Epische Details |
+| `docs/06-stories/*/*.md` | Story-Details |
+| `docs/03-decisions/*.md` | Architekturentscheidungsaufzeichnungen |
+| `docs/02-practices/*.md` | Entwicklungspraktiken |
+| `docs/04-architecture/*.md` | Systemarchitektur |
+| `package.json` | Projektmanifest und Abhängigkeiten |
+| `.github/workflows/*.yml` | CI-Konfiguration |
+| `CHANGELOG.md` | Letzte Änderungen |
+
+### Schritt 2: Verwaltete Abschnitte generieren
+
+Der Befehl erstellt oder aktualisiert diese Abschnitte:
+
+```markdown
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+[Project description from package.json or README]
+
+## Current Focus
+[Active epics/stories from status.json]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+[One line per epic]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: tech -->
+## Tech Stack
+- Framework: [from package.json]
+- Key dependencies: [list major deps]
+- Testing: [from scripts or CI]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: decisions -->
+## Key Decisions (ADRs)
+[List of ADRs with titles and status]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: progress -->
+## Recent Progress
+[Last 10 entries from bus/log.jsonl]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: next -->
+## Next Steps
+[Stories in READY status]
+<!-- END_MANAGED -->
+```
+
+### Schritt 3: Diff-First-Bestätigung
+
+Vor dem Schreiben von Änderungen zeigt der Befehl einen Unterschied an und bittet um Bestätigung:
+
+```diff
+- [old content]
++ [new content]
+```
+
+Änderungen werden erst nach Ihrer Bestätigung übernommen.
+
+## Abschnittsbeschränkungen
+
+Um den Kontext kurz und lesbar zu halten:
+
+| Abschnitt | Max-Linien |
+|---------|-----------|
+| Übersicht | 10 |
+| Funktionen | 20 |
+| Technik | 15 |
+| Entscheidungen | 15 |
+| Fortschritt | 30 |
+| weiter | 20 |
+
+## Verwalteter vs. Benutzerinhalt
+
+Der Befehl unterscheidet zwischen:
+
+**Verwaltete Abschnitte** (zwischen Markierungen):
+```markdown
+<!-- MANAGED_SECTION: overview -->
+[Content here - OK to update]
+<!-- END_MANAGED -->
+```
+
+**Von Benutzern geschriebene Abschnitte** (keine Markierungen):
+```markdown
+## My Custom Section
+[Content here - NEVER touched]
+```
+
+Benutzerinhalte außerhalb verwalteter Markierungen bleiben immer erhalten.
+
+## Fehlende Dateien
+
+Wenn keine Quelldateien vorhanden sind, passt sich der Befehl ordnungsgemäß an:
+
+| F fehltile | Aktion |
+|--------------|--------|
+| `docs/context.md` | Neue Datei mit allen Abschnitten erstellen |
+| `status.json` | Funktionen/nächste Abschnitte überspringen, Platzhalter verwenden |
+| `bus/log.jsonl` | Fortschrittsabschnitt überspringen |
+| ADR-Dateien | Abschnitt „Entscheidungen überspringen“ |
+| CI-Konfiguration | CI-Details aus dem technischen Abschnitt überspringen |
+
+## Beispielausgabe
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents...
+
+## Current Focus
+
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+<!-- END_MANAGED -->
+
+[...additional sections...]
+```
+
+## Wann zu verwenden
+
+- **Nach wichtigen Meilensteinen** – Erfassen Sie abgeschlossene Arbeiten
+- **Vor Web-KI-Sitzungen** – Stellen Sie sicher, dass der Kontext aktuell ist
+- **Nach Architekturänderungen** - Neue Entscheidungen aufzeichnen
+- **Während der Sprintplanung** - Fokusbereiche aktualisieren
+
+## Arbeitsablauf
+
+```bash
+# 1. Generate or refresh context
+/agileflow:context:full
+
+# 2. Export for web AI (read-only)
+/agileflow:context:export
+
+# 3. Copy and paste into ChatGPT/Perplexity/Gemini
+```
+
+## Verwandte Befehle
+
+- [`/agileflow:context`](/commands/context) – Übersicht über Kontextbefehle
+- [`/agileflow:context:export`](/commands/context-export) – Prägnanten Auszug exportieren
+- [`/agileflow:context:note`](/commands/context-note) – Notiz mit Zeitstempel hinzufügen
+- [`/agileflow:research:ask`](/commands/research-ask) – Rechercheaufforderung generieren

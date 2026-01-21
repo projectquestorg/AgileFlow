@@ -1,0 +1,98 @@
+---
+title: /weiterleiten
+description: Dokumentieren Sie die Arbeitsübergabe zwischen Agenten
+---
+# /übergabe
+
+Dokumentieren Sie Arbeitsübergaben zwischen Agenten in einer Story mit Zusammenfassung und Blockern für eine reibungslose Zusammenarbeit im Team.
+
+## Schnellstart
+
+```bash
+/agileflow:handoff STORY=US-0042 FROM=agent-a TO=agent-b SUMMARY="Completed API integration" BLOCKERS="Need database schema review"
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `STORY` | Ja | - | Story-ID (z. B. US-0042) |
+| `FROM` | Ja | - | Übergabe der Agenten-ID |
+| `TO` | Ja | - | Empfangende Agenten-ID |
+| `SUMMARY` | Ja | - | Was wurde erreicht oder aktueller Status |
+| `BLOCKERS` | Nein | - | Bekannte Blocker oder Probleme bei der Kommunikation |
+
+## Beispiele
+
+### Einfache Übergabe
+
+```bash
+/agileflow:handoff STORY=US-0050 FROM=AG-API TO=AG-UI SUMMARY="Backend API complete and tested" BLOCKERS="UI styling needs brand color review"
+```
+
+Erstellt eine Übergabenotiz, die Folgendes dokumentiert:
+- Wer übergibt die Arbeit?
+- Was wurde abgeschlossen
+- Alle bekannten Blocker für den nächsten Agenten
+- Datum und Uhrzeit der Übergabe
+
+### Übergabe mit mehreren Blockern
+
+```bash
+/agileflow:handoff STORY=US-0045 FROM=AG-CI TO=AG-DEVOPS SUMMARY="Pipeline setup complete, ready for deployment" BLOCKERS="Environment variables need to be set, Requires AWS credentials approval"
+```
+
+## Ausgabe
+
+Der Befehl erstellt zwei Artefakte:
+
+### 1. Übergabenotiz
+
+Erstellt eine Markdown-Datei unter:
+```text
+docs/09-agents/comms/<STORY>-<YYYYMMDD>-handoff.md
+```
+
+Beispielinhalt:
+```markdown
+# Handoff: US-0042
+
+From: AG-API
+To: AG-UI
+Date: 2025-12-22
+
+## Summary
+Completed API integration with authentication middleware.
+All endpoints tested and passing.
+
+## Blockers
+- Database schema needs DBA review before migration
+- Redis cache configuration pending DevOps approval
+```
+
+###2. Agent-Bus-Protokoll
+
+Hängt einen Eintrag mit dem Typ `handoff` an `docs/09-agents/bus/log.jsonl` an, um einen Prüfpfad der Arbeitsübergänge zwischen Agenten zu erstellen.
+
+## Arbeitsablauf
+
+1. Analysieren Sie alle Eingaben (STORY, FROM, TO, SUMMARY, BLOCKERS)
+2. Übergabenotiz anhand der Vorlage erstellen
+3. Eintrag an das Agentenbusprotokoll anhängen
+4. Vorschau zur Bestätigung anzeigen
+5. Warten Sie auf die JA/NEIN-Genehmigung
+6. Schreiben Sie Dateien erst nach Genehmigung
+
+## Verwenden Sie Wann
+
+- **Agentenwechsel** für eine Story mitten im Projekt
+- **Arbeit pausieren** und den Fortschritt für später dokumentieren
+- **Blocker hervorheben** für den nächsten Agenten
+- **Erstellung eines Audit-Trails** von Arbeitsübergängen
+- **Dokumentieren von Abhängigkeiten** für teamübergreifende Übergaben
+
+## Verwandte Befehle
+
+- [`/status`](/commands/status) – Überprüfen Sie den aktuellen Story-Status und die Aufgaben
+- [`/babysit`](/commands/babysit) – Überwachen Sie den Agentenfortschritt und schlagen Sie Übergaben vor
+- [`/feedback`](/commands/feedback) – Sammeln Sie Feedback zu abgeschlossenen Arbeiten

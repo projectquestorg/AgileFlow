@@ -1,0 +1,286 @@
+---
+title: /contexto
+description: Crie e gerencie o contexto do projeto para ferramentas de IA da web
+---
+# /contexto
+
+Crie, atualize e gerencie o resumo do contexto do seu projeto para uso em ferramentas de IA da web como ChatGPT, Perplexity, Gemini e Claude web.
+
+## Visão geral
+
+A família de comandos __NOTRASLATE_14__ ajuda a manter e exportar o contexto do projeto para ferramentas de IA baseadas na web. Isso é útil quando você precisa:
+
+- Gere um resumo de contexto abrangente para colar em ferramentas de IA da web
+- Exporte um trecho conciso para carregamento rápido do contexto
+- Registre decisões e descobertas importantes em seu arquivo de contexto
+- Mantenha as ferramentas externas de IA informadas sobre o status do seu projeto
+
+## Subcomandos
+
+O comando __NOTRASLATE_15__ possui três subcomandos, cada um com uma finalidade específica:
+
+### /agileflow:context:full
+
+**Gere ou atualize o resumo abrangente do contexto do projeto.**
+
+Cria ou atualiza __NOTRASLATE_16__ com seções gerenciadas contendo:
+- O que estamos construindo e foco atual
+- Mapa de recursos e resumo de tecnologia/ferramentas
+- Decisões-chave (ADRs) e instantâneo da arquitetura
+- Teste e status de CI
+- Progresso recente
+- Riscos e nepassos xt
+
+Este arquivo foi projetado para ser colado no ChatGPT, Perplexity, Gemini ou Claude web para fornecer às ferramentas externas de IA o contexto completo do projeto.
+
+**Uso:**
+```bash
+/agileflow:context:full
+```
+
+**Comportamento:**
+- Lê __NOTRASLATE_17__ existente, se presente
+- Reúne dados de status.json, ADRs, épicos, histórias e CHANGELOG
+- Atualiza apenas seções gerenciadas (entre marcadores __NOTRASLATE_18__)
+- Preserva qualquer conteúdo escrito pelo usuário fora das seções gerenciadas
+- Mostra diferenças antes de aplicar alterações
+- Requer confirmação antes de escrever
+
+---
+
+### /agileflow:context:exportar
+
+**Exporte um trecho de contexto conciso para colar em ferramentas de IA da web.**
+
+Lê `docs/context.md` e gera um trecho condensado (≤300 linhas) pronto para copiar e colar no ChatGPT, Perplexity, Gemini ou Claude web.
+
+Este é um **comando somente leitura** - nenhum arquivo é gravado.
+
+**Uso:**
+```bash
+/agileflow:context:export
+```
+
+**Comportamento:**
+- Lê `docs/context.md`
+- Extrai seções principais (visão geral, foco atual, pilha de tecnologia, decisões, mapa de recursos, próximas etapas)
+- Saídas conciveja o trecho em um bloco de código
+- Inclui instruções para colar na IA da web
+- Não requer confirmação
+
+---
+
+### /agileflow:context:note
+
+**Anexar uma nota com carimbo de data/hora ao arquivo de contexto.**
+
+Adicione rapidamente uma nota a __NOTRASLATE_21__ na seção "Notas". Útil para registrar decisões, observações ou lembretes que devem persistir no contexto do projeto.
+
+**Uso:**
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+**Argumentos:**
+
+| Argumento | Obrigatório | Descrição |
+|----------|----------|------------|
+| NOTA | Sim | Texto de nota de 1 a 5 linhas para anexar |
+
+**Comportamento:**
+- Lê ou cria __NOTRASLATE_22__
+- Cria uma seção "Notas" se ela não existir
+- Acrescenta nota com carimbo de data/hora ISO (por exemplo, __NOTRASLATE_23__)
+- Mostra diferenças antes de aplicar alterações
+- Requer confirmação antes de escrever
+
+---
+
+## Exemplos
+
+### Gerar contexto completo
+
+__NOTRADUZIR_3__
+
+Cria ou atualiza __NOTRASLATE_24__ com informações abrangentes do projeto:
+
+__NÃOTRADUZIR_4__
+
+---
+
+### Exportação para ferramentas de IA da Web
+
+__NOTRADUZIR_5__
+
+Produz uma concisaE trecho (≤300 linhas) pronto para colar:
+
+__NOTRADUZIR_6__
+
+---
+
+### Adicione uma nota rápida
+
+__NÃOTRADUZIR_7__
+
+Acrescenta uma nota com carimbo de data/hora à seção "Notas" de __NOTRASLATE_25__:
+
+__NÃOTRADUZIR_8__
+
+---
+
+## Exemplos de fluxo de trabalho
+
+### Mantenha o contexto atualizado
+
+Mantenha o contexto atualizado para melhor assistência de IA:
+
+__NOTRADUZIR_9__
+
+---
+
+### Use em conversas de IA na Web
+
+Antes de pedir ajuda à IA da web em seu projeto:
+
+__NOTRADUZIR_10__
+
+---
+
+### Capture descobertas importantes
+
+__NOTRADUZIR_11__
+
+---
+
+## Modos de saída
+
+### /agileflow:context:full (criar/atualizar contexto)
+
+**Entrada**: coleta informações de:
+- __NOTRASLATE_26__ - Trabalho atual e status da história
+- __NOTRASLATE_27__ - Mensagens de progresso recentes
+- __NOTRASLATE_28__ - Decisões de arquitetura (ADRs)
+- __NOTRASLATE_29__ - Documentação de design do sistema
+- __NOTRASLATE_30__ - Roteiro de recursos e épicos
+- __NOTRASLATE_31__ - Histórico de lançamento
+- __NOTRASLATE_32__ - Metadados do projeto
+
+**Saída**: Atualiza __NOTRASLATE_33__ com seções gerenciadas enquanto presdisponibilizando conteúdo personalizado
+
+**Comportamento Chave**:
+- Diff-first: mostra as alterações antes de escrever
+- Seções gerenciadas: atualiza apenas o conteúdo entre marcadores __NOTRASLATE_34__
+- Preserva o conteúdo do usuário: nunca modifica o conteúdo fora das seções gerenciadas
+- Requer confirmação: o usuário deve aprovar as alterações
+
+---
+
+### /agileflow:context:export (Copiar para Web AI)
+
+**Entrada**: Lê __NOTRASLATE_35__ existente
+
+**Saída**: trecho conciso (≤300 linhas) pronto para colar no ChatGPT, Perplexity, Gemini ou Claude web
+
+**Caso de uso**: carregue o contexto do projeto na ferramenta de IA da web para continuar o trabalho em uma nova conversa
+
+**Comportamento Chave**:
+- Somente leitura: nenhum arquivo é modificado
+- Autônomo: inclui instruções para colar
+- Pronto para formato: já formatado para fácil copiar e colar
+
+---
+
+### /agileflow:context:note (Anexar nota com carimbo de data/hora)
+
+**Entrada**: argumento NOTA com nota de 1 a 5 linhas
+
+**Saída**: Anexado à seção "Notas" com carimbo de data/hora ISO
+
+**Caso de uso**: captura rápida de eventos, decisões ou descobertas importantes
+
+**Comportamento Chave**:
+- Diff-first: mostra as alterações antes de escrever
+- Cria seção se estiver faltando: cria automaticamente a seção "Notas" se necessário
+- Cronológico: as notas aparecem em ordem com as mais recentes na parte inferior
+- Carimbo de data/hora: cada nota inclui carimbo de data/hora ISO 8601
+
+---
+
+## Melhores práticas
+
+### Atualizações regulares de contexto
+
+Mantenha o contexto atualizado para melhor assistência de IA:
+
+1. **Após marcos importantes**: Execute __NOTRASLATE_36__ para capturar o trabalho concluído
+2. **Antes das sessões de IA da web**: Execute __NOTRASLATE_37__ e cole no ChatGPT
+3. **Durante o desenvolvimento**: Use __NOTRASLATE_38__ para registrar decisões e descobertas
+
+```bash
+# Recommended workflow
+/agileflow:context:full        # Update full context
+/agileflow:context:export      # Get concise version
+# Paste into web AI for context-aware help
+```
+
+---
+
+### Capture descobertas importantes
+
+Registre insights e decisões técnicas:
+
+__NÃOTRADUZIR_13__
+
+---
+
+### Use em conversas de IA na Web
+
+Maximize a eficácia das ferramentas de IA da web fornecendo contexto:
+
+1. Exporte contexto conciso: `/agileflow:context:export`
+2. Copie a saída
+3. Cole em ChatGPT, Perplexity ou Gemini como sua primeira mensagem
+4. Faça perguntas de acompanhamento com todo o contexto do projeto
+
+Isso garanteÉ que a IA da web entende sua base de código, arquitetura e foco atual.
+
+---
+
+### Gerenciar tamanho do arquivo de contexto
+
+Para projetos grandes, gerencie o tamanho do arquivo context.md:
+
+- Use __NOTRASLATE_40__ para verificar o tamanho do contexto atual
+- Arquive notas antigas se elas ultrapassarem mais de 100 entradas
+- Crie arquivos de pesquisa separados para mergulhos profundos
+- Use __NOTRASLATE_41__ para tópicos de pesquisa complexos
+
+---
+
+## Fluxo de trabalho Diff-First
+
+Todos os comandos de contexto que modificam arquivos seguem um fluxo de trabalho consistente:
+
+1. **Mostrar alterações**: o comando exibe as alterações propostas como uma comparação
+2. **Confirmar**: você analisa as alterações e aprova ou rejeita
+3. **Aplicar**: As alterações serão escritas somente após sua confirmação
+
+Isso garante que você nunca perca informações importantes e sempre saiba o que está sendo modificado.
+
+---
+
+## Comandos Relacionados
+
+- [__NOTRASLATE_42____NOTRASLATE_47__ - Criar registros de decisão de arquitetura
+- [`/research`](/commands/research) - Criar e gerenciar notas de pesquisa
+- [`/docs-sync`__NOTRASLATE_49__ - Sincronizar documentação
+- [__NÃOTRANSLATE_45____NOTRASLATE_50__ - Atualizar arquivos README
+
+---
+
+## Notas
+
+- Os arquivos de contexto são armazenados em __NOTRASLATE_46__ como parte da documentação do seu projeto local
+- As seções gerenciadas usam comentários HTML como marcadores e não devem ser editadas manualmente
+- O comando de exportação respeita o limite de 300 linhas para caber nas janelas de contexto da ferramenta de IA da web
+- As notas têm carimbo de data e hora no formato ISO 8601 para consistência e fácil classificação

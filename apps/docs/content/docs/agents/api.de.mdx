@@ -1,0 +1,320 @@
+---
+title: API
+description: Spezialist für Dienste und Datenschicht für die Implementierung von Backend-APIs, Geschäftslogik und Datenmodellen.
+---
+# API-Agent
+
+Der API-Agent (AG-API) ist Ihr Backend-Services-Spezialist. Es implementiert REST/GraphQL-APIs, Geschäftslogik, Datenmodelle, Datenbankzugriff, externe Serviceintegrationen und Statusverwaltung. Es stellt sicher, dass Ihre Datenschicht sicher, leistungsfähig und gut getestet ist.
+
+## Fähigkeiten
+
+- Implementieren Sie REST/GraphQL/tRPC-API-Endpunkte
+- Schreiben Sie Geschäftslogik und Validierungsregeln
+- Entwerfen und pflegen Sie Datenmodelle und Schemata
+- Optimieren Sie Datenbankabfragen und verhindern Sie N+1-Probleme
+- Integrieren Sie externe Dienste (Stripe, SendGrid, Analytics usw.)
+- Implementieren Sie Authentifizierung und Autorisierung
+- Schreiben Sie umfassende API-Tests (Einheit, Integration, Vertrag)
+- Dokumentieren Sie API-Endpunkte und Fehlerbehandlung
+- Koordinieren Sie API-Endpunktabhängigkeiten mit AG-UI
+- Überwachen und protokollieren Sie API-Anfragen mit Kontext
+
+## Wann zu verwenden
+
+Verwenden Sie den API-Agenten, wenn:
+
+– Sie müssen einen neuen API-Endpunkt implementieren
+– Sie müssen Geschäftslogik hinzufügen, um eine Funktion zu verarbeiten
+- Sie müssen einen externen Dienst integrieren (Zahlung, E-Mail usw.)
+-Sie müssen Datenbankabfragen optimieren oder N+1-Probleme beheben
+- Sie müssen eine Authentifizierung oder Autorisierung implementieren
+- Sie entwerfen Datenmodelle für eine neue Funktion
+- Sie müssen umfassende API-Tests schreiben
+– Sie möchten sicherstellen, dass AG-UI-Storys nicht blockiert werden, während sie auf Endpunkte warten
+
+## Wie es funktioniert
+
+1. **Kontextladen**: Agent liest Fachwissen, CLAUDE.md und Architekturdokumente
+2. **Statusprüfung**: Der Agent findet fertige Storys und sucht nach AG-UI-Blockern
+3. **Definition von „Bereit“**: Der Agent validiert Akzeptanzkriterien und Test-Stubs
+4. **Planmodus**: Bei komplexen Arbeiten entwirft der Agent den Ansatz vor der Implementierung
+5. **Implementierung**: Der Agent schreibt Validierung, Fehlerbehandlung und Geschäftslogik
+6. **Testen**: Der Agent schreibt Unit-, Integrations- und Vertragstests
+7. **Koordination**: Agent entsperrt AG-UI-Stories, wenn Endpunkte bereit sind
+8. **Verifizierung**: Der Agent führt Tests durch, um sicherzustellen, dass die Baseline erfolgreich ist
+9. **Dokumentation**: Agent aktualisiert CLAUDE.md und hängt Busnachrichten an
+
+## Beispiel
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need a user profile API endpoint"
+```
+
+Der API-Agent wird:
+1. Überprüfen Sie docs/06-stories/ für die USA mit der Owner==AG-API
+2. Suchen Sie nach blockierten AG-UI-Stories, die auf diesem Endpunkt warten
+3. Implementieren Sie den POST /api/users-Endpunkt:
+   - Eingabevalidierung (Pflichtfelder, Typprüfung)
+   - Geschäftslogik (Hash-Passwort, Standardeinstellungen festlegen)
+   - Datenbankzugriff (in Benutzertabelle einfügen)
+   - Fehlerbehandlung (doppelte E-Mail, Validierungsfehler)
+   - Protokollierung mit Anforderungs-IDs
+4. Umfangreiche Tests schreiben:
+   - Happy Path (gültige Daten erstellen Benutzer)
+   - Validierungsfehler (fehlende E-Mail)
+   - Randfälle (sehr lange E-Mail)
+5. API-Dokumente aktualisieren (OpenAPI/Swagger)
+6. Entsperrungsnachricht an AG-UI senden: „GET /api/users/:id ready“
+7. Markieren Sie „In der Überprüfung“, wenn die Tests erfolgreich sind
+
+Oder direkt spawnen:
+
+```text
+Task(
+  description: "Implement payment webhook endpoint",
+  prompt: "Add Stripe webhook handler for payment.success and payment.failed events",
+  subagent_type: "agileflow-api"
+)
+```
+
+## Schlüsselverhalten
+
+- **Expertise zuerst laden**: Liest vor jeder Arbeit die Datei „expertise.yaml“.
+- **AG-UI-Entsperrung priorisieren**: Prüft, ob AG-UI-Storys auf API-Endpunkten blockiert sind – diese haben höchste Priorität
+- **Proaktive Koordination**: Sendet Entsperrungsnachrichten an AG-UI, wenn EndpoiDie NTs sind bereit
+- **Eingabevalidierung**: Validiert immer Typen, Formate, Bereiche und Autorisierung
+- **Fehlerbehandlung**: Konsistentes Fehlerschema mit HTTP-Statuscodes
+- **Testgesteuert**: Schreibt Tests vor der Implementierung und stellt sicher, dass die Tests vor der Überprüfung bestanden werden
+- **CLAUDE.md-Updates**: Dokumentiert neue API-Muster, die während der Implementierung entdeckt wurden
+- **Session Harness-Integration**: Überprüft den Teststatus vor dem Start und erfordert das Bestehen von Tests vor der Überprüfung
+- **Autonome Befehle**: Ruft /agileflow:ai-code-review, /agileflow:adr-new usw. direkt auf.
+- **Buskoordination**: Sendet Status-, Blockierungs-, Entblockungs- und Fragenachrichten an bus/log.jsonl
+- **Kontexterhaltung**: Verwendet „compact_context“ (Priorität: kritisch), um den Fokus bei langen Gesprächen aufrechtzuerhalten und dabei die Regeln zum Laden von Fachwissen und die Blockerverfolgung durch Kontextkomprimierung beizubehalten
+
+## Kompakte Kontextkonfiguration
+
+Der API-Agent verwendet **kritische Priorität** compact_context, um sicherzustellen, dass der Fokus bei längeren Gesprächen erhalten bleibt:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on API endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status before starting"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets - use environment variables only"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+Dadurch wird sichergestellt, dass kritische Regeln (Laden von Expertenwissen, Blockerpriorisierung, Testüberprüfung) und der aktuelle Status (welche Endpunkte ausgeführt werden, welche UI-Storys blockiert werden) auch nach der Kontextkomprimierung erhalten bleiben.
+
+## Werkzeuge verfügbar
+
+Dieser Agent hat Zugriff auf: Lesen, Schreiben, Bearbeiten, Bash, Glob, Grep
+
+## API-Endpunktmuster
+
+**REST-Konventionen**:
+
+```text
+GET    /api/users           → List users
+POST   /api/users           → Create user
+GET    /api/users/:id       → Get user
+PATCH  /api/users/:id       → Update user
+DELETE /api/users/:id       → Delete user
+```
+
+**Anfrage-/Antwortformat**:
+
+```json
+// Request
+POST /api/users
+{
+  "email": "user@example.com",
+  "password": "secure-password",
+  "name": "John Doe"
+}
+
+// Success Response (201 Created)
+{
+  "id": "user_123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "2025-01-15T10:00:00Z"
+}
+
+// Error Response (422 Unprocessable Entity)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "email": "Email already exists"
+    }
+  }
+}
+```
+
+## Eingabevalidierung
+
+Jeder Endpunkt muss Eingaben validieren:
+
+```javascript
+// Validate required fields
+if (!email || !password) {
+  throw new ValidationError('Email and password required');
+}
+
+// Validate format
+if (!email.includes('@')) {
+  throw new ValidationError('Invalid email format');
+}
+
+// Validate range
+if (password.length < 8) {
+  throw new ValidationError('Password must be 8+ characters');
+}
+
+// Validate authorization
+if (userId !== req.user.id) {
+  throw new AuthorizationError('Cannot access other users');
+}
+```
+
+## Fehlerbehandlung
+
+Konsistentes Fehlerschema über alle Endpunkte hinweg:
+
+```javascript
+// Error class (example)
+class AppError extends Error {
+  constructor(code, message, statusCode = 500, details = {}) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+// Usage
+throw new AppError(
+  'VALIDATION_ERROR',
+  'Email is required',
+  422,
+  { field: 'email' }
+);
+```
+
+## Prüfstandards
+
+Jeder API-Endpunkt benötigt umfassende Tests:
+
+```javascript
+describe('POST /api/users', () => {
+  test('creates user with valid data', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(201);
+    expect(response.body.email).toBe('test@example.com');
+  });
+
+  test('returns validation error for missing email', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ password: 'password123' });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns error for duplicate email', async () => {
+    // Create first user
+    await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+
+    // Try to create duplicate
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('DUPLICATE_EMAIL');
+  });
+});
+```
+
+## Schlüsseldateien
+
+- **Expertise**: `packages/cli/src/core/experts/api/expertise.yaml` (Agentenspeicher)
+- **Workflow**: `packages/cli/src/core/experts/api/workflow.md` (Plan → Erstellen → Selbstverbesserung)
+- **Status**: `docs/09-agents/status.json` (Story-Tracking)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (Koordinationsnachrichten)
+- **CLAUDE.md**: API-Architektur, ORM, Validierungsansatz
+- **Recherche**: `docs/10-research/` (auf API-Muster prüfen)
+- **ADRs**: `docs/03-decisions/` (API-Architekturentscheidungen)
+
+## Workflow-Schritte
+
+1. **Expertise laden**: Expertise.yaml lesen
+2. **Status prüfen**: Finden Sie BEREIT-Storys, bei denen Eigentümer==AG-API ist
+3. **AG-UI-Blocker priorisieren**: Überprüfen Sie den Bus auf AG-UI-Storys, die auf Endpunkten blockiert sind
+4. **Bereitschaftsdefinition validieren**: AC vorhanden, Test-Stub in docs/07-testing/test-cases/
+5. **Sitzungsgeschirr prüfen**: Überprüfen Sie, ob test_status==bestanden ist, bevor Sie beginnen
+6. **Zweig erstellen**: `feature/<US_ID>-<slug>`
+7. **Aktualisierungsstatus**: „In Bearbeitung“ markieren, Busnachricht anhängen
+8. **Implementieren**: Validierung, Fehlerbehandlung, Geschäftslogik, Tests
+9. **Führen Sie die Überprüfung aus**: /agileflow:verify, um sicherzustellen, dass die Tests erfolgreich sind
+10. **CLAUDE.md aktualisieren**: Wenn neue Muster etabliert sind (dokumentieren Sie diese)
+11. **In-Review markieren**: Nur wenn test_status==bestanden
+12. **Entsperrungsnachrichten senden**: Wenn AG-UI auf diesem Endpunkt gewartet hat
+13. **PR generieren**: Verwenden Sie /agileflow:pr-template
+14. **Selbstverbesserung**: Führen Sie self-improve.md nach Abschluss aus
+
+## Quakeits-Checkliste
+
+Vor dem Markieren in der Rezension:
+
+- [ ] Eingaben validiert (Typ, Format, Bereich, Authentifizierung)
+- [ ] Fehlerantworten konsistent (HTTP-Codes, Fehlerschema)
+- [ ] Authentifizierung/Autorisierung wird auf geschützten Routen erzwungen
+- [ ] Keine N+1 Abfragen (optimierter Datenbankzugriff)
+- [ ] Geheimnisse in Umgebungsvariablen (nie fest codiert)
+- [ ] Protokollierung mit Anforderungs-IDs und Kontext
+- [ ] API-Dokumente aktualisiert (OpenAPI/Swagger/README)
+- [ ] Tests umfassen: Happy Path, Validierungsfehler, Authentifizierungsfehler, Grenzfälle
+- [ ] Teststatus: bestanden (überprüft über /agileflow:verify)
+- [ ] AG-UI-Storys entsperrt (ggf. Entsperrungsnachricht gesendet)
+
+## Koordination mit anderen Agenten
+
+**AG-UI (Frontend)**:
+– Überprüfen Sie docs/09-agents/bus/log.jsonl auf blockierte UI-Storys, die auf Endpunkten warten
+– Wenn der Endpunkt bereit ist, senden Sie eine Entsperrungsnachricht mit Methode, Pfad und Anforderungs-/Antwortformat
+- Beispiel: `"API endpoint GET /api/users/:id ready (200 OK, user object), unblocking US-0042"`
+
+**AG-DATABASE (Datenschicht)**:
+- Koordinieren Sie den Schemaentwurf vor der Implementierung von Abfragen
+- Überprüfen Sie Migrationen, bevor Sie sie im Code verwenden
+- Abfragemuster teilenrns zur Optimierung
+
+**AG-CI (Testen)**:
+- Koordinierung beim Aufbau der Testdatenbank
+- Vertragstestinfrastruktur anfordern (Pact, MSW)
+- Stellen Sie API-Tests in CI sicher
+
+**MENTOR (Orchestrierung)**:
+- Fordern Sie eine Klärung der unklaren Geschäftslogik an
+- Melden Sie, wenn die Story-Definition von „Ready“ fehlt
+
+## Verwandte Agenten
+
+– [`ui`](/agents/ui) – Frontend-Komponenten, die API-Endpunkte nutzen
+- [`database`](/agents/database) – Datenschicht- und Schemadesign
+- [`mentor`](/agents/mentor) – Orchestriert die API-Arbeit als Teil der Funktionsimplementierung

@@ -1,0 +1,148 @@
+---
+title: /validar experiência
+description: Valide arquivos de experiência quanto a desvios e obsoletos
+---
+# /validar-expertise
+
+Valide os arquivos de experiência do agente para garantir que eles não se desviem da base de código e permaneçam atualizados.
+
+## Início rápido
+
+```bash
+/agileflow:validate-expertise
+```
+
+Valida todos os arquivos de expertise. Você também pode validar um domínio específico:
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `DOMAIN` | Não | (todos) | Validar arquivo de experiência de domínio específico (por exemplo, `database`, `api`) |
+
+## Verificações de validação
+
+O comando executa quatro verificações de validação críticas em cada arquivo de expertise:
+
+### 1. Desvio de caminho de arquivo
+Verifica se todos os caminhos de arquivo referenciados no arquivo de especialização ainda existem na base de código. Detecta quando arquivos documentados foram movidos, renomeados ou excluídos.
+
+**Exemplo**: se expertise.yaml fizer referência a `src/old/database.ts` mas esse arquivo não existir mais, ele sinaliza isso como desvio.
+
+### 2. Aprendizados obsoletos
+Sinaliza arquivos de especialização que não foram atualizados há 30 dias ou mais. Experiência que não émantido regularmente torna-se desatualizado e menos confiável.
+
+**Aviso**: Arquivos não atualizados há mais de 30 dias são marcados para revisão e atualização.
+
+### 3. Verificação do tamanho do arquivo
+Avisa se um arquivo de expertise ultrapassa 200 linhas. Arquivos grandes são difíceis de manter e devem ser divididos em documentos menores e específicos.
+
+**Recomendação**: Mantenha os arquivos especializados com menos de 200 linhas para melhor manutenção.
+
+### 4. Seções obrigatórias
+Verifica se o arquivo expertise.yaml contém todas as seções necessárias:
+- __NOTRASLATE_12__: identificador de domínio
+- __NOTRASLATE_13__: Pelo menos um modelo mental (conceitos centrais)
+- __NOTRASLATE_14__: Histórico de aprendizagem (pode estar vazio inicialmente)
+- __NOTRASLATE_15__: Arquivos importantes para este domínio
+- __NOTRASLATE_16__: Padrões comuns e antipadrões
+
+## Exemplos
+
+### Validar todos os arquivos de experiência
+
+```bash
+/agileflow:validate-expertise
+```
+
+Executa a validação em todos os arquivos especializados no diretório __NOTRASLATE_17__.
+
+### Validar domínio específico
+
+__NOTRADUZIR_3__
+
+Valida apenas o arquivo de especialização do domínio do banco de dados.
+
+###Verifique outro domínio
+
+__NÃOTRADUZIR_4__
+
+Valida apenas o arquivo de experiência do domínio da API.
+
+## Formato de saída
+
+O comando produz um relatório de validação detalhado:
+
+__NOTRADUZIR_5__
+
+## Indicadores de status
+
+| Indicador | Significado | Ação |
+|-----------|---------|--------|
+| `[PASS]` | Verificação aprovada com sucesso | Nenhuma ação necessária |
+| `[WARN]` | Problema não crítico encontrado | Revise e considere consertar |
+| `[FAIL]` | Problema crítico encontrado | Deve ser corrigido |
+
+## Problemas e soluções comuns
+
+| Edição | Indicator | Solução |
+|-------|-----------|----------|
+| O arquivo referenciado não existe | `[FAIL] DRIFT` | Remover ou atualizar a referência do caminho do arquivo |
+| Arquivo não atualizado há mais de 30 dias | `[WARN] stale` | Revise e atualize os aprendizados |
+| Arquivo de expertise muito grande | `[WARN] File size` | Dividir em arquivos focados |
+| Seções obrigatórias ausentes | `[FAIL] Required sections` | Adicione seções ausentes a expertise.yaml |
+
+## Quando correr
+
+Execute a validação de experiência:
+- **Após o início da sessão**: Opcionall como parte das verificações de integridade do sistema (pode ser configurado como um gancho)
+- **Antes dos principais lançamentos**: certifique-se de que todo o conhecimento esteja atualizado e preciso
+- **Após grandes refatorações**: valide se as referências de arquivo ainda apontam para locais válidos
+- **Periodicamente**: execute mensalmente/trimestralmente para manter a atualização do conhecimento
+- **Ao modificar conhecimentos**: valide as alterações antes de confirmar
+
+## Localização do arquivo de experiência
+
+Os arquivos de experiência são armazenados em:
+__NOTRADUZIR_6__
+
+Por exemplo:
+- `.agileflow/experts/database/expertise.yaml`
+- `.agileflow/experts/api/expertise.yaml`
+- `.agileflow/experts/frontend/expertise.yaml`
+
+## Critérios de sucesso
+
+Um arquivo de experiência saudável deve:
+- ✅ Todos os arquivos referenciados existem na base de código
+- ✅ Atualizado nos últimos 30 dias
+- ✅ Menos de 200 linhas
+- ✅ Contém todas as seções necessárias (domínio, modelos mentais, aprendizados, arquivos-chave, padrões)
+
+## Integração com seu fluxo de trabalho
+
+Você pode configurar a validação de experiência para ser executada automaticamente:
+
+__NÃOTRADUZIR_7__
+
+Isso adiciona um gancho SessionStart que valida a experiência em cada início de sessão e alerta você sobre problemas.
+
+## DerivaDetalhes de detecção
+
+O desvio do caminho do arquivo é o problema mais crítico detectado. O comando procura referências de arquivo no formato:
+- __NOTRASLATE_28__ - Arquivos de código-fonte
+- __NOTRASLATE_29__ - Pacotes Monorepo
+- `lib/...` - Arquivos de biblioteca
+
+Se esses caminhos não existirem mais, eles serão sinalizados para atenção e remoção imediatas.
+
+## Comandos Relacionados
+
+- [`/configure`](/commands/configure) - Configure a validação para ser executada automaticamente
+- [__NOTRASLATE_32__](/commands/diagnose) - Execute diagnósticos de integridade do sistema
+- [`/agent`__NOTRASLATE_37__ - Integrar novos agentes (cria arquivos de experiência)
+- [`/help`](/commands/help) - Ver todos os comandos disponíveis

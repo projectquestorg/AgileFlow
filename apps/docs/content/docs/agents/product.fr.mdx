@@ -1,0 +1,323 @@
+---
+title: Produit
+description: Spécialiste produit pour l'analyse des exigences, les témoignages d'utilisateurs, la clarté des critères d'acceptation et la validation des fonctionnalités avant la planification épique.
+---
+# Agent produit
+
+L'agent produit est spécialisé dans la transformation d'idées vagues de fonctionnalités en exigences claires et réalisables. Il rassemble les exigences des parties prenantes, rédige des user stories avec des critères d'acceptation et valide les fonctionnalités avant la planification épique.
+
+## Capacités
+
+- Interviewer les parties prenantes et recueillir les exigences en utilisant des techniques de questionnement éprouvées
+- Créez des personnalités d'utilisateur détaillées avec des objectifs et des points faibles
+- Rédiger des user stories au format standard "En tant que... je veux... pour que..."
+- Définir les critères d'acceptation en utilisant le format Given/When/Then
+- Identifiez les cas extrêmes et les scénarios d'erreur que les développeurs pourraient manquer
+- Définir les indicateurs de réussite des fonctionnalités
+- Gérer la portée pour éviter toute dérive de la portée
+- Clarifier les exigences floues avant de passer à la planification épique
+
+## Quand l'utiliser
+
+Utilisez cet agent lorsque :
+
+- **Demandes de fonctionnalités vagues** - "Ajouter des profils utilisateur" doit être clair avant le développement
+- **Démarrer une nouvelle épopée** - Rassemblez et clarifiez d'abord les exigences
+- **Fonctionnalités complexes** - Besoin d'une analyse et d'un accès aux cas extrêmescritères de ptance
+- **Entretiens avec les parties prenantes nécessaires** - Comprendre les besoins des utilisateurs et la valeur commerciale
+- **Débats sur la portée** - Déterminez les éléments entrants/sortis de cette version
+- **Rédaction de user story** - Convertir les exigences en critères d'acceptation testables
+- **Validation des fonctionnalités** - Confirmer que la fonctionnalité résout le problème réel de l'utilisateur
+
+## Comment ça marche
+
+L'agent produit suit un workflow structuré :
+
+### Étape 1 : Chargement des connaissances
+
+Avant de commencer la collecte des exigences :
+- Lire CLAUDE.md pour la stratégie produit
+- Consultez docs/10-research/ pour la recherche sur les utilisateurs et l'analyse concurrentielle
+- Consultez les documents/03-décisions/ pour les ADR et les précédents produits
+- Vérifiez docs/08-project/roadmap.md pour le contexte
+
+### Étape 2 : Entretiens avec les parties prenantes
+
+Posez des questions clés pour comprendre la fonctionnalité :
+
+1. **"Pourquoi avons-nous besoin de cette fonctionnalité ?"** → Valeur commerciale et résultats
+2. **"Qui utilisera ceci ?"** → Personnalités et rôles des utilisateurs
+3. **"Quel problème résout-il ?"** → Énoncé du problème
+4. **"Comment le succès sera-t-il mesuré ?"** → Indicateurs de succès
+5. **"Qu'est-ce quecas extrêmes?"** → Scénarios d'erreur et conditions aux limites
+6. **"Y a-t-il des contraintes ?"** → Contraintes techniques, juridiques ou business
+7. **"Quelle est la priorité ?"** → Indispensable ou agréable à avoir
+
+### Étape 3 : Rédiger des témoignages d'utilisateurs
+
+Créez des histoires au format standard :
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+Exemple :
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account and manage my data.
+```
+
+### Étape 4 : Définir les critères d'acceptation
+
+Écrivez des critères testables en utilisant le format Given/When/Then :
+
+```text
+Acceptance Criteria:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+```
+
+### Étape 5 : Identifier les cas extrêmes
+
+Incluez toujours des scénarios d’erreur :
+- Saisie invalide (champs vides, mauvais format)
+- Conditions aux limites (trop longue, trop courte, nulle, négative)
+- Scénarios de conflits (e-mail en double, mises à jour simultanées)
+- Récupération d'erreur (que se passe-t-il en cas d'échec de la sauvegarde ?)
+- Scénarios d'autorisation (non authentifiés, autorisations erronées)
+
+### Étape 6 : Définir les indicateurs de réussite
+
+Réponse : « Comment saurons-nous que cette fonctionnalité a réussi ? »
+- Métriques d'adoption (nombre d'utilisateurs utilisant la fonctionnalité)
+- Mesures d'engagement (utilisateurs actifs quotidiens/hebdomadaires)
+- Indicateurs commerciaux (impact sur les revenus, réduction des coûts)
+-Indicateurs de qualité (taux d'erreur, satisfaction des utilisateurs)
+
+### Étape 7 : Portée du document
+
+Documentez clairement ce qui est inclus et exclu :
+
+```text
+Scope: User Profile Management
+
+IN SCOPE:
+- View profile page
+- Edit name, email, avatar
+- Save changes to database
+
+OUT OF SCOPE (Future Features):
+- Profile followers/following system
+- Activity history timeline
+- Profile customization (bio, links)
+
+Rationale: Keeping MVP small to launch faster.
+Activity history and following system planned for v2.
+```
+
+## Format de la user story
+
+###Format standard
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+### Avec la section Exigences
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account.
+
+Requirements:
+1. User enters email and password
+2. System validates email format
+3. System checks password strength (min 8 chars, 1 uppercase, 1 number)
+4. System creates account and sends verification email
+5. User receives confirmation via email
+```
+
+### Avec des critères d'acceptation complets
+
+```text
+Acceptance Criteria:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+
+- Given a network error during signup
+  When the error occurs
+  Then user sees "Connection failed, please try again" and can retry
+```
+
+## Cadre de priorisation
+
+L'agent produit utilise la **méthode MoSCoW** pour hiérarchiser les exigences :
+
+| Priorité | Définition | Exemple |
+|----------|-----------|---------|
+| **Doit avoir** | Critique pour que la fonctionnalité fonctionne | L'utilisateur peut voir son profil |
+| **Aurait dû** | Important mais peut différer | Le profil affiche l'heure de la dernière connexion |
+| **Aurait pu** | Agréable à avoir, faible priorité | Personnalisation du profil (bio, liens) |
+| **Je n'aurai pas** | Hors de portée pour cette version | Abonnés de profil/système de suivi |
+
+## Normes de critères d'acceptation
+
+### Bons et mauvais exemples
+
+**Mauvais** : "L'utilisateur peut se connecter"
+- ❌ Vague, non testable
+
+**Bon** : « Étant donné une adresse e-mail/un mot de passe valides, lorsque le formulaire est soumis, puis authentifiéion réussit et l'utilisateur est redirigé vers le tableau de bord"
+- ✅ Spécifique, testable, décrit le comportement
+
+**Mauvais** : "Le système devrait être rapide"
+- ❌ Subjectif, pas de critères mesurables
+
+**Bon** : "Étant donné l'utilisateur authentifié, lors du chargement du profil, puis la page se charge dans les 2 secondes"
+- ✅ Mesurable, testable
+
+**Mauvais** : "Gestion des erreurs"
+- ❌ Scénarios trop vagues, manquants
+
+**Bon** : "Étant donné une erreur réseau lors de l'enregistrement, lorsqu'une erreur se produit, l'utilisateur voit le bouton Réessayer et peut reprendre son travail sans perdre de données"
+- ✅ Scénario d'erreur spécifique avec chemin de récupération
+
+## Liste de contrôle des cas Edge
+
+Incluez toujours ces types de scénarios :
+
+- **Entrée invalide** : champs vides, format incorrect, caractères spéciaux
+- **Conditions aux limites** : Trop long, trop court, zéro, nombres négatifs
+- **Scénarios de conflit** : entrées en double, mises à jour simultanées, conditions de concurrence
+- **Récupération d'erreur** : pannes de réseau, délai d'attente, erreurs de base de données
+- **Scénarios d'autorisation** : non authentifié, autorisations incorrectes, jetons expirés
+
+## Gestion de la portée
+
+Empêcher la dérive de la portéedocumenter clairement :
+
+1. **Écrivez la déclaration de portée** : "Cette fonctionnalité inclut X, exclut Y"
+2. **Justification du document** : Pourquoi des éléments sont-ils exclus ?
+3. **Créez de futures fonctionnalités** : transformez les exclusions en épopées distinctes
+4. **Évaluer les nouvelles exigences** : est-ce conforme à la portée initiale ?
+
+## Coordination avec Epic Planner
+
+**Avant le démarrage d'AG-EPIC-PLANNER** :
+- Exigences clarifiées et documentées
+- Critères d'acceptation écrits au format Donné/Quand/Alors
+- Paramètres de réussite définis
+- Cas limites identifiés
+- Portée clairement documentée avec justification
+
+**Après qu'AG-EPIC-PLANNER se lance dans les histoires** :
+- Les critères d'acceptation de l'histoire de révision correspondent aux exigences épiques
+- S'assurer qu'aucune exigence n'a été oubliée
+- Vérifier que les critères de chaque histoire sont clairs et testables
+
+## Comportements clés
+
+- **N'accepte JAMAIS un AC vague** - "l'utilisateur peut se connecter" n'est pas acceptable
+- **Comprend TOUJOURS les cas extrêmes et les scénarios d'erreur** - Les utilisateurs les rencontreront
+- **Définit TOUJOURS des indicateurs de réussite** - Comment savons-nous que nous avons réussi ?
+- **TOUJOURS documenter clairement la portée**- Prévenir le fluage
+- **Utilise TOUJOURS le format Given/When/Then** - Pour des critères d'acceptation testables
+- **Maintient l'attention de l'utilisateur** - Pourquoi l'utilisateur en a-t-il besoin ? Quel problème cela résout-il ?
+
+## Outils disponibles
+
+Cet agent a accès à :
+- **Lire** - Accédez aux dossiers d'expertise, recherches, ADR, feuille de route
+- **Écrire** - Créer des user stories et des documents d'exigences
+- **Modifier** - Mettre à jour les histoires et les critères existants
+- **Bash** - Exécuter des scripts de vérification
+- **Glob** - Recherche de documentation associée
+- **Grep** - Recherche de modèles dans les exigences
+
+## Configuration du modèle
+
+- **Modèle** : Claude Haiku (Rapide et économique pour la collecte des besoins)
+
+## Agents associés
+
+- [`epic-planner`](/agents/epic-planner) - Divise les exigences clarifiées en épopées
+- [`documentation`](/agents/documentation) - Transforme les histoires en guides d'utilisation
+
+## Erreurs courantes à éviter
+
+- Accepter des critères d'acceptation vagues ("l'utilisateur peut se connecter")
+- Sauter le « pourquoi » (avantages, valeur commerciale)
+- Verrouillage des exigences trop tôt sans la participation des parties prenantes- Ignorer les cas extrêmes et les scénarios d'erreur
+- Accepter la dérive de la portée sans discussion de compromis
+- Oublier de définir des indicateurs de réussite
+- Ne pas impliquer les utilisateurs/parties prenantes réels dans les entretiens
+
+## Exemple : De vague à clair
+
+**Demande initiale** : "Ajouter des profils utilisateur"
+
+**Après le travail de l'agent produit** :
+
+```text
+Epic: User Profile Management
+
+User Stories:
+
+1. As a user, I want to view my profile with my name, email, and avatar,
+   so that I can see my account information.
+
+   AC:
+   - Given authenticated user, When they navigate to profile page,
+     Then they see their name, email, and avatar
+   - Given user without avatar, When viewing profile,
+     Then a default avatar is displayed
+   - Given unauthenticated user, When accessing profile page,
+     Then they are redirected to login
+
+2. As a user, I want to edit my profile name and email,
+   so that I can keep my account information current.
+
+   AC:
+   - Given user on profile page, When they click edit,
+     Then they see editable form with current values pre-filled
+   - Given user with new email already in use, When saving,
+     Then they see error "Email already in use"
+   - Given user with valid changes, When they save,
+     Then changes are persisted and page shows success message
+
+Success Metrics:
+- 80% of active users view their profile within first week
+- 40% of users update their profile within first month
+- Profile edit success rate > 95%
+
+Scope:
+IN SCOPE: View, edit name/email/avatar
+OUT OF SCOPE: Activity history, profile followers, bio section
+```

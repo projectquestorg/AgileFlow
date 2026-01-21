@@ -1,0 +1,227 @@
+---
+title: Orquestrador
+description: Coordenador multi-especialista que implanta especialistas de domínio em paralelo e sintetiza resultados. Possui APENAS ferramentas Task/TaskOutput - deve delegar todo o trabalho.
+---
+# Agente Orquestrador
+
+O Agente Orquestrador é um coordenador multidomínio que analisa solicitações complexas, identifica domínios especializados relevantes e implanta agentes especializados em paralelo para executar o trabalho. Em seguida, ele sintetiza todos os resultados em uma resposta unificada.
+
+## Capacidades
+
+- Analisa solicitações complexas para identificar vários domínios (API, UI, banco de dados, testes, segurança, CI, etc.)
+- Implanta de 2 a 8 especialistas de domínio em paralelo para execução simultânea
+- Coordena a execução do trabalho usando apenas ferramentas Task e TaskOutput
+- Sintetiza resultados de especialistas em respostas unificadas e conscientes dos conflitos
+- Lida com trabalho independente paralelo e padrões de trabalho dependentes sequenciais
+- Gerencia pontos de integração entre múltiplas implementações especializadas
+
+## Quando usar
+
+Use este agente quando:
+
+- **Recursos full-stack** - "Adicionar perfil de usuário com API, esquema de banco de dados, componente de UI e testes" requer coordenação em vários domínios
+- **Solicitações complexas de vários domínios** - Solicitações únicas abrangendo API, UI, banco de dadosase e mudanças de implantação
+- **Coordenação de trabalho paralelo** - Múltiplas peças de trabalho independentes que devem ser executadas simultaneamente
+- **Trabalho dependente sequencial** - Trabalho que deve ser concluído em ordem (esquema de banco de dados → API → UI → testes)
+- **Coordenação de integração** - Garantir que múltiplas implementações funcionem juntas corretamente
+- **Grande refatoração** - Mudanças no banco de dados que se propagam para a API, depois para a UI e depois para os testes
+- **Recurso com infraestrutura** - Implementação de recursos mais configuração de pipeline de CI/CD
+
+## Como funciona
+
+O agente segue um fluxo de trabalho estruturado:
+
+```text
+USER REQUEST
+     ↓
+┌─────────────────────────────────────┐
+│ 1. ANALYZE DOMAINS                  │ → Identify API, UI, Database, etc.
+│ 2. PLAN EXECUTION                   │ → Parallel vs sequential dependencies
+│ 3. DEPLOY EXPERTS                   │ → Spawn via Task in parallel
+│ 4. COLLECT RESULTS                  │ → TaskOutput with block: true
+│ 5. SYNTHESIZE RESPONSE              │ → Unified output with integration points
+└─────────────────────────────────────┘
+     ↓
+COORDINATED MULTI-DOMAIN IMPLEMENTATION
+```
+
+### Etapa 1: Analisar solicitação
+
+O agente analisa a solicitação de palavras-chave de domínio e identifica quais especialistas são necessários:
+
+| Solicitação | Domínios | Especialistas |
+|--------|---------|---------|
+| "Adicionar perfil de usuário com API e UI" | API + IU | 2 especialistas (paralelos) |
+| "Adicionar login com testes" | API + Segurança + Testes | 3 especialistas (sequenciais) |
+| "Refatorar banco de dados e atualizar API" | Banco de dados + API | 2 especialistas (sequenciais) |
+|"Recurso full-stack com CI" | Banco de dados + API + UI + Teste + CI | 5 especialistas (mistos) |
+
+### Etapa 2: Execução do Plano
+
+O agente determina a estratégia de execução com base nas dependências:
+
+**Execução Paralela** (trabalho independente):
+```
+API + UI (both can work simultaneously)
+Testing + Documentation (can test while docs written)
+Security audit + Performance analysis (independent reviews)
+```
+
+**Execução Sequencial** (trabalho dependente):
+```
+Database schema → API implementation → UI component
+(Each depends on previous)
+```
+
+**Execução Mista** (algumas paralelas, outras sequenciais):
+__NOTRADUZIR_3__
+
+### Etapa 3: implantar especialistas
+
+Todos os especialistas paralelos são implantados simultaneamente em uma única mensagem usando execução em segundo plano:
+
+__NÃOTRADUZIR_4__
+
+### Etapa 4: coletar resultados
+
+Usa `TaskOutput` com `block: true` para aguardar todas as respostas dos especialistas:
+
+__NOTRADUZIR_5__
+
+### Etapa 5: Sintetizar
+
+Combina todos os resultados de especialistas em uma resposta unificada, destacando:
+- O que cada especialista concluiu
+- Pontos de integração entre implementações
+- Conflitos ou problemas de compatibilidade
+- Próximas etapas recomendadas
+
+## Especialistas em domínio
+
+O Orchestrator coordena com estes especialistas de domínio:
+
+| Domínio | Especialista | Quando implantar |
+|--------|--------|---|
+| **Banco de dados** | `agileflow-database` | Design de esquema, migrações, consultas, indexação |
+| **API** | `agileflow-api` | Endpoints, rotas, lógica de negócios, validação |
+| **IU** | `agileflow-ui` | Componentes, estilo, formulários, acessibilidade |
+| **Testes** | `agileflow-testing` | Testes unitários, testes de integração, cobertura |
+| **Segurança** | `agileflow-security` | Autenticação, autorização, vulnerabilidades |
+| **CI/CD** | `agileflow-ci` | Pipelines, fluxos de trabalho, linting, verificação de tipo |
+| **DevOps** | `agileflow-devops` | Implantação, infraestrutura, conteinerização |
+| **Documentação** | `agileflow-documentation` | Documentos API, guias do usuário, READMEs |
+| **Desempenho** | `agileflow-performance` | Otimização, criação de perfil, benchmarking |
+
+## Padrões paralelos
+
+### Recurso Full Stack
+
+Implante banco de dados e API em paralelo (independente), depois UI e testes em paralelo (depois que a API existir):
+
+__NOTRADUZIR_6__
+
+### Revisão/Análise de Código
+
+Implante vários especialistas para analisar o mesmo código simuAlém disso:
+
+__NÃOTRADUZIR_7__
+
+### Comparação entre os melhores de N
+
+Distribua a mesma tarefa para vários especialistas com abordagens diferentes e compare:
+
+__NÃOTRADUZIR_8__
+
+## Restrições Críticas
+
+O orquestrador possui **APENAS ferramentas Task e TaskOutput**:
+
+### Pode fazer:
+- Gerar especialistas por meio de tarefas
+- Colete resultados via TaskOutput
+- Analisar solicitações e planejar a execução
+- Sintetizar e coordenar respostas
+
+### Não é possível fazer:
+- Ler arquivos (sem ferramenta de leitura)
+- Gravar arquivos (sem ferramenta de gravação)
+- Editar arquivos (sem ferramenta de edição)
+- Executar comandos (sem ferramenta Bash)
+- Código de pesquisa (sem ferramentas Glob/Grep)
+
+**DEVE delegar TODO o trabalho a especialistas do domínio.**
+
+## Resolução de Conflitos
+
+Quando os especialistas produzem resultados conflitantes:
+
+1. **Observe o conflito** na seção de síntese
+2. **Apresente ambas as opções** com compensações
+3. **Recomende um** com base em:
+   - Consistência com padrões existentes
+   - Simplicidade e facilidade de manutenção
+   - Implicações de desempenho
+4. **Peça uma decisão** se a recomendação não estiver clara
+
+Exemplo de conflito:
+__NOTRADUZIR_9__
+
+## Exemplo: Completo-Recurso de perfil de usuário Stack
+
+**Solicitação**: "Adicionar um recurso completo de perfil de usuário com API, banco de dados, componente React e testes"
+
+**Resposta do orquestrador**:
+
+__NOTRADUZIR_10__
+
+## Principais comportamentos
+
+- **SEMPRE analisa vários domínios** - Nunca assume trabalho de domínio único
+- **SEMPRE planeja a estratégia de execução** - Paralela versus sequencial com base em dependências
+- **SEMPRE implanta especialistas em paralelo** - Nunca sequencialmente, a menos que as dependências exijam
+- **SEMPRE implanta TODOS os especialistas em uma ÚNICA mensagem** - Chamadas de tarefas em lotes juntas
+- **SEMPRE usa TaskOutput com bloco: true** - Espera por todos os resultados antes da síntese
+- **NUNCA dá a resposta final sem sintetizar TODAS as respostas dos especialistas** - Todas as perspectivas devem ser integradas
+- **SEMPRE anota os pontos de integração** - Destaca como as implementações se conectam
+
+## Ferramentas disponíveis
+
+Este agente tem acesso a **SOMENTE**:
+- **Tarefa** – Implantar agentes especialistas de domínio em paralelo
+- **TaskOutput** - Colete resultados de especialistas e aguarde a conclusão
+
+NÃO tem acessoss para:
+- Ler, escrever, editar (não é possível modificar o próprio código)
+- Bash (não é possível executar comandos)
+- Glob, Grep (não é possível pesquisar código)
+
+Esta restrição garante que o Orquestrador se concentre exclusivamente na coordenação e não na implementação.
+
+## Configuração do modelo
+
+- **Modelo**: Claude Sonnet 3.5 (otimizado para coordenação)
+- **Raciocínio**: Planejamento, execução paralela, lógica de síntese
+
+## Agentes Relacionados
+
+**Especialistas de domínio** (implantado pelo Orchestrator):
+- [__NOTRASLATE_22____NOTRASLATE_33__ - Esquema de banco de dados e especialista em consulta
+- [__NOTRASLATE_23____NOTRASLATE_34__ - Especialista em endpoint da API REST
+- [`ui`](/agents/ui) - Especialista em componentes de front-end
+- [`testing`](/agents/testing) - Especialista em estratégia e cobertura de testes
+- [`security`](/agents/security) - Especialista em segurança e autenticação
+- [`performance`__NOTRASLATE_38__ - Especialista em otimização de desempenho
+- [__NOTRASLATE_28____NOTRASLATE_39__ - Especialista em pipeline de CI/CD
+- [`devops`__NOTRASLATE_40__ - Infraestrutura e desespecialista em emprego
+- [`documentation`__NOTRASLATE_41__ - Especialista em documentação técnica
+
+**Outros metaagentes**:
+- [`multi-expert`__NOTRASLATE_42__ - Analisa o mesmo problema com 3 a 5 especialistas (casos de uso diferentes - análise versus implementação)
+- [__NOTRASLATE_32____NOTRASLATE_43__ - Orientação de implementação ponta a ponta
+
+## Quando NÃO usar
+
+- **Tarefas simples de domínio único** - Use o especialista de domínio direto (mais rápido e mais simples)
+- **Somente análise** - Use o agente Multi-Expert para análises de alta confiança
+- **Perguntas simples** - Use agentes especializados diretamente
+- **Tarefas que requerem coordenação manual** - O Orchestrator funciona apenas com agentes

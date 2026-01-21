@@ -1,0 +1,153 @@
+---
+title: /adr:atualizar
+description: Atualizar o status de ADR ou adicionar alterações
+---
+# /adr:atualização
+
+Atualize o status de uma ADR existente ou adicione alterações que documentem as alterações de status.
+
+## Início rápido
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after review"
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `NUMBER` | Sim | - | Número ADR a atualizar (4 dígitos, por exemplo, 0042) |
+| `STATUS` | Não | - | Novo status: `proposed`, `accepted`, `deprecated`, `superseded` |
+| `REASON` | Não | - | Motivo da mudança de estado |
+| `SUPERSEDED_BY` | Não | - | Em caso de substituição, o novo número ADR (por exemplo, 0045) |
+
+## Exemplos
+
+### Aceitar uma proposta de ADR
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after security review"
+```
+
+### Descontinuar um ADR
+
+```bash
+/agileflow:adr:update NUMBER=0035 STATUS=deprecated REASON="Context changed, approach is no longer applicable"
+```
+
+### Marcar ADR como substituído
+
+__NOTRADUZIR_3__
+
+### Reativar ADR obsoleto
+
+__NÃOTRADUZIR_4__
+
+### Modo interativo
+
+__NOTRADUZIR_5__
+
+Sem STATUS ou REASON, o comando orienta você durante o processo de atualização.
+
+## Transições de status
+
+### Transições válidas
+
+| De | Para | Razão Comum |
+|------|-----|---------------|
+| `proposed` | `accepted` | Decisão aprovada pela equipe |
+| `proposed` | `rejected` | Alternativa escolhida, não viável |
+| `accepted` | `deprecated` | Não é mais relevante, o contexto mudou |
+| `accepted` | `superseded` | Encontrada uma melhor abordagem, substituída por um novo ADR |
+| `deprecated` | `accepted` | Reconsiderado, ainda válido |
+| `superseded` | `accepted` | Substituição não deu certo |
+
+## Fluxo de trabalho
+
+Ao executar o comando:
+
+1. **Valida** a existência de ADR
+2. **Solicita novo status** (se não for fornecido)
+3. **Requer um motivo** para qualquer mudança de status
+4. **Mostra uma prévia** do que será atualizado
+5. **Peça confirmação** antes de escrever
+6. **Anexa alteração** documentando a alteração
+7. **Atualiza o frontmatter** com novo status e carimbo de data/hora
+
+## Formato de alteração
+
+Quando um status de ADR muda, o comando anexa uma seção de Emenda:
+
+__NOTRADUZIR_6__
+
+O conteúdo original do ADR é preservado; alteraçõesdocumentar a mudança.
+
+## Exemplos por cenário
+
+### Cenário 1: Aprovação de uma proposta de decisão
+
+__NÃOTRADUZIR_7__
+
+Resultado: ADR-0047 agora marcado como __NOTRASLATE_32__ com aprovação documentada.
+
+### Cenário 2: Substituindo uma abordagem antiga
+
+__NÃOTRADUZIR_8__
+
+Resultado: ADR-0041 marcado como __NOTRASLATE_33__ com link para ADR-0050.
+
+### Cenário 3: Reconsiderando uma decisão obsoleta
+
+__NOTRADUZIR_9__
+
+Resultado: ADR-0020 não marcado como obsoleto, agora __NOTRASLATE_34__ para discussão.
+
+### Cenário 4: Documentando Mudança de Contexto
+
+__NOTRADUZIR_10__
+
+Resultado: ADR-0038 marcado como `deprecated` explicando porque está obsoleto.
+
+## Melhores práticas
+
+### Quando atualizar o status do ADR
+
+- **Aprovar** ADRs propostas após análise da equipe
+- **Descontinuar** se o contexto ou os requisitos mudarem
+- **Substituir** quando um ADR mais recente substituir esta abordagem
+- **Reativar** se as circunstâncias mudarem e a decisão antiga for relevante novamente
+
+### Escrevendo bons motivos
+
+**Boas razões:**
+- "Consenso da equipe após revisão da arquitetura"
+- "Nova performancerequisitos CE tornam esta abordagem ineficiente"
+- "O requisito de negócio removeu a restrição que desencadeou esta decisão"
+- "Implementado e validado com sucesso em produção"
+
+**Motivos ruins:**
+- "Não é mais necessário"
+- "Existe uma abordagem melhor"
+- "Equipe decidiu"
+
+### Documentando a Supersessão
+
+Ao substituir um ADR:
+1. Sempre inclua __NOTRASLATE_36__ com o novo número ADR
+2. Explique por que a nova abordagem é melhor
+3. Consulte o novo ADR para obter detalhes de implementação
+4. Mantenha o ADR original intacto para o histórico
+
+### Criando Trabalho de Implementação
+
+Depois de aprovar um ADR:
+
+__NOTRADUZIR_11__
+
+## Comandos Relacionados
+
+- [`/adr:list`](/commands/adr-list) - Ver todos os ADRs
+- [`/adr:view`](/commands/adr-view) - Ver detalhes completos do ADR
+- [`/adr`](/commands/adr) - Criar novo ADR
+- [__NOTRASLATE_40____NOTRASLATE_45__ - Criar épico de implementação
+- [__NOTRASLATE_41____NOTRASLATE_46__ - Criar história de implementação

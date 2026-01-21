@@ -1,0 +1,377 @@
+---
+title: /skill:erstellen
+description: Generieren Sie einen benutzerdefinierten Skill mit Webrecherche, Kochbuchmuster und MCP-Integration
+---
+# /skill:create
+
+Generieren Sie dynamische, forschungsgestützte Fähigkeiten, die Webdokumentation, Ihre lokalen Dokumente und Codebasismuster kombinieren.
+
+## Schnellstart
+
+```bash
+# Interactive mode (recommended)
+/agileflow:skill:create
+
+# With skill name hint
+/agileflow:skill:create supabase-swift
+```
+
+## Was es tut
+
+Der Befehl `/skill:create` erstellt benutzerdefinierte Fertigkeiten, indem er drei Quellen recherchiert und forschungsgestützte Arbeitsabläufe erstellt:
+
+1. **Webdokumentation** – Offizielle Dokumente, API-Referenzen, Tutorials
+2. **Lokale Projektdokumentation** – Ihre Praktiken, Architekturentscheidungen
+3. **Codebasismuster** – Vorhandene Codebeispiele und Konventionen
+
+Es generiert dann:
+- **SKILL.md** – Haupt-Skill-Datei mit Aktivierungsauslösern
+- **references.md** – Links zu allen Dokumentationsquellen
+- **Kochbuch/** – Schritt-für-Schritt-Workflows für verschiedene Anwendungsfälle
+- **.mcp.json** – Optionale MCP-Serverkonfiguration
+
+## Wie es funktioniert
+
+### Phase 1: Anforderungen
+
+Sie beschreiben, welche Fähigkeiten Sie benötigen:
+
+```xml
+Skill categories:
+- Database integration (Supabase, PostgreSQL, MongoDB)
+- API integration (REST, GraphQL, webhooks)
+- UI/Frontend (Components, styling, design system)
+- Development workflow (Testing, deployment, CI/CD)
+- Custom description (describe what you need)
+```
+
+### Phase 2: Forschung
+
+Der Befehl wechselt in den Planmodus und recherchiert:
+
+- **Webdokumente**: Offizielle Dokumentations-URLs, Tutorials, Anleitungen- **Lokale Dokumente**: Dateien in Ihrem `docs/`-Verzeichnis, die mit der Domäne des Skills übereinstimmen
+- **Codebasismuster**: Vorhandener Code, der zeigt, wie Sie Dinge tun
+- **MCP-Server**: Verfügbare Tools für die Technologie
+
+Es sammelt URLs und Muster, ohne Inhalte zu kopieren.
+
+### Phase 3: Generierung
+
+Basierend auf Forschungsergebnissen generiert es:
+
+- **SKILL.md** mit Aktivierungsauslösern und Kochbuchreferenzen
+- **references.md**, das alle Web-/lokalen/Codebase-Quellen verknüpft
+- Verzeichnis **cookbook/** mit einer Datei pro Anwendungsfall
+- **.mcp.json**, wenn ein MCP-Server gefunden wurde
+
+### Phase 4: Bestätigung
+
+Sie sehen die generierte Struktur, können den Inhalt in der Vorschau anzeigen und die Erstellung genehmigen.
+
+## Parameter
+
+Dieser Befehl hat keine Parameter – er ist vollständig interaktiv.
+
+```bash
+/agileflow:skill:create              # Interactive mode
+/agileflow:skill:create my-skill     # Optional: suggest skill name
+```
+
+## Beispiele
+
+### Beispiel 1: Erstellen Sie einen Supabase-Skill
+
+```bash
+/agileflow:skill:create
+```
+
+**Ihre Antworten:**
+```
+What skill would you like to create?
+> [Select "Database integration"]
+
+Which database?
+> Supabase
+
+What language/framework?
+> Swift iOS app
+
+What use cases?
+> Authentication, CRUD operations, Real-time subscriptions
+```
+
+**Generierte Struktur:**
+```
+.claude/skills/supabase-swift/
+├── SKILL.md (activation triggers, cookbook references)
+├── references.md (links to Supabase docs, local patterns)
+├── cookbook/
+│   ├── authentication.md (sign up, sign in, sign out)
+│   ├── crud-operations.md (create, read, update, delete)
+│   └── realtime-subscriptions.md (listen to changes)
+└── .mcp.json (Supabase MCP server config)
+```
+
+### Beispiel 2: Erstellen Sie einen React Components-Skill
+
+```bash
+/agileflow:skill:create ui-components
+```
+
+**Interaktive Eingabeaufforderungen:**```
+Describe what you need:
+> Building reusable React components with accessibility and Tailwind CSS
+
+Frameworks/libraries:
+> React 18, TypeScript, Tailwind CSS, shadcn/ui
+
+Use cases:
+> Creating new components, styling patterns, making accessible
+```
+
+**Zu den generierten Dateien gehören:**
+- Verweise auf React-Dokumente, Tailwind-Dokumente und Richtlinien zur Barrierefreiheit
+- Codebasismuster von `src/components/`
+- Kochbucheinträge für gängige Komponententypen
+
+## Ausgabe
+
+Der Befehl zeigt Ihnen:
+
+1. **Zusammenfassung der Forschung** – Was in den einzelnen Quellen gefunden wurde
+2. **Skill-Struktur** – Dateien, die erstellt werden
+3. **Vorschau** – Erste 50 Zeilen von SKILL.md
+4. **Bestätigung** – JA/NEIN zum Erstellen
+
+Beispielausgabe:
+
+```
+📚 Research Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web Docs:
+  ✓ Supabase Swift SDK docs
+  ✓ API reference
+  ✓ Authentication guide
+
+Local Documentation:
+  ✓ docs/02-practices/database.md
+  ⚠ No local patterns found
+
+Codebase Patterns:
+  ✓ src/lib/supabase.ts (client setup)
+  ✓ src/services/auth/ (auth service)
+
+MCP Server:
+  ✓ @supabase/mcp-server available
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Will create:
+.claude/skills/supabase-swift/
+├── SKILL.md
+├── references.md
+├── cookbook/
+│   ├── authentication.md
+│   ├── crud-operations.md
+│   └── realtime-subscriptions.md
+└── .mcp.json
+
+Create this skill? (Yes/No)
+```
+
+## Best Practices
+
+### Benennungsfähigkeiten
+
+Verwenden Sie spezifische, beschreibende Namen mit Bindestrichen:
+
+- ✅ `supabase-swift` - Klare Technologie und Kontext
+- ✅ `react-components-accessible` – Framework und Schlüsselfunktion
+- ✅ `rest-api-error-handling` - Domäne und Fokus
+- ❌ `database` - Zu vage
+- ❌ `api` - Zu allgemein
+- ❌ `my_skill` - Verwenden Sie Bindestriche, keine Unterstriche
+
+### Effektive Fähigkeiten schaffen
+
+1. **Bestimmte Domänen verwenden** – Eine Technologie pro Fähigkeit, nicht zu umfassend
+2. **Mehrere Anwendungsfälle einbeziehen** – Fügen Sie Kochbucheinträge für verschiedene hinzuSzenarien
+3. **Link zu Projektmustern** – Die references.md sollte auf Ihren tatsächlichen Code verweisen
+4. **Fehlerbehebung hinzufügen** – Häufige Probleme antizipieren und beheben
+5. **Konzentriert bleiben** – 2-4 Kochbucheinträge pro Fertigkeit
+
+### Wann neue Fähigkeiten geschaffen werden sollten
+
+Erstellen Sie einen Skill, wenn:
+- Sie nutzen eine Technologie häufig
+- Ihr Team hat Muster für etwas
+- Sie möchten Best Practices kodieren
+- Sie benötigen eine Schritt-für-Schritt-Anleitung
+
+Nicht erstellen, wenn:
+- Das Thema ist zu eng (ein Kochbucheintrag)
+- Sie verwenden es selten
+- Externe Dokumente sind ausreichend
+
+## Kochbucheinträge
+
+Kochbücher sind Schritt-für-Schritt-Anleitungen für bestimmte Anwendungsfälle. Für jede Fertigkeit können mehrere Kochbücher vorhanden sein.
+
+### Kochbuchstruktur
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```Sprache
+   Codebeispiel
+   ```
+
+2. **Step 2**: Next step
+   ```language
+   Codebeispiel
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### Kochbuchbeispiele
+
+Jeder Kochbucheintrag sollte eine bestimmte, gemeinsame Aufgabe behandeln:
+
+- **Supabase-Fertigkeit**:
+  - `authentication.md` - Registrieren, anmelden, abmelden
+  - `crud-operations.md` - Erstellen, lesen, aktualisieren, löschen
+  - `realtime-subscriptions.md` – Datenbankänderungen abhören
+
+- **Reaktionskomponentenfähigkeit**:
+  - `create-component.md` – Erstellen Sie eine neue Komponente
+  - `styling-patterns.md` – Konsistente Stile anwenden
+  - `accessibility.md` - Machen Sie es zugänglich
+
+## MCP-Integration
+
+Wenn für die Technologie Ihres Skills ein MCP-Server verfügbar ist, enthält der Befehl `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+Dadurch kann Claude MCP-Tools verwenden, wenn er mit dem Skill arbeitet. Damit die Tools funktionieren, müssen Sie Umgebungsvariablen festlegen.
+
+## Fehlerbehandlung
+
+### Die Websuche liefert keine Ergebnisse
+
+Wenn die Dokumentation online nicht gefunden wird:
+– Der Befehl erstellt den Skill mit generischen Mustern
+- Sie können URLs später manuell zu `references.md` hinzufügen
+- Verwenden Sie `/agileflow:skill:edit`, um es zu verbessern
+
+### MCP-Server nicht gefunden
+
+Wenn für Ihre Technologie kein MCP-Server vorhanden ist:
+- Der Skill wird ohne `.mcp.json` erstellt
+– Sie können MCP später hinzufügen, wenn ein Server verfügbar wird
+- Anweisungen zur manuellen MCP-Einrichtung werden bereitgestellt
+
+### Validierungsfehler
+
+Vor dem Schreiben muss der Befehl vaLidate:
+- Der Skillname enthält nur Buchstaben, Zahlen und Bindestriche
+- Die Beschreibung umfasst weniger als 1024 Zeichen
+- SKILL.md hat weniger als 500 Zeilen
+- Alle Kochbuchdateien werden referenziert
+
+Wenn die Validierung fehlschlägt, werden Sie aufgefordert, das Problem zu beheben, bevor Sie fortfahren.
+
+## Nach der Schöpfung
+
+Sobald der Skill erstellt wurde:
+
+1. **Testen Sie es**:
+   ```bash
+   /agileflow:skill:test supabase-swift
+   ```
+
+2. **Verwenden Sie es** – Arbeiten Sie an Aufgaben und der Skill wird automatisch aktiviert
+
+3. **Lernen hinzufügen** – Selbstverbesserung ermöglichen:
+   ```bash
+   /agileflow:skill:upgrade supabase-swift
+   ```
+
+4. **Verbessere es** – Korrigiere Claudes Ausgabe und der Skill lernt:
+   ```bash
+   /agileflow:skill:edit supabase-swift
+   ```
+
+## Fehlerbehebung
+
+### Fähigkeit funktioniert nicht
+
+Wenn eine neu erstellte Fertigkeit nicht aktiviert zu werden scheint:
+
+1. Überprüfen Sie den Abschnitt „Wann zu verwenden“ in SKILL.md
+2. Stellen Sie sicher, dass Ihre Frage mit den Aktivierungsauslösern übereinstimmt
+3. Führen Sie `/agileflow:skill:test` aus, um die Struktur zu überprüfen
+4. Bearbeiten Sie mit `/agileflow:skill:edit`, um Trigger anzupassen
+
+### Fehlende lokale Dokumentation
+
+Wenn der Befehl Ihre lokalen Praxen nicht finden kann:
+
+1. Dokumentation in `docs/02-practices/` oder `docs/04-architecture/` erstellen
+2. Bearbeiten Sie den Skill, um auf das zu verweisen, was Sie erstellen
+3. Verwenden Sie in Ihrer Fähigkeitsbeschreibung spezifischere Schlüsselwörter
+
+### Kochbucheinträge werden nicht angezeigt
+
+Wenn Kochbucheinträge in Claude Code nicht sichtbar sind:
+
+1. Führen Sie `/agileflow:skill:test` aus, um zu überprüfen, ob Dateien vorhanden sind
+2. Überprüfen Sie, ob SKILL.md sie korrekt referenziert
+3. Stellen Sie sicher, dass die Kochbuchdateien einen gültigen Markdown haben
+
+## Verwandte Befehle
+
+- [`/skill:list`](/commands/skill-list) – Alle installierten Fähigkeiten anzeigen
+- [`/skill:edit`](/commands/skill-edit) – Ändern Sie einen vorhandenen Skill
+- [`/skill:test`](/commands/skill-test) – Überprüfen Sie, ob ein Skill funktioniert
+- [`/skill:delete`](/commands/skill-delete) – Einen Skill entfernen
+- [`/skill:upgrade`](/commands/skill-upgrade) – Lernfunktion hinzufügen
+
+## Nächste Schritte
+
+1. Erstellen Sie Ihren ersten Skill: `/agileflow:skill:create`
+2. Testen Sie, ob es funktioniert: `/agileflow:skill:test`
+3. Nutzen Sie es bei Ihrer Arbeit – es wird automatisch aktiviert
+4. Verbessern Sie es mit `/agileflow:skill:upgrade`

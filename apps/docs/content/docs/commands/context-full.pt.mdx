@@ -1,0 +1,158 @@
+---
+title: /agileflow:context:full
+description: Gere ou atualize o resumo abrangente do contexto do projeto para ferramentas de IA da web
+---
+# /agileflow:context:full
+
+Gere ou atualize o resumo de contexto abrangente para ferramentas de IA da web.
+
+## Início rápido
+
+```bash
+/agileflow:context:full
+```
+
+## Objetivo
+
+Cria ou atualiza __NOTRASLATE_7__ com seções gerenciadas contendo:
+
+- O que estamos construindo e foco atual
+- Mapa de recursos e resumo de tecnologia/ferramentas
+- Decisões-chave (ADRs) e instantâneo da arquitetura
+- Teste e status de CI
+- Progresso recente (últimas 10 mensagens de ônibus)
+- Riscos e próximos passos
+
+Este arquivo foi projetado para ser colado no ChatGPT, Perplexity, Gemini ou Claude web para fornecer às ferramentas externas de IA o contexto completo do projeto.
+
+## Como funciona
+
+### Etapa 1: reunir fontes
+
+O comando lê informações de vários arquivos de projeto:
+
+| Fonte | Finalidade |
+|--------|---------|
+| `docs/09-agents/status.json` | História atual/status épico |
+| `docs/09-agents/bus/log.jsonl` | Últimas 10 mensagens de progresso |
+| `docs/05-epics/*.md` | Detalhes épicos |
+| `docs/06-stories/*/*.md` | Detalhes da história |
+| `docs/03-decisions/*.md` | Registros de decisões de arquitetura |
+| `docs/02-practices/*.md` | Práticas de desenvolvimento |
+| `docs/04-architecture/*.md` | Arquitetura do sistema |
+| `package.json` | Manifesto do projeto e dependências |
+| `.github/workflows/*.yml` | Configuração de CI |
+| `CHANGELOG.md` | Mudanças recentes |
+
+### Etapa 2: gerar seções gerenciadas
+
+O comando cria ou atualiza estas seções:
+
+```markdown
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+[Project description from package.json or README]
+
+## Current Focus
+[Active epics/stories from status.json]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+[One line per epic]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: tech -->
+## Tech Stack
+- Framework: [from package.json]
+- Key dependencies: [list major deps]
+- Testing: [from scripts or CI]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: decisions -->
+## Key Decisions (ADRs)
+[List of ADRs with titles and status]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: progress -->
+## Recent Progress
+[Last 10 entries from bus/log.jsonl]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: next -->
+## Next Steps
+[Stories in READY status]
+<!-- END_MANAGED -->
+```
+
+### Etapa 3: Primeira confirmação da diferença
+
+Antes de escrever as alterações, o comando mostra uma diferença e pede confirmação:
+
+```diff
+- [old content]
++ [new content]
+```
+
+As alterações só serão aplicadas após sua confirmação.
+
+## Limites de seção
+
+Para manter o contexto legível:
+
+| Seção | Linhas máximas |
+|--------|-----------|
+| visão geral | 10 |
+| recursos | 20 |
+| tecnologia | 15 |
+| decisões | 15 |
+| progresso | 30 |
+| próximo | 20 |
+
+## Conteúdo gerenciado versus conteúdo do usuário
+
+O comando distingue entre:
+
+**Seções gerenciadas** (entre marcadores):
+__NOTRADUZIR_3__
+
+**Seções escritas pelo usuário** (sem marcadores):
+__NÃOTRADUZIR_4__
+
+O conteúdo do usuário fora dos marcadores gerenciados é sempre preservado.
+
+## Arquivos ausentes
+
+Se os arquivos de origem não existirem, o comando se adapta normalmente:
+
+| Faltando Fou | Ação |
+|--------------|--------|
+| `docs/context.md` | Crie um novo arquivo com todas as seções |
+| `status.json` | Ignore recursos/próximas seções, use espaços reservados |
+| `bus/log.jsonl` | Pular seção de progresso |
+| Arquivos ADR | Pular seção de decisões |
+| Configuração de CI | Ignorar detalhes de CI da seção de tecnologia |
+
+## Exemplo de saída
+
+__NOTRADUZIR_5__
+
+## Quando usar
+
+- **Após marcos importantes** - Capture o trabalho concluído
+- **Antes das sessões de IA na web** - Certifique-se de que o contexto esteja atualizado
+- **Após mudanças na arquitetura** - Registrar novas decisões
+- **Durante o planejamento do sprint** - Atualizar áreas de foco
+
+## Fluxo de trabalho
+
+__NOTRADUZIR_6__
+
+## Comandos Relacionados
+
+- [`/agileflow:context`](/commands/context) - Visão geral dos comandos de contexto
+- [`/agileflow:context:export`](/commands/context-export) - Exportar trecho conciso
+- [`/agileflow:context:note`](/commands/context-note) - Adicionar nota com carimbo de data e hora
+- [`/agileflow:research:ask`](/commands/research-ask) - Gerar prompt de pesquisa

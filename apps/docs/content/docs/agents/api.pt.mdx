@@ -1,0 +1,203 @@
+---
+title: API
+description: Especialista em serviços e camada de dados para implementação de APIs de back-end, lógica de negócios e modelos de dados.
+---
+# Agente de API
+
+O agente API (AG-API) é o seu especialista em serviços de back-end. Ele implementa APIs REST/GraphQL, lógica de negócios, modelos de dados, acesso a banco de dados, integrações de serviços externos e gerenciamento de estado. Ele garante que sua camada de dados seja segura, tenha desempenho e seja bem testada.
+
+## Capacidades
+
+- Implementar endpoints de API REST/GraphQL/tRPC
+- Escrever lógica de negócios e regras de validação
+- Projetar e manter modelos e esquemas de dados
+- Otimize consultas de banco de dados e evite problemas N+1
+- Integrar serviços externos (Stripe, SendGrid, análises, etc.)
+- Implementar autenticação e autorização
+- Escrever testes de API abrangentes (unidade, integração, contrato)
+- Documentar endpoints da API e tratamento de erros
+- Coordenar com AG-UI nas dependências de endpoint da API
+- Monitore e registre solicitações de API com contexto
+
+## Quando usar
+
+Use o agente de API quando:
+
+- Você precisa implementar um novo endpoint de API
+- Você precisa adicionar lógica de negócios para lidar com um recurso
+- Você precisa integrar um serviço externo (pagamento, email, etc.)
+-Você precisa otimizar consultas ao banco de dados ou corrigir problemas N+1
+- Você precisa implementar autenticação ou autorização
+- Você está projetando modelos de dados para um novo recurso
+- Você precisa escrever testes de API abrangentes
+- Você deseja garantir que as histórias AG-UI não sejam bloqueadas aguardando endpoints
+
+## Como funciona
+
+1. **Carregamento de contexto**: o agente lê expertise, CLAUDE.md e documentos de arquitetura
+2. **Verificação de status**: o agente encontra histórias prontas e verifica bloqueadores AG-UI
+3. **Definição de Pronto**: Agente valida critérios de aceitação e stubs de teste
+4. **Modo de planejamento**: para trabalhos complexos, o agente projeta a abordagem antes da implementação
+5. **Implementação**: O agente grava validação, tratamento de erros e lógica de negócios
+6. **Testes**: o agente escreve testes de unidade, integração e contrato
+7. **Coordenação**: o agente desbloqueia histórias AG-UI quando os endpoints estão prontos
+8. **Verificação**: o agente executa testes para garantir a aprovação da linha de base
+9. **Documentação**: O agente atualiza CLAUDE.md e anexa mensagens de barramento
+
+## Exemplo
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need a user profile API endpoint"
+```
+
+O agente da API irá:
+1. Verifique docs/06-stories/ para os EUA com proprietário==AG-API
+2. Procure por histórias AG-UI bloqueadas aguardando neste endpoint
+3. Implemente o endpoint POST /api/users:
+   - Validação de entrada (campos obrigatórios, verificação de tipo)
+   - Lógica de negócios (senha hash, definir padrões)
+   - Acesso ao banco de dados (inserir na tabela de usuários)
+   - Tratamento de erros (e-mail duplicado, erros de validação)
+   - Registro com IDs de solicitação
+4. Escreva testes abrangentes:
+   - Caminho feliz (dados válidos criam usuário)
+   - Erros de validação (email ausente)
+   - Casos extremos (e-mail muito longo)
+5. Atualizar documentos da API (OpenAPI/Swagger)
+6. Envie mensagem de desbloqueio para AG-UI: "GET /api/users/:id ready"
+7. Marque a revisão quando os testes forem aprovados
+
+Ou gerar diretamente:
+
+```text
+Task(
+  description: "Implement payment webhook endpoint",
+  prompt: "Add Stripe webhook handler for payment.success and payment.failed events",
+  subagent_type: "agileflow-api"
+)
+```
+
+## Principais comportamentos
+
+- **Carregar expertise primeiro**: lê expertise.yaml antes de qualquer trabalho
+- **Priorizar desbloqueio de AG-UI**: verifica se há histórias de AG-UI bloqueadas em endpoints de API - essas são prioridade máxima
+- **Coordenação Proativa**: Envia mensagens de desbloqueio para AG-UI quando endpoints estão prontos
+- **Validação de entrada**: sempre valida tipos, formatos, intervalos e autorização
+- **Tratamento de erros**: esquema de erro consistente com códigos de status HTTP
+- ** Orientado a testes **: escreve testes antes da implementação e garante que os testes sejam aprovados antes da revisão
+- **Atualizações CLAUDE.md**: documenta novos padrões de API descobertos durante a implementação
+- **Integração do Session Harness**: verifica o status do teste antes de iniciar, exige aprovação nos testes antes da revisão
+- **Comandos autônomos**: invoca diretamente /agileflow:ai-code-review, /agileflow:adr-new, etc.
+- **Coordenação de barramento**: Envia mensagens de status, bloqueado, desbloqueado e de perguntas para bus/log.jsonl
+- **Preservação de contexto**: usa compact_context (prioridade: crítico) para manter o foco durante longas conversas, preservando regras de carregamento de expertise e rastreamento de bloqueadores por meio da compactação de contexto
+
+## Configuração de contexto compacto
+
+O agente da API usa **prioridade crítica** compact_context para garantir que o foco seja mantido durante conversas estendidas:
+
+__NOTTRANSLATE_2__
+
+Isso garante que regras críticas (carregamento de expertise, priorização de bloqueadores, verificação de testes) e estado atual (quais endpoints são executados, quais histórias de UI são bloqueadas) sejam preservados mesmo após a compactação do contexto.
+
+## Ferramentas disponíveis
+
+Este agente tem acesso a: Ler, Escrever, Editar, Bash, Glob, Grep
+
+## Padrões de endpoint de API
+
+**Convenções REST**:
+
+__NOTRADUZIR_3__
+
+**Formato de solicitação/resposta**:
+
+__NÃOTRADUZIR_4__
+
+## Validação de entrada
+
+Cada endpoint deve validar as entradas:
+
+__NOTRADUZIR_5__
+
+## Tratamento de erros
+
+Esquema de erro consistente em todos os endpoints:
+
+__NOTRADUZIR_6__
+
+## Padrões de teste
+
+Cada endpoint de API precisa de testes abrangentes:
+
+__NÃOTRADUZIR_7__
+
+## Arquivos principais
+
+- **Especialização**: `packages/cli/src/core/experts/api/expertise.yaml` (memória do agente)
+- **Fluxo de trabalho**: __NOTRASLATE_9__ (Plano → Construir → Autoaperfeiçoamento)
+- **Status**: `docs/09-agents/status.json` (rastreamento de história)
+- **Ônibus**: __NOTRASLATE_11__ (mensagens de coordenação)
+- **CLAUDE.md**: arquitetura API, ORM, abordagem de validação
+- **Pesquisa**: `docs/10-research/` (verifique padrões de API)
+- **ADRs**: __NOTRASLATE_13__ (decisões de arquitetura de API)
+
+## Etapas do fluxo de trabalho
+
+1. **Carregar experiência**: Leia expertise.yaml
+2. **Verificar status**: Encontre histórias PRONTAS onde proprietário==AG-API
+3. **Priorize bloqueadores AG-UI**: verifique o barramento para histórias AG-UI bloqueadas em endpoints
+4. **Validar definição de pronto**: AC existe, stub de teste em docs/07-testing/test-cases/
+5. **Verifique o aproveitamento da sessão**: verifique test_status==passando antes de iniciar
+6. **Criar filial**: `feature/<US_ID>-<slug>`
+7. **Status da atualização**: marque "em andamento", anexe a mensagem do barramento
+8. **Implementar**: Validação, tratamento de erros, lógica de negócios, testes
+9. **Execute a verificação**: /agileflow:verify para garantir que os testes sejam aprovados
+10. **Atualize CLAUDE.md**: Se novos padrões forem estabelecidos (documente-os)
+11. **Marcar em revisão**: somente se test_status==passando
+12. **Enviar mensagens de desbloqueio**: se AG-UI estava aguardando neste endpoint
+13. **Gerar PR**: Use /agileflow:pr-template
+14. **Self-Improve**: Execute self-improve.md após a conclusão
+
+##QuaLista de verificação de segurança
+
+Antes de marcar em revisão:
+
+- [] Entradas validadas (tipo, formato, intervalo, autenticação)
+- [] Respostas de erro consistentes (códigos HTTP, esquema de erro)
+- [] Autenticação/autorização aplicada em rotas protegidas
+- [ ] Sem consultas N+1 (acesso otimizado ao banco de dados)
+- [] Segredos em env vars (nunca codificados)
+- [] Registro com IDs de solicitação e contexto
+- [] Documentos da API atualizados (OpenAPI/Swagger/README)
+- [] Cobertura de testes: caminho feliz, erros de validação, falhas de autenticação, casos extremos
+- [] Status do teste: aprovado (verificado via /agileflow:verify)
+- [] Histórias AG-UI desbloqueadas (mensagem de desbloqueio enviada, se aplicável)
+
+## Coordenação com outros agentes
+
+**AG-UI (front-end)**:
+- Verifique docs/09-agents/bus/log.jsonl para histórias de UI bloqueadas aguardando endpoints
+- Quando o endpoint estiver pronto, envie mensagem de desbloqueio com método, caminho, formato de solicitação/resposta
+- Exemplo: `"API endpoint GET /api/users/:id ready (200 OK, user object), unblocking US-0042"`
+
+**AG-DATABASE (camada de dados)**:
+- Coordenar o design do esquema antes de implementar consultas
+- Revise as migrações antes de usar no código
+- Compartilhar padrão de consultarns para otimização
+
+**AG-CI (teste)**:
+- Coordenar a configuração do banco de dados de teste
+- Solicitar contrato de infraestrutura de testes (Pact, MSW)
+- Garantir testes de API em CI
+
+**MENTOR (Orquestração)**:
+- Solicitar esclarecimentos sobre lógica de negócios pouco clara
+- Relatório se faltar história Definição de Pronto
+
+## Agentes Relacionados
+
+- [`ui`](/agents/ui) - Componentes de front-end que consomem endpoints de API
+- [__NOTRASLATE_17____NOTRASLATE_20__ - Camada de dados e design de esquema
+- [`mentor`](/agents/mentor) - Orquestra o trabalho da API como parte da implementação do recurso

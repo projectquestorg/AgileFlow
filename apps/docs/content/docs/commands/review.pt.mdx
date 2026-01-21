@@ -1,0 +1,361 @@
+---
+title: /análise
+description: Revisão de código baseada em IA com sugestões de qualidade
+---
+
+
+# /review
+
+Perform comprehensive AI-powered code review on pull request changes. Review analyzes code for quality, security, performance, best practices, and provides actionable feedback with specific code examples.
+
+## Quick Start
+
+```bash
+# Review current branch against main
+/agileflow:review
+
+# Review specific branch
+/agileflow:review BRANCH=feature/auth
+
+# Review with focus on security
+/agileflow:review FOCUS=security
+```
+
+The command will:
+1. Get code changes (git diff)
+2. Analyze across 6 categories (Quality, Security, Performance, Best Practices, Testing, Documentation)
+3. Generate detailed report with issues prioritized by severity
+4. Calculate code quality score
+5. Suggest auto-fixes and follow-up work
+
+## Key Features
+
+### Comprehensive Analysis
+
+Review examines your code changes across 6 important categories:
+
+| Category | Checks |
+|----------|--------|
+| **Code Quality** | Complexity, duplication, naming, function/file length |
+| **Security** | SQL injection, XSS, hardcoded secrets, unsafe deserialization |
+| **Performance** | N+1 queries, inefficient algorithms, memory leaks |
+| **Best Practices** | Error handling, logging, type safety, async/awaisso |
+| **Testes** | Testes em falta, qualidade dos testes, lacunas de cobertura |
+| **Documentação** | JSDoc ausente, comentários desatualizados, atualizações README |
+
+### Priorização baseada em gravidade
+
+Os problemas são categorizados por impacto:
+
+```text
+🔴 CRITICAL - Must fix before merge
+🟠 HIGH    - Fix before merge (blocks release)
+🟡 MEDIUM  - Address soon (technical debt)
+⚪ LOW     - Nice to have (style/consistency)
+```
+
+### Índice de qualidade do código
+
+Seu PR recebe uma pontuação (0-100) dividida por categoria:
+
+```text
+Code Quality Score: 72/100
+
+Breakdown:
+- Security: 40/100 (critical issues found)
+- Performance: 75/100 (one N+1 query)
+- Maintainability: 80/100 (some complexity)
+- Testing: 65/100 (coverage gaps)
+- Style: 90/100 (mostly consistent)
+```
+
+### Feedback construtivo
+
+Cada edição inclui:
+- Onde está (arquivo, número da linha)
+- Por que é importante (risco/impacto)
+- Como consertar (exemplos de código específicos)
+- Exemplo de ❌ código RUIM
+- Exemplo de ✅ código BOM
+
+## Uso
+
+### Básico - revise o branch atual
+
+__NOTRADUZIR_3__
+
+Revisa as alterações na ramificação atual em relação à principal/mestre.
+
+### Revise o ramo específico
+
+__NÃOTRADUZIR_4__
+
+Analisa o branch nomeado em relação ao main.
+
+### Revisão em base diferente
+
+__NOTRADUZIR_5__
+
+Compara com um branch base diferente.
+
+### Revisão com área de foco
+
+__NOTRADUZIR_6__
+
+### Filtrar por gravidade
+
+__NÃOTRADUZIR_7__
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Opções |
+|-----------|----------|---------|--------|
+| `BRANCH` | Não | Atual | Nome da filial a ser revisada |
+| `BASE` | Não | principal/mestre | Ramo base para comparação |
+| `FOCUS` | Não | tudo | tudo, segurança, desempenho, estilo, testes |
+| `SEVERITY` | Não | tudo | crítico, alto, médio, baixo, todos |
+
+## Exemplos
+
+### Revisão típica de relações públicas
+
+__NÃOTRADUZIR_8__
+
+### Revisão focada em segurança
+
+__NOTRADUZIR_9__
+
+### Avaliação de desempenho
+
+__NOTRADUZIR_10__
+
+## Revise a estrutura do relatório
+
+### Cabeçalho
+
+__NOTRADUZIR_11__
+
+### Resumo
+
+```text
+## Summary
+
+**Critical**: 2 | **High**: 5 | **Medium**: 12 | **Low**: 8
+**Must Fix Before Merge**: 7 issues
+```
+
+### Problemas por gravidade
+
+Para cada questão:
+
+__NÃOTRADUZIR_13__
+
+### Observações Positivas
+
+__NOTRADUZIR_14__
+
+### Análise da qualidade do código
+
+__NÃOTRADUZIR_15__
+
+## Personalização
+
+### Regras específicas do projeto
+
+Crie regras de revisão personalizadas em:
+- `.agileflow/review-rules.md`
+- `docs/02-practices/code-standards.md`
+
+Exemplo:
+
+__NOTRADUZIR_16__
+
+## Ações após revisão
+
+### Correção automática de problemas
+
+```text
+Review asks: "Fix auto-fixable issues? (YES/NO)"
+
+If YES:
+  - Runs npm run lint -- --fix
+  - Fixes 8 style issues automatically
+  - Shows which issues were fixed
+```
+
+### Crie histórias de acompanhamento
+
+__NÃOTRADUZIR_18__
+
+### Bloquear mesclagem para críticoquestões técnicas
+
+__NOTRADUZIR_19__
+
+### Salvar relatório
+
+Relatório salvo automaticamente em:
+```text
+docs/08-project/code-reviews/<YYYYMMDD>-<BRANCH>.md
+```
+
+Exemplo:
+```text
+docs/08-project/code-reviews/20251016-feature-user-auth.md
+```
+
+## Verificações de segurança
+
+Rever verifica automaticamente:
+
+### Segredos e credenciais
+- Chaves de API codificadas
+- Senhas de banco de dados
+- Tokens OAuth
+- segredos JWT
+- Credenciais AWS
+
+### Vulnerabilidades Comuns
+- Injeção de SQL (consultas não parametrizadas)
+- Ataques XSS (saída sem escape)
+- Desserialização insegura
+- Vulnerabilidades CSRF
+- Falta de validação do CORS
+
+### Padrões Inseguros
+- avaliação() ou Função()
+- Concatenação de strings insegura
+- Validação de entrada ausente
+- Criptografia fraca
+- Dependências inseguras
+
+## Verificações de desempenho
+
+A revisão procura:
+
+### Banco de dados
+- Problemas de consulta N+1
+- Índices ausentes
+- Junções ineficientes
+- Consultas desnecessárias
+
+### Algoritmos
+- O(n²) quando O(n) possível
+- Loops aninhados que podem ser planos
+- Cálculos repetidos
+- Recursão não otimizada
+
+### Memória
+- Vazamentos de memória
+- Objetos grandes não liberados
+- Referências circulares
+- Estruturas de dados que consomem muita memória
+
+## Testecobertura
+
+Revise as verificações:
+
+### Novo Código
+- Existe um teste para novas funcionalidades?
+- Os casos extremos são cobertos?
+- A qualidade do teste é boa?
+
+### Lacunas de cobertura
+- Linhas adicionadas sem testes
+- Funções sem cobertura de teste
+- Caminhos de erro não testados
+
+### Qualidade do teste
+- As afirmações são significativas?
+- Os testes verificam o comportamento?
+- Os testes são sustentáveis?
+
+## Resultados e recomendações
+
+### Ações imediatas (mesclagem de blocos)
+
+```text
+1. Remove hardcoded API key (critical)
+2. Fix SQL injection (critical)
+3. Add error handling to login (high)
+```
+
+### Antes da mesclagem
+
+```text
+4. Add tests for auth endpoints (high)
+5. Fix N+1 query in posts API (high)
+6. Reduce complexity in validator.ts (medium)
+```
+
+### Acompanhamento (criar histórias)
+
+```text
+7. Standardize naming conventions (medium)
+8. Add ESLint rule for secrets (medium)
+9. Set up automated security scanning (low)
+```
+
+## Integração com CI
+
+Sugira adicionar a __NOTRASLATE_35__:
+
+```yaml
+- name: AI Code Review
+  run: npx claude-code /agileflow:review BRANCH=${{ github.head_ref }}
+
+- name: Check for critical issues
+  run: |
+    if grep -q "CRITICAL" code-review-report.md; then
+      echo "::error::Critical issues found."
+      exit 1
+    fi
+```
+
+## Dicas
+
+### Antes de enviar PR
+
+```bash
+/agileflow:review
+# Fix any CRITICAL or HIGH issues
+# Address MEDIUM issues if possible
+# Then submit PR with confidence
+```
+
+### Melhoria iterativa
+
+```bash
+# After feedback, run review again
+/agileflow:review
+
+# See if score improved
+# Ensure critical issues fixed
+# Check test coverage
+```
+
+### Abordagem que prioriza a segurança
+
+```bash
+# Always check security first
+/agileflow:review FOCUS=security
+
+# Fix any CRITICAL security issues
+# Then review other categories
+```
+
+## Princípios
+
+- **Seja construtivo** - Forneça feedback prático, não apenas críticas
+- **Mostrar exemplos** - Incluir código ❌ RUIM e ✅ BOM
+- **Priorizar** - Questões críticas primeiro, estilo por último
+- **Comemore** - Incluir observações positivas
+- **Sugerirst fixes** - Não apenas identifique problemas
+- **Sem commits forçados** - Sempre pergunte antes da correção automática
+
+## Comandos Relacionados
+
+- [`/pr`](/commands/pr) - Gerar descrição do PR (revisar antes de enviar)
+- [__NOTRASLATE_37____NOTRASLATE_42__ - Analisar o impacto da mudança
+- [`/babysit`](/commands/babysit) - Orientação de implementação (executa a revisão antes do PR)
+- [__NOTRASLATE_39____NOTRASLATE_44__ - Verifique a aprovação nos testes
+- [`/baseline`](/commands/baseline) - Criar ponto de verificação verificado

@@ -21,17 +21,14 @@ const LINGVA_INSTANCES = [
   "https://translate.projectsegfau.lt",
 ]
 
-// Target languages (must match lib/source.ts)
+// Target languages (must match lib/languages.ts)
+// Only languages supported by Orama search
 const LANGUAGES: Record<string, string> = {
   es: "Spanish",
-  zh: "Chinese",
-  ar: "Arabic",
   fr: "French",
   de: "German",
-  ja: "Japanese",
-  ko: "Korean",
   pt: "Portuguese",
-  he: "Hebrew",
+  ar: "Arabic",
 }
 
 // Delay between requests to avoid rate limiting
@@ -39,11 +36,26 @@ const DELAY_MS = 1000
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+// Max characters per translation request (URL length limit)
+const MAX_CHUNK_SIZE = 1500
+
 async function translateText(
   text: string,
   targetLang: string,
   instanceIndex = 0
 ): Promise<string> {
+  // If text is too long, split into chunks
+  if (text.length > MAX_CHUNK_SIZE) {
+    const chunks = splitIntoChunks(text, MAX_CHUNK_SIZE)
+    const translatedChunks = []
+    for (const chunk of chunks) {
+      const translated = await translateText(chunk, targetLang, 0)
+      translatedChunks.push(translated)
+      await sleep(DELAY_MS) // Rate limit between chunks
+    }
+    return translatedChunks.join(" ")
+  }
+
   if (instanceIndex >= LINGVA_INSTANCES.length) {
     throw new Error("All translation instances failed")
   }
@@ -52,7 +64,7 @@ async function translateText(
   const url = `${instance}/api/v1/en/${targetLang}/${encodeURIComponent(text)}`
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    const response = await fetch(url, { signal: AbortSignal.timeout(15000) })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
@@ -70,6 +82,25 @@ async function translateText(
     }
     throw error
   }
+}
+
+// Split text into chunks at sentence boundaries
+function splitIntoChunks(text: string, maxSize: number): string[] {
+  const chunks: string[] = []
+  const sentences = text.split(/(?<=[.!?])\s+/)
+  let currentChunk = ""
+
+  for (const sentence of sentences) {
+    if (currentChunk.length + sentence.length > maxSize) {
+      if (currentChunk) chunks.push(currentChunk.trim())
+      currentChunk = sentence
+    } else {
+      currentChunk += (currentChunk ? " " : "") + sentence
+    }
+  }
+  if (currentChunk) chunks.push(currentChunk.trim())
+
+  return chunks
 }
 
 // Placeholder map for preserving untranslatable content

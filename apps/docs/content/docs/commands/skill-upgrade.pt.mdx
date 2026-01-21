@@ -1,0 +1,398 @@
+---
+title: /habilidade:atualizar
+description: Atualize as habilidades existentes com capacidade de aprendizagem de autoaperfeiçoamento
+---
+# /habilidade:atualizar
+
+Adicione capacidade de autoaperfeiçoamento às habilidades para que aprendam com suas correções e melhorem continuamente.
+
+## Início rápido
+
+```bash
+# Interactive mode
+/agileflow:skill:upgrade
+
+# Upgrade specific skill
+/agileflow:skill:upgrade supabase-swift
+
+# Upgrade all skills at once
+/agileflow:skill:upgrade --all
+```
+
+## O que faz
+
+As habilidades criadas antes da introdução do sistema de aprendizagem podem ser atualizadas para obter:
+
+1. **Arquivo de aprendizagem** - Rastreia preferências, convenções, padrões
+2. **Autoaperfeiçoamento** - Aprende com suas correções
+3. **Persistência de preferência** - Lembra o que você prefere
+4. **Acúmulo de contexto** – Constrói conhecimento específico do projeto
+5. **Consistência da equipe** – Aprendizados compartilhados entre a equipe
+
+## Como funciona
+
+O processo de atualização:
+
+1. **Cria arquivo de aprendizagem** - __NOTRASLATE_35__
+2. **Atualiza SKILL.md** - Adiciona instruções de aprendizagem
+3. **Preserva o conteúdo** - Conteúdo de habilidade existente inalterado
+4. **Permite o aprendizado** - A habilidade agora pode aprender com as correções
+
+## Sistema de aprendizagem
+
+### Quais habilidades você aprende
+
+As habilidades acompanham três tipos de aprendizagem:
+
+**Preferências** - Como você gosta que as coisas sejam feitas:
+```yaml
+preferences:
+  code_style: "async/await over callbacks"
+  error_handling: "Result<T, Error> type"
+  naming: "camelCase for functions"
+```
+
+**Convenções** - Projeto pattinstruções a seguir:
+```yaml
+conventions:
+  - "Always validate input at service layer"
+  - "Use interfaces for dependency injection"
+  - "Database queries in separate service files"
+```
+
+**Antipadrões** - Coisas a evitar:
+__NOTRADUZIR_3__
+
+### Estrutura do arquivo de aprendizagem
+
+Cada habilidade atualizada recebe um arquivo de aprendizagem:
+
+__NÃOTRADUZIR_4__
+
+Formato do arquivo:
+
+__NOTRADUZIR_5__
+
+## Fluxo de trabalho
+
+### Etapa 1: Selecione a habilidade
+
+Se não for especificado:
+
+__NOTRADUZIR_6__
+
+**Escolha uma habilidade:**
+__NÃOTRADUZIR_7__
+
+### Etapa 2: verificar o status
+
+O comando verifica se a habilidade já foi atualizada:
+
+__NÃOTRADUZIR_8__
+
+Se já tiver atualizado:
+
+__NOTRADUZIR_9__
+
+### Etapa 3: Mostre o que será adicionado
+
+__NOTRADUZIR_10__
+
+### Etapa 4: visualização (opcional)
+
+__NOTRADUZIR_11__
+
+Se você visualizar:
+
+```
+📝 Changes to SKILL.md (preview):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ## When to Use
+
++ ## Self-Improving Learnings
++
++ This skill learns from your corrections and preferences.
++
++ **On invocation**:
++ 1. Check if `.agileflow/skills/_learnings/supabase-swift.yaml` exists
++ 2. If exists, read and apply learned preferences
++ 3. Follow conventions and avoid anti-patterns from learnings
+
+New file preview:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+.agileflow/skills/_learnings/supabase-swift.yaml
+
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-09T10:30:00Z
+
+preferences: {}
+conventions: []
+anti_patterns: []
+...
+
+Apply changes? (Yes/No)
+```
+
+### Etapa 5: Criar arquivo de aprendizagem
+
+O sistema cria __NOTRASLATE_36__:
+
+__NÃOTRADUZIR_13__
+
+### Etapa 6: Atualizar SKILL.md
+
+O sistema adiciona ao SKILL.md:
+
+**Nova seção:**
+__NOTRADUZIR_14__
+
+### Etapa 7: Confirme o sucesso
+
+__NÃOTRADUZIR_15__
+
+## Exemplos
+
+### Exemplo 1: Atualização de Habilidade Única
+
+__NOTRADUZIR_16__
+
+**Resposta:**
+```
+✅ api-client upgraded successfully!
+
+Created: .agileflow/skills/_learnings/api-client.yaml
+
+The skill now has:
+  • Learnings file for tracking preferences
+  • Self-improvement capability
+  • Context accumulation from corrections
+```
+
+### Exemplo 2: atualização em lote de todas as habilidadeseu
+
+__NÃOTRADUZIR_18__
+
+**Resposta:**
+__NOTRADUZIR_19__
+
+### Exemplo 3: já atualizado
+
+```bash
+/agileflow:skill:upgrade react-components
+```
+
+**Resposta:**
+```
+✅ react-components already has self-improving capability!
+
+Learnings file:
+  .agileflow/skills/_learnings/react-components.yaml
+
+Stats:
+  - Corrections: 8
+  - Last learning: 2025-01-08T15:30:00Z
+  - Created: 2025-01-01T00:00:00Z
+
+The skill is learning from your feedback. Keep using it!
+```
+
+## Como as habilidades aprendem
+
+### Fase 1: Na invocação de habilidades
+
+Quando você usa uma habilidade atualizada:
+
+1. Claude verifica se existe arquivo de aprendizagem
+2. Lê preferências, convenções, antipadrões
+3. Aplica-os durante a execução da habilidade
+4. Da próxima vez lembrarei de suas preferências
+
+### Fase 2: Na correção
+
+Quando você corrige a saída de Claude:
+
+1. **Você fornece feedback**: "Não, use async/await"
+2. **Claude extrai sinal**: "Prefira async/await a retornos de chamada"
+3. **Determina a confiança**:
+   - **Alto**: Correção explícita (adicionar aos aprendizados)
+   - **Médio**: você aprovou o resultado (adicionar aos aprendizados)
+   - **Baixo**: Observação (nota para revisão)
+4. **Atualiza arquivo de aprendizagem**: Nova preferência salva
+5. **O próximo uso aplica**: a habilidade lembra sua preferência
+
+### Exemplo de Ciclo de Aprendizagem
+
+**Sessão 1:**
+```
+You: "Create an API error handler"
+
+Claude: [uses try-catch blocks]
+
+You: "No, prefer using Result<T, Error> type"
+
+Claude: Extracts signal and updates learnings file
+  preferences.error_handling = "Result<T, Error>"
+```
+
+**Sessão 2:**
+```
+You: "Create another API error handler"
+
+Claude: [reads learnings file]
+Claude: [uses Result<T, Error> type]
+
+You: "Perfect!"
+
+Claude: Updates learnings metadata: approvals_count++
+```**Sessão 3:**
+```
+You: "New API handler needed"
+
+Claude: [automatically uses Result<T, Error>]
+Claude: [follows all learned conventions]
+
+The skill improved through learning!
+```
+
+## Usando aprendizados
+
+### Revisão manual
+
+Verifique o que a habilidade aprendeu:
+
+```bash
+cat .agileflow/skills/_learnings/supabase-swift.yaml
+```
+
+### Atualizações manuais
+
+Adicione suas próprias preferências antes das correções:
+
+```bash
+# Edit the learnings file directly
+vim .agileflow/skills/_learnings/api-client.yaml
+
+# Add your preferences
+preferences:
+  error_handling: "Custom error types"
+  logging: "Structured JSON logging"
+```
+
+### Compartilhamento de equipe
+
+Comprometa os aprendizados com o git para que a equipe os obtenha:
+
+```bash
+git add .agileflow/skills/_learnings/
+git commit -m "Add api-client learning from team feedback"
+```
+
+Membros da equipe:
+```bash
+git pull
+# Now has the same learnings
+```
+
+## Melhores práticas
+
+### Quando atualizar
+
+Atualize uma habilidade quando:
+
+1. **A habilidade é usada com frequência** - Mais correções = melhor aprendizado
+2. **A equipe tem padrões** - Os aprendizados capturam as preferências da equipe
+3. **Criando novas habilidades** - Permita o aprendizado desde o início
+4. **Consolidando habilidades** - Mesclar aprendizados de habilidades antigas
+
+### Usando o aprendizado de maneira eficaz
+
+1. **Corrigir erros** - Cada correção melhora a habilidade
+2. **Aprovar bons resultados** - Aprovações também são aprendizados
+3. **Padrões de documento** – Adicione convenções manualmente
+4. **Revise periodicamente** - Verifique o que foi aprendido
+5. **Comprometa-se com o git** – Compartilhe aprendizados com a equipe
+
+### Mantendo o aprendizado
+
+1. **Mantenha os arquivos atualizadosed** - Os aprendizados permanecem atualizados
+2. **Monitore correções** - A contagem correta mostra o uso
+3. **Arquivar aprendizados antigos** - Se estiver consolidando habilidades
+4. **Compartilhar melhorias** – Consistência da equipe
+
+## Solução de problemas
+
+### Já atualizou?
+
+Se a habilidade já possui aprendizado:
+
+```
+✅ Skill already upgraded!
+
+To:
+  - View learnings: cat .agileflow/skills/_learnings/<name>.yaml
+  - Edit learnings: /agileflow:skill:edit <name>
+  - Clear learnings: rm .agileflow/skills/_learnings/<name>.yaml
+```
+
+### Nenhum arquivo de aprendizagem criado
+
+Se a atualização for bem-sucedida, mas não houver arquivo de aprendizagem:
+
+1. Verifique o sistema de arquivos:
+   ```bash
+   ls .agileflow/skills/_learnings/
+   ```
+
+2. Verifique se o diretório existe:
+   ```bash
+   mkdir -p .agileflow/skills/_learnings/
+   ```
+
+3. Execute novamente a atualização:
+   ```bash
+   /agileflow:skill:upgrade <skill-name>
+   ```
+
+### Falha na atualização
+
+Se você vir um erro:
+
+```
+❌ Failed to upgrade skill: Permission denied
+```
+
+**Correção**: Verifique as permissões:
+```bash
+chmod -R u+w .agileflow/skills/
+chmod -R u+w .agileflow/skills/_learnings/
+```
+
+Em seguida, tente atualizar novamente.
+
+## Após a atualização
+
+Depois de atualizado:
+
+1. **Use a habilidade** - Comece a trabalhar com ela
+2. **Corrigir Claude** - Cada correção ensina a habilidade
+3. **Monitore o aprendizado** - Verifique o acúmulo de arquivos de aprendizado
+4. **Compartilhe com a equipe** - Comprometa os aprendizados com o git
+
+## Comandos Relacionados
+
+- [`/skill:create`__NOTRASLATE_45__ - Criar habilidade com aprendizagem habilitada
+- [`/skill:list`](/commands/skill-list) - Veja todas as habilidades
+- [`/skill:edit`](/commands/skill-edit) - Editar arquivo de aprendizagem
+- [__NOTRASLATE_40____NOTRASLATE_48__ - Verificar se a habilidade funciona
+- [`/skill:delete`__NOTRASLATE_49__ - Remover habilidade
+
+## Próximas etapas
+
+1. **Listar habilidades**: `/agileflow:skill:list`
+2. **Atualização usada com frequência**: __NOTRASLATE_43__
+3. **Use a habilidade** - Trabalhe nas tarefas e corrija Claude
+4. **Revise os aprendizados**: `cat .agileflow/skills/_learnings/<skill>.yaml`
+5. **Comprometa-se com o git**: compartilhe aprendizados com a equipe

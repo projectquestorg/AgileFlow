@@ -1,0 +1,167 @@
+---
+title: /quoi de neuf
+description: Afficher les nouveautés d'AgileFlow
+---
+# /quoi de neuf
+
+Affichez les mises à jour récentes d'AgileFlow, l'historique des versions et les mises à niveau disponibles. Restez informé des dernières fonctionnalités et améliorations.
+
+## Démarrage rapide
+
+```bash
+/agileflow:whats-new
+```
+
+Affiche les dernières mises à jour d'AgileFlow sans aucun argument requis.
+
+## Paramètres
+
+Cette commande ne prend aucun paramètre - elle affiche automatiquement le journal des modifications de version et les mises à jour récentes.
+
+## Ce qu'il affiche
+
+La commande quoi de neuf fournit :
+
+### 1. Version actuellement installée
+Affiche votre version actuelle d'AgileFlow en haut de la sortie.
+
+### 2. Historique des versions récentes
+Affiche les 3 à 5 dernières versions avec :
+- Numéros de version (par exemple, v2.57.0)
+- Dates de sortie
+- Modifications organisées par catégorie :
+  - **Ajouté** : Nouvelles fonctionnalités
+  - **Modifié** : Modifications des fonctionnalités existantes
+  - **Corrigé** : corrections de bugs
+  - **Supprimé** : fonctionnalités obsolètes
+
+### 3. Vérification de la disponibilité des mises à jour
+Vérifie automatiquement si une version plus récente est disponible et affiche les instructions de mise à niveau.
+
+### 4. Liens rapides
+Fournit des liens utiles :
+- Journal des modifications complet sur GitHub- Commande de mise à jour
+- Configuration de mise à jour automatique
+
+## Exemple de sortie
+
+```text
+╭─────────────────────────────────────────────────────╮
+│  AgileFlow Changelog                                │
+│  Current: v2.63.0                                   │
+╰─────────────────────────────────────────────────────╯
+
+## v2.63.0 (2025-12-27)
+
+### Added
+• Dynamic skill generation system
+• Skill management commands (create, list, remove)
+• Per-IDE options for update and uninstall commands
+
+### Changed
+• Enhanced skill system architecture
+• Improved IDE detection and handling
+
+---
+
+## v2.62.0 (2025-12-26)
+
+### Added
+• Per-IDE update command options
+• IDE-specific uninstall features
+
+---
+
+## v2.61.0 (2025-12-25)
+
+### Added
+• Auto-update system with configurable check frequency
+• Update notifications in welcome message
+• Changelog display after updates
+
+### Changed
+• Improved update notification visibility
+
+---
+
+📖 Full changelog: https://github.com/projectquestorg/AgileFlow/blob/main/packages/cli/CHANGELOG.md
+🔄 Check for updates: npx agileflow update
+⚙️  Configure auto-update: /agileflow:configure --auto-update
+```
+
+Si une mise à jour est disponible :
+
+```text
+⚡ Update available: v2.63.0 → v2.64.0
+   Run: npx agileflow update
+```
+
+## Modèles d'utilisation
+
+Utilisez la commande quoi de neuf lorsque :
+
+- **Rester à jour** : vérifiez les nouveautés des versions récentes
+- **Avant la mise à niveau** : comprenez quelles fonctionnalités sont disponibles avant la mise à jour
+- **Partager avec l'équipe** : montrez à vos coéquipiers les améliorations à venir
+- **Dépannage** : vérifiez que vous disposez des dernières corrections de bogues
+- **Nouvelles fonctionnalités** : découvrez les nouvelles fonctionnalités disponibles
+
+## Scénarios courants
+
+### Vérification des dernières fonctionnalités
+
+Lorsque vous souhaitez connaître les nouveautés sans vérifier manuellement GitHub :
+
+```bash
+/agileflow:whats-new
+```
+
+### Avant de mettre à jour AgileFlow
+
+Consultez ce qui est inclus dans la dernière version avant d'exécuter la mise à jour :
+
+```bash
+/agileflow:whats-new
+# Read the changes
+npx agileflow update
+```
+
+### Rester informé
+
+Exécutez régulièrement pour rester au courant des améliorations d'AgileFlow :
+
+```bash
+# Check monthly for updates
+/agileflow:whats-new
+```
+
+## Commandes associées
+
+- [`/agileflow:configure`](/commands/configure) - Configurer les paramètres de mise à jour automatique
+- [`npx agileflow update`](/commands/update)- Mise à niveau vers la dernière version
+- [`/agileflow:help`](/commands/help) - Présentation du système
+- [`/agileflow:diagnose`](/commands/diagnose) - Diagnostic système
+
+## Format du journal des modifications
+
+Le journal des modifications suit le versionnement sémantique et comprend :
+
+- **Majeur (X.0.0)** : modifications importantes ou fonctionnalités importantes
+- **Mineur (0.X.0)** : Nouvelles fonctionnalités et améliorations
+- **Patch (0.0.X)** : Corrections de bugs et petits ajustements
+
+Chaque entrée inclut ce qui a changé et pourquoi cela est important pour vous.
+
+## Configuration de la mise à jour automatique
+
+Pour les notifications de mise à jour automatique :
+
+```bash
+/agileflow:configure --auto-update
+```
+
+Cela permet :
+- Vérifications périodiques des nouvelles versions
+- Notifications lorsque des mises à jour sont disponibles
+- Téléchargement automatique en arrière-plan
+- Mise à niveau facile en une seule commande lorsque vous êtes prêt

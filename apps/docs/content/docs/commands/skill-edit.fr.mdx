@@ -1,0 +1,479 @@
+---
+title: /compétence : modifier
+description: Modifier le SKILL.md, les entrées du livre de recettes ou les références d'une compétence existante
+---
+# /compétence : modifier
+
+Modifiez une compétence existante dans `.claude/skills/` - mettez à jour les instructions, ajoutez des entrées de livre de recettes, modifiez les références ou réécrivez complètement avec de nouvelles recherches.
+
+## Démarrage rapide
+
+```bash
+# Interactive mode
+/agileflow:skill:edit
+
+# Edit specific skill
+/agileflow:skill:edit supabase-swift
+```
+
+## Ce qu'il fait
+
+Permet de modifier n'importe quel aspect d'une compétence :
+
+- **SKILL.md** - Mettre à jour les déclencheurs et les instructions d'activation
+- **references.md** - Ajouter ou mettre à jour des liens de documentation
+- **Entrées du livre de recettes** - Modifier des workflows de cas d'utilisation spécifiques
+- **Ajouter un nouveau livre de recettes** - Créer des workflows pour de nouveaux cas d'utilisation
+- **Configuration MCP** - Mettre à jour les paramètres du serveur MCP
+- **Renommer la compétence** - Changer le nom et le dossier de la compétence
+
+## Flux de travail
+
+### Étape 1 : Sélectionnez la compétence
+
+Si vous ne fournissez pas de nom de compétence, vous choisirez parmi les compétences disponibles :
+
+```bash
+/agileflow:skill:edit
+```
+
+**Sélection interactive :**
+```
+Which skill would you like to edit?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
+```
+
+### Étape 2 : Afficher la structure des compétences
+
+L'éditeur vous montre avec quoi vous travaillez :
+
+```
+📝 Editing: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Files:
+  1. SKILL.md (main skill file)
+  2. references.md (documentation links)
+  3. cookbook/crud-operations.md
+  4. cookbook/authentication.md
+  5. .mcp.json (MCP configuration)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Étape 3 : Choisissez les éléments à modifier
+
+```
+What would you like to modify?
+
+[1] SKILL.md
+    Edit main skill instructions
+
+[2] references.md
+    Update documentation links
+
+[3] Cookbook entry
+    Edit a specific workflow
+
+[4] Add new cookbook
+    Create a new workflow
+
+[5] MCP configuration
+    Modify MCP server settings
+
+[6] Rename skill
+    Change skill name and folder
+
+Select: 1
+```
+
+### Étape 4 : Apporter des modifications
+
+En fonction de votre sélection :
+
+**PourSKILL.md ou références.md :**
+```
+How would you like to modify this file?
+
+[1] Describe changes
+    Tell me what to change and I'll update it
+
+[2] Add content
+    Append new sections or examples
+
+[3] Replace section
+    Rewrite a specific section
+
+[4] Full rewrite
+    Regenerate with fresh research (Recommended)
+
+[5] Cancel
+    Return without changes
+
+Select: 1
+```
+
+**Ensuite, fournissez des détails :**
+```
+Describe what you'd like to change:
+> Update the "When to Use" section to include GraphQL queries
+> Add a new cookbook entry for Pagination
+> Fix the authentication workflow steps
+```
+
+### Étape 5 : Aperçu des modifications
+
+L'éditeur vous montre exactement ce qui va changer :
+
+```
+📝 Changes to SKILL.md:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- ## When to Use
++ ## When to Use
++
++ This skill activates when:
++ - You're working with Supabase databases
++ - Keywords: "Supabase", "database", "query"
+
+  ## Instructions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply these changes?
+
+[1] Yes, save changes
+    Write the updated file
+
+[2] No, discard
+    Cancel without saving
+
+[3] Edit more
+    Make additional changes first
+
+Select: 1
+```
+
+### Étape 6 : Confirmer et enregistrer
+
+Les modifications ne sont écrites qu'après confirmation :
+
+```
+✅ Updated: .claude/skills/supabase-swift/SKILL.md
+
+Your changes have been saved. The skill will use the updated
+instructions on next use.
+```
+
+## Exemples
+
+### Exemple 1 : Mettre à jour les déclencheurs d'activation
+
+```bash
+/agileflow:skill:edit supabase-swift
+```
+
+**Sélections :**
+1. Choisissez "SKILL.md"
+2. Sélectionnez "Remplacer la section"
+3. Choisissez la section : "Quand utiliser"
+4. Fournissez de nouveaux mots-clés déclencheurs
+
+**Avant :**
+```markdown
+## When to Use
+
+This skill activates when:
+- You're working with Supabase
+- Keywords: "supabase", "database"
+```
+
+**Après :**
+```markdown
+## When to Use
+
+This skill activates when:
+- You're working with Supabase in iOS Swift
+- You need database operations, auth, or real-time
+- Keywords: "supabase", "database", "auth", "realtime", "swift"
+```
+
+### Exemple 2 : Ajouter une nouvelle entrée de livre de recettes
+
+```bash
+/agileflow:skill:edit supabase-swift
+```
+
+**Sélections :**
+1. Choisissez « Ajouter un nouveau livre de recettes »
+2. Saisissez le nom du cas d'utilisation : "pagination"
+
+**Généré :**
+```
+cookbook/pagination.md
+├─ # Pagination with Supabase
+├─ Prerequisites
+├─ Instructions (step-by-step)
+├─ Example
+└─ Troubleshooting
+```
+
+L'éditeur met automatiquement à jour SKILL.md pour référencer le nouveau livre de recettes.
+
+### Exemple 3 : Mettre à jour les liens de documentation
+
+```bash
+/agileflow:skill:edit api-error-handling
+```
+
+**Sélections :**
+1. Choisissez "références.md"
+2. Sélectionnez "Ajouter du contenu"
+3. Fournir de nouvelles ressources
+
+**Résultat :**
+```markdown
+# References for API Error Handling
+
+## External Documentation
+
+- RFC 7231 HTTP Status Codes: https://tools.ietf.org/html/rfc7231
+- HTTP Status Codes Guide: https://httpwg.org/specs/rfc7231.html
+- Your Project API Design: /docs/04-architecture/api-design.md
+```
+
+### Exemplee 4 : Renommer la compétence
+
+```bash
+/agileflow:skill:edit
+```
+
+**Sélections :**
+1. Choisissez la compétence à modifier
+2. Sélectionnez "Renommer la compétence"
+3. Entrez le nouveau nom : `supabase-ios` (auparavant `supabase-swift`)
+
+**Actions :**
+1. Crée un nouveau répertoire avec un nouveau nom
+2. Copie tous les fichiers
+3. Mises à jour du thème principal de SKILL.md
+4. Supprime l'ancien répertoire
+
+**Résultat :**
+```bash
+# Before
+.claude/skills/supabase-swift/
+
+# After
+.claude/skills/supabase-ios/
+```
+
+## Opérations d'édition spéciales
+
+### Réécriture complète (recommandé pour les changements majeurs)
+
+Lorsque vous sélectionnez « Réécriture complète » :
+
+1. **Entrez en mode Plan** - Le commandement recherche les meilleures pratiques actuelles
+2. **Collecter de nouvelles sources** :
+   - Documentation web mise à jour
+   - Nouvelle documentation locale
+   - Modèles de base de code actuels
+3. **Afficher le plan mis à jour** - Vous approuvez les modifications
+4. **Régénérer** - Crée une nouvelle version avec une nouvelle recherche
+5. **Préserver l'historique** - L'ancienne version est sauvegardée
+
+C’est idéal lorsque :
+- La version technologique comporte des mises à jour majeures
+- Vos modèles de projets ont évolué
+- Vous souhaitez actualiser tout le contenu
+
+### Ajouter une nouvelle entrée de livre de recettes
+
+Lorsque vous sélectionnez « Ajouter un nouveau livre de recettes » :
+
+1. **Nommez l'utilisationcas** - par exemple, "pagination", "opérations groupées"
+2. **Choisissez un modèle** - La structure du livre de recettes est remplie automatiquement
+3. **Mettre à jour SKILL.md** - Les références sont ajoutées automatiquement
+4. **Modifier si nécessaire** - Affiner le contenu généré
+
+### Mettre à jour la configuration MCP
+
+Lorsque vous sélectionnez « Configuration MCP » :
+
+1. **Afficher le .mcp.json actuel**
+2. **Modifier les paramètres du serveur**
+3. **Ajouter/supprimer des variables d'environnement**
+4. **Test de configuration** - Vérifier la syntaxe
+
+## Comparaison avant et après
+
+L'éditeur affiche toujours les différences avant de sauvegarder :
+
+```diff
+## Cookbook
+
+Based on context, select the appropriate workflow:
+
+- ### Retrieve Data
+- If you need to get data from Supabase:
+- Then read cookbook/crud-operations.md
+
++ ### Query Data
++ If you need to retrieve rows from Supabase:
++ Then read cookbook/queries.md
+
++ ### Paginate Results
++ If you need to paginate large result sets:
++ Then read cookbook/pagination.md
+```
+
+## Modèle de livre de recettes
+
+Lors de l'ajout d'une nouvelle entrée de livre de recettes, il se remplit automatiquement :
+
+```markdown
+# [Use Case Title]
+
+[Brief description of this workflow.]
+
+## Prerequisites
+
+- [Prerequisite 1]
+- [Prerequisite 2]
+
+## Instructions
+
+1. **[Step 1]**:
+   [Details]
+
+2. **[Step 2]**:
+   [language]
+   [code example]
+
+3. **[Step 3]**:
+   [Details]
+
+## Example
+
+**Input**: [sample]
+**Output**: [result]
+
+## Troubleshooting
+
+- **[Problem]**: [Solution]
+```
+
+## meilleures pratiques
+
+### Quand modifier
+
+Modifiez une compétence lorsque :
+- Mises à jour des versions technologiques
+- Votre équipe découvre de nouveaux modèles
+- De nouveaux cas d'usage émergent
+- Modifications de la documentation
+- Les erreurs doivent être corrigées
+
+### Maintenir les compétences à jour
+
+1. **Audits réguliers** - Testez les compétences tous les trimestres
+2. **Commentaires des utilisateurs** - Modification en fonction de ce que Claude se trompe
+3. **Évolution du modèle** - Mettez à jour en tant que modèle de codes évoluer
+4. **Mises à jour des documents** – Gardez les liens vers les documents externes à jour
+
+### Apporter des changements efficaces
+
+1. **Petits changements ciblés** – Mettez à jour une chose à la fois
+2. **Toujours prévisualiser** - Vérifiez les différences avant d'enregistrer
+3. **Test après édition** - Exécutez `/skill:test` après des modifications majeures
+4. **Documenter pourquoi** – Ajouter des commentaires expliquant les modifications
+
+## Gestion des erreurs
+
+### Compétence introuvable
+
+```
+❌ Skill "<name>" not found.
+
+Available skills:
+  - supabase-swift
+  - ui-components
+
+Use /agileflow:skill:list to see all skills.
+```
+
+**Correction** : vérifiez l'orthographe du nom de la compétence ou répertoriez les compétences disponibles.
+
+### Impossible d'analyser Frontmatter
+
+```
+⚠️ Could not parse SKILL.md frontmatter.
+
+The skill file may have formatting issues.
+Would you like me to try anyway, or edit manually?
+```
+
+**Correction** : Vérifiez que SKILL.md a un frontmatter YAML valide :
+```yaml
+---
+name: skill-name
+description: Skill purpose
+---
+```
+
+### Erreur d'autorisation d'écriture
+
+```
+❌ Cannot write to skill file.
+
+Check permissions for: .claude/skills/<skill>/
+```
+
+**Correction** : Vérifiez les autorisations du répertoire :
+```bash
+chmod -R u+w .claude/skills/<skill>/
+```
+
+## Après la modification
+
+Une fois les modifications enregistrées :
+
+1. **Testez la compétence** :
+   ```bash
+   /agileflow:skill:test <skill-name>
+   ```
+
+2. **Utiliser immédiatement** - Les modifications prendront effet lors de la prochaine utilisation
+
+3. **En cas d'erreur** - Utilisez à nouveau `/skill:edit` pour corriger
+
+4. **Activer l'apprentissage** – Si vous ne l'avez pas déjà fait :
+   ```bash
+   /agileflow:skill:upgrade <skill-name>
+   ```
+
+## Commandes associées
+
+- [`/skill:create`](/commands/skill-create) - Générer une nouvelle compétence
+- [`/skill:list`](/commands/skill-list) - Afficher toutes les compétences
+- [`/skill:test`](/commands/skill-test) - Vérifier que les modifications ont fonctionné
+- [`/skill:delete`](/commands/skill-delete) - Supprimer une compétence
+- [`/skill:upgrade`](/commands/skill-upgrade) - Ajouter une capacité d'apprentissage
+
+## Prochaines étapes
+
+1. **Liste des compétences** : `/agileflow:skill:list`
+2. **Modifiez-en un** : `/agileflow:skill:edit <skill-name>`
+3. **Tester les modifications** : `/agileflow:skill:test <skill-name>`
+4. **Utilisez-le** : vos modifications sont mises en ligne immédiatement

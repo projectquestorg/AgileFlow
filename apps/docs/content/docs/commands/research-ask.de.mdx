@@ -1,0 +1,233 @@
+---
+title: /agileflow:research:ask
+description: Generieren Sie detaillierte Rechercheaufforderungen für ChatGPT, Claude Web, Perplexity oder Gemini
+---
+# /agileflow:research:ask
+
+Generieren Sie eine umfassende, kontextreiche Rechercheaufforderung für externe KI-Tools, wenn Sie Expertenhilfe benötigen.
+
+## Schnellstart
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"
+```
+
+Beispiel zur Fehlerbehebung:
+
+```bash
+/agileflow:research:ask TOPIC="next-auth Google OAuth" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+```
+
+## Zweck
+
+Wenn Sie bei einem Problem nicht weiterkommen oder Expertenrat benötigen, generiert dieser Befehl eine **detaillierte Eingabeaufforderung mit mehr als 200 Zeilen**, die Folgendes enthält:
+
+– Ihr aktueller Codebasiskontext und Codeausschnitte
+- Genaue Fehlermeldungen und Stack-Traces
+- Was Sie bereits versucht haben
+- Spezifische Fragen zur Beantwortung
+
+Die generierte Eingabeaufforderung soll umsetzbare, spezifische Antworten von KI-Tools erhalten.
+
+## Parameter
+
+| Argument | Erforderlich | Beschreibung |
+|----------|----------|-------------|
+| THEMA | Ja | Was Sie recherchieren (z. B. „OAuth 2.0 mit Google“) |
+| DETAILS | Nein | Einschränkungen, Fristen oder spezifische Anforderungen |
+| FEHLER | Nein | Genaue Fehlermeldung bei Fehlerbehebung |
+
+## Was generiert wird
+
+Der Befehl erstellt eine strukturierte Eingabeaufforderung mit diesen Abschnitten:
+
+### 1. Projektkontext
+RahmenVersion, Abhängigkeiten und relevante Dateien aus Ihrer Codebasis.
+
+### 2. Aktuelle Implementierung
+**50+ Zeilen tatsächlicher Code** aus Ihrem Projekt – kein Pseudocode oder Zusammenfassungen.
+
+### 3. Das Problem
+- Genaue Fehlermeldungen (wörtlich)
+- Vollständiger Stack-Trace, falls verfügbar
+- Erwartetes vs. tatsächliches Verhalten
+- Schritte zur Reproduktion
+
+### 4. Was wir bereits versucht haben
+Mindestens **2 Ansätze** mit detaillierten Ergebnissen und Analyse, warum sie nicht funktioniert haben.
+
+### 5. Spezifische Fragen
+**3+ gezielte Fragen**, die beantwortbar und spezifisch auf Ihre Situation zugeschnitten sind.
+
+### 6. Was ich brauche
+- Ursachenanalyse
+- Schritt-für-Schritt-Lösung
+- Vollständige Codebeispiele
+- Fallstricke und Randfälle
+- Testansatz
+
+### 7. Umgebungsdetails
+Node.js-Version, Betriebssystem und relevante Tool-Versionen.
+
+## Qualitätsanforderungen
+
+Der Befehl validiert die generierte Eingabeaufforderung vor der Ausgabe:
+
+| Prüfen | Anforderung |
+|-------|-------------|
+| Länge | ≥200 Zeilen |
+| Codeausschnitte | ≥50 Zeilen tatsächlicher Code |
+| Fehlerdetails | Wörtliche Meldung bei Fehlerbehebunging |
+| Ausprobierter Abschnitt | ≥2 Ansätze dokumentiert |
+| Fragen | ≥3 spezifische Fragen |
+
+Wenn eine Prüfung fehlschlägt, erfasst der Befehl mehr Kontext und wird neu generiert.
+
+## Arbeitsablauf
+
+```
+Step 1: Run the command
+/agileflow:research:ask TOPIC="..." ERROR="..."
+
+Step 2: Copy the generated prompt
+
+Step 3: Paste into ChatGPT, Claude web, Perplexity, or Gemini
+
+Step 4: Get expert analysis
+
+Step 5: Import results back
+/agileflow:research:import TOPIC="..."
+(paste the response when prompted)
+
+Step 6: Results saved to docs/10-research/
+```
+
+## Beispielausgabe
+
+Eine gute Eingabeaufforderung sieht (abgekürzt) so aus:
+
+```markdown
+# Research Request: next-auth Google OAuth unauthorized_client Error
+
+## Project Context
+
+**Framework**: Next.js 14.0.4 with App Router
+**Key Dependencies**:
+- next-auth: 5.0.0-beta.4
+- next: 14.0.4
+- typescript: 5.3.3
+
+---
+
+## Current Implementation
+
+### File: src/app/api/auth/[...nextauth]/route.ts
+
+```typescript
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  Anbieter: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  // ... 40+ weitere Zeilen tatsächlichen Codes
+});
+```
+
+---
+
+## The Problem
+
+### Error Message
+```
+[auth][error] CallbackRouteError: Lesen Sie mehr unter https://errors.authjs.dev#callbackrouteerror
+[auth][cause]: Fehler: unautorisierter_Client
+```
+
+### Expected Behavior
+User should be redirected to Google login, authenticate, and return to the app.
+
+### Actual Behavior
+After clicking "Sign in with Google", immediately get unauthorized_client error.
+
+---
+
+## What We've Already Tried
+
+### Attempt 1: Verify credentials
+**What we did**: Double-checked GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+**Result**: Credentials match exactly
+**Why it didn't work**: Issue persists
+
+### Attempt 2: Check redirect URIs
+**What we did**: Added localhost:3000/api/auth/callback/google to Google Console
+**Result**: Still getting unauthorized_client
+
+---
+
+## Specific Questions
+
+1. **Why does next-auth 5.0.0-beta.4 throw unauthorized_client when credentials are verified?**
+2. **Is there additional configuration needed for Google OAuth with App Router?**
+3. **What's the correct redirect URI format for next-auth v5?**
+4. **Are there known issues with next-auth 5.0.0-beta.4 and the Google provider?**
+
+---
+
+## What I Need
+
+1. **Root cause analysis**: Why is this happening?
+2. **Step-by-step solution** with exact code changes
+3. **Complete code examples** that I can copy-paste
+4. **Gotchas and edge cases** to watch for
+5. **Testing approach** to verify the fix works
+```
+
+## Anti-Patterns
+
+**Generieren Sie keine kurzen, vagen Eingabeaufforderungen:**
+
+```
+❌ "How do I fix OAuth in Next.js?"
+❌ "Getting an error with authentication, how to fix?"
+❌ "Help with Google login"
+```
+
+**Generieren Sie immer detaillierte Eingabeaufforderungen mit:**
+
+```
+✅ 200+ lines with full context
+✅ Actual code from your codebase
+✅ Exact error messages
+✅ What you've already tried
+✅ Specific questions
+```
+
+## Integration mit Babysitter
+
+Wenn [`/agileflow:babysit`](/commands/babysit) feststellt, dass Sie bei einem Problem stecken bleiben, schlägt dies vorMaschen:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+## Tipps für bessere Ergebnisse
+
+1. **Seien Sie beim THEMA genau** – Schließen Sie Framework-Versionen und Fehlertypen ein
+2. **Fehlermeldungen einschließen** – Vollständige Stack-Traces helfen enorm
+3. **Lassen Sie den Befehl Ihren Code lesen** – Er extrahiert die tatsächliche Implementierung
+4. **Überspringen Sie nicht die Validierung** – Die Prüfungen stellen qualitativ hochwertige Antworten sicher
+
+## Verwandte Befehle
+
+- [`/agileflow:research`](/commands/research) – Überblick über das Forschungssystem
+- [`/agileflow:research:import`](/commands/research-import) - Forschungsergebnisse importieren
+- [`/agileflow:research:list`](/commands/research-list) – Alle Forschungsnotizen anzeigen
+- [`/agileflow:research:view`](/commands/research-view) - Spezifische Forschungsnotiz lesen

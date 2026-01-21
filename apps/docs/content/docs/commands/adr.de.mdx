@@ -1,0 +1,110 @@
+---
+title: /adr
+description: Erstellen Sie einen Architekturentscheidungsdatensatz
+---
+# /adr
+
+Erstellen Sie Architecture Decision Records (ADRs), um wichtige Architektur- und Designentscheidungen in Ihrem Projekt zu dokumentieren.
+
+## Schnellstart
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="Need reliable database" DECISION="PostgreSQL chosen" CONSEQUENCES="Better reliability, steeper learning curve"
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Ja | - | 4-stellige ADR-Nummer (z. B. 0001, 0042) |
+| `TITLE` | Ja | - | Kurztitel der Architekturentscheidung |
+| `CONTEXT` | Ja | - | Warum diese Entscheidung nötig war |
+| `DECISION` | Ja | - | Was wurde ausgewählt und warum |
+| `CONSEQUENCES` | Ja | - | Kompromisse, positive und negative Auswirkungen |
+| `LINKS` | Nein | - | Optionale Links zu verwandter Dokumentation |
+
+## Beispiele
+
+### Grundlegendes ADR: Datenbankauswahl
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="We need a reliable database with ACID guarantees for user data and transactions" DECISION="PostgreSQL chosen over MongoDB for its strong consistency guarantees and mature ecosystem" CONSEQUENCES="Better data integrity and reliability. Team needs PostgreSQL training. Slightly higher operational complexity than NoSQL alternatives"
+```
+
+Dadurch wird eine neue Datei unter `docs/03-decisions/adr-0001-use-postgresql-for-persistence.md` mit der vollständigen ADR-Struktur erstellt.
+
+### ADR mit verwandten Links
+
+```bash
+/agileflow:adr NUMBER=0002 TITLE="Adopt TypeScript for all new code" CONTEXT="Type safety issues in JavaScript codebase causing bugs in production" DECISION="Migrate to TypeScript with strict type checking enabled" CONSEQUENCES="Fewer type-related bugs. Initial slower development. Better IDE support and refactoring. Requires team training" LINKS="- Related Story: US-0042\n- Related ADR: ADR-0001"
+```
+
+## Ausgabe
+
+Wenn Sie den Befehl ausführen, sehen Sie Folgendes:
+
+1. **Vorschau**: Zeigt den generierten ADR-Inhalt vollständig an2. **Bestätigung**: Bittet um JA/NEIN um die Genehmigung des ADR
+3. **Dateierstellung**: Erstellt die ADR-Datei im Verzeichnis `docs/03-decisions/`
+4. **Dateinamenformat**: `adr-<NUMBER>-<slug>.md` (automatisch aus dem Titel generiert)
+
+Die generierte ADR umfasst:
+
+```markdown
+---
+number: 0001
+title: Use PostgreSQL for persistence
+date: 2025-12-24
+status: accepted
+tags: [database, architecture]
+---
+
+# ADR-0001: Use PostgreSQL for persistence
+
+## Context
+We need a reliable database...
+
+## Decision
+We will use PostgreSQL...
+
+## Consequences
+- Better data integrity...
+- Team needs training...
+```
+
+## Best Practices
+
+### ADR-Nummerierung
+- fortlaufend nummerieren (0001, 0002, 0003, ...)
+- Überspringen Sie keine Zahlen und verwenden Sie sie nicht erneut
+- Verwenden Sie aus Konsistenzgründen führende Nullen
+
+### Gute ADRs schreiben
+- **Kontext zuerst**: Erklären Sie das Problem oder die Einschränkung vor der Entscheidung
+- **Seien Sie genau**: „PostgreSQL 15+ mit asynchroner Replikation verwenden“, nicht „Eine Datenbank verwenden“
+- **Kompromisse bei Dokumenten**: Listen Sie sowohl positive als auch negative Konsequenzen auf
+- **Halten Sie sich prägnant**: Streben Sie maximal 1-2 Seiten an
+- **Referenzbezogene Arbeit**: Link zu Epen, Geschichten oder anderen ADRs
+
+### Tipps zum Kontextabschnitt
+- Welches Problem oder welche Einschränkung hat diese Entscheidung ausgelöst?
+- Was sind die Geschäftstreiber?
+- Welche technischen Einschränkungen bestehen?
+- Was haben wir schon einmal probiert?
+
+### Tipps zum Entscheidungsabschnitt
+- Geben Sie deutlich an, wHut wurde ausgewählt
+- Erklären Sie kurz, warum diese Option gewonnen hat
+- Erwähnen Sie die in Betracht gezogenen Alternativen
+- Geben Sie Versionsnummern oder spezifische Details an
+
+### Tipps zum Abschnitt „Konsequenzen“.
+- Listen Sie zuerst die positiven Auswirkungen auf
+- Listen Sie dann Kompromisse und Risiken auf
+- Seien Sie ehrlich, was die Nachteile angeht
+- Schlagen Sie Abhilfestrategien vor
+
+## Verwandte Befehle
+
+- [`/story-new`](/commands/story-new) – Erstellen Sie User Stories im Zusammenhang mit Architekturentscheidungen
+- [`/epic-new`](/commands/epic-new) – Erstellen Sie Epics für größere architektonische Anstrengungen
+- [`/context`](/commands/context) – Generieren Sie einen umfassenden Projektkontext einschließlich ADRs

@@ -1,0 +1,290 @@
+---
+title: Leistung
+description: Performance-Spezialist für Optimierung, Profiling, Benchmarking, Skalierbarkeit und leistungskritische Funktionen.
+---
+# Leistungsagent
+
+Der Performance Agent (AG-PERFORMANCE) ist ein Spezialist für Leistungsoptimierung, der Engpässe identifiziert, kritische Pfade optimiert und sicherstellt, dass Anwendungen Leistungsziele erreichen. Dieser Agent konzentriert sich auf die messungsorientierte Optimierung und nicht auf vorzeitige Vermutungen.
+
+## Fähigkeiten
+
+- **Leistungsprofilierung**: Identifizieren Sie tatsächliche Engpässe mit Profilierungstools
+- **Benchmark-Erstellung**: Messen Sie die Leistung vor und nach Optimierungen
+- **Datenbankoptimierung**: Eliminieren Sie N+1-Abfragen, fügen Sie Indizes hinzu und optimieren Sie Abfragen
+- **Caching-Strategien**: Implementieren Sie In-Memory-, Redis-, CDN- und HTTP-Caching
+- **Frontend-Optimierung**: Reduzierung der Bundle-Größe, Code-Aufteilung, Lazy Loading
+- **API-Optimierung**: Reaktionszeiten verkürzen, teure Vorgänge eliminieren
+- **Lasttests**: Skalierbarkeitsgrenzen testen und Bruchstellen finden
+- **Leistungsüberwachung**: Richten Sie Benachrichtigungen für Leistungsrückgänge ein
+- **Skalierbarkeitsanalyse**: Verstehen Sie, wie das System mit der Last skaliert
+- **Dokumentationn**: Erstellen Sie ADRs für Leistungskompromisse
+
+## Wann zu verwenden
+
+Verwenden Sie den Performance Agent, wenn:
+
+- Die Reaktionszeiten sind langsam und müssen optimiert werden
+- Datenbankabfragen sind langsam oder es liegen N+1 Probleme vor
+- Die Frontend-Bundle-Größe ist groß
+- Skalierbarkeitsgrenzen müssen getestet werden
+- Die Speichernutzung ist hoch oder nimmt zu
+– API-Endpunkte übertreffen die Leistungsziele
+- Caching-Strategien müssen implementiert werden
+- Festlegung von Leistungsgrundlagen
+- Erstellen von Leistungsüberwachungen und Warnungen
+- Leistungsentscheidungen müssen dokumentiert werden
+
+## Wie es funktioniert
+
+1. **Wissen laden**: Der Agent liest Fachwissen und Leistungsziele vor
+2. **Analyse**: Agent überprüft die Geschichte auf Auswirkungen auf die Leistung
+3. **Profiling**: Der Agent misst die aktuelle Leistung mit geeigneten Tools
+4. **Erkennung von Engpässen**: Agent findet heraus, wo tatsächlich Zeit aufgewendet wird
+5. **Optimierungsdesign**: Agent plant mehrere Optimierungsansätze
+6. **Implementierung**: Der Agent implementiert die Optimierung mit Messungen
+7. **Benchmarking**: Agent überprüft Verbesserungtrifft Ziel
+8. **Dokumentation**: Agent erstellt ADR zur Dokumentation von Kompromissen
+9. **Überwachung**: Der Agent richtet Warnungen für Leistungsrückgänge ein
+
+## Beispiel
+
+```bash
+# Via babysit - optimize slow API endpoint
+/agileflow:babysit
+> "The user list API endpoint is taking 5 seconds. It needs to be <200ms."
+
+# Agent output:
+# Performance Analysis: GET /api/users
+#
+# Current Performance: 5.2 seconds
+# Target Performance: <200ms
+#
+# Profiling Results:
+# ├── Database query: 4.8s (92% of time)
+# │   └── N+1 problem: Fetching user details in loop
+# ├── JSON serialization: 0.3s (6%)
+# └── Network overhead: 0.1s (2%)
+#
+# Optimization Strategy:
+# 1. Fix N+1: Use JOIN instead of loop (estimated: 4.8s → 0.2s)
+# 2. Add database index on users.created_at
+# 3. Implement caching with 5 minute TTL
+#
+# Estimated Result: <200ms after optimizations
+# Correctness: All tests will still pass
+# Trade-offs: Slight memory overhead for cache
+#
+# Status: Ready for implementation
+```
+
+## Schlüsselverhalten
+
+- **Zuerst messen**: Profilcode, um tatsächliche Engpässe zu finden (nicht raten)
+- **Benchmark vorher/nachher**: Messen Sie immer die Verbesserung
+- **Keine vorzeitige Optimierung**: Optimieren Sie selten verwendeten Code nicht
+- **Korrektheit zuerst**: Verzichten Sie niemals auf Korrektheit zugunsten der Leistung
+- **Kompromisse dokumentieren**: Zeichnen Sie auf, warum Entscheidungen getroffen wurden
+- **Überprüfen unter Last**: Testen Sie die Leistung unter realistischer Last
+
+## Werkzeuge verfügbar
+
+- Lesen, Schreiben, Bearbeiten (Dateioperationen)
+- Bash (Profilerstellung/Auslastungstests ausführen)
+- Glob (langsamen Code finden)
+- Grep (Suche nach Leistungsproblemen)
+
+## Leistungsmetriken
+
+**Wichtige Kennzahlen**:
+- **Reaktionszeit (Latenz)**: Wie lange dauert der Vorgang?
+- **Durchsatz**: Wie viele Vorgänge pro Sekunde?
+- **Ressourcennutzung**: CPU, Speicher, Festplatte, Netzwerk
+- **Skalierbarkeit**: Wie skaliert die Leistung mit der Last?
+
+**PLeistungsziele** (je nach Kontext anpassen):
+- API-Endpunkte: unter 200 ms durchschnittlich, unter 500 ms p95
+- Laden der Frontend-Seite: weniger als 2 Sekunden beim ersten Malen, weniger als 5 Sekunden beim vollständigen Laden
+- Datenbankabfragen: unter 10 ms durchschnittlich, unter 100 ms p95
+- Speicher: Stabil, keine Lecks, vorhersehbares Wachstum
+
+## Profilierungstools
+
+**JavaScript/Node.js**:
+- Chrome DevTools: Integrierter Leistungsprofiler
+- Node.js-Profiler: `node --prof`
+- Clinic.js: Professionelles Profiling-Tool
+- Autocannon: HTTP-Lasttest
+- Flammendiagramme: Visualisieren Sie die für jede Funktion aufgewendete Zeit
+
+**Python**:
+- cProfile: CPU-Profilerstellung
+- Memory_profiler: Speichernutzungsanalyse
+- py-spy: Statistischer Stichprobenprofiler
+
+**Datenbank**:
+- EXPLAIN ANALYZE: Abfrageplan und Ausführungszeit
+- Langsames Abfrageprotokoll: Erfassen Sie Abfragen über dem Schwellenwert
+- Überwachung: Verfolgen Sie die Anzahl der Abfragen, die Zeit und die Ressourcennutzung
+
+**Frontend**:
+- Chrome DevTools: Registerkarten „Leistung“, „Netzwerk“.
+- Leuchtturm: Leistungsprüfung
+- Web Vitals: Kernmetriken (LCP, FID, CLS)
+
+## Häufige Engpässe und Lösungen
+
+| Engpass | Ursache| Lösung |
+|------------|-------|----------|
+| Datenbank | N+1 Abfragen, fehlende Indizes, nicht optimiert | JOIN verwenden, Indizes hinzufügen, denormalisieren |
+| API-Antwort | Langsame Endpunkte, externe Anrufe | Zwischenspeichern, Abfragen optimieren, parallelisieren |
+| Frontend-Rendering | Reflows, Repaints, Großpakete | Codeaufteilung, Lazy Loading, Komprimierung |
+| Erinnerung | Speicherlecks, große Datenstrukturen | Lecks beheben, große Datensätze paginieren |
+| CPU | Teure Algorithmen, unnötige Arbeit | Algorithmusoptimierung, Parallelisierung |
+
+## Optimierungstechniken
+
+**Datenbankoptimierung**:
+```sql
+-- Bad: N+1 queries (1 for users, N for details)
+SELECT * FROM users;
+for each user:
+  SELECT * FROM user_details WHERE user_id = user.id;
+
+-- Good: Single JOIN query
+SELECT u.*, ud.* FROM users u
+JOIN user_details ud ON u.id = ud.user_id;
+```
+
+**Caching-Strategien**:
+- **In-Memory-Cache**: Schnell, aber begrenzte Größe (Redis)
+- **CDN-Cache**: Statische Assets an Edge-Standorten
+- **HTTP-Cache**: Browser-Cache mit ETag, Last-Modified
+- **Datenbank-Cache**: Abfrageergebnis-Cache
+
+**Frontend-Optimierung**:
+```javascript
+// Code splitting: Load only needed code
+import { lazy, Suspense } from 'react';
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// Lazy loading: Load images on demand
+<img loading="lazy" src="image.jpg" alt="...">
+
+// Tree shaking: Remove unused code
+import { usedFunction } from 'library'; // Only usedFunction included
+```
+
+## Lasttest
+
+**Lasttestszenarien**:
+- **Hochfahren**: Erhöhen Sie die Last schrittweise, um den Bruchpunkt zu finden
+- **Anhaltend**: Konstante Belastung über die Zeit- **Spike**: Plötzlicher Anstieg der Belastung
+- **Einweichtest**: Dauerhafte Belastung über einen längeren Zeitraum
+
+**Zu erfassende Metriken**:
+- Antwortzeitverteilung (Durchschnitt, S. 50, S. 95, S. 99)
+- Durchsatz (Anfragen/Sekunde)
+- Fehlerrate (% fehlgeschlagene Anfragen)
+- Ressourcennutzung (CPU, Speicher, Netzwerk)
+
+## Skalierbarkeitsanalyse
+
+Testsystem unter steigender Belastung:
+
+```text
+Load Test Results:
+├── 10 users: 150ms avg, 0% errors ✅
+├── 100 users: 180ms avg, 0% errors ✅
+├── 1000 users: 500ms avg, 2% errors ⚠️
+├── 5000 users: 5s avg, 15% errors ❌
+│
+└── Bottleneck: Database can't handle 5000 concurrent connections
+    Solution: Connection pooling, read replicas, caching
+```
+
+## Session Harness-Integration
+
+Der Performance Agent lässt sich in Session Harness integrieren:
+
+```text
+Pre-Implementation:
+├── Baseline performance measured
+├── Bottleneck identified with data
+└── Optimization plan reviewed
+
+Post-Implementation:
+├── Run /agileflow:verify (tests pass)
+├── Benchmark improvement (meets target)
+└── Verify correctness (tests still pass)
+```
+
+## Qualitätscheckliste
+
+Bevor Sie die Arbeit als abgeschlossen markieren:
+
+- [ ] Aktuelle Leistung gemessen und dokumentiert
+- [ ] Engpass bei Profiling-Daten identifiziert
+- [ ] Grundursache verstanden
+- [ ] Optimierungsstrategie dokumentiert
+- [ ] Vor/nach den durchgeführten Messungen
+- [ ] Verbesserung erfüllt Leistungsziel
+- [ ] Korrektheit überprüft (Tests bestehen noch)
+- [ ] Kompromisse dokumentiert
+- [ ] Überwachung/Warnungen vorhanden
+- [ ] Leistungsmetriken zur Dokumentation hinzugefügt
+
+## Planmodus (für die Optimierung erforderlich)
+
+Leistungsoptimierung erfordert Messung-erste Planung:
+
+| Situation | Aktion |
+|-----------|--------|
+| „Mach es schneller“ (vage) | → EnterPlanMode: Profil zuerst! |
+| Bekanntermaßen langsamer Betrieb | → EnterPlanMode: Designoptimierung |
+| Caching erforderlich | → EnterPlanMode: Planungültigmachung |
+| Abfrageoptimierung | → EnterPlanMode: Vorher/Nachher messen |
+| Problem mit der Paketgröße | → EnterPlanMode: Abhängigkeiten analysieren |
+
+**Arbeitsablauf im Planmodus**:
+1. Profil der aktuellen Leistung
+2. Identifizieren Sie den tatsächlichen Engpass
+3. Designoptimierung mit Benchmarks
+4. Planen Sie eine Überprüfungsstrategie
+5. Holen Sie sich die Genehmigung
+6. Implementieren, messen, überprüfen
+
+## Verwandte Agenten
+
+- [`database`](/agents/database) – Abfrageoptimierung und Indizes
+- [`api`](/agents/api) – Optimierung der API-Antwortzeit
+- [`ui`](/agents/ui) – Frontend-Leistung und Code-Aufteilung
+- [`devops`](/agents/devops) – Infrastrukturleistung, Skalierung
+- [`testing`](/agents/testing) – Automatisierung von Leistungstests
+
+## Koordination
+
+Die Leistung AGent-Koordinaten mit:
+
+- **AG-DATABASE**: Langsame Abfragen identifizieren, Indizes überprüfen
+- **AG-API**: Profil-Endpunktleistung
+- **AG-UI**: Frontend-Engpässe analysieren
+- **AG-DEVOPS**: Anforderungsüberwachung, Koordinatenskalierung
+- **Überwachungsteam**: Richten Sie Leistungswarnungen ein
+
+## Slash-Befehle
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Optimierungstechniken
+– `/agileflow:ai-code-review` – Überprüfen Sie den Code auf Leistungsprobleme
+- `/agileflow:adr-new` – Leistungsentscheidungen dokumentieren
+- `/agileflow:tech-debt` - Leistungsschuld dokumentieren
+- `/agileflow:impact-analysis` – Auswirkungen auf die Leistung analysieren
+- `/agileflow:status STORY=... STATUS=...` – Story-Status aktualisieren
+
+## Leistungsprinzipien
+
+- **Messen, nicht raten**: Die Profilerstellung deckt tatsächliche Engpässe auf
+- **Vorzeitige Optimierung ist böse**: Optimieren Sie dort, wo es darauf ankommt
+- **Ziel 80/20**: Beheben Sie Probleme, die 80 % der Auswirkungen betreffen
+- **Das Schlimmste zuerst optimieren**: Beheben Sie zuerst den größten Engpass
+- **Mit Last überprüfen**: Testen Sie unter realistischen Lastbedingungen
+- **Immer überwachen**: Richten Sie Warnungen für Regressionen ein

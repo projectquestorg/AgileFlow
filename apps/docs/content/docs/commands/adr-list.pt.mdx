@@ -1,0 +1,106 @@
+---
+title: /adr:lista
+description: Liste todos os registros de decisões de arquitetura com status e ações rápidas
+---
+# /adr:lista
+
+Exiba todos os registros de decisões de arquitetura com status, datas e opções de ação rápida.
+
+## Início rápido
+
+```bash
+/agileflow:adr:list
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `STATUS` | Não | - | Filtrar por status: `proposed`, `accepted`, `deprecated`, `superseded` |
+
+## Exemplos
+
+### Listar todas as ADRs
+
+```bash
+/agileflow:adr:list
+```
+
+Mostra todos os ADRs classificados por número com seu status atual.
+
+### Listar apenas ADRs aceitos
+
+```bash
+/agileflow:adr:list STATUS=accepted
+```
+
+Filtros para mostrar apenas ADRs que foram aprovadas e estão em vigor.
+
+### Listar apenas ADRs propostas
+
+__NOTRADUZIR_3__
+
+Mostra ADRs ainda em discussão, aguardando aprovação da equipe.
+
+## Formato de saída
+
+O comando exibe ADRs em uma tabela estruturada:
+
+__NÃOTRADUZIR_4__
+
+## Definições de status
+
+| Estado | Significado | Ação |
+|----|---------|--------|
+| **proposta** | Em discussão, ainda não decidido | Revise e aprove ou solicite alterações |
+| **aceitared** | Decisão tomada e em vigor | Implementar ou criar histórias relacionadas |
+| **obsoleto** | Já não se aplica (mas não é substituído) | Considere reativar se o contexto mudar |
+| **substituído** | Substituído por um ADR mais recente | Veja o ADR substituto para entender a evolução |
+
+## Ações rápidas
+
+Depois de exibir a lista, você pode:
+
+### Ver detalhes de ADR
+
+Selecione um ADR para ver o conteúdo completo, incluindo:
+- Contexto completo explicando a decisão
+- Justificativa da decisão e alternativas consideradas
+- Consequências (positivas e negativas)
+- ADRs e histórias relacionadas
+
+__NOTRADUZIR_5__
+
+### Criar novo ADR
+
+Vá para a criação de ADR na lista:
+
+__NOTRADUZIR_6__
+
+### Atualizar status de ADR
+
+Alterar o status da ADR existente (por exemplo, proposta → aceita):
+
+__NÃOTRADUZIR_7__
+
+## Integração de fluxo de trabalho
+
+### Após a revisão da arquitetura
+
+__NÃOTRADUZIR_8__
+
+### Implementação do planejamento
+
+__NOTRADUZIR_9__
+
+### Acompanhamento de decisões
+
+__NOTRADUZIR_10__
+
+## Comandos Relacionados
+
+- [`/adr`](/commands/adr) - Criar novo ADR
+- [__NÃORANSLATE_17____NOTRASLATE_22__ - Ver detalhes completos do ADR
+- [`/adr:update`__NOTRASLATE_23__ - Atualizar status de ADR
+- [`/epic`__NOTRASLATE_24__ - Criar épico de implementação para ADR aceito
+- [`/story`__NOTRASLATE_25__ - Criar história de implementação

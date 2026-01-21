@@ -1,0 +1,207 @@
+---
+title: /modelo
+description: Crie e gerencie modelos de documentos personalizados
+---
+# /modelo
+
+Crie, gerencie e use modelos personalizados para padronizar a documentação em todo o seu projeto. Crie modelos para histórias, reuniões, relatórios de incidentes e muito mais.
+
+## Início rápido
+
+```bash
+# List all available templates
+/agileflow:template
+
+# Create a new custom template
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+
+# Use a template to generate a document
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `ACTION` | Não | lista | Operação: listar, criar, editar ou usar |
+| `TYPE` | Para criar/editar/usar | - | Tipo de modelo: história, épico, anúncio, personalizado, etc. |
+| `NAME` | Para criar/editar/usar | - | Nome do modelo (por exemplo, notas de reunião) |
+| `PATH` | Opcional | automóvel | Caminho personalizado para salvar o modelo |
+
+## Exemplos
+
+### Listar modelos disponíveis
+
+```bash
+/agileflow:template
+```
+
+Mostra todos os modelos integrados e personalizados:
+
+```text
+# Available Templates
+
+## Built-in Templates (docs/00-meta/templates/)
+- story-template.md - User stories
+- epic-template.md - Epics
+- adr-template.md - Architecture Decision Records
+- agent-profile-template.md - Agent profiles
+- comms-note-template.md - Handoff notes
+- research-template.md - Research notes
+- README-template.md - Folder READMEs
+
+## Custom Templates (docs/00-meta/templates/custom/)
+- meeting-notes.md (created 2025-10-15)
+- incident-report.md (created 2025-10-10)
+- sprint-retro.md (created 2025-10-01)
+
+Usage: /agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+### Crie um modelo de notas de reunião
+
+__NOTRADUZIR_3__
+
+Fornece uma interface de criação de modelos:
+
+__NÃOTRADUZIR_4__
+
+### Crie um modelo de relatório de incidente
+
+__NOTRADUZIR_5__
+
+Defina um modelo de relatório de incidente:
+
+__NOTRANSATRASADO_6__
+
+### Crie um modelo de retrospectiva do Sprint
+
+__NÃOTRADUZIR_7__
+
+Defina um modelo de retrospectiva de sprint com métricas:
+
+__NÃOTRADUZIR_8__
+
+### Use um modelo para gerar um documento
+
+__NOTRADUZIR_9__
+
+Solicita variáveis de modelo e gera o documento:
+
+__NOTRADUZIR_10__
+
+### Editar um modelo existente
+
+__NOTRADUZIR_11__
+
+Mostra o modelo atual e solicita edições com visualização de diferenças.
+
+## Sintaxe do modelo
+
+### Formato variável
+
+Os modelos usam chaves duplas para variáveis:
+
+```markdown
+# {{TITLE}}
+
+**Created by**: {{AUTHOR}}
+**Date**: {{DATE}}
+**Status**: {{STATUS}}
+```
+
+### Variáveis incorporadas
+
+Disponível em todos os modelos:
+
+| Variável | Exemplo | Descrição |
+|----------|------------|-------------|
+| `{{DATE}}` | 24/12/2025 | Data atual (AAAA-MM-DD) |
+| `{{DATETIME}}` | 2025-12-24T10:30:00Z | Data e hora ISO 8601 |
+| `{{USER}}` | Alice | Usuário git atual |
+| `{{YEAR}}` | 2025 | Ano atual |
+
+### Variáveis de modelo de história
+
+Para modelos específicos de histórias:
+
+__NÃOTRADUZIR_13__
+
+### Variáveis do modelo ADR
+
+Para arquitetura deregistros de decisão:
+
+__NOTRADUZIR_14__
+
+## Modelos integrados
+
+AgileFlow inclui modelos padrão que você pode visualizar e personalizar:
+
+| Modelo | Finalidade | Localização |
+|----------|------------|----------|
+| `story-template.md` | Formato da história do usuário | docs/00-meta/templates/story-template.md |
+| `epic-template.md` | Definição épica | docs/00-meta/templates/epic-template.md |
+| `adr-template.md` | Decisões de arquitetura | docs/00-meta/templates/adr-template.md |
+| `agent-profile-template.md` | Documentação do agente | docs/00-meta/templates/agent-profile-template.md |
+| `comms-note-template.md` | Notas de transferência | docs/00-meta/templates/comms-note-template.md |
+| `research-template.md` | Resultados da investigação | docs/00-meta/templates/research-template.md |
+| `README-template.md` | Pasta READMEs | docs/00-meta/templates/README-template.md |
+
+Você pode substituir qualquer modelo integrado criando uma versão personalizada com o mesmo nome.
+
+## Melhores práticas
+
+### Quando criar modelos
+
+Crie um modelo quando:
+- Um tipo de documento é criadovárias vezes
+- Uma estrutura específica deve ser seguida de forma consistente
+- Certos campos devem sempre ser incluídos
+
+### Nomenclatura de modelo
+
+Use nomes descritivos, tipo kebab:
+
+__NÃOTRADUZIR_15__
+
+### Nomeação de variáveis
+
+Utilize UPPERCASE_WITH_UNDERSCORES:
+
+__NOTRADUZIR_16__
+
+### Documentação
+
+Adicione descrições aos modelos personalizados:
+
+```markdown
+---
+template: incident-report
+version: 1.0
+description: Post-incident documentation for service outages
+author: DevOps Team
+created: 2025-10-10
+---
+```
+
+## Gerenciamento de modelos
+
+### Registro de modelo
+
+Os modelos personalizados são rastreados em __NOTRASLATE_34__:
+
+__NÃOTRADUZIR_18__
+
+### Compartilhamento de equipe
+
+Os modelos em __NOTRASLATE_35__ estão comprometidos com o git, então:
+- Todos os membros da equipe usam os mesmos modelos
+- Os modelos são versionados com código
+- As alterações de modelo são revisadas nos PRs
+
+## Comandos Relacionados
+
+- [`/adr`](/commands/adr) - Criar decisões de arquitetura (usa adr-template.md)
+- [`/story-new`](/commands/story-new) - Crie histórias de usuários (usa story-template.md)
+- [`/epic-new`](/commands/epic-new) - Crie épicos (usa epic-template.md)
+- [`/research`](/commands/research) - Criar pesquisa nãoes (usa research-template.md)

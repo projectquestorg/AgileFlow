@@ -1,0 +1,387 @@
+---
+title: Mode visuel
+description: Système de vérification de capture d'écran pour le développement de l'interface utilisateur avec protocole de préfixe vérifié
+---
+# Mode visuel
+
+Le mode visuel est un système de vérification de capture d'écran pour le développement de l'interface utilisateur qui garantit que toutes les sorties visuelles sont examinées et approuvées avant qu'une histoire ne soit marquée comme terminée.
+
+## Aperçu
+
+Lors du développement de composants d'interface utilisateur, les tests seuls peuvent ne pas détecter les problèmes visuels tels que :
+- Problèmes de mise en page
+- Incohérences de style
+- Problèmes de conception réactive
+- Régressions visuelles
+
+Le mode visuel résout ce problème en exigeant que toutes les captures d'écran soient **vérifiées** (préfixées par `verified-`) avant de continuer.
+
+## Comment ça marche
+
+### Le protocole de préfixe vérifié
+
+1. Pendant le développement de l'interface utilisateur, les captures d'écran sont enregistrées dans le répertoire `screenshots/`
+2. Les nouvelles captures d'écran sont enregistrées sans préfixe (par exemple, `login-form.png`)
+3. Après examen visuel, les captures d'écran approuvées sont renommées avec le préfixe `verified-`.
+4. Le mode visuel vérifie que TOUTES les captures d'écran portent le préfixe `verified-`
+5. S'il existe des captures d'écran non vérifiées, la boucle s'arrête pour examen
+
+<image>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/visual-mode-protocol.dark.svg" />
+  <img alt="Protocole de préfixe vérifié" src="/images/docs/features/visual-mode-protocol.light.svg" />
+</image>
+
+## Démarrage rapide
+
+Activer le mode visuel en mode boucle :
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+Ou exécutez directement le vérificateur :
+
+```bash
+node .agileflow/scripts/screenshot-verifier.js
+```
+
+## Flux de travail de capture d'écran
+
+### 1. Prenez des captures d'écran pendant le développement
+
+Lors de l'implémentation des composants de l'interface utilisateur, enregistrez les captures d'écran :
+
+```typescript
+// In your test or component
+await page.screenshot({ path: 'screenshots/user-profile.png' });
+```
+
+Ou manuellement avec les outils de développement du navigateur.
+
+### 2. Examinez les captures d'écran
+
+Le mode visuel se met en pause lorsque des captures d'écran non vérifiées sont trouvées :
+
+```
+⚠️ Visual Mode: Unverified screenshots found
+
+Unverified:
+  - screenshots/user-profile.png
+  - screenshots/settings-modal.png
+
+Please review these screenshots and rename with 'verified-' prefix
+when approved, or delete if issues found.
+```
+
+### 3. Vérifier ou corriger
+
+**Si la capture d'écran semble correcte :**
+```bash
+mv screenshots/user-profile.png screenshots/verified-user-profile.png
+```
+
+**Si des problèmes sont détectés :**
+- Corriger le code de l'interface utilisateur
+- Reprenez la capture d'écran
+- Révisez à nouveau
+
+### 4. Continuer
+
+Une fois toutes les captures d'écran vérifiées, la boucle continue automatiquement.
+
+## Script du vérificateur
+
+### Utilisation
+
+```bash
+# Check all screenshots
+node .agileflow/scripts/screenshot-verifier.js
+
+# Check specific directory
+node .agileflow/scripts/screenshot-verifier.js --dir=tests/screenshots
+
+# Verbose output
+node .agileflow/scripts/screenshot-verifier.js --verbose
+```
+
+### Codes de sortie
+
+| Codes | Signification |
+|------|--------------|
+| 0 | Toutes les captures d'écran vérifiées |
+| 1 | Captures d'écran non vérifiées trouvées |
+| 2 | Erreur pendantng vérification |
+
+### Exemples de sortie
+
+**Tous vérifiés :**
+```
+✅ Visual Mode: All screenshots verified
+
+Verified: 5
+  - verified-login-form.png
+  - verified-user-profile.png
+  - verified-settings-modal.png
+  - verified-dashboard.png
+  - verified-error-state.png
+```
+
+**Non vérifié trouvé :**
+```
+❌ Visual Mode: 2 unverified screenshots
+
+Verified: 3
+Unverified: 2
+  - new-feature.png
+  - updated-header.png
+
+Action required: Review and verify or delete unverified screenshots.
+```
+
+##Configuration
+
+### En état de session
+
+Configuration du mode visuel dans `session-state.json` :
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "mode": "visual",
+    "visual_config": {
+      "screenshots_dir": "screenshots",
+      "verified_prefix": "verified-",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"]
+    }
+  }
+}
+```
+
+### Dans les métadonnées
+
+Paramètres par défaut dans `agileflow-metadata.json` :
+
+```json
+{
+  "visual_mode": {
+    "enabled": false,
+    "screenshots_dir": "screenshots",
+    "verified_prefix": "verified-",
+    "auto_cleanup": true
+  }
+}
+```
+
+###Options
+
+| Options | Par défaut | Descriptif |
+|--------|---------|-------------|
+| `screenshots_dir` | `screenshots` | Répertoire dans lequel rechercher des captures d'écran |
+| `verified_prefix` | `verified-` | Préfixe requis pour les captures d'écran vérifiées |
+| `extensions` | `[".png", ".jpg", ".jpeg", ".webp"]` | Extensions de fichiers image à vérifier |
+| `auto_cleanup` | `true` | Supprimez les captures d'écran vérifiées après l'achèvement épique |
+
+## Intégration avec le mode boucle
+
+Le mode visuel fonctionne comme une étape de vérification supplémentaire dans [Mode boucle](/features/loop-mode) :
+
+<image>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/visual-mode-loop.dark.svg" />
+  <img alt="Intégration de boucle en mode visuelion" src="/images/docs/features/visual-mode-loop.light.svg" />
+</image>
+
+## Quand utiliser le mode visuel
+
+### Bon pour
+
+- ✅ Développement de composants d'interface utilisateur
+- ✅ Concevoir des implémentations de systèmes
+- ✅ Travail de mise en page réactif
+- ✅ Prévention de la régression visuelle
+- ✅ Contrôles visuels d'accessibilité
+- ✅ Travail de thématisation et de stylisme
+
+### Pas bon pour
+
+- ❌ Développement Backend/API
+- ❌ Migrations de bases de données
+- ❌Configuration CI/CD
+- ❌ Fonctionnalités non visuelles
+- ❌ Workflows de tests automatisés uniquement
+
+## meilleures pratiques
+
+### 1. Dénomination cohérente des captures d'écran
+
+Utilisez des noms descriptifs et cohérents :
+
+```
+✅ Good:
+  - login-form-default.png
+  - login-form-error.png
+  - login-form-loading.png
+
+❌ Bad:
+  - screenshot1.png
+  - test.png
+  - final-final-v2.png
+```
+
+### 2. Capturez plusieurs états
+
+Capture d'écran de tous les états des composants :
+
+```typescript
+// Default state
+await page.screenshot({ path: 'screenshots/button-default.png' });
+
+// Hover state
+await button.hover();
+await page.screenshot({ path: 'screenshots/button-hover.png' });
+
+// Disabled state
+await page.setContent('<button disabled>Click</button>');
+await page.screenshot({ path: 'screenshots/button-disabled.png' });
+```
+
+### 3. Inclure le contexte
+
+Capture d'écran suffisamment de contexte pour comprendre le composant :
+
+```typescript
+// Too narrow - just the button
+await button.screenshot({ path: 'screenshots/button.png' });
+
+// Better - button with surrounding context
+await page.screenshot({
+  path: 'screenshots/button-in-form.png',
+  clip: { x: 0, y: 100, width: 400, height: 200 }
+});
+```
+
+### 4. Nettoyer après vérification
+
+Supprimez les anciennes captures d'écran vérifiées une fois les histoires terminées :
+
+```bash
+# Manual cleanup
+rm screenshots/verified-*.png
+
+# Or enable auto_cleanup in config
+```
+
+### 5. Apparence attendue du document
+
+Ajoutez des notes sur ce que la capture d'écran doit montrer :
+
+```markdown
+## Screenshots
+
+### verified-login-form.png
+- Form with email and password fields
+- Blue submit button
+- "Forgot password?" link below
+- No error states visible
+```
+
+## Dépannage
+
+###Scaptures d'écran non détectées
+
+1. Vérifiez le chemin du répertoire :
+   ```bash
+   ls screenshots/
+   ```
+
+2. Vérifiez que les extensions de fichiers sont correctes :
+   ```bash
+   file screenshots/*.png
+   ```
+
+3. Vérifiez le chemin de configuration dans session-state.json
+
+### La vérification ne fonctionne pas
+
+1. Assurez-vous que le mode visuel est activé :
+   ```bash
+   cat docs/09-agents/session-state.json | grep visual
+   ```
+
+2. Vérifiez que le mode boucle est actif :
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+### Faux positifs
+
+Si les captures d'écran sont signalées de manière incorrecte :
+
+1. Vérifiez l'orthographe du préfixe : `verified-` (notez le trait d'union)
+2. Vérifiez les caractères cachés dans le nom de fichier
+3. Vérifiez que le fichier est bien une image
+
+## Exemple de flux de travail
+
+### UI Story : Ajouter un composant d'avatar d'utilisateur
+
+**1. L'histoire commence, Claude implémente le composant :**
+```typescript
+// src/components/Avatar.tsx
+export function Avatar({ src, name, size = 'md' }) {
+  return (
+    <img
+      src={src}
+      alt={name}
+      className={`avatar avatar-${size}`}
+    />
+  );
+}
+```
+
+**2. Claude prend des captures d'écran :**
+```bash
+screenshots/
+  avatar-small.png
+  avatar-medium.png
+  avatar-large.png
+  avatar-fallback.png
+```
+
+**3. Pauses du mode visuel :**
+```
+⚠️ Visual Mode: 4 unverified screenshots
+
+Please review and verify:
+  - avatar-small.png
+  - avatar-medium.png
+  - avatar-large.png
+  - avatar-fallback.png
+```
+
+**4. Vous examinez et vérifiez :**
+```bash
+# All look good
+for f in screenshots/avatar-*.png; do
+  mv "$f" "screenshots/verified-$(basename $f)"
+done
+```
+
+**5. La boucle continue vers l'histoire suivante**
+
+## Fonctionnalités associées
+
+- [Mode boucle](/features/loop-mode) - Traitement autonome de l'histoire
+- [Contrôle des dommages](/features/damage-control) - Protection contre les dommages destructeursopérations
+- [`/agileflow:verify`](/commands/verify) - Commande de vérification manuelle
+
+##Architecture
+
+| Composant | Objectif |
+|-----------|---------|
+| `screenshot-verifier.js` | Script de vérification principal |
+| `ralph-loop.js` | Orchestre les contrôles du mode visuel |
+| `session-state.json` | Stocke la configuration du mode visuel |
+| `screenshots/` | Répertoire de capture d'écran par défaut |
+
+Le mode visuel s'intègre au crochet d'arrêt du mode boucle pour fournir une vérification visuelle parallèlement aux tests automatisés.

@@ -1,0 +1,242 @@
+---
+title: /epic:vue
+description: Affichez des détails épiques avec des histoires et des actions contextuelles
+---
+# /epic:vue
+
+Affichez tous les détails de l'Epic, y compris toutes les histoires regroupées par statut et actions contextuelles.
+
+## Démarrage rapide
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `EPIC` | Oui | - | ID épique (par exemple, EP-0001) |
+
+## Exemples
+
+### Afficher l'épopée spécifique
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+Affiche des informations épiques complètes avec toutes les histoires et actions contextuelles.
+
+### Sélection interactive
+
+```bash
+/agileflow:epic:view
+```
+
+Sans paramètre EPIC, affiche les épopées récentes et vous demande d'en sélectionner une.
+
+## Format de sortie
+
+### Aperçu épique
+
+```markdown
+## EP-0002: Authentication System
+
+**Status**: active
+**Owner**: AG-API
+**Goal**: Implement secure user authentication with OAuth and sessions
+**Created**: 2024-12-20
+**Updated**: 2024-12-28
+
+**Progress**: 4/6 stories complete (67%)
+
+███████████████░░░░░░░ 67%
+```
+
+### Histoires regroupées par statut
+
+```markdown
+### In Progress (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0012 | Session management | AG-API | 4h |
+
+### Ready (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0013 | Remember me feature | AG-UI | 2h |
+
+### Done (4)
+| Story | Title | Owner | Completed |
+|-------|-------|-------|-----------|
+| US-0011 | OAuth Google login | AG-API | 2024-12-27 |
+| US-0010 | Login form UI | AG-UI | 2024-12-26 |
+| US-0009 | User model | AG-API | 2024-12-25 |
+| US-0008 | Auth API setup | AG-API | 2024-12-24 |
+```
+
+### Documentation connexe
+
+```markdown
+### Related
+- **Research**: [OAuth Best Practices](../10-research/20241220-oauth.md)
+- **ADR**: [ADR-0002: Use NextAuth](../03-decisions/adr-0002.md)
+```
+
+## Actions contextuelles
+
+Les actions changent en fonction de la progression épique :
+
+### Pour les épopées à faible progression (inférieure à 50 %)
+
+Lorsque la progression est inférieure à 50 % :
+
+```
+This epic is 40% complete. What would you like to do?
+```
+
+Possibilités :
+- **Ajouter plus d'histoires** : Epic peut avoir besoin d'éléments de travail supplémentaires
+- **Commencez à travailler sur une histoire prête** : commencez la mise en œuvre
+-**Planifiez le sprint pour cette épopée** : planifiez des histoires
+- **Retour à la liste épique** : Retour à la liste complète
+
+### Pour les épopées à progression moyenne (50-99 %)
+
+Lorsque la progression est comprise entre 50 % et 99 % :
+
+```
+This epic is 67% complete. What would you like to do?
+```
+
+Possibilités :
+- **Travailler sur les histoires restantes** (Recommandé) : Concentrez-vous sur la réalisation
+- **Afficher les détails de l'histoire** : Vérifiez une histoire spécifique
+- **Ajouter plus d'histoires** : la portée d'Epic a peut-être augmenté
+- **Marquer Epic comme terminé** : si le travail restant est différé
+
+### Pour les épopées terminées (100 %)
+
+Quand toutes les histoires sont terminées :
+
+```
+This epic is 100% complete! What would you like to do?
+```
+
+Possibilités :
+- **Fermer epic** (Recommandé) : marquer comme terminé dans status.json
+- **Afficher le résumé d'achèvement** : voir ce qui a été livré
+- **Ajouter des histoires de suivi** : Epic a besoin de plus de travail après tout
+- **Retour à la liste épique** : Retour à /agileflow:epic:list
+
+### Pour les épopées en attente
+
+Lorsque Epic est en pause :
+
+```
+This epic is on hold. What would you like to do?
+```
+
+Possibilités :
+- **Reprendre l'épopée** : redéfinissez le statut sur actif
+- **Voir pourquoi il est en attente** : vérifiez les bloqueurs ou les notes
+- **Fermer l'épopée** : plus nécessaire
+- **Retour à la liste épique** : Retour à /agileflow: épique: liste
+
+## Flux de travail typiques
+
+### Continuez à travailler sur Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 67% complete)
+2. Select "Work on remaining stories"
+3. See ready stories
+4. Select a story
+5. /agileflow:story:view STORY={selected}
+6. Start implementation
+```
+
+### Terminez Epic à la fin du sprint
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 95% complete)
+2. Work through remaining stories
+3. When all done:
+4. Select "Close epic"
+5. Epic marked as complete
+6. Start next epic
+```
+
+### Débloquer l'Epic en attente
+
+```
+1. /agileflow:epic:view EPIC=EP-0003
+   (Epic is on-hold)
+2. Check blockers
+3. If resolved: "Resume epic"
+4. Epic changed back to active
+5. Continue work
+```
+
+### Développez Epic avec plus de travail
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 85% complete)
+2. Realize more work is needed
+3. Select "Add more stories"
+4. /agileflow:story EPIC=EP-0002 ...
+5. Create new stories
+6. Update epic progress
+```
+
+## Signification du statut de l'histoire
+
+Dans la vue épique, les histoires sont regroupées par statut :
+
+| Statut | Signification | Action suivante |
+|--------|---------|-------------|
+| **en_progress** | En cours de réalisation | Continuer le travail ou marquer comme bloqué |
+| **prêt** | Prêt à commencer | Choisissez-en un et commencez la mise en œuvre |
+| **fait** | Complété et testé | Passer à l'épopée suivante |
+
+## Interprétation des progrès
+
+### Que signifie le pourcentage
+
+```
+4/6 (67%) = 4 stories done, 2 remaining, 67% complete
+```
+
+- 0-25% : Epic vient de démarrer
+- 25-50 % : Montée en puissance, à mi-sprint
+- 50-75 % : La plupart des travaux identifiés
+- 75-100 % : dernier effort jusqu'à l'achèvement
+
+### Quand ajouter plus d'histoires
+
+Pensez à ajouter des histoires si :
+- Les progrès plafonnent (bloqués au même pourcentage)
+- L'équipe est bloquée en attente de dépendances
+- De nouvelles exigences sont apparues
+
+### Quand fermer Epic
+
+Fermer quand :
+- Toutes les histoires sont marquées comme `done`
+- Les critères d'acceptation sont remplis
+- Prêt à passer à la prochaine épopée
+
+## Commandes associées
+
+- [`/epic:list`](/commands/epic-list) - Voir toutes les épopées
+- [`/epic`](/commands/epic) - Créer une nouvelle épopée
+- [`/story:list`](/commands/story-list) - Voir toutes les histoires
+- [`/story:view`](/commands/story-view) - Afficher les détails de l'histoire
+- [`/story`](/commands/story) - Créez une histoire épique
+- [`/status`](/commands/status) - Mettre à jour le statut de l'histoire
+- [`/sprint`](/commands/sprint) - Planification du sprint
+- [`/board`](/commands/board) - Vue Kanban

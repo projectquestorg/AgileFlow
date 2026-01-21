@@ -1,0 +1,328 @@
+---
+title: /générer-changelog
+description: Générer automatiquement le journal des modifications à partir de l'historique des validations
+---
+# /generate-changelog
+
+Générez automatiquement un journal des modifications à partir de votre historique de validation et des demandes d'extraction à l'aide des validations conventionnelles et du format Conserver un journal des modifications.
+
+## Démarrage rapide
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+## Objectif
+
+Cette commande crée des journaux de modifications professionnels en :
+- Détection automatique de la version des dernières balises git
+- Collecte des commits et des PR fusionnés depuis la dernière version
+- Catégorisation des modifications (Ajouté/Modifié/Corrigé/Supprimé/Sécurité)
+- Mise en évidence des changements de rupture
+- Proposer des versions sémantiques en fonction des changements
+- Mise à jour de `CHANGELOG.md` avec un formatage approprié
+- Création éventuelle de balises git et de versions GitHub
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `VERSION` | Non | détection automatique | Numéro de version (par exemple, `2.5.0`) |
+| `SINCE` | Non | dernière balise | Point de départ (par exemple, `v2.4.0`) |
+| `FORMAT` | Non | `keepachangelog` | Style de format : `keepachangelog`, `simple`, `github` |
+| `AUTO_COMMIT` | Non | `no` | Mises à jour du journal des modifications à validation automatique : `yes` ou `no` |
+
+## Exemples
+
+### Détecter automatiquement tout
+
+```bash
+/agileflow:generate-changelog
+```
+
+Utilise la dernière balise comme démarrage de la version, détecte la version suivante et génère un journal des modifications.
+
+### Spécifiez les versions exactes
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+Crée une section de journal des modifications pour la version 2.5.0 à partir des validations depuis la v2.4.0.
+
+### Utiliser le format GitHub
+
+```bash
+/agileflow:generate-changelog FORMAT=github
+```
+
+Génère un journal des modifications au format de notes de version GitHub.
+
+### Modifications validées automatiquement
+
+```bash
+/agileflow:generate-changelog AUTO_COMMIT=yes
+```
+
+Met à jour CHANGELOG.md et s'engage automatiquement après votre confirmation.
+
+## Comment ça marche
+
+La commande suit un flux de travail intelligent :
+
+### 1. Détection de version
+
+Si `VERSION` n'est pas fourni, détecte depuis git :
+```bash
+git describe --tags --abbrev=0  # Gets latest tag
+```
+
+Suggère ensuite la prochaine version en fonction des modifications :
+- **Majeur (2.0.0)** : changements majeurs détectés
+- **Mineur (1.X.0)** : nouvelles fonctionnalités (feat :) uniquement
+- **Patch (1.1.X)** : corrections de bugs (fix:) uniquement
+
+### 2. Valider la collecte
+
+Rassemble s'engage depuiset `SINCE` point :
+```bash
+git log <SINCE>..HEAD --oneline --no-merges
+```
+
+Récupère également les PR fusionnés depuis GitHub :
+```bash
+gh pr list --state merged --json number,title,mergedAt,labels
+```
+
+### 3. Catégorisation
+
+Catégorise automatiquement à l'aide de commits conventionnels :
+
+| Préfixe | Catégorie | Exemple |
+|--------|----------|---------|
+| `feat:` | **Ajouté** | Nouvelle fonctionnalité X pour les utilisateurs |
+| `fix:` | **Corrigé** | Bug où E provoquait F |
+| `perf:` | **Modifié** | Performances améliorées de 40 % |
+| `refactor:` | **Modifié** | Couche API restructurée |
+| `security:` | **Sécurité** | Vulnérabilité XSS corrigée |
+| `feat!:` ou `BREAKING CHANGE:` | **Modifié** (avec avertissement) | ⚠️ **BREAKING** API repensée |
+
+### 4. Génération du journal des modifications
+
+Crée une entrée au format Conserver un journal des modifications :
+
+```markdown
+## [2.5.0] - 2025-12-22
+
+### Added
+- OAuth2 authentication support (#123)
+- Dark mode toggle (#137)
+
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints (#126)
+- Improved query performance by 50% (#125)
+
+### Fixed
+- Crash when user is null (#124)
+- Memory leak in WebSocket handler (#139)
+
+### Security
+- Patched XSS vulnerability in comment rendering (#131)
+```
+
+### 5. Examen et approbation des utilisateurs
+
+Affiche un aperçu des différences et demande une confirmation avant de mettre à jour CHANGELOG.md.
+
+### 6. Actions facultatives
+
+Si approuvé :
+- Mises à jour `CHANGELOG.md`
+- Crée éventuellement un commit git
+- Peut créer une balise git
+- Peut créerVersion GitHub
+
+## Format du journal des modifications
+
+La commande utilise la norme Keep a Changelog avec ces sections :
+
+### [Inédit]
+Modifications de développement pas encore publiées (reste toujours en haut)
+
+### [VERSION] - DATE
+Sections pour chaque version :
+
+- **Ajouté** - Nouvelle fonctionnalité
+- **Modifié** - Modifications des fonctionnalités existantes
+- **Obsolète** - Fonctionnalité qui sera bientôt supprimée
+- **Supprimé** - Fonctionnalité supprimée
+- **Corrigé** - Corrections de bugs
+- **Sécurité** - Corrections de vulnérabilités de sécurité
+
+## Modifications radicales
+
+Les changements radicaux sont détectés et mis en évidence :
+
+**Détecté par** :
+- Validez avec `!` après avoir tapé : `feat!: redesign API`
+- Validez avec le pied de page `BREAKING CHANGE:`
+- PR étiqueté avec `breaking-change`
+
+**Affiché comme** :
+```markdown
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints. See migration guide. (#126)
+```
+
+## Fichier de sortie
+
+La commande met à jour `CHANGELOG.md` avec cette structure :
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.5.0] - 2025-12-22
+### Added
+...
+
+## [2.4.0] - 2025-11-15
+### Added
+...
+
+---
+
+[unreleased]: https://github.com/user/repo/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/user/repo/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/user/repo/compare/v2.3.0...v2.4.0
+```
+
+## Flux de travail
+
+Le flux de travail complet ressemble à ceci :
+
+1. **Afficher les résultats de détection**
+   ```
+   Latest tag: v2.4.0
+   Commits since: 15 (3 Added, 5 Fixed, 2 Changed, 1 Security)
+   Suggested version: 2.5.0 (MINOR - new features)
+   ```
+
+2. **Afficher l'aperçu du journal des modifications**
+   ```
+   ## [2.5.0] - 2025-12-22
+
+   ### Added
+   - OAuth2 authentication support (#123)
+   ...
+   ```
+
+3. **Demander une confirmation**
+   ```
+   Update CHANGELOG.md? (YES/NO)
+   Auto-commit? (YES/NO)
+   Create tag? (YES/NO)
+   ```
+
+4. **Appliquer les modifications**
+   - Mises à jour CHANGELOG.md
+   - Valide éventuellement : `git commit -m "chore(release): update CHANGELOG for v2.5.0"`
+   - Crée éventuellement la balise : `git tag -a v2.5.0`
+   - Crée éventuellement une version GitHub
+
+## Intégration avec CI/CD
+
+Vous pouvez automatiser la génération du journal des modifications dans CI :
+
+```yaml
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get all tags
+
+      - name: Generate changelog
+        run: /agileflow:generate-changelog VERSION=${{ github.event.inputs.version }}
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update CHANGELOG"
+
+      - name: Create tag
+        run: git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
+
+      - name: Push changes
+        run: git push origin main && git push origin v${{ github.event.inputs.version }}
+
+      - name: Create GitHub release
+        run: gh release create v${{ github.event.inputs.version }} --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## meilleures pratiques
+
+### Format du message de validation
+
+Utilisez des commits conventionnels pour la catégorisation automatique :
+
+```bash
+# Good - auto-categorizes as Added
+git commit -m "feat: add OAuth2 authentication"
+
+# Good - auto-categorizes as Fixed
+git commit -m "fix: crash when user is null"
+
+# Good - breaking change detection
+git commit -m "feat!: redesign API endpoints"
+
+# Better - with scope
+git commit -m "feat(auth): add OAuth2 support"
+```
+
+### Versionnement sémantique
+
+Suivez le versioning sémantique après les versions :
+
+```text
+MAJOR.MINOR.PATCH
+  2  .  5  .  0
+
+- MAJOR: Breaking changes
+- MINOR: New features (backwards compatible)
+- PATCH: Bug fixes only
+```
+
+### Processus de publication
+
+1. **Générer le journal des modifications** pour la prochaine version
+2. **Créer une balise git** avec la version
+3. **Push tag** pour déclencher le pipeline de CD
+4. **Créer une version GitHub** avec un extrait du journal des modifications
+5. **Annoncez la sortie** (blog, réseaux sociaux, newsletter)
+
+## Commandes associées
+
+- [`/ci-setup`](/commands/ci) - Configurer le flux de travail CI/CD
+- [`/setup-deployment`](/commands/deploy) - Configurer le déploiement
+- [`/agileflow:status`](/commands/status) - Afficher l'état du projet

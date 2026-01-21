@@ -1,0 +1,409 @@
+---
+title: Konfiguration
+description: Vollständiger Leitfaden zum Konfigurationssystem von AgileFlow – 9 Agenten zum Anpassen Ihres Entwicklungsworkflows
+---
+# Konfigurationssystem
+
+Das Konfigurationssystem von AgileFlow bietet 9 spezialisierte Agenten, die jeden Aspekt Ihres Entwicklungsworkflows einrichten, anpassen und überprüfen. Greifen Sie über `/agileflow:configure` darauf zu.
+
+## Schnellstart
+
+```bash
+# Interactive wizard - guides you through all options
+/agileflow:configure
+
+# Detect current configuration
+/agileflow:configure --detect
+
+# Enable specific features
+/agileflow:configure --enable=damage-control,status-line,archival
+
+# Upgrade to latest versions
+/agileflow:configure --upgrade
+```
+
+## Die 9 Konfigurationsagenten
+
+| Agent | Zweck | Hauptmerkmal |
+|-------|---------|-------------|
+| **git-config** | Git und Remote-Repos initialisieren | SSH/HTTPS-Unterstützung |
+| **Haken** | Event-driven automation | SessionStart, PreCompact, Stop |
+| **vorverdichten** | Kontexterhaltung | Überlebt Konversationskomprimierung |
+| **Statuszeile** | Benutzerdefinierte Statusleiste | Story, WIP, Kontextanzeige |
+| **Archiv** | Status.json automatisch verwalten | Schwellenwertbasierte Bereinigung |
+| **Namensnennung** | Git-Commit-Richtlinie | Kontrollieren Sie die Offenlegung von KI |
+| **ci** | CI/CD-Workflows | GitHub-Aktionen, GitLab, CircleCI |
+| **Schadensbegrenzung** | Zerstörerischer Befehlsschutz | Musterbasiertes Blockieren |
+| **überprüfen** | Testkonfigurationen | Token-Verwaltung |
+
+## Recommended Setup Order
+
+```
+Phase 1: Foundation (10-15 min)
+├─ 1. git-config      → Enable version control
+├─ 2. hooks           → Enable automation
+└─ 3. attribution     → Establish commit policy
+
+Phase 2: Safety (5-10 min)
+├─ 4. damage-control  → Protect codebase
+└─ 5. verify          → Validate setup
+
+Phase 3: Productivity (15-20 min)
+├─ 6. archival        → Manage status.json size
+├─ 7. status-line     → Real-time visibility
+├─ 8. ci              → Automated testing
+└─ 9. precompact      → Long conversation support
+```
+
+---
+
+## Agentendetails
+
+### 1. Git-Konfiguration
+
+**Zweck:** Git-Repository initialisieren und mit Remote verbinden (GitHub, GitLab usw.)
+
+**Was es tut:**
+– Initialisiert bei Bedarf das Git-Repository
+- Konfiguriert Remote-URL (SSH oder HTTPS)
+- Überprüft die Remote-Verbindung
+- Speichert die Konfiguration in Metadaten
+
+**Optionen:**
+```
+Initialize git:      Yes / No
+Remote protocol:     SSH / HTTPS
+Private repo:        Yes / No (for auth)
+Verify connection:   Yes / No
+```
+
+**Dateien geändert:**
+– `.git/` – Git-Repository
+– `docs/00-meta/agileflow-metadata.json` – Git-Konfiguration gespeichert
+- `.claude/settings.local.json` - Token (falls erforderlich)
+
+---
+
+### 2. Hakensystem
+
+**Zweck:** Ermöglichen Sie ereignisgesteuerte Automatisierung durch die Hooks von Claude Code
+
+**Verfügbare Haken:**
+- **SessionStart** – Willkommensinfo, wenn Claude Code startet
+- **PreCompact** – Kontext vor der Komprimierung beibehalten
+- **Stop** – Sitzungszusammenfassung, wenn Claude aufhört
+- **UserPromptSubmit** – Aktivitätsprotokollierung
+
+**Optionen:**
+```
+SessionStart:        Enable / Disable
+PreCompact:          Enable / Disable
+Stop:                Enable / Disable
+UserPromptSubmit:    Enable / Disable
+```
+
+**Erstellte Dateien:**
+– `.claude/settings.json` – Hook-Konfiguration
+– `scripts/agileflow-welcome.js` – SessionStart-Skript
+– `scripts/precompact-context.sh` – PreCompact-Skript
+- `scripts/agileflow-stop.sh` – Hook-Skript stoppen
+
+**Wichtig:** Erfordert einen Neustart von Claude Code, damit Hooks wirksam werden.
+
+---
+
+### 3. PreCompact-Konfiguration
+
+**Zweck:** Bewahren Sie den kritischen Projektkontext, wenn Claude Code Konversationen komprimiert
+
+**Vorteile:**
+- Projektkonventionen überleben die Komprimierung
+- Aktive Befehlsregeln bleiben erhalten
+- Aktueller Story- und WIP-Status beibehalten
+- Teamkonventionen gehen nicht verloren
+
+**Beispielausgabe während der Komprimierung:**
+```
+Project: MyProject v2.40.0 | Branch: main
+
+Active Stories:
+- US-0042 (in-progress): Login API
+- US-0043 (blocked): Payment Integration
+
+WIP Count: 2/3
+Context Preservation: ENABLED
+```
+
+**Erfordert:** Hooks-System zuerst konfiguriert
+
+---
+
+### 4. Statuszeilenkonfiguration
+
+**Zweck:** Konfigurieren Sie eine benutzerdefinierte Statusleiste in Claude Code
+
+**Verfügbare Komponenten:**
+- Aktuelle Story-ID und Titel
+- Epischer Fortschritt (X/Y-Geschichten)
+- WIP-Anzahl vs. WIP-Limit
+- Prozentsatz der Kontextnutzung
+- Sitzungskosten in USD
+– Name des Git-Zweigs
+
+**Beispielstatuszeilen:**
+```
+[Opus] US-0042: Login API | WIP 2/3 | 45% ctx | main
+agileflow v2.40.0 | US-0003 | main
+```
+
+**Optionen:**
+```
+Display components:  story, epic, wip, context, cost, git (multiselect)
+Show git branch:     Yes / No
+```
+
+**Wichtig:** Erfordert einen Neustart von Claude Code.
+
+---
+
+### 5. Archivkonfiguration
+
+**Zweck:** Dateigröße von status.json automatisch verwalten
+
+**Warum es wichtig ist:**
+– status.json kann das Token-Limit von 25.000 überschreiten
+- Wenn es zu groß ist, können Agenten es nicht lesen
+- Die automatische Archivierung verhindert dies stillschweigend
+
+**Grenzwertoptionen:**
+- **30 Tage** (empfohlen) - Ausgewogenheit zwischen Kontext und Geschichte
+- **14 Tage** – Schnelllebige Projekte
+- **7 Tage** – Große Teams mit vielen Geschichten
+– **3 Tage** – Sehr aggressiv, minimale status.json
+
+**Archivstruktur:**
+```
+docs/09-agents/
+├── status.json           # Active work
+├── status-archive.json   # Historical
+└── archive/
+    ├── 2025-01.json      # Monthly archives
+    └── 2025-02.json
+```
+
+**Manuelle Befehle:**
+```bash
+# Archive with default threshold
+bash scripts/archive-completed-stories.sh
+
+# Archive with custom threshold (days)
+bash scripts/archive-completed-stories.sh 7
+
+# Compress status.json (removes verbose fields)
+bash scripts/compress-status.sh
+```
+
+---
+
+### 6. Attributionskonfiguration
+
+**Zweck:** Konfigurieren Sie Git-Commit-Attributionseinstellungen
+
+**Optionen:**
+- **Keine Namensnennung** (empfohlen): Saubere Commits ohne KI-Erwähnungen
+- **Namensnennung beibehalten** (Standard): Claude-Code-Fußzeile einschließen
+
+**Beispiel CLAUDE.md mit deaktivierter Namensnennung:**
+```markdown
+## CRITICAL: NO AI Attribution in Git Commits
+
+❌ FORBIDDEN:
+- 🤖 Generated with Claude Code
+- Co-Authored-By: Claude
+
+✅ REQUIRED:
+- Clean, professional commit messages
+- Conventional commit format
+```
+
+---
+
+### 7. CI/CD-Konfiguration
+
+**Zweck:** Kontinuierliche Integrationsworkflows einrichten
+
+**Unterstützte Anbieter:**
+- GitHub-Aktionen (`.github/workflows/ci.yml`)
+- GitLab CI (`.gitlab-ci.yml`)
+- CircleCI (`.circleci/config.yml`)
+
+**Konfigurierbare Befehle:**
+- Installieren Sie abhängigStädte
+- Führen Sie Tests durch
+- Linter laufen lassen
+- Führen Sie die Typprüfung aus
+- Projekt erstellen
+
+**Optionen:**
+```
+CI provider:         GitHub Actions / GitLab CI / CircleCI
+Commands to run:     install, test, lint, type-check, build (multiselect)
+Test locally:        Yes / No
+Trigger remote CI:   Yes / No
+```
+
+---
+
+### 8. Konfiguration der Schadensbegrenzung
+
+**Zweck:** Schützen Sie Ihre Codebasis vor destruktiven Befehlen
+
+Die vollständige Dokumentation finden Sie unter [Schadenskontrolle](/docs/features/damage-control).
+
+**Schutzstufen:**
+- **Standard** – Schneller Mustervergleich, über 40 Muster
+- **Erweitert** – Standard + KI-Bewertung
+- **Minimal** – Nur Pfadschutz
+
+**Optionen:**
+```
+Protection level:    Standard / Enhanced / Minimal
+Custom protections:  Prod DB / Cloud CLI / Env files (multiselect)
+```
+
+---
+
+### 9. Verifizierungsagent
+
+**Zweck:** Testen und validieren Sie, dass Konfigurationen ordnungsgemäß funktionieren
+
+**Was es bestätigt:**
+- JSON-Dateisyntax (Einstellungen, Metadaten)
+- Hook-Skriptausführung
+- YAML-Workflow-Syntax
+- CI-Befehle (lokale Tests)
+- Remote-Verbindungen
+
+**Token-Verwaltung:**
+– Speichert Token in `.claude/settings.local.json` (gitignored)
+- Unterstützt GitHub-, GitLab- und CircleCI-Token
+- Gibt niemals Token an die Konsole zurück
+
+---
+
+## Dateiorganisation
+
+```
+project/
+├── .github/workflows/ci.yml          # GitHub Actions
+├── .claude/
+│   ├── settings.json                 # Hooks & status line (committed)
+│   ├── settings.local.json           # User overrides (gitignored)
+│   └── settings.local.example.json   # Template for team
+├── .agileflow/
+│   ├── config/
+│   │   └── damage-control-patterns.yaml
+│   └── scripts/
+│       └── ...
+├── scripts/
+│   ├── agileflow-welcome.js
+│   ├── agileflow-statusline.sh
+│   └── precompact-context.sh
+├── CLAUDE.md                         # Project guidelines
+└── docs/00-meta/
+    └── agileflow-metadata.json       # Configuration metadata
+```
+
+## Gitignore-Regeln
+
+**Engagiert (Teamkonfiguration):**
+- `.claude/settings.json`
+- __NICHT ÜBERSETZEN_31__
+- `.github/workflows/`
+- `CLAUDE.md`
+- `scripts/`
+- `.agileflow/`
+
+**Gitignored (benutzerspezifisch):**
+- `.claude/settings.local.json`
+- `.claude/prompt-log.txt`
+- `.claude/*.log`
+
+## Token-Referenz
+
+### GitHub-Token (ghp_xxx)
+- **Standort:** `.claude/settings.local.json`
+- **Benötigte Bereiche:** `repo`, `workflow`
+- **Erstellen unter:** https://github.com/settings/tokens/new
+
+### GitLab-Token (glpat_xxx)
+- **Standort:** `.claude/settings.local.json`
+- **Benötigte Bereiche:** `api`, `read_repository`, `write_repository`
+- **Erstellen unter:** https://gitlab.com/-/profile/personal_access_tokens
+
+### CircleCI-Token
+- **Standort:** `.claude/settings.local.json`
+- **Erstellen unter:** https://app.circleci.com/settings/user/tokens
+
+## Fehlerbehebung
+
+| Problem | Ursache | Lösung |
+|---------|-------|----------|
+| Konfiguration wird nicht wirksam | Claude Code nicht neu gestartet | Beenden (Befehl+Q) und neu starten |
+| Token-Authentifizierung schlägt fehl | Abgelaufenes/ungültiges Token | Beim Anbieter neu generieren |
+| YAML-Syntaxfehler | Ungültige Workflowdatei |Mit yamllint | validieren
+| status.json zu groß | Überschreitet das Token-Limit | Archivierung aktivieren (3-7 Tage) |
+| Hooks laufen nicht | Settings.json ungültig | Überprüfen Sie JSON mit `jq` |
+| Statuszeile fehlt | Skript nicht ausführbar | `chmod +x scripts/*.sh` |
+
+### Neustartanforderung
+
+Diese Agenten erfordern einen **Claude Code-Neustart**:
+- Haken
+- vorverdichten
+- Statuszeile
+- Schadensbegrenzung
+
+```bash
+# Complete quit (not just closing window)
+Cmd+Q (Mac) or Ctrl+Q (Windows/Linux)
+# Wait 5 seconds, then reopen
+```
+
+### Rollback
+
+```bash
+# Restore from git
+git checkout .claude/settings.json
+
+# Remove problematic hook
+jq 'del(.hooks.HookName)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+
+# Disable all hooks
+jq 'del(.hooks)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
+```
+
+## Häufige Szenarien
+
+### Neues Projekt-Setup
+```bash
+/agileflow:configure  # Select: Git Repository
+/agileflow:configure  # Select: Hooks System
+/agileflow:configure  # Select: Damage Control
+/agileflow:configure  # Select: Verification
+```
+
+### CI/CD hinzufügen
+```bash
+/agileflow:configure  # Select: CI/CD Workflow
+# Choose provider, commands, test locally
+git add .github/workflows/ci.yml
+git commit -m "ci: add GitHub Actions workflow"
+```
+
+### Für große Projekte optimieren
+```bash
+/agileflow:configure  # Select: Archival (7-14 days)
+/agileflow:configure  # Select: Status Line
+/agileflow:configure  # Select: PreCompact
+```

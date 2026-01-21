@@ -1,0 +1,319 @@
+---
+title: /habilidade:excluir
+description: Remover uma habilidade instalada de .claude/skills/
+---
+# /habilidade:excluir
+
+Remova com segurança uma habilidade de __NOTRASLATE_29__ com recursos de segurança completos, incluindo visualização, confirmação e backup opcional.
+
+## Início rápido
+
+```bash
+# Interactive mode
+/agileflow:skill:delete
+
+# Delete specific skill
+/agileflow:skill:delete supabase-swift
+```
+
+## O que faz
+
+O comando de exclusão:
+
+1. **Mostra o que será excluído** - Visualização em árvore de todos os arquivos
+2. **Confirma com você** - Requer aprovação explícita
+3. **Oferece opção de backup** - Salve uma cópia antes de excluir
+4. **Remove permanentemente** - Exclui o diretório de habilidades
+5. **Sugere próximas ações** - O que fazer após a exclusão
+
+## Recursos de segurança
+
+Este comando possui múltiplas camadas de segurança:
+
+- **Sem exclusão acidental** - Sempre confirme antes de remover
+- **Visualização da visualização em árvore** - Veja exatamente o que foi excluído
+- **Opção de backup** - Exportar habilidade antes da exclusão
+- **Uma de cada vez** - Excluir habilidades individuais (sem exclusão em lote)
+- **Confirmação clara** - Escolha explícita de SIM/NÃO
+
+## Fluxo de trabalho
+
+### Etapa 1: Selecione a habilidade
+
+Se você não especificar uma habilidade:
+
+```bash
+/agileflow:skill:delete
+```
+
+**Escolha entre as habilidades disponíveis:**
+```
+Which skill would you like to delete?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components (deprecated)
+    Old component patterns (no longer using)
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 2
+```
+
+### Etapa2: Visualize o que será excluído
+
+O comando mostra exatamente o que há na habilidade:
+
+__NOTRADUZIR_3__
+
+### Etapa 3: Confirmar exclusão
+
+__NÃOTRADUZIR_4__
+
+### Etapa 4: Criar backup (se solicitado)
+
+Se você escolher "Exportar primeiro":
+
+__NOTRADUZIR_5__
+
+Local de backup:
+__NOTRADUZIR_6__
+
+### Etapa 5: exclusão confirmada
+
+__NÃOTRADUZIR_7__
+
+### Etapa 6: Próximas ações
+
+Após a exclusão, você terá opções:
+
+__NÃOTRADUZIR_8__
+
+## Exemplos
+
+### Exemplo 1: Excluir habilidade obsoleta
+
+__NOTRADUZIR_9__
+
+**Resposta:**
+__NOTRADUZIR_10__
+
+### Exemplo 2: Excluir com backup
+
+__NOTRADUZIR_11__
+
+**Resposta:**
+```
+⚠️  About to delete: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+  .claude/skills/supabase-swift/
+  ├── SKILL.md
+  ├── references.md
+  ├── cookbook/ (3 files)
+  └── .mcp.json
+
+Total: 6 files
+
+Are you sure? (Yes/No/Export first)
+> Export first
+
+📦 Creating backup...
+
+Backup saved to:
+  .claude/skills-backup/supabase-swift-20251209-150000/
+
+Ready to delete? (Yes/No)
+> Yes
+
+✅ Deleted: supabase-swift
+```
+
+### Exemplo 3: Seleção Interativa
+
+__NÃOTRADUZIR_13__
+
+**Resposta:**
+__NOTRADUZIR_14__
+
+## Gerenciamento de backup
+
+### Local de backup
+
+Os backups são salvos com carimbo de data/hora:
+
+__NÃOTRADUZIR_15__
+
+Formato: `<skill-name>-<YYYYMMDD-HHMMSS>/`
+
+### Restaurar do backup
+
+Se você excluir uma habilidade e quiser devolvê-la:
+
+__NOTRADUZIR_16__
+
+### Limpe backups antigos
+
+Remova periodicamente backups antigos:
+
+```bash
+# List backups
+ls -la .claude/skills-backup/
+
+# Remove old backup
+rm -rf .claude/skills-backup/old-skill-20250101-120000/
+```
+
+## Quando fazer Deleger
+
+Excluir habilidades quando:
+
+- **Não é mais necessário** - A tecnologia está obsoleta
+- **Desatualizado** - Existe alternativa melhor
+- **Duplicado** - Consolidado em uma habilidade
+- **Baixa qualidade** - Habilidade não ajuda
+- **Organização** - Muitas habilidades semelhantes
+
+## Antes de excluir
+
+Considere:
+
+1. **Tem certeza?** - A exclusão é permanente
+2. **Documente o porquê** - Nota no git commit
+3. **Backup primeiro** - Use a opção "Exportar primeiro"
+4. **Criar substituto** - Se estiver consolidando habilidades
+5. **Notificar equipe** - Se compartilhado no git
+
+## Alternativa para excluir
+
+Em vez de excluir, você poderia:
+
+1. **Renomear** para indicar obsoleto:
+   __NÃOTRADUZIR_18__
+
+2. **Arquivar** saindo das habilidades ativas:
+   __NOTRADUZIR_19__
+
+3. **Marcar na documentação**:
+   - Edite SKILL.md para adicionar aviso de suspensão de uso
+   - Ainda disponível, mas marcado como obsoleto
+
+## Tratamento de erros
+
+### Habilidade não encontrada
+
+```
+❌ Skill "<name>" not found.
+
+Available skills:
+  - supabase-swift
+  - ui-components
+  - api-error-handling
+
+Use /agileflow:skill:list to see all skills.
+```
+
+**Correção**: verifique a ortografia do nome da habilidade ou liste as habilidades disponíveis.
+
+### Nenhuma habilidade para excluir
+
+```
+❌ No skills to delete.
+
+No skills are currently installed in .claude/skills/
+
+Create a skill first: /agileflow:skill:create
+```
+
+**Corrigir**:Crie uma habilidade antes de tentar excluir uma.
+
+### Falha na exclusão
+
+```
+❌ Failed to delete skill: Permission denied
+
+The skill directory may be in use or have permission issues.
+Try manually: rm -rf .claude/skills/<skill>/
+```
+
+**Correção**: verifique as permissões do arquivo:
+```bash
+ls -la .claude/skills/<skill>/
+chmod -R u+w .claude/skills/<skill>/
+rm -rf .claude/skills/<skill>/
+```
+
+### Falha na criação do backup
+
+```
+⚠️  Could not create backup.
+
+Check permissions for:
+  .claude/skills-backup/
+
+Manual backup:
+  cp -r .claude/skills/<skill> .claude/skills-backup/
+```
+
+**Correção**: certifique-se de que o diretório de backup seja gravável:
+```bash
+mkdir -p .claude/skills-backup/
+chmod u+w .claude/skills-backup/
+```
+
+## Melhores práticas
+
+### Fluxo de trabalho de exclusão
+
+1. **Use __NOTRASLATE_31__** para ver todas as habilidades
+2. **Teste antes de excluir** se não tiver certeza:
+   ```bash
+   /agileflow:skill:test <skill-name>
+   ```
+3. **Use a opção "Exportar primeiro"** para backup
+4. **Confirme a exclusão** explicitamente
+5. **Anote no git** por que a habilidade foi excluída
+
+### Estratégia de backup
+
+1. **Sempre exporte** habilidades criadas há mais de um mês
+2. **Mantenha backups** por no mínimo 30 dias
+3. **Documente** quais habilidades têm backup
+4. **Teste restaurações** periodicamente
+
+### Fluxo de trabalho da equipe
+
+Se estiver compartilhando habilidades no git:
+
+1. **Comprometa a exclusão** com o motivo:
+   ```bash
+   git commit -m "Remove: deprecated-api-client skill - \
+   consolidated into api-integration skill"
+   ```
+
+2. **Notificar a equipe** sobre exclusão
+
+3. **Mantenha backup** no branch git (opcional):
+   ```bash
+   git checkout -b backup-deprecated-skills
+   git checkout main
+   ```
+
+## Comandos Relacionados
+
+- [`/skill:list`](/commands/skill-list) - Veja todas as habilidadesls antes de excluir
+- [`/skill:create`](/commands/skill-create) - Criar habilidade de substituição
+- [`/skill:edit`](/commands/skill-edit) - Renomear em vez de excluir
+- [`/skill:test`](/commands/skill-test) - Verifique antes da exclusão
+- [__NOTRASLATE_36____NOTRASLATE_42__ - Melhorar as habilidades existentes
+
+## Próximas etapas
+
+1. **Listar habilidades**: `/agileflow:skill:list`
+2. **Identificar obsoletos**: Quais não são usados?
+3. **Backup primeiro**: Use a opção "Exportar primeiro"
+4. **Exclua com cuidado**: confirme cada exclusão
+5. **Limpar backups**: Remova backups antigos periodicamente

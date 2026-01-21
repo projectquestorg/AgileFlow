@@ -1,0 +1,408 @@
+---
+title: Interface utilisateur
+description: Spécialiste de la couche UI/présentation pour la mise en œuvre de composants frontaux, le style, l'accessibilité et l'expérience utilisateur.
+---
+# Agent d'interface utilisateur
+
+L'agent UI (AG-UI) est votre spécialiste frontend. Il implémente des composants réactifs, des systèmes de style, des jetons de conception, des fonctionnalités d'accessibilité (WCAG 2.1 AA) et applique les principes de psychologie UX pour créer des interfaces à la fois belles et utilisables.
+
+## Capacités
+
+- Créer des composants réactifs (320px à 1920px+)
+- Implémenter des systèmes de conception avec des jetons (couleurs, espacement, typographie)
+- Assurer l'accessibilité aux WCAG 2.1 AA (clavier de navigation, lecteurs d'écran, contraste)
+- Appliquer les lois UX (Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End, Doherty)
+- Rédiger des tests de composants (unitaires, intégration, accessibilité avec axe-core)
+- Construire avec une conception axée sur le mobile
+- Intégration aux points de terminaison de l'API
+- Créer un support de thème et de mode sombre
+- Maintenir la cohérence de la conception dans toutes les applications
+- Rédiger une microcopie et un texte d'aide
+
+## Quand l'utiliser
+
+Utilisez l'agent d'interface utilisateur dans les cas suivants :
+
+- Vous devez implémenter un nouveau composant ou fonctionnalité
+- Vous devez créer un système de conception ou concevoir des jetons
+- Vous souhaitez améliorer l'accessibilitéy (clavier de navigation, lecteurs d'écran)
+- Vous devez rendre l'interface utilisateur réactive à travers les points d'arrêt
+- Vous souhaitez appliquer les bonnes pratiques UX et les principes psychologiques
+- Vous devez intégrer des composants avec les points de terminaison de l'API
+- Vous devez rédiger des tests de composants complets
+- Vous souhaitez améliorer les performances perçues et les retours utilisateurs
+
+## Comment ça marche
+
+1. **Chargement du contexte** : l'agent lit l'expertise, CLAUDE.md et la documentation du système de conception
+2. **Vérification du système de conception** : l'agent vérifie si le système de conception existe (premier étage uniquement)
+3. **Vérification du statut** : l'agent trouve les histoires prêtes et vérifie les bloqueurs d'API
+4. **Définition de Prêt** : L'agent valide les critères d'acceptation et les talons de test
+5. **Mode Plan** : pour les fonctionnalités complexes, l'agent conçoit la structure des composants
+6. **Mise en œuvre** : l'agent crée des composants à l'aide de jetons de conception
+7. **Accessibilité** : l'agent assure la prise en charge de la navigation au clavier et du lecteur d'écran
+8. **Lois UX** : l'agent applique les principes psychologiques issus de la recherche UX
+9. **Test** : l'agent écrit l'unité, l'intégration et untests d'accessibilité
+10. **Vérification** : l'agent exécute des tests pour garantir la réussite de la ligne de base
+
+## Exemple
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need to implement a user profile page"
+```
+
+L'agent d'interface utilisateur :
+1. Vérifiez le système de conception (créez s'il est manquant)
+2. Recherchez la dépendance à l'API (GET /api/users/:id)
+3. Composants de conception :
+   - ProfileCard (affiche les informations utilisateur)
+   - ProfileForm (modifier les informations utilisateur)
+   - AvatarUpload (changer d'avatar)
+4. Implémentez avec des jetons de conception :
+   - Couleurs du système de conception (pas de #couleurs codées en dur)
+   - Espacement par rapport à l'échelle des jetons (pas de 16 px codé en dur)
+   - Typographie du système de conception
+5. Assurer l’accessibilité :
+   - Navigation au clavier (Tabulation dans les champs du formulaire)
+   - Lecteur d'écran (étiquettes de formulaire associées)
+   - Contraste des couleurs (4,5:1 pour le texte)
+6. Appliquez les lois UX :
+   - Jakob's : mise en page de formulaire familière
+   - Fitts : grandes cibles tactiles (44px+)
+   - Peak-End : animation de réussite lors de la sauvegarde
+7. Écrire des tests (unitaire + intégration + accessibilité)
+8. Marquer en révision lorsque les tests réussissent
+
+Ou apparaissez directement :
+
+```text
+Task(
+  description: "Implement product card component",
+  prompt: "Create reusable card for products with image, price, rating. Mobile-first design.",
+  subagent_type: "agileflow-ui"
+)
+```
+
+## Comportements clés
+
+- **Charger l'expertise en premier** : lit expertise.yaml avant tout travail
+- **Design System Proactive** : vérifie le système de conception sur le premier étage, crée s'il est manquant
+- **Refactor to Tokens** : propose de migrer les styles codés en dur vers le système de conception
+- **Mobile-First** : styles de base pour mobile (320 px), puis ajout de points d'arrêt
+- **Accessibilité par défaut** : chaque composant inclut la prise en charge de la navigation par clavier et du lecteur d'écran
+- **Lois UX appliquées** : utilise des principes psychologiques (proximité, contraste, moyens)
+- **Utilisation des jetons** : tous les styles utilisent des jetons de conception, jamais de valeurs codées en dur
+- **Intégration du harnais de session** : vérifie l'état du test avant de commencer, nécessite la réussite des tests
+- **Commandes autonomes** : appelle directement /agileflow:impact-analysis, /agileflow:adr-new, etc.
+- **Coordination de bus** : envoie un message bloqué à AG-API si le point de terminaison est manquant
+- **Mises à jour README** : met à jour de manière proactive la documentation après des modifications importantes
+- **Préservation du contexte** : utilise compact_context (priorité : élevée) pour maintenir la concentration lors de longues conversations, en préservantg concevoir la détection du système et le suivi des dépendances de l'API via le compactage du contexte
+
+## Configuration du contexte compact
+
+L'agent d'interface utilisateur utilise compact_context **haute priorité** pour garantir que les dépendances du système de conception et de l'API restent ciblées :
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ui/expertise.yaml"
+    - "CHECK DESIGN SYSTEM FIRST: Detect if design tokens exist; create if missing"
+    - "VERIFY SESSION HARNESS: Check environment.json and test_status baseline"
+    - "ONLY in-review if tests pass: test_status:passing required"
+    - "CHECK FOR API DEPENDENCIES: Search status.json for blocked UI stories"
+    - "APPLY UX LAWS: Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End, Doherty"
+    - "ACCESSIBILITY REQUIRED: WCAG 2.1 AA minimum"
+  state_fields:
+    - current_story
+    - design_system_status
+    - api_dependencies
+    - test_status_baseline
+```
+
+Cela garantit que les règles critiques pour l'interface utilisateur (détection du système de conception, normes d'accessibilité, vérification des bloqueurs d'API) et l'état actuel (quels jetons de conception existent, quels points de terminaison d'API sont nécessaires) persistent grâce au compactage du contexte.
+
+## Outils disponibles
+
+Cet agent a accès à : Lecture, Écriture, Modification, Bash, Glob, Grep
+
+## Jetons du système de conception
+
+Un système bien conçu comprend :
+
+```typescript
+// Colors
+export const colors = {
+  primary: '#3b82f6',
+  primaryHover: '#2563eb',
+  text: '#1f2937',
+  textSecondary: '#6b7280',
+  background: '#ffffff',
+  error: '#ef4444',
+  success: '#10b981',
+};
+
+// Spacing (8px scale)
+export const spacing = {
+  xs: '0.25rem',  // 4px
+  sm: '0.5rem',   // 8px
+  md: '1rem',     // 16px
+  lg: '1.5rem',   // 24px
+  xl: '2rem',     // 32px
+};
+
+// Typography
+export const typography = {
+  fontFamily: {
+    base: 'system-ui, -apple-system, sans-serif',
+    mono: '"Courier New", monospace',
+  },
+  fontSize: {
+    xs: '0.75rem',   // 12px
+    sm: '0.875rem',  // 14px
+    base: '1rem',    // 16px
+    lg: '1.125rem',  // 18px
+    xl: '1.25rem',   // 20px
+  },
+};
+
+// Breakpoints
+export const breakpoints = {
+  sm: '640px',
+  md: '768px',
+  lg: '1024px',
+  xl: '1280px',
+};
+```
+
+## Liste de contrôle d'accessibilité
+
+WCAG 2.1 AA minimum pour tous les composants :
+
+**Navigation au clavier** :
+- L'ordre des onglets est logique et visible
+- Tous les éléments interactifs accessibles via Tab
+- Entrée/Espace active les boutons
+- Escape ferme les modaux
+- Les touches fléchées parcourent les listes
+
+**Lecteurs d'écran** :
+- HTML sémantique (`<button>`, `<nav>`, `<main>`, `<article>`)- Texte alternatif pour les images (descriptif, non décoratif)
+- aria-label pour les boutons contenant uniquement des icônes
+- aria-live pour les mises à jour dynamiques
+- Libellés de formulaire associés (attribut for=)
+
+**Couleur et contraste** :
+- Contraste du texte : 4,5:1 minimum
+- Contraste des composants de l'interface utilisateur : 3 : 1 minimum
+- Ne vous fiez pas uniquement à la couleur (erreur = rouge + icône + texte)
+- Test avec des simulateurs de daltonisme
+
+## Lois et principes UX
+
+**Loi de Jakob** : les utilisateurs s'attendent à des modèles familiers
+- Utiliser la navigation standard (logo en haut à gauche, recherche en haut à droite)
+- Dispositions et interactions de formulaires familières
+- N'innovez pas au niveau des micro-interactions
+
+**Loi de Hick** : Plus de choix = décisions plus lentes
+- Réduire les options sur les écrans critiques
+- Divisez les tâches complexes en étapes
+- Utiliser des filtres/rechercher de grandes listes
+
+**Loi de Fitts** : la distance et la taille affectent le temps cible
+- Cibles tactiles minimum 44×44px (mobile), 40×40px (ordinateur de bureau)
+- Espacement adéquat entre les éléments cliquables
+- Actions importantes à portée de main sur mobile
+
+**Principes de la Gestalt** : éléments visuels du groupe humain
+- Proximité : Groupeéléments liés proches les uns des autres
+- Similitude : Même couleur/forme/taille = même catégorie
+- Région commune : les éléments dans les bordures sont regroupés
+- Prägnanz : Utiliser la forme visuelle la plus simple
+
+**Effet Von Restorff** : les éléments distinctifs se démarquent
+- Un CTA principal par écran se démarque
+- Le reste est de style secondaire/tertiaire
+- Modèle Netflix : boutons rouges uniquement pour les actions principales
+
+**Règle Peak-End** : les utilisateurs se souviennent des pics et des fins
+- Créez des moments mémorables lors des états de réussite
+- Rendre les fins délicieuses (célébrer les victoires)
+- Instagram : l'animation du cœur est un retour instantané
+
+**Seuil Doherty** : une réponse inférieure à 400 ms crée une dépendance
+- Fournir un retour visuel immédiat (moins de 400 ms)
+- Utilisez une interface utilisateur optimiste (afficher le résultat avant la confirmation du serveur)
+- Écrans squelettes lors du chargement
+- Ne faites jamais attendre les utilisateurs sans retour
+
+**Loi de Tesler** : la complexité ne peut pas être éliminée, mais simplement déplacée
+- Absorber la complexité du système, pas de l'utilisateur
+- Remplir automatiquement les champs à partir du contexte
+- Les valeurs par défaut intelligentes réduisent les décisions
+- Suggérer en fonction de l'historique
+
+## Testeurnormes
+
+Chaque composant nécessite des tests complets :
+
+```typescript
+// Unit test (component logic)
+test('Button renders with correct label', () => {
+  const { getByText } = render(<Button>Click me</Button>);
+  expect(getByText('Click me')).toBeInTheDocument();
+});
+
+// Integration test (user flow)
+test('Form submits with valid data', async () => {
+  const { getByLabelText, getByRole } = render(<UserForm />);
+  const emailInput = getByLabelText('Email');
+  const submitBtn = getByRole('button', { name: /submit/i });
+
+  fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+  fireEvent.click(submitBtn);
+
+  await waitFor(() => {
+    expect(mockSubmit).toHaveBeenCalled();
+  });
+});
+
+// Accessibility test (axe-core)
+test('Button meets accessibility standards', async () => {
+  const { container } = render(<Button>Click me</Button>);
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+});
+```
+
+## Approche axée sur le mobile
+
+**Styles de base** (Mobile - 320 px) :
+
+```css
+.card {
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+  grid-template-columns: 1fr; /* Single column */
+}
+```
+
+**Point d'arrêt de la tablette** (768 px+) :
+
+```css
+@media (min-width: 768px) {
+  .card {
+    padding: var(--spacing-lg);
+    grid-template-columns: 1fr 1fr; /* 2 columns */
+  }
+}
+```
+
+**Point d'arrêt du bureau** (1024px+) :
+
+```css
+@media (min-width: 1024px) {
+  .card {
+    padding: var(--spacing-xl);
+    grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  }
+}
+```
+
+## Points d'arrêt réactifs
+
+- **Mobile** : 320 px à 639 px (styles de base)
+- **Tablette** : 640 px à 1 023 px (@media min-width : 640px)
+- **Bureau** : 1 024 px à 1 279 px (@media min-width : 1024px)
+- **Grand bureau** : 1 280 px+ (@largeur minimale du média : 1 280 px)
+
+## Fichiers clés
+
+- **Expertise** : `packages/cli/src/core/experts/ui/expertise.yaml` (mémoire des agents)
+- **Workflow** : `packages/cli/src/core/experts/ui/workflow.md` (Planifier → Construire → Auto-amélioration)
+- **Statut** : `docs/09-agents/status.json` (suivi de l'histoire)
+- **Bus** : `docs/09-agents/bus/log.jsonl` (messages de coordination)
+- **Jetons de conception** : `src/theme/tokens.ts` ou `src/styles/design-tokens.css`
+- **Composants** : `src/components/` (fichiers de composants)
+- **Tests** : `src/components/*.test.tsx` (fichiers de test)
+- **CLAUDE.md** : Approche stylistique, modèles de composants, normes de tests
+
+## Étapes du flux de travail
+
+1. **Charger Expertise** : Lire expertise.yaml
+2. **Vérifier le système de conception** : premier étage uniquement - créer s'il est manquant
+3. **Vérifier l'état** : recherchez des histoires PRÊTES où propriétaire==AG-UI
+4. **Vérifiez les dépendances de l'API** : recherchez les bloqueurs AG-API
+5. **Valider la définition de Ready** : AC existe, talon de test dans docs/07-testing/test-cases/
+6. **Vérifiez le harnais de session** : vérifiez test_status==passing avant de commencer
+7. **Créer une branche** : `feature/<US_ID>-<slug>`
+8. **Statut de la mise à jour** : marquez "en cours", ajoutez le message de bus
+9. **Implémenter** : composants utilisant des jetons de conception (diff-first, OUI/NON)
+10. **Accessibilité** : assurez la prise en charge de la navigation par clavier et du lecteur d'écran
+11. **Lois UX** : appliquer les principes psychologiques
+12. **Ecrire des tests** : Unité + intégration + accessibilité
+13. **Exécuter la vérification** : /agileflow:verify pour garantir la réussite des tests
+14. **Mettre à jour CLAUDE.md** : si de nouveaux modèles d'interface utilisateur sont établis
+15. **Mettre à jour le fichier README** : documentez de manière proactive les nouveaux composants ou modèles
+16. **Marquer en révision** : uniquement si test_status==réussite
+17. **Générer des relations publiques** : utilisez /agileflow:pr-modèle
+18. **Self-Improve** : exécutez self-improve.md une fois terminé
+
+## Liste de contrôle qualité
+
+Avant de marquer en révision :
+
+**Fonctionnalité** :
+- [ ] Réactif à travers les points d'arrêt (320px à 1920px+)
+- [ ] Tous les éléments interactifs ont des états survol/focus/actif
+- [ ] Rendu correct dans tous les états (chargement, erreur, vide, succès)
+- [ ] Aucune erreur ou avertissement de console
+
+**Accessibilité** :
+- [ ] Navigation au clavier entièrement fonctionnelle (Tabulation, Entrée, Échap, Flèches)
+- [ ] Prise en charge des lecteurs d'écran (HTML sémantique, étiquettes aria)
+- [ ] Contraste des couleurs 4,5:1 (texte), 3:1 (UI)
+- [ ] Indicateurs de mise au point clairement visibles
+
+**Conception** :
+- [ ] Utilise des jetons de conception (pas de couleurs, d'espacement, de polices codées en dur)
+- [ ] Hiérarchie typographique claire
+- [ ] Espacement cohérent (grille de 8 px)
+- [ ] Approche axée sur le mobile
+
+**UX** :
+- [ ] Loi de Jakob : modèles familiers
+- [ ] Loi de Fitts : cibles tactiles de 44 px+, espacement adéquat
+- [ ] Loi de Hick : choix minimaux
+- [ ] Von Restorff : un CTA principal se démarque
+- [ ] Peak-End Rule : des moments de réussite mémorables**Tests** :
+-[ ] Tests unitaires pour la logique des composants
+- [ ] Tests d'intégration des flux utilisateurs
+- [ ] Tests d'accessibilité (axe-core, jest-axe)
+-[ ] Les tests couvrent le chemin heureux + les cas extrêmes + les états d'erreur
+
+## Coordination avec d'autres agents
+
+**AG-API (back-end)** :
+- Vérifiez status.json pour l'état du point de terminaison de l'API
+- Marquer bloqué si le point de terminaison n'est pas prêt
+- Envoyez un message de déblocage à AG-API si vous avez besoin d'un point de terminaison
+- Exemple : `"Blocked: needs GET /api/users/:id endpoint from US-0040"`
+
+**AG-CI (Tests)** :
+- Coordonner les infrastructures de tests (axe-core, jest-axe)
+- Demander la configuration de la base de données de test si nécessaire
+- Assurer les tests des composants en CI
+
+**MENTOR (Orchestration)** :
+- Demander des éclaircissements sur des exigences peu claires
+- Signaler si l'histoire manque Définition de Prêt
+
+## Agents associés
+
+- [`api`](/agents/api) - Points de terminaison backend qui alimentent les composants de l'interface utilisateur
+- [`database`](/agents/database) - API sous-jacente à la couche de données
+- [`mentor`](/agents/mentor) - Orchestre le travail de l'interface utilisateur dans le cadre de la mise en œuvre des fonctionnalités

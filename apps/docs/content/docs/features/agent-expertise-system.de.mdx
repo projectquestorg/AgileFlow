@@ -1,0 +1,729 @@
+---
+title: "Agent-Expertise-System"
+description: "Sich selbst verbessernde Agenten, die Domänenexpertise bewahren und die Aufgabenausführung durch erlerntes Wissen beschleunigen"
+---
+# Agent-Expertise-System
+
+Das Agent Expertise System ist ein Muster, bei dem Agenten **Expertisedateien** (mentale Modelle) ihrer Domäne verwalten und diese während ihrer Arbeit automatisch aktualisieren. Dadurch entsteht ein geschlossenes Lernsystem, das Agenten mit der Zeit schneller und präziser macht.
+
+## Übersicht
+
+### Das Problem gelöst
+
+Ohne Fachwissensdateien erfordert jede Sitzung die gleiche Untersuchung:
+- Agent beginnt neu
+- Um die Struktur zu verstehen, muss die Codebasis durchsucht werden
+- Wiederholt die Erkundung für jede Aufgabe
+- Verbessert oder lernt nie
+
+Mit Fachwissensdateien werden Agenten intelligenter:
+- Laden Sie das mentale Modell zu Beginn der Sitzung
+- Überspringen Sie die Erkundung und konzentrieren Sie sich auf das Bauen
+- Lernen Sie aus jeder Aufgabe
+- Verbessern Sie sich automatisch durch Selbstverbesserung
+
+### Hauptvorteile
+
+| Aspekt | Ohne Fachwissen | Mit Fachwissen |
+|--------|------------------|----------------|
+| **Geschwindigkeit** | Langsam (muss erforscht werden) | Schnell (vorinstalliertes Wissen) |
+| **Genauigkeit** | Variable (abhängig von der Erkundung) | Konsistent (validiertes Wissen) |
+| **Lernen** |Keine – vergisst alles | Automatisch – baut sich im Laufe der Zeit auf |
+| **Wiederverwendung von Wissen** | Null – fängt bei Null an | Vollständig – nutzt alle Erkenntnisse |
+| **Kontextgröße** | Groß (Erkundung + Bau) | Klein (Expertise + Gebäude) |
+
+## Wie es funktioniert
+
+Das Expertensystem folgt einem **dreistufigen Arbeitsablauf**:
+
+### Schritt 1: Planen (mit Fachwissen)
+
+```
+Load expertise.yaml → Validate against code → Create detailed plan
+```
+
+Der Agent:
+1. **Liest** die Fachwissensdatei (mentales Modell der Domäne)
+2. **Validiert** es anhand des tatsächlichen Codes (Code ist die Quelle der Wahrheit)
+3. **Plant** die Arbeit auf der Grundlage validierten Wissens
+
+**Beispiel:**
+```yaml
+# expertise.yaml excerpt
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions
+      key_exports: [tables, relations]
+```
+
+Der Agent liest dies und weiß genau, wo sich Schemadateien befinden, und überspringt Verzeichnissuchen.
+
+### Schritt 2: Erstellen (Plan ausführen)
+
+```
+Execute changes → Capture diff → Validate result
+```
+
+Der Agent:
+1. **Führt** den Implementierungsplan aus
+2. **Erfasst**, was sich geändert hat (git diff)
+3. **Überprüft**, ob das Ergebnis funktioniert
+
+Beispielergebnis:
+```
+Modified files:
+- src/db/schema.ts
+- src/db/migrations/20250109_add_users.ts
+- src/db/queries/users.ts
+```
+
+### Schritt 3: Selbstverbesserung (Fachwissen aktualisieren)
+
+```
+Analyze changes → Update expertise.yaml → Add learnings
+```
+
+Der Agent:
+1. **Analysiert** den Git-Diff
+2. **Nach obenversieht** die Gutachtendatei mit neuem Wissen
+3. **Fügt** einen Lerneintrag hinzu
+
+**Beispiel-Learning-Eintrag:**
+```yaml
+learnings:
+  - date: 2025-01-09
+    insight: "User schema uses UUID for id field, not auto-increment"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/queries/users.ts
+    context: "US-0042: Add user authentication"
+```
+
+## Expertise-Dateistruktur
+
+Jede Agentendomäne verfügt über eine Datei `expertise.yaml`, die Folgendes dokumentiert:
+
+### 1. Metadaten
+```yaml
+domain: database           # Domain identifier
+last_updated: 2025-01-09  # When updated (helps detect staleness)
+version: 1.1              # Schema version (for future migrations)
+```
+
+### 2. Abschnitt „Dateien“.
+Wichtige Dateien, über die der Agent Bescheid wissen muss:
+
+```yaml
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions (Drizzle)
+      key_exports: [tables, relations]
+      conventions: "Table names plural, columns snake_case"
+
+    - path: src/db/migrations/
+      purpose: Migration files
+      pattern: "YYYYMMDD_description.ts"
+```
+
+**Warum das wichtig ist:** Der Agent weiß, wo sich Dinge befinden, ohne suchen zu müssen.
+
+### 3. Abschnitt „Beziehungen“.
+Wie Entitäten in der Domäne zusammenhängen:
+
+```yaml
+relationships:
+  - parent: users
+    child: posts
+    type: one-to-many
+    key: "posts.user_id references users.id"
+
+  - parent: posts
+    child: comments
+    type: one-to-many
+    cascade: delete
+```
+
+**Warum das wichtig ist:** Der Agent versteht den Datenfluss und die Abhängigkeiten.
+
+### 4. Abschnitt „Muster“.
+Wiederkehrende Ansätze, denen man folgen sollte:
+
+```yaml
+patterns:
+  - name: "Soft deletes"
+    description: "Use deleted_at timestamp instead of hard DELETE"
+    location: Tables with user data
+    example: "All timestamps use deleted_at, never remove rows"
+
+  - name: "Timestamp columns"
+    description: "All tables have created_at and updated_at"
+    location: Every table
+    convention: "Auto-managed by ORM or triggers"
+```
+
+**Warum das wichtig ist:** Der Agent wendet automatisch konsistente Muster an.
+
+### 5. Abschnitt „Konventionen“.
+In der Domäne zu befolgende Regeln:
+
+```yaml
+conventions:
+  - "Tables: lowercase, plural (users, posts, categories)"
+  - "Columns: lowercase, snake_case (first_name, created_at)"
+  - "Foreign keys: <table_singular>_id (user_id, post_id)"
+  - "Required columns: id, created_at, updated_at"
+  - "All queries use parameterized statements"
+  - "Migrations must be reversible (up and down)"
+```
+
+**Warum das wichtig ist:** Der Agent behält die Konsistenz mit dem vorhandenen Code bei.
+
+### 6. Lernbereich
+Automatisch aktualisiert durch Selbstverbesserung:
+
+```yaml
+learnings:
+  - date: 2025-01-08
+    insight: "User model uses UUID primary key, not auto-increment"
+    files_affected: [src/db/schema.ts, src/db/queries/users.ts]
+    context: "US-0041: User authentication setup"
+
+  - date: 2025-01-09
+    insight: "Migrations use TypeORM decorators, not raw SQL"
+    files_affected: [src/db/migrations/]
+    context: "US-0042: Add user roles table"
+```
+
+**Warum das wichtig ist:** Der Agent merkt sich, was er gelernt hat, und verbessert sich dadurchr Zeit.
+
+## Vollständiges Workflow-Beispiel
+
+Hier ist ein echter Workflow von Anfang bis Ende:
+
+### Erste Anfrage
+> „Fügen Sie eine Sitzungstabelle hinzu, um Benutzeranmeldesitzungen zu verfolgen“
+
+### Schritt 1: Planen
+
+Agent liest Expertise.yaml und weiß:
+- Schemata sind in `src/db/schema.ts`
+- Migrationen gehen in `src/db/migrations/`
+– Muster: Soft-Deletes mit `deleted_at`
+- Konvention: UUID-Primärschlüssel
+- Beziehungen: Sitzungen verfügen über viele Überwachungsprotokolle
+
+**Plan erstellt:**
+```markdown
+1. Add sessions table to src/db/schema.ts
+   - Columns: id (UUID), user_id (FK), token, expires_at, created_at, updated_at, deleted_at
+2. Create migration: src/db/migrations/20250109_add_sessions.ts
+3. Create query functions: src/db/queries/sessions.ts
+4. Add pattern to conventions: "Sessions use token field for validation"
+```
+
+### Schritt 2: Erstellen
+
+Der Agent führt Folgendes aus:
+1. Ändert `src/db/schema.ts` – fügt Sitzungstabelle hinzu
+2. Erstellt eine Migrationsdatei
+3. Erstellt Abfragedienstprogramme
+4. Validiert mit TypeScript
+
+Git diff zeigt:
+```
+ src/db/schema.ts          | +12 lines
+ src/db/migrations/...ts   | +35 lines
+ src/db/queries/sessions.ts | +45 lines
+```
+
+### Schritt 3: Selbstverbesserung
+
+Fachwissen über Agentenaktualisierungen:
+
+```yaml
+# New entry added automatically
+files:
+  queries:
+    - path: src/db/queries/sessions.ts
+      purpose: Session query functions
+      new: true
+      created_date: 2025-01-09
+
+patterns:
+  - name: "Token-based sessions"
+    description: "Use token field for session validation, not auto-increment ID"
+    location: src/db/schema.ts (sessions table)
+    example: "Sessions stored with UUID token, validated on login"
+
+learnings:
+  - date: 2025-01-09
+    insight: "Session table implemented with UUID id, token field, and soft delete"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_add_sessions.ts
+      - src/db/queries/sessions.ts
+    context: "US-0045: Add session tracking"
+```
+
+**Ergebnis:** Wenn der Agent das nächste Mal an Sitzungen arbeitet, kennt er bereits die Struktur und Muster.
+
+## Verfügbare Agentenexperten
+
+AgileFlow umfasst Fachwissen für diese Bereiche:
+
+### Pilotphase (MVP)
+- **Datenbank** – Schema, Migrationen, Abfragen
+- **API** – CLI-Befehle, RouTests, Endpunkte
+- **UI** – Komponenten, Stil, Layouts
+
+### Rollout der Phase 1
+- **Testen** – Testdateien, Muster, Frameworks
+- **CI/CD** – GitHub-Aktionen, Docker, Bereitstellung
+- **DevOps** – Infrastruktur, Kubernetes, Überwachung
+- **Sicherheit** – Authentifizierung, Token, Berechtigungen
+
+### Rollout der Phase 2
+- **Dokumentation** – README, API-Dokumente, Anleitungen
+- **Refactoring** – Codebereinigung, Optimierung
+- **Leistung** – Caching, Optimierung, Benchmarks
+- **Barrierefreiheit** – WCAG, alle 11y-Muster
+
+### Rollout der Phase 3+
+- **Mobil** – React Native, iOS, Android
+- **Integrationen** – Webhooks, APIs, Dienste von Drittanbietern
+- **Analytics** – Tracking, Metriken, Dashboards
+- **Überwachung** - Beobachtbarkeit, Alarmierung
+
+## Dreistufige Workflow-Muster
+
+### Für die vollständige Funktionsentwicklung
+
+Verwenden Sie den **vollständigen Workflow**, wenn Sie eine vollständige Funktion implementieren:
+
+```bash
+# 1. Read the workflow prompt
+cat packages/cli/src/core/experts/database/workflow.md
+
+# 2. Make your request
+# "Add user authentication with sessions and password reset"
+
+# Agent automatically:
+# - Loads expertise.yaml
+# - Plans the feature
+# - Builds it
+# - Self-improves
+```
+
+### Für kurze Fragen
+
+Nutzen Sie für weitere Informationen die **Frage-Eingabeaufforderung**:
+
+```bash
+# 1. Read the question prompt
+cat packages/cli/src/core/experts/database/question.md
+
+# 2. Ask your question
+# "Where are the migration files stored?"
+
+# Agent loads expertise and answers from domain knowledge
+```
+
+### Für manuelle Updates
+
+Verwenden Sie die **Aufforderung zur Selbstverbesserung** aNachdem Sie Änderungen vorgenommen haben:
+
+```bash
+# 1. Make your code changes manually
+
+# 2. Read the self-improve prompt
+cat packages/cli/src/core/experts/database/self-improve.md
+
+# 3. Run self-improvement
+# Agent analyzes your changes and updates expertise.yaml
+```
+
+## Fachkompetenzvalidierung
+
+Verwenden Sie das bereitgestellte Validierungsskript, um sicherzustellen, dass die Expertise-Dateien korrekt bleiben:
+
+```bash
+# Validate all expertise files
+./scripts/validate-expertise.sh
+
+# Validate specific domain
+./scripts/validate-expertise.sh database
+
+# Expected output
+PASS  database
+PASS  api
+PASS  ui
+WARN  testing - stale (45 days since update)
+```
+
+### Validierungsprüfungen
+
+Der Validator prüft:
+- **Schema** – Erforderliche Felder vorhanden (Domain, last_updated, Version)
+- **Veraltetheit** – Datei nicht älter als 30 Tage
+- **Größe** – Datei bleibt fokussiert (unter 200 Zeilen)
+- **Learnings** - Der Agent hat sich mindestens einmal verbessert
+
+## Expertise-Metriken
+
+Überwachen Sie den Zustand Ihres Expertise-Systems:
+
+```bash
+# Show metrics dashboard
+./scripts/expertise-metrics.sh
+
+# Output as JSON (for logging)
+./scripts/expertise-metrics.sh --json
+
+# Output as CSV (for analysis)
+./scripts/expertise-metrics.sh --csv
+```
+
+### Verfolgte Metriken
+
+```
+╔════════════════════════════════════════════════╗
+║        Agent Expert Metrics Dashboard          ║
+╚════════════════════════════════════════════════╝
+
+Summary
+─────────────────────────────────────────────────
+Total Experts:              15
+With Learnings:             12 (80%)
+Total Learnings Recorded:   48
+Avg File Size:              145 lines
+
+Staleness Distribution
+─────────────────────────────────────────────────
+Updated in last 7 days:     8
+8-30 days old:              4
+31-90 days old:             2
+90+ days old:               1
+
+Self-Improve Health
+─────────────────────────────────────────────────
+Good adoption: 12/15 agents learning
+Average learnings per expert: 3.2
+```
+
+### Schlüsselmetriken
+
+- **Selbstverbesserungsrate** – % der Agenten, die sich selbst verbessert haben (Ziel: 100 %)
+- **Durchschnittliche Lernergebnisse** - Lernakkumulation pro Experte (Ziel: 5+)
+- **Veraltetheit** – Wie aktuell die Gutachtendateien sind (Ziel: unter 7 Tagen)
+- **Dateigröße** – Konzentrieren Sie sich auf das Fachwissen (jeweils weniger als 200 Zeilen)
+
+## Automatische Selbstverbesserung
+
+Das System kann Fachwissensdateien basierend auf der geleisteten Arbeit automatisch aktualisieren:
+
+### Wie es funktioniert
+
+```bash
+# Script runs as a session stop hook
+node scripts/auto-self-improve.js
+
+# Process:
+# 1. Detect which agent was active
+# 2. Analyze git diff for changes
+# 3. Generate learning summary
+# 4. Append to expertise.yaml
+```
+
+### Beispiel für automatisches Lernen
+
+Wenn der Agent diese Dateien geändert hat:
+```
+src/db/schema.ts        # +10 lines
+src/db/migrations/...ts # +25 lines
+src/db/queries/users.ts # +30 lines
+```
+
+Das System fügt automatisch hinzu:
+```yaml
+learnings:
+  - date: 2025-01-09
+    auto_generated: true
+    insight: "Modified 3 database files: added user schema updates and queries"
+    files_touched:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_extend_users.ts
+      - src/db/queries/users.ts
+    context: "Session work - database domain"
+```
+
+## Erstellen eines neuen Agentenexperten
+
+### 1. Verzeichnis erstellen
+
+```bash
+mkdir -p packages/cli/src/core/experts/your-domain/
+```
+
+### 2. Vorlagen kopieren
+
+```bash
+cp packages/cli/src/core/experts/templates/expertise-template.yaml \
+   packages/cli/src/core/experts/your-domain/expertise.yaml
+
+cp packages/cli/src/core/experts/templates/question-template.md \
+   packages/cli/src/core/experts/your-domain/question.md
+
+cp packages/cli/src/core/experts/templates/self-improve-template.md \
+   packages/cli/src/core/experts/your-domain/self-improve.md
+
+cp packages/cli/src/core/experts/templates/workflow-template.md \
+   packages/cli/src/core/experts/your-domain/workflow.md
+```
+
+### 3. Passen Sie Expertise.yaml an
+
+```yaml
+domain: your-domain
+last_updated: 2025-01-09
+version: 1.0
+
+files:
+  primary:
+    - path: src/your-domain/
+      purpose: Main domain code location
+
+  secondary:
+    - path: src/lib/your-domain/
+      purpose: Shared utilities
+
+relationships: []
+patterns: []
+conventions: []
+learnings: []
+```
+
+### 4. Agent-Datei aktualisieren
+
+Ändern Sie die Hauptagentendatei, um Fachwissen zu laden:
+
+```markdown
+# At the top of your agent (FIRST ACTION)
+
+## FIRST ACTION: Load Expertise
+
+Read your expertise file at `packages/cli/src/core/experts/your-domain/expertise.yaml`.
+
+This contains your mental model of the domain, including:
+- Key file locations
+- Relationships between entities
+- Patterns to follow
+- Conventions to maintain
+```
+
+Und am Ende führen Sie die Selbstverbesserung durch:
+
+```markdown
+## FINAL ACTION: Self-Improve
+
+Read `packages/cli/src/core/experts/your-domain/self-improve.md`
+
+Then analyze what you changed and update your expertise file.
+```
+
+## Best Practices
+
+### DO
+
+✅ **Validierung von Fachwissen anhand von Code** – Code ist die Quelle der Wahrheit, Fachwissen ist das Arbeitsgedächtnis
+✅ **Konzentrieren Sie sich auf das Fachwissen** – Eine Domain pro Datei (unter 200 Zeilen)
+✅ **Alle Erkenntnisse datieren** – Verfolgen Sie, wann Erkenntnisse entdeckt wurden
+✅ **Bestimmte Dateipfade verwenden** – Sagen Sie nicht „irgendwo in src/“, sondern verwenden Sie genaue Pfade
+✅ **Veraltete Informationen entfernen** – Löschen Sie Einträge, die nicht mehr gelten
+✅ **Validierung regelmäßig durchführen** – `./scripts/validate-expertise.sh`
+
+### NICHT
+
+❌ **Vertrauen Sie blind Ihrem Fachwissen** – Überprüfen Sie immer anhand des tatsächlichen Codes
+❌ **Domain mischens** – Halten Sie Datenbank-Expertise von API-Expertise getrennt
+❌ **Erlerntes manuell bearbeiten** – Überlassen Sie es der Selbstverbesserung
+❌ **Veraltete Einträge behalten** – Entfernen Sie Wissen, das nicht mehr korrekt ist
+❌ **Validierung überspringen** – Veraltetes Fachwissen schadet mehr als es hilft
+❌ **Erstellen Sie riesige Dateien** – Aufteilen in mehrere fokussierte Domänen
+
+## Grundprinzipien
+
+### 1. Code ist die Quelle der Wahrheit
+
+Expertise-Dateien sind mentale Modelle – etwa wie ein Ingenieur ein System versteht. Sie sind nützlich, aber nicht maßgeblich.
+
+**Validieren Sie immer anhand des tatsächlichen Codes**, bevor Sie sich auf Fachwissen verlassen.
+
+```yaml
+# ✅ Good - validated against code
+# Confirmed: Database uses UUID primary keys in all tables
+# Checked: src/db/schema.ts line 45
+
+# ❌ Bad - speculative
+# Probably uses UUIDs
+# I think the database is PostgreSQL
+```
+
+### 2. Fachwissen beschleunigt, ersetzt nicht
+
+Fachwissen hilft Agenten, schneller zu arbeiten, indem es Recherchen überflüssig macht, aber Agenten sollten die Ergebnisse trotzdem validieren.
+
+**Nutzen Sie Fachwissen, um die Suche zu überspringen, nicht um das Denken zu überspringen.**
+
+### 3. Lernen geschieht automatisch
+
+Pflegen Sie Fachwissensdateien nicht manuell. Führen Sie `self-improve.md` aus, nachdem Sie Änderungen vorgenommen haben.
+
+**Das System lernt automatisch, wenn Sie den Workflow nutzen.**
+
+### 4. Fachwissen ist fokussiert
+
+Each expert konzentriert sich auf EINE Domäne. Erstellen Sie nicht „All Frontend Expert“, sondern „React Component Expert“ oder „Form Validation Expert“.
+
+**Enge Bereiche → Besserer Fokus → Schnelleres Lernen**
+
+### 5. Veraltetheit signalisiert Probleme
+
+Wenn das Fachwissen innerhalb von 30 Tagen nicht aktualisiert wurde, gilt Folgendes:
+- Die Domain ist stabil (gut!)
+- Der Agent wird nicht verwendet (entfernen)
+- Das Fachwissen ist falsch (aktualisieren)
+
+**Verwenden Sie das Validierungsskript, um den Zustand zu überwachen.**
+
+## Architekturdiagramm
+
+<Bild>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/agent-expertise-arch.dark.svg" />
+  <img alt="Agent Expertise Architecture" src="/images/docs/features/agent-expertise-arch.light.svg" />
+</Bild>
+
+> Der geschlossene Workflow: Experten laden Wissen, validieren es, bauen damit auf und lernen automatisch aus dem, was sie tun.
+
+## Vergleich: Mit vs. ohne Fachwissen
+
+### Ohne Fachwissen (traditioneller Agent)
+
+```
+Session 1:
+├─ Search codebase structure (5 min)
+├─ Understand naming conventions (3 min)
+├─ Find database schema file (2 min)
+└─ Build feature (10 min)
+Total: 20 minutes
+
+Session 2: (Same task in different domain)
+├─ Search codebase structure (5 min) ← Repeat!
+├─ Understand naming conventions (3 min) ← Repeat!
+├─ Find database schema file (2 min) ← Repeat!
+└─ Build feature (10 min)
+Total: 20 minutes ← No improvement
+```
+
+### Mit Fachwissen (Selbstverbesserungsmittel)
+
+```
+Session 1:
+├─ Load expertise.yaml (instant)
+├─ Validate against code (1 min)
+├─ Build feature (10 min)
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 13 minutes
+
+Session 2: (Same task in same domain)
+├─ Load expertise.yaml (instant) ← Faster exploration
+├─ Validate against code (instant) ← Already knows structure
+├─ Build feature (9 min) ← Slightly faster, better patterns
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 11 minutes ← Improvement!
+
+Session 10: (Regular work in domain)
+├─ Load expertise.yaml (instant)
+├─ No validation needed (already verified)
+├─ Build feature (8 min) ← Experts apply patterns automatically
+├─ Self-improve (1 min) ← Minimal updates
+└─ Save learnings
+Total: 9 minutes ← Continuous improvement
+```
+
+## Fehlerbehebungting
+
+### Expertise-Datei ist veraltet
+
+**Problem:** Zuletzt aktualisiert vor mehr als 45 Tagen
+
+**Lösung:**
+1. Lesen Sie die Gutachtendatei
+2. Überprüfen Sie den aktuellen Codestatus
+3. Aktualisieren Sie alle ungenauen Einträge
+4. Führen Sie die Validierung aus: `./scripts/validate-expertise.sh domain`
+
+### Keine Erkenntnisse aufgezeichnet
+
+**Problem:** Der Agent hat sich nie selbst verbessert
+
+**Ursache:** Workflow-Schritte wurden nicht befolgt oder die Selbstverbesserung wurde nicht ausgeführt
+
+**Lösung:**
+1. Führen Sie die Arbeit mit dem vollständigen Workflow aus
+2. Stellen Sie sicher, dass der Schritt zur Selbstverbesserung abgeschlossen ist
+3. Suchen Sie in der Datei „expertise.yaml“ nach neuen Lerneinträgen
+
+### Datei ist zu groß (>200 Zeilen)
+
+**Problem:** Die Gutachtendatei ist zu stark gewachsen
+
+**Ursache:** Die Domain ist zu breit oder es wurden redundante Einträge hinzugefügt
+
+**Lösung:**
+1. Aufteilen in mehrere fokussierte Dateien
+2. Entfernen Sie doppelte/veraltete Einträge
+3. Bewahren Sie nur wesentliche Informationen auf
+
+### Fachwissen stimmt nicht mit Code überein
+
+**Problem:** Die Informationen zur Gutachtendatei sind falsch
+
+**Ursache:** Der Code wurde ohne Aktualisierung des Fachwissens geändert, oder das Fachwissen war nie korrekt
+
+**Lösung:**
+1. Führen Sie die Validierung aus: `./scripts/validate-expertise.sh`
+2. Korrigieren Sie ungenaue En manuellversucht
+3. Richten Sie einen Prozess ein, um dies früher zu erkennen
+4. Führen Sie nach der nächsten Arbeitssitzung eine Selbstverbesserung durch
+
+## Recherche und weiterführende Literatur
+
+Dieses System basiert auf dem **Agent Expert-Muster** von:
+
+- **Quelle:** IndyDevDans Kurs zur taktischen Agentencodierung
+- **Lektion:** 13 – Agentenexperten: Endlich Agenten, die tatsächlich lernen
+- **Konzept:** Agenten pflegen externe Wissensdatenbanken für eine beschleunigte Aufgabenausführung
+
+Das Muster erkennt Folgendes:
+1. Agenten, die in jeder Sitzung alles erkunden, sind ineffizient
+2. Persistentes Wissen (Expertendateien) beschleunigt die Arbeit enorm
+3. Sich selbst verbessernde Systeme lernen und werden mit der Zeit besser
+4. Fokussierte Bereiche schaffen nachhaltiges Lernen
+
+Detaillierte Theorie- und Implementierungsmuster finden Sie in der Forschungsdokumentation.
+
+## Zusammenfassung
+
+Das Agent Expertise System ermöglicht es Agenten, sich selbst zu verbessern durch:
+
+1. **Expertisedateien** – Mentale Modelle jeder Domäne
+2. **Dreistufiger Arbeitsablauf** – Planen → Erstellen → Selbstverbesserung
+3. **Automatisches Lernen** – Fachwissen wird während der Arbeit der Agenten aktualisiert
+4. **Validierung und Metriken** – Tools zur Qualitätssicherung
+5. **Fokussierte Domänen** – Spezialwissen für jeden Bereich
+
+Dieses geschlossene Lernsystem macht Agenten schneller, genauer und immer wertvoller, da sie im Laufe der Zeit Domänenwissen ansammeln.

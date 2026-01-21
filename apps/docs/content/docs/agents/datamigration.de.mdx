@@ -1,0 +1,274 @@
+---
+title: Datenmigration
+description: Datenmigrationsspezialist für Migrationen ohne Ausfallzeiten, Datenvalidierung, Rollback-Strategien und groß angelegte Datenbewegungen.
+---
+# AG-DATAMIGRATION
+
+Der Datenmigrationsspezialist entwirft und führt komplexe Datentransformationen ohne Ausfallzeiten aus. AG-DATAMIGRATION gewährleistet Datensicherheit, Integrität und Geschäftskontinuität bei Datenbankmigrationen und Schemaänderungen.
+
+## Fähigkeiten
+
+- **Migrationen ohne Ausfallzeiten**: Dual-Write, Shadow-Traffic, Expand-Contract, Feature-Flag-Muster
+- **Datenvalidierung**: Datensatzzählungen, Integritätsprüfungen, Fremdschlüsselvalidierung
+- **Rollback-Strategien**: Backup-Überprüfung, Rollback-Verfahren, Notfallwiederherstellung
+- **Groß angelegte Datenbewegungen**: Export-/Importoptimierung, Stapelverarbeitung, parallele Ausführung
+- **Schemaentwicklung**: Abwärtskompatibilität, mehrstufige Änderungen, langwierige Migrationen
+- **Migrationsüberwachung**: Metriken, Warnungen, Gesundheitsprüfungen während der Ausführung
+- **Erkennung von Datenkorruption**: Prüfsummen, Duplikaterkennung, Bereichsvalidierung
+- **Multi-Datenbank-Unterstützung**: SQL zu NoSQL, plattformübergreifende Migrationen
+
+## Wann zu verwenden
+
+Verwenden Sie AG-DATAMIGRATION, wenn Sie Folgendes benötigen:- Planen und Ausführen von Datenbankschemaänderungen
+- Migrieren Sie Daten zwischen Systemen ohne Ausfallzeiten
+- Führen Sie umfangreiche Datenexporte und -importe durch
+- Validieren Sie die Datenintegrität nach Transformationen
+- Entwerfen Sie Rollback-Verfahren für Produktionsmigrationen
+- Entwickeln Sie Datenbankschemata unter Beibehaltung der Abwärtskompatibilität
+- Bewältigen Sie komplexe Datentransformationen
+
+## Wie es funktioniert
+
+1. **Kontextladen**: Der Agent liest die Expertendatei und prüft die Migrationsanforderungen
+2. **Planung**: Wählt ein Null-Ausfallzeit-Muster aus (Dual-Write, Shadow, Expand-Contract, Flags)
+3. **Validierungsdesign**: Erstellt SQL-Abfragen und prüft die Datenintegrität
+4. **Rollback-Strategie**: Dokumentiert Sicherungsverfahren und Rollback-Schritte
+5. **Staging-Test**: Führt die Migration gegen die Staging-Umgebung aus
+6. **Überwachungseinrichtung**: Konfiguriert Metriken, Warnungen und Zustandsprüfungen
+7. **Ausführung**: Führt die Migration außerhalb der Hauptverkehrszeiten mit Teamüberwachung aus
+8. **Verifizierung**: Validiert Daten und Leistung nach der Migration
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We need to migrate users table from PostgreSQL to MongoDB with zero downtime"
+
+# Or directly invoke
+/agileflow:plan-migration
+
+# AG-DATAMIGRATION will:
+# 1. Design zero-downtime pattern
+# 2. Create validation rules
+# 3. Document rollback procedure
+# 4. Test in staging environment
+# 5. Create monitoring and alerting
+```
+
+## Schlüsselverhalten
+
+- **Niemals ohne Backup migrieren** - Immer einen Fluchtweg haben
+- **Datenintegrität überprüfen** – Validierungsregeln definieren Erfolgskriterien
+- **Plan für den schlimmsten Fall** - Rollback-Verfahren dokumentiert und getestet
+- **Ausführung außerhalb der Spitzenzeiten** – Minimieren Sie die Auswirkungen auf Benutzer und Leistung
+- **Alles im Staging testen** - Keine Überraschungen in der Produktion
+- **Genau überwachen** – Beobachten Sie wichtige Kennzahlen während der gesamten Migration
+
+## Muster ohne Ausfallzeiten
+
+AG-DATAMIGRATION nutzt vier bewährte Muster:
+
+### Muster 1: Dual Write
+1. Fügen Sie neben dem alten ein neues Schema/System hinzu
+2. Schreiben Sie gleichzeitig an Alte und Neue
+3. Füllen Sie alte Daten mit dem neuen System aus
+4. Lesevorgänge auf neues System umstellen
+5. Altes System außer Betrieb nehmen
+
+**Zeitleiste**: Tage bis Wochen (sicher)
+**Risiko**: Niedrig (kann jederzeit wieder auftreten)
+**Ausfallzeit**: Null
+
+### Muster 2: Schattenverkehr
+1. Anfragen normal annehmen (altes System)
+2. Kopie der Anfragen an neues System senden (Schatten)
+3. Antworten vergleichen (sollten identisch sein)
+4. Wechseln Sie den Verkehr, wenn Sie sicher sind
+5. Keep altes System im Schatten für Rollback
+
+**Zeitleiste**: Stunden bis Tage
+**Risiko**: Niedrig (Schattenverkehr fängt Probleme auf)
+**Ausfallzeit**: Null bis unter 30 Sekunden
+
+### Muster 3: Vertrag erweitern
+1. Erweitern: Neue Spalte/Tabelle neben der alten hinzufügen
+2. Migrieren: Daten kopieren und transformieren
+3. Vertrag: Alte Spalte/Tabelle entfernen
+4. Bereinigung: Unterstützenden Code entfernen
+
+**Zeitleiste**: Stunden bis Tage pro Schritt
+**Risiko**: Gering (jeder Schritt reversibel)
+**Ausfallzeit**: Null (jeder Schritt separat)
+
+### Muster 4: Feature-Flags
+1. Kodieren Sie neues Verhalten neben altem
+2. Feature-Flag-Steuerelemente, die verwendet werden
+3. Schrittweise Einführung (1 % → 10 % → 100 %)
+4. Überwachen Sie alle Ebenen auf Probleme
+5. Entfernen Sie den alten Code, sobald er stabil ist
+
+**Zeitleiste**: Tage bis Wochen
+**Risiko**: Niedrig (sofortiger Rollback mit Flag)
+**Ausfallzeit**: Null
+
+## Werkzeuge verfügbar
+
+Dieser Agent hat Zugriff auf:
+
+- **Lesen**: Zugriff auf Datenbankschemata und Datenmodelle
+- **Schreiben**: Migrationsskripte und Validierungsregeln erstellen
+- **Bearbeiten**: Migrationsverfahren aktualisieren
+- **Bash**: Migrationsbefehle und Moni ausführenToring
+- **Glob**: Migrationsbezogene Dateien finden
+- **Grep**: Suche nach Datenmustern und Schemaänderungen
+
+## Kernaufgaben
+
+1. Planen Sie Migrationen ohne Ausfallzeiten
+2. Entwerfen Sie Datentransformationspipelines
+3. Erstellen Sie Migrationsvalidierungsstrategien
+4. Entwerfen Sie Rollback-Verfahren
+5. Implementieren Sie eine Migrationsüberwachung
+6. Testen Sie Migrationen im Staging
+7. Führen Sie Migrationen mit minimaler Ausfallzeit durch
+8. Überprüfen Sie die Datenintegrität nach der Migration
+9. Erstellen Sie eine Migrationsdokumentation
+10. Aktualisieren Sie status.json nach jeder Statusänderung
+
+## Checkliste vor der Migration
+
+Vor jeder Migration prüft AG-DATAMIGRATION:
+
+- Vollständiges Backup erstellt (verifiziert und wiederherstellbar)
+- Die Staging-Umgebung entspricht der Produktion
+- Rollback-Verfahren dokumentiert und getestet
+- Überwachung und Alarmierung konfiguriert
+- Kommunikationsplan erstellt
+- Team in Migrationsschritten geschult
+- Notfallkontakte verfügbar
+- Alle Validierungsregeln definiert und getestet
+
+## Datenvalidierungsregeln
+
+AG-DATAMIGRATION validiert:
+
+```sql
+-- Check record counts match
+SELECT COUNT(*) FROM old_table;
+SELECT COUNT(*) FROM new_table;
+-- Should be equal
+
+-- Check data integrity
+SELECT * FROM new_table WHERE required_field IS NULL;
+-- Should return 0 rows
+
+-- Check foreign key integrity
+SELECT COUNT(*) FROM new_table nt
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = nt.user_id);
+-- Should return 0 orphaned records
+
+-- Check date ranges valid
+SELECT * FROM new_table WHERE date_field > NOW();
+-- Should return 0 future-dated records
+```
+
+## Rollback-Trigger
+
+AG-DATAMIGRATION wartet auf und führt einen Rollback durch, wenn:
+
+- Validierung schlägt fehl (Datenkonflikt)
+- Die Fehlerrate überschreitet den Schwellenwert
+- Die Latenz steigt um mehr als das Doppelte des Ausgangswerts
+– Die Replikationsverzögerung überschreitet den Grenzwert
+- Datenbeschädigung festgestellt
+- Manuelle Entscheidung durch Bereitschaftsleiter
+
+## Überwachung während der Migration
+
+Wichtige Kennzahlen, die Sie im Auge behalten sollten:
+
+– Abfragelatenz (S. 50, S. 95, S. 99)
+- Fehlerrate (% fehlgeschlagene Anfragen)
+- Durchsatz (Anfragen/Sekunde)
+- Datenbankverbindungen (Nutzung vs. max.)
+- Replikationsverzögerung (falls zutreffend)
+- Festplatten-/Speicher-/CPU-Nutzung
+- Verarbeitungsrate aufzeichnen (für große Bewegungen)
+
+## Groß angelegte Datenbewegungen
+
+Für große Datensätze, AG-DATAMIGRATION:
+
+**Exportieren**:
+- Außerhalb der Hauptverkehrszeiten
+- Streaming (keine Volllast)
+- Komprimierung für den Transport
+- Parallelexporte
+- Prüfsummenüberprüfung
+
+**Importieren**:
+- Batch-Einfügungen (10.000 Datensätze/Batch)
+- Deaktivieren Sie Indizes während des Imports
+- Indizes danach neu erstellen
+- Parallelimporte
+- Parallel validieren
+
+**Verwandlung**:
+- Streamen Sie Daten stapelweise
+- Validieren Sie jede Charge
+- Kontrollpunkt zur Wiederherstellung
+- Fehler separat protokollieren
+
+## Related-Agenten
+
+- [`AG-DATABASE`](/agents/database) – Koordinierung des Schemadesigns und der Indizes
+- [`AG-DEVOPS`](/agents/devops) – Koordinieren Sie den Bereitstellungszeitpunkt
+- [`AG-MONITORING`](/agents/monitoring) – Richten Sie die Überwachung während Migrationen ein
+
+## Slash-Befehle
+
+AG-DATAMIGRATION kann diese Befehle direkt aufrufen:
+
+- `/agileflow:research:ask TOPIC=...` – Recherchieren Sie bewährte Methoden für die Migration
+– `/agileflow:ai-code-review` – Überprüfen Sie den Migrationscode auf Sicherheit
+– `/agileflow:adr-new` – Migrationsentscheidungen dokumentieren
+– `/agileflow:status STORY=... STATUS=...` – Status der Migrationsgeschichte aktualisieren
+
+## Qualitätsstandards
+
+Bevor die Arbeiten als abgeschlossen gekennzeichnet werden, stellt AG-DATAMIGRATION Folgendes sicher:
+
+- Migrationsplan dokumentiert (Schritte, Zeitplan, Schätzung der Ausfallzeit)
+- Datenvalidierungsregeln definiert und getestet
+- Rollback-Verfahren dokumentiert und getestet
+- Backup erstellt, überprüft und wiederherstellbar
+– Staging-Migration erfolgreich abgeschlossen
+- Überwachungseinrichtung bereit (Metriken, Warnungen, Gesundheitsprüfungen)
+- Analyse der Auswirkungen auf die Leistung
+- Null-Ausfallzeit-Ansatz bestätigt
+- Validierung nach der Migration Slan erstellt
+- Kommunikationsplan erstellt (wer benachrichtigt werden soll)
+
+## Verifizierungsprotokoll
+
+AG-DATAMIGRATION folgt dem Session Harness-System, um Funktionsstörungen zu verhindern:
+
+1. **Vorimplementierung**: Überprüft den Basisdatenstatus und die Umgebung
+2. **Während der Arbeit**: Testet Validierungsregeln und Rollback im Staging
+3. **Nach der Implementierung**: Überprüft die Datenintegrität, bevor sie als abgeschlossen markiert wird
+4. **Fertigstellung der Geschichte**: Kann NUR als „in Überprüfung“ markiert werden, wenn alle Validierungen erfolgreich sind
+
+Ausführliche Informationen finden Sie im [Session Harness Protocol](/agents/session-harness)].
+
+## Kommunikation während der Migration
+
+AG-DATAMIGRATION-Koordinaten über den Agentenbus:
+
+```jsonl
+{"ts":"2025-10-21T10:00:00Z","from":"AG-DATAMIGRATION","type":"status","text":"Migration plan created for user_profiles: dual-write approach, zero-downtime"}
+{"ts":"2025-10-21T10:05:00Z","from":"AG-DATAMIGRATION","type":"question","text":"AG-DATABASE: New indexes needed for performance after schema change?"}
+{"ts":"2025-10-21T10:10:00Z","from":"AG-DATAMIGRATION","type":"status","text":"Data validation complete: 100% record match, all integrity checks passed"}
+```
+
+Dadurch bleiben alle Teammitglieder über den Migrationsstatus und etwaige Blocker informiert.

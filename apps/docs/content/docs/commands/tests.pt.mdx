@@ -1,0 +1,281 @@
+---
+title: / testes de configuração
+description: Configure a infraestrutura de testes automatizados
+---
+# /setup-testes
+
+Detecte automaticamente seu tipo de projeto e inicialize uma infraestrutura de teste completa com instalação de estrutura, configuração, testes de exemplo e integração de CI.
+
+## Início rápido
+
+```bash
+/agileflow:setup-tests FRAMEWORK=auto COVERAGE=yes
+```
+
+## Objetivo
+
+Este comando cria uma base de teste profissional ao:
+- Detecção automática da linguagem e estrutura do seu projeto
+- Instalando dependências de estrutura de teste apropriadas
+- Criação de arquivos de configuração de teste
+- Geração de exemplos de testes unitários, de integração e E2E
+- Adicionando scripts de teste à sua configuração de compilação
+- Integração de testes no pipeline de CI/CD
+- Criação de documentação de testes e melhores práticas
+- Executando testes para verificar se a configuração funciona
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `FRAMEWORK` | Não | `auto` | `auto`, `jest`, `mocha`, `pytest`, `rspec`, `go-test`, `cargo-test` |
+| `COVERAGE` | Não | `yes` | Ativar relatórios de cobertura: `yes` ou `no` |
+| `E2E` | Não | `no` | Inclui testes E2E: __NOTRASLATE_35__ ou __NOTRASLATE_36__ |
+
+## Exemplos
+
+### Detecção e configuração automática
+
+```bash
+/agileflow:setup-tests
+```
+
+Detecta Node.js/Python/Ruby/Go/Rust e instala a estrutura apropriada.
+
+### Forçar Estrutura Específica
+
+```bash
+/agileflow:setup-tests FRAMEWORK=jest COVERAGE=yes
+```
+
+Usa Jest para testes com cobertura habilitada.
+
+### Incluir testes E2E
+
+__NOTRADUZIR_3__
+
+Configura testes de unidade, integração E ponta a ponta (Playwright para aplicativos da web).
+
+### Projeto Python
+
+__NÃOTRADUZIR_4__
+
+Instala o pytest com cobertura e cria testes de exemplo.
+
+## Detecção de Projeto
+
+O comando detecta automaticamente sua pilha de tecnologia:
+
+| Pilha de tecnologia | Estrutura | Detectado por |
+|-----------|-----------|-------------|
+| Node.js | Brincadeira | pacote.json |
+| Node.js (antigo) | Mocha | pacote.json |
+| Pitão | pytest | requisitos.txt, pyproject.toml |
+| Rubi | RSpec | Arquivo Gem |
+| Vá | vá testar | go.mod |
+| Ferrugem | carga testá | Carga.toml |
+| Java | JUnit | pom.xml, build.gradle |
+| .NET | xUnidade/NUunidade | *.csproj |
+
+## Arquivos de saída
+
+O comando cria uma configuração de teste completa:
+
+### Arquivos de configuração
+
+**Brincadeira** (`jest.config.js`):
+__NOTRADUZIR_5__
+
+**pytest** (`pytest.ini`):
+__NOTRADUZIR_6__
+
+**RSpec** (__NOTRASLATE_39__):
+__NÃOTRADUZIR_7__
+
+### Estrutura de diretório
+
+Cria diretórios de teste organizados:
+
+<FileTree>
+  <Folder name="tests">
+    <Folder name="unit" />
+    <Folder name="integration" />
+    <Folder name="e2e" />
+    <Folder name="fixtures" />
+    <Folder name="helpers" />
+  </Folder>
+</FileTree>
+
+### Exemplos de testes
+
+**Teste de unidade** (__NOTRASLATE_40__):
+__NÃOTRADUZIR_8__
+
+**Teste de componente** (__NOTRASLATE_41__):
+__NOTRADUZIR_9__
+
+**Teste de integração** (`tests/integration/api.test.ts`):
+__NOTRADUZIR_10__
+
+**Teste E2E** (__NOTRASLATE_43__):
+__NOTRADUZIR_11__
+
+### Scripts NPM
+
+`package.json` atualizado:
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "playwright test"
+  }
+}
+```
+
+### Integração de CI
+
+Adiciona trabalho de teste a __NOTRASLATE_45__:
+__NÃOTRADUZIR_13__
+
+### Documentotação
+
+Cria `docs/02-practices/testing.md`:
+__NOTRADUZIR_14__
+
+## Tipos de teste
+
+### Testes unitários
+**O quê**: testar funções/classes individuais isoladamente
+**Velocidade**: Rápido (<10ms cada)
+**Mocking**: Sim, dependências simuladas
+**Cobertura**: a maior parte do código deve ter testes de unidade
+
+Exemplo: teste uma função de utilidade que calcula a idade do usuário.
+
+### Testes de Integração
+**O que**: teste vários componentes trabalhando juntos
+**Velocidade**: Média (<100ms cada)
+**Mocking**: Mínimo, use componentes reais
+**Cobertura**: fluxos de trabalho críticos e rotas de API
+
+Exemplo: teste se o fluxo de autenticação funciona de ponta a ponta com o banco de dados.
+
+### Testes E2E (opcional)
+**O que**: teste fluxos de usuário completos em aplicativos reais
+**Velocidade**: Lento (segundos por teste)
+**Zombando**: Nenhum, aplicação real
+**Cobertura**: somente jornadas críticas de usuários
+
+Exemplo: inscrição do usuário → login → visualizar o fluxo do painel.
+
+## Limites de cobertura
+
+Limites padrão (razoáveis, não perfeccionistas):
+- **Filiais**: 70% - Todos os caminhos de decisão cobertos
+- **Funções**: 70% - Chamada de todas as funçõesEd
+- **Linhas**: 70% - Todas as linhas executadas
+- **Declarações**: 70% - Todas as declarações são executadas
+
+**Por que não 100%?**
+- 100% de cobertura não garante 100% de correção
+- Alguns códigos são difíceis de testar (IU, casos extremos)
+- Retornos decrescentes após 70-80%
+- Concentre-se nos caminhos críticos
+
+## Executando testes
+
+### Durante o desenvolvimento
+__NÃOTRADUZIR_15__
+Executa testes automaticamente quando os arquivos são alterados.
+
+### Antes de confirmar
+__NOTRADUZIR_16__
+Conjunto de testes completo com verificação de cobertura.
+
+### Em CI
+É executado automaticamente a cada push:
+```bash
+npm test -- --coverage --ci
+```
+
+## Fluxo de trabalho
+
+A configuração segue estas etapas:
+
+1. **Detectar idioma/tempo de execução**
+   - Procura package.json, Gemfile, go.mod, etc.
+   - Determina a estrutura apropriada
+
+2. **Verifique a configuração existente**
+   - Verifica diretórios de teste (test/, testes/, __tests__/)
+   - Verifica arquivos de configuração de teste
+   - Detecta configuração de CI
+
+3. **Mostrar plano de configuração**
+   __NÃOTRADUZIR_18__
+
+4. **Instalar dependências**
+   - instalação npm, instalação pip, instalação de pacote, etc.
+
+5. **Criar configuração**
+   - Específico da estruturac arquivos de configuração
+
+6. **Gerar exemplos**
+   - Exemplo de teste unitário
+   - Exemplo de teste de integração
+   - Exemplo de teste E2E (se solicitado)
+
+7. **Atualizar Scripts e CI**
+   - Adicionar comandos de teste
+   - Integrar com o fluxo de trabalho existente
+
+8. **Executar testes**
+   - Verifique se a configuração funciona
+   - Mostrar relatório de cobertura
+
+9. **Criar documentação**
+   - Guia de teste
+   - Melhores práticas
+   - Expectativas de cobertura
+
+## Próximas etapas
+
+Após a conclusão da configuração:
+
+1. **Execute testes localmente**
+   __NOTRADUZIR_19__
+
+2. **Escreva os primeiros testes**
+   - Comece com testes unitários para utilitários
+   - Adicione testes de integração para APIs
+   - Posteriormente, adicione testes E2E para fluxos críticos
+
+3. **Ativar verificações de cobertura**
+   - CI exige cobertura mínima
+   - Mesclagem bloqueada se a cobertura cair
+
+4. **Monitore tendências de cobertura**
+   - Use codecov.io ou similar
+   - Acompanhe a cobertura ao longo do tempo
+   - Comemore melhorias
+
+## Melhores práticas
+
+1. **Escrever testes antecipadamente** - TDD ou recursos complementares
+2. **Mantenha os testes rápidos** - simulação de operações lentas
+3. **Use nomes descritivos** - Nome do testee explica o que testa
+4. **Uma afirmação por teste** - Quando possível, deixa claras as falhas
+5. **DRY em testes** - Use acessórios, fábricas, configuração/desmontagem
+6. **Comportamento de teste** – Não são detalhes de implementação
+7. **Evite instabilidade** - Sem problemas de tempo, falhas aleatórias
+8. **Limpar** - Redefinir o estado entre os testes
+
+## Comandos Relacionados
+
+- [__NOTRASLATE_47__](/commands/ci) - Configurar fluxo de trabalho de CI/CD
+- [__NOTRASLATE_48____NOTRASLATE_60__ - Configurar implantação
+- [`/packages`](/commands/packages) - Gerenciar dependências de teste

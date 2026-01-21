@@ -1,0 +1,245 @@
+---
+title: Conformité
+description: Spécialiste de la conformité pour la conformité réglementaire, RGPD, HIPAA, SOC2, pistes d'audit, exigences légales et documentation de conformité.
+---
+# Spécialiste de la conformité
+
+AG-COMPLIANCE garantit la conformité réglementaire dans les cadres RGPD, HIPAA, SOC2, PCI-DSS et autres, en mettant l'accent sur les pistes d'audit, la protection des données et la documentation de conformité.
+
+## Capacités
+
+- **Conformité au cadre réglementaire** : RGPD, HIPAA, SOC2, PCI-DSS, CCPA
+- **Mise en œuvre de la piste d'audit** : journalisation immuable de tous les accès et modifications aux données
+- **Politiques de conservation des données** : définissez et automatisez les calendriers de suppression des données
+- **Gestion du consentement** : gestion et retrait du consentement RGPD
+- **Politiques et conditions de confidentialité** : documentation pour la conformité légale et réglementaire
+- **Réponse aux incidents** : procédures et notification en cas de violation de données
+- **Documentation de conformité** : preuves pour les auditeurs et examens de conformité
+
+## Quand l'utiliser
+
+Utilisez AG-COMPLIANCE lorsque :
+
+- Identifier les exigences réglementaires applicables à votre entreprise
+- Mise en place de pistes d'audit pour l'accès aux données et les modifications
+- Concevoir des politiques de conservation et de suppression des données
+- Mise en place de la gestion des consentements RGPD- Rédaction des politiques de confidentialité et des conditions d'utilisation
+- Préparation aux audits de conformité
+- Documenter les procédures de réponse aux incidents
+
+## Comment ça marche
+
+1. **Chargement du contexte** : Lit le dossier d'expertise et l'état de conformité du projet
+2. **Analyse du cadre** : détermine quelles réglementations s'appliquent (RGPD, HIPAA, etc.)
+3. **Audit** : examine la base de code pour détecter les lacunes en matière de conformité
+4. **Mise en œuvre** : implémente les pistes d'audit, la gestion des consentements et la suppression des données
+5. **Documentation** : crée une politique de confidentialité, une politique de conservation des données et une réponse aux incidents
+6. **Preuve** : Prépare la documentation pour les auditeurs et les examens de conformité
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to ensure GDPR compliance for my EU users"
+
+# AG-COMPLIANCE will:
+# 1. Audit codebase for GDPR compliance gaps
+# 2. Implement audit trail logging (who, what, when, where, why)
+# 3. Set up consent management system
+# 4. Create privacy policy documentation
+# 5. Implement data deletion procedures
+# 6. Document incident response
+```
+
+## Comportements clés
+
+- **Ne jamais faire de compromis** : la conformité n'est pas négociable et n'est jamais ignorée pour des raisons de commodité.
+- **Pistes d'audit d'abord** : tous les accès aux données et modifications enregistrés de manière immuable
+- **Axé sur la confidentialité** : minimise la collecte de données, respecte les droits des utilisateurs
+- **Documentation** : crée des preuves pour les auditeurs et les examens de conformité
+- **Proactif** : identifie les lacunes avant qu'elles ne soientviennent des problèmes
+
+## Outils disponibles
+
+- Lire, écrire, modifier, Bash, Glob, Grep
+- Accès à Session Harness pour vérification
+
+## Cadres de conformité
+
+**RGPD** (UE - s'applique aux données des citoyens de l'UE) :
+- Droit d'accès (les utilisateurs peuvent demander leurs données)
+- Droit à l'oubli (les utilisateurs peuvent demander la suppression)
+- Portabilité des données (les utilisateurs peuvent demander l'exportation de données)
+- Gestion du consentement (doit avoir un consentement explicite)
+- Pistes d'audit (qui a accédé à quoi, quand)
+- Évaluations des impacts sur la vie privée
+
+**HIPAA** (États-Unis - données de santé) :
+- Confidentialité des patients (protection des PHI)
+- Droits des patients (accès, modification, suppression)
+- Contrôles d'audit (journalisation et surveillance)
+- Contrôles d'accès (authentification, autorisation)
+- Sécurité des transmissions (cryptage en transit)
+- Notification de violation (en cas de fuite de données)
+
+**SOC2** (Prestataires de services) :
+- Sécurité (données protégées contre tout accès non autorisé)
+- Disponibilité (disponibilité du système)
+- Intégrité du traitement (données traitées correctement)
+- Confidentialité (données gardées confidentielles)
+- Confidentialité (gestion des données personnellesd correctly)
+- Audit trails and monitoring
+
+**PCI-DSS** (Payment card processing):
+- Secure network (firewall, no defaults)
+- Data protection (encryption, restricted access)
+- Vulnerability management (patching, testing)
+- Access control (least privilege)
+- Monitoring and testing (audit logs)
+
+## Audit Trails (Critical)
+
+**What to Log**:
+- Who (user ID, admin ID)
+- What (action, data accessed)
+- When (timestamp)
+- Where (IP address, location)
+- Why (purpose, reason)
+- Result (success or failure)
+
+**Example Audit Log Entry**:
+```json
+{
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "action": "view_patient_record",
+  "resource": "patient-456",
+  "ip_address": "192.168.1.1",
+  "location": "New York, USA",
+  "result": "success",
+  "purpose": "Treatment"
+}
+```
+
+**Immutable Requirements**:
+- Logs must be tamper-proof
+- Append-only database
+- Encrypt and sign logs
+- Archive old logs securely
+- Never allow deletion (except with authorization)
+
+## Data Retention Policies
+
+Define for each data type:
+
+- **User account data**: Keep while active, delete 30 days after deactivation
+- **Transaction data**: Keep 7 years (financial requirement)
+- **Logs**: Keep 90 days (operational), archive 1 year
+- **Deleted user données** : supprimer dans les 30 jours
+- **Données de sauvegarde** : conserver pendant 30 jours
+
+**Mise en œuvre de la suppression automatique** :
+- Travaux planifiés pour supprimer les données expirées
+- Enregistrez toutes les suppressions
+- Vérifier que la suppression a réussi
+
+## Gestion du consentement (RGPD)
+
+**Consentement explicite requis** :
+- Cases à cocher non pré-cochées (doit être opt-in)
+- Description claire des données collectées
+- Finalité de la collecte de données
+- Qui a accès aux données
+- Droit de retirer son consentement
+
+**Mise en œuvre** :
+```javascript
+// Must have explicit consent before processing
+if (!user.has_marketing_consent) {
+  throw new Error('Consent required');
+}
+
+// Log consent grant/withdrawal
+auditLog({
+  action: 'consent_granted',
+  user_id: user.id,
+  type: 'marketing',
+  timestamp: new Date(),
+});
+```
+
+## Documentation de conformité
+
+**Document destiné aux auditeurs** :
+- Politique de confidentialité
+- Conditions d'utilisation
+- Addendum informatique (DPA)
+-Documents de sécurité
+- Politique de conservation des journaux d'audit
+- Procédures de réponse aux incidents
+- Dossiers de formation des employés
+- Évaluations de la conformité des fournisseurs
+
+## Sections de la politique de confidentialité
+
+- **Données collectées** : Quelles données personnelles collectez-vous ?
+- **Finalité** : Pourquoi collectez-vous ces données ?
+- **Base juridique** : Pourquoi êtes-vous autorisé à les recueillir (consentement, contrat, etc.) ?
+- **Conservation** : Combien de temps le conservez-vous ?
+- **Utilisateur RiDroits** : Droit d'accès, de suppression, de portabilité
+- **Tiers** : Qui a accès aux données des utilisateurs ?
+- **Cookies** : Politique de cookies et suivi
+
+## Réponse aux incidents
+
+**Procédure en cas de violation de données** :
+1. Détecter la violation (accès non autorisé aux données personnelles)
+2. Détails du document (quoi, quand, qui a été affecté)
+3. Notifier l'autorité de régulation (RGPD : 72 heures)
+4. Informer les utilisateurs concernés (RGPD : sans délai excessif)
+5. Préserver les preuves (journaux, enregistrements d'accès)
+6. Corriger (corriger la vulnérabilité)
+7. Réviser et améliorer (prévenir la récidive)
+
+## Liste de contrôle qualité
+
+Avant de marquer la conformité des travaux terminés :
+
+- Cadre de conformité identifié
+- Exigences documentées
+- Des pistes d'audit enregistrant tout (qui, quoi, quand, où, pourquoi)
+- Politiques de conservation des données définies et automatisées
+- Gestion du consentement mise en place (si RGPD)
+- Politique de confidentialité rédigée et publiée
+- Conditions d'utilisation rédigées et publiées
+- Réponse aux incidents documentée
+- Formation des employés documentée
+- Évaluations de tiers à jour
+- Tests réussis avec test_status : "passant"
+
+## Agents associés
+
+- [AG-SECURITY](/agents/security) - Cryptage des données, contrôle d'accès
+- [AG-ANALYTICS](/agents/analytics) - Suivi des événements conforme au RGPD
+- [AG-MONITORING](/agents/monitoring) - Surveillance et alerte de sécurité
+
+## Messages de coordination
+
+AG-COMPLIANCE se coordonne avec d’autres équipes :
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-COMPLIANCE",
+  "type": "status",
+  "text": "Audit trails implemented for all data access, GDPR ready"
+}
+```
+
+## Commandes barre oblique
+
+- `/agileflow:research:ask TOPIC=...` – Exigences de conformité en matière de recherche
+- `/agileflow:ai-code-review` – Revoir le code pour les problèmes de conformité
+- `/agileflow:adr-new` - Documenter les décisions de conformité
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de l'histoire

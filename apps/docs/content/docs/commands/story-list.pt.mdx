@@ -1,0 +1,207 @@
+---
+title: /história:lista
+description: Liste todas as histórias com status e opções de filtragem
+---
+# /história:lista
+
+Exiba todas as histórias de usuários com opções de filtragem e recursos de ação rápida.
+
+## Início rápido
+
+```bash
+/agileflow:story:list
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `EPIC` | Não | - | Filtrar por épico (por exemplo, EP-0001) |
+| `STATUS` | Não | - | Filtrar por status: `ready`, `in_progress`, `blocked`, `done` |
+| `OWNER` | Não | - | Filtrar por proprietário (por exemplo, AG-UI) |
+
+## Exemplos
+
+### Listar todas as histórias
+
+```bash
+/agileflow:story:list
+```
+
+Mostra todas as histórias organizadas por épico com seu status.
+
+### Listar histórias para épicos específicos
+
+```bash
+/agileflow:story:list EPIC=EP-0001
+```
+
+Mostra apenas histórias no épico de autenticação.
+
+### Listar histórias prontas
+
+__NOTRADUZIR_3__
+
+Mostra todas as histórias prontas para começar a trabalhar.
+
+### Listar histórias em andamento
+
+__NÃOTRADUZIR_4__
+
+Mostra os itens de trabalho atuais.
+
+### Listar histórias por proprietário
+
+__NOTRADUZIR_5__
+
+Mostra todas as histórias atribuídas ao agente de UI.
+
+### Filtros Combinados
+
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+```
+
+Mostra histórias prontas apenas no épico de autenticação.
+
+__NÃOTRADUZIR_7__
+
+Mostra histórias de API que estão bloqueadas no momento.
+
+## Formato de saída
+
+As histórias são organizadas por épico com colunas de status:
+
+__NÃOTRADUZIR_8__
+
+## Definições de status
+
+| Estado | Significado | Ação |
+|----|---------|--------|
+| **pronto** | Pronto para começar, sem bloqueadores | Iniciar o trabalho / ver detalhes |
+| **em_progresso** | Atualmente em trabalho | Continuar o trabalho/marcar bloqueado se necessário |
+| **bloqueado** | Aguardando dependência ou esclarecimento | Resolva o bloqueador/desbloqueie quando estiver pronto |
+| **concluído** | Concluído e testado | Passar para a próxima história |
+
+## Ações rápidas
+
+Depois de exibir a lista, você pode:
+
+### Ver detalhes da história
+
+Selecione uma história para ver:
+- Critérios de aceitação completos
+- Status do teste
+- Dependências
+- Bloqueadores (se houver)
+- Notas de progresso
+
+__NOTRADUZIR_9__
+
+### Comece a trabalhar em uma história
+
+Escolha uma história pronta e marque-a como in_progress:
+
+__NOTRADUZIR_10__
+
+### Criar nova história
+
+Adicione uma história a um épico:
+
+__NOTRADUZIR_11__
+
+##Integração de fluxo de trabalho
+
+### Levantamento Diário
+
+```bash
+/agileflow:story:list STATUS=in_progress
+# See what's being worked on
+/agileflow:story:list STATUS=blocked
+# See what's blocked
+```
+
+### Planejamento de Sprint
+
+__NÃOTRADUZIR_13__
+
+### Desbloqueando fluxo de trabalho
+
+__NOTRADUZIR_14__
+
+### Acompanhamento de conclusão
+
+__NÃOTRADUZIR_15__
+
+## Estratégias de filtragem
+
+### Por épico
+__NOTRADUZIR_16__
+
+### Por status
+```bash
+/agileflow:story:list STATUS=ready
+# Find available work
+```
+
+__NÃOTRADUZIR_18__
+
+### Pelo Proprietário
+__NOTRADUZIR_19__
+
+### Por Status + Épico
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+# Ready stories in specific epic
+```
+
+### Por status + proprietário
+```bash
+/agileflow:story:list STATUS=in_progress OWNER=AG-UI
+# Current work for specific agent
+```
+
+## Interpretando resultados
+
+### Distribuição saudável de histórias
+
+```
+5 stories (1 done, 2 in_progress, 2 ready)
+```
+
+- ✅ As pessoas têm trabalho a fazer
+- ✅ O trabalho está fluindo
+- ✅ O backlog está pronto
+
+### Problemas potenciais
+
+**Muitos em andamento (>3)**
+```
+5 stories (0 done, 4 in_progress, 1 ready)
+```
+- Considere reduzir o WIP (trabalho em andamento)
+- Concentre-se em completar histórias
+
+**Sem histórias prontas**
+```
+5 stories (2 done, 2 in_progress, 0 ready)
+```
+- Precisa planejar mais histórias
+- Crie __NOTRASLATE_33__ para os próximos itens de trabalho
+
+**Muitos bloqueados**
+```
+7 stories (1 done, 1 in_progress, 3 blocked, 2 ready)
+```
+- Bloqueadores de endereços com urgência
+- Pode ser necessário desbloquear dependências
+
+## Comandos Relacionados
+
+- [`/story:view`](/commands/story-view) - Ver stdetalhes
+- [`/story`](/commands/story) - Criar nova história
+- [`/story-validate`__NOTRASLATE_43__ - Validar a integridade da história
+- [`/status`](/commands/status) - Atualizar status da história
+- [`/epic:list`](/commands/epic-list) - Ver épicos
+- [`/board`__NOTRASLATE_46__ - Quadro kanban visual
+- [`/blockers`](/commands/blockers) - Encontre e resolva bloqueadores

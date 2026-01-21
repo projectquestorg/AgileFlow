@@ -1,0 +1,251 @@
+---
+title: /ajuda
+description: Exibir visão geral e comandos do sistema AgileFlow
+---
+#/ajuda
+
+Exiba uma visão geral abrangente do sistema AgileFlow, estrutura de pastas, conceitos-chave e todos os comandos disponíveis.
+
+## Início rápido
+
+```bash
+/agileflow:help
+```
+
+Mostra a visão geral completa do sistema AgileFlow sem a necessidade de argumentos.
+
+## Parâmetros
+
+Este comando não aceita parâmetros – ele exibe automaticamente a visão geral completa do sistema.
+
+## O que ele exibe
+
+O comando help fornece uma visão geral em uma tela de:
+
+### 1. Mapa de pastas
+Mostra a estrutura da documentação e o que fica onde:
+
+<FileTree>
+  <Folder name="docs">
+    <Folder name="00-meta" />
+    <Folder name="01-brainstorming" />
+    <Folder name="02-practices" />
+    <Folder name="03-decisions" />
+    <Folder name="04-architecture" />
+    <Folder name="05-epics" />
+    <Folder name="06-stories" />
+    <Folder name="07-testing" />
+    <Folder name="08-project" />
+    <Folder name="09-agents" />
+    <Folder name="10-research" />
+  </Folder>
+</FileTree>
+
+### 2. Conceitos Básicos
+Explica os principais conceitos do AgileFlow:
+- **Épicos**: grandes recursos divididos em histórias
+- **Histórias**: itens de trabalho individuais com critérios de aceitação
+- **ADRs**:Registros de decisões de arquitetura que documentam decisões de design
+- **status.json**: arquivo central de rastreamento de status com o progresso da história
+- **bus/log.jsonl**: log de comunicação do agente
+
+### 3. Fluxo de trabalho diário
+Descreve o fluxo de desenvolvimento típico:
+1. Escolha a história em status.json
+2. Implementar os critérios de aceitação
+3. Escreva e execute testes
+4. Crie uma solicitação pull
+5. Atualizar o status da história
+
+**Limite de WIP**: Máximo de 2 histórias por agente por vez.
+
+### 4. Todos os comandos disponíveis
+Lista mais de 40 comandos AgileFlow organizados por categoria:
+- **Planejamento**: épico, história, sprint, dependências, automático
+- **Rastreamento**: status, quadro, bloqueadores, métricas, velocidade
+- **Desenvolvimento**: cuidar, verificar, revisar, relações públicas, impacto
+- **Operações**: ci, implantação, changelog, pacotes, testes
+- **Documentação**: adr, docs, readme-sync, pesquisa, contexto
+- **Colaboração**: atribuir, transferir, atualizar, retro, feedback
+- **Avançado**: multiespecialista, agente, configuração, diagnóstico, validação de experiência
+
+## Exemplo de saída
+
+```text
+========================================
+AGILEFLOW SYSTEM OVERVIEW
+========================================
+
+📁 FOLDER MAP
+├── 00-meta/          Metadata, config
+├── 01-brainstorming/ Ideas & proposals
+├── 02-practices/     Your practices
+├── 03-decisions/     Architecture decisions
+├── 04-architecture/  System design docs
+├── 05-epics/         Feature epics
+├── 06-stories/       User stories
+├── 07-testing/       Test documentation
+├── 08-project/       Project management
+├── 09-agents/        Status & comms
+└── 10-research/      Research notes
+
+📊 KEY CONCEPTS
+- Epics: Large features (EP-0001)
+- Stories: Individual work (US-0001)
+- ADRs: Design decisions (ADR-0001)
+- status.json: Progress tracking
+- bus/log.jsonl: Agent communication
+
+⚙️ DAILY WORKFLOW
+1. Pick story from status.json
+2. Implement to acceptance criteria
+3. Write and run tests
+4. Create pull request
+5. Update story status
+⚠️ WIP Limit: Max 2 stories/agent
+
+📋 COMMANDS (40+)
+
+PLANNING
+  /epic        Create feature epic with stories
+  /story       Create user story with AC
+  /sprint      Data-driven sprint planning
+  /deps        Visualize dependency graph
+  /auto        Auto-generate stories from spec
+
+TRACKING
+  /status      Update story status
+  /board       Visual kanban board
+  /blockers    Track and resolve blockers
+  /metrics     Analytics dashboard
+  /velocity    Track velocity and forecast
+
+DEVELOPMENT
+  /babysit     Interactive mentor
+  /verify      Run tests and update status
+  /review      AI-powered code review
+  /pr          Generate PR description
+  /impact      Analyze change impact
+
+[... more commands ...]
+
+========================================
+```
+
+## Padrões de uso
+
+Utilize a ajudacomando quando:
+- **Novo no AgileFlow**: obtenha uma visão geral completa do sistema
+- **Esqueci um comando**: Referência rápida de comandos
+- **Membros da equipe de integração**: explica a estrutura do sistema
+- **Precisa de referência rápida**: visão geral de tudo em uma tela
+
+## Categorias de Comando
+
+### Comandos de planejamento
+Criar e organizar o trabalho:
+- __NOTRASLATE_4__ - Crie épicos com histórias
+- __NOTRASLATE_5__ - Crie histórias individuais
+- __NOTRASLATE_6__ - Planejamento de sprint com previsão
+- __NOTRASLATE_7__ - Visualização de dependência
+- __NOTRASLATE_8__ - Gerar histórias automaticamente
+
+### Comandos de rastreamento
+Monitore o progresso:
+- __NOTRASLATE_9__ - Atualizar status da história
+- __NOTRASLATE_10__ - Visualização do quadro Kanban
+- __NOTRASLATE_11__ - Rastreamento do bloqueador
+- `metrics` - Análise
+- __NOTRASLATE_13__ - Rastreamento de velocidade
+
+### Comandos de Desenvolvimento
+Implementar recursos:
+- __NOTRASLATE_14__ - Mentor interativo
+- __NOTRASLATE_15__ - Executor de teste
+- `review` - Revisão de código
+- `pr` - gerador de relações públicas
+- `impact`- Análise de impacto
+
+### Comandos de Operações
+DevOps e lançamentos:
+- __NOTRASLATE_19__ - Configuração de CI/CD
+- __NOTRASLATE_20__ - Pipeline de implantação
+- __NOTRASLATE_21__ - Registro de alterações automático
+- __NOTRASLATE_22__ - Gerenciamento de dependências
+- __NOTRASLATE_23__ - Infraestrutura de teste
+
+### Comandos de documentação
+Manter documentos:
+- __NOTRASLATE_24__ - Decisões de arquitetura
+- __NOTRASLATE_25__ - Sincronização de documentos
+- `readme-sync` - sincronização README
+- __NOTRASLATE_27__ - Notas de pesquisa
+- __NOTRASLATE_28__ - Exportação de contexto
+
+### Comandos de colaboração
+Coordenação de equipe:
+- __NOTRASLATE_29__ - Atribuir histórias
+- __NOTRASLATE_30__ - Transferência de documentos
+- __NOTRASLATE_31__ - Relatórios de progresso
+- `retro` - Retrospectivas
+- __NOTRASLATE_33__ - Colete comentários
+
+### Comandos Avançados
+Tarefas complexas:
+- __NOTRASLATE_34__ - Implante vários especialistas
+- __NOTRASLATE_35__ - Agentes integrados
+- __NOTRASLATE_36__ - Configurar recursos
+- __NOTRASLATE_37__ - Diagnóstico do sistema
+- `validate-expertise` - Validar experiênciatempo
+
+## Limite de WIP
+
+AgileFlow impõe um **máximo de 2 histórias por agente** para:
+- Reduza a troca de contexto
+- Melhorar o foco e a qualidade
+- Permitir uma melhor colaboração
+- Evitar gargalos
+
+Verifique __NOTRASLATE_39__ para ver as contagens de WIP atuais.
+
+## Exemplo de fluxo de trabalho diário
+
+```text
+1. CHECK STATUS
+   /status --filter=assigned
+
+2. PICK NEXT STORY
+   Story: US-0042 (3 points)
+   AC: Write unit tests for auth module
+
+3. IMPLEMENT
+   - Create test file
+   - Write test cases
+   - Run tests locally
+
+4. VERIFY
+   /verify STORY=US-0042
+
+5. CREATE PR
+   /pr STORY=US-0042
+
+6. UPDATE STATUS
+   /status STORY=US-0042 STATUS=in-review
+```
+
+## Encontrando comandos específicos
+
+Se precisar de ajuda com um comando específico:
+
+__NOTRADUZIR_3__
+
+Ou visite a documentação dos comandos para obter guias detalhados sobre cada comando.
+
+## Comandos Relacionados
+
+- [`/story`](/commands/story) - Criar histórias de usuários
+- [`/epic`](/commands/epic) - Crie épicos
+- [__NOTRASLATE_42____NOTRASLATE_63__ - Atualizar status da história
+- [`/board`](/commands/board) - Ver quadro kanban
+- [`/diagnose`__NOTRASLATE_65__ - Diagnóstico do sistema
+- [`/configure`__NOTRASLATE_66__ - Configurar recursos

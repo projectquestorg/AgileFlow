@@ -1,0 +1,267 @@
+---
+title: Conception
+description: Spécialiste de la conception pour les systèmes de conception UI/UX, la conception visuelle, les modèles de conception, la documentation de conception et le développement axé sur la conception.
+---
+# Spécialiste de la conception
+
+AG-DESIGN crée et gère des systèmes de conception, des spécifications de composants, des jetons de conception et garantit une conception axée sur l'accessibilité pour tous les produits.
+
+## Capacités
+
+- **Création de systèmes de conception** : jetons de conception, bibliothèque de composants, modèles de conception
+- **Spécifications des composants** : spécifications complètes avec états, variantes, accessoires, accessibilité
+- **Documentation de conception** : guides de transfert de la conception au code, spécifications des composants
+- **Conception axée sur l'accessibilité** : WCAG AA minimum, AAA préféré
+- **Design Tokens** : Couleurs, typographie, espacement, ombres, animations (source unique de vérité)
+- **Audits de cohérence** : garantir l'utilisation du système de conception pour tous les produits
+- **Design System Versioning** : versioning sémantique, gestion du changelog
+
+## Quand l'utiliser
+
+Utilisez AG-DESIGN lorsque :
+
+- Créer ou maintenir un système de conception
+- Concevoir de nouveaux composants ou fonctionnalités d'interface utilisateur
+- Documenter les spécifications des composants pour les développeurs
+- Réalisation d'audits de cohérence de conception
+- Assurer la conformité en matière d'accessibilité (WCAG AA/AAA)- Définition des jetons de conception et des directives
+- Création de la documentation de transfert de la conception au code
+
+## Comment ça marche
+
+1. **Chargement du contexte** : lit le fichier d'expertise et l'état actuel du système de conception
+2. **Analyse de conception** : examine les composants et les jetons nécessaires
+3. **Spécification** : crée des spécifications complètes de composants avec tous les états et variantes
+4. **Documentation** : crée des jetons de conception et des guides de transfert de conception vers code
+5. **Examen d'accessibilité** : Audits de conformité aux WCAG AA/AAA
+6. **Contrôle de cohérence** : vérifie que l'utilisation du système de conception est cohérente
+7. **Coordination** : met à jour status.json et se coordonne avec AG-UI sur la mise en œuvre
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "I need to design a new Button component with multiple variants"
+
+# AG-DESIGN will:
+# 1. Define Button component purpose and use cases
+# 2. Create full specification (states, variants, props, accessibility)
+# 3. Define design tokens (colors, typography, spacing)
+# 4. Create design-to-code handoff guide
+# 5. Conduct accessibility audit (contrast, focus, keyboard)
+# 6. Provide specs to AG-UI for implementation
+```
+
+## Comportements clés
+
+- **L'accessibilité d'abord** : WCAG AA minimum, AAA préféré pour toutes les conceptions
+- **Entièrement spécifié** : chaque composant a des spécifications complètes (tous les états, variantes)
+- **Basé sur des jetons** : les couleurs, la typographie et l'espacement utilisent des jetons de conception (non codés en dur)
+- **Implementation-Aware** : les conceptions sont réalisables à mettre en œuvre
+- **Axé sur la cohérence** : L'ensemble du système de conception est cohérent et cohérent
+- **Documentation** : toutes les conceptions documentées pour être transmises aux développeurs
+
+## Outils disponibles
+
+- Lire, écrire, modifier, Bash, Glob, Grep
+- Accès à Session Harness pour vérification
+
+## Jetons de conception
+
+**Couleurs** :
+- Primaire (couleur de l'action principale)
+- Secondaire (actions de soutien)
+- Accent (faits saillants)
+- Couleurs d'état (rouge d'erreur, jaune d'avertissement, vert de réussite, bleu d'information)
+- Gris neutres (fonds, bordures)
+
+**Typographie** :
+- Familles de polices (titre, corps, monospace)
+- Tailles de police (échelle : 12px, 14px, 16px, 18px, 20px, 24px, 32px)
+- Poids des polices (400, 500, 600, 700)
+- Hauteurs de ligne (1,2, 1,5, 1,8)
+
+**Espacement** :
+- Échelle : 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+- Utilisé pour le rembourrage, la marge, les espaces
+
+**Autres jetons** :
+- Ombres (niveaux d'élévation 0-24)
+- Bordures (rayon de bordure, largeurs, styles)
+- Animations (durées, easing)
+
+## Spécifications des composants
+
+**Les spécifications complètes comprennent** :
+- Nom et objectif du composant
+- États (par défaut, survol, actif, désactivé,chargement, erreur)
+- Variantes (tailles, couleurs, combinaisons)
+- Props/propriétés avec types et valeurs par défaut
+- Exigences d'accessibilité (ARIA, focus, clavier)
+- Directives d'utilisation (quand utiliser, quand ne pas)
+- Jetons de conception utilisés
+- Composants associés
+
+**Exemple de spécifications de composant** :
+```text
+## Button Component
+
+Purpose: Primary interaction element for user actions
+
+Props:
+- variant: "primary" | "secondary" | "danger" (default: "primary")
+- size: "sm" | "md" | "lg" (default: "md")
+- disabled: boolean (default: false)
+- loading: boolean (default: false)
+- icon: ReactNode (optional)
+- children: ReactNode (required)
+
+States:
+- Default: Uses primary color token
+- Hover: 10% darker, cursor pointer
+- Active: 20% darker
+- Disabled: 40% opacity, cursor not-allowed
+- Loading: Shows spinner, disabled state
+
+Accessibility:
+- Type: button
+- ARIA label if no text
+- Focus visible with 2px outline
+- Enter/Space triggers click
+- Tab order preserved
+
+Tokens Used:
+- Color: primary, secondary, danger
+- Typography: button-md (14px, 600 weight)
+- Spacing: md (16px)
+- Shadow: elevation-2
+
+Usage:
+- Primary actions (sign up, submit)
+- Secondary actions with variant="secondary"
+- Destructive actions with variant="danger"
+
+Do NOT Use For:
+- Navigation (use Link component)
+- Toggle states (use Toggle component)
+```
+
+## Documentation de conception
+
+**Structure des documents du système de conception** :
+- Présentation et philosophie
+- Documentation des tokens (couleurs, typographie, espacement)
+- Bibliothèque de composants (tous les composants avec spécifications)
+- Modèles de conception (modèles d'interaction courants)
+- À faire et à ne pas faire (directives d'utilisation)
+- Directives d'accessibilité
+- Guides d'implémentation (pour les développeurs)
+
+**Transfert de la conception au code** :
+- Spécifications du composant (comme ci-dessus)
+- Lien vers le fichier Figma/design
+- Jetons de conception requis
+- Directives du développeur
+- Liste de contrôle des tests
+- Liste de contrôle d'accessibilité
+
+## Accessibilité (WCAG AA/AAA)
+
+**WCAG AA (minimum)** :
+- Contraste des couleurs ≥4,5:1 pour le texte
+- Contraste des couleurs ≥3:1 pour les composants de l'interface utilisateur
+- Focus sur les indicateurs visibles (contour ≥2px)
+- Clavier accessible (all éléments interactifs)
+- Aucune information sur la couleur uniquement (utilisez des icônes, du texte, des motifs)
+- Le mouvement peut être désactivé (préfère le mouvement réduit)
+
+**WCAG AAA (Souhaité)** :
+- Contraste des couleurs ≥7:1 pour le texte
+- Contraste des couleurs ≥4,5:1 pour les composants de l'interface utilisateur
+- Indicateurs de mise au point améliorés
+- Des contrôles de mouvement plus granulaires
+
+**Liste de contrôle pour l'examen de la conception** :
+- Rapports de contraste vérifiés
+- États de focus conçus
+- Navigation au clavier possible
+- Aucune information sur la couleur uniquement
+- Compatible avec les lecteurs d'écran (implicite)
+- Mouvement réduit respecté
+
+## Gestion des versions du système de conception
+
+**Gestion de versions sémantique** :
+- MAJEUR : modifications majeures (suppression de composants, changements de spécifications importants)
+- MINEUR : Nouveaux composants ou améliorations ininterrompues
+- PATCH : corrections de bugs et mises à jour de la documentation
+
+**Journal des modifications par version** :
+- Composants ajoutés
+- Composants modifiés/mis à jour
+- Composants obsolètes
+- Correction de bugs
+- Changements de jetons
+
+## Audit de cohérence de conception
+
+**Vérifiez** :
+- Couleurs incohérentes (devraient utiliser des jetons)
+- Espacement incohérent (doit utiliser une échelle)
+- Typographie incohérentehy (devrait utiliser les polices système)
+- Comportement incohérent des composants
+- Accessibilité manquante (ARIA manquant, états de focus)
+- Utilisation cassée du système de conception
+
+**Exemple de sortie** :
+```text
+Design Consistency Audit Report
+- ✅ Colors: 100% token usage
+- ⚠️ Spacing: 2 components using custom values
+- ❌ Typography: 3 inconsistent font sizes
+- ⚠️ Accessibility: 5 missing ARIA labels
+- 🔧 Recommendations: [list]
+```
+
+## Liste de contrôle qualité
+
+Avant de terminer le travail de conception du marquage :
+
+- Tous les composants conçus avec des spécifications complètes
+- Jetons de design définis (couleurs, typographie, espacement)
+- Exigences d'accessibilité documentées (WCAG AA minimum)
+- Tous les états et variantes spécifiés
+- Documentation de conception terminée
+- Création d'un guide de transfert pour les développeurs
+- Cohérence du système de conception vérifiée
+- Contraste des couleurs vérifié (AA minimum)
+- Indicateurs de mise au point conçus
+- Navigation au clavier prise en compte
+- Tests réussis avec test_status : "passing"
+
+## Agents associés
+
+- [AG-UI](/agents/ui) - Implémentation des composants à partir des spécifications de conception
+- [AG-ACCESSIBILITY](/agents/accessibility) - Tests et validation d'accessibilité
+- [AG-PRODUCT](/agents/product) - Stratégie produit et collaboration en matière de conception
+
+## Messages de coordination
+
+AG-DESIGN se coordonne avec d'autres teams :
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-DESIGN",
+  "type": "status",
+  "text": "New Button component design spec created and ready for implementation"
+}
+```
+
+## Commandes barre oblique
+
+- `/agileflow:research:ask TOPIC=...` - Meilleures pratiques du système de conception de recherche
+- `/agileflow:ai-code-review` – Vérifier que les spécifications de conception sont complètes.
+- `/agileflow:adr-new` - Décisions de conception de documents
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de l'histoire

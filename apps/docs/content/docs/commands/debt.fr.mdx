@@ -1,0 +1,319 @@
+---
+title: /dette
+description: Suivre et prioriser les éléments techniques de la dette
+---
+# /debt
+
+Suivez et visualisez la dette technique dans la base de code. Identifiez, catégorisez et hiérarchisez les travaux de refactorisation grâce à une notation basée sur les données.
+
+## Démarrage rapide
+
+```bash
+/agileflow:debt
+```
+
+Exécute une analyse rapide et génère un rapport de dette avec les paramètres par défaut.
+
+Or with custom options:
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=report THRESHOLD=medium
+```
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `SCAN` | Non | `quick` | Profondeur d'analyse : `quick` (zones signalées uniquement) ou `full` (base de code entière) |
+| `OUTPUT` | Non | `report` | Type de sortie : `report`, `stories` ou `both` |
+| `THRESHOLD` | Non | `medium` | Gravité minimale : `high`, `medium` ou `low` |
+
+## What It Detects
+
+Le scanner de dette identifie plusieurs types de dette technique :
+
+### Code Quality Signals
+- Commentaires TODO/FIXME/HACK
+- Fonctions longues (>50 lignes)
+- Complexe cyclomatique élevéville (>10)
+- Blocs de code dupliqués
+- Fichiers volumineux (>500 lignes)
+- Nidification profonde (>4 niveaux)
+- Objets divins (> 10 méthodes)
+- Faible couverture des tests (moins de 70 %)
+
+### Dette basée sur une histoire
+Recherche les histoires marquées avec `tech-debt: true` ou avec « refactor » ou « cleanup » dans le titre.
+
+### Dette architecturale
+Vérifie les ADR pour les décisions obsolètes ou les conséquences négatives documentées.
+
+### Analyse de l'historique Git
+- Fichiers à fort taux de désabonnement (fréquemment modifiés)
+- Fichiers avec de nombreux auteurs (propriété peu claire)
+- Anciennes branches pas encore fusionnées
+
+### Sortie Linter
+Analyse la sortie d'ESLint, TypeScript, Pylint, SonarQube et les rapports de couverture.
+
+## Catégories de dettes
+
+La dette technique est organisée en sept catégories :
+
+| Catégorie | Descriptif | Exemples |
+|--------------|-------------|--------------|
+| **Architecture** | Mauvaises abstractions, couplages étroits, modèles manquants | Couplage de services, dépendances circulaires |
+| **Qualité du code** | Duplication, complexité, style incohérent | Copier-coller du code, haute complexité |
+| **Documentations** |Missing, outdated, or incomplete docs | Undocumented APIs, stale guides |
+| **Tests** | Low coverage, flaky tests, missing E2E | No unit tests, missing integration tests |
+| **Security** | Outdated deps, exposed secrets, weak auth | CVE-vulnerable packages, hardcoded tokens |
+| **Performance** | N+1 queries, memory leaks, slow ops | Inefficient algorithms, memory bloat |
+| **Dependencies** | Outdated packages, unmaintained libraries | Years-old libraries, abandoned projects |
+
+## Scoring Formula
+
+Each debt item receives a score from 0-100:
+
+```text
+Score = (Severity × Scope × Pain) / 10
+
+Severity: 1-10 (impact level)
+Scope:    1-10 (files affected)
+Pain:     1-10 (developer frustration)
+```
+
+### Severity Levels
+- **Faible** (1-3) : problème mineur, ne bloque rien
+- **Moyen** (4-6) : problème modéré, ralentit le développement
+- **Élevé** (7-9) : problème important, bloque des fonctionnalités ou provoque des bugs
+- **Critique** (10) : Urgent, provoque des problèmes de production ou bloque le travail
+
+## Exemples
+
+### Quick Scan (Default)
+
+```bash
+/agileflow:debt
+```
+
+Scanne les zones marquées TODO/FIXME et les histoires étiquetées. Generates report.
+
+### Full Codebase Scan
+
+```bash
+/agileflow:debt SCAN=full
+```
+
+Analyse approfondie de l'intégralité de la base de code, y compris l'analyse de la complexité, la détection des duplications et l'analyse de la couverture.
+
+### Générez des histoires pour les dettes critiques
+
+```bash
+/agileflow:debt SCAN=quick OUTPUT=stories THRESHOLD=high
+```
+
+Recherche les éléments de dette critiques et crée éventuellement des histoires pour eux.
+
+### Générer à la fois un rapport et des histoires
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=both THRESHOLD=medium
+```
+
+Crée un rapport sur la dette et génère des histoires pour les éléments de dette d'une gravité supérieure à moyenne.
+
+## Exemple de sortie
+
+```markdown
+# Technical Debt Report
+
+**Generated**: 2025-12-24T10:30:00Z
+**Total Debt Items**: 42
+**Critical**: 3 | **High**: 12 | **Medium**: 18 | **Low**: 9
+**Total Estimated Effort**: 48 days
+
+---
+
+## Critical Debt (Score >80)
+
+### 1. Auth service tightly coupled to database
+**Type**: Architecture | **Score**: 87
+**Impact**: Blocks US-0055 (Add OAuth), US-0061 (Add 2FA)
+**Files**: src/services/auth.ts (287 lines, complexity 18)
+**Estimate**: 3-5 days
+**ADR**: ADR-0003 recommends service layer separation (not implemented)
+
+### 2. Missing integration tests for payment flow
+**Type**: Testing | **Score**: 85
+**Impact**: High risk for regressions, blocking production
+**Files**: src/api/payments/*.ts (12 files, 0% coverage)
+**Last Incident**: 2025-09-15 (payment processing bug)
+**Estimate**: 2-3 days
+
+---
+
+## High Debt (Score 60-80)
+[12 items...]
+
+---
+
+## Summary by Category
+
+| Category | Count | Avg Score | Estimated Effort |
+|----------|-------|-----------|------------------|
+| Architecture | 8 | 72 | 15 days |
+| Code Quality | 15 | 58 | 8 days |
+| Testing | 10 | 65 | 12 days |
+| Security | 3 | 78 | 5 days |
+| Performance | 4 | 61 | 6 days |
+
+---
+
+## Debt Heatmap (Most Problematic Files)
+
+- src/services/auth.ts: 3 items (architecture, complexity, coupling)
+- src/api/payments/process.ts: 2 items (no tests, deprecated API)
+- src/utils/legacy.ts: 2 items (duplication, no docs)
+
+---
+
+## Recommendations
+
+1. **Immediate** (Critical): Address auth refactor and payment tests
+2. **This Sprint**: Tackle 3 high-severity items (by ROI)
+3. **Next Sprint**: Reserve 20% capacity for debt reduction
+4. **Ongoing**: Require tests for all new code (enforce in CI)
+```
+
+## Flux de travail
+
+Après avoir généré un rapport de dette, vous pouvez :
+
+### 1. Examinez le rapport
+Comprenez quelle dette existe et où elle se trouve.
+
+### 2. Générer des histoires (facultatif)
+```bash
+/agileflow:debt OUTPUT=stories
+```
+
+Crée des histoires pour les éléments de dette critiques avec :
+- Critères d'acceptation axés sur l'état "avant/après"
+- Analyse d'impact
+- Effort estimé
+- Références aux fonctionnalités concernées
+
+### 3. Enregistrer dans la documentation
+```bash
+/agileflow:debt OUTPUT=report
+```
+
+Enregistre le rapport dans `docs/08-project/tech-debt-YYYYMMDD.md` et met à jour le README avec un lien.
+
+### 4. Créer une épopée de dette
+S'il existe de nombreux éléments critiques, crée une épopée :
+- EP-XXXX : Réduction de la dette techniquen
+- Histoires pour les 5 principaux éléments critiques
+- Suit les progrès de la réduction de la dette
+
+## Utilisation des informations sur la dette
+
+### Planifier des sprints
+Réservez 10 à 20 % de chaque sprint pour la réduction de la dette :
+
+```bash
+/agileflow:sprint --include-debt --debt-threshold=high
+```
+
+### Rétrospectives
+Suivre la réduction de la dette dans les rétrospectives :
+
+```bash
+/agileflow:retro --analyze-debt
+```
+
+### Tableau de bord
+Créez un tableau de bord de la dette qui se met à jour chaque semaine :
+
+```text
+docs/08-project/debt-dashboard.md
+
+# Debt Dashboard (Weekly)
+
+Week 52: 42 items (↑ from 39)
+Week 51: 39 items (↓ from 43)
+
+Critical: 3 items (target: reduce to 1 this sprint)
+```
+
+## meilleures pratiques
+
+1. **Soyez honnête à propos des estimations** : optez pour le haut
+2. **Lien vers les fonctionnalités** : donner la priorité aux nouveaux travaux bloquant la dette
+3. **Célébrez les réductions** : reconnaissez le remboursement de la dette dans les rétros
+4. **Empêcher l'accumulation** : appliquer les tests dans CI pour le nouveau code
+5. **Réexaminer régulièrement** : effectuez une analyse de la dette mensuellement ou trimestriellement
+
+## Prévention de la dette
+
+Ajoutez une révision de la dette à votre CI/CD :
+
+```yaml
+# Run weekly technical debt scan
+- cron: '0 0 * * 1'  # Every Monday
+  name: Technical debt scan
+  run: /agileflow:debt SCAN=full OUTPUT=report
+```
+
+## Intégration avec le développement
+
+Lors de la mise en œuvre de fonctionnalités, vérifiez si elles créent de la dette :
+
+```bash
+# Before completing story
+/agileflow:debt SCAN=quick THRESHOLD=high
+
+# If debt created, track in story
+/agileflow:status STORY=US-0042 TECH_DEBT=true DEBT_SCORE=42
+```
+
+## Modèle d'histoire pour la dette
+
+Lors de la création d'histoires pour les éléments de dette :
+
+```markdown
+---
+story_id: US-XXXX
+title: Refactor auth service to separate concerns
+type: tech-debt
+debt_score: 87
+estimate: 3d
+---
+
+## Current State (Before)
+- auth.ts contains DB queries, business logic, and HTTP handling
+- 287 lines, complexity 18
+- Hard to test, hard to extend
+
+## Desired State (After)
+- Clear separation: AuthService, AuthRepository, AuthController
+- Each <100 lines, complexity <8
+- 80%+ test coverage
+- Enables US-0055 (OAuth)
+
+## Acceptance Criteria
+- [ ] AuthRepository handles all DB operations
+- [ ] AuthService contains only business logic
+- [ ] AuthController handles only HTTP/routing
+- [ ] Tests cover each layer independently
+- [ ] All existing auth tests still pass
+```
+
+## Commandes associées
+
+- [`/diagnose`](/commands/diagnose) - Systèmetem health diagnostics
+- [`/metrics`](/commands/metrics) - Analytics and metrics dashboard
+- [`/story`](/commands/story) - Create stories for debt items
+- [`/epic`](/commands/epic) - Create debt reduction epic
+- [`/retro`](/commands/retro) - Include debt analysis in retrospectives
+- [`/board`](/commands/board) - View debt-related stories on board

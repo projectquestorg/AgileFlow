@@ -1,0 +1,216 @@
+---
+title: Pruebas
+description: Especialista en pruebas para estrategia de prueba, patrones de prueba, optimización de cobertura y diseño integral de conjuntos de pruebas.
+---
+# Agente de prueba
+
+El agente de pruebas (AG-TESTING) es un experto especializado en control de calidad que diseña estrategias de prueba integrales, elimina los antipatrones de prueba y optimiza la cobertura de las pruebas. A diferencia de la configuración de la infraestructura de CI, este agente se centra en las preguntas de "qué probar" y "cómo probarlo".
+
+## Capacidades
+
+- **Diseño de estrategia de prueba**: cree planes de prueba integrales que abarquen pruebas unitarias, de integración y E2E.
+- **Optimización de cobertura**: analiza la cobertura del código e identifica brechas en rutas críticas
+- **Prueba de detección de antipatrones**: identifique y elimine pruebas inestables, lentas y quebradizas
+- **Infraestructura de prueba**: cree dispositivos de prueba, fábricas y funciones auxiliares
+- **Análisis de cobertura**: mide e informa métricas de cobertura con recomendaciones prácticas
+- **Documentación de patrones de prueba**: documente patrones de prueba reutilizables y mejores prácticas
+- **Pruebas de rendimiento**: diseñar y ejecutar puntos de referencia de rendimiento
+- **Pruebas de mutación**: prueba las propias pruebas para garantizar la calidad.## Cuándo utilizar
+
+Utilice el agente de prueba cuando:
+
+- Iniciar una nueva función y es necesario definir qué necesita probarse
+- La cobertura actual de las pruebas es inferior al 70 % y necesita mejoras.
+- Las pruebas son inestables (fallas intermitentes) o lentas (>1 segundo cada una)
+- Necesidad de diseñar instalaciones de prueba o fábricas para datos de prueba complejos
+- Configuración de infraestructura de pruebas automatizadas.
+- Creación de ADR para decisiones de prueba.
+- Implementación de conjuntos de pruebas integrales para rutas críticas.
+
+## Cómo funciona
+
+1. **Carga de conocimientos**: el agente lee el archivo de experiencia y el estado de prueba del proyecto
+2. **Revisión de la historia**: el agente analiza la historia para determinar los requisitos de capacidad de prueba
+3. **Planificación de pruebas**: el agente diseña casos de prueba (camino feliz, casos de error, casos extremos)
+4. **Configuración de infraestructura**: el agente crea dispositivos de prueba, simulacros y ayudantes
+5. **Implementación de pruebas**: el agente escribe pruebas siguiendo el patrón AAA (Arrange-Act-Assert)
+6. **Medición de cobertura**: El agente mide la cobertura e identifica brechas
+7. **Eliminación antipatrones**: el agente identifica y repara los flpruebas blandas/lentas/quebradizas
+8. **Verificación**: el agente ejecuta `/agileflow:verify` para garantizar que todas las pruebas pasen
+9. **Coordinación**: El agente actualiza status.json y se comunica a través de bus/log.jsonl
+
+## Ejemplo
+
+```bash
+# Via babysit - identify testing work
+/agileflow:babysit
+> "We need comprehensive testing for the payment processing feature"
+
+# Agent output:
+# Test Strategy Created:
+# - Unit tests: Payment validation, transaction formatting (80% coverage)
+# - Integration tests: Database saves, external API calls (15% coverage)
+# - E2E tests: Complete payment workflow (5% coverage)
+# - Coverage target: 85% critical path
+# - Expected test count: 47 tests
+# - Estimated time: 4 hours
+```
+
+## Comportamientos clave
+
+- **Patrón AAA**: todas las pruebas siguen la estructura Organizar-Actuar-Afirmar para mayor claridad
+- **Aislamiento de prueba**: las pruebas unitarias simulan dependencias; Las pruebas de integración utilizan dependencias reales.
+- **Centrado en el comportamiento**: las pruebas validan el comportamiento, no los detalles de implementación.
+- **Ejecución rápida**: las pruebas unitarias se ejecutan en milisegundos; suite completa en minutos
+- **Nombre claro**: los nombres de las pruebas describen exactamente lo que se está probando
+- **Umbrales de cobertura**: 70% mínimo, 80%+ para rutas críticas (100% para autenticación/pago)
+- **Sin pruebas inestables**: las fallas intermitentes son señales de alerta; Se elimina la aleatoriedad y el tiempo.
+- **Conciencia del rendimiento**: las pruebas no son más lentas que el código que prueban.
+- **Preservación del contexto**: utiliza compact_context (prioridad: alta) para mantener el enfoque de las pruebas durante conversaciones largas, preservandoObjetivos de cobertura y detección de antipatrones mediante compactación del contexto.
+
+## Configuración de contexto compacto
+
+El agente de pruebas utiliza compact_context de **alta prioridad** para garantizar que la cobertura y la calidad de las pruebas permanezcan enfocadas:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+    - "AAA PATTERN: All tests follow Arrange-Act-Assert structure"
+    - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+    - "NO FLAKY TESTS: Eliminate randomness, timing issues, intermittent failures"
+    - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+    - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+  state_fields:
+    - current_story
+    - coverage_percentage
+    - critical_paths_count
+    - flaky_tests_found
+    - test_status_baseline
+```
+
+Esto garantiza que las reglas de prueba críticas (patrón AAA, mínimos de cobertura, prácticas de prueba anti-incorrectas) y el estado actual (brechas de cobertura, recuentos de pruebas inestables, estado de las pruebas de ruta crítica) permanezcan enfocados a través de la compactación del contexto.
+
+## Herramientas disponibles
+
+- Leer, escribir, editar (operaciones de archivos)
+- Bash (ejecutar comandos de prueba)
+- Glob (buscar archivos de prueba)
+- Grep (código de prueba de búsqueda)
+
+## Integración del arnés de sesión
+
+El agente de pruebas se integra con el arnés de sesión para garantizar la calidad:
+
+```text
+Pre-Implementation:
+├── Check environment.json exists
+├── Verify test_status: "passing" baseline
+└── Run /agileflow:session:resume
+
+During Implementation:
+├── Run tests incrementally
+├── Fix failures immediately
+└── Update test_status in real-time
+
+Post-Implementation:
+├── Run /agileflow:verify US-XXXX (must pass)
+├── Verify test_status: "passing"
+└── Mark story "in-review" ONLY if tests pass
+```
+
+## Categorías de prueba y objetivos
+
+| Categoría | Porcentaje | Velocidad | Alcance |
+|----------|-----------|-------|-------|
+| Pruebas unitarias | 80% | menos de 1 ms cada uno | Función única, dependencias burladas |
+| Pruebas de integración | 15% | Más lento | Múltiples componentes, dependencias reales |
+| Pruebas E2E| 5% | Muy lento | Flujos de trabajo de usuario completos |
+| Pruebas de contrato | 0-5% | Rápido | Validación del esquema API |
+
+## Lista de verificación de calidad
+
+Antes de marcar una historia como completa:
+
+- [ ] Cobertura de prueba ≥70% (rutas críticas 100%)
+- [] Todos los escenarios de camino feliz probados
+- [] Todos los escenarios de error probados
+- [] Casos extremos identificados y probados
+- [] Sin pruebas inestables (ejecutar 10 veces, todas pasan)
+- [] Sin pruebas lentas (cada prueba en menos de 1 segundo, conjunto completo en menos de 5 minutos)
+- [] Prueba el comportamiento de la prueba, no la implementación.
+- [] Los nombres de las pruebas describen claramente lo que se prueba
+- [ ] Dispositivos de prueba reutilizables y bien documentados
+- [ ] Informe de cobertura generado y revisado
+- [] test_status: "aprobado" verificado
+
+## Patrones de prueba comunes
+
+**Patrón AAA (Organizar-Actuar-Afirmar)**:
+```javascript
+describe('validateEmail', () => {
+  it('rejects invalid formats', () => {
+    // Arrange
+    const email = 'invalid@';
+
+    // Act
+    const result = validateEmail(email);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+});
+```
+
+**Accesorios de prueba (datos de prueba reutilizables)**:
+```javascript
+const validUser = { id: 1, email: 'user@example.com', name: 'John' };
+const invalidUser = { id: 2, email: 'invalid@', name: 'Jane' };
+```
+
+**Pruebas parametrizadas**:
+```javascript
+test.each([
+  ['valid@example.com', true],
+  ['invalid@', false],
+  ['no-at-sign.com', false],
+])('validates email %s', (email, expected) => {
+  expect(validateEmail(email)).toBe(expected);
+});
+```
+
+## Antipatrones a eliminar
+
+| Antipatrón | Problema | Arreglar |
+|--------------|---------|-----|
+| Pruebas escamosas | Fallos intermitentes, impredecibles | Eliminar la aleatoriedad,añadir esperas de condiciones |
+| Pruebas lentas | >1 segundo cada uno | Utilice simulacros, paralelice y optimice consultas |
+| Pruebas frágiles | Pausa en la refactorización | Comportamiento de prueba, no detalles de implementación |
+| Burlarse demasiado | Aislamiento poco realista | Pruebas unitarias de equilibrio y de integración |
+
+## Agentes relacionados
+
+- [`qa`](/agents/qa) - Estrategia de prueba y preparación para el lanzamiento (alcance diferente)
+- [`ci`](/agents/ci) - Infraestructura de prueba y configuración de canalización de CI
+- [`api`](/agents/api) - Pruebas de API y validación de contratos
+- [`ui`](/agents/ui) - Pruebas de componentes y pruebas de interacción del usuario
+- [`database`](/agents/database) - Pruebas de capa de datos y optimización de consultas
+
+## Coordinación
+
+El Agente de Pruebas coordina con otros agentes:
+
+- **AG-API**: asegúrese de que se prueben los casos de error de API
+- **AG-UI**: Coordinación de pruebas de componentes y E2E
+- **AG-DATABASE**: Prueba de capa de datos y rendimiento de consultas
+- **AG-CI**: Solicitar infraestructura de prueba (ejecución paralela, informes de cobertura)
+- **AG-QA**: alinear las métricas de calidad y los objetivos de cobertura de pruebas
+
+## Comandos de barra diagonal
+
+- `/agileflow:verify US-XXXX` - Ejecutar pruebas para una historia específica
+- `/agileflow:research:ask TOPIC=...` - Patrones de prueba de investigación
+- `/agileflow:ai-code-review` - Revisar el código de prueba para detectar antipatrones
+- `/agileflow:adr-new` - Decisiones de prueba de documentos
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia

@@ -1,0 +1,301 @@
+---
+title: /auto
+description: Gere histórias automaticamente a partir de PRDs, modelos ou especificações
+---
+# /automático
+
+Gere automaticamente histórias de usuários a partir de artefatos de produtos, como PRDs, modelos, especificações de API ou documentos de design. Economiza tempo dividindo os requisitos em histórias acionáveis.
+
+## Início rápido
+
+```bash
+/agileflow:auto SOURCE=<file-or-url> [EPIC=<EP-ID>] [AUTO_CREATE=no]
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `SOURCE` | Sim | - | Caminho para arquivo ou URL (PRD, maquete, especificação de API, diagrama de fluxo) |
+| `EPIC` | Não | Gerado automaticamente | Associe histórias a épicos existentes (por exemplo, __NOTRASLATE_12__) |
+| `OWNER` | Não | Detectado automaticamente | Proprietário padrão para histórias geradas (por exemplo, __NOTRASLATE_14__) |
+| `AUTO_CREATE` | Não | `no` | `yes` para criar imediatamente, `no` para visualização primeiro |
+
+## Exemplos
+
+### Visualizar histórias do PRD
+
+```bash
+/agileflow:auto SOURCE=docs/requirements/auth-prd.md
+```
+
+Lê o documento de requisitos de autenticação e gera uma visualização da história sem criar arquivos.
+
+### Gerar a partir da especificação da API
+
+```bash
+/agileflow:auto SOURCE=docs/api/openapi.json OWNER=AG-API
+```
+
+Extraatua em endpoints da especificação OpenAPI/Swagger e gera uma história por endpoint.
+
+### Gerar a partir do modelo Figma
+
+__NOTRADUZIR_3__
+
+OCR é o design de maquete para identificar telas, formulários e interações e, em seguida, gera histórias de interface do usuário.
+
+### Gere e crie imediatamente
+
+__NÃOTRADUZIR_4__
+
+Gera histórias e cria todos os arquivos imediatamente (pule a etapa de visualização).
+
+## Tipos de fontes compatíveis
+
+### Documento de Requisitos do Produto (PRD)
+
+**Formatos**: `.md`, `.docx`, `.pdf`, `.txt`
+
+**Extratos**:
+- Descrições de recursos
+- Personas de usuários e casos de uso
+- Critérios e métricas de sucesso
+- Casos extremos e cenários de erro
+- Requisitos não funcionais
+
+**Exemplo**:
+__NOTRADUZIR_5__
+
+**Histórias geradas**: 4 a 6 histórias cobrindo registro, login, redefinição de senha, OAuth e gerenciamento de sessão.
+
+### Documentação da API
+
+**Formatos**: OpenAPI/Swagger JSON, documentos da API __NOTRASLATE_23__
+
+**Extratos**:
+- Endpoints (método HTTP + caminho)
+- Esquemas de solicitação/resposta
+- Autênticarequisitos de operação
+- Códigos de erro e casos extremos
+- Limitação de taxas e cotas
+
+**Exemplo OpenAPI**:
+__NOTRADUZIR_6__
+
+**Histórias geradas**: uma por endpoint com critérios de aceitação do esquema.
+
+### Modelos e designs de UI
+
+**Formatos**: Figma URL, `.png`/`.jpg` (com OCR), especificação de design `.md`
+
+**Extratos**:
+- Layouts e componentes de tela
+- Interações e fluxos do usuário
+- Campos de formulário e validação
+- Navegação e links
+- Projete o uso do sistema
+
+**Exemplo**: a captura de tela do formulário de login gera histórias para componente de formulário, validação, mensagens de erro e link de redefinição de senha.
+
+### Diagramas de fluxo do usuário
+
+**Formatos**: Mermaid `.mmd`, PlantUML, diagramas de fluxo (`.png` com OCR)
+
+**Extratos**:
+- Etapas na jornada do usuário
+- Pontos de decisão e ramificações
+- Caminhos alternativos
+- Cenários de sucesso e fracasso
+
+**Exemplo**: o diagrama de fluxo de autenticação gera histórias para cada etapa.
+
+## Processo de geração de histórias
+
+### Etapa 1: Analisar a fonte
+- Identificar documentotipo
+- Extrair requisitos e recursos
+- Requisitos relacionados ao grupo
+- Analisar especificações técnicas
+
+### Etapa 2: recursos do grupo
+- Requisitos relacionados tornam-se uma história
+- Evite duplicação de histórias
+- Garantir que as histórias sejam independentes
+- Verifique os critérios de INVESTIMENTO
+
+### Etapa 3: gerar histórias
+- Crie um título a partir da descrição do recurso
+- Escreva os critérios de aceitação no formato Dado/Quando/Então
+- Estimativa de esforço (0,5d, 1d, 1,5d, 2d)
+- Atribuir proprietário apropriado
+- Identificar dependências
+
+### Etapa 4: Mostrar visualização
+- Exibir todas as histórias geradas
+- Mostrar estimativas e proprietários
+- Mostrar contagem de histórias e esforço total
+- Peça aprovação antes de criar
+
+### Etapa 5: Criar arquivos (se aprovado)
+- Crie épico (se não for fornecido)
+- Crie arquivos de histórias com modelos
+- Criar stubs de teste
+- Atualizar status.json
+- Anexar a bus/log.jsonl
+
+## Regras de geração de histórias (INVEST)
+
+As histórias geradas seguem os critérios do INVEST:
+
+| Critério | Descrição |
+|-----------|------------|
+| **Independente** | Pode ser completado sem outras histórias |
+| **Negociável** | Os detalhes podem ser ajustados após a criação |
+| **Valioso** | Oferece valor ao usuário ou à equipe |
+| **Estimável** | Pode ser dimensionado (0,5d-2d) |
+| **Pequeno** | Concluível em um sprint |
+| **Testável** | Possui critérios de aceitação claros |
+
+Histórias >2d são divididas em histórias menores.
+
+## Diretrizes de estimativa
+
+| Estimativa | Quando usar |
+|----------|------------|
+| `0.5d` | CRUD simples, campo de formulário, componente básico |
+| `1d` | Standard feature, moderate complexity |
+| `1.5d` | Lógica complexa, validações múltiplas, integração |
+| `2d` | Refatorador significativo ou componente principal |
+| `>2d` | A história será dividida em histórias menores |
+
+## Exemplo: PRD para histórias
+
+### Entrada PRD
+
+__NÃOTRADUZIR_7__
+
+### Visualização de histórias geradas
+
+__NÃOTRADUZIR_8__
+
+## Geração de Critérios de Aceitação
+
+As histórias são geradas no formato Dado/Quando/Então:
+
+__NOTRADUZIR_9__
+
+## Arquivos de saída
+
+O comando cria:
+
+1. **Arquivo épico** (`docs/05-epics/EP-XXXX.md`)
+   -Título e gol épicos
+   - Referência do documento fonte
+   - Lista de histórias infantis
+
+2. **Arquivos de história** (`docs/06-stories/EP-XXXX/US-XXXX.md`)
+   - Conteúdo gerado da fonte
+   - Critérios de aceitação
+   - Notas técnicas
+   - Estratégia de teste
+
+3. **Esboços de teste** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - Estrutura de teste alinhada com AC
+   - Espaços reservados para implementação de teste
+
+4. **Rastreamento de status** (`docs/09-agents/status.json`)
+   - Todas as histórias adicionadas com status: __NOTRASLATE_38__
+
+5. **Comunicação** (`docs/09-agents/bus/log.jsonl`)
+   - Evento de geração de história registrado
+
+## Fluxo de trabalho
+
+1. **Prepare o documento de origem** - Certifique-se de que o PRD/especificação esteja completo
+2. **Gerar visualização** - Execute `/auto` com `AUTO_CREATE=no`
+3. **Analise as histórias geradas** - Verifique a precisão e integridade
+4. **Ajuste se necessário** - Edite a visualização ou gere novamente com parâmetros diferentes
+5. **Crie histórias** - Execute com __NOTRASLATE_42__ ou aprove a visualização
+6. **Validar histórias** - Use __NOTRASLATE_43__ em histórias geradas
+7. **Planejar sprint** – Incluir histórias validadas em`/sprint`
+
+## Cenários Comuns
+
+### Cenário: API tem 15 endpoints
+
+**Problema**: muitas histórias (viola a regra de estimativa de 0,5d-2d)
+
+**Solução**: o comando agrupa automaticamente endpoints relacionados:
+- Endpoints para o mesmo recurso (GET, POST, PATCH, DELETE) → Uma história
+- Listar e detalhar endpoints → Uma história
+- Endpoints de autenticação → Uma história
+
+**Resultado**: 15 endpoints → 5-6 histórias
+
+### Cenário: PRD tem requisitos pouco claros
+
+**Problema**: as histórias geradas parecem vagas
+
+**Solução**:
+1. Esclareça primeiro o PRD com as partes interessadas
+2. Execute novamente __NOTRASLATE_45__ com fonte atualizada
+3. Ou edite manualmente as histórias geradas com __NOTRASLATE_46__
+
+### Cenário: as histórias geradas não correspondem à velocidade da equipe
+
+**Problema**: as estimativas parecem muito otimistas/pessimistas
+
+**Solução**:
+1. Revise histórias e ajuste estimativas
+2. Considere a velocidade histórica da equipe
+3. Execute __NOTRASLATE_47__ para entender a capacidade da equipe
+4. Divida histórias grandes em histórias menores
+
+## Lista de verificação de qualidade
+
+Antes de aprovar o armazenamento geradoies:
+
+- [] Todas as histórias têm critérios de aceitação claros
+- [] As histórias são independentes (sem dependências ocultas)
+- [] As estimativas são realistas (intervalo de 0,5d-2d)
+- [] Os critérios de aceitação usam o formato Dado/Quando/Então
+- [ ] As notas técnicas são precisas
+- [] As histórias cobrem os principais cenários (caminho feliz + casos extremos)
+- [] Nenhuma história é duplicada
+- [] O objetivo épico é claro e específico
+- [] As atribuições do proprietário são apropriadas
+
+## Integração com outros comandos
+
+- **Após a geração**: Use __NOTRASLATE_48__ para garantir a qualidade
+- **Antes do sprint**: Use __NOTRASLATE_49__ para selecionar histórias
+- **Para dependências**: Use __NOTRASLATE_50__ se as histórias tiverem relacionamentos
+- **Durante o desenvolvimento**: Use __NOTRASLATE_51__ para ajuda na implementação
+- **Para testes**: Use __NOTRASLATE_52__ para executar testes
+
+## Melhores práticas
+
+- **Comece com os requisitos** - Invista tempo em PRD ou especificações claras
+- **Analise histórias geradas** - Não aceite cegamente a geração de IA
+- **Validar antes do sprint** - Use __NOTRASLATE_53__ em todos os ghistórias geradas
+- **Requisitos relacionados ao grupo** - Épico mais focado = histórias melhores
+- **Seja específico na fonte** - Requisitos vagos → histórias vagas
+- **Considere dependências** - Revisão manual para dependências ocultas
+- **Estime de forma conservadora** - Adicione buffer para incógnitas
+
+## Limitações e considerações
+
+- **A IA pode interpretar mal** - Revise as histórias geradas para obter precisão
+- **O contexto é importante** - As histórias geradas podem não ter conhecimento do domínio
+- **As dependências são manuais** - Adicione dependências entre andares manualmente
+- **As estimativas variam de acordo com a equipe** - Ajuste com base na sua velocidade
+- **Detalhes técnicos** - Pode precisar de acréscimos manuais no contexto da arquitetura
+
+## Comandos Relacionados
+
+- [`/epic`](/commands/epic) - Crie épicos manualmente, se necessário
+- [`/story`](/commands/story) - Crie ou edite histórias individuais
+- [`/story-validate`__NOTRASLATE_61__ - Validar qualidade gerada
+- [__NOTRASLATE_57__](/commands/sprint) - Planeje sprints com histórias geradas
+- [`/deps`](/commands/deps) - Visualize dependências após geração

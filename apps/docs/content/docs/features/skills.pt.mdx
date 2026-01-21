@@ -1,0 +1,475 @@
+---
+title: Sistema de habilidades
+description: Crie, gerencie e melhore continuamente prompts de IA personalizados que aprendem com seu feedback
+---
+# Sistema de habilidades
+
+O sistema Skills permite criar e gerenciar prompts de IA personalizados que aprendem e melhoram com o tempo. As habilidades são modelos reutilizáveis ​​e baseados em pesquisas que combinam as melhores práticas do seu projeto, documentação externa e padrões de base de código em guias focados e acionáveis ​​para Claude.
+
+## Início rápido
+
+Crie sua primeira habilidade em 30 segundos:
+
+```bash
+/agileflow:skill:create
+```
+
+Responda a algumas perguntas sobre o que você precisa e Claude pesquisará as melhores práticas e gerará uma habilidade pronta para uso.
+
+Então use-o:
+
+```bash
+/agileflow:skill:list              # See all your skills
+/agileflow:skill:test my-skill     # Verify it works
+/agileflow:skill:upgrade my-skill  # Add learning capability
+```
+
+## O que são habilidades?
+
+Uma **habilidade** é um modelo de prompt estruturado que ensina Claude como lidar com tarefas específicas no contexto do seu projeto. As habilidades são:
+
+- **Apoiado em pesquisa** - Gerado a partir de documentos da web, documentação local e sua base de código
+- **Autoaperfeiçoamento** - Aprenda com suas correções e refine automaticamente
+- **Baseado em livro de receitas** - Vários fluxos de trabalho de casos de uso em uma única habilidade
+- **Integrável** - Pode incluir servidores Model Context Protocol (MCP) para acesso a ferramentas
+
+###Habilidades de exemplo
+
+Você pode criar habilidades para:
+
+- **Operações de banco de dados**: "Supabase Swift" - Como trabalhar com Supabase em seu aplicativo iOS
+- **Padrões de API**: "Clientes de API REST" - Práticas recomendadas para o padrão de integração de API do seu projeto
+- **Desenvolvimento de componentes**: "Reagir componentes com acessibilidade" - Como construir componentes seguindo seus padrões
+- **Implantação**: "GitHub Actions CI/CD" - O fluxo de trabalho de implantação e teste da sua equipe
+- **Experiência no domínio**: "Aprendizado de máquina com TensorFlow" - Práticas recomendadas específicas para seus projetos de ML
+
+## Conceitos Básicos
+
+### Estrutura de habilidades
+
+Cada habilidade contém:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file with activation triggers and instructions
+├── references.md         # Links to web docs, local docs, and code patterns
+├── cookbook/             # Per-use-case workflows
+│   ├── use-case-1.md
+│   └── use-case-2.md
+└── .mcp.json            # Optional MCP server configuration
+```
+
+### Como funcionam as habilidades
+
+1. **Ativação**: quando você pergunta a Claude sobre um tópico que corresponde aos gatilhos de uma habilidade, a habilidade é ativada
+2. **Execução**: Claude lê SKILL.md e segue as instruções
+3. **Aprendizado**: quando você corrige Claude, a habilidade aprende suas preferências
+4. **Evolução**: cada correção atualiza o arquivo de aprendizado, tornando a habilidade mais inteligente
+
+### Sistema de aprendizagemAs habilidades podem melhorar automaticamente por meio de um sistema de aprendizagem:
+
+__NOTRADUZIR_3__
+
+Cada arquivo de aprendizagem rastreia:
+- **Preferências** - O que os usuários preferem (formatação, estilo, abordagem)
+- **Convenções** - Padrões e padrões específicos do projeto
+- **Antipadrões** - O que evitar
+- **Exemplos** - Bons e maus exemplos de correções
+
+## Criando Habilidades
+
+### Início rápido
+
+Crie uma habilidade com pesquisa inteligente:
+
+__NÃOTRADUZIR_4__
+
+Ou dê uma dica:
+
+__NOTRADUZIR_5__
+
+### Como funciona a criação
+
+O comando __NOTRASLATE_23__ realiza pesquisas abrangentes:
+
+**Fase 1: Requisitos**
+- Você descreve o que precisa (tecnologia, casos de uso, estrutura)
+
+**Fase 2: Pesquisa**
+- **Documentação da Web** - Documentos oficiais, referências de API, tutoriais
+- **Documentação local** - Documentos, decisões de arquitetura e práticas do seu projeto
+- **Padrões de base de código** - Exemplos de códigos e convenções existentes
+- **Servidores MCP** - Ferramentas disponíveis para a tecnologia
+
+**Fase 3: Geração**
+O comando gera:
+- ** HABILIDADE.md** – Habilidade principal com gatilhos de ativação e livro de receitas
+- **references.md** - Links de documentação e padrões de código
+- **livro de receitas/** - Fluxos de trabalho para diferentes casos de uso
+- **.mcp.json** - Configuração do servidor (se aplicável)
+
+**Fase 4: Confirmação**
+Você vê a estrutura gerada e pode criar, editar ou cancelar.
+
+## Gerenciando habilidades
+
+### Listar todas as habilidades
+
+Veja suas habilidades instaladas:
+
+__NOTRADUZIR_6__
+
+Mostra:
+- Nomes e descrições de habilidades
+- Casos de uso suportados
+- Status de integração MCP
+- Contagem de arquivos
+
+### Editar habilidades
+
+Modifique uma habilidade existente:
+
+__NÃOTRADUZIR_7__
+
+Você pode:
+- Atualizar instruções SKILL.md
+- Adicionar novas entradas do livro de receitas
+- Atualizar referências e links de documentação
+- Renomeie a habilidade
+- Faça uma reescrita completa com novas pesquisas
+
+### Teste de habilidades
+
+Verifique se uma habilidade funciona corretamente:
+
+__NÃOTRADUZIR_8__
+
+Testes:
+- **Validação de estrutura** - Todos os arquivos necessários presentes
+- **Validação de conteúdo** - Formatação e tamanho adequados
+- **Teste de ativação** - A habilidade é ativada em prompts de amostra
+- **Configuração MCP** -Configuração de servidor válida
+
+### Excluir habilidades
+
+Remova uma habilidade quando não for mais necessária:
+
+__NOTRADUZIR_9__
+
+### Atualizar habilidades
+
+Adicione capacidade de aprendizagem a habilidades mais antigas:
+
+__NOTRADUZIR_10__
+
+Ou atualize tudo de uma vez:
+
+__NOTRADUZIR_11__
+
+Cria um arquivo de aprendizado que rastreia correções e melhorias.
+
+## O Sistema de Aprendizagem
+
+### Quais habilidades você aprende
+
+Quando você usa uma habilidade e corrige o resultado de Claude, a habilidade aprende:
+
+1. **Correções explícitas** - Aprendizados de alta confiança com feedback direto
+2. **Respostas aprovadas** – Aprendizados de confiança média com as aprovações
+3. **Padrões** – Observações de baixa confiança para revisão
+
+### Formato de arquivo de aprendizagem
+
+Cada habilidade possui um arquivo de aprendizagem opcional em __NOTRASLATE_24__:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-08T10:30:00Z
+
+preferences:
+  code_style: "swift-concurrency"
+  error_handling: "Result<T, Error>"
+  async_patterns: "async/await"
+
+conventions:
+  naming: "camelCase for variables, PascalCase for types"
+  structure: "Separate data, service, and UI layers"
+  testing: "Unit tests required for all public APIs"
+
+anti_patterns:
+  - "Avoid callback patterns (use async/await instead)"
+  - "Never hardcode API keys in code"
+
+examples:
+  good:
+    - "let user = try await supabase.auth.user()"
+  bad:
+    - "var apiKey = 'sk-...' // Never do this"
+
+metadata:
+  corrections_count: 12
+  approvals_count: 8
+  last_correction: 2025-01-08T10:30:00Z
+```
+
+### Como funciona o autoaperfeiçoamento
+
+**Na invocação:**
+1. Claude verifica se existe um arquivo de aprendizagem
+2. Lê preferências, convenções e antipadrões
+3. Aplica-os durante a execução da habilidade
+
+**Na correção:**
+1. Você fornece feedback ou correção
+2. Claude extrai o ssinal (o que mudar)
+3. Determina o nível de confiança (alto/médio/baixo)
+4. Atualiza o arquivo de aprendizagem
+5. A próxima invocação usa as preferências atualizadas
+
+## Melhores práticas
+
+### Criando habilidades eficazes
+
+1. **Use nomes específicos** - `supabase-swift` não apenas `database`
+2. **Inclua vários casos de uso** - Adicione entradas do livro de receitas para diferentes cenários
+3. **Link para padrões de projeto** – Faça referência às convenções da sua base de código
+4. **Adicionar solução de problemas** - Antecipe e resolva problemas comuns
+5. **Mantenha o foco** - Um domínio por habilidade, não muito amplo
+
+### Manutenção de habilidades
+
+1. **Teste regularmente** - Use __NOTRASLATE_27__ para verificar a qualidade
+2. **Revise os aprendizados** - Verifique o que a habilidade aprendeu com as correções
+3. **Atualizar referências** - Mantenha os links da documentação atualizados
+4. **Arquive habilidades não utilizadas** - Limpe habilidades que você não usa mais
+5. **Compartilhe melhorias** - Comprometa os aprendizados com o git para obter consistência da equipe
+
+### Habilidades de organização
+
+**Categorias de habilidades sugeridas:**
+
+- **Camada de dados** - Banco de dados ooperações, migrações, consultas
+- **Camada API** - Clientes REST, GraphQL, webhooks, autenticação
+- **Camada UI** - Componentes, estilo, acessibilidade, animações
+- **Infraestrutura** - Implantação, CI/CD, monitoramento, segurança
+- **Fluxos de trabalho** - Teste, revisão de código, depuração, criação de perfil
+- **Domínio** - Modelos de ML, processamento de imagens, processamento de pagamentos
+
+## Fluxos de trabalho do livro de receitas
+
+### O que é um livro de receitas?
+
+Uma entrada de livro de receitas é um guia passo a passo para um caso de uso específico dentro de uma habilidade.
+
+### Modelo de livro de receitas
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```idioma
+   exemplo de código
+   ```
+
+2. **Step 2**: Next step
+   ```idioma
+   exemplo de código
+   __NÃOTRADUZIR_15__
+
+### Quando adicionar livros de receitas
+
+Adicione entradas do livro de receitas quando:
+- Existem vários casos de uso comuns
+- Diferentes fluxos de trabalho se aplicam
+- A configuração difere entre os cenários
+- Os usuários frequentemente pedem orientação passo a passo
+
+## Integração MCP
+
+As habilidades podem ser integradas aos servidores Model Context Protocol para acesso à ferramenta.
+
+### O que é MCP?
+
+Os servidores MCP ampliam os recursos do Claude fornecendo:
+- Dados em tempo realacesso
+- Execução de ferramentas (operações de arquivos, chamadas de rede)
+- Integração de sistemas (APIs, bancos de dados)
+- Conhecimento especializado (documentação, ferramentas de código)
+
+### Usando MCP em habilidades
+
+Se um servidor MCP for encontrado durante a criação, a habilidade incluirá __NOTRASLATE_28__:
+
+__NOTRADUZIR_16__
+
+A habilidade então documenta:
+- Ferramentas fornecidas pelo servidor
+- Instruções de configuração
+- Variáveis de ambiente necessárias
+- Exemplos de integração
+
+## Ciclo de Vida de Habilidades
+
+### Criação
+
+1. Execute __NOTRASLATE_29__
+2. Descreva o que você precisa
+3. Comando pesquisa melhores práticas
+4. Revise a habilidade gerada
+5. Crie a habilidade
+
+### Uso
+
+1. Trabalhe em tarefas que correspondam ao domínio da habilidade
+2. Claude ativa a habilidade automaticamente
+3. A habilidade fornece orientação e exemplos
+4. Você executa as recomendações da habilidade
+
+### Melhoria
+
+1. Quando faltar alguma coisa na produção de Claude, corrija-a
+2. A habilidade aprende com a correção
+3. Da próxima vez, a habilidade fornecerá melhor orientação
+4. Use __NOTRASLATE_30__ para permitir o aprendizado
+
+### Evolução
+
+1. Com o tempo, as habilidades se tornameu mais adaptado
+2. O arquivo de aprendizagem captura padrões específicos do projeto
+3. Novos membros da equipe herdam o conhecimento
+4. Habilidades tornam-se memória institucional
+
+## Compartilhando habilidades
+
+### Exportar uma habilidade
+
+Copie um diretório de habilidades para compartilhar:
+
+```bash
+cp -r .claude/skills/my-skill /path/to/share/
+```
+
+### Importar uma habilidade
+
+Copie para o seu diretório de habilidades:
+
+__NÃOTRADUZIR_18__
+
+### Controle de versão
+
+Comprometa habilidades com git (inclua aprendizados):
+
+__NOTRADUZIR_19__
+
+Os membros da equipe obtêm automaticamente as habilidades e o aprendizado.
+
+## Solução de problemas
+
+### Habilidade não ativada
+
+**Problema**: Você pergunta sobre o tema da habilidade, mas Claude não a ativa.
+
+**Solução**:
+1. Verifique a seção "Quando usar" em SKILL.md
+2. Certifique-se de que sua pergunta corresponda aos gatilhos de ativação
+3. Use __NOTRASLATE_31__ para verificar a estrutura de habilidades
+4. Edite a habilidade para adicionar mais palavras-chave, se necessário
+
+### Servidor MCP não encontrado
+
+**Problema**: Durante a criação, aparece "Servidor MCP não encontrado".
+
+**Solução**:
+1. Você pode criar a habilidade sem MCP e adicioná-la mais tarde
+2. Configure manualmente __NOTRASLATE_32__ após a criação
+3. Verifique se o servidor está publicado (npm, GitHub, etc.)
+
+### Arquivo de aprendizagem ausente
+
+**Problema**: A habilidade não melhora mesmo após as correções.
+
+**Solução**:
+1. Execute __NOTRASLATE_33__
+2. Isso cria o arquivo de aprendizagem
+3. Correções futuras serão rastreadas
+
+### Falha na validação de habilidade
+
+**Problema**: __NOTRASLATE_34__ mostra falhas.
+
+**Solução**:
+1. Leia o relatório de validação para questões específicas
+2. Use __NOTRASLATE_35__ para corrigir problemas
+3. Teste novamente para verificar as correções
+
+## Uso Avançado
+
+### Criando habilidades específicas de domínio
+
+Crie várias habilidades especializadas para domínios complexos:
+
+```bash
+# Data layer skills
+/agileflow:skill:create postgresql-queries
+/agileflow:skill:create database-migrations
+
+# API layer skills
+/agileflow:skill:create rest-error-handling
+/agileflow:skill:create graphql-schema-design
+
+# UI layer skills
+/agileflow:skill:create accessibility-wcag
+/agileflow:skill:create react-performance
+```
+
+### Composição de habilidades
+
+Faça referência a outras habilidades dentro de uma habilidade:
+
+Em HABILIDADE.md:
+```markdown
+## Related Skills
+
+This skill works best with:
+- [REST API clients](/skills/api-client)
+- [Error handling patterns](/skills/error-handling)
+```
+
+### Personalizando aprendizados
+
+Edite manualmente o arquivo de aprendizado para personalização avançada:
+
+```bash
+.agileflow/skills/_learnings/my-skill.yaml
+```
+
+Adicione convenções específicas do projeto que não exijam correções.
+
+## Comandos Relacionados
+
+- [`/skill:create`](/commands/skill-create) - Gere uma nova habilidade com pesquisa
+- [`/skill:list`__NOTRASLATE_44__ - Ver todas as habilidades instaladas
+- [`/skill:edit`](/commands/skill-edit) - Modificar uma habilidade existente
+- [`/skill:test`](/commands/skill-test) - Verifique se uma habilidade funciona corretamente
+- [`/skill:delete`](/commands/skill-delete) - Remover uma habilidade
+- [`/skill:upgrade`](/commands/skill-upgrade) - Adicionar capacidade de autoaperfeiçoamento
+
+## Próximas etapas
+
+1. **Crie sua primeira habilidade** - Comece com uma tecnologia que você usa com frequência
+2. **Teste** - Use __NOTRASLATE_42__ para verificar se funciona
+3. **Use** - Trabalhe nas tarefas e deixe a habilidade ser ativada
+4. **Melhore** - Corrija o resultado de Claude para ensinar a habilidade
+5. **Compartilhe** - Comprometa-se com o git e os membros da equipe entenderão
+
+As competências são a memória institucional do seu projeto. Com o tempo, eles codificam suas melhores práticas e conhecimentos específicos do projeto, tornando Claude mais eficaz em ajudá-lo a construir.

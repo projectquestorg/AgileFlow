@@ -1,0 +1,561 @@
+---
+title: /flujo ágil:investigación
+description: Comandos del subdirectorio de investigación para la investigación y la importación de conocimientos impulsadas por IA
+---
+# /agileflow:investigación
+
+Sistema de investigación integral para generar indicaciones de investigación detalladas, importar hallazgos y administrar notas de investigación.
+
+## Inicio rápido
+
+The research system provides four specialized commands:
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"       # Generate research prompt
+/agileflow:research:import TOPIC="title"                  # Import external results
+/agileflow:research:list                                   # View all research notes
+/agileflow:research:view FILE=<filename>                  # Read specific note
+```
+
+## Descripción general
+
+El sistema de investigación permite:
+
+1. **Genere indicaciones de investigación detalladas** para ChatGPT, Claude web, Perplexity o Gemini
+2. **Importa resultados** de herramientas de IA externas a tu proyecto
+3. **Examinar y consultar** resultados de investigaciones anteriores
+4. **Organizar los hallazgos** con plantillas e índices estructurados
+
+La investigación es esencial para:
+- Resolución de problemas difíciles con experiencia externa en IA
+- Investigar tecnologías antes de tomar decisiones de arquitectura.
+- Documentar el aprendizaje de fuentes externas.
+- Creación de una base de conocimientos para su equipo.
+
+## Subcomandos
+
+### /agileflow:research:ask - Generar mensaje de investigación
+
+Genere una propuesta de investigación integral y rica en contexto para herramientas de inteligencia artificial web.
+
+**Propósito**: Crea más de 200 mensajes detallados que te incluyen a ti.Contexto de la base de código, mensajes de error exactos, lo que ha probado y preguntas específicas.
+
+**Comando**:
+```bash
+/agileflow:research:ask TOPIC="your topic" [DETAILS="constraints"] [ERROR="error message"]
+```
+
+**Parámetros**:
+
+| Argumento | Requerido | Descripción |
+|----------|----------|-------------|
+| TEMA | Sí | Qué estás investigando (por ejemplo, "OAuth 2.0 con Google") |
+| DETALLES | No | Restricciones, plazos o requisitos específicos |
+| ERROR | No | Mensaje de error exacto al solucionar problemas |
+
+**Características clave**:
+
+- **Genera más de 200 líneas como mínimo** - Detallado y completo
+- **Incluye fragmentos de código reales** - Más de 50 líneas de su código base
+- **Incrusta errores exactos** - Seguimientos de pila completos si se solucionan problemas
+- **Enumera las soluciones intentadas** - Muestra lo que ya has probado
+- **Hace preguntas específicas** - Más de 3 preguntas específicas para la IA
+- **Solo salida** - No se escriben archivos, se copia a una herramienta de IA externa
+
+**Qué se genera**:
+
+El mensaje incluye estas secciones obligatorias:
+
+- **Contexto del proyecto** - Marco, dependencias, archivos relevantes
+- **Implementación actual** - 50+ líneass de código real de su base de código
+- **El problema** - Mensajes de error exactos, seguimientos de pila, comportamiento esperado versus real
+- **Lo que ya hemos probado** - Más de 2 enfoques con resultados y análisis
+- **Preguntas específicas** - Más de 3 preguntas específicas para responder
+- **Lo que necesito** - Análisis de causa raíz, solución paso a paso, ejemplos de código, trampas
+- **Detalles del entorno** - Versiones e información del sistema
+- **Referencias** - Enlaces a fuentes si se cita documentación
+
+**Validación de calidad**:
+
+Antes de generar, el comando verifica:
+- Longitud ≥ 200 líneas
+- Fragmentos de código ≥ 50 líneas
+- Mensajes de error palabra por palabra (si corresponde)
+- ≥ 2 enfoques probados enumerados
+- ≥ 3 preguntas específicas incluidas
+
+**Ejemplo**:
+
+```bash
+# Research OAuth issue
+/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+
+# Output: 250+ line prompt with code, error details, what was tried, and specific questions
+# Copy output → ChatGPT/Claude web → Get expert analysis
+# Then use /agileflow:research:import to save the response
+```
+
+**Flujo de trabajo**:
+
+```
+1. /agileflow:research:ask TOPIC="..."
+   ↓ (command generates prompt)
+2. Copy prompt output
+3. Paste into ChatGPT/Claude web/Perplexity
+4. Get expert analysis
+5. /agileflow:research:import TOPIC="..." CONTENT="paste response"
+   ↓ (command saves and structures results)
+6. Results saved to docs/10-research/YYYYMMDD-topic-slug.md
+```
+
+**Integración con niñera**:
+
+Cuando `/babysit` detecta que estás atascado, sugiere:
+```
+Looks like you're stuck on this problem.
+Try: /agileflow:research:ask TOPIC="describe your problem"
+```
+
+---
+
+### /agileflow:research:import - Importar resultados de investigación
+
+Importe resultados de investigación de herramientas de inteligencia artificial externas a su carpeta de investigación con estructuraformato seguro.
+
+**Propósito**: toma resultados de ChatGPT, Claude web, Perplexity, transcripciones de YouTube o publicaciones de blogs y los guarda como archivos de rebajas organizados.
+
+**Comando**:
+```bash
+/agileflow:research:import TOPIC="topic" [CONTENT="results"] [SOURCE="url"]
+```
+
+**Parámetros**:
+
+| Argumento | Requerido | Descripción |
+|----------|----------|-------------|
+| TEMA | Sí | Nombre del archivo de investigación (por ejemplo, "Configuración de OAuth 2.0") |
+| CONTENIDO | Sí* | Resultados de la investigación para importar (*se pueden pegar después del comando) |
+| FUENTE | No | URL de origen original para atribución |
+
+**Características clave**:
+
+- **Conserva TODOS los fragmentos de código** - Exactamente como se proporciona
+- **Genera elementos procesables** - Próximos pasos concretos, no sugerencias vagas
+- **Vista previa de primera diferencia** - Mostrar el resultado formateado antes de guardar
+- **Actualiza el índice de investigación** - Se agrega automáticamente a docs/10-research/README.md
+- **Enlaces a decisiones** - Puede hacer referencia a ADR, Epics o Stories
+
+**Qué se crea**:
+
+Expediente de investigación estructurado con secciones:
+
+- **Resumen** - 2-3 párrafos TL;DR
+- **Hallazgos clave** - Conclusiones principales como bullepuntos t
+- **Enfoque de implementación** - Plan paso a paso, si corresponde
+- **Fragmentos de código** - Todo el código se conserva exactamente como se proporciona
+- **Elementos de acción** - Próximos pasos concretos (casillas de verificación)
+- **Riesgos y trampas** - Advertencias y casos extremos
+- **Sugerencias de historias** - Características potenciales si la investigación sugiere trabajo
+- **Referencia de contenido sin formato** - Contenido original colapsado como referencia
+
+**Ubicación del archivo**:
+```
+docs/10-research/YYYYMMDD-topic-slug.md
+```
+
+**Actualización del índice**:
+
+Entrada de investigación agregada a `docs/10-research/README.md`:
+```markdown
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+```
+
+**Ejemplo**:
+
+```bash
+# After getting ChatGPT response about OAuth
+/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+
+# Prompts: "Paste the ChatGPT response"
+# You paste content
+# Command shows preview
+# You confirm
+# Results saved to docs/10-research/20250101-oauth-setup.md
+```
+
+**Funciona con**:
+
+- Respuestas de ChatGPT
+- Claude conversaciones web
+- Resultados de la investigación sobre la perplejidad.
+- Transcripciones de vídeos de YouTube.
+- Extractos de publicaciones de blog
+- Notas de charlas de conferencias.
+- Páginas de documentación
+- Notas de la reunión
+
+---
+
+### /agileflow:research:list - Mostrar índice de notas de investigación
+
+Muestre todas las notas de investigación de su proyecto con una descripción general rápida.
+
+**Propósito**: Muestra notas de investigación almacenadas en `docs/10-research/` con fecha, tema, nombre de archivo y resumen.
+
+**Comando**:
+__NOTRADUCIR_9__
+
+**Parámetros**: Ninguno
+
+**Características clave**:
+
+- **Solo lectura** - No se escriben archivos
+- **Muestra todas las notas** - Fecha, tema, nombre de archivo
+- **Ordenado por fecha** - Lo más nuevo primero
+- **Consejos de acción rápida** - Sugerencias para los próximos comandos
+
+**Ejemplo de salida**:
+
+```
+## Research Notes
+
+| Date | Topic | File |
+|------|-------|------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md |
+| 2024-12-31 | TypeScript Performance | 20241231-typescript-perf.md |
+| 2024-12-28 | Mermaid Diagrams | 20241228-mermaid.md |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=20250101-oauth-setup.md - Read a note
+- /agileflow:research:ask TOPIC="new topic" - Create new research
+- /agileflow:research:import - Import external content
+```
+
+**Cuándo utilizar**:
+
+- Encuentre investigaciones anteriores antes de implementar
+- Busque fragmentos de código que haya investigado
+- Verifique los elementos de acción de investigaciones anteriores.
+
+---
+
+### /agileflow:research:view - Leer nota de investigación específica
+
+Muestre el contenido completo de una nota de investigación de su carpeta de investigación.
+
+**Propósito**: leer y revisar notas de investigación para encontrar fragmentos de código, elementos de acción y hallazgos.
+
+**Comando**:
+```bash
+/agileflow:research:view FILE=<filename>
+```
+
+**Parámetros**:
+
+| Argumento | Requerido | Descripción |
+|----------|----------|-------------|
+| ARCHIVO | Sí | Nombre de archivo de la nota de investigación (por ejemplo, "20250101-oauth-setup.md") |
+
+**Características clave**:
+
+- **Solo lectura** - No se escriben archivos
+- **Contenido completo** - Se muestra el archivo completo, no truncado
+- **Encontrar cualquier cosa** - Fragmentos de código, acelementos de información, hallazgos
+
+**Ejemplo**:
+
+```bash
+# View OAuth research
+/agileflow:research:view FILE=20250101-oauth-setup.md
+
+# Output: Full content of the file
+```
+
+**La salida incluye**:
+
+- Contenido completo del archivo de investigación.
+- Todos los fragmentos de código de la investigación.
+- Elementos de acción con casillas de verificación
+- Hallazgos clave y trampas
+- Riesgos y consideraciones
+- Referencias y fuentes
+
+---
+
+## Ejemplos de flujo de trabajo
+
+### Flujo de trabajo de investigación completo
+
+**Escenario**: Estás atascado en la autenticación y necesitas ayuda de un experto.
+
+```bash
+# Step 1: Generate detailed research prompt
+/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client error" \
+  ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+
+# Output: 250+ line detailed prompt with your code, error, what you tried, questions
+# → Copy the prompt
+
+# Step 2: Paste into ChatGPT/Perplexity
+# → Get expert analysis back
+
+# Step 3: Import the results
+/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+
+# Prompts for content → paste ChatGPT response
+# → Shows preview of formatted file
+# → Saves to docs/10-research/YYYYMMDD-nextauth-oauth-fix.md
+
+# Step 4: Reference in your work
+# - Create ADR referencing the research
+# - Create story based on action items
+# - Check action items when implementing
+
+# Step 5: Review research when implementing
+/agileflow:research:list                    # See all research
+/agileflow:research:view FILE=<filename>    # Review details
+```
+
+### Investigando antes de la decisión arquitectónica
+
+```bash
+# Step 1: Research database options
+/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time collaboration"
+
+# Step 2: Get expert comparison, use cases, tradeoffs
+# → Copy response from ChatGPT/Perplexity
+
+# Step 3: Import results
+/agileflow:research:import TOPIC="Database Selection Analysis"
+
+# Step 4: Create ADR referencing research
+# /agileflow:adr NEW
+# Mention: "See research in docs/10-research/"
+
+# Step 5: Team reviews research before decision
+/agileflow:research:view FILE=20250101-database-selection.md
+```
+
+### Aprender del contenido externo
+
+```bash
+# You find a great article/YouTube video about your tech
+
+# Step 1: Import the content
+/agileflow:research:import TOPIC="Next.js App Router Advanced Patterns" \
+  SOURCE="https://example.com/article"
+
+# Copy/paste key sections → saves to research folder
+
+# Step 2: Reference from architecture docs
+# docs/04-architecture/... → "See research: [link]"
+
+# Step 3: Create stories from action items
+# "Per research, we should implement error boundaries"
+```
+
+---
+
+## Integración con otros comandos
+
+### niñera - Detección de atascados
+
+Cuando `/babysit` detecta que estás atascado en un problema:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+### ADR - Decisiones de arquitectura
+
+Investigación de referencia en decisiones de arquitectura:
+
+```markdown
+# ADR-0042: Use PostgreSQL for persistence
+
+**Research**: See [Database Comparison](../10-research/20250101-database-selection.md)
+
+Based on the research findings, we decided to use PostgreSQL because...
+```
+
+### Historias y epopeyas
+
+Cree trabajos a partir de los resultados de la investigación:
+
+```bash
+# After importing research results
+/agileflow:research:import TOPIC="Auth Pattern"
+
+# Then create story based on action items
+/agileflow:epic NEW
+# Include: "Based on research: docs/10-research/20250101-auth-pattern.md"
+```
+
+---
+
+## Mejores prácticas
+
+### Generación de indicaciones de investigación
+
+1. **Sea específico con el TEMA** - No diga simplemente "ayuda con la autenticación", diga "next-auth 5.0"con Google OAuth"
+2. **Incluir mensajes de ERROR**: los seguimientos completos de la pila son de gran ayuda
+3. **Documenta lo que intentaste**: muestra la IA con la que has hecho los deberes.
+4. **Haga preguntas específicas** - "¿Por qué sucede X?" no "¿Cómo soluciono esto?"
+
+**Buenos ejemplos de TEMA:**
+- "Error de cliente no autorizado de Google OAuth de next-auth con el enrutador de aplicación Next.js 14"
+- "Errores de compilación en modo estricto de TypeScript en la configuración de monorepo"
+- "La validación de la firma del webhook de Stripe falla en el desarrollo"
+
+**Ejemplos de malos temas:**
+- "ayuda con la autenticación"
+- "¿Por qué mi código está roto?"
+- "error en mi aplicación"
+
+### Importación de investigación
+
+1. **Cita siempre la fuente** - ¿De dónde sacaste esto?
+2. **Conservar exactamente los fragmentos de código** - No modificar los ejemplos
+3. **Extraiga los hallazgos clave**: no se limite a pegar contenido sin editar
+4. **Generar elementos de acción** - ¿Qué deberías hacer con esto?
+5. **Enlace a decisiones**: haga referencia a ADR, epopeyas e historias, si son relevantes.
+
+### Gestión de la investigación
+
+1. **Revisar antes de implementar** - No seguir ciegamente la investigación
+2. **Comprobark elementos de acción**: use casillas de verificación para realizar un seguimiento de lo que hizo
+3. **Mantenga los archivos actualizados** - Actualice si obtiene más información
+4. **Referencia en decisiones** - Enlace de ADR e historias
+5. **Archivar investigaciones antiguas**: mover los resultados obsoletos al directorio de archivos
+
+---
+
+## Estructura de investigación
+
+Los archivos de investigación se almacenan con prefijos de fecha ISO:
+
+```
+docs/10-research/
+├── README.md                                    (Index table)
+├── 20250101-oauth-setup.md
+├── 20241231-typescript-performance.md
+└── 20241228-mermaid-diagrams.md
+```
+
+### Nomenclatura de archivos
+
+```
+YYYYMMDD-topic-slug.md
+
+Examples:
+- 20250101-oauth-setup.md
+- 20241231-stripe-webhooks.md
+- 20241228-typescript-strict-mode.md
+```
+
+### Índice de investigación
+
+El `docs/10-research/README.md` mantiene una tabla de todas las notas de investigación:
+
+```markdown
+# Research Notes
+
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+| 2024-12-31 | TypeScript Performance | 20241231-typescript-perf.md | Optimization techniques and tsconfig tuning |
+| 2024-12-28 | Mermaid Diagrams | 20241228-mermaid.md | Diagram syntax, rendering, and best practices |
+```
+
+---
+
+## Cuándo utilizar la investigación
+
+### Antes de las decisiones arquitectónicas
+Herramientas y marcos de investigación antes de recomendarlos:
+
+```bash
+/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time sync"
+# → Get expert comparison
+/agileflow:research:import  # Import results
+# → Create ADR referencing the research
+```
+
+### Investigación de características
+Profundice en cómo implementar funciones complejas:
+
+```bash
+/agileflow:research:ask TOPIC="Next.js App Router middleware patterns"
+/agileflow:research:ask TOPIC="OAuth 2.0 implementation with security best practices"
+/agileflow:research:ask TOPIC="Real-time WebSocket architecture in Node.js"
+```
+
+### Solución de problemas difíciles
+Obtenga ayuda de expertos cuando esté atascado:
+
+```bash
+/agileflow:research:ask TOPIC="TypeScript strict mode in monorepo" \
+  ERROR="error TS1149: File is a CommonJS module..."
+```
+
+### Aprendizaje y formación
+Documente los aprendizajes de cursos, tutoriales o documentación:
+
+```bash
+/agileflow:research:import TOPIC="React 18 Suspense and Streaming" \
+  SOURCE="https://react.dev/reference/react/Suspense"
+```
+
+### Evaluación de tecnología
+Compare opciones antes de la adopción:
+
+```bash
+/agileflow:research:ask TOPIC="GraphQL vs tRPC for type-safe APIs"
+/agileflow:research:ask TOPIC="SvelteKit vs Next.js for new project"
+```
+
+---## Solución de problemas
+
+### Mensaje de investigación demasiado corto
+
+Si recibe un mensaje de menos de 200 líneas, el comando se regenerará. Asegúrate de:
+- EL TEMA es específico (incluye versiones del marco, tipos de errores)
+- El ERROR incluye el seguimiento de la pila completa si se soluciona el problema
+- El comando lee tu código base real
+
+### Importar índice sin actualizar
+
+El índice (`docs/10-research/README.md`) se crea y actualiza automáticamente. Si falta:
+
+```bash
+/agileflow:research:list  # This will create the index if missing
+```
+
+### No puedo encontrar el archivo de investigación
+
+Utilice `/agileflow:research:list` para ver todos los archivos disponibles:
+
+```bash
+/agileflow:research:list
+# Shows all files with correct filenames for /agileflow:research:view
+```
+
+### La carpeta de investigación no existe
+
+El primer comando de lista o importación de investigación crea el directorio `docs/10-research/` automáticamente. No se necesita configuración manual.
+
+---
+
+## Comandos relacionados
+
+- [`/agileflow:babysit`](/commands/babysit) - Detecta situaciones estancadas y sugiere investigaciones:preguntar
+- [`/agileflow:adr`](/commands/adr) - Crear decisiones de arquitectura que hagan referencia a la investigación
+- [`/agileflow:epic`](/commands/epic) - Crea epopeyas basadas en los resultados de la investigación
+- [`/agileflow:story`](/commands/story) - Crea historias con referencias de investigación

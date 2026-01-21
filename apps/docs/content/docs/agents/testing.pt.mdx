@@ -1,0 +1,192 @@
+---
+title: Teste
+description: Especialista em testes para estratégia de teste, padrões de teste, otimização de cobertura e design abrangente de conjunto de testes.
+---
+# Agente de teste
+
+O Agente de Teste (AG-TESTING) é um especialista especializado em garantia de qualidade que projeta estratégias de teste abrangentes, elimina antipadrões de teste e otimiza a cobertura de teste. Ao contrário da configuração da infraestrutura de CI, este agente concentra-se nas questões “o que testar” e “como testar”.
+
+## Capacidades
+
+- **Design de estratégia de teste**: crie planos de teste abrangentes abrangendo testes unitários, de integração e E2E
+- **Otimização de cobertura**: analise a cobertura de código e identifique lacunas em caminhos críticos
+- **Teste de detecção de antipadrão**: identifique e elimine testes instáveis, lentos e frágeis
+- **Infraestrutura de teste**: crie equipamentos de teste, fábricas e funções auxiliares
+- **Análise de cobertura**: meça e relate métricas de cobertura com recomendações acionáveis
+- **Documentação de padrões de teste**: documente padrões de testes reutilizáveis e práticas recomendadas
+- **Testes de desempenho**: Projetar e executar benchmarks de desempenho
+- **Teste de mutação**: teste os próprios testes para garantir a qualidade## Quando usar
+
+Use o agente de teste quando:
+
+- Iniciando um novo recurso e precisa definir o que precisa ser testado
+- A cobertura atual dos testes está abaixo de 70% e precisa de melhorias
+- Os testes são instáveis (falhas intermitentes) ou lentos (>1 segundo cada)
+- Necessidade de projetar equipamentos de teste ou fábricas para dados de teste complexos
+- Configuração de infraestrutura de testes automatizados
+- Criação de ADRs para decisões de teste
+- Implementação de suítes de testes abrangentes para caminhos críticos
+
+## Como funciona
+
+1. **Carregamento de conhecimento**: o agente lê o arquivo de conhecimento e o estado de teste do projeto
+2. **Revisão da história**: o agente analisa a história em busca de requisitos de testabilidade
+3. **Planejamento de teste**: o agente projeta casos de teste (caminho feliz, casos de erro, casos extremos)
+4. **Configuração da infraestrutura**: o agente cria acessórios de teste, simulações e auxiliares
+5. **Implementação de teste**: o agente escreve testes seguindo o padrão AAA (Arrange-Act-Assert)
+6. **Medição de cobertura**: o agente mede a cobertura e identifica lacunas
+7. **Eliminação de Antipadrão**: Agente identifica e corrige falhastestes aky/lentos/frágeis
+8. **Verificação**: o agente executa __NOTRASLATE_6__ para garantir que todos os testes sejam aprovados
+9. **Coordenação**: Agente atualiza status.json e se comunica via bus/log.jsonl
+
+## Exemplo
+
+```bash
+# Via babysit - identify testing work
+/agileflow:babysit
+> "We need comprehensive testing for the payment processing feature"
+
+# Agent output:
+# Test Strategy Created:
+# - Unit tests: Payment validation, transaction formatting (80% coverage)
+# - Integration tests: Database saves, external API calls (15% coverage)
+# - E2E tests: Complete payment workflow (5% coverage)
+# - Coverage target: 85% critical path
+# - Expected test count: 47 tests
+# - Estimated time: 4 hours
+```
+
+## Principais comportamentos
+
+- **Padrão AAA**: Todos os testes seguem a estrutura Arrange-Act-Assert para maior clareza
+- **Isolamento de teste**: testes unitários de dependências simuladas; testes de integração usam dependências reais
+- **Focado no comportamento**: os testes validam o comportamento, não os detalhes da implementação
+- **Execução Rápida**: Testes unitários são executados em milissegundos; suíte completa em minutos
+- **Nomenclatura clara**: os nomes dos testes descrevem exatamente o que está sendo testado
+- **Limites de cobertura**: mínimo de 70%, 80%+ para caminhos críticos (100% para autenticação/pagamento)
+- **Sem testes fragmentados**: Falhas intermitentes são sinais de alerta; aleatoriedade e tempo removidos
+- **Consciência de desempenho**: os testes não são mais lentos que o código que testam
+- **Preservação de contexto**: usa compact_context (prioridade: alta) para manter o foco do teste durante longas conversas, preservando coverage targets and anti-pattern detection through context compaction
+
+## Compact Context Configuration
+
+The Testing agent uses **high priority** compact_context to ensure test coverage and quality stay in focus:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+    - "AAA PATTERN: All tests follow Arrange-Act-Assert structure"
+    - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+    - "NO FLAKY TESTS: Eliminate randomness, timing issues, intermittent failures"
+    - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+    - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+  state_fields:
+    - current_story
+    - coverage_percentage
+    - critical_paths_count
+    - flaky_tests_found
+    - test_status_baseline
+```
+
+This ensures testing-critical rules (AAA pattern, coverage minimums, anti-flaky test practices) and current state (coverage gaps, flaky test counts, critical path testing status) remain in focus through context compaction.
+
+## Tools Available
+
+- Read, Write, Edit (file operations)
+- Bash (run test commands)
+- Glob (find test files)
+- Grep (search test code)
+
+## Session Harness Integration
+
+The Testing Agent integrates with the Session Harness to ensure quality:
+
+```text
+Pre-Implementation:
+├── Check environment.json exists
+├── Verify test_status: "passing" baseline
+└── Run /agileflow:session:resume
+
+During Implementation:
+├── Run tests incrementally
+├── Fix failures immediately
+└── Update test_status in real-time
+
+Post-Implementation:
+├── Run /agileflow:verify US-XXXX (must pass)
+├── Verify test_status: "passing"
+└── Mark story "in-review" ONLY if tests pass
+```
+
+## Test Categories & Targets
+
+| Category | Percentage | Speed | Scope |
+|----------|-----------|-------|-------|
+| Unit Tests | 80% | under 1ms each | Single function, mocked dependencies |
+| Integration Tests | 15% | Slower | Multiple components, real dependencies |
+| E2E Tests| 5% | Muito lento | Fluxos de trabalho completos do usuário |
+| Testes de Contrato | 0-5% | Rápido | Validação de esquema API |
+
+## Lista de verificação de qualidade
+
+Antes de marcar uma história como concluída:
+
+- [] Cobertura de teste ≥70% (caminhos críticos 100%)
+- [] Todos os cenários de caminho feliz testados
+- [] Todos os cenários de erro testados
+- [] Casos extremos identificados e testados
+- [] Sem testes instáveis (executar 10x, todos passam)
+- [] Sem testes lentos (cada teste com menos de 1s, conjunto completo com menos de 5min)
+- [] Testa o comportamento do teste, não a implementação
+- [] Os nomes dos testes descrevem claramente o que foi testado
+- [] Dispositivos de teste reutilizáveis e bem documentados
+- [] Relatório de cobertura gerado e revisado
+- [] test_status: "aprovado" verificado
+
+## Padrões de teste comuns
+
+**Padrão AAA (Arrange-Act-Assert)**:
+__NOTRADUZIR_3__
+
+**Acessórios de teste (dados de teste reutilizáveis)**:
+__NÃOTRADUZIR_4__
+
+**Testes parametrizados**:
+__NOTRADUZIR_5__
+
+## Antipadrões para eliminar
+
+| Antipadrão | Problema | Correção |
+|-------------|---------|-----|
+| Testes instáveis ​​| Falhas intermitentes, imprevisíveis | Remova a aleatoriedade,add espera por condições |
+| Testes lentos | >1 segundo cada | Use simulações, paralelize, otimize consultas |
+| Testes frágeis | Pausa na refatoração | Comportamento de teste, não detalhes de implementação |
+| Zombaria demais | Isolamento irrealista | Balancear testes unitários e de integração |
+
+## Agentes Relacionados
+
+- [`qa`__NOTRASLATE_17__ - Estratégia de teste e prontidão de lançamento (escopo diferente)
+- [`ci`__NOTRASLATE_18__ - Infraestrutura de teste e configuração de pipeline de CI
+- [`api`](/agents/api) - Teste de API e validação de contrato
+- [`ui`](/agents/ui) - Teste de componentes e teste de interação do usuário
+- [`database`__NOTRASLATE_21__ - Teste de camada de dados e otimização de consulta
+
+## Coordenação
+
+O Agente de Teste coordena com outros agentes:
+
+- **AG-API**: certifique-se de que os casos de erro da API sejam testados
+- **AG-UI**: Coordenação de testes de componentes e E2E
+- **AG-DATABASE**: teste a camada de dados e o desempenho da consulta
+- **AG-CI**: Solicitar infraestrutura de teste (execução paralela, relatórios de cobertura)
+- **AG-QA**: alinhamento com métricas de qualidade e metas de cobertura de teste
+
+## Comandos de barra
+
+- __NOTRASLATE_12__ - Execute testes para uma história específica
+- __NOTRASLATE_13__ - Padrões de teste de pesquisa
+- __NOTRASLATE_14__ - Revise o código de teste para antipadrões
+- __NOTRASLATE_15__ - Documentar decisões de teste
+- __NOTRASLATE_16__ - Atualizar status da história

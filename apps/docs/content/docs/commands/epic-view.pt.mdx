@@ -1,0 +1,174 @@
+---
+title: /épico:ver
+description: Veja detalhes épicos com histórias e ações contextuais
+---
+# /épico:visualizar
+
+Veja detalhes épicos completos, incluindo todas as histórias agrupadas por status e ações baseadas no contexto.
+
+## Início rápido
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `EPIC` | Sim | - | ID épico (por exemplo, EP-0001) |
+
+## Exemplos
+
+### Ver épico específico
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+Exibe informações épicas completas com todas as histórias e ações baseadas no contexto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:epic:view
+```
+
+Sem parâmetro EPIC, mostra épicos recentes e pede para você selecionar um.
+
+## Formato de saída
+
+### Visão geral épica
+
+__NOTRADUZIR_3__
+
+### Histórias agrupadas por status
+
+__NÃOTRADUZIR_4__
+
+### Documentação Relacionada
+
+__NOTRADUZIR_5__
+
+## Ações baseadas no contexto
+
+As ações mudam com base no progresso épico:
+
+### Para épicos de baixo progresso (abaixo de 50%)
+
+Quando o progresso está abaixo de 50%:
+
+__NOTRADUZIR_6__
+
+Opções:
+- **Adicione mais histórias**: a Epic pode precisar de itens de trabalho adicionais
+- **Comece a trabalhar em uma história pronta**: comece a implementar
+-**Planeje o sprint para este épico**: agende histórias
+- **Voltar à lista épica**: Voltar à lista completa
+
+### Para épicos de progresso médio (50-99%)
+
+Quando o progresso está entre 50% e 99%:
+
+__NÃOTRADUZIR_7__
+
+Opções:
+- **Trabalhar nas histórias restantes** (Recomendado): Concentre-se na conclusão
+- **Ver detalhes da história**: Verifique a história específica
+- **Adicione mais histórias**: o escopo épico pode ter aumentado
+- **Marcar épico como concluído**: se o trabalho restante for adiado
+
+### Para épicos concluídos (100%)
+
+Quando todas as histórias estiverem prontas:
+
+__NÃOTRADUZIR_8__
+
+Opções:
+- **Fechar épico** (recomendado): marcar como concluído em status.json
+- **Ver resumo de conclusão**: Veja o que foi entregue
+- **Adicionar histórias de acompanhamento**: Afinal, a Epic precisa de mais trabalho
+- **Voltar à lista épica**: Retornar para /agileflow:epic:list
+
+### Para épicos em espera
+
+Quando o épico está pausado:
+
+__NOTRADUZIR_9__
+
+Opções:
+- **Retomar épico**: Altere o status de volta para ativo
+- **Veja por que está em espera**: verifique bloqueadores ou notas
+- **Fechar épico**: Não é mais necessário
+- **Voltar à lista épica**: Retornar para /agileflai: épico: lista
+
+## Fluxos de trabalho típicos
+
+### Continue trabalhando no Epic
+
+__NOTRADUZIR_10__
+
+### Termine o Epic no final do Sprint
+
+__NOTRADUZIR_11__
+
+### Desbloquear épico em espera
+
+```
+1. /agileflow:epic:view EPIC=EP-0003
+   (Epic is on-hold)
+2. Check blockers
+3. If resolved: "Resume epic"
+4. Epic changed back to active
+5. Continue work
+```
+
+### Expanda o Epic com mais trabalho
+
+__NÃOTRADUZIR_13__
+
+## Significados do status da história
+
+Na visualização épica, as histórias são agrupadas por status:
+
+| Estado | Significado | Próxima ação |
+|--------|---------|---------|
+| **em_progresso** | Atualmente em trabalho | Continuar o trabalho ou marcar como bloqueado |
+| **pronto** | Pronto para começar | Escolha um e comece a implementação |
+| **concluído** | Concluído e testado | Vá para o próximo épico |
+
+## Interpretação do progresso
+
+### O que significa a porcentagem
+
+__NOTRADUZIR_14__
+
+- 0-25%: a Epic acabou de começar
+- 25-50%: Aceleração, meio do sprint
+- 50-75%: Maioria dos trabalhos identificados
+- 75-100%: Empurrão final para conclusão
+
+### Quando adicionar mais histórias
+
+Considere adicionar histórias se:
+- O progresso está estagnando (preso na mesma porcentagem)
+- Equipe está bloqueada aguardando dependências
+- Novos requisitos surgiram
+
+### Quando fechar o Epic
+
+Fechar quando:
+- Todas as histórias estão marcadas como __NOTRASLATE_16__
+- Os critérios de aceitação são atendidos
+- Pronto para passar para o próximo épico
+
+## Comandos Relacionados
+
+- [`/epic:list`](/commands/epic-list) - Ver todos os épicos
+- [`/epic`](/commands/epic) - Criar novo épico
+- [`/story:list`](/commands/story-list) - Ver todas as histórias
+- [`/story:view`__NOTRASLATE_28__ - Ver detalhes da história
+- [`/story`](/commands/story) - Crie uma história épica
+- [__NOTRASLATE_22____NOTRASLATE_30__ - Atualizar status da história
+- [`/sprint`__NOTRASLATE_31__ - Planejamento de sprint
+- [`/board`__NOTRASLATE_32__ - Visualização Kanban

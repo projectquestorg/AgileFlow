@@ -1,0 +1,265 @@
+---
+title: control de calidad
+description: Especialista en control de calidad para estrategia de pruebas, planificación de pruebas, métricas de calidad, pruebas de regresión y validación de la preparación para el lanzamiento.
+---
+# Agente de control de calidad
+
+El agente de control de calidad (AG-QA) es un especialista en control de calidad que garantiza que las funciones cumplan con los estándares de calidad antes de su lanzamiento. Este agente se centra en la estrategia de prueba, las pruebas de regresión, las métricas de calidad y la preparación para el lanzamiento, complementando al agente de pruebas que diseña implementaciones de prueba.
+
+## Capacidades
+
+- **Desarrollo de estrategias de prueba**: cree planes de prueba integrales con alcance, objetivos de cobertura y criterios de éxito.
+- **Pruebas de regresión**: planifique y administre conjuntos de pruebas de regresión para lanzamientos
+- **Métricas de calidad**: defina y realice un seguimiento de los KPI (cobertura de código, tasa de escape de errores, densidad de defectos)
+- **Preparación para la liberación**: cree y valide listas de verificación de liberación y procedimientos de aprobación
+- **Gestión de casos de prueba**: organice y administre casos de prueba manuales
+- **Clasificación de errores**: evalúa la gravedad y prioriza la resolución del problema
+- **Planificación UAT**: coordinar las pruebas de aceptación del usuario con las partes interesadas
+- **Puertas de calidad**: defina puntos de control de calidad automatizados en el proceso de CI/CD
+
+## Cuándo utilizar
+
+Utilice el agente de control de calidadt cuando:
+
+- Planificación de un nuevo lanzamiento y necesidad de criterios de calidad.
+- Necesidad de definir una estrategia de prueba con objetivos de cobertura.
+- Creación de casos de prueba para flujos de trabajo de usuarios críticos.
+- Configuración de pruebas de regresión para lanzamientos.
+- Triaje de errores y evaluación de la gravedad.
+- Planificación de Pruebas de Aceptación de Usuario (UAT)
+- Necesidad de establecer puertas de calidad y criterios de salida.
+- Creación de listas de verificación de preparación para el lanzamiento.
+
+## Cómo funciona
+
+1. **Carga de conocimientos**: el agente lee los estándares de calidad del proyecto y la experiencia
+2. **Análisis de funciones**: el agente revisa la historia para determinar las necesidades de prueba
+3. **Estrategia de prueba**: el agente diseña un plan de prueba con objetivos de alcance y cobertura
+4. **Planificación de pruebas**: el agente crea casos de prueba y alcance de regresión
+5. **Puertas de calidad**: el agente define umbrales y métricas de calidad
+6. **Preparación para la liberación**: el agente crea listas de verificación y procedimientos de aprobación
+7. **Coordinación**: el agente se alinea con los equipos de prueba y desarrollo.
+8. **Verificación**: el agente garantiza que se cumplan los criterios de calidad.
+9. **Documentación**: El agente actualiza el estado.jinformes de hijo y calidad
+
+## Ejemplo
+
+```bash
+# Via babysit - define release quality criteria
+/agileflow:babysit
+> "We're preparing v2.1.0 for release. What's our release readiness?"
+
+# Agent output:
+# Release Readiness Assessment:
+# - Code coverage: 82% (target: 80%) ✅
+# - All automated tests passing: 523/523 ✅
+# - Critical bugs: 0 ✅
+# - Regression test scope: 15 core workflows
+# - UAT sign-off: Pending
+# - Performance baseline: Verified
+# - Security review: In progress
+#
+# Release Recommendation: READY WITH CONDITIONS
+# - Security review must complete before release
+# - UAT sign-off required from product team
+```
+
+## Comportamientos clave
+
+- **La calidad es lo primero**: nunca publique sin cumplir con los criterios de calidad.
+- **Prueba temprana**: las pruebas se realizan durante todo el desarrollo, no solo al final.
+- **Basado en riesgo**: las áreas de mayor riesgo reciben más atención en las pruebas
+- **Basado en métricas**: decisiones de calidad respaldadas por datos y KPI
+- **Criterios claros**: criterios de publicación documentados y mensurables
+- **Enfocado en regresión**: las pruebas de regresión automatizadas previenen errores conocidos
+- **Aprobación del usuario**: UAT valida las expectativas del usuario antes del lanzamiento.
+
+## Herramientas disponibles
+
+- Leer, escribir, editar (operaciones de archivos)
+- Bash (ejecutar informes de calidad)
+- Glob (encontrar artefactos de prueba)
+- Grep (analizar datos de calidad)
+
+## Marco de métricas de calidad
+
+**Métricas de cobertura**:
+- Cobertura de código: >80% unidad, >60% integración, >30% E2E
+- Cobertura de funciones: % de funciones probadas
+- Cobertura de requisitos: % de requisitos probados
+
+**Métricas de errores**:
+- Errores encontrados: recuento total
+- Tasa de escape de errores: % de errores encontrados en producción frente a pruebas (taobjetivo: menos del 2%)
+- Densidad de defectos: errores por cada 1000 líneas de código (objetivo: menos de 2,5)
+
+**KPI de calidad**:
+- Tasa de aprobación de la prueba: >95%
+- Tiempo medio de reparación: tiempo medio desde el informe hasta la resolución.
+- Tasa de regresión: % de regresiones en lanzamientos
+
+## Lista de verificación de preparación para el lanzamiento
+
+**Debe tener antes del lanzamiento**:
+- [] Revisión del código completada (100% de cobertura)
+- [] Todas las pruebas automatizadas pasan
+- [] Errores críticos resueltos
+- [ ] Línea base de desempeño cumplida
+- [ ] Accesibilidad verificada (WCAG AA)
+- [] Revisión de seguridad aprobada
+- [ ] Documentación actualizada
+- [] Aprobación UAT obtenida
+
+**Debería tenerlo antes del lanzamiento**:
+- [] Errores de alta prioridad resueltos
+- [] Rendimiento optimizado
+- [] Prueba de carga completada
+- [ ] Configuración de monitoreo
+
+**Es bueno tenerlo antes del lanzamiento**:
+- [] Errores de prioridad media resueltos
+- [ ] Se publicaron puntos de referencia de rendimiento
+- [ ] Comunicación de usuario redactada
+
+## Niveles de gravedad de errores
+
+| Gravedad | Descripción | Ejemplo | Prioridad |
+|----------|-------------|---------|----------|
+| Crítico | Característica inutilizable, dapérdida de ta, violación de seguridad | Los usuarios no pueden iniciar sesión | Arreglar inmediatamente |
+| Alto | Característica significativamente deteriorada | El pago falla el 50% de las veces | Arreglar lo antes posible |
+| Medio | La función funciona con limitaciones | Correo electrónico retrasado 2 horas | Calendario futuro próximo |
+| Bajo | Problema menor, solución sencilla | Texto del botón desalineado | Trabajo pendiente |
+
+## Gestión de casos de prueba
+
+**Plantilla de caso de prueba**:
+```text
+Test Case ID: TC-001
+Title: User can log in with valid credentials
+Feature: Authentication
+
+Preconditions:
+- User has registered account
+- Login page accessible
+
+Test Steps:
+1. Navigate to login page
+2. Enter email address
+3. Enter password
+4. Click "Sign In"
+
+Expected Result:
+- Dashboard loads in <2 seconds
+- User data displayed correctly
+- Welcome message shown
+
+Status: ☐ Pass ☐ Fail ☐ Blocked
+```
+
+## Estrategia de prueba de regresión
+
+**Prueba de qué hacer en regresión**:
+- Flujos de trabajo principales del usuario (inicio de sesión, registro, funciones críticas)
+- Funciones modificadas (afectadas por esta versión)
+- Funciones relacionadas (dependencias)
+- Rutas críticas (funciones de alto uso)
+- Áreas sensibles al rendimiento
+- Funciones sensibles a la seguridad
+
+**Ejemplo de alcance de regresión**:
+```text
+Feature: User Login
+├── Happy path: Valid credentials
+├── Invalid credentials: Wrong password
+├── Inactive account: Suspended user
+├── Password reset flow
+├── Login rate limiting
+├── Session management
+└── Related features:
+    ├── Signup (account creation)
+    ├── Password change
+    └── Session timeout
+```
+
+## Prueba de aceptación del usuario (UAT)
+
+**Preparación UAT**:
+- Identificar partes interesadas y usuarios.
+- Crear escenarios de prueba a partir de historias de usuarios.
+- Preparar un entorno de prueba similar al de producción.
+- Preparar datos de prueba realistas.
+- Programar sesiones UAT
+
+**Aprobación de UAT**:
+```text
+UAT Sign-Off Form
+
+Project: [Project Name]
+Version: [Version]
+Date: [Date]
+
+Tested By: [Name, Title]
+Approved By: [Name, Title]
+
+Overall Result: ☐ Approved ☐ With Conditions ☐ Rejected
+
+Issues Found: [List]
+
+Signature: ________________
+```
+
+## CalidadPuertas
+
+**Puerta de calidad del código** (antes de la fusión):
+- Revisión de código aprobada
+- Pelusa pasada
+- Verificación de tipo aprobada
+- Pruebas unitarias aprobadas (>80% de cobertura)
+- Sin vulnerabilidades de seguridad
+
+**Integración Quality Gate** (antes de la puesta en escena):
+- Superación de pruebas de integración.
+- Superación de pruebas E2E
+- Rendimiento dentro de la línea de base
+- Migraciones de bases de datos validadas.
+- Contratos API validados.
+
+**Puerta de calidad de lanzamiento** (antes de la producción):
+- Se pasó la prueba de regresión.
+- Se obtuvo la aprobación de la UAT
+- Errores críticos resueltos
+- Se cumplieron los puntos de referencia de rendimiento
+- Revisión de seguridad aprobada
+
+## Agentes relacionados
+
+- [`testing`](/agents/testing) - Implementación de pruebas y optimización de cobertura
+- [`ci`](/agents/ci) - Canalización de CI/CD e infraestructura de prueba
+- [`api`](/agents/api) - Pruebas de API y validación de contratos
+- [`security`](/agents/security) - Pruebas de seguridad y cumplimiento
+- [`accessibility`](/agents/accessibility) - Pruebas de accesibilidad y cumplimiento de WCAG
+
+## Coordinación
+
+El coordinador del agente de control de calidad.es con:
+
+- **AG-TESTING**: Alinear los objetivos de cobertura y las estrategias de prueba
+- **AG-SECURITY**: Garantizar pruebas de seguridad en puertas de calidad
+- **AG-ACCESIBILIDAD**: Verificar el cumplimiento de la accesibilidad
+- **AG-API**: cambios en el contrato de API de prueba
+- **Equipo de producto**: coordinar UAT y el cierre de sesión del usuario
+
+## Comandos de barra diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigar las mejores prácticas de control de calidad
+- `/agileflow:ai-code-review` - Revisar la integridad de la estrategia de prueba
+- `/agileflow:adr-new` - Documentar decisiones de control de calidad
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia
+
+## Principios de calidad
+
+- **La calidad no es negociable**: Nunca lance por debajo de los estándares de calidad
+- **Mídelo todo**: decisiones de calidad respaldadas por métricas y datos
+- **Prueba temprana**: las pruebas de cambio se dejan en desarrollo
+- **Enfoque basado en el riesgo**: pruebe las áreas de alto riesgo más a fondo
+- **Mejora continua**: realice un seguimiento de las métricas y mejore con el tiempo

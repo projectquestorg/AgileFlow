@@ -1,0 +1,242 @@
+---
+title: /epic:view
+description: Sehen Sie sich epische Details mit Geschichten und kontextbezogenen Aktionen an
+---
+# /epic:view
+
+Sehen Sie sich vollständige epische Details an, einschließlich aller Geschichten, gruppiert nach Status und kontextbezogenen Aktionen.
+
+## Schnellstart
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `EPIC` | Ja | - | Epische ID (z. B. EP-0001) |
+
+## Beispiele
+
+### Spezifisches Epos anzeigen
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+Zeigt vollständige epische Informationen mit allen Geschichten und kontextbezogenen Aktionen an.
+
+### Interaktive Auswahl
+
+```bash
+/agileflow:epic:view
+```
+
+Ohne EPIC-Parameter werden aktuelle Epics angezeigt und Sie werden aufgefordert, eines auszuwählen.
+
+## Ausgabeformat
+
+### Epischer Überblick
+
+```markdown
+## EP-0002: Authentication System
+
+**Status**: active
+**Owner**: AG-API
+**Goal**: Implement secure user authentication with OAuth and sessions
+**Created**: 2024-12-20
+**Updated**: 2024-12-28
+
+**Progress**: 4/6 stories complete (67%)
+
+███████████████░░░░░░░ 67%
+```
+
+### Geschichten nach Status gruppiert
+
+```markdown
+### In Progress (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0012 | Session management | AG-API | 4h |
+
+### Ready (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0013 | Remember me feature | AG-UI | 2h |
+
+### Done (4)
+| Story | Title | Owner | Completed |
+|-------|-------|-------|-----------|
+| US-0011 | OAuth Google login | AG-API | 2024-12-27 |
+| US-0010 | Login form UI | AG-UI | 2024-12-26 |
+| US-0009 | User model | AG-API | 2024-12-25 |
+| US-0008 | Auth API setup | AG-API | 2024-12-24 |
+```
+
+### Verwandte Dokumentation
+
+```markdown
+### Related
+- **Research**: [OAuth Best Practices](../10-research/20241220-oauth.md)
+- **ADR**: [ADR-0002: Use NextAuth](../03-decisions/adr-0002.md)
+```
+
+## Kontextbezogene Aktionen
+
+Aktionen ändern sich je nach epischem Fortschritt:
+
+### Für Epics mit geringem Fortschritt (unter 50 %)
+
+Wenn der Fortschritt unter 50 % liegt:
+
+```
+This epic is 40% complete. What would you like to do?
+```
+
+Optionen:
+- **Weitere Storys hinzufügen**: Epic benötigt möglicherweise zusätzliche Arbeitselemente
+- **Beginnen Sie mit der Arbeit an einer fertigen Story**: Beginnen Sie mit der Umsetzung
+-**Sprint für dieses Epos planen**: Storys planen
+- **Zurück zur epischen Liste**: Zurück zur vollständigen Liste
+
+### Für Epics mit mittlerem Fortschritt (50–99 %)
+
+Wenn der Fortschritt zwischen 50 % und 99 % liegt:
+
+```
+This epic is 67% complete. What would you like to do?
+```
+
+Optionen:
+- **Arbeiten Sie an den verbleibenden Geschichten** (empfohlen): Konzentrieren Sie sich auf den Abschluss
+- **Story-Details anzeigen**: Überprüfen Sie eine bestimmte Story
+- **Weitere Geschichten hinzufügen**: Der epische Umfang ist möglicherweise gewachsen
+- **Epos als abgeschlossen markieren**: Wenn die verbleibende Arbeit zurückgestellt wird
+
+### Für abgeschlossene Epen (100 %)
+
+Wenn alle Geschichten fertig sind:
+
+```
+This epic is 100% complete! What would you like to do?
+```
+
+Optionen:
+- **Epos schließen** (empfohlen): In status.json als abgeschlossen markieren
+- **Zusammenfassung der Fertigstellung anzeigen**: Sehen Sie, was geliefert wurde
+- **Folgegeschichten hinzufügen**: Epic braucht schließlich noch mehr Arbeit
+- **Zurück zur epischen Liste**: Zurück zu /agileflow:epic:list
+
+### Für Epics in der Warteschleife
+
+Wenn Epic pausiert ist:
+
+```
+This epic is on hold. What would you like to do?
+```
+
+Optionen:
+- **Epos fortsetzen**: Status wieder auf „Aktiv“ ändern
+- **Sehen Sie, warum es in der Warteschleife ist**: Überprüfen Sie Blocker oder Notizen
+- **Epos schließen**: Wird nicht mehr benötigt
+- **Zurück zur epischen Liste**: Zurück zu /agileflow:epic:list
+
+## Typische Arbeitsabläufe
+
+### Arbeiten Sie weiter an Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 67% complete)
+2. Select "Work on remaining stories"
+3. See ready stories
+4. Select a story
+5. /agileflow:story:view STORY={selected}
+6. Start implementation
+```
+
+### Beende Epic am Ende des Sprints
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 95% complete)
+2. Work through remaining stories
+3. When all done:
+4. Select "Close epic"
+5. Epic marked as complete
+6. Start next epic
+```
+
+### Entsperren Sie die Warteschleife Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0003
+   (Epic is on-hold)
+2. Check blockers
+3. If resolved: "Resume epic"
+4. Epic changed back to active
+5. Continue work
+```
+
+### Erweitern Sie Epic mit mehr Arbeit
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 85% complete)
+2. Realize more work is needed
+3. Select "Add more stories"
+4. /agileflow:story EPIC=EP-0002 ...
+5. Create new stories
+6. Update epic progress
+```
+
+## Bedeutungen des Story-Status
+
+In der epischen Ansicht sind Storys nach Status gruppiert:
+
+| Status | Bedeutung | Nächste Aktion |
+|--------|---------|-------------|
+| **in_Progress** | Derzeit wird daran gearbeitet | Arbeit fortsetzen oder als blockiert markieren |
+| **bereit** | Bereit zum Start | Wählen Sie eine aus und beginnen Sie mit der Implementierung |
+| **erledigt** | Abgeschlossen und getestet | Zum nächsten Epos wechseln |
+
+## Fortschrittsinterpretation
+
+### Was der Prozentsatz bedeutet
+
+```
+4/6 (67%) = 4 stories done, 2 remaining, 67% complete
+```
+
+- 0-25 %: Epic hat gerade erst begonnen
+- 25–50 %: Hochfahren, mitten im Sprint
+- 50–75 %: Die meisten Arbeiten wurden identifiziert
+- 75–100 %: Endanstrengung bis zum Abschluss
+
+### Wann weitere Geschichten hinzugefügt werden sollten
+
+Erwägen Sie das Hinzufügen von Geschichten, wenn:
+- Der Fortschritt stagniert (hängt beim gleichen Prozentsatz fest)
+- Das Team ist blockiert und wartet auf Abhängigkeiten
+- Neue Anforderungen entstanden
+
+### Wann sollte Epi geschlossen werden?c
+
+Schließen, wenn:
+- Alle Geschichten sind mit `done` gekennzeichnet.
+- Akzeptanzkriterien sind erfüllt
+- Bereit zum nächsten Epos
+
+## Verwandte Befehle
+
+- [`/epic:list`](/commands/epic-list) - Alle Epen anzeigen
+- [`/epic`](/commands/epic) - Neues Epos erstellen
+- [`/story:list`](/commands/story-list) - Alle Geschichten anzeigen
+- [`/story:view`](/commands/story-view) - Story-Details anzeigen
+- [`/story`](/commands/story) - Erstellen Sie eine epische Geschichte
+- [`/status`](/commands/status) – Story-Status aktualisieren
+- [`/sprint`](/commands/sprint) – Sprintplanung
+- [`/board`](/commands/board) – Kanban-Ansicht

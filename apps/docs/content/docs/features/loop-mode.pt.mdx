@@ -1,0 +1,300 @@
+---
+title: Modo Loop
+description: Processamento autônomo de histórias com Ralph Loop para uma conclusão épica sem intervenção
+---
+# Modo Loop
+
+O Modo Loop permite o processamento autônomo de histórias por meio do sistema **Ralph Loop** do AgileFlow. Nomeado em homenagem ao padrão “Ralph Wiggum” da pesquisa da Anthropic sobre fluxos de trabalho de agentes, ele processa automaticamente histórias em um épico sem intervenção manual.
+
+O modo Loop é ativado através do comando [__NOTRASLATE_21____NOTRASLATE_40__ com parâmetros especiais. A Babysit orquestra todo o processo enquanto Ralph Loop cuida da automação.
+
+## Visão geral
+
+Quando ativado, Modo Loop:
+
+1. Escolhe a primeira história “pronta” de um épico
+2. Marca como "in_progress" e inicia a implementação
+3. Quando Claude para, executa testes automaticamente
+4. Se os testes forem aprovados → marca a história como concluída, carrega a próxima história
+5. Continua até a conclusão épica ou o máximo de iterações alcançado
+
+Isso permite o **processamento em lote noturno** de épicos bem definidos com critérios de aceitação claros.
+
+## Início rápido
+
+```bash
+# Start loop mode for an epic
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+
+# Or initialize directly via script
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+```
+
+## Como funciona
+
+### O Gancho de Parada
+
+O Modo Loop usa o sistema de gancho de parada do Claude Code. Quando Claude para de respondernão:
+
+1. O script __NOTRASLATE_22__ é executado automaticamente
+2. Executa o comando de teste configurado (padrão: __NOTRASLATE_23__)
+3. Com base nos resultados, avança para a próxima história ou solicita correções
+
+<imagem>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/loop-mode-flow.dark.svg" />
+  <img alt="Fluxo do modo Loop" src="/images/docs/features/loop-mode-flow.light.svg" />
+</imagem>
+
+### Estado da sessão
+
+A configuração do loop é armazenada em __NOTRASLATE_24__:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 3,
+    "max_iterations": 20,
+    "test_command": "npm test",
+    "mode": "normal"
+  }
+}
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `EPIC` | Sim | - | ID épico para processar (por exemplo, EP-0042) |
+| `MODE` | Sim | - | Deve ser __NOTRASLATE_27__ para modo autônomo |
+| `MAX` | Não | 20 | Máximo de iterações antes de parar |
+
+## Comandos CLI
+
+```bash
+# Initialize loop for an epic
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# Check current loop status
+node .agileflow/scripts/ralph-loop.js --status
+
+# Stop the loop gracefully
+node .agileflow/scripts/ralph-loop.js --stop
+
+# Reset loop state completely
+node .agileflow/scripts/ralph-loop.js --reset
+
+# Run one iteration manually
+node .agileflow/scripts/ralph-loop.js --run
+```
+
+## Modos de loop
+
+### Modo normal (padrão)
+
+Verificação baseada em teste padrão:
+
+__NOTRADUZIR_3__
+
+- Executa `npm test` após cada parada de Claude
+- Passa se todos os testes forem bem-sucedidos
+- Falha se algum teste falhar
+
+### Modo Visual
+
+Para épicos focados na UI que exigem verificação de captura de tela:
+
+__NÃOTRADUZIR_4__
+
+- Verifica o diretório __NOTRASLATE_30__ em busca de imagens
+- Todas as capturas de tela devem ter o prefixo __NOTRASLATE_31__
+- Útil para desenvolvimento de componentes de UI
+
+Consulte [Modo Visual__NOTRASLATE_41__ para obter detalhes.
+
+### Modo de cobertura
+
+Para requisitos de cobertura de teste:
+
+__NOTRADUZIR_5__
+
+- Executa testes com relatórios de cobertura
+- Verifica se a cobertura atende ao limite (por exemplo, 80%)
+- Falha se a cobertura cair abaixo do limite
+
+## Seleção de história
+
+O Modo Loop seleciona histórias nesta ordem de prioridade:
+
+1. **História atual** - Se já estiver em andamento
+2. **Histórias prontas** – Stories com status “pronto” (todas as dependências atendidas)
+3. **Histórias bloqueadas** - Puladas até serem desbloqueadas
+
+As histórias devem ter:
+- Critérios de aceitação claros
+- Todas as dependências resolvidas
+- Status definido como "pronto" ou "pendente"
+
+## Configuração
+
+### Comando de teste
+
+Configure o comando de teste em __NOTRADUZIR_32__:
+
+__NOTRADUZIR_6__
+
+### Parar configuração do gancho
+
+O modo Loop requer o gancho de parada em __NOTRASLATE_33__:
+
+__NÃOTRADUZIR_7__
+
+## Quando usar o modo Loop
+
+### Bom para
+
+- ✅ Épicos bem definidos com histórias claras
+- ✅ Desenvolvimento orientado a testes (os testes definem "pronto")
+- ✅ Processamento em lote de várias histórias durante a noite
+- ✅ Tarefas de implementação repetitivas (endpoints CRUD, componentes)
+- ✅ Histórias com critérios de aceitação automatizados
+
+### Não é bom para
+
+- ❌ Trabalho exploratório sem critérios de aceitação claros
+- ❌ Histórias que requerem revisão humana antes de prosseguir
+- ❌ Trabalho complexo em vários domínios que precisa de coordenação
+- ❌ Implementações iniciais sem padrões
+- ❌ Histórias com dependências externas (APIs, serviços)
+
+## Exemplo de fluxo de trabalho
+
+### 1. Prepare o épico
+
+Certifique-se de que todas as histórias tenham critérios de aceitação claros:
+
+__NÃOTRADUZIR_8__
+
+### 2. Iniciar modo Loop
+
+__NOTRADUZIR_9__
+
+### 3. Monitore o progresso
+
+Verifique o status periodicamente:
+
+__NOTRADUZIR_10__
+
+Saída:
+__NOTRADUZIR_11__
+
+### 4. Lidar com falhas
+
+Se testarfalha, o Loop Mode mostra as falhas e continua funcionando:
+
+```
+❌ Tests failed for US-0017
+
+Failures:
+  - UserList.test.tsx: Expected 3 users, got 2
+
+Continue fixing or run /agileflow:babysit --stop to pause.
+```
+
+### 5. Conclua a Épica
+
+Quando todas as histórias forem concluídas:
+
+__NÃOTRADUZIR_13__
+
+## Solução de problemas
+
+### Loop não inicia
+
+1. Verifique se o estado da sessão existe:
+   __NOTRADUZIR_14__
+
+2. Verifique se o gancho de parada está configurado:
+   __NÃOTRADUZIR_15__
+
+3. Inicialize manualmente:
+   __NOTRADUZIR_16__
+
+### Testes sempre falhando
+
+1. Execute os testes manualmente primeiro:
+   ```bash
+   npm test
+   ```
+
+2. Verifique o comando de teste na configuração:
+   __NÃOTRADUZIR_18__
+
+3. Certifique-se de que existam testes para a história atual
+
+### Loop preso na mesma história
+
+1. Verifique a contagem de iterações:
+   __NOTRADUZIR_19__
+
+2. Se estiver se aproximando do máximo de iterações:
+   - Corrigir o problema de bloqueio
+   - Ignore a história: atualize o status para "bloqueado"
+   - Aumento máximo: __NOTRASLATE_34__
+
+### Parando Inesperadamente
+
+O loop para quando:
+- Máximo de iterações alcançado
+- Épico completo
+- Comando de parada manual
+- Erro crítico na execução do teste
+
+Verifique os registros para obter detalhes:
+```bash
+cat .agileflow/logs/ralph-loop.log
+```
+
+## Melhores práticas
+
+### 1. Comece com EP pequenoICs
+
+Teste o modo Loop em um épico de 3 a 5 histórias primeiro, antes de lotes maiores.
+
+### 2. Escreva os testes primeiro
+
+O Modo Loop funciona melhor com TDD - os testes definem quando uma história está "pronta".
+
+### 3. Mantenha as histórias focadas
+
+Cada história deve ser completada em 1-3 iterações. Grandes histórias → mais fracassos.
+
+### 4. Monitore Periodicamente
+
+Verifique o status a cada 30-60 minutos durante corridas longas.
+
+### 5. Use o modo visual para UI
+
+Para o trabalho da IU, habilite o Modo Visual para detectar problemas de renderização que os testes podem perder.
+
+## Recursos relacionados
+
+- [Modo Visual__NOTRASLATE_42__ - Verificação de captura de tela para desenvolvimento de UI
+- [Contexto Compacto__NOTRASLATE_43__ - Preservação do contexto durante sessões longas
+- [`/agileflow:babysit`__NOTRASLATE_44__ - O comando mentor que orquestra o modo Loop
+- [__NOTRASLATE_36____NOTRASLATE_45__ - Verificação de teste manual
+
+## Arquitetura
+
+O modo Loop consiste em:
+
+| Componente | Finalidade |
+|-----------|---------|
+| `ralph-loop.js` | Script de orquestração do loop principal |
+| `screenshot-verifier.js` | Verificação de captura de tela do modo visualrei |
+| `session-state.json` | Configuração e estado do loop |
+| Pare o gancho | Ponto de integração do Código Claude |
+
+O nome "Ralph" vem do artigo de pesquisa da Anthropic sobre fluxos de trabalho de agentes, onde "Ralph Wiggum" foi usado como codinome para padrões autônomos de conclusão de tarefas.

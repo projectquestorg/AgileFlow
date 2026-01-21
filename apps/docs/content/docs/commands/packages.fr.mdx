@@ -1,0 +1,376 @@
+---
+title: /paquets
+description: Gérez les dépendances avec des mises à jour et des audits de sécurité
+---
+# /paquets
+
+Gérez de manière exhaustive les dépendances du projet avec des tableaux de bord automatisés, des audits de sécurité, des mises à jour sécurisées et une gestion des vulnérabilités dans tous les principaux gestionnaires de packages.
+
+## Démarrage rapide
+
+```bash
+/agileflow:packages ACTION=dashboard
+```
+
+## Objectif
+
+Cette commande fournit une gestion complète des dépendances en :
+- Détection des dépendances du projet entre npm, pip, cargo et autres gestionnaires de packages
+- Génération de tableaux de bord de dépendance complets avec des informations sur l'état et la vulnérabilité
+- Réalisation d'audits de sécurité et identification des CVE
+- Planification et application de mises à jour sécurisées des dépendances
+- Création d'histoires pour les problèmes de sécurité
+- Suivi et reporting sur l'état de maintenance
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `ACTION` | Non | `dashboard` | `dashboard`, `update` ou `audit` |
+| `SCOPE` | Non | `all` | Pour les mises à jour : `security`, `major`, `minor`, `patch`, `all` |
+| `OUTPUT` | Non | `markdown` | Pour le tableau de bord : `markdown`, `html`, `json`, `csv` |
+| `INCLUDE_DEV` | Non | `yes` | Incluez les dépendances de développement : `yes` ou `no` |
+| `SAVE_TO` | Non | varie | Emplacement d'enregistrement du rapport (par exemple, `docs/08-project/deps.md`) |
+| `AUTO_PR` | Non | `no` | Créez automatiquement un PR pour les mises à jour : `yes` ou `no` |
+
+## Exemples
+
+### Afficher le tableau de bord des dépendances
+
+```bash
+/agileflow:packages
+```
+
+Affiche un tableau de bord complet de toutes les dépendances avec l'état, les vulnérabilités et les recommandations.
+
+### Exporter le tableau de bord au format HTML
+
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=html
+```
+
+Génère un tableau de bord HTML interactif avec des tableaux et des graphiques triables.
+
+### Audit de sécurité uniquement
+
+```bash
+/agileflow:packages ACTION=audit
+```
+
+Exécute des contrôles de sécurité et signale les vulnérabilités sans apporter de modifications.
+
+### Mettre à jour les vulnérabilités de sécurité
+
+```bash
+/agileflow:packages ACTION=update SCOPE=security
+```
+
+Met à jour en toute sécurité les packages avec une sécurité connue iémet et demande confirmation.
+
+### Mettre à jour les versions mineures
+
+```bash
+/agileflow:packages ACTION=update SCOPE=minor
+```
+
+Met à jour les versions mineures (nouvelles fonctionnalités, rétrocompatibles).
+
+### Créer automatiquement un PR pour les mises à jour
+
+```bash
+/agileflow:packages ACTION=update SCOPE=all AUTO_PR=yes
+```
+
+Met à jour tous les packages et crée automatiquement une pull request.
+
+## Actions
+
+### ACTION=tableau de bord (par défaut)
+
+Génère un rapport de dépendance complet montrant :
+- **Nombre total** - Dépendances de production et de développement
+- **Statut de vulnérabilité** - Critique, élevé, moyen, faible
+- **Disponibilité des mises à jour** - Versions majeures, mineures et de correctifs
+- **Informations sur la licence** - Pour le suivi de la conformité
+- **Score de santé** - Santé globale du maintien des dépendances
+
+**Exemple de sortie** :
+```text
+# Dependencies Dashboard
+
+Project: my-app
+Generated: 2025-12-24 10:00:00 UTC
+Total Dependencies: 145 (prod: 98, dev: 47)
+
+## Summary
+
+| Category | Count | Action Needed |
+|----------|-------|---------------|
+| Critical Vulnerabilities | 2 | Update immediately |
+| Major Updates | 12 | Review breaking changes |
+| Minor Updates | 28 | Safe to update |
+| Up-to-date | 85 | No action |
+| Deprecated | 3 | Find alternatives |
+
+## Critical Vulnerabilities
+
+### express@4.16.0
+Current: 4.16.0 → Latest: 4.18.2 (+2 major)
+Severity: HIGH (CVSS 7.5)
+CVE: CVE-2022-24999
+Description: ReDoS vulnerability in Express.js routing
+Fix: npm install express@4.18.2
+
+[Additional vulnerability details...]
+
+## Maintenance Score: 78/100
+
+Breakdown:
+- Security: 60/100 (2 critical vulnerabilities)
+- Freshness: 80/100 (most deps recent)
+- License compliance: 95/100 (2 GPL warnings)
+- Bundle size: 75/100 (some optimization possible)
+```
+
+### ACTION=mise à jour
+
+Planifie et applique les mises à jour des dépendances avec des contrôles de sécurité :
+
+1. **Détecte les packages obsolètes** à l'aide du gestionnaire de packages approprié
+2. **Classé par type** - sécurité, majeur, mineur, correctif
+3. **Affiche le plan de mise à jour** avec des avertissements de modification avec rupture
+4. **Demande une confirmation** avant de postuler
+5. **Exécute des tests** après la mise à jourmange (si disponible)
+6. **Crée un PR** si demandé
+7. **Génère un rapport** avec toutes les modifications
+
+**Gestionnaires de packages pris en charge** :
+- Node.js : npm, fil, pnpm
+- Python : pip, pip-tools, poésie
+- Ruby : bundler (Gemfile)
+- Allez : allez mod
+- Rouille : cargaison
+- Java : Maven, Gradle
+- .NET : NuGet
+
+**Les mises à jour de sécurité** sont toujours prioritaires et recommandées immédiatement.
+
+**Mises à jour majeures** créent des histoires individuelles à examiner (peuvent nécessiter des modifications de code).
+
+Les **mises à jour mineures/de correctifs** peuvent être regroupées en toute sécurité.
+
+### ACTION=audit
+
+Exécute un audit de sécurité uniquement sans mise à jour :
+
+Affiche toutes les vulnérabilités connues avec :
+- Niveaux de gravité (critique, élevé, modéré, faible)
+- Identifiants et descriptions CVE
+- Versions des packages concernés
+- Correctifs recommandés
+
+Exemple :
+```text
+# Security Audit Report
+
+Generated: 2025-12-24 10:00:00 UTC
+Package Manager: npm
+
+## Critical (2)
+- express@4.16.0: CVE-2022-24999 (CVSS 7.5)
+- lodash@4.17.19: CVE-2021-23337 (CVSS 7.4)
+
+## High (0)
+None
+
+## Moderate (3)
+[Details...]
+
+Recommendation: Run /agileflow:packages ACTION=update SCOPE=security
+```
+
+## Détection du gestionnaire de packages
+
+La commande détecte et prend automatiquement en charge :
+
+| Gestionnaire | Fichiers | Détection |
+|---------|-------|---------------|
+| npm | package.json, package-lock.json | Projets Node.js |
+| fil | fil.lock | Node.js moderne |
+| pnpm | pnpm-lock.yaml | Node.js moderne |
+| pépin | exigences.txt, pyproject.toml | Python |
+| poésie | poésie.lock | Python moderne |
+| regroupeur | Gemfile, Gemfile.lock | Rubis/Rails |
+| allez mod | go.mod, go.sum | Aller |
+| cargaison | Cargo.toml, Cargo.lock | Rouille |
+| Maven | pom.xml | Java |
+| Diplômé | build.gradle | Java |
+| NuGet | *.csproj, packages.config | .NET |
+
+## Formats de sortie
+
+### Markdown (par défaut)
+Rapport lisible par l'homme avec des tableaux, adaptés à la documentation :
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=markdown
+```
+
+### HTML
+Tableau de bord interactif avec filtrage, tri et visualisation :
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=html
+```
+
+###JSON
+Données structurées pour l'outillage et l'intégration :
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=json
+```
+
+### CSV
+Format compatible avec une feuille de calcul :
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=csv
+```
+
+## Exemples de flux de travail
+
+### Audit hebdomadaire des dépendances
+
+```bash
+# Run every Monday
+/agileflow:packages ACTION=audit
+```
+
+Passez en revue toutes les vulnérabilités et planifiez les mises à jour.
+
+### Entretien mensuel
+
+```bash
+# Update minor and patch versions
+/agileflow:packages ACTION=update SCOPE=minor
+```
+
+Restez au courant des changements ininterrompus.
+
+### Mises à jour majeures trimestrielles
+
+```bash
+# Review major version upgrades
+/agileflow:packages ACTION=update SCOPE=major
+```
+
+Planifiez et testez soigneusement les modifications majeures.
+
+### Correctif de sécurité d'urgence
+
+```bash
+# Immediately update critical vulnerabilities
+/agileflow:packages ACTION=update SCOPE=security
+```
+
+Créez des relations publiques et déployez-les rapidement si les tests réussissent.
+
+## Intégration CI
+
+### Audit automatisé dans CI
+
+Ajouter aux actions GitHub :
+```yaml
+- name: Dependency audit
+  run: npm audit --audit-level=high
+
+- name: Check outdated
+  run: npm outdated || true  # Don't fail, just report
+```
+
+### Configuration du Dépendabot
+
+Créez `.github/dependabot.yml` :
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+```
+
+Dependabot créera automatiquement des PR pour les mises à jour.
+
+### Contrôle de dépendance hebdomadaire
+
+Ajouter un flux de travail planifié :
+```yaml
+name: Dependencies
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: /agileflow:packages ACTION=dashboard
+```
+
+## Créer des histoires pour les vulnérabilités
+
+Lorsque des problèmes de sécurité sont détectés, créez des histoires :
+
+**Format** :
+```text
+US-XXXX: Fix security vulnerability in [PACKAGE]
+
+Severity: [CRITICAL|HIGH|MEDIUM]
+CVE: [CVE-XXXX-XXXXX]
+Current: [version]
+Fix: [recommended version]
+
+Steps to Fix:
+1. Update package: npm install package@latest
+2. Run tests: npm test
+3. Review changelog for breaking changes
+```
+
+## meilleures pratiques
+
+1. **Donner la priorité à la sécurité** - Mettez toujours à jour les vulnérabilités critiques immédiatement
+
+2. **Mises à jour mineures par lots** - Regroupez les mises à jour ininterrompues pour plus d'efficacité
+
+3. **Test après les mises à jour** - Exécutez toujours la suite de tests complète après les mises à jour
+
+4. **Examinez les modifications majeures** - Testez les versions majeures en préparation avant la production
+
+5. **Surveiller les dépréciations** - Agissez rapidement sur les packages obsolètes
+
+6. **Conformité des licences** - Vérifiez les licences pour les exigences de l'entreprise
+
+7. **Taille du paquet** – Ensemble de moniteurse taille impact des dépendances
+
+8. **Audits automatisés** - Exécutez des audits chaque semaine, pas seulement pendant les versions
+
+## Règles
+
+- Ne mettez jamais à jour automatiquement les packages critiques sans approbation
+- Prévisualisez toujours les modifications avant de les appliquer (diff-first, OUI/NON)
+- Regrouper les mises à jour mineures/correctives lorsque cela est possible
+- Avertir de manière visible des modifications cassantes
+- Lien vers les journaux de modifications et les guides de migration
+- Créez des histoires pour les mises à niveau majeures
+- Ne sautez jamais les tests après la mise à jour
+- Validez toujours les fichiers de verrouillage (package-lock.json, Cargo.lock, etc.)
+
+## Commandes associées
+
+- [`/setup-tests`](/commands/tests) - Configurer les tests automatisés
+- [`/ci-setup`](/commands/ci) - Configurer les contrôles CI
+- [`/setup-deployment`](/commands/deploy) - Configurer le déploiement

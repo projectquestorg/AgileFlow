@@ -1,0 +1,297 @@
+---
+title: /habilidad:lista
+description: Enumere todas las habilidades instaladas con sus descripciones y estado.
+---
+# /habilidad:lista
+
+Muestra todas las habilidades instaladas en `.claude/skills/` con sus metadatos e información de archivo.
+
+## Inicio rápido
+
+```bash
+/agileflow:skill:list
+```
+
+Muestra todas las habilidades instaladas con descripciones, recuentos de archivos y estado de MCP.
+
+## Qué hace
+
+Escanea tus habilidades instaladas y muestra:
+
+- **Nombres de habilidades** - Identificador de SKILL.md
+- **Descripciones** - Propósito y casos de uso
+- **Recuento de archivos** - Cuántos archivos hay en cada habilidad
+- **Entradas del libro de recetas** - Flujos de trabajo de casos de uso incluidos
+- **Estado de MCP** - Si MCP está configurado
+- **Recomendaciones de acción** - Qué hacer a continuación
+
+## Parámetros
+
+Este comando no tiene parámetros.
+
+```bash
+/agileflow:skill:list
+```
+
+## Formato de salida
+
+Salida de ejemplo con múltiples habilidades:
+
+```
+📦 Installed Skills (4 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+supabase-swift
+  Supabase database operations for Swift iOS apps
+  └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
+     cookbook/crud.md, .mcp.json
+  MCP: ✓ Configured
+
+ui-components
+  React component patterns with accessibility
+  └─ 4 files: SKILL.md, references.md, cookbook/create.md,
+     cookbook/styling.md
+
+api-error-handling
+  REST API error handling patterns
+  └─ 3 files: SKILL.md, references.md, cookbook/http-errors.md
+
+typescript-patterns
+  TypeScript best practices and type patterns
+  └─ 2 files: SKILL.md, references.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Comprender el resultado
+
+### Entrada de habilidad
+
+Cada habilidad muestra:
+
+1. **Nombre**: identificador de la habilidad (p. ej., `supabase-swift`)
+2. **Descripción** - Desde el principio de la habilidad
+3. **Archivos** - Desglose de archivos incluidos:
+   - `SKILL.md` - Archivo de habilidades principal (siempre presente)
+   - __NORANSLATE_18__: enlaces de documentación (normalmente presentes)
+   - `cookbook/*.md` - Flujos de trabajo de casos de uso
+   - `.mcp.json` - Configuración del servidor MCP (si corresponde)
+4. **Estado de MCP** - "✓" si `.mcp.json` existe y está configurado
+
+### Información del archivo
+
+El recuento de archivos incluye:
+
+- **SKILL.md** - 1 archivo
+- **references.md** - 1 archivo (si existe)
+- **libro de recetas/** - Múltiples archivos (uno por caso de uso)
+- **.mcp.json** - 1 archivo (si está configurado)
+
+Desglose de ejemplo:
+```
+5 files total:
+  - SKILL.md (main)
+  - references.md (links)
+  - cookbook/crud-operations.md (workflow)
+  - cookbook/authentication.md (workflow)
+  - .mcp.json (MCP config)
+```
+
+## Ejemplos
+
+### Listar todas las habilidades
+
+```bash
+/agileflow:skill:list
+```
+
+**Respuesta:**
+```
+📦 Installed Skills (2 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+python-fastapi
+  FastAPI REST API patterns with validation and error handling
+  └─ 3 files: SKILL.md, references.md, cookbook/crud.md
+
+react-hooks
+  Custom React hooks patterns and best practices
+  └─ 2 files: SKILL.md, references.md
+```
+
+### No hay habilidades instaladas
+
+Si aún no has creado ninguna habilidad:
+
+```
+📦 No skills installed yet.
+
+Skills are stored in .claude/skills/ and can be created with:
+  /agileflow:skill:create
+
+This will research best practices and generate a contextual skill.
+```
+
+## Próximas acciones
+
+Después de enumerar las habilidades, se le ofrecen opciones:
+
+```
+What would you like to do?
+
+[1] Create new skill
+    Generate a new skill with web research and cookbook pattern
+
+[2] Edit a skill
+    Modify an existing skill's content or structure
+
+[3] Delete a skill
+    Remove a skill you no longer need
+
+[4] Test a skill
+    Verify a skill works correctly and validate structure
+
+[5] Done
+    Exit skill management
+```
+
+### Seleccione una acción
+
+Elija una opción para:
+
+- **Crear nueva habilidad** → `/agileflow:skill:create`
+- **Editar una habilidad** → `/agileflow:skill:edit`
+- **Eliminar una habilidad** → `/agileflow:skill:delete`
+- **Prueba una habilidad** → `/agileflow:skill:test`
+- **Listo** → Salir
+
+## Estructura de habilidades
+
+Cada directorio de habilidades ccontiene:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file (required)
+│   └─ Activation triggers, instructions, cookbook references
+├── references.md         # Documentation links (recommended)
+│   └─ Web docs, local docs, codebase patterns
+├── cookbook/             # Use-case workflows (optional)
+│   ├── use-case-1.md
+│   ├── use-case-2.md
+│   └── use-case-3.md
+└── .mcp.json            # MCP server config (optional)
+    └─ Tools for the skill's technology
+```
+
+## Comprobando detalles de habilidades
+
+Para ver más detalles sobre una habilidad específica:
+
+```bash
+# Edit the skill to view/modify
+/agileflow:skill:edit <skill-name>
+
+# Test the skill to validate
+/agileflow:skill:test <skill-name>
+
+# View SKILL.md directly
+cat .claude/skills/<skill-name>/SKILL.md
+```
+
+## Estado de MCP
+
+El indicador MCP muestra si una habilidad está configurada para acceder a la herramienta:
+
+- ** ✓ Configurado ** - `.mcp.json` existe y las herramientas MCP están disponibles
+- *Sin indicador* - No hay MCP configurado (aún se puede utilizar sin herramientas)
+
+Para agregar MCP a una habilidad:
+
+```bash
+# Edit the skill
+/agileflow:skill:edit <skill-name>
+
+# Or upgrade it
+/agileflow:skill:upgrade <skill-name>
+```
+
+## Mejores prácticas
+
+### Habilidades de organización
+
+Habilidades relacionadas con el grupo por dominio:
+
+- **Capa de datos**: `supabase-swift`, `postgresql-queries`, `mongodb-patterns`
+- **capa API**: `rest-api-errors`, `graphql-schema`, `webhooks`
+- **capa UI**: `react-components`, `accessibility-wcag`, `tailwind-patterns`
+- **DevOps**: `github-actions`, `docker-deployment`, `kubernetes`
+
+### Auditorías periódicas
+
+Ejecute periódicamente `/skill:list` para:
+
+1. Verifique las habilidades no utilizadas
+2. Verificar la configuración de MCP
+3. Identificar habilidades que necesitan actualización
+4. Ver el recuento total de habilidades
+
+### Limpiando
+
+Elimina las habilidades que ya no utilizas:```bash
+/agileflow:skill:delete old-skill-name
+```
+
+Esto mantiene su directorio de habilidades enfocado y más fácil de administrar.
+
+## Solución de problemas
+
+### Falta el directorio de habilidades
+
+Si ves "Aún no hay habilidades instaladas" y habilidades esperadas:
+
+1. Compruebe si existe `.claude/skills/`:
+   ```bash
+   ls -la .claude/skills/
+   ```
+
+2. Verifique que los archivos SKILL.md existan en los subdirectorios:
+   ```bash
+   find .claude/skills -name "SKILL.md"
+   ```
+
+3. Asegúrese de tener los permisos de lectura adecuados en el directorio.
+
+### Información de habilidades incompleta
+
+Si una habilidad muestra metadatos incompletos:
+
+1. El archivo SKILL.md puede tener un frontmatter corrupto
+2. Ejecute `/agileflow:skill:test` para diagnosticar
+3. Edite con `/agileflow:skill:edit` para arreglar
+
+### MCP no se muestra
+
+Si espera MCP pero no ve " ✓ Configurado ":
+
+1. Compruebe si existe `.mcp.json`:
+   ```bash
+   ls .claude/skills/<skill-name>/.mcp.json
+   ```
+
+2. Verifique que tenga una sintaxis JSON válida.
+3. Actualice o edite la habilidad para arreglar la configuración de MCP
+
+## Comandos relacionados
+
+- [`/skill:create`](/commands/skill-create) - Generar una nueva habilidad
+- [`/skill:edit`](/commands/skill-edit) - Modificar una habilidad existente
+- [`/skill:test`](/commands/skill-test) - Versi una habilidad funciona
+- [`/skill:delete`](/commands/skill-delete) - Eliminar una habilidad
+- [`/skill:upgrade`](/commands/skill-upgrade) - Agregar capacidad de aprendizaje
+
+## Próximos pasos
+
+1. **Enumere sus habilidades**: `/agileflow:skill:list`
+2. **Crea más habilidades**: `/agileflow:skill:create`
+3. **Prueba una habilidad**: `/agileflow:skill:test <skill-name>`
+4. **Habilitar aprendizaje**: `/agileflow:skill:upgrade <skill-name>`

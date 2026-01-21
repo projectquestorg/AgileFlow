@@ -1,0 +1,269 @@
+---
+title: /histoire:liste
+description: Répertoriez toutes les histoires avec des options de statut et de filtrage
+---
+# /histoire:liste
+
+Affichez toutes les user stories avec des options de filtrage et des fonctionnalités d’action rapide.
+
+## Démarrage rapide
+
+```bash
+/agileflow:story:list
+```
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `EPIC` | Non | - | Filtrer par épopée (par exemple, EP-0001) |
+| `STATUS` | Non | - | Filtrer par statut : `ready`, `in_progress`, `blocked`, `done` |
+| `OWNER` | Non | - | Filtrer par propriétaire (par exemple, AG-UI) |
+
+## Exemples
+
+### Liste toutes les histoires
+
+```bash
+/agileflow:story:list
+```
+
+Affiche toutes les histoires organisées par épopée avec leur statut.
+
+### Répertorier les histoires pour une épopée spécifique
+
+```bash
+/agileflow:story:list EPIC=EP-0001
+```
+
+Affiche uniquement les histoires dans l'épopée d'authentification.
+
+### Liste des histoires prêtes
+
+```bash
+/agileflow:story:list STATUS=ready
+```
+
+Affiche toutes les histoires prêtes à commencer à travailler.
+
+### Liste des histoires en cours
+
+```bash
+/agileflow:story:list STATUS=in_progress
+```
+
+Affiche les éléments de travail en cours.
+
+### Répertorier les histoires par propriétaire
+
+```bash
+/agileflow:story:list OWNER=AG-UI
+```
+
+Affiche tous les étages attribués à l'agent d'interface utilisateur.
+
+### Filtres combinés
+
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+```
+
+Affiche les histoires prêtes uniquement dans l'épopée d'authentification.
+
+```bash
+/agileflow:story:list STATUS=blocked OWNER=AG-API
+```
+
+Affiche les histoires d'API actuellement bloquées.
+
+## Format de sortie
+
+Les histoires sont organisées par épopée avec des colonnes de statut :
+
+```markdown
+## Stories
+
+### EP-0001: Authentication System
+| Story | Title | Status | Owner | Estimate |
+|-------|-------|--------|-------|----------|
+| US-0001 | Login form | done | AG-UI | 2h |
+| US-0002 | Password reset | in_progress | AG-API | 3h |
+| US-0003 | Session management | ready | AG-API | 4h |
+
+### EP-0002: User Dashboard
+| Story | Title | Status | Owner | Estimate |
+|-------|-------|--------|-------|----------|
+| US-0004 | Dashboard layout | ready | AG-UI | 2h |
+| US-0005 | Activity feed | ready | AG-UI | 3h |
+
+---
+**Summary**: 5 stories (1 done, 1 in_progress, 3 ready)
+```
+
+## Définitions de statut
+
+| Statut | Signification | Actions |
+|--------|---------|--------|
+| **prêt** | Prêt à démarrer, sans bloqueurs | Commencer le travail / afficher les détails |
+| **en_progress** | En cours de réalisation | Continuer le travail / marquer bloqué si nécessaire |
+| **bloqué** | En attente de dépendance ou de clarification | Résoudre le bloqueur/débloquer lorsque vous êtes prêt |
+| **fait** | Complété et testé | Passer à l'histoire suivante |
+
+## Actions rapides
+
+Après avoir affiché la liste, vous pouvez :
+
+### Afficher les détails de l'histoire
+
+Sélectionnez une histoire pour voir :
+- Critères d'acceptation complets
+- Statut des tests
+- Dépendances
+- Bloqueurs (le cas échéant)
+- Notes d'avancement
+
+```bash
+/agileflow:story:view STORY=US-0003
+```
+
+### Commencez à travailler sur une histoire
+
+Choisissez une histoire prête et marquez-la comme in_progress :
+
+```bash
+/agileflow:status US-0003 STATUS=in_progress
+```
+
+### Créer une nouvelle histoire
+
+Ajouter une histoire à une épopée :
+
+```bash
+/agileflow:story EPIC=EP-0001 ...
+```
+
+##Intégration du flux de travail
+
+### Standup quotidien
+
+```bash
+/agileflow:story:list STATUS=in_progress
+# See what's being worked on
+/agileflow:story:list STATUS=blocked
+# See what's blocked
+```
+
+### Planification des sprints
+
+```bash
+/agileflow:story:list STATUS=ready
+# See available work
+/agileflow:epic:list
+# See epic status
+# Select stories for sprint
+```
+
+### Débloquer le flux de travail
+
+```bash
+/agileflow:story:list STATUS=blocked
+# See all blocked stories
+# Resolve dependencies
+/agileflow:story:view STORY=<blocked>
+# See blocker details
+/agileflow:status <story> STATUS=ready
+# When unblocked, mark ready again
+```
+
+### Suivi de l'achèvement
+
+```bash
+/agileflow:story:list STATUS=done
+# See what was completed
+/agileflow:story:list STATUS=in_progress
+# See what's being worked on
+/agileflow:story:list STATUS=ready
+# See what's queued up
+```
+
+## Stratégies de filtrage
+
+### Par Epic
+```bash
+/agileflow:story:list EPIC=EP-0001
+# Focus on one feature
+```
+
+### Par statut
+```bash
+/agileflow:story:list STATUS=ready
+# Find available work
+```
+
+```bash
+/agileflow:story:list STATUS=blocked
+# Find blockers to resolve
+```
+
+### Par le propriétaire
+```bash
+/agileflow:story:list OWNER=AG-API
+# See what an agent is working on
+```
+
+### Par statut + Epic
+```bash
+/agileflow:story:list EPIC=EP-0001 STATUS=ready
+# Ready stories in specific epic
+```
+
+### Par statut + propriétaire
+```bash
+/agileflow:story:list STATUS=in_progress OWNER=AG-UI
+# Current work for specific agent
+```
+
+## Interprétation des résultats
+
+### Distribution d'histoires saines
+
+```
+5 stories (1 done, 2 in_progress, 2 ready)
+```
+
+- ✅ Les gens ont du travail à faire
+- ✅ Le travail coule à flot
+- ✅ Le backlog est prêt
+
+### Problèmes potentiels
+
+**Trop de in_progress (>3)**
+```
+5 stories (0 done, 4 in_progress, 1 ready)
+```
+- Envisager de réduire les encours (travail en cours)
+- Concentrez-vous sur la réalisation d'histoires
+
+**Aucune histoire prête**
+```
+5 stories (2 done, 2 in_progress, 0 ready)
+```
+- Besoin de planifier plus d'histoires
+- Créez `/agileflow:story` pour les prochains éléments de travail
+
+**Beaucoup de bloqués**
+```
+7 stories (1 done, 1 in_progress, 3 blocked, 2 ready)
+```
+- Adresser les bloqueurs en urgence
+- Il faudra peut-être débloquer les dépendances
+
+## Commandes associées
+
+- [`/story:view`](/commands/story-view) - Afficher stdétails originaux
+- [`/story`](/commands/story) - Créer une nouvelle histoire
+- [`/story-validate`](/commands/story-validate) - Valider l'exhaustivité de l'histoire
+- [`/status`](/commands/status) - Mettre à jour le statut de l'histoire
+- [`/epic:list`](/commands/epic-list) - Voir les épopées
+- [`/board`](/commands/board) - Tableau Kanban visuel
+- [`/blockers`](/commands/blockers) - Rechercher et résoudre les bloqueurs

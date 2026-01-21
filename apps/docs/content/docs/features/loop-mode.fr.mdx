@@ -1,0 +1,371 @@
+---
+title: Mode boucle
+description: Traitement autonome de l'histoire avec Ralph Loop pour une réalisation épique sans intervention
+---
+# Mode boucle
+
+Le mode Boucle permet un traitement autonome des histoires via le système **Ralph Loop** d'AgileFlow. Nommé d'après le modèle « Ralph Wiggum » issu des recherches d'Anthropic sur les flux de travail agents, il traite automatiquement les histoires dans une épopée sans intervention manuelle.
+
+Le mode boucle est activé via la commande [`/agileflow:babysit`](/commands/babysit) avec des paramètres spéciaux. Babysit orchestre l'ensemble du processus tandis que Ralph Loop gère l'automatisation.
+
+## Aperçu
+
+Lorsqu'il est activé, le mode boucle :
+
+1. Sélectionne la première histoire « prête » d'une épopée
+2. Le marque "in_progress" et commence la mise en œuvre
+3. Lorsque Claude s'arrête, exécute automatiquement les tests
+4. Si les tests réussissent → marque l'histoire terminée, charge l'histoire suivante
+5. Continue jusqu'à ce que l'épique soit terminée ou que les itérations maximales soient atteintes
+
+Cela permet le **traitement par lots de nuit** d'epics bien définis avec des critères d'acceptation clairs.
+
+## Démarrage rapide
+
+```bash
+# Start loop mode for an epic
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+
+# Or initialize directly via script
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+```
+
+## Comment ça marche
+
+### Le crochet d'arrêt
+
+Le mode Boucle utilise le système de crochet d'arrêt de Claude Code. Quand Claude arrête de répondreng :
+
+1. Le script `ralph-loop.js` s'exécute automatiquement
+2. Il exécute la commande de test configurée (par défaut : `npm test`)
+3. En fonction des résultats, il passe à l'histoire suivante ou demande des correctifs.
+
+<image>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/loop-mode-flow.dark.svg" />
+  <img alt="Flux en mode boucle" src="/images/docs/features/loop-mode-flow.light.svg" />
+</image>
+
+### État de la session
+
+La configuration de la boucle est stockée dans `docs/09-agents/session-state.json` :
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 3,
+    "max_iterations": 20,
+    "test_command": "npm test",
+    "mode": "normal"
+  }
+}
+```
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `EPIC` | Oui | - | ID Epic à traiter (par exemple, EP-0042) |
+| `MODE` | Oui | - | Doit être `loop` pour le mode autonome |
+| `MAX` | Non | 20 | Itérations maximales avant l'arrêt |
+
+## Commandes CLI
+
+```bash
+# Initialize loop for an epic
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# Check current loop status
+node .agileflow/scripts/ralph-loop.js --status
+
+# Stop the loop gracefully
+node .agileflow/scripts/ralph-loop.js --stop
+
+# Reset loop state completely
+node .agileflow/scripts/ralph-loop.js --reset
+
+# Run one iteration manually
+node .agileflow/scripts/ralph-loop.js --run
+```
+
+## Modes de boucle
+
+### Mode normal (par défaut)
+
+Vérification standard basée sur des tests :
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+```
+
+- Exécute `npm test` après chaque arrêt de Claude
+- Réussi si tous les tests réussissent
+- Échoue si un test échoue
+
+### Mode visuel
+
+Pour les epics centrées sur l'interface utilisateur nécessitant une vérification par capture d'écran :
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+- Vérifie le répertoire `screenshots/` pour les images
+- Toutes les captures d'écran doivent avoir le préfixe `verified-`
+- Utile pour le développement de composants d'interface utilisateur
+
+Voir [Mode visuel](/features/visual-mode) pour plus de détails.
+
+### Mode de couverture
+
+Pour les exigences de couverture des tests :
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+- Exécute des tests avec des rapports de couverture
+- Vérifie que la couverture atteint le seuil (par exemple, 80 %)
+- Échec si la couverture descend en dessous du seuil
+
+## Sélection d'histoires
+
+Le mode Boucle sélectionne les histoires dans cet ordre de priorité :
+
+1. **Histoire actuelle** - Si une est déjà en cours
+2. **Histoires prêtes** - Histoires avec le statut « prêt » (toutes les dépendances sont remplies)
+3. **Histoires bloquées** - Ignorées jusqu'à ce qu'elles soient débloquées
+
+Les histoires doivent avoir :
+- Critères d'acceptation clairs
+- Toutes les dépendances résolues
+- Statut défini sur "prêt" ou "en attente"
+
+##Configuration
+
+### Tester la commande
+
+Configurez la commande de test dans `agileflow-metadata.json` :
+
+```json
+{
+  "loop": {
+    "test_command": "npm test",
+    "coverage_threshold": 70,
+    "max_iterations": 20
+  }
+}
+```
+
+### Configuration du crochet d'arrêt
+
+Le mode boucle nécessite le crochet d'arrêt dans `.claude/settings.json` :
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agileflow/scripts/ralph-loop.js --run"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Quand utiliser le mode boucle
+
+### Bon pour
+
+- ✅ Des épopées bien définies avec des histoires claires
+- ✅ Développement piloté par les tests (les tests définissent "terminé")
+- ✅ Traitement par lots de plusieurs histoires du jour au lendemain
+- ✅ Tâches répétitives d'implémentation (points de terminaison CRUD, composants)
+- ✅ Histoires avec critères d'acceptation automatisés
+
+### Pas bon pour
+
+- ❌ Travaux exploratoires sans critères d'acceptation clairs
+- ❌ Histoires nécessitant un examen humain avant de continuer
+- ❌ Travaux multi-domaines complexes nécessitant une coordination
+- ❌ Premières implémentations sans modèles
+- ❌ Stories avec dépendances externes (API, services)
+
+## Exemple de flux de travail
+
+### 1. Préparez l'épopée
+
+Assurez-vous que toutes les histoires ont des critères d’acceptation clairs :
+
+```markdown
+## US-0015: Add User List Component
+
+**Acceptance Criteria:**
+- [ ] Component renders list of users from API
+- [ ] Loading state shown while fetching
+- [ ] Error state displayed on failure
+- [ ] Empty state when no users
+
+**Tests:** src/components/UserList.test.tsx
+```
+
+### 2. Démarrer le mode boucle
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=15
+```
+
+### 3. Surveiller les progrès
+
+Vérifiez périodiquement l'état :
+
+```bash
+node .agileflow/scripts/ralph-loop.js --status
+```
+
+Sortie :
+```
+Loop Status:
+  Epic: EP-0042
+  Current Story: US-0017
+  Iteration: 5 of 15
+  Mode: normal
+  Stories Completed: 4
+  Stories Remaining: 3
+```
+
+### 4. Gérer les échecs
+
+Si testEn cas d'échec, le mode boucle affiche les échecs et continue de fonctionner :
+
+```
+❌ Tests failed for US-0017
+
+Failures:
+  - UserList.test.tsx: Expected 3 users, got 2
+
+Continue fixing or run /agileflow:babysit --stop to pause.
+```
+
+### 5. Terminez l'épopée
+
+Lorsque toutes les histoires sont terminées :
+
+```
+✅ Epic EP-0042 Complete!
+
+Summary:
+  - Stories Completed: 7
+  - Total Iterations: 12
+  - Time Elapsed: 2h 34m
+
+All tests passing. Ready for review.
+```
+
+## Dépannage
+
+### La boucle ne démarre pas
+
+1. Vérifiez que l'état de la session existe :
+   ```bash
+   cat docs/09-agents/session-state.json
+   ```
+
+2. Vérifiez que le crochet d'arrêt est configuré :
+   ```bash
+   cat .claude/settings.json | grep -A5 "Stop"
+   ```
+
+3. Initialisez manuellement :
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042
+   ```
+
+### Les tests échouent toujours
+
+1. Exécutez d’abord les tests manuellement :
+   ```bash
+   npm test
+   ```
+
+2. Vérifiez la commande de test dans la configuration :
+   ```bash
+   cat docs/00-meta/agileflow-metadata.json | grep test_command
+   ```
+
+3. Assurez-vous que des tests existent pour l'histoire actuelle
+
+### Boucle bloquée sur la même histoire
+
+1. Vérifiez le nombre d'itérations :
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+2. Si vous approchez du nombre maximal d'itérations, soit :
+   - Résoudre le problème de blocage
+   - Passer l'histoire : mettre à jour le statut sur "bloqué"
+   - Augmentation maximale : `--max=30`
+
+### Arrêt inattendu
+
+La boucle s'arrête lorsque :
+- Nombre maximum d'itérations atteint
+- Épique terminée
+- Commande d'arrêt manuelle
+- Erreur critique dans l'exécution du test
+
+Consultez les journaux pour plus de détails :
+```bash
+cat .agileflow/logs/ralph-loop.log
+```
+
+## meilleures pratiques
+
+### 1. Commencez par un petit EPics
+
+Testez le mode boucle sur une épopée de 3 à 5 histoires avant des lots plus importants.
+
+### 2. Écrivez d'abord les tests
+
+Le mode boucle fonctionne mieux avec TDD – les tests définissent quand une histoire est « terminée ».
+
+### 3. Gardez les histoires concentrées
+
+Chaque histoire doit pouvoir être complétée en 1 à 3 itérations. Grandes histoires → plus d'échecs.
+
+### 4. Surveiller périodiquement
+
+Vérifiez l'état toutes les 30 à 60 minutes pendant les longues courses.
+
+### 5. Utiliser le mode visuel pour l'interface utilisateur
+
+Pour le travail sur l'interface utilisateur, activez le mode visuel pour détecter les problèmes de rendu que les tests pourraient manquer.
+
+## Fonctionnalités associées
+
+-[Visual Mode](/features/visual-mode) - Vérification de capture d'écran pour le développement de l'interface utilisateur
+-[Compact Context](/features/compact-context) - Préservation du contexte lors de longues sessions
+- [`/agileflow:babysit`](/commands/babysit) - La commande mentor qui orchestre le mode boucle
+- [`/agileflow:verify`](/commands/verify) - Vérification manuelle des tests
+
+##Architecture
+
+Le mode boucle comprend :
+
+| Composant | Objectif |
+|-----------|---------|
+| `ralph-loop.js` | Script d'orchestration de la boucle principale |
+| `screenshot-verifier.js` | Vérification de la capture d'écran du mode visuelroi |
+| `session-state.json` | Configuration et état de la boucle |
+| Crochet d'arrêt | Point d'intégration Claude Code |
+
+Le nom « Ralph » vient du document de recherche d'Anthropic sur les flux de travail agentiques, dans lequel « Ralph Wiggum » était utilisé comme nom de code pour les modèles d'exécution de tâches autonomes.

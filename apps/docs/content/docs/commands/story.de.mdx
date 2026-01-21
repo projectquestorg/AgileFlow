@@ -1,0 +1,140 @@
+---
+title: /Geschichte
+description: Erstellen Sie eine User Story mit Akzeptanzkriterien
+---
+# /Geschichte
+
+Erstellen Sie eine neue User Story mit Akzeptanzkriterien, Test-Stubs und Statusverfolgung.
+
+## Schnellstart
+
+```bash
+/agileflow:story EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id>
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `EPIC` | Ja | - | Übergeordnete epische ID (z. B. EP-0001) |
+| `STORY` | Ja | - | Story identifier (e.g., US-0001) |
+| `TITLE` | Ja | - | Titel der Geschichte, der die Funktion beschreibt |
+| `OWNER` | Ja | - | Eigentümername oder Agenten-ID (z. B. AG-UI, AG-API) |
+| `ESTIMATE` | Nein | `0.5d` | Zeitschätzung (z. B. `0.5d`, `1d`, `2d`) |
+| `AC` | Nein | - | Akzeptanzkriterien im Format „Gegeben/Wann/Dann“ |
+| `DEPENDENCIES` | Nein | - | Durch Kommas getrennte Liste abhängiger Story-IDs (z. B. `US-0001,US-0002`) |
+
+## Beispiele
+
+### Grundlegende Story-Erstellung
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0001 TITLE="User registration form" OWNER=AG-UI
+```
+
+Erstellt eine Story-Datei unter `docs/06-stories/EP-0010/US-0001-user-registration-form.md` mit Standardschätzung (0,5 Tage) und Status (bereit).
+
+### Story mit Akzeptanzkriterien
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0002 TITLE="Validate email address" OWNER=AG-API ESTIMATE=1d AC="Given a valid email, When form submitted, Then confirmation email sent"
+```
+
+Erstellt die Story mit spezifischen Akzeptanzkriterien, die die Entwicklung und Tests leiten.
+
+### Geschichte mit Abhängigkeiten
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0003 TITLE="Password reset flow" OWNER=AG-API ESTIMATE=1d DEPENDENCIES=US-0001,US-0002
+```
+
+Erstellt die Story und markiert sie als abhängig von vorherigen Storys. Diese Abhängigkeiten werden im Befehl `/deps` visualisiert.
+
+## Ausgabe
+
+Der Befehl erstellt:
+
+1. **Story-Datei** (`docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - Story-Metadaten (ID, Epic, Besitzer, Schätzung, Status)
+   - Beschreibung und Akzeptanzkriterien
+   - Architekturkontext (während der Entwicklung befüllt)
+   - Teststrategie
+
+2. **Test-Stub** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - Teststruktur abgestimmt auf Akzeptanzkriterien
+   - Platzhalter für Testdurchführung
+   - Links zur Geschichte für den Kontext
+
+3. **Statusverfolgung** (`docs/09-agents/status.json`)
+   - Story-Eintrag mit Eigentümer, Kostenvoranschlag und Status
+   - Abhängigkeitslinks zu anderen Geschichten
+   - Epischer Auftrag
+
+4. **Agentenkommunikation** (`docs/09-agents/bus/log.jsonl`)
+   - Zuweisungsnachricht mit der erstellten und zugewiesenen Story
+
+## Workfniedrig
+
+1. **Erstellen Sie die Story** – Führen Sie `/story` mit Epos, ID, Titel und Besitzer aus
+2. **Akzeptanzkriterien hinzufügen** – Verwenden Sie `/story-validate`, um AC zu verfeinern und zu testen
+3. **Vollständigkeit überprüfen** – Führen Sie `/story-validate STORY=<US-ID>` vor der Entwicklung aus
+4. **Entwickeln Sie die Geschichte** – Der Eigentümer führt die Umsetzung gemäß den Akzeptanzkriterien durch
+5. **Tests ausführen** – Verwenden Sie `/verify`, um automatisierte Tests auszuführen
+6. **Überprüfung anfordern** – Aktualisieren Sie den Status auf `in-review`, wenn Sie bereit sind
+
+## Akzeptanzkriterienformat
+
+Verwenden Sie das Format „Gegeben/Wann/Dann“ für klare, überprüfbare Kriterien:
+
+```markdown
+- **Given** a user on the registration page
+  **When** they enter valid email and password
+  **Then** an account is created and confirmation email sent
+
+- **Given** they submit an invalid email
+  **When** they click submit
+  **Then** form shows "Invalid email" error
+```
+
+Akzeptanzkriterien sollten sein:
+- **Spezifisch**: Verweisen auf tatsächliche Felder und Werte
+- **Testable**: Can be verified with automated or manual tests
+- **Unabhängig**: Jedes Kriterium testet eine Sache
+- **Abgeschlossen**: Happy Path und wichtige Randfälle abdecken
+
+## Story-Schätzungen
+
+Verwenden Sie diese Standardschätzungen:
+
+| Schätzung | Wann zu verwenden |
+|----------|------------|
+| `0.5d` | Einfaches CRUD, grundlegende UI-Komponente, schnelle Lösung |
+| __NICHT ÜBERSETZEN_29__ | Standardfunktion mit Validierung und Basistests |
+| `1.5d` | Komplexe Logik, mehrere Validierungen oder Integration |
+| `2d` | Wesentliches Refactoring oder wichtige Funktionskomponente |
+| `>2d` | In kleinere Geschichten aufteilen |
+
+## Integration mit anderen Befehlen
+
+- **Nach der Story-Erstellung**: Verwenden Sie `/story-validate`, um die Bereitschaft sicherzustellen
+- **Vor der Entwicklung**: Verwenden Sie `/babysit` für interaktive Implementierungshilfe
+- **Während der Entwicklung**: Verwenden Sie `/verify`, um Tests auszuführen
+- **Zur Codeüberprüfung**: Verwenden Sie `/review` für KI-gestützte Vorschläge
+- **For pull requests**: Use `/pr` to auto-generate PR description
+
+## Best Practices
+
+- **Eine Story = ein Feature** – Sorgen Sie dafür, dass die Storys fokussiert und unabhängig darstellbar sind
+- **Schreiben Sie klare Akzeptanzkriterien** – Diese leiten die Entwicklung und das Testen
+- **Realistisch einschätzen** - Berücksichtigen Sie Komplexität und Teamerfahrung
+- **Abhängigkeiten explizit verknüpfen** – Hilft bei der Sprintplanung und Risikobewertungment
+- **Vor der Entwicklung validieren** – Verwenden Sie `/story-validate`, um Probleme frühzeitig zu erkennen
+
+## Verwandte Befehle
+
+- [`/epic`](/commands/epic) – Erstellen Sie das übergeordnete Epos
+- [`/story-validate`](/commands/story-validate) – Überprüfen Sie die Vollständigkeit der Story vor der Entwicklung
+- [`/sprint`](/commands/sprint) – Wählen Sie Storys für die Sprintplanung aus
+- [`/auto`](/commands/auto) – Geschichten automatisch aus PRDs oder Spezifikationen generieren
+- [`/babysit`](/commands/babysit) – Erhalten Sie interaktive Hilfe während der Implementierung
+- [`/verify`](/commands/verify) – Tests ausführen und Teststatus aktualisieren

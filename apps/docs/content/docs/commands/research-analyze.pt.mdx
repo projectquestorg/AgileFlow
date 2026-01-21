@@ -1,0 +1,196 @@
+---
+title: /pesquisa:analisar
+description: Analise pesquisas existentes para implementação em seu projeto
+---
+# /pesquisa:analisar
+
+Revise as notas de pesquisa existentes e analise como elas poderiam ser implementadas em seu projeto com o contexto específico do projeto.
+
+## Início rápido
+
+```bash
+/agileflow:research:analyze FILE=20250106-caching-strategy.md
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `FILE` | Não | - | Nome do arquivo da nota de pesquisa (será solicitado se não for fornecido) |
+
+## Exemplos
+
+### Analise pesquisas específicas
+
+```bash
+/agileflow:research:analyze FILE=20250106-nextjs-upgrade.md
+```
+
+Analisa a pesquisa de atualização do Next.js e mostra como implementá-la em seu projeto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:research:analyze
+```
+
+Sem o parâmetro FILE, lista as pesquisas disponíveis e solicita que você selecione uma.
+
+## Fluxo de trabalho
+
+O comando orienta você através de uma análise estruturada:
+
+### Etapa 1: Selecione Pesquisa
+
+Se FILE não for fornecido, mostra pesquisas recentes com descrições:
+
+__NOTRADUZIR_3__
+
+### Etapa 2: revisar o resumo da pesquisa
+
+Exibe um breve resumo da pesquisa:
+
+__NÃOTRADUZIR_4__
+
+### Etapa 3: entrar no modo de plano
+
+Entra automaticamente no modo de plano ereúne o contexto do seu projeto:
+
+__NOTRADUZIR_5__
+
+Isso lê sua base de código real para tornar a análise específica do projeto.
+
+### Etapa 4: Análise detalhada da implementação
+
+Mostra como a pesquisa se aplica ao SEU projeto específico:
+
+__NOTRADUZIR_6__
+
+### Etapa 5: Decidir sobre a implementação
+
+Mostra benefícios e pergunta se você deseja criar artefatos:
+
+__NÃOTRADUZIR_7__
+
+### Etapa 6: recomendação de artefato inteligente
+
+Com base no tipo de pesquisa, recomenda o melhor artefato:
+
+| Tipo de pesquisa | Artefato recomendado | Por que |
+|---|---|---|
+| Decisão de arquitetura (OAuth vs autenticação local) | **ADR** | Decisão única com compensações |
+| Recurso com mais de 5 etapas (integração OAuth) | **Épico + Histórias** | Vários arquivos, vários domínios |
+| Tarefa focada única (botão Adicionar OAuth) | **História** | Escopo claro, 1-3 arquivos |
+| Melhores práticas (padrões de tratamento de erros) | **Documento prático** | Diretrizes, trabalho não monitorado |
+
+Então pergunta:
+
+__NÃOTRADUZIR_8__
+
+### Etapa 7: Criar artefatos
+
+Com base na sua escolha, cria:
+
+- **ADR**:Documenta decisões arquitetônicas e compensações
+- **Epic + Stories**: divide-se em trabalhos rastreáveis
+- **História**: cria um único item de trabalho
+- **Nada**: Apenas fecha com análise salva
+
+## Arquivos de saída
+
+### Análise salva
+
+A análise detalhada é salva no arquivo de pesquisa:
+
+__NOTRADUZIR_9__
+
+### Artefatos criados
+
+Se você optar por criar artefatos:
+
+**Se ADR:**
+__NOTRADUZIR_10__
+
+**Se épico + histórias:**
+__NOTRADUZIR_11__
+
+**Se história:**
+```
+docs/06-stories/<EPIC>/US-XXXX-oauth-implementation.md
+```
+
+## Principais recursos
+
+### Análise Específica do Projeto
+
+Em vez de conselhos genéricos:
+
+__NÃOTRADUZIR_13__
+
+### Benefícios primeiro
+
+Sempre mostra o que você GANHA antes da complexidade da implementação:
+
+__NOTRADUZIR_14__
+
+### Recomendações inteligentes
+
+O padrão não é Epic para tudo:
+
+__NÃOTRADUZIR_15__
+
+## Melhores práticas
+
+### Quando usar /research:analyze
+
+**Use-o quando:**
+- Você importou pesquisas anteriormente e agora precisa de implementação
+- Você deseja entender o impacto específico do projeto
+- Você está decidindo se vai resolver isso agora ou mais tarde
+- Vocêquer transformar pesquisa em trabalho rastreável
+
+**Não use quando:**
+- Apenas lendo pesquisas para obter informações (use __NOTRASLATE_17__)
+- Não está pronto para implementar (apenas revise, não crie artefatos)
+- Analisando novas pesquisas (use __NOTRASLATE_18__ primeiro)
+
+### Obtendo melhores recomendações
+
+Antes de analisar a pesquisa:
+- Certifique-se de que sua base de código esteja atualizada (último commit)
+- Tenha os arquivos principais organizados (README, documentos principais)
+- Entenda sua pilha de tecnologia (documentado em CLAUDE.md)
+
+A análise lê seu código real para fazer recomendações específicas.
+
+### Escolhendo o tipo de artefato
+
+**Escolha ADR se:**
+- Esta é uma decisão arquitetônica única
+- Várias opções de trade-off foram avaliadas
+- A equipe precisa entender o porquê
+
+**Escolha Épico + Histórias se:**
+- O recurso abrange mais de 5 etapas de implementação
+- Vários arquivos e domínios afetados
+- 3+ dias de esforço
+
+**Escolha História se:**
+- Tarefa de implementação única e focada
+- 1-3 arquivos afetados
+- Pode ser feito em 1-2 horas
+
+**Escolha Documento prático se:**
+- Esta é a orientação/melhor ppráticas
+- Aplica-se a muitas tarefas futuras
+- Não rastreado como trabalho
+
+## Comandos Relacionados
+
+- [`/research:import`](/commands/research-import) - Importar novas pesquisas
+- [`/research:list`](/commands/research-list) - Ver todas as notas de pesquisa
+- [__NOTRASLATE_21____NOTRASLATE_28__ - Ver detalhes da pesquisa
+- [__NOTRASLATE_22____NOTRASLATE_29__ - Criar ADR a partir da análise
+- [__NOTRASLATE_23____NOTRASLATE_30__ - Crie épico a partir da análise
+- [`/story`](/commands/story) - Criar história a partir da análise
+- [`/babysit`__NOTRASLATE_32__ - Implementar artefatos criados

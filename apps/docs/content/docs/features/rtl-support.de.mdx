@@ -1,0 +1,198 @@
+---
+title: RTL-Sprachunterstützung
+description: Unterstützung für von rechts nach links geschriebene Sprachen wie Arabisch, Hebräisch, Persisch und Urdu.
+---
+# RTL-Sprachunterstützung
+
+Die AgileFlow-Dokumentation unterstützt Rechts-nach-Links-Sprachen (RTL), einschließlich Arabisch, Hebräisch, Persisch und Urdu. In diesem Leitfaden erfahren Sie, wie Sie die RTL-Unterstützung nutzen und Übersetzungen beisteuern.
+
+## Verwenden des RTL-Modus
+
+### Sprachumschalter
+
+Klicken Sie auf das Sprach-/Globussymbol im Site-Header, um zwischen LTR- und RTL-Modus zu wechseln. Die Seite passt sich automatisch an:
+
+- Textrichtung
+- Layoutspiegelung
+- Navigationsausrichtung
+- Komponentenpositionierung
+
+### Automatische Erkennung
+
+Wenn Ihr Browser auf eine RTL-Sprache eingestellt ist, startet die Site automatisch im RTL-Modus. Unterstützte RTL-Sprachen:
+
+- Arabisch (ar)
+- Hebräisch (er)
+- Persisch/Farsi (fa)
+- Urdu (ur)
+
+## RTL-fähiges CSS
+
+Die Seite verwendet Tailwind CSS mit RTL-Varianten. Verwenden Sie das Präfix `rtl:` für RTL-spezifische Stile:
+
+```css
+/* Example RTL styles */
+.my-element {
+  margin-left: 1rem;   /* LTR default */
+}
+
+[dir="rtl"] .my-element {
+  margin-left: 0;
+  margin-right: 1rem;  /* RTL override */
+}
+
+/* Using Tailwind rtl: variant */
+<div className="ml-4 rtl:ml-0 rtl:mr-4">
+  Content
+</div>
+```
+
+### Logische Eigenschaften
+
+In den meisten Fällen bevorzugen Sie logische CSS-Eigenschaften, die die Richtung automatisch verarbeiten:
+
+```css
+/* Instead of this */
+margin-left: 1rem;
+padding-right: 2rem;
+text-align: left;
+
+/* Use this */
+margin-inline-start: 1rem;
+padding-inline-end: 2rem;
+text-align: start;
+```
+
+Rückenwindäquivalente:
+- `ms-*` = margin-inline-start
+-`me-*` = margin-inline-end
+- `ps-*` = padding-inline-start
+- `pe-*` = padding-inline-end
+- `start-*` = inset-inline-start
+- `end-*` = inset-inline-end
+
+## Übersetzungsworkflow
+
+### Hinzufügen einer neuen Sprache
+
+1. Übersetzungsdateien in `/locales/{lang}/` erstellen:
+
+```
+locales/
+├── en/
+│   ├── common.json
+│   └── docs.json
+├── ar/
+│   ├── common.json
+│   └── docs.json
+└── he/
+    ├── common.json
+    └── docs.json
+```
+
+2. Fügen Sie die Sprache zu `LANGUAGES` in `components/language-switcher.tsx` hinzu:
+
+```typescript
+const LANGUAGES: Language[] = [
+  { code: "en", name: "English", nativeName: "English", direction: "ltr" },
+  { code: "ar", name: "Arabic", nativeName: "العربية", direction: "rtl" },
+  // Add new language here
+]
+```
+
+3. Erstellen Sie übersetzte MDX-Dateien:
+
+```
+content/docs/
+├── index.mdx           # English (default)
+└── ar/
+    └── index.mdx       # Arabic translation
+```
+
+### Übersetzungsrichtlinien
+
+1. **Formatierung beibehalten**: Codeblöcke, Links und Komponenten bleiben erhalten
+2. **Alt-Text übersetzen**: Bild-Alt-Attribute sollten übersetzt werden
+3. **URLs behalten**: Übersetzen Sie keine URL-Slugs, es sei denn, dies ist unbedingt erforderlich
+4. **Technische Begriffe überprüfen**: Einige technische Begriffe bleiben möglicherweise auf Englisch
+
+### Beispiel-RTL-Inhalt
+
+Hier ist ein arabischer Beispieltext zum Testen des RTL-Layouts:
+
+```arabic
+مرحبًا بكم في توثيق AgileFlow. هذا النص باللغة العربية لاختبار دعم اللغات من اليمين إلى اليسار.
+```
+
+```hebrew
+ברוכים הבאים לתיעוד AgileFlow. זהו טקסט בעברית לבדיקת תמיכה בשפות מימין לשמאל.
+```
+
+## RTL-Layout testen
+
+1. Wechseln Sie mit dem Sprachumschalter in den RTL-Modus
+2. Überprüfen Sie diese Bereiche auf RichtigkeitSpiegelung:
+   - Navigationsseitenleiste (sollte rechts sein)
+   - Ausrichtung des Suchsymbols
+   - Scrollrichtung des Codeblocks
+   - Fortschrittsbalken
+   - Symbole (einige sollten umdrehen, andere nicht)
+
+### Symbole, die NICHT umgedreht werden sollten
+
+- Suchsymbol
+- Symbol für externen Link
+- Häkchen
+- Plus/Minus
+- Schließen (X)
+
+### Symbole, die umgedreht werden sollten
+
+- Pfeil nach links/rechts
+- Chevron links/rechts
+- Einrücken/Ausrücken
+- Antworten/Weiterleiten
+
+## Technische Umsetzung
+
+### DirectionProvider
+
+Die Komponente `DirectionProvider` verwaltet den Richtungsstatus:
+
+```tsx
+import { useDirection } from "@/components/direction-provider"
+
+function MyComponent() {
+  const { direction, setDirection, isRTL } = useDirection()
+
+  return (
+    <div className={isRTL ? "text-right" : "text-left"}>
+      Current direction: {direction}
+    </div>
+  )
+}
+```
+
+### Zugriffsrichtung in CSS
+
+Das Attribut `dir` wird für das Element `<html>` festgelegt:
+
+```css
+/* CSS selector */
+[dir="rtl"] .my-element {
+  /* RTL styles */
+}
+
+/* Tailwind */
+<div className="rtl:flex-row-reverse">
+```
+
+## Mitwirken
+
+Möchten Sie bei der Übersetzung von AgileFlow helfen? Wir freuen uns über Beiträge!
+
+1. Überprüfen Sie vorhandene Übersetzungen in `/locales/`
+2. Erstellen Sie einen neuen Ordner für Ihre Sprache
+3. Reichen Sie eine PR mit Ihren Übersetzungen ein
+
+Bei Fragen öffnen Sie ein Issue auf GitHub.

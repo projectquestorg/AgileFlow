@@ -1,0 +1,172 @@
+---
+title: /agileflow:pesquisa:pergunte
+description: Gere solicitações de pesquisa detalhadas para ChatGPT, Claude web, Perplexity ou Gemini
+---
+# /agileflow:research:ask
+
+Gere um prompt de pesquisa abrangente e rico em contexto para ferramentas externas de IA quando precisar de ajuda especializada.
+
+## Início rápido
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"
+```
+
+Exemplo para solução de problemas:
+
+```bash
+/agileflow:research:ask TOPIC="next-auth Google OAuth" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+```
+
+## Objetivo
+
+Quando você está preso em um problema ou precisa de orientação especializada, este comando gera um **prompt detalhado de mais de 200 linhas** que inclui:
+
+- Seu contexto de base de código atual e trechos de código
+- Mensagens de erro exatas e rastreamentos de pilha
+- O que você já tentou
+- Perguntas específicas para responder
+
+O prompt gerado foi projetado para obter respostas específicas e acionáveis de ferramentas de IA.
+
+## Parâmetros
+
+| Argumento | Obrigatório | Descrição |
+|----------|----------|------------|
+| TÓPICO | Sim | O que você está pesquisando (por exemplo, "OAuth 2.0 com Google") |
+| DETALHES | Não | Restrições, prazos ou requisitos específicos |
+| ERRO | Não | Mensagem de erro exata se solução de problemas |
+
+## O que é gerado
+
+O comando cria um prompt estruturado com estas seções:
+
+### 1. Contexto do projeto
+Estruturaversão, dependências e arquivos relevantes da sua base de código.
+
+### 2. Implementação Atual
+**Mais de 50 linhas de código real** do seu projeto, sem pseudocódigo ou resumos.
+
+### 3. O problema
+- Mensagens de erro exatas (literalmente)
+- Rastreamento completo da pilha, se disponível
+- Comportamento esperado vs real
+- Passos para reproduzir
+
+### 4. O que já tentamos
+Pelo menos **duas abordagens** com resultados detalhados e análise do motivo pelo qual não funcionaram.
+
+### 5. Perguntas Específicas
+**Mais de três perguntas específicas** que são respondíveis e específicas para sua situação.
+
+### 6. O que eu preciso
+- Análise de causa raiz
+- Solução passo a passo
+- Exemplos de código completos
+- Pegadinhas e casos extremos
+- Abordagem de teste
+
+### 7. Detalhes do ambiente
+Versão do Node.js, sistema operacional e versões de ferramentas relevantes.
+
+## Requisitos de qualidade
+
+O comando valida o prompt gerado antes de gerar:
+
+| Verifique | Requisito |
+|-------|------------|
+| Comprimento | ≥200 linhas |
+| Trechos de código | ≥50 linhas de código real |
+| Detalhes do erro | Mensagem literal se o problema for solucionadoem |
+| Seção experimentada | ≥2 abordagens documentadas |
+| Perguntas | ≥3 questões específicas |
+
+Se alguma verificação falhar, o comando reunirá mais contexto e será regenerado.
+
+## Fluxo de trabalho
+
+```
+Step 1: Run the command
+/agileflow:research:ask TOPIC="..." ERROR="..."
+
+Step 2: Copy the generated prompt
+
+Step 3: Paste into ChatGPT, Claude web, Perplexity, or Gemini
+
+Step 4: Get expert analysis
+
+Step 5: Import results back
+/agileflow:research:import TOPIC="..."
+(paste the response when prompted)
+
+Step 6: Results saved to docs/10-research/
+```
+
+## Exemplo de saída
+
+Um bom prompt é assim (abreviado):
+
+```markdown
+# Research Request: next-auth Google OAuth unauthorized_client Error
+
+## Project Context
+
+**Framework**: Next.js 14.0.4 with App Router
+**Key Dependencies**:
+- next-auth: 5.0.0-beta.4
+- next: 14.0.4
+- typescript: 5.3.3
+
+---
+
+## Current Implementation
+
+### File: src/app/api/auth/[...nextauth]/route.ts
+
+```código digitado
+__NOTRADUZIR_19__
+import Google from "next-auth/providers/google";
+
+exportar const { manipuladores, auth, signIn, signOut } = NextAuth({
+  provedores: [
+    Google({
+      ID do cliente: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  // ... mais 40 linhas de código real
+});
+__NÃOTRADUZIR_4__
+[auth][error] CallbackRouteError: Leia mais em https://errors.authjs.dev#callbackrouteerror
+[auth][causa]: Erro: cliente_não autorizado
+__NOTRADUZIR_5__
+
+## Antipadrões
+
+**Não gere solicitações curtas e vagas:**
+
+__NOTRADUZIR_6__
+
+**Sempre gere prompts detalhados com:**
+
+__NÃOTRADUZIR_7__
+
+## Integração com babá
+
+Quando [__NOTRASLATE_9____NOTRASLATE_14__ detecta que você está preso em um problema, isso sugerepontos:
+
+__NÃOTRADUZIR_8__
+
+## Dicas para melhores resultados
+
+1. **Seja específico com TOPIC** - Inclua versões da estrutura e tipos de erros
+2. **Incluir mensagens de ERRO** - Rastreamentos completos de pilha ajudam tremendamente
+3. **Deixe o comando ler seu código** - Ele extrai a implementação real
+4. **Não pule a validação** - As verificações garantem respostas de qualidade
+
+## Comandos Relacionados
+
+- [`/agileflow:research`](/commands/research) - Visão geral do sistema de pesquisa
+- [`/agileflow:research:import`__NOTRASLATE_16__ - Importar resultados de pesquisa
+- [`/agileflow:research:list`](/commands/research-list) - Ver todas as notas de pesquisa
+- [__NOTRASLATE_13____NOTRASLATE_18__ - Leia a nota de pesquisa específica

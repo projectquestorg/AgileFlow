@@ -1,0 +1,201 @@
+---
+title: Epischer Planer
+description: Spezialist für epische und Story-Planung für die Zerlegung großer Features in ausführbare Storys.
+---
+# Epic Planner Agent
+
+Der Epic Planner-Agent (EPIC-PLANNER) ist Ihr Spezialist für die Feature-Zerlegung. Es unterteilt große Features in angemessen dimensionierte Epics und Storys mit klaren Akzeptanzkriterien, Schätzungen, Abhängigkeiten und Agentenzuweisungen.
+
+## Fähigkeiten
+
+- Teilen Sie die Features in 3–8 Story-Epen mit klaren Zielen auf
+- Schreiben Sie für jede Geschichte die Akzeptanzkriterien „Gegeben/Wann/Dann“ auf
+- Schätzen Sie die Komplexität der Story (0,5d, 1d, 2d)
+- Kartenabhängigkeiten zwischen Geschichten
+- Extrahieren Sie den Architekturkontext aus Designdokumenten
+- Geschichten spezialisierten Agenten zuweisen (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- Erstellen Sie Test-Stubs, die an den Akzeptanzkriterien ausgerichtet sind
+- Status.json aktualisieren und über bus/log.jsonl koordinieren
+
+## Wann zu verwenden
+
+Verwenden Sie den Epic Planner-Agenten, wenn:
+
+- Sie haben eine umfangreiche Feature-Anfrage, die Sie in kleinere Storys zerlegen möchten
+- Sie benötigen Hilfe bei der Einschätzung der Komplexität der Geschichte
+- Sie möchten Abhängigkeiten zwischen Storys planen
+– Sie müssen den Architekturkontext zur Entwicklerunterstützung extrahieren
+- Du bist unsicher, wie man brechtak arbeiten teamübergreifend
+- Sie möchten sicherstellen, dass die Geschichten den INVEST-Kriterien entsprechen (unabhängig, verhandelbar, wertvoll, schätzbar, klein, überprüfbar).
+
+## Wie es funktioniert
+
+1. **Kontextladen**: Der Agent liest Fachwissen, Status.json, Roadmap und Architekturdokumente
+2. **Klarstellung**: Agent fragt nach Funktionsumfang, Einschränkungen und Prioritäten
+3. **Recherche**: Der Agent überprüft docs/10-research/ auf relevante Muster
+4. **Planung**: Agent schlägt eine epische Struktur mit 3-8 Kindergeschichten vor
+5. **Architekturextraktion**: Der Agent ruft relevanten Architekturkontext mit Quellenangaben ab
+6. **Definition von „Bereit“**: Der Agent stellt sicher, dass jede Story über AC, Test-Stub und keine Blocker verfügt
+7. **Erstellung**: Der Agent erstellt Epic-/Story-Dateien, Test-Stubs und aktualisiert status.json
+8. **Koordination**: Der Agent hängt Zuweisungsnachrichten an bus/log.jsonl an
+9. **Selbstverbesserung**: Der Agent führt self-improve.md aus, um sein Fachwissen zu aktualisieren
+
+## Beispiel
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need to plan the user authentication feature"
+```
+
+Der Epic Planner wird:
+1. Stellen Sie klärende Fragen (JWT vs. Sitzung? Social Login? MF).A?)
+2. Überprüfen Sie docs/04-architecture/ auf bereits dokumentierte Authentifizierungsmuster
+3. Vorschlag: EP-0015: Benutzerauthentifizierung (5 Geschichten)
+   - US-0150: JWT-Infrastruktur einrichten (AG-API, 1d)
+   - US-0151: Login-Endpunkt implementieren (AG-API, 1d)
+   - US-0152: Anmeldeformular erstellen (AG-UI, 1d)
+   - US-0153: Abmeldung implementieren (AG-API, 0.5d)
+   - US-0154: Authentifizierungstests hinzufügen (AG-CI, 1d)
+4. Write acceptance criteria for each story
+5. Abhängigkeiten identifizieren (Form hängt vom Endpunkt ab)
+6. Erstellen Sie Dateien mit integriertem Architekturkontext
+7. Aktualisieren Sie status.json mit allen 5 Storys, die als „bereit“ markiert sind.
+
+Oder direkt spawnen:
+
+```text
+Task(
+  description: "Plan the payment processing feature",
+  prompt: "Break into stories with AC and estimates. Stripe integration required.",
+  subagent_type: "agileflow-epic-planner"
+)
+```
+
+## Schlüsselverhalten
+
+- **INVEST-Kriterien**: Jede Geschichte ist unabhängig, verhandelbar, wertvoll, schätzbar, klein, überprüfbar
+- **Schätzungen von 0,5 bis 2 Tagen**: Geschichten sollten in einer einzigen Arbeitssitzung abgeschlossen werden können
+- **Vertikale Slices**: Jede Story bietet nach Möglichkeit einen für den Benutzer sichtbaren Wert
+- **Architecture-Kontextextraktion**: Enthält relevante Abschnitte aus docs/04-architecture/ mit Quellenangaben
+- **Quellenangabe**: Jedes technische Detail enthält `[Source: architecture/file.md#section]` zur Überprüfung
+- **Definition von „Bereit“**: Jede Story verfügt über AC, Test-Stub, keine Blocker und Agentenzuweisung
+- **Autonome Befehle**: Ruft /agileflow:board, /agileflow:velocity, /agileflow:research:ask direkt auf
+- **Statusaktualisierungen**: Erstellt Storys mit status=ready in docs/09-agents/status.json
+- **Bus-Nachrichten**: Hängt „Assign“-Nachrichten für jede Story an docs/09-agents/bus/log.jsonl an
+
+## Werkzeuge verfügbar
+
+Dieser Agent hat Zugriff auf: Lesen, Schreiben, Bearbeiten, Glob, Grep
+
+## Akzeptanzkriterienformat
+
+Zur Verdeutlichung wird in jeder Geschichte das Format „Gegeben/Wann/Dann“ verwendet:
+
+```markdown
+## Acceptance Criteria
+
+- **Given** a user is logged out
+  **When** they click "Login"
+  **Then** the login form appears with email and password fields
+
+- **Given** valid credentials entered
+  **When** they click "Sign In"
+  **Then** they're redirected to dashboard and JWT token is stored
+
+- **Given** invalid credentials
+  **When** they click "Sign In"
+  **Then** error message displays and form remains visible
+```
+
+## Schätzungsrichtlinien
+
+- **0,5d**: Einfache Komponente, grundlegender CRUD-Endpunkt, Konfigurationsänderung, Fehlerbehebung
+- **1d**: Moderate Komponente mit Status, API-Endpunkt mit Tests, kleines Feature
+- **2d**: Komplexe Funktion, Integration mit externen Diensten, erhebliche Umgestaltung
+- **>2d**: Aufteilung in kleinere Geschichten (verstößt gegen das Größenprinzip)
+
+## Agentenzuweisung Guide
+
+When creating stories, assign based on scope:
+
+- **AG-UI**: Frontend components, styling, design systems, accessibility, user interactions
+- **AG-API**: Backend endpoints, business logic, data models, database access, integrations
+- **AG-CI**: Test infrastructure, CI/CD pipelines, linting, code coverage, quality gates
+- **AG-DEVOPS**: Dependencies, deployment, technical debt, impact analysis, changelogs
+
+**Cross-Agent Stories**: If a story spans multiple agents (full-stack), break into separate stories with documented dependency.
+
+## Architecture Context Extraction
+
+When creating stories, EPIC-PLANNER automatically extracts relevant architecture context:
+
+1. **Identifies Relevant Sections**: Reads story type (Backend/Frontend/Full-Stack) and finds matching docs
+2. **Extracts Only Relevant Details**: Includes data models, API specs, component patterns, file paths
+3. **Cites All Sources**: Every detail includes `[Source: docs/04-architecture/{filename}.md#{section}]`
+4. **Never Invents Details**: Only extracts from actual Architekturdokumente
+5. **Enthält frühere Story-Einblicke**: Wenn eine verwandte Story vorhanden ist, werden gewonnene Erkenntnisse extrahiert
+
+Beispiel-Architekturkontext in der Geschichte:
+
+```markdown
+### Data Models & Schemas
+User model with fields: id, email, password_hash, created_at, updated_at
+[Source: architecture/data-models.md#user-model]
+
+### API Specifications
+POST /api/auth/login: Accepts email/password, returns JWT token
+[Source: architecture/api-spec.md#authentication]
+
+### File Locations
+Backend services: src/services/auth.ts following naming convention
+[Source: architecture/project-structure.md#services]
+```
+
+## Schlüsseldateien
+
+- **Expertise**: `packages/cli/src/core/experts/epic-planner/expertise.yaml` (Agentenspeicher)
+- **Workflow**: `packages/cli/src/core/experts/epic-planner/workflow.md` (Plan → Erstellen → Selbstverbesserung)
+- **Epics**: `docs/05-epics/` (epische Definitionen)
+- **Stories**: `docs/06-stories/` (Benutzergeschichten nach Epos geordnet)
+- **Test-Stubs**: `docs/07-testing/test-cases/` (einer pro Story)
+- **Status**: `docs/09-agents/status.json` (Story-Tracking)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (Koordinationsnachrichten)
+- **Architektur**: `docs/04-architecture/` (Kontext mit Zitaten extrahieren)
+- **Recherche**: `docs/10-research/` (vor der Planung prüfen)
+- **Roadmap**: `docs/08-project/roadmap.md` (Prioritäten)
+
+## Workflow-Schritte
+
+1. **Expertise laden**: Expertise.yaml lesen
+2. **Kapazität prüfen**: Überprüfen Sie status.json auf Team-WIP-Grenzwerte
+3. **Prioritäten prüfen**: Lesen Sie docs/08-project/roadmap.md
+4. **Recherche prüfen**: Überprüfen Sie docs/10-research/ auf relevante Musters
+5. **Umfang klären**: Fragen Sie den Benutzer nach Funktionsgrenzen
+6. **Epos vorschlagen**: Schlagen Sie eine epische Struktur mit 3–8 Geschichten vor
+7. **Architektur extrahieren**: Kontext aus docs/04-architecture/ mit Zitaten abrufen
+8. **Vorschau anzeigen**: Diff zur Überprüfung anzeigen
+9. **Dateien erstellen**: Epic, Storys (mit Architekturkontext), Test-Stubs
+10. **Status aktualisieren**: Fügen Sie Storys als „bereit“ zu docs/09-agents/status.json hinzu.
+11. **Bus aktualisieren**: „Assign“-Nachrichten anhängen
+12. **Selbstverbesserung**: Führen Sie self-improve.md nach Abschluss aus
+
+## Qualitätscheckliste
+
+Bevor Sie die Geschichten fertigstellen:
+
+- [ ] Epic hat klare Ziel- und Erfolgskennzahlen
+- [ ] Jede Geschichte hat 2-5 überprüfbare Akzeptanzkriterien
+- [ ] Schätzungen sind realistisch (Bereich 0,5–2 Tage)
+- [ ] Alle Abhängigkeiten identifiziert und dokumentiert
+- [ ] Besitzer werden basierend auf dem Umfang zugewiesen (UI, API, CI, DevOps)
+- [ ] Test-Stubs verweisen auf Akzeptanzkriterien
+- [ ] Architekturkontext extrahiert mit Quellenangaben
+- [ ] Geschichten, die in status.json als „bereit“ markiert sind
+- [ ] An Bus/Lo angehängte Nachrichten zuweiseng.jsonl
+
+## Verwandte Agenten
+
+- [`mentor`](/agents/mentor) – Orchestriert den gesamten Arbeitsablauf und delegiert die Planung an Epic Planner
+- [`api`](/agents/api) – Implementiert API/Backend-Storys, die von Epic Planner erstellt wurden
+- [`ui`](/agents/ui) – Implementiert von Epic Planner erstellte UI-/Frontend-Stories

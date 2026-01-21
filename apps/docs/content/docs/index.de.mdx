@@ -1,0 +1,134 @@
+---
+title: Einführung
+description: Das KI-gestützte Projektmanagement-Framework für Claude Code. Optimieren Sie Ihren Entwicklungsworkflow mit intelligenten Agenten, automatisierter Planung und nahtloser Teamzusammenarbeit.
+---
+# AgileFlow
+
+AgileFlow ist ein **KI-gestütztes Projektmanagement-Framework**, das speziell für [Claude Code](https://claude.ai/code)] entwickelt wurde. Es bringt strukturierte, agile Arbeitsabläufe, intelligente Agenten und Docs-as-Code-Projektmanagement direkt in Ihre Entwicklungsumgebung.
+
+## Warum AgileFlow?
+
+Herkömmliche Projektmanagement-Tools erzeugen Reibungen zwischen Planung und Ausführung. AgileFlow schließt diese Lücke, indem es das Projektmanagement direkt in Ihren KI-gestützten Codierungsworkflow einbettet.
+
+- **Kein Kontextwechsel** – Verwalten Sie Epics, Storys und Status, ohne Ihr Terminal zu verlassen
+- **KI-native Workflows** – Speziell für die Fähigkeiten von Claude Code entwickelt
+- **Docs-as-code** – Alle Projektartefakte befinden sich in Ihrem Repository
+- **Intelligente Agenten** – Spezialisierte KI-Agenten für verschiedene Domänen
+
+## Hauptmerkmale
+
+### 74 Slash-Befehle
+
+AgileFlow bietet eine umfassende Befehlsbibliothek für jeden Aspekt des Projektmanagements:
+
+| Kategorie | Befehle |
+|----------|----------|
+| **Planung** | `/epic`, `/story`, `/sprint`, `/deps` |
+| **Sendungsverfolgung** | `/status`, `/board`, `/blockers`, `/metrics` |
+| **Entwicklung** | `/babysit`, `/verify`, `/review`, `/pr` |
+| **Operationen** | `/ci`, `/deploy`, `/changelog`, `/packages` |
+| **Forschung** | `/research:ask`, `/research:import`, `/context:full`, `/context:export`, `/multi-expert` |
+
+### 30 spezialisierte Agenten
+
+Jeder Agent ist ein Experte auf seinem Gebiet und bereit, bei bestimmten Aufgaben zu helfen:
+
+- **Mentor** – End-to-End-Implementierungsanleitung
+- **epic-planner** – Unterteilen Sie Features in Geschichten
+- **Datenbank** – Schemadesign und Migrationen
+- **api** – Backend-Dienste und Datenschicht
+- **ui** – Frontend-Komponenten und -Styling
+- **Sicherheit** – Schwachstellenanalyse und Compliance
+- **Testen** – Teststrategie und -abdeckung
+- **Devops** – CI/CD und Bereitstellung
+
+### Docs-as-Code-Architektur
+
+Alle Projekte mVerwaltungsartefakte werden als strukturierte Dateien in Ihrem Repository gespeichert:
+
+<FileTree>
+  <Folder name="docs">
+    <Folder name="05-epics">
+      <File name="EP-0001.md" comment="Epic definitions" />
+    </Folder>
+    <Folder name="06-stories">
+      <File name="US-0001.md" comment="User stories" />
+    </Folder>
+    <Folder name="09-agents">
+      <File name="status.json" comment="Real-time project status" />
+      <Folder name="bus">
+        <File name="log.jsonl" comment="Agent communication" />
+      </Folder>
+    </Folder>
+    <Folder name="03-decisions">
+      <File name="ADR-0001.md" comment="Architecture Decision Records" />
+    </Folder>
+  </Folder>
+</FileTree>
+
+### Visuelles Kanban-Board
+
+```text
+View your project status at a glance with the /board command:
+
+/agileflow:board
+
+┌────────────────────────────────────────────────────────────────┐
+│                         KANBAN BOARD                          │
+├──────────────┬──────────────┬──────────────┬──────────────────┤
+│   BACKLOG    │  IN PROGRESS │   REVIEW     │    COMPLETED     │
+├──────────────┼──────────────┼──────────────┼──────────────────┤
+│ US-0012      │ US-0015      │ US-0014      │ US-0001 ✓       │
+│ Add auth     │ API layer    │ Unit tests   │ US-0002 ✓       │
+│              │              │              │ US-0003 ✓       │
+└──────────────┴──────────────┴──────────────┴──────────────────┘
+```
+
+## Kurzes Beispiel
+
+So sieht ein typischer AgileFlow-Workflow aus:
+
+```bash
+# 1. Create an epic for a new feature
+/epic EPIC=EP-0001 TITLE="User Authentication" GOAL="Secure user login system"
+
+# 2. Break it down into stories
+/story EPIC=EP-0001 STORY=US-0001 TITLE="Login form" OWNER=AG-UI
+
+# 3. Start working on a story
+/status STORY=US-0001 STATUS=in-progress
+
+# 4. Get AI-guided implementation
+/babysit
+
+# 5. Verify your implementation
+/verify US-0001
+
+# 6. Generate a PR
+/pr STORY=US-0001
+```
+
+## Wie es funktioniert
+
+1. **AgileFlow installieren** – Ein Befehl fügt Ihrem Projekt alle Funktionen hinzu
+2. **Planen mit KI** – Verwenden Sie Agenten, um Funktionen in umsetzbare Geschichten aufzuschlüsseln
+3. **Fortschritt verfolgen** – Statusaktualisierungen in Echtzeit in `status.json`
+4. **Zusammenarbeiten** – Agenten kommunizieren über den Nachrichtenbus
+5. **Schiff** – Automatisierte PR-Generierung und ÄnderungsprotokollAktualisierungen
+
+## Philosophie
+
+AgileFlow basiert auf diesen Prinzipien:
+
+- **Konvention vor Konfiguration** – Sinnvolle Standardeinstellungen, die einfach funktionieren
+- **Transparenz** – Alle Daten sind Klartext, versioniert
+- **Zusammensetzbarkeit** – Verwenden Sie nur das, was Sie brauchen
+- **AI-first** – Entwickelt für die Zusammenarbeit zwischen Mensch und KI
+
+## Nächste Schritte
+
+Bereit, loszulegen?
+
+1. **Schnelleinrichtung**: Führen Sie zur Installation `npx agileflow@latest setup` aus
+2. **Interaktives Tutorial**: Folgen Sie unserem [Erste Schritte](/getting-started)-Assistenten
+3. **Deep Dive**: Sehen Sie sich die [Installation](/installation)-Anleitung für alle Optionen an

@@ -1,0 +1,179 @@
+---
+title: Integrações
+description: Especialista em integração para APIs de terceiros, webhooks, processadores de pagamento, serviços externos e conectividade de API.
+---
+# Especialista em Integração
+
+AG-INTEGRATIONS lida com todas as integrações de serviços de terceiros, desde processadores de pagamento e provedores de autenticação até webhooks e sincronização de dados com APIs externas.
+
+## Capacidades
+
+- **Implementação de cliente API**: Stripe, Twilio, SendGrid, AWS, Google e outros serviços
+- **Manuseio de Webhook**: validação de assinatura, idempotência, processamento de eventos
+- **Provedores de autenticação**: Auth0, OAuth (Google, GitHub, Facebook), AWS Cognito
+- **Processamento de pagamento**: Stripe, Square, PayPal com manipulação de webhook
+- **Entrega de e-mail**: integrações SendGrid, Mailgun, AWS SES
+- **Tratamento de erros e lógica de novas tentativas**: espera exponencial, limitação de taxa, degradação graciosa
+- **Verificações e monitoramento de integridade**: monitoramento de integridade de serviços externos
+
+## Quando usar
+
+Use AG-INTEGRAÇÕES quando:
+
+- Integração de APIs de terceiros (Stripe, Twilio, SendGrid, etc.)
+- Configuração de provedores de autenticação (Auth0, Google OAuth)
+- Implementação de receptores e manipuladores de webhook
+- Criação de processo de pagamentoavaliando fluxos
+- Lidar com falhas de serviços externos normalmente
+- Implementando lógica de nova tentativa com espera exponencial
+- Configuração de monitoramento de saúde para serviços externos
+
+## Como funciona
+
+1. **Carregamento de contexto**: lê arquivo de experiência e integrações existentes
+2. **Pesquisa de serviços**: analisa documentação, preços, limites de taxas, autenticação
+3. **Implementação do cliente**: Cria um cliente API com autenticação adequada
+4. **Tratamento de erros**: implementa tratamento abrangente de erros e lógica de repetição
+5. **Configuração do Webhook**: valida assinaturas, implementa idempotência
+6. **Testes**: Cria testes de integração com serviços externos simulados
+7. **Monitoramento**: configura verificações de integridade e alertas
+
+## Exemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to add Stripe payments with webhook handling"
+
+# AG-INTEGRATIONS will:
+# 1. Research Stripe API and webhook events
+# 2. Implement Stripe API client with authentication
+# 3. Create webhook receiver with signature validation
+# 4. Implement retry logic for failed charges
+# 5. Create integration tests (mocked Stripe)
+# 6. Document setup and webhook events
+```
+
+## Principais comportamentos
+
+- **Nunca codifica segredos**: sempre usa variáveis de ambiente para chaves de API
+- **Valida Webhooks**: a validação da assinatura é obrigatória (evita falsificação)
+- **Lida com todos os erros**: erros de rede, tempo limite, limite de taxa e serviço
+- **Implementa Lógica de Nova Tentativa**: Exponential backoff with jitter
+- **Secure Logging**: Never logs credentials or sensitive data
+- **Graceful Degradation**: Provides fallback if external service unavailable
+
+## Tools Available
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Access to Session Harness for verification
+
+## Common Integrations
+
+**Payment Processing**:
+- Stripe - Payments, subscriptions, payouts
+- Square - Point-of-sale
+- PayPal - Payments, subscriptions
+
+**Authentication**:
+- Auth0 - Enterprise authentication
+- Google OAuth - Social login
+- GitHub OAuth - Developer login
+
+**Email Delivery**:
+- SendGrid - Transactional email
+- Mailgun - Email delivery
+- AWS SES - Cost-effective email
+
+**SMS/Messaging**:
+- Twilio - SMS, voice, messaging
+- AWS SNS - Message delivery
+- Firebase Cloud Messaging - Push notifications
+
+**File Storage**:
+- AWS S3 - Cloud storage
+- Google Cloud Storage - Cloud storage
+- Azure Blob Storage - Cloud storage
+
+## Integration Pattern
+
+```javascript
+// 1. Create client with auth
+const client = new StripeClient(process.env.STRIPE_API_KEY);
+
+// 2. Make authenticated request
+const payment = await client.payments.create({
+  amount: 10000,
+  currency: 'usd',
+});
+
+// 3. Handle errors
+if (payment.error) {
+  logger.error('Payment failed', {
+    error: payment.error,
+    // Never log sensitive data
+  });
+  // Implement retry or fallback
+}
+```
+
+## Webhook Security
+
+**Critical Requirementsexo**:
+- Validar assinatura do webhook (evitar falsificação)
+- Responder com 200 OK imediatamente (confirmar recebimento)
+- Processar de forma assíncrona (não bloquear resposta)
+- Lidar com duplicatas (webhooks podem ser tentados novamente)
+
+## Estratégia de tratamento de erros
+
+- Identificar erros recuperáveis (rede, tempo limite, 5xx)
+- Implementar backoff exponencial com jitter
+- Definir contagem máxima de novas tentativas
+- Registrar falhas e alertar se persistentes
+- Implementar degradação graciosa
+
+## Lista de verificação de qualidade
+
+Antes de marcar o trabalho de integração como concluído:
+
+- Autenticação de serviço funcionando
+- Chamadas de API testadas e funcionando
+- Todos os erros tratados (rede, tempo limite, limite de taxa)
+- Lógica de nova tentativa com espera exponencial implementada
+- Webhooks validados (verificação de assinatura)
+- Webhooks idempotentes (lidar com duplicatas)
+- Chaves de API em variáveis de ambiente (nunca codificadas)
+- O registro de erros não expõe segredos
+- Os testes de integração cobrem cenários de caminho feliz + erro
+- Documentação completa (instalação, autenticação, configuração)
+- Exame de saúde ou monitoramento em vigor
+- Testes aprovadosg com test_status: "passando"
+
+## Agentes Relacionados
+
+- [AG-API__NOTRASLATE_8__ - Integração da camada de serviço e endpoints
+- [AG-SECURITY__NOTRASLATE_9__ - Gerenciamento seguro de credenciais
+- [AG-MONITORING__NOTRASLATE_10__ - Verificações de integridade e alertas
+
+## Mensagens de Coordenação
+
+AG-INTEGRAÇÕES coordena com outras equipes:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-INTEGRATIONS",
+  "type": "status",
+  "story": "US-0040",
+  "text": "Stripe integration ready, AG-API can now implement payment endpoint"
+}
+```
+
+## Comandos de barra
+
+- __NOTRASLATE_3__ - Melhores práticas de serviço de pesquisa
+- __NOTRASLATE_4__ - Revise o código de integração para segurança
+- __NOTRASLATE_5__ - Decisões de escolha de integração de documentos
+- __NOTRASLATE_6__ - Documento sem tratamento de erros
+- __NOTRASLATE_7__ - Atualizar status da história

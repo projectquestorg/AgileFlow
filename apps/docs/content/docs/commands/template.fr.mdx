@@ -1,0 +1,399 @@
+---
+title: /modèle
+description: Créer et gérer des modèles de documents personnalisés
+---
+# /modèle
+
+Créez, gérez et utilisez des modèles personnalisés pour standardiser la documentation dans l'ensemble de votre projet. Créez des modèles pour les histoires, les réunions, les rapports d'incidents, etc.
+
+## Démarrage rapide
+
+```bash
+# List all available templates
+/agileflow:template
+
+# Create a new custom template
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+
+# Use a template to generate a document
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `ACTION` | Non | liste | Opération : répertorier, créer, modifier ou utiliser |
+| `TYPE` | Pour créer/modifier/utiliser | - | Type de modèle : histoire, épopée, adr, personnalisé, etc. |
+| `NAME` | Pour créer/modifier/utiliser | - | Nom du modèle (par exemple, notes de réunion) |
+| `PATH` | Facultatif | automobile | Chemin personnalisé pour enregistrer le modèle |
+
+## Exemples
+
+### Liste des modèles disponibles
+
+```bash
+/agileflow:template
+```
+
+Affiche tous les modèles intégrés et personnalisés :
+
+```text
+# Available Templates
+
+## Built-in Templates (docs/00-meta/templates/)
+- story-template.md - User stories
+- epic-template.md - Epics
+- adr-template.md - Architecture Decision Records
+- agent-profile-template.md - Agent profiles
+- comms-note-template.md - Handoff notes
+- research-template.md - Research notes
+- README-template.md - Folder READMEs
+
+## Custom Templates (docs/00-meta/templates/custom/)
+- meeting-notes.md (created 2025-10-15)
+- incident-report.md (created 2025-10-10)
+- sprint-retro.md (created 2025-10-01)
+
+Usage: /agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+### Créer un modèle de notes de réunion
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+```
+
+Fournit une interface de création de modèles :
+
+```text
+Creating new template: meeting-notes
+
+Template content:
+
+---
+title: {{TITLE}}
+date: {{DATE}}
+attendees: {{ATTENDEES}}
+---
+
+# {{TITLE}}
+
+**Date**: {{DATE}}
+**Attendees**: {{ATTENDEES}}
+
+## Agenda
+1.
+2.
+3.
+
+## Notes
+
+### Topic 1
+
+
+### Topic 2
+
+
+## Action Items
+- [ ] Task 1 (Owner: {{OWNER}}, Due: {{DUE_DATE}})
+- [ ] Task 2
+
+## Decisions Made
+-
+
+## Next Meeting
+**Date**:
+**Topics**:
+
+---
+
+Save to: docs/00-meta/templates/custom/meeting-notes.md
+Proceed? (YES/NO)
+```
+
+### Créer un modèle de rapport d'incident
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=incident-report
+```
+
+Définir un modèle de rapport d'incident :
+
+__NOTRANSTARD_6__
+
+### Créer un modèle de rétrospective de sprint
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=sprint-retro
+```
+
+Définissez un modèle de rétrospective de sprint avec des métriques :
+
+```markdown
+# Sprint {{SPRINT_NUMBER}} Retrospective
+
+**Dates**: {{START_DATE}} to {{END_DATE}}
+**Team**: {{TEAM}}
+**Facilitator**: {{FACILITATOR}}
+
+## Sprint Goals
+
+### Planned
+{{GOALS_PLANNED}}
+
+### Achieved
+{{GOALS_ACHIEVED}}
+
+## Metrics
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Stories Completed | {{TARGET_STORIES}} | {{ACTUAL_STORIES}} | {{STATUS}} |
+| Velocity | {{TARGET_VELOCITY}} | {{ACTUAL_VELOCITY}} | {{STATUS}} |
+| Test Coverage | {{TARGET_COVERAGE}}% | {{ACTUAL_COVERAGE}}% | {{STATUS}} |
+| Bugs | <{{MAX_BUGS}} | {{ACTUAL_BUGS}} | {{STATUS}} |
+
+## What Went Well? 🎉
+
+1.
+2.
+3.
+
+## What Didn't Go Well? 😞
+
+1.
+2.
+3.
+
+## What Should We Try? 💡
+
+1.
+2.
+3.
+
+## Action Items
+
+- [ ] {{ACTION_1}} (Owner: {{OWNER_1}}, Due: {{DUE_1}})
+- [ ] {{ACTION_2}} (Owner: {{OWNER_2}}, Due: {{DUE_2}})
+- [ ] {{ACTION_3}} (Owner: {{OWNER_3}}, Due: {{DUE_3}})
+
+## Shoutouts 🙌
+
+-
+
+**Next Retrospective**: {{NEXT_RETRO_DATE}}
+```
+
+### Utiliser un modèle pour générer un document
+
+```bash
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+Demande les variables du modèle et génère le document :
+
+```text
+Using template: meeting-notes
+
+Fill in template variables:
+
+TITLE: Weekly Team Sync
+ATTENDEES: Alice, Bob, Carol, DevOps Team
+OWNER: Alice
+DUE_DATE: 2025-12-31
+
+Generated document preview:
+
+---
+title: Weekly Team Sync
+date: 2025-12-24
+attendees: Alice, Bob, Carol, DevOps Team
+---
+
+# Weekly Team Sync
+
+**Date**: 2025-12-24
+**Attendees**: Alice, Bob, Carol, DevOps Team
+
+## Agenda
+1.
+2.
+3.
+
+[...preview continues...]
+
+Save to: docs/08-project/meetings/2025-12-24-weekly-sync.md
+Proceed? (YES/NO)
+```
+
+### Modifier un modèle existant
+
+```bash
+/agileflow:template ACTION=edit TYPE=custom NAME=meeting-notes
+```
+
+Affiche le modèle actuel et invite à les modifier avec un aperçu différentiel.
+
+## Syntaxe du modèle
+
+### Format des variables
+
+Les modèles utilisent des doubles accolades pour les variables :
+
+```markdown
+# {{TITLE}}
+
+**Created by**: {{AUTHOR}}
+**Date**: {{DATE}}
+**Status**: {{STATUS}}
+```
+
+### Variables intégrées
+
+Disponible dans tous les modèles :
+
+| Variables | Exemple | Descriptif |
+|--------------|---------|-------------|
+| `{{DATE}}` | 2025-12-24 | Date actuelle (AAAA-MM-JJ) |
+| `{{DATETIME}}` | 2025-12-24T10:30:00Z | Dateheure ISO 8601 |
+| `{{USER}}` | Alice | Utilisateur actuel de Git |
+| `{{YEAR}}` | 2025 | Année en cours |
+
+### Variables du modèle d'histoire
+
+Pour les modèles spécifiques à une histoire :
+
+```text
+{{STORY_ID}} - Story identifier (US-0042)
+{{EPIC_ID}} - Parent epic (EP-0001)
+{{OWNER}} - Story owner/assignee
+{{ESTIMATE}} - Story point estimate
+{{AC}} - Acceptance criteria
+{{DEPENDENCIES}} - Dependencies on other stories
+```
+
+### Variables du modèle ADR
+
+Pour l'architecture deenregistrements de décision :
+
+```text
+{{NUMBER}} - ADR number (0001, 0042)
+{{STATUS}} - Decision status (proposed, accepted, superseded)
+{{CONTEXT}} - Driving factors
+{{DECISION}} - The decision made
+{{CONSEQUENCES}} - Trade-offs and impacts
+```
+
+## Modèles intégrés
+
+AgileFlow comprend des modèles par défaut que vous pouvez afficher et personnaliser :
+
+| Modèle | Objectif | Localisation |
+|--------------|---------|--------------|
+| `story-template.md` | Format de la user story | docs/00-meta/templates/story-template.md |
+| `epic-template.md` | Définition épique | docs/00-meta/templates/epic-template.md |
+| `adr-template.md` | Décisions architecturales | docs/00-meta/templates/adr-template.md |
+| `agent-profile-template.md` | Documentation des agents | docs/00-meta/templates/agent-profile-template.md |
+| `comms-note-template.md` | Notes de transfert | docs/00-meta/templates/comms-note-template.md |
+| `research-template.md` | Résultats de la recherche | docs/00-meta/templates/research-template.md |
+| `README-template.md` | Dossier README | docs/00-meta/templates/README-template.md |
+
+Vous pouvez remplacer n'importe quel modèle intégré en créant une version personnalisée portant le même nom.
+
+## meilleures pratiques
+
+### Quand créer des modèles
+
+Créez un modèle lorsque :
+- Un type de document est crééplusieurs fois
+- Une structure spécifique doit être suivie de manière cohérente
+- Certains champs doivent toujours être inclus
+
+### Nom du modèle
+
+Utilisez des noms descriptifs, typiques du kebab :
+
+```text
+Good:
+- meeting-notes
+- sprint-retrospective
+- incident-report
+- design-proposal
+
+Avoid:
+- template1
+- doc
+- new-file
+```
+
+### Dénomination des variables
+
+Utilisez UPPERCASE_WITH_UNDERSCORES :
+
+```text
+Good:
+{{STORY_ID}}, {{OWNER}}, {{DUE_DATE}}
+
+Avoid:
+{{story_id}}, {{owner}}, {{due-date}}, {{Author}}
+```
+
+###Documentations
+
+Ajoutez des descriptions aux modèles personnalisés :
+
+```markdown
+---
+template: incident-report
+version: 1.0
+description: Post-incident documentation for service outages
+author: DevOps Team
+created: 2025-10-10
+---
+```
+
+## Gestion des modèles
+
+### Registre de modèles
+
+Les modèles personnalisés sont suivis dans `docs/00-meta/templates/registry.json` :
+
+```json
+{
+  "templates": [
+    {
+      "name": "meeting-notes",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/meeting-notes.md",
+      "created": "2025-10-15",
+      "author": "Alice",
+      "description": "Weekly team meeting notes",
+      "variables": ["TITLE", "DATE", "ATTENDEES", "OWNER"]
+    },
+    {
+      "name": "incident-report",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/incident-report.md",
+      "created": "2025-10-10",
+      "author": "Bob",
+      "description": "Post-incident documentation",
+      "variables": ["INCIDENT_ID", "SEVERITY", "SUMMARY", "ROOT_CAUSE"]
+    }
+  ]
+}
+```
+
+### Partage d'équipe
+
+Les modèles dans `docs/00-meta/templates/custom/` sont validés dans git, donc :
+- Tous les membres de l'équipe utilisent les mêmes modèles
+- Les modèles sont versionnés avec du code
+- Les modifications du modèle sont examinées dans les PR
+
+## Commandes associées
+
+- [`/adr`](/commands/adr) - Créer des décisions d'architecture (utilise adr-template.md)
+- [`/story-new`](/commands/story-new) - Créer des user stories (utilise story-template.md)
+- [`/epic-new`](/commands/epic-new) - Créer des épopées (utilise epic-template.md)
+- [`/research`](/commands/research) - Créer une recherche nones (utilise search-template.md)

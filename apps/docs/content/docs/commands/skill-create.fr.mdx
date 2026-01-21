@@ -1,0 +1,377 @@
+---
+title: /compétence : créer
+description: Générez une compétence personnalisée avec la recherche sur le Web, un modèle de livre de recettes et l'intégration MCP
+---
+# /compétence : créer
+
+Générez des compétences dynamiques fondées sur la recherche qui combinent la documentation Web, vos documents locaux et des modèles de base de code.
+
+## Démarrage rapide
+
+```bash
+# Interactive mode (recommended)
+/agileflow:skill:create
+
+# With skill name hint
+/agileflow:skill:create supabase-swift
+```
+
+## Ce qu'il fait
+
+La commande `/skill:create` crée des compétences personnalisées en recherchant trois sources et en créant des flux de travail basés sur la recherche :
+
+1. **Documentation Web** - Documents officiels, références API, tutoriels
+2. **Documentation du projet local** - Vos pratiques, décisions d'architecture
+3. **Modèles de base de code** - Exemples de code et conventions existants
+
+Il génère alors :
+- **SKILL.md** - Fichier de compétences principal avec déclencheurs d'activation
+- **references.md** - Liens vers toutes les sources de documentation
+- **cookbook/** - Workflows étape par étape pour différents cas d'utilisation
+- **.mcp.json** - Configuration facultative du serveur MCP
+
+## Comment ça marche
+
+### Phase 1 : Exigences
+
+Vous décrivez la compétence dont vous avez besoin :
+
+```xml
+Skill categories:
+- Database integration (Supabase, PostgreSQL, MongoDB)
+- API integration (REST, GraphQL, webhooks)
+- UI/Frontend (Components, styling, design system)
+- Development workflow (Testing, deployment, CI/CD)
+- Custom description (describe what you need)
+```
+
+### Phase 2 : Recherche
+
+La commande passe en mode Plan et recherche :
+
+- **Documents Web** : URL de documentation officielle, tutoriels, guides- **Documents locaux** : fichiers dans votre répertoire `docs/` correspondant au domaine de la compétence
+- **Modèles de base de code** : code existant montrant comment vous faites les choses
+- **Serveurs MCP** : Outils disponibles pour la technologie
+
+Il collecte les URL et les modèles sans copier le contenu.
+
+### Phase 3 : Génération
+
+Basé sur les résultats de la recherche, il génère :
+
+- **SKILL.md** avec déclencheurs d'activation et références de livres de recettes
+- **references.md** reliant toutes les sources web/locales/codebase
+- Répertoire **cookbook/** avec un fichier par cas d'utilisation
+- **.mcp.json** si un serveur MCP a été trouvé
+
+### Phase 4 : Confirmation
+
+Vous voyez la structure générée, pouvez prévisualiser le contenu et approuver la création.
+
+## Paramètres
+
+Cette commande n'a aucun paramètre - elle est entièrement interactive.
+
+```bash
+/agileflow:skill:create              # Interactive mode
+/agileflow:skill:create my-skill     # Optional: suggest skill name
+```
+
+## Exemples
+
+### Exemple 1 : Créer une compétence Supabase
+
+```bash
+/agileflow:skill:create
+```
+
+**Vos réponses :**
+```
+What skill would you like to create?
+> [Select "Database integration"]
+
+Which database?
+> Supabase
+
+What language/framework?
+> Swift iOS app
+
+What use cases?
+> Authentication, CRUD operations, Real-time subscriptions
+```
+
+**Structure générée :**
+```
+.claude/skills/supabase-swift/
+├── SKILL.md (activation triggers, cookbook references)
+├── references.md (links to Supabase docs, local patterns)
+├── cookbook/
+│   ├── authentication.md (sign up, sign in, sign out)
+│   ├── crud-operations.md (create, read, update, delete)
+│   └── realtime-subscriptions.md (listen to changes)
+└── .mcp.json (Supabase MCP server config)
+```
+
+### Exemple 2 : Créer une compétence de composants React
+
+```bash
+/agileflow:skill:create ui-components
+```
+
+**Invites interactives :**```
+Describe what you need:
+> Building reusable React components with accessibility and Tailwind CSS
+
+Frameworks/libraries:
+> React 18, TypeScript, Tailwind CSS, shadcn/ui
+
+Use cases:
+> Creating new components, styling patterns, making accessible
+```
+
+**Les fichiers générés incluent :**
+- Références aux documents React, aux documents Tailwind, aux directives d'accessibilité
+- Modèles de base de code de `src/components/`
+- Entrées du livre de recettes pour les types de composants courants
+
+## Sortie
+
+La commande vous montre :
+
+1. **Résumé de la recherche** – Ce que la recherche a trouvé dans chaque source
+2. **Structure des compétences** - Fichiers qui seront créés
+3. **Aperçu** - 50 premières lignes de SKILL.md
+4. **Confirmation** - OUI/NON pour créer
+
+Exemple de sortie :
+
+```
+📚 Research Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web Docs:
+  ✓ Supabase Swift SDK docs
+  ✓ API reference
+  ✓ Authentication guide
+
+Local Documentation:
+  ✓ docs/02-practices/database.md
+  ⚠ No local patterns found
+
+Codebase Patterns:
+  ✓ src/lib/supabase.ts (client setup)
+  ✓ src/services/auth/ (auth service)
+
+MCP Server:
+  ✓ @supabase/mcp-server available
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Will create:
+.claude/skills/supabase-swift/
+├── SKILL.md
+├── references.md
+├── cookbook/
+│   ├── authentication.md
+│   ├── crud-operations.md
+│   └── realtime-subscriptions.md
+└── .mcp.json
+
+Create this skill? (Yes/No)
+```
+
+## meilleures pratiques
+
+### Compétences de dénomination
+
+Utilisez des noms spécifiques et descriptifs avec des tirets :
+
+- ✅ `supabase-swift` - Technologie et contexte clairs
+- ✅ `react-components-accessible` - Framework et fonctionnalité clé
+- ✅ `rest-api-error-handling` - Domaine et focus
+- ❌ `database` - Trop vague
+- ❌ `api` - Trop générique
+- ❌ `my_skill` - Utilisez des traits d'union, pas des traits de soulignement
+
+### Créer des compétences efficaces
+
+1. **Utiliser des domaines spécifiques** - Une technologie par compétence, pas trop large
+2. **Inclure plusieurs cas d'utilisation** - Ajoutez des entrées de livre de recettes pour différentsscénarios
+3. **Lien vers les modèles de projet** - Le fichier references.md doit pointer vers votre code réel
+4. **Ajouter un dépannage** – Anticipez et résolvez les problèmes courants
+5. ** Restez concentré ** - 2 à 4 entrées de livre de recettes par compétence
+
+### Quand créer de nouvelles compétences
+
+Créez une compétence lorsque :
+- Vous utilisez fréquemment une technologie
+- Votre équipe a des modèles pour quelque chose
+- Vous souhaitez encoder les bonnes pratiques
+- Vous avez besoin de conseils étape par étape
+
+Ne créez pas si :
+- Le sujet est trop restreint (une entrée de livre de recettes)
+- Vous l'utilisez rarement
+- Des documents externes suffisent
+
+## Entrées du livre de recettes
+
+Les livres de recettes sont des guides étape par étape pour des cas d'utilisation spécifiques. Chaque compétence peut avoir plusieurs livres de recettes.
+
+### Structure du livre de recettes
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```langue
+   exemple de code
+   ```
+
+2. **Step 2**: Next step
+   ```langue
+   exemple de code
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### Exemples de livres de recettes
+
+Chaque entrée de livre de recettes doit répondre à une tâche spécifique et courante :
+
+- **Compétence Supabase** :
+  - `authentication.md` - S'inscrire, se connecter, se déconnecter
+  - `crud-operations.md` - Créer, lire, mettre à jour, supprimer
+  -`realtime-subscriptions.md` - Écouter les modifications de la base de données
+
+- **Compétence des composants React** :
+  - `create-component.md` - Créer un nouveau composant
+  - `styling-patterns.md` - Appliquer des styles cohérents
+  - `accessibility.md` - Rendre le accessible
+
+## Intégration MCP
+
+Si la technologie de votre compétence dispose d'un serveur MCP disponible, la commande inclut `.mcp.json` :
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+Cela permet à Claude d'utiliser les outils MCP lorsqu'il travaille avec la compétence. Vous devrez définir des variables d'environnement pour que les outils fonctionnent.
+
+## Gestion des erreurs
+
+### La recherche sur le Web ne renvoie aucun résultat
+
+Si la documentation est introuvable en ligne :
+- La commande crée la compétence avec des motifs génériques
+- Vous pourrez ajouter manuellement des URL à `references.md` ultérieurement.
+- Utilisez `/agileflow:skill:edit` pour l'améliorer
+
+### Serveur MCP introuvable
+
+Si aucun serveur MCP n'existe pour votre technologie :
+- La compétence est créée sans `.mcp.json`
+- Vous pouvez ajouter MCP plus tard si un serveur devient disponible
+- Des instructions de configuration manuelle du MCP sont fournies
+
+### Erreurs de validation
+
+Avant d'écrire, la commande vadates :
+- Le nom de la compétence ne contient que des lettres, des chiffres et des traits d'union
+- La description comporte moins de 1 024 caractères
+- SKILL.md fait moins de 500 lignes
+- Tous les fichiers du livre de recettes sont référencés
+
+Si la validation échoue, il vous sera demandé de corriger avant de continuer.
+
+## Après la création
+
+Une fois la compétence créée :
+
+1. **Testez-le** :
+   ```bash
+   /agileflow:skill:test supabase-swift
+   ```
+
+2. **Utilisez-le** - Travaillez sur des tâches et la compétence s'activera automatiquement
+
+3. **Ajouter l'apprentissage** - Activer l'auto-amélioration :
+   ```bash
+   /agileflow:skill:upgrade supabase-swift
+   ```
+
+4. **Améliorez-le** - Corrigez le résultat de Claude et la compétence apprend :
+   ```bash
+   /agileflow:skill:edit supabase-swift
+   ```
+
+## Dépannage
+
+### La compétence ne fonctionne pas
+
+Si une compétence nouvellement créée ne semble pas s'activer :
+
+1. Vérifiez la section « Quand utiliser » dans SKILL.md
+2. Assurez-vous que votre question correspond aux déclencheurs d'activation
+3. Exécutez `/agileflow:skill:test` pour vérifier la structure
+4. Modifiez avec `/agileflow:skill:edit` pour ajuster les déclencheurs
+
+### Documentation locale manquante
+
+Si la commande ne trouve pas vos pratiques locales :
+
+1. Créez la documentation dans `docs/02-practices/` ou `docs/04-architecture/`
+2. Modifiez la compétence pour référencer ce que vous créez
+3. Utilisez des mots-clés plus spécifiques dans la description de vos compétences
+
+### Entrées du livre de recettes non affichées
+
+Si les entrées du livre de recettes ne sont pas visibles dans Claude Code :
+
+1. Exécutez `/agileflow:skill:test` pour vérifier que les fichiers existent
+2. Vérifiez que SKILL.md les référence correctement
+3. Assurez-vous que les fichiers du livre de recettes sont valides Markdown
+
+## Commandes associées
+
+- [`/skill:list`](/commands/skill-list) - Afficher toutes les compétences installées
+- [`/skill:edit`](/commands/skill-edit) - Modifier une compétence existante
+- [`/skill:test`](/commands/skill-test) - Vérifier qu'une compétence fonctionne
+- [`/skill:delete`](/commands/skill-delete) - Supprimer une compétence
+- [`/skill:upgrade`](/commands/skill-upgrade) - Ajouter une capacité d'apprentissage
+
+## Prochaines étapes
+
+1. Créez votre première compétence : `/agileflow:skill:create`
+2. Testez le fonctionnement : `/agileflow:skill:test`
+3. Utilisez-le dans votre travail - il s'activera automatiquement
+4. Améliorez-le avec `/agileflow:skill:upgrade`

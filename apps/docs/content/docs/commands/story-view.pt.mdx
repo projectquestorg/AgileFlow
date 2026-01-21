@@ -1,0 +1,203 @@
+---
+title: /história:ver
+description: Veja detalhes da história com ações contextuais baseadas no status da história
+---
+# /história:ver
+
+Veja detalhes completos da história, incluindo critérios de aceitação, testes e dependências com ações baseadas no contexto.
+
+## Início rápido
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `STORY` | Sim | - | ID da história (por exemplo, US-0042) |
+
+## Exemplos
+
+### Ver história específica
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+Exibe informações completas da história e oferece ações baseadas no contexto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:story:view
+```
+
+Sem o parâmetro STORY, mostra histórias recentes e pede para você selecionar uma.
+
+## Formato de saída
+
+### Visão geral da história
+
+__NOTRADUZIR_3__
+
+### Critérios de aceitação
+
+__NÃOTRADUZIR_4__
+
+### Dependências
+
+__NOTRADUZIR_5__
+
+### Status do teste
+
+__NOTRADUZIR_6__
+
+### Notas de progresso
+
+__NÃOTRADUZIR_7__
+
+## Ações baseadas no contexto
+
+As ações mudam com base no status da história:
+
+### Para histórias prontas
+
+Quando uma história tem __NOTRASLATE_20__ para começar:
+
+__NÃOTRADUZIR_8__
+
+Opções:
+- **Comece a trabalhar nesta história** (Recommended): Marcar como in_progress
+- **Valide a história primeiro**: verifique se o AC e as dependências estão completos
+- **Ver pesquisas relacionadas**: Encontre notas de pesquisa para este épico
+- **Voltar à lista de histórias**: Retornar para /agileflow:story:list
+
+### Para histórias em andamento
+
+Quando você está trabalhando ativamente em uma história:
+
+__NOTRADUZIR_9__
+
+Opções:
+- **Marcar como concluído**: Todos os AC concluídos, passar para o status concluído
+- **Marcar como bloqueado**: acerte um bloqueador, preciso de ajuda
+- **Ver/executar testes**: verifique o status do teste para esta história
+- **Adicionar nota de progresso**: Documente o progresso atual
+
+### Para histórias bloqueadas
+
+Quando uma história é bloqueada:
+
+__NOTRADUZIR_10__
+
+Opções:
+- **Ver detalhes do bloqueador**: veja o que está bloqueando esta história
+- **Desbloquear e retomar**: Bloqueador resolvido, continue trabalhando
+- **Reatribuir história**: atribuir a um proprietário diferente
+- **Criar tarefa de pesquisa**: Necessidade de pesquisar o bloqueador
+
+### Para histórias concluídas
+
+Quando uma história termina:
+
+__NOTRADUZIR_11__
+
+Opções:
+- **Ver resumo de conclusão**: Veja o que foi entregue
+- **Reabrir história**: Problema encontrado, nprecisa de mais trabalho
+- **Ver a próxima história em épico**: Continue com o trabalho relacionado
+- **Voltar à lista de histórias**: Retornar para /agileflow:story:list
+
+## Fluxos de trabalho típicos
+
+### Iniciar implementação
+
+```
+1. /agileflow:story:view STORY=US-0042
+2. Review acceptance criteria
+3. Check dependencies (all done?)
+4. Select "Start working on this story"
+5. Story marked as in_progress
+6. Begin implementation with /agileflow:babysit
+```
+
+### Continuar o trabalho
+
+__NÃOTRADUZIR_13__
+
+### Bloqueador de alça
+
+__NOTRADUZIR_14__
+
+### Reabrir história
+
+__NÃOTRADUZIR_15__
+
+## Compreendendo as dependências da história
+
+A seção Dependências mostra:
+
+- ✅ **concluído**: Dependência concluída, pode prosseguir
+- ⏳ **in_progress**: Dependência sendo trabalhada, verifique com o proprietário
+- 🔶 **pronto**: Dependência pronta para iniciar, pode querer esperar
+- 🚫 **bloqueado**: a dependência está bloqueada, não é possível prosseguir
+
+**Regra**: Não inicie uma história se suas dependências estiverem bloqueadas.
+
+## Interpretação do status do teste
+
+### Passando nos testes ✅
+
+__NOTRADUZIR_16__
+
+Os testes foram aprovados - o recurso está funcionando corretamente.
+
+### Testes Pendentes ⏳
+
+```
+Integration: auth-flow.test.ts | pending
+```
+
+Existem testes, mas ainda não foram executados. Execute com __NOTRASLATE_21__.
+
+### Testes faltantes 🔴
+
+__NÃOTRADUZIR_18__
+
+Testes precisam ser criados. Adicione-os durante a implementaçãoíon.
+
+## Melhores práticas
+
+### Antes de começar o trabalho
+
+- [] Leia todos os critérios de aceitação
+- [] Verifique se todas as dependências foram concluídas
+- [ ] Verifique se há pesquisas relacionadas
+- [] Revise as notas de progresso do planejamento
+
+### Durante o trabalho
+
+- [] Escreva/atualize testes enquanto você codifica
+- [] Adicione notas de progresso periodicamente
+- [] Marcar como bloqueado se você encontrar problemas
+- [] Atualize as caixas de seleção do AC conforme você as completa
+
+### Quando concluído
+
+- [] Todos os AC são verificados
+- [] Todos os novos testes passam
+- [] Testes existentes atualizados, se necessário
+- [] Considere criar a próxima história se o épico continuar
+
+## Comandos Relacionados
+
+- [`/story:list`](/commands/story-list) - Ver todas as histórias
+- [`/story`__NOTRASLATE_31__ - Criar nova história
+- [`/story-validate`](/commands/story-validate) - Validar a integridade da história
+- [`/status`](/commands/status) - Atualizar status da história
+- [`/babysit`__NOTRASLATE_34__ - Obtenha ajuda para implementar
+- [__NOTRASLATE_27____NOTRASLATE_35__ - Executar e atualizar o status do teste
+- [`/blockers`](/commands/blockers) - Res.bloqueadores de oliva
+- [`/epic:view`__NOTRASLATE_37__ - Ver épico pai

@@ -1,0 +1,307 @@
+---
+title: /agileflow:configuration:visual-e2e
+description: Configurer l'infrastructure de test Visual E2E avec Playwright et la vérification des captures d'écran
+---
+# /agileflow:setup:visual-e2e
+
+Configurez l'infrastructure de test Visual E2E avec Playwright et le flux de travail de vérification des captures d'écran.
+
+## Démarrage rapide
+
+```bash
+/agileflow:setup:visual-e2e
+```
+
+## Objectif
+
+Met en place une infrastructure de test Visual E2E complète comprenant :
+
+- Installation du dramaturge avec dépendances du navigateur
+- `playwright.config.ts` avec démarrage automatique du serveur Web
+- Exemple de test E2E avec capture d'écran
+- Répertoire de captures d'écran pour vérification visuelle
+- Scripts npm pour exécuter des tests
+
+## Pourquoi Visual E2E ?
+
+**Le problème** : les tests réussissent mais l'interface utilisateur est cassée.
+
+Les tests fonctionnels vérifient le comportement mais pas l'apparence visuelle. Un bouton peut "fonctionner" mais être :
+- Mauvaise couleur
+- Mauvaise position
+- Superposition d'autres éléments
+- Absent entièrement (remplacé par un état d'erreur)
+
+Visual E2E avec vérification de capture d'écran détecte ces problèmes.
+
+## Ce qui est créé
+
+### dramaturge.config.ts
+
+Configuration de Playwright avec webServer pour démarrer automatiquement votre serveur de développement :
+
+```typescript
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    screenshot: 'on',
+    trace: 'on-first-retry',
+  },
+
+  // Auto-start dev server
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+});
+```
+
+### Exemple de test
+
+`tests/e2e/visual-example.spec.ts` :
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Visual Verification Examples', () => {
+  test('homepage loads correctly', async ({ page }) => {
+    await page.goto('/');
+
+    // Capture full-page screenshot for visual verification
+    await page.screenshot({
+      path: 'screenshots/homepage-full.png',
+      fullPage: true,
+    });
+
+    // Basic assertions
+    await expect(page).toHaveTitle(/./);
+  });
+});
+```
+
+### Annuaire Sstructure
+
+```
+your-project/
+├── playwright.config.ts
+├── tests/
+│   └── e2e/
+│       └── visual-example.spec.ts
+├── screenshots/
+│   ├── homepage-full.png          # After test runs
+│   └── verified-homepage-full.png # After visual review
+└── package.json                   # Updated with test:e2e scripts
+```
+
+### Scripts npm
+
+Ajouté à `package.json` :
+
+```json
+{
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
+  }
+}
+```
+
+## Étapes de configuration
+
+La commande effectue ces 8 étapes :
+
+1. **Vérifiez package.json** - Vérifiez que le projet a une configuration npm
+2. **Installer Playwright** - `npm install --save-dev @playwright/test`
+3. **Installer le navigateur** - `npx playwright install --with-deps chromium`
+4. **Créer une configuration** - `playwright.config.ts` avec webServer
+5. **Créer un répertoire de test** - `tests/e2e/`
+6. **Créer un répertoire de captures d'écran** - `screenshots/`
+7. **Créer un exemple de test** - Test avec capture d'écran
+8. **Ajouter des scripts npm** - Scripts `test:e2e`
+9. **Exécuter la vérification** - Exécuter un exemple de test
+
+## Flux de travail de vérification visuelle
+
+Une fois les tests exécutés, les captures d'écran nécessitent un examen visuel :
+
+### 1. Exécuter des tests
+
+```bash
+npm run test:e2e
+```
+
+Les tests génèrent des captures d'écran dans le répertoire `screenshots/`.
+
+### 2. Examinez les captures d'écran
+
+Claude examine chaque capture d'écran pour vérifier que l'interface utilisateur semble correcte.
+
+### 3. Vérifier et renommer
+
+Les captures d'écran approuvées sont renommées avec le préfixe `verified-` :
+
+```bash
+mv screenshots/homepage.png screenshots/verified-homepage.png
+```### 4. Exécutez le vérificateur
+
+```bash
+node scripts/screenshot-verifier.js --path ./screenshots
+```
+
+Cela garantit que toutes les captures d’écran ont été examinées avant de marquer le travail comme terminé.
+
+## Intégration avec le mode boucle
+
+Visual E2E s'intègre au [Loop Mode](/features/loop-mode) pour le développement autonome de l'interface utilisateur :
+
+```bash
+# Initialize loop with Visual Mode
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+En mode visuel, la boucle vérifie :
+1. Les tests réussissent
+2. Toutes les captures d'écran ont le préfixe `verified-`
+3. Minimum 2 itérations terminées
+
+Cela évite l’achèvement prématuré des travaux d’assurance-chômage.
+
+## Paramètres
+
+| Paramètre | Par défaut | Descriptif |
+|-----------|---------|-------------|
+| DEV_CMD | `npm run dev` | Commande du serveur de développement |
+| PORT | `3000` | Port du serveur de développement |
+| NAVIGATEUR | `chromium` | Navigateur à installer (chrome est le plus petit, ~ 300 Mo) |
+
+## Exécution de tests
+
+Après la configuration :
+
+```bash
+# Run all E2E tests
+npm run test:e2e
+
+# Run with UI (interactive mode)
+npm run test:e2e:ui
+
+# Run with visible browser
+npm run test:e2e:headed
+
+# Run specific test
+npx playwright test tests/e2e/visual-example.spec.ts
+```
+
+## meilleures pratiques
+
+### 1. Capturer des pages complètes
+
+Pour une vérification visuelle, capturez des pages complètes :
+
+```typescript
+await page.screenshot({
+  path: 'screenshots/homepage.png',
+  fullPage: true,
+});
+```
+
+### 2. Capturer les composants
+
+Pour les tests spécifiques aux composants :
+
+```typescript
+const header = page.locator('header').first();
+await header.screenshot({
+  path: 'screenshots/header.png',
+});
+```
+
+### 3. Nommer les captures d'écran de manière descriptive
+
+```
+screenshots/
+├── login-form-empty.png
+├── login-form-filled.png
+├── login-form-error.png
+└── dashboard-loaded.png
+```
+
+### 4. Testez différents états
+
+```typescript
+// Empty state
+await page.screenshot({ path: 'screenshots/list-empty.png' });
+
+// Loading state
+await page.goto('/users');
+await page.screenshot({ path: 'screenshots/list-loading.png' });
+
+// Loaded state
+await page.waitForSelector('[data-testid="user-list"]');
+await page.screenshot({ path: 'screenshots/list-loaded.png' });
+```
+
+## Dépannage
+
+### Navigateur introuvable
+
+Si Playwright ne trouve pas le navigateur :
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+### Le serveur de développement ne démarre pas
+
+Vérifiez que votre `package.json` a la bonne commande dev :
+
+```json
+{
+  "scripts": {
+    "dev": "next dev"  // or your dev command
+  }
+}
+```
+
+### Répertoire de captures d'écran manquant
+
+Assurez-vous que le répertoire existe avant d'exécuter des tests :
+
+```bash
+mkdir -p screenshots
+```
+
+### Expiration du délai des tests
+
+Augmentez le délai d'expiration du serveur Web dans la configuration :
+
+```typescript
+webServer: {
+  command: 'npm run dev',
+  timeout: 180000,  // 3 minutes
+}
+```
+
+## Connexes
+
+- [Mode visuel](/features/visual-mode) - Système de vérification de capture d'écran
+- [Mode boucle](/features/loop-mode) - Traitement autonome de l'histoire
+- [`/agileflow:verify`](/commands/verify) - Exécuter des tests et une vérification
+- [`/agileflow:tests`](/commands/tests) - Test de la configuration de l'infrastructure

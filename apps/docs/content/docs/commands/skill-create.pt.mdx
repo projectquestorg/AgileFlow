@@ -1,0 +1,294 @@
+---
+title: /habilidade:criar
+description: Gere uma habilidade personalizada com pesquisa na web, padrão de livro de receitas e integração MCP
+---
+# /habilidade:criar
+
+Gere habilidades dinâmicas apoiadas em pesquisas que combinam documentação da web, seus documentos locais e padrões de base de código.
+
+## Início rápido
+
+```bash
+# Interactive mode (recommended)
+/agileflow:skill:create
+
+# With skill name hint
+/agileflow:skill:create supabase-swift
+```
+
+## O que faz
+
+O comando __NOTRASLATE_16__ cria habilidades personalizadas pesquisando três fontes e construindo fluxos de trabalho apoiados por pesquisas:
+
+1. **Documentação da Web** – Documentos oficiais, referências de API, tutoriais
+2. **Documentação do projeto local** – Suas práticas, decisões de arquitetura
+3. **Padrões de base de código** – Exemplos de códigos e convenções existentes
+
+Em seguida, gera:
+- **SKILL.md** - Arquivo de habilidade principal com gatilhos de ativação
+- **references.md** - Links para todas as fontes de documentação
+- **livro de receitas/** - Fluxos de trabalho passo a passo para diferentes casos de uso
+- **.mcp.json** - Configuração opcional do servidor MCP
+
+## Como funciona
+
+### Fase 1: Requisitos
+
+Você descreve qual habilidade você precisa:
+
+```xml
+Skill categories:
+- Database integration (Supabase, PostgreSQL, MongoDB)
+- API integration (REST, GraphQL, webhooks)
+- UI/Frontend (Components, styling, design system)
+- Development workflow (Testing, deployment, CI/CD)
+- Custom description (describe what you need)
+```
+
+### Fase 2: Pesquisa
+
+O comando entra no Modo Plano e pesquisa:
+
+- **Documentos da Web**: URLs de documentação oficial, tutoriais, guias- **Documentos locais**: arquivos em seu diretório __NOTRASLATE_17__ que correspondem ao domínio da habilidade
+- **Padrões de base de código**: código existente que mostra como você faz as coisas
+- **Servidores MCP**: Ferramentas disponíveis para a tecnologia
+
+Ele coleta URLs e padrões sem copiar conteúdo.
+
+### Fase 3: Geração
+
+Com base nos resultados da pesquisa, gera:
+
+- **SKILL.md** com gatilhos de ativação e referências de livros de receitas
+- **references.md** vinculando todas as fontes web/local/codebase
+- diretório **cookbook/** com um arquivo por caso de uso
+- **.mcp.json** se um servidor MCP foi encontrado
+
+### Fase 4: Confirmação
+
+Você vê a estrutura gerada, pode visualizar o conteúdo e aprovar a criação.
+
+## Parâmetros
+
+Este comando não possui parâmetros – é totalmente interativo.
+
+```bash
+/agileflow:skill:create              # Interactive mode
+/agileflow:skill:create my-skill     # Optional: suggest skill name
+```
+
+## Exemplos
+
+### Exemplo 1: Crie uma habilidade Supabase
+
+__NOTRADUZIR_3__
+
+**Suas respostas:**
+__NÃOTRADUZIR_4__
+
+**Estrutura gerada:**
+__NOTRADUZIR_5__
+
+### Exemplo 2: Crie uma habilidade de componentes React
+
+__NOTRADUZIR_6__
+
+**Informações interativas:**__NÃOTRADUZIR_7__
+
+**Os arquivos gerados incluem:**
+- Referências a documentos React, documentos Tailwind, diretrizes de acessibilidade
+- Padrões de base de código de __NOTRASLATE_18__
+- Entradas do livro de receitas para tipos de componentes comuns
+
+## Saída
+
+O comando mostra a você:
+
+1. **Resumo da Pesquisa** – O que foi encontrado em cada fonte
+2. **Estrutura de Habilidades** - Arquivos que serão criados
+3. **Visualização** - Primeiras 50 linhas de SKILL.md
+4. **Confirmação** - SIM/NÃO para criar
+
+Exemplo de saída:
+
+__NÃOTRADUZIR_8__
+
+## Melhores práticas
+
+### Habilidades de nomenclatura
+
+Use nomes específicos e descritivos com hífens:
+
+- ✅ __NOTRASLATE_19__ - Tecnologia e contexto claros
+- ✅ __NOTRASLATE_20__ - Estrutura e recurso principal
+- ✅ __NOTRASLATE_21__ - Domínio e foco
+- ❌ __NOTRASLATE_22__ - Muito vago
+- ❌ __NOTRASLATE_23__ - Muito genérico
+- ❌ __NOTRASLATE_24__ - Use hífens, não sublinhados
+
+### Criando habilidades eficazes
+
+1. **Use domínios específicos** - Uma tecnologia por habilidade, não muito ampla
+2. **Inclua vários casos de uso** - Adicione entradas do livro de receitas para diferentescenários
+3. **Link para padrões de projeto** - O reference.md deve apontar para seu código real
+4. **Adicionar solução de problemas** - Antecipe e resolva problemas comuns
+5. **Mantenha o foco** - 2 a 4 entradas de livros de receitas por habilidade
+
+### Quando criar novas habilidades
+
+Crie uma habilidade quando:
+- Você usa uma tecnologia com frequência
+- Sua equipe tem padrões para alguma coisa
+- Você deseja codificar as melhores práticas
+- Você precisa de orientação passo a passo
+
+Não crie se:
+- O tópico é muito restrito (uma entrada no livro de receitas)
+- Você raramente usa
+- Documentos externos são suficientes
+
+## Entradas do livro de receitas
+
+Os livros de receitas são guias passo a passo para casos de uso específicos. Cada habilidade pode ter vários livros de receitas.
+
+### Estrutura do livro de receitas
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```idioma
+   exemplo de código
+   ```
+
+2. **Step 2**: Next step
+   ```idioma
+   exemplo de código
+   __NOTRADUZIR_11__
+
+### Exemplos de livros de receitas
+
+Cada entrada do livro de receitas deve abordar uma tarefa comum e específica:
+
+- **Habilidade Supabase**:
+  - __NOTRASLATE_25__ - Inscreva-se, entre, saia
+  - __NOTRASLATE_26__ - Criar, ler, atualizar, excluir
+  - __NOTRASLATE_27__ - Ouça as alterações do banco de dados
+
+- **Habilidade de reação de componentes**:
+  - __NOTRASLATE_28__ - Construa um novo componente
+  - __NOTRASLATE_29__ - Aplicar estilos consistentes
+  - __NOTRASLATE_30__ - Torne-o acessível
+
+## Integração MCP
+
+Se a tecnologia da sua habilidade tiver um servidor MCP disponível, o comando incluirá __NOTRASLATE_31__:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+Isso permite que Claude use ferramentas MCP ao trabalhar com a habilidade. Você precisará definir variáveis ​​de ambiente para que as ferramentas funcionem.
+
+## Tratamento de erros
+
+### A pesquisa na Web não retorna resultados
+
+Se a documentação não for encontrada online:
+- O comando cria a habilidade com padrões genéricos
+- Você pode adicionar URLs manualmente a __NOTRASLATE_32__ mais tarde
+- Use __NOTRASLATE_33__ para melhorá-lo
+
+### Servidor MCP não encontrado
+
+Se não existir nenhum servidor MCP para sua tecnologia:
+- A habilidade é criada sem __NOTRASLATE_34__
+- Você pode adicionar o MCP posteriormente se um servidor ficar disponível
+- São fornecidas instruções manuais de configuração do MCP
+
+### Erros de validação
+
+Antes de escrever, o comando validados:
+- O nome da habilidade contém apenas letras, números, hifens
+- A descrição tem menos de 1.024 caracteres
+- SKILL.md tem menos de 500 linhas
+- Todos os arquivos do livro de receitas são referenciados
+
+Se a validação falhar, você será solicitado a corrigir antes de continuar.
+
+## Após a criação
+
+Depois que a habilidade for criada:
+
+1. **Teste**:
+   __NÃOTRADUZIR_13__
+
+2. **Use** - Trabalhe nas tarefas e a habilidade será ativada automaticamente
+
+3. **Adicione aprendizado** - Permita o autoaperfeiçoamento:
+   __NOTRADUZIR_14__
+
+4. **Melhore** - Corrija o resultado de Claude e a habilidade aprende:
+   __NÃOTRADUZIR_15__
+
+## Solução de problemas
+
+### Habilidade não funciona
+
+Se uma habilidade recém-criada parece não ser ativada:
+
+1. Verifique a seção "Quando usar" em SKILL.md
+2. Certifique-se de que sua pergunta corresponda aos gatilhos de ativação
+3. Execute __NOTRASLATE_35__ para verificar a estrutura
+4. Edite com __NOTRASLATE_36__ para ajustar os gatilhos
+
+### Documentação local ausente
+
+Se o comando não conseguir encontrar suas práticas locais:
+
+1. Crie documentação em __NOTRASLATE_37__ ou __NOTRASLATE_38__
+2. Edite a habilidade para fazer referência ao que você cria
+3. Use palavras-chave mais específicas na descrição de suas habilidades
+
+### Entradas do livro de receitas não mostradas
+
+Se as entradas do livro de receitas não estiverem visíveis no Código Claude:
+
+1. Execute __NOTRASLATE_39__ para verificar se os arquivos existem
+2. Verifique se SKILL.md faz referência a eles corretamente
+3. Certifique-se de que os arquivos do livro de receitas sejam Markdown válidos
+
+## Comandos Relacionados
+
+- [__NOTRASLATE_40____NOTRASLATE_48__ - Ver todas as habilidades instaladas
+- [`/skill:edit`__NOTRASLATE_49__ - Modificar uma habilidade existente
+- [`/skill:test`](/commands/skill-test) - Verifique se uma habilidade funciona
+- [__NOTRASLATE_43____NOTRASLATE_51__ - Remover uma habilidade
+- [`/skill:upgrade`__NOTRASLATE_52__ - Adicionar capacidade de aprendizagem
+
+## Próximas etapas
+
+1. Crie sua primeira habilidade: __NOTRASLATE_45__
+2. Teste se funciona: __NOTRASLATE_46__
+3. Use-o em seu trabalho - ele será ativado automaticamente
+4. Melhore com __NOTRASLATE_47__

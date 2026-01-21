@@ -1,0 +1,269 @@
+---
+title: Requête de base de code
+description: Recherche intelligente dans la base de code à l'aide de requêtes programmatiques au lieu de RAG. Traduit le langage naturel en requêtes structurées pour une exploration rapide et ciblée du code.
+---
+# Agent de requête de base de code
+
+Le Codebase Query Agent est votre spécialiste de l'exploration rapide et ciblée de la base de code à l'aide de la recherche programmatique (modèle RLM). Cet agent traduit les questions en langage naturel en requêtes structurées, permettant une découverte de code efficace sans charger des fichiers entiers dans leur contexte.
+
+## Capacités
+
+- **Traduction en langage naturel** : convertissez des questions telles que "Où l'authentification est-elle gérée ?" en requêtes structurées
+- **Recherche de modèles de fichiers** : recherchez des fichiers par modèles globaux et conventions de dénomination
+- **Recherche de contenu** : recherche de style Grep de modèles de code, de noms de fonctions et de texte
+- **Recherche basée sur des balises** : recherchez des fichiers par balises sémantiques (api, ui, auth, base de données, test)
+- **Export Discovery** : localisez où les symboles sont exportés et utilisés
+- **Mappage des dépendances** : afficher quels fichiers importent/sont importés par un fichier donné
+- **Gestion du budget des jetons** : respectez les limites du contexte en tronquant les résultats volumineux
+
+## Quand l'utiliser
+
+Utilisez cet agent lorsque vous avez besoin de :
+
+- Rechercher des fichiers liés à une fonctionnalité (authenticatisur, API, base de données, etc.)
+- Localiser les définitions de fonctions ou les exportations
+- Découvrez les dépendances de fichiers et les chaînes d'importation
+- Rechercher le contenu du code sans lire des fichiers entiers
+- Explorez rapidement une base de code inconnue
+- Créer un contexte pour implémenter une fonctionnalité
+
+## Comment ça marche
+
+### Traduction des requêtes
+
+L'agent traduit le langage naturel en requêtes structurées :
+
+| L'utilisateur dit | Type de requête | Traduction |
+|---------------|------------|-------------|
+| « Où l'authentification est-elle gérée ? » | balise + requête | `--tag="auth"` + `--query="auth"` |
+| « Quels fichiers utilisent la fonction de connexion ? » | exporter | `--export="login"` |
+| "Rechercher des fichiers avec gestion des erreurs" | contenu | `--content="try.*catch"` |
+| "Montrez-moi les routes API" | étiquette | `--tag="api"` |
+| "De quoi dépend user.ts ?" | dépôts | `--deps="src/user.ts"` |
+| "Fichiers de schéma de base de données" | balise + requête | `--tag="database"` + `--query="schema"` |
+| "Composants React à l'aide de hooks" | contenu | `--content="use(State\|Effect\|Ref)"` |
+| "Tous les fichiers de test" | étiquette | `--tag="test"` |
+
+### Balise disponibles
+
+| Étiquette | Matchs |
+|-----|---------|
+| API | `/api/`, `/routes/`, `/controllers/` |
+| interface utilisateur | `/components/`, `/views/`, `/pages/` |
+| authentification | `/auth/`, `/login/`, `/jwt/` |
+| base de données | `/db/`, `/models/`, `/migrations/` |
+| tester | `/test/`, `/__tests__/`, `/spec/` |
+| configuration | `/config/`, `/settings/` |
+| bibliothèque | `/lib/`, `/utils/`, `/helpers/` |
+
+### Flux de travail
+
+1. **Parse Query** : comprenez ce que l'utilisateur recherche
+2. **Traduire** : convertir le langage naturel en types de requêtes structurées
+3. **Vérifier l'index** : assurez-vous que l'index de la base de code est disponible (construisez si nécessaire)
+4. **Exécuter la requête** : exécutez la requête avec les indicateurs appropriés
+5. **Format des résultats** : renvoie les chemins de fichiers avec le contexte
+6. **Tronquer si nécessaire** : Respecter les limites du budget des jetons
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Where is authentication handled in this codebase?"
+```
+
+L'agent de requête de base de code :
+1. Traduire en : `--tag="auth"` + `--query="auth"`
+2. Vérifier/construire l'index
+3. Rechercher des fichiers correspondant aux modèles d'authentification
+4. Renvoie des résultats structurés :
+```
+Query: "authentication files"
+Translation: --tag="auth" + --query="auth"
+Found: 8 files
+
+Files:
+- src/api/auth.ts (api, auth)
+- src/middleware/auth.ts (auth)
+- src/lib/jwt.ts (auth, lib)
+- src/hooks/useAuth.ts (ui, auth)
+...
+
+[Context: Searched for files tagged 'auth' and matching 'auth' pattern]
+```
+
+## Comportements clés
+
+- **LECTURE SEULE** : cet agent ne peut pas écrire, éditer ou modifier des fichiers
+- **Index-First** : vérifie/construit toujours l'index de base de code avant d'interroger
+- **Token-Aware** : tronque les résultats pour respecter le budget (par défaut : 15 000 caractères)
+- **Sortie structurée** : renvoie un format cohérent avec la requête, la traduction et les résultats
+- **Stratégie de repli** : utilise Glob/Grep directement si l'index n'est pas disponible
+
+## Outils disponibles
+
+Cet agent a accès à :
+- **Lire** : parcourir les fichiers pour comprendre le contexte
+- **Glob** : découverte de fichiers basée sur des modèles
+- **Grep** : recherche basée sur le contenu
+
+**Notamment manquant** (agent en LECTURE SEULE) :
+- Pas d'outil d'écriture
+- Pas d'outil d'édition
+- Pas d'outil Bash (sauf pour exécuter un script de requête)
+
+## Types de requêtes
+
+### Requête de modèle/mot clé
+```bash
+--query="auth"
+```
+Recherche intelligente combinant des modèles globaux, une correspondance de balises et une recherche d'exportation.
+
+### Recherche de contenu
+```bash
+--content="validateToken"
+```
+Recherche de texte de style Grepdans les fichiers.
+
+### Recherche de balises
+```bash
+--tag="api"
+```
+Recherchez les fichiers correspondant aux modèles de balises sémantiques.
+
+### Exporter la recherche
+```bash
+--export="login"
+```
+Recherchez les fichiers qui exportent un symbole spécifique.
+
+### Recherche de dépendances
+```bash
+--deps="src/auth.js"
+```
+Montrez ce que le fichier importe et ce qui l'importe.
+
+### Index de construction
+```bash
+--build-index
+```
+Reconstruisez l'index de la base de code (lorsqu'il est obsolète ou manquant).
+
+## Format de sortie
+
+Format de réponse standard :
+
+```
+Query: "[original natural language query]"
+Translation: [query flags used]
+Index Status: [built/stale/missing]
+Found: [N] files
+
+Files:
+- path/to/file.ts (tags)
+- path/to/other.ts (tags)
+...
+
+[Context: explanation of what was searched]
+```
+
+Pour les recherches de contenu, inclut les lignes correspondantes :
+```
+Matches in path/to/file.ts:
+  42: const token = validateToken(input);
+  85: if (!validateToken(refreshToken)) {
+```
+
+## Gestion du budget des jetons
+
+L'agent respecte les limites de jetons :
+- Budget par défaut : 15 000 caractères
+- Utilisez `--budget=5000` pour des résultats plus petits
+- Les gros résultats sont tronqués avec préavis
+- Affiche le nombre total même lorsqu'il est tronqué
+
+## Comportement de repli
+
+Si le script de requête ou l'index n'est pas disponible :
+
+1. **Modèles de fichiers** : utilisez l'outil Glob pour la correspondance de modèles
+2. **Recherche de contenu** : utilisez l'outil Grep pour la recherche de texte
+3. **Combiner les résultats** : dédupliquer et formater manuellement
+
+## Intégration avec d'autres agents
+
+L'agent de requête Codebase est typiquelly invoqué par :
+
+- **MENTOR** : recherchez le code pertinent pour la mise en œuvre des fonctionnalités
+- **AG-API** : localisez les implémentations d'API existantes
+- **REFACTOR** : recherchez des modèles de code à mettre à jour
+- **AG-DEVOPS** : Rechercher les fichiers de configuration
+- **EPIC-PLANNER** : Comprendre la structure de la base de code
+
+Les résultats sont renvoyés directement (aucune messagerie de bus n'est nécessaire pour les requêtes en lecture seule).
+
+## Modèle RLM
+
+Cet agent implémente le modèle RLM (Repository-Level Modeling) :
+
+- **Recherche programmatique** : interrogez la base de code via une API structurée, pas RAG
+- **Basé sur un index** : utilise un index prédéfini pour des recherches rapides
+- **Token-Efficient** : renvoie uniquement les résultats pertinents, pas les fichiers entiers
+- **Déterministe** : la même requête renvoie toujours les mêmes résultats
+
+Avantages par rapport à RAG :
+- Plus rapide (pas de calcul d'intégration)
+- Plus précis (correspondances exactes)
+- Coût inférieur (contexte plus petit)
+- Déterministe (pas d'hallucinations)
+
+## Modèles courants
+
+**Trouver des fichiers d'implémentation**
+```
+"Where is [feature] implemented?"
+→ --tag="[relevant-tag]" + --query="[feature]"
+```
+
+**Trouver des sites d'utilisation**
+```
+"What uses [function/class]?"
+→ --export="[symbol]"
+```
+
+**Trouver une configuration**
+```
+"Where is [setting] configured?"
+→ --tag="config" + --content="[setting]"
+```
+
+**Mamanp Dépendances**
+```
+"What does [file] depend on?"
+→ --deps="[file-path]"
+```
+
+## Agents associés
+
+- [`research`](/agents/research) - Pour une recherche technique plus approfondie au-delà du code
+- [`mentor`](/agents/mentor) - Invoque souvent une requête de base de code pour le contexte
+- [`refactor`](/agents/refactor) - Utilise les résultats de la requête pour planifier la refactorisation
+- [`devops`](/agents/devops) - Recherche le code de configuration et d'infrastructure
+
+## Anti-modèles
+
+**À NE PAS FAIRE :**
+- Utiliser les outils d'écriture/édition (vous êtes en LECTURE SEULE)
+- Charger l'intégralité de la base de code dans son contexte
+- Ignorer l'état de l'index (vérifier/construire d'abord)
+- Renvoie le contenu brut du fichier (renvoie des résultats structurés)
+- Dépasser le budget symbolique (tronquer avec préavis)
+
+**FAIRE :**
+- Traduire le langage naturel en types de requêtes
+- Vérifiez l'état de l'index avant d'interroger
+- Combinez les types de requêtes pour les recherches complexes
+- Afficher le nombre de correspondances et les chemins de fichiers
+- Expliquez ce qui a été recherché et comment

@@ -1,0 +1,354 @@
+---
+title: Agentes de configuración
+description: Agentes especializados para instalar y configurar funciones de AgileFlow
+---
+# Agentes de configuración
+
+Los agentes de configuración son agentes especializados que ayudan a instalar y configurar varias funciones de AgileFlow. Se invocan mediante el comando `/agileflow:configure`.
+
+## Descripción general
+
+Cuando ejecuta `/agileflow:configure`, se le presenta un menú de opciones de configuración. Cada opción genera un agente de configuración dedicado que lo guía a través de la configuración.
+
+```bash
+/agileflow:configure
+```
+
+## Agentes de configuración disponibles
+
+### Sistema de ganchos
+
+**Agente**: `configuration-hooks`
+
+Configura el sistema de ganchos de Claude Code para la automatización basada en eventos.
+
+**Qué configura:**
+- Gancho SessionStart - Pantalla de bienvenida, estado del proyecto
+- Gancho PreCompact - Preservación del contexto
+- Detener gancho - Resumen de sesión, advertencia de cambios no confirmados
+- Gancho UserPromptSubmit - Registro de actividad
+
+**Archivos creados:**
+- `.claude/settings.json` - Configuración de ganchos
+- `scripts/agileflow-welcome.js` - Pantalla de bienvenida
+- `scripts/precompact-context.sh` - Preservación del contexto
+- `scripts/agileflow-stop.sh` - Resumen de la sesión
+- `scripts/get-env.js` - Ayudante de variable de entorno
+
+---
+
+### Contexto precompacto
+
+**Agente**: `configuration-precompact`
+
+Configura el enlace PreCompact para preservar el contexto crítico cuando se compactan las conversaciones.
+
+**Qué conserva:**
+- Versión del proyecto, rama git, historias activas.
+- Reglas de comando activas (por ejemplo, el requisito AskUserQuestion de niñera)
+- Convenciones clave de CLAUDE.md
+- Progreso reciente de bus/log.jsonl
+
+**Soporte de múltiples comandos (v2.40.0+):**
+Se pueden activar varios comandos simultáneamente. El gancho PreCompact lee todos los comandos activos de `session-state.json` y conserva sus reglas de comportamiento.
+
+---
+
+### Autoarchivado
+
+**Agente**: `configuration-archival`
+
+Configura el archivo automático de historias antiguas completadas para mantener `status.json` pequeño.
+
+**Por qué es importante:**
+A medida que los proyectos crecen, `status.json` puede exceder el límite de tokens de 25 000 de Claude Code, lo que provoca que los agentes fallen. El archivo automático mueve historias antiguas completadas a `status-archive.json`.
+
+**Opciones de configuración:**
+- 30 días (recomendado)
+- 14 días
+- 7 días
+- 3 días (agresivo)
+
+**Archivos creados:**
+- `docs/00-meta/agileflow-metadata.json` - Configuración de umbral
+- `scripts/archive-completed-stories.sh` - Guión de archivo
+- Entrada de gancho SessionStart - Ejecuta el archivo automáticamente
+
+---
+
+### Atribución de Git
+
+**Agente**: `configuration-attribution`
+
+Configura si Claude Code agrega atribución de IA a las confirmaciones de git.
+
+**Opciones:**
+- **Desactivar atribución** - Confirmaciones limpias, sin pies de página de IA (uso profesional)
+- **Mantener atribución** - Incluir pie de página "Generado con Claude Code"
+
+**Qué hace:**
+- Crea o actualiza `CLAUDE.md` con política de atribución
+- Agrega una sección CRÍTICA que sigue Claude
+
+---
+
+### Línea de estado
+
+**Agente**: `configuration-status-line`
+
+Configura la barra de estado personalizada que se muestra en Claude Code.
+
+**Qué muestra:**
+- Rama Git (codificada por colores por tipo)
+- ID y título de la historia actual
+- Recuento WIP (amarillo si >1, rojo si >3)
+- Porcentaje de finalización
+
+**Salida de ejemplo:**
+```
+[main] US-0007: Status Line | WIP: 2 | Done: 85%
+```
+
+---
+
+### Canalización de CI
+
+**Agente**: `configuration-ci`
+
+Configura el flujo de trabajo de CI/CD para pruebas automatizadas y controles de calidad.
+
+**Qué crea:**
+-Archivo de flujo de trabajo de acciones de GitHub
+- Comandos de prueba
+- Configuración de pelusa
+- Umbrales de cobertura
+
+---
+
+### Configuración de Git
+
+**Agente**: `configuration-git-config`
+
+Configura la inicialización del repositorio git y la configuración remota.
+
+**Qué hace:**
+- Inicializa el repositorio de git si es necesario
+- Configura el origen remoto
+- Configura la rama predeterminada
+- Configura .gitignore
+
+---
+
+### Control de daños
+
+**Agente**: `configuration-damage-control`
+
+Configura el sistema de control de daños para proteger contra comandos destructivos.
+
+**Niveles de protección:**
+- **Estándar** - Bloquea patrones destructivos comunes
+- **Estricto** - Bloqueo más agresivo
+- **Permisivo** - Bloqueo mínimo
+
+**Qué bloquea:**
+- `rm -rf /` y variantes
+- Empujes forzados a ramas protegidas.
+- La base de datos cae sin confirmación.
+- Eliminaciones masivas de archivos
+
+Consulte [Control de daños](/features/damage-control) para obtener la documentación completa.
+
+---
+
+### Verificar configuración
+
+**Agente**: `configuration-verify`
+
+Verifica que toda la configuración de AgileFlow sea correcta y funcione.
+
+**Qué comprueba:**
+- Ganchos sistema correctamente configurado
+- Existen directorios requeridos
+- Los scripts son ejecutables.
+- Los archivos JSON son válidos
+- Los ganchos de Git están instalados.
+
+## Uso
+
+### Configuración interactiva
+
+```bash
+/agileflow:configure
+```
+
+Verás opciones como:
+```
+Which feature would you like to configure?
+
+1. Hooks System (Recommended)
+2. Auto-Archival
+3. Git Attribution
+4. Status Line
+5. CI Pipeline
+6. Damage Control
+7. Verify Configuration
+```
+
+### Invocación directa del agente
+
+También puede invocar agentes de configuración directamente a través de la herramienta Tarea:
+
+```javascript
+Task(
+  description: "Configure hooks system",
+  prompt: "Set up the hooks system with SessionStart and PreCompact",
+  subagent_type: "configuration-hooks"
+)
+```
+
+## Archivos de configuración
+
+### .claude/settings.json
+
+Archivo de configuración de ganchos principales. Comprometido con git.
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/agileflow-welcome.js"
+      }]
+    }],
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### docs/00-meta/agileflow-metadata.json
+
+Configuración de funciones y seguimiento de versiones.
+
+```json
+{
+  "version": "2.78.0",
+  "created": "2025-01-01T00:00:00Z",
+  "updated": "2025-01-09T00:00:00Z",
+  "archival": {
+    "threshold_days": 30,
+    "enabled": true
+  },
+  "features": {
+    "hooks": {
+      "enabled": true,
+      "configured_version": "2.41.0"
+    },
+    "precompact": {
+      "enabled": true,
+      "configured_version": "2.40.0"
+    }
+  }
+}
+```
+
+### .claude/settings.local.json
+
+Anulaciones específicas del usuario. Gitigignorado.
+
+```json
+{
+  "env": {
+    "USER_NAME": "Your Name"
+  }
+}
+```
+
+## Mejores prácticas
+
+### 1. Comience con el sistema de ganchos
+
+El sistema de ganchos es fundamental. Configúrelo primero y luego agregue otras funciones.
+
+```bash
+/agileflow:configure
+# Select: Hooks System
+```
+
+### 2. Habilite el archivado automático anticipado
+
+Para proyectos con muchas historias, habilite el archivo automático para evitar que status.json crezca demasiado.
+
+### 3. Reiniciar después de la configuración
+
+musLos cambios de configuración requieren reiniciar Claude Code:
+
+```
+RESTART CLAUDE CODE NOW!
+Quit completely (Cmd+Q), wait 5 seconds, restart
+Hooks ONLY load on startup!
+```
+
+### 4. Verificar la configuración
+
+Después de realizar cambios, ejecute la verificación:
+
+```bash
+/agileflow:configure
+# Select: Verify Configuration
+```
+
+### 5. Probar scripts manualmente
+
+Antes de confiar en los ganchos, pruebe los scripts manualmente:
+
+```bash
+# Test welcome display
+node scripts/agileflow-welcome.js
+
+# Test context preservation
+bash scripts/precompact-context.sh
+
+# Test session wrap-up
+bash scripts/agileflow-stop.sh
+```
+
+## Solución de problemas
+
+### Los ganchos no funcionan
+
+1. Verifique que `.claude/settings.json` exista y sea JSON válido
+2. Verifique el formato de la matriz de ganchos (debe usar el formato `matcher` + `hooks`)
+3. Reinicie Claude Code por completo
+
+### Formato antiguo detectado
+
+Si ve "Se detectó formato de gancho antiguo", su settings.json usa el formato obsoleto. Ejecute `/agileflow:configure` → Hooks System para migrar.
+
+### Scripts no encontrados
+
+Asegúrese de que los scripts estén en la ubicación correcta:
+- `scripts/agileflow-welcome.js`
+- `scripts/precompact-context.sh`
+- `scripts/get-env.js`
+
+### Permiso denegado
+
+Hacer que los scripts sean ejecutables:
+```bash
+chmod +x scripts/*.js scripts/*.sh
+```
+
+## Documentación relacionada
+
+- [Arquitectura del sistema de ganchos](/features/hooks-system) - Documentación detallada de ganchos
+- [Contexto compacto](/features/compact-context) - Contextopreservación
+- [Control de daños](/features/damage-control) - Sistema de protección
+- [`/agileflow:configure`](/commands/configure) - Comando de configuración

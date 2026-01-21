@@ -1,0 +1,284 @@
+---
+title: Accessibilité
+description: Spécialiste de l'accessibilité pour la conformité WCAG, la conception inclusive, le support technologique d'assistance et les tests d'accessibilité.
+---
+# Agent d'accessibilité
+
+L'agent d'accessibilité (AG-ACCESSIBILITY) est un spécialiste de l'accessibilité qui garantit que les applications sont utilisables par tous, y compris les personnes handicapées. Cet agent effectue des audits WCAG, des tests avec des technologies d'assistance et garantit le respect des principes de conception inclusifs.
+
+## Capacités
+
+- **Audit WCAG 2.1** : vérifier la conformité aux niveaux AA et AAA
+- **Test du lecteur d'écran** : test avec NVDA, JAWS, VoiceOver
+- **Navigation au clavier** : assurez-vous que toutes les fonctionnalités sont accessibles via le clavier
+- **Vérification du contraste des couleurs** : Valider un rapport de contraste ≥4,5:1
+- **Gestion de la mise au point** : indicateurs de mise au point visibles et ordre logique des onglets
+- **Tests d'accessibilité** : tests automatiques et manuels
+- **Support technologique d'assistance** : Prise en charge des lecteurs d'écran, de la commande vocale, etc.
+- **Conception inclusive** : modèles de conception qui fonctionnent pour tous les utilisateurs
+- **Implémentation ARIA** : HTML sémantique et étiquettes ARIA appropriées
+- **Documentation sur l'accessibilité** : créez des guides et des s de test quotidiensnormes
+
+## Quand l'utiliser
+
+Utilisez l'agent d'accessibilité lorsque :
+
+- Concevoir de nouvelles fonctionnalités ou composants
+- Besoin d'une vérification de conformité WCAG 2.1
+- Problèmes de contraste de couleur ou problèmes d'accessibilité visuelle
+- La navigation au clavier ne fonctionne pas
+- Problèmes de compatibilité des lecteurs d'écran
+- Besoin de tester avec des technologies d'assistance
+- Création de normes d'accessibilité
+- Planification des versions (tests d'accessibilité requis)
+- Les utilisateurs handicapés signalent des problèmes
+- Besoin d'ADR pour les décisions en matière d'accessibilité
+
+## Comment ça marche
+
+1. **Chargement des connaissances** : l'agent lit l'expertise et les normes WCAG
+2. **Analyse des fonctionnalités** : l'agent examine l'histoire pour connaître les implications en matière d'accessibilité
+3. **Audit automatisé** : l'agent exécute Axe, Lighthouse, WAVE
+4. **Tests manuels** : l'agent teste la navigation au clavier et les lecteurs d'écran
+5. **Documentation des problèmes** : l'agent répertorie tous les problèmes d'accessibilité avec leur gravité
+6. **Planification des mesures correctives** : l'agent se coordonne avec les équipes de conception/interface utilisateur
+7. **Vérification** : l'agent re-teste après les correctifs
+8. **Documentation** : mises à jour des agentsstatus.json et rapporte les résultats
+
+## Exemple
+
+```bash
+# Via babysit - audit new form component for accessibility
+/agileflow:babysit
+> "We built a new form component. Is it accessible?"
+
+# Agent output:
+# Accessibility Audit: New Form Component
+#
+# Issues Found:
+# CRITICAL (blocks functionality):
+# ├── Form fields have no labels (missing <label> elements)
+# ├── Submit button has no accessible name
+# └── Error messages not announced to screen readers
+#
+# MAJOR (significantly impacts usability):
+# ├── Color contrast: 3.8:1 (need 4.5:1)
+# └── Focus indicators not visible
+#
+# MINOR (impacts some users):
+# ├── Form instructions could be clearer
+# └── Missing aria-required on required fields
+#
+# WCAG Compliance: 25% AA (need 100%)
+#
+# Remediation Steps:
+# 1. Add <label> for each form field
+# 2. Add accessible names to buttons (aria-label)
+# 3. Add aria-live to error messages
+# 4. Increase color contrast to 4.5:1
+# 5. Add visible focus indicators (2px outline)
+#
+# Accessibility Checklist:
+# ✅ Test with screen reader (NVDA)
+# ✅ Keyboard-only navigation
+# ✅ Tab order verification
+# ✅ Color contrast validation
+# ✅ Focus indicator verification
+```
+
+## Comportements clés
+
+- **Inclus par défaut** : conception pour tous les utilisateurs dès le départ
+- **Test avec de vrais utilisateurs** : utilisez de véritables technologies d'assistance
+- **Keyboard First** : toutes les fonctionnalités accessibles sans souris
+- **Color Not Only** : informations non véhiculées par la couleur seule
+- **Clear Focus** : indicateurs de mise au point visibles sur chaque élément interactif
+- **HTML sémantique** : utilisez les éléments HTML appropriés pour donner du sens
+- **Aucune hypothèse** : ne présumez pas que tous les utilisateurs disposent d'un clavier ou d'un périphérique de pointage.
+
+## Outils disponibles
+
+- Lire, écrire, modifier (opérations sur les fichiers)
+- Bash (exécuter des tests tous les 11 ans)
+- Glob (trouver les fichiers de test a11y)
+- Grep (recherche de problèmes a11y)
+
+## Normes WCAG 2.1
+
+**Niveaux WCAG 2.1** :
+- **Niveau A** : Accessibilité minimale
+- **Niveau AA** : Accessibilité améliorée (norme recommandée)
+- **Niveau AAA** : Accessibilité optimale (viser cela)
+
+**Principes WCAG 2.1** :
+1. **Perceptible** : les informations et les composants de l'interface utilisateur doivent être perceptibles
+2. **Utilisable** : les composants de l'interface utilisateur et la navigation doivent être opérationnels
+3. **Compréhensible** : les informations et les opérations doivent être compréhensibles
+4. **Robuste** : le contenu doit être robuste pour les technologies d'assistance
+
+**Critères clés WCAG 2.1 AA** :
+- **Contraste des couleurs** : texte ≥4,5:1, composants de l'interface utilisateur ≥3:1
+- **Clavier accessible** : toutes les fonctionnalités via le clavier
+- **Pas de pièges au clavier** : possibilité de sortir de n'importe quel composant
+- **Ordre de mise au point** : l'ordre des tabulations correspond à l'ordre visuel (logique)
+- **Focus Visible** : indicateur de mise au point visible contour ≥2px
+- **Taille de la cible tactile** : ≥44x44 pixels CSS
+- **HTML sémantique** : utilisez les éléments HTML appropriés
+- **Étiquettes ARIA** : les boutons/liens ont des noms accessibles
+- **Étiquettes de formulaire** : tous les champs du formulaire sont correctement étiquetés
+
+## Tests d'accessibilité
+
+**Tests automatisés** (exécutés en premier pour un retour rapide) :
+- **axe DevTools** : extension de navigateur, identifie les problèmes courants
+- **Lighthouse** : audit intégré dans Chrome DevTools
+- **WAVE** : outil WebAIM pour le retour visuel
+- **Vérificateurs de contraste de couleur** : vérifiez le rapport 4,5 : 1
+
+**Manuel Testing** (indispensable pour une véritable évaluation) :
+- **Navigation au clavier uniquement** : onglet sur toute la page (pas de souris)
+- **Tests de lecteurs d'écran** : NVDA (Windows), JAWS (Windows), VoiceOver (macOS)
+- **Vérification de l'ordre des tabulations** : Vérifiez le flux logique
+- **Visibilité de l'indicateur de focus** : voir le focus sur chaque élément interactif
+- **Validation du contraste des couleurs** : Vérification des outils + inspection visuelle
+
+**Prise en charge du lecteur d'écran** :
+-NVDA (Windows, gratuit)
+- JAWS (Windows, payant, le plus populaire)
+- VoiceOver (macOS/iOS, intégré)
+- TalkBack (Android, intégré)
+
+## Problèmes d'accessibilité courants
+
+| Problème | Problème | Corriger |
+|-------|---------|-----|
+| Aucune étiquette sur les entrées | Le lecteur d'écran ne sait pas de quel champ il s'agit | Ajouter `<label for="id">` |
+| Boutons contenant uniquement des icônes | Pas de nom pour les lecteurs d'écran | Ajouter `aria-label="name"` |
+| Faible contraste de couleur | Difficile à lire pour les utilisateurs malvoyants | Augmenter le contraste à 4,5:1 |
+| Indicateurs de focus manquants | Les utilisateurs du clavier ne peuvent pas voir où ils se trouvent | Ajouter un contour de focus visible |
+| Pas de texte alternatif sur les images | Scles lecteurs actuels ne peuvent pas décrire l'image | Ajouter une description `alt="..."` |
+| Pièges à clavier | Les utilisateurs ne peuvent pas s'éloigner | Correction de la gestion du focus |
+| Informations sur la couleur uniquement | Les utilisateurs daltoniens manquent de signification | Utiliser des icônes, du texte, des motifs |
+
+## Liste de contrôle d'accessibilité
+
+**Accessibilité visuelle** :
+- [ ] Contraste des couleurs ≥4,5:1 pour le texte (WCAG AA)
+- [ ] Contraste des couleurs ≥3:1 pour les composants de l'interface utilisateur
+- [ ] Aucune information sur la couleur uniquement (utilisez des icônes/du texte)
+- [ ] Texte redimensionnable à 200% sans défilement
+- [ ] Indicateur de mise au point visible (contour ≥2px)
+-[ ] Cibles tactiles ≥44x44 pixels CSS
+- [ ] Conception visuelle cohérente (les boutons ressemblent à des boutons)
+
+**Accessibilité du clavier** :
+- [ ] Toutes les fonctionnalités accessibles via le clavier
+- [ ] Aucun piège clavier (Tab peut quitter n'importe quel composant)
+- [ ] Ordre des onglets logique (correspond à l'ordre visuel)
+- [ ] Entrée/Espace active les boutons
+- [ ] Les touches fléchées naviguent dans les listes/menus
+- [ ] Escape ferme les modaux/popovers
+
+**Accessibilité du lecteur d'écran** :
+- [ ] HTML sémantique (bouton, lien, étiquettes de formulaire)
+- [ ] Tous les boutons/les liens ont un nom accessible
+- [ ] Les images ont un texte alternatif (ou masqué si elles sont décoratives)
+- [ ] Les champs du formulaire ont des étiquettes (ou aria-label)
+- [ ] Erreurs de formulaire annoncées aux lecteurs d'écran
+- [ ] Repères présents (principaux, nav, complémentaires)
+- [ ] Ignorer les liens pour la navigation au clavier
+- [ ] Régions en direct pour le contenu dynamique
+
+## Modèles de conception inclusifs
+
+**Formulaires** :
+```html
+<!-- Good: Label associated with input -->
+<label for="email">Email</label>
+<input id="email" type="email" required aria-required="true">
+<span class="error" role="alert">Email is required</span>
+
+<!-- Bad: Placeholder only, no label -->
+<input placeholder="Email" type="email">
+```
+
+**Boutons** :
+```html
+<!-- Good: Clear accessible name -->
+<button aria-label="Close menu">
+  <svg aria-hidden="true"><!-- icon --></svg>
+</button>
+
+<!-- Bad: Icon-only with no label -->
+<button>
+  <svg><!-- icon --></svg>
+</button>
+```
+
+**Photos** :
+```html
+<!-- Good: Descriptive alt text -->
+<img src="profile.jpg" alt="Sarah Chen, product manager">
+
+<!-- Bad: Alt text missing -->
+<img src="profile.jpg">
+
+<!-- Good: Decorative image hidden -->
+<img src="decoration.jpg" alt="" aria-hidden="true">
+```
+
+**Contraste des couleurs** :
+```text
+Good: White text (#FFF) on blue (#0066CC) = 8.6:1 ✅ AAA
+Bad:  White text (#FFF) on gray (#999) = 3.9:1 ❌ AA (need 4.5:1)
+Good: White text (#FFF) on black (#000) = 21:1 ✅ AAA
+```
+
+## Priorité de correction
+
+| Priorité | Gravité | Exemples |
+|----------|----------|---------------|
+| Critique | Bloque les fonctionnalités de base | Aucun accès au clavier aux fonctionnalités, étiquettes de formulaire manquantes |
+| Majeur | Impacte considérablement la convivialité | Faible contraste des couleurs, indicateurs de mise au point manquants |
+| Mineur | Impacte certains utilisateurs | Annotations ARIA manquantes, messages d'erreur détaillés |
+
+## Mouvement et animation
+
+**Considérations en matière d'accessibilité** :
+- [ ] Les animations respectent `prefers-reduced-motion`
+- [ ] Pas de clignotement provoquant des crises (pas de >3 clignotements/seconde)
+- [ ] Autolay désactivé par défaut
+- [ ] Les utilisateurs peuvent mettre les animations en pause
+
+## Agents associés
+
+- [`design`](/agents/design) - Conception visuelle et couleur/contraste
+- [`ui`](/agents/ui) - Implémentation de composants avec ARIA/HTML sémantique
+- [`testing`](/agents/testing) - Automatisation des tests d'accessibilité
+- [`qa`](/agents/qa) - Accessibilité en préparation pour la publication
+
+##Coordination
+
+L'agent d'accessibilité se coordonne avec :
+
+- **AG-DESIGN** : contraste visuel, indicateurs de mise au point, motifs inclusifs
+- **AG-UI** : implémentation ARIA, HTML sémantique, navigation au clavier
+- **AG-TESTING** : Automatisation des tests d'accessibilité
+- **AG-QA** : Accessibilité dans les critères de publication
+- **Équipe produit** : Valider les améliorations d'accessibilité avec de vrais utilisateurs
+
+## Commandes barre oblique
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques de tous les jours
+- `/agileflow:ai-code-review` - Vérifier le code pour les problèmes d'accessibilité
+- `/agileflow:adr-new` - Documenter les décisions en matière d'accessibilité
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de l'histoire
+
+## AccèsPrincipes de fiabilité
+
+- **Inclusif dès la conception** : prenez en compte tous les utilisateurs dès le départ
+- **Test avec de vrais utilisateurs** : utilisez de véritables technologies d'assistance
+- **Aucun raccourci** : la conformité aux WCAG est obligatoire et non facultative
+- **Couches d'accessibilité** : visuel, clavier, lecteur d'écran, cognitif
+- **Amélioration continue** : corrigez les problèmes découverts
+- **Éducation** : aidez l'équipe à comprendre pourquoi l'accessibilité est importante

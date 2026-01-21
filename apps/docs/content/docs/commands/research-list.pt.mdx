@@ -1,0 +1,91 @@
+---
+title: /agileflow:pesquisa:lista
+description: Exiba o índice de todas as notas de pesquisa do seu projeto
+---
+# /agileflow:pesquisa:lista
+
+Exiba todas as notas de pesquisa armazenadas em seu projeto com uma visão geral rápida.
+
+## Início rápido
+
+```bash
+/agileflow:research:list
+```
+
+Não são necessários argumentos — mostra todas as notas de pesquisa.
+
+## Objetivo
+
+Mostra notas de pesquisa armazenadas em __NOTRASLATE_3__ com:
+
+- Data
+- Tópico
+- Nome do arquivo
+- Resumo de uma linha (se disponível)
+
+Este é um **comando somente leitura** – nenhum arquivo é gravado.
+
+## Saída
+
+```
+## Research Notes
+
+| Date       | Topic                  | File                        |
+|------------|------------------------|-----------------------------|
+| 2025-01-07 | OAuth Integration       | 20250107-oauth.md           |
+| 2025-01-06 | Performance Tips        | 20250106-perf.md            |
+| 2025-01-05 | Database Migrations     | 20250105-migrations.md      |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=<filename> - Read a specific note
+- /agileflow:research:analyze FILE=<filename> - Analyze for implementation
+- /agileflow:research:ask TOPIC="new topic" - Create new research prompt
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## Quando não existe pesquisa
+
+Se nenhuma nota de pesquisa for encontrada:
+
+```
+No research notes found.
+
+Quick start:
+- /agileflow:research:ask TOPIC="your topic" - Generate research prompt for ChatGPT/Claude
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## Como funciona
+
+1. Lê __NOTRASLATE_4__ para a tabela de índice
+2. Se o README não existir, lista os arquivos do diretório
+3. Se o diretório não existir, mostra uma mensagem útil
+4. Sugere próximas ações
+
+## Ações rápidas
+
+Depois de visualizar a lista, você pode:
+
+| Ação | Comando |
+|--------|---------|
+| Leia uma nota | `/agileflow:research:view FILE=<filename>` |
+| Analisar para implementação | `/agileflow:research:analyze FILE=<filename>` |
+| Criar novas pesquisas | `/agileflow:research:ask TOPIC="..."` |
+| Importar conteúdo | `/agileflow:research:import TOPIC="..."` |
+
+## Quando usar
+
+- **Antes da implementação** - Encontre o passadopesquisar sobre um tema
+- **Procurando trechos de código** - Lembre-se de onde você pesquisou algo
+- **Verifique os itens de ação** - Veja quais tarefas surgiram da pesquisa
+- **Compartilhamento de conhecimento em equipe** - Navegue pelo que foi pesquisado
+
+## Comandos Relacionados
+
+- [`/agileflow:research`](/commands/research) - Visão geral do sistema de pesquisa
+- [`/agileflow:research:ask`](/commands/research-ask) - Gerar prompts de pesquisa
+- [`/agileflow:research:import`__NOTRASLATE_16__ - Importar resultados de pesquisa
+- [__NOTRASLATE_12____NOTRASLATE_17__ - Leia a nota de pesquisa específica
+- [`/agileflow:research:analyze`__NOTRASLATE_18__ - Analisar para implementação

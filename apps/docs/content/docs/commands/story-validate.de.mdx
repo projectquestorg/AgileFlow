@@ -1,0 +1,202 @@
+---
+title: /story-validate
+description: Überprüfen Sie die Vollständigkeit der Geschichte vor der Entwicklung
+---
+# /story-validate
+
+Überprüfen Sie die Vollständigkeit, Klarheit und Entwicklungsbereitschaft einer Story, bevor Sie sie einem Agenten zuweisen.
+
+## Schnellstart
+
+```bash
+/agileflow:story-validate STORY=<US-ID>
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `STORY` | Ja | - | Story-ID (z. B. US-0001) |
+
+## Beispiele
+
+### Vor der Entwicklung validieren
+
+```bash
+/agileflow:story-validate STORY=US-0042
+```
+
+Führt eine umfassende Validierung der Story durch und gibt einen detaillierten Bericht zurück, der zeigt, was vollständig ist und was repariert werden muss.
+
+### Sehen Sie sich eine Geschichte von Different Epic an
+
+```bash
+/agileflow:story-validate STORY=US-0085
+```
+
+Der Befehl findet die Story-Datei automatisch, unabhängig davon, zu welchem Epic sie gehört.
+
+## Ausgabe
+
+Der Validierungsbericht enthält:
+
+### Prüfungen bestanden
+Zeigt alle bestandenen Validierungskriterien an:
+- Erforderliche Abschnitte vorhanden
+- Akzeptanzkriterien klar und überprüfbar
+- Mit Quellen gefüllter Architekturkontext
+- Abhängigkeiten dokumentiert
+- Schätzung ist realistisch
+
+### FEHLERHAFTE Probleme
+Zeigt kritische Probleme, die must behoben werden:
+- Fehlende erforderliche Abschnitte (AC, Architekturkontext)
+- Unklare Akzeptanzkriterien (kein Gegeben/Wann/Dann-Format)
+- Fehlende Quellenangaben im Architekturkontext
+- Nicht überprüfte Abhängigkeiten
+- Unrealistische Schätzung
+
+### WARNUNGEN
+Zeigt kleinere Probleme oder Vorschläge an:
+- Abhängigkeiten könnten klarer sein
+- Die Akzeptanzkriterien könnten spezifischer sein
+- Platzhaltertext für den Dev Agent Record
+- Verbesserungsvorschläge
+
+## Validierungscheckliste
+
+Der Befehl validiert:
+
+### 1. Erforderliche Abschnitte
+- Story-Metadaten (ID, Epic, Besitzer, Schätzung, Status)
+- Beschreibung
+- Akzeptanzkriterien (Format „Gegeben/Wann/Dann“)
+- Architekturkontext mit Unterabschnitten
+- Teststrategie
+- Dev-Agent-Datensatz (Struktur)
+- Abhängigkeiten (falls zutreffend)
+
+### 2. Qualität der Akzeptanzkriterien
+- Verwendet das Format „Gegeben/Wann/Dann“ (nicht nur Aufzählungspunkte)
+- 2-5 Kriterien (nicht zu viele, nicht zu wenige)
+- Spezifisch und messbar
+– Verweist auf Implementierungsdetails
+- Jedes Kriterium ist unabhängig überprüfbar
+
+### 3. Architekturkontext
+- Sektion existiert mit echtem Inhalt
+- Enthält Quellenangaben: `[Source: architecture/{file}.md#{section}]`
+- Alle referenzierten Dateien sind in `docs/04-architecture/` vorhanden.
+- Inhalte werden extrahiert (nicht erfunden)
+
+### 4. Schätzung
+- Die Schätzung ist eine von: 0,5d, 1d, 1,5d, 2d
+- Für >2 Tage: schlägt vor, in kleinere Geschichten aufzuteilen
+- Realistisch für den Umfang der Geschichte
+
+### 5. Abhängigkeiten
+- Das Format ist klar: „Abhängig von US-#### (Beschreibung)“
+– Referenzierte Storys sind in status.json vorhanden
+- Keine zirkulären Abhängigkeiten
+- Blockierte Geschichten haben dokumentierte Gründe
+
+## Arbeitsablauf
+
+1. **Story erstellen** – Verwenden Sie `/story`, um eine neue Story zu erstellen
+2. **Vollständigkeit überprüfen** – Führen Sie `/story-validate` aus, um dies vor der Entwicklung zu überprüfen
+3. **Probleme beheben** – Beheben Sie alle fehlgeschlagenen Prüfungen oder Warnungen
+4. **Erneut ausführen** – Nach Korrekturen erneut validieren
+5. **Entwickeln** – Die Story ist fertig, wenn alle Prüfungen bestanden sind
+
+## Beispielbericht
+
+```text
+🔍 Story Validation Report
+==========================
+Story: US-0042 - User login form
+File: docs/06-stories/EP-0010/US-0042-user-login-form.md
+Status: ready
+
+✅ PASSED (11 checks)
+------------------
+- All required sections present
+- Acceptance criteria in proper format
+- Architecture context populated
+- All source citations valid
+- Dependencies documented
+- Estimate is realistic
+- Owner assigned and appropriate
+- Dev Agent Record structured
+- No circular dependencies detected
+- Story within epic scope
+- Title is clear and descriptive
+
+❌ FAILED (0 issues)
+-------------------
+[None]
+
+⚠️ WARNINGS (1 issue)
+-----------------------
+Warning: Architecture Context could be more detailed
+  Suggestion: Add more specific API endpoint references
+
+📊 SUMMARY
+----------
+Architecture Context: ✓ populated
+Acceptance Criteria: ✓ clear
+Dependencies: ✓ documented
+Dev Agent Record: ✓ structured
+Ready for Development: YES
+
+Next Steps:
+1. Story is ready! Assign to owner with /agileflow:assign US-0042
+2. Or include in next sprint with /agileflow:sprint
+```
+
+## Häufige Probleme und Korrekturen
+
+### Problem: „Architekturkontext fehlt“
+**Fix**: Abschnitte für Datenmodelle, API-Spezifikationen und Komponenten mit Quellenangaben zu __N hinzufügenOTRANSLATE_10__.
+
+### Problem: „Akzeptanzkriterien nicht im Format „Gegeben/Wann/Dann““
+**Fix**: Kriterien nach dem Muster neu schreiben:
+```text
+- Given [precondition]
+  When [action]
+  Then [expected outcome]
+```
+
+### Problem: „Quellenangabe nicht gefunden“
+**Fix**: Überprüfen Sie, ob die Datei in `docs/04-architecture/` vorhanden ist, und verwenden Sie den richtigen Abschnittsanker.
+
+### Problem: „Schätzung scheint hoch für den Umfang“
+**Fix**: Erwägen Sie, die Geschichte in kleinere Teile aufzuteilen oder in den technischen Anmerkungen eine Begründung anzugeben.
+
+### Problem: „Zirkuläre Abhängigkeit erkannt“
+**Fix**: Abhängigkeitskette überprüfen und auflösen – Storys können nicht abgeschlossen werden, wenn sie voneinander abhängen.
+
+## Integration mit anderen Befehlen
+
+- **Nach der Erstellung**: Führen Sie vor der Zuweisung immer `/story-validate` aus
+- **Vor der Zuweisung**: Verwenden Sie `/assign` erst, nachdem die Validierung erfolgreich war
+- **Vor dem Sprint**: Verwenden Sie `/sprint` mit validierten Storys
+- **Während der Entwicklung**: Referenzvalidierungsbericht für den Kontext
+- **Für Aktualisierungen**: Erneut validieren, wenn die Story erheblich geändert wurde
+
+## Best Practices
+
+- **Vor der Zuweisung validieren** -Erkennen Sie Probleme frühzeitig, bevor die Entwicklung beginnt
+- **Überprüfen Sie fehlgeschlagene Prüfungen sorgfältig** - Für jede Prüfung gibt es einen spezifischen Vorschlag
+- **Ignorieren Sie Warnungen nicht** – Sie weisen oft auf Qualitätsverbesserungen hin
+- **Architekturdokumente verwenden** – Richtige Zitate machen Geschichten für Entwickler klarer
+- **Konzentrieren Sie sich auf AC** – 2–5 Kriterien, die die Hauptszenarien abdecken
+- **Testen Sie Ihre Geschichten** – Die Validierung prüft die Klarheit, nicht die Richtigkeit
+
+## Verwandte Befehle
+
+- [`/story`](/commands/story) - Neue Geschichten erstellen
+- [`/epic`](/commands/epic) – Übergeordnetes Epos erstellen
+- [`/assign`](/commands/assign) – Weisen Sie validierte Storys den Besitzern zu
+- [`/sprint`](/commands/sprint) – Validierte Storys in den Sprint einbeziehen
+- [`/babysit`](/commands/babysit) – Erhalten Sie Hilfe während der Entwicklung
+- [`/deps`](/commands/deps) – Story-Abhängigkeiten visualisieren

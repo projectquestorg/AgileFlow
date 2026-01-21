@@ -1,0 +1,148 @@
+---
+title: /quadro
+description: Exibir quadro kanban visual com limites de WIP
+---
+# /placa
+
+Gere e exiba um quadro kanban visual organizado por status da história com limites de trabalho em andamento, codificação por cores e insights acionáveis.
+
+## Início rápido
+
+```bash
+/agileflow:board
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `EPIC` | Não | - | Filtrar por ID épico específico (por exemplo, EP-0010) |
+| `OWNER` | Não | - | Filtrar por ID de agente/proprietário (por exemplo, AG-UI) |
+| `FORMAT` | Não | asci | Formato de saída: `ascii`, `markdown` ou `html` |
+| `GROUP_BY` | Não | estado | Método de agrupamento: `status`, `owner` ou `epic` |
+
+## Exemplos
+
+### Ver quadro completo
+
+```bash
+/agileflow:board
+```
+
+Exibe todas as histórias organizadas por status (pronto, em andamento, em revisão, concluído) no formato ASCII.
+
+### Filtrar por épico
+
+```bash
+/agileflow:board EPIC=EP-0010
+```
+
+Mostrar apenas histórias do épico de autenticação.
+
+### Filtrar por proprietário
+
+__NOTRADUZIR_3__
+
+Exibir todas as histórias atribuídas à idade da IUnão.
+
+### Agrupar por proprietário
+
+__NÃOTRADUZIR_4__
+
+Organize o quadro por membros da equipe em vez de status.
+
+### Exportar para Markdown
+
+__NOTRADUZIR_5__
+
+Gere um formato de tabela de descontos adequado para documentação ou relatórios.
+
+## Layout da placa (formato ASCII)
+
+__NOTRADUZIR_6__
+
+## Codificação de cores
+
+- 🟢 **Verde** - Alta prioridade ou pronto para começar
+- 🟡 **Amarelo** - Em andamento ou prioridade média
+- 🔵 **Azul** - Em revisão ou baixa prioridade
+- ⚪ **Branco** - Concluído/concluído
+- 🔴 **Vermelho** - Bloqueado (aguardando dependência)
+- ⚠️ **Aviso** - Limite de WIP excedido
+
+## Estatísticas do Conselho
+
+O quadro exibe as principais métricas:
+
+- **Resumo** - Contagem total de histórias e distribuição por status
+- **Limites de WIP** - Status do trabalho em andamento para cada agente (o limite é de 2 histórias por agente)
+- **Bloqueadores** - Cartões vermelhos mostram histórias bloqueadas com dependências
+- **Tarefa épica** - Histórias agrupadas por épico
+- **Estimativa** - Estimativa de tempo (em dias) para cada história
+
+## Formatos de saída
+
+### ASCII (padrão)
+
+Visual amigável ao terminal com emojis ed desenho de caixa. Melhor para visualização de terminal.
+
+### Remarcação
+
+Formato de tabela adequado para documentação, problemas do GitHub ou relatórios:
+
+__NÃOTRADUZIR_7__
+
+###HTML
+
+Exportação HTML interativa com estilo, adequada para painéis da web ou e-mail.
+
+## Sugestões de ação
+
+O quadro sugere ações automaticamente com base no estado atual:
+
+- "AG-UI no limite WIP. Conclua US-0038 antes de iniciar novo trabalho."
+- "US-0041 bloqueado. Podemos desbloqueá-lo revisando US-0035?"
+- "3 histórias prontas. Qual devemos priorizar?"
+
+## Melhores práticas
+
+1. **Revise diariamente** - Verifique o quadro no standup
+2. **Respeite os limites de WIP** - Não exceda 2 histórias por agente
+3. **Desbloqueie rapidamente** - Não deixe stories bloqueados por mais tempo do que o necessário
+4. **Exportar instantâneos** - Salve instantâneos do tabuleiro semanalmente para monitorar a velocidade
+5. **Use filtros** - Concentre-se em um épico ou equipe de cada vez para maior clareza
+
+## Comandos Relacionados
+
+- [`/agileflow:status`](/commands/status) - Atualizar status da história
+- [`/agileflow:blockers`__NOTRASLATE_53__ - Analise os bloqueadores detalhadamente
+- [__NOTRASLATE_20____NOTRASLATE_54__ - Veja métricas e análises detalhadas
+- [`/agileflow:velocity`](/commands/velocity) - Acompanhe a velocidade e as previsões da equipe
+
+## Perguntas frequentes
+
+<Accordion type="multiple">
+  <AccordionItem value="wip">
+    <AccordionTrigger>Como o limite de WIP é calculado?</AccordionTrigger>
+    <AccordionContent>
+      O padrão é 2 histórias por agente no status "em andamento" ou "em revisão". Quando um agente chega a 2, ele deve terminar histórias antes de começar novas.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="export">
+    <AccordionTrigger>Posso exportar o quadro?</AccordionTrigger>
+    <AccordionContent>
+      Sim, use `FORMAT=markdown` ou `FORMAT=html` para obter formatos exportáveis.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="update">
+    <AccordionTrigger>Com que frequência o quadro é atualizado?</AccordionTrigger>
+    <AccordionContent>
+      O quadro lê __NOTRASLATE_24__ que é atualizado sempre que você executa __NOTRASLATE_25__. Atualize o quadro para ver as alterações mais recentes.
+    </AccordionContent></AccordionItem>
+  <AccordionItem value="estimates">
+    <AccordionTrigger>O que significam as estimativas?</AccordionTrigger>
+    <AccordionContent>
+      As estimativas mostram quanto tempo a história deve durar (em dias). Use isto ao atribuir trabalho aos agentes.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

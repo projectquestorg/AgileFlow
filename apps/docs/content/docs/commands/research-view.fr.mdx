@@ -1,0 +1,144 @@
+---
+title: /agileflow:recherche:vue
+description: Lire et afficher le contenu complet d'une note de recherche spécifique
+---
+# /agileflow:recherche:vue
+
+Affichez le contenu complet d’une note de recherche de votre dossier de recherche.
+
+## Démarrage rapide
+
+```bash
+/agileflow:research:view FILE=20250101-oauth-setup.md
+```
+
+## Objectif
+
+Lisez et examinez les notes de recherche pour trouver :
+
+- Des extraits de code de recherches antérieures
+- Éléments d'action et leur statut
+- Principales conclusions et recommandations
+- Approches de mise en œuvre
+
+Il s'agit d'une **commande en lecture seule** : aucun fichier n'est modifié.
+
+## Paramètres
+
+| Arguments | Obligatoire | Descriptif |
+|--------------|----------|-------------|
+| FICHIER | Oui | Nom du fichier de la note de recherche |
+
+## Utilisation
+
+```bash
+# View specific research
+/agileflow:research:view FILE=20250101-oauth-setup.md
+
+# View another note
+/agileflow:research:view FILE=20241231-typescript-perf.md
+```
+
+## Sélection interactive
+
+Si vous exécutez la commande sans FILE, vous serez invité à sélectionner :
+
+```
+Which research note would you like to view?
+
+1. 20250106-oauth-setup.md - OAuth 2.0 Setup
+2. 20250105-next-patterns.md - Next.js Best Practices
+3. Show full list
+```
+
+## Sortie
+
+Affiche le **dossier de recherche complet**, jamais tronqué ni résumé :
+
+```markdown
+# OAuth 2.0 Setup
+
+**Import Date**: 2025-01-01
+**Topic**: OAuth 2.0 Setup
+**Source**: https://chatgpt.com
+
+---
+
+## Summary
+
+[Full executive summary...]
+
+---
+
+## Key Findings
+
+- [Complete list of findings...]
+
+---
+
+## Implementation Approach
+
+1. [All implementation steps...]
+
+---
+
+## Code Snippets
+
+[All code blocks exactly as imported...]
+
+---
+
+## Action Items
+
+- [x] Completed action
+- [ ] Pending action
+
+---
+
+## Risks & Gotchas
+
+[Full risk assessment...]
+```
+
+## Après le visionnage
+
+Les actions suivantes vous sont proposées :
+
+```
+What would you like to do with this research?
+
+1. Analyze for implementation (Recommended)
+2. View another research note
+3. Done
+```
+
+**Analyser pour la mise en œuvre** passe en mode plan et explore comment appliquer cette recherche à votre base de code spécifique.
+
+## Trouver le bon fichier
+
+Vous ne connaissez pas le nom du fichier ? Ulistez d'abord :
+
+```bash
+/agileflow:research:list
+# Shows all files with correct names
+
+/agileflow:research:view FILE=<filename from list>
+```
+
+## Gestion des fichiers manquants
+
+Si le fichier n'existe pas :
+
+```
+Research note not found: [FILENAME]
+
+Use /agileflow:research:list to see all available research notes.
+```
+
+## Commandes associées
+
+- [`/agileflow:research`](/commands/research) - Aperçu du système de recherche
+- [`/agileflow:research:ask`](/commands/research-ask) - Générer des invites de recherche
+- [`/agileflow:research:import`](/commands/research-import) - Importer les résultats de la recherche
+- [`/agileflow:research:list`](/commands/research-list) - Afficher toutes les notes de recherche
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyser pour la mise en œuvre

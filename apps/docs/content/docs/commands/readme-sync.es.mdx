@@ -1,0 +1,189 @@
+---
+title: /readme-sincronización
+description: Sincronizar el archivo README.md de una carpeta con su contenido actual
+---
+# /readme-sync
+
+Mantenga actualizados los archivos README.md de la carpeta generando automáticamente una sección de contenido que coincida con los archivos reales de la carpeta.
+
+## Inicio rápido
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Para sincronizar todas las carpetas de documentación a la vez:
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+## Parámetros
+
+| Parámetro | Requerido | Predeterminado | Descripción |
+|-----------|----------|---------|-------------|
+| `FOLDER` | No | - | Ruta a la carpeta (por ejemplo, `docs/02-practices`) o `all` para sincronizar documentos completos/ |
+
+## Ejemplos
+
+### Sincronizar carpeta única
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Analiza `docs/02-practices/` en busca de todos los archivos y subdirectorios, luego actualiza la sección `## Contents` de `docs/02-practices/README.md` con los elementos actuales.
+
+### Sincronizar todas las carpetas de documentación
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+Sincroniza automáticamente todas las carpetas en el directorio `docs/` en paralelo:
+- `docs/00-meta/`
+- `docs/01-brainstorming/`
+- `docs/02-practices/`
+- `docs/03-decisions/`
+- ... y más
+
+### Selección de carpeta interactiva
+
+```bash
+/agileflow:readme-sync
+```
+
+Si no especifica una carpeta,el comando te pide que elijas:
+
+```text
+Which folder should I sync?
+
+1. docs/02-practices (Recommended)
+2. docs/04-architecture
+3. all
+4. Other (enter custom path)
+```
+
+## Salida
+
+El comando genera una sección `## Contents` en el archivo README:
+
+```markdown
+## Contents
+
+- **testing.md** – Test strategy, patterns, and test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, and commit conventions
+- **ci.md** – CI/CD pipeline configuration and testing gates
+- **security.md** – Security practices, input validation, and authentication
+- **releasing.md** – Release procedures, versioning, and changelog management
+
+### Sub-folder: design/
+- **design/colors.md** – Color palette and branding guidelines
+- **design/typography.md** – Font stack and text styling rules
+```
+
+## Cómo funciona
+
+### Paso 1: Listar el contenido
+El comando escanea la carpeta en busca de:
+- Todas las rebajas y otros archivos.
+- Subdirectorios y sus contenidos
+
+### Paso 2: Extraer descripciones
+Para cada archivo, extrae:
+- **Archivos Markdown**: el primer encabezado (# Encabezado) o la primera oración
+- **Otros archivos**: primera línea o descripción basada en el nombre del archivo
+
+### Paso 3: Crear sección de contenidos
+Genera un formato de lista de viñetas limpio con:
+- Nombres de archivos en negrita
+- Descripciones de una frase
+- Estructura anidada para subdirectorios
+
+### Paso 4: Vista previa y confirmación
+Le muestra los cambios propuestos:
+
+```text
+📁 Syncing docs/02-practices/README.md
+=====================================
+
+Proposed Changes to ## Contents Section:
+─────────────────────────────────────────
+- **testing.md** – Test strategy, patterns, test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, commit conventions
+...
+
+Update README.md with these changes? (YES/NO)
+```
+
+## Mejores prácticas
+
+### Mantener el contenido actualizado
+Ejecutar después de agregar nuevos archivos a una carpeta:
+
+```bash
+# Just added a new file
+vim docs/02-practices/performance-tuning.md
+
+# Update the README
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+### Lista de verificación previa al lanzamiento
+Antes de lanzamientos importantes, sincronice toda la documentación:
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+### Mantenimiento trimestral
+Programe auditorías periódicas de la documentación:
+
+```bash
+# Sync entire docs/ and review changes
+/agileflow:readme-sync FOLDER=all
+```
+
+### Al reorganizar
+Después de reestructurar una carpeta, sincronice inmediatamente:
+
+```bash
+/agileflow:readme-sync FOLDER=docs/your-folder
+```
+
+## Qué actualiza
+
+El comando **solo actualiza la sección `## Contents`**:
+
+- Elimina listados de archivos antiguos
+- Agrega todos los archivos actuales con descripciones.
+- Mantiene todas las demás secciones README sin cambios.
+- Conserva notas y enlaces personalizados
+- Mantiene intactas las secciones de encabezado, introducción y pie de página
+
+Esto significa que puede utilizar el comando de forma segura sin perder documentación personalizada.
+
+## Extracción de descripción de archivo
+
+El comando extrae descripciones de forma inteligente:
+
+```markdown
+# Testing Strategy
+
+Guidelines for writing and running tests...
+```
+
+Extraído como: "Estrategia de prueba: directrices para redactar y ejecutar pruebas"
+
+```markdown
+<!-- This file documents git workflow -->
+Guidelines for branching and committing
+```
+
+Extrae la primera línea significativa como descripción.
+
+## Comandos relacionados
+
+- [`/docs-sync`](/commands/docs-sync) - Sincronizar documentación con cambios de código
+- [`/context`](/commands/context) - Generar contexto integral del proyecto
+- [`/template`](/commands/template) - Crear plantillas de documentación personalizadas

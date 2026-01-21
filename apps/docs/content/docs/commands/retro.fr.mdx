@@ -1,0 +1,213 @@
+---
+title: /rétro
+description: Générer une rétrospective au format Démarrer/Arrêter/Continuer
+---
+# /rétro
+
+Générateur rétrospectif automatisé qui analyse les données du projet pour faire apparaître des informations, des modèles et des améliorations exploitables à l'aide du format Démarrer/Arrêter/Continuer.
+
+## Démarrage rapide
+
+```bash
+/agileflow:retro
+```
+
+Génère une rétrospective des 2 dernières semaines à l'aide des données du projet.
+
+## Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `TIMEFRAME` | Non | 2 semaines | Période à analyser : sprint, 2 semaines, 30j ou 90j |
+| `EPIC` | Non | - | Analyser une épopée spécifique uniquement (par exemple, EP-0010) |
+| `FORMAT` | Non | ascii | Format de sortie : ascii, markdown ou html |
+| `SAVE` | Non | vrai | Enregistrer dans docs/08-project/retrospectives/ |
+
+## Exemples
+
+### Rétrospective standard de 2 semaines
+
+```bash
+/agileflow:retro
+```
+
+Analyse les 2 dernières semaines avec une sortie au format ASCII comprenant :
+- Résumé du sprint (histoires, vélocité, temps de cycle)
+- Ce qui s'est bien passé (section Continuer)
+- Ce qui doit être amélioré (sections Start/Stop)
+- Éléments exploitables par priorité
+-Contributions de l'équipe
+- Prédictions pour le prochain sprint
+
+### Rétrospective des 30 derniers jours
+
+```bash
+/agileflow:retro TIMEFRAME=30d FORMAT=markdown
+```
+
+Analyse les 30 derniers jours et enregistre sous forme de démarque pour un partage facile.
+
+### Rétrospective spécifique à l'épopée
+
+```bash
+/agileflow:retro EPIC=EP-0010 FORMAT=markdown
+```
+
+Concentre l'analyse rétrospective sur l'achèvement d'une épopée spécifique avec :
+- Mesures de réussite épiques
+- Qu'est-ce qui s'est bien passé lors de l'exécution épique
+- Défis rencontrés
+- Apprentissages pour les futures épopées
+
+### Exporter sans enregistrer
+
+```bash
+/agileflow:retro SAVE=false FORMAT=markdown
+```
+
+Génère et affiche une rétrospective sans enregistrer sur le disque (utile pour une analyse rapide).
+
+## Sortie
+
+### Format ASCII (par défaut)
+
+Crée un rapport formaté avec un dessin de boîte Unicode :
+
+```text
+╔════════════════════════════════════════════════════════════════╗
+║                  AGILEFLOW RETROSPECTIVE                        ║
+║                  Sprint: Oct 17 - Oct 31 (2 weeks)              ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                 ║
+║  📊 SPRINT SUMMARY                                              ║
+║  Stories Completed:   17 (85% of planned 20)                   ║
+║  Velocity:            8.5 stories/week (↗ +12%)                ║
+║  Cycle Time:          3.2 days avg (↓ -8%)                     ║
+║                                                                 ║
+║  ✅ WHAT WENT WELL (Continue)                                   ║
+║  1. Velocity increased +12% vs previous sprint                 ║
+║  2. Completed EP-0010 (Authentication) on schedule             ║
+║  3. 12 stories completed in <2 days                            ║
+║                                                                 ║
+║  ⚠️ WHAT NEEDS IMPROVEMENT                                      ║
+║  1. Average review time: 2.5 days (up from 1.8)                ║
+║     🛑 STOP: Letting PRs sit unreviewed                         ║
+║     ▶️ START: Daily 30min review slot                           ║
+║                                                                 ║
+║  🎯 ACTION ITEMS                                                ║
+║  HIGH Priority:                                                ║
+║  [ ] Unblock US-0045 (escalate for API keys)                   ║
+║  [ ] Set up daily review time block (30min)                    ║
+║                                                                 ║
+║  🔮 PREDICTIONS FOR NEXT SPRINT                                 ║
+║  Based on current velocity:                                    ║
+║  EP-0011 (Payment): 40% → 75% (6 stories)                      ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+### Fichiers enregistrés
+
+Enregistre automatiquement dans :
+```text
+docs/08-project/retrospectives/retro-<YYYYMMDD>.md
+docs/08-project/retrospectives/README.md (updated with index)
+```
+
+## Sources de données
+
+Analyse les données de 4 sources :
+
+1. **docs/09-agents/bus/log.jsonl** - Modèles d'événements, transitions d'état, bloqueurs
+2. **docs/09-agents/status.json** - État actuel, niveaux d'en-cours, propriété
+3. **docs/06-stories/**/US-*.md** - Données d'achèvement, estimations par rapport aux chiffres réels
+4. **Veldonnées ocity** - Points complétés, tendances de débit
+
+## Structure rétrospective
+
+### Continuer (Ce qui s'est bien passé)
+
+Modèles identifiés :
+- Augmentations de vitesse élevées
+- Temps de cycle rapides (moins de 2 jours)
+- Zéro histoire bloquée
+- Achèvements épiques
+- Bonne précision d'estimation (moins de 20% de variance)
+- Charge de travail des agents équilibrée
+
+### Début (Nouvelles pratiques)
+
+Recommandations pour :
+- Standups quotidiens pour identifier les bloqueurs plus tôt
+- Décomposer les histoires en petits morceaux
+- Terminer des histoires avant d'en commencer de nouvelles
+- Vérifications des dépendances avant le sprint
+- Blocs de temps d'examen dédiés
+- Planification du poker pour l'estimation
+- Formation croisée sur les zones de goulot d'étranglement
+
+### Stop (Choses à éliminer)
+
+Anti-modèles détectés :
+- Laisser les PR sans examen
+- Démarrer des histoires avec des dépendances externes
+- Estimer sans comprendre la complexité
+- Sur-engagement dans la planification du sprint
+- Changement de contexte entre les histoires
+- Grands PR (> 400 lignes)
+- Attribuer tous les travaux à un seul agent
+
+## Informations d'analyse
+
+### Détection de modèles
+
+La commande identifiers :
+- **Bloqueurs récurrents** - Histoires bloquées plusieurs fois
+- **Modèles de jours de la semaine** - Quand la plupart des travaux sont terminés
+- **Modèles de transfert** - Silos de connaissances ou propriété peu claire
+- **Corrélations de taille d'histoire** - Quelles tailles sont les plus efficaces
+- **Tendances de vitesse** - Amélioration ou baisse de la productivité
+
+### Moments de célébration
+
+Faits saillants des victoires comme :
+- Achèvements épiques
+- Jalons de vélocité (histoires à deux chiffres/semaine)
+- Zéro bug signalé
+- Livraisons rapides (moins de 4 heures)
+- Réalisations de couverture de test à 100 %
+
+## Flux de travail
+
+1. Charger les sources de données (journaux de bus, état, données d'histoire)
+2. Analyser ce qui s'est bien passé (vitesse, temps de cycle, achèvement)
+3. Analyser ce qui doit être amélioré (chutes, cycles longs, WIP)
+4. Détecter les modèles avancés
+5. Générez des actions prioritaires
+6. Créez une section de célébration
+7. Générer un rapport complet
+8. Enregistrer dans le répertoire des rétrospectives
+9. Mettre à jour l'index avec la dernière entrée
+
+## Utiliser quand
+
+- **Limites du sprint** - Après chaque sprint ou itération
+- **Réalisations épiques** - Rétrospectivesur l'épopée complète
+- **Avis d'équipe** - Check-ins mensuels ou trimestriels
+- **Amélioration des processus** - Identifier des modèles au fil du temps
+- **Avant la planification** - Appliquer les apprentissages au prochain sprint
+- **Contexte des métriques** - Comprendre ce que signifient les chiffres
+
+## Intégration
+
+Fonctionne bien avec :
+- [`/metrics`](/commands/metrics) - Contextualiser les données de métriques
+- [`/velocity`](/commands/velocity) - Analyser les tendances de vitesse
+- [`/babysit`](/commands/babysit) - Suggère du rétro aux limites du sprint
+- [`/status`](/commands/status) - Fait référence à l'état actuel de l'histoire
+
+## Commandes associées
+
+- [`/metrics`](/commands/metrics) - Métriques détaillées du projet
+- [`/velocity`](/commands/velocity) - Suivi de la vitesse et tendances
+- [`/update`](/commands/update) - Rapports d'avancement des parties prenantes
+- [`/feedback`](/commands/feedback) - Recueillir les commentaires de l'équipe sur les histoires

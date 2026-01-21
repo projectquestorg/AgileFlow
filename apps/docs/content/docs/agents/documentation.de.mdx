@@ -1,0 +1,195 @@
+---
+title: Dokumentation
+description: Dokumentationsspezialist für technische Dokumente, API-Dokumentation, Benutzerhandbücher, Tutorials und Dokumentationspflege.
+---
+# Dokumentationsagent
+
+Der Documentation Agent (AG-DOCUMENTATION) ist Ihr Spezialist für technisches Schreiben, API-Dokumentation, Benutzerhandbücher und die Aktualisierung der Dokumentation mit Ihrer Codebasis. Dieser Agent stellt sicher, dass die gesamte Dokumentation sowohl für neue als auch für erfahrene Entwickler aktuell, klar und hilfreich bleibt.
+
+## Fähigkeiten
+
+- **API-Dokumentation**: OpenAPI/Swagger-Spezifikationen, Endpunktbeschreibungen, Anfrage-/Antwortbeispiele und Fehlercodes
+- **Benutzerhandbücher und Tutorials**: Anleitungen für den Einstieg, Schritt-für-Schritt-Anleitungen, Best Practices und Fehlerbehebung
+- **Entwicklerhandbücher**: Projekteinrichtung, Entwicklungsworkflow, Architekturübersicht und Erweiterungsmuster
+- **README-Verwaltung**: Root-, modulspezifische und funktionsspezifische README-Dateien
+- **Änderungsprotokoll-Wartung**: Versionshinweise und benutzerseitige Änderungsverfolgung
+- **Dokumentationsprüfungen**: Identifizieren Sie veraltete Inhalte, defekte Links und fehlende Beispiele
+- **Automatisch generierte Dokumente**: Unterstützung für OpenAPI Generator, TypeDoc/JSDocund Architekturdiagramme
+
+## Wann zu verwenden
+
+Verwenden Sie diesen Agenten, wenn Sie Folgendes benötigen:
+
+- API-Dokumentation mit Arbeitsbeispielen schreiben oder aktualisieren
+- Erstellen Sie Benutzerhandbücher für neue Funktionen (Schritt-für-Schritt-Anleitungen)
+- Aktualisieren Sie die README-Dateien, um den aktuellen Projektstatus widerzuspiegeln
+- Schreiben Sie Onboarding-Leitfäden für Entwickler
+- Erstellen Sie Anleitungen und FAQs zur Fehlerbehebung für häufige Probleme
+- Dokumentieren Sie Architekturentscheidungen und Systemdesign
+- Pflegen Sie das Änderungsprotokoll mit Versionshinweisen
+- Beheben Sie defekte Dokumentationslinks
+- Prüfen Sie die Dokumentation auf Aktualität und Richtigkeit
+- Halten Sie die Dokumentation mit Codeänderungen synchron
+
+## Wie es funktioniert
+
+1. **Kontextladen**: Agent liest Fachwissensdatei (Dokumentationsmuster, Dateispeicherorte, Konventionen) und analysiert die Projektstruktur (CLAUDE.md, status.json, aktuelle Versionen)
+
+2. **Dokumentationsprüfung**: Der Agent identifiziert Dokumentationslücken, veraltete Abschnitte, fehlerhafte Links und fehlende Beispiele, indem er Dokumente/Strukturen scannt und mit dem Code vergleicht
+
+3. **Planung**: Agent schlägt eine Verbesserung der Dokumentation vorEnts, schlägt neue Leitfäden vor, identifiziert veraltete Inhalte und priorisiert die Arbeit
+
+4. **Schreiben**: Der Agent erstellt/aktualisiert die Dokumentation mit Priorität auf Klarheit gegenüber Kürze, enthält Arbeitsbeispiele (Kopieren und Einfügen möglich) und behält eine konsistente Formatierung bei
+
+5. **Qualitätsprüfung**: Der Agent überprüft, ob die Dokumentation mit dem Code auf dem neuesten Stand ist, alle Schritte erklärt werden, Beispiele funktionieren und die Navigation zwischen den Dokumenten klar ist
+
+6. **Koordination**: Der Agent aktualisiert status.json, hängt Abschlussmeldungen an und sendet Aktualisierungen an den Agentenbus
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We just released v2.17.0. Need to update the changelog and API docs for the new endpoints"
+```
+
+Der Dokumentationsagent würde:
+1. Überprüfen Sie die neuen API-Endpunkte, die in Version 2.17.0 hinzugefügt wurden
+2. Aktualisieren Sie die API-Dokumentation mit Anfrage-/Antwortbeispielen
+3. Fügen Sie Versionshinweise zum Änderungsprotokoll hinzu, um benutzerbezogene Änderungen hervorzuheben
+4. Aktualisieren Sie die README-Datei bei Bedarf
+5. Überprüfen Sie, ob alle Links funktionieren
+
+## Schlüsselverhalten
+
+- **Priorität der Dokumentation**: Klarheit vor Kürze – erklärt alles für neue Benutzer
+- **Immer Beispiele einschließen**: Dokumentation ohne Beispiele ist nutzlos; Alle Beispiele sind Copy-Paste bereit
+- **Aktuell bleiben**: Die Dokumentation muss mit dem Code auf dem neuesten Stand bleiben; Veraltete Dokumente sind schlimmer als keine Dokumente
+- **Fehlerbehebung einbeziehen**: Beheben Sie häufige Probleme, auf die Benutzer stoßen
+- **Breaking Changes im Dokument**: Kritisch für Benutzer, die Versionen aktualisieren
+- **Linkprüfung**: Behebt proaktiv defekte Dokumentationslinks
+- **Konsistenz**: Behält in allen Dokumenten einheitliche Formatierung, Ton und Struktur bei
+- **Kontexterhaltung**: Verwendet „compact_context“ (Priorität: hoch), um den Fokus bei langen Gesprächen beizubehalten und die Verfolgung der Dokumentationsabdeckung und Linkvalidierung durch Kontextkomprimierung beizubehalten
+
+## Kompakte Kontextkonfiguration
+
+Der Dokumentationsagent verwendet Compact_Context mit **hoher Priorität**, um sicherzustellen, dass die Dokumentationsqualität im Fokus bleibt:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/documentation/expertise.yaml"
+    - "NEVER LET DOCS LAG BEHIND CODE: Stale docs are worse than no docs (misinformation)"
+    - "ALWAYS INCLUDE EXAMPLES: Documentation without examples is useless"
+    - "KEEP LINKS CURRENT: Run link checker, fix broken references"
+    - "DOCUMENT BREAKING CHANGES: Critical for users upgrading versions"
+    - "CLARITY OVER BREVITY: Explain everything for new users"
+  state_fields:
+    - current_story
+    - documentation_coverage
+    - broken_links_count
+    - outdated_sections
+```
+
+Dadurch wird sichergestellt, dass dokumentationskritische Regeln (Aktualität der Dokumente, einschließlich Beispiele, Vollständigkeit der Dokumentation) und der aktuelle Status (welche Dokumente veraltet sind, welche Links defekt sind) durch die Kontextkomprimierung erhalten bleiben.
+
+## WerkzeugeVerfügbar
+
+Dieser Agent hat Zugriff auf:
+- **Lesen**: Dokumentationsdateien durchsuchen und Struktur verstehen
+- **Schreiben**: Neue Dokumentationsdateien erstellen
+- **Bearbeiten**: Vorhandene Dokumentation aktualisieren
+- **Bash**: Link-Checker ausführen, Dokumentationsstruktur validieren
+- **Glob**: Dokumentationsdateien nach Muster suchen
+- **Grep**: Dokumentationsinhalte durchsuchen und defekte Links identifizieren
+
+## Dokumentationstypen
+
+### API-Dokumentation
+- OpenAPI/Swagger-Spezifikationen
+- Endpunktbeschreibungen mit Pfaden, Methoden, Parametern
+- Anfrage-/Antwortbeispiele
+- Fehlercodes und ihre Bedeutung
+- Authentifizierungs- und Autorisierungsdetails
+- Informationen zur Ratenbegrenzung
+- Codebeispiele in mehreren Sprachen
+
+### Benutzerhandbücher
+- Anleitungen für den Einstieg
+- Häufige Aufgaben mit Schritt-für-Schritt-Anleitungen
+- Best Practices sowie Tipps und Tricks
+- Abschnitte zur Fehlerbehebung
+- FAQ-Seiten
+- Links zu Video-Tutorials
+
+### Entwicklerhandbücher
+- Projekteinrichtung und -installation
+- Entwicklungsworkflow
+- Architekturübersicht
+- Organisation und Struktur des Codes
+- Wie to erweitern/anpassen
+- Test- und Debugging-Ansätze
+- Gemeinsame Muster und Anti-Muster
+
+### README-Dateien
+- Projektübersicht und Zweck
+- Installations-/Einrichtungsanweisungen
+- Schneller Einstieg mit Arbeitsbeispielen
+- Funktionsliste
+- Dokumentationslinks
+- Mitwirkende Richtlinien
+- Lizenz und Namensnennung
+
+## Qualitätscheckliste
+
+Vor der Dokumentation:
+- Die Dokumentation ist mit dem Code auf dem neuesten Stand
+- Alle neuen Funktionen mit Beispielen dokumentiert
+- Die API-Dokumentation enthält Arbeitsbeispiele
+- Links sind nicht defekt
+- Die Formatierung ist in allen Dateien konsistent
+- Beispiele funktionieren und sind zum Kopieren und Einfügen bereit
+- Der Abschnitt zur Fehlerbehebung befasst sich mit häufigen Problemen
+- Die Navigation zwischen Dokumenten ist klar
+- README ist korrekt und hilfreich
+- Es verbleiben keine veralteten Informationen mehr
+
+## Verwandte Agenten
+
+- [`research`](/agents/research) – Sammelt technische Informationen für die Dokumentation
+- [`adr-writer`](/agents/adr-writer) – Dokumentiert Architekturentscheidungen, auf die in Leitfäden verwiesen wird
+- [`epic-planner`](/agents/epic-planner) – Erstellt Epen, die dokumentierenntation stellt sicher, dass sie ordnungsgemäß dokumentiert werden
+- [`readme-updater`](/agents/readme-updater) – Überprüft und aktualisiert README-Dateien in allen Projektordnern
+
+## Gemeinsame Muster
+
+**Dokumentation als Code**
+- Die gesamte Dokumentation wurde mit Code in Git versioniert
+- Quelle der Wahrheit ist die lebendige Codebasis, nicht separate Dokumente
+- Änderungen am Code lösen Dokumentationsaktualisierungen aus
+
+**Nummerierte Verzeichnisstruktur**
+- Dokumentation organisiert in Dokumenten/mit nummerierten Verzeichnissen (00-Meta bis 10-Recherche)
+- Konsistente Struktur über alle Projekte hinweg
+
+**Dokumentationspflege**
+- Planen Sie vierteljährliche Audits, um veraltete Informationen zu finden
+- Aktualisieren Sie die Dokumentation nach jeder Veröffentlichung
+- Aktualisieren Sie nach jeder API-Änderung die API-Dokumente
+- Beheben Sie defekte Links proaktiv
+
+## Koordinationsnachrichten
+
+Der Dokumentationsagent kommuniziert mit anderen Agenten über Busnachrichten:
+
+```jsonl
+{"ts":"2025-10-21T10:00:00Z","from":"AG-DOCUMENTATION","type":"status","text":"API docs updated for v2.17.0"}
+{"ts":"2025-10-21T10:05:00Z","from":"AG-DOCUMENTATION","type":"question","text":"UI component API changed - need updated documentation for props"}
+```
+
+Wenn andere Agenten ihre Arbeit abschließen:
+- AG-API vervollständigt Endpunkt → Dokumentationsagent aktualisiert API-Dokumente
+- AG-UI gibt Komponente frei → Documentation Agent dokumentiert Komponente proPS und Nutzung
+- Veröffentlichung erfolgt → Dokumentationsagent aktualisiert Änderungsprotokoll und Versionshinweise
+- Architekturentscheidung getroffen → Dokumentationsagent aktualisiert die ADR-Dokumentation

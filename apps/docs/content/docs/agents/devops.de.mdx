@@ -1,0 +1,164 @@
+---
+title: DevOps
+description: DevOps- und Automatisierungsspezialist für Abhängigkeitsmanagement, Bereitstellungseinrichtung, Testinfrastruktur, Codequalität, Auswirkungsanalyse, Nachverfolgung technischer Schulden und Erstellung von Änderungsprotokollen.
+---
+# AG-DEVOPS
+
+Der DevOps & Automation Agent ist auf Infrastrukturautomatisierung, Abhängigkeitsmanagement und Bereitstellungspipelines spezialisiert. AG-DEVOPS stellt sicher, dass Projekte eine hohe Codequalität beibehalten, Sicherheitslücken verwalten und zuverlässig bereitgestellt werden.
+
+## Fähigkeiten
+
+- **Abhängigkeitsmanagement**: Sicherheitsüberprüfungen, Versionsverfolgung, Schwachstellenbehebungen, Lizenzkonformität
+- **Bereitstellungsautomatisierung**: Einrichtung der CI/CD-Pipeline, Staging-/Produktionskonfiguration, Bereitstellungen ohne Ausfallzeiten
+- **Testinfrastruktur**: Test-Framework-Setup, Optimierung, Leistungstests
+- **Automatisierung der Codequalität**: Linting, Formatierung, Code-Review-Bots, Coverage-Tracking
+- **Auswirkungsanalyse**: Abhängigkeitsbäume, Bewertung des Explosionsradius, Bewertung der Änderungsauswirkungen
+- **Technisches Schuldenmanagement**: Schuldenbewertung, Priorisierung, Reduzierungsverfolgung
+- **Dokumentationssynchronisierung**: API-Dokumente, README-Dateien, Änderungsprotokollpflege
+- **Changelog-Generierung**: Semantische Versionierung, automatisierte Versionshinweise
+- **Stakeholder Reporting**: Statusaktualisierungen, Metriken, Fortschrittsverfolgung
+
+## Wann zu verwenden
+
+Verwenden Sie AG-DEVOPS, wenn Sie Folgendes benötigen:
+
+- Aktualisieren Sie Abhängigkeiten oder führen Sie Sicherheitsüberprüfungen durch
+- CI/CD-Pipelines einrichten oder optimieren
+- Konfigurieren Sie die Testinfrastruktur und -abdeckung
+- Automatisieren Sie Codequalitätsprüfungen
+- Analysieren Sie die Auswirkungen von Änderungen auf die Codebasis
+- Verfolgen und reduzieren Sie technische Schulden
+- Generieren Sie Änderungsprotokolle und Versionshinweise
+- Erstellen Sie Stakeholder-Berichte und Statusaktualisierungen
+
+## Wie es funktioniert
+
+1. **Kontextladen**: Der Agent liest die Expertise-Datei und prüft den Zustand der Projektabhängigkeiten
+2. **Analyse**: Überprüft status.json auf zugewiesene Storys und technische Schulden
+3. **Ausführung**: Implementiert Automatisierung, aktualisiert Konfigurationen oder erstellt Pipelines
+4. **Verifizierung**: Führt Tests durch, validiert CI-Erfolge und bestätigt, dass keine Regressionen vorliegen
+5. **Koordination**: Aktualisiert status.json und kommuniziert über den Agentenbus
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We need to set up a deployment pipeline for staging and production"
+
+# Or directly invoke
+/agileflow:setup-deployment
+
+# AG-DEVOPS will:
+# 1. Detect project type (Node.js, Python, etc.)
+# 2. Recommend deployment platform (GitHub Actions, etc.)
+# 3. Configure CI/CD pipelines
+# 4. Set up environment variables
+# 5. Document procedures
+```
+
+## Schlüsselverhalten
+
+- **Kritische Schwachstellen werden innerhalb von 24 Stunden behoben** - Sicherheit ist nicht verhandelbar
+- **Bereitstellungen ohne Ausfallzeiten erforderlich** – Produktionsstabilität ist unerlässlich
+- **Gib niemals Geheimnisse preis** – Alle Anmeldeinformationen werden über sichere Kanäle verwaltet
+- **Behält eine Testabdeckung von mindestens 70 % bei** - Wird in CI durchgesetzt
+- **Planen Sie vor Infrastrukturänderungen** - Entwerfen Sie Rollback-Strategien für komplexe Änderungen
+- **Proaktive Audits** – Sucht regelmäßig nach technischen Schulden und Optimierungsmöglichkeiten
+- **Kontexterhaltung**: Verwendet „compact_context“ (Priorität: hoch), um den Bereitstellungsfokus bei langen Gesprächen beizubehalten und dabei Null-Ausfallzeit-Anforderungen und Sicherheitsprotokolle durch Kontextkomprimierung beizubehalten
+
+## Kompakte Kontextkonfiguration
+
+Der DevOps-Agent verwendet Compact_Context mit **hoher Priorität**, um sicherzustellen, dass die Bereitstellungssicherheit im Fokus bleibt:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/devops/expertise.yaml"
+    - "ZERO-DOWNTIME DEPLOYMENTS: Production stability is essential (non-negotiable)"
+    - "CRITICAL VULNERABILITIES: Address within 24 hours (security first)"
+    - "NEVER COMMIT SECRETS: All credentials via secure channels only"
+    - "MAINTAIN COVERAGE: 70% minimum test coverage enforced in CI"
+    - "PLAN BEFORE INFRASTRUCTURE: Design rollback strategies for complex changes"
+    - "PROACTIVE AUDITS: Regularly scan for technical debt"
+  state_fields:
+    - current_story
+    - deployment_strategy
+    - vulnerability_status
+    - rollback_plan
+    - test_coverage_baseline
+```
+
+Dadurch wird sichergestellt, dass DevOps-kritische Regeln (Bereitstellung ohne Ausfallzeiten, Commits ohne Geheimnisse, Reaktion auf Schwachstellen) und der aktuelle Status (Bereitstellungsstrategie, Schwachstellenstatus, Rollback-Bereitschaft) durch Kontextkomprimierung im Fokus bleiben.
+
+## Tools verfügbarfähig
+
+Dieser Agent hat Zugriff auf:
+
+- **Lesen**: Zugriff auf Projektdateien und Konfigurationen
+- **Schreiben**: Erstellen Sie neue Automatisierungsskripte und Konfigurationsdateien
+- **Bearbeiten**: Vorhandene CI/CD-Workflows und -Einstellungen aktualisieren
+- **Bash**: Build-, Test- und Bereitstellungsbefehle ausführen
+- **Glob**: Konfigurations- und Abhängigkeitsdateien finden
+- **Grep**: Suche nach Mustern in Code und Konfigurationen
+- **WebFetch**: Recherchetools und Best Practices
+- **WebSearch**: Lösungsdokumentation finden
+
+## Kernaufgaben
+
+1. Projektabhängigkeiten verwalten (Updates, Sicherheitsaudits, Reporting)
+2. Richten Sie Bereitstellungspipelines ein und pflegen Sie sie
+3. Konfigurieren Sie die Testinfrastruktur
+4. Automatisieren Sie Codequalitätsprüfungen
+5. Analysieren Sie die Auswirkungen von Codeänderungen
+6. Verfolgen und priorisieren Sie technische Schulden
+7. Halten Sie die Dokumentation mit dem Code synchronisiert
+8. Generieren Sie Änderungsprotokolle aus Commits/PRs
+9. Erstellen Sie Stakeholder-Update-Berichte
+10. Pflegen Sie benutzerdefinierte Dokumentvorlagen
+
+## Qualitätsstandards
+
+Bevor die Arbeit als abgeschlossen markiert wird, stellt AG-DEVOPS Folgendes sicher:
+
+- Alle Automatisierungsskripte tgeprüft und funktionsfähig
+– CI/CD-Pipelines, die den Feature-Zweig weitergeben
+- Dokumentation zusammen mit dem Code aktualisiert
+- Sichere Verwaltung von Geheimnissen (keine fest codierten Anmeldeinformationen)
+- Keine wichtigen Änderungen ohne Migrationsleitfaden
+- Rollback-Verfahren dokumentiert
+- Gegebenenfalls Überwachung/Alarmierung konfiguriert
+
+## Verwandte Agenten
+
+- [`AG-CI`](/agents/ci) – Übernimmt die Einrichtung des Test-Frameworks und Qualitätstools, während AG-DEVOPS die Bereitstellungsautomatisierung verwaltet
+– [`AG-UI`](/agents/ui) – Koordinieren Sie Abhängigkeitsaktualisierungen, die sich auf das Frontend auswirken
+- [`AG-API`](/agents/api) – Koordinierung des Bereitstellungszeitpunkts und der Datenbankmigrationen
+- [`MENTOR`](/agents/mentor) – Bericht über technische Schuldentrends und Automatisierungsmöglichkeiten
+
+## Slash-Befehle
+
+AG-DEVOPS kann diese Befehle direkt aufrufen:
+
+– `/agileflow:packages ACTION=update` – Abhängigkeiten scannen und aktualisieren
+– `/agileflow:packages ACTION=dashboard` – Abhängigkeitszustandsbericht erstellen
+– `/agileflow:setup-deployment` – Konfigurieren Sie CI/CD-Pipelines
+– `/agileflow:setup-tests` – Bootstrap-Testinfrastrukturure
+- `/agileflow:ai-code-review` - Automatisierte Codeüberprüfung
+- `/agileflow:impact-analysis` - Auswirkungen von Änderungen analysieren
+- `/agileflow:tech-debt` - Technische Schulden scannen und verfolgen
+– `/agileflow:docs-sync` – Halten Sie Dokumente mit dem Code synchron
+- `/agileflow:generate-changelog` – Änderungsprotokoll automatisch generieren
+- `/agileflow:stakeholder-update` - Erstellen Sie eine Zusammenfassung
+
+## Verifizierungsprotokoll
+
+AG-DEVOPS folgt dem Session Harness-System, um Funktionsstörungen zu verhindern:
+
+1. **Vorimplementierung**: Überprüft den Basisteststatus und die Umgebung
+2. **Während der Arbeit**: Führt inkrementelle Tests durch und aktualisiert den Status in Echtzeit
+3. **Post-Implementierung**: Überprüft, ob alle Tests bestanden wurden, bevor Storys als abgeschlossen markiert werden
+4. **Fertigstellung der Geschichte**: Kann NUR als „in Überprüfung“ markiert werden, wenn `test_status: "passing"`
+
+Ausführliche Informationen finden Sie im [Session Harness Protocol](/agents/session-harness)].

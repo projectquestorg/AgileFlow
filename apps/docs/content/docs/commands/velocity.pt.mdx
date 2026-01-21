@@ -1,0 +1,244 @@
+---
+title: /velocidade
+description: Rastreie a velocidade e preveja a capacidade do sprint
+---
+# /velocidade
+
+Calcule a velocidade da equipe a partir de histórias concluídas, identifique tendências e preveja datas de conclusão épicas e marcantes com níveis de confiança.
+
+## Início rápido
+
+```bash
+/agileflow:velocity
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `PERIOD` | Não | corrida | Período de tempo: `week`, `sprint`, `month` ou `all` |
+| `FORECAST` | Não | - | Prever a conclusão de um épico/marco (por exemplo, EP-0010) |
+| `FORMAT` | Não | relatório | Formato de saída: `report`, `chart` ou `json` |
+
+## Exemplos
+
+### Ver velocidade atual
+
+```bash
+/agileflow:velocity
+```
+
+Mostre a velocidade do último sprint (2 semanas) com tendências.
+
+### Apenas na semana passada
+
+```bash
+/agileflow:velocity PERIOD=week
+```
+
+Concentre-se na velocidade da semana mais recente.
+
+### Tendência do mês
+
+__NOTRADUZIR_3__
+
+Tendência de velocidade de 30 dias para identificar padrões sazonais.
+
+### Previsão de conclusão épica
+
+__NÃOTRADUZIR_4__
+
+Preveja quando oO épico de autenticação será concluído com base na velocidade atual.
+
+### Ver como gráfico
+
+__NOTRADUZIR_5__
+
+Gráfico de velocidade de arte ASCII para visualização no terminal.
+
+### Exportar como JSON
+
+__NOTRADUZIR_6__
+
+Formato legível por máquina para integração com outras ferramentas.
+
+## Cálculo de velocidade
+
+Velocidade = Total de pontos concluídos por período de tempo
+
+**Exemplo**:
+- Semana 1: 8 dias de história concluídos
+- Semana 2: 10 dias de história concluídos
+- Semana 3: 7 dias de história concluídos
+- **Velocidade média**: (8+10+7)/3 = **8,3 dias de história/semana**
+
+Os pontos são calculados a partir da estimativa da história multiplicada pela conclusão durante o período.
+
+## Relatório de velocidade
+
+O formato de relatório padrão inclui diversas seções:
+
+### Seção de velocidade atual
+
+__NÃOTRADUZIR_7__
+
+Mostra a capacidade geral da equipe e tendência de melhoria.
+
+### Gráfico Histórico de Velocidade
+
+__NÃOTRADUZIR_8__
+
+Representação visual das tendências de velocidade.
+
+### Análise Semanal
+
+__NOTRADUZIR_9__
+
+Detalhes de cada período mostrando histórias concluídas e variação de tamanho.
+
+### Velocidade por proprietário
+
+```text
+| Owner | Points/Week | Stories/Week | Utilization | Trend |
+|-------|-------------|--------------|-------------|-------|
+| AG-API | 4.1 | 2.8 | 85% | ↗️ +20% |
+| AG-UI | 3.2 | 2.1 | 80% | ↗️ +10% |
+| AG-CI | 0.8 | 0.6 | 40% | → Stable |
+| AG-DEVOPS | 0.2 | 0.2 | 10% | 🆕 New |
+```
+
+Mostra a distribuição e utilização do trabalho por membro da equipe.
+
+## Previsão
+
+Ao especificar __NOTRASLATE_30__, o comando prevê a conclusão:
+
+### Exemplo de previsão
+
+__NOTRADUZIR_11__
+
+**Níveis de confiança**:
+- **Alta (>80%)** - Velocidade estável, previsão confiável
+- **Médio (60-80%)** - Alguma variação, previsão razoável
+- **Baixo (abaixo de 60%)** - Alta variação, previsão não confiável
+
+### Algoritmo de previsão
+
+```text
+Days to complete = (Remaining points / Velocity) * 7
+Completion date = Today + Days to complete
+Confidence = 100% - (Velocity std dev / Velocity avg) * 100
+```
+
+## Saída do gráfico de velocidade
+
+Visualização ASCII da velocidade ao longo do tempo:
+
+__NÃOTRADUZIR_13__
+
+## Velocidade por tamanho da história
+
+Insights sobre quais tamanhos de histórias funcionam melhor:
+
+__NOTRADUZIR_14__
+
+Mostra que histórias menores são concluídas de forma mais rápida e confiável.
+
+**Insight**: histórias ≤1d são concluídas mais rapidamente. Divida histórias >1,5d em incrementos menores.
+
+## Análise de Risco
+
+O relatório inclui avaliação de risco:
+
+__NÃOTRADUZIR_15__
+
+Ajuda a identificar e mitigar riscos às previsões.
+
+## Planejamento de capacidade
+
+Recomendações para planejamento de sprint:
+
+__NOTRADUZIR_16__
+
+Ajuda a planejar o trabalho do sprintcarga com base na velocidade real.
+
+## Exportar formatos
+
+### Relatório (padrão)
+
+Relatório completo de velocidade de remarcação com todas as seções.
+
+### Gráfico
+
+Apenas gráfico de tendência de velocidade de arte ASCII:
+
+```text
+Velocity Trend (8 weeks)
+
+Points/Week
+ 12 ┤           ●●●
+ 11 ┤         ●
+...
+```
+
+### JSON
+
+Formato legível por máquina:
+
+__NÃOTRADUZIR_18__
+
+## Melhores práticas
+
+1. **Acompanhar mais de 3 períodos** - Precisa de pelo menos 3 semanas para obter velocidade confiável
+2. **Use estimativas consistentes** - Estimativas nas mesmas unidades (dias, pontos)
+3. **Analise as tendências** - Procure padrões de melhoria ou declínio
+4. **Conta para feriados** - Ajuste as previsões para folgas
+5. **Atualização semanal** - Acompanhe a velocidade de cada sprint em busca de tendências
+
+## Metas de velocidade
+
+Defina metas de equipe e acompanhe o progresso:
+
+__NOTRADUZIR_19__
+
+## Comandos Relacionados
+
+- [`/agileflow:metrics`__NOTRASLATE_67__ - Métricas e análises detalhadas
+- [`/agileflow:board`](/commands/board) - Quadro kanban visual
+- [`/agileflow:blockers`](/commands/blockers) - Identificar bloqueadores de velocidade
+- [`/agileflow:status`](/commands/status) - Update story status
+
+## Perguntas frequentes
+
+<Accordion type="multiple">
+  <AccordionItem value="variable">
+    <AccordionTrigger>Por que minha velocidade é tão variável?</AccordionTrigger>
+    <AccordionContent>
+      Possíveis causas: histórias com tamanhos muito variados (padronizar estimativas), interrupções frequentes (proteger o tempo de trabalho), bloqueadores que retardam a conclusão (desbloqueio mais rápido) ou alterações na capacidade da equipe (novos membros, ausências).
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="data-points">
+    <AccordionTrigger>Quantos pontos de dados eu preciso?__NOTRASLATE_54__
+    <AccordionContent>
+      Pelo menos 3 períodos de tempo para confiabilidade. Menos de 5 períodos = previsão de baixa confiança.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="onboarding">
+    <AccordionTrigger>Devo incluir a velocidade durante a integração?__NOTRASLATE_57__
+    <AccordionContent>
+      Não, exclua os primeiros sprints. Novos membros da equipe diminuem a velocidade temporariamente.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="declining">
+    <AccordionTrigger>E se a velocidade estiver diminuindo?</AccordionTrigger>
+    <AccordionContent>
+      Investirportão: bloqueios crescentes, histórias maiores, ausências da equipe ou problemas de qualidade que exigem retrabalho.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="low-confidence">
+    <AccordionTrigger>Posso fazer previsões com pouca confiança?</AccordionTrigger>
+    <AccordionContent>
+      Sim, mas use buffers amplos. A estimativa P90 (90% de confiança) é mais conservadora que a P50 (50% de confiança).
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

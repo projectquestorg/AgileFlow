@@ -1,0 +1,140 @@
+---
+title: /historia
+description: Crear una historia de usuario con criterios de aceptación.
+---
+# /historia
+
+Cree una nueva historia de usuario con criterios de aceptación, resguardos de prueba y seguimiento de estado.
+
+## Inicio rápido
+
+```bash
+/agileflow:story EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id>
+```
+
+## Parámetros
+
+| Parámetro | Requerido | Predeterminado | Descripción |
+|-----------|----------|---------|-------------|
+| `EPIC` | Sí | - | ID épico principal (por ejemplo, EP-0001) |
+| `STORY` | Sí | - | Identificador de historia (por ejemplo, US-0001) |
+| `TITLE` | Sí | - | Título de la historia que describe la característica |
+| `OWNER` | Sí | - | Nombre del propietario o ID del agente (por ejemplo, AG-UI, AG-API) |
+| `ESTIMATE` | No | `0.5d` | Estimación de tiempo (por ejemplo, `0.5d`, `1d`, `2d`) |
+| `AC` | No | - | Criterios de aceptación en formato Dado/Cuándo/Entonces |
+| `DEPENDENCIES` | No | - | Lista separada por comas de ID de historias dependientes (por ejemplo, `US-0001,US-0002`) |
+
+## Ejemplos
+
+### Creación básica de historias
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0001 TITLE="User registration form" OWNER=AG-UI
+```
+
+Crea un archivo de historia en `docs/06-stories/EP-0010/US-0001-user-registration-form.md` con estimación predeterminada (0,5d) y estado (listo).
+
+### almacenary con criterios de aceptación
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0002 TITLE="Validate email address" OWNER=AG-API ESTIMATE=1d AC="Given a valid email, When form submitted, Then confirmation email sent"
+```
+
+Crea la historia con criterios de aceptación específicos que guían el desarrollo y las pruebas.
+
+### Historia con dependencias
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0003 TITLE="Password reset flow" OWNER=AG-API ESTIMATE=1d DEPENDENCIES=US-0001,US-0002
+```
+
+Crea la historia y la marca como dependiente de historias anteriores. Estas dependencias se visualizan en el comando `/deps`.
+
+## Salida
+
+El comando crea:
+
+1. **Archivo de historia** (`docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - Metadatos de la historia (ID, épica, propietario, estimación, estado)
+   - Descripción y criterios de aceptación.
+   - Contexto arquitectónico (completado durante el desarrollo)
+   - Estrategia de prueba
+
+2. **Talón de prueba** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - Estructura de prueba alineada con los criterios de aceptación.
+   - Marcador de posición para la implementación de pruebas.
+   - Enlaces a la historia para el contexto.
+
+3. **Seguimiento de estado** (`docs/09-agents/status.json`)
+   - Entrada de historia con propietario, estimación y estado.
+   - Enlaces de dependencia a otras historias.
+   - Asignación épica
+
+4. **Comunicación del agente** (`docs/09-agents/bus/log.jsonl`)
+   - Mensaje de tarea que muestra la historia creada y asignada.
+
+## Trabajobajo
+
+1. **Crea la historia** - Ejecuta `/story` con épica, ID, título y propietario.
+2. **Agregar criterios de aceptación** - Utilice `/story-validate` para refinar y probar AC
+3. **Validar integridad** - Ejecute `/story-validate STORY=<US-ID>` antes del desarrollo
+4. **Desarrollar la historia** - El propietario implementa según los criterios de aceptación.
+5. **Ejecutar pruebas** - Utilice `/verify` para ejecutar pruebas automatizadas
+6. **Solicitar revisión**: actualice el estado a `in-review` cuando esté listo
+
+## Formato de criterios de aceptación
+
+Utilice el formato Dado/Cuándo/Entonces para obtener criterios claros y comprobables:
+
+```markdown
+- **Given** a user on the registration page
+  **When** they enter valid email and password
+  **Then** an account is created and confirmation email sent
+
+- **Given** they submit an invalid email
+  **When** they click submit
+  **Then** form shows "Invalid email" error
+```
+
+Los criterios de aceptación deben ser:
+- **Específico**: campos y valores reales de referencia
+- **Comprobable**: se puede verificar con pruebas automáticas o manuales
+- **Independiente**: Cada criterio prueba una cosa
+- **Completo**: cubre el camino feliz y los principales casos extremos
+
+## Estimaciones de historias
+
+Utilice estas estimaciones estándar:
+
+| Estimación | Cuándo utilizar |
+|----------|------------|
+| `0.5d` | CRUD simple, componente básico de UI, solución rápida |
+| __NOTRADUCIR_29__ | Característica estándar con validación y pruebas básicas |
+| `1.5d` | Lógica compleja, múltiples validaciones o integración |
+| `2d` | Refactorización significativa o componente de característica importante |
+| `>2d` | Dividase en historias más pequeñas |
+
+## Integración con otros comandos
+
+- **Después de la creación de la historia**: use `/story-validate` para garantizar la preparación
+- **Antes del desarrollo**: utilice `/babysit` para obtener ayuda interactiva sobre la implementación.
+- **Durante el desarrollo**: use `/verify` para ejecutar pruebas
+- **Para revisión de código**: use `/review` para sugerencias impulsadas por IA
+- **Para solicitudes de extracción**: utilice `/pr` para generar automáticamente la descripción del PR
+
+## Mejores prácticas
+
+- **Una historia = una característica** - Mantenga las historias enfocadas y entregables de forma independiente
+- **Escriba criterios de aceptación claros** - Estos guían el desarrollo y las pruebas.
+- **Estimación realista** - Considere la complejidad y la experiencia del equipo
+- **Vincular dependencias explícitamente** - Ayuda con la planificación de sprints y la evaluación de riesgoscomentario
+- **Validar antes del desarrollo** - Utilice `/story-validate` para detectar problemas con antelación
+
+## Comandos relacionados
+
+- [`/epic`](/commands/epic) - Crear la epopeya principal
+- [`/story-validate`](/commands/story-validate) - Validar la integridad de la historia antes del desarrollo
+- [`/sprint`](/commands/sprint) - Seleccionar historias para la planificación de sprint
+- [`/auto`](/commands/auto) - Generar historias automáticamente a partir de PRD o especificaciones
+- [`/babysit`](/commands/babysit) - Obtenga ayuda interactiva durante la implementación
+- [`/verify`](/commands/verify) - Ejecutar pruebas y actualizar el estado de las pruebas

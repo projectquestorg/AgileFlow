@@ -1,0 +1,180 @@
+---
+title: Commandes
+description: Référence complète pour les 74 commandes slash AgileFlow. Chaque commande est conçue pour une tâche spécifique dans votre flux de travail de développement basé sur l'IA.
+---
+# Commandes
+
+AgileFlow fournit **74 commandes slash** que vous pouvez utiliser directement dans Claude Code. Toutes les commandes suivent le modèle `/agileflow:command-name`.
+
+## Catégories de commandes
+
+### Planification
+
+Commandes pour créer et organiser le travail :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/ideate`](/commands/ideate) | Générer des idées d'amélioration à l'aide d'une analyse multi-experts |
+| [`/epic`](/commands/epic) | Créer une nouvelle épopée avec des histoires (sous-commandes : list, view) |
+| [`/story`](/commands/story) | Créer une user story avec des critères d'acceptation (sous-commandes : list, view) |
+| [`/sprint`](/commands/sprint) | Planification de sprint basée sur les données avec prévision de vitesse |
+| [`/deps`](/commands/deps) | Visualisez le graphique de dépendance avec la détection du chemin critique |
+| [`/auto`](/commands/auto) | Générez automatiquement des histoires à partir de PRD, de maquettes ou de spécifications |
+
+### Suivi
+
+Commandes pour suivre la progression :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/status`](/commands/status) | Mettre à jour le statut et la progression de l'histoire |
+| [`/board`](/commands/board) | Afficher un tableau Kanban visuel avec les limites d'en-cours |
+| [`/blockers`](/commands/blockers) | Suivez et résolvez les bloqueurs avec des suggestions exploitables |
+| [`/metrics`](/commands/metrics) | Tableau de bord analytique avec temps de cycle et débit |
+| [`/velocity`](/commands/velocity) | Suivre la vitesse et prévoir la capacité de sprint |
+
+### Développement
+
+Commandes pour implémenter les fonctionnalités :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/babysit`](/commands/babysit) | Mentor interactif pour la mise en œuvre de fonctionnalités de bout en bout |
+| [`/verify`](/commands/verify) | Exécuter des tests de projet et mettre à jour le statut des tests de story |
+| [`/review`](/commands/review) | Révision de code basée sur l'IA avec suggestions de qualité |
+| [`/pr`](/commands/pr) | Générer une description de demande d'extraction à partir de l'histoire |
+| [`/impact`](/commands/impact) | Analyser l'impact des changements sur la base de code |
+
+### Oopérations
+
+Commandes pour DevOps et les versions :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/ci`](/commands/ci) | Amorcer le flux de travail CI/CD avec tests et contrôles qualité |
+| [`/deploy`](/commands/deploy) | Configurer un pipeline de déploiement automatisé |
+| [`/changelog`](/commands/changelog) | Générer automatiquement le journal des modifications à partir de l'historique des validations |
+| [`/packages`](/commands/packages) | Gérez les dépendances avec des mises à jour et des audits de sécurité |
+| [`/tests`](/commands/tests) | Mettre en place une infrastructure de tests automatisés |
+| [`/debt`](/commands/debt) | Suivre et prioriser les éléments de dette technique |
+
+###Documentations
+
+Commandes pour gérer les documents :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/adr`](/commands/adr) | Créer un enregistrement de décision d'architecture (sous-commandes : list, view, update) |
+| [`/docs`](/commands/docs) | Synchroniser la documentation avec les modifications du code |
+| [`/readme-sync`](/commands/readme-sync) | Synchroniser unfolder's README.md with its current contents |
+| [`/research`](/commands/research) | Research management with subcommands: ask, import, list, view, analyze |
+| [`/context`](/commands/context) | Context generation with subcommands: full, export, note |
+| [`/help`](/commands/help) | Display AgileFlow system overview and all commands |
+
+### Collaboration
+
+Commands for team coordination:
+
+| Command | Description |
+|---------|-------------|
+| [`/assign`](/commands/assign) | Assign or reassign a story to an owner |
+| [`/handoff`](/commands/handoff) | Document work handoff between agents |
+| [`/update`](/commands/update) | Generate stakeholder progress report |
+| [`/retro`](/commands/retro) | Generate retrospective with Start/Stop/Continue format |
+| [`/feedback`](/commands/feedback) | Collect and process agent feedback |
+
+### Advanced
+
+Specialized commands for complex tasks:
+
+| Command | Description |
+|---------|-------------|
+| [`/multi-expert`](/commands/multi-expert) | Déployer plusieurs experts du domaine sur le même problème |
+| [`/agent`](/commands/agent) | Embarquer un nouvel agent avec profil et contrat |
+| [`/configure`](/commands/configure) | Configurer les fonctionnalités avancées d'AgileFlow |
+| [`/diagnose`](/commands/diagnose) | Diagnostic de l'état du système |
+| [`/validate-expertise`](/commands/validate-expertise) | Valider les dossiers d'expertise en dérive et obsolescence |
+| [`/whats-new`](/commands/whats-new) | Afficher les nouveautés d'AgileFlow |
+
+## Modèles d'utilisation
+
+### Utilisation de base
+
+```bash
+# Simple command
+/agileflow:board
+
+# Command with required parameters
+/agileflow:status STORY=US-0001 STATUS=in-progress
+
+# Command with optional parameters
+/agileflow:metrics TIMEFRAME=30d EPIC=EP-0001 FORMAT=markdown
+```
+
+### Conventions des paramètres
+
+- **Paramètres obligatoires** : `PARAM=<value>` - Doit être fourni
+- **Paramètres facultatifs** : `[PARAM=<value>]` - Peut être omis pour les valeurs par défaut
+- **ID** : utilisez des modèles tels que `EP-0001`, `US-0001`, `AG-UI`
+- **Listes** : valeurs séparées par des virgules là où elles sont indiquées
+
+### Obtenir de l'aide
+
+```bash
+# Show all available commands
+/agileflow:help
+
+# System diagnostics
+/agileflow:diagnose
+```
+
+## Essayez-le vous-même
+
+Explorez les commandes AgileFlow de manière interactive dans ce bac à sable :
+
+<CommandPlayground
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
+/>
+
+<div className="mt-4 grille écart-4 sm:grid-cols-2">
+  <CommandPlayground
+    command="/agileflow:epic EP-0001"
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
+  />
+  <CommandPlayground
+    command="/agileflow:babysit"
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
+  />
+</div>
+
+## Commandes de session
+
+Commandes de gestion des sessions de travail et des flux de travail parallèles :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/session:new`](/commands/session-new) | Créez une session parallèle avec git worktree |
+| [`/session:resume`](/commands/session-resume) | Passer à une autre session |
+| [`/session:status`](/commands/session-status) | Afficher toutes les sessions et leur état |
+| [`/session:end`](/commands/session-end) | Terminer la session et éventuellement nettoyer l'arbre de travail |
+| [`/session:history`](/commands/session-history) | Afficher l'historique et les statistiques des sessions passées |
+| [`/session:init`](/commands/session-init) | Initialiser le système de suivi de session |
+
+## Commandes de compétences
+
+Commandes de gestion des compétences dynamiques :
+
+| Commande | Descriptif |
+|---------|-------------|
+| [`/skill:create`](/commands/skill-create) | Générez une compétence personnalisée avec la recherche Web et l'intégration MCP |
+| [`/skill:list`](/commands/skill-list) | Liste tous les installed skills with descriptions |
+| [`/skill:edit`](/commands/skill-edit) | Edit an existing skill's content |
+| [`/skill:delete`](/commands/skill-delete) | Remove an installed skill |
+| [`/skill:test`](/commands/skill-test) | Verify a skill works correctly |
+| [`/skill:upgrade`](/commands/skill-upgrade) | Add self-improving learning capability to existing skills |

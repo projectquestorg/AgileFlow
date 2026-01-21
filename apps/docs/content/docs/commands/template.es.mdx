@@ -1,0 +1,399 @@
+---
+title: /plantilla
+description: Cree y administre plantillas de documentos personalizados
+---
+# /plantilla
+
+Cree, administre y utilice plantillas personalizadas para estandarizar la documentación en todo su proyecto. Cree plantillas para historias, reuniones, informes de incidentes y más.
+
+## Inicio rápido
+
+```bash
+# List all available templates
+/agileflow:template
+
+# Create a new custom template
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+
+# Use a template to generate a document
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+## Parámetros
+
+| Parámetro | Requerido | Predeterminado | Descripción |
+|-----------|----------|---------|-------------|
+| `ACTION` | No | lista | Operación: listar, crear, editar o usar |
+| `TYPE` | Para crear/editar/usar | - | Tipo de plantilla: historia, épica, adr, personalizada, etc. |
+| `NAME` | Para crear/editar/usar | - | Nombre de la plantilla (por ejemplo, notas de la reunión) |
+| `PATH` | Opcional | automático | Ruta personalizada para guardar la plantilla |
+
+## Ejemplos
+
+### Lista de plantillas disponibles
+
+```bash
+/agileflow:template
+```
+
+Muestra todas las plantillas integradas y personalizadas:
+
+```text
+# Available Templates
+
+## Built-in Templates (docs/00-meta/templates/)
+- story-template.md - User stories
+- epic-template.md - Epics
+- adr-template.md - Architecture Decision Records
+- agent-profile-template.md - Agent profiles
+- comms-note-template.md - Handoff notes
+- research-template.md - Research notes
+- README-template.md - Folder READMEs
+
+## Custom Templates (docs/00-meta/templates/custom/)
+- meeting-notes.md (created 2025-10-15)
+- incident-report.md (created 2025-10-10)
+- sprint-retro.md (created 2025-10-01)
+
+Usage: /agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+### Crear una plantilla de notas de reunión
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+```
+
+Proporciona una interfaz de creación de plantillas:
+
+```text
+Creating new template: meeting-notes
+
+Template content:
+
+---
+title: {{TITLE}}
+date: {{DATE}}
+attendees: {{ATTENDEES}}
+---
+
+# {{TITLE}}
+
+**Date**: {{DATE}}
+**Attendees**: {{ATTENDEES}}
+
+## Agenda
+1.
+2.
+3.
+
+## Notes
+
+### Topic 1
+
+
+### Topic 2
+
+
+## Action Items
+- [ ] Task 1 (Owner: {{OWNER}}, Due: {{DUE_DATE}})
+- [ ] Task 2
+
+## Decisions Made
+-
+
+## Next Meeting
+**Date**:
+**Topics**:
+
+---
+
+Save to: docs/00-meta/templates/custom/meeting-notes.md
+Proceed? (YES/NO)
+```
+
+### Crear una plantilla de informe de incidente
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=incident-report
+```
+
+Defina una plantilla de informe de incidentes:
+
+__NOTRANSTARDE_6__
+
+### Crear una plantilla de retrospectiva de Sprint
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=sprint-retro
+```
+
+Defina una plantilla de retrospectiva de sprint con métricas:
+
+```markdown
+# Sprint {{SPRINT_NUMBER}} Retrospective
+
+**Dates**: {{START_DATE}} to {{END_DATE}}
+**Team**: {{TEAM}}
+**Facilitator**: {{FACILITATOR}}
+
+## Sprint Goals
+
+### Planned
+{{GOALS_PLANNED}}
+
+### Achieved
+{{GOALS_ACHIEVED}}
+
+## Metrics
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Stories Completed | {{TARGET_STORIES}} | {{ACTUAL_STORIES}} | {{STATUS}} |
+| Velocity | {{TARGET_VELOCITY}} | {{ACTUAL_VELOCITY}} | {{STATUS}} |
+| Test Coverage | {{TARGET_COVERAGE}}% | {{ACTUAL_COVERAGE}}% | {{STATUS}} |
+| Bugs | <{{MAX_BUGS}} | {{ACTUAL_BUGS}} | {{STATUS}} |
+
+## What Went Well? 🎉
+
+1.
+2.
+3.
+
+## What Didn't Go Well? 😞
+
+1.
+2.
+3.
+
+## What Should We Try? 💡
+
+1.
+2.
+3.
+
+## Action Items
+
+- [ ] {{ACTION_1}} (Owner: {{OWNER_1}}, Due: {{DUE_1}})
+- [ ] {{ACTION_2}} (Owner: {{OWNER_2}}, Due: {{DUE_2}})
+- [ ] {{ACTION_3}} (Owner: {{OWNER_3}}, Due: {{DUE_3}})
+
+## Shoutouts 🙌
+
+-
+
+**Next Retrospective**: {{NEXT_RETRO_DATE}}
+```
+
+### Utilice una plantilla para generar un documento
+
+```bash
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+Solicita variables de plantilla y genera el documento:
+
+```text
+Using template: meeting-notes
+
+Fill in template variables:
+
+TITLE: Weekly Team Sync
+ATTENDEES: Alice, Bob, Carol, DevOps Team
+OWNER: Alice
+DUE_DATE: 2025-12-31
+
+Generated document preview:
+
+---
+title: Weekly Team Sync
+date: 2025-12-24
+attendees: Alice, Bob, Carol, DevOps Team
+---
+
+# Weekly Team Sync
+
+**Date**: 2025-12-24
+**Attendees**: Alice, Bob, Carol, DevOps Team
+
+## Agenda
+1.
+2.
+3.
+
+[...preview continues...]
+
+Save to: docs/08-project/meetings/2025-12-24-weekly-sync.md
+Proceed? (YES/NO)
+```
+
+### Editar una plantilla existente
+
+```bash
+/agileflow:template ACTION=edit TYPE=custom NAME=meeting-notes
+```
+
+Muestra la plantilla actual y solicita ediciones con vista previa de diferencias.
+
+## Sintaxis de plantilla
+
+### Formato variable
+
+Las plantillas utilizan llaves dobles para las variables:
+
+```markdown
+# {{TITLE}}
+
+**Created by**: {{AUTHOR}}
+**Date**: {{DATE}}
+**Status**: {{STATUS}}
+```
+
+### Variables integradas
+
+Disponible en todas las plantillas:
+
+| Variables | Ejemplo | Descripción |
+|----------|---------|-------------|
+| `{{DATE}}` | 2025-12-24 | Fecha actual (AAAA-MM-DD) |
+| `{{DATETIME}}` | 2025-12-24T10:30:00Z | Fecha y hora ISO 8601 |
+| `{{USER}}` | alicia | Usuario actual de git |
+| `{{YEAR}}` | 2025 | Año en curso |
+
+### Variables de plantilla de historia
+
+Para plantillas específicas de historias:
+
+```text
+{{STORY_ID}} - Story identifier (US-0042)
+{{EPIC_ID}} - Parent epic (EP-0001)
+{{OWNER}} - Story owner/assignee
+{{ESTIMATE}} - Story point estimate
+{{AC}} - Acceptance criteria
+{{DEPENDENCIES}} - Dependencies on other stories
+```
+
+### Variables de plantilla ADR
+
+Para la arquitectura deregistros de decisión:
+
+```text
+{{NUMBER}} - ADR number (0001, 0042)
+{{STATUS}} - Decision status (proposed, accepted, superseded)
+{{CONTEXT}} - Driving factors
+{{DECISION}} - The decision made
+{{CONSEQUENCES}} - Trade-offs and impacts
+```
+
+## Plantillas integradas
+
+AgileFlow incluye plantillas predeterminadas que puede ver y personalizar:
+
+| Plantilla | Propósito | Ubicación |
+|----------|---------|----------|
+| `story-template.md` | Formato de historia de usuario | docs/00-meta/templates/story-template.md |
+| `epic-template.md` | Definición épica | docs/00-meta/templates/epic-template.md |
+| `adr-template.md` | Decisiones de arquitectura | docs/00-meta/templates/adr-template.md |
+| `agent-profile-template.md` | Documentación del agente | docs/00-meta/templates/agent-profile-template.md |
+| `comms-note-template.md` | Notas de traspaso | docs/00-meta/templates/comms-note-template.md |
+| `research-template.md` | Resultados de la investigación | docs/00-meta/templates/research-template.md |
+| `README-template.md` | Carpeta LÉAME | docs/00-meta/templates/README-template.md |
+
+Puede anular cualquier plantilla integrada creando una versión personalizada con el mismo nombre.
+
+## Mejores prácticas
+
+### Cuándo crear plantillas
+
+Cree una plantilla cuando:
+- Se crea un tipo de documento.varias veces
+- Se debe seguir una estructura específica de forma consistente.
+- Ciertos campos siempre deben incluirse
+
+### Nomenclatura de plantilla
+
+Utilice nombres descriptivos de casos de kebab:
+
+```text
+Good:
+- meeting-notes
+- sprint-retrospective
+- incident-report
+- design-proposal
+
+Avoid:
+- template1
+- doc
+- new-file
+```
+
+### Nomenclatura de variables
+
+Utilice UPPERCASE_WITH_UNDERSCORES:
+
+```text
+Good:
+{{STORY_ID}}, {{OWNER}}, {{DUE_DATE}}
+
+Avoid:
+{{story_id}}, {{owner}}, {{due-date}}, {{Author}}
+```
+
+### Documentación
+
+Agregue descripciones a plantillas personalizadas:
+
+```markdown
+---
+template: incident-report
+version: 1.0
+description: Post-incident documentation for service outages
+author: DevOps Team
+created: 2025-10-10
+---
+```
+
+## Gestión de plantillas
+
+### Registro de plantilla
+
+Las plantillas personalizadas se rastrean en `docs/00-meta/templates/registry.json`:
+
+```json
+{
+  "templates": [
+    {
+      "name": "meeting-notes",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/meeting-notes.md",
+      "created": "2025-10-15",
+      "author": "Alice",
+      "description": "Weekly team meeting notes",
+      "variables": ["TITLE", "DATE", "ATTENDEES", "OWNER"]
+    },
+    {
+      "name": "incident-report",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/incident-report.md",
+      "created": "2025-10-10",
+      "author": "Bob",
+      "description": "Post-incident documentation",
+      "variables": ["INCIDENT_ID", "SEVERITY", "SUMMARY", "ROOT_CAUSE"]
+    }
+  ]
+}
+```
+
+### Equipo compartido
+
+Las plantillas en `docs/00-meta/templates/custom/` están comprometidas con git, por lo tanto:
+- Todos los miembros del equipo usan las mismas plantillas.
+- Las plantillas están versionadas con código.
+- Los cambios de plantilla se revisan en los RP
+
+## Comandos relacionados
+
+- [`/adr`](/commands/adr) - Crear decisiones de arquitectura (usa adr-template.md)
+- [`/story-new`](/commands/story-new) - Crear historias de usuario (usa story-template.md)
+- [`/epic-new`](/commands/epic-new) - Crear epopeyas (usa epic-template.md)
+- [`/research`](/commands/research) - Crear investigación noes (usa research-template.md)

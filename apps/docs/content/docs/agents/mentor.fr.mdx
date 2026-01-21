@@ -1,0 +1,163 @@
+---
+title: Mentor
+description: Mentor de mise en œuvre de bout en bout pour guider la mise en œuvre des fonctionnalités, de l'idée au PR.
+---
+# Agent mentor
+
+L'agent Mentor (MENTOR) est votre spécialiste de l'orchestration pour des workflows complets de mise en œuvre de fonctionnalités. Il vous guide depuis les demandes initiales de fonctionnalités jusqu'à l'intégration de la recherche, la création d'histoires, la coordination de la mise en œuvre et la préparation des relations publiques.
+
+## Capacités
+
+- Orchestration des fonctionnalités de bout en bout, de l'idée au PR fusionné
+- Intégration de la recherche à partir de docs/10-research/
+- Création d'épopées et d'histoires en cas de besoin
+- Coordination multi-agents et gestion des statuts
+- Maintenance CLAUDE.md et documentation des patrons
+- Orchestration des commandes Slack (41 commandes disponibles)
+- Définition de la validation Ready et comblement des lacunes
+- Résolution des dépendances des agents et gestion des WIP
+
+## Quand l'utiliser
+
+Utilisez l'agent Mentor lorsque :
+
+- Vous avez une demande de fonctionnalité en anglais simple à implémenter
+- Vous devez planifier la mise en œuvre sur plusieurs histoires/épopées
+- Vous devez rechercher une technologie inconnue avant de commencer
+- Vous coordonnez le travail entre agents spécialisés (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- Tu as besoind pour garantir que la définition de « Prêt » est respectée avant la mise en œuvre
+- Vous souhaitez automatiser la génération et la coordination des RP
+
+## Comment ça marche
+
+1. **Chargement du contexte** : l'agent lit le fichier d'expertise, status.json, bus/log.jsonl et la feuille de route
+2. **Analyse des connaissances** : l'agent identifie les WIP actuels, les bloqueurs, les histoires prêtes et les lacunes de la recherche
+3. **Proposition** : l'agent suggère 3 à 7 prochaines actions prioritaires en fonction de la feuille de route et des dépendances.
+4. **Planification** : l'agent crée les épopées/histoires manquantes et s'assure que la définition de "Prêt" est respectée
+5. **Intégration de la recherche** : l'agent exploite ou demande des recherches à partir de docs/10-research/
+6. **Coordination** : l'agent orchestre les agents spécialisés et met à jour le statut/le bus
+7. **Documentation** : l'agent met à jour CLAUDE.md avec les modèles nouvellement appris
+8. **Finalisation** : l'agent génère une description du PR et prépare la fusion
+
+## Exemple
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need to add payment processing to the platform"
+```
+
+Le mentor :
+1. Vérifiez si l'épopée de paiement existe ; créer si besoin
+2. Plongez dans les stories (installation, intégration Stripe, gestion des webhooks, etc.)
+3. Recherchez les modèles de paiement (consultez docs/10-research/ ou suggérez de nouvelles recherches)
+4. Validez la définition de Prêt pour chaque histoire
+5. Suggérez quelle histoire mettre en œuvre en premier
+6. Coordonner la mise en œuvre avec des agents spécialisés
+7. Mettre à jour le statut au fur et à mesure de l'avancement des travaux
+
+Ou apparaissez directement :
+
+```text
+Task(
+  description: "Implement user authentication",
+  prompt: "Add JWT-based auth with login/logout flows, profile management",
+  subagent_type: "agileflow-mentor"
+)
+```
+
+## Comportements clés
+
+- **Exécution de commandes autonomes** : appelle directement les commandes slash (tableau, statut, analyse d'impact, recherche : demander, etc.) sans demander la permission
+- **Gestion du cycle de vie de l'histoire** : valide la définition de Prêt, marque en cours, passe en cours de révision, mises à jour à effectuer
+- **Application des limites WIP** : respecte un maximum de 2 histoires par agent en cours
+- **Suivi des dépendances** : identifie les bloqueurs, coordonne le déblocage entre les agents
+- **Planification axée sur la recherche** : intègre les recherches existantes ou demande de nouvelles recherches via /agileflow:research:ask
+- **Mises à jour proactives de CLAUDE.md** : Documente les nouveaux modèles/conventions découverts lors de la mise en œuvre
+- **Coordination inter-agents**: utilise bus/log.jsonl pour envoyer des messages à d'autres agents (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- **Préservation du contexte** : utilise compact_context (priorité : critique) pour maintenir le focus sur l'orchestration pendant les longues conversations, en préservant la définition de la validation Ready et le suivi des bloqueurs grâce au compactage du contexte.
+
+## Configuration du contexte compact
+
+L'agent Mentor utilise la **priorité critique** compact_context pour garantir que le focus de l'orchestration n'est jamais perdu :
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS read expertise.yaml first"
+    - "ALWAYS validate Definition of Ready before implementation"
+    - "Max 2 stories per agent in-progress (WIP limit)"
+    - "Slash commands are autonomous (invoke directly)"
+    - "File operations require diff + YES/NO confirmation"
+    - "Update status.json + bus/log.jsonl for all state changes"
+  state_fields:
+    - current_story
+    - story_status
+    - wip_count
+    - blockers
+    - next_actions
+```
+
+Cela garantit que les règles critiques pour le mentor (définition de la validation Ready, limites WIP, exécution de commandes autonomes) et l'état de l'orchestration (histoire actuelle, bloqueurs, actions suivantes prioritaires) sont toujours préservés, même après un compactage approfondi du contexte.
+
+## Outils disponibles
+
+Cet agent a accès à : Lecture, Écriture, Modification, Bash, Glob, Grep
+
+## Types de messages de bus
+
+Le Mentor communique via ces types de messages :
+
+```jsonl
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"status","story":"<US-ID>","text":"Description"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"blocked","story":"<US-ID>","text":"Blocked: <reason>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"unblock","story":"<US-ID>","text":"Unblocking: <reason>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"assign","story":"<US-ID>","text":"Assigned to <AGENT-ID>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"question","story":"<US-ID>","text":"Clarification needed: <question>"}
+```
+
+## Fichiers clés
+
+- **Expertise** : `packages/cli/src/core/experts/mentor/expertise.yaml` (mémoire des agents)
+- **Workflow** : `packages/cli/src/core/experts/mentor/workflow.md` (Plan → Construire → Auto-Améliorer)
+- **Statut** : `docs/09-agents/status.json` (suivi de l'histoire - source unique de vérité)
+- **Bus** : `docs/09-agents/bus/log.jsonl` (messages de coordination)
+- **Feuille de route** : `docs/08-project/roadmap.md` (priorités et contexte)
+- **Recherche** : `docs/10-research/` (notes de recherche techniques)
+- **ADR** : `docs/03-decisions/` (décisions d'architecture)
+- **CLAUDE.md** : invite du système d'IA spécifique au projet
+
+## Étapes du flux de travail
+
+1. **Charger l'expertise** : lisez expertise.yaml pour charger le modèle mental
+2. **Vérifier l'état** : lisez status.json pour les WIP actuels, les bloqueurs et les histoires prêtes
+3. **Lire Bus** : Vérifiez bus/log.jsonl pour l'activité récente de l'agent
+4. **Consultez la feuille de route** : consultez docs/08-project/roadmap.md pour connaître les priorités.
+5. **Proposer des actions** : suggérer 3 à 7 prochaines actions classées par priorité
+6. **Plan** : divisez la fonctionnalité en épopées/histoires avec des critères d'acceptation
+7. **Recherche** : intégrer des recherches existantes ou suggérer de nouvelles recherches
+8. **Attribuer** : créez des histoires avec des affectations d'agents et des talons de test
+9. **Mettre à jour le statut** : marquez les histoires comme prêtes, mettez à jour status.json
+10. **Message Bus** : ajouter des messages de coordination
+11. **Mise en œuvre** : Guider la mise en œuvre par l'intermédiaire d'agents spécialisés
+12. **Document** : Mettez à jour CLAUDE.md avec de nouveaux modèles
+13. **Générer PR** : utilisez /agileflow:pr-template pour la description du PR
+14. **Self-Improve** : exécutez self-improve.md une fois terminé
+
+## Coordination des agents
+
+**MENTOR se coordonne avec** :
+
+- **AG-UI** : Histoires frontales - vérifie les histoires d'interface utilisateur bloquées en attente sur l'API
+- **AG-API** : histoires backend - garantit que les points de terminaison de l'API sont prêts à débloquer l'interface utilisateur
+- **AG-CI** : Infrastructure de test - coordonne la configuration et la vérification des tests
+- **AG-DEVOPS** : Dépendances et déploiement - coordonne les migrations et les mises à jour des packages
+- **EPIC-PLANNER** : Décomposition de l'histoire - délègue la planification de l'épopée/de l'histoire si nécessaire
+- **RECHERCHE** : Recherche technique - coordonne la recherche sur des technologies inconnues
+
+## Agents associés
+
+- [`epic-planner`](/agents/epic-planner) - Spécialisé dans la décomposition de fonctionnalités en épopées et en histoires
+- [`api`](/agents/api) - BaServices cend et implémentation de la couche de données
+- [`ui`](/agents/ui) - Composants frontend et interfaces utilisateur

@@ -1,0 +1,188 @@
+---
+title: Multi-Experte
+description: Multi-Experten-Orchestrator, der 3–5 Domänenexperten für dasselbe Problem einsetzt und Ergebnisse für hochzuverlässige Antworten synthetisiert.
+---
+# Multi-Experten-Agent
+
+Der Multi-Expert Agent ist ein Orchestrator, der komplexe Fragen analysiert, indem er drei bis fünf spezialisierte Fachexperten parallel einsetzt und deren Ergebnisse dann in einer umfassenden, vertrauenswürdigen Analyse zusammenfasst.
+
+## Fähigkeiten
+
+- Bringt mehrere spezialisierte Domänenexperten parallel für eine umfassende Analyse hervor
+- Erkennt relevante Domänen anhand von Fragen (Sicherheit, API, UI, Datenbank, Tests, Leistung, CI, DevOps)
+- Fasst Expertenergebnisse mit Vertrauensbewertung (Hoch/Mittel/Niedrig) zusammen.
+- Identifiziert Übereinstimmungen zwischen Experten (hohes Vertrauen) und Meinungsverschiedenheiten (Überprüfung erforderlich)
+- Extrahiert einzigartige Erkenntnisse von einzelnen Experten
+- Bietet priorisierte empfohlene Maßnahmen
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+
+- **Komplexe Fragen, die sich über mehrere Domänen erstrecken** - „Ist unsere Authentifizierungsimplementierung sicher?“ benötigt Sicherheit + API + Tests + Datenbankperspektiven
+- **Sicherheitsüberprüfungen** – Analysieren Sie Code aus verschiedenen Blickwinkeln (Sicherheit, Architektur, Tests)
+- **ArchitektTürrezensionen** – Erhalten Sie Feedback von Fachexperten zu Designentscheidungen
+- **PR-Überprüfungen** – Multiperspektivische Codeüberprüfung für Vertrauen in die Korrektheit
+- **End-to-End-Flussanalyse** – Verfolgen Sie Anfragen über mehrere Ebenen mit Expertenvalidierung
+- **Schwere Probleme beheben** - Mehrere mögliche Ursachen, die einer Expertenanalyse bedürfen
+- **Fragen zu „Best Practices“** – Validierung über mehrere Domänen erforderlich
+
+## Wie es funktioniert
+
+Der Agent folgt einem strukturierten Arbeitsablauf:
+
+```text
+USER QUESTION
+      ↓
+┌─────────────────┐
+│ 1. ANALYZE      │ → Identify 3-5 relevant domains
+│ 2. DEPLOY       │ → Spawn experts IN PARALLEL
+│ 3. COLLECT      │ → Wait for all results
+│ 4. SYNTHESIZE   │ → Combine with confidence scoring
+│ 5. REPORT       │ → High-confidence answer
+└─────────────────┘
+```
+
+### Schritt 1: Domänenanalyse
+
+Der Agent analysiert die Frage nach Domain-Keywords und wählt 3-5 Experten aus:
+- **1 PRIMÄR-Experte** – Relevanteste Domäne
+- **2-4 UNTERSTÜTZENDE Experten** - Bieten Sie zusätzliche Perspektiven
+
+### Schritt 2: Parallele Bereitstellung
+
+Aus Effizienzgründen werden alle Experten gleichzeitig im Hintergrund eingesetzt:
+
+```bash
+Task(
+  description: "Security analysis",
+  prompt: "FIRST: Read packages/cli/src/core/experts/security/expertise.yaml\n\nQUESTION: ...",
+  subagent_type: "agileflow-security",
+  run_in_background: true
+)
+```
+
+### Schritt 3: Ergebnisse sammeln
+
+Verwendet `TaskOutput` mit `block: true`, um auf alle Expertenantworten zu warten.
+
+### Schritt 4: Synthese mit Vertrauensbewertung
+
+Analysiert all Antworten und Gruppenergebnisse:
+
+- **VEREINBARUNG (2+ Experten)** → Hohes Vertrauen
+- **EINZIGARTIGE EINBLICKE (1 Experte)** → Bemerkenswerte Entdeckung
+- **UNVEREINBARUNG** → Zur menschlichen Überprüfung markiert
+
+### Schritt 5: Bericht
+
+Gibt eine strukturierte Analyse mit Abschnitten aus:
+- **Wichtige Erkenntnisse (hohes Vertrauen)** - Vereinbarungen zwischen 2+ Experten
+- **Einzigartige Erkenntnisse** – Bemerkenswerte Erkenntnisse einzelner Experten
+- **Unstimmigkeiten (Überprüfung erforderlich)** - Widersprüchliche Meinungen
+- **Empfohlene Maßnahmen** - Priorisierte nächste Schritte
+
+## Vertrauensbewertung
+
+| Ebene | Kriterien |
+|-------|----------|
+| **Hoch** | 3+ Experten stimmen den zitierten spezifischen Beweisen zu |
+| **Mittel** | 2 Experten stimmen einigen Beweisen zu |
+| **Niedrig** | Nur 1 Experte, Überprüfung erforderlich |
+
+## Domänenerkennung
+
+Der Agent ordnet Frageschlüsselwörter den Domänenexperten zu:
+
+| Schlüsselwörter | Experte |
+|----------|--------|
+| Datenbank, Schema, Tabelle, SQL, Abfrage | agileflow-datenbank |
+| API, Endpunkt, REST, Route, Controller | agileflow-api |
+| Komponente, Benutzeroberfläche, Frontend, Stil | agileflow-ui |
+| test, spec, Abdeckung, Mock | agileflow-tests |
+| Sicherheit, Authentifizierung, JWT, Schwachstelle | agileflow-sicherheit |
+| Leistung, Cache, optimieren, langsam | agileflow-performance |
+| CI, Workflow, Pipeline, Build | agileflow-ci |
+| bereitstellen, Infrastruktur, Docker | agileflow-devops |
+
+## Beispiel
+
+**Benutzerfrage**: „Ist unsere Authentifizierungsimplementierung sicher?“
+
+**Antwort des Agenten**:
+
+```text
+Analyzing for relevant domains...
+
+Detected domains:
+- Security (primary) - auth security analysis
+- API (supporting) - implementation review
+- Testing (supporting) - coverage verification
+- Database (supporting) - credential storage
+
+Deploying 4 experts in parallel...
+
+## Multi-Expert Analysis: Authentication Security
+
+**Confidence**: High (4 experts, strong agreement)
+
+### Key Findings (High Confidence)
+1. JWT tokens never expire - CRITICAL - Agreed by: Security, API
+2. Auth middleware inconsistent - HIGH - Agreed by: Security, API
+
+### Unique Insights
+- Database: Password hashing is correct (bcrypt with proper salt rounds)
+- Testing: Only 40% coverage on auth routes, missing integration tests
+
+### Disagreements (Needs Review)
+None - all experts aligned on security stance
+
+### Recommended Actions
+1. Add JWT expiration and refresh token rotation (CRITICAL)
+2. Audit all routes for consistent middleware application (HIGH)
+3. Increase test coverage to 80% for auth routes (MEDIUM)
+4. Add integration tests for auth flow (MEDIUM)
+```
+
+## Schlüsselverhalten
+
+- **Setzt Experten IMMER parallel ein** - Niemals nacheinander (Effizienz)
+- **Stellt IMMER ALLE Experten in einer EINZIGEN Nachricht bereit** - Batch-Task-Aufrufe zusammen
+- **Gib NIEMALS eine endgültige Antwort, ohne ALLE Expertenantworten zusammenzufassen** - Alle Perspektiven sind wichtig
+- **Beinhaltet IMMER das Lesen von Fachwissen in Expertenaufforderungen** - `"FIRST: Read packages/cli/src/core/experts/{domain}/expertise.yaml"`
+- **Setzt insgesamt 3–5 Experten ein** – Nicht weniger, nicht mehr (optimale Synthese)
+- **Verwendet IMMER TaskOutput mit Block: true** – Um alle Ergebnisse zu sammeln
+
+## Werkzeuge verfügbar
+
+Dieser Agent hat Zugriff auf:
+- **Lesen** – Greifen Sie auf die Fachwissensdateien der Agenten zu
+- **Schreiben** - Erstellen Sie einAnalysedokumente
+- **Bearbeiten** – Vorhandene Analysen aktualisieren
+- **Bash** – Verifizierungsbefehle ausführen
+- **Glob** – Suche nach relevanten Dateien
+- **Grep** – Code und Dokumentation durchsuchen
+- **Aufgabe** – Expertenagenten parallel bereitstellen
+- **TaskOutput** – Expertenergebnisse sammeln
+
+## Modellkonfiguration
+
+- **Modell**: Claude Opus 4.5 (Sonett)
+- **Begründung**: Vollständige komplexe Analyse mit mehreren Perspektiven
+
+## Verwandte Agenten
+
+- [`database`](/agents/database) – Datenbankschema- und Abfrageexperte
+- [`api`](/agents/api) – REST-API-Endpunktexperte
+- [`ui`](/agents/ui) – Experte für Frontend-Komponenten
+- [`testing`](/agents/testing) – Experte für Testabdeckung und Strategie
+- [`security`](/agents/security) – Experte für Sicherheit und Authentifizierung
+- [`performance`](/agents/performance) – Experte für Leistungsoptimierung
+- [`ci`](/agents/ci) – CI/CD-Pipeline-Experte
+- [`devops`](/agents/devops) – Experte für Infrastruktur und Bereitstellung
+
+## Wenn NOT zu verwenden
+
+- **Einfache Einzeldomänenfragen** - Verwenden Sie stattdessen den direkten Domänenexperten
+- **Fragen, die Entscheidungsbefugnis erfordern** - Multi-Expert bietet nur Analysen
+- **Sensible Informationen** – Dokumentieren Sie die beteiligten Experten vor der Bereitstellung

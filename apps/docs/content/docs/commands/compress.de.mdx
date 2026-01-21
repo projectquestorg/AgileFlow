@@ -1,0 +1,395 @@
+---
+title: /Kompresse
+description: Komprimieren Sie status.json, indem Sie ausführliche Felder entfernen und nur Tracking-Metadaten beibehalten
+---
+# /komprimieren
+
+Reduzieren Sie die Größe der Datei „status.json“, indem Sie ausführliche Story-Felder entfernen und gleichzeitig alle wichtigen Tracking-Metadaten sowie vollständige Story-Details in Markdown-Dateien beibehalten.
+
+## Schnellstart
+
+```bash
+/agileflow:compress
+```
+
+## Zweck
+
+Dieser Befehl löst ein häufiges Problem: Wenn `status.json` groß wird (insbesondere bei großen Projekten mit mehr als 100 Storys), kann es die Token-Grenzwerte überschreiten und die Agentenverarbeitung verlangsamen. Der Komprimierungsbefehl:
+- Entfernt ausführliche Felder (Beschreibungen, AC, Architekturkontext usw.)
+- Behält nur wesentliche Tracking-Metadaten (Story-ID, Status, Besitzer, Zeitstempel)
+- Reduziert die Dateigröße normalerweise um 80–90 %
+- Behält den gesamten Story-Inhalt in Markdown-Dateien bei
+- Behält den vollständigen Projektverlauf bei
+– Stellt sicher, dass Agenten status.json effizient lesen können
+
+## Parameter
+
+Dieser Befehl hat keine Parameter – er wird direkt auf `docs/09-agents/status.json` angewendet.
+
+## Nutzung
+
+Führen Sie einfach Folgendes aus:
+
+```bash
+/agileflow:compress
+```
+
+Der Befehl wird:
+1. Überprüfen Sie, ob status.json vorhanden ist und ein gültiger JSON-Code ist
+2. Vorher Statistiken anzeigen (Größe, Linien, Story Count)
+3. Erstellen Sie ein automatisches Backup
+4. Entfernen Sie ausführliche Felder
+5. Komprimierte Version schreiben
+6. Nach Statistiken und Einsparungen anzeigen
+
+## Was entfernt wird
+
+Diese ausführlichen Felder wurden aus status.json entfernt:
+
+```text
+- description          # Story description and context
+- acceptanceCriteria   # AC bullet points
+- architectureContext  # Architecture details
+- technicalNotes       # Implementation hints
+- testingStrategy      # Test approach
+- devAgentRecord       # Implementation notes
+- previousStoryInsights # Lessons from previous story
+- (all other large text fields)
+```
+
+Diese werden stattdessen sicher in `docs/06-stories/`-Markdown-Dateien gespeichert.
+
+## Was bleibt erhalten
+
+In status.json verbleiben nur die wesentlichen Tracking-Metadaten:
+
+```text
+- story_id            # Story identifier
+- epic                # Parent epic
+- title               # Story title
+- owner               # Assigned agent
+- status              # Current status (ready/in-progress/blocked/done)
+- estimate            # Time estimate
+- created             # Creation timestamp
+- updated             # Last update timestamp
+- completed_at        # Completion timestamp
+- dependencies        # Dependent story IDs
+- branch              # Git branch name
+- summary             # Short summary
+- last_update         # Last modification message
+- assigned_at         # Assignment timestamp
+```
+
+## Beispielausgabe
+
+```text
+🗜️  AgileFlow Status Compression
+   Purpose: Strip verbose fields from status.json
+   Target: Keep only essential tracking metadata
+
+💾 Backup created: docs/09-agents/status.json.backup
+
+📊 Before Compression:
+   Stories: 145
+   Size: 384KB
+   Lines: 12,847
+
+✅ Compression complete!
+
+📊 After Compression:
+   Stories: 145 (unchanged)
+   Size: 384KB → 42KB
+   Lines: 12,847 → 1,203
+   Saved: 89% (342KB)
+
+✅ Estimated tokens: ~10,500 (safely under 25000 limit)
+
+📋 Status Summary:
+   ready: 23 stories
+   in-progress: 8 stories
+   blocked: 2 stories
+   done: 112 stories
+
+💾 To restore original: cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+## Wann zu verwenden
+
+### Komprimierung verwenden, wenn:
+
+1. **status.json überschreitet 25.000 Token**
+   – Agents schlagen mit „Dateiinhalt überschreitet maximal zulässige Token“ fehl.
+
+2. **Datei wird langsam verarbeitet**
+   - Zu groß für Kontextfenster
+   – Verursacht Zeitüberschreitungsprobleme
+
+3. **Nach dem großen epischen Abschluss**
+   - Viele abgeschlossene Geschichten mit ausführlichen Aufzeichnungen
+   - Das Projekt ist erheblich gewachsen
+
+4. **Vierteljährliche Wartung**
+   - Regelmäßige Bereinigung, um den Überblick zu behalten
+
+### Alternative: Mit Archival kombinieren
+
+Für noch bessere Ergebnisse kombinieren Sie Komprimierung mit Archivierung:
+
+```bash
+# Step 1: Archive completed stories older than 3 days
+bash .agileflow/scripts/archive-completed-stories.sh 3
+
+# Step 2: Compress remaining stories
+/agileflow:compress
+```
+
+Dieser zweistufige ProzessSS erreicht eine maximale Reduzierung bei gleichzeitiger Beibehaltung der Historie.
+
+## Sicherheit und Backups
+
+### Automatische Sicherung
+
+Vor der Komprimierung erstellt der Befehl ein Backup:
+```text
+docs/09-agents/status.json.backup
+```
+
+### Kein Datenverlust
+
+– Der vollständige Story-Inhalt verbleibt in den Markdown-Dateien `docs/06-stories/`
+- Story-Markdown-Dateien werden NICHT geändert
+– Nur der status.json-Index wird komprimiert
+- Kann jederzeit aus dem Backup wiederhergestellt werden
+
+### Bei Bedarf wiederherstellen
+
+```bash
+cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+Das Backup enthält die komplette Originaldatei.
+
+## Warum diese Architektur?
+
+### Trennung von Belangen
+
+**status.json** = Leichter Tracking-Index
+- „Welche Geschichten gibt es?“
+- „Wem gehört jede Geschichte?“
+- „Wie ist der aktuelle Stand?“
+- „Wann wurde es aktualisiert?“
+
+**docs/06-stories/** = vollständiger Story-Inhalt
+- Vollständige Beschreibungen
+- Akzeptanzkriterien
+- Architekturentscheidungen
+- Hinweise zur Implementierung
+- Teststrategien
+
+**docs/09-agents/archive/** = historische Daten
+- Abgeschlossene Geschichten, die älter als der Schwellenwert sind
+- Monatliche Organisation
+- Volle Abruffähigkeit
+
+### Vorteile
+
+1. **Schnelle Indizierung** – Agents lesen Sie status.json schnell
+2. **Vollständiger Inhalt** – Vollständige Details im Story-Markdown
+3. **Durchsuchbar** – Kann Story-Dateien nach Inhalten durchsuchen
+4. **Versionierbar** – Alle Dateien werden git-tracked
+5. **Archivierbar** – Alte Geschichten blähen den Tracking-Index nicht auf
+
+## Token-Schätzung
+
+Der Befehl schätzt die Token-Nutzung:
+
+```text
+Token estimation formula: tokens ≈ bytes / 4
+
+Before: 384KB × 1024 bytes/KB ÷ 4 = 98,304 tokens
+After: 42KB × 1024 bytes/KB ÷ 4 = 10,752 tokens
+
+Saved: 87,552 tokens!
+```
+
+Ziel: Halten Sie status.json unter 25.000 Token (100 KB komprimiert).
+
+## Workflow-Integration
+
+### Mit Agent Bus
+
+Die status.json-Komprimierung hat keine Auswirkungen auf Folgendes:
+– Agent-Nachrichtenbus (`docs/09-agents/bus/log.jsonl`)
+- Agentenkommunikation und -koordination
+- Verfolgung des Story-Status
+
+### Mit CI/CD
+
+Komprimierung kann zur CI-Automatisierung hinzugefügt werden:
+
+```yaml
+name: Maintenance
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Sunday 2am UTC
+
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive and compress
+        run: |
+          bash .agileflow/scripts/archive-completed-stories.sh 3
+          /agileflow:compress
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add docs/09-agents/
+          git diff --quiet && git diff --staged --quiet || \
+          git commit -m "chore(maintenance): archive and compress status"
+          git push
+```
+
+## Häufige Szenarien
+
+### Szenario 1: Projekt wird größer
+
+**Problem**: status.json ist 250 KB groß und hat 150 Storys
+**Lösung**:
+```bash
+/agileflow:compress
+```
+**Ergebnis**: Reduziert sich auf 30 KB und liegt somit problemlos unter den Token-Grenzwerten
+
+### Szenario 2: Viele abgeschlossene Geschichten
+
+**Problem**: 120 abgeschlossene, 30 aktive Geschichten; status.json aufgebläht
+**Lösung**:
+```bash
+# Archive stories completed >7 days ago
+bash .agileflow/scripts/archive-completed-stories.sh 7
+
+# Then compress
+/agileflow:compress
+```
+**Ergebnis**: Verschiebt alte Storys ins Archiv, komprimiert die verbleibenden
+
+### Szenario 3: Regelmäßige Wartung
+
+**Problem**: Sie möchten status.json automatisch schlank halten
+**Lösung**: Zum CI-Plan hinzufügen (monatliche Komprimierung)
+**Ergebnis**: Immer unter Token-Grenzwerten, schnelle Agentenverarbeitung
+
+## Fehlerbehebung
+
+### „status.json nach der Komprimierung immer noch zu groß“
+
+Versuchen Sie es mit einer aggressiveren Archivierung:
+```bash
+# Archive stories >3 days old instead of default 7
+bash .agileflow/scripts/archive-completed-stories.sh 3
+
+/agileflow:compress
+```
+
+### „Kritische Informationen nach der Komprimierung verloren“
+
+Aus Backup wiederherstellen:
+```bash
+cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+Überprüfen Sie, ob Story-Markdown-Dateien die Details in `docs/06-stories/` enthalten.
+
+### „Kann keine Story-Details finden“
+
+Der Story-Inhalt befindet sich in Markdown-Dateien:
+```bash
+find docs/06-stories/ -name "US-*.md" | xargs grep "your search term"
+```
+
+## Best Practices
+
+1. **Regelmäßige Komprimierung** – Monatlich oder vierteljährlich ausführen
+2. **Aggressiv archivieren** – Verschieben Sie zuerst alte abgeschlossene Geschichten
+3. **Sichern vorher** – Durch die Komprimierung wird automatisch ein Backup erstellt
+4. **Überprüfen nach** – Überprüfen Sie die Token-Schätzung in der Ausgabe
+5. **Änderungen festschreiben** – Komprimierten Status zu Git hinzufügen
+6. **Dokumentenrichtlinie** – Erfassen Sie, wann/warum Sie kompensierenRession läuft
+7. **Wiederherstellung testen** – Überprüfen Sie bei Bedarf, ob die Sicherung funktioniert
+
+## Verwandte Befehle
+
+- [`/agileflow:status`](/commands/status) – Aktuelle Story-Status anzeigen
+- [`/agileflow:validate`](/commands/validate) – Überprüfen Sie den Zustand des AgileFlow-Systems
+- Archivskript: `bash .agileflow/scripts/archive-completed-stories.sh` - Abgeschlossene Storys ins Archiv verschieben
+
+## Technische Details
+
+### Beteiligte Dateien
+
+| Datei | Zweck |
+|------|---------|
+| `docs/09-agents/status.json` | Leichter Tracking-Index (komprimiert) |
+| `docs/09-agents/status.json.backup` | Automatisches Backup vor der Komprimierung |
+| `docs/06-stories/` | Vollständige Story-Markdown-Dateien (unverändert) |
+| `docs/09-agents/archive/YYYY-MM.json` | Historische abgeschlossene Geschichten |
+
+### Implementierung
+
+Das Komprimierungsskript verwendet `jq` für die JSON-Verarbeitung:
+
+```bash
+# Extract only essential fields for each story
+jq '[.[] | {story_id, epic, title, owner, status, estimate, created, updated, completed_at, dependencies, branch, summary, last_update, assigned_at}]' status.json > status-compressed.json
+```
+
+### Token-Berechnung
+
+In der Ausgabe verwendete grobe Schätzung:
+- 1 Token ≈ 4 Zeichen/Bytes (ungefähr)
+- 100-KB-Datei ≈ 25.000 Token
+- Ziel: < 100 KB, um deutlich unter den Grenzwerten zu bleiben
+
+## FAQ
+
+<Accordion type="multiple">
+  <AccordionItem value="delete">
+    <AccordionTrigger>Führt eine Komprimierung durchn Story-Dateien löschen?</AccordionTrigger>
+    <AccordionContent>
+      Nein. Nur status.json wird geändert. Der Story-Markdown in docs/06-stories/ bleibt unberührt.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="undo">
+    <AccordionTrigger>Kann ich die Komprimierung rückgängig machen?</AccordionTrigger>
+    <AccordionContent>
+      Ja. Es wird automatisch ein Backup erstellt. Einfach wiederherstellen: `cp docs/09-agents/status.json.backup docs/09-agents/status.json`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="when">
+    <AccordionTrigger>Wann sollte ich komprimieren?</AccordionTrigger>
+    <AccordionContent>
+      Wenn status.json 25 KB überschreitet, oder monatlich als Wartung. Für beste Ergebnisse mit Archivmaterial kombinieren.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="performance">
+    <AccordionTrigger>Beeinflusst dies die Leistung des Agenten?</AccordionTrigger>
+    <AccordionContent>
+      Ja, verbessert es dramatisch. Kleinere status.json = schnellere Lesevorgänge, mehr verfügbarer Kontext für Agenten.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="git">
+    <AccordionTrigger>Whüber Git-Geschichte?</AccordionTrigger>
+    <AccordionContent>
+      Alle Änderungen werden übernommen. Frühere Versionen befinden sich bei Bedarf im Git-Verlauf.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="customize">
+    <AccordionTrigger>Kann ich anpassen, welche Felder beibehalten werden sollen?</AccordionTrigger>
+    <AccordionContent>
+      Ja, bearbeiten Sie das Komprimierungsskript, um bei Bedarf zusätzliche Felder für Ihren Workflow beizubehalten.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

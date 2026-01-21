@@ -1,0 +1,220 @@
+---
+title: /habilidade:lista
+description: Liste todas as habilidades instaladas com suas descrições e status
+---
+# /habilidade:lista
+
+Exiba todas as habilidades instaladas em __NOTRASLATE_15__ com seus metadados e informações de arquivo.
+
+## Início rápido
+
+```bash
+/agileflow:skill:list
+```
+
+Mostra todas as habilidades instaladas com descrições, contagens de arquivos e status do MCP.
+
+## O que faz
+
+Verifica suas habilidades instaladas e exibe:
+
+- **Nomes de habilidades** - Identificador de SKILL.md
+- **Descrições** - Finalidade e casos de uso
+- **Contagem de arquivos** - Quantos arquivos em cada habilidade
+- **Entradas do livro de receitas** - Fluxos de trabalho de casos de uso incluídos
+- **Status do MCP** - Se o MCP está configurado
+- **Recomendações de ação** - O que fazer a seguir
+
+## Parâmetros
+
+Este comando não possui parâmetros.
+
+```bash
+/agileflow:skill:list
+```
+
+## Formato de saída
+
+Exemplo de saída com múltiplas habilidades:
+
+```
+📦 Installed Skills (4 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+supabase-swift
+  Supabase database operations for Swift iOS apps
+  └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
+     cookbook/crud.md, .mcp.json
+  MCP: ✓ Configured
+
+ui-components
+  React component patterns with accessibility
+  └─ 4 files: SKILL.md, references.md, cookbook/create.md,
+     cookbook/styling.md
+
+api-error-handling
+  REST API error handling patterns
+  └─ 3 files: SKILL.md, references.md, cookbook/http-errors.md
+
+typescript-patterns
+  TypeScript best practices and type patterns
+  └─ 2 files: SKILL.md, references.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Compreendendo o resultado
+
+### Entrada de habilidade
+
+Cada habilidade mostra:
+
+1. **Nome** – Identificador da habilidade (por exemplo, __NOTRASLATE_16__)
+2. **Descrição** - Do conteúdo inicial da habilidade
+3. **Arquivos** - Detalhamento dos arquivos incluídos:
+   - __NOTRASLATE_17__ - Arquivo de habilidade principal (sempre presente)
+   - __NÃORANSLATE_18__ – Links de documentação (geralmente presentes)
+   - __NOTRASLATE_19__ - Fluxos de trabalho de casos de uso
+   - __NOTRASLATE_20__ - configuração do servidor MCP (se aplicável)
+4. **Status MCP** - "✓" se __NOTRASLATE_21__ existir e estiver configurado
+
+### Informações do arquivo
+
+A contagem de arquivos inclui:
+
+- **SKILL.md** - 1 arquivo
+- **references.md** - 1 arquivo (se existir)
+- **cookbook/** - Vários arquivos (um por caso de uso)
+- **.mcp.json** - 1 arquivo (se configurado)
+
+Exemplo de detalhamento:
+__NOTRADUZIR_3__
+
+## Exemplos
+
+### Listar todas as habilidades
+
+__NÃOTRADUZIR_4__
+
+**Resposta:**
+__NOTRADUZIR_5__
+
+### Nenhuma habilidade instalada
+
+Se você ainda não criou nenhuma habilidade:
+
+__NOTRADUZIR_6__
+
+## Próximas ações
+
+Depois de listar as habilidades, você terá opções:
+
+__NÃOTRADUZIR_7__
+
+### Selecione uma ação
+
+Escolha uma opção para:
+
+- **Criar nova habilidade** → __NOTRASLATE_22__
+- **Editar uma habilidade** → __NOTRASLATE_23__
+- **Excluir uma habilidade** → __NOTRASLATE_24__
+- **Teste uma habilidade** → __NOTRASLATE_25__
+- **Concluído** → Sair
+
+## Estrutura de habilidades
+
+Cada diretório de habilidades ccontém:
+
+__NÃOTRADUZIR_8__
+
+## Verificando detalhes de habilidades
+
+Para ver mais detalhes sobre uma habilidade específica:
+
+__NOTRADUZIR_9__
+
+## Status do MCP
+
+O indicador MCP mostra se uma habilidade está configurada para acesso a ferramentas:
+
+- **✓ Configurado** - __NOTRASLATE_26__ existe e ferramentas MCP estão disponíveis
+- *Sem indicador* - Nenhum MCP configurado (ainda utilizável sem ferramentas)
+
+Para adicionar MCP a uma habilidade:
+
+__NOTRADUZIR_10__
+
+## Melhores práticas
+
+### Habilidades de organização
+
+Agrupar habilidades relacionadas por domínio:
+
+- **Camada de dados**: `supabase-swift`, `postgresql-queries`, `mongodb-patterns`
+- **Camada API**: `rest-api-errors`, `graphql-schema`, `webhooks`
+- **Camada de IU**: `react-components`, `accessibility-wcag`, `tailwind-patterns`
+- **DevOps**: `github-actions`, `docker-deployment`, `kubernetes`
+
+### Auditorias Regulares
+
+Execute periodicamente __NOTRASLATE_39__ para:
+
+1. Verifique se há habilidades não utilizadas
+2. Verifique a configuração do MCP
+3. Identifique competências que precisam de atualização
+4. Veja a contagem total de habilidades
+
+### Limpando
+
+Exclua habilidades que você não usa mais:__NOTRADUZIR_11__
+
+Isso mantém seu diretório de habilidades focado e mais fácil de gerenciar.
+
+## Solução de problemas
+
+### Diretório de habilidades ausente
+
+Se você vir "Nenhuma habilidade instalada ainda" e as habilidades esperadas:
+
+1. Verifique se __NOTRASLATE_40__ existe:
+   ```bash
+   ls -la .claude/skills/
+   ```
+
+2. Verifique se os arquivos SKILL.md existem nos subdiretórios:
+   __NÃOTRADUZIR_13__
+
+3. Garanta permissões de leitura adequadas no diretório
+
+### Informações de habilidade incompletas
+
+Se uma habilidade mostrar metadados incompletos:
+
+1. O arquivo SKILL.md pode ter frontmatter corrompido
+2. Execute __NOTRASLATE_41__ para diagnosticar
+3. Edite com __NOTRASLATE_42__ para corrigir
+
+### MCP não aparece
+
+Se você espera o MCP, mas não vê "✓ Configurado":
+
+1. Verifique se __NOTRASLATE_43__ existe:
+   __NOTRADUZIR_14__
+
+2. Verifique se a sintaxe JSON é válida
+3. Atualize ou edite a habilidade para corrigir a configuração do MCP
+
+## Comandos Relacionados
+
+- [`/skill:create`__NOTRASLATE_53__ - Gerar uma nova habilidade
+- [`/skill:edit`](/commands/skill-edit) - Modificar uma habilidade existente
+- [`/skill:test`](/commands/skill-test) - Verse uma habilidade funciona
+- [`/skill:delete`](/commands/skill-delete) - Remover uma habilidade
+- [`/skill:upgrade`__NOTRASLATE_57__ - Adicionar capacidade de aprendizagem
+
+## Próximas etapas
+
+1. **Liste suas habilidades**: `/agileflow:skill:list`
+2. **Crie mais habilidades**: `/agileflow:skill:create`
+3. **Teste uma habilidade**: __NOTRASLATE_51__
+4. **Permitir aprendizagem**: `/agileflow:skill:upgrade <skill-name>`

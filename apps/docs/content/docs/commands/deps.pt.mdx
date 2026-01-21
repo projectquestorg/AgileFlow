@@ -1,0 +1,171 @@
+---
+title: /deps
+description: Visualize o gráfico de dependência com detecção de caminho crítico
+---
+# /deps
+
+Visualize e analise gráficos de dependências históricas/épicas com detecção de caminho crítico, identificação de dependência circular e recomendações acionáveis.
+
+## Início rápido
+
+```bash
+/agileflow:deps
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `SCOPE` | Não | `all` | `story`, `epic` ou `all` - escopo de visualização |
+| `EPIC` | Não | - | Mostrar dependências dentro de um épico específico (por exemplo, __NOTRASLATE_21__) |
+| `STORY` | Não | - | Mostrar dependências para uma história específica (por exemplo, __NOTRASLATE_23__) |
+| `FORMAT` | Não | `ascii` | Formato de saída: `ascii`, `mermaid`, `graphviz` ou `json` |
+| `ANALYSIS` | Não | `all` | Tipo de análise: `critical-path`, `circular`, `blocking` ou `all` |
+
+## Exemplos
+
+### Ver gráfico de dependência completo
+
+__NOTRANSATRASADO_1__
+
+Mostra gráfico ASCII de todas as histórias e suas dependências com indicadores de status, caminho crítico e análise de história de bloqueio.
+
+### Analisar dependências épicas
+
+```bash
+/agileflow:deps EPIC=EP-0010
+```
+
+Visualiza dependências apenas dentro do épico de autenticação, ajudando a entender a ordem de trabalho.
+
+### Verifique dependências específicas da história
+
+__NOTRADUZIR_3__
+
+Mostra do que essa história depende e quais histórias dependem dela, além de análise de impacto.
+
+### Exportar como diagrama de sereia
+
+__NÃOTRADUZIR_4__
+
+Gera formato de diagrama Mermaid adequado para documentação ou GitHub.
+
+### Encontre apenas o caminho crítico
+
+__NOTRADUZIR_5__
+
+Mostra apenas o caminho de dependência mais longo (gargalo para conclusão do projeto).
+
+### Detectar dependências circulares
+
+__NOTRADUZIR_6__
+
+Verifica ciclos impossíveis de concluir e sugere soluções.
+
+## Formato de saída
+
+### Gráfico ASCII (padrão)
+
+__NÃOTRADUZIR_7__
+
+### Formato do Diagrama da Sereia
+
+<imagem>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/commands/deps-graph.dark.svg" />
+  <img alt="Exemplo de gráfico de dependência" src="/images/docs/commands/deps-graph.light.svg" />
+</imagem>
+
+## Tipos de análise
+
+### Caminho Crítico
+**Mostra**: A cadeia de dependência mais longa do início ao fim
+
+Ajuda a identificar:
+- Quais histórias são gargalos
+- Caminho mais crítico para a conclusão do projeto
+- Onde os atrasos têm impacto máximo
+- Histórias para priorizar para conclusão
+
+__NÃOTRADUZIR_8__
+
+### Dependências Circulares
+**Programas**: histórias que dependem umas das outras em um ciclo
+
+Exemplo de problema de dependência circular:
+__NOTRADUZIR_9__
+
+**Como corrigir**:
+1. Revise o projeto arquitetônico
+2. Quebre a dependência introduzindo abstração
+3. Crie uma história de interface/contrato
+4. Refatore uma história para quebrar o ciclo
+
+### Bloqueio de histórias
+**Programas**: histórias que bloqueiam a maioria dos outros trabalhos
+
+Identifica gargalos de alto impacto:
+__NOTRADUZIR_10__
+
+## Indicadores de status da história
+
+| Indicador | Significado | Ação |
+|-----------|---------|--------|
+| ✅ Concluído | História concluída | Não bloqueia mais os outros |
+| 🟢 Pronto | Pronto para desenvolvimentonão | Pode ser iniciado a qualquer momento |
+| 🟡 Em andamento | Atualmente em trabalho | Monitorar atrasos |
+| 🔵 Em Revisão | Aguardando aprovação | Pode ser concluído em breve |
+| ⚪ Bloqueado | Esperando nas dependências | Não é possível iniciar até ser desbloqueado |
+
+## Cenários Comuns
+
+### Cenário: a história tem alta prioridade, mas está bloqueada
+
+__NOTRADUZIR_11__
+
+### Cenário: Encontrada uma Dependência Circular
+
+```text
+❌ Services have circular dependency
+
+Current: Auth → User → Session → Auth (cycle)
+
+Solution:
+  1. Create US-0055: "Auth/User service contract"
+  2. Make all three depend on US-0055 (new foundation)
+  3. Now: Auth/User/Session → US-0055 (no cycle)
+```
+
+### Cenário: história do caminho crítico em risco
+
+__NÃOTRADUZIR_13__
+
+## Oportunidades de trabalho paralelo
+
+O comando identifica histórias que podem ser trabalhadas em paralelo:
+
+__NOTRADUZIR_14__
+
+## Integração com outros comandos
+
+- **Antes do planejamento do sprint**: execute __NOTRASLATE_36__ para entender os riscos
+- **Durante o sprint**: monitore o caminho crítico com __NOTRASLATE_37__
+- **Ao investigar bloqueadores**: Use __NOTRASLATE_38__ para ver o que depende desta história
+- **Ao adicionar dependências**: execute novamente para verificar novos riscos
+- **Quando uma história é bloqueada**: Use __NOTRASLATE_39__ para ver a cadeia
+
+## Melhores práticas
+
+- **Verifique antes de cada primaverat** - As dependências podem mudar conforme as histórias são refinadas
+- **Priorize histórias de bloqueio** - Inicie bloqueadores de alto impacto antecipadamente
+- **Monitore o caminho crítico** - As histórias sobre o caminho crítico merecem atenção extra
+- **Detectar ciclos antecipadamente** - Execute __NOTRASLATE_40__ regularmente
+- **Trabalho dependente da sequência** - Comece primeiro as histórias fundamentais
+- **Documente as dependências claramente** - Use o frontmatter da história para vincular dependências
+
+## Comandos Relacionados
+
+- [`/sprint`](/commands/sprint) - O planejamento do sprint respeita as dependências
+- [`/board`](/commands/board) - Ver progresso do sprint e bloqueadores
+- [__NOTRASLATE_43____NOTRASLATE_48__ - Rastreie e resolva histórias bloqueadas
+- [`/story-validate`__NOTRASLATE_49__ - Validar dependências existentes
+- [`/metrics`](/commands/metrics) - Correlacionar tempo de ciclo com profundidade de dependência

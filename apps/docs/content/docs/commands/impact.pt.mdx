@@ -1,0 +1,390 @@
+---
+title: /impacto
+description: Analise o impacto da mudança na base de código
+---
+# /impacto
+
+Analise o impacto das alterações de código em outras partes da sua base de código para evitar regressões. A detecção de impacto identifica arquivos, testes e recursos afetados e, em seguida, sugere quais testes executar e o que pode falhar.
+
+## Início rápido
+
+```bash
+# Auto-detect changes on current branch
+/agileflow:impact
+
+# Analyze specific files
+/agileflow:impact FILES=src/api/auth.ts,src/middleware/jwt.ts
+
+# Skip test execution
+/agileflow:impact RUN_TESTS=no
+```
+
+O comando irá:
+1. Identifique os arquivos alterados
+2. Mapear dependências (diretas e indiretas)
+3. Encontre testes relacionados
+4. Detecte alterações significativas
+5. Gere relatório de impacto
+6. Opcionalmente, execute testes afetados
+
+## Principais recursos
+
+### Análise de Gráfico de Dependência
+
+O Impact cria automaticamente um gráfico de dependência:
+
+```text
+Your Change: src/api/auth.ts
+  ├─ Direct dependents (files that import this)
+  │  ├─ src/api/auth/index.ts
+  │  ├─ src/middleware/auth.ts
+  │  └─ tests/api/auth/login.test.ts
+  └─ Indirect dependents (2-level chain)
+     ├─ src/app.ts
+     ├─ src/routes.ts
+     └─ [more...]
+```
+
+### Teste de descoberta
+
+Encontra automaticamente testes que precisam ser executados:
+
+```text
+Critical (Always Run):
+  ✓ tests/api/auth/login.test.ts
+  ✓ tests/integration/auth-flow.test.ts
+
+Recommended (Affected Indirectly):
+  ⚠️  tests/api/users/*.test.ts
+  ⚠️  tests/e2e/login.spec.ts
+
+Optional (Low Risk):
+  - tests/components/Header.test.tsx
+```
+
+### Detecção de alterações significativas
+
+Identifica alterações na assinatura da função:
+
+__NOTRADUZIR_3__
+
+### Mapeamento de Cobertura
+
+Mostra a cobertura do teste para código alterado:
+
+__NÃOTRADUZIR_4__
+
+## Uso
+
+### Básico - detecção automática de alterações
+
+__NOTRADUZIR_5__
+
+Usa git para encontrar alterações na ramificação atual e analisar o impacto.
+
+### Analise arquivos específicos
+
+__NOTRADUZIR_6__
+
+Umanalisa apenas os arquivos listados (útil para análise manual).
+
+### Ramo base diferente
+
+__NÃOTRADUZIR_7__
+
+Compara com o desenvolvimento em vez do principal/mestre.
+
+### Ignorar a execução do teste
+
+__NÃOTRADUZIR_8__
+
+Mostra análise de impacto, mas não executa testes.
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `FILES` | Não | Detecção automática | Caminhos de arquivo separados por vírgula |
+| `BASE` | Não | principal/mestre | Ramo base para comparação |
+| `RUN_TESTS` | Não | sim | Execute testes afetados |
+
+## Exemplos
+
+### Mudanças típicas de recursos
+
+__NOTRADUZIR_9__
+
+### Mudança de middleware de segurança
+
+__NOTRADUZIR_10__
+
+### Detecção de alterações significativas
+
+__NOTRADUZIR_11__
+
+## Estrutura do relatório de impacto
+
+### Cabeçalho
+
+```text
+# Impact Analysis Report
+
+**Branch**: feature/user-auth
+**Base**: main
+**Changed Files**: 5
+**Potentially Affected Files**: 23
+**Tests to Run**: 12
+```
+
+### Impactos diretos
+
+Para cada arquivo alterado:
+
+__NÃOTRADUZIR_13__
+
+## Métodos de Análise
+
+### Análise Estática
+
+O Impact usa análise de código estático (sem código em execução):
+
+- Analisar instruções de importação/exigência
+- Construir dependência grah
+- Identificar dependências circulares
+- Encontre código exportado, mas não utilizado
+- Mapear relacionamentos de arquivos
+
+**Benefícios**: Rápido, não requer compilação/testes para execução, captura alterações de importação
+
+### Mapeamento de cobertura de teste
+
+Mapas mudaram de linha para testes:
+
+- Lê relatórios de cobertura (se disponível)
+- Combina números de linha com arquivos de teste
+- Identifica alterações descobertas
+- Sugere adições de teste
+
+### Correspondência de padrões
+
+Correspondência inteligente de padrões para testes relacionados:
+
+| Alterar tipo | Padrão |
+|------------|---------|
+| Rota API alterada | Procure por `routes.test.ts`, __NOTRASLATE_35__ |
+| Componente alterado | Procure por `*.test.tsx`, `*.stories.tsx` |
+| Serviço alterado | Procure por __NOTRASLATE_38__, testes de integração |
+| Tipo alterado | Procure por __NOTRASLATE_39__ que usam o tipo |
+
+## Mudanças significativas
+
+O Impact detecta alterações significativas:
+
+### Alteração de assinatura de função
+
+__NOTRADUZIR_14__
+
+### Exportação removida
+
+__NÃOTRADUZIR_15__
+
+### Alteração de tipo
+
+__NOTRADUZIR_16__
+
+## Recomendações de teste
+
+O impacto sugere quais testes devem ser realizadoso run:
+
+### Critical (Always Run)
+
+- Direct unit tests for changed files
+- Tests that specifically target the changed code
+- All tests that import changed file
+
+### Recommended (Run if Time Permits)
+
+- Integration tests using changed files
+- End-to-end tests through changed features
+- Tests of dependent features
+
+### Optional (Low Risk)
+
+- Peripheral tests
+- Tests with indirect dependency chains
+- Tests of unrelated features
+
+## Actions After Analysis
+
+### 1. Review Impact Summary
+
+```text
+Changed: 3 files
+Affected: 8 files
+Tests: 5 need to run
+```
+
+### 2. Run Tests (if RUN_TESTS=yes)
+
+```text
+Running critical tests...
+✅ tests/api/auth/login.test.ts (12 tests, 345ms)
+✅ tests/middleware/auth.test.ts (8 tests, 234ms)
+⚠️  tests/integration/auth-flow.test.ts (3 tests, FAILED)
+
+Test Results: 20 passed, 3 failed
+```
+
+### 3. Handle Failures
+
+If tests fail:
+
+```text
+Tests failed. Options:
+1. Fix code and re-run tests
+2. Create story for regression
+3. Skip and investigate later
+
+What should we do?
+```
+
+### 4. Handle Breaking Changes
+
+If breaking changes detected:
+
+```text
+⚠️  Breaking changes found!
+
+These functions changed signature:
+- login() in src/api/auth.ts
+
+3 callers need to be updated:
+- src/middleware/auth.ts:45
+- tests/api/auth/login.test.ts:23
+
+Create stories to update these files?
+```
+
+## Visualization
+
+Impact can visualize dependency trees:
+
+```text
+src/api/auth/login.ts (CHANGED)
+├── src/api/auth/index.ts (direct)
+│   ├── src/app.ts (indirect)
+│   └── src/routes.ts (indirect)
+├── src/middleware/auth.ts (direct)
+│   └── src/app.ts (indirect)
+└── tests/api/auth/login.test.ts (test)
+```
+
+## Integration with CI
+
+Suggest optimized CI that only runs affected tests:
+
+```yaml
+- name: Impact analysis
+  run: npx claude-code /agileflow:impact BASE=main
+
+- name: Run affected tests
+  run: npm test -- $(cat affected-tests.txt)
+
+- name: Check for breaking changes
+  run: |
+    if grep -q "BREAKING CHANGE" impact-report.md; then
+      echo "::warning::Breaking changes detected"
+    fi
+```
+
+## Use Cases
+
+### Before submitting PR
+
+```bash
+# Check impact of your changes
+/agileflow:impact
+
+# Run the recommended tests
+# If any fail, fix before submitting PR
+```
+
+### After code review feedback
+
+```bash
+# You made changes based on review
+/agileflow:impact
+
+# Make sure nothing broke
+# Re-run affected tests
+```
+
+### Beantes de mesclar com principal
+
+```bash
+# Final check before merge
+/agileflow:impact BASE=main
+
+# Ensure no regressions
+# All critical tests passing
+```
+
+### Refatorando segurança
+
+```bash
+# Before large refactor
+/agileflow:baseline "Before refactor"
+
+# Make changes
+# Check impact
+/agileflow:impact
+
+# If breaking changes, understand them
+# Update callers accordingly
+```
+
+## Dicas
+
+### Execute o impacto com antecedência e frequência
+
+```bash
+# After each major change
+/agileflow:impact
+
+# Catch breakage early
+# Easier to fix one change than many
+```
+
+### Preste atenção aos impactos indiretos
+
+```text
+Direct impact: 3 affected files
+Indirect impact: 8 more affected files
+
+Fixing direct isn't enough - test indirects too
+```
+
+### A cobertura do teste é importante
+
+```text
+87% coverage = 13% of changes untested
+Missing tests = potential bugs from untested paths
+
+Add tests for uncovered lines
+```
+
+### Mudanças radicais exigem coordenação
+
+```text
+⚠️  Function signature changed
+Need to update 5 callers
+Create stories to track the updates
+```
+
+## Comandos Relacionados
+
+- [`/review`](/commands/review) - Revisão de qualidade do código
+- [`/verify`__NOTRASLATE_46__ - Executar testes
+- [`/pr`](/commands/pr) - Gerar PR com notas de impacto
+- [`/babysit`](/commands/babysit) - Orientação de implementação (impacto de execução)
+- [`/baseline`](/commands/baseline) - Criar ponto de verificação verificado

@@ -1,0 +1,404 @@
+---
+title: /garder les enfants
+description: Mentor interactif pour la mise en œuvre de fonctionnalités de bout en bout
+---
+# /garde d'enfants
+
+Un mentor interactif qui vous guide tout au long de la mise en œuvre de fonctionnalités allant des exigences en anglais simple aux demandes d'extraction complétées. Babysit combine une collecte de contexte automatisée, des suggestions de tâches intelligentes et une assistance pratique au code.
+
+## Démarrage rapide
+
+```bash
+/agileflow:babysit
+```
+
+La commande va :
+1. Rassemblez tout le contexte du projet (histoires, épopées, tests, documentation)
+2. Présentez des suggestions de tâches intelligentes basées sur la priorité et l'état de préparation
+3. Vous guider pas à pas dans la mise en œuvre
+4. Mettez à jour le statut de votre projet pendant que vous travaillez
+5. Générez des descriptions de relations publiques lorsque vous êtes prêt
+
+## Principales fonctionnalités
+
+### Suggestions de tâches intelligentes
+
+Lorsque vous démarrez `/babysit`, il analyse votre projet et recommande :
+
+- **Histoires PRÊTES** (tous les AC terminés, tests annulés) - Priorité la plus élevée
+- **Histoires bloquées** (avec chemins de déblocage clairs) - Haute priorité
+- **Épopées presque complètes** (plus de 80 % d'histoires terminées) - Terminez ce que vous avez commencé
+- **Priorités de la feuille de route** - Travaux stratégiques importants
+- ** Lacunes dans la recherche ** - Travail préparatoire à l'avdébogage oid plus tard
+
+Les tâches sont classées en fonction de ce qu'un vrai développeur prioriserait, et pas seulement par récence ou par ordre.
+
+### Conseils pratiques de mise en œuvre
+
+Pour chaque histoire ou long métrage :
+
+```text
+1. Validate story readiness (acceptance criteria, tests)
+2. Read architecture context relevant to the task
+3. Plan implementation in small steps
+4. Apply code changes incrementally with diffs
+5. Run tests after each change
+6. Update project status as you progress
+7. Generate PR description when complete
+```
+
+### Apparition d'experts en agents
+
+Pour les travaux complexes, babysit détecte automatiquement le domaine et fait apparaître des spécialistes :
+
+- **Travail de base de données** → Expert AG-DATABASE
+- **Points de terminaison API** → Expert AG-API
+- **Composants UI** → Expert AG-UI
+- **Tests** → Expert AG-TESTING
+- **Documentation** → Expert AG-DOCUMENTATION
+
+Les spécialistes gèrent un travail approfondi et ciblé tandis que le baby-sitter coordonne le flux global.
+
+### Suivi des progrès
+
+Tout le travail est suivi avec une liste de tâches :
+
+```text
+1. Run context script (loads all project state)
+2. Present task suggestions
+3. Read task-specific documentation
+4. Validate story readiness
+5. Plan implementation steps
+6. Apply code changes with tests
+7. Update project status
+8. Generate PR description
+9. Mark complete
+```
+
+Vous pouvez voir exactement où vous êtes et ce qui reste.
+
+## Utilisation
+
+### Basic – Laisser le babysitting suggérer du travail
+
+```bash
+/agileflow:babysit
+```
+
+Babysit analysera votre projet et vous demandera sur quoi vous aimeriez travailler.
+
+### Reprendre le travail existant
+
+```bash
+/agileflow:babysit
+```
+
+Si vous avez des histoires en statut `in_progress`, babysit vous proposera de les reprendre.
+
+### Travailler sur des spécificitésc histoire
+
+Vous pouvez dire à babysit « Je veux travailler sur US-0042 » et cela :
+- Charger le fichier d'histoire
+- Validez c'est prêt
+- Planifier la mise en œuvre
+- Vous guider dans sa construction
+
+## Paramètres
+
+Babysit accepte la saisie libre en langage naturel :
+
+| Entrée | Effet |
+|-------|--------|
+| `"Add user profile page"` | Créer une nouvelle fonctionnalité ou trouver une histoire correspondante |
+| `"US-0042"` | Travailler sur une histoire spécifique |
+| `"Continue"` | Reprendre la dernière histoire sur laquelle vous travailliez |
+| `"What should I work on?"` | Obtenir des recommandations (par défaut) |
+
+## Mode boucle autonome
+
+Babysit prend en charge l'exécution autonome via le **Mode Boucle**, qui traite automatiquement l'intégralité des histoires d'une épopée.
+
+### Démarrage rapide
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+```
+
+### Comment ça marche
+
+```text
+1. Initialize loop for epic
+2. Load first "ready" story
+3. Work on implementation
+4. When Claude stops → Stop hook runs tests
+   - If tests PASS → mark story complete, load next
+   - If tests FAIL → show errors, continue fixing
+5. Repeat until epic complete or max iterations
+```
+
+### Paramètres
+
+| Paramètre | Obligatoire | Par défaut | Descriptif |
+|-----------|----------|---------|-------------|
+| `EPIC` | Oui | - | ID Epic à traiter (par exemple, EP-0042) |
+| `MODE` | Oui | - | Doit être `loop` pour le mode autonome |
+|`MAX` | Non | 20 | Itérations maximales (limite de sécurité) |
+
+### Contrôle de boucle
+
+```bash
+# Check loop status
+node scripts/ralph-loop.js --status
+
+# Stop the loop manually
+node scripts/ralph-loop.js --stop
+
+# Reset loop state
+node scripts/ralph-loop.js --reset
+```
+
+### Quand utiliser le mode boucle
+
+**Convient pour :**
+- Traiter une épopée bien définie avec des histoires claires
+- Développement piloté par les tests (les tests définissent "terminé")
+- Traitement par lots de plusieurs histoires
+
+**Pas bon pour :**
+- Travaux exploratoires sans critères d'acceptation clairs
+- Histoires nécessitant un examen humain avant de continuer
+- Travaux multi-domaines complexes nécessitant une coordination
+
+Pour une documentation complète sur le mode boucle, y compris le mode visuel et le mode de couverture, consultez le [Guide des fonctionnalités du mode boucle](/features/loop-mode).
+
+### Exemple de séance
+
+```text
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+
+→ Ralph Loop Initialized
+  Epic: EP-0042
+  Stories: 5 ready, 7 total
+  Starting: US-0015 "Add user authentication"
+
+[Claude implements US-0015...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0015 complete
+  → Moving to US-0016
+
+[Claude implements US-0016...]
+
+→ Stop Hook: Running tests...
+  ✗ 2 tests failing
+  → Fix errors and continue
+
+[Claude fixes tests...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0016 complete
+  → Moving to US-0017
+
+[...continues until epic complete...]
+
+→ EPIC COMPLETE!
+  EP-0042 finished in 12 iterations
+  5 stories completed
+```
+
+## Exemples
+
+### Commencer une nouvelle implémentation
+
+```bash
+/agileflow:babysit
+# Babysit suggests: "US-0042: User Login API is READY"
+# You confirm → Implementation begins
+# Babysit guides through: Plan → Code → Test → PR
+```
+
+### Terminez plusieurs histoires connexes
+
+```bash
+/agileflow:babysit
+# Babysit shows: "EP-0005 is 80% done. 1 story left: US-0051"
+# You accept → Start final story
+# Babysit tracks progress
+# When done → Ready for baseline or release
+```
+
+### Exigences inconnues
+
+```bash
+/agileflow:babysit
+# You: "I want user authentication but not sure the best way"
+# Babysit: "Should I research JWT vs sessions first? This prevents debugging later"
+# You: "Yes, research"
+# Babysit: Runs /agileflow:research:ask, saves findings, then plans implementation
+```
+
+## Présentation du flux de travail
+
+```text
+Start → Gather Context → Suggest Tasks → Choose Task
+  ↓
+Read Story & Architecture → Validate Readiness → Plan Steps
+  ↓
+Implement Code → Run Tests → Update Status
+  ↓
+Generate PR → Finish
+```
+
+## Définition de Prêt
+
+Avant la mise en œuvre, babysit vérifie que les histoires ont :
+
+- ✓ Critères d'acceptation (format Donné/Quand/Alors)
+- ✓ Contexte d'architecture aveccitations des sources
+- ✓ Talons de test dans docs/07-testing/
+- ✓ Dépendances résolues et documentées
+- ✓ Aperçus précédents d'histoires connexes
+
+S'il en manque, babysit vous proposera de les compléter en premier (les histoires restent « en brouillon » jusqu'à ce qu'elles soient prêtes).
+
+## Chargement du contexte
+
+Lorsque vous démarrez babysit, il exécute automatiquement ce script contextuel :
+
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+Cette unique commande regroupe :
+- Statut Git, branche, modifications non validées
+- Toutes les histoires et épopées de status.json
+- État de la session et sessions actives
+- Structure documentaire
+- Notes de recherche (les plus récentes en premier)
+- Messages récents des agents
+- Présence du dossier clé
+
+Un appel de script, un contexte complet, un démarrage rapide.
+
+## Quand l'utiliser
+
+### Idéal pour
+
+- **Démarrage de la mise en œuvre** - Besoin de conseils sur les points sur lesquels travailler
+- **Reprise à mi-fonctionnalité** - Reprendre là où vous vous étiez arrêté
+- **Achèvement épique** - Terminez les histoires finales dans un ensemble de fonctionnalités
+- **Exigences incertaines** - Questions de recherche avant de coder
+- **Fonctionnalités en plusieurs étapes** - Travail complexe sur plusieurs fichiers
+- **Testsvalidation** - S'assurer que les tests réussissent avant le PR
+
+### Pas pour
+
+- **Corrections rapides** (fautes de frappe, one-liners) - Faites-les vous-même
+- **Recherche pure** - Utilisez plutôt `/agileflow:research:ask`
+- **Décisions architecturales** - Utilisez plutôt `/agileflow:adr`
+- **Documentation uniquement** - Utilisez plutôt `/agileflow:docs`
+
+## Style de sortie
+
+Babysit utilise des résultats clairs et exploitables :
+
+- **Titres** pour les sections principales
+- **Puces courtes** pour les options et les explications
+- **Blocs de code** pour les différences et les exemples
+- **Questions** pour guider vos décisions (ne vous demande jamais de "taper")
+- **Mises à jour de progression** pendant que vous travaillez
+
+Chaque réponse se termine par une question sur l'étape suivante afin que vous ayez toujours le contrôle.
+
+## Intégration avec d'autres commandes
+
+Babysit fonctionne avec d'autres commandes AgileFlow :
+
+| Tâche | Commande |
+|------|--------------|
+| Besoin de vérifier des tests ? | `/agileflow:verify` |
+| Besoin d'une description des relations publiques ? | `/agileflow:pr` |
+| Besoin d'une révision de code ? | `/agileflow:review` |
+| Vous voulez d’abord faire des recherches ? | `/agileflow:research:ask` |
+| Besoin d’une analyse d’impact ? | `/agileflow:impact` |
+| Prêt pour la ligne de base ? | `/agileflow:baseline` |
+
+## Conseils
+
+### Obtenez de meilleures suggestions
+
+- Gardez le backlog de votre histoire dans status.json
+- Rédiger des critères d'acceptation clairs
+- Marquer les histoires comme prêtes une fois terminées
+- Garder les documents d'architecture à jour
+
+### Implémentations réussies
+
+- Laissez le babysitting valider d'abord la préparation de l'histoire
+- Lire la section contexte architecture
+- Mettre en œuvre par petites étapes (pas toutes en même temps)
+- Exécuter des tests après chaque changement
+- Demandez de l'aide si vous êtes bloqué
+
+### Orchestration multi-experts
+
+Pour les fonctionnalités complexes, babysit va automatiquement :
+- Expert API Spawn pour le travail backend
+- Expert en interface utilisateur Spawn pour le travail frontend
+- Exécuter les deux en parallèle s'ils sont indépendants
+- Coordonner l'intégration finale
+
+Vous n'avez pas besoin de gérer manuellement plusieurs agents : babysit s'en charge.
+
+## Modèles courants
+
+### "Je ne sais pas sur quoi travailler"
+
+```text
+/agileflow:babysit
+→ Babysit shows ranked suggestions
+→ Pick the one that interests you
+→ Let babysit guide the implementation
+```
+
+### "Je veux finir cette épopée"
+
+```text
+/agileflow:babysit
+→ "EP-0005 is 80% done, 2 stories left"
+→ Choose story
+→ Complete it with babysit's guidance
+→ Move to next story
+→ When done: /agileflow:baseline "EP-0005 complete"
+```
+
+### "Je dois d'abord faire des recherches là-dessus"
+
+```text
+/agileflow:babysit
+→ "Need to understand JWT patterns first?"
+→ "Yes, research"
+→ /agileflow:research:ask TOPIC="JWT best practices"
+→ Copy research results back
+→ Babysit plans implementation based on research
+→ Code with confidence
+```
+
+## Commandes associées
+
+- [`/epic`](/commands/epic) – Créez une nouvelle épopée avec des histoires
+- [`/story`](/commands/story) - Créer des histoires individuelles
+- [`/verify`](/commands/verify) - Exécuter des tests
+- [`/pr`](/commands/pr) - Générer une demande d'extraction
+- [`/review`](/commands/review) - Révision du code
+- [`/impact`](/commands/impact) - Analyser l'impact du changement
+- [`/context`](/commands/context) - Recherche et contexte
+- [`/baseline`](/commands/baseline) - Créer un point de contrôle vérifié
+
+## Fonctionnalités associées
+
+-[Loop Mode](/features/loop-mode) - Documentation complète pour le traitement autonome des histoires
+-[Visual Mode](/features/visual-mode) - Vérification de capture d'écran pour le développement de l'interface utilisateur
+-[Compact Context](/features/compact-context) - Préservation du contexte lors de longues sessions

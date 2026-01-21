@@ -1,0 +1,228 @@
+---
+title: Plantillas de especificación de componentes
+description: Plantillas estandarizadas para documentar componentes de la interfaz de usuario con accesorios, accesibilidad y ejemplos de uso.
+---
+import { ComponentSpec, CopyComponent } from "@/components/component-spec"
+
+# Plantillas de especificación de componentes
+
+Esta guía cubre cómo documentar los componentes de la interfaz de usuario utilizando las plantillas de especificaciones estandarizadas proporcionadas por AgileFlow.
+
+## Descripción general
+
+Cada componente debe tener:
+- **Tabla de accesorios** - Generada automáticamente a partir de tipos de TypeScript
+- **Declaración de importación** - Cómo importar el componente
+- **Ejemplo de uso** - Ejemplo de código básico
+- **Lista de verificación de accesibilidad** - Estado de cumplimiento de las WCAG
+- **Botón Copiar** - Copia de componentes con un solo clic
+
+## Ejemplo de especificación de componente
+
+A continuación se muestra un ejemplo de un componente completamente documentado:
+
+<ComponentSpec
+  name="Button"
+  description="A versatile button component supporting multiple variants and sizes."
+  importStatement={__NOTRANSLATE_3__}
+  props={[
+    {
+      name: "variant",
+      type: '"default" | "destructive" | "outline" | "secondary" | "ghost" | "link"',
+      description: "The visual style of the button",
+      default: '"default"',
+    },
+    {
+      name: "size",
+      type: '"default" | "sm" | "lg" | "icon"',
+      description: "The size of the button",
+      default: '"default"',
+    },
+    {
+      name: "asChild",
+      type: "boolean",
+      description: "Render as child component (for composition)",
+      default: "false",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description: "Whether the button is disabled",
+      default: "false",
+    },
+  ]}
+  usageExample={`<Button variant="default" size="sm">
+  Haz clic en mí
+</Button>
+
+<Button variant="destructive" disabled>
+  Eliminar
+</Button>
+
+<Button asChild>
+  <a href="/docs">Ir a Documentos</a>
+</Button>`}
+  accesibilidad={[
+    {
+      etiqueta: "Accesible por teclado",
+      estado: "pasar",
+      descripción: "Se puede activar con la tecla Enter o Espacio",
+    },
+    {
+      etiqueta: "Enfoque visible",
+      estado: "pasar",
+      descripción: "Tiene un anillo de enfoque visible para los usuarios del teclado",},
+    {
+      etiqueta: "Estado deshabilitado anunciado",
+      estado: "pasar",
+      descripción: "Los lectores de pantalla anuncian el estado deshabilitado",
+    },
+    {
+      etiqueta: "Toque el tamaño del objetivo",
+      estado: "pasar",
+      descripción: "Cumple con el mínimo de 44x44px para dispositivos móviles",
+    },
+    {
+      etiqueta: "Estado de carga",
+      estado: "advertir",
+      descripción: "Considere agregar aria-busy para acciones asíncronas",
+    },
+  ]}
+/>
+
+## Usando las plantillas
+
+### En archivos MDX
+
+Importe el componente `ComponentSpec`:
+
+```tsx
+import { ComponentSpec, CopyComponent } from "@/components/component-spec"
+
+<ComponentSpec
+  name="MyComponent"
+  description="Component description"
+  importStatement={'import { MyComponent } from "@/components/my-component"'}
+  props={[
+    {
+      name: "propName",
+      type: "string",
+      description: "What the prop does",
+      required: true,
+    },
+  ]}
+  usageExample={'<MyComponent propName="value" />'}
+  accessibility={[
+    { label: "Check 1", status: "pass" },
+    { label: "Check 2", status: "warn", description: "Details" },
+  ]}
+/>
+```
+
+### Esquema de la tabla de accesorios
+
+```typescript
+interface PropDefinition {
+  name: string       // Prop name
+  type: string       // TypeScript type
+  description: string // What the prop does
+  required?: boolean // Is it required?
+  default?: string   // Default value
+}
+```
+
+### Esquema de lista de verificación de accesibilidad
+
+```typescript
+interface AccessibilityItem {
+  label: string              // Check name
+  status: "pass" | "warn" | "info"
+  description?: string       // Additional details
+}
+```
+
+## Comprobaciones de accesibilidad estándar
+
+Utilice estas comprobaciones comunes para mantener la coherencia:
+
+### Componentes interactivos
+- Teclado accesible (Intro/Espacio)
+- Enfoque visible
+- Orden de enfoque lógico
+- Toque el objetivo >= 44x44px
+
+### Componentes del formulario
+- Etiquetas asociadas
+- Mensajes de error anunciados
+- Campos obligatorios indicados
+- Estado no válido transmitido
+
+### Componentes de contenido
+- Contraste de color >= 4,5:1
+- Texto redimensionable
+- palabrareducible por iones
+- Texto alternativo presente
+
+## Función de copia con un clic
+
+Agregue un botón de copia para el código completo del componente:
+
+<CopyComponent
+  name="Button"
+  code={`import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center...",
+  {
+    variants: {
+      variant: { default: "...", destructive: "..." },
+      size: { default: "...", sm: "...", lg: "..." },
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<tipo de variantes de botón> {
+  ¿asChild?: booleano
+}
+
+Botón constante = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variante, tamaño, asChild = false, ...props }, ref) => {
+    constante Comp = asChild? Ranura: "botón"
+    regresar (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Botón"
+
+exportar {Botón,Variantes de botón}`}
+/>
+
+## Mejores prácticas
+
+1. **Mantenga los accesorios al mínimo**: solo documente los accesorios de API públicos
+2. **Utilice tipos precisos** - Copie tipos del código fuente
+3. **Prueba de accesibilidad**: verifica las afirmaciones antes de aprobar
+4. **Actualice periódicamente**: mantenga las especificaciones sincronizadas con el código
+5. **Enlace a la fuente** - Consulte la fuente de GitHub cuando sea posible
+
+## Guía de migración
+
+Para aplicar esta plantilla a documentos existentes:
+
+1. Importe `ComponentSpec` en la parte superior del archivo MDX
+2. Extraiga accesorios del componente TypeScript
+3. Agregue un ejemplo de uso del código existente
+4. correrauditoría de accesibilidad
+5. Reemplace la documentación antigua con `<ComponentSpec />`
+
+Consulte [Button](/components/button), [Card](/components/card), [Input](/components/input), [Dialog](/components/dialog) y [Select](/components/select)] para ver ejemplos en vivo.

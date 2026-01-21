@@ -1,0 +1,480 @@
+---
+title: /revisar
+description: Revisión de código impulsada por IA con sugerencias de calidad
+---
+# /revisión
+
+Realice una revisión integral del código basada en IA sobre los cambios en las solicitudes de extracción. Review analiza el código en cuanto a calidad, seguridad, rendimiento, mejores prácticas y proporciona comentarios prácticos con ejemplos de código específicos.
+
+## Inicio rápido
+
+```bash
+# Review current branch against main
+/agileflow:review
+
+# Review specific branch
+/agileflow:review BRANCH=feature/auth
+
+# Review with focus on security
+/agileflow:review FOCUS=security
+```
+
+El comando:
+1. Obtener cambios de código (git diff)
+2. Analice en 6 categorías (Calidad, Seguridad, Rendimiento, Mejores Prácticas, Pruebas, Documentación)
+3. Genere un informe detallado con los problemas priorizados por gravedad.
+4. Calcular el nivel de calidad del código.
+5. Sugerir correcciones automáticas y trabajos de seguimiento.
+
+## Características clave
+
+### Análisis completo
+
+La revisión examina los cambios de su código en 6 categorías importantes:
+
+| Categoría | Cheques |
+|----------|--------|
+| **Calidad del código** | Complejidad, duplicación, denominación, función/longitud del archivo |
+| **Seguridad** | Inyección SQL, XSS, secretos codificados, deserialización insegura |
+| **Rendimiento** | Consultas N+1, algoritmos ineficientes, pérdidas de memoria |
+| **Mejores prácticas** | Manejo de errores, registro, seguridad de tipos, async/awaeso |
+| **Pruebas** | Pruebas faltantes, calidad de las pruebas, lagunas en la cobertura |
+| **Documentación** | Falta JSDoc, comentarios obsoletos, actualizaciones README |
+
+### Priorización basada en la gravedad
+
+Los problemas se clasifican por impacto:
+
+```text
+🔴 CRITICAL - Must fix before merge
+🟠 HIGH    - Fix before merge (blocks release)
+🟡 MEDIUM  - Address soon (technical debt)
+⚪ LOW     - Nice to have (style/consistency)
+```
+
+### Nivel de calidad del código
+
+Su PR obtiene una puntuación (0-100) desglosada por categoría:
+
+```text
+Code Quality Score: 72/100
+
+Breakdown:
+- Security: 40/100 (critical issues found)
+- Performance: 75/100 (one N+1 query)
+- Maintainability: 80/100 (some complexity)
+- Testing: 65/100 (coverage gaps)
+- Style: 90/100 (mostly consistent)
+```
+
+### Comentarios constructivos
+
+Cada número incluye:
+- Dónde está (archivo, número de línea)
+- Por qué es importante (riesgo/impacto)
+- Cómo solucionarlo (ejemplos de código específicos)
+- Ejemplo de ❌ código MAL
+- Ejemplo de ✅ BUEN código
+
+## Uso
+
+### Básico - revisar la rama actual
+
+```bash
+/agileflow:review
+```
+
+Revisa los cambios en la rama actual con respecto a principal/maestra.
+
+### Revisar rama específica
+
+```bash
+/agileflow:review BRANCH=feature/user-auth
+```
+
+Revisa la rama nombrada con respecto a la principal.
+
+### Revisar con base diferente
+
+```bash
+/agileflow:review BRANCH=feature/auth BASE=develop
+```
+
+Se compara con una rama base diferente.
+
+### Revisión con área de enfoque
+
+```bash
+# Security-only review
+/agileflow:review FOCUS=security
+
+# Performance-only review
+/agileflow:review FOCUS=performance
+
+# Testing coverage review
+/agileflow:review FOCUS=tests
+```
+
+### Filtrar por gravedad
+
+```bash
+# Show only critical/high issues
+/agileflow:review SEVERITY=high
+
+# Show all issues
+/agileflow:review SEVERITY=all
+```
+
+## Parámetros
+
+| Parámetro | Requerido | Predeterminado | Opciones |
+|-----------|----------|---------|---------|
+| `BRANCH` | No | Actual | Nombre de la sucursal para revisar |
+| `BASE` | No | principal/maestro | Rama base para comparar |
+| `FOCUS` | No | todos | todo, seguridad, rendimiento, estilo, pruebas |
+| `SEVERITY` | No | todos | crítico, alto, medio, bajo, todo |
+
+## Ejemplos
+
+### Revisión típica de relaciones públicas
+
+```bash
+/agileflow:review
+
+# Output:
+# AI Code Review Report
+# Branch: feature/user-auth
+# Files Changed: 5
+# Critical: 1 | High: 3 | Medium: 5 | Low: 2
+# Code Quality Score: 72/100
+#
+# 🔴 CRITICAL ISSUES
+# - Hardcoded API key in stripe.ts:15
+#
+# 🟠 HIGH ISSUES
+# - N+1 query in posts API
+# - Missing error handling in login
+# ...
+```
+
+### Revisión centrada en la seguridad
+
+```bash
+/agileflow:review FOCUS=security
+
+# Analyzes only for:
+# - Hardcoded secrets
+# - SQL injection risks
+# - XSS vulnerabilities
+# - Authentication issues
+# - CORS misconfiguration
+```
+
+### Revisión de desempeño
+
+```bash
+/agileflow:review FOCUS=performance
+
+# Checks for:
+# - N+1 database queries
+# - Inefficient algorithms
+# - Missing indexes
+# - Memory leaks
+# - Bundle size issues
+```
+
+## Revisar la estructura del informe
+
+### Encabezado
+
+```text
+# AI Code Review Report
+
+**Branch**: feature/user-auth
+**Base**: main
+**Files Changed**: 8
+**Lines Added**: 245
+**Lines Removed**: 32
+**Generated**: 2025-10-16T10:30:00Z
+```
+
+### Resumen
+
+```text
+## Summary
+
+**Critical**: 2 | **High**: 5 | **Medium**: 12 | **Low**: 8
+**Must Fix Before Merge**: 7 issues
+```
+
+### Problemas por gravedad
+
+Para cada tema:
+
+```text
+### 1. Hardcoded API Key (SECURITY)
+**File**: src/api/payments/stripe.ts:15
+**Severity**: CRITICAL
+
+// ❌ BAD
+const stripeKey = "sk_live_abc123...";
+
+// ✅ GOOD
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not set");
+
+**Risk**: API key exposed in version control.
+**Fix**: Move to environment variable. Rotate immediately.
+**Priority**: Block merge
+```
+
+### Observaciones positivas
+
+```text
+## Positive Observations ✅
+
+- ✅ Good use of TypeScript strict mode
+- ✅ Consistent error handling pattern
+- ✅ Well-structured component separation
+- ✅ Clear commit messages
+```
+
+### Desglose de la calidad del código
+
+```text
+## Code Quality Score: 72/100
+
+**Breakdown**:
+- Security: 40/100 (2 critical issues)
+- Performance: 75/100 (1 N+1 query)
+- Maintainability: 80/100 (some complexity)
+- Testing: 65/100 (coverage gaps)
+- Style: 90/100 (mostly consistent)
+```
+
+## Personalización
+
+### Reglas específicas del proyecto
+
+Cree reglas de revisión personalizadas en:
+- `.agileflow/review-rules.md`
+- `docs/02-practices/code-standards.md`
+
+Ejemplo:
+
+```markdown
+# Code Review Rules
+
+## Critical
+- No console.log in production code
+- All API endpoints must have rate limiting
+- All database queries must use ORM
+
+## High
+- Functions >30 lines should be refactored
+- Test coverage must be >85%
+```
+
+## Acciones después de la revisión
+
+### Problemas de solución automática
+
+```text
+Review asks: "Fix auto-fixable issues? (YES/NO)"
+
+If YES:
+  - Runs npm run lint -- --fix
+  - Fixes 8 style issues automatically
+  - Shows which issues were fixed
+```
+
+### Crear historias de seguimiento
+
+```text
+Review asks: "Create stories for follow-up work?"
+
+If YES:
+  - Creates story for each medium/low issue
+  - Adds to your backlog
+  - Links to code review report
+```
+
+### Bloquear fusión para críticocuestiones icales
+
+```text
+Review asks: "Block merge for critical/high issues?"
+
+If YES:
+  - Marks merge as blocked
+  - Provides failure reason
+  - Suggests resolution steps
+```
+
+### Guardar informe
+
+Informe guardado automáticamente en:
+```text
+docs/08-project/code-reviews/<YYYYMMDD>-<BRANCH>.md
+```
+
+Ejemplo:
+```text
+docs/08-project/code-reviews/20251016-feature-user-auth.md
+```
+
+## Controles de seguridad
+
+La revisión comprueba automáticamente:
+
+### Secretos y credenciales
+- Claves API codificadas
+- Contraseñas de bases de datos
+- Fichas de OAuth
+- Secretos de JWT
+- Credenciales de AWS
+
+### Vulnerabilidades comunes
+- Inyección SQL (consultas no parametrizadas)
+- Ataques XSS (salida sin escape)
+- Deserialización insegura
+- Vulnerabilidades CSRF
+- Falta la validación CORS
+
+### Patrones inseguros
+- evaluación() o Función()
+- Concatenación de cadenas insegura
+- Falta validación de entrada
+- Cifrado débil
+- Dependencias inseguras
+
+## Comprobaciones de rendimiento
+
+La revisión busca:
+
+### Base de datos
+- N+1 problemas de consulta
+- Índices faltantes
+- Uniones ineficientes
+- Consultas innecesarias
+
+### Algoritmos
+- O(n²) cuando O(n) sea posible
+- Bucles anidados que podrían ser planos.
+- Cálculos repetidos
+- Recursividad no optimizada
+
+### Memoria
+- Fugas de memoria
+- Objetos grandes no liberados
+- Referencias circulares
+- Estructuras de datos que acaparan la memoria.
+
+## TestiCobertura
+
+Revisar cheques:
+
+### Nuevo código
+- ¿Existe alguna prueba para nuevas funciones?
+- ¿Están cubiertos los casos extremos?
+- ¿La calidad de la prueba es buena?
+
+### Brechas de cobertura
+- Líneas agregadas sin pruebas.
+- Funciones sin cobertura de prueba.
+- Rutas de error no probadas
+
+### Calidad de la prueba
+- ¿Tienen significado las afirmaciones?
+- ¿Las pruebas verifican el comportamiento?
+- ¿Se pueden mantener las pruebas?
+
+## Resultados y recomendaciones
+
+### Acciones inmediatas (fusión de bloques)
+
+```text
+1. Remove hardcoded API key (critical)
+2. Fix SQL injection (critical)
+3. Add error handling to login (high)
+```
+
+### Antes de fusionar
+
+```text
+4. Add tests for auth endpoints (high)
+5. Fix N+1 query in posts API (high)
+6. Reduce complexity in validator.ts (medium)
+```
+
+### Seguimiento (Crear Historias)
+
+```text
+7. Standardize naming conventions (medium)
+8. Add ESLint rule for secrets (medium)
+9. Set up automated security scanning (low)
+```
+
+## Integración con CI
+
+Sugerir agregar a `.github/workflows/pr.yml`:
+
+```yaml
+- name: AI Code Review
+  run: npx claude-code /agileflow:review BRANCH=${{ github.head_ref }}
+
+- name: Check for critical issues
+  run: |
+    if grep -q "CRITICAL" code-review-report.md; then
+      echo "::error::Critical issues found."
+      exit 1
+    fi
+```
+
+## Consejos
+
+### Antes de enviar PR
+
+```bash
+/agileflow:review
+# Fix any CRITICAL or HIGH issues
+# Address MEDIUM issues if possible
+# Then submit PR with confidence
+```
+
+### Mejora iterativa
+
+```bash
+# After feedback, run review again
+/agileflow:review
+
+# See if score improved
+# Ensure critical issues fixed
+# Check test coverage
+```
+
+### Enfoque centrado en la seguridad
+
+```bash
+# Always check security first
+/agileflow:review FOCUS=security
+
+# Fix any CRITICAL security issues
+# Then review other categories
+```
+
+## Principios
+
+- **Sea constructivo** - Proporcione comentarios prácticos, no solo críticas
+- **Mostrar ejemplos** - Incluye código ❌ MALO y ✅ BUEN
+- **Priorizar** - Los problemas críticos primero, el estilo al final
+- **Celebrar** - Incluir observaciones positivas
+- **Sugerircorrecciones principales** - No se limite a identificar los problemas
+- **Sin compromisos forzados** - Pregunte siempre antes de realizar la reparación automática
+
+## Comandos relacionados
+
+- [`/pr`](/commands/pr) - Generar descripción de PR (revisar antes de enviar)
+- [`/impact`](/commands/impact) - Analizar el impacto del cambio
+- [`/babysit`](/commands/babysit) - Guía de implementación (ejecuta la revisión antes del PR)
+- [`/verify`](/commands/verify) - Verificar el paso de las pruebas
+- [`/baseline`](/commands/baseline) - Crear punto de control verificado

@@ -1,0 +1,130 @@
+---
+title: /história
+description: Crie uma história de usuário com critérios de aceitação
+---
+#/história
+
+Crie uma nova história de usuário com critérios de aceitação, stubs de teste e rastreamento de status.
+
+## Início rápido
+
+```bash
+/agileflow:story EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id>
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `EPIC` | Sim | - | ID épico pai (por exemplo, EP-0001) |
+| `STORY` | Sim | - | Identificador de história (por exemplo, US-0001) |
+| `TITLE` | Sim | - | Título da história descrevendo o recurso |
+| `OWNER` | Sim | - | Nome do proprietário ou ID do agente (por exemplo, AG-UI, AG-API) |
+| `ESTIMATE` | Não | `0.5d` | Estimativa de tempo (por exemplo, `0.5d`, `1d`, `2d`) |
+| `AC` | Não | - | Critérios de aceitação no formato Dado/Quando/Então |
+| `DEPENDENCIES` | Não | - | Lista separada por vírgulas de IDs de histórias dependentes (por exemplo, __NOTRASLATE_16__) |
+
+## Exemplos
+
+### Criação básica de histórias
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0001 TITLE="User registration form" OWNER=AG-UI
+```
+
+Cria um arquivo de história em __NOTRASLATE_17__ com estimativa padrão (0,5d) e status (pronto).
+
+### Lojay com critérios de aceitação
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0002 TITLE="Validate email address" OWNER=AG-API ESTIMATE=1d AC="Given a valid email, When form submitted, Then confirmation email sent"
+```
+
+Cria a história com critérios de aceitação específicos que orientam o desenvolvimento e os testes.
+
+### História com Dependências
+
+__NOTRADUZIR_3__
+
+Cria a história e a marca como dependente de histórias anteriores. Essas dependências são visualizadas no comando __NOTRASLATE_18__.
+
+## Saída
+
+O comando cria:
+
+1. **Arquivo de história** (`docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - Metadados da história (ID, épico, proprietário, estimativa, status)
+   - Descrição e critérios de aceitação
+   - Contexto da arquitetura (preenchido durante o desenvolvimento)
+   - Estratégia de teste
+
+2. **Esboço de teste** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - Estrutura de teste alinhada aos critérios de aceitação
+   - Espaço reservado para implementação de teste
+   - Links para a história para contexto
+
+3. **Rastreamento de status** (`docs/09-agents/status.json`)
+   - Entrada de história com proprietário, estimativa e status
+   - Links de dependência para outras histórias
+   - Tarefa épica
+
+4. **Comunicação do agente** (__NOTRASLATE_22__)
+   - Mensagem de atribuição mostrando a história criada e atribuída
+
+## Trabalhobaixo
+
+1. **Crie a história** - Execute __NOTRASLATE_23__ com épico, ID, título e proprietário
+2. **Adicionar critérios de aceitação** - Use __NOTRASLATE_24__ para refinar e testar AC
+3. **Valide a integridade** - Execute __NOTRASLATE_25__ antes do desenvolvimento
+4. **Desenvolva a história** - O proprietário implementa de acordo com os critérios de aceitação
+5. **Executar testes** - Use __NOTRASLATE_26__ para executar testes automatizados
+6. **Solicitar revisão** - Atualize o status para __NOTRASLATE_27__ quando estiver pronto
+
+## Formato dos critérios de aceitação
+
+Use o formato Dado/Quando/Então para critérios claros e testáveis:
+
+__NÃOTRADUZIR_4__
+
+Os critérios de aceitação devem ser:
+- **Específico**: Referência a campos e valores reais
+- **Testável**: pode ser verificado com testes automatizados ou manuais
+- **Independente**: cada critério testa uma coisa
+- **Completo**: Cubra o caminho feliz e os principais casos extremos
+
+## Estimativas de histórias
+
+Use estas estimativas padrão:
+
+| Estimativa | Quando usar |
+|----------|------------|
+| `0.5d` | CRUD simples, componente básico de UI, solução rápida |
+| `1d` | Recurso padrão com validação e testes básicos |
+| `1.5d` | Lógica complexa, validações múltiplas ou integração |
+| `2d` | Refatoração significativa ou componente de recurso principal |
+| `>2d` | Divida em histórias menores |
+
+## Integração com outros comandos
+
+- **Após a criação da história**: Use __NOTRASLATE_33__ para garantir a prontidão
+- **Antes do desenvolvimento**: Use __NOTRASLATE_34__ para ajuda de implementação interativa
+- **Durante o desenvolvimento**: Use __NOTRASLATE_35__ para executar testes
+- **Para revisão de código**: use __NOTRASLATE_36__ para sugestões baseadas em IA
+- **Para solicitações pull**: use __NOTRASLATE_37__ para gerar automaticamente a descrição do PR
+
+## Melhores práticas
+
+- **Uma história = um recurso** - Mantenha as histórias focadas e entregues de forma independente
+- **Escreva critérios de aceitação claros** - Eles orientam o desenvolvimento e os testes
+- **Faça uma estimativa realista** - Considere a complexidade e a experiência da equipe
+- **Vincular dependências explicitamente** - Ajuda no planejamento de sprint e avaliação de riscoscomentar
+- **Validar antes do desenvolvimento** - Use __NOTRASLATE_38__ para detectar problemas antecipadamente
+
+## Comandos Relacionados
+
+- [`/epic`__NOTRASLATE_45__ - Crie o épico pai
+- [`/story-validate`](/commands/story-validate) - Validar a integridade da história antes do desenvolvimento
+- [`/sprint`__NOTRASLATE_47__ - Selecione histórias para planejamento de sprint
+- [`/auto`](/commands/auto) - Gerar histórias automaticamente a partir de PRDs ou especificações
+- [`/babysit`](/commands/babysit) - Obtenha ajuda interativa durante a implementação
+- [`/verify`](/commands/verify) - Execute testes e atualize o status do teste

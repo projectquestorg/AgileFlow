@@ -1,0 +1,155 @@
+---
+title: /adr:ver
+description: Visualize detalhes de ADR com ações contextuais baseadas no status de ADR
+---
+# /adr:visualizar
+
+Visualize detalhes completos do ADR e execute ações baseadas no contexto com base no status atual do ADR.
+
+## Início rápido
+
+```bash
+/agileflow:adr:view NUMBER=0042
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `NUMBER` | Sim | - | Número ADR (4 dígitos, por exemplo, 0042) |
+
+## Exemplos
+
+### Ver ADR específico
+
+```bash
+/agileflow:adr:view NUMBER=0003
+```
+
+Exibe o conteúdo completo do ADR-0003 e oferece ações baseadas no contexto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:adr:view
+```
+
+Sem o parâmetro NUMBER, mostra ADRs recentes e solicita que você selecione uma.
+
+## Formato de saída
+
+Cada visualização ADR inclui:
+
+### Informações do cabeçalho
+
+__NOTRADUZIR_3__
+
+### Seções
+
+1. **Contexto**: explica por que essa decisão foi necessária
+   - Problema ou restrição que desencadeou a decisão
+   - Drivers de negócios e requisitos técnicos
+   - Opções alternativas que foram consideradas
+
+2. **Decisão**: o que foi escolhido e por quê
+   - Declaração clara da decisão
+   - Justificativa para esta escolha sobre alternativas- Versões ou configurações específicas, se relevante
+
+3. **Consequências**: Compensações e impactos
+   - **Positivo**: Benefícios e melhorias
+   - **Negativo**: Custos, riscos, curva de aprendizado
+   - Estratégias de mitigação, se aplicável
+
+4. **Relacionado**: Links para pesquisas, histórias, outras ADRs
+   - Pesquisa que levou a esta decisão
+   - Histórias de implementação criadas a partir deste ADR
+   - Outros ADRs que este substitui ou é substituído por
+
+## Ações baseadas no contexto
+
+As ações mudam com base no status da ADR:
+
+### Para ADRs propostas
+
+Quando um ADR ainda é __NOTRASLATE_10__, você pode:
+- **Aceitar este ADR**: Marcar como `accepted` e em vigor
+- **Solicitar alterações**: Modifique a proposta
+- **Rejeite este ADR**: Marque como __NOTRASLATE_12__ com motivo
+
+### Para ADRs aceitas (recomendado)
+
+Quando um ADR é __NOTRASLATE_13__, você pode:
+- **Crie histórias de implementação**: transforme a decisão em um trabalho prático
+- **Substituir por novo ADR**: Substituir por decisão atualizada
+- **Descontinuar este ADR**: Marcar como não mais aplicávelimpossível
+- **Ver pesquisas relacionadas**: veja as pesquisas que levaram à decisão
+
+### Para ADRs obsoletos
+
+Quando um ADR é __NOTRASLATE_14__, você pode:
+- **Ver histórico de descontinuação**: veja por que foi descontinuado
+- **Reative este ADR**: marque como __NOTRASLATE_15__ novamente se o contexto mudar
+- **Ver ADR de substituição**: Veja o que substituiu este
+- **Voltar à lista ADR**: Voltar à lista completa
+
+### Para ADRs Substituídos
+
+Quando um ADR é __NOTRASLATE_16__, você pode:
+- **Ver ADR de substituição**: Veja o ADR que substituiu este
+- **Ver evolução da decisão**: entenda como essa decisão evoluiu
+- **Voltar à lista ADR**: Voltar à lista completa
+
+## Fluxos de trabalho típicos
+
+### Aprovar decisão proposta
+
+__NÃOTRADUZIR_4__
+
+### Implementar decisão aceita
+
+__NOTRADUZIR_5__
+
+### Acompanhar a evolução das decisões
+
+__NOTRADUZIR_6__
+
+### Reconsidere a decisão obsoleta
+
+__NÃOTRADUZIR_7__
+
+## Exemplo de exibição de ADR
+
+__NÃOTRADUZIR_8__
+
+## Melhores práticas
+
+### Ao revisar uma ADR
+
+- Leia o contexto primeiro para entender o problema
+- Revise ambas as posiçõesConsequências cinco e negativas
+- Verifique a seção relacionada para o trabalho de implementação
+- Observe a evolução da decisão (se substituída)
+
+### Ao decidir se implementará
+
+Faça estas perguntas:
+1. Este ADR está no status __NOTRASLATE_17__?
+2. As consequências positivas correspondem às nossas necessidades atuais?
+3. Estamos preparados para consequências negativas?
+4. Temos capacidade de implementação?
+
+### Quando o status do ADR muda
+
+Sempre use __NOTRASLATE_18__ para documentar:
+- Por que o status está mudando
+- O que desencadeou a mudança
+- Referência ao ADR substituto (se substituído)
+
+## Comandos Relacionados
+
+- [`/adr:list`](/commands/adr-list) - Ver todos os ADRs
+- [__NOTRASLATE_20__](/commands/adr) - Criar novo ADR
+- [__NOTRASLATE_21____NOTRASLATE_27__ - Atualizar status de ADR
+- [`/epic`__NOTRASLATE_28__ - Criar épico de implementação
+- [__NOTRASLATE_23____NOTRASLATE_29__ - Criar história de implementação
+- [`/research:view`](/commands/research-view) - Ver pesquisas relacionadas

@@ -1,0 +1,273 @@
+---
+title: /pacotes
+description: Gerencie dependências com atualizações e auditorias de segurança
+---
+# /pacotes
+
+Gerencie de forma abrangente as dependências do projeto com painéis automatizados, auditorias de segurança, atualizações seguras e gerenciamento de vulnerabilidades em todos os principais gerenciadores de pacotes.
+
+## Início rápido
+
+```bash
+/agileflow:packages ACTION=dashboard
+```
+
+## Objetivo
+
+Este comando fornece gerenciamento completo de dependências por meio de:
+- Detectando dependências de projeto em npm, pip, cargo e outros gerenciadores de pacotes
+- Geração de painéis de dependência abrangentes com informações de status e vulnerabilidade
+- Executar auditorias de segurança e identificar CVEs
+- Planejar e aplicar atualizações de dependências seguras
+- Criação de histórias para questões de segurança
+- Acompanhamento e relatórios sobre a saúde da manutenção
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `ACTION` | Não | `dashboard` | `dashboard`, `update` ou `audit` |
+| `SCOPE` | Não | `all` | Para atualizações: `security`, `major`, `minor`, `patch`, `all` |
+| `OUTPUT` | Não | `markdown` | Para painel: `markdown`, `html`, `json`, `csv` |
+| `INCLUDE_DEV` | Não | `yes` | Inclui dependências de desenvolvimento: __NOTRASLATE_41__ ou __NOTRASLATE_42__ |
+| `SAVE_TO` | Não | varia | Salvar local do relatório (por exemplo, __NOTRASLATE_44__) |
+| `AUTO_PR` | Não | `no` | Criar PR automaticamente para atualizações: `yes` ou __NOTRASLATE_48__ |
+
+## Exemplos
+
+### Ver painel de dependências
+
+```bash
+/agileflow:packages
+```
+
+Mostra um painel abrangente de todas as dependências com status, vulnerabilidades e recomendações.
+
+### Exportar painel como HTML
+
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=html
+```
+
+Gera painel HTML interativo com tabelas e gráficos classificáveis.
+
+### Somente auditoria de segurança
+
+__NOTRADUZIR_3__
+
+Executa verificações de segurança e relata vulnerabilidades sem fazer alterações.
+
+### Atualizar vulnerabilidades de segurança
+
+__NÃOTRADUZIR_4__
+
+Atualiza pacotes com segurança com segurança conhecida iquestiona e pede confirmação.
+
+### Atualizar versões secundárias
+
+__NOTRADUZIR_5__
+
+Atualiza versões secundárias (novos recursos, compatibilidade com versões anteriores).
+
+### Criação automática de PR para atualizações
+
+__NOTRADUZIR_6__
+
+Atualiza todos os pacotes e cria uma solicitação pull automaticamente.
+
+## Ações
+
+### ACTION=painel (padrão)
+
+Gera um relatório de dependência abrangente mostrando:
+- **Contagem total** - Dependências de produção e desenvolvimento
+- **Status de vulnerabilidade** - Crítico, alto, médio, baixo
+- **Disponibilidade de atualização** - Versões principais, secundárias e de patch
+- **Informações de licença** - Para monitoramento de conformidade
+- **Pontuação de integridade** - Integridade geral de manutenção da dependência
+
+**Exemplo de saída**:
+__NÃOTRADUZIR_7__
+
+### ACTION=atualizar
+
+Planeja e aplica atualizações de dependências com verificações de segurança:
+
+1. **Detecta pacotes desatualizados** usando o gerenciador de pacotes apropriado
+2. **Categoriza por tipo** - segurança, principal, secundária, patch
+3. **Mostra o plano de atualização** com avisos de alterações significativas
+4. **Pede confirmação** antes de aplicar
+5. **Executa testes** após a atualizaçãocome (se disponível)
+6. **Cria PR** se solicitado
+7. **Gera relatório** com todas as alterações
+
+**Gerenciadores de pacotes suportados**:
+- Node.js: npm, fio, pnpm
+- Python: pip, pip-tools, poesia
+- Ruby: empacotador (Gemfile)
+- Vá: vá mod
+- Ferrugem: carga
+-Java: Maven, Gradle
+- .NET: NuGet
+
+**Atualizações de segurança** são sempre priorizadas e recomendadas imediatamente.
+
+**Atualizações importantes** criam histórias individuais para revisão (podem exigir alterações de código).
+
+**Atualizações secundárias/de patch** podem ser agrupadas com segurança.
+
+### ACTION=auditoria
+
+Executa apenas auditoria de segurança sem atualização:
+
+Mostra todas as vulnerabilidades conhecidas com:
+- Níveis de gravidade (crítico, alto, moderado, baixo)
+- Identificadores e descrições CVE
+- Versões de pacotes afetadas
+- Correções recomendadas
+
+Exemplo:
+__NÃOTRADUZIR_8__
+
+## Detecção do gerenciador de pacotes
+
+O comando detecta e suporta automaticamente:
+
+| Gerente | Arquivos | Detecção |
+|--------|-------|-----------|
+| npm | pacote.json, pacote-lock.json | Projetos Node.js |
+| fios | fio.lock | Node.js moderno |
+| pnpm | pnpm-lock.yaml | Node.js moderno |
+| pip | requisitos.txt, pyproject.toml | Pitão |
+| poesia | poesia.lock | Python moderno |
+| empacotador | Gemfile, Gemfile.lock | Rubi/Rails |
+| vá mod | go.mod, go.sum | Vá |
+| carga | Cargo.toml, Cargo.lock | Ferrugem |
+| Especialista | pom.xml | Java |
+| Gradil | construir.gradle | Java |
+| NuGet | *.csproj, pacotes.config | .NET |
+
+## Formatos de saída
+
+### Markdown (padrão)
+Relatório legível com tabelas, adequado para documentação:
+__NOTRADUZIR_9__
+
+###HTML
+Painel interativo com filtragem, classificação e visualização:
+__NOTRADUZIR_10__
+
+### JSON
+Dados estruturados para ferramentas e integração:
+__NOTRADUZIR_11__
+
+###CSV
+Formato compatível com planilha:
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=csv
+```
+
+## Exemplos de fluxo de trabalho
+
+### Auditoria semanal de dependências
+
+__NÃOTRADUZIR_13__
+
+Revise todas as vulnerabilidades e planeje atualizações.
+
+### Manutenção Mensal
+
+__NOTRADUZIR_14__
+
+Mantenha-se atualizado com mudanças ininterruptas.
+
+### Principais atualizações trimestrais
+
+__NÃOTRADUZIR_15__
+
+Planeje e teste as alterações significativas com cuidado.
+
+### Patch de segurança de emergência
+
+__NOTRADUZIR_16__
+
+Crie relações públicas e implante rapidamente se os testes forem aprovados.
+
+## Integração de CI
+
+### Auditoria Automatizada em CI
+
+Adicionar às ações do GitHub:
+```yaml
+- name: Dependency audit
+  run: npm audit --audit-level=high
+
+- name: Check outdated
+  run: npm outdated || true  # Don't fail, just report
+```
+
+### Configuração do Dependabot
+
+Crie `.github/dependabot.yml`:
+__NÃOTRADUZIR_18__
+
+O Dependabot criará automaticamente PRs para atualizações.
+
+### Verificação semanal de dependência
+
+Adicione fluxo de trabalho agendado:
+__NOTRADUZIR_19__
+
+## Criando histórias para vulnerabilidades
+
+Quando forem encontrados problemas de segurança, crie histórias:
+
+**Formato**:
+```text
+US-XXXX: Fix security vulnerability in [PACKAGE]
+
+Severity: [CRITICAL|HIGH|MEDIUM]
+CVE: [CVE-XXXX-XXXXX]
+Current: [version]
+Fix: [recommended version]
+
+Steps to Fix:
+1. Update package: npm install package@latest
+2. Run tests: npm test
+3. Review changelog for breaking changes
+```
+
+## Melhores práticas
+
+1. **Priorize a segurança** - Sempre atualize vulnerabilidades críticas imediatamente
+
+2. **Atualizações secundárias em lote** - Agrupe atualizações ininterruptas para maior eficiência
+
+3. **Teste após atualizações** - Sempre execute o conjunto de testes completo após as atualizações
+
+4. **Revise as principais alterações** - Teste as versões principais na preparação antes da produção
+
+5. **Monitore Depreciações** - Aja antecipadamente em pacotes obsoletos
+
+6. **Conformidade de licenças** - Verifique as licenças para requisitos corporativos
+
+7. **Tamanho do pacote** - Pacote de monitoramentoO tamanho do impacto das dependências
+
+8. **Auditorias automatizadas** – Execute auditorias semanalmente, não apenas durante os lançamentos
+
+## Regras
+
+- Nunca atualize automaticamente pacotes críticos sem aprovação
+- Sempre visualize as alterações antes de aplicar (diferença primeiro, SIM/NÃO)
+- Agrupe atualizações secundárias/patch quando possível
+- Avisar com destaque sobre alterações significativas
+- Link para changelogs e guias de migração
+- Crie histórias para grandes atualizações
+- Nunca pule os testes após a atualização
+- Sempre confirme arquivos de bloqueio (package-lock.json, Cargo.lock, etc.)
+
+## Comandos Relacionados
+
+- [`/setup-tests`__NOTRASLATE_53__ - Configurar testes automatizados
+- [`/ci-setup`__NOTRASLATE_54__ - Configurar verificações de CI
+- [__NOTRASLATE_52____NOTRASLATE_55__ - Configurar implantação

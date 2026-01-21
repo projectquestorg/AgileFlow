@@ -1,0 +1,412 @@
+---
+title: /verifizieren
+description: Führen Sie Projekttests durch und aktualisieren Sie den Story-Teststatus
+---
+# /verify
+
+Führen Sie Ihre Projekttests durch und aktualisieren Sie den Story-Teststatus automatisch in Ihrem Tracking-System. Verify ist eine Kernkomponente der Sitzungsnutzung von AgileFlow, die die Testvalidierung während Ihres gesamten Entwicklungsworkflows gewährleistet.
+
+## Schnellstart
+
+```bash
+# Run all tests and update all in-progress stories
+/agileflow:verify
+
+# Run tests and update specific story
+/agileflow:verify US-0042
+```
+
+Der Befehl wird:
+1. Laden Sie die Testkonfiguration aus Ihrem Projekt
+2. Führen Sie die Testsuite aus
+3. Analysieren Sie die Testergebnisse
+4. Status des Story-Tests aktualisieren (bestanden/nicht bestanden)
+5. Zeigen Sie einen klaren Bericht mit visuellen Indikatoren an
+
+## Hauptmerkmale
+
+### Automatisches Test-Parsing
+
+Verify erkennt und analysiert automatisch Testergebnisse von:
+
+| Rahmen | Beispielausgabe |
+|-----------|---|
+| Jest/Vitest (Node.js) | `Tests: 42 passed, 42 total` |
+| Pytest (Python) | `42 passed in 2.5s` |
+| Fracht (Rost) | `test result: ok. 42 passed` |
+| Testen | `ok github.com/user/project` |
+
+Wenn die Analyse fehlschlägt, wird auf den Exit-Code zurückgegriffen (0 = bestanden, ungleich Null = fehlgeschlagen).
+
+### Aktualisierungen des Story-Status
+
+Testergebnisse werden automatisch in Ihren Stories erfasst:
+
+```json
+{
+  "story_id": "US-0042",
+  "test_status": "passing",
+  "test_results": {
+    "last_run": "2025-12-06T10:30:00Z",
+    "command": "npm test",
+    "passed": 42,
+    "failed": 0,
+    "exit_code": 0,
+    "output_summary": "All tests passed (42/42)"
+  }
+}
+```
+
+### Multi-StOry-Tracking
+
+Überprüfen Sie ohne eine bestimmte Story-ID, ob alle `in_progress`-Storys aktualisiert werden:
+
+```bash
+/agileflow:verify
+# Updates test_status for:
+# - US-0042: passing
+# - US-0043: passing
+# - US-0044: failing
+```
+
+## Nutzung
+
+### Führen Sie alle Tests aus
+
+```bash
+/agileflow:verify
+```
+
+Führt Ihre Testsuite aus und aktualisiert alle laufenden Storys mit Ergebnissen.
+
+### Führen Sie Tests für eine bestimmte Story durch
+
+```bash
+/agileflow:verify US-0042
+```
+
+Führt Tests durch und aktualisiert nur den Teststatus von US-0042. Nützlich, wenn Sie nur an einer Geschichte arbeiten.
+
+### Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `STORY` | Nein | Alles in Bearbeitung | Zu aktualisierende Story-ID (z. B. US-0042) |
+
+## Beispiele
+
+### Typischer Entwicklungsworkflow
+
+```bash
+# Make code changes...
+
+# Verify tests still pass
+/agileflow:verify
+
+# Output:
+# ✅ PASSED | npm test | 42 passed, 0 failed | 12.3s
+# Updated stories:
+# - US-0042: passing
+# - US-0043: passing
+```
+
+### Tests schlagen fehl – beheben Sie sie
+
+```bash
+/agileflow:verify
+
+# Output:
+# ❌ FAILED | npm test | 40 passed, 2 failed | 8.7s
+#
+# Failed tests:
+#   ❌ auth.test.ts:42 - Expected redirect
+#   ❌ api.test.ts:67 - Session token not persisting
+#
+# Updated stories:
+# - US-0042: failing
+# - US-0043: failing
+```
+
+### Vor dem Erstellen der Grundlinie
+
+```bash
+# Ensure all tests pass before marking a milestone
+/agileflow:verify
+
+# If passing:
+/agileflow:baseline "Sprint 3 complete"
+
+# If failing:
+# (Fix tests first, then baseline)
+```
+
+## Ausgabeformat
+
+### Erfolgsbericht
+
+```text
+🧪 Test Verification Complete
+
+Command: npm test
+Duration: 12.3s
+Result: ✅ PASSED
+
+Tests: 42 passed, 0 failed, 42 total
+
+Updated stories:
+- US-0042: passing
+- US-0043: passing
+
+All in-progress stories have passing tests ✅
+```
+
+### Fehlerbericht
+
+```text
+🧪 Test Verification Complete
+
+Command: npm test
+Duration: 8.7s
+Result: ❌ FAILED
+
+Tests: 40 passed, 2 failed, 42 total
+
+Failed tests:
+  ❌ auth.test.ts:42
+     Expected redirect to /dashboard
+     Got redirect to /login
+
+  ❌ api.test.ts:67
+     Session token not persisting
+     Cookie not set after login
+
+Updated stories:
+- US-0042: failing
+- US-0043: failing
+
+⚠️  WARNING: 2 stories now have failing tests
+```
+
+### Zeitüberschreitung
+
+```text
+🧪 Test Verification Failed
+
+Command: npm test
+Result: ⏱️  TIMEOUT (60s)
+
+The test suite did not complete within 60 seconds.
+
+Updated stories:
+- US-0042: failing (timeout)
+
+Consider:
+1. Increase test_timeout_ms in environment.json
+2. Optimize slow tests
+3. Run specific test suites instead of all tests
+```
+
+## Konfiguration
+
+Verify verwendet Einstellungen von `docs/00-meta/environment.json`:
+
+```json
+{
+  "test_command": "npm test",
+  "test_timeout_ms": 60000,
+  "project_type": "nodejs"
+}
+```
+
+So passen Sie das Testverhalten an:
+
+1. Bearbeiten Sie `docs/00-meta/environment.json`
+2. Change `test_command` to your command
+3. Change `test_timeout_ms` to desired timeout
+4. Führen Sie die Überprüfung erneut aus
+
+## Voraussetzungen
+
+Für die Überprüfung ist Folgendes erforderlich:
+
+– **Sitzungsharness initialisiert** – Führen Sie zuerst `/agileflow:session:init` aus
+- **docs/00-meta/environment.json** – Testkonfigurationsdatei
+- **docs/09-agents/status.json** – Story-Tracking
+- **Arbeitstests** – Ihr Projekt muss über eine Testsuite verfügen
+
+### Initialize session harness
+
+If you get a "Session harness not initialized" error:
+
+```bash
+/agileflow:session:init
+```
+
+Dies wird:
+- Detect your project type
+- Create environment.json with test config
+- Richten Sie die Testüberprüfung für alle Storys ein
+
+## Integration with Other Commands
+
+Verify is used automatically by:
+
+| Befehl | Wann |
+|---------|------|
+| `/babysit` | After implementing code changes |
+| `/baseline` | Vor dem Erstellen verifizierter Kontrollpunkte |
+| `/session:resume` | Zu Beginn der Arbeitssitzung |
+| `/pr` | Can include test status in PR description |
+
+Sie können auch Version ausführenSie können den Status jederzeit manuell überprüfen.
+
+## Häufige Szenarien
+
+### „Bestehen meine Tests?“
+
+```bash
+/agileflow:verify
+# Shows immediate pass/fail status with counts
+```
+
+### „Fehlerhafte Tests beheben“
+
+```bash
+# See which tests failed
+/agileflow:verify
+
+# Fix the failing tests in your code editor
+# Then verify again
+/agileflow:verify
+# Should show ✅ PASSED now
+```
+
+### „Eine Geschichte scheitert, andere gehen durch“
+
+```bash
+# Check which story has failing tests
+/agileflow:verify
+
+# Review that story's test_status in output
+# Focus on fixing just that story's tests
+
+# Run verify with specific story to confirm fix
+/agileflow:verify US-0042
+```
+
+### „Tests langsam – dauert zu lange“
+
+```bash
+# Timeout occurred
+/agileflow:verify
+
+# Options:
+# 1. Increase timeout in environment.json
+# 2. Run subset of tests: npm test -- --testPathPattern=auth
+# 3. Optimize slow tests
+
+# Increase timeout and try again
+```
+
+## Fehlerbehebung
+
+### „Sitzungsharness nicht initialisiert“
+
+**Fehler:**
+```text
+⚠️  Session harness not initialized
+Run /agileflow:session:init to set up test verification
+```
+
+**Fix:**
+```bash
+/agileflow:session:init
+```
+
+### „Tests nicht gefunden“
+
+**Fehler:**
+```text
+❌ Test Command Failed
+Command: npm test
+Error: npm: command not found
+```
+
+**Fix:**
+- Abhängigkeiten installieren: `npm install`
+- Verify test command in environment.json matches your setup
+- Überprüfen Sie, ob PATH die erforderlichen Tools enthält
+
+### „Story nicht gefunden“
+
+**Fehler:**
+```text
+⚠️  Story US-0099 not found in status.json
+Available in_progress stories:
+- US-0042
+- US-0043
+```
+
+**Fix:**
+- Überprüfen Sie, ob die Story-ID korrekt ist (status.json prüfen).
+- Ohne Story-ID ausführen, um alle laufenden Storys zu überprüfen
+
+### „Ungültige status.json“
+
+**Fehler:**
+```text
+❌ Cannot Update Status
+File docs/09-agents/status.json is invalid or missing.
+```
+
+**Fix:**
+```bash
+# Re-initialize AgileFlow setup
+/agileflow:setup
+```
+
+## Tipps
+
+### Führen Sie häufig Tests durch
+
+```bash
+# After every major change
+/agileflow:verify
+
+# Before committing
+/agileflow:verify
+
+# Before creating PR
+/agileflow:verify
+
+# Before baseline
+/agileflow:verify
+```
+
+### Regressionen frühzeitig erkennen
+
+Verify verfolgt den Teststatus automatisch nach Story, sodass Sie:
+-Sehen Sie, wann Tests abbrechen (test_status ändert sich)
+- Identifizieren Sie, welche Geschichte den Fehler verursacht hat
+- Beheben Sie Probleme, bevor sie sich anhäufen
+
+### Mit Grundlinie verwenden
+
+```bash
+# Ensure all tests pass
+/agileflow:verify
+
+# If all passing:
+/agileflow:baseline "Milestone complete"
+
+# If any failing:
+# (Fix first, then baseline)
+```
+
+## Verwandte Befehle
+
+- [`/babysit`](/commands/babysit) – Implementierungsmentor (führt die Überprüfung automatisch aus)
+- [`/baseline`](/commands/baseline) - Verifizierte Prüfpunkte erstellen (erfordert das Bestehen von Tests)
+- [`/session:init`](/commands/session-init) – Sitzungskabel initialisieren
+- [`/session:resume`](/commands/session-resume) – Sitzung fortsetzen (Verifizierung durchführen)
+- [`/pr`](/commands/pr) - Pull-Anfrage generieren (zeigt den Teststatus)

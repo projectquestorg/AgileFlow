@@ -1,0 +1,377 @@
+---
+title: /habilidad:crear
+description: Genere una habilidad personalizada con investigación web, patrón de libro de cocina e integración de MCP
+---
+# /habilidad:crear
+
+Genere habilidades dinámicas respaldadas por investigaciones que combinen documentación web, sus documentos locales y patrones de base de código.
+
+## Inicio rápido
+
+```bash
+# Interactive mode (recommended)
+/agileflow:skill:create
+
+# With skill name hint
+/agileflow:skill:create supabase-swift
+```
+
+## Qué hace
+
+El comando `/skill:create` crea habilidades personalizadas investigando tres fuentes y creando flujos de trabajo respaldados por investigaciones:
+
+1. **Documentación web**: documentos oficiales, referencias de API, tutoriales
+2. **Documentación del proyecto local**: sus prácticas y decisiones de arquitectura
+3. **Patrones de base de código**: convenciones y ejemplos de código existentes
+
+Luego genera:
+- **SKILL.md** - Archivo de habilidades principal con activadores de activación
+- **references.md** - Enlaces a todas las fuentes de documentación
+- **libro de recetas/** - Flujos de trabajo paso a paso para diferentes casos de uso
+- **.mcp.json** - Configuración del servidor MCP opcional
+
+## Cómo funciona
+
+### Fase 1: Requisitos
+
+Describes qué habilidad necesitas:
+
+```xml
+Skill categories:
+- Database integration (Supabase, PostgreSQL, MongoDB)
+- API integration (REST, GraphQL, webhooks)
+- UI/Frontend (Components, styling, design system)
+- Development workflow (Testing, deployment, CI/CD)
+- Custom description (describe what you need)
+```
+
+### Fase 2: Investigación
+
+El comando ingresa al Modo Plan y investiga:
+
+- **Documentos web**: URL de documentación oficial, tutoriales y guías- **Documentos locales**: archivos en su directorio `docs/` que coinciden con el dominio de la habilidad
+- **Patrones de base de código**: código existente que muestra cómo haces las cosas
+- **Servidores MCP**: Herramientas disponibles para la tecnología
+
+Recopila URL y patrones sin copiar contenido.
+
+### Fase 3: Generación
+
+Con base en los hallazgos de la investigación, genera:
+
+- **SKILL.md** con activadores de activación y referencias de libros de cocina
+- **references.md** vincula todas las fuentes web/locales/de base de código
+- Directorio **libro de recetas/** con un archivo por caso de uso
+- **.mcp.json** si se encontró un servidor MCP
+
+### Fase 4: Confirmación
+
+Usted ve la estructura generada, puede obtener una vista previa del contenido y aprobar la creación.
+
+## Parámetros
+
+Este comando no tiene parámetros; es completamente interactivo.
+
+```bash
+/agileflow:skill:create              # Interactive mode
+/agileflow:skill:create my-skill     # Optional: suggest skill name
+```
+
+## Ejemplos
+
+### Ejemplo 1: Crear una habilidad Supabase
+
+```bash
+/agileflow:skill:create
+```
+
+**Tus respuestas:**
+```
+What skill would you like to create?
+> [Select "Database integration"]
+
+Which database?
+> Supabase
+
+What language/framework?
+> Swift iOS app
+
+What use cases?
+> Authentication, CRUD operations, Real-time subscriptions
+```
+
+**Estructura generada:**
+```
+.claude/skills/supabase-swift/
+├── SKILL.md (activation triggers, cookbook references)
+├── references.md (links to Supabase docs, local patterns)
+├── cookbook/
+│   ├── authentication.md (sign up, sign in, sign out)
+│   ├── crud-operations.md (create, read, update, delete)
+│   └── realtime-subscriptions.md (listen to changes)
+└── .mcp.json (Supabase MCP server config)
+```
+
+### Ejemplo 2: Crear una habilidad de componentes de React
+
+```bash
+/agileflow:skill:create ui-components
+```
+
+**Mensajes interactivos:**```
+Describe what you need:
+> Building reusable React components with accessibility and Tailwind CSS
+
+Frameworks/libraries:
+> React 18, TypeScript, Tailwind CSS, shadcn/ui
+
+Use cases:
+> Creating new components, styling patterns, making accessible
+```
+
+**Los archivos generados incluyen:**
+- Referencias a documentos de React, documentos de Tailwind, pautas de accesibilidad
+- Patrones de código base de `src/components/`
+- Entradas del libro de recetas para tipos de componentes comunes
+
+## Salida
+
+El comando te muestra:
+
+1. **Resumen de la investigación**: lo que se encontró en cada fuente
+2. **Estructura de habilidades** - Archivos que se crearán
+3. **Vista previa** - Primeras 50 líneas de SKILL.md
+4. **Confirmación** - SÍ/NO para crear
+
+Salida de ejemplo:
+
+```
+📚 Research Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web Docs:
+  ✓ Supabase Swift SDK docs
+  ✓ API reference
+  ✓ Authentication guide
+
+Local Documentation:
+  ✓ docs/02-practices/database.md
+  ⚠ No local patterns found
+
+Codebase Patterns:
+  ✓ src/lib/supabase.ts (client setup)
+  ✓ src/services/auth/ (auth service)
+
+MCP Server:
+  ✓ @supabase/mcp-server available
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Will create:
+.claude/skills/supabase-swift/
+├── SKILL.md
+├── references.md
+├── cookbook/
+│   ├── authentication.md
+│   ├── crud-operations.md
+│   └── realtime-subscriptions.md
+└── .mcp.json
+
+Create this skill? (Yes/No)
+```
+
+## Mejores prácticas
+
+### Habilidades para nombrar
+
+Utilice nombres descriptivos específicos con guiones:
+
+- ✅ `supabase-swift` - Tecnología y contexto claros
+- ✅ `react-components-accessible` - Marco y característica clave
+- ✅ `rest-api-error-handling` - Dominio y enfoque
+- ❌ `database` - Demasiado vago
+- ❌ `api` - Demasiado genérico
+- ❌ `my_skill` - Utilice guiones, no guiones bajos
+
+### Creando habilidades efectivas
+
+1. **Utilice dominios específicos**: una tecnología por habilidad, no demasiado amplia
+2. **Incluir múltiples casos de uso**: agregue entradas de libros de cocina para diferentesescenarios
+3. **Enlace a patrones de proyecto**: el archivo references.md debe apuntar a su código real.
+4. **Agregar solución de problemas**: anticipe y solucione problemas comunes
+5. **Manténgase enfocado**: de 2 a 4 entradas de libros de cocina por habilidad
+
+### Cuándo crear nuevas habilidades
+
+Crea una habilidad cuando:
+- Utilizas una tecnología con frecuencia.
+- Tu equipo tiene patrones para algo.
+- Quieres codificar las mejores prácticas.
+- Necesita orientación paso a paso
+
+No cree si:
+- El tema es demasiado limitado (una entrada del libro de cocina)
+- Lo usas raramente
+- Los documentos externos son suficientes.
+
+## Entradas de libros de cocina
+
+Los libros de cocina son guías paso a paso para casos de uso específicos. Cada habilidad puede tener varios libros de cocina.
+
+### Estructura del libro de cocina
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```idioma
+   ejemplo de código
+   ```
+
+2. **Step 2**: Next step
+   ```idioma
+   ejemplo de código
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### Ejemplos de libros de cocina
+
+Cada entrada del libro de cocina debe abordar una tarea común específica:
+
+- **Habilidad Supabase**:
+  - `authentication.md` - Registrarse, iniciar sesión, cerrar sesión
+  - `crud-operations.md` - Crear, leer, actualizar, eliminar
+  -`realtime-subscriptions.md` - Escuchar cambios en la base de datos
+
+- **Habilidad de componentes de reacción**:
+  - `create-component.md` - Construir un nuevo componente
+  - `styling-patterns.md` - Aplicar estilos consistentes
+  - `accessibility.md` - Hazlo accesible
+
+## Integración MCP
+
+Si la tecnología de su habilidad tiene un servidor MCP disponible, el comando incluye `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+Esto le permite a Claude usar herramientas MCP cuando trabaja con la habilidad. Deberá configurar variables de entorno para que funcionen las herramientas.
+
+## Manejo de errores
+
+### La búsqueda web no arroja resultados
+
+Si la documentación no se encuentra en línea:
+- El comando crea la habilidad con patrones genéricos.
+- Puedes agregar URL manualmente a `references.md` más tarde
+- Utilice `/agileflow:skill:edit` para mejorarlo.
+
+### Servidor MCP no encontrado
+
+Si no existe ningún servidor MCP para su tecnología:
+- La habilidad se crea sin `.mcp.json`
+- Puede agregar MCP más tarde si hay un servidor disponible
+- Se proporcionan instrucciones de configuración manual de MCP
+
+### Errores de validación
+
+Antes de escribir, el comando validato:
+- El nombre de la habilidad contiene solo letras, números y guiones.
+- La descripción tiene menos de 1024 caracteres.
+- SKILL.md tiene menos de 500 líneas
+- Se hace referencia a todos los archivos de libros de cocina.
+
+Si la validación falla, se le pedirá que lo solucione antes de continuar.
+
+## Después de la creación
+
+Una vez creada la habilidad:
+
+1. **Pruébalo**:
+   ```bash
+   /agileflow:skill:test supabase-swift
+   ```
+
+2. **Úsalo** - Trabaja en tareas y la habilidad se activará automáticamente
+
+3. **Agregar aprendizaje** - Habilitar la superación personal:
+   ```bash
+   /agileflow:skill:upgrade supabase-swift
+   ```
+
+4. **Mejóralo** - Corrige el resultado de Claude y la habilidad aprende:
+   ```bash
+   /agileflow:skill:edit supabase-swift
+   ```
+
+## Solución de problemas
+
+### La habilidad no funciona
+
+Si una habilidad recién creada no parece activarse:
+
+1. Consulte la sección "Cuándo utilizar" en SKILL.md
+2. Asegúrese de que su pregunta coincida con los factores desencadenantes de activación.
+3. Ejecute `/agileflow:skill:test` para verificar la estructura.
+4. Edite con `/agileflow:skill:edit` para ajustar los activadores
+
+### Falta documentación local
+
+Si el comando no puede encontrar sus prácticas locales:
+
+1. Cree documentación en `docs/02-practices/` o `docs/04-architecture/`
+2. Edite la habilidad para hacer referencia a lo que crea
+3. Utilice palabras clave más específicas en la descripción de su habilidad.
+
+### Entradas del libro de cocina no mostradas
+
+Si las entradas del libro de cocina no son visibles en Claude Code:
+
+1. Ejecute `/agileflow:skill:test` para verificar que los archivos existan
+2. Verifique que SKILL.md haga referencia a ellos correctamente
+3. Asegúrese de que los archivos del libro de recetas sean válidos.
+
+## Comandos relacionados
+
+- [`/skill:list`](/commands/skill-list) - Ver todas las habilidades instaladas
+- [`/skill:edit`](/commands/skill-edit) - Modificar una habilidad existente
+- [`/skill:test`](/commands/skill-test) - Verificar que una habilidad funcione
+- [`/skill:delete`](/commands/skill-delete) - Eliminar una habilidad
+- [`/skill:upgrade`](/commands/skill-upgrade) - Agregar capacidad de aprendizaje
+
+## Próximos pasos
+
+1. Crea tu primera habilidad: `/agileflow:skill:create`
+2. Pruebe que funciona: `/agileflow:skill:test`
+3. Úselo en su trabajo: se activará automáticamente
+4. Mejóralo con `/agileflow:skill:upgrade`

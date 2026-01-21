@@ -1,0 +1,120 @@
+---
+title: /sessão:init
+description: Inicializar o chicote de sessão com verificação de teste
+---
+# /sessão:init
+
+Inicialize ou verifique o sistema de gerenciamento de sessão. Este comando configura a infraestrutura de rastreamento de sessão.
+
+## Início rápido
+
+```bash
+/agileflow:session:init
+```
+
+## O que faz
+
+1. Cria o diretório __NOTRASLATE_13__ se estiver ausente
+2. Inicializa __NOTRASLATE_14__ com esquema
+3. Registra o diretório atual como uma sessão
+4. Cria um arquivo de bloqueio com o ID do processo atual
+5. Exibe o status da sessão
+
+## Exemplo de saída
+
+### Configuração pela primeira vez
+
+```
+✓ Session initialized
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+
+No other active sessions detected.
+```
+
+### Já inicializado
+
+```
+✓ Session already active
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+```
+
+### Outras sessões ativas
+
+__NOTRADUZIR_3__
+
+## Quando é chamado?
+
+### Automático (recomendado)
+
+O gancho SessionStart chama isso automaticamente quando o Claude Code é iniciado:
+
+__NÃOTRADUZIR_4__
+
+O script de boas-vindas registra a sessão e exibe o status.
+
+### Manual
+
+Execute manualmente para:
+- Verifique se o sistema de sessão está funcionando
+- Registre-se novamente após problemas no sistema
+- Problemas de sessão de depuração
+
+__NOTRADUZIR_5__
+
+## Arquivos criados
+
+### Arquivo de Registro
+
+__NOTRADUZIR_15__:
+
+__NOTRADUZIR_6__
+
+### Bloquear arquivo
+
+`.agileflow/sessions/1.lock`:
+
+__NÃOTRADUZIR_7__
+
+## Solução de problemas
+
+### Sessão não detectada
+
+__NÃOTRADUZIR_8__
+
+### Aviso de bloqueio obsoleto
+
+Se você vir bloqueios obsoletos, o comando init os limpa:
+
+__NOTRADUZIR_9__
+
+### Problemas de permissão
+
+Certifique-se de ter acesso de gravação a __NOTRASLATE_17__:
+
+__NOTRADUZIR_10__
+
+## Integração com script de boas-vindas
+
+O script de boas-vindas do AgileFlow inclui detecção de sessão:
+
+__NOTRADUZIR_11__
+
+Ou com conflitos:
+
+```
+│ Sessions             │ ⚠️ 2 other active                   │
+
+⚠️  Other Claude session(s) active in this repo.
+```
+
+## Comandos Relacionados
+
+- [`/session:status`](/commands/session-status) - Ver todas as sessões
+- [__NOTRASLATE_19____NOTRASLATE_22__ - Criar sessão paralela
+- [`/session:end`__NOTRASLATE_23__ - Encerrar sessão atual

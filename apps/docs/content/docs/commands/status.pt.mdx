@@ -1,0 +1,113 @@
+---
+title: /status
+description: Atualizar o status e o progresso da história
+---
+# /status
+
+Atualize o status da história no sistema de rastreamento de projetos e transmita as alterações aos agentes por meio do barramento de mensagens.
+
+## Início rápido
+
+```bash
+/agileflow:status STORY=US-0001 STATUS=in-progress
+```
+
+## Parâmetros
+
+| Parâmetro | Obrigatório | Padrão | Descrição |
+|-----------|----------|---------|------------|
+| `STORY` | Sim | - | ID da história (por exemplo, US-0001, US-0042) |
+| `STATUS` | Sim | - | Novo status: `ready`, `in-progress`, `blocked`, `in-review` ou `done` |
+| `SUMMARY` | Não | - | Resumo de 1-2 linhas do progresso ou motivo da mudança de status |
+| `PR` | Não | - | URL de solicitação pull (para status de revisão/concluído) |
+| `TO` | Não | TODOS | Agente(s) alvo a notificar através do barramento de mensagens |
+
+## Exemplos
+
+### Comece a trabalhar em uma história
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="Beginning login form implementation"
+```
+
+Isso atualiza o status da história e notifica todos os agentes de que você começou a trabalhar.
+
+### Marcar como bloqueado
+
+```bash
+/agileflow:status STORY=US-0045 STATUS=blocked SUMMARY="Waiting on AG-API to implement /auth/login endpoint"
+```
+
+Transmita o bloqueador para que outros membros da equipe possam ajudar a resolvê-lo.
+
+### Mover para revisão de código__NOTRADUZIR_3__
+
+Compartilhe o link PR para revisores.
+
+### Conclua uma história
+
+__NÃOTRADUZIR_4__
+
+Marque a história como concluída.
+
+## Saída
+
+O comando exibe:
+1. **Visualização de comparação** - Mostra o que mudará em __NOTRASLATE_16__
+2. **Confirmação** - solicitação SIM/NÃO para aplicar alterações
+3. **Mensagem de sucesso** – Confirmação de atualização de status
+4. **Message Bus Entry** - Mensagem de difusão enviada aos agentes
+
+Exemplo de saída:
+__NOTRADUZIR_5__
+
+## Arquivos de dados atualizados
+
+Este comando modifica:
+- __NOTRASLATE_17__ - Acompanhamento do status da história
+- __NOTRASLATE_18__ - Barramento de mensagens do agente (acrescenta evento de mudança de status)
+
+## Valores de status explicados
+
+- **pronto** - A história está preparada e esperando para ser iniciada
+- **em andamento** - Atualmente sendo trabalhado ativamente
+- **bloqueado** - Aguardando dependência externa ou esclarecimento
+- **em revisão** - Concluído e aguardando revisão/aprovação do código
+- **concluído** - Concluído, testado e verificado
+
+## Melhores práticas
+
+1. **Sempre inclua um resumo** - Ajuda a equipe a entender o contexto e o progresso2. **Atualize imediatamente** - Não espere atualizações de status em lote
+3. **Vincular PRs para avaliações** – Ajuda os revisores a encontrar seu trabalho
+4. **Use uma linguagem clara** - Explique os bloqueadores em detalhes para que outras pessoas possam ajudar
+5. **Atualizar quando bloqueado** - Não fique sentado silenciosamente nos bloqueadores - comunique-se imediatamente
+
+## Comandos Relacionados
+
+- [`/agileflow:board`](/commands/board) - Ver quadro kanban com todos os status
+- [__NOTRASLATE_20____NOTRASLATE_48__ - Analisar e resolver bloqueadores
+- [`/agileflow:assign`](/commands/assign) - Atribuir história ao proprietário com status
+- [`/agileflow:metrics`__NOTRASLATE_50__ - Acompanhar métricas de conclusão
+
+## Perguntas frequentes
+
+<Accordion type="multiple">
+  <AccordionItem value="direct">
+    <AccordionTrigger>Posso alterar o status diretamente?</AccordionTrigger>
+    <AccordionContent>
+      Sim, use o parâmetro __NOTRASLATE_23__ com qualquer valor de status válido.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="assign">
+    <AccordionTrigger>E se eu quiser atribuir a história também?__NOTRASLATE_40__
+    <AccordionContent>
+      Usar __NÃORANSLATE_24__ que lida com atualizações de atribuição e status juntas.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="notify">
+    <AccordionTrigger>Como faço para notificar agentes específicos?__NOTRASLATE_43__
+    <AccordionContent>
+      Use o parâmetro __NOTRASLATE_25__: __NOTRASLATE_26__
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
