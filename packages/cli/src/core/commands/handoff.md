@@ -246,3 +246,131 @@ ACTIONS
 2) Append bus line type="handoff".
 
 Diff-first; YES/NO.
+
+---
+
+## Expected Output
+
+### Successful Handoff
+
+```
+📋 Creating Handoff: US-0042
+
+From: AG-API
+To: AG-UI
+Summary: Completed auth endpoints, tests passing
+
+Files to create:
+───────────────────────────────────────────────
+1. docs/09-agents/comms/US-0042-20260121-handoff.md
+
+Preview:
+─────────────────────────────────────────────
+# Handoff: US-0042
+
+**From**: AG-API
+**To**: AG-UI
+**Date**: 2026-01-21
+
+## Summary
+Completed all authentication API endpoints including login, logout, and token refresh.
+Unit and integration tests passing (14 tests).
+
+## Work Completed
+- POST /api/auth/login endpoint
+- POST /api/auth/logout endpoint
+- POST /api/auth/refresh endpoint
+- JWT token generation with 1h expiry
+- Integration tests with mocked database
+
+## Blockers
+- None - API is ready for UI integration
+
+## Notes for Next Agent
+- Use the `useAuth` hook for token management
+- Login endpoint returns { token, user } on success
+- Error responses use standard { error, code } format
+- See docs/04-architecture/auth-api.md for full spec
+
+## Files Modified
+- src/api/auth/login.ts
+- src/api/auth/logout.ts
+- src/api/auth/refresh.ts
+- tests/api/auth/*.test.ts
+─────────────────────────────────────────────
+
+2. docs/09-agents/bus/log.jsonl (append)
+   + {"ts":"2026-01-21T14:30:00Z","type":"handoff","story":"US-0042","from":"AG-API","to":"AG-UI","summary":"Completed auth endpoints"}
+
+[AskUserQuestion: "Create this handoff?"]
+
+✅ Handoff created successfully!
+   Note: docs/09-agents/comms/US-0042-20260121-handoff.md
+   Bus log updated: handoff event appended
+```
+
+### Missing Required Inputs
+
+```
+❌ Missing required inputs
+
+Please provide:
+  • STORY - Story ID (e.g., US-0042)
+  • FROM - Source agent (e.g., AG-API)
+  • TO - Target agent (e.g., AG-UI)
+  • SUMMARY - What was done
+
+Usage:
+/agileflow:handoff STORY=US-0042 FROM=AG-API TO=AG-UI SUMMARY="Completed auth endpoints"
+
+Optional:
+  • BLOCKERS - Issues for next agent (e.g., "Need DBA review")
+```
+
+### Handoff with Blockers
+
+```
+📋 Creating Handoff: US-0042
+
+From: AG-API
+To: AG-UI
+Summary: Completed auth endpoints
+Blockers: 2 identified
+
+Files to create:
+───────────────────────────────────────────────
+1. docs/09-agents/comms/US-0042-20260121-handoff.md
+
+## Blockers
+
+⚠️ The following blockers need attention:
+
+1. **Database migration pending**
+   Schema changes need DBA review before deployment.
+   Related: ADR-0015 (database upgrade strategy)
+
+2. **Rate limiting not configured**
+   Need to decide on rate limits for login endpoint.
+   Suggest: /agileflow:adr for rate limiting decision
+
+[AskUserQuestion: "Create handoff with blockers?"]
+```
+
+### Invalid Agent ID
+
+```
+❌ Invalid agent ID: AG-UNKNOWN
+
+Valid agent IDs:
+  • AG-UI - UI/frontend specialist
+  • AG-API - API/backend specialist
+  • AG-DATABASE - Database specialist
+  • AG-CI - CI/CD specialist
+  • AG-TESTING - Testing specialist
+  • AG-DEVOPS - DevOps specialist
+
+Check the FROM and TO parameters.
+
+Usage:
+/agileflow:handoff STORY=US-0042 FROM=AG-API TO=AG-UI SUMMARY="..."
+```
