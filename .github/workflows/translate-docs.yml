@@ -4,20 +4,23 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/docs/content/docs/**/*.mdx'
-      - '!apps/docs/content/docs/es/**'
-      - '!apps/docs/content/docs/zh/**'
-      - '!apps/docs/content/docs/ar/**'
-      - '!apps/docs/content/docs/fr/**'
-      - '!apps/docs/content/docs/de/**'
-      - '!apps/docs/content/docs/ja/**'
-      - '!apps/docs/content/docs/ko/**'
-      - '!apps/docs/content/docs/pt/**'
-      - '!apps/docs/content/docs/he/**'
+      # Only trigger on English source files (no language suffix)
+      - 'apps/docs/content/docs/**/index.mdx'
+      - 'apps/docs/content/docs/**/[!index]*.mdx'
+      # Exclude translated files (filename suffix format)
+      - '!apps/docs/content/docs/**/*.es.mdx'
+      - '!apps/docs/content/docs/**/*.fr.mdx'
+      - '!apps/docs/content/docs/**/*.de.mdx'
+      - '!apps/docs/content/docs/**/*.pt.mdx'
+      - '!apps/docs/content/docs/**/*.ar.mdx'
+      - '!apps/docs/content/docs/**/*.zh.mdx'
+      - '!apps/docs/content/docs/**/*.ja.mdx'
+      - '!apps/docs/content/docs/**/*.ko.mdx'
+      - '!apps/docs/content/docs/**/*.he.mdx'
   workflow_dispatch:
     inputs:
       language:
-        description: 'Language to translate to (es, zh, ar, fr, de, ja, ko, pt, he, or "all")'
+        description: 'Language to translate to (es, fr, de, pt, ar, or "all")'
         required: false
         default: 'all'
 
@@ -54,7 +57,8 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "files=all" >> $GITHUB_OUTPUT
           else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' | grep -v '/es/\|/zh/\|/ar/\|/fr/\|/de/\|/ja/\|/ko/\|/pt/\|/he/' || true)
+            # Filter out translated files (*.{lang}.mdx format)
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\|zh\|ja\|ko\|he\)\.mdx$' || true)
             echo "files<<EOF" >> $GITHUB_OUTPUT
             echo "$CHANGED" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
@@ -77,18 +81,15 @@ jobs:
           fi
 
           if [ "$LANG" = "all" ]; then
-            # Translate to all languages (one at a time to avoid rate limits)
-            for L in es zh fr de ja ko pt; do
+            # Translate to Orama-supported languages only (one at a time to avoid rate limits)
+            for L in es fr de pt; do
               echo "Translating to $L..."
               npx tsx scripts/translate-docs.ts $L $FILE_ARGS || echo "Warning: $L translation had errors"
               sleep 2
             done
-            # RTL languages last
-            for L in ar he; do
-              echo "Translating to $L..."
-              npx tsx scripts/translate-docs.ts $L $FILE_ARGS || echo "Warning: $L translation had errors"
-              sleep 2
-            done
+            # RTL language (Arabic) - also Orama-supported
+            echo "Translating to ar..."
+            npx tsx scripts/translate-docs.ts ar $FILE_ARGS || echo "Warning: ar translation had errors"
           else
             npx tsx scripts/translate-docs.ts $LANG $FILE_ARGS
           fi
