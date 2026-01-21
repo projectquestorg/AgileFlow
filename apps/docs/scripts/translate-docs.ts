@@ -433,6 +433,13 @@ async function main() {
     console.log(`\n🌐 Translating to ${LANGUAGES[lang]} (${lang})...`)
 
     for (const file of mdxFiles) {
+      // Check if translation already exists
+      const outputPath = file.replace(/\.mdx$/, `.${lang}.mdx`)
+      if (fs.existsSync(outputPath)) {
+        console.log(`  ⏭️  ${file} (already translated)`)
+        continue
+      }
+
       console.log(`  📄 ${file}`)
       try {
         await translateMdxFile(file, lang, dryRun)
