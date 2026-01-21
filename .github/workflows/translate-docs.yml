@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       # Trigger on any mdx file change, then filter in script
+      - 'apps/docs/content/docs/*.mdx'
       - 'apps/docs/content/docs/**/*.mdx'
   workflow_dispatch:
     inputs:
@@ -52,10 +53,11 @@ jobs:
             echo "=== Diff between HEAD~1 and HEAD ==="
             git diff --name-only HEAD~1 HEAD || true
             echo "=== MDX files changed ==="
-            git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' || true
+            git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/*.mdx' 'apps/docs/content/docs/**/*.mdx' || true
 
             # Filter out translated files (*.{lang}.mdx format)
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\|zh\|ja\|ko\|he\)\.mdx$' || true)
+            # Include both root level and nested mdx files
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/*.mdx' 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\|zh\|ja\|ko\|he\)\.mdx$' || true)
             echo "=== Filtered files ==="
             echo "$CHANGED"
 
