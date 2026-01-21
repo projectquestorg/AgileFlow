@@ -35,6 +35,107 @@ try {
 }
 
 // =============================================================================
+// Command Whitelist for safeExec (US-0120)
+// =============================================================================
+
+/**
+ * Whitelisted commands for safeExec
+ * Only commands starting with these prefixes are allowed
+ */
+const SAFEEXEC_ALLOWED_COMMANDS = [
+  // Git commands (read-only operations)
+  'git ',
+  'git branch',
+  'git log',
+  'git status',
+  'git diff',
+  'git rev-parse',
+  'git describe',
+  'git show',
+  'git config',
+  'git remote',
+  'git tag',
+  // Node commands (for internal AgileFlow scripts only)
+  'node ',
+];
+
+/**
+ * Dangerous patterns that should never be executed
+ */
+const SAFEEXEC_BLOCKED_PATTERNS = [
+  /\|/,         // Pipe
+  /;/,          // Command separator
+  /&&/,         // AND operator
+  /\|\|/,       // OR operator
+  /`/,          // Backticks
+  /\$\(/,       // Command substitution
+  />/,          // Redirect output
+  /</,          // Redirect input
+  /\bsudo\b/,   // Sudo
+  /\brm\b/,     // Remove
+  /\bmv\b/,     // Move
+  /\bcp\b/,     // Copy
+  /\bchmod\b/,  // Change permissions
+  /\bchown\b/,  // Change owner
+  /\bcurl\b/,   // curl (network)
+  /\bwget\b/,   // wget (network)
+];
+
+/**
+ * Logger for safeExec operations (configurable)
+ */
+let _safeExecLogger = null;
+
+/**
+ * Configure the safeExec logger
+ * @param {Function|null} logger - Logger function or null to disable
+ */
+function configureSafeExecLogger(logger) {
+  _safeExecLogger = logger;
+}
+
+/**
+ * Log a safeExec operation
+ * @param {string} level - Log level ('debug', 'warn', 'error')
+ * @param {string} message - Log message
+ * @param {Object} [details] - Additional details
+ */
+function logSafeExec(level, message, details = {}) {
+  if (_safeExecLogger) {
+    _safeExecLogger(level, message, details);
+  }
+}
+
+/**
+ * Check if a command is allowed
+ * @param {string} cmd - Command to check
+ * @returns {{allowed: boolean, reason?: string}}
+ */
+function isCommandAllowed(cmd) {
+  if (!cmd || typeof cmd !== 'string') {
+    return { allowed: false, reason: 'Invalid command' };
+  }
+
+  const trimmed = cmd.trim();
+
+  // Check for blocked patterns
+  for (const pattern of SAFEEXEC_BLOCKED_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      return { allowed: false, reason: `Blocked pattern: ${pattern}` };
+    }
+  }
+
+  // Check against whitelist
+  const isWhitelisted = SAFEEXEC_ALLOWED_COMMANDS.some(prefix => trimmed.startsWith(prefix));
+
+  if (!isWhitelisted) {
+    return { allowed: false, reason: 'Command not in whitelist' };
+  }
+
+  return { allowed: true };
+}
+
+// =============================================================================
 // Synchronous I/O Helpers
 // =============================================================================
 
@@ -83,14 +184,48 @@ function safeLs(dirPath) {
 }
 
 /**
- * Safely execute a shell command.
+ * Safely execute a shell command with whitelist validation.
+ *
+ * Only whitelisted commands (mainly git operations) are allowed.
+ * Dangerous patterns (pipes, redirects, etc.) are blocked.
+ *
  * @param {string} cmd - Command to execute
+ * @param {Object} [options] - Options
+ * @param {boolean} [options.bypassWhitelist=false] - Skip whitelist check (use with caution)
  * @returns {string|null} Command output or null
  */
-function safeExec(cmd) {
+function safeExec(cmd, options = {}) {
+  const { bypassWhitelist = false } = options;
+
+  // Validate command unless bypassed
+  if (!bypassWhitelist) {
+    const check = isCommandAllowed(cmd);
+    if (!check.allowed) {
+      logSafeExec('warn', 'Command blocked by whitelist', {
+        cmd: cmd?.substring(0, 100),
+        reason: check.reason,
+      });
+      return null;
+    }
+  }
+
+  logSafeExec('debug', 'Executing command', {
+    cmd: cmd?.substring(0, 100),
+    bypassed: bypassWhitelist,
+  });
+
   try {
-    return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-  } catch {
+    const result = execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    logSafeExec('debug', 'Command succeeded', {
+      cmd: cmd?.substring(0, 50),
+      outputLength: result?.length || 0,
+    });
+    return result;
+  } catch (error) {
+    logSafeExec('debug', 'Command failed', {
+      cmd: cmd?.substring(0, 50),
+      error: error?.message?.substring(0, 100),
+    });
     return null;
   }
 }
@@ -140,17 +275,51 @@ async function safeLsAsync(dirPath) {
 }
 
 /**
- * Execute a command asynchronously.
+ * Execute a command asynchronously with whitelist validation.
+ *
+ * Only whitelisted commands (mainly git operations) are allowed.
+ * Dangerous patterns (pipes, redirects, etc.) are blocked.
+ *
  * @param {string} cmd - Command to execute
+ * @param {Object} [options] - Options
+ * @param {boolean} [options.bypassWhitelist=false] - Skip whitelist check (use with caution)
  * @returns {Promise<string|null>} Command output or null
  */
-async function safeExecAsync(cmd) {
+async function safeExecAsync(cmd, options = {}) {
+  const { bypassWhitelist = false } = options;
+
+  // Validate command unless bypassed
+  if (!bypassWhitelist) {
+    const check = isCommandAllowed(cmd);
+    if (!check.allowed) {
+      logSafeExec('warn', 'Async command blocked by whitelist', {
+        cmd: cmd?.substring(0, 100),
+        reason: check.reason,
+      });
+      return null;
+    }
+  }
+
+  logSafeExec('debug', 'Executing async command', {
+    cmd: cmd?.substring(0, 100),
+    bypassed: bypassWhitelist,
+  });
+
   return new Promise(resolve => {
     exec(cmd, { encoding: 'utf8' }, (error, stdout) => {
       if (error) {
+        logSafeExec('debug', 'Async command failed', {
+          cmd: cmd?.substring(0, 50),
+          error: error?.message?.substring(0, 100),
+        });
         resolve(null);
       } else {
-        resolve(stdout.trim());
+        const result = stdout.trim();
+        logSafeExec('debug', 'Async command succeeded', {
+          cmd: cmd?.substring(0, 50),
+          outputLength: result?.length || 0,
+        });
+        resolve(result);
       }
     });
   });
@@ -506,6 +675,12 @@ module.exports = {
   safeReadJSONAsync,
   safeLsAsync,
   safeExecAsync,
+
+  // Command whitelist (US-0120)
+  SAFEEXEC_ALLOWED_COMMANDS,
+  SAFEEXEC_BLOCKED_PATTERNS,
+  configureSafeExecLogger,
+  isCommandAllowed,
 
   // Context tracking
   getContextPercentage,

@@ -47,6 +47,10 @@ const {
   safeReadJSONAsync,
   safeLsAsync,
   safeExecAsync,
+  SAFEEXEC_ALLOWED_COMMANDS,
+  SAFEEXEC_BLOCKED_PATTERNS,
+  configureSafeExecLogger,
+  isCommandAllowed,
   RESEARCH_COMMANDS,
   determineSectionsToLoad,
   parseCommandArgs,
@@ -108,16 +112,34 @@ describe('context-loader', () => {
   });
 
   describe('safeExec', () => {
-    it('returns command output', () => {
+    it('returns command output for whitelisted commands', () => {
       mockExecSync.mockReturnValue('  output  ');
-      expect(safeExec('echo test')).toBe('output');
+      expect(safeExec('git status')).toBe('output');
     });
 
     it('returns null when command fails', () => {
       mockExecSync.mockImplementation(() => {
         throw new Error('Command failed');
       });
-      expect(safeExec('invalid-command')).toBeNull();
+      expect(safeExec('git status')).toBeNull();
+    });
+
+    it('returns null for non-whitelisted commands', () => {
+      expect(safeExec('echo test')).toBeNull();
+      expect(mockExecSync).not.toHaveBeenCalled();
+    });
+
+    it('allows bypass whitelist option', () => {
+      mockExecSync.mockReturnValue('  output  ');
+      expect(safeExec('echo test', { bypassWhitelist: true })).toBe('output');
+      expect(mockExecSync).toHaveBeenCalled();
+    });
+
+    it('blocks commands with dangerous patterns', () => {
+      expect(safeExec('git status | grep foo')).toBeNull();
+      expect(safeExec('git status; rm -rf /')).toBeNull();
+      expect(safeExec('git status && echo hi')).toBeNull();
+      expect(mockExecSync).not.toHaveBeenCalled();
     });
   });
 
@@ -164,16 +186,184 @@ describe('context-loader', () => {
   });
 
   describe('safeExecAsync', () => {
-    it('returns command output asynchronously', async () => {
+    it('returns command output asynchronously for whitelisted commands', async () => {
       mockExec.mockImplementation((cmd, opts, cb) => cb(null, '  result  '));
-      const result = await safeExecAsync('echo test');
+      const result = await safeExecAsync('git branch');
       expect(result).toBe('result');
     });
 
     it('returns null when command fails', async () => {
       mockExec.mockImplementation((cmd, opts, cb) => cb(new Error('fail'), ''));
-      const result = await safeExecAsync('bad-cmd');
+      const result = await safeExecAsync('git branch');
       expect(result).toBeNull();
+    });
+
+    it('returns null for non-whitelisted commands', async () => {
+      const result = await safeExecAsync('echo test');
+      expect(result).toBeNull();
+      expect(mockExec).not.toHaveBeenCalled();
+    });
+
+    it('allows bypass whitelist option', async () => {
+      mockExec.mockImplementation((cmd, opts, cb) => cb(null, '  output  '));
+      const result = await safeExecAsync('echo test', { bypassWhitelist: true });
+      expect(result).toBe('output');
+      expect(mockExec).toHaveBeenCalled();
+    });
+
+    it('blocks commands with dangerous patterns', async () => {
+      const result1 = await safeExecAsync('git log | head');
+      const result2 = await safeExecAsync('git status; cat /etc/passwd');
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
+      expect(mockExec).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Command Whitelist (US-0120)', () => {
+    describe('SAFEEXEC_ALLOWED_COMMANDS', () => {
+      it('includes git commands', () => {
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git ');
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git branch');
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git log');
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git status');
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git diff');
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git rev-parse');
+      });
+
+      it('includes node commands for internal scripts', () => {
+        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('node ');
+      });
+
+      it('is an array', () => {
+        expect(Array.isArray(SAFEEXEC_ALLOWED_COMMANDS)).toBe(true);
+      });
+    });
+
+    describe('SAFEEXEC_BLOCKED_PATTERNS', () => {
+      it('includes dangerous patterns', () => {
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('|'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test(';'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('&&'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('||'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('`cmd`'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('$(cmd)'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('>'))).toBe(true);
+        expect(SAFEEXEC_BLOCKED_PATTERNS.some(p => p.test('<'))).toBe(true);
+      });
+
+      it('is an array of RegExp', () => {
+        expect(Array.isArray(SAFEEXEC_BLOCKED_PATTERNS)).toBe(true);
+        SAFEEXEC_BLOCKED_PATTERNS.forEach(pattern => {
+          expect(pattern instanceof RegExp).toBe(true);
+        });
+      });
+    });
+
+    describe('isCommandAllowed', () => {
+      it('allows whitelisted git commands', () => {
+        expect(isCommandAllowed('git status')).toEqual({ allowed: true });
+        expect(isCommandAllowed('git branch --show-current')).toEqual({ allowed: true });
+        expect(isCommandAllowed('git log -1 --format="%h"')).toEqual({ allowed: true });
+        expect(isCommandAllowed('git diff HEAD~1')).toEqual({ allowed: true });
+        expect(isCommandAllowed('git rev-parse HEAD')).toEqual({ allowed: true });
+      });
+
+      it('allows whitelisted node commands', () => {
+        expect(isCommandAllowed('node script.js')).toEqual({ allowed: true });
+        expect(isCommandAllowed('node "/path/to/script.js" status')).toEqual({ allowed: true });
+      });
+
+      it('blocks non-whitelisted commands', () => {
+        const result = isCommandAllowed('echo hello');
+        expect(result.allowed).toBe(false);
+        expect(result.reason).toBe('Command not in whitelist');
+      });
+
+      it('blocks commands with dangerous patterns', () => {
+        expect(isCommandAllowed('git status | grep foo').allowed).toBe(false);
+        expect(isCommandAllowed('git status; rm -rf /').allowed).toBe(false);
+        expect(isCommandAllowed('git status && echo done').allowed).toBe(false);
+        expect(isCommandAllowed('git status || exit').allowed).toBe(false);
+        expect(isCommandAllowed('git status `whoami`').allowed).toBe(false);
+        expect(isCommandAllowed('git status $(id)').allowed).toBe(false);
+        expect(isCommandAllowed('git log > output.txt').allowed).toBe(false);
+        expect(isCommandAllowed('git diff < input.txt').allowed).toBe(false);
+      });
+
+      it('blocks dangerous commands even if they start with git', () => {
+        expect(isCommandAllowed('git push; rm -rf /').allowed).toBe(false);
+        expect(isCommandAllowed('git status && sudo rm -rf /').allowed).toBe(false);
+      });
+
+      it('returns appropriate reasons', () => {
+        const pipeResult = isCommandAllowed('git status | head');
+        expect(pipeResult.allowed).toBe(false);
+        expect(pipeResult.reason).toMatch(/Blocked pattern/);
+
+        const nonWhitelisted = isCommandAllowed('ls -la');
+        expect(nonWhitelisted.allowed).toBe(false);
+        expect(nonWhitelisted.reason).toBe('Command not in whitelist');
+      });
+
+      it('handles invalid input', () => {
+        expect(isCommandAllowed(null).allowed).toBe(false);
+        expect(isCommandAllowed(undefined).allowed).toBe(false);
+        expect(isCommandAllowed('').allowed).toBe(false);
+        expect(isCommandAllowed(123).allowed).toBe(false);
+      });
+    });
+
+    describe('configureSafeExecLogger', () => {
+      it('accepts a logger function', () => {
+        const mockLogger = jest.fn();
+        expect(() => configureSafeExecLogger(mockLogger)).not.toThrow();
+      });
+
+      it('accepts null to disable logging', () => {
+        expect(() => configureSafeExecLogger(null)).not.toThrow();
+      });
+
+      it('logger receives log calls when command is blocked', () => {
+        const mockLogger = jest.fn();
+        configureSafeExecLogger(mockLogger);
+
+        // Try a blocked command
+        safeExec('echo dangerous');
+
+        expect(mockLogger).toHaveBeenCalledWith(
+          'warn',
+          'Command blocked by whitelist',
+          expect.objectContaining({
+            reason: 'Command not in whitelist',
+          })
+        );
+
+        // Clean up
+        configureSafeExecLogger(null);
+      });
+
+      it('logger receives log calls on successful execution', () => {
+        const mockLogger = jest.fn();
+        configureSafeExecLogger(mockLogger);
+        mockExecSync.mockReturnValue('output');
+
+        safeExec('git status');
+
+        expect(mockLogger).toHaveBeenCalledWith(
+          'debug',
+          'Executing command',
+          expect.any(Object)
+        );
+        expect(mockLogger).toHaveBeenCalledWith(
+          'debug',
+          'Command succeeded',
+          expect.any(Object)
+        );
+
+        // Clean up
+        configureSafeExecLogger(null);
+      });
     });
   });
 
