@@ -91,13 +91,29 @@ function getLockPath(sessionId) {
   return path.join(SESSIONS_DIR, `${sessionId}.lock`);
 }
 
-// Read lock file
+// Read lock file (sync version for backward compatibility)
 function readLock(sessionId) {
   const lockPath = getLockPath(sessionId);
   if (!fs.existsSync(lockPath)) return null;
 
   try {
     const content = fs.readFileSync(lockPath, 'utf8');
+    const lock = {};
+    content.split('\n').forEach(line => {
+      const [key, value] = line.split('=');
+      if (key && value) lock[key.trim()] = value.trim();
+    });
+    return lock;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Read lock file (async version for parallel operations)
+async function readLockAsync(sessionId) {
+  const lockPath = getLockPath(sessionId);
+  try {
+    const content = await fs.promises.readFile(lockPath, 'utf8');
     const lock = {};
     content.split('\n').forEach(line => {
       const [key, value] = line.split('=');
@@ -131,7 +147,7 @@ function isSessionActive(sessionId) {
   return isPidAlive(parseInt(lock.pid, 10));
 }
 
-// Clean up stale locks (with detailed tracking)
+// Clean up stale locks (with detailed tracking) - sync version for backward compatibility
 function cleanupStaleLocks(registry, options = {}) {
   const { verbose = false, dryRun = false } = options;
   let cleaned = 0;
@@ -166,10 +182,84 @@ function cleanupStaleLocks(registry, options = {}) {
   return { count: cleaned, sessions: cleanedSessions };
 }
 
-// Get current git branch
+// Clean up stale locks (async parallel version - faster for many sessions)
+async function cleanupStaleLocksAsync(registry, options = {}) {
+  const { verbose = false, dryRun = false } = options;
+  const cleanedSessions = [];
+
+  const sessionEntries = Object.entries(registry.sessions);
+  if (sessionEntries.length === 0) {
+    return { count: 0, sessions: [] };
+  }
+
+  // Read all locks in parallel
+  const lockResults = await Promise.all(
+    sessionEntries.map(async ([id, session]) => {
+      const lock = await readLockAsync(id);
+      return { id, session, lock };
+    })
+  );
+
+  // Process results (sequential - fast since it's just memory operations)
+  for (const { id, session, lock } of lockResults) {
+    if (lock) {
+      const pid = parseInt(lock.pid, 10);
+      const isAlive = isPidAlive(pid);
+
+      if (!isAlive) {
+        cleanedSessions.push({
+          id,
+          nickname: session.nickname,
+          branch: session.branch,
+          pid,
+          reason: 'pid_dead',
+          path: session.path,
+        });
+
+        if (!dryRun) {
+          removeLock(id);
+        }
+      }
+    }
+  }
+
+  return { count: cleanedSessions.length, sessions: cleanedSessions };
+}
+
+// Git command cache (10 second TTL to avoid stale data)
+const gitCache = {
+  data: new Map(),
+  ttlMs: 10000,
+  get(key) {
+    const entry = this.data.get(key);
+    if (entry && Date.now() - entry.timestamp < this.ttlMs) {
+      return entry.value;
+    }
+    this.data.delete(key);
+    return null;
+  },
+  set(key, value) {
+    this.data.set(key, { value, timestamp: Date.now() });
+  },
+  invalidate(key) {
+    if (key) {
+      this.data.delete(key);
+    } else {
+      this.data.clear();
+    }
+  },
+};
+
+// Get current git branch (cached for performance)
 function getCurrentBranch() {
+  const cacheKey = `branch:${ROOT}`;
+  const cached = gitCache.get(cacheKey);
+  if (cached !== null) return cached;
+
   try {
-    return execSync('git branch --show-current', { cwd: ROOT, encoding: 'utf8' }).trim();
+    const branch = execSync('git branch --show-current', { cwd: ROOT, encoding: 'utf8' }).trim();
+    gitCache.set(cacheKey, branch);
+    return branch;
   } catch (e) {
     return 'unknown';
   }
@@ -477,22 +567,33 @@ function deleteSession(sessionId, removeWorktree = false) {
   return { success: true };
 }
 
-// Get main branch name (main or master)
+// Get main branch name (main or master) - cached since it rarely changes
 function getMainBranch() {
+  const cacheKey = `mainBranch:${ROOT}`;
+  const cached = gitCache.get(cacheKey);
+  if (cached !== null) return cached;
+
   const checkMain = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/main'], {
     cwd: ROOT,
     encoding: 'utf8',
   });
 
-  if (checkMain.status === 0) return 'main';
+  if (checkMain.status === 0) {
+    gitCache.set(cacheKey, 'main');
+    return 'main';
+  }
 
   const checkMaster = spawnSync('git', ['show-ref', '--verify', '--quiet', 'refs/heads/master'], {
     cwd: ROOT,
     encoding: 'utf8',
   });
 
-  if (checkMaster.status === 0) return 'master';
+  if (checkMaster.status === 0) {
+    gitCache.set(cacheKey, 'master');
+    return 'master';
+  }
 
+  gitCache.set(cacheKey, 'main');
   return 'main'; // Default fallback
 }
 
@@ -777,7 +878,7 @@ const SESSION_PHASES = {
   MERGED: 'merged',
 };
 
-// Detect session phase based on git state
+// Detect session phase based on git state (with caching for performance)
 function getSessionPhase(session) {
   // If merged_at field exists, session was merged
   if (session.merged_at) {
@@ -796,6 +897,11 @@ function getSessionPhase(session) {
       return SESSION_PHASES.TODO;
     }
 
+    // Cache key for this session's git state
+    const cacheKey = `phase:${sessionPath}`;
+    const cached = gitCache.get(cacheKey);
+    if (cached !== null) return cached;
+
     // Count commits since branch diverged from main
     const mainBranch = getMainBranch();
     const commitCount = execSync(`git rev-list --count ${mainBranch}..HEAD 2>/dev/null || echo 0`, {
@@ -806,6 +912,7 @@ function getSessionPhase(session) {
     const commits = parseInt(commitCount, 10);
 
     if (commits === 0) {
+      gitCache.set(cacheKey, SESSION_PHASES.TODO);
       return SESSION_PHASES.TODO;
     }
 
@@ -815,13 +922,17 @@ function getSessionPhase(session) {
       encoding: 'utf8',
     }).trim();
 
+    let phase;
     if (status === '') {
       // No uncommitted changes = ready for review
-      return SESSION_PHASES.REVIEW;
+      phase = SESSION_PHASES.REVIEW;
+    } else {
+      // Has commits but also uncommitted changes = still coding
+      phase = SESSION_PHASES.CODING;
     }
 
-    // Has commits but also uncommitted changes = still coding
-    return SESSION_PHASES.CODING;
+    gitCache.set(cacheKey, phase);
+    return phase;
   } catch (e) {
     // On error, assume coding phase
     return SESSION_PHASES.CODING;
@@ -2046,6 +2157,7 @@ module.exports = {
   deleteSession,
   isSessionActive,
   cleanupStaleLocks,
+  cleanupStaleLocksAsync,
   // Merge operations
   getMainBranch,
   checkMergeability,

@@ -22,6 +22,29 @@ const { execSync } = require('child_process');
 // Import centralized path utilities
 const { getStatusPath } = require('../lib/paths');
 
+// Simple cache for status.json (60 second TTL)
+const statusCache = {
+  data: null,
+  path: null,
+  timestamp: 0,
+  ttlMs: 60000,
+  get(filePath) {
+    if (
+      this.data &&
+      this.path === filePath &&
+      Date.now() - this.timestamp < this.ttlMs
+    ) {
+      return this.data;
+    }
+    return null;
+  },
+  set(filePath, data) {
+    this.data = data;
+    this.path = filePath;
+    this.timestamp = Date.now();
+  },
+};
+
 function getProjectInfo() {
   const rootDir = path.resolve(__dirname, '..');
 
@@ -77,7 +100,12 @@ function getProjectInfo() {
   try {
     const statusPath = getStatusPath(rootDir);
     if (fs.existsSync(statusPath)) {
-      const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      // Use cache if available (faster for repeated calls)
+      let status = statusCache.get(statusPath);
+      if (!status) {
+        status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+        statusCache.set(statusPath, status);
+      }
 
       // Get active stories
       if (status.stories) {
