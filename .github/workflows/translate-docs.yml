@@ -50,19 +50,15 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "files=all" >> $GITHUB_OUTPUT
           else
-            # Debug: Show all commits available
-            echo "=== Git log ==="
-            git log --oneline -5 || true
-            echo "=== Diff between HEAD~1 and HEAD ==="
-            git diff --name-only HEAD~1 HEAD || true
-            echo "=== MDX files changed ==="
-            git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/*.mdx' 'apps/docs/content/docs/**/*.mdx' || true
+            # Get English source files that changed (exclude translation files)
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/*.mdx' 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\)\.mdx$' || true)
 
-            # Filter out translated files (*.{lang}.mdx format)
-            # Include both root level and nested mdx files
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/*.mdx' 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\|zh\|ja\|ko\|he\)\.mdx$' || true)
-            echo "=== Filtered files ==="
-            echo "$CHANGED"
+            if [ -n "$CHANGED" ]; then
+              echo "Changed English files:"
+              echo "$CHANGED"
+            else
+              echo "No English doc files changed"
+            fi
 
             echo "files<<EOF" >> $GITHUB_OUTPUT
             echo "$CHANGED" >> $GITHUB_OUTPUT
@@ -73,7 +69,8 @@ jobs:
         if: steps.changed.outputs.files != ''
         run: |
           cd apps/docs
-          LANG="${{ github.event.inputs.language || 'es' }}"
+          # For push events, translate to all languages; for manual dispatch, use specified language
+          LANG="${{ github.event.inputs.language || 'all' }}"
           FILES="${{ steps.changed.outputs.files }}"
 
           # Build file list argument (only for incremental updates)
