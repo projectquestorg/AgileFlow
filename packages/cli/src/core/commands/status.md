@@ -337,3 +337,77 @@ Claude:
 - "Final summary of what was delivered"
 - "Any technical debt introduced?"
 - "Lessons learned?"
+
+---
+
+## Expected Output
+
+### Successful Status Update
+
+```
+📋 Status Update for US-0042
+
+Current: ready (plan phase)
+New: in-progress (execute phase)
+
+docs/09-agents/status.json
+───────────────────────────
+- "status": "ready",
+- "phase": "plan",
++ "status": "in-progress",
++ "phase": "execute",
++ "summary": "Started work on login form",
++ "last_update": "2026-01-21T14:30:00Z"
+
+[AskUserQuestion: "Update US-0042 to in-progress?"]
+
+✅ Status updated: US-0042 → in-progress
+✅ Bus message sent to: ALL
+```
+
+### With Phase Handoff
+
+```
+📋 Phase Transition Detected: plan → execute
+
+Before updating status, let's capture a handoff summary.
+
+[AskUserQuestion: "What's the plan for implementing this story?"]
+
+User: "Adding login form with email/password validation"
+
+✅ Handoff captured
+
+docs/09-agents/status.json
+───────────────────────────
+- "status": "ready",
++ "status": "in-progress",
++ "summary": "Adding login form with email/password validation"
+
+[AskUserQuestion: "Update US-0042 to in-progress?"]
+
+✅ Status updated: US-0042 → in-progress
+✅ Phase handoff logged: plan → execute
+```
+
+### Validation Error
+
+```
+❌ Invalid status value: "in_progress"
+
+Valid values are:
+  • ready - Story ready to start
+  • in-progress - Currently being worked on
+  • blocked - Waiting on dependency
+  • in-review - Code review/PR in progress
+  • done - Completed and verified
+```
+
+### JSON Corruption Recovery
+
+```
+❌ ERROR: status.json is now invalid JSON after update!
+
+Fix: Restoring from backup: docs/09-agents/status.json.backup
+✅ Backup restored successfully
+```

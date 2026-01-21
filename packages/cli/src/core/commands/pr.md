@@ -227,3 +227,99 @@ ACTIONS
 3) Suggest a Conventional Commit subject for squash.
 
 No file writes.
+
+---
+
+## Expected Output
+
+### Successful PR Description
+
+```
+📝 Generating PR description for US-0042...
+
+Reading story file: docs/06-stories/EP-0010/US-0042-login-form.md
+✅ Found epic: EP-0010 (User Authentication)
+✅ Found 3 acceptance criteria
+✅ Found 1 dependency: US-0041
+
+───────────────────────────────────────────────────────────
+PASTE-READY PR BODY (Copy everything below this line)
+───────────────────────────────────────────────────────────
+
+## US-0042: Implement Login Form with Validation
+
+### Summary
+
+Implements the user login form with email/password validation as part of the
+User Authentication epic (EP-0010). This PR adds client-side validation,
+error handling, and integration with the authentication API.
+
+### Linked Issues
+
+- Closes #US-0042
+- Depends on #US-0041 (Authentication API)
+
+### Acceptance Criteria
+
+- [x] User can enter email and password
+- [x] Form validates email format
+- [ ] Form shows error messages for invalid input
+- [x] Submit button disabled while validating
+
+### Test Evidence
+
+- `npm test src/components/LoginForm.test.tsx` - 12 tests passing
+- Manual testing: Verified on Chrome, Firefox, Safari
+- Screenshot: login-form-validation.png
+
+### Screenshots
+
+![Login Form](./screenshots/login-form.png)
+
+### Risk Assessment
+
+- **Low risk**: UI-only changes, no backend modifications
+- **Rollback**: Revert this PR if issues detected
+
+### Code Owners
+
+@frontend-team
+
+───────────────────────────────────────────────────────────
+
+**Suggested commit message:**
+```
+feat(auth): implement login form with validation
+
+Closes US-0042
+```
+
+[AskUserQuestion: "Use this PR description?"]
+```
+
+### Missing Story ID
+
+```
+❌ Missing required input: STORY
+
+Usage:
+/agileflow:pr STORY=US-0042 TITLE="Login Form"
+
+Optional parameters:
+- AC_CHECKED="1,2,4" - Mark AC items 1, 2, 4 as checked
+- TEST_EVIDENCE="npm test passes, manual QA complete"
+- NOTES="Additional context for reviewers"
+```
+
+### Story File Not Found
+
+```
+❌ Story file not found
+
+Searched:
+- docs/06-stories/US-0042.md
+- docs/06-stories/EP-*/US-0042-*.md
+
+Create the story first:
+/agileflow:story EPIC=EP-0010 STORY=US-0042 TITLE="Login Form" OWNER=AG-UI
+```

@@ -370,3 +370,96 @@ After successfully creating the story, offer next steps:
 - `/agileflow:story-validate` - Validate story completeness
 - `/agileflow:status` - Update story status
 - `/agileflow:epic` - Create parent epic
+
+---
+
+## Expected Output
+
+### Successful Story Creation
+
+```
+📝 Creating Story: US-0042
+
+Epic: EP-0010
+Title: Login Form with Validation
+Owner: AG-UI
+Estimate: 2h
+TDD Mode: true (smart default for AG-UI)
+
+Files to create:
+───────────────────────────
+1. docs/06-stories/EP-0010/US-0042-login-form-validation.md
+   - Story file with 3 acceptance criteria
+
+2. docs/07-testing/test-cases/US-0042.md
+   - Test stub referencing AC
+
+3. __tests__/US-0042.test.ts (TDD mode)
+   - 3 pending test cases from AC
+
+4. docs/09-agents/status.json (merge)
+   + "US-0042": {
+   +   "id": "US-0042",
+   +   "epic": "EP-0010",
+   +   "owner": "AG-UI",
+   +   "status": "ready",
+   +   "estimate": "2h",
+   +   "tdd_mode": true,
+   +   "test_file": "__tests__/US-0042.test.ts"
+   + }
+
+5. docs/09-agents/bus/log.jsonl (append)
+   + {"ts":"...","type":"assign","from":"SYSTEM","to":"AG-UI","story":"US-0042"}
+
+[AskUserQuestion: "Create story US-0042: Login Form with Validation?"]
+
+✅ Story US-0042 created successfully!
+✅ Test stub created: docs/07-testing/test-cases/US-0042.md
+✅ TDD tests created: __tests__/US-0042.test.ts (3 pending)
+✅ Bus message sent: assign → AG-UI
+
+[AskUserQuestion: "What would you like to do next?"]
+```
+
+### Story with Dependencies
+
+```
+📝 Creating Story: US-0043
+
+Dependencies: US-0042 (Login Form)
+
+⚠️ Dependency Status:
+  • US-0042: ready (not yet done)
+
+[AskUserQuestion: "Create story with pending dependency?"]
+  - Yes, create anyway (dependency will block)
+  - No, wait for US-0042
+
+✅ Story US-0043 created
+⚠️ Status set to 'blocked' (waiting on US-0042)
+```
+
+### Validation Error
+
+```
+❌ Invalid Input
+
+Missing required parameters:
+  • EPIC - Parent epic ID (e.g., EP-0010)
+  • TITLE - Story title
+
+Usage:
+/agileflow:story EPIC=EP-0010 STORY=US-0042 TITLE="Login Form" OWNER=AG-UI
+```
+
+### TDD Mode Detection
+
+```
+📝 Story Creation
+
+Owner: AG-DOCUMENTATION
+TDD Mode: false (smart default - documentation work)
+
+ℹ️ To enable TDD mode, add TDD=true to the command:
+   /agileflow:story ... TDD=true
+```

@@ -362,3 +362,116 @@ Suggested actions:
 - `/agileflow:story:list` - View all stories
 - `/agileflow:sprint` - Plan sprint with epic stories
 - `/agileflow:board` - Visual kanban board
+
+---
+
+## Expected Output
+
+### Successful Epic Creation
+
+```
+📦 Creating Epic: EP-0010
+
+Title: User Authentication System
+Owner: AG-API
+Goal: Enable secure user login with OAuth support
+
+Files to create:
+───────────────────────────
+1. docs/05-epics/EP-0010.md
+   - Epic definition with goal and stories
+
+2. docs/06-stories/EP-0010/US-0042-login-form.md
+   - Story: Login Form (AG-UI)
+
+3. docs/06-stories/EP-0010/US-0043-oauth-integration.md
+   - Story: OAuth Integration (AG-API)
+
+4. docs/06-stories/EP-0010/US-0044-session-management.md
+   - Story: Session Management (AG-API)
+
+5. docs/09-agents/status.json (merge)
+   + "EP-0010": {
+   +   "id": "EP-0010",
+   +   "owner": "AG-API",
+   +   "status": "active",
+   +   "stories": ["US-0042", "US-0043", "US-0044"]
+   + }
+   + "US-0042": { "epic": "EP-0010", "owner": "AG-UI", "status": "ready" }
+   + "US-0043": { "epic": "EP-0010", "owner": "AG-API", "status": "ready" }
+   + "US-0044": { "epic": "EP-0010", "owner": "AG-API", "status": "ready" }
+
+6. docs/09-agents/bus/log.jsonl (append)
+   + {"type":"assign","to":"AG-API","epic":"EP-0010","text":"Epic created"}
+   + {"type":"assign","to":"AG-UI","story":"US-0042","text":"Story created"}
+   + {"type":"assign","to":"AG-API","story":"US-0043","text":"Story created"}
+   + {"type":"assign","to":"AG-API","story":"US-0044","text":"Story created"}
+
+[AskUserQuestion: "Create epic EP-0010 with 3 stories?"]
+
+✅ Epic EP-0010 created successfully!
+✅ Created 3 stories: US-0042, US-0043, US-0044
+✅ Bus messages sent to assigned owners
+
+[AskUserQuestion: "What would you like to do next?"]
+```
+
+### Research Validation Warning
+
+```
+📦 Creating Epic: EP-0010 (5 stories)
+
+⚠️  Research Check
+
+This epic has no linked research.
+Complex features (3+ stories) benefit from research-first planning.
+
+[AskUserQuestion: "What would you like to do?"]
+  - Create research first (Recommended)
+  - Continue without research
+  - Link existing research
+```
+
+### With Linked Research
+
+```
+📦 Creating Epic: EP-0010
+
+Research linked: 20260121-auth-system-analysis.md
+
+✅ Research file validated
+✅ Key findings extracted:
+   • OAuth 2.0 recommended over custom auth
+   • JWT for session tokens
+   • 3 integration points identified
+
+[Proceeding with epic creation...]
+```
+
+### Validation Error
+
+```
+❌ Invalid STORIES format
+
+Received: US-0042,US-0043
+Expected: US-0042|title|owner,US-0043|title|owner
+
+Format: "US-ID|title|owner,US-ID2|title2|owner2"
+
+Example:
+STORIES="US-0042|Login Form|AG-UI,US-0043|OAuth|AG-API"
+```
+
+### Epic Already Exists
+
+```
+❌ Epic EP-0010 already exists
+
+Existing epic:
+  Title: User Authentication System
+  Status: in_progress
+  Stories: 3 (1 done, 2 in progress)
+
+To add stories, use:
+  /agileflow:story EPIC=EP-0010 STORY=US-00XX TITLE="..." OWNER=...
+```
