@@ -4,19 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      # Only trigger on English source files (no language suffix)
-      - 'apps/docs/content/docs/**/index.mdx'
-      - 'apps/docs/content/docs/**/[!index]*.mdx'
-      # Exclude translated files (filename suffix format)
-      - '!apps/docs/content/docs/**/*.es.mdx'
-      - '!apps/docs/content/docs/**/*.fr.mdx'
-      - '!apps/docs/content/docs/**/*.de.mdx'
-      - '!apps/docs/content/docs/**/*.pt.mdx'
-      - '!apps/docs/content/docs/**/*.ar.mdx'
-      - '!apps/docs/content/docs/**/*.zh.mdx'
-      - '!apps/docs/content/docs/**/*.ja.mdx'
-      - '!apps/docs/content/docs/**/*.ko.mdx'
-      - '!apps/docs/content/docs/**/*.he.mdx'
+      # Trigger on any mdx file change, then filter in script
+      - 'apps/docs/content/docs/**/*.mdx'
   workflow_dispatch:
     inputs:
       language:
