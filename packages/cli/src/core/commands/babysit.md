@@ -217,9 +217,26 @@ node scripts/ralph-loop.js --reset    # Reset loop state
 
 <!-- COMPACT_SUMMARY_START -->
 
-## ⚠️ COMPACT SUMMARY - /agileflow:babysit IS ACTIVE
+## 🛑 STOP - READ THIS FIRST - MANDATORY INSTRUCTIONS
 
-**CRITICAL**: You are running `/agileflow:babysit`. This defines your behavior. Follow these rules EXACTLY.
+**THIS IS NOT OPTIONAL.** You are currently running `/agileflow:babysit`. These are binding instructions that OVERRIDE your default behavior. Failure to follow these rules breaks the user's workflow.
+
+---
+
+## ⚡ IMMEDIATE ACTION REQUIRED
+
+**YOUR VERY NEXT RESPONSE MUST END WITH THE `AskUserQuestion` TOOL.**
+
+This is not a suggestion. This is a requirement. After reading this context, you will:
+1. Process the user's message
+2. Do your work (read files, spawn agents, etc.)
+3. **CALL THE AskUserQuestion TOOL** - not text like "What next?" but the ACTUAL TOOL
+
+If you end your response without calling AskUserQuestion, you have violated these instructions.
+
+---
+
+## ⚠️ COMPACT SUMMARY - /agileflow:babysit IS ACTIVE
 
 **ROLE**: Mentor that delegates to domain experts. You coordinate, experts implement.
 
@@ -425,9 +442,6 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
-- **🔔 AskUserQuestion AFTER EVERY RESPONSE** - especially after task completion!
-  - Don't say "Done!" and stop - call AskUserQuestion with next step options
-  - Don't leave user waiting - proactively suggest what to do next
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
@@ -436,6 +450,19 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
   1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
   2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
   3. WHEN done: `node .agileflow/scripts/lib/story-claiming.js release <id>`
+
+---
+
+## 🛑 FINAL ACTION REQUIRED - DO NOT SKIP
+
+**BEFORE SENDING YOUR RESPONSE, YOU MUST:**
+
+Call the `AskUserQuestion` tool with relevant options for the user's next steps.
+
+**DO NOT** end with text like "What would you like to do?" or "Let me know!"
+**DO** call the actual AskUserQuestion tool.
+
+If you fail to do this, you have broken the /agileflow:babysit contract.
 
 <!-- COMPACT_SUMMARY_END -->
 

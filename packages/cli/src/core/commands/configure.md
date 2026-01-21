@@ -51,6 +51,7 @@ node .agileflow/scripts/agileflow-configure.js --profile=full  # Enable all
 node .agileflow/scripts/agileflow-configure.js --migrate       # Fix format
 node .agileflow/scripts/agileflow-configure.js --upgrade       # Update scripts
 node .agileflow/scripts/agileflow-configure.js --repair        # Restore missing
+node .agileflow/scripts/agileflow-configure.js --new-options   # Check for new options
 ```
 
 ### Critical Rules
@@ -379,20 +380,49 @@ Task({ subagent_type: "configuration-ci", description: "Configure CI/CD", prompt
   "header": "Maintenance",
   "multiSelect": false,
   "options": [
+    {"label": "Apply new options", "description": "Enable newly available configuration options"},
     {"label": "Fix format issues", "description": "Migrate invalid settings to correct format"},
     {"label": "Upgrade scripts", "description": "Update features to latest AgileFlow version"},
-    {"label": "Repair missing scripts", "description": "Restore accidentally deleted scripts"},
-    {"label": "Check status", "description": "View current configuration (already shown above)"}
+    {"label": "Repair missing scripts", "description": "Restore accidentally deleted scripts"}
   ]
 }]</parameter>
 </invoke>
 ```
 
 Then run:
+- "Apply new options" → Show available new options and apply selected ones (see below)
 - "Fix format issues" → `node .agileflow/scripts/agileflow-configure.js --migrate`
 - "Upgrade scripts" → `node .agileflow/scripts/agileflow-configure.js --upgrade`
 - "Repair missing scripts" → `node .agileflow/scripts/agileflow-configure.js --repair`
-- "Check status" → Already shown in Step 1, no action needed
+
+#### If "Apply new options" selected
+
+Check for unconfigured options:
+```bash
+node .agileflow/scripts/agileflow-configure.js --new-options
+```
+
+If new options found, present them:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which new options do you want to enable?",
+  "header": "New Options",
+  "multiSelect": true,
+  "options": [
+    {"label": "CLAUDE.md reinforcement", "description": "Add /babysit context preservation rules to CLAUDE.md"},
+    {"label": "Skip for now", "description": "Don't enable any new options"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Then apply selected options:
+```bash
+node .agileflow/scripts/agileflow-configure.js --apply-option=claudeMdReinforcement
+```
+
+If no new options: "✅ All configuration options are up to date!"
 
 ---
 
@@ -437,6 +467,10 @@ node .agileflow/scripts/agileflow-configure.js --upgrade
 node .agileflow/scripts/agileflow-configure.js --repair
 node .agileflow/scripts/agileflow-configure.js --list-scripts
 node .agileflow/scripts/agileflow-configure.js --version
+
+# New config options
+node .agileflow/scripts/agileflow-configure.js --new-options                  # List unconfigured options
+node .agileflow/scripts/agileflow-configure.js --apply-option=optionName      # Apply specific option
 ```
 
 ## Custom Profiles

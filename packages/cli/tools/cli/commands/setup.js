@@ -7,6 +7,7 @@
 
 const chalk = require('chalk');
 const path = require('node:path');
+const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
 const semver = require('semver');
 const { Installer } = require('../installers/core/installer');
@@ -90,6 +91,7 @@ module.exports = {
           agileflowFolder: '.agileflow',
           docsFolder: 'docs',
           updateGitignore: true,
+          claudeMdReinforcement: true,
         };
       } else {
         // Interactive prompts
@@ -131,6 +133,73 @@ module.exports = {
         if (docsResult.errors.length > 0) {
           docsResult.errors.forEach(err => error(`  ${err}`));
         }
+      }
+
+      // CLAUDE.md reinforcement for /babysit AskUserQuestion rules
+      if (config.claudeMdReinforcement) {
+        const claudeMdPath = path.join(config.directory, 'CLAUDE.md');
+        const claudeMdMarker = '<!-- AGILEFLOW_BABYSIT_RULES -->';
+        const claudeMdContent = `
+
+${claudeMdMarker}
+## AgileFlow /babysit Context Preservation Rules
+
+When \`/agileflow:babysit\` is active (check session-state.json), these rules are MANDATORY:
+
+1. **ALWAYS end responses with the AskUserQuestion tool** - Not text like "What next?" but the ACTUAL TOOL CALL
+2. **Use Plan Mode for non-trivial tasks** - Call \`EnterPlanMode\` before complex implementations
+3. **Delegate complex work to domain experts** - Use \`Task\` tool with appropriate \`subagent_type\`
+4. **Track progress with TodoWrite** - For any task with 3+ steps
+
+These rules persist across conversation compaction. Check \`docs/09-agents/session-state.json\` for active commands.
+${claudeMdMarker}
+`;
+
+        try {
+          let existingContent = '';
+          if (fs.existsSync(claudeMdPath)) {
+            existingContent = fs.readFileSync(claudeMdPath, 'utf8');
+          }
+
+          // Only append if marker doesn't exist
+          if (!existingContent.includes(claudeMdMarker)) {
+            fs.appendFileSync(claudeMdPath, claudeMdContent);
+            success('Added /babysit rules to CLAUDE.md');
+          } else {
+            info('CLAUDE.md already has /babysit rules');
+          }
+        } catch (err) {
+          warning(`Could not update CLAUDE.md: ${err.message}`);
+        }
+      }
+
+      // Update metadata with config tracking
+      try {
+        const metadataPath = path.join(config.directory, config.docsFolder, '00-meta', 'agileflow-metadata.json');
+        if (fs.existsSync(metadataPath)) {
+          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          const packageJson = require(path.join(__dirname, '..', '..', '..', 'package.json'));
+
+          // Track config schema version and profile
+          metadata.config_schema_version = packageJson.version;
+          metadata.active_profile = options.yes ? 'default' : null; // null = custom
+
+          // Track config options that were configured
+          if (!metadata.agileflow) metadata.agileflow = {};
+          if (!metadata.agileflow.config_options) metadata.agileflow.config_options = {};
+
+          metadata.agileflow.config_options.claudeMdReinforcement = {
+            available_since: '2.92.0',
+            configured: true,
+            enabled: config.claudeMdReinforcement,
+            configured_at: new Date().toISOString(),
+            description: 'Add /babysit AskUserQuestion rules to CLAUDE.md',
+          };
+
+          fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
+        }
+      } catch (err) {
+        // Silently fail - metadata tracking is non-critical
       }
 
       // Final summary

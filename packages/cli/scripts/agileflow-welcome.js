@@ -17,7 +17,14 @@ const { execSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c, box } = require('../lib/colors');
-const { getProjectRoot } = require('../lib/paths');
+const {
+  getProjectRoot,
+  getStatusPath,
+  getMetadataPath,
+  getSessionStatePath,
+  getAgileflowDir,
+  getClaudeDir,
+} = require('../lib/paths');
 const { readJSONCached, readFileCached } = require('../lib/file-cache');
 
 // Session manager path (relative to script location)
@@ -63,11 +70,11 @@ try {
  */
 function loadProjectFiles(rootDir) {
   const paths = {
-    status: path.join(rootDir, 'docs', '09-agents', 'status.json'),
-    metadata: path.join(rootDir, 'docs', '00-meta', 'agileflow-metadata.json'),
-    settings: path.join(rootDir, '.claude', 'settings.json'),
-    sessionState: path.join(rootDir, 'docs', '09-agents', 'session-state.json'),
-    configYaml: path.join(rootDir, '.agileflow', 'config.yaml'),
+    status: getStatusPath(rootDir),
+    metadata: getMetadataPath(rootDir),
+    settings: path.join(getClaudeDir(rootDir), 'settings.json'),
+    sessionState: getSessionStatePath(rootDir),
+    configYaml: path.join(getAgileflowDir(rootDir), 'config.yaml'),
     cliPackage: path.join(rootDir, 'packages', 'cli', 'package.json'),
   };
 
@@ -137,7 +144,7 @@ function getProjectInfo(rootDir, cache = null) {
       info.version = cache.cliPackage.version;
     } else {
       // No cache - fall back to file reads (for backwards compatibility)
-      const configPath = path.join(rootDir, '.agileflow', 'config.yaml');
+      const configPath = path.join(getAgileflowDir(rootDir), 'config.yaml');
       if (fs.existsSync(configPath)) {
         const content = fs.readFileSync(configPath, 'utf8');
         const versionMatch = content.match(/^version:\s*['"]?([0-9.]+)/m);
@@ -145,7 +152,7 @@ function getProjectInfo(rootDir, cache = null) {
           info.version = versionMatch[1];
         }
       } else {
-        const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+        const metadataPath = getMetadataPath(rootDir);
         if (fs.existsSync(metadataPath)) {
           const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
           info.version = metadata.version || info.version;
@@ -188,7 +195,7 @@ function getProjectInfo(rootDir, cache = null) {
       }
     } else if (!cache) {
       // No cache - fall back to file read
-      const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
+      const statusPath = getStatusPath(rootDir);
       if (fs.existsSync(statusPath)) {
         const statusData = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
         if (statusData.stories) {
@@ -229,7 +236,7 @@ function runArchival(rootDir, cache = null) {
       result.threshold = metadata.archival?.threshold_days || 7;
     } else {
       // No cache - fall back to file read
-      const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+      const metadataPath = getMetadataPath(rootDir);
       if (fs.existsSync(metadataPath)) {
         const metadataData = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
         if (metadataData.archival?.enabled === false) {
@@ -243,7 +250,7 @@ function runArchival(rootDir, cache = null) {
     // Use cached status if available
     const status = cache?.status;
     if (!status && !cache) {
-      const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
+      const statusPath = getStatusPath(rootDir);
       if (!fs.existsSync(statusPath)) return result;
     }
 
@@ -285,7 +292,7 @@ function clearActiveCommands(rootDir, cache = null) {
   const result = { ran: false, cleared: 0, commandNames: [], preserved: false };
 
   try {
-    const sessionStatePath = path.join(rootDir, 'docs/09-agents/session-state.json');
+    const sessionStatePath = getSessionStatePath(rootDir);
 
     // Use cached sessionState if available, but we still need to read fresh for clearing
     // because we need to write back. Cache is only useful to check if file exists.
@@ -372,7 +379,7 @@ function checkParallelSessions(rootDir) {
 
   try {
     // Check if session manager exists
-    const managerPath = path.join(rootDir, '.agileflow', 'scripts', 'session-manager.js');
+    const managerPath = path.join(getAgileflowDir(rootDir), 'scripts', 'session-manager.js');
     if (!fs.existsSync(managerPath) && !fs.existsSync(SESSION_MANAGER_PATH)) {
       return result;
     }
@@ -466,7 +473,7 @@ function checkPreCompact(rootDir, cache = null) {
       }
     } else {
       // No cache - fall back to file read
-      const settingsPath = path.join(rootDir, '.claude/settings.json');
+      const settingsPath = path.join(getClaudeDir(rootDir), 'settings.json');
       if (fs.existsSync(settingsPath)) {
         const settingsData = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
         if (settingsData.hooks?.PreCompact?.length > 0) {
@@ -476,7 +483,7 @@ function checkPreCompact(rootDir, cache = null) {
     }
 
     // Check if the script exists (must always check filesystem)
-    const scriptPath = path.join(rootDir, 'scripts/precompact-context.sh');
+    const scriptPath = path.join(rootDir, 'scripts', 'precompact-context.sh');
     if (fs.existsSync(scriptPath)) {
       result.scriptExists = true;
     }
@@ -495,7 +502,7 @@ function checkPreCompact(rootDir, cache = null) {
       }
     } else if (!cache) {
       // No cache - fall back to file read
-      const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+      const metadataPath = getMetadataPath(rootDir);
       if (fs.existsSync(metadataPath)) {
         const metadataData = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
         if (metadataData.features?.precompact?.configured_version) {
@@ -520,7 +527,7 @@ function checkDamageControl(rootDir, cache = null) {
     let settings = cache?.settings;
     if (!settings && !cache) {
       // No cache - fall back to file read
-      const settingsPath = path.join(rootDir, '.claude/settings.json');
+      const settingsPath = path.join(getClaudeDir(rootDir), 'settings.json');
       if (fs.existsSync(settingsPath)) {
         settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       }
@@ -550,7 +557,7 @@ function checkDamageControl(rootDir, cache = null) {
           }
 
           // Check if all required scripts exist (in .claude/hooks/damage-control/)
-          const hooksDir = path.join(rootDir, '.claude', 'hooks', 'damage-control');
+          const hooksDir = path.join(getClaudeDir(rootDir), 'hooks', 'damage-control');
           const requiredScripts = [
             'bash-tool-damage-control.js',
             'edit-tool-damage-control.js',
@@ -568,8 +575,8 @@ function checkDamageControl(rootDir, cache = null) {
 
     // Count patterns in patterns.yaml
     const patternsLocations = [
-      path.join(rootDir, '.claude', 'hooks', 'damage-control', 'patterns.yaml'),
-      path.join(rootDir, '.agileflow', 'scripts', 'damage-control', 'patterns.yaml'),
+      path.join(getClaudeDir(rootDir), 'hooks', 'damage-control', 'patterns.yaml'),
+      path.join(getAgileflowDir(rootDir), 'scripts', 'damage-control', 'patterns.yaml'),
     ];
     for (const patternsPath of patternsLocations) {
       if (fs.existsSync(patternsPath)) {
@@ -597,6 +604,237 @@ function compareVersions(a, b) {
     if (numA > numB) return 1;
   }
   return 0;
+}
+
+/**
+ * All available config options with their version requirements
+ * These are the options that can be configured through /agileflow:configure
+ */
+const ALL_CONFIG_OPTIONS = {
+  claudeMdReinforcement: { since: '2.92.0', description: 'Add /babysit rules to CLAUDE.md', autoApplyable: true },
+  sessionStartHook: { since: '2.35.0', description: 'Welcome display on session start', autoApplyable: false },
+  precompactHook: { since: '2.40.0', description: 'Context preservation during /compact', autoApplyable: false },
+  damageControlHooks: { since: '2.50.0', description: 'Block destructive commands', autoApplyable: false },
+  statusLine: { since: '2.35.0', description: 'Custom status bar display', autoApplyable: false },
+  autoArchival: { since: '2.35.0', description: 'Auto-archive completed stories', autoApplyable: false },
+  autoUpdate: { since: '2.70.0', description: 'Auto-update on session start', autoApplyable: false },
+  ralphLoop: { since: '2.60.0', description: 'Autonomous story processing', autoApplyable: false },
+};
+
+/**
+ * Check for new config options that haven't been presented to the user
+ * Returns info about outdated config and whether to auto-apply (for "full" profile)
+ */
+function checkConfigStaleness(rootDir, currentVersion, cache = null) {
+  const result = {
+    outdated: false,
+    newOptionsCount: 0,
+    newOptions: [],
+    configSchemaVersion: null,
+    activeProfile: null,
+    autoApply: false,
+  };
+
+  try {
+    const metadata = cache?.metadata;
+    if (!metadata) return result;
+
+    result.configSchemaVersion = metadata.config_schema_version || null;
+    result.activeProfile = metadata.active_profile || null;
+
+    const configOptions = metadata.agileflow?.config_options || {};
+
+    // If no config_schema_version, this is an old installation - all options are "new"
+    if (!result.configSchemaVersion) {
+      // For old installations, detect which features are actually configured via settings.json
+      const settings = cache?.settings || {};
+      const hooks = settings.hooks || {};
+
+      // Check each option against actual configuration
+      for (const [name, optionInfo] of Object.entries(ALL_CONFIG_OPTIONS)) {
+        const isConfigured = isOptionActuallyConfigured(name, hooks, settings);
+        if (!isConfigured) {
+          result.outdated = true;
+          result.newOptionsCount++;
+          result.newOptions.push({
+            name,
+            description: optionInfo.description,
+            autoApplyable: optionInfo.autoApplyable,
+          });
+        }
+      }
+    } else {
+      // Check for unconfigured options in metadata
+      for (const [name, option] of Object.entries(configOptions)) {
+        if (option.configured === false) {
+          const optionInfo = ALL_CONFIG_OPTIONS[name] || { description: name, autoApplyable: false };
+          result.outdated = true;
+          result.newOptionsCount++;
+          result.newOptions.push({
+            name,
+            description: optionInfo.description,
+            autoApplyable: optionInfo.autoApplyable,
+          });
+        }
+      }
+
+      // Check for options that might not be in metadata yet (added after their install)
+      for (const [name, optionInfo] of Object.entries(ALL_CONFIG_OPTIONS)) {
+        if (!configOptions[name]) {
+          // Option doesn't exist in metadata - check if it was added after their config_schema_version
+          if (compareVersions(result.configSchemaVersion, optionInfo.since) < 0) {
+            const alreadyAdded = result.newOptions.some(o => o.name === name);
+            if (!alreadyAdded) {
+              result.outdated = true;
+              result.newOptionsCount++;
+              result.newOptions.push({
+                name,
+                description: optionInfo.description,
+                autoApplyable: optionInfo.autoApplyable,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // If profile is "full", auto-apply features that support it
+    if (result.outdated && result.activeProfile === 'full') {
+      const autoApplyableOptions = result.newOptions.filter(o => o.autoApplyable);
+      if (autoApplyableOptions.length > 0) {
+        result.autoApply = true;
+        // Only auto-apply the auto-applyable ones
+        result.autoApplyOptions = autoApplyableOptions;
+      }
+    }
+  } catch (e) {
+    // Silently fail - config check is non-critical
+  }
+
+  return result;
+}
+
+/**
+ * Check if a config option is actually configured in settings
+ */
+function isOptionActuallyConfigured(optionName, hooks, settings) {
+  switch (optionName) {
+    case 'sessionStartHook':
+      return hooks.SessionStart && hooks.SessionStart.length > 0;
+    case 'precompactHook':
+      return hooks.PreCompact && hooks.PreCompact.length > 0;
+    case 'damageControlHooks':
+      return hooks.PreToolUse && hooks.PreToolUse.some(h =>
+        h.hooks?.some(hk => hk.command?.includes('damage-control'))
+      );
+    case 'statusLine':
+      return settings.statusLine && settings.statusLine.command;
+    case 'autoArchival':
+      // Archival is tied to SessionStart hook running archive script
+      return hooks.SessionStart && hooks.SessionStart.some(h =>
+        h.hooks?.some(hk => hk.command?.includes('archive'))
+      );
+    case 'autoUpdate':
+      // Would need to check metadata for autoUpdate setting
+      return false; // Default to not configured
+    case 'ralphLoop':
+      return hooks.Stop && hooks.Stop.some(h =>
+        h.hooks?.some(hk => hk.command?.includes('ralph-loop'))
+      );
+    case 'claudeMdReinforcement':
+      // Check if CLAUDE.md has the marker - can't easily check from here
+      return false; // Let welcome script handle this
+    default:
+      return false;
+  }
+}
+
+/**
+ * Auto-apply new config options for "full" profile
+ * Returns true if any options were applied
+ */
+function autoApplyConfigOptions(rootDir, newOptions) {
+  let applied = 0;
+
+  for (const option of newOptions) {
+    try {
+      if (option.name === 'claudeMdReinforcement') {
+        // Apply CLAUDE.md reinforcement
+        const claudeMdPath = path.join(rootDir, 'CLAUDE.md');
+        const marker = '<!-- AGILEFLOW_BABYSIT_RULES -->';
+        const content = `
+
+${marker}
+## AgileFlow /babysit Context Preservation Rules
+
+When \`/agileflow:babysit\` is active (check session-state.json), these rules are MANDATORY:
+
+1. **ALWAYS end responses with the AskUserQuestion tool** - Not text like "What next?" but the ACTUAL TOOL CALL
+2. **Use Plan Mode for non-trivial tasks** - Call \`EnterPlanMode\` before complex implementations
+3. **Delegate complex work to domain experts** - Use \`Task\` tool with appropriate \`subagent_type\`
+4. **Track progress with TodoWrite** - For any task with 3+ steps
+
+These rules persist across conversation compaction. Check \`docs/09-agents/session-state.json\` for active commands.
+${marker}
+`;
+
+        let existingContent = '';
+        if (fs.existsSync(claudeMdPath)) {
+          existingContent = fs.readFileSync(claudeMdPath, 'utf8');
+        }
+
+        if (!existingContent.includes(marker)) {
+          fs.appendFileSync(claudeMdPath, content);
+          applied++;
+        }
+      }
+      // Add more option handlers here as new options are added
+    } catch (e) {
+      // Silently fail individual options
+    }
+  }
+
+  // Update metadata to mark options as configured
+  if (applied > 0) {
+    try {
+      const metadataPath = getMetadataPath(rootDir);
+      if (fs.existsSync(metadataPath)) {
+        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+
+        // Get current CLI version for updating config_schema_version
+        let currentVersion = '2.92.0';
+        try {
+          const pkgPath = path.join(__dirname, '..', 'package.json');
+          if (fs.existsSync(pkgPath)) {
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+            currentVersion = pkg.version;
+          }
+        } catch (e) {}
+
+        // Update config_schema_version
+        metadata.config_schema_version = currentVersion;
+
+        // Mark applied options as configured
+        if (!metadata.agileflow) metadata.agileflow = {};
+        if (!metadata.agileflow.config_options) metadata.agileflow.config_options = {};
+
+        for (const option of newOptions) {
+          metadata.agileflow.config_options[option.name] = {
+            ...metadata.agileflow.config_options[option.name],
+            configured: true,
+            enabled: true,
+            configured_at: new Date().toISOString(),
+          };
+        }
+
+        fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
+      }
+    } catch (e) {
+      // Silently fail metadata update
+    }
+  }
+
+  return applied;
 }
 
 // Check for updates (async but we'll use sync approach for welcome)
@@ -726,7 +964,7 @@ function getExpertiseCountFast(rootDir) {
   const result = { total: 0, passed: 0, warnings: 0, failed: 0, issues: [], validated: false };
 
   // Find experts directory
-  let expertsDir = path.join(rootDir, '.agileflow', 'experts');
+  let expertsDir = path.join(getAgileflowDir(rootDir), 'experts');
   if (!fs.existsSync(expertsDir)) {
     expertsDir = path.join(rootDir, 'packages', 'cli', 'src', 'core', 'experts');
   }
@@ -789,7 +1027,7 @@ function validateExpertise(rootDir) {
   const result = { total: 0, passed: 0, warnings: 0, failed: 0, issues: [] };
 
   // Find experts directory
-  let expertsDir = path.join(rootDir, '.agileflow', 'experts');
+  let expertsDir = path.join(getAgileflowDir(rootDir), 'experts');
   if (!fs.existsSync(expertsDir)) {
     expertsDir = path.join(rootDir, 'packages', 'cli', 'src', 'core', 'experts');
   }
@@ -882,7 +1120,7 @@ function getFeatureVersions(rootDir) {
   };
 
   try {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+    const metadataPath = getMetadataPath(rootDir);
     if (fs.existsSync(metadataPath)) {
       const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
 
@@ -1276,6 +1514,28 @@ async function main() {
     // Update check failed - continue without it
   }
 
+  // Check for new config options
+  let configStaleness = { outdated: false, autoApply: false };
+  let configAutoApplied = 0;
+  try {
+    configStaleness = checkConfigStaleness(rootDir, info.version, cache);
+
+    // Auto-apply new options if profile is "full" (only auto-applyable ones)
+    if (configStaleness.autoApply && configStaleness.autoApplyOptions?.length > 0) {
+      configAutoApplied = autoApplyConfigOptions(rootDir, configStaleness.autoApplyOptions);
+      if (configAutoApplied > 0) {
+        // Remove auto-applied options from the list, keep non-auto-applyable ones
+        configStaleness.newOptions = configStaleness.newOptions.filter(o => !o.autoApplyable);
+        configStaleness.newOptionsCount = configStaleness.newOptions.length;
+        if (configStaleness.newOptionsCount === 0) {
+          configStaleness.outdated = false;
+        }
+      }
+    }
+  } catch (e) {
+    // Config check failed - continue without it
+  }
+
   // Show session banner FIRST if in a non-main session
   const sessionBanner = formatSessionBanner(parallelSessions);
   if (sessionBanner) {
@@ -1294,6 +1554,23 @@ async function main() {
       damageControl
     )
   );
+
+  // Show config auto-apply confirmation (for "full" profile)
+  if (configAutoApplied > 0) {
+    console.log('');
+    console.log(`${c.mintGreen}✨ Auto-applied ${configAutoApplied} new config option(s)${c.reset}`);
+    console.log(`   ${c.slate}Profile "full" enables all new features automatically.${c.reset}`);
+  }
+
+  // Show config staleness notification (for custom profiles)
+  if (configStaleness.outdated && configStaleness.newOptionsCount > 0) {
+    console.log('');
+    console.log(`${c.amber}⚙️  ${configStaleness.newOptionsCount} new configuration option(s) available${c.reset}`);
+    for (const opt of configStaleness.newOptions.slice(0, 3)) {
+      console.log(`   ${c.dim}• ${opt.description}${c.reset}`);
+    }
+    console.log(`   ${c.slate}Run ${c.skyBlue}/agileflow:configure${c.reset}${c.slate} to enable them.${c.reset}`);
+  }
 
   // Show warning and tip if other sessions are active (vibrant colors)
   if (parallelSessions.otherActive > 0) {
@@ -1372,7 +1649,7 @@ async function main() {
   // Epic completion check: auto-complete epics where all stories are done
   if (storyStateMachine && cache.status) {
     try {
-      const statusPath = path.join(rootDir, 'docs', '09-agents', 'status.json');
+      const statusPath = getStatusPath(rootDir);
       const statusData = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
       const incompleteEpics = storyStateMachine.findIncompleteEpics(statusData);
 
@@ -1384,7 +1661,7 @@ async function main() {
             autoCompleted++;
             console.log('');
             console.log(
-              `${c.emerald}✅ Auto-completed ${c.bold}${epicId}${c.reset}${c.emerald} (${completed}/${total} stories done)${c.reset}`
+              `${c.mintGreen}✅ Auto-completed ${c.bold}${epicId}${c.reset}${c.mintGreen} (${completed}/${total} stories done)${c.reset}`
             );
           }
         }

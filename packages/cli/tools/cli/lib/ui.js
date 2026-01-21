@@ -191,6 +191,12 @@ async function promptInstall() {
       message: 'Create/update .gitignore with recommended entries?',
       default: true,
     },
+    {
+      type: 'confirm',
+      name: 'claudeMdReinforcement',
+      message: 'Add /babysit AskUserQuestion rules to CLAUDE.md? (recommended for context preservation)',
+      default: true,
+    },
   ]);
 
   return {
@@ -200,6 +206,7 @@ async function promptInstall() {
     agileflowFolder: answers.agileflowFolder,
     docsFolder: answers.docsFolder,
     updateGitignore: answers.updateGitignore,
+    claudeMdReinforcement: answers.claudeMdReinforcement,
   };
 }
 
