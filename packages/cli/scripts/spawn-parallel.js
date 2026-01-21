@@ -284,8 +284,10 @@ function spawn(args) {
 
   // Spawn in tmux or output commands
   if (noTmux) {
+    // User explicitly requested manual mode
     outputCommands(createdSessions, { init, dangerous, prompt });
   } else if (hasTmux()) {
+    // Tmux available - use it
     const tmuxResult = spawnInTmux(createdSessions, { init, dangerous, prompt });
 
     if (tmuxResult.success) {
@@ -302,18 +304,19 @@ function spawn(args) {
       console.error(error(`Failed to create tmux session: ${tmuxResult.error}`));
       outputCommands(createdSessions, { init, dangerous, prompt });
     }
-  } else if (hasScreen()) {
-    console.log(warning('tmux not found, screen support not yet implemented.'));
-    outputCommands(createdSessions, { init, dangerous, prompt });
   } else {
-    console.log(warning('Neither tmux nor screen found. Outputting manual commands.'));
-    console.log(dim('  Tip: Install tmux for automatic session management:'));
-    console.log(dim('    • macOS: brew install tmux'));
-    console.log(dim('    • Ubuntu/Debian: sudo apt install tmux'));
-    console.log(dim('    • Fedora/RHEL: sudo dnf install tmux'));
-    console.log(dim('    • No sudo? Try: conda install -c conda-forge tmux'));
+    // Tmux NOT available - require it or use --no-tmux
+    console.log(error('\n❌ tmux is required but not installed.\n'));
+    console.log(bold('Install tmux:'));
+    console.log(`  ${c.cyan}macOS:${c.reset}        brew install tmux`);
+    console.log(`  ${c.cyan}Ubuntu/Debian:${c.reset} sudo apt install tmux`);
+    console.log(`  ${c.cyan}Fedora/RHEL:${c.reset}  sudo dnf install tmux`);
+    console.log(`  ${c.cyan}No sudo?${c.reset}      conda install -c conda-forge tmux`);
     console.log('');
-    outputCommands(createdSessions, { init, dangerous, prompt });
+    console.log(dim('Or use --no-tmux to get manual commands instead:'));
+    console.log(`  ${c.cyan}node spawn-parallel.js spawn --count ${createdSessions.length} --no-tmux${c.reset}`);
+    console.log('');
+    console.log(warning('Worktrees created but Claude not spawned. Install tmux or use --no-tmux.'));
   }
 
   // Summary
