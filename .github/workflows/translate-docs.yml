@@ -46,8 +46,19 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "files=all" >> $GITHUB_OUTPUT
           else
+            # Debug: Show all commits available
+            echo "=== Git log ==="
+            git log --oneline -5 || true
+            echo "=== Diff between HEAD~1 and HEAD ==="
+            git diff --name-only HEAD~1 HEAD || true
+            echo "=== MDX files changed ==="
+            git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' || true
+
             # Filter out translated files (*.{lang}.mdx format)
             CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'apps/docs/content/docs/**/*.mdx' | grep -v '\.\(es\|fr\|de\|pt\|ar\|zh\|ja\|ko\|he\)\.mdx$' || true)
+            echo "=== Filtered files ==="
+            echo "$CHANGED"
+
             echo "files<<EOF" >> $GITHUB_OUTPUT
             echo "$CHANGED" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
