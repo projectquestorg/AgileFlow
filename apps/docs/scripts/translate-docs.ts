@@ -108,7 +108,9 @@ const placeholders: Map<string, string> = new Map()
 let placeholderIndex = 0
 
 function createPlaceholder(content: string): string {
-  const id = `__NOTRANSLATE_${placeholderIndex++}__`
+  // Use Unicode private use area character + numbers to prevent translation
+  // Format: ⟦0⟧ - brackets + number only, translation APIs leave these alone
+  const id = `⟦${placeholderIndex++}⟧`
   placeholders.set(id, content)
   return id
 }
@@ -150,6 +152,10 @@ function extractTranslatableContent(mdx: string): {
 
   // Step 5: Replace import statements
   content = content.replace(/^import\s+.*$/gm, (match) => createPlaceholder(match))
+
+  // Step 6: Preserve blank lines before JSX components (prevents heading merging)
+  // Convert double newlines to placeholder to preserve structure
+  content = content.replace(/\n\n/g, createPlaceholder("\n\n"))
 
   // Now split remaining content into sections
   const sections: { type: "code" | "text"; content: string }[] = []

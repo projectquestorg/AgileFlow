@@ -1,0 +1,265 @@
+---
+title: /zuordnen
+description: Weisen Sie eine Story einem Eigentümer zu oder weisen Sie sie neu zu
+---
+
+
+# /assign
+
+Eine Story einem Eigentümer zuweisen oder neu zuweisen, mit optionaler Statusaktualisierung. Aktualisiert Story-Metadaten und sendet die Zuweisung über den Nachrichtenbus.
+
+## Schnellstart
+
+```bash
+/agileflow:assign STORY=US-0001 NEW_OWNER=AG-UI
+```
+
+## Parameter
+
+| Parameter | Erforderlich | Standard | Beschreibung |
+|-----------|----------|---------|-------------|
+| `STORY` | Ja | - | Zuzuweisende Story-ID (z. B. US-0001, US-0042) |
+| `NEW_OWNER` | Ja | - | Agenten-/Eigentümer-ID (z. B. AG-UI, AG-API, AG-CI) |
+| `NEW_STATUS` | Nein | - | Aktualisierungsstatus: `ready`, `in-progress`, `blocked`, `in-review`, `done` |
+| `NOTE` | Nein | - | Optionaler Kontext zur Zuweisung |
+
+## Beispiele
+
+### Story dem Eigentümer zuweisen
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI
+```
+
+Weise die Story dem UI-Team zu, ohne den Status zu ändern.
+
+### Zuweisen und mit der Arbeit beginnen
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Starting login form implementation"
+```
+
+Story zuweisen und sofort als markieren in Bearbeitung mit Kontext.
+
+### Einem anderen Eigentümer neu zuweisen
+
+```bash
+/agileflow:assign STORY=US-0038 NEW_OWNER=AG-API NEW_STATUS=ready NOTE="Re-prioritized for OAuth implementation"
+```
+
+Story von einem Agenten zu einem anderen verschieben.
+
+### Von „Nicht zugewiesen“ zuweisen
+
+```bash
+/agileflow:assign STORY=US-0050 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Ready for CI/CD integration work"
+```
+
+Eine nicht zugewiesene Story bearbeiten.
+
+### Neuzuweisung wegen Blocker
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NEW_STATUS=blocked NOTE="Blocked on infrastructure provisioning. Needs DevOps attention"
+```
+
+Neuzuweisung bei unterschiedlichem Fachwissen needed.
+
+## Was aktualisiert wird
+
+Der Befehl aktualisiert zwei Dateien:
+
+### 1. Story-Datei
+
+Aktualisiert Story-Frontmatter (in `docs/06-stories/**/<STORY>.md`):
+
+```yaml
+---
+owner: AG-UI
+status: in-progress
+updated: 2025-12-24T14:30:00Z
+---
+```
+
+### 2. Statusverfolgung Datei
+
+Aktualisiert `docs/09-agents/status.json` mit Zuweisung und Statusänderung.
+
+### 3. Nachrichtenbus
+
+Hängt ein „Assign“-Ereignis an `docs/09-agents/bus/log.jsonl` an:
+
+```json
+{"ts":"2025-12-24T14:30:00Z","from":"claude","type":"assign","story":"US-0042","owner":"AG-UI","status":"in-progress","text":"Starting login form implementation"}
+```
+
+## Statuswerte
+
+Bei Verwendung von `NEW_STATUS` Wählen Sie aus:
+
+| Status | Bedeutung | Wann zu verwenden |
+|--------|---------|-------------|
+| `ready` | Vorbereitet, wartet auf den Start | Nach der Erstellung oder bei Entsperrung |
+| `in-progress` | Derzeit wird daran gearbeitet | Wenn der Eigentümer mit der Arbeit beginnt |
+| `blocked` | Warten auf externe Abhängigkeit | Wenn der Blocker identifiziert wurde |
+| `in-review` | Vollständig, wartet auf Genehmigung | Codeüberprüfung oder Qualitätssicherung |
+| `done` | Fertig und verifiziert | Nachdem alle Prüfungen bestanden wurden |
+
+## Beispiel für einen Zuweisungsablauf
+
+Typischer Arbeitsablauf durch Zuweisungsstatus:
+
+**1. Story erstellt** (STORY=US-0042, EIGENTÜMER=nicht zugewiesen, STATUS=bereit)
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=ready
+```
+
+**2. Eigentümer beginnt mit der Arbeit**
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress
+```
+
+**3. Code vollständig, bereit zur Überprüfung**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-review PR=https://github.com/...
+```
+
+**4. Rezension abgeschlossen**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=done
+```
+
+**5. Bei Blockierung während der Arbeit**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=blocked SUMMARY="Blocked on API response format"
+```
+
+**6. Entsperrt, Arbeit fortsetzen**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="API clarified, resuming development"
+```
+
+## Ausgabe
+
+Der Befehl zeigt an:
+
+1. **Diff-Vorschau** – Zeigt die vorzunehmenden Änderungen an
+2. **Bestätigung** – JA/NEIN-Aufforderung zur Bestätigung
+3. **Erfolgsmeldung** – Bestätigt den Abschluss der Zuweisung
+
+Beispielausgabe:
+
+```text
+✅ Story Assigned
+Story:     US-0042
+Owner:     unassigned → AG-UI
+Status:    ready (unchanged)
+Updated:   2025-12-24T14:30:00Z
+
+Message broadcast: Assigned US-0042 to AG-UI
+```
+
+## JSON-Sicherheit
+
+Der Befehl verwendet sichere JSON-Verarbeitung:
+
+- **Niemals echo/cat verwenden** – Immer jq oder das Bearbeitungstool verwenden
+- **Überprüft nach dem Update** – Überprüft vor dem Abschluss, ob JSON gültig ist
+- **Sicherungen bei Fehler** – Kann bei Beschädigung aus der Sicherung wiederhergestellt werden
+
+## Best Practices
+
+1. **Sofort zuweisen** – Lassen Sie Storys nicht unberücksichtigt
+2. **Kontext einbeziehen** – Verwenden Sie HINWEIS, um zu erklären, warum die Zuweisung stattgefunden hat
+3. **Fachwissen abgleichen** – Weisen Sie es einem Agenten mit relevanten Fähigkeiten zu
+4. **Auslastung ausbalancieren** – Verteilen Sie die Arbeit gerecht auf die Agenten
+5. **Status aktualisieren** – Berücksichtigen Sie beim Zuweisen den Aktualisierungsstatus
+6. **Kommunizieren** – Das Team sollte verstehen, warum eine Neuzuweisung stattgefunden hat
+
+## Häufige Szenarien
+
+### Laden Sie BAusgleichen
+
+Arbeit verteilen, wenn ein Agent überlastet ist:
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NOTE="Load balancing: AG-API at WIP limit"
+```
+
+### Cross-Training
+
+An weniger erfahrenen Agenten mit Anleitung zuweisen:
+
+```bash
+/agileflow:assign STORY=US-0060 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Cross-training opportunity for CI/CD work. Pair with AG-API"
+```
+
+### Fachwissenstransfer
+
+Bei Fachwissen einem Spezialisten zuweisen benötigt:
+
+```bash
+/agileflow:assign STORY=US-0065 NEW_OWNER=AG-SECURITY NEW_STATUS=in-progress NOTE="Security vulnerability fix - needs security expertise"
+```
+
+### Wiederherstellung vom Blocker
+
+Arbeit nach Aufheben der Blockierung fortsetzen:
+
+```bash
+/agileflow:assign STORY=US-0070 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Unblocked: API endpoint now available, resuming frontend work"
+```
+
+## Verwandte Befehle
+
+- [`/agileflow:status`](/commands/status) - Nur Status aktualisieren, ohne ihn neu zuzuweisen
+- [`/agileflow:board`](/commands/board) - Alle Aufgaben visuell anzeigen
+- [`/agileflow:metrics`](/commands/metrics) - Siehe Arbeitslastverteilung
+- [`/story-new`](/commands/story-new) - Neue Geschichten mit Aufgaben erstellen
+
+## FAQ
+
+<Accordion type="multiple">
+  <AccordionItem value="wip">
+    <AccordionTrigger>Kann ich jemandem zuweisen, der bereits das WIP-Limit erreicht hat?</AccordionTrigger>
+    <AccordionContent>
+      Ja, aber es wird nicht empfohlen. Überprüfen Sie `/agileflow:board`, um zu sehen, wer Kapazität hat.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="wrong">
+    <AccordionTrigger>Was passiert, wenn ich den falschen Eigentümer zuordne?</AccordionTrigger>
+    <AccordionContent>
+      Einfach neu zuweisen: `/agileflow:assign STORY=US-0042 NEW_OWNER=AG-API`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="immediately">
+    <AccordionTrigger>Soll ich sofort nach der Erstellung zuweisen?</AccordionTrigger>
+    <AccordionContent>
+      Best Practice ist ja – weisen Sie es im Erstellungsbefehl oder direkt danach mit `/assign` zu.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="multiple">
+    <AccordionTrigger>Kann ich ArschAn mehrere Eigentümer übertragen?</AccordionTrigger>
+    <AccordionContent>
+      Nein, eine Geschichte = ein Besitzer. Weisen Sie für die Paarprogrammierung in der Beschreibung die Primär- und Notizpaarung zu.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="difference">
+    <AccordionTrigger>Was ist der Unterschied zwischen Zuweisen und Status?</AccordionTrigger>
+    <AccordionContent>
+      **Zuweisen** ändert den Besitzer UND optional den Status. **Status** ändert nur den Status, der Eigentümer bleibt unverändert. Verwenden Sie **assign**, wenn Sie den Besitzer ändern, **status**, wenn Sie nur den Fortschritt aktualisieren.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="available">
+    <AccordionTrigger>Woher weiß ich, welche Eigentümer verfügbar sind?</AccordionTrigger>
+    <AccordionContent>
+      Verwenden Sie `/agileflow:board`, um aktuelle Teammitglieder und deren Arbeitsbelastung anzuzeigen.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
