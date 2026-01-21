@@ -1,0 +1,181 @@
+---
+title: Instalación
+description: Configure AgileFlow en su proyecto en menos de un minuto.
+---
+
+# Instalación
+
+AgileFlow se distribuye como un paquete npm que se instala directamente en su proyecto, agregando comandos de barra diagonal, agentes y estructura del proyecto.
+
+## Requisitos previos
+
+- **Node.js** 18.0 o superior
+- **Claude Code**, **Cursor**, **Windsurf**, o **OpenAI Codex CLI**
+- Un repositorio Git para tu proyecto
+
+## Instalación rápida
+
+```bash
+npx agileflow@latest setup
+```
+
+¡Eso es todo! El `npx` El comando siempre recupera la última versión, por lo que nunca tendrá que preocuparse por instalaciones obsoletas.
+
+### Actualizaciones
+
+```bash
+npx agileflow@latest update
+```
+
+## Después de la configuración
+
+```bash
+/agileflow:help              # View all commands
+/agileflow:configure         # Configure hooks, status line, etc.
+/agileflow:babysit           # Interactive mentor for implementation
+```
+
+## Qué se instala
+
+<FileTree>
+  <Folder name=".agileflow" comment="Core installation">
+    <File name="config.json" />
+    <Folder name="agents" comment="30 domain experts" />
+    <Folder name="commands" comment="74 slash commands" />
+    <Folder name="templates" comment="Story, epic, ADR templates" />
+  </Folder>
+  <Folder name=".claude" comment="Claude Code integration">
+    <Folder name="commands/agileflow" comment="Slash commands" />
+  </Folder>
+  <Folder name="docs" comment="Project documentation">
+    <Folder name="03-decisions" comment="ADRs" />
+    <Folder name="05-epics" comment="Epic definitions" />
+    <Folder name="06-stories" comment="User stories" />
+    <Folder name="09-agents" comment="Status tracking" />
+    <Folder name="10-research" comment="Research notes" />
+  </Folder>
+</FileTree>
+
+### Comandos instalados
+
+Todos los comandos estarán disponibles como `/agileflow:command-name` en Código Claude:
+
+| Command | Description |
+|---------|-------------|
+| `/agileflow:epic` | Create a new epic |
+| `/agileflow:story` | Create a user story |
+| `/agileflow:status` | Update story status |
+| `/agileflow:board` | View kanban board |
+| `/agileflow:babysit` | Start guided implementation |
+
+Ver el [referencia de comando completa](/commands) para los 72 comandos.
+
+## Verificar la instalación
+
+Después de la instalación, verifique que todo esté configurado correctamente:
+
+```bash
+# In Claude Code, run:
+/agileflow:help
+```
+
+Debería ver el menú de ayuda de AgileFlow con todos los comandos disponibles.
+
+## Soporte IDE
+
+AgileFlow funciona con múltiples IDE impulsados ​​por IA:
+
+| IDE | Status | Config Location |
+|-----|--------|-----------------|
+| Claude Code | Supported | `.claude/commands/agileflow/` |
+| Cursor | Supported | `.cursor/commands/agileflow/` |
+| Windsurf | Supported | `.windsurf/workflows/agileflow/` |
+| OpenAI Codex CLI | Supported | `.codex/skills/` and `~/.codex/prompts/` |
+
+### Configuración específica de IDE
+
+```bash
+# Claude Code (default)
+agileflow setup
+
+# Cursor
+agileflow setup --ide cursor
+
+# Windsurf
+agileflow setup --ide windsurf
+
+# OpenAI Codex CLI
+agileflow setup --ide codex
+```
+
+## Configuración
+
+Después de la instalación, puede personalizar el comportamiento de AgileFlow:
+
+```bash
+/agileflow:configure
+```
+
+Este comando interactivo le permite:
+
+- Activar/desactivar funciones
+- Establecer propietarios predeterminados para las historias
+- Configurar ganchos y automatización
+- Ajustar la visualización de la línea de estado
+
+Ver [Configuración](/configuration) para todas las opciones.
+
+## Actualizando
+
+Para actualizar AgileFlow a la última versión:
+
+```bash
+npx agileflow@latest setup
+```
+
+Se conservan los datos de su proyecto existente (épicas, historias, estado).
+
+## Desinstalar
+
+Para eliminar AgileFlow de su proyecto:
+
+```bash
+# Remove AgileFlow directories
+rm -rf .agileflow
+rm -rf .claude/commands/agileflow
+
+# Optionally remove docs (contains your project data)
+rm -rf docs
+```
+
+## Solución de problemas
+
+### Los comandos no aparecen
+
+Asegúrese de ejecutar Claude Code desde la raíz de su proyecto donde se instaló AgileFlow.
+
+### Errores de permiso
+
+Asegúrese de tener acceso de escritura al directorio del proyecto:
+
+```bash
+chmod -R u+w .agileflow .claude docs
+```
+
+### Problemas con la versión del nodo
+
+AgileFlow requiere Node.js 18+:
+
+```bash
+node --version  # Should be v18.0.0 or higher
+```
+
+## Próximos pasos
+
+Ahora que AgileFlow está instalado:
+
+1. **Create your first epic**: `/agileflow:epic EPIC=EP-0001 TITLE="My Feature"`
+2. **Break it into stories**: `/agileflow:story EPIC=EP-0001 STORY=US-0001 TITLE="First task"`
+3. **Start working**: `/agileflow:babysit`
+
+Usar `/agileflow:help` para ver todos los comandos disponibles.

@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
 
+// Import centralized path utilities
+const { getStatusPath, getBusLogPath, getSessionStatePath } = require('../../../lib/paths');
+
 /**
  * DataWatcher - watches status.json and log files for changes
  * Triggers refresh callback when data updates
@@ -15,10 +18,10 @@ class DataWatcher {
     this.watcher = null;
     this.cwd = process.cwd();
 
-    // Paths to watch
-    this.statusPath = path.join(this.cwd, 'docs/09-agents/status.json');
-    this.logPath = path.join(this.cwd, 'docs/09-agents/bus/log.jsonl');
-    this.sessionStatePath = path.join(this.cwd, '.agileflow/session-state.json');
+    // Paths to watch (using centralized path utilities)
+    this.statusPath = getStatusPath(this.cwd);
+    this.logPath = getBusLogPath(this.cwd);
+    this.sessionStatePath = getSessionStatePath(this.cwd);
   }
 
   start() {

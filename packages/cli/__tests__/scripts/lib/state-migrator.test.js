@@ -365,8 +365,9 @@ describe('state-migrator', () => {
     });
 
     it('accepts all valid story statuses', () => {
-      const validStatuses = ['ready', 'in_progress', 'completed', 'blocked', 'archived'];
-      validStatuses.forEach(status => {
+      // Import VALID_STATUSES from story-state-machine (single source of truth)
+      const { VALID_STATUSES } = require('../../../scripts/lib/story-state-machine');
+      VALID_STATUSES.forEach(status => {
         const data = {
           schema_version: '2.0.0',
           stories: { 'US-001': { title: 'Test', status } },

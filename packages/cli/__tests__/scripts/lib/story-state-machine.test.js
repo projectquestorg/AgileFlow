@@ -185,9 +185,9 @@ describe('story-state-machine', () => {
       const result = transition(story, 'in_progress');
 
       expect(result.auditEntry).toBeDefined();
-      expect(result.auditEntry.storyId).toBe('US-001');
-      expect(result.auditEntry.fromStatus).toBe('ready');
-      expect(result.auditEntry.toStatus).toBe('in_progress');
+      expect(result.auditEntry.story_id).toBe('US-001');
+      expect(result.auditEntry.from_status).toBe('ready');
+      expect(result.auditEntry.to_status).toBe('in_progress');
     });
 
     it('fails for invalid target status', () => {
@@ -277,7 +277,7 @@ describe('story-state-machine', () => {
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].storyId).toBe('US-002');
+      expect(result.errors[0].story_id).toBe('US-002');
     });
   });
 
@@ -285,16 +285,16 @@ describe('story-state-machine', () => {
     it('creates entry with required fields', () => {
       const entry = createAuditEntry('US-001', 'ready', 'in_progress');
 
-      expect(entry.storyId).toBe('US-001');
-      expect(entry.fromStatus).toBe('ready');
-      expect(entry.toStatus).toBe('in_progress');
-      expect(entry.transitionedAt).toBeDefined();
-      expect(entry.transitionedBy).toBe('system');
+      expect(entry.story_id).toBe('US-001');
+      expect(entry.from_status).toBe('ready');
+      expect(entry.to_status).toBe('in_progress');
+      expect(entry.transitioned_at).toBeDefined();
+      expect(entry.transitioned_by).toBe('system');
     });
 
     it('includes actor when provided', () => {
       const entry = createAuditEntry('US-001', 'ready', 'in_progress', { actor: 'user123' });
-      expect(entry.transitionedBy).toBe('user123');
+      expect(entry.transitioned_by).toBe('user123');
     });
 
     it('includes reason when provided', () => {
@@ -320,7 +320,7 @@ describe('story-state-machine', () => {
 
       const trail = getAuditTrail({ storyId: 'US-001' });
       expect(trail).toHaveLength(1);
-      expect(trail[0].storyId).toBe('US-001');
+      expect(trail[0].story_id).toBe('US-001');
     });
 
     it('filters by fromStatus', () => {
@@ -329,7 +329,7 @@ describe('story-state-machine', () => {
 
       const trail = getAuditTrail({ fromStatus: 'in_progress' });
       expect(trail).toHaveLength(1);
-      expect(trail[0].fromStatus).toBe('in_progress');
+      expect(trail[0].from_status).toBe('in_progress');
     });
 
     it('filters by toStatus', () => {
@@ -338,7 +338,7 @@ describe('story-state-machine', () => {
 
       const trail = getAuditTrail({ toStatus: 'completed' });
       expect(trail).toHaveLength(1);
-      expect(trail[0].toStatus).toBe('completed');
+      expect(trail[0].to_status).toBe('completed');
     });
 
     it('returns copy of trail', () => {

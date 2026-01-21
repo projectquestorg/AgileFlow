@@ -15,14 +15,14 @@ const { execSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
-const { getProjectRoot } = require('../lib/paths');
+const { getProjectRoot, getStatusPath, getSessionStatePath, getAgileflowDir } = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
 const { isValidBranchName, isValidSessionNickname } = require('../lib/validate');
 
 const { SessionRegistry } = require('../lib/session-registry');
 
 const ROOT = getProjectRoot();
-const SESSIONS_DIR = path.join(ROOT, '.agileflow', 'sessions');
+const SESSIONS_DIR = path.join(getAgileflowDir(ROOT), 'sessions');
 const REGISTRY_PATH = path.join(SESSIONS_DIR, 'registry.json');
 
 // Injectable registry instance for testing
@@ -177,7 +177,7 @@ function getCurrentBranch() {
 
 // Get current story from status.json
 function getCurrentStory() {
-  const statusPath = path.join(ROOT, 'docs', '09-agents', 'status.json');
+  const statusPath = getStatusPath(ROOT);
   const result = safeReadJSON(statusPath, { defaultValue: null });
 
   if (!result.ok || !result.data) return null;
@@ -1829,7 +1829,7 @@ function getMergeHistory() {
 }
 
 // Session state file path
-const SESSION_STATE_PATH = path.join(ROOT, 'docs', '09-agents', 'session-state.json');
+const SESSION_STATE_PATH = getSessionStatePath(ROOT);
 
 /**
  * Switch active session context (for use with /add-dir).

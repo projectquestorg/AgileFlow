@@ -19,6 +19,9 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
+// Import centralized path utilities
+const { getStatusPath } = require('../lib/paths');
+
 function getProjectInfo() {
   const rootDir = path.resolve(__dirname, '..');
 
@@ -72,7 +75,7 @@ function getProjectInfo() {
   const activeEpics = [];
 
   try {
-    const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
+    const statusPath = getStatusPath(rootDir);
     if (fs.existsSync(statusPath)) {
       const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
 

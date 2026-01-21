@@ -12,6 +12,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Import status constants from single source of truth
+const { VALID_STATUSES } = require('./story-state-machine');
+
 // Current schema version
 const CURRENT_SCHEMA_VERSION = '2.0.0';
 
@@ -311,8 +314,8 @@ function validateSchema(data) {
       if (!story.status) {
         errors.push(`Story ${storyId} missing required field: status`);
       }
-      const validStatuses = ['ready', 'in_progress', 'completed', 'blocked', 'archived'];
-      if (story.status && !validStatuses.includes(story.status)) {
+      // Use VALID_STATUSES from story-state-machine.js (single source of truth)
+      if (story.status && !VALID_STATUSES.includes(story.status)) {
         errors.push(`Story ${storyId} has invalid status: ${story.status}`);
       }
     }

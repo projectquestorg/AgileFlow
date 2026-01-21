@@ -21,6 +21,14 @@
 const fs = require('fs');
 const path = require('path');
 
+// Import status constants from single source of truth
+const { VALID_STATUSES } = require('../lib/story-state-machine');
+
+// Extended statuses for backward compatibility (maps to canonical values)
+// These legacy values are accepted but should be migrated to canonical values
+const LEGACY_STATUSES = ['pending', 'done', 'in-progress', 'in-review'];
+const ALL_ACCEPTED_STATUSES = [...VALID_STATUSES, ...LEGACY_STATUSES];
+
 let input = '';
 process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
@@ -131,21 +139,7 @@ function validateStatusJson(data) {
         if (!story.title && !story.name) {
           issues.push(`Story ${story.id || index} missing 'title' or 'name' field`);
         }
-        if (
-          story.status &&
-          ![
-            'pending',
-            'in_progress',
-            'completed',
-            'done',
-            'blocked',
-            'ready',
-            'in-progress',
-            'in_review',
-            'in-review',
-            'archived',
-          ].includes(story.status)
-        ) {
+        if (story.status && !ALL_ACCEPTED_STATUSES.includes(story.status)) {
           issues.push(`Story ${story.id || index} has invalid status: ${story.status}`);
         }
       });
@@ -155,21 +149,7 @@ function validateStatusJson(data) {
         if (!story.title && !story.name) {
           issues.push(`Story ${storyId} missing 'title' or 'name' field`);
         }
-        if (
-          story.status &&
-          ![
-            'pending',
-            'in_progress',
-            'completed',
-            'done',
-            'blocked',
-            'ready',
-            'in-progress',
-            'in_review',
-            'in-review',
-            'archived',
-          ].includes(story.status)
-        ) {
+        if (story.status && !ALL_ACCEPTED_STATUSES.includes(story.status)) {
           issues.push(`Story ${storyId} has invalid status: ${story.status}`);
         }
       });

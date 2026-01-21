@@ -3,10 +3,16 @@
 /**
  * Auto-translate documentation using Lingva (free, no signup)
  *
+ * NEW APPROACH: AST-based extraction
+ * - Parses MDX structure line by line
+ * - Only extracts translatable text (prose, headings, list items)
+ * - Preserves all MDX/JSX structure exactly
+ * - Translates text segments individually
+ *
  * Usage:
- *   npx ts-node scripts/translate-docs.ts           # Translate all docs
- *   npx ts-node scripts/translate-docs.ts es        # Translate to Spanish only
- *   npx ts-node scripts/translate-docs.ts --dry-run # Preview without writing
+ *   npx tsx scripts/translate-docs.ts           # Translate all docs
+ *   npx tsx scripts/translate-docs.ts es        # Translate to Spanish only
+ *   npx tsx scripts/translate-docs.ts --dry-run # Preview without writing
  */
 
 import * as fs from "fs"
@@ -14,7 +20,6 @@ import * as path from "path"
 import { glob } from "glob"
 
 // Lingva instances (free Google Translate proxies)
-// Test with: curl "https://lingva.lunar.icu/api/v1/en/es/hello"
 const LINGVA_INSTANCES = [
   "https://lingva.lunar.icu",
   "https://lingva.thedaviddelta.com",
@@ -22,7 +27,6 @@ const LINGVA_INSTANCES = [
 ]
 
 // Target languages (must match lib/languages.ts)
-// Only languages supported by Orama search
 const LANGUAGES: Record<string, string> = {
   es: "Spanish",
   fr: "French",
@@ -31,33 +35,27 @@ const LANGUAGES: Record<string, string> = {
   ar: "Arabic",
 }
 
-// Delay between requests to avoid rate limiting
-const DELAY_MS = 1000
+const DELAY_MS = 1500 // Increased delay for reliability
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Max characters per translation request (URL length limit)
-const MAX_CHUNK_SIZE = 1500
+// ============================================================
+// Translation API
+// ============================================================
 
 async function translateText(
   text: string,
   targetLang: string,
   instanceIndex = 0
 ): Promise<string> {
-  // If text is too long, split into chunks
-  if (text.length > MAX_CHUNK_SIZE) {
-    const chunks = splitIntoChunks(text, MAX_CHUNK_SIZE)
-    const translatedChunks = []
-    for (const chunk of chunks) {
-      const translated = await translateText(chunk, targetLang, 0)
-      translatedChunks.push(translated)
-      await sleep(DELAY_MS) // Rate limit between chunks
-    }
-    return translatedChunks.join(" ")
-  }
+  if (!text.trim()) return text
+
+  // Skip if text is too short or only whitespace/punctuation
+  if (text.trim().length < 2) return text
 
   if (instanceIndex >= LINGVA_INSTANCES.length) {
-    throw new Error("All translation instances failed")
+    console.error(`  ⚠️ All instances failed for: "${text.slice(0, 50)}..."`)
+    return text // Return original on failure
   }
 
   const instance = LINGVA_INSTANCES[instanceIndex]
@@ -74,124 +72,257 @@ async function translateText(
     }
     return data.translation
   } catch (error) {
-    // Try next instance
     if (instanceIndex < LINGVA_INSTANCES.length - 1) {
-      console.log(`  Instance ${instanceIndex + 1} failed, trying next...`)
       await sleep(500)
       return translateText(text, targetLang, instanceIndex + 1)
     }
-    throw error
+    return text // Return original on complete failure
   }
 }
 
-// Split text into chunks at sentence boundaries
-function splitIntoChunks(text: string, maxSize: number): string[] {
-  const chunks: string[] = []
-  const sentences = text.split(/(?<=[.!?])\s+/)
-  let currentChunk = ""
+// ============================================================
+// MDX Line Classification
+// ============================================================
 
-  for (const sentence of sentences) {
-    if (currentChunk.length + sentence.length > maxSize) {
-      if (currentChunk) chunks.push(currentChunk.trim())
-      currentChunk = sentence
-    } else {
-      currentChunk += (currentChunk ? " " : "") + sentence
+interface LineInfo {
+  original: string
+  type:
+    | "frontmatter-boundary" // ---
+    | "frontmatter-title"    // title: ...
+    | "frontmatter-desc"     // description: ...
+    | "frontmatter-other"    // other frontmatter lines
+    | "code-fence"           // ``` or ```lang
+    | "code-content"         // inside code block
+    | "jsx-component"        // <Component ...> or </Component>
+    | "import"               // import ...
+    | "heading"              // # Heading
+    | "list-item"            // - item or * item or 1. item
+    | "table-row"            // | col | col |
+    | "blockquote"           // > quote
+    | "link-reference"       // [text]: url
+    | "empty"                // blank line
+    | "paragraph"            // regular text
+  translatable?: string      // the part to translate
+  prefix?: string            // non-translatable prefix
+  suffix?: string            // non-translatable suffix
+}
+
+function classifyLine(line: string, inCodeBlock: boolean, inFrontmatter: boolean): LineInfo {
+  const trimmed = line.trim()
+
+  // Empty line
+  if (!trimmed) {
+    return { original: line, type: "empty" }
+  }
+
+  // Code fence
+  if (trimmed.startsWith("```")) {
+    return { original: line, type: "code-fence" }
+  }
+
+  // Inside code block
+  if (inCodeBlock) {
+    return { original: line, type: "code-content" }
+  }
+
+  // Frontmatter boundary
+  if (trimmed === "---") {
+    return { original: line, type: "frontmatter-boundary" }
+  }
+
+  // Inside frontmatter
+  if (inFrontmatter) {
+    const titleMatch = line.match(/^(title:\s*["']?)(.+?)(["']?\s*)$/)
+    if (titleMatch) {
+      return {
+        original: line,
+        type: "frontmatter-title",
+        prefix: titleMatch[1],
+        translatable: titleMatch[2],
+        suffix: titleMatch[3],
+      }
+    }
+
+    const descMatch = line.match(/^(description:\s*["']?)(.+?)(["']?\s*)$/)
+    if (descMatch) {
+      return {
+        original: line,
+        type: "frontmatter-desc",
+        prefix: descMatch[1],
+        translatable: descMatch[2],
+        suffix: descMatch[3],
+      }
+    }
+
+    return { original: line, type: "frontmatter-other" }
+  }
+
+  // Import statement
+  if (trimmed.startsWith("import ")) {
+    return { original: line, type: "import" }
+  }
+
+  // JSX component (starts with < and capital letter, or closing tag)
+  if (/^<[A-Z]/.test(trimmed) || /^<\/[A-Z]/.test(trimmed)) {
+    return { original: line, type: "jsx-component" }
+  }
+
+  // Heading - translate the text after #
+  const headingMatch = line.match(/^(#{1,6}\s+)(.+)$/)
+  if (headingMatch) {
+    return {
+      original: line,
+      type: "heading",
+      prefix: headingMatch[1],
+      translatable: headingMatch[2],
     }
   }
-  if (currentChunk) chunks.push(currentChunk.trim())
 
-  return chunks
-}
-
-// Placeholder map for preserving untranslatable content
-const placeholders: Map<string, string> = new Map()
-let placeholderIndex = 0
-
-function createPlaceholder(content: string): string {
-  // Use Unicode private use area character + numbers to prevent translation
-  // Format: ⟦0⟧ - brackets + number only, translation APIs leave these alone
-  const id = `⟦${placeholderIndex++}⟧`
-  placeholders.set(id, content)
-  return id
-}
-
-function restorePlaceholders(text: string): string {
-  let result = text
-  for (const [id, original] of placeholders) {
-    result = result.replace(new RegExp(id, "g"), original)
-  }
-  return result
-}
-
-function extractTranslatableContent(mdx: string): {
-  frontmatter: string
-  sections: { type: "code" | "text"; content: string }[]
-} {
-  // Reset placeholders for each file
-  placeholders.clear()
-  placeholderIndex = 0
-
-  // Extract frontmatter
-  const frontmatterMatch = mdx.match(/^---\n([\s\S]*?)\n---/)
-  const frontmatter = frontmatterMatch ? frontmatterMatch[0] : ""
-  let content = frontmatter ? mdx.slice(frontmatter.length) : mdx
-
-  // Step 1: Replace code blocks with placeholders
-  content = content.replace(/```[\s\S]*?```/g, (match) => createPlaceholder(match))
-
-  // Step 2: Replace inline code with placeholders
-  content = content.replace(/`[^`\n]+`/g, (match) => createPlaceholder(match))
-
-  // Step 3: Replace JSX components with placeholders (handles nested)
-  // Match opening tags, closing tags, and self-closing tags
-  content = content.replace(/<[A-Z][a-zA-Z]*[^>]*\/?>/g, (match) => createPlaceholder(match))
-  content = content.replace(/<\/[A-Z][a-zA-Z]*>/g, (match) => createPlaceholder(match))
-
-  // Step 4: Replace markdown links/images URLs (keep link text translatable)
-  content = content.replace(/\]\([^)]+\)/g, (match) => createPlaceholder(match))
-
-  // Step 5: Replace import statements
-  content = content.replace(/^import\s+.*$/gm, (match) => createPlaceholder(match))
-
-  // Step 6: Preserve blank lines before JSX components (prevents heading merging)
-  // Convert double newlines to placeholder to preserve structure
-  content = content.replace(/\n\n/g, createPlaceholder("\n\n"))
-
-  // Now split remaining content into sections
-  const sections: { type: "code" | "text"; content: string }[] = []
-
-  // Check if there's any text content left
-  if (content.trim()) {
-    sections.push({ type: "text", content })
+  // List item - translate the text after marker
+  const listMatch = line.match(/^(\s*[-*+]|\s*\d+\.)\s+(.+)$/)
+  if (listMatch) {
+    return {
+      original: line,
+      type: "list-item",
+      prefix: listMatch[1] + " ",
+      translatable: listMatch[2],
+    }
   }
 
-  return { frontmatter, sections }
+  // Table row - don't translate (usually code/data)
+  if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+    return { original: line, type: "table-row" }
+  }
+
+  // Blockquote - translate the text after >
+  const blockquoteMatch = line.match(/^(>\s*)(.+)$/)
+  if (blockquoteMatch) {
+    return {
+      original: line,
+      type: "blockquote",
+      prefix: blockquoteMatch[1],
+      translatable: blockquoteMatch[2],
+    }
+  }
+
+  // Link reference
+  if (/^\[.+\]:\s/.test(trimmed)) {
+    return { original: line, type: "link-reference" }
+  }
+
+  // Regular paragraph - translate it
+  // But first, check if it contains JSX mixed in (like `text <Component> text`)
+  if (/<[A-Z]/.test(line)) {
+    // Mixed JSX - don't translate to avoid breaking structure
+    return { original: line, type: "jsx-component" }
+  }
+
+  return {
+    original: line,
+    type: "paragraph",
+    translatable: line,
+  }
 }
 
-async function translateFrontmatter(
-  frontmatter: string,
+// ============================================================
+// Text Processing (preserve inline code/links)
+// ============================================================
+
+interface TextSegment {
+  type: "text" | "code" | "link" | "bold" | "italic" | "special"
+  content: string
+}
+
+function tokenizeText(text: string): TextSegment[] {
+  const segments: TextSegment[] = []
+  let remaining = text
+
+  // Regex patterns for markdown inline elements
+  const patterns = [
+    { type: "code" as const, regex: /`[^`]+`/ },
+    { type: "link" as const, regex: /\[([^\]]+)\]\([^)]+\)/ },
+    { type: "bold" as const, regex: /\*\*[^*]+\*\*/ },
+    { type: "italic" as const, regex: /(?<!\*)\*[^*]+\*(?!\*)/ },
+    { type: "special" as const, regex: /\{\{[^}]+\}\}/ }, // Template variables
+  ]
+
+  while (remaining.length > 0) {
+    // Find the earliest match
+    let earliest: { index: number; length: number; type: TextSegment["type"]; match: string } | null = null
+
+    for (const { type, regex } of patterns) {
+      const match = remaining.match(regex)
+      if (match && match.index !== undefined) {
+        if (!earliest || match.index < earliest.index) {
+          earliest = {
+            index: match.index,
+            length: match[0].length,
+            type,
+            match: match[0],
+          }
+        }
+      }
+    }
+
+    if (earliest && earliest.index > 0) {
+      // Text before the match
+      segments.push({ type: "text", content: remaining.slice(0, earliest.index) })
+    }
+
+    if (earliest) {
+      segments.push({ type: earliest.type, content: earliest.match })
+      remaining = remaining.slice(earliest.index + earliest.length)
+    } else {
+      // No more matches, rest is text
+      if (remaining) {
+        segments.push({ type: "text", content: remaining })
+      }
+      break
+    }
+  }
+
+  return segments
+}
+
+async function translateWithPreservation(
+  text: string,
   targetLang: string
 ): Promise<string> {
-  // Extract title and description for translation
-  const titleMatch = frontmatter.match(/title:\s*["']?(.+?)["']?\n/)
-  const descMatch = frontmatter.match(/description:\s*["']?(.+?)["']?\n/)
+  const segments = tokenizeText(text)
+  const result: string[] = []
 
-  let result = frontmatter
+  for (const segment of segments) {
+    if (segment.type === "text" && segment.content.trim()) {
+      // Preserve leading/trailing whitespace
+      const leadingSpace = segment.content.match(/^\s*/)?.[0] || ""
+      const trailingSpace = segment.content.match(/\s*$/)?.[0] || ""
+      const trimmed = segment.content.trim()
 
-  if (titleMatch) {
-    const translatedTitle = await translateText(titleMatch[1], targetLang)
-    await sleep(DELAY_MS)
-    result = result.replace(titleMatch[1], translatedTitle)
+      const translated = await translateText(trimmed, targetLang)
+      result.push(leadingSpace + translated + trailingSpace)
+      await sleep(200) // Small delay between segments
+    } else if (segment.type === "link") {
+      // For links, translate only the display text
+      const linkMatch = segment.content.match(/\[([^\]]+)\](\([^)]+\))/)
+      if (linkMatch) {
+        const translatedText = await translateText(linkMatch[1], targetLang)
+        await sleep(200)
+        result.push(`[${translatedText}]${linkMatch[2]}`)
+      } else {
+        result.push(segment.content)
+      }
+    } else {
+      // Keep code, bold markers, etc. as-is
+      result.push(segment.content)
+    }
   }
 
-  if (descMatch) {
-    const translatedDesc = await translateText(descMatch[1], targetLang)
-    await sleep(DELAY_MS)
-    result = result.replace(descMatch[1], translatedDesc)
-  }
-
-  return result
+  return result.join("")
 }
+
+// ============================================================
+// Main Translation Logic
+// ============================================================
 
 async function translateMdxFile(
   filePath: string,
@@ -199,68 +330,79 @@ async function translateMdxFile(
   dryRun: boolean
 ): Promise<void> {
   const content = fs.readFileSync(filePath, "utf-8")
-  const { frontmatter, sections } = extractTranslatableContent(content)
+  const lines = content.split("\n")
 
-  // Translate frontmatter
-  const translatedFrontmatter = await translateFrontmatter(frontmatter, targetLang)
+  let inCodeBlock = false
+  let inFrontmatter = false
+  let frontmatterCount = 0
 
-  // Translate text sections
-  const translatedSections: string[] = []
-  for (const section of sections) {
-    if (section.type === "code") {
-      translatedSections.push(section.content)
-    } else {
-      // Split long text into chunks (Lingva has limits)
-      const chunks = section.content.match(/[\s\S]{1,1000}/g) || []
-      const translatedChunks: string[] = []
+  const translatedLines: string[] = []
 
-      for (const chunk of chunks) {
-        if (chunk.trim()) {
-          try {
-            const translated = await translateText(chunk, targetLang)
-            translatedChunks.push(translated)
-            await sleep(DELAY_MS)
-          } catch (error) {
-            console.error(`  Warning: Failed to translate chunk, keeping original`)
-            translatedChunks.push(chunk)
-          }
-        } else {
-          translatedChunks.push(chunk)
-        }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Track frontmatter boundaries
+    if (line.trim() === "---") {
+      frontmatterCount++
+      inFrontmatter = frontmatterCount === 1
+      if (frontmatterCount === 2) {
+        inFrontmatter = false
       }
-      translatedSections.push(translatedChunks.join(""))
+    }
+
+    // Track code blocks
+    if (line.trim().startsWith("```") && !inFrontmatter) {
+      inCodeBlock = !inCodeBlock
+    }
+
+    const lineInfo = classifyLine(line, inCodeBlock, inFrontmatter)
+
+    // Translate if needed
+    if (lineInfo.translatable) {
+      try {
+        const translated = await translateWithPreservation(
+          lineInfo.translatable,
+          targetLang
+        )
+        await sleep(DELAY_MS)
+
+        // Reconstruct line
+        const newLine =
+          (lineInfo.prefix || "") + translated + (lineInfo.suffix || "")
+        translatedLines.push(newLine)
+      } catch (error) {
+        // On error, keep original
+        translatedLines.push(line)
+      }
+    } else {
+      // Keep line as-is
+      translatedLines.push(line)
     }
   }
 
-  // Ensure frontmatter ends with newline before content
-  const frontmatterWithNewline = translatedFrontmatter.endsWith("\n")
-    ? translatedFrontmatter
-    : translatedFrontmatter + "\n"
+  const translatedContent = translatedLines.join("\n")
 
-  // Restore placeholders (JSX components, code blocks, etc.)
-  const translatedContent = restorePlaceholders(
-    frontmatterWithNewline + translatedSections.join("")
-  )
-
-  // Determine output path using filename suffix format (e.g., index.es.mdx)
-  // This is the format Fumadocs expects for i18n
-  const ext = path.extname(filePath) // .mdx
-  const baseName = filePath.slice(0, -ext.length) // content/docs/index
-  const outputPath = `${baseName}.${targetLang}${ext}` // content/docs/index.es.mdx
+  // Determine output path
+  const ext = path.extname(filePath)
+  const baseName = filePath.slice(0, -ext.length)
+  const outputPath = `${baseName}.${targetLang}${ext}`
 
   if (dryRun) {
     console.log(`  Would write: ${outputPath}`)
   } else {
     fs.writeFileSync(outputPath, translatedContent)
-    console.log(`  Written: ${outputPath}`)
+    console.log(`  ✓ Written: ${outputPath}`)
   }
 }
+
+// ============================================================
+// CLI Entry Point
+// ============================================================
 
 async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes("--dry-run")
 
-  // Separate languages from file paths
   const nonFlags = args.filter((a) => !a.startsWith("--"))
   const langs = nonFlags.filter((a) => a in LANGUAGES)
   const specificFiles = nonFlags.filter((a) => a.endsWith(".mdx"))
@@ -272,15 +414,13 @@ async function main() {
     process.exit(1)
   }
 
-  // Use specific files if provided, otherwise find all English MDX files
+  // Find files to translate
   let mdxFiles: string[]
   if (specificFiles.length > 0) {
-    // Normalize paths (remove apps/docs/ prefix if present)
     mdxFiles = specificFiles.map((f) => f.replace(/^apps\/docs\//, ""))
-    console.log(`Translating ${mdxFiles.length} specific files`)
+    console.log(`Translating ${mdxFiles.length} specific file(s)`)
   } else {
     mdxFiles = await glob("content/docs/**/*.mdx", {
-      // Ignore already translated files (*.{lang}.mdx format)
       ignore: Object.keys(LANGUAGES).map((l) => `content/docs/**/*.${l}.mdx`),
     })
     console.log(`Found ${mdxFiles.length} files to translate`)
@@ -290,19 +430,19 @@ async function main() {
   console.log(`Dry run: ${dryRun}\n`)
 
   for (const lang of langsToTranslate) {
-    console.log(`\nTranslating to ${LANGUAGES[lang]} (${lang})...`)
+    console.log(`\n🌐 Translating to ${LANGUAGES[lang]} (${lang})...`)
 
     for (const file of mdxFiles) {
-      console.log(`  Processing: ${file}`)
+      console.log(`  📄 ${file}`)
       try {
         await translateMdxFile(file, lang, dryRun)
       } catch (error) {
-        console.error(`  Error translating ${file}:`, error)
+        console.error(`  ❌ Error:`, error)
       }
     }
   }
 
-  console.log("\nDone!")
+  console.log("\n✅ Done!")
 }
 
 main().catch(console.error)

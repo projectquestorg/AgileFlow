@@ -22,6 +22,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Import status constants from single source of truth
+const { VALID_STATUSES } = require('../lib/story-state-machine');
+
 let input = '';
 process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
@@ -141,21 +144,13 @@ function validateSingleStory(story, index) {
     issues.push(`Story ${storyRef}: missing 'title' or 'name' field`);
   }
 
-  // Status validation
-  const validStatuses = [
-    'pending',
-    'ready',
-    'in_progress',
-    'in-progress',
-    'in_review',
-    'in-review',
-    'completed',
-    'blocked',
-    'archived',
-  ];
-  if (story.status && !validStatuses.includes(story.status)) {
+  // Status validation (using canonical values from story-state-machine.js)
+  // Also accept legacy formats for backward compatibility
+  const legacyStatuses = ['pending', 'in-progress', 'in-review'];
+  const allAcceptedStatuses = [...VALID_STATUSES, ...legacyStatuses];
+  if (story.status && !allAcceptedStatuses.includes(story.status)) {
     issues.push(
-      `Story ${storyRef}: invalid status "${story.status}". Valid: ${validStatuses.join(', ')}`
+      `Story ${storyRef}: invalid status "${story.status}". Valid: ${VALID_STATUSES.join(', ')}`
     );
   }
 

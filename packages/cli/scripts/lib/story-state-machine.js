@@ -21,8 +21,12 @@
  * - archived → (terminal - no transitions out)
  */
 
-// Valid story statuses
+// Valid story statuses - SINGLE SOURCE OF TRUTH
+// All validators should import these constants instead of hardcoding
 const VALID_STATUSES = ['ready', 'in_progress', 'in_review', 'blocked', 'completed', 'archived'];
+
+// Statuses that indicate a story is "done" (for metrics and epic completion checks)
+const COMPLETED_STATUSES = ['completed', 'archived'];
 
 // Define valid state transitions
 // Key = from state, Value = array of valid "to" states
@@ -87,11 +91,11 @@ function getValidTransitions(fromStatus) {
  */
 function createAuditEntry(storyId, fromStatus, toStatus, metadata = {}) {
   return {
-    storyId,
-    fromStatus,
-    toStatus,
-    transitionedAt: new Date().toISOString(),
-    transitionedBy: metadata.actor || 'system',
+    story_id: storyId,
+    from_status: fromStatus,
+    to_status: toStatus,
+    transitioned_at: new Date().toISOString(),
+    transitioned_by: metadata.actor || 'system',
     reason: metadata.reason || null,
     metadata: metadata.extra || {},
   };
@@ -116,14 +120,17 @@ function logAuditEntry(entry) {
 function getAuditTrail(filter = {}) {
   let entries = [...auditTrail];
 
-  if (filter.storyId) {
-    entries = entries.filter(e => e.storyId === filter.storyId);
+  if (filter.storyId || filter.story_id) {
+    const id = filter.storyId || filter.story_id;
+    entries = entries.filter(e => e.story_id === id);
   }
-  if (filter.fromStatus) {
-    entries = entries.filter(e => e.fromStatus === filter.fromStatus);
+  if (filter.fromStatus || filter.from_status) {
+    const status = filter.fromStatus || filter.from_status;
+    entries = entries.filter(e => e.from_status === status);
   }
-  if (filter.toStatus) {
-    entries = entries.filter(e => e.toStatus === filter.toStatus);
+  if (filter.toStatus || filter.to_status) {
+    const status = filter.toStatus || filter.to_status;
+    entries = entries.filter(e => e.to_status === status);
   }
 
   return entries;
@@ -207,8 +214,8 @@ function transition(story, toStatus, options = {}) {
   const updatedStory = {
     ...story,
     status: toStatus,
-    transitioned_at: auditEntry.transitionedAt,
-    transitioned_by: auditEntry.transitionedBy,
+    transitioned_at: auditEntry.transitioned_at,
+    transitioned_by: auditEntry.transitioned_by,
   };
 
   // Add history entry if story has history array
@@ -218,8 +225,8 @@ function transition(story, toStatus, options = {}) {
       {
         from: fromStatus,
         to: toStatus,
-        at: auditEntry.transitionedAt,
-        by: auditEntry.transitionedBy,
+        at: auditEntry.transitioned_at,
+        by: auditEntry.transitioned_by,
         reason,
       },
     ];
@@ -248,7 +255,7 @@ function batchTransition(stories, toStatus, options = {}) {
     const result = transition(story, toStatus, options);
     results.push(result);
     if (!result.success) {
-      errors.push({ storyId: story.id || 'unknown', error: result.error });
+      errors.push({ story_id: story.id || 'unknown', error: result.error });
     }
   }
 
@@ -360,8 +367,8 @@ function autoCompleteEpic(statusData, epicId) {
 
   if (allComplete) {
     epic.status = 'complete';
-    epic.completed = new Date().toISOString().split('T')[0];
-    statusData.updated = new Date().toISOString();
+    epic.completed_at = new Date().toISOString(); // Use full ISO 8601 format
+    statusData.updated_at = new Date().toISOString();
     return {
       updated: true,
       epic,
@@ -401,6 +408,7 @@ function findIncompleteEpics(statusData) {
 module.exports = {
   // Constants
   VALID_STATUSES,
+  COMPLETED_STATUSES,
   TRANSITIONS,
 
   // Validation

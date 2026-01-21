@@ -78,6 +78,94 @@ function getSessionStatePath(rootDir) {
 }
 
 /**
+ * Get the agileflow-metadata.json path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to agileflow-metadata.json
+ */
+function getMetadataPath(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '00-meta', 'agileflow-metadata.json');
+}
+
+/**
+ * Get the message bus log path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to bus/log.jsonl
+ */
+function getBusLogPath(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '09-agents', 'bus', 'log.jsonl');
+}
+
+/**
+ * Get the epics directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to epics directory
+ */
+function getEpicsDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '05-epics');
+}
+
+/**
+ * Get the stories directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to stories directory
+ */
+function getStoriesDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '06-stories');
+}
+
+/**
+ * Get the archive directory path for completed stories.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to archive directory
+ */
+function getArchiveDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '09-agents', 'archive');
+}
+
+/**
+ * Get the agents directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to agents directory (docs/09-agents)
+ */
+function getAgentsDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '09-agents');
+}
+
+/**
+ * Get the decisions (ADR) directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to decisions directory
+ */
+function getDecisionsDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '03-decisions');
+}
+
+/**
+ * Get the research directory path.
+ *
+ * @param {string} [rootDir] - Project root (auto-detected if not provided)
+ * @returns {string} Path to research directory
+ */
+function getResearchDir(rootDir) {
+  const root = rootDir || getProjectRoot();
+  return path.join(root, 'docs', '10-research');
+}
+
+/**
  * Check if we're in an AgileFlow project.
  *
  * @param {string} [dir=process.cwd()] - Directory to check
@@ -89,11 +177,26 @@ function isAgileflowProject(dir = process.cwd()) {
 }
 
 module.exports = {
+  // Root and base directories
   getProjectRoot,
   getAgileflowDir,
   getClaudeDir,
   getDocsDir,
+
+  // Status and session files
   getStatusPath,
   getSessionStatePath,
+  getMetadataPath,
+  getBusLogPath,
+
+  // Documentation directories
+  getEpicsDir,
+  getStoriesDir,
+  getArchiveDir,
+  getAgentsDir,
+  getDecisionsDir,
+  getResearchDir,
+
+  // Utilities
   isAgileflowProject,
 };

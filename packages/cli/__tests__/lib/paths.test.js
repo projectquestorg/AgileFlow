@@ -12,6 +12,14 @@ const {
   getDocsDir,
   getStatusPath,
   getSessionStatePath,
+  getMetadataPath,
+  getBusLogPath,
+  getEpicsDir,
+  getStoriesDir,
+  getArchiveDir,
+  getAgentsDir,
+  getDecisionsDir,
+  getResearchDir,
   isAgileflowProject,
 } = require('../../lib/paths');
 
@@ -136,6 +144,102 @@ describe('paths', () => {
     it('returns correct path without rootDir (auto-detect)', () => {
       const result = getSessionStatePath();
       expect(result).toMatch(/docs[/\\]09-agents[/\\]session-state\.json$/);
+    });
+  });
+
+  describe('getMetadataPath', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getMetadataPath(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '00-meta', 'agileflow-metadata.json'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getMetadataPath();
+      expect(result).toMatch(/docs[/\\]00-meta[/\\]agileflow-metadata\.json$/);
+    });
+  });
+
+  describe('getBusLogPath', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getBusLogPath(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getBusLogPath();
+      expect(result).toMatch(/docs[/\\]09-agents[/\\]bus[/\\]log\.jsonl$/);
+    });
+  });
+
+  describe('getEpicsDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getEpicsDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '05-epics'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getEpicsDir();
+      expect(result).toMatch(/docs[/\\]05-epics$/);
+    });
+  });
+
+  describe('getStoriesDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getStoriesDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '06-stories'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getStoriesDir();
+      expect(result).toMatch(/docs[/\\]06-stories$/);
+    });
+  });
+
+  describe('getArchiveDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getArchiveDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '09-agents', 'archive'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getArchiveDir();
+      expect(result).toMatch(/docs[/\\]09-agents[/\\]archive$/);
+    });
+  });
+
+  describe('getAgentsDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getAgentsDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '09-agents'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getAgentsDir();
+      expect(result).toMatch(/docs[/\\]09-agents$/);
+    });
+  });
+
+  describe('getDecisionsDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getDecisionsDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '03-decisions'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getDecisionsDir();
+      expect(result).toMatch(/docs[/\\]03-decisions$/);
+    });
+  });
+
+  describe('getResearchDir', () => {
+    it('returns correct path with explicit rootDir', () => {
+      const result = getResearchDir(testDir);
+      expect(result).toBe(path.join(testDir, 'docs', '10-research'));
+    });
+
+    it('returns correct path without rootDir (auto-detect)', () => {
+      const result = getResearchDir();
+      expect(result).toMatch(/docs[/\\]10-research$/);
     });
   });
 

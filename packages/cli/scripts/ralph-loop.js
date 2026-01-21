@@ -34,33 +34,33 @@ const { execSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
-const { getProjectRoot } = require('../lib/paths');
+const { getProjectRoot, getStatusPath, getSessionStatePath } = require('../lib/paths');
 const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
 const { isValidEpicId, parseIntBounded } = require('../lib/validate');
 
 // Read session state
 function getSessionState(rootDir) {
-  const statePath = path.join(rootDir, 'docs/09-agents/session-state.json');
+  const statePath = getSessionStatePath(rootDir);
   const result = safeReadJSON(statePath, { defaultValue: {} });
   return result.ok ? result.data : {};
 }
 
 // Write session state
 function saveSessionState(rootDir, state) {
-  const statePath = path.join(rootDir, 'docs/09-agents/session-state.json');
+  const statePath = getSessionStatePath(rootDir);
   safeWriteJSON(statePath, state, { createDir: true });
 }
 
 // Read status.json for stories
 function getStatus(rootDir) {
-  const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
+  const statusPath = getStatusPath(rootDir);
   const result = safeReadJSON(statusPath, { defaultValue: { stories: {}, epics: {} } });
   return result.ok ? result.data : { stories: {}, epics: {} };
 }
 
 // Save status.json
 function saveStatus(rootDir, status) {
-  const statusPath = path.join(rootDir, 'docs/09-agents/status.json');
+  const statusPath = getStatusPath(rootDir);
   safeWriteJSON(statusPath, status);
 }
 
