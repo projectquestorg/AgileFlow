@@ -364,6 +364,23 @@ function createSession(options = {}) {
     };
   }
 
+  // Copy environment files to new worktree (they don't copy automatically)
+  const envFiles = ['.env', '.env.local', '.env.development', '.env.test', '.env.production'];
+  const copiedEnvFiles = [];
+  for (const envFile of envFiles) {
+    const src = path.join(ROOT, envFile);
+    const dest = path.join(worktreePath, envFile);
+    if (fs.existsSync(src) && !fs.existsSync(dest)) {
+      try {
+        fs.copyFileSync(src, dest);
+        copiedEnvFiles.push(envFile);
+      } catch (e) {
+        // Non-fatal: log but continue
+        console.warn(`Warning: Could not copy ${envFile}: ${e.message}`);
+      }
+    }
+  }
+
   // Register session - worktree sessions are always parallel threads
   registry.next_id++;
   registry.sessions[sessionId] = {
@@ -386,6 +403,7 @@ function createSession(options = {}) {
     branch: branchName,
     thread_type: registry.sessions[sessionId].thread_type,
     command: `cd "${worktreePath}" && claude`,
+    envFilesCopied: copiedEnvFiles,
   };
 }
 
