@@ -24,6 +24,7 @@ Create a new user story with acceptance criteria, test stubs, and status trackin
 | `ESTIMATE` | No | `0.5d` | Time estimate (e.g., `0.5d`, `1d`, `2d`) |
 | `AC` | No | - | Acceptance criteria in Given/When/Then format |
 | `DEPENDENCIES` | No | - | Comma-separated list of dependent story IDs (e.g., `US-0001,US-0002`) |
+| `TDD` | No | Smart default | Enable TDD mode to generate test stubs from acceptance criteria |
 
 ## Examples
 
@@ -51,6 +52,60 @@ Creates the story with specific acceptance criteria that guide development and t
 
 Creates the story and marks it as dependent on previous stories. These dependencies are visualized in `/deps` command.
 
+### Story with TDD Mode
+
+```bash
+/agileflow:story EPIC=EP-0010 STORY=US-0004 TITLE="User login" OWNER=AG-API AC="Given user on login page, When valid credentials entered, Then dashboard shown"
+```
+
+For code owners like AG-API, TDD mode is automatically enabled. This generates a test file at `__tests__/US-0004.test.ts` with pending tests derived from the acceptance criteria.
+
+## TDD Mode
+
+TDD (Test-Driven Development) mode generates framework-specific test stubs from your acceptance criteria. Tests are created **before** implementation, following the principle that tests should **specify** behavior, not just verify it.
+
+### Smart Defaults
+
+TDD mode uses smart defaults based on the story owner:
+
+| Owner Type | TDD Default | Rationale |
+|------------|-------------|-----------|
+| AG-API, AG-UI, AG-DATABASE | `true` | Code-focused, tests critical |
+| AG-TESTING, AG-SECURITY, AG-PERFORMANCE | `true` | Quality-focused |
+| AG-DOCUMENTATION, AG-RESEARCH, AG-PRODUCT | `false` | Non-code work |
+| AG-DEVOPS, AG-CI | `false` | Infrastructure, config |
+
+You can always override the default:
+- `TDD=true` - Force TDD mode on
+- `TDD=false` - Force TDD mode off
+
+### Generated Test Structure
+
+For Jest/Vitest (TypeScript):
+```typescript
+describe('US-0004: User login', () => {
+  // AC1: valid login shows dashboard
+  describe('valid login shows dashboard', () => {
+    it.skip('should dashboard shown', () => {
+      // Given: user on login page
+      // When: valid credentials entered
+      // Then: dashboard shown
+      expect(true).toBe(true); // TODO: Implement
+    });
+  });
+});
+```
+
+### TDD Workflow
+
+1. **Create story with TDD** - Tests are generated from acceptance criteria
+2. **Clear context** - Start a fresh Claude session
+3. **Implement to pass tests** - Tell agent: "Make all tests in `__tests__/US-0004.test.ts` pass"
+4. **Agent implements blindly** - Without knowing how tests were generated
+5. **Tests validate behavior** - Implementation genuinely satisfies requirements
+
+This separation ensures tests truly specify behavior rather than just verifying what was written.
+
 ## Output
 
 The command creates:
@@ -60,18 +115,25 @@ The command creates:
    - Description and acceptance criteria
    - Architecture context (populated during development)
    - Testing strategy
+   - TDD badge (if TDD mode enabled)
 
 2. **Test stub** (`docs/07-testing/test-cases/US-XXXX.md`)
    - Test structure aligned with acceptance criteria
    - Placeholder for test implementation
    - Links to story for context
 
-3. **Status tracking** (`docs/09-agents/status.json`)
+3. **TDD test file** (if TDD mode enabled)
+   - Jest/Vitest: `__tests__/US-XXXX.test.ts`
+   - pytest: `tests/test_US-XXXX.py`
+   - Go: `<package>/US-XXXX_test.go`
+
+4. **Status tracking** (`docs/09-agents/status.json`)
    - Story entry with owner, estimate, and status
    - Dependency links to other stories
    - Epic assignment
+   - TDD mode flag and test file path (if TDD enabled)
 
-4. **Agent communication** (`docs/09-agents/bus/log.jsonl`)
+5. **Agent communication** (`docs/09-agents/bus/log.jsonl`)
    - Assignment message showing story created and assigned
 
 ## Workflow
@@ -127,6 +189,8 @@ Use these standard estimates:
 
 - **One story = one feature** - Keep stories focused and independently deliverable
 - **Write clear acceptance criteria** - These guide development and testing
+- **Use TDD for code stories** - Let tests specify behavior before implementation
+- **Clear context before implementing TDD tests** - Start fresh so agent doesn't "know" tests
 - **Estimate realistically** - Consider complexity and team experience
 - **Link dependencies explicitly** - Helps with sprint planning and risk assessment
 - **Validate before development** - Use `/story-validate` to catch issues early
@@ -139,3 +203,4 @@ Use these standard estimates:
 - [`/auto`](/commands/auto) - Auto-generate stories from PRDs or specs
 - [`/babysit`](/commands/babysit) - Get interactive help during implementation
 - [`/verify`](/commands/verify) - Run tests and update test status
+- [`/tests`](/commands/tests) - Set up test infrastructure for TDD workflow
