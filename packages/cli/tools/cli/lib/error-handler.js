@@ -7,9 +7,15 @@
  * - CRITICAL: Severe errors (exit 1 + stack trace if DEBUG=1)
  *
  * Error output format: "X <problem> | Action: <what to do> | Run: <command>"
+ *
+ * Note: Formatting logic is extracted to lib/format-error.js for standalone use.
  */
 
-const { c } = require('../../../lib/colors');
+const {
+  formatError: formatErrorHelper,
+  formatWarning: formatWarningHelper,
+  formatErrorWithStack,
+} = require('../../../lib/format-error');
 
 class ErrorHandler {
   /**
@@ -30,14 +36,7 @@ class ErrorHandler {
    * @returns {string} Formatted error string
    */
   formatError(message, actionText, commandHint) {
-    let output = `${c.red}\u2716${c.reset} ${message}`;
-    if (actionText) {
-      output += ` ${c.dim}|${c.reset} ${c.cyan}Action:${c.reset} ${actionText}`;
-    }
-    if (commandHint) {
-      output += ` ${c.dim}|${c.reset} ${c.green}Run:${c.reset} ${c.bold}${commandHint}${c.reset}`;
-    }
-    return output;
+    return formatErrorHelper(message, actionText, commandHint);
   }
 
   /**
@@ -48,14 +47,7 @@ class ErrorHandler {
    * @returns {string} Formatted warning string
    */
   formatWarning(message, actionText, commandHint) {
-    let output = `${c.yellow}\u26A0${c.reset}  ${message}`;
-    if (actionText) {
-      output += ` ${c.dim}|${c.reset} ${c.cyan}Action:${c.reset} ${actionText}`;
-    }
-    if (commandHint) {
-      output += ` ${c.dim}|${c.reset} ${c.green}Run:${c.reset} ${c.bold}${commandHint}${c.reset}`;
-    }
-    return output;
+    return formatWarningHelper(message, actionText, commandHint);
   }
 
   /**
@@ -94,11 +86,11 @@ class ErrorHandler {
    * @param {Error} [error] - Original error object for stack trace
    */
   critical(message, actionText, commandHint, error) {
-    console.error(this.formatError(message, actionText, commandHint));
-    if (process.env.DEBUG === '1' && error?.stack) {
-      console.error(`\n${c.dim}Stack trace:${c.reset}`);
-      console.error(c.dim + error.stack + c.reset);
-    }
+    const formatted = formatErrorWithStack(message, error, {
+      action: actionText,
+      command: commandHint,
+    });
+    console.error(formatted);
     process.exit(1);
   }
 

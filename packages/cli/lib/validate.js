@@ -4,89 +4,131 @@
  * Centralized validation patterns and helpers to prevent
  * command injection, path traversal, and invalid input handling.
  *
- * This module re-exports from split validation modules for backward compatibility.
- * For better performance, import directly from:
- *   - validate-names.js - Name/ID validation patterns
- *   - validate-args.js  - CLI argument validation
- *   - validate-paths.js - Path traversal protection
+ * Usage patterns:
+ *
+ * 1. Namespace import (recommended - clear, discoverable):
+ *    const { names, args, paths, commands } = require('./validate');
+ *    names.isValidStoryId('US-0001')
+ *    paths.validatePath('/some/path')
+ *    args.validateArgs(schema, input)
+ *
+ * 2. Flat import (backwards compatible):
+ *    const { isValidStoryId, validatePath } = require('./validate');
+ *
+ * 3. Direct import (best performance):
+ *    const { isValidStoryId } = require('./validate-names');
+ *    const { validatePath } = require('./validate-paths');
  */
 
-// Re-export name validators
-const {
-  PATTERNS,
-  isValidBranchName,
-  isValidStoryId,
-  isValidEpicId,
-  isValidFeatureName,
-  isValidProfileName,
-  isValidCommandName,
-  isValidSessionNickname,
-  isValidMergeStrategy,
-} = require('./validate-names');
+// Import all validators
+const validateNames = require('./validate-names');
+const validateArgs = require('./validate-args');
+const validatePaths = require('./validate-paths');
+const validateCommands = require('./validate-commands');
 
-// Re-export argument validators
-const {
-  isPositiveInteger,
-  parseIntBounded,
-  isValidOption,
-  validateArgs,
-} = require('./validate-args');
+// ============================================================================
+// Namespace exports (recommended for new code)
+// ============================================================================
 
-// Re-export path validators
-const {
-  PathValidationError,
-  checkSymlinkChainDepth,
-  validatePath,
-  validatePathSync,
-  hasUnsafePathPatterns,
-  sanitizeFilename,
-} = require('./validate-paths');
+/**
+ * Name/ID validation namespace
+ * @namespace names
+ */
+const names = {
+  PATTERNS: validateNames.PATTERNS,
+  isValidBranchName: validateNames.isValidBranchName,
+  isValidStoryId: validateNames.isValidStoryId,
+  isValidEpicId: validateNames.isValidEpicId,
+  isValidFeatureName: validateNames.isValidFeatureName,
+  isValidProfileName: validateNames.isValidProfileName,
+  isValidCommandName: validateNames.isValidCommandName,
+  isValidSessionNickname: validateNames.isValidSessionNickname,
+  isValidMergeStrategy: validateNames.isValidMergeStrategy,
+};
 
-// Re-export command validators
-const {
-  ALLOWED_COMMANDS,
-  DANGEROUS_PATTERNS,
-  validateCommand,
-  buildSpawnArgs,
-  isAllowedCommand,
-  getAllowedCommandList,
-  parseCommand,
-  checkArgSafety,
-} = require('./validate-commands');
+/**
+ * CLI argument validation namespace
+ * @namespace args
+ */
+const args = {
+  isPositiveInteger: validateArgs.isPositiveInteger,
+  parseIntBounded: validateArgs.parseIntBounded,
+  isValidOption: validateArgs.isValidOption,
+  validateArgs: validateArgs.validateArgs,
+};
+
+/**
+ * Path traversal protection namespace
+ * @namespace paths
+ */
+const paths = {
+  PathValidationError: validatePaths.PathValidationError,
+  checkSymlinkChainDepth: validatePaths.checkSymlinkChainDepth,
+  validatePath: validatePaths.validatePath,
+  validatePathSync: validatePaths.validatePathSync,
+  hasUnsafePathPatterns: validatePaths.hasUnsafePathPatterns,
+  sanitizeFilename: validatePaths.sanitizeFilename,
+};
+
+/**
+ * Command validation namespace
+ * @namespace commands
+ */
+const commands = {
+  ALLOWED_COMMANDS: validateCommands.ALLOWED_COMMANDS,
+  DANGEROUS_PATTERNS: validateCommands.DANGEROUS_PATTERNS,
+  validateCommand: validateCommands.validateCommand,
+  buildSpawnArgs: validateCommands.buildSpawnArgs,
+  isAllowedCommand: validateCommands.isAllowedCommand,
+  getAllowedCommandList: validateCommands.getAllowedCommandList,
+  parseCommand: validateCommands.parseCommand,
+  checkArgSafety: validateCommands.checkArgSafety,
+};
+
+// ============================================================================
+// Flat exports (backwards compatible)
+// ============================================================================
 
 module.exports = {
+  // Namespaces (recommended for new code)
+  names,
+  args,
+  paths,
+  commands,
+
+  // Flat exports (backwards compatible)
   // Patterns and basic validators (from validate-names.js)
-  PATTERNS,
-  isValidBranchName,
-  isValidStoryId,
-  isValidEpicId,
-  isValidFeatureName,
-  isValidProfileName,
-  isValidCommandName,
-  isValidSessionNickname,
-  isValidMergeStrategy,
+  PATTERNS: validateNames.PATTERNS,
+  isValidBranchName: validateNames.isValidBranchName,
+  isValidStoryId: validateNames.isValidStoryId,
+  isValidEpicId: validateNames.isValidEpicId,
+  isValidFeatureName: validateNames.isValidFeatureName,
+  isValidProfileName: validateNames.isValidProfileName,
+  isValidCommandName: validateNames.isValidCommandName,
+  isValidSessionNickname: validateNames.isValidSessionNickname,
+  isValidMergeStrategy: validateNames.isValidMergeStrategy,
 
   // Argument validators (from validate-args.js)
-  isPositiveInteger,
-  parseIntBounded,
-  isValidOption,
-  validateArgs,
+  isPositiveInteger: validateArgs.isPositiveInteger,
+  parseIntBounded: validateArgs.parseIntBounded,
+  isValidOption: validateArgs.isValidOption,
+  validateArgs: validateArgs.validateArgs,
 
   // Path traversal protection (from validate-paths.js)
-  PathValidationError,
-  validatePath,
-  validatePathSync,
-  hasUnsafePathPatterns,
-  sanitizeFilename,
-  checkSymlinkChainDepth,
+  PathValidationError: validatePaths.PathValidationError,
+  validatePath: validatePaths.validatePath,
+  validatePathSync: validatePaths.validatePathSync,
+  hasUnsafePathPatterns: validatePaths.hasUnsafePathPatterns,
+  sanitizeFilename: validatePaths.sanitizeFilename,
+  checkSymlinkChainDepth: validatePaths.checkSymlinkChainDepth,
 
   // Command validation (from validate-commands.js)
-  ALLOWED_COMMANDS,
-  DANGEROUS_PATTERNS,
-  validateCommand,
-  buildSpawnArgs,
-  isAllowedCommand,
-  getAllowedCommandList,
-  parseCommand,
-  checkArgSafety,
+  ALLOWED_COMMANDS: validateCommands.ALLOWED_COMMANDS,
+  DANGEROUS_PATTERNS: validateCommands.DANGEROUS_PATTERNS,
+  validateCommand: validateCommands.validateCommand,
+  buildSpawnArgs: validateCommands.buildSpawnArgs,
+  isAllowedCommand: validateCommands.isAllowedCommand,
+  getAllowedCommandList: validateCommands.getAllowedCommandList,
+  parseCommand: validateCommands.parseCommand,
+  checkArgSafety: validateCommands.checkArgSafety,
 };

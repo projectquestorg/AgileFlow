@@ -185,8 +185,10 @@ describe('error-handler', () => {
       process.env.DEBUG = '1';
       const error = new Error('Test error');
       handler.critical('Critical', null, null, error);
-      // Should have multiple calls: error message + stack trace header + stack
-      expect(mockConsoleError.mock.calls.length).toBeGreaterThan(1);
+      // Stack trace should be included in the output
+      const output = mockConsoleError.mock.calls[0][0];
+      expect(output).toContain('Stack trace');
+      expect(output).toContain('Test error');
     });
 
     it('handles error without stack trace', () => {

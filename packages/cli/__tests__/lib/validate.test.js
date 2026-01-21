@@ -182,4 +182,61 @@ describe('validate.js re-exports', () => {
       }
     });
   });
+
+  describe('namespace exports', () => {
+    it('exports names namespace', () => {
+      expect(validate.names).toBeDefined();
+      expect(typeof validate.names.isValidStoryId).toBe('function');
+      expect(validate.names.isValidStoryId('US-0001')).toBe(true);
+      expect(validate.names.PATTERNS).toBeDefined();
+    });
+
+    it('exports args namespace', () => {
+      expect(validate.args).toBeDefined();
+      expect(typeof validate.args.isPositiveInteger).toBe('function');
+      expect(validate.args.isPositiveInteger(5)).toBe(true);
+      expect(typeof validate.args.validateArgs).toBe('function');
+    });
+
+    it('exports paths namespace', () => {
+      expect(validate.paths).toBeDefined();
+      expect(typeof validate.paths.validatePath).toBe('function');
+      expect(typeof validate.paths.hasUnsafePathPatterns).toBe('function');
+      expect(validate.paths.hasUnsafePathPatterns('../etc').safe).toBe(false);
+      expect(validate.paths.PathValidationError).toBeDefined();
+    });
+
+    it('exports commands namespace', () => {
+      expect(validate.commands).toBeDefined();
+      expect(typeof validate.commands.validateCommand).toBe('function');
+      expect(typeof validate.commands.isAllowedCommand).toBe('function');
+      expect(validate.commands.isAllowedCommand('npm')).toBe(true);
+      expect(validate.commands.ALLOWED_COMMANDS).toBeDefined();
+    });
+
+    it('namespaces contain same functions as flat exports', () => {
+      // Verify namespace functions work identically to flat exports
+      expect(validate.names.isValidStoryId('US-0001')).toBe(
+        validate.isValidStoryId('US-0001')
+      );
+      expect(validate.args.isPositiveInteger(42)).toBe(validate.isPositiveInteger(42));
+      expect(validate.paths.hasUnsafePathPatterns('../test').safe).toBe(
+        validate.hasUnsafePathPatterns('../test').safe
+      );
+      expect(validate.commands.isAllowedCommand('git')).toBe(
+        validate.isAllowedCommand('git')
+      );
+    });
+
+    it('supports namespace destructuring pattern', () => {
+      const { names, args, paths, commands } = validate;
+
+      expect(names.isValidBranchName('main')).toBe(true);
+      expect(args.parseIntBounded('10', 0)).toBe(10);
+      expect(paths.sanitizeFilename('test<>file.txt')).toBe('test__file.txt');
+      // getAllowedCommandList returns full command strings like "npm test"
+      const allowedList = commands.getAllowedCommandList();
+      expect(allowedList.some(cmd => cmd.startsWith('npm'))).toBe(true);
+    });
+  });
 });

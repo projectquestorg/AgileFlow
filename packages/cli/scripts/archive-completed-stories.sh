@@ -5,15 +5,23 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Source shared utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source colors from canonical source (lib/colors.sh)
+if [[ -f "$SCRIPT_DIR/lib/colors.sh" ]]; then
+  source "$SCRIPT_DIR/lib/colors.sh"
+  NC="$RESET"  # Alias for backwards compatibility
+else
+  # Fallback colors if colors.sh not available
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[1;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m'
+fi
 
 # Source JSON utilities if available
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$SCRIPT_DIR/lib/json-utils.sh" ]]; then
   source "$SCRIPT_DIR/lib/json-utils.sh"
 fi

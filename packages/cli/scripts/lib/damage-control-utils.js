@@ -387,6 +387,111 @@ function validatePathAgainstPatterns(filePath, config, operation = 'access') {
   return { action: 'allow' };
 }
 
+/**
+ * Factory: Create a path-based damage control hook
+ *
+ * Reduces boilerplate for Edit/Write/Delete hooks that all use path validation.
+ *
+ * @param {string} operation - Operation type ('edit', 'write', 'delete')
+ * @returns {function} Hook runner function
+ *
+ * @example
+ * // In damage-control-edit.js:
+ * const { createPathHook } = require('./lib/damage-control-utils');
+ * createPathHook('edit')();
+ */
+function createPathHook(operation) {
+  return function runHook() {
+    const projectRoot = findProjectRoot();
+    const defaultConfig = { zeroAccessPaths: [], readOnlyPaths: [], noDeletePaths: [] };
+
+    runDamageControlHook({
+      getInputValue: input => input.file_path || input.tool_input?.file_path,
+      loadConfig: () => loadPatterns(projectRoot, parsePathPatterns, defaultConfig),
+      validate: (filePath, config) => validatePathAgainstPatterns(filePath, config, operation),
+      onBlock: (result, filePath) => {
+        outputBlocked(result.reason, result.detail, `File: ${filePath}`);
+      },
+    });
+  };
+}
+
+/**
+ * Factory: Create the bash damage control hook
+ *
+ * @returns {function} Hook runner function
+ *
+ * @example
+ * // In damage-control-bash.js:
+ * const { createBashHook } = require('./lib/damage-control-utils');
+ * createBashHook()();
+ */
+function createBashHook() {
+  return function runHook() {
+    const projectRoot = findProjectRoot();
+    const defaultConfig = { bashToolPatterns: [], askPatterns: [], agileflowProtections: [] };
+
+    /**
+     * Test command against a single pattern rule
+     */
+    function matchesPattern(command, rule) {
+      try {
+        const flags = rule.flags || '';
+        const regex = new RegExp(rule.pattern, flags);
+        return regex.test(command);
+      } catch (e) {
+        // Invalid regex - skip this pattern
+        return false;
+      }
+    }
+
+    /**
+     * Validate command against all patterns
+     */
+    function validateCommand(command, config) {
+      // Check blocked patterns (bashToolPatterns + agileflowProtections)
+      const blockedPatterns = [
+        ...(config.bashToolPatterns || []),
+        ...(config.agileflowProtections || []),
+      ];
+
+      for (const rule of blockedPatterns) {
+        if (matchesPattern(command, rule)) {
+          return {
+            action: 'block',
+            reason: rule.reason || 'Command blocked by damage control',
+          };
+        }
+      }
+
+      // Check ask patterns
+      for (const rule of config.askPatterns || []) {
+        if (matchesPattern(command, rule)) {
+          return {
+            action: 'ask',
+            reason: rule.reason || 'Please confirm this command',
+          };
+        }
+      }
+
+      // Allow by default
+      return { action: 'allow' };
+    }
+
+    runDamageControlHook({
+      getInputValue: input => input.command || input.tool_input?.command,
+      loadConfig: () => loadPatterns(projectRoot, parseBashPatterns, defaultConfig),
+      validate: validateCommand,
+      onBlock: (result, command) => {
+        outputBlocked(
+          result.reason,
+          `Command: ${command.substring(0, 100)}${command.length > 100 ? '...' : ''}`
+        );
+      },
+    });
+  };
+}
+
 module.exports = {
   c,
   findProjectRoot,
@@ -399,6 +504,8 @@ module.exports = {
   parseBashPatterns,
   parsePathPatterns,
   validatePathAgainstPatterns,
+  createPathHook,
+  createBashHook,
   CONFIG_PATHS,
   STDIN_TIMEOUT_MS,
 };

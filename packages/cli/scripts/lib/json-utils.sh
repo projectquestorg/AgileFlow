@@ -5,6 +5,12 @@
 #
 # Provides safe JSON parsing functions with error handling.
 
+# Source colors from canonical source if not already loaded
+UTILS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "$RESET" ]] && [[ -f "$UTILS_DIR/colors.sh" ]]; then
+  source "$UTILS_DIR/colors.sh"
+fi
+
 # ============================================================================
 # Safe JSON Parsing
 # ============================================================================
