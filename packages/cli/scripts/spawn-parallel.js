@@ -109,19 +109,22 @@ function spawnInTmux(sessions, options = {}) {
     spawnSync('tmux', ['set-option', '-t', sessionName, opt, value], { encoding: 'utf8' });
   };
 
-  // Clean UI - no status bar, just the content
-  tmuxOpts('status', 'off');
+  // Clean, minimal status bar
+  tmuxOpts('status', 'on');
+  tmuxOpts('status-position', 'bottom');
+  tmuxOpts('status-style', 'bg=#282c34,fg=#abb2bf');
+  tmuxOpts('status-left', '#[fg=#61afef,bold] Parallel ');
+  tmuxOpts('status-left-length', '15');
+  tmuxOpts('status-right', '#[fg=#98c379] ← → to switch │ q to quit ');
+  tmuxOpts('status-right-length', '45');
+  tmuxOpts('window-status-format', '#[fg=#5c6370] [#I] #W ');
+  tmuxOpts('window-status-current-format', '#[fg=#61afef,bold,bg=#3e4452] [#I] #W ');
+  tmuxOpts('window-status-separator', '');
 
-  // Add F1-F9 keybindings for quick window switching
-  for (let w = 0; w < 9; w++) {
-    spawnSync('tmux', ['bind-key', '-n', `F${w + 1}`, 'select-window', '-t', `:${w}`], {
-      encoding: 'utf8',
-    });
-  }
-
-  // Alt+Left/Right for prev/next
-  spawnSync('tmux', ['bind-key', '-n', 'M-Left', 'select-window', '-t', ':-'], { encoding: 'utf8' });
-  spawnSync('tmux', ['bind-key', '-n', 'M-Right', 'select-window', '-t', ':+'], { encoding: 'utf8' });
+  // Simple keybindings - just arrow keys!
+  spawnSync('tmux', ['bind-key', '-n', 'Left', 'select-window', '-t', ':-'], { encoding: 'utf8' });
+  spawnSync('tmux', ['bind-key', '-n', 'Right', 'select-window', '-t', ':+'], { encoding: 'utf8' });
+  spawnSync('tmux', ['bind-key', '-n', 'q', 'detach-client'], { encoding: 'utf8' });
 
   for (let i = 0; i < sessions.length; i++) {
     const session = sessions[i];
@@ -317,10 +320,9 @@ function spawn(args) {
       console.log(success(`\n✅ Tmux session created: ${tmuxResult.sessionName}`));
       console.log(`${c.cyan}   ${tmuxResult.windowCount} windows ready${c.reset}\n`);
       console.log(bold('📺 Controls:'));
-      console.log(`   ${c.cyan}tmux attach -t ${tmuxResult.sessionName}${c.reset}  - Attach to session`);
-      console.log(`   ${dim('F1, F2, F3...')}  - Switch to window 1, 2, 3...`);
-      console.log(`   ${dim('Alt+← / Alt+→')}  - Previous / Next window`);
-      console.log(`   ${dim('Ctrl+b d')}  - Detach (sessions keep running)`);
+      console.log(`   ${c.cyan}tmux attach -t ${tmuxResult.sessionName}${c.reset}  - Attach`);
+      console.log(`   ${dim('← / →')}  Arrow keys to switch windows`);
+      console.log(`   ${dim('q')}      Quit/Detach (sessions keep running)`);
       console.log('');
     } else {
       console.error(error(`Failed to create tmux session: ${tmuxResult.error}`));
