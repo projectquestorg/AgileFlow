@@ -164,6 +164,10 @@ class Installer {
       spinner.text = 'Installing changelog...';
       await this.installChangelog(agileflowDir, { force: effectiveForce });
 
+      // Set up shell aliases for claude command
+      spinner.text = 'Setting up shell aliases...';
+      const aliasResult = await this.setupShellAliases(directory, { force: effectiveForce });
+
       // Create config.yaml
       spinner.text = 'Creating configuration...';
       await this.createConfig(agileflowDir, userName, agileflowFolder, { force: effectiveForce });
@@ -191,6 +195,7 @@ class Installer {
         projectDir: directory,
         counts,
         fileOps,
+        shellAliases: aliasResult,
       };
     } catch (error) {
       spinner.fail('Installation failed');
@@ -811,6 +816,95 @@ class Installer {
         }
       }
     }
+  }
+
+  /**
+   * Set up shell aliases for the claude command
+   * Adds aliases to ~/.bashrc and/or ~/.zshrc so 'claude' auto-spawns tmux
+   * @param {string} directory - Project directory (used for relative path in alias)
+   * @param {Object} options - Setup options
+   * @param {boolean} options.force - Overwrite existing aliases
+   * @returns {Promise<Object>} Result with shells configured
+   */
+  async setupShellAliases(directory, options = {}) {
+    const os = require('os');
+    const result = {
+      configured: [],
+      skipped: [],
+      error: null,
+    };
+
+    // Only set up aliases on Unix-like systems
+    if (process.platform === 'win32') {
+      result.skipped.push('Windows (not supported)');
+      return result;
+    }
+
+    const homeDir = os.homedir();
+    const aliasBlock = `
+# AgileFlow: claude with tmux auto-spawn
+alias claude="bash .agileflow/scripts/af"
+alias af="bash .agileflow/scripts/af"
+alias agileflow="bash .agileflow/scripts/af"
+`;
+
+    const marker = '# AgileFlow: claude with tmux auto-spawn';
+    const rcFiles = [
+      { name: 'bash', path: path.join(homeDir, '.bashrc') },
+      { name: 'zsh', path: path.join(homeDir, '.zshrc') },
+    ];
+
+    for (const rc of rcFiles) {
+      try {
+        // Check if RC file exists
+        if (!(await fs.pathExists(rc.path))) {
+          result.skipped.push(`${rc.name} (no ${path.basename(rc.path)})`);
+          continue;
+        }
+
+        const content = await fs.readFile(rc.path, 'utf8');
+
+        // Check if aliases already exist
+        if (content.includes(marker)) {
+          if (options.force) {
+            // Remove existing block and re-add
+            const lines = content.split('\n');
+            const filteredLines = [];
+            let inBlock = false;
+
+            for (const line of lines) {
+              if (line.includes(marker)) {
+                inBlock = true;
+                continue;
+              }
+              if (inBlock && line.startsWith('alias ')) {
+                continue;
+              }
+              if (inBlock && line.trim() === '') {
+                inBlock = false;
+                continue;
+              }
+              inBlock = false;
+              filteredLines.push(line);
+            }
+
+            await fs.writeFile(rc.path, filteredLines.join('\n') + aliasBlock, 'utf8');
+            result.configured.push(rc.name);
+          } else {
+            result.skipped.push(`${rc.name} (already configured)`);
+          }
+          continue;
+        }
+
+        // Append aliases to RC file
+        await fs.appendFile(rc.path, aliasBlock);
+        result.configured.push(rc.name);
+      } catch (err) {
+        result.skipped.push(`${rc.name} (error: ${err.message})`);
+      }
+    }
+
+    return result;
   }
 
   /**

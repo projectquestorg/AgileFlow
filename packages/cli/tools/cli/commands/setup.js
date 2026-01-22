@@ -112,6 +112,16 @@ module.exports = {
       success(`Installed ${coreResult.counts.commands} commands`);
       success(`Installed ${coreResult.counts.skills} skills`);
 
+      // Report shell alias setup
+      if (coreResult.shellAliases) {
+        if (coreResult.shellAliases.configured.length > 0) {
+          success(`Added 'claude' alias to: ${coreResult.shellAliases.configured.join(', ')}`);
+        }
+        if (coreResult.shellAliases.skipped.length > 0) {
+          info(`Shell aliases skipped: ${coreResult.shellAliases.skipped.join(', ')}`);
+        }
+      }
+
       // Setup IDE configurations
       displaySection('Configuring IDEs');
 
@@ -209,6 +219,13 @@ ${claudeMdMarker}
       info('Open your IDE and use /agileflow:help');
       info(`Run 'npx agileflow status' to check setup`);
       info(`Run 'npx agileflow update' to get updates`);
+
+      // Shell alias reload reminder
+      if (coreResult.shellAliases?.configured?.length > 0) {
+        console.log(chalk.bold('\nShell aliases:'));
+        info(`Reload shell to use: ${chalk.cyan('source ~/.bashrc')} or ${chalk.cyan('source ~/.zshrc')}`);
+        info(`Then run ${chalk.cyan('claude')} to auto-start in tmux session`);
+      }
 
       console.log(chalk.dim(`\nInstalled to: ${coreResult.path}\n`));
 
