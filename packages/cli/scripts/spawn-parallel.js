@@ -104,6 +104,25 @@ function spawnInTmux(sessions, options = {}) {
     return { success: false, error: createResult.stderr };
   }
 
+  // Configure clean, user-friendly tmux settings
+  const tmuxOpts = (opt, value) => {
+    spawnSync('tmux', ['set-option', '-t', sessionName, opt, value], { encoding: 'utf8' });
+  };
+
+  // Clean UI - no status bar, just the content
+  tmuxOpts('status', 'off');
+
+  // Add F1-F9 keybindings for quick window switching
+  for (let w = 0; w < 9; w++) {
+    spawnSync('tmux', ['bind-key', '-n', `F${w + 1}`, 'select-window', '-t', `:${w}`], {
+      encoding: 'utf8',
+    });
+  }
+
+  // Alt+Left/Right for prev/next
+  spawnSync('tmux', ['bind-key', '-n', 'M-Left', 'select-window', '-t', ':-'], { encoding: 'utf8' });
+  spawnSync('tmux', ['bind-key', '-n', 'M-Right', 'select-window', '-t', ':+'], { encoding: 'utf8' });
+
   for (let i = 0; i < sessions.length; i++) {
     const session = sessions[i];
     const cmd = buildClaudeCommand(session.path, options);
@@ -297,11 +316,10 @@ function spawn(args) {
     if (tmuxResult.success) {
       console.log(success(`\n✅ Tmux session created: ${tmuxResult.sessionName}`));
       console.log(`${c.cyan}   ${tmuxResult.windowCount} windows ready${c.reset}\n`);
-      console.log(bold('📺 Navigation:'));
+      console.log(bold('📺 Controls:'));
       console.log(`   ${c.cyan}tmux attach -t ${tmuxResult.sessionName}${c.reset}  - Attach to session`);
-      console.log(`   ${dim('Ctrl+b n')}  - Next window`);
-      console.log(`   ${dim('Ctrl+b p')}  - Previous window`);
-      console.log(`   ${dim('Ctrl+b 0-9')}  - Go to window N`);
+      console.log(`   ${dim('F1, F2, F3...')}  - Switch to window 1, 2, 3...`);
+      console.log(`   ${dim('Alt+← / Alt+→')}  - Previous / Next window`);
       console.log(`   ${dim('Ctrl+b d')}  - Detach (sessions keep running)`);
       console.log('');
     } else {
