@@ -80,6 +80,11 @@ tmux new-session -d -s "$SESSION_NAME" -n "main"
 
 # Configure the session with user-friendly settings
 tmux set-option -t "$SESSION_NAME" mouse on
+
+# Sane scrolling - works properly with vim/nvim and doesn't get stuck
+tmux bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'select-pane -t=; copy-mode -e; send-keys -M'"
+tmux bind-key -n WheelDownPane select-pane -t= \; send-keys -M
+
 tmux set-option -t "$SESSION_NAME" status on
 tmux set-option -t "$SESSION_NAME" status-position bottom
 tmux set-option -t "$SESSION_NAME" status-style 'bg=#282c34,fg=#abb2bf'
