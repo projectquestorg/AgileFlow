@@ -80,6 +80,12 @@ tmux new-session -d -s "$SESSION_NAME" -n "main"
 
 # Configure the session with user-friendly settings
 tmux set-option -t "$SESSION_NAME" mouse on
+
+# Fix inverted scroll direction (swap wheel up/down in copy mode)
+tmux bind-key -T copy-mode WheelUpPane send-keys -X scroll-up
+tmux bind-key -T copy-mode WheelDownPane send-keys -X scroll-down
+tmux bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-up
+tmux bind-key -T copy-mode-vi WheelDownPane send-keys -X scroll-down
 tmux set-option -t "$SESSION_NAME" status on
 tmux set-option -t "$SESSION_NAME" status-position bottom
 tmux set-option -t "$SESSION_NAME" status-style 'bg=#282c34,fg=#abb2bf'
