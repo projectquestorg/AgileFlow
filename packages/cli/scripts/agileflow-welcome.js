@@ -89,6 +89,27 @@ function loadProjectFiles(rootDir) {
 }
 
 /**
+ * Check if tmux is installed
+ * Returns object with availability info and install suggestions
+ */
+function checkTmuxAvailability() {
+  try {
+    execSync('which tmux', { encoding: 'utf8', stdio: 'pipe' });
+    return { available: true };
+  } catch (e) {
+    return {
+      available: false,
+      installCommands: {
+        macOS: 'brew install tmux',
+        ubuntu: 'sudo apt install tmux',
+        fedora: 'sudo dnf install tmux',
+        noSudo: 'conda install -c conda-forge tmux',
+      },
+    };
+  }
+}
+
+/**
  * PERFORMANCE OPTIMIZATION: Batch git commands into single call
  * Reduces subprocess overhead from 3 calls to 1.
  * Estimated savings: 20-40ms
@@ -1556,6 +1577,13 @@ async function main() {
     // Config check failed - continue without it
   }
 
+  // Check tmux availability (only if tmuxAutoSpawn is enabled)
+  let tmuxCheck = { available: true };
+  const tmuxAutoSpawnEnabled = cache?.metadata?.features?.tmuxAutoSpawn?.enabled !== false;
+  if (tmuxAutoSpawnEnabled) {
+    tmuxCheck = checkTmuxAvailability();
+  }
+
   // Show session banner FIRST if in a non-main session
   const sessionBanner = formatSessionBanner(parallelSessions);
   if (sessionBanner) {
@@ -1590,6 +1618,17 @@ async function main() {
       console.log(`   ${c.dim}• ${opt.description}${c.reset}`);
     }
     console.log(`   ${c.slate}Run ${c.skyBlue}/agileflow:configure${c.reset}${c.slate} to enable them.${c.reset}`);
+  }
+
+  // Show tmux installation notice if tmux auto-spawn is enabled but tmux not installed
+  if (tmuxAutoSpawnEnabled && !tmuxCheck.available) {
+    console.log('');
+    console.log(`${c.amber}📦 tmux not installed${c.reset} ${c.dim}(required for parallel sessions)${c.reset}`);
+    console.log(`   ${c.slate}Install with one of:${c.reset}`);
+    console.log(`   ${c.dim}• macOS:${c.reset}  ${c.cyan}brew install tmux${c.reset}`);
+    console.log(`   ${c.dim}• Ubuntu:${c.reset} ${c.cyan}sudo apt install tmux${c.reset}`);
+    console.log(`   ${c.dim}• No sudo:${c.reset} ${c.cyan}conda install -c conda-forge tmux${c.reset}`);
+    console.log(`   ${c.slate}Or disable: ${c.skyBlue}/agileflow:configure --disable=tmuxautospawn${c.reset}`);
   }
 
   // Show warning and tip if other sessions are active (vibrant colors)
