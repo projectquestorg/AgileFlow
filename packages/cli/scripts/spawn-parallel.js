@@ -115,15 +115,18 @@ function spawnInTmux(sessions, options = {}) {
   tmuxOpts('status-style', 'bg=#282c34,fg=#abb2bf');
   tmuxOpts('status-left', '#[fg=#61afef,bold] Parallel ');
   tmuxOpts('status-left-length', '15');
-  tmuxOpts('status-right', '#[fg=#98c379] ← → to switch │ q to quit ');
+  tmuxOpts('status-right', '#[fg=#98c379] Alt+1/2/3 to switch │ q=quit ');
   tmuxOpts('status-right-length', '45');
   tmuxOpts('window-status-format', '#[fg=#5c6370] [#I] #W ');
   tmuxOpts('window-status-current-format', '#[fg=#61afef,bold,bg=#3e4452] [#I] #W ');
   tmuxOpts('window-status-separator', '');
 
-  // Simple keybindings - just arrow keys!
-  spawnSync('tmux', ['bind-key', '-n', 'Left', 'select-window', '-t', ':-'], { encoding: 'utf8' });
-  spawnSync('tmux', ['bind-key', '-n', 'Right', 'select-window', '-t', ':+'], { encoding: 'utf8' });
+  // Simple keybindings - Alt+number to switch windows
+  for (let w = 1; w <= 9; w++) {
+    spawnSync('tmux', ['bind-key', '-n', `M-${w}`, 'select-window', '-t', `:${w - 1}`], {
+      encoding: 'utf8',
+    });
+  }
   spawnSync('tmux', ['bind-key', '-n', 'q', 'detach-client'], { encoding: 'utf8' });
 
   for (let i = 0; i < sessions.length; i++) {
@@ -321,8 +324,8 @@ function spawn(args) {
       console.log(`${c.cyan}   ${tmuxResult.windowCount} windows ready${c.reset}\n`);
       console.log(bold('📺 Controls:'));
       console.log(`   ${c.cyan}tmux attach -t ${tmuxResult.sessionName}${c.reset}  - Attach`);
-      console.log(`   ${dim('← / →')}  Arrow keys to switch windows`);
-      console.log(`   ${dim('q')}      Quit/Detach (sessions keep running)`);
+      console.log(`   ${dim('Alt+1/2/3')}  Switch to window 1, 2, 3`);
+      console.log(`   ${dim('q')}          Quit (sessions keep running)`);
       console.log('');
     } else {
       console.error(error(`Failed to create tmux session: ${tmuxResult.error}`));
