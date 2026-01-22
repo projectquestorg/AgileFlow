@@ -387,6 +387,103 @@ function list() {
 }
 
 /**
+ * Add a new window to an existing tmux session
+ */
+function addWindow(args) {
+  const nickname = args.nickname || args.name || null;
+  const branch = args.branch || null;
+
+  // Check if we're inside a tmux session
+  const tmuxEnv = process.env.TMUX;
+  if (!tmuxEnv) {
+    console.log(error('\n❌ Not in a tmux session.\n'));
+    console.log(`${c.cyan}Use /agileflow:session:spawn to create a new tmux session first.${c.reset}`);
+    console.log(`${dim('Or run: node .agileflow/scripts/spawn-parallel.js spawn --count 1')}`);
+    return { success: false, error: 'Not in tmux' };
+  }
+
+  // Get current tmux session name
+  let currentSession;
+  try {
+    currentSession = execSync('tmux display-message -p "#S"', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    console.log(error('Failed to get current tmux session name.'));
+    return { success: false, error: 'Failed to get tmux session' };
+  }
+
+  console.log(bold(`\n🚀 Adding new window to tmux session: ${currentSession}\n`));
+
+  // Create a new session/worktree
+  const sessionSpec = {
+    nickname: nickname || `parallel-${Date.now()}`,
+    branch: branch || `parallel-${Date.now()}`,
+  };
+
+  const result = sessionManager.createSession({
+    nickname: sessionSpec.nickname,
+    branch: sessionSpec.branch,
+  });
+
+  if (!result.success) {
+    console.error(error(`Failed to create session: ${result.error}`));
+    return { success: false, error: result.error };
+  }
+
+  const windowName = sessionSpec.nickname;
+  const cmd = buildClaudeCommand(result.path, {});
+
+  // Create new window in current tmux session
+  const newWindowResult = spawnSync('tmux', ['new-window', '-t', currentSession, '-n', windowName], {
+    encoding: 'utf8',
+  });
+
+  if (newWindowResult.status !== 0) {
+    console.error(error(`Failed to create tmux window: ${newWindowResult.stderr}`));
+    return { success: false, error: newWindowResult.stderr };
+  }
+
+  // Send command to the new window
+  spawnSync('tmux', ['send-keys', '-t', `${currentSession}:${windowName}`, cmd, 'Enter'], {
+    encoding: 'utf8',
+  });
+
+  // Get window number
+  let windowIndex;
+  try {
+    windowIndex = execSync(`tmux list-windows -t ${currentSession} -F "#I:#W" | grep ":${windowName}$" | cut -d: -f1`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    windowIndex = '?';
+  }
+
+  // Show what was copied
+  const copied = [...(result.envFilesCopied || []), ...(result.foldersCopied || [])];
+  const copyInfo = copied.length ? dim(` (copied: ${copied.join(', ')})`) : '';
+
+  console.log(success(`  ✓ Created session ${result.sessionId}: ${windowName}${copyInfo}`));
+  console.log(`    ${dim('Path:')} ${result.path}`);
+  console.log(`    ${dim('Branch:')} ${result.branch}`);
+  console.log('');
+  console.log(success(`✅ Added window [${windowIndex}] "${windowName}" to tmux session`));
+  console.log(`\n${c.cyan}Press Alt+${windowIndex} to switch to the new window${c.reset}`);
+  console.log(`${dim('Or use Ctrl+b then the window number')}\n`);
+
+  return {
+    success: true,
+    sessionId: result.sessionId,
+    windowName,
+    windowIndex,
+    path: result.path,
+    branch: result.branch,
+  };
+}
+
+/**
  * Kill all tmux claude-parallel sessions
  */
 function killAll() {
@@ -430,6 +527,7 @@ ${c.cyan}USAGE:${c.reset}
 
 ${c.cyan}COMMANDS:${c.reset}
   spawn       Create worktrees and optionally spawn Claude instances
+  add-window  Add a new window to current tmux session (when in tmux)
   list        List all parallel sessions
   kill-all    Kill all claude-parallel tmux sessions
 
@@ -457,6 +555,18 @@ ${c.cyan}EXAMPLES:${c.reset}
 
   ${dim('# Just output commands (no tmux)')}
   node scripts/spawn-parallel.js spawn --count 4 --no-tmux
+
+${c.cyan}ADD-WINDOW OPTIONS:${c.reset}
+  --name NAME         Name for the new session/window
+  --nickname NAME     Alias for --name
+  --branch BRANCH     Use specific branch name
+
+${c.cyan}ADD-WINDOW EXAMPLES:${c.reset}
+  ${dim('# Add window with auto-generated name (when in tmux)')}
+  node scripts/spawn-parallel.js add-window
+
+  ${dim('# Add named window')}
+  node scripts/spawn-parallel.js add-window --name auth
 `);
 }
 
@@ -498,6 +608,10 @@ function main() {
     case 'spawn':
       spawn(args);
       break;
+    case 'add-window':
+    case 'add':
+      addWindow(args);
+      break;
     case 'list':
       list();
       break;
@@ -526,6 +640,7 @@ if (require.main === module) {
 // Export for testing
 module.exports = {
   spawn,
+  addWindow,
   list,
   killAll,
   buildClaudeCommand,

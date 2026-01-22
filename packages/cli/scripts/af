@@ -1,0 +1,34 @@
+#!/bin/bash
+# af - Short alias for Claude Code with tmux integration
+#
+# This is a convenience wrapper that:
+# 1. Auto-starts Claude in a tmux session (for parallel sessions support)
+# 2. Attaches to existing session if one exists for this directory
+# 3. Falls back to regular claude if tmux isn't available
+#
+# Usage:
+#   af              # Start Claude in tmux
+#   af --no-tmux    # Start without tmux
+#   af -h           # Show help
+#
+# To install globally:
+#   sudo ln -s $(pwd)/.agileflow/scripts/af /usr/local/bin/af
+#   # Or add to your PATH
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Check if claude-tmux.sh exists in the same directory
+if [ -f "$SCRIPT_DIR/claude-tmux.sh" ]; then
+  exec "$SCRIPT_DIR/claude-tmux.sh" "$@"
+fi
+
+# Fallback: try to find claude-tmux.sh in .agileflow/scripts
+if [ -f ".agileflow/scripts/claude-tmux.sh" ]; then
+  exec ".agileflow/scripts/claude-tmux.sh" "$@"
+fi
+
+# Last resort: just run claude directly
+exec claude "$@"

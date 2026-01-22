@@ -43,7 +43,23 @@ git rev-parse --is-inside-work-tree
 
 If not in a git repo, display error and exit.
 
-### Step 2: Run Session Manager to Get Current State
+### Step 1.5: Check if Inside Tmux Session
+
+```bash
+# Check if $TMUX environment variable is set
+echo $TMUX
+```
+
+**If INSIDE tmux** (TMUX is not empty):
+- Use the simplified tmux add-window flow (see Step 2B below)
+- This adds a new window to the CURRENT tmux session instead of creating external worktree
+
+**If NOT inside tmux**:
+- Continue with the standard flow (Step 2A below)
+
+### Step 2A: Standard Flow (NOT in tmux)
+
+Run Session Manager to Get Current State:
 
 ```bash
 node .agileflow/scripts/session-manager.js status
@@ -51,7 +67,48 @@ node .agileflow/scripts/session-manager.js status
 
 Parse the JSON output to understand current sessions.
 
-### Step 3: Present Options with AskUserQuestion
+### Step 2B: Tmux Flow (INSIDE tmux)
+
+When inside tmux, use the simplified add-window flow:
+
+```
+AskUserQuestion:
+  question: "Name for the new session window?"
+  header: "New window"
+  multiSelect: false
+  options:
+    - label: "Auto-generate name"
+      description: "Creates parallel-{timestamp} automatically"
+    - label: "auth"
+      description: "Authentication work"
+    - label: "feature"
+      description: "New feature development"
+    - label: "bugfix"
+      description: "Bug fixing"
+```
+
+Then run:
+
+```bash
+# If auto-generate selected:
+node .agileflow/scripts/spawn-parallel.js add-window
+
+# If named option selected:
+node .agileflow/scripts/spawn-parallel.js add-window --name {selected_name}
+
+# If "Other" with custom input:
+node .agileflow/scripts/spawn-parallel.js add-window --name {custom_name}
+```
+
+The script will:
+1. Create a new git worktree
+2. Add a new tmux window to the current session
+3. Start Claude in that window
+4. Output the Alt+N shortcut to switch to it
+
+Display success and exit - skip remaining steps.
+
+### Step 3: Present Options with AskUserQuestion (Standard flow only)
 
 Use AskUserQuestion to let user choose how to create the session:
 
@@ -187,11 +244,58 @@ To switch to this session, run:
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:session:new IS ACTIVE
 
-**CRITICAL**: This command creates new parallel sessions with git worktrees. Three-step process: validate → present options → create.
+**CRITICAL**: This command creates new parallel sessions with git worktrees.
+
+**TWO MODES:**
+1. **In tmux**: Adds a new window to current session (fast, Alt+N to switch)
+2. **Not in tmux**: Creates worktree with /add-dir navigation
 
 ---
 
-### 🚨 RULE #1: VALIDATE PREREQUISITES
+### 🚨 RULE #0: CHECK IF IN TMUX FIRST
+
+```bash
+echo $TMUX
+```
+
+**If TMUX is NOT empty** → Use TMUX FLOW (Rule #1B)
+**If TMUX is empty** → Use STANDARD FLOW (Rule #1A onwards)
+
+---
+
+### 🚨 RULE #1B: TMUX FLOW (when in tmux)
+
+Ask for session name:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Name for the new session window?",
+  "header": "New window",
+  "multiSelect": false,
+  "options": [
+    {"label": "Auto-generate name", "description": "Creates parallel-{timestamp} automatically"},
+    {"label": "auth", "description": "Authentication work"},
+    {"label": "feature", "description": "New feature development"},
+    {"label": "bugfix", "description": "Bug fixing"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Then run:
+```bash
+# Auto-generate:
+node .agileflow/scripts/spawn-parallel.js add-window
+
+# Named:
+node .agileflow/scripts/spawn-parallel.js add-window --name {name}
+```
+
+The script outputs the Alt+N shortcut. **DONE - skip remaining rules.**
+
+---
+
+### 🚨 RULE #1A: VALIDATE PREREQUISITES (standard flow)
 
 Before doing anything, check:
 ```bash
@@ -475,8 +579,11 @@ To switch to this session, run:
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:session:new` IS ACTIVE
-- ALWAYS validate git repo first
-- Present 3 options: auto-create / named / existing branch
+- **CHECK $TMUX FIRST** - determines which flow to use
+- **In tmux**: Use `spawn-parallel.js add-window` → fast, Alt+N to switch
+- **Not in tmux**: Standard worktree flow → /add-dir to switch
+- ALWAYS validate git repo first (for standard flow)
+- Present 3 options: auto-create / named / existing branch (standard flow)
 - Each option leads to different flow
 - Use AskUserQuestion for user selections
 - Handle all error cases (directory, branch, git)
