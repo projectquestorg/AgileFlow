@@ -89,22 +89,52 @@ function loadProjectFiles(rootDir) {
 }
 
 /**
+ * Detect the user's platform for install guidance
+ */
+function detectPlatform() {
+  const platform = process.platform;
+
+  if (platform === 'darwin') {
+    return { os: 'macOS', installCmd: 'brew install tmux', hasSudo: true };
+  }
+
+  if (platform === 'linux') {
+    // Try to detect Linux distribution
+    try {
+      const osRelease = fs.readFileSync('/etc/os-release', 'utf8');
+      if (osRelease.includes('Ubuntu') || osRelease.includes('Debian') || osRelease.includes('Pop!_OS') || osRelease.includes('Mint')) {
+        return { os: 'Ubuntu/Debian', installCmd: 'sudo apt install tmux', hasSudo: true };
+      }
+      if (osRelease.includes('Fedora') || osRelease.includes('Red Hat') || osRelease.includes('CentOS') || osRelease.includes('Rocky')) {
+        return { os: 'Fedora/RHEL', installCmd: 'sudo dnf install tmux', hasSudo: true };
+      }
+      if (osRelease.includes('Arch')) {
+        return { os: 'Arch', installCmd: 'sudo pacman -S tmux', hasSudo: true };
+      }
+    } catch (e) {
+      // Can't read /etc/os-release
+    }
+    return { os: 'Linux', installCmd: 'sudo apt install tmux', hasSudo: true };
+  }
+
+  // Windows WSL or unknown
+  return { os: 'Unknown', installCmd: null, hasSudo: false };
+}
+
+/**
  * Check if tmux is installed
- * Returns object with availability info and install suggestions
+ * Returns object with availability info and platform-specific install suggestion
  */
 function checkTmuxAvailability() {
   try {
     execSync('which tmux', { encoding: 'utf8', stdio: 'pipe' });
     return { available: true };
   } catch (e) {
+    const platform = detectPlatform();
     return {
       available: false,
-      installCommands: {
-        macOS: 'brew install tmux',
-        ubuntu: 'sudo apt install tmux',
-        fedora: 'sudo dnf install tmux',
-        noSudo: 'conda install -c conda-forge tmux',
-      },
+      platform,
+      noSudoCmd: 'conda install -c conda-forge tmux',
     };
   }
 }
@@ -1623,12 +1653,22 @@ async function main() {
   // Show tmux installation notice if tmux auto-spawn is enabled but tmux not installed
   if (tmuxAutoSpawnEnabled && !tmuxCheck.available) {
     console.log('');
-    console.log(`${c.amber}📦 tmux not installed${c.reset} ${c.dim}(required for parallel sessions)${c.reset}`);
-    console.log(`   ${c.slate}Install with one of:${c.reset}`);
-    console.log(`   ${c.dim}• macOS:${c.reset}  ${c.cyan}brew install tmux${c.reset}`);
-    console.log(`   ${c.dim}• Ubuntu:${c.reset} ${c.cyan}sudo apt install tmux${c.reset}`);
-    console.log(`   ${c.dim}• No sudo:${c.reset} ${c.cyan}conda install -c conda-forge tmux${c.reset}`);
-    console.log(`   ${c.slate}Or disable: ${c.skyBlue}/agileflow:configure --disable=tmuxautospawn${c.reset}`);
+    console.log(`${c.amber}📦 tmux not installed${c.reset} ${c.dim}(enables parallel sessions in one terminal)${c.reset}`);
+
+    // Show platform-specific install command
+    if (tmuxCheck.platform?.installCmd) {
+      console.log(`   ${c.slate}Install for ${tmuxCheck.platform.os}:${c.reset}`);
+      console.log(`   ${c.cyan}${tmuxCheck.platform.installCmd}${c.reset}`);
+      console.log('');
+      console.log(`   ${c.dim}No sudo? Use: ${c.cyan}${tmuxCheck.noSudoCmd}${c.reset}`);
+    } else {
+      // Unknown platform - show all options
+      console.log(`   ${c.slate}Install with one of:${c.reset}`);
+      console.log(`   ${c.dim}• macOS:${c.reset}  ${c.cyan}brew install tmux${c.reset}`);
+      console.log(`   ${c.dim}• Ubuntu:${c.reset} ${c.cyan}sudo apt install tmux${c.reset}`);
+      console.log(`   ${c.dim}• No sudo:${c.reset} ${c.cyan}${tmuxCheck.noSudoCmd}${c.reset}`);
+    }
+    console.log(`   ${c.dim}Or disable this notice: ${c.skyBlue}/agileflow:configure --disable=tmuxautospawn${c.reset}`);
   }
 
   // Show warning and tip if other sessions are active (vibrant colors)
