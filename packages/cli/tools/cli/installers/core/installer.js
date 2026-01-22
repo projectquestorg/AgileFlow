@@ -843,9 +843,16 @@ class Installer {
     const homeDir = os.homedir();
     const aliasBlock = `
 # AgileFlow: claude with tmux auto-spawn
-alias claude="bash .agileflow/scripts/af"
-alias af="bash .agileflow/scripts/af"
-alias agileflow="bash .agileflow/scripts/af"
+# Uses wrapper when in AgileFlow project, falls back to real claude otherwise
+claude() {
+  if [ -f ".agileflow/scripts/af" ]; then
+    bash .agileflow/scripts/af "$@"
+  else
+    command claude "$@"
+  fi
+}
+af() { claude "$@"; }
+agileflow() { claude "$@"; }
 `;
 
     const marker = '# AgileFlow: claude with tmux auto-spawn';
