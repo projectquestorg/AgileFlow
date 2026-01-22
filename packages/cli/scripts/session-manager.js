@@ -1209,12 +1209,11 @@ function main() {
 
       // Register in single pass (combines register + count + status)
       const registry = loadRegistry();
-      const cleanupResult = cleanupStaleLocks(registry);
       const branch = getCurrentBranch();
       const story = getCurrentStory();
       const pid = process.ppid || process.pid;
 
-      // Find or create session
+      // Find or create session FIRST (so we don't clean our own stale lock)
       let sessionId = null;
       let isNew = false;
       for (const [id, session] of Object.entries(registry.sessions)) {
@@ -1257,6 +1256,16 @@ function main() {
       }
       saveRegistry(registry);
 
+      // Clean up stale locks AFTER registering current session (so we don't clean our own lock)
+      const cleanupResult = cleanupStaleLocks(registry);
+
+      // Filter out the current session from cleanup reports (its lock was just refreshed)
+      // Use String() to ensure consistent comparison (sessionId is string, cleanup.id may vary)
+      const filteredCleanup = {
+        count: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)).length,
+        sessions: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)),
+      };
+
       // Build session list and counts
       const sessions = [];
       let otherActive = 0;
@@ -1277,8 +1286,8 @@ function main() {
           current,
           otherActive,
           total: sessions.length,
-          cleaned: cleanupResult.count,
-          cleanedSessions: cleanupResult.sessions,
+          cleaned: filteredCleanup.count,
+          cleanedSessions: filteredCleanup.sessions,
         })
       );
       break;
