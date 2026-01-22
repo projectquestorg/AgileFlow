@@ -619,6 +619,7 @@ const ALL_CONFIG_OPTIONS = {
   autoArchival: { since: '2.35.0', description: 'Auto-archive completed stories', autoApplyable: false },
   autoUpdate: { since: '2.70.0', description: 'Auto-update on session start', autoApplyable: false },
   ralphLoop: { since: '2.60.0', description: 'Autonomous story processing', autoApplyable: false },
+  tmuxAutoSpawn: { since: '2.92.0', description: 'Auto-start Claude in tmux session', autoApplyable: true },
 };
 
 /**
@@ -744,6 +745,9 @@ function isOptionActuallyConfigured(optionName, hooks, settings) {
     case 'claudeMdReinforcement':
       // Check if CLAUDE.md has the marker - can't easily check from here
       return false; // Let welcome script handle this
+    case 'tmuxAutoSpawn':
+      // Check metadata for tmuxAutoSpawn setting (default is enabled)
+      return false; // Let welcome script handle this via metadata
     default:
       return false;
   }
@@ -786,6 +790,22 @@ ${marker}
         if (!existingContent.includes(marker)) {
           fs.appendFileSync(claudeMdPath, content);
           applied++;
+        }
+      } else if (option.name === 'tmuxAutoSpawn') {
+        // Auto-enable tmux auto-spawn via metadata
+        const metadataPath = getMetadataPath(rootDir);
+        if (fs.existsSync(metadataPath)) {
+          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          if (!metadata.features) metadata.features = {};
+          if (!metadata.features.tmuxAutoSpawn || metadata.features.tmuxAutoSpawn.enabled === undefined) {
+            metadata.features.tmuxAutoSpawn = {
+              enabled: true,
+              version: metadata.version || '2.92.0',
+              at: new Date().toISOString(),
+            };
+            fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
+            applied++;
+          }
         }
       }
       // Add more option handlers here as new options are added
