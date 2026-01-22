@@ -79,6 +79,7 @@ echo "Starting Claude in tmux session: $SESSION_NAME"
 tmux new-session -d -s "$SESSION_NAME" -n "main"
 
 # Configure the session with user-friendly settings
+tmux set-option -t "$SESSION_NAME" mouse on
 tmux set-option -t "$SESSION_NAME" status on
 tmux set-option -t "$SESSION_NAME" status-position bottom
 tmux set-option -t "$SESSION_NAME" status-style 'bg=#282c34,fg=#abb2bf'
