@@ -171,8 +171,8 @@ After handling issues (or if none), present the main category menu:
   "header": "Preset",
   "multiSelect": false,
   "options": [
-    {"label": "Full (Recommended)", "description": "All features: hooks, archival, status line, AskUserQuestion"},
-    {"label": "Basic", "description": "SessionStart + PreCompact + Archival + AskUserQuestion"},
+    {"label": "Full (Recommended)", "description": "All features: hooks, archival, status line, AskUserQuestion, TmuxAutoSpawn"},
+    {"label": "Basic", "description": "SessionStart + PreCompact + Archival + AskUserQuestion + TmuxAutoSpawn"},
     {"label": "Minimal", "description": "SessionStart + Archival only"},
     {"label": "None", "description": "Disable all AgileFlow features"}
   ]
@@ -314,7 +314,8 @@ Then ask about other features:
     {"label": "Archival", "description": "Auto-archive completed stories older than threshold"},
     {"label": "Status Line", "description": "Custom status bar showing story/epic info"},
     {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"},
-    {"label": "AskUserQuestion Mode", "description": "End responses with guided options"}
+    {"label": "AskUserQuestion Mode", "description": "End responses with guided options"},
+    {"label": "Tmux Auto-Spawn", "description": "Auto-start Claude in tmux session when using af/agileflow wrapper"}
   ]
 }]</parameter>
 </invoke>
@@ -329,6 +330,7 @@ Map selections to commands:
 - Status Line → `statusline`
 - Auto-Update → `autoupdate`
 - AskUserQuestion Mode → `askuserquestion`
+- Tmux Auto-Spawn → `tmuxautospawn`
 
 Then run:
 ```bash

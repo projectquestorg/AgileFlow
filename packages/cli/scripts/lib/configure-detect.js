@@ -48,6 +48,13 @@ function detectConfig(version) {
         outdated: false,
         mode: null,
       },
+      tmuxautospawn: {
+        enabled: true, // Default to enabled (opt-out feature)
+        valid: true,
+        issues: [],
+        version: null,
+        outdated: false,
+      },
     },
     metadata: { exists: false, version: null },
     currentVersion: version,
@@ -242,9 +249,16 @@ function detectMetadata(status, version) {
     status.features.askuserquestion.mode = meta.features.askUserQuestion.mode || 'all';
   }
 
+  // TmuxAutoSpawn metadata (default to true if not explicitly set)
+  if (meta.features?.tmuxAutoSpawn !== undefined) {
+    status.features.tmuxautospawn.enabled = meta.features.tmuxAutoSpawn.enabled !== false;
+  } else {
+    status.features.tmuxautospawn.enabled = true; // Default enabled
+  }
+
   // Read feature versions and check if outdated
   if (meta.features) {
-    const featureKeyMap = { askUserQuestion: 'askuserquestion' };
+    const featureKeyMap = { askUserQuestion: 'askuserquestion', tmuxAutoSpawn: 'tmuxautospawn' };
     Object.entries(meta.features).forEach(([feature, data]) => {
       const statusKey = featureKeyMap[feature] || feature.toLowerCase();
       if (status.features[statusKey] && data.version) {
@@ -349,6 +363,14 @@ function printStatus(status) {
     log(`   AskUserQuestion: ${auqStatusText}`, c.green);
   } else {
     log(`   AskUserQuestion: disabled`, c.dim);
+  }
+
+  // TmuxAutoSpawn
+  const tas = status.features.tmuxautospawn;
+  if (tas.enabled) {
+    log(`   Tmux Auto-Spawn: enabled`, c.green);
+  } else {
+    log(`   Tmux Auto-Spawn: disabled`, c.dim);
   }
 
   // Metadata version

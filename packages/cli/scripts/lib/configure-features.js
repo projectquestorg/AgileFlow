@@ -38,6 +38,7 @@ const FEATURES = {
     patternsFile: 'damage-control-patterns.yaml',
   },
   askuserquestion: { metadataOnly: true },
+  tmuxautospawn: { metadataOnly: true },
 };
 
 const PROFILES = {
@@ -51,19 +52,20 @@ const PROFILES = {
       'ralphloop',
       'selfimprove',
       'askuserquestion',
+      'tmuxautospawn',
     ],
     archivalDays: 30,
   },
   basic: {
     description: 'Essential hooks + archival (SessionStart + PreCompact + Archival)',
-    enable: ['sessionstart', 'precompact', 'archival', 'askuserquestion'],
+    enable: ['sessionstart', 'precompact', 'archival', 'askuserquestion', 'tmuxautospawn'],
     disable: ['statusline', 'ralphloop', 'selfimprove'],
     archivalDays: 30,
   },
   minimal: {
     description: 'SessionStart + archival only',
     enable: ['sessionstart', 'archival'],
-    disable: ['precompact', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion'],
+    disable: ['precompact', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion', 'tmuxautospawn'],
     archivalDays: 30,
   },
   none: {
@@ -76,6 +78,7 @@ const PROFILES = {
       'ralphloop',
       'selfimprove',
       'askuserquestion',
+      'tmuxautospawn',
     ],
   },
 };
@@ -211,6 +214,25 @@ function enableFeature(feature, options = {}, version) {
     );
     success(`AskUserQuestion enabled (mode: ${mode})`);
     info('All commands will end with AskUserQuestion tool for guided interaction');
+    return true;
+  }
+
+  // Handle tmuxautospawn (metadata only)
+  if (feature === 'tmuxautospawn') {
+    updateMetadata(
+      {
+        features: {
+          tmuxAutoSpawn: {
+            enabled: true,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Tmux auto-spawn enabled');
+    info('Running "af" or "agileflow" will auto-start Claude in tmux session');
     return true;
   }
 
@@ -496,6 +518,25 @@ function disableFeature(feature, version) {
     );
     success('AskUserQuestion disabled');
     info('Commands will end with natural text questions instead of AskUserQuestion tool');
+    return true;
+  }
+
+  // Disable tmuxautospawn
+  if (feature === 'tmuxautospawn') {
+    updateMetadata(
+      {
+        features: {
+          tmuxAutoSpawn: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Tmux auto-spawn disabled');
+    info('Running "af" or "agileflow" will start Claude directly without tmux');
     return true;
   }
 

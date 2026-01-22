@@ -23,7 +23,7 @@
  *   --detect                            Show current status
  *   --help                              Show help
  *
- * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol, askuserquestion
+ * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol, askuserquestion, tmuxautospawn
  */
 
 const fs = require('fs');
@@ -130,7 +130,7 @@ ${c.cyan}Feature Control:${c.reset}
   --enable=<list>     Enable features (comma-separated)
   --disable=<list>    Disable features (comma-separated)
 
-  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol, askuserquestion
+  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol, askuserquestion, tmuxautospawn
 
 ${c.cyan}Statusline Components:${c.reset}
   --show=<list>       Show statusline components (comma-separated)

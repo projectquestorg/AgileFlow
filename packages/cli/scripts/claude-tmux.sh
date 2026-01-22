@@ -27,6 +27,25 @@ if [ "$NO_TMUX" = true ]; then
   exec claude "$@"
 fi
 
+# Check if tmux auto-spawn is disabled in config
+METADATA_FILE="docs/00-meta/agileflow-metadata.json"
+if [ -f "$METADATA_FILE" ]; then
+  # Use node to parse JSON (more reliable than jq which may not be installed)
+  TMUX_ENABLED=$(node -e "
+    try {
+      const meta = JSON.parse(require('fs').readFileSync('$METADATA_FILE', 'utf8'));
+      // Default to true (enabled) if not explicitly set to false
+      console.log(meta.features?.tmuxAutoSpawn?.enabled !== false ? 'true' : 'false');
+    } catch (e) {
+      console.log('true');  // Default to enabled on error
+    }
+  " 2>/dev/null || echo "true")
+
+  if [ "$TMUX_ENABLED" = "false" ]; then
+    exec claude "$@"
+  fi
+fi
+
 # Check if we're already inside tmux
 if [ -n "$TMUX" ]; then
   # Already in tmux, just run claude
