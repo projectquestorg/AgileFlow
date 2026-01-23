@@ -24,7 +24,7 @@ describe('WindsurfSetup', () => {
     it('initializes with correct name and configDir', () => {
       expect(windsurfSetup.name).toBe('windsurf');
       expect(windsurfSetup.displayName).toBe('Windsurf');
-      expect(windsurfSetup.preferred).toBe(true); // Windsurf is preferred
+      expect(windsurfSetup.preferred).toBe(false); // Windsurf changed to non-preferred in f058b90
       expect(windsurfSetup.configDir).toBe('.windsurf');
       expect(windsurfSetup.workflowsDir).toBe('workflows');
     });

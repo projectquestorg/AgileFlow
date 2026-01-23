@@ -226,11 +226,30 @@ To switch to this session, run:
 - One short command to type
 - Immediately enables file access to the new session directory
 
+## Worktree Creation Timeout
+
+By default, worktree creation has a 2-minute (120000ms) timeout. For large repositories with many files, you can increase this:
+
+```bash
+# Increase timeout to 5 minutes (300000ms)
+node .agileflow/scripts/session-manager.js create --timeout 300000
+```
+
+During worktree creation, progress feedback is displayed:
+- **TTY (terminal)**: Animated spinner
+- **Non-TTY (Claude Code)**: Periodic "still working" messages every 10 seconds
+
+If worktree creation times out or fails, the script automatically cleans up:
+- Removes any partial worktree directory
+- Prunes git worktree registry
+- Removes the branch if we just created it
+
 ## Error Handling
 
 - **Directory exists**: Suggest different name or manual cleanup
 - **Branch conflict**: Offer to use existing branch or create new one
 - **Git errors**: Display error message and suggest manual resolution
+- **Timeout**: Suggest increasing timeout for large repos
 
 ## Related Commands
 

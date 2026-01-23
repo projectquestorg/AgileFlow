@@ -130,7 +130,8 @@ describe('IdeRegistry', () => {
     it('returns only preferred IDEs', () => {
       const preferred = IdeRegistry.getPreferred();
       expect(preferred).toContain('claude-code');
-      expect(preferred).toContain('windsurf');
+      // Windsurf was changed to non-preferred in f058b90
+      expect(preferred).not.toContain('windsurf');
       expect(preferred).not.toContain('cursor');
       expect(preferred).not.toContain('codex');
     });

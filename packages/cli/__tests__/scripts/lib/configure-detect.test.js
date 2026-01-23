@@ -288,7 +288,10 @@ describe('configure-detect', () => {
     it('detects archival settings', () => {
       const status = {
         metadata: { exists: false, version: null },
-        features: { archival: { enabled: false, threshold: null } },
+        features: {
+          archival: { enabled: false, threshold: null },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+        },
         hasOutdated: false,
       };
       fs.existsSync.mockReturnValue(true);
@@ -310,6 +313,7 @@ describe('configure-detect', () => {
         metadata: { exists: false, version: null },
         features: {
           sessionstart: { enabled: true, version: null, outdated: false },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
         },
         hasOutdated: false,
       };
@@ -330,6 +334,7 @@ describe('configure-detect', () => {
         metadata: { exists: false, version: null },
         features: {
           askuserquestion: { enabled: false, version: null, outdated: false, mode: null },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
         },
         hasOutdated: false,
       };
@@ -361,6 +366,7 @@ describe('configure-detect', () => {
           statusline: { enabled: false, valid: true, issues: [], outdated: false },
           damagecontrol: { enabled: false, valid: true, issues: [], outdated: false },
           askuserquestion: { enabled: false, valid: true, issues: [], outdated: false },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
         },
         metadata: { exists: false, version: null },
         currentVersion: '2.0.0',
@@ -387,6 +393,7 @@ describe('configure-detect', () => {
           statusline: { enabled: false, valid: true, issues: [], outdated: false },
           damagecontrol: { enabled: false, valid: true, issues: [], outdated: false },
           askuserquestion: { enabled: false, valid: true, issues: [], outdated: false },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
         },
         metadata: { exists: false, version: null },
         currentVersion: '2.0.0',

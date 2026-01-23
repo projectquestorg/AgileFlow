@@ -11,7 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execSync, spawnSync, spawn } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
@@ -385,8 +385,157 @@ function getSession(sessionId) {
   };
 }
 
+// Default worktree timeout (2 minutes)
+const DEFAULT_WORKTREE_TIMEOUT_MS = 120000;
+
+/**
+ * Display progress feedback during long operations.
+ * Returns a function to stop the progress indicator.
+ *
+ * @param {string} message - Progress message
+ * @returns {function} Stop function
+ */
+function progressIndicator(message) {
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let frameIndex = 0;
+  let elapsed = 0;
+
+  // For TTY (interactive terminal), show spinner
+  if (process.stderr.isTTY) {
+    const interval = setInterval(() => {
+      process.stderr.write(`\r${frames[frameIndex++ % frames.length]} ${message}`);
+    }, 80);
+    return () => {
+      clearInterval(interval);
+      process.stderr.write(`\r${' '.repeat(message.length + 2)}\r`);
+    };
+  }
+
+  // For non-TTY (Claude Code, piped output), emit periodic updates to stderr
+  process.stderr.write(`⏳ ${message}...\n`);
+  const interval = setInterval(() => {
+    elapsed += 10;
+    process.stderr.write(`⏳ Still working... (${elapsed}s elapsed)\n`);
+  }, 10000); // Update every 10 seconds
+
+  return () => {
+    clearInterval(interval);
+  };
+}
+
+/**
+ * Create a git worktree with timeout and progress feedback.
+ * Uses async spawn instead of spawnSync for timeout support.
+ *
+ * @param {string} worktreePath - Path for the new worktree
+ * @param {string} branchName - Branch name for the worktree
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @returns {Promise<{stdout: string, stderr: string}>}
+ */
+function createWorktreeWithTimeout(worktreePath, branchName, timeoutMs = DEFAULT_WORKTREE_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+
+    const proc = spawn('git', ['worktree', 'add', worktreePath, branchName], {
+      cwd: ROOT,
+    });
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      proc.kill('SIGTERM');
+      // Give it a moment to terminate gracefully, then SIGKILL
+      setTimeout(() => {
+        try {
+          proc.kill('SIGKILL');
+        } catch (e) {
+          // Process may have already exited
+        }
+      }, 1000);
+    }, timeoutMs);
+
+    proc.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    proc.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      reject(new Error(`Failed to spawn git: ${err.message}`));
+    });
+
+    proc.on('close', (code, signal) => {
+      clearTimeout(timer);
+
+      if (timedOut) {
+        reject(new Error(`Worktree creation timed out after ${timeoutMs / 1000}s. Try increasing timeout or check disk space.`));
+        return;
+      }
+
+      if (signal) {
+        reject(new Error(`Worktree creation was terminated by signal: ${signal}`));
+        return;
+      }
+
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        reject(new Error(`Failed to create worktree: ${stderr || 'unknown error'}`));
+      }
+    });
+  });
+}
+
+/**
+ * Clean up partial state after failed worktree creation.
+ * Removes partial directory and prunes git worktree registry.
+ *
+ * @param {string} worktreePath - Path of the failed worktree
+ * @param {string} branchName - Branch name that was being used
+ * @param {boolean} branchCreatedByUs - Whether we created the branch
+ */
+function cleanupFailedWorktree(worktreePath, branchName, branchCreatedByUs = false) {
+  // Remove partial worktree directory if it exists
+  if (fs.existsSync(worktreePath)) {
+    try {
+      fs.rmSync(worktreePath, { recursive: true, force: true });
+      process.stderr.write(`🧹 Cleaned up partial worktree directory\n`);
+    } catch (e) {
+      process.stderr.write(`⚠️  Could not remove partial directory: ${e.message}\n`);
+    }
+  }
+
+  // Prune git worktree registry to clean up any references
+  try {
+    spawnSync('git', ['worktree', 'prune'], { cwd: ROOT, encoding: 'utf8' });
+  } catch (e) {
+    // Non-fatal
+  }
+
+  // If we created the branch and the worktree failed, optionally clean up the branch too
+  // But only if it has no commits beyond the parent (i.e., we just created it)
+  if (branchCreatedByUs) {
+    try {
+      // Check if branch exists and has no unique commits
+      const result = spawnSync('git', ['branch', '-d', branchName], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+      if (result.status === 0) {
+        process.stderr.write(`🧹 Cleaned up unused branch: ${branchName}\n`);
+      }
+    } catch (e) {
+      // Non-fatal - branch may have commits or not exist
+    }
+  }
+}
+
 // Create new session with worktree
-function createSession(options = {}) {
+async function createSession(options = {}) {
   const registry = loadRegistry();
   const sessionId = String(registry.next_id);
   const projectName = registry.project_name;
@@ -431,6 +580,7 @@ function createSession(options = {}) {
     }
   );
 
+  let branchCreatedByUs = false;
   if (checkRef.status !== 0) {
     // Branch doesn't exist, create it
     const createBranch = spawnSync('git', ['branch', branchName], {
@@ -444,18 +594,25 @@ function createSession(options = {}) {
         error: `Failed to create branch: ${createBranch.stderr || 'unknown error'}`,
       };
     }
+    branchCreatedByUs = true;
   }
 
-  // Create worktree (using spawnSync for safety)
-  const createWorktree = spawnSync('git', ['worktree', 'add', worktreePath, branchName], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  // Get timeout from options (default: 2 minutes)
+  const timeoutMs = options.timeout || DEFAULT_WORKTREE_TIMEOUT_MS;
 
-  if (createWorktree.status !== 0) {
+  // Create worktree with timeout and progress feedback
+  const stopProgress = progressIndicator('Creating worktree (this may take a while for large repos)');
+  try {
+    await createWorktreeWithTimeout(worktreePath, branchName, timeoutMs);
+    stopProgress();
+    process.stderr.write(`✓ Worktree created successfully\n`);
+  } catch (error) {
+    stopProgress();
+    // Clean up partial state
+    cleanupFailedWorktree(worktreePath, branchName, branchCreatedByUs);
     return {
       success: false,
-      error: `Failed to create worktree: ${createWorktree.stderr || 'unknown error'}`,
+      error: error.message,
     };
   }
 
@@ -1120,7 +1277,7 @@ function main() {
     case 'create': {
       const options = {};
       // SECURITY: Only accept whitelisted option keys
-      const allowedKeys = ['nickname', 'branch'];
+      const allowedKeys = ['nickname', 'branch', 'timeout'];
       for (let i = 1; i < args.length; i++) {
         const arg = args[i];
         if (arg.startsWith('--')) {
@@ -1138,8 +1295,20 @@ function main() {
           }
         }
       }
-      const result = createSession(options);
-      console.log(JSON.stringify(result));
+      // Parse timeout as number (milliseconds)
+      if (options.timeout) {
+        options.timeout = parseInt(options.timeout, 10);
+        if (isNaN(options.timeout) || options.timeout < 1000) {
+          console.log(JSON.stringify({ success: false, error: 'Timeout must be a number >= 1000 (milliseconds)' }));
+          return;
+        }
+      }
+      // Handle async createSession
+      createSession(options).then(result => {
+        console.log(JSON.stringify(result));
+      }).catch(err => {
+        console.log(JSON.stringify({ success: false, error: err.message }));
+      });
       break;
     }
 
@@ -1453,7 +1622,7 @@ ${c.brand}${c.bold}Session Manager${c.reset} - Multi-session coordination for Cl
 ${c.cyan}Commands:${c.reset}
   register [nickname]     Register current directory as a session
   unregister <id>         Unregister a session (remove lock)
-  create [--nickname X]   Create new session with git worktree
+  create [--nickname X] [--timeout MS]  Create session with worktree (default timeout: 120000ms)
   list [--json]           List all sessions
   count                   Count other active sessions
   delete <id> [--remove-worktree]  Delete session
