@@ -21,6 +21,7 @@
  *   --budget=<chars>   Token budget for output (default: 15000)
  *   --json             Output as JSON
  *   --verbose          Show debug info
+ *   --explain          Show equivalent bash workflow (ls/find/grep/cat)
  *
  * Exit codes:
  *   0 = Success
@@ -56,6 +57,7 @@ function parseArgs(argv) {
     budget: DEFAULT_BUDGET,
     json: false,
     verbose: false,
+    explain: false, // Show equivalent bash workflow
   };
 
   for (const arg of argv.slice(2)) {
@@ -65,6 +67,8 @@ function parseArgs(argv) {
       args.json = true;
     } else if (arg === '--verbose') {
       args.verbose = true;
+    } else if (arg === '--explain') {
+      args.explain = true;
     } else if (arg.startsWith('--query=')) {
       args.query = arg.slice(8);
     } else if (arg.startsWith('--deps=')) {
@@ -83,6 +87,73 @@ function parseArgs(argv) {
   }
 
   return args;
+}
+
+// Generate bash workflow explanation (research: ls → find → grep → cat pattern)
+function explainWorkflow(queryType, queryValue, projectRoot) {
+  const lines = ['', '📖 Equivalent Bash Workflow:', ''];
+
+  switch (queryType) {
+    case 'query':
+      lines.push('# Step 1: List available directories (ls)');
+      lines.push(`ls -la ${projectRoot}/src/`);
+      lines.push('');
+      lines.push('# Step 2: Find files matching pattern (find)');
+      lines.push(`find ${projectRoot} -name "*${queryValue}*" -type f`);
+      lines.push('');
+      lines.push('# Step 3: Search content within files (grep)');
+      lines.push(`grep -rl "${queryValue}" ${projectRoot}/src/`);
+      lines.push('');
+      lines.push('# This tool combines all three with indexing for speed.');
+      break;
+
+    case 'content':
+      lines.push('# Equivalent to grep with context:');
+      lines.push(`grep -rn "${queryValue}" ${projectRoot}/src/ --include="*.{js,ts,tsx}"`);
+      lines.push('');
+      lines.push('# This tool adds: index awareness, budget truncation, structured output.');
+      break;
+
+    case 'tag':
+      const tagPatterns = {
+        api: '/api/|/routes/|/controllers/',
+        ui: '/components/|/views/|/pages/',
+        auth: '/auth/|/login/|/jwt/',
+        database: '/db/|/models/|/migrations/',
+        test: '/test/|/__tests__/|/spec/',
+      };
+      lines.push('# Equivalent to find with path patterns:');
+      lines.push(`find ${projectRoot} -type f | grep -E "${tagPatterns[queryValue] || queryValue}"`);
+      lines.push('');
+      lines.push('# This tool uses pre-indexed tags for instant lookup.');
+      break;
+
+    case 'export':
+      lines.push('# Equivalent to grep for export statements:');
+      lines.push(`grep -rn "export.*${queryValue}" ${projectRoot}/src/ --include="*.{js,ts,tsx}"`);
+      lines.push('');
+      lines.push('# This tool tracks exports in index for instant symbol lookup.');
+      break;
+
+    case 'deps':
+      lines.push('# Equivalent to grep for imports:');
+      lines.push(`grep -n "import.*from" ${queryValue}`);
+      lines.push('');
+      lines.push('# Plus reverse search for files importing this one:');
+      lines.push(`grep -rl "${path.basename(queryValue, path.extname(queryValue))}" ${projectRoot}/src/`);
+      lines.push('');
+      lines.push('# This tool tracks bidirectional dependencies in index.');
+      break;
+
+    default:
+      lines.push('# Generic file system exploration:');
+      lines.push(`ls -la ${projectRoot}/`);
+      lines.push(`find ${projectRoot} -type f -name "*.ts" | head -20`);
+  }
+
+  lines.push('');
+  lines.push('─'.repeat(50));
+  return lines.join('\n');
 }
 
 // Search file content using grep-style regex
@@ -265,13 +336,20 @@ async function main() {
 
     // Handle --query (glob pattern search)
     if (args.query) {
-      if (args.verbose) console.error(`Querying: ${args.query}`);
+      if (args.verbose) {
+        console.error(`\n🔍 Step 1: Querying for "${args.query}"`);
+        console.error(`   Project: ${args.project}`);
+      }
 
       // First try to get/update index
+      if (args.verbose) console.error(`📂 Step 2: Checking/updating index...`);
       const indexResult = updateIndex(args.project);
       if (!indexResult.ok) {
         console.error(`Error: ${indexResult.error}`);
         process.exit(1);
+      }
+      if (args.verbose) {
+        console.error(`   Index has ${Object.keys(indexResult.data.files).length} files`);
       }
 
       // Interpret query
@@ -280,24 +358,38 @@ async function main() {
 
       // If query looks like a glob, use it directly
       if (query.includes('*') || query.includes('/')) {
+        if (args.verbose) console.error(`🔎 Step 3: Glob pattern search: ${args.query}`);
         files = queryFiles(indexResult.data, args.query);
       } else {
         // Otherwise, search multiple ways:
+        if (args.verbose) console.error(`🔎 Step 3: Multi-strategy search...`);
+
         // 1. Files containing query in name
+        if (args.verbose) console.error(`   3a. Filename match: **/*${args.query}*`);
         files = queryFiles(indexResult.data, `**/*${args.query}*`);
+        if (args.verbose) console.error(`       Found ${files.length} files by name`);
 
         // 2. Files with matching tag
+        if (args.verbose) console.error(`   3b. Tag search: ${query}`);
         const tagFiles = queryByTag(indexResult.data, query);
+        if (args.verbose) console.error(`       Found ${tagFiles.length} files by tag`);
         files = [...new Set([...files, ...tagFiles])];
 
         // 3. Files exporting symbol
+        if (args.verbose) console.error(`   3c. Export search: ${args.query}`);
         const exportFiles = queryByExport(indexResult.data, args.query);
+        if (args.verbose) console.error(`       Found ${exportFiles.length} files by export`);
         files = [...new Set([...files, ...exportFiles])];
       }
+      if (args.verbose) console.error(`✅ Step 4: Total unique results: ${files.length}\n`);
 
       if (files.length === 0) {
         console.error(`No files found matching: ${args.query}`);
         process.exit(2);
+      }
+
+      if (args.explain) {
+        console.log(explainWorkflow('query', args.query, args.project));
       }
 
       const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
@@ -319,6 +411,10 @@ async function main() {
       if (result.data.length === 0) {
         console.error(`No content matches for: ${args.content}`);
         process.exit(2);
+      }
+
+      if (args.explain) {
+        console.log(explainWorkflow('content', args.content, args.project));
       }
 
       const output = args.json
@@ -345,6 +441,10 @@ async function main() {
         process.exit(2);
       }
 
+      if (args.explain) {
+        console.log(explainWorkflow('tag', args.tag, args.project));
+      }
+
       const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
@@ -365,6 +465,10 @@ async function main() {
       if (files.length === 0) {
         console.error(`No files export: ${args.export}`);
         process.exit(2);
+      }
+
+      if (args.explain) {
+        console.log(explainWorkflow('export', args.export, args.project));
       }
 
       const output = args.json ? JSON.stringify(files, null, 2) : formatResults(files, 'files');
@@ -389,6 +493,10 @@ async function main() {
         process.exit(2);
       }
 
+      if (args.explain) {
+        console.log(explainWorkflow('deps', args.deps, args.project));
+      }
+
       const output = args.json ? JSON.stringify(deps, null, 2) : formatResults(deps, 'deps');
       console.log(truncateOutput(output, args.budget));
       process.exit(0);
@@ -410,6 +518,7 @@ Options:
   --budget=<chars>      Output budget in characters (default: 15000)
   --json                Output as JSON
   --verbose             Show debug info
+  --explain             Show equivalent bash workflow (ls/find/grep/cat)
 
 Exit codes:
   0 = Success

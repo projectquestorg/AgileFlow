@@ -1,0 +1,744 @@
+---
+title: تكاملات IDE
+description: قم بتثبيت وتكوين AgileFlow لـ Claude Code، أو Cursor، أو Windsurf، أو Codex CLI.
+---
+
+# تكاملات IDE
+
+يدعم AgileFlow العديد من IDEs من خلال نظام تثبيت موحد. يحتوي كل IDE على دليل التكوين الخاص به ويدعم ميزات مختلفة. يغطي هذا المستند التثبيت والإعداد والاستخدام لجميع بيئات التطوير المتكاملة المدعومة.
+
+## بيئة التطوير المتكاملة المدعومة
+
+يدعم AgileFlow حاليًا أربعة بيئات تطوير متكاملة:
+
+| IDE | Config Dir | Type | Status | Recommended |
+|-----|------------|------|--------|-------------|
+| **Claude Code** | `.claude/` | AI Code Editor | Fully supported | Yes |
+| **Cursor** | `.cursor/` | VSCode fork | Fully supported | Yes |
+| **Windsurf** | `.windsurf/` | VSCode fork | Fully supported | Yes |
+| **OpenAI Codex CLI** | `.codex/` | CLI tool | Fully supported | - |
+
+## بداية سريعة
+
+### التثبيت لـ Claude Code (افتراضي)
+
+Claude Code هو IDE الافتراضي ونقطة البداية الموصى بها:
+
+```bash
+# Install AgileFlow with Claude Code support
+npx agileflow setup
+
+# Or specify Claude Code explicitly
+npx agileflow setup --ide claude-code
+```
+
+هذا يخلق:
+- `.claude/commands/agileflow/` - جميع الأوامر والوكلاء
+- `.claude/agents/agileflow/` - وكلاء فرعيون قابلون للنشر
+- `.claude/skills/` - دليل المهارات التي ينشئها المستخدم
+- `.claude/hooks/damage-control/` - نظام الأمان (اختياري)
+
+### التثبيت لـ IDEs المتعددة
+
+قم بتثبيت AgileFlow لعدة بيئات تطوير متكاملة دفعة واحدة:
+
+```bash
+# Setup for Cursor and Windsurf
+npx agileflow setup --ide cursor,windsurf
+
+# Setup for all IDEs
+npx agileflow setup --ide all
+```
+
+## تفاصيل إعداد IDE
+
+### كلود كود
+
+Claude Code هو IDE الأساسي الذي يتمتع بالتكامل الأكثر تقدمًا.
+
+#### هيكل الدليل
+
+```
+.claude/
+├── commands/
+│   └── agileflow/              # AgileFlow commands
+│       ├── board.md
+│       ├── babysit.md
+│       ├── agents/             # Subcommand: agents
+│       │   ├── adr-writer.md
+│       │   ├── api.md
+│       │   └── ...
+│       └── session/             # Subcommand: session
+│           ├── start.md
+│           └── end.md
+├── agents/
+│   └── agileflow/              # Spawnable subagents
+│       ├── adr-writer.md
+│       ├── api.md
+│       └── ...
+├── skills/                      # User-generated skills
+│   ├── supabase-swift/
+│   │   ├── SKILL.md
+│   │   ├── references.md
+│   │   └── cookbook/
+│   └── ...
+├── hooks/
+│   └── damage-control/          # Safety system
+│       ├── bash-tool-damage-control.js
+│       ├── edit-tool-damage-control.js
+│       ├── write-tool-damage-control.js
+│       └── patterns.yaml
+└── settings.json                # Claude Code configuration
+```
+
+#### الوصول إلى الأوامر
+
+أوامر الوصول في Claude Code باستخدام بناء جملة الشرطة المائلة:
+
+```
+# Main commands
+/agileflow:board
+/agileflow:babysit
+/agileflow:mentor
+
+# Agent subcommands
+/agileflow:agents:adr-writer
+/agileflow:agents:api
+
+# Session commands
+/agileflow:session:start
+/agileflow:session:end
+```
+
+#### تفرخ الوكيل الفرعي
+
+يتوفر الوكلاء أيضًا كوكلاء فرعيين قابلين للنشر لأداة المهام:
+
+```python
+# In your Claude Code task/workflow
+task = Task(
+    description="Write an ADR for authentication",
+    subagent_type="agileflow-adr-writer"  # Spawns .claude/agents/agileflow/adr-writer.md
+)
+```
+
+#### التحكم في الأضرار (نظام السلامة)
+
+يتضمن كلود كود اختياري **Damage Control** السنانير للسلامة:
+
+```bash
+# Enable damage control during setup
+npx agileflow setup --damage-control
+```
+
+هذا يخلق:
+- `.claude/hooks/damage-control/` - البرامج النصية للتحقق من السلامة
+- `.claude/settings.json` مع تكوين الخطاف PreToolUse
+- يحظر أوامر bash الخطيرة قبل تنفيذها
+- يحمي الملفات الحساسة من الحذف العرضي
+
+يرى [السيطرة على الأضرار](/features/damage-control) للحصول على التفاصيل.
+
+#### إعدادات
+
+يستخدم كلود كود `.claude/settings.json` للتكوين:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/damage-control/bash-tool-damage-control.js",
+          "timeout": 5000
+        }]
+      }
+    ]
+  }
+}
+```
+
+### المؤشر
+
+المؤشر عبارة عن شوكة VSCode مُحسّنة لمساعدة الذكاء الاصطناعي.
+
+#### هيكل الدليل
+
+```
+.cursor/
+└── commands/
+    └── AgileFlow/              # AgileFlow commands
+        ├── board.md
+        ├── babysit.md
+        ├── agents/             # Agents as subcommands
+        │   ├── adr-writer.md
+        │   └── ...
+        └── ...
+```
+
+#### الوصول إلى الأوامر
+
+أوامر الوصول في المؤشر باستخدام بناء جملة الشرطة المائلة:
+
+```
+# Main commands
+/AgileFlow:board
+/AgileFlow:babysit
+
+# Agent subcommands
+/AgileFlow:agents:adr-writer
+```
+
+**Note**: يستخدم المؤشر الأحرف الكبيرة `AgileFlow` في اسم الدليل للتوافق مع اصطلاحات VSCode.
+
+#### الاختلافات عن كلود كود
+
+- لا `.claude/agents/` spawnable directory (Cursor doesn't have Task tool)
+- لا توجد خطافات للتحكم في الضرر (يفتقر المؤشر إلى دعم الخطاف PreToolUse)
+- ملفات تخفيض السعر عادي في `.cursor/commands/` (لا المعالجة المسبقة)
+- الملفات للقراءة فقط، ويتم فقدان التعديلات عند إعادة التثبيت
+
+#### يثبت
+
+```bash
+# Setup Cursor integration
+npx agileflow setup --ide cursor
+```
+
+### ركوب الأمواج
+
+Windsurf عبارة عن شوكة VSCode تتمتع بقدرات إدارة التدفق بالذكاء الاصطناعي.
+
+#### هيكل الدليل
+
+```
+.windsurf/
+└── workflows/                  # Windsurf-specific structure
+    └── agileflow/              # AgileFlow workflows
+        ├── board.md
+        ├── babysit.md
+        ├── agents/             # Agent workflows
+        │   ├── adr-writer.md
+        │   └── ...
+        └── ...
+```
+
+#### الوصول إلى سير العمل
+
+يتعامل Windsurf مع الأوامر على أنها "سير عمل" لإدارة التدفق:
+
+```
+# Invoke workflows
+/agileflow:board
+/agileflow:babysit
+
+# Agent workflows
+/agileflow:agents:adr-writer
+```
+
+#### الميزات الخاصة لركوب الأمواج
+
+يمكن لركوب الأمواج استخدام سير العمل من أجل:
+- **Manage flow steps** - تقسيم المهام إلى خطوات منظمة
+- **Context management** - الحفاظ على الحالة عبر الخطوات
+- **Parallel execution** - تشغيل مهام سير عمل متعددة في وقت واحد
+- **Integration** - الجمع بين سير عمل AgileFlow وتدفقات Windsurf الخاصة
+
+#### يثبت
+
+```bash
+# Setup Windsurf integration
+npx agileflow setup --ide windsurf
+```
+
+### OpenAI Codex CLI
+
+Codex CLI هو مساعد الذكاء الاصطناعي لسطر الأوامر مع نموذج تكامل مختلف.
+
+#### هيكل الدليل
+
+```
+.codex/
+└── skills/
+    └── agileflow-NAME/         # Skills (agents)
+        └── SKILL.md            # Codex skill format
+
+~/.codex/prompts/                # User-level (not per-repo)
+├── agileflow-board.md
+├── agileflow-babysit.md
+└── ...                          # Commands as prompts
+
+AGENTS.md                        # Project instructions (repo root)
+```
+
+#### نموذج التثبيت
+
+يستخدم Codex CLI نموذجًا مختلفًا عن IDEs الأخرى:
+
+1. **Skills** (لكل مستودع): يصبح وكلاء AgileFlow مهارات Codex
+   - تقع في `.codex/skills/agileflow-*/`
+   - كل مهارة لها `SKILL.md` ملف
+   - تم استدعاؤه مع `$skill-name` بناء الجملة
+
+2. **Prompts** (على مستوى المستخدم): تصبح أوامر AgileFlow بمثابة مطالبات Codex
+   - تقع في `~/.codex/prompts/agileflow-*.md`
+   - المشتركة عبر كافة المشاريع على الجهاز
+   - تم استدعاؤه مع `/prompt-name` بناء الجملة
+
+3. **Project Instructions**: ملف AGENTS.md في جذر الريبو
+   - السقالات لاتفاقيات المشروع
+   - يوفر السياق حول المهارات المتاحة
+   - المراجع هيكل المشروع
+
+#### تنسيق المهارة
+
+يتم تحويل مهارات Codex من وكلاء AgileFlow:
+
+```markdown
+---
+name: agileflow-adr-writer
+description: Write Architecture Decision Records
+version: 1.0.0
+---
+
+# AgileFlow: ADR Writer
+
+> Invoke with `$agileflow-adr-writer` or via `/skills`
+
+[Skill instructions...]
+```
+
+#### تنسيق سريع
+
+يتم تحويل مطالبات Codex من أوامر AgileFlow:
+
+```markdown
+# AgileFlow: Board
+
+> View the project status board with story counts and WIP limits
+
+[Prompt instructions...]
+
+## Context
+
+{{input}}
+```
+
+#### وكلاء.md
+
+المتولدة `AGENTS.md` يوفر الملف:
+
+```markdown
+# AGENTS.md
+
+> Project instructions for Codex CLI with AgileFlow integration
+
+## When to Use AgileFlow Skills
+
+| Task Type | Skill to Use |
+|-----------|--------------|
+| Architecture decisions | `$agileflow-adr-writer` |
+| Database work | `$agileflow-database` |
+| API endpoints | `$agileflow-api` |
+| ... | ... |
+
+## Security Recommendations
+
+Configure Codex with approval requirements:
+
+```toml
+# ~/.codex/config.toml
+موافقة_سياسة = "عند الطلب"
+sandbox_mode = "مساحة العمل للكتابة"
+```
+```
+
+#### يثبت
+
+```bash
+# Setup Codex CLI integration
+npx agileflow setup --ide codex
+
+# Or specify alternate Codex home
+CODEX_HOME=/custom/path npx agileflow setup --ide codex
+```
+
+#### استخدام Codex CLI مع AgileFlow
+
+استدعاء المهارات في الدستور الغذائي:
+
+```bash
+# Use a skill
+$agileflow-adr-writer
+> Create an ADR for database migration strategy
+
+# List available skills
+/skills
+```
+
+## إعداد متعدد IDE
+
+### التثبيت لـ IDEs المتعددة
+
+```bash
+# Install for specific IDEs
+npx agileflow setup --ide claude-code,cursor,windsurf
+
+# Install for all supported IDEs
+npx agileflow setup --ide all
+
+# Install for Codex + Claude Code
+npx agileflow setup --ide claude-code,codex
+```
+
+### التبديل بين IDEs
+
+بمجرد التثبيت، يمكنك استخدام AgileFlow في أي بيئة تطوير متكاملة (IDE) دون إعادة التثبيت:
+
+```bash
+# All IDEs have access to the same .agileflow/ core
+# Each IDE has its own config directory:
+# - Claude Code: .claude/
+# - Cursor: .cursor/
+# - Windsurf: .windsurf/
+# - Codex CLI: .codex/ (plus ~/.codex/)
+
+# Just open the project in your IDE of choice
+code .                    # Opens in Cursor/VSCode
+windsurf .                # Opens in Windsurf
+cursor .                  # Opens in Cursor
+```
+
+### الكشف عن IDEs المثبتة
+
+اكتشف أي بيئة تطوير متكاملة تم تكوينها في مشروعك:
+
+```bash
+# Show detected IDEs
+npx agileflow detect
+
+# Output:
+# ✓ Claude Code (.claude/)
+# ✓ Cursor (.cursor/)
+# ✓ Windsurf (.windsurf/)
+```
+
+## نظام معالج IDE الديناميكي
+
+يستخدم AgileFlow نظام معالج IDE قائم على البرنامج المساعد للتوسعة.
+
+### كيف يعمل
+
+```
+IDE Detection
+    ↓
+Handler Loading (.js files in ide/ directory)
+    ↓
+Handler Registration (by IDE name)
+    ↓
+Setup Execution (handler.setup() method)
+    ↓
+Configuration Creation (IDE-specific)
+```
+
+### معالجات IDE
+
+يحتوي كل IDE على فئة معالج مخصصة:
+
+| Handler | File | Base Class | Methods |
+|---------|------|-----------|---------|
+| Claude Code | `claude-code.js` | BaseIdeSetup | setup(), setupDamageControl() |
+| Cursor | `cursor.js` | BaseIdeSetup | setup(), cleanup() |
+| Windsurf | `windsurf.js` | BaseIdeSetup | setup(), cleanup() |
+| Codex CLI | `codex.js` | BaseIdeSetup | setup(), installSkills(), installPrompts() |
+
+### ميزات الفئة الأساسية
+
+تمتد كافة معالجات IDE `BaseIdeSetup` الذي يوفر:
+
+```javascript
+class BaseIdeSetup {
+  // Core methods
+  async setup(projectDir, agileflowDir, options)
+  async cleanup(projectDir)
+  async detect(projectDir)
+
+  // Utilities
+  async installCommandsRecursive(sourceDir, targetDir, agileflowDir, injectDynamic)
+  injectDynamicContent(content, agileflowDir)
+  replaceDocsReferences(content)
+  async scanDirectory(dirPath, extension)
+  async ensureDir(dirPath)
+  async writeFile(filePath, content)
+  async readFile(filePath)
+}
+```
+
+### التوسع مع IDEs الجديدة
+
+لإضافة دعم لـ IDE جديد:
+
+1. **Create handler** (`new-ide.js`):
+```javascript
+const { BaseIdeSetup } = require('./_base-ide');
+
+class NewIdeSetup extends BaseIdeSetup {
+  constructor() {
+    super('new-ide', 'New IDE Name', true);
+    this.configDir = '.new-ide';
+  }
+
+  async setup(projectDir, agileflowDir, options = {}) {
+    // Custom setup logic
+    const commandsSource = path.join(agileflowDir, 'commands');
+    const commandsTarget = path.join(projectDir, this.configDir, 'commands', 'AgileFlow');
+
+    await this.installCommandsRecursive(
+      commandsSource,
+      commandsTarget,
+      agileflowDir,
+      true // Inject dynamic content
+    );
+  }
+}
+
+module.exports = { NewIdeSetup };
+```
+
+2. **Place in IDE directory**:
+```
+packages/cli/tools/cli/installers/ide/new-ide.js
+```
+
+3. **Test**:
+```bash
+npx agileflow setup --ide new-ide
+```
+
+سيقوم IdeManager بتحميل المعالج وتسجيله تلقائيًا.
+
+## تخصيص التثبيت
+
+### أسماء مجلدات AgileFlow المخصصة
+
+بشكل افتراضي، يستخدم AgileFlow `.agileflow/` و `docs/` تسمية:
+
+```bash
+# Use custom names
+npx agileflow setup --agileflow-folder=.flow --docs-folder=documentation
+```
+
+تقوم جميع أدوات التثبيت تلقائيًا باستبدال المراجع للحفاظ على الاتساق.
+
+### تخطي التحكم في الأضرار (كود كلود)
+
+تخطي تثبيت التحكم في الأضرار لـ Claude Code:
+
+```bash
+npx agileflow setup --skip-damage-control
+```
+
+## تم إنشاء ملفات التكوين
+
+### كلود كود
+
+بعد الإعداد، يقوم Claude Code بإنشاء:
+
+```
+.claude/
+├── commands/agileflow/        # Commands (58+)
+├── agents/agileflow/          # Spawnable agents (27+)
+├── skills/                    # User-generated skills
+├── hooks/
+│   └── damage-control/        # Optional safety system
+└── settings.json              # Configuration
+```
+
+### المؤشر
+
+بعد الإعداد، يقوم المؤشر بإنشاء:
+
+```
+.cursor/
+└── commands/
+    └── AgileFlow/             # Commands and agents
+```
+
+### ركوب الأمواج
+
+بعد الإعداد، يقوم Windsurf بإنشاء:
+
+```
+.windsurf/
+└── workflows/
+    └── agileflow/             # Workflows
+```
+
+### كوديكس كلي
+
+بعد الإعداد، يقوم Codex بإنشاء:
+
+```
+.codex/
+└── skills/
+    └── agileflow-*/           # Skills (per-repo)
+
+~/.codex/prompts/
+├── agileflow-*.md             # Prompts (user-level)
+
+AGENTS.md                       # Project instructions
+```
+
+## إدارة تكوينات IDE
+
+### إعادة التثبيت لـ IDE
+
+```bash
+# Reinstall Claude Code configuration
+npx agileflow setup --ide claude-code
+
+# This cleans up and reinstalls
+# - Removes old configuration
+# - Recreates with latest version
+# - Preserves damage control patterns if they exist
+```
+
+### إلغاء تثبيت AgileFlow
+
+```bash
+# Remove from specific IDE
+rm -rf .claude/commands/agileflow
+
+# Or remove entire IDE config
+rm -rf .claude/
+```
+
+### تحديث التكوين
+
+عند ترقية AgileFlow، يتم تحديث التكوينات تلقائيًا:
+
+```bash
+# Update to latest version
+npm update agileflow
+
+# Reinstall IDE configurations
+npx agileflow setup --ide all
+```
+
+## عدد الأوامر والوكلاء
+
+عند التثبيت، يحصل كل IDE على حق الوصول إلى:
+
+- **58+ slash commands** - جميع عمليات AgileFlow
+- **27+ agents** - عمال متخصصون (قاعدة بيانات، واجهة برمجة التطبيقات، واجهة المستخدم، إلخ.)
+- **Dynamic skills** - مطالبات الذكاء الاصطناعي التي أنشأها المستخدم
+
+يتم إدخالها تلقائيًا في تكوين كل IDE أثناء الإعداد.
+
+## نظام حقن المحتوى
+
+يستخدم AgileFlow حقن المحتوى الديناميكي لإبقاء قوائم الأوامر محدثة:
+
+1. **Template placeholders** موجودة في ملفات الأوامر:
+   ```markdown
+   <!-- {{AGENT_LIST}} -->
+   <!-- {{COMMAND_LIST}} -->
+   ```
+
+2. **At install time**، يتم استبدال العناصر النائبة:
+   ```javascript
+   // Scans .agileflow/agents/ and .agileflow/commands/
+   // Replaces placeholders with current lists
+   ```
+
+3. **No manual maintenance** مطلوب - الحالي دائما
+
+## استكشاف أخطاء إعداد IDE وإصلاحها
+
+### الأوامر لا تظهر
+
+**Problem**: تم تثبيت IDE لكن الأوامر لا تظهر.
+
+**Solution**:
+1. التحقق من التثبيت: `ls .claude/commands/agileflow/` (لكلود كود)
+2. إعادة تشغيل IDE بالكامل (إنهاء وإعادة فتح)
+3. إعادة التثبيت: `npx agileflow setup --ide claude-code`
+
+### التحكم في الأضرار لا يعمل (كود كلود)
+
+**Problem**: لا يتم حظر الأوامر الخطيرة.
+
+**Solution**:
+1. تم تكوين خطافات التحقق: `ls .claude/hooks/damage-control/`
+2. تحقق من أن settings.json يحتوي على خطافات PreToolUse
+3. أعد تشغيل Claude Code بالكامل
+4. يرى [استكشاف أخطاء التحكم في الأضرار وإصلاحها](/features/damage-control#troubleshooting)
+
+### Codex CLI لا يجد المهارات
+
+**Problem**: المهارات غير متوفرة في Codex.
+
+**Solution**:
+1. يؤكد `.codex/skills/` موجود ولديه أدلة المهارات
+2. يفحص `~/.codex/prompts/` للملفات السريعة
+3. أعد تشغيل Codex CLI
+4. التحقق من صفحة الدستور الغذائي: `echo $CODEX_HOME`
+
+### صراعات IDE المختلطة
+
+**Problem**: يؤدي استخدام نفس المشروع في عدة بيئات تطوير متكاملة إلى حدوث مشكلات.
+
+**Solution**:
+- يحتوي كل IDE على دليل التكوين الخاص به (بدون تعارضات)
+- شارك `.agileflow/` الأساسية عبر IDEs
+- استخدم التحكم في الإصدار لمشاركة التكوينات
+
+## أفضل الممارسات
+
+### اختيار إيد
+
+- **Claude Code**: موصى به لمعظم المستخدمين، كامل الميزات
+- **Cursor**: بديل جيد، يعمل مع امتدادات VSCode
+- **Windsurf**: الأفضل لإدارة سير العمل
+- **Codex CLI**: جيد للتطوير الأول لـ CLI والبيئات السحابية
+
+### إدارة التكوين
+
+1. **Version control** إعداد AgileFlow:
+   ```bash
+   git add .claude/ .cursor/ .windsurf/ .codex/ AGENTS.md
+   git commit -m "Add AgileFlow configuration"
+   ```
+
+2. **Share across team** - يحصل أعضاء الفريق على نفس الإعداد
+3. **Preserve patterns** - لا تحذف `.agileflow/` بين الاعداد
+
+### حماية
+
+- **Damage Control** يحمي كلود كود بشكل افتراضي
+- **AGENTS.md** في وثائق الدستور الغذائي ممارسات السلامة
+- قم بمراجعة الأنماط قبل مشاركتها مع الفريق
+
+### بيئة تطوير متكاملة متعددة
+
+- **Install once**: واحد `.agileflow/` الأساسية المشتركة عبر IDEs
+- **Switch freely**: يستخدم `code .`, `windsurf .`, `cursor .`
+- **No conflicts**: يحتوي كل IDE على دليل تكوين منفصل
+
+## الوثائق ذات الصلة
+
+- [السيطرة على الأضرار](/features/damage-control) - نظام الأمان لكلود كود
+- [ابدء](/docs/getting-started) - الإعداد الأولي
+- [مرجع الأوامر](/docs/commands) - جميع الأوامر المتاحة
+- [مرجع الوكلاء](/docs/agents) - مواصفات الوكيل
+- [نظام المهارات](/features/skills) - إنشاء مطالبات مخصصة
+
+## الخطوات التالية
+
+1. **Install for your IDE** - `npx agileflow setup`
+2. **Run first command** - `/agileflow:board` لرؤية الحالة
+3. **Customize** - إضافة السيطرة على الأضرار، وخلق المهارات
+4. **Share** - الالتزام بالتكوين لبوابة الفريق
+5. **Extend** - قم بإنشاء معالج IDE الخاص بك إذا لزم الأمر

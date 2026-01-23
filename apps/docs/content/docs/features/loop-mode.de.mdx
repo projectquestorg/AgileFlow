@@ -1,0 +1,372 @@
+---
+title: Loop-Modus
+description: Autonome Story-Verarbeitung mit Ralph Loop für die unkomplizierte epische Vervollständigung
+---
+
+# Loop-Modus
+
+Der Loop-Modus ermöglicht die autonome Story-Verarbeitung durch AgileFlows **Ralph Loop** System. Benannt nach dem „Ralph Wiggum“-Muster aus der Forschung von Anthropic zu Agenten-Workflows, verarbeitet es Geschichten automatisch in einem Epos ohne manuelles Eingreifen.
+
+Der Loop-Modus wird durch aktiviert [`/agileflow:babysit`](/commands/babysit) Befehl mit speziellen Parametern. Babysit orchestriert den gesamten Prozess, während Ralph Loop die Automatisierung übernimmt.
+
+## Überblick
+
+Wenn aktiviert, Loop-Modus:
+
+1. Wählt die erste „fertige“ Geschichte aus einem Epos aus
+2. Markiert es als „in_progress“ und beginnt mit der Implementierung
+3. Wenn Claude stoppt, werden die Tests automatisch ausgeführt
+4. Wenn die Tests bestanden werden → Markiert die Story als abgeschlossen und lädt die nächste Story
+5. Wird fortgesetzt, bis Epic abgeschlossen ist oder die maximale Anzahl an Iterationen erreicht ist
+
+Dies ermöglicht **overnight batch processing** klar definierter Epen mit klaren Akzeptanzkriterien.
+
+## Schnellstart
+
+```bash
+# Start loop mode for an epic
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+
+# Or initialize directly via script
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+```
+
+## Wie es funktioniert
+
+### Der Stopphaken
+
+Der Loop-Modus nutzt das Stop-Hook-System von Claude Code. Wenn Claude nicht mehr antwortet:
+
+1. Der `ralph-loop.js` Das Skript wird automatisch ausgeführt
+2. Es führt den konfigurierten Testbefehl aus (Standard: `npm test`)
+3. Basierend auf den Ergebnissen wird entweder mit der nächsten Story fortgefahren oder nach Korrekturen gefragt
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/loop-mode-flow.dark.svg" />
+  <img alt="Loop-Modus-Fluss" src="/images/docs/features/loop-mode-flow.light.svg" />
+</picture>
+
+### Sitzungsstatus
+
+Die Schleifenkonfiguration wird in gespeichert `docs/09-agents/session-state.json`:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 3,
+    "max_iterations": 20,
+    "test_command": "npm test",
+    "mode": "normal"
+  }
+}
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
+| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MAX` | No | 20 | Maximum iterations before stopping |
+
+## CLI-Befehle
+
+```bash
+# Initialize loop for an epic
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# Check current loop status
+node .agileflow/scripts/ralph-loop.js --status
+
+# Stop the loop gracefully
+node .agileflow/scripts/ralph-loop.js --stop
+
+# Reset loop state completely
+node .agileflow/scripts/ralph-loop.js --reset
+
+# Run one iteration manually
+node .agileflow/scripts/ralph-loop.js --run
+```
+
+## Loop-Modi
+
+### Normaler Modus (Standard)
+
+Standardtestbasierte Verifizierung:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+```
+
+- Läuft `npm test` nach jedem Claude-Stopp
+- Besteht, wenn alle Tests erfolgreich sind
+- Schlägt fehl, wenn ein Test fehlschlägt
+
+### Visueller Modus
+
+Für UI-fokussierte Epics, die eine Screenshot-Überprüfung erfordern:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+- Schecks `screenshots/` Verzeichnis für Bilder
+- Alle Screenshots müssen vorhanden sein `verified-` Präfix
+- Nützlich für die Entwicklung von UI-Komponenten
+
+Sehen [Visueller Modus](/features/visual-mode) für Einzelheiten.
+
+### Abdeckungsmodus
+
+Für Anforderungen an die Testabdeckung:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+- Führt Tests mit Abdeckungsberichten durch
+- Überprüft, ob die Abdeckung den Schwellenwert erreicht (z. B. 80 %).
+- Schlägt fehl, wenn die Abdeckung unter den Schwellenwert fällt
+
+## Story-Auswahl
+
+Der Loop-Modus wählt Storys in dieser Prioritätsreihenfolge aus:
+
+1. **Current story** - Falls einer bereits in Bearbeitung ist
+2. **Ready stories** - Stories mit Status „bereit“ (alle Abhängigkeiten erfüllt)
+3. **Blocked stories** - Übersprungen, bis die Blockierung aufgehoben wird
+
+Geschichten müssen Folgendes enthalten:
+- Klare Akzeptanzkriterien
+- Alle Abhängigkeiten gelöst
+- Status auf „Bereit“ oder „Ausstehend“ gesetzt
+
+## Konfiguration
+
+### Testbefehl
+
+Konfigurieren Sie den Testbefehl in `agileflow-metadata.json`:
+
+```json
+{
+  "loop": {
+    "test_command": "npm test",
+    "coverage_threshold": 70,
+    "max_iterations": 20
+  }
+}
+```
+
+### Stoppen Sie die Hook-Einrichtung
+
+Im Loop-Modus muss der Stop-Hook eingerastet sein `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agileflow/scripts/ralph-loop.js --run"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Wann sollte der Loop-Modus verwendet werden?
+
+### Gut für
+
+- ✅ Klar definierte Epen mit klaren Geschichten
+- ✅ Testgetriebene Entwicklung (Tests definieren „erledigt“)
+- ✅ Stapelverarbeitung mehrerer Geschichten über Nacht
+- ✅ Wiederkehrende Implementierungsaufgaben (CRUD-Endpunkte, Komponenten)
+- ✅ Geschichten mit automatisierten Akzeptanzkriterien
+
+### Nicht gut für
+
+- ❌ Sondierungsarbeit ohne klare Akzeptanzkriterien
+- ❌ Stories requiring human review before proceeding
+- ❌ Komplexe Multi-Domain-Arbeit, die Koordination erfordert
+- ❌ Erstmalige Implementierungen ohne Muster
+- ❌ Stories mit externen Abhängigkeiten (APIs, Services)
+
+## Beispiel-Workflow
+
+### 1. Bereiten Sie das Epos vor
+
+Stellen Sie sicher, dass alle Geschichten klare Akzeptanzkriterien haben:
+
+```markdown
+## US-0015: Add User List Component
+
+**Acceptance Criteria:**
+- [ ] Component renders list of users from API
+- [ ] Loading state shown while fetching
+- [ ] Error state displayed on failure
+- [ ] Empty state when no users
+
+**Tests:** src/components/UserList.test.tsx
+```
+
+### 2. Starten Sie den Loop-Modus
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=15
+```
+
+### 3. Monitor Progress
+
+Überprüfen Sie den Status regelmäßig:
+
+```bash
+node .agileflow/scripts/ralph-loop.js --status
+```
+
+Ausgabe:
+```
+Loop Status:
+  Epic: EP-0042
+  Current Story: US-0017
+  Iteration: 5 of 15
+  Mode: normal
+  Stories Completed: 4
+  Stories Remaining: 3
+```
+
+### 4. Behandeln Sie Fehler
+
+Wenn Tests fehlschlagen, zeigt der Schleifenmodus die Fehler an und arbeitet weiter:
+
+```
+❌ Tests failed for US-0017
+
+Failures:
+  - UserList.test.tsx: Expected 3 users, got 2
+
+Continue fixing or run /agileflow:babysit --stop to pause.
+```
+
+### 5. Schließe das Epos ab
+
+Wenn alle Geschichten fertig sind:
+
+```
+✅ Epic EP-0042 Complete!
+
+Summary:
+  - Stories Completed: 7
+  - Total Iterations: 12
+  - Time Elapsed: 2h 34m
+
+All tests passing. Ready for review.
+```
+
+## Fehlerbehebung
+
+### Schleife startet nicht
+
+1. Überprüfen Sie, ob der Sitzungsstatus vorhanden ist:
+   ```bash
+   cat docs/09-agents/session-state.json
+   ```
+
+2. Überprüfen Sie, ob der Stopphaken konfiguriert ist:
+   ```bash
+   cat .claude/settings.json | grep -A5 "Stop"
+   ```
+
+3. Manuell initialisieren:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042
+   ```
+
+### Tests schlagen immer fehl
+
+1. Führen Sie die Tests zunächst manuell durch:
+   ```bash
+   npm test
+   ```
+
+2. Überprüfen Sie den Testbefehl in der Konfiguration:
+   ```bash
+   cat docs/00-meta/agileflow-metadata.json | grep test_command
+   ```
+
+3. Stellen Sie sicher, dass Tests für die aktuelle Story vorhanden sind
+
+### Schleife bleibt bei derselben Geschichte hängen
+
+1. Überprüfen Sie die Anzahl der Iterationen:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+2. Wenn Sie sich der maximalen Anzahl an Iterationen nähern, gehen Sie entweder wie folgt vor:
+   - Beheben Sie das Blockierungsproblem
+   - Story überspringen: Status auf „blockiert“ aktualisieren
+   - Maximal erhöhen: `--max=30`
+
+### Unerwartet anhalten
+
+Die Schleife stoppt, wenn:
+- Maximale Anzahl an Iterationen erreicht
+- Episch abgeschlossen
+- Manueller Stoppbefehl
+- Kritischer Fehler bei der Testausführung
+
+Weitere Informationen finden Sie in den Protokollen:
+```bash
+cat .agileflow/logs/ralph-loop.log
+```
+
+## Best Practices
+
+### 1. Beginnen Sie mit kleinen Epen
+
+Testen Sie den Loop-Modus zunächst an einem 3- bis 5-stöckigen Epos, bevor Sie größere Serien erstellen.
+
+### 2. Schreiben Sie zuerst Tests
+
+Der Loop-Modus funktioniert am besten mit TDD – Tests definieren, wann eine Story „fertig“ ist.
+
+### 3. Halten Sie die Geschichten fokussiert
+
+Jede Geschichte sollte in 1–3 Iterationen abgeschlossen werden können. Große Geschichten → mehr Misserfolge.
+
+### 4. Regelmäßig überwachen
+
+Überprüfen Sie den Status bei langen Läufen alle 30–60 Minuten.
+
+### 5. Verwenden Sie den visuellen Modus für die Benutzeroberfläche
+
+Aktivieren Sie für UI-Arbeiten den visuellen Modus, um Rendering-Probleme zu erkennen, die Tests möglicherweise übersehen.
+
+## Verwandte Funktionen
+
+- [Visueller Modus](/features/visual-mode) - Screenshot-Überprüfung für die UI-Entwicklung
+- [Kompakter Kontext](/features/compact-context) - Kontexterhaltung bei langen Sitzungen
+- [`/agileflow:babysit`](/commands/babysit) – Der Mentor-Befehl, der den Loop-Modus orchestriert
+- [`/agileflow:verify`](/commands/verify) - Manuelle Testüberprüfung
+
+## Architektur
+
+Der Loop-Modus besteht aus:
+
+| Component | Purpose |
+|-----------|---------|
+| `ralph-loop.js` | Main loop orchestration script |
+| `screenshot-verifier.js` | Visual Mode screenshot checking |
+| `session-state.json` | Loop configuration and state |
+| Stop hook | Claude Code integration point |
+
+Der Name „Ralph“ stammt aus der Forschungsarbeit von Anthropic zu Agenten-Workflows, in der „Ralph Wiggum“ als Codename für autonome Aufgabenerledigungsmuster verwendet wurde.

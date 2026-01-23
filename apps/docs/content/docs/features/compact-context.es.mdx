@@ -1,0 +1,437 @@
+---
+title: Preservación del contexto compacto
+description: Cómo los agentes de AgileFlow preservan el conocimiento crítico durante la compactación automática del contexto
+---
+
+# Preservación del contexto compacto
+
+Uso de agentes AgileFlow **compact_context** configuración para preservar el conocimiento y el estado críticos cuando Claude Code compacta automáticamente el contexto de la conversación. Esta característica garantiza que los agentes mantengan el enfoque, sigan las reglas esenciales y realicen un seguimiento del estado actual incluso durante conversaciones prolongadas que activan la compresión del contexto.
+
+## El problema: pérdida de contexto durante la compactación
+
+Cuando las conversaciones se alargan, Claude Code compacta automáticamente el contexto para mantenerse dentro de los límites simbólicos. Esta compactación puede provocar:
+
+- **Lost Rules**: Los agentes olvidan reglas de comportamiento críticas (por ejemplo, "Cargar experiencia primero", "Verificar que las pruebas pasen antes de realizar la revisión")
+- **Lost State**: Los agentes pierden la pista del trabajo actual (en qué historia están, qué los bloquea, qué se ha hecho)
+- **Lost Priorities**: Los agentes olvidan qué tareas son urgentes (por ejemplo, desbloquear historias AG-UI)
+- **Refocusing Delay**: Los agentes desperdician tokens al releer la experiencia y el contexto después de la compactación.
+
+Esto es especialmente problemático para:
+- **Long-running features**: Trabajo de implementación de varios días con docenas de intercambios.
+- **Dependent agents**: UI esperando en los puntos finales de API, ambos necesitan un enfoque sostenido
+- **Critical coordination**: Mentor que orquesta múltiples agentes simultáneamente
+
+## La solución: contexto compacto
+
+Cada agente define un `compact_context` Configuración con tres componentes:
+
+### 1. Nivel de prioridad
+
+Determina con qué agresividad se conserva el contexto del agente durante la compactación:
+
+```yaml
+compact_context:
+  priority: critical  # one of: critical, high, medium, low
+```
+
+**Priority Levels**:
+- `critical` (2 agentes): Siempre conservado incluso en compactación agresiva.
+  - Mentor, Agente API
+  - Manejar la orquestación y la implementación central
+- `high` (8 agentes): Preservado en la mayoría de las compactaciones.
+  - UI, base de datos, CI, DevOps, pruebas, seguridad, documentación, rendimiento
+  - Ejecute trabajos de larga duración con un enfoque sostenido
+- `medium` (15 agentes): Preservado cuando sea posible
+  - La mayoría de los agentes especializados (análisis, integraciones, móviles, etc.)
+  - Manejar tareas específicas del dominio
+- `low` (2 agentes): primero en ser eliminado
+  - Agentes asesores, poco utilizados (planificador épico, orquestador)
+  - Sólo incluido si la habitación lo permite.
+
+### 2. Preservar las reglas
+
+Reglas básicas de comportamiento que nunca deben perderse:
+
+```yaml
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+  - "VERIFY TEST BASELINE: Check test_status before starting"
+  - "PRIORITIZE AG-UI BLOCKERS: Unblock UI stories waiting on API endpoints"
+  - "DIFF-FIRST APPROACH: Show edits with confirmation before applying"
+  - "NEVER hardcode secrets: Use environment variables only"
+```
+
+**Good rules to preserve**:
+- Identidad y rol (por ejemplo, "Usted es AG-API")
+- Restricciones de seguridad críticas (por ejemplo, "Nunca codificar secretos")
+- Procedimientos que se deben seguir (por ejemplo, "Cargar experiencia primero")
+- Protocolos de coordinación (por ejemplo, "Actualizar status.json antes y después del trabajo")
+- Requisitos de gestión de estado (por ejemplo, "Verificar test_status antes de la revisión")
+- Prioridades de comportamiento (por ejemplo, "Priorizar el desbloqueo de AG-UI")
+
+**Poor rules** (no conserve estos):
+- Instrucciones de flujo de trabajo paso a paso (se pueden derivar nuevamente del estado)
+- Información genérica disponible en archivos de experiencia.
+- Detalles específicos del contexto (en su lugar, van en state_fields)
+
+### 3. Campos estatales
+
+Estado dinámico que cambia durante el trabajo:
+
+```yaml
+state_fields:
+  - current_story
+  - endpoints_implemented
+  - blocked_ui_stories
+  - test_status_baseline
+```
+
+**State fields preserve current work context**:
+- ¿Qué historia se está implementando en este momento?
+- Qué puntos finales están hechos, cuáles están pendientes
+- ¿Qué historias están bloqueadas en qué?
+- Línea base del estado de la prueba (debe aprobarse antes de la revisión interna)
+- Problemas conocidos o deuda técnica descubierta
+
+## Ejemplo real: Agente API
+
+El agente API demuestra compact_context en acción:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status"
+    - "ONLY mark in-review if test_status:passing - NO EXCEPTIONS"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets or API keys - use environment variables"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+**What this preserves**:
+- Prioridades críticas (desbloquear la interfaz de usuario primero)
+- Reglas de seguridad (verificación de prueba, manejo secreto)
+- Current state (which endpoints are done, what's blocking UI)
+- Línea de base de la prueba (esencial para determinar cuándo se realiza el trabajo)
+
+Durante una implementación de API de 2 días con más de 50 intercambios:
+1. La compactación del contexto ocurre después de ~30 intercambios
+2. Preservar reglas recuerda al agente que verifique que las pruebas pasen (no es opcional)
+3. Los campos de estado muestran qué historias de UI están bloqueadas (verificación de prioridad)
+4. El agente continúa sin perder impulso ni reenfocarse.
+
+## Todas las configuraciones de agentes
+
+### Prioridad crítica (2 agentes)
+
+**mentor**
+```yaml
+priority: critical
+preserve_rules:
+  - "ALWAYS read expertise.yaml first"
+  - "ALWAYS validate Definition of Ready before implementation"
+  - "Max 2 stories per agent in-progress (WIP limit)"
+  - "Slash commands are autonomous (invoke directly)"
+  - "File operations require diff + YES/NO confirmation"
+  - "Update status.json + bus/log.jsonl for all state changes"
+state_fields:
+  - current_story
+  - story_status
+  - wip_count
+  - blockers
+  - next_actions
+```
+
+**api**
+```yaml
+priority: critical
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+  - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting"
+  - "VERIFY TEST BASELINE: Session harness required"
+  - "ONLY mark in-review if test_status:passing"
+  - "DIFF-FIRST FOR FILE CHANGES: Show edits with confirmation"
+  - "NEVER hardcode secrets - use environment variables"
+state_fields:
+  - current_story
+  - endpoints_implemented
+  - blocked_ui_stories
+  - test_status_baseline
+```
+
+### Alta prioridad (8 agentes)
+
+**ui**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ui/expertise.yaml"
+  - "CHECK DESIGN SYSTEM FIRST: Detect if design tokens exist"
+  - "VERIFY SESSION HARNESS: Check environment.json and test_status"
+  - "ONLY in-review if tests pass: test_status:passing required"
+  - "CHECK FOR API DEPENDENCIES: Search status.json for blocked UI stories"
+  - "APPLY UX LAWS: Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End"
+  - "ACCESSIBILITY REQUIRED: WCAG 2.1 AA minimum"
+state_fields:
+  - current_story
+  - design_system_status
+  - api_dependencies
+  - test_status_baseline
+```
+
+**database**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/database/expertise.yaml"
+  - "NEVER CHANGE SCHEMA WITHOUT MIGRATION: All changes require reversible scripts"
+  - "PLAN MODE FOR HIGH-RISK CHANGES: Design before implementing"
+  - "VERIFY TEST BASELINE: Check test_status before starting"
+  - "REQUIRED COLUMNS: Every table needs id, created_at, updated_at"
+  - "COORDINATION WITH AG-API: Review their queries"
+state_fields:
+  - current_story
+  - schema_changes_planned
+  - migration_strategy
+  - api_query_reviews
+  - test_status_baseline
+```
+
+**testing**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+  - "AAA PATTERN: All tests follow Arrange-Act-Assert"
+  - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+  - "NO FLAKY TESTS: Eliminate randomness, timing issues"
+  - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+  - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+state_fields:
+  - current_story
+  - coverage_percentage
+  - critical_paths_count
+  - flaky_tests_found
+  - test_status_baseline
+```
+
+**ci, devops, security, documentation, performance** también uso `priority: high` con reglas específicas de dominio y campos de estado.
+
+### Prioridad media (15 agentes)
+
+Agentes especializados en análisis, integraciones, dispositivos móviles, cumplimiento, diseño, migración de datos, control de calidad, accesibilidad, monitoreo, adr-writer, investigación, refactor, readme-updater.
+
+todo uso `priority: medium` con reglas de conservación y campos de estado específicos del dominio.
+
+## Cómo funciona el contexto compacto en la práctica
+
+### Ejemplo: implementación de API de 2 días
+
+**Day 1 - Morning**:
+1. El agente carga experiencia (2 tokens)
+2. Lee el contexto base de código de 30 KB (8 tokens)
+3. Implementa el primer punto final (5 intercambios, 15 tokens)
+4. **Total so far: 25 tokens of 200K budget**
+
+**Day 1 - Afternoon**:
+1. Continues with next endpoint (8 exchanges, 24 tokens)
+2. Pruebas y optimización (6 intercambios, 18 tokens)
+3. **Approaching compression threshold (~40 tokens)**
+
+**Before Compression** (sin contexto_compacto):
+- El agente recarga experiencia (2 tokens)
+- El agente vuelve a leer el código base (8 tokens)
+- El agente vuelve a revisar las historias desbloqueadas (3 tokens)
+- **13 extra tokens wasted, momentum lost**
+
+**With Compact_context** (prioridad crítica):
+- Recuerde conservar las reglas: cargar experiencia, verificar bloqueadores, verificar pruebas
+- Los campos estatales recuerdan: trabajando en US-0042, 3 puntos finales terminados, 2 historias de UI bloqueadas
+- El contexto de la base de código se comprime temporalmente pero se preserva el conocimiento crítico
+- **Agent resumes immediately without re-reading expertise**
+
+**Day 2 - Morning**:
+1. La recompresión del contexto vuelve a ocurrir
+2. El agente vuelve a ampliar su experiencia (1 token, ya cargado)
+3. Currículums con contexto completo sabiendo:
+   - Qué historias están bloqueadas (conocimiento prioritario)
+   - Requisitos básicos de prueba (conocimientos de seguridad)
+   - Lo que ya está implementado (conocimiento estatal)
+4. Continúa con el punto final (5 intercambios, 15 tokens)
+5. Prueba final y revisión (4 intercambios, 12 tokens)
+
+**Efficiency Gain**: ~20 tokens guardados, enfoque sostenido mantenido, sin retrasos en el reenfoque.
+
+## Cuando ocurre la compactación
+
+Claude Code compacta el contexto cuando:
+- El uso de tokens se acerca al límite del modelo (~180 000 de un presupuesto de 200 000)
+- La conversación tiene muchos intercambios (pactos para preservar partes importantes)
+- Largos períodos de inactividad (compactación periódica para empezar de nuevo)
+- El usuario activa manualmente la compresión
+
+## Implementación del contexto compacto
+
+### Para agentes existentes
+
+Agregar al front-matter del agente:
+
+```yaml
+---
+name: agileflow-example
+description: Example agent description
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: haiku
+compact_context:
+  priority: high
+  preserve_rules:
+    - "CRITICAL RULE 1"
+    - "CRITICAL RULE 2"
+    - "CRITICAL RULE 3"
+  state_fields:
+    - current_story
+    - critical_state_1
+    - critical_state_2
+---
+```
+
+### Mejores prácticas
+
+1. **Keep preserve rules focused**: 5-7 reglas máximo
+2. **Use state fields for context**: No pongas detalles del estado en las reglas de preservación.
+3. **Reference expertise files**: Las reglas deben apuntar a la experiencia, no duplicarla
+4. **Update state during work**: Mencione periódicamente el estado actual en las respuestas.
+5. **Match priority to impact**: Mayor impacto = mayor prioridad
+6. **Document in main text**: Explique compact_context en la documentación del agente.
+
+### Qué NO preservar
+
+- Flujos de trabajo procesales largos (estos pueden derivarse nuevamente del estado)
+- Información general genérica (va en experiencia)
+- Fragmentos de código o ejemplos (conservados en experiencia o base de código)
+- Explicaciones detalladas (en su lugar, utilice reglas concisas)
+- Información redundante (evite la duplicación con reglas de conservación)
+
+## Matriz de prioridad de agentes
+
+| Agent | Priority | Impact If Lost | Recoverability |
+|-------|----------|---|---|
+| mentor | critical | Can't coordinate implementation | Hard - needs full context reload |
+| api | critical | Can't complete endpoints, blocks UI | Hard - loses blocker tracking |
+| ui | high | Loses design system state | Moderate - expertise has patterns |
+| database | high | Loses schema design decisions | Moderate - migrations in git |
+| testing | high | Loses coverage strategy | Moderate - test files exist |
+| ci | high | Loses build configuration | Moderate - scripts in git |
+| devops | high | Loses deployment strategy | Moderate - docs/architecture exists |
+| security | high | Loses threat model | Moderate - expertise has patterns |
+| documentation | high | Loses coverage tracking | Moderate - expertise has patterns |
+| performance | high | Loses optimization goals | Moderate - metrics in code |
+| research | medium | Loses research notes | Easy - notes in docs/10-research |
+| analytics | medium | Loses instrumentation goals | Easy - can reanalyze requirements |
+| integrations | medium | Loses API integration details | Easy - expertise has patterns |
+| mobile | medium | Loses platform-specific decisions | Easy - expertise has patterns |
+
+## Patrones comunes de contexto_compacto
+
+### Patrón 1: Reglas críticas para la seguridad
+
+Para agentes que manejan operaciones confidenciales (API, seguridad, base de datos):
+
+```yaml
+preserve_rules:
+  - "SAFETY RULE 1: Critical constraint"
+  - "SAFETY RULE 2: Another critical constraint"
+  - "VERIFICATION: How to verify the rule is followed"
+```
+
+### Patrón 2: Trabajo intenso en coordinación
+
+Para agentes que desbloquean a otros (api, ui, base de datos):
+
+```yaml
+preserve_rules:
+  - "BLOCKER CHECK: What to look for"
+  - "COORDINATION: How to notify blocked agents"
+  - "PRIORITIZATION: How to rank blocking work"
+state_fields:
+  - blocked_stories
+  - unblock_messages_sent
+  - coordination_status
+```
+
+### Patrón 3: Trabajo de puerta de calidad
+
+Para agentes que controlan el estado de la prueba (pruebas, ci, rendimiento):
+
+```yaml
+preserve_rules:
+  - "BASELINE REQUIREMENT: test_status:passing needed"
+  - "GATE FUNCTION: How to verify gates are met"
+  - "OVERRIDE POLICY: How to document exceptions"
+state_fields:
+  - test_status_baseline
+  - coverage_percentage
+  - gate_status
+```
+
+### Patrón 4: Funciones de larga duración
+
+Para agentes que trabajan con funciones de varios días (mentor, api, ui):
+
+```yaml
+preserve_rules:
+  - "EXPERTISE LOADING: Always load expertise first"
+  - "WIP LIMITS: Max N stories in-progress per agent"
+  - "STATE TRACKING: Update status/bus for every state change"
+state_fields:
+  - current_story
+  - story_status
+  - wip_count
+  - next_actions
+```
+
+## Monitoreo de la efectividad del contexto compacto
+
+### Señales de que el contexto compacto está funcionando
+
+- Los agentes mantienen un comportamiento consistente después de la compactación del contexto.
+- No es necesario reorientar ni releer la experiencia después de la compactación.
+- Las pruebas continúan pasando sin reiniciar
+- La coordinación entre agentes se mantiene fluida
+- Menos problemas de "contexto perdido" en conversaciones largas
+
+### Señales El contexto compacto necesita ajustes
+
+- El agente se olvida de revisar los bloqueadores después de la compactación.
+- El agente pierde la pista del estado de la historia en mitad de una conversación
+- Se olvidan las reglas críticas, pero se hace referencia a ellas en futuros intercambios.
+- El seguimiento del estado se vuelve inconsistente
+- El comportamiento del agente cambia notablemente después de la compactación.
+
+### Depuración del contexto compacto
+
+1. **Check preserve rules clarity**: ¿Son concisos y prácticos?
+2. **Verify state fields**: ¿Se actualizan realmente durante el trabajo?
+3. **Review priority fit**: ¿La prioridad del agente es adecuada a su impacto?
+4. **Test after compaction**: Comprueba manualmente el comportamiento después de la compresión.
+5. **Read expert feedback**: Verifique el bus de mensajes para detectar problemas de coordinación.
+
+## Funciones relacionadas
+
+- **Expertise Files**: Base de conocimientos a largo plazo que complementa compact_context
+- **Damage Control**: Evita cambios de código no deseados mediante la confirmación de varios pasos
+- **Session Harness**: Valida la línea base del estado de la prueba (referenciada en el contexto_compacto de la mayoría de los agentes)
+- **Skills System**: Capacidades dinámicas del agente cargadas bajo demanda
+
+## Next Steps
+
+- Revise la de su agente `compact_context` configuración en `packages/cli/src/core/agents/`
+- Si crea nuevos agentes, defina compact_context con el nivel de prioridad apropiado
+- Para funciones de larga duración, supervise la eficacia de la compactación del contexto
+- Actualice las reglas de preservación cuando descubra nuevos patrones de comportamiento críticos

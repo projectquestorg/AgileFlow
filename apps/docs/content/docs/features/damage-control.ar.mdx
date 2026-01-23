@@ -1,0 +1,404 @@
+---
+title: السيطرة على الأضرار
+description: قم بحماية قاعدة التعليمات البرمجية الخاصة بك من الأوامر المدمرة باستخدام خطافات PreToolUse
+---
+
+# السيطرة على الأضرار
+
+التحكم في الأضرار هو نظام أمان يمنع عملاء الذكاء الاصطناعي من تنفيذ أوامر مدمرة أو خطيرة. ويستخدم كلود كود **PreToolUse hooks** للتحقق من صحة الأوامر قبل التنفيذ.
+
+## بداية سريعة
+
+```bash
+# Enable with interactive wizard
+/agileflow:configure damagecontrol
+
+# Or command line
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+
+# Then restart Claude Code (Cmd+Q / Ctrl+Q)
+```
+
+## كيف يعمل
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-flow.dark.svg" />
+  <img alt="Damage Control Flow" src="/images/docs/features/damage-control-flow.light.svg" />
+</picture>
+
+يستخدم التحكم في الأضرار ثلاثة خطافات منفصلة:
+
+| Hook | File | Protects Against |
+|------|------|------------------|
+| **Bash** | `damage-control-bash.js` | Dangerous shell commands |
+| **Edit** | `damage-control-edit.js` | Edits to protected files |
+| **Write** | `damage-control-write.js` | Writes to protected locations |
+
+---
+
+## طبقات الحماية
+
+### أنماط أوامر باش
+
+**Automatically Blocked:**
+- الحذف المدمر: `rm -rf /`, `rm -rf ..`، الحذف العودي
+- دفع القوة: `git push --force`, `git push -f`
+- إعادة التعيين الثابت: `git reset --hard`
+- تدمير قاعدة البيانات: `DROP TABLE`, `TRUNCATE TABLE`, `DELETE FROM ... ;`
+- عمليات القرص: `dd if=`, `mkfs.`, `fdisk`
+- التعرض لأوراق الاعتماد: `cat *.pem`, `cat id_rsa`
+- القتل بالقوة: `kill -9`, `killall`, `pkill -9`
+- وأكثر من 30 نمطًا آخر
+
+**Requires Confirmation (Ask Patterns):**
+- يتم حذف قاعدة البيانات باستخدام WHERE: `DELETE FROM table WHERE ...`
+- نشر: `npm publish`
+- الضغط على الرئيسي: `git push origin main`
+- يحذف Cloud CLI: `aws delete`, `gcloud delete`, `az delete`
+- تحديثات قاعدة البيانات: `UPDATE ... SET ... WHERE`
+- إزالة وحدات العقدة: `rm -rf node_modules`
+
+### مستويات حماية المسار
+
+| Level | Read | Write | Edit | Delete |
+|-------|------|-------|------|--------|
+| **Zero Access** | No | No | No | No |
+| **Read-Only** | Yes | No | No | No |
+| **No Delete** | Yes | Yes | Yes | No |
+
+**Zero Access Paths:**
+- مفاتيح SSH: `~/.ssh/`, `id_rsa`, `id_ed25519`
+- بيانات الاعتماد السحابية: `~/.aws/`, `~/.gnupg/`, `~/.config/gh/`
+- أسرار الإنتاج: `.env.production`, `.env.local`, `.env.secrets`
+- المفاتيح الخاصة: `*.pem`, `*.key`, `credentials.json`
+
+**Read-Only Paths:**
+- تكوين شل: `~/.bashrc`, `~/.zshrc`, `~/.gitconfig`
+- قفل الملفات: `package-lock.json`, `yarn.lock`
+- نظام: `/etc/`
+
+**No Delete Paths:**
+- AgileFlow الأساسية: `.agileflow/`, `.claude/`
+- حالة المشروع: `docs/09-agents/status.json`
+- التحكم بالمصدر: `.git/`
+- جذور المشروع: `README.md`, `package.json`
+
+---
+
+## دليل الإعداد
+
+### المتطلبات الأساسية
+
+- AgileFlow v2.78.0+
+- كلود كود (الأحدث)
+- `.agileflow` تم تثبيت الدليل
+
+### الخطوة 1: اختر مستوى الحماية
+
+**Standard (Recommended)**
+- مطابقة الأنماط السريعة فقط
+- تمت إضافة زمن الوصول بمقدار 0 مللي ثانية
+- تم حظر أكثر من 40 نمطًا خطيرًا
+- مثالية لمعظم المشاريع
+
+**Enhanced**
+- التقييم القياسي + الذكاء الاصطناعي للتهديدات غير المعروفة
+- تمت إضافة زمن الوصول 50-100 مللي ثانية
+- أفضل للكود الحساس للغاية
+- الميزة التجريبية
+
+**Minimal**
+- حماية المسار فقط
+- لا توجد أنماط أوامر باش
+
+### الخطوة 2: تمكين
+
+```bash
+/agileflow:configure damagecontrol
+```
+
+أو:
+
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+### الخطوة 3: التحقق
+
+```bash
+# Check patterns file
+ls -la .agileflow/config/damage-control-patterns.yaml
+
+# Check hooks configured
+grep -A 5 "PreToolUse" .claude/settings.json
+
+# Test (should be blocked)
+rm -rf /
+```
+
+### الخطوة 4: إعادة تشغيل كود كلود
+
+**Important:** تصبح الخطافات سارية المفعول فقط بعد إعادة التشغيل.
+
+```bash
+# Complete quit (Cmd+Q / Ctrl+Q)
+# Wait 5 seconds
+# Reopen Claude Code
+```
+
+---
+
+## بنيان
+
+### تدفق النظام
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-arch.dark.svg" />
+  <img alt="Damage Control Architecture" src="/images/docs/features/damage-control-arch.light.svg" />
+</picture>
+
+### مثال باش هوك
+
+```javascript
+// Input: { command: "rm -rf /" }
+// Pattern: /\brm\s+-rf\s+/
+// Test: pattern.test("rm -rf /") = true
+// Result: BLOCKED (exit code 2)
+```
+
+### تحرير مثال هوك
+
+```javascript
+// Input: { file_path: "/Users/me/.ssh/id_rsa" }
+// Protected: zeroAccessPaths: ["~/.ssh/"]
+// Test: path.startsWith(expandedPath)
+// Result: BLOCKED (exit code 2)
+```
+
+### رموز الخروج
+
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Allow | Tool executes normally |
+| 2 | Block | Tool execution prevented |
+
+### فلسفة الفشل والانفتاح
+
+إذا كان ملف الأنماط تالفًا أو مفقودًا، فسيتم حذف الأوامر **allowed** (غير محظور). وهذا يضمن أن نظام الأمان المعطل لا يعيق جميع العمليات.
+
+---
+
+## إعدادات
+
+### ملف الأنماط
+
+موقع: `.agileflow/config/damage-control-patterns.yaml`
+
+```yaml
+# Blocked bash commands
+bashToolPatterns:
+  - pattern: 'rm\s+-rf\s+/'
+    reason: "Recursive delete from root"
+  - pattern: 'git\s+push\s+--force'
+    reason: "Force push blocked"
+
+# Requires confirmation
+askPatterns:
+  - pattern: 'npm\s+publish'
+    reason: "Publishing to npm"
+  - pattern: 'git\s+push\s+origin\s+main'
+    reason: "Pushing to main"
+
+# Zero access (no read/write/edit)
+zeroAccessPaths:
+  - '~/.ssh/'
+  - '.env'
+
+# Read-only (can read, not modify)
+readOnlyPaths:
+  - '~/.bashrc'
+  - 'package-lock.json'
+
+# No delete (can read/write, not delete)
+noDeletePaths:
+  - '.agileflow/'
+  - '.git/'
+```
+
+### إضافة أنماط مخصصة
+
+تحرير ملف الأنماط مباشرة:
+
+```yaml
+# Add to bashToolPatterns
+bashToolPatterns:
+  # ... existing patterns ...
+  - pattern: 'my-dangerous-command'
+    reason: "Custom block reason"
+
+# Add to askPatterns
+askPatterns:
+  # ... existing patterns ...
+  - pattern: 'deploy\s+production'
+    reason: "Production deployment"
+```
+
+### تكوين الخطاف
+
+في `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-bash.js"
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-edit.js"
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-write.js"
+        }]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## الأسئلة الشائعة واستكشاف الأخطاء وإصلاحها
+
+### أسئلة عامة
+
+**Q: Does Damage Control slow down commands?**
+
+ج: لا، فهو يضيف أقل من 5 مللي ثانية لكل أمر. تم تحسين مطابقة الأنماط.
+
+**Q: Can I disable it temporarily?**
+
+ج: نعم:
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+```
+Then restart Claude Code. Re-enable with `--enable=damagecontrol`.
+
+**Q: What if it blocks something that should be allowed?**
+
+ج: تحرير `.agileflow/config/damage-control-patterns.yaml`:
+1. اجعل النمط أكثر تحديدًا
+2. نقله من `bashToolPatterns` ل `askPatterns`
+3. قم بإزالته إذا لم تكن هناك حاجة إليه
+
+ثم أعد تشغيل كلود كود.
+
+**Q: Does it protect against human mistakes too?**
+
+ج: نعم. تمر جميع الأوامر عبر الخطافات، سواء منك أو من الذكاء الاصطناعي.
+
+**Q: Can patterns be bypassed?**
+
+ج: ليس بسهولة. تتطابق الأنماط مع سلاسل الأوامر الفعلية. حلول بسيطة مثل `r m -rf` إنشاء أخطاء في بناء الجملة.
+
+### مشاكل الإعداد
+
+**Q: Hooks aren't working after enabling.**
+
+ج: السبب الأكثر شيوعًا هو عدم قيامك بإعادة تشغيل Claude Code:
+1. إغلاق كامل (Cmd+Q / Ctrl+Q)
+2. انتظر 5 ثواني
+3. إعادة فتح
+4. اختبار مع `rm -rf /`
+
+**Q: How do I know if it's working?**
+
+A: Test a blocked command:
+```bash
+rm -rf /
+# Should see: [BLOCKED] rm with absolute path
+```
+
+**Q: Can't find patterns file.**
+
+ج: إنشائه:
+```bash
+mkdir -p .agileflow/config
+cp .agileflow/templates/damage-control-patterns.yaml .agileflow/config/
+```
+
+**Q: settings.json got corrupted.**
+
+ج: أصلحه:
+```bash
+cp .claude/settings.json .claude/settings.json.broken
+node .agileflow/scripts/agileflow-configure.js --migrate
+# If that fails:
+rm .claude/settings.json
+/agileflow:configure damagecontrol
+```
+
+### استكشاف أخطاء المصفوفة وإصلاحها
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Hooks don't run | Not restarted | Quit and restart Claude Code |
+| All commands blocked | Patterns too broad | Edit YAML, make patterns specific |
+| Valid command blocked | False positive | Move to askPatterns or remove |
+| Patterns file missing | Not created | Run `/agileflow:configure damagecontrol` |
+| JSON parse error | Invalid settings | Validate with `jq empty .claude/settings.json` |
+
+### تعطيل
+
+**Temporarily disable:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+# Restart Claude Code
+```
+
+**Remove specific hook:**
+```bash
+jq 'del(.hooks.PreToolUse)' .claude/settings.json > tmp.json
+mv tmp.json .claude/settings.json
+# Restart Claude Code
+```
+
+**Re-enable:**
+```bash
+/agileflow:configure damagecontrol
+# Restart Claude Code
+```
+
+---
+
+## أفضل الممارسات
+
+### افعل
+- تمكين التحكم في الأضرار في جميع المشاريع
+- استخدام الحماية القياسية (المحسّنة تجريبية)
+- اختبار مع `rm -rf /` بعد الإعداد
+- احتفظ بملف الأنماط في التحكم في الإصدار
+- مراجعة العمليات المحظورة في السجلات
+
+### لا تفعل ذلك
+- لا تقم بالتعطيل دون سبب وجيه
+- لا تجعل الأنماط واسعة جدًا (إيجابيات كاذبة)
+- لا تنس إعادة التشغيل بعد التغييرات
+- لا تتجاهل تحذيرات الأوامر المحظورة
+
+### للفرق
+- يقترف `.agileflow/config/damage-control-patterns.yaml`
+- قم بتوثيق الأنماط المخصصة بالتعليقات
+- أنماط الاختبار قبل النشر في الفريق
+- مراجعة وتحديث الأنماط بشكل دوري

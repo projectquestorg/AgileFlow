@@ -1,0 +1,528 @@
+---
+title: Sistema de habilidades
+description: Crie, gerencie e melhore continuamente prompts de IA personalizados que aprendem com seu feedback
+---
+
+# Sistema de habilidades
+
+O sistema Skills permite criar e gerenciar prompts de IA personalizados que aprendem e melhoram com o tempo. As habilidades são modelos reutilizáveis ​​e baseados em pesquisas que combinam as melhores práticas do seu projeto, documentação externa e padrões de base de código em guias focados e acionáveis ​​para Claude.
+
+## Início rápido
+
+Crie sua primeira habilidade em 30 segundos:
+
+```bash
+/agileflow:skill:create
+```
+
+Responda a algumas perguntas sobre o que você precisa e Claude pesquisará as melhores práticas e gerará uma habilidade pronta para uso.
+
+Então use-o:
+
+```bash
+/agileflow:skill:list              # See all your skills
+/agileflow:skill:test my-skill     # Verify it works
+/agileflow:skill:upgrade my-skill  # Add learning capability
+```
+
+## O que são habilidades?
+
+A **skill** é um modelo de prompt estruturado que ensina Claude como lidar com tarefas específicas no contexto do seu projeto. As habilidades são:
+
+- **Research-backed** - Gerado a partir de documentos da web, documentação local e sua base de código
+- **Self-improving** - Aprenda com suas correções e refine automaticamente
+- **Cookbook-based** - Vários fluxos de trabalho de casos de uso em uma única habilidade
+- **Integrable** - Pode incluir servidores Model Context Protocol (MCP) para acesso a ferramentas
+
+### Habilidades de exemplo
+
+Você pode criar habilidades para:
+
+- **Database operations**: "Supabase Swift" - Como trabalhar com Supabase em seu aplicativo iOS
+- **API patterns**: "Clientes API REST" - Melhores práticas para o padrão de integração API do seu projeto
+- **Component development**: "Componentes React com acessibilidade" - Como construir componentes seguindo seus padrões
+- **Deployment**: "GitHub Actions CI/CD" - O fluxo de trabalho de implantação e teste da sua equipe
+- **Domain expertise**: "Machine Learning with TensorFlow" – Práticas recomendadas específicas para seus projetos de ML
+
+## Conceitos Básicos
+
+### Estrutura de habilidades
+
+Cada habilidade contém:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file with activation triggers and instructions
+├── references.md         # Links to web docs, local docs, and code patterns
+├── cookbook/             # Per-use-case workflows
+│   ├── use-case-1.md
+│   └── use-case-2.md
+└── .mcp.json            # Optional MCP server configuration
+```
+
+### Como funcionam as habilidades
+
+1. **Activation**: Quando você pergunta a Claude sobre um tópico que corresponde aos gatilhos de uma habilidade, a habilidade é ativada
+2. **Execution**: Claude lê SKILL.md e segue as instruções
+3. **Learning**: Quando você corrige Claude, a habilidade aprende suas preferências
+4. **Evolution**: Cada correção atualiza o arquivo de aprendizagem, tornando a habilidade mais inteligente
+
+### Sistema de aprendizagem
+
+As habilidades podem melhorar automaticamente por meio de um sistema de aprendizagem:
+
+```
+.agileflow/skills/_learnings/
+├── supabase-swift.yaml
+├── api-client.yaml
+└── react-components.yaml
+```
+
+Cada arquivo de aprendizagem rastreia:
+- **Preferences** - O que os usuários preferem (formatação, estilo, abordagem)
+- **Conventions** - Padrões e padrões específicos do projeto
+- **Anti-patterns** - O que evitar
+- **Examples** - Bons e maus exemplos de correções
+
+## Criando Habilidades
+
+### Início rápido
+
+Crie uma habilidade com pesquisa inteligente:
+
+```bash
+/agileflow:skill:create
+```
+
+Ou dê uma dica:
+
+```bash
+/agileflow:skill:create supabase-swift
+```
+
+### Como funciona a criação
+
+O `/agileflow:skill:create` comando realiza pesquisas abrangentes:
+
+**Phase 1: Requirements**
+- Você descreve o que precisa (tecnologia, casos de uso, estrutura)
+
+**Phase 2: Research**
+- **Web documentation** - Documentos oficiais, referências de API, tutoriais
+- **Local documentation** - Documentos do seu projeto, decisões de arquitetura, práticas
+- **Codebase patterns** - Exemplos de códigos e convenções existentes
+- **MCP servers** - Ferramentas disponíveis para a tecnologia
+
+**Phase 3: Generation**
+O comando gera:
+- **SKILL.md** - Habilidade principal com gatilhos de ativação e livro de receitas
+- **references.md** - Links de documentação e padrões de código
+- **cookbook/** - Fluxos de trabalho para diferentes casos de uso
+- **.mcp.json** - Configuração do servidor (se aplicável)
+
+**Phase 4: Confirmation**
+Você vê a estrutura gerada e pode criar, editar ou cancelar.
+
+## Gerenciando Habilidades
+
+### Listar todas as habilidades
+
+Veja suas habilidades instaladas:
+
+```bash
+/agileflow:skill:list
+```
+
+Mostra:
+- Nomes e descrições de habilidades
+- Casos de uso suportados
+- Status de integração do MCP
+- Contagem de arquivos
+
+### Editar habilidades
+
+Modifique uma habilidade existente:
+
+```bash
+/agileflow:skill:edit <skill-name>
+```
+
+Você pode:
+- Atualizar instruções SKILL.md
+- Adicionar novas entradas do livro de receitas
+- Atualizar referências e links de documentação
+- Renomeie a habilidade
+- Faça uma reescrita completa com novas pesquisas
+
+### Habilidades de teste
+
+Verifique se uma habilidade funciona corretamente:
+
+```bash
+/agileflow:skill:test <skill-name>
+```
+
+Testes:
+- **Structure validation** - Todos os arquivos necessários presentes
+- **Content validation** - Formatação e tamanho adequados
+- **Activation test** - A habilidade é ativada em prompts de amostra
+- **MCP configuration** - Configuração de servidor válida
+
+### Excluir habilidades
+
+Remova uma habilidade quando não for mais necessária:
+
+```bash
+/agileflow:skill:delete <skill-name>
+```
+
+### Atualizar habilidades
+
+Adicione capacidade de aprendizagem a habilidades mais antigas:
+
+```bash
+/agileflow:skill:upgrade <skill-name>
+```
+
+Ou atualize tudo de uma vez:
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+Cria um arquivo de aprendizado que rastreia correções e melhorias.
+
+## O Sistema de Aprendizagem
+
+### Quais habilidades aprendem
+
+Quando você usa uma habilidade e corrige o resultado de Claude, a habilidade aprende:
+
+1. **Explicit corrections** - Aprendizados de alta confiança com feedback direto
+2. **Approved responses** - Aprendizados de confiança média com aprovações
+3. **Patterns** - Observações de baixa confiança para revisão
+
+### Formato de arquivo de aprendizagem
+
+Cada habilidade possui um arquivo de aprendizagem opcional em `.agileflow/skills/_learnings/<skill>.yaml`:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-08T10:30:00Z
+
+preferences:
+  code_style: "swift-concurrency"
+  error_handling: "Result<T, Error>"
+  async_patterns: "async/await"
+
+conventions:
+  naming: "camelCase for variables, PascalCase for types"
+  structure: "Separate data, service, and UI layers"
+  testing: "Unit tests required for all public APIs"
+
+anti_patterns:
+  - "Avoid callback patterns (use async/await instead)"
+  - "Never hardcode API keys in code"
+
+examples:
+  good:
+    - "let user = try await supabase.auth.user()"
+  bad:
+    - "var apiKey = 'sk-...' // Never do this"
+
+metadata:
+  corrections_count: 12
+  approvals_count: 8
+  last_correction: 2025-01-08T10:30:00Z
+```
+
+### Como funciona o autoaperfeiçoamento
+
+**On invocation:**
+1. Claude verifica se existe um arquivo de aprendizagem
+2. Lê preferências, convenções e antipadrões
+3. Aplica-os durante a execução da habilidade
+
+**On correction:**
+1. Você fornece feedback ou correção
+2. Claude extrai o sinal (o que mudar)
+3. Determina o nível de confiança (alto/médio/baixo)
+4. Atualiza o arquivo de aprendizagem
+5. A próxima invocação usa as preferências atualizadas
+
+## Melhores Práticas
+
+### Criando habilidades eficazes
+
+1. **Use specific names** - `supabase-swift` não apenas `database`
+2. **Include multiple use cases** - Adicione entradas de livros de receitas para diferentes cenários
+3. **Link to project patterns** - Faça referência às convenções da sua base de código
+4. **Add troubleshooting** - Antecipar e resolver problemas comuns
+5. **Keep it focused** - Um domínio por habilidade, não muito amplo
+
+### Manutenção de habilidades
+
+1. **Test regularly** - Usar `/agileflow:skill:test` para verificar a qualidade
+2. **Review learnings** - Verifique o que a habilidade aprendeu com as correções
+3. **Update references** - Mantenha os links de documentação atualizados
+4. **Archive unused skills** - Limpe habilidades que você não usa mais
+5. **Share improvements** - Comprometa o aprendizado com o git para obter consistência da equipe
+
+### Habilidades de organização
+
+**Suggested skill categories:**
+
+- **Data layer** - Operações de banco de dados, migrações, consultas
+- **API layer** - Clientes REST, GraphQL, webhooks, autenticação
+- **UI layer** - Componentes, estilo, acessibilidade, animações
+- **Infrastructure** - Implantação, CI/CD, monitoramento, segurança
+- **Workflows** - Teste, revisão de código, depuração, criação de perfil
+- **Domain** - Modelos de ML, processamento de imagens, processamento de pagamentos
+
+## Fluxos de trabalho do livro de receitas
+
+### O que é um livro de receitas?
+
+Uma entrada de livro de receitas é um guia passo a passo para um caso de uso específico dentro de uma habilidade.
+
+### Modelo de livro de receitas
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```language
+   exemplo de código
+   ```
+
+2. **Step 2**: Next step
+   ```language
+   exemplo de código
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### Quando adicionar livros de receitas
+
+Adicione entradas do livro de receitas quando:
+- Existem vários casos de uso comuns
+- Diferentes fluxos de trabalho se aplicam
+- A configuração difere entre os cenários
+- Os usuários frequentemente pedem orientação passo a passo
+
+## Integração MCP
+
+As habilidades podem ser integradas aos servidores Model Context Protocol para acesso à ferramenta.
+
+### O que é MCP?
+
+Os servidores MCP ampliam os recursos do Claude fornecendo:
+- Acesso a dados em tempo real
+- Execução de ferramentas (operações de arquivo, chamadas de rede)
+- Integração de sistemas (APIs, bancos de dados)
+- Conhecimento especializado (documentação, ferramentas de código)
+
+### Usando MCP em habilidades
+
+Se um servidor MCP for encontrado durante a criação, a habilidade inclui `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+A habilidade então documenta:
+- Ferramentas fornecidas pelo servidor
+- Instruções de configuração
+- Variáveis ​​de ambiente necessárias
+- Exemplos de integração
+
+## Ciclo de Vida de Habilidades
+
+### Criação
+
+1. Correr `/agileflow:skill:create`
+2. Descreva o que você precisa
+3. Comando pesquisa melhores práticas
+4. Revise a habilidade gerada
+5. Crie a habilidade
+
+### Uso
+
+1. Trabalhe em tarefas que correspondam ao domínio da habilidade
+2. Claude ativa a habilidade automaticamente
+3. A habilidade fornece orientação e exemplos
+4. Você executa as recomendações da habilidade
+
+### Melhoria
+
+1. Quando faltar alguma coisa na saída de Claude, corrija-a
+2. A habilidade aprende com a correção
+3. Da próxima vez, a habilidade fornecerá melhor orientação
+4. Usar `/agileflow:skill:upgrade` para permitir a aprendizagem
+
+### Evolução
+
+1. Com o tempo, as habilidades se tornam mais personalizadas
+2. O arquivo de aprendizagem captura padrões específicos do projeto
+3. Novos membros da equipe herdam o conhecimento
+4. Habilidades tornam-se memória institucional
+
+## Compartilhando habilidades
+
+### Exportar uma habilidade
+
+Copie um diretório de habilidades para compartilhar:
+
+```bash
+cp -r .claude/skills/my-skill /path/to/share/
+```
+
+### Importar uma habilidade
+
+Copie para o seu diretório de habilidades:
+
+```bash
+cp -r /path/to/skill .claude/skills/
+```
+
+### Controle de versão
+
+Comprometa habilidades com git (inclua aprendizados):
+
+```bash
+git add .claude/skills/
+git add .agileflow/skills/_learnings/
+git commit -m "Add supabase-swift skill with learnings"
+```
+
+Os membros da equipe obtêm automaticamente as habilidades e o aprendizado.
+
+## Solução de problemas
+
+### Habilidade não ativada
+
+**Problem**: You ask about the skill's topic but Claude doesn't activate it.
+
+**Solution**:
+1. Verifique a seção "Quando usar" em SKILL.md
+2. Certifique-se de que sua pergunta corresponda aos gatilhos de ativação
+3. Usar `/agileflow:skill:test` para verificar a estrutura de habilidades
+4. Edite a habilidade para adicionar mais palavras-chave, se necessário
+
+### Servidor MCP não encontrado
+
+**Problem**: Durante a criação, aparece "Servidor MCP não encontrado".
+
+**Solution**:
+1. You can create the skill without MCP and add it later
+2. Configurar manualmente `.mcp.json` após a criação
+3. Verifique se o servidor está publicado (npm, GitHub, etc.)
+
+### Arquivo de aprendizagem ausente
+
+**Problem**: A habilidade não melhora mesmo após as correções.
+
+**Solution**:
+1. Correr `/agileflow:skill:upgrade <skill-name>`
+2. Isso cria o arquivo de aprendizagem
+3. Correções futuras serão rastreadas
+
+### Falha na validação de habilidade
+
+**Problem**: `/agileflow:skill:test` mostra falhas.
+
+**Solution**:
+1. Leia o relatório de validação para problemas específicos
+2. Usar `/agileflow:skill:edit` para corrigir problemas
+3. Teste novamente para verificar as correções
+
+## Uso Avançado
+
+### Criando habilidades específicas de domínio
+
+Crie várias habilidades especializadas para domínios complexos:
+
+```bash
+# Data layer skills
+/agileflow:skill:create postgresql-queries
+/agileflow:skill:create database-migrations
+
+# API layer skills
+/agileflow:skill:create rest-error-handling
+/agileflow:skill:create graphql-schema-design
+
+# UI layer skills
+/agileflow:skill:create accessibility-wcag
+/agileflow:skill:create react-performance
+```
+
+### Composição de habilidades
+
+Faça referência a outras habilidades dentro de uma habilidade:
+
+Em HABILIDADE.md:
+```markdown
+## Related Skills
+
+This skill works best with:
+- [REST API clients](/skills/api-client)
+- [Error handling patterns](/skills/error-handling)
+```
+
+### Personalizando aprendizados
+
+Edite manualmente o arquivo de aprendizado para personalização avançada:
+
+```bash
+.agileflow/skills/_learnings/my-skill.yaml
+```
+
+Adicione convenções específicas do projeto que não exijam correções.
+
+## Comandos Relacionados
+
+- [`/habilidade:criar`](/commands/skill-create) - Gere uma nova habilidade com pesquisa
+- [`/habilidade:lista`](/commands/skill-list) - Ver todas as habilidades instaladas
+- [`/habilidade:editar`](/commands/skill-edit) - Modificar uma habilidade existente
+- [`/habilidade:teste`](/commands/skill-test) - Verifique se uma habilidade funciona corretamente
+- [`/habilidade:excluir`](/commands/skill-delete) - Remover uma habilidade
+- [`/habilidade:atualizar`](/commands/skill-upgrade) - Adicionar capacidade de autoaperfeiçoamento
+
+## Próximas etapas
+
+1. **Create your first skill** - Comece com uma tecnologia que você usa com frequência
+2. **Test it** - Usar `/agileflow:skill:test` para verificar se funciona
+3. **Use it** - Trabalhe nas tarefas e deixe a habilidade ser ativada
+4. **Improve it** - Corrija o resultado de Claude para ensinar a habilidade
+5. **Share it** - Comprometa-se com o git e os membros da equipe entenderão
+
+As competências são a memória institucional do seu projeto. Com o tempo, eles codificam suas melhores práticas e conhecimentos específicos do projeto, tornando Claude mais eficaz em ajudá-lo a construir.

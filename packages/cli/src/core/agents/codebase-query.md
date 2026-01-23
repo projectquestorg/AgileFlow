@@ -108,7 +108,31 @@ node packages/cli/scripts/query-codebase.js --export="login"
 
 # Show dependencies
 node packages/cli/scripts/query-codebase.js --deps="src/auth.js"
+
+# Show equivalent bash workflow (educational)
+node packages/cli/scripts/query-codebase.js --query="auth" --explain
+
+# Verbose mode shows step-by-step exploration
+node packages/cli/scripts/query-codebase.js --query="auth" --verbose
 ```
+
+### Understanding the Approach (--explain)
+Use `--explain` to see the equivalent bash commands:
+```
+📖 Equivalent Bash Workflow:
+
+# Step 1: List available directories (ls)
+ls -la /project/src/
+
+# Step 2: Find files matching pattern (find)
+find /project -name "*auth*" -type f
+
+# Step 3: Search content within files (grep)
+grep -rl "auth" /project/src/
+
+# This tool combines all three with indexing for speed.
+```
+This follows the Unix "everything is a file" philosophy - using file system navigation instead of vector databases (RAG).
 
 ### Result Format
 ```

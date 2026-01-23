@@ -1,27 +1,27 @@
 ---
-title: Sesiones paralelas
-description: Trabaje en múltiples funciones simultáneamente con árboles de trabajo git aislados y protección de límites de sesión.
+title: Sessões Paralelas
+description: Trabalhe em vários recursos simultaneamente com árvores de trabalho git isoladas e proteção de limite de sessão.
 ---
 
-# Sesiones paralelas
+# Sessões Paralelas
 
-Las sesiones paralelas le permiten trabajar en múltiples funciones, errores o experimentos simultáneamente sin cambiar de contexto. Cada sesión tiene su propio directorio aislado, rama git y protección de límites para evitar ediciones accidentales entre sesiones.
+As sessões paralelas permitem que você trabalhe em vários recursos, bugs ou experimentos simultaneamente, sem mudança de contexto. Cada sessão tem seu próprio diretório isolado, ramificação git e proteção de limite para evitar edições acidentais entre sessões.
 
-## Descripción general
+## Visão geral
 
-Cuando trabaja en proyectos complejos, a menudo necesita:
-- Corregir un error mientras una función está en progreso
-- Experimenta sin afectar tu trabajo principal
-- Revisar el código en una rama mientras se desarrolla en otra
+Ao trabalhar em projetos complexos, muitas vezes você precisa:
+- Corrija um bug enquanto um recurso está em andamento
+- Experimente sem afetar seu trabalho principal
+- Revise o código em uma ramificação enquanto desenvolve em outra
 
-Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usando **git worktrees**, cada uno rastreado por AgileFlow con protección automática de límites.
+Sessões Paralelas resolvem isso criando espaços de trabalho isolados usando **git worktrees**, cada um rastreado pelo AgileFlow com proteção automática de limites.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-overview.dark.svg" />
-  <img alt="Parallel Sessions Overview" src="/images/docs/features/parallel-sessions-overview.light.svg" />
+  <img alt="Visão geral das sessões paralelas" src="/images/docs/features/parallel-sessions-overview.light.svg" />
 </picture>
 
-## Características clave
+## Principais recursos
 
 | Feature | Description |
 |---------|-------------|
@@ -31,18 +31,18 @@ Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usand
 | **Easy Switching** | Switch sessions with `/add-dir` - stays in same terminal |
 | **Independent Context** | Each session maintains its own story and progress |
 
-## Cómo funciona
+## Como funciona
 
-### Arquitectura
+### Arquitetura
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-arch.dark.svg" />
-  <img alt="Parallel Sessions Architecture" src="/images/docs/features/parallel-sessions-arch.light.svg" />
+  <img alt="Arquitetura de sessões paralelas" src="/images/docs/features/parallel-sessions-arch.light.svg" />
 </picture>
 
-### Gestión del estado de sesión
+### Gerenciamento de estado de sessão
 
-Las sesiones se rastrean en dos archivos:
+As sessões são rastreadas em dois arquivos:
 
 **Registry** (`.agileflow/sessions/registry.json`):
 ```json
@@ -79,13 +79,13 @@ Las sesiones se rastrean en dos archivos:
 }
 ```
 
-### Protección de límites
+### Proteção de limite
 
-El enlace de límite de sesión se ejecuta en cada operación de edición y escritura:
+O gancho de limite de sessão é executado em todas as operações de edição e gravação:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-boundary.dark.svg" />
-  <img alt="Session Boundary Protection Flow" src="/images/docs/features/parallel-sessions-boundary.light.svg" />
+  <img alt="Fluxo de proteção de limite de sessão" src="/images/docs/features/parallel-sessions-boundary.light.svg" />
 </picture>
 
 **Protection Logic:**
@@ -102,16 +102,16 @@ const isAllowed =
 
 ## Comandos
 
-### Crear nueva sesión
+### Criar nova sessão
 
 ```
 /agileflow:session:new
 ```
 
-Crea una nueva sesión paralela con opciones:
-- **Auto-create**: Genera `../project-{id}` con rama `session-{id}`
-- **Named**: Crea `../project-{name}` con apodo personalizado
-- **Existing branch**: Utiliza una rama git existente
+Cria uma nova sessão paralela com opções:
+- **Auto-create**: Gera `../project-{id}` com filial `session-{id}`
+- **Named**: Cria `../project-{name}` com apelido personalizado
+- **Existing branch**: Usa uma ramificação git existente
 
 **Output:**
 ```
@@ -128,13 +128,13 @@ To switch to this session, run:
   /add-dir ../project-bugfix
 ```
 
-### Cambiar de sesión
+### Alternar sessões
 
 ```
 /agileflow:session:resume
 ```
 
-Enumera todas las sesiones y proporciona el comando para cambiar:
+Lista todas as sessões e fornece o comando para alternar:
 
 ```
 Which session would you like to resume?
@@ -149,35 +149,35 @@ Which session would you like to resume?
   Start a fresh parallel workspace
 ```
 
-Después de la selección:
+Após a seleção:
 ```
 To switch to Session 2 "bugfix":
 
   /add-dir ../project-bugfix
 ```
 
-### Ver estado de la sesión
+### Ver status da sessão
 
 ```
 /agileflow:session:status
 ```
 
-Muestra información de la sesión actual y todas las sesiones registradas.
+Mostra informações da sessão atual e todas as sessões registradas.
 
-### Finalizar sesión
+### Encerrar sessão
 
 ```
 /agileflow:session:end
 ```
 
-Finaliza la sesión actual y opcionalmente:
-- Fusiona los cambios nuevamente al principal
-- Elimina el árbol de trabajo
-- Limpia la rama
+Encerra a sessão atual e opcionalmente:
+- Mescla as alterações de volta ao principal
+- Exclui a árvore de trabalho
+- Limpa o galho
 
-## Ejemplo de flujo de trabajo
+## Exemplo de fluxo de trabalho
 
-### Iniciar una corrección de errores mientras el trabajo de funciones está en curso
+### Iniciando uma correção de bug enquanto o trabalho do recurso está em andamento
 
 ```
 # You're working on Session 1 (main) with US-0042: User Auth API
@@ -213,11 +213,11 @@ User: /add-dir /home/user/project
 # Back in Session 1, boundary protection now blocks edits to ../project-bugfix
 ```
 
-## Configuración
+## Configuração
 
-### Habilitación de la protección de límites de sesión
+### Habilitando a proteção de limite de sessão
 
-Los enlaces de límites de sesión se configuran automáticamente cuando utiliza sesiones paralelas. se agregan a `.claude/settings.json`:
+Os ganchos de limite de sessão são configurados automaticamente quando você usa sessões paralelas. Eles são adicionados a `.claude/settings.json`:
 
 ```json
 {
@@ -246,19 +246,19 @@ Los enlaces de límites de sesión se configuran automáticamente cuando utiliza
 }
 ```
 
-### Desactivar la protección de límites
+### Desativando proteção de limite
 
-Para trabajar entre sesiones sin restricciones:
+Para trabalhar em sessões sem restrições:
 
 ```bash
 node .agileflow/scripts/session-manager.js clear-active
 ```
 
-Esto borra la sesión activa, permitiendo ediciones en cualquier directorio.
+Isso limpa a sessão ativa, permitindo edições em qualquer diretório.
 
-## CLI del administrador de sesiones
+## CLI do gerenciador de sessão
 
-El script del administrador de sesión proporciona control directo:
+O script do gerenciador de sessão fornece controle direto:
 
 ```bash
 # List all sessions
@@ -283,36 +283,36 @@ node .agileflow/scripts/session-manager.js create --nickname "feature"
 node .agileflow/scripts/session-manager.js delete 2 --remove-worktree
 ```
 
-## Mejores prácticas
+## Melhores Práticas
 
-### Qué hacer
+### O que fazer
 
-- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` son más claros que `session-2`
-- **Switch sessions explicitly**: Utilice siempre `/agileflow:session:resume` cambiar
-- **Commit before switching**: asegúrese de que el trabajo se guarde antes de cambiar de sesión
-- **End sessions when done**: Limpiar árboles de trabajo para ahorrar espacio en disco
+- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` são mais claros do que `session-2`
+- **Switch sessions explicitly**: Sempre use `/agileflow:session:resume` mudar
+- **Commit before switching**: certifique-se de que o trabalho seja salvo antes de alterar as sessões
+- **End sessions when done**: Limpe as árvores de trabalho para economizar espaço em disco
 
-### No hacer
+### O que não fazer
 
-- **Don't manually cd**: Usar `/add-dir` permanecer en la misma conversación de Claude
-- **Don't disable boundaries casually**: Previenen la contaminación cruzada accidental
-- **Don't create too many sessions**: Mantenlo manejable (se recomienda 3-5 como máximo)
+- **Don't manually cd**: Usar `/add-dir` permanecer na mesma conversa de Claude
+- **Don't disable boundaries casually**: Eles evitam a contaminação cruzada acidental
+- **Don't create too many sessions**: Mantenha-o gerenciável (3-5 no máximo recomendado)
 
-## Solución de problemas
+## Solução de problemas
 
-### Error "Edición bloqueada"
+### Erro "Editar bloqueado"
 
-**Cause**: Estás intentando editar un archivo fuera de la sesión activa.
+**Cause**: você está tentando editar um arquivo fora da sessão ativa.
 
 **Solution**:
 ```
 /agileflow:session:resume
 ```
-Seleccione la sesión correcta, luego ejecute el `/add-dir` comando mostrado.
+Selecione a sessão correta e execute o `/add-dir` comando mostrado.
 
-### Sesión no encontrada
+### Sessão não encontrada
 
-**Cause**: El directorio del árbol de trabajo fue eliminado o movido.
+**Cause**: o diretório da árvore de trabalho foi excluído ou movido.
 
 **Solution**:
 ```bash
@@ -323,9 +323,9 @@ ls ../project-{name}
 node .agileflow/scripts/session-manager.js delete {id}
 ```
 
-### Conflictos del árbol de trabajo de Git
+### Conflitos da árvore de trabalho do Git
 
-**Cause**: La rama ya está desprotegida en otro árbol de trabajo.
+**Cause**: Ramificação já retirada em outra árvore de trabalho.
 
 **Solution**:
 ```bash
@@ -336,8 +336,8 @@ git worktree list
 git worktree remove ../project-{name}
 ```
 
-## Funciones relacionadas
+## Recursos relacionados
 
-- [Control de daños](/docs/features/damage-control) - Protección de archivos adicional
-- [Contexto compacto](/docs/features/compact-context) - Preservación del contexto entre sesiones.
-- [Experiencia del agente](/docs/features/agent-expertise-system) - Agentes especializados para sesiones.
+- [Controle de Danos](/docs/features/damage-control) - Proteção adicional de arquivos
+- [Contexto Compacto](/docs/features/compact-context) - Preservação do contexto entre sessões
+- [Agent Expertise](/docs/features/agent-expertise-system) - Agentes especializados para sessões

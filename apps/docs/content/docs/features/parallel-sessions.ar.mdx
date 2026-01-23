@@ -1,27 +1,27 @@
 ---
-title: Sesiones paralelas
-description: Trabaje en múltiples funciones simultáneamente con árboles de trabajo git aislados y protección de límites de sesión.
+title: الجلسات الموازية
+description: يمكنك العمل على ميزات متعددة في وقت واحد باستخدام أشجار عمل git المعزولة وحماية حدود الجلسة.
 ---
 
-# Sesiones paralelas
+# الجلسات الموازية
 
-Las sesiones paralelas le permiten trabajar en múltiples funciones, errores o experimentos simultáneamente sin cambiar de contexto. Cada sesión tiene su propio directorio aislado, rama git y protección de límites para evitar ediciones accidentales entre sesiones.
+تتيح لك الجلسات المتوازية العمل على ميزات أو أخطاء أو تجارب متعددة في وقت واحد دون الحاجة إلى تبديل السياق. تحتوي كل جلسة على دليلها المعزول وفرع git وحماية الحدود لمنع التعديلات غير المقصودة عبر الجلسات.
 
-## Descripción general
+## ملخص
 
-Cuando trabaja en proyectos complejos, a menudo necesita:
-- Corregir un error mientras una función está en progreso
-- Experimenta sin afectar tu trabajo principal
-- Revisar el código en una rama mientras se desarrolla en otra
+عند العمل في مشاريع معقدة، غالبًا ما تحتاج إلى:
+- إصلاح الخلل أثناء تقدم الميزة
+- قم بالتجربة دون التأثير على عملك الرئيسي
+- مراجعة التعليمات البرمجية في فرع واحد أثناء التطوير في فرع آخر
 
-Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usando **git worktrees**, cada uno rastreado por AgileFlow con protección automática de límites.
+تعمل الجلسات المتوازية على حل هذه المشكلة عن طريق إنشاء مساحات عمل معزولة باستخدام **git worktrees**، يتم تتبع كل منها بواسطة AgileFlow مع حماية الحدود التلقائية.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-overview.dark.svg" />
   <img alt="Parallel Sessions Overview" src="/images/docs/features/parallel-sessions-overview.light.svg" />
 </picture>
 
-## Características clave
+## الميزات الرئيسية
 
 | Feature | Description |
 |---------|-------------|
@@ -31,18 +31,18 @@ Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usand
 | **Easy Switching** | Switch sessions with `/add-dir` - stays in same terminal |
 | **Independent Context** | Each session maintains its own story and progress |
 
-## Cómo funciona
+## كيف يعمل
 
-### Arquitectura
+### بنيان
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-arch.dark.svg" />
   <img alt="Parallel Sessions Architecture" src="/images/docs/features/parallel-sessions-arch.light.svg" />
 </picture>
 
-### Gestión del estado de sesión
+### إدارة حالة الجلسة
 
-Las sesiones se rastrean en dos archivos:
+يتم تتبع الجلسات في ملفين:
 
 **Registry** (`.agileflow/sessions/registry.json`):
 ```json
@@ -79,9 +79,9 @@ Las sesiones se rastrean en dos archivos:
 }
 ```
 
-### Protección de límites
+### حماية الحدود
 
-El enlace de límite de sesión se ejecuta en cada operación de edición y escritura:
+يتم تشغيل خطاف حدود الجلسة في كل عملية تحرير وكتابة:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-boundary.dark.svg" />
@@ -100,18 +100,18 @@ const isAllowed =
   filePath === activeSession.path;
 ```
 
-## Comandos
+## الأوامر
 
-### Crear nueva sesión
+### إنشاء جلسة جديدة
 
 ```
 /agileflow:session:new
 ```
 
-Crea una nueva sesión paralela con opciones:
-- **Auto-create**: Genera `../project-{id}` con rama `session-{id}`
-- **Named**: Crea `../project-{name}` con apodo personalizado
-- **Existing branch**: Utiliza una rama git existente
+إنشاء جلسة متوازية جديدة مع الخيارات:
+- **Auto-create**: يولد `../project-{id}` مع فرع `session-{id}`
+- **Named**: يخلق `../project-{name}` مع اللقب المخصص
+- **Existing branch**: يستخدم فرع بوابة موجود
 
 **Output:**
 ```
@@ -128,13 +128,13 @@ To switch to this session, run:
   /add-dir ../project-bugfix
 ```
 
-### Cambiar de sesión
+### تبديل الجلسات
 
 ```
 /agileflow:session:resume
 ```
 
-Enumera todas las sesiones y proporciona el comando para cambiar:
+يسرد كافة الجلسات ويوفر الأمر للتبديل:
 
 ```
 Which session would you like to resume?
@@ -149,35 +149,35 @@ Which session would you like to resume?
   Start a fresh parallel workspace
 ```
 
-Después de la selección:
+بعد الاختيار:
 ```
 To switch to Session 2 "bugfix":
 
   /add-dir ../project-bugfix
 ```
 
-### Ver estado de la sesión
+### عرض حالة الجلسة
 
 ```
 /agileflow:session:status
 ```
 
-Muestra información de la sesión actual y todas las sesiones registradas.
+يعرض معلومات الجلسة الحالية وجميع الجلسات المسجلة.
 
-### Finalizar sesión
+### نهاية الجلسة
 
 ```
 /agileflow:session:end
 ```
 
-Finaliza la sesión actual y opcionalmente:
-- Fusiona los cambios nuevamente al principal
-- Elimina el árbol de trabajo
-- Limpia la rama
+يُنهي الجلسة الحالية واختياريًا:
+- يدمج التغييرات مرة أخرى إلى الرئيسي
+- حذف شجرة العمل
+- ينظف الفرع
 
-## Ejemplo de flujo de trabajo
+## مثال سير العمل
 
-### Iniciar una corrección de errores mientras el trabajo de funciones está en curso
+### بدء إصلاح الأخطاء أثناء عمل الميزة
 
 ```
 # You're working on Session 1 (main) with US-0042: User Auth API
@@ -213,11 +213,11 @@ User: /add-dir /home/user/project
 # Back in Session 1, boundary protection now blocks edits to ../project-bugfix
 ```
 
-## Configuración
+## إعدادات
 
-### Habilitación de la protección de límites de sesión
+### تمكين حماية حدود الجلسة
 
-Los enlaces de límites de sesión se configuran automáticamente cuando utiliza sesiones paralelas. se agregan a `.claude/settings.json`:
+يتم تكوين خطافات حدود الجلسة تلقائيًا عند استخدام جلسات متوازية. يتم إضافتهم إلى `.claude/settings.json`:
 
 ```json
 {
@@ -246,19 +246,19 @@ Los enlaces de límites de sesión se configuran automáticamente cuando utiliza
 }
 ```
 
-### Desactivar la protección de límites
+### تعطيل حماية الحدود
 
-Para trabajar entre sesiones sin restricciones:
+للعمل عبر الجلسات دون قيود:
 
 ```bash
 node .agileflow/scripts/session-manager.js clear-active
 ```
 
-Esto borra la sesión activa, permitiendo ediciones en cualquier directorio.
+يؤدي هذا إلى مسح الجلسة النشطة، مما يسمح بإجراء تعديلات على أي دليل.
 
-## CLI del administrador de sesiones
+## مدير الجلسة CLI
 
-El script del administrador de sesión proporciona control directo:
+يوفر البرنامج النصي لمدير الجلسة التحكم المباشر:
 
 ```bash
 # List all sessions
@@ -283,36 +283,36 @@ node .agileflow/scripts/session-manager.js create --nickname "feature"
 node .agileflow/scripts/session-manager.js delete 2 --remove-worktree
 ```
 
-## Mejores prácticas
+## أفضل الممارسات
 
-### Qué hacer
+### افعل
 
-- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` son más claros que `session-2`
-- **Switch sessions explicitly**: Utilice siempre `/agileflow:session:resume` cambiar
-- **Commit before switching**: asegúrese de que el trabajo se guarde antes de cambiar de sesión
-- **End sessions when done**: Limpiar árboles de trabajo para ahorrar espacio en disco
+- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` هي أوضح من `session-2`
+- **Switch sessions explicitly**: استخدم دائمًا `/agileflow:session:resume` للتبديل
+- **Commit before switching**: تأكد من حفظ العمل قبل تغيير الجلسات
+- **End sessions when done**: تنظيف أشجار العمل لتوفير مساحة القرص
 
-### No hacer
+### لا تفعل ذلك
 
-- **Don't manually cd**: Usar `/add-dir` permanecer en la misma conversación de Claude
-- **Don't disable boundaries casually**: Previenen la contaminación cruzada accidental
-- **Don't create too many sessions**: Mantenlo manejable (se recomienda 3-5 como máximo)
+- **Don't manually cd**: يستخدم `/add-dir` للبقاء في نفس محادثة كلود
+- **Don't disable boundaries casually**: تمنع التلوث العرضي
+- **Don't create too many sessions**: اجعلها قابلة للإدارة (يوصى بـ 3-5 كحد أقصى)
 
-## Solución de problemas
+## استكشاف الأخطاء وإصلاحها
 
-### Error "Edición bloqueada"
+### خطأ "تم حظر التعديل".
 
-**Cause**: Estás intentando editar un archivo fuera de la sesión activa.
+**Cause**: أنت تحاول تحرير ملف خارج الجلسة النشطة.
 
 **Solution**:
 ```
 /agileflow:session:resume
 ```
-Seleccione la sesión correcta, luego ejecute el `/add-dir` comando mostrado.
+حدد الجلسة الصحيحة، ثم قم بتشغيل `/add-dir` يظهر الأمر.
 
-### Sesión no encontrada
+### لم يتم العثور على الجلسة
 
-**Cause**: El directorio del árbol de trabajo fue eliminado o movido.
+**Cause**: تم حذف دليل شجرة العمل أو نقله.
 
 **Solution**:
 ```bash
@@ -323,9 +323,9 @@ ls ../project-{name}
 node .agileflow/scripts/session-manager.js delete {id}
 ```
 
-### Conflictos del árbol de trabajo de Git
+### تعارضات Git Worktree
 
-**Cause**: La rama ya está desprotegida en otro árbol de trabajo.
+**Cause**: تم سحب الفرع بالفعل في شجرة عمل أخرى.
 
 **Solution**:
 ```bash
@@ -336,8 +336,8 @@ git worktree list
 git worktree remove ../project-{name}
 ```
 
-## Funciones relacionadas
+## الميزات ذات الصلة
 
-- [Control de daños](/docs/features/damage-control) - Protección de archivos adicional
-- [Contexto compacto](/docs/features/compact-context) - Preservación del contexto entre sesiones.
-- [Experiencia del agente](/docs/features/agent-expertise-system) - Agentes especializados para sesiones.
+- [السيطرة على الأضرار](/docs/features/damage-control) - حماية إضافية للملفات
+- [سياق مدمج](/docs/features/compact-context) - الحفاظ على السياق عبر الجلسات
+- [خبرة الوكيل](/docs/features/agent-expertise-system) - وكلاء متخصصون للجلسات

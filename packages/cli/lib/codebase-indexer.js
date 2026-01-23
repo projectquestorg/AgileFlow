@@ -440,29 +440,29 @@ function buildIndex(projectRoot, options = {}) {
         tags,
       };
 
-      // Update tag index
+      // Update tag index (use Object.hasOwn to avoid prototype pollution)
       for (const tag of tags) {
-        if (!index.tags[tag]) {
+        if (!Object.hasOwn(index.tags, tag)) {
           index.tags[tag] = [];
         }
         index.tags[tag].push(relativePath);
       }
 
-      // Update symbol index
+      // Update symbol index (use Object.hasOwn to avoid prototype pollution with names like "constructor")
       for (const func of symbols.functions) {
-        if (!index.symbols.functions[func]) {
+        if (!Object.hasOwn(index.symbols.functions, func)) {
           index.symbols.functions[func] = [];
         }
         index.symbols.functions[func].push(relativePath);
       }
       for (const cls of symbols.classes) {
-        if (!index.symbols.classes[cls]) {
+        if (!Object.hasOwn(index.symbols.classes, cls)) {
           index.symbols.classes[cls] = [];
         }
         index.symbols.classes[cls].push(relativePath);
       }
       for (const exp of exports) {
-        if (!index.symbols.exports[exp]) {
+        if (!Object.hasOwn(index.symbols.exports, exp)) {
           index.symbols.exports[exp] = [];
         }
         index.symbols.exports[exp].push(relativePath);
@@ -639,11 +639,11 @@ function updateIndex(projectRoot, options = {}) {
 
     for (const [filePath, fileData] of Object.entries(existingIndex.files)) {
       for (const tag of fileData.tags || []) {
-        if (!existingIndex.tags[tag]) existingIndex.tags[tag] = [];
+        if (!Object.hasOwn(existingIndex.tags, tag)) existingIndex.tags[tag] = [];
         existingIndex.tags[tag].push(filePath);
       }
       for (const exp of fileData.exports || []) {
-        if (!existingIndex.symbols.exports[exp]) existingIndex.symbols.exports[exp] = [];
+        if (!Object.hasOwn(existingIndex.symbols.exports, exp)) existingIndex.symbols.exports[exp] = [];
         existingIndex.symbols.exports[exp].push(filePath);
       }
     }

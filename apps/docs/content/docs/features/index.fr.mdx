@@ -1,0 +1,149 @@
+---
+title: Caractéristiques
+description: Découvrez les fonctionnalités AgileFlow pour protéger et automatiser votre flux de développement.
+---
+
+# Caractéristiques
+
+AgileFlow inclut des fonctionnalités puissantes pour protéger votre base de code, automatiser les flux de travail et maintenir la productivité de votre équipe.
+
+## Fonctionnalités principales
+
+### Système de compétences
+
+Créez, gérez et améliorez continuellement les invites d'IA personnalisées qui tirent parti de vos commentaires.
+
+- **Research-backed creation** - Généré à partir de documents Web, de la documentation locale et de votre base de code
+- **Cookbook workflows** - Plusieurs guides spécifiques à des cas d'utilisation dans une seule compétence
+- **Self-improving** - Les compétences apprennent de vos corrections et s'affinent automatiquement
+- **MCP integration** - Connectez-vous aux serveurs Model Context Protocol pour accéder aux outils
+- **Team shareable** - S'engager à git et partager les connaissances institutionnelles
+
+[En savoir plus sur les compétences](/docs/features/skills)
+
+### Système d'expertise des agents
+
+Activez des agents auto-améliorés qui maintiennent la connaissance du domaine et accélèrent l’exécution des tâches.
+
+- **Expertise files** - Les agents maintiennent des modèles mentaux de leur domaine
+- **Three-step workflow** - Planifier (avec expertise) → Construire → Auto-amélioration
+- **Automatic learning** - Expertise updates as agents work and make changes
+- **Validation & metrics** - Des outils pour garantir que l'expertise reste précise et à jour
+- **Focused domains** - Connaissances spécialisées en matière de bases de données, d'API, d'interface utilisateur, de tests, de CI/CD, etc.
+
+[En savoir plus sur l'expertise des agents](/docs/features/agent-expertise-system)
+
+### Séances parallèles
+
+Travaillez simultanément sur plusieurs fonctionnalités, bugs ou expériences avec des espaces de travail isolés et une protection des limites.
+
+- **Git worktrees** - Chaque session a son propre répertoire et sa propre branche
+- **Boundary protection** - Les hooks d'édition/écriture empêchent les modifications accidentelles entre sessions
+- **Easy switching** - Utiliser `/add-dir` changer de session dans le même terminal
+- **Session tracking** - AgileFlow suit toutes les sessions avec leur statut et leur activité
+- **Independent context** - Chaque session maintient sa propre histoire et sa propre progression
+
+[En savoir plus sur les sessions parallèles](/docs/features/parallel-sessions)
+
+---
+
+## Automation
+
+### Mode boucle
+
+Exécutez Claude de manière autonome avec une exécution continue des tâches jusqu'à leur achèvement.
+
+- **Autonomous execution** - Claude accomplit des tâches sans interruption
+- **Configurable limits** - Set iteration limits and timeouts
+- **Progress tracking** - Voyez ce qui se passe à chaque étape
+- **Safe fallbacks** - Les contrôles de sécurité intégrés empêchent les boucles incontrôlables
+
+[En savoir plus sur le mode boucle](/docs/features/loop-mode)
+
+### Mode visuel
+
+Laissez Claude voir et interagir avec les interfaces visuelles via des captures d'écran et l'automatisation du navigateur.
+
+- **Screenshot analysis** - Claude peut analyser le contenu visuel
+- **Browser automation** - Intégration de dramaturge pour les tests Web
+- **UI verification** - Valider automatiquement les changements visuels
+- **Cross-platform** - Fonctionne sur n'importe quel système d'exploitation avec prise en charge du navigateur
+
+[En savoir plus sur le mode visuel](/docs/features/visual-mode)
+
+### Préservation du contexte compact
+
+Préservez les connaissances et l’état critiques des agents pendant le compactage automatique du contexte.
+
+- **Context-aware compaction** - Règles critiques préservées lorsque Claude Code compresse le contexte
+- **Priority-based preservation** - Agents critiques toujours préservés
+- **State continuity** - Histoire actuelle, bloqueurs et progrès maintenus
+- **Long conversation support** - Concentration soutenue des agents tout au long des journées de travail
+- **Zero-overhead** - Automatic, no manual configuration needed
+
+[En savoir plus sur le contexte compact](/docs/features/compact-context)
+
+---
+
+## Configuration et sécurité
+
+### Système de configuration
+
+9 agents spécialisés pour mettre en place et personnaliser votre workflow de développement.
+
+- **Git setup** - Initialiser le référentiel et les connexions à distance
+- **Hooks system** - Automatisation événementielle (SessionStart, PreCompact, Stop)
+- **Status line** - Barre d'état personnalisée dans Claude Code
+- **Archival** - Gérer automatiquement la taille du fichier status.json
+- **CI/CD** - Tests automatisés avec GitHub Actions, GitLab, CircleCI
+- **Attribution** - Contrôler la divulgation de l'IA dans les commits git
+- **And more** - Contexte PreCompact, vérification, gestion des tokens
+
+[En savoir plus sur la configuration](/docs/features/configuration)
+
+### Intégrations IDE
+
+Installez et configurez AgileFlow pour votre IDE préféré avec l'installation automatique des commandes, des agents et des compétences.
+
+- **Multiple IDEs** - Claude Code, Curseur, Windsurf, OpenAI Codex CLI
+- **Auto-detection** - Détectez quels IDE sont configurés dans votre projet
+- **Damage Control** - Optional safety system for Claude Code
+- **Dynamic content** - Commandes et agents injectés automatiquement lors de l'installation
+- **Multi-IDE support** - Utilisez le même projet sur plusieurs IDE
+
+[En savoir plus sur les intégrations IDE](/docs/features/ide-integrations)
+
+### Contrôle des dégâts
+
+Protégez votre base de code des commandes destructrices à l'aide des hooks PreToolUse.
+
+- **Bash command validation** - Bloquez les schémas dangereux comme `rm -rf /`, `git push --force`
+- **File access control** - Protect secrets, keys, and critical files
+- **Customizable rules** - Ajouter des modèles de protection spécifiques au projet
+- **Ask-first mode** - Exiger une confirmation pour les opérations à risque
+- **Three protection layers** - Validation des outils Bash, Edit et Write
+
+[En savoir plus sur le contrôle des dommages](/docs/features/damage-control)
+
+---
+
+## Référence rapide
+
+| Feature | Purpose | Get Started |
+|---------|---------|-------------|
+| **Skills** | Custom AI prompts that learn | `/agileflow:skill:create` |
+| **Agent Expertise** | Self-improving domain knowledge | Built-in |
+| **Parallel Sessions** | Work on multiple features | `/agileflow:session:new` |
+| **Loop Mode** | Autonomous task execution | `/agileflow:loop` |
+| **Visual Mode** | Screenshot and browser automation | `/agileflow:visual` |
+| **Compact Context** | Preserve state through compression | Built-in |
+| **Configuration** | Setup and customize workflow | `/agileflow:configure` |
+| **IDE Integrations** | Multi-IDE support | `npx agileflow setup` |
+| **Damage Control** | Block dangerous commands | `/agileflow:configure damagecontrol` |
+
+## Prochaines étapes
+
+1. **Start with Setup** - Courir `/agileflow:configure` pour monter votre projet
+2. **Enable Safety** - Configure Damage Control to protect your codebase
+3. **Learn Skills** - Créez des invites personnalisées pour votre flux de travail
+4. **Try Parallel Sessions** - Travailler sur plusieurs fonctionnalités simultanément

@@ -1,0 +1,731 @@
+---
+title: "Sistema de experiencia del agente"
+description: "Agentes de mejora personal que mantienen la experiencia en el dominio y aceleran la ejecución de tareas a través del conocimiento aprendido."
+---
+
+# Sistema de experiencia del agente
+
+El Sistema de Experiencia del Agente es un patrón donde los agentes mantienen **expertise files** (modelos mentales) de su dominio y actualizarlos automáticamente a medida que funcionan. Esto crea un sistema de aprendizaje de circuito cerrado que hace que los agentes sean más rápidos y precisos con el tiempo.
+
+## Descripción general
+
+### El problema resuelto
+
+Sin archivos de experiencia, cada sesión requiere la misma exploración:
+- El agente comienza de nuevo
+- Debe buscar la base del código para comprender la estructura.
+- Repite la exploración para cada tarea.
+- Nunca mejora ni aprende.
+
+Con archivos de experiencia, los agentes se vuelven más inteligentes:
+- Cargar modelo mental al inicio de la sesión
+- Salta la exploración y céntrate en construir
+- Aprende de cada tarea
+- Mejorar automáticamente a través de la superación personal
+
+### Beneficios clave
+
+| Aspect | Without Expertise | With Expertise |
+|--------|------------------|----------------|
+| **Speed** | Slow (must explore) | Fast (pre-loaded knowledge) |
+| **Accuracy** | Variable (depends on exploration) | Consistent (validated knowledge) |
+| **Learning** | None - forgets everything | Automatic - builds over time |
+| **Knowledge Reuse** | Zero - starts from scratch | Complete - leverages all learnings |
+| **Context Size** | Large (exploration + building) | Small (expertise + building) |
+
+## Cómo funciona
+
+El sistema de experiencia sigue un **three-step workflow**:
+
+### Paso 1: Planificar (con experiencia)
+
+```
+Load expertise.yaml → Validate against code → Create detailed plan
+```
+
+El agente:
+1. **Reads** el expediente de pericia (modelo mental del dominio)
+2. **Validates** compararlo con el código real (el código es la fuente de la verdad)
+3. **Plans** el trabajo basado en conocimientos validados
+
+**Example:**
+```yaml
+# expertise.yaml excerpt
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions
+      key_exports: [tables, relations]
+```
+
+El agente lee esto y sabe exactamente dónde están los archivos de esquema, omitiendo las búsquedas de directorio.
+
+### Paso 2: construir (ejecutar plan)
+
+```
+Execute changes → Capture diff → Validate result
+```
+
+El agente:
+1. **Executes** el plan de implementación
+2. **Captures** qué cambió (git diff)
+3. **Validates** el resultado funciona
+
+Resultado de ejemplo:
+```
+Modified files:
+- src/db/schema.ts
+- src/db/migrations/20250109_add_users.ts
+- src/db/queries/users.ts
+```
+
+### Paso 3: Superación personal (actualización de experiencia)
+
+```
+Analyze changes → Update expertise.yaml → Add learnings
+```
+
+El agente:
+1. **Analyzes** la diferencia de git
+2. **Updates** el archivo de experiencia con nuevos conocimientos
+3. **Adds** una entrada de aprendizajes
+
+**Example learnings entry:**
+```yaml
+learnings:
+  - date: 2025-01-09
+    insight: "User schema uses UUID for id field, not auto-increment"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/queries/users.ts
+    context: "US-0042: Add user authentication"
+```
+
+## Estructura del archivo de experiencia
+
+Cada dominio de agente tiene un `expertise.yaml` archivo que documenta:
+
+### 1. Metadatos
+```yaml
+domain: database           # Domain identifier
+last_updated: 2025-01-09  # When updated (helps detect staleness)
+version: 1.1              # Schema version (for future migrations)
+```
+
+### 2. Sección de Archivos
+Archivos clave que el agente necesita conocer:
+
+```yaml
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions (Drizzle)
+      key_exports: [tables, relations]
+      conventions: "Table names plural, columns snake_case"
+
+    - path: src/db/migrations/
+      purpose: Migration files
+      pattern: "YYYYMMDD_description.ts"
+```
+
+**Why this matters:** El agente sabe dónde están las cosas sin buscar.
+
+### 3. Sección de Relaciones
+Cómo se relacionan las entidades del dominio:
+
+```yaml
+relationships:
+  - parent: users
+    child: posts
+    type: one-to-many
+    key: "posts.user_id references users.id"
+
+  - parent: posts
+    child: comments
+    type: one-to-many
+    cascade: delete
+```
+
+**Why this matters:** El agente comprende el flujo de datos y las dependencias.
+
+### 4. Sección de Patrones
+Enfoques recurrentes a seguir:
+
+```yaml
+patterns:
+  - name: "Soft deletes"
+    description: "Use deleted_at timestamp instead of hard DELETE"
+    location: Tables with user data
+    example: "All timestamps use deleted_at, never remove rows"
+
+  - name: "Timestamp columns"
+    description: "All tables have created_at and updated_at"
+    location: Every table
+    convention: "Auto-managed by ORM or triggers"
+```
+
+**Why this matters:** El agente aplica patrones consistentes automáticamente.
+
+### 5. Sección de Convenciones
+Normas a seguir en el dominio:
+
+```yaml
+conventions:
+  - "Tables: lowercase, plural (users, posts, categories)"
+  - "Columns: lowercase, snake_case (first_name, created_at)"
+  - "Foreign keys: <table_singular>_id (user_id, post_id)"
+  - "Required columns: id, created_at, updated_at"
+  - "All queries use parameterized statements"
+  - "Migrations must be reversible (up and down)"
+```
+
+**Why this matters:** El agente mantiene la coherencia con el código existente.
+
+### 6. Sección de Aprendizajes
+Actualizado automáticamente mediante automejora:
+
+```yaml
+learnings:
+  - date: 2025-01-08
+    insight: "User model uses UUID primary key, not auto-increment"
+    files_affected: [src/db/schema.ts, src/db/queries/users.ts]
+    context: "US-0041: User authentication setup"
+
+  - date: 2025-01-09
+    insight: "Migrations use TypeORM decorators, not raw SQL"
+    files_affected: [src/db/migrations/]
+    context: "US-0042: Add user roles table"
+```
+
+**Why this matters:** El agente recuerda lo que aprendió y mejora con el tiempo.
+
+## Ejemplo completo de flujo de trabajo
+
+Aquí hay un flujo de trabajo real de principio a fin:
+
+### Solicitud inicial
+> "Agregar una tabla de sesiones para rastrear las sesiones de inicio de sesión de los usuarios"
+
+### Paso 1: Planificar
+
+El agente lee expert.yaml y sabe:
+- Los esquemas están en `src/db/schema.ts`
+- Las migraciones entran `src/db/migrations/`
+- Patrón: eliminaciones temporales con `deleted_at`
+- Convención: claves primarias UUID
+- Relaciones: las sesiones tienen muchos registros de auditoría
+
+**Plan created:**
+```markdown
+1. Add sessions table to src/db/schema.ts
+   - Columns: id (UUID), user_id (FK), token, expires_at, created_at, updated_at, deleted_at
+2. Create migration: src/db/migrations/20250109_add_sessions.ts
+3. Create query functions: src/db/queries/sessions.ts
+4. Add pattern to conventions: "Sessions use token field for validation"
+```
+
+### Paso 2: construir
+
+El agente ejecuta:
+1. Modifica `src/db/schema.ts` - agrega tabla de sesiones
+2. Crea un archivo de migración
+3. Crea utilidades de consulta.
+4. Valida con TypeScript
+
+Git diff muestra:
+```
+ src/db/schema.ts          | +12 lines
+ src/db/migrations/...ts   | +35 lines
+ src/db/queries/sessions.ts | +45 lines
+```
+
+### Paso 3: superación personal
+
+Experiencia en actualizaciones de agentes:
+
+```yaml
+# New entry added automatically
+files:
+  queries:
+    - path: src/db/queries/sessions.ts
+      purpose: Session query functions
+      new: true
+      created_date: 2025-01-09
+
+patterns:
+  - name: "Token-based sessions"
+    description: "Use token field for session validation, not auto-increment ID"
+    location: src/db/schema.ts (sessions table)
+    example: "Sessions stored with UUID token, validated on login"
+
+learnings:
+  - date: 2025-01-09
+    insight: "Session table implemented with UUID id, token field, and soft delete"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_add_sessions.ts
+      - src/db/queries/sessions.ts
+    context: "US-0045: Add session tracking"
+```
+
+**Result:** La próxima vez que el agente trabaje en sesiones, ya conocerá la estructura y los patrones.
+
+## Agentes expertos disponibles
+
+AgileFlow incluye experiencia en estos dominios:
+
+### Fase Piloto (MVP)
+- **Database** - Esquema, migraciones, consultas.
+- **API** - Comandos CLI, rutas, puntos finales
+- **UI** - Componentes, estilo, diseños.
+
+### Lanzamiento de la fase 1
+- **Testing** - Archivos de prueba, patrones, marcos.
+- **CI/CD** - Acciones de GitHub, Docker, implementación.
+- **DevOps** - Infraestructura, Kubernetes, monitorización.
+- **Security** - Autenticación, tokens, permisos.
+
+### Lanzamiento de la fase 2
+- **Documentation** - LÉAME, documentos API, guías
+- **Refactoring** - Limpieza y optimización de código.
+- **Performance** - Almacenamiento en caché, optimización, puntos de referencia
+- **Accessibility** - WCAG, todos los patrones
+
+### Lanzamiento de la fase 3+
+- **Mobile** - Reaccionar nativo, iOS, Android
+- **Integrations** - Webhooks, API, servicios de terceros
+- **Analytics** - Seguimiento, métricas, paneles de control.
+- **Monitoring** - Observabilidad, alerta.
+
+## Patrones de flujo de trabajo de tres pasos
+
+### Para un desarrollo completo de funciones
+
+Utilice el **full workflow** al implementar una característica completa:
+
+```bash
+# 1. Read the workflow prompt
+cat packages/cli/src/core/experts/database/workflow.md
+
+# 2. Make your request
+# "Add user authentication with sessions and password reset"
+
+# Agent automatically:
+# - Loads expertise.yaml
+# - Plans the feature
+# - Builds it
+# - Self-improves
+```
+
+### Para preguntas rápidas
+
+Utilice el **question prompt** para información:
+
+```bash
+# 1. Read the question prompt
+cat packages/cli/src/core/experts/database/question.md
+
+# 2. Ask your question
+# "Where are the migration files stored?"
+
+# Agent loads expertise and answers from domain knowledge
+```
+
+### Para actualizaciones manuales
+
+Utilice el **self-improve prompt** después de realizar cambios:
+
+```bash
+# 1. Make your code changes manually
+
+# 2. Read the self-improve prompt
+cat packages/cli/src/core/experts/database/self-improve.md
+
+# 3. Run self-improvement
+# Agent analyzes your changes and updates expertise.yaml
+```
+
+## Validación de experiencia
+
+Utilice el script de validación proporcionado para garantizar que los archivos de experiencia sean precisos:
+
+```bash
+# Validate all expertise files
+./scripts/validate-expertise.sh
+
+# Validate specific domain
+./scripts/validate-expertise.sh database
+
+# Expected output
+PASS  database
+PASS  api
+PASS  ui
+WARN  testing - stale (45 days since update)
+```
+
+### Comprobaciones de validación
+
+El validador comprueba:
+- **Schema** - Campos obligatorios presentes (dominio, última actualización, versión)
+- **Staleness** - Expediente no mayor a 30 días
+- **Size** - El archivo permanece enfocado (menos de 200 líneas)
+- **Learnings** - El agente ha mejorado a sí mismo al menos una vez.
+
+## Métricas de experiencia
+
+Supervise el estado de su sistema de experiencia:
+
+```bash
+# Show metrics dashboard
+./scripts/expertise-metrics.sh
+
+# Output as JSON (for logging)
+./scripts/expertise-metrics.sh --json
+
+# Output as CSV (for analysis)
+./scripts/expertise-metrics.sh --csv
+```
+
+### Métricas rastreadas
+
+```
+╔════════════════════════════════════════════════╗
+║        Agent Expert Metrics Dashboard          ║
+╚════════════════════════════════════════════════╝
+
+Summary
+─────────────────────────────────────────────────
+Total Experts:              15
+With Learnings:             12 (80%)
+Total Learnings Recorded:   48
+Avg File Size:              145 lines
+
+Staleness Distribution
+─────────────────────────────────────────────────
+Updated in last 7 days:     8
+8-30 days old:              4
+31-90 days old:             2
+90+ days old:               1
+
+Self-Improve Health
+─────────────────────────────────────────────────
+Good adoption: 12/15 agents learning
+Average learnings per expert: 3.2
+```
+
+### Métricas clave
+
+- **Self-Improve Rate** - % de agentes que han automejorado (objetivo: 100%)
+- **Average Learnings** - Acumulación de aprendizaje por experto (objetivo: 5+)
+- **Staleness** - Cuán actuales son los expedientes de pericia (objetivo: menos de 7 días)
+- **File Size** - Mantenga la experiencia enfocada (menos de 200 líneas cada una)
+
+## Superación personal automática
+
+El sistema puede actualizar automáticamente los archivos de experiencia según el trabajo realizado:
+
+### Cómo funciona
+
+```bash
+# Script runs as a session stop hook
+node scripts/auto-self-improve.js
+
+# Process:
+# 1. Detect which agent was active
+# 2. Analyze git diff for changes
+# 3. Generate learning summary
+# 4. Append to expertise.yaml
+```
+
+### Ejemplo de aprendizaje automático
+
+Si el agente modificó estos archivos:
+```
+src/db/schema.ts        # +10 lines
+src/db/migrations/...ts # +25 lines
+src/db/queries/users.ts # +30 lines
+```
+
+El sistema agrega automáticamente:
+```yaml
+learnings:
+  - date: 2025-01-09
+    auto_generated: true
+    insight: "Modified 3 database files: added user schema updates and queries"
+    files_touched:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_extend_users.ts
+      - src/db/queries/users.ts
+    context: "Session work - database domain"
+```
+
+## Crear un nuevo agente experto
+
+### 1. Crear directorio
+
+```bash
+mkdir -p packages/cli/src/core/experts/your-domain/
+```
+
+### 2. Copiar plantillas
+
+```bash
+cp packages/cli/src/core/experts/templates/expertise-template.yaml \
+   packages/cli/src/core/experts/your-domain/expertise.yaml
+
+cp packages/cli/src/core/experts/templates/question-template.md \
+   packages/cli/src/core/experts/your-domain/question.md
+
+cp packages/cli/src/core/experts/templates/self-improve-template.md \
+   packages/cli/src/core/experts/your-domain/self-improve.md
+
+cp packages/cli/src/core/experts/templates/workflow-template.md \
+   packages/cli/src/core/experts/your-domain/workflow.md
+```
+
+### 3. Personaliza experticia.yaml
+
+```yaml
+domain: your-domain
+last_updated: 2025-01-09
+version: 1.0
+
+files:
+  primary:
+    - path: src/your-domain/
+      purpose: Main domain code location
+
+  secondary:
+    - path: src/lib/your-domain/
+      purpose: Shared utilities
+
+relationships: []
+patterns: []
+conventions: []
+learnings: []
+```
+
+### 4. Actualizar el archivo del agente
+
+Modifique el archivo del agente principal para cargar experiencia:
+
+```markdown
+# At the top of your agent (FIRST ACTION)
+
+## FIRST ACTION: Load Expertise
+
+Read your expertise file at `packages/cli/src/core/experts/your-domain/expertise.yaml`.
+
+This contains your mental model of the domain, including:
+- Key file locations
+- Relationships between entities
+- Patterns to follow
+- Conventions to maintain
+```
+
+Y al final, ejecuta la mejora personal:
+
+```markdown
+## FINAL ACTION: Self-Improve
+
+Read `packages/cli/src/core/experts/your-domain/self-improve.md`
+
+Then analyze what you changed and update your expertise file.
+```
+
+## Mejores prácticas
+
+### HACER
+
+✅ **Validate expertise against code** - El código es fuente de verdad, la experiencia es memoria de trabajo
+✅ **Keep expertise focused** - Un dominio por archivo (menos de 200 líneas)
+✅ **Date all learnings** - Seguimiento de cuándo se descubrieron ideas
+✅ **Use specific file paths** - No digas "en algún lugar de src/", usa rutas exactas
+✅ **Remove stale information** - Eliminar entradas que ya no se aplican
+✅ **Run validation regularly** - `./scripts/validate-expertise.sh`
+
+### NO
+
+❌ **Trust expertise blindly** - Verifique siempre con el código real
+❌ **Mix domains** - Mantenga la experiencia en bases de datos separada de la experiencia en API
+❌ **Manually edit learnings** - Deja que la superación personal se encargue de ello.
+❌ **Keep outdated entries** - Eliminar conocimientos que ya no sean precisos.
+❌ **Skip validation** - La experiencia obsoleta perjudica más que ayuda
+❌ **Create huge files** - Dividir en múltiples dominios enfocados
+
+## Principios clave
+
+### 1. El código es fuente de verdad
+
+Los archivos de experiencia son modelos mentales, como cómo un ingeniero entiende un sistema. Son útiles pero no autoritarios.
+
+**Always validate against actual code** antes de confiar en la experiencia.
+
+```yaml
+# ✅ Good - validated against code
+# Confirmed: Database uses UUID primary keys in all tables
+# Checked: src/db/schema.ts line 45
+
+# ❌ Bad - speculative
+# Probably uses UUIDs
+# I think the database is PostgreSQL
+```
+
+### 2. La experiencia acelera, no reemplaza
+
+La experiencia ayuda a los agentes a trabajar más rápido al eliminar la exploración, pero los agentes aún deben validar los hallazgos.
+
+**Use expertise to skip the search, not to skip thinking.**
+
+### 3. El aprendizaje es automático
+
+No mantenga manualmente archivos de experiencia. Correr `self-improve.md` después de realizar cambios.
+
+**The system learns automatically if you use the workflow.**
+
+### 4. La experiencia está enfocada
+
+Cada experto se centra en UN dominio. No cree un "Experto en todo el frontend": cree un "Experto en componentes de React" o un "Experto en validación de formularios".
+
+**Narrow domains → Better focus → Faster learning**
+
+### 5. Problemas de señales de estancamiento
+
+Si la experiencia no se ha actualizado en 30 días, tampoco:
+- El dominio es estable (¡bien!)
+- El agente no se está utilizando (eliminarlo)
+- La experiencia es incorrecta (actualícela)
+
+**Use the validation script to monitor health.**
+
+## Diagrama de arquitectura
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/agent-expertise-arch.dark.svg" />
+  <img alt="Agent Expertise Architecture" src="/images/docs/features/agent-expertise-arch.light.svg" />
+</picture>
+
+> El flujo de trabajo de circuito cerrado: los expertos cargan conocimientos, los validan, construyen con ellos y aprenden automáticamente de lo que hacen.
+
+## Comparación: con y sin experiencia
+
+### Sin Experiencia (Agente Tradicional)
+
+```
+Session 1:
+├─ Search codebase structure (5 min)
+├─ Understand naming conventions (3 min)
+├─ Find database schema file (2 min)
+└─ Build feature (10 min)
+Total: 20 minutes
+
+Session 2: (Same task in different domain)
+├─ Search codebase structure (5 min) ← Repeat!
+├─ Understand naming conventions (3 min) ← Repeat!
+├─ Find database schema file (2 min) ← Repeat!
+└─ Build feature (10 min)
+Total: 20 minutes ← No improvement
+```
+
+### Con experiencia (agente de mejora personal)
+
+```
+Session 1:
+├─ Load expertise.yaml (instant)
+├─ Validate against code (1 min)
+├─ Build feature (10 min)
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 13 minutes
+
+Session 2: (Same task in same domain)
+├─ Load expertise.yaml (instant) ← Faster exploration
+├─ Validate against code (instant) ← Already knows structure
+├─ Build feature (9 min) ← Slightly faster, better patterns
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 11 minutes ← Improvement!
+
+Session 10: (Regular work in domain)
+├─ Load expertise.yaml (instant)
+├─ No validation needed (already verified)
+├─ Build feature (8 min) ← Experts apply patterns automatically
+├─ Self-improve (1 min) ← Minimal updates
+└─ Save learnings
+Total: 9 minutes ← Continuous improvement
+```
+
+## Solución de problemas
+
+### El archivo de experiencia está obsoleto
+
+**Problem:** Última actualización hace más de 45 días
+
+**Solution:**
+1. Leer el expediente de pericia
+2. Verificar el estado actual del código
+3. Actualice cualquier entrada inexacta
+4. Ejecutar validación: `./scripts/validate-expertise.sh domain`
+
+### No se registraron aprendizajes
+
+**Problem:** El agente nunca ha mejorado
+
+**Cause:** No se siguieron los pasos del flujo de trabajo o no se ejecutó la mejora automática
+
+**Solution:**
+1. Ejecute el trabajo utilizando el flujo de trabajo completo
+2. Asegúrese de que se complete el paso de mejora personal
+3. Consulte experticia.yaml para ver la entrada de nuevos aprendizajes
+
+### El archivo es demasiado grande (>200 líneas)
+
+**Problem:** El archivo de experiencia creció demasiado
+
+**Cause:** El dominio es demasiado amplio o se agregaron entradas redundantes
+
+**Solution:**
+1. Dividir en múltiples archivos enfocados
+2. Eliminar entradas duplicadas/obsoletas
+3. Mantenga solo la información esencial
+
+### La experiencia no coincide con el código
+
+**Problem:** La información del archivo de experiencia es incorrecta
+
+**Cause:** El código cambió sin actualizar la experiencia, o la experiencia nunca fue precisa
+
+**Solution:**
+1. Ejecutar validación: `./scripts/validate-expertise.sh`
+2. Corregir manualmente entradas inexactas
+3. Configure el proceso para detectar esto antes
+4. Ejecute la mejora personal después de la próxima sesión de trabajo
+
+## Investigación y lectura adicional
+
+Este sistema se basa en la **Agent Expert pattern** de:
+
+- **Source:** Curso de codificación agente táctica de IndyDevDan
+- **Lesson:** 13 - Agentes expertos: finalmente, agentes que realmente aprenden
+- **Concept:** Agentes que mantienen bases de conocimiento externas para la ejecución acelerada de tareas.
+
+El patrón reconoce que:
+1. Los agentes que exploran todo en cada sesión son ineficientes
+2. El conocimiento persistente (archivos de experiencia) acelera drásticamente el trabajo
+3. Los sistemas de mejora automática aprenden y mejoran con el tiempo
+4. Los dominios enfocados crean un aprendizaje sostenible
+
+Consulte la documentación de investigación para conocer la teoría detallada y los patrones de implementación.
+
+## Resumen
+
+El Agent Expertise System permite a los agentes mejorar a través de:
+
+1. **Expertise Files** - Modelos mentales de cada dominio.
+2. **Three-Step Workflow** - Planificar → Construir → Automejorar
+3. **Automatic Learning** - Actualizaciones de experiencia a medida que trabajan los agentes.
+4. **Validation & Metrics** - Herramientas para garantizar la calidad.
+5. **Focused Domains** - Conocimientos especializados para cada área.
+
+Este sistema de aprendizaje de circuito cerrado hace que los agentes sean más rápidos, más precisos y cada vez más valiosos a medida que acumulan conocimiento del dominio con el tiempo.
+

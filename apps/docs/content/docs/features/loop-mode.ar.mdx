@@ -1,0 +1,372 @@
+---
+title: وضع الحلقة
+description: معالجة مستقلة للقصة باستخدام Ralph Loop لإكمال الملحمة دون تدخل
+---
+
+# وضع الحلقة
+
+يتيح وضع Loop معالجة القصة بشكل مستقل من خلال AgileFlow **Ralph Loop** نظام. تم تسميته على اسم نمط "Ralph Wiggum" من بحث Anthropic حول سير العمل الوكيل، وهو يعالج القصص تلقائيًا في ملحمة دون تدخل يدوي.
+
+يتم تنشيط وضع الحلقة من خلال [`/ Agileflow:babysit`](/commands/babysit) الأمر مع المعلمات الخاصة. يقوم Babysit بتنسيق العملية برمتها بينما يتولى Ralph Loop عملية التشغيل الآلي.
+
+## ملخص
+
+عند التمكين، وضع الحلقة:
+
+1. يختار القصة "الجاهزة" الأولى من الملحمة
+2. يضع علامة "in_progress" عليه ويبدأ التنفيذ
+3. عندما يتوقف كلود، يقوم بإجراء الاختبارات تلقائيًا
+4. إذا نجحت الاختبارات → يشير إلى اكتمال القصة، فسيتم تحميل القصة التالية
+5. يستمر حتى اكتمال الملحمة أو الوصول إلى الحد الأقصى من التكرارات
+
+وهذا يتيح **overnight batch processing** من الملاحم المحددة جيدًا مع معايير قبول واضحة.
+
+## بداية سريعة
+
+```bash
+# Start loop mode for an epic
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+
+# Or initialize directly via script
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+```
+
+## كيف يعمل
+
+### هوك التوقف
+
+يستخدم وضع Loop نظام ربط الإيقاف الخاص بـ Claude Code. عندما توقف كلود عن الرد:
+
+1. ال `ralph-loop.js` يعمل البرنامج النصي تلقائيا
+2. يقوم بتنفيذ أمر الاختبار الذي تم تكوينه (الافتراضي: `npm test`)
+3. واستنادًا إلى النتائج، فإنه إما ينتقل إلى القصة التالية أو يطالب بإجراء إصلاحات
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/loop-mode-flow.dark.svg" />
+  <img alt="Loop Mode Flow" src="/images/docs/features/loop-mode-flow.light.svg" />
+</picture>
+
+### حالة الجلسة
+
+يتم تخزين تكوين الحلقة في `docs/09-agents/session-state.json`:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 3,
+    "max_iterations": 20,
+    "test_command": "npm test",
+    "mode": "normal"
+  }
+}
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
+| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MAX` | No | 20 | Maximum iterations before stopping |
+
+## أوامر سطر الأوامر
+
+```bash
+# Initialize loop for an epic
+node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# Check current loop status
+node .agileflow/scripts/ralph-loop.js --status
+
+# Stop the loop gracefully
+node .agileflow/scripts/ralph-loop.js --stop
+
+# Reset loop state completely
+node .agileflow/scripts/ralph-loop.js --reset
+
+# Run one iteration manually
+node .agileflow/scripts/ralph-loop.js --run
+```
+
+## أوضاع الحلقة
+
+### الوضع العادي (افتراضي)
+
+التحقق القياسي القائم على الاختبار:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop
+```
+
+- أشواط `npm test` بعد كل توقف كلود
+- ينجح إذا نجحت جميع الاختبارات
+- يفشل إذا فشل أي اختبار
+
+### الوضع المرئي
+
+بالنسبة للملاحم التي تركز على واجهة المستخدم والتي تتطلب التحقق من لقطة الشاشة:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+- الشيكات `screenshots/` دليل للصور
+- يجب أن تحتوي جميع لقطات الشاشة `verified-` بادئة
+- مفيد لتطوير مكونات واجهة المستخدم
+
+يرى [الوضع المرئي](/features/visual-mode) للحصول على التفاصيل.
+
+### وضع التغطية
+
+لمتطلبات تغطية الاختبار:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+- يقوم بإجراء الاختبارات مع تقارير التغطية
+- التحقق من أن التغطية تلبي الحد الأدنى (على سبيل المثال، 80%)
+- يفشل إذا انخفضت التغطية إلى ما دون الحد الأدنى
+
+## اختيار القصة
+
+يحدد Loop Mode القصص بترتيب الأولوية هذا:
+
+1. **Current story** - إذا كان هناك بالفعل قيد التقدم
+2. **Ready stories** - القصص ذات الحالة "جاهزة" (تم استيفاء جميع التبعيات)
+3. **Blocked stories** - تخطي حتى الافراج عنه
+
+يجب أن تحتوي القصص على:
+- معايير قبول واضحة
+- تم حل كافة التبعيات
+- تم ضبط الحالة على "جاهز" أو "معلق"
+
+## إعدادات
+
+### أمر الاختبار
+
+قم بتكوين أمر الاختبار في `agileflow-metadata.json`:
+
+```json
+{
+  "loop": {
+    "test_command": "npm test",
+    "coverage_threshold": 70,
+    "max_iterations": 20
+  }
+}
+```
+
+### إيقاف إعداد الخطاف
+
+يتطلب وضع الحلقة ربط الإيقاف `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agileflow/scripts/ralph-loop.js --run"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## متى يتم استخدام وضع الحلقة
+
+### جيد ل
+
+- ✅ ملاحم محددة جيدًا بقصص واضحة
+- ✅ التطوير القائم على الاختبار (تحدد الاختبارات "تم")
+- ✅ معالجة الدفعات لقصص متعددة بين عشية وضحاها
+- ✅ مهام التنفيذ المتكررة (نقاط النهاية والمكونات CRUD)
+- ✅ قصص بمعايير القبول الآلي
+
+### ليست جيدة ل
+
+- ❌العمل الاستكشافي بدون معايير قبول واضحة
+- ❌ قصص تتطلب مراجعة بشرية قبل المتابعة
+- ❌ عمل معقد متعدد المجالات يحتاج إلى تنسيق
+- ❌التنفيذ لأول مرة بدون أنماط
+- ❌ قصص ذات تبعيات خارجية (واجهات برمجة التطبيقات والخدمات)
+
+## مثال لسير العمل
+
+### 1. تحضير الملحمة
+
+التأكد من أن جميع القصص لها معايير قبول واضحة:
+
+```markdown
+## US-0015: Add User List Component
+
+**Acceptance Criteria:**
+- [ ] Component renders list of users from API
+- [ ] Loading state shown while fetching
+- [ ] Error state displayed on failure
+- [ ] Empty state when no users
+
+**Tests:** src/components/UserList.test.tsx
+```
+
+### 2. ابدأ وضع الحلقة
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=15
+```
+
+### 3. مراقبة التقدم
+
+التحقق من الحالة بشكل دوري:
+
+```bash
+node .agileflow/scripts/ralph-loop.js --status
+```
+
+الإخراج:
+```
+Loop Status:
+  Epic: EP-0042
+  Current Story: US-0017
+  Iteration: 5 of 15
+  Mode: normal
+  Stories Completed: 4
+  Stories Remaining: 3
+```
+
+### 4. التعامل مع الفشل
+
+في حالة فشل الاختبارات، يعرض Loop Mode حالات الفشل ويستمر في العمل:
+
+```
+❌ Tests failed for US-0017
+
+Failures:
+  - UserList.test.tsx: Expected 3 users, got 2
+
+Continue fixing or run /agileflow:babysit --stop to pause.
+```
+
+### 5. أكمل الملحمة
+
+عند اكتمال جميع القصص:
+
+```
+✅ Epic EP-0042 Complete!
+
+Summary:
+  - Stories Completed: 7
+  - Total Iterations: 12
+  - Time Elapsed: 2h 34m
+
+All tests passing. Ready for review.
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### الحلقة لا تبدأ
+
+1. التحقق من وجود حالة الجلسة:
+   ```bash
+   cat docs/09-agents/session-state.json
+   ```
+
+2. تحقق من تكوين خطاف الإيقاف:
+   ```bash
+   cat .claude/settings.json | grep -A5 "Stop"
+   ```
+
+3. التهيئة يدويًا:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --init --epic=EP-0042
+   ```
+
+### الاختبارات دائما تفشل
+
+1. قم بإجراء الاختبارات يدويًا أولاً:
+   ```bash
+   npm test
+   ```
+
+2. تحقق من أمر الاختبار في التكوين:
+   ```bash
+   cat docs/00-meta/agileflow-metadata.json | grep test_command
+   ```
+
+3. تأكد من وجود اختبارات للقصة الحالية
+
+### حلقة عالقة في نفس القصة
+
+1. التحقق من عدد التكرار:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+2. إذا اقتربت من الحد الأقصى للتكرارات، إما:
+   - إصلاح مشكلة الحظر
+   - تخطي القصة: تحديث الحالة إلى "محظور"
+   - زيادة الحد الأقصى: `--max=30`
+
+### التوقف بشكل غير متوقع
+
+تتوقف الحلقة عندما:
+- تم الوصول إلى الحد الأقصى من التكرارات
+- ملحمة كاملة
+- أمر التوقف اليدوي
+- خطأ فادح في تنفيذ الاختبار
+
+تحقق من السجلات للحصول على التفاصيل:
+```bash
+cat .agileflow/logs/ralph-loop.log
+```
+
+## أفضل الممارسات
+
+### 1. ابدأ بالملاحم الصغيرة
+
+اختبر وضع الحلقة على ملحمة مكونة من 3-5 قصص أولاً قبل دفعات أكبر.
+
+### 2. اكتب الاختبارات أولاً
+
+يعمل وضع Loop Mode بشكل أفضل مع TDD - تحدد الاختبارات متى "تنتهي" القصة.
+
+### 3. حافظ على تركيز القصص
+
+يجب أن تكتمل كل قصة في 1-3 تكرارات. قصص كبيرة ← المزيد من الإخفاقات.
+
+### 4. المراقبة بشكل دوري
+
+تحقق من الحالة كل 30-60 دقيقة خلال فترات التشغيل الطويلة.
+
+### 5. استخدم الوضع المرئي لواجهة المستخدم
+
+بالنسبة لعمل واجهة المستخدم، قم بتمكين الوضع المرئي للتعرف على مشكلات العرض التي قد تفوتها الاختبارات.
+
+## الميزات ذات الصلة
+
+- [الوضع المرئي](/features/visual-mode) - التحقق من لقطة الشاشة لتطوير واجهة المستخدم
+- [سياق مدمج](/features/compact-context) - الحفاظ على السياق خلال الجلسات الطويلة
+- [`/ Agileflow:babysit`](/commands/babysit) - الأمر المرشد الذي ينظم وضع الحلقة
+- [`/ Agileflow: التحقق`](/commands/verify) - التحقق من الاختبار اليدوي
+
+## بنيان
+
+يتكون وضع الحلقة من:
+
+| Component | Purpose |
+|-----------|---------|
+| `ralph-loop.js` | Main loop orchestration script |
+| `screenshot-verifier.js` | Visual Mode screenshot checking |
+| `session-state.json` | Loop configuration and state |
+| Stop hook | Claude Code integration point |
+
+يأتي اسم "رالف" من ورقة بحثية لـ Anthropic حول سير العمل الوكيل، حيث تم استخدام "Ralph Wiggum" كاسم رمزي لأنماط إكمال المهام المستقلة.

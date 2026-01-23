@@ -1,0 +1,404 @@
+---
+title: Damage Control
+description: Proteja sua base de código de comandos destrutivos usando ganchos PreToolUse
+---
+
+# Damage Control
+
+Damage Control is a safety system that prevents AI agents from running destructive or dangerous commands. It uses Claude Code's **PreToolUse hooks** para validar comandos antes da execução.
+
+## Início rápido
+
+```bash
+# Enable with interactive wizard
+/agileflow:configure damagecontrol
+
+# Or command line
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+
+# Then restart Claude Code (Cmd+Q / Ctrl+Q)
+```
+
+## Como funciona
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-flow.dark.svg" />
+  <img alt="Damage Control Flow" src="/images/docs/features/damage-control-flow.light.svg" />
+</picture>
+
+O Damage Control usa três ganchos separados:
+
+| Hook | File | Protects Against |
+|------|------|------------------|
+| **Bash** | `damage-control-bash.js` | Dangerous shell commands |
+| **Edit** | `damage-control-edit.js` | Edits to protected files |
+| **Write** | `damage-control-write.js` | Writes to protected locations |
+
+---
+
+## Camadas de proteção
+
+### Padrões de comando Bash
+
+**Automatically Blocked:**
+- Exclusões destrutivas: `rm -rf /`, `rm -rf ..`, exclusões recursivas
+- Forçar impulso: `git push --force`, `git push -f`
+- Reinicialização total: `git reset --hard`
+- Destruição do banco de dados: `DROP TABLE`, `TRUNCATE TABLE`, `DELETE FROM ... ;`
+- Operações de disco: `dd if=`, `mkfs.`, `fdisk`
+- Exposição de credenciais: `cat *.pem`, `cat id_rsa`
+- Forçar a morte: `kill -9`, `killall`, `pkill -9`
+- E mais 30 padrões
+
+**Requires Confirmation (Ask Patterns):**
+- Exclusões de banco de dados com WHERE: `DELETE FROM table WHERE ...`
+- Publicação: `npm publish`
+- Empurrando para principal: `git push origin main`
+- Exclusões da Cloud CLI: `aws delete`, `gcloud delete`, `az delete`
+- Atualizações do banco de dados: `UPDATE ... SET ... WHERE`
+- Removendo node_modules: `rm -rf node_modules`
+
+### Níveis de proteção de caminho
+
+| Level | Read | Write | Edit | Delete |
+|-------|------|-------|------|--------|
+| **Zero Access** | No | No | No | No |
+| **Read-Only** | Yes | No | No | No |
+| **No Delete** | Yes | Yes | Yes | No |
+
+**Zero Access Paths:**
+- Chaves SSH: `~/.ssh/`, `id_rsa`, `id_ed25519`
+- Credenciais de nuvem: `~/.aws/`, `~/.gnupg/`, `~/.config/gh/`
+- Segredos de produção: `.env.production`, `.env.local`, `.env.secrets`
+- Chaves privadas: `*.pem`, `*.key`, `credentials.json`
+
+**Read-Only Paths:**
+- Configuração do shell: `~/.bashrc`, `~/.zshrc`, `~/.gitconfig`
+- Bloquear arquivos: `package-lock.json`, `yarn.lock`
+- Sistema: `/etc/`
+
+**No Delete Paths:**
+- Núcleo do AgileFlow: `.agileflow/`, `.claude/`
+- Situação do projeto: `docs/09-agents/status.json`
+- Controle de origem: `.git/`
+- Raízes do projeto: `README.md`, `package.json`
+
+---
+
+## Guia de configuração
+
+### Pré-requisitos
+
+- AgileFlow v2.78.0+
+- Código Claude (mais recente)
+- `.agileflow` diretório instalado
+
+### Etapa 1: escolha o nível de proteção
+
+**Standard (Recommended)**
+- Apenas correspondência rápida de padrões
+- Latência de 0 ms adicionada
+- Mais de 40 padrões perigosos bloqueados
+- Perfeito para a maioria dos projetos
+
+**Enhanced**
+- Avaliação padrão + IA para ameaças desconhecidas
+- Latência de 50-100 ms adicionada
+- Melhor para código altamente sensível
+- Experimental feature
+
+**Minimal**
+- Somente proteção de caminho
+- Sem padrões de comando bash
+
+### Etapa 2: ativar
+
+```bash
+/agileflow:configure damagecontrol
+```
+
+Ou:
+
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+### Etapa 3: verificar
+
+```bash
+# Check patterns file
+ls -la .agileflow/config/damage-control-patterns.yaml
+
+# Check hooks configured
+grep -A 5 "PreToolUse" .claude/settings.json
+
+# Test (should be blocked)
+rm -rf /
+```
+
+### Etapa 4: reinicie o código Claude
+
+**Important:** Os ganchos só entram em vigor após a reinicialização.
+
+```bash
+# Complete quit (Cmd+Q / Ctrl+Q)
+# Wait 5 seconds
+# Reopen Claude Code
+```
+
+---
+
+## Arquitetura
+
+### Fluxo do sistema
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-arch.dark.svg" />
+  <img alt="Damage Control Architecture" src="/images/docs/features/damage-control-arch.light.svg" />
+</picture>
+
+### Exemplo de gancho Bash
+
+```javascript
+// Input: { command: "rm -rf /" }
+// Pattern: /\brm\s+-rf\s+/
+// Test: pattern.test("rm -rf /") = true
+// Result: BLOCKED (exit code 2)
+```
+
+### Editar exemplo de gancho
+
+```javascript
+// Input: { file_path: "/Users/me/.ssh/id_rsa" }
+// Protected: zeroAccessPaths: ["~/.ssh/"]
+// Test: path.startsWith(expandedPath)
+// Result: BLOCKED (exit code 2)
+```
+
+### Códigos de saída
+
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Allow | Tool executes normally |
+| 2 | Block | Tool execution prevented |
+
+### Filosofia de falha aberta
+
+Se o arquivo de padrões estiver corrompido ou ausente, os comandos serão **allowed** (não bloqueado). Isso garante que um sistema de segurança quebrado não bloqueie todas as operações.
+
+---
+
+## Configuração
+
+### Arquivo de padrões
+
+Localização: `.agileflow/config/damage-control-patterns.yaml`
+
+```yaml
+# Blocked bash commands
+bashToolPatterns:
+  - pattern: 'rm\s+-rf\s+/'
+    reason: "Recursive delete from root"
+  - pattern: 'git\s+push\s+--force'
+    reason: "Force push blocked"
+
+# Requires confirmation
+askPatterns:
+  - pattern: 'npm\s+publish'
+    reason: "Publishing to npm"
+  - pattern: 'git\s+push\s+origin\s+main'
+    reason: "Pushing to main"
+
+# Zero access (no read/write/edit)
+zeroAccessPaths:
+  - '~/.ssh/'
+  - '.env'
+
+# Read-only (can read, not modify)
+readOnlyPaths:
+  - '~/.bashrc'
+  - 'package-lock.json'
+
+# No delete (can read/write, not delete)
+noDeletePaths:
+  - '.agileflow/'
+  - '.git/'
+```
+
+### Adicionando padrões personalizados
+
+Edite o arquivo de padrões diretamente:
+
+```yaml
+# Add to bashToolPatterns
+bashToolPatterns:
+  # ... existing patterns ...
+  - pattern: 'my-dangerous-command'
+    reason: "Custom block reason"
+
+# Add to askPatterns
+askPatterns:
+  # ... existing patterns ...
+  - pattern: 'deploy\s+production'
+    reason: "Production deployment"
+```
+
+### Configuração de ganchos
+
+Em `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-bash.js"
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-edit.js"
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-write.js"
+        }]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Perguntas frequentes e solução de problemas
+
+### Perguntas Gerais
+
+**Q: Does Damage Control slow down commands?**
+
+R: Não, adiciona menos de 5 ms por comando. A correspondência de padrões é otimizada.
+
+**Q: Can I disable it temporarily?**
+
+R: Sim:
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+```
+Then restart Claude Code. Re-enable with `--enable=damagecontrol`.
+
+**Q: What if it blocks something that should be allowed?**
+
+R: Editar `.agileflow/config/damage-control-patterns.yaml`:
+1. Torne o padrão mais específico
+2. Mova-o de `bashToolPatterns` para `askPatterns`
+3. Remova-o se não for necessário
+
+Em seguida, reinicie o Claude Code.
+
+**Q: Does it protect against human mistakes too?**
+
+R: Sim. Todos os comandos passam por ganchos, sejam seus ou da IA.
+
+**Q: Can patterns be bypassed?**
+
+R: Não é fácil. Os padrões correspondem às sequências de comandos reais. Soluções alternativas simples como `r m -rf` criar erros de sintaxe.
+
+### Problemas de configuração
+
+**Q: Hooks aren't working after enabling.**
+
+R: Causa mais comum – você não reiniciou o Claude Code:
+1. Fechar completamente (Cmd+Q / Ctrl+Q)
+2. Aguarde 5 segundos
+3. Reabrir
+4. Teste com `rm -rf /`
+
+**Q: How do I know if it's working?**
+
+R: Teste um comando bloqueado:
+```bash
+rm -rf /
+# Should see: [BLOCKED] rm with absolute path
+```
+
+**Q: Can't find patterns file.**
+
+R: Crie:
+```bash
+mkdir -p .agileflow/config
+cp .agileflow/templates/damage-control-patterns.yaml .agileflow/config/
+```
+
+**Q: settings.json got corrupted.**
+
+R: Corrija:
+```bash
+cp .claude/settings.json .claude/settings.json.broken
+node .agileflow/scripts/agileflow-configure.js --migrate
+# If that fails:
+rm .claude/settings.json
+/agileflow:configure damagecontrol
+```
+
+### Matriz de solução de problemas
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Hooks don't run | Not restarted | Quit and restart Claude Code |
+| All commands blocked | Patterns too broad | Edit YAML, make patterns specific |
+| Valid command blocked | False positive | Move to askPatterns or remove |
+| Patterns file missing | Not created | Run `/agileflow:configure damagecontrol` |
+| JSON parse error | Invalid settings | Validate with `jq empty .claude/settings.json` |
+
+### Desativando
+
+**Temporarily disable:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+# Restart Claude Code
+```
+
+**Remove specific hook:**
+```bash
+jq 'del(.hooks.PreToolUse)' .claude/settings.json > tmp.json
+mv tmp.json .claude/settings.json
+# Restart Claude Code
+```
+
+**Re-enable:**
+```bash
+/agileflow:configure damagecontrol
+# Restart Claude Code
+```
+
+---
+
+## Melhores Práticas
+
+### O que fazer
+- Habilite o controle de danos em todos os projetos
+- Use proteção padrão (aprimorada é experimental)
+- Teste com `rm -rf /` após a configuração
+- Mantenha o arquivo de padrões no controle de versão
+- Revise as operações bloqueadas nos logs
+
+### O que não fazer
+- Não desative sem um bom motivo
+- Não crie padrões muito amplos (falsos positivos)
+- Não se esqueça de reiniciar após as alterações
+- Não ignore avisos de comandos bloqueados
+
+### Para equipes
+- Comprometer-se `.agileflow/config/damage-control-patterns.yaml`
+- Documente padrões personalizados com comentários
+- Teste padrões antes de implantar na equipe
+- Revise e atualize padrões periodicamente

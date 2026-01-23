@@ -1,0 +1,731 @@
+---
+title: "نظام الخبرة الوكيل"
+description: "وكلاء التحسين الذاتي الذين يحافظون على الخبرة في المجال ويسرعون تنفيذ المهام من خلال المعرفة المكتسبة"
+---
+
+# نظام الخبرة الوكيل
+
+نظام خبرة الوكيل هو النمط الذي يحافظ عليه الوكلاء **expertise files** (النماذج العقلية) لمجالهم وتحديثها تلقائيًا أثناء عملها. يؤدي هذا إلى إنشاء نظام تعليمي مغلق الحلقة يجعل الوكلاء أسرع وأكثر دقة بمرور الوقت.
+
+## ملخص
+
+### تم حل المشكلة
+
+بدون ملفات الخبرة، تتطلب كل جلسة الاستكشاف نفسه:
+- يبدأ الوكيل جديدًا
+- يجب البحث في قاعدة التعليمات البرمجية لفهم البنية
+- يكرر الاستكشاف لكل مهمة
+- لا يتحسن أو يتعلم أبدًا
+
+بفضل ملفات الخبرة، يصبح الوكلاء أكثر ذكاءً:
+- تحميل النموذج العقلي عند بداية الجلسة
+- تخطي الاستكشاف، والتركيز على البناء
+- تعلم من كل مهمة
+- التحسين تلقائيًا من خلال التحسين الذاتي
+
+### الفوائد الرئيسية
+
+| Aspect | Without Expertise | With Expertise |
+|--------|------------------|----------------|
+| **Speed** | Slow (must explore) | Fast (pre-loaded knowledge) |
+| **Accuracy** | Variable (depends on exploration) | Consistent (validated knowledge) |
+| **Learning** | None - forgets everything | Automatic - builds over time |
+| **Knowledge Reuse** | Zero - starts from scratch | Complete - leverages all learnings |
+| **Context Size** | Large (exploration + building) | Small (expertise + building) |
+
+## كيف يعمل
+
+يتبع نظام الخبرة أ **three-step workflow**:
+
+### الخطوة 1: التخطيط (مع الخبرة)
+
+```
+Load expertise.yaml → Validate against code → Create detailed plan
+```
+
+الوكيل:
+1. **Reads** ملف الخبرة (النموذج العقلي للمجال)
+2. **Validates** إنه ضد الكود الفعلي (الكود هو مصدر الحقيقة)
+3. **Plans** العمل على أساس المعرفة التحقق من صحتها
+
+**Example:**
+```yaml
+# expertise.yaml excerpt
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions
+      key_exports: [tables, relations]
+```
+
+يقرأ الوكيل هذا ويعرف بالضبط مكان وجود ملفات المخطط، ويتخطى عمليات البحث في الدليل.
+
+### الخطوة 2: البناء (تنفيذ الخطة)
+
+```
+Execute changes → Capture diff → Validate result
+```
+
+الوكيل:
+1. **Executes** خطة التنفيذ
+2. **Captures** ما الذي تغير (جيت ديف)
+3. **Validates** النتيجة تعمل
+
+نتيجة المثال:
+```
+Modified files:
+- src/db/schema.ts
+- src/db/migrations/20250109_add_users.ts
+- src/db/queries/users.ts
+```
+
+### الخطوة 3: تحسين الذات (تحديث الخبرة)
+
+```
+Analyze changes → Update expertise.yaml → Add learnings
+```
+
+الوكيل:
+1. **Analyzes** فرق جيت
+2. **Updates** ملف الخبرة بمعارف جديدة
+3. **Adds** مدخل التعلم
+
+**Example learnings entry:**
+```yaml
+learnings:
+  - date: 2025-01-09
+    insight: "User schema uses UUID for id field, not auto-increment"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/queries/users.ts
+    context: "US-0042: Add user authentication"
+```
+
+## هيكل ملف الخبرة
+
+يحتوي كل مجال وكيل على `expertise.yaml` توثيق الملف :
+
+### 1. البيانات الوصفية
+```yaml
+domain: database           # Domain identifier
+last_updated: 2025-01-09  # When updated (helps detect staleness)
+version: 1.1              # Schema version (for future migrations)
+```
+
+### 2. قسم الملفات
+الملفات الرئيسية التي يحتاج الوكيل إلى معرفتها:
+
+```yaml
+files:
+  schemas:
+    - path: src/db/schema.ts
+      purpose: Database table definitions (Drizzle)
+      key_exports: [tables, relations]
+      conventions: "Table names plural, columns snake_case"
+
+    - path: src/db/migrations/
+      purpose: Migration files
+      pattern: "YYYYMMDD_description.ts"
+```
+
+**Why this matters:** الوكيل يعرف مكان الأشياء دون البحث.
+
+### 3. قسم العلاقات
+كيفية ارتباط الكيانات في المجال:
+
+```yaml
+relationships:
+  - parent: users
+    child: posts
+    type: one-to-many
+    key: "posts.user_id references users.id"
+
+  - parent: posts
+    child: comments
+    type: one-to-many
+    cascade: delete
+```
+
+**Why this matters:** يفهم الوكيل تدفق البيانات والتبعيات.
+
+### 4. قسم الأنماط
+الأساليب المتكررة التي يجب اتباعها:
+
+```yaml
+patterns:
+  - name: "Soft deletes"
+    description: "Use deleted_at timestamp instead of hard DELETE"
+    location: Tables with user data
+    example: "All timestamps use deleted_at, never remove rows"
+
+  - name: "Timestamp columns"
+    description: "All tables have created_at and updated_at"
+    location: Every table
+    convention: "Auto-managed by ORM or triggers"
+```
+
+**Why this matters:** يقوم الوكيل بتطبيق الأنماط المتسقة تلقائيًا.
+
+### 5. قسم الاتفاقيات
+القواعد الواجب اتباعها في المجال:
+
+```yaml
+conventions:
+  - "Tables: lowercase, plural (users, posts, categories)"
+  - "Columns: lowercase, snake_case (first_name, created_at)"
+  - "Foreign keys: <table_singular>_id (user_id, post_id)"
+  - "Required columns: id, created_at, updated_at"
+  - "All queries use parameterized statements"
+  - "Migrations must be reversible (up and down)"
+```
+
+**Why this matters:** يحافظ الوكيل على الاتساق مع التعليمات البرمجية الموجودة.
+
+### 6. قسم الدروس
+التحديث التلقائي عن طريق التحسين الذاتي:
+
+```yaml
+learnings:
+  - date: 2025-01-08
+    insight: "User model uses UUID primary key, not auto-increment"
+    files_affected: [src/db/schema.ts, src/db/queries/users.ts]
+    context: "US-0041: User authentication setup"
+
+  - date: 2025-01-09
+    insight: "Migrations use TypeORM decorators, not raw SQL"
+    files_affected: [src/db/migrations/]
+    context: "US-0042: Add user roles table"
+```
+
+**Why this matters:** يتذكر الوكيل ما تعلمه، ويتحسن بمرور الوقت.
+
+## مثال سير العمل الكامل
+
+إليك سير عمل حقيقي من البداية إلى النهاية:
+
+### الطلب الأولي
+> "إضافة جدول جلسات لتتبع جلسات تسجيل دخول المستخدم"
+
+### الخطوة 1: التخطيط
+
+يقرأ الوكيل Expert.yaml ويعرف:
+- المخططات موجودة `src/db/schema.ts`
+- تدخل الهجرات `src/db/migrations/`
+- النمط: حذف ناعم مع `deleted_at`
+- الاتفاقية: مفاتيح UUID الأساسية
+- العلاقات: تحتوي الجلسات على العديد من سجلات التدقيق
+
+**Plan created:**
+```markdown
+1. Add sessions table to src/db/schema.ts
+   - Columns: id (UUID), user_id (FK), token, expires_at, created_at, updated_at, deleted_at
+2. Create migration: src/db/migrations/20250109_add_sessions.ts
+3. Create query functions: src/db/queries/sessions.ts
+4. Add pattern to conventions: "Sessions use token field for validation"
+```
+
+### الخطوة 2: البناء
+
+ينفذ الوكيل:
+1. يعدل `src/db/schema.ts` - يضيف جدول الجلسات
+2. ينشئ ملف الهجرة
+3. إنشاء أدوات مساعدة للاستعلام
+4. يتم التحقق باستخدام TypeScript
+
+يظهر فرق Git:
+```
+ src/db/schema.ts          | +12 lines
+ src/db/migrations/...ts   | +35 lines
+ src/db/queries/sessions.ts | +45 lines
+```
+
+### الخطوة 3: تحسين الذات
+
+خبرة تحديثات الوكيل:
+
+```yaml
+# New entry added automatically
+files:
+  queries:
+    - path: src/db/queries/sessions.ts
+      purpose: Session query functions
+      new: true
+      created_date: 2025-01-09
+
+patterns:
+  - name: "Token-based sessions"
+    description: "Use token field for session validation, not auto-increment ID"
+    location: src/db/schema.ts (sessions table)
+    example: "Sessions stored with UUID token, validated on login"
+
+learnings:
+  - date: 2025-01-09
+    insight: "Session table implemented with UUID id, token field, and soft delete"
+    files_affected:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_add_sessions.ts
+      - src/db/queries/sessions.ts
+    context: "US-0045: Add session tracking"
+```
+
+**Result:** في المرة القادمة التي يعمل فيها الوكيل على الجلسات، فإنه يعرف بالفعل البنية والأنماط.
+
+## خبراء الوكيل المتاحين
+
+يتضمن AgileFlow الخبرة في هذه المجالات:
+
+### المرحلة التجريبية (MVP)
+- **Database** - المخطط والهجرات والاستعلامات
+- **API** - أوامر CLI والطرق ونقاط النهاية
+- **UI** - المكونات والتصميم والتخطيطات
+
+### طرح المرحلة الأولى
+- **Testing** - اختبار الملفات والأنماط والأطر
+- **CI/CD** - إجراءات جيثب، عامل الميناء، النشر
+- **DevOps** - البنية التحتية، Kubernetes، المراقبة
+- **Security** - المصادقة، الرموز، الأذونات
+
+### طرح المرحلة الثانية
+- **Documentation** - التمهيدي، مستندات API، الأدلة
+- **Refactoring** - تنظيف التعليمات البرمجية والتحسين
+- **Performance** - التخزين المؤقت، والتحسين، والمعايير
+- **Accessibility** - WCAG، أنماط a11y
+
+### المرحلة 3+ الطرح
+- **Mobile** - رد الفعل الأصلي، iOS، أندرويد
+- **Integrations** - خطافات الويب وواجهات برمجة التطبيقات وخدمات الطرف الثالث
+- **Analytics** - التتبع والمقاييس ولوحات المعلومات
+- **Monitoring** - الملاحظة والتنبيه
+
+## أنماط سير العمل من ثلاث خطوات
+
+### لتطوير الميزات الكاملة
+
+استخدم **full workflow** عند تنفيذ ميزة كاملة:
+
+```bash
+# 1. Read the workflow prompt
+cat packages/cli/src/core/experts/database/workflow.md
+
+# 2. Make your request
+# "Add user authentication with sessions and password reset"
+
+# Agent automatically:
+# - Loads expertise.yaml
+# - Plans the feature
+# - Builds it
+# - Self-improves
+```
+
+### للأسئلة السريعة
+
+استخدم **question prompt** للحصول على معلومات:
+
+```bash
+# 1. Read the question prompt
+cat packages/cli/src/core/experts/database/question.md
+
+# 2. Ask your question
+# "Where are the migration files stored?"
+
+# Agent loads expertise and answers from domain knowledge
+```
+
+### للحصول على التحديثات اليدوية
+
+استخدم **self-improve prompt** بعد إجراء التغييرات:
+
+```bash
+# 1. Make your code changes manually
+
+# 2. Read the self-improve prompt
+cat packages/cli/src/core/experts/database/self-improve.md
+
+# 3. Run self-improvement
+# Agent analyzes your changes and updates expertise.yaml
+```
+
+## التحقق من الخبرة
+
+استخدم البرنامج النصي للتحقق المقدم لضمان بقاء ملفات الخبرة دقيقة:
+
+```bash
+# Validate all expertise files
+./scripts/validate-expertise.sh
+
+# Validate specific domain
+./scripts/validate-expertise.sh database
+
+# Expected output
+PASS  database
+PASS  api
+PASS  ui
+WARN  testing - stale (45 days since update)
+```
+
+### فحوصات التحقق من الصحة
+
+يقوم المدقق بالتحقق من:
+- **Schema** - الحقول المطلوبة موجودة (المجال، آخر_تحديث، الإصدار)
+- **Staleness** - ملف لا يزيد عمره عن 30 يومًا
+- **Size** - يظل الملف مركزًا (أقل من 200 سطر)
+- **Learnings** - قام الوكيل بتحسين نفسه مرة واحدة على الأقل
+
+## مقاييس الخبرة
+
+مراقبة صحة نظام الخبرة الخاص بك:
+
+```bash
+# Show metrics dashboard
+./scripts/expertise-metrics.sh
+
+# Output as JSON (for logging)
+./scripts/expertise-metrics.sh --json
+
+# Output as CSV (for analysis)
+./scripts/expertise-metrics.sh --csv
+```
+
+### تتبع المقاييس
+
+```
+╔════════════════════════════════════════════════╗
+║        Agent Expert Metrics Dashboard          ║
+╚════════════════════════════════════════════════╝
+
+Summary
+─────────────────────────────────────────────────
+Total Experts:              15
+With Learnings:             12 (80%)
+Total Learnings Recorded:   48
+Avg File Size:              145 lines
+
+Staleness Distribution
+─────────────────────────────────────────────────
+Updated in last 7 days:     8
+8-30 days old:              4
+31-90 days old:             2
+90+ days old:               1
+
+Self-Improve Health
+─────────────────────────────────────────────────
+Good adoption: 12/15 agents learning
+Average learnings per expert: 3.2
+```
+
+### المقاييس الرئيسية
+
+- **Self-Improve Rate** - نسبة الوكلاء الذين قاموا بتحسين أنفسهم (الهدف: 100%)
+- **Average Learnings** - تراكم التعلم لكل خبير (الهدف: 5+)
+- **Staleness** - كيفية ملفات الخبرة الحالية (الهدف: أقل من 7 أيام)
+- **File Size** - حافظ على تركيز الخبرة (أقل من 200 سطر لكل منهما)
+
+## التحسين الذاتي التلقائي
+
+يمكن للنظام تحديث ملفات الخبرة تلقائيًا بناءً على العمل المنجز:
+
+### كيف يعمل
+
+```bash
+# Script runs as a session stop hook
+node scripts/auto-self-improve.js
+
+# Process:
+# 1. Detect which agent was active
+# 2. Analyze git diff for changes
+# 3. Generate learning summary
+# 4. Append to expertise.yaml
+```
+
+### مثال للتعلم التلقائي
+
+إذا قام الوكيل بتعديل هذه الملفات:
+```
+src/db/schema.ts        # +10 lines
+src/db/migrations/...ts # +25 lines
+src/db/queries/users.ts # +30 lines
+```
+
+يضيف النظام تلقائيًا:
+```yaml
+learnings:
+  - date: 2025-01-09
+    auto_generated: true
+    insight: "Modified 3 database files: added user schema updates and queries"
+    files_touched:
+      - src/db/schema.ts
+      - src/db/migrations/20250109_extend_users.ts
+      - src/db/queries/users.ts
+    context: "Session work - database domain"
+```
+
+## إنشاء خبير وكيل جديد
+
+### 1. إنشاء الدليل
+
+```bash
+mkdir -p packages/cli/src/core/experts/your-domain/
+```
+
+### 2. نسخ القوالب
+
+```bash
+cp packages/cli/src/core/experts/templates/expertise-template.yaml \
+   packages/cli/src/core/experts/your-domain/expertise.yaml
+
+cp packages/cli/src/core/experts/templates/question-template.md \
+   packages/cli/src/core/experts/your-domain/question.md
+
+cp packages/cli/src/core/experts/templates/self-improve-template.md \
+   packages/cli/src/core/experts/your-domain/self-improve.md
+
+cp packages/cli/src/core/experts/templates/workflow-template.md \
+   packages/cli/src/core/experts/your-domain/workflow.md
+```
+
+### 3. تخصيص الخبرة.yaml
+
+```yaml
+domain: your-domain
+last_updated: 2025-01-09
+version: 1.0
+
+files:
+  primary:
+    - path: src/your-domain/
+      purpose: Main domain code location
+
+  secondary:
+    - path: src/lib/your-domain/
+      purpose: Shared utilities
+
+relationships: []
+patterns: []
+conventions: []
+learnings: []
+```
+
+### 4. تحديث ملف الوكيل
+
+قم بتعديل ملف الوكيل الرئيسي لتحميل الخبرة:
+
+```markdown
+# At the top of your agent (FIRST ACTION)
+
+## FIRST ACTION: Load Expertise
+
+Read your expertise file at `packages/cli/src/core/experts/your-domain/expertise.yaml`.
+
+This contains your mental model of the domain, including:
+- Key file locations
+- Relationships between entities
+- Patterns to follow
+- Conventions to maintain
+```
+
+وفي النهاية، قم بتشغيل التحسين الذاتي:
+
+```markdown
+## FINAL ACTION: Self-Improve
+
+Read `packages/cli/src/core/experts/your-domain/self-improve.md`
+
+Then analyze what you changed and update your expertise file.
+```
+
+## أفضل الممارسات
+
+### يفعل
+
+✅ **Validate expertise against code** - الكود هو مصدر الحقيقة، والخبرة هي الذاكرة العاملة
+✅ **Keep expertise focused** - نطاق واحد لكل ملف (أقل من 200 سطر)
+✅ **Date all learnings** - تتبع متى تم اكتشاف الأفكار
+✅ **Use specific file paths** - لا تقل "في مكان ما في src/"، استخدم المسارات الدقيقة
+✅ **Remove stale information** - حذف الإدخالات التي لم تعد تنطبق
+✅ **Run validation regularly** - `./scripts/validate-expertise.sh`
+
+### لا
+
+❌ **Trust expertise blindly** - تحقق دائمًا من الكود الفعلي
+❌ **Mix domains** - احتفظ بخبرة قاعدة البيانات منفصلة عن خبرة واجهة برمجة التطبيقات (API).
+❌ **Manually edit learnings** - دع تحسين الذات يتعامل معها
+❌ **Keep outdated entries** - إزالة المعرفة التي لم تعد دقيقة
+❌ **Skip validation** - الخبرة التي لا معنى لها تؤذي أكثر مما تساعد
+❌ **Create huge files** - انقسم إلى مجالات متعددة مركزة
+
+## المبادئ الأساسية
+
+### 1. القانون هو مصدر الحقيقة
+
+ملفات الخبرة هي نماذج عقلية - مثل كيفية فهم المهندس للنظام. إنها مفيدة ولكنها ليست موثوقة.
+
+**Always validate against actual code** قبل الاعتماد على الخبرة.
+
+```yaml
+# ✅ Good - validated against code
+# Confirmed: Database uses UUID primary keys in all tables
+# Checked: src/db/schema.ts line 45
+
+# ❌ Bad - speculative
+# Probably uses UUIDs
+# I think the database is PostgreSQL
+```
+
+### 2. الخبرة تسرع، ولا تحل محل
+
+تساعد الخبرة الوكلاء على العمل بشكل أسرع من خلال القضاء على الاستكشاف، ولكن لا يزال يتعين على الوكلاء التحقق من صحة النتائج.
+
+**Use expertise to skip the search, not to skip thinking.**
+
+### 3. التعلم تلقائي
+
+لا تحتفظ بملفات الخبرة يدويًا. يجري `self-improve.md` بعد إجراء التغييرات.
+
+**The system learns automatically if you use the workflow.**
+
+### 4. تركز الخبرة
+
+يركز كل خبير على مجال واحد. لا تنشئ "All Frontend Expert" - بل أنشئ "React Component Expert" أو "Form Validation Expert".
+
+**Narrow domains → Better focus → Faster learning**
+
+### 5. مشاكل في إشارات الجمود
+
+إذا لم يتم تحديث الخبرة خلال 30 يومًا، إما:
+- النطاق مستقر (جيد!)
+- الوكيل غير مستخدم (قم بإزالته)
+- الخبرة خاطئة (قم بالتحديث)
+
+**Use the validation script to monitor health.**
+
+## مخطط الهندسة المعمارية
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/agent-expertise-arch.dark.svg" />
+  <img alt="Agent Expertise Architecture" src="/images/docs/features/agent-expertise-arch.light.svg" />
+</picture>
+
+> سير العمل ذو الحلقة المغلقة: يقوم الخبراء بتحميل المعرفة والتحقق من صحتها والبناء عليها والتعلم تلقائيًا مما يفعلونه.
+
+## المقارنة: مع مقابل بدون خبرة
+
+### بدون خبرة (الوكيل التقليدي)
+
+```
+Session 1:
+├─ Search codebase structure (5 min)
+├─ Understand naming conventions (3 min)
+├─ Find database schema file (2 min)
+└─ Build feature (10 min)
+Total: 20 minutes
+
+Session 2: (Same task in different domain)
+├─ Search codebase structure (5 min) ← Repeat!
+├─ Understand naming conventions (3 min) ← Repeat!
+├─ Find database schema file (2 min) ← Repeat!
+└─ Build feature (10 min)
+Total: 20 minutes ← No improvement
+```
+
+### مع الخبرة (عامل تحسين الذات)
+
+```
+Session 1:
+├─ Load expertise.yaml (instant)
+├─ Validate against code (1 min)
+├─ Build feature (10 min)
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 13 minutes
+
+Session 2: (Same task in same domain)
+├─ Load expertise.yaml (instant) ← Faster exploration
+├─ Validate against code (instant) ← Already knows structure
+├─ Build feature (9 min) ← Slightly faster, better patterns
+├─ Self-improve (2 min)
+└─ Save learnings
+Total: 11 minutes ← Improvement!
+
+Session 10: (Regular work in domain)
+├─ Load expertise.yaml (instant)
+├─ No validation needed (already verified)
+├─ Build feature (8 min) ← Experts apply patterns automatically
+├─ Self-improve (1 min) ← Minimal updates
+└─ Save learnings
+Total: 9 minutes ← Continuous improvement
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### ملف الخبرة قديم
+
+**Problem:** آخر تحديث منذ أكثر من 45 يومًا
+
+**Solution:**
+1. إقرأ ملف الخبرة
+2. تحقق من حالة الكود الحالية
+3. قم بتحديث أي إدخالات غير دقيقة
+4. تشغيل التحقق من الصحة: `./scripts/validate-expertise.sh domain`
+
+### لم يتم تسجيل الدروس
+
+**Problem:** لم يقم الوكيل بتحسين نفسه أبدًا
+
+**Cause:** لم يتم اتباع خطوات سير العمل أو لم يتم تشغيل التحسين الذاتي
+
+**Solution:**
+1. تشغيل العمل باستخدام سير العمل الكامل
+2. تأكد من اكتمال خطوة التحسين الذاتي
+3. تحقق من Expert.yaml لإدخال الدروس الجديدة
+
+### الملف كبير جدًا (> 200 سطر)
+
+**Problem:** نما ملف الخبرة كثيرًا
+
+**Cause:** النطاق واسع للغاية أو تمت إضافة إدخالات زائدة عن الحاجة
+
+**Solution:**
+1. تقسيم إلى ملفات مركزة متعددة
+2. إزالة الإدخالات المكررة/التي عفا عليها الزمن
+3. احتفظ بالمعلومات الأساسية فقط
+
+### الخبرة لا تتطابق مع الكود
+
+**Problem:** معلومات ملف الخبرة خاطئة
+
+**Cause:** تم تغيير الكود دون تحديث الخبرة، أو أن الخبرة لم تكن دقيقة على الإطلاق
+
+**Solution:**
+1. تشغيل التحقق من الصحة: `./scripts/validate-expertise.sh`
+2. إصلاح الإدخالات غير الدقيقة يدويًا
+3. قم بإعداد العملية للقبض على هذا في وقت سابق
+4. قم بتشغيل التحسين الذاتي بعد جلسة العمل التالية
+
+## البحث ومزيد من القراءة
+
+يعتمد هذا النظام على **Agent Expert pattern** من:
+
+- **Source:** دورة البرمجة التكتيكية للوكيل من IndyDevDan
+- **Lesson:** 13 - خبراء الوكلاء: أخيرًا، الوكلاء الذين يتعلمون فعليًا
+- **Concept:** يحافظ الوكلاء على قواعد معرفية خارجية لتسريع تنفيذ المهام
+
+يعترف النمط بما يلي:
+1. يستكشف الوكلاء كل شيء في كل جلسة غير فعالة
+2. Persistent knowledge (expertise files) dramatically accelerates work
+3. تتعلم أنظمة التحسين الذاتي وتتحسن بمرور الوقت
+4. المجالات المركزة تخلق التعلم المستدام
+
+راجع وثائق البحث للحصول على نظرية مفصلة وأنماط التنفيذ.
+
+## ملخص
+
+يتيح نظام خبرة الوكيل للوكلاء إمكانية التحسين الذاتي من خلال:
+
+1. **Expertise Files** - النماذج العقلية لكل مجال
+2. **Three-Step Workflow** - الخطة ← البناء ← التحسين الذاتي
+3. **Automatic Learning** - تحديثات الخبرة أثناء عمل الوكلاء
+4. **Validation & Metrics** - أدوات ضمان الجودة
+5. **Focused Domains** - المعرفة المتخصصة لكل مجال
+
+يعمل نظام التعلم ذو الحلقة المغلقة هذا على جعل الوكلاء أسرع وأكثر دقة وذو قيمة متزايدة حيث يقومون بتجميع المعرفة بالمجال بمرور الوقت.
+

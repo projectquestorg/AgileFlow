@@ -85,8 +85,6 @@ tmux set-option -t "$SESSION_NAME" mouse on
 tmux set-option -t "$SESSION_NAME" default-terminal "xterm-256color"
 
 # Sane scrolling - works properly with vim/nvim
-tmux bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'select-pane -t=; copy-mode -e; send-keys -M'"
-tmux bind-key -n WheelDownPane select-pane -t= \; send-keys -M
 
 # Detach with Ctrl+b d (default tmux behavior, NOT 'q'!)
 

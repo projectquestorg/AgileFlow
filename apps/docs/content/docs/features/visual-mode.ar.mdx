@@ -1,0 +1,388 @@
+---
+title: Visual Mode
+description: Screenshot verification system for UI development with verified-prefix protocol
+---
+
+# الوضع المرئي
+
+الوضع المرئي هو نظام للتحقق من لقطة الشاشة لتطوير واجهة المستخدم والذي يضمن مراجعة جميع المخرجات المرئية والموافقة عليها قبل وضع علامة على القصة مكتملة.
+
+## ملخص
+
+عند تطوير مكونات واجهة المستخدم، قد لا تتمكن الاختبارات وحدها من اكتشاف المشكلات المرئية مثل:
+- مشاكل التخطيط
+- تناقضات التصميم
+- قضايا التصميم استجابة
+- الانحدارات البصرية
+
+يعالج الوضع المرئي هذا الأمر من خلال المطالبة بجميع لقطات الشاشة **verified** (مسبق بـ `verified-`) قبل المتابعة.
+
+## كيف يعمل
+
+### بروتوكول البادئة التي تم التحقق منها
+
+1. أثناء تطوير واجهة المستخدم، يتم حفظ لقطات الشاشة في `screenshots/` دليل
+2. يتم حفظ لقطات الشاشة الجديدة بدون بادئة (على سبيل المثال، `login-form.png`)
+3. بعد المراجعة المرئية، تتم إعادة تسمية لقطات الشاشة المعتمدة بـ `verified-` بادئة
+4. يتحقق الوضع المرئي من أن جميع لقطات الشاشة تحتوي على `verified-` بادئة
+5. في حالة وجود أي لقطات شاشة لم يتم التحقق منها، تتوقف الحلقة مؤقتًا للمراجعة
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/visual-mode-protocol.dark.svg" />
+  <img alt="Verified Prefix Protocol" src="/images/docs/features/visual-mode-protocol.light.svg" />
+</picture>
+
+## بداية سريعة
+
+تمكين الوضع المرئي في وضع الحلقة:
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+أو قم بتشغيل أداة التحقق مباشرة:
+
+```bash
+node .agileflow/scripts/screenshot-verifier.js
+```
+
+## سير عمل لقطة الشاشة
+
+### 1. التقط لقطات الشاشة أثناء التطوير
+
+عند تنفيذ مكونات واجهة المستخدم، احفظ لقطات الشاشة:
+
+```typescript
+// In your test or component
+await page.screenshot({ path: 'screenshots/user-profile.png' });
+```
+
+أو يدويًا باستخدام أدوات تطوير المتصفح.
+
+### 2. قم بمراجعة لقطات الشاشة
+
+يتوقف الوضع المرئي مؤقتًا عند العثور على لقطات شاشة لم يتم التحقق منها:
+
+```
+⚠️ Visual Mode: Unverified screenshots found
+
+Unverified:
+  - screenshots/user-profile.png
+  - screenshots/settings-modal.png
+
+Please review these screenshots and rename with 'verified-' prefix
+when approved, or delete if issues found.
+```
+
+### 3. التحقق أو الإصلاح
+
+**If the screenshot looks correct:**
+```bash
+mv screenshots/user-profile.png screenshots/verified-user-profile.png
+```
+
+**If issues are found:**
+- إصلاح رمز واجهة المستخدم
+- أعد التقاط لقطة الشاشة
+- قم بالمراجعة مرة أخرى
+
+### 4. تابع
+
+بمجرد التحقق من جميع لقطات الشاشة، تستمر الحلقة تلقائيًا.
+
+## البرنامج النصي للتحقق
+
+### الاستخدام
+
+```bash
+# Check all screenshots
+node .agileflow/scripts/screenshot-verifier.js
+
+# Check specific directory
+node .agileflow/scripts/screenshot-verifier.js --dir=tests/screenshots
+
+# Verbose output
+node .agileflow/scripts/screenshot-verifier.js --verbose
+```
+
+### رموز الخروج
+
+| Code | Meaning |
+|------|---------|
+| 0 | All screenshots verified |
+| 1 | Unverified screenshots found |
+| 2 | Error during verification |
+
+### أمثلة الإخراج
+
+**All Verified:**
+```
+✅ Visual Mode: All screenshots verified
+
+Verified: 5
+  - verified-login-form.png
+  - verified-user-profile.png
+  - verified-settings-modal.png
+  - verified-dashboard.png
+  - verified-error-state.png
+```
+
+**Unverified Found:**
+```
+❌ Visual Mode: 2 unverified screenshots
+
+Verified: 3
+Unverified: 2
+  - new-feature.png
+  - updated-header.png
+
+Action required: Review and verify or delete unverified screenshots.
+```
+
+## إعدادات
+
+### في حالة الجلسة
+
+تكوين الوضع المرئي في `session-state.json`:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "mode": "visual",
+    "visual_config": {
+      "screenshots_dir": "screenshots",
+      "verified_prefix": "verified-",
+      "extensions": [".png", ".jpg", ".jpeg", ".webp"]
+    }
+  }
+}
+```
+
+### في البيانات الوصفية
+
+الإعدادات الافتراضية في `agileflow-metadata.json`:
+
+```json
+{
+  "visual_mode": {
+    "enabled": false,
+    "screenshots_dir": "screenshots",
+    "verified_prefix": "verified-",
+    "auto_cleanup": true
+  }
+}
+```
+
+### خيارات
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `screenshots_dir` | `screenshots` | Directory to scan for screenshots |
+| `verified_prefix` | `verified-` | Prefix required for verified screenshots |
+| `extensions` | `[".png", ".jpg", ".jpeg", ".webp"]` | Image file extensions to check |
+| `auto_cleanup` | `true` | Remove verified screenshots after epic completion |
+
+## التكامل مع وضع الحلقة
+
+يعمل الوضع المرئي كخطوة تحقق إضافية [وضع الحلقة](/features/loop-mode):
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/visual-mode-loop.dark.svg" />
+  <img alt="Visual Mode Loop Integration" src="/images/docs/features/visual-mode-loop.light.svg" />
+</picture>
+
+## متى تستخدم الوضع المرئي
+
+### جيد ل
+
+- ✅ تطوير مكونات واجهة المستخدم
+- ✅ تطبيقات نظام التصميم
+- ✅ عمل تخطيط سريع الاستجابة
+- ✅ منع الانحدار البصري
+- ✅ إمكانية الوصول إلى الشيكات البصرية
+- ✅ عمل الثيمات والتصميم
+
+### ليست جيدة ل
+
+- ❌ تطوير الواجهة الخلفية/واجهة برمجة التطبيقات (API).
+- ❌ عمليات ترحيل قاعدة البيانات
+- ❌ تكوين CI/CD
+- ❌ مميزات غير مرئية
+- ❌الاختبار الآلي لسير العمل فقط
+
+## أفضل الممارسات
+
+### 1. تسمية لقطة الشاشة المتسقة
+
+استخدم أسماء وصفية ومتسقة:
+
+```
+✅ Good:
+  - login-form-default.png
+  - login-form-error.png
+  - login-form-loading.png
+
+❌ Bad:
+  - screenshot1.png
+  - test.png
+  - final-final-v2.png
+```
+
+### 2. التقاط دول متعددة
+
+لقطة شاشة لجميع حالات المكونات:
+
+```typescript
+// Default state
+await page.screenshot({ path: 'screenshots/button-default.png' });
+
+// Hover state
+await button.hover();
+await page.screenshot({ path: 'screenshots/button-hover.png' });
+
+// Disabled state
+await page.setContent('<button disabled>Click</button>');
+await page.screenshot({ path: 'screenshots/button-disabled.png' });
+```
+
+### 3. قم بتضمين السياق
+
+لقطة شاشة كافية لفهم المكون:
+
+```typescript
+// Too narrow - just the button
+await button.screenshot({ path: 'screenshots/button.png' });
+
+// Better - button with surrounding context
+await page.screenshot({
+  path: 'screenshots/button-in-form.png',
+  clip: { x: 0, y: 100, width: 400, height: 200 }
+});
+```
+
+### 4. التنظيف بعد التحقق
+
+قم بإزالة لقطات الشاشة القديمة التي تم التحقق منها عند اكتمال القصص:
+
+```bash
+# Manual cleanup
+rm screenshots/verified-*.png
+
+# Or enable auto_cleanup in config
+```
+
+### 5. توثيق المظهر المتوقع
+
+أضف ملاحظات حول ما يجب أن تظهره لقطة الشاشة:
+
+```markdown
+## Screenshots
+
+### verified-login-form.png
+- Form with email and password fields
+- Blue submit button
+- "Forgot password?" link below
+- No error states visible
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### لم يتم الكشف عن لقطات الشاشة
+
+1. التحقق من مسار الدليل:
+   ```bash
+   ls screenshots/
+   ```
+
+2. التحقق من صحة امتدادات الملفات:
+   ```bash
+   file screenshots/*.png
+   ```
+
+3. تحقق من مسار التكوين في session-state.json
+
+### التحقق لا يعمل
+
+1. تأكد من تمكين الوضع المرئي:
+   ```bash
+   cat docs/09-agents/session-state.json | grep visual
+   ```
+
+2. التحقق من وضع الحلقة نشط:
+   ```bash
+   node .agileflow/scripts/ralph-loop.js --status
+   ```
+
+### إيجابيات كاذبة
+
+إذا تم وضع علامة على لقطات الشاشة بشكل غير صحيح:
+
+1. التحقق من تهجئة البادئة: `verified-` (لاحظ الواصلة)
+2. التحقق من وجود أحرف مخفية في اسم الملف
+3. التحقق من أن الملف هو في الواقع صورة
+
+## مثال لسير العمل
+
+### قصة واجهة المستخدم: إضافة مكون الصورة الرمزية للمستخدم
+
+**1. Story starts, Claude implements component:**
+```typescript
+// src/components/Avatar.tsx
+export function Avatar({ src, name, size = 'md' }) {
+  return (
+    <img
+      src={src}
+      alt={name}
+      className={`avatar avatar-${size}`}
+    />
+  );
+}
+```
+
+**2. Claude takes screenshots:**
+```bash
+screenshots/
+  avatar-small.png
+  avatar-medium.png
+  avatar-large.png
+  avatar-fallback.png
+```
+
+**3. Visual Mode pauses:**
+```
+⚠️ Visual Mode: 4 unverified screenshots
+
+Please review and verify:
+  - avatar-small.png
+  - avatar-medium.png
+  - avatar-large.png
+  - avatar-fallback.png
+```
+
+**4. You review and verify:**
+```bash
+# All look good
+for f in screenshots/avatar-*.png; do
+  mv "$f" "screenshots/verified-$(basename $f)"
+done
+```
+
+**5. Loop continues to next story**
+
+## الميزات ذات الصلة
+
+- [وضع الحلقة](/features/loop-mode) - معالجة القصة المستقلة
+- [السيطرة على الأضرار](/features/damage-control) - الحماية ضد العمليات التدميرية
+- [`/ Agileflow: التحقق`](/commands/verify) - أمر التحقق اليدوي
+
+## بنيان
+
+| Component | Purpose |
+|-----------|---------|
+| `screenshot-verifier.js` | Main verification script |
+| `ralph-loop.js` | Orchestrates Visual Mode checks |
+| `session-state.json` | Stores Visual Mode configuration |
+| `screenshots/` | Default screenshot directory |
+
+يتكامل الوضع المرئي مع خطاف الإيقاف الخاص بوضع Loop Mode لتوفير التحقق البصري جنبًا إلى جنب مع الاختبار الآلي.

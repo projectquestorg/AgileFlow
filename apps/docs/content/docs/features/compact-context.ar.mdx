@@ -1,0 +1,437 @@
+---
+title: الحفاظ على السياق المضغوط
+description: كيف يحافظ وكلاء AgileFlow على المعرفة الهامة أثناء ضغط السياق التلقائي
+---
+
+# الحفاظ على السياق المضغوط
+
+استخدام وكلاء AgileFlow **compact_context** التكوين للحفاظ على المعرفة الهامة والحالة عندما يقوم Claude Code بضغط سياق المحادثة تلقائيًا. تضمن هذه الميزة أن يحافظ الوكلاء على التركيز، ويستمرون في اتباع القواعد الأساسية، وتتبع الحالة الحالية حتى أثناء المحادثات الموسعة التي تؤدي إلى ضغط السياق.
+
+## المشكلة: فقدان السياق أثناء الضغط
+
+عندما تطول المحادثات، يقوم Claude Code تلقائيًا بضغط السياق ليظل ضمن الحدود الرمزية. هذا الضغط يمكن أن يسبب:
+
+- **Lost Rules**: ينسى الوكلاء القواعد السلوكية الهامة (على سبيل المثال، "تحميل الخبرة أولاً"، "التحقق من اجتياز الاختبارات قبل المراجعة")
+- **Lost State**: يفقد الوكلاء مسار العمل الحالي (ما هي القصة التي يعملون فيها، وما الذي يمنعهم، وما الذي تم إنجازه)
+- **Lost Priorities**: ينسى الوكلاء المهام العاجلة (على سبيل المثال، إلغاء حظر قصص AG-UI)
+- **Refocusing Delay**: يقوم الوكلاء بإهدار الرموز المميزة لإعادة قراءة الخبرة والسياق بعد الضغط
+
+وهذا يمثل مشكلة خاصة بالنسبة إلى:
+- **Long-running features**: أعمال التنفيذ متعددة الأيام مع العشرات من البورصات
+- **Dependent agents**: واجهة المستخدم تنتظر نقاط نهاية واجهة برمجة التطبيقات، وكلاهما يحتاج إلى تركيز مستمر
+- **Critical coordination**: يقوم المرشد بتنسيق عدة وكلاء في وقت واحد
+
+## الحل: السياق المضغوط
+
+يحدد كل وكيل أ `compact_context` التكوين مع ثلاثة مكونات:
+
+### 1. مستوى الأولوية
+
+يحدد مدى قوة الحفاظ على سياق الوكيل أثناء الضغط:
+
+```yaml
+compact_context:
+  priority: critical  # one of: critical, high, medium, low
+```
+
+**Priority Levels**:
+- `critical` (2 وكيل): يتم الحفاظ عليه دائمًا حتى في حالة الضغط العدواني
+  - معلمه، وكيل API
+  - التعامل مع التنسيق والتنفيذ الأساسي
+- `high` (8 وكلاء): محفوظ في معظم المضغوطات
+  - واجهة المستخدم، قاعدة البيانات، CI، DevOps، الاختبار، الأمان، التوثيق، الأداء
+  - قم بتشغيل العمل طويل الأمد بتركيز مستمر
+- `medium` (١٥ وكلاء): يُحفظ عند الإمكان
+  - معظم الوكلاء المتخصصين (التحليلات والتكاملات والهواتف المحمولة وما إلى ذلك)
+  - التعامل مع المهام الخاصة بالمجال
+- `low` (2 وكلاء): أول من يحذف
+  - الوكلاء الاستشاريون، نادرًا ما يتم استخدامهم (مخطط ملحمي، منسق)
+  - يتم تضمينه فقط إذا كانت الغرفة تسمح بذلك
+
+### 2. الحفاظ على القواعد
+
+القواعد السلوكية الأساسية التي لا يجب فقدانها أبدًا:
+
+```yaml
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+  - "VERIFY TEST BASELINE: Check test_status before starting"
+  - "PRIORITIZE AG-UI BLOCKERS: Unblock UI stories waiting on API endpoints"
+  - "DIFF-FIRST APPROACH: Show edits with confirmation before applying"
+  - "NEVER hardcode secrets: Use environment variables only"
+```
+
+**Good rules to preserve**:
+- الهوية والدور (على سبيل المثال، "أنت AG-API")
+- قيود السلامة الهامة (على سبيل المثال، "عدم تشفير الأسرار مطلقًا")
+- الإجراءات التي يجب اتباعها (على سبيل المثال، "تحميل الخبرة أولاً")
+- بروتوكولات التنسيق (على سبيل المثال، "تحديث Status.json قبل وبعد العمل")
+- متطلبات إدارة الحالة (على سبيل المثال، "التحقق من حالة الاختبار قبل المراجعة")
+- الأولويات السلوكية (على سبيل المثال، "إعطاء الأولوية لإلغاء حظر AG-UI")
+
+**Poor rules** (لا تحتفظ بهذه):
+- تعليمات سير العمل خطوة بخطوة (يمكن إعادة استخلاصها من الحالة)
+- معلومات عامة متوفرة في ملفات الخبرة
+- التفاصيل الخاصة بالسياق (تلك التي تدخل في حقول_الحالة بدلاً من ذلك)
+
+### 3. حقول الدولة
+
+الحالة الديناميكية التي تتغير أثناء العمل:
+
+```yaml
+state_fields:
+  - current_story
+  - endpoints_implemented
+  - blocked_ui_stories
+  - test_status_baseline
+```
+
+**State fields preserve current work context**:
+- ما هي القصة التي يتم تنفيذها الآن
+- ما هي نقاط النهاية التي تمت، والتي هي في انتظار
+- ما هي القصص المحظورة على ماذا
+- خط الأساس لحالة الاختبار (يجب اجتيازه قبل المراجعة)
+- تم اكتشاف المشكلات المعروفة أو الديون الفنية
+
+## مثال حقيقي: وكيل API
+
+يوضح وكيل واجهة برمجة التطبيقات Compact_context أثناء العمل:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status"
+    - "ONLY mark in-review if test_status:passing - NO EXCEPTIONS"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets or API keys - use environment variables"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+**What this preserves**:
+- الأولويات الحاسمة (إلغاء حظر واجهة المستخدم أولاً)
+- قواعد السلامة (التحقق من الاختبار، التعامل السري)
+- الحالة الحالية (ما هي نقاط النهاية التي تم تنفيذها، وما الذي يحظر واجهة المستخدم)
+- اختبار خط الأساس (ضروري لتحديد متى يتم إنجاز العمل)
+
+أثناء تنفيذ واجهة برمجة التطبيقات (API) لمدة يومين مع أكثر من 50 بورصة:
+1. يحدث ضغط السياق بعد حوالي 30 عملية تبادل
+2. قواعد الاحتفاظ تذكر الوكيل بالتحقق من اجتياز الاختبارات (ليس اختياريًا)
+3. تعرض حقول الحالة قصص واجهة المستخدم المحظورة (فحص الأولوية)
+4. يستمر الوكيل دون أن يفقد الزخم أو إعادة التركيز
+
+## جميع تكوينات الوكيل
+
+### الأولوية الحاسمة (2 وكلاء)
+
+**mentor**
+```yaml
+priority: critical
+preserve_rules:
+  - "ALWAYS read expertise.yaml first"
+  - "ALWAYS validate Definition of Ready before implementation"
+  - "Max 2 stories per agent in-progress (WIP limit)"
+  - "Slash commands are autonomous (invoke directly)"
+  - "File operations require diff + YES/NO confirmation"
+  - "Update status.json + bus/log.jsonl for all state changes"
+state_fields:
+  - current_story
+  - story_status
+  - wip_count
+  - blockers
+  - next_actions
+```
+
+**api**
+```yaml
+priority: critical
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+  - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting"
+  - "VERIFY TEST BASELINE: Session harness required"
+  - "ONLY mark in-review if test_status:passing"
+  - "DIFF-FIRST FOR FILE CHANGES: Show edits with confirmation"
+  - "NEVER hardcode secrets - use environment variables"
+state_fields:
+  - current_story
+  - endpoints_implemented
+  - blocked_ui_stories
+  - test_status_baseline
+```
+
+### أولوية عالية (8 وكلاء)
+
+**ui**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ui/expertise.yaml"
+  - "CHECK DESIGN SYSTEM FIRST: Detect if design tokens exist"
+  - "VERIFY SESSION HARNESS: Check environment.json and test_status"
+  - "ONLY in-review if tests pass: test_status:passing required"
+  - "CHECK FOR API DEPENDENCIES: Search status.json for blocked UI stories"
+  - "APPLY UX LAWS: Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End"
+  - "ACCESSIBILITY REQUIRED: WCAG 2.1 AA minimum"
+state_fields:
+  - current_story
+  - design_system_status
+  - api_dependencies
+  - test_status_baseline
+```
+
+**database**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/database/expertise.yaml"
+  - "NEVER CHANGE SCHEMA WITHOUT MIGRATION: All changes require reversible scripts"
+  - "PLAN MODE FOR HIGH-RISK CHANGES: Design before implementing"
+  - "VERIFY TEST BASELINE: Check test_status before starting"
+  - "REQUIRED COLUMNS: Every table needs id, created_at, updated_at"
+  - "COORDINATION WITH AG-API: Review their queries"
+state_fields:
+  - current_story
+  - schema_changes_planned
+  - migration_strategy
+  - api_query_reviews
+  - test_status_baseline
+```
+
+**testing**
+```yaml
+priority: high
+preserve_rules:
+  - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+  - "AAA PATTERN: All tests follow Arrange-Act-Assert"
+  - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+  - "NO FLAKY TESTS: Eliminate randomness, timing issues"
+  - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+  - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+state_fields:
+  - current_story
+  - coverage_percentage
+  - critical_paths_count
+  - flaky_tests_found
+  - test_status_baseline
+```
+
+**ci, devops, security, documentation, performance** استخدم أيضًا `priority: high` مع القواعد الخاصة بالمجال وحقول الحالة.
+
+### أولوية متوسطة (15 وكيلًا)
+
+وكلاء متخصصون في التحليلات، وعمليات التكامل، والهواتف المحمولة، والامتثال، والتصميم، وترحيل البيانات، وضمان الجودة، وإمكانية الوصول، والمراقبة، وكاتب الإعلانات، والبحث، وإعادة البناء، ومحدث الملف التمهيدي.
+
+كل استخدام `priority: medium` مع قواعد الحفاظ الخاصة بالمجال وحقول الحالة.
+
+## كيف يعمل السياق المضغوط في الممارسة العملية
+
+### مثال: تنفيذ واجهة برمجة التطبيقات لمدة يومين
+
+**Day 1 - Morning**:
+1. يقوم الوكيل بتحميل الخبرة (2 رمزًا)
+2. يقرأ سياق قاعدة التعليمات البرمجية بحجم 30 كيلو بايت (8 رموز مميزة)
+3. تنفيذ نقطة النهاية الأولى (5 عمليات تبادل و15 رمزًا مميزًا)
+4. **Total so far: 25 tokens of 200K budget**
+
+**Day 1 - Afternoon**:
+1. يستمر مع نقطة النهاية التالية (8 تبادلات، 24 رمزًا)
+2. الاختبارات والتحسين (6 عمليات تبادل، و18 رمزًا مميزًا)
+3. **Approaching compression threshold (~40 tokens)**
+
+**Before Compression** (بدون سياق_مضغوط):
+- يقوم الوكيل بإعادة تحميل الخبرة (رمزان)
+- يقوم الوكيل بإعادة قراءة قاعدة التعليمات البرمجية (8 رموز مميزة)
+- يقوم الوكيل بإعادة مراجعة القصص غير المحظورة (3 رموز)
+- **13 extra tokens wasted, momentum lost**
+
+**With Compact_context** (الأولوية الحاسمة):
+- تذكير بالحفاظ على القواعد: قم بتحميل الخبرة، وتحقق من أدوات الحظر، وتحقق من الاختبارات
+- تذكير حقول الحالة: العمل على US-0042، تم الانتهاء من 3 نقاط نهاية، وتم حظر قصتين لواجهة المستخدم
+- تم ضغط سياق قاعدة التعليمات البرمجية مؤقتًا ولكن تم الحفاظ على المعرفة المهمة
+- **Agent resumes immediately without re-reading expertise**
+
+**Day 2 - Morning**:
+1. يحدث إعادة ضغط السياق مرة أخرى
+2. يقوم الوكيل بإعادة توسيع خبرته (رمز مميز واحد - تم تحميله بالفعل)
+3. السيرة الذاتية مع معرفة السياق الكامل:
+   - ما هي القصص المحظورة (المعرفة ذات الأولوية)
+   - اختبار المتطلبات الأساسية (معرفة السلامة)
+   - ما تم تنفيذه بالفعل (معرفة الدولة)
+4. يستمر مع نقطة النهاية النهائية (5 تبادلات، 15 رمزًا)
+5. الاختبار النهائي والمراجعة (4 عمليات تبادل، 12 رمزًا)
+
+**Efficiency Gain**: تم حفظ ~20 رمزًا مميزًا، والحفاظ على التركيز المستمر، دون أي تأخير في إعادة التركيز.
+
+## عندما يحدث الضغط
+
+يقوم كلود كود بضغط السياق عندما:
+- يقترب استخدام الرمز المميز من الحد الأقصى للنموذج (حوالي 180 ألفًا من ميزانية 200 ألفًا)
+- المحادثة بها العديد من التبادلات (اتفاقيات للحفاظ على الأجزاء المهمة)
+- فترات خمول طويلة (ضغط دوري لبداية جديدة)
+- يقوم المستخدم بتشغيل الضغط يدويًا
+
+## تنفيذ السياق المدمج
+
+### للوكلاء الحاليين
+
+إضافة إلى المادة الأمامية للوكيل:
+
+```yaml
+---
+name: agileflow-example
+description: Example agent description
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: haiku
+compact_context:
+  priority: high
+  preserve_rules:
+    - "CRITICAL RULE 1"
+    - "CRITICAL RULE 2"
+    - "CRITICAL RULE 3"
+  state_fields:
+    - current_story
+    - critical_state_1
+    - critical_state_2
+---
+```
+
+### أفضل الممارسات
+
+1. **Keep preserve rules focused**: 5-7 قواعد كحد أقصى
+2. **Use state fields for context**: لا تضع تفاصيل الحالة في قواعد الحفظ
+3. **Reference expertise files**: يجب أن تشير القواعد إلى الخبرة، وليس تكرارها
+4. **Update state during work**: اذكر الحالة الحالية بانتظام في الردود
+5. **Match priority to impact**: تأثير أعلى = أولوية أعلى
+6. **Document in main text**: اشرح Compact_context في وثائق الوكيل
+
+### ما لا ينبغي الحفاظ عليه
+
+- سير العمل الإجرائي الطويل (يمكن إعادة استخلاصه من الحالة)
+- معلومات أساسية عامة (تتعلق بالخبرة)
+- مقتطفات أو أمثلة التعليمات البرمجية (المحفوظة في الخبرة أو قاعدة التعليمات البرمجية)
+- تفسيرات مطولة (استخدم قواعد موجزة بدلاً من ذلك)
+- معلومات زائدة عن الحاجة (تجنب الازدواجية مع الحفاظ على القواعد)
+
+## مصفوفة أولوية الوكيل
+
+| Agent | Priority | Impact If Lost | Recoverability |
+|-------|----------|---|---|
+| mentor | critical | Can't coordinate implementation | Hard - needs full context reload |
+| api | critical | Can't complete endpoints, blocks UI | Hard - loses blocker tracking |
+| ui | high | Loses design system state | Moderate - expertise has patterns |
+| database | high | Loses schema design decisions | Moderate - migrations in git |
+| testing | high | Loses coverage strategy | Moderate - test files exist |
+| ci | high | Loses build configuration | Moderate - scripts in git |
+| devops | high | Loses deployment strategy | Moderate - docs/architecture exists |
+| security | high | Loses threat model | Moderate - expertise has patterns |
+| documentation | high | Loses coverage tracking | Moderate - expertise has patterns |
+| performance | high | Loses optimization goals | Moderate - metrics in code |
+| research | medium | Loses research notes | Easy - notes in docs/10-research |
+| analytics | medium | Loses instrumentation goals | Easy - can reanalyze requirements |
+| integrations | medium | Loses API integration details | Easy - expertise has patterns |
+| mobile | medium | Loses platform-specific decisions | Easy - expertise has patterns |
+
+## أنماط Compact_Context الشائعة
+
+### النمط 1: قواعد السلامة الحرجة
+
+بالنسبة للوكلاء الذين يتعاملون مع العمليات الحساسة (واجهة برمجة التطبيقات، الأمان، قاعدة البيانات):
+
+```yaml
+preserve_rules:
+  - "SAFETY RULE 1: Critical constraint"
+  - "SAFETY RULE 2: Another critical constraint"
+  - "VERIFICATION: How to verify the rule is followed"
+```
+
+### النمط 2: التنسيق-العمل الثقيل
+
+بالنسبة للوكلاء الذين يقومون بإلغاء حظر الآخرين (واجهة برمجة التطبيقات، واجهة المستخدم، قاعدة البيانات):
+
+```yaml
+preserve_rules:
+  - "BLOCKER CHECK: What to look for"
+  - "COORDINATION: How to notify blocked agents"
+  - "PRIORITIZATION: How to rank blocking work"
+state_fields:
+  - blocked_stories
+  - unblock_messages_sent
+  - coordination_status
+```
+
+### النموذج 3: عمل بوابة الجودة
+
+بالنسبة للوكلاء الذين يقومون بالبوابة على حالة الاختبار (الاختبار، CI، الأداء):
+
+```yaml
+preserve_rules:
+  - "BASELINE REQUIREMENT: test_status:passing needed"
+  - "GATE FUNCTION: How to verify gates are met"
+  - "OVERRIDE POLICY: How to document exceptions"
+state_fields:
+  - test_status_baseline
+  - coverage_percentage
+  - gate_status
+```
+
+### النمط 4: ميزات طويلة الأمد
+
+بالنسبة للوكلاء الذين يعملون على ميزات متعددة الأيام (mentor، api، ui):
+
+```yaml
+preserve_rules:
+  - "EXPERTISE LOADING: Always load expertise first"
+  - "WIP LIMITS: Max N stories in-progress per agent"
+  - "STATE TRACKING: Update status/bus for every state change"
+state_fields:
+  - current_story
+  - story_status
+  - wip_count
+  - next_actions
+```
+
+## مراقبة فعالية سياق الاتفاق
+
+### علامات السياق المضغوط تعمل
+
+- يحافظ الوكلاء على السلوك المتسق بعد ضغط السياق
+- لا توجد خبرة في إعادة التركيز أو إعادة القراءة بعد الضغط
+- تستمر الاختبارات في المرور دون إعادة التشغيل
+- يبقى التنسيق بين الوكلاء سلسًا
+- عدد أقل من مشكلات "السياق المفقود" في المحادثات الطويلة
+
+### علامات السياق المضغوط يحتاج إلى تعديل
+
+- ينسى الوكيل التحقق من الحاصرات بعد الضغط
+- يفقد الوكيل تتبع حالة القصة في منتصف المحادثة
+- يتم نسيان القواعد المهمة ولكن تتم الإشارة إليها في التبادلات المستقبلية
+- يصبح تتبع الدولة غير متناسق
+- يتغير سلوك الوكيل بشكل ملحوظ بعد الضغط
+
+### تصحيح السياق المضغوط
+
+1. **Check preserve rules clarity**: هل هي موجزة وقابلة للتنفيذ؟
+2. **Verify state fields**: هل يتم تحديثها فعلا أثناء العمل؟
+3. **Review priority fit**: هل أولوية الوكيل مناسبة لأثره؟
+4. **Test after compaction**: التحقق يدويًا من السلوك بعد الضغط
+5. **Read expert feedback**: تحقق من ناقل الرسائل لمعرفة مشكلات التنسيق
+
+## الميزات ذات الصلة
+
+- **Expertise Files**: قاعدة معرفية طويلة المدى تكمل Compact_context
+- **Damage Control**: يمنع تغييرات التعليمات البرمجية غير المقصودة من خلال التأكيد متعدد الخطوات
+- **Session Harness**: التحقق من صحة خط الأساس لحالة الاختبار (المشار إليه في السياق المضغوط لمعظم الوكلاء)
+- **Skills System**: يتم تحميل إمكانات الوكيل الديناميكي عند الطلب
+
+## الخطوات التالية
+
+- قم بمراجعة وكيلك `compact_context` التكوين في `packages/cli/src/core/agents/`
+- في حالة إنشاء وكلاء جدد، قم بتعريف Compact_context بمستوى الأولوية المناسب
+- بالنسبة للميزات طويلة الأمد، قم بمراقبة فعالية ضغط السياق
+- قم بتحديث قواعد الحفظ عندما تكتشف أنماطًا سلوكية مهمة جديدة

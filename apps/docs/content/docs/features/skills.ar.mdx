@@ -1,0 +1,528 @@
+---
+title: نظام المهارات
+description: قم بإنشاء وإدارة وتحسين مطالبات الذكاء الاصطناعي المخصصة التي تتعلم من تعليقاتك
+---
+
+# نظام المهارات
+
+يتيح لك نظام المهارات إنشاء وإدارة مطالبات الذكاء الاصطناعي المخصصة التي تتعلم وتتحسن بمرور الوقت. المهارات عبارة عن قوالب قابلة لإعادة الاستخدام ومدعومة بالأبحاث تجمع بين أفضل ممارسات مشروعك والوثائق الخارجية وأنماط قاعدة التعليمات البرمجية في أدلة مركزة وقابلة للتنفيذ لكلود.
+
+## بداية سريعة
+
+اصنع مهارتك الأولى في 30 ثانية:
+
+```bash
+/agileflow:skill:create
+```
+
+أجب عن بعض الأسئلة حول ما تحتاجه، وسيقوم كلود بالبحث عن أفضل الممارسات وتوليد مهارة جاهزة للاستخدام.
+
+ثم استخدمه:
+
+```bash
+/agileflow:skill:list              # See all your skills
+/agileflow:skill:test my-skill     # Verify it works
+/agileflow:skill:upgrade my-skill  # Add learning capability
+```
+
+## ما هي المهارات؟
+
+A **skill** هو قالب موجه منظم يعلم كلود كيفية التعامل مع مهام محددة في سياق المشروع الخاص بك. المهارات هي:
+
+- **Research-backed** - تم إنشاؤها من مستندات الويب والوثائق المحلية وقاعدة التعليمات البرمجية الخاصة بك
+- **Self-improving** - تعلم من تصحيحاتك وقم بتحسينها تلقائيًا
+- **Cookbook-based** - سير عمل حالات الاستخدام المتعددة في مهارة واحدة
+- **Integrable** - يمكن أن تشمل خوادم بروتوكول السياق النموذجي (MCP) للوصول إلى الأداة
+
+### مهارات المثال
+
+يمكنك إنشاء مهارات من أجل:
+
+- **Database operations**: "Supabase Swift" - كيفية العمل مع Supabase في تطبيق iOS الخاص بك
+- **API patterns**: "عملاء REST API" - أفضل الممارسات لنمط تكامل واجهة برمجة التطبيقات لمشروعك
+- **Component development**: "مكونات التفاعل مع إمكانية الوصول" - كيفية إنشاء المكونات وفقًا لمعاييرك
+- **Deployment**: "GitHub Actions CI/CD" - سير عمل النشر والاختبار لفريقك
+- **Domain expertise**: "التعلم الآلي باستخدام TensorFlow" - أفضل الممارسات الخاصة بمشاريع تعلم الآلة الخاصة بك
+
+## المفاهيم الأساسية
+
+### هيكل المهارات
+
+تحتوي كل مهارة على:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file with activation triggers and instructions
+├── references.md         # Links to web docs, local docs, and code patterns
+├── cookbook/             # Per-use-case workflows
+│   ├── use-case-1.md
+│   └── use-case-2.md
+└── .mcp.json            # Optional MCP server configuration
+```
+
+### كيف تعمل المهارات
+
+1. **Activation**: عندما تسأل Claude عن موضوع يطابق محفزات المهارة، يتم تنشيط المهارة
+2. **Execution**: يقرأ كلود SKILL.md ويتبع التعليمات
+3. **Learning**: عندما تقوم بتصحيح كلود، تتعلم المهارة تفضيلاتك
+4. **Evolution**: يقوم كل تصحيح بتحديث ملف التعلم، مما يجعل المهارة أكثر ذكاءً
+
+### نظام التعلم
+
+يمكن أن تتحسن المهارات تلقائيًا من خلال نظام التعلم:
+
+```
+.agileflow/skills/_learnings/
+├── supabase-swift.yaml
+├── api-client.yaml
+└── react-components.yaml
+```
+
+يتتبع كل ملف تعليمي ما يلي:
+- **Preferences** - ما يفضله المستخدمون (التنسيق، الأسلوب، الأسلوب)
+- **Conventions** - الأنماط والمعايير الخاصة بالمشروع
+- **Anti-patterns** - ما يجب تجنبه
+- **Examples** - أمثلة جيدة وسيئة من التصحيحات
+
+## خلق المهارات
+
+### بداية سريعة
+
+اصنع مهارة من خلال البحث الذكي:
+
+```bash
+/agileflow:skill:create
+```
+
+أو تقديم تلميح:
+
+```bash
+/agileflow:skill:create supabase-swift
+```
+
+### كيف يعمل الخلق
+
+ال `/agileflow:skill:create` يقوم الأمر بإجراء بحث شامل:
+
+**Phase 1: Requirements**
+- تصف ما تحتاجه (التكنولوجيا، حالات الاستخدام، إطار العمل)
+
+**Phase 2: Research**
+- **Web documentation** - المستندات الرسمية ومراجع API والبرامج التعليمية
+- **Local documentation** - مستندات مشروعك وقراراته وممارساته المعمارية
+- **Codebase patterns** - أمثلة واتفاقيات التعليمات البرمجية الموجودة
+- **MCP servers** - الأدوات المتاحة للتكنولوجيا
+
+**Phase 3: Generation**
+ينشئ الأمر:
+- **SKILL.md** - المهارة الرئيسية مع مشغلات التنشيط وكتاب الطبخ
+- **references.md** - روابط التوثيق وأنماط التعليمات البرمجية
+- **cookbook/** - سير العمل لحالات الاستخدام المختلفة
+- **.mcp.json** - تكوين الخادم (إن أمكن)
+
+**Phase 4: Confirmation**
+ترى البنية التي تم إنشاؤها ويمكنك إنشاؤها أو تحريرها أو إلغاؤها.
+
+## مهارات الإدارة
+
+### قائمة بجميع المهارات
+
+عرض مهاراتك المثبتة:
+
+```bash
+/agileflow:skill:list
+```
+
+يظهر:
+- أسماء المهارات وأوصافها
+- حالات الاستخدام المدعومة
+- حالة التكامل MCP
+- عدد الملفات
+
+### تحرير المهارات
+
+تعديل مهارة موجودة:
+
+```bash
+/agileflow:skill:edit <skill-name>
+```
+
+أنت تستطيع:
+- قم بتحديث تعليمات SKILL.md
+- إضافة إدخالات كتاب الطبخ الجديدة
+- تحديث المراجع وروابط الوثائق
+- إعادة تسمية المهارة
+- قم بإعادة الكتابة بالكامل باستخدام بحث جديد
+
+### مهارات الاختبار
+
+التحقق من أن المهارة تعمل بشكل صحيح:
+
+```bash
+/agileflow:skill:test <skill-name>
+```
+
+الاختبارات:
+- **Structure validation** - جميع الملفات المطلوبة موجودة
+- **Content validation** - التنسيق والحجم المناسب
+- **Activation test** - يتم تنشيط المهارة بناءً على مطالبات العينة
+- **MCP configuration** - إعداد خادم صالح
+
+### حذف المهارات
+
+إزالة مهارة عندما لم تعد هناك حاجة إليها:
+
+```bash
+/agileflow:skill:delete <skill-name>
+```
+
+### ترقية المهارات
+
+إضافة القدرة على التعلم إلى المهارات القديمة:
+
+```bash
+/agileflow:skill:upgrade <skill-name>
+```
+
+أو قم بالترقية مرة واحدة:
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+يقوم بإنشاء ملف تعليمي يتتبع التصحيحات والتحسينات.
+
+## نظام التعلمات
+
+### ما هي المهارات التي تعلمها
+
+عند استخدام مهارة ما وتصحيح مخرجات كلود، تتعلم المهارة ما يلي:
+
+1. **Explicit corrections** - التعلم بثقة عالية من ردود الفعل المباشرة
+2. **Approved responses** - تعلمات الثقة المتوسطة من الموافقات
+3. **Patterns** - ملاحظات منخفضة الثقة للمراجعة
+
+### تنسيق ملف التعلم
+
+تحتوي كل مهارة على ملف تعليمي اختياري في `.agileflow/skills/_learnings/<skill>.yaml`:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-08T10:30:00Z
+
+preferences:
+  code_style: "swift-concurrency"
+  error_handling: "Result<T, Error>"
+  async_patterns: "async/await"
+
+conventions:
+  naming: "camelCase for variables, PascalCase for types"
+  structure: "Separate data, service, and UI layers"
+  testing: "Unit tests required for all public APIs"
+
+anti_patterns:
+  - "Avoid callback patterns (use async/await instead)"
+  - "Never hardcode API keys in code"
+
+examples:
+  good:
+    - "let user = try await supabase.auth.user()"
+  bad:
+    - "var apiKey = 'sk-...' // Never do this"
+
+metadata:
+  corrections_count: 12
+  approvals_count: 8
+  last_correction: 2025-01-08T10:30:00Z
+```
+
+### كيف يعمل التحسين الذاتي
+
+**On invocation:**
+1. يتحقق كلود من وجود ملف تعليمي
+2. يقرأ التفضيلات والاتفاقيات والأنماط المضادة
+3. يطبقها أثناء تنفيذ المهارة
+
+**On correction:**
+1. يمكنك تقديم ردود الفعل أو التصحيح
+2. كلود يستخرج الإشارة (ما يجب تغييره)
+3. تحديد مستوى الثقة (مرتفع/متوسط/منخفض)
+4. تحديث ملف الدروس
+5. يستخدم الاستدعاء التالي التفضيلات المحدثة
+
+## أفضل الممارسات
+
+### خلق المهارات الفعالة
+
+1. **Use specific names** - `supabase-swift` ليس فقط `database`
+2. **Include multiple use cases** - إضافة إدخالات كتاب الطبخ لسيناريوهات مختلفة
+3. **Link to project patterns** - الرجوع إلى اصطلاحات قاعدة التعليمات البرمجية الخاصة بك
+4. **Add troubleshooting** - توقع ومعالجة القضايا المشتركة
+5. **Keep it focused** - مجال واحد لكل مهارة، وليس واسعًا جدًا
+
+### الحفاظ على المهارات
+
+1. **Test regularly** - يستخدم `/agileflow:skill:test` للتحقق من الجودة
+2. **Review learnings** - التحقق مما تعلمته المهارة من التصويبات
+3. **Update references** - حافظ على روابط الوثائق محدثة
+4. **Archive unused skills** - تنظيف المهارات التي لم تعد تستخدمها
+5. **Share improvements** - الالتزام بالتعلم لتحقيق اتساق الفريق
+
+### مهارات التنظيم
+
+**Suggested skill categories:**
+
+- **Data layer** - عمليات قاعدة البيانات، والهجرات، والاستعلامات
+- **API layer** - عملاء REST، GraphQL، خطافات الويب، المصادقة
+- **UI layer** - المكونات والتصميم وإمكانية الوصول والرسوم المتحركة
+- **Infrastructure** - النشر، CI/CD، المراقبة، الأمن
+- **Workflows** - الاختبار، ومراجعة التعليمات البرمجية، وتصحيح الأخطاء، والتنميط
+- **Domain** - نماذج ML ومعالجة الصور ومعالجة الدفع
+
+## سير عمل كتاب الطبخ
+
+### ما هو كتاب الطبخ؟
+
+يعد إدخال كتاب الطبخ بمثابة دليل خطوة بخطوة لحالة استخدام محددة ضمن المهارة.
+
+### قالب كتاب الطبخ
+
+```markdown
+# Use Case Title
+
+Brief description of this workflow.
+
+## Prerequisites
+
+- Prerequisite 1
+- Prerequisite 2
+
+## Instructions
+
+1. **Step 1**: Description with example
+   ```language
+   مثال التعليمات البرمجية
+   ```
+
+2. **Step 2**: Next step
+   ```language
+   مثال التعليمات البرمجية
+   ```
+
+## Example
+
+**Input**: Sample input or scenario
+**Output**: Expected output
+
+## Troubleshooting
+
+- **Problem**: Solution
+```
+
+### متى تضيف كتب الطبخ
+
+أضف إدخالات كتاب الطبخ عندما:
+- توجد حالات استخدام شائعة متعددة
+- تنطبق مسارات عمل مختلفة
+- يختلف الإعداد بين السيناريوهات
+- كثيرًا ما يطلب المستخدمون إرشادات خطوة بخطوة
+
+## التكامل MCP
+
+يمكن أن تتكامل المهارات مع خوادم Model context Protocol للوصول إلى الأداة.
+
+### ما هو MCP؟
+
+تعمل خوادم MCP على توسيع قدرات Claude من خلال توفير:
+- الوصول إلى البيانات في الوقت الحقيقي
+- تنفيذ الأداة (عمليات الملفات، مكالمات الشبكة)
+- تكامل النظام (واجهات برمجة التطبيقات وقواعد البيانات)
+- المعرفة المتخصصة (الوثائق وأدوات التعليمات البرمجية)
+
+### استخدام MCP في المهارات
+
+إذا تم العثور على خادم MCP أثناء الإنشاء، فستتضمن المهارة `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": ["@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "${SUPABASE_URL}",
+        "SUPABASE_KEY": "${SUPABASE_KEY}"
+      }
+    }
+  }
+}
+```
+
+ثم توثق المهارة ما يلي:
+- الأدوات التي يوفرها الخادم
+- تعليمات الإعداد
+- متغيرات البيئة اللازمة
+- أمثلة التكامل
+
+## دورة حياة المهارة
+
+### الخلق
+
+1. يجري `/agileflow:skill:create`
+2. صف ما تحتاجه
+3. القيادة تبحث في أفضل الممارسات
+4. مراجعة المهارة المولدة
+5. اصنع المهارة
+
+### الاستخدام
+
+1. العمل على المهام المطابقة لمجال المهارة
+2. يقوم كلود بتنشيط المهارة تلقائيًا
+3. توفر المهارة التوجيه والأمثلة
+4. يمكنك تنفيذ توصيات المهارة
+
+### تحسين
+
+1. عندما يخطئ مخرج كلود في شيء ما، قم بتصحيحه
+2. المهارة تتعلم من التصحيح
+3. في المرة القادمة، توفر المهارة توجيهًا أفضل
+4. يستخدم `/agileflow:skill:upgrade` لتمكين التعلم
+
+### تطور
+
+1. بمرور الوقت، تصبح المهارات أكثر تخصيصًا
+2. يلتقط ملف الدروس أنماطًا خاصة بالمشروع
+3. أعضاء الفريق الجدد يرثون المعرفة
+4. المهارات تصبح ذاكرة مؤسسية
+
+## مهارات المشاركة
+
+### تصدير مهارة
+
+Copy a skill directory to share:
+
+```bash
+cp -r .claude/skills/my-skill /path/to/share/
+```
+
+### استيراد مهارة
+
+انسخ إلى دليل مهاراتك:
+
+```bash
+cp -r /path/to/skill .claude/skills/
+```
+
+### التحكم في الإصدار
+
+الالتزام بالمهارات اللازمة لـ git (بما في ذلك الدروس المستفادة):
+
+```bash
+git add .claude/skills/
+git add .agileflow/skills/_learnings/
+git commit -m "Add supabase-swift skill with learnings"
+```
+
+يحصل أعضاء الفريق تلقائيًا على المهارات والتعلم.
+
+## استكشاف الأخطاء وإصلاحها
+
+### المهارة غير مفعلة
+
+**Problem**: تسأل عن موضوع المهارة لكن كلود لا ينشطها.
+
+**Solution**:
+1. تحقق من قسم "متى يتم الاستخدام" في SKILL.md
+2. تأكد من أن سؤالك يتطابق مع مشغلات التنشيط
+3. يستخدم `/agileflow:skill:test` to verify the skill structure
+4. قم بتحرير المهارة لإضافة المزيد من الكلمات الرئيسية إذا لزم الأمر
+
+### لم يتم العثور على خادم MCP
+
+**Problem**: أثناء الإنشاء، تظهر رسالة "لم يتم العثور على خادم MCP".
+
+**Solution**:
+1. يمكنك إنشاء المهارة بدون MCP وإضافتها لاحقًا
+2. إعداد يدويا `.mcp.json` بعد الخلق
+3. Check if the server is published (npm, GitHub, etc.)
+
+### ملف الدروس مفقود
+
+**Problem**: لا تتحسن المهارة حتى بعد التصحيحات.
+
+**Solution**:
+1. يجري `/agileflow:skill:upgrade <skill-name>`
+2. يؤدي هذا إلى إنشاء ملف الدروس
+3. سيتم تتبع التصحيحات المستقبلية
+
+### فشل التحقق من صحة المهارة
+
+**Problem**: `/agileflow:skill:test` يظهر الفشل.
+
+**Solution**:
+1. Read the validation report for specific issues
+2. يستخدم `/agileflow:skill:edit` لإصلاح المشاكل
+3. اختبر مرة أخرى للتحقق من الإصلاحات
+
+## الاستخدام المتقدم
+
+### خلق مهارات خاصة بالمجال
+
+إنشاء مهارات متخصصة متعددة للمجالات المعقدة:
+
+```bash
+# Data layer skills
+/agileflow:skill:create postgresql-queries
+/agileflow:skill:create database-migrations
+
+# API layer skills
+/agileflow:skill:create rest-error-handling
+/agileflow:skill:create graphql-schema-design
+
+# UI layer skills
+/agileflow:skill:create accessibility-wcag
+/agileflow:skill:create react-performance
+```
+
+### تكوين المهارة
+
+الإشارة إلى المهارات الأخرى ضمن المهارة:
+
+في SKIL.md:
+```markdown
+## Related Skills
+
+This skill works best with:
+- [REST API clients](/skills/api-client)
+- [Error handling patterns](/skills/error-handling)
+```
+
+### تخصيص التعلم
+
+قم بتحرير ملف الدروس يدويًا للتخصيص المتقدم:
+
+```bash
+.agileflow/skills/_learnings/my-skill.yaml
+```
+
+أضف اصطلاحات خاصة بالمشروع لا تتطلب تصحيحات.
+
+## الأوامر ذات الصلة
+
+- [`/المهارة: إنشاء`](/commands/skill-create) - توليد مهارة جديدة مع البحث
+- [`/ المهارة: القائمة`](/commands/skill-list) - عرض جميع المهارات المثبتة
+- [`/المهارة: تحرير`](/commands/skill-edit) - تعديل مهارة موجودة
+- [`/المهارة:اختبار`](/commands/skill-test) - التحقق من أن المهارة تعمل بشكل صحيح
+- [`/المهارة:حذف`](/commands/skill-delete) - إزالة المهارة
+- [`/المهارة:ترقية`](/commands/skill-upgrade) - إضافة القدرة على التحسين الذاتي
+
+## الخطوات التالية
+
+1. **Create your first skill** - ابدأ بالتقنية التي تستخدمها بشكل متكرر
+2. **Test it** - يستخدم `/agileflow:skill:test` للتحقق من أنه يعمل
+3. **Use it** - العمل على المهام وترك المهارة تنشط
+4. **Improve it** - تصحيح مخرجات كلود لتعليم المهارة
+5. **Share it** - الالتزام بالبوابة وأعضاء الفريق يحصلون عليها
+
+المهارات هي الذاكرة المؤسسية لمشروعك. وبمرور الوقت، تقوم بتشفير أفضل الممارسات والمعرفة الخاصة بالمشروع، مما يجعل كلود أكثر فعالية في مساعدتك على البناء.

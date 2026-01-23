@@ -167,6 +167,14 @@ function classifyLine(line: string, inCodeBlock: boolean, inFrontmatter: boolean
     return { original: line, type: "jsx-component" }
   }
 
+  // HTML tags that should not be translated (picture, source, img, etc.)
+  // Check trimmed line since tags may be indented
+  const htmlTags = ["picture", "source", "img", "video", "audio", "iframe", "figure", "figcaption", "br", "hr", "div", "span", "details", "summary"]
+  const htmlTagPattern = new RegExp(`^\\s*</?(?:${htmlTags.join("|")})(?:\\s|>|/>|$)`, "i")
+  if (htmlTagPattern.test(line)) {
+    return { original: line, type: "jsx-component" }
+  }
+
   // Heading - translate the text after #
   const headingMatch = line.match(/^(#{1,6}\s+)(.+)$/)
   if (headingMatch) {

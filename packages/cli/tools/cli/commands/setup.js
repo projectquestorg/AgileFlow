@@ -115,7 +115,7 @@ module.exports = {
       // Report shell alias setup
       if (coreResult.shellAliases) {
         if (coreResult.shellAliases.configured.length > 0) {
-          success(`Added 'claude' alias to: ${coreResult.shellAliases.configured.join(', ')}`);
+          success(`Added 'af' alias to: ${coreResult.shellAliases.configured.join(', ')}`);
         }
         if (coreResult.shellAliases.skipped.length > 0) {
           info(`Shell aliases skipped: ${coreResult.shellAliases.skipped.join(', ')}`);
@@ -224,7 +224,7 @@ ${claudeMdMarker}
       if (coreResult.shellAliases?.configured?.length > 0) {
         console.log(chalk.bold('\nShell aliases:'));
         info(`Reload shell to use: ${chalk.cyan('source ~/.bashrc')} or ${chalk.cyan('source ~/.zshrc')}`);
-        info(`Then run ${chalk.cyan('claude')} to auto-start in tmux session`);
+        info(`Then run ${chalk.cyan('af')} to start Claude in tmux (or ${chalk.cyan('claude')} for normal)`);
       }
 
       console.log(chalk.dim(`\nInstalled to: ${coreResult.path}\n`));

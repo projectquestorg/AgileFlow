@@ -1,0 +1,404 @@
+---
+title: Schadensbegrenzung
+description: Schützen Sie Ihre Codebasis mit PreToolUse-Hooks vor zerstörerischen Befehlen
+---
+
+# Schadensbegrenzung
+
+Damage Control ist ein Sicherheitssystem, das verhindert, dass KI-Agenten destruktive oder gefährliche Befehle ausführen. Es verwendet Claude Codes **PreToolUse hooks** um Befehle vor der Ausführung zu validieren.
+
+## Schnellstart
+
+```bash
+# Enable with interactive wizard
+/agileflow:configure damagecontrol
+
+# Or command line
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+
+# Then restart Claude Code (Cmd+Q / Ctrl+Q)
+```
+
+## Wie es funktioniert
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-flow.dark.svg" />
+  <img alt="Damage Control Flow" src="/images/docs/features/damage-control-flow.light.svg" />
+</picture>
+
+Damage Control verwendet drei separate Hooks:
+
+| Hook | File | Protects Against |
+|------|------|------------------|
+| **Bash** | `damage-control-bash.js` | Dangerous shell commands |
+| **Edit** | `damage-control-edit.js` | Edits to protected files |
+| **Write** | `damage-control-write.js` | Writes to protected locations |
+
+---
+
+## Schutzschichten
+
+### Bash-Befehlsmuster
+
+**Automatically Blocked:**
+- Zerstörerische Löschungen: `rm -rf /`, `rm -rf ..`, rekursive Löschvorgänge
+- Kraftschub: `git push --force`, `git push -f`
+- Hard-Reset: `git reset --hard`
+- Datenbankzerstörung: `DROP TABLE`, `TRUNCATE TABLE`, `DELETE FROM ... ;`
+- Festplattenoperationen: `dd if=`, `mkfs.`, `fdisk`
+- Offenlegung von Anmeldeinformationen: `cat *.pem`, `cat id_rsa`
+- Tötung erzwingen: `kill -9`, `killall`, `pkill -9`
+- Und über 30 weitere Muster
+
+**Requires Confirmation (Ask Patterns):**
+- Datenbank löscht mit WHERE: `DELETE FROM table WHERE ...`
+- Veröffentlichung: `npm publish`
+- Zur Hauptseite schieben: `git push origin main`
+- Cloud CLI löscht: `aws delete`, `gcloud delete`, `az delete`
+- Datenbankaktualisierungen: `UPDATE ... SET ... WHERE`
+- Node_modules entfernen: `rm -rf node_modules`
+
+### Pfadschutzstufen
+
+| Level | Read | Write | Edit | Delete |
+|-------|------|-------|------|--------|
+| **Zero Access** | No | No | No | No |
+| **Read-Only** | Yes | No | No | No |
+| **No Delete** | Yes | Yes | Yes | No |
+
+**Zero Access Paths:**
+- SSH-Schlüssel: `~/.ssh/`, `id_rsa`, `id_ed25519`
+- Cloud-Anmeldeinformationen: `~/.aws/`, `~/.gnupg/`, `~/.config/gh/`
+- Produktionsgeheimnisse: `.env.production`, `.env.local`, `.env.secrets`
+- Private Schlüssel: `*.pem`, `*.key`, `credentials.json`
+
+**Read-Only Paths:**
+- Shell-Konfiguration: `~/.bashrc`, `~/.zshrc`, `~/.gitconfig`
+- Dateien sperren: `package-lock.json`, `yarn.lock`
+- System: `/etc/`
+
+**No Delete Paths:**
+- AgileFlow-Kern: `.agileflow/`, `.claude/`
+- Projektstatus: `docs/09-agents/status.json`
+- Quellcodeverwaltung: `.git/`
+- Projektwurzeln: `README.md`, `package.json`
+
+---
+
+## Setup-Anleitung
+
+### Voraussetzungen
+
+- AgileFlow v2.78.0+
+- Claude Code (aktuell)
+- `.agileflow` Verzeichnis installiert
+
+### Schritt 1: Wählen Sie die Schutzstufe
+
+**Standard (Recommended)**
+- Nur schneller Mustervergleich
+- 0 ms Latenz hinzugefügt
+- Über 40 gefährliche Muster blockiert
+- Perfekt für die meisten Projekte
+
+**Enhanced**
+- Standard + KI-Bewertung für unbekannte Bedrohungen
+- 50-100 ms Latenz hinzugefügt
+- Besser für hochsensiblen Code
+- Experimentelle Funktion
+
+**Minimal**
+- Nur Pfadschutz
+- Keine Bash-Befehlsmuster
+
+### Schritt 2: Aktivieren
+
+```bash
+/agileflow:configure damagecontrol
+```
+
+Oder:
+
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol
+```
+
+### Schritt 3: Überprüfen
+
+```bash
+# Check patterns file
+ls -la .agileflow/config/damage-control-patterns.yaml
+
+# Check hooks configured
+grep -A 5 "PreToolUse" .claude/settings.json
+
+# Test (should be blocked)
+rm -rf /
+```
+
+### Schritt 4: Starten Sie Claude Code neu
+
+**Important:** Hooks werden erst nach einem Neustart wirksam.
+
+```bash
+# Complete quit (Cmd+Q / Ctrl+Q)
+# Wait 5 seconds
+# Reopen Claude Code
+```
+
+---
+
+## Architektur
+
+### Systemfluss
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/damage-control-arch.dark.svg" />
+  <img alt="Damage Control Architecture" src="/images/docs/features/damage-control-arch.light.svg" />
+</picture>
+
+### Beispiel für einen Bash-Hook
+
+```javascript
+// Input: { command: "rm -rf /" }
+// Pattern: /\brm\s+-rf\s+/
+// Test: pattern.test("rm -rf /") = true
+// Result: BLOCKED (exit code 2)
+```
+
+### Hook-Beispiel bearbeiten
+
+```javascript
+// Input: { file_path: "/Users/me/.ssh/id_rsa" }
+// Protected: zeroAccessPaths: ["~/.ssh/"]
+// Test: path.startsWith(expandedPath)
+// Result: BLOCKED (exit code 2)
+```
+
+### Exit-Codes
+
+| Code | Meaning | Action |
+|------|---------|--------|
+| 0 | Allow | Tool executes normally |
+| 2 | Block | Tool execution prevented |
+
+### Fail-Open-Philosophie
+
+Wenn die Musterdatei beschädigt ist oder fehlt, sind die Befehle vorhanden **allowed** (nicht blockiert). Dadurch wird sichergestellt, dass ein defektes Sicherheitssystem nicht alle Vorgänge blockiert.
+
+---
+
+## Konfiguration
+
+### Musterdatei
+
+Standort: `.agileflow/config/damage-control-patterns.yaml`
+
+```yaml
+# Blocked bash commands
+bashToolPatterns:
+  - pattern: 'rm\s+-rf\s+/'
+    reason: "Recursive delete from root"
+  - pattern: 'git\s+push\s+--force'
+    reason: "Force push blocked"
+
+# Requires confirmation
+askPatterns:
+  - pattern: 'npm\s+publish'
+    reason: "Publishing to npm"
+  - pattern: 'git\s+push\s+origin\s+main'
+    reason: "Pushing to main"
+
+# Zero access (no read/write/edit)
+zeroAccessPaths:
+  - '~/.ssh/'
+  - '.env'
+
+# Read-only (can read, not modify)
+readOnlyPaths:
+  - '~/.bashrc'
+  - 'package-lock.json'
+
+# No delete (can read/write, not delete)
+noDeletePaths:
+  - '.agileflow/'
+  - '.git/'
+```
+
+### Benutzerdefinierte Muster hinzufügen
+
+Bearbeiten Sie die Musterdatei direkt:
+
+```yaml
+# Add to bashToolPatterns
+bashToolPatterns:
+  # ... existing patterns ...
+  - pattern: 'my-dangerous-command'
+    reason: "Custom block reason"
+
+# Add to askPatterns
+askPatterns:
+  # ... existing patterns ...
+  - pattern: 'deploy\s+production'
+    reason: "Production deployment"
+```
+
+### Hooks-Konfiguration
+
+In `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-bash.js"
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-edit.js"
+        }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node .agileflow/scripts/damage-control-write.js"
+        }]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## FAQ und Fehlerbehebung
+
+### Allgemeine Fragen
+
+**Q: Does Damage Control slow down commands?**
+
+A: Nein, es kommen weniger als 5 ms pro Befehl hinzu. Der Mustervergleich ist optimiert.
+
+**Q: Can I disable it temporarily?**
+
+A: Ja:
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+```
+Starten Sie dann Claude Code neu. Mit erneut aktivieren `--enable=damagecontrol`.
+
+**Q: What if it blocks something that should be allowed?**
+
+A: Bearbeiten `.agileflow/config/damage-control-patterns.yaml`:
+1. Machen Sie das Muster spezifischer
+2. Verschieben Sie es von `bashToolPatterns` Zu `askPatterns`
+3. Entfernen Sie es, wenn es nicht benötigt wird
+
+Starten Sie dann Claude Code neu.
+
+**Q: Does it protect against human mistakes too?**
+
+A: Ja. Alle Befehle durchlaufen Hooks, egal ob von Ihnen oder der KI.
+
+**Q: Can patterns be bypassed?**
+
+A: Nicht einfach. Muster stimmen mit tatsächlichen Befehlszeichenfolgen überein. Einfache Problemumgehungen wie `r m -rf` Syntaxfehler erzeugen.
+
+### Einrichtungsprobleme
+
+**Q: Hooks aren't working after enabling.**
+
+A: Häufigste Ursache – Sie haben Claude Code nicht neu gestartet:
+1. Vollständig schließen (Befehl+Q / Strg+Q)
+2. Warten Sie 5 Sekunden
+3. Wieder öffnen
+4. Testen Sie mit `rm -rf /`
+
+**Q: How do I know if it's working?**
+
+A: Testen Sie einen blockierten Befehl:
+```bash
+rm -rf /
+# Should see: [BLOCKED] rm with absolute path
+```
+
+**Q: Can't find patterns file.**
+
+A: Erstellen Sie es:
+```bash
+mkdir -p .agileflow/config
+cp .agileflow/templates/damage-control-patterns.yaml .agileflow/config/
+```
+
+**Q: settings.json got corrupted.**
+
+A: Beheben Sie das Problem:
+```bash
+cp .claude/settings.json .claude/settings.json.broken
+node .agileflow/scripts/agileflow-configure.js --migrate
+# If that fails:
+rm .claude/settings.json
+/agileflow:configure damagecontrol
+```
+
+### Fehlerbehebungsmatrix
+
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| Hooks don't run | Not restarted | Quit and restart Claude Code |
+| All commands blocked | Patterns too broad | Edit YAML, make patterns specific |
+| Valid command blocked | False positive | Move to askPatterns or remove |
+| Patterns file missing | Not created | Run `/agileflow:configure damagecontrol` |
+| JSON parse error | Invalid settings | Validate with `jq empty .claude/settings.json` |
+
+### Deaktivieren
+
+**Temporarily disable:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=damagecontrol
+# Restart Claude Code
+```
+
+**Remove specific hook:**
+```bash
+jq 'del(.hooks.PreToolUse)' .claude/settings.json > tmp.json
+mv tmp.json .claude/settings.json
+# Restart Claude Code
+```
+
+**Re-enable:**
+```bash
+/agileflow:configure damagecontrol
+# Restart Claude Code
+```
+
+---
+
+## Best Practices
+
+### DOS
+- Aktivieren Sie die Schadensbegrenzung für alle Projekte
+- Standardschutz verwenden (erweitert ist experimentell)
+- Testen Sie mit `rm -rf /` nach der Einrichtung
+- Behalten Sie die Versionskontrolle der Musterdatei bei
+- Überprüfen Sie blockierte Vorgänge in Protokollen
+
+### Verbote
+- Deaktivieren Sie die Funktion nicht ohne guten Grund
+- Machen Sie die Muster nicht zu breit (falsche Positive)
+- Vergessen Sie nicht, nach Änderungen neu zu starten
+- Ignorieren Sie Warnungen zu blockierten Befehlen nicht
+
+### Für Teams
+- Begehen `.agileflow/config/damage-control-patterns.yaml`
+- Dokumentieren Sie benutzerdefinierte Muster mit Kommentaren
+- Testen Sie Muster, bevor Sie sie im Team bereitstellen
+- Überprüfen und aktualisieren Sie Muster regelmäßig

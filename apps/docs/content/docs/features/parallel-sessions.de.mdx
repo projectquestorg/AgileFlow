@@ -1,27 +1,27 @@
 ---
-title: Sesiones paralelas
-description: Trabaje en múltiples funciones simultáneamente con árboles de trabajo git aislados y protección de límites de sesión.
+title: Parallele Sitzungen
+description: Arbeiten Sie gleichzeitig an mehreren Funktionen mit isolierten Git-Arbeitsbäumen und Sitzungsgrenzenschutz.
 ---
 
-# Sesiones paralelas
+# Parallele Sitzungen
 
-Las sesiones paralelas le permiten trabajar en múltiples funciones, errores o experimentos simultáneamente sin cambiar de contexto. Cada sesión tiene su propio directorio aislado, rama git y protección de límites para evitar ediciones accidentales entre sesiones.
+Mit parallelen Sitzungen können Sie gleichzeitig an mehreren Funktionen, Fehlern oder Experimenten arbeiten, ohne den Kontext zu wechseln. Jede Sitzung verfügt über ein eigenes isoliertes Verzeichnis, einen eigenen Git-Zweig und einen Grenzschutz, um versehentliche sitzungsübergreifende Änderungen zu verhindern.
 
-## Descripción general
+## Überblick
 
-Cuando trabaja en proyectos complejos, a menudo necesita:
-- Corregir un error mientras una función está en progreso
-- Experimenta sin afectar tu trabajo principal
-- Revisar el código en una rama mientras se desarrolla en otra
+Wenn Sie an komplexen Projekten arbeiten, müssen Sie häufig Folgendes tun:
+- Beheben Sie einen Fehler, während eine Funktion ausgeführt wird
+- Experimentieren Sie, ohne Ihre Hauptarbeit zu beeinträchtigen
+- Überprüfen Sie den Code in einem Zweig, während Sie in einem anderen entwickeln
 
-Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usando **git worktrees**, cada uno rastreado por AgileFlow con protección automática de límites.
+Parallele Sitzungen lösen dieses Problem, indem sie isolierte Arbeitsbereiche erstellen **git worktrees**, jeweils von AgileFlow mit automatischem Grenzschutz verfolgt.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-overview.dark.svg" />
   <img alt="Parallel Sessions Overview" src="/images/docs/features/parallel-sessions-overview.light.svg" />
 </picture>
 
-## Características clave
+## Hauptmerkmale
 
 | Feature | Description |
 |---------|-------------|
@@ -31,18 +31,18 @@ Las sesiones paralelas resuelven esto creando espacios de trabajo aislados usand
 | **Easy Switching** | Switch sessions with `/add-dir` - stays in same terminal |
 | **Independent Context** | Each session maintains its own story and progress |
 
-## Cómo funciona
+## Wie es funktioniert
 
-### Arquitectura
+### Architektur
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-arch.dark.svg" />
   <img alt="Parallel Sessions Architecture" src="/images/docs/features/parallel-sessions-arch.light.svg" />
 </picture>
 
-### Gestión del estado de sesión
+### Sitzungsstatusverwaltung
 
-Las sesiones se rastrean en dos archivos:
+Sitzungen werden in zwei Dateien verfolgt:
 
 **Registry** (`.agileflow/sessions/registry.json`):
 ```json
@@ -79,9 +79,9 @@ Las sesiones se rastrean en dos archivos:
 }
 ```
 
-### Protección de límites
+### Grenzschutz
 
-El enlace de límite de sesión se ejecuta en cada operación de edición y escritura:
+Der Sitzungsgrenzen-Hook wird bei jedem Bearbeitungs- und Schreibvorgang ausgeführt:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/parallel-sessions-boundary.dark.svg" />
@@ -100,18 +100,18 @@ const isAllowed =
   filePath === activeSession.path;
 ```
 
-## Comandos
+## Befehle
 
-### Crear nueva sesión
+### Neue Sitzung erstellen
 
 ```
 /agileflow:session:new
 ```
 
-Crea una nueva sesión paralela con opciones:
-- **Auto-create**: Genera `../project-{id}` con rama `session-{id}`
-- **Named**: Crea `../project-{name}` con apodo personalizado
-- **Existing branch**: Utiliza una rama git existente
+Erstellt eine neue parallele Sitzung mit folgenden Optionen:
+- **Auto-create**: Erzeugt `../project-{id}` mit Zweig `session-{id}`
+- **Named**: Erstellt `../project-{name}` mit benutzerdefiniertem Spitznamen
+- **Existing branch**: Verwendet einen vorhandenen Git-Zweig
 
 **Output:**
 ```
@@ -128,13 +128,13 @@ To switch to this session, run:
   /add-dir ../project-bugfix
 ```
 
-### Cambiar de sesión
+### Wechseln Sie die Sitzungen
 
 ```
 /agileflow:session:resume
 ```
 
-Enumera todas las sesiones y proporciona el comando para cambiar:
+Listet alle Sitzungen auf und stellt den Befehl zum Wechseln bereit:
 
 ```
 Which session would you like to resume?
@@ -149,35 +149,35 @@ Which session would you like to resume?
   Start a fresh parallel workspace
 ```
 
-Después de la selección:
+Nach der Auswahl:
 ```
 To switch to Session 2 "bugfix":
 
   /add-dir ../project-bugfix
 ```
 
-### Ver estado de la sesión
+### Sitzungsstatus anzeigen
 
 ```
 /agileflow:session:status
 ```
 
-Muestra información de la sesión actual y todas las sesiones registradas.
+Zeigt aktuelle Sitzungsinformationen und alle registrierten Sitzungen an.
 
-### Finalizar sesión
+### Sitzung beenden
 
 ```
 /agileflow:session:end
 ```
 
-Finaliza la sesión actual y opcionalmente:
-- Fusiona los cambios nuevamente al principal
-- Elimina el árbol de trabajo
-- Limpia la rama
+Beendet die aktuelle Sitzung und optional:
+- Führt Änderungen zurück zur Hauptdatei zusammen
+- Löscht den Arbeitsbaum
+- Bereinigt den Zweig
 
-## Ejemplo de flujo de trabajo
+## Workflow-Beispiel
 
-### Iniciar una corrección de errores mientras el trabajo de funciones está en curso
+### Starten einer Fehlerbehebung, während die Feature-Arbeit im Gange ist
 
 ```
 # You're working on Session 1 (main) with US-0042: User Auth API
@@ -213,11 +213,11 @@ User: /add-dir /home/user/project
 # Back in Session 1, boundary protection now blocks edits to ../project-bugfix
 ```
 
-## Configuración
+## Konfiguration
 
-### Habilitación de la protección de límites de sesión
+### Aktivieren des Sitzungsgrenzenschutzes
 
-Los enlaces de límites de sesión se configuran automáticamente cuando utiliza sesiones paralelas. se agregan a `.claude/settings.json`:
+Sitzungsgrenzen-Hooks werden automatisch konfiguriert, wenn Sie parallele Sitzungen verwenden. Sie werden ergänzt `.claude/settings.json`:
 
 ```json
 {
@@ -246,19 +246,19 @@ Los enlaces de límites de sesión se configuran automáticamente cuando utiliza
 }
 ```
 
-### Desactivar la protección de límites
+### Grenzschutz deaktivieren
 
-Para trabajar entre sesiones sin restricciones:
+Um ohne Einschränkungen sitzungsübergreifend zu arbeiten:
 
 ```bash
 node .agileflow/scripts/session-manager.js clear-active
 ```
 
-Esto borra la sesión activa, permitiendo ediciones en cualquier directorio.
+Dadurch wird die aktive Sitzung gelöscht, sodass Änderungen an jedem Verzeichnis möglich sind.
 
-## CLI del administrador de sesiones
+## Sitzungsmanager-CLI
 
-El script del administrador de sesión proporciona control directo:
+Das Sitzungsmanager-Skript bietet direkte Kontrolle:
 
 ```bash
 # List all sessions
@@ -283,36 +283,36 @@ node .agileflow/scripts/session-manager.js create --nickname "feature"
 node .agileflow/scripts/session-manager.js delete 2 --remove-worktree
 ```
 
-## Mejores prácticas
+## Best Practices
 
-### Qué hacer
+### DOS
 
-- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` son más claros que `session-2`
-- **Switch sessions explicitly**: Utilice siempre `/agileflow:session:resume` cambiar
-- **Commit before switching**: asegúrese de que el trabajo se guarde antes de cambiar de sesión
-- **End sessions when done**: Limpiar árboles de trabajo para ahorrar espacio en disco
+- **Use descriptive nicknames**: `bugfix`, `auth`, `experiment` sind klarer als `session-2`
+- **Switch sessions explicitly**: Immer verwenden `/agileflow:session:resume` wechseln
+- **Commit before switching**: Stellen Sie sicher, dass die Arbeit gespeichert wird, bevor Sie die Sitzung ändern
+- **End sessions when done**: Arbeitsbäume bereinigen, um Speicherplatz zu sparen
 
-### No hacer
+### Verbote
 
-- **Don't manually cd**: Usar `/add-dir` permanecer en la misma conversación de Claude
-- **Don't disable boundaries casually**: Previenen la contaminación cruzada accidental
-- **Don't create too many sessions**: Mantenlo manejable (se recomienda 3-5 como máximo)
+- **Don't manually cd**: Verwenden `/add-dir` um im selben Claude-Gespräch zu bleiben
+- **Don't disable boundaries casually**: Sie verhindern eine versehentliche Kreuzkontamination
+- **Don't create too many sessions**: Halten Sie es überschaubar (maximal 3–5 empfohlen)
 
-## Solución de problemas
+## Troubleshooting
 
-### Error "Edición bloqueada"
+### Fehler „Bearbeiten blockiert“.
 
-**Cause**: Estás intentando editar un archivo fuera de la sesión activa.
+**Cause**: Sie versuchen, eine Datei außerhalb der aktiven Sitzung zu bearbeiten.
 
 **Solution**:
 ```
 /agileflow:session:resume
 ```
-Seleccione la sesión correcta, luego ejecute el `/add-dir` comando mostrado.
+Wählen Sie die richtige Sitzung aus und führen Sie dann die aus `/add-dir` Befehl angezeigt.
 
-### Sesión no encontrada
+### Sitzung nicht gefunden
 
-**Cause**: El directorio del árbol de trabajo fue eliminado o movido.
+**Cause**: Das Arbeitsbaumverzeichnis wurde gelöscht oder verschoben.
 
 **Solution**:
 ```bash
@@ -323,9 +323,9 @@ ls ../project-{name}
 node .agileflow/scripts/session-manager.js delete {id}
 ```
 
-### Conflictos del árbol de trabajo de Git
+### Git Worktree-Konflikte
 
-**Cause**: La rama ya está desprotegida en otro árbol de trabajo.
+**Cause**: Zweig bereits in einem anderen Arbeitsbaum ausgecheckt.
 
 **Solution**:
 ```bash
@@ -336,8 +336,8 @@ git worktree list
 git worktree remove ../project-{name}
 ```
 
-## Funciones relacionadas
+## Verwandte Funktionen
 
-- [Control de daños](/docs/features/damage-control) - Protección de archivos adicional
-- [Contexto compacto](/docs/features/compact-context) - Preservación del contexto entre sesiones.
-- [Experiencia del agente](/docs/features/agent-expertise-system) - Agentes especializados para sesiones.
+- [Schadensbegrenzung](/docs/features/damage-control) - Zusätzlicher Dateischutz
+- [Kompakter Kontext](/docs/features/compact-context) - Kontexterhaltung über Sitzungen hinweg
+- [Agentenkompetenz](/docs/features/agent-expertise-system) - Spezialisierte Agenten für Sitzungen
