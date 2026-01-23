@@ -78,29 +78,17 @@ echo "Starting Claude in tmux session: $SESSION_NAME"
 # Create session in detached mode first
 tmux new-session -d -s "$SESSION_NAME" -n "main"
 
-# Configure the session with user-friendly settings
+# Minimal config - mouse and scrolling only, no fancy styling
 tmux set-option -t "$SESSION_NAME" mouse on
 
-# Sane scrolling - works properly with vim/nvim and doesn't get stuck
+# Fix colors - proper terminal support
+tmux set-option -t "$SESSION_NAME" default-terminal "xterm-256color"
+
+# Sane scrolling - works properly with vim/nvim
 tmux bind-key -n WheelUpPane if-shell -F -t = "#{mouse_any_flag}" "send-keys -M" "if -Ft= '#{pane_in_mode}' 'send-keys -M' 'select-pane -t=; copy-mode -e; send-keys -M'"
 tmux bind-key -n WheelDownPane select-pane -t= \; send-keys -M
 
-tmux set-option -t "$SESSION_NAME" status on
-tmux set-option -t "$SESSION_NAME" status-position bottom
-tmux set-option -t "$SESSION_NAME" status-style 'bg=#282c34,fg=#abb2bf'
-tmux set-option -t "$SESSION_NAME" status-left '#[fg=#61afef,bold] Claude '
-tmux set-option -t "$SESSION_NAME" status-left-length 15
-tmux set-option -t "$SESSION_NAME" status-right '#[fg=#98c379] Alt+1/2/3 to switch | q=quit '
-tmux set-option -t "$SESSION_NAME" status-right-length 45
-tmux set-option -t "$SESSION_NAME" window-status-format '#[fg=#5c6370] [#I] #W '
-tmux set-option -t "$SESSION_NAME" window-status-current-format '#[fg=#61afef,bold,bg=#3e4452] [#I] #W '
-tmux set-option -t "$SESSION_NAME" window-status-separator ''
-
-# Set up keybindings - Alt+number to switch windows
-for i in 1 2 3 4 5 6 7 8 9; do
-  tmux bind-key -n "M-$i" select-window -t ":$((i-1))"
-done
-tmux bind-key -n q detach-client
+# Detach with Ctrl+b d (default tmux behavior, NOT 'q'!)
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"
