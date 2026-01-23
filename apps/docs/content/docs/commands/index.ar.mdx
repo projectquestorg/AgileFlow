@@ -1,0 +1,181 @@
+---
+title: الأوامر
+description: مرجع كامل لجميع أوامر الشرطة المائلة AgileFlow البالغ عددها 77. تم تصميم كل أمر لمهمة محددة في سير عمل التطوير المدعوم بالذكاء الاصطناعي.
+---
+
+# الأوامر
+
+يوفر AgileFlow **77 slash commands** التي يمكنك استخدامها مباشرة في Claude Code. جميع الأوامر تتبع النمط `/agileflow:command-name`.
+
+## فئات الأوامر
+
+### تخطيط
+
+أوامر لإنشاء وتنظيم العمل:
+
+| Command | Description |
+|---------|-------------|
+| [`/ideate`](/commands/ideate) | Generate improvement ideas using multi-expert analysis |
+| [`/epic`](/commands/epic) | Create a new epic with stories (subcommands: list, view) |
+| [`/story`](/commands/story) | Create a user story with acceptance criteria (subcommands: list, view) |
+| [`/sprint`](/commands/sprint) | Data-driven sprint planning with velocity forecasting |
+| [`/deps`](/commands/deps) | Visualize dependency graph with critical path detection |
+| [`/auto`](/commands/auto) | Auto-generate stories from PRDs, mockups, or specs |
+
+### تتبع
+
+أوامر لمراقبة التقدم:
+
+| Command | Description |
+|---------|-------------|
+| [`/status`](/commands/status) | Update story status and progress |
+| [`/board`](/commands/board) | Display visual kanban board with WIP limits |
+| [`/blockers`](/commands/blockers) | Track and resolve blockers with actionable suggestions |
+| [`/metrics`](/commands/metrics) | Analytics dashboard with cycle time and throughput |
+| [`/velocity`](/commands/velocity) | Track velocity and forecast sprint capacity |
+
+### تطوير
+
+أوامر لتنفيذ الميزات:
+
+| Command | Description |
+|---------|-------------|
+| [`/babysit`](/commands/babysit) | Interactive mentor for end-to-end feature implementation |
+| [`/verify`](/commands/verify) | Run project tests and update story test status |
+| [`/review`](/commands/review) | AI-powered code review with quality suggestions |
+| [`/pr`](/commands/pr) | Generate pull request description from story |
+| [`/impact`](/commands/impact) | Analyze change impact across codebase |
+
+### العمليات
+
+أوامر DevOps والإصدارات:
+
+| Command | Description |
+|---------|-------------|
+| [`/ci`](/commands/ci) | Bootstrap CI/CD workflow with testing and quality checks |
+| [`/deploy`](/commands/deploy) | Set up automated deployment pipeline |
+| [`/changelog`](/commands/changelog) | Auto-generate changelog from commit history |
+| [`/packages`](/commands/packages) | Manage dependencies with updates and security audits |
+| [`/tests`](/commands/tests) | Set up automated testing infrastructure |
+| [`/debt`](/commands/debt) | Track and prioritize technical debt items |
+
+### التوثيق
+
+أوامر للحفاظ على المستندات:
+
+| Command | Description |
+|---------|-------------|
+| [`/adr`](/commands/adr) | Create an Architecture Decision Record (subcommands: list, view, update) |
+| [`/docs`](/commands/docs) | Synchronize documentation with code changes |
+| [`/readme-sync`](/commands/readme-sync) | Synchronize a folder's README.md with its current contents |
+| [`/research`](/commands/research) | Research management with subcommands: ask, import, list, view, analyze |
+| [`/context`](/commands/context) | Context generation with subcommands: full, export, note |
+| [`/help`](/commands/help) | Display AgileFlow system overview and all commands |
+
+### تعاون
+
+أوامر لتنسيق الفريق:
+
+| Command | Description |
+|---------|-------------|
+| [`/assign`](/commands/assign) | Assign or reassign a story to an owner |
+| [`/handoff`](/commands/handoff) | Document work handoff between agents |
+| [`/update`](/commands/update) | Generate stakeholder progress report |
+| [`/retro`](/commands/retro) | Generate retrospective with Start/Stop/Continue format |
+| [`/feedback`](/commands/feedback) | Collect and process agent feedback |
+
+### متقدم
+
+أوامر متخصصة للمهام المعقدة:
+
+| Command | Description |
+|---------|-------------|
+| [`/multi-expert`](/commands/multi-expert) | Deploy multiple domain experts on the same problem |
+| [`/agent`](/commands/agent) | Onboard a new agent with profile and contract |
+| [`/configure`](/commands/configure) | Configure advanced AgileFlow features |
+| [`/diagnose`](/commands/diagnose) | System health diagnostics |
+| [`/validate-expertise`](/commands/validate-expertise) | Validate expertise files for drift and staleness |
+| [`/whats-new`](/commands/whats-new) | Show what's new in AgileFlow |
+
+## أنماط الاستخدام
+
+### الاستخدام الأساسي
+
+```bash
+# Simple command
+/agileflow:board
+
+# Command with required parameters
+/agileflow:status STORY=US-0001 STATUS=in-progress
+
+# Command with optional parameters
+/agileflow:metrics TIMEFRAME=30d EPIC=EP-0001 FORMAT=markdown
+```
+
+### اتفاقيات المعلمة
+
+- **Required parameters**: `PARAM=<value>` - يجب توفيرها
+- **Optional parameters**: `[PARAM=<value>]` - يمكن حذفها للافتراضيات
+- **IDs**: استخدام أنماط مثل `EP-0001`, `US-0001`, `AG-UI`
+- **Lists**: القيم المفصولة بفواصل حيث تتم الإشارة إليها
+
+### الحصول على المساعدة
+
+```bash
+# Show all available commands
+/agileflow:help
+
+# System diagnostics
+/agileflow:diagnose
+```
+
+## جربه بنفسك
+
+استكشف أوامر AgileFlow بشكل تفاعلي في وضع الحماية هذا:
+
+<CommandPlayground
+  الأمر = "/ Agileflow: الحالة"
+  العنوان = "ملعب الأوامر التفاعلية"
+  description="جرب أوامر AgileFlow الشائعة وشاهد المخرجات المحاكية"
+/>
+
+<div className="mt-4 grid gap-4 sm:grid-cols-2">
+  <CommandPlayground
+    الأمر = "/ Agileflow: ملحمة EP-0001"
+    العنوان = "التقدم الملحمي"
+    وصف = "تتبع الإكمال الملحمي"
+    قراءة فقط = {خطأ}
+  />
+  <CommandPlayground
+    الأمر = "/ Agileflow: babysit"
+    العنوان = "سير العمل الموجه"
+    وصف = "بدء التطوير المساعد"
+    قراءة فقط = {خطأ}
+  />
+</div>
+
+## أوامر الجلسة
+
+أوامر لإدارة جلسات العمل ومسارات العمل الموازية:
+
+| Command | Description |
+|---------|-------------|
+| [`/session:new`](/commands/session-new) | Create a parallel session with git worktree |
+| [`/session:resume`](/commands/session-resume) | Switch to a different session |
+| [`/session:status`](/commands/session-status) | View all sessions and their state |
+| [`/session:end`](/commands/session-end) | End session and optionally clean up worktree |
+| [`/session:history`](/commands/session-history) | View past session history and metrics |
+| [`/session:init`](/commands/session-init) | Initialize session tracking system |
+
+## أوامر المهارة
+
+أوامر لإدارة المهارات الديناميكية:
+
+| Command | Description |
+|---------|-------------|
+| [`/skill:create`](/commands/skill-create) | Generate a custom skill with web research and MCP integration |
+| [`/skill:list`](/commands/skill-list) | List all installed skills with descriptions |
+| [`/skill:edit`](/commands/skill-edit) | Edit an existing skill's content |
+| [`/skill:delete`](/commands/skill-delete) | Remove an installed skill |
+| [`/skill:test`](/commands/skill-test) | Verify a skill works correctly |
+| [`/skill:upgrade`](/commands/skill-upgrade) | Add self-improving learning capability to existing skills |

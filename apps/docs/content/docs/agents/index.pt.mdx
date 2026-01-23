@@ -1,0 +1,225 @@
+---
+title: Agentes
+description: 31 agentes de IA especializados para todos os aspectos do desenvolvimento de software. Cada agente é um especialista em sua área, pronto para ajudar em tarefas específicas.
+---
+
+# Agentes
+
+AgileFlow inclui **31 specialized agents**, cada um especialista em seu domínio. Agentes podem ser gerados pelo `/babysit` mentor ou invocado diretamente usando a ferramenta Tarefa.
+
+## Como funcionam os agentes
+
+1. **Expertise-First**: Cada agente carrega seu arquivo de experiência para entender seus padrões de base de código
+2. **Context-Aware**: os agentes leem documentos do projeto, status.json e alterações recentes
+3. **Context Preservation**: Os agentes aprimorados usam a configuração compact_context para preservar o conhecimento crítico durante a compactação da conversa
+4. **Collaborative**: os agentes se comunicam por meio do barramento de mensagens e atualizam o status da história
+5. **Self-Improving**: Os agentes atualizam seus conhecimentos após concluir o trabalho
+
+## Recurso de contexto compacto
+
+Para manter o foco durante longas conversas, os agentes AgileFlow usam **compact_context** configuração para preservar informações críticas quando o contexto é compactado automaticamente. Isso garante que os agentes não percam regras, estados e prioridades importantes no meio da conversa.
+
+### Como funciona
+
+Cada agente tem um `compact_context` configuração com três componentes:
+
+**Priority Level**: determina o quão agressivamente o contexto do agente é preservado
+- `critical` - Sempre preservado (agentes de maior prioridade como mentor, api, ui)
+- `high` - Preservado na maioria das compactações (agentes importantes)
+- `medium` - Preservado quando possível (agentes padrão)
+- `low` - Primeiro a ser removido (raro, usado para agentes consultivos)
+
+**Preserve Rules**: Regras comportamentais básicas que nunca devem ser perdidas
+- Identidade e função do agente
+- Restrições críticas e regras de segurança
+- Procedimentos obrigatórios (por exemplo, "Carregar experiência primeiro")
+- Requisitos de gestão estadual
+- Protocolos de coordenação
+
+**State Fields**: Estado dinâmico que muda durante o trabalho
+- História atual sendo implementada (US-#### ID)
+- Progresso da tarefa e porcentagem de conclusão
+- Bloqueadores e dependências conhecidos
+- Próximas ações priorizadas
+- Status de teste/construção
+
+### Exemplo de configuração
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Read packages/cli/src/core/experts/api/expertise.yaml"
+    - "VERIFY TEST BASELINE: Check test_status before starting"
+    - "PRIORITIZE AG-UI BLOCKERS: Unblock UI stories waiting on API endpoints"
+    - "DIFF-FIRST APPROACH: Show edits with confirmation before applying"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+Quando o Claude Code compacta o contexto, ele preserva essas regras e campos de estado para todos os agentes, garantindo a continuidade mesmo após múltiplas rodadas de compactação de conversação.
+
+### Distribuição Prioritária do Agente
+
+- **Critical** (2 agentes): mentor, API
+- **High** (9 agentes): interface do usuário, banco de dados, ci, devops, testes, segurança, documentação, desempenho, consulta à base de código
+- **Medium** (15 agentes): migração de dados, controle de qualidade, acessibilidade, monitoramento, pesquisa, redator de anúncios, análises, integrações, dispositivos móveis, design, conformidade, refatoração, produto, atualizador readme
+- **Low** (2 agentes): planejador épico, orquestrador
+
+Essa abordagem em camadas garante que os agentes mais críticos sempre mantenham o foco, enquanto outros degradam o contexto quando necessário.
+
+## Categorias de agentes
+
+### Desenvolvimento Central
+
+Os principais agentes para a construção de recursos:
+
+| Agent | Description |
+|-------|-------------|
+| [`mentor`](/agents/mentor) | End-to-end implementation guidance from idea to PR |
+| [`epic-planner`](/agents/epic-planner) | Break down features into epics and stories |
+| [`database`](/agents/database) | Schema design, migrations, query optimization |
+| [`api`](/agents/api) | Backend services, business logic, data layer |
+| [`ui`](/agents/ui) | Frontend components, styling, accessibility |
+
+### Qualidade e testes
+
+Agentes focados na qualidade do código:
+
+| Agent | Description |
+|-------|-------------|
+| [`testing`](/agents/testing) | Test strategy, patterns, coverage optimization |
+| [`qa`](/agents/qa) | Test planning, quality metrics, release readiness |
+| [`security`](/agents/security) | Vulnerability analysis, auth patterns, compliance |
+| [`performance`](/agents/performance) | Optimization, profiling, benchmarking |
+| [`accessibility`](/agents/accessibility) | WCAG compliance, assistive technology support |
+
+### Infraestrutura
+
+Agentes para DevOps e operações:
+
+| Agent | Description |
+|-------|-------------|
+| [`devops`](/agents/devops) | Deployment setup, testing infrastructure, quality checks |
+| [`ci`](/agents/ci) | CI/CD workflows, linting, type checking, coverage |
+| [`monitoring`](/agents/monitoring) | Observability, logging, alerting, dashboards |
+| [`datamigration`](/agents/datamigration) | Zero-downtime migrations, data validation, rollback |
+
+### Documentação e Pesquisa
+
+Agentes para gestão do conhecimento:
+
+| Agent | Description |
+|-------|-------------|
+| [`documentation`](/agents/documentation) | Technical docs, API docs, user guides |
+| [`research`](/agents/research) | Gathering information, research notes, best practices |
+| [`adr-writer`](/agents/adr-writer) | Architecture Decision Records |
+| [`readme-updater`](/agents/readme-updater) | Auditing and updating documentation files |
+| [`codebase-query`](/agents/codebase-query) | Intelligent codebase search using programmatic queries |
+
+### Domínios Especializados
+
+Agentes para casos de uso específicos:
+
+| Agent | Description |
+|-------|-------------|
+| [`mobile`](/agents/mobile) | React Native, Flutter, cross-platform mobile |
+| [`integrations`](/agents/integrations) | Third-party APIs, webhooks, payment processors |
+| [`analytics`](/agents/analytics) | Event tracking, metrics dashboards, data analysis |
+| [`compliance`](/agents/compliance) | GDPR, HIPAA, SOC2, audit trails |
+| [`design`](/agents/design) | UI/UX design systems, visual design, patterns |
+
+### Metaagentes
+
+Agentes que coordenam outros agentes:
+
+| Agent | Description |
+|-------|-------------|
+| [`multi-expert`](/agents/multi-expert) | Deploys 3-5 experts on the same problem for high-confidence answers |
+| [`product`](/agents/product) | Requirements analysis, user stories, acceptance criteria |
+| [`refactor`](/agents/refactor) | Technical debt cleanup, legacy code modernization |
+
+## Agentes Geradores
+
+### Via /babysit (recomendado)
+
+O `/babysit` o mentor detecta automaticamente qual agente é necessário:
+
+```bash
+/agileflow:babysit
+# Then describe your task - babysit will spawn the right agent
+```
+
+### Desova Direta
+
+Você também pode gerar agentes diretamente usando a ferramenta Tarefa:
+
+```text
+Task(
+  description: "Design user sessions schema",
+  prompt: "Create a sessions table to track user logins with proper indexes",
+  subagent_type: "agileflow-database"
+)
+```
+
+### Agentes Paralelos
+
+Para recursos full-stack, gere vários agentes simultaneamente:
+
+```text
+# API work
+Task(subagent_type: "agileflow-api", run_in_background: true, ...)
+
+# UI work (runs in parallel)
+Task(subagent_type: "agileflow-ui", run_in_background: true, ...)
+```
+
+## Comunicação do Agente
+
+Os agentes coordenam através `docs/09-agents/`:
+
+<FileTree>
+  <Folder name="docs">
+    <Folder name="09-agents">
+      <File name="status.json" comment="Story statuses and assignments" />
+      <Folder name="bus">
+        <File name="log.jsonl" comment="Agent messages and handoffs" />
+      </Folder>
+    </Folder>
+  </Folder>
+</FileTree>
+
+### Atualizações de status
+
+Atualização dos agentes `status.json` como eles funcionam:
+
+```json
+{
+  "stories": {
+    "US-0042": {
+      "status": "in-progress",
+      "owner": "AG-DATABASE",
+      "summary": "Created sessions table with indexes"
+    }
+  }
+}
+```
+
+### Ônibus de mensagens
+
+Mensagens de coordenação de log de agentes:
+
+```json
+{"timestamp": "2025-12-24T10:00:00Z", "type": "assign", "story": "US-0042", "owner": "AG-DATABASE"}
+{"timestamp": "2025-12-24T11:00:00Z", "type": "handoff", "story": "US-0042", "from": "AG-DATABASE", "to": "AG-API"}
+```
+
+## Melhores Práticas
+
+1. **Let babysit choose**: O mentor sabe qual agente se adapta melhor
+2. **Provide context**: informe os agentes sobre os padrões existentes em sua base de código
+3. **Review updates**: Verifique as alterações de status.json que os agentes fazem
+4. **Use multi-expert for uncertainty**: Quando você precisar de alta confiança, implante vários especialistas

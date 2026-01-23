@@ -1,0 +1,181 @@
+---
+title: Comandos
+description: Referencia completa para los 77 comandos de barra diagonal de AgileFlow. Cada comando está diseñado para una tarea específica en su flujo de trabajo de desarrollo impulsado por IA.
+---
+
+# Comandos
+
+AgileFlow proporciona **77 slash commands** que puedes usar directamente en Claude Code. Todos los comandos siguen el patrón. `/agileflow:command-name`.
+
+## Categorías de comando
+
+### Planificación
+
+Comandos para crear y organizar el trabajo:
+
+| Command | Description |
+|---------|-------------|
+| [`/ideate`](/commands/ideate) | Generate improvement ideas using multi-expert analysis |
+| [`/epic`](/commands/epic) | Create a new epic with stories (subcommands: list, view) |
+| [`/story`](/commands/story) | Create a user story with acceptance criteria (subcommands: list, view) |
+| [`/sprint`](/commands/sprint) | Data-driven sprint planning with velocity forecasting |
+| [`/deps`](/commands/deps) | Visualize dependency graph with critical path detection |
+| [`/auto`](/commands/auto) | Auto-generate stories from PRDs, mockups, or specs |
+
+### Seguimiento
+
+Comandos para monitorear el progreso:
+
+| Command | Description |
+|---------|-------------|
+| [`/status`](/commands/status) | Update story status and progress |
+| [`/board`](/commands/board) | Display visual kanban board with WIP limits |
+| [`/blockers`](/commands/blockers) | Track and resolve blockers with actionable suggestions |
+| [`/metrics`](/commands/metrics) | Analytics dashboard with cycle time and throughput |
+| [`/velocity`](/commands/velocity) | Track velocity and forecast sprint capacity |
+
+### Desarrollo
+
+Comandos para implementar funciones:
+
+| Command | Description |
+|---------|-------------|
+| [`/babysit`](/commands/babysit) | Interactive mentor for end-to-end feature implementation |
+| [`/verify`](/commands/verify) | Run project tests and update story test status |
+| [`/review`](/commands/review) | AI-powered code review with quality suggestions |
+| [`/pr`](/commands/pr) | Generate pull request description from story |
+| [`/impact`](/commands/impact) | Analyze change impact across codebase |
+
+### Operaciones
+
+Comandos para DevOps y lanzamientos:
+
+| Command | Description |
+|---------|-------------|
+| [`/ci`](/commands/ci) | Bootstrap CI/CD workflow with testing and quality checks |
+| [`/deploy`](/commands/deploy) | Set up automated deployment pipeline |
+| [`/changelog`](/commands/changelog) | Auto-generate changelog from commit history |
+| [`/packages`](/commands/packages) | Manage dependencies with updates and security audits |
+| [`/tests`](/commands/tests) | Set up automated testing infrastructure |
+| [`/debt`](/commands/debt) | Track and prioritize technical debt items |
+
+### Documentación
+
+Comandos para mantener documentos:
+
+| Command | Description |
+|---------|-------------|
+| [`/adr`](/commands/adr) | Create an Architecture Decision Record (subcommands: list, view, update) |
+| [`/docs`](/commands/docs) | Synchronize documentation with code changes |
+| [`/readme-sync`](/commands/readme-sync) | Synchronize a folder's README.md with its current contents |
+| [`/research`](/commands/research) | Research management with subcommands: ask, import, list, view, analyze |
+| [`/context`](/commands/context) | Context generation with subcommands: full, export, note |
+| [`/help`](/commands/help) | Display AgileFlow system overview and all commands |
+
+### Colaboración
+
+Comandos para la coordinación del equipo:
+
+| Command | Description |
+|---------|-------------|
+| [`/assign`](/commands/assign) | Assign or reassign a story to an owner |
+| [`/handoff`](/commands/handoff) | Document work handoff between agents |
+| [`/update`](/commands/update) | Generate stakeholder progress report |
+| [`/retro`](/commands/retro) | Generate retrospective with Start/Stop/Continue format |
+| [`/feedback`](/commands/feedback) | Collect and process agent feedback |
+
+### Avanzado
+
+Comandos especializados para tareas complejas:
+
+| Command | Description |
+|---------|-------------|
+| [`/multi-expert`](/commands/multi-expert) | Deploy multiple domain experts on the same problem |
+| [`/agent`](/commands/agent) | Onboard a new agent with profile and contract |
+| [`/configure`](/commands/configure) | Configure advanced AgileFlow features |
+| [`/diagnose`](/commands/diagnose) | System health diagnostics |
+| [`/validate-expertise`](/commands/validate-expertise) | Validate expertise files for drift and staleness |
+| [`/whats-new`](/commands/whats-new) | Show what's new in AgileFlow |
+
+## Patrones de uso
+
+### Uso básico
+
+```bash
+# Simple command
+/agileflow:board
+
+# Command with required parameters
+/agileflow:status STORY=US-0001 STATUS=in-progress
+
+# Command with optional parameters
+/agileflow:metrics TIMEFRAME=30d EPIC=EP-0001 FORMAT=markdown
+```
+
+### Convenciones de parámetros
+
+- **Required parameters**: `PARAM=<value>` - Debe ser proporcionado
+- **Optional parameters**: `[PARAM=<value>]` - Puede omitirse por defecto
+- **IDs**: Utilice patrones como `EP-0001`, `US-0001`, `AG-UI`
+- **Lists**: Valores separados por comas donde se indique
+
+### Obtener ayuda
+
+```bash
+# Show all available commands
+/agileflow:help
+
+# System diagnostics
+/agileflow:diagnose
+```
+
+## Pruébelo usted mismo
+
+Explore los comandos de AgileFlow de forma interactiva en este entorno limitado:
+
+<CommandPlayground
+  comando="/agileflow:estado"
+  title="Zona de juegos de comando interactiva"
+  descripción="Pruebe los comandos comunes de AgileFlow y vea el resultado simulado"
+/>
+
+<div className="mt-4 grid gap-4 sm:grid-cols-2">
+  <CommandPlayground
+    comando="/agileflow:épico EP-0001"
+    título="Progreso épico"
+    descripción="Seguimiento de finalización épica"
+    sólo lectura={falso}
+  />
+  <CommandPlayground
+    comando="/agileflow:cuidar niños"
+    title="Flujo de trabajo guiado"
+    descripción="Iniciar desarrollo asistido"
+    sólo lectura={falso}
+  />
+</div>
+
+## Comandos de sesión
+
+Comandos para gestionar sesiones de trabajo y flujos de trabajo paralelos:
+
+| Command | Description |
+|---------|-------------|
+| [`/session:new`](/commands/session-new) | Create a parallel session with git worktree |
+| [`/session:resume`](/commands/session-resume) | Switch to a different session |
+| [`/session:status`](/commands/session-status) | View all sessions and their state |
+| [`/session:end`](/commands/session-end) | End session and optionally clean up worktree |
+| [`/session:history`](/commands/session-history) | View past session history and metrics |
+| [`/session:init`](/commands/session-init) | Initialize session tracking system |
+
+## Comandos de habilidad
+
+Comandos para gestionar habilidades dinámicas:
+
+| Command | Description |
+|---------|-------------|
+| [`/skill:create`](/commands/skill-create) | Generate a custom skill with web research and MCP integration |
+| [`/skill:list`](/commands/skill-list) | List all installed skills with descriptions |
+| [`/skill:edit`](/commands/skill-edit) | Edit an existing skill's content |
+| [`/skill:delete`](/commands/skill-delete) | Remove an installed skill |
+| [`/skill:test`](/commands/skill-test) | Verify a skill works correctly |
+| [`/skill:upgrade`](/commands/skill-upgrade) | Add self-improving learning capability to existing skills |
