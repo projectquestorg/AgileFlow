@@ -1,0 +1,413 @@
+---
+title: /يؤكد
+description: تشغيل اختبارات المشروع وتحديث حالة اختبار القصة
+---
+
+# /يؤكد
+
+قم بتنفيذ اختبارات مشروعك وقم بتحديث حالة اختبار القصة تلقائيًا في نظام التتبع الخاص بك. يعد التحقق أحد المكونات الأساسية لأداة جلسة AgileFlow التي تضمن التحقق من صحة الاختبار خلال سير عمل التطوير الخاص بك.
+
+## بداية سريعة
+
+```bash
+# Run all tests and update all in-progress stories
+/agileflow:verify
+
+# Run tests and update specific story
+/agileflow:verify US-0042
+```
+
+الأمر سوف:
+1. تحميل تكوين الاختبار من مشروعك
+2. تنفيذ مجموعة الاختبار
+3. تحليل نتائج الاختبار
+4. تحديث حالة اختبار القصة (ناجح/راسب)
+5. عرض تقرير واضح بمؤشرات مرئية
+
+## الميزات الرئيسية
+
+### تحليل الاختبار التلقائي
+
+يقوم التحقق تلقائيًا باكتشاف نتائج الاختبار وتحليلها من:
+
+| Framework | Example Output |
+|-----------|-----------------|
+| Jest/Vitest (Node.js) | `Tests: 42 passed, 42 total` |
+| Pytest (Python) | `42 passed in 2.5s` |
+| Cargo (Rust) | `test result: ok. 42 passed` |
+| Go Test | `ok github.com/user/project` |
+
+إذا فشل التحليل، فإنه يعود للخروج من التعليمات البرمجية (0 = تمرير، غير صفر = فشل).
+
+### تحديثات حالة القصة
+
+يتم تسجيل نتائج الاختبار تلقائيًا في قصصك:
+
+```json
+{
+  "story_id": "US-0042",
+  "test_status": "passing",
+  "test_results": {
+    "last_run": "2025-12-06T10:30:00Z",
+    "command": "npm test",
+    "passed": 42,
+    "failed": 0,
+    "exit_code": 0,
+    "output_summary": "All tests passed (42/42)"
+  }
+}
+```
+
+### تتبع متعدد القصة
+
+بدون معرف قصة محدد، تحقق من التحديثات كلها `in_progress` القصص:
+
+```bash
+/agileflow:verify
+# Updates test_status for:
+# - US-0042: passing
+# - US-0043: passing
+# - US-0044: failing
+```
+
+## الاستخدام
+
+### تشغيل كافة الاختبارات
+
+```bash
+/agileflow:verify
+```
+
+ينفذ مجموعة الاختبار الخاصة بك ويحدث جميع القصص قيد التقدم بالنتائج.
+
+### إجراء اختبارات لقصة محددة
+
+```bash
+/agileflow:verify US-0042
+```
+
+يقوم بتشغيل الاختبارات وتحديث حالة اختبار US-0042 فقط. مفيد عندما تعمل على قصة واحدة فقط.
+
+### حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | No | All in-progress | Story ID to update (e.g., US-0042) |
+
+## أمثلة
+
+### سير عمل التطوير النموذجي
+
+```bash
+# Make code changes...
+
+# Verify tests still pass
+/agileflow:verify
+
+# Output:
+# ✅ PASSED | npm test | 42 passed, 0 failed | 12.3s
+# Updated stories:
+# - US-0042: passing
+# - US-0043: passing
+```
+
+### فشل الاختبارات - قم بإصلاحها
+
+```bash
+/agileflow:verify
+
+# Output:
+# ❌ FAILED | npm test | 40 passed, 2 failed | 8.7s
+#
+# Failed tests:
+#   ❌ auth.test.ts:42 - Expected redirect
+#   ❌ api.test.ts:67 - Session token not persisting
+#
+# Updated stories:
+# - US-0042: failing
+# - US-0043: failing
+```
+
+### قبل إنشاء خط الأساس
+
+```bash
+# Ensure all tests pass before marking a milestone
+/agileflow:verify
+
+# If passing:
+/agileflow:baseline "Sprint 3 complete"
+
+# If failing:
+# (Fix tests first, then baseline)
+```
+
+## تنسيق الإخراج
+
+### تقرير النجاح
+
+```text
+🧪 Test Verification Complete
+
+Command: npm test
+Duration: 12.3s
+Result: ✅ PASSED
+
+Tests: 42 passed, 0 failed, 42 total
+
+Updated stories:
+- US-0042: passing
+- US-0043: passing
+
+All in-progress stories have passing tests ✅
+```
+
+### تقرير الفشل
+
+```text
+🧪 Test Verification Complete
+
+Command: npm test
+Duration: 8.7s
+Result: ❌ FAILED
+
+Tests: 40 passed, 2 failed, 42 total
+
+Failed tests:
+  ❌ auth.test.ts:42
+     Expected redirect to /dashboard
+     Got redirect to /login
+
+  ❌ api.test.ts:67
+     Session token not persisting
+     Cookie not set after login
+
+Updated stories:
+- US-0042: failing
+- US-0043: failing
+
+⚠️  WARNING: 2 stories now have failing tests
+```
+
+### نفذ الوقت
+
+```text
+🧪 Test Verification Failed
+
+Command: npm test
+Result: ⏱️  TIMEOUT (60s)
+
+The test suite did not complete within 60 seconds.
+
+Updated stories:
+- US-0042: failing (timeout)
+
+Consider:
+1. Increase test_timeout_ms in environment.json
+2. Optimize slow tests
+3. Run specific test suites instead of all tests
+```
+
+## إعدادات
+
+التحقق من استخدامات الإعدادات من `docs/00-meta/environment.json`:
+
+```json
+{
+  "test_command": "npm test",
+  "test_timeout_ms": 60000,
+  "project_type": "nodejs"
+}
+```
+
+لتخصيص سلوك الاختبار:
+
+1. يحرر `docs/00-meta/environment.json`
+2. يتغير `test_command` لأمرك
+3. يتغير `test_timeout_ms` إلى المهلة المطلوبة
+4. قم بتشغيل التحقق مرة أخرى
+
+## المتطلبات الأساسية
+
+التحقق يتطلب:
+
+- **Session harness initialized** - يجري `/agileflow:session:init` أولاً
+- **docs/00-meta/environment.json** - ملف التكوين الاختباري
+- **docs/09-agents/status.json** - تتبع القصة
+- **Working tests** - يجب أن يحتوي مشروعك على مجموعة اختبارية
+
+### تهيئة تسخير الجلسة
+
+إذا تلقيت رسالة الخطأ "لم تتم تهيئة أداة الجلسة":
+
+```bash
+/agileflow:session:init
+```
+
+هذا سوف:
+- كشف نوع المشروع الخاص بك
+- قم بإنشاء بيئة.json مع تكوين الاختبار
+- قم بإعداد اختبار التحقق لجميع القصص
+
+## التكامل مع الأوامر الأخرى
+
+يتم استخدام التحقق تلقائيًا بواسطة:
+
+| Command | When |
+|---------|------|
+| `/babysit` | After implementing code changes |
+| `/baseline` | Before creating verified checkpoints |
+| `/session:resume` | At start of work session |
+| `/pr` | Can include test status in PR description |
+
+يمكنك أيضًا تشغيل التحقق يدويًا في أي وقت للتحقق من الحالة.
+
+## السيناريوهات المشتركة
+
+### "هل نجحت اختباراتي؟"
+
+```bash
+/agileflow:verify
+# Shows immediate pass/fail status with counts
+```
+
+### "إصلاح الاختبارات الفاشلة"
+
+```bash
+# See which tests failed
+/agileflow:verify
+
+# Fix the failing tests in your code editor
+# Then verify again
+/agileflow:verify
+# Should show ✅ PASSED now
+```
+
+### "قصة واحدة تفشل، وأخرى تمر"
+
+```bash
+# Check which story has failing tests
+/agileflow:verify
+
+# Review that story's test_status in output
+# Focus on fixing just that story's tests
+
+# Run verify with specific story to confirm fix
+/agileflow:verify US-0042
+```
+
+### "الاختبارات بطيئة - وتستغرق وقتًا طويلاً"
+
+```bash
+# Timeout occurred
+/agileflow:verify
+
+# Options:
+# 1. Increase timeout in environment.json
+# 2. Run subset of tests: npm test -- --testPathPattern=auth
+# 3. Optimize slow tests
+
+# Increase timeout and try again
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### "لم يتم تهيئة تسخير الجلسة"
+
+**Error:**
+```text
+⚠️  Session harness not initialized
+Run /agileflow:session:init to set up test verification
+```
+
+**Fix:**
+```bash
+/agileflow:session:init
+```
+
+### "لم يتم العثور على الاختبارات"
+
+**Error:**
+```text
+❌ Test Command Failed
+Command: npm test
+Error: npm: command not found
+```
+
+**Fix:**
+- تثبيت التبعيات: `npm install`
+- تحقق من أن أمر الاختبار في Environment.json يطابق الإعداد الخاص بك
+- تحقق من أن PATH يتضمن الأدوات المطلوبة
+
+### "لم يتم العثور على القصة"
+
+**Error:**
+```text
+⚠️  Story US-0099 not found in status.json
+Available in_progress stories:
+- US-0042
+- US-0043
+```
+
+**Fix:**
+- تأكد من صحة معرف القصة (تحقق من Status.json)
+- قم بالتشغيل بدون معرف القصة للتحقق من جميع القصص قيد التقدم
+
+### "حالة json غير صالحة"
+
+**Error:**
+```text
+❌ Cannot Update Status
+File docs/09-agents/status.json is invalid or missing.
+```
+
+**Fix:**
+```bash
+# Re-initialize AgileFlow setup
+/agileflow:setup
+```
+
+## نصائح
+
+### قم بإجراء الاختبارات بشكل متكرر
+
+```bash
+# After every major change
+/agileflow:verify
+
+# Before committing
+/agileflow:verify
+
+# Before creating PR
+/agileflow:verify
+
+# Before baseline
+/agileflow:verify
+```
+
+### قبض على الانحدارات في وقت مبكر
+
+تقوم ميزة التحقق تلقائيًا بتتبع حالة الاختبار حسب القصة، حتى تتمكن من:
+- معرفة متى تنقطع الاختبارات (تغيرات حالة الاختبار)
+- حدد القصة التي أدت إلى الفشل
+- أصلح المشاكل قبل أن تتراكم
+
+### استخدم مع خط الأساس
+
+```bash
+# Ensure all tests pass
+/agileflow:verify
+
+# If all passing:
+/agileflow:baseline "Milestone complete"
+
+# If any failing:
+# (Fix first, then baseline)
+```
+
+## الأوامر ذات الصلة
+
+- [`/ جليسة الأطفال`](/commands/babysit) - مرشد التنفيذ (يتم التحقق تلقائيًا)
+- [`/خط الأساس`](/commands/baseline) - إنشاء نقاط تفتيش تم التحقق منها (يتطلب اجتياز الاختبارات)
+- [`/ الجلسة: init`](/commands/session-init) - تهيئة تسخير الجلسة
+- [`/ الجلسة: استئناف`](/commands/session-resume) - استئناف الجلسة (يعمل التحقق)
+- [`/العلاقات العامة`](/commands/pr) - إنشاء طلب سحب (يظهر حالة الاختبار)

@@ -1,0 +1,399 @@
+---
+title: /velocidade
+description: Rastreie a velocidade e preveja a capacidade do sprint
+---
+
+# /velocidade
+
+Calcule a velocidade da equipe a partir de histórias concluídas, identifique tendências e preveja datas de conclusão épicas e marcantes com níveis de confiança.
+
+## Início rápido
+
+```bash
+/agileflow:velocity
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PERIOD` | No | sprint | Time period: `week`, `sprint`, `month`, or `all` |
+| `FORECAST` | No | - | Predict completion for epic/milestone (e.g., EP-0010) |
+| `FORMAT` | No | report | Output format: `report`, `chart`, or `json` |
+
+## Exemplos
+
+### Ver velocidade atual
+
+```bash
+/agileflow:velocity
+```
+
+Mostre a velocidade do último sprint (2 semanas) com tendências.
+
+### Somente na semana passada
+
+```bash
+/agileflow:velocity PERIOD=week
+```
+
+Concentre-se na velocidade da semana mais recente.
+
+### Tendência do mês
+
+```bash
+/agileflow:velocity PERIOD=month
+```
+
+Tendência de velocidade de 30 dias para identificar padrões sazonais.
+
+### Previsão de conclusão épica
+
+```bash
+/agileflow:velocity FORECAST=EP-0010
+```
+
+Preveja quando o épico de autenticação será concluído com base na velocidade atual.
+
+### Ver como gráfico
+
+```bash
+/agileflow:velocity FORMAT=chart
+```
+
+Gráfico de velocidade de arte ASCII para visualização no terminal.
+
+### Exportar como JSON
+
+```bash
+/agileflow:velocity FORMAT=json
+```
+
+Formato legível por máquina para integração com outras ferramentas.
+
+## Cálculo de velocidade
+
+Velocidade = Total de pontos concluídos por período de tempo
+
+**Example**:
+- Semana 1: 8 dias de história concluídos
+- Semana 2: 10 dias de história concluídos
+- Semana 3: 7 dias de história concluídos
+- **Average velocity**: (8+10+7)/3 = **8.3 story-days/week**
+
+Os pontos são calculados a partir da estimativa da história multiplicada pela conclusão durante o período.
+
+## Relatório de velocidade
+
+O formato de relatório padrão inclui diversas seções:
+
+### Seção de velocidade atual
+
+```text
+📊 Current Velocity
+
+Average:       8.3 points/week
+Trend:         ↗️ +15% (improving)
+Last sprint:   10 points
+Best sprint:   12 points (Week of 2025-12-10)
+Worst sprint:  5 points (Week of 2025-11-26)
+```
+
+Mostra a capacidade geral da equipe e tendência de melhoria.
+
+### Gráfico Histórico de Velocidade
+
+```text
+Points/Week
+ 12 │           ●●●
+ 11 │         ●
+ 10 │   ●●  ●
+  9 │  ●  ●
+  8 │ ●            ← Current (8.3 avg)
+  7 │               ●
+  6 │              ●
+  5 │    ●       ●
+  4 │   ●
+  3 │
+    └──────────────────────────────────────
+     W1  W2  W3  W4  W5  W6  W7  W8
+
+Legend:
+  ● Actual velocity
+  ─ Trend line
+  ↗️ Trend: +15% over period
+```
+
+Representação visual das tendências de velocidade.
+
+### Análise Semanal
+
+```text
+| Week | Points | Stories | Avg Size | Notes |
+|------|--------|---------|----------|-------|
+| 2025-12-24 | 10 | 6 | 1.7d | ↗️ +25% |
+| 2025-12-17 | 8  | 5 | 1.6d | ↗️ +14% |
+| 2025-12-10 | 7  | 4 | 1.8d | ↘️ -30% |
+| 2025-12-03 | 10 | 7 | 1.4d | ↗️ +100% |
+```
+
+Detalhes de cada período mostrando histórias concluídas e variação de tamanho.
+
+### Velocidade por proprietário
+
+```text
+| Owner | Points/Week | Stories/Week | Utilization | Trend |
+|-------|-------------|--------------|-------------|-------|
+| AG-API | 4.1 | 2.8 | 85% | ↗️ +20% |
+| AG-UI | 3.2 | 2.1 | 80% | ↗️ +10% |
+| AG-CI | 0.8 | 0.6 | 40% | → Stable |
+| AG-DEVOPS | 0.2 | 0.2 | 10% | 🆕 New |
+```
+
+Mostra a distribuição e utilização do trabalho por membro da equipe.
+
+## Previsão
+
+Quando você especifica `FORECAST=<epic>`, o comando prevê a conclusão:
+
+### Exemplo de previsão
+
+```text
+🎯 Forecast: Epic Completion
+
+EP-0010: User Authentication
+- Stories: 12 total
+- Completed: 8 (66%)
+- Remaining: 4 stories, 6 points
+- At current velocity (8.3 pts/wk): under 1 week
+- Forecast completion: 2025-12-31 (7 days)
+- Confidence: High (85%)
+```
+
+**Confidence levels**:
+- **High (>80%)** - Velocidade estável, previsão confiável
+- **Medium (60-80%)** - Alguma variação, previsão razoável
+- **Low (under 60%)** - Alta variação, previsão não confiável
+
+### Algoritmo de Previsão
+
+```text
+Days to complete = (Remaining points / Velocity) * 7
+Completion date = Today + Days to complete
+Confidence = 100% - (Velocity std dev / Velocity avg) * 100
+```
+
+## Saída do gráfico de velocidade
+
+Visualização ASCII da velocidade ao longo do tempo:
+
+```text
+Velocity Trend (8 weeks)
+
+Points/Week
+ 12 ┤           ●●●
+ 11 ┤         ●
+ 10 ┤   ●●  ●
+  9 ┤  ●  ●
+  8 ┤ ●            ← Current (8.3 avg)
+  7 ┤               ●
+  6 ┤              ●
+  5 ┤    ●       ●
+  4 ┤   ●
+  3 ┤
+    └─────────────────────────────────────
+     W1  W2  W3  W4  W5  W6  W7  W8
+
+Trend: ↗️ +15% (improving)
+```
+
+## Velocidade por tamanho da história
+
+Insights sobre quais tamanhos de histórias funcionam melhor:
+
+```text
+Size    | Count | Avg Days | Success Rate
+--------|-------|----------|-------------
+≤0.5d   |   8   |   0.4d   | 100% ✅
+0.5-1d  |  12   |   0.9d   |  92% ✅
+1-1.5d  |  10   |   1.3d   |  80% ⚠️
+1.5-2d  |   6   |   2.1d   |  67% ⚠️
+>2d     |   3   |   3.5d   |  33% 🔴
+```
+
+Mostra que histórias menores são concluídas de forma mais rápida e confiável.
+
+**Insight**: Histórias ≤1d são concluídas mais rapidamente. Divida histórias >1,5d em incrementos menores.
+
+## Análise de Risco
+
+O relatório inclui avaliação de risco:
+
+```text
+⚠️ Risk Analysis
+
+### Velocity Risks
+1. **AG-API dependency**: 50% of points from one agent
+   - Mitigation: Cross-train, pair programming
+
+2. **Story size variance**: Some 2d stories slow velocity
+   - Mitigation: Split stories >1.5d
+
+3. **Seasonal slowdown**: Historical dip in Week 5
+   - Mitigation: Add buffer to forecasts
+
+### Schedule Risks
+- EP-0011 blocking release
+- If velocity drops 20% → Release delayed 1 week
+- If AG-API unavailable → 50% velocity loss
+```
+
+Ajuda a identificar e mitigar riscos às previsões.
+
+## Planejamento de Capacidade
+
+Recomendações para planejamento de sprint:
+
+```text
+📅 Capacity Planning
+
+**Current Capacity**: 8.3 points/week (4 agents)
+
+**This Sprint** (2 weeks):
+- Plan: 16-18 points (2x velocity)
+- Buffer: Keep 2-3 ready stories
+- Focus: Complete EP-0010
+
+**Next Sprint**:
+- Plan: 16-20 points
+- Priority: EP-0011 (release blocker)
+- Consider: Add stories for AG-CI (underutilized)
+
+**Long-term**:
+- Maintain 8-10 points/week sustained velocity
+- Reserve 20% for tech debt
+- Keep story sizes ≤1.5d for predictability
+```
+
+Ajuda a planejar a carga de trabalho do sprint com base na velocidade real.
+
+## Exportar formatos
+
+### Relatório (padrão)
+
+Relatório completo de velocidade de remarcação com todas as seções.
+
+### Gráfico
+
+Apenas gráfico de tendência de velocidade de arte ASCII:
+
+```text
+Velocity Trend (8 weeks)
+
+Points/Week
+ 12 ┤           ●●●
+ 11 ┤         ●
+...
+```
+
+### JSON
+
+Formato legível por máquina:
+
+```json
+{
+  "generated": "2025-12-24T14:30:00Z",
+  "period": "8 weeks",
+  "velocity": {
+    "current": 8.3,
+    "trend": "+15%",
+    "last_sprint": 10,
+    "best": 12,
+    "worst": 5,
+    "std_dev": 2.1
+  },
+  "by_owner": {
+    "AG-UI": 3.2,
+    "AG-API": 4.1,
+    "AG-CI": 0.8,
+    "AG-DEVOPS": 0.2
+  },
+  "forecasts": [
+    {
+      "epic": "EP-0010",
+      "remaining_points": 6,
+      "weeks_needed": 0.7,
+      "completion_date": "2025-12-31",
+      "confidence": 85
+    }
+  ]
+}
+```
+
+## Melhores Práticas
+
+1. **Track over 3+ periods** - Precisa de pelo menos 3 semanas para velocidade confiável
+2. **Use consistent estimates** - Estimativas nas mesmas unidades (dias, pontos)
+3. **Review trends** - Procure padrões de melhoria ou declínio
+4. **Account for holidays** - Ajustar as previsões para folga
+5. **Update weekly** - Acompanhe a velocidade de cada sprint em busca de tendências
+
+## Metas de velocidade
+
+Defina metas de equipe e acompanhe o progresso:
+
+```text
+🎯 Velocity Goals
+
+Current:    8.3 points/week
+Target:     10 points/week (by end of quarter)
+Stretch:    12 points/week
+
+Action Items:
+- [ ] Split 2 large stories (US-0050, US-0051)
+- [ ] Assign 2 more stories to AG-CI
+- [ ] Review blockers (US-0041)
+- [ ] Celebrate hitting 10 pts/wk! 🎉
+```
+
+## Comandos Relacionados
+
+- [`/agileflow:métricas`](/commands/metrics) - Métricas e análises detalhadas
+- [`/agileflow:board`](/commands/board) - Quadro visual kanban
+- [`/agileflow:bloqueadores`](/commands/blockers) - Identificar bloqueadores de velocidade
+- [`/agileflow:status`](/commands/status) - Atualizar status da história
+
+## Perguntas frequentes
+
+<Accordion type="multiple">
+  <AccordionItem value="variable">
+    <AccordionTrigger>Why is my velocity so variable?</AccordionTrigger>
+    <AccordionContent>
+      Possíveis causas: histórias com tamanhos muito variados (padronizar estimativas), interrupções frequentes (proteger o tempo de trabalho), bloqueadores que retardam a conclusão (desbloqueio mais rápido) ou alterações na capacidade da equipe (novos membros, ausências).
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="data-points">
+    <AccordionTrigger>How many data points do I need?</AccordionTrigger>
+    <AccordionContent>
+      Pelo menos 3 períodos de tempo para confiabilidade. Menos de 5 períodos = previsão de baixa confiança.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="onboarding">
+    <AccordionTrigger>Should I include velocity during onboarding?</AccordionTrigger>
+    <AccordionContent>
+      Não, exclua os primeiros sprints. Novos membros da equipe diminuem a velocidade temporariamente.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="declining">
+    <AccordionTrigger>What if velocity is declining?</AccordionTrigger>
+    <AccordionContent>
+      Investigue: bloqueios crescentes, histórias maiores, ausências da equipe ou problemas de qualidade que exijam retrabalho.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="low-confidence">
+    <AccordionTrigger>Can I forecast with low confidence?</AccordionTrigger>
+    <AccordionContent>
+      Sim, mas use buffers amplos. A estimativa P90 (90% de confiança) é mais conservadora que a P50 (50% de confiança).
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

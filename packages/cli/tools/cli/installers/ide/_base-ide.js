@@ -15,6 +15,11 @@ const {
   ContentInjectionError,
   withPermissionHandling,
 } = require('../../lib/ide-errors');
+const {
+  replaceReferences,
+  createDocsReplacements,
+  injectContent: injectDynamicContentHelper,
+} = require('../../lib/content-transformer');
 
 /**
  * Base class for IDE-specific setup
@@ -48,6 +53,7 @@ class BaseIdeSetup {
 
   /**
    * Replace docs/ references in content with custom folder name
+   * Uses content-transformer module for consistent replacements
    * @param {string} content - File content
    * @returns {string} Updated content
    */
@@ -56,28 +62,31 @@ class BaseIdeSetup {
       return content; // No replacement needed
     }
 
-    // Replace all variations of docs/ references
-    return content
-      .replace(/docs\//g, `${this.docsFolder}/`)
-      .replace(/`docs\//g, `\`${this.docsFolder}/`)
-      .replace(/"docs\//g, `"${this.docsFolder}/`)
-      .replace(/'docs\//g, `'${this.docsFolder}/`)
-      .replace(/\(docs\//g, `(${this.docsFolder}/`)
-      .replace(/docs\/\)/g, `${this.docsFolder}/)`)
-      .replace(/\bdocs\b(?!\.)/g, this.docsFolder); // Replace standalone "docs" word
+    // Use content-transformer for standard replacements
+    let result = replaceReferences(content, createDocsReplacements(this.docsFolder));
+
+    // Additional patterns not covered by standard replacements
+    result = replaceReferences(result, {
+      'docs/)': `${this.docsFolder}/)`,
+    });
+
+    // Replace standalone "docs" word (not followed by .)
+    result = result.replace(/\bdocs\b(?!\.)/g, this.docsFolder);
+
+    return result;
   }
 
   /**
    * Inject dynamic content into template (agent lists, command lists)
+   * Uses content-transformer module for consistent injection
    * @param {string} content - Template file content
    * @param {string} agileflowDir - AgileFlow installation directory
    * @returns {string} Content with placeholders replaced
    */
   injectDynamicContent(content, agileflowDir) {
-    const { injectContent } = require('../../lib/content-injector');
     // agileflowDir is the user's .agileflow installation directory
     // which has agents/, commands/, skills/ at the root level
-    return injectContent(content, {
+    return injectDynamicContentHelper(content, {
       coreDir: agileflowDir,
       agileflowFolder: this.agileflowFolder,
       version: this.getVersion(),

@@ -1,0 +1,186 @@
+---
+title: /التحقق من الخبرة
+description: التحقق من صحة ملفات الخبرة للانجراف والجفاء
+---
+
+# /التحقق من الخبرة
+
+التحقق من صحة ملفات خبرة الوكيل للتأكد من أنها لم تنجرف من قاعدة التعليمات البرمجية وتظل محدثة.
+
+## بداية سريعة
+
+```bash
+/agileflow:validate-expertise
+```
+
+التحقق من صحة جميع ملفات الخبرة. يمكنك أيضًا التحقق من صحة مجال معين:
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `DOMAIN` | No | (all) | Validate specific domain expertise file (e.g., `database`, `api`) |
+
+## فحوصات التحقق من الصحة
+
+يقوم الأمر بإجراء أربع عمليات تحقق مهمة من صحة كل ملف خبرة:
+
+### 1. انحراف مسار الملف
+التحقق من أن جميع مسارات الملفات المشار إليها في ملف الخبرة لا تزال موجودة في قاعدة التعليمات البرمجية. يكتشف متى تم نقل الملفات الموثقة أو إعادة تسميتها أو حذفها.
+
+**Example**: إذا المراجع Expert.yaml `src/old/database.ts` ولكن هذا الملف لم يعد موجودا، فإنه يضع علامة على هذا باعتباره الانجراف.
+
+### 2. التعلم الذي لا معنى له
+وضع علامات على ملفات الخبرة التي لم يتم تحديثها خلال 30 يومًا أو أكثر. الخبرة التي لا تتم صيانتها بانتظام تصبح قديمة وأقل موثوقية.
+
+**Warning**: يتم وضع علامة على الملفات التي لم يتم تحديثها خلال أكثر من 30 يومًا للمراجعة والتحديث.
+
+### 3. التحقق من حجم الملف
+يحذر إذا تجاوز ملف الخبرة 200 سطر. من الصعب الحفاظ على الملفات كبيرة الحجم ويجب تقسيمها إلى مستندات أصغر حجمًا ومركزة.
+
+**Recommendation**: احتفظ بملفات الخبرة تحت 200 سطر لتحسين إمكانية الصيانة.
+
+### 4. الأقسام المطلوبة
+التحقق من أن ملف Expert.yaml يحتوي على جميع الأقسام المطلوبة:
+- `domain`: معرف المجال
+- `mental_models`: نموذج عقلي واحد على الأقل (المفاهيم الأساسية)
+- `learnings`: سجل التعلم (يمكن أن يكون فارغًا في البداية)
+- `key_files`: ملفات هامة لهذا المجال
+- `patterns`: الأنماط الشائعة والأنماط المضادة
+
+## أمثلة
+
+### التحقق من صحة كافة ملفات الخبرة
+
+```bash
+/agileflow:validate-expertise
+```
+
+يقوم بتشغيل التحقق من صحة كافة ملفات الخبرة في `.agileflow/experts/` دليل.
+
+### التحقق من صحة المجال المحدد
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+التحقق من صحة ملف خبرة مجال قاعدة البيانات فقط.
+
+### تحقق من مجال آخر
+
+```bash
+/agileflow:validate-expertise DOMAIN=api
+```
+
+التحقق من صحة ملف خبرة مجال API فقط.
+
+## تنسيق الإخراج
+
+ينتج الأمر تقريرًا تفصيليًا للتحقق من الصحة:
+
+```text
+======================================
+EXPERTISE VALIDATION REPORT
+======================================
+
+Validating: database
+  [PASS] File exists: expertise.yaml
+  [PASS] Required sections present
+  [WARN] 2 stale learnings (>30 days)
+  [FAIL] DRIFT: src/old/database.ts not found
+
+Validating: api
+  [PASS] All checks passed
+
+Validating: frontend
+  [WARN] File size: 287 lines (recommend <200)
+
+--------------------------------------
+SUMMARY
+--------------------------------------
+Total domains: 25
+Passed: 23
+Warnings: 1
+Failures: 1
+
+RECOMMENDED ACTIONS:
+1. Update database expertise - remove reference to src/old/database.ts
+2. Split frontend expertise - reduce from 287 to <200 lines
+3. Review stale learnings in database domain
+```
+
+## مؤشرات الحالة
+
+| Indicator | Meaning | Action |
+|-----------|---------|--------|
+| `[PASS]` | Check passed successfully | No action needed |
+| `[WARN]` | Non-critical issue found | Review and consider fixing |
+| `[FAIL]` | Critical issue found | Must be fixed |
+
+## القضايا والحلول المشتركة
+
+| Issue | Indicator | Solution |
+|-------|-----------|----------|
+| Referenced file doesn't exist | `[FAIL] DRIFT` | Remove or update file path reference |
+| File not updated in 30+ days | `[WARN] stale` | Review and update learnings |
+| Expertise file too large | `[WARN] File size` | Split into focused files |
+| Missing required sections | `[FAIL] Required sections` | Add missing sections to expertise.yaml |
+
+## متى يتم التشغيل
+
+تشغيل التحقق من الخبرة:
+- **After session start**: اختياري كجزء من فحوصات صحة النظام (يمكن تهيئته كخطاف)
+- **Before major releases**: تأكد من أن جميع الخبرات حديثة ودقيقة
+- **After large refactors**: التحقق من أن مراجع الملفات لا تزال تشير إلى مواقع صالحة
+- **Periodically**: تشغيل شهري/ربع سنوي للحفاظ على عملة الخبرة
+- **When modifying expertise**: التحقق من صحة التغييرات قبل الالتزام
+
+## موقع ملف الخبرة
+
+يتم تخزين ملفات الخبرة في:
+```text
+.agileflow/experts/{domain}/expertise.yaml
+```
+
+على سبيل المثال:
+- `.agileflow/experts/database/expertise.yaml`
+- `.agileflow/experts/api/expertise.yaml`
+- `.agileflow/experts/frontend/expertise.yaml`
+
+## معايير النجاح
+
+يجب أن يكون ملف الخبرة الصحي:
+- ✅ جميع الملفات المشار إليها موجودة في قاعدة التعليمات البرمجية
+- ✅ تم التحديث خلال آخر 30 يومًا
+- ✅ أقل من 200 سطر
+- ✅ يحتوي على جميع الأقسام المطلوبة (المجال، النماذج العقلية، التعلم، الملفات الرئيسية، الأنماط)
+
+## التكامل مع سير العمل الخاص بك
+
+يمكنك تكوين التحقق من الخبرة ليتم تشغيله تلقائيًا:
+
+```bash
+/agileflow:configure --enable=expertise-validation
+```
+
+يؤدي ذلك إلى إضافة خطاف SessionStart الذي يتحقق من صحة الخبرة في كل بداية جلسة وينبهك بالمشكلات.
+
+## تفاصيل الكشف عن الانجراف
+
+إن انحراف مسار الملف هو المشكلة الأكثر أهمية التي تم اكتشافها. يبحث الأمر عن مراجع الملفات بالتنسيق:
+- `src/...` - ملفات التعليمات البرمجية المصدر
+- `packages/...` - حزم مونوريبو
+- `lib/...` - ملفات المكتبة
+
+إذا لم تعد هذه المسارات موجودة، فسيتم وضع علامة عليها للاهتمام بها وإزالتها على الفور.
+
+## الأوامر ذات الصلة
+
+- [`/تكوين`](/commands/configure) - تكوين التحقق من الصحة ليتم تشغيله تلقائيا
+- [`/تشخيص`](/commands/diagnose) - تشغيل تشخيص صحة النظام
+- [`/ الوكيل`](/commands/agent) - وكلاء جدد على متن الطائرة (إنشاء ملفات الخبرة)
+- [`/مساعدة`](/commands/help) - عرض جميع الأوامر المتاحة

@@ -1,0 +1,451 @@
+---
+title: /pruebas-de-configuración
+description: Configurar una infraestructura de pruebas automatizada
+---
+
+# /pruebas-de-configuración
+
+Detecte automáticamente su tipo de proyecto e inicie una infraestructura de prueba completa con instalación de marco, configuración, pruebas de ejemplo e integración de CI.
+
+## Inicio rápido
+
+```bash
+/agileflow:setup-tests FRAMEWORK=auto COVERAGE=yes
+```
+
+## Objetivo
+
+Este comando crea una base de pruebas profesional al:
+- Detección automática del lenguaje y marco de su proyecto
+- Instalación de dependencias del marco de pruebas adecuadas
+- Crear archivos de configuración de prueba
+- Generación de pruebas unitarias, de integración y de ejemplo E2E
+- Agregar scripts de prueba a su configuración de compilación
+- Integración de pruebas en el proceso de CI/CD
+- Creación de documentación de prueba y mejores prácticas.
+- Ejecución de pruebas para verificar que la configuración funciona.
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FRAMEWORK` | No | `auto` | `auto`, `jest`, `mocha`, `pytest`, `rspec`, `go-test`, `cargo-test` |
+| `COVERAGE` | No | `yes` | Enable coverage reporting: `yes` or `no` |
+| `E2E` | No | `no` | Include E2E tests: `yes` or `no` |
+
+## Ejemplos
+
+### Detección automática y configuración
+
+```bash
+/agileflow:setup-tests
+```
+
+Detecta Node.js/Python/Ruby/Go/Rust e instala el marco apropiado.
+
+### Marco específico de fuerza
+
+```bash
+/agileflow:setup-tests FRAMEWORK=jest COVERAGE=yes
+```
+
+Utiliza Jest para realizar pruebas con la cobertura habilitada.
+
+### Incluir pruebas E2E
+
+```bash
+/agileflow:setup-tests E2E=yes
+```
+
+Configura pruebas unitarias, de integración Y de un extremo a otro (Dramaturgo para aplicaciones web).
+
+### Proyecto Python
+
+```bash
+/agileflow:setup-tests FRAMEWORK=pytest
+```
+
+Instala pytest con cobertura y crea pruebas de ejemplo.
+
+## Detección de proyectos
+
+El comando detecta automáticamente su pila tecnológica:
+
+| Tech Stack | Framework | Detected By |
+|-----------|-----------|-------------|
+| Node.js | Jest | package.json |
+| Node.js (older) | Mocha | package.json |
+| Python | pytest | requirements.txt, pyproject.toml |
+| Ruby | RSpec | Gemfile |
+| Go | go test | go.mod |
+| Rust | cargo test | Cargo.toml |
+| Java | JUnit | pom.xml, build.gradle |
+| .NET | xUnit/NUnit | *.csproj |
+
+## Archivos de salida
+
+El comando crea una configuración de prueba completa:
+
+### Archivos de configuración
+
+**Jest** (`jest.config.js`):
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    '!src/**/*.d.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
+  }
+};
+```
+
+**pytest** (`pytest.ini`):
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py *_test.py
+addopts = --cov=src --cov-report=html --cov-report=term
+```
+
+**RSpec** (`.rspec`):
+```text
+--format documentation
+--require spec_helper
+```
+
+### Estructura del directorio
+
+Crea directorios de prueba organizados:
+
+<FileTree>
+  <Folder name="tests">
+    <Folder name="unit" />
+    <Folder name="integration" />
+    <Folder name="e2e" />
+    <Folder name="fixtures" />
+    <Folder name="helpers" />
+  </Folder>
+</FileTree>
+
+### Pruebas de ejemplo
+
+**Unit Test** (`tests/unit/example.test.ts`):
+```typescript
+describe('Example Test Suite', () => {
+  it('should pass this example test', () => {
+    expect(true).toBe(true);
+  });
+
+  it('should test basic math', () => {
+    expect(2 + 2).toBe(4);
+  });
+});
+```
+
+**Component Test** (`tests/components/Button.test.tsx`):
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import Button from '@/components/Button';
+
+describe('Button Component', () => {
+  it('renders with text', () => {
+    render(<Button>Click Me</Button>);
+    expect(screen.getByText('Click Me')).toBeInTheDocument();
+  });
+
+  it('calls onClick when clicked', () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click</Button>);
+    fireEvent.click(screen.getByText('Click'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+**Integration Test** (`tests/integration/api.test.ts`):
+```typescript
+import request from 'supertest';
+import app from '@/app';
+
+describe('API Integration Tests', () => {
+  it('GET / should return 200', async () => {
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+  });
+
+  it('POST /api/users should create user', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ name: 'Test User', email: 'test@example.com' });
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+  });
+});
+```
+
+**E2E Test** (`tests/e2e/login.spec.ts`):
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('user can log in', async ({ page }) => {
+  await page.goto('http://localhost:3000/login');
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  await expect(page).toHaveURL('http://localhost:3000/dashboard');
+});
+```
+
+### Guiones de NPM
+
+Actualizado `package.json`:
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "playwright test"
+  }
+}
+```
+
+### Integración de CI
+
+Agrega trabajo de prueba a `.github/workflows/ci.yml`:
+```yaml
+test:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test -- --coverage
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/lcov.info
+```
+
+### Documentación
+
+Crea `docs/02-practices/testing.md`:
+```markdown
+# Testing Guide
+
+## Running Tests
+
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # With coverage report
+npm run test:unit     # Unit tests only
+
+## Writing Tests
+
+### Unit Tests
+- Test individual functions/classes in isolation
+- Mock external dependencies
+- Fast (<10ms per test)
+
+### Integration Tests
+- Test multiple components together
+- Use real dependencies when possible
+- Medium speed (<100ms per test)
+
+### E2E Tests
+- Test full user flows
+- Run against real app
+- Slow (seconds per test)
+
+## Coverage Requirements
+
+- Minimum 70% coverage (enforced in CI)
+- New code should be 90%+ covered
+- Critical paths require 100% coverage
+
+## Best Practices
+
+- Use descriptive test names (Given/When/Then)
+- One assertion per test when possible
+- Avoid test interdependence
+- Use factories/fixtures for test data
+```
+
+## Tipos de prueba
+
+### Pruebas unitarias
+**What**: Pruebe funciones/clases individuales de forma aislada
+**Speed**: Rápido (< 10 ms cada uno)
+**Mocking**: Sí, dependencias simuladas
+**Coverage**: La mayoría del código debería tener pruebas unitarias.
+
+Ejemplo: Pruebe una función de utilidad que calcule la edad del usuario.
+
+### Pruebas de integración
+**What**: Pruebe varios componentes trabajando juntos
+**Speed**: Medio (< 100 ms cada uno)
+**Mocking**: Mínimo, utilice componentes reales.
+**Coverage**: Flujos de trabajo críticos y rutas API
+
+Ejemplo: Pruebe que el flujo de autenticación funcione de un extremo a otro con la base de datos.
+
+### Pruebas E2E (opcional)
+**What**: Pruebe flujos de usuarios completos en una aplicación real
+**Speed**: Lento (segundos por prueba)
+**Mocking**: Ninguno, aplicación real
+**Coverage**: Solo viajes de usuarios críticos
+
+Ejemplo: Registro de usuario → iniciar sesión → ver el flujo del panel.
+
+## Umbrales de cobertura
+
+Umbrales predeterminados (razonables, no perfeccionistas):
+- **Branches**: 70% - Todas las vías de decisión cubiertas
+- **Functions**: 70% - Todas las funciones llamadas
+- **Lines**: 70% - Todas las líneas ejecutadas
+- **Statements**: 70% - Se ejecutan todas las declaraciones
+
+**Why not 100%?**
+- Una cobertura del 100% no garantiza una corrección del 100%
+- Algunos códigos son difíciles de probar (UI, casos extremos)
+- Rentabilidades decrecientes después del 70-80%
+- En su lugar, céntrese en los caminos críticos
+
+## Ejecución de pruebas
+
+### Durante el desarrollo
+```bash
+npm run test:watch
+```
+Ejecuta pruebas automáticamente cuando los archivos cambian.
+
+### Antes de comprometerse
+```bash
+npm test
+npm run test:coverage
+```
+Conjunto de pruebas completo con verificación de cobertura.
+
+### En CI
+Se ejecuta automáticamente con cada pulsación:
+```bash
+npm test -- --coverage --ci
+```
+
+## Flujo de trabajo
+
+La configuración sigue estos pasos:
+
+1. **Detect Language/Runtime**
+   - Busca package.json, Gemfile, go.mod, etc.
+   - Determina el marco apropiado
+
+2. **Check Existing Setup**
+   - Busca directorios de pruebas (test/, tests/, __tests__/)
+   - Comprueba los archivos de configuración de prueba
+   - Detecta la configuración de CI
+
+3. **Show Setup Plan**
+   ```
+   Will install:
+   - jest, @types/jest, ts-jest
+   - @testing-library/react
+
+   Will create:
+   - jest.config.js
+   - tests/ directory structure
+   - Example tests
+
+   Will update:
+   - package.json (test scripts)
+   - .github/workflows/ci.yml (test job)
+
+   Proceed? (YES/NO)
+   ```
+
+4. **Install Dependencies**
+   - Instalación npm, instalación pip, instalación de paquete, etc.
+
+5. **Create Configuration**
+   - Archivos de configuración específicos del marco
+
+6. **Generate Examples**
+   - Ejemplo de prueba unitaria
+   - Ejemplo de prueba de integración
+   - Ejemplo de prueba E2E (si se solicita)
+
+7. **Update Scripts and CI**
+   - Agregar comandos de prueba
+   - Integrar con el flujo de trabajo existente
+
+8. **Run Tests**
+   - Verificar que la configuración funcione
+   - Mostrar informe de cobertura
+
+9. **Create Documentation**
+   - guía de pruebas
+   - Mejores prácticas
+   - Expectativas de cobertura
+
+## Próximos pasos
+
+Una vez completada la configuración:
+
+1. **Run Tests Locally**
+   ```bash
+   npm test
+   npm run test:watch
+   ```
+
+2. **Write First Tests**
+   - Comience con pruebas unitarias para servicios públicos
+   - Agregar pruebas de integración para API
+   - Posteriormente agregar pruebas E2E para flujos críticos.
+
+3. **Enable Coverage Checks**
+   - CI requiere cobertura mínima
+   - Fusión bloqueada si la cobertura cae
+
+4. **Monitor Coverage Trends**
+   - Utilice codecov.io o similar
+   - Seguimiento de la cobertura a lo largo del tiempo
+   - Celebre las mejoras
+
+## Mejores prácticas
+
+1. **Write Tests Early** - TDD o funciones paralelas
+2. **Keep Tests Fast** - Simulacros de operaciones lentas
+3. **Use Descriptive Names** - El nombre de la prueba explica lo que prueba.
+4. **One Assert Per Test** - Cuando sea posible, deja claras las fallas.
+5. **DRY in Tests** - Usar accesorios, fábricas, montaje/desmontaje.
+6. **Test Behavior** - No hay detalles de implementación.
+7. **Avoid Flakiness** - Sin problemas de sincronización, fallas aleatorias
+8. **Clean Up** - Restablecer el estado entre pruebas.
+
+## Comandos relacionados
+
+- [`/ci-configuración`](/commands/ci) - Configurar el flujo de trabajo CI/CD
+- [`/configuración-implementación`](/commands/deploy) - Configurar la implementación
+- [`/paquetes`](/commands/packages) - Gestionar dependencias de prueba.

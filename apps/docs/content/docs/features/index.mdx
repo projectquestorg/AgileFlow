@@ -49,6 +49,17 @@ Work on multiple features, bugs, or experiments simultaneously with isolated wor
 
 ## Automation
 
+### Hooks System
+
+Event-driven automation using Claude Code's official hooks for triggers and responses.
+
+- **SessionStart hooks** - Run scripts when Claude Code starts
+- **PreCompact hooks** - Preserve context during conversation compression
+- **PreToolUse hooks** - Block dangerous commands before execution
+- **Ready-to-use scripts** - Status line, auto-archival, context preservation
+
+[Learn about Hooks System](/docs/features/hooks-system)
+
 ### Loop Mode
 
 Run Claude autonomously with continuous task execution until completion.
@@ -134,6 +145,7 @@ Protect your codebase from destructive commands using PreToolUse hooks.
 | **Skills** | Custom AI prompts that learn | `/agileflow:skill:create` |
 | **Agent Expertise** | Self-improving domain knowledge | Built-in |
 | **Parallel Sessions** | Work on multiple features | `/agileflow:session:new` |
+| **Hooks System** | Event-driven automation | `/agileflow:configure` |
 | **Loop Mode** | Autonomous task execution | `/agileflow:loop` |
 | **Visual Mode** | Screenshot and browser automation | `/agileflow:visual` |
 | **Compact Context** | Preserve state through compression | Built-in |

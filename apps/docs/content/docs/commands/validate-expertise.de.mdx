@@ -1,0 +1,186 @@
+---
+title: /validate-expertise
+description: Validieren Sie Fachwissensdateien auf Abweichung und Veraltung
+---
+
+# /validate-expertise
+
+Validieren Sie die Expertenwissensdateien der Agenten, um sicherzustellen, dass sie nicht von der Codebasis abweichen und aktuell bleiben.
+
+## Schnellstart
+
+```bash
+/agileflow:validate-expertise
+```
+
+Validiert alle Expertise-Dateien. Sie können auch eine bestimmte Domäne validieren:
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `DOMAIN` | No | (all) | Validate specific domain expertise file (e.g., `database`, `api`) |
+
+## Validierungsprüfungen
+
+Der Befehl führt vier kritische Validierungsprüfungen für jede Expertise-Datei durch:
+
+### 1. Dateipfaddrift
+Überprüft, ob alle Dateipfade, auf die in der Expertise-Datei verwiesen wird, noch in der Codebasis vorhanden sind. Erkennt, wenn dokumentierte Dateien verschoben, umbenannt oder gelöscht wurden.
+
+**Example**: Wenn Expertise.yaml verweist `src/old/database.ts` Da diese Datei jedoch nicht mehr existiert, wird dies als Drift gekennzeichnet.
+
+### 2. Veraltete Erkenntnisse
+Kennzeichnet Expertise-Dateien, die seit 30 oder mehr Tagen nicht aktualisiert wurden. Fachwissen, das nicht regelmäßig gepflegt wird, ist veraltet und weniger zuverlässig.
+
+**Warning**: Dateien, die seit mehr als 30 Tagen nicht aktualisiert wurden, werden zur Überprüfung und Aktualisierung markiert.
+
+### 3. Dateigrößenprüfung
+Warnt, wenn eine Gutachtendatei mehr als 200 Zeilen umfasst. Übergroße Dateien sind schwer zu verwalten und sollten in kleinere, fokussierte Dokumente aufgeteilt werden.
+
+**Recommendation**: Behalten Sie Fachwissensdateien zur besseren Wartbarkeit unter 200 Zeilen.
+
+### 4. Erforderliche Abschnitte
+Überprüft, ob die Datei „expertise.yaml“ alle erforderlichen Abschnitte enthält:
+- `domain`: Domain-ID
+- `mental_models`: Mindestens ein mentales Modell (Kernkonzepte)
+- `learnings`: Lernhistorie (kann zunächst leer sein)
+- `key_files`: Wichtige Dateien für diese Domain
+- `patterns`: Gemeinsame Muster und Anti-Muster
+
+## Beispiele
+
+### Validieren Sie alle Expertise-Dateien
+
+```bash
+/agileflow:validate-expertise
+```
+
+Führt eine Validierung für alle Expertise-Dateien in durch `.agileflow/experts/` Verzeichnis.
+
+### Bestimmte Domäne validieren
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+Validiert nur die Datenbankdomänen-Expertisedatei.
+
+### Überprüfen Sie eine andere Domain
+
+```bash
+/agileflow:validate-expertise DOMAIN=api
+```
+
+Validiert nur die API-Domänen-Expertisedatei.
+
+## Ausgabeformat
+
+Der Befehl erstellt einen detaillierten Validierungsbericht:
+
+```text
+======================================
+EXPERTISE VALIDATION REPORT
+======================================
+
+Validating: database
+  [PASS] File exists: expertise.yaml
+  [PASS] Required sections present
+  [WARN] 2 stale learnings (>30 days)
+  [FAIL] DRIFT: src/old/database.ts not found
+
+Validating: api
+  [PASS] All checks passed
+
+Validating: frontend
+  [WARN] File size: 287 lines (recommend <200)
+
+--------------------------------------
+SUMMARY
+--------------------------------------
+Total domains: 25
+Passed: 23
+Warnings: 1
+Failures: 1
+
+RECOMMENDED ACTIONS:
+1. Update database expertise - remove reference to src/old/database.ts
+2. Split frontend expertise - reduce from 287 to <200 lines
+3. Review stale learnings in database domain
+```
+
+## Statusanzeigen
+
+| Indicator | Meaning | Action |
+|-----------|---------|--------|
+| `[PASS]` | Check passed successfully | No action needed |
+| `[WARN]` | Non-critical issue found | Review and consider fixing |
+| `[FAIL]` | Critical issue found | Must be fixed |
+
+## Häufige Probleme und Lösungen
+
+| Issue | Indicator | Solution |
+|-------|-----------|----------|
+| Referenced file doesn't exist | `[FAIL] DRIFT` | Remove or update file path reference |
+| File not updated in 30+ days | `[WARN] stale` | Review and update learnings |
+| Expertise file too large | `[WARN] File size` | Split into focused files |
+| Missing required sections | `[FAIL] Required sections` | Add missing sections to expertise.yaml |
+
+## Wann laufen?
+
+Führen Sie eine Fachwissensvalidierung durch:
+- **After session start**: Optional im Rahmen von Systemzustandsprüfungen (kann als Hook konfiguriert werden)
+- **Before major releases**: Stellen Sie sicher, dass alle Fachkenntnisse aktuell und korrekt sind
+- **After large refactors**: Überprüfen Sie, ob Dateiverweise weiterhin auf gültige Speicherorte verweisen
+- **Periodically**: Wird monatlich/vierteljährlich ausgeführt, um die Aktualität des Fachwissens aufrechtzuerhalten
+- **When modifying expertise**: Änderungen vor dem Festschreiben validieren
+
+## Speicherort der Expertise-Datei
+
+Die Gutachtendateien werden gespeichert unter:
+```text
+.agileflow/experts/{domain}/expertise.yaml
+```
+
+Zum Beispiel:
+- `.agileflow/experts/database/expertise.yaml`
+- `.agileflow/experts/api/expertise.yaml`
+- `.agileflow/experts/frontend/expertise.yaml`
+
+## Erfolgskriterien
+
+Eine gesunde Fachwissensdatei sollte:
+- ✅ Alle referenzierten Dateien sind in der Codebasis vorhanden
+- ✅ Innerhalb der letzten 30 Tage aktualisiert
+- ✅ Unter 200 Zeilen
+- ✅ Enthält alle erforderlichen Abschnitte (Domäne, mentale_Modelle, Erkenntnisse, Schlüsseldateien, Muster)
+
+## Integration in Ihren Workflow
+
+Sie können die Fachwissensvalidierung so konfigurieren, dass sie automatisch ausgeführt wird:
+
+```bash
+/agileflow:configure --enable=expertise-validation
+```
+
+Dadurch wird ein SessionStart-Hook hinzugefügt, der das Fachwissen bei jedem Sitzungsstart validiert und Sie auf Probleme aufmerksam macht.
+
+## Details zur Drifterkennung
+
+Dateipfaddrift ist das kritischste erkannte Problem. Der Befehl sucht nach Dateiverweisen im Format:
+- `src/...` - Quellcodedateien
+- `packages/...` - Monorepo-Pakete
+- `lib/...` - Bibliotheksdateien
+
+Wenn diese Pfade nicht mehr vorhanden sind, werden sie zur sofortigen Bearbeitung und Entfernung markiert.
+
+## Verwandte Befehle
+
+- [`/configure`](/commands/configure) - Konfigurieren Sie die Validierung so, dass sie automatisch ausgeführt wird
+- [`/diagnose`](/commands/diagnose) - Führen Sie eine Systemzustandsdiagnose durch
+- [`/agent`](/commands/agent) - Onboarding neuer Agenten (erstellt Fachwissensdateien)
+- [`/help`](/commands/help) - Alle verfügbaren Befehle anzeigen

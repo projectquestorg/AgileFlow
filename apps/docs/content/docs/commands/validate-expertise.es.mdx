@@ -1,0 +1,186 @@
+---
+title: /validar-experiencia
+description: Validar archivos de experiencia para detectar desvíos y obsolescencias
+---
+
+# /validar-experiencia
+
+Valide los archivos de experiencia del agente para asegurarse de que no se hayan desviado del código base y permanezcan actualizados.
+
+## Inicio rápido
+
+```bash
+/agileflow:validate-expertise
+```
+
+Valida todos los archivos de experiencia. También puedes validar un dominio específico:
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `DOMAIN` | No | (all) | Validate specific domain expertise file (e.g., `database`, `api`) |
+
+## Comprobaciones de validación
+
+El comando realiza cuatro comprobaciones de validación críticas en cada archivo de experiencia:
+
+### 1. Desviación de la ruta del archivo
+Comprueba que todas las rutas de archivo a las que se hace referencia en el archivo de experiencia todavía existen en el código base. Detecta cuándo se han movido, renombrado o eliminado archivos documentados.
+
+**Example**: Si hace referencia a expert.yaml `src/old/database.ts` pero ese archivo ya no existe, lo marca como deriva.
+
+### 2. Aprendizajes obsoletos
+Marca los archivos de experiencia que no se han actualizado en 30 días o más. La experiencia que no se mantiene periódicamente queda obsoleta y menos confiable.
+
+**Warning**: Los archivos que no se actualizan en más de 30 días se marcan para revisión y actualización.
+
+### 3. Verificación del tamaño del archivo
+Advierte si un archivo de experiencia supera las 200 líneas. Los archivos de gran tamaño son difíciles de mantener y deben dividirse en documentos más pequeños y enfocados.
+
+**Recommendation**: Mantenga los archivos de experiencia en menos de 200 líneas para una mejor mantenibilidad.
+
+### 4. Secciones requeridas
+Verifica que el archivo expert.yaml contenga todas las secciones requeridas:
+- `domain`: Identificador de dominio
+- `mental_models`: Al menos un modelo mental (conceptos centrales)
+- `learnings`: Historial de aprendizaje (puede estar vacío inicialmente)
+- `key_files`: Archivos importantes para este dominio
+- `patterns`: Patrones y antipatrones comunes
+
+## Ejemplos
+
+### Validar todos los archivos de experiencia
+
+```bash
+/agileflow:validate-expertise
+```
+
+Ejecuta la validación de todos los archivos de experiencia en `.agileflow/experts/` directorio.
+
+### Validar dominio específico
+
+```bash
+/agileflow:validate-expertise DOMAIN=database
+```
+
+Valida únicamente el archivo de experiencia del dominio de la base de datos.
+
+### Verifique otro dominio
+
+```bash
+/agileflow:validate-expertise DOMAIN=api
+```
+
+Valida solo el archivo de experiencia del dominio API.
+
+## Formato de salida
+
+El comando produce un informe de validación detallado:
+
+```text
+======================================
+EXPERTISE VALIDATION REPORT
+======================================
+
+Validating: database
+  [PASS] File exists: expertise.yaml
+  [PASS] Required sections present
+  [WARN] 2 stale learnings (>30 days)
+  [FAIL] DRIFT: src/old/database.ts not found
+
+Validating: api
+  [PASS] All checks passed
+
+Validating: frontend
+  [WARN] File size: 287 lines (recommend <200)
+
+--------------------------------------
+SUMMARY
+--------------------------------------
+Total domains: 25
+Passed: 23
+Warnings: 1
+Failures: 1
+
+RECOMMENDED ACTIONS:
+1. Update database expertise - remove reference to src/old/database.ts
+2. Split frontend expertise - reduce from 287 to <200 lines
+3. Review stale learnings in database domain
+```
+
+## Indicadores de estado
+
+| Indicator | Meaning | Action |
+|-----------|---------|--------|
+| `[PASS]` | Check passed successfully | No action needed |
+| `[WARN]` | Non-critical issue found | Review and consider fixing |
+| `[FAIL]` | Critical issue found | Must be fixed |
+
+## Problemas comunes y soluciones
+
+| Issue | Indicator | Solution |
+|-------|-----------|----------|
+| Referenced file doesn't exist | `[FAIL] DRIFT` | Remove or update file path reference |
+| File not updated in 30+ days | `[WARN] stale` | Review and update learnings |
+| Expertise file too large | `[WARN] File size` | Split into focused files |
+| Missing required sections | `[FAIL] Required sections` | Add missing sections to expertise.yaml |
+
+## Cuando correr
+
+Ejecute la validación de experiencia:
+- **After session start**: Opcional como parte de las comprobaciones del estado del sistema (se puede configurar como un gancho)
+- **Before major releases**: Asegúrese de que toda la experiencia esté actualizada y sea precisa
+- **After large refactors**: Valide que las referencias de archivos aún apunten a ubicaciones válidas
+- **Periodically**: Ejecutar mensualmente/trimestralmente para mantener la actualización de la experiencia.
+- **When modifying expertise**: Validar los cambios antes de confirmar
+
+## Ubicación del archivo de experiencia
+
+Los archivos de experiencia se almacenan en:
+```text
+.agileflow/experts/{domain}/expertise.yaml
+```
+
+Por ejemplo:
+- `.agileflow/experts/database/expertise.yaml`
+- `.agileflow/experts/api/expertise.yaml`
+- `.agileflow/experts/frontend/expertise.yaml`
+
+## Criterios de éxito
+
+Un expediente de experiencia saludable debería:
+- ✅ Todos los archivos referenciados existen en el código base
+- ✅ Actualizado en los últimos 30 días
+- ✅ Menos de 200 líneas
+- ✅ Contiene todas las secciones requeridas (dominio, modelos_mentales, aprendizajes, archivos_clave, patrones)
+
+## Integración con su flujo de trabajo
+
+Puede configurar la validación de experiencia para que se ejecute automáticamente:
+
+```bash
+/agileflow:configure --enable=expertise-validation
+```
+
+Esto agrega un enlace SessionStart que valida la experiencia en cada inicio de sesión y le alerta sobre problemas.
+
+## Detalles de detección de deriva
+
+La desviación de la ruta del archivo es el problema más crítico detectado. El comando busca referencias de archivos en el formato:
+- `src/...` - Archivos de código fuente
+- `packages/...` - Paquetes monorepo
+- `lib/...` - Archivos de biblioteca
+
+Si estas rutas ya no existen, se marcan para su atención y eliminación inmediata.
+
+## Comandos relacionados
+
+- [`/configurar`](/commands/configure) - Configurar la validación para que se ejecute automáticamente.
+- [`/ diagnosticar`](/commands/diagnose) - Ejecutar diagnósticos de salud del sistema.
+- [`/agente`](/commands/agent) - Incorporación de nuevos agentes (crea archivos de experiencia)
+- [`/ayuda`](/commands/help) - Ver todos los comandos disponibles

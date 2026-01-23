@@ -1,0 +1,191 @@
+---
+title: /mise à jour
+description: Générer un rapport d'avancement des parties prenantes
+---
+
+# /mise à jour
+
+Générez des mises à jour de haut niveau sur le projet pour les parties prenantes, les dirigeants ou les clients avec des mesures, des progrès et des risques.
+
+## Démarrage rapide
+
+```bash
+/agileflow:update PERIOD=week AUDIENCE=exec
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PERIOD` | No | week | Time frame: week, sprint, month, quarter, or custom |
+| `START_DATE` | No | - | For custom period (YYYY-MM-DD format) |
+| `END_DATE` | No | - | For custom period (YYYY-MM-DD format) |
+| `AUDIENCE` | No | exec | Target audience: exec, client, team, or board |
+| `FORMAT` | No | markdown | Output format: email, markdown, slides, or pdf |
+
+## Exemples
+
+### Mise à jour hebdomadaire de l'exécutif
+
+```bash
+/agileflow:update PERIOD=week AUDIENCE=exec FORMAT=email
+```
+
+Génère une mise à jour concise d'une page pour les cadres de niveau C avec :
+- Résumé analytique et état général
+- Réalisations clés
+- Bloqueurs ou risques critiques
+- Vitesse et métriques
+- Pas de jargon technique
+
+### Rapport client bihebdomadaire
+
+```bash
+/agileflow:update PERIOD=2weeks AUDIENCE=client FORMAT=markdown
+```
+
+Génère une mise à jour axée sur les fonctionnalités pour les clients avec :
+- Ce que les utilisateurs peuvent désormais faire
+- Progrès vers les livrables du contrat
+- Captures d'écran ou références de démonstration
+- Communication transparente sur les problèmes
+- Langage bénéfique pour l'utilisateur
+
+### Rétrospective Team Sprint
+
+```bash
+/agileflow:update PERIOD=sprint AUDIENCE=team FORMAT=markdown
+```
+
+Génère une mise à jour détaillée pour l'équipe avec :
+- Décisions d’architecture et ADR
+- Réalisations techniques
+- Célébration des victoires
+- Aperçus rétrospectifs
+- Éléments d'action
+
+### Mise à jour de la période personnalisée
+
+```bash
+/agileflow:update PERIOD=custom START_DATE=2025-12-01 END_DATE=2025-12-15 AUDIENCE=board FORMAT=pdf
+```
+
+## Sortir
+
+La commande génère une mise à jour complète enregistrée dans :
+```text
+docs/08-project/updates/<YYYYMMDD>-update.md
+```
+
+### Mettre à jour la structure
+
+**Executive Summary**
+- Aperçu de 2-3 phrases
+- Réalisations clés
+- Problèmes ou risques critiques
+- Statut global (En bonne voie / À risque / Bloqué)
+
+**Progress This Period**
+- Histoires complétées par des décomptes
+- Pourcentages de progression des Epics
+- Jalons franchis
+
+**Upcoming Priorities**
+- Domaines d’intervention du prochain sprint
+- Jalons à venir avec dates
+
+**Metrics & Trends**
+- Vitesse (histoires/semaine)
+- Pourcentage de taux d'achèvement
+- Métriques de qualité (couverture des tests, bugs)
+- Tendances (en amélioration/en baisse)
+
+**Blockers & Risks**
+- Bloqueurs actuels avec les propriétaires
+- Stratégies d'atténuation des risques
+- Statut de chaque élément
+
+**Decisions Made**
+- Enregistrements de décisions d'architecture (ADR) récents
+- Justification des choix clés
+
+**Team Updates** (le cas échéant)
+- Modifications de la capacité de l'équipe
+- Réalisations notables
+- Indicateurs de moral
+
+## Sources de données
+
+La commande regroupe les données de 10 sources :
+
+1. **docs/09-agents/status.json** - Instantanés de l'état de l'histoire
+2. **docs/05-epics/*.md** - Progrès et achèvement épiques
+3. **docs/06-stories/**/US-*.md** - Détails de l'histoire et achèvement
+4. **docs/08-project/backlog.md** - Éléments du carnet de commandes
+5. **docs/08-project/roadmap.md** - Jalons de la feuille de route
+6. **docs/08-project/milestones.md** - Objectifs marquants
+7. **docs/08-project/risks.md** - Registre des risques
+8. **Git history** - Commits et PR fusionnés
+9. **docs/09-agents/bus/log.jsonl** - Activité et événements
+10. **docs/03-decisions/adr-*.md** - Décisions récentes
+
+## Personnalisation du public
+
+### Cadre (niveau C)
+- Aperçu de très haut niveau
+- Accent sur l’impact commercial
+- Mesures et retour sur investissement
+- Risques mis en évidence dès le début
+- Maximum 1 page
+
+### Client
+- Langage axé sur les fonctionnalités
+- Avantages pour les utilisateurs soulignés
+- Transparent sur les problèmes
+- Captures d'écran/liens de démonstration inclus
+- Progrès vers les livrables du contrat
+
+### Équipe
+- Plus de détails techniques inclus
+- Décisions d'architecture incluses
+- Célébration des victoires
+- Aperçus rétrospectifs
+- Actions à entreprendre pour la prochaine période
+
+### Conseil
+- Aperçu stratégique
+- Implications financières
+- Positionnement compétitif
+- Feuille de route à long terme
+- L'évaluation des risques
+
+## Flux de travail
+
+1. Déterminer la période (par défaut : cette semaine)
+2. Collectez des données à partir des 10 sources
+3. Calculer les métriques et les tendances
+4. Identifier les travaux terminés et les bloqueurs
+5. Format pour le public cible
+6. Aperçu de la mise à jour en démarque
+7. Demandez : « Envoyer la mise à jour ? (OUI/NON/MODIFIER) »
+8. Si OUI : Enregistrez dans docs/08-project/updates/ et éventuellement envoyez un e-mail aux parties prenantes
+
+## Utiliser quand
+
+- **Weekly team syncs** - Mises à jour régulières de la cadence
+- **Executive presentations** - Reporting mensuel/trimestriel
+- **Client communication** - Mises à jour des progrès contractuels
+- **Sprint retrospectives** - Apprentissages axés sur l'équipe
+- **Board meetings** - Mises à jour de l'alignement stratégique
+- **Risk escalation** - Mise en évidence précoce des bloqueurs
+
+## Intégration
+
+Lien vers des épopées et des histoires pour plus de détails. ADR de référence pour le contexte architectural. Incluez des liens GitHub PR le cas échéant.
+
+## Commandes associées
+
+- [`/métriques`](/commands/metrics) - Métriques et analyses détaillées du projet
+- [`/rétro`](/commands/retro) - Rétrospective Sprint au format Start/Stop/Continue
+- [`/garde d'enfants`](/commands/babysit) - Surveiller les progrès et suggérer des mises à jour
+- [`/vitesse`](/commands/velocity) - Suivre les tendances de vitesse de l'équipe

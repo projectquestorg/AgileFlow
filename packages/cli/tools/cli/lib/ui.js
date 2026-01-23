@@ -9,6 +9,7 @@ const inquirer = require('inquirer');
 const path = require('node:path');
 const fs = require('node:fs');
 const { IdeManager } = require('../installers/ide/manager');
+const { IdeRegistry } = require('./ide-registry');
 const { BRAND_HEX } = require('../../../lib/colors');
 
 // Load package.json for version
@@ -95,31 +96,10 @@ function getIdeChoices() {
 
 /**
  * @deprecated Use getIdeChoices() instead - dynamically loaded from IDE handlers
- * Legacy hardcoded IDE choices kept for backward compatibility
+ * Legacy hardcoded IDE choices - now sourced from IdeRegistry for consistency
+ * Kept for backward compatibility with code that imports IDE_CHOICES directly
  */
-const IDE_CHOICES = [
-  {
-    name: 'Claude Code',
-    value: 'claude-code',
-    checked: true,
-    configDir: '.claude/commands',
-    description: "Anthropic's Claude Code IDE",
-  },
-  {
-    name: 'Cursor',
-    value: 'cursor',
-    checked: false,
-    configDir: '.cursor/rules',
-    description: 'AI-powered code editor',
-  },
-  {
-    name: 'Windsurf',
-    value: 'windsurf',
-    checked: false,
-    configDir: '.windsurf/workflows',
-    description: "Codeium's AI IDE",
-  },
-];
+const IDE_CHOICES = IdeRegistry.getChoices();
 
 /**
  * Prompt for installation configuration
@@ -230,11 +210,13 @@ async function confirm(message, defaultValue = true) {
 
 /**
  * Get IDE configuration by name
+ * Uses IdeRegistry for consistent configuration
  * @param {string} ideName - IDE name
  * @returns {Object|null}
  */
 function getIdeConfig(ideName) {
-  return IDE_CHOICES.find(ide => ide.value === ideName) || null;
+  // Use IdeRegistry as the single source of truth
+  return IdeRegistry.get(ideName);
 }
 
 module.exports = {

@@ -1,0 +1,253 @@
+---
+title: نظام السنانير
+description: أتمتة تعتمد على الأحداث لسير عمل التطوير الخاص بك باستخدام خطافات Claude Code.
+---
+
+# نظام السنانير
+
+يستفيد AgileFlow من نظام الخطافات الرسمي الخاص بـ Claude Code لتمكينه **event-driven automation** في سير عمل التطوير الخاص بك.
+
+## ما هي السنانير؟
+
+الخطافات عبارة عن مشغلات تلقائية تنفذ الأوامر عند حدوث أحداث معينة أثناء جلسة Claude Code الخاصة بك:
+
+| Event | When It Fires | Use Case |
+|-------|---------------|----------|
+| `SessionStart` | When Claude Code session begins | Display status, load context |
+| `PreCompact` | Before conversation is compacted | Preserve critical context |
+| `UserPromptSubmit` | After you submit a prompt | Activity logging |
+| `Stop` | When Claude stops responding | Cleanup, validation |
+| `PreToolUse` | Before a tool is used | Block dangerous commands |
+| `PostToolUse` | After a tool completes | Validation, logging |
+
+## بداية سريعة
+
+### 1. إنشاء دليل التكوين
+
+```bash
+mkdir -p .claude
+```
+
+### 2. أضف خطافات إلى الإعدادات
+
+إنشاء أو تحرير `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 3. أعد تشغيل كود كلود
+
+تدخل الخطافات حيز التنفيذ عند بدء الجلسة التالية. يستخدم `Cmd/Ctrl + Shift + P` وحدد "Reload Window" في برامج التحرير المستندة إلى VS Code.
+
+## تكوينات المثال
+
+### رسالة ترحيب عند بدء الجلسة
+
+اعرض رسالة ترحيب مفيدة عند بدء العمل:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo '\\n  Welcome! Type /agileflow:help for available commands\\n'"
+      }]
+    }]
+  }
+}
+```
+
+### عرض حالة المشروع
+
+إظهار القصة الحالية وعدد WIP وفرع git:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### الأرشفة التلقائية للقصص المكتملة
+
+تنظيف القصص القديمة المكتملة تلقائيًا:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/archive-completed-stories.sh"
+      }]
+    }]
+  }
+}
+```
+
+### الحفاظ على السياق أثناء الضغط
+
+الحفاظ على الحالة الحرجة عندما يقوم Claude Code بضغط المحادثة:
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### تسجيل النشاط
+
+تتبع جميع المطالبات لمراجعتها لاحقًا:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Prompt submitted\" >> .claude/activity.log"
+      }]
+    }]
+  }
+}
+```
+
+### منع الأوامر الخطرة
+
+منع العمليات المدمرة باستخدام خطافات PreToolUse:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/damage-control/bash-tool-damage-control.js"
+      }]
+    }]
+  }
+}
+```
+
+يرى [السيطرة على الأضرار](/docs/features/damage-control) لمزيد من خيارات السلامة.
+
+## ملفات التكوين
+
+يستخدم AgileFlow نظام تكوين من مستويين:
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `.claude/settings.json` | Project-level defaults | Committed to git |
+| `.claude/settings.local.json` | User-specific overrides | Gitignored |
+
+الإعدادات الخاصة بالمستخدم في `settings.local.json` تجاوز إعدادات المشروع، مما يسمح لأعضاء الفريق بتخصيص تجربتهم دون التأثير على الآخرين.
+
+## البرامج النصية هوك AgileFlow
+
+يوفر AgileFlow نصوصًا جاهزة للاستخدام في `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `agileflow-statusline.sh` | Display project status (branch, story, WIP count) |
+| `archive-completed-stories.sh` | Auto-archive completed stories older than 30 days |
+| `precompact-context.sh` | Preserve critical context during conversation compaction |
+| `clear-active-command.js` | Clear active command state on session start |
+| `get-env.js` | Output environment information for status line |
+| `agileflow-welcome.js` | Display welcome message with project info |
+
+## إعداد الخطافات باستخدام AgileFlow
+
+أسهل طريقة لتكوين الخطافات هي من خلال التكوين التفاعلي لـ AgileFlow:
+
+```
+/agileflow:configure
+```
+
+يختار **Hooks** لإعداد أتمتة تعتمد على الأحداث باستخدام المطالبات الموجهة.
+
+أو استخدم وكيل التكوين المحدد:
+
+```
+/agileflow:agents:configuration:hooks
+```
+
+## مخطط تكوين الخطاف
+
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolName or *",
+      "hooks": [{
+        "type": "command",
+        "command": "shell command to execute"
+      }]
+    }]
+  }
+}
+```
+
+**Fields:**
+- `EventName` - واحد من: SessionStart، PreCompact، UserPromptSubmit، Stop، PreToolUse، PostToolUse
+- `matcher` - اسم الأداة لـ PreToolUse/PostToolUse، أو `*` لأحداث أخرى
+- `type` - حاليا فقط `command` مدعوم
+- `command` - أمر شل للتنفيذ
+
+## استكشاف الأخطاء وإصلاحها
+
+### هوك لا يعمل
+
+1. **Check syntax** - التحقق من صحة JSON في `.claude/settings.json`
+2. **Restart session** - يتم تحميل الخطافات فقط عند بدء الجلسة
+3. **Check permissions** - التأكد من أن البرامج النصية قابلة للتنفيذ (`chmod +x scripts/*.sh`)
+4. **Check logs** - أنظر `.claude/hook.log` للأخطاء
+
+### هوك يعمل ببطء
+
+1. **Keep hooks fast** - يجب أن تكتمل خطافات SessionStart في أقل من 5 ثوانٍ
+2. **Use background execution** - بالنسبة للعمليات البطيئة، قم بالتشغيل بشكل غير متزامن
+3. **Cache results** - استخدم التخزين المؤقت القائم على الملفات للعمليات باهظة الثمن
+
+### PreCompact لا يحافظ على السياق
+
+1. **Verify script exists** - يفحص `scripts/precompact-context.sh` موجود
+2. **Check output format** - يجب أن يقوم البرنامج النصي بإخراج تنسيق سياق صالح
+3. **Review session-state.json** - التأكد من تعقب الأوامر النشطة
+
+## الوثائق ذات الصلة
+
+- [نظام التكوين](/docs/features/configuration) - الإعداد التفاعلي
+- [السيطرة على الأضرار](/docs/features/damage-control) - استخدم خطافات الأمان مسبقًا
+- [سياق مدمج](/docs/features/compact-context) - تفاصيل الحفاظ على السياق
+- [الجلسات الموازية](/docs/features/parallel-sessions) - إدارة الجلسة

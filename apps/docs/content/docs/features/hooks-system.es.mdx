@@ -1,0 +1,253 @@
+---
+title: Sistema de ganchos
+description: Automatización basada en eventos para su flujo de trabajo de desarrollo utilizando ganchos de Claude Code.
+---
+
+# Sistema de ganchos
+
+AgileFlow aprovecha el sistema de ganchos oficial de Claude Code para permitir **event-driven automation** en su flujo de trabajo de desarrollo.
+
+## ¿Qué son los ganchos?
+
+Los ganchos son activadores automáticos que ejecutan comandos cuando ocurren eventos específicos durante su sesión de Claude Code:
+
+| Event | When It Fires | Use Case |
+|-------|---------------|----------|
+| `SessionStart` | When Claude Code session begins | Display status, load context |
+| `PreCompact` | Before conversation is compacted | Preserve critical context |
+| `UserPromptSubmit` | After you submit a prompt | Activity logging |
+| `Stop` | When Claude stops responding | Cleanup, validation |
+| `PreToolUse` | Before a tool is used | Block dangerous commands |
+| `PostToolUse` | After a tool completes | Validation, logging |
+
+## Inicio rápido
+
+### 1. Crear directorio de configuración
+
+```bash
+mkdir -p .claude
+```
+
+### 2. Agregar ganchos a la configuración
+
+Crear o editar `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 3. Reinicie el código Claude
+
+Los ganchos entran en vigor en el inicio de la siguiente sesión. Usar `Cmd/Ctrl + Shift + P` y seleccione "Recargar ventana" en los editores basados ​​en VS Code.
+
+## Configuraciones de ejemplo
+
+### Mensaje de bienvenida al inicio de la sesión
+
+Muestre un útil mensaje de bienvenida cuando comience a trabajar:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo '\\n  Welcome! Type /agileflow:help for available commands\\n'"
+      }]
+    }]
+  }
+}
+```
+
+### Visualización del estado del proyecto
+
+Mostrar la historia actual, el recuento de WIP y la rama de git:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Autoarchivar historias completadas
+
+Limpiar historias antiguas completadas automáticamente:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/archive-completed-stories.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Preservación del contexto durante la compactación
+
+Preservar el estado crítico cuando Claude Code comprime la conversación:
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Registro de actividad
+
+Realice un seguimiento de todas las indicaciones para su posterior revisión:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Prompt submitted\" >> .claude/activity.log"
+      }]
+    }]
+  }
+}
+```
+
+### Bloquear comandos peligrosos
+
+Evite operaciones destructivas con ganchos PreToolUse:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/damage-control/bash-tool-damage-control.js"
+      }]
+    }]
+  }
+}
+```
+
+Ver [Control de daños](/docs/features/damage-control) para más opciones de seguridad.
+
+## Archivos de configuración
+
+AgileFlow utiliza un sistema de configuración de dos niveles:
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `.claude/settings.json` | Project-level defaults | Committed to git |
+| `.claude/settings.local.json` | User-specific overrides | Gitignored |
+
+Configuraciones específicas del usuario en `settings.local.json` anule la configuración del proyecto, lo que permite a los miembros del equipo personalizar su experiencia sin afectar a los demás.
+
+## Secuencias de comandos de gancho de AgileFlow
+
+AgileFlow proporciona scripts listos para usar en `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `agileflow-statusline.sh` | Display project status (branch, story, WIP count) |
+| `archive-completed-stories.sh` | Auto-archive completed stories older than 30 days |
+| `precompact-context.sh` | Preserve critical context during conversation compaction |
+| `clear-active-command.js` | Clear active command state on session start |
+| `get-env.js` | Output environment information for status line |
+| `agileflow-welcome.js` | Display welcome message with project info |
+
+## Configurar ganchos con AgileFlow
+
+La forma más sencilla de configurar enlaces es mediante la configuración interactiva de AgileFlow:
+
+```
+/agileflow:configure
+```
+
+Seleccionar **Hooks** para configurar la automatización basada en eventos con indicaciones guiadas.
+
+O utilice el agente de configuración específico:
+
+```
+/agileflow:agents:configuration:hooks
+```
+
+## Esquema de configuración del gancho
+
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolName or *",
+      "hooks": [{
+        "type": "command",
+        "command": "shell command to execute"
+      }]
+    }]
+  }
+}
+```
+
+**Fields:**
+- `EventName` - Uno de: SessionStart, PreCompact, UserPromptSubmit, Stop, PreToolUse, PostToolUse
+- `matcher` - Nombre de la herramienta para PreToolUse/PostToolUse, o `*` para otros eventos
+- `type` - Actualmente sólo `command` es compatible
+- `command` - Comando Shell para ejecutar
+
+## Solución de problemas
+
+### El gancho no funciona
+
+1. **Check syntax** - Validar JSON en `.claude/settings.json`
+2. **Restart session** - Los ganchos solo se cargan al inicio de la sesión.
+3. **Check permissions** - Asegúrese de que los scripts sean ejecutables (`chmod +x scripts/*.sh`)
+4. **Check logs** - Pase a ver `.claude/hook.log` por errores
+
+### Gancho corriendo lentamente
+
+1. **Keep hooks fast** - Los enlaces SessionStart deberían completarse en menos de 5 segundos
+2. **Use background execution** - Para operaciones lentas, ejecute de forma asincrónica
+3. **Cache results** - Utilice el almacenamiento en caché basado en archivos para operaciones costosas
+
+### PreCompact no conserva el contexto
+
+1. **Verify script exists** - Controlar `scripts/precompact-context.sh` esta presente
+2. **Check output format** - El script debe generar un formato de contexto válido
+3. **Review session-state.json** - Garantizar que se realice un seguimiento de los comandos activos
+
+## Documentación relacionada
+
+- [Sistema de configuración](/docs/features/configuration) - Configuración interactiva
+- [Control de daños](/docs/features/damage-control) - PreToolUse ganchos de seguridad
+- [Contexto compacto](/docs/features/compact-context) - Detalles de preservación del contexto.
+- [Sesiones paralelas](/docs/features/parallel-sessions) - Gestión de sesiones

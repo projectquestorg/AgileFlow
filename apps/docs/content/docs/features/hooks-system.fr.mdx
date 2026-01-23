@@ -1,0 +1,253 @@
+---
+title: Système de crochets
+description: Automatisation événementielle pour votre flux de travail de développement à l'aide des hooks Claude Code.
+---
+
+# Système de crochets
+
+AgileFlow exploite le système de hooks officiel de Claude Code pour permettre **event-driven automation** dans votre flux de travail de développement.
+
+## Que sont les crochets ?
+
+Les hooks sont des déclencheurs automatiques qui exécutent des commandes lorsque des événements spécifiques se produisent pendant votre session Claude Code :
+
+| Event | When It Fires | Use Case |
+|-------|---------------|----------|
+| `SessionStart` | When Claude Code session begins | Display status, load context |
+| `PreCompact` | Before conversation is compacted | Preserve critical context |
+| `UserPromptSubmit` | After you submit a prompt | Activity logging |
+| `Stop` | When Claude stops responding | Cleanup, validation |
+| `PreToolUse` | Before a tool is used | Block dangerous commands |
+| `PostToolUse` | After a tool completes | Validation, logging |
+
+## Démarrage rapide
+
+### 1. Créer un répertoire de configuration
+
+```bash
+mkdir -p .claude
+```
+
+### 2. Ajouter des hooks aux paramètres
+
+Créer ou modifier `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 3. Redémarrez Claude Code
+
+Les hooks prennent effet au prochain démarrage de la session. Utiliser `Cmd/Ctrl + Shift + P` et sélectionnez "Recharger la fenêtre" dans les éditeurs basés sur VS Code.
+
+## Exemples de configurations
+
+### Message de bienvenue au début de la session
+
+Affichez un message de bienvenue utile lorsque vous commencez à travailler :
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo '\\n  Welcome! Type /agileflow:help for available commands\\n'"
+      }]
+    }]
+  }
+}
+```
+
+### Affichage de l'état du projet
+
+Afficher l'histoire actuelle, le nombre d'en-cours et la branche git :
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Archiver automatiquement les histoires terminées
+
+Nettoyez automatiquement les anciennes histoires terminées :
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/archive-completed-stories.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Préservation du contexte pendant le compactage
+
+Préserver l'état critique lorsque Claude Code compresse la conversation :
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Journalisation des activités
+
+Suivez toutes les invites pour un examen ultérieur :
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Prompt submitted\" >> .claude/activity.log"
+      }]
+    }]
+  }
+}
+```
+
+### Bloquer les commandes dangereuses
+
+Empêchez les opérations destructrices avec les hooks PreToolUse :
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/damage-control/bash-tool-damage-control.js"
+      }]
+    }]
+  }
+}
+```
+
+Voir [Contrôle des dégâts](/docs/features/damage-control) pour plus d'options de sécurité.
+
+## Fichiers de configuration
+
+AgileFlow utilise un système de configuration à deux niveaux :
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `.claude/settings.json` | Project-level defaults | Committed to git |
+| `.claude/settings.local.json` | User-specific overrides | Gitignored |
+
+Paramètres spécifiques à l'utilisateur dans `settings.local.json` remplacez les paramètres du projet, permettant aux membres de l’équipe de personnaliser leur expérience sans affecter les autres.
+
+## Scripts de hook AgileFlow
+
+AgileFlow fournit des scripts prêts à l'emploi dans `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `agileflow-statusline.sh` | Display project status (branch, story, WIP count) |
+| `archive-completed-stories.sh` | Auto-archive completed stories older than 30 days |
+| `precompact-context.sh` | Preserve critical context during conversation compaction |
+| `clear-active-command.js` | Clear active command state on session start |
+| `get-env.js` | Output environment information for status line |
+| `agileflow-welcome.js` | Display welcome message with project info |
+
+## Configurer des hooks avec AgileFlow
+
+Le moyen le plus simple de configurer les hooks consiste à utiliser la configuration interactive d'AgileFlow :
+
+```
+/agileflow:configure
+```
+
+Sélectionner **Hooks** pour configurer une automatisation basée sur les événements avec des invites guidées.
+
+Ou utilisez l'agent de configuration spécifique :
+
+```
+/agileflow:agents:configuration:hooks
+```
+
+## Schéma de configuration du hook
+
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolName or *",
+      "hooks": [{
+        "type": "command",
+        "command": "shell command to execute"
+      }]
+    }]
+  }
+}
+```
+
+**Fields:**
+- `EventName` - L'un des suivants : SessionStart, PreCompact, UserPromptSubmit, Stop, PreToolUse, PostToolUse
+- `matcher` - Nom de l'outil pour PreToolUse/PostToolUse, ou `*` pour d'autres événements
+- `type` - Actuellement seulement `command` est pris en charge
+- `command` - Commande Shell à exécuter
+
+## Dépannage
+
+### Le crochet ne fonctionne pas
+
+1. **Check syntax** - Valider JSON dans `.claude/settings.json`
+2. **Restart session** - Les hooks ne se chargent qu'au démarrage de la session
+3. **Check permissions** - S'assurer que les scripts sont exécutables (`chmod +x scripts/*.sh`)
+4. **Check logs** - Regarder dans `.claude/hook.log` pour les erreurs
+
+### Crochet fonctionnant lentement
+
+1. **Keep hooks fast** - Les hooks SessionStart devraient se terminer en moins de 5 secondes
+2. **Use background execution** - Pour les opérations lentes, exécutez de manière asynchrone
+3. **Cache results** - Utiliser la mise en cache basée sur les fichiers pour les opérations coûteuses
+
+### PreCompact ne préserve pas le contexte
+
+1. **Verify script exists** - Vérifier `scripts/precompact-context.sh` est présent
+2. **Check output format** - Le script doit générer un format de contexte valide
+3. **Review session-state.json** - S'assurer que les commandes actives sont suivies
+
+## Documentation connexe
+
+- [Système de configuration](/docs/features/configuration) - Configuration interactive
+- [Contrôle des dégâts](/docs/features/damage-control) - Crochets de sécurité PreToolUse
+- [Contexte compact](/docs/features/compact-context) - Détails de préservation du contexte
+- [Séances parallèles](/docs/features/parallel-sessions) - Gestion des séances

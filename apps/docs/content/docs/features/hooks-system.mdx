@@ -1,0 +1,253 @@
+---
+title: Hooks System
+description: Event-driven automation for your development workflow using Claude Code hooks.
+---
+
+# Hooks System
+
+AgileFlow leverages Claude Code's official hooks system to enable **event-driven automation** in your development workflow.
+
+## What Are Hooks?
+
+Hooks are automatic triggers that execute commands when specific events occur during your Claude Code session:
+
+| Event | When It Fires | Use Case |
+|-------|---------------|----------|
+| `SessionStart` | When Claude Code session begins | Display status, load context |
+| `PreCompact` | Before conversation is compacted | Preserve critical context |
+| `UserPromptSubmit` | After you submit a prompt | Activity logging |
+| `Stop` | When Claude stops responding | Cleanup, validation |
+| `PreToolUse` | Before a tool is used | Block dangerous commands |
+| `PostToolUse` | After a tool completes | Validation, logging |
+
+## Quick Start
+
+### 1. Create Configuration Directory
+
+```bash
+mkdir -p .claude
+```
+
+### 2. Add Hooks to Settings
+
+Create or edit `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 3. Restart Claude Code
+
+Hooks take effect on the next session start. Use `Cmd/Ctrl + Shift + P` and select "Reload Window" in VS Code-based editors.
+
+## Example Configurations
+
+### Welcome Message on Session Start
+
+Display a helpful welcome message when you start working:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo '\\n  Welcome! Type /agileflow:help for available commands\\n'"
+      }]
+    }]
+  }
+}
+```
+
+### Project Status Display
+
+Show current story, WIP count, and git branch:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Auto-Archive Completed Stories
+
+Clean up old completed stories automatically:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/archive-completed-stories.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Context Preservation During Compaction
+
+Preserve critical state when Claude Code compresses the conversation:
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Activity Logging
+
+Track all prompts for later review:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Prompt submitted\" >> .claude/activity.log"
+      }]
+    }]
+  }
+}
+```
+
+### Block Dangerous Commands
+
+Prevent destructive operations with PreToolUse hooks:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/damage-control/bash-tool-damage-control.js"
+      }]
+    }]
+  }
+}
+```
+
+See [Damage Control](/docs/features/damage-control) for more safety options.
+
+## Configuration Files
+
+AgileFlow uses a two-tier configuration system:
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `.claude/settings.json` | Project-level defaults | Committed to git |
+| `.claude/settings.local.json` | User-specific overrides | Gitignored |
+
+User-specific settings in `settings.local.json` override project settings, allowing team members to customize their experience without affecting others.
+
+## AgileFlow Hook Scripts
+
+AgileFlow provides ready-to-use scripts in `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `agileflow-statusline.sh` | Display project status (branch, story, WIP count) |
+| `archive-completed-stories.sh` | Auto-archive completed stories older than 30 days |
+| `precompact-context.sh` | Preserve critical context during conversation compaction |
+| `clear-active-command.js` | Clear active command state on session start |
+| `get-env.js` | Output environment information for status line |
+| `agileflow-welcome.js` | Display welcome message with project info |
+
+## Setting Up Hooks with AgileFlow
+
+The easiest way to configure hooks is through AgileFlow's interactive configuration:
+
+```
+/agileflow:configure
+```
+
+Select **Hooks** to set up event-driven automation with guided prompts.
+
+Or use the specific configuration agent:
+
+```
+/agileflow:agents:configuration:hooks
+```
+
+## Hook Configuration Schema
+
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolName or *",
+      "hooks": [{
+        "type": "command",
+        "command": "shell command to execute"
+      }]
+    }]
+  }
+}
+```
+
+**Fields:**
+- `EventName` - One of: SessionStart, PreCompact, UserPromptSubmit, Stop, PreToolUse, PostToolUse
+- `matcher` - Tool name for PreToolUse/PostToolUse, or `*` for other events
+- `type` - Currently only `command` is supported
+- `command` - Shell command to execute
+
+## Troubleshooting
+
+### Hook Not Running
+
+1. **Check syntax** - Validate JSON in `.claude/settings.json`
+2. **Restart session** - Hooks only load on session start
+3. **Check permissions** - Ensure scripts are executable (`chmod +x scripts/*.sh`)
+4. **Check logs** - Look in `.claude/hook.log` for errors
+
+### Hook Running Slowly
+
+1. **Keep hooks fast** - SessionStart hooks should complete in under 5 seconds
+2. **Use background execution** - For slow operations, run asynchronously
+3. **Cache results** - Use file-based caching for expensive operations
+
+### PreCompact Not Preserving Context
+
+1. **Verify script exists** - Check `scripts/precompact-context.sh` is present
+2. **Check output format** - Script must output valid context format
+3. **Review session-state.json** - Ensure active commands are tracked
+
+## Related Documentation
+
+- [Configuration System](/docs/features/configuration) - Interactive setup
+- [Damage Control](/docs/features/damage-control) - PreToolUse safety hooks
+- [Compact Context](/docs/features/compact-context) - Context preservation details
+- [Parallel Sessions](/docs/features/parallel-sessions) - Session management

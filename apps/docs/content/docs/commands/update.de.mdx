@@ -1,0 +1,191 @@
+---
+title: /aktualisieren
+description: Erstellen Sie einen Fortschrittsbericht für die Stakeholder
+---
+
+# /aktualisieren
+
+Generieren Sie Projektaktualisierungen auf hoher Ebene für Stakeholder, Führungskräfte oder Kunden mit Kennzahlen, Fortschritten und Risiken.
+
+## Schnellstart
+
+```bash
+/agileflow:update PERIOD=week AUDIENCE=exec
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PERIOD` | No | week | Time frame: week, sprint, month, quarter, or custom |
+| `START_DATE` | No | - | For custom period (YYYY-MM-DD format) |
+| `END_DATE` | No | - | For custom period (YYYY-MM-DD format) |
+| `AUDIENCE` | No | exec | Target audience: exec, client, team, or board |
+| `FORMAT` | No | markdown | Output format: email, markdown, slides, or pdf |
+
+## Beispiele
+
+### Wöchentliches Update für Führungskräfte
+
+```bash
+/agileflow:update PERIOD=week AUDIENCE=exec FORMAT=email
+```
+
+Erstellt ein prägnantes einseitiges Update für C-Level-Führungskräfte mit:
+- Zusammenfassung und Gesamtstatus
+- Wichtigste Erfolge
+- Kritische Blocker oder Risiken
+- Geschwindigkeit und Metriken
+- Kein Fachjargon
+
+### Zweiwöchentlicher Kundenbericht
+
+```bash
+/agileflow:update PERIOD=2weeks AUDIENCE=client FORMAT=markdown
+```
+
+Erzeugt ein funktionsorientiertes Update für Kunden mit:
+- Was Benutzer jetzt tun können
+- Fortschritte bei der Erbringung vertraglicher Leistungen
+- Screenshots oder Demo-Referenzen
+- Transparente Problemkommunikation
+- Sprache mit Benutzernutzen
+
+### Team-Sprint-Retrospektive
+
+```bash
+/agileflow:update PERIOD=sprint AUDIENCE=team FORMAT=markdown
+```
+
+Erstellt ein detailliertes Update für das Team mit:
+- Architekturentscheidungen und ADRs
+- Technische Errungenschaften
+- Feier der Siege
+- Rückblicke
+- Aktionselemente
+
+### Benutzerdefinierte Periodenaktualisierung
+
+```bash
+/agileflow:update PERIOD=custom START_DATE=2025-12-01 END_DATE=2025-12-15 AUDIENCE=board FORMAT=pdf
+```
+
+## Ausgabe
+
+Der Befehl generiert ein umfassendes Update, das gespeichert wird unter:
+```text
+docs/08-project/updates/<YYYYMMDD>-update.md
+```
+
+### Struktur aktualisieren
+
+**Executive Summary**
+- Übersicht über 2-3 Sätze
+- Wichtigste Erfolge
+- Kritische Probleme oder Risiken
+- Gesamtstatus (Auf Kurs / In Gefahr / Blockiert)
+
+**Progress This Period**
+- Geschichten mit Zählungen abgeschlossen
+- Epische Fortschrittsprozentsätze
+- Meilensteine ​​erreicht
+
+**Upcoming Priorities**
+- Schwerpunktbereiche des nächsten Sprints
+- Kommende Meilensteine ​​mit Terminen
+
+**Metrics & Trends**
+- Geschwindigkeit (Geschichten/Woche)
+- Prozentsatz der Abschlussquote
+- Qualitätsmetriken (Testabdeckung, Fehler)
+- Trends (Verbesserung/Rückgang)
+
+**Blockers & Risks**
+- Aktuelle Blocker mit Eigentümern
+- Strategien zur Risikominderung
+- Status jedes Elements
+
+**Decisions Made**
+- Aktuelle Architekturentscheidungsaufzeichnungen (ADRs)
+- Begründung für wichtige Entscheidungen
+
+**Team Updates** (gegebenenfalls)
+- Änderungen der Teamkapazität
+- Bemerkenswerte Erfolge
+- Moralindikatoren
+
+## Datenquellen
+
+Der Befehl aggregiert Daten aus 10 Quellen:
+
+1. **docs/09-agents/status.json** - Momentaufnahmen des Story-Status
+2. **docs/05-epics/*.md** – Epischer Fortschritt und Abschluss
+3. **docs/06-stories/**/US-*.md** – Story-Details und Abschluss
+4. **docs/08-project/backlog.md** - Backlog-Elemente
+5. **docs/08-project/roadmap.md** - Roadmap-Meilensteine
+6. **docs/08-project/milestones.md** - Meilensteinziele
+7. **docs/08-project/risks.md** - Risikoregister
+8. **Git history** - Commits und zusammengeführte PRs
+9. **docs/09-agents/bus/log.jsonl** - Aktivitäten und Veranstaltungen
+10. **docs/03-decisions/adr-*.md** – Aktuelle Entscheidungen
+
+## Zielgruppenanpassung
+
+### Führungskraft (C-Level)
+- Sehr allgemeiner Überblick
+- Fokus auf geschäftliche Auswirkungen
+- Kennzahlen und ROI
+- Risiken frühzeitig hervorgehoben
+- Maximal 1 Seite
+
+### Kunde
+- Feature-fokussierte Sprache
+- Benutzervorteile hervorgehoben
+- Transparent bei Problemen
+- Screenshots/Demo-Links enthalten
+- Fortschritte bei der Erbringung vertraglicher Leistungen
+
+### Team
+- Weitere technische Details enthalten
+- Architekturentscheidungen inklusive
+- Feier der Siege
+- Rückblicke
+- Aktionspunkte für die nächste Periode
+
+### Planke
+- Strategischer Überblick
+- Finanzielle Auswirkungen
+- Wettbewerbsfähige Positionierung
+- Langfristige Roadmap
+- Risikobewertung
+
+## Arbeitsablauf
+
+1. Zeitraum festlegen (Standard: diese Woche)
+2. Sammeln Sie Daten aus allen 10 Quellen
+3. Berechnen Sie Kennzahlen und Trends
+4. Identifizieren Sie abgeschlossene Arbeiten und Blockaden
+5. Format für Zielgruppe
+6. Vorschau des Updates im Markdown
+7. Fragen Sie: „Update senden? (JA/NEIN/BEARBEITEN)“
+8. Wenn JA: Speichern Sie es unter docs/08-project/updates/ und senden Sie optional eine E-Mail an die Beteiligten
+
+## Verwenden Sie Wann
+
+- **Weekly team syncs** - Regelmäßige Trittfrequenz-Updates
+- **Executive presentations** - Monatliche/vierteljährliche Berichterstattung
+- **Client communication** - Vertragsfortschrittsaktualisierungen
+- **Sprint retrospectives** - Teamorientiertes Lernen
+- **Board meetings** - Aktualisierungen der strategischen Ausrichtung
+- **Risk escalation** - Blocker frühzeitig hervorheben
+
+## Integration
+
+Link zu Epen und Geschichten für weitere Details. Referenz-ADRs für den architektonischen Kontext. Fügen Sie gegebenenfalls GitHub-PR-Links ein.
+
+## Verwandte Befehle
+
+- [`/metrics`](/commands/metrics) - Detaillierte Projektmetriken und -analysen
+- [`/retro`](/commands/retro) - Sprint-Retrospektive im Start/Stop/Fortfahren-Format
+- [`/babysitten`](/commands/babysit) - Überwachen Sie den Fortschritt und schlagen Sie Aktualisierungen vor
+- [`/Geschwindigkeit`](/commands/velocity) - Verfolgen Sie die Geschwindigkeitstrends Ihres Teams

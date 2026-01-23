@@ -1,0 +1,169 @@
+---
+title: /o que há de novo
+description: Mostre o que há de novo no AgileFlow
+---
+
+# /o que há de novo
+
+Exiba atualizações recentes do AgileFlow, histórico de versões e atualizações disponíveis. Mantenha-se informado sobre os recursos e melhorias mais recentes.
+
+## Início rápido
+
+```bash
+/agileflow:whats-new
+```
+
+Mostra as atualizações mais recentes do AgileFlow sem a necessidade de argumentos.
+
+## Parâmetros
+
+Este comando não aceita parâmetros - ele exibe automaticamente o changelog da versão e as atualizações recentes.
+
+## O que ele exibe
+
+O comando whats-new fornece:
+
+### 1. Versão atual instalada
+Mostra sua versão atual do AgileFlow na parte superior da saída.
+
+### 2. Histórico de versões recentes
+Exibe os últimos 3 a 5 lançamentos com:
+- Números de versão (por exemplo, v2.57.0)
+- Datas de lançamento
+- Mudanças organizadas por categoria:
+  - **Added**: Novos recursos
+  - **Changed**: Modificações em recursos existentes
+  - **Fixed**: Correções de bugs
+  - **Removed**: Recursos obsoletos
+
+### 3. Verificação de disponibilidade de atualização
+Verifica automaticamente se uma versão mais recente está disponível e mostra instruções de atualização.
+
+### 4. Links rápidos
+Fornece links úteis:
+- Log de alterações completo no GitHub
+- Comando de atualização
+- Configuração de atualização automática
+
+## Exemplo de saída
+
+```text
+╭─────────────────────────────────────────────────────╮
+│  AgileFlow Changelog                                │
+│  Current: v2.63.0                                   │
+╰─────────────────────────────────────────────────────╯
+
+## v2.63.0 (2025-12-27)
+
+### Added
+• Dynamic skill generation system
+• Skill management commands (create, list, remove)
+• Per-IDE options for update and uninstall commands
+
+### Changed
+• Enhanced skill system architecture
+• Improved IDE detection and handling
+
+---
+
+## v2.62.0 (2025-12-26)
+
+### Added
+• Per-IDE update command options
+• IDE-specific uninstall features
+
+---
+
+## v2.61.0 (2025-12-25)
+
+### Added
+• Auto-update system with configurable check frequency
+• Update notifications in welcome message
+• Changelog display after updates
+
+### Changed
+• Improved update notification visibility
+
+---
+
+📖 Full changelog: https://github.com/projectquestorg/AgileFlow/blob/main/packages/cli/CHANGELOG.md
+🔄 Check for updates: npx agileflow update
+⚙️  Configure auto-update: /agileflow:configure --auto-update
+```
+
+Se uma atualização estiver disponível:
+
+```text
+⚡ Update available: v2.63.0 → v2.64.0
+   Run: npx agileflow update
+```
+
+## Padrões de uso
+
+Use o comando whats-new quando:
+
+- **Keep Updated**: Confira o que há de novo nos lançamentos recentes
+- **Before Upgrading**: entenda quais recursos estão disponíveis antes de atualizar
+- **Share with Team**: Mostre aos colegas de equipe quais melhorias estão por vir
+- **Troubleshooting**: Verifique se você tem as correções de bugs mais recentes
+- **New Features**: Descubra recursos recentemente disponíveis
+
+## Cenários Comuns
+
+### Verificando os recursos mais recentes
+
+Quando você quiser saber o que há de novo sem verificar manualmente o GitHub:
+
+```bash
+/agileflow:whats-new
+```
+
+### Antes de atualizar o AgileFlow
+
+Veja o que está incluído na versão mais recente antes de executar a atualização:
+
+```bash
+/agileflow:whats-new
+# Read the changes
+npx agileflow update
+```
+
+### Manter-se informado
+
+Execute periodicamente para se manter atualizado com as melhorias do AgileFlow:
+
+```bash
+# Check monthly for updates
+/agileflow:whats-new
+```
+
+## Comandos Relacionados
+
+- [`/agileflow:configure`](/commands/configure) - Definir configurações de atualização automática
+- [`atualização npx ágilflow`](/commands/update) - Atualize para a versão mais recente
+- [`/agileflow:ajuda`](/commands/help) - Visão geral do sistema
+- [`/agileflow:diagnosticar`](/commands/diagnose) - Diagnóstico do sistema
+
+## Formato do registro de alterações
+
+O changelog segue o versionamento semântico e inclui:
+
+- **Major (X.0.0)**: alterações importantes ou recursos significativos
+- **Minor (0.X.0)**: Novos recursos e melhorias
+- **Patch (0.0.X)**: Correções de bugs e pequenos ajustes
+
+Cada entrada inclui o que mudou e por que isso é importante para você.
+
+## Configuração de atualização automática
+
+Para notificações de atualização automática:
+
+```bash
+/agileflow:configure --auto-update
+```
+
+Isso permite:
+- Verificações periódicas para novas versões
+- Notificações quando atualizações estiverem disponíveis
+- Download automático em segundo plano
+- Atualização fácil com um comando quando estiver pronto

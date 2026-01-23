@@ -4,10 +4,13 @@
  * Centralized registry of supported IDEs with their metadata.
  * This eliminates duplicate IDE configuration scattered across commands.
  *
+ * Enhanced as part of US-0178: Consolidate IDE installer config into unified registry pattern
+ *
  * Usage:
  *   const { IdeRegistry } = require('./lib/ide-registry');
  *   const configPath = IdeRegistry.getConfigPath('claude-code', projectDir);
  *   const displayName = IdeRegistry.getDisplayName('cursor');
+ *   const config = IdeRegistry.get('windsurf');
  */
 
 const path = require('path');
@@ -18,9 +21,14 @@ const path = require('path');
  * @property {string} name - Internal IDE name (e.g., 'claude-code')
  * @property {string} displayName - Human-readable name (e.g., 'Claude Code')
  * @property {string} configDir - Base config directory (e.g., '.claude')
- * @property {string} targetSubdir - Target subdirectory for commands (e.g., 'commands/agileflow')
+ * @property {string} commandsSubdir - Subdirectory for commands (e.g., 'commands', 'workflows')
+ * @property {string} agileflowFolder - AgileFlow folder name (e.g., 'agileflow', 'AgileFlow')
+ * @property {string} targetSubdir - Full target path (computed from commandsSubdir + agileflowFolder)
  * @property {boolean} preferred - Whether this is a preferred IDE
+ * @property {string} description - Short description for UI
  * @property {string} [handler] - Handler class name (e.g., 'ClaudeCodeSetup')
+ * @property {Object} labels - Custom labels for installed content
+ * @property {Object} features - Feature flags for this IDE
  */
 
 /**
@@ -32,33 +40,83 @@ const IDE_REGISTRY = {
     name: 'claude-code',
     displayName: 'Claude Code',
     configDir: '.claude',
+    commandsSubdir: 'commands',
+    agileflowFolder: 'agileflow',
     targetSubdir: 'commands/agileflow', // lowercase
     preferred: true,
+    description: "Anthropic's Claude Code IDE",
     handler: 'ClaudeCodeSetup',
+    labels: {
+      commands: 'commands',
+      agents: 'agents',
+    },
+    features: {
+      spawnableAgents: true, // Has .claude/agents/ for Task tool
+      skills: true, // Has .claude/skills/ for user skills
+      damageControl: true, // Supports PreToolUse hooks
+    },
   },
   cursor: {
     name: 'cursor',
     displayName: 'Cursor',
     configDir: '.cursor',
+    commandsSubdir: 'commands',
+    agileflowFolder: 'AgileFlow',
     targetSubdir: 'commands/AgileFlow', // PascalCase
     preferred: false,
+    description: 'AI-powered code editor',
     handler: 'CursorSetup',
+    labels: {
+      commands: 'commands',
+      agents: 'agents',
+    },
+    features: {
+      spawnableAgents: false,
+      skills: false,
+      damageControl: false,
+    },
   },
   windsurf: {
     name: 'windsurf',
     displayName: 'Windsurf',
     configDir: '.windsurf',
+    commandsSubdir: 'workflows',
+    agileflowFolder: 'agileflow',
     targetSubdir: 'workflows/agileflow', // lowercase
     preferred: true,
+    description: "Codeium's AI IDE",
     handler: 'WindsurfSetup',
+    labels: {
+      commands: 'workflows',
+      agents: 'agent workflows',
+    },
+    features: {
+      spawnableAgents: false,
+      skills: false,
+      damageControl: false,
+    },
   },
   codex: {
     name: 'codex',
     displayName: 'OpenAI Codex CLI',
     configDir: '.codex',
+    commandsSubdir: 'skills',
+    agileflowFolder: 'agileflow',
     targetSubdir: 'skills', // Codex uses skills directory
     preferred: false,
+    description: "OpenAI's Codex CLI",
     handler: 'CodexSetup',
+    labels: {
+      commands: 'prompts',
+      agents: 'skills',
+    },
+    features: {
+      spawnableAgents: false,
+      skills: true, // Has .codex/skills/
+      damageControl: false,
+      customInstall: true, // Uses custom install flow (not setupStandard)
+      agentsMd: true, // Creates AGENTS.md at project root
+    },
   },
 };
 
@@ -177,6 +235,61 @@ class IdeRegistry {
   static getHandler(ideName) {
     const ide = IDE_REGISTRY[ideName];
     return ide ? ide.handler : null;
+  }
+
+  /**
+   * Get IDE choices formatted for UI selection (inquirer checkbox format)
+   * @returns {Array} Array of {name, value, checked, configDir, description}
+   */
+  static getChoices() {
+    return Object.values(IDE_REGISTRY)
+      .sort((a, b) => {
+        // Preferred first, then alphabetical
+        if (a.preferred && !b.preferred) return -1;
+        if (!a.preferred && b.preferred) return 1;
+        return a.displayName.localeCompare(b.displayName);
+      })
+      .map((ide, index) => ({
+        name: ide.displayName,
+        value: ide.name,
+        checked: ide.preferred || index === 0,
+        configDir: `${ide.configDir}/${ide.commandsSubdir}`,
+        description: ide.description,
+      }));
+  }
+
+  /**
+   * Check if an IDE has a specific feature
+   * @param {string} ideName - IDE name
+   * @param {string} featureName - Feature to check
+   * @returns {boolean}
+   */
+  static hasFeature(ideName, featureName) {
+    const ide = IDE_REGISTRY[ideName];
+    return !!(ide && ide.features && ide.features[featureName]);
+  }
+
+  /**
+   * Get all IDEs with a specific feature
+   * @param {string} featureName - Feature to filter by
+   * @returns {string[]} Array of IDE names
+   */
+  static getWithFeature(featureName) {
+    return Object.entries(IDE_REGISTRY)
+      .filter(([, meta]) => meta.features && meta.features[featureName])
+      .map(([name]) => name);
+  }
+
+  /**
+   * Get labels for an IDE (e.g., 'commands' vs 'workflows')
+   * @param {string} ideName - IDE name
+   * @returns {Object} Labels object {commands, agents}
+   */
+  static getLabels(ideName) {
+    const ide = IDE_REGISTRY[ideName];
+    return ide && ide.labels
+      ? ide.labels
+      : { commands: 'commands', agents: 'agents' };
   }
 }
 

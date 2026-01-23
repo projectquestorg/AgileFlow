@@ -22,28 +22,8 @@ const { execSync } = require('child_process');
 // Import centralized path utilities
 const { getStatusPath } = require('../lib/paths');
 
-// Simple cache for status.json (60 second TTL)
-const statusCache = {
-  data: null,
-  path: null,
-  timestamp: 0,
-  ttlMs: 60000,
-  get(filePath) {
-    if (
-      this.data &&
-      this.path === filePath &&
-      Date.now() - this.timestamp < this.ttlMs
-    ) {
-      return this.data;
-    }
-    return null;
-  },
-  set(filePath, data) {
-    this.data = data;
-    this.path = filePath;
-    this.timestamp = Date.now();
-  },
-};
+// Import centralized file cache (US-0176: deduplicated status.json access)
+const { readJSONCached } = require('../lib/file-cache');
 
 function getProjectInfo() {
   const rootDir = path.resolve(__dirname, '..');
@@ -99,18 +79,14 @@ function getProjectInfo() {
 
   try {
     const statusPath = getStatusPath(rootDir);
-    if (fs.existsSync(statusPath)) {
-      // Use cache if available (faster for repeated calls)
-      let status = statusCache.get(statusPath);
-      if (!status) {
-        status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-        statusCache.set(statusPath, status);
-      }
+    // Use centralized file cache (US-0176: 60s TTL, shared across all consumers)
+    const status = readJSONCached(statusPath, { ttlMs: 60000 });
 
+    if (status) {
       // Get active stories
       if (status.stories) {
         Object.entries(status.stories).forEach(([id, story]) => {
-          if (story.status === 'in_progress') {
+          if (story.status === 'in-progress') {
             activeStories.push({ id, title: story.title, owner: story.owner });
             wipCount++;
           }

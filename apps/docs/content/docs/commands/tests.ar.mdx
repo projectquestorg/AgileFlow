@@ -1,0 +1,451 @@
+---
+title: / اختبارات الإعداد
+description: قم بإعداد البنية التحتية للاختبار الآلي
+---
+
+# / اختبارات الإعداد
+
+اكتشف تلقائيًا نوع مشروعك وقم بتشغيل بنية أساسية كاملة للاختبار من خلال إعداد إطار العمل والتكوين واختبارات الأمثلة وتكامل CI.
+
+## بداية سريعة
+
+```bash
+/agileflow:setup-tests FRAMEWORK=auto COVERAGE=yes
+```
+
+## غاية
+
+ينشئ هذا الأمر أساسًا للاختبار الاحترافي من خلال:
+- الكشف التلقائي عن لغة المشروع وإطاره
+- تثبيت تبعيات إطار الاختبار المناسب
+- إنشاء ملفات تكوين الاختبار
+- إنشاء نموذج للوحدة والتكامل واختبارات E2E
+- إضافة البرامج النصية للاختبار إلى تكوين البناء الخاص بك
+- دمج الاختبارات في خط أنابيب CI/CD
+- إنشاء وثائق الاختبار وأفضل الممارسات
+- إجراء الاختبارات للتحقق من عمل الإعداد
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FRAMEWORK` | No | `auto` | `auto`, `jest`, `mocha`, `pytest`, `rspec`, `go-test`, `cargo-test` |
+| `COVERAGE` | No | `yes` | Enable coverage reporting: `yes` or `no` |
+| `E2E` | No | `no` | Include E2E tests: `yes` or `no` |
+
+## أمثلة
+
+### الكشف التلقائي والإعداد
+
+```bash
+/agileflow:setup-tests
+```
+
+يكتشف Node.js/Python/Ruby/Go/Rust ويقوم بتثبيت الإطار المناسب.
+
+### إطار القوة المحددة
+
+```bash
+/agileflow:setup-tests FRAMEWORK=jest COVERAGE=yes
+```
+
+يستخدم Jest للاختبار مع تمكين التغطية.
+
+### تشمل اختبارات E2E
+
+```bash
+/agileflow:setup-tests E2E=yes
+```
+
+يقوم بإعداد الوحدة والتكامل والاختبارات الشاملة (الكاتب المسرحي لتطبيقات الويب).
+
+### مشروع بايثون
+
+```bash
+/agileflow:setup-tests FRAMEWORK=pytest
+```
+
+تثبيت pytest مع التغطية وإنشاء اختبارات تجريبية.
+
+## كشف المشروع
+
+يكتشف الأمر تلقائيًا مكدس التكنولوجيا الخاص بك:
+
+| Tech Stack | Framework | Detected By |
+|-----------|-----------|-------------|
+| Node.js | Jest | package.json |
+| Node.js (older) | Mocha | package.json |
+| Python | pytest | requirements.txt, pyproject.toml |
+| Ruby | RSpec | Gemfile |
+| Go | go test | go.mod |
+| Rust | cargo test | Cargo.toml |
+| Java | JUnit | pom.xml, build.gradle |
+| .NET | xUnit/NUnit | *.csproj |
+
+## ملفات الإخراج
+
+يقوم الأمر بإنشاء إعداد اختبار كامل:
+
+### ملفات التكوين
+
+**Jest** (`jest.config.js`):
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    '!src/**/*.d.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
+  }
+};
+```
+
+**pytest** (`pytest.ini`):
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py *_test.py
+addopts = --cov=src --cov-report=html --cov-report=term
+```
+
+**RSpec** (`.rspec`):
+```text
+--format documentation
+--require spec_helper
+```
+
+### هيكل الدليل
+
+إنشاء أدلة اختبار منظمة:
+
+<FileTree>
+  <Folder name="tests">
+    <Folder name="unit" />
+    <Folder name="integration" />
+    <Folder name="e2e" />
+    <Folder name="fixtures" />
+    <Folder name="helpers" />
+  </Folder>
+</FileTree>
+
+### اختبارات سبيل المثال
+
+**Unit Test** (`tests/unit/example.test.ts`):
+```typescript
+describe('Example Test Suite', () => {
+  it('should pass this example test', () => {
+    expect(true).toBe(true);
+  });
+
+  it('should test basic math', () => {
+    expect(2 + 2).toBe(4);
+  });
+});
+```
+
+**Component Test** (`tests/components/Button.test.tsx`):
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import Button from '@/components/Button';
+
+describe('Button Component', () => {
+  it('renders with text', () => {
+    render(<Button>Click Me</Button>);
+    expect(screen.getByText('Click Me')).toBeInTheDocument();
+  });
+
+  it('calls onClick when clicked', () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click</Button>);
+    fireEvent.click(screen.getByText('Click'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+**Integration Test** (`tests/integration/api.test.ts`):
+```typescript
+import request from 'supertest';
+import app from '@/app';
+
+describe('API Integration Tests', () => {
+  it('GET / should return 200', async () => {
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+  });
+
+  it('POST /api/users should create user', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ name: 'Test User', email: 'test@example.com' });
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+  });
+});
+```
+
+**E2E Test** (`tests/e2e/login.spec.ts`):
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('user can log in', async ({ page }) => {
+  await page.goto('http://localhost:3000/login');
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  await expect(page).toHaveURL('http://localhost:3000/dashboard');
+});
+```
+
+### مخطوطات NPM
+
+تم التحديث `package.json`:
+```json
+{
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:e2e": "playwright test"
+  }
+}
+```
+
+### التكامل سي
+
+يضيف مهمة اختبار إلى `.github/workflows/ci.yml`:
+```yaml
+test:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test -- --coverage
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/lcov.info
+```
+
+### التوثيق
+
+يخلق `docs/02-practices/testing.md`:
+```markdown
+# Testing Guide
+
+## Running Tests
+
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # With coverage report
+npm run test:unit     # Unit tests only
+
+## Writing Tests
+
+### Unit Tests
+- Test individual functions/classes in isolation
+- Mock external dependencies
+- Fast (<10ms per test)
+
+### Integration Tests
+- Test multiple components together
+- Use real dependencies when possible
+- Medium speed (<100ms per test)
+
+### E2E Tests
+- Test full user flows
+- Run against real app
+- Slow (seconds per test)
+
+## Coverage Requirements
+
+- Minimum 70% coverage (enforced in CI)
+- New code should be 90%+ covered
+- Critical paths require 100% coverage
+
+## Best Practices
+
+- Use descriptive test names (Given/When/Then)
+- One assertion per test when possible
+- Avoid test interdependence
+- Use factories/fixtures for test data
+```
+
+## أنواع الاختبار
+
+### اختبارات الوحدة
+**What**: اختبار الوظائف/الفئات الفردية بشكل منفصل
+**Speed**: سريع (< 10 مللي ثانية لكل منهما)
+**Mocking**: نعم، تبعيات وهمية
+**Coverage**: يجب أن تحتوي معظم التعليمات البرمجية على اختبارات الوحدة
+
+مثال: اختبار دالة مساعدة تحسب عمر المستخدم.
+
+### اختبارات التكامل
+**What**: اختبار مكونات متعددة تعمل معًا
+**Speed**: متوسط ​​(<100 مللي ثانية لكل منهما)
+**Mocking**: الحد الأدنى، استخدم مكونات حقيقية
+**Coverage**: سير العمل الحاسم ومسارات واجهة برمجة التطبيقات
+
+مثال: اختبار أن تدفق المصادقة يعمل من البداية إلى النهاية مع قاعدة البيانات.
+
+### اختبارات E2E (اختياري)
+**What**: اختبار تدفقات المستخدم الكاملة في التطبيق الحقيقي
+**Speed**: بطيء (ثواني لكل اختبار)
+**Mocking**: لا شيء، التطبيق الحقيقي
+**Coverage**: رحلات المستخدم الهامة فقط
+
+مثال: تسجيل المستخدم → تسجيل الدخول → عرض تدفق لوحة المعلومات.
+
+## عتبات التغطية
+
+الحدود الافتراضية (معقولة وليست مثالية):
+- **Branches**: 70% - تغطية جميع مسارات القرار
+- **Functions**: 70% - تم استدعاء كافة الوظائف
+- **Lines**: 70% - تم تنفيذ كافة الأسطر
+- **Statements**: 70% - يتم تشغيل كافة البيانات
+
+**Why not 100%?**
+- التغطية 100% لا تضمن الصحة 100%
+- يصعب اختبار بعض التعليمات البرمجية (واجهة المستخدم، وحالات الحافة)
+- تناقص العوائد بعد 70-80%
+- ركز على المسارات الحرجة بدلاً من ذلك
+
+## تشغيل الاختبارات
+
+### أثناء التطوير
+```bash
+npm run test:watch
+```
+يقوم بتشغيل الاختبارات تلقائيًا عند تغيير الملفات.
+
+### قبل الالتزام
+```bash
+npm test
+npm run test:coverage
+```
+مجموعة اختبار كاملة مع فحص التغطية.
+
+### في سي
+يعمل تلقائيًا عند كل ضغطة:
+```bash
+npm test -- --coverage --ci
+```
+
+## سير العمل
+
+يتبع الإعداد الخطوات التالية:
+
+1. **Detect Language/Runtime**
+   - يبحث عن package.json وGemfile وgo.mod وما إلى ذلك.
+   - يحدد الإطار المناسب
+
+2. **Check Existing Setup**
+   - عمليات المسح بحثًا عن أدلة الاختبار (اختبار/، اختبارات/، __اختبارات__/)
+   - التحقق من ملفات التكوين الاختبار
+   - يكتشف تكوين CI
+
+3. **Show Setup Plan**
+   ```
+   Will install:
+   - jest, @types/jest, ts-jest
+   - @testing-library/react
+
+   Will create:
+   - jest.config.js
+   - tests/ directory structure
+   - Example tests
+
+   Will update:
+   - package.json (test scripts)
+   - .github/workflows/ci.yml (test job)
+
+   Proceed? (YES/NO)
+   ```
+
+4. **Install Dependencies**
+   - تثبيت npm، تثبيت النقطة، تثبيت الحزمة، إلخ.
+
+5. **Create Configuration**
+   - ملفات التكوين الخاصة بالإطار
+
+6. **Generate Examples**
+   - مثال على اختبار الوحدة
+   - مثال على اختبار التكامل
+   - مثال اختبار E2E (إذا طلب ذلك)
+
+7. **Update Scripts and CI**
+   - إضافة أوامر الاختبار
+   - التكامل مع سير العمل الحالي
+
+8. **Run Tests**
+   - التحقق من عمل الإعداد
+   - عرض تقرير التغطية
+
+9. **Create Documentation**
+   - دليل الاختبار
+   - أفضل الممارسات
+   - توقعات التغطية
+
+## الخطوات التالية
+
+بعد اكتمال الإعداد:
+
+1. **Run Tests Locally**
+   ```bash
+   npm test
+   npm run test:watch
+   ```
+
+2. **Write First Tests**
+   - ابدأ باختبارات الوحدة للمرافق
+   - إضافة اختبارات التكامل لواجهات برمجة التطبيقات
+   - أضف لاحقًا اختبارات E2E للتدفقات الحرجة
+
+3. **Enable Coverage Checks**
+   - يتطلب CI الحد الأدنى من التغطية
+   - تم حظر الدمج في حالة انخفاض التغطية
+
+4. **Monitor Coverage Trends**
+   - استخدم codecov.io أو ما شابه
+   - تتبع التغطية مع مرور الوقت
+   - احتفل بالتحسينات
+
+## أفضل الممارسات
+
+1. **Write Tests Early** - TDD أو بجانب الميزات
+2. **Keep Tests Fast** - عمليات وهمية بطيئة
+3. **Use Descriptive Names** - اسم الاختبار يوضح ما يختبره
+4. **One Assert Per Test** - عندما يكون ذلك ممكنا، يوضح الفشل
+5. **DRY in Tests** - استخدام التركيبات والمصانع والإعداد/الهدم
+6. **Test Behavior** - عدم تفاصيل التنفيذ
+7. **Avoid Flakiness** - لا مشاكل التوقيت، والفشل العشوائي
+8. **Clean Up** - إعادة ضبط الحالة بين الاختبارات
+
+## الأوامر ذات الصلة
+
+- [`/ إعداد ci`](/commands/ci) - إعداد سير عمل CI/CD
+- [`/الإعداد للنشر`](/commands/deploy) - تكوين النشر
+- [`/ الحزم`](/commands/packages) - إدارة تبعيات الاختبار

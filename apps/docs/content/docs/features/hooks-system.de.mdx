@@ -1,0 +1,253 @@
+---
+title: Hakensystem
+description: Ereignisgesteuerte Automatisierung für Ihren Entwicklungsworkflow mithilfe von Claude Code-Hooks.
+---
+
+# Hakensystem
+
+AgileFlow nutzt zur Aktivierung das offizielle Hooks-System von Claude Code **event-driven automation** in Ihrem Entwicklungsworkflow.
+
+## Was sind Haken?
+
+Hooks sind automatische Auslöser, die Befehle ausführen, wenn während Ihrer Claude Code-Sitzung bestimmte Ereignisse auftreten:
+
+| Event | When It Fires | Use Case |
+|-------|---------------|----------|
+| `SessionStart` | When Claude Code session begins | Display status, load context |
+| `PreCompact` | Before conversation is compacted | Preserve critical context |
+| `UserPromptSubmit` | After you submit a prompt | Activity logging |
+| `Stop` | When Claude stops responding | Cleanup, validation |
+| `PreToolUse` | Before a tool is used | Block dangerous commands |
+| `PostToolUse` | After a tool completes | Validation, logging |
+
+## Schnellstart
+
+### 1. Erstellen Sie ein Konfigurationsverzeichnis
+
+```bash
+mkdir -p .claude
+```
+
+### 2. Fügen Sie Hooks zu den Einstellungen hinzu
+
+Erstellen oder bearbeiten `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 3. Starten Sie Claude Code neu
+
+Hooks werden beim nächsten Sitzungsstart wirksam. Verwenden `Cmd/Ctrl + Shift + P` und wählen Sie „Fenster neu laden“ in VS-Code-basierten Editoren.
+
+## Beispielkonfigurationen
+
+### Willkommensnachricht beim Sitzungsstart
+
+Zeigen Sie eine hilfreiche Willkommensnachricht an, wenn Sie mit der Arbeit beginnen:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo '\\n  Welcome! Type /agileflow:help for available commands\\n'"
+      }]
+    }]
+  }
+}
+```
+
+### Projektstatusanzeige
+
+Aktuelle Story, WIP-Anzahl und Git-Zweig anzeigen:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/agileflow-statusline.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Abgeschlossene Geschichten automatisch archivieren
+
+Alte abgeschlossene Storys automatisch bereinigen:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/archive-completed-stories.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Kontexterhaltung während der Komprimierung
+
+Behalten Sie den kritischen Zustand bei, wenn Claude Code die Konversation komprimiert:
+
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### Aktivitätsprotokollierung
+
+Verfolgen Sie alle Eingabeaufforderungen zur späteren Überprüfung:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "echo \"[$(date '+%Y-%m-%d %H:%M:%S')] Prompt submitted\" >> .claude/activity.log"
+      }]
+    }]
+  }
+}
+```
+
+### Blockieren Sie gefährliche Befehle
+
+Verhindern Sie destruktive Vorgänge mit PreToolUse-Hooks:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/damage-control/bash-tool-damage-control.js"
+      }]
+    }]
+  }
+}
+```
+
+Sehen [Schadensbegrenzung](/docs/features/damage-control) für mehr Sicherheitsoptionen.
+
+## Konfigurationsdateien
+
+AgileFlow verwendet ein zweistufiges Konfigurationssystem:
+
+| File | Purpose | Version Control |
+|------|---------|-----------------|
+| `.claude/settings.json` | Project-level defaults | Committed to git |
+| `.claude/settings.local.json` | User-specific overrides | Gitignored |
+
+Benutzerspezifische Einstellungen in `settings.local.json` Überschreiben Sie Projekteinstellungen, sodass Teammitglieder ihre Erfahrung anpassen können, ohne andere zu beeinträchtigen.
+
+## AgileFlow-Hook-Skripte
+
+AgileFlow bietet gebrauchsfertige Skripte in `scripts/`:
+
+| Script | Purpose |
+|--------|---------|
+| `agileflow-statusline.sh` | Display project status (branch, story, WIP count) |
+| `archive-completed-stories.sh` | Auto-archive completed stories older than 30 days |
+| `precompact-context.sh` | Preserve critical context during conversation compaction |
+| `clear-active-command.js` | Clear active command state on session start |
+| `get-env.js` | Output environment information for status line |
+| `agileflow-welcome.js` | Display welcome message with project info |
+
+## Einrichten von Hooks mit AgileFlow
+
+Der einfachste Weg, Hooks zu konfigurieren, ist die interaktive Konfiguration von AgileFlow:
+
+```
+/agileflow:configure
+```
+
+Wählen **Hooks** um eine ereignisgesteuerte Automatisierung mit geführten Eingabeaufforderungen einzurichten.
+
+Oder verwenden Sie den spezifischen Konfigurationsagenten:
+
+```
+/agileflow:agents:configuration:hooks
+```
+
+## Hook-Konfigurationsschema
+
+```json
+{
+  "hooks": {
+    "EventName": [{
+      "matcher": "ToolName or *",
+      "hooks": [{
+        "type": "command",
+        "command": "shell command to execute"
+      }]
+    }]
+  }
+}
+```
+
+**Fields:**
+- `EventName` - Einer von: SessionStart, PreCompact, UserPromptSubmit, Stop, PreToolUse, PostToolUse
+- `matcher` - Werkzeugname für PreToolUse/PostToolUse, oder `*` für andere Veranstaltungen
+- `type` - Derzeit nur `command` wird unterstützt
+- `command` - Shell-Befehl zum Ausführen
+
+## Fehlerbehebung
+
+### Hook läuft nicht
+
+1. **Check syntax** - Validieren Sie JSON in `.claude/settings.json`
+2. **Restart session** - Hooks werden nur beim Sitzungsstart geladen
+3. **Check permissions** - Stellen Sie sicher, dass Skripte ausführbar sind (`chmod +x scripts/*.sh`)
+4. **Check logs** - Blick in `.claude/hook.log` für Fehler
+
+### Haken läuft langsam
+
+1. **Keep hooks fast** – SessionStart-Hooks sollten in weniger als 5 Sekunden abgeschlossen sein
+2. **Use background execution** - Bei langsamen Vorgängen asynchron ausführen
+3. **Cache results** - Verwenden Sie dateibasiertes Caching für teure Vorgänge
+
+### PreCompact behält den Kontext nicht bei
+
+1. **Verify script exists** - Überprüfen `scripts/precompact-context.sh` vorhanden ist
+2. **Check output format** - Das Skript muss ein gültiges Kontextformat ausgeben
+3. **Review session-state.json** – Stellen Sie sicher, dass aktive Befehle verfolgt werden
+
+## Verwandte Dokumentation
+
+- [Konfigurationssystem](/docs/features/configuration) - Interaktives Setup
+- [Schadensbegrenzung](/docs/features/damage-control) - PreToolSicherheitshaken verwenden
+- [Kompakter Kontext](/docs/features/compact-context) - Details zur Kontexterhaltung
+- [Parallele Sitzungen](/docs/features/parallel-sessions) - Sitzungsverwaltung

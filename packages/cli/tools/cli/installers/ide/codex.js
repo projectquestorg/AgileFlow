@@ -14,9 +14,14 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('fs-extra');
 const chalk = require('chalk');
-const { safeLoad, yaml } = require('../../../../lib/yaml-utils');
+const { yaml } = require('../../../../lib/yaml-utils');
 const { BaseIdeSetup } = require('./_base-ide');
-const { parseFrontmatter } = require('../../../../scripts/lib/frontmatter-parser');
+const {
+  getFrontmatter,
+  stripFrontmatter,
+  replaceReferences,
+  IDE_REPLACEMENTS,
+} = require('../../lib/content-transformer');
 
 /**
  * OpenAI Codex CLI setup handler
@@ -55,24 +60,15 @@ class CodexSetup extends BaseIdeSetup {
 
   /**
    * Convert an AgileFlow agent markdown file to Codex SKILL.md format
+   * Uses content-transformer module for consistent transformations
    * @param {string} content - Original agent markdown content
    * @param {string} agentName - Agent name (e.g., 'database')
    * @returns {string} Codex SKILL.md content
    */
   convertAgentToSkill(content, agentName) {
-    // Extract frontmatter using shared parser
-    let description = `AgileFlow ${agentName} agent`;
-    let model = 'default';
-
-    const frontmatter = parseFrontmatter(content);
-    if (frontmatter && Object.keys(frontmatter).length > 0) {
-      if (frontmatter.description) {
-        description = frontmatter.description;
-      }
-      if (frontmatter.model) {
-        model = frontmatter.model;
-      }
-    }
+    // Extract frontmatter using content-transformer
+    const frontmatter = getFrontmatter(content);
+    const description = frontmatter.description || `AgileFlow ${agentName} agent`;
 
     // Create SKILL.md with YAML frontmatter
     const skillFrontmatter = yaml
@@ -83,8 +79,8 @@ class CodexSetup extends BaseIdeSetup {
       })
       .trim();
 
-    // Remove original frontmatter from content
-    let bodyContent = content.replace(/^---\n[\s\S]*?\n---\n*/, '');
+    // Remove original frontmatter from content using content-transformer
+    let bodyContent = stripFrontmatter(content);
 
     // Add Codex-specific header
     const codexHeader = `# AgileFlow: ${agentName.charAt(0).toUpperCase() + agentName.slice(1)} Agent
@@ -93,12 +89,8 @@ class CodexSetup extends BaseIdeSetup {
 
 `;
 
-    // Replace Claude-specific references
-    bodyContent = bodyContent
-      .replace(/Claude Code/gi, 'Codex CLI')
-      .replace(/CLAUDE\.md/g, 'AGENTS.md')
-      .replace(/\.claude\//g, '.codex/')
-      .replace(/Task tool/gi, 'skill invocation');
+    // Replace Claude-specific references using content-transformer
+    bodyContent = replaceReferences(bodyContent, IDE_REPLACEMENTS.codex);
 
     return `---
 ${skillFrontmatter}
@@ -109,35 +101,25 @@ ${codexHeader}${bodyContent}`;
 
   /**
    * Convert an AgileFlow command markdown file to Codex prompt format
+   * Uses content-transformer module for consistent transformations
    * @param {string} content - Original command markdown content
    * @param {string} commandName - Command name (e.g., 'board')
    * @returns {string} Codex prompt content
    */
   convertCommandToPrompt(content, commandName) {
-    // Extract description from frontmatter if present
-    let description = `AgileFlow ${commandName} command`;
+    // Extract description from frontmatter using content-transformer
+    const frontmatter = getFrontmatter(content);
+    const description = frontmatter.description || `AgileFlow ${commandName} command`;
 
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    if (frontmatterMatch) {
-      try {
-        const frontmatter = safeLoad(frontmatterMatch[1]);
-        if (frontmatter.description) {
-          description = frontmatter.description;
-        }
-      } catch (e) {
-        // Ignore YAML parse errors
-      }
-    }
+    // Remove original frontmatter from content using content-transformer
+    let bodyContent = stripFrontmatter(content);
 
-    // Remove original frontmatter from content
-    let bodyContent = content.replace(/^---\n[\s\S]*?\n---\n*/, '');
-
-    // Replace Claude-specific references
-    bodyContent = bodyContent
-      .replace(/Claude Code/gi, 'Codex CLI')
-      .replace(/CLAUDE\.md/g, 'AGENTS.md')
-      .replace(/\.claude\//g, '.codex/')
-      .replace(/\/agileflow:/g, '$agileflow-');
+    // Replace Claude-specific references using content-transformer
+    // Use codex replacements plus command-specific pattern
+    bodyContent = replaceReferences(bodyContent, {
+      ...IDE_REPLACEMENTS.codex,
+      '/agileflow:': '$agileflow-',
+    });
 
     // Add Codex prompt header
     const header = `# AgileFlow: ${commandName}

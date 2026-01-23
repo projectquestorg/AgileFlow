@@ -1,0 +1,279 @@
+---
+title: /historia:ver
+description: Ver detalles de la historia con acciones contextuales basadas en el estado de la historia
+---
+
+# /historia:ver
+
+Vea los detalles completos de la historia, incluidos los criterios de aceptación, las pruebas y las dependencias con acciones contextuales.
+
+## Inicio rápido
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0042) |
+
+## Ejemplos
+
+### Ver historia específica
+
+```bash
+/agileflow:story:view STORY=US-0042
+```
+
+Muestra información completa de la historia y ofrece acciones contextuales.
+
+### Selección interactiva
+
+```bash
+/agileflow:story:view
+```
+
+Sin parámetro HISTORIA, muestra historias recientes y le pide que seleccione una.
+
+## Formato de salida
+
+### Descripción general de la historia
+
+```markdown
+## US-0042: User Login Form
+
+**Epic**: EP-0001 (Authentication System)
+**Status**: in_progress
+**Owner**: AG-UI
+**Estimate**: 3h
+**Created**: 2024-12-28
+**Updated**: 2024-12-30
+```
+
+### Criterios de aceptación
+
+```markdown
+### Acceptance Criteria
+
+- [x] Given a user on the login page
+      When they enter valid credentials
+      Then they are redirected to dashboard
+
+- [ ] Given a user on the login page
+      When they enter invalid credentials
+      Then they see an error message
+
+- [ ] Given a user on the login page
+      When they click "Forgot Password"
+      Then they are taken to password reset flow
+```
+
+### Dependencias
+
+```markdown
+### Dependencies
+
+- US-0040: API authentication endpoint (done)
+- US-0041: Session management (ready) ⚠️ Not started yet
+```
+
+### Estado de la prueba
+
+```markdown
+### Test Status
+
+| Test | Status |
+|------|--------|
+| Unit: LoginForm.test.tsx | passing |
+| Integration: auth-flow.test.ts | pending |
+| E2E: login.spec.ts | not created |
+```
+
+### Notas de progreso
+
+```markdown
+### Progress Notes
+
+- 2024-12-30: Started form implementation
+- 2024-12-29: Design approved
+```
+
+## Acciones conscientes del contexto
+
+Las acciones cambian según el estado de la historia:
+
+### Para historias listas
+
+Cuando una historia es `ready` para empezar:
+
+```
+This story is ready to start. What would you like to do?
+```
+
+Opciones:
+- **Start working on this story** (Recomendado): Marcar como en_progreso
+- **Validate story first**: Compruebe si el aire acondicionado y las dependencias están completos
+- **View related research**: Encuentra notas de investigación para esta epopeya.
+- **Back to story list**: Volver a /agileflow:story:list
+
+### Para historias en progreso
+
+Cuando estás trabajando activamente en una historia:
+
+```
+This story is in progress. What would you like to do?
+```
+
+Opciones:
+- **Mark as complete**: Todo el aire acondicionado hecho, pasar al estado hecho
+- **Mark as blocked**: Golpea a un bloqueador, necesitas ayuda
+- **View/run tests**: Verifique el estado de la prueba para esta historia
+- **Add progress note**: Documentar el progreso actual
+
+### Para historias bloqueadas
+
+Cuando una historia está bloqueada:
+
+```
+This story is blocked. What would you like to do?
+```
+
+Opciones:
+- **View blocker details**: Ver qué está bloqueando esta historia
+- **Unblock and resume**: Bloqueador resuelto, continuar trabajando
+- **Reassign story**: Asignar a un propietario diferente
+- **Create research task**: Necesidad de investigar el bloqueador
+
+### Para historias completadas
+
+Cuando una historia está terminada:
+
+```
+This story is complete. What would you like to do?
+```
+
+Opciones:
+- **View completion summary**: Ver lo que se entregó
+- **Reopen story**: Problema encontrado, necesita más trabajo
+- **View next story in epic**: Continuar con el trabajo relacionado
+- **Back to story list**: Volver a /agileflow:story:list
+
+## Flujos de trabajo típicos
+
+### Iniciar implementación
+
+```
+1. /agileflow:story:view STORY=US-0042
+2. Review acceptance criteria
+3. Check dependencies (all done?)
+4. Select "Start working on this story"
+5. Story marked as in_progress
+6. Begin implementation with /agileflow:babysit
+```
+
+### Continuar trabajando
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Story is in_progress)
+2. See current progress notes
+3. Review tests needing completion
+4. Continue implementation
+5. When done: Select "Mark as complete"
+```
+
+### Bloqueador de mango
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Blocked)
+2. See blocker details
+3. Create task to resolve (e.g., waiting for API)
+4. When resolved: Select "Unblock and resume"
+5. Continue work
+```
+
+### Reabrir la historia
+
+```
+1. /agileflow:story:view STORY=US-0042
+   (Story is done)
+2. In testing, found issue
+3. Select "Reopen story"
+4. Story changed back to in_progress
+5. Fix the issue
+6. Mark as complete again
+```
+
+## Comprender las dependencias de la historia
+
+La sección Dependencias muestra:
+
+- ✅ **done**: Dependencia completa, puede continuar
+- ⏳ **in_progress**: Se está trabajando en la dependencia, consulte con el propietario.
+- 🔶 **ready**: Dependencia lista para comenzar, es posible que desee esperar
+- 🚫 **blocked**: La dependencia está bloqueada, no se puede continuar
+
+**Rule**: No inicies una historia si sus dependencias están bloqueadas.
+
+## Interpretación del estado de la prueba
+
+### Pasar pruebas ✅
+
+```
+Unit: LoginForm.test.tsx | passing
+```
+
+Las pruebas pasan: la función funciona correctamente.
+
+### Pruebas pendientes ⏳
+
+```
+Integration: auth-flow.test.ts | pending
+```
+
+Existen pruebas pero aún no se han realizado. correr con `/agileflow:verify`.
+
+### Pruebas faltantes 🔴
+
+```
+E2E: login.spec.ts | not created
+```
+
+Es necesario crear pruebas. Agréguelos durante la implementación.
+
+## Mejores prácticas
+
+### Antes de comenzar a trabajar
+
+- [] Leer todos los criterios de aceptación
+- [] Verificar que todas las dependencias estén realizadas
+- [] Verifique si hay investigaciones relacionadas.
+- [] Revisar las notas de progreso de la planificación.
+
+### Durante el trabajo
+
+- [] Escribe/actualiza pruebas a medida que codificas
+- [] Agregar notas de progreso periódicamente
+- [] Marcar como bloqueado si tienes problemas
+- [] Actualiza las casillas de verificación de AC a medida que las completas
+
+### Cuando esté completo
+
+- [] Todos los aires acondicionados están marcados.
+- [ ] Todas las pruebas nuevas pasan
+- [] Se actualizaron las pruebas existentes si es necesario
+- [] Considera crear la siguiente historia si la épica continúa.
+
+## Comandos relacionados
+
+- [`/historia:lista`](/commands/story-list) - Ver todas las historias
+- [`/historia`](/commands/story) - Crear nueva historia
+- [`/validar historia`](/commands/story-validate) - Validar la integridad de la historia.
+- [`/estado`](/commands/status) - Actualizar el estado de la historia
+- [`/cuidar`](/commands/babysit) - Obtenga ayuda para implementar
+- [`/verificar`](/commands/verify) - Ejecutar y actualizar el estado de la prueba.
+- [`/bloqueadores`](/commands/blockers) - Resolver bloqueadores
+- [`/épico:ver`](/commands/epic-view) - Ver épica para padres

@@ -10,8 +10,12 @@ import { MobileNav } from "@/components/mobile-nav"
 import { ModeSwitcher } from "@/components/mode-switcher"
 import { Button } from "@/registry/new-york-v4/ui/button"
 
-export function SiteHeader() {
-  const pageTree = source.pageTree
+interface SiteHeaderProps {
+  tree?: typeof source.pageTree
+}
+
+export function SiteHeader({ tree }: SiteHeaderProps) {
+  const pageTree = tree || source.pageTree
 
   return (
     <header className="bg-background sticky top-0 z-50 w-full border-b border-border/40">

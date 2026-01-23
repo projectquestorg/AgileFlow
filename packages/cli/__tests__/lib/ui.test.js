@@ -176,8 +176,9 @@ describe('ui.js', () => {
       const config = getIdeConfig('claude-code');
 
       expect(config).not.toBeNull();
-      expect(config.value).toBe('claude-code');
-      expect(config.name).toBe('Claude Code');
+      // getIdeConfig now returns IdeRegistry.get() format which uses 'name' instead of 'value'
+      expect(config.name).toBe('claude-code');
+      expect(config.displayName).toBe('Claude Code');
     });
 
     it('returns null for unknown IDE', () => {
@@ -189,8 +190,9 @@ describe('ui.js', () => {
     it('returns config with all expected properties', () => {
       const config = getIdeConfig('cursor');
 
+      // Uses IdeRegistry format with name, displayName, configDir, etc.
       expect(config).toHaveProperty('name');
-      expect(config).toHaveProperty('value');
+      expect(config).toHaveProperty('displayName');
       expect(config).toHaveProperty('configDir');
     });
   });
