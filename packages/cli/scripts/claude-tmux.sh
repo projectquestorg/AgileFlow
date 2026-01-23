@@ -84,9 +84,11 @@ tmux set-option -t "$SESSION_NAME" mouse on
 # Fix colors - proper terminal support
 tmux set-option -t "$SESSION_NAME" default-terminal "xterm-256color"
 
-# Sane scrolling - works properly with vim/nvim
-
-# Detach with Ctrl+b d (default tmux behavior, NOT 'q'!)
+# Keybindings: Alt+number to switch windows, Alt+q to detach
+for i in 1 2 3 4 5 6 7 8 9; do
+  tmux bind-key -n "M-$i" select-window -t ":$((i-1))"
+done
+tmux bind-key -n M-q detach-client
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"
