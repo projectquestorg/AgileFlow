@@ -633,9 +633,10 @@ async function createSession(options = {}) {
     }
   }
 
-  // Copy Claude Code and AgileFlow config folders (gitignored contents won't copy with worktree)
+  // Copy Claude Code, AgileFlow config, and docs folders (gitignored contents won't copy with worktree)
   // Note: The folder may exist with some tracked files, but gitignored subfolders (commands/, agents/) won't be there
-  const configFolders = ['.claude', '.agileflow'];
+  // docs/ contains gitignored state files like status.json, session-state.json that need to be shared
+  const configFolders = ['.claude', '.agileflow', 'docs'];
   const copiedFolders = [];
   for (const folder of configFolders) {
     const src = path.join(ROOT, folder);
