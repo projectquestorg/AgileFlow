@@ -15,7 +15,7 @@ const { BaseIdeSetup } = require('./_base-ide');
  */
 class WindsurfSetup extends BaseIdeSetup {
   constructor() {
-    super('windsurf', 'Windsurf', true);
+    super('windsurf', 'Windsurf', false);
     this.configDir = '.windsurf';
     this.workflowsDir = 'workflows';
   }

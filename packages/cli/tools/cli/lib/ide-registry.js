@@ -83,7 +83,7 @@ const IDE_REGISTRY = {
     commandsSubdir: 'workflows',
     agileflowFolder: 'agileflow',
     targetSubdir: 'workflows/agileflow', // lowercase
-    preferred: true,
+    preferred: false,
     description: "Codeium's AI IDE",
     handler: 'WindsurfSetup',
     labels: {
