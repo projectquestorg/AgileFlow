@@ -1,0 +1,98 @@
+---
+title: /ملحمي
+description: إنشاء ملحمة جديدة مع القصص
+---
+
+# /ملحمي
+
+أنشئ ملحمة جديدة تحتوي على قصص أطفال اختيارية لتنظيم قصص المستخدمين ذات الصلة حول ميزة أو هدف أكبر.
+
+## بداية سريعة
+
+```bash
+/agileflow:epic EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text>
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic identifier (e.g., EP-0001) |
+| `TITLE` | Yes | - | Epic title describing the feature or goal |
+| `OWNER` | Yes | - | Owner name or agent ID (e.g., AG-UI, AG-API) |
+| `GOAL` | Yes | - | Outcome or metric that defines success for this epic |
+| `STORIES` | No | - | Comma-separated list of initial stories (format: `US-ID\|title\|owner`) |
+
+## أمثلة
+
+### الخلق الملحمي الأساسي
+
+```bash
+/agileflow:epic EPIC=EP-0010 TITLE="User Authentication" OWNER=AG-API GOAL="Enable users to securely register and log in"
+```
+
+يقوم بإنشاء ملف ملحمي جديد في `docs/05-epics/EP-0010.md` بالتفاصيل المقدمة وتسجيله في `docs/09-agents/status.json`.
+
+### ملحمة مع القصص الأولية
+
+```bash
+/agileflow:epic EPIC=EP-0011 TITLE="Payment Processing" OWNER=AG-API GOAL="Enable payments via Stripe" STORIES="US-0040|Stripe integration|AG-API,US-0041|Payment form|AG-UI,US-0042|Webhook handler|AG-API"
+```
+
+ينشئ الملحمة وينشئ قصص الأطفال الأولية تلقائيًا ضمنها `docs/06-stories/EP-0011/`. يتم إنشاء كل قصة باستخدام:
+- حالة: `ready` (جاهز للتطوير)
+- تقدير: `0.5d` (افتراضي، يمكن تعديله)
+- التبعيات: فارغة (يتم تحديثها يدويًا حسب الحاجة)
+
+## الإخراج
+
+يقوم الأمر بإنشاء:
+
+1. **Epic file** (`docs/05-epics/EP-XXXX.md`)
+   - البيانات الوصفية الملحمية (العنوان، المالك، الحالة، الهدف)
+   - الوضع الحالي والمقاييس
+   - قائمة قصص الأطفال
+
+2. **Story files** (واحدة لكل قصة، `docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - قالب القصة مع العناصر النائبة لمعايير القبول
+   - مرتبطة بملحمة الوالدين
+   - جاهز للتعريف التفصيلي
+
+3. **Status tracking** (`docs/09-agents/status.json`)
+   - دخول ملحمي مع المالك والوضع الحالي
+   - إدخالات القصة مرتبطة بالملحمة
+
+4. **Agent communication** (`docs/09-agents/bus/log.jsonl`)
+   - تظهر رسائل المهام الملحمة التي تم إنشاؤها والقصص المخصصة
+
+## سير العمل
+
+1. **Plan your epic** - تحديد هدف الميزة ومقاييس النجاح
+2. **Create the epic** - يجري `/epic` الأمر بالتفاصيل الأساسية
+3. **Add stories** - قم بإنشائها الآن باستخدام معلمة STORIES أو استخدمها `/story` لإضافتها بشكل فردي لاحقًا
+4. **Develop stories** - يستخدم `/story-validate` للتأكد من أن كل قصة جاهزة قبل التطوير
+5. **Sprint plan** - يستخدم `/sprint` لتحديد القصص للسباق القادم
+6. **Track progress** - يستخدم `/board` لمراقبة اكتمال ملحمة
+
+## التكامل مع الأوامر الأخرى
+
+- **After epic creation**: يستخدم `/story` لإضافة المزيد من القصص
+- **Before sprint planning**: يستخدم `/sprint` لاختيار قصص من هذه الملحمة
+- **For progress tracking**: يستخدم `/board` أو `/metrics` لرؤية الانتهاء الملحمي
+- **For dependencies**: يستخدم `/deps` لتصور تبعيات القصة داخل الملحمة
+
+## أفضل الممارسات
+
+- **Keep epics focused** - ميزة واحدة أو منطقة ميزة واحدة لكل ملحمة
+- **Make goals measurable** - Use specific outcomes or metrics (not "improve user experience")
+- **Add stories incrementally** - ابدأ بالقصص الأساسية، وأضف القصص ذات الصلة بمرور الوقت
+- **Assign appropriate owners** - تطابق مالك الملحمة مع وكيل التطوير الأساسي
+- **Document context** - إضافة سياق تقني في الملف الملحمي بعد الإنشاء
+
+## الأوامر ذات الصلة
+
+- [`/قصة`](/commands/story) - إنشاء قصص فردية داخل ملحمة
+- [`/ سبرينت`](/commands/sprint) - خطط لسباقات السرعة بقصص ملحمية محددة
+- [`/ ديبس`](/commands/deps) - تصور تبعيات القصة داخل الملحمة
+- [`/اللوحة`](/commands/board) - تتبع التقدم الملحمي بصريا
+- [`/المقاييس`](/commands/metrics) - عرض مقاييس الإنجاز والسرعة الملحمية

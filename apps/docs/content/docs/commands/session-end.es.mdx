@@ -1,0 +1,134 @@
+---
+title: /sesión:fin
+description: Finalice la sesión actual y, opcionalmente, limpie el árbol de trabajo
+---
+
+# /sesión:fin
+
+Finalice limpiamente una sesión de Claude Code, eliminando su bloqueo y, opcionalmente, limpiando el árbol de trabajo de git.
+
+## Inicio rápido
+
+```bash
+/agileflow:session:end
+```
+
+## Cómo funciona
+
+1. Muestra información de la sesión actual.
+2. Le pregunta si desea eliminar el árbol de trabajo de git.
+3. Elimina el archivo de bloqueo de sesión.
+4. Opcionalmente elimina el directorio del árbol de trabajo.
+
+## Ejemplo de interacción
+
+```
+Ending Session 2 "auth"
+
+Path: /home/user/myproject-auth
+Branch: session-2
+Created: 2 hours ago
+
+Do you want to remove the git worktree?
+
+○ Keep worktree (just end session tracking)
+○ Remove worktree (delete directory and branch)
+```
+
+## Opciones de limpieza
+
+| Option | What Happens |
+|--------|--------------|
+| **Keep worktree** | Session lock removed, directory stays. You can `cd` there and work manually. |
+| **Remove worktree** | Directory deleted, branch optionally removed, full cleanup. |
+
+## Cuándo utilizar cada opción
+
+### Mantener el árbol de trabajo
+
+- Quieres seguir trabajando allí sin Claude.
+- Necesita conservar los cambios no confirmados
+- Volverás a este trabajo más tarde.
+
+### Quitar árbol de trabajo
+
+- El trabajo está completo y fusionado.
+- Quieres liberar espacio en disco
+- Limpiar experimentos abandonados
+
+## Finalizar la sesión actual
+
+Al ejecutar desde su sesión actual:
+
+```bash
+/agileflow:session:end
+# This ends your current session
+# You'll see a warning before proceeding
+```
+
+## Finalizar otras sesiones
+
+También puedes finalizar sesiones en las que no estás actualmente:
+
+```bash
+/agileflow:session:status
+# See all sessions
+
+/agileflow:session:end
+# Select which session to end
+```
+
+## Lo que se limpia
+
+### Bloqueo de sesión
+Siempre eliminado:
+```
+.agileflow/sessions/2.lock → deleted
+```
+
+### Entrada de registro
+Actualizado:
+```json
+{
+  "sessions": {
+    "2": {
+      "ended": "2025-12-26T15:00:00Z",
+      "status": "ended"
+    }
+  }
+}
+```
+
+### Árbol de trabajo de Git (opcional)
+Si elige eliminar:
+```bash
+git worktree remove /home/user/myproject-auth
+# Directory deleted
+# Branch optionally deleted
+```
+
+## Controles de seguridad
+
+El comando evita la pérdida accidental de datos:
+
+- **Uncommitted changes**: Se muestra una advertencia si el árbol de trabajo tiene trabajo no confirmado
+- **Main session**: No se puede eliminar el árbol de trabajo principal del proyecto
+- **Active sessions**: Advertencia si intenta finalizar otra sesión activa
+
+## Limpieza de sesión obsoleta
+
+Si una sesión muere inesperadamente:
+
+```bash
+/agileflow:session:status
+# Shows "stale" for dead sessions
+
+/agileflow:session:end
+# Select the stale session to clean up
+```
+
+## Comandos relacionados
+
+- [`/sesión:estado`](/commands/session-status) - Verifique primero el estado de la sesión
+- [`/sesión:nueva`](/commands/session-new) - Crear sesión de reemplazo
+- [`/sesión:historial`](/commands/session-history) - Ver sesiones finalizadas

@@ -1,0 +1,232 @@
+---
+title: /multiexperto
+description: Implemente varios expertos en el dominio en el mismo problema para obtener mayor confianza
+---
+
+# /multiexperto
+
+Implemente varios agentes expertos en el mismo problema o pregunta. Cada experto analiza de forma independiente desde la perspectiva de su dominio y luego los resultados se sintetizan para obtener respuestas de mayor confianza.
+
+## Cuando usar
+
+Implemente varios expertos para:
+- **Complex cross-domain questions** - "¿Cómo fluye la autenticación del usuario desde el inicio de sesión hasta la API?"
+- **Architecture analysis** - "¿Cuáles son las implicaciones de seguridad de este cambio?"
+- **Code review with multiple perspectives** - "Revisa este PR desde diferentes ángulos"
+- **Debugging hard problems** - "¿Por qué esta prueba es inestable?"
+- **Best practice validation** - "¿Nuestro enfoque es correcto para este caso de uso?"
+
+## Inicio rápido
+
+```bash
+/agileflow:multi-expert "How does user authentication flow from login to API?"
+```
+
+## Cómo funciona
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    YOUR QUESTION                             │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              ORCHESTRATOR ANALYZES DOMAINS                   │
+│  1. Detect relevant expert domains                           │
+│  2. Select 3-5 experts based on question                     │
+│  3. Deploy experts IN PARALLEL                               │
+│  4. Collect independent analyses                             │
+│  5. Synthesize results                                       │
+└─────────────────────────────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+    ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+    │  Security     │ │  API Expert   │ │  Testing      │
+    │  Expert       │ │               │ │  Expert       │
+    │               │ │               │ │               │
+    │ Analyzes from │ │ Analyzes from │ │ Analyzes from │
+    │ security      │ │ implementation│ │ test coverage │
+    │ perspective   │ │ perspective   │ │ perspective   │
+    └───────────────┘ └───────────────┘ └───────────────┘
+            │               │               │
+            └───────────────┼───────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   SYNTHESIZE RESULTS                         │
+│  • Find agreements (high confidence)                         │
+│  • Identify unique insights                                  │
+│  • Flag disagreements (needs review)                         │
+│  • Combine into comprehensive answer                         │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   FINAL ANSWER                               │
+│  📊 Confidence: High/Medium/Low                              │
+│  🎯 Key Findings (agreed by multiple experts)                │
+│  💡 Unique Insights (from individual experts)                │
+│  ⚠️ Disagreements (needs human review)                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Ejemplos
+
+### Revisión de seguridad de autenticación
+
+```bash
+/agileflow:multi-expert "Is our authentication implementation secure? Review JWT token handling, password storage, session management, and access control."
+```
+
+Despliega expertos en:
+- **Security** - Caducidad de JWT, validación de tokens, análisis de vulnerabilidad.
+- **API** - Revisión de implementación, consistencia del middleware.
+- **Testing** - Análisis de cobertura de pruebas.
+- **Database** - Almacenamiento de credenciales y cifrado
+
+Da como resultado una evaluación de seguridad de alta confianza con correcciones específicas.
+
+### Arquitectura de características complejas
+
+```bash
+/agileflow:multi-expert "We're building a real-time notification system. What are the architectural and performance implications?"
+```
+
+Despliega expertos en:
+- **Architecture** - Patrones de diseño del sistema.
+- **Performance** - Problemas de latencia y escalabilidad
+- **Testing** - Cómo probar sistemas distribuidos.
+- **DevOps** - Requisitos de infraestructura
+
+Resultados en una orientación arquitectónica integral.
+
+### Depuración de pruebas inestables
+
+```bash
+/agileflow:multi-expert "Our E2E tests are flaky. What's causing the intermittent failures?"
+```
+
+Despliega expertos en:
+- **Testing** - Problemas de sincronización y aislamiento de pruebas
+- **CI/CD** - Crear coherencia en el entorno
+- **Performance** - Tiempos de espera y limitaciones de recursos
+- **DevOps** - Configuración del entorno y variables.
+
+Resultados en una evaluación de depuración de múltiples ángulos.
+
+## Dominios y expertos
+
+Dominios expertos disponibles y sus palabras clave:
+
+| Domain | Keywords | Expert |
+|--------|----------|--------|
+| Database | schema, table, query, migration, SQL, model | DB Expert |
+| API | endpoint, REST, GraphQL, route, controller, backend | API Expert |
+| UI | component, frontend, button, form, style, CSS | UI Expert |
+| Testing | test, spec, coverage, mock, assertion | Testing Expert |
+| Security | auth, JWT, OAuth, vulnerability, XSS, CSRF | Security Expert |
+| Performance | optimize, cache, latency, profiling, slow | Performance Expert |
+| CI/CD | workflow, pipeline, build, deploy, GitHub Actions | CI Expert |
+| DevOps | infrastructure, Docker, Kubernetes, env | DevOps Expert |
+| Accessibility | ARIA, a11y, screen reader, WCAG | A11y Expert |
+| Architecture | design, pattern, structure, decision | Architecture Expert |
+
+## Estructura de salida
+
+### Niveles de confianza
+
+**High Confidence**
+- Más de 3 expertos coinciden en el hallazgo
+- Evidencia citada con rutas de archivos específicas
+- Sin opiniones contradictorias
+
+**Medium Confidence**
+- 2 expertos están de acuerdo
+- Algunas pruebas proporcionadas
+- Existen desacuerdos menores
+
+**Low Confidence**
+- Sólo 1 experto lo menciona
+- Sin evidencia específica
+- Grandes desacuerdos entre expertos
+
+### Formato de resultado
+
+```markdown
+## Multi-Expert Analysis Results
+
+**Question**: [original question]
+**Experts Consulted**: [list of experts]
+**Overall Confidence**: High/Medium/Low
+
+### 🎯 Key Findings (High Confidence)
+*Areas where multiple experts agree*
+
+1. Finding 1 - Agreed by: Expert1, Expert2
+2. Finding 2 - Agreed by: Expert1, Expert3
+
+### 💡 Unique Insights
+*Valuable perspectives from individual experts*
+
+- **Expert1**: [Unique insight from their domain]
+- **Expert2**: [Unique insight from their domain]
+
+### ⚠️ Areas of Disagreement
+*Requires human review to resolve*
+
+- Expert1 says X, but Expert2 says Y
+  - Context: [why they might disagree]
+  - Recommendation: [how to resolve]
+
+### 📋 Recommended Actions
+
+1. [Action] - Priority: High - Source: Expert1
+2. [Action] - Priority: Medium - Source: Expert2
+
+### 🔍 Files Referenced
+
+- `path/to/file.ts` - Mentioned by: Expert1, Expert2
+- `path/to/other.ts` - Mentioned by: Expert3
+```
+
+## Mejores prácticas
+
+1. **Be specific** - Más detalles en su pregunta = mejor análisis de expertos
+2. **Include context** - Comparta nombres de archivos relevantes o fragmentos de código
+3. **Ask for multiple perspectives** - "¿Cuáles son las implicaciones [de dominio]?"
+4. **Review disagreements** - Cuando los expertos no están de acuerdo se requiere juicio humano
+5. **Follow recommendations** - Los expertos hacen referencia a archivos y patrones específicos
+
+## Flujo de trabajo
+
+1. Analizar preguntas para dominios relevantes
+2. Identifique palabras clave y mapee a expertos
+3. Seleccione de 3 a 5 expertos (cobertura de saldo frente a gastos generales)
+4. Implementar a todos los expertos en paralelo
+5. Recopilar análisis independientes
+6. Sintetizar resultados
+7. Informar resultados de confianza alta/media/baja
+
+## Casos de uso
+
+### Revisión de código
+Obtenga múltiples perspectivas sobre decisiones arquitectónicas, implicaciones de seguridad y cobertura de pruebas antes de fusionarse.
+
+### Toma de decisiones técnicas
+Valide las decisiones arquitectónicas importantes antes de la implementación obteniendo el consenso de expertos.
+
+### Depuración de problemas complejos
+Implemente expertos en pruebas, rendimiento e infraestructura para identificar la causa raíz desde múltiples ángulos.
+
+### Evaluación de riesgos
+Consiga que expertos en seguridad, rendimiento y arquitectura identifiquen riesgos potenciales en nuevas funciones.
+
+### Aprendizaje y conocimiento
+Comprender los componentes del sistema desde múltiples perspectivas para construir modelos mentales integrales.
+
+## Comandos relacionados
+
+- [`/ revisión-de-código-ai`](/commands/ai-code-review) - Revisión de código de un solo experto
+- [`/adr-nuevo`](/commands/adr-new) - Documentar decisiones arquitectónicas.
+- [`/métricas`](/commands/metrics) - Métricas y análisis del proyecto.
+- [`/cuidar`](/commands/babysit) - Sugerir consulta de expertos.

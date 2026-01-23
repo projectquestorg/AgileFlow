@@ -1,0 +1,159 @@
+---
+title: /docs-sync
+description: Synchronisieren Sie die Dokumentation mit Codeänderungen
+---
+
+# /docs-sync
+
+Synchronisieren Sie Ihre Dokumentation mit Codebasisänderungen, indem Sie neuen Code erkennen und sicherstellen, dass entsprechende Dokumentation vorhanden ist.
+
+## Schnellstart
+
+```bash
+/agileflow:docs-sync
+```
+
+Zum Vergleich mit einem bestimmten Zweig:
+
+```bash
+/agileflow:docs-sync BRANCH=feature-auth BASE=main
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `BRANCH` | No | Current branch | Branch to analyze for changes |
+| `BASE` | No | main/master | Base branch to compare against |
+| `AUTO_CREATE` | No | no | Automatically create missing documentation (yes/no) |
+
+## Beispiele
+
+### Aktuellen Zweig analysieren
+
+```bash
+/agileflow:docs-sync
+```
+
+Analysiert Ihren aktuellen Zweig gegen `main` und Berichte:
+- Neue API-Endpunkte ohne Dokumentation
+- Neue UI-Komponenten ohne Dokumentation
+- Konfigurationsänderungen nicht dokumentiert
+- Veraltete Dokumentation
+
+### Vergleichen Sie den Funktionszweig
+
+```bash
+/agileflow:docs-sync BRANCH=feature-oauth BASE=main
+```
+
+Vergleicht `feature-oauth` gegen `main` um alle Dokumentationslücken zu finden.
+
+### Fehlende Dokumente automatisch erstellen
+
+```bash
+/agileflow:docs-sync BRANCH=feature-payments AUTO_CREATE=yes
+```
+
+Erstellt automatisch eine Stub-Dokumentation für alle fehlenden Elemente und führt einen Commit mit einer Nachricht durch `docs: sync with codebase changes`.
+
+## Ausgabe
+
+Der Befehl generiert einen umfassenden Bericht:
+
+```markdown
+# Documentation Sync Report
+
+**Branch**: feature-auth | **Base**: main | **Generated**: 2025-12-24T10:30:00Z
+
+## Missing Documentation
+
+### API Endpoints (3)
+- ❌ POST /api/auth/login (src/api/auth/login.ts)
+- ❌ POST /api/auth/logout (src/api/auth/logout.ts)
+- ❌ GET /api/auth/verify (src/api/auth/verify.ts)
+
+### UI Components (2)
+- ❌ LoginForm (src/components/LoginForm.tsx)
+- ⚠️ UserProfile (src/components/UserProfile.tsx) - stub exists, needs details
+
+### Configuration (1)
+- ❌ New env var: JWT_SECRET (.env.example)
+
+## Outdated Documentation
+
+### Deprecated
+- 📄 docs/04-architecture/api.md mentions /api/v1/login (removed in this branch)
+
+## Up-to-Date
+- ✅ UserAvatar component documented
+- ✅ Database schema up-to-date
+```
+
+## Wie es funktioniert
+
+### Änderungserkennung
+
+Der Befehl:
+1. **Compares branches** verwenden `git diff` um alle Codeänderungen zu identifizieren
+2. **Categorizes changes** in API-Endpunkte, UI-Komponenten, Dienste, Konfigurationen und Datenbankschemata
+3. **Maps to documentation** Speicherorte, an denen Dokumente vorhanden sein sollten
+
+### Intelligente Schlussfolgerung
+
+Die Dokumentation stammt aus:
+- **TypeScript types and interfaces** - Funktionssignaturen und Rückgabetypen
+- **JSDoc comments** - Vorhandene Codedokumentation
+- **Test files** - Anwendungsbeispiele
+- **OpenAPI decorators** - API-Spezifikationen
+
+### Lückenanalyse
+
+Für jede geänderte Datei prüft der Befehl Folgendes:
+- **Missing documentation**: Neu hinzugefügter Code ohne Dokumente
+- **Outdated documentation**: Verweise auf entfernten oder geänderten Code
+- **Incomplete documentation**: Stubs, die Details benötigen
+
+## Dokumentationszuordnung
+
+Codeänderungen werden der erwarteten Dokumentation zugeordnet:
+
+| Code Location | Expected Documentation |
+|--------------|----------------------|
+| `src/api/` or `src/routes/` | `docs/04-architecture/api.md` or OpenAPI spec |
+| `src/components/` or `src/pages/` | `docs/04-architecture/components.md` or Storybook |
+| `src/services/` or `src/utils/` | `docs/04-architecture/services.md` |
+| `*.config.js`, `.env.example` | `docs/02-practices/configuration.md` |
+| `migrations/` or `schema/` | `docs/04-architecture/database.md` |
+
+## Best Practices
+
+### Vor dem Festschreiben des Codes
+Laufen `docs-sync` um Dokumentationslücken frühzeitig zu erkennen:
+
+```bash
+/agileflow:docs-sync BRANCH=your-feature BASE=main
+```
+
+### Beim Hinzufügen neuer Endpunkte
+Der Befehl markiert sie automatisch, sodass Sie sich die Dokumentation leichter merken können:
+
+```bash
+/agileflow:docs-sync AUTO_CREATE=yes
+```
+
+Dadurch werden Stubs erstellt, die mit „TODO: Details hinzufügen“ zur manuellen Überprüfung gekennzeichnet sind.
+
+### Zu pflegende Dokumentationsabschnitte
+Halten Sie diese mit dem Code synchronisiert:
+- Beispiele für API-Anfragen/Antworten
+- Komponenten-Requisitendefinitionen
+- Konfigurationsoptionen
+- Änderungen des Datenbankschemas
+- Veraltete API-Endpunkte
+
+## Verwandte Befehle
+
+- [`/context`](/commands/context) - Erstellen Sie ein umfassendes Kontextbriefing
+- [`/readme-sync`](/commands/readme-sync) - Synchronisieren Sie README-Dateien mit Ordnerinhalten
+- [`/adr`](/commands/adr) - Architekturentscheidungen dokumentieren

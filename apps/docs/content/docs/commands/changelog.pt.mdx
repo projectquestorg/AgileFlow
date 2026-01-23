@@ -1,0 +1,329 @@
+---
+title: /gerar log de alterações
+description: Gerar automaticamente changelog a partir do histórico de commits
+---
+
+# /gerar log de alterações
+
+Gere automaticamente um changelog a partir de seu histórico de commits e pull requests usando commits convencionais e formato Keep a Changelog.
+
+## Início rápido
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+## Propósito
+
+Este comando cria changelogs profissionais ao:
+- Detectando automaticamente a versão das tags git mais recentes
+- Coletando commits e PRs mesclados desde o último lançamento
+- Categorizando alterações (Adicionado/Alterado/Fixo/Removido/Segurança)
+- Destacando alterações importantes
+- Sugestão de versões semânticas com base em alterações
+- Atualizando `CHANGELOG.md` com formatação adequada
+- Opcionalmente, criando tags git e versões do GitHub
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `VERSION` | No | auto-detect | Version number (e.g., `2.5.0`) |
+| `SINCE` | No | last tag | Starting point (e.g., `v2.4.0`) |
+| `FORMAT` | No | `keepachangelog` | Format style: `keepachangelog`, `simple`, `github` |
+| `AUTO_COMMIT` | No | `no` | Auto-commit changelog updates: `yes` or `no` |
+
+## Exemplos
+
+### Detectar tudo automaticamente
+
+```bash
+/agileflow:generate-changelog
+```
+
+Usa a tag mais recente como início da versão, detecta a próxima versão e gera changelog.
+
+### Especifique versões exatas
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+Cria uma seção de changelog para a versão 2.5.0 a partir de commits desde a v2.4.0.
+
+### Use o formato GitHub
+
+```bash
+/agileflow:generate-changelog FORMAT=github
+```
+
+Gera changelog no formato de notas de versão do GitHub.
+
+### Confirmar alterações automaticamente
+
+```bash
+/agileflow:generate-changelog AUTO_COMMIT=yes
+```
+
+Atualiza CHANGELOG.md e confirma automaticamente após sua confirmação.
+
+## Como funciona
+
+O comando segue um fluxo de trabalho inteligente:
+
+### 1. Detecção de versão
+
+Se `VERSION` não fornecido, detecta no git:
+```bash
+git describe --tags --abbrev=0  # Gets latest tag
+```
+
+Em seguida, sugere a próxima versão com base nas alterações:
+- **Major (2.0.0)**: Alterações importantes detectadas
+- **Minor (1.X.0)**: Novos recursos (feat:) apenas
+- **Patch (1.1.X)**: Correções de bugs (correção:) apenas
+
+### 2. Confirmar coleta
+
+Reúne commits desde `SINCE` apontar:
+```bash
+git log <SINCE>..HEAD --oneline --no-merges
+```
+
+Também busca PRs mesclados do GitHub:
+```bash
+gh pr list --state merged --json number,title,mergedAt,labels
+```
+
+### 3. Categorização
+
+Categoriza automaticamente usando commits convencionais:
+
+| Prefix | Category | Example |
+|--------|----------|---------|
+| `feat:` | **Added** | New feature X for users |
+| `fix:` | **Fixed** | Bug where E caused F |
+| `perf:` | **Changed** | Improved performance by 40% |
+| `refactor:` | **Changed** | Restructured API layer |
+| `security:` | **Security** | Patched XSS vulnerability |
+| `feat!:` or `BREAKING CHANGE:` | **Changed** (with warning) | ⚠️ **BREAKING** Redesigned API |
+
+### 4. Geração de changelog
+
+Cria entrada no formato Keep a Changelog:
+
+```markdown
+## [2.5.0] - 2025-12-22
+
+### Added
+- OAuth2 authentication support (#123)
+- Dark mode toggle (#137)
+
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints (#126)
+- Improved query performance by 50% (#125)
+
+### Fixed
+- Crash when user is null (#124)
+- Memory leak in WebSocket handler (#139)
+
+### Security
+- Patched XSS vulnerability in comment rendering (#131)
+```
+
+### 5. Revisão e aprovação do usuário
+
+Mostra a visualização do diferencial e pede confirmação antes de atualizar CHANGELOG.md.
+
+### 6. Ações Opcionais
+
+Se aprovado:
+- Atualizações `CHANGELOG.md`
+- Opcionalmente, cria git commit
+- Pode criar tag git
+- Pode criar uma versão do GitHub
+
+## Formato do registro de alterações
+
+O comando usa o padrão Keep a Changelog com estas seções:
+
+### [Não lançado]
+Mudanças de desenvolvimento ainda não divulgadas (fica sempre no topo)
+
+### [VERSÃO] - DATA
+Seções para cada versão:
+
+- **Added** - Nova funcionalidade
+- **Changed** - Alterações na funcionalidade existente
+- **Deprecated** - Funcionalidade a ser removida em breve
+- **Removed** - Funcionalidade removida
+- **Fixed** - Correções de bugs
+- **Security** - Correções de vulnerabilidades de segurança
+
+## Quebrando mudanças
+
+Mudanças significativas são detectadas e destacadas com destaque:
+
+**Detected By**:
+- Comprometa-se com `!` depois do tipo: `feat!: redesign API`
+- Comprometa-se com `BREAKING CHANGE:` rodapé
+- PR rotulado com `breaking-change`
+
+**Displayed As**:
+```markdown
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints. See migration guide. (#126)
+```
+
+## Arquivo de saída
+
+O comando atualiza `CHANGELOG.md` com esta estrutura:
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.5.0] - 2025-12-22
+### Added
+...
+
+## [2.4.0] - 2025-11-15
+### Added
+...
+
+---
+
+[unreleased]: https://github.com/user/repo/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/user/repo/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/user/repo/compare/v2.3.0...v2.4.0
+```
+
+## Fluxo de trabalho
+
+O fluxo de trabalho completo é assim:
+
+1. **Show Detection Results**
+   ```
+   Latest tag: v2.4.0
+   Commits since: 15 (3 Added, 5 Fixed, 2 Changed, 1 Security)
+   Suggested version: 2.5.0 (MINOR - new features)
+   ```
+
+2. **Show Changelog Preview**
+   ```
+   ## [2.5.0] - 2025-12-22
+
+   ### Added
+   - OAuth2 authentication support (#123)
+   ...
+   ```
+
+3. **Ask for Confirmation**
+   ```
+   Update CHANGELOG.md? (YES/NO)
+   Auto-commit? (YES/NO)
+   Create tag? (YES/NO)
+   ```
+
+4. **Apply Changes**
+   - Atualizações CHANGELOG.md
+   - Opcionalmente confirma: `git commit -m "chore(release): update CHANGELOG for v2.5.0"`
+   - Opcionalmente, cria tag: `git tag -a v2.5.0`
+   - Opcionalmente, cria uma versão do GitHub
+
+## Integração com CI/CD
+
+Você pode automatizar a geração de changelog no CI:
+
+```yaml
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get all tags
+
+      - name: Generate changelog
+        run: /agileflow:generate-changelog VERSION=${{ github.event.inputs.version }}
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update CHANGELOG"
+
+      - name: Create tag
+        run: git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
+
+      - name: Push changes
+        run: git push origin main && git push origin v${{ github.event.inputs.version }}
+
+      - name: Create GitHub release
+        run: gh release create v${{ github.event.inputs.version }} --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## Melhores Práticas
+
+### Formato de mensagem de confirmação
+
+Use commits convencionais para categorização automática:
+
+```bash
+# Good - auto-categorizes as Added
+git commit -m "feat: add OAuth2 authentication"
+
+# Good - auto-categorizes as Fixed
+git commit -m "fix: crash when user is null"
+
+# Good - breaking change detection
+git commit -m "feat!: redesign API endpoints"
+
+# Better - with scope
+git commit -m "feat(auth): add OAuth2 support"
+```
+
+### Versionamento Semântico
+
+Siga o versionamento semântico após os lançamentos:
+
+```text
+MAJOR.MINOR.PATCH
+  2  .  5  .  0
+
+- MAJOR: Breaking changes
+- MINOR: New features (backwards compatible)
+- PATCH: Bug fixes only
+```
+
+### Processo de Liberação
+
+1. **Generate changelog** para a próxima versão
+2. **Create git tag** com versão
+3. **Push tag** para acionar o pipeline de CD
+4. **Create GitHub release** com trecho do changelog
+5. **Announce release** (blog, mídia social, boletim informativo)
+
+## Comandos Relacionados
+
+- [`/ci-setup`](/commands/ci) - Configurar fluxo de trabalho de CI/CD
+- [`/setup-deployment`](/commands/deploy) - Configurar implantação
+- [`/agileflow:status`](/commands/status) - Ver status do projeto

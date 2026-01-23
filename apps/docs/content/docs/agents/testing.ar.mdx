@@ -1,0 +1,219 @@
+---
+title: اختبار
+description: متخصص في اختبار استراتيجية الاختبار وأنماط الاختبار وتحسين التغطية وتصميم مجموعة الاختبار الشاملة.
+---
+
+# وكيل الاختبار
+
+وكيل الاختبار (AG-TESTING) هو خبير متخصص في ضمان الجودة يقوم بتصميم إستراتيجيات اختبار شاملة، والتخلص من الأنماط المضادة للاختبار، وتحسين تغطية الاختبار. على عكس إعداد البنية الأساسية لـ CI، يركز هذا الوكيل على الأسئلة "ما يجب اختباره" و"كيفية اختباره".
+
+## القدرات
+
+- **Test Strategy Design**: إنشاء خطط اختبار شاملة تغطي الوحدة والتكامل واختبار E2E
+- **Coverage Optimization**: تحليل تغطية الكود وتحديد الثغرات في المسارات الحرجة
+- **Test Anti-Pattern Detection**: تحديد والقضاء على الاختبارات المتقشرة والبطيئة والهشة
+- **Test Infrastructure**: إنشاء تركيبات الاختبار والمصانع والوظائف المساعدة
+- **Coverage Analysis**: قياس مقاييس التغطية والإبلاغ عنها بتوصيات قابلة للتنفيذ
+- **Test Pattern Documentation**: توثيق أنماط الاختبار القابلة لإعادة الاستخدام وأفضل الممارسات
+- **Performance Testing**: تصميم وتنفيذ معايير الأداء
+- **Mutation Testing**: اختبار الاختبارات نفسها للتأكد من الجودة
+
+## متى تستخدم
+
+استخدم وكيل الاختبار عندما:
+
+- بدء ميزة جديدة والحاجة إلى تحديد ما يحتاج إلى اختبار
+- نسبة التغطية الحالية للاختبار أقل من 70% وتحتاج إلى تحسين
+- تكون الاختبارات غير مستقرة (حالات فشل متقطعة) أو بطيئة (> ثانية واحدة لكل منها)
+- تحتاج إلى تصميم تركيبات الاختبار أو المصانع لبيانات الاختبار المعقدة
+- إعداد البنية التحتية للاختبار الآلي
+- إنشاء ADRs لقرارات الاختبار
+- تنفيذ مجموعات اختبار شاملة للمسارات الحرجة
+
+## كيف يعمل
+
+1. **Knowledge Loading**: يقرأ الوكيل ملف الخبرة وحالة اختبار المشروع
+2. **Story Review**: يقوم الوكيل بتحليل القصة لمتطلبات قابلية الاختبار
+3. **Test Planning**: يقوم الوكيل بتصميم حالات الاختبار (المسار السعيد، حالات الخطأ، حالات الحافة)
+4. **Infrastructure Setup**: يقوم الوكيل بإنشاء تركيبات الاختبار والمحاكاة والمساعدين
+5. **Test Implementation**: يقوم الوكيل بكتابة الاختبارات وفقًا لنمط AAA (الترتيب-التنفيذ-التأكيد)
+6. **Coverage Measurement**: يقوم الوكيل بقياس التغطية وتحديد الثغرات
+7. **Anti-Pattern Elimination**: يقوم الوكيل بتحديد الاختبارات غير المستقرة/البطيئة/الهشة وإصلاحها
+8. **Verification**: يدير الوكيل `/agileflow:verify` للتأكد من اجتياز جميع الاختبارات
+9. **Coordination**: يقوم الوكيل بتحديث Status.json ويتواصل عبر bus/log.jsonl
+
+## مثال
+
+```bash
+# Via babysit - identify testing work
+/agileflow:babysit
+> "We need comprehensive testing for the payment processing feature"
+
+# Agent output:
+# Test Strategy Created:
+# - Unit tests: Payment validation, transaction formatting (80% coverage)
+# - Integration tests: Database saves, external API calls (15% coverage)
+# - E2E tests: Complete payment workflow (5% coverage)
+# - Coverage target: 85% critical path
+# - Expected test count: 47 tests
+# - Estimated time: 4 hours
+```
+
+## السلوكيات الرئيسية
+
+- **AAA Pattern**: تتبع جميع الاختبارات بنية الترتيب والتنفيذ والتأكيد من أجل الوضوح
+- **Test Isolation**: وحدة تختبر التبعيات الوهمية؛ تستخدم اختبارات التكامل التبعيات الحقيقية
+- **Behavior-Focused**: الاختبارات تتحقق من صحة السلوك، وليس تفاصيل التنفيذ
+- **Fast Execution**: يتم تشغيل اختبارات الوحدة بالمللي ثانية؛ جناح كامل في دقائق
+- **Clear Naming**: أسماء الاختبار تصف بالضبط ما يتم اختباره
+- **Coverage Thresholds**: 70% كحد أدنى، 80%+ للمسارات الحرجة (100% للمصادقة/الدفع)
+- **No Flaky Tests**: حالات الفشل المتقطعة هي أعلام حمراء؛ تمت إزالة العشوائية والتوقيت
+- **Performance Awareness**: الاختبارات ليست أبطأ من الكود الذي تختبره
+- **Context Preservation**: يستخدم Compact_context (الأولوية: عالية) للحفاظ على تركيز الاختبار أثناء المحادثات الطويلة، والحفاظ على أهداف التغطية واكتشاف الأنماط المضادة من خلال ضغط السياق
+
+## تكوين السياق المضغوط
+
+يستخدم وكيل الاختبار **high priority** Compact_context لضمان التركيز على تغطية الاختبار والجودة:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+    - "AAA PATTERN: All tests follow Arrange-Act-Assert structure"
+    - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+    - "NO FLAKY TESTS: Eliminate randomness, timing issues, intermittent failures"
+    - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+    - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+  state_fields:
+    - current_story
+    - coverage_percentage
+    - critical_paths_count
+    - flaky_tests_found
+    - test_status_baseline
+```
+
+وهذا يضمن بقاء قواعد الاختبار الحرجة (نمط AAA، والحد الأدنى من التغطية، وممارسات الاختبار المضادة للتقلبات) والحالة الحالية (فجوات التغطية، وأعداد الاختبارات غير المستقرة، وحالة اختبار المسار الحرج) موضع التركيز من خلال ضغط السياق.
+
+## الأدوات المتاحة
+
+- القراءة والكتابة والتحرير (عمليات الملف)
+- باش (تشغيل أوامر الاختبار)
+- Glob (ابحث عن ملفات الاختبار)
+- Grep (رمز اختبار البحث)
+
+## تكامل تسخير الجلسة
+
+يتكامل وكيل الاختبار مع أداة الجلسة لضمان الجودة:
+
+```text
+Pre-Implementation:
+├── Check environment.json exists
+├── Verify test_status: "passing" baseline
+└── Run /agileflow:session:resume
+
+During Implementation:
+├── Run tests incrementally
+├── Fix failures immediately
+└── Update test_status in real-time
+
+Post-Implementation:
+├── Run /agileflow:verify US-XXXX (must pass)
+├── Verify test_status: "passing"
+└── Mark story "in-review" ONLY if tests pass
+```
+
+## فئات الاختبار والأهداف
+
+| Category | Percentage | Speed | Scope |
+|----------|-----------|-------|-------|
+| Unit Tests | 80% | under 1ms each | Single function, mocked dependencies |
+| Integration Tests | 15% | Slower | Multiple components, real dependencies |
+| E2E Tests | 5% | Very slow | Full user workflows |
+| Contract Tests | 0-5% | Fast | API schema validation |
+
+## قائمة مراجعة الجودة
+
+قبل وضع علامة على القصة مكتملة:
+
+- [ ] تغطية الاختبار ≥70% (المسارات الحرجة 100%)
+- [ ] تم اختبار جميع سيناريوهات المسار السعيد
+- [ ] All error scenarios tested
+- [ ] تم تحديد الحالات المتطورة واختبارها
+- [ ] لا توجد اختبارات غير مستقرة (تشغيل 10x، كل النجاح)
+- [ ] لا توجد اختبارات بطيئة (كل اختبار أقل من ثانية واحدة، ومجموعة كاملة أقل من 5 دقائق)
+- [ ] يختبر سلوك الاختبار، وليس التنفيذ
+- [ ] تصف أسماء الاختبارات بوضوح ما تم اختباره
+- [ ] تركيبات الاختبار قابلة لإعادة الاستخدام وموثقة جيدًا
+- [ ] تم إنشاء تقرير التغطية ومراجعته
+- [ ] test_status: تم التحقق من "النجاح".
+
+## أنماط الاختبار الشائعة
+
+**AAA Pattern (Arrange-Act-Assert)**:
+```javascript
+describe('validateEmail', () => {
+  it('rejects invalid formats', () => {
+    // Arrange
+    const email = 'invalid@';
+
+    // Act
+    const result = validateEmail(email);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+});
+```
+
+**Test Fixtures (Reusable test data)**:
+```javascript
+const validUser = { id: 1, email: 'user@example.com', name: 'John' };
+const invalidUser = { id: 2, email: 'invalid@', name: 'Jane' };
+```
+
+**Parameterized Tests**:
+```javascript
+test.each([
+  ['valid@example.com', true],
+  ['invalid@', false],
+  ['no-at-sign.com', false],
+])('validates email %s', (email, expected) => {
+  expect(validateEmail(email)).toBe(expected);
+});
+```
+
+## مكافحة الأنماط للقضاء عليها
+
+| Anti-Pattern | Problem | Fix |
+|--------------|---------|-----|
+| Flaky tests | Intermittent failures, unpredictable | Remove randomness, add waits for conditions |
+| Slow tests | >1 second each | Use mocks, parallelize, optimize queries |
+| Brittle tests | Break on refactoring | Test behavior, not implementation details |
+| Over-mocking | Unrealistic isolation | Balance unit and integration tests |
+
+## الوكلاء ذوو الصلة
+
+- ["qa".](/agents/qa) - استراتيجية الاختبار والاستعداد للإصدار (نطاق مختلف)
+- ["سي".](/agents/ci) - اختبار البنية التحتية وإعداد خط أنابيب CI
+- ["واجهة برمجة التطبيقات".](/agents/api) - اختبار API والتحقق من صحة العقد
+- ["واجهة المستخدم".](/agents/ui) - اختبار المكونات واختبار تفاعل المستخدم
+- ["قاعدة البيانات".](/agents/database) - اختبار طبقة البيانات وتحسين الاستعلام
+
+## تنسيق
+
+يقوم وكيل الاختبار بالتنسيق مع الوكلاء الآخرين:
+
+- **AG-API**: تأكد من اختبار حالات خطأ واجهة برمجة التطبيقات
+- **AG-UI**: التنسيق بشأن المكونات واختبار E2E
+- **AG-DATABASE**: اختبار طبقة البيانات وأداء الاستعلام
+- **AG-CI**: طلب البنية التحتية للاختبار (التنفيذ الموازي، وتقارير التغطية)
+- **AG-QA**: التوافق مع مقاييس الجودة وأهداف تغطية الاختبار
+
+## أوامر القطع
+
+- `/agileflow:verify US-XXXX` - إجراء اختبارات لقصة محددة
+- `/agileflow:research:ask TOPIC=...` - أنماط اختبار البحث
+- `/agileflow:ai-code-review` - مراجعة كود الاختبار للأنماط المضادة
+- `/agileflow:adr-new` - توثيق قرارات الاختبار
+- `/agileflow:status STORY=... STATUS=...` - تحديث حالة القصة

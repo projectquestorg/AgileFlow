@@ -1,0 +1,300 @@
+---
+title: /habilidade:lista
+description: Liste todas as habilidades instaladas com suas descrições e status
+---
+
+# /habilidade:lista
+
+Exibir todas as habilidades instaladas em `.claude/skills/` com seus metadados e informações de arquivo.
+
+## Início rápido
+
+```bash
+/agileflow:skill:list
+```
+
+Mostra todas as habilidades instaladas com descrições, contagens de arquivos e status do MCP.
+
+## O que isso faz
+
+Verifica suas habilidades instaladas e exibe:
+
+- **Skill names** - Identificador de SKILL.md
+- **Descriptions** - Finalidade e casos de uso
+- **File count** - Quantos arquivos em cada habilidade
+- **Cookbook entries** - Fluxos de trabalho de casos de uso incluídos
+- **MCP status** - Se o MCP está configurado
+- **Action recommendations** - O que fazer a seguir
+
+## Parâmetros
+
+Este comando não possui parâmetros.
+
+```bash
+/agileflow:skill:list
+```
+
+## Formato de saída
+
+Exemplo de saída com múltiplas habilidades:
+
+```
+📦 Installed Skills (4 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+supabase-swift
+  Supabase database operations for Swift iOS apps
+  └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
+     cookbook/crud.md, .mcp.json
+  MCP: ✓ Configured
+
+ui-components
+  React component patterns with accessibility
+  └─ 4 files: SKILL.md, references.md, cookbook/create.md,
+     cookbook/styling.md
+
+api-error-handling
+  REST API error handling patterns
+  └─ 3 files: SKILL.md, references.md, cookbook/http-errors.md
+
+typescript-patterns
+  TypeScript best practices and type patterns
+  └─ 2 files: SKILL.md, references.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Compreendendo a saída
+
+### Entrada de habilidade
+
+Cada habilidade mostra:
+
+1. **Name** - Identificador da habilidade (por exemplo, `supabase-swift`)
+2. **Description** - Do frontmatter da habilidade
+3. **Files** - Detalhamento dos arquivos incluídos:
+   - `SKILL.md` - Arquivo de habilidade principal (sempre presente)
+   - `references.md` - Links de documentação (geralmente presentes)
+   - `cookbook/*.md` - Fluxos de trabalho de casos de uso
+   - `.mcp.json` - Configuração do servidor MCP (se aplicável)
+4. **MCP Status** - "✓" se `.mcp.json` existe e está configurado
+
+### Informações do arquivo
+
+A contagem de arquivos inclui:
+
+- **SKILL.md** - 1 arquivo
+- **references.md** - 1 arquivo (se existir)
+- **cookbook/** - Vários arquivos (um por caso de uso)
+- **.mcp.json** - 1 arquivo (se configurado)
+
+Exemplo de detalhamento:
+```
+5 files total:
+  - SKILL.md (main)
+  - references.md (links)
+  - cookbook/crud-operations.md (workflow)
+  - cookbook/authentication.md (workflow)
+  - .mcp.json (MCP config)
+```
+
+## Exemplos
+
+### Listar todas as habilidades
+
+```bash
+/agileflow:skill:list
+```
+
+**Response:**
+```
+📦 Installed Skills (2 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+python-fastapi
+  FastAPI REST API patterns with validation and error handling
+  └─ 3 files: SKILL.md, references.md, cookbook/crud.md
+
+react-hooks
+  Custom React hooks patterns and best practices
+  └─ 2 files: SKILL.md, references.md
+```
+
+### Nenhuma habilidade instalada
+
+Se você ainda não criou nenhuma habilidade:
+
+```
+📦 No skills installed yet.
+
+Skills are stored in .claude/skills/ and can be created with:
+  /agileflow:skill:create
+
+This will research best practices and generate a contextual skill.
+```
+
+## Próximas ações
+
+Depois de listar as habilidades, você terá opções:
+
+```
+What would you like to do?
+
+[1] Create new skill
+    Generate a new skill with web research and cookbook pattern
+
+[2] Edit a skill
+    Modify an existing skill's content or structure
+
+[3] Delete a skill
+    Remove a skill you no longer need
+
+[4] Test a skill
+    Verify a skill works correctly and validate structure
+
+[5] Done
+    Exit skill management
+```
+
+### Selecione uma ação
+
+Escolha uma opção para:
+
+- **Create new skill** → `/agileflow:skill:create`
+- **Edit a skill** → `/agileflow:skill:edit`
+- **Delete a skill** → `/agileflow:skill:delete`
+- **Test a skill** → `/agileflow:skill:test`
+- **Done** → Sair
+
+## Estrutura de habilidades
+
+Cada diretório de habilidades contém:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file (required)
+│   └─ Activation triggers, instructions, cookbook references
+├── references.md         # Documentation links (recommended)
+│   └─ Web docs, local docs, codebase patterns
+├── cookbook/             # Use-case workflows (optional)
+│   ├── use-case-1.md
+│   ├── use-case-2.md
+│   └── use-case-3.md
+└── .mcp.json            # MCP server config (optional)
+    └─ Tools for the skill's technology
+```
+
+## Verificando detalhes da habilidade
+
+Para ver mais detalhes sobre uma habilidade específica:
+
+```bash
+# Edit the skill to view/modify
+/agileflow:skill:edit <skill-name>
+
+# Test the skill to validate
+/agileflow:skill:test <skill-name>
+
+# View SKILL.md directly
+cat .claude/skills/<skill-name>/SKILL.md
+```
+
+## Status do MCP
+
+O indicador MCP mostra se uma habilidade está configurada para acesso a ferramentas:
+
+- **✓ Configured** - `.mcp.json` existe e as ferramentas MCP estão disponíveis
+- *No indicator* - Nenhum MCP configurado (ainda utilizável sem ferramentas)
+
+Para adicionar MCP a uma habilidade:
+
+```bash
+# Edit the skill
+/agileflow:skill:edit <skill-name>
+
+# Or upgrade it
+/agileflow:skill:upgrade <skill-name>
+```
+
+## Melhores Práticas
+
+### Habilidades de organização
+
+Agrupar habilidades relacionadas por domínio:
+
+- **Data layer**: `supabase-swift`, `postgresql-queries`, `mongodb-patterns`
+- **API layer**: `rest-api-errors`, `graphql-schema`, `webhooks`
+- **UI layer**: `react-components`, `accessibility-wcag`, `tailwind-patterns`
+- **DevOps**: `github-actions`, `docker-deployment`, `kubernetes`
+
+### Auditorias Regulares
+
+Execute periodicamente `/skill:list` para:
+
+1. Verifique se há habilidades não utilizadas
+2. Verifique a configuração do MCP
+3. Identifique habilidades que precisam ser atualizadas
+4. Veja a contagem total de habilidades
+
+### Limpando
+
+Exclua habilidades que você não usa mais:
+
+```bash
+/agileflow:skill:delete old-skill-name
+```
+
+Isso mantém seu diretório de habilidades focado e mais fácil de gerenciar.
+
+## Solução de problemas
+
+### Diretório de habilidades ausente
+
+Se você vir "Nenhuma habilidade instalada ainda" e as habilidades esperadas:
+
+1. Verifique se `.claude/skills/` existe:
+   ```bash
+   ls -la .claude/skills/
+   ```
+
+2. Verifique se os arquivos SKILL.md existem nos subdiretórios:
+   ```bash
+   find .claude/skills -name "SKILL.md"
+   ```
+
+3. Garanta permissões de leitura adequadas no diretório
+
+### Informações de habilidade incompletas
+
+Se uma habilidade mostrar metadados incompletos:
+
+1. O arquivo SKILL.md pode ter frontmatter corrompido
+2. Correr `/agileflow:skill:test` diagnosticar
+3. Editar com `/agileflow:skill:edit` consertar
+
+### MCP não aparece
+
+Se você espera o MCP, mas não vê "✓ Configurado":
+
+1. Verifique se `.mcp.json` existe:
+   ```bash
+   ls .claude/skills/<skill-name>/.mcp.json
+   ```
+
+2. Verifique se tem sintaxe JSON válida
+3. Atualize ou edite a habilidade para corrigir a configuração do MCP
+
+## Comandos Relacionados
+
+- [`/habilidade:criar`](/commands/skill-create) - Gerar uma nova habilidade
+- [`/habilidade:editar`](/commands/skill-edit) - Modificar uma habilidade existente
+- [`/habilidade:teste`](/commands/skill-test) - Verifique se uma habilidade funciona
+- [`/habilidade:excluir`](/commands/skill-delete) - Remover uma habilidade
+- [`/habilidade:atualizar`](/commands/skill-upgrade) - Adicionar capacidade de aprendizagem
+
+## Próximas etapas
+
+1. **List your skills**: `/agileflow:skill:list`
+2. **Create more skills**: `/agileflow:skill:create`
+3. **Test a skill**: `/agileflow:skill:test <skill-name>`
+4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`

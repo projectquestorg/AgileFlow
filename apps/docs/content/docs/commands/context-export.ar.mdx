@@ -1,0 +1,158 @@
+---
+title: / Agileflow:context:export
+description: قم بتصدير مقتطف سياقي موجز للصقه في أدوات الذكاء الاصطناعي على الويب
+---
+
+# / Agileflow:context:export
+
+قم بتصدير مقتطف سياقي موجز للصقه في أدوات الذكاء الاصطناعي على الويب.
+
+## بداية سريعة
+
+```bash
+/agileflow:context:export
+```
+
+## غاية
+
+يقرأ `docs/context.md` ويخرج مقتطفًا مكثفًا (≥300 سطرًا) جاهزًا للصقه في ChatGPT أو Perplexity أو Gemini أو Claude web.
+
+**This is a read-only command** - لا تتم كتابة أي ملفات.
+
+## تنسيق الإخراج
+
+يقوم الأمر بإخراج كتلة تعليمات برمجية تخفيض السعر لسهولة النسخ:
+
+```markdown
+# Project Context Brief
+Last updated: 2025-12-24
+
+## What We're Building
+AgileFlow is a comprehensive project management system...
+
+## Current Focus
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+
+## Tech Stack
+- Framework: Next.js 16, TypeScript
+- UI: React, Tailwind CSS, shadcn/ui
+- Testing: Jest, Playwright
+
+## Key Decisions
+- ADR-001: Use TypeScript for type safety (Accepted)
+- ADR-002: Use React component library (Accepted)
+
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+
+## Next Steps
+- US-0043: Visual Mode documentation (ready)
+- US-0044: Session commands docs (ready)
+
+---
+**Paste this into**: ChatGPT, Perplexity, Gemini, or Claude web
+**Purpose**: Load full project context for AI assistance
+**Limit**: This excerpt is ≤300 lines for easy pasting
+```
+
+## الأقسام متضمنة
+
+يتضمن التصدير هذه الأقسام فقط (ليبقى أقل من 300 سطر):
+
+| Section | Max Lines | Purpose |
+|---------|-----------|---------|
+| Header | 2 | Title and timestamp |
+| What We're Building | 5 | Project overview |
+| Current Focus | 5 | Active work |
+| Tech Stack | 8 | Technologies |
+| Key Decisions | 10 | ADR titles only |
+| Feature Map | 15 | One line per epic |
+| Next Steps | 15 | Ready stories |
+| Footer | 3 | Paste instructions |
+
+## الأقسام مستبعدة
+
+للبقاء ضمن الحد الأقصى البالغ 300 سطر، يتم تخطي ما يلي:
+
+- **Recent Progress** - مطول جدا
+- **Notes section** - طويل جداً
+- **Detailed story descriptions** - لا حاجة للسياق
+- **Full ADR content** - العناوين متضمنة فقط
+
+## تكثيف المحتوى
+
+عند الاستخراج، يتم تكثيف المحتوى:
+
+| Element | Full Size | Condensed |
+|---------|-----------|-----------|
+| ADRs | Full description | Title + status only |
+| Stories | Title + description | Title + status |
+| Tech | Full list + versions | Framework + key deps |
+| Epics | Title + stories list | Title + count + status |
+| Decisions | Full context | One-liner |
+
+## متطلبات
+
+**docs/context.md must exist** قبل التصدير.
+
+في حالة فقدانه، سترى:
+
+```
+Error: docs/context.md not found.
+
+To create it, run: /agileflow:context:full
+
+Then you can export with: /agileflow:context:export
+```
+
+## سير العمل الاستخدام
+
+```bash
+# 1. Generate context (if needed)
+/agileflow:context:full
+
+# 2. Export concise version
+/agileflow:context:export
+
+# 3. Copy the output
+# 4. Paste into ChatGPT, Perplexity, Gemini, or Claude web
+# 5. Ask questions with full project context
+```
+
+## لماذا 300 سطر؟
+
+أدوات الويب AI لها حدود لإطار السياق. مقتطف من 300 سطر:
+
+- يناسب بشكل مريح معظم نوافذ سياق أدوات الذكاء الاصطناعي
+- يوفر تفاصيل كافية للحصول على مساعدة مستنيرة
+- يترك مجالا لأسئلتك الفعلية
+- سريع اللصق والمعالجة
+
+## متى تستخدم
+
+- **Before web AI sessions** - تحميل سياق المشروع
+- **When switching AI tools** - نقل السياق بين الأدوات
+- **After context updates** - احصل على نسخة موجزة جديدة
+- **For team sharing** - نظرة عامة سريعة على المشروع
+
+## لا حاجة للتأكيد
+
+هذا أمر للقراءة فقط:
+
+- ✓ اقرأ المستندات/context.md
+- ✓ استخراج وتنسيق
+- ✓ الإخراج إلى كتلة التعليمات البرمجية
+- ✗ لا يوجد ملف يكتب
+- ✗ لا حاجة للتأكيد
+- ✗ لا توجد تغييرات في الحالة
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: السياق`](/commands/context) - نظرة عامة على أوامر السياق
+- [`/ Agileflow:context:full`](/commands/context-full) - توليد السياق الكامل
+- [`/ Agileflow:context:note`](/commands/context-note) - إضافة ملاحظة ذات طابع زمني
+- [`/ Agileflow:research:ask`](/commands/research-ask) - توليد موجه البحث

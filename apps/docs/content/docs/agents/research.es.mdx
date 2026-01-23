@@ -1,0 +1,266 @@
+---
+title: Investigación
+description: Especialista en investigación para recopilar información técnica, crear indicaciones de investigación para ChatGPT, guardar notas de investigación y mantener el índice de investigación.
+---
+
+# Agente de investigación
+
+El Agente de Investigación (RESEARCH) es su especialista en investigación técnica, gestión del conocimiento y creación de propuestas de investigación integrales. Este agente recopila información de fuentes autorizadas, sintetiza los hallazgos y mantiene un índice de búsqueda de investigaciones para referencia futura.
+
+## Capacidades
+
+- **Web Research**: Busque documentación oficial y fuentes autorizadas para obtener información técnica.
+- **ChatGPT Prompt Building**: Cree indicaciones de investigación integrales solicitando planes de implementación, fragmentos de código, borradores de ADR, desgloses de historias y más.
+- **Research Note Curation**: guarde los resultados de la investigación estructurada en docs/10-research/ con un formato coherente
+- **Research Index Maintenance**: Mantenga docs/10-research/README.md actualizado primero con las investigaciones más recientes
+- **Stale Research Detection**: Identifique investigaciones con más de 90 días de antigüedad que puedan necesitar actualización
+- **Research Gap Identification**: Marcar investigaciones faltantes para decisiones técnicas y ADR
+- **Agent Coordination**: Notificar a los agentes solicitantes cuando se complete la investigación a través de mensajes de bus
+
+## Cuando usar
+
+Utilice este agente cuando necesite:
+
+- Investigar un tema técnico o una elección de tecnología.
+- Comprender las compensaciones entre diferentes enfoques
+- Cree un mensaje ChatGPT completo para un análisis más profundo
+- Documentar los hallazgos en formato estructurado para referencia futura.
+- Actualizar resultados de investigaciones obsoletos (más de 90 días)
+- Encuentre qué investigaciones ya existen antes de tomar decisiones.
+- Apoye la creación de ADR con investigación de antecedentes técnicos
+- Obtenga orientación de implementación para un enfoque de funciones
+
+## Cómo funciona
+
+### Flujo de trabajo de investigación web
+
+1. **Understanding**: El agente aclara la pregunta de investigación y las limitaciones.
+2. **Search**: El agente busca documentación oficial y fuentes autorizadas (WebSearch, WebFetch)
+3. **Gathering**: El agente recopila hallazgos clave: enfoques, compensaciones, mejores prácticas, puntos de referencia
+4. **Synthesis**: El agente organiza los hallazgos en un formato estructurado.
+5. **Saving**: El agente guarda la investigación en `docs/10-research/<YYYYMMDD>-<slug>.md`
+6. **Indexing**: El agente actualiza docs/10-research/README.md con una entrada en la tabla cronológica
+7. **Coordination**: El agente publica un mensaje de bus para notificar al agente solicitante
+
+### Flujo de trabajo de solicitud de investigación de ChatGPT
+
+1. **Context Loading**: El agente lee CLAUDE.md, context.md, status.json, ADR relacionados, investigaciones existentes para evitar duplicaciones.
+2. **Understanding**: El agente aclara el tema de investigación y las preguntas específicas que necesitan respuestas.
+3. **Prompt Building**: El agente crea un mensaje completo solicitando:
+   - TL;DR resumen
+   - Plan de implementación paso a paso con rutas de archivos
+   - Fragmentos de código ejecutables mínimos (listo para copiar y pegar)
+   - Configuración y configuración del entorno.
+   - Patrones de manejo de errores
+   - Ganchos de observabilidad y análisis
+   - Ejemplos de prueba (unidad, integración, E2E)
+   - Lista de verificación de pruebas manuales
+   - Consideraciones de seguridad y privacidad
+   - Borrador de ADR con opciones y ventajas y desventajas
+   - Desglose de la historia con criterios de aceptación Dado/Cuándo/Entonces
+   - Plan de reversión y riesgos
+   - Plantilla de cuerpo de relaciones públicas
+   - Solo fuentes de documentación oficiales (citadas con título, URL y fecha)
+
+4. **Output**: El agente proporciona un mensaje como bloque de código para copiar y pegar fácilmente
+5. **Processing**: El usuario pega los resultados de ChatGPT a Claude
+6. **Saving**: El agente guarda los resultados en `docs/10-research/<YYYYMMDD>-<slug>.md`
+7. **Indexing**: El agente actualiza el índice de investigación.
+8. **Notification**: El agente notifica al agente solicitante mediante un mensaje de bus
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Need to research JWT vs OAuth2 for authentication"
+```
+
+El agente de investigación:
+1. Busque fuentes autorizadas (JWT RFC, especificaciones OAuth2, artículos de security.com)
+2. Reúna hallazgos clave (sin estado versus con estado, tokens de actualización, delegación, casos de uso)
+3. Crear una nota de investigación comparando enfoques
+4. Guardar en docs/10-research/20251021-jwt-vs-oauth2.md
+5. Actualizar índice de investigación
+6. Publicar mensaje de bus: "Investigación completa: JWT vs OAuth2 guardado en docs/10-research/20251021-jwt-vs-oauth2.md"
+
+## Comportamientos clave
+
+- **Official Sources Only**: La investigación cita documentación oficial, no publicaciones de blogs aleatorias.
+- **Comprehensive Prompts**: Las indicaciones de ChatGPT son exhaustivas y solicitan detalles de implementación, pruebas, consideraciones de seguridad y borradores de ADR.
+- **Structured Formatting**: Toda la investigación sigue una estructura consistente (resumen, hallazgos, enfoque recomendado, compensaciones, fuentes)
+- **Stale Detection**: Identifica investigaciones con más de 90 días de antigüedad y señala una posible actualización cuando la tecnología ha cambiado
+- **No Duplication**: Comprueba la investigación existente antes de iniciar una nueva investigación.
+- **Agent Coordination**: Notifica a los agentes solicitantes inmediatamente cuando se completa la investigación.
+- **Clear Sourcing**: Todas las investigaciones citan fuentes con título, URL y fecha de recuperación.
+
+## Herramientas disponibles
+
+Este agente tiene acceso a:
+- **Read**: Explore archivos de investigación y comprenda los hallazgos existentes
+- **Write**: Crear nuevas notas de investigación
+- **Edit**: Actualizar las notas de investigación existentes.
+- **Glob**: Encuentra archivos de investigación por patrón
+- **Grep**: Buscar contenido de investigación
+- **WebSearch**: busque en la web información técnica
+- **WebFetch**: Obtener y analizar páginas web
+
+## Estructura de la nota de investigación
+
+Cada nota de investigación incluye:
+
+```markdown
+# Research: <Title>
+
+**Date**: YYYY-MM-DD
+**Researcher**: [Agent or Name]
+**Status**: Active | Superseded | Archived
+
+## Summary
+[2-3 sentence TL;DR]
+
+## Key Findings
+1. [Finding with explanation]
+2. [Finding with explanation]
+3. ...
+
+## Recommended Approach
+[Which approach is recommended and why]
+
+## Implementation Steps
+1. [High-level step]
+2. [High-level step]
+...
+
+## Risks & Considerations
+- [Risk or trade-off]
+- [Risk or trade-off]
+
+## Trade-offs
+| Option | Pros | Cons |
+|--------|------|------|
+| A      | ...  | ...  |
+| B      | ...  | ...  |
+
+## Sources
+- [Title](URL) - Retrieved YYYY-MM-DD
+- [Title](URL) - Retrieved YYYY-MM-DD
+
+## Related
+- ADRs: ADR-0001, ADR-0003
+- Stories: US-0042, US-0055
+- Epics: EP-0002
+
+## Notes
+[Additional context, caveats, future research needed]
+```
+
+## Formato del índice de investigación
+
+docs/10-research/README.md mantiene una tabla cronológica (la más reciente primero):
+
+```markdown
+| Date       | Topic                        | Path                        | Summary                     |
+|------------|------------------------------|-----------------------------|-----------------------------|
+| 2025-10-16 | JWT authentication patterns  | 20251016-jwt-auth.md        | Compared JWT, session, OAuth2 |
+| 2025-10-15 | React state management       | 20251015-react-state.md     | Redux vs Zustand vs Context |
+```
+
+## Lista de control de calidad
+
+Antes de guardar la investigación:
+- La fecha es actual (formato AAAA-MM-DD)
+- El resumen es conciso (2-3 oraciones)
+- Se enumeran al menos 3 hallazgos clave
+- Enfoque recomendado expresado claramente
+- Fuentes citadas con URL y fechas de recuperación.
+- ADR/historias/épicas relacionadas vinculadas
+- Índice actualizado con la entrada más reciente en la parte superior
+- Todos los enlaces externos son a documentación oficial.
+
+## Identificar lagunas en la investigación
+
+El Agente de Investigación señala lagunas en la investigación cuando:
+- Elección de tecnología aún no investigada (necesaria antes del ADR)
+- Incertidumbre del enfoque mencionada en las notas de la historia.
+- Múltiples enfoques discutidos sin un ganador claro
+- La ADR existe pero carece de investigaciones que la respalden
+- La investigación está obsoleta (>90 días y la tecnología ha cambiado)
+- Se necesita investigación duplicada (versiones tecnológicas actualizadas)
+
+## Coordinación con otros agentes
+
+Las solicitudes de investigación comúnmente provienen de:
+- **AG-UI**: Sistemas de diseño, patrones de componentes, técnicas de accesibilidad.
+- **AG-API**: arquitecturas API, diseños de bases de datos, patrones de autenticación
+- **AG-CI**: Marcos de prueba, plataformas de CI, herramientas de calidad de código
+- **AG-DEVOPS**: Estrategias de implementación, orquestación de contenedores, monitoreo
+- **ADR-WRITER**: Alternativas técnicas antes de tomar decisiones.
+- **EPIC-PLANNER**: Investigación de la pila de tecnología antes de planificar epopeyas
+
+Cuando se solicita investigación:
+1. Consulte docs/09-agents/bus/log.jsonl para ver el mensaje de solicitud de investigación.
+2. Investigación completa (solicitud web o ChatGPT)
+3. Guarde los resultados en docs/10-research/
+4. Actualizar índice de investigación
+5. Publicar mensaje de bus para notificar al solicitante
+
+## Plantilla de mensaje de ChatGPT
+
+Al crear un mensaje de investigación, incluya:
+
+```text
+Context: [Project overview from context.md]
+Current priority: [From status.json]
+Related ADRs: [List relevant decisions]
+
+Research topic: [Specific question]
+
+Please provide:
+1. TL;DR (2-3 sentences)
+2. Step-by-step implementation plan with exact file paths
+3. Minimal runnable code snippets (copy-paste ready)
+4. Configuration (env vars, config files, CLI flags)
+5. Error handling patterns
+6. Observability (logging, metrics, tracing)
+7. Tests: unit, integration, E2E examples
+8. Manual testing checklist
+9. Security checklist (auth, input validation, secrets, etc.)
+10. Privacy considerations (PII, GDPR, data retention)
+11. ADR draft with context, options, recommendation, consequences
+12. Story breakdown (3-6 stories with Given/When/Then AC)
+13. Rollback plan
+14. Risks and gotchas
+15. PR body template
+16. Sources: official docs/repos only with title, URL, date
+
+Final checklist:
+- [ ] Ready to paste back to Claude for implementation
+- [ ] All code snippets tested conceptually
+- [ ] Risks clearly flagged
+```
+
+## Agentes Relacionados
+
+- [`documentación`](/agents/documentation) - Utiliza los resultados de la investigación para crear guías y documentos.
+- [`adr-escritor`](/agents/adr-writer) - Siempre solicita investigación antes de crear ADR
+- [`epic-planner`](/agents/epic-planner) - Solicita una investigación de la pila de tecnología antes de planificar las funciones.
+- [`mentor`](/agents/mentor) - Puede solicitar investigaciones para aclarar cuestiones técnicas.
+- [`cuidar niños`](/agents/babysit) - Puede coordinar solicitudes de investigación de otros agentes.
+
+## Patrones comunes
+
+**Two Research Workflows**
+- **Web Research**: Búsqueda directa y síntesis (más rápida para temas sencillos)
+- **ChatGPT Prompt**: Cree un mensaje completo para que la IA lo analice (mejor para decisiones complejas)
+
+**Research Before Decisions**
+- Siempre investigue antes de crear ADR (ADR-WRITER solicita investigación)
+- Siempre investigue antes de planificar epopeyas (EPIC-PLANNER solicita investigación)
+- Señalar la incertidumbre en las historias y las investigaciones antes de la implementación.
+
+**Stale Research Management**
+- Auditoría trimestral de docs/10-research/ para investigaciones antiguas
+- Marcar como "Reemplazado" si una nueva investigación contradice la anterior
+- Nunca elimine la investigación (consérvela para el contexto histórico)
+- Actualizar si las versiones técnicas han cambiado

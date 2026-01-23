@@ -1,0 +1,190 @@
+---
+title: /readme-sync
+description: Sincronize o README.md de uma pasta com seu conteúdo atual
+---
+
+# /readme-sync
+
+Mantenha os arquivos README.md da pasta atualizados, gerando automaticamente uma seção de conteúdo que corresponda aos arquivos reais da pasta.
+
+## Início rápido
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Para sincronizar todas as pastas de documentação de uma só vez:
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FOLDER` | No | - | Path to folder (e.g., `docs/02-practices`), or `all` to sync entire docs/ |
+
+## Exemplos
+
+### Sincronizar pasta única
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Verificações `docs/02-practices/` para todos os arquivos e subdiretórios e, em seguida, atualiza o `## Contents` seção de `docs/02-practices/README.md` com itens atuais.
+
+### Sincronize todas as pastas de documentação
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+Sincroniza automaticamente todas as pastas em `docs/` diretório em paralelo:
+- `docs/00-meta/`
+- `docs/01-brainstorming/`
+- `docs/02-practices/`
+- `docs/03-decisions/`
+- ... e mais
+
+### Seleção de pasta interativa
+
+```bash
+/agileflow:readme-sync
+```
+
+Se você não especificar uma pasta, o comando solicitará que você escolha:
+
+```text
+Which folder should I sync?
+
+1. docs/02-practices (Recommended)
+2. docs/04-architecture
+3. all
+4. Other (enter custom path)
+```
+
+## Saída
+
+O comando gera um `## Contents` seção no README:
+
+```markdown
+## Contents
+
+- **testing.md** – Test strategy, patterns, and test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, and commit conventions
+- **ci.md** – CI/CD pipeline configuration and testing gates
+- **security.md** – Security practices, input validation, and authentication
+- **releasing.md** – Release procedures, versioning, and changelog management
+
+### Sub-folder: design/
+- **design/colors.md** – Color palette and branding guidelines
+- **design/typography.md** – Font stack and text styling rules
+```
+
+## Como funciona
+
+### Etapa 1: listar o conteúdo
+O comando verifica a pasta em busca de:
+- Todos os markdown e outros arquivos
+- Subdiretórios e seus conteúdos
+
+### Etapa 2: extrair descrições
+Para cada arquivo, ele extrai:
+- **Markdown files**: O primeiro título (# Heading) ou primeira frase
+- **Other files**: Primeira linha ou descrição baseada em nome de arquivo
+
+### Etapa 3: construir seção de conteúdo
+Gera um formato de lista com marcadores limpo com:
+- Nomes de arquivos em negrito
+- Descrições de uma frase
+- Estrutura aninhada para subdiretórios
+
+### Etapa 4: visualizar e confirmar
+Mostra as alterações propostas:
+
+```text
+📁 Syncing docs/02-practices/README.md
+=====================================
+
+Proposed Changes to ## Contents Section:
+─────────────────────────────────────────
+- **testing.md** – Test strategy, patterns, test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, commit conventions
+...
+
+Update README.md with these changes? (YES/NO)
+```
+
+## Melhores Práticas
+
+### Mantenha o conteúdo atualizado
+Execute após adicionar novos arquivos a uma pasta:
+
+```bash
+# Just added a new file
+vim docs/02-practices/performance-tuning.md
+
+# Update the README
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+### Lista de verificação de pré-lançamento
+Antes dos principais lançamentos, sincronize toda a documentação:
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+### Manutenção Trimestral
+Agende auditorias regulares de documentação:
+
+```bash
+# Sync entire docs/ and review changes
+/agileflow:readme-sync FOLDER=all
+```
+
+### Ao reorganizar
+Após reestruturar uma pasta, sincronize imediatamente:
+
+```bash
+/agileflow:readme-sync FOLDER=docs/your-folder
+```
+
+## O que ele atualiza
+
+O comando **only updates the `## Contents` section**:
+
+- Remove listagens de arquivos antigos
+- Adiciona todos os arquivos atuais com descrições
+- Mantém todas as outras seções README inalteradas
+- Preserva notas e links personalizados
+- Mantém as seções de cabeçalho, introdução e rodapé intactas
+
+Isso significa que você pode usar o comando com segurança sem perder a documentação personalizada.
+
+## Extração de descrição de arquivo
+
+O comando extrai descrições de forma inteligente:
+
+```markdown
+# Testing Strategy
+
+Guidelines for writing and running tests...
+```
+
+Extratos como: "Estratégia de Teste – Diretrizes para escrever e executar testes"
+
+```markdown
+<!-- This file documents git workflow -->
+Guidelines for branching and committing
+```
+
+Extrai a primeira linha significativa como descrição.
+
+## Comandos Relacionados
+
+- [`/docs-sync`](/commands/docs-sync) - Sincronize a documentação com alterações de código
+- [`/contexto`](/commands/context) - Gerar contexto abrangente do projeto
+- [`/modelo`](/commands/template) - Crie modelos de documentação personalizados

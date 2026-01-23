@@ -1,0 +1,98 @@
+---
+title: /Epos
+description: Erstelle ein neues Epos mit Geschichten
+---
+
+# /Epos
+
+Erstellen Sie ein neues Epos mit optionalen untergeordneten Storys, um verwandte User Stories rund um ein größeres Feature oder Ziel zu organisieren.
+
+## Schnellstart
+
+```bash
+/agileflow:epic EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text>
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic identifier (e.g., EP-0001) |
+| `TITLE` | Yes | - | Epic title describing the feature or goal |
+| `OWNER` | Yes | - | Owner name or agent ID (e.g., AG-UI, AG-API) |
+| `GOAL` | Yes | - | Outcome or metric that defines success for this epic |
+| `STORIES` | No | - | Comma-separated list of initial stories (format: `US-ID\|title\|owner`) |
+
+## Beispiele
+
+### Grundlegende epische Erstellung
+
+```bash
+/agileflow:epic EPIC=EP-0010 TITLE="User Authentication" OWNER=AG-API GOAL="Enable users to securely register and log in"
+```
+
+Erstellt eine neue epische Datei unter `docs/05-epics/EP-0010.md` mit den angegebenen Daten und meldet es an `docs/09-agents/status.json`.
+
+### Episch mit ersten Geschichten
+
+```bash
+/agileflow:epic EPIC=EP-0011 TITLE="Payment Processing" OWNER=AG-API GOAL="Enable payments via Stripe" STORIES="US-0040|Stripe integration|AG-API,US-0041|Payment form|AG-UI,US-0042|Webhook handler|AG-API"
+```
+
+Erstellt das Epos und generiert automatisch die ersten untergeordneten Geschichten darunter `docs/06-stories/EP-0011/`. Jede Geschichte wird erstellt mit:
+- Status: `ready` (bereit zur Entwicklung)
+- Schätzen: `0.5d` (Standard, kann geändert werden)
+- Abhängigkeiten: leer (bei Bedarf manuell aktualisiert)
+
+## Ausgabe
+
+Der Befehl erstellt:
+
+1. **Epic file** (`docs/05-epics/EP-XXXX.md`)
+   - Epische Metadaten (Titel, Besitzer, Status, Ziel)
+   - Aktueller Status und Kennzahlen
+   - Liste mit Kindergeschichten
+
+2. **Story files** (eine pro Geschichte, `docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - Story-Vorlage mit Platzhaltern für Akzeptanzkriterien
+   - Mit übergeordnetem Epos verknüpft
+   - Bereit für eine detaillierte Definition
+
+3. **Status tracking** (`docs/09-agents/status.json`)
+   - Epischer Eintrag mit Besitzer und aktuellem Status
+   - Story-Einträge mit Bezug zum Epos
+
+4. **Agent communication** (`docs/09-agents/bus/log.jsonl`)
+   - Zuweisungsnachrichten, die erstellte Epos und zugewiesene Storys anzeigen
+
+## Arbeitsablauf
+
+1. **Plan your epic** - Definieren Sie das Funktionsziel und die Erfolgsmetriken
+2. **Create the epic** - Laufen `/epic` Befehl mit grundlegenden Details
+3. **Add stories** - Entweder jetzt mit dem STORIES-Parameter erstellen oder verwenden `/story` später einzeln hinzufügen
+4. **Develop stories** - Verwenden `/story-validate` um sicherzustellen, dass jede Geschichte vor der Entwicklung fertig ist
+5. **Sprint plan** - Verwenden `/sprint` um Geschichten für den kommenden Sprint auszuwählen
+6. **Track progress** - Verwenden `/board` um den epischen Abschluss zu überwachen
+
+## Integration mit anderen Befehlen
+
+- **After epic creation**: Verwenden `/story` um weitere Geschichten hinzuzufügen
+- **Before sprint planning**: Verwenden `/sprint` Geschichten aus diesem Epos auszuwählen
+- **For progress tracking**: Verwenden `/board` oder `/metrics` epische Vollendung zu sehen
+- **For dependencies**: Verwenden `/deps` um Story-Abhängigkeiten innerhalb von Epic zu visualisieren
+
+## Best Practices
+
+- **Keep epics focused** - Ein Feature oder Feature-Bereich pro Epic
+- **Make goals measurable** - Verwenden Sie bestimmte Ergebnisse oder Kennzahlen (nicht „Benutzererfahrung verbessern“).
+- **Add stories incrementally** - Beginnen Sie mit Kerngeschichten und fügen Sie im Laufe der Zeit verwandte Geschichten hinzu
+- **Assign appropriate owners** - Ordnen Sie den epischen Besitzer dem primären Entwicklungsagenten zu
+- **Document context** - Fügen Sie nach der Erstellung technischen Kontext zur Epic-Datei hinzu
+
+## Verwandte Befehle
+
+- [`/Geschichte`](/commands/story) - Erstellen Sie individuelle Geschichten innerhalb eines Epos
+- [`/sprint`](/commands/sprint) - Planen Sie Sprints mit epischen spezifischen Geschichten
+- [`/deps`](/commands/deps) - Visualisieren Sie Story-Abhängigkeiten innerhalb von Epic
+- [`/board`](/commands/board) - Verfolgen Sie epische Fortschritte visuell
+- [`/metrics`](/commands/metrics) - Sehen Sie sich epische Fertigstellungs- und Geschwindigkeitsmetriken an

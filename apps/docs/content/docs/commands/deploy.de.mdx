@@ -1,0 +1,324 @@
+---
+title: /setup-deployment
+description: Richten Sie eine automatisierte Bereitstellungspipeline ein
+---
+
+# /setup-deployment
+
+Erkennen Sie automatisch Ihren Projekttyp und konfigurieren Sie eine vollständige Bereitstellungspipeline mit plattformspezifischen Konfigurationen, CI/CD-Workflows und Umgebungsmanagement.
+
+## Schnellstart
+
+```bash
+/agileflow:setup-deployment PLATFORM=auto ENV=both AUTO_DEPLOY=no
+```
+
+## Zweck
+
+Dieser Befehl richtet die Bereitstellungsinfrastruktur intelligent ein, indem er:
+- Automatische Erkennung Ihres Projekttyps (statisch, Full-Stack, serverlos, mobil, Container)
+- Empfehlung der optimalen Bereitstellungsplattform
+- Generieren plattformspezifischer Konfigurationsdateien
+- Erstellen von GitHub Actions-Bereitstellungsworkflows
+- Einrichten von Umgebungsvariablenvorlagen und Secrets-Management
+- Bereitstellung klarer nächster Schritte für die Bereitstellung
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PLATFORM` | No | `auto` | `auto`, `vercel`, `netlify`, `heroku`, `aws`, `gcp`, `docker`, `eas` |
+| `ENV` | No | `both` | `staging`, `production`, or `both` |
+| `AUTO_DEPLOY` | No | `no` | `yes` or `no` - trigger deployment automatically on push |
+
+## Beispiele
+
+### Alles automatisch erkennen
+
+```bash
+/agileflow:setup-deployment
+```
+
+Erkennt den Projekttyp und empfiehlt automatisch die beste Plattform.
+
+### Geben Sie die Plattform explizit an
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel ENV=both
+```
+
+Richtet die Vercel-Bereitstellung sowohl für die Bereitstellung als auch für die Produktion ein.
+
+### Docker-Bereitstellung für Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker ENV=production
+```
+
+Konfiguriert die Docker-basierte Bereitstellung (funktioniert mit Fly.io, AWS, GCP).
+
+### Mobile App mit EAS
+
+```bash
+/agileflow:setup-deployment PLATFORM=eas ENV=production
+```
+
+Richtet Expo-Anwendungsdienste für die React Native/Expo-Bereitstellung ein.
+
+## Projekterkennung
+
+Der Befehl analysiert Ihr Projekt, um Plattformen zu empfehlen:
+
+### Statische Websites
+**Detected By**: HTML/CSS/JS, React/Vue/Angular SPA (kein Backend)
+- Empfohlen: Vercel oder Netlify
+- Ideal für: Marketing-Sites, SPAs, Dokumentation
+
+### Full-Stack-Web-Apps
+**Detected By**: Node.js-Server, Express/Fastify/Next.js-API-Routen
+- Empfohlen: Vercel (Next.js) oder Railway
+- Ideal für: Web-Apps mit Backend-Logik
+
+### Mobile Apps (React Native / Expo)
+**Detected By**: `expo` Konfiguration, `react-native` Abhängigkeit
+- Empfohlen: EAS (Expo Application Services)
+- Ideal für: mobile iOS-/Android-Apps
+
+### Containerbasierte Apps
+**Detected By**: `Dockerfile` gegenwärtig
+- Empfohlen: Fly.io
+- Ideal für: Benutzerdefinierte Docker-Bereitstellungen, Microservices
+
+### Serverlose Funktionen
+**Detected By**: Lambda-Funktionen, API-Gateway-Konfiguration
+- Empfohlen: AWS Lambda- oder Vercel-Funktionen
+- Ideal für: ereignisgesteuerte Workloads mit Bezahlung pro Ausführung
+
+## Ausgabedateien
+
+Der Befehl erstellt mehrere Konfigurationsdateien:
+
+### Plattformkonfiguration
+- **Vercel**: `vercel.json`
+- **Netlify**: `netlify.toml`
+- **Heroku**: `Procfile`, `app.json`
+- **Docker**: `Dockerfile`, `.dockerignore`, `fly.toml`
+- **EAS**: `eas.json`
+- **AWS Lambda**: `serverless.yml`
+
+### CI/CD-Workflow
+- `.github/workflows/deploy.yml` - Automatisierter Bereitstellungsworkflow
+- Unterstützt Inszenierung → Produktionsförderung
+- Läuft bei Push zu Staging-/Hauptzweigen
+
+### Umweltmanagement
+- `.env.example` - Vorlage für Umgebungsvariablen (sicheres Festschreiben)
+- `docs/02-practices/secrets-management.md` - Leitfaden zur Geheimnisseverwaltung
+- `docs/02-practices/deployment.md` - Bereitstellungsdokumentation
+
+## Plattformen
+
+### Vercel (empfohlen für Next.js/React)
+Am besten geeignet für: Next.js-, React- und SPA-Bereitstellungen
+- Automatische Builds auf Git Push
+- Globales CDN
+- Integrierte serverlose Funktionen
+- Benutzeroberfläche für das Umgebungsmanagement
+- Vorschau der Bereitstellungen auf PRs
+
+**Next Steps**:
+```bash
+vercel link              # Connect your GitHub repo
+vercel env add DATABASE_URL production
+git push origin main     # Trigger deployment
+```
+
+### Netlify (empfohlen für statische Websites)
+Am besten geeignet für: Statische Websites, JAMstack, allgemeine SPAs
+- Automatische Builds von Git
+- Integrierte Analysen und Formulare
+- Serverlose Funktionen
+- Netlify CMS-Integration
+- Benutzerdefinierte Domänenverwaltung
+
+### Heroku (Node.js/Python-Server)
+Am besten geeignet für: Traditionelle Serveranwendungen
+- Einfache Slug-basierte Bereitstellung
+- PostgreSQL- und Redis-Add-ons
+- Verwaltung von Umgebungsvariablen
+- Funktionen für die Teamzusammenarbeit
+
+**Next Steps**:
+```bash
+heroku login
+heroku create my-app
+heroku addons:create heroku-postgresql:hobby-dev
+git push heroku main
+```
+
+### Fly.io (Docker-Bereitstellung)
+Am besten geeignet für: Docker-Container, Microservices, benutzerdefinierte Laufzeiten
+- Globale Bereitstellung mit Anycast-Routing
+- IPv6-Unterstützung
+- Automatische Skalierung
+- Persistente Bände
+- PostgreSQL enthalten
+
+**Next Steps**:
+```bash
+fly auth login
+fly launch
+fly deploy
+```
+
+### AWS (Lambda/ECS/Elastic Beanstalk)
+Am besten geeignet für: Skalierbare Anwendungen, Microservices
+- Mehrere Bereitstellungsoptionen (Lambda, ECS, Beanstalk)
+- Kostengünstig im großen Maßstab
+- Integration mit dem AWS-Ökosystem
+- Fein abgestimmte Zugangskontrolle
+
+### EAS (Expo/React Native)
+Am besten geeignet für: Mobile Apps (iOS/Android)
+- Native Builds in der Cloud
+- Einreichungen im App Store/Play Store
+- OTA-Updates
+- Entwicklungsclient-Builds
+
+## Arbeitsablauf
+
+Die Einrichtung folgt einem einheitlichen Prozess:
+
+1. **Detect Project Type** - Analysiert Abhängigkeiten und Dateien
+2. **Recommend Platform** - Schlägt optimales Hosting vor
+3. **Generate Configuration** - Erstellt plattformspezifische Dateien
+4. **Create Workflow** – Richtet GitHub-Aktionen für die Bereitstellung ein
+5. **Environment Setup** - Erstellt `.env.example` und Dokumente
+6. **Show Preview** - Zeigt alle Dateien zur Überprüfung an
+7. **Create Files** - Schreibt nach Bestätigung mit JA/NEIN auf die Festplatte
+8. **Display Next Steps** - Leitfaden zum Abschluss der Einrichtung
+
+## Umweltmanagement
+
+### Inszenierung vs. Produktion
+
+Der Befehl kann eine oder beide Umgebungen einrichten:
+
+```yaml
+# Example: Two-branch deployment
+Staging:
+  - Branch: staging
+  - URL: staging.example.com
+  - Environment: development-like
+
+Production:
+  - Branch: main
+  - URL: example.com
+  - Environment: live
+```
+
+### Geheimnismanagement
+
+**Never commit secrets to git**. Stattdessen:
+
+1. Verwenden `.env.example` als Vorlage
+2. Speichern Sie tatsächliche Geheimnisse in der Plattform (Vercel, Heroku usw.)
+3. GitHub Actions bietet `${{ secrets.NAME }}`
+4. Lesen `docs/02-practices/secrets-management.md` für Einzelheiten
+
+**Common Secrets**:
+- Datenbankverbindungszeichenfolgen
+- API-Schlüssel (Stripe, SendGrid usw.)
+- AWS-Anmeldeinformationen
+- Service-Token von Drittanbietern
+
+## Beispiele nach Plattform
+
+### Vercel-Bereitstellung
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel
+```
+
+Erstellt:
+- `vercel.json` mit Build-Konfiguration
+- `.github/workflows/deploy.yml` für die automatische Bereitstellung
+- `.env.example` mit Vercel-Variablennamen
+- Bereitstellungsdokumente
+
+### Heroku mit PostgreSQL
+
+```bash
+/agileflow:setup-deployment PLATFORM=heroku ENV=production
+```
+
+Erstellt:
+- `Procfile` (Web: npm start)
+- `app.json` mit Buildpack-Konfiguration
+- PostgreSQL-Setup-Dokumente
+- Bereitstellungsworkflow
+
+### Docker zu Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker
+```
+
+Erstellt:
+- `Dockerfile` mit mehrstufigem Aufbau
+- `.dockerignore` für ein sauberes Bild
+- `fly.toml` mit Regions- und Volume-Konfiguration
+- Bereitstellungsworkflow
+
+## Option zur automatischen Bereitstellung
+
+Standardmäßig erfordern Bereitstellungen eine manuelle Auslösung. So aktivieren Sie die automatische Bereitstellung bei jedem Push:
+
+```bash
+/agileflow:setup-deployment AUTO_DEPLOY=yes
+```
+
+**Important**: Bei der Produktion mit Vorsicht verwenden. Halten:
+- Erfordern Sie immer, dass CI zuerst besteht
+- Nutzen Sie den Staging → Hauptpromotionsprozess
+- Implementieren Sie Feature-Flags für schrittweise Rollouts
+- Überwachen Sie die Fehlerverfolgung nach Bereitstellungen
+
+## Nächste Schritte nach der Einrichtung
+
+1. **Add Platform Connection**
+   ```bash
+   vercel link
+   # or
+   fly auth login
+   fly launch
+   ```
+
+2. **Configure Secrets**
+   ```bash
+   vercel env add DATABASE_URL production
+   # or
+   fly secrets set DATABASE_URL=postgresql://...
+   ```
+
+3. **Test Deployment**
+   ```bash
+   git push origin staging
+   # Check deployment logs on platform dashboard
+   ```
+
+4. **Set Custom Domain** (Optional)
+   ```bash
+   vercel domains add example.com
+   # Follow platform-specific DNS setup
+   ```
+
+5. **Enable Auto-Deploy** (Optional)
+   - Aktivieren Sie nach dem Testen des Stagings die automatische Produktionsbereitstellung
+   - Konfigurieren Sie Zweigschutzregeln
+
+## Verwandte Befehle
+
+- [`/ci-setup`](/commands/ci) - Einrichten von CI/CD-Tests und -Prüfungen
+- [`/setup-tests`](/commands/tests) - Konfigurieren Sie das Test-Framework
+- [`/generate-changelog`](/commands/changelog) - Versionshinweise erstellen

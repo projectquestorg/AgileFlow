@@ -1,0 +1,145 @@
+---
+title: / Agileflow:أبحاث:عرض
+description: قراءة وعرض المحتوى الكامل لمذكرة بحثية محددة
+---
+
+# / Agileflow:أبحاث:عرض
+
+اعرض المحتوى الكامل لمذكرة بحثية من مجلد البحث الخاص بك.
+
+## بداية سريعة
+
+```bash
+/agileflow:research:view FILE=20250101-oauth-setup.md
+```
+
+## غاية
+
+قراءة ومراجعة الملاحظات البحثية للعثور على:
+
+- مقتطفات من التعليمات البرمجية من الأبحاث السابقة
+- عناصر العمل وحالتها
+- النتائج والتوصيات الرئيسية
+- أساليب التنفيذ
+
+هذا هو **read-only command**- لا يتم تعديل أي ملفات.
+
+## حدود
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| FILE | Yes | Filename of the research note |
+
+## الاستخدام
+
+```bash
+# View specific research
+/agileflow:research:view FILE=20250101-oauth-setup.md
+
+# View another note
+/agileflow:research:view FILE=20241231-typescript-perf.md
+```
+
+## الاختيار التفاعلي
+
+إذا قمت بتشغيل الأمر بدون FILE، فستتم مطالبتك بتحديد:
+
+```
+Which research note would you like to view?
+
+1. 20250106-oauth-setup.md - OAuth 2.0 Setup
+2. 20250105-next-patterns.md - Next.js Best Practices
+3. Show full list
+```
+
+## الإخراج
+
+يعرض **complete research file**- لم يتم اقتطاعها أو تلخيصها أبدًا:
+
+```markdown
+# OAuth 2.0 Setup
+
+**Import Date**: 2025-01-01
+**Topic**: OAuth 2.0 Setup
+**Source**: https://chatgpt.com
+
+---
+
+## Summary
+
+[Full executive summary...]
+
+---
+
+## Key Findings
+
+- [Complete list of findings...]
+
+---
+
+## Implementation Approach
+
+1. [All implementation steps...]
+
+---
+
+## Code Snippets
+
+[All code blocks exactly as imported...]
+
+---
+
+## Action Items
+
+- [x] Completed action
+- [ ] Pending action
+
+---
+
+## Risks & Gotchas
+
+[Full risk assessment...]
+```
+
+## بعد المشاهدة
+
+يُعرض عليك الإجراءات التالية:
+
+```
+What would you like to do with this research?
+
+1. Analyze for implementation (Recommended)
+2. View another research note
+3. Done
+```
+
+**Analyze for implementation** يدخل في وضع الخطة ويستكشف كيفية تطبيق هذا البحث على قاعدة التعليمات البرمجية المحددة الخاصة بك.
+
+## العثور على الملف الصحيح
+
+لا تعرف اسم الملف؟ استخدم القائمة أولاً:
+
+```bash
+/agileflow:research:list
+# Shows all files with correct names
+
+/agileflow:research:view FILE=<filename from list>
+```
+
+## معالجة الملفات المفقودة
+
+إذا كان الملف غير موجود:
+
+```
+Research note not found: [FILENAME]
+
+Use /agileflow:research:list to see all available research notes.
+```
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: البحث`](/commands/research) - نظرة عامة على نظام البحث
+- [`/ Agileflow:research:ask`](/commands/research-ask) - توليد مطالبات البحث
+- [`/ Agileflow:البحث:استيراد`](/commands/research-import) - استيراد نتائج البحوث
+- [`/ Agileflow:research:list`](/commands/research-list) - عرض كافة الملاحظات البحثية
+- [`/ Agileflow:البحث:تحليل`](/commands/research-analyze) - تحليل للتنفيذ

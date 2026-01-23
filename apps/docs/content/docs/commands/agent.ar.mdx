@@ -1,0 +1,313 @@
+---
+title: /عامل
+description: على متن وكيل جديد مع الملف الشخصي والعقد
+---
+
+# /عامل
+
+قم بإعداد وكلاء جدد بملفات تعريف ومطالبات النظام (العقود) وحدود النطاق للتعاون الفعال بين الفريق.
+
+## بداية سريعة
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Bash" SCOPE="src/components/,frontend"
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `AGENT_ID` | Yes | - | Unique agent identifier (e.g., AG-UI, AG-API) |
+| `ROLE` | Yes | - | Agent's role or title |
+| `TOOLS` | No | Read,Write,Edit,Bash | Comma-separated available tools |
+| `SCOPE` | No | - | Directories and story tags agent can access |
+
+## أمثلة
+
+### مطور الواجهة الأمامية على متن الطائرة
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Edit,Bash,Glob" SCOPE="src/components/,src/pages/,frontend,ui"
+```
+
+يقوم بإنشاء ملف تعريف الوكيل باستخدام:
+- الدور والمسؤوليات
+- الأدوات المتاحة (قراءة، كتابة، تحرير، باش)
+- حدود النطاق (فقط src/components/ وsrc/pages/)
+- موجه النظام (العقد) بقواعد صارمة
+
+### مطور واجهة برمجة التطبيقات (API) على متن الطائرة
+
+```bash
+/agileflow:agent AGENT_ID=AG-API ROLE="Backend API Developer" TOOLS="Read,Write,Edit,Bash,Grep" SCOPE="src/api/,src/services/,backend,api"
+```
+
+### أخصائي CI/CD على متن الطائرة
+
+```bash
+/agileflow:agent AGENT_ID=AG-CI ROLE="CI/CD Automation Engineer" TOOLS="Read,Write,Bash,Grep" SCOPE=".github/,scripts/,ci,devops"
+```
+
+## الإخراج
+
+### 1. ملف تعريف الوكيل
+
+Creates agent profile markdown at `docs/02-practices/prompts/agents/agent-<AGENT_ID>.md`
+
+محتوى المثال:
+
+```text
+---
+agent_id: AG-UI
+role: Frontend Developer
+tools: [Read, Write, Edit, Bash, Glob]
+scope:
+  directories: [src/components/, src/pages/]
+  story_tags: [frontend, ui, ux]
+---
+
+# AG-UI: Frontend Developer Agent
+
+## Responsibilities
+Build and maintain user interface components with React and Tailwind CSS.
+
+## Available Tools
+- Read - Read files and directories
+- Write - Create new files
+- Edit - Modify existing files
+- Bash - Run commands (npm, git)
+- Glob - Search for files by pattern
+
+## Scope Boundaries
+
+### Allowed Directories
+- `src/components/` - UI components
+- `src/pages/` - Page layouts
+- `public/` - Static assets
+
+### Restricted Directories
+- `src/api/` - Backend code
+- `.github/` - CI/CD workflows
+
+### Story Tags
+- `frontend` - UI features
+- `ui` - Component work
+- `ux` - User experience
+- `design` - Design implementation
+
+## System Prompt (Contract)
+
+### Scope Restrictions
+You can ONLY modify files in:
+- `src/components/**`
+- `src/pages/**`
+
+You CANNOT modify:
+- Backend code in `src/api/`
+- CI/CD workflows in `.github/`
+
+### Testing Requirements
+Before committing, run:
+- `npm test -- src/components/` - Run component tests
+- `npm run lint:css` - Check Tailwind usage
+
+### Commit Message Format
+Use conventional commits with `ui:` prefix:
+- `feat(ui): add new button component`
+- `fix(ui): correct responsive breakpoint`
+- `style(ui): update component spacing`
+
+### Status Updates
+After completing a story:
+1. Update `docs/09-agents/status.json` with new status
+2. Log to `docs/09-agents/bus/log.jsonl`
+3. Include completion time and any blockers
+
+### Code Standards
+- TypeScript required (no .js files)
+- JSDoc comments on exported components
+- Storybook stories for all components
+- 80%+ test coverage for components
+- Accessibility checks (axe-core)
+```
+
+### 2. قائمة الوكيل
+
+التحديثات أو الإنشاء `docs/09-agents/roster.yaml`:
+
+```yaml
+agents:
+  AG-UI:
+    id: AG-UI
+    role: Frontend Developer
+    tools: [Read, Write, Edit, Bash, Glob]
+    scope:
+      directories: [src/components/, src/pages/]
+      story_tags: [frontend, ui, ux]
+  AG-API:
+    id: AG-API
+    role: Backend API Developer
+    tools: [Read, Write, Edit, Bash, Grep]
+    scope:
+      directories: [src/api/, src/services/]
+      story_tags: [backend, api, database]
+```
+
+### 3. موجه النظام
+
+يُخرج مطالبة نظام مكثفة للنسخ/اللصق كمطالبة للنظام الطرفي:
+
+```text
+You are AG-UI, a Frontend Developer Agent.
+
+ROLE: Build and maintain user interface components.
+
+SCOPE BOUNDARIES (Strict):
+- Can modify: src/components/, src/pages/
+- Cannot modify: src/api/, .github/
+- Story tags: frontend, ui, ux
+
+TESTING:
+- Run npm test before committing
+- Maintain 80%+ coverage
+- Check accessibility with axe-core
+
+COMMITS:
+- Format: "feat(ui):" or "fix(ui):"
+- Conventional commits required
+
+STATUS:
+- Update docs/09-agents/status.json after completing stories
+- Log events to docs/09-agents/bus/log.jsonl
+```
+
+## مكونات ملف تعريف الوكيل
+
+### المسؤوليات
+
+وصف واضح لما يفعله الوكيل:
+- مجال محدد (واجهة المستخدم، API، CI/CD)
+- التقنيات المستخدمة
+- التسليمات الرئيسية
+- دور الفريق
+
+### الأدوات المتاحة
+
+ما يمكن للوكيل استخدامه:
+- **Read** - قراءة الملفات وتحليل التعليمات البرمجية
+- **Write** - إنشاء ملفات جديدة
+- **Edit** - تعديل الملفات الموجودة
+- **Bash** - تشغيل أوامر الصدفة (git، npm، docker)
+- **Glob** - البحث عن الملفات حسب النمط
+- **Grep** - محتويات ملف البحث
+
+### حدود النطاق
+
+أين يمكن للوكيل العمل:
+- **Allowed directories** - وكيل الملفات يمكن تعديله
+- **Restricted directories** - وكيل الملفات لا يمكن لمسه
+- **Story tags** - ما العمل الذي يتم تكليفه بهذا الوكيل
+
+### موجه النظام (العقد)
+
+يجب على وكيل القواعد اتباع ما يلي:
+- **Scope restrictions** - مسارات الملفات بالضبط
+- **Testing requirements** - متى/كيفية الاختبار
+- **Commit conventions** - شكل الفرع والرسالة
+- **Status updates** - كيفية تتبع التقدم
+- **Code standards** - متطلبات الجودة
+
+## أفضل الممارسات
+
+### وكلاء التسمية
+استخدم معرفات وصفية تشير بوضوح إلى الدور:
+- ✅ جيد: AG-UI، AG-API، AG-CI، AG-DEVOPS، AG-SECURITY
+- ❌ سيء: AG-001، AG-A، AG-DEV1
+
+### تحديد النطاق
+
+اجعل الحدود واضحة تمامًا:
+
+**Good** - مسارات محددة:
+- `src/components/`
+- `src/api/routes/`
+- `.github/workflows/`
+
+**Bad** - حدود غامضة:
+- "أشياء الواجهة"
+- "الأشياء الخلفية"
+
+### متطلبات الاختبار
+
+تضمين أوامر اختبار محددة:
+
+**Good** - أوامر واضحة:
+- يجري `npm test -- src/components/`
+- تحقق من التغطية مع `npm run coverage`
+- الوبر مع `npm run lint:tsx`
+
+**Bad** - تعليمات غامضة:
+- "كتابة الاختبارات"
+- "تأكد من أنه يعمل"
+
+### تعيين علامة القصة
+
+تعيين القصص بناءً على العلامات:
+
+| Agent | Story Tags |
+|-------|------------|
+| AG-UI | frontend, ui, ux, design |
+| AG-API | backend, api, database |
+| AG-CI | ci, devops, automation |
+
+## سير العمل
+
+1. جمع تفاصيل الوكيل:
+   - المعرف الفريد (AG-DOMAIN)
+   - الدور/العنوان
+   - الأدوات المتاحة
+   - حدود النطاق
+   - علامات القصة
+
+2. إنشاء ملف تعريف الوكيل من القالب
+   - قسم المسؤوليات
+   - قائمة الأدوات
+   - حدود النطاق (واضحة ومحددة)
+   - موجه النظام (عقد مع القواعد)
+
+3. تحديث قائمة الوكيل
+   - أضف إدخالاً إلى docs/09-agents/roster.yaml
+   - معرف الخريطة → الدور والأدوات والنطاق
+
+4. إنشاء موجه النظام
+   - موجه الإخراج المكثف
+   - جاهز لللصق كمطالبة النظام الطرفي
+
+5. التحقق من صحة الوكيل
+   - مراجعة حدود النطاق (بدون تعارضات)
+   - تأكيد متطلبات الاختبار
+   - تحقق من تعيينات علامة القصة
+
+## اندماج
+
+Agent profiles integrate with:
+- **Status tracking** - تظهر القائمة وكلاء نشطين
+- **Story assignment** - استخدم معرف الوكيل والعلامات
+- **Capacity planning** - معرفة من هو متاح
+- **Handoffs** - ملفات تعريف الوكيل المرجعي في الاتصالات
+- **Scope validation** - منع التغييرات خارج النطاق
+
+## استخدم متى
+
+- **Onboarding new team members** - إنشاء الملف الشخصي والعقد
+- **Adding specialized roles** - الأمن والأداء ووكلاء الوصول
+- **Restructuring team** - تحديث حدود النطاق
+- **Training agents** - استخدم موجه النظام كمرجع
+- **Resolving conflicts** - نطاق واضح يمنع التداخل
+
+## الأوامر ذات الصلة
+
+- [`/التسليم`](/commands/handoff) - توثيق انتقالات العمل بين الوكلاء
+- [`/الحالة`](/commands/status) - عرض جميع الوكلاء النشطين والمهام
+- [`/ جليسة الأطفال`](/commands/babysit) - مراقبة تقدم الوكيل
+- [`/المقاييس`](/commands/metrics) - مقاييس أداء الوكيل

@@ -1,0 +1,197 @@
+---
+title: /épico:lista
+description: Liste todos os épicos com status e acompanhamento de progresso
+---
+
+# /épico:lista
+
+Exiba todos os épicos com status, acompanhamento de progresso e opções de ação rápida.
+
+## Início rápido
+
+```bash
+/agileflow:epic:list
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STATUS` | No | - | Filter by status: `active`, `complete`, `on-hold` |
+
+## Exemplos
+
+### Listar todos os épicos
+
+```bash
+/agileflow:epic:list
+```
+
+Mostra todos os épicos com status e porcentagem de conclusão da história.
+
+### Listar apenas épicos ativos
+
+```bash
+/agileflow:epic:list STATUS=active
+```
+
+Filtros para mostrar apenas os épicos em andamento.
+
+### Listar apenas épicos concluídos
+
+```bash
+/agileflow:epic:list STATUS=complete
+```
+
+Mostra épicos que têm todas as histórias concluídas.
+
+## Formato de saída
+
+O comando exibe épicos em uma tabela estruturada:
+
+```markdown
+## Epics
+
+| Epic | Title | Status | Progress | Owner |
+|------|-------|--------|----------|-------|
+| EP-0003 | User Dashboard | active | 2/5 (40%) | AG-UI |
+| EP-0002 | Authentication | active | 4/6 (67%) | AG-API |
+| EP-0001 | Core Setup | complete | 3/3 (100%) | AG-DEVOPS |
+
+---
+**Summary**: 3 epics (2 active, 1 complete)
+**Stories**: 9/14 complete (64%)
+```
+
+## Definições de status
+
+| Status | Meaning | Progress Bar | Action |
+|--------|---------|------|--------|
+| **active** | In progress, accepting new stories | Partial fill | Continue work, add stories |
+| **complete** | All stories done | Full (100%) | View summary, possibly reopen |
+| **on-hold** | Paused, not currently worked on | Frozen | Resume or close |
+
+## Visualização do Progresso
+
+O progresso é mostrado como:
+- **Numerator**: Histórias concluídas
+- **Denominator**: Total de histórias em épico
+- **Percentage**: Conclusão geral
+
+Exemplo: `4/6 (67%)` = 4 histórias concluídas, 2 restantes, 67% concluídas
+
+## Ações rápidas
+
+Depois de exibir a lista, você pode:
+
+### Ver detalhes épicos
+
+Selecione um épico para ver:
+- Todas as histórias agrupadas por status (em andamento, pronta, concluída)
+- Visualização do progresso
+- Proprietário e objetivo
+- Pesquisas relacionadas e RAMs
+
+```bash
+/agileflow:epic:view EPIC=EP-0003
+```
+
+### Adicionar história ao épico
+
+Crie uma nova história sob um épico existente:
+
+```bash
+/agileflow:story EPIC=EP-0003 ...
+```
+
+### Crie um novo épico
+
+Comece um novo recurso épico:
+
+```bash
+/agileflow:epic TITLE="..." ...
+```
+
+## Integração de fluxo de trabalho
+
+### Planejamento de Sprints
+
+```bash
+/agileflow:epic:list STATUS=active
+# See which epics are in progress
+/agileflow:epic:view EPIC=EP-0003
+# Review stories and their status
+/agileflow:sprint
+# Plan which stories to work on
+```
+
+### Planejamento Trimestral
+
+```bash
+/agileflow:epic:list
+# See all epics and their progress
+# Identify bottlenecks (epics with less than 50% progress)
+# Decide which epics to prioritize next
+```
+
+### Acompanhamento de conclusão
+
+```bash
+/agileflow:epic:list STATUS=active
+# Work on remaining stories in in-progress epics
+/agileflow:epic:list STATUS=complete
+# Review what was shipped
+```
+
+### Épicos em espera
+
+```bash
+/agileflow:epic:list STATUS=on-hold
+# Check if any on-hold epics can be resumed
+/agileflow:epic:view EPIC=EP-0002
+# Understand why it's on hold
+```
+
+## Interpretando Resultados
+
+### Alto progresso (acima de 80%)
+
+```
+EP-0002 | Authentication | active | 5/6 (83%) | AG-API
+```
+
+- Epic está quase completo
+- Concentre-se em terminar a última história
+- Planeje o próximo épico para começar
+- Não feche até 100%
+
+### Progresso Médio (40-80%)
+
+```
+EP-0003 | User Dashboard | active | 3/7 (43%) | AG-UI
+```
+
+- Epic está no meio do sprint
+- Pode precisar de histórias adicionais
+- Verifique se as histórias estão bloqueadas
+- Considere adicionar recursos
+
+### Baixo Progresso (abaixo de 40%)
+
+```
+EP-0001 | Onboarding Flow | active | 1/8 (12%) | AG-UI
+```
+
+- Épico acabou de começar
+- Aceleração em andamento
+- Monitore bloqueadores
+- Pode querer adicionar mais histórias
+
+## Comandos Relacionados
+
+- [`/épico: visualizar`](/commands/epic-view) - Veja detalhes épicos de todas as histórias
+- [`/épico`](/commands/epic) - Crie um novo épico
+- [`/história:lista`](/commands/story-list) - Veja todas as histórias com filtros
+- [`/placa`](/commands/board) - Visualização visual do quadro Kanban
+- [`/sprint`](/commands/sprint) - Planejamento de sprints
+- [`/métricas`](/commands/metrics) - Análise de progresso

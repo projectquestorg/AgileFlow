@@ -1,0 +1,268 @@
+---
+title: /deps
+description: Visualisieren Sie das Abhängigkeitsdiagramm mit der Erkennung kritischer Pfade
+---
+
+# /deps
+
+Visualisieren und analysieren Sie Story-/epische Abhängigkeitsdiagramme mit der Erkennung kritischer Pfade, der Identifizierung zirkulärer Abhängigkeiten und umsetzbaren Empfehlungen.
+
+## Schnellstart
+
+```bash
+/agileflow:deps
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCOPE` | No | `all` | `story`, `epic`, or `all` - scope of visualization |
+| `EPIC` | No | - | Show dependencies within specific epic (e.g., `EP-0010`) |
+| `STORY` | No | - | Show dependencies for specific story (e.g., `US-0032`) |
+| `FORMAT` | No | `ascii` | Output format: `ascii`, `mermaid`, `graphviz`, or `json` |
+| `ANALYSIS` | No | `all` | Analysis type: `critical-path`, `circular`, `blocking`, or `all` |
+
+## Beispiele
+
+### Vollständiges Abhängigkeitsdiagramm anzeigen
+
+```bash
+/agileflow:deps
+```
+
+Zeigt ein ASCII-Diagramm aller Storys und ihrer Abhängigkeiten mit Statusindikatoren, kritischem Pfad und blockierender Story-Analyse.
+
+### Analysieren Sie epische Abhängigkeiten
+
+```bash
+/agileflow:deps EPIC=EP-0010
+```
+
+Visualisiert Abhängigkeiten nur innerhalb des Authentifizierungsepos und hilft so, die Arbeitsreihenfolge zu verstehen.
+
+### Überprüfen Sie spezifische Story-Abhängigkeiten
+
+```bash
+/agileflow:deps STORY=US-0032
+```
+
+Zeigt, wovon diese Geschichte abhängt und welche Geschichten davon abhängen, sowie eine Wirkungsanalyse.
+
+### Als Meerjungfrauendiagramm exportieren
+
+```bash
+/agileflow:deps FORMAT=mermaid
+```
+
+Erzeugt ein Mermaid-Diagrammformat, das für Dokumentation oder GitHub geeignet ist.
+
+### Nur kritischen Pfad finden
+
+```bash
+/agileflow:deps ANALYSIS=critical-path
+```
+
+Zeigt nur den längsten Abhängigkeitspfad an (Engpass für den Projektabschluss).
+
+### Erkennen Sie zirkuläre Abhängigkeiten
+
+```bash
+/agileflow:deps ANALYSIS=circular
+```
+
+Sucht nach nicht abzuschließenden Zyklen und schlägt Korrekturen vor.
+
+## Ausgabeformat
+
+### ASCII-Diagramm (Standard)
+
+```text
+Story Dependency Graph
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Legend:
+  ✅ Done    🟢 Ready    🟡 In Progress    🔵 In Review    ⚪ Blocked
+
+EP-0010: Authentication Epic
+┌────────────────────────────────────────────────────────────┐
+│                                                            │
+│  ✅ US-0030 - Database schema                              │
+│  │                                                         │
+│  ├─▶ ✅ US-0031 - User model                               │
+│  │   │                                                     │
+│  │   ├─▶ 🟡 US-0032 - Login endpoint (in-progress)        │
+│  │   │   │                                                 │
+│  │   │   ├─▶ 🟢 US-0033 - Login UI                         │
+│  │   │   │                                                 │
+│  │   │   └─▶ ⚪ US-0045 - Password reset (blocked)         │
+│  │   │                                                     │
+│  │   └─▶ ✅ US-0034 - JWT middleware                       │
+│  │                                                         │
+│  └─▶ 🔵 US-0035 - User registration (in-review)            │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+
+Critical Path:
+  US-0030 → US-0031 → US-0032 → US-0033  (11 days total)
+
+Blocking Stories:
+  US-0040 blocks: US-0041, US-0042  (⚠️ High impact)
+  US-0032 blocks: US-0033, US-0045  (⚠️ High impact)
+
+Circular Dependencies: None detected ✅
+```
+
+### Meerjungfrau-Diagrammformat
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/commands/deps-graph.dark.svg" />
+  <img alt="Dependency Graph Example" src="/images/docs/commands/deps-graph.light.svg" />
+</picture>
+
+## Analysetypen
+
+### Kritischer Pfad
+**Shows**: Die längste Abhängigkeitskette von Anfang bis Ende
+
+Hilft bei der Identifizierung von:
+- Welche Geschichten sind Engpässe?
+- Der kritischste Weg zum Projektabschluss
+- Wo Verzögerungen die größte Wirkung haben
+- Geschichten, die für die Fertigstellung priorisiert werden müssen
+
+```text
+Critical Path: US-0030 → US-0031 → US-0032 → US-0033
+Duration: 8 days
+⚠️ US-0032 is in-progress on critical path
+   → Any delay here delays entire epic
+```
+
+### Zirkuläre Abhängigkeiten
+**Shows**: Geschichten, die in einem Kreislauf voneinander abhängen
+
+Beispiel für ein zirkuläres Abhängigkeitsproblem:
+```text
+❌ CIRCULAR DETECTED!
+
+Cycle: US-0050 → US-0051 → US-0052 → US-0050
+
+Impact: ⚠️ CRITICAL - These stories cannot be completed
+```
+
+**How to fix**:
+1. Überprüfen Sie den architektonischen Entwurf
+2. Brechen Sie die Abhängigkeit, indem Sie Abstraktion einführen
+3. Erstellen Sie eine Schnittstellen-/Vertragsgeschichte
+4. Refaktorieren Sie eine Story, um den Teufelskreis zu durchbrechen
+
+### Blockierende Geschichten
+**Shows**: Stories that block the most other work
+
+Identifiziert schwerwiegende Engpässe:
+```text
+High Impact Blockers:
+┌────────┬──────────────────┬────────┬──────────────┐
+│ Story  │ Title            │ Status │ Blocks       │
+├────────┼──────────────────┼────────┼──────────────┤
+│ US-0040│ Stripe integ.    │ 🟢 Ready│ 2 stories  │
+│ US-0032│ Login endpoint   │ 🟡 WIP │ 2 stories  │
+└────────┴──────────────────┴────────┴──────────────┘
+
+Action: Start US-0040 immediately (blocks payment epic)
+```
+
+## Story-Statusindikatoren
+
+| Indicator | Meaning | Action |
+|-----------|---------|--------|
+| ✅ Done | Story completed | Doesn't block others anymore |
+| 🟢 Ready | Ready for development | Can be started anytime |
+| 🟡 In Progress | Currently being worked | Monitor for delays |
+| 🔵 In Review | Awaiting approval | May complete soon |
+| ⚪ Blocked | Waiting on dependencies | Can't start until unblocked |
+
+## Häufige Szenarien
+
+### Szenario: Die Story hat hohe Priorität, ist aber blockiert
+
+```text
+⚪ US-0045 - Password reset (blocked)
+   Waiting for: US-0032 (Login endpoint, 75% done)
+
+Recommendation:
+  - Check US-0032 progress daily
+  - Consider pairing to accelerate if delayed
+  - US-0045 can start as soon as US-0032 is done
+```
+
+### Szenario: Es wurde eine zirkuläre Abhängigkeit gefunden
+
+```text
+❌ Services have circular dependency
+
+Current: Auth → User → Session → Auth (cycle)
+
+Solution:
+  1. Create US-0055: "Auth/User service contract"
+  2. Make all three depend on US-0055 (new foundation)
+  3. Now: Auth/User/Session → US-0055 (no cycle)
+```
+
+### Szenario: Critical Path Story in Gefahr
+
+```text
+US-0032 is on CRITICAL PATH but in-progress
+⚠️ Currently 75% done, but original estimate was 2d
+
+If it slips:
+  - US-0033 blocked (1d delay)
+  - US-0045 blocked (2d delay)
+  - Entire epic completion delayed
+
+Recommendation:
+  - Daily standup on progress
+  - Pair if needed to accelerate
+  - Identify blockers immediately
+```
+
+## Parallele Arbeitsmöglichkeiten
+
+Der Befehl identifiziert Geschichten, die parallel bearbeitet werden können:
+
+```text
+Stories That Can Start Now (No Blockers):
+
+EP-0010: Authentication
+  ✅ US-0033 (Login UI)         - AG-UI available
+  ✅ US-0040 (Stripe integ.)    - HIGH PRIORITY
+
+Recommended Assignments:
+  AG-UI:  US-0033 (ready now)
+  AG-API: US-0040 (high impact blocker)
+```
+
+## Integration mit anderen Befehlen
+
+- **Before sprint planning**: Laufen `/deps` Risiken zu verstehen
+- **During sprint**: Überwachen Sie den kritischen Pfad mit `/board`
+- **When investigating blockers**: Verwenden `/deps` um zu sehen, was von dieser Geschichte abhängt
+- **When adding dependencies**: Erneut ausführen, um nach neuen Risiken zu suchen
+- **When a story is blocked**: Verwenden `/deps STORY=US-XXXX` um die Kette zu sehen
+
+## Best Practices
+
+- **Check before each sprint** - Abhängigkeiten können sich ändern, wenn Geschichten verfeinert werden
+- **Prioritize blocking stories** - Beginnen Sie frühzeitig mit wirkungsvollen Blockern
+- **Monitor critical path** – Geschichten über den kritischen Pfad verdienen besondere Aufmerksamkeit
+- **Detect cycles early** - Laufen `/deps ANALYSIS=circular` regelmäßig
+- **Sequence dependent work** - Beginnen Sie zuerst mit grundlegenden Geschichten
+- **Document dependencies clearly** - Verwenden Sie Story Frontmatter, um Abhängigkeiten zu verknüpfen
+
+## Verwandte Befehle
+
+- [`/sprint`](/commands/sprint) - Die Sprintplanung berücksichtigt Abhängigkeiten
+- [`/board`](/commands/board) - Sprintfortschritt und Blocker anzeigen
+- [`/blockers`](/commands/blockers) - Verfolgen und lösen Sie blockierte Storys
+- [`/story-validate`](/commands/story-validate) - Überprüfen Sie, ob Abhängigkeiten vorhanden sind
+- [`/metrics`](/commands/metrics) - Korrelieren Sie die Zykluszeit mit der Abhängigkeitstiefe

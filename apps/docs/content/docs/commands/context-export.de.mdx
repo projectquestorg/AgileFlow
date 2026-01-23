@@ -1,0 +1,158 @@
+---
+title: /agileflow:context:export
+description: Exportieren Sie einen prägnanten Kontextauszug zum Einfügen in Web-KI-Tools
+---
+
+# /agileflow:context:export
+
+Exportieren Sie einen prägnanten Kontextauszug zum Einfügen in Web-KI-Tools.
+
+## Schnellstart
+
+```bash
+/agileflow:context:export
+```
+
+## Zweck
+
+Liest `docs/context.md` und gibt einen komprimierten Auszug (≤300 Zeilen) aus, der in ChatGPT, Perplexity, Gemini oder Claude Web eingefügt werden kann.
+
+**This is a read-only command** - Es werden keine Dateien geschrieben.
+
+## Ausgabeformat
+
+Der Befehl gibt einen Markdown-Codeblock zum einfachen Kopieren aus:
+
+```markdown
+# Project Context Brief
+Last updated: 2025-12-24
+
+## What We're Building
+AgileFlow is a comprehensive project management system...
+
+## Current Focus
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+
+## Tech Stack
+- Framework: Next.js 16, TypeScript
+- UI: React, Tailwind CSS, shadcn/ui
+- Testing: Jest, Playwright
+
+## Key Decisions
+- ADR-001: Use TypeScript for type safety (Accepted)
+- ADR-002: Use React component library (Accepted)
+
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+
+## Next Steps
+- US-0043: Visual Mode documentation (ready)
+- US-0044: Session commands docs (ready)
+
+---
+**Paste this into**: ChatGPT, Perplexity, Gemini, or Claude web
+**Purpose**: Load full project context for AI assistance
+**Limit**: This excerpt is ≤300 lines for easy pasting
+```
+
+## Abschnitte enthalten
+
+Der Export umfasst nur diese Abschnitte (um unter 300 Zeilen zu bleiben):
+
+| Section | Max Lines | Purpose |
+|---------|-----------|---------|
+| Header | 2 | Title and timestamp |
+| What We're Building | 5 | Project overview |
+| Current Focus | 5 | Active work |
+| Tech Stack | 8 | Technologies |
+| Key Decisions | 10 | ADR titles only |
+| Feature Map | 15 | One line per epic |
+| Next Steps | 15 | Ready stories |
+| Footer | 3 | Paste instructions |
+
+## Ausgeschlossene Abschnitte
+
+Um innerhalb der 300-Zeilen-Grenze zu bleiben, werden diese übersprungen:
+
+- **Recent Progress** - Zu ausführlich
+- **Notes section** - Zu lang
+- **Detailed story descriptions** - Für den Kontext nicht erforderlich
+- **Full ADR content** - Nur Titel enthalten
+
+## Inhaltsverdichtung
+
+Beim Extrahieren wird der Inhalt komprimiert:
+
+| Element | Full Size | Condensed |
+|---------|-----------|-----------|
+| ADRs | Full description | Title + status only |
+| Stories | Title + description | Title + status |
+| Tech | Full list + versions | Framework + key deps |
+| Epics | Title + stories list | Title + count + status |
+| Decisions | Full context | One-liner |
+
+## Anforderungen
+
+**docs/context.md must exist** vor dem Export.
+
+Wenn es fehlt, sehen Sie:
+
+```
+Error: docs/context.md not found.
+
+To create it, run: /agileflow:context:full
+
+Then you can export with: /agileflow:context:export
+```
+
+## Nutzungsworkflow
+
+```bash
+# 1. Generate context (if needed)
+/agileflow:context:full
+
+# 2. Export concise version
+/agileflow:context:export
+
+# 3. Copy the output
+# 4. Paste into ChatGPT, Perplexity, Gemini, or Claude web
+# 5. Ask questions with full project context
+```
+
+## Warum 300 Zeilen?
+
+Web-KI-Tools haben Kontextfensterbeschränkungen. Ein 300-zeiliger Auszug:
+
+- Passt bequem in die meisten Kontextfenster von KI-Tools
+- Bietet genügend Details für fundierte Hilfe
+- Lässt Raum für Ihre eigentlichen Fragen
+- Lässt sich schnell einkleistern und verarbeiten
+
+## Wann zu verwenden
+
+- **Before web AI sessions** - Projektkontext laden
+- **When switching AI tools** - Kontext zwischen Tools übertragen
+- **After context updates** - Holen Sie sich eine neue, prägnante Version
+- **For team sharing** - Schneller Projektüberblick
+
+## Keine Bestätigung erforderlich
+
+Dies ist ein schreibgeschützter Befehl:
+
+- ✓ Lesen Sie docs/context.md
+- ✓ Extrahieren und formatieren
+- ✓ Ausgabe an Codeblock
+- ✗ KEINE Dateischreibvorgänge
+- ✗ KEINE Bestätigung erforderlich
+- ✗ KEINE Zustandsänderungen
+
+## Verwandte Befehle
+
+- [`/agileflow:context`](/commands/context) - Übersicht über Kontextbefehle
+- [`/agileflow:context:full`](/commands/context-full) - Vollständigen Kontext generieren
+- [`/agileflow:context:note`](/commands/context-note) - Notiz mit Zeitstempel hinzufügen
+- [`/agileflow:research:ask`](/commands/research-ask) - Generieren Sie eine Forschungsaufforderung

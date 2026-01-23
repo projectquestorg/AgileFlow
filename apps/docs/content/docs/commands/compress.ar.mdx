@@ -1,0 +1,396 @@
+---
+title: /ضغط
+description: قم بضغط Status.json عن طريق إزالة الحقول المطولة والاحتفاظ بتتبع البيانات الوصفية فقط
+---
+
+# /ضغط
+
+قم بتقليل حجم ملف Status.json عن طريق إزالة حقول القصة المطولة مع الحفاظ على جميع بيانات تعريف التتبع الهامة والحفاظ على تفاصيل القصة الكاملة في ملفات تخفيض السعر.
+
+## بداية سريعة
+
+```bash
+/agileflow:compress
+```
+
+## غاية
+
+يحل هذا الأمر مشكلة شائعة: متى `status.json` تنمو بشكل كبير (خاصة في المشاريع الكبيرة التي تحتوي على أكثر من 100 قصة)، ويمكن أن تتجاوز حدود الرمز المميز وتبطئ معالجة الوكيل. أمر الضغط:
+- إزالة الحقول المطولة (الأوصاف، AC، سياق البنية، وما إلى ذلك)
+- يحتفظ فقط ببيانات تعريف التتبع الأساسية (معرف القصة، والحالة، والمالك، والطوابع الزمنية)
+- Reduces file size by 80-90% typically
+- يحافظ على محتوى القصة الكاملة في ملفات تخفيض السعر
+- يحافظ على تاريخ المشروع الكامل
+- يضمن أن الوكلاء يمكنهم قراءة Status.json بكفاءة
+
+## حدود
+
+لا يحتوي هذا الأمر على أي معلمات - فهو يعمل مباشرة `docs/09-agents/status.json`.
+
+## الاستخدام
+
+ببساطة قم بتشغيل:
+
+```bash
+/agileflow:compress
+```
+
+الأمر سوف:
+1. التحقق من وجود Status.json وصلاحيته لـ JSON
+2. إظهار قبل الإحصائيات (الحجم، الخطوط، عدد القصص)
+3. إنشاء نسخة احتياطية تلقائية
+4. إزالة الحقول المطولة
+5. كتابة نسخة مضغوطة
+6. تظهر بعد الإحصائيات والمدخرات
+
+## ما تتم إزالته
+
+تتم إزالة هذه الحقول المطولة من Status.json:
+
+```text
+- description          # Story description and context
+- acceptanceCriteria   # AC bullet points
+- architectureContext  # Architecture details
+- technicalNotes       # Implementation hints
+- testingStrategy      # Test approach
+- devAgentRecord       # Implementation notes
+- previousStoryInsights # Lessons from previous story
+- (all other large text fields)
+```
+
+These are safely preserved in `docs/06-stories/` ملفات تخفيض السعر بدلا من ذلك.
+
+## ما الذي يتم الاحتفاظ به
+
+تبقى بيانات تعريف التتبع الأساسية فقط في Status.json:
+
+```text
+- story_id            # Story identifier
+- epic                # Parent epic
+- title               # Story title
+- owner               # Assigned agent
+- status              # Current status (ready/in-progress/blocked/done)
+- estimate            # Time estimate
+- created             # Creation timestamp
+- updated             # Last update timestamp
+- completed_at        # Completion timestamp
+- dependencies        # Dependent story IDs
+- branch              # Git branch name
+- summary             # Short summary
+- last_update         # Last modification message
+- assigned_at         # Assignment timestamp
+```
+
+## إخراج المثال
+
+```text
+🗜️  AgileFlow Status Compression
+   Purpose: Strip verbose fields from status.json
+   Target: Keep only essential tracking metadata
+
+💾 Backup created: docs/09-agents/status.json.backup
+
+📊 Before Compression:
+   Stories: 145
+   Size: 384KB
+   Lines: 12,847
+
+✅ Compression complete!
+
+📊 After Compression:
+   Stories: 145 (unchanged)
+   Size: 384KB → 42KB
+   Lines: 12,847 → 1,203
+   Saved: 89% (342KB)
+
+✅ Estimated tokens: ~10,500 (safely under 25000 limit)
+
+📋 Status Summary:
+   ready: 23 stories
+   in-progress: 8 stories
+   blocked: 2 stories
+   done: 112 stories
+
+💾 To restore original: cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+## متى تستخدم
+
+### استخدم الضغط عندما:
+
+1. **status.json exceeds 25,000 tokens**
+   - فشل الوكلاء بسبب "تجاوز محتوى الملف الحد الأقصى المسموح به من الرموز المميزة"
+
+2. **File is slow to process**
+   - كبير جدًا بالنسبة لنوافذ السياق
+   - يسبب مشاكل المهلة
+
+3. **After major epic completion**
+   - العديد من القصص المكتملة مع السجلات المطولة
+   - لقد نما المشروع بشكل ملحوظ
+
+4. **Quarterly maintenance**
+   - التنظيف المنتظم للحفاظ على تتبع العجاف
+
+### البديل: الجمع مع الأرشيف
+
+للحصول على نتائج أفضل، اجمع بين الضغط والأرشفة:
+
+```bash
+# Step 1: Archive completed stories older than 3 days
+bash .agileflow/scripts/archive-completed-stories.sh 3
+
+# Step 2: Compress remaining stories
+/agileflow:compress
+```
+
+تحقق هذه العملية المكونة من خطوتين أقصى قدر من التخفيض مع الحفاظ على التاريخ.
+
+## السلامة والنسخ الاحتياطي
+
+### النسخ الاحتياطي التلقائي
+
+قبل الضغط، يقوم الأمر بإنشاء نسخة احتياطية:
+```text
+docs/09-agents/status.json.backup
+```
+
+### لا فقدان البيانات
+
+- يبقى محتوى القصة الكاملة في `docs/06-stories/` ملفات تخفيض السعر
+- لا يتم تعديل ملفات تخفيض القصة
+- يتم ضغط فهرس Status.json فقط
+- يمكن دائمًا الاستعادة من النسخة الاحتياطية
+
+### استعادة إذا لزم الأمر
+
+```bash
+cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+تحتوي النسخة الاحتياطية على الملف الأصلي الكامل.
+
+## لماذا هذه العمارة؟
+
+### فصل المخاوف
+
+**status.json** = مؤشر تتبع خفيف الوزن
+- "ما هي القصص الموجودة؟"
+- "من يملك كل قصة؟"
+- "ما هو الوضع الحالي؟"
+- "متى تم تحديثه؟"
+
+**docs/06-stories/** = محتوى القصة كاملة
+- أوصاف كاملة
+- معايير القبول
+- قرارات معمارية
+- ملاحظات التنفيذ
+- استراتيجيات الاختبار
+
+**docs/09-agents/archive/** = البيانات التاريخية
+- Completed stories older than threshold
+- Monthly organization
+- Full retrieval capability
+
+### فوائد
+
+1. **Fast Indexing** - يقوم الوكلاء بقراءة Status.json بسرعة
+2. **Complete Content** - التفاصيل الكاملة في تخفيض القصة
+3. **Searchable** - يمكن أن grep ملفات القصة للمحتوى
+4. **Versionable** - يتم تتبع جميع الملفات بواسطة git
+5. **Archivable** - القصص القديمة لا تنفخ مؤشر التتبع
+
+## تقدير الرمز المميز
+
+يقوم الأمر بتقدير استخدام الرمز المميز:
+
+```text
+Token estimation formula: tokens ≈ bytes / 4
+
+Before: 384KB × 1024 bytes/KB ÷ 4 = 98,304 tokens
+After: 42KB × 1024 bytes/KB ÷ 4 = 10,752 tokens
+
+Saved: 87,552 tokens!
+```
+
+الهدف: احتفظ بـstatus.json أقل من 25000 رمز مميز (100 كيلو بايت مضغوطة).
+
+## تكامل سير العمل
+
+### مع وكيل الحافلة
+
+لا يؤثر ضغط Status.json على:
+- ناقل رسائل الوكيل (`docs/09-agents/bus/log.jsonl`)
+- التواصل والتنسيق مع الوكيل
+- تتبع حالة القصة
+
+### مع سي/سي دي
+
+يمكن إضافة الضغط إلى أتمتة CI:
+
+```yaml
+name: Maintenance
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Sunday 2am UTC
+
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive and compress
+        run: |
+          bash .agileflow/scripts/archive-completed-stories.sh 3
+          /agileflow:compress
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add docs/09-agents/
+          git diff --quiet && git diff --staged --quiet || \
+          git commit -m "chore(maintenance): archive and compress status"
+          git push
+```
+
+## السيناريوهات المشتركة
+
+### السيناريو 1: نمو المشروع بشكل كبير
+
+**Problem**: Status.json بحجم 250 كيلو بايت ويحتوي على 150 قصة
+**Solution**:
+```bash
+/agileflow:compress
+```
+**Result**: يتم تقليله إلى 30 كيلو بايت، بسهولة ضمن حدود الرمز المميز
+
+### السيناريو 2: العديد من القصص المكتملة
+
+**Problem**: 120 قصة مكتملة، 30 قصة نشطة؛ Status.json منتفخة
+**Solution**:
+```bash
+# Archive stories completed >7 days ago
+bash .agileflow/scripts/archive-completed-stories.sh 7
+
+# Then compress
+/agileflow:compress
+```
+**Result**: ينقل القصص القديمة إلى الأرشيف، ويضغط المتبقي
+
+### السيناريو 3: الصيانة الدورية
+
+**Problem**: هل ترغب في الحفاظ على الحالة.json هزيلًا تلقائيًا
+**Solution**: إضافة إلى جدول CI (الضغط الشهري)
+**Result**: دائمًا ضمن حدود الرمز المميز، معالجة سريعة للوكيل
+
+## استكشاف الأخطاء وإصلاحها
+
+### "status.json لا يزال كبيرًا جدًا بعد الضغط"
+
+حاول أرشفة أكثر عدوانية:
+```bash
+# Archive stories >3 days old instead of default 7
+bash .agileflow/scripts/archive-completed-stories.sh 3
+
+/agileflow:compress
+```
+
+### "فقدان المعلومات الهامة بعد الضغط"
+
+استعادة من النسخة الاحتياطية:
+```bash
+cp docs/09-agents/status.json.backup docs/09-agents/status.json
+```
+
+تحقق مما إذا كانت ملفات تخفيض القصة تحتوي على التفاصيل `docs/06-stories/`.
+
+### "لا يمكن العثور على تفاصيل القصة"
+
+محتوى القصة موجود في ملفات تخفيض السعر:
+```bash
+find docs/06-stories/ -name "US-*.md" | xargs grep "your search term"
+```
+
+## أفضل الممارسات
+
+1. **Regular Compression** - تشغيل شهري أو ربع سنوي
+2. **Archive Aggressively** - انقل القصص القديمة المكتملة أولاً
+3. **Back Up Before** - يقوم الضغط بإنشاء نسخة احتياطية تلقائيًا
+4. **Verify After** - التحقق من تقدير الرمز المميز في الإخراج
+5. **Commit Changes** - إضافة حالة مضغوطة إلى git
+6. **Document Policy** - سجل متى/لماذا يعمل الضغط
+7. **Test Restoration** - التحقق من عمل النسخ الاحتياطي إذا لزم الأمر
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: الحالة`](/commands/status) - عرض حالات القصة الحالية
+- [`/ Agileflow: التحقق من صحة`](/commands/validate) - التحقق من صحة نظام AgileFlow
+- البرنامج النصي للأرشيف: `bash .agileflow/scripts/archive-completed-stories.sh` - نقل القصص المكتملة إلى الأرشيف
+
+## التفاصيل الفنية
+
+### الملفات المعنية
+
+| File | Purpose |
+|------|---------|
+| `docs/09-agents/status.json` | Lightweight tracking index (compressed) |
+| `docs/09-agents/status.json.backup` | Automatic backup before compression |
+| `docs/06-stories/` | Full story markdown files (unchanged) |
+| `docs/09-agents/archive/YYYY-MM.json` | Historical completed stories |
+
+### تطبيق
+
+يستخدم البرنامج النصي للضغط `jq` لمعالجة JSON:
+
+```bash
+# Extract only essential fields for each story
+jq '[.[] | {story_id, epic, title, owner, status, estimate, created, updated, completed_at, dependencies, branch, summary, last_update, assigned_at}]' status.json > status-compressed.json
+```
+
+### حساب الرمز المميز
+
+التقدير التقريبي المستخدم في الإخراج:
+- 1 رمز مميز ≈ 4 أحرف/بايت (تقريبي)
+- ملف بحجم 100 كيلو بايت ≈ 25000 رمزًا
+- الهدف: <100 كيلو بايت للبقاء ضمن الحدود المسموح بها
+
+## التعليمات
+
+<Accordion type="multiple">
+  <AccordionItem value="delete">
+    <AccordionTrigger>Does compression delete story files?</AccordionTrigger>
+    <AccordionContent>
+      لا، يتم تعديل Status.json فقط. لم يتم تغيير تخفيض القصة في docs/06-stories/.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="undo">
+    <AccordionTrigger>Can I undo compression?</AccordionTrigger>
+    <AccordionContent>
+      نعم. يتم إنشاء نسخة احتياطية تلقائيا. مجرد استعادة: `cp docs/09-agents/status.json.backup docs/09-agents/status.json`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="when">
+    <AccordionTrigger>When should I compress?</AccordionTrigger>
+    <AccordionContent>
+      عندما يتجاوز حجمstatus.json 25 كيلو بايت، أو شهريًا كصيانة. ادمجها مع الأرشيف للحصول على أفضل النتائج.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="performance">
+    <AccordionTrigger>Does this affect agent performance?</AccordionTrigger>
+    <AccordionContent>
+      نعم يحسنها بشكل كبير. أصغر Status.json = قراءة أسرع وسياق أكثر توفرًا للوكلاء.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="git">
+    <AccordionTrigger>What about git history?</AccordionTrigger>
+    <AccordionContent>
+      جميع التغييرات ملتزمة. الإصدارات السابقة موجودة في سجل git إذا لزم الأمر.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="customize">
+    <AccordionTrigger>Can I customize which fields to keep?</AccordionTrigger>
+    <AccordionContent>
+      نعم، قم بتحرير البرنامج النصي للضغط للاحتفاظ بالحقول الإضافية إذا لزم الأمر لسير عملك.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

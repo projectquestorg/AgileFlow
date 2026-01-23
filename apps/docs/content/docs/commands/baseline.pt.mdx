@@ -1,0 +1,481 @@
+---
+title: /linha de base
+description: Marcar o estado atual como linha de base verificada
+---
+
+# /linha de base
+
+Crie pontos de verificação verificados que representam estados válidos do seu projeto. As linhas de base usam tags git e rastreamento de metadados para criar pontos de redefinição seguros, comparar resultados de testes ao longo do tempo e rastrear regressões de estados verificados.
+
+## Início rápido
+
+```bash
+# Create baseline (requires passing tests)
+/agileflow:baseline
+
+# Create with custom message
+/agileflow:baseline "Sprint 3 complete - all features tested"
+
+# Create for epic completion
+/agileflow:baseline "EP-0005: User authentication complete"
+```
+
+O comando irá:
+1. Verifique se os testes estão passando
+2. Verifique se a árvore de trabalho do git está limpa
+3. Crie tag git com carimbo de data/hora
+4. Atualizar metadados (baseline_commit, baseline_history)
+5. Marcar histórias como verificadas nesta linha de base
+6. Exibir relatório de verificação final
+
+## Principais recursos
+
+### Verificação de segurança
+
+Antes de criar a linha de base, verifique:
+
+- ✅ **Tests passing** - Todos os testes devem passar (0 falhas)
+- ✅ **Clean git** - Nenhuma alteração não confirmada
+- ✅ **Story tests passing** - Todas as histórias em andamento passam nos testes
+- ✅ **Session initialized** -ambiente.json existe
+
+Se alguma verificação falhar, a criação da linha de base será bloqueada com instruções claras.
+
+### Tags com carimbo de data/hora
+
+As linhas de base criam tags git com carimbos de data/hora precisos:
+
+```text
+agileflow-baseline-20251222-143000
+                    YYYYMMDD-HHMMSS
+```
+
+Use essas tags para:
+- Redefinir para o ponto de verificação exato: `git checkout agileflow-baseline-...`
+- Compare versões: `git diff agileflow-baseline-20251206... agileflow-baseline-20251215...`
+- Compartilhe com a equipe: `git push origin agileflow-baseline-...`
+
+### Rastreamento de Metadados
+
+Todas as informações de linha de base armazenadas em:
+
+```text
+docs/00-meta/environment.json
+  ├─ baseline_commit: "abc123def456"
+  └─ baseline_established: "2025-12-06T14:30:00Z"
+
+docs/09-agents/session-state.json
+  └─ baseline_history: [
+       {
+         "tag": "agileflow-baseline-20251206-143000",
+         "commit": "abc123def456",
+         "created_at": "2025-12-06T14:30:00Z",
+         "message": "Sprint 3 complete",
+         "test_count": 42,
+         "stories_verified": ["US-0043", "US-0044", "US-0045"]
+       }
+     ]
+
+docs/06-stories/US-0042.md (frontmatter)
+  └─ verified_at_baseline: "agileflow-baseline-20251206-143000"
+```
+
+### Histórico da linha de base
+
+Veja todas as linhas de base criadas:
+
+```text
+Baselines (most recent first):
+
+1. agileflow-baseline-20251206-143000
+   Date: 2025-12-06 14:30:00
+   Message: Sprint 3 complete - all features tested
+   Tests: 42/42 passing
+   Stories: US-0043, US-0044, US-0045
+
+2. agileflow-baseline-20251130-103000
+   Date: 2025-11-30 10:30:00
+   Message: Before auth refactor
+   Tests: 38/38 passing
+   Stories: US-0040, US-0041
+```
+
+## Uso
+
+### Linha de base básica
+
+```bash
+/agileflow:baseline
+```
+
+Cria uma linha de base com a mensagem padrão "Linha de base - todos os testes foram aprovados"
+
+### Com mensagem personalizada
+
+```bash
+/agileflow:baseline "Sprint 3 complete - 15 stories done"
+```
+
+Mensagens significativas ajudam você a lembrar o que essa linha de base representa.
+
+### Mensagem multilinha
+
+```bash
+/agileflow:baseline "
+Release v1.0 - Ready for production
+
+All features tested and approved
+Security audit passed
+Performance benchmarks met
+Documentation complete
+"
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `MESSAGE` | No | "Baseline - all tests passing" | Descriptive message for this baseline |
+
+## Exemplos
+
+### Após a conclusão épica
+
+```bash
+# All stories in EP-0005 are done and tested
+/agileflow:baseline "EP-0005: User authentication complete"
+
+# Output:
+# ✅ Baseline Established
+#
+# Tag: agileflow-baseline-20251206-143000
+# Commit: abc123def456
+# Message: EP-0005: User authentication complete
+# Tests: 42/42 passing
+# Stories: US-0039, US-0040, US-0041, US-0042
+#
+# Epic is now marked as verified baseline!
+```
+
+### Antes da refatoração arriscada
+
+```bash
+# Take safety checkpoint before refactoring
+/agileflow:baseline "Before auth system refactor"
+
+# Make changes...
+# If something breaks, reset with:
+# git checkout agileflow-baseline-20251206-143000
+```
+
+### Conclusão do sprint
+
+```bash
+/agileflow:baseline "Sprint 12 complete - 15 stories finished, 58 tests passing"
+
+# Sprint checkpoint created
+# Can track progress across sprints
+```
+
+### Pronto para lançamento
+
+```bash
+/agileflow:baseline "v1.0 release candidate - all tests passing, security audit done"
+
+# Release checkpoint saved
+# Can reference later if issues arise
+```
+
+## Fluxo de trabalho
+
+### Verificações pré-voo
+
+```bash
+1. Check session harness initialized
+   └─ docs/00-meta/environment.json exists
+
+2. Verify tests passing
+   └─ Run: npm test (or configured test command)
+   └─ Exit code must be 0
+
+3. Check git working tree clean
+   └─ No uncommitted changes
+   └─ No untracked files
+
+4. Verify story test status
+   └─ All in_progress stories have test_status: passing
+```
+
+### Criar linha de base
+
+```bash
+1. Generate tag name with timestamp
+   └─ agileflow-baseline-YYYYMMDD-HHMMSS
+
+2. Get baseline message (from arg or user input)
+   └─ Default: "Baseline - all tests passing"
+
+3. Create git annotated tag
+   └─ git tag -a "agileflow-baseline-..." -m "message"
+
+4. Update environment.json
+   └─ baseline_commit: commit SHA
+   └─ baseline_established: ISO timestamp
+
+5. Update session-state.json
+   └─ Add to baseline_history array
+
+6. Update story metadata
+   └─ Each verified story gets verified_at_baseline tag
+
+7. Display final report
+```
+
+## Saída
+
+### Relatório de sucesso
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Baseline Established
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tag: agileflow-baseline-20251206-143000
+Commit: abc123def456
+Message: Sprint 3 complete - all features tested
+Timestamp: 2025-12-06 14:30:00
+
+Verification Status:
+  ✅ Tests: 42/42 passing
+  ✅ Stories: 3 verified (US-0043, US-0044, US-0045)
+  ✅ Git: Clean working tree
+  ✅ Branch: main
+
+This baseline can be used to:
+  • Reset to known-good state (git checkout <tag>)
+  • Compare test results over time
+  • Track regression from this point
+  • Verify deployment readiness
+
+Baseline saved in:
+  • Git tag: agileflow-baseline-20251206-143000
+  • environment.json: baseline_commit updated
+  • session-state.json: baseline history
+  • Story metadata: verified_at_baseline
+
+To push baseline to remote:
+  git push origin agileflow-baseline-20251206-143000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Falha: testes não aprovados
+
+```text
+❌ Cannot Create Baseline - Tests Failing
+
+Command: npm test
+Result: 2/42 tests failed
+
+Failed tests:
+  ❌ auth.test.ts:42 - Session timeout handling
+  ❌ api.test.ts:15 - Rate limiting check
+
+Baselines require all tests passing.
+
+Options:
+  1. Fix failing tests
+  2. Skip failing tests (creates PARTIAL baseline)
+  3. Cancel baseline creation
+
+Run /agileflow:verify to see full details
+Then fix the tests and try again.
+```
+
+### Falha: Git Sujo
+
+```text
+❌ Cannot Create Baseline - Uncommitted Changes
+
+Working tree changes:
+  M src/components/Profile.tsx
+  M src/api/auth.ts
+  ?? temp/debug.log
+
+Baselines require clean git state.
+
+Options:
+  1. Commit changes first
+  2. Stash changes and create baseline
+  3. Cancel baseline creation
+
+Commit your changes and try again.
+```
+
+### Falha: não inicializado
+
+```text
+⚠️  Session Harness Not Initialized
+
+The baseline command requires session harness configuration.
+
+Run /agileflow:session:init to:
+1. Detect your project type
+2. Create environment.json
+3. Enable baseline creation
+
+Or manually create docs/00-meta/environment.json
+```
+
+## Quando criar linhas de base
+
+### Melhores tempos
+
+| When | Message |
+|------|---------|
+| After epic completion | "EP-0005: User authentication complete" |
+| After sprint ends | "Sprint 12 complete - 15 stories finished" |
+| Before risky refactor | "Before auth system refactor" |
+| Before major update | "Before updating TensorFlow" |
+| At release milestone | "v1.0 release candidate" |
+
+### Benefícios
+
+- **Reset point**: `git checkout agileflow-baseline-...` voltar
+- **Regression detection**: Compare os testes atuais com a linha de base
+- **Progress tracking**: Mostrar evolução ao longo do tempo
+- **Release safety**: Marca o estado implantável verificado
+- **Team sharing**: Enviar tags para acesso da equipe
+
+## Recursos avançados
+
+### Comparar com a linha de base
+
+Veja o que mudou desde a linha de base:
+
+```bash
+# Show commits since baseline
+git log agileflow-baseline-20251206-143000..HEAD
+
+# Show code changes since baseline
+git diff agileflow-baseline-20251206-143000..HEAD
+```
+
+### Listar todas as linhas de base
+
+```bash
+# Show all baseline tags
+git tag -l "agileflow-baseline-*" --sort=version:refname
+```
+
+### Restaurar da linha de base
+
+```bash
+# Create safety backup first
+git checkout -b backup/pre-restore
+
+# Restore to specific baseline
+git checkout agileflow-baseline-20251206-143000
+
+# Or restore to latest baseline
+git checkout $(git tag -l "agileflow-baseline-*" --sort=version:refname | tail -1)
+```
+
+### Empurre para a equipe
+
+```bash
+# Push specific baseline to remote
+git push origin agileflow-baseline-20251206-143000
+
+# Push all baselines
+git push origin "refs/tags/agileflow-baseline-*"
+```
+
+## Integração com outros comandos
+
+| Command | Integration |
+|---------|-------------|
+| `/verify` | Baseline requires passing tests (runs verify) |
+| `/babysit` | Babysit guides to baseline at feature completion |
+| `/pr` | PR can reference baseline in description |
+| `/session:init` | Initializes baseline capability |
+| `/session:resume` | Checks baseline status at session start |
+
+## Fluxo de Desenvolvimento Típico
+
+```text
+Start Sprint
+  ↓
+Work on stories with /agileflow:babysit
+  ↓
+Verify tests with /agileflow:verify
+  ↓
+Code review with /agileflow:review
+  ↓
+Create PR with /agileflow:pr
+  ↓
+Merge PR
+  ↓
+Sprint complete - Run /agileflow:baseline
+  ↓
+Next sprint
+```
+
+## Pontas
+
+### Crie com frequência
+
+```bash
+# Weekly baselines
+/agileflow:baseline "Week 50 complete"
+
+# Per-epic baselines
+/agileflow:baseline "EP-0005 complete"
+
+# Pre-risky-change baselines
+/agileflow:baseline "Before major refactor"
+```
+
+### Use mensagens significativas
+
+**Good messages**:
+```text
+"Sprint 12 complete - user auth feature"
+"v1.0 release candidate"
+"Before TensorFlow upgrade"
+"Payment integration verified"
+```
+
+**Bad messages**:
+```text
+"baseline"
+"checkpoint"
+"test"
+```
+
+### Enviar para controle remoto para a equipe
+
+```bash
+# Share baselines with team
+git push origin agileflow-baseline-20251206-143000
+
+# Team can check out shared baseline
+git checkout agileflow-baseline-20251206-143000
+```
+
+### Acompanhe as linhas de base ao longo do tempo
+
+```bash
+# See progression of baselines
+git log --all --oneline --decorate | grep baseline
+
+# Useful for tracking progress through project
+```
+
+## Comandos Relacionados
+
+- [`/verificar`](/commands/verify) - Executar testes (necessários para linha de base)
+- [`/babá`](/commands/babysit) - Implementação (termina com sugestão de linha de base)
+- [`/sessão:init`](/commands/session-init) - Inicializar capacidade de linha de base
+- [`/sessão:currículo`](/commands/session-resume) - Iniciar sessão com verificação de linha de base
+- [`/pr`](/commands/pr) - Gerar PR (linha de base de referência, se relevante)

@@ -1,0 +1,134 @@
+---
+title: /session:fin
+description: Terminer la session en cours et éventuellement nettoyer l'arbre de travail
+---
+
+# /session:fin
+
+Terminez proprement une session Claude Code, en supprimant son verrou et éventuellement en nettoyant l'arbre de travail git.
+
+## Démarrage rapide
+
+```bash
+/agileflow:session:end
+```
+
+## Comment ça marche
+
+1. Affiche les informations sur la session en cours
+2. Vous demande si vous souhaitez supprimer l'arbre de travail git
+3. Supprime le fichier de verrouillage de session
+4. Supprime éventuellement le répertoire worktree
+
+## Exemple d'interaction
+
+```
+Ending Session 2 "auth"
+
+Path: /home/user/myproject-auth
+Branch: session-2
+Created: 2 hours ago
+
+Do you want to remove the git worktree?
+
+○ Keep worktree (just end session tracking)
+○ Remove worktree (delete directory and branch)
+```
+
+## Options de nettoyage
+
+| Option | What Happens |
+|--------|--------------|
+| **Keep worktree** | Session lock removed, directory stays. You can `cd` there and work manually. |
+| **Remove worktree** | Directory deleted, branch optionally removed, full cleanup. |
+
+## Quand utiliser chaque option
+
+### Conserver l'arbre de travail
+
+- Tu veux continuer à travailler là-bas sans Claude
+- Vous devez conserver les modifications non validées
+- Vous reviendrez sur ce travail plus tard
+
+### Supprimer l'arbre de travail
+
+- Le travail est terminé et fusionné
+- Vous souhaitez libérer de l'espace disque
+- Nettoyer les expériences abandonnées
+
+## Fin de la session en cours
+
+Lors de l'exécution à partir de votre session en cours :
+
+```bash
+/agileflow:session:end
+# This ends your current session
+# You'll see a warning before proceeding
+```
+
+## Mettre fin aux autres sessions
+
+Vous pouvez également mettre fin aux sessions auxquelles vous n'êtes pas actuellement :
+
+```bash
+/agileflow:session:status
+# See all sessions
+
+/agileflow:session:end
+# Select which session to end
+```
+
+## Ce qui est nettoyé
+
+### Verrouillage de session
+Toujours supprimé :
+```
+.agileflow/sessions/2.lock → deleted
+```
+
+### Entrée de registre
+Mis à jour:
+```json
+{
+  "sessions": {
+    "2": {
+      "ended": "2025-12-26T15:00:00Z",
+      "status": "ended"
+    }
+  }
+}
+```
+
+### Arbre de travail Git (facultatif)
+Si vous choisissez de supprimer :
+```bash
+git worktree remove /home/user/myproject-auth
+# Directory deleted
+# Branch optionally deleted
+```
+
+## Contrôles de sécurité
+
+La commande évite la perte accidentelle de données :
+
+- **Uncommitted changes**: Avertissement affiché si l'arbre de travail contient du travail non validé
+- **Main session**: Impossible de supprimer l'arbre de travail principal du projet
+- **Active sessions**: Avertissement si vous essayez de mettre fin à une autre session active
+
+## Nettoyage de session obsolète
+
+Si une session s'arrête de manière inattendue :
+
+```bash
+/agileflow:session:status
+# Shows "stale" for dead sessions
+
+/agileflow:session:end
+# Select the stale session to clean up
+```
+
+## Commandes associées
+
+- [`/session:statut`](/commands/session-status) - Vérifiez d'abord l'état de la session
+- [`/session:nouveau`](/commands/session-new) - Créer une session de remplacement
+- [`/session:historique`](/commands/session-history) - Voir les sessions terminées

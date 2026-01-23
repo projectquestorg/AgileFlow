@@ -1,0 +1,405 @@
+---
+title: / جليسة أطفال
+description: مرشد تفاعلي لتنفيذ الميزات الشاملة
+---
+
+# / جليسة أطفال
+
+مرشد تفاعلي يرشدك خلال تنفيذ الميزات بدءًا من متطلبات اللغة الإنجليزية البسيطة وحتى طلبات السحب المكتملة. يجمع Babysit بين جمع السياق الآلي واقتراحات المهام الذكية والمساعدة العملية في التعليمات البرمجية.
+
+## بداية سريعة
+
+```bash
+/agileflow:babysit
+```
+
+الأمر سوف:
+1. جمع كل سياق المشروع (القصص والملاحم والاختبارات والوثائق)
+2. تقديم اقتراحات المهام الذكية على أساس الأولوية والاستعداد
+3. إرشادك خلال التنفيذ خطوة بخطوة
+4. قم بتحديث حالة مشروعك أثناء عملك
+5. قم بإنشاء أوصاف العلاقات العامة عندما تكون جاهزة
+
+## الميزات الرئيسية
+
+### اقتراحات المهام الذكية
+
+عندما تبدأ `/babysit`، فهو يحلل مشروعك ويوصي بما يلي:
+
+- **READY stories** (اكتملت جميع أجهزة تكييف الهواء، وتم إيقاف الاختبارات) - الأولوية القصوى
+- **Blocked stories** (مع مسارات إلغاء الحظر الواضحة) - أولوية عالية
+- **Near-complete epics** (تم إنجاز أكثر من 80% من القصص) - أكمل ما بدأته
+- **Roadmap priorities** - عمل استراتيجي مهم
+- **Research gaps** - العمل التحضيري لتجنب التصحيح لاحقا
+
+يتم ترتيب المهام حسب ما قد يعطيه المطور الحقيقي الأولوية، وليس فقط حسب الحداثة أو الترتيب.
+
+### إرشادات التنفيذ العملي
+
+لكل قصة أو ميزة:
+
+```text
+1. Validate story readiness (acceptance criteria, tests)
+2. Read architecture context relevant to the task
+3. Plan implementation in small steps
+4. Apply code changes incrementally with diffs
+5. Run tests after each change
+6. Update project status as you progress
+7. Generate PR description when complete
+```
+
+### وكيل خبير التفريخ
+
+بالنسبة للأعمال المعقدة، تقوم خدمة babysit تلقائيًا باكتشاف النطاق وتوليد المتخصصين:
+
+- **Database work** → خبير AG-DATABASE
+- **API endpoints** → خبير AG-API
+- **UI components** → خبير AG-UI
+- **Testing** → خبير اختبار AG
+- **Documentation** → خبير وثائق AG
+
+يتعامل المتخصصون مع العمل العميق المركز بينما تقوم مجالسة الأطفال بتنسيق التدفق الإجمالي.
+
+### تتبع التقدم
+
+يتم تتبع جميع الأعمال من خلال قائمة المهام:
+
+```text
+1. Run context script (loads all project state)
+2. Present task suggestions
+3. Read task-specific documentation
+4. Validate story readiness
+5. Plan implementation steps
+6. Apply code changes with tests
+7. Update project status
+8. Generate PR description
+9. Mark complete
+```
+
+يمكنك أن ترى بالضبط أين أنت وما تبقى.
+
+## الاستخدام
+
+### أساسي - اسمح لمجالسة الأطفال باقتراح العمل
+
+```bash
+/agileflow:babysit
+```
+
+سيقوم Babysit بتحليل مشروعك ويسألك عما ترغب في العمل عليه.
+
+### استئناف العمل الحالي
+
+```bash
+/agileflow:babysit
+```
+
+إذا كان لديك قصص في `in_progress` الحالة، ستعرض جليسة الأطفال استئنافها.
+
+### العمل على قصة محددة
+
+يمكنك إخبار جليسة الأطفال "أريد العمل على US-0042" وسيقوم بما يلي:
+- قم بتحميل ملف القصة
+- التحقق من أنها جاهزة
+- التخطيط للتنفيذ
+- يرشدك من خلال بناءه
+
+## حدود
+
+يقبل Babysit إدخال اللغة الطبيعية بشكل حر:
+
+| Input | Effect |
+|-------|--------|
+| `"Add user profile page"` | Create new feature or find matching story |
+| `"US-0042"` | Work on specific story |
+| `"Continue"` | Resume the last story you were working on |
+| `"What should I work on?"` | Get recommendations (default) |
+
+## وضع الحلقة المستقلة
+
+Babysit يدعم التنفيذ المستقل من خلال **Loop Mode**، الذي يعالج قصص الملحمة بأكملها تلقائيًا.
+
+### بداية سريعة
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+```
+
+### كيف يعمل
+
+```text
+1. Initialize loop for epic
+2. Load first "ready" story
+3. Work on implementation
+4. When Claude stops → Stop hook runs tests
+   - If tests PASS → mark story complete, load next
+   - If tests FAIL → show errors, continue fixing
+5. Repeat until epic complete or max iterations
+```
+
+### حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
+| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MAX` | No | 20 | Maximum iterations (safety limit) |
+
+### التحكم في الحلقة
+
+```bash
+# Check loop status
+node scripts/ralph-loop.js --status
+
+# Stop the loop manually
+node scripts/ralph-loop.js --stop
+
+# Reset loop state
+node scripts/ralph-loop.js --reset
+```
+
+### متى يتم استخدام وضع الحلقة
+
+**Good for:**
+- معالجة ملحمة محددة المعالم بقصص واضحة
+- التطوير القائم على الاختبار (تحدد الاختبارات "تم")
+- معالجة دفعة قصص متعددة
+
+**Not good for:**
+- العمل الاستكشافي دون معايير قبول واضحة
+- قصص تتطلب مراجعة بشرية قبل المتابعة
+- عمل معقد متعدد المجالات يحتاج إلى التنسيق
+
+للحصول على وثائق وضع الحلقة الشاملة بما في ذلك الوضع المرئي ووضع التغطية، راجع [دليل ميزات وضع الحلقة](/features/loop-mode).
+
+### جلسة المثال
+
+```text
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+
+→ Ralph Loop Initialized
+  Epic: EP-0042
+  Stories: 5 ready, 7 total
+  Starting: US-0015 "Add user authentication"
+
+[Claude implements US-0015...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0015 complete
+  → Moving to US-0016
+
+[Claude implements US-0016...]
+
+→ Stop Hook: Running tests...
+  ✗ 2 tests failing
+  → Fix errors and continue
+
+[Claude fixes tests...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0016 complete
+  → Moving to US-0017
+
+[...continues until epic complete...]
+
+→ EPIC COMPLETE!
+  EP-0042 finished in 12 iterations
+  5 stories completed
+```
+
+## أمثلة
+
+### ابدأ التنفيذ الجديد
+
+```bash
+/agileflow:babysit
+# Babysit suggests: "US-0042: User Login API is READY"
+# You confirm → Implementation begins
+# Babysit guides through: Plan → Code → Test → PR
+```
+
+### أكمل العديد من القصص ذات الصلة
+
+```bash
+/agileflow:babysit
+# Babysit shows: "EP-0005 is 80% done. 1 story left: US-0051"
+# You accept → Start final story
+# Babysit tracks progress
+# When done → Ready for baseline or release
+```
+
+### متطلبات غير معروفة
+
+```bash
+/agileflow:babysit
+# You: "I want user authentication but not sure the best way"
+# Babysit: "Should I research JWT vs sessions first? This prevents debugging later"
+# You: "Yes, research"
+# Babysit: Runs /agileflow:research:ask, saves findings, then plans implementation
+```
+
+## نظرة عامة على سير العمل
+
+```text
+Start → Gather Context → Suggest Tasks → Choose Task
+  ↓
+Read Story & Architecture → Validate Readiness → Plan Steps
+  ↓
+Implement Code → Run Tests → Update Status
+  ↓
+Generate PR → Finish
+```
+
+## تعريف جاهز
+
+قبل التنفيذ، يجب على مجالسة الأطفال التأكد من أن القصص تحتوي على:
+
+- ✓ معايير القبول (التنسيق المحدد/متى/ثم)
+- ✓ سياق الهندسة المعمارية مع الاستشهادات المصدر
+- ✓ بذرة الاختبار في docs/07-testing/
+- ✓ حل التبعيات وتوثيقها
+- ✓ رؤى سابقة من القصص ذات الصلة
+
+في حالة فقدان أي منها، ستقترح جليسة الأطفال إكمالها أولاً (تبقى القصص "مسودة" حتى تصبح جاهزة).
+
+## تحميل السياق
+
+عندما تبدأ في مجالسة الأطفال، فإنه يقوم بتشغيل البرنامج النصي للسياق تلقائيًا:
+
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+يجمع هذا الأمر الفردي:
+- حالة Git، الفرع، التغييرات غير الملتزم بها
+- جميع القصص والملاحم من Status.json
+- حالة الجلسة والجلسات النشطة
+- هيكل التوثيق
+- الملاحظات البحثية (الأحدث أولاً)
+- رسائل الوكيل الأخيرة
+- وجود الملف الرئيسي
+
+استدعاء نص واحد، سياق شامل، بدء تشغيل سريع.
+
+## متى تستخدم
+
+### أفضل ل
+
+- **Starting implementation** - بحاجة إلى إرشادات بشأن ما يجب العمل عليه
+- **Picking up mid-feature** - استئناف من حيث توقفت
+- **Epic completion** - إنهاء القصص النهائية في مجموعة الميزات
+- **Uncertain requirements** - أسئلة البحث قبل البرمجة
+- **Multi-step features** - العمل المعقد عبر الملفات
+- **Testing validation** - التأكد من اجتياز الاختبارات قبل العلاقات العامة
+
+### ليس من أجل
+
+- **Quick fixes** (أخطاء مطبعية، سطر واحد) - فقط افعلها بنفسك
+- **Pure research** - يستخدم `/agileflow:research:ask` بدلاً من
+- **Architectural decisions** - يستخدم `/agileflow:adr` بدلاً من
+- **Documentation only** - يستخدم `/agileflow:docs` بدلاً من
+
+## نمط الإخراج
+
+يستخدم Babysit مخرجات واضحة وقابلة للتنفيذ:
+
+- **Headings** للأقسام الرئيسية
+- **Short bullets** للخيارات والتوضيحات
+- **Code blocks** للفرق والأمثلة
+- **Questions** لتوجيه قراراتك (لا يطلب منك أبدًا "الكتابة")
+- **Progress updates** أثناء عملك
+
+ينتهي كل رد بسؤال الخطوة التالية حتى تكون أنت المسيطر دائمًا.
+
+## التكامل مع الأوامر الأخرى
+
+يعمل Babysit جنبًا إلى جنب مع أوامر AgileFlow الأخرى:
+
+| Task | Command |
+|------|---------|
+| Need to verify tests? | `/agileflow:verify` |
+| Need PR description? | `/agileflow:pr` |
+| Need code review? | `/agileflow:review` |
+| Want to research first? | `/agileflow:research:ask` |
+| Need impact analysis? | `/agileflow:impact` |
+| Ready for baseline? | `/agileflow:baseline` |
+
+## نصائح
+
+### احصل على اقتراحات أفضل
+
+- احتفظ بتراكم قصتك في Status.json
+- اكتب معايير قبول واضحة
+- قم بتمييز القصص على أنها جاهزة عند اكتمالها
+- حافظ على تحديث مستندات الهندسة المعمارية
+
+### تطبيقات ناجحة
+
+- دع مجالسة الأطفال تتحقق من جاهزية القصة أولاً
+- اقرأ قسم سياق الهندسة المعمارية
+- التنفيذ بخطوات صغيرة (ليس كلها مرة واحدة)
+- قم بإجراء الاختبارات بعد كل تغيير
+- اطلب المساعدة إذا علقت
+
+### تنسيق متعدد الخبراء
+
+بالنسبة للميزات المعقدة، ستقوم خدمة مجالسة الأطفال تلقائيًا بما يلي:
+- خبير Spawn API للعمل في الواجهة الخلفية
+- خبير Spawn UI للعمل في الواجهة الأمامية
+- قم بتشغيل كلاهما بالتوازي إذا كان مستقلاً
+- تنسيق التكامل النهائي
+
+لا تحتاج إلى إدارة العديد من الوكلاء يدويًا - حيث تتولى مجالسة الأطفال ذلك.
+
+## الأنماط الشائعة
+
+### "لا أعرف ما العمل عليه"
+
+```text
+/agileflow:babysit
+→ Babysit shows ranked suggestions
+→ Pick the one that interests you
+→ Let babysit guide the implementation
+```
+
+### "أريد أن أنهي هذه الملحمة"
+
+```text
+/agileflow:babysit
+→ "EP-0005 is 80% done, 2 stories left"
+→ Choose story
+→ Complete it with babysit's guidance
+→ Move to next story
+→ When done: /agileflow:baseline "EP-0005 complete"
+```
+
+### "أحتاج إلى البحث في هذا أولاً"
+
+```text
+/agileflow:babysit
+→ "Need to understand JWT patterns first?"
+→ "Yes, research"
+→ /agileflow:research:ask TOPIC="JWT best practices"
+→ Copy research results back
+→ Babysit plans implementation based on research
+→ Code with confidence
+```
+
+## الأوامر ذات الصلة
+
+- [`/ملحمة`](/commands/epic) - إنشاء ملحمة جديدة بالقصص
+- [`/قصة`](/commands/story) - إنشاء قصص فردية
+- [`/التحقق`](/commands/verify) - تشغيل الاختبارات
+- [`/العلاقات العامة`](/commands/pr) - توليد طلب السحب
+- [`/مراجعة`](/commands/review) - مراجعة الكود
+- [`/ تأثير`](/commands/impact) - تحليل تأثير التغيير
+- [`/ السياق`](/commands/context) - البحث والسياق
+- [`/خط الأساس`](/commands/baseline) - إنشاء نقطة تفتيش تم التحقق منها
+
+## الميزات ذات الصلة
+
+- [وضع الحلقة](/features/loop-mode) - التوثيق الكامل لمعالجة القصة المستقلة
+- [الوضع المرئي](/features/visual-mode) - التحقق من لقطة الشاشة لتطوير واجهة المستخدم
+- [سياق مدمج](/features/compact-context) - الحفاظ على السياق خلال الجلسات الطويلة

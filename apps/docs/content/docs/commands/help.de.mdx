@@ -1,0 +1,255 @@
+---
+title: /helfen
+description: Zeigen Sie die Übersicht und Befehle des AgileFlow-Systems an
+---
+
+# /helfen
+
+Zeigen Sie einen umfassenden Überblick über das AgileFlow-System, die Ordnerstruktur, Schlüsselkonzepte und alle verfügbaren Befehle an.
+
+## Schnellstart
+
+```bash
+/agileflow:help
+```
+
+Zeigt die vollständige AgileFlow-Systemübersicht ohne erforderliche Argumente.
+
+## Parameter
+
+Dieser Befehl benötigt keine Parameter – er zeigt automatisch die vollständige Systemübersicht an.
+
+## Was es anzeigt
+
+Der Hilfebefehl bietet einen Überblick über Folgendes auf einem Bildschirm:
+
+### 1. Ordnerübersicht
+Zeigt die Dokumentationsstruktur und was wo lebt:
+
+<FileTree>
+  <Folder name="docs">
+    <Folder name="00-meta" />
+    <Folder name="01-brainstorming" />
+    <Folder name="02-practices" />
+    <Folder name="03-decisions" />
+    <Folder name="04-architecture" />
+    <Folder name="05-epics" />
+    <Folder name="06-stories" />
+    <Folder name="07-testing" />
+    <Folder name="08-project" />
+    <Folder name="09-agents" />
+    <Folder name="10-research" />
+  </Folder>
+</FileTree>
+
+### 2. Kernkonzepte
+Erklärt die wichtigsten AgileFlow-Konzepte:
+- **Epics**: Große Features, aufgeteilt in Geschichten
+- **Stories**: Einzelne Arbeitselemente mit Akzeptanzkriterien
+- **ADRs**: Architekturentscheidungsaufzeichnungen, die Entwurfsentscheidungen dokumentieren
+- **status.json**: Zentrale Status-Tracking-Datei mit Story-Fortschritt
+- **bus/log.jsonl**: Kommunikationsprotokoll des Agenten
+
+### 3. Täglicher Arbeitsablauf
+Beschreibt den typischen Entwicklungsablauf:
+1. Wählen Sie eine Story aus status.json aus
+2. Akzeptanzkriterien umsetzen
+3. Schreiben Sie Tests und führen Sie sie aus
+4. Pull-Anfrage erstellen
+5. Story-Status aktualisieren
+
+**WIP Limit**: Maximal 2 Geschichten pro Agent gleichzeitig.
+
+### 4. Alle verfügbaren Befehle
+Listet über 40 AgileFlow-Befehle nach Kategorien geordnet auf:
+- **Planning**: episch, Geschichte, Sprint, Deps, Auto
+- **Tracking**: Status, Board, Blocker, Metriken, Geschwindigkeit
+- **Development**: babysitten, überprüfen, überprüfen, PR, Wirkung
+- **Operations**: ci, bereitstellen, Änderungsprotokoll, Pakete, Tests
+- **Documentation**: ADR, Dokumente, Readme-Synchronisierung, Forschung, Kontext
+- **Collaboration**: zuweisen, übergeben, aktualisieren, retro, Feedback
+- **Advanced**: Multi-Experte, Agent, Konfiguration, Diagnose, Validierung-Expertise
+
+## Beispielausgabe
+
+```text
+========================================
+AGILEFLOW SYSTEM OVERVIEW
+========================================
+
+📁 FOLDER MAP
+├── 00-meta/          Metadata, config
+├── 01-brainstorming/ Ideas & proposals
+├── 02-practices/     Your practices
+├── 03-decisions/     Architecture decisions
+├── 04-architecture/  System design docs
+├── 05-epics/         Feature epics
+├── 06-stories/       User stories
+├── 07-testing/       Test documentation
+├── 08-project/       Project management
+├── 09-agents/        Status & comms
+└── 10-research/      Research notes
+
+📊 KEY CONCEPTS
+- Epics: Large features (EP-0001)
+- Stories: Individual work (US-0001)
+- ADRs: Design decisions (ADR-0001)
+- status.json: Progress tracking
+- bus/log.jsonl: Agent communication
+
+⚙️ DAILY WORKFLOW
+1. Pick story from status.json
+2. Implement to acceptance criteria
+3. Write and run tests
+4. Create pull request
+5. Update story status
+⚠️ WIP Limit: Max 2 stories/agent
+
+📋 COMMANDS (40+)
+
+PLANNING
+  /epic        Create feature epic with stories
+  /story       Create user story with AC
+  /sprint      Data-driven sprint planning
+  /deps        Visualize dependency graph
+  /auto        Auto-generate stories from spec
+
+TRACKING
+  /status      Update story status
+  /board       Visual kanban board
+  /blockers    Track and resolve blockers
+  /metrics     Analytics dashboard
+  /velocity    Track velocity and forecast
+
+DEVELOPMENT
+  /babysit     Interactive mentor
+  /verify      Run tests and update status
+  /review      AI-powered code review
+  /pr          Generate PR description
+  /impact      Analyze change impact
+
+[... more commands ...]
+
+========================================
+```
+
+## Nutzungsmuster
+
+Verwenden Sie den Befehl „help“, wenn:
+- **New to AgileFlow**: Erhalten Sie einen vollständigen Systemüberblick
+- **Forgot a command**: Kurzreferenz zu Befehlen
+- **Onboarding team members**: Erklärt die Systemstruktur
+- **Need quick reference**: Überblick über alles auf einem Bildschirm
+
+## Befehlskategorien
+
+### Planungsbefehle
+Arbeit erstellen und organisieren:
+- `epic` - Erstellen Sie Epen mit Geschichten
+- `story` - Erstellen Sie individuelle Geschichten
+- `sprint` - Sprintplanung mit Prognose
+- `deps` - Abhängigkeitsvisualisierung
+- `auto` - Geschichten automatisch generieren
+
+### Tracking-Befehle
+Fortschritt überwachen:
+- `status` - Aktualisieren Sie den Story-Status
+- `board` - Kanban-Board-Ansicht
+- `blockers` - Blockerverfolgung
+- `metrics` - Analytik
+- `velocity` - Geschwindigkeitsverfolgung
+
+### Entwicklungsbefehle
+Implementieren Sie Funktionen:
+- `babysit` - Interaktiver Mentor
+- `verify` - Testläufer
+- `review` - Codeüberprüfung
+- `pr` - PR-Generator
+- `impact` - Wirkungsanalyse
+
+### Operationsbefehle
+DevOps und Releases:
+- `ci` - CI/CD-Setup
+- `deploy` – Bereitstellungspipeline
+- `changelog` - Automatisches Änderungsprotokoll
+- `packages` - Abhängigkeitsmanagement
+- `tests` - Testinfrastruktur
+
+### Dokumentationsbefehle
+Dokumente pflegen:
+- `adr` - Architekturentscheidungen
+- `docs` - Dokumentensynchronisierung
+- `readme-sync` - README-Synchronisierung
+- `research` - Forschungsnotizen
+- `context` - Kontextexport
+
+### Kollaborationsbefehle
+Teamkoordination:
+- `assign` - Geschichten zuweisen
+- `handoff` - Übergabe von Dokumenten
+- `update` - Fortschrittsberichte
+- `retro` - Retrospektiven
+- `feedback` - Sammeln Sie Feedback
+
+### Erweiterte Befehle
+Komplexe Aufgaben:
+- `multi-expert` - Setzen Sie mehrere Experten ein
+- `agent` - Onboard-Agenten
+- `configure` - Konfigurieren Sie Funktionen
+- `diagnose` - Systemdiagnose
+- `validate-expertise` - Fachwissen validieren
+
+## WIP-Limit
+
+AgileFlow erzwingt a **maximum of 2 stories per agent** Zu:
+- Reduzieren Sie den Kontextwechsel
+- Verbessern Sie Fokus und Qualität
+- Ermöglichen Sie eine bessere Zusammenarbeit
+- Engpässe verhindern
+
+Überprüfen `/board` um die aktuellen WIP-Zählungen anzuzeigen.
+
+## Beispiel für einen täglichen Arbeitsablauf
+
+```text
+1. CHECK STATUS
+   /status --filter=assigned
+
+2. PICK NEXT STORY
+   Story: US-0042 (3 points)
+   AC: Write unit tests for auth module
+
+3. IMPLEMENT
+   - Create test file
+   - Write test cases
+   - Run tests locally
+
+4. VERIFY
+   /verify STORY=US-0042
+
+5. CREATE PR
+   /pr STORY=US-0042
+
+6. UPDATE STATUS
+   /status STORY=US-0042 STATUS=in-review
+```
+
+## Bestimmte Befehle finden
+
+Wenn Sie Hilfe zu einem bestimmten Befehl benötigen:
+
+```bash
+# Example: Get help for /story command
+/agileflow:story --help
+```
+
+Oder besuchen Sie die Befehlsdokumentation für detaillierte Anleitungen zu jedem Befehl.
+
+## Verwandte Befehle
+
+- [`/Geschichte`](/commands/story) - Erstellen Sie User Stories
+- [`/episch`](/commands/epic) - Erstellen Sie Epen
+- [`/status`](/commands/status) - Aktualisieren Sie den Story-Status
+- [`/board`](/commands/board) - Kanban-Board anzeigen
+- [`/diagnose`](/commands/diagnose) - Systemdiagnose
+- [`/configure`](/commands/configure) - Konfigurieren Sie Funktionen

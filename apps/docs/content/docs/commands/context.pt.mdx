@@ -1,0 +1,423 @@
+---
+title: /contexto
+description: Crie e gerencie o contexto do projeto para ferramentas de IA da web
+---
+
+# /contexto
+
+Crie, atualize e gerencie o resumo do contexto do seu projeto para uso em ferramentas de IA da web como ChatGPT, Perplexity, Gemini e Claude web.
+
+## Visão geral
+
+O `/context` A família de comandos ajuda a manter e exportar o contexto do projeto para ferramentas de IA baseadas na web. Isso é útil quando você precisa:
+
+- Gere um resumo de contexto abrangente para colar em ferramentas de IA da web
+- Exporte um trecho conciso para carregamento rápido de contexto
+- Registre decisões e descobertas importantes em seu arquivo de contexto
+- Mantenha as ferramentas externas de IA informadas sobre o status do seu projeto
+
+## Subcomandos
+
+O `/context` O comando possui três subcomandos, cada um com uma finalidade específica:
+
+### /agileflow:context:full
+
+**Generate or refresh the comprehensive project context brief.**
+
+Cria ou atualiza `docs/context.md` com seções gerenciadas contendo:
+- O que estamos construindo e foco atual
+- Mapa de recursos e resumo de tecnologia/ferramentas
+- Principais decisões (ADRs) e instantâneo da arquitetura
+- Teste e status de CI
+- Progresso recente
+- Riscos e próximos passos
+
+Este arquivo foi projetado para ser colado no ChatGPT, Perplexity, Gemini ou Claude web para fornecer às ferramentas externas de IA o contexto completo do projeto.
+
+**Usage:**
+```bash
+/agileflow:context:full
+```
+
+**Behavior:**
+- Lê existente `docs/context.md` se presente
+- Reúne dados de status.json, ADRs, épicos, histórias e CHANGELOG
+- Atualiza somente seções gerenciadas (entre `<!-- MANAGED_SECTION -->` marcadores)
+- Preserva qualquer conteúdo escrito pelo usuário fora das seções gerenciadas
+- Mostra a diferença antes de aplicar as alterações
+- Requer confirmação antes de escrever
+
+---
+
+### /agileflow:context:exportar
+
+**Export a concise context excerpt for pasting into web AI tools.**
+
+Lê `docs/context.md` e gera um trecho condensado (≤300 linhas) pronto para copiar e colar no ChatGPT, Perplexity, Gemini ou Claude web.
+
+Este é um **read-only command** - nenhum arquivo é gravado.
+
+**Usage:**
+```bash
+/agileflow:context:export
+```
+
+**Behavior:**
+- Lê `docs/context.md`
+- Extrai seções principais (visão geral, foco atual, pilha de tecnologia, decisões, mapa de recursos, próximas etapas)
+- Produz um trecho conciso em um bloco de código
+- Inclui instruções para colar na IA da web
+- Não requer confirmação
+
+---
+
+### /agileflow:context:note
+
+**Append a timestamped note to the context file.**
+
+Adicione rapidamente uma nota a `docs/context.md` na seção "Notas". Útil para registrar decisões, observações ou lembretes que devem persistir no contexto do projeto.
+
+**Usage:**
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+**Arguments:**
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| NOTE | Yes | 1-5 line note text to append |
+
+**Behavior:**
+- Lê ou cria `docs/context.md`
+- Cria uma seção "Notas" se ela não existir
+- Acrescenta nota com carimbo de data/hora ISO (por exemplo, `2024-12-31T10:30:00Z`)
+- Mostra a diferença antes de aplicar as alterações
+- Requer confirmação antes de escrever
+
+---
+
+## Exemplos
+
+### Gere contexto completo
+
+```bash
+/agileflow:context:full
+```
+
+Cria ou atualiza `docs/context.md` com informações abrangentes do projeto:
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents. It provides automated task management, documentation synchronization, and intelligent context preservation.
+
+## Current Focus
+
+- Implementing context compacting for long conversations
+- Improving research workflow integration
+- Expanding agent capabilities
+
+## Feature Map
+
+- **Core**: Project setup, status tracking, agent coordination
+- **Documentation**: Automatic sync, README generation, ADR management
+- **Agents**: 27 specialized agents for different tasks
+- **Research**: Structured research notes and integration
+
+## Tech Stack
+
+- **Language**: TypeScript
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React with Tailwind CSS
+- **Package Manager**: npm with legacy-peer-deps
+- **Deployment**: Vercel
+
+## Key Decisions
+
+- ADR-0001: Use TypeScript for type safety
+- ADR-0002: Use React component library
+- ADR-0003: Next.js for web framework
+
+## Architecture Snapshot
+
+- Monorepo structure with packages/ and apps/
+- CLI package with 72 commands
+- Website and documentation sites
+- Agent-based command coordination
+
+## Testing & CI
+
+- Unit tests: Jest
+- E2E tests: Playwright
+- CI/CD: GitHub Actions
+- Pre-commit hooks for validation
+
+## Recent Progress
+
+- Completed context compacting feature
+- Improved documentation sync workflow
+- Added 5 new specialized agents
+
+## Risks
+
+- Token limits with large projects
+- Documentation drift during rapid development
+
+## Next Steps
+
+- Implement automated test coverage reporting
+- Add real-time collaboration features
+- Expand agent capabilities for code generation
+```
+
+---
+
+### Exportar para ferramentas de IA da Web
+
+```bash
+/agileflow:context:export
+```
+
+Produz um trecho conciso (≤300 linhas) pronto para colar:
+
+```text
+# Project Context Brief
+
+Last updated: 2025-12-24
+Project: AgileFlow - AI-powered project management
+
+## What We're Building
+AgileFlow provides automated task management, documentation, and AI agents.
+
+## Current Focus
+- Context compacting for conversations
+- Research workflow integration
+- Agent capability expansion
+
+## Tech Stack
+- TypeScript, Next.js 16, React, Tailwind CSS, Vercel
+
+## Key Decisions
+- ADR-0001: Use TypeScript
+- ADR-0002: Use React components
+- ADR-0003: Use Next.js
+
+## Feature Map
+- Core: Setup, tracking, coordination
+- Documentation: Sync, README, ADRs
+- Agents: 27 specialized agents
+- Research: Structured notes
+
+## Next Steps
+- Automated test coverage
+- Real-time collaboration
+- More agent capabilities
+
+---
+
+Paste this excerpt into your web AI tool (ChatGPT, Perplexity, Gemini, Claude web) to load project context.
+```
+
+---
+
+### Adicione uma nota rápida
+
+```bash
+/agileflow:context:note NOTE="User reported critical bug with OAuth flow on mobile"
+```
+
+Acrescenta uma nota com carimbo de data e hora à seção "Notas" do `docs/context.md`:
+
+```markdown
+## Notes
+
+- **[2025-12-24T10:30:00Z]**: User reported critical bug with OAuth flow on mobile
+- **[2025-12-23T14:15:00Z]**: Completed initial research on TypeScript 5.4 features
+- **[2025-12-22T09:00:00Z]**: Decided to upgrade to React 19 in next sprint
+```
+
+---
+
+## Exemplos de fluxo de trabalho
+
+### Mantenha o contexto atualizado
+
+Mantenha o contexto atualizado para melhor assistência de IA:
+
+```bash
+# After each major milestone
+/agileflow:context:full
+
+# Before starting work in web AI
+/agileflow:context:export
+# Copy output and paste into ChatGPT/Perplexity
+```
+
+---
+
+### Use em conversas de IA na Web
+
+Antes de pedir ajuda à IA da web em seu projeto:
+
+```bash
+# Export concise context
+/agileflow:context:export
+
+# Copy output and paste as initial message in ChatGPT
+# Then ask your question with full project context
+```
+
+---
+
+### Capture descobertas importantes
+
+```bash
+/agileflow:context:note NOTE="TypeScript 5.4 improves type inference for generics"
+/agileflow:context:note NOTE="Need to upgrade Node.js to 20+ for new features"
+/agileflow:context:note NOTE="Team prefers MUI components over shadcn/ui"
+```
+
+---
+
+## Modos de saída
+
+### /agileflow:context:full (criar/atualizar contexto)
+
+**Input**: Reúne informações de:
+- `status.json` - Trabalho atual e status da história
+- `bus/log.jsonl` - Mensagens de progresso recentes
+- `docs/03-decisions/` - Decisões de arquitetura (ADRs)
+- `docs/04-architecture/` - Documentação de projeto do sistema
+- `docs/05-epics/` - Roteiro de recursos e épicos
+- `CHANGELOG.md` - Histórico de lançamento
+- `package.json` - Metadados do projeto
+
+**Output**: Atualizações `docs/context.md` com seções gerenciadas enquanto preserva o conteúdo personalizado
+
+**Key Behavior**:
+- Diff-first: Mostra as alterações antes de escrever
+- Seções gerenciadas: atualiza apenas o conteúdo entre `<!-- MANAGED_SECTION -->` marcadores
+- Preserva o conteúdo do usuário: nunca modifica o conteúdo fora das seções gerenciadas
+- Requer confirmação: o usuário deve aprovar as alterações
+
+---
+
+### /agileflow:context:export (Copiar para Web AI)
+
+**Input**: Lê existente `docs/context.md`
+
+**Output**: Trecho conciso (≤300 linhas) pronto para colar no ChatGPT, Perplexity, Gemini ou Claude web
+
+**Use Case**: Carregue o contexto do projeto na ferramenta de IA da web para continuar trabalhando em uma nova conversa
+
+**Key Behavior**:
+- Somente leitura: nenhum arquivo é modificado
+- Autônomo: Inclui instruções para colar
+- Pronto para formato: já formatado para fácil copiar e colar
+
+---
+
+### /agileflow:context:note (Anexar nota com carimbo de data/hora)
+
+**Input**: Argumento NOTA com nota de 1 a 5 linhas
+
+**Output**: Anexado à seção "Notas" com carimbo de data/hora ISO
+
+**Use Case**: Captura rápida de eventos, decisões ou descobertas importantes
+
+**Key Behavior**:
+- Diff-first: Mostra as alterações antes de escrever
+- Cria seção se estiver faltando: cria automaticamente a seção "Notas" se necessário
+- Cronológico: as notas aparecem em ordem com as mais recentes na parte inferior
+- Carimbo de data/hora: cada nota inclui carimbo de data/hora ISO 8601
+
+---
+
+## Melhores Práticas
+
+### Atualizações regulares de contexto
+
+Mantenha o contexto atualizado para melhor assistência de IA:
+
+1. **After major milestones**: Correr `/agileflow:context:full` para capturar o trabalho concluído
+2. **Before web AI sessions**: Correr `/agileflow:context:export` e cole no ChatGPT
+3. **During development**: Usar `/agileflow:context:note` para registrar decisões e descobertas
+
+```bash
+# Recommended workflow
+/agileflow:context:full        # Update full context
+/agileflow:context:export      # Get concise version
+# Paste into web AI for context-aware help
+```
+
+---
+
+### Capture descobertas importantes
+
+Registre insights e decisões técnicas:
+
+```bash
+/agileflow:context:note NOTE="TypeScript 5.4 improves type inference - consider upgrading"
+/agileflow:context:note NOTE="Stripe API changed pagination in v2.0 - update integration"
+/agileflow:context:note NOTE="Team consensus: use Postgres over MongoDB for this project"
+```
+
+---
+
+### Use em conversas de IA na Web
+
+Maximize a eficácia das ferramentas de IA da web fornecendo contexto:
+
+1. Exportar contexto conciso: `/agileflow:context:export`
+2. Copie a saída
+3. Cole no ChatGPT, Perplexity ou Gemini como sua primeira mensagem
+4. Faça perguntas de acompanhamento com o contexto completo do projeto
+
+Isso garante que a IA da web entenda sua base de código, arquitetura e foco atual.
+
+---
+
+### Gerenciar tamanho do arquivo de contexto
+
+Para projetos grandes, gerencie o tamanho do arquivo context.md:
+
+- Usar `/agileflow:context:export` para verificar o tamanho do contexto atual
+- Arquive notas antigas se elas ultrapassarem mais de 100 entradas
+- Crie arquivos de pesquisa separados para aprofundamentos
+- Usar `/agileflow:research:ask` para tópicos de pesquisa complexos
+
+---
+
+## Fluxo de trabalho Diff-First
+
+Todos os comandos de contexto que modificam arquivos seguem um fluxo de trabalho consistente:
+
+1. **Show Changes**: O comando exibe as alterações propostas como uma comparação
+2. **Confirm**: você revisa as alterações e aprova ou rejeita
+3. **Apply**: As alterações são escritas somente após sua confirmação
+
+Isso garante que você nunca perca informações importantes e sempre saiba o que está sendo modificado.
+
+---
+
+## Comandos Relacionados
+
+- [`/adr`](/commands/adr) - Criar registros de decisão de arquitetura
+- [`/pesquisa`](/commands/research) - Criar e gerenciar notas de pesquisa
+- [`/docs-sync`](/commands/docs-sync) - Sincronizar documentação
+- [`/readme-sync`](/commands/readme-sync) - Atualizar arquivos README
+
+---
+
+## Notas
+
+- Arquivos de contexto são armazenados em `docs/context.md` como parte da documentação do seu projeto local
+- As seções gerenciadas usam comentários HTML como marcadores e não devem ser editadas manualmente
+- O comando de exportação respeita o limite de 300 linhas para caber nas janelas de contexto da ferramenta de IA da web
+- As notas têm carimbo de data e hora no formato ISO 8601 para consistência e fácil classificação

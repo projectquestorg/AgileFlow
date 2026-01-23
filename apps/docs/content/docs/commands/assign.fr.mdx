@@ -1,0 +1,264 @@
+---
+title: /attribuer
+description: Attribuer ou réattribuer une histoire à un propriétaire
+---
+
+# /attribuer
+
+Attribuez ou réattribuez une histoire à un propriétaire avec une mise à jour facultative du statut. Met à jour les métadonnées de l'histoire et diffuse la mission via le bus de messages.
+
+## Démarrage rapide
+
+```bash
+/agileflow:assign STORY=US-0001 NEW_OWNER=AG-UI
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID to assign (e.g., US-0001, US-0042) |
+| `NEW_OWNER` | Yes | - | Agent/owner ID (e.g., AG-UI, AG-API, AG-CI) |
+| `NEW_STATUS` | No | - | Update status: `ready`, `in-progress`, `blocked`, `in-review`, `done` |
+| `NOTE` | No | - | Optional context about the assignment |
+
+## Exemples
+
+### Attribuer une histoire au propriétaire
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI
+```
+
+Attribuez l’histoire à l’équipe UI sans changer de statut.
+
+### Attribuer et commencer le travail
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Starting login form implementation"
+```
+
+Attribuez une histoire et marquez-la immédiatement comme en cours avec le contexte.
+
+### Réaffecter à un autre propriétaire
+
+```bash
+/agileflow:assign STORY=US-0038 NEW_OWNER=AG-API NEW_STATUS=ready NOTE="Re-prioritized for OAuth implementation"
+```
+
+Déplacez l'histoire d'un agent à un autre.
+
+### Attribuer à partir de Non attribué
+
+```bash
+/agileflow:assign STORY=US-0050 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Ready for CI/CD integration work"
+```
+
+Donnez du travail à une histoire non assignée.
+
+### Réaffecter en raison d'un bloqueur
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NEW_STATUS=blocked NOTE="Blocked on infrastructure provisioning. Needs DevOps attention"
+```
+
+Réaffecter lorsqu'une expertise différente est nécessaire.
+
+## Ce qui est mis à jour
+
+La commande met à jour deux fichiers :
+
+### 1. Fichier d'histoire
+
+Updates story frontmatter (in `docs/06-stories/**/<STORY>.md`):
+
+```yaml
+---
+owner: AG-UI
+status: in-progress
+updated: 2025-12-24T14:30:00Z
+---
+```
+
+### 2. Fichier de suivi de l'état
+
+Mises à jour `docs/09-agents/status.json` avec affectation et changement de statut.
+
+### 3. Bus de messages
+
+Ajoute un événement « assigner » à `docs/09-agents/bus/log.jsonl`:
+
+```json
+{"ts":"2025-12-24T14:30:00Z","from":"claude","type":"assign","story":"US-0042","owner":"AG-UI","status":"in-progress","text":"Starting login form implementation"}
+```
+
+## Valeurs d'état
+
+Lors de l'utilisation `NEW_STATUS`, choisissez parmi :
+
+| Status | Meaning | When to Use |
+|--------|---------|-------------|
+| `ready` | Prepared, waiting to start | After creation or when unblocked |
+| `in-progress` | Currently being worked on | When owner begins work |
+| `blocked` | Waiting on external dependency | When blocker identified |
+| `in-review` | Complete, awaiting approval | Code review or QA |
+| `done` | Finished and verified | After all checks pass |
+
+## Exemple de flux d'affectation
+
+Flux de travail typique via les états d'affectation :
+
+**1. Story created** (STORY=US-0042, OWNER=non attribué, STATUS=prêt)
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=ready
+```
+
+**2. Owner starts work**
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress
+```
+
+**3. Code complete, ready for review**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-review PR=https://github.com/...
+```
+
+**4. Review complete**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=done
+```
+
+**5. If blocked during work**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=blocked SUMMARY="Blocked on API response format"
+```
+
+**6. Unblocked, resume work**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="API clarified, resuming development"
+```
+
+## Sortir
+
+La commande affiche :
+
+1. **Diff Preview** - Affiche les modifications à apporter
+2. **Confirmation** - Invite OUI/NON pour confirmer
+3. **Success Message** - Confirme la mission terminée
+
+Exemple de sortie :
+
+```text
+✅ Story Assigned
+Story:     US-0042
+Owner:     unassigned → AG-UI
+Status:    ready (unchanged)
+Updated:   2025-12-24T14:30:00Z
+
+Message broadcast: Assigned US-0042 to AG-UI
+```
+
+## Sécurité JSON
+
+La commande utilise une gestion JSON sécurisée :
+
+- **Never uses echo/cat** - Utilise toujours l'outil jq ou Edit
+- **Validates after update** - Vérifie que JSON est valide avant de terminer
+- **Backs up on error** - Peut restaurer à partir d'une sauvegarde en cas de corruption
+
+## Meilleures pratiques
+
+1. **Assign immediately** - Ne laissez pas d'histoires non attribuées
+2. **Include context** - Utilisez NOTE pour expliquer pourquoi l'affectation a eu lieu
+3. **Match expertise** - Attribuer à un agent possédant les compétences pertinentes
+4. **Balance load** - Répartir le travail équitablement entre les agents
+5. **Update status** - Pensez à mettre à jour le statut lors de l'attribution
+6. **Communicate** - L'équipe doit comprendre pourquoi la réaffectation a eu lieu
+
+## Scénarios courants
+
+### Équilibrage de charge
+
+Répartissez le travail lorsqu'un agent est surchargé :
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NOTE="Load balancing: AG-API at WIP limit"
+```
+
+### Formation croisée
+
+Attribuer à un agent moins expérimenté avec des conseils :
+
+```bash
+/agileflow:assign STORY=US-0060 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Cross-training opportunity for CI/CD work. Pair with AG-API"
+```
+
+### Transfert d'expertise
+
+Réaffecter à un spécialiste lorsque l'expertise est nécessaire :
+
+```bash
+/agileflow:assign STORY=US-0065 NEW_OWNER=AG-SECURITY NEW_STATUS=in-progress NOTE="Security vulnerability fix - needs security expertise"
+```
+
+### Récupération du bloqueur
+
+Reprendre le travail après le déblocage :
+
+```bash
+/agileflow:assign STORY=US-0070 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Unblocked: API endpoint now available, resuming frontend work"
+```
+
+## Commandes associées
+
+- [`/agileflow:statut`](/commands/status) - Mettre à jour uniquement le statut sans réaffecter
+- [`/agileflow:board`](/commands/board) - Afficher visuellement toutes les missions
+- [`/agileflow:métriques`](/commands/metrics) - Voir la répartition de la charge de travail
+- [`/histoire-nouvelle`](/commands/story-new) - Créez de nouvelles histoires avec des devoirs
+
+## FAQ
+
+<Accordion type="multiple">
+  <AccordionItem value="wip">
+    <AccordionTrigger>Can I assign to someone who's already at WIP limit?</AccordionTrigger>
+    <AccordionContent>
+      Oui, mais ce n'est pas recommandé. Vérifier `/agileflow:board` pour voir qui a la capacité.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="wrong">
+    <AccordionTrigger>What if I assign wrong owner?</AccordionTrigger>
+    <AccordionContent>
+      Réaffectez simplement : `/agileflow:assign STORY=US-0042 NEW_OWNER=AG-API`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="immediately">
+    <AccordionTrigger>Should I assign immediately upon creation?</AccordionTrigger>
+    <AccordionContent>
+      La meilleure pratique est oui - affectez dans la commande de création ou juste après avec `/assign`.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="multiple">
+    <AccordionTrigger>Can I assign to multiple owners?</AccordionTrigger>
+    <AccordionContent>
+      Non, une histoire = un propriétaire. Pour la programmation en binôme, attribuez-le à l'appariement principal et notez-le dans la description.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="difference">
+    <AccordionTrigger>What's the difference between assign and status?</AccordionTrigger>
+    <AccordionContent>
+      **assign** change de propriétaire ET éventuellement de statut. **status** change de statut uniquement, propriétaire inchangé. Utiliser **assign** lors d'un changement de propriétaire, **status** lors de la simple mise à jour des progrès.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="available">
+    <AccordionTrigger>How do I know what owners are available?</AccordionTrigger>
+    <AccordionContent>
+      Utiliser `/agileflow:board` pour voir les membres actuels de l’équipe et leur charge de travail.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

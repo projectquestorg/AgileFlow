@@ -1,0 +1,112 @@
+---
+title: /adr
+description: Crie um registro de decisão de arquitetura
+---
+
+# /adr
+
+Crie registros de decisões de arquitetura (ADRs) para documentar escolhas arquitetônicas importantes e decisões de design em seu projeto.
+
+## Início rápido
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="Need reliable database" DECISION="PostgreSQL chosen" CONSEQUENCES="Better reliability, steeper learning curve"
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | 4-digit ADR number (e.g., 0001, 0042) |
+| `TITLE` | Yes | - | Short title of the architectural decision |
+| `CONTEXT` | Yes | - | Why this decision was needed |
+| `DECISION` | Yes | - | What was chosen and why |
+| `CONSEQUENCES` | Yes | - | Trade-offs, positive and negative impacts |
+| `LINKS` | No | - | Optional links to related documentation |
+
+## Exemplos
+
+### ADR Básico: Seleção de Banco de Dados
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="We need a reliable database with ACID guarantees for user data and transactions" DECISION="PostgreSQL chosen over MongoDB for its strong consistency guarantees and mature ecosystem" CONSEQUENCES="Better data integrity and reliability. Team needs PostgreSQL training. Slightly higher operational complexity than NoSQL alternatives"
+```
+
+Isso cria um novo arquivo em `docs/03-decisions/adr-0001-use-postgresql-for-persistence.md` com a estrutura completa do ADR.
+
+### ADR com links relacionados
+
+```bash
+/agileflow:adr NUMBER=0002 TITLE="Adopt TypeScript for all new code" CONTEXT="Type safety issues in JavaScript codebase causing bugs in production" DECISION="Migrate to TypeScript with strict type checking enabled" CONSEQUENCES="Fewer type-related bugs. Initial slower development. Better IDE support and refactoring. Requires team training" LINKS="- Related Story: US-0042\n- Related ADR: ADR-0001"
+```
+
+## Saída
+
+When you run the command, you'll see:
+
+1. **Preview**: Mostra o conteúdo ADR gerado por completo
+2. **Confirmation**: Pede SIM/NÃO para aprovar o ADR
+3. **File Creation**: Cria o arquivo ADR em `docs/03-decisions/` diretório
+4. **Filename Format**: `adr-<NUMBER>-<slug>.md` (gerado automaticamente a partir do título)
+
+O ADR gerado inclui:
+
+```markdown
+---
+number: 0001
+title: Use PostgreSQL for persistence
+date: 2025-12-24
+status: accepted
+tags: [database, architecture]
+---
+
+# ADR-0001: Use PostgreSQL for persistence
+
+## Context
+We need a reliable database...
+
+## Decision
+We will use PostgreSQL...
+
+## Consequences
+- Better data integrity...
+- Team needs training...
+```
+
+## Melhores Práticas
+
+### Numeração ADR
+- Numere sequencialmente (0001, 0002, 0003, ...)
+- Não pule números nem os reutilize
+- Use zeros à esquerda para consistência
+
+### Escrevendo boas ADRs
+- **Context first**: Explique o problema ou restrição antes da decisão
+- **Be specific**: "Usar PostgreSQL 15+ com replicação assíncrona" e não "Usar um banco de dados"
+- **Document trade-offs**: Liste as consequências positivas e negativas
+- **Keep concise**: Aim for 1-2 pages maximum
+- **Reference related work**: link para épicos, histórias ou outras ADRs
+
+### Dicas da seção de contexto
+- Que problema ou restrição desencadeou esta decisão?
+- Quais são os impulsionadores do negócio?
+- Que restrições técnicas existem?
+- O que já tentamos antes?
+
+### Dicas da seção de decisão
+- Indique claramente o que foi escolhido
+- Explique brevemente por que esta opção venceu
+- Mencione alternativas que foram consideradas
+- Inclua números de versão ou detalhes específicos
+
+### Dicas da seção de consequências
+- Liste os impactos positivos primeiro
+- Em seguida, liste as compensações e os riscos
+- Seja honesto sobre as desvantagens
+- Sugerir estratégias de mitigação
+
+## Comandos Relacionados
+
+- [`/ história-nova`](/commands/story-new) - Criar histórias de usuários relacionadas a decisões arquitetônicas
+- [`/épico-novo`](/commands/epic-new) - Crie épicos para esforços arquitetônicos maiores
+- [`/contexto`](/commands/context) - Gerar contexto abrangente do projeto, incluindo ADRs

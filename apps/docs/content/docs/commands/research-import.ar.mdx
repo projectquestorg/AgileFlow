@@ -1,0 +1,252 @@
+---
+title: / Agileflow:research:import
+description: قم باستيراد نتائج البحث من ChatGPT أو Claude أو Perplexity أو محتوى خارجي إلى مجلد البحث الخاص بك
+---
+
+# / Agileflow:research:import
+
+قم باستيراد نتائج البحث من أدوات الذكاء الاصطناعي الخارجية أو المحتوى إلى مجلد البحث الخاص بمشروعك بتنسيق منظم.
+
+## بداية سريعة
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup"
+```
+
+ثم الصق المحتوى عند المطالبة بذلك. أو قم بتقديمها مضمنة:
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+```
+
+## غاية
+
+بعد الاستخدام [`/ Agileflow:research:ask`](/commands/research-ask) للحصول على إجابات من الذكاء الاصطناعي الخارجي، هذا الأمر:
+
+- تنسيق النتائج في تخفيض منظم
+- يحفظ ل `docs/10-research/YYYYMMDD-topic-slug.md`
+- يقوم بتحديث فهرس البحث تلقائيًا
+- روابط اختيارية إلى ADRs أو الملاحم أو القصص
+
+## حدود
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Name for the research file (e.g., "OAuth 2.0 Setup") |
+| CONTENT | Yes* | Research results to import (*can be pasted after command) |
+| SOURCE | No | Original source URL for attribution |
+
+## ما تستورده
+
+يعمل مع المحتوى من:
+
+- ردود ChatGPT
+- محادثات كلود ويب
+- نتائج البحوث الحيرة
+- يوتيوب فيديو النصوص
+- منشورات ومقالات المدونة
+- ملاحظات نقاش المؤتمر
+- صفحات التوثيق
+- ملاحظات الاجتماع
+
+## سير العمل
+
+يتبع الأمر سير عمل منظم:
+
+### المرحلة الأولى: التحقق من صحة المدخلات
+
+1. تحقق من توفير الموضوع (يسأل إذا كان مفقودًا)
+2. التحقق من توفير المحتوى (يطالبك باللصق إذا كان مفقودًا)
+
+### المرحلة الثانية: التحليل والتنسيق
+
+3. استخراج النتائج الرئيسية والملخص
+4. تحديد مقتطفات التعليمات البرمجية (المحفوظة تمامًا)
+5. إنشاء عناصر العمل
+6. قم بإنشاء اقتراحات للقصة إن أمكن
+
+### المرحلة 3: المعاينة (الاختلاف أولاً)
+
+7. عرض النتيجة المنسقة قبل الحفظ
+8. اطلب التأكيد
+
+### المرحلة 4: الحفظ والفهرسة
+
+9. حفظ ل `docs/10-research/YYYYMMDD-topic-slug.md`
+10. تحديث `docs/10-research/README.md` فِهرِس
+
+### المرحلة الخامسة: تحليل العرض (اختياري)
+
+11. اسأل إذا كنت تريد تحليل التنفيذ
+12. إذا كانت الإجابة بنعم، فادخل إلى وضع الخطة واستكشف قاعدة التعليمات البرمجية الخاصة بك
+13. اقتراح قطعة أثرية مناسبة (ADR، Epic، Story، Practice doc)
+
+## تنسيق الإخراج
+
+يتم تنظيم البحث المستورد على النحو التالي:
+
+```markdown
+# [Topic Title]
+
+**Import Date**: YYYY-MM-DD
+**Topic**: [original topic]
+**Source**: [URL or "ChatGPT/Claude/Perplexity research"]
+**Content Type**: research
+
+---
+
+## Summary
+
+[2-3 paragraph executive summary]
+
+---
+
+## Key Findings
+
+- [Main point 1 with details]
+- [Main point 2 with details]
+- [Main point 3 with details]
+
+---
+
+## Implementation Approach
+
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+
+---
+
+## Code Snippets
+
+[ALL code snippets preserved exactly as provided]
+
+---
+
+## Action Items
+
+- [ ] [Action 1 - concrete next step]
+- [ ] [Action 2 - concrete next step]
+
+---
+
+## Risks & Gotchas
+
+- [Risk 1]
+- [Risk 2]
+
+---
+
+## Story Suggestions
+
+[If content suggests feature work]
+
+---
+
+## References
+
+- Source: [URL]
+- Import date: YYYY-MM-DD
+```
+
+## موقع الملف
+
+يتم حفظ البحث ببادئة التاريخ ISO:
+
+```
+docs/10-research/YYYYMMDD-topic-slug.md
+
+Examples:
+- docs/10-research/20250101-oauth-setup.md
+- docs/10-research/20241231-stripe-webhooks.md
+```
+
+## تحديث الفهرس
+
+يتم تحديث كل عملية استيراد تلقائيًا `docs/10-research/README.md`:
+
+```markdown
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+| [older entries...] |
+```
+
+## تحليل التنفيذ
+
+بعد الحفظ، يُعرض عليك تحليل التنفيذ:
+
+```
+Would you like me to analyze how this research could be implemented in your project?
+
+1. Yes - Enter plan mode and explore (Recommended)
+2. No - Just save the research
+3. Link to existing Epic/Story
+```
+
+إذا اخترت "نعم"، الأمر:
+
+1. يدخل في وضع الخطة
+2. يجمع سياق المشروع الخاص بك
+3. يبين الفوائد وخطوات التنفيذ
+4. يوصي بنوع القطعة الأثرية المناسب:
+
+| Research Type | Artifact |
+|---------------|----------|
+| Architecture/tech decision | ADR |
+| Large feature (5+ steps) | Epic + Stories |
+| Single focused task | Story |
+| Best practices/guidelines | Practice doc |
+| Code quality improvement | Tech debt item |
+
+## مثال الاستخدام
+
+### سير العمل الكامل
+
+```bash
+# Step 1: Get help from ChatGPT
+/agileflow:research:ask TOPIC="next-auth OAuth setup"
+# Copy the generated prompt, paste into ChatGPT
+
+# Step 2: Import the response
+/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+# Paste ChatGPT's response when prompted
+
+# Step 3: Review and confirm
+# Command shows formatted preview
+# You confirm to save
+
+# Step 4: Optionally analyze for implementation
+# Choose "Yes" to enter plan mode
+# Get specific recommendations for your codebase
+```
+
+### استيراد نسخة يوتيوب
+
+```bash
+/agileflow:research:import TOPIC="React 18 Streaming SSR" SOURCE="https://youtube.com/watch?v=..."
+# Paste the transcript
+```
+
+### استيراد مشاركة المدونة
+
+```bash
+/agileflow:research:import TOPIC="Vercel Edge Functions" SOURCE="https://vercel.com/blog/..."
+# Paste relevant sections
+```
+
+## أفضل الممارسات
+
+1. **Always cite the source** - قم بتضمين الوسيطة SOURCE
+2. **Preserve code exactly** - لا تقم بتعديل الأمثلة من استجابات الذكاء الاصطناعي
+3. **Extract key findings** - لا تلصق المحتوى الخام فقط
+4. **Generate action items** - جعل البحث قابلاً للتنفيذ
+5. **Link to decisions** - مرجع من ADRs، الملاحم، القصص
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: البحث`](/commands/research) - نظرة عامة على نظام البحث
+- [`/ Agileflow:research:ask`](/commands/research-ask) - توليد مطالبات البحث
+- [`/ Agileflow:research:list`](/commands/research-list) - عرض كافة الملاحظات البحثية
+- [`/ Agileflow:البحث:عرض`](/commands/research-view) - قراءة مذكرة بحثية محددة
+- [`/ Agileflow:البحث:تحليل`](/commands/research-analyze) - تحليل البحوث الموجودة

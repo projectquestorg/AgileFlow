@@ -1,0 +1,87 @@
+---
+title: /sesión:estado
+description: Ver todas las sesiones activas y su estado actual
+---
+
+# /sesión:estado
+
+Muestra una tabla formateada de todas las sesiones registradas, mostrando cuáles están actualmente activas.
+
+## Inicio rápido
+
+```bash
+/agileflow:session:status
+```
+
+## Salida de ejemplo
+
+```
+┌─────┬──────────────────────────────┬────────────┬─────────┬────────────┐
+│ ID  │ Path                         │ Branch     │ Status  │ Nickname   │
+├─────┼──────────────────────────────┼────────────┼─────────┼────────────┤
+│ 1   │ /home/user/myproject         │ main       │ active  │ (main)     │
+│ 2   │ /home/user/myproject-auth    │ session-2  │ active  │ auth       │
+│ 3   │ /home/user/myproject-3       │ session-3  │ stale   │ -          │
+└─────┴──────────────────────────────┴────────────┴─────────┴────────────┘
+
+Active: 2    Stale: 1
+
+Current session: 1
+
+To switch sessions, run /agileflow:session:resume
+To create new session, run /agileflow:session:new
+```
+
+## Valores de estado
+
+| Status | Meaning |
+|--------|---------|
+| `active` | Session has a running Claude Code process |
+| `stale` | Lock file exists but process is no longer running |
+| `(main)` | The original project directory (Session 1) |
+
+## Detección de sesión
+
+Las sesiones se detectan mediante bloqueo basado en PID:
+
+1. Cada sesión crea un archivo de bloqueo con su ID de proceso.
+2. La verificación de estado verifica si cada PID todavía está ejecutándose
+3. Los bloqueos obsoletos se limpian automáticamente en el siguiente inicio
+
+## Casos de uso
+
+### Antes de comenzar a trabajar
+
+Comprueba si otras sesiones ya están trabajando en algo:
+
+```bash
+/agileflow:session:status
+# See what's active, decide if you need a new session
+```
+
+### Después de regresar al trabajo
+
+Descubra qué sesiones existen y su estado:
+
+```bash
+/agileflow:session:status
+# Review sessions, then:
+/agileflow:session:resume  # to switch to one
+```
+
+### Depuración de conflictos
+
+Si sospecha que hay conflictos de sesión:
+
+```bash
+/agileflow:session:status
+# Check for multiple "active" sessions
+# Stale sessions may need cleanup
+```
+
+## Comandos relacionados
+
+- [`/sesión:nueva`](/commands/session-new) - Crear una nueva sesión paralela
+- [`/sesión:reanudar`](/commands/session-resume) - Cambiar a otra sesión
+- [`/sesión:fin`](/commands/session-end) - Finalizar la sesión actual
+- [`/sesión:inicio`](/commands/session-init) - Inicializar el sistema de sesión

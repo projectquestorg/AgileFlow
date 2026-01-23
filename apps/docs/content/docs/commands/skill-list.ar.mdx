@@ -1,0 +1,300 @@
+---
+title: /المهارة:قائمة
+description: قم بإدراج كافة المهارات المثبتة مع أوصافها وحالتها
+---
+
+# /المهارة:قائمة
+
+عرض كافة المهارات المثبتة في `.claude/skills/` مع البيانات الوصفية ومعلومات الملف.
+
+## بداية سريعة
+
+```bash
+/agileflow:skill:list
+```
+
+يعرض جميع المهارات المثبتة مع الأوصاف وعدد الملفات وحالة MCP.
+
+## ماذا يفعل
+
+يقوم بمسح مهاراتك المثبتة ويعرض:
+
+- **Skill names** - المعرف من SKILL.md
+- **Descriptions** - الغرض وحالات الاستخدام
+- **File count** - كم عدد الملفات في كل مهارة
+- **Cookbook entries** - تم تضمين سير عمل حالة الاستخدام
+- **MCP status** - ما إذا تم تكوين MCP
+- **Action recommendations** - ماذا تفعل بعد ذلك
+
+## حدود
+
+لا يحتوي هذا الأمر على معلمات.
+
+```bash
+/agileflow:skill:list
+```
+
+## تنسيق الإخراج
+
+مثال على الإخراج بمهارات متعددة:
+
+```
+📦 Installed Skills (4 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+supabase-swift
+  Supabase database operations for Swift iOS apps
+  └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
+     cookbook/crud.md, .mcp.json
+  MCP: ✓ Configured
+
+ui-components
+  React component patterns with accessibility
+  └─ 4 files: SKILL.md, references.md, cookbook/create.md,
+     cookbook/styling.md
+
+api-error-handling
+  REST API error handling patterns
+  └─ 3 files: SKILL.md, references.md, cookbook/http-errors.md
+
+typescript-patterns
+  TypeScript best practices and type patterns
+  └─ 2 files: SKILL.md, references.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## فهم الإخراج
+
+### دخول المهارة
+
+تظهر كل مهارة:
+
+1. **Name** - معرف المهارة (على سبيل المثال، `supabase-swift`)
+2. **Description** - من مقدمة المهارة
+3. **Files** - تفصيل الملفات المضمنة:
+   - `SKILL.md` - ملف المهارات الرئيسية (موجود دائمًا)
+   - `references.md` - روابط التوثيق (موجودة عادة)
+   - `cookbook/*.md` - سير عمل حالة الاستخدام
+   - `.mcp.json` - تكوين خادم MCP (إن أمكن)
+4. **MCP Status** - "✓" إذا `.mcp.json` موجود وتم تكوينه
+
+### معلومات الملف
+
+يتضمن عدد الملفات ما يلي:
+
+- **SKILL.md** - ملف واحد
+- **references.md** - ملف واحد (إن وجد)
+- **cookbook/** - ملفات متعددة (واحد لكل حالة استخدام)
+- **.mcp.json** - ملف واحد (إذا تم تكوينه)
+
+تفصيل المثال:
+```
+5 files total:
+  - SKILL.md (main)
+  - references.md (links)
+  - cookbook/crud-operations.md (workflow)
+  - cookbook/authentication.md (workflow)
+  - .mcp.json (MCP config)
+```
+
+## أمثلة
+
+### قائمة بجميع المهارات
+
+```bash
+/agileflow:skill:list
+```
+
+**Response:**
+```
+📦 Installed Skills (2 total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+python-fastapi
+  FastAPI REST API patterns with validation and error handling
+  └─ 3 files: SKILL.md, references.md, cookbook/crud.md
+
+react-hooks
+  Custom React hooks patterns and best practices
+  └─ 2 files: SKILL.md, references.md
+```
+
+### لم يتم تثبيت أي مهارات
+
+إذا لم تقم بإنشاء أي مهارات بعد:
+
+```
+📦 No skills installed yet.
+
+Skills are stored in .claude/skills/ and can be created with:
+  /agileflow:skill:create
+
+This will research best practices and generate a contextual skill.
+```
+
+## الإجراءات التالية
+
+بعد سرد المهارات، تُعرض عليك خيارات:
+
+```
+What would you like to do?
+
+[1] Create new skill
+    Generate a new skill with web research and cookbook pattern
+
+[2] Edit a skill
+    Modify an existing skill's content or structure
+
+[3] Delete a skill
+    Remove a skill you no longer need
+
+[4] Test a skill
+    Verify a skill works correctly and validate structure
+
+[5] Done
+    Exit skill management
+```
+
+### حدد إجراءً
+
+اختر خيارًا من أجل:
+
+- **Create new skill** → `/agileflow:skill:create`
+- **Edit a skill** → `/agileflow:skill:edit`
+- **Delete a skill** → `/agileflow:skill:delete`
+- **Test a skill** → `/agileflow:skill:test`
+- **Done** → خروج
+
+## هيكل المهارات
+
+يحتوي كل دليل مهارات على:
+
+```
+.claude/skills/<skill-name>/
+├── SKILL.md              # Main skill file (required)
+│   └─ Activation triggers, instructions, cookbook references
+├── references.md         # Documentation links (recommended)
+│   └─ Web docs, local docs, codebase patterns
+├── cookbook/             # Use-case workflows (optional)
+│   ├── use-case-1.md
+│   ├── use-case-2.md
+│   └── use-case-3.md
+└── .mcp.json            # MCP server config (optional)
+    └─ Tools for the skill's technology
+```
+
+## التحقق من تفاصيل المهارة
+
+لمعرفة المزيد من التفاصيل حول مهارة معينة:
+
+```bash
+# Edit the skill to view/modify
+/agileflow:skill:edit <skill-name>
+
+# Test the skill to validate
+/agileflow:skill:test <skill-name>
+
+# View SKILL.md directly
+cat .claude/skills/<skill-name>/SKILL.md
+```
+
+## حالة MCP
+
+يوضح مؤشر MCP ما إذا تم تكوين المهارة للوصول إلى الأداة:
+
+- **✓ Configured** - `.mcp.json` موجودة وأدوات MCP متاحة
+- *No indicator* - لم يتم تكوين MCP (لا يزال قابلاً للاستخدام بدون أدوات)
+
+لإضافة MCP إلى مهارة:
+
+```bash
+# Edit the skill
+/agileflow:skill:edit <skill-name>
+
+# Or upgrade it
+/agileflow:skill:upgrade <skill-name>
+```
+
+## أفضل الممارسات
+
+### مهارات التنظيم
+
+تجميع المهارات ذات الصلة حسب المجال:
+
+- **Data layer**: `supabase-swift`, `postgresql-queries`, `mongodb-patterns`
+- **API layer**: `rest-api-errors`, `graphql-schema`, `webhooks`
+- **UI layer**: `react-components`, `accessibility-wcag`, `tailwind-patterns`
+- **DevOps**: `github-actions`, `docker-deployment`, `kubernetes`
+
+### عمليات التدقيق المنتظمة
+
+تشغيل بشكل دوري `/skill:list` ل:
+
+1. التحقق من المهارات غير المستخدمة
+2. تحقق من تكوين MCP
+3. تحديد المهارات التي تحتاج إلى تحديث
+4. انظر إجمالي عدد المهارات
+
+### تنظيف
+
+احذف المهارات التي لم تعد تستخدمها:
+
+```bash
+/agileflow:skill:delete old-skill-name
+```
+
+وهذا يحافظ على تركيز دليل مهاراتك ويسهل إدارته.
+
+## استكشاف الأخطاء وإصلاحها
+
+### دليل المهارات مفقود
+
+إذا رأيت رسالة "لم يتم تثبيت أي مهارات حتى الآن" والمهارات المتوقعة:
+
+1. تحقق مما إذا `.claude/skills/` موجود:
+   ```bash
+   ls -la .claude/skills/
+   ```
+
+2. تحقق من وجود ملفات SKILL.md في الدلائل الفرعية:
+   ```bash
+   find .claude/skills -name "SKILL.md"
+   ```
+
+3. تأكد من أذونات القراءة المناسبة على الدليل
+
+### معلومات المهارة غير مكتملة
+
+إذا أظهرت المهارة بيانات تعريف غير مكتملة:
+
+1. قد يحتوي الملف SKILL.md على مادة أمامية تالفة
+2. يجري `/agileflow:skill:test` لتشخيص
+3. تحرير مع `/agileflow:skill:edit` لإصلاح
+
+### MCP لا يظهر
+
+إذا كنت تتوقع MCP ولكنك لا ترى "✓ تم التهيئة":
+
+1. تحقق مما إذا `.mcp.json` موجود:
+   ```bash
+   ls .claude/skills/<skill-name>/.mcp.json
+   ```
+
+2. تحقق من أنه يحتوي على صيغة JSON صالحة
+3. قم بترقية المهارة أو تحريرها لإصلاح تكوين MCP
+
+## الأوامر ذات الصلة
+
+- [`/المهارة: إنشاء`](/commands/skill-create) - توليد مهارة جديدة
+- [`/المهارة: تحرير`](/commands/skill-edit) - تعديل مهارة موجودة
+- [`/المهارة:اختبار`](/commands/skill-test) - التحقق من عمل المهارة
+- [`/المهارة:حذف`](/commands/skill-delete) - إزالة المهارة
+- [`/المهارة:ترقية`](/commands/skill-upgrade) - إضافة القدرة على التعلم
+
+## الخطوات التالية
+
+1. **List your skills**: `/agileflow:skill:list`
+2. **Create more skills**: `/agileflow:skill:create`
+3. **Test a skill**: `/agileflow:skill:test <skill-name>`
+4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`

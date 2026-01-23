@@ -1,0 +1,177 @@
+---
+title: /sessão:init
+description: Inicializar o chicote de sessão com verificação de teste
+---
+
+# /sessão:init
+
+Inicialize ou verifique o sistema de gerenciamento de sessão. Este comando configura a infraestrutura de rastreamento de sessão.
+
+## Início rápido
+
+```bash
+/agileflow:session:init
+```
+
+## O que isso faz
+
+1. Cria `.agileflow/sessions/` diretório se estiver faltando
+2. Inicializa `registry.json` com esquema
+3. Registra o diretório atual como uma sessão
+4. Cria um arquivo de bloqueio com o ID do processo atual
+5. Exibe o status da sessão
+
+## Exemplo de saída
+
+### Configuração pela primeira vez
+
+```
+✓ Session initialized
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+
+No other active sessions detected.
+```
+
+### Já inicializado
+
+```
+✓ Session already active
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+```
+
+### Outras sessões ativas
+
+```
+✓ Session initialized
+
+  Session ID: 1 (current)
+  Path: /home/user/myproject
+  Branch: main
+
+⚠️ 2 other session(s) active in this repo.
+   Run /agileflow:session:status to see all sessions.
+   Run /agileflow:session:new to create isolated workspace.
+```
+
+## Quando é chamado?
+
+### Automático (recomendado)
+
+O gancho SessionStart chama isso automaticamente quando o Claude Code é iniciado:
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "SessionStart": {
+      "command": "node scripts/agileflow-welcome.js"
+    }
+  }
+}
+```
+
+O script de boas-vindas registra a sessão e exibe o status.
+
+### Manual
+
+Execute manualmente para:
+- Verifique se o sistema de sessão está funcionando
+- Registre-se novamente após problemas no sistema
+- Problemas de sessão de depuração
+
+```bash
+/agileflow:session:init
+```
+
+## Arquivos criados
+
+### Arquivo de registro
+
+`.agileflow/sessions/registry.json`:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "next_id": 2,
+  "project_name": "myproject",
+  "sessions": {
+    "1": {
+      "path": "/home/user/myproject",
+      "branch": "main",
+      "created": "2025-12-26T10:00:00Z",
+      "is_main": true
+    }
+  }
+}
+```
+
+### Bloquear arquivo
+
+`.agileflow/sessions/1.lock`:
+
+```
+pid=12345
+started=1703588400
+```
+
+## Solução de problemas
+
+### Sessão não detectada
+
+```bash
+# Check if registry exists
+ls .agileflow/sessions/
+
+# Re-initialize
+/agileflow:session:init
+```
+
+### Aviso de bloqueio obsoleto
+
+Se você vir bloqueios obsoletos, o comando init os limpa:
+
+```
+✓ Session initialized
+  Cleaned 1 stale session(s)
+```
+
+### Problemas de permissão
+
+Certifique-se de ter acesso de gravação para `.agileflow/`:
+
+```bash
+ls -la .agileflow/
+# Should show your user as owner
+```
+
+## Integração com script de boas-vindas
+
+O script de boas-vindas do AgileFlow inclui detecção de sessão:
+
+```
+╭──────────────────────┬────────────────────────────────────╮
+│ agileflow v2.53.0   main (cc45511)                        │
+├──────────────────────┼────────────────────────────────────┤
+│ Sessions             │ ✓ Session 1 (only)                 │
+╰──────────────────────┴────────────────────────────────────╯
+```
+
+Ou com conflitos:
+
+```
+│ Sessions             │ ⚠️ 2 other active                   │
+
+⚠️  Other Claude session(s) active in this repo.
+```
+
+## Comandos Relacionados
+
+- [`/sessão:status`](/commands/session-status) - Ver todas as sessões
+- [`/sessão:novo`](/commands/session-new) - Criar sessão paralela
+- [`/sessão:fim`](/commands/session-end) - Finalizar sessão atual

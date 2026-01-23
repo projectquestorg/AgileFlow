@@ -1,0 +1,192 @@
+---
+title: /adr:actualizar
+description: Actualizar el estado del ADR o agregar modificaciones
+---
+
+# /adr:actualizar
+
+Actualice el estado de un ADR existente o agregue enmiendas que documenten los cambios de estado.
+
+## Inicio rápido
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after review"
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | ADR number to update (4-digit, e.g., 0042) |
+| `STATUS` | No | - | New status: `proposed`, `accepted`, `deprecated`, `superseded` |
+| `REASON` | No | - | Reason for the status change |
+| `SUPERSEDED_BY` | No | - | If superseding, the new ADR number (e.g., 0045) |
+
+## Ejemplos
+
+### Aceptar una ADR propuesta
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after security review"
+```
+
+### Desaprobar un ADR
+
+```bash
+/agileflow:adr:update NUMBER=0035 STATUS=deprecated REASON="Context changed, approach is no longer applicable"
+```
+
+### Marcar ADR como reemplazado
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=superseded SUPERSEDED_BY=0045 REASON="New requirements made this approach obsolete"
+```
+
+### Reactivar ADR obsoleto
+
+```bash
+/agileflow:adr:update NUMBER=0030 STATUS=accepted REASON="Reconsidered in light of new project constraints"
+```
+
+### Modo interactivo
+
+```bash
+/agileflow:adr:update NUMBER=0042
+```
+
+Sin ESTADO ni MOTIVO, el comando lo guía a través del proceso de actualización.
+
+## Transiciones de estado
+
+### Transiciones válidas
+
+| From | To | Common Reason |
+|------|-----|---------------|
+| `proposed` | `accepted` | Team approved decision |
+| `proposed` | `rejected` | Alternative chosen, not viable |
+| `accepted` | `deprecated` | No longer relevant, context changed |
+| `accepted` | `superseded` | Better approach found, replaced by new ADR |
+| `deprecated` | `accepted` | Reconsidered, still valid |
+| `superseded` | `accepted` | Replacement didn't work out |
+
+## Flujo de trabajo
+
+Cuando ejecutas el comando:
+
+1. **Validates** el ADR existe
+2. **Asks for new status** (si no se proporciona)
+3. **Requires a reason** para cualquier cambio de estado
+4. **Shows preview** de lo que se actualizará
+5. **Asks for confirmation** antes de escribir
+6. **Appends amendment** documentando el cambio
+7. **Updates frontmatter** con nuevo estado y marca de tiempo
+
+## Formato de enmienda
+
+Cuando cambia el estado de un ADR, el comando agrega una sección de Enmienda:
+
+```markdown
+## Amendment - 2024-12-30
+
+**Status changed**: accepted → superseded
+**Reason**: New requirements made this approach obsolete.
+**Superseded by**: [ADR-0045: New Approach](adr-0045-new-approach.md)
+**Updated**: 2024-12-30
+```
+
+Se conserva el contenido original del ADR; las enmiendas documentan el cambio.
+
+## Ejemplos por escenario
+
+### Escenario 1: Aprobación de una decisión propuesta
+
+```bash
+# A team member proposed using a new framework
+# After review meeting, you approve it
+
+/agileflow:adr:update NUMBER=0047 STATUS=accepted REASON="Team consensus in architecture review meeting 2024-12-30. Framework choice validated against scalability requirements."
+```
+
+Resultado: ADR-0047 ahora marcado como `accepted` con aprobación documentada.
+
+### Escenario 2: Reemplazar un viejo enfoque
+
+```bash
+# You've found a better approach to database caching
+# The old ADR (0041) should be superseded by new ADR (0050)
+
+/agileflow:adr:update NUMBER=0041 STATUS=superseded SUPERSEDED_BY=0050 REASON="New caching strategy provides 3x better performance with simpler implementation. See ADR-0050 for details."
+```
+
+Resultado: ADR-0041 marcado como `superseded` con enlace a ADR-0050.
+
+### Escenario 3: reconsiderar una decisión obsoleta
+
+```bash
+# Project direction changed, old approach might be relevant again
+/agileflow:adr:update NUMBER=0020 STATUS=accepted REASON="Project switched to microservices architecture. Original monolithic approach may apply to specific subdomain. Reactivating for team consideration."
+```
+
+Resultado: ADR-0020 desmarcado como obsoleto, ahora `accepted` para discusión.
+
+### Escenario 4: Documentar el cambio de contexto
+
+```bash
+# Business requirements changed, a decision no longer applies
+/agileflow:adr:update NUMBER=0038 STATUS=deprecated REASON="Support for legacy browsers dropped in new product roadmap. This ADR addressed IE11 compatibility which is no longer required."
+```
+
+Resultado: ADR-0038 marcado como `deprecated` explicando por qué está obsoleto.
+
+## Mejores prácticas
+
+### Cuándo actualizar el estado de ADR
+
+- **Approve** ADR propuestas después de la revisión del equipo
+- **Deprecate** si el contexto o los requisitos cambian
+- **Supersede** cuando un ADR más nuevo reemplaza este enfoque
+- **Reactivate** si las circunstancias cambian y la antigua decisión vuelve a ser relevante
+
+### Escribir buenas razones
+
+**Good reasons:**
+- "Consenso del equipo después de la revisión de la arquitectura"
+- "Los nuevos requisitos de rendimiento hacen que este enfoque sea ineficaz"
+- "La exigencia empresarial eliminó la restricción que desencadenó esta decisión"
+- "Implementado y validado con éxito en producción"
+
+**Poor reasons:**
+- "Ya no es necesario"
+- "Existe un mejor enfoque"
+- "El equipo decidió"
+
+### Documentación de la sustitución
+
+Al reemplazar un ADR:
+1. Incluir siempre `SUPERSEDED_BY` con nuevo número ADR
+2. Explique por qué el nuevo enfoque es mejor.
+3. Consulte el nuevo ADR para obtener detalles de implementación.
+4. Mantenga el ADR original intacto para el historial.
+
+### Crear trabajo de implementación
+
+Después de aprobar un ADR:
+
+```bash
+# Mark ADR as accepted
+/agileflow:adr:update NUMBER=0050 STATUS=accepted REASON="Team approved in review"
+
+# View the ADR to plan implementation
+/agileflow:adr:view NUMBER=0050
+
+# Create stories or epic from the ADR
+/agileflow:epic TITLE="Implement ADR-0050" ...
+```
+
+## Comandos relacionados
+
+- [`/adr:lista`](/commands/adr-list) - Ver todos los ADR
+- [`/adr:ver`](/commands/adr-view) - Ver detalles completos de ADR
+- [`/ dirección`](/commands/adr) - Crear nuevo ADR
+- [`/épico`](/commands/epic) - Crear implementación épica
+- [`/historia`](/commands/story) - Crear historia de implementación

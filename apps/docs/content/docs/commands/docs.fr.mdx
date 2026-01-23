@@ -1,0 +1,159 @@
+---
+title: /docs-sync
+description: Synchronisez la documentation avec les modifications de code
+---
+
+# /docs-sync
+
+Synchronisez votre documentation avec les modifications de la base de code en détectant le nouveau code et en vous assurant que la documentation correspondante existe.
+
+## Démarrage rapide
+
+```bash
+/agileflow:docs-sync
+```
+
+Pour comparer avec une branche spécifique :
+
+```bash
+/agileflow:docs-sync BRANCH=feature-auth BASE=main
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `BRANCH` | No | Current branch | Branch to analyze for changes |
+| `BASE` | No | main/master | Base branch to compare against |
+| `AUTO_CREATE` | No | no | Automatically create missing documentation (yes/no) |
+
+## Exemples
+
+### Analyser la branche actuelle
+
+```bash
+/agileflow:docs-sync
+```
+
+Analyse votre branche actuelle par rapport à `main` et rapports :
+- Nouveaux points de terminaison d'API sans documentation
+- Nouveaux composants d'interface utilisateur sans documentation
+- Modifications de configuration non documentées
+- Documentation obsolète
+
+### Comparer la branche des fonctionnalités
+
+```bash
+/agileflow:docs-sync BRANCH=feature-oauth BASE=main
+```
+
+Compare `feature-oauth` contre `main` pour trouver toutes les lacunes de la documentation.
+
+### Créer automatiquement des documents manquants
+
+```bash
+/agileflow:docs-sync BRANCH=feature-payments AUTO_CREATE=yes
+```
+
+Génère automatiquement une documentation stub pour tous les éléments manquants et s'engage avec un message `docs: sync with codebase changes`.
+
+## Sortir
+
+La commande génère un rapport complet :
+
+```markdown
+# Documentation Sync Report
+
+**Branch**: feature-auth | **Base**: main | **Generated**: 2025-12-24T10:30:00Z
+
+## Missing Documentation
+
+### API Endpoints (3)
+- ❌ POST /api/auth/login (src/api/auth/login.ts)
+- ❌ POST /api/auth/logout (src/api/auth/logout.ts)
+- ❌ GET /api/auth/verify (src/api/auth/verify.ts)
+
+### UI Components (2)
+- ❌ LoginForm (src/components/LoginForm.tsx)
+- ⚠️ UserProfile (src/components/UserProfile.tsx) - stub exists, needs details
+
+### Configuration (1)
+- ❌ New env var: JWT_SECRET (.env.example)
+
+## Outdated Documentation
+
+### Deprecated
+- 📄 docs/04-architecture/api.md mentions /api/v1/login (removed in this branch)
+
+## Up-to-Date
+- ✅ UserAvatar component documented
+- ✅ Database schema up-to-date
+```
+
+## Comment ça marche
+
+### Détection des changements
+
+La commande :
+1. **Compares branches** en utilisant `git diff` pour identifier tous les changements de code
+2. **Categorizes changes** dans les points de terminaison de l'API, les composants de l'interface utilisateur, les services, la configuration et les schémas de base de données
+3. **Maps to documentation** emplacements où les documents devraient exister
+
+### Inférence intelligente
+
+La documentation est déduite de :
+- **TypeScript types and interfaces** - Signatures de fonction et types de retour
+- **JSDoc comments** -Documentation du code existant
+- **Test files** - Exemples d'utilisation
+- **OpenAPI decorators** - Spécifications API
+
+### Analyse des écarts
+
+Pour chaque fichier modifié, la commande vérifie :
+- **Missing documentation**: Code nouvellement ajouté sans documentation
+- **Outdated documentation**: Références au code supprimé ou modifié
+- **Incomplete documentation**: Stubs nécessitant des détails
+
+## Cartographie des documents
+
+Les modifications de code sont mappées à la documentation attendue :
+
+| Code Location | Expected Documentation |
+|--------------|----------------------|
+| `src/api/` or `src/routes/` | `docs/04-architecture/api.md` or OpenAPI spec |
+| `src/components/` or `src/pages/` | `docs/04-architecture/components.md` or Storybook |
+| `src/services/` or `src/utils/` | `docs/04-architecture/services.md` |
+| `*.config.js`, `.env.example` | `docs/02-practices/configuration.md` |
+| `migrations/` or `schema/` | `docs/04-architecture/database.md` |
+
+## Meilleures pratiques
+
+### Avant de valider le code
+Courir `docs-sync` pour identifier rapidement les lacunes dans la documentation :
+
+```bash
+/agileflow:docs-sync BRANCH=your-feature BASE=main
+```
+
+### Lors de l'ajout de nouveaux points de terminaison
+La commande les signalera automatiquement, ce qui facilitera la mémorisation de la documentation :
+
+```bash
+/agileflow:docs-sync AUTO_CREATE=yes
+```
+
+Cela crée des talons marqués de « À FAIRE : Ajouter des détails » pour une révision manuelle.
+
+### Sections de documentation à conserver
+Gardez-les synchronisés avec le code :
+- Exemples de requêtes/réponses API
+- Définitions des accessoires de composants
+- Options de configuration
+- Modifications du schéma de base de données
+- Points de terminaison d'API obsolètes
+
+## Commandes associées
+
+- [`/contexte`](/commands/context) - Générer un briefing contextuel complet
+- [`/readme-sync`](/commands/readme-sync) - Synchronisez les fichiers README avec le contenu du dossier
+- [`/adr`](/commands/adr) - Documenter les décisions architecturales

@@ -1,0 +1,243 @@
+---
+title: /retour
+description: Recueillir et traiter les commentaires des agents
+---
+
+# /retour
+
+Recueillez les commentaires des agents et des humains sur les histoires, les épopées et les sprints pour une amélioration continue des processus.
+
+## Démarrage rapide
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCOPE` | No | story | Feedback scope: story, epic, or sprint |
+| `STORY` | Conditionally | - | Story ID (required if SCOPE=story) |
+| `EPIC` | Conditionally | - | Epic ID (required if SCOPE=epic) |
+| `ANONYMOUS` | No | no | Allow anonymous feedback (yes/no) |
+
+## Exemples
+
+### Commentaires sur l'achèvement de l'histoire
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+Après avoir marqué une histoire comme terminée, récupérez :
+- Indice de clarté AC (1-5)
+- Note de résolution des dépendances (1-5)
+- Cote d’exactitude de l’estimation (1-5)
+- Note de fluidité de la mise en œuvre (1-5)
+- Ce qui s'est bien passé
+- Ce qui pourrait être amélioré
+
+### Rétrospective épique
+
+```bash
+/agileflow:feedback SCOPE=epic EPIC=EP-0010
+```
+
+Une fois l'accomplissement épique terminé, rassemblez :
+- Mesures de réussite par rapport aux objectifs épiques
+- Ce qui s'est bien passé lors de l'exécution
+- Ce qui ne s'est pas bien passé
+- Surprises et apprentissages
+- Actions pour la prochaine épopée
+
+### Commentaires sur la rétrospective du sprint
+
+```bash
+/agileflow:feedback SCOPE=sprint
+```
+
+À la fin du sprint, recueillez les commentaires de l'équipe :
+- Continuer (continuer à faire)
+- Arrêter (plus utile)
+- Début (nouvelles pratiques)
+- Expériences à tenter
+- Les bloqueurs ont supprimé ce sprint
+
+### Commentaires anonymes
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0045 ANONYMOUS=yes
+```
+
+Recueille des commentaires sans attribution pour des sujets sensibles.
+
+## Sortir
+
+### Fichiers de commentaires
+
+Enregistre les commentaires dans :
+```text
+docs/08-project/feedback/<YYYYMMDD>-<story-or-epic-id>.md
+```
+
+### Exemple d'histoire
+
+```markdown
+## Story Feedback: US-0042
+
+**Completed by**: AG-API
+**Date**: 2025-12-22
+
+### Ratings (1-5)
+- AC clarity: 5 (crystal clear)
+- Dependencies resolved: 4 (one minor blocker)
+- Estimate accuracy: 5 (spot on)
+- Implementation smoothness: 4 (smooth)
+
+### What Went Well
+- Clear acceptance criteria with examples
+- All tests passed on first run
+- Good documentation
+
+### What Could Be Improved
+- Database schema migration took longer than expected
+
+### Blockers Encountered
+- None significant
+
+### Learnings/Insights
+- JSON schema validation saved hours of debugging
+```
+
+## Types de commentaires
+
+### 1. Commentaires sur la fin de l'histoire
+
+Notes pour :
+- **AC Clarity** - Les critères d'acceptation étaient-ils clairs ? (1-5)
+- **Dependencies** - Les bloqueurs ont-ils été résolus ? (1-5)
+- **Estimate Accuracy** - L'estimation était-elle exacte ? (1-5)
+- **Implementation** - Le processus s'est-il déroulé sans heurts ? (1-5)
+- **Testing** - Les tests étaient-ils adéquats ? (1-5)
+- **Documentation** - La documentation était-elle suffisante ? (1-5)
+
+Plus ouvert :
+- Qu'est-ce qui s'est bien passé ? (2-3 balles)
+- Qu’est-ce qui pourrait être amélioré ? (2-3 balles)
+- Des bloqueurs rencontrés ?
+- Apprentissages/idées ?
+
+### 2. Commentaires sur les performances des agents
+
+Suit l’efficacité :
+- Histoires terminées
+- Histoires bloquées
+- Délai de réalisation moyen
+- Points forts observés
+- Points à améliorer
+- Recommandations
+
+### 3. Rétrospective épique
+
+Après une réalisation épique :
+- Mesures de réussite par rapport aux objectifs
+- Qu'est-ce qui s'est bien passé ?
+- Qu'est-ce qui ne s'est pas bien passé ?
+- Surprises et apprentissages
+- Actions pour la prochaine épopée
+
+### 4. Rétrospective des sprints
+
+A la fin du sprint :
+- Continuer (continuer à faire)
+- Arrêter (plus utile)
+- Début (nouvelles pratiques)
+- Expériences à tenter
+- Bloqueurs supprimés
+- Problèmes récurrents
+
+## Métriques suivies
+
+Le système de feedback suit :
+
+| Metric | Target | Purpose |
+|--------|--------|---------|
+| Story clarity score | >4.0 | AC quality |
+| Estimate accuracy | within 50% | Planning improvement |
+| Blocker frequency | under 20% of stories | Dependency management |
+| Test coverage average | >85% | Code quality |
+| Completion velocity | Trending up | Team throughput |
+
+## Analyses et perspectives
+
+### Détection de modèles
+
+Détection automatique des modèles :
+- **Unclear AC** - Histoires avec des scores de clarté inférieurs à 3 → Améliorer le modèle
+- **Poor estimates** - Grande variance → Réviser le guide d'estimation
+- **Frequent blockers** - Stories souvent bloquées → Améliorer le suivi des dépendances
+- **Low test coverage** - Tests inadéquats → Appliquer les normes plus tôt
+
+### Améliorations exploitables
+
+Génère automatiquement :
+- **Improvement stories** pour les problèmes récurrents
+- **Process recommendations** pour les problèmes détectés
+- **Recognition** pour les victoires et les plus performants
+- **ADRs** pour les apprentissages d'architecture
+
+### Rapports rétrospectifs
+
+Génère des résumés complets :
+- Sentiment général (en amélioration/en baisse/stable)
+- Top des victoires avec célébration
+- Principaux défis
+- Actions recommandées
+- Perspectives et apprentissages de l'équipe
+
+## Flux de travail
+
+1. Invite automatique aux points de déclenchement :
+   - Le statut de l'histoire passe à « terminé »
+   - Epic atteint 100 % d'achèvement
+   - Date de fin du sprint atteinte
+2. Présenter le formulaire de commentaires avec un contexte pré-rempli
+3. Demandez : « Fournir des commentaires maintenant ? (OUI/NON/ PLUS TARD) »
+4. Si OUI : Collectez les notes et les commentaires de manière interactive
+5. Enregistrer dans le répertoire de commentaires
+6. Analyser les modèles dans tous les commentaires
+7. Suggérer des histoires d'amélioration pour les problèmes
+
+## Utiliser quand
+
+- **Story completion** - Immédiatement après le marquage
+- **Epic retrospective** - Après un achèvement épique
+- **Sprint end** - Recueillir les apprentissages de l'équipe
+- **Process improvement** - Revue mensuelle des modèles de feedback
+- **Performance review** - Évaluations trimestrielles des agents
+- **Team retrospectives** - Cérémonies formelles de sprint
+
+## Déclencheurs automatiques
+
+Des invites de commentaires s'affichent :
+- Lorsque le statut de l'histoire passe à « terminé »
+- Quand l'épopée atteint 100 % d'achèvement
+- Aux dates de fin de sprint configurées
+- Peut être demandé manuellement à tout moment
+
+## Intégration
+
+Les commentaires affluent vers :
+- **Retrospectives** - Informations incluses dans les rétros de sprint
+- **Metrics** - Notes suivies au fil du temps
+- **Story creation** - Générer automatiquement des histoires d'amélioration
+- **ADRs** - Documenter les apprentissages sous forme de décisions architecturales
+- **Agent profiles** - Listes de mises à jour des données de performance
+
+## Commandes associées
+
+- [`/rétro`](/commands/retro) - Analyse rétrospective du sprint
+- [`/métriques`](/commands/metrics) - Indicateurs et tendances du projet
+- [`/mise à jour`](/commands/update) - Rapports d'avancement des parties prenantes
+- [`/statut`](/commands/status) - Histoire actuelle et statut de l'équipe

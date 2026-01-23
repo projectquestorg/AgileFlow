@@ -1,0 +1,252 @@
+---
+title: /Blocker
+description: Verfolgen und lösen Sie Blockaden mit umsetzbaren Vorschlägen
+---
+
+# /Blocker
+
+Analysieren und verfolgen Sie alle Hindernisse im gesamten Projekt mit Kategorisierung, Ursachenanalyse und umsetzbaren Lösungsvorschlägen.
+
+## Schnellstart
+
+```bash
+/agileflow:blockers
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `AGENT` | No | - | Filter to specific agent (e.g., AG-UI, AG-API) |
+| `SHOW_RESOLVED` | No | false | Include recently resolved blockers (last 7 days) |
+| `DETAILED` | No | false | Show extended details with ADR and research links |
+
+## Beispiele
+
+### Alle Blocker anzeigen
+
+```bash
+/agileflow:blockers
+```
+
+Zeigen Sie alle aktiven Blocker aller Agenten mit zusammenfassenden Statistiken und vorgeschlagenen Aktionen an.
+
+### Nach Agent filtern
+
+```bash
+/agileflow:blockers AGENT=AG-UI
+```
+
+Zeigt nur Blocker an, die das UI-Team betreffen.
+
+### Beziehen Sie gelöste Blocker ein
+
+```bash
+/agileflow:blockers SHOW_RESOLVED=true
+```
+
+Zeigen Sie sowohl aktive als auch kürzlich gelöste Blocker (letzte 7 Tage) an, um den Entsperrungsfortschritt zu verfolgen.
+
+### Vollständige Details anzeigen
+
+```bash
+/agileflow:blockers DETAILED=true
+```
+
+Zeigen Sie erweiterte Informationen an, einschließlich zugehöriger ADRs, Forschungsnotizen und Lösungsempfehlungen.
+
+## Blocker-Kategorien
+
+Blocker werden nach Typ kategorisiert, um die Identifizierung von Lösungsmustern zu erleichtern:
+
+### Technische Blocker
+Fehlende APIs, Infrastruktur oder unvollständige Abhängigkeiten. Entsperren Sie häufig, wenn die abhängige Geschichte abgeschlossen ist.
+
+**Example**: AG-UI blockiert und wartet auf die Implementierung der AG-API `/auth/login` Endpunkt
+
+**Resolution**: Überprüfen Sie, ob die AG-API-Story in Bearbeitung ist, schätzen Sie die Fertigstellungszeit ein oder verwenden Sie Scheindaten als Problemumgehung.
+
+### Koordinationsblocker
+Warten auf andere Agenten oder Anforderung einer Übergabe. Erfordert teamübergreifende Kommunikation.
+
+**Example**: AG-UI hat das Warten auf AG-API-Prioritätsentscheidung blockiert
+
+**Resolution**: Planen Sie die Synchronisierung, klären Sie Prioritäten oder verteilen Sie die Arbeit neu, um die Kapazität auszugleichen.
+
+### Klärungsblocker
+Anforderungen unklar oder Akzeptanzkriterien unvollständig. Ohne weitere Informationen kann ich nicht fortfahren.
+
+**Example**: Bereitstellungsziel unklar (Vercel vs. AWS vs. Docker)
+
+**Resolution**: Stellen Sie spezifische Fragen, überprüfen Sie epische Ziele oder erstellen Sie eine Spike-Story zur Untersuchung.
+
+### Externe Blocker
+Service, Genehmigung oder Zugriff durch Dritte erforderlich. Oft außerhalb der Teamkontrolle.
+
+**Example**: Warten auf Zahlungs-Gateway-API-Schlüssel vom Anbieter
+
+**Resolution**: An Stakeholder eskalieren, Annahmen dokumentieren, um parallel zu arbeiten.
+
+### Kapazitätsblocker
+Teammitglied hat das WIP-Limit erreicht und kann keine neuen Geschichten starten. Andere warten auf ihre Verfügbarkeit.
+
+**Example**: AG-API bei 2/2 Stockwerken, 3 fertige Stockwerke warten
+
+**Resolution**: Verteilen Sie die Aufgaben auf andere Agenten, konzentrieren Sie sich auf die Erledigung der aktuellen Arbeit oder erweitern Sie die Teamkapazität.
+
+### Forschungsblocker
+Bevor Sie fortfahren, ist eine Untersuchung erforderlich. Veraltete Forschungsergebnisse müssen möglicherweise aktualisiert werden.
+
+**Example**: Bereitstellungsvergleichsforschung veraltet (mehr als 90 Tage alt)
+
+**Resolution**: Laufen `/agileflow:research:ask` Aktuelle Best Practices finden Sie in den Forschungsnotizen.
+
+## Ausgabeformat
+
+### Zusammenfassungsabschnitt
+
+```text
+🚧 Blocker Dashboard
+====================
+Generated: 2025-12-24 14:30
+Filter: All agents
+
+📊 SUMMARY
+----------
+Total Active Blockers: 8
+  - Technical: 3
+  - Coordination: 2
+  - Clarification: 1
+  - External: 0
+  - Capacity: 2
+  - Research: 0
+
+Critical (>14 days): 1
+Cross-Agent Blockers: 2
+```
+
+### Abschnitt „Kritische Blocker“.
+
+Blocker sind >14 Tage lang veraltet und erfordern sofortige Aufmerksamkeit:
+
+```text
+🔴 CRITICAL BLOCKERS (>14 days)
+-------------------------------
+US-0051 | AG-DEVOPS | Blocked for 16 days
+  Reason: Unclear deployment target
+  Impact: Blocking EP-0012 CI/CD Pipeline (10% complete)
+
+  💡 Resolution:
+     - Ask stakeholder: Which platform? (Vercel, AWS, Docker)
+     - Related research: docs/10-research/deployment-comparison.md (90 days old)
+     - Suggest: /agileflow:research:ask TOPIC="Modern deployment 2025"
+```
+
+### Abschnitt „Aktive Blocker“.
+
+Nach Kategorien gruppiert mit Lösungsvorschlägen und geschätzten Entsperrzeiten.
+
+### Abschnitt „Kapazitätsblocker“.
+
+Agenten am WIP-Limit mit wartenden Storys:
+
+```text
+💪 CAPACITY BLOCKERS
+--------------------
+AG-API at WIP limit (2/2):
+  - US-0038 (in-progress, est. 1d remaining)
+  - US-0041 (in-progress, est. 2d remaining)
+
+Ready stories waiting for AG-API: 3
+  - US-0055 (EP-0011, est: 1d)
+  - US-0060 (EP-0013, est: 2d)
+  - US-0062 (EP-0010, est: 0.5d)
+
+💡 Suggestion: Wait for US-0038 to complete (tomorrow),
+   then pick up US-0062 (smallest and fastest win)
+```
+
+### Abschnitt „Kürzlich gelöst“ (wenn SHOW_RESOLVED=true)
+
+```text
+✅ RECENTLY RESOLVED (last 7 days)
+----------------------------------
+2025-12-21 14:30 - AG-API unblocked US-0042: "POST /auth/login endpoint complete"
+2025-12-20 09:15 - AG-UI unblocked US-0033: "Design system tokens extracted"
+2025-12-19 16:45 - AG-CI unblocked US-0028: "Test environment configured"
+```
+
+### Abschnitt „Aktionselemente“.
+
+Priorisierte nächste Schritte mit spezifischen Befehlen:
+
+```text
+🎯 PRIORITIZED ACTIONS
+----------------------
+1. [High] Resolve US-0051 clarification blocker (16 days old)
+   Command: /agileflow:status STORY=US-0051 STATUS=ready NOTE="Clarified: Vercel"
+
+2. [High] Complete US-0038 (70% done, unblocks US-0042)
+   Command: /agileflow:status STORY=US-0038 STATUS=in-review
+
+3. [Medium] Update stale deployment research (90 days old)
+   Command: /agileflow:research:ask TOPIC="Deployment platforms"
+
+4. [Low] Redistribute AG-API backlog when capacity opens
+   Command: /agileflow:assign STORY=US-0055 NEW_OWNER=AG-API
+```
+
+## Wichtige Erkenntnisse
+
+Der Blocker-Befehl hebt Folgendes hervor:
+
+- **Critical blockers** - Alles, was länger als 14 Tage veraltet ist, erfordert sofortiges Handeln
+- **Cross-agent blockers** - Zeigt AG-API ↔ AG-UI-Koordinationsmöglichkeiten
+- **Capacity constraints** - Identifiziert Engpässe in der Teamkapazität
+- **Dependency chains** - Durch das Entsperren von Story A werden die Storys B und C freigegeben
+- **Research gaps** - Zeigt an, wenn die Recherche veraltet ist und aktualisiert werden muss
+
+## Best Practices
+
+1. **Check blockers daily** - Beim Aufstehen oder morgens
+2. **Unblock immediately** - Lassen Sie Blocker nicht länger als nötig sitzen
+3. **Communicate blockers** - Status aktualisieren, sobald blockiert, nicht danach
+4. **Escalate critical** - Alles, was länger als 7 Tage dauert, muss eskaliert werden
+5. **Document root cause** - Helfen Sie bei der zukünftigen Referenz mit klaren Blockierungsgründen
+
+## Verwandte Befehle
+
+- [`/agileflow:status`](/commands/status) - Aktualisieren Sie den Blockerstatus, wenn die Lösung behoben ist
+- [`/agileflow:board`](/commands/board) - Visualisieren Sie Blocker in der Kanban-Ansicht
+- [`/agileflow:metrics`](/commands/metrics) - Analysieren Sie die Auswirkungen von Blockern auf Kennzahlen
+- [`/agileflow:research:ask`](/commands/research) - Generieren Sie eine detaillierte Rechercheaufforderung zur Blockeruntersuchung
+- [`/story-new`](/commands/story-new) - Erstellen Sie entsperrende Geschichten
+
+## FAQ
+
+<Accordion type="multiple">
+  <AccordionItem value="detected">
+    <AccordionTrigger>How is a blocker detected?</AccordionTrigger>
+    <AccordionContent>
+      Blocker werden identifiziert durch: Geschichten mit `status: "blocked"` in status.json warten Storys auf unvollständige Abhängigkeiten, Agenten mit WIP-Limit und bereiten Storys warten und Storys, die seit mehr als 14 Tagen unverändert sind.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="types">
+    <AccordionTrigger>How are blocker types determined?</AccordionTrigger>
+    <AccordionContent>
+      Typen werden abgeleitet aus: `blocked_by` Feldtext (enthält Schlüsselwörter wie „API“, „Genehmigung“, „unklar“), Busnachrichten mit Blockerkommentaren, Story-Abhängigkeitsketten und epischen Kontext.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="spike">
+    <AccordionTrigger>Can I create a spike story to unblock research?</AccordionTrigger>
+    <AccordionContent>
+      Ja, verwenden `/story-new` um eine Spitze zu erzeugen: `/story-new EPIC=EP-0012 TYPE=spike TITLE="Research modern deployment platforms"`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="difference">
+    <AccordionTrigger>What's the difference between blocked and WIP limit?</AccordionTrigger>
+    <AccordionContent>
+      **Blocked** bedeutet, dass der Vorgang nicht fortgesetzt werden kann (externe Abhängigkeit). **WIP limit** bedeutet, dass der Agent ausgelastet ist und die aktuelle Arbeit beenden sollte, bevor er mit weiteren Arbeiten beginnt.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

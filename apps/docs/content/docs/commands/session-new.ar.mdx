@@ -1,0 +1,146 @@
+---
+title: /الجلسة:جديد
+description: قم بإنشاء جلسة متوازية باستخدام git Worktree للعمل متعدد الجلسات
+---
+
+# /الجلسة:جديد
+
+قم بإنشاء جلسة Claude Code متوازية جديدة باستخدام الإعداد التلقائي لشجرة عمل git. يتيح لك ذلك العمل على مهام متعددة في وقت واحد دون تعارضات.
+
+## بداية سريعة
+
+```bash
+/agileflow:session:new
+```
+
+## كيف يعمل
+
+عند تشغيل هذا الأمر، ستظهر لك الخيارات:
+
+1. **Auto-create Session N** - إنشاء جلسة مرقمة تلقائيًا (على سبيل المثال، الجلسة 2، الجلسة 3)
+2. **Name this session** - إعطاء لقب مثل "auth" أو "refactor"
+3. **Use existing branch** - إرفاق إلى فرع لديك بالفعل
+
+الأمر إذن:
+1. إنشاء شجرة عمل git جديدة في دليل موازي
+2. يسجل الجلسة في سجل الجلسة
+3. يظهر لك `cd` أمر للتبديل إلى مساحة العمل الجديدة
+
+## إخراج المثال
+
+```
+Creating Session 2...
+
+✓ Session created successfully
+
+  Session ID: 2
+  Path: /home/user/myproject-2
+  Branch: session-2
+
+To start working in this session:
+  cd /home/user/myproject-2 && claude
+```
+
+## حدود
+
+يستخدم هذا الأمر المطالبات التفاعلية (AskUserQuestion) بدلاً من معلمات سطر الأوامر.
+
+| Option | Description |
+|--------|-------------|
+| Auto-create | Uses next available session ID |
+| Named session | Creates with custom nickname (e.g., "auth" → `/home/user/myproject-auth`) |
+| Existing branch | Attaches to a branch without creating a new one |
+
+## لماذا نستخدم الجلسات المتوازية؟
+
+### المشكلة
+
+يؤدي تشغيل مثيلات Claude Code المتعددة في نفس الدليل إلى ما يلي:
+- تعارضات تأمين الملفات (خاصة على نظام التشغيل macOS)
+- خطر التعديلات المتعارضة على نفس الملفات
+- مشترك `~/.claude/` قضايا الدليل
+- لا توجد رؤية لما تعمل عليه الجلسات الأخرى
+
+### الحل
+
+توفر أشجار عمل Git ما يلي:
+- **Isolated directories** - كل جلسة لها مجلد خاص بها
+- **Shared .git** - كفاءة القرص، لا يوجد الريبو المكرر
+- **Independent branches** - لا يوجد تعارضات دمج أثناء العمل
+- **Clean separation** - الجلسات مينفعش تدوس على بعضها
+
+## سير العمل
+
+### بدء مهمة ثانية
+
+```bash
+# In your main project
+/agileflow:session:new
+# Pick "Auto-create Session 2"
+
+# Claude shows:
+#   cd /home/user/myproject-2 && claude
+
+# Open new terminal
+cd /home/user/myproject-2
+claude
+```
+
+### تسمية الجلسات حسب الميزة
+
+```bash
+# Create session for auth work
+/agileflow:session:new
+# Pick "Name this session" → "auth"
+
+# Creates: /home/user/myproject-auth on branch session-auth
+```
+
+### استخدام الفرع الموجود
+
+```bash
+# You have a feature branch already
+git branch
+# feature/new-api
+# main
+
+/agileflow:session:new
+# Pick "Use existing branch" → "feature/new-api"
+
+# Creates worktree attached to that branch
+```
+
+## سجل الجلسة
+
+يتم تتبع الجلسات `.agileflow/sessions/registry.json`:
+
+```json
+{
+  "sessions": {
+    "1": {
+      "path": "/home/user/myproject",
+      "branch": "main",
+      "is_main": true
+    },
+    "2": {
+      "path": "/home/user/myproject-2",
+      "branch": "session-2",
+      "nickname": null
+    }
+  }
+}
+```
+
+## أفضل الممارسات
+
+- **One task per session** - حافظ على تركيز الجلسات
+- **Use nicknames for long-running work** - أسهل للتذكر من الأرقام
+- **End sessions when done** - يستخدم `/session:end` لتنظيف
+- **Check status before starting** - يستخدم `/session:status` لمعرفة ما يجري
+
+## الأوامر ذات الصلة
+
+- [`/الجلسة:الحالة`](/commands/session-status) - عرض كافة الجلسات
+- [`/ الجلسة: استئناف`](/commands/session-resume) - التبديل إلى جلسة أخرى
+- [`/ الجلسة: النهاية`](/commands/session-end) - إنهاء الجلسة وتنظيفها اختياريًا
+- [`/ الجلسة: التاريخ`](/commands/session-history) - عرض الجلسات الماضية

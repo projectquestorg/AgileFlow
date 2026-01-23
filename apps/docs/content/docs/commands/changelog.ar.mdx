@@ -1,0 +1,329 @@
+---
+title: / إنشاء سجل التغيير
+description: إنشاء سجل التغيير تلقائيًا من سجل الالتزام
+---
+
+# / إنشاء سجل التغيير
+
+يمكنك إنشاء سجل التغيير تلقائيًا من سجل الالتزام الخاص بك وسحب الطلبات باستخدام الالتزامات التقليدية والاحتفاظ بتنسيق سجل التغيير.
+
+## بداية سريعة
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+## غاية
+
+يقوم هذا الأمر بإنشاء سجلات التغيير الاحترافية عن طريق:
+- اكتشاف الإصدار من أحدث علامات git تلقائيًا
+- جمع الالتزامات والعلاقات العامة المدمجة منذ الإصدار الأخير
+- تصنيف التغييرات (مضافة/متغيرة/ثابتة/محذوفة/أمان)
+- تسليط الضوء على التغييرات العاجلة
+- اقتراح الإصدارات الدلالية على أساس التغييرات
+- تحديث `CHANGELOG.md` بالتنسيق المناسب
+- اختياريًا، يمكنك إنشاء علامات git وإصدارات GitHub
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `VERSION` | No | auto-detect | Version number (e.g., `2.5.0`) |
+| `SINCE` | No | last tag | Starting point (e.g., `v2.4.0`) |
+| `FORMAT` | No | `keepachangelog` | Format style: `keepachangelog`, `simple`, `github` |
+| `AUTO_COMMIT` | No | `no` | Auto-commit changelog updates: `yes` or `no` |
+
+## أمثلة
+
+### الكشف التلقائي عن كل شيء
+
+```bash
+/agileflow:generate-changelog
+```
+
+يستخدم أحدث علامة عند بدء الإصدار، ويكتشف الإصدار التالي، وينشئ سجل التغيير.
+
+### تحديد الإصدارات الدقيقة
+
+```bash
+/agileflow:generate-changelog VERSION=2.5.0 SINCE=v2.4.0
+```
+
+ينشئ قسم سجل التغيير للإصدار 2.5.0 من الالتزامات منذ الإصدار 2.4.0.
+
+### استخدم تنسيق جيثب
+
+```bash
+/agileflow:generate-changelog FORMAT=github
+```
+
+يُنشئ سجل التغيير بتنسيق ملاحظات إصدار GitHub.
+
+### الالتزام التلقائي بالتغييرات
+
+```bash
+/agileflow:generate-changelog AUTO_COMMIT=yes
+```
+
+يقوم بتحديث CHANGELOG.md ويتم تنفيذه تلقائيًا بعد التأكيد.
+
+## كيف يعمل
+
+يتبع الأمر سير عمل ذكي:
+
+### 1. الكشف عن الإصدار
+
+لو `VERSION` لم يتم توفيره، يكتشف من بوابة:
+```bash
+git describe --tags --abbrev=0  # Gets latest tag
+```
+
+ثم يقترح الإصدار التالي بناءً على التغييرات:
+- **Major (2.0.0)**: تم الكشف عن تغييرات جذرية
+- **Minor (1.X.0)**: ميزات جديدة (الفذ :) فقط
+- **Patch (1.1.X)**: إصلاحات الشوائب (الإصلاح :) فقط
+
+### 2. الالتزام بالتحصيل
+
+يرتكب منذ ذلك الحين `SINCE` نقطة:
+```bash
+git log <SINCE>..HEAD --oneline --no-merges
+```
+
+يقوم أيضًا بجلب العلاقات العامة المدمجة من GitHub:
+```bash
+gh pr list --state merged --json number,title,mergedAt,labels
+```
+
+### 3. التصنيف
+
+يتم التصنيف تلقائيًا باستخدام الالتزامات التقليدية:
+
+| Prefix | Category | Example |
+|--------|----------|---------|
+| `feat:` | **Added** | New feature X for users |
+| `fix:` | **Fixed** | Bug where E caused F |
+| `perf:` | **Changed** | Improved performance by 40% |
+| `refactor:` | **Changed** | Restructured API layer |
+| `security:` | **Security** | Patched XSS vulnerability |
+| `feat!:` or `BREAKING CHANGE:` | **Changed** (with warning) | ⚠️ **BREAKING** Redesigned API |
+
+### 4. إنشاء سجل التغيير
+
+إنشاء إدخال بتنسيق Keep a Changelog:
+
+```markdown
+## [2.5.0] - 2025-12-22
+
+### Added
+- OAuth2 authentication support (#123)
+- Dark mode toggle (#137)
+
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints (#126)
+- Improved query performance by 50% (#125)
+
+### Fixed
+- Crash when user is null (#124)
+- Memory leak in WebSocket handler (#139)
+
+### Security
+- Patched XSS vulnerability in comment rendering (#131)
+```
+
+### 5. مراجعة المستخدم والموافقة عليه
+
+يعرض معاينة الفرق ويطلب التأكيد قبل تحديث CHANGELOG.md.
+
+### 6. الإجراءات الاختيارية
+
+في حالة الموافقة:
+- Updates `CHANGELOG.md`
+- اختياريًا، يتم إنشاء التزام git
+- يمكن إنشاء علامة git
+- يمكن إنشاء إصدار GitHub
+
+## تنسيق سجل التغيير
+
+يستخدم الأمر الاحتفاظ بمعيار Changelog مع هذه الأقسام:
+
+### [غير منشورة]
+لم يتم إصدار تغييرات التطوير بعد (تبقى دائمًا في الأعلى)
+
+### [النسخة] - التاريخ
+الأقسام الخاصة بكل إصدار:
+
+- **Added** - New functionality
+- **Changed** - تغييرات على الوظائف الحالية
+- **Deprecated** - الوظائف التي سيتم إزالتها قريبًا
+- **Removed** - تمت إزالة الوظيفة
+- **Fixed** - إصلاحات الشوائب
+- **Security** - إصلاحات الثغرات الأمنية
+
+## كسر التغييرات
+
+تم الكشف عن التغييرات العاجلة وإبرازها بشكل بارز:
+
+**Detected By**:
+- الالتزام مع `!` بعد النوع: `feat!: redesign API`
+- الالتزام مع `BREAKING CHANGE:` تذييل
+- العلاقات العامة المسمى ب `breaking-change`
+
+**Displayed As**:
+```markdown
+### Changed
+- ⚠️ **BREAKING**: Redesigned API endpoints. See migration guide. (#126)
+```
+
+## ملف الإخراج
+
+تحديثات الأمر `CHANGELOG.md` مع هذا الهيكل:
+
+```markdown
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [2.5.0] - 2025-12-22
+### Added
+...
+
+## [2.4.0] - 2025-11-15
+### Added
+...
+
+---
+
+[unreleased]: https://github.com/user/repo/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/user/repo/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/user/repo/compare/v2.3.0...v2.4.0
+```
+
+## سير العمل
+
+يبدو سير العمل الكامل كما يلي:
+
+1. **Show Detection Results**
+   ```
+   Latest tag: v2.4.0
+   Commits since: 15 (3 Added, 5 Fixed, 2 Changed, 1 Security)
+   Suggested version: 2.5.0 (MINOR - new features)
+   ```
+
+2. **Show Changelog Preview**
+   ```
+   ## [2.5.0] - 2025-12-22
+
+   ### Added
+   - OAuth2 authentication support (#123)
+   ...
+   ```
+
+3. **Ask for Confirmation**
+   ```
+   Update CHANGELOG.md? (YES/NO)
+   Auto-commit? (YES/NO)
+   Create tag? (YES/NO)
+   ```
+
+4. **Apply Changes**
+   - التحديثات CHANGELOG.md
+   - يلتزم بشكل اختياري: `git commit -m "chore(release): update CHANGELOG for v2.5.0"`
+   - اختياريًا، يُنشئ علامة: `git tag -a v2.5.0`
+   - اختياريًا، يُنشئ إصدار GitHub
+
+## التكامل مع CI/CD
+
+يمكنك أتمتة إنشاء سجل التغيير في CI:
+
+```yaml
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get all tags
+
+      - name: Generate changelog
+        run: /agileflow:generate-changelog VERSION=${{ github.event.inputs.version }}
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): update CHANGELOG"
+
+      - name: Create tag
+        run: git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
+
+      - name: Push changes
+        run: git push origin main && git push origin v${{ github.event.inputs.version }}
+
+      - name: Create GitHub release
+        run: gh release create v${{ github.event.inputs.version }} --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+## أفضل الممارسات
+
+### الالتزام بتنسيق الرسالة
+
+استخدم الالتزامات التقليدية للتصنيف التلقائي:
+
+```bash
+# Good - auto-categorizes as Added
+git commit -m "feat: add OAuth2 authentication"
+
+# Good - auto-categorizes as Fixed
+git commit -m "fix: crash when user is null"
+
+# Good - breaking change detection
+git commit -m "feat!: redesign API endpoints"
+
+# Better - with scope
+git commit -m "feat(auth): add OAuth2 support"
+```
+
+### الإصدار الدلالي
+
+اتبع الإصدارات الدلالية بعد الإصدارات:
+
+```text
+MAJOR.MINOR.PATCH
+  2  .  5  .  0
+
+- MAJOR: Breaking changes
+- MINOR: New features (backwards compatible)
+- PATCH: Bug fixes only
+```
+
+### عملية الإصدار
+
+1. **Generate changelog** للإصدار القادم
+2. **Create git tag** مع الإصدار
+3. **Push tag** لتشغيل خط أنابيب القرص المضغوط
+4. **Create GitHub release** مع مقتطفات سجل التغيير
+5. **Announce release** (مدونة، وسائل التواصل الاجتماعي، النشرة الإخبارية)
+
+## الأوامر ذات الصلة
+
+- [`/ إعداد ci`](/commands/ci) - إعداد سير عمل CI/CD
+- [`/الإعداد للنشر`](/commands/deploy) - تكوين النشر
+- [`/ Agileflow: الحالة`](/commands/status) - عرض حالة المشروع

@@ -1,0 +1,439 @@
+---
+title: /مهارة:حذف
+description: إزالة مهارة مثبتة من .claude/skills/
+---
+
+# /مهارة:حذف
+
+قم بإزالة المهارة بأمان من `.claude/skills/` مع ميزات الأمان الكاملة بما في ذلك المعاينة والتأكيد والنسخ الاحتياطي الاختياري.
+
+## بداية سريعة
+
+```bash
+# Interactive mode
+/agileflow:skill:delete
+
+# Delete specific skill
+/agileflow:skill:delete supabase-swift
+```
+
+## ماذا يفعل
+
+أمر الحذف:
+
+1. **Shows what will be deleted** - عرض شجرة لجميع الملفات
+2. **Confirms with you** - يتطلب موافقة صريحة
+3. **Offers backup option** - احفظ نسخة قبل الحذف
+4. **Permanently removes** - حذف دليل المهارات
+5. **Suggests next actions** - ماذا تفعل بعد الحذف
+
+## ميزات السلامة
+
+يحتوي هذا الأمر على طبقات أمان متعددة:
+
+- **No accidental deletion** - تأكد دائمًا قبل الإزالة
+- **Tree view preview** - انظر بالضبط ما تم حذفه
+- **Backup option** - تصدير المهارة قبل الحذف
+- **One at a time** - حذف المهارات الفردية (لا يوجد حذف دفعة)
+- **Clear confirmation** - خيار صريح بنعم/لا
+
+## سير العمل
+
+### الخطوة 1: حدد المهارة
+
+إذا لم تحدد مهارة:
+
+```bash
+/agileflow:skill:delete
+```
+
+**Choose from available skills:**
+```
+Which skill would you like to delete?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components (deprecated)
+    Old component patterns (no longer using)
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 2
+```
+
+### الخطوة 2: معاينة ما سيتم حذفه
+
+يوضح الأمر بالضبط ما هو موجود في المهارة:
+
+```
+⚠️  About to delete: ui-components
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+
+  .claude/skills/ui-components/
+  ├── SKILL.md
+  ├── references.md
+  ├── cookbook/
+  │   ├── create-component.md
+  │   ├── styling-patterns.md
+  │   └── accessibility.md
+  └── .mcp.json
+
+Total: 6 files in 2 directories
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### الخطوة 3: تأكيد الحذف
+
+```
+Are you sure you want to delete this skill?
+This cannot be undone.
+
+[1] Yes, delete permanently
+    Remove the skill and all its files
+
+[2] No, keep it
+    Cancel and return
+
+[3] Export first
+    Save a backup before deleting
+
+Select: 3
+```
+
+### الخطوة 4: إنشاء نسخة احتياطية (إذا طلب ذلك)
+
+إذا اخترت "التصدير أولاً":
+
+```
+📦 Creating backup...
+
+Backup saved to:
+  .claude/skills-backup/ui-components-20251209-143052/
+
+This contains a copy of everything. You can restore it later
+if needed, or just delete the backup directory.
+
+Ready to delete? (Yes/No)
+```
+
+موقع النسخ الاحتياطي:
+```
+.claude/skills-backup/
+└── ui-components-20251209-143052/
+    ├── SKILL.md
+    ├── references.md
+    ├── cookbook/
+    └── .mcp.json
+```
+
+### الخطوة 5: حذف التأكيد
+
+```
+✅ Deleted: ui-components
+
+The skill has been permanently removed from .claude/skills/
+```
+
+### الخطوة 6: الإجراءات التالية
+
+بعد الحذف، تُعرض عليك خيارات:
+
+```
+What would you like to do next?
+
+[1] Delete another skill
+    Remove more skills
+
+[2] Create new skill
+    Generate a replacement skill
+
+[3] List remaining skills
+    See what's still installed
+
+[4] Done
+    Exit skill management
+
+Select: 4
+```
+
+## أمثلة
+
+### مثال 1: حذف المهارة المهملة
+
+```bash
+/agileflow:skill:delete old-pattern
+```
+
+**Response:**
+```
+⚠️  About to delete: old-pattern
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+  .claude/skills/old-pattern/
+  ├── SKILL.md
+  └── references.md
+
+Total: 2 files
+
+Are you sure? (Yes/No/Export first)
+> Yes
+
+✅ Deleted: old-pattern
+```
+
+### المثال 2: الحذف باستخدام النسخ الاحتياطي
+
+```bash
+/agileflow:skill:delete supabase-swift
+```
+
+**Response:**
+```
+⚠️  About to delete: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This will permanently remove:
+  .claude/skills/supabase-swift/
+  ├── SKILL.md
+  ├── references.md
+  ├── cookbook/ (3 files)
+  └── .mcp.json
+
+Total: 6 files
+
+Are you sure? (Yes/No/Export first)
+> Export first
+
+📦 Creating backup...
+
+Backup saved to:
+  .claude/skills-backup/supabase-swift-20251209-150000/
+
+Ready to delete? (Yes/No)
+> Yes
+
+✅ Deleted: supabase-swift
+```
+
+### مثال 3: التحديد التفاعلي
+
+```bash
+/agileflow:skill:delete
+```
+
+**Response:**
+```
+Which skill would you like to delete?
+
+[1] api-integration
+[2] database-queries
+[3] react-components
+
+Select: 2
+
+⚠️  About to delete: database-queries
+...
+```
+
+## إدارة النسخ الاحتياطي
+
+### موقع النسخ الاحتياطي
+
+يتم حفظ النسخ الاحتياطية بالطابع الزمني:
+
+```
+.claude/skills-backup/
+├── ui-components-20251208-093000/
+├── api-client-20251208-103500/
+└── database-20251209-150000/
+```
+
+Format: `<skill-name>-<YYYYMMDD-HHMMSS>/`
+
+### استعادة من النسخة الاحتياطية
+
+إذا قمت بحذف مهارة وتريد استعادتها:
+
+```bash
+# Copy from backup
+cp -r .claude/skills-backup/supabase-swift-20251209-150000 \
+      .claude/skills/supabase-swift
+
+# Verify it works
+/agileflow:skill:test supabase-swift
+```
+
+### تنظيف النسخ الاحتياطية القديمة
+
+قم بإزالة النسخ الاحتياطية القديمة بشكل دوري:
+
+```bash
+# List backups
+ls -la .claude/skills-backup/
+
+# Remove old backup
+rm -rf .claude/skills-backup/old-skill-20250101-120000/
+```
+
+## متى يتم الحذف
+
+حذف المهارات عندما:
+
+- **No longer needed** - تم إهمال التكنولوجيا
+- **Outdated** - يوجد بديل أفضل
+- **Duplicated** - دمجها في مهارة واحدة
+- **Low quality** - المهارة ليست مفيدة
+- **Organization** - الكثير من المهارات المماثلة
+
+## قبل الحذف
+
+يعتبر:
+
+1. **Are you sure?** - الحذف نهائي
+2. **Document why** - ملاحظة في بوابة الالتزام
+3. **Backup first** - استخدم خيار "التصدير أولاً".
+4. **Create replacement** - إذا كان تعزيز المهارات
+5. **Notify team** - إذا تمت مشاركتها في git
+
+## بديل للحذف
+
+بدلاً من الحذف، يمكنك:
+
+1. **Rename** للإشارة إلى إهمال:
+   ```bash
+   /agileflow:skill:edit <skill-name>
+   # Select "Rename skill"
+   # Rename to: deprecated-<old-name>
+   ```
+
+2. **Archive** عن طريق الخروج من المهارات النشطة:
+   ```bash
+   mv .claude/skills/old-skill .claude/skills-archive/
+   ```
+
+3. **Mark in documentation**:
+   - قم بتحرير SKILL.md لإضافة إشعار الإهمال
+   - لا تزال متاحة ولكن تم وضع علامة عليها على أنها قديمة
+
+## معالجة الأخطاء
+
+### لم يتم العثور على المهارة
+
+```
+❌ Skill "<name>" not found.
+
+Available skills:
+  - supabase-swift
+  - ui-components
+  - api-error-handling
+
+Use /agileflow:skill:list to see all skills.
+```
+
+**Fix**: التحقق من تهجئة اسم المهارة، أو قائمة المهارات المتاحة.
+
+### لا توجد مهارات للحذف
+
+```
+❌ No skills to delete.
+
+No skills are currently installed in .claude/skills/
+
+Create a skill first: /agileflow:skill:create
+```
+
+**Fix**: قم بإنشاء مهارة قبل محاولة حذفها.
+
+### فشل الحذف
+
+```
+❌ Failed to delete skill: Permission denied
+
+The skill directory may be in use or have permission issues.
+Try manually: rm -rf .claude/skills/<skill>/
+```
+
+**Fix**: التحقق من أذونات الملف:
+```bash
+ls -la .claude/skills/<skill>/
+chmod -R u+w .claude/skills/<skill>/
+rm -rf .claude/skills/<skill>/
+```
+
+### فشل إنشاء النسخة الاحتياطية
+
+```
+⚠️  Could not create backup.
+
+Check permissions for:
+  .claude/skills-backup/
+
+Manual backup:
+  cp -r .claude/skills/<skill> .claude/skills-backup/
+```
+
+**Fix**: تأكد من أن دليل النسخ الاحتياطي قابل للكتابة:
+```bash
+mkdir -p .claude/skills-backup/
+chmod u+w .claude/skills-backup/
+```
+
+## أفضل الممارسات
+
+### سير عمل الحذف
+
+1. **Use `/skill:list`** لرؤية جميع المهارات
+2. **Test before deleting** إذا لم تكن متأكدا:
+   ```bash
+   /agileflow:skill:test <skill-name>
+   ```
+3. **Use "Export first"** خيار للنسخ الاحتياطي
+4. **Confirm deletion** صراحة
+5. **Note in git** لماذا تم حذف المهارة
+
+### استراتيجية النسخ الاحتياطي
+
+1. **Always export** للمهارات التي تم إنشاؤها منذ أكثر من شهر
+2. **Keep backups** لمدة 30 يوما كحد أدنى
+3. **Document** المهارات التي يتم نسخها احتياطيًا
+4. **Test restores** بشكل دوري
+
+### سير عمل الفريق
+
+إذا كانت مشاركة المهارات في git:
+
+1. **Commit deletion** مع السبب:
+   ```bash
+   git commit -m "Remove: deprecated-api-client skill - \
+   consolidated into api-integration skill"
+   ```
+
+2. **Notify team** من الحذف
+
+3. **Keep backup** في فرع git (اختياري):
+   ```bash
+   git checkout -b backup-deprecated-skills
+   git checkout main
+   ```
+
+## الأوامر ذات الصلة
+
+- [`/ المهارة: القائمة`](/commands/skill-list) - الاطلاع على جميع المهارات قبل الحذف
+- [`/المهارة: إنشاء`](/commands/skill-create) - إنشاء مهارة الاستبدال
+- [`/المهارة: تحرير`](/commands/skill-edit) - إعادة التسمية بدلاً من الحذف
+- [`/المهارة:اختبار`](/commands/skill-test) - التحقق قبل الحذف
+- [`/المهارة:ترقية`](/commands/skill-upgrade) - تحسين المهارات الموجودة
+
+## الخطوات التالية
+
+1. **List skills**: `/agileflow:skill:list`
+2. **Identify obsolete**: أي منها لا تستخدم؟
+3. **Backup first**: استخدم خيار "التصدير أولاً".
+4. **Delete carefully**: قم بتأكيد كل عملية حذف
+5. **Clean backups**: إزالة النسخ الاحتياطية القديمة بشكل دوري

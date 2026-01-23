@@ -1,0 +1,252 @@
+---
+title: /agileflow:research:import
+description: Importieren Sie Forschungsergebnisse von ChatGPT, Claude, Perplexity oder externen Inhalten in Ihren Forschungsordner
+---
+
+# /agileflow:research:import
+
+Importieren Sie Forschungsergebnisse aus externen KI-Tools oder Inhalten mit strukturierter Formatierung in den Forschungsordner Ihres Projekts.
+
+## Schnellstart
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup"
+```
+
+Fügen Sie dann den Inhalt ein, wenn Sie dazu aufgefordert werden. Oder stellen Sie es inline bereit:
+
+```bash
+/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+```
+
+## Zweck
+
+Nach der Verwendung [`/agileflow:research:ask`](/commands/research-ask) Um Antworten von externer KI zu erhalten, verwenden Sie diesen Befehl:
+
+- Formatiert die Ergebnisse in strukturierten Markdown
+- Speichert `docs/10-research/YYYYMMDD-topic-slug.md`
+- Aktualisiert den Forschungsindex automatisch
+- Optional Links zu ADRs, Epics oder Stories
+
+## Parameter
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Name for the research file (e.g., "OAuth 2.0 Setup") |
+| CONTENT | Yes* | Research results to import (*can be pasted after command) |
+| SOURCE | No | Original source URL for attribution |
+
+## Was es importiert
+
+Funktioniert mit Inhalten von:
+
+- ChatGPT-Antworten
+- Claude Web-Gespräche
+- Ergebnisse der Ratlosigkeitsforschung
+- YouTube-Videotranskripte
+- Blogbeiträge und Artikel
+- Gesprächsnotizen zur Konferenz
+- Dokumentationsseiten
+- Besprechungsnotizen
+
+## Arbeitsablauf
+
+Der Befehl folgt einem strukturierten Arbeitsablauf:
+
+### Phase 1: Eingaben validieren
+
+1. Überprüfen Sie, ob das THEMA angegeben ist (fragen Sie, ob es fehlt)
+2. Überprüfen Sie, ob INHALT bereitgestellt wird (fordern Sie zum Einfügen auf, wenn dieser fehlt)
+
+### Phase 2: Analysieren und Formatieren
+
+3. Extrahieren Sie die wichtigsten Ergebnisse und eine Zusammenfassung
+4. Codeschnipsel identifizieren (exakt erhalten)
+5. Generieren Sie Aktionselemente
+6. Erstellen Sie ggf. Story-Vorschläge
+
+### Phase 3: Vorschau (Diff-First)
+
+7. Formatiertes Ergebnis vor dem Speichern anzeigen
+8. Bitte um Bestätigung
+
+### Phase 4: Speichern und indizieren
+
+9. Speichern unter `docs/10-research/YYYYMMDD-topic-slug.md`
+10. Aktualisieren `docs/10-research/README.md` Index
+
+### Phase 5: Angebotsanalyse (optional)
+
+11. Fragen Sie, ob Sie eine Implementierungsanalyse wünschen
+12. Wenn ja, wechseln Sie in den Planmodus und erkunden Sie Ihre Codebasis
+13. Schlagen Sie ein geeignetes Artefakt vor (ADR, Epic, Story, Übungsdokument)
+
+## Ausgabeformat
+
+Die importierte Forschung ist wie folgt strukturiert:
+
+```markdown
+# [Topic Title]
+
+**Import Date**: YYYY-MM-DD
+**Topic**: [original topic]
+**Source**: [URL or "ChatGPT/Claude/Perplexity research"]
+**Content Type**: research
+
+---
+
+## Summary
+
+[2-3 paragraph executive summary]
+
+---
+
+## Key Findings
+
+- [Main point 1 with details]
+- [Main point 2 with details]
+- [Main point 3 with details]
+
+---
+
+## Implementation Approach
+
+1. [Step 1]
+2. [Step 2]
+3. [Step 3]
+
+---
+
+## Code Snippets
+
+[ALL code snippets preserved exactly as provided]
+
+---
+
+## Action Items
+
+- [ ] [Action 1 - concrete next step]
+- [ ] [Action 2 - concrete next step]
+
+---
+
+## Risks & Gotchas
+
+- [Risk 1]
+- [Risk 2]
+
+---
+
+## Story Suggestions
+
+[If content suggests feature work]
+
+---
+
+## References
+
+- Source: [URL]
+- Import date: YYYY-MM-DD
+```
+
+## Dateispeicherort
+
+Recherchen werden mit ISO-Datumspräfix gespeichert:
+
+```
+docs/10-research/YYYYMMDD-topic-slug.md
+
+Examples:
+- docs/10-research/20250101-oauth-setup.md
+- docs/10-research/20241231-stripe-webhooks.md
+```
+
+## Indexaktualisierung
+
+Jeder Import wird automatisch aktualisiert `docs/10-research/README.md`:
+
+```markdown
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+| [older entries...] |
+```
+
+## Implementierungsanalyse
+
+Nach dem Speichern wird Ihnen eine Implementierungsanalyse angeboten:
+
+```
+Would you like me to analyze how this research could be implemented in your project?
+
+1. Yes - Enter plan mode and explore (Recommended)
+2. No - Just save the research
+3. Link to existing Epic/Story
+```
+
+Wenn Sie „Ja“ wählen, lautet der Befehl:
+
+1. Wechselt in den Planmodus
+2. Erfasst Ihren Projektkontext
+3. Zeigt Vorteile und Umsetzungsschritte
+4. Empfiehlt den geeigneten Artefakttyp:
+
+| Research Type | Artifact |
+|---------------|----------|
+| Architecture/tech decision | ADR |
+| Large feature (5+ steps) | Epic + Stories |
+| Single focused task | Story |
+| Best practices/guidelines | Practice doc |
+| Code quality improvement | Tech debt item |
+
+## Beispielverwendung
+
+### Vollständiger Workflow
+
+```bash
+# Step 1: Get help from ChatGPT
+/agileflow:research:ask TOPIC="next-auth OAuth setup"
+# Copy the generated prompt, paste into ChatGPT
+
+# Step 2: Import the response
+/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+# Paste ChatGPT's response when prompted
+
+# Step 3: Review and confirm
+# Command shows formatted preview
+# You confirm to save
+
+# Step 4: Optionally analyze for implementation
+# Choose "Yes" to enter plan mode
+# Get specific recommendations for your codebase
+```
+
+### YouTube-Transkript importieren
+
+```bash
+/agileflow:research:import TOPIC="React 18 Streaming SSR" SOURCE="https://youtube.com/watch?v=..."
+# Paste the transcript
+```
+
+### Blogbeitrag importieren
+
+```bash
+/agileflow:research:import TOPIC="Vercel Edge Functions" SOURCE="https://vercel.com/blog/..."
+# Paste relevant sections
+```
+
+## Best Practices
+
+1. **Always cite the source** - Schließen Sie das SOURCE-Argument ein
+2. **Preserve code exactly** - Ändern Sie keine Beispiele aus KI-Antworten
+3. **Extract key findings** - Fügen Sie nicht nur Rohinhalte ein
+4. **Generate action items** - Machen Sie die Forschung umsetzbar
+5. **Link to decisions** - Referenz aus ADRs, Epics, Stories
+
+## Verwandte Befehle
+
+- [`/agileflow:research`](/commands/research) - Überblick über das Forschungssystem
+- [`/agileflow:research:ask`](/commands/research-ask) - Generieren Sie Forschungsaufforderungen
+- [`/agileflow:research:list`](/commands/research-list) - Alle Forschungsnotizen anzeigen
+- [`/agileflow:research:view`](/commands/research-view) - Lesen Sie die spezifische Forschungsnotiz
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analysieren Sie vorhandene Forschungsergebnisse

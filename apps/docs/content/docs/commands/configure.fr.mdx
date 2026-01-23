@@ -1,0 +1,155 @@
+---
+title: /configurer
+description: Configurer les fonctionnalités avancées d'AgileFlow (git, hooks, archivage, CI, ligne d'état)
+---
+
+# /configurer
+
+Configurez les fonctionnalités avancées d'AgileFlow avec des profils, activez/désactivez les options et la migration de format pour personnaliser la configuration de votre flux de travail.
+
+## Démarrage rapide
+
+```bash
+/agileflow:configure
+```
+
+Cela ouvre un menu de configuration interactif. Vous pouvez également exécuter avec des options spécifiques :
+
+```bash
+/agileflow:configure --profile=full
+/agileflow:configure --enable=sessionstart,precompact
+/agileflow:configure --disable=archival
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `--profile` | No | - | Configuration profile: `full`, `basic`, `minimal`, or `none` |
+| `--enable` | No | - | Comma-separated list of features to enable |
+| `--disable` | No | - | Comma-separated list of features to disable |
+| `--migrate` | No | - | Fix format issues in existing configuration |
+| `--detect` | No | - | Check current configuration status |
+| `--archival-days` | No | 7 | Days before archiving completed stories |
+
+## Profils de configuration
+
+| Profile | SessionStart | PreCompact | Stop Hook | Archival | Status Line |
+|---------|-------------|------------|-----------|----------|------------|
+| `full` | ✅ | ✅ | ✅ | ✅ 7 days | ✅ |
+| `basic` | ✅ | ✅ | ❌ | ✅ 7 days | ❌ |
+| `minimal` | ✅ | ❌ | ❌ | ✅ 7 days | ❌ |
+| `none` | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+## Fonctionnalités disponibles
+
+- **sessionstart**: Affichage de bienvenue avec l'état du projet au démarrage de la session
+- **precompact**: Préserver le contexte lors du compactage des conversations
+- **stop**: Avertir des modifications git non validées avant de terminer la session
+- **archival**: Archiver automatiquement les anciennes histoires terminées (jours configurables)
+- **statusline**: Barre d'état personnalisée affichant l'histoire en cours et la progression
+
+## Exemples
+
+### Configuration de base (recommandée)
+
+```bash
+/agileflow:configure --profile=full
+```
+
+Active toutes les fonctionnalités : hooks, archivage et ligne d’état.
+
+### Activer des fonctionnalités spécifiques
+
+```bash
+/agileflow:configure --enable=sessionstart,precompact
+```
+
+Activez uniquement les hooks SessionStart et PreCompact, désactivez les autres.
+
+### Désactiver la fonctionnalité
+
+```bash
+/agileflow:configure --disable=statusline
+```
+
+Désactivez la ligne d'état personnalisée tout en conservant les autres fonctionnalités.
+
+### Résoudre les problèmes de configuration
+
+```bash
+/agileflow:configure --migrate
+```
+
+Si vous voyez des avertissements de format, cela les corrigera automatiquement et créera une sauvegarde à `.claude/settings.json.backup`.
+
+### Vérifier l'état actuel
+
+```bash
+/agileflow:configure --detect
+```
+
+Affiche ce qui est actuellement activé ou désactivé sans apporter de modifications.
+
+### Seuil d'archivage personnalisé
+
+```bash
+/agileflow:configure --enable=archival --archival-days=14
+```
+
+Archivez les histoires terminées après 14 jours au lieu des 7 jours par défaut.
+
+## Ce qui est configuré
+
+### Système de crochets
+Configure les hooks dans `.claude/settings.json` pour:
+- SessionStart : affiche les informations sur le projet lorsque vous démarrez une session
+- UserPromptSubmit : exécute la validation avant les validations
+- Stop : avertit des modifications non validées à la fin de la session
+
+### Système d'archives
+Mises à jour `docs/00-meta/agileflow-metadata.json` pour activer l'archivage automatique des histoires terminées plus anciennes que le seuil spécifié.
+
+### Ligne d'état
+Configure la barre d'état Claude Code personnalisée affichant :
+- Branche git actuelle
+- ID d'histoire active
+- Nombre d'en-cours (travaux en cours)
+- Pourcentage d'achèvement
+
+## Sortir
+
+Après la configuration, vous verrez :
+
+```text
+✅ Configuration Complete!
+
+Enabled:
+  ✅ sessionstart
+  ✅ precompact
+  ✅ stop
+
+Disabled:
+  ❌ archival
+  ❌ statusline
+
+═══════════════════════════════════════════════════════
+🔴 RESTART CLAUDE CODE NOW!
+   Quit completely, wait 5 seconds, restart
+═══════════════════════════════════════════════════════
+```
+
+Redémarrez toujours Claude Code après les modifications de configuration pour qu'elles prennent effet.
+
+## Remarques importantes
+
+- **Format Migration**: Si tu vois `⚠️ INVALID FORMAT` avertissements, exécutez `--migrate` d'abord avant les autres options
+- **Backup Created**: L'option de migration crée automatiquement une sauvegarde à `.claude/settings.json.backup`
+- **Restart Required**: Vous devez quitter complètement et redémarrer Claude Code pour que les modifications s'appliquent
+- **Metadata Updated**: La configuration des fonctionnalités est suivie dans `docs/00-meta/agileflow-metadata.json`
+
+## Commandes associées
+
+- [`/diagnostiquer`](/commands/diagnose) - Vérifier la santé et la configuration du système
+- [`/valider-expertise`](/commands/validate-expertise) - Valider les dossiers d'expertise
+- [`/aide`](/commands/help) - Afficher toutes les commandes disponibles

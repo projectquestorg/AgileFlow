@@ -1,0 +1,347 @@
+---
+title: /pesquisa:analisar
+description: Analise pesquisas existentes para implementação em seu projeto
+---
+
+# /pesquisa:analisar
+
+Revise as notas de pesquisa existentes e analise como elas poderiam ser implementadas em seu projeto com o contexto específico do projeto.
+
+## Início rápido
+
+```bash
+/agileflow:research:analyze FILE=20250106-caching-strategy.md
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FILE` | No | - | Filename of research note (will prompt if not provided) |
+
+## Exemplos
+
+### Analise pesquisas específicas
+
+```bash
+/agileflow:research:analyze FILE=20250106-nextjs-upgrade.md
+```
+
+Analisa a pesquisa de atualização do Next.js e mostra como implementá-la em seu projeto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:research:analyze
+```
+
+Sem o parâmetro FILE, lista as pesquisas disponíveis e solicita que você selecione uma.
+
+## Fluxo de trabalho
+
+O comando orienta você através de uma análise estruturada:
+
+### Etapa 1: selecione a pesquisa
+
+Se FILE não for fornecido, mostra pesquisas recentes com descrições:
+
+```
+Which research would you like to analyze for implementation?
+
+- [Most recent] - Topic description
+- [Second most recent] - Topic description
+- Show full list - View all research notes
+```
+
+### Etapa 2: revisar o resumo da pesquisa
+
+Exibe um breve resumo da pesquisa:
+
+```markdown
+## Research: OAuth Implementation Best Practices
+
+**Imported**: 2024-12-20
+**Source**: OAuth 2.0 RFC and industry guides
+
+### Key Findings
+- Use PKCE flow for mobile/SPA applications
+- Implement proper token refresh strategies
+- Always use HTTPS for OAuth endpoints
+```
+
+### Etapa 3: entrar no modo de plano
+
+Entra automaticamente no modo de planejamento e reúne o contexto do seu projeto:
+
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+Isso lê sua base de código real para tornar a análise específica do projeto.
+
+### Etapa 4: Análise detalhada da implementação
+
+Mostra como a pesquisa se aplica ao SEU projeto específico:
+
+```markdown
+## Implementation Analysis for "OAuth Implementation"
+
+### 🎯 Benefits of Implementing This Research
+
+**What you would gain:**
+- Your current auth.ts uses basic session tokens
+  This research would add OAuth support for third-party integrations
+  Would reduce login friction for users with existing accounts
+
+**Problems this solves:**
+- Current authentication doesn't support federated login
+- Manual credential management creates security risks
+- No single sign-on capability for enterprise customers
+
+**Why now?**
+- Q1 roadmap includes enterprise customer onboarding
+- Your login modal receives 50+ complaints/month about manual login
+
+---
+
+### 🔧 How It Would Be Implemented
+
+**Files to modify:**
+| File | Change | Effort |
+|------|--------|--------|
+| `src/api/auth/auth.ts` | Add OAuth strategy | Medium |
+| `src/api/routes/auth.ts` | Add OAuth endpoints | Medium |
+| `src/components/LoginForm.tsx` | Add OAuth button | Low |
+
+**New files to create:**
+- `src/auth/strategies/oauth-google.ts` - Google OAuth handler
+- `src/auth/strategies/oauth-github.ts` - GitHub OAuth handler
+
+**Implementation steps:**
+1. Install @agileflow/oauth provider
+2. Configure OAuth apps (Google, GitHub)
+3. Add OAuth strategy to authentication
+4. Update login form with OAuth buttons
+5. Test OAuth flow end-to-end
+
+---
+
+### 🔄 What Would Change
+
+**Behavior changes:**
+- Login page shows "Sign in with Google/GitHub" option
+- Users can authenticate with existing accounts
+- Session management handles both local and federated auth
+
+**Architecture impact:**
+- New OAuth provider layer between auth and strategies
+- Token management becomes more complex
+- Security: Must implement PKCE and state validation
+
+**Dependencies:**
+- Install: `@agileflow/oauth` (240 KB)
+- No breaking changes to existing code
+
+---
+
+### ⚠️ Risks & Considerations
+
+- **Implementation complexity**: OAuth spec is complex, requires careful implementation
+  *Mitigation*: Use established library, comprehensive testing
+
+- **User adoption**: Some users may not have Google/GitHub accounts
+  *Mitigation*: Keep local auth as fallback option
+
+- **Third-party dependencies**: OAuth providers could change APIs
+  *Mitigation*: Use abstraction layer, wrap provider-specific code
+
+---
+
+### ⏱️ Effort Estimate
+
+**Scope**: Medium
+**Suggested approach**: Epic with 4-5 stories
+**Estimated effort**: 3-5 days
+```
+
+### Etapa 5: decidir sobre a implementação
+
+Mostra benefícios e pergunta se você deseja criar artefatos:
+
+```
+Based on this analysis, would you like to proceed with implementation?
+
+- Yes - Create implementation artifacts (Recommended)
+- Modify approach first - Let's adjust the plan
+- Save analysis to research file - For later review
+- Cancel - Exit plan mode
+```
+
+### Etapa 6: recomendação de artefato inteligente
+
+Com base no tipo de pesquisa, recomenda o melhor artefato:
+
+| Research Type | Recommended Artifact | Why |
+|---|---|---|
+| Architecture decision (OAuth vs local auth) | **ADR** | One-time decision with trade-offs |
+| Feature with 5+ steps (OAuth integration) | **Epic + Stories** | Multiple files, multiple domains |
+| Single focused task (Add OAuth button) | **Story** | Clear scope, 1-3 files |
+| Best practices (Error handling patterns) | **Practice doc** | Guidelines, not tracked work |
+
+Então pergunta:
+
+```
+Based on scope, I recommend creating an Epic with 4-5 stories.
+
+What would you like to do?
+
+- Epic + Stories (Recommended)
+- Create ADR instead
+- Create single story instead
+- Skip artifact creation
+```
+
+### Etapa 7: criar artefatos
+
+Com base na sua escolha, cria:
+
+- **ADR**: Documenta decisões arquitetônicas e compensações
+- **Epic + Stories**: divide-se em trabalho rastreável
+- **Story**: Cria um único item de trabalho
+- **Nothing**: Apenas fecha com análise salva
+
+## Arquivos de saída
+
+### Análise salva
+
+A análise detalhada é salva no arquivo de pesquisa:
+
+```
+docs/10-research/20250106-oauth-strategy.md
+  ├── Original research content (unchanged)
+  └── ## Implementation Analysis section (appended)
+```
+
+### Artefatos criados
+
+Se você optar por criar artefatos:
+
+**If ADR:**
+```
+docs/03-decisions/adr-0045-oauth-authentication.md
+  └── Links back to research
+```
+
+**If Epic + Stories:**
+```
+docs/05-epics/EP-0015.md
+  └── OAuth Integration Epic
+
+docs/06-stories/EP-0015/
+  ├── US-0151-setup-oauth-providers.md
+  ├── US-0152-implement-google-login.md
+  ├── US-0153-implement-github-login.md
+  ├── US-0154-update-login-form.md
+  └── US-0155-test-oauth-flow.md
+
+docs/09-agents/status.json
+  └── All stories added with ready status
+```
+
+**If Story:**
+```
+docs/06-stories/<EPIC>/US-XXXX-oauth-implementation.md
+```
+
+## Principais recursos
+
+### Análise Específica do Projeto
+
+Em vez de conselhos genéricos:
+
+```
+❌ WRONG: "You should implement OAuth for better security"
+✅ RIGHT: "Your auth.ts currently uses basic sessions.
+           OAuth would add federation for the 50+ enterprise
+           customers in your Q1 roadmap."
+```
+
+### Benefícios primeiro
+
+Sempre mostra o que você GANHA antes da complexidade da implementação:
+
+```
+Benefits:
+- Reduce login friction
+- Support 3rd party integrations
+- Enterprise-ready authentication
+
+Then implementation details...
+```
+
+### Recomendações Inteligentes
+
+O padrão não é Epic para tudo:
+
+```
+Simple task (add button) → Story
+Medium feature (OAuth setup) → Epic + Stories
+Architecture decision → ADR
+Guidelines → Practice doc
+```
+
+## Melhores Práticas
+
+### Quando usar /research:analyze
+
+**Use it when:**
+- Você importou pesquisas anteriormente e agora precisa de implementação
+- Você deseja entender o impacto específico do projeto
+- Você está decidindo se vai resolver isso agora ou mais tarde
+- Você quer transformar a pesquisa em um trabalho rastreável
+
+**Don't use it when:**
+- Apenas lendo pesquisas para obter informações (use `/research:view`)
+- Não está pronto para implementar (apenas revise, não crie artefatos)
+- Analisando novas pesquisas (use `/research:import` primeiro)
+
+### Obtendo melhores recomendações
+
+Antes de analisar a pesquisa:
+- Certifique-se de que sua base de código esteja atualizada (último commit)
+- Tenha os arquivos principais organizados (README, documentos principais)
+- Entenda sua pilha de tecnologia (documentado em CLAUDE.md)
+
+A análise lê seu código real para fazer recomendações específicas.
+
+### Escolhendo o tipo de artefato
+
+**Choose ADR if:**
+- Esta é uma decisão arquitetônica única
+- Várias opções de compensação foram avaliadas
+- A equipe precisa entender o porquê
+
+**Choose Epic + Stories if:**
+- O recurso abrange mais de 5 etapas de implementação
+- Multiple files and domains affected
+- Mais de 3 dias de esforço
+
+**Choose Story if:**
+- Tarefa de implementação única e focada
+- 1-3 arquivos afetados
+- Pode ser feito em 1-2 horas
+
+**Choose Practice doc if:**
+- Esta é uma orientação/melhores práticas
+- Aplica-se a muitas tarefas futuras
+- Não rastreado como trabalho
+
+## Comandos Relacionados
+
+- [`/pesquisa:importar`](/commands/research-import) - Importar novas pesquisas
+- [`/pesquisa:lista`](/commands/research-list) - Ver todas as notas de pesquisa
+- [`/pesquisa:ver`](/commands/research-view) - View research details
+- [`/adr`](/commands/adr) - Criar ADR a partir da análise
+- [`/épico`](/commands/epic) - Crie épico a partir da análise
+- [`/ história`](/commands/story) - Criar história a partir da análise
+- [`/babá`](/commands/babysit) - Implementar artefatos criados

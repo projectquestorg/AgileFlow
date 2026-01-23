@@ -1,0 +1,87 @@
+---
+title: /sessão:status
+description: Veja todas as sessões ativas e seu estado atual
+---
+
+# /sessão:status
+
+Exibe uma tabela formatada de todas as sessões registradas, mostrando quais estão ativas no momento.
+
+## Início rápido
+
+```bash
+/agileflow:session:status
+```
+
+## Exemplo de saída
+
+```
+┌─────┬──────────────────────────────┬────────────┬─────────┬────────────┐
+│ ID  │ Path                         │ Branch     │ Status  │ Nickname   │
+├─────┼──────────────────────────────┼────────────┼─────────┼────────────┤
+│ 1   │ /home/user/myproject         │ main       │ active  │ (main)     │
+│ 2   │ /home/user/myproject-auth    │ session-2  │ active  │ auth       │
+│ 3   │ /home/user/myproject-3       │ session-3  │ stale   │ -          │
+└─────┴──────────────────────────────┴────────────┴─────────┴────────────┘
+
+Active: 2    Stale: 1
+
+Current session: 1
+
+To switch sessions, run /agileflow:session:resume
+To create new session, run /agileflow:session:new
+```
+
+## Valores de status
+
+| Status | Meaning |
+|--------|---------|
+| `active` | Session has a running Claude Code process |
+| `stale` | Lock file exists but process is no longer running |
+| `(main)` | The original project directory (Session 1) |
+
+## Detecção de Sessão
+
+As sessões são detectadas usando bloqueio baseado em PID:
+
+1. Cada sessão cria um arquivo de bloqueio com seu ID de processo
+2. A verificação de status verifica se cada PID ainda está em execução
+3. Bloqueios obsoletos são limpos automaticamente na próxima inicialização
+
+## Casos de uso
+
+### Antes de começar o trabalho
+
+Verifique se outras sessões já estão trabalhando em algo:
+
+```bash
+/agileflow:session:status
+# See what's active, decide if you need a new session
+```
+
+### Depois de retornar ao trabalho
+
+Descubra quais sessões existem e seu estado:
+
+```bash
+/agileflow:session:status
+# Review sessions, then:
+/agileflow:session:resume  # to switch to one
+```
+
+### Depurando conflitos
+
+Se você suspeitar de conflitos de sessão:
+
+```bash
+/agileflow:session:status
+# Check for multiple "active" sessions
+# Stale sessions may need cleanup
+```
+
+## Comandos Relacionados
+
+- [`/sessão:novo`](/commands/session-new) - Crie uma nova sessão paralela
+- [`/sessão:currículo`](/commands/session-resume) - Mudar para outra sessão
+- [`/sessão:fim`](/commands/session-end) - Finalizar sessão atual
+- [`/sessão:init`](/commands/session-init) - Inicializar sistema de sessão

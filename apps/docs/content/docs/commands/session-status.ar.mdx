@@ -1,0 +1,87 @@
+---
+title: / الجلسة: الحالة
+description: عرض جميع الجلسات النشطة وحالتها الحالية
+---
+
+# / الجلسة: الحالة
+
+عرض جدول منسق بجميع الجلسات المسجلة، موضحًا الجلسات النشطة حاليًا.
+
+## بداية سريعة
+
+```bash
+/agileflow:session:status
+```
+
+## إخراج المثال
+
+```
+┌─────┬──────────────────────────────┬────────────┬─────────┬────────────┐
+│ ID  │ Path                         │ Branch     │ Status  │ Nickname   │
+├─────┼──────────────────────────────┼────────────┼─────────┼────────────┤
+│ 1   │ /home/user/myproject         │ main       │ active  │ (main)     │
+│ 2   │ /home/user/myproject-auth    │ session-2  │ active  │ auth       │
+│ 3   │ /home/user/myproject-3       │ session-3  │ stale   │ -          │
+└─────┴──────────────────────────────┴────────────┴─────────┴────────────┘
+
+Active: 2    Stale: 1
+
+Current session: 1
+
+To switch sessions, run /agileflow:session:resume
+To create new session, run /agileflow:session:new
+```
+
+## قيم الحالة
+
+| Status | Meaning |
+|--------|---------|
+| `active` | Session has a running Claude Code process |
+| `stale` | Lock file exists but process is no longer running |
+| `(main)` | The original project directory (Session 1) |
+
+## كشف الجلسة
+
+يتم اكتشاف الجلسات باستخدام القفل المستند إلى PID:
+
+1. تقوم كل جلسة بإنشاء ملف قفل بمعرف العملية الخاص به
+2. يتحقق فحص الحالة مما إذا كان كل معرف PID لا يزال قيد التشغيل
+3. يتم تنظيف الأقفال القديمة تلقائيًا عند بدء التشغيل التالي
+
+## حالات الاستخدام
+
+### قبل البدء بالعمل
+
+تحقق مما إذا كانت الجلسات الأخرى تعمل بالفعل على شيء ما:
+
+```bash
+/agileflow:session:status
+# See what's active, decide if you need a new session
+```
+
+### بعد العودة إلى العمل
+
+تعرف على الجلسات الموجودة وحالتها:
+
+```bash
+/agileflow:session:status
+# Review sessions, then:
+/agileflow:session:resume  # to switch to one
+```
+
+### تصحيح الصراعات
+
+إذا كنت تشك في حدوث تعارضات في الجلسة:
+
+```bash
+/agileflow:session:status
+# Check for multiple "active" sessions
+# Stale sessions may need cleanup
+```
+
+## الأوامر ذات الصلة
+
+- [`/الجلسة:جديدة`](/commands/session-new) - إنشاء جلسة موازية جديدة
+- [`/ الجلسة: استئناف`](/commands/session-resume) - التبديل إلى جلسة أخرى
+- [`/ الجلسة: النهاية`](/commands/session-end) - إنهاء الجلسة الحالية
+- [`/ الجلسة: init`](/commands/session-init) - تهيئة نظام الجلسة

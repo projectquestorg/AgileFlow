@@ -1,0 +1,324 @@
+---
+title: /configuration-déploiement
+description: Configurer un pipeline de déploiement automatisé
+---
+
+# /configuration-déploiement
+
+Détectez automatiquement votre type de projet et configurez un pipeline de déploiement complet avec des configurations spécifiques à la plate-forme, des flux de travail CI/CD et une gestion de l'environnement.
+
+## Démarrage rapide
+
+```bash
+/agileflow:setup-deployment PLATFORM=auto ENV=both AUTO_DEPLOY=no
+```
+
+## But
+
+Cette commande configure intelligemment l'infrastructure de déploiement en :
+- Détection automatique de votre type de projet (statique, full-stack, sans serveur, mobile, conteneurs)
+- Recommander la plateforme de déploiement optimale
+- Génération de fichiers de configuration spécifiques à la plate-forme
+- Création de workflows de déploiement d'actions GitHub
+- Mise en place de modèles de variables d'environnement et gestion des secrets
+- Fournir des étapes claires pour le déploiement
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PLATFORM` | No | `auto` | `auto`, `vercel`, `netlify`, `heroku`, `aws`, `gcp`, `docker`, `eas` |
+| `ENV` | No | `both` | `staging`, `production`, or `both` |
+| `AUTO_DEPLOY` | No | `no` | `yes` or `no` - trigger deployment automatically on push |
+
+## Exemples
+
+### Tout détecter automatiquement
+
+```bash
+/agileflow:setup-deployment
+```
+
+Détecte le type de projet et recommande automatiquement la meilleure plateforme.
+
+### Spécifier explicitement la plateforme
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel ENV=both
+```
+
+Configure le déploiement de Vercel pour la préparation et la production.
+
+### Déploiement de Docker sur Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker ENV=production
+```
+
+Configure le déploiement basé sur Docker (fonctionne avec Fly.io, AWS, GCP).
+
+### Application mobile avec EAS
+
+```bash
+/agileflow:setup-deployment PLATFORM=eas ENV=production
+```
+
+Configure les services d'application Expo pour le déploiement de React Native/Expo.
+
+## Détection de projet
+
+La commande analyse votre projet pour recommander des plateformes :
+
+### Sites statiques
+**Detected By**: HTML/CSS/JS, React/Vue/Angular SPA (pas de backend)
+- Recommandé : Vercel ou Netlify
+- Idéal pour : Sites marketing, SPA, documentation
+
+### Applications Web Full-Stack
+**Detected By**: Serveur Node.js, routes API Express/Fastify/Next.js
+- Recommandé : Vercel (Next.js) ou Railway
+- Idéal pour : les applications Web avec une logique backend
+
+### Applications mobiles (React Native / Expo)
+**Detected By**: `expo` configuration, `react-native` dépendance
+- Recommandé : EAS (Expo Application Services)
+- Idéal pour : les applications mobiles iOS/Android
+
+### Applications basées sur des conteneurs
+**Detected By**: `Dockerfile` présent
+- Recommandé : Fly.io
+- Idéal pour : les déploiements Docker personnalisés, les microservices
+
+### Fonctions sans serveur
+**Detected By**: Fonctions Lambda, configuration API Gateway
+- Recommandé : fonctions AWS Lambda ou Vercel
+- Idéal pour : les charges de travail basées sur les événements et payées à l'exécution
+
+## Fichiers de sortie
+
+La commande crée plusieurs fichiers de configuration :
+
+### Configuration de la plateforme
+- **Vercel**: `vercel.json`
+- **Netlify**: `netlify.toml`
+- **Heroku**: `Procfile`, `app.json`
+- **Docker**: `Dockerfile`, `.dockerignore`, `fly.toml`
+- **EAS**: `eas.json`
+- **AWS Lambda**: `serverless.yml`
+
+### Flux de travail CI/CD
+- `.github/workflows/deploy.yml` - Workflow de déploiement automatisé
+- Prend en charge la mise en scène → promotion de la production
+- S'exécute en mode push vers les branches intermédiaires/principales
+
+### Gestion de l'environnement
+- `.env.example` - Modèle pour les variables d'environnement (sûr à valider)
+- `docs/02-practices/secrets-management.md` - Guide de gestion des secrets
+- `docs/02-practices/deployment.md` - Documentation de déploiement
+
+## Plateformes
+
+### Vercel (recommandé pour Next.js/React)
+Idéal pour : les déploiements Next.js, React et SPA
+- Constructions automatiques sur git push
+- CDN mondial
+- Fonctions sans serveur intégrées
+- Interface utilisateur de gestion de l'environnement
+- Prévisualiser les déploiements sur les PR
+
+**Next Steps**:
+```bash
+vercel link              # Connect your GitHub repo
+vercel env add DATABASE_URL production
+git push origin main     # Trigger deployment
+```
+
+### Netlify (recommandé pour les sites statiques)
+Idéal pour : sites statiques, JAMstack, SPA généraux
+- Constructions automatiques à partir de git
+- Analyses et formulaires intégrés
+- Fonctions sans serveur
+- Intégration du CMS Netlify
+- Gestion de domaine personnalisée
+
+### Heroku (serveurs Node.js/Python)
+Idéal pour : les applications serveur traditionnelles
+- Déploiement simple basé sur slug
+- PostgreSQL, modules complémentaires Redis
+- Gestion des variables d'environnement
+- Fonctionnalités de collaboration en équipe
+
+**Next Steps**:
+```bash
+heroku login
+heroku create my-app
+heroku addons:create heroku-postgresql:hobby-dev
+git push heroku main
+```
+
+### Fly.io (déploiement Docker)
+Idéal pour : conteneurs Docker, microservices, environnements d'exécution personnalisés
+- Déploiement mondial avec routage anycast
+- Prise en charge d'IPv6
+- Mise à l'échelle automatique
+- Volumes persistants
+- PostgreSQL inclus
+
+**Next Steps**:
+```bash
+fly auth login
+fly launch
+fly deploy
+```
+
+### AWS (Lambda/ECS/Elastic Beanstalk)
+Idéal pour : applications évolutives, microservices
+- Plusieurs options de déploiement (Lambda, ECS, Beanstalk)
+- Rentable à grande échelle
+- Intégration avec l'écosystème AWS
+- Contrôle d'accès précis
+
+### EAS (Expo/Réagir Natif)
+Idéal pour : applications mobiles (iOS/Android)
+- Builds natifs dans le cloud
+- Soumissions App Store/Play Store
+- Mises à jour OTA
+- Constructions de clients de développement
+
+## Flux de travail
+
+La configuration suit un processus cohérent :
+
+1. **Detect Project Type** - Analyse les dépendances et les fichiers
+2. **Recommend Platform** - Suggère un hébergement optimal
+3. **Generate Configuration** - Crée des fichiers spécifiques à la plate-forme
+4. **Create Workflow** - Configure les actions GitHub pour le déploiement
+5. **Environment Setup** - Crée `.env.example` et des documents
+6. **Show Preview** - Affiche tous les fichiers pour examen
+7. **Create Files** - Écrit sur le disque après confirmation OUI/NON
+8. **Display Next Steps** - Guide l'achèvement de la configuration
+
+## Gestion de l'environnement
+
+### Mise en scène vs production
+
+La commande peut configurer l'un ou les deux environnements :
+
+```yaml
+# Example: Two-branch deployment
+Staging:
+  - Branch: staging
+  - URL: staging.example.com
+  - Environment: development-like
+
+Production:
+  - Branch: main
+  - URL: example.com
+  - Environment: live
+```
+
+### Gestion des secrets
+
+**Never commit secrets to git**. Plutôt:
+
+1. Utiliser `.env.example` comme modèle
+2. Stockez les secrets réels dans la plateforme (Vercel, Heroku, etc.)
+3. GitHub Actions fournit `${{ secrets.NAME }}`
+4. Lire `docs/02-practices/secrets-management.md` pour plus de détails
+
+**Common Secrets**:
+- Chaînes de connexion à la base de données
+- Clés API (Stripe, SendGrid, etc.)
+- Informations d'identification AWS
+- Jetons de service tiers
+
+## Exemples par plateforme
+
+### Déploiement Vercel
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel
+```
+
+Crée :
+- `vercel.json` avec la configuration de construction
+- `.github/workflows/deploy.yml` pour le déploiement automatique
+- `.env.example` avec les noms de variables Vercel
+- Documents de déploiement
+
+### Heroku avec PostgreSQL
+
+```bash
+/agileflow:setup-deployment PLATFORM=heroku ENV=production
+```
+
+Crée :
+- `Procfile` (Web : démarrage npm)
+- `app.json` avec la configuration du buildpack
+- Documentation d'installation de PostgreSQL
+- Flux de travail de déploiement
+
+### Docker vers Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker
+```
+
+Crée :
+- `Dockerfile` avec construction en plusieurs étapes
+- `.dockerignore` pour une image nette
+- `fly.toml` avec configuration de région et de volume
+- Flux de travail de déploiement
+
+## Option de déploiement automatique
+
+Par défaut, les déploiements nécessitent un déclenchement manuel. Pour activer le déploiement automatique à chaque push :
+
+```bash
+/agileflow:setup-deployment AUTO_DEPLOY=yes
+```
+
+**Important**: Utiliser avec prudence en production. Considérer:
+- Exigez toujours que CI réussisse en premier
+- Utiliser la mise en scène → processus de promotion principal
+- Implémenter des indicateurs de fonctionnalités pour des déploiements progressifs
+- Surveiller le suivi des erreurs après les déploiements
+
+## Prochaines étapes après l'installation
+
+1. **Add Platform Connection**
+   ```bash
+   vercel link
+   # or
+   fly auth login
+   fly launch
+   ```
+
+2. **Configure Secrets**
+   ```bash
+   vercel env add DATABASE_URL production
+   # or
+   fly secrets set DATABASE_URL=postgresql://...
+   ```
+
+3. **Test Deployment**
+   ```bash
+   git push origin staging
+   # Check deployment logs on platform dashboard
+   ```
+
+4. **Set Custom Domain** (Facultatif)
+   ```bash
+   vercel domains add example.com
+   # Follow platform-specific DNS setup
+   ```
+
+5. **Enable Auto-Deploy** (Facultatif)
+   - Après avoir testé la préparation, activez le déploiement automatique en production
+   - Configurer les règles de protection des branches
+
+## Commandes associées
+
+- [`/ci-setup`](/commands/ci) - Mettre en place les tests et contrôles CI/CD
+- [`/setup-tests`](/commands/tests) - Configurer le framework de tests
+- [`/generate-changelog`](/commands/changelog) - Créer des notes de version

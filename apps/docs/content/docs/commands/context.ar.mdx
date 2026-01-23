@@ -1,0 +1,423 @@
+---
+title: /سياق
+description: إنشاء وإدارة سياق المشروع لأدوات الذكاء الاصطناعي على الويب
+---
+
+# /سياق
+
+قم بإنشاء ملخص سياق مشروعك وتحديثه وإدارته لاستخدامه في أدوات الذكاء الاصطناعي على الويب مثل ChatGPT وPerplexity وGemini وClaude web.
+
+## ملخص
+
+ال `/context` تساعدك عائلة الأوامر في الحفاظ على سياق المشروع وتصديره لأدوات الذكاء الاصطناعي المستندة إلى الويب. وهذا مفيد عندما تحتاج إلى:
+
+- أنشئ ملخصًا شاملاً للسياق للصقه في أدوات الذكاء الاصطناعي على الويب
+- قم بتصدير مقتطف موجز لتحميل السياق بسرعة
+- قم بتسجيل القرارات والاكتشافات المهمة في ملف السياق الخاص بك
+- أبقِ أدوات الذكاء الاصطناعي الخارجية على علم بحالة مشروعك
+
+## أوامر فرعية
+
+ال `/context` يحتوي الأمر على ثلاثة أوامر فرعية، لكل منها غرض محدد:
+
+### / Agileflow: السياق: كامل
+
+**Generate or refresh the comprehensive project context brief.**
+
+يخلق أو التحديثات `docs/context.md` مع الأقسام المدارة التي تحتوي على:
+- ما نبنيه والتركيز الحالي
+- خريطة الميزات وملخص التكنولوجيا/الأدوات
+- القرارات الرئيسية (ADRs) ولقطات الهندسة المعمارية
+- حالة الاختبار وCI
+- التقدم الأخير
+- المخاطر والخطوات التالية
+
+تم تصميم هذا الملف ليتم لصقه في ChatGPT أو Perplexity أو Gemini أو Claude web لإعطاء سياق المشروع الكامل لأدوات الذكاء الاصطناعي الخارجية.
+
+**Usage:**
+```bash
+/agileflow:context:full
+```
+
+**Behavior:**
+- يقرأ الموجودة `docs/context.md` إذا كان موجودا
+- يجمع البيانات من Status.json وADRs والملاحم والقصص وCHANGELOG
+- تحديثات الأقسام المدارة فقط (بين `<!-- MANAGED_SECTION -->` علامات)
+- يحافظ على أي محتوى كتبه المستخدم خارج الأقسام المُدارة
+- يظهر الفرق قبل تطبيق التغييرات
+- يتطلب التأكيد قبل الكتابة
+
+---
+
+### / Agileflow:context:export
+
+**Export a concise context excerpt for pasting into web AI tools.**
+
+يقرأ `docs/context.md` ويخرج مقتطفًا مكثفًا (≥300 سطرًا) جاهزًا للنسخ واللصق في ChatGPT أو Perplexity أو Gemini أو Claude web.
+
+هذا هو **read-only command** - لا تتم كتابة أي ملفات.
+
+**Usage:**
+```bash
+/agileflow:context:export
+```
+
+**Behavior:**
+- يقرأ `docs/context.md`
+- يستخرج الأقسام الرئيسية (نظرة عامة، التركيز الحالي، مجموعة التكنولوجيا، القرارات، خريطة الميزات، الخطوات التالية)
+- إخراج مقتطفات موجزة في كتلة التعليمات البرمجية
+- يتضمن تعليمات للصق في الويب AI
+- لا يتطلب تأكيدا
+
+---
+
+### / Agileflow:context:note
+
+**Append a timestamped note to the context file.**
+
+إضافة ملاحظة بسرعة إلى `docs/context.md` ضمن قسم "الملاحظات". مفيد لتسجيل القرارات أو الملاحظات أو التذكيرات التي يجب أن تستمر في سياق المشروع.
+
+**Usage:**
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+**Arguments:**
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| NOTE | Yes | 1-5 line note text to append |
+
+**Behavior:**
+- يقرأ أو يخلق `docs/context.md`
+- إنشاء قسم "الملاحظات" إذا لم يكن موجودًا
+- إلحاق ملاحظة بطابع زمني ISO (على سبيل المثال، `2024-12-31T10:30:00Z`)
+- يظهر الفرق قبل تطبيق التغييرات
+- يتطلب التأكيد قبل الكتابة
+
+---
+
+## أمثلة
+
+### إنشاء سياق كامل
+
+```bash
+/agileflow:context:full
+```
+
+يخلق أو التحديثات `docs/context.md` مع معلومات المشروع الشاملة:
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents. It provides automated task management, documentation synchronization, and intelligent context preservation.
+
+## Current Focus
+
+- Implementing context compacting for long conversations
+- Improving research workflow integration
+- Expanding agent capabilities
+
+## Feature Map
+
+- **Core**: Project setup, status tracking, agent coordination
+- **Documentation**: Automatic sync, README generation, ADR management
+- **Agents**: 27 specialized agents for different tasks
+- **Research**: Structured research notes and integration
+
+## Tech Stack
+
+- **Language**: TypeScript
+- **Framework**: Next.js 16 (App Router)
+- **UI**: React with Tailwind CSS
+- **Package Manager**: npm with legacy-peer-deps
+- **Deployment**: Vercel
+
+## Key Decisions
+
+- ADR-0001: Use TypeScript for type safety
+- ADR-0002: Use React component library
+- ADR-0003: Next.js for web framework
+
+## Architecture Snapshot
+
+- Monorepo structure with packages/ and apps/
+- CLI package with 72 commands
+- Website and documentation sites
+- Agent-based command coordination
+
+## Testing & CI
+
+- Unit tests: Jest
+- E2E tests: Playwright
+- CI/CD: GitHub Actions
+- Pre-commit hooks for validation
+
+## Recent Progress
+
+- Completed context compacting feature
+- Improved documentation sync workflow
+- Added 5 new specialized agents
+
+## Risks
+
+- Token limits with large projects
+- Documentation drift during rapid development
+
+## Next Steps
+
+- Implement automated test coverage reporting
+- Add real-time collaboration features
+- Expand agent capabilities for code generation
+```
+
+---
+
+### تصدير لأدوات الويب AI
+
+```bash
+/agileflow:context:export
+```
+
+يُخرج مقتطفًا موجزًا ​​(≥300 سطرًا) جاهزًا للصقه:
+
+```text
+# Project Context Brief
+
+Last updated: 2025-12-24
+Project: AgileFlow - AI-powered project management
+
+## What We're Building
+AgileFlow provides automated task management, documentation, and AI agents.
+
+## Current Focus
+- Context compacting for conversations
+- Research workflow integration
+- Agent capability expansion
+
+## Tech Stack
+- TypeScript, Next.js 16, React, Tailwind CSS, Vercel
+
+## Key Decisions
+- ADR-0001: Use TypeScript
+- ADR-0002: Use React components
+- ADR-0003: Use Next.js
+
+## Feature Map
+- Core: Setup, tracking, coordination
+- Documentation: Sync, README, ADRs
+- Agents: 27 specialized agents
+- Research: Structured notes
+
+## Next Steps
+- Automated test coverage
+- Real-time collaboration
+- More agent capabilities
+
+---
+
+Paste this excerpt into your web AI tool (ChatGPT, Perplexity, Gemini, Claude web) to load project context.
+```
+
+---
+
+### أضف ملاحظة سريعة
+
+```bash
+/agileflow:context:note NOTE="User reported critical bug with OAuth flow on mobile"
+```
+
+يُلحق ملاحظة ذات طابع زمني بقسم "الملاحظات" في `docs/context.md`:
+
+```markdown
+## Notes
+
+- **[2025-12-24T10:30:00Z]**: User reported critical bug with OAuth flow on mobile
+- **[2025-12-23T14:15:00Z]**: Completed initial research on TypeScript 5.4 features
+- **[2025-12-22T09:00:00Z]**: Decided to upgrade to React 19 in next sprint
+```
+
+---
+
+## أمثلة سير العمل
+
+### حافظ على السياق متجددًا
+
+حافظ على تحديث السياق للحصول على مساعدة أفضل للذكاء الاصطناعي:
+
+```bash
+# After each major milestone
+/agileflow:context:full
+
+# Before starting work in web AI
+/agileflow:context:export
+# Copy output and paste into ChatGPT/Perplexity
+```
+
+---
+
+### استخدامها في محادثات الويب AI
+
+قبل أن تطلب من الذكاء الاصطناعي على الويب مساعدتك في مشروعك:
+
+```bash
+# Export concise context
+/agileflow:context:export
+
+# Copy output and paste as initial message in ChatGPT
+# Then ask your question with full project context
+```
+
+---
+
+### التقاط الاكتشافات الهامة
+
+```bash
+/agileflow:context:note NOTE="TypeScript 5.4 improves type inference for generics"
+/agileflow:context:note NOTE="Need to upgrade Node.js to 20+ for new features"
+/agileflow:context:note NOTE="Team prefers MUI components over shadcn/ui"
+```
+
+---
+
+## أوضاع الإخراج
+
+### /agileflow:context:full (إنشاء/تحديث السياق)
+
+**Input**: يجمع المعلومات من:
+- `status.json` - العمل الحالي وحالة القصة
+- `bus/log.jsonl` - رسائل التقدم الأخيرة
+- `docs/03-decisions/` - قرارات الهندسة المعمارية (ADRs)
+- `docs/04-architecture/` - وثائق تصميم النظام
+- `docs/05-epics/` - ميزة خارطة الطريق والملاحم
+- `CHANGELOG.md` - تاريخ الإصدار
+- `package.json` - البيانات الوصفية للمشروع
+
+**Output**: التحديثات `docs/context.md` مع الأقسام المُدارة مع الحفاظ على المحتوى المخصص
+
+**Key Behavior**:
+- Diff-first: يعرض التغييرات قبل الكتابة
+- الأقسام المُدارة: يقوم فقط بتحديث المحتوى بين الأقسام `<!-- MANAGED_SECTION -->` علامات
+- يحافظ على محتوى المستخدم: لا يقوم أبدًا بتعديل المحتوى خارج الأقسام المُدارة
+- يتطلب تأكيدًا: يجب على المستخدم الموافقة على التغييرات
+
+---
+
+### /agileflow:context:export (نسخ إلى Web AI)
+
+**Input**: يقرأ الموجودة `docs/context.md`
+
+**Output**: مقتطف موجز (≥300 سطر) جاهز للصقه في ChatGPT أو Perplexity أو Gemini أو Claude web
+
+**Use Case**: قم بتحميل سياق المشروع في أداة الويب AI لمواصلة العمل في محادثة جديدة
+
+**Key Behavior**:
+- للقراءة فقط: لا يتم تعديل أي ملفات
+- مكتفية ذاتيا: تتضمن تعليمات اللصق
+- جاهز للتنسيق: تم تنسيقه بالفعل لسهولة النسخ واللصق
+
+---
+
+### /agileflow:context:note (إلحاق ملاحظة ذات طابع زمني)
+
+**Input**: وسيطة ملاحظة مع ملاحظة من 1 إلى 5 أسطر
+
+**Output**: يتم إلحاقه بقسم "الملاحظات" مع الطابع الزمني ISO
+
+**Use Case**: التقاط سريع للأحداث أو القرارات أو الاكتشافات المهمة
+
+**Key Behavior**:
+- Diff-first: يعرض التغييرات قبل الكتابة
+- إنشاء قسم إذا كان مفقودًا: إنشاء قسم "الملاحظات" تلقائيًا إذا لزم الأمر
+- ترتيب زمني: تظهر الملاحظات بالترتيب مع الأحدث في الأسفل
+- الطابع الزمني: تتضمن كل ملاحظة طابعًا زمنيًا وفقًا لمعايير ISO 8601
+
+---
+
+## أفضل الممارسات
+
+### تحديثات السياق العادية
+
+حافظ على السياق متجددًا للحصول على مساعدة أفضل للذكاء الاصطناعي:
+
+1. **After major milestones**: يجري `/agileflow:context:full` لالتقاط العمل المكتمل
+2. **Before web AI sessions**: يجري `/agileflow:context:export` والصقه في ChatGPT
+3. **During development**: يستخدم `/agileflow:context:note` لتسجيل القرارات والاكتشافات
+
+```bash
+# Recommended workflow
+/agileflow:context:full        # Update full context
+/agileflow:context:export      # Get concise version
+# Paste into web AI for context-aware help
+```
+
+---
+
+### التقاط الاكتشافات الهامة
+
+تسجيل الرؤى والقرارات الفنية:
+
+```bash
+/agileflow:context:note NOTE="TypeScript 5.4 improves type inference - consider upgrading"
+/agileflow:context:note NOTE="Stripe API changed pagination in v2.0 - update integration"
+/agileflow:context:note NOTE="Team consensus: use Postgres over MongoDB for this project"
+```
+
+---
+
+### استخدامها في محادثات الويب AI
+
+تعظيم فعالية أدوات الذكاء الاصطناعي على الويب من خلال توفير السياق:
+
+1. تصدير سياق موجز: `/agileflow:context:export`
+2. انسخ الإخراج
+3. الصق في ChatGPT أو Perplexity أو Gemini كرسالتك الأولى
+4. اطرح أسئلة متابعة مع سياق المشروع الكامل
+
+وهذا يضمن أن الذكاء الاصطناعي للويب يفهم قاعدة التعليمات البرمجية والهندسة المعمارية والتركيز الحالي.
+
+---
+
+### إدارة حجم ملف السياق
+
+بالنسبة للمشاريع الكبيرة، قم بإدارة حجم ملف context.md:
+
+- يستخدم `/agileflow:context:export` للتحقق من حجم السياق الحالي
+- أرشفة الملاحظات القديمة إذا تجاوزت 100+ إدخال
+- قم بإنشاء ملفات بحثية منفصلة للغوص العميق
+- يستخدم `/agileflow:research:ask` لموضوعات البحث المعقدة
+
+---
+
+## فرق سير العمل الأول
+
+تتبع جميع أوامر السياق التي تقوم بتعديل الملفات سير عمل متسق:
+
+1. **Show Changes**: يعرض الأمر التغييرات المقترحة كفرق
+2. **Confirm**: تقوم بمراجعة التغييرات والموافقة عليها أو رفضها
+3. **Apply**: تتم كتابة التغييرات فقط بعد تأكيدك
+
+وهذا يضمن عدم فقدان أي معلومات مهمة أبدًا ومعرفة ما يتم تعديله دائمًا.
+
+---
+
+## الأوامر ذات الصلة
+
+- [`/adr`](/commands/adr) - إنشاء سجلات قرار الهندسة المعمارية
+- [`/ بحث`](/commands/research) - إنشاء وإدارة الملاحظات البحثية
+- [`/ مزامنة المستندات`](/commands/docs-sync) - مزامنة الوثائق
+- [`/الملف التمهيدي للمزامنة`](/commands/readme-sync) - تحديث ملفات README
+
+---
+
+## ملحوظات
+
+- يتم تخزين ملفات السياق في `docs/context.md` كجزء من وثائق المشروع المحلي الخاص بك
+- تستخدم الأقسام المُدارة تعليقات HTML كعلامات ويجب عدم تحريرها يدويًا
+- يحترم أمر التصدير حد الـ 300 سطر ليناسب نوافذ سياق أداة الذكاء الاصطناعي على الويب
+- يتم وضع طابع زمني على الملاحظات بتنسيق ISO 8601 لتحقيق الاتساق وسهولة الفرز

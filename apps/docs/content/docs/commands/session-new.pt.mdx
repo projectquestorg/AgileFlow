@@ -1,0 +1,146 @@
+---
+title: /sessão:novo
+description: Crie uma sessão paralela com git worktree para trabalho multisessão
+---
+
+# /sessão:novo
+
+Crie uma nova sessão paralela do Claude Code com configuração automática da árvore de trabalho git. Isso permite que você trabalhe em várias tarefas simultaneamente, sem conflitos.
+
+## Início rápido
+
+```bash
+/agileflow:session:new
+```
+
+## Como funciona
+
+Ao executar este comando, você verá opções:
+
+1. **Auto-create Session N** - Cria automaticamente uma sessão numerada (por exemplo, Sessão 2, Sessão 3)
+2. **Name this session** - Dê um apelido como “auth” ou “refactor”
+3. **Use existing branch** - Anexe a um branch que você já possui
+
+O comando então:
+1. Cria uma nova árvore de trabalho git em um diretório paralelo
+2. Registra a sessão no registro de sessão
+3. Te mostra o `cd` comando para mudar para o novo espaço de trabalho
+
+## Exemplo de saída
+
+```
+Creating Session 2...
+
+✓ Session created successfully
+
+  Session ID: 2
+  Path: /home/user/myproject-2
+  Branch: session-2
+
+To start working in this session:
+  cd /home/user/myproject-2 && claude
+```
+
+## Parâmetros
+
+Este comando usa prompts interativos (AskUserQuestion) em vez de parâmetros de linha de comando.
+
+| Option | Description |
+|--------|-------------|
+| Auto-create | Uses next available session ID |
+| Named session | Creates with custom nickname (e.g., "auth" → `/home/user/myproject-auth`) |
+| Existing branch | Attaches to a branch without creating a new one |
+
+## Por que usar sessões paralelas?
+
+### O problema
+
+A execução de várias instâncias do Claude Code no mesmo diretório causa:
+- Conflitos de bloqueio de arquivos (especialmente no macOS)
+- Risco de edições conflitantes nos mesmos arquivos
+- Compartilhado `~/.claude/` problemas de diretório
+- Nenhuma visibilidade sobre o que outras sessões estão trabalhando
+
+### A solução
+
+As árvores de trabalho Git fornecem:
+- **Isolated directories** - Cada sessão tem sua própria pasta
+- **Shared .git** - Disco eficiente, sem repositório duplicado
+- **Independent branches** - Sem conflitos de mesclagem durante o trabalho
+- **Clean separation** - As sessões não podem pisar umas nas outras
+
+## Fluxo de trabalho
+
+### Iniciando uma segunda tarefa
+
+```bash
+# In your main project
+/agileflow:session:new
+# Pick "Auto-create Session 2"
+
+# Claude shows:
+#   cd /home/user/myproject-2 && claude
+
+# Open new terminal
+cd /home/user/myproject-2
+claude
+```
+
+### Nomeando sessões por recurso
+
+```bash
+# Create session for auth work
+/agileflow:session:new
+# Pick "Name this session" → "auth"
+
+# Creates: /home/user/myproject-auth on branch session-auth
+```
+
+### Usando filial existente
+
+```bash
+# You have a feature branch already
+git branch
+# feature/new-api
+# main
+
+/agileflow:session:new
+# Pick "Use existing branch" → "feature/new-api"
+
+# Creates worktree attached to that branch
+```
+
+## Registro de Sessão
+
+As sessões são rastreadas em `.agileflow/sessions/registry.json`:
+
+```json
+{
+  "sessions": {
+    "1": {
+      "path": "/home/user/myproject",
+      "branch": "main",
+      "is_main": true
+    },
+    "2": {
+      "path": "/home/user/myproject-2",
+      "branch": "session-2",
+      "nickname": null
+    }
+  }
+}
+```
+
+## Melhores Práticas
+
+- **One task per session** - Mantenha as sessões focadas
+- **Use nicknames for long-running work** - Mais fácil de lembrar do que números
+- **End sessions when done** - Usar `/session:end` para limpar
+- **Check status before starting** - Usar `/session:status` para ver o que está acontecendo
+
+## Comandos Relacionados
+
+- [`/sessão:status`](/commands/session-status) - Ver todas as sessões
+- [`/sessão:currículo`](/commands/session-resume) - Mudar para outra sessão
+- [`/sessão:fim`](/commands/session-end) - Finalizar e opcionalmente limpar uma sessão
+- [`/sessão:história`](/commands/session-history) - Ver sessões anteriores

@@ -1,0 +1,197 @@
+---
+title: /epic:liste
+description: Répertoriez toutes les épopées avec suivi du statut et de la progression
+---
+
+# /epic:liste
+
+Affichez toutes les épopées avec le statut, le suivi de la progression et les options d'action rapide.
+
+## Démarrage rapide
+
+```bash
+/agileflow:epic:list
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STATUS` | No | - | Filter by status: `active`, `complete`, `on-hold` |
+
+## Exemples
+
+### Lister toutes les épopées
+
+```bash
+/agileflow:epic:list
+```
+
+Affiche toutes les épopées avec leur statut et leur pourcentage d'achèvement de l'histoire.
+
+### Répertorier uniquement les épopées actives
+
+```bash
+/agileflow:epic:list STATUS=active
+```
+
+Filtres pour afficher uniquement les épopées en cours.
+
+### Liste uniquement les épopées terminées
+
+```bash
+/agileflow:epic:list STATUS=complete
+```
+
+Affiche les épopées dont toutes les histoires sont terminées.
+
+## Format de sortie
+
+La commande affiche les epics dans un tableau structuré :
+
+```markdown
+## Epics
+
+| Epic | Title | Status | Progress | Owner |
+|------|-------|--------|----------|-------|
+| EP-0003 | User Dashboard | active | 2/5 (40%) | AG-UI |
+| EP-0002 | Authentication | active | 4/6 (67%) | AG-API |
+| EP-0001 | Core Setup | complete | 3/3 (100%) | AG-DEVOPS |
+
+---
+**Summary**: 3 epics (2 active, 1 complete)
+**Stories**: 9/14 complete (64%)
+```
+
+## Définitions de statut
+
+| Status | Meaning | Progress Bar | Action |
+|--------|---------|------|--------|
+| **active** | In progress, accepting new stories | Partial fill | Continue work, add stories |
+| **complete** | All stories done | Full (100%) | View summary, possibly reopen |
+| **on-hold** | Paused, not currently worked on | Frozen | Resume or close |
+
+## Visualisation des progrès
+
+Les progrès sont indiqués comme suit :
+- **Numerator**: Histoires terminées
+- **Denominator**: Histoires totales en épopée
+- **Percentage**: Achèvement global
+
+Exemple: `4/6 (67%)` = 4 histoires terminées, 2 restantes, terminées à 67 %
+
+## Actions rapides
+
+Après avoir affiché la liste, vous pouvez :
+
+### Voir les détails épiques
+
+Sélectionnez une épopée pour voir :
+- Toutes les histoires regroupées par statut (in_progress, ready, done)
+- Visualisation des progrès
+- Propriétaire et objectif
+- Recherches connexes et effets indésirables
+
+```bash
+/agileflow:epic:view EPIC=EP-0003
+```
+
+### Ajouter une histoire à Epic
+
+Créez une nouvelle histoire sous une épopée existante :
+
+```bash
+/agileflow:story EPIC=EP-0003 ...
+```
+
+### Créer une nouvelle épopée
+
+Démarrez une nouvelle épopée de fonctionnalités :
+
+```bash
+/agileflow:epic TITLE="..." ...
+```
+
+## Intégration du flux de travail
+
+### Planification des sprints
+
+```bash
+/agileflow:epic:list STATUS=active
+# See which epics are in progress
+/agileflow:epic:view EPIC=EP-0003
+# Review stories and their status
+/agileflow:sprint
+# Plan which stories to work on
+```
+
+### Planification trimestrielle
+
+```bash
+/agileflow:epic:list
+# See all epics and their progress
+# Identify bottlenecks (epics with less than 50% progress)
+# Decide which epics to prioritize next
+```
+
+### Suivi d'achèvement
+
+```bash
+/agileflow:epic:list STATUS=active
+# Work on remaining stories in in-progress epics
+/agileflow:epic:list STATUS=complete
+# Review what was shipped
+```
+
+### Épopées en attente
+
+```bash
+/agileflow:epic:list STATUS=on-hold
+# Check if any on-hold epics can be resumed
+/agileflow:epic:view EPIC=EP-0002
+# Understand why it's on hold
+```
+
+## Interprétation des résultats
+
+### Progrès élevé (au-dessus de 80 %)
+
+```
+EP-0002 | Authentication | active | 5/6 (83%) | AG-API
+```
+
+- Epic est presque terminé
+- Concentrez-vous sur la fin de la dernière histoire
+- Planifiez la prochaine épopée pour commencer
+- Ne fermez pas avant 100 %
+
+### Progrès moyen (40-80%)
+
+```
+EP-0003 | User Dashboard | active | 3/7 (43%) | AG-UI
+```
+
+- Epic est en plein sprint
+- Peut-être besoin d'histoires supplémentaires
+- Vérifiez si les histoires sont bloquées
+- Pensez à ajouter des ressources
+
+### Faibles progrès (inférieurs à 40 %)
+
+```
+EP-0001 | Onboarding Flow | active | 1/8 (12%) | AG-UI
+```
+
+- Epic vient de commencer
+- Montée en puissance en cours
+- Surveiller les bloqueurs
+- Je voudrais peut-être ajouter plus d'histoires
+
+## Commandes associées
+
+- [`/epic:vue`](/commands/epic-view) - Afficher les détails épiques avec toutes les histoires
+- [`/épique`](/commands/epic) - Créer une nouvelle épopée
+- [`/histoire:liste`](/commands/story-list) - Voir toutes les histoires avec des filtres
+- [`/tableau`](/commands/board) - Vue visuelle du tableau Kanban
+- [`/sprint`](/commands/sprint) - Planification des sprints
+- [`/métriques`](/commands/metrics) - Analyse des progrès

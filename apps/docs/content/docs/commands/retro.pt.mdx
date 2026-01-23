@@ -1,0 +1,214 @@
+---
+title: /retrô
+description: Gere retrospectiva com formato Iniciar/Parar/Continuar
+---
+
+# /retrô
+
+Gerador retrospectivo automatizado que analisa dados do projeto para revelar insights, padrões e melhorias acionáveis ​​usando o formato Iniciar/Parar/Continuar.
+
+## Início rápido
+
+```bash
+/agileflow:retro
+```
+
+Gera uma retrospectiva das últimas 2 semanas usando dados do projeto.
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `TIMEFRAME` | No | 2weeks | Period to analyze: sprint, 2weeks, 30d, or 90d |
+| `EPIC` | No | - | Analyze specific epic only (e.g., EP-0010) |
+| `FORMAT` | No | ascii | Output format: ascii, markdown, or html |
+| `SAVE` | No | true | Save to docs/08-project/retrospectives/ |
+
+## Exemplos
+
+### Retrospectiva padrão de 2 semanas
+
+```bash
+/agileflow:retro
+```
+
+Analisa as últimas 2 semanas com saída formatada em ASCII, incluindo:
+- Resumo do sprint (histórias, velocidade, tempo de ciclo)
+- O que correu bem (secção Continuar)
+- O que precisa ser melhorado (seções Iniciar/Parar)
+- Itens acionáveis ​​por prioridade
+- Contribuições da equipe
+- Previsões para o próximo sprint
+
+### Retrospectiva dos últimos 30 dias
+
+```bash
+/agileflow:retro TIMEFRAME=30d FORMAT=markdown
+```
+
+Analisa os últimos 30 dias e salva como descontos para facilitar o compartilhamento.
+
+### Retrospectiva épica específica
+
+```bash
+/agileflow:retro EPIC=EP-0010 FORMAT=markdown
+```
+
+Concentra a análise retrospectiva na conclusão de um épico específico com:
+- Métricas de sucesso épicas
+- O que correu bem durante a execução épica
+- Desafios encontrados
+- Aprendizados para futuros épicos
+
+### Exportar sem salvar
+
+```bash
+/agileflow:retro SAVE=false FORMAT=markdown
+```
+
+Gera e exibe retrospectiva sem salvar em disco (útil para análises rápidas).
+
+## Saída
+
+### Formato ASCII (padrão)
+
+Cria um relatório formatado com desenho de caixa Unicode:
+
+```text
+╔════════════════════════════════════════════════════════════════╗
+║                  AGILEFLOW RETROSPECTIVE                        ║
+║                  Sprint: Oct 17 - Oct 31 (2 weeks)              ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                 ║
+║  📊 SPRINT SUMMARY                                              ║
+║  Stories Completed:   17 (85% of planned 20)                   ║
+║  Velocity:            8.5 stories/week (↗ +12%)                ║
+║  Cycle Time:          3.2 days avg (↓ -8%)                     ║
+║                                                                 ║
+║  ✅ WHAT WENT WELL (Continue)                                   ║
+║  1. Velocity increased +12% vs previous sprint                 ║
+║  2. Completed EP-0010 (Authentication) on schedule             ║
+║  3. 12 stories completed in <2 days                            ║
+║                                                                 ║
+║  ⚠️ WHAT NEEDS IMPROVEMENT                                      ║
+║  1. Average review time: 2.5 days (up from 1.8)                ║
+║     🛑 STOP: Letting PRs sit unreviewed                         ║
+║     ▶️ START: Daily 30min review slot                           ║
+║                                                                 ║
+║  🎯 ACTION ITEMS                                                ║
+║  HIGH Priority:                                                ║
+║  [ ] Unblock US-0045 (escalate for API keys)                   ║
+║  [ ] Set up daily review time block (30min)                    ║
+║                                                                 ║
+║  🔮 PREDICTIONS FOR NEXT SPRINT                                 ║
+║  Based on current velocity:                                    ║
+║  EP-0011 (Payment): 40% → 75% (6 stories)                      ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+### Arquivos salvos
+
+Salva automaticamente em:
+```text
+docs/08-project/retrospectives/retro-<YYYYMMDD>.md
+docs/08-project/retrospectives/README.md (updated with index)
+```
+
+## Fontes de dados
+
+Analisa dados de 4 fontes:
+
+1. **docs/09-agents/bus/log.jsonl** - Padrões de eventos, transições de status, bloqueadores
+2. **docs/09-agents/status.json** - Estado atual, níveis de WIP, propriedade
+3. **docs/06-stories/**/US-*.md** - Dados de conclusão, estimativas versus valores reais
+4. **Velocity data** - Pontos concluídos, tendências de rendimento
+
+## Estrutura Retrospectiva
+
+### Continuar (o que deu certo)
+
+Padrões identificados:
+- Aumentos de alta velocidade
+- Tempos de ciclo rápidos (menos de 2 dias)
+- Zero histórias bloqueadas
+- Conclusões épicas
+- Boa precisão de estimativa (variação inferior a 20%)
+- Carga de trabalho equilibrada do agente
+
+### Iniciar (Novas Práticas)
+
+Recomendações para:
+- Levantamentos diários para identificar bloqueadores mais cedo
+- Dividindo histórias em pedaços menores
+- Terminar histórias antes de começar novas
+- Verificações de dependência pré-sprint
+- Blocos de tempo de revisão dedicados
+- Planejando o pôquer para estimativa
+- Treinamento cruzado em áreas de gargalo
+
+### Pare (coisas para eliminar)
+
+Antipadrões detectados:
+- Deixar os PRs sem serem revisados
+- Iniciando histórias com dependências externas
+- Estimando sem entender a complexidade
+- Comprometimento excessivo no planejamento do sprint
+- Troca de contexto entre histórias
+- PRs grandes (>400 linhas)
+- Atribuindo todo o trabalho a um agente
+
+## Informações de análise
+
+### Detecção de padrões
+
+O comando identifica:
+- **Recurring blockers** - Histórias bloqueadas várias vezes
+- **Day-of-week patterns** - Quando a maior parte do trabalho for concluída
+- **Handoff patterns** - Silos de conhecimento ou propriedade pouco clara
+- **Story size correlations** - Quais tamanhos são mais eficientes
+- **Velocity trends** - Melhorar ou diminuir a produtividade
+
+### Momentos de celebração
+
+Destaques vitórias como:
+- Conclusões épicas
+- Marcos de velocidade (histórias de dois dígitos/semana)
+- Zero bugs relatados
+- Entregas rápidas (menos de 4 horas)
+- 100% de conquistas de cobertura de teste
+
+## Fluxo de trabalho
+
+1. Carregar fontes de dados (logs de barramento, status, dados de história)
+2. Analise o que deu certo (velocidade, tempo de ciclo, conclusão)
+3. Analise o que precisa ser melhorado (quedas, ciclos longos, WIP)
+4. Detecte padrões avançados
+5. Gere itens de ação priorizados
+6. Criar seção de celebração
+7. Gere um relatório abrangente
+8. Salvar no diretório de retrospectivas
+9. Atualizar índice com entrada mais recente
+
+## Usar quando
+
+- **Sprint boundaries** - Após cada sprint ou iteração
+- **Epic completions** - Retrospectiva do épico completo
+- **Team reviews** - Check-ins mensais ou trimestrais
+- **Process improvement** - Identificação de padrões ao longo do tempo
+- **Before planning** - Aplicar o aprendizado no próximo sprint
+- **Metrics context** - Entenda o que os números significam
+
+## Integração
+
+Funciona bem com:
+- [`/métricas`](/commands/metrics) - Contextualizar dados de métricas
+- [`/velocidade`](/commands/velocity) - Analisar tendências de velocidade
+- [`/babá`](/commands/babysit) - Sugere retro nos limites do sprint
+- [`/status`](/commands/status) - Faz referência ao status atual da história
+
+## Comandos Relacionados
+
+- [`/métricas`](/commands/metrics) - Métricas detalhadas do projeto
+- [`/velocidade`](/commands/velocity) - Rastreamento de velocidade e tendências
+- [`/atualizar`](/commands/update) - Relatórios de progresso das partes interessadas
+- [`/comentários`](/commands/feedback) - Colete feedback da equipe sobre histórias

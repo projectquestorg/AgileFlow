@@ -1,0 +1,158 @@
+---
+title: /agileflow:contexte:export
+description: Exportez un extrait de contexte concis pour le coller dans des outils d'IA Web
+---
+
+# /agileflow:contexte:export
+
+Exportez un extrait de contexte concis pour le coller dans les outils d’IA Web.
+
+## Démarrage rapide
+
+```bash
+/agileflow:context:export
+```
+
+## But
+
+Lit `docs/context.md` et génère un extrait condensé (≤ 300 lignes) prêt à être collé dans ChatGPT, Perplexity, Gemini ou Claude Web.
+
+**This is a read-only command** - aucun fichier n'est écrit.
+
+## Format de sortie
+
+La commande génère un bloc de code markdown pour une copie facile :
+
+```markdown
+# Project Context Brief
+Last updated: 2025-12-24
+
+## What We're Building
+AgileFlow is a comprehensive project management system...
+
+## Current Focus
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+
+## Tech Stack
+- Framework: Next.js 16, TypeScript
+- UI: React, Tailwind CSS, shadcn/ui
+- Testing: Jest, Playwright
+
+## Key Decisions
+- ADR-001: Use TypeScript for type safety (Accepted)
+- ADR-002: Use React component library (Accepted)
+
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+
+## Next Steps
+- US-0043: Visual Mode documentation (ready)
+- US-0044: Session commands docs (ready)
+
+---
+**Paste this into**: ChatGPT, Perplexity, Gemini, or Claude web
+**Purpose**: Load full project context for AI assistance
+**Limit**: This excerpt is ≤300 lines for easy pasting
+```
+
+## Sections incluses
+
+L'export comprend uniquement ces sections (pour rester sous 300 lignes) :
+
+| Section | Max Lines | Purpose |
+|---------|-----------|---------|
+| Header | 2 | Title and timestamp |
+| What We're Building | 5 | Project overview |
+| Current Focus | 5 | Active work |
+| Tech Stack | 8 | Technologies |
+| Key Decisions | 10 | ADR titles only |
+| Feature Map | 15 | One line per epic |
+| Next Steps | 15 | Ready stories |
+| Footer | 3 | Paste instructions |
+
+## Sections exclues
+
+Pour rester dans la limite de 300 lignes, celles-ci sont ignorées :
+
+- **Recent Progress** - Trop verbeux
+- **Notes section** - Trop longtemps
+- **Detailed story descriptions** - Pas nécessaire pour le contexte
+- **Full ADR content** - Seuls les titres inclus
+
+## Condensation du contenu
+
+Lors de l'extraction, le contenu est condensé :
+
+| Element | Full Size | Condensed |
+|---------|-----------|-----------|
+| ADRs | Full description | Title + status only |
+| Stories | Title + description | Title + status |
+| Tech | Full list + versions | Framework + key deps |
+| Epics | Title + stories list | Title + count + status |
+| Decisions | Full context | One-liner |
+
+## Exigences
+
+**docs/context.md must exist** avant d'exporter.
+
+S'il manque, vous verrez :
+
+```
+Error: docs/context.md not found.
+
+To create it, run: /agileflow:context:full
+
+Then you can export with: /agileflow:context:export
+```
+
+## Flux de travail d'utilisation
+
+```bash
+# 1. Generate context (if needed)
+/agileflow:context:full
+
+# 2. Export concise version
+/agileflow:context:export
+
+# 3. Copy the output
+# 4. Paste into ChatGPT, Perplexity, Gemini, or Claude web
+# 5. Ask questions with full project context
+```
+
+## Pourquoi 300 lignes ?
+
+Les outils d'IA Web ont des limites de fenêtre contextuelle. Un extrait de 300 lignes :
+
+- S'adapte confortablement à la plupart des fenêtres contextuelles des outils d'IA
+- Fournit suffisamment de détails pour une assistance éclairée
+- Laisse de la place à vos vraies questions
+- Est rapide à coller et à traiter
+
+## Quand utiliser
+
+- **Before web AI sessions** - Charger le contexte du projet
+- **When switching AI tools** - Transférer le contexte entre les outils
+- **After context updates** - Obtenez une nouvelle version concise
+- **For team sharing** - Aperçu rapide du projet
+
+## Aucune confirmation nécessaire
+
+Il s'agit d'une commande en lecture seule :
+
+- ✓ Lire docs/context.md
+- ✓ Extraire et formater
+- ✓ Sortie vers le bloc de code
+- ✗ AUCUNE écriture de fichier
+- ✗ AUCUNE confirmation nécessaire
+- ✗ AUCUN changement d'état
+
+## Commandes associées
+
+- [`/agileflow:contexte`](/commands/context) - Présentation des commandes contextuelles
+- [`/agileflow:contexte:full`](/commands/context-full) - Générer un contexte complet
+- [`/agileflow:contexte:note`](/commands/context-note) - Ajouter une note horodatée
+- [`/agileflow:research:demander`](/commands/research-ask) - Générer une invite de recherche

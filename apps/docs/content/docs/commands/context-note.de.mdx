@@ -1,0 +1,196 @@
+---
+title: /agileflow:context:note
+description: Fügen Sie Ihrer Projektkontextdatei eine zeitgestempelte Notiz hinzu
+---
+
+# /agileflow:context:note
+
+Hängen Sie eine zeitgestempelte Notiz an die Projektkontextdatei an.
+
+## Schnellstart
+
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+## Zweck
+
+Fügen Sie schnell eine Notiz hinzu `docs/context.md` im Abschnitt „Notizen“. Nützlich für die Aufnahme:
+
+- Entscheidungen und Begründung
+- Beobachtungen während der Entwicklung
+- Erinnerungen für zukünftige Sitzungen
+- Teamkommunikation
+- Technische Entdeckungen
+
+## Parameter
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| NOTE | Yes | 1-5 line note text to append |
+
+## Beispielverwendung
+
+```bash
+# Record a decision
+/agileflow:context:note NOTE="Decided to use JWT instead of sessions"
+
+# Document an issue
+/agileflow:context:note NOTE="User reported auth bug in production, investigating"
+
+# Sprint planning note
+/agileflow:context:note NOTE="Sprint planning: focusing on US-0042 and US-0045 this week"
+
+# Technical discovery
+/agileflow:context:note NOTE="Performance issue fixed: reduced API response time by 40%"
+
+# Stakeholder feedback
+/agileflow:context:note NOTE="Stakeholder meeting: new feature request added to backlog"
+```
+
+## Notizformat
+
+Notizen werden mit ISO 8601-Zeitstempeln angehängt:
+
+```markdown
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Decided to use JWT instead of sessions
+- **[2024-12-31T15:45:00Z]**: User reported auth bug in production
+- **[2025-01-01T09:00:00Z]**: Sprint planning: focusing on US-0042 this week
+```
+
+## Arbeitsablauf
+
+### Schritt 1: Geben Sie den Notiztext ein
+
+Wenn das NOTE-Argument fehlt, werden Sie aufgefordert:
+
+```
+What note would you like to add to docs/context.md?
+```
+
+### Schritt 2: Diff-First-Bestätigung
+
+Vor dem Schreiben zeigt der Befehl, was sich ändern wird:
+
+```diff
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Old note here
++ - **[2025-01-07T14:22:00Z]**: New note being added
+```
+
+### Schritt 3: Bestätigen
+
+Sie müssen die Änderung genehmigen, bevor sie angewendet wird.
+
+## Automatische Erstellung
+
+### Wenn docs/context.md nicht existiert
+
+Der Befehl erstellt es mit einem Abschnitt „Notizen“:
+
+```markdown
+# Project Context
+
+<!-- MANAGED_SECTION: placeholder -->
+Run /agileflow:context:full to populate project context.
+<!-- END_MANAGED -->
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+### Wenn der Abschnitt „Notizen“ nicht vorhanden ist
+
+Der Befehl fügt es am Ende der Datei hinzu:
+
+```markdown
+[existing content...]
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+## Zeitstempelformat
+
+Alle Zeitstempel verwenden das ISO 8601-Format (UTC):
+
+```
+YYYY-MM-DDTHH:MM:SSZ
+```
+
+Beispiele:
+- `2024-12-31T10:30:00Z` - richtig
+- `2025-01-07T15:45:30Z` - richtig
+
+Dies gewährleistet:
+- Konsistente Sortierung
+- Universelle Zeitreferenz
+- Maschinenlesbares Format
+- Einfache chronologische Reihenfolge
+
+## Chronologische Reihenfolge
+
+Notizen werden in der Reihenfolge angezeigt, in der sie hinzugefügt wurden:
+
+- **Oldest** Notizen oben
+- **Newest** Anmerkungen unten
+
+Dies bietet eine chronologische Geschichte der Entscheidungen und Entdeckungen.
+
+## Gute Notenbeispiele
+
+```bash
+# Technical decisions
+/agileflow:context:note NOTE="Switched from REST to GraphQL for complex queries"
+
+# Bug tracking
+/agileflow:context:note NOTE="Fixed race condition in user auth - PR #245"
+
+# Team coordination
+/agileflow:context:note NOTE="API team ready for integration - contact @john"
+
+# Environment changes
+/agileflow:context:note NOTE="Upgraded Node.js to v20 in CI - all tests passing"
+
+# External dependencies
+/agileflow:context:note NOTE="Stripe API v2 deprecation - migrate by March 2025"
+```
+
+## Wann zu verwenden
+
+- **After making decisions** - Dokumentieren Sie die Begründung
+- **When encountering issues** - Verfolgen Sie Probleme und Lösungen
+- **During planning** - Zeichnen Sie Sprintziele und Schwerpunktbereiche auf
+- **After deployments** - Versionsveröffentlichungen beachten
+- **When blocked** - Dokumentblocker für den Kontext
+
+## Hinweis vs. ADR
+
+| Use Note for | Use ADR for |
+|--------------|-------------|
+| Quick observations | Major architecture decisions |
+| Temporary reminders | Long-term technical choices |
+| Day-to-day tracking | Decisions needing justification |
+| Team communications | Choices with alternatives considered |
+
+Für wichtige technische Entscheidungen verwenden Sie [`/agileflow:adr`](/commands/adr) stattdessen.
+
+## Notizen anzeigen
+
+Notizen sind sichtbar, wenn Sie:
+
+1. Sicht `docs/context.md` direkt
+2. Laufen `/agileflow:context:export` (sofern der Platz es zulässt)
+3. Laufen `/agileflow:context:full` um den Kontext aufzufrischen
+
+## Verwandte Befehle
+
+- [`/agileflow:context`](/commands/context) - Übersicht über Kontextbefehle
+- [`/agileflow:context:full`](/commands/context-full) - Vollständigen Kontext generieren
+- [`/agileflow:context:export`](/commands/context-export) - Prägnanten Auszug exportieren
+- [`/agileflow:adr`](/commands/adr) - Erstellen Sie Architekturentscheidungsdatensätze

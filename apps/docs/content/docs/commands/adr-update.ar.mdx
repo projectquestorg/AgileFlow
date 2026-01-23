@@ -1,0 +1,192 @@
+---
+title: /adr:update
+description: تحديث حالة ADR أو إضافة تعديلات
+---
+
+# /adr:update
+
+قم بتحديث حالة ADR الموجودة أو أضف تعديلات توثق تغييرات الحالة.
+
+## بداية سريعة
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after review"
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | ADR number to update (4-digit, e.g., 0042) |
+| `STATUS` | No | - | New status: `proposed`, `accepted`, `deprecated`, `superseded` |
+| `REASON` | No | - | Reason for the status change |
+| `SUPERSEDED_BY` | No | - | If superseding, the new ADR number (e.g., 0045) |
+
+## أمثلة
+
+### قبول ADR المقترح
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=accepted REASON="Team approved after security review"
+```
+
+### إهمال ADR
+
+```bash
+/agileflow:adr:update NUMBER=0035 STATUS=deprecated REASON="Context changed, approach is no longer applicable"
+```
+
+### وضع علامة على ADR على أنه تم استبداله
+
+```bash
+/agileflow:adr:update NUMBER=0042 STATUS=superseded SUPERSEDED_BY=0045 REASON="New requirements made this approach obsolete"
+```
+
+### إعادة تنشيط ADR المهملة
+
+```bash
+/agileflow:adr:update NUMBER=0030 STATUS=accepted REASON="Reconsidered in light of new project constraints"
+```
+
+### الوضع التفاعلي
+
+```bash
+/agileflow:adr:update NUMBER=0042
+```
+
+بدون الحالة أو السبب، يرشدك الأمر خلال عملية التحديث.
+
+## انتقالات الحالة
+
+### انتقالات صالحة
+
+| From | To | Common Reason |
+|------|-----|---------------|
+| `proposed` | `accepted` | Team approved decision |
+| `proposed` | `rejected` | Alternative chosen, not viable |
+| `accepted` | `deprecated` | No longer relevant, context changed |
+| `accepted` | `superseded` | Better approach found, replaced by new ADR |
+| `deprecated` | `accepted` | Reconsidered, still valid |
+| `superseded` | `accepted` | Replacement didn't work out |
+
+## سير العمل
+
+عند تشغيل الأمر:
+
+1. **Validates** ADR موجود
+2. **Asks for new status** (إذا لم يتم توفيرها)
+3. **Requires a reason** لأي تغيير في الحالة
+4. **Shows preview** لما سيتم تحديثه
+5. **Asks for confirmation** قبل الكتابة
+6. **Appends amendment** توثيق التغيير
+7. **Updates frontmatter** مع الحالة الجديدة والطابع الزمني
+
+## تنسيق التعديل
+
+عندما تتغير حالة ADR، يقوم الأمر بإلحاق قسم التعديل:
+
+```markdown
+## Amendment - 2024-12-30
+
+**Status changed**: accepted → superseded
+**Reason**: New requirements made this approach obsolete.
+**Superseded by**: [ADR-0045: New Approach](adr-0045-new-approach.md)
+**Updated**: 2024-12-30
+```
+
+يتم الحفاظ على محتوى ADR الأصلي؛ التعديلات توثق التغيير.
+
+## أمثلة حسب السيناريو
+
+### السيناريو 1: الموافقة على القرار المقترح
+
+```bash
+# A team member proposed using a new framework
+# After review meeting, you approve it
+
+/agileflow:adr:update NUMBER=0047 STATUS=accepted REASON="Team consensus in architecture review meeting 2024-12-30. Framework choice validated against scalability requirements."
+```
+
+النتيجة: تم وضع علامة ADR-0047 الآن على أنها `accepted` مع موافقة موثقة.
+
+### السيناريو الثاني: استبدال النهج القديم
+
+```bash
+# You've found a better approach to database caching
+# The old ADR (0041) should be superseded by new ADR (0050)
+
+/agileflow:adr:update NUMBER=0041 STATUS=superseded SUPERSEDED_BY=0050 REASON="New caching strategy provides 3x better performance with simpler implementation. See ADR-0050 for details."
+```
+
+النتيجة: تم وضع علامة ADR-0041 على أنها `superseded` مع وصلة إلى ADR-0050.
+
+### السيناريو 3: إعادة النظر في القرار المهمل
+
+```bash
+# Project direction changed, old approach might be relevant again
+/agileflow:adr:update NUMBER=0020 STATUS=accepted REASON="Project switched to microservices architecture. Original monolithic approach may apply to specific subdomain. Reactivating for team consideration."
+```
+
+النتيجة: تم إلغاء وضع علامة على ADR-0020 على أنه مهمل، الآن `accepted` للمناقشة.
+
+### السيناريو 4: توثيق تغيير السياق
+
+```bash
+# Business requirements changed, a decision no longer applies
+/agileflow:adr:update NUMBER=0038 STATUS=deprecated REASON="Support for legacy browsers dropped in new product roadmap. This ADR addressed IE11 compatibility which is no longer required."
+```
+
+النتيجة: تم وضع علامة ADR-0038 على أنها `deprecated` موضحا لماذا عفا عليه الزمن.
+
+## أفضل الممارسات
+
+### متى يتم تحديث حالة ADR
+
+- **Approve** التفاعلات الدوائية المقترحة بعد مراجعة الفريق
+- **Deprecate** إذا تغير السياق أو المتطلبات
+- **Supersede** عندما يحل ADR الأحدث محل هذا النهج
+- **Reactivate** إذا تغيرت الظروف وأصبح القرار القديم ذا صلة مرة أخرى
+
+### كتابة أسباب وجيهة
+
+**Good reasons:**
+- "إجماع الفريق بعد مراجعة الهندسة المعمارية"
+- "متطلبات الأداء الجديدة تجعل هذا النهج غير فعال"
+- "أزالت متطلبات العمل القيد الذي أدى إلى اتخاذ هذا القرار"
+- "تم التنفيذ بنجاح والتحقق من صحته في الإنتاج"
+
+**Poor reasons:**
+- "لم تعد هناك حاجة"
+- "هناك نهج أفضل"
+- "الفريق قرر"
+
+### توثيق التجاوز
+
+عند استبدال ADR:
+1. تشمل دائما `SUPERSEDED_BY` مع رقم ADR الجديد
+2. اشرح لماذا يعتبر النهج الجديد أفضل
+3. راجع ADR الجديد للحصول على تفاصيل التنفيذ
+4. حافظ على ADR الأصلي سليمًا للتاريخ
+
+### خلق أعمال التنفيذ
+
+بعد الموافقة على ADR:
+
+```bash
+# Mark ADR as accepted
+/agileflow:adr:update NUMBER=0050 STATUS=accepted REASON="Team approved in review"
+
+# View the ADR to plan implementation
+/agileflow:adr:view NUMBER=0050
+
+# Create stories or epic from the ADR
+/agileflow:epic TITLE="Implement ADR-0050" ...
+```
+
+## الأوامر ذات الصلة
+
+- [`/adr:list`](/commands/adr-list) - عرض جميع ADRs
+- [`/العنوان:عرض`](/commands/adr-view) - عرض تفاصيل ADR الكاملة
+- [`/adr`](/commands/adr) - إنشاء ADR جديد
+- [`/ملحمة`](/commands/epic) - إنشاء ملحمة التنفيذ
+- [`/قصة`](/commands/story) - إنشاء قصة التنفيذ

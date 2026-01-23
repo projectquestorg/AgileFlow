@@ -1,0 +1,234 @@
+---
+title: / Agileflow:بحث:اسأل
+description: أنشئ مطالبات بحثية تفصيلية لـ ChatGPT أو Claude web أو Perplexity أو Gemini
+---
+
+# / Agileflow:بحث:اسأل
+
+قم بإنشاء مطالبة بحثية شاملة وغنية بالسياق لأدوات الذكاء الاصطناعي الخارجية عندما تحتاج إلى مساعدة الخبراء.
+
+## بداية سريعة
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"
+```
+
+مثال لاستكشاف الأخطاء وإصلاحها:
+
+```bash
+/agileflow:research:ask TOPIC="next-auth Google OAuth" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+```
+
+## غاية
+
+عندما تواجه مشكلة ما أو تحتاج إلى إرشادات الخبراء، يقوم هذا الأمر بإنشاء ملف **detailed 200+ line prompt** يتضمن:
+
+- سياق قاعدة التعليمات البرمجية الحالية ومقتطفات التعليمات البرمجية
+- رسائل الخطأ الدقيقة وتتبعات المكدس
+- ما كنت قد حاولت بالفعل
+- أسئلة محددة للإجابة
+
+تم تصميم المطالبة التي تم إنشاؤها للحصول على إجابات محددة وقابلة للتنفيذ من أدوات الذكاء الاصطناعي.
+
+## حدود
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | What you're researching (e.g., "OAuth 2.0 with Google") |
+| DETAILS | No | Constraints, deadlines, or specific requirements |
+| ERROR | No | Exact error message if troubleshooting |
+
+## ما يتم إنشاؤه
+
+يقوم الأمر بإنشاء موجه منظم بهذه الأقسام:
+
+### 1. سياق المشروع
+إصدار الإطار والتبعيات والملفات ذات الصلة من قاعدة التعليمات البرمجية الخاصة بك.
+
+### 2. التنفيذ الحالي
+**50+ lines of actual code** من مشروعك - وليس التعليمات البرمجية الزائفة أو الملخصات.
+
+### 3. المشكلة
+- رسائل الخطأ بالضبط (حرفيا)
+- تتبع المكدس الكامل إذا كان متاحًا
+- السلوك المتوقع مقابل السلوك الفعلي
+- خطوات التكاثر
+
+### 4. ما جربناه بالفعل
+على الأقل **2 approaches** مع نتائج مفصلة وتحليلات لسبب عدم نجاحها.
+
+### 5. أسئلة محددة
+**3+ targeted questions** التي تكون مسؤولة ومحددة لحالتك.
+
+### 6. ما أحتاجه
+- تحليل السبب الجذري
+- الحل خطوة بخطوة
+- أمثلة التعليمات البرمجية كاملة
+- مسكتك وحالات الحافة
+- نهج الاختبار
+
+### 7. تفاصيل البيئة
+إصدار Node.js ونظام التشغيل وإصدارات الأدوات ذات الصلة.
+
+## متطلبات الجودة
+
+يتحقق الأمر من صحة المطالبة التي تم إنشاؤها قبل الإخراج:
+
+| Check | Requirement |
+|-------|-------------|
+| Length | ≥200 lines |
+| Code snippets | ≥50 lines of actual code |
+| Error details | Verbatim message if troubleshooting |
+| Tried section | ≥2 approaches documented |
+| Questions | ≥3 specific questions |
+
+إذا فشل أي فحص، يقوم الأمر بجمع المزيد من السياق وإعادة إنشائه.
+
+## سير العمل
+
+```
+Step 1: Run the command
+/agileflow:research:ask TOPIC="..." ERROR="..."
+
+Step 2: Copy the generated prompt
+
+Step 3: Paste into ChatGPT, Claude web, Perplexity, or Gemini
+
+Step 4: Get expert analysis
+
+Step 5: Import results back
+/agileflow:research:import TOPIC="..."
+(paste the response when prompted)
+
+Step 6: Results saved to docs/10-research/
+```
+
+## إخراج المثال
+
+تبدو المطالبة الجيدة كما يلي (مختصرة):
+
+```markdown
+# Research Request: next-auth Google OAuth unauthorized_client Error
+
+## Project Context
+
+**Framework**: Next.js 14.0.4 with App Router
+**Key Dependencies**:
+- next-auth: 5.0.0-beta.4
+- next: 14.0.4
+- typescript: 5.3.3
+
+---
+
+## Current Implementation
+
+### File: src/app/api/auth/[...nextauth]/route.ts
+
+```typescript
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+
+تصدير const { معالجات، مصادقة، تسجيل الدخول، تسجيل الخروج } = NextAuth({
+  مقدمي الخدمة: [
+    جوجل({
+      معرف العميل:process.env.GOOGLE_CLIENT_ID!،
+      ClientSecret:process.env.GOOGLE_CLIENT_SECRET!،
+    })،
+  ]،
+  // ... أكثر من 40 سطرًا إضافيًا من التعليمات البرمجية الفعلية
+});
+```
+
+---
+
+## The Problem
+
+### Error Message
+```
+[auth] [خطأ] CallbackRouteError: اقرأ المزيد على https://errors.authjs.dev#callbackrouteerror
+[auth][cause]: Error: unauthorized_client
+```
+
+### Expected Behavior
+User should be redirected to Google login, authenticate, and return to the app.
+
+### Actual Behavior
+After clicking "Sign in with Google", immediately get unauthorized_client error.
+
+---
+
+## What We've Already Tried
+
+### Attempt 1: Verify credentials
+**What we did**: Double-checked GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+**Result**: Credentials match exactly
+**Why it didn't work**: Issue persists
+
+### Attempt 2: Check redirect URIs
+**What we did**: Added localhost:3000/api/auth/callback/google to Google Console
+**Result**: Still getting unauthorized_client
+
+---
+
+## Specific Questions
+
+1. **Why does next-auth 5.0.0-beta.4 throw unauthorized_client when credentials are verified?**
+2. **Is there additional configuration needed for Google OAuth with App Router?**
+3. **What's the correct redirect URI format for next-auth v5?**
+4. **Are there known issues with next-auth 5.0.0-beta.4 and the Google provider?**
+
+---
+
+## What I Need
+
+1. **Root cause analysis**: Why is this happening?
+2. **Step-by-step solution** with exact code changes
+3. **Complete code examples** that I can copy-paste
+4. **Gotchas and edge cases** to watch for
+5. **Testing approach** to verify the fix works
+```
+
+## مكافحة الأنماط
+
+**Don't generate short, vague prompts:**
+
+```
+❌ "How do I fix OAuth in Next.js?"
+❌ "Getting an error with authentication, how to fix?"
+❌ "Help with Google login"
+```
+
+**Always generate detailed prompts with:**
+
+```
+✅ 200+ lines with full context
+✅ Actual code from your codebase
+✅ Exact error messages
+✅ What you've already tried
+✅ Specific questions
+```
+
+## التكامل مع مجالسة الأطفال
+
+متى [`/ Agileflow:babysit`](/commands/babysit) يكتشف أنك عالق في مشكلة ما، فهو يقترح ما يلي:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+## نصائح للحصول على نتائج أفضل
+
+1. **Be specific with TOPIC** - تضمين إصدارات الإطار وأنواع الأخطاء
+2. **Include ERROR messages** - آثار المكدس الكامل تساعد بشكل كبير
+3. **Let the command read your code** - يستخرج التنفيذ الفعلي
+4. **Don't skip validation** - الشيكات تضمن استجابات الجودة
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: البحث`](/commands/research) - نظرة عامة على نظام البحث
+- [`/ Agileflow:البحث:استيراد`](/commands/research-import) - استيراد نتائج البحوث
+- [`/ Agileflow:research:list`](/commands/research-list) - عرض كافة الملاحظات البحثية
+- [`/ Agileflow:البحث:عرض`](/commands/research-view) - قراءة مذكرة بحثية محددة

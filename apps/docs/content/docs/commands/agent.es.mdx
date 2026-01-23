@@ -1,0 +1,313 @@
+---
+title: /agente
+description: Incorporación de un nuevo agente con perfil y contrato
+---
+
+# /agente
+
+Incorpore nuevos agentes con perfiles, indicaciones del sistema (contratos) y límites de alcance para una colaboración eficaz en equipo.
+
+## Inicio rápido
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Bash" SCOPE="src/components/,frontend"
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `AGENT_ID` | Yes | - | Unique agent identifier (e.g., AG-UI, AG-API) |
+| `ROLE` | Yes | - | Agent's role or title |
+| `TOOLS` | No | Read,Write,Edit,Bash | Comma-separated available tools |
+| `SCOPE` | No | - | Directories and story tags agent can access |
+
+## Ejemplos
+
+### Desarrollador frontend integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Edit,Bash,Glob" SCOPE="src/components/,src/pages/,frontend,ui"
+```
+
+Crea perfil de agente con:
+- Rol y responsabilidades
+- Herramientas disponibles (Leer, Escribir, Editar, Bash)
+- Límites de alcance (solo src/components/ y src/pages/)
+- Aviso del sistema (contrato) con reglas estrictas
+
+### Desarrollador de API integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-API ROLE="Backend API Developer" TOOLS="Read,Write,Edit,Bash,Grep" SCOPE="src/api/,src/services/,backend,api"
+```
+
+### Especialista en CI/CD integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-CI ROLE="CI/CD Automation Engineer" TOOLS="Read,Write,Bash,Grep" SCOPE=".github/,scripts/,ci,devops"
+```
+
+## Producción
+
+### 1. Perfil del agente
+
+Creates agent profile markdown at `docs/02-practices/prompts/agents/agent-<AGENT_ID>.md`
+
+Contenido de ejemplo:
+
+```text
+---
+agent_id: AG-UI
+role: Frontend Developer
+tools: [Read, Write, Edit, Bash, Glob]
+scope:
+  directories: [src/components/, src/pages/]
+  story_tags: [frontend, ui, ux]
+---
+
+# AG-UI: Frontend Developer Agent
+
+## Responsibilities
+Build and maintain user interface components with React and Tailwind CSS.
+
+## Available Tools
+- Read - Read files and directories
+- Write - Create new files
+- Edit - Modify existing files
+- Bash - Run commands (npm, git)
+- Glob - Search for files by pattern
+
+## Scope Boundaries
+
+### Allowed Directories
+- `src/components/` - UI components
+- `src/pages/` - Page layouts
+- `public/` - Static assets
+
+### Restricted Directories
+- `src/api/` - Backend code
+- `.github/` - CI/CD workflows
+
+### Story Tags
+- `frontend` - UI features
+- `ui` - Component work
+- `ux` - User experience
+- `design` - Design implementation
+
+## System Prompt (Contract)
+
+### Scope Restrictions
+You can ONLY modify files in:
+- `src/components/**`
+- `src/pages/**`
+
+You CANNOT modify:
+- Backend code in `src/api/`
+- CI/CD workflows in `.github/`
+
+### Testing Requirements
+Before committing, run:
+- `npm test -- src/components/` - Run component tests
+- `npm run lint:css` - Check Tailwind usage
+
+### Commit Message Format
+Use conventional commits with `ui:` prefix:
+- `feat(ui): add new button component`
+- `fix(ui): correct responsive breakpoint`
+- `style(ui): update component spacing`
+
+### Status Updates
+After completing a story:
+1. Update `docs/09-agents/status.json` with new status
+2. Log to `docs/09-agents/bus/log.jsonl`
+3. Include completion time and any blockers
+
+### Code Standards
+- TypeScript required (no .js files)
+- JSDoc comments on exported components
+- Storybook stories for all components
+- 80%+ test coverage for components
+- Accessibility checks (axe-core)
+```
+
+### 2. Lista de agentes
+
+Actualiza o crea `docs/09-agents/roster.yaml`:
+
+```yaml
+agents:
+  AG-UI:
+    id: AG-UI
+    role: Frontend Developer
+    tools: [Read, Write, Edit, Bash, Glob]
+    scope:
+      directories: [src/components/, src/pages/]
+      story_tags: [frontend, ui, ux]
+  AG-API:
+    id: AG-API
+    role: Backend API Developer
+    tools: [Read, Write, Edit, Bash, Grep]
+    scope:
+      directories: [src/api/, src/services/]
+      story_tags: [backend, api, database]
+```
+
+### 3. Aviso del sistema
+
+Genera un mensaje del sistema condensado para copiar/pegar como mensaje del sistema terminal:
+
+```text
+You are AG-UI, a Frontend Developer Agent.
+
+ROLE: Build and maintain user interface components.
+
+SCOPE BOUNDARIES (Strict):
+- Can modify: src/components/, src/pages/
+- Cannot modify: src/api/, .github/
+- Story tags: frontend, ui, ux
+
+TESTING:
+- Run npm test before committing
+- Maintain 80%+ coverage
+- Check accessibility with axe-core
+
+COMMITS:
+- Format: "feat(ui):" or "fix(ui):"
+- Conventional commits required
+
+STATUS:
+- Update docs/09-agents/status.json after completing stories
+- Log events to docs/09-agents/bus/log.jsonl
+```
+
+## Componentes del perfil del agente
+
+### Responsabilidades
+
+Descripción clara de lo que hace el agente:
+- Dominio específico (UI, API, CI/CD)
+- Tecnologías utilizadas
+- Entregables clave
+- rol de equipo
+
+### Herramientas disponibles
+
+Qué puede utilizar el agente:
+- **Read** - Leer archivos y analizar código.
+- **Write** - Crear nuevos archivos
+- **Edit** - Modificar archivos existentes
+- **Bash** - Ejecutar comandos de shell (git, npm, docker)
+- **Glob** - Buscar archivos por patrón
+- **Grep** - Buscar contenido del archivo
+
+### Límites del alcance
+
+Dónde puede trabajar el agente:
+- **Allowed directories** - El agente de archivos puede modificar
+- **Restricted directories** - El agente de archivos NO PUEDE tocar
+- **Story tags** - ¿Qué trabajo se le asigna a este agente?
+
+### Aviso del sistema (contrato)
+
+El agente debe seguir las reglas:
+- **Scope restrictions** - Rutas de archivos exactas
+- **Testing requirements** - Cuándo/cómo realizar la prueba
+- **Commit conventions** - Formato de sucursal y mensaje.
+- **Status updates** - Cómo seguir el progreso
+- **Code standards** - Requisitos de calidad
+
+## Mejores prácticas
+
+### Agentes de nombres
+Utilice identificaciones descriptivas que indiquen claramente el rol:
+- ✅ Bueno: AG-UI, AG-API, AG-CI, AG-DEVOPS, AG-SECURITY
+- ❌ Malo: AG-001, AG-A, AG-DEV1
+
+### Definición del alcance
+
+Deje los límites muy claros:
+
+**Good** - Caminos específicos:
+- `src/components/`
+- `src/api/routes/`
+- `.github/workflows/`
+
+**Bad** - Límites vagos:
+- "cosas de interfaz"
+- "cosas de backend"
+
+### Requisitos de prueba
+
+Incluya comandos de prueba específicos:
+
+**Good** - Comandos claros:
+- Correr `npm test -- src/components/`
+- Consulta cobertura con `npm run coverage`
+- Pelusa con `npm run lint:tsx`
+
+**Bad** - Instrucciones vagas:
+- "Escribir pruebas"
+- "Asegúrate de que funcione"
+
+### Mapeo de etiquetas de historia
+
+Asignar historias basadas en etiquetas:
+
+| Agent | Story Tags |
+|-------|------------|
+| AG-UI | frontend, ui, ux, design |
+| AG-API | backend, api, database |
+| AG-CI | ci, devops, automation |
+
+## Flujo de trabajo
+
+1. Reúna los detalles del agente:
+   - ID único (DOMINIO AG)
+   - Rol/título
+   - Herramientas disponibles
+   - Límites del alcance
+   - Etiquetas de historia
+
+2. Crear perfil de agente a partir de plantilla
+   - Sección de responsabilidades
+   - Lista de herramientas
+   - Límites del alcance (claros y específicos)
+   - Aviso del sistema (contrato con reglas)
+
+3. Actualizar la lista de agentes
+   - Agregar entrada a docs/09-agents/roster.yaml
+   - ID del mapa → función, herramientas, alcance
+
+4. Generar mensaje del sistema
+   - Mensaje condensado de salida
+   - Listo para pegar como indicador del sistema terminal
+
+5. Validar agente
+   - Revisar los límites del alcance (sin conflictos)
+   - Confirmar los requisitos de prueba
+   - Verifique las asignaciones de etiquetas de historias
+
+## Integración
+
+Los perfiles de agentes se integran con:
+- **Status tracking** - La lista muestra agentes activos.
+- **Story assignment** - Utilice etiquetas y ID de agente
+- **Capacity planning** - Ver quién está disponible
+- **Handoffs** - Perfiles de agentes de referencia en comunicaciones.
+- **Scope validation** - Evitar cambios fuera de alcance
+
+## Usar cuando
+
+- **Onboarding new team members** - Crear perfil y contrato.
+- **Adding specialized roles** - Agentes de seguridad, rendimiento, accesibilidad.
+- **Restructuring team** - Actualizar los límites del alcance
+- **Training agents** - Utilice el indicador del sistema como referencia
+- **Resolving conflicts** - El alcance claro evita la superposición
+
+## Comandos relacionados
+
+- [`/traspaso`](/commands/handoff) - Documentar las transiciones de trabajo entre agentes.
+- [`/estado`](/commands/status) - Ver todos los agentes activos y asignaciones.
+- [`/cuidar`](/commands/babysit) - Monitorear el progreso del agente.
+- [`/métricas`](/commands/metrics) - Métricas de rendimiento del agente

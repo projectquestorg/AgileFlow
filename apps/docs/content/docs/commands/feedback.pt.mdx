@@ -1,0 +1,243 @@
+---
+title: /opinião
+description: Colete e processe feedback do agente
+---
+
+# /opinião
+
+Colete feedback de agentes e humanos sobre histórias, épicos e sprints para melhoria contínua do processo.
+
+## Início rápido
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCOPE` | No | story | Feedback scope: story, epic, or sprint |
+| `STORY` | Conditionally | - | Story ID (required if SCOPE=story) |
+| `EPIC` | Conditionally | - | Epic ID (required if SCOPE=epic) |
+| `ANONYMOUS` | No | no | Allow anonymous feedback (yes/no) |
+
+## Exemplos
+
+### Feedback de conclusão da história
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+Depois de marcar uma história como concluída, colete:
+- Classificação de clareza AC (1-5)
+- Classificação de resolução de dependência (1-5)
+- Estimativa de classificação de precisão (1-5)
+- Classificação de suavidade de implementação (1-5)
+- O que correu bem
+- O que poderia ser melhorado
+
+### Feedback retrospectivo épico
+
+```bash
+/agileflow:feedback SCOPE=epic EPIC=EP-0010
+```
+
+Após a conclusão épica, reúna:
+- Métricas de sucesso em relação a metas épicas
+- O que deu certo durante a execução
+- O que não deu certo
+- Surpresas e aprendizados
+- Ações para o próximo épico
+
+### Feedback retrospectivo do Sprint
+
+```bash
+/agileflow:feedback SCOPE=sprint
+```
+
+No final do sprint, colete o feedback da equipe:
+- Continuar (continue fazendo)
+- Parar (não é mais útil)
+- Iniciar (novas práticas)
+- Experimentos para tentar
+- Os bloqueadores removeram este sprint
+
+### Feedback anônimo
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0045 ANONYMOUS=yes
+```
+
+Coleta feedback sem atribuição para tópicos delicados.
+
+## Saída
+
+### Arquivos de comentários
+
+Saves feedback to:
+```text
+docs/08-project/feedback/<YYYYMMDD>-<story-or-epic-id>.md
+```
+
+### Exemplo de feedback da história
+
+```markdown
+## Story Feedback: US-0042
+
+**Completed by**: AG-API
+**Date**: 2025-12-22
+
+### Ratings (1-5)
+- AC clarity: 5 (crystal clear)
+- Dependencies resolved: 4 (one minor blocker)
+- Estimate accuracy: 5 (spot on)
+- Implementation smoothness: 4 (smooth)
+
+### What Went Well
+- Clear acceptance criteria with examples
+- All tests passed on first run
+- Good documentation
+
+### What Could Be Improved
+- Database schema migration took longer than expected
+
+### Blockers Encountered
+- None significant
+
+### Learnings/Insights
+- JSON schema validation saved hours of debugging
+```
+
+## Tipos de feedback
+
+### 1. Feedback sobre a conclusão da história
+
+Avaliações para:
+- **AC Clarity** - Os critérios de aceitação foram claros? (1-5)
+- **Dependencies** - Os bloqueadores foram resolvidos? (1-5)
+- **Estimate Accuracy** - A estimativa foi precisa? (1-5)
+- **Implementation** - Quão tranquilo foi o processo? (1-5)
+- **Testing** - Os testes foram adequados? (1-5)
+- **Documentation** - A documentação foi suficiente? (1-5)
+
+Mais aberto:
+- O que correu bem? (2-3 balas)
+- O que poderia ser melhorado? (2-3 balas)
+- Bloqueadores encontrados?
+- Aprendizados/insights?
+
+### 2. Feedback de desempenho do agente
+
+Rastreia a eficácia:
+- Histórias concluídas
+- Histórias bloqueadas
+- Tempo médio de conclusão
+- Pontos fortes observados
+- Áreas para melhoria
+- Recomendações
+
+### 3. Retrospectiva Épica
+
+Após a conclusão épica:
+- Métricas de sucesso versus metas
+- O que correu bem?
+- O que não deu certo?
+- Surpresas e aprendizados
+- Ações para o próximo épico
+
+### 4. Retrospectiva do Sprint
+
+No final do sprint:
+- Continuar (continue fazendo)
+- Parar (não é mais útil)
+- Iniciar (novas práticas)
+- Experimentos para tentar
+- Bloqueadores removidos
+- Problemas recorrentes
+
+## Métricas rastreadas
+
+O sistema de feedback rastreia:
+
+| Metric | Target | Purpose |
+|--------|--------|---------|
+| Story clarity score | >4.0 | AC quality |
+| Estimate accuracy | within 50% | Planning improvement |
+| Blocker frequency | under 20% of stories | Dependency management |
+| Test coverage average | >85% | Code quality |
+| Completion velocity | Trending up | Team throughput |
+
+## Análise e insights
+
+### Detecção de padrões
+
+Detecta padrões automaticamente:
+- **Unclear AC** - Histórias com pontuação de clareza abaixo de 3 → Melhorar modelo
+- **Poor estimates** - Grande variação → Revisar guia de estimativa
+- **Frequent blockers** - Histórias frequentemente bloqueadas → Melhorar o rastreamento de dependências
+- **Low test coverage** - Testes inadequados → Aplicar padrões mais cedo
+
+### Melhorias acionáveis
+
+Gera automaticamente:
+- **Improvement stories** para problemas recorrentes
+- **Process recommendations** para problemas detectados
+- **Recognition** para vitórias e alto desempenho
+- **ADRs** para aprendizados de arquitetura
+
+### Relatórios retrospectivos
+
+Gera resumos abrangentes:
+- Sentimento geral (melhorando/declinando/estável)
+- Principais vitórias com comemoração
+- Principais desafios
+- Ações recomendadas
+- Insights e aprendizados da equipe
+
+## Fluxo de trabalho
+
+1. Solicitação automática em pontos de gatilho:
+   - O status da história muda para "concluído"
+   - Epic atinge 100% de conclusão
+   - Data de término do sprint atingida
+2. Apresentar formulário de feedback com contexto pré-preenchido
+3. Pergunte: "Fornecer feedback agora? (SIM/NÃO/MAIS TARDE)"
+4. Se SIM: Colete classificações e comentários de forma interativa
+5. Salvar no diretório de comentários
+6. Analise padrões em todos os comentários
+7. Sugira histórias de melhoria para problemas
+
+## Usar quando
+
+- **Story completion** - Imediatamente após a marcação feita
+- **Epic retrospective** - Após a conclusão épica
+- **Sprint end** - Reúna os aprendizados da equipe
+- **Process improvement** - Revisão mensal dos padrões de feedback
+- **Performance review** - Avaliações trimestrais dos agentes
+- **Team retrospectives** - Cerimônias formais de sprint
+
+## Gatilhos automáticos
+
+Solicitações de feedback aparecem:
+- Quando o status da história muda para "concluído"
+- Quando o épico atinge 100% de conclusão
+- Nas datas de término do sprint configuradas
+- Pode ser solicitado manualmente a qualquer momento
+
+## Integração
+
+O feedback flui para:
+- **Retrospectives** - Insights incluídos nas retrospectivas do sprint
+- **Metrics** - Avaliações monitoradas ao longo do tempo
+- **Story creation** - Gerar automaticamente histórias de melhorias
+- **ADRs** - Documentar aprendizados como decisões arquitetônicas
+- **Agent profiles** - Listas de atualizações de dados de desempenho
+
+## Comandos Relacionados
+
+- [`/ retrô`](/commands/retro) - Análise retrospectiva do Sprint
+- [`/métricas`](/commands/metrics) - Métricas e tendências do projeto
+- [`/atualizar`](/commands/update) - Relatórios de progresso das partes interessadas
+- [`/status`](/commands/status) - História atual e status da equipe

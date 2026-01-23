@@ -1,0 +1,320 @@
+---
+title: /دَين
+description: تتبع وتحديد أولويات بنود الديون الفنية
+---
+
+# /دَين
+
+تتبع وتصور الديون الفنية عبر قاعدة التعليمات البرمجية. تحديد أعمال إعادة الهيكلة وتصنيفها وتحديد أولوياتها من خلال التسجيل المستند إلى البيانات.
+
+## بداية سريعة
+
+```bash
+/agileflow:debt
+```
+
+يقوم بإجراء فحص سريع وينشئ تقرير الديون بالإعدادات الافتراضية.
+
+أو مع خيارات مخصصة:
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=report THRESHOLD=medium
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCAN` | No | `quick` | Scan depth: `quick` (flagged areas only) or `full` (entire codebase) |
+| `OUTPUT` | No | `report` | Output type: `report`, `stories`, or `both` |
+| `THRESHOLD` | No | `medium` | Minimum severity: `high`, `medium`, or `low` |
+
+## ما يكتشفه
+
+يحدد ماسح الديون أنواعًا متعددة من الديون الفنية:
+
+### إشارات جودة الكود
+- TODO/FIXME/HACK التعليقات
+- وظائف طويلة (> 50 سطرًا)
+- تعقيد سيكلوماتيكي عالي (> 10)
+- كتل التعليمات البرمجية المكررة
+- الملفات الكبيرة (>500 سطر)
+- تداخل عميق (> 4 مستويات)
+- الله يعترض (>10 طرق)
+- تغطية اختبار منخفضة (أقل من 70%)
+
+### الديون القائمة على القصة
+يبحث في القصص الموسومة بـ `tech-debt: true` أو مع "إعادة البناء" أو "التنظيف" في العنوان.
+
+### ديون العمارة
+يتحقق من ADRs بحثًا عن قرارات مهملة أو عواقب سلبية موثقة.
+
+### تحليل تاريخ جيت
+- الملفات ذات معدل التكرار العالي (يتم تعديلها بشكل متكرر)
+- ملفات بها العديد من المؤلفين (ملكية غير واضحة)
+- الفروع القديمة لم يتم دمجها بعد
+
+### إخراج لينتر
+يوزع الإخراج من تقارير ESLint وTypeScript وPylint وSonarQube والتغطية.
+
+## فئات الديون
+
+يتم تنظيم الديون الفنية إلى سبع فئات:
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| **Architecture** | Wrong abstractions, tight coupling, missing patterns | Service coupling, circular dependencies |
+| **Code Quality** | Duplication, complexity, inconsistent style | Copy-paste code, high complexity |
+| **Documentation** | Missing, outdated, or incomplete docs | Undocumented APIs, stale guides |
+| **Testing** | Low coverage, flaky tests, missing E2E | No unit tests, missing integration tests |
+| **Security** | Outdated deps, exposed secrets, weak auth | CVE-vulnerable packages, hardcoded tokens |
+| **Performance** | N+1 queries, memory leaks, slow ops | Inefficient algorithms, memory bloat |
+| **Dependencies** | Outdated packages, unmaintained libraries | Years-old libraries, abandoned projects |
+
+## صيغة التهديف
+
+يحصل كل عنصر دين على درجة من 0 إلى 100:
+
+```text
+Score = (Severity × Scope × Pain) / 10
+
+Severity: 1-10 (impact level)
+Scope:    1-10 (files affected)
+Pain:     1-10 (developer frustration)
+```
+
+### مستويات الخطورة
+- **Low** (1-3): مسألة بسيطة، لا تمنع شيئا
+- **Medium** (4-6): أمر معتدل، يبطئ التنمية
+- **High** (7-9): مشكلة كبيرة أو تحجب ميزات أو تسبب أخطاء
+- **Critical** (10): عاجل، يسبب مشاكل في الإنتاج أو يعطل العمل
+
+## أمثلة
+
+### المسح السريع (الافتراضي)
+
+```bash
+/agileflow:debt
+```
+
+يقوم بمسح المناطق التي تحمل علامة TODO/FIXME والقصص ذات العلامات. يولد التقرير.
+
+### مسح كامل لقاعدة التعليمات البرمجية
+
+```bash
+/agileflow:debt SCAN=full
+```
+
+فحص عميق لقاعدة التعليمات البرمجية بأكملها بما في ذلك تحليل التعقيد واكتشاف الازدواجية وتحليل التغطية.
+
+### إنشاء قصص للديون الحرجة
+
+```bash
+/agileflow:debt SCAN=quick OUTPUT=stories THRESHOLD=high
+```
+
+يبحث عن بنود الديون المهمة وينشئ قصصًا لها بشكل اختياري.
+
+### إنشاء كل من التقرير والقصص
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=both THRESHOLD=medium
+```
+
+إنشاء تقرير الديون وإنشاء قصص لبنود الديون فوق متوسطة الخطورة.
+
+## مثال الإخراج
+
+```markdown
+# Technical Debt Report
+
+**Generated**: 2025-12-24T10:30:00Z
+**Total Debt Items**: 42
+**Critical**: 3 | **High**: 12 | **Medium**: 18 | **Low**: 9
+**Total Estimated Effort**: 48 days
+
+---
+
+## Critical Debt (Score >80)
+
+### 1. Auth service tightly coupled to database
+**Type**: Architecture | **Score**: 87
+**Impact**: Blocks US-0055 (Add OAuth), US-0061 (Add 2FA)
+**Files**: src/services/auth.ts (287 lines, complexity 18)
+**Estimate**: 3-5 days
+**ADR**: ADR-0003 recommends service layer separation (not implemented)
+
+### 2. Missing integration tests for payment flow
+**Type**: Testing | **Score**: 85
+**Impact**: High risk for regressions, blocking production
+**Files**: src/api/payments/*.ts (12 files, 0% coverage)
+**Last Incident**: 2025-09-15 (payment processing bug)
+**Estimate**: 2-3 days
+
+---
+
+## High Debt (Score 60-80)
+[12 items...]
+
+---
+
+## Summary by Category
+
+| Category | Count | Avg Score | Estimated Effort |
+|----------|-------|-----------|------------------|
+| Architecture | 8 | 72 | 15 days |
+| Code Quality | 15 | 58 | 8 days |
+| Testing | 10 | 65 | 12 days |
+| Security | 3 | 78 | 5 days |
+| Performance | 4 | 61 | 6 days |
+
+---
+
+## Debt Heatmap (Most Problematic Files)
+
+- src/services/auth.ts: 3 items (architecture, complexity, coupling)
+- src/api/payments/process.ts: 2 items (no tests, deprecated API)
+- src/utils/legacy.ts: 2 items (duplication, no docs)
+
+---
+
+## Recommendations
+
+1. **Immediate** (Critical): Address auth refactor and payment tests
+2. **This Sprint**: Tackle 3 high-severity items (by ROI)
+3. **Next Sprint**: Reserve 20% capacity for debt reduction
+4. **Ongoing**: Require tests for all new code (enforce in CI)
+```
+
+## سير العمل
+
+بعد إنشاء تقرير الديون، يمكنك:
+
+### 1. قم بمراجعة التقرير
+فهم ما هو الدين الموجود وأين هو.
+
+### 2. إنشاء قصص (اختياري)
+```bash
+/agileflow:debt OUTPUT=stories
+```
+
+إنشاء قصص لبنود الديون الهامة باستخدام:
+- تركز معايير القبول على الحالة "قبل/بعد".
+- تحليل التأثير
+- جهد مقدر
+- مراجع للميزات المتأثرة
+
+### 3. احفظ في التوثيق
+```bash
+/agileflow:debt OUTPUT=report
+```
+
+يحفظ التقرير ل `docs/08-project/tech-debt-YYYYMMDD.md` ويقوم بتحديث الملف التمهيدي باستخدام رابط.
+
+### 4. إنشاء ملحمة الديون
+في حالة وجود العديد من العناصر المهمة، يتم إنشاء ملحمة:
+- EP-XXXX: تخفيض الديون الفنية
+- قصص لأفضل 5 عناصر حاسمة
+- يتتبع التقدم المحرز في خفض الديون
+
+## استخدام معلومات الديون
+
+### خطة سباقات السرعة
+احتياطي 10-20% من كل سباق لتخفيض الديون:
+
+```bash
+/agileflow:sprint --include-debt --debt-threshold=high
+```
+
+### بأثر رجعي
+تتبع تخفيض الديون بأثر رجعي:
+
+```bash
+/agileflow:retro --analyze-debt
+```
+
+### لوحة القيادة
+قم بإنشاء لوحة معلومات الديون التي يتم تحديثها أسبوعيًا:
+
+```text
+docs/08-project/debt-dashboard.md
+
+# Debt Dashboard (Weekly)
+
+Week 52: 42 items (↑ from 39)
+Week 51: 39 items (↓ from 43)
+
+Critical: 3 items (target: reduce to 1 this sprint)
+```
+
+## أفضل الممارسات
+
+1. **Be Honest About Estimates**: خطأ في الجانب العالي
+2. **Link to Features**: إعطاء الأولوية للديون التي تعيق العمل الجديد
+3. **Celebrate Reductions**: التعرف على سداد الديون في الرجعية
+4. **Prevent Accumulation**: فرض الاختبار في CI للكود الجديد
+5. **Review Regularly**: تشغيل فحص الديون شهريًا أو ربع سنويًا
+
+## منع الديون
+
+أضف مراجعة الديون إلى CI/CD الخاص بك:
+
+```yaml
+# Run weekly technical debt scan
+- cron: '0 0 * * 1'  # Every Monday
+  name: Technical debt scan
+  run: /agileflow:debt SCAN=full OUTPUT=report
+```
+
+## التكامل مع التنمية
+
+عند تنفيذ الميزات، تحقق مما إذا كانت تؤدي إلى إنشاء ديون:
+
+```bash
+# Before completing story
+/agileflow:debt SCAN=quick THRESHOLD=high
+
+# If debt created, track in story
+/agileflow:status STORY=US-0042 TECH_DEBT=true DEBT_SCORE=42
+```
+
+## قالب القصة للديون
+
+عند إنشاء قصص لبنود الديون:
+
+```markdown
+---
+story_id: US-XXXX
+title: Refactor auth service to separate concerns
+type: tech-debt
+debt_score: 87
+estimate: 3d
+---
+
+## Current State (Before)
+- auth.ts contains DB queries, business logic, and HTTP handling
+- 287 lines, complexity 18
+- Hard to test, hard to extend
+
+## Desired State (After)
+- Clear separation: AuthService, AuthRepository, AuthController
+- Each <100 lines, complexity <8
+- 80%+ test coverage
+- Enables US-0055 (OAuth)
+
+## Acceptance Criteria
+- [ ] AuthRepository handles all DB operations
+- [ ] AuthService contains only business logic
+- [ ] AuthController handles only HTTP/routing
+- [ ] Tests cover each layer independently
+- [ ] All existing auth tests still pass
+```
+
+## الأوامر ذات الصلة
+
+- [`/تشخيص`](/commands/diagnose) - تشخيص صحة النظام
+- [`/المقاييس`](/commands/metrics) - لوحة معلومات التحليلات والمقاييس
+- [`/قصة`](/commands/story) - إنشاء قصص لبنود الديون
+- [`/ملحمة`](/commands/epic) - إنشاء ملحمة تخفيض الديون
+- [`/الرجعية`](/commands/retro) - تضمين تحليل الديون بأثر رجعي
+- [`/اللوحة`](/commands/board) - عرض القصص المتعلقة بالديون على متن الطائرة

@@ -1,0 +1,377 @@
+---
+title: /paquetes
+description: Gestione dependencias con actualizaciones y auditorías de seguridad.
+---
+
+# /paquetes
+
+Administre de manera integral las dependencias del proyecto con paneles automatizados, auditorías de seguridad, actualizaciones seguras y administración de vulnerabilidades en todos los principales administradores de paquetes.
+
+## Inicio rápido
+
+```bash
+/agileflow:packages ACTION=dashboard
+```
+
+## Objetivo
+
+Este comando proporciona una gestión de dependencia completa mediante:
+- Detecting project dependencies across npm, pip, cargo, and other package managers
+- Generación de paneles de dependencia integrales con información de estado y vulnerabilidad
+- Ejecutar auditorías de seguridad e identificar CVE
+- Planificación y aplicación de actualizaciones de dependencia seguras
+- Creando historias para temas de seguridad
+- Seguimiento e informes sobre el estado del mantenimiento.
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `ACTION` | No | `dashboard` | `dashboard`, `update`, or `audit` |
+| `SCOPE` | No | `all` | For updates: `security`, `major`, `minor`, `patch`, `all` |
+| `OUTPUT` | No | `markdown` | For dashboard: `markdown`, `html`, `json`, `csv` |
+| `INCLUDE_DEV` | No | `yes` | Include dev dependencies: `yes` or `no` |
+| `SAVE_TO` | No | varies | Save report location (e.g., `docs/08-project/deps.md`) |
+| `AUTO_PR` | No | `no` | Auto-create PR for updates: `yes` or `no` |
+
+## Ejemplos
+
+### Ver panel de dependencia
+
+```bash
+/agileflow:packages
+```
+
+Muestra un panel completo de todas las dependencias con estado, vulnerabilidades y recomendaciones.
+
+### Exportar panel como HTML
+
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=html
+```
+
+Genera un panel HTML interactivo con tablas y gráficos ordenables.
+
+### Sólo auditoría de seguridad
+
+```bash
+/agileflow:packages ACTION=audit
+```
+
+Ejecuta controles de seguridad e informa vulnerabilidades sin realizar cambios.
+
+### Actualizar vulnerabilidades de seguridad
+
+```bash
+/agileflow:packages ACTION=update SCOPE=security
+```
+
+Actualiza de forma segura paquetes con problemas de seguridad conocidos y solicita confirmación.
+
+### Actualizar versiones menores
+
+```bash
+/agileflow:packages ACTION=update SCOPE=minor
+```
+
+Actualiza versiones menores (nuevas funciones, compatible con versiones anteriores).
+
+### Crear relaciones públicas automáticamente para actualizaciones
+
+```bash
+/agileflow:packages ACTION=update SCOPE=all AUTO_PR=yes
+```
+
+Actualiza todos los paquetes y crea una solicitud de extracción automáticamente.
+
+## Comportamiento
+
+### ACCIÓN=panel (predeterminado)
+
+Genera un informe de dependencia completo que muestra:
+- **Total count** - Dependencias de producción y desarrollo.
+- **Vulnerability status** - Crítico, alto, medio, bajo
+- **Update availability** - Versiones mayores, menores y de parche.
+- **License info** - Para seguimiento del cumplimiento
+- **Health score** - Salud general del mantenimiento de la dependencia.
+
+**Output Example**:
+```text
+# Dependencies Dashboard
+
+Project: my-app
+Generated: 2025-12-24 10:00:00 UTC
+Total Dependencies: 145 (prod: 98, dev: 47)
+
+## Summary
+
+| Category | Count | Action Needed |
+|----------|-------|---------------|
+| Critical Vulnerabilities | 2 | Update immediately |
+| Major Updates | 12 | Review breaking changes |
+| Minor Updates | 28 | Safe to update |
+| Up-to-date | 85 | No action |
+| Deprecated | 3 | Find alternatives |
+
+## Critical Vulnerabilities
+
+### express@4.16.0
+Current: 4.16.0 → Latest: 4.18.2 (+2 major)
+Severity: HIGH (CVSS 7.5)
+CVE: CVE-2022-24999
+Description: ReDoS vulnerability in Express.js routing
+Fix: npm install express@4.18.2
+
+[Additional vulnerability details...]
+
+## Maintenance Score: 78/100
+
+Breakdown:
+- Security: 60/100 (2 critical vulnerabilities)
+- Freshness: 80/100 (most deps recent)
+- License compliance: 95/100 (2 GPL warnings)
+- Bundle size: 75/100 (some optimization possible)
+```
+
+### ACCIÓN=actualizar
+
+Planifica y aplica actualizaciones de dependencias con controles de seguridad:
+
+1. **Detects outdated packages** usando el administrador de paquetes apropiado
+2. **Categorizes by type** - seguridad, mayor, menor, parche
+3. **Shows update plan** con advertencias de cambios importantes
+4. **Asks for confirmation** antes de aplicar
+5. **Runs tests** después de las actualizaciones (si están disponibles)
+6. **Creates PR** si se solicita
+7. **Generates report** con todos los cambios
+
+**Supported Package Managers**:
+- Node.js: npm, hilo, pnpm
+- Python: pip, pip-tools, poesía
+- Ruby: paquete (Gemfile)
+- Ir: ir mod
+- Óxido: carga
+- Java: Maven, Gradle
+- .NET: NuGet
+
+**Security Updates** Siempre se priorizan y recomiendan de inmediato.
+
+**Major Updates** cree historias individuales para su revisión (puede requerir cambios de código).
+
+**Minor/Patch Updates** se puede dosificar de forma segura.
+
+### ACCIÓN=auditoría
+
+Ejecuta auditoría de seguridad únicamente sin actualizar:
+
+Muestra todas las vulnerabilidades conocidas con:
+- Niveles de gravedad (crítico, alto, moderado, bajo)
+- Identificadores y descripciones CVE
+- Versiones de paquetes afectadas
+- Correcciones recomendadas
+
+Ejemplo:
+```text
+# Security Audit Report
+
+Generated: 2025-12-24 10:00:00 UTC
+Package Manager: npm
+
+## Critical (2)
+- express@4.16.0: CVE-2022-24999 (CVSS 7.5)
+- lodash@4.17.19: CVE-2021-23337 (CVSS 7.4)
+
+## High (0)
+None
+
+## Moderate (3)
+[Details...]
+
+Recommendation: Run /agileflow:packages ACTION=update SCOPE=security
+```
+
+## Detección del administrador de paquetes
+
+El comando detecta y admite automáticamente:
+
+| Manager | Files | Detection |
+|---------|-------|-----------|
+| npm | package.json, package-lock.json | Node.js projects |
+| yarn | yarn.lock | Modern Node.js |
+| pnpm | pnpm-lock.yaml | Modern Node.js |
+| pip | requirements.txt, pyproject.toml | Python |
+| poetry | poetry.lock | Modern Python |
+| bundler | Gemfile, Gemfile.lock | Ruby/Rails |
+| go mod | go.mod, go.sum | Go |
+| cargo | Cargo.toml, Cargo.lock | Rust |
+| Maven | pom.xml | Java |
+| Gradle | build.gradle | Java |
+| NuGet | *.csproj, packages.config | .NET |
+
+## Formatos de salida
+
+### Rebaja (predeterminado)
+Informe legible por humanos con tablas, adecuado para documentación:
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=markdown
+```
+
+### HTML
+Panel interactivo con filtrado, clasificación y visualización:
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=html
+```
+
+### JSON
+Datos estructurados para herramientas e integración:
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=json
+```
+
+### CSV
+Formato compatible con hojas de cálculo:
+```bash
+/agileflow:packages ACTION=dashboard OUTPUT=csv
+```
+
+## Ejemplos de flujo de trabajo
+
+### Auditoría de Dependencia Semanal
+
+```bash
+# Run every Monday
+/agileflow:packages ACTION=audit
+```
+
+Revise todas las vulnerabilidades y planifique las actualizaciones.
+
+### Mantenimiento mensual
+
+```bash
+# Update minor and patch versions
+/agileflow:packages ACTION=update SCOPE=minor
+```
+
+Manténgase actualizado con cambios continuos.
+
+### Actualizaciones importantes trimestrales
+
+```bash
+# Review major version upgrades
+/agileflow:packages ACTION=update SCOPE=major
+```
+
+Planifique y pruebe los cambios importantes con cuidado.
+
+### Parche de seguridad de emergencia
+
+```bash
+# Immediately update critical vulnerabilities
+/agileflow:packages ACTION=update SCOPE=security
+```
+
+Cree relaciones públicas e implemente rápidamente si se superan las pruebas.
+
+## Integración de CI
+
+### Auditoría automatizada en CI
+
+Agregar a acciones de GitHub:
+```yaml
+- name: Dependency audit
+  run: npm audit --audit-level=high
+
+- name: Check outdated
+  run: npm outdated || true  # Don't fail, just report
+```
+
+### Configuración del robot dependiente
+
+Crear `.github/dependabot.yml`:
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+```
+
+Dependabot creará automáticamente relaciones públicas para las actualizaciones.
+
+### Verificación de dependencia semanal
+
+Agregar flujo de trabajo programado:
+```yaml
+name: Dependencies
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: /agileflow:packages ACTION=dashboard
+```
+
+## Creando historias para vulnerabilidades
+
+Cuando se encuentren problemas de seguridad, cree historias:
+
+**Format**:
+```text
+US-XXXX: Fix security vulnerability in [PACKAGE]
+
+Severity: [CRITICAL|HIGH|MEDIUM]
+CVE: [CVE-XXXX-XXXXX]
+Current: [version]
+Fix: [recommended version]
+
+Steps to Fix:
+1. Update package: npm install package@latest
+2. Run tests: npm test
+3. Review changelog for breaking changes
+```
+
+## Mejores prácticas
+
+1. **Prioritize Security** - Actualice siempre las vulnerabilidades críticas inmediatamente
+
+2. **Batch Minor Updates** - Actualizaciones grupales continuas para mayor eficiencia.
+
+3. **Test After Updates** - Ejecute siempre el conjunto de pruebas completo después de las actualizaciones.
+
+4. **Review Major Changes** - Pruebe las versiones principales en la puesta en escena antes de la producción.
+
+5. **Monitor Deprecations** - Actuar tempranamente sobre paquetes obsoletos
+
+6. **License Compliance** - Verificar licencias para requisitos corporativos.
+
+7. **Bundle Size** - Monitorear el impacto del tamaño del paquete de las dependencias.
+
+8. **Automated Audits** - Ejecute auditorías semanalmente, no solo durante los lanzamientos.
+
+## Normas
+
+- Nunca actualice automáticamente paquetes críticos sin aprobación
+- Siempre obtenga una vista previa de los cambios antes de aplicarlos (diferencia primero, SÍ/NO)
+- Actualizaciones menores de grupo/parches cuando sea posible
+- Advertir de manera destacada sobre cambios importantes
+- Enlace a registros de cambios y guías de migración
+- Cree historias para actualizaciones importantes
+- Nunca te saltes las pruebas después de la actualización
+- Confirme siempre los archivos de bloqueo (package-lock.json, Cargo.lock, etc.)
+
+## Comandos relacionados
+
+- [`/pruebas de configuración`](/commands/tests) - Configurar pruebas automatizadas
+- [`/ci-configuración`](/commands/ci) - Configurar controles de CI
+- [`/configuración-implementación`](/commands/deploy) - Configurar la implementación

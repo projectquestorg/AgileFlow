@@ -1,0 +1,465 @@
+---
+title: /العلاقات العامة
+description: إنشاء وصف طلب السحب من القصة
+---
+
+# /العلاقات العامة
+
+أنشئ أوصاف طلب سحب كاملة وجاهزة لللصق مباشرةً من قصص المستخدم وأدلة الاختبار. يضمن أمر PR أن طلبات السحب الخاصة بك موثقة جيدًا، وارتباطها بالعمل ذي الصلة، وتتضمن جميع التفاصيل الضرورية للمراجعين.
+
+## بداية سريعة
+
+```bash
+# Generate PR from story with title
+/agileflow:pr STORY=US-0042 TITLE="Add user profile"
+
+# Generate PR with test evidence
+/agileflow:pr STORY=US-0042 TITLE="Add user profile" TEST_EVIDENCE="All unit tests pass, E2E tested login→profile flow"
+```
+
+الأمر سوف:
+1. تحميل القصة من `docs/06-stories/US-0042.md`
+2. استخراج معايير القبول والتبعيات والسياق
+3. بناء وصف كامل للعلاقات العامة مع جميع الأقسام
+4. علامة تجارية جاهزة للصق الإخراج لـ GitHub/GitLab
+5. اقترح رسالة التزام تقليدية لدمج الاسكواش
+
+## الميزات الرئيسية
+
+### سياق القصة التلقائي
+
+يتضمن وصف العلاقات العامة تلقائيًا ما يلي:
+
+- **Epic reference** - ما الميزة التي ينتمي إليها هذا؟
+- **Story summary** - ما تم تنفيذه
+- **Dependencies** - قصص أخرى يعتمد عليها
+- **Acceptance criteria** - جميع أجهزة التكييف مع حالات خانة الاختيار
+- **Test evidence** - نتائج الاختبار والتحقق
+- **Risk assessment** - التأثيرات المحتملة وخطة التراجع
+- **Code owners** - من ملف CODEOWNERS
+
+### إدارة قائمة المراجعة
+
+تصبح معايير القبول قائمة مرجعية للعلاقات العامة:
+
+```markdown
+## Checklist
+
+- [x] AC1: User can login with email and password
+- [x] AC2: Login errors show validation feedback
+- [ ] AC3: 2FA support (scope creep - skipped)
+- [x] AC4: Session persists across page reloads
+```
+
+### تكامل أدلة الاختبار
+
+تضمين نتائج الاختبار والتحقق مباشرة:
+
+```markdown
+## Test Evidence
+
+### Unit Tests
+- ✅ 42 tests passing, 0 failing
+- Coverage: 87% (auth module)
+
+### Integration Tests
+- ✅ Login flow end-to-end verified
+- ✅ Session persistence confirmed
+- ✅ Tested with Chrome, Firefox, Safari
+
+### Manual Testing
+- ✅ Tested on desktop and mobile
+- ✅ Accessibility check passed (WCAG AA)
+```
+
+### الالتزامات التقليدية
+
+يقترح رسائل الالتزام المناسبة لدمج الاسكواش:
+
+```text
+feat(auth): implement user login with JWT tokens
+
+Implements US-0042: User Login API
+- Email/password authentication
+- JWT token generation and validation
+- Session persistence across reloads
+- Comprehensive test coverage
+
+Closes #42
+```
+
+## الاستخدام
+
+### وصف العلاقات العامة الأساسية
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Add user login API"
+```
+
+يولد العلاقات العامة مع:
+- ملخص القصة من US-0042.md
+- جميع معايير القبول
+- القضايا المرتبطة (القصة + التبعيات)
+- تقييم المخاطر
+- أصحاب الكود
+
+### العلاقات العامة مع أدلة الاختبار
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Add user login" TEST_EVIDENCE="All tests passing (42/42), E2E verified"
+```
+
+يضيف قسم نتائج الاختبار إلى العلاقات العامة.
+
+### العلاقات العامة مع حالة معايير القبول
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" AC_CHECKED="✓ Email auth, ✓ JWT generation, ✗ 2FA"
+```
+
+يُظهر أي مكيفات هواء تم إكمالها مقابل تم تخطيها.
+
+### العلاقات العامة مع ملاحظات إضافية
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" NOTES="Coordinated with frontend team on API contract"
+```
+
+يضيف ملاحظات مخصصة إلى الوصف.
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0042) |
+| `TITLE` | Yes | - | Short PR title (1-5 words) |
+| `TEST_EVIDENCE` | No | "" | Test results, coverage, manual testing notes |
+| `AC_CHECKED` | No | - | Acceptance criteria status (✓/✗ for each) |
+| `NOTES` | No | "" | Additional context or coordination notes |
+
+## أمثلة
+
+### علاقات عامة بسيطة من القصة
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Implement login API"
+
+# Output:
+# ## Summary
+# Implements JWT-based user authentication with email and password login...
+#
+# ## Linked Issues
+# - Implements #US-0042
+# - Depends on #US-0039 (User schema)
+#
+# ## Checklist
+# - [x] AC1: Users can login with email/password
+# - [x] AC2: Invalid credentials show error
+# ...
+```
+
+### العلاقات العامة مع أدلة الاختبار الكاملة
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="User authentication" TEST_EVIDENCE="
+- Unit Tests: 42 passing, 0 failing
+- Integration Tests: Login flow verified
+- E2E Tests: Desktop and mobile tested
+- Coverage: 89%
+- Manual: Tested with 2FA, session timeout, etc.
+"
+
+# Output includes comprehensive test section
+```
+
+### العلاقات العامة مع استكمال التيار المتردد الجزئي
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" AC_CHECKED="
+✓ Email/password login
+✓ Session persistence
+✗ 2FA (out of scope - separate story)
+✓ Error handling
+"
+
+# Checklist shows what was done vs deferred
+```
+
+### ملاحظات تنسيق الفريق
+
+```bash
+/agileflow:pr STORY=US-0051 TITLE="Payment processing" NOTES="
+Coordinated with backend team on webhook signature validation.
+Frontend team reviewed API contract and approves.
+DevOps confirmed payment processor credentials are configured.
+"
+```
+
+## هيكل وصف العلاقات العامة
+
+### قسم الرأس
+
+```markdown
+## Summary
+
+[Generated from story summary + optional NOTES]
+Explains what was built and why at a high level.
+
+### Linked Issues
+
+- Implements #US-0042
+- Depends on #US-0039 (User schema)
+- Relates to #EP-0005 (Authentication epic)
+
+### Checklist
+
+- [x] AC1: Users can login with email/password
+- [x] AC2: Invalid credentials show error
+- [x] AC3: Sessions persist across page reloads
+- [x] AC4: Logout clears session and token
+```
+
+### قسم الاختبار
+
+```markdown
+### Test Evidence
+
+[Formatted TEST_EVIDENCE input or auto-detected from test run]
+
+### Screenshots/GIFs
+
+[Placeholder for visual evidence if needed]
+- Login page
+- Success flow
+- Error handling
+- Session persistence across reloads
+
+### Risk Assessment
+
+**Potential Impact**:
+- Changes authentication flow (affects all users)
+- Modifies session handling (potential breakage in existing integrations)
+
+**Rollback Plan**:
+- Simple revert to previous commit (no database migrations)
+- Sessions will remain valid for 24 hours after rollback
+- Users may need to log back in if cache cleared
+
+### Code Owners
+
+@backend-team
+@security-team
+```
+
+## تنسيق الالتزام التقليدي
+
+يقترح أمر PR رسالة التزام تتبع الالتزامات التقليدية:
+
+```text
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### أمثلة
+
+**Feature**:
+```text
+feat(auth): implement JWT-based user authentication
+
+Implements user login with email and password, JWT token
+generation, and session persistence.
+
+Closes #US-0042
+```
+
+**Fix**:
+```text
+fix(auth): prevent session fixation vulnerability
+
+Use secure token generation and add CSRF protection
+to login endpoint.
+
+Closes #US-0043
+```
+
+**Docs**:
+```text
+docs(api): add authentication API documentation
+
+Documents JWT token generation, validation, and
+refresh token flow.
+
+Related to #US-0042
+```
+
+## Template Sections
+
+يتضمن كل وصف للعلاقات العامة ما يلي:
+
+1. **Summary** - ما تم بناؤه
+2. **Linked Issues** - القصة + التبعيات
+3. **Checklist** - حالة معايير القبول
+4. **Test Evidence** - كيف تم التحقق منها
+5. **Screenshots/GIFs** - دليل مرئي (إن وجد)
+6. **Risk Assessment** - التأثيرات المحتملة + خطة التراجع
+7. **Code Owners** - من يجب عليه المراجعة
+
+## متى تستخدم
+
+### بعد الانتهاء من القصة
+
+```bash
+# Story implemented and tested
+/agileflow:pr STORY=US-0042 TITLE="User authentication"
+
+# Copy output, paste into GitHub PR
+```
+
+### تقديم للمراجعة
+
+```bash
+# All tests passing, ready for review
+/agileflow:pr STORY=US-0042 TITLE="..." TEST_EVIDENCE="42/42 tests passing"
+
+# Generate and include in PR body
+```
+
+### قصص تابعة متعددة
+
+```bash
+# Story with several dependencies
+/agileflow:pr STORY=US-0044 TITLE="..."
+
+# PR will show all linked stories
+# Reviewers can see dependency chain
+```
+
+## نصائح
+
+### أنشئ العلاقات العامة أولاً، ثم أرسلها
+
+```bash
+1. Complete implementation and testing
+2. Run /agileflow:pr to generate description
+3. Review the output
+4. Create PR on GitHub/GitLab
+5. Paste the generated description
+6. Submit PR
+```
+
+### قم بتضمين أدلة اختبار شاملة
+
+أدلة اختبار أفضل = مراجعة أسرع:
+
+```text
+TEST_EVIDENCE="
+- Unit Tests: 45/45 passing
+- Integration Tests: Login flow, session management
+- E2E: Desktop and mobile browsers
+- Coverage: 89%
+- Manual: Accessibility audit, performance check
+"
+```
+
+### ربط كافة الأعمال ذات الصلة
+
+سوف تجد العلاقات العامة تلقائيًا:
+- القصة قيد التنفيذ
+- التبعيات (قصص أخرى)
+- ملحمة ذات صلة
+- أصحاب الكود للمراجعة
+
+### استخدم للتوثيق
+
+احتفظ بأوصاف العلاقات العامة كوثائق:
+- يفهم المطورون المستقبليون هذه الميزة
+- يمكن الرجوع إليها في مستندات الهندسة المعمارية
+- يظهر استراتيجية الاختبار
+- توثيق قرارات المخاطر
+
+## التكامل مع الأوامر الأخرى
+
+| Command | Integration |
+|---------|-------------|
+| `/babysit` | Babysit generates PR at end of implementation |
+| `/review` | Run review before PR to catch issues |
+| `/impact` | Include impact analysis notes |
+| `/verify` | Include test results in test evidence section |
+| `/baseline` | PR marks feature ready for baseline/release |
+
+## مثال سير العمل
+
+```bash
+# 1. Work on story with babysit
+/agileflow:babysit
+# → Choose US-0042
+# → Implement with guidance
+# → Tests passing
+
+# 2. Verify tests before PR
+/agileflow:verify US-0042
+# → Confirms: test_status: passing
+
+# 3. Generate PR description
+/agileflow:pr STORY=US-0042 TITLE="User authentication" TEST_EVIDENCE="42/42 tests passing, E2E verified"
+# → Copy output
+
+# 4. Review code quality
+/agileflow:review
+# → Fix any issues
+
+# 5. Submit PR with generated description
+# → Paste PR output to GitHub
+# → Submit for review
+
+# 6. After merge, mark as done
+# → Update status.json: status=completed
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### "لم يتم العثور على القصة"
+
+**Error**: ملف القصة غير موجود
+
+**Fix**: التحقق من صحة معرف القصة:
+```bash
+/agileflow:pr STORY=US-0042 TITLE="..."
+# Check that docs/06-stories/US-0042.md exists
+```
+
+### "مشكلة تنسيق معايير القبول"
+
+**Fix**: تأكد من أن تنسيق AC_CHECKED يطابق عدد التيار المتردد:
+```bash
+# BAD - Wrong number of items
+AC_CHECKED="✓ AC1, ✓ AC2"
+
+# GOOD - One per AC in story
+AC_CHECKED="✓ AC1, ✓ AC2, ✓ AC3, ✗ AC4"
+```
+
+### ""أدلة الاختبار طويلة جدًا""
+
+**Fix**: تلخيص أدلة الاختبار:
+```bash
+# Instead of full test output, provide summary
+TEST_EVIDENCE="
+- Unit tests: 45/45 passing
+- Integration: Login flow verified
+- E2E: Chrome, Firefox tested
+- Coverage: 89%
+"
+```
+
+## الأوامر ذات الصلة
+
+- [`/ جليسة الأطفال`](/commands/babysit) - مرشد التنفيذ (يستخدم العلاقات العامة في النهاية)
+- [`/قصة`](/commands/story) - إنشاء قصص باستخدام AC التي تشير إليها العلاقات العامة
+- [`/مراجعة`](/commands/review) - مراجعة الكود قبل العلاقات العامة
+- [`/التحقق`](/commands/verify) - إجراء اختبارات للأدلة
+- [`/ تأثير`](/commands/impact) - تحليل تأثير العلاقات العامة
+- [`/خط الأساس`](/commands/baseline) - وضع علامة على الميزة مكتملة بعد الدمج

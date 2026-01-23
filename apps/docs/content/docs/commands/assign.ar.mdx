@@ -1,0 +1,264 @@
+---
+title: /تخصيص
+description: تعيين أو إعادة تعيين قصة لمالك
+---
+
+# /تخصيص
+
+قم بتعيين أو إعادة تعيين قصة لمالك من خلال تحديث الحالة الاختياري. يقوم بتحديث بيانات تعريف القصة ويبث المهمة عبر ناقل الرسائل.
+
+## بداية سريعة
+
+```bash
+/agileflow:assign STORY=US-0001 NEW_OWNER=AG-UI
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID to assign (e.g., US-0001, US-0042) |
+| `NEW_OWNER` | Yes | - | Agent/owner ID (e.g., AG-UI, AG-API, AG-CI) |
+| `NEW_STATUS` | No | - | Update status: `ready`, `in-progress`, `blocked`, `in-review`, `done` |
+| `NOTE` | No | - | Optional context about the assignment |
+
+## أمثلة
+
+### تعيين القصة للمالك
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI
+```
+
+قم بتعيين القصة لفريق واجهة المستخدم دون تغيير الحالة.
+
+### تعيين وبدء العمل
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Starting login form implementation"
+```
+
+قم بتعيين القصة ووضع علامة على الفور على أنها قيد التقدم مع السياق.
+
+### إعادة التعيين إلى مالك مختلف
+
+```bash
+/agileflow:assign STORY=US-0038 NEW_OWNER=AG-API NEW_STATUS=ready NOTE="Re-prioritized for OAuth implementation"
+```
+
+نقل القصة من وكيل إلى آخر.
+
+### تعيين من غير معين
+
+```bash
+/agileflow:assign STORY=US-0050 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Ready for CI/CD integration work"
+```
+
+إعطاء العمل لقصة غير معينة.
+
+### إعادة التعيين بسبب الحظر
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NEW_STATUS=blocked NOTE="Blocked on infrastructure provisioning. Needs DevOps attention"
+```
+
+إعادة التعيين عند الحاجة إلى خبرات مختلفة.
+
+## ما يتم تحديثه
+
+يقوم الأمر بتحديث ملفين:
+
+### 1. ملف القصة
+
+Updates story frontmatter (in `docs/06-stories/**/<STORY>.md`):
+
+```yaml
+---
+owner: AG-UI
+status: in-progress
+updated: 2025-12-24T14:30:00Z
+---
+```
+
+### 2. ملف تتبع الحالة
+
+التحديثات `docs/09-agents/status.json` مع التعيين وتغيير الحالة.
+
+### 3. حافلة الرسائل
+
+إلحاق حدث "تعيين" بـ `docs/09-agents/bus/log.jsonl`:
+
+```json
+{"ts":"2025-12-24T14:30:00Z","from":"claude","type":"assign","story":"US-0042","owner":"AG-UI","status":"in-progress","text":"Starting login form implementation"}
+```
+
+## قيم الحالة
+
+عند الاستخدام `NEW_STATUS`، اختر من:
+
+| Status | Meaning | When to Use |
+|--------|---------|-------------|
+| `ready` | Prepared, waiting to start | After creation or when unblocked |
+| `in-progress` | Currently being worked on | When owner begins work |
+| `blocked` | Waiting on external dependency | When blocker identified |
+| `in-review` | Complete, awaiting approval | Code review or QA |
+| `done` | Finished and verified | After all checks pass |
+
+## مثال على تدفق المهمة
+
+سير العمل النموذجي من خلال حالات التعيين:
+
+**1. Story created** (القصة=US-0042، المالك=غير معين، الحالة=جاهزة)
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=ready
+```
+
+**2. Owner starts work**
+
+```bash
+/agileflow:assign STORY=US-0042 NEW_OWNER=AG-UI NEW_STATUS=in-progress
+```
+
+**3. Code complete, ready for review**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-review PR=https://github.com/...
+```
+
+**4. Review complete**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=done
+```
+
+**5. If blocked during work**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=blocked SUMMARY="Blocked on API response format"
+```
+
+**6. Unblocked, resume work**
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="API clarified, resuming development"
+```
+
+## الإخراج
+
+يعرض الأمر:
+
+1. **Diff Preview** - يظهر التغييرات التي يتعين إجراؤها
+2. **Confirmation** - نعم/لا موجه للتأكيد
+3. **Success Message** - يؤكد الانتهاء من المهمة
+
+مثال الإخراج:
+
+```text
+✅ Story Assigned
+Story:     US-0042
+Owner:     unassigned → AG-UI
+Status:    ready (unchanged)
+Updated:   2025-12-24T14:30:00Z
+
+Message broadcast: Assigned US-0042 to AG-UI
+```
+
+## سلامة جيسون
+
+يستخدم الأمر معالجة JSON الآمنة:
+
+- **Never uses echo/cat** - يستخدم دائمًا أداة jq أو Edit
+- **Validates after update** - التحقق من صلاحية JSON قبل الانتهاء
+- **Backs up on error** - يمكن الاستعادة من النسخة الاحتياطية في حالة حدوث تلف
+
+## أفضل الممارسات
+
+1. **Assign immediately** - لا تترك القصص غير مخصصة
+2. **Include context** - استخدم الملاحظة لشرح سبب حدوث المهمة
+3. **Match expertise** - تعيين وكيل بالمهارات ذات الصلة
+4. **Balance load** - توزيع العمل بشكل عادل بين الوكلاء
+5. **Update status** - خذ بعين الاعتبار تحديث الحالة عند التعيين
+6. **Communicate** - يجب أن يفهم الفريق سبب حدوث إعادة التعيين
+
+## السيناريوهات المشتركة
+
+### موازنة التحميل
+
+توزيع العمل عند تحميل وكيل واحد بشكل زائد:
+
+```bash
+/agileflow:assign STORY=US-0055 NEW_OWNER=AG-DEVOPS NOTE="Load balancing: AG-API at WIP limit"
+```
+
+### التدريب المتقاطع
+
+قم بتعيين وكيل أقل خبرة مع التوجيه:
+
+```bash
+/agileflow:assign STORY=US-0060 NEW_OWNER=AG-CI NEW_STATUS=ready NOTE="Cross-training opportunity for CI/CD work. Pair with AG-API"
+```
+
+### نقل الخبرة
+
+إعادة التعيين إلى متخصص عند الحاجة إلى الخبرة:
+
+```bash
+/agileflow:assign STORY=US-0065 NEW_OWNER=AG-SECURITY NEW_STATUS=in-progress NOTE="Security vulnerability fix - needs security expertise"
+```
+
+### الاسترداد من مانع
+
+استئناف العمل بعد رفع الحظر:
+
+```bash
+/agileflow:assign STORY=US-0070 NEW_OWNER=AG-UI NEW_STATUS=in-progress NOTE="Unblocked: API endpoint now available, resuming frontend work"
+```
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: الحالة`](/commands/status) - تحديث الحالة فقط دون إعادة التعيين
+- [`/ Agileflow:board`](/commands/board) - عرض كافة المهام بصريا
+- [`/ Agileflow: المقاييس`](/commands/metrics) - انظر توزيع عبء العمل
+- [`/قصة جديدة`](/commands/story-new) - إنشاء قصص جديدة مع المهام
+
+## التعليمات
+
+<Accordion type="multiple">
+  <AccordionItem value="wip">
+    <AccordionTrigger>Can I assign to someone who's already at WIP limit?</AccordionTrigger>
+    <AccordionContent>
+      نعم، ولكن لا ينصح به. يفحص `/agileflow:board` لمعرفة من لديه القدرة.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="wrong">
+    <AccordionTrigger>What if I assign wrong owner?</AccordionTrigger>
+    <AccordionContent>
+      ببساطة قم بإعادة التعيين: `/agileflow:assign STORY=US-0042 NEW_OWNER=AG-API`
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="immediately">
+    <AccordionTrigger>Should I assign immediately upon creation?</AccordionTrigger>
+    <AccordionContent>
+      أفضل الممارسات هي نعم - قم بالتعيين ضمن أمر الإنشاء أو بعده مباشرة `/assign`.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="multiple">
+    <AccordionTrigger>Can I assign to multiple owners?</AccordionTrigger>
+    <AccordionContent>
+      لا، قصة واحدة = مالك واحد. بالنسبة للبرمجة الزوجية، قم بتعيين الاقتران الأساسي والملاحظات في الوصف.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="difference">
+    <AccordionTrigger>What's the difference between assign and status?</AccordionTrigger>
+    <AccordionContent>
+      **assign** يغير المالك والحالة اختياريًا. **status** يتغير الوضع فقط، المالك دون تغيير. يستخدم **assign** عند تغيير الملكية، **status** عند تحديث التقدم فقط.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="available">
+    <AccordionTrigger>How do I know what owners are available?</AccordionTrigger>
+    <AccordionContent>
+      يستخدم `/agileflow:board` لرؤية أعضاء الفريق الحاليين وعبء العمل الخاص بهم.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

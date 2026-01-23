@@ -1,0 +1,474 @@
+---
+title: /compétence:test
+description: Vérifier qu'une compétence fonctionne correctement en testant son activation et sa fonctionnalité
+---
+
+# /compétence:test
+
+Testez une compétence pour vérifier qu'elle s'active correctement, qu'elle est structurée correctement et qu'elle produit les résultats attendus.
+
+## Démarrage rapide
+
+```bash
+# Interactive mode
+/agileflow:skill:test
+
+# Test specific skill
+/agileflow:skill:test supabase-swift
+```
+
+## Ce qu'il fait
+
+La commande test valide les compétences à travers trois phases :
+
+1. **Structure Validation** - Les fichiers existent et sont correctement formatés
+2. **Content Validation** - Sections obligatoires présentes, pas de liens brisés
+3. **Activation Test** (facultatif) - Vérifiez les déclencheurs de compétences sur des exemples d'invites
+
+## Flux de travail
+
+### Phase 1 : Sélectionner la compétence
+
+Si vous ne précisez pas de compétence :
+
+```bash
+/agileflow:skill:test
+```
+
+**Choose from available skills:**
+```
+Which skill would you like to test?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
+```
+
+### Phase 2 : Validation de la structure
+
+Le test exécute des contrôles automatisés :
+
+```
+🧪 Testing: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE VALIDATION
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid (name: supabase-swift, description: present)
+  ✅ references.md exists
+  ✅ cookbook/ directory found (2 entries)
+  ⚠️  No .mcp.json (MCP not configured)
+
+CONTENT VALIDATION
+  ✅ "When to Use" section present
+  ✅ Description under 1024 characters (467 chars)
+  ✅ SKILL.md under 500 lines (287 lines)
+  ✅ All cookbook files referenced in SKILL.md exist
+  ✅ No broken file references
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Phase 3 : Test d'activation facultatif
+
+Après validation de la structure :
+
+```
+Would you like to test skill activation with a sample prompt?
+
+[1] Yes, test activation (Recommended)
+    I'll simulate using the skill
+
+[2] Skip activation test
+    Structure validation is enough
+
+[3] View SKILL.md content
+    Read the full skill instructions
+
+Select: 1
+```
+
+Si vous choisissez le test d'activation :
+
+```
+Sample prompts that should activate this skill:
+
+[1] "Help me set up Supabase authentication in my iOS app"
+[2] "Create CRUD operations for my user database"
+[3] "How do I query Supabase from Swift?"
+
+Which would you like to test? (or enter custom prompt)
+> 1
+```
+
+### Phase 4 : résultats des tests
+
+```
+🧪 Test Results: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE VALIDATION
+  ✅ PASS (5/5 checks)
+
+CONTENT VALIDATION
+  ✅ PASS (5/5 checks)
+
+ACTIVATION TEST
+  ✅ PASS - Skill triggered on test prompt
+  ✅ Response includes cookbook references
+  ✅ All referenced files are accessible
+
+MCP CONFIGURATION
+  ⚠️  NOT CONFIGURED - Skills work without MCP
+
+OVERALL: ✅ SKILL IS FUNCTIONAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Contrôles de validation
+
+### Vérifications de structure
+
+| Check | What It Verifies |
+|-------|------------------|
+| **SKILL.md exists** | Main skill file is present |
+| **Frontmatter valid** | Has `name:` and `description:` |
+| **references.md** | Documentation links file (recommended) |
+| **cookbook/ directory** | Workflows exist (if referenced) |
+| **.mcp.json valid** | JSON syntax correct (if present) |
+
+### Vérifications du contenu
+
+| Check | What It Verifies |
+|-------|------------------|
+| **"When to Use" section** | Activation triggers defined |
+| **Description length** | Under 1024 characters |
+| **SKILL.md size** | Under 500 lines |
+| **Cookbook references** | All files in SKILL.md exist |
+| **No broken links** | Local file paths are valid |
+
+### Indicateurs
+
+- **✅ PASS** - Chèque réussi
+- **⚠️ WARNING** - Fichier facultatif manquant (non requis)
+- **❌ FAIL** - La vérification requise a échoué
+
+## Exemples
+
+### Exemple 1 : Compétence de réussite au test
+
+```bash
+/agileflow:skill:test react-components
+```
+
+**Output:**
+```
+🧪 Test Results: react-components
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ✅ PASS (all 5 checks)
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ✅ FULLY FUNCTIONAL
+```
+
+### Exemple 2 : Compétence avec avertissements
+
+```bash
+/agileflow:skill:test api-basic
+```
+
+**Output:**
+```
+🧪 Test Results: api-basic
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ⚠️  WARNINGS (3/5 checks)
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid
+  ⚠️  No references.md (recommended but not required)
+  ⚠️  No cookbook/ directory
+  ✅ No .mcp.json (simple skill)
+
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ⚠️  FUNCTIONAL WITH RECOMMENDATIONS
+
+Recommendations:
+  - Add references.md to link external documentation
+  - Consider adding cookbook/ entries for multiple use cases
+```
+
+### Exemple 3 : Compétence avec échecs
+
+```bash
+/agileflow:skill:test broken-skill
+```
+
+**Output:**
+```
+🧪 Test Results: broken-skill
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ❌ FAIL (1/5 checks)
+  ❌ SKILL.md missing or corrupt
+  ❌ Cannot parse frontmatter
+  ⚠️  references.md exists
+  ⚠️  No cookbook/
+  ⚠️  No .mcp.json
+
+CONTENT:       ⚠️  SKIPPED (structure issues)
+ACTIVATION:    ❌ FAIL (cannot test without valid SKILL.md)
+
+Overall: ❌ SKILL NEEDS FIXING
+
+Issues Found:
+  1. SKILL.md frontmatter is invalid
+  2. Missing "When to Use" section
+  3. Description exceeds 1024 characters
+
+Fix With: /agileflow:skill:edit broken-skill
+```
+
+## Actions suivantes après le test
+
+### Si le test réussit
+
+```
+✅ Skill is working perfectly!
+
+What would you like to do?
+
+[1] Test another skill
+[2] Use this skill now
+[3] Upgrade with learning capability
+    /agileflow:skill:upgrade <skill-name>
+[4] Done
+```
+
+### Si le test comporte des avertissements
+
+```
+⚠️  Skill works but could be improved.
+
+What would you like to do?
+
+[1] Edit skill to fix issues
+    /agileflow:skill:edit <skill-name>
+[2] Ignore warnings and continue
+[3] View detailed report
+[4] Done
+```
+
+### Si le test échoue
+
+```
+❌ Skill has issues that need fixing.
+
+What would you like to do?
+
+[1] Edit skill to fix problems
+    /agileflow:skill:edit <skill-name>
+[2] Delete and recreate skill
+    /agileflow:skill:delete <skill-name>
+[3] View detailed report
+[4] Done
+```
+
+## Interprétation des résultats
+
+### Problèmes de structure
+
+**Problem**: "SKILL.md manquant"
+- **Cause**: Le répertoire de compétences ne contient pas SKILL.md
+- **Fix**: Vérifiez que le répertoire existe : `ls .claude/skills/<name>/SKILL.md`
+- **Solution**: Utiliser `/skill:edit` recréer
+
+**Problem**: "Frontmatter invalide"
+- **Cause**: SKILL.md YAML est mal formé
+- **Fix**: Vérifiez que les 5 premières lignes contiennent un YAML valide :
+  ```yaml
+  ---
+  name: skill-name
+  description: Purpose
+  ---
+  ```
+- **Solution**: Utiliser `/skill:edit` pour corriger le sujet
+
+**Problem**: "Pas de section 'Quand utiliser'"
+- **Cause**: Déclencheurs d'activation non définis
+- **Fix**: Ajouter une section à SKILL.md :
+  ```markdown
+  ## When to Use
+
+  This skill activates when:
+  - Condition 1
+  - Keywords: "keyword1", "keyword2"
+  ```
+- **Solution**: Utiliser `/skill:edit` pour ajouter une section
+
+### Problèmes de contenu
+
+**Problem**: "La description dépasse 1024 caractères"
+- **Cause**: La description de la compétence est trop longue
+- **Fix**: Raccourcir la description dans le frontmatter SKILL.md
+- **Solution**: Utiliser `/skill:edit` pour réduire la longueur
+
+**Problem**: "SKILL.md dépasse 500 lignes"
+- **Cause**: La compétence est trop vaste/complexe
+- **Fix**: déplacer le contenu vers un livre de recettes/des fichiers
+- **Solution**: Utiliser `/skill:edit` réorganiser
+
+**Problem**: "Lien brisé : livre de recettes/missing.md référencé mais introuvable"
+- **Cause**: Référence du fichier de livre de recettes sans fichier réel
+- **Fix**: Soit créez le fichier, soit supprimez la référence
+- **Solution**: Utiliser `/skill:edit` réparer
+
+### Problèmes MCP
+
+**Problem**: "JSON invalide dans .mcp.json"
+- **Cause**: Erreur de syntaxe dans la configuration MCP
+- **Fix**: Vérifiez que la syntaxe JSON est valide
+- **Solution**: Utiliser `/skill:edit` pour réparer JSON
+
+**Problem**: "Aucun objet mcpServers"
+- **Cause**: .mcp.json manque la structure requise
+- **Fix**: Ajoutez une structure appropriée :
+  ```json
+  {
+    "mcpServers": {
+      "name": { ... }
+    }
+  }
+  ```
+- **Solution**: Utiliser `/skill:edit` mettre à jour
+
+## Flux de travail de test
+
+### Test rapide (Structure uniquement)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "Skip activation test"
+```
+
+Prend quelques secondes pour vérifier la structure et le contenu du fichier.
+
+### Test complet (Structure + Activation)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "Yes, test activation"
+# When asked: pick or enter test prompt
+```
+
+Teste que la compétence s’active réellement sur des invites pertinentes.
+
+### Test détaillé (Structure + Activation + Afficher le contenu)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "View SKILL.md content"
+# Then manually review the skill
+```
+
+Aide à comprendre ce que fait la compétence avant de l’utiliser.
+
+## Meilleures pratiques
+
+### Test après création
+
+Testez toujours une compétence juste après l'avoir créée :
+
+```bash
+/agileflow:skill:create my-skill
+/agileflow:skill:test my-skill  # ← Right after creation
+```
+
+### Test après édition
+
+Testez après avoir apporté des modifications :
+
+```bash
+/agileflow:skill:edit my-skill
+/agileflow:skill:test my-skill  # ← Verify changes worked
+```
+
+### Audits réguliers
+
+Testez périodiquement toutes les compétences :
+
+```bash
+/agileflow:skill:list
+# For each skill:
+/agileflow:skill:test <skill-name>
+```
+
+### Testez de nouveaux déclencheurs
+
+Lorsque vous ajoutez de nouveaux déclencheurs d'activation :
+
+```bash
+/agileflow:skill:edit my-skill  # Add trigger keywords
+/agileflow:skill:test my-skill  # Test with those keywords
+```
+
+## Dépannage
+
+### Tests bloqués
+
+Si le test semble bloqué :
+
+1. **Wait up to 30 seconds** - Les tests d'activation peuvent prendre du temps
+2. **Check internet connection** - Si vous testez des sources Web
+3. **Cancel (Ctrl+C)** et réessaye
+4. **Skip activation test** - Essayez le test de structure uniquement
+
+### Résultats incohérents
+
+Si les résultats des tests varient :
+
+1. **Network issues** - Certaines sources peuvent être temporairement indisponibles
+2. **Race conditions** - Réessayez de tester
+3. **Check file system** - Assurez-vous que les fichiers sont lisibles :
+   ```bash
+   ls -la .claude/skills/<skill>/
+   ```
+
+### Le test d'activation échoue
+
+Si « Compétence déclenchée correctement » indique un échec :
+
+1. Mettre à jour les déclencheurs d'activation :
+   ```bash
+   /agileflow:skill:edit <skill-name>
+   # Edit "When to Use" section
+   ```
+
+2. Testez avec différentes invites
+
+3. Vérifiez si les mots-clés sont suffisamment spécifiques
+
+## Commandes associées
+
+- [`/compétence : créer`](/commands/skill-create) - Générer une nouvelle compétence
+- [`/compétence :liste`](/commands/skill-list) - Voir toutes les compétences
+- [`/compétence : modifier`](/commands/skill-edit) - Résoudre les problèmes de compétences
+- [`/compétence : supprimer`](/commands/skill-delete) - Supprimer une compétence
+- [`/compétence : mise à niveau`](/commands/skill-upgrade) - Ajouter une capacité d'apprentissage
+
+## Prochaines étapes
+
+1. **Test a skill**: `/agileflow:skill:test <skill-name>`
+2. **If passes**: Utilisez la compétence dans votre travail
+3. **If fails**: Modifier avec `/agileflow:skill:edit`
+4. **After fixing**: Testez à nouveau pour vérifier

@@ -1,0 +1,405 @@
+---
+title: /babá
+description: Mentor interativo para implementação de recursos de ponta a ponta
+---
+
+# /babá
+
+Um mentor interativo que orienta você na implementação de recursos, desde requisitos em inglês simples até solicitações pull concluídas. Babysit combina coleta automatizada de contexto, sugestões inteligentes de tarefas e assistência prática de código.
+
+## Início rápido
+
+```bash
+/agileflow:babysit
+```
+
+O comando irá:
+1. Reúna todo o contexto do projeto (histórias, épicos, testes, documentação)
+2. Apresente sugestões de tarefas inteligentes com base na prioridade e na prontidão
+3. Orientá-lo através da implementação passo a passo
+4. Atualize o status do seu projeto enquanto você trabalha
+5. Gere descrições de PR quando estiver pronto
+
+## Principais recursos
+
+### Sugestões de tarefas inteligentes
+
+Quando você começa `/babysit`, analisa seu projeto e recomenda:
+
+- **READY stories** (all AC complete, tests stubbed) - Highest priority
+- **Blocked stories** (com caminhos de desbloqueio claros) - Alta prioridade
+- **Near-complete epics** (80%+ histórias concluídas) - Termine o que começou
+- **Roadmap priorities** - Importante trabalho estratégico
+- **Research gaps** - Prepare o trabalho para evitar depuração posterior
+
+As tarefas são classificadas de acordo com o que um desenvolvedor real priorizaria, não apenas por tempo recente ou ordem.
+
+### Orientação prática de implementação
+
+Para cada história ou recurso:
+
+```text
+1. Validate story readiness (acceptance criteria, tests)
+2. Read architecture context relevant to the task
+3. Plan implementation in small steps
+4. Apply code changes incrementally with diffs
+5. Run tests after each change
+6. Update project status as you progress
+7. Generate PR description when complete
+```
+
+### Geração de Agente Especialista
+
+Para trabalhos complexos, o babysit detecta automaticamente o domínio e gera especialistas:
+
+- **Database work** → Especialista AG-DATABASE
+- **API endpoints** → Especialista AG-API
+- **UI components** → Especialista AG-UI
+- **Testing** → Especialista AG-TESTING
+- **Documentation** → Especialista AG-DOCUMENTAÇÃO
+
+Os especialistas cuidam do trabalho profundo e focado, enquanto a babá coordena o fluxo geral.
+
+### Acompanhamento do progresso
+
+Todo o trabalho é rastreado com uma lista de tarefas:
+
+```text
+1. Run context script (loads all project state)
+2. Present task suggestions
+3. Read task-specific documentation
+4. Validate story readiness
+5. Plan implementation steps
+6. Apply code changes with tests
+7. Update project status
+8. Generate PR description
+9. Mark complete
+```
+
+Você pode ver exatamente onde está e o que resta.
+
+## Uso
+
+### Básico - Deixe a babá sugerir trabalho
+
+```bash
+/agileflow:babysit
+```
+
+A Babysit analisará seu projeto e perguntará no que você gostaria de trabalhar.
+
+### Retomar o trabalho existente
+
+```bash
+/agileflow:babysit
+```
+
+Se você tem histórias em `in_progress` status, a babá se oferecerá para retomá-los.
+
+### Trabalhe em uma história específica
+
+Você pode dizer à babá "Quero trabalhar no US-0042" e ela irá:
+- Carregue o arquivo da história
+- Valide que está pronto
+- Planeje a implementação
+- Guie você na construção
+
+## Parâmetros
+
+A Babysit aceita entrada de linguagem natural de formato livre:
+
+| Input | Effect |
+|-------|--------|
+| `"Add user profile page"` | Create new feature or find matching story |
+| `"US-0042"` | Work on specific story |
+| `"Continue"` | Resume the last story you were working on |
+| `"What should I work on?"` | Get recommendations (default) |
+
+## Modo Loop Autônomo
+
+A Babysit apoia a execução autónoma através de **Loop Mode**, que processa automaticamente as histórias de um épico inteiro.
+
+### Início rápido
+
+```bash
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+```
+
+### Como funciona
+
+```text
+1. Initialize loop for epic
+2. Load first "ready" story
+3. Work on implementation
+4. When Claude stops → Stop hook runs tests
+   - If tests PASS → mark story complete, load next
+   - If tests FAIL → show errors, continue fixing
+5. Repeat until epic complete or max iterations
+```
+
+### Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
+| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MAX` | No | 20 | Maximum iterations (safety limit) |
+
+### Controle de loop
+
+```bash
+# Check loop status
+node scripts/ralph-loop.js --status
+
+# Stop the loop manually
+node scripts/ralph-loop.js --stop
+
+# Reset loop state
+node scripts/ralph-loop.js --reset
+```
+
+### Quando usar o modo Loop
+
+**Good for:**
+- Processando um épico bem definido com histórias claras
+- Desenvolvimento orientado a testes (testes definem "pronto")
+- Processamento em lote de várias histórias
+
+**Not good for:**
+- Trabalho exploratório sem critérios de aceitação claros
+- Histórias que exigem revisão humana antes de prosseguir
+- Trabalho complexo em vários domínios que precisa de coordenação
+
+Para documentação abrangente do Modo Loop, incluindo Modo Visual e Modo de Cobertura, consulte o [Guia de recursos do modo Loop](/features/loop-mode).
+
+### Sessão de exemplo
+
+```text
+/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+
+→ Ralph Loop Initialized
+  Epic: EP-0042
+  Stories: 5 ready, 7 total
+  Starting: US-0015 "Add user authentication"
+
+[Claude implements US-0015...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0015 complete
+  → Moving to US-0016
+
+[Claude implements US-0016...]
+
+→ Stop Hook: Running tests...
+  ✗ 2 tests failing
+  → Fix errors and continue
+
+[Claude fixes tests...]
+
+→ Stop Hook: Running tests...
+  ✓ Tests pass
+  ✓ Marked US-0016 complete
+  → Moving to US-0017
+
+[...continues until epic complete...]
+
+→ EPIC COMPLETE!
+  EP-0042 finished in 12 iterations
+  5 stories completed
+```
+
+## Exemplos
+
+### Iniciar uma nova implementação
+
+```bash
+/agileflow:babysit
+# Babysit suggests: "US-0042: User Login API is READY"
+# You confirm → Implementation begins
+# Babysit guides through: Plan → Code → Test → PR
+```
+
+### Conclua várias histórias relacionadas
+
+```bash
+/agileflow:babysit
+# Babysit shows: "EP-0005 is 80% done. 1 story left: US-0051"
+# You accept → Start final story
+# Babysit tracks progress
+# When done → Ready for baseline or release
+```
+
+### Requisitos desconhecidos
+
+```bash
+/agileflow:babysit
+# You: "I want user authentication but not sure the best way"
+# Babysit: "Should I research JWT vs sessions first? This prevents debugging later"
+# You: "Yes, research"
+# Babysit: Runs /agileflow:research:ask, saves findings, then plans implementation
+```
+
+## Visão geral do fluxo de trabalho
+
+```text
+Start → Gather Context → Suggest Tasks → Choose Task
+  ↓
+Read Story & Architecture → Validate Readiness → Plan Steps
+  ↓
+Implement Code → Run Tests → Update Status
+  ↓
+Generate PR → Finish
+```
+
+## Definição de Pronto
+
+Antes da implementação, a babá verifica se as histórias possuem:
+
+- ✓ Critérios de aceitação (formato Dado/Quando/Então)
+- ✓ Contexto da arquitetura com citações de fontes
+- ✓ Esboços de teste em docs/07-testing/
+- ✓ Dependências resolvidas e documentadas
+- ✓ Insights anteriores de histórias relacionadas
+
+Se alguma estiver faltando, a babá irá sugerir completá-la primeiro (as histórias ficam em “rascunho” até ficarem prontas).
+
+## Carregamento de contexto
+
+Quando você inicia o babysit, ele executa este script de contexto automaticamente:
+
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+Este único comando reúne:
+- Status do Git, branch, alterações não confirmadas
+- Todas as histórias e épicos de status.json
+- Estado da sessão e sessões ativas
+- Estrutura da documentação
+- Notas de pesquisa (mais recentes primeiro)
+- Mensagens recentes do agente
+- Presença de arquivo chave
+
+Uma chamada de script, contexto abrangente, inicialização rápida.
+
+## Quando usar
+
+### Melhor para
+
+- **Starting implementation** - Precisa de orientação sobre o que trabalhar
+- **Picking up mid-feature** - Retome de onde você parou
+- **Epic completion** - Conclua as histórias finais em um conjunto de recursos
+- **Uncertain requirements** - Perguntas de pesquisa antes da codificação
+- **Multi-step features** - Trabalho complexo em arquivos
+- **Testing validation** - Certifique-se de que os testes sejam aprovados antes do PR
+
+### Não para
+
+- **Quick fixes** (erros de digitação, frases curtas) - Faça você mesmo
+- **Pure research** - Usar `/agileflow:research:ask` em vez de
+- **Architectural decisions** - Usar `/agileflow:adr` em vez de
+- **Documentation only** - Usar `/agileflow:docs` em vez de
+
+## Output Style
+
+A Babysit usa resultados claros e acionáveis:
+
+- **Headings** para seções principais
+- **Short bullets** para opções e explicações
+- **Code blocks** para diferenças e exemplos
+- **Questions** para orientar suas decisões (nunca pede para você "digitar")
+- **Progress updates** enquanto você trabalha
+
+Cada resposta termina com uma pergunta sobre o próximo passo para que você esteja sempre no controle.
+
+## Integração com outros comandos
+
+Babysit funciona junto com outros comandos do AgileFlow:
+
+| Task | Command |
+|------|---------|
+| Need to verify tests? | `/agileflow:verify` |
+| Need PR description? | `/agileflow:pr` |
+| Need code review? | `/agileflow:review` |
+| Want to research first? | `/agileflow:research:ask` |
+| Need impact analysis? | `/agileflow:impact` |
+| Ready for baseline? | `/agileflow:baseline` |
+
+## Pontas
+
+### Receba sugestões melhores
+
+- Mantenha o backlog de sua história em status.json
+- Escreva critérios de aceitação claros
+- Marcar histórias como prontas quando concluídas
+- Mantenha os documentos de arquitetura atualizados
+
+### Implementações bem-sucedidas
+
+- Deixe a babá validar primeiro a preparação da história
+- Leia a seção de contexto da arquitetura
+- Implemente em pequenos passos (não todos de uma vez)
+- Execute testes após cada alteração
+- Peça ajuda se estiver preso
+
+### Orquestração multi-especialista
+
+Para recursos complexos, o babysit irá automaticamente:
+- Especialista em API Spawn para trabalho de back-end
+- Spawn UI especialista para trabalho de front-end
+- Execute ambos em paralelo se forem independentes
+- Coordenar a integração final
+
+Você não precisa gerenciar manualmente vários agentes - a babá cuida disso.
+
+## Padrões Comuns
+
+### "Não sei no que trabalhar"
+
+```text
+/agileflow:babysit
+→ Babysit shows ranked suggestions
+→ Pick the one that interests you
+→ Let babysit guide the implementation
+```
+
+### "Eu quero terminar esse épico"
+
+```text
+/agileflow:babysit
+→ "EP-0005 is 80% done, 2 stories left"
+→ Choose story
+→ Complete it with babysit's guidance
+→ Move to next story
+→ When done: /agileflow:baseline "EP-0005 complete"
+```
+
+### "Preciso pesquisar isso primeiro"
+
+```text
+/agileflow:babysit
+→ "Need to understand JWT patterns first?"
+→ "Yes, research"
+→ /agileflow:research:ask TOPIC="JWT best practices"
+→ Copy research results back
+→ Babysit plans implementation based on research
+→ Code with confidence
+```
+
+## Comandos Relacionados
+
+- [`/épico`](/commands/epic) - Crie um novo épico com histórias
+- [`/ história`](/commands/story) - Crie histórias individuais
+- [`/verificar`](/commands/verify) - Executar testes
+- [`/pr`](/commands/pr) - Gerar solicitação pull
+- [`/revisão`](/commands/review) - Revisão de código
+- [`/impacto`](/commands/impact) - Analisar o impacto da mudança
+- [`/contexto`](/commands/context) - Pesquisa e contexto
+- [`/linha de base`](/commands/baseline) - Criar ponto de verificação verificado
+
+## Recursos relacionados
+
+- [Modo Loop](/features/loop-mode) - Documentação completa para processamento autônomo de histórias
+- [Modo visual](/features/visual-mode) - Verificação de captura de tela para desenvolvimento de UI
+- [Contexto Compacto](/features/compact-context) - Preservação do contexto durante sessões longas

@@ -1,0 +1,566 @@
+---
+title: / Agileflow:أبحاث
+description: أوامر الدليل الفرعي للبحث من أجل التحقيق المدعوم بالذكاء الاصطناعي واستيراد المعرفة
+---
+
+# / Agileflow:أبحاث
+
+نظام بحث شامل لإنشاء مطالبات تحقيق مفصلة واستيراد النتائج وإدارة الملاحظات البحثية.
+
+## بداية سريعة
+
+يوفر نظام البحث أربعة أوامر متخصصة:
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"       # Generate research prompt
+/agileflow:research:import TOPIC="title"                  # Import external results
+/agileflow:research:list                                   # View all research notes
+/agileflow:research:view FILE=<filename>                  # Read specific note
+```
+
+## ملخص
+
+يتيح نظام البحث:
+
+1. **Generate detailed research prompts** لـ ChatGPT أو Claude web أو Perplexity أو Gemini
+2. **Import results** من أدوات الذكاء الاصطناعي الخارجية إلى مشروعك
+3. **Browse and reference** نتائج البحوث السابقة
+4. **Organize findings** مع القوالب والفهارس المنظمة
+
+البحث ضروري من أجل:
+- استكشاف المشكلات الصعبة وإصلاحها باستخدام خبرة الذكاء الاصطناعي الخارجية
+- التحقيق في التقنيات قبل اتخاذ القرارات المعمارية
+- توثيق التعلم من المصادر الخارجية
+- Building knowledge base for your team
+
+## أوامر فرعية
+
+### /agileflow:research:ask - إنشاء موجه بحث
+
+أنشئ بحثًا شاملاً وغنيًا بالسياق لأدوات الذكاء الاصطناعي على الويب.
+
+**Purpose**: ينشئ أكثر من 200 سطرًا من المطالبات التفصيلية التي تتضمن سياق قاعدة التعليمات البرمجية الخاصة بك ورسائل الخطأ الدقيقة وما جربته وأسئلة محددة.
+
+**Command**:
+```bash
+/agileflow:research:ask TOPIC="your topic" [DETAILS="constraints"] [ERROR="error message"]
+```
+
+**Parameters**:
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | What you're researching (e.g., "OAuth 2.0 with Google") |
+| DETAILS | No | Constraints, deadlines, or specific requirements |
+| ERROR | No | Exact error message if troubleshooting |
+
+**Key Features**:
+
+- **Generates 200+ lines minimum** - مفصلة وشاملة
+- **Includes actual code snippets** - أكثر من 50 سطرًا من قاعدة التعليمات البرمجية الخاصة بك
+- **Embeds exact errors** - آثار المكدس الكامل في حالة استكشاف الأخطاء وإصلاحها
+- **Lists attempted solutions** - يظهر ما قمت بتجربته بالفعل
+- **Asks specific questions** - 3+ أسئلة مستهدفة لمنظمة العفو الدولية
+- **Output only** - لا توجد ملفات مكتوبة، يمكنك نسخها إلى أداة AI خارجية
+
+**What Gets Generated**:
+
+تتضمن المطالبة هذه الأقسام الإلزامية:
+
+- **Project Context** - الإطار والتبعيات والملفات ذات الصلة
+- **Current Implementation** - أكثر من 50 سطرًا من التعليمات البرمجية الفعلية من قاعدة التعليمات البرمجية الخاصة بك
+- **The Problem** - رسائل الخطأ الدقيقة، وتتبعات المكدس، والسلوك المتوقع مقابل السلوك الفعلي
+- **What We've Already Tried** - 2+ نهج مع النتائج والتحليل
+- **Specific Questions** - 3+ أسئلة مستهدفة للإجابة عليها
+- **What I Need** - تحليل السبب الجذري، والحل خطوة بخطوة، وأمثلة التعليمات البرمجية، والمشاكل
+- **Environment Details** - الإصدارات ومعلومات النظام
+- **References** - روابط المصدر في حالة الاستشهاد بالوثائق
+
+**Quality Validation**:
+
+قبل الإخراج، يتحقق الأمر:
+- الطول ≥ 200 سطر
+- مقتطفات التعليمات البرمجية ≥ 50 سطرًا
+- رسائل الخطأ حرفيًا (إن أمكن)
+- ≥ 2 الأساليب المجربة المدرجة
+- ≥ 3 أسئلة محددة متضمنة
+
+**Example**:
+
+```bash
+# Research OAuth issue
+/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+
+# Output: 250+ line prompt with code, error details, what was tried, and specific questions
+# Copy output → ChatGPT/Claude web → Get expert analysis
+# Then use /agileflow:research:import to save the response
+```
+
+**Workflow**:
+
+```
+1. /agileflow:research:ask TOPIC="..."
+   ↓ (command generates prompt)
+2. Copy prompt output
+3. Paste into ChatGPT/Claude web/Perplexity
+4. Get expert analysis
+5. /agileflow:research:import TOPIC="..." CONTENT="paste response"
+   ↓ (command saves and structures results)
+6. Results saved to docs/10-research/YYYYMMDD-topic-slug.md
+```
+
+**Integration with babysit**:
+
+متى `/babysit` يكتشف أنك عالق، فإنه يقترح:
+```
+Looks like you're stuck on this problem.
+Try: /agileflow:research:ask TOPIC="describe your problem"
+```
+
+---
+
+### /agileflow:research:import - استيراد نتائج البحث
+
+قم باستيراد نتائج البحث من أدوات الذكاء الاصطناعي الخارجية إلى مجلد البحث الخاص بك بتنسيق منظم.
+
+**Purpose**: يأخذ النتائج من ChatGPT أو Claude web أو Perplexity أو نصوص YouTube أو منشورات المدونة ويحفظها كملفات تخفيض منظمة.
+
+**Command**:
+```bash
+/agileflow:research:import TOPIC="topic" [CONTENT="results"] [SOURCE="url"]
+```
+
+**Parameters**:
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Name for the research file (e.g., "OAuth 2.0 Setup") |
+| CONTENT | Yes* | Research results to import (*can be pasted after command) |
+| SOURCE | No | Original source URL for attribution |
+
+**Key Features**:
+
+- **Preserves ALL code snippets** - بالضبط كما هو منصوص عليه
+- **Generates actionable items** - خطوات تالية ملموسة، وليست اقتراحات غامضة
+- **Diff-first preview** - عرض النتيجة المنسقة قبل الحفظ
+- **Updates research index** - يضيف تلقائيًا إلى المستندات/10-research/README.md
+- **Links to decisions** - يمكن الرجوع إلى ADRs أو الملاحم أو القصص
+
+**What Gets Created**:
+
+ملف بحث منظم مع الأقسام:
+
+- **Summary** - 2-3 فقرة TL;DR
+- **Key Findings** - الوجبات الرئيسية كنقاط نقطية
+- **Implementation Approach** - خطة خطوة بخطوة إن أمكن
+- **Code Snippets** - تم الحفاظ على كافة التعليمات البرمجية تمامًا كما هو منصوص عليه
+- **Action Items** - الخطوات التالية الملموسة (مربعات الاختيار)
+- **Risks & Gotchas** - التحذيرات وحالات الحافة
+- **Story Suggestions** - الميزات المحتملة إذا اقترح البحث العمل
+- **Raw Content Reference** - انهار المحتوى الأصلي كمرجع
+
+**File Location**:
+```
+docs/10-research/YYYYMMDD-topic-slug.md
+```
+
+**Index Update**:
+
+تمت إضافة مدخل البحث إلى `docs/10-research/README.md`:
+```markdown
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+```
+
+**Example**:
+
+```bash
+# After getting ChatGPT response about OAuth
+/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+
+# Prompts: "Paste the ChatGPT response"
+# You paste content
+# Command shows preview
+# You confirm
+# Results saved to docs/10-research/20250101-oauth-setup.md
+```
+
+**Works With**:
+
+- ردود ChatGPT
+- محادثات كلود ويب
+- نتائج البحوث الحيرة
+- يوتيوب فيديو النصوص
+- مقتطفات من مشاركة المدونة
+- ملاحظات نقاش المؤتمر
+- صفحات التوثيق
+- ملاحظات الاجتماع
+
+---
+
+### /agileflow:research:list - عرض فهرس ملاحظات البحث
+
+اعرض جميع الملاحظات البحثية في مشروعك مع نظرة عامة سريعة.
+
+**Purpose**: يعرض ملاحظات البحث المخزنة في `docs/10-research/` مع التاريخ والموضوع واسم الملف والملخص.
+
+**Command**:
+```bash
+/agileflow:research:list
+```
+
+**Parameters**: لا أحد
+
+**Key Features**:
+
+- **Read-only** - لا توجد ملفات مكتوبة
+- **Shows all notes** - التاريخ، الموضوع، اسم الملف
+- **Sorted by date** - الأحدث أولاً
+- **Quick action hints** - اقتراحات للأوامر القادمة
+
+**Output Example**:
+
+```
+## Research Notes
+
+| Date | Topic | File |
+|------|-------|------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md |
+| 2024-12-31 | TypeScript Performance | 20241231-typescript-perf.md |
+| 2024-12-28 | Mermaid Diagrams | 20241228-mermaid.md |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=20250101-oauth-setup.md - Read a note
+- /agileflow:research:ask TOPIC="new topic" - Create new research
+- /agileflow:research:import - Import external content
+```
+
+**When to Use**:
+
+- البحث عن البحوث السابقة قبل التنفيذ
+- ابحث عن مقتطفات التعليمات البرمجية التي بحثت عنها
+- التحقق من بنود العمل من البحوث السابقة
+
+---
+
+### /agileflow:research:view - اقرأ ملاحظة بحثية محددة
+
+اعرض المحتوى الكامل لمذكرة بحثية من مجلد البحث الخاص بك.
+
+**Purpose**: اقرأ ملاحظات البحث وراجعها للعثور على مقتطفات التعليمات البرمجية وعناصر العمل والنتائج.
+
+**Command**:
+```bash
+/agileflow:research:view FILE=<filename>
+```
+
+**Parameters**:
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| FILE | Yes | Filename of the research note (e.g., "20250101-oauth-setup.md") |
+
+**Key Features**:
+
+- **Read-only** - لا توجد ملفات مكتوبة
+- **Full content** - يتم عرض الملف بالكامل، غير مقطوع
+- **Find anything** - مقتطفات التعليمات البرمجية، وبنود العمل، والنتائج
+
+**Example**:
+
+```bash
+# View OAuth research
+/agileflow:research:view FILE=20250101-oauth-setup.md
+
+# Output: Full content of the file
+```
+
+**Output Includes**:
+
+- استكمال محتوى ملف البحث
+- جميع مقتطفات التعليمات البرمجية من البحث
+- عناصر العمل مع مربعات الاختيار
+- النتائج الرئيسية والمشاكل
+- المخاطر والاعتبارات
+- المراجع والمصادر
+
+---
+
+## أمثلة سير العمل
+
+### سير العمل البحثي الكامل
+
+**Scenario**: أنت عالق في المصادقة وتحتاج إلى مساعدة الخبراء.
+
+```bash
+# Step 1: Generate detailed research prompt
+/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client error" \
+  ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+
+# Output: 250+ line detailed prompt with your code, error, what you tried, questions
+# → Copy the prompt
+
+# Step 2: Paste into ChatGPT/Perplexity
+# → Get expert analysis back
+
+# Step 3: Import the results
+/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+
+# Prompts for content → paste ChatGPT response
+# → Shows preview of formatted file
+# → Saves to docs/10-research/YYYYMMDD-nextauth-oauth-fix.md
+
+# Step 4: Reference in your work
+# - Create ADR referencing the research
+# - Create story based on action items
+# - Check action items when implementing
+
+# Step 5: Review research when implementing
+/agileflow:research:list                    # See all research
+/agileflow:research:view FILE=<filename>    # Review details
+```
+
+### التحقيق قبل اتخاذ القرار المعماري
+
+```bash
+# Step 1: Research database options
+/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time collaboration"
+
+# Step 2: Get expert comparison, use cases, tradeoffs
+# → Copy response from ChatGPT/Perplexity
+
+# Step 3: Import results
+/agileflow:research:import TOPIC="Database Selection Analysis"
+
+# Step 4: Create ADR referencing research
+# /agileflow:adr NEW
+# Mention: "See research in docs/10-research/"
+
+# Step 5: Team reviews research before decision
+/agileflow:research:view FILE=20250101-database-selection.md
+```
+
+### التعلم من المحتوى الخارجي
+
+```bash
+# You find a great article/YouTube video about your tech
+
+# Step 1: Import the content
+/agileflow:research:import TOPIC="Next.js App Router Advanced Patterns" \
+  SOURCE="https://example.com/article"
+
+# Copy/paste key sections → saves to research folder
+
+# Step 2: Reference from architecture docs
+# docs/04-architecture/... → "See research: [link]"
+
+# Step 3: Create stories from action items
+# "Per research, we should implement error boundaries"
+```
+
+---
+
+## التكامل مع الأوامر الأخرى
+
+### مجالسة الأطفال - كشف العالقة
+
+متى `/babysit` يكتشف أنك عالق في مشكلة ما:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+### ADR - قرارات الهندسة المعمارية
+
+البحوث المرجعية في القرارات المعمارية:
+
+```markdown
+# ADR-0042: Use PostgreSQL for persistence
+
+**Research**: See [Database Comparison](../10-research/20250101-database-selection.md)
+
+Based on the research findings, we decided to use PostgreSQL because...
+```
+
+### قصص وملاحم
+
+إنشاء عمل من نتائج البحوث:
+
+```bash
+# After importing research results
+/agileflow:research:import TOPIC="Auth Pattern"
+
+# Then create story based on action items
+/agileflow:epic NEW
+# Include: "Based on research: docs/10-research/20250101-auth-pattern.md"
+```
+
+---
+
+## أفضل الممارسات
+
+### الجيل البحثي الفوري
+
+1. **Be specific with TOPIC** - لا تقل "مساعدة في المصادقة" فحسب، بل قل "next-auth 5.0 with Google OAuth"
+2. **Include ERROR messages** - آثار المكدس الكامل تساعد بشكل كبير
+3. **Document what you tried** - يظهر الذكاء الاصطناعي الذي قمت به من واجباتك المنزلية
+4. **Ask specific questions** - "لماذا يحدث X؟" وليس "كيف يمكنني إصلاح هذا؟"
+
+**Good TOPIC examples:**
+- "خطأ في مصادقة Google OAuth التالية unauthorized_client مع جهاز توجيه التطبيقات Next.js 14"
+- "أخطاء تجميع الوضع الصارم لـ TypeScript في إعداد monorepo"
+- "فشل التحقق من صحة توقيع خطاف الويب الشريطي في التطوير"
+
+**Bad TOPIC examples:**
+- "المساعدة في المصادقة"
+- "لماذا تم كسر الكود الخاص بي"
+- "خطأ في تطبيقي"
+
+### استيراد البحوث
+
+1. **Always cite the source** - من أين لك هذا؟
+2. **Preserve code snippets exactly** - لا تقم بتعديل الأمثلة
+3. **Extract key findings** - لا تلصق المحتوى الخام فقط
+4. **Generate action items** - ماذا يجب أن تفعل بهذا؟
+5. **Link to decisions** - الإشارة إلى ADRs والملاحم والقصص إذا كانت ذات صلة
+
+### إدارة البحوث
+
+1. **Review before implementing** - لا تتبع الأبحاث بشكل أعمى
+2. **Check action items** - استخدم مربعات الاختيار لتتبع ما قمت به
+3. **Keep files current** - قم بالتحديث إذا تعلمت المزيد
+4. **Reference in decisions** - رابط من ADRs والقصص
+5. **Archive old research** - نقل النتائج القديمة إلى دليل الأرشيف
+
+---
+
+## هيكل البحث
+
+يتم تخزين ملفات البحث ببادئات تاريخ ISO:
+
+```
+docs/10-research/
+├── README.md                                    (Index table)
+├── 20250101-oauth-setup.md
+├── 20241231-typescript-performance.md
+└── 20241228-mermaid-diagrams.md
+```
+
+### تسمية الملف
+
+```
+YYYYMMDD-topic-slug.md
+
+Examples:
+- 20250101-oauth-setup.md
+- 20241231-stripe-webhooks.md
+- 20241228-typescript-strict-mode.md
+```
+
+### مؤشر البحوث
+
+ال `docs/10-research/README.md` يحتفظ بجدول بجميع الملاحظات البحثية:
+
+```markdown
+# Research Notes
+
+| Date | Topic | File | Summary |
+|------|-------|------|---------|
+| 2025-01-01 | OAuth 2.0 Setup | 20250101-oauth-setup.md | OAuth flows, security, best practices |
+| 2024-12-31 | TypeScript Performance | 20241231-typescript-perf.md | Optimization techniques and tsconfig tuning |
+| 2024-12-28 | Mermaid Diagrams | 20241228-mermaid.md | Diagram syntax, rendering, and best practices |
+```
+
+---
+
+## متى تستخدم البحث
+
+### قبل قرارات الهندسة المعمارية
+أدوات وأطر البحث قبل التوصية بها:
+
+```bash
+/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time sync"
+# → Get expert comparison
+/agileflow:research:import  # Import results
+# → Create ADR referencing the research
+```
+
+### تحقيق الميزة
+تعمق في كيفية تنفيذ الميزات المعقدة:
+
+```bash
+/agileflow:research:ask TOPIC="Next.js App Router middleware patterns"
+/agileflow:research:ask TOPIC="OAuth 2.0 implementation with security best practices"
+/agileflow:research:ask TOPIC="Real-time WebSocket architecture in Node.js"
+```
+
+### استكشاف المشكلات الصعبة وإصلاحها
+احصل على مساعدة الخبراء عندما تتعثر:
+
+```bash
+/agileflow:research:ask TOPIC="TypeScript strict mode in monorepo" \
+  ERROR="error TS1149: File is a CommonJS module..."
+```
+
+### التعلم والتدريب
+توثيق الدروس من الدورات التدريبية أو البرامج التعليمية أو التوثيق:
+
+```bash
+/agileflow:research:import TOPIC="React 18 Suspense and Streaming" \
+  SOURCE="https://react.dev/reference/react/Suspense"
+```
+
+### تقييم التكنولوجيا
+مقارنة الخيارات قبل الاعتماد:
+
+```bash
+/agileflow:research:ask TOPIC="GraphQL vs tRPC for type-safe APIs"
+/agileflow:research:ask TOPIC="SvelteKit vs Next.js for new project"
+```
+
+---
+
+## استكشاف الأخطاء وإصلاحها
+
+### موجه البحث قصير جدًا
+
+إذا حصلت على مطالبة أقل من 200 سطر، فسيتم إعادة إنشاء الأمر. تأكد:
+- TOPIC محدد (يتضمن إصدارات إطار العمل وأنواع الأخطاء)
+- خطأ يتضمن تتبع المكدس الكامل في حالة استكشاف الأخطاء وإصلاحها
+- يقرأ الأمر قاعدة التعليمات البرمجية الفعلية الخاصة بك
+
+### استيراد عدم تحديث الفهرس
+
+الفهرس (`docs/10-research/README.md`) is automatically created and updated. If it's missing:
+
+```bash
+/agileflow:research:list  # This will create the index if missing
+```
+
+### لا يمكن العثور على ملف البحث
+
+يستخدم `/agileflow:research:list` لرؤية جميع الملفات المتاحة:
+
+```bash
+/agileflow:research:list
+# Shows all files with correct filenames for /agileflow:research:view
+```
+
+### مجلد البحث غير موجود
+
+يقوم أمر استيراد أو قائمة البحث الأول بإنشاء ملف `docs/10-research/` الدليل تلقائيا. لا حاجة إلى الإعداد اليدوي.
+
+---
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow:babysit`](/commands/babysit) - يكتشف المواقف العالقة ويقترح البحث:اسأل
+- [`/ Agileflow:adr`](/commands/adr) - إنشاء قرارات معمارية تشير إلى الأبحاث
+- [`/ Agileflow:epic`](/commands/epic) - إنشاء ملاحم بناءً على نتائج الأبحاث
+- [`/ Agileflow:قصة`](/commands/story) - إنشاء قصص مع مراجع البحث

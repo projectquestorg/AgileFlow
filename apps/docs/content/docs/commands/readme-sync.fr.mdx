@@ -1,0 +1,190 @@
+---
+title: /readme-sync
+description: Synchroniser le README.md d'un dossier avec son contenu actuel
+---
+
+# /readme-sync
+
+Gardez les fichiers README.md du dossier à jour en générant automatiquement une section de contenu qui correspond aux fichiers réels du dossier.
+
+## Démarrage rapide
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Pour synchroniser tous les dossiers de documentation en même temps :
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FOLDER` | No | - | Path to folder (e.g., `docs/02-practices`), or `all` to sync entire docs/ |
+
+## Exemples
+
+### Synchroniser un seul dossier
+
+```bash
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+Analyses `docs/02-practices/` pour tous les fichiers et sous-répertoires, puis met à jour le `## Contents` section de `docs/02-practices/README.md` avec les articles actuels.
+
+### Synchroniser tous les dossiers de documentation
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+Synchronise automatiquement tous les dossiers dans `docs/` répertoire en parallèle :
+- `docs/00-meta/`
+- `docs/01-brainstorming/`
+- `docs/02-practices/`
+- `docs/03-decisions/`
+- ... et plus encore
+
+### Sélection interactive des dossiers
+
+```bash
+/agileflow:readme-sync
+```
+
+Si vous ne spécifiez pas de dossier, la commande vous demande de choisir :
+
+```text
+Which folder should I sync?
+
+1. docs/02-practices (Recommended)
+2. docs/04-architecture
+3. all
+4. Other (enter custom path)
+```
+
+## Sortir
+
+La commande génère un `## Contents` dans le fichier README :
+
+```markdown
+## Contents
+
+- **testing.md** – Test strategy, patterns, and test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, and commit conventions
+- **ci.md** – CI/CD pipeline configuration and testing gates
+- **security.md** – Security practices, input validation, and authentication
+- **releasing.md** – Release procedures, versioning, and changelog management
+
+### Sub-folder: design/
+- **design/colors.md** – Color palette and branding guidelines
+- **design/typography.md** – Font stack and text styling rules
+```
+
+## Comment ça marche
+
+### Étape 1 : lister le contenu
+La commande analyse le dossier pour :
+- Tous les démarques et autres fichiers
+- Sous-répertoires et leur contenu
+
+### Étape 2 : Extraire les descriptions
+Pour chaque fichier, il extrait :
+- **Markdown files**: Le premier titre (# Titre) ou première phrase
+- **Other files**: Description basée sur la première ligne ou le nom de fichier
+
+### Étape 3 : Créer une section de contenu
+Génère un format de liste à puces propre avec :
+- Noms de fichiers en gras
+- Descriptions en une phrase
+- Structure imbriquée pour les sous-répertoires
+
+### Étape 4 : Prévisualiser et confirmer
+Vous montre les modifications proposées :
+
+```text
+📁 Syncing docs/02-practices/README.md
+=====================================
+
+Proposed Changes to ## Contents Section:
+─────────────────────────────────────────
+- **testing.md** – Test strategy, patterns, test infrastructure
+- **git-branching.md** – Git workflow, branching strategy, commit conventions
+...
+
+Update README.md with these changes? (YES/NO)
+```
+
+## Meilleures pratiques
+
+### Garder le contenu à jour
+Exécuter après avoir ajouté de nouveaux fichiers à un dossier :
+
+```bash
+# Just added a new file
+vim docs/02-practices/performance-tuning.md
+
+# Update the README
+/agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+### Liste de contrôle de pré-lancement
+Avant les versions majeures, synchronisez toute la documentation :
+
+```bash
+/agileflow:readme-sync FOLDER=all
+```
+
+### Entretien trimestriel
+Planifiez des audits documentaires réguliers :
+
+```bash
+# Sync entire docs/ and review changes
+/agileflow:readme-sync FOLDER=all
+```
+
+### Lors de la réorganisation
+Après avoir restructuré un dossier, synchronisez immédiatement :
+
+```bash
+/agileflow:readme-sync FOLDER=docs/your-folder
+```
+
+## Ce qu'il met à jour
+
+La commande **only updates the `## Contents` section**:
+
+- Supprime les anciennes listes de fichiers
+- Ajoute tous les fichiers actuels avec des descriptions
+- Maintient toutes les autres sections README inchangées
+- Préserve les notes et les liens personnalisés
+- Conserve les sections d’en-tête, d’introduction et de pied de page intactes
+
+Cela signifie que vous pouvez utiliser la commande en toute sécurité sans perdre la documentation personnalisée.
+
+## Extraction de description de fichier
+
+La commande extrait intelligemment les descriptions :
+
+```markdown
+# Testing Strategy
+
+Guidelines for writing and running tests...
+```
+
+Extraits comme : "Stratégie de test – Lignes directrices pour l'écriture et l'exécution de tests"
+
+```markdown
+<!-- This file documents git workflow -->
+Guidelines for branching and committing
+```
+
+Extrait la première ligne significative comme description.
+
+## Commandes associées
+
+- [`/docs-sync`](/commands/docs-sync) - Synchroniser la documentation avec les modifications de code
+- [`/contexte`](/commands/context) - Générer un contexte de projet complet
+- [`/modèle`](/commands/template) - Créer des modèles de documentation personnalisés

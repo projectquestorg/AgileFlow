@@ -1,0 +1,92 @@
+---
+title: /agileflow:research:list
+description: Zeigen Sie den Index aller Forschungsnotizen in Ihrem Projekt an
+---
+
+# /agileflow:research:list
+
+Zeigen Sie alle in Ihrem Projekt gespeicherten Forschungsnotizen mit einer schnellen Übersicht an.
+
+## Schnellstart
+
+```bash
+/agileflow:research:list
+```
+
+Keine Argumente erforderlich – zeigt alle Forschungsnotizen an.
+
+## Zweck
+
+Zeigt Forschungsnotizen an, die in gespeichert sind `docs/10-research/` mit:
+
+- Datum
+- Thema
+- Dateiname
+- Einzeilige Zusammenfassung (falls verfügbar)
+
+Das ist ein **read-only command**– Es werden keine Dateien geschrieben.
+
+## Ausgabe
+
+```
+## Research Notes
+
+| Date       | Topic                  | File                        |
+|------------|------------------------|-----------------------------|
+| 2025-01-07 | OAuth Integration       | 20250107-oauth.md           |
+| 2025-01-06 | Performance Tips        | 20250106-perf.md            |
+| 2025-01-05 | Database Migrations     | 20250105-migrations.md      |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=<filename> - Read a specific note
+- /agileflow:research:analyze FILE=<filename> - Analyze for implementation
+- /agileflow:research:ask TOPIC="new topic" - Create new research prompt
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## Wenn keine Forschung vorhanden ist
+
+Wenn keine Forschungsnotizen gefunden werden:
+
+```
+No research notes found.
+
+Quick start:
+- /agileflow:research:ask TOPIC="your topic" - Generate research prompt for ChatGPT/Claude
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## Wie es funktioniert
+
+1. Liest `docs/10-research/README.md` für die Indextabelle
+2. Wenn README nicht vorhanden ist, werden die Dateien aus dem Verzeichnis aufgelistet
+3. Wenn das Verzeichnis nicht existiert, wird eine hilfreiche Meldung angezeigt
+4. Schlägt nächste Aktionen vor
+
+## Schnelle Aktionen
+
+Nachdem Sie die Liste angezeigt haben, können Sie:
+
+| Action | Command |
+|--------|---------|
+| Read a note | `/agileflow:research:view FILE=<filename>` |
+| Analyze for implementation | `/agileflow:research:analyze FILE=<filename>` |
+| Create new research | `/agileflow:research:ask TOPIC="..."` |
+| Import content | `/agileflow:research:import TOPIC="..."` |
+
+## Wann zu verwenden
+
+- **Before implementing** - Finden Sie frühere Forschungsergebnisse zu einem Thema
+- **Looking for code snippets** - Merken Sie sich, wo Sie etwas recherchiert haben
+- **Check action items** - Sehen Sie, welche Aufgaben aus der Forschung hervorgegangen sind
+- **Team knowledge sharing** - Durchsuchen Sie, was recherchiert wurde
+
+## Verwandte Befehle
+
+- [`/agileflow:research`](/commands/research) - Überblick über das Forschungssystem
+- [`/agileflow:research:ask`](/commands/research-ask) - Generieren Sie Forschungsaufforderungen
+- [`/agileflow:research:import`](/commands/research-import) - Forschungsergebnisse importieren
+- [`/agileflow:research:view`](/commands/research-view) - Lesen Sie die spezifische Forschungsnotiz
+- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyse zur Umsetzung

@@ -1,0 +1,465 @@
+---
+title: /pr
+description: Générer une description de demande d'extraction à partir de l'histoire
+---
+
+# /pr
+
+Générez des descriptions de pull request complètes et prêtes à coller directement à partir de vos user stories et de vos preuves de test. La commande PR garantit que vos demandes d'extraction sont bien documentées, renvoient à des travaux pertinents et incluent tous les détails nécessaires pour les réviseurs.
+
+## Démarrage rapide
+
+```bash
+# Generate PR from story with title
+/agileflow:pr STORY=US-0042 TITLE="Add user profile"
+
+# Generate PR with test evidence
+/agileflow:pr STORY=US-0042 TITLE="Add user profile" TEST_EVIDENCE="All unit tests pass, E2E tested login→profile flow"
+```
+
+La commande va :
+1. Chargez l'histoire depuis `docs/06-stories/US-0042.md`
+2. Extraire les critères d'acceptation, les dépendances et le contexte
+3. Créez une description de relations publiques complète avec toutes les sections
+4. Sortie de démarque prête à coller pour GitHub/GitLab
+5. Suggérer un message de validation conventionnel pour les fusions de squash
+
+## Principales fonctionnalités
+
+### Contexte d'histoire automatique
+
+La description du PR comprend automatiquement :
+
+- **Epic reference** - À quelle fonctionnalité cela appartient
+- **Story summary** - Ce qui a été mis en œuvre
+- **Dependencies** - D'autres histoires dont cela dépend
+- **Acceptance criteria** - Tous les AC avec des états de case à cocher
+- **Test evidence** - Vos résultats de tests et vérification
+- **Risk assessment** - Impacts potentiels et plan de retour en arrière
+- **Code owners** - À partir du fichier CODEOWNERS
+
+### Gestion des listes de contrôle
+
+Les critères d'acceptation deviennent une liste de contrôle des relations publiques :
+
+```markdown
+## Checklist
+
+- [x] AC1: User can login with email and password
+- [x] AC2: Login errors show validation feedback
+- [ ] AC3: 2FA support (scope creep - skipped)
+- [x] AC4: Session persists across page reloads
+```
+
+### Intégration des preuves de test
+
+Incluez directement les résultats des tests et la vérification :
+
+```markdown
+## Test Evidence
+
+### Unit Tests
+- ✅ 42 tests passing, 0 failing
+- Coverage: 87% (auth module)
+
+### Integration Tests
+- ✅ Login flow end-to-end verified
+- ✅ Session persistence confirmed
+- ✅ Tested with Chrome, Firefox, Safari
+
+### Manual Testing
+- ✅ Tested on desktop and mobile
+- ✅ Accessibility check passed (WCAG AA)
+```
+
+### Engagements conventionnels
+
+Suggère des messages de validation appropriés pour les fusions de squash :
+
+```text
+feat(auth): implement user login with JWT tokens
+
+Implements US-0042: User Login API
+- Email/password authentication
+- JWT token generation and validation
+- Session persistence across reloads
+- Comprehensive test coverage
+
+Closes #42
+```
+
+## Usage
+
+### Description de base des relations publiques
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Add user login API"
+```
+
+Génère des relations publiques avec :
+- Résumé de l'histoire de US-0042.md
+- Tous les critères d'acceptation
+- Problèmes liés (histoire + dépendances)
+- L'évaluation des risques
+- Propriétaires de codes
+
+### RP avec preuves de test
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Add user login" TEST_EVIDENCE="All tests passing (42/42), E2E verified"
+```
+
+Ajoute une section de résultats de test au PR.
+
+### PR avec statut de critères d'acceptation
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" AC_CHECKED="✓ Email auth, ✓ JWT generation, ✗ 2FA"
+```
+
+Montre quels AC ont été terminés ou ignorés.
+
+### PR avec notes supplémentaires
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" NOTES="Coordinated with frontend team on API contract"
+```
+
+Ajoute des notes personnalisées à la description.
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0042) |
+| `TITLE` | Yes | - | Short PR title (1-5 words) |
+| `TEST_EVIDENCE` | No | "" | Test results, coverage, manual testing notes |
+| `AC_CHECKED` | No | - | Acceptance criteria status (✓/✗ for each) |
+| `NOTES` | No | "" | Additional context or coordination notes |
+
+## Exemples
+
+### PR simple à partir de l'histoire
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Implement login API"
+
+# Output:
+# ## Summary
+# Implements JWT-based user authentication with email and password login...
+#
+# ## Linked Issues
+# - Implements #US-0042
+# - Depends on #US-0039 (User schema)
+#
+# ## Checklist
+# - [x] AC1: Users can login with email/password
+# - [x] AC2: Invalid credentials show error
+# ...
+```
+
+### PR avec preuves de test complètes
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="User authentication" TEST_EVIDENCE="
+- Unit Tests: 42 passing, 0 failing
+- Integration Tests: Login flow verified
+- E2E Tests: Desktop and mobile tested
+- Coverage: 89%
+- Manual: Tested with 2FA, session timeout, etc.
+"
+
+# Output includes comprehensive test section
+```
+
+### PR avec achèvement partiel de la climatisation
+
+```bash
+/agileflow:pr STORY=US-0042 TITLE="Login API" AC_CHECKED="
+✓ Email/password login
+✓ Session persistence
+✗ 2FA (out of scope - separate story)
+✓ Error handling
+"
+
+# Checklist shows what was done vs deferred
+```
+
+### Notes de coordination d’équipe
+
+```bash
+/agileflow:pr STORY=US-0051 TITLE="Payment processing" NOTES="
+Coordinated with backend team on webhook signature validation.
+Frontend team reviewed API contract and approves.
+DevOps confirmed payment processor credentials are configured.
+"
+```
+
+## Structure de description du PR
+
+### Section d'en-tête
+
+```markdown
+## Summary
+
+[Generated from story summary + optional NOTES]
+Explains what was built and why at a high level.
+
+### Linked Issues
+
+- Implements #US-0042
+- Depends on #US-0039 (User schema)
+- Relates to #EP-0005 (Authentication epic)
+
+### Checklist
+
+- [x] AC1: Users can login with email/password
+- [x] AC2: Invalid credentials show error
+- [x] AC3: Sessions persist across page reloads
+- [x] AC4: Logout clears session and token
+```
+
+### Section d'essais
+
+```markdown
+### Test Evidence
+
+[Formatted TEST_EVIDENCE input or auto-detected from test run]
+
+### Screenshots/GIFs
+
+[Placeholder for visual evidence if needed]
+- Login page
+- Success flow
+- Error handling
+- Session persistence across reloads
+
+### Risk Assessment
+
+**Potential Impact**:
+- Changes authentication flow (affects all users)
+- Modifies session handling (potential breakage in existing integrations)
+
+**Rollback Plan**:
+- Simple revert to previous commit (no database migrations)
+- Sessions will remain valid for 24 hours after rollback
+- Users may need to log back in if cache cleared
+
+### Code Owners
+
+@backend-team
+@security-team
+```
+
+## Format de validation conventionnel
+
+La commande PR suggère un message de validation après les validations conventionnelles :
+
+```text
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Exemples
+
+**Feature**:
+```text
+feat(auth): implement JWT-based user authentication
+
+Implements user login with email and password, JWT token
+generation, and session persistence.
+
+Closes #US-0042
+```
+
+**Fix**:
+```text
+fix(auth): prevent session fixation vulnerability
+
+Use secure token generation and add CSRF protection
+to login endpoint.
+
+Closes #US-0043
+```
+
+**Docs**:
+```text
+docs(api): add authentication API documentation
+
+Documents JWT token generation, validation, and
+refresh token flow.
+
+Related to #US-0042
+```
+
+## Sections du modèle
+
+Chaque description de PR comprend :
+
+1. **Summary** - Ce qui a été construit
+2. **Linked Issues** - Histoire + dépendances
+3. **Checklist** - Statut des critères d'acceptation
+4. **Test Evidence** - Comment cela a été vérifié
+5. **Screenshots/GIFs** - Preuve visuelle (le cas échéant)
+6. **Risk Assessment** - Impacts potentiels + plan de rollback
+7. **Code Owners** - Qui devrait réviser
+
+## Quand utiliser
+
+### Après avoir terminé une histoire
+
+```bash
+# Story implemented and tested
+/agileflow:pr STORY=US-0042 TITLE="User authentication"
+
+# Copy output, paste into GitHub PR
+```
+
+### Soumettre pour examen
+
+```bash
+# All tests passing, ready for review
+/agileflow:pr STORY=US-0042 TITLE="..." TEST_EVIDENCE="42/42 tests passing"
+
+# Generate and include in PR body
+```
+
+### Plusieurs histoires dépendantes
+
+```bash
+# Story with several dependencies
+/agileflow:pr STORY=US-0044 TITLE="..."
+
+# PR will show all linked stories
+# Reviewers can see dependency chain
+```
+
+## Conseils
+
+### Générez d'abord un PR, puis soumettez-le
+
+```bash
+1. Complete implementation and testing
+2. Run /agileflow:pr to generate description
+3. Review the output
+4. Create PR on GitHub/GitLab
+5. Paste the generated description
+6. Submit PR
+```
+
+### Inclure des preuves de test complètes
+
+De meilleures preuves de tests = un examen plus rapide :
+
+```text
+TEST_EVIDENCE="
+- Unit Tests: 45/45 passing
+- Integration Tests: Login flow, session management
+- E2E: Desktop and mobile browsers
+- Coverage: 89%
+- Manual: Accessibility audit, performance check
+"
+```
+
+### Lier tous les travaux connexes
+
+PR trouvera automatiquement :
+- Histoire en cours de mise en œuvre
+- Dépendances (autres histoires)
+- Épopée associée
+- Propriétaires du code pour examen
+
+### Utiliser pour la documentation
+
+Conservez les descriptions de relations publiques comme documentation :
+- Les futurs développeurs comprennent la fonctionnalité
+- Peut faire référence dans les documents d'architecture
+- Affiche la stratégie de test
+- Documente les décisions en matière de risques
+
+## Intégration avec d'autres commandes
+
+| Command | Integration |
+|---------|-------------|
+| `/babysit` | Babysit generates PR at end of implementation |
+| `/review` | Run review before PR to catch issues |
+| `/impact` | Include impact analysis notes |
+| `/verify` | Include test results in test evidence section |
+| `/baseline` | PR marks feature ready for baseline/release |
+
+## Exemple de flux de travail
+
+```bash
+# 1. Work on story with babysit
+/agileflow:babysit
+# → Choose US-0042
+# → Implement with guidance
+# → Tests passing
+
+# 2. Verify tests before PR
+/agileflow:verify US-0042
+# → Confirms: test_status: passing
+
+# 3. Generate PR description
+/agileflow:pr STORY=US-0042 TITLE="User authentication" TEST_EVIDENCE="42/42 tests passing, E2E verified"
+# → Copy output
+
+# 4. Review code quality
+/agileflow:review
+# → Fix any issues
+
+# 5. Submit PR with generated description
+# → Paste PR output to GitHub
+# → Submit for review
+
+# 6. After merge, mark as done
+# → Update status.json: status=completed
+```
+
+## Dépannage
+
+### "Histoire introuvable"
+
+**Error**: Le fichier d'histoire n'existe pas
+
+**Fix**: Vérifiez que l'ID de l'histoire est correct :
+```bash
+/agileflow:pr STORY=US-0042 TITLE="..."
+# Check that docs/06-stories/US-0042.md exists
+```
+
+### "Problème de formatage des critères d'acceptation"
+
+**Fix**: Assurez-vous que le format AC_CHECKED correspond au nombre AC :
+```bash
+# BAD - Wrong number of items
+AC_CHECKED="✓ AC1, ✓ AC2"
+
+# GOOD - One per AC in story
+AC_CHECKED="✓ AC1, ✓ AC2, ✓ AC3, ✗ AC4"
+```
+
+### "Tester les preuves trop longtemps"
+
+**Fix**: Résumer les preuves de test :
+```bash
+# Instead of full test output, provide summary
+TEST_EVIDENCE="
+- Unit tests: 45/45 passing
+- Integration: Login flow verified
+- E2E: Chrome, Firefox tested
+- Coverage: 89%
+"
+```
+
+## Commandes associées
+
+- [`/garde d'enfants`](/commands/babysit) - Mentor de mise en œuvre (utilise pr à la fin)
+- [`/histoire`](/commands/story) - Créer des histoires avec AC qui pr références
+- [`/révision`](/commands/review) - Revue de code avant PR
+- [`/vérifier`](/commands/verify) - Exécuter des tests de preuves
+- [`/impact`](/commands/impact) - Analyser l'impact des relations publiques
+- [`/ligne de base`](/commands/baseline) - Marquer la fonctionnalité comme terminée après la fusion

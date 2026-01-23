@@ -1,0 +1,213 @@
+---
+title: /idealizar
+description: Gere ideias de melhoria categorizadas usando análise de vários especialistas
+---
+
+# /idealizar
+
+Gere ideias de melhoria implantando vários especialistas de domínio em paralelo para analisar sua base de código de diferentes perspectivas (segurança, desempenho, qualidade de código, UX, testes, API/Arquitetura).
+
+## Início rápido
+
+```bash
+/agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=report
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCOPE` | No | `all` | Which domains to analyze: `all`, `security`, `perf`, `code`, `ux` |
+| `DEPTH` | No | `quick` | Analysis depth: `quick` (3 ideas), `deep` (5 ideas) |
+| `OUTPUT` | No | `report` | Output type: `report` (ideation only), `stories` (create stories), `both` |
+
+## Exemplos
+
+### Analise todos os domínios - escopo rápido
+
+```bash
+/agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=report
+```
+
+Implanta 6 especialistas (segurança, desempenho, refatoração, interface do usuário, testes, API) para gerar 3 ideias de melhoria cada. Resultados em relatório de ideação com ideias de confiança alta/média.
+
+### Análise profunda de segurança
+
+```bash
+/agileflow:ideate SCOPE=security DEPTH=deep OUTPUT=stories
+```
+
+Foco na segurança com análise profunda (5 ideias por especialista). Cria histórias para itens de alta confiança imediatamente.
+
+### Análise de desempenho com relatórios e histórias
+
+```bash
+/agileflow:ideate SCOPE=perf DEPTH=deep OUTPUT=both
+```
+
+Analisa desempenho com especialistas (desempenho, banco de dados, API), gera relatório e cria histórias de implementação.
+
+## Mapeamento de escopo
+
+| SCOPE | Experts Deployed | Best For |
+|-------|------------------|----------|
+| `all` | Security, Performance, Refactor, UI, Testing, API | Comprehensive analysis (6 experts) |
+| `security` | Security, API, Testing | Security review (3 experts) |
+| `perf` | Performance, Database, API | Performance optimization (3 experts) |
+| `code` | Refactor, Testing, API | Code quality (3 experts) |
+| `ux` | UI, Accessibility, API | User experience (3 experts) |
+
+## Estrutura de saída
+
+### Relatório de Ideação (`output.md`)
+
+The command generates `docs/08-project/ideation-<YYYYMMDD>.md` with:
+
+1. **Summary**: Total de ideias, quebra de confiança
+2. **High-Confidence Improvements**: Ideias acordadas por mais de 2 especialistas (priorize-as)
+3. **Medium-Confidence Opportunities**: Único especialista com evidências (vale a pena explorar)
+4. **Summary by Category**: Tabela de contagens de ideias por domínio
+5. **Recommended Next Steps**: Orientação de implementação
+
+### Pontuação de confiança
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **HIGH** | 2+ experts suggest similar idea | Include prominently, recommend immediate action |
+| **MEDIUM** | 1 expert with specific evidence (file paths, metrics) | Include as opportunity |
+| **LOW** | 1 expert, vague/no evidence | Exclude from report |
+
+### Seção de relatório de amostra
+
+```markdown
+# Ideation Report
+
+**Generated**: 2025-12-30
+**Scope**: all
+**Depth**: quick
+**Total Ideas**: 15 (High: 4, Medium: 8, Low: 3)
+
+## 🎯 High-Confidence Improvements
+*Agreed by multiple experts - prioritize these*
+
+### 1. Add request rate limiting to API
+**Category**: Security | **Impact**: High | **Effort**: 1-2 days
+**Experts**: Security, API
+**Why**: Prevents DDoS attacks and brute force attempts
+**Files**: `src/api/middleware/auth.ts`, `src/api/routes/`
+
+## 💡 Medium-Confidence Opportunities
+*Single expert with evidence - worth exploring*
+
+### 5. Implement caching layer for database queries
+**Category**: Performance | **Impact**: High | **Effort**: 2-3 days
+**Expert**: Performance
+**Why**: Your homepage renders 200+ components, this would fix 2-second load time
+**Files**: `src/db/queries.ts`, `src/cache/`
+```
+
+### Histórias geradas (opcional)
+
+Quando `OUTPUT=stories` ou `OUTPUT=both`, cria histórias de implementação em `docs/06-stories/` para cada ideia de alta confiança:
+
+```markdown
+---
+story_id: US-XXXX
+type: improvement
+ideation_source: ideation-20251230.md
+estimate: 1d
+---
+
+# US-XXXX: Idea from Ideation
+
+## Background
+Identified in ideation report. Agreed by: Security, API experts.
+
+## Acceptance Criteria
+- [ ] Specific criterion 1
+- [ ] Specific criterion 2
+- [ ] Tests pass
+
+## Technical Notes
+Implementation approach from ideation analysis.
+```
+
+## Como funciona
+
+1. **Parse Arguments**: determina quais especialistas implantar e analisar a profundidade
+2. **Deploy Experts in Parallel**: Lança todos os especialistas simultaneamente
+3. **Each Expert Generates Ideas**: 3-5 ideias de melhoria específicas e acionáveis
+4. **Collect Results**: aguarda a conclusão de todos os especialistas
+5. **Synthesize**: Agrupa ideias sobrepostas, pontua confiança
+6. **Generate Output**: Cria relatório (e histórias opcionais)
+
+## Melhores Práticas
+
+### Obtenha o máximo de /ideate
+
+**Do This:**
+- Usar `SCOPE=all` trimestralmente para análise abrangente
+- Use ESCOPO específico para áreas de melhoria focadas
+- Usar `DEPTH=deep` ao investigar um domínio específico
+- Revise primeiro as ideias de ALTA confiança
+- Crie histórias para melhorias de ALTA confiança
+
+**Don't Do This:**
+- Ignore ideias de confiança MÉDIA com evidências específicas
+- Tente implementar tudo de uma vez
+- Use sem executar o git para obter o contexto do código mais recente
+- Pule a seção “por que” ao decidir implementar
+
+### Interpretando Resultados
+
+**High-Confidence Ideas** (2+ especialistas):
+- Forte sinal de oportunidade real de melhoria
+- Recomendado para ação imediata
+- Geralmente requerem 1-3 dias de esforço
+
+**Medium-Confidence Ideas** (único especialista):
+- Valioso, mas menos certo
+- Vale a pena discutir com a equipe
+- Muitas vezes, bons candidatos para o próximo sprint
+
+**Vague Ideas**:
+- Excluído automaticamente do relatório
+- Muito genérico, sem caminhos de arquivo ou métricas
+- Se estiver interessado, faça uma pesquisa focada primeiro
+
+## Comandos Relacionados
+
+- [`/épico`](/commands/epic) - Crie épico para melhorias de ideação
+- [`/ história`](/commands/story) - Criar história para melhorias específicas
+- [`/pesquisa:analisar`](/commands/research-analyze) - Aprofundamento em áreas específicas de melhoria
+- [`/babá`](/commands/babysit) - Obtenha ajuda para implementar uma melhoria
+
+## Integração
+
+### Com planejamento de sprint
+
+Após a idealização, use itens de alta confiança para preencher o sprint:
+
+```bash
+/agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=stories
+# Stories created → add to sprint planning with /agileflow:sprint
+```
+
+### Com retrospectivas
+
+Execute a idealização após retrospectivas para encontrar melhorias sistêmicas:
+
+```bash
+/agileflow:ideate SCOPE=code DEPTH=deep
+# Analyze code quality problems identified in retro
+```
+
+### Com ADRs
+
+Converta ideias arquitetônicas em ADRs:
+
+```bash
+/agileflow:ideate SCOPE=architecture OUTPUT=report
+# Review HIGH-confidence architectural improvements
+/agileflow:adr NUMBER=0045 TITLE="..." CONTEXT="From ideation"
+```

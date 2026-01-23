@@ -1,0 +1,155 @@
+---
+title: /ci-setup
+description: Fluxo de trabalho Bootstrap CI/CD com testes e verificações de qualidade
+---
+
+# /ci-setup
+
+Inicialize um fluxo de trabalho mínimo de CI/CD com testes automatizados e verificações de qualidade integradas com GitHub Actions e regras de propriedade de código.
+
+## Início rápido
+
+```bash
+/agileflow:ci-setup OWNERS=@username,@team
+```
+
+## Propósito
+
+Este comando configura uma base completa de CI/CD para seu projeto:
+- Criando um fluxo de trabalho do GitHub Actions com lint, typecheck e trabalhos de teste
+- Estabelecendo propriedade de código por meio de um arquivo CODEOWNERS
+- Configurando permissões e controles de simultaneidade
+- Providing guidance on enabling required checks
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `OWNERS` | Yes | - | GitHub usernames or team handles (comma-separated, e.g., `@alice,@team-backend`) |
+
+## Exemplos
+
+### Uso Básico
+
+```bash
+/agileflow:ci-setup OWNERS=@alice,@bob
+```
+
+Configura o CI com Alice e Bob como proprietários do código.
+
+### Vários identificadores de equipe
+
+```bash
+/agileflow:ci-setup OWNERS=@frontend-team,@devops-team,@maintainer
+```
+
+Atribui várias equipes como proprietários de código para requisitos de revisão de código.
+
+## Fluxo de trabalho
+
+O comando segue um fluxo de trabalho consistente:
+
+1. **Parse Owners Input** - Valida e normaliza identificadores do GitHub
+2. **Generate CI Workflow** - Cria `.github/workflows/ci.yml` com três empregos:
+   - **Lint Job** - Espaço reservado para ESLint, Prettier ou similar
+   - **Typecheck Job** - Espaço reservado para TypeScript, Flow, mypy ou similar
+   - **Test Job** - Espaço reservado para Jest, pytest, teste de carga ou similar
+3. **Generate CODEOWNERS** - Cria mapeamentos de propriedade:
+   - `/src/` → proprietários atribuídos
+   - `/docs/03-decisions/` → proprietários atribuídos
+4. **Show Preview** - Exibe os dois arquivos gerados para revisão
+5. **Await Confirmation** - Pergunta "Criar esses arquivos? (SIM/NÃO)"
+6. **Create Files** - Escreve fluxo de trabalho de CI e CODEOWNERS se aprovado
+7. **Display Next Steps** - Mostra como ativar as verificações necessárias no GitHub
+
+## Arquivos de saída
+
+O comando cria dois arquivos:
+
+**`.github/workflows/ci.yml`** - Fluxo de trabalho do GitHub Actions com:
+- Funciona em: eventos push e pull_request
+- Três trabalhos: lint, typecheck, test (permissões mínimas)
+- Controle de simultaneidade (cancela execuções em andamento)
+- Comandos de tarefa genéricos para customização
+
+**`CODEOWNERS`** - Configuração de propriedade do código:
+```text
+/src/ @owners
+/docs/03-decisions/ @owners
+```
+
+## Vagas de CI
+
+Cada trabalho é configurado como um espaço reservado para personalização:
+
+### Trabalho de fiapos
+- Funciona em: ubuntu-mais recente
+- Objetivo: Estilo de código e verificações de qualidade
+- Personalize com: `npm run lint`, `eslint .`, `prettier --check`, etc.
+
+### Trabalho de verificação de digitação
+- Funciona em: ubuntu-mais recente
+- Objetivo: verificação de segurança de tipo
+- Personalize com: `tsc --noEmit`, `flow check`, `mypy`, etc.
+
+### Trabalho de teste
+- Funciona em: ubuntu-mais recente
+- Objetivo: execução automatizada de testes
+- Personalize com: `npm test`, `pytest`, `cargo test`, etc.
+
+## Próximas etapas
+
+Após a conclusão da configuração, você precisa:
+
+1. **Customize Job Commands**
+   - Editar `.github/workflows/ci.yml`
+   - Substitua comandos genéricos pelos comandos reais do seu projeto
+
+2. **Enable Branch Protection**
+   - Vá para as configurações do repositório GitHub
+   - Navegue até Filiais → Regras de proteção de filiais
+   - Criar regra para `main` filial
+
+3. **Add Required Status Checks**
+   - Nas configurações de proteção de ramificação, habilite:
+     - ✓ Exigir que as verificações de status sejam aprovadas
+     - ✓ Exigir que as filiais estejam atualizadas
+     - ✓ Incluir administradores
+   - Selecione quais verificações são necessárias (lint, typecheck, test)
+
+4. **Configure Code Review**
+   - Ativar: exigir revisões de pull request
+   - Defina o número de revisores (por exemplo, 1 ou 2)
+   - Dispensar aprovações de pull request obsoletas
+   - Exigir revisões do proprietário do código (usa arquivo CODEOWNERS)
+
+5. **Optional: Merge Queue**
+   - Habilite a fila de mesclagem do GitHub para implantações mais seguras
+   - Mescla automaticamente depois que todas as verificações forem aprovadas
+
+## Personalização
+
+Os arquivos de fluxo de trabalho gerados são pontos de partida. Você deve personalizar:
+
+**In `.github/workflows/ci.yml`**:
+```yaml
+# Change these commands to match your project
+- run: npm run lint  # ESLint, Prettier, stylelint, etc.
+- run: npm run typecheck  # TypeScript, Flow, mypy, etc.
+- run: npm test  # Jest, pytest, cargo test, etc.
+```
+
+**In `CODEOWNERS`**:
+```text
+# Add more specific paths as your project grows
+/src/api/ @api-team
+/src/ui/ @frontend-team
+/docs/ @documentation-team
+*.md @maintainers
+```
+
+## Comandos Relacionados
+
+- [`/setup-deployment`](/commands/deploy) - Configurar pipelines de implantação
+- [`/setup-testes`](/commands/tests) - Configurar infraestrutura de testes
+- [`/agileflow:status`](/commands/status) - Verifique o status do IC

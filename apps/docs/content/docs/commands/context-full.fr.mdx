@@ -1,0 +1,201 @@
+---
+title: /agileflow:contexte:complet
+description: Générez ou actualisez le résumé complet du contexte du projet pour les outils d'IA Web.
+---
+
+# /agileflow:contexte:complet
+
+Générez ou actualisez la synthèse contextuelle complète pour les outils d'IA Web.
+
+## Démarrage rapide
+
+```bash
+/agileflow:context:full
+```
+
+## But
+
+Crée ou met à jour `docs/context.md` avec des sections gérées contenant :
+
+- Ce que nous construisons et nos priorités actuelles
+- Carte des fonctionnalités et résumé des technologies/outils
+- Décisions clés (ADR) et instantané de l'architecture
+- Tests et statut CI
+- Progression récente (10 derniers messages de bus)
+- Risques et prochaines étapes
+
+Ce fichier est conçu pour être collé dans ChatGPT, Perplexity, Gemini ou Claude Web afin de donner aux outils d'IA externes le contexte complet du projet.
+
+## Comment ça marche
+
+### Étape 1 : Rassembler les sources
+
+La commande lit les informations de plusieurs fichiers de projet :
+
+| Source | Purpose |
+|--------|---------|
+| `docs/09-agents/status.json` | Current story/epic status |
+| `docs/09-agents/bus/log.jsonl` | Last 10 progress messages |
+| `docs/05-epics/*.md` | Epic details |
+| `docs/06-stories/*/*.md` | Story details |
+| `docs/03-decisions/*.md` | Architecture Decision Records |
+| `docs/02-practices/*.md` | Development practices |
+| `docs/04-architecture/*.md` | System architecture |
+| `package.json` | Project manifest and dependencies |
+| `.github/workflows/*.yml` | CI configuration |
+| `CHANGELOG.md` | Recent changes |
+
+### Étape 2 : générer des sections gérées
+
+La commande crée ou met à jour ces sections :
+
+```markdown
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+[Project description from package.json or README]
+
+## Current Focus
+[Active epics/stories from status.json]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+[One line per epic]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: tech -->
+## Tech Stack
+- Framework: [from package.json]
+- Key dependencies: [list major deps]
+- Testing: [from scripts or CI]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: decisions -->
+## Key Decisions (ADRs)
+[List of ADRs with titles and status]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: progress -->
+## Recent Progress
+[Last 10 entries from bus/log.jsonl]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: next -->
+## Next Steps
+[Stories in READY status]
+<!-- END_MANAGED -->
+```
+
+### Étape 3 : Première confirmation du différentiel
+
+Avant d'écrire les modifications, la commande affiche une différence et demande une confirmation :
+
+```diff
+- [old content]
++ [new content]
+```
+
+Les modifications ne sont appliquées qu’après confirmation de votre part.
+
+## Limites des sections
+
+Pour que le contexte reste bref et lisible :
+
+| Section | Max Lines |
+|---------|-----------|
+| overview | 10 |
+| features | 20 |
+| tech | 15 |
+| decisions | 15 |
+| progress | 30 |
+| next | 20 |
+
+## Contenu géré ou contenu utilisateur
+
+La commande fait la distinction entre :
+
+**Managed sections** (entre les marqueurs):
+```markdown
+<!-- MANAGED_SECTION: overview -->
+[Content here - OK to update]
+<!-- END_MANAGED -->
+```
+
+**User-written sections** (pas de marqueurs) :
+```markdown
+## My Custom Section
+[Content here - NEVER touched]
+```
+
+Le contenu utilisateur en dehors des marqueurs gérés est toujours préservé.
+
+## Fichiers manquants
+
+Si les fichiers sources n'existent pas, la commande s'adapte gracieusement :
+
+| Missing File | Action |
+|--------------|--------|
+| `docs/context.md` | Create new file with all sections |
+| `status.json` | Skip features/next sections, use placeholders |
+| `bus/log.jsonl` | Skip progress section |
+| ADR files | Skip decisions section |
+| CI config | Skip CI details from tech section |
+
+## Exemple de sortie
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents...
+
+## Current Focus
+
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+<!-- END_MANAGED -->
+
+[...additional sections...]
+```
+
+## Quand utiliser
+
+- **After major milestones** - Capturer le travail terminé
+- **Before web AI sessions** - S'assurer que le contexte est actuel
+- **After architecture changes** - Enregistrer les nouvelles décisions
+- **During sprint planning** - Mettre à jour les domaines d'intervention
+
+## Flux de travail
+
+```bash
+# 1. Generate or refresh context
+/agileflow:context:full
+
+# 2. Export for web AI (read-only)
+/agileflow:context:export
+
+# 3. Copy and paste into ChatGPT/Perplexity/Gemini
+```
+
+## Commandes associées
+
+- [`/agileflow:contexte`](/commands/context) - Présentation des commandes contextuelles
+- [`/agileflow:contexte:export`](/commands/context-export) - Exporter un extrait concis
+- [`/agileflow:contexte:note`](/commands/context-note) - Ajouter une note horodatée
+- [`/agileflow:research:demander`](/commands/research-ask) - Générer une invite de recherche

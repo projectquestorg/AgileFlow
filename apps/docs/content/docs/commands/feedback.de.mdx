@@ -1,0 +1,243 @@
+---
+title: /Rückmeldung
+description: Sammeln und verarbeiten Sie Agenten-Feedback
+---
+
+# /Rückmeldung
+
+Sammeln Sie Feedback von Agenten und Menschen zu Storys, Epics und Sprints für eine kontinuierliche Prozessverbesserung.
+
+## Schnellstart
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCOPE` | No | story | Feedback scope: story, epic, or sprint |
+| `STORY` | Conditionally | - | Story ID (required if SCOPE=story) |
+| `EPIC` | Conditionally | - | Epic ID (required if SCOPE=epic) |
+| `ANONYMOUS` | No | no | Allow anonymous feedback (yes/no) |
+
+## Beispiele
+
+### Feedback zum Abschluss der Story
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0042
+```
+
+Nachdem Sie eine Geschichte als erledigt markiert haben, sammeln Sie Folgendes:
+- AC-Klarheitsbewertung (1–5)
+- Bewertung der Abhängigkeitsauflösung (1–5)
+- Schätzgenauigkeitsbewertung (1-5)
+- Bewertung der reibungslosen Implementierung (1–5)
+- Was gut gelaufen ist
+- Was könnte verbessert werden
+
+### Episches retrospektives Feedback
+
+```bash
+/agileflow:feedback SCOPE=epic EPIC=EP-0010
+```
+
+After epic completion, gather:
+- Erfolgskennzahlen im Vergleich zu epischen Zielen
+- Was bei der Ausführung gut gelaufen ist
+- Was nicht gut gelaufen ist
+- Überraschungen und Erkenntnisse
+- Aktionen für das nächste Epos
+
+### Retrospektives Sprint-Feedback
+
+```bash
+/agileflow:feedback SCOPE=sprint
+```
+
+Sammeln Sie am Ende des Sprints Team-Feedback:
+- Weitermachen (weitermachen)
+- Stopp (nicht mehr sinnvoll)
+- Start (neue Praxen)
+- Experimente zum Ausprobieren
+- Blocker haben diesen Sprint entfernt
+
+### Anonymes Feedback
+
+```bash
+/agileflow:feedback SCOPE=story STORY=US-0045 ANONYMOUS=yes
+```
+
+Sammelt Feedback ohne Quellenangabe zu sensiblen Themen.
+
+## Ausgabe
+
+### Feedback-Dateien
+
+Speichert Feedback an:
+```text
+docs/08-project/feedback/<YYYYMMDD>-<story-or-epic-id>.md
+```
+
+### Beispiel-Story-Feedback
+
+```markdown
+## Story Feedback: US-0042
+
+**Completed by**: AG-API
+**Date**: 2025-12-22
+
+### Ratings (1-5)
+- AC clarity: 5 (crystal clear)
+- Dependencies resolved: 4 (one minor blocker)
+- Estimate accuracy: 5 (spot on)
+- Implementation smoothness: 4 (smooth)
+
+### What Went Well
+- Clear acceptance criteria with examples
+- All tests passed on first run
+- Good documentation
+
+### What Could Be Improved
+- Database schema migration took longer than expected
+
+### Blockers Encountered
+- None significant
+
+### Learnings/Insights
+- JSON schema validation saved hours of debugging
+```
+
+## Feedback-Typen
+
+### 1. Feedback zum Abschluss der Geschichte
+
+Bewertungen für:
+- **AC Clarity** - Waren die Akzeptanzkriterien klar? (1-5)
+- **Dependencies** - Wurden Blocker behoben? (1-5)
+- **Estimate Accuracy** - War die Schätzung korrekt? (1-5)
+- **Implementation** - Wie reibungslos verlief der Prozess? (1-5)
+- **Testing** - Waren die Tests ausreichend? (1-5)
+- **Documentation** - War die Dokumentation ausreichend? (1-5)
+
+Plus unbefristet:
+- Was ist gut gelaufen? (2-3 Kugeln)
+- Was könnte verbessert werden? (2-3 Kugeln)
+- Blocker angetroffen?
+- Erkenntnisse/Einsichten?
+
+### 2. Feedback zur Agentenleistung
+
+Verfolgt die Wirksamkeit:
+- Geschichten abgeschlossen
+- Geschichten blockiert
+- Durchschnittliche Fertigstellungszeit
+- Stärken beobachtet
+- Bereiche mit Verbesserungspotenzial
+- Empfehlungen
+
+### 3. Epische Retrospektive
+
+Nach epischem Abschluss:
+- Erfolgskennzahlen vs. Ziele
+- Was ist gut gelaufen?
+- Was ist nicht gut gelaufen?
+- Überraschungen und Erkenntnisse
+- Aktionen für das nächste Epos
+
+### 4. Sprint-Retrospektive
+
+Am Ende des Sprints:
+- Weitermachen (weitermachen)
+- Stopp (nicht mehr sinnvoll)
+- Start (neue Praxen)
+- Experimente zum Ausprobieren
+- Blocker entfernt
+- Wiederkehrende Probleme
+
+## Verfolgte Metriken
+
+Das Feedbacksystem verfolgt:
+
+| Metric | Target | Purpose |
+|--------|--------|---------|
+| Story clarity score | >4.0 | AC quality |
+| Estimate accuracy | within 50% | Planning improvement |
+| Blocker frequency | under 20% of stories | Dependency management |
+| Test coverage average | >85% | Code quality |
+| Completion velocity | Trending up | Team throughput |
+
+## Analysen und Erkenntnisse
+
+### Mustererkennung
+
+Erkennt Muster automatisch:
+- **Unclear AC** - Geschichten mit Klarheitsbewertungen unter 3 → Vorlage verbessern
+- **Poor estimates** - Große Varianz → Schätzungsleitfaden überarbeiten
+- **Frequent blockers** - Geschichten werden oft blockiert → Abhängigkeitsverfolgung verbessern
+- **Low test coverage** - Tests unzureichend → Standards früher durchsetzen
+
+### Umsetzbare Verbesserungen
+
+Automatisch generiert:
+- **Improvement stories** für wiederkehrende Probleme
+- **Process recommendations** für erkannte Probleme
+- **Recognition** für Siege und Leistungsträger
+- **ADRs** für Architekturunterricht
+
+### Retrospektive Berichte
+
+Erzeugt umfassende Zusammenfassungen:
+- Gesamtstimmung (verbessernd/rückläufig/stabil)
+- Top-Siege mit Jubel
+- Top-Herausforderungen
+- Empfohlene Maßnahmen
+- Einblicke und Erkenntnisse des Teams
+
+## Arbeitsablauf
+
+1. Automatische Eingabeaufforderung an Triggerpunkten:
+   - Der Story-Status ändert sich zu „erledigt“
+   - Epic erreicht 100 % Abschluss
+   - Sprint-Enddatum erreicht
+2. Präsentieren Sie das Feedback-Formular mit vorab ausgefülltem Kontext
+3. Fragen Sie: „Jetzt Feedback geben? (JA/NEIN/SPÄTER)“
+4. Wenn JA: Sammeln Sie interaktiv Bewertungen und Kommentare
+5. Im Feedback-Verzeichnis speichern
+6. Analysieren Sie Muster im gesamten Feedback
+7. Schlagen Sie Verbesserungsgeschichten für Probleme vor
+
+## Verwenden Sie Wann
+
+- **Story completion** - Unmittelbar nach erfolgter Markierung
+- **Epic retrospective** - Nach epischem Abschluss
+- **Sprint end** - Sammeln Sie Team-Learnings
+- **Process improvement** - Monatliche Überprüfung der Feedbackmuster
+- **Performance review** - Vierteljährliche Agentenbewertungen
+- **Team retrospectives** - Formelle Sprintzeremonien
+
+## Automatische Auslöser
+
+Feedback-Eingabeaufforderungen werden angezeigt:
+- Wenn sich der Story-Status auf „abgeschlossen“ ändert
+- Wenn das Epos zu 100 % abgeschlossen ist
+- Zu konfigurierten Sprint-Enddaten
+- Kann jederzeit manuell angefordert werden
+
+## Integration
+
+Feedback fließt ein in:
+- **Retrospectives** – Einblicke in Sprint-Retros enthalten
+- **Metrics** - Bewertungen im Laufe der Zeit verfolgt
+- **Story creation** - Verbesserungsgeschichten automatisch generieren
+- **ADRs** - Dokumentieren Sie Erkenntnisse als Architekturentscheidungen
+- **Agent profiles** - Leistungsdaten aktualisieren Dienstpläne
+
+## Verwandte Befehle
+
+- [`/retro`](/commands/retro) - Sprint-Retrospektivanalyse
+- [`/metrics`](/commands/metrics) - Projektkennzahlen und -trends
+- [`/update`](/commands/update) - Fortschrittsberichte der Stakeholder
+- [`/status`](/commands/status) - Aktuelle Story und Teamstatus

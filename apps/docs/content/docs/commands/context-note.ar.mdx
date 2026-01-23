@@ -1,0 +1,196 @@
+---
+title: / Agileflow:context:note
+description: أضف ملاحظة ذات طابع زمني إلى ملف سياق المشروع الخاص بك
+---
+
+# / Agileflow:context:note
+
+قم بإلحاق ملاحظة ذات طابع زمني بملف سياق المشروع.
+
+## بداية سريعة
+
+```bash
+/agileflow:context:note NOTE="Your note here"
+```
+
+## غاية
+
+إضافة ملاحظة بسرعة إلى `docs/context.md` ضمن قسم "الملاحظات". مفيد للتسجيل:
+
+- القرارات والمبرر
+- الملاحظات أثناء التطوير
+- تذكير بالدورات القادمة
+- اتصالات الفريق
+- الاكتشافات التقنية
+
+## حدود
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| NOTE | Yes | 1-5 line note text to append |
+
+## مثال الاستخدام
+
+```bash
+# Record a decision
+/agileflow:context:note NOTE="Decided to use JWT instead of sessions"
+
+# Document an issue
+/agileflow:context:note NOTE="User reported auth bug in production, investigating"
+
+# Sprint planning note
+/agileflow:context:note NOTE="Sprint planning: focusing on US-0042 and US-0045 this week"
+
+# Technical discovery
+/agileflow:context:note NOTE="Performance issue fixed: reduced API response time by 40%"
+
+# Stakeholder feedback
+/agileflow:context:note NOTE="Stakeholder meeting: new feature request added to backlog"
+```
+
+## تنسيق الملاحظة
+
+يتم إلحاق الملاحظات بالطوابع الزمنية ISO 8601:
+
+```markdown
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Decided to use JWT instead of sessions
+- **[2024-12-31T15:45:00Z]**: User reported auth bug in production
+- **[2025-01-01T09:00:00Z]**: Sprint planning: focusing on US-0042 this week
+```
+
+## سير العمل
+
+### الخطوة 1: تقديم نص الملاحظة
+
+إذا كانت الوسيطة NOT مفقودة، فستتم مطالبتك بما يلي:
+
+```
+What note would you like to add to docs/context.md?
+```
+
+### الخطوة 2: تأكيد الفرق الأول
+
+قبل الكتابة، يوضح الأمر ما الذي سيتغير:
+
+```diff
+## Notes
+
+- **[2024-12-31T10:30:00Z]**: Old note here
++ - **[2025-01-07T14:22:00Z]**: New note being added
+```
+
+### الخطوة 3: التأكيد
+
+يجب عليك الموافقة على التغيير قبل تطبيقه.
+
+## الإنشاء التلقائي
+
+### إذا كان docs/context.md غير موجود
+
+يقوم الأمر بإنشائه باستخدام قسم الملاحظات:
+
+```markdown
+# Project Context
+
+<!-- MANAGED_SECTION: placeholder -->
+Run /agileflow:context:full to populate project context.
+<!-- END_MANAGED -->
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+### إذا كان قسم الملاحظات غير موجود
+
+The command adds it at the end of the file:
+
+```markdown
+[existing content...]
+
+## Notes
+
+- **[2025-01-07T14:22:00Z]**: Your note here
+```
+
+## تنسيق الطابع الزمني
+
+تستخدم جميع الطوابع الزمنية تنسيق ISO 8601 (UTC):
+
+```
+YYYY-MM-DDTHH:MM:SSZ
+```
+
+أمثلة:
+- `2024-12-31T10:30:00Z` - صحيح
+- `2025-01-07T15:45:30Z` - صحيح
+
+وهذا يضمن:
+- فرز متسق
+- مرجع زمني عالمي
+- تنسيق قابل للقراءة آليًا
+- ترتيب زمني سهل
+
+## الترتيب الزمني
+
+تظهر الملاحظات بترتيب إضافتها:
+
+- **Oldest** ملاحظات في الأعلى
+- **Newest** ملاحظات في الأسفل
+
+يوفر هذا تاريخًا زمنيًا للقرارات والاكتشافات.
+
+## أمثلة ملاحظة جيدة
+
+```bash
+# Technical decisions
+/agileflow:context:note NOTE="Switched from REST to GraphQL for complex queries"
+
+# Bug tracking
+/agileflow:context:note NOTE="Fixed race condition in user auth - PR #245"
+
+# Team coordination
+/agileflow:context:note NOTE="API team ready for integration - contact @john"
+
+# Environment changes
+/agileflow:context:note NOTE="Upgraded Node.js to v20 in CI - all tests passing"
+
+# External dependencies
+/agileflow:context:note NOTE="Stripe API v2 deprecation - migrate by March 2025"
+```
+
+## متى تستخدم
+
+- **After making decisions** - توثيق الاستدلال
+- **When encountering issues** - تتبع المشاكل والحلول
+- **During planning** - سجل أهداف العدو ومجالات التركيز
+- **After deployments** - ملاحظة إصدارات الإصدار
+- **When blocked** - حاصرات الوثيقة للسياق
+
+## ملاحظة مقابل ADR
+
+| Use Note for | Use ADR for |
+|--------------|-------------|
+| Quick observations | Major architecture decisions |
+| Temporary reminders | Long-term technical choices |
+| Day-to-day tracking | Decisions needing justification |
+| Team communications | Choices with alternatives considered |
+
+بالنسبة للقرارات الفنية الهامة، استخدم [`/ Agileflow:adr`](/commands/adr) بدلاً من.
+
+## عرض الملاحظات
+
+تكون الملاحظات مرئية عندما:
+
+1. منظر `docs/context.md` مباشرة
+2. يجري `/agileflow:context:export` (إذا سمحت المساحة)
+3. يجري `/agileflow:context:full` لتحديث السياق
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: السياق`](/commands/context) - نظرة عامة على أوامر السياق
+- [`/ Agileflow:context:full`](/commands/context-full) - توليد السياق الكامل
+- [`/ Agileflow:context:export`](/commands/context-export) - تصدير مقتطفات موجزة
+- [`/ Agileflow:adr`](/commands/adr) - إنشاء سجلات قرار الهندسة المعمارية

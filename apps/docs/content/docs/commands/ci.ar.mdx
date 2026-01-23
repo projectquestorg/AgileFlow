@@ -1,0 +1,155 @@
+---
+title: /ci-setup
+description: سير عمل Bootstrap CI/CD مع الاختبار وفحوصات الجودة
+---
+
+# /ci-setup
+
+قم بتشغيل الحد الأدنى من سير عمل CI/CD مع الاختبار الآلي وفحوصات الجودة المدمجة مع إجراءات GitHub وقواعد ملكية التعليمات البرمجية.
+
+## بداية سريعة
+
+```bash
+/agileflow:ci-setup OWNERS=@username,@team
+```
+
+## غاية
+
+يقوم هذا الأمر بإعداد أساس CI/CD كامل لمشروعك من خلال:
+- إنشاء سير عمل GitHub Actions باستخدام مهام الوبر والتحقق من الكتابة والاختبار
+- إنشاء ملكية الكود من خلال ملف CODEOWNERS
+- تكوين الأذونات وضوابط التزامن
+- تقديم التوجيه بشأن تمكين الفحوصات المطلوبة
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `OWNERS` | Yes | - | GitHub usernames or team handles (comma-separated, e.g., `@alice,@team-backend`) |
+
+## أمثلة
+
+### الاستخدام الأساسي
+
+```bash
+/agileflow:ci-setup OWNERS=@alice,@bob
+```
+
+يقوم بإعداد CI مع Alice وBob كأصحاب التعليمات البرمجية.
+
+### مقابض فريق متعددة
+
+```bash
+/agileflow:ci-setup OWNERS=@frontend-team,@devops-team,@maintainer
+```
+
+يقوم بتعيين فرق متعددة كمالكين للتعليمات البرمجية لمتطلبات مراجعة التعليمات البرمجية.
+
+## سير العمل
+
+يتبع الأمر سير عمل متسق:
+
+1. **Parse Owners Input** - التحقق من صحة مقابض GitHub وتطبيعها
+2. **Generate CI Workflow** - يخلق `.github/workflows/ci.yml` مع ثلاث وظائف:
+   - **Lint Job** - عنصر نائب لـ ESLint أو Prettier أو ما شابه
+   - **Typecheck Job** - عنصر نائب لـ TypeScript، أو Flow، أو mypy، أو ما شابه ذلك
+   - **Test Job** - عنصر نائب لـ Jest أو pytest أو اختبار البضائع أو ما شابه ذلك
+3. **Generate CODEOWNERS** - إنشاء تعيينات الملكية:
+   - `/src/` → المالكين المعينين
+   - `/docs/03-decisions/` → المالكين المعينين
+4. **Show Preview** - يعرض كلا الملفات التي تم إنشاؤها للمراجعة
+5. **Await Confirmation** - السؤال "هل تريد إنشاء هذه الملفات؟ (نعم/لا)"
+6. **Create Files** - يكتب سير عمل CI و CODEOWNERS إذا تمت الموافقة عليه
+7. **Display Next Steps** - يوضح كيفية تمكين الاختبارات المطلوبة في جيثب
+
+## ملفات الإخراج
+
+يقوم الأمر بإنشاء ملفين:
+
+**`.github/workflows/ci.yml`** - سير عمل إجراءات GitHub مع:
+- يعمل على: أحداث الدفع والسحب
+- ثلاث وظائف: الوبر، فحص الكتابة، الاختبار (الحد الأدنى من الأذونات)
+- التحكم في التزامن (إلغاء عمليات التشغيل الجارية)
+- أوامر مهمة عامة للتخصيص
+
+**`CODEOWNERS`** - تكوين ملكية الكود:
+```text
+/src/ @owners
+/docs/03-decisions/ @owners
+```
+
+## وظائف سي آي
+
+يتم تكوين كل مهمة كعنصر نائب للتخصيص:
+
+### وظيفة لينت
+- يعمل على: أوبونتو الأحدث
+- الغرض: نمط الكود وفحص الجودة
+- تخصيص مع: `npm run lint`, `eslint .`, `prettier --check`، إلخ.
+
+### وظيفة فحص الكتابة
+- يعمل على: أوبونتو الأحدث
+- الغرض: اكتب التحقق من السلامة
+- تخصيص مع: `tsc --noEmit`, `flow check`, `mypy`، إلخ.
+
+### وظيفة الاختبار
+- يعمل على: أوبونتو الأحدث
+- الغرض: تنفيذ الاختبار الآلي
+- تخصيص مع: `npm test`, `pytest`, `cargo test`، إلخ.
+
+## الخطوات التالية
+
+بعد اكتمال الإعداد، تحتاج إلى:
+
+1. **Customize Job Commands**
+   - يحرر `.github/workflows/ci.yml`
+   - استبدل الأوامر العامة بالأوامر الفعلية لمشروعك
+
+2. **Enable Branch Protection**
+   - انتقل إلى إعدادات مستودع GitHub
+   - انتقل إلى الفروع → قواعد حماية الفروع
+   - إنشاء قاعدة ل `main` فرع
+
+3. **Add Required Status Checks**
+   - في إعدادات حماية الفرع، قم بتمكين:
+     - ✓ تتطلب الشيكات الحالة لتمرير
+     - ✓ اشتراط أن تكون الفروع محدثة
+     - ✓ تضمين المسؤولين
+   - حدد الفحوصات المطلوبة (الوبر، فحص الكتابة، الاختبار)
+
+4. **Configure Code Review**
+   - تمكين: يتطلب مراجعات طلب السحب
+   - تحديد عدد المراجعين (على سبيل المثال، 1 أو 2)
+   - رفض موافقات طلب السحب التي لا معنى لها
+   - يتطلب مراجعات مالك الكود (يستخدم ملف CODEOWNERS)
+
+5. **Optional: Merge Queue**
+   - تمكين قائمة انتظار دمج GitHub لعمليات نشر أكثر أمانًا
+   - يدمج تلقائيا بعد اجتياز كافة الشيكات
+
+## التخصيص
+
+ملفات سير العمل التي تم إنشاؤها هي نقاط البداية. يجب عليك تخصيص:
+
+**In `.github/workflows/ci.yml`**:
+```yaml
+# Change these commands to match your project
+- run: npm run lint  # ESLint, Prettier, stylelint, etc.
+- run: npm run typecheck  # TypeScript, Flow, mypy, etc.
+- run: npm test  # Jest, pytest, cargo test, etc.
+```
+
+**In `CODEOWNERS`**:
+```text
+# Add more specific paths as your project grows
+/src/api/ @api-team
+/src/ui/ @frontend-team
+/docs/ @documentation-team
+*.md @maintainers
+```
+
+## الأوامر ذات الصلة
+
+- [`/الإعداد للنشر`](/commands/deploy) - تكوين خطوط أنابيب النشر
+- [`/اختبارات الإعداد`](/commands/tests) - إعداد البنية التحتية للاختبار
+- [`/ Agileflow: الحالة`](/commands/status) - التحقق من حالة CI

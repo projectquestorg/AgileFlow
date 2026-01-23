@@ -1,0 +1,381 @@
+---
+title: /Auto
+description: Generieren Sie automatisch Storys aus PRDs, Modellen oder Spezifikationen
+---
+
+# /Auto
+
+Generieren Sie automatisch User Stories aus Produktartefakten wie PRDs, Modellen, API-Spezifikationen oder Designdokumenten. Spart Zeit beim Aufschlüsseln von Anforderungen in umsetzbare Geschichten.
+
+## Schnellstart
+
+```bash
+/agileflow:auto SOURCE=<file-or-url> [EPIC=<EP-ID>] [AUTO_CREATE=no]
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SOURCE` | Yes | - | Path to file or URL (PRD, mockup, API spec, flow diagram) |
+| `EPIC` | No | Auto-generated | Associate stories with existing epic (e.g., `EP-0010`) |
+| `OWNER` | No | Auto-detected | Default owner for generated stories (e.g., `AG-API`) |
+| `AUTO_CREATE` | No | `no` | `yes` to create immediately, `no` for preview first |
+
+## Beispiele
+
+### Vorschau der Geschichten von PRD
+
+```bash
+/agileflow:auto SOURCE=docs/requirements/auth-prd.md
+```
+
+Liest das Dokument mit den Authentifizierungsanforderungen und generiert eine Story-Vorschau, ohne Dateien zu erstellen.
+
+### Aus API-Spezifikation generieren
+
+```bash
+/agileflow:auto SOURCE=docs/api/openapi.json OWNER=AG-API
+```
+
+Extrahiert Endpunkte aus der OpenAPI/Swagger-Spezifikation und generiert eine Story pro Endpunkt.
+
+### Aus Figma-Mockup generieren
+
+```bash
+/agileflow:auto SOURCE=https://figma.com/file/abc123 AUTO_CREATE=no
+```
+
+OCR ist das Mockup-Design zur Identifizierung von Bildschirmen, Formularen und Interaktionen und generiert dann UI-Storys.
+
+### Sofort generieren und erstellen
+
+```bash
+/agileflow:auto SOURCE=docs/requirements/payment-prd.md EPIC=EP-0011 AUTO_CREATE=yes
+```
+
+Erstellt Storys und erstellt alle Dateien sofort (Vorschauschritt überspringen).
+
+## Unterstützte Quelltypen
+
+### Produktanforderungsdokument (PRD)
+
+**Formats**: `.md`, `.docx`, `.pdf`, `.txt`
+
+**Extracts**:
+- Feature descriptions
+- Benutzerpersönlichkeiten und Anwendungsfälle
+- Erfolgskriterien und -metriken
+- Randfälle und Fehlerszenarien
+- Nichtfunktionale Anforderungen
+
+**Example**:
+```markdown
+# User Authentication Feature
+
+Users should be able to:
+- Register with email and password
+- Reset forgotten password via email
+- Login with OAuth (Google, GitHub)
+- Manage account settings
+
+Requirements:
+- Email verification required
+- Password minimum 8 characters
+- Session expires after 24 hours
+```
+
+**Generated Stories**: 4-6 Geschichten zu Registrierung, Anmeldung, Passwortzurücksetzung, OAuth und Sitzungsverwaltung.
+
+### API-Dokumentation
+
+**Formats**: OpenAPI/Swagger JSON, API-Dokumente `.md`
+
+**Extracts**:
+- Endpunkte (HTTP-Methode + Pfad)
+- Anfrage-/Antwortschemata
+- Authentifizierungsanforderungen
+- Fehlercodes und Randfälle
+- Ratenbegrenzung und Quoten
+
+**Example OpenAPI**:
+```yaml
+paths:
+  /api/users:
+    post:
+      summary: Create user
+      requestBody:
+        schema:
+          properties:
+            name: string
+            email: string
+```
+
+**Generated Stories**: Eine pro Endpunkt mit Akzeptanzkriterien aus dem Schema.
+
+### UI-Modelle und -Designs
+
+**Formats**: Figma-URL, `.png`/`.jpg` (mit OCR), Designspez `.md`
+
+**Extracts**:
+- Bildschirmlayouts und Komponenten
+- Benutzerinteraktionen und -flüsse
+- Form fields and validation
+- Navigation und Links
+- Nutzung des Designsystems
+
+**Example**: Screenshot des Anmeldeformulars generiert Storys für Formularkomponente, Validierung, Fehlermeldungen und Link zum Zurücksetzen des Passworts.
+
+### Benutzerflussdiagramme
+
+**Formats**: Meerjungfrau `.mmd`, PlantUML, Flussdiagramme (`.png` mit OCR)
+
+**Extracts**:
+- Schritte in der Benutzerreise
+- Entscheidungspunkte und Zweige
+- Alternative Wege
+- Erfolgs- und Misserfolgsszenarien
+
+**Example**: Das Authentifizierungsflussdiagramm generiert Geschichten für jeden Schritt.
+
+## Prozess der Story-Generierung
+
+### Schritt 1: Quelle analysieren
+- Identifizieren Sie den Dokumenttyp
+- Extrahieren Sie Anforderungen und Funktionen
+- Gruppenbezogene Anforderungen
+- Technische Spezifikationen analysieren
+
+### Schritt 2: Gruppenfunktionen
+- Verwandte Anforderungen werden zu einer Geschichte
+- Vermeiden Sie die Duplizierung von Geschichten
+- Stellen Sie sicher, dass Geschichten unabhängig sind
+- Überprüfen Sie die INVEST-Kriterien
+
+### Schritt 3: Geschichten generieren
+- Erstellen Sie einen Titel aus der Funktionsbeschreibung
+- Schreiben Sie Akzeptanzkriterien im Format „Gegeben/Wann/Dann“.
+- Aufwand abschätzen (0,5d, 1d, 1,5d, 2d)
+- Weisen Sie den entsprechenden Eigentümer zu
+- Identifizieren Sie Abhängigkeiten
+
+### Schritt 4: Vorschau anzeigen
+- Alle generierten Storys anzeigen
+- Schätzungen und Eigentümer anzeigen
+- Zeigen Sie die Anzahl der Storys und den Gesamtaufwand an
+- Bitten Sie vor der Erstellung um Genehmigung
+
+### Schritt 5: Dateien erstellen (falls genehmigt)
+- Epos erstellen (falls nicht angegeben)
+- Erstellen Sie Story-Dateien mit Vorlagen
+- Erstellen Sie Test-Stubs
+- Status.json aktualisieren
+- An bus/log.jsonl anhängen
+
+## Regeln für die Story-Generierung (INVEST)
+
+Generierte Geschichten folgen den INVEST-Kriterien:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Independent** | Can be completed without other stories |
+| **Negotiable** | Details can be adjusted after creation |
+| **Valuable** | Delivers user-facing or team value |
+| **Estimable** | Can be sized (0.5d-2d) |
+| **Small** | Completable in one sprint |
+| **Testable** | Has clear acceptance criteria |
+
+Geschichten >2d werden in kleinere unterteilt.
+
+## Schätzungsrichtlinien
+
+| Estimate | When to Use |
+|----------|------------|
+| `0.5d` | Simple CRUD, form field, basic component |
+| `1d` | Standard feature, moderate complexity |
+| `1.5d` | Complex logic, multiple validations, integration |
+| `2d` | Significant refactor or major component |
+| `>2d` | Story will be broken into smaller ones |
+
+## Beispiel: PRD zu Stories
+
+### Geben Sie PRD ein
+
+```markdown
+# User Authentication Feature
+
+## Overview
+Allow users to register, log in, and manage accounts.
+
+## Requirements
+- Users register with email and password
+- Email verification required
+- Password reset via email
+- Login with OAuth (Google, GitHub)
+- Session management and expiry
+```
+
+### Vorschau der generierten Geschichten
+
+```text
+Story Generation Preview
+
+Source: docs/requirements/auth-prd.md
+Epic: EP-0010 (User Authentication) - CREATED
+Stories: 5
+
+1. US-0050: User registration (1.5d, AG-API)
+   "Users can register with email and password"
+
+2. US-0051: Email verification (1d, AG-API)
+   "Verify email before allowing login"
+
+3. US-0052: Password reset flow (1d, AG-API)
+   "Users can reset forgotten password"
+
+4. US-0053: OAuth login - Google (1.5d, AG-API)
+   "Users can log in with Google account"
+
+5. US-0054: OAuth login - GitHub (1.5d, AG-API)
+   "Users can log in with GitHub account"
+
+Total Estimate: 6.5 days
+Recommended Owner: AG-API
+
+Create these stories? (YES/NO)
+```
+
+## Generierung von Akzeptanzkriterien
+
+Geschichten werden im Format „Gegeben/Wann/Dann“ generiert:
+
+```markdown
+## Acceptance Criteria
+
+- Given a user on registration page
+  When they enter valid email and 8+ character password
+  Then account is created and verification email sent
+
+- Given invalid password (< 8 characters)
+  When they try to submit
+  Then form shows "Password must be at least 8 characters"
+
+- Given user opens verification email
+  When they click verification link
+  Then email is marked verified and login works
+```
+
+## Ausgabedateien
+
+Der Befehl erstellt:
+
+1. **Epic file** (`docs/05-epics/EP-XXXX.md`)
+   - Epischer Titel und Ziel
+   - Referenz zum Quelldokument
+   - Liste mit Kindergeschichten
+
+2. **Story files** (`docs/06-stories/EP-XXXX/US-XXXX.md`)
+   - Generierter Inhalt aus der Quelle
+   - Akzeptanzkriterien
+   - Technische Hinweise
+   - Teststrategie
+
+3. **Test stubs** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - Teststruktur auf AC ausgerichtet
+   - Platzhalter für die Testdurchführung
+
+4. **Status tracking** (`docs/09-agents/status.json`)
+   - Alle hinzugefügten Geschichten mit Status: `ready`
+
+5. **Communication** (`docs/09-agents/bus/log.jsonl`)
+   - Ereignis zur Story-Generierung protokolliert
+
+## Arbeitsablauf
+
+1. **Prepare source document** - Stellen Sie sicher, dass PRD/Spezifikation vollständig ist
+2. **Generate preview** - Laufen `/auto` mit `AUTO_CREATE=no`
+3. **Review generated stories** - Überprüfen Sie die Richtigkeit und Vollständigkeit
+4. **Adjust if needed** - Vorschau bearbeiten oder mit anderen Parametern neu generieren
+5. **Create stories** - Lauf mit `AUTO_CREATE=yes` oder Vorschau genehmigen
+6. **Validate stories** - Verwenden `/story-validate` auf generierte Geschichten
+7. **Plan sprint** - Fügen Sie validierte Geschichten hinzu `/sprint`
+
+## Häufige Szenarien
+
+### Szenario: API hat 15 Endpunkte
+
+**Problem**: Zu viele Geschichten (verstößt gegen die 0,5d-2d-Schätzregel)
+
+**Solution**: Der Befehl gruppiert automatisch verwandte Endpunkte:
+- Endpunkte für dieselbe Ressource (GET, POST, PATCH, DELETE) → Eine Geschichte
+- Endpunkte auflisten und detailliert → Eine Geschichte
+- Authentifizierungsendpunkte → Eine Geschichte
+
+**Result**: 15 Endpunkte → 5-6 Geschichten
+
+### Szenario: PRD hat unklare Anforderungen
+
+**Problem**: Generierte Geschichten wirken vage
+
+**Solution**:
+1. Klären Sie PRD zunächst mit den Stakeholdern
+2. Wiederholung `/auto` mit aktualisierter Quelle
+3. Oder bearbeiten Sie generierte Geschichten manuell mit `/story`
+
+### Szenario: Generierte Storys entsprechen nicht der Teamgeschwindigkeit
+
+**Problem**: Schätzungen erscheinen zu optimistisch/pessimistisch
+
+**Solution**:
+1. Überprüfen Sie Geschichten und passen Sie Schätzungen an
+2. Berücksichtigen Sie die historische Geschwindigkeit des Teams
+3. Laufen `/velocity` Teamfähigkeit verstehen
+4. Teilen Sie große Geschichten in kleinere auf
+
+## Qualitätscheckliste
+
+Bevor Sie generierte Storys genehmigen:
+
+- [ ] Alle Geschichten haben klare Akzeptanzkriterien
+- [ ] Geschichten sind unabhängig (keine versteckten Abhängigkeiten)
+- [ ] Schätzungen sind realistisch (Bereich 0,5-2 Tage)
+- [ ] Akzeptanzkriterien verwenden das Format „Gegeben/Wann/Dann“.
+- [ ] Technische Hinweise sind korrekt
+- [ ] Die Geschichten behandeln Hauptszenarien (Happy Path + Randfälle)
+- [ ] Es werden keine Geschichten dupliziert
+- [ ] Das epische Ziel ist klar und spezifisch
+- [ ] Besitzerzuweisungen sind angemessen
+
+## Integration mit anderen Befehlen
+
+- **After generation**: Verwenden `/story-validate` Qualität zu gewährleisten
+- **Before sprint**: Verwenden `/sprint` Geschichten auszuwählen
+- **For dependencies**: Verwenden `/deps` wenn Geschichten Beziehungen haben
+- **During development**: Verwenden `/babysit` für Hilfe bei der Umsetzung
+- **For testing**: Verwenden `/verify` um Tests durchzuführen
+
+## Best Practices
+
+- **Start with requirements** - Investieren Sie Zeit in klare PRDs oder Spezifikationen
+- **Review generated stories** - Akzeptieren Sie die KI-Generierung nicht blind
+- **Validate before sprint** - Verwenden `/story-validate` auf allen generierten Geschichten
+- **Group related requirements** - Fokussierteres Epos = bessere Geschichten
+- **Be specific in source** - Vage Anforderungen → vage Geschichten
+- **Consider dependencies** - Manuelle Überprüfung auf versteckte Abhängigkeiten
+- **Estimate conservatively** - Puffer für Unbekannte hinzufügen
+
+## Einschränkungen und Überlegungen
+
+- **AI may misinterpret** - Überprüfen Sie generierte Geschichten auf Richtigkeit
+- **Context matters** - Den generierten Geschichten mangelt es möglicherweise an Domänenkenntnissen
+- **Dependencies are manual** - Storyübergreifende Abhängigkeiten manuell hinzufügen
+- **Estimates vary by team** - Passen Sie die Geschwindigkeit entsprechend Ihrer Geschwindigkeit an
+- **Technical details** - Möglicherweise sind manuelle Ergänzungen zum Architekturkontext erforderlich
+
+## Verwandte Befehle
+
+- [`/episch`](/commands/epic) - Erstellen Sie bei Bedarf manuell Epics
+- [`/Geschichte`](/commands/story) - Erstellen oder bearbeiten Sie einzelne Geschichten
+- [`/story-validate`](/commands/story-validate) - Validieren Sie die generierte Qualität
+- [`/sprint`](/commands/sprint) - Planen Sie Sprints mit generierten Storys
+- [`/deps`](/commands/deps) - Visualisieren Sie Abhängigkeiten nach der Generierung

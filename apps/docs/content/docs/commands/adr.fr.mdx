@@ -1,0 +1,112 @@
+---
+title: /adr
+description: Créer un enregistrement de décision d'architecture
+---
+
+# /adr
+
+Créez des enregistrements de décisions architecturales (ADR) pour documenter les choix architecturaux et les décisions de conception importants dans votre projet.
+
+## Démarrage rapide
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="Need reliable database" DECISION="PostgreSQL chosen" CONSEQUENCES="Better reliability, steeper learning curve"
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | 4-digit ADR number (e.g., 0001, 0042) |
+| `TITLE` | Yes | - | Short title of the architectural decision |
+| `CONTEXT` | Yes | - | Why this decision was needed |
+| `DECISION` | Yes | - | What was chosen and why |
+| `CONSEQUENCES` | Yes | - | Trade-offs, positive and negative impacts |
+| `LINKS` | No | - | Optional links to related documentation |
+
+## Exemples
+
+### ADR de base : sélection de la base de données
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="We need a reliable database with ACID guarantees for user data and transactions" DECISION="PostgreSQL chosen over MongoDB for its strong consistency guarantees and mature ecosystem" CONSEQUENCES="Better data integrity and reliability. Team needs PostgreSQL training. Slightly higher operational complexity than NoSQL alternatives"
+```
+
+Cela crée un nouveau fichier à `docs/03-decisions/adr-0001-use-postgresql-for-persistence.md` with the full ADR structure.
+
+### ADR avec liens connexes
+
+```bash
+/agileflow:adr NUMBER=0002 TITLE="Adopt TypeScript for all new code" CONTEXT="Type safety issues in JavaScript codebase causing bugs in production" DECISION="Migrate to TypeScript with strict type checking enabled" CONSEQUENCES="Fewer type-related bugs. Initial slower development. Better IDE support and refactoring. Requires team training" LINKS="- Related Story: US-0042\n- Related ADR: ADR-0001"
+```
+
+## Sortir
+
+Lorsque vous exécutez la commande, vous verrez :
+
+1. **Preview**: Affiche le contenu ADR généré dans son intégralité
+2. **Confirmation**: Demande OUI/NON pour approuver l'ADR
+3. **File Creation**: Crée le fichier ADR dans `docs/03-decisions/` annuaire
+4. **Filename Format**: `adr-<NUMBER>-<slug>.md` (généré automatiquement à partir du titre)
+
+L'ADR généré comprend :
+
+```markdown
+---
+number: 0001
+title: Use PostgreSQL for persistence
+date: 2025-12-24
+status: accepted
+tags: [database, architecture]
+---
+
+# ADR-0001: Use PostgreSQL for persistence
+
+## Context
+We need a reliable database...
+
+## Decision
+We will use PostgreSQL...
+
+## Consequences
+- Better data integrity...
+- Team needs training...
+```
+
+## Meilleures pratiques
+
+### Numérotation ADR
+- Numéroter séquentiellement (0001, 0002, 0003, ...)
+- Ne sautez pas de chiffres et ne les réutilisez pas
+- Utilisez des zéros non significatifs pour plus de cohérence
+
+### Rédiger de bons ADR
+- **Context first**: Expliquer le problème ou la contrainte avant la décision
+- **Be specific**: "Utiliser PostgreSQL 15+ avec réplication asynchrone" et non "Utiliser une base de données"
+- **Document trade-offs**: Énumérez les conséquences positives et négatives
+- **Keep concise**: Visez 1 à 2 pages maximum
+- **Reference related work**: Lien vers des épopées, des histoires ou d'autres ADR
+
+### Conseils pour la section contextuelle
+- Quel problème ou contrainte a déclenché cette décision ?
+- Quels sont les moteurs d’activité ?
+- Quelles sont les contraintes techniques ?
+- Qu’avons-nous essayé auparavant ?
+
+### Conseils pour la section Décision
+- Énoncez clairement ce qui a été choisi
+- Expliquez brièvement pourquoi cette option a gagné
+- Mentionner les alternatives qui ont été envisagées
+- Inclure les numéros de version ou des détails spécifiques
+
+### Conseils de la section Conséquences
+- Énumérez d’abord les impacts positifs
+- Ensuite, énumérez les compromis et les risques
+- Soyez honnête sur les inconvénients
+- Proposer des stratégies d’atténuation
+
+## Commandes associées
+
+- [`/histoire-nouvelle`](/commands/story-new) - Créer des user stories liées aux décisions architecturales
+- [`/epic-nouveau`](/commands/epic-new) - Créez des épopées pour des efforts architecturaux plus importants
+- [`/contexte`](/commands/context) - Générer un contexte de projet complet, y compris les ADR

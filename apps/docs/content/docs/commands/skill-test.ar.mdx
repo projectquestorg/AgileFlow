@@ -1,0 +1,474 @@
+---
+title: /مهارة:اختبار
+description: تحقق من أن المهارة تعمل بشكل صحيح عن طريق اختبار تنشيطها ووظيفتها
+---
+
+# /مهارة:اختبار
+
+اختبر مهارة للتأكد من أنها نشطة بشكل صحيح، ولها بنية مناسبة، وتنتج النتائج المتوقعة.
+
+## بداية سريعة
+
+```bash
+# Interactive mode
+/agileflow:skill:test
+
+# Test specific skill
+/agileflow:skill:test supabase-swift
+```
+
+## ماذا يفعل
+
+يقوم أمر الاختبار بالتحقق من صحة المهارات من خلال ثلاث مراحل:
+
+1. **Structure Validation** - الملفات موجودة ومنسقة بشكل صحيح
+2. **Content Validation** - الأقسام المطلوبة موجودة، لا توجد روابط معطلة
+3. **Activation Test** (اختياري) - تحقق من محفزات المهارة في نماذج المطالبات
+
+## سير العمل
+
+### المرحلة 1: حدد المهارة
+
+إذا لم تحدد مهارة:
+
+```bash
+/agileflow:skill:test
+```
+
+**Choose from available skills:**
+```
+Which skill would you like to test?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
+```
+
+### المرحلة الثانية: التحقق من صحة الهيكل
+
+يقوم الاختبار بإجراء فحوصات آلية:
+
+```
+🧪 Testing: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE VALIDATION
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid (name: supabase-swift, description: present)
+  ✅ references.md exists
+  ✅ cookbook/ directory found (2 entries)
+  ⚠️  No .mcp.json (MCP not configured)
+
+CONTENT VALIDATION
+  ✅ "When to Use" section present
+  ✅ Description under 1024 characters (467 chars)
+  ✅ SKILL.md under 500 lines (287 lines)
+  ✅ All cookbook files referenced in SKILL.md exist
+  ✅ No broken file references
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### المرحلة 3: اختبار التنشيط الاختياري
+
+بعد التحقق من صحة الهيكل:
+
+```
+Would you like to test skill activation with a sample prompt?
+
+[1] Yes, test activation (Recommended)
+    I'll simulate using the skill
+
+[2] Skip activation test
+    Structure validation is enough
+
+[3] View SKILL.md content
+    Read the full skill instructions
+
+Select: 1
+```
+
+إذا اخترت اختبار التنشيط:
+
+```
+Sample prompts that should activate this skill:
+
+[1] "Help me set up Supabase authentication in my iOS app"
+[2] "Create CRUD operations for my user database"
+[3] "How do I query Supabase from Swift?"
+
+Which would you like to test? (or enter custom prompt)
+> 1
+```
+
+### المرحلة الرابعة: نتائج الاختبار
+
+```
+🧪 Test Results: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE VALIDATION
+  ✅ PASS (5/5 checks)
+
+CONTENT VALIDATION
+  ✅ PASS (5/5 checks)
+
+ACTIVATION TEST
+  ✅ PASS - Skill triggered on test prompt
+  ✅ Response includes cookbook references
+  ✅ All referenced files are accessible
+
+MCP CONFIGURATION
+  ⚠️  NOT CONFIGURED - Skills work without MCP
+
+OVERALL: ✅ SKILL IS FUNCTIONAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## فحوصات التحقق من الصحة
+
+### الشيكات الهيكلية
+
+| Check | What It Verifies |
+|-------|------------------|
+| **SKILL.md exists** | Main skill file is present |
+| **Frontmatter valid** | Has `name:` and `description:` |
+| **references.md** | Documentation links file (recommended) |
+| **cookbook/ directory** | Workflows exist (if referenced) |
+| **.mcp.json valid** | JSON syntax correct (if present) |
+
+### فحوصات المحتوى
+
+| Check | What It Verifies |
+|-------|------------------|
+| **"When to Use" section** | Activation triggers defined |
+| **Description length** | Under 1024 characters |
+| **SKILL.md size** | Under 500 lines |
+| **Cookbook references** | All files in SKILL.md exist |
+| **No broken links** | Local file paths are valid |
+
+### المؤشرات
+
+- **✅ PASS** - تم اجتياز الشيك
+- **⚠️ WARNING** - الملف الاختياري مفقود (غير مطلوب)
+- **❌ FAIL** - فشل الفحص المطلوب
+
+## أمثلة
+
+### مثال 1: اختبار مهارة النجاح
+
+```bash
+/agileflow:skill:test react-components
+```
+
+**Output:**
+```
+🧪 Test Results: react-components
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ✅ PASS (all 5 checks)
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ✅ FULLY FUNCTIONAL
+```
+
+### مثال 2: مهارة التعامل مع التحذيرات
+
+```bash
+/agileflow:skill:test api-basic
+```
+
+**Output:**
+```
+🧪 Test Results: api-basic
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ⚠️  WARNINGS (3/5 checks)
+  ✅ SKILL.md exists
+  ✅ Frontmatter valid
+  ⚠️  No references.md (recommended but not required)
+  ⚠️  No cookbook/ directory
+  ✅ No .mcp.json (simple skill)
+
+CONTENT:       ✅ PASS (all 5 checks)
+ACTIVATION:    ✅ PASS (triggered correctly)
+
+Overall: ⚠️  FUNCTIONAL WITH RECOMMENDATIONS
+
+Recommendations:
+  - Add references.md to link external documentation
+  - Consider adding cookbook/ entries for multiple use cases
+```
+
+### مثال 3: المهارة مع الفشل
+
+```bash
+/agileflow:skill:test broken-skill
+```
+
+**Output:**
+```
+🧪 Test Results: broken-skill
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STRUCTURE:     ❌ FAIL (1/5 checks)
+  ❌ SKILL.md missing or corrupt
+  ❌ Cannot parse frontmatter
+  ⚠️  references.md exists
+  ⚠️  No cookbook/
+  ⚠️  No .mcp.json
+
+CONTENT:       ⚠️  SKIPPED (structure issues)
+ACTIVATION:    ❌ FAIL (cannot test without valid SKILL.md)
+
+Overall: ❌ SKILL NEEDS FIXING
+
+Issues Found:
+  1. SKILL.md frontmatter is invalid
+  2. Missing "When to Use" section
+  3. Description exceeds 1024 characters
+
+Fix With: /agileflow:skill:edit broken-skill
+```
+
+## الإجراءات التالية بعد الاختبار
+
+### إذا نجح الاختبار
+
+```
+✅ Skill is working perfectly!
+
+What would you like to do?
+
+[1] Test another skill
+[2] Use this skill now
+[3] Upgrade with learning capability
+    /agileflow:skill:upgrade <skill-name>
+[4] Done
+```
+
+### إذا كان الاختبار يحتوي على تحذيرات
+
+```
+⚠️  Skill works but could be improved.
+
+What would you like to do?
+
+[1] Edit skill to fix issues
+    /agileflow:skill:edit <skill-name>
+[2] Ignore warnings and continue
+[3] View detailed report
+[4] Done
+```
+
+### إذا فشل الاختبار
+
+```
+❌ Skill has issues that need fixing.
+
+What would you like to do?
+
+[1] Edit skill to fix problems
+    /agileflow:skill:edit <skill-name>
+[2] Delete and recreate skill
+    /agileflow:skill:delete <skill-name>
+[3] View detailed report
+[4] Done
+```
+
+## تفسير النتائج
+
+### قضايا الهيكل
+
+**Problem**: "SKILL.md مفقود"
+- **Cause**: دليل المهارات لا يحتوي على SKILL.md
+- **Fix**: التحقق من وجود الدليل: `ls .claude/skills/<name>/SKILL.md`
+- **Solution**: يستخدم `/skill:edit` لإعادة
+
+**Problem**: "الأمر الأمامي غير صالح"
+- **Cause**: SKILL.md YAML غير صحيح
+- **Fix**: تحقق من أن الأسطر الخمسة الأولى تحتوي على YAML صالحة:
+  ```yaml
+  ---
+  name: skill-name
+  description: Purpose
+  ---
+  ```
+- **Solution**: يستخدم `/skill:edit` لإصلاح الجبهة
+
+**Problem**: "لا يوجد قسم "متى يتم الاستخدام""
+- **Cause**: مشغلات التنشيط غير محددة
+- **Fix**: إضافة قسم إلى SKILL.md:
+  ```markdown
+  ## When to Use
+
+  This skill activates when:
+  - Condition 1
+  - Keywords: "keyword1", "keyword2"
+  ```
+- **Solution**: يستخدم `/skill:edit` لإضافة قسم
+
+### قضايا المحتوى
+
+**Problem**: "الوصف يتجاوز 1024 حرفًا"
+- **Cause**: وصف المهارة طويل جدًا
+- **Fix**: تقصير الوصف في frontmatter SKILL.md
+- **Solution**: يستخدم `/skill:edit` لتقليل الطول
+
+**Problem**: "SKILL.md يتجاوز 500 سطر"
+- **Cause**: المهارة كبيرة جدًا/معقدة
+- **Fix**:نقل المحتوى إلى كتاب الطبخ/الملفات
+- **Solution**: يستخدم `/skill:edit` لإعادة التنظيم
+
+**Problem**: "الرابط المعطل: تمت الإشارة إلى كتاب الطبخ/missing.md ولكن لم يتم العثور عليه"
+- **Cause**: مرجع ملف كتاب الطبخ بدون الملف الفعلي
+- **Fix**: إما إنشاء الملف أو إزالة المرجع
+- **Solution**: يستخدم `/skill:edit` لإصلاح
+
+### قضايا MCP
+
+**Problem**: "JSON غير صالح في .mcp.json"
+- **Cause**: خطأ في بناء الجملة في تكوين MCP
+- **Fix**: تحقق من صحة بناء جملة JSON
+- **Solution**: يستخدم `/skill:edit` لإصلاح JSON
+
+**Problem**: "لا يوجد كائن mcpServers"
+- **Cause**: .mcp.json يفتقد البنية المطلوبة
+- **Fix**: إضافة البنية المناسبة:
+  ```json
+  {
+    "mcpServers": {
+      "name": { ... }
+    }
+  }
+  ```
+- **Solution**: يستخدم `/skill:edit` للتحديث
+
+## اختبار سير العمل
+
+### اختبار سريع (الهيكل فقط)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "Skip activation test"
+```
+
+يستغرق ثوانٍ للتحقق من بنية الملف ومحتواه.
+
+### الاختبار الكامل (الهيكل + التنشيط)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "Yes, test activation"
+# When asked: pick or enter test prompt
+```
+
+اختبارات تلك المهارة التي يتم تنشيطها فعليًا عند المطالبات ذات الصلة.
+
+### الاختبار التفصيلي (الهيكل + التنشيط + عرض المحتوى)
+
+```bash
+/agileflow:skill:test supabase-swift
+# When asked: select "View SKILL.md content"
+# Then manually review the skill
+```
+
+يساعد على فهم ما تفعله المهارة قبل استخدامها.
+
+## أفضل الممارسات
+
+### الاختبار بعد الخلق
+
+اختبر دائمًا المهارة مباشرة بعد إنشائها:
+
+```bash
+/agileflow:skill:create my-skill
+/agileflow:skill:test my-skill  # ← Right after creation
+```
+
+### الاختبار بعد التحرير
+
+الاختبار بعد إجراء التغييرات:
+
+```bash
+/agileflow:skill:edit my-skill
+/agileflow:skill:test my-skill  # ← Verify changes worked
+```
+
+### عمليات التدقيق المنتظمة
+
+اختبار جميع المهارات بشكل دوري:
+
+```bash
+/agileflow:skill:list
+# For each skill:
+/agileflow:skill:test <skill-name>
+```
+
+### اختبار المشغلات الجديدة
+
+عند إضافة مشغلات تنشيط جديدة:
+
+```bash
+/agileflow:skill:edit my-skill  # Add trigger keywords
+/agileflow:skill:test my-skill  # Test with those keywords
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### تعليق الاختبار
+
+إذا بدا أن الاختبار معلق:
+
+1. **Wait up to 30 seconds** - قد يستغرق اختبار التنشيط بعض الوقت
+2. **Check internet connection** - في حالة اختبار مصادر الويب
+3. **Cancel (Ctrl+C)** وحاول مرة أخرى
+4. **Skip activation test** - حاول اختبار الهيكل فقط
+
+### نتائج غير متناسقة
+
+إذا اختلفت نتائج الاختبار:
+
+1. **Network issues** - قد تكون بعض المصادر غير متاحة مؤقتًا
+2. **Race conditions** - حاول الاختبار مرة أخرى
+3. **Check file system** - التأكد من أن الملفات قابلة للقراءة:
+   ```bash
+   ls -la .claude/skills/<skill>/
+   ```
+
+### فشل اختبار التنشيط
+
+إذا ظهرت رسالة "تشغيل المهارة بشكل صحيح" على أنها فاشلة:
+
+1. تحديث مشغلات التنشيط:
+   ```bash
+   /agileflow:skill:edit <skill-name>
+   # Edit "When to Use" section
+   ```
+
+2. اختبار مع مطالبات مختلفة
+
+3. تحقق مما إذا كانت الكلمات الرئيسية محددة بما فيه الكفاية
+
+## الأوامر ذات الصلة
+
+- [`/المهارة: إنشاء`](/commands/skill-create) - توليد مهارة جديدة
+- [`/ المهارة: القائمة`](/commands/skill-list) - عرض جميع المهارات
+- [`/المهارة: تحرير`](/commands/skill-edit) - إصلاح مشاكل المهارة
+- [`/المهارة:حذف`](/commands/skill-delete) - إزالة المهارة
+- [`/المهارة:ترقية`](/commands/skill-upgrade) - إضافة القدرة على التعلم
+
+## الخطوات التالية
+
+1. **Test a skill**: `/agileflow:skill:test <skill-name>`
+2. **If passes**: استخدم المهارة في عملك
+3. **If fails**: تحرير مع `/agileflow:skill:edit`
+4. **After fixing**: اختبار مرة أخرى للتحقق

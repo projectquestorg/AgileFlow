@@ -1,0 +1,286 @@
+---
+title: Seguridad
+description: Especialista en seguridad para análisis de vulnerabilidades, patrones de autenticación, autorización, cumplimiento y revisiones de seguridad antes del lanzamiento.
+---
+
+# Security Agent
+
+El Agente de Seguridad (AG-SECURITY) es un especialista en seguridad y vulnerabilidad que garantiza que las aplicaciones sean seguras desde su diseño. Este agente realiza modelos de amenazas, análisis de vulnerabilidades, implementa patrones seguros y realiza auditorías de seguridad obligatorias previas al lanzamiento.
+
+## Capacidades
+
+- **Vulnerability Analysis**: Identificar problemas de seguridad en requisitos y código.
+- **Threat Modeling**: Modelar amenazas y diseñar estrategias de defensa.
+- **Authentication Patterns**: Implementar autenticación segura (JWT, OAuth, gestión de sesiones)
+- **Authorization**: Aplicar control de acceso basado en roles y atributos
+- **Input Validation**: Previene ataques XSS, inyección SQL y inyección de comandos
+- **Secrets Management**: Asegúrese de que los secretos nunca estén codificados ni expuestos
+- **Security Testing**: Escribe pruebas para errores de autenticación, intentos de inyección, escalada de privilegios.
+- **Dependency Scanning**: Identificar dependencias vulnerables
+- **Compliance**: Verifique OWASP Top 10, CWE y los estándares de la industria
+- **Pre-Release Audits**: Revisión de seguridad obligatoria antes de cada lanzamiento.
+
+## Cuando usar
+
+Utilice Security Agent cuando:
+
+- Implementación de funciones de autenticación o autorización
+- Manejo de datos confidenciales del usuario (PII, información de pago)
+- Procesamiento de entradas de usuarios (formularios, API)
+- Integración con servicios externos
+- Implementar cifrado o gestión de secretos.
+- Necesita revisión del código de seguridad antes de fusionar
+- Planificación de una liberación (auditoría previa a la liberación obligatoria)
+- Necesidad de documentar las decisiones de seguridad mediante ADR
+- Vulnerabilidad descubierta y necesita solución
+
+## Cómo funciona
+
+1. **Knowledge Loading**: El agente lee experiencia e investigaciones de seguridad.
+2. **Story Review**: El agente analiza la historia en busca de implicaciones de seguridad.
+3. **Threat Modeling**: El agente modela amenazas para funciones críticas para la seguridad.
+4. **Vulnerability Analysis**: El agente identifica vectores de ataque y mitigaciones.
+5. **Security Testing**: El agente escribe pruebas de seguridad (fallos de autenticación, inyecciones, escalada)
+6. **Verification**: El agente se ejecuta `/agileflow:verify` para garantizar que las pruebas pasen
+7. **Documentation**: El agente crea ADR para decisiones de seguridad.
+8. **Clearance Decision**: Informes de agentes APROBADOS / APROBADOS CON MITIGACIONES / RECHAZADOS
+9. **Coordination**: El agente actualiza status.json y comunica los hallazgos.
+
+## Ejemplo
+
+```bash
+# Via babysit - security review of authentication feature
+/agileflow:babysit
+> "We're implementing JWT-based authentication. Need security review."
+
+# Agent output:
+# Security Review: US-0042 - JWT Authentication
+#
+# Vulnerabilities Found:
+# - HIGH: Tokens stored in localStorage (XSS exposure)
+# - MEDIUM: No token refresh mechanism (long-lived tokens)
+# - MEDIUM: Missing CSRF protection
+#
+# Recommendations:
+# 1. Move tokens to httpOnly cookies (not accessible to JS)
+# 2. Implement token refresh with short-lived access tokens
+# 3. Add CSRF tokens for state-changing requests
+# 4. Validate tokens on every protected endpoint
+#
+# Security Tests Required:
+# - Test invalid token rejection
+# - Test expired token handling
+# - Test CSRF token validation
+# - Test privilege escalation prevention
+#
+# Clearance: APPROVED WITH MITIGATIONS
+# - Implement recommendations above
+# - Re-run security tests
+# - ADR documenting JWT strategy required
+```
+
+## Comportamientos clave
+
+- **Security First**: Nunca te saltes los controles de seguridad para cumplir con los plazos
+- **Defense in Depth**: Múltiples capas de seguridad, no un único punto de falla
+- **Fail Secure**: Denegación predeterminada, permiso explícito
+- **Threat Modeling**: Piensa como un atacante
+- **Zero Trust**: Nunca confíes en las entradas del usuario o en los datos externos
+- **Principle of Least Privilege**: Los usuarios tienen los permisos mínimos necesarios.
+- **Transparency**: Documente todas las decisiones y mitigaciones de seguridad.
+- **Context Preservation**: Utiliza compact_context (prioridad: alta) para mantener el enfoque en la seguridad durante conversaciones largas, preservando los modelos de amenazas y los requisitos de seguridad a través de la compactación del contexto.
+
+## Configuración de contexto compacto
+
+El agente de seguridad utiliza **high priority** compact_context para garantizar que la vigilancia de la seguridad se mantenga enfocada:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/security/expertise.yaml"
+    - "SECURITY FIRST: Never skip security checks to meet deadlines"
+    - "DEFENSE IN DEPTH: Multiple layers, not single point of failure"
+    - "FAIL SECURE: Default deny, explicit allow (principle of least privilege)"
+    - "THREAT MODELING: Think like an attacker, anticipate exploits"
+    - "ZERO TRUST: Never trust user input or external data"
+    - "NO SECRETS: No hardcoded API keys, credentials, or sensitive data"
+  state_fields:
+    - current_story
+    - threat_model
+    - security_requirements
+    - vulnerability_findings
+    - mitigation_progress
+```
+
+Esto garantiza que las reglas críticas para la seguridad (modelado de amenazas, confianza cero, protección secreta, defensa en profundidad) y el estado actual (vulnerabilidades conocidas, modelos de amenazas, estado de mitigación) permanezcan enfocados a través de la compactación del contexto.
+
+## Herramientas disponibles
+
+- Leer, escribir, editar (operaciones de archivos)
+- Bash (ejecutar análisis de seguridad)
+- Glob (buscar archivos relacionados con la seguridad)
+- Grep (búsqueda de secretos o vulnerabilidades)
+
+## Lista de verificación de seguridad (obligatoria antes del lanzamiento)
+
+Antes de aprobar CUALQUIER autorización:
+
+- [] Sin secretos codificados, claves API ni credenciales
+- [] Todas las entradas del usuario validadas (tipo, longitud, formato, rango)
+- [] Todas las salidas codificadas/escapadas (evitar XSS, inyección)
+- [] Autenticación aplicada en puntos finales protegidos
+- [] Las comprobaciones de autorización verifican los permisos
+- [] La limitación de velocidad evita la fuerza bruta y DoS
+- [] HTTPS aplicado (no hay HTTP en producción)
+- [] CORS configurado correctamente (no `*` para credenciales)
+- [] Tokens CSRF necesarios para solicitudes de cambio de estado
+- [] Dependencias analizadas en busca de vulnerabilidades
+- [] Los mensajes de error no exponen los detalles del sistema
+- [] El registro no captura contraseñas/tokens/PII
+- [] SQL usa declaraciones parametrizadas
+- [] Las pruebas de seguridad cubren fallas de autenticación, escalada de privilegios e inyecciones.
+- [ ] Requisitos de cumplimiento documentados
+
+## Patrones de seguridad comunes
+
+**Authentication (JWT)**:
+```javascript
+// Good: Secure JWT with expiration
+const token = jwt.sign(
+  { userId: user.id },
+  process.env.JWT_SECRET,
+  { algorithm: 'RS256', expiresIn: '1h' }
+);
+
+// Bad: No expiration, weak algorithm
+const token = jwt.sign(
+  { userId: user.id, password: user.password },
+  'hardcoded-secret',
+  { algorithm: 'HS256' }
+);
+```
+
+**Authorization (Role-Based)**:
+```javascript
+// Good: Check permissions on backend
+function protectedRoute(req, res) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  // ... handle request
+}
+
+// Bad: Trust frontend role
+if (user.role === 'admin') {
+  // ... always true on frontend
+}
+```
+
+**Input Validation**:
+```javascript
+// Good: Whitelist valid inputs
+const email = req.body.email;
+if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+  return res.status(400).json({ error: 'Invalid email' });
+}
+
+// Bad: No validation, vulnerable to injection
+const query = `SELECT * FROM users WHERE email = '${email}'`;
+```
+
+**Secrets Management**:
+```javascript
+// Good: Load from environment variables
+const dbPassword = process.env.DB_PASSWORD;
+
+// Bad: Hardcoded credentials
+const dbPassword = 'supersecretpassword123';
+```
+
+## Vulnerabilidades comunes que se deben prevenir
+
+| Vulnerability | Risk | Prevention |
+|---------------|------|-----------|
+| SQL Injection | Data breach | Parameterized queries |
+| XSS (Cross-Site Scripting) | Session hijacking | Input sanitization, output encoding |
+| CSRF (Cross-Site Request Forgery) | Unauthorized actions | CSRF tokens, SameSite cookies |
+| Weak Authentication | Account takeover | Strong passwords, MFA, JWT |
+| Hardcoded Secrets | Credential exposure | Environment variables |
+| Missing HTTPS | Man-in-the-middle | Enforce HTTPS, HSTS |
+| Privilege Escalation | Unauthorized access | Authorization checks |
+| Dependency Vulnerabilities | Supply chain attacks | Regular scanning, updates |
+
+## Niveles de gravedad de errores
+
+| Severity | Description | Example |
+|----------|-------------|---------|
+| Critical | Security breach, data loss | Unauthenticated API access |
+| High | Significant vulnerability | Weak password policy |
+| Medium | Notable weakness | Missing CSRF tokens |
+| Low | Minor issue | Verbose error messages |
+
+## Marco de modelado de amenazas
+
+Para conocer las características principales, pregunte:
+
+1. **What assets are we protecting?** (datos de usuario, información de pago, IP)
+2. **Who are the threats?** (hackers, usuarios malintencionados, insiders)
+3. **What attacks are possible?** (inyección SQL, XSS, relleno de credenciales)
+4. **How do we prevent each attack?** (validación, cifrado, limitación de velocidad)
+5. **What's our defense depth?** (capas de seguridad)
+6. **Can we detect attacks?** (registro, seguimiento, alertas)
+
+## Escaneo de dependencias
+
+Antes de cada lanzamiento, ejecute:
+
+```bash
+npm audit              # Find vulnerable packages
+npm audit fix         # Update vulnerable packages
+npm update            # Update all packages
+```
+
+Hallazgos del documento:
+- ¿Qué paquetes son vulnerables?
+- ¿Cuál es la gravedad?
+- ¿Podemos actualizar o hay alguna solución?
+- ¿Cuándo se comprobó esto por última vez?
+
+## Agentes Relacionados
+
+- [`probando`](/agents/testing) - Implementación de pruebas de seguridad.
+- [`api`](/agents/api) - Seguridad y validación de API.
+- [`base de datos`](/agents/database) - Seguridad de bases de datos y control de acceso.
+- [`devops`](/agents/devops) - Seguridad de la infraestructura
+- [`ci`](/agents/ci) - Escaneo de seguridad en el proceso de CI
+
+## Coordinación
+
+El Agente de Seguridad coordina con:
+
+- **AG-API**: Garantizar la autenticación/validación en los puntos finales
+- **AG-UI**: Prevenir XSS, CSRF en la interfaz
+- **AG-DATABASE**: Verificar la seguridad de la consulta, control de acceso
+- **AG-DEVOPS**: Seguridad de infraestructura, gestión de secretos.
+- **AG-TESTING**: Coordinar la cobertura de pruebas de seguridad.
+- **All Agents**: Señalar de forma proactiva las implicaciones de seguridad
+
+## Comandos de barra diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigar patrones de seguridad.
+- `/agileflow:ai-code-review` - Revisar el código para problemas de seguridad.
+- `/agileflow:adr-new` - Decisiones de seguridad de documentos.
+- `/agileflow:tech-debt` - Documento de deuda de garantía
+- `/agileflow:impact-analysis` - Analizar el impacto de los cambios en la seguridad.
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia
+
+## Principios de seguridad
+
+- **Never skip security** para plazos
+- **Measure before you fix** - entender la vulnerabilidad
+- **Defense in depth** - múltiples capas, no un único punto de falla
+- **Zero trust** - nunca confíes en la entrada del usuario o en datos externos
+- **Least privilege** - grant minimum necessary permissions
+- **Transparent** - documentar todas las decisiones de seguridad
+- **Err on side of caution** - en caso de duda, sea más restrictivo

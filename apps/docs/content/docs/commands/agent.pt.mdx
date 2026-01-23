@@ -1,0 +1,313 @@
+---
+title: /agente
+description: Integre um novo agente com perfil e contrato
+---
+
+# /agente
+
+Integre novos agentes com perfis, avisos do sistema (contratos) e limites de escopo para uma colaboração eficaz em equipe.
+
+## Início rápido
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Bash" SCOPE="src/components/,frontend"
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `AGENT_ID` | Yes | - | Unique agent identifier (e.g., AG-UI, AG-API) |
+| `ROLE` | Yes | - | Agent's role or title |
+| `TOOLS` | No | Read,Write,Edit,Bash | Comma-separated available tools |
+| `SCOPE` | No | - | Directories and story tags agent can access |
+
+## Exemplos
+
+### Desenvolvedor Frontend Integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-UI ROLE="Frontend Developer" TOOLS="Read,Write,Edit,Bash,Glob" SCOPE="src/components/,src/pages/,frontend,ui"
+```
+
+Cria perfil de agente com:
+- Função e responsabilidades
+- Ferramentas disponíveis (leitura, gravação, edição, Bash)
+- Limites do escopo (somente src/components/ e src/pages/)
+- Prompt do sistema (contrato) com regras rígidas
+
+### Desenvolvedor de API integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-API ROLE="Backend API Developer" TOOLS="Read,Write,Edit,Bash,Grep" SCOPE="src/api/,src/services/,backend,api"
+```
+
+### Especialista em CI/CD integrado
+
+```bash
+/agileflow:agent AGENT_ID=AG-CI ROLE="CI/CD Automation Engineer" TOOLS="Read,Write,Bash,Grep" SCOPE=".github/,scripts/,ci,devops"
+```
+
+## Saída
+
+### 1. Perfil do Agente
+
+Creates agent profile markdown at `docs/02-practices/prompts/agents/agent-<AGENT_ID>.md`
+
+Conteúdo de exemplo:
+
+```text
+---
+agent_id: AG-UI
+role: Frontend Developer
+tools: [Read, Write, Edit, Bash, Glob]
+scope:
+  directories: [src/components/, src/pages/]
+  story_tags: [frontend, ui, ux]
+---
+
+# AG-UI: Frontend Developer Agent
+
+## Responsibilities
+Build and maintain user interface components with React and Tailwind CSS.
+
+## Available Tools
+- Read - Read files and directories
+- Write - Create new files
+- Edit - Modify existing files
+- Bash - Run commands (npm, git)
+- Glob - Search for files by pattern
+
+## Scope Boundaries
+
+### Allowed Directories
+- `src/components/` - UI components
+- `src/pages/` - Page layouts
+- `public/` - Static assets
+
+### Restricted Directories
+- `src/api/` - Backend code
+- `.github/` - CI/CD workflows
+
+### Story Tags
+- `frontend` - UI features
+- `ui` - Component work
+- `ux` - User experience
+- `design` - Design implementation
+
+## System Prompt (Contract)
+
+### Scope Restrictions
+You can ONLY modify files in:
+- `src/components/**`
+- `src/pages/**`
+
+You CANNOT modify:
+- Backend code in `src/api/`
+- CI/CD workflows in `.github/`
+
+### Testing Requirements
+Before committing, run:
+- `npm test -- src/components/` - Run component tests
+- `npm run lint:css` - Check Tailwind usage
+
+### Commit Message Format
+Use conventional commits with `ui:` prefix:
+- `feat(ui): add new button component`
+- `fix(ui): correct responsive breakpoint`
+- `style(ui): update component spacing`
+
+### Status Updates
+After completing a story:
+1. Update `docs/09-agents/status.json` with new status
+2. Log to `docs/09-agents/bus/log.jsonl`
+3. Include completion time and any blockers
+
+### Code Standards
+- TypeScript required (no .js files)
+- JSDoc comments on exported components
+- Storybook stories for all components
+- 80%+ test coverage for components
+- Accessibility checks (axe-core)
+```
+
+### 2. Lista de Agentes
+
+Atualiza ou cria `docs/09-agents/roster.yaml`:
+
+```yaml
+agents:
+  AG-UI:
+    id: AG-UI
+    role: Frontend Developer
+    tools: [Read, Write, Edit, Bash, Glob]
+    scope:
+      directories: [src/components/, src/pages/]
+      story_tags: [frontend, ui, ux]
+  AG-API:
+    id: AG-API
+    role: Backend API Developer
+    tools: [Read, Write, Edit, Bash, Grep]
+    scope:
+      directories: [src/api/, src/services/]
+      story_tags: [backend, api, database]
+```
+
+### 3. Prompt do sistema
+
+Gera um prompt de sistema condensado para copiar/colar como prompt de sistema de terminal:
+
+```text
+You are AG-UI, a Frontend Developer Agent.
+
+ROLE: Build and maintain user interface components.
+
+SCOPE BOUNDARIES (Strict):
+- Can modify: src/components/, src/pages/
+- Cannot modify: src/api/, .github/
+- Story tags: frontend, ui, ux
+
+TESTING:
+- Run npm test before committing
+- Maintain 80%+ coverage
+- Check accessibility with axe-core
+
+COMMITS:
+- Format: "feat(ui):" or "fix(ui):"
+- Conventional commits required
+
+STATUS:
+- Update docs/09-agents/status.json after completing stories
+- Log events to docs/09-agents/bus/log.jsonl
+```
+
+## Componentes do perfil do agente
+
+### Responsabilidades
+
+Descrição clara do que o agente faz:
+- Domínio específico (UI, API, CI/CD)
+- Tecnologias utilizadas
+- Principais resultados
+- Função da equipe
+
+### Ferramentas disponíveis
+
+O que o agente pode usar:
+- **Read** - Leia arquivos e analise código
+- **Write** - Crie novos arquivos
+- **Edit** - Modificar arquivos existentes
+- **Bash** - Execute comandos shell (git, npm, docker)
+- **Glob** - Encontre arquivos por padrão
+- **Grep** - Pesquisar conteúdo do arquivo
+
+### Limites do escopo
+
+Onde o agente pode trabalhar:
+- **Allowed directories** - Agente de arquivos pode modificar
+- **Restricted directories** - O agente de arquivos NÃO PODE tocar
+- **Story tags** - Que trabalho é atribuído a este agente
+
+### Prompt do Sistema (Contrato)
+
+Regras que o agente deve seguir:
+- **Scope restrictions** - Caminhos de arquivo exatos
+- **Testing requirements** - Quando/como testar
+- **Commit conventions** - Formato de filial e mensagem
+- **Status updates** - Como acompanhar o progresso
+- **Code standards** - Requisitos de qualidade
+
+## Melhores Práticas
+
+### Nomeando Agentes
+Use IDs descritivos que indiquem claramente a função:
+- ✅ Bom: AG-UI, AG-API, AG-CI, AG-DEVOPS, AG-SECURITY
+- ❌ Ruim: AG-001, AG-A, AG-DEV1
+
+### Definindo Escopo
+
+Deixe os limites bem claros:
+
+**Good** - Caminhos específicos:
+- `src/components/`
+- `src/api/routes/`
+- `.github/workflows/`
+
+**Bad** - Limites vagos:
+- "coisas de front-end"
+- "coisas de back-end"
+
+### Requisitos de teste
+
+Inclui comandos de teste específicos:
+
+**Good** - Limpar comandos:
+- Correr `npm test -- src/components/`
+- Verifique a cobertura com `npm run coverage`
+- Lint com `npm run lint:tsx`
+
+**Bad** - Instruções vagas:
+- "Escrever testes"
+- "Certifique-se de que funciona"
+
+### Mapeamento de tags de história
+
+Atribua histórias com base em tags:
+
+| Agent | Story Tags |
+|-------|------------|
+| AG-UI | frontend, ui, ux, design |
+| AG-API | backend, api, database |
+| AG-CI | ci, devops, automation |
+
+## Fluxo de trabalho
+
+1. Reúna detalhes do agente:
+   - ID exclusivo (AG-DOMAIN)
+   - Função/título
+   - Ferramentas disponíveis
+   - Limites do escopo
+   - Tags de história
+
+2. Criar perfil de agente a partir de modelo
+   - Seção de responsabilidades
+   - Lista de ferramentas
+   - Limites do escopo (claros e específicos)
+   - Prompt do sistema (contrato com regras)
+
+3. Atualizar lista de agentes
+   - Add entry to docs/09-agents/roster.yaml
+   - ID do mapa → função, ferramentas, escopo
+
+4. Gerar prompt do sistema
+   - Prompt condensado de saída
+   - Pronto para colar como prompt do sistema de terminal
+
+5. Validar agente
+   - Revise os limites do escopo (sem conflitos)
+   - Confirme os requisitos de teste
+   - Verifique as atribuições de tags de história
+
+## Integração
+
+Perfis de agente integram-se com:
+- **Status tracking** - Lista mostra agentes ativos
+- **Story assignment** - Use ID e tags do agente
+- **Capacity planning** - Veja quem está disponível
+- **Handoffs** - Perfis de agente de referência em comunicações
+- **Scope validation** - Evite alterações fora do escopo
+
+## Use When
+
+- **Onboarding new team members** - Criar perfil e contrato
+- **Adding specialized roles** - Agentes de segurança, desempenho, acessibilidade
+- **Restructuring team** - Atualizar limites do escopo
+- **Training agents** - Use o prompt do sistema como referência
+- **Resolving conflicts** - Escopo claro evita sobreposição
+
+## Comandos Relacionados
+
+- [`/transferência`](/commands/handoff) - Documentar transições de trabalho entre agentes
+- [`/status`](/commands/status) - Ver todos os agentes e atribuições ativos
+- [`/babá`](/commands/babysit) - Monitore o progresso do agente
+- [`/métricas`](/commands/metrics) - Métricas de desempenho do agente

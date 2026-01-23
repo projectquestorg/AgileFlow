@@ -1,0 +1,243 @@
+---
+title: /ملحمة:عرض
+description: عرض تفاصيل ملحمية مع القصص والإجراءات السياقية
+---
+
+# /ملحمة:عرض
+
+عرض تفاصيل ملحمية كاملة بما في ذلك جميع القصص المجمعة حسب الحالة والإجراءات المدركة للسياق.
+
+## بداية سريعة
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic ID (e.g., EP-0001) |
+
+## أمثلة
+
+### عرض ملحمة محددة
+
+```bash
+/agileflow:epic:view EPIC=EP-0002
+```
+
+يعرض معلومات ملحمية كاملة مع جميع القصص والإجراءات المدركة للسياق.
+
+### الاختيار التفاعلي
+
+```bash
+/agileflow:epic:view
+```
+
+بدون معلمة EPIC، يعرض الملاحم الأخيرة ويطلب منك تحديد واحدة.
+
+## تنسيق الإخراج
+
+### نظرة عامة ملحمية
+
+```markdown
+## EP-0002: Authentication System
+
+**Status**: active
+**Owner**: AG-API
+**Goal**: Implement secure user authentication with OAuth and sessions
+**Created**: 2024-12-20
+**Updated**: 2024-12-28
+
+**Progress**: 4/6 stories complete (67%)
+
+███████████████░░░░░░░ 67%
+```
+
+### قصص مجمعة حسب الحالة
+
+```markdown
+### In Progress (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0012 | Session management | AG-API | 4h |
+
+### Ready (1)
+| Story | Title | Owner | Estimate |
+|-------|-------|-------|----------|
+| US-0013 | Remember me feature | AG-UI | 2h |
+
+### Done (4)
+| Story | Title | Owner | Completed |
+|-------|-------|-------|-----------|
+| US-0011 | OAuth Google login | AG-API | 2024-12-27 |
+| US-0010 | Login form UI | AG-UI | 2024-12-26 |
+| US-0009 | User model | AG-API | 2024-12-25 |
+| US-0008 | Auth API setup | AG-API | 2024-12-24 |
+```
+
+### الوثائق ذات الصلة
+
+```markdown
+### Related
+- **Research**: [OAuth Best Practices](../10-research/20241220-oauth.md)
+- **ADR**: [ADR-0002: Use NextAuth](../03-decisions/adr-0002.md)
+```
+
+## الإجراءات المدركة للسياق
+
+تتغير الإجراءات بناءً على التقدم الملحمي:
+
+### للملاحم ذات التقدم المنخفض (أقل من 50%)
+
+عندما يكون التقدم أقل من 50%:
+
+```
+This epic is 40% complete. What would you like to do?
+```
+
+خيارات:
+- **Add more stories**: قد تحتاج الملحمة إلى عناصر عمل إضافية
+- **Start work on a ready story**: البدء في التنفيذ
+- **Plan sprint for this epic**: جدولة القصص
+- **Back to epic list**: العودة إلى القائمة الكاملة
+
+### لملاحم التقدم المتوسط ​​(50-99%)
+
+عندما يتراوح التقدم بين 50% و99%:
+
+```
+This epic is 67% complete. What would you like to do?
+```
+
+خيارات:
+- **Work on remaining stories** (مستحسن): التركيز على الإكمال
+- **View story details**: التحقق من قصة محددة
+- **Add more stories**: ربما يكون النطاق الملحمي قد نما
+- **Mark epic as complete**: إذا تم تأجيل العمل المتبقي
+
+### للملاحم المكتملة (100%)
+
+عند الانتهاء من جميع القصص:
+
+```
+This epic is 100% complete! What would you like to do?
+```
+
+خيارات:
+- **Close epic** (مستحسن): وضع علامة مكتمل في Status.json
+- **View completion summary**: انظر ما تم تسليمه
+- **Add follow-up stories**: الملحمة تحتاج إلى المزيد من العمل بعد كل شيء
+- **Back to epic list**: العودة إلى /agileflow:epic:list
+
+### للملاحم المعلقة
+
+عندما يتم إيقاف الملحمة مؤقتًا:
+
+```
+This epic is on hold. What would you like to do?
+```
+
+خيارات:
+- **Resume epic**: قم بتغيير الحالة مرة أخرى إلى نشطة
+- **View why it's on hold**: التحقق من الحاصرات أو الملاحظات
+- **Close epic**: لم تعد هناك حاجة
+- **Back to epic list**: العودة إلى /agileflow:epic:list
+
+## سير العمل النموذجي
+
+### استمر في العمل على Epic
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 67% complete)
+2. Select "Work on remaining stories"
+3. See ready stories
+4. Select a story
+5. /agileflow:story:view STORY={selected}
+6. Start implementation
+```
+
+### قم بإنهاء الملحمة في نهاية السباق
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 95% complete)
+2. Work through remaining stories
+3. When all done:
+4. Select "Close epic"
+5. Epic marked as complete
+6. Start next epic
+```
+
+### إلغاء حظر الملحمة أثناء الانتظار
+
+```
+1. /agileflow:epic:view EPIC=EP-0003
+   (Epic is on-hold)
+2. Check blockers
+3. If resolved: "Resume epic"
+4. Epic changed back to active
+5. Continue work
+```
+
+### قم بتوسيع Epic بمزيد من العمل
+
+```
+1. /agileflow:epic:view EPIC=EP-0002
+   (See 85% complete)
+2. Realize more work is needed
+3. Select "Add more stories"
+4. /agileflow:story EPIC=EP-0002 ...
+5. Create new stories
+6. Update epic progress
+```
+
+## معاني حالة القصة
+
+في العرض الملحمي، يتم تجميع القصص حسب الحالة:
+
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| **in_progress** | Currently being worked on | Continue work or mark as blocked |
+| **ready** | Ready to start | Pick one and begin implementation |
+| **done** | Completed and tested | Move to next epic |
+
+## تفسير التقدم
+
+### ماذا تعني النسبة
+
+```
+4/6 (67%) = 4 stories done, 2 remaining, 67% complete
+```
+
+- 0-25%: الملحمة بدأت للتو
+- 25-50%: التسارع في منتصف السباق
+- 50-75%: تم تحديد معظم الأعمال
+- 75-100%: الدفعة النهائية للاكتمال
+
+### متى تضيف المزيد من القصص
+
+فكر في إضافة قصص إذا:
+- التقدم مستقر (عالق عند نفس النسبة)
+- تم حظر الفريق في انتظار التبعيات
+- ظهرت متطلبات جديدة
+
+### متى تغلق ملحمة
+
+إغلاق عندما:
+- تم وضع علامة على جميع القصص كـ `done`
+- يتم استيفاء معايير القبول
+- على استعداد للانتقال إلى الملحمة القادمة
+
+## الأوامر ذات الصلة
+
+- [`/ملحمة:قائمة`](/commands/epic-list) - عرض جميع الملاحم
+- [`/ملحمة`](/commands/epic) - إنشاء ملحمة جديدة
+- [`/قصة:قائمة`](/commands/story-list) - عرض جميع القصص
+- [`/قصة:عرض`](/commands/story-view) - عرض تفاصيل القصة
+- [`/قصة`](/commands/story) - إنشاء قصة في الملحمة
+- [`/الحالة`](/commands/status) - تحديث حالة القصة
+- [`/ سبرينت`](/commands/sprint) - التخطيط للسباق
+- [`/اللوحة`](/commands/board) - عرض كانبان

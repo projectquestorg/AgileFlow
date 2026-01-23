@@ -1,0 +1,381 @@
+---
+title: /آلي
+description: إنشاء قصص تلقائيًا من PRDs أو النماذج بالحجم الطبيعي أو المواصفات
+---
+
+# /آلي
+
+قم بإنشاء قصص المستخدم تلقائيًا من عناصر المنتج مثل PRDs أو النماذج بالحجم الطبيعي أو مواصفات واجهة برمجة التطبيقات (API) أو مستندات التصميم. يوفر الوقت في تقسيم المتطلبات إلى قصص قابلة للتنفيذ.
+
+## بداية سريعة
+
+```bash
+/agileflow:auto SOURCE=<file-or-url> [EPIC=<EP-ID>] [AUTO_CREATE=no]
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SOURCE` | Yes | - | Path to file or URL (PRD, mockup, API spec, flow diagram) |
+| `EPIC` | No | Auto-generated | Associate stories with existing epic (e.g., `EP-0010`) |
+| `OWNER` | No | Auto-detected | Default owner for generated stories (e.g., `AG-API`) |
+| `AUTO_CREATE` | No | `no` | `yes` to create immediately, `no` for preview first |
+
+## أمثلة
+
+### معاينة القصص من PRD
+
+```bash
+/agileflow:auto SOURCE=docs/requirements/auth-prd.md
+```
+
+يقرأ مستند متطلبات المصادقة وينشئ معاينة القصة دون إنشاء ملفات.
+
+### إنشاء من مواصفات API
+
+```bash
+/agileflow:auto SOURCE=docs/api/openapi.json OWNER=AG-API
+```
+
+يستخرج نقاط النهاية من مواصفات OpenAPI/Swagger ويولد قصة واحدة لكل نقطة نهاية.
+
+### إنشاء من نموذج Figma
+
+```bash
+/agileflow:auto SOURCE=https://figma.com/file/abc123 AUTO_CREATE=no
+```
+
+يعد التعرف الضوئي على الحروف (OCR) بمثابة تصميم بالحجم الطبيعي لتحديد الشاشات والنماذج والتفاعلات، ثم يقوم بإنشاء قصص واجهة المستخدم.
+
+### إنشاء وإنشاء على الفور
+
+```bash
+/agileflow:auto SOURCE=docs/requirements/payment-prd.md EPIC=EP-0011 AUTO_CREATE=yes
+```
+
+يُنشئ القصص وينشئ جميع الملفات على الفور (تخطي خطوة المعاينة).
+
+## أنواع المصادر المدعومة
+
+### وثيقة متطلبات المنتج (PRD)
+
+**Formats**: `.md`, `.docx`, `.pdf`, `.txt`
+
+**Extracts**:
+- أوصاف الميزة
+- شخصيات المستخدم وحالات الاستخدام
+- معايير النجاح والمقاييس
+- حالات الحافة وسيناريوهات الخطأ
+- المتطلبات غير الوظيفية
+
+**Example**:
+```markdown
+# User Authentication Feature
+
+Users should be able to:
+- Register with email and password
+- Reset forgotten password via email
+- Login with OAuth (Google, GitHub)
+- Manage account settings
+
+Requirements:
+- Email verification required
+- Password minimum 8 characters
+- Session expires after 24 hours
+```
+
+**Generated Stories**: 4-6 قصص تغطي التسجيل وتسجيل الدخول وإعادة تعيين كلمة المرور وOAuth وإدارة الجلسة.
+
+### وثائق واجهة برمجة التطبيقات
+
+**Formats**: OpenAPI/Swagger JSON، مستندات API `.md`
+
+**Extracts**:
+- نقاط النهاية (طريقة HTTP + المسار)
+- مخططات الطلب/الاستجابة
+- متطلبات المصادقة
+- رموز الخطأ وحالات الحافة
+- تحديد المعدل والحصص
+
+**Example OpenAPI**:
+```yaml
+paths:
+  /api/users:
+    post:
+      summary: Create user
+      requestBody:
+        schema:
+          properties:
+            name: string
+            email: string
+```
+
+**Generated Stories**: واحد لكل نقطة نهاية مع معايير القبول من المخطط.
+
+### نماذج وتصميمات واجهة المستخدم
+
+**Formats**: عنوان URL للشكل، `.png`/`.jpg` (مع التعرف الضوئي على الحروف)، مواصفات التصميم `.md`
+
+**Extracts**:
+- تخطيطات الشاشة ومكوناتها
+- تفاعلات المستخدم والتدفقات
+- حقول النموذج والتحقق من صحتها
+- الملاحة والروابط
+- استخدام نظام التصميم
+
+**Example**: لقطة شاشة لنموذج تسجيل الدخول تنشئ قصصًا لمكون النموذج والتحقق من الصحة ورسائل الخطأ ورابط إعادة تعيين كلمة المرور.
+
+### مخططات تدفق المستخدم
+
+**Formats**: حورية البحر `.mmd`، PlantUML، مخططات التدفق (`.png` مع التعرف الضوئي على الحروف)
+
+**Extracts**:
+- خطوات في رحلة المستخدم
+- نقاط القرار والفروع
+- مسارات بديلة
+- سيناريوهات النجاح والفشل
+
+**Example**: مخطط تدفق المصادقة يولد قصصًا لكل خطوة.
+
+## عملية توليد القصة
+
+### الخطوة 1: تحليل المصدر
+- تحديد نوع الوثيقة
+- استخراج المتطلبات والميزات
+- المتطلبات المتعلقة بالمجموعة
+- تحليل المواصفات الفنية
+
+### الخطوة 2: ميزات المجموعة
+- المتطلبات ذات الصلة تصبح قصة واحدة
+- تجنب ازدواجية القصة
+- تأكد من أن القصص مستقلة
+- تحقق من معايير الاستثمار
+
+### الخطوة 3: إنشاء القصص
+- إنشاء عنوان من وصف الميزة
+- اكتب معايير القبول بتنسيق معين/متى/ثم
+- تقدير الجهد (0.5 د، 1 د، 1.5 د، 2 د)
+- تعيين المالك المناسب
+- تحديد التبعيات
+
+### الخطوة 4: عرض المعاينة
+- عرض كافة القصص التي تم إنشاؤها
+- عرض التقديرات والمالكين
+- إظهار عدد القصص والجهد الإجمالي
+- اطلب الموافقة قبل الإنشاء
+
+### الخطوة 5: إنشاء الملفات (إذا تمت الموافقة عليها)
+- إنشاء ملحمة (إذا لم يتم توفيرها)
+- إنشاء ملفات القصة مع القوالب
+- إنشاء بذرة اختبار
+- تحديث الحالة.json
+- إلحاق بالحافلة/log.jsonl
+
+## قواعد إنشاء القصة (الاستثمار)
+
+تتبع القصص التي تم إنشاؤها معايير الاستثمار:
+
+| Criterion | Description |
+|-----------|-------------|
+| **Independent** | Can be completed without other stories |
+| **Negotiable** | Details can be adjusted after creation |
+| **Valuable** | Delivers user-facing or team value |
+| **Estimable** | Can be sized (0.5d-2d) |
+| **Small** | Completable in one sprint |
+| **Testable** | Has clear acceptance criteria |
+
+القصص > 2d مقسمة إلى قصص أصغر.
+
+## إرشادات التقدير
+
+| Estimate | When to Use |
+|----------|------------|
+| `0.5d` | Simple CRUD, form field, basic component |
+| `1d` | Standard feature, moderate complexity |
+| `1.5d` | Complex logic, multiple validations, integration |
+| `2d` | Significant refactor or major component |
+| `>2d` | Story will be broken into smaller ones |
+
+## مثال: PRD إلى القصص
+
+### إدخال PRD
+
+```markdown
+# User Authentication Feature
+
+## Overview
+Allow users to register, log in, and manage accounts.
+
+## Requirements
+- Users register with email and password
+- Email verification required
+- Password reset via email
+- Login with OAuth (Google, GitHub)
+- Session management and expiry
+```
+
+### معاينة القصص التي تم إنشاؤها
+
+```text
+Story Generation Preview
+
+Source: docs/requirements/auth-prd.md
+Epic: EP-0010 (User Authentication) - CREATED
+Stories: 5
+
+1. US-0050: User registration (1.5d, AG-API)
+   "Users can register with email and password"
+
+2. US-0051: Email verification (1d, AG-API)
+   "Verify email before allowing login"
+
+3. US-0052: Password reset flow (1d, AG-API)
+   "Users can reset forgotten password"
+
+4. US-0053: OAuth login - Google (1.5d, AG-API)
+   "Users can log in with Google account"
+
+5. US-0054: OAuth login - GitHub (1.5d, AG-API)
+   "Users can log in with GitHub account"
+
+Total Estimate: 6.5 days
+Recommended Owner: AG-API
+
+Create these stories? (YES/NO)
+```
+
+## إنشاء معايير القبول
+
+يتم إنشاء القصص بتنسيق معين/متى/ثم:
+
+```markdown
+## Acceptance Criteria
+
+- Given a user on registration page
+  When they enter valid email and 8+ character password
+  Then account is created and verification email sent
+
+- Given invalid password (< 8 characters)
+  When they try to submit
+  Then form shows "Password must be at least 8 characters"
+
+- Given user opens verification email
+  When they click verification link
+  Then email is marked verified and login works
+```
+
+## ملفات الإخراج
+
+يقوم الأمر بإنشاء:
+
+1. **Epic file** (`docs/05-epics/EP-XXXX.md`)
+   - عنوان ملحمي والهدف
+   - مرجع الوثيقة المصدر
+   - قائمة قصص الأطفال
+
+2. **Story files** (`docs/06-stories/EP-XXXX/US-XXXX.md`)
+   - المحتوى الذي تم إنشاؤه من المصدر
+   - معايير القبول
+   - ملاحظات فنية
+   - استراتيجية الاختبار
+
+3. **Test stubs** (`docs/07-testing/test-cases/US-XXXX.md`)
+   - هيكل الاختبار متوافق مع التيار المتردد
+   - العناصر النائبة لتنفيذ الاختبار
+
+4. **Status tracking** (`docs/09-agents/status.json`)
+   - جميع القصص المضافة مع الحالة: `ready`
+
+5. **Communication** (`docs/09-agents/bus/log.jsonl`)
+   - تم تسجيل حدث إنشاء القصة
+
+## سير العمل
+
+1. **Prepare source document** - تأكد من اكتمال PRD/المواصفات
+2. **Generate preview** - يجري `/auto` مع `AUTO_CREATE=no`
+3. **Review generated stories** - التحقق من الدقة والاكتمال
+4. **Adjust if needed** - تحرير المعاينة أو التجديد باستخدام معلمات مختلفة
+5. **Create stories** - اركض مع `AUTO_CREATE=yes` أو الموافقة على المعاينة
+6. **Validate stories** - يستخدم `/story-validate` على القصص المولدة
+7. **Plan sprint** - تضمين القصص التي تم التحقق منها في `/sprint`
+
+## السيناريوهات المشتركة
+
+### السيناريو: تحتوي واجهة برمجة التطبيقات (API) على 15 نقطة نهاية
+
+**Problem**: عدد كبير جدًا من القصص (ينتهك قاعدة التقدير 0.5d-2d)
+
+**Solution**: يقوم الأمر تلقائيًا بتجميع نقاط النهاية ذات الصلة:
+- نقاط النهاية لنفس المورد (GET، POST، PATCH، DELETE) → قصة واحدة
+- قائمة وتفصيل نقاط النهاية → قصة واحدة
+- نقاط نهاية المصادقة → قصة واحدة
+
+**Result**: 15 نقطة نهاية → 5-6 قصص
+
+### السيناريو: لدى PRD متطلبات غير واضحة
+
+**Problem**: القصص المولدة تبدو غامضة
+
+**Solution**:
+1. قم بتوضيح PRD مع أصحاب المصلحة أولاً
+2. إعادة تشغيل `/auto` مع المصدر المحدث
+3. أو قم بتحرير القصص التي تم إنشاؤها يدويًا باستخدام `/story`
+
+### السيناريو: القصص التي تم إنشاؤها لا تتطابق مع سرعة الفريق
+
+**Problem**: تبدو التقديرات متفائلة/متشائمة للغاية
+
+**Solution**:
+1. مراجعة القصص وضبط التقديرات
+2. النظر في السرعة التاريخية للفريق
+3. يجري `/velocity` لفهم قدرة الفريق
+4. قسم القصص الكبيرة إلى قصص أصغر
+
+## قائمة مراجعة الجودة
+
+قبل الموافقة على القصص التي تم إنشاؤها:
+
+- [ ] جميع القصص لها معايير قبول واضحة
+- [ ] القصص مستقلة (لا توجد تبعيات مخفية)
+- [ ] التقديرات واقعية (نطاق 0.5d-2d)
+- [ ] تستخدم معايير القبول تنسيق معين/متى/ثم
+- [ ] الملاحظات الفنية دقيقة
+- [ ] تغطي القصص السيناريوهات الرئيسية (المسار السعيد + الحالات المتطورة)
+- [ ] لا توجد قصص مكررة
+- [ ] الهدف الملحمي واضح ومحدد
+- [ ] تعيينات المالك مناسبة
+
+## التكامل مع الأوامر الأخرى
+
+- **After generation**: يستخدم `/story-validate` لضمان الجودة
+- **Before sprint**: يستخدم `/sprint` لاختيار القصص
+- **For dependencies**: يستخدم `/deps` إذا كانت القصص لها علاقات
+- **During development**: يستخدم `/babysit` للمساعدة في التنفيذ
+- **For testing**: يستخدم `/verify` لتشغيل الاختبارات
+
+## أفضل الممارسات
+
+- **Start with requirements** - استثمر الوقت في PRD أو المواصفات الواضحة
+- **Review generated stories** - لا تقبل بشكل أعمى جيل الذكاء الاصطناعي
+- **Validate before sprint** - يستخدم `/story-validate` على جميع القصص التي تم إنشاؤها
+- **Group related requirements** - ملحمة أكثر تركيزًا = قصص أفضل
+- **Be specific in source** - متطلبات غامضة → قصص غامضة
+- **Consider dependencies** - المراجعة اليدوية للتبعيات المخفية
+- **Estimate conservatively** - إضافة المخزن المؤقت للمجهولين
+
+## القيود والاعتبارات
+
+- **AI may misinterpret** - مراجعة القصص التي تم إنشاؤها للتأكد من دقتها
+- **Context matters** - القصص التي تم إنشاؤها قد تفتقر إلى المعرفة بالمجال
+- **Dependencies are manual** - إضافة تبعيات عبر القصة يدويًا
+- **Estimates vary by team** - اضبط بناءً على سرعتك
+- **Technical details** - قد تحتاج إلى إضافات يدوية إلى سياق الهندسة المعمارية
+
+## الأوامر ذات الصلة
+
+- [`/ملحمة`](/commands/epic) - قم بإنشاء الملاحم يدويًا إذا لزم الأمر
+- [`/قصة`](/commands/story) - إنشاء أو تحرير القصص الفردية
+- [`/التحقق من صحة القصة`](/commands/story-validate) - التحقق من الجودة التي تم إنشاؤها
+- [`/ سبرينت`](/commands/sprint) - خطط لسباقات السرعة مع القصص التي تم إنشاؤها
+- [`/ ديبس`](/commands/deps) - تصور التبعيات بعد الجيل

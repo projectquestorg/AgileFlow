@@ -1,0 +1,119 @@
+---
+title: /session:reprendre
+description: Passer à une autre session avec chargement du contexte
+---
+
+# /session:reprendre
+
+Passez à une autre session Claude Code. Affiche les sessions disponibles et fournit la commande pour changer.
+
+## Démarrage rapide
+
+```bash
+/agileflow:session:resume
+```
+
+## Comment ça marche
+
+1. Répertorie toutes les sessions enregistrées avec statut
+2. Présente un sélecteur interactif pour sélectionner une session
+3. Affiche la commande du terminal pour changer
+
+## Exemple d'interaction
+
+```
+Which session do you want to resume?
+
+○ Session 1 (main) - /home/user/myproject [active]
+○ Session 2 "auth" - /home/user/myproject-auth [active]
+○ Session 3 - /home/user/myproject-3 [stale]
+```
+
+Après avoir sélectionné la session 2 :
+
+```
+To resume Session 2 "auth":
+
+  cd /home/user/myproject-auth && claude --resume
+
+Note: Use a new terminal window/tab for best experience.
+```
+
+## États de session
+
+| State | Can Resume? | Notes |
+|-------|-------------|-------|
+| `active` | Yes | Another Claude instance is running there |
+| `stale` | Yes | Previous session ended, directory still exists |
+| `current` | No | You're already in this session |
+
+## L'indicateur --resume
+
+Le `claude --resume` flag indique à Claude Code de :
+- Charger l'historique des conversations de la session précédente
+- Restaurer le contexte sur ce sur quoi vous travailliez
+- Continuez là où vous vous êtes arrêté
+
+Sans `--resume`, Claude repart dans un nouveau contexte.
+
+## Exemples de flux de travail
+
+### Basculer entre les tâches
+
+```bash
+# Currently in Session 1 working on feature A
+/agileflow:session:resume
+# Select Session 2 "auth"
+
+# In new terminal:
+cd /home/user/myproject-auth && claude --resume
+# Continue auth work with full context
+```
+
+### Retour après la pause
+
+```bash
+# Start Claude Code
+claude
+
+# See: "2 other active sessions"
+/agileflow:session:resume
+# Pick the session you want to continue
+```
+
+### Nettoyer avant de reprendre
+
+Si une session apparaît comme obsolète :
+
+```bash
+/agileflow:session:status
+# Session 3 shows "stale"
+
+/agileflow:session:end
+# Select Session 3 to clean up
+
+/agileflow:session:resume
+# Now switch to a clean session
+```
+
+## Conseils sur les terminaux
+
+**Best practice**: ouvre un nouvel onglet/fenêtre de terminal pour chaque session.
+
+```bash
+# Tab 1: Session 1 (main project)
+cd /home/user/myproject && claude
+
+# Tab 2: Session 2 (auth feature)
+cd /home/user/myproject-auth && claude --resume
+
+# Tab 3: Session 3 (API work)
+cd /home/user/myproject-3 && claude --resume
+```
+
+## Commandes associées
+
+- [`/session:statut`](/commands/session-status) - Voir toutes les sessions en premier
+- [`/session:nouveau`](/commands/session-new) - Créez plutôt une nouvelle session
+- [`/session:fin`](/commands/session-end) - Nettoyer avant de changer
+- [`/session:historique`](/commands/session-history) - Voir les sessions passées

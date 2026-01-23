@@ -1,0 +1,140 @@
+---
+title: /session:history
+description: Zeigen Sie den Verlauf und die Nutzungsmetriken vergangener Sitzungen an
+---
+
+# /session:history
+
+Zeigen Sie den Verlauf aller Sitzungen, einschließlich der beendeten, mit Zeit- und Aktivitätsmetriken an.
+
+## Schnellstart
+
+```bash
+/agileflow:session:history
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `DAYS` | No | `7` | Number of days of history to show |
+
+## Beispiele
+
+```bash
+# Last 7 days (default)
+/agileflow:session:history
+
+# Last 30 days
+/agileflow:session:history DAYS=30
+
+# All history
+/agileflow:session:history DAYS=all
+```
+
+## Beispielausgabe
+
+```
+Session History (last 7 days)
+─────────────────────────────────────────────────────────────────
+
+Session 1 (main)
+  Path: /home/user/myproject
+  Branch: main
+  Status: active
+  Created: 2025-12-20 10:00
+  Duration: 6d 5h (ongoing)
+
+Session 2 "auth"
+  Path: /home/user/myproject-auth
+  Branch: session-2
+  Status: ended
+  Created: 2025-12-24 14:00
+  Ended: 2025-12-25 16:30
+  Duration: 1d 2h 30m
+  Worktree: removed
+
+Session 3
+  Path: /home/user/myproject-3
+  Branch: session-3
+  Status: ended
+  Created: 2025-12-26 09:00
+  Ended: 2025-12-26 12:00
+  Duration: 3h
+  Worktree: kept at /home/user/myproject-3
+
+─────────────────────────────────────────────────────────────────
+Total sessions: 3
+Active: 1    Ended: 2
+Average duration: 2d 3h
+```
+
+## Verlaufsdaten
+
+Der Sitzungsverlauf umfasst:
+
+| Field | Description |
+|-------|-------------|
+| Session ID | Numeric identifier |
+| Nickname | Human-friendly name if provided |
+| Path | Directory location |
+| Branch | Git branch used |
+| Status | active, ended, or stale |
+| Created | When session was started |
+| Ended | When session was ended (if applicable) |
+| Duration | How long the session was active |
+| Worktree | Whether worktree was kept or removed |
+
+## Anwendungsfälle
+
+### Überprüfung von Arbeitsmustern
+
+```bash
+/agileflow:session:history DAYS=30
+# See how many sessions you've used
+# Identify if you're creating too many abandoned sessions
+```
+
+### Alte Sitzungen finden
+
+```bash
+/agileflow:session:history DAYS=all
+# Find a session from weeks ago
+# Check if its worktree still exists
+```
+
+### Bereinigungsentscheidungen
+
+```bash
+/agileflow:session:history
+# See which sessions have worktrees kept
+# Decide which to clean up
+```
+
+## Datenspeicherung
+
+Der Sitzungsverlauf wird in gespeichert `.agileflow/sessions/registry.json`:
+
+```json
+{
+  "sessions": {
+    "1": {
+      "created": "2025-12-20T10:00:00Z",
+      "last_active": "2025-12-26T15:00:00Z",
+      "is_main": true
+    },
+    "2": {
+      "created": "2025-12-24T14:00:00Z",
+      "ended": "2025-12-25T16:30:00Z",
+      "nickname": "auth",
+      "worktree_removed": true
+    }
+  }
+}
+```
+
+## Verwandte Befehle
+
+- [`/session:status`](/commands/session-status) - Aktuelle aktive Sitzungen anzeigen
+- [`/session:end`](/commands/session-end) - Sitzungen beenden und aufräumen
+- [`/session:new`](/commands/session-new) - Neue Sitzung erstellen

@@ -1,0 +1,98 @@
+---
+title: /épico
+description: Crea una nueva epopeya con historias.
+---
+
+# /épico
+
+Cree una nueva epopeya con historias secundarias opcionales para organizar historias de usuarios relacionadas en torno a una característica u objetivo más amplio.
+
+## Inicio rápido
+
+```bash
+/agileflow:epic EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text>
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | Yes | - | Epic identifier (e.g., EP-0001) |
+| `TITLE` | Yes | - | Epic title describing the feature or goal |
+| `OWNER` | Yes | - | Owner name or agent ID (e.g., AG-UI, AG-API) |
+| `GOAL` | Yes | - | Outcome or metric that defines success for this epic |
+| `STORIES` | No | - | Comma-separated list of initial stories (format: `US-ID\|title\|owner`) |
+
+## Ejemplos
+
+### Creación épica básica
+
+```bash
+/agileflow:epic EPIC=EP-0010 TITLE="User Authentication" OWNER=AG-API GOAL="Enable users to securely register and log in"
+```
+
+Crea un nuevo archivo épico en `docs/05-epics/EP-0010.md` con los datos proporcionados y lo registra en `docs/09-agents/status.json`.
+
+### Épica con historias iniciales
+
+```bash
+/agileflow:epic EPIC=EP-0011 TITLE="Payment Processing" OWNER=AG-API GOAL="Enable payments via Stripe" STORIES="US-0040|Stripe integration|AG-API,US-0041|Payment form|AG-UI,US-0042|Webhook handler|AG-API"
+```
+
+Crea la epopeya y genera automáticamente historias infantiles iniciales en `docs/06-stories/EP-0011/`. Cada historia se crea con:
+- Estado: `ready` (listo para el desarrollo)
+- Estimar: `0.5d` (predeterminado, se puede modificar)
+- Dependencias: vacías (actualizadas manualmente según sea necesario)
+
+## Producción
+
+El comando crea:
+
+1. **Epic file** (`docs/05-epics/EP-XXXX.md`)
+   - Metadatos épicos (título, propietario, estado, objetivo)
+   - Estado actual y métricas
+   - Lista de cuentos infantiles
+
+2. **Story files** (uno por historia, `docs/06-stories/EP-XXXX/US-XXXX-<slug>.md`)
+   - Plantilla de historia con marcadores de posición de criterios de aceptación
+   - Vinculado a la epopeya de los padres.
+   - Listo para una definición detallada
+
+3. **Status tracking** (`docs/09-agents/status.json`)
+   - Entrada épica con propietario y estado actual.
+   - Entradas de historias vinculadas a la epopeya.
+
+4. **Agent communication** (`docs/09-agents/bus/log.jsonl`)
+   - Mensajes de tareas que muestran las épicas creadas y las historias asignadas.
+
+## Flujo de trabajo
+
+1. **Plan your epic** - Definir el objetivo de la función y las métricas de éxito.
+2. **Create the epic** - Correr `/epic` comando con detalles básicos
+3. **Add stories** - Créelos ahora con el parámetro STORIES o use `/story` para agregar individualmente más tarde
+4. **Develop stories** - Usar `/story-validate` para garantizar que cada historia esté lista antes del desarrollo
+5. **Sprint plan** - Usar `/sprint` para seleccionar historias para el próximo sprint
+6. **Track progress** - Usar `/board` para monitorear la finalización épica
+
+## Integración con otros comandos
+
+- **After epic creation**: Usar `/story` para agregar más historias
+- **Before sprint planning**: Usar `/sprint` para seleccionar historias de esta epopeya
+- **For progress tracking**: Usar `/board` o `/metrics` para ver una finalización épica
+- **For dependencies**: Usar `/deps` para visualizar las dependencias de la historia dentro de Epic
+
+## Mejores prácticas
+
+- **Keep epics focused** - Una característica o área de características por épica
+- **Make goals measurable** - Utilice resultados o métricas específicas (no "mejorar la experiencia del usuario")
+- **Add stories incrementally** - Comience con historias principales y agregue otras relacionadas con el tiempo.
+- **Assign appropriate owners** - Empareja al propietario épico con el agente de desarrollo principal.
+- **Document context** - Agregar contexto técnico en el archivo épico después de la creación.
+
+## Comandos relacionados
+
+- [`/historia`](/commands/story) - Crea historias individuales dentro de una epopeya.
+- [`/correr`](/commands/sprint) - Planifica sprints con historias épicas específicas.
+- [`/deps`](/commands/deps) - Visualizar dependencias de historias dentro de Epic.
+- [`/tablero`](/commands/board) - Sigue visualmente el progreso épico
+- [`/métricas`](/commands/metrics) - Ver métricas de velocidad y finalización épicas

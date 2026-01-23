@@ -1,0 +1,197 @@
+---
+title: / ملحمة: قائمة
+description: قم بإدراج جميع الملاحم مع تتبع الحالة والتقدم
+---
+
+# / ملحمة: قائمة
+
+اعرض جميع الملاحم مع الحالة وتتبع التقدم وخيارات الإجراء السريع.
+
+## بداية سريعة
+
+```bash
+/agileflow:epic:list
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STATUS` | No | - | Filter by status: `active`, `complete`, `on-hold` |
+
+## أمثلة
+
+### قائمة جميع الملاحم
+
+```bash
+/agileflow:epic:list
+```
+
+يعرض جميع الملاحم مع حالتها ونسبة إكمال القصة.
+
+### قائمة الملاحم النشطة فقط
+
+```bash
+/agileflow:epic:list STATUS=active
+```
+
+مرشحات لإظهار الملاحم الجارية حاليًا فقط.
+
+### قائمة الملاحم المكتملة فقط
+
+```bash
+/agileflow:epic:list STATUS=complete
+```
+
+يعرض الملاحم التي اكتملت فيها جميع القصص.
+
+## تنسيق الإخراج
+
+يعرض الأمر الملاحم في جدول منظم:
+
+```markdown
+## Epics
+
+| Epic | Title | Status | Progress | Owner |
+|------|-------|--------|----------|-------|
+| EP-0003 | User Dashboard | active | 2/5 (40%) | AG-UI |
+| EP-0002 | Authentication | active | 4/6 (67%) | AG-API |
+| EP-0001 | Core Setup | complete | 3/3 (100%) | AG-DEVOPS |
+
+---
+**Summary**: 3 epics (2 active, 1 complete)
+**Stories**: 9/14 complete (64%)
+```
+
+## تعريفات الحالة
+
+| Status | Meaning | Progress Bar | Action |
+|--------|---------|------|--------|
+| **active** | In progress, accepting new stories | Partial fill | Continue work, add stories |
+| **complete** | All stories done | Full (100%) | View summary, possibly reopen |
+| **on-hold** | Paused, not currently worked on | Frozen | Resume or close |
+
+## تصور التقدم
+
+يظهر التقدم على النحو التالي:
+- **Numerator**: قصص مكتملة
+- **Denominator**: مجموع القصص في الملحمة
+- **Percentage**: الانتهاء الشامل
+
+مثال: `4/6 (67%)` = تم الانتهاء من 4 قصص، وبقي 2، واكتمل 67%
+
+## إجراءات سريعة
+
+بعد عرض القائمة، يمكنك:
+
+### عرض تفاصيل ملحمية
+
+اختر ملحمة لترى:
+- جميع القصص مجمعة حسب الحالة (جاري التنفيذ، جاهزة، تم)
+- تصور التقدم
+- المالك والهدف
+- البحوث ذات الصلة والتفاعلات العكسية
+
+```bash
+/agileflow:epic:view EPIC=EP-0003
+```
+
+### أضف قصة إلى ملحمة
+
+قم بإنشاء قصة جديدة ضمن ملحمة موجودة:
+
+```bash
+/agileflow:story EPIC=EP-0003 ...
+```
+
+### إنشاء ملحمة جديدة
+
+بدء ملحمة ميزة جديدة:
+
+```bash
+/agileflow:epic TITLE="..." ...
+```
+
+## تكامل سير العمل
+
+### تخطيط سبرينت
+
+```bash
+/agileflow:epic:list STATUS=active
+# See which epics are in progress
+/agileflow:epic:view EPIC=EP-0003
+# Review stories and their status
+/agileflow:sprint
+# Plan which stories to work on
+```
+
+### التخطيط ربع السنوي
+
+```bash
+/agileflow:epic:list
+# See all epics and their progress
+# Identify bottlenecks (epics with less than 50% progress)
+# Decide which epics to prioritize next
+```
+
+### تتبع الإنجاز
+
+```bash
+/agileflow:epic:list STATUS=active
+# Work on remaining stories in in-progress epics
+/agileflow:epic:list STATUS=complete
+# Review what was shipped
+```
+
+### ملاحم معلقة
+
+```bash
+/agileflow:epic:list STATUS=on-hold
+# Check if any on-hold epics can be resumed
+/agileflow:epic:view EPIC=EP-0002
+# Understand why it's on hold
+```
+
+## تفسير النتائج
+
+### تقدم مرتفع (أعلى من 80%)
+
+```
+EP-0002 | Authentication | active | 5/6 (83%) | AG-API
+```
+
+- الملحمة على وشك الاكتمال
+- ركز على إنهاء القصة الأخيرة
+- خطط للملحمة التالية للبدء
+- لا تغلق حتى 100%
+
+### التقدم المتوسط ​​(40-80%)
+
+```
+EP-0003 | User Dashboard | active | 3/7 (43%) | AG-UI
+```
+
+- الملحمة في منتصف السباق
+- قد تحتاج إلى قصص إضافية
+- تحقق مما إذا كانت القصص محظورة
+- فكر في إضافة الموارد
+
+### تقدم منخفض (أقل من 40%)
+
+```
+EP-0001 | Onboarding Flow | active | 1/8 (12%) | AG-UI
+```
+
+- ملحمة بدأت للتو
+- التعلية قيد التقدم
+- مراقبة الحاصرات
+- قد ترغب في إضافة المزيد من القصص
+
+## الأوامر ذات الصلة
+
+- [`/ملحمة:عرض`](/commands/epic-view) - عرض تفاصيل ملحمية مع جميع القصص
+- [`/ملحمة`](/commands/epic) - إنشاء ملحمة جديدة
+- [`/قصة:قائمة`](/commands/story-list) - عرض جميع القصص مع المرشحات
+- [`/اللوحة`](/commands/board) - عرض لوحة كانبان المرئية
+- [`/ سبرينت`](/commands/sprint) - التخطيط للسباق
+- [`/المقاييس`](/commands/metrics) - تحليلات التقدم

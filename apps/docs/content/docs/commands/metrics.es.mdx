@@ -1,0 +1,348 @@
+---
+title: /métrica
+description: Panel de análisis con tiempo de ciclo y rendimiento
+---
+
+# /métrica
+
+Genere un panel de análisis integral que muestre el tiempo del ciclo, el tiempo de entrega, el rendimiento, el estado del WIP e información útil para la toma de decisiones basada en datos.
+
+## Inicio rápido
+
+```bash
+/agileflow:metrics
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `TIMEFRAME` | No | 30d | Time period: `7d`, `30d`, `90d`, or `all` |
+| `EPIC` | No | - | Filter by specific epic (e.g., EP-0010) |
+| `OWNER` | No | - | Filter by agent/owner (e.g., AG-API) |
+| `FORMAT` | No | ascii | Output format: `ascii`, `markdown`, `json`, or `csv` |
+| `METRIC` | No | all | Specific metric: `cycle-time`, `lead-time`, `throughput`, or `all` |
+
+## Ejemplos
+
+### Ver todas las métricas (últimos 30 días)
+
+```bash
+/agileflow:metrics
+```
+
+Muestre un panel de métricas completo del último mes.
+
+### Últimos 90 días
+
+```bash
+/agileflow:metrics TIMEFRAME=90d
+```
+
+Vista más amplia para análisis y pronóstico de tendencias.
+
+### Métricas épicas específicas
+
+```bash
+/agileflow:metrics EPIC=EP-0010 TIMEFRAME=30d
+```
+
+Centrarse en las métricas épicas de autenticación.
+
+### Sólo utilización del agente
+
+```bash
+/agileflow:metrics OWNER=AG-API TIMEFRAME=7d
+```
+
+Vea lo que AG-API completó esta semana.
+
+### Exportar como JSON
+
+```bash
+/agileflow:metrics FORMAT=json
+```
+
+Formato legible por máquina para integración con otras herramientas.
+
+## Métricas clave
+
+### Tiempo de ciclo
+
+Tiempo desde "en curso" hasta "terminado" (tiempo de trabajo real).
+
+**Example**:
+- La historia empezó el lunes.
+- Historia completada el viernes
+- Duración del ciclo: 4 días
+
+Muestra cuánto tiempo lleva realmente el trabajo una vez iniciado.
+
+### Plazo de entrega
+
+Tiempo desde la creación de la historia hasta su finalización (tiempo total incluida la espera).
+
+**Example**:
+- Historia creada el lunes de la semana 1.
+- Historia completada el viernes de la semana 2.
+- Plazo de entrega: 10 días
+
+Muestra el tiempo de un extremo a otro, incluida la espera en la cola de listos.
+
+### Rendimiento
+
+Historias completadas por semana.
+
+**Example**:
+- Semana 1: 8 historias
+- Semana 2: 10 historias
+- Semana 3: 7 historias
+- Promedio: 8,3 historias/semana
+
+Muestra la capacidad y productividad del equipo.
+
+### Trabajo en progreso (WIP)
+
+Historias actuales en estado "en progreso" o "en revisión".
+
+**Example**:
+```text
+Current WIP: 4 / 6 stories (67% capacity)
+Status: ✅ Within limits
+
+Breakdown:
+  in-progress: 3 stories
+  in-review: 1 story
+  blocked: 0 stories
+```
+
+### Eficiencia de flujo
+
+Porcentaje de tiempo dedicado a trabajar activamente frente a esperar.
+
+**Example**:
+```text
+Average: 41% (3.2d active / 7.8d total)
+
+Interpretation:
+  Stories spend 59% of time waiting
+  Only 41% of time is active work
+```
+
+Cuanto más alto es mejor. Objetivo >60%.
+
+### Utilización del agente
+
+Distribución del trabajo entre los miembros del equipo.
+
+**Example**:
+```text
+AG-API: 4.1 points/week (40%)
+AG-UI: 3.2 points/week (32%)
+AG-CI: 0.8 points/week (20%)
+AG-DEVOPS: 0.2 points/week (7%)
+```
+
+Identifica a los miembros del equipo subutilizados.
+
+## Salida del panel
+
+El panel ASCII predeterminado muestra todas las métricas clave:
+
+```text
+╔════════════════════════════════════════════════════════════╗
+║           AGILEFLOW METRICS DASHBOARD                      ║
+║         Last 30 Days (Dec 24 - Jan 23)                     ║
+╠════════════════════════════════════════════════════════════╣
+║                                                             ║
+║  📊 KEY METRICS                                             ║
+║  Cycle Time:       3.2 days avg  (↓ 8% vs last month)     ║
+║  Lead Time:        7.8 days avg  (↑ 5% vs last month)     ║
+║  Throughput:       8.5 stories/week  (↗ +12%)             ║
+║  Flow Efficiency:  41%  (Target: >60%)                    ║
+║                                                             ║
+║  🎯 WORK IN PROGRESS                                        ║
+║  Current WIP:  4 / 6 stories (67%)  ✅                    ║
+║  Blocked:      2 stories  ⚠️                               ║
+║                                                             ║
+║  AG-API:     2 stories (at limit)                         ║
+║  AG-UI:      1 story                                      ║
+║  AG-CI:      1 story                                      ║
+║  AG-DEVOPS:  0 stories                                    ║
+║                                                             ║
+║  📈 EPIC HEALTH                                             ║
+║  EP-0010  ████████████████████░░  85%  🟢 On track       ║
+║  EP-0011  ████████░░            40%  🟡 2 blocked        ║
+║  EP-0012  ██░░                  10%  🟢 Healthy          ║
+║                                                             ║
+║  ⚡ RECOMMENDATIONS                                        ║
+║  1. Unblock US-0045, US-0048 (blocked >2 days)           ║
+║  2. Reduce review time (currently 2.1 days avg)          ║
+║  3. Assign more stories to AG-DEVOPS (0 active)          ║
+║  4. Improve estimation accuracy (+15% variance)          ║
+║                                                             ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+## Distribución del tiempo del ciclo
+
+Desglose visual de los tiempos de finalización de la historia:
+
+```text
+Cycle Time (30 days)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Average:    3.2 days
+Median:     2.5 days
+85th %ile:  5.0 days
+Min:        0.5 days
+Max:        8.0 days
+
+Distribution:
+0-1 days  ████████░░ 8 stories (32%)
+1-3 days  ████████████████░░ 12 stories (48%)
+3-5 days  ████░░ 3 stories (12%)
+5+ days   ██░░ 2 stories (8%)
+```
+
+Los tiempos de ciclo más cortos son mejores. Las historias que duran más de cinco días justifican una investigación.
+
+## Gráfico de rendimiento
+
+Tasas de finalización de historias históricas:
+
+```text
+Throughput (Last 8 Weeks)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Week 1  ████████░░ 8 stories
+Week 2  ██████████░░ 10 stories
+Week 3  ██████░░ 6 stories
+Week 4  ████████████░░ 12 stories  ← Peak
+Week 5  ████████░░ 8 stories
+Week 6  ██████░░ 6 stories
+Week 7  ██████████░░ 10 stories
+Week 8  ████████░░ 8 stories
+
+Average: 8.5 stories/week
+Trend:   ↗ +12% vs previous month
+```
+
+Muestra tendencias de productividad y velocidad sostenible.
+
+## Formatos de exportación
+
+### Reducción
+
+Formato de tabla para informes y documentación:
+
+```markdown
+## AgileFlow Metrics (Last 30 Days)
+
+| Metric | Value | Trend | Target |
+|--------|-------|-------|--------|
+| Cycle Time | 3.2d avg | ↓ 8% | <3d |
+| Lead Time | 7.8d avg | ↑ 5% | <7d |
+| Throughput | 8.5/week | ↗ +12% | 10/week |
+| Flow Efficiency | 41% | ↑ 2% | >60% |
+```
+
+### JSON
+
+Formato legible por máquina:
+
+```json
+{
+  "timeframe": "30d",
+  "generated_at": "2025-12-24T14:30:00Z",
+  "metrics": {
+    "cycle_time": {
+      "avg": 3.2,
+      "median": 2.5,
+      "p85": 5.0,
+      "unit": "days",
+      "change_pct": -8
+    },
+    "throughput": {
+      "avg": 8.5,
+      "unit": "stories/week",
+      "change_pct": 12
+    }
+  }
+}
+```
+
+### CSV
+
+Formato de hoja de cálculo para análisis en Excel/Google Sheets:
+
+```csv
+Date,Cycle Time,Lead Time,Throughput,WIP,Blocked
+2025-12-24,3.2,7.8,8.5,4,2
+2025-12-23,3.1,7.5,8.2,5,1
+```
+
+## Perspectivas y recomendaciones
+
+El panel genera automáticamente recomendaciones procesables:
+
+- **Reduce cycle time** - Si >5 días, bloqueadores o desplazamiento del alcance
+- **Reduce lead time** - Historias que esperan demasiado tiempo en la cola lista
+- **Improve flow efficiency** - Historias que pasan demasiado tiempo repasándolas.
+- **Balance utilization** - Redistribuir a los miembros del equipo subutilizados.
+- **Estimate accuracy** - Si la varianza >20%, las estimaciones no son confiables
+
+## Tendencias
+
+Cada métrica muestra la tendencia en comparación con el período anterior:
+
+- ↗ **Improving** - Mejorando
+- → **Stable** - Ningún cambio significativo
+- ↘ **Declining** - Empeorando
+
+Los indicadores verdes/amarillos/rojos muestran la salud:
+- 🟢 **Green** - En camino
+- 🟡 **Yellow** - Precaución necesaria
+- 🔴 **Red** - Problema crítico
+
+## Mejores prácticas
+
+1. **Review weekly** - Verificar métricas en la planificación de sprint.
+2. **Track trends** - Comparar con el período anterior para conocer los patrones.
+3. **Find bottlenecks** - Plazo de entrega elevado vs tiempo de ciclo = tiempo de espera
+4. **Act on data** - Utilice conocimientos para mejorar el proceso.
+5. **Share with team** - La transparencia genera rendición de cuentas
+
+## Comandos relacionados
+
+- [`/agileflow:velocidad`](/commands/velocity) - Tendencias de velocidad y pronóstico.
+- [`/agileflow:tablero`](/commands/board) - Vista visual de Kanban
+- [`/agileflow:bloqueadores`](/commands/blockers) - Análisis de bloqueadores
+- [`/flujo ágil:retro`](/commands/retro) - Recopilación de datos retrospectivos.
+
+## Preguntas frecuentes
+
+<Accordion type="multiple">
+  <AccordionItem value="cycle-time">
+    <AccordionTrigger>Why is my cycle time high?</AccordionTrigger>
+    <AccordionContent>
+      Podrían ser: historias demasiado grandes (divididas en partes más pequeñas), bloqueadores (desbloquear más rápido), retrasos en la revisión del código (revisiones más rápidas) o reelaboraciones/errores (mejorar las pruebas).
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="throughput">
+    <AccordionTrigger>How do I improve throughput?</AccordionTrigger>
+    <AccordionContent>
+      Opciones: reducir el tamaño de la historia (más pequeña = más rápida), reducir el tiempo del bloqueador, mejorar la estimación o mejorar las habilidades/automatización del equipo.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="flow">
+    <AccordionTrigger>Why is flow efficiency low?</AccordionTrigger>
+    <AccordionContent>
+      Las historias pasan tiempo en la cola lista (comienzan a trabajar más rápido), en revisión (revisiones de código más rápidas) o bloqueadas (se desbloquean más rápido). Mejore reduciendo el tiempo de espera, no trabajando más rápido.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="export">
+    <AccordionTrigger>Can I export metrics history?</AccordionTrigger>
+    <AccordionContent>
+      Sí, guarde informes de varias ejecuciones y compárelos. Usar `FORMAT=csv` para análisis de hojas de cálculo.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

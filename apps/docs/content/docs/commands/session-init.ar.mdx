@@ -1,0 +1,177 @@
+---
+title: / الجلسة: الحرف الأول
+description: تهيئة تسخير الجلسة مع التحقق من الاختبار
+---
+
+# / الجلسة: الحرف الأول
+
+تهيئة أو التحقق من نظام إدارة الجلسة. يقوم هذا الأمر بإعداد البنية الأساسية لتتبع الجلسة.
+
+## بداية سريعة
+
+```bash
+/agileflow:session:init
+```
+
+## ماذا يفعل
+
+1. يخلق `.agileflow/sessions/` الدليل إذا كان في عداد المفقودين
+2. التهيئة `registry.json` مع المخطط
+3. يسجل الدليل الحالي كجلسة
+4. يقوم بإنشاء ملف قفل بمعرف العملية الحالي
+5. يعرض حالة الجلسة
+
+## إخراج المثال
+
+### الإعداد لأول مرة
+
+```
+✓ Session initialized
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+
+No other active sessions detected.
+```
+
+### تمت تهيئته بالفعل
+
+```
+✓ Session already active
+
+  Session ID: 1
+  Path: /home/user/myproject
+  Branch: main
+```
+
+### جلسات أخرى نشطة
+
+```
+✓ Session initialized
+
+  Session ID: 1 (current)
+  Path: /home/user/myproject
+  Branch: main
+
+⚠️ 2 other session(s) active in this repo.
+   Run /agileflow:session:status to see all sessions.
+   Run /agileflow:session:new to create isolated workspace.
+```
+
+## متى يتم استدعاؤه؟
+
+### تلقائي (مستحسن)
+
+يستدعي خطاف SessionStart هذا تلقائيًا عندما يبدأ Claude Code:
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "SessionStart": {
+      "command": "node scripts/agileflow-welcome.js"
+    }
+  }
+}
+```
+
+يسجل البرنامج النصي الترحيبي الجلسة ويعرض الحالة.
+
+### يدوي
+
+تشغيل يدويا إلى:
+- التحقق من عمل نظام الجلسة
+- إعادة التسجيل بعد مشاكل النظام
+- تصحيح مشاكل الجلسة
+
+```bash
+/agileflow:session:init
+```
+
+## الملفات التي تم إنشاؤها
+
+### ملف التسجيل
+
+`.agileflow/sessions/registry.json`:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "next_id": 2,
+  "project_name": "myproject",
+  "sessions": {
+    "1": {
+      "path": "/home/user/myproject",
+      "branch": "main",
+      "created": "2025-12-26T10:00:00Z",
+      "is_main": true
+    }
+  }
+}
+```
+
+### قفل الملف
+
+`.agileflow/sessions/1.lock`:
+
+```
+pid=12345
+started=1703588400
+```
+
+## استكشاف الأخطاء وإصلاحها
+
+### عدم اكتشاف الجلسة
+
+```bash
+# Check if registry exists
+ls .agileflow/sessions/
+
+# Re-initialize
+/agileflow:session:init
+```
+
+### تحذير من قفل قديم
+
+إذا رأيت أقفالًا قديمة، فسيقوم الأمر init بتنظيفها:
+
+```
+✓ Session initialized
+  Cleaned 1 stale session(s)
+```
+
+### مشاكل الإذن
+
+تأكد من أن لديك حق الوصول للكتابة إلى `.agileflow/`:
+
+```bash
+ls -la .agileflow/
+# Should show your user as owner
+```
+
+## التكامل مع البرنامج النصي الترحيبي
+
+يتضمن البرنامج النصي الترحيبي AgileFlow الكشف عن الجلسة:
+
+```
+╭──────────────────────┬────────────────────────────────────╮
+│ agileflow v2.53.0   main (cc45511)                        │
+├──────────────────────┼────────────────────────────────────┤
+│ Sessions             │ ✓ Session 1 (only)                 │
+╰──────────────────────┴────────────────────────────────────╯
+```
+
+أو مع الصراعات:
+
+```
+│ Sessions             │ ⚠️ 2 other active                   │
+
+⚠️  Other Claude session(s) active in this repo.
+```
+
+## الأوامر ذات الصلة
+
+- [`/الجلسة:الحالة`](/commands/session-status) - عرض كافة الجلسات
+- [`/الجلسة:جديدة`](/commands/session-new) - إنشاء جلسة موازية
+- [`/ الجلسة: النهاية`](/commands/session-end) - إنهاء الجلسة الحالية

@@ -1,0 +1,112 @@
+---
+title: /adr
+description: إنشاء سجل قرار الهندسة المعمارية
+---
+
+# /adr
+
+قم بإنشاء سجلات قرارات الهندسة المعمارية (ADRs) لتوثيق الاختيارات المعمارية الهامة وقرارات التصميم في مشروعك.
+
+## بداية سريعة
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="Need reliable database" DECISION="PostgreSQL chosen" CONSEQUENCES="Better reliability, steeper learning curve"
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | 4-digit ADR number (e.g., 0001, 0042) |
+| `TITLE` | Yes | - | Short title of the architectural decision |
+| `CONTEXT` | Yes | - | Why this decision was needed |
+| `DECISION` | Yes | - | What was chosen and why |
+| `CONSEQUENCES` | Yes | - | Trade-offs, positive and negative impacts |
+| `LINKS` | No | - | Optional links to related documentation |
+
+## أمثلة
+
+### ADR الأساسي: اختيار قاعدة البيانات
+
+```bash
+/agileflow:adr NUMBER=0001 TITLE="Use PostgreSQL for persistence" CONTEXT="We need a reliable database with ACID guarantees for user data and transactions" DECISION="PostgreSQL chosen over MongoDB for its strong consistency guarantees and mature ecosystem" CONSEQUENCES="Better data integrity and reliability. Team needs PostgreSQL training. Slightly higher operational complexity than NoSQL alternatives"
+```
+
+يؤدي هذا إلى إنشاء ملف جديد في `docs/03-decisions/adr-0001-use-postgresql-for-persistence.md` مع هيكل ADR الكامل.
+
+### ADR مع الروابط ذات الصلة
+
+```bash
+/agileflow:adr NUMBER=0002 TITLE="Adopt TypeScript for all new code" CONTEXT="Type safety issues in JavaScript codebase causing bugs in production" DECISION="Migrate to TypeScript with strict type checking enabled" CONSEQUENCES="Fewer type-related bugs. Initial slower development. Better IDE support and refactoring. Requires team training" LINKS="- Related Story: US-0042\n- Related ADR: ADR-0001"
+```
+
+## الإخراج
+
+عند تشغيل الأمر، سترى:
+
+1. **Preview**: يعرض محتوى ADR الذي تم إنشاؤه بالكامل
+2. **Confirmation**: يطلب نعم/لا للموافقة على ADR
+3. **File Creation**: يقوم بإنشاء ملف ADR في `docs/03-decisions/` دليل
+4. **Filename Format**: `adr-<NUMBER>-<slug>.md` (يتم إنشاؤه تلقائيًا من العنوان)
+
+يتضمن ADR الذي تم إنشاؤه ما يلي:
+
+```markdown
+---
+number: 0001
+title: Use PostgreSQL for persistence
+date: 2025-12-24
+status: accepted
+tags: [database, architecture]
+---
+
+# ADR-0001: Use PostgreSQL for persistence
+
+## Context
+We need a reliable database...
+
+## Decision
+We will use PostgreSQL...
+
+## Consequences
+- Better data integrity...
+- Team needs training...
+```
+
+## أفضل الممارسات
+
+### ترقيم ADR
+- الرقم بالتسلسل (0001، 0002، 0003، ...)
+- لا تتخطى الأرقام أو تعيد استخدامها
+- استخدم الأصفار البادئة لتحقيق الاتساق
+
+### كتابة ADRs جيدة
+- **Context first**: اشرح المشكلة أو القيد قبل اتخاذ القرار
+- **Be specific**: "استخدم PostgreSQL 15+ مع النسخ المتماثل غير المتزامن" وليس "استخدم قاعدة بيانات"
+- **Document trade-offs**: اذكر النتائج الإيجابية والسلبية
+- **Keep concise**: استهدف 1-2 صفحة كحد أقصى
+- **Reference related work**: رابط للملاحم أو القصص أو ADRs الأخرى
+
+### نصائح قسم السياق
+- ما المشكلة أو القيد الذي أدى إلى هذا القرار؟
+- ما هي محركات الأعمال؟
+- ما هي القيود التقنية الموجودة؟
+- ماذا جربنا من قبل؟
+
+### نصائح قسم القرار
+- اذكر بوضوح ما تم اختياره
+- اشرح بإيجاز سبب فوز هذا الخيار
+- اذكر البدائل التي تم النظر فيها
+- قم بتضمين أرقام الإصدارات أو تفاصيل محددة
+
+### نصائح قسم العواقب
+- قم بإدراج التأثيرات الإيجابية أولاً
+- ثم قم بإدراج المفاضلات والمخاطر
+- كن صادقًا بشأن السلبيات
+- اقتراح استراتيجيات التخفيف
+
+## الأوامر ذات الصلة
+
+- [`/قصة جديدة`](/commands/story-new) - إنشاء قصص المستخدمين المتعلقة بالقرارات المعمارية
+- [`/ملحمة جديدة`](/commands/epic-new) - إنشاء ملاحم لجهود معمارية أكبر
+- [`/ السياق`](/commands/context) - إنشاء سياق المشروع الشامل بما في ذلك ADRs

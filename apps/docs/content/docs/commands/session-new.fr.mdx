@@ -1,0 +1,146 @@
+---
+title: /session:nouveau
+description: Créez une session parallèle avec git worktree pour un travail multi-session
+---
+
+# /session:nouveau
+
+Créez une nouvelle session Claude Code parallèle avec la configuration automatique de l'arbre de travail git. Cela vous permet de travailler sur plusieurs tâches simultanément sans conflits.
+
+## Démarrage rapide
+
+```bash
+/agileflow:session:new
+```
+
+## Comment ça marche
+
+Lorsque vous exécutez cette commande, des options vous seront présentées :
+
+1. **Auto-create Session N** - Crée automatiquement une session numérotée (par exemple, Session 2, Session 3)
+2. **Name this session** - Donnez un pseudo comme "auth" ou "refactor"
+3. **Use existing branch** - Attacher à une branche que vous possédez déjà
+
+La commande alors :
+1. Crée un nouvel arbre de travail git dans un répertoire parallèle
+2. Enregistre la session dans le registre de session
+3. vous montre le `cd` commande pour basculer vers le nouvel espace de travail
+
+## Exemple de sortie
+
+```
+Creating Session 2...
+
+✓ Session created successfully
+
+  Session ID: 2
+  Path: /home/user/myproject-2
+  Branch: session-2
+
+To start working in this session:
+  cd /home/user/myproject-2 && claude
+```
+
+## Paramètres
+
+Cette commande utilise des invites interactives (AskUserQuestion) au lieu de paramètres de ligne de commande.
+
+| Option | Description |
+|--------|-------------|
+| Auto-create | Uses next available session ID |
+| Named session | Creates with custom nickname (e.g., "auth" → `/home/user/myproject-auth`) |
+| Existing branch | Attaches to a branch without creating a new one |
+
+## Pourquoi utiliser des sessions parallèles ?
+
+### Le problème
+
+L’exécution de plusieurs instances Claude Code dans le même répertoire provoque :
+- Conflits de verrouillage de fichiers (surtout sur macOS)
+- Risque de modifications contradictoires dans les mêmes fichiers
+- Commun `~/.claude/` problèmes d'annuaire
+- Aucune visibilité sur ce sur quoi les autres sessions travaillent
+
+### La solution
+
+Les arbres de travail Git fournissent :
+- **Isolated directories** - Chaque session a son propre dossier
+- **Shared .git** - Disque efficace, pas de dépôt en double
+- **Independent branches** - Aucun conflit de fusion pendant le travail
+- **Clean separation** - Les sessions ne peuvent pas se marcher dessus
+
+## Flux de travail
+
+### Démarrer une deuxième tâche
+
+```bash
+# In your main project
+/agileflow:session:new
+# Pick "Auto-create Session 2"
+
+# Claude shows:
+#   cd /home/user/myproject-2 && claude
+
+# Open new terminal
+cd /home/user/myproject-2
+claude
+```
+
+### Nommer les sessions par fonctionnalité
+
+```bash
+# Create session for auth work
+/agileflow:session:new
+# Pick "Name this session" → "auth"
+
+# Creates: /home/user/myproject-auth on branch session-auth
+```
+
+### Utiliser une branche existante
+
+```bash
+# You have a feature branch already
+git branch
+# feature/new-api
+# main
+
+/agileflow:session:new
+# Pick "Use existing branch" → "feature/new-api"
+
+# Creates worktree attached to that branch
+```
+
+## Registre des sessions
+
+Les sessions sont suivies dans `.agileflow/sessions/registry.json`:
+
+```json
+{
+  "sessions": {
+    "1": {
+      "path": "/home/user/myproject",
+      "branch": "main",
+      "is_main": true
+    },
+    "2": {
+      "path": "/home/user/myproject-2",
+      "branch": "session-2",
+      "nickname": null
+    }
+  }
+}
+```
+
+## Meilleures pratiques
+
+- **One task per session** - Gardez les séances concentrées
+- **Use nicknames for long-running work** - Plus facile à retenir que les chiffres
+- **End sessions when done** - Utiliser `/session:end` nettoyer
+- **Check status before starting** - Utiliser `/session:status` pour voir ce qui se passe
+
+## Commandes associées
+
+- [`/session:statut`](/commands/session-status) - Voir toutes les séances
+- [`/session:reprendre`](/commands/session-resume) - Passer à une autre session
+- [`/session:fin`](/commands/session-end) - Terminer et éventuellement nettoyer une session
+- [`/session:historique`](/commands/session-history) - Voir les sessions passées

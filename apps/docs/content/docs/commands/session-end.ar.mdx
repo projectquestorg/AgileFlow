@@ -1,0 +1,134 @@
+---
+title: / الجلسة: النهاية
+description: قم بإنهاء الجلسة الحالية وقم بتنظيف شجرة العمل بشكل اختياري
+---
+
+# / الجلسة: النهاية
+
+قم بإنهاء جلسة Claude Code بشكل نظيف، وإزالة قفلها وتنظيف شجرة عمل git بشكل اختياري.
+
+## بداية سريعة
+
+```bash
+/agileflow:session:end
+```
+
+## كيف يعمل
+
+1. يعرض معلومات الجلسة الحالية
+2. يسألك عما إذا كنت تريد إزالة شجرة عمل git
+3. يزيل ملف قفل الجلسة
+4. اختياريًا، يحذف دليل شجرة العمل
+
+## مثال التفاعل
+
+```
+Ending Session 2 "auth"
+
+Path: /home/user/myproject-auth
+Branch: session-2
+Created: 2 hours ago
+
+Do you want to remove the git worktree?
+
+○ Keep worktree (just end session tracking)
+○ Remove worktree (delete directory and branch)
+```
+
+## خيارات التنظيف
+
+| Option | What Happens |
+|--------|--------------|
+| **Keep worktree** | Session lock removed, directory stays. You can `cd` there and work manually. |
+| **Remove worktree** | Directory deleted, branch optionally removed, full cleanup. |
+
+## متى تستخدم كل خيار
+
+### احتفظ بـ Worktree
+
+- تريد مواصلة العمل هناك بدون كلود
+- تحتاج إلى الحفاظ على التغييرات غير الملتزم بها
+- ستعود إلى هذا العمل لاحقًا
+
+### إزالة شجرة العمل
+
+- اكتمل العمل وتم دمجه
+- تريد تحرير مساحة القرص
+- تنظيف التجارب المهجورة
+
+## إنهاء الجلسة الحالية
+
+عند التشغيل من جلستك الحالية:
+
+```bash
+/agileflow:session:end
+# This ends your current session
+# You'll see a warning before proceeding
+```
+
+## إنهاء الجلسات الأخرى
+
+يمكنك أيضًا إنهاء الجلسات التي لم تتواجد فيها حاليًا:
+
+```bash
+/agileflow:session:status
+# See all sessions
+
+/agileflow:session:end
+# Select which session to end
+```
+
+## ما الذي يتم تنظيفه
+
+### قفل الجلسة
+تمت الإزالة دائمًا:
+```
+.agileflow/sessions/2.lock → deleted
+```
+
+### دخول التسجيل
+تم التحديث:
+```json
+{
+  "sessions": {
+    "2": {
+      "ended": "2025-12-26T15:00:00Z",
+      "status": "ended"
+    }
+  }
+}
+```
+
+### جيت ووركتري (اختياري)
+إذا اخترت إزالة:
+```bash
+git worktree remove /home/user/myproject-auth
+# Directory deleted
+# Branch optionally deleted
+```
+
+## فحوصات السلامة
+
+يمنع الأمر فقدان البيانات غير المقصود:
+
+- **Uncommitted changes**: يظهر التحذير إذا كانت شجرة العمل بها عمل متاح
+- **Main session**: لا يمكن إزالة شجرة عمل المشروع الرئيسي
+- **Active sessions**: تحذير في حالة محاولة إنهاء جلسة نشطة أخرى
+
+## تنظيف الجلسة التي لا معنى لها
+
+إذا ماتت الجلسة بشكل غير متوقع:
+
+```bash
+/agileflow:session:status
+# Shows "stale" for dead sessions
+
+/agileflow:session:end
+# Select the stale session to clean up
+```
+
+## الأوامر ذات الصلة
+
+- [`/الجلسة:الحالة`](/commands/session-status) - التحقق من حالة الجلسة أولاً
+- [`/الجلسة:جديدة`](/commands/session-new) - إنشاء جلسة بديلة
+- [`/ الجلسة: التاريخ`](/commands/session-history) - انظر الجلسات المنتهية

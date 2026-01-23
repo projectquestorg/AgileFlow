@@ -1,0 +1,324 @@
+---
+title: /configuração-implantação
+description: Configurar pipeline de implantação automatizado
+---
+
+# /configuração-implantação
+
+Detecte automaticamente o tipo de projeto e configure um pipeline de implantação completo com configurações específicas da plataforma, fluxos de trabalho de CI/CD e gerenciamento de ambiente.
+
+## Início rápido
+
+```bash
+/agileflow:setup-deployment PLATFORM=auto ENV=both AUTO_DEPLOY=no
+```
+
+## Propósito
+
+Este comando configura de forma inteligente a infraestrutura de implantação:
+- Detecção automática do tipo de projeto (estático, pilha completa, sem servidor, móvel, contêineres)
+- Recomendando a plataforma de implantação ideal
+- Gerando arquivos de configuração específicos da plataforma
+- Criando fluxos de trabalho de implantação do GitHub Actions
+- Configurando modelos de variáveis ​​de ambiente e gerenciamento de segredos
+- Fornecendo as próximas etapas claras para implantação
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PLATFORM` | No | `auto` | `auto`, `vercel`, `netlify`, `heroku`, `aws`, `gcp`, `docker`, `eas` |
+| `ENV` | No | `both` | `staging`, `production`, or `both` |
+| `AUTO_DEPLOY` | No | `no` | `yes` or `no` - trigger deployment automatically on push |
+
+## Exemplos
+
+### Detectar tudo automaticamente
+
+```bash
+/agileflow:setup-deployment
+```
+
+Detecta o tipo de projeto e recomenda automaticamente a melhor plataforma.
+
+### Especifique a plataforma explicitamente
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel ENV=both
+```
+
+Configura a implantação do Vercel para teste e produção.
+
+### Implantação do Docker no Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker ENV=production
+```
+
+Configura a implantação baseada em Docker (funciona com Fly.io, AWS, GCP).
+
+### Aplicativo móvel com EAS
+
+```bash
+/agileflow:setup-deployment PLATFORM=eas ENV=production
+```
+
+Configura o Expo Application Services para implantação do React Native/Expo.
+
+## Detecção de Projeto
+
+O comando analisa seu projeto para recomendar plataformas:
+
+### Sites estáticos
+**Detected By**: HTML/CSS/JS, React/Vue/Angular SPA (sem back-end)
+- Recomendado: Vercel ou Netlify
+- Ideal para: Sites de marketing, SPAs, documentação
+
+### Aplicativos da Web Full Stack
+**Detected By**: Servidor Node.js, rotas de API Express/Fastify/Next.js
+- Recomendado: Vercel (Next.js) ou Railway
+- Ideal para: aplicativos da Web com lógica de back-end
+
+### Aplicativos móveis (React Native / Expo)
+**Detected By**: `expo` configuração, `react-native` dependência
+- Recomendado: EAS (Expo Application Services)
+- Ideal para: aplicativos móveis iOS/Android
+
+### Aplicativos baseados em contêiner
+**Detected By**: `Dockerfile` presente
+- Recomendado: Fly.io
+- Ideal para: implantações personalizadas do Docker, microsserviços
+
+### Funções sem servidor
+**Detected By**: funções Lambda, configuração do API Gateway
+- Recomendado: funções AWS Lambda ou Vercel
+- Ideal para: Cargas de trabalho orientadas por eventos e com pagamento por execução
+
+## Arquivos de saída
+
+O comando cria vários arquivos de configuração:
+
+### Configuração da plataforma
+- **Vercel**: `vercel.json`
+- **Netlify**: `netlify.toml`
+- **Heroku**: `Procfile`, `app.json`
+- **Docker**: `Dockerfile`, `.dockerignore`, `fly.toml`
+- **EAS**: `eas.json`
+- **AWS Lambda**: `serverless.yml`
+
+### Fluxo de trabalho de CI/CD
+- `.github/workflows/deploy.yml` - Fluxo de trabalho de implantação automatizado
+- Suporta encenação → promoção de produção
+- Executa em push para staging/branches principais
+
+### Gestão Ambiental
+- `.env.example` - Modelo para variáveis ​​de ambiente (seguro para commit)
+- `docs/02-practices/secrets-management.md` - Guia de gerenciamento de segredos
+- `docs/02-practices/deployment.md` - Documentação de implantação
+
+## Plataformas
+
+### Vercel (recomendado para Next.js/React)
+Melhor para: implantações Next.js, React, SPA
+- Compilações automáticas no git push
+- CDN Global
+- Funções sem servidor integradas
+- IU de gerenciamento de ambiente
+- Visualizar implantações em PRs
+
+**Next Steps**:
+```bash
+vercel link              # Connect your GitHub repo
+vercel env add DATABASE_URL production
+git push origin main     # Trigger deployment
+```
+
+### Netlify (recomendado para sites estáticos)
+Ideal para: sites estáticos, JAMstack, SPAs gerais
+- Compilações automáticas do git
+- Análises e formulários integrados
+- Funções sem servidor
+- Integração Netlify CMS
+- Gerenciamento de domínio personalizado
+
+### Heroku (servidores Node.js/Python)
+Ideal para: aplicativos de servidor tradicionais
+- Implantação simples baseada em slug
+- PostgreSQL, complementos Redis
+- Gerenciamento de variáveis ​​de ambiente
+- Recursos de colaboração em equipe
+
+**Next Steps**:
+```bash
+heroku login
+heroku create my-app
+heroku addons:create heroku-postgresql:hobby-dev
+git push heroku main
+```
+
+### Fly.io (implantação do Docker)
+Melhor para: contêineres Docker, microsserviços, tempos de execução personalizados
+- Implantação global com roteamento anycast
+- Suporte IPv6
+- Escalonamento automático
+- Volumes persistentes
+- PostgreSQL incluído
+
+**Next Steps**:
+```bash
+fly auth login
+fly launch
+fly deploy
+```
+
+### AWS (Lambda/ECS/Elastic Beanstalk)
+Ideal para: aplicativos escaláveis, microsserviços
+- Múltiplas opções de implantação (Lambda, ECS, Beanstalk)
+- Econômico em escala
+- Integração com ecossistema AWS
+- Controle de acesso refinado
+
+### EAS (Expo/React Native)
+Ideal para: aplicativos móveis (iOS/Android)
+- Construções nativas na nuvem
+- Envios para App Store/Play Store
+- Atualizações OTA
+- Desenvolvimento de compilações de cliente
+
+## Fluxo de trabalho
+
+A configuração segue um processo consistente:
+
+1. **Detect Project Type** - Analisa dependências e arquivos
+2. **Recommend Platform** - Sugere hospedagem ideal
+3. **Generate Configuration** - Cria arquivos específicos da plataforma
+4. **Create Workflow** - Configura ações do GitHub para implantação
+5. **Environment Setup** - Cria `.env.example` e documentos
+6. **Show Preview** - Exibe todos os arquivos para revisão
+7. **Create Files** - Grava no disco após confirmação SIM/NÃO
+8. **Display Next Steps** - Orienta a conclusão da configuração
+
+## Gestão Ambiental
+
+### Preparação vs Produção
+
+O comando pode configurar um ou ambos os ambientes:
+
+```yaml
+# Example: Two-branch deployment
+Staging:
+  - Branch: staging
+  - URL: staging.example.com
+  - Environment: development-like
+
+Production:
+  - Branch: main
+  - URL: example.com
+  - Environment: live
+```
+
+### Gerenciamento de segredos
+
+**Never commit secrets to git**. Em vez de:
+
+1. Usar `.env.example` como modelo
+2. Armazene segredos reais na plataforma (Vercel, Heroku, etc.)
+3. GitHub Actions fornece `${{ secrets.NAME }}`
+4. Ler `docs/02-practices/secrets-management.md` para detalhes
+
+**Common Secrets**:
+- Sequências de conexão do banco de dados
+- Chaves de API (Stripe, SendGrid, etc.)
+- Credenciais da AWS
+- Tokens de serviço de terceiros
+
+## Exemplos por plataforma
+
+### Implantação Vercel
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel
+```
+
+Cria:
+- `vercel.json` com configuração de compilação
+- `.github/workflows/deploy.yml` para implantação automática
+- `.env.example` com nomes de variáveis ​​Vercel
+- Documentos de implantação
+
+### Heroku com PostgreSQL
+
+```bash
+/agileflow:setup-deployment PLATFORM=heroku ENV=production
+```
+
+Cria:
+- `Procfile` (web: npm start)
+- `app.json` com configuração do buildpack
+- Documentos de configuração do PostgreSQL
+- Fluxo de trabalho de implantação
+
+### Docker para Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker
+```
+
+Cria:
+- `Dockerfile` com construção em vários estágios
+- `.dockerignore` para imagem limpa
+- `fly.toml` com configuração de região e volume
+- Fluxo de trabalho de implantação
+
+## Opção de implantação automática
+
+Por padrão, as implantações exigem acionamento manual. Para ativar a implantação automática em cada push:
+
+```bash
+/agileflow:setup-deployment AUTO_DEPLOY=yes
+```
+
+**Important**: Use com cuidado na produção. Considerar:
+- Sempre exija que o CI seja aprovado primeiro
+- Use preparação → processo de promoção principal
+- Implementar sinalizadores de recursos para implementações graduais
+- Monitore o rastreamento de erros após implantações
+
+## Próximas etapas após a configuração
+
+1. **Add Platform Connection**
+   ```bash
+   vercel link
+   # or
+   fly auth login
+   fly launch
+   ```
+
+2. **Configure Secrets**
+   ```bash
+   vercel env add DATABASE_URL production
+   # or
+   fly secrets set DATABASE_URL=postgresql://...
+   ```
+
+3. **Test Deployment**
+   ```bash
+   git push origin staging
+   # Check deployment logs on platform dashboard
+   ```
+
+4. **Set Custom Domain** (Opcional)
+   ```bash
+   vercel domains add example.com
+   # Follow platform-specific DNS setup
+   ```
+
+5. **Enable Auto-Deploy** (Opcional)
+   - Depois de testar a preparação, ative a implantação automática de produção
+   - Configurar regras de proteção de ramificação
+
+## Comandos Relacionados
+
+- [`/ci-setup`](/commands/ci) - Configurar testes e verificações de CI/CD
+- [`/setup-testes`](/commands/tests) - Configurar estrutura de teste
+- [`/gerar-log de alterações`](/commands/changelog) - Criar notas de lançamento

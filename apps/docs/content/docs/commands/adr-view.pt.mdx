@@ -1,0 +1,236 @@
+---
+title: /adr:view
+description: Visualize detalhes de ADR com ações contextuais baseadas no status de ADR
+---
+
+# /adr:ver
+
+Visualize detalhes completos do ADR e execute ações baseadas no contexto com base no status atual do ADR.
+
+## Início rápido
+
+```bash
+/agileflow:adr:view NUMBER=0042
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `NUMBER` | Yes | - | ADR number (4-digit, e.g., 0042) |
+
+## Exemplos
+
+### Ver ADR específico
+
+```bash
+/agileflow:adr:view NUMBER=0003
+```
+
+Exibe o conteúdo completo do ADR-0003 e oferece ações baseadas no contexto.
+
+### Seleção Interativa
+
+```bash
+/agileflow:adr:view
+```
+
+Sem o parâmetro NUMBER, mostra ADRs recentes e solicita que você selecione uma.
+
+## Formato de saída
+
+Cada visualização ADR inclui:
+
+### Informações do cabeçalho
+
+```markdown
+## ADR-0042: Use PostgreSQL for Persistence
+
+**Status**: accepted
+**Date**: 2024-12-28
+**Tags**: database, architecture
+```
+
+### Seções
+
+1. **Context**: Explica por que essa decisão foi necessária
+   - Problema ou restrição que desencadeou a decisão
+   - Drivers de negócios e requisitos técnicos
+   - Opções alternativas que foram consideradas
+
+2. **Decision**: O que foi escolhido e por quê
+   - Declaração clara da decisão
+   - Justificativa para esta escolha sobre alternativas
+   - Versões ou configurações específicas, se relevante
+
+3. **Consequences**: Compensações e impactos
+   - **Positive**: Benefícios e melhorias
+   - **Negative**: Custos, riscos, curva de aprendizado
+   - Estratégias de mitigação, se aplicável
+
+4. **Related**: Links para pesquisas, histórias, outras ADRs
+   - Pesquisa que levou a esta decisão
+   - Histórias de implementação criadas a partir deste ADR
+   - Outros ADRs este substitui ou é substituído por
+
+## Ações baseadas no contexto
+
+As ações mudam com base no status da ADR:
+
+### Para ADRs propostas
+
+Quando um ADR ainda está `proposed`, você pode:
+- **Accept this ADR**: Marcar como `accepted` e com efeito
+- **Request changes**: Modificar a proposta
+- **Reject this ADR**: Marcar como `rejected` com razão
+
+### Para ADRs aceitas (recomendado)
+
+Quando uma ADR é `accepted`, você pode:
+- **Create implementation stories**: Transforme decisão em trabalho acionável
+- **Supersede with new ADR**: Substitua pela decisão atualizada
+- **Deprecate this ADR**: Marcar como não aplicável
+- **View related research**: Veja pesquisas que levaram à decisão
+
+### Para ADRs obsoletos
+
+Quando uma ADR é `deprecated`, você pode:
+- **View deprecation history**: Veja por que foi descontinuado
+- **Reactivate this ADR**: Marcar como `accepted` novamente se o contexto mudar
+- **View replacement ADR**: Veja o que substituiu isso
+- **Back to ADR list**: Retornar à lista completa
+
+### Para ADRs Substituídos
+
+Quando uma ADR é `superseded`, você pode:
+- **View replacement ADR**: Veja o ADR que substituiu este
+- **View decision evolution**: Entenda como essa decisão evoluiu
+- **Back to ADR list**: Retornar à lista completa
+
+## Fluxos de trabalho típicos
+
+### Aprovar decisão proposta
+
+```
+1. /agileflow:adr:view NUMBER=0045
+   (See proposed architecture decision)
+2. Select "Accept this ADR"
+3. ADR status changes to accepted
+4. Select "Create implementation stories"
+5. Stories created in docs/06-stories/
+```
+
+### Implementar decisão aceita
+
+```
+1. /agileflow:adr:view NUMBER=0042
+   (See accepted architecture decision)
+2. Select "Create implementation stories"
+3. Stories created for implementing this decision
+4. Work on stories with /agileflow:babysit
+```
+
+### Acompanhe a evolução das decisões
+
+```
+1. /agileflow:adr:view NUMBER=0010
+   (Old approach)
+2. See "Superseded by ADR-0035"
+3. Select "View replacement ADR"
+4. See how decision evolved over time
+```
+
+### Reconsiderar decisão obsoleta
+
+```
+1. /agileflow:adr:view NUMBER=0015
+   (Deprecated approach)
+2. Check why it was deprecated
+3. If context changed: "Reactivate this ADR"
+4. Mark as accepted again
+```
+
+## Exemplo de exibição de ADR
+
+```markdown
+## ADR-0042: Use PostgreSQL for Persistence
+
+**Status**: accepted
+**Date**: 2024-12-28
+**Tags**: database, architecture
+
+---
+
+### Context
+
+We need a reliable database with ACID guarantees for user data and transactions.
+The application handles financial transactions requiring strong consistency.
+Current SQLite implementation cannot scale to multiple servers.
+
+---
+
+### Decision
+
+We will use PostgreSQL as our primary database because:
+- Mature, well-tested ACID compliance
+- Excellent tooling and ecosystem
+- Team has existing experience
+- Supports advanced features (JSONB, full-text search)
+
+---
+
+### Consequences
+
+**Positive:**
+- Strong data integrity guarantees
+- Better performance at scale
+- Rich query capabilities
+- Team familiarity reduces learning curve
+
+**Negative:**
+- Requires managed database service or self-hosting
+- Team needs PostgreSQL-specific training
+- Migration effort from SQLite
+- Slightly higher operational complexity than NoSQL
+
+---
+
+### Related
+
+- [Research: Database Selection](../10-research/20241225-database-selection.md)
+- [US-0050: Database migration story](../06-stories/EP-0005/US-0050.md)
+- Supersedes: ADR-0010 (Use SQLite)
+```
+
+## Melhores Práticas
+
+### When Reviewing an ADR
+
+- Leia o Contexto primeiro para entender o problema
+- Revise as consequências positivas e negativas
+- Verifique a seção relacionada para o trabalho de implementação
+- Observe a evolução da decisão (se substituída)
+
+### Ao decidir se implementar
+
+Faça estas perguntas:
+1. Este ADR está em `accepted` status?
+2. As consequências positivas correspondem às nossas necessidades atuais?
+3. Estamos preparados para consequências negativas?
+4. Temos capacidade de implementação?
+
+### Quando o status do ADR muda
+
+Sempre use `/agileflow:adr:update` documentar:
+- Por que o status está mudando
+- O que desencadeou a mudança
+- Referência ao ADR substituto (se substituído)
+
+## Comandos Relacionados
+
+- [`/adr:lista`](/commands/adr-list) - Ver todos os ADRs
+- [`/adr`](/commands/adr) - Criar novo ADR
+- [`/adr:atualização`](/commands/adr-update) - Atualizar status de ADR
+- [`/épico`](/commands/epic) - Criar épico de implementação
+- [`/ história`](/commands/story) - Criar história de implementação
+- [`/pesquisa:ver`](/commands/research-view) - Ver pesquisas relacionadas

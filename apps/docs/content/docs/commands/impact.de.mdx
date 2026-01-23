@@ -1,0 +1,528 @@
+---
+title: /Auswirkungen
+description: Analysieren Sie die Auswirkungen von Änderungen auf die gesamte Codebasis
+---
+
+# /Auswirkungen
+
+Analysieren Sie die Auswirkungen von Codeänderungen auf andere Teile Ihrer Codebasis, um Regressionen zu verhindern. Die Auswirkungserkennung identifiziert betroffene Dateien, Tests und Funktionen und schlägt dann vor, welche Tests ausgeführt werden sollen und was möglicherweise kaputt geht.
+
+## Schnellstart
+
+```bash
+# Auto-detect changes on current branch
+/agileflow:impact
+
+# Analyze specific files
+/agileflow:impact FILES=src/api/auth.ts,src/middleware/jwt.ts
+
+# Skip test execution
+/agileflow:impact RUN_TESTS=no
+```
+
+Der Befehl wird:
+1. Identifizieren Sie geänderte Dateien
+2. Kartenabhängigkeiten (direkt und indirekt)
+3. Finden Sie verwandte Tests
+4. Erkennen Sie Breaking Changes
+5. Wirkungsbericht erstellen
+6. Führen Sie optional betroffene Tests aus
+
+## Hauptmerkmale
+
+### Abhängigkeitsdiagrammanalyse
+
+Impact erstellt automatisch ein Abhängigkeitsdiagramm:
+
+```text
+Your Change: src/api/auth.ts
+  ├─ Direct dependents (files that import this)
+  │  ├─ src/api/auth/index.ts
+  │  ├─ src/middleware/auth.ts
+  │  └─ tests/api/auth/login.test.ts
+  └─ Indirect dependents (2-level chain)
+     ├─ src/app.ts
+     ├─ src/routes.ts
+     └─ [more...]
+```
+
+### Testerkennung
+
+Findet automatisch Tests, die ausgeführt werden müssen:
+
+```text
+Critical (Always Run):
+  ✓ tests/api/auth/login.test.ts
+  ✓ tests/integration/auth-flow.test.ts
+
+Recommended (Affected Indirectly):
+  ⚠️  tests/api/users/*.test.ts
+  ⚠️  tests/e2e/login.spec.ts
+
+Optional (Low Risk):
+  - tests/components/Header.test.tsx
+```
+
+### Erkennung bahnbrechender Änderungen
+
+Identifiziert Funktionssignaturänderungen:
+
+```text
+⚠️  BREAKING CHANGE DETECTED
+
+File: src/api/auth/login.ts
+Function: login()
+
+Before:
+  login(email: string, password: string): Promise<Token>
+
+After:
+  login(credentials: LoginRequest): Promise<AuthResponse>
+
+Affected callers:
+  - src/middleware/auth.ts:45
+  - tests/api/auth/login.test.ts:23
+  - tests/integration/auth-flow.test.ts:67
+```
+
+### Abdeckungskartierung
+
+Zeigt die Testabdeckung für geänderten Code an:
+
+```text
+Changed Lines:  45-52 (8 lines)
+Test Coverage:  87%
+Uncovered:      Lines 50-51 (2 lines not tested)
+
+⚠️  2 lines of changes have no test coverage
+    Consider adding tests for these paths
+```
+
+## Verwendung
+
+### Einfach – Änderungen automatisch erkennen
+
+```bash
+/agileflow:impact
+```
+
+Verwendet Git, um Änderungen am aktuellen Zweig zu finden und die Auswirkungen zu analysieren.
+
+### Analysieren Sie bestimmte Dateien
+
+```bash
+/agileflow:impact FILES=src/api/auth.ts,src/middleware/jwt.ts
+```
+
+Analysiert nur die aufgelisteten Dateien (nützlich für die manuelle Analyse).
+
+### Anderer Basiszweig
+
+```bash
+/agileflow:impact BASE=develop
+```
+
+Vergleicht mit Develop anstelle von Main/Master.
+
+### Testausführung überspringen
+
+```bash
+/agileflow:impact RUN_TESTS=no
+```
+
+Zeigt eine Auswirkungsanalyse an, führt jedoch keine Tests durch.
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `FILES` | No | Auto-detect | Comma-separated file paths |
+| `BASE` | No | main/master | Base branch for comparison |
+| `RUN_TESTS` | No | yes | Execute affected tests |
+
+## Beispiele
+
+### Typische Funktionsänderungen
+
+```bash
+/agileflow:impact
+
+# Output:
+# Impact Analysis Report
+#
+# Changed Files: 3
+# - src/api/auth.ts (23 lines modified)
+# - src/middleware/auth.ts (15 lines modified)
+# - src/components/LoginForm.tsx (12 lines modified)
+#
+# Affected Files: 8
+# - Direct dependents: 3
+# - Indirect dependents: 5
+#
+# Tests to Run: 5
+# - Critical: 2 (direct tests)
+# - Recommended: 3 (integration tests)
+#
+# Coverage: 87% (2 lines uncovered)
+```
+
+### Änderung der Sicherheits-Middleware
+
+```bash
+/agileflow:impact FILES=src/middleware/auth.ts
+
+# Output:
+# Changed: src/middleware/auth.ts (34 lines)
+#
+# Direct Dependents (6):
+#   - src/api/auth/index.ts
+#   - src/api/users/index.ts
+#   - src/api/posts/index.ts
+#   - src/middleware/validate.ts
+#   - src/app.ts
+#   - tests/middleware/auth.test.ts
+#
+# Tests to Run:
+#   ✓ tests/middleware/auth.test.ts
+#   ⚠️  tests/integration/auth-flow.test.ts
+#   ⚠️  tests/api/*/index.test.ts
+```
+
+### Erkennung bahnbrechender Änderungen
+
+```bash
+/agileflow:impact
+
+# Output includes:
+# ⚠️  BREAKING CHANGE DETECTED
+#
+# Function signature changed in src/api/auth/login.ts
+#
+# Before: login(email, password)
+# After:  login(credentials)
+#
+# Update these callers:
+#   - src/middleware/auth.ts:45
+#   - tests/api/auth/login.test.ts:23
+```
+
+## Struktur des Wirkungsberichts
+
+### Kopfzeile
+
+```text
+# Impact Analysis Report
+
+**Branch**: feature/user-auth
+**Base**: main
+**Changed Files**: 5
+**Potentially Affected Files**: 23
+**Tests to Run**: 12
+```
+
+### Direkte Auswirkungen
+
+Für jede geänderte Datei:
+
+```text
+### src/api/auth/login.ts (MODIFIED)
+
+**Type**: API endpoint
+**Changes**: 23 lines modified
+
+**Direct dependents** (3):
+- src/api/auth/index.ts (exports this endpoint)
+- src/middleware/auth.ts (uses login logic)
+- tests/api/auth/login.test.ts (tests this file)
+
+**Indirect dependents** (8):
+- src/app.ts → src/api/auth/index.ts → login.ts
+- src/routes.ts → src/api/auth/index.ts → login.ts
+- [6 more...]
+
+**Related tests**:
+- ✅ tests/api/auth/login.test.ts (exists)
+- ⚠️  tests/integration/auth-flow.test.ts (may need updates)
+- ❌ Missing: E2E test for login flow
+
+**Related stories**:
+- US-0042: Implement JWT authentication (IN-REVIEW)
+
+**Coverage**: 87% (lines 45-52 uncovered)
+```
+
+## Analysemethoden
+
+### Statische Analyse
+
+Impact verwendet eine statische Codeanalyse (kein laufender Code):
+
+- Analysieren Sie Import-/Require-Anweisungen
+- Erstellen Sie ein Abhängigkeitsdiagramm
+- Identifizieren Sie zirkuläre Abhängigkeiten
+- Finden Sie exportierten, aber nicht verwendeten Code
+- Dateibeziehungen zuordnen
+
+**Benefits**: Schnell, erfordert keine Build-/Testausführung, fängt Importänderungen ab
+
+### Testen Sie die Abdeckungszuordnung
+
+Ordnet geänderte Zeilen Tests zu:
+
+- Liest Abdeckungsberichte (falls verfügbar)
+- Ordnet Zeilennummern den Testdateien zu
+- Identifiziert aufgedeckte Änderungen
+- Schlägt Testergänzungen vor
+
+### Mustervergleich
+
+Intelligenter Mustervergleich für verwandte Tests:
+
+| Change Type | Pattern |
+|-------------|---------|
+| API route changed | Look for `routes.test.ts`, `api/*.test.ts` |
+| Component changed | Look for `*.test.tsx`, `*.stories.tsx` |
+| Service changed | Look for `service.test.ts`, integration tests |
+| Type changed | Look for `*.test.ts` that use the type |
+
+## Breaking Changes
+
+Impact erkennt wichtige Änderungen:
+
+### Änderung der Funktionssignatur
+
+```text
+⚠️  BREAKING CHANGE
+
+Function: login()
+Before:   login(email: string, password: string)
+After:    login(credentials: LoginRequest)
+
+Callers to update:
+- src/middleware/auth.ts:45
+  OLD: login(user.email, user.password)
+  NEW: login({ email: user.email, password: user.password })
+```
+
+### Export entfernt
+
+```text
+⚠️  BREAKING CHANGE
+
+Removed export: validateSession
+(was in src/middleware/auth.ts)
+
+Callers will break:
+- src/api/posts/index.ts:23 - imports validateSession
+- tests/middleware/auth.test.ts:45
+```
+
+### Typänderung
+
+```text
+⚠️  BREAKING CHANGE
+
+Type changed: User interface
+Added required field: verified_at (Date)
+
+Callers creating User without field:
+- src/api/auth/signup.ts:67
+- src/seeders/users.ts:12
+```
+
+## Testempfehlungen
+
+Impact schlägt vor, welche Tests ausgeführt werden sollen:
+
+### Kritisch (Immer ausgeführt)
+
+- Direkte Unit-Tests für geänderte Dateien
+- Tests, die speziell auf den geänderten Code abzielen
+- Alle Tests, die geänderte Dateien importieren
+
+### Empfohlen (Ausführen, wenn es die Zeit erlaubt)
+
+- Integrationstests mit geänderten Dateien
+- End-to-End-Tests durch geänderte Features
+- Tests abhängiger Funktionen
+
+### Optional (geringes Risiko)
+
+- Peripherietests
+- Tests mit indirekten Abhängigkeitsketten
+- Tests unabhängiger Funktionen
+
+## Aktionen nach der Analyse
+
+### 1. Überprüfen Sie die Wirkungszusammenfassung
+
+```text
+Changed: 3 files
+Affected: 8 files
+Tests: 5 need to run
+```
+
+### 2. Tests ausführen (wenn RUN_TESTS=yes)
+
+```text
+Running critical tests...
+✅ tests/api/auth/login.test.ts (12 tests, 345ms)
+✅ tests/middleware/auth.test.ts (8 tests, 234ms)
+⚠️  tests/integration/auth-flow.test.ts (3 tests, FAILED)
+
+Test Results: 20 passed, 3 failed
+```
+
+### 3. Behandeln Sie Fehler
+
+Wenn Tests fehlschlagen:
+
+```text
+Tests failed. Options:
+1. Fix code and re-run tests
+2. Create story for regression
+3. Skip and investigate later
+
+What should we do?
+```
+
+### 4. Behandeln Sie Breaking Changes
+
+Wenn bahnbrechende Änderungen erkannt werden:
+
+```text
+⚠️  Breaking changes found!
+
+These functions changed signature:
+- login() in src/api/auth.ts
+
+3 callers need to be updated:
+- src/middleware/auth.ts:45
+- tests/api/auth/login.test.ts:23
+
+Create stories to update these files?
+```
+
+## Visualisierung
+
+Impact kann Abhängigkeitsbäume visualisieren:
+
+```text
+src/api/auth/login.ts (CHANGED)
+├── src/api/auth/index.ts (direct)
+│   ├── src/app.ts (indirect)
+│   └── src/routes.ts (indirect)
+├── src/middleware/auth.ts (direct)
+│   └── src/app.ts (indirect)
+└── tests/api/auth/login.test.ts (test)
+```
+
+## Integration mit CI
+
+Schlagen Sie eine optimierte CI vor, die nur betroffene Tests ausführt:
+
+```yaml
+- name: Impact analysis
+  run: npx claude-code /agileflow:impact BASE=main
+
+- name: Run affected tests
+  run: npm test -- $(cat affected-tests.txt)
+
+- name: Check for breaking changes
+  run: |
+    if grep -q "BREAKING CHANGE" impact-report.md; then
+      echo "::warning::Breaking changes detected"
+    fi
+```
+
+## Anwendungsfälle
+
+### Bevor Sie PR einreichen
+
+```bash
+# Check impact of your changes
+/agileflow:impact
+
+# Run the recommended tests
+# If any fail, fix before submitting PR
+```
+
+### Nach dem Code-Review-Feedback
+
+```bash
+# You made changes based on review
+/agileflow:impact
+
+# Make sure nothing broke
+# Re-run affected tests
+```
+
+### Vor dem Zusammenführen mit der Hauptdatei
+
+```bash
+# Final check before merge
+/agileflow:impact BASE=main
+
+# Ensure no regressions
+# All critical tests passing
+```
+
+### Refactoring-Sicherheit
+
+```bash
+# Before large refactor
+/agileflow:baseline "Before refactor"
+
+# Make changes
+# Check impact
+/agileflow:impact
+
+# If breaking changes, understand them
+# Update callers accordingly
+```
+
+## Tipps
+
+### Führen Sie den Impact früh und häufig durch
+
+```bash
+# After each major change
+/agileflow:impact
+
+# Catch breakage early
+# Easier to fix one change than many
+```
+
+### Achten Sie auf indirekte Auswirkungen
+
+```text
+Direct impact: 3 affected files
+Indirect impact: 8 more affected files
+
+Fixing direct isn't enough - test indirects too
+```
+
+### Testabdeckung ist wichtig
+
+```text
+87% coverage = 13% of changes untested
+Missing tests = potential bugs from untested paths
+
+Add tests for uncovered lines
+```
+
+### Bahnbrechende Veränderungen erfordern Koordination
+
+```text
+⚠️  Function signature changed
+Need to update 5 callers
+Create stories to track the updates
+```
+
+## Verwandte Befehle
+
+- [`/rezension`](/commands/review) - Überprüfung der Codequalität
+- [`/verify`](/commands/verify) - Führen Sie Tests durch
+- [`/pr`](/commands/pr) - Erstellen Sie PR mit Wirkungsnotizen
+- [`/babysitten`](/commands/babysit) - Implementierungsanleitung (Auswirkungen auf die Ausführung)
+- [`/baseline`](/commands/baseline) - Erstellen Sie einen verifizierten Kontrollpunkt

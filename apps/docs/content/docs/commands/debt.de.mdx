@@ -1,0 +1,320 @@
+---
+title: /Schulden
+description: Verfolgen und priorisieren Sie technische Schuldenposten
+---
+
+# /Schulden
+
+Verfolgen und visualisieren Sie technische Schulden in der gesamten Codebasis. Identifizieren, kategorisieren und priorisieren Sie Refactoring-Arbeiten mit datengesteuerter Bewertung.
+
+## Schnellstart
+
+```bash
+/agileflow:debt
+```
+
+Führt einen schnellen Scan durch und erstellt einen Schuldenbericht mit Standardeinstellungen.
+
+Oder mit benutzerdefinierten Optionen:
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=report THRESHOLD=medium
+```
+
+## Parameter
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SCAN` | No | `quick` | Scan depth: `quick` (flagged areas only) or `full` (entire codebase) |
+| `OUTPUT` | No | `report` | Output type: `report`, `stories`, or `both` |
+| `THRESHOLD` | No | `medium` | Minimum severity: `high`, `medium`, or `low` |
+
+## Was es erkennt
+
+Der Schuldenscanner identifiziert mehrere Arten technischer Schulden:
+
+### Codequalitätssignale
+- TODO/FIXME/HACK-Kommentare
+- Lange Funktionen (>50 Zeilen)
+- Hohe zyklomatische Komplexität (>10)
+- Doppelte Codeblöcke
+- Große Dateien (>500 Zeilen)
+- Tiefe Verschachtelung (>4 Ebenen)
+- Gottobjekte (>10 Methoden)
+- Geringe Testabdeckung (unter 70 %)
+
+### Geschichtenbasierte Schulden
+Durchsucht Geschichten, die mit getaggt sind `tech-debt: true` oder mit „refactor“ oder „cleanup“ im Titel.
+
+### Architekturschulden
+Überprüft ADRs auf veraltete Entscheidungen oder dokumentierte negative Konsequenzen.
+
+### Git-Verlaufsanalyse
+- Dateien mit hoher Abwanderung (häufig geändert)
+- Dateien mit vielen Autoren (unklarer Eigentümer)
+- Alte Filialen noch nicht zusammengelegt
+
+### Linter-Ausgabe
+Analysiert die Ausgabe von ESLint, TypeScript, Pylint, SonarQube und Abdeckungsberichten.
+
+## Schuldenkategorien
+
+Technische Schulden sind in sieben Kategorien unterteilt:
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| **Architecture** | Wrong abstractions, tight coupling, missing patterns | Service coupling, circular dependencies |
+| **Code Quality** | Duplication, complexity, inconsistent style | Copy-paste code, high complexity |
+| **Documentation** | Missing, outdated, or incomplete docs | Undocumented APIs, stale guides |
+| **Testing** | Low coverage, flaky tests, missing E2E | No unit tests, missing integration tests |
+| **Security** | Outdated deps, exposed secrets, weak auth | CVE-vulnerable packages, hardcoded tokens |
+| **Performance** | N+1 queries, memory leaks, slow ops | Inefficient algorithms, memory bloat |
+| **Dependencies** | Outdated packages, unmaintained libraries | Years-old libraries, abandoned projects |
+
+## Bewertungsformel
+
+Jeder Schuldenposten erhält eine Punktzahl von 0-100:
+
+```text
+Score = (Severity × Scope × Pain) / 10
+
+Severity: 1-10 (impact level)
+Scope:    1-10 (files affected)
+Pain:     1-10 (developer frustration)
+```
+
+### Schweregrade
+- **Low** (1-3): Kleines Problem, blockiert nichts
+- **Medium** (4-6): Moderates Problem, verlangsamt die Entwicklung
+- **High** (7-9): Erhebliches Problem, blockiert Funktionen oder verursacht Fehler
+- **Critical** (10): Dringend, verursacht Produktionsprobleme oder blockiert die Arbeit
+
+## Beispiele
+
+### Schnellscan (Standard)
+
+```bash
+/agileflow:debt
+```
+
+Scannt Bereiche, die mit TODO/FIXME und getaggten Storys markiert sind. Erstellt einen Bericht.
+
+### Vollständiger Codebasis-Scan
+
+```bash
+/agileflow:debt SCAN=full
+```
+
+Tiefenscan der gesamten Codebasis, einschließlich Komplexitätsanalyse, Duplikaterkennung und Abdeckungsanalyse.
+
+### Generieren Sie Geschichten für kritische Schulden
+
+```bash
+/agileflow:debt SCAN=quick OUTPUT=stories THRESHOLD=high
+```
+
+Findet kritische Schuldenposten und erstellt optional Storys dazu.
+
+### Generieren Sie sowohl Berichte als auch Geschichten
+
+```bash
+/agileflow:debt SCAN=full OUTPUT=both THRESHOLD=medium
+```
+
+Erstellt einen Schuldenbericht und generiert Storys für Schuldenposten mit einem mittleren Schweregrad.
+
+## Ausgabebeispiel
+
+```markdown
+# Technical Debt Report
+
+**Generated**: 2025-12-24T10:30:00Z
+**Total Debt Items**: 42
+**Critical**: 3 | **High**: 12 | **Medium**: 18 | **Low**: 9
+**Total Estimated Effort**: 48 days
+
+---
+
+## Critical Debt (Score >80)
+
+### 1. Auth service tightly coupled to database
+**Type**: Architecture | **Score**: 87
+**Impact**: Blocks US-0055 (Add OAuth), US-0061 (Add 2FA)
+**Files**: src/services/auth.ts (287 lines, complexity 18)
+**Estimate**: 3-5 days
+**ADR**: ADR-0003 recommends service layer separation (not implemented)
+
+### 2. Missing integration tests for payment flow
+**Type**: Testing | **Score**: 85
+**Impact**: High risk for regressions, blocking production
+**Files**: src/api/payments/*.ts (12 files, 0% coverage)
+**Last Incident**: 2025-09-15 (payment processing bug)
+**Estimate**: 2-3 days
+
+---
+
+## High Debt (Score 60-80)
+[12 items...]
+
+---
+
+## Summary by Category
+
+| Category | Count | Avg Score | Estimated Effort |
+|----------|-------|-----------|------------------|
+| Architecture | 8 | 72 | 15 days |
+| Code Quality | 15 | 58 | 8 days |
+| Testing | 10 | 65 | 12 days |
+| Security | 3 | 78 | 5 days |
+| Performance | 4 | 61 | 6 days |
+
+---
+
+## Debt Heatmap (Most Problematic Files)
+
+- src/services/auth.ts: 3 items (architecture, complexity, coupling)
+- src/api/payments/process.ts: 2 items (no tests, deprecated API)
+- src/utils/legacy.ts: 2 items (duplication, no docs)
+
+---
+
+## Recommendations
+
+1. **Immediate** (Critical): Address auth refactor and payment tests
+2. **This Sprint**: Tackle 3 high-severity items (by ROI)
+3. **Next Sprint**: Reserve 20% capacity for debt reduction
+4. **Ongoing**: Require tests for all new code (enforce in CI)
+```
+
+## Arbeitsablauf
+
+Nachdem Sie einen Schuldenbericht erstellt haben, können Sie:
+
+### 1. Überprüfen Sie den Bericht
+Verstehen Sie, welche Schulden bestehen und wo sie liegen.
+
+### 2. Geschichten generieren (optional)
+```bash
+/agileflow:debt OUTPUT=stories
+```
+
+Erstellt Geschichten für kritische Schuldenposten mit:
+- Die Akzeptanzkriterien konzentrierten sich auf den „Vorher/Nachher“-Zustand
+- Wirkungsanalyse
+- Geschätzter Aufwand
+- Verweise auf betroffene Funktionen
+
+### 3. In der Dokumentation speichern
+```bash
+/agileflow:debt OUTPUT=report
+```
+
+Speichert den Bericht unter `docs/08-project/tech-debt-YYYYMMDD.md` und aktualisiert die README-Datei mit einem Link.
+
+### 4. Erstellen Sie Debt Epic
+Wenn viele kritische Elemente vorhanden sind, wird ein Epos erstellt:
+- EP-XXXX: Technische Schuldenreduzierung
+- Geschichten für die fünf wichtigsten Artikel
+- Verfolgt den Fortschritt beim Schuldenabbau
+
+## Verwendung von Schuldeninformationen
+
+### Planen Sie Sprints
+Reservieren Sie 10–20 % jedes Sprints für den Schuldenabbau:
+
+```bash
+/agileflow:sprint --include-debt --debt-threshold=high
+```
+
+### Retrospektiven
+Schuldenabbau im Nachhinein verfolgen:
+
+```bash
+/agileflow:retro --analyze-debt
+```
+
+### Armaturenbrett
+Erstellen Sie ein wöchentlich aktualisiertes Schulden-Dashboard:
+
+```text
+docs/08-project/debt-dashboard.md
+
+# Debt Dashboard (Weekly)
+
+Week 52: 42 items (↑ from 39)
+Week 51: 39 items (↓ from 43)
+
+Critical: 3 items (target: reduce to 1 this sprint)
+```
+
+## Best Practices
+
+1. **Be Honest About Estimates**: Irrtum auf der hohen Seite
+2. **Link to Features**: Priorisieren Sie die Schuldenblockierung bei neuen Arbeiten
+3. **Celebrate Reductions**: Schuldentilgung im Nachhinein anerkennen
+4. **Prevent Accumulation**: Erzwingen Sie Tests in CI für neuen Code
+5. **Review Regularly**: Schuldenscan monatlich oder vierteljährlich durchführen
+
+## Schuldenprävention
+
+Fügen Sie Ihrer CI/CD eine Schuldenprüfung hinzu:
+
+```yaml
+# Run weekly technical debt scan
+- cron: '0 0 * * 1'  # Every Monday
+  name: Technical debt scan
+  run: /agileflow:debt SCAN=full OUTPUT=report
+```
+
+## Integration mit Entwicklung
+
+Überprüfen Sie bei der Implementierung von Funktionen, ob diese Schulden verursachen:
+
+```bash
+# Before completing story
+/agileflow:debt SCAN=quick THRESHOLD=high
+
+# If debt created, track in story
+/agileflow:status STORY=US-0042 TECH_DEBT=true DEBT_SCORE=42
+```
+
+## Story-Vorlage für Schulden
+
+Beim Erstellen von Storys für Schuldenposten:
+
+```markdown
+---
+story_id: US-XXXX
+title: Refactor auth service to separate concerns
+type: tech-debt
+debt_score: 87
+estimate: 3d
+---
+
+## Current State (Before)
+- auth.ts contains DB queries, business logic, and HTTP handling
+- 287 lines, complexity 18
+- Hard to test, hard to extend
+
+## Desired State (After)
+- Clear separation: AuthService, AuthRepository, AuthController
+- Each <100 lines, complexity <8
+- 80%+ test coverage
+- Enables US-0055 (OAuth)
+
+## Acceptance Criteria
+- [ ] AuthRepository handles all DB operations
+- [ ] AuthService contains only business logic
+- [ ] AuthController handles only HTTP/routing
+- [ ] Tests cover each layer independently
+- [ ] All existing auth tests still pass
+```
+
+## Verwandte Befehle
+
+- [`/diagnose`](/commands/diagnose) - Systemzustandsdiagnose
+- [`/metrics`](/commands/metrics) - Analyse- und Metrik-Dashboard
+- [`/Geschichte`](/commands/story) - Erstellen Sie Geschichten für Schuldenposten
+- [`/episch`](/commands/epic) - Erstellen Sie ein Schuldenabbau-Epos
+- [`/retro`](/commands/retro) - Schuldenanalyse in Retrospektiven einbeziehen
+- [`/board`](/commands/board) - Sehen Sie sich an Bord schuldenbezogene Geschichten an

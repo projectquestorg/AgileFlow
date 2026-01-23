@@ -1,0 +1,201 @@
+---
+title: / Agileflow: السياق: كامل
+description: قم بإنشاء أو تحديث ملخص سياق المشروع الشامل لأدوات الذكاء الاصطناعي على الويب
+---
+
+# / Agileflow: السياق: كامل
+
+قم بإنشاء أو تحديث ملخص السياق الشامل لأدوات الذكاء الاصطناعي على الويب.
+
+## بداية سريعة
+
+```bash
+/agileflow:context:full
+```
+
+## غاية
+
+يخلق أو التحديثات `docs/context.md` مع الأقسام المدارة التي تحتوي على:
+
+- ما نبنيه والتركيز الحالي
+- خريطة الميزات وملخص التكنولوجيا/الأدوات
+- القرارات الرئيسية (ADRs) ولقطات الهندسة المعمارية
+- حالة الاختبار وCI
+- التقدم الأخير (آخر 10 رسائل حافلة)
+- المخاطر والخطوات التالية
+
+تم تصميم هذا الملف ليتم لصقه في ChatGPT أو Perplexity أو Gemini أو Claude web لإعطاء سياق المشروع الكامل لأدوات الذكاء الاصطناعي الخارجية.
+
+## كيف يعمل
+
+### الخطوة 1: جمع المصادر
+
+يقرأ الأمر المعلومات من ملفات المشروع المتعددة:
+
+| Source | Purpose |
+|--------|---------|
+| `docs/09-agents/status.json` | Current story/epic status |
+| `docs/09-agents/bus/log.jsonl` | Last 10 progress messages |
+| `docs/05-epics/*.md` | Epic details |
+| `docs/06-stories/*/*.md` | Story details |
+| `docs/03-decisions/*.md` | Architecture Decision Records |
+| `docs/02-practices/*.md` | Development practices |
+| `docs/04-architecture/*.md` | System architecture |
+| `package.json` | Project manifest and dependencies |
+| `.github/workflows/*.yml` | CI configuration |
+| `CHANGELOG.md` | Recent changes |
+
+### الخطوة 2: إنشاء الأقسام المُدارة
+
+يقوم الأمر بإنشاء هذه الأقسام أو تحديثها:
+
+```markdown
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+[Project description from package.json or README]
+
+## Current Focus
+[Active epics/stories from status.json]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+[One line per epic]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: tech -->
+## Tech Stack
+- Framework: [from package.json]
+- Key dependencies: [list major deps]
+- Testing: [from scripts or CI]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: decisions -->
+## Key Decisions (ADRs)
+[List of ADRs with titles and status]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: progress -->
+## Recent Progress
+[Last 10 entries from bus/log.jsonl]
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: next -->
+## Next Steps
+[Stories in READY status]
+<!-- END_MANAGED -->
+```
+
+### الخطوة 3: تأكيد الفرق الأول
+
+قبل كتابة التغييرات، يظهر الأمر فرقًا ويطلب التأكيد:
+
+```diff
+- [old content]
++ [new content]
+```
+
+لا يتم تطبيق التغييرات إلا بعد التأكيد.
+
+## حدود القسم
+
+للحفاظ على ملخص السياق قابلاً للقراءة:
+
+| Section | Max Lines |
+|---------|-----------|
+| overview | 10 |
+| features | 20 |
+| tech | 15 |
+| decisions | 15 |
+| progress | 30 |
+| next | 20 |
+
+## مُدار مقابل محتوى المستخدم
+
+ويفرق الأمر بين:
+
+**Managed sections** (بين العلامات):
+```markdown
+<!-- MANAGED_SECTION: overview -->
+[Content here - OK to update]
+<!-- END_MANAGED -->
+```
+
+**User-written sections** (بدون علامات):
+```markdown
+## My Custom Section
+[Content here - NEVER touched]
+```
+
+يتم دائمًا الاحتفاظ بمحتوى المستخدم خارج العلامات المُدارة.
+
+## الملفات المفقودة
+
+إذا لم تكن الملفات المصدر موجودة، فسيتم تعديل الأمر بأمان:
+
+| Missing File | Action |
+|--------------|--------|
+| `docs/context.md` | Create new file with all sections |
+| `status.json` | Skip features/next sections, use placeholders |
+| `bus/log.jsonl` | Skip progress section |
+| ADR files | Skip decisions section |
+| CI config | Skip CI details from tech section |
+
+## إخراج المثال
+
+```markdown
+# Project Context Brief
+
+**Last Updated**: 2025-12-24
+**Project**: AgileFlow - AI-powered project management
+
+<!-- MANAGED_SECTION: overview -->
+## What We're Building
+
+AgileFlow is a comprehensive project management system powered by AI agents...
+
+## Current Focus
+
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+<!-- END_MANAGED -->
+
+<!-- MANAGED_SECTION: features -->
+## Feature Map
+
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+<!-- END_MANAGED -->
+
+[...additional sections...]
+```
+
+## متى تستخدم
+
+- **After major milestones** - التقاط العمل المكتمل
+- **Before web AI sessions** - التأكد من أن السياق حديث
+- **After architecture changes** - سجل القرارات الجديدة
+- **During sprint planning** - تحديث مجالات التركيز
+
+## سير العمل
+
+```bash
+# 1. Generate or refresh context
+/agileflow:context:full
+
+# 2. Export for web AI (read-only)
+/agileflow:context:export
+
+# 3. Copy and paste into ChatGPT/Perplexity/Gemini
+```
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: السياق`](/commands/context) - نظرة عامة على أوامر السياق
+- [`/ Agileflow:context:export`](/commands/context-export) - تصدير مقتطفات موجزة
+- [`/ Agileflow:context:note`](/commands/context-note) - إضافة ملاحظة ذات طابع زمني
+- [`/ Agileflow:research:ask`](/commands/research-ask) - توليد موجه البحث

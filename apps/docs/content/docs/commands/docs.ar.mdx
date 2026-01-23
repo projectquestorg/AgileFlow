@@ -1,0 +1,159 @@
+---
+title: /docs-sync
+description: مزامنة الوثائق مع تغييرات التعليمات البرمجية
+---
+
+# /docs-sync
+
+قم بمزامنة وثائقك مع تغييرات قاعدة التعليمات البرمجية عن طريق اكتشاف التعليمات البرمجية الجديدة والتأكد من وجود الوثائق المقابلة.
+
+## بداية سريعة
+
+```bash
+/agileflow:docs-sync
+```
+
+للمقارنة مع فرع معين:
+
+```bash
+/agileflow:docs-sync BRANCH=feature-auth BASE=main
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `BRANCH` | No | Current branch | Branch to analyze for changes |
+| `BASE` | No | main/master | Base branch to compare against |
+| `AUTO_CREATE` | No | no | Automatically create missing documentation (yes/no) |
+
+## أمثلة
+
+### تحليل الفرع الحالي
+
+```bash
+/agileflow:docs-sync
+```
+
+يحلل فرعك الحالي ضد `main` والتقارير:
+- نقاط نهاية API جديدة بدون وثائق
+- مكونات واجهة مستخدم جديدة بدون وثائق
+- لم يتم توثيق تغييرات التكوين
+- الوثائق التي عفا عليها الزمن
+
+### قارن فرع الميزة
+
+```bash
+/agileflow:docs-sync BRANCH=feature-oauth BASE=main
+```
+
+يقارن `feature-oauth` ضد `main` للعثور على جميع الفجوات التوثيقية.
+
+### إنشاء المستندات المفقودة تلقائيًا
+
+```bash
+/agileflow:docs-sync BRANCH=feature-payments AUTO_CREATE=yes
+```
+
+يقوم تلقائيًا بإنشاء وثائق كعب الروتين لجميع العناصر المفقودة والالتزامات مع الرسالة `docs: sync with codebase changes`.
+
+## الإخراج
+
+يقوم الأمر بإنشاء تقرير شامل:
+
+```markdown
+# Documentation Sync Report
+
+**Branch**: feature-auth | **Base**: main | **Generated**: 2025-12-24T10:30:00Z
+
+## Missing Documentation
+
+### API Endpoints (3)
+- ❌ POST /api/auth/login (src/api/auth/login.ts)
+- ❌ POST /api/auth/logout (src/api/auth/logout.ts)
+- ❌ GET /api/auth/verify (src/api/auth/verify.ts)
+
+### UI Components (2)
+- ❌ LoginForm (src/components/LoginForm.tsx)
+- ⚠️ UserProfile (src/components/UserProfile.tsx) - stub exists, needs details
+
+### Configuration (1)
+- ❌ New env var: JWT_SECRET (.env.example)
+
+## Outdated Documentation
+
+### Deprecated
+- 📄 docs/04-architecture/api.md mentions /api/v1/login (removed in this branch)
+
+## Up-to-Date
+- ✅ UserAvatar component documented
+- ✅ Database schema up-to-date
+```
+
+## كيف يعمل
+
+### كشف التغيير
+
+الأمر:
+1. **Compares branches** استخدام `git diff` للتعرف على جميع تغييرات التعليمات البرمجية
+2. **Categorizes changes** في نقاط نهاية API ومكونات واجهة المستخدم والخدمات والتكوين ومخططات قاعدة البيانات
+3. **Maps to documentation** المواقع التي يجب أن توجد بها المستندات
+
+### الاستدلال الذكي
+
+يتم استنتاج التوثيق من:
+- **TypeScript types and interfaces** - التواقيع الوظيفية وأنواع الإرجاع
+- **JSDoc comments** - وثائق التعليمات البرمجية الموجودة
+- **Test files** - أمثلة الاستخدام
+- **OpenAPI decorators** - مواصفات API
+
+### تحليل الفجوة
+
+لكل ملف تم تغييره، يتحقق الأمر مما يلي:
+- **Missing documentation**: كود مضاف حديثًا بدون مستندات
+- **Outdated documentation**: إشارات إلى التعليمات البرمجية التي تمت إزالتها أو تغييرها
+- **Incomplete documentation**: بذرة التي تحتاج إلى تفاصيل
+
+## رسم الخرائط التوثيق
+
+يتم تعيين تغييرات التعليمات البرمجية إلى الوثائق المتوقعة:
+
+| Code Location | Expected Documentation |
+|--------------|----------------------|
+| `src/api/` or `src/routes/` | `docs/04-architecture/api.md` or OpenAPI spec |
+| `src/components/` or `src/pages/` | `docs/04-architecture/components.md` or Storybook |
+| `src/services/` or `src/utils/` | `docs/04-architecture/services.md` |
+| `*.config.js`, `.env.example` | `docs/02-practices/configuration.md` |
+| `migrations/` or `schema/` | `docs/04-architecture/database.md` |
+
+## أفضل الممارسات
+
+### قبل ارتكاب التعليمات البرمجية
+يجري `docs-sync` لتحديد فجوات التوثيق في وقت مبكر:
+
+```bash
+/agileflow:docs-sync BRANCH=your-feature BASE=main
+```
+
+### عند إضافة نقاط نهاية جديدة
+سيقوم الأمر بوضع علامة عليها تلقائيًا، مما يسهل تذكر الوثائق:
+
+```bash
+/agileflow:docs-sync AUTO_CREATE=yes
+```
+
+يؤدي هذا إلى إنشاء بذرة تحمل علامة "TODO: أضف تفاصيل" للمراجعة اليدوية.
+
+### أقسام التوثيق للمحافظة عليها
+احتفظ بهذه المزامنة مع الكود:
+- أمثلة على طلب/استجابة واجهة برمجة التطبيقات
+- تعريفات العناصر المكونة
+- خيارات التكوين
+- تغييرات مخطط قاعدة البيانات
+- نقاط نهاية API المهملة
+
+## الأوامر ذات الصلة
+
+- [`/ السياق`](/commands/context) - إنشاء موجز سياق شامل
+- [`/الملف التمهيدي للمزامنة`](/commands/readme-sync) - مزامنة ملفات README مع محتويات المجلد
+- [`/adr`](/commands/adr) - توثيق القرارات المعمارية

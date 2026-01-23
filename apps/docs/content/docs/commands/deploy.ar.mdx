@@ -1,0 +1,324 @@
+---
+title: /الإعداد للنشر
+description: قم بإعداد خط أنابيب النشر الآلي
+---
+
+# /الإعداد للنشر
+
+اكتشف نوع مشروعك تلقائيًا وقم بتكوين مسار نشر كامل باستخدام التكوينات الخاصة بالنظام الأساسي، وسير عمل CI/CD، وإدارة البيئة.
+
+## بداية سريعة
+
+```bash
+/agileflow:setup-deployment PLATFORM=auto ENV=both AUTO_DEPLOY=no
+```
+
+## غاية
+
+يقوم هذا الأمر بإعداد البنية الأساسية للنشر بذكاء من خلال:
+- الكشف التلقائي عن نوع مشروعك (ثابت، متكامل، بدون خادم، متنقل، حاويات)
+- التوصية بمنصة النشر الأمثل
+- إنشاء ملفات التكوين الخاصة بالمنصة
+- إنشاء سير عمل نشر إجراءات GitHub
+- إعداد قوالب متغيرات البيئة وإدارة الأسرار
+- توفير خطوات تالية واضحة للنشر
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `PLATFORM` | No | `auto` | `auto`, `vercel`, `netlify`, `heroku`, `aws`, `gcp`, `docker`, `eas` |
+| `ENV` | No | `both` | `staging`, `production`, or `both` |
+| `AUTO_DEPLOY` | No | `no` | `yes` or `no` - trigger deployment automatically on push |
+
+## أمثلة
+
+### الكشف التلقائي عن كل شيء
+
+```bash
+/agileflow:setup-deployment
+```
+
+يكتشف نوع المشروع ويوصي بأفضل منصة تلقائيًا.
+
+### حدد النظام الأساسي بشكل صريح
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel ENV=both
+```
+
+يقوم بإعداد نشر Vercel لكل من التدريج والإنتاج.
+
+### نشر عامل ميناء لFly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker ENV=production
+```
+
+تكوين النشر المستند إلى Docker (يعمل مع Fly.io وAWS وGCP).
+
+### تطبيقات الهاتف المتحرك مع EAS
+
+```bash
+/agileflow:setup-deployment PLATFORM=eas ENV=production
+```
+
+يقوم بإعداد خدمات تطبيق Expo لنشر React Native/Expo.
+
+## كشف المشروع
+
+يقوم الأمر بتحليل مشروعك للتوصية بالأنظمة الأساسية:
+
+### المواقع الثابتة
+**Detected By**: HTML/CSS/JS، React/Vue/Angular SPA (بدون واجهة خلفية)
+- الموصى بها: Vercel أو Netlify
+- مثالي لـ: مواقع التسويق والمنتجعات الصحية والتوثيق
+
+### تطبيقات الويب الكاملة
+**Detected By**: خادم Node.js، مسارات API Express/Fastify/Next.js
+- موصى به: Vercel (Next.js) أو Railway
+- مثالي لـ: تطبيقات الويب ذات منطق الواجهة الخلفية
+
+### تطبيقات الهاتف المحمول (React Native / Expo)
+**Detected By**: `expo` التكوين, `react-native` التبعية
+- أوصى: EAS (خدمات تطبيقات المعرض)
+- مثالي لـ: تطبيقات الهاتف المحمول iOS/Android
+
+### التطبيقات القائمة على الحاويات
+**Detected By**: `Dockerfile` حاضر
+- الموصى بها: Fly.io
+- مثالية لـ: عمليات نشر Docker المخصصة والخدمات الصغيرة
+
+### وظائف بدون خادم
+**Detected By**: وظائف Lambda، تكوين بوابة API
+- موصى به: وظائف AWS Lambda أو Vercel
+- مثالية لـ: أعباء العمل القائمة على الأحداث والدفع لكل تنفيذ
+
+## ملفات الإخراج
+
+يقوم الأمر بإنشاء عدة ملفات تكوين:
+
+### تكوين المنصة
+- **Vercel**: `vercel.json`
+- **Netlify**: `netlify.toml`
+- **Heroku**: `Procfile`, `app.json`
+- **Docker**: `Dockerfile`, `.dockerignore`, `fly.toml`
+- **EAS**: `eas.json`
+- **AWS Lambda**: `serverless.yml`
+
+### سير عمل CI/CD
+- `.github/workflows/deploy.yml` - سير عمل النشر الآلي
+- يدعم التدريج → ترويج الإنتاج
+- يعمل على الدفع إلى التدريج/الفروع الرئيسية
+
+### إدارة البيئة
+- `.env.example` - قالب لمتغيرات البيئة (آمنة للالتزام)
+- `docs/02-practices/secrets-management.md` - دليل إدارة الأسرار
+- `docs/02-practices/deployment.md` - وثائق النشر
+
+## المنصات
+
+### Vercel (موصى به لـ Next.js/React)
+الأفضل لـ: Next.js، React، عمليات نشر SPA
+- البناء التلقائي على git Push
+- شبكة CDN العالمية
+- وظائف مدمجة بدون خادم
+- واجهة إدارة البيئة
+- معاينة عمليات النشر على العلاقات العامة
+
+**Next Steps**:
+```bash
+vercel link              # Connect your GitHub repo
+vercel env add DATABASE_URL production
+git push origin main     # Trigger deployment
+```
+
+### Netlify (موصى به للمواقع الثابتة)
+الأفضل لـ: المواقع الثابتة، JAMstack، المنتجعات الصحية العامة
+- الإنشاءات التلقائية من git
+- التحليلات والنماذج المضمنة
+- وظائف بدون خادم
+- التكامل مع Netlify CMS
+- إدارة المجال المخصص
+
+### هيروكو (خوادم Node.js/Python)
+الأفضل لـ: تطبيقات الخادم التقليدية
+- نشر بسيط قائم على سبيكة
+- إضافات PostgreSQL وRedis
+- إدارة متغيرات البيئة
+- ميزات التعاون الجماعي
+
+**Next Steps**:
+```bash
+heroku login
+heroku create my-app
+heroku addons:create heroku-postgresql:hobby-dev
+git push heroku main
+```
+
+### Fly.io (نشر عامل الميناء)
+الأفضل لـ: حاويات Docker، والخدمات الصغيرة، وأوقات التشغيل المخصصة
+- النشر العالمي مع التوجيه Anycast
+- دعم IPv6
+- التحجيم التلقائي
+- الكميات المستمرة
+- تم تضمين PostgreSQL
+
+**Next Steps**:
+```bash
+fly auth login
+fly launch
+fly deploy
+```
+
+### AWS (لامدا/ECS/شجرة الفاصولياء المرنة)
+الأفضل لـ: التطبيقات القابلة للتطوير والخدمات الصغيرة
+- خيارات نشر متعددة (Lambda، ECS، Beanstalk)
+- فعالة من حيث التكلفة على نطاق واسع
+- التكامل مع النظام البيئي AWS
+- التحكم في الوصول الدقيق
+
+### EAS (المعرض/الرد الأصلي)
+الأفضل لـ: تطبيقات الهاتف المحمول (iOS/Android)
+- يبني الأصلي في السحابة
+- طلبات متجر التطبيقات/متجر Play
+- تحديثات عبر الهواء
+- يبني عميل التطوير
+
+## سير العمل
+
+يتبع الإعداد عملية متسقة:
+
+1. **Detect Project Type** - تحليل التبعيات والملفات
+2. **Recommend Platform** - يقترح الاستضافة الأمثل
+3. **Generate Configuration** - إنشاء ملفات خاصة بالمنصة
+4. **Create Workflow** - إعداد إجراءات GitHub للنشر
+5. **Environment Setup** - يخلق `.env.example` والمستندات
+6. **Show Preview** - عرض جميع الملفات للمراجعة
+7. **Create Files** - يكتب إلى القرص بعد تأكيد نعم/لا
+8. **Display Next Steps** - اكتمال إعداد الأدلة
+
+## إدارة البيئة
+
+### التدريج مقابل الإنتاج
+
+يمكن للأمر إعداد إحدى البيئتين أو كلتيهما:
+
+```yaml
+# Example: Two-branch deployment
+Staging:
+  - Branch: staging
+  - URL: staging.example.com
+  - Environment: development-like
+
+Production:
+  - Branch: main
+  - URL: example.com
+  - Environment: live
+```
+
+### إدارة الأسرار
+
+**Never commit secrets to git**. بدلاً من:
+
+1. يستخدم `.env.example` كقالب
+2. قم بتخزين الأسرار الفعلية في النظام الأساسي (Vercel، Heroku، إلخ.)
+3. توفر إجراءات GitHub `${{ secrets.NAME }}`
+4. يقرأ `docs/02-practices/secrets-management.md` للحصول على التفاصيل
+
+**Common Secrets**:
+- Database connection strings
+- مفاتيح واجهة برمجة التطبيقات (Stripe، وSendGrid، وما إلى ذلك)
+- بيانات اعتماد AWS
+- رموز خدمة الطرف الثالث
+
+## أمثلة حسب المنصة
+
+### نشر فيرسيل
+
+```bash
+/agileflow:setup-deployment PLATFORM=vercel
+```
+
+يخلق:
+- `vercel.json` مع بناء التكوين
+- `.github/workflows/deploy.yml` للنشر التلقائي
+- `.env.example` مع أسماء المتغيرات Vercel
+- Deployment docs
+
+### Heroku مع PostgreSQL
+
+```bash
+/agileflow:setup-deployment PLATFORM=heroku ENV=production
+```
+
+يخلق:
+- `Procfile` (الويب: بداية npm)
+- `app.json` مع التكوين buildpack
+- مستندات إعداد PostgreSQL
+- سير عمل النشر
+
+### عامل ميناء إلى Fly.io
+
+```bash
+/agileflow:setup-deployment PLATFORM=docker
+```
+
+يخلق:
+- `Dockerfile` مع بناء متعدد المراحل
+- `.dockerignore` للحصول على صورة نظيفة
+- `fly.toml` مع المنطقة وحجم التكوين
+- سير عمل النشر
+
+## خيار النشر التلقائي
+
+افتراضيًا، تتطلب عمليات النشر التشغيل اليدوي. لتمكين النشر التلقائي في كل دفعة:
+
+```bash
+/agileflow:setup-deployment AUTO_DEPLOY=yes
+```
+
+**Important**: استخدم بحذر في الإنتاج. يعتبر:
+- اطلب دائمًا CI للمرور أولاً
+- استخدم التدريج → عملية الترويج الرئيسية
+- تنفيذ علامات الميزات للطرح التدريجي
+- مراقبة تتبع الأخطاء بعد عمليات النشر
+
+## الخطوات التالية بعد الإعداد
+
+1. **Add Platform Connection**
+   ```bash
+   vercel link
+   # or
+   fly auth login
+   fly launch
+   ```
+
+2. **Configure Secrets**
+   ```bash
+   vercel env add DATABASE_URL production
+   # or
+   fly secrets set DATABASE_URL=postgresql://...
+   ```
+
+3. **Test Deployment**
+   ```bash
+   git push origin staging
+   # Check deployment logs on platform dashboard
+   ```
+
+4. **Set Custom Domain** (خياري)
+   ```bash
+   vercel domains add example.com
+   # Follow platform-specific DNS setup
+   ```
+
+5. **Enable Auto-Deploy** (خياري)
+   - بعد اختبار التدريج، قم بتمكين النشر التلقائي للإنتاج
+   - تكوين قواعد حماية الفرع
+
+## الأوامر ذات الصلة
+
+- [`/ إعداد ci`](/commands/ci) - إعداد اختبارات وفحوصات CI/CD
+- [`/اختبارات الإعداد`](/commands/tests) - تكوين إطار الاختبار
+- [`/إنشاء سجل التغيير`](/commands/changelog) - إنشاء ملاحظات الإصدار

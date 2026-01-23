@@ -1,0 +1,140 @@
+---
+title: /adr:liste
+description: Répertoriez tous les enregistrements de décision d'architecture avec leur statut et leurs actions rapides
+---
+
+# /adr:liste
+
+Affichez tous les enregistrements de décision d'architecture avec leur statut, leurs dates et leurs options d'action rapide.
+
+## Démarrage rapide
+
+```bash
+/agileflow:adr:list
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STATUS` | No | - | Filter by status: `proposed`, `accepted`, `deprecated`, `superseded` |
+
+## Exemples
+
+### Répertorier tous les ADR
+
+```bash
+/agileflow:adr:list
+```
+
+Affiche tous les ADR triés par numéro avec leur statut actuel.
+
+### Répertorier uniquement les ADR acceptés
+
+```bash
+/agileflow:adr:list STATUS=accepted
+```
+
+Filtres pour afficher uniquement les ADR qui ont été approuvés et qui sont en vigueur.
+
+### Répertorier uniquement les ADR proposés
+
+```bash
+/agileflow:adr:list STATUS=proposed
+```
+
+Montre les ADR toujours en discussion, en attente d’approbation par l’équipe.
+
+## Format de sortie
+
+La commande affiche les ADR dans un tableau structuré :
+
+```
+## Architecture Decision Records
+
+| # | Title | Status | Date | Tags |
+|---|-------|--------|------|------|
+| 0003 | Use PostgreSQL for persistence | accepted | 2024-12-28 | database, architecture |
+| 0002 | Session management approach | accepted | 2024-12-25 | auth, sessions |
+| 0001 | AgileFlow agent system | accepted | 2024-12-20 | agents, architecture |
+
+---
+**Summary**: 3 ADRs (3 accepted, 0 proposed, 0 deprecated)
+```
+
+## Définitions de statut
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| **proposed** | Under discussion, not yet decided | Review and approve or request changes |
+| **accepted** | Decision made and in effect | Implement or create related stories |
+| **deprecated** | No longer applies (but not replaced) | Consider reactivating if context changes |
+| **superseded** | Replaced by a newer ADR | View replacement ADR to understand evolution |
+
+## Actions rapides
+
+Après avoir affiché la liste, vous pouvez :
+
+### Afficher les détails de l'ADR
+
+Sélectionnez un ADR pour voir le contenu complet, notamment :
+- Contexte complet expliquant la décision
+- Justification de la décision et alternatives envisagées
+- Conséquences (positives et négatives)
+- ADR et histoires connexes
+
+```bash
+/agileflow:adr:view NUMBER=0003
+```
+
+### Créer un nouvel ADR
+
+Accédez à la création ADR dans la liste :
+
+```bash
+/agileflow:adr NUMBER=0004 TITLE="..." CONTEXT="..." DECISION="..." CONSEQUENCES="..."
+```
+
+### Mettre à jour le statut ADR
+
+Modifier le statut d'un ADR existant (par exemple, proposé → accepté) :
+
+```bash
+/agileflow:adr:update NUMBER=0003 STATUS=accepted
+```
+
+## Intégration du flux de travail
+
+### Après la revue de l'architecture
+
+```bash
+/agileflow:adr:list STATUS=proposed
+# Review proposed decisions
+/agileflow:adr:view NUMBER=0003  # View each for discussion
+/agileflow:adr:update NUMBER=0003 STATUS=accepted  # Approve decision
+```
+
+### Planification de la mise en œuvre
+
+```bash
+/agileflow:adr:list STATUS=accepted
+# See all approved architectural decisions
+/agileflow:adr:view NUMBER=0003
+# If needed: /agileflow:epic to create implementation work
+```
+
+### Suivi des décisions
+
+```bash
+/agileflow:adr:list
+# Comprehensive view of all decisions and their status
+# Superseded ADRs show decision evolution
+```
+
+## Commandes associées
+
+- [`/adr`](/commands/adr) - Créer un nouvel ADR
+- [`/adr:vue`](/commands/adr-view) - Voir tous les détails de l'ADR
+- [`/adr:mise à jour`](/commands/adr-update) - Mettre à jour le statut ADR
+- [`/épique`](/commands/epic) - Créer une épopée de mise en œuvre pour les ADR acceptés
+- [`/histoire`](/commands/story) - Créer une histoire de mise en œuvre

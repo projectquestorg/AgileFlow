@@ -1,0 +1,92 @@
+---
+title: / Agileflow:research:list
+description: عرض فهرس جميع الملاحظات البحثية في مشروعك
+---
+
+# / Agileflow:research:list
+
+اعرض جميع الملاحظات البحثية المخزنة في مشروعك مع نظرة عامة سريعة.
+
+## بداية سريعة
+
+```bash
+/agileflow:research:list
+```
+
+لا توجد حجج مطلوبة—يظهر كل الملاحظات البحثية.
+
+## غاية
+
+يظهر الملاحظات البحثية المخزنة في `docs/10-research/` مع:
+
+- تاريخ
+- عنوان
+- اسم الملف
+- ملخص من سطر واحد (إن وجد)
+
+هذا هو **read-only command**- لا تتم كتابة أي ملفات.
+
+## الإخراج
+
+```
+## Research Notes
+
+| Date       | Topic                  | File                        |
+|------------|------------------------|-----------------------------|
+| 2025-01-07 | OAuth Integration       | 20250107-oauth.md           |
+| 2025-01-06 | Performance Tips        | 20250106-perf.md            |
+| 2025-01-05 | Database Migrations     | 20250105-migrations.md      |
+
+Total: 3 research notes
+
+Quick actions:
+- /agileflow:research:view FILE=<filename> - Read a specific note
+- /agileflow:research:analyze FILE=<filename> - Analyze for implementation
+- /agileflow:research:ask TOPIC="new topic" - Create new research prompt
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## عندما لا يوجد بحث
+
+إذا لم يتم العثور على ملاحظات بحثية:
+
+```
+No research notes found.
+
+Quick start:
+- /agileflow:research:ask TOPIC="your topic" - Generate research prompt for ChatGPT/Claude
+- /agileflow:research:import TOPIC="..." - Import external content
+```
+
+## كيف يعمل
+
+1. يقرأ `docs/10-research/README.md` لجدول الفهرس
+2. إذا لم يكن الملف README موجودًا، فسيقوم بسرد الملفات من الدليل
+3. إذا كان الدليل غير موجود، يظهر رسالة مفيدة
+4. يقترح الإجراءات التالية
+
+## إجراءات سريعة
+
+بعد الاطلاع على القائمة يمكنك:
+
+| Action | Command |
+|--------|---------|
+| Read a note | `/agileflow:research:view FILE=<filename>` |
+| Analyze for implementation | `/agileflow:research:analyze FILE=<filename>` |
+| Create new research | `/agileflow:research:ask TOPIC="..."` |
+| Import content | `/agileflow:research:import TOPIC="..."` |
+
+## متى تستخدم
+
+- **Before implementing** - البحث عن البحوث السابقة حول الموضوع
+- **Looking for code snippets** - تذكر أين قمت بالبحث عن شيء ما
+- **Check action items** - تعرف على المهام التي جاءت من البحث
+- **Team knowledge sharing** - تصفح ما تم بحثه
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow: البحث`](/commands/research) - نظرة عامة على نظام البحث
+- [`/ Agileflow:research:ask`](/commands/research-ask) - توليد مطالبات البحث
+- [`/ Agileflow:البحث:استيراد`](/commands/research-import) - استيراد نتائج البحوث
+- [`/ Agileflow:البحث:عرض`](/commands/research-view) - قراءة مذكرة بحثية محددة
+- [`/ Agileflow:البحث:تحليل`](/commands/research-analyze) - تحليل للتنفيذ

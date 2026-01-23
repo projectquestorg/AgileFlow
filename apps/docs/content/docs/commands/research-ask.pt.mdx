@@ -1,0 +1,234 @@
+---
+title: /agileflow:pesquisa:perguntar
+description: Gere solicitações de pesquisa detalhadas para ChatGPT, Claude web, Perplexity ou Gemini
+---
+
+# /agileflow:pesquisa:perguntar
+
+Gere um prompt de pesquisa abrangente e rico em contexto para ferramentas externas de IA quando precisar de ajuda especializada.
+
+## Início rápido
+
+```bash
+/agileflow:research:ask TOPIC="your research topic"
+```
+
+Exemplo para solução de problemas:
+
+```bash
+/agileflow:research:ask TOPIC="next-auth Google OAuth" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+```
+
+## Propósito
+
+Quando você está preso em um problema ou precisa de orientação especializada, este comando gera um **detailed 200+ line prompt** isso inclui:
+
+- Seu contexto de base de código atual e trechos de código
+- Mensagens de erro exatas e rastreamentos de pilha
+- O que você já tentou
+- Perguntas específicas para responder
+
+O prompt gerado foi projetado para obter respostas específicas e acionáveis ​​de ferramentas de IA.
+
+## Parâmetros
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | What you're researching (e.g., "OAuth 2.0 with Google") |
+| DETAILS | No | Constraints, deadlines, or specific requirements |
+| ERROR | No | Exact error message if troubleshooting |
+
+## O que é gerado
+
+O comando cria um prompt estruturado com estas seções:
+
+### 1. Contexto do Projeto
+Versão da estrutura, dependências e arquivos relevantes da sua base de código.
+
+### 2. Implementação Atual
+**50+ lines of actual code** do seu projeto - não pseudocódigo ou resumos.
+
+### 3. O problema
+- Mensagens de erro exatas (literalmente)
+- Rastreamento de pilha completo, se disponível
+- Comportamento esperado versus comportamento real
+- Passos para reproduzir
+
+### 4. O que já tentamos
+Pelo menos **2 approaches** com resultados detalhados e análises de por que não funcionaram.
+
+### 5. Perguntas Específicas
+**3+ targeted questions** que sejam responsáveis ​​e específicos para sua situação.
+
+### 6. O que eu preciso
+- Análise de causa raiz
+- Solução passo a passo
+- Exemplos completos de código
+- Pegadinhas e casos extremos
+- Abordagem de teste
+
+### 7. Detalhes do ambiente
+Versão do Node.js, sistema operacional e versões de ferramentas relevantes.
+
+## Requisitos de qualidade
+
+O comando valida o prompt gerado antes de gerar:
+
+| Check | Requirement |
+|-------|-------------|
+| Length | ≥200 lines |
+| Code snippets | ≥50 lines of actual code |
+| Error details | Verbatim message if troubleshooting |
+| Tried section | ≥2 approaches documented |
+| Questions | ≥3 specific questions |
+
+Se alguma verificação falhar, o comando reunirá mais contexto e será regenerado.
+
+## Fluxo de trabalho
+
+```
+Step 1: Run the command
+/agileflow:research:ask TOPIC="..." ERROR="..."
+
+Step 2: Copy the generated prompt
+
+Step 3: Paste into ChatGPT, Claude web, Perplexity, or Gemini
+
+Step 4: Get expert analysis
+
+Step 5: Import results back
+/agileflow:research:import TOPIC="..."
+(paste the response when prompted)
+
+Step 6: Results saved to docs/10-research/
+```
+
+## Exemplo de saída
+
+Um bom prompt é assim (abreviado):
+
+```markdown
+# Research Request: next-auth Google OAuth unauthorized_client Error
+
+## Project Context
+
+**Framework**: Next.js 14.0.4 with App Router
+**Key Dependencies**:
+- next-auth: 5.0.0-beta.4
+- next: 14.0.4
+- typescript: 5.3.3
+
+---
+
+## Current Implementation
+
+### File: src/app/api/auth/[...nextauth]/route.ts
+
+```typescript
+import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
+
+exportar const { manipuladores, auth, signIn, signOut } = NextAuth({
+  provedores: [
+    Google({
+      ID do cliente: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  // ... mais 40 linhas de código real
+});
+```
+
+---
+
+## The Problem
+
+### Error Message
+```
+[auth][error] CallbackRouteError: Leia mais em https://errors.authjs.dev#callbackrouteerror
+[auth][cause]: Error: unauthorized_client
+```
+
+### Expected Behavior
+User should be redirected to Google login, authenticate, and return to the app.
+
+### Actual Behavior
+After clicking "Sign in with Google", immediately get unauthorized_client error.
+
+---
+
+## What We've Already Tried
+
+### Attempt 1: Verify credentials
+**What we did**: Double-checked GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+**Result**: Credentials match exactly
+**Why it didn't work**: Issue persists
+
+### Attempt 2: Check redirect URIs
+**What we did**: Added localhost:3000/api/auth/callback/google to Google Console
+**Result**: Still getting unauthorized_client
+
+---
+
+## Specific Questions
+
+1. **Why does next-auth 5.0.0-beta.4 throw unauthorized_client when credentials are verified?**
+2. **Is there additional configuration needed for Google OAuth with App Router?**
+3. **What's the correct redirect URI format for next-auth v5?**
+4. **Are there known issues with next-auth 5.0.0-beta.4 and the Google provider?**
+
+---
+
+## What I Need
+
+1. **Root cause analysis**: Why is this happening?
+2. **Step-by-step solution** with exact code changes
+3. **Complete code examples** that I can copy-paste
+4. **Gotchas and edge cases** to watch for
+5. **Testing approach** to verify the fix works
+```
+
+## Antipadrões
+
+**Don't generate short, vague prompts:**
+
+```
+❌ "How do I fix OAuth in Next.js?"
+❌ "Getting an error with authentication, how to fix?"
+❌ "Help with Google login"
+```
+
+**Always generate detailed prompts with:**
+
+```
+✅ 200+ lines with full context
+✅ Actual code from your codebase
+✅ Exact error messages
+✅ What you've already tried
+✅ Specific questions
+```
+
+## Integração com babá
+
+Quando [`/agileflow:babá`](/commands/babysit) detecta que você está preso em um problema, sugere:
+
+```
+⚠️ You're working on this for a while. Need help?
+
+Try:
+  /agileflow:research:ask TOPIC="describe your problem"
+```
+
+## Dicas para melhores resultados
+
+1. **Be specific with TOPIC** - Incluir versões de framework e tipos de erros
+2. **Include ERROR messages** - Rastreamentos completos de pilha ajudam tremendamente
+3. **Let the command read your code** - Extrai a implementação real
+4. **Don't skip validation** - As verificações garantem respostas de qualidade
+
+## Comandos Relacionados
+
+- [`/agileflow:pesquisa`](/commands/research) - Visão geral do sistema de pesquisa
+- [`/agileflow:research:import`](/commands/research-import) - Importar resultados de pesquisa
+- [`/agileflow:pesquisa:lista`](/commands/research-list) - Ver todas as notas de pesquisa
+- [`/agileflow:research:view`](/commands/research-view) - Leia nota de pesquisa específica

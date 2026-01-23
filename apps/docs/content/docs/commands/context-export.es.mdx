@@ -1,0 +1,158 @@
+---
+title: /agileflow:context:exportar
+description: Exporte un extracto de contexto conciso para pegarlo en herramientas web de IA
+---
+
+# /agileflow:context:exportar
+
+Exporte un extracto de contexto conciso para pegarlo en herramientas web de IA.
+
+## Inicio rápido
+
+```bash
+/agileflow:context:export
+```
+
+## Objetivo
+
+Lee `docs/context.md` y genera un extracto condensado (≤300 líneas) listo para pegar en ChatGPT, Perplexity, Gemini o Claude web.
+
+**This is a read-only command** - no se escriben archivos.
+
+## Formato de salida
+
+El comando genera un bloque de código de rebajas para facilitar la copia:
+
+```markdown
+# Project Context Brief
+Last updated: 2025-12-24
+
+## What We're Building
+AgileFlow is a comprehensive project management system...
+
+## Current Focus
+- EP-0010: Documentation System (in_progress)
+- US-0042: Add Loop Mode docs (in_progress)
+
+## Tech Stack
+- Framework: Next.js 16, TypeScript
+- UI: React, Tailwind CSS, shadcn/ui
+- Testing: Jest, Playwright
+
+## Key Decisions
+- ADR-001: Use TypeScript for type safety (Accepted)
+- ADR-002: Use React component library (Accepted)
+
+## Feature Map
+| Epic | Status | Stories |
+|------|--------|---------|
+| EP-0010 | in_progress | 5 total, 3 done |
+| EP-0009 | complete | 7 total, 7 done |
+
+## Next Steps
+- US-0043: Visual Mode documentation (ready)
+- US-0044: Session commands docs (ready)
+
+---
+**Paste this into**: ChatGPT, Perplexity, Gemini, or Claude web
+**Purpose**: Load full project context for AI assistance
+**Limit**: This excerpt is ≤300 lines for easy pasting
+```
+
+## Secciones incluidas
+
+La exportación incluye sólo estas secciones (para mantenerse por debajo de las 300 líneas):
+
+| Section | Max Lines | Purpose |
+|---------|-----------|---------|
+| Header | 2 | Title and timestamp |
+| What We're Building | 5 | Project overview |
+| Current Focus | 5 | Active work |
+| Tech Stack | 8 | Technologies |
+| Key Decisions | 10 | ADR titles only |
+| Feature Map | 15 | One line per epic |
+| Next Steps | 15 | Ready stories |
+| Footer | 3 | Paste instructions |
+
+## Secciones excluidas
+
+Para permanecer dentro del límite de 300 líneas, se omiten estas:
+
+- **Recent Progress** - Demasiado detallado
+- **Notes section** - demasiado tiempo
+- **Detailed story descriptions** - No es necesario para el contexto.
+- **Full ADR content** - Solo se incluyen títulos
+
+## Contenido condensado
+
+Al extraer, el contenido se condensa:
+
+| Element | Full Size | Condensed |
+|---------|-----------|-----------|
+| ADRs | Full description | Title + status only |
+| Stories | Title + description | Title + status |
+| Tech | Full list + versions | Framework + key deps |
+| Epics | Title + stories list | Title + count + status |
+| Decisions | Full context | One-liner |
+
+## Requisitos
+
+**docs/context.md must exist** antes de exportar.
+
+Si falta, verás:
+
+```
+Error: docs/context.md not found.
+
+To create it, run: /agileflow:context:full
+
+Then you can export with: /agileflow:context:export
+```
+
+## Flujo de trabajo de uso
+
+```bash
+# 1. Generate context (if needed)
+/agileflow:context:full
+
+# 2. Export concise version
+/agileflow:context:export
+
+# 3. Copy the output
+# 4. Paste into ChatGPT, Perplexity, Gemini, or Claude web
+# 5. Ask questions with full project context
+```
+
+## ¿Por qué 300 líneas?
+
+Las herramientas web de IA tienen límites de ventana de contexto. Un extracto de 300 líneas:
+
+- Se adapta cómodamente a la mayoría de las ventanas contextuales de herramientas de IA
+- Proporciona suficientes detalles para una asistencia informada.
+- Deja espacio para sus preguntas reales
+- Es rápido de pegar y procesar.
+
+## Cuando usar
+
+- **Before web AI sessions** - Cargar contexto del proyecto.
+- **When switching AI tools** - Transferir contexto entre herramientas.
+- **After context updates** - Obtenga una nueva versión concisa
+- **For team sharing** - Descripción rápida del proyecto
+
+## No se necesita confirmación
+
+Este es un comando de sólo lectura:
+
+- ✓ Leer documentos/context.md
+- ✓ Extraer y formatear
+- ✓ Salida al bloque de código
+- ✗ NO se escribe ningún archivo
+- ✗ NO se necesita confirmación
+- ✗ NO hay cambios de estado
+
+## Comandos relacionados
+
+- [`/flujo ágil: contexto`](/commands/context) - Descripción general de los comandos de contexto
+- [`/agileflow:context:completo`](/commands/context-full) - Generar contexto completo
+- [`/agileflow:context:nota`](/commands/context-note) - Agregar nota con marca de tiempo
+- [`/agileflow:investigación:preguntar`](/commands/research-ask) - Generar mensaje de investigación

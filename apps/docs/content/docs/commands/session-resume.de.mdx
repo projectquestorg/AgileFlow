@@ -1,0 +1,119 @@
+---
+title: /session:resume
+description: Wechseln Sie zu einer anderen Sitzung mit Kontextladen
+---
+
+# /session:resume
+
+Wechseln Sie zu einer anderen Claude Code-Sitzung. Zeigt verfügbare Sitzungen an und stellt den Befehl zum Wechseln bereit.
+
+## Schnellstart
+
+```bash
+/agileflow:session:resume
+```
+
+## Wie es funktioniert
+
+1. Listet alle registrierten Sitzungen mit Status auf
+2. Präsentiert eine interaktive Auswahl zum Auswählen einer Sitzung
+3. Zeigt den Terminalbefehl zum Wechseln an
+
+## Beispielinteraktion
+
+```
+Which session do you want to resume?
+
+○ Session 1 (main) - /home/user/myproject [active]
+○ Session 2 "auth" - /home/user/myproject-auth [active]
+○ Session 3 - /home/user/myproject-3 [stale]
+```
+
+Nach Auswahl von Sitzung 2:
+
+```
+To resume Session 2 "auth":
+
+  cd /home/user/myproject-auth && claude --resume
+
+Note: Use a new terminal window/tab for best experience.
+```
+
+## Sitzungszustände
+
+| State | Can Resume? | Notes |
+|-------|-------------|-------|
+| `active` | Yes | Another Claude instance is running there |
+| `stale` | Yes | Previous session ended, directory still exists |
+| `current` | No | You're already in this session |
+
+## Die Flagge --resume
+
+Der `claude --resume` Flag weist Claude Code an:
+- Laden Sie den Gesprächsverlauf der vorherigen Sitzung
+- Stellen Sie den Kontext zu dem wieder her, woran Sie gearbeitet haben
+- Machen Sie dort weiter, wo Sie aufgehört haben
+
+Ohne `--resume`Claude beginnt mit einem neuen Kontext.
+
+## Workflow-Beispiele
+
+### Zwischen Aufgaben wechseln
+
+```bash
+# Currently in Session 1 working on feature A
+/agileflow:session:resume
+# Select Session 2 "auth"
+
+# In new terminal:
+cd /home/user/myproject-auth && claude --resume
+# Continue auth work with full context
+```
+
+### Rückkehr nach der Pause
+
+```bash
+# Start Claude Code
+claude
+
+# See: "2 other active sessions"
+/agileflow:session:resume
+# Pick the session you want to continue
+```
+
+### Aufräumen vor dem Fortsetzen
+
+Wenn eine Sitzung als veraltet angezeigt wird:
+
+```bash
+/agileflow:session:status
+# Session 3 shows "stale"
+
+/agileflow:session:end
+# Select Session 3 to clean up
+
+/agileflow:session:resume
+# Now switch to a clean session
+```
+
+## Terminal-Tipps
+
+**Best practice**: Öffnen Sie für jede Sitzung eine neue Terminal-Registerkarte/ein neues Terminal-Fenster.
+
+```bash
+# Tab 1: Session 1 (main project)
+cd /home/user/myproject && claude
+
+# Tab 2: Session 2 (auth feature)
+cd /home/user/myproject-auth && claude --resume
+
+# Tab 3: Session 3 (API work)
+cd /home/user/myproject-3 && claude --resume
+```
+
+## Verwandte Befehle
+
+- [`/session:status`](/commands/session-status) - Sehen Sie sich zuerst alle Sitzungen an
+- [`/session:new`](/commands/session-new) - Erstellen Sie stattdessen eine neue Sitzung
+- [`/session:end`](/commands/session-end) - Vor dem Wechsel aufräumen
+- [`/session:history`](/commands/session-history) - Sehen Sie sich vergangene Sitzungen an

@@ -1,0 +1,193 @@
+---
+title: /junta
+description: Mostrar tablero kanban visual con límites de WIP
+---
+
+# /junta
+
+Genere y muestre un tablero kanban visual organizado por estado de la historia con límites de trabajo en progreso, codificación de colores e información procesable.
+
+## Inicio rápido
+
+```bash
+/agileflow:board
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `EPIC` | No | - | Filter by specific epic ID (e.g., EP-0010) |
+| `OWNER` | No | - | Filter by agent/owner ID (e.g., AG-UI) |
+| `FORMAT` | No | ascii | Output format: `ascii`, `markdown`, or `html` |
+| `GROUP_BY` | No | status | Grouping method: `status`, `owner`, or `epic` |
+
+## Ejemplos
+
+### Ver pensión completa
+
+```bash
+/agileflow:board
+```
+
+Muestra todas las historias organizadas por estado (listo, en progreso, en revisión, terminado) en formato ASCII.
+
+### Filtrar por épico
+
+```bash
+/agileflow:board EPIC=EP-0010
+```
+
+Muestra solo historias para la epopeya de Autenticación.
+
+### Filtrar por propietario
+
+```bash
+/agileflow:board OWNER=AG-UI
+```
+
+Muestra todas las historias asignadas al agente de UI.
+
+### Agrupar por propietario
+
+```bash
+/agileflow:board GROUP_BY=owner
+```
+
+Organice el tablero por miembros del equipo en lugar de por estatus.
+
+### Exportar a rebajas
+
+```bash
+/agileflow:board FORMAT=markdown
+```
+
+Genere un formato de tabla de rebajas adecuado para documentación o informes.
+
+## Diseño de la placa (formato ASCII)
+
+```text
+╔═══════════════════════════════════════════════════════════╗
+║           AGILEFLOW KANBAN BOARD                          ║
+║          Updated: 2025-12-24 14:30                        ║
+╠═══════════════════════════════════════════════════════════╣
+║ 📊 Summary: 15 stories | 3 ready | 4 in-progress | 6 done║
+║ ⚠️  WIP Limit: 2/agent (AG-UI: 2/2 ⚠️, AG-API: 1/2 ✓)   ║
+╚═══════════════════════════════════════════════════════════╝
+
+┌──────────────┬──────────────┬──────────────┬──────────────┐
+│ 📋 READY (3) │ 🔄 IN PROG   │ 👀 REVIEW    │ ✅ DONE (6)  │
+│              │ (4) WIP: 4/6 │ (2)          │              │
+├──────────────┼──────────────┼──────────────┼──────────────┤
+│ 🟢 US-0042   │ 🟡 US-0038   │ 🔵 US-0035   │ ⚪ US-0030   │
+│ Login form   │ OAuth flow   │ Pwd reset    │ User reg     │
+│ AG-UI · 1d   │ AG-API · 1.5d│ AG-API · 1d  │ AG-API · 1d  │
+│              │              │              │              │
+│ 🟢 US-0043   │ 🟡 US-0039   │              │ ⚪ US-0031   │
+│ Profile page │ Session mgmt │              │ Login endpt  │
+│ AG-UI · 1.5d │ AG-API · 1d  │              │ AG-API · 1d  │
+│              │              │              │              │
+│ 🟢 US-0044   │ 🟡 US-0040   │              │ ⚪ US-0032   │
+│ Dashboard    │ Rate limit   │              │ JWT token    │
+│ AG-UI · 2d   │ AG-CI · 0.5d │              │ AG-API · 0.5d│
+│              │              │              │              │
+│              │ 🔴 US-0041   │              │ ⚪ US-0033   │
+│              │ BLOCKED      │              │ DB schema    │
+│              │ Payment API  │              │ AG-API · 0.5d│
+│              │ AG-API · 2d  │              │              │
+│              │ Dep: US-0035 │              │              │
+└──────────────┴──────────────┴──────────────┴──────────────┘
+```
+
+## Codificación de colores
+
+- 🟢 **Green** - Alta prioridad o listo para comenzar
+- 🟡 **Yellow** - En curso o prioridad media
+- 🔵 **Blue** - En revisión o baja prioridad
+- ⚪ **White** - Hecho/completado
+- 🔴 **Red** - Bloqueado (esperando dependencia)
+- ⚠️ **Warning** - Límite de WIP excedido
+
+## Estadísticas de la junta
+
+El tablero muestra métricas clave:
+
+- **Summary** - Recuento total de historias y distribución por estado.
+- **WIP Limits** - Estado de trabajo en progreso para cada agente (el límite es 2 historias por agente)
+- **Blockers** - Las tarjetas rojas muestran historias bloqueadas con dependencias.
+- **Epic Assignment** - Historias agrupadas por su epopeya.
+- **Estimate** - Tiempo estimado (en días) para cada historia.
+
+## Formatos de salida
+
+### ASCII (predeterminado)
+
+Visual compatible con terminal con emojis y dibujos de cuadros. Lo mejor para visualización en terminal.
+
+### Reducción
+
+Formato de tabla adecuado para documentación, problemas de GitHub o informes:
+
+```markdown
+## AgileFlow Board (2025-12-24 14:30)
+
+| Ready | In Progress | In Review | Done |
+|-------|-------------|-----------|------|
+| **US-0042** 🟢<br>Login form<br>AG-UI · 1d | **US-0038** 🟡<br>OAuth flow<br>AG-API · 1.5d | **US-0035** 🔵<br>Password reset<br>AG-API · 1d | **US-0030** ✅<br>User reg<br>AG-API · 1d |
+```
+
+### HTML
+
+Exportación HTML interactiva con estilo, adecuada para paneles web o correo electrónico.
+
+## Sugerencias de acción
+
+El tablero sugiere automáticamente acciones basadas en el estado actual:
+
+- "AG-UI al límite de WIP. Complete US-0038 antes de comenzar un nuevo trabajo".
+- "US-0041 bloqueado. ¿Podemos desbloquearlo revisando US-0035?"
+- "3 pisos listos. ¿Cuál deberíamos priorizar?"
+
+## Mejores prácticas
+
+1. **Review daily** - Revisa el tablero en posición de pie.
+2. **Respect WIP limits** - No exceder 2 pisos por agente
+3. **Unblock quickly** - No dejes historias bloqueadas más tiempo del necesario
+4. **Export snapshots** - Guarde instantáneas del tablero semanalmente para realizar un seguimiento de la velocidad
+5. **Use filters** - Concéntrese en una epopeya o equipo a la vez para mayor claridad.
+
+## Comandos relacionados
+
+- [`/agileflow:estado`](/commands/status) - Actualizar el estado de la historia
+- [`/agileflow:bloqueadores`](/commands/blockers) - Analizar los bloqueadores en detalle.
+- [`/agileflow:métricas`](/commands/metrics) - Ver métricas y análisis detallados
+- [`/agileflow:velocidad`](/commands/velocity) - Seguimiento de la velocidad y los pronósticos del equipo.
+
+## Preguntas frecuentes
+
+<Accordion type="multiple">
+  <AccordionItem value="wip">
+    <AccordionTrigger>How is WIP limit calculated?</AccordionTrigger>
+    <AccordionContent>
+      El valor predeterminado es 2 historias por agente en estado "en progreso" o "en revisión". Cuando un agente llega a 2, debe terminar las historias antes de comenzar otras nuevas.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="export">
+    <AccordionTrigger>Can I export the board?</AccordionTrigger>
+    <AccordionContent>
+      Si, usa `FORMAT=markdown` o `FORMAT=html` para obtener formatos exportables.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="update">
+    <AccordionTrigger>How often is the board updated?</AccordionTrigger>
+    <AccordionContent>
+      El tablero lee desde `docs/09-agents/status.json` que se actualiza cada vez que ejecutas `/agileflow:status`. Actualiza el tablero para ver los últimos cambios.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="estimates">
+    <AccordionTrigger>What do the estimates mean?</AccordionTrigger>
+    <AccordionContent>
+      Las estimaciones muestran cuánto tiempo debería durar la historia (en días). Utilícelo al asignar trabajo a los agentes.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

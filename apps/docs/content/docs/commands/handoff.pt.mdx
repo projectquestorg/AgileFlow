@@ -1,0 +1,99 @@
+---
+title: /não interferir
+description: Documente a transferência de trabalho entre agentes
+---
+
+# /não interferir
+
+Documente as transferências de trabalho entre agentes em uma história com resumo e bloqueadores para uma colaboração tranquila da equipe.
+
+## Início rápido
+
+```bash
+/agileflow:handoff STORY=US-0042 FROM=agent-a TO=agent-b SUMMARY="Completed API integration" BLOCKERS="Need database schema review"
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0042) |
+| `FROM` | Yes | - | Handing off agent ID |
+| `TO` | Yes | - | Receiving agent ID |
+| `SUMMARY` | Yes | - | What was accomplished or current status |
+| `BLOCKERS` | No | - | Known blockers or issues to communicate |
+
+## Exemplos
+
+### Transferência Básica
+
+```bash
+/agileflow:handoff STORY=US-0050 FROM=AG-API TO=AG-UI SUMMARY="Backend API complete and tested" BLOCKERS="UI styling needs brand color review"
+```
+
+Cria uma nota de transferência documentando:
+- Quem está entregando o trabalho
+- O que foi concluído
+- Quaisquer bloqueadores conhecidos para o próximo agente
+- Data e hora da transferência
+
+### Handoff com vários bloqueadores
+
+```bash
+/agileflow:handoff STORY=US-0045 FROM=AG-CI TO=AG-DEVOPS SUMMARY="Pipeline setup complete, ready for deployment" BLOCKERS="Environment variables need to be set, Requires AWS credentials approval"
+```
+
+## Saída
+
+O comando cria dois artefatos:
+
+### 1. Nota de transferência
+
+Cria um arquivo markdown em:
+```text
+docs/09-agents/comms/<STORY>-<YYYYMMDD>-handoff.md
+```
+
+Conteúdo de exemplo:
+```markdown
+# Handoff: US-0042
+
+From: AG-API
+To: AG-UI
+Date: 2025-12-22
+
+## Summary
+Completed API integration with authentication middleware.
+All endpoints tested and passing.
+
+## Blockers
+- Database schema needs DBA review before migration
+- Redis cache configuration pending DevOps approval
+```
+
+### 2. Registro do barramento do agente
+
+Acrescenta uma entrada a `docs/09-agents/bus/log.jsonl` com tipo `handoff` para criar uma trilha de auditoria de transições de trabalho entre agentes.
+
+## Fluxo de trabalho
+
+1. Analise todas as entradas (HISTÓRIA, DE, PARA, RESUMO, BLOQUEADORES)
+2. Gerar nota de transferência a partir do modelo
+3. Anexar entrada ao log do barramento do agente
+4. Mostrar visualização para confirmação
+5. Aguarde a aprovação SIM/NÃO
+6. Grave arquivos somente após aprovação
+
+## Usar quando
+
+- **Switching agents** em uma história no meio do projeto
+- **Pausing work** e documentando o progresso para mais tarde
+- **Highlighting blockers** para o próximo agente
+- **Creating audit trail** de transições de trabalho
+- **Documenting dependencies** para transferências entre equipes
+
+## Comandos Relacionados
+
+- [`/status`](/commands/status) - Verifique o status e as atribuições atuais da história
+- [`/babá`](/commands/babysit) - Monitor agent progress and suggest handoffs
+- [`/comentários`](/commands/feedback) - Colete feedback sobre o trabalho concluído
