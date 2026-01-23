@@ -8,7 +8,7 @@ System architecture, component design, and technical documentation for AgileFlow
 
 | Document | Description |
 |----------|-------------|
-| [Commands](./commands.md) | All 74 slash commands |
+| [Commands](./commands.md) | All 76 slash commands |
 | [Subagents](./subagents.md) | All 30 specialized agents |
 | [Skills](./skills.md) | Dynamic skill generator |
 
@@ -69,7 +69,7 @@ Storage         →  status.json, docs/, bus/
 
 ### Key Components
 
-- **Commands**: 74 slash commands for agile workflows
+- **Commands**: 76 slash commands for agile workflows
 - **Agents**: 30 domain-specialized experts
 - **Skills**: Dynamic generation via `/agileflow:skill:create`
 - **Experts**: Self-improving knowledge bases per domain

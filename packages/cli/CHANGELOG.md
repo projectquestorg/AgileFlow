@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.92.0] - 2026-01-23
+
+### Added
+- Tmux integration, i18n docs, EP-0022 codebase health improvements
+
 ## [2.91.0] - 2026-01-20
 
 ### Added
