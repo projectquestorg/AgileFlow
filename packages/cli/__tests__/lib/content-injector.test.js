@@ -765,4 +765,380 @@ Content
       expect(hasSections(content)).toBe(false);
     });
   });
+
+  // ==========================================================================
+  // Session Harness Template Injection Tests
+  // ==========================================================================
+
+  describe('session harness injection', () => {
+    const {
+      generateSessionHarnessContent,
+      clearSessionHarnessCache,
+    } = require('../../tools/cli/lib/content-injector');
+
+    beforeEach(() => {
+      // Clear cache before each test to ensure fresh state
+      clearSessionHarnessCache();
+    });
+
+    it('generates session harness content with agent ID substitution', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      // Create a simple test template
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        `SESSION HARNESS PROTOCOL
+
+Example message:
+\`\`\`jsonl
+{"from":"{AGENT_ID}","type":"warning","text":"Override test"}
+\`\`\`
+
+End of protocol.
+`
+      );
+
+      const result = generateSessionHarnessContent(tempDir, 'AG-API');
+
+      expect(result).toContain('SESSION HARNESS PROTOCOL');
+      expect(result).toContain('"from":"AG-API"');
+      expect(result).not.toContain('{AGENT_ID}');
+    });
+
+    it('returns empty string when template file does not exist', () => {
+      // No templates directory created
+      const result = generateSessionHarnessContent(tempDir, 'AG-TEST');
+
+      expect(result).toBe('');
+    });
+
+    it('uses default agent ID when none provided', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Agent: {AGENT_ID}'
+      );
+
+      const result = generateSessionHarnessContent(tempDir);
+
+      expect(result).toContain('Agent: AGENT');
+    });
+
+    it('injects session harness with explicit agent ID marker', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Protocol for {AGENT_ID}'
+      );
+
+      const template = `# Agent File
+
+<!-- {{SESSION_HARNESS:AG-UI}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Protocol for AG-UI');
+      expect(result).not.toContain('{{SESSION_HARNESS');
+    });
+
+    it('injects session harness with agent ID from frontmatter', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Protocol for {AGENT_ID}'
+      );
+
+      const template = `---
+name: agileflow-security
+description: Security agent
+tools:
+  - Read
+---
+
+# Security Agent
+
+<!-- {{SESSION_HARNESS}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Protocol for AG-SECURITY');
+      expect(result).not.toContain('{{SESSION_HARNESS}}');
+    });
+
+    it('handles non-comment format {{SESSION_HARNESS}}', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Protocol content'
+      );
+
+      const template = `---
+name: api
+---
+
+{{SESSION_HARNESS}}
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Protocol content');
+      expect(result).not.toContain('{{SESSION_HARNESS}}');
+    });
+
+    it('caches template content for performance', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Original content {AGENT_ID}'
+      );
+
+      // First call - loads from file
+      const result1 = generateSessionHarnessContent(tempDir, 'AG-API');
+      expect(result1).toContain('Original content AG-API');
+
+      // Modify file (but cache should return old content)
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Modified content {AGENT_ID}'
+      );
+
+      // Second call - should use cached content
+      const result2 = generateSessionHarnessContent(tempDir, 'AG-UI');
+      expect(result2).toContain('Original content AG-UI');
+
+      // Clear cache
+      clearSessionHarnessCache();
+
+      // Third call - should load new content
+      const result3 = generateSessionHarnessContent(tempDir, 'AG-CI');
+      expect(result3).toContain('Modified content AG-CI');
+    });
+
+    it('handles missing templates gracefully in injectContent', () => {
+      // No templates directory - should leave marker in place or remove it
+      const template = `# Agent
+
+<!-- {{SESSION_HARNESS}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      // When template is missing, the marker should either be replaced with empty
+      // or left as-is (depends on implementation choice)
+      // Since our implementation replaces with empty string from generateSessionHarnessContent
+      expect(result).toContain('# Agent');
+      expect(result).toContain('## Footer');
+    });
+  });
+
+  // ==========================================================================
+  // Quality Gate Priorities Template Injection Tests
+  // ==========================================================================
+
+  describe('quality gate priorities injection', () => {
+    const {
+      generateQualityGatePrioritiesContent,
+      clearQualityGatePrioritiesCache,
+    } = require('../../tools/cli/lib/content-injector');
+
+    beforeEach(() => {
+      // Clear cache before each test to ensure fresh state
+      clearQualityGatePrioritiesCache();
+    });
+
+    it('generates quality gate priorities content with agent ID substitution', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      // Create a simple test template
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        `### QUALITY GATE PRIORITIES
+
+**UNIVERSAL CRITICAL GATES**:
+- [ ] Tests pass
+
+**Override Example**:
+\`\`\`jsonl
+{"from":"{AGENT_ID}","type":"warning","text":"Override: gate skipped"}
+\`\`\`
+`
+      );
+
+      const result = generateQualityGatePrioritiesContent(tempDir, 'AG-API');
+
+      expect(result).toContain('QUALITY GATE PRIORITIES');
+      expect(result).toContain('"from":"AG-API"');
+      expect(result).not.toContain('{AGENT_ID}');
+    });
+
+    it('returns empty string when template file does not exist', () => {
+      // No templates directory created
+      const result = generateQualityGatePrioritiesContent(tempDir, 'AG-TEST');
+
+      expect(result).toBe('');
+    });
+
+    it('uses default agent ID when none provided', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Agent: {AGENT_ID}'
+      );
+
+      const result = generateQualityGatePrioritiesContent(tempDir);
+
+      expect(result).toContain('Agent: AGENT');
+    });
+
+    it('injects quality gate priorities with comment marker', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Quality gates for {AGENT_ID}'
+      );
+
+      const template = `---
+name: agileflow-ui
+description: UI agent
+---
+
+# UI Agent
+
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-UI Specific)
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Quality gates for AG-UI');
+      expect(result).not.toContain('{{QUALITY_GATE_PRIORITIES}}');
+    });
+
+    it('injects quality gate priorities with agent ID from frontmatter', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Gates for {AGENT_ID}'
+      );
+
+      const template = `---
+name: agileflow-security
+description: Security agent
+tools:
+  - Read
+---
+
+# Security Agent
+
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+## Domain-specific checklist
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Gates for AG-SECURITY');
+      expect(result).not.toContain('{{QUALITY_GATE_PRIORITIES}}');
+    });
+
+    it('handles non-comment format {{QUALITY_GATE_PRIORITIES}}', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Priority content'
+      );
+
+      const template = `---
+name: api
+---
+
+{{QUALITY_GATE_PRIORITIES}}
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Priority content');
+      expect(result).not.toContain('{{QUALITY_GATE_PRIORITIES}}');
+    });
+
+    it('caches template content for performance', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Original gates {AGENT_ID}'
+      );
+
+      // First call - loads from file
+      const result1 = generateQualityGatePrioritiesContent(tempDir, 'AG-API');
+      expect(result1).toContain('Original gates AG-API');
+
+      // Modify file (but cache should return old content)
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Modified gates {AGENT_ID}'
+      );
+
+      // Second call - should use cached content
+      const result2 = generateQualityGatePrioritiesContent(tempDir, 'AG-UI');
+      expect(result2).toContain('Original gates AG-UI');
+
+      // Clear cache
+      clearQualityGatePrioritiesCache();
+
+      // Third call - should load new content
+      const result3 = generateQualityGatePrioritiesContent(tempDir, 'AG-CI');
+      expect(result3).toContain('Modified gates AG-CI');
+    });
+
+    it('handles missing templates gracefully in injectContent', () => {
+      // No templates directory
+      const template = `# Agent
+
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      // When template is missing, the marker should be replaced with empty string
+      expect(result).toContain('# Agent');
+      expect(result).toContain('## Footer');
+    });
+  });
 });

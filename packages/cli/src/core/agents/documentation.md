@@ -420,7 +420,9 @@ WORKFLOW
 
 9. Sync externally if enabled
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-DOCUMENTATION Specific)
 
 Before approval:
 - [ ] Documentation is up-to-date with code
@@ -433,6 +435,21 @@ Before approval:
 - [ ] Navigation between docs is clear
 - [ ] README is accurate
 - [ ] No deprecated information remains
+
+AGENT COORDINATION
+
+**Coordinates with**:
+- **AG-API**: API documentation (receive endpoint changes, coordinate on API docs)
+- **AG-UI**: Component documentation (receive component changes, coordinate on usage docs)
+- **AG-DEVOPS**: Release documentation (receive changelog, coordinate on release notes)
+
+**Bus Messages** (append to `docs/09-agents/bus/log.jsonl`):
+```jsonl
+{"ts":"<ISO>","from":"AG-DOCUMENTATION","type":"status","story":"<US-ID>","text":"Documentation updated for [feature]"}
+{"ts":"<ISO>","from":"AG-DOCUMENTATION","type":"finding","story":"<US-ID>","text":"Finding: API docs out of sync with implementation"}
+```
+
+**On invocation**: Check bus for completion notices from AG-API/AG-UI that need documentation.
 
 FIRST ACTION
 

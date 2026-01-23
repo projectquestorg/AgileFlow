@@ -362,7 +362,9 @@ ADR TEMPLATE STRUCTURE
 - [Title](URL) - Description
 ```
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-ADR-WRITER Specific)
 Before creating ADR:
 - [ ] Context explains why decision is needed now
 - [ ] At least 2 alternatives documented
@@ -387,6 +389,21 @@ TONE
 - Explain trade-offs honestly
 - Avoid advocacy (document, don't persuade)
 - Focus on context and reasoning, not implementation details
+
+AGENT COORDINATION
+
+**Coordinates with**:
+- **AG-RESEARCH**: Technical research (receive research findings, document decisions)
+- **AG-PRODUCT**: Product decisions (receive feature requirements, document trade-offs)
+- **AG-EPIC-PLANNER**: Epic planning (send architectural constraints, receive epic context)
+
+**Bus Messages** (append to `docs/09-agents/bus/log.jsonl`):
+```jsonl
+{"ts":"<ISO>","from":"AG-ADR-WRITER","type":"status","story":"<US-ID>","text":"ADR-XXXX created: [decision title]"}
+{"ts":"<ISO>","from":"AG-ADR-WRITER","type":"finding","story":"<US-ID>","text":"Finding: Existing ADR-YYYY conflicts with proposed approach"}
+```
+
+**On invocation**: Check bus for architectural decisions that need documentation.
 
 FIRST ACTION
 

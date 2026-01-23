@@ -229,19 +229,23 @@ PLANNING PRINCIPLES
 - Vertical slices: Each story delivers user-visible value when possible
 - INVEST criteria: Independent, Negotiable, Valuable, Estimable, Small, Testable
 
-SLASH COMMANDS (Proactive Use)
+SLASH COMMANDS (Triggered by Specific Conditions)
 
-EPIC-PLANNER can directly invoke AgileFlow commands:
+AG-EPIC-PLANNER invokes these commands based on specific triggers:
 
-**Research**:
-- `/agileflow:research:ask TOPIC=...` → Research unfamiliar technologies before planning
+**Research** (trigger: unfamiliar technology in epic):
+- **Condition**: Epic mentions technology not in `expertise.yaml` knowledge base
+- `/agileflow:research:ask TOPIC=...` → Research before planning
 
-**Documentation**:
-- `/agileflow:adr-new` → Create ADR if epic involves architectural decision
+**Documentation** (trigger: architectural decision required):
+- **Condition**: Epic requires choosing between frameworks, patterns, or tools
+- `/agileflow:adr-new` → Create ADR documenting the decision
 
-**Coordination**:
-- `/agileflow:board` → Visualize story distribution after planning
-- `/agileflow:velocity` → Check team capacity before estimating
+**Coordination** (trigger: after planning complete):
+- **Condition**: After creating stories for an epic
+- `/agileflow:board` → Show story distribution to user
+- **Condition**: Before estimating large epics (>5 stories)
+- `/agileflow:velocity` → Check team capacity for realistic estimates
 
 AGENT ASSIGNMENT GUIDE
 
@@ -389,7 +393,9 @@ ESTIMATION GUIDELINES
 - 2d: Complex feature, integration, significant refactor
 - >2d: Break into smaller stories
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-EPIC-PLANNER Specific)
 Before creating stories:
 - [ ] Epic has clear goal and success metrics
 - [ ] Each story has 2–5 testable acceptance criteria
@@ -397,6 +403,21 @@ Before creating stories:
 - [ ] Dependencies identified and documented
 - [ ] Owners assigned based on scope (UI, API, CI)
 - [ ] Test stubs reference AC
+
+AGENT COORDINATION
+
+**Coordinates with**:
+- **AG-PRODUCT**: Requirements input (receive PRD/requirements, validate completeness)
+- **AG-RESEARCH**: Technical research (receive research findings, incorporate into stories)
+- **AG-API/AG-UI**: Story assignments (send stories, receive capacity feedback)
+
+**Bus Messages** (append to `docs/09-agents/bus/log.jsonl`):
+```jsonl
+{"ts":"<ISO>","from":"AG-EPIC-PLANNER","type":"status","story":"<US-ID>","text":"Epic EP-XXXX planned: [N] stories created, ready for sprint planning"}
+{"ts":"<ISO>","from":"AG-EPIC-PLANNER","type":"finding","story":"<US-ID>","text":"Finding: Story US-XXXX too large (>2d), needs breakdown"}
+```
+
+**On invocation**: Check bus for new PRDs or requirements from AG-PRODUCT.
 
 FIRST ACTION
 

@@ -12,6 +12,11 @@
  *   <!-- {{AGENT_LIST}} -->   - Full formatted agent list
  *   <!-- {{COMMAND_LIST}} --> - Full formatted command list
  *
+ * TEMPLATES:
+ *   <!-- {{SESSION_HARNESS}} -->       - Session harness protocol (generic)
+ *   <!-- {{SESSION_HARNESS:AG-API}} --> - Session harness protocol (with agent ID)
+ *   <!-- {{QUALITY_GATE_PRIORITIES}} --> - Quality gate priorities (CRITICAL/HIGH/MEDIUM)
+ *
  * METADATA:
  *   {{VERSION}}        - AgileFlow version from package.json
  *   {{INSTALL_DATE}}   - Date of installation (YYYY-MM-DD)
@@ -226,6 +231,143 @@ function generateCommandList(commandsDir) {
 }
 
 // =============================================================================
+// Template Generation Functions
+// =============================================================================
+
+/**
+ * Session harness template cache
+ * @type {string|null}
+ */
+let sessionHarnessTemplateCache = null;
+
+/**
+ * Quality gate priorities template cache
+ * @type {string|null}
+ */
+let qualityGatePrioritiesCache = null;
+
+/**
+ * Load session harness template from templates directory
+ * @param {string} coreDir - Path to core directory
+ * @returns {string} Template content or empty string if not found
+ */
+function loadSessionHarnessTemplate(coreDir) {
+  // Return cached template if available
+  if (sessionHarnessTemplateCache !== null) {
+    return sessionHarnessTemplateCache;
+  }
+
+  const templatePath = path.join(coreDir, 'templates', 'session-harness-protocol.md');
+
+  if (!fs.existsSync(templatePath)) {
+    // Template not found, return empty string
+    sessionHarnessTemplateCache = '';
+    return sessionHarnessTemplateCache;
+  }
+
+  // Validate path is within core directory (security)
+  if (!isPathSafe(templatePath, coreDir)) {
+    sessionHarnessTemplateCache = '';
+    return sessionHarnessTemplateCache;
+  }
+
+  try {
+    sessionHarnessTemplateCache = fs.readFileSync(templatePath, 'utf8');
+    return sessionHarnessTemplateCache;
+  } catch (err) {
+    sessionHarnessTemplateCache = '';
+    return sessionHarnessTemplateCache;
+  }
+}
+
+/**
+ * Generate session harness protocol content for a specific agent
+ * @param {string} coreDir - Path to core directory
+ * @param {string} agentId - Agent ID (e.g., "AG-API", "AG-UI")
+ * @returns {string} Session harness content with agent ID substituted
+ */
+function generateSessionHarnessContent(coreDir, agentId = 'AGENT') {
+  const template = loadSessionHarnessTemplate(coreDir);
+
+  if (!template) {
+    return '';
+  }
+
+  // Substitute agent ID in the template
+  // The template uses {AGENT_ID} as placeholder
+  return template.replace(/\{AGENT_ID\}/g, agentId);
+}
+
+/**
+ * Clear the session harness template cache
+ * Useful for testing or when template file changes
+ */
+function clearSessionHarnessCache() {
+  sessionHarnessTemplateCache = null;
+}
+
+/**
+ * Load quality gate priorities template from templates directory
+ * @param {string} coreDir - Path to core directory
+ * @returns {string} Template content or empty string if not found
+ */
+function loadQualityGatePrioritiesTemplate(coreDir) {
+  // Return cached template if available
+  if (qualityGatePrioritiesCache !== null) {
+    return qualityGatePrioritiesCache;
+  }
+
+  const templatePath = path.join(coreDir, 'templates', 'quality-gate-priorities.md');
+
+  if (!fs.existsSync(templatePath)) {
+    qualityGatePrioritiesCache = '';
+    return qualityGatePrioritiesCache;
+  }
+
+  // Validate path is within core directory (security)
+  if (!isPathSafe(templatePath, coreDir)) {
+    qualityGatePrioritiesCache = '';
+    return qualityGatePrioritiesCache;
+  }
+
+  try {
+    qualityGatePrioritiesCache = fs.readFileSync(templatePath, 'utf8');
+    return qualityGatePrioritiesCache;
+  } catch (err) {
+    qualityGatePrioritiesCache = '';
+    return qualityGatePrioritiesCache;
+  }
+}
+
+/**
+ * Generate quality gate priorities content for a specific agent
+ * @param {string} coreDir - Path to core directory
+ * @param {string} agentId - Agent ID (e.g., "AG-API", "AG-UI")
+ * @returns {string} Quality gate priorities content with agent ID substituted
+ */
+function generateQualityGatePrioritiesContent(coreDir, agentId = 'AGENT') {
+  const template = loadQualityGatePrioritiesTemplate(coreDir);
+
+  if (!template) {
+    return '';
+  }
+
+  // Substitute placeholders in the template
+  return template
+    .replace(/\{AGENT_ID\}/g, agentId)
+    .replace(/\{TIMESTAMP\}/g, new Date().toISOString())
+    .replace(/\{STORY_ID\}/g, 'US-XXXX');
+}
+
+/**
+ * Clear the quality gate priorities template cache
+ * Useful for testing or when template file changes
+ */
+function clearQualityGatePrioritiesCache() {
+  qualityGatePrioritiesCache = null;
+}
+
+// =============================================================================
 // Main Injection Function
 // =============================================================================
 
@@ -282,6 +424,69 @@ function injectContent(content, context = {}) {
       const commandList = generateCommandList(path.join(coreDir, 'commands'));
       result = result.replace(/<!-- \{\{COMMAND_LIST\}\} -->/g, commandList);
       result = result.replace(/\{\{COMMAND_LIST\}\}/g, commandList);
+    }
+
+    // Replace session harness template placeholder
+    // Supports two formats:
+    //   <!-- {{SESSION_HARNESS}} -->        - Uses default agent ID
+    //   <!-- {{SESSION_HARNESS:AG-API}} --> - Uses specified agent ID
+    if (result.includes('SESSION_HARNESS')) {
+      // First, handle agent-specific format: <!-- {{SESSION_HARNESS:AG-XXX}} -->
+      const agentSpecificPattern = /<!-- \{\{SESSION_HARNESS:(AG-[A-Z]+)\}\} -->/g;
+      result = result.replace(agentSpecificPattern, (match, agentId) => {
+        return generateSessionHarnessContent(coreDir, agentId);
+      });
+
+      // Then, handle generic format: <!-- {{SESSION_HARNESS}} -->
+      // Try to extract agent ID from frontmatter name field if available
+      const genericPattern = /<!-- \{\{SESSION_HARNESS\}\} -->/g;
+      result = result.replace(genericPattern, () => {
+        // Try to get agent ID from frontmatter 'name' field
+        // Look for "name: agileflow-xxx" pattern in the content
+        const frontmatterMatch = result.match(/^---[\s\S]*?name:\s*(agileflow-)?(\w+)[\s\S]*?---/m);
+        let agentId = 'AGENT';
+        if (frontmatterMatch && frontmatterMatch[2]) {
+          // Convert agent name to uppercase agent ID format
+          // e.g., "api" -> "AG-API", "ui" -> "AG-UI"
+          agentId = `AG-${frontmatterMatch[2].toUpperCase()}`;
+        }
+        return generateSessionHarnessContent(coreDir, agentId);
+      });
+
+      // Also handle non-comment format: {{SESSION_HARNESS}}
+      result = result.replace(/\{\{SESSION_HARNESS\}\}/g, () => {
+        const frontmatterMatch = result.match(/^---[\s\S]*?name:\s*(agileflow-)?(\w+)[\s\S]*?---/m);
+        let agentId = 'AGENT';
+        if (frontmatterMatch && frontmatterMatch[2]) {
+          agentId = `AG-${frontmatterMatch[2].toUpperCase()}`;
+        }
+        return generateSessionHarnessContent(coreDir, agentId);
+      });
+    }
+
+    // Replace quality gate priorities template placeholder
+    // Supports: <!-- {{QUALITY_GATE_PRIORITIES}} -->
+    if (result.includes('QUALITY_GATE_PRIORITIES')) {
+      // Handle comment format: <!-- {{QUALITY_GATE_PRIORITIES}} -->
+      const qualityGatePattern = /<!-- \{\{QUALITY_GATE_PRIORITIES\}\} -->/g;
+      result = result.replace(qualityGatePattern, () => {
+        const frontmatterMatch = result.match(/^---[\s\S]*?name:\s*(agileflow-)?(\w+)[\s\S]*?---/m);
+        let agentId = 'AGENT';
+        if (frontmatterMatch && frontmatterMatch[2]) {
+          agentId = `AG-${frontmatterMatch[2].toUpperCase()}`;
+        }
+        return generateQualityGatePrioritiesContent(coreDir, agentId);
+      });
+
+      // Also handle non-comment format: {{QUALITY_GATE_PRIORITIES}}
+      result = result.replace(/\{\{QUALITY_GATE_PRIORITIES\}\}/g, () => {
+        const frontmatterMatch = result.match(/^---[\s\S]*?name:\s*(agileflow-)?(\w+)[\s\S]*?---/m);
+        let agentId = 'AGENT';
+        if (frontmatterMatch && frontmatterMatch[2]) {
+          agentId = `AG-${frontmatterMatch[2].toUpperCase()}`;
+        }
+        return generateQualityGatePrioritiesContent(coreDir, agentId);
+      });
     }
   }
 
@@ -380,6 +585,8 @@ function hasPlaceholders(content) {
     /\{\{INSTALL_DATE\}\}/,
     /\{\{AGENT_LIST\}\}/,
     /\{\{COMMAND_LIST\}\}/,
+    /\{\{SESSION_HARNESS\}\}/,
+    /\{\{QUALITY_GATE_PRIORITIES\}\}/,
     /\{agileflow_folder\}/,
   ];
 
@@ -400,6 +607,11 @@ function getPlaceholderDocs() {
     lists: {
       '<!-- {{AGENT_LIST}} -->': 'Full formatted agent list with details',
       '<!-- {{COMMAND_LIST}} -->': 'Full formatted command list',
+    },
+    templates: {
+      '<!-- {{SESSION_HARNESS}} -->': 'Session harness protocol (auto-detects agent ID from frontmatter)',
+      '<!-- {{SESSION_HARNESS:AG-API}} -->': 'Session harness protocol with explicit agent ID',
+      '<!-- {{QUALITY_GATE_PRIORITIES}} -->': 'Quality gate priorities with CRITICAL/HIGH/MEDIUM levels',
     },
     metadata: {
       '{{VERSION}}': 'AgileFlow version from package.json',
@@ -422,6 +634,12 @@ module.exports = {
   // List generation
   generateAgentList,
   generateCommandList,
+
+  // Template generation
+  generateSessionHarnessContent,
+  clearSessionHarnessCache,
+  generateQualityGatePrioritiesContent,
+  clearQualityGatePrioritiesCache,
 
   // Main injection
   injectContent,

@@ -481,7 +481,9 @@ WORKFLOW (Using Claude Code Tools)
    - Folder is now current and complete
    - Status: ✅ Updated or ⚠️ Needs manual review
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-README-UPDATER Specific)
 
 Before completing:
 - [ ] Folder purpose clearly documented
@@ -494,6 +496,21 @@ Before completing:
 - [ ] Consistent formatting with other READMEs
 - [ ] Helpful to someone new to the project
 - [ ] No broken references or outdated info
+
+AGENT COORDINATION
+
+**Coordinates with**:
+- **AG-DOCUMENTATION**: Documentation sync (receive doc changes, coordinate on README updates)
+- **AG-DEVOPS**: Release notes (receive changelog, update project README)
+- **AG-API/AG-UI**: Feature documentation (receive feature completions, update feature docs)
+
+**Bus Messages** (append to `docs/09-agents/bus/log.jsonl`):
+```jsonl
+{"ts":"<ISO>","from":"AG-README-UPDATER","type":"status","story":"<US-ID>","text":"README updated: [folder] now reflects current state"}
+{"ts":"<ISO>","from":"AG-README-UPDATER","type":"finding","story":"<US-ID>","text":"Finding: README in [folder] references non-existent files"}
+```
+
+**On invocation**: Check bus for completion notices that need README updates.
 
 FIRST ACTION
 

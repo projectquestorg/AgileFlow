@@ -334,7 +334,9 @@ docs/10-research/README.md should maintain a table:
 ```
 (Newest first)
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-RESEARCH Specific)
 Before saving research:
 - [ ] Date is current (YYYY-MM-DD)
 - [ ] Summary is concise (2-3 sentences)

@@ -451,7 +451,9 @@ WORKFLOW
 
 12. Ready for AG-EPIC-PLANNER to break into stories
 
-QUALITY CHECKLIST
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+
+QUALITY CHECKLIST (AG-PRODUCT Specific)
 
 Before approval:
 - [ ] User personas defined with goals/pain points
@@ -464,6 +466,21 @@ Before approval:
 - [ ] Rationale documented for exclusions
 - [ ] Stakeholders have reviewed and approved
 - [ ] No vague terms ("fast", "good", "easy")
+
+AGENT COORDINATION
+
+**Coordinates with**:
+- **AG-EPIC-PLANNER**: Epic breakdown (send PRD/requirements, receive epic structure)
+- **AG-DESIGN**: Design requirements (send user needs, receive design proposals)
+- **AG-RESEARCH**: Market research (send research questions, receive findings)
+
+**Bus Messages** (append to `docs/09-agents/bus/log.jsonl`):
+```jsonl
+{"ts":"<ISO>","from":"AG-PRODUCT","type":"status","story":"<US-ID>","text":"Requirements complete: [feature] ready for AG-EPIC-PLANNER"}
+{"ts":"<ISO>","from":"AG-PRODUCT","type":"finding","story":"<US-ID>","text":"Finding: Requirement conflict detected between [feature A] and [feature B]"}
+```
+
+**On invocation**: Check bus for clarification requests from implementation agents.
 
 FIRST ACTION
 
