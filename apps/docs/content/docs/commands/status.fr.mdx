@@ -1,0 +1,129 @@
+---
+title: /statut
+description: Mettre à jour le statut et la progression de l'histoire
+---
+
+# /statut
+
+Mettez à jour le statut de l'histoire dans le système de suivi du projet et diffusez les modifications aux agents via le bus de messages.
+
+## Démarrage rapide
+
+```bash
+/agileflow:status STORY=US-0001 STATUS=in-progress
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0001, US-0042) |
+| `STATUS` | Yes | - | New status: `ready`, `in-progress`, `blocked`, `in-review`, or `done` |
+| `SUMMARY` | No | - | 1-2 line summary of progress or reason for status change |
+| `PR` | No | - | Pull request URL (for review/done status) |
+| `TO` | No | ALL | Target agent(s) to notify via message bus |
+
+## Exemples
+
+### Commencez à travailler sur une histoire
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="Beginning login form implementation"
+```
+
+Cela met à jour le statut de l'histoire et informe tous les agents que vous avez commencé à travailler.
+
+### Marquer comme bloqué
+
+```bash
+/agileflow:status STORY=US-0045 STATUS=blocked SUMMARY="Waiting on AG-API to implement /auth/login endpoint"
+```
+
+Diffusez le bloqueur afin que les autres membres de l’équipe puissent aider à le résoudre.
+
+### Passer à la révision du code
+
+```bash
+/agileflow:status STORY=US-0038 STATUS=in-review PR=https://github.com/your-repo/pull/123 SUMMARY="Login form complete, ready for review"
+```
+
+Partagez le lien PR pour les évaluateurs.
+
+### Terminer une histoire
+
+```bash
+/agileflow:status STORY=US-0030 STATUS=done SUMMARY="User registration fully tested and deployed"
+```
+
+Marquez l'histoire comme terminée.
+
+## Sortir
+
+La commande affiche :
+1. **Diff Preview** - Montre ce qui va changer `docs/09-agents/status.json`
+2. **Confirmation** - Invite OUI/NON pour appliquer les modifications
+3. **Success Message** - Confirmation que le statut a été mis à jour
+4. **Message Bus Entry** - Message de diffusion envoyé aux agents
+
+Exemple de sortie :
+```text
+✅ Story Status Updated
+Story:    US-0042
+Status:   ready → in-progress
+Summary:  Beginning login form implementation
+Updated:  2025-12-24T14:30:00Z
+
+Message broadcast to: ALL agents
+```
+
+## Fichiers de données mis à jour
+
+Cette commande modifie :
+- `docs/09-agents/status.json` - Suivi du statut de l'histoire
+- `docs/09-agents/bus/log.jsonl` - Bus de messages d'agent (ajoute un événement de changement d'état)
+
+## Valeurs d'état expliquées
+
+- **ready** - L'histoire est préparée et attend d'être commencée
+- **in-progress** - Actuellement en cours de développement
+- **blocked** - En attente de dépendance externe ou de clarification
+- **in-review** - Révision/approbation du code terminée et en attente
+- **done** - Fini, testé et vérifié
+
+## Meilleures pratiques
+
+1. **Always include a summary** - Aide l'équipe à comprendre le contexte et les progrès
+2. **Update immediately** - N'attendez pas les mises à jour de statut par lots
+3. **Link PRs for reviews** - Aide les réviseurs à trouver votre travail
+4. **Use clear language** - Expliquez les bloqueurs en détail pour que d'autres puissent vous aider
+5. **Update when blocked** - Ne vous asseyez pas silencieusement sur les bloqueurs - communiquez immédiatement
+
+## Commandes associées
+
+- [`/agileflow:board`](/commands/board) - Afficher le tableau Kanban avec tous les statuts
+- [`/agileflow:bloqueurs`](/commands/blockers) - Analyser et résoudre les bloqueurs
+- [`/agileflow:attribuer`](/commands/assign) - Attribuer une histoire au propriétaire avec statut
+- [`/agileflow:métriques`](/commands/metrics) - Suivre les mesures d'achèvement
+
+## FAQ
+
+<Accordion type="multiple">
+  <AccordionItem value="direct">
+    <AccordionTrigger>Can I change status directly?</AccordionTrigger>
+    <AccordionContent>
+      Oui, utilisez le `STATUS` paramètre avec n’importe quelle valeur d’état valide.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="assign">
+    <AccordionTrigger>What if I want to assign the story too?</AccordionTrigger>
+    <AccordionContent>
+      Utiliser `/agileflow:assign` qui gère ensemble les mises à jour d’affectation et de statut.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="notify">
+    <AccordionTrigger>How do I notify specific agents?</AccordionTrigger>
+    <AccordionContent>
+      Utilisez le `TO` paramètre: `/agileflow:status STORY=US-0042 STATUS=done TO=AG-REVIEW`
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

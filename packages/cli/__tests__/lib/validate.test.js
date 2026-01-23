@@ -216,16 +216,12 @@ describe('validate.js re-exports', () => {
 
     it('namespaces contain same functions as flat exports', () => {
       // Verify namespace functions work identically to flat exports
-      expect(validate.names.isValidStoryId('US-0001')).toBe(
-        validate.isValidStoryId('US-0001')
-      );
+      expect(validate.names.isValidStoryId('US-0001')).toBe(validate.isValidStoryId('US-0001'));
       expect(validate.args.isPositiveInteger(42)).toBe(validate.isPositiveInteger(42));
       expect(validate.paths.hasUnsafePathPatterns('../test').safe).toBe(
         validate.hasUnsafePathPatterns('../test').safe
       );
-      expect(validate.commands.isAllowedCommand('git')).toBe(
-        validate.isAllowedCommand('git')
-      );
+      expect(validate.commands.isAllowedCommand('git')).toBe(validate.isAllowedCommand('git'));
     });
 
     it('supports namespace destructuring pattern', () => {

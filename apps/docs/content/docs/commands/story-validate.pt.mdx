@@ -1,0 +1,203 @@
+---
+title: /validar história
+description: Valide a integridade da história antes do desenvolvimento
+---
+
+# /validar história
+
+Valide a integridade, a clareza e a prontidão de uma história para desenvolvimento antes de atribuí-la a um agente.
+
+## Início rápido
+
+```bash
+/agileflow:story-validate STORY=<US-ID>
+```
+
+## Parâmetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story identifier (e.g., US-0001) |
+
+## Exemplos
+
+### Validar antes do desenvolvimento
+
+```bash
+/agileflow:story-validate STORY=US-0042
+```
+
+Executa validação abrangente da história e retorna um relatório detalhado mostrando o que está completo e o que precisa ser corrigido.
+
+### Confira uma história de outro épico
+
+```bash
+/agileflow:story-validate STORY=US-0085
+```
+
+O comando localiza automaticamente o arquivo da história, independentemente do épico ao qual ele pertence.
+
+## Saída
+
+O relatório de validação inclui:
+
+### Cheques PASSADOS
+Mostra todos os critérios de validação aprovados:
+- Seções obrigatórias presentes
+- Critérios de aceitação claros e testáveis
+- Contexto de arquitetura preenchido com fontes
+- Dependências documentadas
+- A estimativa é realista
+
+### Problemas com FALHA
+Mostra problemas críticos que devem ser corrigidos:
+- Seções obrigatórias ausentes (AC, contexto de arquitetura)
+- Critérios de aceitação pouco claros (não no formato Dado/Quando/Então)
+- Citações de fontes ausentes no contexto da arquitetura
+- Dependências não verificadas
+- Estimativa irrealista
+
+### AVISOS
+Mostra pequenos problemas ou sugestões:
+- As dependências poderiam ser mais claras
+- Os critérios de aceitação poderiam ser mais específicos
+- Texto do espaço reservado para registro do agente de desenvolvimento
+- Melhorias sugeridas
+
+## Lista de verificação de validação
+
+O comando valida:
+
+### 1. Seções obrigatórias
+- Metadados da história (ID, épico, proprietário, estimativa, status)
+- Descrição
+- Critérios de aceitação (formato Dado/Quando/Então)
+- Contexto de arquitetura com subseções
+- Estratégia de teste
+- Registro do agente de desenvolvimento (estrutura)
+- Dependências (se aplicável)
+
+### 2. Qualidade dos Critérios de Aceitação
+- Usa o formato Dado/Quando/Então (não apenas marcadores)
+- 2 a 5 critérios (nem muitos, nem poucos)
+- Específico e mensurável
+- Detalhes de implementação de referências
+- Cada critério é testável de forma independente
+
+### 3. Contexto da Arquitetura
+- Existe seção com conteúdo real
+- Inclui citações de fontes: `[Source: architecture/{file}.md#{section}]`
+- Todos os arquivos referenciados existem em `docs/04-architecture/`
+- O conteúdo é extraído (não inventado)
+
+### 4. Estimativa
+- A estimativa é uma de: 0,5d, 1d, 1,5d, 2d
+- Para >2d: sugere dividir em histórias menores
+- Realista para o escopo da história
+
+### 5. Dependências
+- O formato é claro: "Depende dos EUA-#### (descrição)"
+- Histórias referenciadas existem em status.json
+- Sem dependências circulares
+- Histórias bloqueadas têm motivos documentados
+
+## Fluxo de trabalho
+
+1. **Create story** - Usar `/story` para criar uma nova história
+2. **Validate completeness** - Correr `/story-validate` para verificar antes do desenvolvimento
+3. **Fix issues** - Abordar quaisquer verificações ou avisos com falha
+4. **Run again** - Revalidar após correções
+5. **Develop** - A história estará pronta quando todas as verificações forem aprovadas
+
+## Relatório de exemplo
+
+```text
+🔍 Story Validation Report
+==========================
+Story: US-0042 - User login form
+File: docs/06-stories/EP-0010/US-0042-user-login-form.md
+Status: ready
+
+✅ PASSED (11 checks)
+------------------
+- All required sections present
+- Acceptance criteria in proper format
+- Architecture context populated
+- All source citations valid
+- Dependencies documented
+- Estimate is realistic
+- Owner assigned and appropriate
+- Dev Agent Record structured
+- No circular dependencies detected
+- Story within epic scope
+- Title is clear and descriptive
+
+❌ FAILED (0 issues)
+-------------------
+[None]
+
+⚠️ WARNINGS (1 issue)
+-----------------------
+Warning: Architecture Context could be more detailed
+  Suggestion: Add more specific API endpoint references
+
+📊 SUMMARY
+----------
+Architecture Context: ✓ populated
+Acceptance Criteria: ✓ clear
+Dependencies: ✓ documented
+Dev Agent Record: ✓ structured
+Ready for Development: YES
+
+Next Steps:
+1. Story is ready! Assign to owner with /agileflow:assign US-0042
+2. Or include in next sprint with /agileflow:sprint
+```
+
+## Problemas comuns e soluções
+
+### Problema: "Falta contexto de arquitetura"
+**Fix**: adicione seções para modelos de dados, especificações de API, componentes com citações de origem para `docs/04-architecture/`.
+
+### Problema: "Os critérios de aceitação não estão no formato Dado/Quando/Então"
+**Fix**: Reescreva os critérios seguindo o padrão:
+```text
+- Given [precondition]
+  When [action]
+  Then [expected outcome]
+```
+
+### Problema: "Citação da fonte não encontrada"
+**Fix**: Verifique se o arquivo existe em `docs/04-architecture/` e use a âncora de seção correta.
+
+### Problema: "A estimativa parece alta para o escopo"
+**Fix**: Considere dividir a história em histórias menores ou fornecer justificativas em Notas Técnicas.
+
+### Problema: "Dependência circular detectada"
+**Fix**: Revise a cadeia de dependências e resolva - as histórias não poderão ser concluídas se dependerem umas das outras.
+
+## Integração com outros comandos
+
+- **After creation**: Sempre corra `/story-validate` antes de atribuir
+- **Before assignment**: Usar `/assign` somente após a validação passar
+- **Before sprint**: Usar `/sprint` com histórias validadas
+- **During development**: Relatório de validação de referência para contexto
+- **For updates**: Revalidar se a história for significativamente modificada
+
+## Melhores Práticas
+
+- **Validate before assigning** - Identifique os problemas antes do início do desenvolvimento
+- **Review failed checks carefully** - Cada um tem uma sugestão específica
+- **Don't ignore warnings** - Muitas vezes indicam melhorias de qualidade
+- **Use architecture docs** - Citações adequadas tornam as histórias mais claras para os desenvolvedores
+- **Keep AC focused** - 2 a 5 critérios que cobrem os principais cenários
+- **Test your stories** - A validação verifica a clareza, não a correção
+
+## Comandos Relacionados
+
+- [`/ história`](/commands/story) - Crie novas histórias
+- [`/épico`](/commands/epic) - Criar épico pai
+- [`/atribuir`](/commands/assign) - Atribuir histórias validadas aos proprietários
+- [`/sprint`](/commands/sprint) - Incluir histórias validadas no sprint
+- [`/babá`](/commands/babysit) - Obtenha ajuda durante o desenvolvimento
+- [`/deps`](/commands/deps) - Visualize dependências da história

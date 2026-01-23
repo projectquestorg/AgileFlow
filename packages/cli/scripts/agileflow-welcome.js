@@ -102,10 +102,20 @@ function detectPlatform() {
     // Try to detect Linux distribution
     try {
       const osRelease = fs.readFileSync('/etc/os-release', 'utf8');
-      if (osRelease.includes('Ubuntu') || osRelease.includes('Debian') || osRelease.includes('Pop!_OS') || osRelease.includes('Mint')) {
+      if (
+        osRelease.includes('Ubuntu') ||
+        osRelease.includes('Debian') ||
+        osRelease.includes('Pop!_OS') ||
+        osRelease.includes('Mint')
+      ) {
         return { os: 'Ubuntu/Debian', installCmd: 'sudo apt install tmux', hasSudo: true };
       }
-      if (osRelease.includes('Fedora') || osRelease.includes('Red Hat') || osRelease.includes('CentOS') || osRelease.includes('Rocky')) {
+      if (
+        osRelease.includes('Fedora') ||
+        osRelease.includes('Red Hat') ||
+        osRelease.includes('CentOS') ||
+        osRelease.includes('Rocky')
+      ) {
         return { os: 'Fedora/RHEL', installCmd: 'sudo dnf install tmux', hasSudo: true };
       }
       if (osRelease.includes('Arch')) {
@@ -662,15 +672,43 @@ function compareVersions(a, b) {
  * These are the options that can be configured through /agileflow:configure
  */
 const ALL_CONFIG_OPTIONS = {
-  claudeMdReinforcement: { since: '2.92.0', description: 'Add /babysit rules to CLAUDE.md', autoApplyable: true },
-  sessionStartHook: { since: '2.35.0', description: 'Welcome display on session start', autoApplyable: false },
-  precompactHook: { since: '2.40.0', description: 'Context preservation during /compact', autoApplyable: false },
-  damageControlHooks: { since: '2.50.0', description: 'Block destructive commands', autoApplyable: false },
+  claudeMdReinforcement: {
+    since: '2.92.0',
+    description: 'Add /babysit rules to CLAUDE.md',
+    autoApplyable: true,
+  },
+  sessionStartHook: {
+    since: '2.35.0',
+    description: 'Welcome display on session start',
+    autoApplyable: false,
+  },
+  precompactHook: {
+    since: '2.40.0',
+    description: 'Context preservation during /compact',
+    autoApplyable: false,
+  },
+  damageControlHooks: {
+    since: '2.50.0',
+    description: 'Block destructive commands',
+    autoApplyable: false,
+  },
   statusLine: { since: '2.35.0', description: 'Custom status bar display', autoApplyable: false },
-  autoArchival: { since: '2.35.0', description: 'Auto-archive completed stories', autoApplyable: false },
-  autoUpdate: { since: '2.70.0', description: 'Auto-update on session start', autoApplyable: false },
+  autoArchival: {
+    since: '2.35.0',
+    description: 'Auto-archive completed stories',
+    autoApplyable: false,
+  },
+  autoUpdate: {
+    since: '2.70.0',
+    description: 'Auto-update on session start',
+    autoApplyable: false,
+  },
   ralphLoop: { since: '2.60.0', description: 'Autonomous story processing', autoApplyable: false },
-  tmuxAutoSpawn: { since: '2.92.0', description: 'Auto-start Claude in tmux session', autoApplyable: true },
+  tmuxAutoSpawn: {
+    since: '2.92.0',
+    description: 'Auto-start Claude in tmux session',
+    autoApplyable: true,
+  },
 };
 
 /**
@@ -719,7 +757,10 @@ function checkConfigStaleness(rootDir, currentVersion, cache = null) {
       // Check for unconfigured options in metadata
       for (const [name, option] of Object.entries(configOptions)) {
         if (option.configured === false) {
-          const optionInfo = ALL_CONFIG_OPTIONS[name] || { description: name, autoApplyable: false };
+          const optionInfo = ALL_CONFIG_OPTIONS[name] || {
+            description: name,
+            autoApplyable: false,
+          };
           result.outdated = true;
           result.newOptionsCount++;
           result.newOptions.push({
@@ -776,22 +817,24 @@ function isOptionActuallyConfigured(optionName, hooks, settings) {
     case 'precompactHook':
       return hooks.PreCompact && hooks.PreCompact.length > 0;
     case 'damageControlHooks':
-      return hooks.PreToolUse && hooks.PreToolUse.some(h =>
-        h.hooks?.some(hk => hk.command?.includes('damage-control'))
+      return (
+        hooks.PreToolUse &&
+        hooks.PreToolUse.some(h => h.hooks?.some(hk => hk.command?.includes('damage-control')))
       );
     case 'statusLine':
       return settings.statusLine && settings.statusLine.command;
     case 'autoArchival':
       // Archival is tied to SessionStart hook running archive script
-      return hooks.SessionStart && hooks.SessionStart.some(h =>
-        h.hooks?.some(hk => hk.command?.includes('archive'))
+      return (
+        hooks.SessionStart &&
+        hooks.SessionStart.some(h => h.hooks?.some(hk => hk.command?.includes('archive')))
       );
     case 'autoUpdate':
       // Would need to check metadata for autoUpdate setting
       return false; // Default to not configured
     case 'ralphLoop':
-      return hooks.Stop && hooks.Stop.some(h =>
-        h.hooks?.some(hk => hk.command?.includes('ralph-loop'))
+      return (
+        hooks.Stop && hooks.Stop.some(h => h.hooks?.some(hk => hk.command?.includes('ralph-loop')))
       );
     case 'claudeMdReinforcement':
       // Check if CLAUDE.md has the marker - can't easily check from here
@@ -848,7 +891,10 @@ ${marker}
         if (fs.existsSync(metadataPath)) {
           const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
           if (!metadata.features) metadata.features = {};
-          if (!metadata.features.tmuxAutoSpawn || metadata.features.tmuxAutoSpawn.enabled === undefined) {
+          if (
+            !metadata.features.tmuxAutoSpawn ||
+            metadata.features.tmuxAutoSpawn.enabled === undefined
+          ) {
             metadata.features.tmuxAutoSpawn = {
               enabled: true,
               version: metadata.version || '2.92.0',
@@ -1636,24 +1682,32 @@ async function main() {
   // Show config auto-apply confirmation (for "full" profile)
   if (configAutoApplied > 0) {
     console.log('');
-    console.log(`${c.mintGreen}✨ Auto-applied ${configAutoApplied} new config option(s)${c.reset}`);
+    console.log(
+      `${c.mintGreen}✨ Auto-applied ${configAutoApplied} new config option(s)${c.reset}`
+    );
     console.log(`   ${c.slate}Profile "full" enables all new features automatically.${c.reset}`);
   }
 
   // Show config staleness notification (for custom profiles)
   if (configStaleness.outdated && configStaleness.newOptionsCount > 0) {
     console.log('');
-    console.log(`${c.amber}⚙️  ${configStaleness.newOptionsCount} new configuration option(s) available${c.reset}`);
+    console.log(
+      `${c.amber}⚙️  ${configStaleness.newOptionsCount} new configuration option(s) available${c.reset}`
+    );
     for (const opt of configStaleness.newOptions.slice(0, 3)) {
       console.log(`   ${c.dim}• ${opt.description}${c.reset}`);
     }
-    console.log(`   ${c.slate}Run ${c.skyBlue}/agileflow:configure${c.reset}${c.slate} to enable them.${c.reset}`);
+    console.log(
+      `   ${c.slate}Run ${c.skyBlue}/agileflow:configure${c.reset}${c.slate} to enable them.${c.reset}`
+    );
   }
 
   // Show tmux installation notice if tmux auto-spawn is enabled but tmux not installed
   if (tmuxAutoSpawnEnabled && !tmuxCheck.available) {
     console.log('');
-    console.log(`${c.amber}📦 tmux not installed${c.reset} ${c.dim}(enables parallel sessions in one terminal)${c.reset}`);
+    console.log(
+      `${c.amber}📦 tmux not installed${c.reset} ${c.dim}(enables parallel sessions in one terminal)${c.reset}`
+    );
 
     // Show platform-specific install command
     if (tmuxCheck.platform?.installCmd) {
@@ -1668,7 +1722,9 @@ async function main() {
       console.log(`   ${c.dim}• Ubuntu:${c.reset} ${c.cyan}sudo apt install tmux${c.reset}`);
       console.log(`   ${c.dim}• No sudo:${c.reset} ${c.cyan}${tmuxCheck.noSudoCmd}${c.reset}`);
     }
-    console.log(`   ${c.dim}Or disable this notice: ${c.skyBlue}/agileflow:configure --disable=tmuxautospawn${c.reset}`);
+    console.log(
+      `   ${c.dim}Or disable this notice: ${c.skyBlue}/agileflow:configure --disable=tmuxautospawn${c.reset}`
+    );
   }
 
   // Show warning and tip if other sessions are active (vibrant colors)

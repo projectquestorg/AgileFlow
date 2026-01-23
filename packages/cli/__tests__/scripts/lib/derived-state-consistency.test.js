@@ -17,18 +17,18 @@ const {
 
 // Helper: Calculate WIP count (stories in progress or review)
 function calculateWipCount(stories) {
+  if (!stories) return 0;
   const wipStatuses = ['in_progress', 'in_review'];
   return Object.values(stories).filter(s => wipStatuses.includes(s.status)).length;
 }
 
 // Helper: Calculate completion percentage
 function calculateCompletionPercentage(stories) {
+  if (!stories) return 0;
   const storyList = Object.values(stories);
   if (storyList.length === 0) return 0;
 
-  const completedCount = storyList.filter(s =>
-    COMPLETED_STATUSES.includes(s.status)
-  ).length;
+  const completedCount = storyList.filter(s => COMPLETED_STATUSES.includes(s.status)).length;
 
   return Math.round((completedCount / storyList.length) * 100);
 }
@@ -390,10 +390,11 @@ describe('derived-state-consistency', () => {
     });
 
     it('handles stories object being null/undefined', () => {
-      expect(calculateWipCount(null || {})).toBe(0);
-      expect(calculateWipCount(undefined || {})).toBe(0);
-      expect(calculateCompletionPercentage(null || {})).toBe(0);
-      expect(calculateCompletionPercentage(undefined || {})).toBe(0);
+      // Test with actual null/undefined - functions should handle gracefully
+      expect(calculateWipCount(null)).toBe(0);
+      expect(calculateWipCount(undefined)).toBe(0);
+      expect(calculateCompletionPercentage(null)).toBe(0);
+      expect(calculateCompletionPercentage(undefined)).toBe(0);
     });
 
     it('handles stories with only completed_at but wrong status', () => {

@@ -1,0 +1,232 @@
+---
+title: /sprint
+description: Planificación de sprints basada en datos con previsión de velocidad
+---
+
+# /sprint
+
+Cree planes de sprint basados ​​en datos utilizando velocidad histórica, análisis de capacidad de agentes y selección inteligente de historias en función de dependencias y prioridades.
+
+## Inicio rápido
+
+```bash
+/agileflow:sprint [SPRINT=<id>] [DURATION=<days>] [MODE=suggest|commit]
+```
+
+## Parámetros
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SPRINT` | No | Auto-generated | Sprint identifier (e.g., "Sprint-42", "2025-W43") |
+| `DURATION` | No | `10` | Sprint duration in days |
+| `AGENTS` | No | All active | Comma-separated agent IDs to plan for (e.g., `AG-UI,AG-API`) |
+| `MODE` | No | `suggest` | `suggest` to preview, `commit` to save plan to status.json |
+| `FOCUS_EPIC` | No | - | Optionally focus sprint on specific epic (e.g., `EP-0010`) |
+
+## Ejemplos
+
+### Ver sugerencia de sprint
+
+```bash
+/agileflow:sprint
+```
+
+Analiza el trabajo pendiente, la capacidad y la velocidad actuales. Muestra historias recomendadas sin realizar cambios.
+
+### Planificar un sprint específico
+
+```bash
+/agileflow:sprint SPRINT=Sprint-42 DURATION=10 MODE=suggest
+```
+
+Planifica un sprint de 10 días y muestra una vista previa de las historias recomendadas, los riesgos y el análisis de capacidad.
+
+### Confirmar plan de sprint
+
+```bash
+/agileflow:sprint SPRINT=Sprint-42 DURATION=10 MODE=commit
+```
+
+Compromete el plan de sprint a `docs/09-agents/status.json` y crea un hito en `docs/08-project/milestones.md`.
+
+### Centrarse en una epopeya específica
+
+```bash
+/agileflow:sprint FOCUS_EPIC=EP-0010 AGENTS=AG-API MODE=suggest
+```
+
+Los planes se centraron en la autenticación épica, priorizando historias de esa épica para el agente AG-API.
+
+## Producción
+
+El informe del plan de sprint incluye:
+
+### Análisis de capacidad
+- **Historical velocity**: Días completados en los últimos 30 días por agente
+- **Projected capacity**: Capacidad estimada para la duración de este sprint
+- **Available slots**: Posiciones WIP disponibles por agente
+- **Risk factors**: Historias en revisión que pueden liberar capacidad
+
+### Estado del trabajo pendiente
+- Las historias listas cuentan
+- Historias bloqueadas (pueden desbloquearse durante el sprint)
+- Historias elegibles (dependencias resueltas)
+
+### Compromiso de Sprint recomendado
+Lista priorizada de historias para comprometer:
+```text
+✅ US-0042 (1d) - AG-UI - Epic: EP-0010
+   "User login form with validation"
+   Dependencies: None ✅
+
+✅ US-0043 (0.5d) - AG-API - Epic: EP-0010
+   "POST /auth/login endpoint"
+   Risk: Blocks US-0042 → Schedule first ⚠️
+```
+
+### Historias diferidas
+Historias que se pueden retomar si se libera capacidad:
+```text
+⚠️ US-0055 (1d) - AG-API - Epic: EP-0013
+   "GET /user/settings endpoint"
+   → Move to next sprint or pick up if capacity frees
+```
+
+### Objetivos de sprint
+Objetivos de alto nivel basados ​​en distribución y prioridades épicas.
+
+### Riesgos y dependencias
+- Se necesita coordinación entre agentes
+- Cadenas de dependencia que necesitan secuenciación
+- Bloqueadores de alto impacto
+- Historias que pueden completarse temprano
+
+### Recomendaciones
+- Secuenciación sugerida de la historia.
+- Áreas de enfoque del monitoreo de Sprint
+- Temas de stand-up diarios
+- Cuándo reevaluar y ajustar
+
+## Fuentes de datos
+
+El comando analiza:
+
+| Source | Purpose |
+|--------|---------|
+| `docs/09-agents/status.json` | Current story status, WIP, assignments |
+| `docs/09-agents/bus/log.jsonl` | Historical velocity from completed stories |
+| `docs/08-project/backlog.md` | Priority order for story selection |
+| `docs/08-project/roadmap.md` | Strategic priorities |
+| `docs/08-project/milestones.md` | Deadline constraints |
+| `docs/05-epics/*.md` | Epic goals and context |
+| `docs/06-stories/**/*.md` | Story details, AC, estimates |
+
+## Algoritmo de planificación
+
+### Fase 1: Analizar la capacidad
+- Cuente las historias en progreso y en revisión por agente
+- Calcular espacios disponibles (máximo 2 por agente)
+- Tenga en cuenta qué historias en revisión pueden completarse pronto
+
+### Fase 2: Calcular la velocidad
+- Analizar finalizaciones históricas de bus/log.jsonl (últimos 30 días)
+- Sumar estimaciones de la historia para obtener la velocidad total.
+- Calcular la velocidad por agente
+- Capacidad del proyecto durante la duración del sprint
+
+### Fase 3: Seleccionar historias
+- Filtrar historias listas (Definición de Ready cumplida)
+- Validar dependencias (todos los departamentos deben estar en estado = "hecho")
+- Priorizar por orden de trabajo pendiente y enfoque épico
+- Seleccionar hasta alcanzar aforo
+- Equilibrio entre agentes
+
+### Fase 4: Evaluar los riesgos
+- Identificar historias de ruta crítica
+- Busque bloqueadores de alto impacto
+- Señalar las necesidades de coordinación entre agentes
+- Encuentra largas cadenas de dependencia
+
+### Fase 5: Confirmar (si MODO = confirmar)
+- Actualizar status.json con metadatos de sprint
+- Crear hito en hitos.md
+- Registre la decisión de planificación de sprint en bus/log.jsonl
+
+## Flujo de trabajo
+
+1. **Prepare stories** - Asegúrese de que las historias estén listas (use `/story-validate`)
+2. **Analyze capacity** - Correr `/sprint MODE=suggest` ver recomendación
+3. **Review risks** - Verifique las dependencias y bloqueadores entre agentes
+4. **Adjust if needed** - Agregar/eliminar historias o ajustar la secuencia
+5. **Commit plan** - Correr `/sprint MODE=commit` guardar
+6. **Start sprint** - Comience con la historia de mayor prioridad
+7. **Monitor progress** - Usar `/board` y `/blockers` durante el sprint
+
+## Criterios de selección de historias
+
+Las historias se seleccionan en este orden de prioridad:
+
+1. **Must be "ready" status** - Definición de Ready Met
+2. **Dependencies resolved** - Todos los departamentos tienen estado = "hecho"
+3. **Backlog priority** - Orden especificada en backlog.md
+4. **Epic alignment** - Enfoque épico si se especifica
+5. **Milestone deadlines** - Artículos urgentes de hitos.md
+6. **Team capacity** - No excedas la velocidad calculada
+7. **Agent balance** - Distribuir el trabajo de manera uniforme.
+
+## Límites de trabajo en curso
+
+- **Maximum 2 stories in-progress per agent**
+- Las historias en revisión pueden completarse pronto y liberar capacidad
+- El emparejamiento en historias de alto riesgo cuenta como 2 espacios
+
+## Patrones de uso comunes
+
+### Inicio del sprint
+```bash
+/agileflow:sprint MODE=suggest    # See recommendation
+/agileflow:sprint MODE=commit     # Commit when ready
+/agileflow:assign STORY=US-0042   # Start with first story
+```
+
+### Ajuste a mitad del sprint
+```bash
+/agileflow:sprint MODE=suggest    # Reassess remaining capacity
+/agileflow:assign STORY=US-0055   # Pick up deferred story if space
+```
+
+### Fin del sprint
+```bash
+/agileflow:velocity              # Update historical velocity
+/agileflow:sprint                # Plan next sprint
+```
+
+## Mejores prácticas
+
+- **Plan based on velocity** - La velocidad histórica es un mejor predictor que las estimaciones.
+- **Respect WIP limits** - No exceda 2 por agente (limita el cambio de contexto)
+- **Validate dependencies** - Las historias bloqueadas no se completarán
+- **Sequence wisely** - Backend antes que frontend cuando existen dependencias
+- **Monitor risks** - Los bloqueadores de alto impacto necesitan atención diaria
+- **Be conservative** - Planifique al 70-80% de su capacidad, guarde el buffer para problemas
+- **Adjust mid-sprint** - Si las tareas se completan antes, agregue historias diferidas
+
+## Integración con otros comandos
+
+- **Before sprint**: Usar `/deps` comprender los riesgos de dependencia
+- **Before starting**: Usar `/story-validate` en todas las historias
+- **During sprint**: Usar `/board` para la reunión diaria
+- **When blocked**: Usar `/blockers` salir a la superficie y resolver
+- **At end**: Usar `/velocity` para actualizar datos históricos
+- **Next sprint**: Usar `/sprint` de nuevo con velocidad actualizada
+
+## Comandos relacionados
+
+- [`/épico`](/commands/epic) - Crea características épicas para organizar historias.
+- [`/historia`](/commands/story) - Crear historias individuales
+- [`/validar historia`](/commands/story-validate) - Validar historias antes del sprint.
+- [`/deps`](/commands/deps) - Comprender las dependencias y los riesgos de la historia.
+- [`/tablero`](/commands/board) - Ver el progreso del sprint durante el desarrollo.
+- [`/bloqueadores`](/commands/blockers) - Seguimiento y resolución de problemas.
+- [`/velocidad`](/commands/velocity) - Medir la capacidad del equipo
+- [`/métricas`](/commands/metrics) - Ver análisis de sprint

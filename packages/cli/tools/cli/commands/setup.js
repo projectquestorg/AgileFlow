@@ -185,7 +185,12 @@ ${claudeMdMarker}
 
       // Update metadata with config tracking
       try {
-        const metadataPath = path.join(config.directory, config.docsFolder, '00-meta', 'agileflow-metadata.json');
+        const metadataPath = path.join(
+          config.directory,
+          config.docsFolder,
+          '00-meta',
+          'agileflow-metadata.json'
+        );
         if (fs.existsSync(metadataPath)) {
           const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
           const packageJson = require(path.join(__dirname, '..', '..', '..', 'package.json'));
@@ -223,8 +228,12 @@ ${claudeMdMarker}
       // Shell alias reload reminder
       if (coreResult.shellAliases?.configured?.length > 0) {
         console.log(chalk.bold('\nShell aliases:'));
-        info(`Reload shell to use: ${chalk.cyan('source ~/.bashrc')} or ${chalk.cyan('source ~/.zshrc')}`);
-        info(`Then run ${chalk.cyan('af')} to start Claude in tmux (or ${chalk.cyan('claude')} for normal)`);
+        info(
+          `Reload shell to use: ${chalk.cyan('source ~/.bashrc')} or ${chalk.cyan('source ~/.zshrc')}`
+        );
+        info(
+          `Then run ${chalk.cyan('af')} to start Claude in tmux (or ${chalk.cyan('claude')} for normal)`
+        );
       }
 
       console.log(chalk.dim(`\nInstalled to: ${coreResult.path}\n`));

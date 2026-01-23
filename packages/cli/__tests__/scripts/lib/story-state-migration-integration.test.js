@@ -275,7 +275,9 @@ describe('story-state-migration-integration', () => {
       // Validation should flag the invalid status
       const validation = validateSchema(migrated.data);
       expect(validation.valid).toBe(false);
-      expect(validation.errors.some(e => e.includes('US-004') && e.includes('invalid status'))).toBe(true);
+      expect(
+        validation.errors.some(e => e.includes('US-004') && e.includes('invalid status'))
+      ).toBe(true);
     });
 
     it('preserves story data through migration and transition', () => {

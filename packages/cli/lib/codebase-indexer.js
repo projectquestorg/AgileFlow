@@ -643,7 +643,8 @@ function updateIndex(projectRoot, options = {}) {
         existingIndex.tags[tag].push(filePath);
       }
       for (const exp of fileData.exports || []) {
-        if (!Object.hasOwn(existingIndex.symbols.exports, exp)) existingIndex.symbols.exports[exp] = [];
+        if (!Object.hasOwn(existingIndex.symbols.exports, exp))
+          existingIndex.symbols.exports[exp] = [];
         existingIndex.symbols.exports[exp].push(filePath);
       }
     }

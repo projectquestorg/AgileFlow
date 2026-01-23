@@ -296,10 +296,7 @@ function spawn(args) {
     });
 
     // Show what was copied
-    const copied = [
-      ...(result.envFilesCopied || []),
-      ...(result.foldersCopied || []),
-    ];
+    const copied = [...(result.envFilesCopied || []), ...(result.foldersCopied || [])];
     const copyInfo = copied.length ? dim(` (copied: ${copied.join(', ')})`) : '';
     console.log(success(`  ✓ Session ${result.sessionId}: ${sessionSpec.nickname}${copyInfo}`));
   }
@@ -341,16 +338,22 @@ function spawn(args) {
     console.log(`  ${c.cyan}No sudo?${c.reset}      conda install -c conda-forge tmux`);
     console.log('');
     console.log(dim('Or use --no-tmux to get manual commands instead:'));
-    console.log(`  ${c.cyan}node spawn-parallel.js spawn --count ${createdSessions.length} --no-tmux${c.reset}`);
+    console.log(
+      `  ${c.cyan}node spawn-parallel.js spawn --count ${createdSessions.length} --no-tmux${c.reset}`
+    );
     console.log('');
-    console.log(warning('Worktrees created but Claude not spawned. Install tmux or use --no-tmux.'));
+    console.log(
+      warning('Worktrees created but Claude not spawned. Install tmux or use --no-tmux.')
+    );
   }
 
   // Summary
   console.log(bold('\n📊 Session Summary:'));
   console.log(dim('─'.repeat(50)));
   for (const session of createdSessions) {
-    console.log(`  ${c.cyan}${session.sessionId}${c.reset} │ ${session.nickname} │ ${dim(session.branch)}`);
+    console.log(
+      `  ${c.cyan}${session.sessionId}${c.reset} │ ${session.nickname} │ ${dim(session.branch)}`
+    );
   }
   console.log(dim('─'.repeat(50)));
   console.log(`${c.cyan}Use /agileflow:session:status to view all sessions.${c.reset}`);
@@ -397,7 +400,9 @@ function addWindow(args) {
   const tmuxEnv = process.env.TMUX;
   if (!tmuxEnv) {
     console.log(error('\n❌ Not in a tmux session.\n'));
-    console.log(`${c.cyan}Use /agileflow:session:spawn to create a new tmux session first.${c.reset}`);
+    console.log(
+      `${c.cyan}Use /agileflow:session:spawn to create a new tmux session first.${c.reset}`
+    );
     console.log(`${dim('Or run: node .agileflow/scripts/spawn-parallel.js spawn --count 1')}`);
     return { success: false, error: 'Not in tmux' };
   }
@@ -436,9 +441,13 @@ function addWindow(args) {
   const cmd = buildClaudeCommand(result.path, {});
 
   // Create new window in current tmux session
-  const newWindowResult = spawnSync('tmux', ['new-window', '-t', currentSession, '-n', windowName], {
-    encoding: 'utf8',
-  });
+  const newWindowResult = spawnSync(
+    'tmux',
+    ['new-window', '-t', currentSession, '-n', windowName],
+    {
+      encoding: 'utf8',
+    }
+  );
 
   if (newWindowResult.status !== 0) {
     console.error(error(`Failed to create tmux window: ${newWindowResult.stderr}`));
@@ -453,10 +462,13 @@ function addWindow(args) {
   // Get window number
   let windowIndex;
   try {
-    windowIndex = execSync(`tmux list-windows -t ${currentSession} -F "#I:#W" | grep ":${windowName}$" | cut -d: -f1`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
+    windowIndex = execSync(
+      `tmux list-windows -t ${currentSession} -F "#I:#W" | grep ":${windowName}$" | cut -d: -f1`,
+      {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }
+    ).trim();
   } catch {
     windowIndex = '?';
   }
@@ -493,7 +505,10 @@ function killAll() {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    const sessions = result.trim().split('\n').filter(s => s.startsWith('claude-parallel-'));
+    const sessions = result
+      .trim()
+      .split('\n')
+      .filter(s => s.startsWith('claude-parallel-'));
 
     if (sessions.length === 0) {
       console.log(`${c.cyan}No claude-parallel tmux sessions found.${c.reset}`);

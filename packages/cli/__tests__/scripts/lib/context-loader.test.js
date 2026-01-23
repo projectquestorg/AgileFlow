@@ -350,16 +350,8 @@ describe('context-loader', () => {
 
         safeExec('git status');
 
-        expect(mockLogger).toHaveBeenCalledWith(
-          'debug',
-          'Executing command',
-          expect.any(Object)
-        );
-        expect(mockLogger).toHaveBeenCalledWith(
-          'debug',
-          'Command succeeded',
-          expect.any(Object)
-        );
+        expect(mockLogger).toHaveBeenCalledWith('debug', 'Executing command', expect.any(Object));
+        expect(mockLogger).toHaveBeenCalledWith('debug', 'Command succeeded', expect.any(Object));
 
         // Clean up
         configureSafeExecLogger(null);

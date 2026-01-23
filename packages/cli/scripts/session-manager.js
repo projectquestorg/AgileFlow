@@ -15,7 +15,12 @@ const { execSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
-const { getProjectRoot, getStatusPath, getSessionStatePath, getAgileflowDir } = require('../lib/paths');
+const {
+  getProjectRoot,
+  getStatusPath,
+  getSessionStatePath,
+  getAgileflowDir,
+} = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
 const { isValidBranchName, isValidSessionNickname } = require('../lib/validate');
 

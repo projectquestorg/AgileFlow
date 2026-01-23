@@ -114,7 +114,7 @@ function explainWorkflow(queryType, queryValue, projectRoot) {
       lines.push('# This tool adds: index awareness, budget truncation, structured output.');
       break;
 
-    case 'tag':
+    case 'tag': {
       const tagPatterns = {
         api: '/api/|/routes/|/controllers/',
         ui: '/components/|/views/|/pages/',
@@ -123,10 +123,13 @@ function explainWorkflow(queryType, queryValue, projectRoot) {
         test: '/test/|/__tests__/|/spec/',
       };
       lines.push('# Equivalent to find with path patterns:');
-      lines.push(`find ${projectRoot} -type f | grep -E "${tagPatterns[queryValue] || queryValue}"`);
+      lines.push(
+        `find ${projectRoot} -type f | grep -E "${tagPatterns[queryValue] || queryValue}"`
+      );
       lines.push('');
       lines.push('# This tool uses pre-indexed tags for instant lookup.');
       break;
+    }
 
     case 'export':
       lines.push('# Equivalent to grep for export statements:');
@@ -140,7 +143,9 @@ function explainWorkflow(queryType, queryValue, projectRoot) {
       lines.push(`grep -n "import.*from" ${queryValue}`);
       lines.push('');
       lines.push('# Plus reverse search for files importing this one:');
-      lines.push(`grep -rl "${path.basename(queryValue, path.extname(queryValue))}" ${projectRoot}/src/`);
+      lines.push(
+        `grep -rl "${path.basename(queryValue, path.extname(queryValue))}" ${projectRoot}/src/`
+      );
       lines.push('');
       lines.push('# This tool tracks bidirectional dependencies in index.');
       break;

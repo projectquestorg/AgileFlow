@@ -98,9 +98,7 @@ describe('counter.js', () => {
     it('handles subdirectory with no .md files', () => {
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync
-        .mockReturnValueOnce([
-          { name: 'session', isFile: () => false, isDirectory: () => true },
-        ])
+        .mockReturnValueOnce([{ name: 'session', isFile: () => false, isDirectory: () => true }])
         .mockReturnValueOnce(['readme.txt', 'config.json']);
 
       const result = countCommands('/commands');
@@ -163,7 +161,7 @@ describe('counter.js', () => {
     });
 
     it('counts directories containing SKILL.md', () => {
-      fs.existsSync.mockImplementation((p) => {
+      fs.existsSync.mockImplementation(p => {
         // Directory exists
         if (p === '/skills') return true;
         // SKILL.md files exist
@@ -172,7 +170,7 @@ describe('counter.js', () => {
         return false;
       });
 
-      fs.readdirSync.mockImplementation((dir) => {
+      fs.readdirSync.mockImplementation(dir => {
         if (dir === '/skills') {
           return [
             { name: 'pdf', isFile: () => false, isDirectory: () => true },
@@ -190,7 +188,7 @@ describe('counter.js', () => {
     });
 
     it('recursively counts nested skill directories', () => {
-      fs.existsSync.mockImplementation((p) => {
+      fs.existsSync.mockImplementation(p => {
         if (p === '/skills') return true;
         if (p === '/skills/office/SKILL.md') return false; // Parent has no skill
         if (p === '/skills/office/pdf/SKILL.md') return true;
@@ -198,11 +196,9 @@ describe('counter.js', () => {
         return false;
       });
 
-      fs.readdirSync.mockImplementation((dir) => {
+      fs.readdirSync.mockImplementation(dir => {
         if (dir === '/skills') {
-          return [
-            { name: 'office', isFile: () => false, isDirectory: () => true },
-          ];
+          return [{ name: 'office', isFile: () => false, isDirectory: () => true }];
         }
         if (dir === '/skills/office') {
           return [
@@ -228,17 +224,15 @@ describe('counter.js', () => {
     });
 
     it('handles directories without SKILL.md', () => {
-      fs.existsSync.mockImplementation((p) => {
+      fs.existsSync.mockImplementation(p => {
         if (p === '/skills') return true;
         // No SKILL.md files
         return false;
       });
 
-      fs.readdirSync.mockImplementation((dir) => {
+      fs.readdirSync.mockImplementation(dir => {
         if (dir === '/skills') {
-          return [
-            { name: 'incomplete', isFile: () => false, isDirectory: () => true },
-          ];
+          return [{ name: 'incomplete', isFile: () => false, isDirectory: () => true }];
         }
         // Return empty array for subdirectories to stop recursion
         return [];

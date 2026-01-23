@@ -174,7 +174,8 @@ async function promptInstall() {
     {
       type: 'confirm',
       name: 'claudeMdReinforcement',
-      message: 'Add /babysit AskUserQuestion rules to CLAUDE.md? (recommended for context preservation)',
+      message:
+        'Add /babysit AskUserQuestion rules to CLAUDE.md? (recommended for context preservation)',
       default: true,
     },
   ]);

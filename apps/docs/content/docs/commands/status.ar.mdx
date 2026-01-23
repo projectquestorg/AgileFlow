@@ -1,0 +1,129 @@
+---
+title: /حالة
+description: تحديث حالة القصة والتقدم
+---
+
+# /حالة
+
+قم بتحديث حالة القصة في نظام تتبع المشروع وبث التغييرات إلى الوكلاء عبر ناقل الرسائل.
+
+## بداية سريعة
+
+```bash
+/agileflow:status STORY=US-0001 STATUS=in-progress
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story ID (e.g., US-0001, US-0042) |
+| `STATUS` | Yes | - | New status: `ready`, `in-progress`, `blocked`, `in-review`, or `done` |
+| `SUMMARY` | No | - | 1-2 line summary of progress or reason for status change |
+| `PR` | No | - | Pull request URL (for review/done status) |
+| `TO` | No | ALL | Target agent(s) to notify via message bus |
+
+## أمثلة
+
+### ابدأ العمل على القصة
+
+```bash
+/agileflow:status STORY=US-0042 STATUS=in-progress SUMMARY="Beginning login form implementation"
+```
+
+يؤدي ذلك إلى تحديث حالة القصة وإعلام جميع الوكلاء بأنك قد بدأت العمل.
+
+### وضع علامة "محظور".
+
+```bash
+/agileflow:status STORY=US-0045 STATUS=blocked SUMMARY="Waiting on AG-API to implement /auth/login endpoint"
+```
+
+قم ببث أداة الحظر حتى يتمكن أعضاء الفريق الآخرون من المساعدة في حلها.
+
+### انتقل إلى مراجعة الكود
+
+```bash
+/agileflow:status STORY=US-0038 STATUS=in-review PR=https://github.com/your-repo/pull/123 SUMMARY="Login form complete, ready for review"
+```
+
+شارك رابط العلاقات العامة للمراجعين.
+
+### أكمل قصة
+
+```bash
+/agileflow:status STORY=US-0030 STATUS=done SUMMARY="User registration fully tested and deployed"
+```
+
+ضع علامة على القصة على أنها منتهية.
+
+## الإخراج
+
+يعرض الأمر:
+1. **Diff Preview** - يظهر ما سوف يتغير في `docs/09-agents/status.json`
+2. **Confirmation** - نعم/لا موجه لتطبيق التغييرات
+3. **Success Message** - تأكيد أن الحالة محدثة
+4. **Message Bus Entry** - رسالة البث المرسلة إلى الوكلاء
+
+مثال الإخراج:
+```text
+✅ Story Status Updated
+Story:    US-0042
+Status:   ready → in-progress
+Summary:  Beginning login form implementation
+Updated:  2025-12-24T14:30:00Z
+
+Message broadcast to: ALL agents
+```
+
+## تم تحديث ملفات البيانات
+
+يعدل هذا الأمر:
+- `docs/09-agents/status.json` - تتبع حالة القصة
+- `docs/09-agents/bus/log.jsonl` - ناقل رسائل الوكيل (يضيف حدث تغيير الحالة)
+
+## وأوضح قيم الحالة
+
+- **ready** - القصة جاهزة وتنتظر أن تبدأ
+- **in-progress** - يجري العمل عليه حالياً بشكل نشيط
+- **blocked** - انتظار التبعية الخارجية أو التوضيح
+- **in-review** - كامل وينتظر مراجعة/الموافقة على الكود
+- **done** - تم الانتهاء منه واختباره والتحقق منه
+
+## أفضل الممارسات
+
+1. **Always include a summary** - يساعد الفريق على فهم السياق والتقدم
+2. **Update immediately** - لا تنتظر تحديثات الحالة دفعة واحدة
+3. **Link PRs for reviews** - يساعد المراجعين في العثور على عملك
+4. **Use clear language** - اشرح أدوات الحظر بالتفصيل حتى يتمكن الآخرون من المساعدة
+5. **Update when blocked** - لا تجلس على الحواجز بصمت - تواصل على الفور
+
+## الأوامر ذات الصلة
+
+- [`/ Agileflow:board`](/commands/board) - عرض لوحة كانبان بجميع الحالات
+- [`/ Agileflow:blockers`](/commands/blockers) - تحليل وحل العوائق
+- [`/ Agileflow:تعيين`](/commands/assign) - تعيين القصة للمالك بالحالة
+- [`/ Agileflow: المقاييس`](/commands/metrics) - تتبع مقاييس الإنجاز
+
+## التعليمات
+
+<Accordion type="multiple">
+  <AccordionItem value="direct">
+    <AccordionTrigger>Can I change status directly?</AccordionTrigger>
+    <AccordionContent>
+      نعم استخدم `STATUS` المعلمة مع أي قيمة حالة صالحة.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="assign">
+    <AccordionTrigger>What if I want to assign the story too?</AccordionTrigger>
+    <AccordionContent>
+      يستخدم `/agileflow:assign` الذي يتعامل مع كل من تحديثات المهمة والحالة معًا.
+    </AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="notify">
+    <AccordionTrigger>How do I notify specific agents?</AccordionTrigger>
+    <AccordionContent>
+      استخدم `TO` المعلمة: `/agileflow:status STORY=US-0042 STATUS=done TO=AG-REVIEW`
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

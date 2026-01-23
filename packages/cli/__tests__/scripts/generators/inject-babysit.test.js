@@ -461,8 +461,7 @@ But no end marker section.`;
     });
 
     it('handles content with Windows line endings', () => {
-      const content =
-        '<!-- AUTOGEN:TEST:START -->\r\nold\r\n<!-- AUTOGEN:TEST:END -->\r\n';
+      const content = '<!-- AUTOGEN:TEST:START -->\r\nold\r\n<!-- AUTOGEN:TEST:END -->\r\n';
 
       const result = injectContentByMarker(content, 'TEST', 'new');
 

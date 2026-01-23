@@ -1,0 +1,203 @@
+---
+title: /histoire-valider
+description: Valider l'exhaustivité de l'histoire avant le développement
+---
+
+# /histoire-valider
+
+Validez l'exhaustivité, la clarté et l'état de préparation d'une histoire avant de l'attribuer à un agent.
+
+## Démarrage rapide
+
+```bash
+/agileflow:story-validate STORY=<US-ID>
+```
+
+## Paramètres
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `STORY` | Yes | - | Story identifier (e.g., US-0001) |
+
+## Exemples
+
+### Valider avant le développement
+
+```bash
+/agileflow:story-validate STORY=US-0042
+```
+
+Effectue une validation complète de l'histoire et renvoie un rapport détaillé indiquant ce qui est terminé et ce qui doit être corrigé.
+
+### Vérifier une histoire de différentes épopées
+
+```bash
+/agileflow:story-validate STORY=US-0085
+```
+
+La commande localise automatiquement le fichier d'histoire, quelle que soit l'épopée à laquelle il appartient.
+
+## Sortir
+
+Le rapport de validation comprend :
+
+### Chèques RÉUSSIS
+Affiche tous les critères de validation qui ont réussi :
+- Sections obligatoires présentes
+- Critères d'acceptation clairs et testables
+- Contexte d'architecture rempli de sources
+- Dépendances documentées
+- L'estimation est réaliste
+
+### Problèmes ÉCHEC
+Affiche les problèmes critiques qui doivent être résolus :
+- Sections obligatoires manquantes (AC, Contexte d'architecture)
+- Critères d'acceptation peu clairs (pas au format Donné/Quand/Alors)
+- Citations de sources manquantes dans un contexte architectural
+- Dépendances non vérifiées
+- Estimation irréaliste
+
+### AVERTISSEMENTS
+Affiche des problèmes mineurs ou des suggestions :
+- Les dépendances pourraient être plus claires
+- Les critères d'acceptation pourraient être plus précis
+- Texte de l'espace réservé pour l'enregistrement de l'agent de développement
+- Améliorations suggérées
+
+## Liste de contrôle de validation
+
+La commande valide :
+
+### 1. Sections obligatoires
+- Métadonnées de l'histoire (ID, épopée, propriétaire, estimation, statut)
+- Description
+- Critères d'acceptation (format Donné/Quand/Alors)
+- Contexte d'architecture avec sous-sections
+- Stratégie de test
+- Enregistrement de l'agent de développement (structure)
+- Dépendances (le cas échéant)
+
+### 2. Qualité des critères d’acceptation
+- Utilise le format Donné/Quand/Alors (pas uniquement les puces)
+- 2 à 5 critères (ni trop, ni trop peu)
+- Spécifique et mesurable
+- Détails de mise en œuvre des références
+- Chaque critère est testable indépendamment
+
+### 3. Contexte architectural
+- La section existe avec du vrai contenu
+- Comprend des citations de sources : `[Source: architecture/{file}.md#{section}]`
+- Tous les fichiers référencés existent dans `docs/04-architecture/`
+- Le contenu est extrait (non inventé)
+
+### 4. Estimation
+- L'estimation est l'une des valeurs suivantes : 0,5 d, 1 d, 1,5 d, 2 d
+- Pour >2d : suggère de diviser en histoires plus petites
+- Réaliste pour la portée de l'histoire
+
+### 5. Dépendances
+- Le format est clair : "Dépend des États-Unis-#### (description)"
+- Des histoires référencées existent dans status.json
+- Pas de dépendances circulaires
+- Les histoires bloquées ont des raisons documentées
+
+## Flux de travail
+
+1. **Create story** - Utiliser `/story` pour créer une nouvelle histoire
+2. **Validate completeness** - Courir `/story-validate` à vérifier avant le développement
+3. **Fix issues** - Traiter les contrôles ou avertissements ayant échoué
+4. **Run again** - Revalider après les correctifs
+5. **Develop** - L'histoire est prête lorsque tous les contrôles sont réussis
+
+## Exemple de rapport
+
+```text
+🔍 Story Validation Report
+==========================
+Story: US-0042 - User login form
+File: docs/06-stories/EP-0010/US-0042-user-login-form.md
+Status: ready
+
+✅ PASSED (11 checks)
+------------------
+- All required sections present
+- Acceptance criteria in proper format
+- Architecture context populated
+- All source citations valid
+- Dependencies documented
+- Estimate is realistic
+- Owner assigned and appropriate
+- Dev Agent Record structured
+- No circular dependencies detected
+- Story within epic scope
+- Title is clear and descriptive
+
+❌ FAILED (0 issues)
+-------------------
+[None]
+
+⚠️ WARNINGS (1 issue)
+-----------------------
+Warning: Architecture Context could be more detailed
+  Suggestion: Add more specific API endpoint references
+
+📊 SUMMARY
+----------
+Architecture Context: ✓ populated
+Acceptance Criteria: ✓ clear
+Dependencies: ✓ documented
+Dev Agent Record: ✓ structured
+Ready for Development: YES
+
+Next Steps:
+1. Story is ready! Assign to owner with /agileflow:assign US-0042
+2. Or include in next sprint with /agileflow:sprint
+```
+
+## Problèmes courants et correctifs
+
+### Problème : « Contexte architectural manquant »
+**Fix**: Ajoutez des sections pour les modèles de données, les spécifications d'API, les composants avec des citations de sources à `docs/04-architecture/`.
+
+### Problème : « Les critères d'acceptation ne sont pas au format Donné/Quand/Alors »
+**Fix**: Réécrivez les critères en suivant le modèle :
+```text
+- Given [precondition]
+  When [action]
+  Then [expected outcome]
+```
+
+### Problème : « Citation source introuvable »
+**Fix**: Vérifiez que le fichier existe dans `docs/04-architecture/` et utilisez l'ancre de section appropriée.
+
+### Problème : « L'estimation semble élevée par rapport à la portée »
+**Fix**: Envisagez de diviser l'histoire en plusieurs parties plus petites ou de fournir une justification dans les notes techniques.
+
+### Problème : « Dépendance circulaire détectée »
+**Fix**: Examinez la chaîne de dépendance et résolvez - les histoires ne peuvent pas être terminées si elles dépendent les unes des autres.
+
+## Intégration avec d'autres commandes
+
+- **After creation**: Toujours courir `/story-validate` avant d'attribuer
+- **Before assignment**: Utiliser `/assign` seulement après la validation
+- **Before sprint**: Utiliser `/sprint` avec des histoires validées
+- **During development**: Rapport de validation de référence pour le contexte
+- **For updates**: Revalider si l'histoire est significativement modifiée
+
+## Meilleures pratiques
+
+- **Validate before assigning** - Détecter les problèmes tôt avant le début du développement
+- **Review failed checks carefully** - Chacun a une suggestion spécifique
+- **Don't ignore warnings** - Ils indiquent souvent des améliorations de la qualité
+- **Use architecture docs** - Des citations appropriées rendent les histoires plus claires pour les développeurs
+- **Keep AC focused** - 2 à 5 critères qui couvrent les principaux scénarios
+- **Test your stories** - La validation vérifie la clarté, pas l'exactitude
+
+## Commandes associées
+
+- [`/histoire`](/commands/story) - Créer de nouvelles histoires
+- [`/épique`](/commands/epic) - Créer une épopée parent
+- [`/attribuer`](/commands/assign) - Attribuer des histoires validées aux propriétaires
+- [`/sprint`](/commands/sprint) - Inclure des histoires validées dans le sprint
+- [`/garde d'enfants`](/commands/babysit) - Obtenez de l'aide pendant le développement
+- [`/deps`](/commands/deps) - Visualiser les dépendances de l'histoire

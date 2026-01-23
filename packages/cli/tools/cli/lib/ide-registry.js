@@ -287,9 +287,7 @@ class IdeRegistry {
    */
   static getLabels(ideName) {
     const ide = IDE_REGISTRY[ideName];
-    return ide && ide.labels
-      ? ide.labels
-      : { commands: 'commands', agents: 'agents' };
+    return ide && ide.labels ? ide.labels : { commands: 'commands', agents: 'agents' };
   }
 }
 

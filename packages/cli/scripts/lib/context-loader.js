@@ -63,22 +63,22 @@ const SAFEEXEC_ALLOWED_COMMANDS = [
  * Dangerous patterns that should never be executed
  */
 const SAFEEXEC_BLOCKED_PATTERNS = [
-  /\|/,         // Pipe
-  /;/,          // Command separator
-  /&&/,         // AND operator
-  /\|\|/,       // OR operator
-  /`/,          // Backticks
-  /\$\(/,       // Command substitution
-  />/,          // Redirect output
-  /</,          // Redirect input
-  /\bsudo\b/,   // Sudo
-  /\brm\b/,     // Remove
-  /\bmv\b/,     // Move
-  /\bcp\b/,     // Copy
-  /\bchmod\b/,  // Change permissions
-  /\bchown\b/,  // Change owner
-  /\bcurl\b/,   // curl (network)
-  /\bwget\b/,   // wget (network)
+  /\|/, // Pipe
+  /;/, // Command separator
+  /&&/, // AND operator
+  /\|\|/, // OR operator
+  /`/, // Backticks
+  /\$\(/, // Command substitution
+  />/, // Redirect output
+  /</, // Redirect input
+  /\bsudo\b/, // Sudo
+  /\brm\b/, // Remove
+  /\bmv\b/, // Move
+  /\bcp\b/, // Copy
+  /\bchmod\b/, // Change permissions
+  /\bchown\b/, // Change owner
+  /\bcurl\b/, // curl (network)
+  /\bwget\b/, // wget (network)
 ];
 
 /**

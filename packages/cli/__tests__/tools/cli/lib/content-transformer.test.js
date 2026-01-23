@@ -23,7 +23,7 @@ jest.mock('../../../../tools/cli/lib/content-injector', () => ({
 
 // Mock the frontmatter-parser module
 jest.mock('../../../../scripts/lib/frontmatter-parser', () => ({
-  parseFrontmatter: jest.fn((content) => {
+  parseFrontmatter: jest.fn(content => {
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (!match) return {};
     // Simple YAML-like parsing for tests
@@ -37,7 +37,7 @@ jest.mock('../../../../scripts/lib/frontmatter-parser', () => ({
     }
     return result;
   }),
-  extractBody: jest.fn((content) => {
+  extractBody: jest.fn(content => {
     const match = content.match(/^---\n[\s\S]*?\n---\n*/);
     if (!match) return content;
     return content.slice(match[0].length).trim();
@@ -152,9 +152,7 @@ describe('content-transformer.js', () => {
 
       it('handles empty replacement string', () => {
         const content = 'Remove this word please';
-        const result = replaceReferences(content, [
-          { pattern: 'this ', replacement: '' },
-        ]);
+        const result = replaceReferences(content, [{ pattern: 'this ', replacement: '' }]);
         expect(result).toBe('Remove word please');
       });
     });
@@ -228,7 +226,7 @@ Content here`;
     it('transforms values using valueMap', () => {
       const frontmatter = { description: 'An agent for testing' };
       const result = convertFrontmatter(frontmatter, {
-        valueMap: { description: (v) => v.replace('agent', 'skill') },
+        valueMap: { description: v => v.replace('agent', 'skill') },
       });
       expect(result.description).toBe('An skill for testing');
     });
@@ -282,9 +280,12 @@ Content here`;
     });
 
     it('returns defaults only for empty frontmatter', () => {
-      const result = convertFrontmatter({}, {
-        defaults: { version: '1.0' },
-      });
+      const result = convertFrontmatter(
+        {},
+        {
+          defaults: { version: '1.0' },
+        }
+      );
       expect(result).toEqual({ version: '1.0' });
     });
   });
@@ -372,7 +373,7 @@ Content here`;
     it('applies additional replacements', () => {
       const content = 'Custom pattern here';
       const result = transformForIde(content, 'codex', {
-        additionalReplacements: { 'Custom': 'Modified' },
+        additionalReplacements: { Custom: 'Modified' },
       });
       expect(result).toBe('Modified pattern here');
     });

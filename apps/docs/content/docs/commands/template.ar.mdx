@@ -1,0 +1,450 @@
+---
+title: /نموذج
+description: إنشاء وإدارة قوالب المستندات المخصصة
+---
+
+# /نموذج
+
+قم بإنشاء قوالب مخصصة وإدارتها واستخدامها لتوحيد الوثائق عبر مشروعك. أنشئ قوالب للقصص والاجتماعات وتقارير الحوادث والمزيد.
+
+## بداية سريعة
+
+```bash
+# List all available templates
+/agileflow:template
+
+# Create a new custom template
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+
+# Use a template to generate a document
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `ACTION` | No | list | Operation: list, create, edit, or use |
+| `TYPE` | For create/edit/use | - | Template type: story, epic, adr, custom, etc. |
+| `NAME` | For create/edit/use | - | Template name (e.g., meeting-notes) |
+| `PATH` | Optional | auto | Custom path to save template |
+
+## أمثلة
+
+### قائمة القوالب المتاحة
+
+```bash
+/agileflow:template
+```
+
+يعرض جميع القوالب المضمنة والمخصصة:
+
+```text
+# Available Templates
+
+## Built-in Templates (docs/00-meta/templates/)
+- story-template.md - User stories
+- epic-template.md - Epics
+- adr-template.md - Architecture Decision Records
+- agent-profile-template.md - Agent profiles
+- comms-note-template.md - Handoff notes
+- research-template.md - Research notes
+- README-template.md - Folder READMEs
+
+## Custom Templates (docs/00-meta/templates/custom/)
+- meeting-notes.md (created 2025-10-15)
+- incident-report.md (created 2025-10-10)
+- sprint-retro.md (created 2025-10-01)
+
+Usage: /agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+### إنشاء قالب ملاحظات الاجتماع
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=meeting-notes
+```
+
+يوفر واجهة منشئ القالب:
+
+```text
+Creating new template: meeting-notes
+
+Template content:
+
+---
+title: {{TITLE}}
+date: {{DATE}}
+attendees: {{ATTENDEES}}
+---
+
+# {{TITLE}}
+
+**Date**: {{DATE}}
+**Attendees**: {{ATTENDEES}}
+
+## Agenda
+1.
+2.
+3.
+
+## Notes
+
+### Topic 1
+
+
+### Topic 2
+
+
+## Action Items
+- [ ] Task 1 (Owner: {{OWNER}}, Due: {{DUE_DATE}})
+- [ ] Task 2
+
+## Decisions Made
+-
+
+## Next Meeting
+**Date**:
+**Topics**:
+
+---
+
+Save to: docs/00-meta/templates/custom/meeting-notes.md
+Proceed? (YES/NO)
+```
+
+### إنشاء قالب تقرير الحادث
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=incident-report
+```
+
+تحديد قالب تقرير الحادث:
+
+```markdown
+---
+template: incident-report
+version: 1.0
+---
+
+# Incident Report: {{TITLE}}
+
+**ID**: INC-{{INCIDENT_ID}}
+**Date**: {{DATE}}
+**Severity**: {{SEVERITY}}
+**Status**: {{STATUS}}
+**Reporter**: {{REPORTER}}
+
+## Summary
+{{SUMMARY}}
+
+## Timeline
+
+| Time | Event |
+|------|-------|
+| {{TIME_1}} | {{EVENT_1}} |
+| {{TIME_2}} | {{EVENT_2}} |
+| {{TIME_3}} | {{EVENT_3}} |
+
+## Impact
+
+**Users Affected**: {{USERS_AFFECTED}}
+**Duration**: {{DURATION}}
+**Services**: {{SERVICES}}
+
+## Root Cause
+
+{{ROOT_CAUSE}}
+
+## Resolution
+
+{{RESOLUTION}}
+
+## Prevention
+
+### Immediate Actions
+- [ ] {{ACTION_1}}
+- [ ] {{ACTION_2}}
+
+### Long-term Actions
+- [ ] {{ACTION_3}} (Story: US-XXXX)
+- [ ] {{ACTION_4}} (Story: US-XXXX)
+
+**Post-Incident Review**: {{PIR_DATE}}
+```
+
+### إنشاء قالب Sprint بأثر رجعي
+
+```bash
+/agileflow:template ACTION=create TYPE=custom NAME=sprint-retro
+```
+
+تحديد قالب Sprint بأثر رجعي باستخدام المقاييس:
+
+```markdown
+# Sprint {{SPRINT_NUMBER}} Retrospective
+
+**Dates**: {{START_DATE}} to {{END_DATE}}
+**Team**: {{TEAM}}
+**Facilitator**: {{FACILITATOR}}
+
+## Sprint Goals
+
+### Planned
+{{GOALS_PLANNED}}
+
+### Achieved
+{{GOALS_ACHIEVED}}
+
+## Metrics
+
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Stories Completed | {{TARGET_STORIES}} | {{ACTUAL_STORIES}} | {{STATUS}} |
+| Velocity | {{TARGET_VELOCITY}} | {{ACTUAL_VELOCITY}} | {{STATUS}} |
+| Test Coverage | {{TARGET_COVERAGE}}% | {{ACTUAL_COVERAGE}}% | {{STATUS}} |
+| Bugs | <{{MAX_BUGS}} | {{ACTUAL_BUGS}} | {{STATUS}} |
+
+## What Went Well? 🎉
+
+1.
+2.
+3.
+
+## What Didn't Go Well? 😞
+
+1.
+2.
+3.
+
+## What Should We Try? 💡
+
+1.
+2.
+3.
+
+## Action Items
+
+- [ ] {{ACTION_1}} (Owner: {{OWNER_1}}, Due: {{DUE_1}})
+- [ ] {{ACTION_2}} (Owner: {{OWNER_2}}, Due: {{DUE_2}})
+- [ ] {{ACTION_3}} (Owner: {{OWNER_3}}, Due: {{DUE_3}})
+
+## Shoutouts 🙌
+
+-
+
+**Next Retrospective**: {{NEXT_RETRO_DATE}}
+```
+
+### استخدم قالبًا لإنشاء مستند
+
+```bash
+/agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+يطالب بمتغيرات القالب وينشئ المستند:
+
+```text
+Using template: meeting-notes
+
+Fill in template variables:
+
+TITLE: Weekly Team Sync
+ATTENDEES: Alice, Bob, Carol, DevOps Team
+OWNER: Alice
+DUE_DATE: 2025-12-31
+
+Generated document preview:
+
+---
+title: Weekly Team Sync
+date: 2025-12-24
+attendees: Alice, Bob, Carol, DevOps Team
+---
+
+# Weekly Team Sync
+
+**Date**: 2025-12-24
+**Attendees**: Alice, Bob, Carol, DevOps Team
+
+## Agenda
+1.
+2.
+3.
+
+[...preview continues...]
+
+Save to: docs/08-project/meetings/2025-12-24-weekly-sync.md
+Proceed? (YES/NO)
+```
+
+### تحرير قالب موجود
+
+```bash
+/agileflow:template ACTION=edit TYPE=custom NAME=meeting-notes
+```
+
+يعرض القالب الحالي ويطالب بإجراء تعديلات من خلال معاينة الفرق.
+
+## بناء جملة القالب
+
+### تنسيق متغير
+
+تستخدم القوالب أقواسًا مزدوجة متعرجة للمتغيرات:
+
+```markdown
+# {{TITLE}}
+
+**Created by**: {{AUTHOR}}
+**Date**: {{DATE}}
+**Status**: {{STATUS}}
+```
+
+### المتغيرات المضمنة
+
+متوفر في جميع القوالب:
+
+| Variable | Example | Description |
+|----------|---------|-------------|
+| `{{DATE}}` | 2025-12-24 | Current date (YYYY-MM-DD) |
+| `{{DATETIME}}` | 2025-12-24T10:30:00Z | ISO 8601 datetime |
+| `{{USER}}` | alice | Current git user |
+| `{{YEAR}}` | 2025 | Current year |
+
+### متغيرات قالب القصة
+
+بالنسبة للقوالب الخاصة بالقصة:
+
+```text
+{{STORY_ID}} - Story identifier (US-0042)
+{{EPIC_ID}} - Parent epic (EP-0001)
+{{OWNER}} - Story owner/assignee
+{{ESTIMATE}} - Story point estimate
+{{AC}} - Acceptance criteria
+{{DEPENDENCIES}} - Dependencies on other stories
+```
+
+### متغيرات قالب ADR
+
+بالنسبة لسجلات قرارات الهندسة المعمارية:
+
+```text
+{{NUMBER}} - ADR number (0001, 0042)
+{{STATUS}} - Decision status (proposed, accepted, superseded)
+{{CONTEXT}} - Driving factors
+{{DECISION}} - The decision made
+{{CONSEQUENCES}} - Trade-offs and impacts
+```
+
+## القوالب المضمنة
+
+يتضمن AgileFlow قوالب افتراضية يمكنك عرضها وتخصيصها:
+
+| Template | Purpose | Location |
+|----------|---------|----------|
+| `story-template.md` | User story format | docs/00-meta/templates/story-template.md |
+| `epic-template.md` | Epic definition | docs/00-meta/templates/epic-template.md |
+| `adr-template.md` | Architecture decisions | docs/00-meta/templates/adr-template.md |
+| `agent-profile-template.md` | Agent documentation | docs/00-meta/templates/agent-profile-template.md |
+| `comms-note-template.md` | Handoff notes | docs/00-meta/templates/comms-note-template.md |
+| `research-template.md` | Research findings | docs/00-meta/templates/research-template.md |
+| `README-template.md` | Folder READMEs | docs/00-meta/templates/README-template.md |
+
+يمكنك تجاوز أي قالب مضمن عن طريق إنشاء إصدار مخصص بنفس الاسم.
+
+## أفضل الممارسات
+
+### متى يتم إنشاء القوالب
+
+قم بإنشاء قالب عندما:
+- يتم إنشاء نوع المستند عدة مرات
+- وينبغي اتباع هيكل محدد باستمرار
+- يجب دائمًا تضمين حقول معينة
+
+### تسمية القالب
+
+استخدم أسماء وصفية لحالة الكباب:
+
+```text
+Good:
+- meeting-notes
+- sprint-retrospective
+- incident-report
+- design-proposal
+
+Avoid:
+- template1
+- doc
+- new-file
+```
+
+### تسمية المتغير
+
+استخدم UPPERCASE_WITH_UNDERSCORES:
+
+```text
+Good:
+{{STORY_ID}}, {{OWNER}}, {{DUE_DATE}}
+
+Avoid:
+{{story_id}}, {{owner}}, {{due-date}}, {{Author}}
+```
+
+### التوثيق
+
+إضافة أوصاف إلى القوالب المخصصة:
+
+```markdown
+---
+template: incident-report
+version: 1.0
+description: Post-incident documentation for service outages
+author: DevOps Team
+created: 2025-10-10
+---
+```
+
+## إدارة القالب
+
+### سجل القالب
+
+يتم تعقب القوالب المخصصة `docs/00-meta/templates/registry.json`:
+
+```json
+{
+  "templates": [
+    {
+      "name": "meeting-notes",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/meeting-notes.md",
+      "created": "2025-10-15",
+      "author": "Alice",
+      "description": "Weekly team meeting notes",
+      "variables": ["TITLE", "DATE", "ATTENDEES", "OWNER"]
+    },
+    {
+      "name": "incident-report",
+      "type": "custom",
+      "path": "docs/00-meta/templates/custom/incident-report.md",
+      "created": "2025-10-10",
+      "author": "Bob",
+      "description": "Post-incident documentation",
+      "variables": ["INCIDENT_ID", "SEVERITY", "SUMMARY", "ROOT_CAUSE"]
+    }
+  ]
+}
+```
+
+### مشاركة الفريق
+
+القوالب في `docs/00-meta/templates/custom/` ملتزمون بـ git، لذلك:
+- يستخدم جميع أعضاء الفريق نفس القوالب
+- يتم إصدار القوالب برمز
+- تتم مراجعة تغييرات القالب في العلاقات العامة
+
+## الأوامر ذات الصلة
+
+- [`/adr`](/commands/adr) - إنشاء قرارات الهندسة المعمارية (يستخدم adr-template.md)
+- [`/قصة جديدة`](/commands/story-new) - إنشاء قصص المستخدم (يستخدم Story-template.md)
+- [`/ملحمة جديدة`](/commands/epic-new) - إنشاء ملاحم (يستخدم epic-template.md)
+- [`/ بحث`](/commands/research) - إنشاء ملاحظات بحثية (يستخدم Research-template.md)

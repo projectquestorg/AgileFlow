@@ -65,7 +65,14 @@ const PROFILES = {
   minimal: {
     description: 'SessionStart + archival only',
     enable: ['sessionstart', 'archival'],
-    disable: ['precompact', 'statusline', 'ralphloop', 'selfimprove', 'askuserquestion', 'tmuxautospawn'],
+    disable: [
+      'precompact',
+      'statusline',
+      'ralphloop',
+      'selfimprove',
+      'askuserquestion',
+      'tmuxautospawn',
+    ],
     archivalDays: 30,
   },
   none: {

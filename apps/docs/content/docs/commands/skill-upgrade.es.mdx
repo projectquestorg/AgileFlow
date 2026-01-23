@@ -1,0 +1,599 @@
+---
+title: /habilidad:actualizar
+description: Actualice las habilidades existentes con capacidad de aprendizaje de mejora personal
+---
+
+# /habilidad:actualizar
+
+Agregue capacidad de superación personal a las habilidades para que aprendan de sus correcciones y mejoren continuamente.
+
+## Inicio rápido
+
+```bash
+# Interactive mode
+/agileflow:skill:upgrade
+
+# Upgrade specific skill
+/agileflow:skill:upgrade supabase-swift
+
+# Upgrade all skills at once
+/agileflow:skill:upgrade --all
+```
+
+## Qué hace
+
+Las habilidades creadas antes de la introducción del sistema de aprendizaje se pueden actualizar para obtener:
+
+1. **Learnings file** - Realiza un seguimiento de preferencias, convenciones y patrones.
+2. **Self-improvement** - Aprende de tus correcciones
+3. **Preference persistence** - Recuerda lo que prefieres
+4. **Context accumulation** - Desarrolla conocimientos específicos del proyecto.
+5. **Team consistency** - Aprendizajes compartidos entre el equipo.
+
+## Cómo funciona
+
+El proceso de actualización:
+
+1. **Creates learnings file** - `.agileflow/skills/_learnings/<skill>.yaml`
+2. **Updates SKILL.md** - Agrega instrucciones de aprendizaje.
+3. **Preserves content** - El contenido de habilidades existente no ha cambiado.
+4. **Enables learning** - La habilidad ahora puede aprender de las correcciones.
+
+## Sistema de aprendizaje
+
+### Qué habilidades se aprenden
+
+Las habilidades rastrean tres tipos de aprendizajes:
+
+**Preferences** - Cómo te gustan las cosas hechas:
+```yaml
+preferences:
+  code_style: "async/await over callbacks"
+  error_handling: "Result<T, Error> type"
+  naming: "camelCase for functions"
+```
+
+**Conventions** - Patrones de proyecto a seguir:
+```yaml
+conventions:
+  - "Always validate input at service layer"
+  - "Use interfaces for dependency injection"
+  - "Database queries in separate service files"
+```
+
+**Anti-patterns** - Cosas a evitar:
+```yaml
+anti_patterns:
+  - "Avoid callback patterns (use async/await)"
+  - "Never hardcode configuration"
+  - "Don't put business logic in controllers"
+```
+
+### Estructura del archivo de aprendizajes
+
+Cada habilidad mejorada obtiene un archivo de aprendizaje:
+
+```
+.agileflow/skills/_learnings/
+├── supabase-swift.yaml
+├── react-components.yaml
+└── api-client.yaml
+```
+
+Formato de archivo:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-09T10:30:00Z
+
+preferences:
+  async_pattern: "async/await"
+  error_handling: "Result<T, Error>"
+
+conventions:
+  - "Separate data, service, and UI layers"
+  - "Always handle network errors explicitly"
+
+anti_patterns:
+  - "Avoid callback patterns"
+  - "Never hardcode API keys"
+
+context:
+  # Project-specific learnings
+
+examples:
+  good:
+    - "let user = try await supabase.auth.user()"
+  bad:
+    - "var apiKey = 'sk-...'"
+
+metadata:
+  corrections_count: 3
+  approvals_count: 5
+  last_correction: 2025-01-08T10:30:00Z
+  created: 2025-01-01T00:00:00Z
+```
+
+## Flujo de trabajo
+
+### Paso 1: seleccione la habilidad
+
+Si no se especifica:
+
+```bash
+/agileflow:skill:upgrade
+```
+
+**Choose a skill:**
+```
+Which skill would you like to upgrade?
+
+[1] supabase-swift
+    Supabase database operations for Swift iOS apps
+
+[2] ui-components
+    React component patterns with accessibility
+
+[3] api-error-handling
+    REST API error handling patterns
+
+Select: 1
+```
+
+### Paso 2: verificar el estado
+
+El comando comprueba si la habilidad ya está actualizada:
+
+```
+Checking upgrade status for: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Skill is eligible for upgrade
+
+Current state:
+  - SKILL.md: exists
+  - Learnings file: NOT YET CREATED
+  - Learning capability: NOT ENABLED
+```
+
+Si ya está actualizado:
+
+```
+✅ Skill "supabase-swift" already has self-improving capability!
+
+Learnings file: .agileflow/skills/_learnings/supabase-swift.yaml
+  - Corrections: 5
+  - Last learning: 2025-01-08T10:30:00Z
+
+View learnings: /agileflow:skill:edit supabase-swift
+```
+
+### Paso 3: muestre lo que se agregará
+
+```
+📦 Upgrade: supabase-swift
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Changes to be made:
+
+1. SKILL.md - Add sections:
+   - ## Self-Improving Learnings
+   - Update ## Instructions to include learning workflow
+
+2. Create new file:
+   - .agileflow/skills/_learnings/supabase-swift.yaml
+
+The skill will now learn from your corrections!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Paso 4: Vista previa (opcional)
+
+```
+Proceed with upgrade?
+
+[1] Yes, upgrade skill
+    Add learning capability now
+
+[2] Preview changes first (Recommended)
+    Show exact changes before applying
+
+[3] Cancel
+    Exit without changes
+
+Select: 2
+```
+
+Si obtiene una vista previa:
+
+```
+📝 Changes to SKILL.md (preview):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ## When to Use
+
++ ## Self-Improving Learnings
++
++ This skill learns from your corrections and preferences.
++
++ **On invocation**:
++ 1. Check if `.agileflow/skills/_learnings/supabase-swift.yaml` exists
++ 2. If exists, read and apply learned preferences
++ 3. Follow conventions and avoid anti-patterns from learnings
+
+New file preview:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+.agileflow/skills/_learnings/supabase-swift.yaml
+
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-09T10:30:00Z
+
+preferences: {}
+conventions: []
+anti_patterns: []
+...
+
+Apply changes? (Yes/No)
+```
+
+### Paso 5: crear un archivo de aprendizajes
+
+El sistema crea `.agileflow/skills/_learnings/<skill>.yaml`:
+
+```yaml
+skill: supabase-swift
+version: 1
+last_updated: 2025-01-09T10:30:00Z
+
+# =============================================================================
+# PREFERENCES
+# =============================================================================
+preferences:
+  # Preferences will be learned from corrections
+
+# =============================================================================
+# CONVENTIONS
+# =============================================================================
+conventions:
+  # - "Convention will be added from corrections"
+
+# =============================================================================
+# ANTI-PATTERNS
+# =============================================================================
+anti_patterns:
+  # - "Things to avoid will be added here"
+
+# =============================================================================
+# CONTEXT
+# =============================================================================
+context:
+  # Project-specific context will be learned
+
+# =============================================================================
+# EXAMPLES
+# =============================================================================
+examples:
+  good: []
+  bad: []
+
+# =============================================================================
+# METADATA
+# =============================================================================
+metadata:
+  corrections_count: 0
+  approvals_count: 0
+  created: 2025-01-09T10:30:00Z
+  sessions: []
+```
+
+### Paso 6: actualice SKILL.md
+
+El sistema agrega a SKILL.md:
+
+**New section:**
+```markdown
+## Self-Improving Learnings
+
+This skill learns from your corrections and preferences.
+
+**On invocation**:
+1. Check if `.agileflow/skills/_learnings/supabase-swift.yaml` exists
+2. If exists, read and apply learned preferences
+3. Follow conventions and avoid anti-patterns from learnings
+
+**On correction**:
+1. When user corrects output, extract the signal
+2. Determine confidence level:
+   - **high**: Explicit correction ("never do X", "always do Y")
+   - **medium**: User approved or pattern worked well
+   - **low**: Observation to review later
+3. Update the learnings file with new preference
+
+**Learnings file location**: `.agileflow/skills/_learnings/supabase-swift.yaml`
+```
+
+### Paso 7: confirmar el éxito
+
+```
+✅ Skill upgraded successfully!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Modified: .claude/skills/supabase-swift/SKILL.md
+Created:  .agileflow/skills/_learnings/supabase-swift.yaml
+
+The skill will now:
+  • Load learned preferences on each invocation
+  • Extract signals from your corrections
+  • Build up conventions over time
+  • Avoid learned anti-patterns
+
+Start using the skill - it will learn from your feedback!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## Ejemplos
+
+### Ejemplo 1: mejorar una habilidad única
+
+```bash
+/agileflow:skill:upgrade api-client
+```
+
+**Response:**
+```
+✅ api-client upgraded successfully!
+
+Created: .agileflow/skills/_learnings/api-client.yaml
+
+The skill now has:
+  • Learnings file for tracking preferences
+  • Self-improvement capability
+  • Context accumulation from corrections
+```
+
+### Ejemplo 2: Actualización por lotes de todas las habilidades
+
+```bash
+/agileflow:skill:upgrade --all
+```
+
+**Response:**
+```
+📦 Upgrading all skills...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Skills to upgrade:
+  [1/3] supabase-swift... ✅
+  [2/3] ui-components... ✅
+  [3/3] api-client... ✅
+
+✅ Upgraded 3 skills successfully!
+
+All skills now have self-improving capability.
+```
+
+### Ejemplo 3: ya actualizado
+
+```bash
+/agileflow:skill:upgrade react-components
+```
+
+**Response:**
+```
+✅ react-components already has self-improving capability!
+
+Learnings file:
+  .agileflow/skills/_learnings/react-components.yaml
+
+Stats:
+  - Corrections: 8
+  - Last learning: 2025-01-08T15:30:00Z
+  - Created: 2025-01-01T00:00:00Z
+
+The skill is learning from your feedback. Keep using it!
+```
+
+## Cómo se aprenden las habilidades
+
+### Fase 1: Sobre la invocación de habilidades
+
+Cuando usas una habilidad mejorada:
+
+1. Claude comprueba si existe el archivo de aprendizajes
+2. Lee preferencias, convenciones, antipatrones.
+3. Los aplica mientras ejecuta la habilidad.
+4. La próxima vez recordará tus preferencias.
+
+### Fase 2: Sobre la corrección
+
+Cuando corrige la salida de Claude:
+
+1. **You provide feedback**: "No, use async/await en su lugar"
+2. **Claude extracts signal**: "Prefiero async/await a las devoluciones de llamada"
+3. **Determines confidence**:
+   - **High**: Corrección explícita (agregar a los aprendizajes)
+   - **Medium**: Usted aprobó el resultado (agregar a los aprendizajes)
+   - **Low**: Observación (nota para revisión)
+4. **Updates learnings file**: Nueva preferencia guardada
+5. **Next use applies it**: La habilidad recuerda tu preferencia
+
+### Ejemplo de ciclo de aprendizaje
+
+**Session 1:**
+```
+You: "Create an API error handler"
+
+Claude: [uses try-catch blocks]
+
+You: "No, prefer using Result<T, Error> type"
+
+Claude: Extracts signal and updates learnings file
+  preferences.error_handling = "Result<T, Error>"
+```
+
+**Session 2:**
+```
+You: "Create another API error handler"
+
+Claude: [reads learnings file]
+Claude: [uses Result<T, Error> type]
+
+You: "Perfect!"
+
+Claude: Updates learnings metadata: approvals_count++
+```
+
+**Session 3:**
+```
+You: "New API handler needed"
+
+Claude: [automatically uses Result<T, Error>]
+Claude: [follows all learned conventions]
+
+The skill improved through learning!
+```
+
+## Usando aprendizajes
+
+### Revisión manual
+
+Comprueba lo que ha aprendido la habilidad:
+
+```bash
+cat .agileflow/skills/_learnings/supabase-swift.yaml
+```
+
+### Actualizaciones manuales
+
+Agregue sus propias preferencias antes de las correcciones:
+
+```bash
+# Edit the learnings file directly
+vim .agileflow/skills/_learnings/api-client.yaml
+
+# Add your preferences
+preferences:
+  error_handling: "Custom error types"
+  logging: "Structured JSON logging"
+```
+
+### Compartir equipo
+
+Comprometa los aprendizajes con git para que el equipo los obtenga:
+
+```bash
+git add .agileflow/skills/_learnings/
+git commit -m "Add api-client learning from team feedback"
+```
+
+Miembros del equipo:
+```bash
+git pull
+# Now has the same learnings
+```
+
+## Mejores prácticas
+
+### Cuándo actualizar
+
+Mejora una habilidad cuando:
+
+1. **Skill is frequently used** - Más correcciones = mejor aprendizaje
+2. **Team has patterns** - Los aprendizajes capturan las preferencias del equipo.
+3. **Creating new skills** - Habilitar el aprendizaje desde el principio.
+4. **Consolidating skills** - Fusionar aprendizajes de viejas habilidades.
+
+### Utilizar los aprendizajes de forma eficaz
+
+1. **Correct mistakes** - Cada corrección mejora la habilidad.
+2. **Approve good output** - Las aprobaciones también son aprendizajes
+3. **Document patterns** - Agregar convenciones manualmente
+4. **Review periodically** - Comprobar lo aprendido
+5. **Commit to git** - Compartir aprendizajes con el equipo.
+
+### Mantener los aprendizajes
+
+1. **Keep files updated** - Los aprendizajes se mantienen actualizados.
+2. **Monitor corrections** - El recuento correcto muestra el uso
+3. **Archive old learnings** - Si consolida habilidades
+4. **Share improvements** - Consistencia del equipo
+
+## Solución de problemas
+
+### ¿Ya actualizado?
+
+Si la habilidad ya tiene aprendizaje:
+
+```
+✅ Skill already upgraded!
+
+To:
+  - View learnings: cat .agileflow/skills/_learnings/<name>.yaml
+  - Edit learnings: /agileflow:skill:edit <name>
+  - Clear learnings: rm .agileflow/skills/_learnings/<name>.yaml
+```
+
+### No se creó ningún archivo de aprendizaje
+
+Si la actualización se realizó correctamente pero no hay ningún archivo de aprendizaje:
+
+1. Verifique el sistema de archivos:
+   ```bash
+   ls .agileflow/skills/_learnings/
+   ```
+
+2. Verifique que el directorio exista:
+   ```bash
+   mkdir -p .agileflow/skills/_learnings/
+   ```
+
+3. Vuelva a ejecutar la actualización:
+   ```bash
+   /agileflow:skill:upgrade <skill-name>
+   ```
+
+### Actualización fallida
+
+Si ve un error:
+
+```
+❌ Failed to upgrade skill: Permission denied
+```
+
+**Fix**: Verificar permisos:
+```bash
+chmod -R u+w .agileflow/skills/
+chmod -R u+w .agileflow/skills/_learnings/
+```
+
+Luego vuelva a intentar actualizar.
+
+## Después de la actualización
+
+Una vez actualizado:
+
+1. **Use the skill** - Empieza a trabajar con él.
+2. **Correct Claude** - Cada corrección enseña la habilidad.
+3. **Monitor learning** - Verificar la acumulación de archivos de aprendizaje
+4. **Share with team** - Comprometer lo aprendido con git.
+
+## Comandos relacionados
+
+- [`/habilidad:crear`](/commands/skill-create) - Crear habilidad con el aprendizaje habilitado
+- [`/habilidad:lista`](/commands/skill-list) - Ver todas las habilidades
+- [`/ habilidad: editar`](/commands/skill-edit) - Editar archivo de aprendizajes
+- [`/habilidad:prueba`](/commands/skill-test) - Verificar el trabajo de habilidad.
+- [`/habilidad:eliminar`](/commands/skill-delete) - Quitar habilidad
+
+## Próximos pasos
+
+1. **List skills**: `/agileflow:skill:list`
+2. **Upgrade frequently used**: `/agileflow:skill:upgrade <skill>`
+3. **Use the skill** - Trabajar en tareas y corregir a Claude.
+4. **Review learnings**: `cat .agileflow/skills/_learnings/<skill>.yaml`
+5. **Commit to git**: Compartir aprendizajes con el equipo

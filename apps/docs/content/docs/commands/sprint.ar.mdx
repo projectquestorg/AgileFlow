@@ -1,0 +1,232 @@
+---
+title: /sprint
+description: التخطيط السريع المبني على البيانات مع التنبؤ بالسرعة
+---
+
+# /sprint
+
+أنشئ خطط سباق سريعة تعتمد على البيانات باستخدام السرعة التاريخية، وتحليل قدرة الوكيل، واختيار القصة الذكية بناءً على التبعيات والأولويات.
+
+## بداية سريعة
+
+```bash
+/agileflow:sprint [SPRINT=<id>] [DURATION=<days>] [MODE=suggest|commit]
+```
+
+## حدود
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `SPRINT` | No | Auto-generated | Sprint identifier (e.g., "Sprint-42", "2025-W43") |
+| `DURATION` | No | `10` | Sprint duration in days |
+| `AGENTS` | No | All active | Comma-separated agent IDs to plan for (e.g., `AG-UI,AG-API`) |
+| `MODE` | No | `suggest` | `suggest` to preview, `commit` to save plan to status.json |
+| `FOCUS_EPIC` | No | - | Optionally focus sprint on specific epic (e.g., `EP-0010`) |
+
+## أمثلة
+
+### عرض اقتراح سبرينت
+
+```bash
+/agileflow:sprint
+```
+
+يحلل التراكم الحالي والقدرة والسرعة. يعرض القصص الموصى بها دون إجراء تغييرات.
+
+### خطة سباق محددة
+
+```bash
+/agileflow:sprint SPRINT=Sprint-42 DURATION=10 MODE=suggest
+```
+
+يخطط لسباق سريع لمدة 10 أيام ويعرض معاينة للقصص والمخاطر وتحليل القدرات الموصى بها.
+
+### الالتزام بخطة سبرينت
+
+```bash
+/agileflow:sprint SPRINT=Sprint-42 DURATION=10 MODE=commit
+```
+
+يرتكب خطة العدو ل `docs/09-agents/status.json` ويخلق علامة فارقة في `docs/08-project/milestones.md`.
+
+### التركيز على ملحمة محددة
+
+```bash
+/agileflow:sprint FOCUS_EPIC=EP-0010 AGENTS=AG-API MODE=suggest
+```
+
+ركزت خطط Sprint على المصادقة الملحمية، مع إعطاء الأولوية للقصص من تلك الملحمة لوكيل AG-API.
+
+## الإخراج
+
+يتضمن تقرير خطة الركض ما يلي:
+
+### تحليل القدرات
+- **Historical velocity**: الأيام المكتملة في آخر 30 يومًا لكل وكيل
+- **Projected capacity**: السعة المقدرة لمدة السباق هذه
+- **Available slots**: وظائف WIP متاحة لكل وكيل
+- **Risk factors**: القصص قيد المراجعة التي قد تحرر القدرات
+
+### حالة التراكم
+- عدد القصص الجاهزة
+- القصص المحظورة (قد يتم إلغاء حظرها أثناء السباق)
+- القصص المؤهلة (تم حل التبعيات)
+
+### التزام سبرينت الموصى به
+قائمة أولويات القصص التي يجب الالتزام بها:
+```text
+✅ US-0042 (1d) - AG-UI - Epic: EP-0010
+   "User login form with validation"
+   Dependencies: None ✅
+
+✅ US-0043 (0.5d) - AG-API - Epic: EP-0010
+   "POST /auth/login endpoint"
+   Risk: Blocks US-0042 → Schedule first ⚠️
+```
+
+### القصص المؤجلة
+القصص التي يمكن التقاطها إذا تحررت القدرة:
+```text
+⚠️ US-0055 (1d) - AG-API - Epic: EP-0013
+   "GET /user/settings endpoint"
+   → Move to next sprint or pick up if capacity frees
+```
+
+### أهداف سبرينت
+أهداف عالية المستوى تعتمد على التوزيع الملحمي والأولويات.
+
+### المخاطر والتبعيات
+- هناك حاجة إلى التنسيق بين الوكلاء
+- سلاسل التبعية التي تحتاج إلى التسلسل
+- حاصرات عالية التأثير
+- القصص التي قد تكتمل في وقت مبكر
+
+### التوصيات
+- تسلسل القصة المقترح
+- مجالات التركيز لمراقبة Sprint
+- مواضيع الوقوف اليومية
+- متى يجب إعادة التقييم والتكيف
+
+## مصادر البيانات
+
+تحليل الأمر:
+
+| Source | Purpose |
+|--------|---------|
+| `docs/09-agents/status.json` | Current story status, WIP, assignments |
+| `docs/09-agents/bus/log.jsonl` | Historical velocity from completed stories |
+| `docs/08-project/backlog.md` | Priority order for story selection |
+| `docs/08-project/roadmap.md` | Strategic priorities |
+| `docs/08-project/milestones.md` | Deadline constraints |
+| `docs/05-epics/*.md` | Epic goals and context |
+| `docs/06-stories/**/*.md` | Story details, AC, estimates |
+
+## خوارزمية التخطيط
+
+### المرحلة الأولى: تحليل القدرات
+- قم بإحصاء القصص قيد التقدم وقيد المراجعة لكل وكيل
+- حساب الفتحات المتاحة (بحد أقصى 2 لكل وكيل)
+- لاحظ القصص قيد المراجعة التي قد تكتمل قريبًا
+
+### المرحلة الثانية: حساب السرعة
+- تحليل الإكمالات التاريخية من bus/log.jsonl (آخر 30 يومًا)
+- جمع تقديرات القصة للحصول على السرعة الإجمالية
+- حساب السرعة لكل وكيل
+- قدرة المشروع على مدة العدو
+
+### المرحلة 3: حدد القصص
+- تصفية القصص الجاهزة (تعريف الجاهزية)
+- التحقق من صحة التبعيات (جميع عمليات الإقلاع يجب أن تكون بالحالة = "تم")
+- تحديد الأولويات حسب ترتيب الأعمال المتراكمة والتركيز الملحمي
+- حدد حتى الوصول إلى السعة
+- التوازن بين الوكلاء
+
+### المرحلة الرابعة: تقييم المخاطر
+- تحديد قصص المسار الحرج
+- تحقق من وجود حاصرات عالية التأثير
+- ضع علامة على احتياجات التنسيق بين الوكلاء
+- ابحث عن سلاسل التبعية الطويلة
+
+### المرحلة 5: الالتزام (إذا كان MODE=الالتزام)
+- قم بتحديث Status.json باستخدام البيانات التعريفية لـ Sprint
+- إنشاء علامة فارقة في Miles.md
+- قم بتسجيل قرار التخطيط للسباق السريع في bus/log.jsonl
+
+## سير العمل
+
+1. **Prepare stories** - التأكد من أن القصص جاهزة (استخدام `/story-validate`)
+2. **Analyze capacity** - يجري `/sprint MODE=suggest` لرؤية التوصية
+3. **Review risks** - التحقق من التبعيات والحواجز عبر الوكيل
+4. **Adjust if needed** - إضافة/إزالة القصص أو ضبط التسلسل
+5. **Commit plan** - يجري `/sprint MODE=commit` للحفظ
+6. **Start sprint** - ابدأ بالقصة ذات الأولوية القصوى
+7. **Monitor progress** - يستخدم `/board` و `/blockers` أثناء العدو
+
+## معايير اختيار القصة
+
+يتم اختيار القصص حسب ترتيب الأولوية هذا:
+
+1. **Must be "ready" status** - تعريف الجاهزية
+2. **Dependencies resolved** - جميع عمليات الإقلاع لها حالة = "تم"
+3. **Backlog priority** - الطلب المحدد في backlog.md
+4. **Epic alignment** - التركيز الملحمي إذا تم تحديده
+5. **Milestone deadlines** - العناصر العاجلة من ومعالم.md
+6. **Team capacity** - لا تتجاوز السرعة المحسوبة
+7. **Agent balance** - توزيع العمل بالتساوي
+
+## حدود العمل قيد التقدم
+
+- **Maximum 2 stories in-progress per agent**
+- قد تكتمل القصص قيد المراجعة قريبًا وستكون متاحة مجانًا
+- يعتبر الاقتران بالقصص عالية المخاطر بمثابة فتحتين
+
+## أنماط الاستخدام الشائعة
+
+### بداية سبرينت
+```bash
+/agileflow:sprint MODE=suggest    # See recommendation
+/agileflow:sprint MODE=commit     # Commit when ready
+/agileflow:assign STORY=US-0042   # Start with first story
+```
+
+### تعديل منتصف السباق
+```bash
+/agileflow:sprint MODE=suggest    # Reassess remaining capacity
+/agileflow:assign STORY=US-0055   # Pick up deferred story if space
+```
+
+### نهاية سبرينت
+```bash
+/agileflow:velocity              # Update historical velocity
+/agileflow:sprint                # Plan next sprint
+```
+
+## أفضل الممارسات
+
+- **Plan based on velocity** - السرعة التاريخية هي مؤشر أفضل من التقديرات
+- **Respect WIP limits** - لا تتجاوز 2 لكل وكيل (يحد من تبديل السياق)
+- **Validate dependencies** - لن تكتمل القصص المحظورة
+- **Sequence wisely** - الواجهة الخلفية قبل الواجهة الأمامية عند وجود التبعيات
+- **Monitor risks** - تحتاج الحاصرات عالية التأثير إلى اهتمام يومي
+- **Be conservative** - التخطيط لسعة 70-80%، وحفظ المخزن المؤقت للمشكلات
+- **Adjust mid-sprint** - إذا اكتملت المهام مبكرًا، قم بإضافة القصص المؤجلة
+
+## التكامل مع الأوامر الأخرى
+
+- **Before sprint**: يستخدم `/deps` لفهم مخاطر التبعية
+- **Before starting**: يستخدم `/story-validate` على كل القصص
+- **During sprint**: يستخدم `/board` للوقوف اليومي
+- **When blocked**: يستخدم `/blockers` إلى السطح وحلها
+- **At end**: يستخدم `/velocity` لتحديث البيانات التاريخية
+- **Next sprint**: يستخدم `/sprint` مرة أخرى مع السرعة المحدثة
+
+## الأوامر ذات الصلة
+
+- [`/ملحمة`](/commands/epic) - إنشاء ملاحم مميزة لتنظيم القصص
+- [`/قصة`](/commands/story) - إنشاء قصص فردية
+- [`/التحقق من صحة القصة`](/commands/story-validate) - التحقق من صحة القصص قبل العدو
+- [`/ ديبس`](/commands/deps) - فهم تبعيات القصة والمخاطر
+- [`/اللوحة`](/commands/board) - عرض التقدم السريع أثناء التطوير
+- [`/الحاصرات`](/commands/blockers) - تتبع المشكلات وحلها
+- [`/السرعة`](/commands/velocity) - قياس قدرة الفريق
+- [`/المقاييس`](/commands/metrics) - عرض تحليلات العدو

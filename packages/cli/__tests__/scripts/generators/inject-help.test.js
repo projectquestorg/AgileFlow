@@ -9,10 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const {
-  generateCommandList,
-  injectContent,
-} = require('../../../scripts/generators/inject-help');
+const { generateCommandList, injectContent } = require('../../../scripts/generators/inject-help');
 
 describe('inject-help.js', () => {
   let tempDir;
@@ -90,9 +87,24 @@ describe('inject-help.js', () => {
 
     it('groups multiple commands in same category', () => {
       const commands = [
-        { name: 'story', description: 'Create story', argumentHint: '', category: 'Story Management' },
-        { name: 'epic', description: 'Create epic', argumentHint: '', category: 'Story Management' },
-        { name: 'assign', description: 'Assign story', argumentHint: '', category: 'Story Management' },
+        {
+          name: 'story',
+          description: 'Create story',
+          argumentHint: '',
+          category: 'Story Management',
+        },
+        {
+          name: 'epic',
+          description: 'Create epic',
+          argumentHint: '',
+          category: 'Story Management',
+        },
+        {
+          name: 'assign',
+          description: 'Assign story',
+          argumentHint: '',
+          category: 'Story Management',
+        },
       ];
 
       const result = generateCommandList(commands);
@@ -141,7 +153,11 @@ describe('inject-help.js', () => {
       // Find the blank line between categories
       let foundBlankBetweenCategories = false;
       for (let i = 1; i < lines.length - 1; i++) {
-        if (lines[i] === '' && lines[i - 1].includes('/agileflow:') && lines[i + 1].includes('**')) {
+        if (
+          lines[i] === '' &&
+          lines[i - 1].includes('/agileflow:') &&
+          lines[i + 1].includes('**')
+        ) {
           foundBlankBetweenCategories = true;
           break;
         }
@@ -374,7 +390,12 @@ placeholder
       // Generate command list
       const commands = [
         { name: 'help', description: 'Show help', argumentHint: '', category: 'System' },
-        { name: 'status', description: 'Show status', argumentHint: 'STORY=<id>', category: 'Story' },
+        {
+          name: 'status',
+          description: 'Show status',
+          argumentHint: 'STORY=<id>',
+          category: 'Story',
+        },
       ];
       const commandList = generateCommandList(commands);
 
@@ -460,9 +481,7 @@ More content.
     });
 
     it('categories are bold formatted', () => {
-      const commands = [
-        { name: 'x', description: 'X', argumentHint: '', category: 'My Category' },
-      ];
+      const commands = [{ name: 'x', description: 'X', argumentHint: '', category: 'My Category' }];
 
       const result = generateCommandList(commands);
 

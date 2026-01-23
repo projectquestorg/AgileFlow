@@ -436,8 +436,7 @@ old
     });
 
     it('handles Windows line endings in content', () => {
-      const content =
-        '<!-- AUTOGEN:TEST:START -->\r\nold\r\n<!-- AUTOGEN:TEST:END -->\r\n';
+      const content = '<!-- AUTOGEN:TEST:START -->\r\nold\r\n<!-- AUTOGEN:TEST:END -->\r\n';
 
       const result = injectContentByMarker(content, 'TEST', 'new');
 
@@ -643,9 +642,7 @@ v1
     });
 
     it('skill list entries have bold name', () => {
-      const skills = [
-        { name: 'my-skill', description: 'Description', category: 'Cat' },
-      ];
+      const skills = [{ name: 'my-skill', description: 'Description', category: 'Cat' }];
 
       const result = generateSkillList(skills);
 
