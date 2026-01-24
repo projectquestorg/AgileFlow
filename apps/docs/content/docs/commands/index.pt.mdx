@@ -134,23 +134,23 @@ Comandos especializados para tarefas complexas:
 Explore os comandos do AgileFlow interativamente nesta sandbox:
 
 <CommandPlayground
-  comando="/agileflow:status"
-  title="Playground de comando interativo"
-  description="Experimente comandos comuns do AgileFlow e veja o resultado simulado"
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
 />
 
 <div className="mt-4 grid gap-4 sm:grid-cols-2">
   <CommandPlayground
-    comando="/agileflow:epic EP-0001"
-    title="Progresso épico"
-    description="Acompanhe a conclusão épica"
-    somente leitura={falso}
+    command="/agileflow:epic EP-0001"
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
   />
   <CommandPlayground
-    comando = "/agileflow: babá"
-    title="Fluxo de trabalho guiado"
-    description="Iniciar desenvolvimento assistido"
-    somente leitura={falso}
+    command="/agileflow:babysit"
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
   />
 </div>
 

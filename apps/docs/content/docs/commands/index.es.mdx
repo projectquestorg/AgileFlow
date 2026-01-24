@@ -134,23 +134,23 @@ Comandos especializados para tareas complejas:
 Explore los comandos de AgileFlow de forma interactiva en este entorno limitado:
 
 <CommandPlayground
-  comando="/agileflow:estado"
-  title="Zona de juegos de comando interactiva"
-  descripción="Pruebe los comandos comunes de AgileFlow y vea el resultado simulado"
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
 />
 
 <div className="mt-4 grid gap-4 sm:grid-cols-2">
   <CommandPlayground
-    comando="/agileflow:épico EP-0001"
-    título="Progreso épico"
-    descripción="Seguimiento de finalización épica"
-    sólo lectura={falso}
+    command="/agileflow:epic EP-0001"
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
   />
   <CommandPlayground
-    comando="/agileflow:cuidar niños"
-    title="Flujo de trabajo guiado"
-    descripción="Iniciar desarrollo asistido"
-    sólo lectura={falso}
+    command="/agileflow:babysit"
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
   />
 </div>
 
