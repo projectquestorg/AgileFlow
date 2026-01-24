@@ -94,6 +94,31 @@
       "10-research": true
     }
   },
+  "sessions": {
+    "defaultStartupMode": "normal",
+    "startupModes": {
+      "normal": {
+        "label": "Normal",
+        "description": "Standard Claude with permission prompts",
+        "flags": null
+      },
+      "skip-permissions": {
+        "label": "Skip permissions",
+        "description": "claude --dangerously-skip-permissions (trusted mode)",
+        "flags": "--dangerous"
+      },
+      "accept-edits": {
+        "label": "Accept edits only",
+        "description": "claude --permission-mode acceptEdits",
+        "flags": "--claude-args \"--permission-mode acceptEdits\""
+      },
+      "no-claude": {
+        "label": "Don't start Claude",
+        "description": "Create worktree only, start Claude manually",
+        "flags": "--no-claude"
+      }
+    }
+  },
   "git": {
     "initialized": false,
     "remoteConfigured": false,

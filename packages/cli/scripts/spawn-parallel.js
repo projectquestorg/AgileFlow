@@ -64,16 +64,24 @@ function hasScreen() {
  * Build the Claude command for a session
  */
 function buildClaudeCommand(sessionPath, options = {}) {
-  const { init = false, dangerous = false, prompt = null } = options;
+  const { init = false, dangerous = false, prompt = null, claudeArgs = null, noClaude = false } = options;
   const parts = [`cd "${sessionPath}"`];
 
   if (init) {
     parts.push('claude init --yes 2>/dev/null || true');
   }
 
+  // If noClaude is true, just return cd command (no claude startup)
+  if (noClaude) {
+    return parts.join(' && ');
+  }
+
   let claudeCmd = 'claude';
   if (dangerous) {
-    claudeCmd = 'claude --dangerouslySkipPermissions';
+    claudeCmd = 'claude --dangerously-skip-permissions';
+  } else if (claudeArgs) {
+    // Custom claude arguments (e.g., --permission-mode acceptEdits)
+    claudeCmd = `claude ${claudeArgs}`;
   }
 
   if (prompt) {
@@ -215,7 +223,7 @@ function getReadyStoriesFromEpic(epicId) {
 /**
  * Main spawn command
  */
-function spawn(args) {
+async function spawn(args) {
   const count = args.count ? parseInt(args.count, 10) : null;
   const branches = args.branches ? args.branches.split(',').map(b => b.trim()) : null;
   const fromEpic = args['from-epic'] || args.fromEpic;
@@ -223,6 +231,8 @@ function spawn(args) {
   const init = args.init || false;
   const dangerous = args.dangerous || false;
   const prompt = args.prompt || null;
+  const claudeArgs = args['claude-args'] || args.claudeArgs || null;
+  const noClaude = args['no-claude'] || args.noClaude || false;
 
   // Determine what to create
   let sessionsToCreate = [];
@@ -276,7 +286,7 @@ function spawn(args) {
 
   const createdSessions = [];
   for (const sessionSpec of sessionsToCreate) {
-    const result = sessionManager.createSession({
+    const result = await sessionManager.createSession({
       nickname: sessionSpec.nickname,
       branch: sessionSpec.branch,
     });
@@ -311,10 +321,10 @@ function spawn(args) {
   // Spawn in tmux or output commands
   if (noTmux) {
     // User explicitly requested manual mode
-    outputCommands(createdSessions, { init, dangerous, prompt });
+    outputCommands(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
   } else if (hasTmux()) {
     // Tmux available - use it
-    const tmuxResult = spawnInTmux(createdSessions, { init, dangerous, prompt });
+    const tmuxResult = spawnInTmux(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
 
     if (tmuxResult.success) {
       console.log(success(`\n✅ Tmux session created: ${tmuxResult.sessionName}`));
@@ -326,7 +336,7 @@ function spawn(args) {
       console.log('');
     } else {
       console.error(error(`Failed to create tmux session: ${tmuxResult.error}`));
-      outputCommands(createdSessions, { init, dangerous, prompt });
+      outputCommands(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
     }
   } else {
     // Tmux NOT available - require it or use --no-tmux
@@ -392,9 +402,12 @@ function list() {
 /**
  * Add a new window to an existing tmux session
  */
-function addWindow(args) {
+async function addWindow(args) {
   const nickname = args.nickname || args.name || null;
   const branch = args.branch || null;
+  const dangerous = args.dangerous || false;
+  const claudeArgs = args['claude-args'] || args.claudeArgs || null;
+  const noClaude = args['no-claude'] || args.noClaude || false;
 
   // Check if we're inside a tmux session
   const tmuxEnv = process.env.TMUX;
@@ -427,7 +440,7 @@ function addWindow(args) {
     branch: branch || `parallel-${Date.now()}`,
   };
 
-  const result = sessionManager.createSession({
+  const result = await sessionManager.createSession({
     nickname: sessionSpec.nickname,
     branch: sessionSpec.branch,
   });
@@ -438,7 +451,7 @@ function addWindow(args) {
   }
 
   const windowName = sessionSpec.nickname;
-  const cmd = buildClaudeCommand(result.path, {});
+  const cmd = buildClaudeCommand(result.path, { dangerous, claudeArgs, noClaude });
 
   // Create new window in current tmux session
   const newWindowResult = spawnSync(
@@ -551,7 +564,9 @@ ${c.cyan}SPAWN OPTIONS:${c.reset}
   --branches "a,b,c"  Create worktrees for specific branch names
   --from-epic EP-XXX  Create worktrees for ready stories in epic
   --init              Run 'claude init' in each worktree
-  --dangerous         Use --dangerouslySkipPermissions
+  --dangerous         Use --dangerously-skip-permissions
+  --claude-args "..." Custom arguments for claude command
+  --no-claude         Create worktree but don't start claude
   --no-tmux           Output commands without spawning in tmux
   --prompt "TEXT"     Initial prompt to send to each Claude instance
 
@@ -575,6 +590,9 @@ ${c.cyan}ADD-WINDOW OPTIONS:${c.reset}
   --name NAME         Name for the new session/window
   --nickname NAME     Alias for --name
   --branch BRANCH     Use specific branch name
+  --dangerous         Use --dangerously-skip-permissions
+  --claude-args "..." Custom arguments for claude command
+  --no-claude         Create worktree but don't start claude
 
 ${c.cyan}ADD-WINDOW EXAMPLES:${c.reset}
   ${dim('# Add window with auto-generated name (when in tmux)')}
@@ -582,6 +600,15 @@ ${c.cyan}ADD-WINDOW EXAMPLES:${c.reset}
 
   ${dim('# Add named window')}
   node scripts/spawn-parallel.js add-window --name auth
+
+  ${dim('# Add window without starting claude')}
+  node scripts/spawn-parallel.js add-window --name research --no-claude
+
+  ${dim('# Add window with skip permissions')}
+  node scripts/spawn-parallel.js add-window --name trusted --dangerous
+
+  ${dim('# Add window with custom claude args')}
+  node scripts/spawn-parallel.js add-window --name safe --claude-args "--permission-mode acceptEdits"
 `);
 }
 
@@ -616,16 +643,16 @@ function parseArgs(argv) {
 /**
  * Main entry point
  */
-function main() {
+async function main() {
   const { command, args } = parseArgs(process.argv.slice(2));
 
   switch (command) {
     case 'spawn':
-      spawn(args);
+      await spawn(args);
       break;
     case 'add-window':
     case 'add':
-      addWindow(args);
+      await addWindow(args);
       break;
     case 'list':
       list();

@@ -7,7 +7,7 @@ compact_context:
     - "ACTIVE COMMAND: /agileflow:configure - Configuration manager for AgileFlow features"
     - "CRITICAL: Max 4 options per AskUserQuestion - use hierarchical menus"
     - "CRITICAL: Run --detect FIRST, handle issues, then show Main Menu"
-    - "Main Menu (4 categories): Profiles | Features | Infrastructure | Maintenance"
+    - "Main Menu (5 categories): Profiles | Features | Sessions | Infrastructure | Maintenance"
     - "Each category has its own sub-menu with max 4 options"
     - "MUST show RED RESTART banner after ANY changes"
   state_fields:
@@ -27,7 +27,7 @@ Configuration management with **hierarchical menus** (4 options max per question
 
 1. **Run detection**: `node .agileflow/scripts/agileflow-configure.js --detect`
 2. **Handle issues**: If ⚠️ INVALID FORMAT → migrate. If 🔄 OUTDATED → upgrade.
-3. **Main menu** (4 categories): Profiles | Features | Infrastructure | Maintenance
+3. **Main menu** (5 categories): Profiles | Features | Sessions | Infrastructure | Maintenance
 4. **Sub-menu**: Based on selection, show category-specific options
 
 ### Menu Flow
@@ -39,6 +39,8 @@ Main Menu → "What would you like to configure?"
 │                   └─ Custom: Save, Export, Import, Delete
 ├─ Features       → Enable | Disable | View status
 │                   └─ Hooks (4) + Other Features (4)
+├─ Sessions       → Default startup mode for new sessions
+│                   └─ Normal | Skip permissions | Accept edits | No Claude
 ├─ Infrastructure → Visual E2E | Damage Control | CI/CD
 └─ Maintenance    → Fix format | Upgrade | Repair | Check status
 ```
@@ -133,6 +135,7 @@ After handling issues (or if none), present the main category menu:
   "options": [
     {"label": "Profiles", "description": "Quick setup with preset configurations (full, basic, minimal)"},
     {"label": "Features", "description": "Enable or disable individual hooks and features"},
+    {"label": "Sessions", "description": "Configure default startup mode for new sessions"},
     {"label": "Infrastructure", "description": "Set up Visual E2E, Damage Control, or CI/CD"},
     {"label": "Maintenance", "description": "Fix issues, repair scripts, or check status"}
   ]
@@ -337,6 +340,63 @@ Then run:
 node .agileflow/scripts/agileflow-configure.js --enable=feature1,feature2
 # or
 node .agileflow/scripts/agileflow-configure.js --disable=feature1,feature2
+```
+
+---
+
+### If "Sessions" selected
+
+Configure default startup mode for new sessions created with `/agileflow:session:new`.
+
+First, read current setting:
+```bash
+cat docs/00-meta/agileflow-metadata.json | grep '"defaultStartupMode"' 2>/dev/null || echo "normal"
+```
+
+Then present options:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What should be the default Claude startup mode for new sessions?",
+  "header": "Startup",
+  "multiSelect": false,
+  "options": [
+    {"label": "Normal (Recommended)", "description": "Standard Claude with permission prompts"},
+    {"label": "Skip permissions", "description": "claude --dangerously-skip-permissions (trusted mode)"},
+    {"label": "Accept edits only", "description": "claude --permission-mode acceptEdits"},
+    {"label": "Don't start Claude", "description": "Create worktree only, start Claude manually"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Map selection to value:
+| Selection | defaultStartupMode value |
+|-----------|--------------------------|
+| Normal | `normal` |
+| Skip permissions | `skip-permissions` |
+| Accept edits only | `accept-edits` |
+| Don't start Claude | `no-claude` |
+
+Update the metadata file:
+```bash
+# Read current metadata
+metadata=$(cat docs/00-meta/agileflow-metadata.json)
+
+# Update defaultStartupMode (using jq if available, or manual edit)
+# The value should be one of: normal, skip-permissions, accept-edits, no-claude
+```
+
+Or use the Edit tool to update `docs/00-meta/agileflow-metadata.json`:
+- Find: `"defaultStartupMode": "..."`
+- Replace with: `"defaultStartupMode": "{selected_value}"`
+
+Display confirmation:
+```
+✅ Default session startup mode set to: {selected_value}
+
+When creating new sessions with /agileflow:session:new, this will be the
+recommended option. You can still choose a different mode per-session.
 ```
 
 ---
@@ -834,3 +894,14 @@ Repaired: 1, Errors: 0, Skipped: 18
 | Scripts outdated (feature version differs) | `--upgrade` |
 | Settings format broken | `--migrate` |
 | Major corruption/reinstall needed | `npx agileflow update --force`
+
+---
+
+## Related Commands
+
+- `/agileflow:ci` - Bootstrap CI/CD workflow
+- `/agileflow:deploy` - Set up deployment pipeline
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:template` - Manage custom templates
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:help` - Display AgileFlow overview

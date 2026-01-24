@@ -30,6 +30,16 @@ When you need to work on multiple things simultaneously in the same repo, this c
 - Its own branch
 - Independent session tracking
 
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:new
+```
+
+---
+
 ## IMMEDIATE ACTIONS
 
 Upon invocation, execute these steps:
@@ -87,23 +97,75 @@ AskUserQuestion:
       description: "Bug fixing"
 ```
 
-Then run:
+### Step 2B.2: Ask Startup Mode (OPTIONAL but recommended)
+
+After getting the session name, check for configured default startup mode:
 
 ```bash
-# If auto-generate selected:
-node .agileflow/scripts/spawn-parallel.js add-window
+# Read the default startup mode from metadata (if exists)
+cat docs/00-meta/agileflow-metadata.json | grep -A1 '"defaultStartupMode"' 2>/dev/null
+```
 
-# If named option selected:
-node .agileflow/scripts/spawn-parallel.js add-window --name {selected_name}
+The `defaultStartupMode` can be: `normal`, `skip-permissions`, `accept-edits`, or `no-claude`.
 
-# If "Other" with custom input:
-node .agileflow/scripts/spawn-parallel.js add-window --name {custom_name}
+Then ask how Claude should start, putting the configured default first with "(Recommended)":
+
+```
+AskUserQuestion:
+  question: "How should Claude start in this session?"
+  header: "Startup mode"
+  multiSelect: false
+  options:
+    # Put the defaultStartupMode option FIRST with "(Recommended)" suffix
+    # Example if defaultStartupMode is "normal":
+    - label: "Normal (Recommended)"
+      description: "Standard Claude with permission prompts"
+    - label: "Skip permissions"
+      description: "claude --dangerously-skip-permissions (trusted mode)"
+    - label: "Accept edits only"
+      description: "claude --permission-mode acceptEdits"
+    - label: "Don't start Claude"
+      description: "Create worktree only, start Claude manually"
+
+    # Example if defaultStartupMode is "skip-permissions":
+    # - label: "Skip permissions (Recommended)"
+    #   description: "claude --dangerously-skip-permissions (trusted mode)"
+    # - label: "Normal"
+    #   description: "Standard Claude with permission prompts"
+    # - label: "Accept edits only"
+    #   description: "claude --permission-mode acceptEdits"
+    # - label: "Don't start Claude"
+    #   description: "Create worktree only, start Claude manually"
+```
+
+**Mode to Flag Mapping:**
+| defaultStartupMode | spawn-parallel.js flag |
+|--------------------|------------------------|
+| `normal` | (no extra flags) |
+| `skip-permissions` | `--dangerous` |
+| `accept-edits` | `--claude-args "--permission-mode acceptEdits"` |
+| `no-claude` | `--no-claude` |
+
+Then run based on selections:
+
+```bash
+# Normal mode (default):
+node .agileflow/scripts/spawn-parallel.js add-window --name {session_name}
+
+# Skip permissions mode:
+node .agileflow/scripts/spawn-parallel.js add-window --name {session_name} --dangerous
+
+# Accept edits only mode:
+node .agileflow/scripts/spawn-parallel.js add-window --name {session_name} --claude-args "--permission-mode acceptEdits"
+
+# Don't start Claude:
+node .agileflow/scripts/spawn-parallel.js add-window --name {session_name} --no-claude
 ```
 
 The script will:
 1. Create a new git worktree
 2. Add a new tmux window to the current session
-3. Start Claude in that window
+3. Start Claude with selected options (or just cd if --no-claude)
 4. Output the Alt+N shortcut to switch to it
 
 Display success and exit - skip remaining steps.
@@ -284,7 +346,7 @@ echo $TMUX
 
 ### 🚨 RULE #1B: TMUX FLOW (when in tmux)
 
-Ask for session name:
+**Step 1: Ask for session name:**
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -301,13 +363,44 @@ Ask for session name:
 </invoke>
 ```
 
-Then run:
+**Step 2: Read default startup mode and ask:**
 ```bash
-# Auto-generate:
-node .agileflow/scripts/spawn-parallel.js add-window
+# Check configured default (normal if not set)
+cat docs/00-meta/agileflow-metadata.json | grep '"defaultStartupMode"' 2>/dev/null
+```
 
-# Named:
+Then ask with configured default first + "(Recommended)":
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "How should Claude start?",
+  "header": "Startup",
+  "multiSelect": false,
+  "options": [
+    {"label": "{default} (Recommended)", "description": "Configured default"},
+    {"label": "Normal", "description": "Standard with prompts"},
+    {"label": "Skip permissions", "description": "--dangerously-skip-permissions"},
+    {"label": "Accept edits only", "description": "--permission-mode acceptEdits"},
+    {"label": "Don't start Claude", "description": "Manual start later"}
+  ]
+}]</parameter>
+</invoke>
+```
+Note: Put the defaultStartupMode FIRST with "(Recommended)", remove duplicate.
+
+**Step 3: Run with selected options:**
+```bash
+# Normal:
 node .agileflow/scripts/spawn-parallel.js add-window --name {name}
+
+# Skip permissions:
+node .agileflow/scripts/spawn-parallel.js add-window --name {name} --dangerous
+
+# Accept edits:
+node .agileflow/scripts/spawn-parallel.js add-window --name {name} --claude-args "--permission-mode acceptEdits"
+
+# No Claude:
+node .agileflow/scripts/spawn-parallel.js add-window --name {name} --no-claude
 ```
 
 The script outputs the Alt+N shortcut. **DONE - skip remaining rules.**
@@ -609,5 +702,12 @@ To switch to this session, run:
 - **Run `session-manager.js switch {new_id}` AFTER creating session** (enables boundary protection)
 - Show `/add-dir {path}` command for user to switch (NOT cd && claude)
 - Show tip to use /agileflow:session:resume
+- **STARTUP OPTIONS (tmux flow)**: After name, ask startup mode:
+  - Read `defaultStartupMode` from `docs/00-meta/agileflow-metadata.json`
+  - Put configured default FIRST with "(Recommended)" suffix
+  - Normal → (no extra flags)
+  - Skip permissions → `--dangerous`
+  - Accept edits → `--claude-args "--permission-mode acceptEdits"`
+  - Don't start → `--no-claude`
 
 <!-- COMPACT_SUMMARY_END -->
