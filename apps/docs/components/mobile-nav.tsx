@@ -70,7 +70,29 @@ export function MobileNav({
 }) {
   const [open, setOpen] = React.useState(false)
   const contentRef = React.useRef<HTMLDivElement>(null)
+  const activeItemRef = React.useRef<HTMLAnchorElement>(null)
+  const pathname = usePathname()
   const handleScroll = useScrollPersistence(open, contentRef)
+
+  // Helper to check if a section contains the current page
+  const isSectionActive = (url: string) => {
+    if (url === "/") return pathname === "/"
+    return pathname.startsWith(url)
+  }
+
+  // Scroll to center the active item when drawer opens
+  React.useEffect(() => {
+    if (open && activeItemRef.current) {
+      // Small delay to allow drawer animation and collapsibles to expand
+      const timer = setTimeout(() => {
+        activeItemRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
+      }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   // Helper to render pages within a folder, handling separators
   const renderFolderContents = (
@@ -93,11 +115,14 @@ export function MobileNav({
         if (!showMcpDocs && item.url?.includes("/mcp")) {
           return
         }
+        const isCurrentPage = pathname === item.url
         elements.push(
           <MobileLink
             key={item.url}
+            ref={isCurrentPage ? activeItemRef : undefined}
             href={item.url}
             onOpenChange={onNavigate}
+            isActive={isCurrentPage}
             className="flex items-center gap-2 py-1 text-lg"
           >
             {item.name}
@@ -201,15 +226,19 @@ export function MobileNav({
           <div className="flex flex-col gap-1">
             {/* Direct links */}
             <MobileLink
+              ref={pathname === "/" ? activeItemRef : undefined}
               href="/"
               onOpenChange={setOpen}
+              isActive={pathname === "/"}
               className="py-1 text-xl font-medium"
             >
               Introduction
             </MobileLink>
             <MobileLink
+              ref={pathname === "/installation" ? activeItemRef : undefined}
               href="/installation"
               onOpenChange={setOpen}
+              isActive={pathname === "/installation"}
               className="py-1 text-xl font-medium"
             >
               Installation
@@ -228,6 +257,7 @@ export function MobileNav({
               return (
                 <Collapsible
                   key={group.$id}
+                  defaultOpen={isSectionActive(sectionUrl)}
                   className="group/collapsible"
                 >
                   <CollapsibleTrigger className="flex w-full items-center justify-between py-1 text-xl font-medium">
@@ -238,8 +268,10 @@ export function MobileNav({
                     <div className="flex flex-col gap-1 py-2 pl-4 border-l border-border/40">
                       {hasIndex && (
                         <MobileLink
+                          ref={pathname === sectionUrl ? activeItemRef : undefined}
                           href={sectionUrl}
                           onOpenChange={setOpen}
+                          isActive={pathname === sectionUrl}
                           className="py-1 text-lg"
                         >
                           Overview
@@ -264,29 +296,35 @@ export function MobileNav({
   )
 }
 
-function MobileLink({
-  href,
-  onOpenChange,
-  className,
-  children,
-  ...props
-}: LinkProps & {
-  onOpenChange?: (open: boolean) => void
-  children: React.ReactNode
-  className?: string
-}) {
+const MobileLink = React.forwardRef<
+  HTMLAnchorElement,
+  LinkProps & {
+    onOpenChange?: (open: boolean) => void
+    children: React.ReactNode
+    className?: string
+    isActive?: boolean
+  }
+>(function MobileLink(
+  { href, onOpenChange, className, children, isActive, ...props },
+  ref
+) {
   const router = useRouter()
   return (
     <Link
+      ref={ref}
       href={href}
       onClick={() => {
         router.push(href.toString())
         onOpenChange?.(false)
       }}
-      className={cn("text-2xl font-medium", className)}
+      className={cn(
+        "text-2xl font-medium",
+        isActive && "text-foreground font-semibold",
+        className
+      )}
       {...props}
     >
       {children}
     </Link>
   )
-}
+})
