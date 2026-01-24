@@ -1,15 +1,14 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<id>] [MODE=loop] [MAX=<iterations>] [VISUAL=true] [COVERAGE=<percent>]"
+argument-hint: [EPIC=<EP-ID>] [MODE=loop|once] [MAX=<number>] [VISUAL=true|false] [COVERAGE=<number>]
 compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow-babysit - Mentor mode with expert delegation"
     - "🔔 MANDATORY: Call AskUserQuestion tool at END of EVERY response - especially after completing tasks"
     - "NEVER end with text like 'Done!' or 'What's next?' - ALWAYS use AskUserQuestion tool instead"
-    - "MUST use EnterPlanMode FIRST for ANY non-trivial task (explore codebase, design approach, get approval)"
-    - "MUST delegate complex work to domain experts (don't do everything yourself)"
-    - "Simple task → do yourself | Complex single-domain → spawn expert | Multi-domain → spawn orchestrator"
+    - "{{RULES:plan_mode}}"
+    - "{{RULES:delegation}}"
     - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with 200+ line detailed prompt"
     - "Research prompts MUST include: 50+ lines actual code, exact error, what was tried, 3+ specific questions"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js claim <id>' IMMEDIATELY after user selects story"
@@ -1059,3 +1058,15 @@ Based on your project state:
 3. You approve the plan
 4. I execute (directly or via domain experts)
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:sprint` - Sprint planning with velocity forecasting
+- `/agileflow:board` - Visual kanban board of stories
+- `/agileflow:story` - Create new user stories
+- `/agileflow:epic` - Create new epics
+- `/agileflow:status` - Update story status
+- `/agileflow:blockers` - Track and resolve blockers
+- `/agileflow:research:ask` - Generate research prompts when stuck

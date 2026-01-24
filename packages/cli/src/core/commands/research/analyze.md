@@ -11,9 +11,13 @@ compact_context:
     - "MUST intelligently recommend artifact type (ADR/Epic/Stories/Practice) based on scope"
     - "DO NOT assume a one-size-fits-all artifact type"
     - "Research type + analysis determines artifact: Architecture decision→ADR, Large feature→Epic+Stories, Focused improvement→Story"
+    - "For large research files (50k+ chars) or HIGH complexity: Use RLM approach with document-repl.js"
+    - "Assess file with --info before reading; use targeted extraction for large docs"
   state_fields:
     - selected_research_file
     - research_topic
+    - research_complexity
+    - research_chars
     - plan_mode_active
     - implementation_analysis
 ---
@@ -33,6 +37,14 @@ After importing research with `/agileflow:research:import`, you may not be ready
 - Create appropriate artifacts (ADR, Epic, Story) when ready
 
 **This is the "I want to do something with that research now" command.**
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:analyze
+```
 
 ---
 
@@ -155,6 +167,25 @@ Every implementation analysis must include:
 
 ---
 
+### 🚨 RULE #5: USE RLM FOR LARGE RESEARCH FILES
+
+**For research files > 50k chars or HIGH complexity, use document-repl.js:**
+
+```bash
+# Assess first
+node packages/cli/scripts/document-repl.js --load="docs/10-research/FILE.md" --info
+
+# If large/complex, use targeted extraction:
+node packages/cli/scripts/document-repl.js --load="FILE" --toc
+node packages/cli/scripts/document-repl.js --load="FILE" --search="implementation"
+node packages/cli/scripts/document-repl.js --load="FILE" --section="Key Findings"
+```
+
+**❌ WRONG**: Read full 100k char research file into context
+**✅ RIGHT**: Use document-repl.js to extract only relevant sections
+
+---
+
 ### ANTI-PATTERNS (DON'T DO THESE)
 
 ❌ Skip plan mode and analyze without project context
@@ -163,6 +194,7 @@ Every implementation analysis must include:
 ❌ Assume one artifact type for all research (Epic for everything)
 ❌ Create artifacts without user asking first
 ❌ Finish without asking "Should we implement this?"
+❌ Load full large research files (50k+) - use RLM approach
 
 ### DO THESE INSTEAD
 
@@ -172,6 +204,8 @@ Every implementation analysis must include:
 ✅ Show specific, quantifiable benefits
 ✅ Recommend artifact type based on research scope
 ✅ Confirm user wants to implement before creating anything
+✅ Assess research file size/complexity before reading
+✅ Use document-repl.js for large or complex research files
 
 ---
 
@@ -304,12 +338,34 @@ ls docs/10-research/*.md
 </invoke>
 ```
 
-### Step 3: Read and Summarize Research
+### Step 3: Assess and Read Research
 
-Read the selected research file:
+First, assess the research file size and complexity:
 
 ```bash
-# Read the research note
+# Assess document complexity
+node packages/cli/scripts/document-repl.js --load="docs/10-research/[SELECTED_FILE]" --info --json
+```
+
+**Decision point based on assessment:**
+
+| Chars | Complexity | Approach |
+|-------|------------|----------|
+| < 10k | Any | Direct read (standard approach) |
+| 10-50k | LOW/MEDIUM | Direct read (standard approach) |
+| 50k+ | Any | **Use RLM approach** |
+| Any | HIGH | **Use RLM approach** |
+
+**If RLM approach needed** (large or high-complexity file):
+- Use document-repl.js for targeted extraction
+- Get TOC first: `--toc`
+- Search for key concepts: `--search="implementation"`, `--search="benefits"`
+- Extract relevant sections: `--section="Key Findings"`
+- Avoid loading full document to preserve context
+
+**If standard approach** (small, simple file):
+```bash
+# Read the research note directly
 cat docs/10-research/[SELECTED_FILE]
 ```
 
@@ -567,3 +623,4 @@ The implementation plan is now tracked and ready to execute.
 - `/agileflow:research:view` - Read-only view of research
 - `/agileflow:research:list` - Show all research notes
 - `/agileflow:research:ask` - Generate research prompt for web AI
+- `/agileflow:rlm` - RLM document analysis (used automatically for large research files)

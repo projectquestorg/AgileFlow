@@ -5,11 +5,10 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:story-new - Story creator with acceptance criteria"
-    - "MUST create TodoWrite task list immediately (6 steps: parse, create story, create test stub, merge status, append bus, confirm)"
-    - "MUST show file previews before confirming writes"
-    - "MUST use Edit tool or jq for JSON operations (never echo/cat > status.json)"
-    - "MUST validate JSON after every modification"
-    - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
+    - "{{RULES:todo_tracking}}"
+    - "{{RULES:file_preview}}"
+    - "{{RULES:json_operations}}"
+    - "{{RULES:user_confirmation}}"
     - "MUST create test stub in docs/07-testing/test-cases/<STORY>.md referencing AC"
     - "AC format: Given/When/Then bullets (user story format)"
     - "TDD=true: Generate framework-specific test code BEFORE implementation"

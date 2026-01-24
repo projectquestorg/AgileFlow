@@ -29,6 +29,16 @@ When you have multiple sessions and want to switch between them, this command:
 - Shows which are currently active (have a running Claude process)
 - Provides the `cd` command to switch to your chosen session
 
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:resume
+```
+
+---
+
 ## IMMEDIATE ACTIONS
 
 Upon invocation, execute these steps:

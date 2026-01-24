@@ -1,6 +1,18 @@
 ---
 description: List all Architecture Decision Records
 argument-hint: [STATUS=<status>]
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:adr:list - Lists all ADRs with status and quick actions"
+    - "MUST read docs/03-decisions/ directory for ADR files"
+    - "MUST parse frontmatter for status, date, tags"
+    - "MUST display table sorted by number with status indicators"
+    - "MUST offer actions: view details, create new, update status"
+    - "This is READ-ONLY - no file writes"
+  state_fields:
+    - status_filter
+    - adr_count
 ---
 
 # /agileflow:adr:list
@@ -18,6 +30,14 @@ Shows all ADRs from `docs/03-decisions/` with:
 - Quick action options
 
 **This is a read-only command** - no files are written.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js adr:list
+```
 
 ---
 

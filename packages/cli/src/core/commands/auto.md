@@ -1,6 +1,6 @@
 ---
 description: Auto-generate stories from PRDs, mockups, or specs
-argument-hint: SOURCE=<path|url> [EPIC=<id>] [OWNER=<agent>] [AUTO_CREATE=yes|no]
+argument-hint: SOURCE=<path|url> [EPIC=<EP-ID>] [OWNER=<id>] [AUTO_CREATE=true|false]
 compact_context:
   priority: high
   preserve_rules:
@@ -471,3 +471,13 @@ OUTPUT
 - Story files (multiple)
 - Test stub files (multiple)
 - Updated status.json
+
+---
+
+## Related Commands
+
+- `/agileflow:story` - Create user stories manually
+- `/agileflow:epic` - Create epics
+- `/agileflow:epic-planner` - Plan epic breakdown
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:babysit` - Mentor workflow

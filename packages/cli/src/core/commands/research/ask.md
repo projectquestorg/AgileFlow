@@ -1,6 +1,6 @@
 ---
 description: Generate detailed research prompt for web AI tools (ChatGPT, Perplexity, etc.)
-argument-hint: TOPIC=<text> [DETAILS=<constraints>] [ERROR=<error message>]
+argument-hint: TOPIC=<text> [DETAILS=<text>] [ERROR=<text>]
 type: output-only  # This command generates output for user to copy - not an ongoing task
 compact_context:
   priority: critical
@@ -37,6 +37,14 @@ When you need external research (from ChatGPT, Perplexity, Claude web, Gemini), 
 - Specific questions to answer
 
 **This is STEP 1 of research workflow.** After you get results from the external AI, use `/agileflow:research:import` to save them.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:ask
+```
 
 ---
 

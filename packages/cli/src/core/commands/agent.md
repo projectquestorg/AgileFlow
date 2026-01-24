@@ -1,6 +1,6 @@
 ---
 description: Onboard a new agent with profile and contract
-argument-hint: AGENT_ID=<id> ROLE=<role> [TOOLS=<list>] [SCOPE=<dirs>]
+argument-hint: AGENT_ID=<id> ROLE=<text> [TOOLS=<list>] [SCOPE=<list>]
 compact_context:
   priority: high
   preserve_rules:
@@ -224,6 +224,16 @@ Options:
 
 [AskUserQuestion: "How to proceed?"]
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:story` - Create user stories for agents
+- `/agileflow:status` - Update story status and progress
+- `/agileflow:babysit` - Interactive mentor workflow
+- `/agileflow:help` - Display AgileFlow overview
 
 ### Roster File Created
 

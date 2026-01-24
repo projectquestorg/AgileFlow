@@ -122,3 +122,11 @@ If a newer version exists, show:
 - Include dates if available
 - Always show the GitHub link for full history
 - Mention update availability if applicable
+
+---
+
+## Related Commands
+
+- `/agileflow:changelog` - Generate changelog from commits
+- `/agileflow:configure` - Manage AgileFlow features
+- `/agileflow:help` - Display AgileFlow overview

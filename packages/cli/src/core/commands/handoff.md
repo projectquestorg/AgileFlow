@@ -6,8 +6,8 @@ compact_context:
   preserve_rules:
     - "STORY, FROM, TO are REQUIRED - always ask if missing"
     - "Create handoff note from template in docs/09-agents/comms/"
-    - "Append bus log entry with type='handoff' to docs/09-agents/bus/log.jsonl"
-    - "Always show diff/preview FIRST, wait for YES/NO confirmation BEFORE writing"
+    - "{{RULES:bus_messaging}}"
+    - "{{RULES:file_preview}}"
     - "Include SUMMARY (what was done) and BLOCKERS (issues for next agent)"
     - "Use template: @packages/cli/src/core/templates/comms-note-template.md"
   state_fields:
@@ -374,3 +374,13 @@ Check the FROM and TO parameters.
 Usage:
 /agileflow:handoff STORY=US-0042 FROM=AG-API TO=AG-UI SUMMARY="..."
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:assign` - Assign stories to owners
+- `/agileflow:status` - Update story status
+- `/agileflow:blockers` - Track blockers
+- `/agileflow:board` - Kanban board view
+- `/agileflow:sprint` - Sprint planning

@@ -635,3 +635,13 @@ OUTPUT
 - Example tests (unit + integration + E2E if requested)
 - CI integration
 - Testing documentation
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:ci` - Bootstrap CI/CD workflow
+- `/agileflow:verify` - Run tests and update story status
+- `/agileflow:baseline` - Mark verified baseline
+- `/agileflow:pr` - Generate pull request from story

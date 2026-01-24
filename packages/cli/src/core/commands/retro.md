@@ -1,12 +1,12 @@
 ---
 description: Generate retrospective with Start/Stop/Continue format
-argument-hint: "[TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<id>] [FORMAT=ascii|markdown|html] [SAVE=true|false]"
+argument-hint: [TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<EP-ID>] [FORMAT=ascii|markdown|html] [SAVE=true|false]
 model: haiku
 compact_context:
   priority: medium
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:retro - Retrospective facilitator (read-only analysis)"
-    - "MUST create TodoWrite task list (9 steps: load data, analyze well, analyze improvements, detect patterns, generate actions, celebrate, report, save, update index)"
+    - "{{RULES:todo_tracking}}"
     - "MUST focus on TEAM-LEVEL patterns (never individual blame)"
     - "MUST balance positive (Continue) with improvements (Start/Stop)"
     - "MUST use DATA to drive insights (no opinions without evidence)"
@@ -707,3 +707,13 @@ OUTPUT
 - Saved to docs/08-project/retrospectives/retro-YYYYMMDD.md
 - Updated retrospectives/README.md index
 - Action items formatted as checkboxes for easy tracking
+
+---
+
+## Related Commands
+
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:metrics` - Analytics dashboard
+- `/agileflow:velocity` - Track velocity
+- `/agileflow:feedback` - Collect agent feedback
+- `/agileflow:board` - Kanban board view

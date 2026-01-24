@@ -1,5 +1,6 @@
 ---
 description: Auto-generate changelog from commit history
+argument-hint: (no arguments)
 compact_context:
   priority: high
   preserve_rules:
@@ -528,6 +529,16 @@ User selected: Changed
 
 [Continuing with remaining commits...]
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:docs` - Synchronize documentation with code
+- `/agileflow:update` - Generate stakeholder progress report
+- `/agileflow:pr` - Generate pull request from story
+- `/agileflow:deploy` - Set up deployment pipeline
+- `/agileflow:whats-new` - Show AgileFlow version history
 
 ### Version Suggestion
 

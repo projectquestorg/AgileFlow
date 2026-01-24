@@ -1,6 +1,20 @@
 ---
 description: View ADR details with contextual actions
-argument-hint: NUMBER=<4-digit>
+argument-hint: NUMBER=<number>
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:adr:view - Views ADR with context-aware actions"
+    - "MUST read ADR file from docs/03-decisions/adr-NUMBER-*.md"
+    - "MUST display full ADR content: context, decision, consequences, links"
+    - "MUST offer CONTEXT-AWARE actions based on ADR status"
+    - "STATUS=proposed → Accept, reject, request changes"
+    - "STATUS=accepted → Create stories, supersede, deprecate"
+    - "STATUS=deprecated/superseded → View history, replacement"
+    - "ALWAYS offer next steps via AskUserQuestion"
+  state_fields:
+    - selected_adr_number
+    - adr_status
 ---
 
 # /agileflow:adr:view
@@ -16,6 +30,14 @@ Displays complete ADR information and offers **context-aware actions** based on 
 - **accepted** → Create implementation stories, supersede, deprecate
 - **deprecated** → View history, reactivate if needed
 - **superseded** → View replacement ADR, understand evolution
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js adr:view
+```
 
 ---
 

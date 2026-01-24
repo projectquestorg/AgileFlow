@@ -34,6 +34,14 @@ Shows all research notes stored in `docs/10-research/` with:
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:list
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:research:list IS ACTIVE

@@ -1,16 +1,16 @@
 ---
 description: Data-driven sprint planning with velocity forecasting
-argument-hint: "[SPRINT=<id>] [DURATION=<days>] [AGENTS=<list>] [MODE=suggest|commit] [FOCUS_EPIC=<id>]"
+argument-hint: [SPRINT=<id>] [DURATION=<number>] [AGENTS=<list>] [MODE=suggest|commit] [FOCUS_EPIC=<EP-ID>]
 model: haiku
 compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:sprint-plan - Sprint planner with capacity analysis"
-    - "MUST create TodoWrite task list immediately (8 steps: load knowledge, analyze capacity, calculate velocity, select stories, assess risks, generate report, commit if MODE=commit)"
+    - "{{RULES:todo_tracking}}"
     - "MUST calculate historical velocity from last 30 days (bus/log.jsonl)"
     - "MUST respect WIP limits (max 2 in-progress per agent)"
     - "MUST validate dependencies resolved (only select stories with all deps status=done)"
-    - "MUST show diff preview before committing (MODE=commit)"
+    - "{{RULES:file_preview}}"
     - "MUST assess risks (dependency chains, cross-agent coordination, epic staleness)"
     - "MODE=suggest shows preview; MODE=commit updates status.json + milestones.md"
   state_fields:
@@ -627,3 +627,14 @@ After displaying plan, ask:
 - "Does this sprint commitment look reasonable?"
 - "Should I commit this plan (update status.json and milestones.md)?"
 - "Any stories you'd like to add/remove?"
+
+---
+
+## Related Commands
+
+- `/agileflow:board` - Visual kanban board
+- `/agileflow:velocity` - Track velocity and forecast capacity
+- `/agileflow:metrics` - Analytics dashboard with cycle time
+- `/agileflow:assign` - Assign stories to owners
+- `/agileflow:blockers` - Track and resolve blockers
+- `/agileflow:retro` - Sprint retrospective

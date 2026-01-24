@@ -1,6 +1,6 @@
 ---
 description: Deploy multiple domain experts on the same problem for higher confidence
-argument-hint: <question or task>
+argument-hint: <question>
 compact_context:
   priority: high
   preserve_rules:
@@ -360,3 +360,13 @@ Launching experts now...
 ### ARGUMENTS
 
 {{argument}}
+
+---
+
+## Related Commands
+
+- `/agileflow:review` - AI-powered code review
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:impact` - Analyze change impact
+- `/agileflow:babysit` - Mentor workflow
+- `/agileflow:rpi` - Research-Plan-Implement workflow

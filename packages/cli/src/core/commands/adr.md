@@ -1,13 +1,13 @@
 ---
 description: Create an Architecture Decision Record
-argument-hint: NUMBER=<4-digit> TITLE=<text> CONTEXT=<text> DECISION=<text> CONSEQUENCES=<text> [LINKS=<text>]
+argument-hint: NUMBER=<number> TITLE=<text> CONTEXT=<text> DECISION=<text> CONSEQUENCES=<text> [LINKS=<text>]
 compact_context:
   priority: medium
   preserve_rules:
     - "NUMBER is REQUIRED - must be 4-digit sequentially (0001, 0002, etc.)"
     - "TITLE, CONTEXT, DECISION, CONSEQUENCES all REQUIRED"
     - "Create ADR file in docs/03-decisions/adr-<NUMBER>-<slug>.md"
-    - "Always show preview FIRST, wait for YES/NO confirmation BEFORE writing"
+    - "{{RULES:file_preview}}"
     - "Document BOTH positive and negative consequences"
     - "Keep ADRs concise: 1-2 pages max"
     - "Link related ADRs and stories in Related section"

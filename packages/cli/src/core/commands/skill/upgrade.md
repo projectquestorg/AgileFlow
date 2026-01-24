@@ -1,6 +1,6 @@
 ---
 description: Upgrade existing skills with self-improving learning capability
-argument-hint: [SKILL_NAME] (optional)
+argument-hint: [<name>]
 compact_context:
   priority: medium
   preserve_rules:
@@ -540,3 +540,13 @@ Before completing, verify:
 # Batch upgrade (upgrade all at once)
 /agileflow:skill:upgrade --all
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:skill:create` - Create a new skill
+- `/agileflow:skill:list` - List all installed skills
+- `/agileflow:skill:edit` - Edit existing skill
+- `/agileflow:skill:test` - Test skill functionality
+- `/agileflow:skill:delete` - Remove an installed skill

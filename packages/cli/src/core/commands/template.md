@@ -563,3 +563,13 @@ OUTPUT
 - Updated template file (if ACTION=edit)
 - Generated document from template (if ACTION=use)
 - Updated registry.json
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:story` - Create user stories
+- `/agileflow:epic` - Create epics
+- `/agileflow:adr` - Create Architecture Decision Records
+- `/agileflow:docs` - Synchronize documentation

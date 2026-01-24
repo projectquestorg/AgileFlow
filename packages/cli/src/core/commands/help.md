@@ -167,3 +167,13 @@ docs/
 - `/agileflow:diagnose` - System health check
 - `/agileflow:configure` - Setup AgileFlow
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:whats-new` - Show what's new in AgileFlow
+- `/agileflow:board` - Visual kanban board
+- `/agileflow:babysit` - Interactive mentor workflow

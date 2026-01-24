@@ -1,6 +1,21 @@
 ---
 description: Update ADR status or content
-argument-hint: NUMBER=<4-digit> [STATUS=<status>] [REASON=<text>]
+argument-hint: NUMBER=<number> [STATUS=<status>] [REASON=<text>]
+compact_context:
+  priority: high
+  preserve_rules:
+    - "NUMBER is REQUIRED - always ask if missing"
+    - "Every status change MUST have documented reason"
+    - "Show preview of changes before writing (diff-first pattern)"
+    - "If superseded, MUST link to replacement ADR"
+    - "Never delete content - always append amendments"
+    - "Update timestamps in frontmatter when modifying"
+  state_fields:
+    - adr_number
+    - current_status
+    - new_status
+    - reason
+    - superseded_by
 ---
 
 # /agileflow:adr:update
@@ -16,6 +31,14 @@ Allows you to:
 - Add amendment notes explaining status changes
 - Mark an ADR as superseded by a newer ADR
 - Reactivate deprecated ADRs
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js adr:update
+```
 
 ---
 

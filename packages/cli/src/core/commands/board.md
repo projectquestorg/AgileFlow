@@ -1,6 +1,6 @@
 ---
 description: Display visual kanban board with WIP limits
-argument-hint: "[EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|markdown|html] [GROUP_BY=status|owner|epic]"
+argument-hint: [EPIC=<EP-ID>] [OWNER=<id>] [FORMAT=ascii|markdown|html] [GROUP_BY=status|owner|epic]
 model: haiku
 type: output-only  # Board display - read-only visualization, not an ongoing task
 compact_context:
@@ -430,3 +430,13 @@ OUTPUT
 - Statistics summary
 - Action suggestions
 - Optional: saved snapshot file
+
+---
+
+## Related Commands
+
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:status` - Update story status
+- `/agileflow:blockers` - Track blockers
+- `/agileflow:story:list` - List all stories
+- `/agileflow:epic:view` - View epic details

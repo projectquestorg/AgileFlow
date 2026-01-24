@@ -1,6 +1,6 @@
 ---
 description: Track velocity and forecast sprint capacity
-argument-hint: "[PERIOD=week|sprint|month|all] [FORECAST=<epic-id>] [FORMAT=report|chart|json]"
+argument-hint: [PERIOD=week|sprint|month|all] [FORECAST=<EP-ID>] [FORMAT=report|chart|json]
 model: haiku
 compact_context:
   priority: medium
@@ -544,3 +544,13 @@ OUTPUT
 - Forecasts for epics/milestones
 - Risk analysis
 - Action items
+
+---
+
+## Related Commands
+
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:metrics` - Analytics dashboard
+- `/agileflow:retro` - Sprint retrospective
+- `/agileflow:board` - Kanban board view
+- `/agileflow:epic:list` - View epics with progress

@@ -1,6 +1,6 @@
 ---
 description: Edit an existing skill's SKILL.md, cookbook entries, or references
-argument-hint: [SKILL_NAME] (optional)
+argument-hint: [<name>]
 compact_context:
   priority: medium
   preserve_rules:
@@ -347,3 +347,13 @@ Create a skill first: /agileflow:skill:create
 # Edit specific skill
 /agileflow:skill:edit supabase-swift
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:skill:create` - Create a new skill
+- `/agileflow:skill:list` - List all installed skills
+- `/agileflow:skill:test` - Test skill functionality
+- `/agileflow:skill:upgrade` - Add learning capability
+- `/agileflow:skill:delete` - Remove an installed skill

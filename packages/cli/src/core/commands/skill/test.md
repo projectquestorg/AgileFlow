@@ -1,6 +1,6 @@
 ---
 description: Verify a skill works correctly by testing its activation and functionality
-argument-hint: [SKILL_NAME] (optional)
+argument-hint: [<name>]
 compact_context:
   priority: medium
   preserve_rules:
@@ -382,3 +382,13 @@ Fix with: /agileflow:skill:edit <name>
 # Test specific skill
 /agileflow:skill:test supabase-swift
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:skill:create` - Create a new skill
+- `/agileflow:skill:list` - List all installed skills
+- `/agileflow:skill:edit` - Edit existing skill
+- `/agileflow:skill:upgrade` - Add learning capability
+- `/agileflow:skill:delete` - Remove an installed skill

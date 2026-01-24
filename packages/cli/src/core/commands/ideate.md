@@ -444,3 +444,13 @@ After generating output, present options:
 | OUTPUT | report, stories, both | report | What to generate |
 
 {{argument}}
+
+---
+
+## Related Commands
+
+- `/agileflow:multi-expert` - Deploy multiple experts for analysis
+- `/agileflow:story` - Create user stories from ideas
+- `/agileflow:epic` - Create epic for grouped improvements
+- `/agileflow:review` - AI-powered code review
+- `/agileflow:debt` - Track technical debt items

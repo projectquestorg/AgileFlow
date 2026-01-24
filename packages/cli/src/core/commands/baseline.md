@@ -1,6 +1,6 @@
 ---
 description: Mark current state as verified baseline
-argument-hint: [message] (optional)
+argument-hint: [<message>]
 compact_context:
   priority: critical
   preserve_rules:
@@ -657,3 +657,13 @@ Claude: 🧪 Verifying all requirements...
 
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:verify` - Run tests and update status
+- `/agileflow:ci` - CI/CD workflow
+- `/agileflow:tests` - Testing infrastructure
+- `/agileflow:changelog` - Generate changelog
+- `/agileflow:pr` - Create pull request

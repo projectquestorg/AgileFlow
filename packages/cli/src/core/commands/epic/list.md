@@ -1,6 +1,18 @@
 ---
 description: List all epics with status and progress
 argument-hint: [STATUS=<status>]
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:epic:list - Lists all epics with progress tracking"
+    - "MUST read status.json for epic data"
+    - "MUST calculate story progress (completed/total) for each epic"
+    - "MUST display table with status, progress percentage, owner"
+    - "MUST offer actions: view details, add story, create new epic"
+    - "This is READ-ONLY - no file writes"
+  state_fields:
+    - status_filter
+    - epic_count
 ---
 
 # /agileflow:epic:list
@@ -18,6 +30,14 @@ Shows all epics from `docs/09-agents/status.json` with:
 - Quick action options
 
 **This is a read-only command** - no files are written.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js epic:list
+```
 
 ---
 

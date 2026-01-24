@@ -38,6 +38,14 @@ This file is designed to be pasted into ChatGPT, Perplexity, Gemini, or Claude w
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js context:full
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:context:full IS ACTIVE

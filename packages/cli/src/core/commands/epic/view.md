@@ -1,6 +1,23 @@
 ---
 description: View epic details with stories and contextual actions
 argument-hint: EPIC=<EP-ID>
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:epic:view - Views epic with all stories and context-aware actions"
+    - "MUST read epic from status.json and load all stories"
+    - "MUST display overview: title, owner, goal, progress bar"
+    - "MUST group stories by status: in_progress, ready, done"
+    - "MUST offer CONTEXT-AWARE actions based on progress"
+    - "Progress <50% → Add stories, start work, plan sprint"
+    - "Progress 50-99% → Work on remaining, view details"
+    - "Progress 100% → Close epic, view summary"
+    - "Status on-hold → Resume, view blockers, close"
+    - "ALWAYS offer next steps via AskUserQuestion"
+  state_fields:
+    - selected_epic_id
+    - epic_progress
+    - epic_status
 ---
 
 # /agileflow:epic:view
@@ -16,6 +33,14 @@ Displays complete epic information and offers **context-aware actions** based on
 - **active, high progress** → Complete remaining stories, close epic
 - **complete** → View summary, reopen if needed
 - **on-hold** → Resume, view blockers
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js epic:view
+```
 
 ---
 

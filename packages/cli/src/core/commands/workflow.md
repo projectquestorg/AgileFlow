@@ -1,6 +1,6 @@
 ---
 description: Define and run parameterized workflow templates
-argument-hint: <template> [arguments...]
+argument-hint: <template> [<arguments>]
 compact_context:
   priority: normal
   preserve_rules:
@@ -8,6 +8,11 @@ compact_context:
     - "Template format: {{arg_name}} for substitution"
     - "Built-in workflows: review, test-feature, implement, analyze"
     - "Custom workflows in docs/08-project/workflows/"
+  state_fields:
+    - workflow_name
+    - workflow_arguments
+    - execution_status
+    - template_path
 ---
 
 # /agileflow:workflow
@@ -342,3 +347,13 @@ Custom workflows (docs/08-project/workflows/):
 - Works with babysit for story implementation
 - Can trigger from Ralph Loop
 - Integrates with expert system for multi-domain work
+
+---
+
+## Related Commands
+
+- `/agileflow:babysit` - Interactive mentor workflow
+- `/agileflow:batch` - Process multiple items
+- `/agileflow:story` - Create user stories
+- `/agileflow:template` - Manage custom templates
+- `/agileflow:choose` - AI-directed decision making

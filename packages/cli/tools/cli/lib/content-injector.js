@@ -368,6 +368,102 @@ function clearQualityGatePrioritiesCache() {
 }
 
 // =============================================================================
+// Preserve Rules Expansion Functions
+// =============================================================================
+
+/**
+ * Preserve rules template cache
+ * @type {Object|null}
+ */
+let preserveRulesCache = null;
+
+/**
+ * Load preserve rules definitions from templates directory
+ * @param {string} coreDir - Path to core directory
+ * @returns {Object} Rules object with category keys and rule arrays
+ */
+function loadPreserveRules(coreDir) {
+  // Return cached rules if available
+  if (preserveRulesCache !== null) {
+    return preserveRulesCache;
+  }
+
+  const rulesPath = path.join(coreDir, 'templates', 'preserve-rules.json');
+
+  if (!fs.existsSync(rulesPath)) {
+    preserveRulesCache = {};
+    return preserveRulesCache;
+  }
+
+  // Validate path is within core directory (security)
+  if (!isPathSafe(rulesPath, coreDir)) {
+    preserveRulesCache = {};
+    return preserveRulesCache;
+  }
+
+  try {
+    const content = fs.readFileSync(rulesPath, 'utf8');
+    preserveRulesCache = JSON.parse(content);
+    return preserveRulesCache;
+  } catch (err) {
+    preserveRulesCache = {};
+    return preserveRulesCache;
+  }
+}
+
+/**
+ * Expand preserve rules placeholders in content
+ * Replaces "{{RULES:category}}" with actual rule strings from the template
+ *
+ * @param {string} content - Content with preserve rules placeholders
+ * @param {string} coreDir - Path to core directory
+ * @returns {string} Content with rules expanded
+ */
+function expandPreserveRules(content, coreDir) {
+  const rules = loadPreserveRules(coreDir);
+
+  if (!rules || Object.keys(rules).length === 0) {
+    return content;
+  }
+
+  // Pattern matches: - "{{RULES:category}}" in YAML preserve_rules arrays
+  // We need to handle the YAML list context carefully
+  const pattern = /- "\{\{RULES:(\w+)\}\}"/g;
+
+  return content.replace(pattern, (match, category) => {
+    const ruleList = rules[category];
+
+    if (!ruleList || !Array.isArray(ruleList) || ruleList.length === 0) {
+      // Unknown category or empty, keep original placeholder as warning
+      return match;
+    }
+
+    // Sanitize rules before injecting
+    const sanitizedRules = ruleList.map(rule => {
+      // Escape double quotes in rule text
+      const escaped = String(rule).replace(/"/g, '\\"');
+      // Validate it's a reasonable rule string
+      if (escaped.length > 500) {
+        return escaped.substring(0, 500);
+      }
+      return escaped;
+    });
+
+    // Return expanded rules as YAML list items with proper indentation
+    // Each rule becomes: - "rule text"
+    return sanitizedRules.map(rule => `- "${rule}"`).join('\n    ');
+  });
+}
+
+/**
+ * Clear the preserve rules template cache
+ * Useful for testing or when template file changes
+ */
+function clearPreserveRulesCache() {
+  preserveRulesCache = null;
+}
+
+// =============================================================================
 // Main Injection Function
 // =============================================================================
 
@@ -384,6 +480,11 @@ function injectContent(content, context = {}) {
   const { coreDir, agileflowFolder = '.agileflow', version = 'unknown' } = context;
 
   let result = content;
+
+  // Expand preserve rules placeholders first (YAML frontmatter processing)
+  if (coreDir && fs.existsSync(coreDir) && result.includes('{{RULES:')) {
+    result = expandPreserveRules(result, coreDir);
+  }
 
   // Get counts if core directory is available
   let counts = { commands: 0, agents: 0, skills: 0 };
@@ -587,6 +688,7 @@ function hasPlaceholders(content) {
     /\{\{COMMAND_LIST\}\}/,
     /\{\{SESSION_HARNESS\}\}/,
     /\{\{QUALITY_GATE_PRIORITIES\}\}/,
+    /\{\{RULES:\w+\}\}/,
     /\{agileflow_folder\}/,
   ];
 
@@ -612,6 +714,18 @@ function getPlaceholderDocs() {
       '<!-- {{SESSION_HARNESS}} -->': 'Session harness protocol (auto-detects agent ID from frontmatter)',
       '<!-- {{SESSION_HARNESS:AG-API}} -->': 'Session harness protocol with explicit agent ID',
       '<!-- {{QUALITY_GATE_PRIORITIES}} -->': 'Quality gate priorities with CRITICAL/HIGH/MEDIUM levels',
+    },
+    preserve_rules: {
+      '{{RULES:json_operations}}': 'Rules for safe JSON file modifications',
+      '{{RULES:file_preview}}': 'Rules for showing previews before writing',
+      '{{RULES:user_confirmation}}': 'Rules for using AskUserQuestion tool',
+      '{{RULES:todo_tracking}}': 'Rules for using TodoWrite tool',
+      '{{RULES:bus_messaging}}': 'Rules for bus message logging',
+      '{{RULES:plan_mode}}': 'Rules for using EnterPlanMode',
+      '{{RULES:commit_approval}}': 'Rules about git commits',
+      '{{RULES:delegation}}': 'Rules for expert delegation',
+      '{{RULES:research_first}}': 'Rules for checking research before starting',
+      '{{RULES:status_updates}}': 'Rules for updating status.json',
     },
     metadata: {
       '{{VERSION}}': 'AgileFlow version from package.json',
@@ -640,6 +754,10 @@ module.exports = {
   clearSessionHarnessCache,
   generateQualityGatePrioritiesContent,
   clearQualityGatePrioritiesCache,
+
+  // Preserve rules expansion
+  expandPreserveRules,
+  clearPreserveRulesCache,
 
   // Main injection
   injectContent,

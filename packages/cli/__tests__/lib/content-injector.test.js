@@ -16,6 +16,8 @@ const {
   filterSections,
   stripSectionMarkers,
   hasSections,
+  expandPreserveRules,
+  clearPreserveRulesCache,
 } = require('../../tools/cli/lib/content-injector');
 
 describe('content-injector', () => {
@@ -1139,6 +1141,214 @@ name: api
       // When template is missing, the marker should be replaced with empty string
       expect(result).toContain('# Agent');
       expect(result).toContain('## Footer');
+    });
+  });
+
+  describe('preserve rules expansion', () => {
+    beforeEach(() => {
+      // Clear cache before each test
+      clearPreserveRulesCache();
+    });
+
+    it('expands single rule category in YAML frontmatter', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({
+          json_operations: [
+            'MUST use Edit tool for JSON operations',
+            'MUST validate JSON after modification',
+          ],
+        })
+      );
+
+      const template = `---
+description: Test command
+compact_context:
+  preserve_rules:
+    - "ACTIVE COMMAND: /test"
+    - "{{RULES:json_operations}}"
+    - "Custom rule here"
+---
+
+# Command Content
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('- "MUST use Edit tool for JSON operations"');
+      expect(result).toContain('- "MUST validate JSON after modification"');
+      expect(result).toContain('- "Custom rule here"');
+      expect(result).not.toContain('{{RULES:json_operations}}');
+    });
+
+    it('expands multiple rule categories', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({
+          json_operations: ['JSON rule 1', 'JSON rule 2'],
+          file_preview: ['Preview rule 1'],
+        })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:json_operations}}"
+    - "{{RULES:file_preview}}"
+---
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('- "JSON rule 1"');
+      expect(result).toContain('- "JSON rule 2"');
+      expect(result).toContain('- "Preview rule 1"');
+    });
+
+    it('preserves non-template rules unchanged', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({ category: ['Rule'] })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "This is a regular rule"
+    - "Another custom rule"
+---
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('- "This is a regular rule"');
+      expect(result).toContain('- "Another custom rule"');
+    });
+
+    it('handles unknown category gracefully', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({ known_category: ['Rule'] })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:unknown_category}}"
+---
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      // Unknown category should be kept as-is as a warning
+      expect(result).toContain('{{RULES:unknown_category}}');
+    });
+
+    it('handles missing rules file gracefully', () => {
+      // No templates directory
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:json_operations}}"
+---
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      // Should keep placeholder when no rules file exists
+      expect(result).toContain('{{RULES:json_operations}}');
+    });
+
+    it('escapes double quotes in rules', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({
+          test: ['Rule with "quotes" inside'],
+        })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:test}}"
+---
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Rule with \\"quotes\\" inside');
+    });
+
+    it('caches rules for performance', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({ test: ['Original rule'] })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:test}}"
+---
+`;
+
+      // First call
+      const result1 = injectContent(template, { coreDir: tempDir });
+      expect(result1).toContain('Original rule');
+
+      // Modify file (but cache should return old content)
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({ test: ['Modified rule'] })
+      );
+
+      // Second call - should use cached content
+      const result2 = injectContent(template, { coreDir: tempDir });
+      expect(result2).toContain('Original rule');
+
+      // Clear cache
+      clearPreserveRulesCache();
+
+      // Third call - should load new content
+      const result3 = injectContent(template, { coreDir: tempDir });
+      expect(result3).toContain('Modified rule');
+    });
+
+    it('works via expandPreserveRules direct call', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({
+          delegation: ['Delegate complex work', 'Simple task -> do yourself'],
+        })
+      );
+
+      const content = `    - "{{RULES:delegation}}"`;
+
+      const result = expandPreserveRules(content, tempDir);
+
+      expect(result).toContain('- "Delegate complex work"');
+      expect(result).toContain('- "Simple task -> do yourself"');
     });
   });
 });

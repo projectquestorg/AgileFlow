@@ -29,6 +29,14 @@ Reads `docs/context.md` and outputs a condensed excerpt (≤300 lines) ready to 
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js context:export
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:context:export IS ACTIVE

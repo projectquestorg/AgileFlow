@@ -1,6 +1,6 @@
 ---
 description: Track and resolve blockers with actionable suggestions
-argument-hint: "[AGENT=<id>] [SHOW_RESOLVED=true] [DETAILED=true]"
+argument-hint: [AGENT=<id>] [SHOW_RESOLVED=true|false] [DETAILED=true|false]
 model: haiku
 compact_context:
   priority: high
@@ -529,3 +529,13 @@ If yes, suggest:
 - `/story-new` for creating unblocking stories
 - `/handoff` for reassigning capacity-blocked stories
 - `/adr-new` for architectural blockers needing decisions
+
+---
+
+## Related Commands
+
+- `/agileflow:status` - Update story status
+- `/agileflow:board` - Kanban board view
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:handoff` - Document work handoff
+- `/agileflow:deps` - Dependency visualization

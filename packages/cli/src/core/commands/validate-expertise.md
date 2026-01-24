@@ -1,6 +1,6 @@
 ---
 description: Validate expertise files for drift and staleness
-argument-hint: "[DOMAIN]"
+argument-hint: [<domain>]
 model: haiku
 compact_context:
   priority: medium
@@ -218,3 +218,12 @@ RULES
 - Report issues but don't auto-fix
 - Prioritize drift detection (most critical)
 - Keep output concise and actionable
+
+---
+
+## Related Commands
+
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:configure` - Manage AgileFlow features
+- `/agileflow:agent` - Onboard new agents
+- `/agileflow:help` - Display AgileFlow overview

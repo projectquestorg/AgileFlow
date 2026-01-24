@@ -1,6 +1,6 @@
 ---
 description: Synthesize insights across multiple research files
-argument-hint: [TOPIC=<text> | FILES=<comma-separated>]
+argument-hint: [TOPIC=<text>] [FILES=<list>]
 compact_context:
   priority: high
   preserve_rules:
@@ -33,6 +33,14 @@ Query across your research notes to discover:
 - **Patterns** - Common technologies, timelines, categories across research
 
 **RLM Concept Applied**: This implements the "dependency graph over documents" pattern - treating research files as nodes in a graph and finding cross-document relationships.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:synthesize
+```
 
 ---
 

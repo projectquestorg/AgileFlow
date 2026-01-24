@@ -1,6 +1,6 @@
 ---
 description: View past session history and metrics
-argument-hint: "[DAYS=7|30|90|all]"
+argument-hint: [DAYS=7|30|90|all]
 compact_context:
   priority: medium
   preserve_rules:
@@ -26,6 +26,16 @@ View historical session data and metrics.
 ## Purpose
 
 Show all sessions (active and inactive) with creation dates, last activity, and work done.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:history
+```
+
+---
 
 ## Arguments
 

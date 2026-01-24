@@ -5,12 +5,11 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:status - Status updater broadcasting to message bus"
-    - "MUST update docs/09-agents/status.json (use jq or Edit tool, never echo/cat >)"
-    - "MUST validate JSON after modification (jq empty check)"
-    - "MUST append bus message to docs/09-agents/bus/log.jsonl"
-    - "MUST use AskUserQuestion for user confirmation (YES/NO format)"
-    - "MUST show diff preview before confirming (diff-first pattern)"
-    - "Status values: ready|in-progress|blocked|in-review|done"
+    - "{{RULES:json_operations}}"
+    - "{{RULES:bus_messaging}}"
+    - "{{RULES:user_confirmation}}"
+    - "{{RULES:file_preview}}"
+    - "{{RULES:status_updates}}"
     - "MUST escape user text automatically (jq handles escaping)"
     - "PHASE HANDOFF: Prompt for summary on phase transitions (ready→in-progress, in-progress→in-review, in-review→done)"
   state_fields:
@@ -411,3 +410,13 @@ Valid values are:
 Fix: Restoring from backup: docs/09-agents/status.json.backup
 ✅ Backup restored successfully
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:board` - Visual kanban board
+- `/agileflow:assign` - Assign stories to owners
+- `/agileflow:blockers` - Track and resolve blockers
+- `/agileflow:story:view` - View story details
+- `/agileflow:handoff` - Document work handoff

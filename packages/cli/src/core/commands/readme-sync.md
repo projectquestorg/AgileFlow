@@ -1,6 +1,6 @@
 ---
 description: Synchronize a folder's README.md with its current contents
-argument-hint: FOLDER=<path> | FOLDER=all
+argument-hint: FOLDER=<path>|all
 compact_context:
   priority: medium
   preserve_rules:
@@ -9,7 +9,7 @@ compact_context:
     - "If FOLDER=all, spawn agent for each docs/* subfolder in parallel"
     - "List all files and subdirectories with descriptions"
     - "Build '## Contents' section with file descriptions"
-    - "Always show diff/preview FIRST, wait for YES/NO BEFORE updating"
+    - "{{RULES:file_preview}}"
     - "Only update '## Contents' section - preserve other sections"
     - "Use Edit tool to update README only after approval"
   state_fields:
@@ -255,6 +255,11 @@ Only the `## Contents` section of README.md:
 - Maintains all other sections unchanged
 - Preserves custom notes and links
 
-RELATED
-- CLAUDE.md - Project conventions and practices
-- Mermaid diagram syntax - For flowcharts and sequence diagrams
+---
+
+## Related Commands
+
+- `/agileflow:docs` - Synchronize documentation with code
+- `/agileflow:changelog` - Generate changelog from commits
+- `/agileflow:template` - Manage custom templates
+- `/agileflow:configure` - Manage AgileFlow features

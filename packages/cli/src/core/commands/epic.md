@@ -5,13 +5,12 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:epic-new - Epic creator for feature planning"
-    - "MUST create TodoWrite task list immediately (6 steps: parse, create epic, create stories, merge status, append bus, confirm)"
-    - "MUST show file previews before confirming writes"
-    - "MUST use Edit tool or jq for JSON operations (never echo/cat > status.json)"
-    - "MUST validate JSON after every modification"
-    - "MUST use AskUserQuestion for user confirmation (YES/NO/CANCEL format)"
+    - "{{RULES:todo_tracking}}"
+    - "{{RULES:file_preview}}"
+    - "{{RULES:json_operations}}"
+    - "{{RULES:user_confirmation}}"
     - "STORIES format: 'US-ID|title|owner,US-ID2|title2|owner2' (comma-separated triplets)"
-    - "RESEARCH-FIRST: Validate research exists before creating epic; warn if missing for complex features"
+    - "{{RULES:research_first}}"
   state_fields:
     - epic_id
     - owner

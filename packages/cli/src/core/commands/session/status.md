@@ -27,6 +27,16 @@ Quick view of all sessions and their status.
 
 Display a compact overview of all registered sessions without prompting for action.
 
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:status
+```
+
+---
+
 ## Arguments
 
 | Argument | Required | Description |

@@ -1,5 +1,6 @@
 ---
 description: Track and prioritize technical debt items
+argument-hint: (no arguments)
 compact_context:
   priority: medium
   preserve_rules:
@@ -396,3 +397,13 @@ OUTPUT
 - Optional: Stories for top debt items
 - Optional: Trend analysis
 - Recommendations for debt reduction
+
+---
+
+## Related Commands
+
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:review` - AI-powered code review
+- `/agileflow:packages` - Manage dependencies and audits
+- `/agileflow:story` - Create stories for debt items
+- `/agileflow:retro` - Sprint retrospective with debt review

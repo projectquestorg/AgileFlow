@@ -1,6 +1,6 @@
 ---
 description: Orchestrate Research-Plan-Implement workflow with explicit phase transitions
-argument-hint: [TASK=<description>] [PHASE=research|plan|implement] [SKIP_RESEARCH=true]
+argument-hint: [TASK=<text>] [PHASE=research|plan|implement] [SKIP_RESEARCH=true|false]
 compact_context:
   priority: critical
   preserve_rules:
@@ -29,6 +29,14 @@ Orchestrate the Research-Plan-Implement workflow for maximum AI agent effectiven
 Guide complex tasks through three phases, each producing a compressed artifact for the next phase. Based on [Context Engineering for Coding Agents](../10-research/20260113-context-engineering-coding-agents.md) research.
 
 **Key insight**: LLMs are stateless. Better output requires better input context. Frequent intentional compaction at phase boundaries prevents the "dumb zone" (~40% context utilization).
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js rpi
+```
 
 ---
 

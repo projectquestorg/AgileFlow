@@ -1,6 +1,6 @@
 ---
 description: Synchronize documentation with code changes
-argument-hint: [BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=yes|no]
+argument-hint: [BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=true|false]
 compact_context:
   priority: high
   preserve_rules:
@@ -8,7 +8,7 @@ compact_context:
     - "Categorize changes: API, UI, services, config, database"
     - "Generate gap report: missing, outdated, up-to-date docs"
     - "NEVER delete docs without explicit approval"
-    - "ALWAYS use diff-first, YES/NO pattern before writing"
+    - "{{RULES:file_preview}}"
     - "PRESERVE custom content - use managed section markers"
     - "INFER docs from TypeScript types, JSDoc, OpenAPI, tests"
     - "Optional AUTO_CREATE mode auto-generates all missing docs"
@@ -396,3 +396,13 @@ OUTPUT
 - Gap report (markdown)
 - List of actions to take
 - Optional: PR with doc updates (if approved)
+
+---
+
+## Related Commands
+
+- `/agileflow:readme-sync` - Sync folder README with contents
+- `/agileflow:changelog` - Generate changelog from commits
+- `/agileflow:update` - Generate stakeholder progress report
+- `/agileflow:template` - Manage custom templates
+- `/agileflow:pr` - Generate pull request from story

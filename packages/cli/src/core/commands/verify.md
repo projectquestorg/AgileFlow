@@ -1,6 +1,6 @@
 ---
 description: Run project tests and update story test status
-argument-hint: [story_id] (optional)
+argument-hint: [<US-ID>]
 compact_context:
   priority: critical
   preserve_rules:
@@ -398,6 +398,18 @@ Run without story_id to verify all in_progress stories.
 5. **Exit Code Priority**: Always trust exit code over output parsing
 6. **Incremental Parsing**: Start with exit code only, add framework-specific parsing later
 7. **User Feedback**: Show clear, actionable output with visual indicators (✅/❌)
+
+---
+
+## Related Commands
+
+- `/agileflow:status` - Update story status
+- `/agileflow:audit` - Audit story completion
+- `/agileflow:ci` - Set up CI/CD workflow
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:baseline` - Mark verified baseline
+
+---
 
 ## Example Execution
 

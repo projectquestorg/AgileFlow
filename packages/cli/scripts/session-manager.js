@@ -331,7 +331,9 @@ function getSessionsHealth(options = {}) {
         timeout: 5000,
       });
       if (result.stdout && result.stdout.trim()) {
-        const changes = result.stdout.trim().split('\n');
+        // Don't use trim() on the whole string - it removes leading space from first status
+        // Split by newline and filter empty lines instead
+        const changes = result.stdout.split('\n').filter((line) => line.length > 0);
         const sessionData = {
           id,
           ...session,

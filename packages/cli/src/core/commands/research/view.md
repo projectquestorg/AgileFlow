@@ -33,6 +33,14 @@ Displays the content of a research note from `docs/10-research/`. Useful for:
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:view
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:research:view IS ACTIVE

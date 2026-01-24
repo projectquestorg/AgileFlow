@@ -6,12 +6,11 @@ compact_context:
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:assign - Story assigner and owner changer"
     - "MUST update story frontmatter (owner, status, updated timestamp)"
-    - "MUST update docs/09-agents/status.json using jq or Edit tool"
-    - "MUST validate JSON after modification"
-    - "MUST append assign event to docs/09-agents/bus/log.jsonl"
-    - "MUST use AskUserQuestion for user confirmation (YES/NO format)"
-    - "MUST show diff preview before confirming (diff-first pattern)"
-    - "Status values: ready|in-progress|blocked|in-review|done"
+    - "{{RULES:json_operations}}"
+    - "{{RULES:bus_messaging}}"
+    - "{{RULES:user_confirmation}}"
+    - "{{RULES:file_preview}}"
+    - "{{RULES:status_updates}}"
   state_fields:
     - story_id
     - current_owner
@@ -357,3 +356,13 @@ Files to update:
    New owner: AG-UI
    Notification sent to both agents
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:status` - Update story status
+- `/agileflow:handoff` - Document work handoff
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:board` - Kanban board view
+- `/agileflow:story:view` - View story details

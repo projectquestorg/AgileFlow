@@ -1,6 +1,6 @@
 ---
 description: Visualize dependency graph with critical path detection
-argument-hint: [SCOPE=story|epic|all] [EPIC=<id>] [STORY=<id>] [FORMAT=ascii|mermaid|graphviz|json] [ANALYSIS=critical-path|circular|blocking|all]
+argument-hint: [SCOPE=story|epic|all] [EPIC=<EP-ID>] [STORY=<US-ID>] [FORMAT=ascii|mermaid|graphviz|json] [ANALYSIS=critical-path|circular|blocking|all]
 model: haiku
 compact_context:
   priority: high
@@ -648,3 +648,13 @@ OUTPUT
 - Blocking story impact analysis
 - Parallel work opportunities
 - Optional: Mermaid/GraphViz export for documentation
+
+---
+
+## Related Commands
+
+- `/agileflow:blockers` - Track blockers
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:board` - Kanban board view
+- `/agileflow:story:view` - View story details
+- `/agileflow:epic:view` - View epic details

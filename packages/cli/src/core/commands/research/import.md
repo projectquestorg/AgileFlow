@@ -45,6 +45,14 @@ Also works for importing:
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js research:import
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:research:import IS ACTIVE

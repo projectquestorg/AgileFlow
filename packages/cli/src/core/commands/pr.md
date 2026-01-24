@@ -323,3 +323,13 @@ Searched:
 Create the story first:
 /agileflow:story EPIC=EP-0010 STORY=US-0042 TITLE="Login Form" OWNER=AG-UI
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:story` - Create user stories
+- `/agileflow:review` - AI-powered code review
+- `/agileflow:verify` - Run tests and update story status
+- `/agileflow:status` - Update story status and progress
+- `/agileflow:ci` - Bootstrap CI/CD workflow

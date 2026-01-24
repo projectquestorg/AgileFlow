@@ -1,6 +1,22 @@
 ---
 description: View story details with contextual actions
 argument-hint: STORY=<US-ID>
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:story:view - Views story with context-aware actions"
+    - "MUST read story file and status.json entry"
+    - "MUST display full story: AC (with checkboxes), tests, dependencies, blockers"
+    - "MUST offer CONTEXT-AWARE actions based on story status"
+    - "STATUS=ready → Start work, validate, view research"
+    - "STATUS=in_progress → Mark complete, mark blocked, view tests"
+    - "STATUS=blocked → View blocker, unblock, reassign"
+    - "STATUS=done → View summary, reopen, view next story"
+    - "ALWAYS offer next steps via AskUserQuestion"
+  state_fields:
+    - selected_story_id
+    - story_status
+    - story_epic
 ---
 
 # /agileflow:story:view
@@ -16,6 +32,14 @@ Displays complete story information and offers **context-aware actions** based o
 - **in_progress** → View progress, mark blocked, complete
 - **blocked** → View blockers, unblock, reassign
 - **done** → View summary, reopen if needed
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js story:view
+```
 
 ---
 

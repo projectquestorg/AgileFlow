@@ -1,6 +1,6 @@
 ---
 description: Analyze change impact across codebase
-argument-hint: [FILES=<paths>] [BASE=<branch>] [RUN_TESTS=yes|no]
+argument-hint: [FILES=<paths>] [BASE=<branch>] [RUN_TESTS=true|false]
 compact_context:
   priority: high
   preserve_rules:
@@ -320,3 +320,13 @@ OUTPUT
 - List of affected files and tests
 - Test recommendations (critical/recommended/optional)
 - Optional: Run tests and report results
+
+---
+
+## Related Commands
+
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:verify` - Run tests and update story status
+- `/agileflow:pr` - Generate pull request from story
+- `/agileflow:review` - AI-powered code review
+- `/agileflow:batch` - Process multiple files

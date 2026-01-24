@@ -1,6 +1,6 @@
 ---
 description: Process multiple items with functional patterns (map/pmap/filter/reduce)
-argument-hint: <operation> <pattern> [action]
+argument-hint: <operation> <pattern> [<action>]
 compact_context:
   priority: normal
   preserve_rules:
@@ -475,3 +475,13 @@ Future versions may add: coverage, lint, types gates.
 - Works with `/agileflow:babysit` for batch story processing
 - **Loop mode** enables iterative batch processing with quality gates
 - Integrates with agent system for parallel work
+
+---
+
+## Related Commands
+
+- `/agileflow:babysit` - Mentor workflow
+- `/agileflow:story` - Create user stories
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:verify` - Run tests and verify
+- `/agileflow:sprint` - Sprint planning

@@ -1,6 +1,6 @@
 ---
 description: Analytics dashboard with cycle time and throughput
-argument-hint: "[TIMEFRAME=7d|30d|90d|all] [EPIC=<id>] [OWNER=<id>] [FORMAT=ascii|json|csv] [METRIC=cycle-time|lead-time|throughput|all]"
+argument-hint: [TIMEFRAME=7d|30d|90d|all] [EPIC=<EP-ID>] [OWNER=<id>] [FORMAT=ascii|json|csv] [METRIC=cycle-time|lead-time|throughput|all]
 model: haiku
 type: output-only  # Analytics display - read-only, not an ongoing task
 compact_context:
@@ -757,3 +757,13 @@ OUTPUT
 - Or JSON/CSV/Markdown based on FORMAT parameter
 - Always include timeframe and generation timestamp
 - Save to docs/08-project/metrics-reports/metrics-YYYYMMDD.md (optional)
+
+---
+
+## Related Commands
+
+- `/agileflow:velocity` - Track velocity and forecast capacity
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:retro` - Sprint retrospective
+- `/agileflow:board` - Kanban board view
+- `/agileflow:deps` - Dependency visualization

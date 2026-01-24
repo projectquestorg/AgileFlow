@@ -778,3 +778,13 @@ OUTPUT
 - CI/CD workflow
 - Environment management guide
 - Next steps checklist
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:ci` - Bootstrap CI/CD workflow
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:changelog` - Generate changelog for releases
+- `/agileflow:pr` - Generate pull request from story

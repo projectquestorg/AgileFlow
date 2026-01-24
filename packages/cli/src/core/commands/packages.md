@@ -1,5 +1,6 @@
 ---
 description: Manage dependencies with updates and security audits
+argument-hint: (no arguments)
 compact_context:
   priority: high
   preserve_rules:
@@ -453,3 +454,13 @@ Depending on ACTION:
 - **dashboard**: Dependency dashboard (markdown/html/json/csv)
 - **update**: Update report + optional PR with updates (if approved)
 - **audit**: Security audit report with severity levels
+
+---
+
+## Related Commands
+
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:debt` - Track technical debt items
+- `/agileflow:ci` - Bootstrap CI/CD workflow
+- `/agileflow:pr` - Generate pull request from story
+- `/agileflow:story` - Create story for security updates

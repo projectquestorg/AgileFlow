@@ -1,6 +1,6 @@
 ---
 description: Automated competitor analysis with feature gap identification
-argument-hint: "[COMPETITORS=<keywords>] [FOCUS=all|features|security|perf|ux] [OUTPUT=matrix|report|stories]"
+argument-hint: [COMPETITORS=<text>] [FOCUS=all|features|security|perf|ux] [OUTPUT=matrix|report|stories]
 compact_context:
   priority: high
   preserve_rules:

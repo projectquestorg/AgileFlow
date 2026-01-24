@@ -7,7 +7,7 @@ compact_context:
     - "CI setup creates .github/workflows/ci.yml with lint/typecheck/test jobs"
     - "MUST parse OWNERS input (comma-separated GitHub handles or team names)"
     - "MUST create CODEOWNERS file with owner mappings for src/ and docs/03-decisions/"
-    - "ALWAYS show diff-first preview before creating files (YES/NO confirmation required)"
+    - "{{RULES:file_preview}}"
     - "Concurrency control and minimal permissions are required for security"
   state_fields:
     - owners_input
@@ -240,3 +240,13 @@ ACTIONS
 3) Print notes for enabling required checks.
 
 Diff-first; YES/NO.
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features and hooks
+- `/agileflow:deploy` - Set up deployment pipeline
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:verify` - Run tests and verify stories
+- `/agileflow:pr` - Generate pull request from story

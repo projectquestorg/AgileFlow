@@ -1,6 +1,6 @@
 ---
 description: AI-directed decision making with structured options
-argument-hint: <decision> [context]
+argument-hint: <decision> [<context>]
 compact_context:
   priority: normal
   preserve_rules:
@@ -8,6 +8,11 @@ compact_context:
     - "AI selects best option based on context"
     - "Always explain selection rationale"
     - "Can delegate to experts for analysis before choosing"
+  state_fields:
+    - decision_question
+    - options_analyzed
+    - selected_option
+    - selection_rationale
 ---
 
 # /agileflow:choose
@@ -335,3 +340,13 @@ Use `/agileflow:choose` for decisions that:
 3. **Be honest about trade-offs**: Every option has downsides
 4. **Document decisions**: Use `/agileflow:adr` for important architectural choices
 5. **Revisit decisions**: Circumstances change; choices may need updating
+
+---
+
+## Related Commands
+
+- `/agileflow:adr` - Create Architecture Decision Records
+- `/agileflow:multi-expert` - Deploy multiple experts for analysis
+- `/agileflow:workflow` - Run parameterized workflows
+- `/agileflow:babysit` - Interactive mentor workflow
+- `/agileflow:rpi` - Research-Plan-Implement workflow

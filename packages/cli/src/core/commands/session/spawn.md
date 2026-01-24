@@ -35,6 +35,14 @@ Based on the [git worktrees parallel sessions research](../../../10-research/202
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:spawn
+```
+
+---
+
 ## IMMEDIATE ACTIONS
 
 Upon invocation, execute these steps:

@@ -5,7 +5,7 @@ compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:ai-code-review - Code reviewer analyzing git diffs"
-    - "NEVER auto-commit fixes without explicit user approval - ALWAYS ask first"
+    - "{{RULES:commit_approval}}"
     - "Be constructive and helpful, never blame or criticize developers"
     - "Show both BAD and GOOD code examples - use ❌ BAD and ✅ GOOD markers"
     - "Prioritize by severity: CRITICAL must be fixed before merge, HIGH should be addressed"
@@ -585,3 +585,13 @@ OUTPUT
 - Code quality score
 - Recommendations
 - Optional: Auto-fixes (if approved)
+
+---
+
+## Related Commands
+
+- `/agileflow:pr` - Generate pull request description
+- `/agileflow:impact` - Analyze change impact
+- `/agileflow:tests` - Set up testing infrastructure
+- `/agileflow:diagnose` - System health diagnostics
+- `/agileflow:multi-expert` - Deploy multiple experts for analysis

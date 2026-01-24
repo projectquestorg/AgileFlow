@@ -32,6 +32,16 @@ Sets up session tracking infrastructure:
 
 This command is typically called automatically by the SessionStart hook.
 
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:init
+```
+
+---
+
 ## IMMEDIATE ACTIONS
 
 ### Step 1: Ensure Session Infrastructure

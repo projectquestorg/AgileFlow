@@ -30,6 +30,14 @@ Quickly add a note to `docs/context.md` under the "Notes" section. Useful for re
 
 ---
 
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js context:note
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:context:note IS ACTIVE

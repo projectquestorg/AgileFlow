@@ -1,5 +1,6 @@
 ---
 description: Collect and process agent feedback
+argument-hint: (no arguments)
 compact_context:
   priority: medium
   preserve_rules:
@@ -521,3 +522,13 @@ OUTPUT
 - Saved feedback (markdown)
 - Optional: Retrospective summary
 - Optional: Auto-generated improvement stories
+
+---
+
+## Related Commands
+
+- `/agileflow:retro` - Sprint retrospective
+- `/agileflow:status` - Update story status
+- `/agileflow:sprint` - Sprint planning
+- `/agileflow:story` - Create improvement stories
+- `/agileflow:metrics` - Analytics and metrics dashboard

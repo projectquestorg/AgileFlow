@@ -1,6 +1,21 @@
 ---
 description: List all stories with status and filters
 argument-hint: [EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>]
+compact_context:
+  priority: medium
+  preserve_rules:
+    - "ACTIVE COMMAND: /agileflow:story:list - Lists stories with filters and quick actions"
+    - "MUST read status.json for story data"
+    - "MUST support filters: EPIC, STATUS, OWNER (combinable)"
+    - "MUST group stories by epic in output table"
+    - "MUST show: story ID, title, status, phase, owner, estimate"
+    - "MUST offer actions: view details, start work, create new"
+    - "This is READ-ONLY - no file writes"
+  state_fields:
+    - epic_filter
+    - status_filter
+    - owner_filter
+    - story_count
 ---
 
 # /agileflow:story:list
@@ -18,6 +33,14 @@ Shows all stories from `docs/09-agents/status.json` with:
 - Quick action options
 
 **This is a read-only command** - no files are written.
+
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js story:list
+```
 
 ---
 

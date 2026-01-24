@@ -1,5 +1,6 @@
 ---
 description: System health diagnostics
+argument-hint: (no arguments)
 compact_context:
   priority: high
   preserve_rules:
@@ -391,3 +392,12 @@ Next steps:
 2. Verify installation completed successfully
 3. Re-run diagnostics: /agileflow:diagnose
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:configure` - Manage AgileFlow features
+- `/agileflow:verify` - Run tests and verify
+- `/agileflow:validate-expertise` - Validate expertise files
+- `/agileflow:help` - Display AgileFlow overview

@@ -520,3 +520,13 @@ OUTPUT
 - Saved to docs/08-project/updates/
 - Optional: Email sent to stakeholders
 - Log entry in bus/log.jsonl
+
+---
+
+## Related Commands
+
+- `/agileflow:docs` - Synchronize documentation with code
+- `/agileflow:metrics` - Analytics dashboard with cycle time
+- `/agileflow:board` - Visual kanban board
+- `/agileflow:retro` - Generate sprint retrospective
+- `/agileflow:changelog` - Generate changelog from commits

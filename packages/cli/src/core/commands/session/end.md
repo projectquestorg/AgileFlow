@@ -31,6 +31,16 @@ When you're done with a session, this command:
 - Optionally removes the git worktree directory
 - Updates the registry with last active timestamp
 
+---
+
+## STEP 0: Gather Context
+
+```bash
+node .agileflow/scripts/obtain-context.js session:end
+```
+
+---
+
 ## IMMEDIATE ACTIONS
 
 ### Step 1: Get Current Session

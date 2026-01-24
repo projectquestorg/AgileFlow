@@ -1,6 +1,6 @@
 ---
 description: Remove an installed skill from .claude/skills/
-argument-hint: [SKILL_NAME] (optional)
+argument-hint: [<name>]
 compact_context:
   priority: medium
   preserve_rules:
@@ -304,3 +304,13 @@ Try manually: rm -rf .claude/skills/<skill>/
 # Delete specific skill
 /agileflow:skill:delete supabase-swift
 ```
+
+---
+
+## Related Commands
+
+- `/agileflow:skill:create` - Create a new skill
+- `/agileflow:skill:list` - List all installed skills
+- `/agileflow:skill:edit` - Edit existing skill
+- `/agileflow:skill:upgrade` - Add learning capability
+- `/agileflow:skill:test` - Test skill functionality
