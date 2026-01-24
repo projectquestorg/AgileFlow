@@ -196,20 +196,20 @@ Supprimer les violations copy-paste:
 // Avant (validation dupliquée)
 function validateSignup(email, password) {
   if (!email.includes('@')) return false;
-  if (password.length < 8) return false;
+  if (password.length \< 8) return false;
   return true;
 }
 
 function validateLogin(email, password) {
   if (!email.includes('@')) return false;
-  if (password.length < 8) return false;
+  if (password.length \< 8) return false;
   return true;
 }
 
 // Après (principe DRY)
 function validateCredentials(email, password) {
   if (!email.includes('@')) return false;
-  if (password.length < 8) return false;
+  if (password.length \< 8) return false;
   return true;
 }
 ```
@@ -357,7 +357,7 @@ function handleUserUpdate(userId, updateData, callback) {
     callback(new Error('Invalid email'));
     return;
   }
-  if (!updateData.name || updateData.name.length < 2) {
+  if (!updateData.name || updateData.name.length \< 2) {
     callback(new Error('Name must be at least 2 characters'));
     return;
   }
@@ -404,7 +404,7 @@ async function handleUserUpdate(userId, updateData) {
 function validateUserUpdate(data) {
   if (!data.email) throw new Error('Email required');
   if (!data.email.includes('@')) throw new Error('Invalid email');
-  if (!data.name || data.name.length < 2) {
+  if (!data.name || data.name.length \< 2) {
     throw new Error('Name must be at least 2 characters');
   }
 }

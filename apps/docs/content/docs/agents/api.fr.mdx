@@ -142,10 +142,10 @@ function validateUserUpdate(data) {
   if (!data.email || !data.email.includes('@')) {
     throw new Error('Invalid email');
   }
-  if (data.name && data.name.length < 2) {
+  if (data.name && data.name.length \< 2) {
     throw new Error('Name too short');
   }
-  if (data.age && (data.age < 18 || data.age > 120)) {
+  if (data.age && (data.age \< 18 || data.age > 120)) {
     throw new Error('Age must be between 18 and 120');
   }
 }

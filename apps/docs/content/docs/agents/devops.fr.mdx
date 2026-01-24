@@ -152,11 +152,11 @@ resource "aws_autoscaling_group" "app" {
 ## Monitoring d'infrastructure
 
 **Métriques clés**:
-- CPU utilization: < 80% (sinon scale up)
-- Memory usage: < 85% (sinon scale up)
-- Disk usage: < 90% (augmenter stockage)
+- CPU utilization: \< 80% (sinon scale up)
+- Memory usage: \< 85% (sinon scale up)
+- Disk usage: \< 90% (augmenter stockage)
 - Network I/O: Mesurer pour les pics
-- Latency: < 200ms (médian), < 500ms (p95)
+- Latency: \< 200ms (médian), \< 500ms (p95)
 
 **Alertes**:
 ```
@@ -216,8 +216,8 @@ Bandwidth:
 ## Disaster recovery
 
 **RTO/RPO**:
-- RTO (Recovery Time Objective): < 1 heure
-- RPO (Recovery Point Objective): < 15 minutes
+- RTO (Recovery Time Objective): \< 1 heure
+- RPO (Recovery Point Objective): \< 15 minutes
 
 **Plan DR**:
 ```
