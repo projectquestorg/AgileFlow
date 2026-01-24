@@ -443,6 +443,27 @@ function getCurrentStory() {
 // Thread type enum values
 const THREAD_TYPES = ['base', 'parallel', 'chained', 'fusion', 'big', 'long'];
 
+/**
+ * Check if a directory is a git worktree (not the main repo).
+ * In a worktree, .git is a file pointing to the main repo's .git/worktrees/<name>
+ * In the main repo, .git is a directory.
+ *
+ * @param {string} dir - Directory to check
+ * @returns {boolean} True if dir is a git worktree
+ */
+function isGitWorktree(dir) {
+  const gitPath = path.join(dir, '.git');
+  try {
+    const stat = fs.lstatSync(gitPath);
+    // In a worktree, .git is a file containing "gitdir: /path/to/main/.git/worktrees/<name>"
+    // In the main repo, .git is a directory
+    return stat.isFile();
+  } catch (e) {
+    // .git doesn't exist - not a git repo at all
+    return false;
+  }
+}
+
 // Auto-detect thread type from context
 function detectThreadType(session, isWorktree = false) {
   // Worktree sessions are parallel threads
@@ -491,7 +512,9 @@ function registerSession(nickname = null, threadType = null) {
   const sessionId = String(registry.next_id);
   registry.next_id++;
 
-  const isMain = cwd === ROOT;
+  // A session is "main" only if it's at the project root AND not a git worktree
+  // Worktrees have .git as a file (not directory), pointing to the main repo
+  const isMain = cwd === ROOT && !isGitWorktree(cwd);
   const detectedType =
     threadType && THREAD_TYPES.includes(threadType) ? threadType : detectThreadType(null, !isMain);
 

@@ -106,6 +106,8 @@ Display:
 To resume later: cd {path} && claude
 ```
 
+Then proceed to **Step 4: Offer to Close Tab**.
+
 ### Step 3c: If "End and delete worktree" Selected
 
 ```bash
@@ -123,11 +125,46 @@ Display:
    git branch -d {branch}
 ```
 
+Then proceed to **Step 4: Offer to Close Tab**.
+
 ### Step 3d: If "Cancel" Selected
 
 ```
 Session remains active.
 ```
+
+---
+
+## Step 4: Offer to Close Tab (if in tmux)
+
+After ending a session (via end, delete, or merge), check if we're in tmux and offer to close the tab.
+
+**Check if in tmux:**
+```bash
+echo $TMUX
+```
+
+If `$TMUX` is set (non-empty), we're in tmux. Ask:
+
+```
+AskUserQuestion:
+  question: "Close this tmux tab?"
+  header: "Close tab"
+  multiSelect: false
+  options:
+    - label: "Yes, close tab"
+      description: "Close this terminal tab (Alt+x also works)"
+    - label: "No, keep open"
+      description: "Stay in this tab"
+```
+
+**If "Yes, close tab" selected:**
+```bash
+tmux kill-window
+```
+
+**If "No, keep open" selected:**
+Display any final messages and end.
 
 ---
 
@@ -345,6 +382,8 @@ Summary:
 💡 To push your changes: git push
 ```
 
+Then proceed to **Step 4: Offer to Close Tab**.
+
 If failed:
 
 ```
@@ -532,6 +571,39 @@ Session remains active.
 
 ---
 
+### 🚨 RULE #5: OFFER TO CLOSE TMUX TAB
+
+After session ends (via end, delete, or merge), check if in tmux and offer to close:
+
+```bash
+# Check if in tmux
+echo $TMUX
+```
+
+If in tmux, ask:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Close this tmux tab?",
+  "header": "Close tab",
+  "multiSelect": false,
+  "options": [
+    {"label": "Yes, close tab",
+     "description": "Close this terminal tab (Alt+x also works)"},
+    {"label": "No, keep open",
+     "description": "Stay in this tab"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+If "Yes":
+```bash
+tmux kill-window
+```
+
+---
+
 ### KEY FILES
 
 | File | Purpose |
@@ -557,6 +629,7 @@ Session remains active.
    f. Execute integrate
    g. Show success with cd command
 5. If end/delete → Execute and show result
+6. If in tmux → Offer to close tab
 ```
 
 ---
@@ -588,5 +661,6 @@ Session remains active.
 - Merge flow: uncommitted → preview → conflicts → strategy → confirm → execute
 - Default strategy: squash
 - Always show cd command to return to main
+- **After session ends: Offer to close tmux tab (if in tmux)**
 
 <!-- COMPACT_SUMMARY_END -->
