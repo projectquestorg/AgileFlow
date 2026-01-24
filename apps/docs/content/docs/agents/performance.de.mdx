@@ -52,13 +52,13 @@ Verwenden Sie den Performance Agent, wenn:
 ```bash
 # Via babysit - optimize slow API endpoint
 /agileflow:babysit
-> "The user list API endpoint is taking 5 seconds. It needs to be <200ms."
+> "The user list API endpoint is taking 5 seconds. It needs to be \<200ms."
 
 # Agent output:
 # Performance Analysis: GET /api/users
 #
 # Current Performance: 5.2 seconds
-# Target Performance: <200ms
+# Target Performance: \<200ms
 #
 # Profiling Results:
 # ├── Database query: 4.8s (92% of time)
@@ -71,7 +71,7 @@ Verwenden Sie den Performance Agent, wenn:
 # 2. Add database index on users.created_at
 # 3. Implement caching with 5 minute TTL
 #
-# Estimated Result: <200ms after optimizations
+# Estimated Result: \<200ms after optimizations
 # Correctness: All tests will still pass
 # Trade-offs: Slight memory overhead for cache
 #

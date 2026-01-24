@@ -40,13 +40,13 @@ Utiliser AG-PERFORMANCE quand:
 ```bash
 # Via babysit - optimiser l'endpoint API lent
 /agileflow:babysit
-> "The user list API endpoint takes 5 seconds. Needs to be <200ms."
+> "The user list API endpoint takes 5 seconds. Needs to be \<200ms."
 
 # Sortie de l'agent:
 # Performance Analysis: GET /api/users
 #
 # Performance actuelle: 5.2 secondes
-# Objectif de performance: <200ms
+# Objectif de performance: \<200ms
 #
 # Résultats du profiling:
 # ├── Requête BD: 4.8s (92% du temps)
@@ -59,7 +59,7 @@ Utiliser AG-PERFORMANCE quand:
 # 2. Ajouter l'index BD sur users.created_at
 # 3. Implémenter la mise en cache avec TTL 5 minutes
 #
-# Résultat estimé: <200ms après optimisations
+# Résultat estimé: \<200ms après optimisations
 # Correction: Tous les tests resteront passants
 # Compromis: Léger overhead mémoire pour la mise en cache
 #
