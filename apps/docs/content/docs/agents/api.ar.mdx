@@ -1,0 +1,321 @@
+---
+title: API
+description: متخصص طبقة الخدمات والبيانات لتنفيذ APIs الخلفية والمنطق التجاري ونماذج البيانات.
+---
+
+# وكيل API
+
+وكيل API (AG-API) هو متخصصك في خدمات النهاية الخلفية. يقوم بتنفيذ REST/GraphQL/tRPC API endpoints والمنطق التجاري ونماذج البيانات والوصول قاعدة البيانات وتكاملات الخدمات الخارجية وإدارة الحالة. يضمن أن طبقة البيانات الخاصة بك آمنة وعالية الأداء واختبرت بشكل شامل.
+
+## القدرات
+
+- تنفيذ REST/GraphQL/tRPC API endpoints
+- كتابة المنطق التجاري وقواعد التحقق
+- تصميم والحفاظ على نماذج البيانات والمخطط
+- تحسين استعلامات قاعدة البيانات ومنع مشاكل N+1
+- دمج الخدمات الخارجية (Stripe, SendGrid, analytics, إلخ)
+- تنفيذ المصادقة والترخيص
+- كتابة اختبارات API شاملة (unit, integration, contract)
+- توثيق API endpoints ومعالجة الأخطاء
+- التنسيق مع AG-UI على تبعيات API endpoint
+- مراقبة وتسجيل طلبات API مع السياق
+
+## متى تستخدم
+
+استخدم وكيل API عندما:
+
+- تحتاج إلى تنفيذ endpoint API جديد
+- تحتاج إلى إضافة منطق تجاري للتعامل مع ميزة
+- تحتاج إلى دمج خدمة خارجية (دفع، بريد إلكتروني، إلخ)
+- تحتاج إلى تحسين استعلامات قاعدة البيانات أو إصلاح مشاكل N+1
+- تحتاج إلى تنفيذ المصادقة أو الترخيص
+- تقوم بتصميم نماذج بيانات لميزة جديدة
+- تحتاج إلى كتابة اختبارات API شاملة
+- تريد التأكد من أن قصص AG-UI لا يتم حجبها بانتظار endpoints
+
+## كيف يعمل
+
+1. **Context Loading**: يقرأ الوكيل الخبرة و CLAUDE.md ومستندات المعمارية
+2. **Status Check**: يجد الوكيل قصصًا جاهزة ويفحص حجب AG-UI
+3. **Definition of Ready**: يتحقق الوكيل من معايير القبول وحظر الاختبار
+4. **Plan Mode**: للعمل المعقد يصمم الوكيل النهج قبل التنفيذ
+5. **Implementation**: يكتب الوكيل التحقق ومعالجة الأخطاء والمنطق التجاري
+6. **Testing**: يكتب الوكيل اختبارات unit و integration و contract
+7. **Coordination**: يفك الوكيل حجب قصص AG-UI عندما يكون endpoints جاهزًا
+8. **Verification**: يقوم الوكيل بتشغيل الاختبارات للتأكد من اجتياز الخط الأساسي
+9. **Documentation**: يحدث الوكيل CLAUDE.md وأضيفة رسائل bus
+
+## مثال
+
+```bash
+# عبر /babysit (موصى به)
+/agileflow:babysit
+> "I need a user profile API endpoint"
+```
+
+سيقوم وكيل API بـ:
+1. التحقق من docs/06-stories/ عن US مع owner==AG-API
+2. البحث عن أي قصص AG-UI محجوبة بانتظار هذا endpoint
+3. تنفيذ POST /api/users endpoint:
+   - التحقق من الإدخال (الحقول المطلوبة، فحص النوع)
+   - المنطق التجاري (تجزئة كلمة المرور، تعيين الافتراضيات)
+   - الوصول قاعدة البيانات (الإدراج في جدول المستخدمين)
+   - معالجة الأخطاء (بريد إلكتروني مكرر، أخطاء التحقق)
+   - التسجيل مع معرفات الطلب
+4. كتابة اختبارات شاملة:
+   - المسار السعيد (البيانات الصحيحة تنشئ المستخدم)
+   - أخطاء التحقق (عدم وجود بريد إلكتروني)
+   - حالات حدية (بريد إلكتروني طويل جدًا)
+5. تحديث مستندات API (OpenAPI/Swagger)
+6. إرسال رسالة فك حجب إلى AG-UI: "GET /api/users/:id ready"
+7. وضع علامة في المراجعة عندما تمر الاختبارات
+
+أو التوليد مباشرة:
+
+```text
+Task(
+  description: "Implement payment webhook endpoint",
+  prompt: "Add Stripe webhook handler for payment.success and payment.failed events",
+  subagent_type: "agileflow-api"
+)
+```
+
+## السلوكيات الرئيسية
+
+- **Load Expertise First**: قراءة expertise.yaml قبل أي عمل
+- **Prioritize AG-UI Unblocking**: التحقق من قصص AG-UI محجوبة على endpoints API - هذه الأولوية الأعلى
+- **Proactive Coordination**: إرسال رسائل فك الحجب إلى AG-UI عندما يكون endpoints جاهزًا
+- **Input Validation**: التحقق دائمًا من الأنواع والتنسيقات والنطاقات والترخيص
+- **Error Handling**: مخطط خطأ متسق مع رموز حالة HTTP
+- **Test-Driven**: كتابة الاختبارات قبل التنفيذ وضمان اجتياز الاختبارات قبل review
+- **CLAUDE.md Updates**: توثيق أنماط API الجديدة المكتشفة أثناء التنفيذ
+- **Session Harness Integration**: التحقق من حالة الاختبار قبل البدء ويتطلب اختبارات ناجحة قبل review
+- **Autonomous Commands**: استدعاء مباشر /agileflow:ai-code-review, /agileflow:adr-new, وغيرها
+- **Bus Coordination**: إرسال رسائل status و blocked و unblock و question إلى bus/log.jsonl
+- **Context Preservation**: استخدام compact_context (priority: critical) للحفاظ على التركيز خلال المحادثات الطويلة
+
+## تكوين Compact Context
+
+يستخدم وكيل API **critical priority** compact_context لضمان الحفاظ على التركيز خلال المحادثات الممتدة:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on API endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status before starting"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets - use environment variables only"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+يضمن هذا الحفاظ على القواعد الحرجة (تحميل الخبرة، أولويات الحجب، التحقق من الاختبار) والحالة الحالية (الEndpoints المنتهية، قصص UI المحجوبة) حتى بعد تعديل السياق.
+
+## الأدوات المتاحة
+
+هذا الوكيل له الوصول إلى: Read, Write, Edit, Bash, Glob, Grep
+
+## أنماط API Endpoint
+
+**اتفاقيات REST**:
+
+```text
+GET    /api/users           → قائمة المستخدمين
+POST   /api/users           → إنشاء مستخدم
+GET    /api/users/:id       → الحصول على مستخدم
+PATCH  /api/users/:id       → تحديث مستخدم
+DELETE /api/users/:id       → حذف مستخدم
+```
+
+**تنسيق الطلب/الاستجابة**:
+
+```json
+// Request
+POST /api/users
+{
+  "email": "user@example.com",
+  "password": "secure-password",
+  "name": "John Doe"
+}
+
+// Success Response (201 Created)
+{
+  "id": "user_123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "2025-01-15T10:00:00Z"
+}
+
+// Error Response (422 Unprocessable Entity)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "email": "Email already exists"
+    }
+  }
+}
+```
+
+## التحقق من الإدخال
+
+يجب أن يتحقق كل endpoint من الإدخال:
+
+```javascript
+// التحقق من الحقول المطلوبة
+if (!email || !password) {
+  throw new ValidationError('Email and password required');
+}
+
+// التحقق من التنسيق
+if (!email.includes('@')) {
+  throw new ValidationError('Invalid email format');
+}
+
+// التحقق من النطاق
+if (password.length < 8) {
+  throw new ValidationError('Password must be 8+ characters');
+}
+
+// التحقق من الترخيص
+if (userId !== req.user.id) {
+  throw new AuthorizationError('Cannot access other users');
+}
+```
+
+## معالجة الأخطاء
+
+مخطط خطأ متسق عبر جميع endpoints:
+
+```javascript
+// فئة الخطأ (مثال)
+class AppError extends Error {
+  constructor(code, message, statusCode = 500, details = {}) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+// الاستخدام
+throw new AppError(
+  'VALIDATION_ERROR',
+  'Email is required',
+  422,
+  { field: 'email' }
+);
+```
+
+## معايير الاختبار
+
+يحتاج كل endpoint API إلى اختبارات شاملة:
+
+```javascript
+describe('POST /api/users', () => {
+  test('creates user with valid data', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(201);
+    expect(response.body.email).toBe('test@example.com');
+  });
+
+  test('returns validation error for missing email', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ password: 'password123' });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns error for duplicate email', async () => {
+    // Create first user
+    await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+
+    // Try to create duplicate
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('DUPLICATE_EMAIL');
+  });
+});
+```
+
+## الملفات الرئيسية
+
+- **Expertise**: `packages/cli/src/core/experts/api/expertise.yaml` (ذاكرة الوكيل)
+- **Workflow**: `packages/cli/src/core/experts/api/workflow.md` (Plan → Build → Self-Improve)
+- **Status**: `docs/09-agents/status.json` (تتبع القصة)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (رسائل التنسيق)
+- **CLAUDE.md**: معمارية API و ORM ونهج التحقق
+- **Research**: `docs/10-research/` (التحقق من أنماط API)
+- **ADRs**: `docs/03-decisions/` (قرارات معمارية API)
+
+## خطوات سير العمل
+
+1. **Load Expertise**: قراءة expertise.yaml
+2. **Check Status**: البحث عن قصص READY حيث owner==AG-API
+3. **Prioritize AG-UI Blockers**: البحث في bus عن قصص AG-UI محجوبة على endpoints
+4. **Validate Definition of Ready**: AC موجود، حظر اختبار في docs/07-testing/test-cases/
+5. **Check Session Harness**: التحقق من test_status==passing قبل البدء
+6. **Create Branch**: `feature/<US_ID>-<slug>`
+7. **Update Status**: وضع علامة "in-progress"، أضيفة رسالة bus
+8. **Implement**: التحقق و معالجة الأخطاء والمنطق التجاري والاختبارات
+9. **Run Verification**: /agileflow:verify للتأكد من اجتياز الاختبارات
+10. **Update CLAUDE.md**: إذا تم إنشاء أنماط جديدة (توثيقها)
+11. **Mark In-Review**: فقط إذا test_status==passing
+12. **Send Unblock Messages**: إذا كان AG-UI ينتظر هذا endpoint
+13. **Generate PR**: استخدام /agileflow:pr-template
+14. **Self-Improve**: تشغيل self-improve.md بعد الانتهاء
+
+## قائمة التحقق من الجودة
+
+قبل وضع علامة في المراجعة:
+
+- [ ] المدخلات المتحقق منها (النوع، التنسيق، النطاق، المصادقة)
+- [ ] استجابات الخطأ متسقة (رموز HTTP، مخطط الخطأ)
+- [ ] المصادقة/الترخيص مفروضة على الطرق المحمية
+- [ ] لا استعلامات N+1 (الوصول قاعدة البيانات المحسّن)
+- [ ] الأسرار في متغيرات env (لا تكن مشفرة أبدًا)
+- [ ] التسجيل مع معرفات الطلب والسياق
+- [ ] مستندات API محدثة (OpenAPI/Swagger/README)
+- [ ] الاختبارات تغطي: المسار السعيد، أخطاء التحقق، فشل المصادقة، الحالات الحدية
+- [ ] حالة الاختبار: ناجحة (تم التحقق عبر /agileflow:verify)
+- [ ] قصص AG-UI مفكوكة الحجب (تم إرسال رسالة فك الحجب إذا أمكن)
+
+## التنسيق مع وكلاء آخرين
+
+**AG-UI (الواجهة الأمامية)**:
+- التحقق من docs/09-agents/bus/log.jsonl عن قصص UI محجوبة بانتظار endpoints
+- عند جاهزية endpoint، إرسال رسالة فك حجب مع الطريقة والمسار وتنسيق الطلب/الاستجابة
+- مثال: `"API endpoint GET /api/users/:id ready (200 OK, user object), unblocking US-0042"`
+
+**AG-DATABASE (طبقة البيانات)**:
+- التنسيق على تصميم المخطط قبل تنفيذ الاستعلامات
+- مراجعة الترحيلات قبل الاستخدام في الرمز
+- مشاركة أنماط الاستعلام للتحسين
+
+**AG-CI (الاختبار)**:
+- التنسيق على إعداد قاعدة بيانات الاختبار
+- طلب البنية الأساسية للاختبار التعاقدي (Pact, MSW)
+- ضمان اختبارات API في CI
+
+**MENTOR (الأوركسترا)**:
+- طلب توضيح بشأن المنطق التجاري الغامض
+- الإبلاغ إذا كانت القصة تفتقد Definition of Ready
+
+## الوكلاء ذات الصلة
+
+- [`ui`](/agents/ui) - مكونات الواجهة الأمامية التي تستهلك API endpoints
+- [`database`](/agents/database) - طبقة البيانات وتصميم المخطط
+- [`mentor`](/agents/mentor) - يوجه عمل API كجزء من تنفيذ الميزة

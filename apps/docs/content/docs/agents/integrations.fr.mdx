@@ -1,0 +1,270 @@
+---
+title: Intégrations
+description: Spécialiste des intégrations pour les intégrations tierces, les webhooks, les API externes, les synchronisations et la gestion des dépendances tierces.
+---
+
+# Spécialiste intégrations
+
+AG-INTEGRATIONS gère les intégrations tierces, les webhooks, les API externes et les synchronisations de données.
+
+## Capacités
+
+- **Intégrations API**: Stripe, SendGrid, AWS, etc.
+- **Webhooks**: Recevoir et traiter les événements
+- **OAuth**: Intégration d'authentification tierce
+- **Synchronisations de données**: Garder les données cohérentes entre systèmes
+- **Retry logic**: Gérer les défaillances d'API
+- **Rate limiting**: Respecter les limites d'API
+- **Monitoring d'intégrations**: Alerter en cas de défaillance
+- **Documentation d'API externe**: Qui utilise quoi et comment
+
+## Quand l'utiliser
+
+Utiliser AG-INTEGRATIONS quand:
+
+- Ajouter une intégration tierce (Stripe, SendGrid)
+- Implémenter les webhooks
+- Configurer OAuth ou SSO
+- Gérer les synchronisations de données
+- Déboguer les défaillances d'intégration
+- Monitorer la santé des intégrations
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "I need to add Stripe payment processing"
+
+# AG-INTEGRATIONS fera:
+# 1. Configurer les clés API Stripe
+# 2. Implémenter l'endpoint webhook
+# 3. Gérer les événements de paiement
+# 4. Configurer les retries
+# 5. Monitorer la santé Stripe
+```
+
+## Intégrations courantes
+
+**Paiements**: Stripe, Square, PayPal
+**Email**: SendGrid, Mailgun, AWS SES
+**Messaging**: Slack, Discord, Twilio
+**Cloud**: AWS, Azure, Google Cloud
+**Analytics**: Mixpanel, Amplitude, Segment
+**CRM**: Salesforce, HubSpot
+
+## Configuration sécurisée
+
+**Secrets**:
+```javascript
+const stripe = require('stripe')(
+  process.env.STRIPE_SECRET_KEY
+);
+```
+
+**Jamais en dur**:
+```javascript
+// Mauvais
+const stripe = require('stripe')('sk_live_1234567890');
+
+// Bon
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+```
+
+## Gestion des webhooks
+
+**Endpoint webhook**:
+```javascript
+app.post('/webhooks/stripe', async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+
+  try {
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    switch (event.type) {
+      case 'charge.succeeded':
+        await handlePaymentSuccess(event.data.object);
+        break;
+      case 'charge.failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    res.status(400).send(`Webhook error: ${err.message}`);
+  }
+});
+```
+
+## Retry logic
+
+**Exponential backoff**:
+```javascript
+async function callAPIWithRetry(fn, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+
+      const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s
+      await sleep(delay);
+    }
+  }
+}
+
+// Usage
+const result = await callAPIWithRetry(() =>
+  stripe.charges.create({
+    amount: 1000,
+    currency: 'usd',
+    source: 'tok_visa'
+  })
+);
+```
+
+## Rate limiting
+
+**Respecter les limites API**:
+```javascript
+const RateLimiter = require('bottleneck');
+
+const limiter = new RateLimiter({
+  maxConcurrent: 5,
+  minTime: 200 // min 200ms between calls
+});
+
+const callAPI = limiter.wrap(async (data) => {
+  return await stripe.charges.create(data);
+});
+
+// Chaque appel respects les limites
+await callAPI({ amount: 1000, currency: 'usd' });
+```
+
+## OAuth
+
+**Login avec Google**:
+```javascript
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/auth/google/callback"
+  },
+  async (accessToken, refreshToken, profile, done) => {
+    // Find or create user
+    const user = await User.findOrCreate({
+      googleId: profile.id,
+      email: profile.emails[0].value,
+      name: profile.displayName
+    });
+    return done(null, user);
+  }
+));
+```
+
+## Synchronisation de données
+
+**Bidirectionnelle**:
+```
+Local DB → Stripe (push updates)
+Stripe → Local DB (pull events via webhooks)
+
+┌─────────────┐
+│  Local DB   │
+└─────────────┘
+      ↓↑
+  POST /api/charges
+  Webhook events
+      ↓↑
+┌─────────────┐
+│   Stripe    │
+└─────────────┘
+```
+
+## Monitoring d'intégrations
+
+**Métriques**:
+- Health check: est-ce que l'API est accessible?
+- Latency: combien de temps l'API répond?
+- Error rate: % d'appels échoués
+- Webhook latency: délai de traitement
+
+**Exemple monitoring Stripe**:
+```javascript
+setInterval(async () => {
+  try {
+    const charges = await stripe.charges.list({ limit: 1 });
+    console.log('✅ Stripe API healthy');
+  } catch (err) {
+    console.error('❌ Stripe API error:', err.message);
+    alertOncall('Stripe integration down');
+  }
+}, 60000); // Check every minute
+```
+
+## Gestion des dépendances
+
+**Versionning API**:
+- Stripe v1, v2, v3 (versions différentes)
+- SendGrid v3.0, v3.1 (compatibilité rétro)
+- Gérer les dépréciations
+
+**Exemple**:
+```javascript
+// Old endpoint deprecated
+// GET /api/users/:id/profile
+
+// New endpoint
+// GET /api/users/:id (includes profile)
+
+// Support both during transition
+app.get('/api/users/:id', (req, res) => {
+  // Handle both old and new clients
+});
+```
+
+## Troubleshooting
+
+**Webhook ne reçoit pas d'événements?**
+1. Vérifier l'URL du webhook est correcte
+2. Vérifier le signature webhook est vérifiée
+3. Monitorer les 403/404 errors
+4. Replay l'événement depuis le dashboard du fournisseur
+
+**API timeout?**
+1. Augmenter le timeout
+2. Implémenter async jobs (ne pas attendre)
+3. Utiliser des webhooks plutôt que du polling
+
+## Liste de contrôle
+
+Avant de lancer l'intégration:
+
+- [ ] Clés API sécurisées (variables d'environnement)
+- [ ] Webhooks configurés et testés
+- [ ] Retry logic implémentée
+- [ ] Rate limiting respecté
+- [ ] Error handling complet
+- [ ] Monitoring en place
+- [ ] Documentation complète
+- [ ] Tests d'intégration écrits
+- [ ] Dépannage documenté
+- [ ] Failover plan (que faire si l'API est down)
+
+## Agents associés
+
+- [`security`](/agents/security) - Sécurité des clés API
+- [`monitoring`](/agents/monitoring) - Monitoring de santé
+- [`devops`](/agents/devops) - Configuration et déploiement
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns d'intégration
+- `/agileflow:adr-new` - Documenter les décisions d'intégration
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

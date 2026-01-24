@@ -1,0 +1,183 @@
+---
+title: CI
+description: متخصص CI/CD والجودة لإعداد سير العمل والبنية الأساسية للاختبار ومراجعة الرمز والتحقق من النوع وتغطية واستمرارية التكامل.
+---
+
+# AG-CI
+
+متخصص CI/CD والجودة يتخصص في خطوط CI الفورية والبنية الأساسية للاختبار وأتمتة جودة الرمز. AG-CI يحافظ على CI أخضر وسريع مما يضمن أن كل التزام يستوفي معايير الجودة.
+
+## القدرات
+
+- **CI/CD Pipeline Setup**: GitHub Actions و GitLab CI والمنصات CI الأخرى
+- **Test Framework Configuration**: Jest و Vitest و Pytest و Playwright و Cypress setup
+- **Linting & Formatting**: ESLint و Prettier و Black configuration
+- **Type Checking**: TypeScript و mypy وأنظمة النوع الأخرى
+- **Code Coverage**: تطبيق عتبة التغطية والإبلاغ
+- **Security Scanning**: SAST و فحوصات التبعيات و مسح الثغرات الأمنية
+- **E2E Testing**: أتمتة الاختبار من طرف إلى طرف واكتشاف الاختبارات غير المستقرة
+- **Build Optimization**: التخزين المؤقت والتوازي وتقسيم المهام
+- **CLAUDE.md Maintenance**: توثيق ممارسات واتفاقيات CI/الاختبار
+
+## متى تستخدم
+
+استخدم AG-CI عندما تحتاج إلى:
+
+- إعداد أو تحسين خطوط CI/CD
+- تكوين أطر الاختبار والحسابات
+- تطبيق مراجعة الرمز أو التحقق من النوع
+- إعداد تتبع وتطبيق تغطية الرمز
+- تحسين أوقات البناء
+- إصلاح الاختبارات غير المستقرة
+- تطبيق مسح الأمان
+- توثيق ممارسات الاختبار في CLAUDE.md
+
+## كيف يعمل
+
+1. **Context Loading**: يقرأ الوكيل ملف الخبرة ويفحص تكوين CI
+2. **Analysis**: يراجع status.json عن القصص المتعلقة بالاختبار ومشاكل CI
+3. **Execution**: ينشئ سير العمل وأطر الاختبار وأدوات الجودة
+4. **Verification**: يشغل خط CI على فرع الميزة للتأكد من نجاحه
+5. **Documentation**: يحدث CLAUDE.md بأنماط واتفاقيات اختبار جديدة
+6. **Coordination**: يحدث status.json ويتواصل عبر ناقل الوكيل
+
+## مثال
+
+```bash
+# عبر /babysit
+/agileflow:babysit
+> "We need to set up a CI pipeline with unit and E2E tests"
+
+# أو استدعاء مباشر
+/agileflow:setup-tests
+
+# AG-CI ستقوم بـ:
+# 1. Detect project type (Node.js, Python, etc.)
+# 2. Recommend test frameworks
+# 3. Set up test infrastructure
+# 4. Configure CI workflows
+# 5. Document patterns in CLAUDE.md
+```
+
+## السلوكيات الرئيسية
+
+- **CI must stay green** - لا يمكن دمج الاختبارات الفاشلة
+- **Keep builds fast** - استهدف أقل من 5 دقائق للوحدة/lint وأقل من 15 دقيقة للمجموعة الكاملة
+- **Fail fast approach** - التقط الانحدار فورًا وليس بمراجعة PR
+- **No disabled tests without approval** - يتم تطبيق عتبات التغطية
+- **Security scanning enabled** - كل خط CI يتضمن فحوصات الأمان
+- **CLAUDE.md updated proactively** - أنماط الاختبار توثق للتطوير المستقبلي
+- **Context Preservation**: استخدام compact_context (priority: high) للحفاظ على تركيز خط CI
+
+## تكوين Compact Context
+
+يستخدم وكيل CI **high priority** compact_context لضمان بقاء تكامل البناء في التركيز:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ci/expertise.yaml"
+    - "CI MUST STAY GREEN: Cannot merge failing tests (non-negotiable)"
+    - "KEEP BUILDS FAST: Target under 5 minutes unit/lint, under 15 minutes full suite"
+    - "COVERAGE THRESHOLDS: Enforce minimums, no disabled tests without approval"
+    - "SECURITY SCANNING: Every CI pipeline includes security checks"
+    - "FAIL FAST APPROACH: Catch regressions immediately"
+  state_fields:
+    - current_story
+    - ci_pipeline_status
+    - coverage_targets
+    - flaky_tests_found
+    - build_optimization_progress
+```
+
+يضمن هذا أن القواعس الحرجة (البناء الأخضر وعتبات التغطية وفحص الأمان) والحالة الحالية تبقى في التركيز.
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه الوصول إلى:
+
+- **Read**: الوصول إلى ملفات سير العمل وتكوينات الاختبار
+- **Write**: إنشاء ملفات اختبار جديدة وتعريفات سير العمل
+- **Edit**: تحديث تكوينات CI الموجودة
+- **Bash**: تنفيذ أوامر CI وملفات الاختبار
+- **Glob**: البحث عن ملفات الاختبار وأنماط سير العمل
+- **Grep**: البحث عن أنماط الاختبار ومشاكل التغطية
+
+## المسؤوليات الأساسية
+
+1. الحفاظ على CI أخضر وسريع
+2. ضمان وجود اختبار واحد على الأقل لكل قصة تتحقق من معايير القبول
+3. الحفاظ على عتبات تغطية الاختبار
+4. تكوين مراجعة الرمز والتحقق من النوع
+5. إعداد مسح الأمان
+6. توثيق ممارسات الاختبار في docs/02-practices/
+7. تحديث status.json بعد كل تغيير حالة
+8. أضيفة رسائل التنسيق إلى ناقل الوكيل
+9. إصلاح الاختبارات غير المستقرة ومشاكل CI
+10. تحسين أوقات البناء
+
+## معايير الجودة
+
+قبل وضع علامة على العمل كاملة، AG-CI يضمن:
+
+- تشغيل CI بنجاح على فرع الميزة
+- مهام الوحدة/lint تنتهي في أقل من 5 دقائق
+- اختبارات التكامل/E2E تعمل بالتوازي حيث أمكن
+- فشل الاختبارات توفر رسائل خطأ واضحة وقابلة للعمل
+- إنشاء تقارير التغطية واستوفاء العتبات
+- تكوين الفحوصات المطلوبة على الفروع المحمية
+- تحديد الاختبارات غير المستقرة والإصلاح (أو التتبع)
+- تمكين مسح الأمان
+- الوصول إلى الأسرار عبر أسرار GitHub وليس مشفرة
+
+## الوكلاء ذات الصلة
+
+- [`AG-DEVOPS`](/agents/devops) - التنسيق على تحسين البناء والأداء
+- [`AG-UI`](/agents/ui) - توفير إعداد اختبار المكون والاختبار الشامل
+- [`AG-API`](/agents/api) - توفير إعداد اختبار التكامل وقاعدة بيانات الاختبار
+- [`MENTOR`](/agents/mentor) - الإبلاغ عن فجوات البنية الأساسية للاختبار
+
+## أوامر القطع
+
+AG-CI يمكن أن يستدعي مباشرة هذه الأوامر:
+
+- `/agileflow:research:ask TOPIC=...` - بحث أطر الاختبار ومنصات CI
+- `/agileflow:ai-code-review` - مراجعة تكوين CI قبل وضع علامة في المراجعة
+- `/agileflow:impact-analysis` - تحليل تأثير تغييرات CI على أوقات البناء
+- `/agileflow:adr-new` - توثيق قرارات CI/الاختبار
+- `/agileflow:tech-debt` - توثيق الاختبارات غير المستقرة والبناء البطيء
+- `/agileflow:board` - تصور حالة القصة
+- `/agileflow:status STORY=... STATUS=...` - تحديث حالة القصة
+
+## أهداف الأداء
+
+AG-CI يحافظ على معايير الأداء هذه:
+
+- **Unit/lint jobs**: أقل من 5 دقائق
+- **Full test suite**: أقل من 15 دقيقة
+- **Build time trend**: مستقر أو تحسن شهريًا
+- **Flaky tests**: صفر في الفرع الرئيسي
+
+## صيانة CLAUDE.md
+
+AG-CI يحدث CLAUDE.md بشكل استباقي مع أنماط CI/الاختبار عندما:
+
+- إعداد خط CI/CD لأول مرة
+- إضافة أطر اختبار أو أدوات جديدة
+- إنشاء اتفاقيات الاختبار
+- تكوين أدوات جودة الرمز
+- اكتشاف أفضل الممارسات الخاصة بالمشروع
+
+يضمن هذا أن التطوير المستقبلي يستخدم أنماط متسقة.
+
+## بروتوكول التحقق
+
+AG-CI يتبع نظام Session Harness لمنع كسر الوظيفة:
+
+1. **Pre-Implementation**: التحقق من حالة الاختبار الأساسية وتكوين CI
+2. **During Work**: تشغيل الاختبارات التدريجية والتحقق من نجاح CI
+3. **Post-Implementation**: التحقق من نجاح خط CI قبل وضع علامة كاملة
+4. **Story Completion**: يمكن فقط وضع علامة "في المراجعة" إذا `test_status: "passing"`
+
+راجع [Session Harness Protocol](/agents/session-harness) لمزيد من التفاصيل.

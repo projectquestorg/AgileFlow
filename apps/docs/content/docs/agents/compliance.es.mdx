@@ -1,0 +1,247 @@
+---
+title: Cumplimiento
+description: Especialista en cumplimiento para cumplimiento regulatorio, GDPR, HIPAA, SOC2, auditoría, requisitos legales y documentación de cumplimiento.
+---
+
+# Especialista en Cumplimiento
+
+AG-COMPLIANCE asegura el cumplimiento regulatorio en GDPR, HIPAA, SOC2, PCI-DSS y otros marcos, con enfoque en auditoría, protección de datos y documentación de cumplimiento.
+
+## Capacidades
+
+- **Cumplimiento de Marco Regulatorio**: GDPR, HIPAA, SOC2, PCI-DSS, CCPA
+- **Implementación de Auditoría**: Logging inmutable de todo acceso a datos y modificaciones
+- **Políticas de Retención de Datos**: Definir y automatizar cronogramas de eliminación de datos
+- **Gestión de Consentimiento**: Manejo de consentimiento GDPR y retirada
+- **Políticas de Privacidad y Términos**: Documentación para cumplimiento legal y regulatorio
+- **Respuesta a Incidentes**: Procedimientos de violación de datos y notificación
+- **Documentación de Cumplimiento**: Evidencia para auditores y revisiones de cumplimiento
+
+## Cuándo Usar
+
+Utiliza AG-COMPLIANCE cuando:
+
+- Identificar requisitos regulatorios aplicables para tu negocio
+- Implementar auditoría para acceso y modificaciones de datos
+- Diseñar políticas de retención y eliminación de datos
+- Configurar gestión de consentimiento GDPR
+- Escribir políticas de privacidad y términos de servicio
+- Prepararse para auditorías de cumplimiento
+- Documentar procedimientos de respuesta a incidentes
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: Lee archivo de experiencia y estado de cumplimiento del proyecto
+2. **Análisis de Marco**: Determina qué regulaciones aplican (GDPR, HIPAA, etc.)
+3. **Auditoría**: Revisa base de código en busca de brechas de cumplimiento
+4. **Implementación**: Implementa auditoría, gestión de consentimiento, eliminación de datos
+5. **Documentación**: Crea política de privacidad, política de retención de datos, respuesta a incidentes
+6. **Evidencia**: Prepara documentación para auditores y revisiones de cumplimiento
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to ensure GDPR compliance for my EU users"
+
+# AG-COMPLIANCE hará:
+# 1. Auditar base de código para brechas de cumplimiento GDPR
+# 2. Implementar logging de auditoría (quién, qué, cuándo, dónde, por qué)
+# 3. Configurar sistema de gestión de consentimiento
+# 4. Crear documentación de política de privacidad
+# 5. Implementar procedimientos de eliminación de datos
+# 6. Documentar respuesta a incidentes
+```
+
+## Comportamientos Clave
+
+- **Nunca Compromete**: El cumplimiento no es negociable, nunca se salta por conveniencia
+- **Auditoría Primero**: Todo acceso a datos y modificaciones logged inmutablemente
+- **Enfocado en Privacidad**: Minimiza recopilación de datos, respeta derechos del usuario
+- **Documentación**: Crea evidencia para auditores y revisiones de cumplimiento
+- **Proactivo**: Identifica brechas antes de convertirse en problemas
+
+## Herramientas Disponibles
+
+- Leer, Escribir, Editar, Bash, Glob, Grep
+- Acceso a Session Harness para verificación
+
+## Marcos de Cumplimiento
+
+**GDPR** (EU - aplica a datos de ciudadanos de la UE):
+- Derecho de acceso (los usuarios pueden solicitar sus datos)
+- Derecho al olvido (los usuarios pueden solicitar eliminación)
+- Portabilidad de datos (los usuarios pueden solicitar exportación de datos)
+- Gestión de consentimiento (debe tener consentimiento explícito)
+- Auditoría (quién accedió a qué, cuándo)
+- Evaluaciones de impacto de privacidad
+
+**HIPAA** (USA - datos sanitarios):
+- Privacidad del paciente (protección PHI)
+- Derechos del paciente (acceso, enmienda, eliminación)
+- Controles de auditoría (logging y monitoreo)
+- Controles de acceso (autenticación, autorización)
+- Seguridad de transmisión (encriptación en tránsito)
+- Notificación de violación (si se filtran datos)
+
+**SOC2** (Proveedores de servicios):
+- Seguridad (datos protegidos de acceso no autorizado)
+- Disponibilidad (tiempo de actividad del sistema)
+- Integridad de procesamiento (datos procesados correctamente)
+- Confidencialidad (datos mantenidos confidenciales)
+- Privacidad (datos personales manejados correctamente)
+- Auditoría y monitoreo
+
+**PCI-DSS** (Procesamiento de tarjetas de pago):
+- Red segura (firewall, sin valores predeterminados)
+- Protección de datos (encriptación, acceso restringido)
+- Gestión de vulnerabilidades (parches, pruebas)
+- Control de acceso (privilegio mínimo)
+- Monitoreo y pruebas (registros de auditoría)
+
+## Auditoría (Crítica)
+
+**Qué Registrar**:
+- Quién (ID de usuario, ID de admin)
+- Qué (acción, datos accedidos)
+- Cuándo (timestamp)
+- Dónde (dirección IP, ubicación)
+- Por Qué (propósito, razón)
+- Resultado (éxito o fallo)
+
+**Ejemplo de Entrada de Registro de Auditoría**:
+```json
+{
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "action": "view_patient_record",
+  "resource": "patient-456",
+  "ip_address": "192.168.1.1",
+  "location": "New York, USA",
+  "result": "success",
+  "purpose": "Treatment"
+}
+```
+
+**Requisitos Inmutables**:
+- Los registros deben ser a prueba de manipulación
+- Base de datos de solo apéndice
+- Encriptar y firmar registros
+- Archivar registros antiguos de forma segura
+- Nunca permitir eliminación (excepto con autorización)
+
+## Políticas de Retención de Datos
+
+Definir para cada tipo de datos:
+
+- **Datos de cuenta de usuario**: Mantener mientras esté activa, eliminar 30 días después de desactivación
+- **Datos de transacciones**: Mantener 7 años (requisito financiero)
+- **Registros**: Mantener 90 días (operacional), archivar 1 año
+- **Datos de usuario eliminado**: Eliminar dentro de 30 días
+- **Datos de copia de seguridad**: Mantener 30 días
+
+**Implementar Eliminación Automatizada**:
+- Trabajos programados para eliminar datos expirados
+- Registrar todas las eliminaciones
+- Verificar que la eliminación tuvo éxito
+
+## Gestión de Consentimiento (GDPR)
+
+**Consentimiento Explícito Requerido**:
+- Sin casillas de verificación pre-marcadas (debe ser opt-in)
+- Descripción clara de qué datos se recopilan
+- Propósito de la recopilación de datos
+- Quién tiene acceso a los datos
+- Derecho a retirar consentimiento
+
+**Implementación**:
+```javascript
+// Debe tener consentimiento explícito antes de procesar
+if (!user.has_marketing_consent) {
+  throw new Error('Consent required');
+}
+
+// Registrar concesión/retirada de consentimiento
+auditLog({
+  action: 'consent_granted',
+  user_id: user.id,
+  type: 'marketing',
+  timestamp: new Date(),
+});
+```
+
+## Documentación de Cumplimiento
+
+**Documentar para Auditores**:
+- Política de privacidad
+- Términos de servicio
+- Adenda de procesamiento de datos (DPA)
+- Documentación de seguridad
+- Política de retención de registros de auditoría
+- Procedimientos de respuesta a incidentes
+- Registros de capacitación de empleados
+- Evaluaciones de cumplimiento de proveedores
+
+## Secciones de Política de Privacidad
+
+- **Datos Recopilados**: ¿Qué datos personales recopilas?
+- **Propósito**: ¿Por qué recopilas estos datos?
+- **Base Legal**: ¿Por qué se te permite recopilarlos (consentimiento, contrato, etc.)?
+- **Retención**: ¿Cuánto tiempo los conservas?
+- **Derechos del Usuario**: Derecho de acceso, eliminación, portabilidad
+- **Terceros**: ¿Quién tiene acceso a datos del usuario?
+- **Cookies**: Política de cookies y rastreo
+
+## Respuesta a Incidentes
+
+**Procedimiento de Violación de Datos**:
+1. Detectar violación (acceso no autorizado a datos personales)
+2. Documentar detalles (qué, cuándo, quién está afectado)
+3. Notificar autoridad reguladora (GDPR: 72 horas)
+4. Notificar usuarios afectados (GDPR: sin demora indebida)
+5. Preservar evidencia (registros, registros de acceso)
+6. Remediar (arreglar la vulnerabilidad)
+7. Revisar y mejorar (prevenir recurrencia)
+
+## Lista de Control de Calidad
+
+Antes de marcar trabajo de cumplimiento como completo:
+
+- Marco de cumplimiento identificado
+- Requisitos documentados
+- Auditoría registra todo (quién, qué, cuándo, dónde, por qué)
+- Políticas de retención de datos definidas y automatizadas
+- Gestión de consentimiento implementada (si GDPR)
+- Política de privacidad escrita y publicada
+- Términos de servicio escritos y publicados
+- Respuesta a incidentes documentada
+- Capacitación de empleados documentada
+- Evaluaciones de terceros actuales
+- Pruebas pasando con test_status: "passing"
+
+## Agentes Relacionados
+
+- [AG-SECURITY](/agents/security) - Encriptación de datos, control de acceso
+- [AG-ANALYTICS](/agents/analytics) - Seguimiento de eventos compatible con GDPR
+- [AG-MONITORING](/agents/monitoring) - Monitoreo y alertas de seguridad
+
+## Mensajes de Coordinación
+
+AG-COMPLIANCE se coordina con otros equipos:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-COMPLIANCE",
+  "type": "status",
+  "text": "Audit trails implemented for all data access, GDPR ready"
+}
+```
+
+## Comandos de Barra Diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigar requisitos de cumplimiento
+- `/agileflow:ai-code-review` - Revisar código para problemas de cumplimiento
+- `/agileflow:adr-new` - Documentar decisiones de cumplimiento
+- `/agileflow:status STORY=... STATUS=...` - Actualizar estado de historia

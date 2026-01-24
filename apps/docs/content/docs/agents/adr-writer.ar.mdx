@@ -1,0 +1,297 @@
+---
+title: كاتب ADR
+description: متخصص تسجيلات القرارات المعمارية لتوثيق القرارات التقنية والمقايضات والبدائل المدروسة.
+---
+
+# وكيل كاتب ADR
+
+وكيل كاتب ADR (ADR-WRITER) هو متخصصك في توثيق قرارات المعمارية وتسجيل المقايضات والحفاظ على سجل تاريخي للخيارات التقنية. يضمن هذا الوكيل أن القرارات المهمة يتم التقاطها مع السياق المناسب بحيث لا تعيد الفرق نقاش نفس الخيارات.
+
+## القدرات
+
+- **ADR Creation**: إنشاء Architecture Decision Records توثق سبب الخيارات التقنية
+- **Alternatives Documentation**: تسجيل 2-5 بدائل مدروسة مع الإيجابيات والسلبيات لكل واحدة
+- **Trade-off Analysis**: توثيق الآثار الإيجابية والسلبية والمحايدة للقرارات
+- **Decision Linking**: ربط ADRs ذات الصلة والإشارة إلى البحث الداعم
+- **Status Lifecycle**: تتبع ADRs من خلال Proposed → Accepted → Deprecated/Superseded
+- **Research Integration**: التنسيق مع وكيل البحث للتحليل التقني الداعم
+- **ADR Index Maintenance**: الحفاظ على docs/03-decisions/README.md محدثة مع جميع القرارات
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما تحتاج إلى توثيق:
+
+- **اختيارات التكنولوجيا**: اختيار الإطار، اختيار قاعدة البيانات، اختيار لغة البرمجة، قرارات المكتبات
+- **أنماط المعمارية**: Monolith vs microservices، REST vs GraphQL، event-driven vs request-response
+- **نمذجة البيانات**: تصميم المخطط، استراتيجية التطبيع، نهج التخزين المؤقت
+- **نهج الأمان**: آلية المصادقة، استراتيجية التشفير، إدارة الأسرار
+- **قرارات البنية التحتية**: منصة الاستضافة، نظام CI/CD، حل المراقبة
+- **ممارسات التطوير**: استراتيجية الاختبار، نموذج الفروع، إرشادات نمط الرمز
+- **مقايضات الأداء**: عندما يتم اتخاذ قرارات السرعة مقابل الذاكرة أو معدل الإنتاجية مقابل الكمون
+
+## كيف يعمل
+
+1. **Context Loading**: يقرأ الوكيل ملف الخبرة ويفحص ADRs الحديثة ويمسح docs/10-research/ عن البحث الداعم
+
+2. **Understanding**: يوضح الوكيل ما هو القرار الذي يتم اتخاذه ولماذا هو مطلوب الآن
+
+3. **Research Integration**: يفحص الوكيل البحث الموجود حول موضوع القرار أو يطلب البحث إذا لزم الأمر عبر `/agileflow:research:ask`
+
+4. **Alternatives Analysis**: يحدد الوكيل 2-5 بدائل مع الإيجابيات والسلبيات (من البحث أو إدخال المستخدم)
+
+5. **ADR Drafting**: يقوم الوكيل بإنشاء ADR مع:
+   - رقم تسلسلي 4 أرقام (0001، 0002، إلخ)
+   - عنوان صيغة حتمية ("استخدم PostgreSQL للمثابرة البيانات")
+   - السياق يشرح لماذا القرار مطلوب الآن
+   - بيان القرار (ما تم اختياره)
+   - البدائل مع الإيجابيات والسلبيات
+   - الآثار (إيجابية، سلبية، محايدة)
+   - الحالة (Proposed، Accepted، Deprecated، Superseded)
+   - المراجع المرتبطة بملاحظات البحث والمستندات الرسمية
+
+6. **Preview & Approval**: يعرض الوكيل المعاينة لموافقة YES/NO
+
+7. **Creation**: ينشئ الوكيل `docs/03-decisions/adr-<NUMBER>-<slug>.md`
+
+8. **Indexing**: يحدث الوكيل docs/03-decisions/README.md بإدخال جديد
+
+## مثال
+
+```bash
+# عبر /babysit
+/agileflow:babysit
+> "We need to document why we chose PostgreSQL over MongoDB for our database"
+```
+
+سيقوم وكيل كاتب ADR بـ:
+1. فحص docs/10-research/ عن بحث قاعدة البيانات الموجود
+2. إذا كان مفقودًا، اطلب: "دعني أبحث عن خيارات قاعدة البيانات أولاً"
+3. جمع البحث على PostgreSQL و MongoDB والخيارات الأخرى
+4. المقابلة معك على السياق (لماذا الآن؟ القيود؟ تجربة الفريق؟)
+5. مسودة ADR-0003: استخدام PostgreSQL للمثابرة البيانات
+6. إظهار معاينة مع جميع البدائل والمقايضات
+7. الحصول على الموافقة (نعم/لا)
+8. إنشاء adr-0003-use-postgresql.md
+9. تحديث docs/03-decisions/README.md
+10. الإعلان: "تم إنشاء ADR-0003 وجاهز لمراجعة الفريق"
+
+## السلوكيات الرئيسية
+
+- **Research First**: يفحص دائمًا البحث الموجود قبل كتابة ADR (أو يطلبه)
+- **Context Over Implementation**: يركز على سبب اتخاذ القرار وليس تفاصيل التنفيذ
+- **Historical Record**: لا يحذف أبدًا ADRs (يُحتفظ به للسياق التاريخي والتعرف على الأنماط)
+- **Clear Alternatives**: يوثق على الأقل بديلين مع إيجابيات وسلبيات صريحة (بدون دعاية)
+- **Sequential Numbering**: ADRs مرقمة تسلسليًا (0001، 0002، 0003، إلخ)
+- **Status Tracking**: يحدث حالة ADR مع تطور القرارات (Proposed → Accepted → Superseded)
+- **Linking**: يربط ADRs ذات الصلة لبناء رسم بياني للقرار بمرور الوقت
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه إمكانية الوصول إلى:
+- **Read**: استعراض ADRs وفهم سجل القرار
+- **Write**: إنشاء ملفات ADR جديدة
+- **Edit**: تحديث ADRs الموجودة (تغيير الحالة، إضافة مراجع)
+- **Glob**: البحث عن ADRs حسب النمط
+- **Grep**: البحث في محتوى القرار
+
+## نموذج ADR
+
+يتبع كل ADR هذا الهيكل:
+
+```markdown
+# ADR-<NUMBER>: <Title>
+
+**Date**: YYYY-MM-DD
+**Status**: Proposed | Accepted | Deprecated | Superseded
+**Deciders**: [Names/roles who made decision]
+
+## Context
+[Describe forces at play: technical, business, team, timeline]
+[What problem are we solving? What constraints exist?]
+
+## Decision
+[State the decision clearly in 1-3 sentences]
+[Explain key reasons for this choice]
+
+## Alternatives Considered
+
+### Option 1: [Name]
+**Pros**:
+- [Benefit]
+- [Benefit]
+
+**Cons**:
+- [Cost or limitation]
+- [Cost or limitation]
+
+**Why rejected**: [Explanation]
+
+### Option 2: [Name]
+...
+
+## Consequences
+
+### Positive
+- [Benefit we expect]
+- [Advantage]
+
+### Negative
+- [Cost or limitation]
+- [Trade-off]
+
+### Neutral
+- [Change that's neither good nor bad]
+
+## References
+- [Title](URL) - Description
+- [Research Note](docs/10-research/YYYYMMDD-slug.md) - How research informed decision
+```
+
+## دورة حياة حالة ADR
+
+- **Proposed**: تحت المراجعة، لم يتم الموافقة عليها بعد (مرحلة النقاش)
+- **Accepted**: موافقة ويجب أن يتبعها الفريق
+- **Deprecated**: لم تعد موصى بها (لكن يُحتفظ به للسجل)
+- **Superseded**: تم استبدالها بـ ADR أحدث (الارتباط بالاستبدال، على سبيل المثال، "Supersedes ADR-0001")
+
+## قائمة التحقق من الجودة
+
+قبل إنشاء ADR:
+- السياق يشرح بوضوح لماذا القرار مطلوب الآن
+- تم توثيق على الأقل بديلين مع الإيجابيات والسلبيات
+- بيان القرار واضح وثابت
+- الآثار متوازنة (إيجابية، سلبية، محايدة)
+- المراجع مضمنة للمطالبات الرئيسية
+- الحالة مناسبة (Proposed للمراجعة، Accepted للنهاية)
+- الرقم متسلسل (تحقق من أحدث رقم ADR)
+- يتم الاستشهاد بالبحث إذا كان متاحًا
+
+## تنسيق فهرس ADR
+
+يحافظ docs/03-decisions/README.md على جدول لجميع ADRs (مع الأحدث أولاً):
+
+```markdown
+| Number | Date       | Title                              | Status   |
+|--------|------------|-----------------------------------|----------|
+| 0005   | 2025-12-24 | Use PostgreSQL for data persistence | Accepted |
+| 0004   | 2025-12-21 | Implement event-driven architecture | Accepted |
+| 0003   | 2025-12-18 | Use TypeScript for all new code    | Accepted |
+| 0002   | 2025-12-15 | REST API over GraphQL              | Accepted |
+| 0001   | 2025-12-12 | Next.js for web framework          | Accepted |
+```
+
+## فئات القرار
+
+عادةً ما تندرج ADRs في هذه الفئات:
+
+**قرارات التكنولوجيا**
+- أي إطار عمل للاستخدام
+- أي قاعدة بيانات للاختيار
+- أي لغة برمجة للخدمات الجديدة
+- أي مكتبة لوظيفة محددة
+
+**قرارات المعمارية**
+- Monolith vs microservices
+- الاتصال المتزامن مقابل غير المتزامن
+- Event-driven vs request-response
+- REST vs GraphQL بتنسيق API
+
+**قرارات تصميم البيانات**
+- مستوى تطبيع المخطط
+- استراتيجية التخزين المؤقت
+- سياسات الاحتفاظ بالبيانات
+- Master-slave vs peer-to-peer replication
+
+**قرارات الأمان والبنية التحتية**
+- آلية المصادقة (JWT، OAuth2، قائم على الجلسة)
+- التشفير أثناء الراحة والنقل
+- نهج إدارة الأسرار
+- منصة النشر والاستضافة
+
+**ممارسات التطوير**
+- استراتيجية الاختبار (تغطية الوحدات والتكامل وE2E)
+- نموذج تفرع Git (git-flow، trunk-based، إلخ)
+- عملية مراجعة الرمز
+- مستوى أتمتة CI/CD
+
+## تحديث وربط ADRs
+
+**وضع علامة كـ Deprecated**:
+```markdown
+**Status**: Deprecated
+
+This decision is no longer recommended because [reason].
+See ADR-0005 for the current approach.
+```
+
+**وضع علامة كـ Superseded**:
+```markdown
+**Status**: Superseded
+
+Superseded by ADR-0005: [New Decision Title]
+
+This decision was replaced because [reason].
+```
+
+**المراجع المتقاطعة**:
+```markdown
+## Related Decisions
+- Builds on: ADR-0003 (Database choice)
+- Related to: ADR-0002 (API design)
+- Supersedes: ADR-0001 (Previous framework decision)
+```
+
+## دمج البحث
+
+وكيل كاتب ADR يقوم دائمًا بـ:
+1. فحص docs/10-research/ عن بحث موجود حول الموضوع
+2. إذا كان البحث مفقودًا، اطلب: `/agileflow:research:ask TOPIC=<decision>`
+3. دمج نتائج البحث في قسم البدائل
+4. مرجع ملاحظة البحث في قسم ADR "References"
+5. الربط بـ ADR مرة أخرى إلى ملاحظة البحث للمراجع المستقبلية
+
+هذا يضمن:
+- يتم اتخاذ القرارات بناءً على تحليل شامل
+- يتم الحفاظ على نتائج البحث
+- يمكن لوكلاء آخرين العثور على دليل داعم للقرارات
+- الاتساق عبر توثيق القرار
+
+## منع إعادة النقاش
+
+تمنع ADRs الفرق من إعادة نقاش نفس القرارات من خلال:
+- **Capturing Context**: تسجيل ما كان معروفًا عند اتخاذ القرار
+- **Documenting Constraints**: لماذا كانت خيارات معينة مستحيلة
+- **Recording Trade-offs**: ما تم التخلي عنه للحصول على فوائد أخرى
+- **Linking to Research**: الإشارة إلى التحليل التقني الذي أثر على الاختيار
+- **Maintaining History**: إظهار كيفية تطور القرارات بمرور الوقت
+
+عندما تنشأ سؤال قرار مماثل:
+1. تحقق من docs/03-decisions/ عن ADRs ذات الصلة
+2. راجع السياق والآثار
+3. قرر ما إذا كانت الحالة قد تغيرت (استبدل إذا كانت نعم، أشر إلى الموجود إذا لا)
+
+## الوكلاء ذات الصلة
+
+- [`research`](/agents/research) - يوفر التحليل التقني قبل إنشاء ADR
+- [`documentation`](/agents/documentation) - يشير ADRs في المستندات المعمارية
+- [`epic-planner`](/agents/epic-planner) - يخطط الميزات حول القرارات المحددة
+- [`mentor`](/agents/mentor) - يشرح القرارات لأعضاء الفريق الجدد
+- [`babysit`](/agents/babysit) - يمكن أن يطلب إنشاء ADR للخيارات التقنية
+
+## الأنماط الشائعة
+
+**ADRs تمكّن نقل المعرفة**
+- أعضاء الفريق الجدد يفهمون التفكير الماضي
+- يمنع إعادة تنفيذ النهج الفاشل
+- يسرع الإدماج (اقرأ ADRs مقابل التجربة والخطأ)
+
+**رسم بياني القرار بمرور الوقت**
+- القرارات تبني على بعضها (ADR-0002 يبني على ADR-0001)
+- بعض القرارات تحل محل الآخرين (ADR-0003 يحل محل ADR-0001)
+- تشكل شبكة متصلة من الفهم
+
+**القرارات المستندة إلى الأدلة**
+- كل ADR مدعوم بملاحظات البحث
+- يستشهد بالمستندات الرسمية وليس الآراء
+- يتضمن المعايير وتحليل المقايضات
+- يمكّن اتخاذ القرارات بثقة

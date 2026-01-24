@@ -1,0 +1,318 @@
+---
+title: CI/CD
+description: Spécialiste CI/CD pour les pipelines, l'automatisation des tests, le linting, la vérification des types et la gestion des artefacts de construction.
+---
+
+# Spécialiste CI/CD
+
+AG-CI est l'expert en intégration continue, responsable des pipelines de construction, de l'automatisation des tests, du linting, de la vérification des types et de la gestion des artefacts.
+
+## Capacités
+
+- **Conception du pipeline CI**: Étapes de construction, tests, déploiement
+- **Automatisation des tests**: Tests unitaires, intégration, E2E dans CI
+- **Linting et formatage**: ESLint, Prettier, stylelint
+- **Vérification des types**: TypeScript, Flow
+- **Analyse de code**: SonarQube, CodeClimate
+- **Gestion des artefacts**: Docker, npm, artifacts S3
+- **Secrets Management**: Variables d'environnement sécurisées
+- **Notifications d'état**: Slack, GitHub, email
+- **Optimization du pipeline**: Parallélisation, caching
+- **Gestion des dépendances**: Audit npm, dépendances vulnérables
+
+## Quand l'utiliser
+
+Utiliser AG-CI quand:
+
+- Configurer ou améliorer un pipeline CI/CD
+- Ajouter des tests automatisés au pipeline
+- Configurer le linting et la vérification des types
+- Optimiser les performances du pipeline
+- Gérer les secrets et les variables d'environnement
+- Construire et déployer des artefacts
+- Analyser la qualité du code
+- Configurer les notifications de statut
+
+## Comment ça marche
+
+1. **Chargement du contexte**: Analyse des configurations CI actuelles
+2. **Audit du pipeline**: Évalue les étapes existantes et identifie les améliorations
+3. **Design**: Conçoit les étapes optimisées du pipeline
+4. **Implémentation**: Ajoute les étapes de test, linting, construction
+5. **Configuration**: Configure les secrets et variables d'environnement
+6. **Optimisation**: Parallélise et met en cache pour la performance
+7. **Notification**: Configure les alertes de réussite/échec
+8. **Documentation**: Crée une documentation du pipeline
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Our CI pipeline is slow. It takes 15 minutes to run tests."
+
+# AG-CI fera:
+# 1. Analyser les étapes du pipeline (où le temps est dépensé)
+# 2. Paralléliser les tests unitaires (3m → 1m)
+# 3. Mettre en cache les dépendances npm (2m → 30s)
+# 4. Scinder les tests E2E (5m → 2m en parallèle)
+# 5. Ajouter le cache Docker (1m économisé)
+# 6. Résultat: 15m → 4m (73% de réduction!)
+```
+
+## Comportements clés
+
+- **Échoue rapidement**: Linting avant les tests (moins coûteux)
+- **Parallélise**: Exécute les tests en parallèle
+- **Caches**: Dépendances, artefacts Docker, résultats de construction
+- **Sécurise les secrets**: Ne jamais logger les clés API ou tokens
+- **Notifie**: Alertes claires sur les succès/échecs
+- **Documente**: Pipeline clair et facile à modifier
+
+## Étapes du pipeline
+
+**Ordre optimal** (du moins au plus coûteux):
+1. Linting (ESLint, Prettier) - 30s
+2. Vérification des types (TypeScript) - 1m
+3. Tests unitaires (Jest) - 2m
+4. Tests d'intégration (Supertest) - 3m
+5. Tests E2E (Cypress) - 5m
+6. Analyse de code (SonarQube) - 1m
+7. Construction (Docker, npm) - 2m
+8. Déploiement (staging) - 2m
+
+## Exemple de configuration
+
+```yaml
+# GitHub Actions ou similar
+pipeline:
+  - name: Lint
+    run: npm run lint
+    timeout: 5m
+
+  - name: Type Check
+    run: npm run type-check
+    timeout: 5m
+
+  - name: Test Unit (parallel)
+    run: npm run test:unit
+    timeout: 10m
+    parallel: true
+    jobs: 4
+
+  - name: Test Integration
+    run: npm run test:integration
+    timeout: 15m
+    depends_on: [test_unit]
+
+  - name: Build
+    run: npm run build
+    timeout: 10m
+    depends_on: [test_integration]
+
+  - name: Deploy Staging
+    run: npm run deploy:staging
+    timeout: 10m
+    depends_on: [build]
+    if: branch == main
+```
+
+## Linting et formatage
+
+**Outils**:
+- **ESLint**: Détecte les erreurs JavaScript
+- **Prettier**: Formate le code
+- **TypeScript**: Vérification de type
+- **Stylelint**: Lint CSS
+- **Commitlint**: Valide les messages de commit
+
+**Exemple de configuration ESLint**:
+```javascript
+{
+  "extends": ["eslint:recommended", "next"],
+  "rules": {
+    "no-console": "warn",
+    "no-unused-vars": "error",
+    "eqeqeq": ["error", "always"]
+  }
+}
+```
+
+## Tests automatisés
+
+**Exécuter tous les tests**:
+```bash
+npm run test:all         # Tous les tests
+npm run test:unit       # Tests unitaires uniquement
+npm run test:integration # Tests d'intégration
+npm run test:e2e        # Tests E2E (Cypress)
+```
+
+**Coberture obligatoire**: >80% coverage
+```bash
+npm run test:coverage   # Générer un rapport de couverture
+```
+
+## Analyse de code
+
+**SonarQube/CodeClimate**:
+```bash
+# Scanner avec SonarQube
+sonar-scanner \
+  -Dsonar.projectKey=my-project \
+  -Dsonar.sources=src \
+  -Dsonar.host.url=https://sonarqube.example.com
+```
+
+**Mesures de qualité**:
+- Couverture de code: >80%
+- Lignes dupliquées: <5%
+- Violations de type: 0
+- Bugs détectés: 0
+- Vulnérabilités de sécurité: 0
+
+## Secrets et variables d'environnement
+
+**Ne PAS coder en dur**:
+```javascript
+// Mauvais
+const API_KEY = "sk-1234567890abcdef";
+
+// Bon
+const API_KEY = process.env.API_KEY;
+```
+
+**Configuration des secrets GitHub Actions**:
+```bash
+# Définir le secret
+gh secret set API_KEY --body "sk-1234567890"
+
+# Utiliser dans le workflow
+- name: Deploy
+  env:
+    API_KEY: ${{ secrets.API_KEY }}
+  run: npm run deploy
+```
+
+**Variables d'environnement par étape**:
+```yaml
+- name: Deploy
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    API_KEY: ${{ secrets.API_KEY }}
+    NODE_ENV: production
+  run: npm run deploy:prod
+```
+
+## Gestion des dépendances
+
+**Audit npm pour les vulnérabilités**:
+```bash
+npm audit                # Audit des dépendances
+npm audit fix           # Corriger les vulnérabilités
+npm outdated            # Montrer les paquets obsolètes
+```
+
+**Mise en cache des dépendances**:
+```yaml
+- name: Cache dependencies
+  uses: actions/cache@v2
+  with:
+    path: ~/.npm
+    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-node-
+```
+
+## Artefacts de construction
+
+**Docker**:
+```bash
+docker build -t myapp:latest .
+docker push myapp:latest
+
+# Dans CI:
+- name: Build Docker Image
+  run: docker build -t ${{ env.REGISTRY }}/myapp:${{ env.VERSION }} .
+```
+
+**npm Registry**:
+```bash
+npm publish              # Publier le paquet
+npm publish --tag beta  # Publier la version beta
+```
+
+## Notifications
+
+**Slack**:
+```yaml
+- name: Notify Slack on Failure
+  if: failure()
+  uses: slackapi/slack-github-action@v1
+  with:
+    webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+    payload: |
+      {
+        "text": "Build failed on main branch"
+      }
+```
+
+## Optimization du pipeline
+
+**Parallélisation**:
+```yaml
+test:
+  parallel:
+    matrix:
+      node: [16, 18, 20]
+      os: [ubuntu, macos, windows]
+```
+
+**Caching intelligent**:
+```yaml
+- uses: actions/cache@v2
+  with:
+    path: node_modules
+    key: ${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+```
+
+## Monitoring du pipeline
+
+**Métriques à suivre**:
+- Durée du pipeline (tendance)
+- Taux de réussite (%)
+- Temps pour corriger (entre l'échec et la correction)
+- Nombre de réexécutions
+- Taux d'utilisation des cache
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail CI comme complet:
+
+- [ ] Pipeline conçu avec des étapes claires
+- [ ] Linting configuré (ESLint, Prettier)
+- [ ] Vérification des types (TypeScript)
+- [ ] Tests unitaires exécutés en parallèle
+- [ ] Tests d'intégration automatisés
+- [ ] Tests E2E exécutés
+- [ ] Couverture de code >80%
+- [ ] Analyse de code (SonarQube)
+- [ ] Construction Docker optimisée
+- [ ] Secrets sécurisés (variables d'environnement)
+- [ ] Notifications configurées (Slack, GitHub)
+- [ ] Dépendances auditées pour les vulnérabilités
+- [ ] Pipeline documenté
+
+## Agents associés
+
+- [`testing`](/agents/testing) - Tests et couverture
+- [`devops`](/agents/devops) - Infrastructure et déploiement
+- [`security`](/agents/security) - Audit de sécurité et gestion des secrets
+- [`performance`](/agents/performance) - Optimisation du pipeline
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques CI
+- `/agileflow:ai-code-review` - Examiner la configuration du pipeline
+- `/agileflow:adr-new` - Documenter les décisions CI/CD
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

@@ -1,0 +1,204 @@
+---
+title: Mentor
+description: Mentor d'implémentation complet pour guider les fonctionnalités de l'idée à la PR avec orchestration multi-agents.
+---
+
+# Agent Mentor
+
+L'agent Mentor (MENTOR) est votre spécialiste en orchestration pour l'implémentation complète des fonctionnalités de l'idée à la PR fusionnée.
+
+## Capacités
+
+- **Orchestration de bout en bout**: De l'idée à la PR fusionnée
+- **Intégration de recherche**: Utiliser docs/10-research/ pour le contexte technique
+- **Création d'épique/story**: Planner et valider Definition of Ready
+- **Coordination multi-agents**: Orchestrer AG-UI, AG-API, AG-CI, AG-DEVOPS
+- **Gestion d'état**: Mettre à jour status.json et bus/log.jsonl
+- **Maintenance CLAUDE.md**: Documenter les nouveaux patterns découverts
+- **Orchestration de commandes slash**: Invoquer directement les commandes (41 disponibles)
+- **Génération de PR**: Préparer les descriptions de PR pour la fusion
+
+## Quand l'utiliser
+
+Utiliser le Mentor quand:
+
+- Vous avez une demande de fonctionnalité complète
+- Besoin de planifier l'implémentation à travers plusieurs stories
+- Besoin de rechercher une technologie inconnue
+- Coordonner le travail entre agents spécialisés
+- Assurer Definition of Ready avant la mise en œuvre
+
+## Exemple
+
+```bash
+# Via /babysit (recommandé)
+/agileflow:babysit
+> "I need to add payment processing to the platform"
+
+# Mentor fera:
+# 1. Vérifier si l'épique de paiement existe (créer si nécessaire)
+# 2. Briser en stories (setup, Stripe integration, webhooks, tests)
+# 3. Rechercher les patterns de paiement (docs/10-research/)
+# 4. Valider Definition of Ready pour chaque story
+# 5. Suggérer la priorité de la story
+# 6. Coordonner avec les agents spécialisés
+# 7. Mettre à jour status au fur et à mesure
+# 8. Générer la description de PR
+```
+
+## Comportements clés
+
+- **Exécution autonome de commandes**: Invoquer directement slash commands (pas de permission demandée)
+- **Gestion du cycle de vie des stories**: De prêt → en cours → en révision → terminé
+- **Respect du WIP limit**: Max 2 stories par agent en in-progress
+- **Coordination multi-agents**: Utiliser bus/log.jsonl pour les messages
+- **Préservation du contexte**: Compact_context (priority: critical) maintient le focus de l'orchestration
+- **Mises à jour CLAUDE.md**: Documenter les nouveaux patterns/conventions découverts
+
+## Configuration Compact Context
+
+Le Mentor utilise **priorité critical** compact_context:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS read expertise.yaml first"
+    - "ALWAYS validate Definition of Ready"
+    - "Max 2 stories per agent in-progress (WIP limit)"
+    - "Slash commands are autonomous (invoke directly)"
+    - "Update status.json + bus/log.jsonl for all changes"
+  state_fields:
+    - current_story
+    - story_status
+    - wip_count
+    - blockers
+    - next_actions
+```
+
+## Fichiers clés
+
+- **Expertise**: `packages/cli/src/core/experts/mentor/expertise.yaml`
+- **Workflow**: `packages/cli/src/core/experts/mentor/workflow.md`
+- **Status**: `docs/09-agents/status.json` (source unique de vérité)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (messages de coordination)
+- **Roadmap**: `docs/08-project/roadmap.md` (contexte et priorités)
+
+## Étapes du workflow
+
+1. **Chargement du contexte**: Lire expertise.yaml, status.json, bus/log.jsonl
+2. **Analyse de connaissances**: Identifier WIP actuels, bloqueurs, stories prêtes
+3. **Proposition**: Suggérer 3-7 actions suivantes prioritaires
+4. **Planification**: Créer épiques/stories manquantes, valider Definition of Ready
+5. **Recherche**: Intégrer la recherche de docs/10-research/ ou en demander
+6. **Coordination**: Orchestrer les agents spécialisés
+7. **Mise à jour**: Mettre à jour status.json et bus/log.jsonl
+8. **Documentation**: Mettre à jour CLAUDE.md avec les nouveaux patterns
+9. **Génération PR**: Préparer la description de PR
+
+## Messages du bus
+
+Le Mentor communique via ces types de message:
+
+```jsonl
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"status","story":"US-0007","text":"Story status update"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"blocked","story":"US-0008","text":"Blocked: API not ready"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"unblock","story":"US-0008","text":"Unblocking: API ready"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"assign","story":"US-0009","text":"Assigned to AG-UI"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"question","story":"US-0010","text":"Clarification needed"}
+```
+
+## Coordination avec agents
+
+**MENTOR coordonne avec**:
+- **AG-UI**: Stories frontend - vérifier les stories UI bloquées attendant l'API
+- **AG-API**: Stories backend - assurer les endpoints API prêts à débloquer l'UI
+- **AG-CI**: Infrastructure de test - coordonner setup et vérification
+- **AG-DEVOPS**: Dépendances - coordonner migrations et mises à jour de packages
+- **EPIC-PLANNER**: Décomposition - déléguer si nécessaire
+- **RESEARCH**: Recherche technique - coordonner la recherche
+
+## Definition of Ready
+
+Avant de marquer une story "ready":
+- [ ] Critères d'acceptation clairs (Given/When/Then)
+- [ ] Dépendances identifiées
+- [ ] Recherche technique complète
+- [ ] Estimation faite (S/M/L)
+- [ ] Pas de bloqueurs connus
+- [ ] Tests stubs créés
+- [ ] Assigned to an agent
+
+## Management du WIP
+
+**Limite du WIP: Max 2 stories par agent en in-progress**
+
+```
+AG-API:
+  - US-0042: Auth middleware (in-progress)
+  - US-0043: User profile API (in-progress)
+  ❌ US-0044: Payment endpoint (waiting - WIP full)
+
+AG-UI:
+  - US-0051: Login component (in-progress)
+  - US-0052: Profile page (in-progress)
+  ❌ US-0053: Payment form (waiting - WIP full)
+```
+
+Si une story finit → débloquer la suivante de la queue.
+
+## Problèmes et déblocage
+
+**Détecter les bloqueurs**:
+- Story en in-progress depuis > 2 jours?
+- Test failing? → Appeler AG-TESTING
+- API lente? → Appeler AG-PERFORMANCE
+- Crash? → Appeler AG-SECURITY
+
+**Déblocage**:
+1. Identifier la racine du problème
+2. Assigner le déblocage à un agent spécialisé
+3. Mettre à jour le status à "blocked"
+4. Suivre via le bus/log.jsonl
+5. Marquer "unblocked" quand résolu
+
+## Génération de PR
+
+**Description de PR**:
+```markdown
+## Summary
+- Paiement avec Stripe intégré
+- Webhooks pour la synchronisation de paiement
+- Tests E2E complétés
+
+## Testing checklist
+- [ ] Paiement réussi avec carte de crédit valide
+- [ ] Gestion des cartes invalides
+- [ ] Tests de retry des webhooks
+- [ ] Tests d'erreur de chaîne
+
+## Related
+- Stories: US-0042, US-0043, US-0044
+- Epic: EP-003
+- Docs: docs/04-architecture/payment-system.md
+```
+
+## Outils disponibles
+
+Cet agent a accès à: Read, Write, Edit, Bash, Glob, Grep
+
+## Related Agents
+
+- [`epic-planner`](/agents/epic-planner) - Décomposition spécialisée
+- [`api`](/agents/api) - Implémentation backend
+- [`ui`](/agents/ui) - Implémentation frontend
+- [`research`](/agents/research) - Recherche technique
+
+## Principes clés
+
+- **Lecture d'expertise d'abord**: Toujours charger le mental model
+- **Prêt avant l'implémentation**: Valider Definition of Ready
+- **Respect du WIP**: Max 2 stories en in-progress
+- **Commandes autonomes**: Invoquer directement (pas de permission)
+- **Mise à jour d'état**: Tous les changements dans status.json + bus
+- **Documentation continue**: Apprendre et mettre à jour CLAUDE.md

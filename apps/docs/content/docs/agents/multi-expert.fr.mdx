@@ -1,0 +1,189 @@
+---
+title: Multi-expert
+description: Orchestrateur multi-expert qui déploie 3-5 experts de domaine sur le même problème et synthétise les résultats pour des réponses de haute confiance.
+---
+
+# Agent multi-expert
+
+L'agent Multi-Expert est un orchestrateur qui analyse les questions complexes en déployant 3-5 experts spécialisés en parallèle, puis synthétise les conclusions dans une analyse complète avec scoring de confiance.
+
+## Capacités
+
+- Déploie plusieurs experts spécialisés en parallèle pour l'analyse complète
+- Détecte les domaines pertinents des questions (sécurité, API, UI, DB, test, performance, CI, DevOps)
+- Synthétise les conclusions des experts avec scoring de confiance (Haut/Moyen/Bas)
+- Identifie les accords entre experts (confiance élevée) et désaccords (nécessite révision)
+- Extrait les insights uniques de chaque expert
+- Fournit les actions recommandées prioritaires
+
+## Quand l'utiliser
+
+Utiliser cet agent quand:
+
+- **Questions complexes multi-domaines**: "Est-ce que notre implémentation d'authentification est sécurisée?" necessite sécurité + API + test + DB perspectives
+- **Revues de sécurité**: Analyser le code de multiples angles
+- **Revues d'architecture**: Obtenir le feedback des experts de domaine
+- **Revues PR**: Révision de code multi-perspective pour confiance de justesse
+- **Analyse de flux complet**: Tracer les requêtes à travers multiples couches
+- **Débogage de problèmes difficiles**: Causes multiples possibles nécessitant analyse d'expert
+- **Questions de "meilleures pratiques"**: Besoin de validation à travers domaines
+
+## Comment ça marche
+
+L'agent suit un workflow structuré:
+
+```text
+QUESTION UTILISATEUR
+      ↓
+┌─────────────────────────────────────┐
+│ 1. ANALYSER      │ → Identifier 3-5 domaines pertinents
+│ 2. DÉPLOYER      │ → Spawner les experts EN PARALLÈLE
+│ 3. COLLECTER     │ → Attendre tous les résultats
+│ 4. SYNTHÉTISER   │ → Combiner avec scoring de confiance
+│ 5. RAPPORTER     │ → Réponse de haute confiance
+└─────────────────────────────────────┘
+```
+
+### Étape 1: Analyse de domaine
+
+L'agent analyse la question pour les mots-clés de domaine et sélectionne 3-5 experts:
+- **1 expert PRIMARY**: Domaine le plus pertinent
+- **2-4 experts SUPPORTING**: Perspectives additionnelles
+
+### Étape 2: Déploiement en parallèle
+
+Tous les experts sont déployés simultanément pour l'efficacité:
+
+```bash
+Task(
+  description: "Analyse de sécurité",
+  prompt: "FIRST: Lire packages/cli/src/core/experts/security/expertise.yaml\n\nQUESTION: ...",
+  subagent_type: "agileflow-security",
+  run_in_background: true
+)
+```
+
+### Étape 3: Collecte des résultats
+
+Utilise `TaskOutput` avec `block: true` pour attendre toutes les réponses d'expert.
+
+### Étape 4: Synthèse avec scoring de confiance
+
+Analyse toutes les réponses et groupe les conclusions:
+
+- **ACCORD (2+ experts)** → Confiance élevée
+- **INSIGHT UNIQUE (1 expert)** → Conclusion notable
+- **DÉSACCORD** → Signalé pour révision humaine
+
+### Étape 5: Rapport
+
+Sorties l'analyse structurée avec sections:
+- **Conclusions clés (Confiance élevée)**: Accords entre 2+ experts
+- **Insights uniques**: Conclusions notables d'experts individuels
+- **Désaccords (Besoin de révision)**: Opinions conflictuelles
+- **Actions recommandées**: Prochaines étapes prioritées
+
+## Scoring de confiance
+
+| Niveau | Critères |
+|--------|----------|
+| **Élevée** | 3+ experts d'accord avec evidence spécifique citée |
+| **Moyen** | 2 experts d'accord avec some evidence |
+| **Bas** | 1 expert uniquement, besoin de vérification |
+
+## Détection de domaine
+
+L'agent mappe les mots-clés de question aux experts de domaine:
+
+| Mots-clés | Expert |
+|-----------|--------|
+| database, schema, table, SQL, query | agileflow-database |
+| API, endpoint, REST, route, controller | agileflow-api |
+| component, UI, frontend, style | agileflow-ui |
+| test, spec, coverage, mock | agileflow-testing |
+| security, auth, JWT, vulnerability | agileflow-security |
+| performance, cache, optimize, slow | agileflow-performance |
+| CI, workflow, pipeline, build | agileflow-ci |
+| deploy, infrastructure, Docker | agileflow-devops |
+
+## Exemple
+
+**Question utilisateur**: "Notre implémentation d'authentification est-elle sécurisée?"
+
+**Réponse de l'agent**:
+
+```text
+Analyse des domaines pertinents...
+
+Domaines détectés:
+- Sécurité (primary) - analyse de sécurité d'auth
+- API (supporting) - révision de mise en œuvre
+- Testing (supporting) - vérification de couverture
+- Base de données (supporting) - stockage des identifiants
+
+Déploiement de 4 experts en parallèle...
+
+## Analyse multi-expert: Sécurité d'authentification
+
+**Confiance**: Élevée (4 experts, accord fort)
+
+### Conclusions clés (Confiance élevée)
+1. Les tokens JWT ne n'expirent jamais - CRITIQUE - Accord par: Sécurité, API
+2. Middleware d'auth incohérent - HAUT - Accord par: Sécurité, API
+
+### Insights uniques
+- Base de données: Hashing de mot de passe correct (bcrypt avec bon salt)
+- Testing: Seulement 40% de couverture sur routes d'auth, tests d'intégration manquants
+
+### Désaccords (Besoin de révision)
+Aucun - tous les experts alignés sur la position de sécurité
+
+### Actions recommandées
+1. Ajouter l'expiration JWT et rotation de token refresh (CRITIQUE)
+2. Auditer toutes les routes pour application middleware cohérente (HAUT)
+3. Augmenter la couverture de test à 80% pour les routes d'auth (MOYEN)
+4. Ajouter les tests d'intégration pour le flux d'auth (MOYEN)
+```
+
+## Comportements clés
+
+- **TOUJOURS déploie les experts en parallèle**: Jamais séquentiellement (efficacité)
+- **TOUJOURS déploie TOUS les experts dans UN SEUL message**: Batch les appels Task ensemble
+- **JAMAIS donne la réponse finale sans synthétiser TOUTES les réponses d'expert**: Toutes les perspectives importent
+- **TOUJOURS inclut la lecture d'expertise dans les prompts d'expert**: `"FIRST: Lire packages/cli/src/core/experts/{domain}/expertise.yaml"`
+- **Déploie 3-5 experts total**: Pas moins, pas plus (synthèse optimale)
+- **TOUJOURS utilise TaskOutput avec block: true**: Pour collecter tous les résultats
+
+## Outils disponibles
+
+Cet agent a accès à:
+- **Read**: Accéder aux fichiers d'expertise d'agent
+- **Write**: Créer les documents d'analyse
+- **Edit**: Mettre à jour les analyses existantes
+- **Bash**: Exécuter les commandes de vérification
+- **Glob**: Rechercher les fichiers pertinents
+- **Grep**: Rechercher le code et la documentation
+- **Task**: Déployer les agents d'experts en parallèle
+- **TaskOutput**: Collecter les résultats d'expert
+
+## Configuration du modèle
+
+- **Modèle**: Claude Opus 4.5 (Sonnet)
+- **Raisonnement**: Analyse complète avec multiples perspectives
+
+## Agents associés
+
+- [`database`](/agents/database) - Expert schéma BD et requête
+- [`api`](/agents/api) - Expert endpoint API REST
+- [`ui`](/agents/ui) - Expert composant frontend
+- [`testing`](/agents/testing) - Expert couverture de test et stratégie
+- [`security`](/agents/security) - Expert sécurité et authentification
+- [`performance`](/agents/performance) - Expert optimisation de performance
+- [`ci`](/agents/ci) - Expert pipeline CI/CD
+- [`devops`](/agents/devops) - Expert infrastructure et déploiement
+
+## Quand NE PAS l'utiliser
+
+- **Questions simples single-domaine**: Utiliser l'expert de domaine direct plutôt (plus rapide, plus simple)
+- **Questions nécessitant une prise de décision**: Multi-Expert fournit l'analyse uniquement
+- **Informations sensibles**: Documenter les experts impliqués avant le déploiement

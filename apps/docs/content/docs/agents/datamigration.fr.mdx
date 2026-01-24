@@ -1,0 +1,295 @@
+---
+title: Migration de données
+description: Spécialiste en migration de données pour les transferts de base de données, les transformations de données, la validation et le rollback des migrations.
+---
+
+# Spécialiste migration de données
+
+AG-DATAMIGRATION gère les migrations de données complexes, les transformations, la validation et les plans de rollback.
+
+## Capacités
+
+- **Transferts de base de données**: Migrer de BD old à new
+- **Transformations de données**: Reformater, nettoyer, valider
+- **Validation**: Vérifier l'intégrité des données post-migration
+- **Rollback**: Revenir à l'ancienne BD si nécessaire
+- **Migration sans temps d'arrêt**: Continuer les services pendant la migration
+- **Tests de migration**: Tester sur les environnements de staging
+- **Documentation**: Documenter le processus de migration
+- **Performance**: Migrer les données massives efficacement
+
+## Quand l'utiliser
+
+Utiliser AG-DATAMIGRATION quand:
+
+- Migrer vers une nouvelle base de données
+- Changer les structures de données (schéma de BD)
+- Consolider les données de plusieurs sources
+- Nettoyer les données (dédupliquer, valider)
+- Migrer vers une plateforme différente (MySQL → PostgreSQL)
+- Effectuer une migration sans temps d'arrêt
+- Besoin de rollback
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "We need to migrate from MySQL to PostgreSQL with zero downtime"
+
+# AG-DATAMIGRATION fera:
+# 1. Concevoir un plan de migration sans temps d'arrêt
+# 2. Configurer la réplication des données
+# 3. Tester sur staging
+# 4. Valider l'intégrité des données
+# 5. Effectuer le cutover
+# 6. Monitorer les problèmes
+# 7. Déactiver l'ancienne BD
+```
+
+## Plan de migration
+
+**Phases**:
+1. **Préparation** (1-2 semaines): Planifier, configurer
+2. **Test** (1 semaine): Tester sur staging
+3. **Cutover** (1-2 heures): Switchover à la nouvelle BD
+4. **Validation** (24h): Surveiller les problèmes
+5. **Décommission** (1 semaine après): Supprimer l'ancienne BD
+
+## Migration sans temps d'arrêt
+
+**Technique dual-write**:
+```
+┌────────────┐
+│ Application│
+└────────────┘
+    ↓    ↓
+  Write to OLD + NEW (dual-write)
+    ↓    ↓
+┌────────────┐  ┌────────────┐
+│  Old BD    │  │  New BD    │
+│ (source)   │  │ (target)   │
+└────────────┘  └────────────┘
+```
+
+**Étapes**:
+1. Déployer dual-write (écrire dans les deux BDs)
+2. Migrer les données existantes (batch import)
+3. Tester que les deux BDs sont cohérentes
+4. Switchover reads à la nouvelle BD
+5. Arrêter les writes à l'ancienne BD
+6. Retirer le dual-write
+
+**Rollback facile**: Si problèmes, revenir aux reads sur l'ancienne BD
+
+## Validation des données
+
+**Vérifications intégrité**:
+```sql
+-- Compte des enregistrements
+SELECT COUNT(*) FROM old_db.users;
+SELECT COUNT(*) FROM new_db.users;
+-- Doivent être égaux
+
+-- Vérifier les clés primaires
+SELECT COUNT(DISTINCT id) FROM new_db.users;
+-- Doit égaler le nombre total de lignes
+
+-- Vérifier les références
+SELECT user_id FROM new_db.posts
+  WHERE user_id NOT IN (SELECT id FROM new_db.users);
+-- Doit retourner 0 lignes (pas de clés orphelines)
+```
+
+**Comparaison des données**:
+```sql
+-- Trouver les différences
+SELECT * FROM old_db.users
+  EXCEPT
+SELECT * FROM new_db.users;
+-- Liste les lignes dans old mais pas dans new
+```
+
+## Transformation de données
+
+**Exemple: Renommer colonne**:
+```sql
+-- Before migration
+SELECT id, user_name, user_email FROM users;
+
+-- After migration
+SELECT id, name, email FROM users;
+
+-- Transformation
+INSERT INTO new_users (id, name, email)
+SELECT id, user_name, user_email FROM old_users;
+```
+
+**Nettoyage de données**:
+```sql
+-- Supprimer les doublons
+DELETE FROM users
+  WHERE id NOT IN (
+    SELECT MIN(id) FROM users
+    GROUP BY email
+  );
+
+-- Normaliser le format d'email
+UPDATE users
+SET email = LOWER(TRIM(email));
+
+-- Supprimer les enregistrements invalides
+DELETE FROM users
+WHERE email NOT LIKE '%@%.%';
+```
+
+## Ordre de migration
+
+**Important pour les dépendances**:
+```
+1. Migrer tables de base (users, roles)
+2. Migrer tables dépendantes (posts, comments)
+3. Migrer relations (followers, likes)
+4. Migrer données historiques (archives)
+5. Migrer analytics/logs
+```
+
+## Tester la migration
+
+**Sur staging d'abord**:
+```bash
+# 1. Créer une copie de la BD de production
+pg_dump production_db | psql staging_db
+
+# 2. Effectuer la migration sur staging
+npm run migrate:staging
+
+# 3. Valider les données
+npm run validate:data
+
+# 4. Tester les cas d'utilisation critiques
+npm run test:integration
+
+# 5. Mesurer la performance
+npm run benchmark
+
+# 6. Simuler le rollback
+npm run migrate:rollback
+npm run validate:rollback
+```
+
+## Plan de rollback
+
+**Quick rollback** (< 5 minutes):
+```bash
+# Si la nouvelle BD a des problèmes
+
+# 1. Arrêter les writes sur la nouvelle BD
+# 2. Pointer les reads à l'ancienne BD
+# 3. Retirer le dual-write
+
+# Temps total: 2-5 minutes
+```
+
+**Scénarios de problèmes**:
+```
+Problème: Données corrompues dans la nouvelle BD
+Rollback: Réappliquer l'ancienne chaîne de connexion
+
+Problème: Performance pire dans la nouvelle BD
+Rollback: Ajuster les index, réessayer après optimisation
+
+Problème: Application plante avec la nouvelle BD
+Rollback: Pointer temporairement vers l'ancienne BD, déboguer
+```
+
+## Monitoring pendant la migration
+
+**Métriques clés**:
+```
+- Latence des requêtes (ancienne vs nouvelle BD)
+- Taux d'erreur (nouvelles exceptions après switch)
+- Nombre de utilisateurs affectés (si problèmes)
+- Consistance des données (validation en continu)
+- Utilisation des ressources (CPU, mémoire, connections)
+```
+
+**Alertes**:
+```
+- Latency > 500ms (seuil normal)
+- Error rate > 1%
+- Difference in row counts > 0.1%
+- Missing foreign key references
+```
+
+## Performance de migration
+
+**Optimization**:
+```sql
+-- Désactiver temporairement les index pendant l'import
+ALTER TABLE users DISABLE TRIGGER ALL;
+INSERT INTO users SELECT * FROM old_users;
+ALTER TABLE users ENABLE TRIGGER ALL;
+
+-- Batch import plutôt que row-by-row
+-- Import: 10 000 rows/sec (batch)
+-- vs. 100 rows/sec (individual inserts)
+```
+
+## Documentation de migration
+
+**Créer un runbook**:
+```markdown
+# PostgreSQL Migration Runbook
+
+## Pre-Migration Checklist
+- [ ] Backup complete (test restore)
+- [ ] Staging migration successful
+- [ ] Performance validated
+- [ ] Rollback tested
+
+## Migration Steps
+1. Enable dual-write (both DBs)
+2. Migrate existing data
+3. Validate data integrity
+4. Switch reads to new DB
+5. Monitor for 24 hours
+6. Disable dual-write
+
+## Rollback
+1. Switch reads to old DB
+2. Investigate issue
+3. Fix and retry
+
+## Success Criteria
+- [ ] No data loss
+- [ ] Latency < 500ms
+- [ ] Error rate < 0.1%
+- [ ] All validations pass
+```
+
+## Liste de contrôle
+
+Avant de démarrer la migration:
+
+- [ ] Plan de migration révisé et approuvé
+- [ ] Staging test réussi
+- [ ] Backup de l'ancienne BD (avec test de restore)
+- [ ] Rollback plan documenté
+- [ ] Validation script écrit et testé
+- [ ] Monitoring configuré
+- [ ] Équipe préparée (runbook clair)
+- [ ] Communication du temps d'arrêt (si applicable)
+- [ ] Support oncall pendant la migration
+
+## Agents associés
+
+- [`database`](/agents/database) - Conception et validation de schéma
+- [`devops`](/agents/devops) - Infrastructure et infrastructure as code
+- [`monitoring`](/agents/monitoring) - Monitoring de la migration
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de migration
+- `/agileflow:adr-new` - Documenter les décisions de migration
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

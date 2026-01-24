@@ -1,0 +1,36 @@
+---
+title: Multi-Expert
+description: Orquestrador multi-especialista que implanta 3-5 especialistas de domínio no mesmo problema e sintetiza resultados.
+---
+
+# Agente Multi-Expert
+
+O Agente Multi-Expert é um orquestrador que analisa questões complexas implantando 3-5 especialistas de domínio especializados em paralelo, sintetizando descobertas em análise abrangente com confiança scoring.
+
+## Capacidades
+
+- **Spawn Multiple Specialized Experts**: Especialistas em paralelo para análise abrangente
+- **Detecção de Domínio**: Detectar domínios relevantes de questões
+- **Síntese de Descobertas**: Combinar com confidence scoring (Alta/Média/Baixa)
+- **Identificar Acordos**: Acordos entre especialistas (alta confiança) vs desacordos (precisa revisão)
+- **Ações Recomendadas Prioritizadas**: Próximos passos recomendados
+
+## Quando Usar
+
+Use quando:
+
+- **Questões Complexas com Múltiplos Domínios**: "É nossa implementação de autenticação segura?" precisa segurança + API + teste + banco de dados perspectivas
+- **Revisões de Segurança**: Analisar código de múltiplos ângulos
+- **Revisões de Arquitetura**: Feedback de especialistas de domínio
+- **Revisões de PR**: Multi-perspectiva code review
+
+## Comportamentos-Chave
+
+- **SEMPRE Implanta Especialistas em Paralelo**: Nunca sequencialmente
+- **SEMPRE Implanta TODOS especialistas em ÚNICA mensagem**: Batch Task calls
+- **NUNCA Dá resposta final sem sintetizar TODAS respostas de especialista**: Todas perspectivas importam
+
+
+## Links Relacionados
+
+- [Versão em Inglês](/agents/multi-expert)

@@ -1,0 +1,273 @@
+---
+title: Agents de configuration
+description: Spécialiste en configuration pour la gestion des variables d'environnement, les fichiers de configuration, les secrets et la gestion multi-environnement.
+---
+
+# Agents de configuration
+
+AG-CONFIGURATION gère les variables d'environnement, les fichiers de configuration, les secrets et la gestion multi-environnement (dev, staging, prod).
+
+## Capacités
+
+- **Gestion des variables d'environnement**: .env, .env.local, .env.production
+- **Configuration par environnement**: Configurations différentes pour dev/staging/prod
+- **Gestion des secrets**: API keys, tokens, mots de passe
+- **Validation de configuration**: Vérifier que les variables requises existent
+- **Rotation des secrets**: Mettre à jour les clés/tokens sans temps d'arrêt
+- **Documentation de configuration**: Registre des variables disponibles
+- **Migration de configuration**: Mise à jour de la configuration lors des déploiements
+
+## Quand l'utiliser
+
+Utiliser AG-CONFIGURATION quand:
+
+- Ajouter une nouvelle variable de configuration
+- Gérer les secrets API
+- Configurer multi-environnement
+- Documenter les variables d'environnement
+- Valider la configuration au démarrage
+- Déployer sur un nouvel environnement
+- Mettre à jour les secrets
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to add an API key for Stripe"
+
+# AG-CONFIGURATION fera:
+# 1. Ajouter STRIPE_API_KEY à .env.example
+# 2. Documenter que c'est obligatoire
+# 3. Créer une fonction de validation
+# 4. Montrer comment définir en production
+# 5. Coordonner avec AG-DEVOPS pour le déploiement
+```
+
+## Structure de configuration
+
+**Hiérarchie des fichiers**:
+```
+.env                  # Variables par défaut (committer à git)
+.env.local            # Surcharges locales (git ignoré)
+.env.example          # Template pour les nouveaux développeurs (committer)
+.env.production       # Secrets de production (très sécurisé!)
+```
+
+**Ordre de chargement** (dernière = priorité la plus haute):
+1. .env
+2. .env.[NODE_ENV]
+3. .env.local
+4. .env.[NODE_ENV].local
+5. Variables shell
+
+## Exemple de configuration
+
+**.env.example** (committer à git):
+```bash
+# Database
+DATABASE_URL=postgresql://localhost:5432/myapp_dev
+DATABASE_POOL_SIZE=10
+
+# API Keys
+STRIPE_API_KEY=sk_test_...     # Obtenir de Stripe test account
+SENDGRID_API_KEY=SG_test...    # Obtenir de SendGrid
+
+# Environment
+NODE_ENV=development
+LOG_LEVEL=debug
+PORT=3000
+```
+
+**.env.local** (git ignoré):
+```bash
+# Overrides personnelles
+DATABASE_URL=postgresql://localhost:5432/myapp_test
+LOG_LEVEL=trace
+```
+
+## Validation de configuration
+
+**Au démarrage** (faire échouer rapidement):
+```javascript
+function validateConfig() {
+  const required = [
+    'DATABASE_URL',
+    'STRIPE_API_KEY',
+    'JWT_SECRET',
+    'NODE_ENV'
+  ];
+
+  for (const key of required) {
+    if (!process.env[key]) {
+      throw new Error(`Missing required env var: ${key}`);
+    }
+  }
+
+  console.log('✅ Configuration valid');
+}
+```
+
+## Gestion des secrets
+
+**Secrets importants**:
+- API keys (Stripe, SendGrid, AWS)
+- Database password
+- JWT secret
+- OAuth secrets
+- Tokens d'authentification
+
+**NE PAS coder en dur**:
+```javascript
+// Mauvais
+const API_KEY = "sk-1234567890";
+
+// Bon
+const API_KEY = process.env.STRIPE_API_KEY;
+if (!API_KEY) {
+  throw new Error('STRIPE_API_KEY not configured');
+}
+```
+
+## Configuration multi-environnement
+
+**Variables par environnement**:
+```javascript
+// config.js
+module.exports = {
+  development: {
+    database: 'myapp_dev',
+    logLevel: 'debug',
+    apiTimeout: 5000,
+    cacheTTL: 60
+  },
+  staging: {
+    database: 'myapp_staging',
+    logLevel: 'info',
+    apiTimeout: 10000,
+    cacheTTL: 300
+  },
+  production: {
+    database: process.env.DATABASE_URL,
+    logLevel: 'warn',
+    apiTimeout: 30000,
+    cacheTTL: 3600
+  }
+};
+
+const config = module.exports[process.env.NODE_ENV];
+```
+
+## Rotation des secrets
+
+**Sans temps d'arrêt**:
+1. Créer le nouveau secret dans le système
+2. Ajouter le nouveau secret à `.env`
+3. Le code essaie d'abord le nouveau, puis l'ancien (fallback)
+4. Valider que le nouveau fonctionne
+5. Supprimer l'ancien secret
+6. Redéployer
+
+```javascript
+// Supporte l'ancien et le nouveau secret
+const stripeKey = process.env.STRIPE_API_KEY_NEW ||
+                  process.env.STRIPE_API_KEY;
+```
+
+## Documentation de configuration
+
+**Registry des variables**:
+```markdown
+# Environment Variables
+
+## Required (must be set)
+- **DATABASE_URL**: PostgreSQL connection string
+- **JWT_SECRET**: Secret for JWT signing (min 32 chars)
+- **STRIPE_API_KEY**: Stripe API key from dashboard
+
+## Optional
+- **LOG_LEVEL**: debug, info, warn, error (default: info)
+- **PORT**: Server port (default: 3000)
+- **CACHE_TTL**: Cache TTL in seconds (default: 300)
+
+## By Environment
+- **development**: Log level=debug, cache TTL=60
+- **staging**: Log level=info, cache TTL=300
+- **production**: Log level=warn, cache TTL=3600
+```
+
+## Gestion des erreurs
+
+**Configuration manquante**:
+```
+Error: Missing required env var: DATABASE_URL
+  Make sure to set DATABASE_URL in .env
+  Example: DATABASE_URL=postgresql://localhost:5432/myapp
+```
+
+**Valeur invalide**:
+```
+Error: DATABASE_POOL_SIZE must be a number (got "abc")
+  Set DATABASE_POOL_SIZE=10 in .env
+```
+
+## Déploiement de configuration
+
+**GitHub Actions**:
+```yaml
+- name: Deploy to Production
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+    JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  run: npm run deploy:prod
+```
+
+**Heroku**:
+```bash
+heroku config:set DATABASE_URL=postgresql://...
+heroku config:set STRIPE_API_KEY=sk_live_...
+heroku config:set JWT_SECRET=your-secret-key
+```
+
+## Outils courants
+
+**dotenv**: Charger .env
+```javascript
+require('dotenv').config();
+const dbUrl = process.env.DATABASE_URL;
+```
+
+**joi**: Valider le schéma de configuration
+```javascript
+const schema = joi.object({
+  DATABASE_URL: joi.string().required(),
+  PORT: joi.number().default(3000),
+  NODE_ENV: joi.string().valid('development', 'production')
+});
+```
+
+## Liste de contrôle de qualité
+
+Avant de lancer:
+
+- [ ] .env.example avec toutes les variables requises
+- [ ] Variables de production sécurisées (pas dans git)
+- [ ] Validation de configuration au démarrage
+- [ ] Messages d'erreur clairs pour les config manquantes
+- [ ] Secrets rotatés (jamais hardcoder)
+- [ ] Documentation de configuration complète
+- [ ] Configuration par environnement testée
+- [ ] Configuration multi-environnement documentée
+- [ ] Secrets gérés avec un gestionnaire (Vault, AWS Secrets)
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques
+- `/agileflow:adr-new` - Documenter les décisions de configuration
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Agents associés
+
+- [`devops`](/agents/devops) - Infrastructure et déploiement
+- [`security`](/agents/security) - Gestion des secrets

@@ -1,0 +1,252 @@
+---
+title: Analytics
+description: Spécialiste en analytique pour le suivi des événements, l'analyse des données, les tableaux de bord des métriques, l'analyse du comportement des utilisateurs et les insights basés sur les données.
+---
+
+# Spécialiste en analytique
+
+AG-ANALYTICS se spécialise dans l'analytique produit, le suivi des événements, l'analyse du comportement des utilisateurs et les tableaux de bord des métriques pour fournir des insights basés sur les données.
+
+## Capacités
+
+- **Conception du schéma de suivi des événements**: Conventions de nommage, propriétés requises, suivi conforme à la vie privée
+- **Tableaux de bord analytiques**: Métriques en temps réel, métriques d'engagement, entonnoirs de conversion
+- **Analyse du comportement des utilisateurs**: Analyse de cohorte, segmentation des utilisateurs, suivi de la rétention
+- **Analyse des entonnoirs de conversion**: Identifier les fuites et les opportunités d'optimisation
+- **Infrastructure de test A/B**: Suivi des variantes de test, analyse statistique
+- **Validation de la qualité des données**: Détection d'anomalies, vérifications de complétude des données
+- **Conformité à la vie privée**: Gestion du consentement RGPD, politiques de rétention des données
+
+## Quand l'utiliser
+
+Utiliser AG-ANALYTICS quand:
+
+- Concevoir le suivi des événements pour les nouvelles fonctionnalités
+- Créer des tableaux de bord analytiques pour visualiser les métriques
+- Analyser le comportement des utilisateurs et les modèles d'engagement
+- Configurer le suivi des entonnoirs de conversion
+- Établir un cadre de test A/B
+- Assurer la conformité RGPD/CCPA pour le suivi
+- Surveiller la qualité des données et les anomalies
+
+## Comment ça marche
+
+1. **Chargement du contexte**: Lit le fichier d'expertise et l'état analytique actuel
+2. **Métriques commerciales**: Identifie quelles métriques importent pour les objectifs commerciaux
+3. **Conception du schéma d'événement**: Crée les conventions de nommage et suit les problèmes PII
+4. **Documentation**: Documente tous les événements, schémas et exigences de confidentialité
+5. **Mise en œuvre**: Coordonne avec AG-API et AG-UI pour la mise en œuvre du suivi
+6. **Tableaux de bord**: Crée des tableaux de bord analytiques en temps réel et des vues
+7. **Surveillance**: Configure la validation de la qualité des données et la détection d'anomalies
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to track user engagement and identify where users drop off"
+
+# AG-ANALYTICS fera:
+# 1. Définir les métriques commerciales (DAU, MAU, rétention)
+# 2. Concevoir le schéma d'événement (pas de PII, conforme au RGPD)
+# 3. Créer une documentation du catalogue d'événements
+# 4. Coordonner avec AG-API pour le suivi backend
+# 5. Coordonner avec AG-UI pour le suivi frontend
+# 6. Créer des tableaux de bord d'engagement
+# 7. Configurer l'analyse de cohorte
+```
+
+## Comportements clés
+
+- **Pas de suivi PII**: Ne jamais suivre les mots de passe, e-mails, numéros de carte de crédit ou données de santé
+- **Confidentialité d'abord**: Toujours considérer la conformité RGPD/CCPA
+- **Schéma d'abord**: Tous les événements définis avec les conventions de nommage avant la mise en œuvre
+- **Qualité des données**: Valide les événements et surveille les anomalies
+- **Vie privée des utilisateurs**: Respecte le consentement de l'utilisateur et permet un opt-out facile
+
+## Outils disponibles
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Accès au Session Harness pour la vérification
+
+## Suivi des événements
+
+**Convention de nommage des événements** (format object_action):
+- `button_clicked` - L'utilisateur a cliqué sur le bouton
+- `form_submitted` - L'utilisateur a soumis le formulaire
+- `page_viewed` - L'utilisateur a visionné la page
+- `payment_completed` - Paiement réussi
+- `feature_enabled` - Fonctionnalité activée
+
+Utiliser snake_case, pas camelCase.
+
+**Exemple de schéma d'événement**:
+```json
+{
+  "event_name": "button_clicked",
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "session_id": "session-456",
+  "properties": {
+    "button_name": "sign_up",
+    "page_url": "/landing"
+  },
+  "context": {
+    "os": "iOS",
+    "browser": "Safari",
+    "country": "US",
+    "app_version": "2.1.0"
+  }
+}
+```
+
+## Tableaux de bord analytiques
+
+**Tableau de bord des métriques clés**:
+- Utilisateurs en temps réel (direct)
+- Pages vues (dernières 24h)
+- Taux de conversion (%)
+- Taux de rebond (%)
+- Durée de session (moyenne)
+
+**Métriques d'engagement**:
+- Utilisateurs actifs quotidiens (DAU)
+- Utilisateurs actifs mensuels (MAU)
+- Utilisateurs qui reviennent (%)
+- Utilisation de fonctionnalités
+- Engagement du contenu
+
+**Entonnoir de conversion**:
+- Étape 1: Pages vues
+- Étape 2: Inscription commencée
+- Étape 3: E-mail vérifié
+- Étape 4: Première fonctionnalité utilisée
+- Taux de conversion global
+
+## Conformité à la vie privée
+
+**Ne PAS suivre**:
+- Mots de passe ou tokens d'authentification
+- Numéros de carte de crédit ou détails de paiement
+- Numéros de sécurité sociale ou IDs gouvernementaux
+- Informations de santé/médicales
+- Données biométriques
+- Toute PII sans consentement explicite
+
+**Exigences du RGPD**:
+- Opt-in explicite (pas pré-coché)
+- Divulgation claire de ce qui est suivi
+- Option de désinscription facile
+- L'utilisateur peut demander l'accès/suppression des données
+- Rétention des données de 90 jours (événements bruts)
+
+## Test A/B
+
+**Configuration du test**:
+```json
+{
+  "test_id": "checkout_button_color_2025",
+  "variant_a": "blue_button",
+  "variant_b": "green_button",
+  "allocation": "50/50",
+  "primary_metric": "checkout_completion_rate",
+  "minimum_sample_size": 10000
+}
+```
+
+**Analyse**:
+- La taille de l'échantillon est-elle suffisante?
+- La différence est-elle statistiquement significative? (p < 0,05)
+- Quelle est la taille d'effet pratique?
+- Quelle variante a gagné?
+
+## Segmentation des utilisateurs
+
+**Segments courants**:
+- Par date d'inscription (nouveaux utilisateurs, 7d, 30d, 90d+)
+- Par niveau d'utilisation (utilisateurs puissants, réguliers, inactifs)
+- Par adoption de fonctionnalités
+- Par géographie
+- Par niveau d'abonnement
+- Par source d'acquisition
+
+## Analyse de cohorte
+
+**Cohortes de rétention** (suivi par date d'inscription):
+- Semaine 0: 100% (référence)
+- Semaine 1: 65% retenus
+- Semaine 2: 42% retenus
+- Semaine 3: 31% retenus
+- Semaine 4: 24% retenus
+
+Tendance: Les courbes de rétention s'améliorent-elles?
+
+## Analyse des entonnoirs
+
+**Identifier les fuites**:
+1. Vue de la page d'accueil: 50 000
+2. Formulaire d'inscription ouvert: 15 000 (30%)
+3. Formulaire soumis: 8 000 (16%)
+4. E-mail vérifié: 6 500 (13%)
+5. Première connexion: 5 200 (10%)
+
+Chute la plus importante: 70% perdent intérêt entre l'accueil et le formulaire d'inscription.
+
+## Qualité des données
+
+**Règles de validation**:
+- L'horodatage de l'événement est valide (dans les 30 derniers jours)
+- Le nom de l'événement correspond au schéma
+- Le format d'ID utilisateur est correct
+- Les propriétés requises sont présentes
+- Pas de PII dans les propriétés
+- Le format d'ID de session est correct
+
+**Surveiller**:
+- Événements en double (déduplication)
+- Propriétés manquantes (lacunes de suivi)
+- Horodatages invalides (décalage d'horloge)
+- Violations du schéma
+- Anomalies (pics ou chutes soudaines)
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail analytique comme complet:
+
+- Schéma d'événement conçu et documenté
+- Conventions de nommage d'événement cohérentes
+- Pas de suivi PII (confidentialité vérifiée)
+- Consentement RGPD mis en œuvre
+- Politique de rétention des données définie
+- Tableaux de bord créés et utiles
+- Règles de validation de qualité des données mises en œuvre
+- Détection d'anomalies configurée
+- Cadre de test A/B prêt
+- Documentation complète (catalogue d'événements, tableaux de bord)
+- Tests passants avec test_status: "passing"
+
+## Agents associés
+
+- [AG-API](/agents/api) - Implémentation du suivi des événements backend
+- [AG-UI](/agents/ui) - Implémentation du suivi des événements frontend
+- [AG-COMPLIANCE](/agents/compliance) - Consentement RGPD et rétention des données
+
+## Messages de coordination
+
+AG-ANALYTICS coordonne avec d'autres équipes:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-ANALYTICS",
+  "type": "status",
+  "text": "Event tracking schema defined for 15 core user actions"
+}
+```
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques analytiques
+- `/agileflow:ai-code-review` - Examiner l'analytique pour la qualité des données
+- `/agileflow:adr-new` - Documenter les décisions analytiques
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de la story

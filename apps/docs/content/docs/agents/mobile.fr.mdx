@@ -1,0 +1,122 @@
+---
+title: Mobile
+description: Spécialiste mobile pour React Native, Flutter, développement cross-platform, intégrations de modules natifs et optimisations mobiles.
+---
+
+# Spécialiste mobile
+
+AG-MOBILE se spécialise dans le développement mobile cross-platform, les intégrations de modules natifs et l'optimisation mobile.
+
+## Capacités
+
+- **React Native & Flutter**: Écrire une fois, déployer sur iOS et Android
+- **Intégrations de modules natifs**: Caméra, localisation, notifications, capteurs
+- **Modèles UI mobiles**: Navigation par onglets, modales, gestes
+- **Optimisation de performance**: Taille du bundle, gestion mémoire, batterie
+- **Test mobile**: Test sur appareil, émulateur, réseau lent
+- **Abstraction de plateforme**: Gérer les différences iOS/Android
+- **Analytics et crash reporting**: Sentry, Bugsnag, monitoring de performance
+
+## Quand l'utiliser
+
+Utiliser AG-MOBILE quand:
+
+- Implémenter des fonctionnalités mobiles cross-platform
+- Intégrer les modules natifs
+- Optimiser la performance mobile
+- Gérer les différences platform-spécifiques
+- Tester sur des appareils réels
+- Mettre en place le déploiement sur App Store
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Add camera functionality that works on iOS and Android"
+
+# AG-MOBILE fera:
+# 1. Rechercher les APIs de caméra
+# 2. Créer la couche d'abstraction
+# 3. Implémenter sur React Native
+# 4. Tester sur vrai appareil iOS
+# 5. Tester sur vrai appareil Android
+# 6. Documenter la configuration
+```
+
+## Comportements clés
+
+- **Abstraction de plateforme**: Ne jamais coder platform-spécifique sans abstraction
+- **Test sur appareil réel**: Toujours tester sur vrais appareils, pas juste émulateurs
+- **Budgets de performance**: Rester dans les budgets (batterie, mémoire, bundle)
+- **Modèles UI mobiles**: Utiliser les patterns appropriés (onglets bas, pas barres latérales)
+- **Parité cross-platform**: Fonctionnalité identique sur iOS et Android
+
+## Outils disponibles
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Accès au Session Harness pour la vérification
+
+## Plateformes mobiles
+
+**React Native**:
+- JavaScript/TypeScript + modules natifs
+- Expo (gérée) ou bare (non gérée)
+- Partage de connaissance React avec l'équipe web
+
+**Flutter**:
+- Langage Dart avec Material Design et widgets Cupertino
+- Hot reload pour développement rapide
+- Caractéristiques de performance fortes
+
+## Performance mobile
+
+**Budgets de cible**:
+- **Taille du bundle**: < 2MB pour téléchargement rapide
+- **Mémoire**: Éviter les objets larges, nettoyer (2-6GB RAM typique)
+- **Batterie**: Minimiser réseau, CPU, affichage
+- **Données**: Compresser images, limiter requêtes
+- **Réseau**: Tester sur réseau lent/peu fiable
+
+## Checklist de qualité
+
+Avant de marquer le travail mobile complet:
+
+- [ ] Implémenté sur iOS et Android
+- [ ] Modèles UX mobiles appropriés
+- [ ] Flux de navigation testés
+- [ ] Gestes gérés correctement
+- [ ] Code platform-spécifique abstrait
+- [ ] Modules natifs (si applicable) intégrés
+- [ ] Budgets de performance respectés (bundle, mémoire)
+- [ ] Testé sur vrais appareils
+- [ ] Testé sur réseau lent
+- [ ] Exigences App Store respectées (icônes, splash screens)
+- [ ] Tests passants avec test_status: "passing"
+
+## Agents associés
+
+- [AG-UI](/agents/ui) - Composants web partagés et APIs
+- [AG-TESTING](/agents/testing) - Stratégies de test
+- [AG-PERFORMANCE](/agents/performance) - Optimisation de performance
+
+## Messages de coordination
+
+AG-MOBILE communique via le bus:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-MOBILE",
+  "type": "status",
+  "story": "US-0040",
+  "text": "Mobile navigation implémentée, prête pour test sur appareil"
+}
+```
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher mobile patterns
+- `/agileflow:ai-code-review` - Examiner le code mobile
+- `/agileflow:adr-new` - Documenter les décisions mobile
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

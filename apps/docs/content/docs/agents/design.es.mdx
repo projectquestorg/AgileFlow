@@ -1,0 +1,269 @@
+---
+title: Diseño
+description: Especialista en diseño para sistemas de diseño UI/UX, diseño visual, patrones de diseño, documentación de diseño y desarrollo impulsado por diseño.
+---
+
+# Especialista en Diseño
+
+AG-DESIGN crea y mantiene sistemas de diseño, especificaciones de componentes, tokens de diseño y garantiza diseño con accesibilidad primero en todos los productos.
+
+## Capacidades
+
+- **Creación de Sistema de Diseño**: Tokens de diseño, biblioteca de componentes, patrones de diseño
+- **Especificaciones de Componentes**: Especificaciones completas con estados, variantes, props, accesibilidad
+- **Documentación de Diseño**: Guías de entrega de diseño a código, especificaciones de componentes
+- **Diseño con Accesibilidad Primero**: WCAG AA mínimo, AAA preferido
+- **Tokens de Diseño**: Colores, tipografía, espaciado, sombras, animaciones (fuente única de verdad)
+- **Auditorías de Consistencia**: Asegurar uso del sistema de diseño en todos los productos
+- **Versionado del Sistema de Diseño**: Versionado semántico, gestión de changelog
+
+## Cuándo Usar
+
+Utiliza AG-DESIGN cuando:
+
+- Crear o mantener un sistema de diseño
+- Diseñar nuevos componentes UI o características
+- Documentar especificaciones de componentes para desarrolladores
+- Realizar auditorías de consistencia de diseño
+- Asegurar cumplimiento de accesibilidad (WCAG AA/AAA)
+- Definir tokens de diseño y pautas
+- Crear documentación de entrega de diseño a código
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: Lee archivo de experiencia y estado actual del sistema de diseño
+2. **Análisis de Diseño**: Revisa qué componentes y tokens se necesitan
+3. **Especificación**: Crea especificaciones completas de componentes con todos los estados y variantes
+4. **Documentación**: Crea tokens de diseño y guías de entrega de diseño a código
+5. **Revisión de Accesibilidad**: Audita cumplimiento WCAG AA/AAA
+6. **Verificación de Consistencia**: Verifica que el uso del sistema de diseño sea consistente
+7. **Coordinación**: Actualiza status.json y se coordina con AG-UI en implementación
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/babysit
+> "I need to design a new Button component with multiple variants"
+
+# AG-DESIGN hará:
+# 1. Definir propósito del componente Button y casos de uso
+# 2. Crear especificación completa (estados, variantes, props, accesibilidad)
+# 3. Definir tokens de diseño (colores, tipografía, espaciado)
+# 4. Crear guía de entrega de diseño a código
+# 5. Realizar auditoría de accesibilidad (contraste, enfoque, teclado)
+# 6. Proporcionar especificaciones a AG-UI para implementación
+```
+
+## Comportamientos Clave
+
+- **Accesibilidad Primero**: WCAG AA mínimo, AAA preferido para todos los diseños
+- **Completamente Especificado**: Todo componente tiene especificaciones completas (todos los estados, variantes)
+- **Basado en Tokens**: Colores, tipografía, espaciado usan tokens de diseño (no hardcoded)
+- **Consciente de Implementación**: Los diseños son factibles de implementar
+- **Enfocado en Consistencia**: Todo el sistema de diseño es coherente y consistente
+- **Documentación**: Todos los diseños documentados para entrega a desarrolladores
+
+## Herramientas Disponibles
+
+- Leer, Escribir, Editar, Bash, Glob, Grep
+- Acceso a Session Harness para verificación
+
+## Tokens de Diseño
+
+**Colores**:
+- Primario (color de acción principal)
+- Secundario (acciones de apoyo)
+- Acento (destacados)
+- Colores de estado (error rojo, advertencia amarilla, éxito verde, info azul)
+- Grises neutrales (fondos, bordes)
+
+**Tipografía**:
+- Familias de fuente (encabezado, cuerpo, monoespaciado)
+- Tamaños de fuente (escala: 12px, 14px, 16px, 18px, 20px, 24px, 32px)
+- Pesos de fuente (400, 500, 600, 700)
+- Alturas de línea (1.2, 1.5, 1.8)
+
+**Espaciado**:
+- Escala: 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+- Usado para padding, margen, espacios
+
+**Otros Tokens**:
+- Sombras (niveles de elevación 0-24)
+- Bordes (radio de borde, anchos, estilos)
+- Animaciones (duraciones, easing)
+
+## Especificaciones de Componentes
+
+**La Especificación Completa Incluye**:
+- Nombre y propósito del componente
+- Estados (predeterminado, hover, activo, deshabilitado, cargando, error)
+- Variantes (tamaños, colores, combinaciones)
+- Props/propiedades con tipos y valores predeterminados
+- Requisitos de accesibilidad (ARIA, enfoque, teclado)
+- Pautas de uso (cuándo usar, cuándo no usar)
+- Tokens de diseño usados
+- Componentes relacionados
+
+**Ejemplo de Especificación de Componente**:
+```text
+## Componente Button
+
+Propósito: Elemento de interacción primaria para acciones del usuario
+
+Props:
+- variant: "primary" | "secondary" | "danger" (predeterminado: "primary")
+- size: "sm" | "md" | "lg" (predeterminado: "md")
+- disabled: boolean (predeterminado: false)
+- loading: boolean (predeterminado: false)
+- icon: ReactNode (opcional)
+- children: ReactNode (requerido)
+
+Estados:
+- Predeterminado: Usa token de color primario
+- Hover: 10% más oscuro, cursor pointer
+- Activo: 20% más oscuro
+- Deshabilitado: 40% opacidad, cursor not-allowed
+- Cargando: Muestra spinner, estado deshabilitado
+
+Accesibilidad:
+- Tipo: button
+- Etiqueta ARIA si no hay texto
+- Enfoque visible con contorno de 2px
+- Enter/Espacio dispara click
+- Orden de tabulación preservado
+
+Tokens Usados:
+- Color: primary, secondary, danger
+- Tipografía: button-md (14px, peso 600)
+- Espaciado: md (16px)
+- Sombra: elevation-2
+
+Uso:
+- Acciones primarias (sign up, submit)
+- Acciones secundarias con variant="secondary"
+- Acciones destructivas con variant="danger"
+
+NO Usar Para:
+- Navegación (usar componente Link)
+- Estados de alternancia (usar componente Toggle)
+```
+
+## Documentación de Diseño
+
+**Estructura de Documentación del Sistema de Diseño**:
+- Descripción general y filosofía
+- Documentación de tokens (colores, tipografía, espaciado)
+- Biblioteca de componentes (todos los componentes con especificaciones)
+- Patrones de diseño (patrones de interacción comunes)
+- Do's y don'ts (pautas de uso)
+- Pautas de accesibilidad
+- Guías de implementación (para desarrolladores)
+
+**Entrega de Diseño a Código**:
+- Especificación del componente (como arriba)
+- Enlace del archivo Figma/diseño
+- Tokens de diseño requeridos
+- Pautas para desarrolladores
+- Lista de verificación de pruebas
+- Lista de verificación de accesibilidad
+
+## Accesibilidad (WCAG AA/AAA)
+
+**WCAG AA (Mínimo)**:
+- Contraste de color ≥4.5:1 para texto
+- Contraste de color ≥3:1 para componentes UI
+- Indicadores de enfoque visibles (≥2px de contorno)
+- Accesible por teclado (todos los elementos interactivos)
+- Sin información solo por color (usar iconos, texto, patrones)
+- El movimiento se puede deshabilitar (prefers-reduced-motion)
+
+**WCAG AAA (Preferido)**:
+- Contraste de color ≥7:1 para texto
+- Contraste de color ≥4.5:1 para componentes UI
+- Indicadores de enfoque mejorados
+- Controles de movimiento más granulares
+
+**Lista de Verificación de Revisión de Diseño**:
+- Relaciones de contraste verificadas
+- Estados de enfoque diseñados
+- Navegación por teclado posible
+- Sin información solo por color
+- Compatible con lector de pantalla (implícito)
+- Movimiento reducido respetado
+
+## Versionado del Sistema de Diseño
+
+**Versionado Semántico**:
+- MAYOR: Cambios de ruptura (eliminación de componente, cambios de especificación significativos)
+- MENOR: Nuevos componentes o mejoras sin ruptura
+- PATCH: Correcciones de bugs y actualizaciones de documentación
+
+**Changelog por Lanzamiento**:
+- Componentes añadidos
+- Componentes cambiados/actualizados
+- Componentes deprecados
+- Bugs corregidos
+- Cambios de tokens
+
+## Auditoría de Consistencia de Diseño
+
+**Comprobar**:
+- Colores inconsistentes (deberían usar tokens)
+- Espaciado inconsistente (deberían usar escala)
+- Tipografía inconsistente (deberían usar fuentes del sistema)
+- Comportamiento de componentes inconsistente
+- Accesibilidad faltante (etiquetas ARIA faltantes, estados de enfoque)
+- Uso roto del sistema de diseño
+
+**Ejemplo de Salida**:
+```text
+Reporte de Auditoría de Consistencia de Diseño
+- ✅ Colores: 100% uso de tokens
+- ⚠️ Espaciado: 2 componentes usando valores personalizados
+- ❌ Tipografía: 3 tamaños de fuente inconsistentes
+- ⚠️ Accesibilidad: 5 etiquetas ARIA faltantes
+- 🔧 Recomendaciones: [lista]
+```
+
+## Lista de Control de Calidad
+
+Antes de marcar el trabajo de diseño como completo:
+
+- Todos los componentes diseñados con especificaciones completas
+- Tokens de diseño definidos (colores, tipografía, espaciado)
+- Requisitos de accesibilidad documentados (WCAG AA mínimo)
+- Todos los estados y variantes especificados
+- Documentación de diseño completa
+- Guía de entrega para desarrolladores creada
+- Consistencia del sistema de diseño verificada
+- Contraste de color verificado (AA mínimo)
+- Indicadores de enfoque diseñados
+- Navegación por teclado considerada
+- Pruebas pasando con test_status: "passing"
+
+## Agentes Relacionados
+
+- [AG-UI](/agents/ui) - Implementación de componentes desde especificaciones de diseño
+- [AG-ACCESSIBILITY](/agents/accessibility) - Pruebas y validación de accesibilidad
+- [AG-PRODUCT](/agents/product) - Estrategia de producto y colaboración de diseño
+
+## Mensajes de Coordinación
+
+AG-DESIGN se coordina con otros equipos:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-DESIGN",
+  "type": "status",
+  "text": "New Button component design spec created and ready for implementation"
+}
+```
+
+## Comandos de Barra Diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigar mejores prácticas de sistemas de diseño
+- `/agileflow:ai-code-review` - Revisar especificaciones de diseño para completitud
+- `/agileflow:adr-new` - Documentar decisiones de diseño
+- `/agileflow:status STORY=... STATUS=...` - Actualizar estado de historia

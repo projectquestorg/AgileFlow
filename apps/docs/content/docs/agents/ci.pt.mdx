@@ -1,0 +1,142 @@
+---
+title: CI/CD
+description: Especialista em CI/CD e qualidade para configuração de workflows, infraestrutura de teste, linting, type checking, cobertura e automação de integração contínua.
+---
+
+# AG-CI
+
+O Agente CI/CD & Qualidade especializa em pipelines de integração contínua, infraestrutura de teste e automação de qualidade de código. AG-CI mantém a CI verde e rápida, garantindo que cada commit atenda aos padrões de qualidade.
+
+## Capacidades
+
+- **Setup de Pipeline CI/CD**: GitHub Actions, GitLab CI e outras plataformas
+- **Configuração de Framework de Teste**: Jest, Vitest, Pytest, Playwright, Cypress
+- **Linting & Formatação**: ESLint, Prettier, Black configuration
+- **Type Checking**: TypeScript, mypy e outros sistemas de tipo
+- **Cobertura de Código**: Aplicação de threshold de cobertura e relatórios
+- **Escaneamento de Segurança**: SAST, checks de dependência, escaneamento de vulnerabilidades
+- **Teste E2E**: Automação de teste end-to-end e detecção de testes flaky
+- **Otimização de Build**: Caching, paralelização, job splitting
+- **Manutenção de CLAUDE.md**: Documentação de práticas e convenções CI/teste
+
+## Quando Usar
+
+Use AG-CI quando precisar:
+
+- Configurar ou otimizar pipelines CI/CD
+- Configurar frameworks de teste e harnesses
+- Implementar linting, formatação ou type checking
+- Configurar rastreamento e aplicação de cobertura de código
+- Otimizar tempos de build
+- Corrigir testes flaky
+- Implementar escaneamento de segurança
+- Documentar práticas de teste em CLAUDE.md
+
+## Como Funciona
+
+1. **Carregamento de Contexto**: Agente lê arquivo expertise e verifica configuração de CI
+2. **Análise**: Revisa status.json para stories relacionadas a testes e problemas de CI
+3. **Execução**: Configura workflows, frameworks de teste, ferramentas de qualidade
+4. **Verificação**: Executa pipeline de CI em branch de feature para garantir que passa
+5. **Documentação**: Atualiza CLAUDE.md com novos padrões de teste e convenções
+6. **Coordenação**: Atualiza status.json e comunica via bus de agente
+
+## Exemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Precisamos configurar um pipeline de CI com testes unit e E2E"
+```
+
+AG-CI fará:
+1. Detectar tipo de projeto (Node.js, Python, etc.)
+2. Recomendar frameworks de teste
+3. Configurar infraestrutura de teste
+4. Configurar workflows de CI
+5. Documentar padrões em CLAUDE.md
+
+## Comportamentos-Chave
+
+- **CI deve ficar verde**: Não pode fazer merge de testes falhando
+- **Manter builds rápidos**: Target abaixo de 5 minutos para unit/lint, abaixo de 15 minutos suite completa
+- **Abordagem fail-fast**: Capturar regressões imediatamente
+- **Nenhum teste desabilitado sem aprovação**: Thresholds de cobertura são aplicados
+- **Escaneamento de segurança ativado**: Todo pipeline de CI inclui verificações de segurança
+- **CLAUDE.md atualizado proativamente**: Padrões de teste documentados para desenvolvimento futuro
+
+## Ferramentas Disponíveis
+
+- Read, Write, Edit (operações de arquivo)
+- Bash (executar comandos de CI e test runners)
+- Glob (encontrar arquivos de teste)
+- Grep (procurar por padrões de teste)
+
+## Responsabilidades Principais
+
+1. Manter CI verde e rápida
+2. Garantir pelo menos um teste por story validando critérios de aceitação
+3. Manter thresholds de cobertura de teste
+4. Configurar linting, formatação, type checking
+5. Configurar escaneamento de segurança
+6. Documentar práticas de teste
+7. Atualizar status.json após cada mudança de status
+8. Anexar mensagens de coordenação ao bus de agente
+9. Corrigir testes flaky e problemas de CI
+10. Otimizar tempos de build
+
+## Padrões de Configuração de CI
+
+**GitHub Actions Workflow**:
+
+```yaml
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+      - run: npm run type-check
+```
+
+**Padrão de Cobertura de Teste**:
+- Unit tests: 80%+ coverage
+- Integration tests: 15% coverage
+- E2E tests: 5% coverage
+
+## Checklist de Qualidade
+
+Antes de marcar trabalho como completo:
+
+- [ ] CI executa com sucesso no branch de feature
+- [ ] Jobs unit/lint completam em menos de 5 minutos
+- [ ] Testes de integração/E2E rodam em paralelo quando possível
+- [ ] Testes falhados fornecem mensagens de erro claras e acionáveis
+- [ ] Relatórios de cobertura gerados e thresholds atendidos
+- [ ] Checks obrigatórios configurados em branches protegidas
+- [ ] Testes flaky identificados e corrigidos
+- [ ] Escaneamento de segurança ativado
+- [ ] Secrets acessados via GitHub secrets, nunca hardcoded
+
+## Agentes Relacionados
+
+- [`devops`](/agents/devops) - Coordenar otimização de build e performance
+- [`ui`](/agents/ui) - Fornecer setup de testes de componentes
+- [`api`](/agents/api) - Fornecer setup de testes de integração
+- [`mentor`](/agents/mentor) - Relatar gaps de infraestrutura de teste
+
+## Comandos Slash
+
+- `/agileflow:research:ask TOPIC=...` - Pesquisar frameworks de teste e plataformas CI
+- `/agileflow:ai-code-review` - Revisar configuração de CI
+- `/agileflow:adr-new` - Documentar decisões de CI/teste
+- `/agileflow:status STORY=... STATUS=...` - Atualizar status de story

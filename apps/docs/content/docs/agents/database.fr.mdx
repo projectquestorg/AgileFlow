@@ -1,0 +1,308 @@
+---
+title: Base de données
+description: Spécialiste en base de données pour la conception du schéma, les migrations, les requêtes optimisées, l'indexation et la performance des requêtes.
+---
+
+# Spécialiste base de données
+
+AG-DATABASE est l'expert en conception et optimisation des bases de données, responsable des schémas, des migrations, de l'optimisation des requêtes et de la performance.
+
+## Capacités
+
+- **Conception du schéma**: Tables, colonnes, types de données, contraintes
+- **Migrations de base de données**: Versioning des schémas, rollback
+- **Optimisation des requêtes**: Éliminer les N+1, ajouter des index
+- **Indexing**: Créer des index pour améliorer la performance
+- **Normalisation/dénormalisation**: Équilibrer les compromis
+- **Performance**: Mesurer et optimiser la latence des requêtes
+- **Scalabilité**: Sharding, réplication, gestion des connexions
+- **Sauvegarde et récupération**: Stratégies de sauvegarde, RPO/RTO
+
+## Quand l'utiliser
+
+Utiliser AG-DATABASE quand:
+
+- Concevoir un schéma pour une nouvelle fonctionnalité
+- Optimiser des requêtes lentes
+- Ajouter des index pour améliorer la performance
+- Créer des migrations de base de données
+- Problèmes N+1
+- Dimensionner la base de données
+- Configurer la réplication
+- Planifier la sauvegarde et la récupération
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "The user list endpoint is taking 5 seconds. Most time in database."
+
+# AG-DATABASE fera:
+# 1. Analyser la requête avec EXPLAIN ANALYZE
+# 2. Identifier le problème N+1
+# 3. Proposer un JOIN au lieu d'une boucle
+# 4. Ajouter des index sur les colonnes de filtrage
+# 5. Mesurer: 5s → 200ms
+```
+
+## Conception du schéma
+
+**Principes**:
+- **Normalisation**: Réduire la duplication (3NF)
+- **Intégrité des données**: Contraintes de clé étrangère
+- **Performance**: Index sur les champs de requête fréquente
+- **Évolutivité**: Concevoir pour la croissance future
+
+**Exemple de schéma**:
+```sql
+-- Users table
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  INDEX idx_email (email)
+);
+
+-- Posts table (relation one-to-many)
+CREATE TABLE posts (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  INDEX idx_user_id (user_id),
+  INDEX idx_created_at (created_at)
+);
+```
+
+## Migrations
+
+**Versioning des migrations**:
+```
+migrations/
+├── 001_create_users.sql
+├── 002_create_posts.sql
+├── 003_add_avatar_to_users.sql
+└── 004_add_index_on_email.sql
+```
+
+**Format de migration**:
+```sql
+-- Migration: 001_create_users.sql
+-- Up (apply this when migrating forward)
+CREATE TABLE users (
+  id UUID PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Down (revert when rolling back)
+DROP TABLE users;
+```
+
+## Optimisation des requêtes
+
+**Problème N+1** (mauvais):
+```javascript
+const users = await User.find();
+for (const user of users) {
+  user.posts = await Post.find({ userId: user.id });
+}
+// 1 requête pour users + N requêtes pour posts = N+1 requêtes!
+```
+
+**Optimisé** (bon):
+```javascript
+const users = await User.find().populate('posts');
+// 1 requête avec JOIN au lieu de N+1
+```
+
+**EXPLAIN ANALYZE** (diagnose):
+```sql
+EXPLAIN ANALYZE
+SELECT u.*, p.* FROM users u
+LEFT JOIN posts p ON u.id = p.user_id
+WHERE u.id = 'user-123';
+
+-- Output montre où le temps est dépensé
+-- Seq Scan vs Index Scan
+```
+
+## Indexing
+
+**Quand ajouter un index**:
+- Colonnes utilisées dans WHERE
+- Colonnes utilisées dans JOIN
+- Colonnes utilisées pour le tri (ORDER BY)
+- Colonnes avec faible cardinalité → ne pas indexer
+
+**Index courants**:
+```sql
+-- Single column index
+CREATE INDEX idx_email ON users(email);
+
+-- Composite index (order matters)
+CREATE INDEX idx_user_created ON posts(user_id, created_at);
+
+-- Unique index (constraint + index)
+CREATE UNIQUE INDEX idx_email_unique ON users(email);
+
+-- Full-text index
+CREATE INDEX idx_title_fts ON posts USING GIN(to_tsvector('english', title));
+```
+
+**Coût vs bénéfice**:
+- Bénéfice: Requêtes plus rapides (SELECT)
+- Coût: Écritures plus lentes (INSERT/UPDATE/DELETE), stockage supplémentaire
+
+## Types de données
+
+**Choisir le bon type**:
+```sql
+-- Identifiants
+id UUID PRIMARY KEY              -- UUID (recommandé)
+id BIGINT PRIMARY KEY            -- Large integer
+
+-- Texte
+email VARCHAR(255)               -- String limité
+description TEXT                 -- String illimité
+title VARCHAR(255) NOT NULL      -- String obligatoire
+
+-- Nombres
+price DECIMAL(10, 2)             -- Monnaie (10 chiffres, 2 décimales)
+quantity INT                     -- Entier
+rating NUMERIC(2,1)              -- 1-5 rating
+
+-- Dates
+created_at TIMESTAMP DEFAULT NOW() -- Avec fuseau horaire
+birth_date DATE                  -- Sans heure
+
+-- Booléen
+is_active BOOLEAN DEFAULT TRUE   -- True/False
+
+-- JSON
+metadata JSONB NOT NULL          -- JSON avec indexing
+```
+
+## Normalisation vs Dénormalisation
+
+**Normalisation** (réduire la duplication):
+```sql
+-- Bon: Tables séparées
+CREATE TABLE users (id, name);
+CREATE TABLE user_emails (user_id, email); -- Plusieurs emails par utilisateur
+
+-- Mauvais: Colonne répétée
+CREATE TABLE users (id, name, email1, email2, email3); -- Que faire pour 4+ emails?
+```
+
+**Dénormalisation** (pour la performance):
+```sql
+-- Dénormalisé pour la performance:
+SELECT u.id, u.name, COUNT(p.id) as post_count
+FROM users u
+LEFT JOIN posts p ON u.id = p.user_id
+GROUP BY u.id;
+
+-- Dénormalisé dans la table (cacher le post_count):
+ALTER TABLE users ADD COLUMN post_count INT DEFAULT 0;
+-- Mettre à jour le cache avec un trigger
+CREATE TRIGGER update_post_count AFTER INSERT ON posts
+  UPDATE users SET post_count = post_count + 1 WHERE id = NEW.user_id;
+```
+
+## Gestion des connexions
+
+**Pool de connexions**:
+```javascript
+const pool = new Pool({
+  max: 20,              // Maximum de connexions
+  idleTimeoutMillis: 30000,  // Fermer inactif après 30s
+  connectionTimeoutMillis: 2000 // Attendre 2s pour une connexion
+});
+
+const client = await pool.connect();
+try {
+  const result = await client.query('SELECT * FROM users');
+} finally {
+  client.release(); // Retourner la connexion au pool
+}
+```
+
+## Performance
+
+**Requête lente**:
+```sql
+SELECT * FROM posts WHERE title LIKE '%javascript%' AND created_at > NOW() - INTERVAL '1 month';
+-- Index manquant sur title, created_at, recherche full-text inefficace
+```
+
+**Optimisé**:
+```sql
+-- Ajouter index composite
+CREATE INDEX idx_posts_title_date ON posts(created_at DESC)
+  WHERE title != NULL;
+
+-- Ou utiliser full-text search
+CREATE INDEX idx_posts_title_fts ON posts USING GIN(to_tsvector(title));
+SELECT * FROM posts
+  WHERE to_tsvector(title) @@ to_tsquery('javascript')
+  AND created_at > NOW() - INTERVAL '1 month';
+```
+
+## Sauvegarde et récupération
+
+**RPO/RTO**:
+- **RPO** (Recovery Point Objective): Combien de données peuvent être perdues (ex: 1 heure)
+- **RTO** (Recovery Time Objective): Combien de temps pour la récupération (ex: 30 minutes)
+
+**Stratégies**:
+```bash
+# Sauvegarde quotidienne complète
+pg_dump mydb > backup-$(date +%Y%m%d).sql
+
+# Sauvegarde avec compression
+pg_dump --compress=9 mydb | aws s3 cp - s3://backups/mydb-$(date +%Y%m%d).sql.gz
+
+# Replication en temps réel (meilleur RPO/RTO)
+-- Configurar replica standby pour failover automatique
+```
+
+## Outils courants
+
+- **PostgreSQL**: SQL avancé, JSONB, performance
+- **MySQL**: Largement disponible, plus simple
+- **MongoDB**: Document-based, flexible schema
+- **Redis**: Cache en mémoire, haute performance
+- **DynamoDB**: Scalabilité sans serveur AWS
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail BD comme complet:
+
+- [ ] Schéma conçu et normalisé (3NF)
+- [ ] Contraintes de clé étrangère en place
+- [ ] Index créés sur les colonnes de requête fréquente
+- [ ] Migrations versionnées
+- [ ] Requêtes optimisées (pas de N+1)
+- [ ] Performance mesurée (<10ms requêtes moyennes)
+- [ ] EXPLAIN ANALYZE examiné
+- [ ] Gestion des connexions configurée
+- [ ] Sauvegarde et récupération en place
+- [ ] test_status: "passing" vérifié
+
+## Agents associés
+
+- [`api`](/agents/api) - Consommateurs de la BD
+- [`performance`](/agents/performance) - Optimisation des requêtes
+- [`devops`](/agents/devops) - Infrastructure, sauvegarde
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns BD
+- `/agileflow:ai-code-review` - Examiner les requêtes pour les optimisations
+- `/agileflow:adr-new` - Documenter les décisions BD
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

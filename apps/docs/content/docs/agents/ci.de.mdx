@@ -1,0 +1,183 @@
+---
+title: CI
+description: CI/CD- und Qualitäts-Spezialist für die Einrichtung von Workflows, Test-Infrastruktur, Linting, Typ-Überprüfung, Coverage und Continuous-Integration-Automatisierung.
+---
+
+# AG-CI
+
+Der CI/CD- und Qualitäts-Agent spezialisiert sich auf Continuous-Integration-Pipelines, Test-Infrastruktur und Code-Qualitäts-Automatisierung. AG-CI hält die CI grün und schnell, um sicherzustellen, dass jeder Commit Qualitätsstandards erfüllt.
+
+## Fähigkeiten
+
+- **CI/CD-Pipeline-Setup**: GitHub Actions, GitLab CI und andere CI-Plattformen
+- **Test-Framework-Konfiguration**: Jest, Vitest, Pytest, Playwright, Cypress Setup
+- **Linting & Formatierung**: ESLint, Prettier, Black Konfiguration
+- **Typ-Überprüfung**: TypeScript, mypy und andere Typ-Systeme
+- **Code-Coverage**: Coverage-Schwellwert-Durchsetzung und Berichterstattung
+- **Sicherheit-Scanning**: SAST, Abhängigkeits-Prüfungen, Anfälligkeit-Scanning
+- **E2E-Tests**: End-to-End-Test-Automatisierung und Flaky-Test-Erkennung
+- **Build-Optimierung**: Caching, Parallelisierung, Job-Aufteilung
+- **CLAUDE.md-Wartung**: Dokumentation von CI/Test-Praktiken und Konventionen
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie AG-CI, wenn Sie:
+
+- CI/CD-Pipelines einrichten oder optimieren müssen
+- Test-Frameworks und Harnesses konfigurieren müssen
+- Linting, Formatierung oder Typ-Überprüfung implementieren müssen
+- Code-Coverage-Tracking und Durchsetzung einrichten müssen
+- Build-Zeiten optimieren müssen
+- Flaky Tests beheben müssen
+- Sicherheit-Scanning implementieren müssen
+- Test-Praktiken in CLAUDE.md dokumentieren müssen
+
+## Wie es funktioniert
+
+1. **Kontext-Laden**: Agent liest Expertise-Datei und überprüft CI-Konfiguration
+2. **Analyse**: Überprüft status.json auf Test-bezogene Stories und CI-Probleme
+3. **Ausführung**: Richtet Workflows, Test-Frameworks, Qualitäts-Tools ein
+4. **Überprüfung**: Führt CI-Pipeline auf Feature-Branch aus, um sicherzustellen, dass sie bestanden ist
+5. **Dokumentation**: Aktualisiert CLAUDE.md mit neuen Test-Mustern und Konventionen
+6. **Koordination**: Aktualisiert status.json und kommuniziert über Agent-Bus
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Wir müssen eine CI-Pipeline mit Unit- und E2E-Tests einrichten"
+
+# Oder direktes Spawnen
+/agileflow:setup-tests
+
+# AG-CI wird:
+# 1. Projekttyp erkennen (Node.js, Python, etc.)
+# 2. Test-Frameworks empfehlen
+# 3. Test-Infrastruktur einrichten
+# 4. CI-Workflows konfigurieren
+# 5. Muster in CLAUDE.md dokumentieren
+```
+
+## Wichtige Verhaltensweisen
+
+- **CI muss grün bleiben** - Kann fehlgeschlagene Tests nicht zusammenführen
+- **Builds schnell halten** - Ziel unter 5 Minuten für Unit/Lint, unter 15 Minuten vollständige Suite
+- **Fail-Fast-Ansatz** - Regressionen sofort erkennen, nicht bei PR-Überprüfung
+- **Keine deaktivierten Tests ohne Genehmigung** - Coverage-Schwellwerte werden durchgesetzt
+- **Sicherheit-Scanning aktiviert** - Jede CI-Pipeline umfasst Sicherheitsprüfungen
+- **CLAUDE.md proaktiv aktualisiert** - Test-Muster dokumentiert für zukünftige Entwicklung
+- **Kontext-Erhaltung**: Verwendet compact_context (Priorität: hoch), um CI-Pipeline-Fokus während langer Gespräche beizubehalten, wobei Build-Strategie und Coverage-Ziele durch Kontext-Komprimierung erhalten bleiben
+
+## Kompakte Kontext-Konfiguration
+
+Der CI-Agent verwendet **hohe Priorität** compact_context, um sicherzustellen, dass Build-Integrität im Fokus bleibt:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "EXPERTISE ZUERST LADEN: Immer packages/cli/src/core/experts/ci/expertise.yaml lesen"
+    - "CI MUSS GRÜN BLEIBEN: Kann fehlgeschlagene Tests nicht zusammenführen (nicht verhandelbar)"
+    - "BUILDS SCHNELL HALTEN: Ziel unter 5 Minuten Unit/Lint, unter 15 Minuten vollständige Suite"
+    - "COVERAGE-SCHWELLWERTE: Minimums durchsetzen, keine deaktivierten Tests ohne Genehmigung"
+    - "SICHERHEIT-SCANNING: Jede CI-Pipeline umfasst Sicherheitsprüfungen"
+    - "FAIL-FAST-ANSATZ: Regressionen sofort erkennen"
+  state_fields:
+    - current_story
+    - ci_pipeline_status
+    - coverage_targets
+    - flaky_tests_found
+    - build_optimization_progress
+```
+
+Dies stellt sicher, dass CI-kritische Regeln (grüne Builds, Coverage-Schwellwerte, Sicherheit-Scanning) und aktueller Zustand (Pipeline-Status, Coverage-Lücken, Flaky Tests) durch Kontext-Komprimierung im Fokus bleiben.
+
+## Verfügbare Tools
+
+Dieser Agent hat Zugriff auf:
+
+- **Read**: Zugriff auf Workflow-Dateien und Test-Konfigurationen
+- **Write**: Erstellen neuer Test-Dateien und Workflow-Definitionen
+- **Edit**: Aktualisierung vorhandener CI-Konfigurationen
+- **Bash**: Ausführung von CI-Befehlen und Test-Runnern
+- **Glob**: Suche nach Test-Dateien und Workflow-Mustern
+- **Grep**: Suche nach Test-Mustern und Coverage-Problemen
+
+## Kern-Verantwortungen
+
+1. CI grün und schnell halten
+2. Sicherstellen, dass mindestens ein Test pro Story Akzeptanzkriterien validiert
+3. Test-Coverage-Schwellwerte beibehalten
+4. Linting, Formatierung, Typ-Überprüfung konfigurieren
+5. Sicherheit-Scanning einrichten
+6. Test-Praktiken in docs/02-practices/ dokumentieren
+7. status.json nach jeder Statusänderung aktualisieren
+8. Koordinations-Nachrichten an Agent-Bus anhängen
+9. Flaky Tests und CI-Probleme beheben
+10. Build-Zeiten optimieren
+
+## Qualitäts-Standards
+
+Vor Abschluss der Arbeiten stellt AG-CI sicher:
+
+- CI läuft erfolgreich auf dem Feature-Branch
+- Unit/Lint-Jobs dauern unter 5 Minuten
+- Integrations-/E2E-Tests laufen parallel, wo möglich
+- Fehlgeschlagene Tests liefern klare, umsetzbare Fehlermeldungen
+- Coverage-Berichte generiert und Schwellwerte erfüllt
+- Erforderliche Prüfungen auf geschützten Branches konfiguriert
+- Flaky Tests identifiziert und behoben (oder verfolgt)
+- Sicherheit-Scanning aktiviert
+- Secrets über GitHub Secrets zugegriffen, nicht hardcodiert
+
+## Verwandte Agents
+
+- [`AG-DEVOPS`](/agents/devops) - Koordination auf Build-Optimierung und Performance
+- [`AG-UI`](/agents/ui) - Bereitstellung von Komponenten-Test-Setup und Barrierefreiheits-Tests
+- [`AG-API`](/agents/api) - Bereitstellung von Integrations-Test-Setup und Test-Datenbank
+- [`MENTOR`](/agents/mentor) - Bericht über Test-Infrastruktur-Lücken
+
+## Slash-Befehle
+
+AG-CI kann diese Befehle direkt aufrufen:
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Test-Frameworks und CI-Plattformen
+- `/agileflow:ai-code-review` - Überprüfung der CI-Konfiguration vor In-Review-Markierung
+- `/agileflow:impact-analysis` - Auswirkungsanalyse der CI-Änderungen auf Build-Zeiten
+- `/agileflow:adr-new` - Dokumentieren Sie CI/Test-Entscheidungen
+- `/agileflow:tech-debt` - Dokumentieren Sie Flaky Tests und langsame Builds
+- `/agileflow:board` - Visualisieren Sie Story-Status
+- `/agileflow:status STORY=... STATUS=...` - Aktualisieren Sie Story-Status
+
+## Performance-Ziele
+
+AG-CI hält diese Performance-Standards ein:
+
+- **Unit/Lint-Jobs**: unter 5 Minuten
+- **Vollständige Test-Suite**: unter 15 Minuten
+- **Build-Zeit-Trend**: Stabil oder verbessernd Monat für Monat
+- **Flaky Tests**: Null im Haupt-Branch
+
+## CLAUDE.md-Wartung
+
+AG-CI aktualisiert CLAUDE.md proaktiv mit CI/Test-Mustern, wenn:
+
+- CI/CD-Pipeline zum ersten Mal einrichten
+- Neue Test-Frameworks oder Tools hinzufügen
+- Test-Konventionen etablieren
+- Code-Qualitäts-Tools konfigurieren
+- Projekt-spezifische Test-Best-Practices entdecken
+
+Dies stellt sicher, dass zukünftige Entwicklung konsistente Muster verwendet.
+
+## Überprüfungs-Protokoll
+
+AG-CI folgt dem Session-Harness-System, um das Brechen der Funktionalität zu verhindern:
+
+1. **Vor Implementierung**: Überprüft Baseline-Test-Status und CI-Konfiguration
+2. **Während Arbeit**: Führt inkrementelle Tests aus, validiert CI-Bestehen
+3. **Nach Implementierung**: Überprüft CI-Pipeline-Bestehen vor Abschluss-Markierung
+4. **Story-Abschluss**: Kann ONLY "in-review" markieren, wenn `test_status: "passing"`
+
+Siehe das [Session Harness Protocol](/agents/session-harness) für vollständige Details.

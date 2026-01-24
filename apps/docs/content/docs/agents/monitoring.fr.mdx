@@ -1,0 +1,209 @@
+---
+title: Monitoring
+description: Spécialiste en monitoring pour l'observabilité, les stratégies de journalisation, les règles d'alerte, les tableaux de bord de métriques et les SLOs.
+---
+
+# Spécialiste monitoring
+
+AG-MONITORING conçoit et met en œuvre des solutions d'observabilité complètes pour assurer que les systèmes de production sont visibles, sains et prêts pour la réponse aux incidents.
+
+## Capacités
+
+- **Journalisation structurée**: Format JSON, IDs de requête/trace, niveaux appropriés
+- **Collecte de métriques**: Métriques applicatives, infrastructure, métier
+- **Tableaux de bord**: Grafana, Datadog, CloudWatch
+- **Règles d'alerte**: Basée sur seuil, anomalies, composites
+- **Définition SLO**: Cibles de disponibilité, latence, taux d'erreur avec budgets d'erreur
+- **Tracing distribué**: Suivi du flux de requête dans le système
+- **Vérifications de santé**: Monitoring de santé d'endpoint et dépendances
+- **Runbooks incidents**: Procédures de détection, diagnostic, résolution
+
+## Quand l'utiliser
+
+Utiliser AG-MONITORING quand:
+
+- Concevoir l'architecture d'observabilité pour un service
+- Implémenter la journalisation structurée
+- Mettre en place la collecte de métriques
+- Configurer les règles d'alerte
+- Définir les SLOs
+- Créer les runbooks incidents
+- Monitorer la santé applicative en production
+- Analyser les modèles de latence
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "Set up monitoring for our new API service"
+
+# AG-MONITORING fera:
+# 1. Concevoir l'architecture d'observabilité
+# 2. Mettre en place la journalisation JSON
+# 3. Configurer Prometheus/Grafana pour les métriques
+# 4. Créer des tableaux de bord
+# 5. Configurer les règles d'alerte
+# 6. Définir les SLOs
+# 7. Créer les runbooks incidents
+```
+
+## Comportements clés
+
+- **Journalisation structurée forcée**: Pas de logs plaintext en production
+- **Alerter sur ce qui compte**: Réduire le bruit avec des seuils intelligents
+- **Préparer les défaillances**: Créer les runbooks avant les incidents
+- **Jamais logger PII**: Sécurité et conformité en premier (pas de mots de passe, tokens, PII)
+- **Monitorer le chemin heureux ET les erreurs**: Alerter sur les seuils de succès et les défaillances
+- **Les SLOs pilotent les décisions**: Les budgets d'erreur déterminent quand ralentir et corriger la dette
+
+## Piliers de l'observabilité
+
+AG-MONITORING implémente les quatre piliers:
+
+### Métriques (Quantitatif)
+- Temps de réponse (latence)
+- Débit (requêtes/seconde)
+- Taux d'erreur (% échecs)
+- Utilisation ressources (CPU, mémoire, disque)
+- Métriques métier (inscriptions, transactions)
+
+### Logs (Événements détaillés)
+- Logs applicatifs (erreurs, avertissements, info)
+- Logs d'accès (requêtes HTTP)
+- Logs d'audit (qui a fait quoi)
+- Format structuré (JSON, facilement recherchable)
+
+### Traces (Flux de requête)
+- Tracing distribué dans le système
+- Ventilation de latence (où le temps est dépensé)
+- Traces d'erreur et stack traces
+- Dépendances de services
+
+### Alertes (Notification proactive)
+- Basée sur seuil (métrique > limite)
+- Basée sur anomalies (modèles inhabituels)
+- Composite (conditions multiples)
+- Routage intelligent (qui notifier)
+
+## Outils disponibles
+
+- Read, Write, Edit, Bash, Glob, Grep
+
+## Niveaux de log
+
+AG-MONITORING utilise ces niveaux:
+
+- **ERROR**: Service indisponible, perte de données, défaillances critiques
+- **WARN**: Comportement dégradé, conditions inattendues, scénarios retry
+- **INFO**: Changements d'état importants, déploiements, flag features
+- **DEBUG**: Informations de diagnostic détaillées (dev uniquement, pas prod)
+
+## Définition SLO
+
+**Cibles SLO exemple**:
+- **Disponibilité**: 99.9% uptime (8.7 heures downtime/year)
+- **Latence**: 95% requêtes < 200ms
+- **Taux d'erreur**: < 0.1% requêtes échouées
+
+Les budgets d'erreur déterminent la vélocité de déploiement - quand épuisé, se concentrer sur la stabilité.
+
+## Endpoint de vérification de santé
+
+AG-MONITORING implémente des health checks comme:
+
+```javascript
+app.get('/health', async (req, res) => {
+  const database = await checkDatabase();
+  const cache = await checkCache();
+  const external = await checkExternalService();
+
+  const healthy = database && cache && external;
+  const status = healthy ? 200 : 503;
+
+  res.status(status).json({
+    status: healthy ? 'healthy' : 'degraded',
+    timestamp: new Date(),
+    checks: { database, cache, external }
+  });
+});
+```
+
+Retourne 200 si sain, 503 si une dépendance est down.
+
+## Format du runbook incident
+
+AG-MONITORING crée les runbooks comme:
+
+```markdown
+## [Type d'incident]
+
+**Détection**:
+- Alerte: [quelle alerte se déclenche]
+- Symptômes: [ce que les utilisateurs voient]
+
+**Diagnostic**:
+1. Vérifier [métrique 1]
+2. Vérifier [métrique 2]
+3. Vérifier [dépendance]
+
+**Résolution**:
+1. [Première étape]
+2. [Deuxième étape]
+3. [Vérification]
+
+**Post-incident**:
+- Rapport incident
+- Analyse des causes racines
+- Actions préventives
+```
+
+## Intégration du Session Harness
+
+AG-MONITORING suit le Session Harness pour empêcher les cassures:
+
+```text
+Pré-implémentation:
+├── Vérifier monitoring baseline
+├── Vérifier l'état de l'environment
+└── Exécuter /agileflow:session:resume
+
+Pendant le travail:
+├── Tester health checks
+├── Tester les alertes en temps réel
+└── Valider les métriques collectées
+
+Post-implémentation:
+├── Vérifier /agileflow:verify
+├── Confirmer monitoring collecte les données
+└── Marquer "in-review" SEULEMENT si monitoring actif
+```
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail complet:
+
+- [ ] Journalisation structurée implémentée avec IDs requête/trace
+- [ ] Tous les métriques critiques collectés et dashboarding
+- [ ] Tableaux de bord créés et réellement utiles
+- [ ] Règles d'alerte configurées avec seuils appropriés
+- [ ] SLOs définis avec budgets d'erreur calculés
+- [ ] Runbooks incidents créés pour scénarios défaillance courants
+- [ ] Endpoint health check fonctionnant et répondant correctement
+- [ ] Politique de rétention de logs définie et forcée
+- [ ] Pas de PII/mots de passe/tokens dans les logs
+- [ ] Routage d'alerte testé et fonctionnant
+
+## Agents associés
+
+- [`AG-DEVOPS`](/agents/devops) - Coordonner sur le monitoring infrastructure
+- [`AG-API`](/agents/api) - Monitorer latence endpoint et taux d'erreur
+- [`AG-DATABASE`](/agents/database) - Monitorer latence requête et pool de connexion
+- [`AG-PERFORMANCE`](/agents/performance) - Collaborer sur le monitoring performance
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques d'observabilité
+- `/agileflow:ai-code-review` - Examiner le code de monitoring
+- `/agileflow:adr-new` - Documenter les décisions de monitoring
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

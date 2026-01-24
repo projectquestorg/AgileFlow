@@ -1,0 +1,197 @@
+---
+title: API
+description: Especialista em camada de serviços e dados para implementar APIs de backend, lógica de negócio e modelos de dados.
+---
+
+# Agente API
+
+O agente API (AG-API) é seu especialista em serviços de backend. Implementa APIs REST/GraphQL, lógica de negócio, modelos de dados, acesso a banco de dados, integrações de serviço externo e gerenciamento de estado. Garante que sua camada de dados seja segura, performática e bem testada.
+
+## Capacidades
+
+- Implementar endpoints de API REST/GraphQL/tRPC
+- Escrever lógica de negócio e regras de validação
+- Projetar e manter modelos e schemas de dados
+- Otimizar consultas de banco de dados e prevenir problemas N+1
+- Integrar serviços externos (Stripe, SendGrid, analytics, etc.)
+- Implementar autenticação e autorização
+- Escrever testes de API abrangentes (unit, integration, contract)
+- Documentar endpoints de API e tratamento de erro
+- Coordenar com AG-UI sobre dependências de endpoint de API
+- Monitorar e registrar solicitações de API com contexto
+
+## Quando Usar
+
+Use o agente API quando:
+
+- Você precisa implementar um novo endpoint de API
+- Você precisa adicionar lógica de negócio para um recurso
+- Você precisa integrar um serviço externo (pagamento, email, etc.)
+- Você precisa otimizar consultas de banco de dados ou corrigir problemas N+1
+- Você precisa implementar autenticação ou autorização
+- Você está projetando modelos de dados para um novo recurso
+- Você precisa escrever testes de API abrangentes
+- Você quer garantir que stories de AG-UI não fiquem bloqueadas esperando endpoints
+
+## Como Funciona
+
+1. **Carregamento de Contexto**: Agente lê expertise, CLAUDE.md, e docs de arquitetura
+2. **Verificação de Status**: Agente encontra stories prontas e verifica blockers de AG-UI
+3. **Definition of Ready**: Agente valida critérios de aceitação e stubs de teste
+4. **Plan Mode**: Para trabalho complexo, agente projeta abordagem antes de implementar
+5. **Implementação**: Agente escreve validação, tratamento de erro e lógica de negócio
+6. **Testes**: Agente escreve testes unit, integration e contract
+7. **Coordenação**: Agente desbloqueia stories de AG-UI quando endpoints estão prontos
+8. **Verificação**: Agente executa testes para garantir que baseline passa
+9. **Documentação**: Agente atualiza CLAUDE.md e append mensagens ao bus
+
+## Exemplo
+
+```bash
+# Via /babysit (recomendado)
+/agileflow:babysit
+> "Preciso de um endpoint de API de perfil de usuário"
+```
+
+O agente API fará:
+1. Verificar docs/06-stories/ por US com owner==AG-API
+2. Procurar por stories de AG-UI bloqueadas esperando este endpoint
+3. Implementar POST /api/users endpoint:
+   - Validação de input (campos obrigatórios, verificação de tipo)
+   - Lógica de negócio (hash de senha, set de defaults)
+   - Acesso de banco de dados (insert na tabela users)
+   - Tratamento de erro (email duplicado, erros de validação)
+   - Logging com IDs de solicitação
+4. Escrever testes abrangentes
+5. Atualizar docs de API
+6. Enviar mensagem de desbloqueio a AG-UI
+7. Marcar in-review quando testes passam
+
+## Comportamentos-Chave
+
+- **Carregar Expertise Primeiro**: Ler expertise.yaml antes de qualquer trabalho
+- **Priorizar Desbloqueio de AG-UI**: Procurar por stories de AG-UI bloqueadas em endpoints - essas são prioridade máxima
+- **Coordenação Proativa**: Enviar mensagens de desbloqueio a AG-UI quando endpoints estão prontos
+- **Validação de Input**: Sempre validar tipos, formatos, intervalos e autorização
+- **Tratamento de Erro**: Schema de erro consistente com códigos de status HTTP
+- **Test-Driven**: Escrever testes antes de implementação, garantir testes passando antes de in-review
+- **Atualizações de CLAUDE.md**: Documentar novos padrões de API descobertos durante implementação
+- **Integração de Session Harness**: Verificar test status antes de começar, exigir testes passando antes de in-review
+
+## Ferramentas Disponíveis
+
+Este agente tem acesso a: Read, Write, Edit, Bash, Glob, Grep
+
+## Padrões de Endpoint de API
+
+**Convenções REST**:
+
+```text
+GET    /api/users           → Listar usuários
+POST   /api/users           → Criar usuário
+GET    /api/users/:id       → Obter usuário
+PATCH  /api/users/:id       → Atualizar usuário
+DELETE /api/users/:id       → Deletar usuário
+```
+
+**Formato de Solicitação/Resposta**:
+
+```json
+// Solicitação
+POST /api/users
+{
+  "email": "user@example.com",
+  "password": "secure-password",
+  "name": "John Doe"
+}
+
+// Resposta de Sucesso (201 Created)
+{
+  "id": "user_123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "2025-01-15T10:00:00Z"
+}
+
+// Resposta de Erro (422 Unprocessable Entity)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "email": "Email already exists"
+    }
+  }
+}
+```
+
+## Validação de Input
+
+Todo endpoint deve validar inputs:
+
+```javascript
+// Validar campos obrigatórios
+if (!email || !password) {
+  throw new ValidationError('Email and password required');
+}
+
+// Validar formato
+if (!email.includes('@')) {
+  throw new ValidationError('Invalid email format');
+}
+
+// Validar intervalo
+if (password.length < 8) {
+  throw new ValidationError('Password must be 8+ characters');
+}
+
+// Validar autorização
+if (userId !== req.user.id) {
+  throw new AuthorizationError('Cannot access other users');
+}
+```
+
+## Padrões de Teste
+
+Cada endpoint de API precisa de testes abrangentes:
+
+```javascript
+describe('POST /api/users', () => {
+  test('creates user with valid data', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(201);
+    expect(response.body.email).toBe('test@example.com');
+  });
+
+  test('returns validation error for missing email', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ password: 'password123' });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+});
+```
+
+## Checklist de Qualidade
+
+Antes de marcar in-review:
+
+- [ ] Inputs validados (tipo, formato, intervalo, auth)
+- [ ] Respostas de erro consistentes (códigos HTTP, schema de erro)
+- [ ] Auth/autorização enforçada em rotas protegidas
+- [ ] Sem queries N+1 (acesso de banco de dados otimizado)
+- [ ] Secrets em env vars (nunca hardcoded)
+- [ ] Logging com IDs de solicitação e contexto
+- [ ] Docs de API atualizadas (OpenAPI/Swagger/README)
+- [ ] Testes cobrem: happy path, erros de validação, falhas auth, edge cases
+- [ ] Status de teste: passing (verificado via /agileflow:verify)
+- [ ] Stories de AG-UI desbloqueadas (enviou mensagem de desbloqueio se aplicável)
+
+## Agentes Relacionados
+
+- [`ui`](/agents/ui) - Componentes de frontend que consomem endpoints de API
+- [`database`](/agents/database) - Camada de dados e design de schema
+- [`mentor`](/agents/mentor) - Orquestra trabalho de API como parte de implementação de feature

@@ -1,0 +1,164 @@
+---
+title: Mentor
+description: Mentor de implementación de principio a fin para guiar la implementación de funciones desde la idea hasta las relaciones públicas.
+---
+
+# Agente mentor
+
+El agente Mentor (MENTOR) es su especialista en orquestación para flujos de trabajo de implementación de funciones completos. Lo guía desde las solicitudes iniciales de funciones hasta la integración de la investigación, la creación de historias, la coordinación de la implementación y la preparación de relaciones públicas.
+
+## Capacidades
+
+- Orquestación de funciones de un extremo a otro, desde la idea hasta las relaciones públicas fusionadas
+- Integración de la investigación de docs/10-research/
+- Creación de historias y épicas cuando sea necesario.
+- Coordinación multiagente y gestión de estado.
+- CLAUDE.md mantenimiento y documentación de patrones
+- Orquestación de comandos de Slack (41 comandos disponibles)
+- Definición de validación lista y llenado de brechas
+- Resolución de dependencia de agentes y gestión de WIP
+
+## Cuando usar
+
+Utilice el agente Mentor cuando:
+
+- Tiene una solicitud de función en inglés sencillo para implementar
+- Necesita planificar la implementación en múltiples historias/épicas.
+- Necesitas investigar una tecnología desconocida antes de comenzar.
+- Estás coordinando el trabajo entre agentes especializados (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- Debe asegurarse de que se cumpla la Definición de Listo antes de la implementación.
+- Quiere automatizar la generación y coordinación de relaciones públicas
+
+## Cómo funciona
+
+1. **Context Loading**: El agente lee el archivo de experiencia, status.json, bus/log.jsonl y la hoja de ruta.
+2. **Knowledge Analysis**: El agente identifica WIP actuales, bloqueadores, historias listas y brechas de investigación.
+3. **Proposal**: El agente sugiere entre 3 y 7 próximas acciones priorizadas según la hoja de ruta y las dependencias.
+4. **Planning**: El agente crea historias/épicas faltantes y garantiza que se cumpla la definición de Listo
+5. **Research Integration**: El agente aprovecha o solicita investigaciones de docs/10-research/
+6. **Coordination**: El agente organiza agentes especializados y actualiza el estado/bus
+7. **Documentation**: El agente actualiza CLAUDE.md con patrones recién aprendidos
+8. **Finalization**: El agente genera una descripción de PR y se prepara para la fusión.
+
+## Ejemplo
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need to add payment processing to the platform"
+```
+
+El mentor:
+1. Compruebe si existe una epopeya de pago; crear si es necesario
+2. Dividase en historias (configuracion, integracion de Stripe, manejo de webhooks, etc.)
+3. Investigue patrones de pago (consulte docs/10-research/ o sugiera una nueva investigación)
+4. Validar definición de Listo para cada historia
+5. Sugiera qué historia implementar primero
+6. Coordinar la implementación con agentes especializados.
+7. Actualizar el estado a medida que avanza el trabajo
+
+O generar directamente:
+
+```text
+Task(
+  description: "Implement user authentication",
+  prompt: "Add JWT-based auth with login/logout flows, profile management",
+  subagent_type: "agileflow-mentor"
+)
+```
+
+## Comportamientos clave
+
+- **Autonomous Command Execution**: Invoca directamente comandos de barra (tablero, estado, análisis de impacto, investigación: preguntar, etc.) sin pedir permiso
+- **Story Lifecycle Management**: Valida la definición de Listo, marca en progreso, pasa a revisión, actualiza como terminado
+- **WIP Limit Enforcement**: Respeta un máximo de 2 pisos por agente en estado en progreso
+- **Dependency Tracking**: Identifica bloqueadores, coordina el desbloqueo entre agentes
+- **Research-Driven Planning**: integra investigaciones existentes o solicita nuevas investigaciones a través de /agileflow:research:ask
+- **Proactive CLAUDE.md Updates**: Documenta nuevos patrones/convenciones descubiertos durante la implementación
+- **Cross-Agent Coordination**: Utiliza bus/log.jsonl para enviar mensajes a otros agentes (AG-UI, AG-API, AG-CI, AG-DEVOPS)
+- **Context Preservation**: Utiliza compact_context (prioridad: crítica) para mantener el enfoque de orquestación durante conversaciones largas, preservando la validación de Definición de Listo y el seguimiento de bloqueadores a través de la compactación del contexto.
+
+## Configuración de contexto compacto
+
+El agente mentor utiliza **critical priority** compact_context para garantizar que el enfoque de la orquestación nunca se pierda:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "ALWAYS read expertise.yaml first"
+    - "ALWAYS validate Definition of Ready before implementation"
+    - "Max 2 stories per agent in-progress (WIP limit)"
+    - "Slash commands are autonomous (invoke directly)"
+    - "File operations require diff + YES/NO confirmation"
+    - "Update status.json + bus/log.jsonl for all state changes"
+  state_fields:
+    - current_story
+    - story_status
+    - wip_count
+    - blockers
+    - next_actions
+```
+
+Esto garantiza que las reglas críticas del mentor (definición de validación de listo, límites de WIP, ejecución autónoma de comandos) y el estado de orquestación (historia actual, bloqueadores, próximas acciones priorizadas) siempre se conserven incluso después de una compactación extensa del contexto.
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Leer, Escribir, Editar, Bash, Glob, Grep
+
+## Tipos de mensajes de autobús
+
+El Mentor se comunica a través de estos tipos de mensajes:
+
+```jsonl
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"status","story":"<US-ID>","text":"Description"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"blocked","story":"<US-ID>","text":"Blocked: <reason>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"unblock","story":"<US-ID>","text":"Unblocking: <reason>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"assign","story":"<US-ID>","text":"Assigned to <AGENT-ID>"}
+{"ts":"2025-10-21T10:00:00Z","from":"MENTOR","type":"question","story":"<US-ID>","text":"Clarification needed: <question>"}
+```
+
+## Archivos clave
+
+- **Expertise**: `packages/cli/src/core/experts/mentor/expertise.yaml` (memoria del agente)
+- **Workflow**: `packages/cli/src/core/experts/mentor/workflow.md` (Planificar → Construir → Automejorar)
+- **Status**: `docs/09-agents/status.json` (seguimiento de la historia - única fuente de verdad)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (mensajes de coordinación)
+- **Roadmap**: `docs/08-project/roadmap.md` (prioridades y contexto)
+- **Research**: `docs/10-research/` (technical research notes)
+- **ADRs**: `docs/03-decisions/` (decisiones de arquitectura)
+- **CLAUDE.md**: Aviso del sistema de IA específico del proyecto
+
+## Pasos del flujo de trabajo
+
+1. **Load Expertise**: Lea experticia.yaml para cargar el modelo mental
+2. **Check Status**: lea status.json para conocer el WIP actual, los bloqueadores y las historias listas.
+3. **Read Bus**: consulte bus/log.jsonl para conocer la actividad reciente del agente
+4. **Check Roadmap**: Revise docs/08-project/roadmap.md para conocer las prioridades
+5. **Propose Actions**: Sugiera de 3 a 7 próximas acciones clasificadas por prioridad
+6. **Plan**: Divida la función en epopeyas/historias con criterios de aceptación.
+7. **Research**: integrar investigaciones existentes o sugerir nuevas investigaciones
+8. **Assign**: cree historias con asignaciones de agentes y resguardos de pruebas
+9. **Update Status**: marcar historias como listas, actualizar status.json
+10. **Message Bus**: Agregar mensajes de coordinación
+11. **Implement**: Implantación de guías a través de agentes especializados
+12. **Document**: Actualiza CLAUDE.md con nuevos patrones
+13. **Generate PR**: Utilice /agileflow:pr-template para la descripción de PR
+14. **Self-Improve**: Ejecute self-improve.md después de finalizar
+
+## Coordinación de agentes
+
+**MENTOR coordinates with**:
+
+- **AG-UI**: Historias de frontend: comprueba si hay historias de UI bloqueadas en espera de API
+- **AG-API**: Historias de backend: garantiza que los puntos finales de API estén listos para desbloquear la interfaz de usuario
+- **AG-CI**: Infraestructura de prueba: coordina la configuración y verificación de la prueba.
+- **AG-DEVOPS**: Dependencias e implementación: coordina migraciones y actualizaciones de paquetes
+- **EPIC-PLANNER**: Descomposición de la historia: delega la planificación épica/de la historia cuando sea necesario
+- **RESEARCH**: Investigación técnica: coordina la investigación sobre tecnologías desconocidas.
+
+## Agentes Relacionados
+
+- [`planificador épico`](/agents/epic-planner) - Especializado en dividir características en épicas e historias.
+- [`api`](/agents/api) - Servicios backend e implementación de capa de datos.
+- [`ui`](/agents/ui) - Componentes frontend e interfaces de usuario.

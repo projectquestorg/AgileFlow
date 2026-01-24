@@ -1,0 +1,262 @@
+---
+title: Base de Datos
+description: Especialista en base de datos para diseño de esquema, migraciones, optimización de consultas y modelado de datos.
+---
+
+# Agente de Base de Datos
+
+El agente de Base de Datos (AG-DATABASE) es tu especialista en base de datos para diseñar esquemas eficientes, escribir migraciones seguras, optimizar consultas y gestionar integridad de datos. Garantiza que tu capa de base de datos sea performante, mantenible y confiable.
+
+## Capacidades
+
+- Diseñar esquemas de base de datos eficientes (tablas, relaciones, restricciones)
+- Escribir scripts de migración reversibles con estrategias de rollback
+- Optimizar consultas lentas (identificar índices faltantes, mejorar estructura de consulta)
+- Prevenir problemas de consultas N+1 y antipatrones SELECT *
+- Asegurar integridad de datos mediante restricciones y validación
+- Revisar consultas de AG-API en busca de problemas de rendimiento
+- Documentar modelos de datos y relaciones con ADRs de arquitectura
+- Coordinarse con AG-API sobre uso de ORM y patrones de consulta
+- Monitorear rendimiento y salud de base de datos
+
+## Cuándo Usar
+
+Utiliza el agente de Base de Datos cuando:
+
+- Necesites diseñar una nueva estructura de tabla o relación
+- Necesites crear un script de migración para cambios de esquema
+- Notices consultas lentas o problemas de rendimiento
+- Quieras optimizar una consulta de base de datos compleja
+- Necesites agregar índices a columnas frecuentemente consultadas
+- Estés diseñando modelos de datos para una nueva característica
+- Quieras prevenir patrones de consultas N+1 antes de que ocurran
+- Necesites coordinarte con el trabajo de capa de datos de AG-API
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: El agente lee experiencia, CLAUDE.md y configuración de base de datos
+2. **Revisión de Historia**: El agente identifica requisitos de datos y relaciones
+3. **Modo Planificación**: El agente diseña esquema y estrategia de migración (para cambios de alto riesgo)
+4. **Diseño de Esquema**: El agente crea diagramas de relación de entidad y normaliza datos
+5. **Creación de Migración**: El agente escribe scripts reversibles hacia arriba/abajo con pruebas
+6. **Coordinación**: El agente comparte esquema con AG-API y revisa sus consultas
+7. **Optimización**: El agente agrega índices y previene patrones de consultas N+1
+8. **Verificación**: El agente ejecuta pruebas para asegurar que todo pase
+9. **Documentación**: El agente actualiza status.json y agrega mensajes de bus
+
+## Ejemplo
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need to design the database schema for users and posts"
+```
+
+El agente de Base de Datos hará:
+1. Preguntar sobre relaciones de datos (¿un usuario a muchos posts?)
+2. Diseñar esquema normalizado:
+   - tabla `users`: id, email, username, password_hash, created_at, updated_at
+   - tabla `posts`: id, user_id, title, content, created_at, updated_at
+   - Restricción de clave foránea: posts.user_id → users.id
+3. Planificar índices: idx_users_email (para login), idx_posts_user_id (para consultas)
+4. Crear script de migración con operaciones hacia arriba/abajo
+5. Coordinarse con AG-API sobre modelos de ORM y consultas
+6. Probar rollback de migración antes de completación
+
+O generado directamente:
+
+```text
+Task(
+  description: "Optimize slow user profile query",
+  prompt: "Query is taking 2+ seconds. Need to analyze and add missing indexes.",
+  subagent_type: "agileflow-database"
+)
+```
+
+## Comportamientos Clave
+
+- **Nunca Hagas Cambios Sin Migraciones**: Todos los cambios de esquema requieren scripts de migración reversibles
+- **Modo Planificación para Cambios de Alto Riesgo**: Siempre usa Modo Planificación para diseñar estrategia de esquema/migración
+- **Migraciones Reversibles**: Toda migración "hacia arriba" tiene correspondiente "hacia abajo" para rollback
+- **Optimización de Consultas**: Analiza consultas para problemas N+1, índices faltantes, antipatrones SELECT *
+- **Convenciones de Nombres**: Tablas minúsculas plurales (users, posts), columnas snake_case (user_id, created_at)
+- **Columnas Requeridas**: Toda tabla tiene id, created_at, updated_at (y deleted_at para soft deletes)
+- **Coordinación con AG-API**: Revisa sus consultas y uso de ORM; sugiere optimizaciones
+- **Integración de Session Harness**: Verifica estado de prueba antes de comenzar, requiere pruebas pasando antes de in-review
+- **Documentación Proactiva**: Crea ADRs para decisiones de esquema principal
+- **Preservación de Contexto**: Usa compact_context (prioridad: alta) para mantener enfoque durante conversaciones largas, preservando decisiones de esquema y seguimiento de optimización de rendimiento a través de compactación de contexto
+
+## Configuración de Contexto Compacto
+
+El agente de Base de Datos usa **prioridad alta** compact_context para asegurar que las decisiones de diseño y optimización de esquema se preserven:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/database/expertise.yaml"
+    - "NEVER CHANGE SCHEMA WITHOUT MIGRATION: All changes require reversible up/down scripts"
+    - "PLAN MODE FOR HIGH-RISK CHANGES: Design schema/migration strategy before implementation"
+    - "VERIFY TEST BASELINE: Check test_status before starting new work"
+    - "REQUIRED COLUMNS: Every table needs id, created_at, updated_at"
+    - "COORDINATION WITH AG-API: Review their queries and ORM patterns"
+  state_fields:
+    - current_story
+    - schema_changes_planned
+    - migration_strategy
+    - api_query_reviews
+    - test_status_baseline
+```
+
+Esto asegura que las reglas críticas de base de datos (requisitos de migración, convenciones de nombres de esquema, columnas requeridas) y el estado actual (qué cambios de esquema están planeados, qué consultas de API necesitan revisión) permanezcan en enfoque a través de compactación de contexto.
+
+## Herramientas Disponibles
+
+Este agente tiene acceso a: Leer, Escribir, Editar, Bash, Glob, Grep
+
+## Principios de Diseño de Esquema
+
+**Normalización**: Reduce redundancia de datos mientras mejora integridad de datos
+
+- Minimizar datos duplicados
+- Una fuente de verdad por campo
+- Desnormalizar solo cuando el rendimiento lo justifique (documenta por qué)
+
+**Convenciones de Nombres**:
+
+- Tablas: minúsculas, plurales (users, products, orders)
+- Columnas: minúsculas, snake_case (first_name, created_at)
+- Claves foráneas: formato table_id (user_id, product_id)
+- Índices: formato idx_table_column (idx_users_email)
+
+**Columnas Requeridas**:
+
+- `id`: Clave primaria (UUID o auto-incremento)
+- `created_at`: Cuándo se creó el registro
+- `updated_at`: Cuándo se modificó el registro por última vez
+- `deleted_at`: Timestamp de soft delete (si se usan soft deletes)
+
+**Relaciones**:
+
+- Uno-a-muchos: Clave foránea en tabla muchos
+- Muchos-a-muchos: Tabla de unión con dos claves foráneas
+- Uno-a-uno: Clave foránea con restricción única
+
+## Patrones de Optimización de Consultas
+
+**Identificar Consultas Lentas**:
+
+```sql
+-- Habilitar logging de consultas para consultas > 100ms
+-- Usar explain plan de base de datos
+EXPLAIN ANALYZE SELECT ...
+```
+
+**Optimizar Consultas**:
+
+- Agregar índices en columnas frecuentemente consultadas (WHERE, JOIN, ORDER BY)
+- Usar EXPLAIN PLAN para verificar uso de índices
+- Agrupar consultas (cargar múltiples registros en consulta única)
+- Usar CTEs/window functions para agregaciones complejas
+
+**Problemas Comunes**:
+
+```sql
+-- MALO: Problema N+1
+SELECT * FROM users;
+-- Loop: SELECT * FROM posts WHERE user_id = $1;
+
+-- BUENO: Consulta única con JOIN
+SELECT users.*, posts.*
+FROM users
+LEFT JOIN posts ON users.id = posts.user_id;
+
+-- MALO: Índice faltante
+SELECT * FROM users WHERE email = $1;
+
+-- BUENO: Agregar índice en email
+CREATE INDEX idx_users_email ON users(email);
+```
+
+## Mejores Prácticas de Migración
+
+**Migraciones Seguras**:
+
+1. Agregar nuevas columnas como nullable (puede rellenar gradualmente)
+2. Crear índices antes de soltar columnas antiguas
+3. Probar plan de rollback antes de desplegar
+4. Copia de seguridad antes de ejecutar migración destructiva
+5. Ejecutar en ventana de mantenimiento si hay posible impacto de producción
+
+**Migraciones Reversibles**:
+
+- Toda migración "hacia arriba" tiene correspondiente "hacia abajo"
+- Migración hacia abajo probada antes de desplegar hacia arriba
+- Ejemplo: Agregar columna (hacia arriba) / Soltar columna (hacia abajo)
+
+## Coordinación con AG-API
+
+**Fase de Diseño de Esquema**:
+
+- AG-API describe necesidades de datos
+- AG-DATABASE diseña esquema
+- Revisar juntos en busca de oportunidades de optimización
+
+**Fase de Implementación**:
+
+- AG-DATABASE crea script de migración
+- AG-API implementa modelos de ORM
+- Coordinarse sobre carga de relaciones (ansiosa vs perezosa)
+
+**Fase de Optimización de Consultas**:
+
+- AG-API desarrolla consulta
+- AG-DATABASE revisa para N+1 y optimización
+- Agregar índices según sea necesario
+
+## Archivos Clave
+
+- **Experiencia**: `packages/cli/src/core/experts/database/expertise.yaml` (memoria del agente)
+- **Flujo de Trabajo**: `packages/cli/src/core/experts/database/workflow.md` (Plan → Build → Self-Improve)
+- **Estado**: `docs/09-agents/status.json` (seguimiento de historias)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (mensajes de coordinación)
+- **CLAUDE.md**: Información de tipo de base de datos y ORM
+- **Investigación**: `docs/10-research/` (comprobar patrones de diseño de esquema)
+- **ADRs**: `docs/03-decisions/` (decisiones de arquitectura de base de datos)
+
+## Pasos del Flujo de Trabajo
+
+1. **Cargar Experiencia**: Lee expertise.yaml para cargar conocimiento de esquema
+2. **Revisar Historia**: Identifica requisitos de datos y relaciones
+3. **Entrar en Modo Planificación**: Diseña esquema, estrategia de migración, analiza impacto
+4. **Crear Esquema**: Define tablas, columnas, restricciones, relaciones
+5. **Crear Migración**: Escribe scripts reversibles hacia arriba/abajo
+6. **Actualizar Estado**: Marcar "in-progress"
+7. **Agregar Mensaje de Bus**: Coordinarse con AG-API
+8. **Probar Migración**: Probar operaciones hacia arriba y abajo
+9. **Optimizar**: Agregar índices basados en patrones de consulta
+10. **Verificar**: Ejecutar pruebas para asegurar que la línea base pase
+11. **Marcar In-Review**: Actualizar estado solo cuando test_status==passing
+12. **Self-Improve**: Ejecutar self-improve.md después de completación
+
+## Lista de Control de Calidad
+
+Antes de marcar in-review:
+
+- [ ] Esquema sigue convenciones de nombres
+- [ ] Todas las columnas requeridas presentes (id, created_at, updated_at)
+- [ ] Relaciones apropiadamente definidas (claves foráneas, restricciones)
+- [ ] Migraciones son reversibles
+- [ ] Migraciones probadas (hacia arriba y abajo)
+- [ ] Índices en columnas comúnmente consultadas
+- [ ] Sin patrones de consultas N+1 anticipados
+- [ ] Restricciones de integridad de datos impuestas
+- [ ] Comentarios explican decisiones complejas
+- [ ] Procedimiento de copia de seguridad y recuperación documentado
+- [ ] Estado de prueba: passing (verificado vía /agileflow:verify)
+
+## Agentes Relacionados
+
+- [`api`](/agents/api) - Implementa modelos de ORM y consultas basadas en esquema
+- [`mentor`](/agents/mentor) - Orquesta trabajo de base de datos como parte de implementación de características
+- [`ci`](/agents/ci) - Configura bases de datos de prueba e infraestructura de pruebas de migración

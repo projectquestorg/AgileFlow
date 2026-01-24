@@ -1,0 +1,180 @@
+---
+title: Integraciones
+description: Especialista en integración de API de terceros, webhooks, procesadores de pagos, servicios externos y conectividad API.
+---
+
+# Especialista en Integración
+
+AG-INTEGRACIONES maneja todas las integraciones de servicios de terceros, desde procesadores de pagos y proveedores de autenticación hasta webhooks y sincronización de datos con API externas.
+
+## Capacidades
+
+- **API Client Implementation**: Stripe, Twilio, SendGrid, AWS, Google y otros servicios
+- **Webhook Handling**: Validación de firma, idempotencia, procesamiento de eventos.
+- **Authentication Providers**: Auth0, OAuth (Google, GitHub, Facebook), AWS Cognito
+- **Payment Processing**: Stripe, Square, PayPal con manejo de webhooks
+- **Email Delivery**: Integraciones con SendGrid, Mailgun y AWS SES
+- **Error Handling & Retry Logic**: Retroceso exponencial, limitación de velocidad, degradación elegante
+- **Health Checks & Monitoring**: Seguimiento del estado del servicio externo
+
+## Cuando usar
+
+Utilice AG-INTEGRACIONES cuando:
+
+- Integración de API de terceros (Stripe, Twilio, SendGrid, etc.)
+- Configuración de proveedores de autenticación (Auth0, Google OAuth)
+- Implementación de receptores y controladores de webhooks
+- Creación de flujos de procesamiento de pagos
+- Manejar las fallas del servicio externo con elegancia
+- Implementación de lógica de reintento con retroceso exponencial
+- Configurar el monitoreo de salud para servicios externos
+
+## Cómo funciona
+
+1. **Context Loading**: Lee el archivo de experiencia y las integraciones existentes
+2. **Service Research**: Reseñas de documentación, precios, límites de tarifas, autenticación.
+3. **Client Implementation**: Crea un cliente API con autenticación adecuada
+4. **Error Handling**: Implementa un manejo integral de errores y una lógica de reintento.
+5. **Webhook Setup**: Valida firmas, implementa idempotencia
+6. **Testing**: Crea pruebas de integración con servicios externos simulados.
+7. **Monitoring**: configura controles de salud y alertas
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to add Stripe payments with webhook handling"
+
+# AG-INTEGRATIONS will:
+# 1. Research Stripe API and webhook events
+# 2. Implement Stripe API client with authentication
+# 3. Create webhook receiver with signature validation
+# 4. Implement retry logic for failed charges
+# 5. Create integration tests (mocked Stripe)
+# 6. Document setup and webhook events
+```
+
+## Comportamientos clave
+
+- **Never Hardcodes Secrets**: Siempre utiliza variables de entorno para las claves API
+- **Validates Webhooks**: La validación de la firma es obligatoria (evita la suplantación de identidad)
+- **Handles All Errors**: Errores de red, tiempo de espera, límite de velocidad y servicio
+- **Implements Retry Logic**: Retroceso exponencial con fluctuación
+- **Secure Logging**: Nunca registra credenciales o datos confidenciales
+- **Graceful Degradation**: Proporciona respaldo si el servicio externo no está disponible
+
+## Herramientas disponibles
+
+- Leer, escribir, editar, Bash, Glob, Grep
+- Acceso a Session Harness para verificación
+
+## Integraciones comunes
+
+**Payment Processing**:
+- Stripe - Pagos, suscripciones, pagos
+- Plaza - Punto de venta
+- PayPal - Pagos, suscripciones
+
+**Authentication**:
+- Auth0: autenticación empresarial
+- Google OAuth: inicio de sesión social
+- GitHub OAuth: inicio de sesión de desarrollador
+
+**Email Delivery**:
+- SendGrid: correo electrónico transaccional
+- Mailgun - Entrega de correo electrónico
+- AWS SES: correo electrónico rentable
+
+**SMS/Messaging**:
+- Twilio - SMS, voz, mensajería
+- AWS SNS: entrega de mensajes
+- Mensajería en la nube de Firebase: notificaciones push
+
+**File Storage**:
+- AWS S3: almacenamiento en la nube
+- Almacenamiento en la nube de Google: almacenamiento en la nube
+- Almacenamiento de blobs de Azure: almacenamiento en la nube
+
+## Patrón de integración
+
+```javascript
+// 1. Create client with auth
+const client = new StripeClient(process.env.STRIPE_API_KEY);
+
+// 2. Make authenticated request
+const payment = await client.payments.create({
+  amount: 10000,
+  currency: 'usd',
+});
+
+// 3. Handle errors
+if (payment.error) {
+  logger.error('Payment failed', {
+    error: payment.error,
+    // Never log sensitive data
+  });
+  // Implement retry or fallback
+}
+```
+
+## Seguridad del webhook
+
+**Critical Requirements**:
+- Validar la firma del webhook (evitar la suplantación de identidad)
+- Responda con 200 OK inmediatamente (confirmar recibo)
+- Procesar de forma asincrónica (no bloquear la respuesta)
+- Manejar duplicados (se pueden volver a intentar los webhooks)
+
+## Estrategia de manejo de errores
+
+- Identificar errores recuperables (red, tiempo de espera, 5xx)
+- Implementar retroceso exponencial con jitter
+- Establecer el recuento máximo de reintentos
+- Registrar fallos y alertar si persisten
+- Implementar una degradación elegante
+
+## Lista de control de calidad
+
+Antes de marcar el trabajo de integración completo:
+
+- Autenticación del servicio funcionando
+- Llamadas API probadas y funcionando
+- Todos los errores manejados (red, tiempo de espera, límite de velocidad)
+- Lógica de reintento con retroceso exponencial implementado
+- Webhooks validados (verificación de firma)
+- Webhooks idempotentes (manejar duplicados)
+- Claves API en variables de entorno (nunca codificadas)
+- El registro de errores no expone secretos
+- Las pruebas de integración cubren escenarios de camino feliz + error
+- Documentación completa (instalación, autenticación, configuración)
+- Control de salud o monitoreo implementado
+- Pruebas aprobadas con test_status: "aprobada"
+
+## Agentes Relacionados
+
+- [API AG](/agents/api) - Integración de capa de servicio y endpoints.
+- [AG-SEGURIDAD](/agents/security) - Gestión segura de credenciales
+- [MONITOREO AG](/agents/monitoring) - Controles de salud y alertas.
+
+## Mensajes de coordinación
+
+AG-INTEGRACIONES coordina con otros equipos:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-INTEGRATIONS",
+  "type": "status",
+  "story": "US-0040",
+  "text": "Stripe integration ready, AG-API can now implement payment endpoint"
+}
+```
+
+## Comandos de barra diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Mejores prácticas del servicio de investigación.
+- `/agileflow:ai-code-review` - Revisar el código de integración por seguridad.
+- `/agileflow:adr-new` - Decisiones de elección de integración de documentos.
+- `/agileflow:tech-debt` - Manejo de errores de documento faltante
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia

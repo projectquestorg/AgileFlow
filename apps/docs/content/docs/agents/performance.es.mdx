@@ -1,0 +1,292 @@
+---
+title: Actuación
+description: Especialista en rendimiento para optimización, creación de perfiles, evaluación comparativa, escalabilidad y funciones críticas para el rendimiento.
+---
+
+# Agente de rendimiento
+
+El agente de rendimiento (AG-PERFORMANCE) es un especialista en optimización del rendimiento que identifica cuellos de botella, optimiza las rutas críticas y garantiza que las aplicaciones cumplan los objetivos de rendimiento. Este agente se centra en la optimización de la medición primero, no en conjeturas prematuras.
+
+## Capacidades
+
+- **Performance Profiling**: Identifique cuellos de botella reales con herramientas de creación de perfiles
+- **Benchmark Creation**: Mida el rendimiento antes y después de las optimizaciones
+- **Database Optimization**: Elimine consultas N+1, agregue índices, optimice consultas
+- **Caching Strategies**: Implementar almacenamiento en caché en memoria, Redis, CDN y HTTP
+- **Frontend Optimization**: Reducción del tamaño del paquete, división de código, carga diferida
+- **API Optimization**: Reduzca los tiempos de respuesta, elimine operaciones costosas
+- **Load Testing**: Pruebe los límites de escalabilidad y encuentre puntos de ruptura
+- **Performance Monitoring**: configurar alertas para regresiones de rendimiento
+- **Scalability Analysis**: Comprenda cómo el sistema escala con la carga.
+- **Documentation**: Cree ADR para compensar el rendimiento
+
+## Cuando usar
+
+Utilice el Performance Agent cuando:
+
+- Los tiempos de respuesta son lentos y necesitan optimización
+- Las consultas a la base de datos son lentas o hay N+1 problemas
+- El tamaño del paquete frontal es grande
+- Necesidad de probar los límites de escalabilidad
+- El uso de memoria es alto o está creciendo
+- Los puntos finales de API superan los objetivos de rendimiento
+- Necesidad de implementar estrategias de almacenamiento en caché
+- Establecer líneas de base de desempeño
+- Creación de alertas y seguimiento del rendimiento
+- Necesidad de documentar las decisiones de desempeño
+
+## Cómo funciona
+
+1. **Knowledge Loading**: El agente lee los objetivos de experiencia y rendimiento.
+2. **Analysis**: El agente revisa la historia en busca de implicaciones en el rendimiento.
+3. **Profiling**: El agente mide el rendimiento actual con las herramientas adecuadas
+4. **Bottleneck Identification**: El agente descubre dónde se gasta realmente el tiempo.
+5. **Optimization Design**: El agente planea múltiples enfoques de optimización
+6. **Implementation**: El agente implementa optimización con mediciones.
+7. **Benchmarking**: El agente verifica que la mejora cumple con el objetivo.
+8. **Documentation**: El agente crea ADR que documenta las compensaciones
+9. **Monitoring**: El agente configura alertas para regresiones de rendimiento
+
+## Ejemplo
+
+```bash
+# Via babysit - optimize slow API endpoint
+/agileflow:babysit
+> "The user list API endpoint is taking 5 seconds. It needs to be <200ms."
+
+# Agent output:
+# Performance Analysis: GET /api/users
+#
+# Current Performance: 5.2 seconds
+# Target Performance: <200ms
+#
+# Profiling Results:
+# ├── Database query: 4.8s (92% of time)
+# │   └── N+1 problem: Fetching user details in loop
+# ├── JSON serialization: 0.3s (6%)
+# └── Network overhead: 0.1s (2%)
+#
+# Optimization Strategy:
+# 1. Fix N+1: Use JOIN instead of loop (estimated: 4.8s → 0.2s)
+# 2. Add database index on users.created_at
+# 3. Implement caching with 5 minute TTL
+#
+# Estimated Result: <200ms after optimizations
+# Correctness: All tests will still pass
+# Trade-offs: Slight memory overhead for cache
+#
+# Status: Ready for implementation
+```
+
+## Comportamientos clave
+
+- **Measure First**: Código de perfil para encontrar cuellos de botella reales (no adivines)
+- **Benchmark Before/After**: Siempre mida la mejora
+- **No Premature Optimization**: No optimice el código poco utilizado
+- **Correctness First**: Nunca sacrifiques la corrección por el rendimiento
+- **Document Trade-Offs**: Registre por qué se tomaron decisiones
+- **Verify Under Load**: Pruebe el rendimiento bajo una carga realista
+
+## Herramientas disponibles
+
+- Leer, escribir, editar (operaciones de archivos)
+- Bash (ejecutar perfiles/pruebas de carga)
+- Glob (buscar código lento)
+- Grep (búsqueda de problemas de rendimiento)
+
+## Métricas de rendimiento
+
+**Key Metrics**:
+- **Response Time (Latency)**: ¿Cuánto tiempo dura la operación?
+- **Throughput**: ¿Cuántas operaciones por segundo?
+- **Resource Usage**: CPU, memoria, disco, red
+- **Scalability**: ¿Cómo aumenta el rendimiento con la carga?
+
+**Performance Targets** (ajustar por contexto):
+- Puntos finales API: menos de 200 ms de promedio, menos de 500 ms p95
+- Carga de la página frontal: menos de 2 segundos para la primera pintura, menos de 5 segundos para carga completa
+- Consultas a bases de datos: menos de 10 ms de media, menos de 100 ms p95
+- Memoria: estable, sin fugas, crecimiento predecible
+
+## Herramientas de creación de perfiles
+
+**JavaScript/Node.js**:
+- Chrome DevTools: perfilador de rendimiento integrado
+- Perfilador de Node.js: `node --prof`
+- clinic.js: herramienta de creación de perfiles profesionales
+- cañón automático: prueba de carga HTTP
+- Gráficos de llamas: visualiza el tiempo invertido en cada función
+
+**Python**:
+- cProfile: perfilado de CPU
+- Memory_profiler: análisis de uso de memoria
+- py-spy: perfilador de muestreo estadístico
+
+**Database**:
+- EXPLICAR ANALIZAR: Plan de consulta y tiempo de ejecución
+- Registro de consultas lento: captura de consultas que superan el umbral
+- Monitoreo: seguimiento del recuento de consultas, el tiempo y el uso de recursos
+
+**Frontend**:
+- Chrome DevTools: pestañas Rendimiento, Red
+- Faro: Auditoría de desempeño
+- Web Vitals: métricas principales (LCP, FID, CLS)
+
+## Cuellos de botella y soluciones comunes
+
+| Bottleneck | Cause | Solution |
+|------------|-------|----------|
+| Database | N+1 queries, missing indexes, unoptimized | Use JOIN, add indexes, denormalize |
+| API response | Slow endpoints, external calls | Cache, optimize queries, parallelize |
+| Frontend rendering | Reflows, repaints, large bundles | Code splitting, lazy loading, compression |
+| Memory | Memory leaks, large data structures | Fix leaks, paginate large datasets |
+| CPU | Expensive algorithms, unnecessary work | Algorithm optimization, parallelization |
+
+## Técnicas de optimización
+
+**Database Optimization**:
+```sql
+-- Bad: N+1 queries (1 for users, N for details)
+SELECT * FROM users;
+for each user:
+  SELECT * FROM user_details WHERE user_id = user.id;
+
+-- Good: Single JOIN query
+SELECT u.*, ud.* FROM users u
+JOIN user_details ud ON u.id = ud.user_id;
+```
+
+**Caching Strategies**:
+- **In-memory cache**: Tamaño rápido pero limitado (Redis)
+- **CDN cache**: Activos estáticos en ubicaciones de borde
+- **HTTP cache**: Caché del navegador con ETag, última modificación
+- **Database cache**: Caché de resultados de consulta
+
+**Frontend Optimization**:
+```javascript
+// Code splitting: Load only needed code
+import { lazy, Suspense } from 'react';
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// Lazy loading: Load images on demand
+<img loading="lazy" src="image.jpg" alt="...">
+
+// Tree shaking: Remove unused code
+import { usedFunction } from 'library'; // Only usedFunction included
+```
+
+## Pruebas de carga
+
+**Load Test Scenarios**:
+- **Ramp up**: Aumente gradualmente la carga hasta encontrar el punto de ruptura
+- **Sustained**: Carga constante a lo largo del tiempo
+- **Spike**: Aumento repentino de la carga
+- **Soak test**: Carga sostenida durante un período prolongado
+
+**Metrics to Capture**:
+- Distribución del tiempo de respuesta (avg, p50, p95, p99)
+- Rendimiento (solicitudes/segundo)
+- Tasa de error (% de solicitudes fallidas)
+- Uso de recursos (CPU, memoria, red)
+
+## Análisis de escalabilidad
+
+Sistema de prueba bajo carga creciente:
+
+```text
+Load Test Results:
+├── 10 users: 150ms avg, 0% errors ✅
+├── 100 users: 180ms avg, 0% errors ✅
+├── 1000 users: 500ms avg, 2% errors ⚠️
+├── 5000 users: 5s avg, 15% errors ❌
+│
+└── Bottleneck: Database can't handle 5000 concurrent connections
+    Solution: Connection pooling, read replicas, caching
+```
+
+## Integración del arnés de sesión
+
+Performance Agent se integra con Session Harness:
+
+```text
+Pre-Implementation:
+├── Baseline performance measured
+├── Bottleneck identified with data
+└── Optimization plan reviewed
+
+Post-Implementation:
+├── Run /agileflow:verify (tests pass)
+├── Benchmark improvement (meets target)
+└── Verify correctness (tests still pass)
+```
+
+## Lista de control de calidad
+
+Antes de completar el trabajo de marcado:
+
+- [ ] Rendimiento actual medido y documentado
+- [] Cuello de botella identificado con datos de elaboración de perfiles
+- [] Causa raíz entendida
+- [ ] Estrategia de optimización documentada
+- [ ] Antes/después de las mediciones tomadas
+- [ ] La mejora cumple con el objetivo de rendimiento
+- [] Corrección verificada (las pruebas aún pasan)
+- [ ] Compensaciones documentadas
+- [ ] Monitoreo/alertas implementadas
+- [] Métricas de rendimiento agregadas a la documentación.
+
+## Modo de plan (requerido para la optimización)
+
+La optimización del rendimiento requiere una planificación centrada en la medición:
+
+| Situation | Action |
+|-----------|--------|
+| "Make it faster" (vague) | → EnterPlanMode: Profile first! |
+| Known slow operation | → EnterPlanMode: Design optimization |
+| Caching needed | → EnterPlanMode: Plan invalidation |
+| Query optimization | → EnterPlanMode: Measure before/after |
+| Bundle size issue | → EnterPlanMode: Analyze dependencies |
+
+**Plan Mode Workflow**:
+1. Perfilar el rendimiento actual
+2. Identificar el cuello de botella real
+3. Optimización del diseño con benchmarks
+4. Estrategia de verificación del plan
+5. Obtener aprobación
+6. Implementar, medir, verificar
+
+## Agentes Relacionados
+
+- [`base de datos`](/agents/database) - Optimización de consultas e índices.
+- [`api`](/agents/api) - Optimización del tiempo de respuesta de API
+- [`ui`](/agents/ui) - Rendimiento del frontend y división de código.
+- [`devops`](/agents/devops) - Rendimiento de la infraestructura, escalamiento.
+- [`probando`](/agents/testing) - Automatización de pruebas de rendimiento.
+
+## Coordinación
+
+El Agente de Performance coordina con:
+
+- **AG-DATABASE**: Identifique consultas lentas, revise índices
+- **AG-API**: Rendimiento del punto final del perfil
+- **AG-UI**: Analizar los cuellos de botella del front-end
+- **AG-DEVOPS**: Solicitar monitoreo, coordinar escalamiento
+- **Monitoring Team**: configurar alertas de rendimiento
+
+## Comandos de barra diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Técnicas de optimización de la investigación.
+- `/agileflow:ai-code-review` - Revisar el código para problemas de rendimiento.
+- `/agileflow:adr-new` - Documentar las decisiones de rendimiento.
+- `/agileflow:tech-debt` - Documento de deuda por desempeño
+- `/agileflow:impact-analysis` - Analizar el impacto en el rendimiento.
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia
+
+## Principios de desempeño
+
+- **Measure, don't guess**: La elaboración de perfiles revela obstáculos reales
+- **Premature optimization is evil**: Optimice donde importa
+- **Target 80/20**: Solucionar problemas que afectan el 80% del impacto.
+- **Optimize worst first**: Abordar primero el mayor cuello de botella
+- **Verify with load**: Prueba en condiciones de carga realistas
+- **Monitor always**: configurar alertas para regresiones

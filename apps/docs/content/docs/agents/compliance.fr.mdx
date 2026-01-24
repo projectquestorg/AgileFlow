@@ -1,0 +1,322 @@
+---
+title: Conformité
+description: Spécialiste en conformité pour les obligations légales, la protection des données, RGPD/CCPA, les audits de conformité et la documentation.
+---
+
+# Spécialiste en conformité
+
+AG-COMPLIANCE assure que les applications respectent les obligations légales, les normes de protection des données et les exigences de conformité réglementaires.
+
+## Capacités
+
+- **RGPD/CCPA**: Droit d'accès, suppression, portabilité des données
+- **Audit de conformité**: Vérifier la conformité aux lois sur la protection des données
+- **Consentement**: Gestion du consentement utilisateur, opt-in/opt-out
+- **Politiques de rétention**: Définir la durée de conservation des données
+- **Documentation**: Registres de traitement, évaluations d'impact
+- **Chiffrement et sécurité**: Protection des données en transit et au repos
+- **Audit trail**: Journalisation des accès et des modifications
+- **Gouvernance des données**: Classification des données, contrôles d'accès
+
+## Quand l'utiliser
+
+Utiliser AG-COMPLIANCE quand:
+
+- Collecter ou traiter les données des utilisateurs
+- Implémenter le droit à l'oubli (suppression RGPD)
+- Exporter les données utilisateur (portabilité)
+- Besoin d'audits de conformité
+- Traiter les demandes légales
+- Implémenter des politiques de rétention
+- Documenter les traitements de données
+- Gérer le consentement utilisateur
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We need to be GDPR compliant by Q1"
+
+# AG-COMPLIANCE fera:
+# 1. Auditer tous les traitements de données
+# 2. Documenter le consentement utilisateur
+# 3. Implémenter le droit à l'oubli
+# 4. Créer les politiques de rétention
+# 5. Configurer le chiffrement
+# 6. Documenter les évaluations d'impact
+# 7. Créer les registres de traitement
+```
+
+## Comportements clés
+
+- **Données d'abord**: Comprendre ce que vous collectez
+- **Droits utilisateur**: Respecter l'accès, la suppression, la portabilité
+- **Consentement clair**: Opt-in explicite, pas pré-coché
+- **Transparence**: Divulger comment les données sont utilisées
+- **Audit trail**: Journaliser les accès aux données sensibles
+
+## Cadre RGPD
+
+**Les 6 droits RGPD**:
+1. Droit d'accès: L'utilisateur peut voir ses données
+2. Droit de rectification: Corriger les données inexactes
+3. Droit à l'oubli: Supprimer complètement les données
+4. Droit à la portabilité: Exporter les données
+5. Droit d'objection: S'opposer au traitement
+6. Droits liés à la prise de décision automatisée
+
+**Exigences RGPD de base**:
+- [ ] Consentement explicite avant le traitement
+- [ ] Politique de confidentialité claire
+- [ ] Droit d'accès aux données personnelles
+- [ ] Droit de suppression des données
+- [ ] Droit à la portabilité des données
+- [ ] Notification de violation dans les 72 heures
+- [ ] Contrats de traitement des données (DPA)
+- [ ] Évaluation d'impact sur la protection des données (DPIA)
+
+## Implémentation du consentement
+
+**Pas bon** (pré-coché):
+```html
+<label>
+  <input type="checkbox" checked> Subscribe to email
+</label>
+```
+
+**Bon** (opt-in explicite):
+```html
+<label>
+  <input type="checkbox"> I want to receive emails about new features
+</label>
+```
+
+**Meilleur** (avec versions lisibles):
+```html
+<div class="consent-notice">
+  <h3>Your privacy matters</h3>
+  <p>We collect:</p>
+  <ul>
+    <li>Account information (name, email)</li>
+    <li>Usage data (pages viewed, features used)</li>
+    <li>Device information (OS, browser)</li>
+  </ul>
+  <a href="/privacy">Full privacy policy</a>
+  <button>Accept</button>
+  <button>Decline</button>
+</div>
+```
+
+## Droit à l'oubli
+
+**Implémentation**:
+```javascript
+async function deleteUserData(userId) {
+  // 1. Supprimer le compte utilisateur
+  await User.delete({ id: userId });
+
+  // 2. Supprimer les données personnelles
+  await UserProfile.delete({ userId });
+  await UserPreferences.delete({ userId });
+
+  // 3. Anonymiser les données de transaction (pour l'audit)
+  await Order.update(
+    { userId },
+    { userId: null, userEmail: null }
+  );
+
+  // 4. Journaliser la suppression
+  await AuditLog.create({
+    action: 'user_deleted',
+    userId,
+    timestamp: new Date()
+  });
+}
+```
+
+## Politique de rétention
+
+**Exemple**:
+```json
+{
+  "data_types": {
+    "account_info": {
+      "retention_days": 90,
+      "reason": "Legal requirement"
+    },
+    "transaction_history": {
+      "retention_days": 2555,
+      "reason": "Tax records (7 years)"
+    },
+    "analytics_events": {
+      "retention_days": 365,
+      "reason": "Analysis and improvement"
+    },
+    "support_tickets": {
+      "retention_days": 730,
+      "reason": "Legal and business value"
+    }
+  }
+}
+```
+
+## Chiffrement des données
+
+**Au repos** (dans la base de données):
+```javascript
+const crypto = require('crypto');
+
+function encryptPII(data) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', KEY, iv);
+  let encrypted = cipher.update(data, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+```
+
+**En transit** (HTTPS):
+```javascript
+// Toujours utiliser HTTPS en production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (!req.secure) {
+      return res.redirect('https://' + req.get('host') + req.url);
+    }
+    next();
+  });
+}
+```
+
+## Audit trail
+
+**Journalisation des accès aux données**:
+```javascript
+async function logDataAccess(userId, action, dataType) {
+  await AuditLog.create({
+    timestamp: new Date(),
+    user_accessed: userId,
+    action: action, // 'view', 'download', 'export'
+    data_type: dataType,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent')
+  });
+}
+```
+
+**Événements à journaliser**:
+- Accès aux données personnelles
+- Modifications de données
+- Suppressions de données
+- Téléchargements d'exports
+- Modifications de consentement
+- Tentatives d'accès non autorisées
+
+## Registre de traitement (ToR)
+
+**Structure**:
+```markdown
+# Register of Processing Activities
+
+## 1. Marketing Email List
+- **Purpose**: Send marketing emails to opted-in users
+- **Data types**: Name, email, preferences
+- **Retention**: Until unsubscribe or 2 years inactivity
+- **Recipients**: Marketing team, email service provider
+- **Legal basis**: Consent (opt-in)
+- **Safeguards**: Encrypted at rest, HTTPS in transit
+
+## 2. Transaction History
+- **Purpose**: Track purchases for business records
+- **Data types**: Purchase date, amount, items, payment method (last 4 digits)
+- **Retention**: 7 years (tax requirement)
+- **Recipients**: Accounting team
+- **Legal basis**: Contractual necessity
+- **Safeguards**: Encrypted, access logs
+
+## 3. Analytics
+- **Purpose**: Improve product features
+- **Data types**: Page views, feature usage, device info (no PII)
+- **Retention**: 1 year
+- **Recipients**: Product team
+- **Legal basis**: Legitimate interest
+- **Safeguards**: Anonymized after 30 days
+```
+
+## Évaluation d'impact (DPIA)
+
+**Quand faire une DPIA**:
+- Traitement à grande échelle de données personnelles
+- Surveillance systématique
+- Traitement automatisé avec légal/effet significatif
+- Fusion de données de sources différentes
+- Données de catégories spéciales
+
+**Format DPIA**:
+```markdown
+# Data Protection Impact Assessment
+
+## 1. Description du traitement
+- Quoi: Suivi des utilisateurs via cookies
+- Quand: 24/7
+- Où: Serveurs US
+- Qui: Marketing team
+
+## 2. Justification
+- Améliorer l'UX avec des recommandations personnalisées
+
+## 3. Risques
+- Risque: Suivi excessif des utilisateurs
+  - Impact: Perte de confiance, violations RGPD
+  - Mitigation: Opt-out clair, rétention 30 jours
+
+## 4. Conclusion
+- Risque accepté avec mitigations
+```
+
+## Cadre CCPA (Californie)
+
+**Droits CCPA**:
+1. Droit à connaître: Quelles données sont collectées
+2. Droit de suppression: Demander la suppression
+3. Droit d'exclusion: Exclure des ventes de données
+4. Droit de non-discrimination: Pas de pénalité pour exercer les droits
+
+**Affichage obligatoire**:
+```html
+<p>
+  California residents have the right to:
+  <a href="/privacy">Know what data we collect</a> |
+  <a href="/delete">Request deletion</a> |
+  <a href="/optout">Opt out of sales</a>
+</p>
+```
+
+## Checklist de conformité
+
+Avant de lancer:
+
+- [ ] Politique de confidentialité écrite et accessible
+- [ ] Consentement explicite pour le traitement des données
+- [ ] Droit d'accès implémenté (exporter les données)
+- [ ] Droit de suppression implémenté
+- [ ] Politique de rétention définie
+- [ ] Chiffrement au repos et en transit
+- [ ] Audit trail configuré
+- [ ] Contrat de traitement (DPA) en place
+- [ ] DPIA effectuée
+- [ ] Registre de traitement maintenu
+- [ ] Équipe consciente de la conformité
+
+## Agents associés
+
+- [`security`](/agents/security) - Sécurité et chiffrement
+- [`database`](/agents/database) - Stockage sécurisé des données
+- [`devops`](/agents/devops) - Infrastructure sécurisée
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les exigences de conformité
+- `/agileflow:adr-new` - Documenter les décisions de conformité
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

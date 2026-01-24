@@ -1,0 +1,134 @@
+---
+title: Móvil
+description: Especialista móvil en React Native, Flutter, desarrollo móvil multiplataforma y funciones específicas para móviles.
+---
+
+# Especialista móvil
+
+AG-MOBILE es el especialista en desarrollo móvil multiplataforma, que se encarga de la implementación de React Native y Flutter, la integración de módulos nativos y la optimización específica para dispositivos móviles.
+
+## Capacidades
+
+- **React Native & Flutter Development**: Escriba una vez, implemente en iOS y Android
+- **Native Module Integration**: Cámara, ubicación, notificaciones, sensores, almacenamiento
+- **Mobile UI Patterns**: Tab navigation, stack navigation, modals, gestures, responsive design
+- **Performance Optimization**: orientación por tamaño de paquete, gestión de memoria, optimización de la batería
+- **Mobile Testing**: Pruebas de dispositivos, pruebas de emuladores, pruebas de redes lentas
+- **Platform Abstraction**: Maneje las diferencias entre iOS y Android con componentes reutilizables
+- **Mobile Analytics & Crash Reporting**: Sentry, Bugsnag, seguimiento del rendimiento
+
+## Cuando usar
+
+Utilice AG-MOBILE cuando:
+
+- Implementación de funciones móviles multiplataforma en React Native o Flutter
+- Creación de integraciones de módulos nativos (cámara, ubicación, sensores)
+- Optimización del rendimiento móvil (tamaño del paquete, memoria, batería)
+- Manejo de códigos y diferencias específicos de la plataforma
+- Pruebas en dispositivos reales
+- Implementación de patrones de UI específicos para dispositivos móviles (pestañas inferiores, modales)
+- Configurar la implementación de la tienda de aplicaciones
+
+## Cómo funciona
+
+1. **Context Loading**: Lee el archivo de experiencia y la estrategia móvil del proyecto (React Native vs Flutter)
+2. **Platform Analysis**: Determina qué diferencias de plataforma existen y cómo abstraerlas.
+3. **Design & Implementation**: Crea componentes multiplataforma con capas de abstracción adecuadas
+4. **Testing**: Pruebas en dispositivos iOS y Android (no solo emuladores)
+5. **Optimization**: Mide y optimiza el tamaño del paquete, la memoria y el uso de la batería
+6. **Coordination**: Actualiza status.json y coordina con AG-UI en componentes compartidos
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to add camera functionality to the mobile app that works on iOS and Android"
+
+# AG-MOBILE will:
+# 1. Research platform-specific camera APIs
+# 2. Create abstraction layer for camera access
+# 3. Implement on React Native (or Flutter)
+# 4. Test on real iOS device
+# 5. Test on real Android device
+# 6. Document setup and usage
+```
+
+## Comportamientos clave
+
+- **Platform Abstraction**: Nunca escribe código específico de la plataforma sin una capa de abstracción
+- **Real Device Testing**: Siempre pruebas en dispositivos reales, no solo en emuladores
+- **Performance Budgets**: Se mantiene dentro de los objetivos de rendimiento (batería, memoria, tamaño del paquete)
+- **Mobile Patterns**: Utiliza patrones de interfaz de usuario móviles apropiados (pestañas inferiores, no barras laterales)
+- **Cross-platform Parity**: Garantiza que la función funcione de manera idéntica en iOS y Android
+
+## Herramientas disponibles
+
+- Leer, escribir, editar, Bash, Glob, Grep
+- Acceso a Session Harness para verificación
+
+## Plataformas móviles
+
+**React Native**:
+- JavaScript/TypeScript + módulos nativos
+- Flujos de trabajo expositivos (administrados) o simples (no administrados)
+- Conocimiento de React compartido con el equipo web
+
+**Flutter**:
+- Lenguaje de dardos con widgets de Material Design y Cupertino
+- Recarga en caliente para un desarrollo rápido
+- Fuertes características de rendimiento
+
+## Rendimiento móvil
+
+Target these metrics:
+
+- **Bundle Size**: Menos de 2 MB para descargas rápidas
+- **Memory**: Evite objetos grandes, limpie adecuadamente (2-6 GB de RAM típica)
+- **Battery**: Minimiza el uso de red, CPU y pantalla
+- **Data**: Comprimir imágenes, limitar solicitudes
+- **Network**: Prueba en redes lentas/no confiables
+
+## Lista de control de calidad
+
+Antes de marcar el trabajo móvil como completo:
+
+- Implementado tanto en iOS como en Android
+- Patrones de UX móvil apropiados
+- Flujos de navegación probados
+- Gestos manejados correctamente.
+- Platform-specific code abstracted
+- Módulos nativos (si los hay) integrados
+- Objetivos de rendimiento cumplidos (tamaño del paquete, memoria)
+- Probado en dispositivos reales
+- Probado en red lenta
+- Se cumplieron los requisitos de la tienda de aplicaciones (iconos, pantallas de presentación)
+- Pruebas aprobadas con test_status: "aprobada"
+
+## Agentes Relacionados
+
+- [AG-UI](/agents/ui) - Componentes web y API de componentes compartidos.
+- [PRUEBAS AG](/agents/testing) - Estrategias y marcos de prueba.
+- [AG-RENDIMIENTO](/agents/performance) - Optimización del rendimiento
+
+## Mensajes de coordinación
+
+AG-MOBILE se comunica con otros agentes a través del autobús:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-MOBILE",
+  "type": "status",
+  "story": "US-0040",
+  "text": "Mobile tab navigation implemented, ready for testing on device"
+}
+```
+
+## Comandos de barra diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigación de patrones móviles, módulos nativos.
+- `/agileflow:ai-code-review` - Revisar el código móvil para problemas específicos de la plataforma.
+- `/agileflow:adr-new` - Documentar decisiones sobre plataformas móviles.
+- `/agileflow:tech-debt` - Documente la deuda móvil y las funciones no probadas
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia

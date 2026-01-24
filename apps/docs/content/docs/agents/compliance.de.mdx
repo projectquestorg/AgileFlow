@@ -1,0 +1,247 @@
+---
+title: Konformität
+description: Konformitäts-Spezialist für regulatorische Konformität, GDPR, HIPAA, SOC2, Audit-Trails, gesetzliche Anforderungen und Konformitäts-Dokumentation.
+---
+
+# Konformitäts-Spezialist
+
+AG-COMPLIANCE stellt regulatorische Konformität über GDPR, HIPAA, SOC2, PCI-DSS und andere Rahmenwerke sicher, mit Fokus auf Audit-Trails, Datenschutz und Konformitäts-Dokumentation.
+
+## Fähigkeiten
+
+- **Regulatorischer Rahmenwerk-Konformität**: GDPR, HIPAA, SOC2, PCI-DSS, CCPA
+- **Audit-Trail-Implementierung**: Unveränderliche Protokollierung aller Datenzugriffe und Änderungen
+- **Daten-Aufbewahrungsrichtlinien**: Definieren und automatisieren Sie Daten-Löschungszeitpläne
+- **Zustimmungs-Management**: GDPR-Zustimmungshandhabung und Widerruf
+- **Datenschutzrichtlinien & Geschäftsbedingungen**: Dokumentation für rechtliche und regulatorische Konformität
+- **Incident-Response**: Datenschutzverletzungs-Verfahren und Benachrichtigung
+- **Konformitäts-Dokumentation**: Nachweise für Prüfer und Konformitäts-Überprüfungen
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie AG-COMPLIANCE, wenn:
+
+- Sie anwendbare regulatorische Anforderungen für Ihr Unternehmen identifizieren
+- Sie Audit-Trails für Datenzugriff und Änderungen implementieren
+- Sie Daten-Aufbewahrungspolitiken und Löschungspolitiken entwerfen
+- Sie GDPR-Zustimmungs-Management einrichten
+- Sie Datenschutzrichtlinien und Nutzungsbedingungen schreiben
+- Sie sich auf Konformitäts-Audits vorbereiten
+- Sie Incident-Response-Verfahren dokumentieren
+
+## Wie es funktioniert
+
+1. **Kontext-Laden**: Liest Expertise-Datei und Projekt-Konformitäts-Status
+2. **Rahmenwerk-Analyse**: Bestimmt, welche Verordnungen gelten (GDPR, HIPAA, etc.)
+3. **Audit**: Überprüft Codebase auf Konformitäts-Lücken
+4. **Implementierung**: Implementiert Audit-Trails, Zustimmungs-Management, Datenlöschung
+5. **Dokumentation**: Erstellt Datenschutzrichtlinie, Daten-Aufbewahrungsrichtlinie, Incident-Response
+6. **Nachweise**: Bereitet Dokumentation für Prüfer und Konformitäts-Überprüfungen vor
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Ich muss GDPR-Konformität für meine EU-Benutzer sicherstellen"
+
+# AG-COMPLIANCE wird:
+# 1. Codebase auf GDPR-Konformitätslücken prüfen
+# 2. Audit-Trail-Protokollierung implementieren (wer, was, wann, wo, warum)
+# 3. Zustimmungs-Management-System einrichten
+# 4. Datenschutzrichtlinien-Dokumentation erstellen
+# 5. Daten-Löschungsverfahren implementieren
+# 6. Incident-Response dokumentieren
+```
+
+## Wichtige Verhaltensweisen
+
+- **Keine Kompromisse**: Konformität ist nicht verhandelbar, niemals aus Bequemlichkeit übersprungen
+- **Audit-Trails an erster Stelle**: Alle Datenzugriffe und Änderungen werden unveränderlich protokolliert
+- **Datenschutz-fokussiert**: Minimiert Datenerfassung, respektiert Benutzerrechte
+- **Dokumentation**: Erstellt Nachweise für Prüfer und Konformitäts-Überprüfungen
+- **Proaktiv**: Identifiziert Lücken, bevor sie zu Problemen werden
+
+## Verfügbare Tools
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Zugriff auf Session Harness für Überprüfung
+
+## Konformitäts-Rahmenwerke
+
+**GDPR** (EU - gilt für Daten von EU-Bürgern):
+- Zugangsrecht (Benutzer können ihre Daten anfordern)
+- Recht auf Vergessenwerden (Benutzer können Löschung anfordern)
+- Datenportabilität (Benutzer können Datensicherung anfordern)
+- Zustimmungs-Management (muss explizite Zustimmung haben)
+- Audit-Trails (wer hat Zugriff auf was, wann)
+- Datenschutz-Folgenabschätzung
+
+**HIPAA** (USA - Gesundheitsdaten):
+- Patient-Datenschutz (PHI-Schutz)
+- Patient-Rechte (Zugriff, Änderung, Löschung)
+- Audit-Kontrollen (Protokollierung und Überwachung)
+- Zugriffskontrolle (Authentifizierung, Autorisierung)
+- Übertragungssicherheit (Verschlüsselung im Transit)
+- Verletzungs-Benachrichtigung (falls Daten durchgesickert)
+
+**SOC2** (Service-Provider):
+- Sicherheit (Daten vor unbefugtem Zugriff geschützt)
+- Verfügbarkeit (System-Uptime)
+- Verarbeitungs-Integrität (Daten korrekt verarbeitet)
+- Vertraulichkeit (Daten bleiben vertraulich)
+- Datenschutz (persönliche Daten korrekt behandelt)
+- Audit-Trails und Überwachung
+
+**PCI-DSS** (Zahlungskarten-Verarbeitung):
+- Sicheres Netzwerk (Firewall, keine Defaults)
+- Datenschutz (Verschlüsselung, beschränkter Zugriff)
+- Schwachstellen-Management (Patching, Tests)
+- Zugriffskontrolle (Least Privilege)
+- Überwachung und Tests (Audit-Protokolle)
+
+## Audit-Trails (Kritisch)
+
+**Was Protokollieren**:
+- Wer (Benutzer-ID, Admin-ID)
+- Was (Aktion, zugegriffene Daten)
+- Wann (Zeitstempel)
+- Wo (IP-Adresse, Standort)
+- Warum (Zweck, Grund)
+- Ergebnis (Erfolg oder Fehler)
+
+**Beispiel Audit-Log-Eintrag**:
+```json
+{
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "action": "view_patient_record",
+  "resource": "patient-456",
+  "ip_address": "192.168.1.1",
+  "location": "New York, USA",
+  "result": "success",
+  "purpose": "Treatment"
+}
+```
+
+**Unveränderliche Anforderungen**:
+- Protokolle müssen manipulationssicher sein
+- Nur-Anhängen-Datenbank
+- Verschlüsseln und signieren Sie Protokolle
+- Archivieren Sie alte Protokolle sicher
+- Erlauben Sie niemals Löschung (außer mit Autorisierung)
+
+## Daten-Aufbewahrungsrichtlinien
+
+Definieren Sie für jeden Datentyp:
+
+- **Benutzerkonto-Daten**: Beibehalten während aktiv, nach 30 Tagen Deaktivierung löschen
+- **Transaktions-Daten**: 7 Jahre beibehalten (Finanzanforderung)
+- **Protokolle**: 90 Tage beibehalten (operativ), 1 Jahr archivieren
+- **Gelöschte Benutzerdaten**: Innerhalb von 30 Tagen löschen
+- **Backup-Daten**: 30 Tage beibehalten
+
+**Implementieren Sie automatisierte Löschung**:
+- Geplante Jobs zum Löschen abgelaufener Daten
+- Alle Löschungen protokollieren
+- Überprüfen Sie, ob Löschung erfolgreich war
+
+## Zustimmungs-Management (GDPR)
+
+**Explizite Zustimmung erforderlich**:
+- Nicht vorausgefüllte Kontrollkästchen (müssen Opt-in sein)
+- Klare Beschreibung, welche Daten erfasst werden
+- Zweck der Datenerfassung
+- Wer hat Zugriff auf Daten
+- Recht, Zustimmung zu widerrufen
+
+**Implementierung**:
+```javascript
+// Muss explizite Zustimmung haben vor Verarbeitung
+if (!user.has_marketing_consent) {
+  throw new Error('Zustimmung erforderlich');
+}
+
+// Zustimmungs-Erteilung/Widerruf protokollieren
+auditLog({
+  action: 'consent_granted',
+  user_id: user.id,
+  type: 'marketing',
+  timestamp: new Date(),
+});
+```
+
+## Konformitäts-Dokumentation
+
+**Dokumentieren Sie für Prüfer**:
+- Datenschutzrichtlinie
+- Nutzungsbedingungen
+- Daten-Verarbeitungs-Addendum (DPA)
+- Sicherheits-Dokumentation
+- Audit-Protokolle-Aufbewahrungsrichtlinie
+- Incident-Response-Verfahren
+- Mitarbeiter-Schulungsaufzeichnungen
+- Lieferanten-Konformitäts-Bewertungen
+
+## Datenschutzrichtlinien-Abschnitte
+
+- **Erfasste Daten**: Welche persönlichen Daten erfassen Sie?
+- **Zweck**: Warum erfassen Sie diese Daten?
+- **Rechtliche Grundlage**: Warum dürfen Sie sie erfassen (Zustimmung, Vertrag, etc.)?
+- **Aufbewahrung**: Wie lange behalten Sie sie?
+- **Benutzerrechte**: Zugangsrecht, Löschung, Portabilität
+- **Dritte**: Wer hat Zugriff auf Benutzerdaten?
+- **Cookies**: Cookie-Richtlinie und Tracking
+
+## Incident-Response
+
+**Datenschutzverletzungs-Verfahren**:
+1. Verletzung erkennen (unbefugter Zugriff auf persönliche Daten)
+2. Details dokumentieren (was, wann, wer betroffen)
+3. Regulatorische Behörde benachrichtigen (GDPR: 72 Stunden)
+4. Betroffene Benutzer benachrichtigen (GDPR: ohne unnötige Verzögerung)
+5. Nachweise bewahren (Protokolle, Zugriffsprotokolle)
+6. Beheben (Schwachstelle beheben)
+7. Überprüfen & verbessern (Wiederholung verhindern)
+
+## Qualitäts-Checkliste
+
+Vor Abschluss der Konformitäts-Arbeiten:
+
+- Konformitäts-Rahmenwerk identifiziert
+- Anforderungen dokumentiert
+- Audit-Trails protokollieren alles (wer, was, wann, wo, warum)
+- Daten-Aufbewahrungsrichtlinien definiert und automatisiert
+- Zustimmungs-Management implementiert (falls GDPR)
+- Datenschutzrichtlinie geschrieben und veröffentlicht
+- Nutzungsbedingungen geschrieben und veröffentlicht
+- Incident-Response dokumentiert
+- Mitarbeiter-Schulung dokumentiert
+- Drittanbieter-Bewertungen aktuell
+- Tests bestanden mit test_status: "passing"
+
+## Verwandte Agents
+
+- [AG-SECURITY](/agents/security) - Daten-Verschlüsselung, Zugriffskontrolle
+- [AG-ANALYTICS](/agents/analytics) - GDPR-konforme Event-Tracking
+- [AG-MONITORING](/agents/monitoring) - Sicherheits-Überwachung und Warnungen
+
+## Koordinations-Nachrichten
+
+AG-COMPLIANCE koordiniert mit anderen Teams:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-COMPLIANCE",
+  "type": "status",
+  "text": "Audit-Trails für alle Datenzugriffe implementiert, GDPR-bereit"
+}
+```
+
+## Slash-Befehle
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Konformitäts-Anforderungen
+- `/agileflow:ai-code-review` - Überprüfung von Code auf Konformitäts-Probleme
+- `/agileflow:adr-new` - Dokumentieren Sie Konformitäts-Entscheidungen
+- `/agileflow:status STORY=... STATUS=...` - Aktualisieren Sie Story-Status

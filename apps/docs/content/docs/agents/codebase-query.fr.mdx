@@ -1,0 +1,220 @@
+---
+title: Requête de base de code
+description: Spécialiste en requête de base de code pour l'exploration, l'analyse, la recherche de dépendances et la compréhension de la structure du projet.
+---
+
+# Spécialiste Requête de base de code
+
+AG-CODEBASE-QUERY est un expert en exploration et analyse de la base de code, responsable de la réponse aux questions sur la structure du projet, les dépendances, les modèles et l'architecture.
+
+## Capacités
+
+- **Exploration de code**: Naviguer dans la structure du projet, trouver les fichiers
+- **Analyse des dépendances**: Comprendre les imports, les dépendances circulaires
+- **Recherche de modèles**: Trouver des cas d'utilisation de composants ou de fonctions
+- **Analyse de la couche**: Identifier les violations de couche architecturale
+- **Audit des imports**: Détecter les imports inutilisés ou non utilisés
+- **Graphe de dépendances**: Visualiser comment les modules se connectent
+- **Détection des modèles**: Trouver les utilisations répétées de code
+- **Recherche de texte**: Rechercher le contenu du code par motifs
+
+## Quand l'utiliser
+
+Utiliser AG-CODEBASE-QUERY quand:
+
+- "Où sont tous les endpoints API pour les utilisateurs?"
+- "Quels composants importent ce service?"
+- "Y a-t-il des dépendances circulaires?"
+- "Comment est structuré le projet?"
+- "Quel est l'impact des changements à ce fichier?"
+- "Où le système gère-t-il l'authentification?"
+- "Quels fichiers utilisent cette fonction?"
+- "Quelles couches importent de la UI à l'API?"
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Show me all places where we handle user authentication"
+
+# AG-CODEBASE-QUERY fera:
+# 1. Rechercher "auth", "login", "JWT" dans le code
+# 2. Trouver les fichiers middleware
+# 3. Analyser les dépendances des modules d'auth
+# 4. Créer une carte visuelle des flux d'authentification
+# 5. Montrer les fichiers où l'authentification est vérifiée
+```
+
+## Comportements clés
+
+- **Pas de modifications**: Requête uniquement (Read, Glob, Grep)
+- **Exploration systématique**: Utiliser des motifs regex pour la recherche complète
+- **Contexte du projet**: Comprendre la structure et les conventions
+- **Rapports clairs**: Présenter les résultats avec des chemins de fichiers et le contexte
+
+## Outils disponibles
+
+- Read, Glob, Grep (recherche uniquement)
+- Bash (pour compter les fichiers, les métriques)
+
+## Commandes de requête courantes
+
+```bash
+# Trouver tous les services
+find src -name "*Service.ts" -o -name "*service.js"
+
+# Compter les fichiers par type
+find src -name "*.tsx" | wc -l
+
+# Rechercher les imports circulaires
+grep -r "import.*from.*" src | grep -E "A->B.*B->A"
+
+# Lister la structure du projet
+tree -L 3 src/
+
+# Compter les lignes de code
+find src -name "*.ts" -o -name "*.tsx" | xargs wc -l
+
+# Trouver les fichiers inutilisés
+find src -type f -name "*.ts" | while read f; do grep -r "$(basename $f)" src > /dev/null || echo "Unused: $f"; done
+```
+
+## Analyse des dépendances
+
+**Dépendances circulaires**:
+```
+ComponentA imports ComponentB
+ComponentB imports ComponentA
+→ Dépendance circulaire!
+```
+
+**Graphe de dépendances**:
+```
+UserService
+  ├── DatabaseAdapter
+  ├── CacheService
+  └── EmailService
+
+CacheService
+  ├── RedisClient
+  └── Logger
+
+EmailService
+  └── Logger
+```
+
+## Analyse de la couche
+
+**Architecture en couches**:
+```
+UI Layer (Components, Pages)
+  ↓ imports
+API Layer (Controllers, Routes)
+  ↓ imports
+Business Logic Layer (Services)
+  ↓ imports
+Data Access Layer (Repositories)
+  ↓ imports
+Database Layer (Query builders)
+```
+
+**Violations**:
+- UI importe directement depuis Database (saute les couches)
+- Services importent depuis UI (direction incorrecte)
+
+## Audit des imports
+
+**Imports inutilisés**:
+```javascript
+import { unused } from 'module'; // Jamais utilisé
+import React from 'react';       // Utilisé en JSX
+```
+
+**Exports inutilisés**:
+```javascript
+export function neverCalled() {
+  // ...
+}
+```
+
+## Requêtes courantes
+
+**Trouver tous les composants React**:
+```bash
+find src -name "*.tsx" | xargs grep -l "export.*function\|export.*class"
+```
+
+**Trouver tous les endpoints API**:
+```bash
+grep -r "app.get\|app.post\|app.put\|app.delete" src/
+```
+
+**Trouver les utilisations d'une fonction**:
+```bash
+grep -r "functionName(" src/ | grep -v "function functionName"
+```
+
+**Compter les fichiers par type**:
+```bash
+echo "TypeScript files:"
+find src -name "*.ts" -o -name "*.tsx" | wc -l
+echo "Test files:"
+find src -name "*.test.ts" -o -name "*.test.tsx" | wc -l
+```
+
+## Rapports courants
+
+**Vue d'ensemble de la structure**:
+```
+src/
+├── components/      (45 files, 12K LOC)
+├── services/        (23 files, 8K LOC)
+├── controllers/     (18 files, 6K LOC)
+├── repositories/    (15 files, 5K LOC)
+├── types/           (12 files, 2K LOC)
+└── utils/           (8 files, 1.5K LOC)
+
+Total: 121 files, 34.5K LOC
+```
+
+**Dépendances externes**:
+```
+Direct dependencies (26):
+- react@18.2.0
+- next@14.0.0
+- typescript@5.2.0
+- axios@1.6.0
+- ...
+
+Dev dependencies (18):
+- @types/react@18.2.0
+- jest@29.0.0
+- eslint@8.0.0
+- ...
+
+Outdated: 5 packages
+Security issues: 0
+```
+
+**Complexity report**:
+```
+Highest complexity functions:
+1. UserService.validateAndCreate (CC: 12)
+2. PaymentController.processPayment (CC: 10)
+3. AuthMiddleware.verify (CC: 8)
+
+Average complexity: 4.2
+```
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de la base de code
+- `/agileflow:adr-new` - Documenter les décisions architecturales
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Agents associés
+
+- [`refactor`](/agents/refactor) - Refactorise en fonction des résultats de requête
+- [`architecture`](/agents/architecture) - Propose des améliorations architecturales
+- [`documentation`](/agents/documentation) - Documente la structure trouvée

@@ -1,0 +1,40 @@
+---
+title: Pesquisa
+description: Especialista em pesquisa para coleta de informação técnica, criação de prompts de pesquisa e manutenção de índice de pesquisa.
+---
+
+# Agente de Pesquisa
+
+O Agente de Pesquisa (RESEARCH) é seu especialista em pesquisa técnica, gerenciamento de conhecimento e construção de prompts de pesquisa abrangente. Reúne informação de fontes autoritárias, sintetiza descobertas e mantém índice de pesquisa pesquisável para referência futura.
+
+## Capacidades
+
+- **Pesquisa Web**: Buscar documentação oficial e fontes autoritárias para informação técnica
+- **Construção de Prompt ChatGPT**: Criar prompts de pesquisa abrangente solicitando planos de implementação, snippets de código, rascunho de ADR, quebra de story
+- **Curação de Nota de Pesquisa**: Salvar descobertas de pesquisa estruturadas para docs/10-research/ com formatação consistente
+- **Manutenção de Índice de Pesquisa**: Manter docs/10-research/README.md atualizado com pesquisa mais nova primeiro
+- **Detecção de Pesquisa Desatualizada**: Identificar pesquisa >90 dias antiga que pode precisar refresh
+- **Identificação de Gap de Pesquisa**: Flag pesquisa faltando para decisões técnicas e ADRs
+- **Coordenação de Agente**: Notificar agentes solicitadores quando pesquisa é completa
+
+## Quando Usar
+
+Use quando precisar:
+
+- Pesquisar tópico técnico ou escolha de tecnologia
+- Entender trade-offs entre diferentes abordagens
+- Construir prompt de pesquisa abrangente para análise mais profunda
+- Documentar descobertas em formato estruturado para referência futura
+- Atualizar descobertas de pesquisa desatualiza (>90 dias antiga)
+
+## Comportamentos-Chave
+
+- **Fontes Oficiais Apenas**: Pesquisa cita documentação oficial, não blog posts aleatórios
+- **Prompts Abrangente**: Prompts de ChatGPT são completos, solicitando detalhes de implementação, testes, considerações de segurança, rascunho de ADR
+- **Formatação Estruturada**: Toda pesquisa segue estrutura consistente (sumário, descobertas, abordagem recomendada, trade-offs, fontes)
+- **Detecção de Desatualizado**: Identifica pesquisa >90 dias antiga e flag para possível refresh quando tech mudou
+
+
+## Links Relacionados
+
+- [Versão em Inglês](/agents/research)

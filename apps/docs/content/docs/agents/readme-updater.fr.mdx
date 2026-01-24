@@ -1,0 +1,266 @@
+---
+title: Metteur à jour README
+description: Spécialiste README pour l'audit et la mise à jour de tous les fichiers de documentation à travers les dossiers de projet.
+---
+
+# Agent metteur à jour README
+
+AG-README-UPDATER est votre spécialiste dans l'audit et la mise à jour des fichiers README.md à travers votre projet. Cet agent assure que la documentation de dossier reste à jour, décrit précisément le contenu, et fournit une navigation claire entre sections associées.
+
+## Capacités
+
+- **Audit README**: Scanner les dossiers et identifier les lacunes de documentation, information obsolète, descriptions de fichiers manquantes
+- **Documentation de contenu**: Documenter tous les fichiers et dossiers dans un dossier avec descriptions claires
+- **Liens de navigation**: Assurer la navigation claire entre les dossiers associés et parent/enfant répertoires
+- **Standardisation de structure**: Appliquer le format README cohérent à travers tous les dossiers de projet
+- **Détection de lien cassé**: Identifier et corriger les liens qui pointent vers les fichiers ou dossiers non-existants
+- **Guidance dossier-spécifique**: Comprendre le purpose et conventions pour chaque type de dossier (00-meta via 10-research)
+- **Exécution parallèle**: Travailler indépendamment sur le dossier assigné quand spawnné par /readme-sync
+
+## Quand l'utiliser
+
+Utiliser cet agent quand vous avez besoin de:
+
+- Auditer tous les READMEs à travers votre projet (via `/agileflow:readme-sync`)
+- Mettre à jour le README d'un dossier spécifique pour refléter le contenu actuel
+- Ajouter la documentation à un dossier qui manque README.md
+- Assurer la navigation cohérente et la liaison inter-dossier
+- Corriger les liens de documentation cassés
+- Mettre à jour README après ajouter/supprimer les fichiers d'un dossier
+- Créer la documentation pour les nouveaux dossiers de projet
+- Standardiser le format README à travers les équipes
+
+## Comment ça marche
+
+1. **Chargement du contexte**: L'agent lit le fichier d'expertise et scanne le dossier assigné (via `/readme-sync`)
+
+2. **Audit**: L'agent liste tous les fichiers/dossiers dans le dossier cible et lit le README actuel (s'il existe)
+
+3. **Analyse de lacunes**: L'agent identifie:
+   - Fichiers non documentés dans README
+   - Fichiers mentionnés dans README qui n'existent plus
+   - Descriptions obsolètes ou purpose de dossier
+   - Liens de navigation cassés
+   - Guidance "how to use" manquante
+
+4. **Planification**: L'agent propose les améliorations:
+   - Meilleure documentation de structure de dossier
+   - Descriptions de fichier mises à jour
+   - Liens de navigation fixés ou ajoutés
+   - Nouvelles sections (How to Use, Known Issues, Next Steps)
+
+5. **Mise à jour**: L'agent utilise l'outil Edit (si README existe) ou Write (si crée nouveau) pour appliquer les améliorations
+
+6. **Rapport**: L'agent résume ce qui a été ajouté/mis à jour/supprimé
+
+## Exemple
+
+```bash
+# Mise à jour de dossier unique
+/agileflow:readme-updater
+> "Update README for docs/02-practices/ folder"
+
+# Mise à jour parallèle de tous les dossiers
+/agileflow:readme-sync
+> "Audit and update all README.md files across docs/"
+```
+
+L'agent README Updater ferait:
+1. Scanner docs/02-practices/ pour tous les fichiers
+2. Lire le README.md actuel
+3. Identifier les fichiers manquants (testing.md, security.md, etc.)
+4. Identifier les liens cassés
+5. Mettre à jour README avec la liste de fichier complète
+6. Ajouter la section "How to Use" claire
+7. Corriger les liens de navigation vers les dossiers parent/associés
+8. Rapport: "Updated docs/02-practices/README.md - added 3 sections, fixed 2 links, documented all files"
+
+## Comportements clés
+
+- **Liste complète de fichier**: Chaque fichier dans le dossier devrait être documenté dans README
+- **Descriptions claires**: Chaque description de fichier explique le purpose et quand l'utiliser
+- **Navigation d'abord**: Les READMEs fournissent les chemins clairs vers les dossiers parent, associés, et enfants
+- **Information actuelle**: Mettre à jour automatiquement quand le contenu de dossier change
+- **Format cohérent**: Utiliser le template README standard à travers tous les dossiers
+- **Pas de liens cassés**: Tous les liens inter-dossier sont vérifiés
+- **Utile aux nouveaux utilisateurs**: Les READMEs supposent le lecteur ne connaît pas la structure du projet
+
+## Outils disponibles
+
+Cet agent a accès à:
+- **Bash**: Découvrir fichiers/dossiers (ls, find, wc commandes)
+- **Read**: Lire le README actuel et comprendre la structure
+- **Edit**: Mettre à jour les fichiers README.md existants
+- **Write**: Créer les nouveaux fichiers README.md
+- **Glob**: Trouver les fichiers par modèle
+- **Grep**: Rechercher le contenu de documentation
+
+## Structure README standard
+
+Chaque README.md suit ce template pour la cohérence:
+
+```markdown
+# Nom du dossier
+
+[1-2 phrase description du purpose du dossier]
+
+## Contenu
+
+- **Fichier/Dossier 1** - Brève description de ce qu'il contient
+- **Fichier/Dossier 2** - Brève description de ce qu'il contient
+- **Fichier/Dossier 3** - Brève description de ce qu'il contient
+
+## Navigation rapide
+
+- [Dossier parent](../README.md)
+- [Dossier associé](../sibling/README.md)
+- [Prochaines étapes](#next-steps)
+
+## Comment utiliser ce dossier
+
+[Guidance étape par étape sur quoi faire avec les fichiers dans ce dossier]
+
+## Fichiers clés expliqués
+
+### important-file.md
+[Expliquera ce que ce fichier fait et pourquoi ça importe]
+
+### another-important-file.md
+[Expliquera le purpose et quand l'utiliser]
+
+## Standards & patterns
+
+[Documentera n'importe quelles conventions utilisées dans ce dossier]
+- Modèles de naming
+- Organisation de fichier
+- Comment ajouter les nouveaux items
+
+## Problèmes connus / Questions ouvertes
+
+- [Question ouverte ou problème connu](link if applicable)
+- [Autre question ouverte]
+
+## Prochaines étapes / TODO
+
+- [ ] [Item à compléter]
+- [ ] [Autre item]
+
+## Documentation associée
+
+- [Lien au dossier associé](../other/README.md)
+- [Lien aux docs architecturaux](../04-architecture/README.md)
+```
+
+## Purposes dossier spécifiques
+
+### docs/00-meta/
+- **Purpose**: Documentation système et guides de setup
+- **Contient**: Guides d'installation, templates de configuration, instructions de workflow
+
+### docs/02-practices/
+- **Purpose**: Pratiques de base de code de VOTRE projet (pas les pratiques AgileFlow)
+- **Contient**: Standards de coding, stratégies de test, workflows git, pratiques de sécurité
+
+### docs/03-decisions/
+- **Purpose**: Architecture Decision Records (ADRs) - tracer les décisions importantes dans le temps
+
+### docs/04-architecture/
+- **Purpose**: Specification technique et documentation de design système
+- **Contient**: Architecture système, modèles de données, specs API, diagrammes de composant
+
+## Checklist d'audit
+
+Avant de compléter la mise à jour README, vérifier:
+- Dossier purpose clairement expliqué (1-2 phrases)
+- Tous les fichiers clés listés avec descriptions
+- Liens de navigation actuels et fonctionnants
+- Questions ouvertes documentées
+- Prochaines étapes/TODOs listées
+- Liens aux dossiers associés
+- Pas de références cassées
+- Formatage cohérent avec d'autres READMEs
+- À jour avec le contenu du dossier actuel
+- Utile à quelqu'un nouveau au projet
+
+## Processus de mise à jour
+
+**Étape 1: Lire le README actuel**
+- Si README.md existe, lire complètement
+- Comprendre ce qui est actuellement documenté
+- Noter ce qui est obsolète ou manquant
+
+**Étape 2: Scanner le contenu du dossier**
+- Lister tous les fichiers et dossiers
+- Comprendre la structure et organisation
+- Identifier les nouveaux fichiers non dans README
+- Identifier les fichiers mentionnés qui n'existent plus
+
+**Étape 3: Identifier les lacunes**
+- Quoi est dans le dossier mais non documenté?
+- Quelle documentation est obsolète?
+- Est-ce que les liens sont toujours valides?
+- Est-ce que le purpose du dossier est toujours précis?
+
+**Étape 4: Planifier les mises à jour**
+- Réorganiser si nécessaire (meilleure structure?)
+- Mettre à jour les descriptions
+- Ajouter les fichiers manquants
+- Supprimer le contenu obsolète
+- Corriger les liens cassés
+
+**Étape 5: Appliquer les mises à jour**
+- Réécrire README.md avec les améliorations
+- Utiliser le format standard (template ci-dessus)
+- Garder cohérent avec d'autres READMEs
+- Assurer que tous les liens fonctionnent
+
+**Étape 6: Rapport**
+- Summary de ce qui a été mis à jour
+- Fichiers ajoutés à la documentation
+- Fichiers supprimés de la documentation
+- Améliorations structurelles faites
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de documentation
+- `/agileflow:adr-new` - Documenter les décisions de documentation
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Agents associés
+
+- [`documentation`](/agents/documentation) - Crée la documentation détaillée que les READMEs lient à
+- [`mentor`](/agents/mentor) - Peut demander les mises à jour README pour la clarté
+- [`babysit`](/agents/babysit) - Peut déclencher `/readme-sync` pour l'audit complet
+- [`epic-planner`](/agents/epic-planner) - Peut noter les lacunes de documentation lors de la planification
+
+## Modèles courants
+
+**Web de navigation**
+- Chaque README lie aux parent, siblings, et enfants
+- Les lecteurs peuvent traverser toute la structure docs/
+- Pas de culs-de-sac ou chemins cassés
+
+**Noms de fichier descriptifs**
+- Les descriptions de fichier expliquent PURPOSE, pas juste WHAT
+- "Coding standards for UI components" vs juste "ui-standards"
+- "Test framework selection rationale" vs juste "testing-adr"
+
+**Structure claire**
+- Section Contents liste tous les fichiers
+- Section Key Files explique les plus importants
+- Section How to Use donne la guidance étape par étape
+- Section Standards documente les conventions
+
+**Trigger de maintenance**
+- Après ajouter des fichiers au dossier
+- Après déplacer/renommer des fichiers
+- Après supprimer/archiver des fichiers
+- Avant de marquer le dossier comme "complet"
+- Durant les audits de documentation trimestriels
+
+**Règles de cohérence**
+- Mêmes headers à travers tous les READMEs
+- Même formatage pour les liens et code
+- Même naming pour les sections de navigation
+- Les liens au parent utilisent toujours ../README.md
+- Les liens aux siblings utilisent ../sibling-folder/README.md

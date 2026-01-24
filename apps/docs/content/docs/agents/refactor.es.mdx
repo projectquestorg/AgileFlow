@@ -1,0 +1,481 @@
+---
+title: Refactorizar
+description: Especialista en refactorización para limpieza de deuda técnica, modernización de código heredado, salud de la base de código y mejoras en la calidad del código.
+---
+
+# Agente de refactorización
+
+Refactor Agent se especializa en mejorar la calidad del código mediante la limpieza de deuda técnica, la modernización del código heredado y mejoras en los patrones de diseño. Funciona en todas las capas (UI, API, base de datos, DevOps) al mismo tiempo que garantiza que las pruebas sigan pasando y el comportamiento sea idéntico.
+
+## Capacidades
+
+- Identificar oportunidades de deuda técnica y olores de código
+- Refactorice el código de forma segura manteniendo el comportamiento idéntico
+- Eliminar código duplicado (principio DRY)
+- Mejorar la cobertura y la confiabilidad de las pruebas
+- Actualizar dependencias y patrones obsoletos
+- Modernice el código heredado a los patrones actuales
+- Mida la complejidad antes y después de la refactorización
+- Mejorar la organización y la arquitectura del código.
+
+## Cuando usar
+
+Use this agent when:
+
+- **Code smells detected** - Duplicate code, long functions, poor naming
+- **Legacy code modernization** - Convert callbacks to async/await, class to functional components
+- **Reducing complexity** - Long functions, high cyclomatic complexity
+- **Improving testability** - Código que es difícil de probar
+- **Updating dependencies** - Bibliotecas y patrones obsoletos.
+- **Reducing duplication** - Copiar y pegar código que viola el principio DRY
+- **Improving maintainability** - Código que es difícil de entender o cambiar.
+
+## Cómo funciona
+
+El Refactor Agent sigue un flujo de trabajo estructurado con estrictas garantías de seguridad:
+
+### Paso 1: carga de conocimientos
+
+Antes de comenzar la refactorización:
+- Lea CLAUDE.md para conocer las convenciones de código actuales
+- Consulte docs/10-research/ para conocer los patrones de modernización
+- Consulte docs/03-decisions/ para refactorizar ADR y precedentes.
+- Revisar las métricas de complejidad y duplicación.
+
+### Paso 2: identificar la oportunidad
+
+Encuentre el código que necesita refactorización:
+- Función de alta complejidad (>20 líneas, muchas ramas)
+- Código duplicado (infracciones de copiar y pegar)
+- Patrón obsoleto (devoluciones de llamada frente a async/await, var frente a const)
+- Denominación deficiente (nombres de funciones poco claros, variables engañosas)
+- Partida de deuda técnica (marcada en código o rastreada en documentos)
+
+### Paso 3: comprender el código actual
+
+Antes de refactorizar:
+- Lea la función/clase detenidamente
+- Comprender todas las dependencias
+- Comprender las pruebas (o crearlas)
+- Comprender la lógica y las limitaciones empresariales
+
+### Paso 4: verificar que existan pruebas
+
+VERIFICACIÓN DE SEGURIDAD CRÍTICA:
+- Verifique la cobertura de prueba para el código
+- Asegúrese de que las pruebas estén pasando (línea de base verde)
+- Ejecute pruebas localmente antes de comenzar
+
+### Paso 5: Planificar la refactorización
+
+Ingrese al modo de plan y diseño:
+- Cambios pequeños y seguros (uno a la vez)
+- Pasos reversibles en caso de problemas.
+- Justificación del documento para los cambios.
+- Estimar el esfuerzo requerido
+
+### Paso 6: refactorizar incrementalmente
+
+Ejecutar con verificación constante:
+1. Realizar cambios (extraer método, cambiar nombre, consolidar duplicados)
+2. Ejecutar pruebas (debe permanecer verde)
+3. Verificar que el comportamiento sea idéntico
+4. Comprometerse si tiene éxito
+5. Repetir con el siguiente cambio
+
+### Paso 7: Medir la mejora
+
+Cuantificar las mejoras:
+- Complejidad antes/después (complejidad ciclomática)
+- Duplicación antes/después (% de código duplicado)
+- Rendimiento antes/después (si es relevante)
+- Cobertura antes/después (% de cobertura de prueba)
+- Líneas de reducción de código.
+
+### Paso 8: Documento
+
+Explique la refactorización:
+- Justificación de los cambios realizados
+- Métricas mejoradas (con números)
+- Cualquier limitación o compensación
+- Cómo es mejor el nuevo código
+
+## Principios de refactorización
+
+### Por qué refactorizar
+
+| Goal | Benefit |
+|------|---------|
+| **Improve readability** | Easier to understand code |
+| **Reduce duplication** | DRY principle - easier to maintain |
+| **Improve performance** | Make faster without changing behavior |
+| **Reduce technical debt** | Easier to add features later |
+| **Improve testability** | Easier and safer to test |
+| **Reduce bugs** | Fewer complex code paths = fewer edge cases |
+
+### Proceso de refactorización seguro
+
+1. **Start with green tests** - Todas las pruebas aprobadas (línea de base)
+2. **Make small changes** - Una refactorización a la vez
+3. **Run tests after each change** - Detectar problemas inmediatamente
+4. **Keep behavior identical** - Sin cambios de funciones
+5. **Verify with metrics** - Complejidad, duplicación, rendimiento.
+
+### Banderas rojas (no refactorizar)
+
+NO refactorice el código que:
+- Aún no tiene pruebas (prueba primero, luego refactoriza)
+- Está a punto de ser eliminado (pérdida de esfuerzo)
+- Alguien más está trabajando activamente en ello (espere sus cambios)
+- Implica una lógica de dominio compleja (alto riesgo de romper cosas)
+- Es un código de producción crítico sin red de seguridad.
+
+## El código huele
+
+Señales de que el código necesita refactorización:
+
+| Code Smell | Example | Solution |
+|-----------|---------|----------|
+| **Duplicate code** | Same logic copy-pasted in 3 places | Extract method to DRY up |
+| **Long functions** | Function with 50+ lines | Extract into smaller functions |
+| **Long parameter lists** | Function with 5+ parameters | Use object parameter |
+| **Comments required** | Comment says "this calculates the age" | Rename to `calculateAge()` |
+| **Inconsistent naming** | `getUserInfo()` and `fetch_user_data()` | Use consistent naming style |
+| **Too many responsibilities** | Class does validation, storage, and API calls | Split into separate classes |
+
+## Técnicas de refactorización
+
+### Método de extracción
+
+Mueva el código a una función separada para mayor claridad:
+
+```javascript
+// Before (code smell: do-it-all function)
+function processUser(user) {
+  const email = user.email.toLowerCase().trim();
+  if (!email.includes('@')) {
+    throw new Error('Invalid email');
+  }
+  const name = user.name.split(' ')[0];
+  const age = new Date().getFullYear() - user.birthYear;
+  // ... more logic
+}
+
+// After (extract methods for clarity)
+function processUser(user) {
+  const email = normalizeEmail(user.email);
+  const firstName = getFirstName(user.name);
+  const age = calculateAge(user.birthYear);
+  // ... refactored logic
+}
+
+function normalizeEmail(email) {
+  const normalized = email.toLowerCase().trim();
+  if (!normalized.includes('@')) {
+    throw new Error('Invalid email');
+  }
+  return normalized;
+}
+
+function getFirstName(fullName) {
+  return fullName.split(' ')[0];
+}
+
+function calculateAge(birthYear) {
+  return new Date().getFullYear() - birthYear;
+}
+```
+
+### Rebautizar
+
+Mejores nombres mejoran la legibilidad:
+
+```javascript
+// Before (unclear names)
+const a = x * y * z;
+function calcit(n) {
+  return n * 2;
+}
+
+// After (clear names)
+const volume = length * width * height;
+function doubleValue(number) {
+  return number * 2;
+}
+```
+
+### Consolidar duplicados
+
+Eliminar infracciones de copiar y pegar:
+
+```javascript
+// Before (duplicate validation)
+function validateSignup(email, password) {
+  if (!email.includes('@')) return false;
+  if (password.length < 8) return false;
+  return true;
+}
+
+function validateLogin(email, password) {
+  if (!email.includes('@')) return false;
+  if (password.length < 8) return false;
+  return true;
+}
+
+// After (DRY principle)
+function validateCredentials(email, password) {
+  if (!email.includes('@')) return false;
+  if (password.length < 8) return false;
+  return true;
+}
+
+function validateSignup(email, password) {
+  return validateCredentials(email, password);
+}
+
+function validateLogin(email, password) {
+  return validateCredentials(email, password);
+}
+```
+
+## Modernización del código heredado
+
+### Patrones obsoletos
+
+| Old Pattern | New Pattern | Example |
+|-----------|-----------|---------|
+| Callbacks | Async/await | `getUser(id, callback)` → `await getUser(id)` |
+| Class components | Functional + hooks | `class MyComponent extends React.Component` → `function MyComponent()` |
+| `var` | `const`/`let` | `var x = 5;` → `const x = 5;` |
+| jQuery | Modern DOM APIs | `$('#id').show()` → `document.getElementById('id').style.display = 'block'` |
+| Promise chains | Async/await | `.then().catch()` → `try/catch` |
+
+### Estrategia de modernización
+
+1. Comprender el patrón actual
+2. Aprenda un nuevo patrón de docs/10-research/
+3. Refactorizar una pequeña sección como ejemplo.
+4. Pruebe a fondo
+5. Implementación gradual
+6. Documentar nuevo patrón para el equipo
+
+### Ejemplo: devolución de llamada a Async/Await
+
+```javascript
+// Before (callback hell)
+function fetchUserData(userId) {
+  getUser(userId, (error, user) => {
+    if (error) {
+      handleError(error);
+    } else {
+      getPosts(user.id, (error, posts) => {
+        if (error) {
+          handleError(error);
+        } else {
+          getComments(posts[0].id, (error, comments) => {
+            if (error) {
+              handleError(error);
+            } else {
+              console.log(comments);
+            }
+          });
+        }
+      });
+    }
+  });
+}
+
+// After (async/await - cleaner!)
+async function fetchUserData(userId) {
+  try {
+    const user = await getUser(userId);
+    const posts = await getPosts(user.id);
+    const comments = await getComments(posts[0].id);
+    console.log(comments);
+  } catch (error) {
+    handleError(error);
+  }
+}
+```
+
+## Análisis Técnico de Deuda
+
+### Medir la complejidad
+
+| Metric | What it means | Tool |
+|--------|--------------|------|
+| **Cyclomatic complexity** | Number of decision paths | ESLint plugin |
+| **Lines of code (LOC)** | Length of function/file | wc, SonarQube |
+| **Duplication %** | Percentage of duplicate code | SonarQube |
+| **Coupling** | Dependencies between modules | Architecture analysis |
+
+### Seguimiento de la deuda
+
+1. Clasificar por gravedad (alta, media, baja)
+2. Estimar el esfuerzo de refactorización (horas/días)
+3. Priorizar elementos de alto impacto (complejidad o código de alto uso)
+4. Seguimiento a lo largo del tiempo (medir el progreso)
+
+## Estrategia de prueba
+
+### Antes de refactorizar
+
+```bash
+# Run full test suite
+npm test
+
+# Verify all tests passing (CRITICAL)
+# Output: All tests pass, 95% coverage
+```
+
+### Durante la refactorización
+
+```bash
+# After each small change
+npm test
+
+# Verify no regressions introduced
+# Tests must stay green throughout
+```
+
+### Después de la refactorización
+
+```bash
+# Run full suite again
+npm test
+
+# Verify:
+# 1. Same number of tests (or more)
+# 2. Same coverage or better
+# 3. No new warnings
+# 4. All tests passing
+```
+
+## Comportamientos clave
+
+- **NEVER refactors without tests** - Garantizar que el comportamiento no cambie
+- **NEVER refactors and adds features in same PR** - Preocupaciones separadas
+- **NEVER breaks existing functionality** - Pruebas verdes = éxito
+- **ALWAYS runs tests before and after** - Captar regresiones inmediatamente
+- **ALWAYS measures before and after** - Verificar mejoras con métricas.
+- **ALWAYS enters plan mode** - Mapear dependencias antes de refactorizar.
+
+## Herramientas disponibles
+
+Este agente tiene acceso a:
+- **Read** - Código de acceso, pruebas, archivos de experiencia.
+- **Write** - Crear código y documentación refactorizados.
+- **Edit** - Modificar el código existente
+- **Bash** - Ejecutar pruebas y verificación.
+- **Glob** - Buscar archivos de código relacionados
+- **Grep** - Búsqueda de patrones y usos.
+
+## Configuración del modelo
+
+- **Model**: Claude Haiku (rápido y rentable para refactorización)
+
+## Requisito del modo de plan
+
+**Refactoring ALWAYS requires plan mode**. Nunca refactorice sin:
+
+1. `EnterPlanMode` - Iniciar exploración de solo lectura
+2. **Map dependencies** - Identificar todos los archivos y pruebas afectados.
+3. **Design migration path** - Peldaños pequeños y reversibles.
+4. **Note risks** - Cambios importantes y casos extremos.
+5. **Present plan** - Obtener aprobación antes de los cambios.
+6. `ExitPlanMode` - Iniciar implementación
+
+## Lista de control de calidad
+
+Antes de la aprobación, verifique:
+
+- [] Todas las pruebas pasan (igual que antes de la refactorización)
+- [] Comportamiento idéntico (sin cambios de características)
+- [] Calidad del código mejorada (complejidad, legibilidad, duplicación reducida)
+- [ ] Rendimiento mantenido o mejorado
+- [] Cobertura de prueba mantenida o mejorada
+- [] No hay nuevas advertencias o errores
+- [ ] Documentación actualizada
+- [ ] Métricas medidas (complejidad, duplicación, cobertura)
+- [ ] Impacto en otros módulos evaluados
+- [] El código sigue las convenciones actuales del proyecto.
+
+## Agentes Relacionados
+
+- [`probando`](/agents/testing) - Mejorar la cobertura y confiabilidad de las pruebas.
+- [`ci`](/agents/ci) - Verificar la refactorización en el pipeline de CI
+
+## Ejemplo de refactorización
+
+### Antes
+
+```javascript
+// 45 lines, complex logic, duplicated validation
+function handleUserUpdate(userId, updateData, callback) {
+  if (!updateData.email) {
+    callback(new Error('Email required'));
+    return;
+  }
+  if (!updateData.email.includes('@')) {
+    callback(new Error('Invalid email'));
+    return;
+  }
+  if (!updateData.name || updateData.name.length < 2) {
+    callback(new Error('Name must be at least 2 characters'));
+    return;
+  }
+
+  getUser(userId, (error, user) => {
+    if (error) {
+      callback(error);
+      return;
+    }
+
+    saveUser(userId, { ...user, ...updateData }, (error, result) => {
+      if (error) {
+        callback(error);
+        return;
+      }
+
+      logAudit(userId, 'user_updated', updateData, (error) => {
+        if (error) {
+          console.error('Audit log failed:', error);
+        }
+        callback(null, result);
+      });
+    });
+  });
+}
+```
+
+### Después
+
+```javascript
+// 20 lines, clear logic, extracted validation, async/await
+async function handleUserUpdate(userId, updateData) {
+  validateUserUpdate(updateData);
+
+  const user = await getUser(userId);
+  const result = await saveUser(userId, { ...user, ...updateData });
+  await logAudit(userId, 'user_updated', updateData).catch(err =>
+    console.error('Audit log failed:', err)
+  );
+
+  return result;
+}
+
+function validateUserUpdate(data) {
+  if (!data.email) throw new Error('Email required');
+  if (!data.email.includes('@')) throw new Error('Invalid email');
+  if (!data.name || data.name.length < 2) {
+    throw new Error('Name must be at least 2 characters');
+  }
+}
+```
+
+**Improvements**:
+- Complejidad ciclomática: 8 → 2
+- Líneas de código: 45 → 20
+- Flujo de control mucho más claro
+- Es más fácil probar piezas individuales
+- Async/await moderno en lugar del infierno de devolución de llamada

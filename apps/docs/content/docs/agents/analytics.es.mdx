@@ -1,0 +1,252 @@
+---
+title: Analítica
+description: Especialista en analítica para seguimiento de eventos, análisis de datos, paneles de métricas, análisis del comportamiento del usuario e ideas basadas en datos.
+---
+
+# Especialista en Analítica
+
+AG-ANALYTICS se especializa en analítica de productos, seguimiento de eventos, análisis del comportamiento del usuario y paneles de métricas para proporcionar ideas basadas en datos.
+
+## Capacidades
+
+- **Diseño de Esquema de Seguimiento de Eventos**: Convenciones de nombres, propiedades requeridas, seguimiento conforme con privacidad
+- **Paneles de Analítica**: Métricas en tiempo real, métricas de engagement, embudos de conversión
+- **Análisis del Comportamiento del Usuario**: Análisis de cohortes, segmentación de usuarios, seguimiento de retención
+- **Análisis del Embudo de Conversión**: Identificación de fugas y oportunidades de optimización
+- **Infraestructura de Pruebas A/B**: Seguimiento de variante de prueba, análisis estadístico
+- **Validación de Calidad de Datos**: Detección de anomalías, controles de completitud de datos
+- **Cumplimiento de Privacidad**: Manejo de consentimiento GDPR, políticas de retención de datos
+
+## Cuándo Usar
+
+Utiliza AG-ANALYTICS cuando:
+
+- Diseñar seguimiento de eventos para nuevas características
+- Crear paneles de analítica para visualizar métricas
+- Analizar el comportamiento del usuario y patrones de engagement
+- Configurar seguimiento de embudo de conversión
+- Establecer marco de pruebas A/B
+- Asegurar cumplimiento de GDPR/CCPA para seguimiento
+- Monitorear calidad de datos y anomalías
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: Lee el archivo de experiencia y el estado de analítica actual
+2. **Métricas de Negocio**: Identifica qué métricas importan para objetivos de negocio
+3. **Diseño de Esquema de Evento**: Crea convenciones de nombres y rastrea preocupaciones de PII
+4. **Documentación**: Documenta todos los eventos, esquemas y requisitos de privacidad
+5. **Implementación**: Se coordina con AG-API y AG-UI para implementación de seguimiento
+6. **Paneles**: Crea paneles en tiempo real y vistas de analítica
+7. **Monitoreo**: Configura validación de calidad de datos y detección de anomalías
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to track user engagement and identify where users drop off"
+
+# AG-ANALYTICS will:
+# 1. Define business metrics (DAU, MAU, retention)
+# 2. Design event schema (no PII, GDPR compliant)
+# 3. Create event catalog documentation
+# 4. Coordinate with AG-API for backend tracking
+# 5. Coordinate with AG-UI for frontend tracking
+# 6. Create engagement dashboards
+# 7. Set up cohort analysis
+```
+
+## Comportamientos Clave
+
+- **Sin Seguimiento de PII**: Nunca rastrea contraseñas, emails, tarjetas de crédito o datos de salud
+- **Privacidad Primero**: Siempre considera cumplimiento de GDPR/CCPA
+- **Esquema Primero**: Todos los eventos definidos con convenciones de nombres antes de implementación
+- **Calidad de Datos**: Valida eventos y monitorea anomalías
+- **Privacidad del Usuario**: Respeta consentimiento del usuario y habilita opt-out fácil
+
+## Herramientas Disponibles
+
+- Leer, Escribir, Editar, Bash, Glob, Grep
+- Acceso a Session Harness para verificación
+
+## Seguimiento de Eventos
+
+**Convención de Nombres de Eventos** (formato object_action):
+- `button_clicked` - Usuario hizo clic en botón
+- `form_submitted` - Usuario envió formulario
+- `page_viewed` - Usuario vio página
+- `payment_completed` - Pago exitoso
+- `feature_enabled` - Característica activada
+
+Usar snake_case, no camelCase.
+
+**Ejemplo de Esquema de Evento**:
+```json
+{
+  "event_name": "button_clicked",
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "session_id": "session-456",
+  "properties": {
+    "button_name": "sign_up",
+    "page_url": "/landing"
+  },
+  "context": {
+    "os": "iOS",
+    "browser": "Safari",
+    "country": "US",
+    "app_version": "2.1.0"
+  }
+}
+```
+
+## Paneles de Analítica
+
+**Panel de Métricas Clave**:
+- Usuarios en tiempo real (vivo)
+- Vistas de página (últimas 24h)
+- Tasa de conversión (%)
+- Tasa de rebote (%)
+- Duración de sesión (promedio)
+
+**Métricas de Engagement**:
+- Usuarios Activos Diarios (DAU)
+- Usuarios Activos Mensuales (MAU)
+- Usuarios que regresan (%)
+- Uso de características
+- Engagement de contenido
+
+**Embudo de Conversión**:
+- Paso 1: Vistas de página de destino
+- Paso 2: Signup iniciado
+- Paso 3: Email verificado
+- Paso 4: Primera característica usada
+- Tasa de conversión general
+
+## Cumplimiento de Privacidad
+
+**NO Rastrear**:
+- Contraseñas o tokens de autenticación
+- Números de tarjeta de crédito o detalles de pago
+- SSN o IDs gubernamentales
+- Información de salud/médica
+- Datos biométricos
+- Cualquier PII sin consentimiento explícito
+
+**Requisitos GDPR**:
+- Opt-in explícito (no pre-marcado)
+- Divulgación clara de qué se rastrea
+- Opción de opt-out fácil
+- El usuario puede solicitar acceso/eliminación de datos
+- Retención de datos de 90 días (eventos brutos)
+
+## Pruebas A/B
+
+**Configuración de Prueba**:
+```json
+{
+  "test_id": "checkout_button_color_2025",
+  "variant_a": "blue_button",
+  "variant_b": "green_button",
+  "allocation": "50/50",
+  "primary_metric": "checkout_completion_rate",
+  "minimum_sample_size": 10000
+}
+```
+
+**Análisis**:
+- ¿Es el tamaño de muestra suficiente?
+- ¿Es la diferencia estadísticamente significativa? (p < 0.05)
+- ¿Cuál es el tamaño de efecto práctico?
+- ¿Cuál variante ganó?
+
+## Segmentación de Usuarios
+
+**Segmentos Comunes**:
+- Por fecha de registro (nuevos usuarios, 7d, 30d, 90d+)
+- Por nivel de uso (usuarios avanzados, regular, inactivo)
+- Por adopción de características
+- Por geografía
+- Por nivel de suscripción
+- Por fuente de adquisición
+
+## Análisis de Cohortes
+
+**Cohortes de Retención** (rastrear por fecha de registro):
+- Semana 0: 100% (línea base)
+- Semana 1: 65% retenido
+- Semana 2: 42% retenido
+- Semana 3: 31% retenido
+- Semana 4: 24% retenido
+
+Tendencia: ¿Están mejorando las curvas de retención?
+
+## Análisis de Embudo
+
+**Identificar Fugas**:
+1. Vista de página de destino: 50,000
+2. Formulario de signup abierto: 15,000 (30%)
+3. Formulario enviado: 8,000 (16%)
+4. Email verificado: 6,500 (13%)
+5. Primer login: 5,200 (10%)
+
+Mayor caída: 70% pierden interés entre destino y formulario de signup.
+
+## Calidad de Datos
+
+**Reglas de Validación**:
+- Timestamp de evento es válido (dentro de últimos 30 días)
+- Nombre de evento coincide con esquema
+- Formato de ID de usuario correcto
+- Propiedades requeridas presentes
+- Sin PII en propiedades
+- Formato de ID de sesión correcto
+
+**Monitorear**:
+- Eventos duplicados (deduplicación)
+- Propiedades faltantes (brechas de seguimiento)
+- Timestamps inválidos (clock skew)
+- Violaciones de esquema
+- Anomalías (picos o caídas repentinas)
+
+## Lista de Control de Calidad
+
+Antes de marcar el trabajo de analítica como completo:
+
+- Esquema de evento diseñado y documentado
+- Convenciones de nombres de eventos consistentes
+- Sin PII en seguimiento (privacidad verificada)
+- Consentimiento de GDPR implementado
+- Política de retención de datos definida
+- Paneles creados y útiles
+- Reglas de validación de calidad de datos implementadas
+- Detección de anomalías configurada
+- Marco de pruebas A/B listo
+- Documentación completa (catálogo de eventos, paneles)
+- Pruebas pasando con test_status: "passing"
+
+## Agentes Relacionados
+
+- [AG-API](/agents/api) - Implementación de seguimiento de eventos de backend
+- [AG-UI](/agents/ui) - Implementación de seguimiento de eventos de frontend
+- [AG-COMPLIANCE](/agents/compliance) - Consentimiento de GDPR y retención de datos
+
+## Mensajes de Coordinación
+
+AG-ANALYTICS se coordina con otros equipos:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-ANALYTICS",
+  "type": "status",
+  "text": "Event tracking schema defined for 15 core user actions"
+}
+```
+
+## Comandos de Barra Diagonal
+
+- `/agileflow:research:ask TOPIC=...` - Investigar mejores prácticas de analítica
+- `/agileflow:ai-code-review` - Revisar analítica para calidad de datos
+- `/agileflow:adr-new` - Documentar decisiones de analítica
+- `/agileflow:status STORY=... STATUS=...` - Actualizar estado de historia

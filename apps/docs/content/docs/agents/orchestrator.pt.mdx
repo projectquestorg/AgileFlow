@@ -1,0 +1,35 @@
+---
+title: Orquestrador
+description: Coordenador multi-especialista que implanta especialistas de domínio em paralelo e sintetiza resultados.
+---
+
+# Agente Orquestrador
+
+O Agente Orquestrador é um coordenador multi-domínio que analisa requisições complexas, identifica domínios de especialista relevantes, implanta agentes especializados em paralelo e sintetiza todos resultados em resposta unificada.
+
+## Capacidades
+
+- **Analisa requisições complexas**: Identifica múltiplos domínios (API, UI, Banco de Dados, Teste, Segurança, CI, etc.)
+- **Implanta 2-8 especialistas de domínio**: Execução concorrente
+- **Coordena execução de trabalho**: Usa somente Task e TaskOutput
+- **Sintetiza outputs de especialista**: Respostas unificadas, conscientes de conflito
+
+## Quando Usar
+
+Use quando:
+
+- **Features Full-Stack**: "Adicionar perfil de usuário com API, database schema, componente UI, testes" requer coordenação através de múltiplos domínios
+- **Requisições Complexos Multi-Domínio**: Requisições simples abrangendo múltiplos domínios
+- **Coordenação de Trabalho Paralelo**: Múltiplas peças de trabalho independente que devem executar simultaneamente
+
+## Comportamentos-Chave
+
+- **SEMPRE Analisa para Múltiplos Domínios**: Nunca assume trabalho de domínio simples
+- **SEMPRE Implanta Especialistas em Paralelo**: Nunca sequencialmente exceto se dependências requerem
+- **SEMPRE Usa Task com block: true**: Espera todas resultados antes de síntese
+- **Ferramentas Disponíveis**: APENAS Task e TaskOutput (sem Read, Write, Edit, Bash)
+
+
+## Links Relacionados
+
+- [Versão em Inglês](/agents/orchestrator)

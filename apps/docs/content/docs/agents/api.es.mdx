@@ -1,0 +1,321 @@
+---
+title: API
+description: Especialista en servicios y capa de datos para implementar APIs de backend, lógica empresarial y modelos de datos.
+---
+
+# Agente API
+
+El agente API (AG-API) es tu especialista en servicios de backend. Implementa APIs REST/GraphQL, lógica empresarial, modelos de datos, acceso a bases de datos, integraciones de servicios externos y gestión de estado. Garantiza que tu capa de datos sea segura, performante y bien probada.
+
+## Capacidades
+
+- Implementar endpoints API REST/GraphQL/tRPC
+- Escribir lógica empresarial y reglas de validación
+- Diseñar y mantener modelos de datos y esquemas
+- Optimizar consultas de base de datos y prevenir problemas N+1
+- Integrar servicios externos (Stripe, SendGrid, analítica, etc.)
+- Implementar autenticación y autorización
+- Escribir pruebas API exhaustivas (unitarias, integración, contrato)
+- Documentar endpoints API y manejo de errores
+- Coordinarse con AG-UI en dependencias de endpoints API
+- Monitorear y registrar solicitudes API con contexto
+
+## Cuándo Usar
+
+Utiliza el agente API cuando:
+
+- Necesites implementar un nuevo endpoint API
+- Necesites agregar lógica empresarial para manejar una característica
+- Necesites integrar un servicio externo (pago, email, etc.)
+- Necesites optimizar consultas de base de datos o arreglar problemas N+1
+- Necesites implementar autenticación o autorización
+- Estés diseñando modelos de datos para una nueva característica
+- Necesites escribir pruebas API exhaustivas
+- Quieras asegurar que las historias de AG-UI no estén bloqueadas esperando endpoints
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: El agente lee experiencia, CLAUDE.md y documentación de arquitectura
+2. **Verificación de Estado**: El agente encuentra historias listas y comprueba bloqueos de AG-UI
+3. **Definición de Listo**: El agente valida criterios de aceptación y stubs de prueba
+4. **Modo Planificación**: Para trabajo complejo, el agente diseña enfoque antes de implementar
+5. **Implementación**: El agente escribe validación, manejo de errores y lógica empresarial
+6. **Pruebas**: El agente escribe pruebas unitarias, integración y contrato
+7. **Coordinación**: El agente desbloquea historias de AG-UI cuando los endpoints están listos
+8. **Verificación**: El agente ejecuta pruebas para asegurar que la línea base pase
+9. **Documentación**: El agente actualiza CLAUDE.md y agrega mensajes de bus
+
+## Ejemplo
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need a user profile API endpoint"
+```
+
+El agente API hará:
+1. Comprobar docs/06-stories/ en busca de US con owner==AG-API
+2. Buscar cualquier historia de AG-UI bloqueada esperando este endpoint
+3. Implementar endpoint POST /api/users:
+   - Validación de entrada (campos requeridos, verificación de tipo)
+   - Lógica empresarial (hash de contraseña, establecer valores predeterminados)
+   - Acceso a base de datos (insertar en tabla de usuarios)
+   - Manejo de errores (email duplicado, errores de validación)
+   - Logging con IDs de solicitud
+4. Escribir pruebas exhaustivas:
+   - Camino feliz (datos válidos crean usuario)
+   - Errores de validación (email faltante)
+   - Casos extremos (email muy largo)
+5. Actualizar documentación de API (OpenAPI/Swagger)
+6. Enviar mensaje de desbloqueo a AG-UI: "GET /api/users/:id ready"
+7. Marcar in-review cuando las pruebas pasen
+
+O generado directamente:
+
+```text
+Task(
+  description: "Implement payment webhook endpoint",
+  prompt: "Add Stripe webhook handler for payment.success and payment.failed events",
+  subagent_type: "agileflow-api"
+)
+```
+
+## Comportamientos Clave
+
+- **Cargar Experiencia Primero**: Lee expertise.yaml antes de cualquier trabajo
+- **Priorizar Desbloqueo de AG-UI**: Comprueba historias de AG-UI bloqueadas en endpoints API - esas son prioridad máxima
+- **Coordinación Proactiva**: Envía mensajes de desbloqueo a AG-UI cuando los endpoints están listos
+- **Validación de Entrada**: Siempre valida tipos, formatos, rangos y autorización
+- **Manejo de Errores**: Esquema de error consistente con códigos de estado HTTP
+- **Impulsado por Pruebas**: Escribe pruebas antes de implementación, asegura que las pruebas pasen antes de in-review
+- **Actualizaciones de CLAUDE.md**: Documenta nuevos patrones API descubiertos durante implementación
+- **Integración de Session Harness**: Verifica estado de prueba antes de comenzar, requiere pruebas pasando antes de in-review
+- **Comandos Autónomos**: Invoca directamente /agileflow:ai-code-review, /agileflow:adr-new, etc.
+- **Coordinación de Bus**: Envía mensajes de estado, bloqueado, desbloqueo y pregunta a bus/log.jsonl
+- **Preservación de Contexto**: Usa compact_context (prioridad: crítica) para mantener enfoque durante conversaciones largas, preservando reglas de carga de experiencia y seguimiento de bloqueadores a través de compactación de contexto
+
+## Configuración de Contexto Compacto
+
+El agente API usa **prioridad crítica** compact_context para asegurar que el enfoque se mantenga durante conversaciones extendidas:
+
+```yaml
+compact_context:
+  priority: critical
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/api/expertise.yaml"
+    - "CHECK FOR AG-UI BLOCKERS: Search bus/log.jsonl for UI stories waiting on API endpoints"
+    - "VERIFY TEST BASELINE: Session harness required - check test_status before starting"
+    - "DIFF-FIRST FOR FILE CHANGES: Show all edits with YES/NO confirmation"
+    - "NEVER hardcode secrets - use environment variables only"
+  state_fields:
+    - current_story
+    - endpoints_implemented
+    - blocked_ui_stories
+    - test_status_baseline
+```
+
+Esto asegura que las reglas críticas (carga de experiencia, priorización de bloqueadores, verificación de pruebas) y el estado actual (qué endpoints están hechos, qué historias de UI están bloqueadas) se preserven incluso después de compactación de contexto.
+
+## Herramientas Disponibles
+
+Este agente tiene acceso a: Leer, Escribir, Editar, Bash, Glob, Grep
+
+## Patrones de Endpoint API
+
+**Convenciones REST**:
+
+```text
+GET    /api/users           → Listar usuarios
+POST   /api/users           → Crear usuario
+GET    /api/users/:id       → Obtener usuario
+PATCH  /api/users/:id       → Actualizar usuario
+DELETE /api/users/:id       → Eliminar usuario
+```
+
+**Formato de Solicitud/Respuesta**:
+
+```json
+// Solicitud
+POST /api/users
+{
+  "email": "user@example.com",
+  "password": "secure-password",
+  "name": "John Doe"
+}
+
+// Respuesta Exitosa (201 Created)
+{
+  "id": "user_123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "2025-01-15T10:00:00Z"
+}
+
+// Respuesta de Error (422 Unprocessable Entity)
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "details": {
+      "email": "Email already exists"
+    }
+  }
+}
+```
+
+## Validación de Entrada
+
+Todo endpoint debe validar entradas:
+
+```javascript
+// Validar campos requeridos
+if (!email || !password) {
+  throw new ValidationError('Email and password required');
+}
+
+// Validar formato
+if (!email.includes('@')) {
+  throw new ValidationError('Invalid email format');
+}
+
+// Validar rango
+if (password.length < 8) {
+  throw new ValidationError('Password must be 8+ characters');
+}
+
+// Validar autorización
+if (userId !== req.user.id) {
+  throw new AuthorizationError('Cannot access other users');
+}
+```
+
+## Manejo de Errores
+
+Esquema de error consistente en todos los endpoints:
+
+```javascript
+// Clase de error (ejemplo)
+class AppError extends Error {
+  constructor(code, message, statusCode = 500, details = {}) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+// Uso
+throw new AppError(
+  'VALIDATION_ERROR',
+  'Email is required',
+  422,
+  { field: 'email' }
+);
+```
+
+## Estándares de Prueba
+
+Todo endpoint API necesita pruebas exhaustivas:
+
+```javascript
+describe('POST /api/users', () => {
+  test('creates user with valid data', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(201);
+    expect(response.body.email).toBe('test@example.com');
+  });
+
+  test('returns validation error for missing email', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ password: 'password123' });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  test('returns error for duplicate email', async () => {
+    // Create first user
+    await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+
+    // Try to create duplicate
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', password: 'password123' });
+    expect(response.status).toBe(409);
+    expect(response.body.error.code).toBe('DUPLICATE_EMAIL');
+  });
+});
+```
+
+## Archivos Clave
+
+- **Experiencia**: `packages/cli/src/core/experts/api/expertise.yaml` (memoria del agente)
+- **Flujo de Trabajo**: `packages/cli/src/core/experts/api/workflow.md` (Plan → Build → Self-Improve)
+- **Estado**: `docs/09-agents/status.json` (seguimiento de historias)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (mensajes de coordinación)
+- **CLAUDE.md**: Arquitectura API, ORM, enfoque de validación
+- **Investigación**: `docs/10-research/` (comprobar patrones de API)
+- **ADRs**: `docs/03-decisions/` (decisiones de arquitectura API)
+
+## Pasos del Flujo de Trabajo
+
+1. **Cargar Experiencia**: Leer expertise.yaml
+2. **Verificar Estado**: Encontrar historias READY donde owner==AG-API
+3. **Priorizar Bloqueadores de AG-UI**: Comprobar bus en busca de historias de AG-UI bloqueadas en endpoints
+4. **Validar Definición de Listo**: AC existe, test stub en docs/07-testing/test-cases/
+5. **Verificar Session Harness**: Verificar test_status==passing antes de comenzar
+6. **Crear Rama**: `feature/<US_ID>-<slug>`
+7. **Actualizar Estado**: Marcar "in-progress", agregar mensaje de bus
+8. **Implementar**: Validación, manejo de errores, lógica empresarial, pruebas
+9. **Ejecutar Verificación**: /agileflow:verify para asegurar que las pruebas pasen
+10. **Actualizar CLAUDE.md**: Si se establecen nuevos patrones (documentarlos)
+11. **Marcar In-Review**: Solo si test_status==passing
+12. **Enviar Mensajes de Desbloqueo**: Si AG-UI estaba esperando este endpoint
+13. **Generar PR**: Usar /agileflow:pr-template
+14. **Self-Improve**: Ejecutar self-improve.md después de completación
+
+## Lista de Control de Calidad
+
+Antes de marcar in-review:
+
+- [ ] Entradas validadas (tipo, formato, rango, auth)
+- [ ] Respuestas de error consistentes (códigos HTTP, esquema de error)
+- [ ] Auth/autorización impuesta en rutas protegidas
+- [ ] Sin consultas N+1 (acceso a base de datos optimizado)
+- [ ] Secretos en variables env (nunca hardcoded)
+- [ ] Logging con IDs de solicitud y contexto
+- [ ] Documentación API actualizada (OpenAPI/Swagger/README)
+- [ ] Pruebas cubren: camino feliz, errores de validación, fallos de auth, casos extremos
+- [ ] Estado de prueba: passing (verificado vía /agileflow:verify)
+- [ ] Historias de AG-UI desbloqueadas (mensaje de desbloqueo enviado si aplica)
+
+## Coordinación con Otros Agentes
+
+**AG-UI (Frontend)**:
+- Comprobar docs/09-agents/bus/log.jsonl en busca de historias de UI bloqueadas esperando endpoints
+- Cuando endpoint esté listo, enviar mensaje de desbloqueo con método, ruta, formato de solicitud/respuesta
+- Ejemplo: `"API endpoint GET /api/users/:id ready (200 OK, user object), unblocking US-0042"`
+
+**AG-DATABASE (Capa de Datos)**:
+- Coordinarse sobre diseño de esquema antes de implementar consultas
+- Revisar migraciones antes de usar en código
+- Compartir patrones de consulta para optimización
+
+**AG-CI (Pruebas)**:
+- Coordinarse sobre configuración de base de datos de prueba
+- Solicitar infraestructura de pruebas de contrato (Pact, MSW)
+- Asegurar que pruebas API en CI
+
+**MENTOR (Orquestación)**:
+- Solicitar aclaración sobre lógica empresarial poco clara
+- Reportar si la historia carece de Definición de Listo
+
+## Agentes Relacionados
+
+- [`ui`](/agents/ui) - Componentes frontend que consumen endpoints API
+- [`database`](/agents/database) - Capa de datos y diseño de esquema
+- [`mentor`](/agents/mentor) - Orquesta trabajo API como parte de implementación de características

@@ -1,0 +1,254 @@
+---
+title: QA
+description: Spécialiste QA pour la stratégie de test, la planification des tests, les métriques de qualité, les tests de régression et la validation de la préparation à la version.
+---
+
+# Agent QA
+
+AG-QA est un spécialiste en assurance qualité qui assure que les fonctionnalités respectent les normes de qualité avant la version. Cet agent se concentre sur la stratégie de test, les tests de régression, les métriques de qualité et la préparation à la version - complétant l'agent Testing qui conçoit les implémentations de test.
+
+## Capacités
+
+- **Développement de stratégie de test**: Créer des plans de test complets avec scope, cibles de couverture, critères de succès
+- **Test de régression**: Planifier et gérer les suites de test de régression pour les versions
+- **Métriques de qualité**: Définir et suivre les KPIs (couverture code, taux d'escape de bugs, densité de défauts)
+- **Préparation à la version**: Créer et valider les checklists de version et procédures de sign-off
+- **Gestion des cas de test**: Organiser et gérer les cas de test manuels
+- **Triage des bugs**: Évaluer la sévérité et prioriser la résolution des problèmes
+- **Planification UAT**: Coordonner l'User Acceptance Testing avec les stakeholders
+- **Qualités gates**: Définir les checkpoints de qualité automatisés dans le pipeline CI/CD
+
+## Quand l'utiliser
+
+Utiliser AG-QA quand:
+
+- Planifier une nouvelle version et avoir besoin de critères de qualité
+- Définir la stratégie de test avec les cibles de couverture
+- Créer les cas de test pour les workflows critiques d'utilisateur
+- Mettre en place le test de régression pour les versions
+- Trier les bugs et évaluer la sévérité
+- Planifier l'User Acceptance Testing (UAT)
+- Besoin d'établir les quality gates et critères de sortie
+- Créer les checklists de préparation à la version
+
+## Exemple
+
+```bash
+# Via /babysit - définir les critères de qualité pour la version
+/babysit
+> "We're preparing v2.1.0 for release. What's our release readiness?"
+
+# Sortie de l'agent:
+# Release Readiness Assessment:
+# - Couverture code: 82% (cible: 80%) ✅
+# - Tous les tests automatisés passants: 523/523 ✅
+# - Bugs critiques: 0 ✅
+# - Scope test de régression: 15 workflows core
+# - UAT sign-off: En attente
+# - Performance baseline: Vérifiée
+# - Revue de sécurité: En cours
+#
+# Recommandation de version: READY WITH CONDITIONS
+# - Revue de sécurité doit compléter avant version
+# - UAT sign-off requis de l'équipe produit
+```
+
+## Comportements clés
+
+- **Qualité d'abord**: Jamais de version sans respecter les critères de qualité
+- **Test tôt**: Le test se passe tout au long du développement, pas juste à la fin
+- **Risk-based**: Les aires de risque plus élevée reçoivent plus d'attention de test
+- **Metrics-driven**: Les décisions de qualité soutenus par des données et KPIs
+- **Clear criteria**: Critères de version documentés et mesurables
+- **Regression focused**: Les tests de régression automatisés préviennent les bugs connus
+- **User sign-off**: L'UAT valide les attentes utilisateur avant version
+
+## Outils disponibles
+
+- Read, Write, Edit (opérations sur les fichiers)
+- Bash (exécuter les rapports de qualité)
+- Glob (trouver les artefacts de test)
+- Grep (analyser les données de qualité)
+
+## Cadre de métriques de qualité
+
+**Métriques de couverture**:
+- Couverture code: >80% unitaire, >60% intégration, >30% E2E
+- Couverture de fonctionnalité: % des fonctionnalités testées
+- Couverture d'exigence: % des exigences testées
+
+**Métriques de bug**:
+- Bugs trouvés: Compte total
+- Taux d'escape de bug: % des bugs trouvés en production vs test (cible: < 2%)
+- Densité de défauts: Bugs par 1000 lignes de code (cible: < 2.5)
+
+**KPIs de qualité**:
+- Taux de réussite de test: > 95%
+- Mean time to fix: Temps moyen du rapport à la résolution
+- Taux de régression: % des régressions dans les versions
+
+## Checklist de préparation à la version
+
+**Doit avoir avant la version**:
+- [ ] Revue de code complète (couverture 100%)
+- [ ] Tous les tests automatisés passants
+- [ ] Bugs critiques résolus
+- [ ] Performance baseline respectée
+- [ ] Accessibilité vérifiée (WCAG AA)
+- [ ] Revue de sécurité réussie
+- [ ] Documentation mise à jour
+- [ ] UAT sign-off obtenu
+
+**Devrait avoir avant la version**:
+- [ ] Bugs priorité élevée résolus
+- [ ] Performance optimisée
+- [ ] Test de charge complété
+- [ ] Monitoring mis en place
+
+**Nice to have avant la version**:
+- [ ] Bugs priorité moyenne résolus
+- [ ] Benchmarks de performance publiés
+- [ ] Communication utilisateur rédigée
+
+## Niveaux de sévérité de bug
+
+| Sévérité | Description | Exemple | Priorité |
+|----------|-------------|---------|----------|
+| Critique | Fonctionnalité inutilisable, perte de données, breach sécurité | Les utilisateurs ne peuvent pas se connecter | Corriger immédiatement |
+| Haut | Fonctionnalité significativement compromised | Le paiement échoue 50% du temps | Corriger ASAP |
+| Moyen | Fonctionnalité marche avec limites | Email retardé 2 heures | Planifier proche future |
+| Bas | Problème mineur, easy workaround | Alignement du texte de bouton | Backlog |
+
+## Gestion des cas de test
+
+**Template de cas de test**:
+```text
+Test Case ID: TC-001
+Title: User can log in with valid credentials
+Feature: Authentication
+
+Preconditions:
+- User has registered account
+- Login page accessible
+
+Test Steps:
+1. Navigate to login page
+2. Enter email address
+3. Enter password
+4. Click "Sign In"
+
+Expected Result:
+- Dashboard loads in <2 seconds
+- User data displayed correctly
+- Welcome message shown
+
+Status: ☐ Pass ☐ Fail ☐ Blocked
+```
+
+## Stratégie de test de régression
+
+**Quoi régresser tester**:
+- Workflows utilisateur core (login, signup, fonctionnalités critiques)
+- Fonctionnalités changées (affectées par cette version)
+- Fonctionnalités associées (dépendances)
+- Chemins critiques (fonctionnalités haute utilisation)
+- Aires sensibles de performance
+- Fonctionnalités sensibles de sécurité
+
+**Scope de régression exemple**:
+```text
+Feature: User Login
+├── Happy path: Valid credentials
+├── Invalid credentials: Wrong password
+├── Inactive account: Suspended user
+├── Password reset flow
+├── Login rate limiting
+├── Session management
+└── Related features:
+    ├── Signup (account creation)
+    ├── Password change
+    └── Session timeout
+```
+
+## User Acceptance Testing (UAT)
+
+**Préparation UAT**:
+- Identifier les stakeholders et utilisateurs
+- Créer les scénarios de test à partir des user stories
+- Préparer l'environnement de test prod-like
+- Préparer les données de test réalistes
+- Planifier les sessions UAT
+
+**Formulaire de sign-off UAT**:
+```text
+Formulaire de sign-off UAT
+
+Project: [Project Name]
+Version: [Version]
+Date: [Date]
+
+Testé par: [Nom, Titre]
+Approuvé par: [Nom, Titre]
+
+Résultat global: ☐ Approuvé ☐ Avec conditions ☐ Rejeté
+
+Problèmes trouvés: [Liste]
+
+Signature: ________________
+```
+
+## Quality gates
+
+**Code Quality Gate** (avant merge):
+- Revue de code approuvée
+- Linting réussi
+- Vérification de type réussie
+- Tests unitaires passants (>80% couverture)
+- Pas de vulnérabilités de sécurité
+
+**Integration Quality Gate** (avant staging):
+- Tests d'intégration passants
+- Tests E2E passants
+- Performance dans le baseline
+- Migrations BD validées
+- Contrats API validés
+
+**Release Quality Gate** (avant production):
+- Test de régression réussi
+- UAT sign-off obtenu
+- Bugs critiques résolus
+- Benchmarks de performance respectés
+- Revue de sécurité approuvée
+
+## Agents associés
+
+- [`testing`](/agents/testing) - Implémentation de test et optimisation de couverture
+- [`ci`](/agents/ci) - Pipeline CI/CD et infrastructure de test
+- [`api`](/agents/api) - Test et validation de contrat API
+- [`security`](/agents/security) - Test de sécurité et conformité
+- [`accessibility`](/agents/accessibility) - Test d'accessibilité et conformité WCAG
+
+## Coordination
+
+L'agent QA coordonne avec:
+
+- **AG-TESTING**: Aligner sur les cibles de couverture et stratégies de test
+- **AG-SECURITY**: Assurer le test de sécurité dans les quality gates
+- **AG-ACCESSIBILITY**: Vérifier la conformité d'accessibilité
+- **AG-API**: Tester les changements de contrat API
+- **Équipe produit**: Coordonner l'UAT et le user sign-off
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques QA
+- `/agileflow:ai-code-review` - Examiner la complétude de la stratégie de test
+- `/agileflow:adr-new` - Documenter les décisions QA
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Principes de qualité
+
+- **Qualité n'est pas négociable**: Jamais de version sous les standards de qualité
+- **Mesurer tout**: Les décisions de qualité soutenus par les métriques et données
+- **Test tôt**: Décaler le test vers la gauche dans le développement
+- **Approche risk-based**: Tester les aires haute-risque plus complètement
+- **Amélioration continue**: Suivre les métriques et améliorer dans le temps

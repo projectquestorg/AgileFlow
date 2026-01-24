@@ -1,0 +1,357 @@
+---
+title: API
+description: Spécialiste API pour la conception REST, la modélisation des données, l'implémentation des endpoints, la validation des données et les contrats API.
+---
+
+# Spécialiste API
+
+AG-API est l'expert en conception et implémentation des API REST, responsable de la modélisation des données, de la conception des endpoints, de la validation des données et de la coordination avec les couches de base de données et interface utilisateur.
+
+## Capacités
+
+- **Conception REST**: Endpoints RESTful, conventions de nommage, codes d'état HTTP
+- **Modélisation des données**: Structures de requête/réponse, sérialisation, gestion des erreurs
+- **Validation des données**: Validation des entrées, contraintes de champ, prévention des injections
+- **Pagination et filtrage**: Curseurs, limites, tri, recherche en texte intégral
+- **Authentification et autorisation**: JWT, OAuth2, contrôle d'accès par rôle
+- **Versioning de l'API**: Stratégies de versioning, dépréciations gratuites
+- **Performance des endpoints**: Optimisation des requêtes, mise en cache
+- **Documentation OpenAPI**: Générer des spécifications Swagger
+- **Gestion des erreurs**: Messages d'erreur cohérents, codes d'erreur numérotés
+- **Contrats API**: Validation de schéma, compatibilité rétroactive
+
+## Quand l'utiliser
+
+Utiliser AG-API quand:
+
+- Concevoir de nouveaux endpoints d'API
+- Implémenter la logique métier pour les points d'accès
+- Ajouter l'authentification ou l'autorisation
+- Valider les données d'entrée utilisateur
+- Optimiser la performance des endpoints
+- Mettre en place la pagination et le filtrage
+- Versioning ou dépréciations d'API
+- Créer la documentation OpenAPI
+
+## Comment ça marche
+
+1. **Chargement du contexte**: Lit l'expertise et les modèles API actuels
+2. **Analyse de story**: Examiner les exigences d'endpoint
+3. **Conception**: Concevoir les endpoints REST, les modèles de données, les schémas de validation
+4. **Implémentation**: Implémenter les contrôleurs, les validations, la logique métier
+5. **Coordination BD**: Collaborer avec AG-DATABASE pour l'optimisation des requêtes
+6. **Tests**: Écrire des tests d'API unitaires et d'intégration
+7. **Documentation**: Générer les spécifications OpenAPI
+8. **Vérification**: Exécuter `/agileflow:verify` pour confirmer les tests
+
+## Exemple
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "I need to create a user profile API with GET and PUT endpoints"
+
+# AG-API fera:
+# 1. Concevoir les endpoints GET /api/users/:id et PUT /api/users/:id
+# 2. Modéliser les réponses {id, name, email, avatar_url, created_at}
+# 3. Valider les données d'entrée (email format, longueur du nom)
+# 4. Implémenter les contrôleurs avec gestion des erreurs
+# 5. Ajouter l'authentification JWT
+# 6. Optimiser les requêtes BD (pas d'appels N+1)
+# 7. Écrire les tests d'intégration
+# 8. Générer la documentation OpenAPI
+```
+
+## Comportements clés
+
+- **RESTful d'abord**: Utiliser les conventions REST (GET/POST/PUT/DELETE par ressource)
+- **Validation stricte**: Valider TOUS les paramètres d'entrée
+- **Codes d'état HTTP appropriés**: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Server Error
+- **Gestion des erreurs cohérente**: Format d'erreur uniforme dans tous les endpoints
+- **Pas de logique de base de données**: Déléguer à AG-DATABASE pour l'optimisation des requêtes
+- **Performance mesurée**: Chaque endpoint <200ms en moyenne
+- **Contrats d'API**: Les modifications sont rétro-compatibles
+
+## Outils disponibles
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Accès au Session Harness pour la vérification
+
+## Conception REST
+
+**Convention de nommage**:
+- Ressources au pluriel: GET /api/users (pas /api/user)
+- Actions via verbes HTTP: POST pour créer, GET pour lire, PUT pour mettre à jour, DELETE pour supprimer
+- Sous-ressources imbriquées: GET /api/users/:userId/posts/:postId
+- Requêtes comme paramètres: GET /api/users?role=admin&limit=10
+
+**Codes de statut HTTP**:
+- **200 OK**: Succès de la requête GET/PUT/DELETE
+- **201 Created**: Ressource créée (POST)
+- **204 No Content**: Succès sans corps de réponse
+- **400 Bad Request**: Validation échouée
+- **401 Unauthorized**: Authentification échouée
+- **403 Forbidden**: Autorisation refusée
+- **404 Not Found**: Ressource non trouvée
+- **409 Conflict**: Conflits (mise à jour simultanée)
+- **500 Server Error**: Erreur interne du serveur
+
+## Modélisation des données
+
+**Exemple de réponse**:
+```json
+{
+  "id": "user-123",
+  "name": "Sarah Chen",
+  "email": "sarah@example.com",
+  "role": "admin",
+  "created_at": "2025-10-21T10:00:00Z",
+  "updated_at": "2025-10-21T15:00:00Z"
+}
+```
+
+**Structure d'erreur**:
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Email format is invalid",
+    "details": [
+      {
+        "field": "email",
+        "message": "Must be valid email address"
+      }
+    ]
+  }
+}
+```
+
+## Validation des données
+
+**Validations courantes**:
+- Format email valide
+- Longueur du mot de passe ≥8 caractères
+- Plage d'âge (18-120 ans)
+- Format de date ISO 8601
+- Format d'URL valide
+- Aucune injection SQL ou XSS
+
+**Exemple de validation**:
+```javascript
+function validateUserUpdate(data) {
+  if (!data.email || !data.email.includes('@')) {
+    throw new Error('Invalid email');
+  }
+  if (data.name && data.name.length < 2) {
+    throw new Error('Name too short');
+  }
+  if (data.age && (data.age < 18 || data.age > 120)) {
+    throw new Error('Age must be between 18 and 120');
+  }
+}
+```
+
+## Authentification et autorisation
+
+**JWT (JSON Web Tokens)**:
+```javascript
+// Signer
+const token = jwt.sign(
+  { userId: user.id },
+  process.env.JWT_SECRET,
+  { expiresIn: '1h' }
+);
+
+// Vérifier
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
+if (!decoded) throw new Error('Invalid token');
+```
+
+**Vérification d'autorisation**:
+```javascript
+function requireRole(role) {
+  return (req, res, next) => {
+    if (!req.user || req.user.role !== role) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  };
+}
+
+// Utilisation
+app.put('/api/users/:id', requireRole('admin'), updateUser);
+```
+
+## Pagination
+
+**Avec curseurs**:
+```bash
+# Première page
+GET /api/posts?limit=10
+
+# Page suivante
+GET /api/posts?limit=10&after=post-123
+
+# Réponse
+{
+  "data": [...],
+  "pagination": {
+    "cursor": "post-456",
+    "has_more": true,
+    "limit": 10
+  }
+}
+```
+
+**Avec décalage/limite**:
+```bash
+# Pages numérotées
+GET /api/users?limit=10&offset=0   # Page 1
+GET /api/users?limit=10&offset=10  # Page 2
+GET /api/users?limit=10&offset=20  # Page 3
+```
+
+## Filtrage et recherche
+
+```bash
+# Filtrer par champ
+GET /api/posts?status=published&author=user-123
+
+# Tri
+GET /api/posts?sort=-created_at,title
+
+# Recherche
+GET /api/posts?search=javascript
+
+# Combiné
+GET /api/posts?status=published&sort=-created_at&limit=10
+```
+
+## Performance
+
+**Optimisations couantes**:
+- Évaluation lente (charger les données une seule fois)
+- Pas d'appels N+1 (1 requête BD par endpoint)
+- Mise en cache avec ETag et Last-Modified
+- Compression GZIP
+- Index de base de données sur les champs de filtrage
+
+**Exemple de requête optimisée**:
+```javascript
+// Mauvais: N+1 problem
+const users = await User.find();
+const result = users.map(user => ({
+  ...user,
+  posts: await Post.find({ userId: user.id })
+}));
+
+// Bon: Single query with JOIN
+const result = await User.find().populate('posts');
+```
+
+## Documentation OpenAPI
+
+**Exemple Swagger**:
+```yaml
+/api/users/{id}:
+  get:
+    summary: Get user by ID
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: User object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      '404':
+        description: User not found
+```
+
+## Versionning
+
+**Stratégies**:
+- **Dans l'URL**: /api/v1/users, /api/v2/users
+- **En-têtes**: Accept: application/vnd.api+json;version=2
+- **Requête**: GET /api/users?version=2
+
+**Dépréciations**:
+```json
+{
+  "data": {...},
+  "_meta": {
+    "deprecated": true,
+    "sunset": "2026-12-31",
+    "migrationGuide": "docs/api/migrate-v1-to-v2"
+  }
+}
+```
+
+## Gestion des erreurs
+
+**Format cohérent**:
+```json
+{
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "User with id 'user-999' not found",
+    "requestId": "req-12345"
+  }
+}
+```
+
+**Ne PAS exposer**:
+- Traces de pile
+- Détails de la base de données
+- Chemin du système de fichiers
+- Versions des bibliothèques
+- Informations d'authentification
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail API comme complet:
+
+- [ ] Endpoints RESTful conçus et bien nommés
+- [ ] Validation des données d'entrée mise en œuvre
+- [ ] Authentification JWT/OAuth2 mise en œuvre
+- [ ] Autorisation par rôle vérifiée
+- [ ] Gestion des erreurs cohérente avec codes d'erreur
+- [ ] Pagination mise en œuvre pour les listes
+- [ ] Tests d'intégration écrits et passants
+- [ ] Performance <200ms par endpoint mesuré
+- [ ] Pas d'appels N+1 (optimisé avec BD)
+- [ ] Documentation OpenAPI générée
+- [ ] Tests de contrat d'API passants
+- [ ] test_status: "passing" vérifié
+
+## Agents associés
+
+- [`database`](/agents/database) - Optimisation des requêtes, schémas
+- [`ui`](/agents/ui) - Contrats avec les clients API
+- [`testing`](/agents/testing) - Tests d'intégration API
+- [`security`](/agents/security) - Authentification, validation
+- [`monitoring`](/agents/monitoring) - Latence d'endpoint, taux d'erreur
+
+## Messages de coordination
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-API",
+  "type": "status",
+  "story": "US-0042",
+  "text": "User profile API endpoints complete with validation and tests passing"
+}
+```
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les meilleures pratiques API
+- `/agileflow:ai-code-review` - Examiner l'API pour les problèmes de design
+- `/agileflow:adr-new` - Documenter les décisions de conception API
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de la story

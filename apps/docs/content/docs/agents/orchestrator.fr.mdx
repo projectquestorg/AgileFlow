@@ -1,0 +1,245 @@
+---
+title: Orchestrateur
+description: Coordinateur multi-experts qui déploie les experts de domaine en parallèle et synthétise les résultats. A SEULEMENT les outils Task/TaskOutput - doit déléguer tout travail.
+---
+
+# Agent orchestrateur
+
+L'agent orchestrateur est un coordinateur multi-domaines qui analyse les requêtes complexes, identifie les domaines d'experts pertinents, et déploie les agents spécialisés en parallèle pour exécuter le travail. Il synthétise ensuite tous les résultats dans une réponse unifiée.
+
+## Capacités
+
+- Analyse les requêtes complexes pour identifier les domaines multiples (API, UI, Base de données, Test, Sécurité, CI, etc.)
+- Déploie 2-8 experts de domaine en parallèle pour l'exécution concurrente
+- Coordonne l'exécution du travail en utilisant seulement les outils Task et TaskOutput
+- Synthétise les sorties d'expert dans les réponses unifiées conscientes des conflits
+- Gère les modèles de travail indépendant parallèle et le travail dépendant séquentiel
+- Gère les points d'intégration entre les implémentations spécialisées multiples
+
+## Quand l'utiliser
+
+Utiliser cet agent quand:
+
+- **Fonctionnalités full-stack**: "Ajouter le profil utilisateur avec API, schéma BD, composant UI, et tests" nécessite coordination à travers domaines
+- **Requêtes multi-domaine complexes**: Requêtes simples couvrant API, UI, BD, et changements de déploiement
+- **Coordination du travail parallèle**: Morceaux multiples de travail indépendant qui devraient exécuter simultanément
+- **Travail dépendant séquentiel**: Travail qui doit compléter en ordre (schéma BD → API → UI → tests)
+- **Coordination d'intégration**: Assurer que les implémentations multiples travaillent ensemble correctement
+- **Large refactoring**: Changements BD qui se propagent à API, puis UI, puis tests
+- **Fonctionnalité avec infrastructure**: Implémentation de fonctionnalité plus setup de pipeline CI/CD
+
+## Comment ça marche
+
+L'agent suit un workflow structuré:
+
+```text
+REQUÊTE UTILISATEUR
+     ↓
+┌──────────────────────────────────────────┐
+│ 1. ANALYSER DOMAINES                     │ → Identifier API, UI, BD, etc.
+│ 2. PLANIFIER L'EXÉCUTION                 │ → Parallèle vs dépendances séquentielles
+│ 3. DÉPLOYER LES EXPERTS                  │ → Spawner via Task en parallèle
+│ 4. COLLECTER LES RÉSULTATS               │ → TaskOutput avec block: true
+│ 5. SYNTHÉTISER LA RÉPONSE                │ → Sortie unifiée avec points d'intégration
+└──────────────────────────────────────────┘
+     ↓
+IMPLÉMENTATION COORDONNÉE MULTI-DOMAINE
+```
+
+### Étape 1: Analyser la requête
+
+L'agent analyse la requête pour les mots-clés de domaine et identifie quels experts sont nécessaires:
+
+| Requête | Domaines | Experts |
+|---------|----------|---------|
+| "Ajouter le profil utilisateur avec API et UI" | API + UI | 2 experts (parallèle) |
+| "Ajouter login avec tests" | API + Sécurité + Test | 3 experts (séquentiel) |
+| "Refactorer la BD et mettre à jour l'API" | BD + API | 2 experts (séquentiel) |
+| "Fonctionnalité full-stack avec CI" | BD + API + UI + Test + CI | 5 experts (mixte) |
+
+### Étape 2: Planifier l'exécution
+
+L'agent détermine la stratégie d'exécution basée sur les dépendances:
+
+**Exécution parallèle** (travail indépendant):
+```
+API + UI (les deux peuvent travailler simultanément)
+Test + Documentation (peuvent tester pendant l'écriture de docs)
+Audit sécurité + Analyse de performance (revues indépendantes)
+```
+
+**Exécution séquentielle** (travail dépendant):
+```
+Schéma BD → Implémentation API → Composant UI
+(Chaque dépend du précédent)
+```
+
+**Exécution mixte** (partiellement parallèle, partiellement séquentielle):
+```
+Parallèle: Schéma BD + Tests API + Documentation
+Puis séquentiel: Implémentation API → Composant UI
+```
+
+### Étape 3: Déployer les experts
+
+Tous les experts parallèles sont déployés simultanément:
+
+```text
+Task(
+  description: "Implémenter l'API de profil utilisateur",
+  prompt: "Créer l'endpoint /api/profile GET/PUT...",
+  subagent_type: "agileflow-api",
+  run_in_background: true
+)
+
+Task(
+  description: "Implémenter le composant UI de profil",
+  prompt: "Créer le composant ProfilePage avec formulaire...",
+  subagent_type: "agileflow-ui",
+  run_in_background: true
+)
+```
+
+### Étape 4: Collecter les résultats
+
+Utilise `TaskOutput` avec `block: true` pour attendre toutes les réponses d'expert:
+
+```text
+TaskOutput(task_id: "<api_task_id>", block: true)
+TaskOutput(task_id: "<ui_task_id>", block: true)
+```
+
+### Étape 5: Synthétiser
+
+Combine toutes les sorties d'expert dans une réponse unifiée mettant l'accent sur:
+- Ce que chaque expert a complété
+- Points d'intégration entre les implémentations
+- Conflits ou problèmes de compatibilité
+- Prochaines étapes recommandées
+
+## Experts de domaine
+
+L'orchestrateur coordonne avec ces spécialistes de domaine:
+
+| Domaine | Expert | Quand déployer |
+|---------|--------|---|
+| **Base de données** | `agileflow-database` | Conception schéma, migrations, requêtes, indexation |
+| **API** | `agileflow-api` | Endpoints, routes, logique métier, validation |
+| **UI** | `agileflow-ui` | Composants, style, formulaires, accessibilité |
+| **Test** | `agileflow-testing` | Tests unitaires, intégration, couverture |
+| **Sécurité** | `agileflow-security` | Authentification, autorisation, vulnérabilités |
+| **CI/CD** | `agileflow-ci` | Pipelines, workflows, linting, vérification de type |
+| **DevOps** | `agileflow-devops` | Déploiement, infrastructure, containerisation |
+| **Documentation** | `agileflow-documentation` | Docs API, guides utilisateur, READMEs |
+| **Performance** | `agileflow-performance` | Optimisation, profiling, benchmarking |
+
+## Modèles parallèles
+
+### Fonctionnalité full-stack
+
+Déployer BD et API en parallèle (indépendant), puis UI et tests en parallèle (après API existe):
+
+```
+Phase 1 (Parallèle):
+  - agileflow-database (schéma)
+  - agileflow-api (endpoint)
+
+Phase 2 (Parallèle, après Phase 1):
+  - agileflow-ui (composant)
+  - agileflow-testing (tests)
+```
+
+### Revue de code / Analyse
+
+Déployer les experts multiples pour analyser le même code simultanément:
+
+```
+Parallèle (même code, perspectives différentes):
+  - agileflow-security (analyse de vulnérabilité)
+  - agileflow-performance (analyse d'optimisation)
+  - agileflow-testing (analyse de couverture de test)
+
+Puis:
+  - Synthétiser les conclusions et prioritair les problèmes
+```
+
+### Comparaison de meilleures options
+
+Déployer la même tâche à experts multiples avec approches différentes:
+
+```
+Parallèle (même tâche, approches différentes):
+  - Expert A (approche 1: API REST)
+  - Expert B (approche 2: API GraphQL)
+  - Expert C (approche 3: API RPC)
+
+Puis:
+  - Comparer les implémentations
+  - Sélectionner la meilleure approche pour la base de code
+  - Fournir le raisonnement
+```
+
+## Contraintes critiques
+
+L'orchestrateur a **SEULEMENT les outils Task et TaskOutput**:
+
+### Peut faire:
+- Spawner les experts via Task
+- Collecter les résultats via TaskOutput
+- Analyser les requêtes et planifier l'exécution
+- Synthétiser et coordonner les réponses
+
+### Ne peut PAS faire:
+- Lire les fichiers (pas d'outil Read)
+- Écrire les fichiers (pas d'outil Write)
+- Éditer les fichiers (pas d'outil Edit)
+- Exécuter les commandes (pas d'outil Bash)
+- Rechercher le code (pas d'outils Glob/Grep)
+
+**DOIT déléguer TOUT le travail aux experts de domaine.**
+
+## Résolution des conflits
+
+Quand les experts produisent les sorties conflictuelles:
+
+1. **Noter le conflit** dans la section synthèse
+2. **Présenter les deux options** avec les trade-offs
+3. **Recommander une** basée sur:
+   - Cohérence avec les modèles existants
+   - Simplicité et maintenabilité
+   - Implications de performance
+4. **Demander la décision** si la recommandation est peu claire
+
+Exemple de conflit:
+```
+### Conflits / Besoin de révision
+
+Expert API recommande: PUT /api/profile pour les mises à jour
+Expert UI s'attend à: PATCH /api/profile pour les mises à jour
+
+Recommandation: Utiliser PUT (plus simple, cohérent avec les conventions REST)
+L'UI peut envoyer l'objet de profil complet sans problème.
+```
+
+## Configuration du modèle
+
+- **Modèle**: Claude Sonnet 3.5 (optimisé pour coordination)
+- **Raisonnement**: Planification, exécution parallèle, synthèse logique
+
+## Agents associés
+
+**Spécialistes de domaine** (déployés par orchestrateur):
+- [`database`](/agents/database), [`api`](/agents/api), [`ui`](/agents/ui), [`testing`](/agents/testing)
+- [`security`](/agents/security), [`performance`](/agents/performance), [`ci`](/agents/ci), [`devops`](/agents/devops)
+- [`documentation`](/agents/documentation)
+
+**Autres agents méta**:
+- [`multi-expert`](/agents/multi-expert) - Analyse le même problème avec 3-5 experts (cas d'usage différent - analyse vs implémentation)
+- [`mentor`](/agents/mentor) - Guidance complète d'implémentation
+
+## Quand NE PAS l'utiliser
+
+- **Tâches simples single-domaine**: Utiliser l'expert de domaine direct plutôt (plus rapide, plus simple)
+- **Analyse uniquement**: Utiliser agent Multi-Expert pour analyse de haute confiance
+- **Questions simples**: Utiliser les agents spécialisés directement
+- **Tâches nécessitant coordination manuelle**: L'orchestrateur fonctionne uniquement avec les agents

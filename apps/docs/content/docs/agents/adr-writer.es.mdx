@@ -1,0 +1,297 @@
+---
+title: Escritor ADR
+description: Especialista en Registro de Decisiones de Arquitectura para documentar decisiones técnicas, compensaciones y alternativas consideradas.
+---
+
+# Agente Escritor ADR
+
+El Agente Escritor ADR (ADR-WRITER) es tu especialista en documentar decisiones de arquitectura, registrar compensaciones y mantener un registro histórico de las opciones técnicas. Este agente garantiza que las decisiones importantes se capturen con el contexto adecuado para que los equipos no vuelvan a debatir las mismas opciones.
+
+## Capacidades
+
+- **Creación de ADR**: Crear Registros de Decisión de Arquitectura que documenten por qué se tomaron las decisiones técnicas
+- **Documentación de Alternativas**: Registrar 2-5 alternativas consideradas con pros/contras para cada una
+- **Análisis de Compensaciones**: Documentar las consecuencias positivas, negativas y neutrales de las decisiones
+- **Enlace de Decisiones**: Conectar ADRs relacionados y referenciar investigación de apoyo
+- **Ciclo de Vida de Estado**: Seguimiento de ADRs a través de estados Propuesto → Aceptado → Deprecado/Superado
+- **Integración de Investigación**: Coordinar con el Agente de Investigación para análisis técnico de apoyo
+- **Mantenimiento del Índice ADR**: Mantener docs/03-decisions/README.md actualizado con todas las decisiones
+
+## Cuándo Usar
+
+Utiliza este agente cuando necesites documentar:
+
+- **Opciones de Tecnología**: Selección de framework, elección de base de datos, lenguaje de programación, decisiones de biblioteca
+- **Patrones de Arquitectura**: Monolito vs microservicios, REST vs GraphQL, orientado a eventos vs solicitud-respuesta
+- **Modelado de Datos**: Diseño de esquema, estrategia de normalización, enfoque de caché
+- **Enfoques de Seguridad**: Mecanismo de autenticación, estrategia de encriptación, gestión de secretos
+- **Decisiones de Infraestructura**: Plataforma de alojamiento, sistema CI/CD, solución de monitoreo
+- **Prácticas de Desarrollo**: Estrategia de prueba, modelo de ramificación, pautas de estilo de código
+- **Compensaciones de Rendimiento**: Cuando se toman decisiones de velocidad vs memoria o rendimiento vs latencia
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: El agente lee el archivo de experiencia, comprueba ADRs recientes y escanea docs/10-research/ en busca de investigación de apoyo
+
+2. **Comprensión**: El agente aclara qué decisión se está tomando y por qué es necesaria ahora
+
+3. **Integración de Investigación**: El agente comprueba si hay investigación existente sobre el tema de la decisión, o solicita investigación si es necesaria vía `/agileflow:research:ask`
+
+4. **Análisis de Alternativas**: El agente identifica 2-5 alternativas con pros/contras (de investigación o entrada del usuario)
+
+5. **Borrador de ADR**: El agente crea ADR con:
+   - Número secuencial de 4 dígitos (0001, 0002, etc.)
+   - Título en forma imperativa ("Usar PostgreSQL para persistencia de datos")
+   - Contexto explicando por qué la decisión es necesaria ahora
+   - Declaración de decisión (qué fue elegido)
+   - Alternativas con pros/contras
+   - Consecuencias (positivas, negativas, neutrales)
+   - Estado (Propuesto, Aceptado, Deprecado, Superado)
+   - Referencias enlazando a notas de investigación y documentos oficiales
+
+6. **Vista Previa y Aprobación**: El agente muestra vista previa para aprobación SÍ/NO
+
+7. **Creación**: El agente crea `docs/03-decisions/adr-<NUMBER>-<slug>.md`
+
+8. **Indexación**: El agente actualiza docs/03-decisions/README.md con la nueva entrada
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We need to document why we chose PostgreSQL over MongoDB for our database"
+```
+
+El Agente Escritor ADR haría:
+1. Comprobar docs/10-research/ en busca de investigación de base de datos existente
+2. Si falta, solicitar: "Déjame investigar opciones de base de datos primero"
+3. Reunir investigación sobre PostgreSQL, MongoDB, otras opciones
+4. Entrevistarte sobre contexto (¿por qué ahora? ¿restricciones? ¿experiencia del equipo?)
+5. Borrador ADR-0003: Usar PostgreSQL para persistencia de datos
+6. Mostrar vista previa con todas las alternativas y compensaciones
+7. Obtener aprobación (SÍ/NO)
+8. Crear adr-0003-use-postgresql.md
+9. Actualizar docs/03-decisions/README.md
+10. Anunciar: "ADR-0003 creado y listo para revisión del equipo"
+
+## Comportamientos Clave
+
+- **Investigación Primero**: Siempre comprueba investigación existente antes de escribir ADR (o la solicita)
+- **Contexto sobre Implementación**: Se enfoca en por qué se tomó la decisión, no en detalles de implementación
+- **Registro Histórico**: Nunca elimina ADRs (se conservan para contexto histórico y reconocimiento de patrones)
+- **Alternativas Claras**: Documenta al menos 2 alternativas con pros/contras honestos (sin defensa)
+- **Numeración Secuencial**: ADRs numerados secuencialmente (0001, 0002, 0003, etc.)
+- **Seguimiento de Estado**: Actualiza el estado de ADR conforme las decisiones evolucionan (Propuesto → Aceptado → Superado)
+- **Enlace**: Conecta ADRs relacionados para construir gráfico de decisión en el tiempo
+
+## Herramientas Disponibles
+
+Este agente tiene acceso a:
+- **Leer**: Navegar ADRs y entender historial de decisiones
+- **Escribir**: Crear nuevos archivos ADR
+- **Editar**: Actualizar ADRs existentes (cambiar estado, agregar referencias)
+- **Glob**: Encontrar ADRs por patrón
+- **Grep**: Buscar contenido de decisiones
+
+## Plantilla de ADR
+
+Cada ADR sigue esta estructura:
+
+```markdown
+# ADR-<NUMBER>: <Title>
+
+**Date**: YYYY-MM-DD
+**Status**: Proposed | Accepted | Deprecated | Superseded
+**Deciders**: [Names/roles who made decision]
+
+## Context
+[Describe forces at play: technical, business, team, timeline]
+[What problem are we solving? What constraints exist?]
+
+## Decision
+[State the decision clearly in 1-3 sentences]
+[Explain key reasons for this choice]
+
+## Alternatives Considered
+
+### Option 1: [Name]
+**Pros**:
+- [Benefit]
+- [Benefit]
+
+**Cons**:
+- [Cost or limitation]
+- [Cost or limitation]
+
+**Why rejected**: [Explanation]
+
+### Option 2: [Name]
+...
+
+## Consequences
+
+### Positive
+- [Benefit we expect]
+- [Advantage]
+
+### Negative
+- [Cost or limitation]
+- [Trade-off]
+
+### Neutral
+- [Change that's neither good nor bad]
+
+## References
+- [Title](URL) - Description
+- [Research Note](docs/10-research/YYYYMMDD-slug.md) - How research informed decision
+```
+
+## Ciclo de Vida del Estado de ADR
+
+- **Propuesto**: Bajo revisión, no aprobado aún (fase de discusión)
+- **Aceptado**: Aprobado y debe ser seguido por el equipo
+- **Deprecado**: Ya no recomendado (pero se conserva para historial)
+- **Superado**: Reemplazado por ADR más nuevo (enlazar al reemplazo, p. ej., "Supera ADR-0001")
+
+## Lista de Control de Calidad
+
+Antes de crear ADR:
+- El contexto explica claramente por qué la decisión es necesaria AHORA
+- Al menos 2 alternativas documentadas con pros/contras
+- Declaración de decisión clara y específica
+- Las consecuencias están equilibradas (positivas, negativas, neutrales)
+- Referencias incluidas para afirmaciones clave
+- Estado apropiado (Propuesto para revisión, Aceptado para finalizado)
+- Número es secuencial (comprobar último número de ADR)
+- La investigación se cita si está disponible
+
+## Formato del Índice de ADR
+
+docs/03-decisions/README.md mantiene una tabla de todos los ADRs (con los más nuevos primero):
+
+```markdown
+| Number | Date       | Title                              | Status   |
+|--------|------------|-----------------------------------|----------|
+| 0005   | 2025-12-24 | Use PostgreSQL for data persistence | Accepted |
+| 0004   | 2025-12-21 | Implement event-driven architecture | Accepted |
+| 0003   | 2025-12-18 | Use TypeScript for all new code    | Accepted |
+| 0002   | 2025-12-15 | REST API over GraphQL              | Accepted |
+| 0001   | 2025-12-12 | Next.js for web framework          | Accepted |
+```
+
+## Categorías de Decisión
+
+Los ADRs típicamente caen en estas categorías:
+
+**Decisiones de Tecnología**
+- Qué framework usar
+- Qué base de datos elegir
+- Qué lenguaje de programación para nuevos servicios
+- Qué biblioteca para funcionalidad específica
+
+**Decisiones de Arquitectura**
+- Monolito vs microservicios
+- Comunicación sincrónica vs asincrónica
+- Orientado a eventos vs solicitud-respuesta
+- Estilo API REST vs GraphQL
+
+**Decisiones de Diseño de Datos**
+- Nivel de normalización de esquema
+- Estrategia de caché
+- Políticas de retención de datos
+- Replicación maestro-esclavo vs punto a punto
+
+**Seguridad e Infraestructura**
+- Mecanismo de autenticación (JWT, OAuth2, basado en sesión)
+- Encriptación en reposo y en tránsito
+- Enfoque de gestión de secretos
+- Plataforma de despliegue y alojamiento
+
+**Prácticas de Desarrollo**
+- Estrategia de prueba (cobertura unitaria, integración, E2E)
+- Modelo de ramificación de Git (git-flow, trunk-based, etc.)
+- Proceso de revisión de código
+- Nivel de automatización CI/CD
+
+## Actualización y Enlace de ADRs
+
+**Marcar como Deprecado**:
+```markdown
+**Status**: Deprecated
+
+This decision is no longer recommended because [reason].
+See ADR-0005 for the current approach.
+```
+
+**Marcar como Superado**:
+```markdown
+**Status**: Superseded
+
+Superseded by ADR-0005: [New Decision Title]
+
+This decision was replaced because [reason].
+```
+
+**Referencias Cruzadas**:
+```markdown
+## Related Decisions
+- Builds on: ADR-0003 (Database choice)
+- Related to: ADR-0002 (API design)
+- Supersedes: ADR-0001 (Previous framework decision)
+```
+
+## Integración de Investigación
+
+El Agente Escritor ADR siempre:
+1. Comprueba docs/10-research/ en busca de investigación existente sobre el tema
+2. Si falta investigación, solicita: `/agileflow:research:ask TOPIC=<decision>`
+3. Incorpora hallazgos de investigación en la sección de Alternativas
+4. Referencias notas de investigación en la sección "Referencias" de ADR
+5. Enlaza ADR de vuelta a nota de investigación para referencia futura
+
+Esto garantiza:
+- Las decisiones se basan en análisis exhaustivo
+- Los hallazgos de investigación se conservan
+- Otros agentes pueden encontrar evidencia de apoyo para decisiones
+- Consistencia en documentación de decisiones
+
+## Prevenir Re-debate
+
+Los ADRs previenen que los equipos vuelvan a debatir las mismas decisiones:
+- **Capturar Contexto**: Registrar qué se sabía cuando se tomó la decisión
+- **Documentar Restricciones**: Por qué ciertas opciones eran imposibles
+- **Registrar Compensaciones**: Qué se renunció para ganar otros beneficios
+- **Enlazar a Investigación**: Apuntar al análisis técnico que informó la elección
+- **Mantener Historial**: Mostrar cómo las decisiones evolucionaron en el tiempo
+
+Cuando surge una pregunta de decisión similar:
+1. Comprobar docs/03-decisions/ en busca de ADRs relacionados
+2. Revisar contexto y consecuencias
+3. Decidir si la situación ha cambiado (superar si sí, referirse a existente si no)
+
+## Agentes Relacionados
+
+- [`research`](/agents/research) - Proporciona análisis técnico antes de creación de ADR
+- [`documentation`](/agents/documentation) - Referencias ADRs en documentación arquitectónica
+- [`epic-planner`](/agents/epic-planner) - Planifica características alrededor de decisiones establecidas
+- [`mentor`](/agents/mentor) - Explica decisiones a nuevos miembros del equipo
+- [`babysit`](/agents/babysit) - Puede solicitar creación de ADR para opciones técnicas
+
+## Patrones Comunes
+
+**Los ADRs Habilitan Transferencia de Conocimiento**
+- Los nuevos miembros del equipo entienden el razonamiento pasado
+- Previene re-implementación de enfoques fallidos
+- Acelera la incorporación (leer ADRs vs prueba-error)
+
+**Gráfico de Decisión en el Tiempo**
+- Las decisiones se construyen una sobre otra (ADR-0002 construye sobre ADR-0001)
+- Algunas decisiones superan otras (ADR-0003 supera ADR-0001)
+- Forman red conectada de comprensión
+
+**Decisiones Basadas en Evidencia**
+- Cada ADR respaldado por notas de investigación
+- Cita documentación oficial, no opiniones
+- Incluye benchmarks y análisis de compensaciones
+- Habilita toma de decisiones confiada

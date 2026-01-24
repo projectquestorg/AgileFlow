@@ -1,0 +1,266 @@
+---
+title: Forschung
+description: Forschungsspezialist für das Sammeln technischer Informationen, das Erstellen von Forschungsaufforderungen für ChatGPT, das Speichern von Forschungsnotizen und die Pflege des Forschungsindex.
+---
+
+# Forschungsagent
+
+Der Research Agent (RESEARCH) ist Ihr Spezialist für technische Forschung, Wissensmanagement und die Erstellung umfassender Forschungsanreize. Dieser Agent sammelt Informationen aus maßgeblichen Quellen, fasst Ergebnisse zusammen und verwaltet einen durchsuchbaren Forschungsindex zur späteren Bezugnahme.
+
+## Fähigkeiten
+
+- **Web Research**: Durchsuchen Sie offizielle Dokumentationen und maßgebliche Quellen nach technischen Informationen
+- **ChatGPT Prompt Building**: Erstellen Sie umfassende Rechercheaufforderungen, in denen Sie Implementierungspläne, Codeausschnitte, ADR-Entwürfe, Story-Aufschlüsselungen und mehr anfordern
+- **Research Note Curation**: Speichern Sie strukturierte Forschungsergebnisse mit einheitlicher Formatierung in docs/10-research/
+- **Research Index Maintenance**: Halten Sie docs/10-research/README.md zuerst mit den neuesten Forschungsergebnissen auf dem neuesten Stand
+- **Stale Research Detection**: Identifizieren Sie Forschungsergebnisse, die älter als 90 Tage sind und möglicherweise aktualisiert werden müssen
+- **Research Gap Identification**: Fehlende Recherche für technische Entscheidungen und ADRs kennzeichnen
+- **Agent Coordination**: Benachrichtigen Sie anfragende Agenten über Busnachrichten, wenn die Recherche abgeschlossen ist
+
+## Wann zu verwenden
+
+Verwenden Sie diesen Agenten, wenn Sie Folgendes benötigen:
+
+- Recherchieren Sie ein technisches Thema oder eine Technologieauswahl
+- Verstehen Sie die Kompromisse zwischen verschiedenen Ansätzen
+- Erstellen Sie eine umfassende ChatGPT-Eingabeaufforderung für eine tiefergehende Analyse
+- Dokumentieren Sie die Ergebnisse in einem strukturierten Format zum späteren Nachschlagen
+- Aktualisieren Sie veraltete Forschungsergebnisse (>90 Tage alt)
+- Finden Sie heraus, welche Forschungsergebnisse bereits vorhanden sind, bevor Sie Entscheidungen treffen
+- Unterstützen Sie die ADR-Erstellung mit technischer Hintergrundrecherche
+- Holen Sie sich Implementierungsanleitungen für einen Feature-Ansatz
+
+## Wie es funktioniert
+
+### Web-Recherche-Workflow
+
+1. **Understanding**: Der Agent klärt die Forschungsfrage und die Einschränkungen
+2. **Search**: Agent durchsucht offizielle Dokumentation und maßgebliche Quellen (WebSearch, WebFetch)
+3. **Gathering**: Agent sammelt wichtige Erkenntnisse – Ansätze, Kompromisse, Best Practices, Benchmarks
+4. **Synthesis**: Agent organisiert Ergebnisse in einem strukturierten Format
+5. **Saving**: Agent speichert Recherche zu `docs/10-research/<YYYYMMDD>-<slug>.md`
+6. **Indexing**: Agent aktualisiert docs/10-research/README.md mit Eintrag in der chronologischen Tabelle
+7. **Coordination**: Der Agent sendet eine Busnachricht, um den anfragenden Agenten zu benachrichtigen
+
+### ChatGPT-Recherche-Eingabeaufforderungs-Workflow
+
+1. **Context Loading**: Der Agent liest CLAUDE.md, context.md, status.json, zugehörige ADRs und vorhandene Recherchen, um Duplikate zu vermeiden
+2. **Understanding**: Der Agent klärt das Forschungsthema und spezifische Fragen, die beantwortet werden müssen
+3. **Prompt Building**: Der Agent erstellt eine umfassende Eingabeaufforderung mit der Bitte um Folgendes:
+   - TL;DR-Zusammenfassung
+   - Schritt-für-Schritt-Implementierungsplan mit Dateipfaden
+   - Minimale ausführbare Codefragmente (Kopieren und Einfügen möglich)
+   - Konfiguration und Umgebungseinrichtung
+   - Fehlerbehandlungsmuster
+   - Beobachtbarkeits- und Analyse-Hooks
+   - Testbeispiele (Einheit, Integration, E2E)
+   - Checkliste für manuelle Tests
+   - Überlegungen zu Sicherheit und Datenschutz
+   - ADR-Entwurf mit Optionen und Vor-/Nachteilen
+   - Aufschlüsselung der Geschichte mit Akzeptanzkriterien „Gegeben/Wann/Dann“.
+   - Rollback-Plan und Risiken
+   - PR-Körpervorlage
+   - Nur offizielle Dokumentationsquellen (zitiert mit Titel, URL, Datum)
+
+4. **Output**: Der Agent stellt eine Eingabeaufforderung als Codeblock zum einfachen Kopieren und Einfügen bereit
+5. **Processing**: Der Benutzer fügt ChatGPT-Ergebnisse zurück in Claude ein
+6. **Saving**: Agent speichert Ergebnisse unter `docs/10-research/<YYYYMMDD>-<slug>.md`
+7. **Indexing**: Agent aktualisiert den Forschungsindex
+8. **Notification**: Agent benachrichtigt den anfragenden Agenten per Busnachricht
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Need to research JWT vs OAuth2 for authentication"
+```
+
+Der Forschungsagent würde:
+1. Durchsuchen Sie maßgebliche Quellen (JWT RFC, OAuth2-Spezifikation, security.com-Artikel)
+2. Sammeln Sie wichtige Erkenntnisse (zustandslos vs. zustandsbehaftet, Aktualisierungstoken, Delegation, Anwendungsfälle)
+3. Erstellen Sie eine Forschungsnotiz, in der Ansätze verglichen werden
+4. Speichern Sie es unter docs/10-research/20251021-jwt-vs-oauth2.md
+5. Forschungsindex aktualisieren
+6. Postbus-Nachricht: „Forschung abgeschlossen: JWT vs. OAuth2 in docs/10-research/20251021-jwt-vs-oauth2.md gespeichert“
+
+## Schlüsselverhalten
+
+- **Official Sources Only**: Die Forschung zitiert offizielle Dokumentation, keine zufälligen Blogbeiträge
+- **Comprehensive Prompts**: ChatGPT-Eingabeaufforderungen sind ausführlich und fordern Implementierungsdetails, Tests, Sicherheitsüberlegungen und ADR-Entwürfe an
+- **Structured Formatting**: Die gesamte Forschung folgt einer einheitlichen Struktur (Zusammenfassung, Ergebnisse, empfohlener Ansatz, Kompromisse, Quellen).
+- **Stale Detection**: Identifiziert Forschungsergebnisse, die älter als 90 Tage sind, und weist auf eine mögliche Aktualisierung hin, wenn sich die Technologie geändert hat
+- **No Duplication**: Überprüft vorhandene Recherchen, bevor mit neuen Recherchen begonnen wird
+- **Agent Coordination**: Benachrichtigt anfragende Agenten sofort, wenn die Recherche abgeschlossen ist
+- **Clear Sourcing**: Bei allen Recherchen werden Quellen mit Titel, URL und Abrufdatum zitiert
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf:
+- **Read**: Durchsuchen Sie Forschungsdateien und verstehen Sie vorhandene Ergebnisse
+- **Write**: Neue Forschungsnotizen erstellen
+- **Edit**: Vorhandene Forschungsnotizen aktualisieren
+- **Glob**: Suchen Sie Forschungsdateien nach Muster
+- **Grep**: Forschungsinhalte durchsuchen
+- **WebSearch**: Durchsuchen Sie das Internet nach technischen Informationen
+- **WebFetch**: Webseiten abrufen und analysieren
+
+## Struktur der Forschungsnotiz
+
+Jede Forschungsnotiz enthält:
+
+```markdown
+# Research: <Title>
+
+**Date**: YYYY-MM-DD
+**Researcher**: [Agent or Name]
+**Status**: Active | Superseded | Archived
+
+## Summary
+[2-3 sentence TL;DR]
+
+## Key Findings
+1. [Finding with explanation]
+2. [Finding with explanation]
+3. ...
+
+## Recommended Approach
+[Which approach is recommended and why]
+
+## Implementation Steps
+1. [High-level step]
+2. [High-level step]
+...
+
+## Risks & Considerations
+- [Risk or trade-off]
+- [Risk or trade-off]
+
+## Trade-offs
+| Option | Pros | Cons |
+|--------|------|------|
+| A      | ...  | ...  |
+| B      | ...  | ...  |
+
+## Sources
+- [Title](URL) - Retrieved YYYY-MM-DD
+- [Title](URL) - Retrieved YYYY-MM-DD
+
+## Related
+- ADRs: ADR-0001, ADR-0003
+- Stories: US-0042, US-0055
+- Epics: EP-0002
+
+## Notes
+[Additional context, caveats, future research needed]
+```
+
+## Forschungsindexformat
+
+docs/10-research/README.md verwaltet eine chronologische Tabelle (neueste zuerst):
+
+```markdown
+| Date       | Topic                        | Path                        | Summary                     |
+|------------|------------------------------|-----------------------------|-----------------------------|
+| 2025-10-16 | JWT authentication patterns  | 20251016-jwt-auth.md        | Compared JWT, session, OAuth2 |
+| 2025-10-15 | React state management       | 20251015-react-state.md     | Redux vs Zustand vs Context |
+```
+
+## Qualitätscheckliste
+
+Vor dem Speichern der Recherche:
+- Das Datum ist aktuell (Format JJJJ-MM-TT)
+- Die Zusammenfassung ist prägnant (2-3 Sätze)
+- Mindestens 3 wichtige Ergebnisse aufgeführt
+- Empfohlener Ansatz klar dargelegt
+- Zitierte Quellen mit URLs und Abrufdaten
+- Verwandte ADRs/Geschichten/Epen verlinkt
+- Index aktualisiert mit neuestem Eintrag oben
+- Alle externen Links verweisen auf die offizielle Dokumentation
+
+## Forschungslücken identifizieren
+
+Der Research Agent weist auf Forschungslücken hin, wenn:
+- Technologieauswahl noch nicht erforscht (vor ADR erforderlich)
+- Gehen Sie auf die in den Story-Notizen erwähnte Unsicherheit ein
+- Mehrere Ansätze diskutiert, ohne klaren Gewinner
+- ADR existiert, aber es mangelt an unterstützender Forschung
+- Die Forschung ist veraltet (>90 Tage und die Technologie hat sich geändert)
+- Doppelte Recherche erforderlich (technische Versionen aktualisiert)
+
+## Koordination mit anderen Agenten
+
+Forschungsanfragen kommen üblicherweise von:
+- **AG-UI**: Designsysteme, Komponentenmuster, Barrierefreiheitstechniken
+- **AG-API**: API-Architekturen, Datenbankdesigns, Authentifizierungsmuster
+- **AG-CI**: Test-Frameworks, CI-Plattformen, Code-Qualitätstools
+- **AG-DEVOPS**: Bereitstellungsstrategien, Container-Orchestrierung, Überwachung
+- **ADR-WRITER**: Technische Alternativen vor der Entscheidungsfindung
+- **EPIC-PLANNER**: Technologie-Stack-Recherche vor der Planung von Epics
+
+Wenn eine Recherche angefordert wird:
+1. Überprüfen Sie docs/09-agents/bus/log.jsonl auf eine Forschungsanforderungsnachricht
+2. Vollständige Recherche (Web- oder ChatGPT-Eingabeaufforderung)
+3. Ergebnisse unter docs/10-research/ speichern
+4. Forschungsindex aktualisieren
+5. Posten Sie eine Busnachricht, um den Anforderer zu benachrichtigen
+
+## ChatGPT-Eingabeaufforderungsvorlage
+
+Berücksichtigen Sie bei der Erstellung von Rechercheaufforderungen Folgendes:
+
+```text
+Context: [Project overview from context.md]
+Current priority: [From status.json]
+Related ADRs: [List relevant decisions]
+
+Research topic: [Specific question]
+
+Please provide:
+1. TL;DR (2-3 sentences)
+2. Step-by-step implementation plan with exact file paths
+3. Minimal runnable code snippets (copy-paste ready)
+4. Configuration (env vars, config files, CLI flags)
+5. Error handling patterns
+6. Observability (logging, metrics, tracing)
+7. Tests: unit, integration, E2E examples
+8. Manual testing checklist
+9. Security checklist (auth, input validation, secrets, etc.)
+10. Privacy considerations (PII, GDPR, data retention)
+11. ADR draft with context, options, recommendation, consequences
+12. Story breakdown (3-6 stories with Given/When/Then AC)
+13. Rollback plan
+14. Risks and gotchas
+15. PR body template
+16. Sources: official docs/repos only with title, URL, date
+
+Final checklist:
+- [ ] Ready to paste back to Claude for implementation
+- [ ] All code snippets tested conceptually
+- [ ] Risks clearly flagged
+```
+
+## Verwandte Agenten
+
+- [„Dokumentation“.](/agents/documentation) - Verwendet Forschungsergebnisse, um Leitfäden und Dokumente zu erstellen
+- [„ADR-Autor“.](/agents/adr-writer) - Fordern Sie immer eine Recherche an, bevor Sie ADRs erstellen
+- [„epischer Planer“.](/agents/epic-planner) - Fordert Tech-Stack-Recherchen an, bevor Funktionen geplant werden
+- [„Mentor“.](/agents/mentor) - Kann Recherchen anfordern, um technische Fragen zu klären
+- [„Babysitten“.](/agents/babysit) - Kann Forschungsanfragen anderer Agenten koordinieren
+
+## Gemeinsame Muster
+
+**Two Research Workflows**
+- **Web Research**: Direkte Suche und Synthese (schneller für einfache Themen)
+- **ChatGPT Prompt**: Erstellen Sie eine umfassende Eingabeaufforderung für die Analyse durch KI (besser für komplexe Entscheidungen).
+
+**Research Before Decisions**
+- Recherchieren Sie immer, bevor Sie ADRs erstellen (ADR-WRITER fordert Recherche an)
+- Recherchieren Sie immer, bevor Sie Epics planen (EPIC-PLANNER fordert Recherche an)
+- Markieren Sie Unsicherheiten in Geschichten und Recherchen vor der Umsetzung
+
+**Stale Research Management**
+- Vierteljährliche Prüfung von docs/10-research/ auf alte Forschung
+- Markieren Sie es als „Ersetzt“, wenn neue Forschungsergebnisse im Widerspruch zu alten stehen
+- Löschen Sie niemals Forschungsergebnisse (behalten Sie den historischen Kontext bei)
+- Aktualisieren Sie, wenn sich die technischen Versionen geändert haben

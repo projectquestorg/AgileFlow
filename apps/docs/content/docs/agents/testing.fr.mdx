@@ -1,0 +1,219 @@
+---
+title: Essai
+description: Spécialiste des tests pour la stratégie de test, les modèles de test, l'optimisation de la couverture et la conception complète d'une suite de tests.
+---
+
+# Agent de test
+
+L'agent de test (AG-TESTING) est un expert spécialisé en assurance qualité qui conçoit des stratégies de test complètes, élimine les anti-modèles de test et optimise la couverture des tests. Contrairement à la configuration de l'infrastructure CI, cet agent se concentre sur les questions « que tester » et « comment le tester ».
+
+## Capacités
+
+- **Test Strategy Design**: Créer des plans de test complets couvrant les tests unitaires, d'intégration et E2E
+- **Coverage Optimization**: Analyser la couverture du code et identifier les lacunes dans les chemins critiques
+- **Test Anti-Pattern Detection**: Identifier et éliminer les tests irréguliers, lents et fragiles
+- **Test Infrastructure**: Créer des montages de test, des usines et des fonctions d'assistance
+- **Coverage Analysis**: Mesurer et rapporter les métriques de couverture avec des recommandations exploitables
+- **Test Pattern Documentation**: Documenter les modèles de tests réutilisables et les meilleures pratiques
+- **Performance Testing**: Concevoir et exécuter des benchmarks de performance
+- **Mutation Testing**: Tester les tests eux-mêmes pour garantir la qualité
+
+## Quand utiliser
+
+Utilisez l'agent de test lorsque :
+
+- Démarrage d'une nouvelle fonctionnalité et nécessité de définir ce qui doit être testé
+- La couverture actuelle des tests est inférieure à 70 % et doit être améliorée
+- Les tests sont irréguliers (échecs intermittents) ou lents (> 1 seconde chacun)
+- Besoin de concevoir des montages ou des usines de test pour des données de test complexes
+- Mise en place d'une infrastructure de tests automatisés
+- Créer des ADR pour tester les décisions
+- Implémentation de suites de tests complètes pour les chemins critiques
+
+## Comment ça marche
+
+1. **Knowledge Loading**: L'agent lit le dossier d'expertise et l'état des tests du projet
+2. **Story Review**: L'agent analyse l'histoire pour les exigences de testabilité
+3. **Test Planning**: L'agent conçoit des cas de tests (happy path, cas d'erreur, cas limites)
+4. **Infrastructure Setup**: L'agent crée des montages de test, des simulations et des assistants
+5. **Test Implementation**: L'agent écrit des tests selon le modèle AAA (Arrange-Act-Assert)
+6. **Coverage Measurement**: L'agent mesure la couverture et identifie les lacunes
+7. **Anti-Pattern Elimination**: L'agent identifie et corrige les tests instables/lents/fragiles
+8. **Verification**: L'agent s'exécute `/agileflow:verify` pour garantir la réussite de tous les tests
+9. **Coordination**: L'agent met à jour status.json et communique via bus/log.jsonl
+
+## Exemple
+
+```bash
+# Via babysit - identify testing work
+/agileflow:babysit
+> "We need comprehensive testing for the payment processing feature"
+
+# Agent output:
+# Test Strategy Created:
+# - Unit tests: Payment validation, transaction formatting (80% coverage)
+# - Integration tests: Database saves, external API calls (15% coverage)
+# - E2E tests: Complete payment workflow (5% coverage)
+# - Coverage target: 85% critical path
+# - Expected test count: 47 tests
+# - Estimated time: 4 hours
+```
+
+## Comportements clés
+
+- **AAA Pattern**: Tous les tests suivent la structure Arrange-Act-Assert pour plus de clarté
+- **Test Isolation**: Les tests unitaires simulent les dépendances ; les tests d'intégration utilisent de vraies dépendances
+- **Behavior-Focused**: Les tests valident le comportement, pas les détails de l'implémentation
+- **Fast Execution**: les tests unitaires s'exécutent en millisecondes ; suite complète en quelques minutes
+- **Clear Naming**: Les noms des tests décrivent exactement ce qui est testé
+- **Coverage Thresholds**: 70% minimum, 80%+ pour les chemins critiques (100% pour l'authentification/paiement)
+- **No Flaky Tests**: Les pannes intermittentes sont des signaux d’alarme ; le caractère aléatoire et le timing ont été supprimés
+- **Performance Awareness**: Les tests ne sont pas plus lents que le code qu'ils testent
+- **Context Preservation**: utilise compact_context (priorité : élevée) pour maintenir la concentration sur les tests pendant les longues conversations, en préservant les cibles de couverture et la détection des anti-modèles grâce au compactage du contexte
+
+## Configuration de contexte compact
+
+L'agent de test utilise **high priority** compact_context pour garantir que la couverture et la qualité des tests restent au centre :
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/testing/expertise.yaml"
+    - "AAA PATTERN: All tests follow Arrange-Act-Assert structure"
+    - "COVERAGE MINIMUM: 70% coverage required, 80%+ for critical paths"
+    - "NO FLAKY TESTS: Eliminate randomness, timing issues, intermittent failures"
+    - "TEST ISOLATION: Unit tests mock, integration tests use real dependencies"
+    - "VERIFY PASSES: Run /agileflow:verify before marking in-review"
+  state_fields:
+    - current_story
+    - coverage_percentage
+    - critical_paths_count
+    - flaky_tests_found
+    - test_status_baseline
+```
+
+Cela garantit que les règles critiques pour les tests (modèle AAA, minimums de couverture, pratiques de test anti-squameuses) et l'état actuel (écarts de couverture, nombre de tests irréguliers, état des tests du chemin critique) restent concentrés grâce au compactage du contexte.
+
+## Outils disponibles
+
+- Lire, écrire, modifier (opérations sur les fichiers)
+- Bash (exécuter des commandes de test)
+- Glob (trouver des fichiers de test)
+- Grep (code de test de recherche)
+
+## Intégration du harnais de session
+
+L'agent de test s'intègre au Session Harness pour garantir la qualité :
+
+```text
+Pre-Implementation:
+├── Check environment.json exists
+├── Verify test_status: "passing" baseline
+└── Run /agileflow:session:resume
+
+During Implementation:
+├── Run tests incrementally
+├── Fix failures immediately
+└── Update test_status in real-time
+
+Post-Implementation:
+├── Run /agileflow:verify US-XXXX (must pass)
+├── Verify test_status: "passing"
+└── Mark story "in-review" ONLY if tests pass
+```
+
+## Catégories et cibles de test
+
+| Category | Percentage | Speed | Scope |
+|----------|-----------|-------|-------|
+| Unit Tests | 80% | under 1ms each | Single function, mocked dependencies |
+| Integration Tests | 15% | Slower | Multiple components, real dependencies |
+| E2E Tests | 5% | Very slow | Full user workflows |
+| Contract Tests | 0-5% | Fast | API schema validation |
+
+## Liste de contrôle de qualité
+
+Avant de marquer une histoire comme terminée :
+
+- [ ] Couverture des tests ≥70 % (chemins critiques 100 %)
+- [ ] Tous les scénarios Happy Path testés
+- [ ] Tous les scénarios d'erreur testés
+- [ ] Cas extrêmes identifiés et testés
+- [ ] Pas de tests irréguliers (exécutez 10x, tous réussissent)
+- [ ] Pas de tests lents (chaque test sous 1 s, suite complète sous 5 min)
+- [ ] Teste le comportement des tests, pas l'implémentation
+- [ ] Les noms des tests décrivent clairement ce qui est testé
+- [ ] Montages de test réutilisables et bien documentés
+- [ ] Rapport de couverture généré et examiné
+- [ ] test_status : "réussite" vérifié
+
+## Modèles de test courants
+
+**AAA Pattern (Arrange-Act-Assert)**:
+```javascript
+describe('validateEmail', () => {
+  it('rejects invalid formats', () => {
+    // Arrange
+    const email = 'invalid@';
+
+    // Act
+    const result = validateEmail(email);
+
+    // Assert
+    expect(result).toBe(false);
+  });
+});
+```
+
+**Test Fixtures (Reusable test data)**:
+```javascript
+const validUser = { id: 1, email: 'user@example.com', name: 'John' };
+const invalidUser = { id: 2, email: 'invalid@', name: 'Jane' };
+```
+
+**Parameterized Tests**:
+```javascript
+test.each([
+  ['valid@example.com', true],
+  ['invalid@', false],
+  ['no-at-sign.com', false],
+])('validates email %s', (email, expected) => {
+  expect(validateEmail(email)).toBe(expected);
+});
+```
+
+## Anti-modèles à éliminer
+
+| Anti-Pattern | Problem | Fix |
+|--------------|---------|-----|
+| Flaky tests | Intermittent failures, unpredictable | Remove randomness, add waits for conditions |
+| Slow tests | >1 second each | Use mocks, parallelize, optimize queries |
+| Brittle tests | Break on refactoring | Test behavior, not implementation details |
+| Over-mocking | Unrealistic isolation | Balance unit and integration tests |
+
+## Agents associés
+
+- ['qa'](/agents/qa) - Stratégie de tests et préparation des versions (portée différente)
+- ['ci'](/agents/ci) - Infrastructure de test et configuration du pipeline CI
+- [`API`](/agents/api) - Tests API et validation des contrats
+- [`ui`](/agents/ui) - Tests de composants et tests d'interaction utilisateur
+- [`base de données`](/agents/database) - Tests de couche de données et optimisation des requêtes
+
+## Coordination
+
+L'agent de test se coordonne avec d'autres agents :
+
+- **AG-API**: Assurez-vous que les cas d'erreur d'API sont testés
+- **AG-UI**: Coordonner les tests composants et E2E
+- **AG-DATABASE**: Tester la couche de données et les performances des requêtes
+- **AG-CI**: Demander une infrastructure de test (exécution parallèle, reporting de couverture)
+- **AG-QA**: S'aligner sur les indicateurs de qualité et les objectifs de couverture des tests
+
+## Commandes barre oblique
+
+- `/agileflow:verify US-XXXX` - Exécuter des tests pour une histoire spécifique
+- `/agileflow:research:ask TOPIC=...` - Rechercher des modèles de tests
+- `/agileflow:ai-code-review` - Réviser le code de test pour les anti-modèles
+- `/agileflow:adr-new` - Documenter les décisions de tests
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut de l'histoire

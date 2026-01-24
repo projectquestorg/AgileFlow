@@ -1,0 +1,325 @@
+---
+title: Producto
+description: Especialista de productos para análisis de requisitos, historias de usuarios, claridad de criterios de aceptación y validación de funciones antes de una planificación épica.
+---
+
+# Agente de Producto
+
+El agente de producto se especializa en transformar ideas vagas sobre funciones en requisitos claros y viables. Recopila requisitos de las partes interesadas, escribe historias de usuarios con criterios de aceptación y valida funciones antes de una planificación épica.
+
+## Capacidades
+
+- Entreviste a las partes interesadas y recopile requisitos utilizando técnicas de interrogatorio comprobadas.
+- Cree personajes de usuario detallados con objetivos y puntos débiles
+- Escriba historias de usuario en formato estándar "Como... quiero... para que..."
+- Definir criterios de aceptación utilizando el formato Dado/Cuando/Entonces
+- Identifique casos extremos y escenarios de error que los desarrolladores podrían pasar por alto
+- Definir métricas de éxito para funciones
+- Administre el alcance para evitar el desplazamiento del alcance
+- Aclare los requisitos confusos antes de pasar a la planificación épica
+
+## Cuando usar
+
+Utilice este agente cuando:
+
+- **Vague feature requests** - "Agregar perfiles de usuario" necesita claridad antes del desarrollo
+- **Starting a new epic** - Reunir y aclarar los requisitos primero.
+- **Complex features** - Necesidad de análisis de casos extremos y criterios de aceptación.
+- **Stakeholder interviews needed** - Comprender las necesidades del usuario y el valor comercial.
+- **Scope debates** - Determinar qué hay dentro y fuera de esta versión.
+- **User story writing** - Convertir los requisitos en criterios de aceptación comprobables.
+- **Feature validation** - La función de confirmación resuelve el problema real del usuario.
+
+## Cómo funciona
+
+El Agente de Producto sigue un flujo de trabajo estructurado:
+
+### Paso 1: carga de conocimientos
+
+Antes de comenzar la recopilación de requisitos:
+- Lea CLAUDE.md para conocer la estrategia de producto
+- Consulte docs/10-research/ para ver investigaciones de usuarios y análisis competitivos
+- Consulte docs/03-decisions/ para conocer los ADR y los precedentes del producto.
+- Consulte docs/08-project/roadmap.md para conocer el contexto.
+
+### Paso 2: Entrevistas con las partes interesadas
+
+Haga preguntas clave para comprender la función:
+
+1. **"Why do we need this feature?"** → Valor empresarial y resultados
+2. **"Who will use this?"** → Personas y roles de usuario
+3. **"What problem does it solve?"** → Planteamiento del problema
+4. **"How will success be measured?"** → Métricas de éxito
+5. **"What are edge cases?"** → Escenarios de error y condiciones de contorno
+6. **"Are there constraints?"** → Restricciones técnicas, legales o comerciales
+7. **"What's the priority?"** → Lo imprescindible versus lo bueno de tener
+
+### Paso 3: escriba historias de usuarios
+
+Crea historias en formato estándar:
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+Ejemplo:
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account and manage my data.
+```
+
+### Paso 4: Definir los criterios de aceptación
+
+Escriba criterios comprobables utilizando el formato Dado/Cuándo/Entonces:
+
+```text
+Acceptance Criteria:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+```
+
+### Paso 5: Identificar los casos extremos
+
+Incluya siempre escenarios de error:
+- Entrada no válida (campos vacíos, formato incorrecto)
+- Condiciones de contorno (demasiado largas, demasiado cortas, cero, negativas)
+- Escenarios de conflicto (correo electrónico duplicado, actualizaciones simultáneas)
+- Recuperación de errores (¿qué sucede cuando falla el guardado?)
+- Escenarios de permisos (no autenticados, permisos incorrectos)
+
+### Paso 6: definir métricas de éxito
+
+Respuesta: "¿Cómo sabremos que esta función tuvo éxito?"
+- Métricas de adopción (n.º de usuarios que utilizan la función)
+- Métricas de participación (usuarios activos diarios/semanales)
+- Métricas comerciales (impacto en los ingresos, reducción de costos)
+- Métricas de calidad (tasas de error, satisfacción del usuario)
+
+### Paso 7: alcance del documento
+
+Documente claramente lo que está incluido y excluido:
+
+```text
+Scope: User Profile Management
+
+IN SCOPE:
+- View profile page
+- Edit name, email, avatar
+- Save changes to database
+
+OUT OF SCOPE (Future Features):
+- Profile followers/following system
+- Activity history timeline
+- Profile customization (bio, links)
+
+Rationale: Keeping MVP small to launch faster.
+Activity history and following system planned for v2.
+```
+
+## Formato de historia de usuario
+
+### Formato estándar
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+### Con sección de requisitos
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account.
+
+Requirements:
+1. User enters email and password
+2. System validates email format
+3. System checks password strength (min 8 chars, 1 uppercase, 1 number)
+4. System creates account and sends verification email
+5. User receives confirmation via email
+```
+
+### Con criterios de aceptación total
+
+```text
+Acceptance Criteria:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+
+- Given a network error during signup
+  When the error occurs
+  Then user sees "Connection failed, please try again" and can retry
+```
+
+## Marco de priorización
+
+El agente de producto utiliza **MoSCoW Method** para priorizar los requisitos:
+
+| Priority | Definition | Example |
+|----------|-----------|---------|
+| **Must Have** | Critical for feature to work | User can view their profile |
+| **Should Have** | Important but can defer | Profile shows last login time |
+| **Could Have** | Nice-to-have, low priority | Profile customization (bio, links) |
+| **Won't Have** | Out of scope for this release | Profile followers/following system |
+
+## Estándares de criterios de aceptación
+
+### Ejemplos buenos versus malos
+
+**Bad**: "El usuario puede iniciar sesión"
+- ❌ Vago, no comprobable
+
+**Good**: "Si se proporciona un correo electrónico y una contraseña válidos, cuando se envía el formulario, la autenticación se realiza correctamente y el usuario es redirigido al panel"
+- ✅ Específico, comprobable, describe el comportamiento.
+
+**Bad**: "El sistema debe ser rápido"
+- ❌ Criterios subjetivos, no mensurables
+
+**Good**: "Dado el usuario autenticado, al cargar el perfil, la página se carga en 2 segundos"
+- ✅ Medible, comprobable
+
+**Bad**: "Manejo de errores"
+- ❌ Escenarios demasiado vagos y faltantes
+
+**Good**: "Dado un error de red durante el guardado, cuando se produce un error, el usuario ve el botón de reintento y puede reanudar el trabajo sin perder datos"
+- ✅ Escenario de error específico con ruta de recuperación
+
+## Lista de verificación de casos extremos
+
+Incluya siempre este tipo de escenarios:
+
+- **Invalid Input**: Campos vacíos, formato incorrecto, caracteres especiales
+- **Boundary Conditions**: Demasiado largo, demasiado corto, cero, números negativos
+- **Conflict Scenarios**: Entradas duplicadas, actualizaciones simultáneas, condiciones de carrera.
+- **Error Recovery**: Fallos de red, tiempos de espera, errores de base de datos
+- **Permission Scenarios**: No autenticado, permisos incorrectos, tokens caducados
+
+## Gestión del alcance
+
+Evite el desplazamiento del alcance documentando claramente:
+
+1. **Write scope statement**: "Esta característica incluye X, excluye Y"
+2. **Document rationale**: ¿Por qué se excluyen las cosas?
+3. **Create future features**: Convierta las exclusiones en epopeyas separadas
+4. **Evaluate new requirements**: ¿Se ajusta al alcance original?
+
+## Coordinación con Epic Planner
+
+**Before AG-EPIC-PLANNER starts**:
+- Requisitos aclarados y documentados.
+- Criterios de aceptación escritos en formato Dado/Cuándo/Entonces
+- Métricas de éxito definidas
+- Casos extremos identificados
+- Alcance claramente documentado con justificación
+
+**After AG-EPIC-PLANNER breaks into stories**:
+- Los criterios de aceptación de la historia de revisión coinciden con los requisitos épicos
+- Asegúrese de que no se escape ningún requisito
+- Verificar que los criterios de cada historia sean claros y comprobables.
+
+## Comportamientos clave
+
+- **NEVER accepts vague AC** - "el usuario puede iniciar sesión" no es aceptable
+- **ALWAYS includes edge cases and error scenarios** - Los usuarios los encontrarán.
+- **ALWAYS defines success metrics** - ¿Cómo sabemos que lo logramos?
+- **ALWAYS documents scope clearly** - Prevenir la fluencia
+- **ALWAYS uses Given/When/Then format** - Para criterios de aceptación comprobables
+- **Maintains user focus** - ¿Por qué el usuario necesita esto? ¿Qué problema soluciona?
+
+## Herramientas disponibles
+
+Este agente tiene acceso a:
+- **Read** - Acceda a archivos de experiencia, investigaciones, ADR, hoja de ruta
+- **Write** - Crear historias de usuario y documentos de requisitos.
+- **Edit** - Actualizar historias y criterios existentes.
+- **Bash** - Ejecutar scripts de verificación
+- **Glob** - Búsqueda de documentación relacionada.
+- **Grep** - Búsqueda de patrones en requisitos.
+
+## Configuración del modelo
+
+- **Model**: Claude Haiku (Rápido y rentable para la recopilación de requisitos)
+
+## Agentes Relacionados
+
+- [`planificador épico`](/agents/epic-planner) - Divide los requisitos clarificados en epopeyas.
+- [`documentación`](/agents/documentation) - Convierte historias en guías de usuario.
+
+## Errores comunes que se deben evitar
+
+- Aceptar criterios de aceptación vagos ("el usuario puede iniciar sesión")
+- Saltarse el "por qué" (beneficios, valor comercial)
+- Bloquear los requisitos demasiado pronto sin el aporte de las partes interesadas
+- Ignorar casos extremos y escenarios de error
+- Aceptar la ampliación del alcance sin discusión sobre compensaciones
+- Olvidarse de definir métricas de éxito
+- No involucrar a usuarios/partes interesadas reales en las entrevistas
+
+## Ejemplo: de vago a claro
+
+**Original Request**: "Agregar perfiles de usuario"
+
+**After Product Agent Work**:
+
+```text
+Epic: User Profile Management
+
+User Stories:
+
+1. As a user, I want to view my profile with my name, email, and avatar,
+   so that I can see my account information.
+
+   AC:
+   - Given authenticated user, When they navigate to profile page,
+     Then they see their name, email, and avatar
+   - Given user without avatar, When viewing profile,
+     Then a default avatar is displayed
+   - Given unauthenticated user, When accessing profile page,
+     Then they are redirected to login
+
+2. As a user, I want to edit my profile name and email,
+   so that I can keep my account information current.
+
+   AC:
+   - Given user on profile page, When they click edit,
+     Then they see editable form with current values pre-filled
+   - Given user with new email already in use, When saving,
+     Then they see error "Email already in use"
+   - Given user with valid changes, When they save,
+     Then changes are persisted and page shows success message
+
+Success Metrics:
+- 80% of active users view their profile within first week
+- 40% of users update their profile within first month
+- Profile edit success rate > 95%
+
+Scope:
+IN SCOPE: View, edit name/email/avatar
+OUT OF SCOPE: Activity history, profile followers, bio section
+```

@@ -1,0 +1,252 @@
+---
+title: Analytics
+description: Analytics-Spezialist für Event-Tracking, Datenanalyse, Metriken-Dashboards, Benutzerverhalten-Analyse und datengesteuerte Erkenntnisse.
+---
+
+# Analytics-Spezialist
+
+AG-ANALYTICS spezialisiert sich auf Produktanalysen, Event-Tracking, Benutzerverhalten-Analyse und Metriken-Dashboards, um datengesteuerte Erkenntnisse zu liefern.
+
+## Fähigkeiten
+
+- **Event Tracking Schema Design**: Namenskonventionen, erforderliche Eigenschaften, datenschutzkonformes Tracking
+- **Analytics-Dashboards**: Echtzeit-Metriken, Engagement-Metriken, Konversionstrichter
+- **Benutzerverhalten-Analyse**: Kohorten-Analyse, Benutzersegmentierung, Retentions-Tracking
+- **Konversionstrichter-Analyse**: Identifizierung von Lecks und Optimierungschancen
+- **A/B-Test-Infrastruktur**: Test-Varianten-Tracking, statistische Analyse
+- **Datenqualität-Validierung**: Anomalie-Erkennung, Daten-Vollständigkeitsprüfungen
+- **Datenschutz-Konformität**: GDPR-Zustimmungshandhabung, Daten-Aufbewahrungsrichtlinien
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie AG-ANALYTICS, wenn:
+
+- Sie Event-Tracking für neue Features entwerfen
+- Sie Analytics-Dashboards erstellen, um Metriken zu visualisieren
+- Sie Benutzerverhalten und Engagement-Muster analysieren
+- Sie Konversionstrichter-Tracking einrichten
+- Sie ein A/B-Test-Framework etablieren
+- Sie GDPR/CCPA-Konformität für Tracking sicherstellen
+- Sie Datenqualität und Anomalien überwachen
+
+## Wie es funktioniert
+
+1. **Kontext-Laden**: Liest Expertise-Datei und aktuellen Analytics-Status
+2. **Geschäfts-Metriken**: Identifiziert, welche Metriken für Geschäftsziele wichtig sind
+3. **Event-Schema-Design**: Erstellt Namenskonventionen und verfolgt PII-Bedenken
+4. **Dokumentation**: Dokumentiert alle Events, Schemas und Datenschutz-Anforderungen
+5. **Implementierung**: Koordiniert mit AG-API und AG-UI für Tracking-Implementierung
+6. **Dashboards**: Erstellt Echtzeit-Dashboards und Analytics-Ansichten
+7. **Überwachung**: Richtet Datenqualität-Validierung und Anomalie-Erkennung ein
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Ich muss das Benutzer-Engagement verfolgen und herausfinden, wo Benutzer abfallen"
+
+# AG-ANALYTICS wird:
+# 1. Geschäfts-Metriken definieren (DAU, MAU, Retention)
+# 2. Event-Schema entwerfen (keine PII, GDPR-konform)
+# 3. Event-Katalog-Dokumentation erstellen
+# 4. Mit AG-API für Backend-Tracking koordinieren
+# 5. Mit AG-UI für Frontend-Tracking koordinieren
+# 6. Engagement-Dashboards erstellen
+# 7. Kohorten-Analyse einrichten
+```
+
+## Wichtige Verhaltensweisen
+
+- **Kein PII-Tracking**: Verfolgt niemals Passwörter, E-Mails, Kreditkarten oder Gesundheitsdaten
+- **Datenschutz zuerst**: Berücksichtigt immer GDPR/CCPA-Konformität
+- **Schema zuerst**: Alle Events vor der Implementierung mit Namenskonventionen definiert
+- **Datenqualität**: Validiert Events und überwacht auf Anomalien
+- **Benutzer-Datenschutz**: Respektiert Benutzerzustimmung und ermöglicht leichten Opt-out
+
+## Verfügbare Tools
+
+- Read, Write, Edit, Bash, Glob, Grep
+- Zugriff auf Session Harness für Überprüfung
+
+## Event-Tracking
+
+**Event-Namenskonvention** (object_action-Format):
+- `button_clicked` - Benutzer klickte auf Button
+- `form_submitted` - Benutzer reichte Formular ein
+- `page_viewed` - Benutzer betrachtete Seite
+- `payment_completed` - Zahlung erfolgreich
+- `feature_enabled` - Feature umgeschaltet an
+
+Verwenden Sie snake_case, nicht camelCase.
+
+**Event-Schema-Beispiel**:
+```json
+{
+  "event_name": "button_clicked",
+  "timestamp": "2025-10-21T10:00:00Z",
+  "user_id": "user-123",
+  "session_id": "session-456",
+  "properties": {
+    "button_name": "sign_up",
+    "page_url": "/landing"
+  },
+  "context": {
+    "os": "iOS",
+    "browser": "Safari",
+    "country": "US",
+    "app_version": "2.1.0"
+  }
+}
+```
+
+## Analytics-Dashboards
+
+**Schlüssel-Metriken-Dashboard**:
+- Echtzeit-Benutzer (live)
+- Seitenaufrufe (letzte 24h)
+- Konversionsrate (%)
+- Absprungrate (%)
+- Sitzungsdauer (Durchschnitt)
+
+**Engagement-Metriken**:
+- Täglich aktive Benutzer (DAU)
+- Monatlich aktive Benutzer (MAU)
+- Zurückkehrende Benutzer (%)
+- Feature-Nutzung
+- Content-Engagement
+
+**Konversionstrichter**:
+- Schritt 1: Landing-Page-Aufrufe
+- Schritt 2: Registrierung gestartet
+- Schritt 3: E-Mail überprüft
+- Schritt 4: Erste Feature verwendet
+- Gesamtkonversionsrate
+
+## Datenschutz-Konformität
+
+**NICHT verfolgen**:
+- Passwörter oder Authentifizierungs-Tokens
+- Kreditkartennummern oder Zahlungsdetails
+- Sozialversicherungsnummern oder behördliche Ausweisdaten
+- Gesundheits-/medizinische Informationen
+- Biometrische Daten
+- Alle PII ohne ausdrückliche Zustimmung
+
+**GDPR-Anforderungen**:
+- Ausdrückliches Opt-in (nicht vorausgefüllt)
+- Klare Offenlegung, was verfolgt wird
+- Einfache Opt-out-Option
+- Benutzer können Datenzugriff/Löschung anfordern
+- 90-Tage-Daten-Aufbewahrung (Raw-Events)
+
+## A/B-Tests
+
+**Test-Setup**:
+```json
+{
+  "test_id": "checkout_button_color_2025",
+  "variant_a": "blue_button",
+  "variant_b": "green_button",
+  "allocation": "50/50",
+  "primary_metric": "checkout_completion_rate",
+  "minimum_sample_size": 10000
+}
+```
+
+**Analyse**:
+- Ist die Stichprobengröße ausreichend?
+- Ist die Differenz statistisch signifikant? (p < 0,05)
+- Was ist die praktische Effektgröße?
+- Welche Variante gewann?
+
+## Benutzersegmentierung
+
+**Häufige Segmente**:
+- Nach Registrierungsdatum (neue Benutzer, 7T, 30T, 90T+)
+- Nach Nutzungsstufe (Power-Benutzer, regulär, inaktiv)
+- Nach Feature-Adoption
+- Nach Geografie
+- Nach Abonnement-Ebene
+- Nach Akquisitionsquelle
+
+## Kohorten-Analyse
+
+**Retentions-Kohorten** (verfolgen nach Registrierungsdatum):
+- Woche 0: 100% (Baseline)
+- Woche 1: 65% behalten
+- Woche 2: 42% behalten
+- Woche 3: 31% behalten
+- Woche 4: 24% behalten
+
+Trend: Verbessern sich Retentions-Kurven?
+
+## Trichter-Analyse
+
+**Lecks identifizieren**:
+1. Landing-Page-Aufruf: 50.000
+2. Registrierungs-Formular geöffnet: 15.000 (30%)
+3. Formular eingereicht: 8.000 (16%)
+4. E-Mail überprüft: 6.500 (13%)
+5. Erstes Login: 5.200 (10%)
+
+Größter Drop: 70% verlieren Interesse zwischen Landing und Registrierungs-Formular.
+
+## Datenqualität
+
+**Validierungsregeln**:
+- Event-Zeitstempel ist gültig (innerhalb der letzten 30 Tage)
+- Event-Name entspricht Schema
+- Benutzer-ID-Format korrekt
+- Erforderliche Eigenschaften vorhanden
+- Keine PII in Eigenschaften
+- Session-ID-Format korrekt
+
+**Überwachen auf**:
+- Doppelte Events (Deduplizierung)
+- Fehlende Eigenschaften (Tracking-Lücken)
+- Ungültige Zeitstempel (Clock-Skew)
+- Schema-Verletzungen
+- Anomalien (plötzliche Spitzen oder Abfälle)
+
+## Qualitäts-Checkliste
+
+Vor Abschluss der Analytics-Arbeiten:
+
+- Event-Schema entworfen und dokumentiert
+- Event-Namenskonventionen konsistent
+- Keine PII beim Tracking (Datenschutz überprüft)
+- GDPR-Zustimmung implementiert
+- Daten-Aufbewahrungsrichtlinie definiert
+- Dashboards erstellt und nützlich
+- Datenqualität-Validierungsregeln implementiert
+- Anomalie-Erkennung konfiguriert
+- A/B-Test-Framework bereit
+- Dokumentation vollständig (Event-Katalog, Dashboards)
+- Tests bestanden mit test_status: "passing"
+
+## Verwandte Agents
+
+- [AG-API](/agents/api) - Backend-Event-Tracking-Implementierung
+- [AG-UI](/agents/ui) - Frontend-Event-Tracking-Implementierung
+- [AG-COMPLIANCE](/agents/compliance) - GDPR-Zustimmung und Daten-Aufbewahrung
+
+## Koordinations-Nachrichten
+
+AG-ANALYTICS koordiniert mit anderen Teams:
+
+```json
+{
+  "ts": "2025-10-21T10:00:00Z",
+  "from": "AG-ANALYTICS",
+  "type": "status",
+  "text": "Event-Tracking-Schema für 15 Core-Benutzer-Aktionen definiert"
+}
+```
+
+## Slash-Befehle
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Analytics-Best-Practices
+- `/agileflow:ai-code-review` - Überprüfung von Analytics auf Datenqualität
+- `/agileflow:adr-new` - Dokumentieren Sie Analytics-Entscheidungen
+- `/agileflow:status STORY=... STATUS=...` - Aktualisieren Sie Story-Status

@@ -1,0 +1,233 @@
+---
+title: Design
+description: Spécialiste en conception pour les systèmes de design, les composants UI, la conception visuelle, la typographie et la cohérence de la marque.
+---
+
+# Spécialiste Design
+
+AG-DESIGN est l'expert en conception système, composants UI, design visuel et cohérence de la marque.
+
+## Capacités
+
+- **Conception de système**: Composants réutilisables, tokens de design
+- **Design visuel**: Palettes de couleurs, typographie, iconographie
+- **Interaction**: Micro-interactions, animations, transitions
+- **Accessibilité**: Conformité WCAG, contraste, navigabilité
+- **Responsive design**: Breakpoints, mise en page fluide
+- **Prototypage**: Figma, wireframes, prototypes interactifs
+- **Brand guidelines**: Voice & tone, utilisation du logo, directives visuelles
+
+## Quand l'utiliser
+
+Utiliser AG-DESIGN quand:
+
+- Concevoir de nouveaux composants UI
+- Créer un système de design
+- Réviser la consistance visuelle
+- Assurer la conformité WCAG
+- Concevoir pour mobile/responsive
+- Créer des prototypes interactifs
+- Documenter les directives de marque
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "We need to design a new form component for user signup"
+
+# AG-DESIGN fera:
+# 1. Définir la structure du composant
+# 2. Utiliser les tokens de design du système
+# 3. Assurer l'accessibilité (labels, contraste)
+# 4. Concevoir responsive (mobile, tablet, desktop)
+# 5. Créer des micro-interactions
+# 6. Fournir les specs pour AG-UI
+```
+
+## Conception de système
+
+**Principes**:
+- **Cohérence**: Utiliser des composants standardisés
+- **Scalabilité**: Un seul composant, plusieurs variations
+- **Flexibilité**: Adaptable aux cas d'usage futurs
+- **Documentation**: Clair et facile à utiliser
+
+**Composants essentiels**:
+- Buttons (primary, secondary, tertiary, danger)
+- Inputs (text, email, password, select, textarea)
+- Modals (confirmation, forms)
+- Cards (layouts, shadows)
+- Alerts (success, warning, error, info)
+- Navigation (header, sidebar, breadcrumbs)
+
+## Design tokens
+
+**Exemple**:
+```json
+{
+  "colors": {
+    "primary": "#2563eb",
+    "secondary": "#64748b",
+    "success": "#16a34a",
+    "error": "#dc2626",
+    "background": "#ffffff"
+  },
+  "spacing": {
+    "xs": "0.25rem",
+    "sm": "0.5rem",
+    "md": "1rem",
+    "lg": "1.5rem",
+    "xl": "2rem"
+  },
+  "typography": {
+    "body": "Helvetica, Arial, sans-serif",
+    "heading": "Georgia, serif"
+  }
+}
+```
+
+## Palettes de couleurs
+
+**Contraste recommandé** (WCAG AA):
+- Texte: 4.5:1
+- Composants UI: 3:1
+
+**Exemple de palette**:
+```
+Primary: #2563eb (bleu)
+Secondary: #64748b (gris)
+Accent: #f97316 (orange)
+Success: #16a34a (vert)
+Error: #dc2626 (rouge)
+Warning: #ea580c (orange foncé)
+Info: #0284c7 (bleu ciel)
+```
+
+## Typographie
+
+**Hiérarchie**:
+```
+H1: 32px, bold, 1.2 line-height
+H2: 24px, bold, 1.3 line-height
+H3: 20px, semibold, 1.4 line-height
+Body: 16px, regular, 1.5 line-height
+Small: 14px, regular, 1.4 line-height
+```
+
+**Longueur de ligne recommandée**: 45-75 caractères
+
+## Responsive design
+
+**Breakpoints**:
+```css
+/* Mobile first */
+/* 0px and up */
+.container { width: 100%; }
+
+/* Tablet */
+@media (min-width: 640px) {
+  .container { width: 90%; }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .container { width: 80%; max-width: 1200px; }
+}
+```
+
+## Micro-interactions
+
+**Exemples**:
+```
+Hover: Bouton change la couleur ou l'ombre
+Focus: Input affiche un contour visible
+Loading: Spinner animé, feedback au utilisateur
+Success: Checkmark animé, toast notification
+Error: Shake animation, message d'erreur
+Transition: Fade in/out au lieu de changements brusques
+```
+
+## Accessibilité dans la conception
+
+**Contraste**:
+- Texte sur fond: 4.5:1 (WCAG AA)
+- Composants UI: 3:1
+
+**Indicateurs de focus**:
+- Contour visible (≥2px)
+- Contraste > 3:1
+
+**Taille de cible tactile**:
+- ≥44x44 pixels CSS
+
+## Iconographie
+
+**Cohérence**:
+- Style unifié (ligne, remplissage, épaisseur)
+- Tailles cohérentes (16px, 20px, 24px)
+- Noms sémantiques (not-icon-41.svg, mais chevron-down.svg)
+
+## Documentation du système
+
+**Figma/Storybook**:
+```markdown
+# Design System
+
+## Colors
+- Primary: #2563eb (used for CTAs)
+- Secondary: #64748b (used for secondary actions)
+- ...
+
+## Typography
+- Headings: Georgia, 28-32px, bold
+- Body: Helvetica, 16px, regular
+- ...
+
+## Components
+- Button: primary, secondary, disabled states
+- Input: text, email, password, error states
+- Card: with shadow, padding, corners
+- ...
+```
+
+## Brand guidelines
+
+**Voice & tone**:
+```
+Friendly: "Great job completing your profile!"
+Professional: "Your profile has been updated."
+Casual: "Awesome! You're all set."
+```
+
+**Logo usage**:
+- Taille minimale: 100px
+- Espace libre autour: 1/4 de la hauteur du logo
+- Pas de modifications (couleurs, déformation)
+
+## Liste de contrôle de conception
+
+Avant de passer à AG-UI:
+
+- [ ] Composants conçus avec variations
+- [ ] Design tokens documentés
+- [ ] Palette de couleurs définie
+- [ ] Typographie hiérarchisée
+- [ ] Accessibilité vérifiée (contraste, focus, taille de cible)
+- [ ] Responsive design testé (mobile, tablet, desktop)
+- [ ] Micro-interactions spécifiées
+- [ ] Componentsokés dans Figma
+- [ ] Documentation fournie aux développeurs
+- [ ] Brand guidelines documentées
+
+## Agents associés
+
+- [`ui`](/agents/ui) - Implémente les conceptions
+- [`accessibility`](/agents/accessibility) - Vérifie la conformité WCAG
+- [`testing`](/agents/testing) - Teste les composants
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de design
+- `/agileflow:adr-new` - Documenter les décisions de design
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

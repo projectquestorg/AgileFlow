@@ -1,0 +1,341 @@
+---
+title: Produit
+description: Spécialiste produit pour l'analyse des exigences, les user stories, la clarté des critères d'acceptation et la validation des fonctionnalités avant la planification épique.
+---
+
+# Agent produit
+
+AG-PRODUCT se spécialise dans la transformation des vagues idées de fonctionnalités en exigences claires et actionnables. Il recueille les exigences des stakeholders, écrit les user stories avec les critères d'acceptation, et valide les fonctionnalités avant la planification épique.
+
+## Capacités
+
+- Interviewer les stakeholders et recueillir les exigences utilisant les techniques de questionnement éprouvées
+- Créer les personas d'utilisateur détaillés avec les objectifs et points de douleur
+- Écrire les user stories au format standard "As a... I want... so that..."
+- Définir les critères d'acceptation utilisant le format Given/When/Then
+- Identifier les cas limites et les scénarios d'erreur que les développeurs pourraient manquer
+- Définir les métriques de succès pour les fonctionnalités
+- Gérer la scope pour prévenir la dérive
+- Clarifier les exigences floues avant la handoff à la planification épique
+
+## Quand l'utiliser
+
+Utiliser cet agent quand:
+
+- **Vagues demandes de fonctionnalités**: "Ajouter les profils utilisateur" a besoin de clarté avant développement
+- **Démarrage d'une épique**: Recueillir et clarifier les exigences d'abord
+- **Fonctionnalités complexes**: Besoin d'analyse de cas limite et critères d'acceptation
+- **Interviews de stakeholder nécessaires**: Comprendre les besoins utilisateurs et valeur métier
+- **Débats de scope**: Déterminer ce qui est in/out pour cette version
+- **Écriture de user story**: Convertir les exigences en critères d'acceptation testables
+- **Validation de fonctionnalité**: Confirmer que la fonctionnalité résout le problème utilisateur réel
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "We need user profile management features"
+
+# AG-PRODUCT fera:
+# 1. Poser des questions de clarification
+# 2. Identifier les user personas
+# 3. Écrire les user stories avec AC
+# 4. Documenter la scope (in/out)
+# 5. Identifier les cas limite
+# 6. Valider les métriques de succès
+# 7. Handoff à AG-EPIC-PLANNER pour décomposition
+```
+
+## Étapes du workflow
+
+### Étape 1: Chargement du contexte
+
+Avant de commencer la collecte des exigences:
+- Lire CLAUDE.md pour la stratégie produit
+- Vérifier docs/10-research/ pour la recherche utilisateur
+- Vérifier docs/03-decisions/ pour les ADRs produit et précédents
+- Vérifier docs/08-project/roadmap.md pour le contexte
+
+### Étape 2: Interviews des stakeholders
+
+Poser les questions clés pour comprendre la fonctionnalité:
+
+1. **"Pourquoi avons-nous besoin de cette fonctionnalité?"** → Valeur métier et résultats
+2. **"Qui va l'utiliser?"** → Personas utilisateurs et rôles
+3. **"Quel problème cela résout?"** → Énoncé du problème
+4. **"Comment le succès sera mesuré?"** → Métriques de succès
+5. **"Quels sont les cas limite?"** → Scénarios d'erreur et conditions limites
+6. **"Y a-t-il des contraintes?"** → Contraintes techniques, légales ou métier
+7. **"Quelle est la priorité?"** → Must-have vs. nice-to-have
+
+### Étape 3: Écrire les user stories
+
+Créer les stories au format standard:
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+Exemple:
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account and manage my data.
+```
+
+### Étape 4: Définir les critères d'acceptation
+
+Écrire les critères testables utilisant le format Given/When/Then:
+
+```text
+Critères d'acceptation:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+```
+
+### Étape 5: Identifier les cas limite
+
+Toujours inclure les scénarios d'erreur:
+- Entrée invalide (champs vides, mauvais format)
+- Conditions limites (trop long, trop court, zéro, négatif)
+- Scénarios de conflit (email dupliqué, mises à jour simultanées)
+- Récupération d'erreur (que se passe-t-il si save échoue?)
+- Scénarios de permission (non authentifié, mauvais permissions)
+
+### Étape 6: Définir les métriques de succès
+
+Répondre: "Comment saurons-nous que cette fonctionnalité a réussi?"
+- Métriques d'adoption (# utilisateurs utilisant la fonctionnalité)
+- Métriques d'engagement (utilisateurs actifs quotidiens/hebdomadaires)
+- Métriques métier (impact sur les revenus, réduction de coûts)
+- Métriques de qualité (taux d'erreur, satisfaction utilisateur)
+
+### Étape 7: Documenter la scope
+
+Documenter clairement ce qui est inclus et exclu:
+
+```text
+Scope: Gestion du profil utilisateur
+
+IN SCOPE:
+- Afficher la page de profil
+- Éditer nom, email, avatar
+- Sauvegarder les modifications en BD
+
+OUT OF SCOPE (Fonctionnalités futures):
+- Système de followers/following
+- Timeline d'activité
+- Customisation de profil (bio, liens)
+
+Rationale: Garder l'MVP petit pour lancer plus rapidement.
+Activity history et système de following planifiés pour v2.
+```
+
+## Format de user story
+
+### Format standard
+
+```text
+As a [user role],
+I want [action/feature],
+so that [benefit/value].
+```
+
+### Avec section des exigences
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account.
+
+Requirements:
+1. User enters email and password
+2. System validates email format
+3. System checks password strength (min 8 chars, 1 uppercase, 1 number)
+4. System creates account and sends verification email
+5. User receives confirmation via email
+```
+
+### Avec critères d'acceptation complets
+
+```text
+As a new user,
+I want to sign up with email and password,
+so that I can access my account.
+
+Acceptance Criteria:
+
+- Given a new user with valid email and strong password
+  When they submit the signup form
+  Then their account is created and verification email sent
+
+- Given a user with an already-registered email
+  When they try to signup
+  Then they see error "Email already in use"
+
+- Given a user with weak password
+  When they try to signup
+  Then they see error "Password must be 8+ chars with uppercase and number"
+
+- Given a network error during signup
+  When the error occurs
+  Then user sees "Connection failed, please try again" and can retry
+```
+
+## Cadre de priorisation
+
+AG-PRODUCT utilise la **méthode MoSCoW** pour prioriser les exigences:
+
+| Priorité | Définition | Exemple |
+|----------|-----------|---------|
+| **Must Have** | Critique pour que la fonctionnalité marche | User peut voir son profil |
+| **Should Have** | Important mais peut être déféré | Profil montre time dernière connexion |
+| **Could Have** | Nice-to-have, faible priorité | Customisation profil (bio, liens) |
+| **Won't Have** | Hors scope pour cette version | Système de followers/following |
+
+## Normes de critères d'acceptation
+
+### Bon vs. Mauvais
+
+**Mauvais**: "User can login"
+- Vague, non testable
+
+**Bon**: "Given valid email/password, When form submitted, Then authentication succeeds and user redirected to dashboard"
+- Spécifique, testable, décrit le comportement
+
+**Mauvais**: "System should be fast"
+- Subjectif, pas de critères mesurables
+
+**Bon**: "Given authenticated user, When loading profile, Then page loads within 2 seconds"
+- Mesurable, testable
+
+**Mauvais**: "Error handling"
+- Trop vague, scénarios manquants
+
+**Bon**: "Given network error during save, When error occurs, Then user sees retry button and can resume work without losing data"
+- Scénario d'erreur spécifique avec chemin de récupération
+
+## Checklist de cas limite
+
+Toujours inclure ces types de scénarios:
+
+- **Entrée invalide**: Champs vides, mauvais format, caractères spéciaux
+- **Conditions limites**: Trop long, trop court, zéro, nombres négatifs
+- **Scénarios de conflit**: Entrées dupliquées, mises à jour simultanées, race conditions
+- **Récupération d'erreur**: Défaillances réseau, timeouts, erreurs BD
+- **Scénarios de permission**: Non authentifié, mauvaises permissions, tokens expirés
+
+## Coordination avec l'epicplanner
+
+**Avant que AG-EPIC-PLANNER ne commence**:
+- Exigences clarifiées et documentées
+- Critères d'acceptation écrits au format Given/When/Then
+- Métriques de succès définies
+- Cas limite identifiés
+- Scope clairement documenté avec rationale
+
+**Après que AG-EPIC-PLANNER décompose en stories**:
+- Vérifier que les critères d'acceptation correspondent aux exigences épiques
+- Assurer qu'aucune exigence n'a coulisse
+- Vérifier que chaque critère de story est clair et testable
+
+## Comportements clés
+
+- **JAMAIS accepte les AC vagues**: "user can login" n'est pas acceptable
+- **TOUJOURS inclut les cas limite et scénarios d'erreur**: Les utilisateurs les rencontreront
+- **TOUJOURS définit les métriques de succès**: Comment saurons-nous que nous avons réussi?
+- **TOUJOURS documente la scope clairement**: Prévenir la dérive
+- **TOUJOURS utilise le format Given/When/Then**: Pour les critères d'acceptation testables
+- Maintient le focus utilisateur: Pourquoi l'utilisateur a-t-il besoin de ça? Quel problème cela résout?
+
+## Outils disponibles
+
+Cet agent a accès à:
+- **Read**: Accéder aux fichiers d'expertise, recherche, ADRs, roadmap
+- **Write**: Créer les user stories et documents de requirements
+- **Edit**: Mettre à jour les stories et critères existants
+- **Bash**: Exécuter les scripts de vérification
+- **Glob**: Rechercher la documentation associée
+- **Grep**: Rechercher les modèles dans les requirements
+
+## Configuration du modèle
+
+- **Modèle**: Claude Haiku (rapide, cost-effective pour la collecte de requirements)
+
+## Agents associés
+
+- [`epic-planner`](/agents/epic-planner) - Décompose les exigences clarifiées en épiques
+- [`documentation`](/agents/documentation) - Transforme les stories en guides utilisateur
+
+## Erreurs courantes à éviter
+
+- Accepter les critères d'acceptation vagues ("user can login")
+- Sauter le "pourquoi" (bénéfices, valeur métier)
+- Verrouiller les exigences trop tôt sans entrée de stakeholder
+- Ignorer les cas limite et scénarios d'erreur
+- Accepter la dérive de scope sans discussion de trade-off
+- Oublier de définir les métriques de succès
+- Ne pas impliquer les vrais utilisateurs/stakeholders dans les interviews
+
+## Exemple: De vague à clair
+
+**Demande originale**: "Ajouter les profils utilisateur"
+
+**Après travail d'AG-PRODUCT**:
+
+```text
+Epic: Gestion du profil utilisateur
+
+User Stories:
+
+1. As a user, I want to view my profile with name, email, and avatar,
+   so that I can see my account information.
+
+   AC:
+   - Given authenticated user, When they navigate to profile page,
+     Then they see their name, email, and avatar
+   - Given user without avatar, When viewing profile,
+     Then a default avatar is displayed
+   - Given unauthenticated user, When accessing profile page,
+     Then they are redirected to login
+
+2. As a user, I want to edit my profile name and email,
+   so that I can keep my account information current.
+
+   AC:
+   - Given user on profile page, When they click edit,
+     Then they see editable form with current values pre-filled
+   - Given user with new email already in use, When saving,
+     Then they see error "Email already in use"
+   - Given user with valid changes, When they save,
+     Then changes are persisted and page shows success message
+
+Success Metrics:
+- 80% of active users view their profile within first week
+- 40% of users update their profile within first month
+- Profile edit success rate > 95%
+
+Scope:
+IN SCOPE: View, edit name/email/avatar
+OUT OF SCOPE: Activity history, profile followers, bio section
+```
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de requirements
+- `/agileflow:adr-new` - Documenter les décisions produit
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

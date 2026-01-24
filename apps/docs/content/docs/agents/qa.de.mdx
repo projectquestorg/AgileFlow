@@ -1,0 +1,266 @@
+---
+title: Qualitätssicherung
+description: QA-Spezialist für Teststrategie, Testplanung, Qualitätsmetriken, Regressionstests und Validierung der Release-Bereitschaft.
+---
+
+# QA-Agent
+
+Der QA-Agent (AG-QA) ist ein Qualitätssicherungsspezialist, der vor der Veröffentlichung sicherstellt, dass Funktionen den Qualitätsstandards entsprechen. Dieser Agent konzentriert sich auf Teststrategie, Regressionstests, Qualitätsmetriken und Release-Bereitschaft – und ergänzt den Testing Agent, der Testimplementierungen entwirft.
+
+## Fähigkeiten
+
+- **Test Strategy Development**: Erstellen Sie umfassende Testpläne mit Umfang, Abdeckungszielen und Erfolgskriterien
+- **Regression Testing**: Regressionstestsuiten für Releases planen und verwalten
+- **Quality Metrics**: KPIs definieren und verfolgen (Codeabdeckung, Bug-Escape-Rate, Fehlerdichte)
+- **Release Readiness**: Erstellen und validieren Sie Freigabechecklisten und Freigabeverfahren
+- **Test Case Management**: Manuelle Testfälle organisieren und verwalten
+- **Bug Triage**: Bewerten Sie den Schweregrad und priorisieren Sie die Problemlösung
+- **UAT Planning**: Koordinieren Sie Benutzerakzeptanztests mit Stakeholdern
+- **Quality Gates**: Definieren Sie automatisierte Qualitätskontrollpunkte in der CI/CD-Pipeline
+
+## Wann zu verwenden
+
+Verwenden Sie den QA-Agent, wenn:
+
+- Planen Sie eine neue Veröffentlichung und benötigen Sie Qualitätskriterien
+- Es muss eine Teststrategie mit Abdeckungszielen definiert werden
+- Erstellen von Testfällen für kritische Benutzerworkflows
+- Einrichten von Regressionstests für Releases
+- Fehler selektieren und Schweregrad beurteilen
+- Planung von Benutzerakzeptanztests (UAT)
+- Es müssen Qualitätstore und Ausstiegskriterien festgelegt werden
+- Erstellen von Checklisten für die Release-Bereitschaft
+
+## Wie es funktioniert
+
+1. **Knowledge Loading**: Agent liest Fachwissen und Projektqualitätsstandards
+2. **Feature Analysis**: Agent überprüft die Geschichte für Testanforderungen
+3. **Test Strategy**: Der Agent entwirft einen Testplan mit Umfang und Abdeckungszielen
+4. **Test Planning**: Agent erstellt Testfälle und Regressionsumfang
+5. **Quality Gates**: Der Agent definiert Qualitätsmetriken und Schwellenwerte
+6. **Release Readiness**: Agent erstellt Freigabeverfahren und Checklisten
+7. **Coordination**: Agent stimmt mit Test- und Entwicklungsteams überein
+8. **Verification**: Der Agent stellt sicher, dass die Qualitätskriterien erfüllt werden
+9. **Documentation**: Agent aktualisiert status.json und Qualitätsberichte
+
+## Beispiel
+
+```bash
+# Via babysit - define release quality criteria
+/agileflow:babysit
+> "We're preparing v2.1.0 for release. What's our release readiness?"
+
+# Agent output:
+# Release Readiness Assessment:
+# - Code coverage: 82% (target: 80%) ✅
+# - All automated tests passing: 523/523 ✅
+# - Critical bugs: 0 ✅
+# - Regression test scope: 15 core workflows
+# - UAT sign-off: Pending
+# - Performance baseline: Verified
+# - Security review: In progress
+#
+# Release Recommendation: READY WITH CONDITIONS
+# - Security review must complete before release
+# - UAT sign-off required from product team
+```
+
+## Schlüsselverhalten
+
+- **Quality First**: Niemals veröffentlichen, ohne Qualitätskriterien zu erfüllen
+- **Test Early**: Tests finden während der gesamten Entwicklung statt, nicht nur am Ende
+- **Risk-Based**: Gebiete mit höherem Risiko erhalten mehr Testaufmerksamkeit
+- **Metrics-Driven**: Qualitätsentscheidungen auf der Grundlage von Daten und KPIs
+- **Clear Criteria**: Freigabekriterien dokumentiert und messbar
+- **Regression Focused**: Automatisierte Regressionstests verhindern bekannte Fehler
+- **User Sign-Off**: UAT validiert Benutzererwartungen vor der Veröffentlichung
+
+## Verfügbare Werkzeuge
+
+- Lesen, Schreiben, Bearbeiten (Dateioperationen)
+- Bash (Qualitätsberichte ausführen)
+- Glob (Testartefakte finden)
+- Grep (Qualitätsdaten analysieren)
+
+## Qualitätsmetrik-Framework
+
+**Coverage Metrics**:
+- Codeabdeckung: >80 % Einheit, >60 % Integration, >30 % E2E
+- Funktionsabdeckung: % der getesteten Funktionen
+- Anforderungsabdeckung: % der getesteten Anforderungen
+
+**Bug Metrics**:
+- Gefundene Fehler: Gesamtzahl
+- Fehlerfluchtrate: % der in der Produktion gefundenen Fehler im Vergleich zum Testen (Ziel: unter 2 %)
+- Fehlerdichte: Fehler pro 1000 Zeilen Code (Ziel: unter 2,5)
+
+**Quality KPIs**:
+- Testerfolgsquote: >95 %
+- Mittlere Fehlerbehebungszeit: Durchschnittliche Zeit vom Bericht bis zur Lösung
+- Regressionsrate: % der Regressionen in Veröffentlichungen
+
+## Checkliste zur Release-Bereitschaft
+
+**Must Have Before Release**:
+- [ ] Codeüberprüfung abgeschlossen (100 % Abdeckung)
+- [ ] Alle automatisierten Tests bestanden
+- [ ] Kritische Fehler behoben
+- [ ] Leistungsbasiswert erreicht
+- [ ] Barrierefreiheit überprüft (WCAG AA)
+- [ ] Sicherheitsüberprüfung bestanden
+- [ ] Dokumentation aktualisiert
+- [ ] UAT-Genehmigung erhalten
+
+**Should Have Before Release**:
+- [ ] Fehler mit hoher Priorität behoben
+- [ ] Leistungsoptimiert
+- [ ] Lasttest abgeschlossen
+- [ ] Überwachung eingerichtet
+
+**Nice to Have Before Release**:
+- [ ] Fehler mittlerer Priorität behoben
+- [ ] Leistungsbenchmarks veröffentlicht
+- [ ] Benutzerkommunikation erstellt
+
+## Fehlerschweregrade
+
+| Severity | Description | Example | Priority |
+|----------|-------------|---------|----------|
+| Critical | Feature unusable, data loss, security breach | Users cannot log in | Fix immediately |
+| High | Feature significantly impaired | Payment fails 50% of time | Fix ASAP |
+| Medium | Feature works with limitations | Email delayed 2 hours | Schedule near future |
+| Low | Minor issue, easy workaround | Button text misaligned | Backlog |
+
+## Testfallmanagement
+
+**Test Case Template**:
+```text
+Test Case ID: TC-001
+Title: User can log in with valid credentials
+Feature: Authentication
+
+Preconditions:
+- User has registered account
+- Login page accessible
+
+Test Steps:
+1. Navigate to login page
+2. Enter email address
+3. Enter password
+4. Click "Sign In"
+
+Expected Result:
+- Dashboard loads in <2 seconds
+- User data displayed correctly
+- Welcome message shown
+
+Status: ☐ Pass ☐ Fail ☐ Blocked
+```
+
+## Regressionsteststrategie
+
+**What to Regress Test**:
+- Kernbenutzer-Workflows (Anmeldung, Registrierung, wichtige Funktionen)
+- Geänderte Funktionen (von dieser Version betroffen)
+- Verwandte Funktionen (Abhängigkeiten)
+- Kritische Pfade (Funktionen mit hoher Nutzung)
+- Leistungssensible Bereiche
+- Sicherheitsrelevante Funktionen
+
+**Regression Scope Example**:
+```text
+Feature: User Login
+├── Happy path: Valid credentials
+├── Invalid credentials: Wrong password
+├── Inactive account: Suspended user
+├── Password reset flow
+├── Login rate limiting
+├── Session management
+└── Related features:
+    ├── Signup (account creation)
+    ├── Password change
+    └── Session timeout
+```
+
+## Benutzerakzeptanztests (UAT)
+
+**UAT Preparation**:
+- Identifizieren Sie Stakeholder und Benutzer
+- Erstellen Sie Testszenarien aus User Stories
+- Bereiten Sie eine produktionsähnliche Testumgebung vor
+- Bereiten Sie realistische Testdaten vor
+- Planen Sie UAT-Sitzungen
+
+**UAT Sign-Off**:
+```text
+UAT Sign-Off Form
+
+Project: [Project Name]
+Version: [Version]
+Date: [Date]
+
+Tested By: [Name, Title]
+Approved By: [Name, Title]
+
+Overall Result: ☐ Approved ☐ With Conditions ☐ Rejected
+
+Issues Found: [List]
+
+Signature: ________________
+```
+
+## Qualitätstore
+
+**Code Quality Gate** (vor der Zusammenführung):
+- Codeüberprüfung genehmigt
+- Flusen bestanden
+- Typprüfung bestanden
+- Unit-Tests bestanden (>80 % Abdeckung)
+- Keine Sicherheitslücken
+
+**Integration Quality Gate** (vor der Inszenierung):
+- Integrationstests bestanden
+- E2E-Tests bestanden
+- Leistung innerhalb der Grundlinie
+- Datenbankmigrationen validiert
+- API-Verträge validiert
+
+**Release Quality Gate** (vor der Produktion):
+- Regressionstest bestanden
+- UAT-Genehmigung erhalten
+- Kritische Fehler behoben
+- Leistungsbenchmarks erfüllt
+- Sicherheitsüberprüfung genehmigt
+
+## Related Agents
+
+- [„Testen“.](/agents/testing) - Testimplementierung und Abdeckungsoptimierung
+- [„ci“.](/agents/ci) - CI/CD-Pipeline und Testinfrastruktur
+- [„api“.](/agents/api) - API-Tests und Vertragsvalidierung
+- [„Sicherheit“.](/agents/security) - Sicherheitstests und Compliance
+- [„Barrierefreiheit“.](/agents/accessibility) - Barrierefreiheitsprüfung und WCAG-Konformität
+
+## Koordinierung
+
+Der QA-Agent koordiniert mit:
+
+- **AG-TESTING**: Ausrichtung auf Abdeckungsziele und Teststrategien
+- **AG-SECURITY**: Gewährleistung von Sicherheitstests in Quality Gates
+- **AG-ACCESSIBILITY**: Überprüfen Sie die Einhaltung der Barrierefreiheit
+- **AG-API**: API-Vertragsänderungen testen
+- **Product Team**: UAT und Benutzerabmeldung koordinieren
+
+## Slash-Befehle
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Best Practices für die Qualitätssicherung
+- `/agileflow:ai-code-review` - Überprüfen Sie die Vollständigkeit der Teststrategie
+- `/agileflow:adr-new` - QA-Entscheidungen dokumentieren
+- `/agileflow:status STORY=... STATUS=...` - Aktualisieren Sie den Story-Status
+
+## Qualitätsgrundsätze
+
+- **Quality is not negotiable**: Veröffentlichen Sie niemals unterhalb der Qualitätsstandards
+- **Measure everything**: Qualitätsentscheidungen, die durch Metriken und Daten gestützt werden
+- **Test early**: Tests nach links in die Entwicklung verschieben
+- **Risk-based approach**: Hochrisikobereiche gründlicher testen
+- **Continuous improvement**: Verfolgen Sie Kennzahlen und verbessern Sie sie im Laufe der Zeit

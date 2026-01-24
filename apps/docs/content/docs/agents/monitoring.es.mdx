@@ -1,0 +1,234 @@
+---
+title: Escucha
+description: Especialista en monitoreo de observabilidad, estrategias de registro, reglas de alerta, paneles de métricas, SLO y visibilidad de producción.
+---
+
+# MONITOREO AG
+
+El especialista en monitoreo y observabilidad diseña e implementa soluciones integrales de observabilidad. AG-MONITORING garantiza que los sistemas de producción sean visibles, estén en buen estado y estén listos para responder a incidentes.
+
+## Capacidades
+
+- **Structured Logging**: formato JSON, ID de solicitud/rastreo, niveles de registro apropiados
+- **Metrics Collection**: Aplicación, infraestructura y métricas comerciales
+- **Dashboard Creation**: Paneles de control de Grafana, Datadog y CloudWatch
+- **Alerting Rules**: Alertas basadas en umbrales, basadas en anomalías y compuestas
+- **SLO Definition**: Disponibilidad, latencia, objetivos de tasa de error con presupuestos de error
+- **Distributed Tracing**: Solicitar seguimiento de flujo a través del sistema
+- **Health Checks**: Supervisión del estado de los terminales y comprobaciones de dependencia
+- **Incident Response Runbooks**: Procedimientos de detección, diagnóstico y resolución.
+- **Performance Analysis**: Desglose de latencia y patrones de uso de recursos
+
+## Cuando usar
+
+Utilice AG-MONITORING cuando necesite:
+
+- Diseñar una arquitectura de observabilidad para un servicio.
+- Implement structured logging
+- Configurar la recopilación de métricas y los paneles
+- Configurar reglas de alerta y enrutamiento de notificaciones
+- Definir SLO y presupuestos de errores
+- Crear runbooks de respuesta a incidentes
+- Supervisar el estado de las aplicaciones en producción
+- Analizar patrones de rendimiento y latencia
+
+## Cómo funciona
+
+1. **Context Loading**: El agente lee el archivo de experiencia y examina la configuración de monitoreo actual
+2. **Design**: Planes de arquitectura de observabilidad (qué registrar, qué medir, qué alertar)
+3. **Implementation**: configura registros, métricas, paneles y alertas
+4. **Verification**: Prueba controles de estado y alertas en preparación
+5. **Documentation**: Crea runbooks de incidentes y documentación de SLO
+6. **Coordination**: Se comunica a través del bus del agente sobre el estado de monitoreo
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Set up monitoring and alerting for the new API service"
+
+# Or directly invoke
+/agileflow:observability-setup
+
+# AG-MONITORING will:
+# 1. Design logging and metrics strategy
+# 2. Set up structured JSON logging
+# 3. Configure Prometheus/Grafana for metrics
+# 4. Create dashboards
+# 5. Configure alerting rules
+# 6. Create incident runbooks
+```
+
+## Comportamientos clave
+
+- **Structured logging enforced** - No hay registros de texto sin formato no estructurados en producción.
+- **Alert on what matters** - Reducir el ruido con umbrales inteligentes
+- **Prepare for failures** - Crear runbooks antes de que ocurran incidentes
+- **Never log PII** - Seguridad y cumplimiento primero (sin contraseñas, tokens, PII)
+- **Monitor the happy path AND errors** - Alerta tanto sobre umbrales de éxito como de fracasos.
+- **SLOs drive decisions** - Los presupuestos erróneos determinan cuándo frenar y arreglar la deuda
+
+## Pilares de observabilidad
+
+AG-MONITORING implementa los cuatro pilares de observabilidad:
+
+### Métricas (cuantitativas)
+- Tiempo de respuesta (latencia)
+- Rendimiento (solicitudes/segundo)
+- Tasa de error (% de fallos)
+- Uso de recursos (CPU, memoria, disco)
+- Métricas comerciales (inscripciones, transacciones)
+
+### Registros (eventos detallados)
+- Registros de aplicaciones (errores, advertencias, información)
+- Registros de acceso (solicitudes HTTP)
+- Registros de auditoría (quién hizo qué)
+- Formato estructurado (JSON, fácilmente buscable)
+
+### Seguimientos (flujo de solicitudes)
+- Seguimiento distribuido a través del sistema.
+- Desglose de latencia (donde se gasta el tiempo)
+- Seguimientos de errores y seguimientos de pila
+- Dependencias del servicio
+
+### Alertas (notificación proactiva)
+- Basado en umbrales (métrica > límite)
+- Basado en anomalías (patrones inusuales)
+- Compuesto (múltiples condiciones)
+- Enrutamiento inteligente (a quién notificar)
+
+## Herramientas disponibles
+
+Este agente tiene acceso a:
+
+- **Read**: Acceda al código de la aplicación y a los patrones de registro
+- **Write**: Crear utilidades de registro y configuraciones de monitoreo
+- **Edit**: Actualizar paneles y reglas de alertas
+- **Bash**: Ejecutar comandos de configuración de monitoreo
+- **Glob**: Encuentra patrones de registro en el código base
+- **Grep**: Buscar código relacionado con el monitoreo
+
+## Responsabilidades principales
+
+1. Diseño de arquitectura de observabilidad.
+2. Implementar registro estructurado
+3. Configurar la colección de métricas
+4. Crear reglas de alerta
+5. Crear paneles de control
+6. Definir SLO y presupuestos de errores
+7. Crear runbooks de respuesta a incidentes
+8. Supervisar el estado de la aplicación
+9. Coordinar con AG-DEVOPS en monitoreo de infraestructura
+10. Mantener la documentación de observabilidad.
+
+## Estándares de calidad
+
+Antes de marcar la finalización del trabajo, AG-MONITORING garantiza:
+
+- Registro estructurado implementado con ID de solicitud/rastreo
+- Todas las métricas críticas recopiladas y paneles
+- Paneles creados y realmente útiles
+- Reglas de alerta configuradas con umbrales adecuados
+- SLO definidos con presupuestos de error calculados
+- Runbooks de incidentes creados para escenarios de fallas comunes
+- El punto final de verificación de estado funciona y responde correctamente
+- Política de retención de registros definida y aplicada
+- Sin PII/contraseñas/tokens en los registros
+- Enrutamiento de alertas probado y funcionando
+
+## Niveles de registro
+
+AG-MONITORING utiliza estos niveles de registro:
+
+- **ERROR**: Servicio no disponible, pérdida de datos, fallas críticas
+- **WARN**: Comportamiento degradado, condiciones inesperadas, escenarios de reintento
+- **INFO**: cambios de estado importantes, implementaciones y cambios en indicadores de funciones
+- **DEBUG**: Información de diagnóstico detallada (solo desarrollo, no producción)
+
+## Definición de SLO
+
+Ejemplos de objetivos de SLO:
+
+- **Availability**: 99,9% de tiempo de actividad (8,7 horas de inactividad/año)
+- **Latency**: 95% de las solicitudes por debajo de 200 ms
+- **Error Rate**: menos del 0,1% de solicitudes fallidas
+
+Los presupuestos de errores determinan la velocidad de implementación: cuando se agota el presupuesto, céntrese en la estabilidad.
+
+## Agentes Relacionados
+
+- [`AG-DEVOPS`](/agents/devops) - Coordinar el monitoreo de infraestructura.
+- [`AG-API`](/agents/api) - Supervisar la latencia de los terminales y las tasas de error
+- [`AG-BASE DE DATOS`](/agents/database) - Monitorear la latencia de consultas y el grupo de conexiones.
+- [`AG-RENDIMIENTO`](/agents/performance) - Colaborar en el seguimiento del desempeño.
+
+## Comandos de barra diagonal
+
+AG-MONITORING puede invocar directamente estos comandos:
+
+- `/agileflow:research:ask TOPIC=...` - Mejores prácticas de observabilidad de la investigación.
+- `/agileflow:ai-code-review` - Revisar el código de monitoreo para conocer las mejores prácticas.
+- `/agileflow:adr-new` - Documentar las decisiones de seguimiento y observabilidad.
+- `/agileflow:status STORY=... STATUS=...` - Actualizar el estado de la historia de seguimiento
+
+## Punto final de verificación de estado
+
+AG-MONITORING implementa controles de salud como este:
+
+```javascript
+app.get('/health', async (req, res) => {
+  const database = await checkDatabase();
+  const cache = await checkCache();
+  const external = await checkExternalService();
+
+  const healthy = database && cache && external;
+  const status = healthy ? 200 : 503;
+
+  res.status(status).json({
+    status: healthy ? 'healthy' : 'degraded',
+    timestamp: new Date(),
+    checks: { database, cache, external }
+  });
+});
+```
+
+Devuelve 200 si está en buen estado, 503 si alguna dependencia está inactiva.
+
+## Formato del Runbook de incidentes
+
+AG-MONITORING crea runbooks como este:
+
+```markdown
+## [Incident Type]
+
+**Detection**:
+- Alert: [which alert fires]
+- Symptoms: [what users see]
+
+**Diagnosis**:
+1. Check [metric 1]
+2. Check [metric 2]
+3. Verify [dependency]
+
+**Resolution**:
+1. [First step]
+2. [Second step]
+3. [Verification]
+
+**Post-Incident**:
+- Incident report
+- Root cause analysis
+- Preventive actions
+```
+
+## Protocolo de verificación
+
+AG-MONITORING sigue el sistema Session Harness para evitar interrumpir la funcionalidad:
+
+1. **Pre-Implementation**: Comprueba el estado y el entorno del monitoreo de referencia
+2. **During Work**: Prueba controles de estado y alertas en tiempo real
+3. **Post-Implementation**: Verifica que el monitoreo esté recopilando datos antes de marcar como completo
+4. **Story Completion**: SÓLO se puede marcar "en revisión" si el monitoreo está operativo
+
+Ver el [Protocolo de arnés de sesión](/agents/session-harness) para detalles completos.

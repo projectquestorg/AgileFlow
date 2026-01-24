@@ -1,0 +1,280 @@
+---
+title: Performance
+description: Spécialiste en performance pour l'optimisation, le profiling, les benchmarks, la scalabilité et les fonctionnalités critiques de performance.
+---
+
+# Agent performance
+
+AG-PERFORMANCE est un spécialiste en optimisation de performance qui identifie les goulots d'étranglement, optimise les chemins critiques et assure que les applications respectent les objectifs de performance. Cet agent se concentre sur l'optimisation axée sur la mesure, pas sur les suppositions prématurées.
+
+## Capacités
+
+- **Profiling de performance**: Identifier les vrais goulots d'étranglement avec les outils
+- **Création de benchmarks**: Mesurer la performance avant et après les optimisations
+- **Optimisation BD**: Éliminer les requêtes N+1, ajouter des index, optimiser les requêtes
+- **Stratégies de mise en cache**: Implémenter in-memory, Redis, CDN, HTTP caching
+- **Optimisation frontend**: Réduction taille bundle, code splitting, lazy loading
+- **Optimisation API**: Réduire les temps de réponse, éliminer les opérations coûteuses
+- **Test de charge**: Tester les limites de scalabilité et trouver les points de rupture
+- **Monitoring de performance**: Configurer les alertes pour les régressions de performance
+- **Analyse de scalabilité**: Comprendre comment le système se met à l'échelle avec la charge
+- **Documentation**: Créer les ADRs pour les compromis de performance
+
+## Quand l'utiliser
+
+Utiliser AG-PERFORMANCE quand:
+
+- Les temps de réponse sont lents et nécessitent optimisation
+- Les requêtes BD sont lentes ou il y a des problèmes N+1
+- La taille du bundle frontend est grande
+- Besoin de tester les limites de scalabilité
+- L'utilisation mémoire est élevée ou augmente
+- Les endpoints API dépassent les objectifs de performance
+- Besoin d'implémenter les stratégies de mise en cache
+- Établir les baselines de performance
+- Créer monitoring et alertes de performance
+- Besoin de documenter les décisions de performance
+
+## Exemple
+
+```bash
+# Via babysit - optimiser l'endpoint API lent
+/agileflow:babysit
+> "The user list API endpoint takes 5 seconds. Needs to be <200ms."
+
+# Sortie de l'agent:
+# Performance Analysis: GET /api/users
+#
+# Performance actuelle: 5.2 secondes
+# Objectif de performance: <200ms
+#
+# Résultats du profiling:
+# ├── Requête BD: 4.8s (92% du temps)
+# │   └── Problème N+1: Fetch des détails utilisateur en boucle
+# ├── Sérialisation JSON: 0.3s (6%)
+# └── Overhead réseau: 0.1s (2%)
+#
+# Stratégie d'optimisation:
+# 1. Corriger N+1: Utiliser JOIN au lieu de boucle (estimation: 4.8s → 0.2s)
+# 2. Ajouter l'index BD sur users.created_at
+# 3. Implémenter la mise en cache avec TTL 5 minutes
+#
+# Résultat estimé: <200ms après optimisations
+# Correction: Tous les tests resteront passants
+# Compromis: Léger overhead mémoire pour la mise en cache
+#
+# Statut: Prêt pour l'implémentation
+```
+
+## Comportements clés
+
+- **Mesure d'abord**: Profiler le code pour trouver les vrais goulots (ne pas supposer)
+- **Benchmark avant/après**: Toujours mesurer l'amélioration
+- **Pas d'optimisation prématurée**: Ne pas optimiser le code rarement utilisé
+- **Correction d'abord**: Ne jamais sacrifier la correction pour la performance
+- **Document les compromis**: Enregistrer pourquoi les décisions ont été prises
+- **Vérifier sous charge**: Tester la performance sous une charge réaliste
+
+## Outils disponibles
+
+- Read, Write, Edit (opérations sur les fichiers)
+- Bash (exécuter profiling/test de charge)
+- Glob (trouver le code lent)
+- Grep (rechercher les problèmes de performance)
+
+## Métriques de performance
+
+**Métriques clés**:
+- **Temps de réponse (Latence)**: Combien de temps prend l'opération?
+- **Débit**: Combien d'opérations par seconde?
+- **Utilisation des ressources**: CPU, mémoire, disque, réseau
+- **Scalabilité**: Comment la performance se met à l'échelle avec la charge?
+
+**Objectifs de performance** (ajuster par contexte):
+- Endpoints API: < 200ms moyen, < 500ms p95
+- Chargement de page frontend: < 2s first paint, < 5s full load
+- Requêtes BD: < 10ms moyen, < 100ms p95
+- Mémoire: Stable, sans fuites, croissance prévisible
+
+## Outils de profiling
+
+**JavaScript/Node.js**:
+- Chrome DevTools: Profileur de performance intégré
+- Node.js profiler: `node --prof`
+- clinic.js: Outil de profiling professionnel
+- autocannon: Test de charge HTTP
+- Flame graphs: Visualiser le temps dépensé
+
+**Python**:
+- cProfile: Profiling CPU
+- memory_profiler: Analyse d'utilisation mémoire
+- py-spy: Profileur de sampling statistique
+
+**Base de données**:
+- EXPLAIN ANALYZE: Plan et temps d'exécution de la requête
+- Slow query log: Capturer les requêtes > seuil
+- Monitoring: Suivi nombre requête, temps, utilisation ressources
+
+**Frontend**:
+- Chrome DevTools: Onglets Performance, Network
+- Lighthouse: Audit de performance
+- Web Vitals: Métriques core (LCP, FID, CLS)
+
+## Goulots d'étranglement courants & solutions
+
+| Goulot | Cause | Solution |
+|--------|-------|----------|
+| BD | Requêtes N+1, index manquants, non optimisées | Utiliser JOIN, ajouter index, dénormaliser |
+| Réponse API | Endpoints lents, appels externes | Mise en cache, optimiser requêtes, paralléliser |
+| Rendering frontend | Reflows, repaints, gros bundles | Code splitting, lazy loading, compression |
+| Mémoire | Fuites mémoire, structures données grandes | Corriger les fuites, paginer les gros datasets |
+| CPU | Algorithmes coûteux, travail inutile | Optimisation algorithme, parallélisation |
+
+## Techniques d'optimisation
+
+**Optimisation BD**:
+```sql
+-- Mauvais: Problème N+1 (1 pour utilisateurs, N pour détails)
+SELECT * FROM users;
+for each user:
+  SELECT * FROM user_details WHERE user_id = user.id;
+
+-- Bon: Single JOIN query
+SELECT u.*, ud.* FROM users u
+JOIN user_details ud ON u.id = ud.user_id;
+```
+
+**Stratégies de mise en cache**:
+- **Cache in-memory**: Rapide mais taille limitée (Redis)
+- **Cache CDN**: Assets statiques aux emplacements edge
+- **Cache HTTP**: Cache navigateur avec ETag, Last-Modified
+- **Cache BD**: Résultats requête cached
+
+**Optimisation frontend**:
+```javascript
+// Code splitting: Charger uniquement le code nécessaire
+import { lazy, Suspense } from 'react';
+const HeavyComponent = lazy(() => import('./HeavyComponent'));
+
+// Lazy loading: Charger les images à la demande
+<img loading="lazy" src="image.jpg" alt="...">
+
+// Tree shaking: Supprimer le code inutilisé
+import { usedFunction } from 'library'; // Seul usedFunction inclus
+```
+
+## Test de charge
+
+**Scénarios de test de charge**:
+- **Ramp up**: Augmenter progressivement la charge pour trouver le point de rupture
+- **Sustained**: Charge constante dans le temps
+- **Spike**: Augmentation soudaine de charge
+- **Soak test**: Charge sustained pendant une période longue
+
+**Métriques à capturer**:
+- Distribution temps de réponse (avg, p50, p95, p99)
+- Débit (requêtes/seconde)
+- Taux d'erreur (% requêtes échouées)
+- Utilisation ressources (CPU, mémoire, réseau)
+
+## Analyse de scalabilité
+
+Tester le système sous charge croissante:
+
+```text
+Résultats test de charge:
+├── 10 utilisateurs: 150ms avg, 0% erreurs ✅
+├── 100 utilisateurs: 180ms avg, 0% erreurs ✅
+├── 1000 utilisateurs: 500ms avg, 2% erreurs ⚠️
+├── 5000 utilisateurs: 5s avg, 15% erreurs ❌
+│
+└── Goulot: BD ne peut pas gérer 5000 connexions concurrentes
+    Solution: Connection pooling, read replicas, mise en cache
+```
+
+## Intégration du Session Harness
+
+AG-PERFORMANCE intègre le Session Harness:
+
+```text
+Pré-implémentation:
+├── Performance baseline mesurée
+├── Goulot identifié avec données
+└── Plan d'optimisation examiné
+
+Post-implémentation:
+├── Exécuter /agileflow:verify (tests passent)
+├── Benchmark amélioration (respecte l'objectif)
+└── Vérifier la correction (tests toujours passants)
+```
+
+## Liste de contrôle de qualité
+
+Avant de marquer le travail complet:
+
+- [ ] Performance actuelle mesurée et documentée
+- [ ] Goulot identifié avec données de profiling
+- [ ] Racine cause comprise
+- [ ] Stratégie d'optimisation documentée
+- [ ] Mesures avant/après prises
+- [ ] Amélioration respecte l'objectif de performance
+- [ ] Correction vérifiée (tests toujours passants)
+- [ ] Compromis documentés
+- [ ] Monitoring/alertes en place
+- [ ] Métriques de performance ajoutées à la documentation
+
+## Mode plan (Requis pour optimisation)
+
+L'optimisation de performance nécessite la planification axée sur la mesure:
+
+| Situation | Action |
+|-----------|--------|
+| "Make it faster" (vague) | → EnterPlanMode: Profiler d'abord! |
+| Opération lente connue | → EnterPlanMode: Concevoir l'optimisation |
+| Mise en cache nécessaire | → EnterPlanMode: Planifier l'invalidation |
+| Optimisation requête | → EnterPlanMode: Mesurer avant/après |
+| Problème taille bundle | → EnterPlanMode: Analyser les dépendances |
+
+**Workflow du mode plan**:
+1. Profiler la performance actuelle
+2. Identifier le vrai goulot
+3. Concevoir l'optimisation avec benchmarks
+4. Planifier la stratégie de vérification
+5. Obtenir l'approbation
+6. Implémenter, mesurer, vérifier
+
+## Agents associés
+
+- [`database`](/agents/database) - Optimisation requête et index
+- [`api`](/agents/api) - Optimisation temps de réponse endpoint
+- [`ui`](/agents/ui) - Optimisation performance frontend et code splitting
+- [`devops`](/agents/devops) - Performance infrastructure, scaling
+- [`testing`](/agents/testing) - Automatisation tests de performance
+
+## Coordination
+
+AG-PERFORMANCE coordonne avec:
+
+- **AG-DATABASE**: Identifier les requêtes lentes, réviser les index
+- **AG-API**: Profiler la performance endpoint
+- **AG-UI**: Analyser les goulots frontend
+- **AG-DEVOPS**: Demander monitoring, coordonner scaling
+- **Équipe Monitoring**: Configurer les alertes de performance
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher techniques d'optimisation
+- `/agileflow:ai-code-review` - Examiner pour problèmes de performance
+- `/agileflow:adr-new` - Documenter les décisions de performance
+- `/agileflow:tech-debt` - Documenter la dette de performance
+- `/agileflow:impact-analysis` - Analyser l'impact de performance
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Principes de performance
+
+- **Mesure, pas suppositions**: Le profiling révèle les vrais goulots
+- **L'optimisation prématurée est mauvaise**: Optimiser où ça compte
+- **Cible 80/20**: Corriger les problèmes affectant 80% de l'impact
+- **Optimiser le pire d'abord**: Résoudre le plus gros goulot d'abord
+- **Vérifier sous charge**: Tester en conditions réalistes
+- **Monitorer toujours**: Configurer les alertes pour les régressions

@@ -1,0 +1,270 @@
+---
+title: Consulta de Base de Código
+description: Búsqueda inteligente de base de código usando consultas programáticas en lugar de RAG. Traduce lenguaje natural a consultas estructuradas para exploración de código rápida y específica.
+---
+
+# Agente de Consulta de Base de Código
+
+El Agente de Consulta de Base de Código es tu especialista en exploración rápida y específica de la base de código usando búsqueda programática (patrón RLM). Este agente traduce preguntas en lenguaje natural a consultas estructuradas, habilitando descubrimiento de código eficiente sin cargar archivos completos en contexto.
+
+## Capacidades
+
+- **Traducción de Lenguaje Natural**: Convertir preguntas como "¿dónde se maneja la auth?" en consultas estructuradas
+- **Búsqueda de Patrones de Archivo**: Encontrar archivos por patrones glob y convenciones de nombres
+- **Búsqueda de Contenido**: Búsquedas estilo Grep para patrones de código, nombres de función y texto
+- **Búsqueda Basada en Etiquetas**: Encontrar archivos por etiquetas semánticas (api, ui, auth, database, test)
+- **Descubrimiento de Exportaciones**: Localizar dónde se exportan y usan símbolos
+- **Mapeo de Dependencias**: Mostrar qué archivos importan/son importados por un archivo dado
+- **Gestión de Presupuesto de Token**: Respetar límites de contexto truncando resultados grandes
+
+## Cuándo Usar
+
+Utiliza este agente cuando necesites:
+
+- Encontrar archivos relacionados con una característica (autenticación, API, base de datos, etc.)
+- Localizar definiciones de función o exportaciones
+- Descubrir dependencias de archivo y cadenas de importación
+- Buscar contenido de código sin leer archivos completos
+- Explorar una base de código desconocida rápidamente
+- Construir contexto para implementar una característica
+
+## Cómo Funciona
+
+### Traducción de Consulta
+
+El agente traduce lenguaje natural a consultas estructuradas:
+
+| Usuario Dice | Tipo de Consulta | Traducción |
+|-----------|------------|-------------|
+| "¿Dónde se maneja la autenticación?" | tag + query | `--tag="auth"` + `--query="auth"` |
+| "¿Qué archivos usan la función login?" | export | `--export="login"` |
+| "Encuentra archivos con manejo de errores" | content | `--content="try.*catch"` |
+| "Muéstrame rutas API" | tag | `--tag="api"` |
+| "¿En qué depende user.ts?" | deps | `--deps="src/user.ts"` |
+| "Archivos de esquema de base de datos" | tag + query | `--tag="database"` + `--query="schema"` |
+| "Componentes React usando hooks" | content | `--content="use(State\|Effect\|Ref)"` |
+| "Todos los archivos de prueba" | tag | `--tag="test"` |
+
+### Etiquetas Disponibles
+
+| Etiqueta | Coincide |
+|-----|---------|
+| api | `/api/`, `/routes/`, `/controllers/` |
+| ui | `/components/`, `/views/`, `/pages/` |
+| auth | `/auth/`, `/login/`, `/jwt/` |
+| database | `/db/`, `/models/`, `/migrations/` |
+| test | `/test/`, `/__tests__/`, `/spec/` |
+| config | `/config/`, `/settings/` |
+| lib | `/lib/`, `/utils/`, `/helpers/` |
+
+### Flujo de Trabajo
+
+1. **Analizar Consulta**: Entender qué está buscando el usuario
+2. **Traducir**: Convertir lenguaje natural a tipos de consulta estructurados
+3. **Verificar Índice**: Asegurar que el índice de base de código esté disponible (compilar si es necesario)
+4. **Ejecutar Consulta**: Ejecutar consulta con banderas apropiadas
+5. **Formatear Resultados**: Devolver rutas de archivo con contexto
+6. **Truncar si es Necesario**: Respetar límites de presupuesto de token
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Where is authentication handled in this codebase?"
+```
+
+El Agente de Consulta de Base de Código haría:
+1. Traducir a: `--tag="auth"` + `--query="auth"`
+2. Verificar/compilar índice
+3. Buscar archivos que coincidan con patrones de auth
+4. Devolver resultados estructurados:
+```
+Query: "authentication files"
+Translation: --tag="auth" + --query="auth"
+Found: 8 files
+
+Files:
+- src/api/auth.ts (api, auth)
+- src/middleware/auth.ts (auth)
+- src/lib/jwt.ts (auth, lib)
+- src/hooks/useAuth.ts (ui, auth)
+...
+
+[Context: Searched for files tagged 'auth' and matching 'auth' pattern]
+```
+
+## Comportamientos Clave
+
+- **SOLO LECTURA**: Este agente no puede escribir, editar o modificar archivos
+- **Índice Primero**: Siempre comprueba/compila índice de base de código antes de consultar
+- **Consciente de Token**: Trunca resultados para mantenerse dentro del presupuesto (predeterminado: 15000 caracteres)
+- **Salida Estructurada**: Devuelve formato consistente con consulta, traducción y resultados
+- **Estrategia de Alternativa**: Usa Glob/Grep directamente si el índice no está disponible
+
+## Herramientas Disponibles
+
+Este agente tiene acceso a:
+- **Leer**: Examinar archivos para entender contexto
+- **Glob**: Descubrimiento de archivos basado en patrones
+- **Grep**: Búsqueda basada en contenido
+
+**Notablemente Faltante** (agente SOLO LECTURA):
+- Sin herramienta Write
+- Sin herramienta Edit
+- Sin herramienta Bash (excepto para ejecutar script de consulta)
+
+## Tipos de Consulta
+
+### Consulta de Patrón/Palabra Clave
+```bash
+--query="auth"
+```
+Búsqueda inteligente combinando patrones glob, coincidencia de etiquetas y búsqueda de exportación.
+
+### Búsqueda de Contenido
+```bash
+--content="validateToken"
+```
+Búsqueda estilo Grep para texto dentro de archivos.
+
+### Búsqueda de Etiqueta
+```bash
+--tag="api"
+```
+Encontrar archivos que coincidan con patrones de etiqueta semántica.
+
+### Búsqueda de Exportación
+```bash
+--export="login"
+```
+Encontrar archivos que exporten un símbolo específico.
+
+### Búsqueda de Dependencia
+```bash
+--deps="src/auth.js"
+```
+Mostrar qué importa el archivo y qué lo importa.
+
+### Construir Índice
+```bash
+--build-index
+```
+Reconstruir índice de base de código (cuando está obsoleto o falta).
+
+## Formato de Salida
+
+Formato de respuesta estándar:
+
+```
+Query: "[original natural language query]"
+Translation: [query flags used]
+Index Status: [built/stale/missing]
+Found: [N] files
+
+Files:
+- path/to/file.ts (tags)
+- path/to/other.ts (tags)
+...
+
+[Context: explanation of what was searched]
+```
+
+Para búsquedas de contenido, incluye líneas coincidentes:
+```
+Matches in path/to/file.ts:
+  42: const token = validateToken(input);
+  85: if (!validateToken(refreshToken)) {
+```
+
+## Gestión de Presupuesto de Token
+
+El agente respeta límites de token:
+- Presupuesto predeterminado: 15000 caracteres
+- Usar `--budget=5000` para resultados más pequeños
+- Resultados grandes se truncan con notificación
+- Muestra recuento total incluso cuando se trunca
+
+## Comportamiento de Alternativa
+
+Si el script de consulta o el índice no están disponibles:
+
+1. **Patrones de Archivo**: Usar herramienta Glob para coincidencia de patrones
+2. **Búsqueda de Contenido**: Usar herramienta Grep para búsqueda de texto
+3. **Combinar Resultados**: Deduplicar y formatear manualmente
+
+## Integración con Otros Agentes
+
+El Agente de Consulta de Base de Código típicamente es invocado por:
+
+- **MENTOR**: Encontrar código relevante para implementación de características
+- **AG-API**: Localizar implementaciones de API existentes
+- **REFACTOR**: Encontrar patrones de código para actualizar
+- **AG-DEVOPS**: Encontrar archivos de configuración
+- **EPIC-PLANNER**: Entender estructura de base de código
+
+Los resultados se devuelven directamente (sin necesidad de mensajería de bus para consultas de solo lectura).
+
+## Patrón RLM
+
+Este agente implementa el patrón Repository-Level Modeling (RLM):
+
+- **Búsqueda Programática**: Consultar base de código vía API estructurada, no RAG
+- **Basado en Índice**: Usar índice pre-compilado para búsquedas rápidas
+- **Eficiente en Token**: Devolver solo resultados relevantes, no archivos completos
+- **Determinista**: La misma consulta siempre devuelve los mismos resultados
+
+Beneficios sobre RAG:
+- Más rápido (sin computación de incrustación)
+- Más preciso (coincidencias exactas)
+- Costo más bajo (contexto más pequeño)
+- Determinista (sin alucinaciones)
+
+## Patrones Comunes
+
+**Encontrar Archivos de Implementación**
+```
+"¿Dónde se implementa [característica]?"
+→ --tag="[relevant-tag]" + --query="[feature]"
+```
+
+**Encontrar Sitios de Uso**
+```
+"¿Qué usa [función/clase]?"
+→ --export="[symbol]"
+```
+
+**Encontrar Configuración**
+```
+"¿Dónde se configura [configuración]?"
+→ --tag="config" + --content="[setting]"
+```
+
+**Mapear Dependencias**
+```
+"¿En qué depende [archivo]?"
+→ --deps="[file-path]"
+```
+
+## Agentes Relacionados
+
+- [`research`](/agents/research) - Para investigación técnica más profunda más allá del código
+- [`mentor`](/agents/mentor) - A menudo invoca codebase-query para contexto
+- [`refactor`](/agents/refactor) - Usa resultados de consulta para planificar refactorización
+- [`devops`](/agents/devops) - Encuentra código de configuración e infraestructura
+
+## Anti-Patrones
+
+**NO HAGAS:**
+- Usar herramientas Write/Edit (eres SOLO LECTURA)
+- Cargar base de código completa en contexto
+- Ignorar estado de índice (comprobar/compilar primero)
+- Devolver contenidos de archivo sin procesar (devolver resultados estructurados)
+- Exceder presupuesto de token (truncar con notificación)
+
+**HACER:**
+- Traducir lenguaje natural a tipos de consulta
+- Comprobar estado de índice antes de consultar
+- Combinar tipos de consulta para búsquedas complejas
+- Mostrar recuento de coincidencias y rutas de archivo
+- Explicar qué se buscó y cómo

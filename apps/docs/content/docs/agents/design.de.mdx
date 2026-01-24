@@ -1,0 +1,103 @@
+---
+title: Design
+description: Design-Spezialist für UI/UX-Design-Systeme, visuelles Design, Design-Muster, Design-Dokumentation und Design-getriebene Entwicklung.
+---
+
+# Design-Spezialist
+
+AG-DESIGN erstellt und verwaltet Design-Systeme, Komponenten-Spezifikationen, Design-Tokens und stellt barrierefreies Design über alle Produkte sicher.
+
+## Fähigkeiten
+
+- **Design-System-Erstellung**: Design-Tokens, Komponenten-Bibliothek, Design-Muster
+- **Komponenten-Spezifikationen**: Vollständige Spezifikationen mit Zuständen, Varianten, Props, Barrierefreiheit
+- **Design-Dokumentation**: Design-to-Code Handoff-Guides, Komponenten-Specs
+- **Barrierefreiheits-erstes Design**: WCAG AA Minimum, AAA bevorzugt
+- **Design-Tokens**: Farben, Typografie, Abstände, Schatten, Animationen (einzige Quelle der Wahrheit)
+- **Konsistenz-Audits**: Stellen Sie Design-System-Nutzung über Produkte sicher
+- **Design-System-Versionierung**: Semantische Versionierung, Changelog-Verwaltung
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie AG-DESIGN, wenn:
+
+- Sie ein Design-System erstellen oder verwalten
+- Sie neue UI-Komponenten oder Features entwerfen
+- Sie Komponenten-Spezifikationen für Entwickler dokumentieren
+- Sie Design-Konsistenz-Audits durchführen
+- Sie Barrierefreiheits-Konformität sicherstellen (WCAG AA/AAA)
+- Sie Design-Tokens und Richtlinien definieren
+- Sie Design-to-Code Handoff-Dokumentation erstellen
+
+## Wie es funktioniert
+
+1. **Kontext-Laden**: Liest Expertise-Datei und aktuellen Design-System-Status
+2. **Design-Analyse**: Überprüft, welche Komponenten und Tokens benötigt werden
+3. **Spezifikation**: Erstellt vollständige Komponenten-Specs mit allen Zuständen und Varianten
+4. **Dokumentation**: Erstellt Design-Tokens und Design-to-Code Handoff-Guides
+5. **Barrierefreiheits-Überprüfung**: Überprüft auf WCAG AA/AAA-Konformität
+6. **Konsistenz-Prüfung**: Überprüft, dass Design-System-Nutzung konsistent ist
+7. **Koordination**: Aktualisiert status.json und koordiniert mit AG-UI auf Implementierung
+
+## Wichtige Verhaltensweisen
+
+- **Barrierefreiheit zuerst**: WCAG AA Minimum, AAA bevorzugt für alle Designs
+- **Vollständig spezifiziert**: Jede Komponente hat vollständige Specs (alle Zustände, Varianten)
+- **Token-basiert**: Farben, Typografie, Abstände verwenden Design-Tokens (nicht hardcodiert)
+- **Implementierungs-bewusst**: Designs sind umsetzbar
+- **Konsistenz-fokussiert**: Gesamtes Design-System ist kohärent und konsistent
+- **Dokumentation**: Alle Designs dokumentiert für Handoff an Entwickler
+
+## Design-Tokens
+
+**Farben**:
+- Primär (Hauptaktionsfarbe)
+- Sekundär (Unterstützungsaktionen)
+- Akzent (Highlights)
+- Status-Farben (Error Rot, Warning Gelb, Success Grün, Info Blau)
+- Neutrale Graus (Hintergründe, Grenzen)
+
+**Typografie**:
+- Schriftfamilien (Überschrift, Text, Monospace)
+- Schriftgrößen (Skalierung: 12px, 14px, 16px, 18px, 20px, 24px, 32px)
+- Schriftgewichte (400, 500, 600, 700)
+- Zeilenhöhen (1.2, 1.5, 1.8)
+
+**Abstände**:
+- Skalierung: 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+- Verwendet für Padding, Margin, Lücken
+
+**Komponenten-Status**:
+- Default, Hover, Active, Disabled, Focus
+- Alle visuell unterscheidbar, Farbenblinde-freundlich
+
+## Komponenten-Spezifikation
+
+Jede Komponente sollte haben:
+
+- **Anatomie**: Welche Teile sichtbar sind
+- **Verhalten**: Was passiert auf Interaktion
+- **Barrierefreiheit**: Rollen, Beschriftungen, Tastatur-Unterstützung
+- **Props**: Einstellbare Parameter
+- **Zustände**: Alle visuellen Zustände (Default, Hover, Active, Disabled, Focus)
+- **Varianten**: Größen, Stile, Typen
+
+## Quality Checklist
+
+Vor Abschluss:
+
+- [ ] Alle Komponenten spezifiziert
+- [ ] Design-Tokens definiert
+- [ ] WCAG AA-Konformität überprüft
+- [ ] Barrierefreiheits-Merkmale dokumentiert
+- [ ] Design-to-Code Handoff-Guide erstellt
+- [ ] Komponenten-Bibliothek organisiert
+- [ ] Versionierung aktualisiert
+- [ ] Dokumentation abgeschlossen
+- [ ] Status aktualisiert
+
+## Verwandte Agents
+
+- [`ui`](/agents/ui) - Komponenten-Implementierung basierend auf Design-Specs
+- [`accessibility`](/agents/accessibility) - Barrierefreiheits-Audit der Designs
+- [`ci`](/agents/ci) - Visual Regression Testing

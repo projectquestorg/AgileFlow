@@ -1,0 +1,286 @@
+---
+title: حماية
+description: متخصص أمني لتحليل الثغرات الأمنية وأنماط المصادقة والترخيص والامتثال ومراجعات الأمان قبل الإصدار.
+---
+
+# وكيل الأمن
+
+وكيل الأمان (AG-SECURITY) هو متخصص في الأمان والثغرات الأمنية ويضمن أمان التطبيقات حسب التصميم. يقوم هذا الوكيل بتنفيذ نماذج التهديدات، وتحليل الثغرات الأمنية، وتنفيذ أنماط آمنة، وإجراء عمليات تدقيق أمنية إلزامية قبل الإصدار.
+
+## القدرات
+
+- **Vulnerability Analysis**: تحديد المشكلات الأمنية في المتطلبات والتعليمات البرمجية
+- **Threat Modeling**: Model threats and design defense strategies
+- **Authentication Patterns**: تنفيذ المصادقة الآمنة (JWT، OAuth، إدارة الجلسة)
+- **Authorization**: فرض التحكم في الوصول على أساس الدور وعلى أساس السمة
+- **Input Validation**: منع هجمات XSS، وحقن SQL، وحقن الأوامر
+- **Secrets Management**: تأكد من عدم تشفير الأسرار أو كشفها مطلقًا
+- **Security Testing**: كتابة اختبارات لفشل المصادقة، ومحاولات الحقن، وتصعيد الامتيازات
+- **Dependency Scanning**: تحديد التبعيات الضعيفة
+- **Compliance**: التحقق من أعلى 10 معايير OWASP وCWE ومعايير الصناعة
+- **Pre-Release Audits**: مراجعة أمنية إلزامية قبل كل إصدار
+
+## متى تستخدم
+
+استخدم وكيل الأمان عندما:
+
+- تنفيذ ميزات المصادقة أو الترخيص
+- التعامل مع بيانات المستخدم الحساسة (معلومات تحديد الهوية الشخصية، ومعلومات الدفع)
+- معالجة إدخال المستخدم (النماذج وواجهات برمجة التطبيقات)
+- التكامل مع الخدمات الخارجية
+- تنفيذ التشفير أو إدارة الأسرار
+- تحتاج إلى مراجعة رمز الأمان قبل الدمج
+- التخطيط للإصدار (تدقيق إلزامي قبل الإصدار)
+- الحاجة إلى توثيق القرارات الأمنية عبر ADR
+- تم اكتشاف الثغرة الأمنية وتحتاج إلى علاج
+
+## كيف يعمل
+
+1. **Knowledge Loading**: وكيل يقرأ الخبرة والأبحاث الأمنية
+2. **Story Review**: يقوم الوكيل بتحليل القصة بحثًا عن آثار أمنية
+3. **Threat Modeling**: نماذج الوكيل للتهديدات المتعلقة بالميزات الأمنية الهامة
+4. **Vulnerability Analysis**: يحدد الوكيل نواقل الهجوم وعمليات التخفيف منه
+5. **Security Testing**: يقوم الوكيل بكتابة اختبارات الأمان (فشل المصادقة، والحقن، والتصعيد)
+6. **Verification**: يدير الوكيل `/agileflow:verify` لضمان اجتياز الاختبارات
+7. **Documentation**: يقوم الوكيل بإنشاء ADRs للقرارات الأمنية
+8. **Clearance Decision**: تقارير الوكيل تمت الموافقة عليها / تمت الموافقة عليها مع التخفيف / مرفوضة
+9. **Coordination**: يقوم الوكيل بتحديث Status.json وإبلاغ النتائج
+
+## مثال
+
+```bash
+# Via babysit - security review of authentication feature
+/agileflow:babysit
+> "We're implementing JWT-based authentication. Need security review."
+
+# Agent output:
+# Security Review: US-0042 - JWT Authentication
+#
+# Vulnerabilities Found:
+# - HIGH: Tokens stored in localStorage (XSS exposure)
+# - MEDIUM: No token refresh mechanism (long-lived tokens)
+# - MEDIUM: Missing CSRF protection
+#
+# Recommendations:
+# 1. Move tokens to httpOnly cookies (not accessible to JS)
+# 2. Implement token refresh with short-lived access tokens
+# 3. Add CSRF tokens for state-changing requests
+# 4. Validate tokens on every protected endpoint
+#
+# Security Tests Required:
+# - Test invalid token rejection
+# - Test expired token handling
+# - Test CSRF token validation
+# - Test privilege escalation prevention
+#
+# Clearance: APPROVED WITH MITIGATIONS
+# - Implement recommendations above
+# - Re-run security tests
+# - ADR documenting JWT strategy required
+```
+
+## السلوكيات الرئيسية
+
+- **Security First**: لا تتخطى أبدًا عمليات التفتيش الأمني ​​للوفاء بالمواعيد النهائية
+- **Defense in Depth**: طبقات متعددة من الأمان، وليس نقطة فشل واحدة
+- **Fail Secure**: الرفض الافتراضي، السماح الصريح
+- **Threat Modeling**: فكر كمهاجم
+- **Zero Trust**: لا تثق مطلقًا بإدخال المستخدم أو البيانات الخارجية
+- **Principle of Least Privilege**: لدى المستخدمين الحد الأدنى من الأذونات اللازمة
+- **Transparency**: توثيق جميع القرارات الأمنية والتخفيفات
+- **Context Preservation**: يستخدم Compact_context (الأولوية: عالية) للحفاظ على التركيز الأمني ​​أثناء المحادثات الطويلة، والحفاظ على نماذج التهديد ومتطلبات الأمان من خلال ضغط السياق
+
+## تكوين السياق المضغوط
+
+يستخدم وكيل الأمن **high priority** Compact_context لضمان بقاء اليقظة الأمنية موضع التركيز:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/security/expertise.yaml"
+    - "SECURITY FIRST: Never skip security checks to meet deadlines"
+    - "DEFENSE IN DEPTH: Multiple layers, not single point of failure"
+    - "FAIL SECURE: Default deny, explicit allow (principle of least privilege)"
+    - "THREAT MODELING: Think like an attacker, anticipate exploits"
+    - "ZERO TRUST: Never trust user input or external data"
+    - "NO SECRETS: No hardcoded API keys, credentials, or sensitive data"
+  state_fields:
+    - current_story
+    - threat_model
+    - security_requirements
+    - vulnerability_findings
+    - mitigation_progress
+```
+
+وهذا يضمن بقاء القواعد الأمنية الحرجة (نمذجة التهديدات، الثقة المعدومة، الحماية السرية، الدفاع المتعمق) والحالة الحالية (نقاط الضعف المعروفة، نماذج التهديد، حالة التخفيف) موضع التركيز من خلال ضغط السياق.
+
+## الأدوات المتاحة
+
+- القراءة والكتابة والتحرير (عمليات الملف)
+- باش (تشغيل عمليات الفحص الأمني)
+- Glob (ابحث عن الملفات المتعلقة بالأمان)
+- Grep (البحث عن الأسرار أو نقاط الضعف)
+
+## قائمة التحقق من الأمان (الإصدار المسبق إلزامي)
+
+قبل الموافقة على أي إصدار:
+
+- [ ] لا توجد أسرار مضمنة، أو مفاتيح API، أو بيانات الاعتماد
+- [ ] تم التحقق من صحة جميع مدخلات المستخدم (النوع، الطول، التنسيق، النطاق)
+- [ ] جميع المخرجات المشفرة/المفلترة (تمنع XSS، والحقن)
+- [ ] يتم فرض المصادقة على نقاط النهاية المحمية
+- [ ] التحقق من التفويض للتحقق من الأذونات
+- [ ] يمنع تحديد المعدل القوة الغاشمة وحجب الخدمة
+- [ ] فرض HTTPS (لا يوجد HTTP في الإنتاج)
+- [ ] تم تكوين CORS بشكل صحيح (ليس `*` لأوراق الاعتماد)
+- [ ] رموز CSRF المطلوبة لطلبات تغيير الحالة
+- [ ] تم فحص التبعيات بحثًا عن نقاط الضعف
+- [ ] لا تكشف رسائل الخطأ عن تفاصيل النظام
+- [ ] لا يلتقط التسجيل كلمات المرور/الرموز المميزة/معلومات تحديد الهوية الشخصية
+- [ ] يستخدم SQL عبارات ذات معلمات
+- [ ] تغطي اختبارات الأمان حالات فشل المصادقة وتصعيد الامتيازات والحقن
+- [ ] تم توثيق متطلبات الامتثال
+
+## أنماط الأمان المشتركة
+
+**Authentication (JWT)**:
+```javascript
+// Good: Secure JWT with expiration
+const token = jwt.sign(
+  { userId: user.id },
+  process.env.JWT_SECRET,
+  { algorithm: 'RS256', expiresIn: '1h' }
+);
+
+// Bad: No expiration, weak algorithm
+const token = jwt.sign(
+  { userId: user.id, password: user.password },
+  'hardcoded-secret',
+  { algorithm: 'HS256' }
+);
+```
+
+**Authorization (Role-Based)**:
+```javascript
+// Good: Check permissions on backend
+function protectedRoute(req, res) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  // ... handle request
+}
+
+// Bad: Trust frontend role
+if (user.role === 'admin') {
+  // ... always true on frontend
+}
+```
+
+**Input Validation**:
+```javascript
+// Good: Whitelist valid inputs
+const email = req.body.email;
+if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+  return res.status(400).json({ error: 'Invalid email' });
+}
+
+// Bad: No validation, vulnerable to injection
+const query = `SELECT * FROM users WHERE email = '${email}'`;
+```
+
+**Secrets Management**:
+```javascript
+// Good: Load from environment variables
+const dbPassword = process.env.DB_PASSWORD;
+
+// Bad: Hardcoded credentials
+const dbPassword = 'supersecretpassword123';
+```
+
+## Common Vulnerabilities to Prevent
+
+| Vulnerability | Risk | Prevention |
+|---------------|------|-----------|
+| SQL Injection | Data breach | Parameterized queries |
+| XSS (Cross-Site Scripting) | Session hijacking | Input sanitization, output encoding |
+| CSRF (Cross-Site Request Forgery) | Unauthorized actions | CSRF tokens, SameSite cookies |
+| Weak Authentication | Account takeover | Strong passwords, MFA, JWT |
+| Hardcoded Secrets | Credential exposure | Environment variables |
+| Missing HTTPS | Man-in-the-middle | Enforce HTTPS, HSTS |
+| Privilege Escalation | Unauthorized access | Authorization checks |
+| Dependency Vulnerabilities | Supply chain attacks | Regular scanning, updates |
+
+## مستويات خطورة الأخطاء
+
+| Severity | Description | Example |
+|----------|-------------|---------|
+| Critical | Security breach, data loss | Unauthenticated API access |
+| High | Significant vulnerability | Weak password policy |
+| Medium | Notable weakness | Missing CSRF tokens |
+| Low | Minor issue | Verbose error messages |
+
+## إطار نمذجة التهديد
+
+للحصول على الميزات الرئيسية، اسأل:
+
+1. **What assets are we protecting?** (بيانات المستخدم، معلومات الدفع، IP)
+2. **Who are the threats?** (المتسللين، المستخدمين الضارين، المطلعين)
+3. **What attacks are possible?** (حقن SQL، XSS، حشو بيانات الاعتماد)
+4. **How do we prevent each attack?** (التحقق، التشفير، تحديد المعدل)
+5. **What's our defense depth?** (طبقات الأمان)
+6. **Can we detect attacks?** (التسجيل، المراقبة، التنبيهات)
+
+## مسح التبعية
+
+قبل كل إصدار، قم بتشغيل:
+
+```bash
+npm audit              # Find vulnerable packages
+npm audit fix         # Update vulnerable packages
+npm update            # Update all packages
+```
+
+نتائج الوثيقة:
+- ما هي الحزم المعرضة للخطر؟
+- ما مدى خطورتها؟
+- هل يمكننا التحديث أم أن هناك حل بديل؟
+- متى تم فحص هذا آخر مرة؟
+
+## الوكلاء ذوو الصلة
+
+- ["الاختبار".](/agents/testing) - تنفيذ اختبار الأمان
+- ["واجهة برمجة التطبيقات".](/agents/api) - أمان API والتحقق من صحتها
+- ["قاعدة البيانات".](/agents/database) - أمن قاعدة البيانات والتحكم في الوصول
+- [`devops`](/agents/devops) - أمن البنية التحتية
+- ["سي".](/agents/ci) - المسح الأمني ​​في خط أنابيب CI
+
+## تنسيق
+
+يقوم وكيل الأمن بالتنسيق مع:
+
+- **AG-API**: تأكد من المصادقة/التحقق من الصحة على نقاط النهاية
+- **AG-UI**: منع XSS، CSRF على الواجهة الأمامية
+- **AG-DATABASE**: التحقق من سلامة الاستعلام، والتحكم في الوصول
+- **AG-DEVOPS**: أمن البنية التحتية، إدارة الأسرار
+- **AG-TESTING**: تنسيق تغطية اختبار الأمان
+- **All Agents**: قم بوضع علامة استباقية على الآثار الأمنية
+
+## أوامر القطع
+
+- `/agileflow:research:ask TOPIC=...` - أنماط الأمن البحثية
+- `/agileflow:ai-code-review` - مراجعة التعليمات البرمجية للقضايا الأمنية
+- `/agileflow:adr-new` - توثيق القرارات الأمنية
+- `/agileflow:tech-debt` - وثيقة الديون الضمانية
+- `/agileflow:impact-analysis` - تحليل الأثر الأمني ​​للتغييرات
+- `/agileflow:status STORY=... STATUS=...` - تحديث حالة القصة
+
+## مبادئ الأمن
+
+- **Never skip security** للمواعيد النهائية
+- **Measure before you fix** - فهم الضعف
+- **Defense in depth** - طبقات متعددة، وليس نقطة فشل واحدة
+- **Zero trust** - لا تثق أبدًا بإدخال المستخدم أو البيانات الخارجية
+- **Least privilege** - منح الحد الأدنى من الأذونات اللازمة
+- **Transparent** - توثيق كافة القرارات الأمنية
+- **Err on side of caution** - عندما تكون في شك، كن أكثر تقييدًا

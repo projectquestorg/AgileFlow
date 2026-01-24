@@ -1,0 +1,285 @@
+---
+title: Barrierefreiheit
+description: Spezialist für Barrierefreiheit für WCAG-Konformität, inklusives Design, Unterstützung für Hilfstechnologien und Barrierefreiheitstests.
+---
+
+# Barrierefreiheits-Agent
+
+Der Barrierefreiheits-Agent (AG-ACCESSIBILITY) ist ein Spezialist für Barrierefreiheit, der sicherstellt, dass Anwendungen von allen verwendbar sind, einschließlich Menschen mit Behinderungen. Dieser Agent führt WCAG-Audits durch, testet mit Hilfstechnologien und stellt sicher, dass Prinzipien des inklusiven Designs eingehalten werden.
+
+## Fähigkeiten
+
+- **WCAG 2.1 Audit**: Überprüfung der Konformität auf Level AA und AAA
+- **Bildschirmlesegerät-Tests**: Tests mit NVDA, JAWS, VoiceOver
+- **Tastaturnavigation**: Sicherstellen, dass alle Funktionen per Tastatur erreichbar sind
+- **Farbkontrast-Überprüfung**: Überprüfung des Kontrastverhältnisses ≥4,5:1
+- **Fokus-Management**: Sichtbare Fokus-Indikatoren und logische Tabulatorpriorität
+- **Barrierefreiheitstests**: Automatisierte und manuelle a11y-Tests
+- **Unterstützung für Hilfstechnologien**: Unterstützung für Bildschirmlesegeräte, Sprachsteuerung usw.
+- **Inklusives Design**: Designmuster, die für alle Benutzer funktionieren
+- **ARIA-Implementierung**: Semantisches HTML und richtige ARIA-Beschriftungen
+- **Barrierefreiheits-Dokumentation**: Erstellung von a11y-Test-Handbüchern und Standards
+
+## Wann Sie den Agent verwenden sollten
+
+Verwenden Sie den Barrierefreiheits-Agent, wenn:
+
+- Sie neue Features oder Komponenten entwerfen
+- Sie die WCAG 2.1-Konformität überprüfen müssen
+- Probleme mit Farbkontrast oder visueller Barrierefreiheit vorliegen
+- Die Tastaturnavigation nicht funktioniert
+- Probleme mit der Bildschirmlesegerät-Kompatibilität auftreten
+- Sie mit Hilfstechnologien testen müssen
+- Sie Barrierefreiheits-Standards erstellen
+- Sie Releases planen (Barrierefreiheitstests erforderlich)
+- Benutzer mit Behinderungen Probleme melden
+- Sie ein ADR für Barrierefreiheits-Entscheidungen benötigen
+
+## Wie es funktioniert
+
+1. **Wissensladung**: Agent liest Expertise und WCAG-Standards
+2. **Feature-Analyse**: Agent überprüft Story auf Auswirkungen auf Barrierefreiheit
+3. **Automatisiertes Audit**: Agent führt axe, Lighthouse, WAVE aus
+4. **Manuelle Tests**: Agent testet Tastaturnavigation, Bildschirmlesegeräte
+5. **Problembeschreibung**: Agent listet alle Barrierefreiheitsprobleme mit Schweregrad auf
+6. **Behebungsplanung**: Agent koordiniert mit Design/UI-Teams
+7. **Überprüfung**: Agent testet nach Korrekturen erneut
+8. **Dokumentation**: Agent aktualisiert status.json und meldet Ergebnisse
+
+## Beispiel
+
+```bash
+# Über babysit - neue Formularkomponente auf Barrierefreiheit prüfen
+/agileflow:babysit
+> "Wir haben eine neue Formularkomponente gebaut. Ist sie barrierefrei?"
+
+# Agent-Ausgabe:
+# Barrierefreiheits-Audit: Neue Formularkomponente
+#
+# Gefundene Probleme:
+# KRITISCH (blockiert Funktionalität):
+# ├── Formularfelder haben keine Beschriftungen (fehlende <label>-Elemente)
+# ├── Absende-Button hat keinen zugänglichen Namen
+# └── Fehlermeldungen werden nicht für Bildschirmlesegeräte angesagt
+#
+# MAJOR (beeinträchtigt Benutzerfreundlichkeit erheblich):
+# ├── Farbkontrast: 3,8:1 (benötigt 4,5:1)
+# └── Fokus-Indikatoren nicht sichtbar
+#
+# MINOR (beeinträchtigt einige Benutzer):
+# ├── Formularanweisungen könnten klarer sein
+# └── Fehlende aria-required auf erforderlichen Feldern
+#
+# WCAG-Konformität: 25% AA (benötigt 100%)
+#
+# Schritte zur Behebung:
+# 1. Fügen Sie <label> für jedes Formularfeld hinzu
+# 2. Fügen Sie zugängliche Namen zu Buttons hinzu (aria-label)
+# 3. Fügen Sie aria-live zu Fehlermeldungen hinzu
+# 4. Erhöhen Sie den Farbkontrast auf 4,5:1
+# 5. Fügen Sie sichtbare Fokus-Indikatoren hinzu (2px Umriss)
+#
+# Barrierefreiheits-Checkliste:
+# ✅ Mit Bildschirmlesegerät testen (NVDA)
+# ✅ Tastatur-nur Navigation
+# ✅ Tab-Reihenfolge-Überprüfung
+# ✅ Farbkontrast-Validierung
+# ✅ Fokus-Indikator-Überprüfung
+```
+
+## Wichtige Verhaltensweisen
+
+- **Standardmäßig inklusiv**: Entwerfen Sie von Anfang an für alle Benutzer
+- **Mit echten Benutzern testen**: Verwenden Sie tatsächliche Hilfstechnologien
+- **Tastatur zuerst**: Alle Funktionen ohne Maus erreichbar
+- **Farbe nicht als einziges Mittel**: Informationen nicht nur durch Farbe vermittelt
+- **Klarer Fokus**: Sichtbare Fokus-Indikatoren auf jedem interaktiven Element
+- **Semantisches HTML**: Verwenden Sie richtige HTML-Elemente für Bedeutung
+- **Keine Annahmen**: Gehen Sie nicht davon aus, dass alle Benutzer Tastaturen oder Zeigegeräte haben
+
+## Verfügbare Tools
+
+- Read, Write, Edit (Dateioperationen)
+- Bash (a11y-Tests ausführen)
+- Glob (a11y-Test-Dateien suchen)
+- Grep (nach a11y-Problemen suchen)
+
+## WCAG 2.1 Standards
+
+**WCAG 2.1 Level**:
+- **Level A**: Minimale Barrierefreiheit
+- **Level AA**: Verbesserte Barrierefreiheit (empfohlener Standard)
+- **Level AAA**: Optimale Barrierefreiheit (angestrebt)
+
+**WCAG 2.1 Prinzipien**:
+1. **Wahrnehmbar**: Informationen und UI-Komponenten müssen wahrnehmbar sein
+2. **Bedienbar**: UI-Komponenten und Navigation müssen bedienbar sein
+3. **Verständlich**: Informationen und Operationen müssen verständlich sein
+4. **Robust**: Inhalte müssen für Hilfstechnologien robust sein
+
+**Wichtige WCAG 2.1 AA-Kriterien**:
+- **Farbkontrast**: Text ≥4,5:1, UI-Komponenten ≥3:1
+- **Tastatur-Zugang**: Alle Funktionen über Tastatur
+- **Keine Tastatur-Fallen**: Tabulator kann aus jeder Komponente herausführen
+- **Fokus-Reihenfolge**: Tabulatorpriorität entspricht visueller Reihenfolge (logisch)
+- **Fokus sichtbar**: Sichtbarer Fokus-Indikator ≥2px Umriss
+- **Touch-Zielgröße**: ≥44x44 CSS-Pixel
+- **Semantisches HTML**: Verwenden Sie richtige HTML-Elemente
+- **ARIA-Beschriftungen**: Buttons/Links haben zugängliche Namen
+- **Formular-Beschriftungen**: Alle Formularfelder ordnungsgemäß beschriftet
+
+## Barrierefreiheitstests
+
+**Automatisierte Tests** (erste Durchführung für schnelle Rückmeldung):
+- **axe DevTools**: Browser-Erweiterung zur Erkennung häufiger Probleme
+- **Lighthouse**: Integriertes Audit in Chrome DevTools
+- **WAVE**: WebAIM-Tool für visuelles Feedback
+- **Farbkontrast-Prüfer**: Überprüfung des 4,5:1-Verhältnisses
+
+**Manuelle Tests** (wesentlich für echte Bewertung):
+- **Tastatur-nur Navigation**: Tab durch gesamte Seite (keine Maus)
+- **Bildschirmlesegerät-Tests**: NVDA (Windows), JAWS (Windows), VoiceOver (macOS)
+- **Tab-Reihenfolge-Überprüfung**: Logischen Fluss überprüfen
+- **Fokus-Indikator-Sichtbarkeit**: Fokus auf jedem interaktiven Element sehen
+- **Farbkontrast-Validierung**: Tool-Überprüfung + visuelle Überprüfung
+
+**Bildschirmlesegerät-Unterstützung**:
+- NVDA (Windows, kostenlos)
+- JAWS (Windows, kostenpflichtig, am beliebtesten)
+- VoiceOver (macOS/iOS, integriert)
+- TalkBack (Android, integriert)
+
+## Häufige Barrierefreiheitsprobleme
+
+| Problem | Auswirkung | Lösung |
+|---------|-----------|--------|
+| Keine Beschriftungen auf Eingaben | Bildschirmlesegerät weiß nicht, welches Feld es ist | Fügen Sie `<label for="id">` hinzu |
+| Nur-Symbol-Buttons | Kein Name für Bildschirmlesegeräte | Fügen Sie `aria-label="name"` hinzu |
+| Niedriger Farbkontrast | Schwer lesbar für Benutzer mit niedriger Sehkraft | Erhöhen Sie den Kontrast auf 4,5:1 |
+| Fehlende Fokus-Indikatoren | Tastatur-Benutzer sehen nicht, wo sie sind | Fügen Sie sichtbaren Fokus-Umriss hinzu |
+| Kein Alt-Text auf Bildern | Bildschirmlesegeräte können Bilder nicht beschreiben | Fügen Sie beschreibenden `alt="..."` hinzu |
+| Tastatur-Fallen | Benutzer können nicht wegnavigieren | Beheben Sie Fokus-Management |
+| Nur Farb-Informationen | Farbenblinde Benutzer verpassen Bedeutung | Verwenden Sie Symbole, Text, Muster |
+
+## Barrierefreiheits-Checkliste
+
+**Visuelle Barrierefreiheit**:
+- [ ] Farbkontrast ≥4,5:1 für Text (WCAG AA)
+- [ ] Farbkontrast ≥3:1 für UI-Komponenten
+- [ ] Keine reinen Farb-Informationen (verwenden Sie Symbole/Text)
+- [ ] Text skalierbar auf 200% ohne Scrolling
+- [ ] Fokus-Indikator sichtbar (≥2px Umriss)
+- [ ] Touch-Ziele ≥44x44 CSS-Pixel
+- [ ] Konsistentes visuelles Design (Buttons sehen wie Buttons aus)
+
+**Tastatur-Barrierefreiheit**:
+- [ ] Alle Funktionen per Tastatur erreichbar
+- [ ] Keine Tastatur-Fallen (Tab kann aus jeder Komponente herausführen)
+- [ ] Tab-Reihenfolge logisch (entspricht visueller Reihenfolge)
+- [ ] Enter/Space aktiviert Buttons
+- [ ] Pfeiltasten navigieren durch Listen/Menüs
+- [ ] Escape schließt Modals/Popovers
+
+**Bildschirmlesegerät-Barrierefreiheit**:
+- [ ] Semantisches HTML (button, link, form labels)
+- [ ] Alle Buttons/Links haben zugänglichen Namen
+- [ ] Bilder haben Alt-Text (oder versteckt, wenn dekorativ)
+- [ ] Formularfelder haben Beschriftungen (oder aria-label)
+- [ ] Formularfehler werden für Bildschirmlesegeräte angesagt
+- [ ] Orientierungspunkte vorhanden (main, nav, complementary)
+- [ ] Skip-Links für Tastaturnavigation
+- [ ] Live-Regionen für dynamische Inhalte
+
+## Inklusive Design-Muster
+
+**Formulare**:
+```html
+<!-- Gut: Beschriftung mit Eingabe verknüpft -->
+<label for="email">E-Mail</label>
+<input id="email" type="email" required aria-required="true">
+<span class="error" role="alert">E-Mail ist erforderlich</span>
+
+<!-- Schlecht: Nur Platzhalter, keine Beschriftung -->
+<input placeholder="E-Mail" type="email">
+```
+
+**Buttons**:
+```html
+<!-- Gut: Klarer zugänglicher Name -->
+<button aria-label="Menü schließen">
+  <svg aria-hidden="true"><!-- Symbol --></svg>
+</button>
+
+<!-- Schlecht: Nur Symbol ohne Beschriftung -->
+<button>
+  <svg><!-- Symbol --></svg>
+</button>
+```
+
+**Bilder**:
+```html
+<!-- Gut: Beschreibender Alt-Text -->
+<img src="profile.jpg" alt="Sarah Chen, Produktmanagerin">
+
+<!-- Schlecht: Alt-Text fehlt -->
+<img src="profile.jpg">
+
+<!-- Gut: Dekoratives Bild versteckt -->
+<img src="decoration.jpg" alt="" aria-hidden="true">
+```
+
+**Farbkontrast**:
+```text
+Gut: Weißer Text (#FFF) auf Blau (#0066CC) = 8,6:1 ✅ AAA
+Schlecht:  Weißer Text (#FFF) auf Grau (#999) = 3,9:1 ❌ AA (benötigt 4,5:1)
+Gut: Weißer Text (#FFF) auf Schwarz (#000) = 21:1 ✅ AAA
+```
+
+## Behebungs-Priorität
+
+| Priorität | Schweregrad | Beispiele |
+|-----------|-----------|----------|
+| Kritisch | Blockiert Kernfunktionalität | Kein Tastatur-Zugang zu Funktionen, fehlende Formular-Beschriftungen |
+| Major | Beeinträchtigt Benutzerfreundlichkeit erheblich | Niedriger Farbkontrast, fehlende Fokus-Indikatoren |
+| Minor | Beeinträchtigt einige Benutzer | Fehlende ARIA-Anmerkungen, ausführliche Fehlermeldungen |
+
+## Bewegung & Animation
+
+**Barrierefreiheits-Überlegungen**:
+- [ ] Animationen respektieren `prefers-reduced-motion`
+- [ ] Kein Anfalls-ausösendes Blitzen (nicht >3 Blitze/Sekunde)
+- [ ] Automatische Wiedergabe standardmäßig deaktiviert
+- [ ] Benutzer können Animationen pausieren
+
+## Verwandte Agents
+
+- [`design`](/agents/design) - Visuelles Design und Farbe/Kontrast
+- [`ui`](/agents/ui) - Komponenten-Implementierung mit ARIA/semantischem HTML
+- [`testing`](/agents/testing) - Automatisierung von Barrierefreiheitstests
+- [`qa`](/agents/qa) - Barrierefreiheit in Release-Vorbereitung
+
+## Koordination
+
+Der Barrierefreiheits-Agent koordiniert mit:
+
+- **AG-DESIGN**: Visueller Kontrast, Fokus-Indikatoren, inklusive Muster
+- **AG-UI**: ARIA-Implementierung, semantisches HTML, Tastaturnavigation
+- **AG-TESTING**: Automatisierung von Barrierefreiheitstests
+- **AG-QA**: Barrierefreiheit in Release-Kriterien
+- **Produktteam**: Validieren Sie Barrierefreiheits-Verbesserungen mit echten Benutzern
+
+## Slash-Befehle
+
+- `/agileflow:research:ask TOPIC=...` - Recherchieren Sie Best Practices für a11y
+- `/agileflow:ai-code-review` - Überprüfung von Code auf Barrierefreiheitsprobleme
+- `/agileflow:adr-new` - Dokumentieren Sie Barrierefreiheits-Entscheidungen
+- `/agileflow:status STORY=... STATUS=...` - Aktualisieren Sie Story-Status
+
+## Barrierefreiheits-Prinzipien
+
+- **Inklusiv nach Design**: Berücksichtigen Sie von Anfang an alle Benutzer
+- **Mit echten Benutzern testen**: Verwenden Sie tatsächliche Hilfstechnologien
+- **Keine Abkürzungen**: WCAG-Konformität ist Pflicht, nicht Optional
+- **Schichten der Barrierefreiheit**: Visuell, Tastatur, Bildschirmlesegerät, kognitiv
+- **Kontinuierliche Verbesserung**: Beheben Sie Probleme, sobald sie erkannt werden
+- **Ausbildung**: Helfen Sie dem Team zu verstehen, warum Barrierefreiheit wichtig ist

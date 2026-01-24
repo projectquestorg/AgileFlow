@@ -1,0 +1,277 @@
+---
+title: Planificateur épique
+description: Spécialiste en décomposition des fonctionnalités en épiques et stories avec critères d'acceptation et test stubs.
+---
+
+# Planificateur épique
+
+AG-EPIC-PLANNER décompose les fonctionnalités en épiques et stories avec critères d'acceptation clairs et infrastructure de test.
+
+## Capacités
+
+- **Décomposition des fonctionnalités**: Briser les grandes fonctionnalités en épiques/stories
+- **Critères d'acceptation**: Given/When/Then format testable
+- **Story estimation**: T-shirt sizing (S, M, L, XL)
+- **Dépendances**: Identifier l'ordre d'implémentation
+- **Travail de configuration**: Créer des stories de configuration
+- **Infrastructure de test**: Créer les stubs de test et les fixtures
+- **Documentation**: Documenter l'approche de décomposition
+
+## Quand l'utiliser
+
+Utiliser AG-EPIC-PLANNER quand:
+
+- Commencer une grande fonctionnalité
+- Clarifier les exigences avant développement
+- Identifier les dépendances
+- Estimer la charge de travail
+- Créer les stories pour l'équipe de développement
+- Planifier les versions (release planning)
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "I need to break down 'Payment processing' into stories"
+
+# AG-EPIC-PLANNER fera:
+# 1. Identifier les épiques (Setup, API, UI, Tests)
+# 2. Décomposer en 8-12 stories
+# 3. Estimer chaque story (S/M/L)
+# 4. Identifier l'ordre d'implémentation
+# 5. Créer les stubs de test
+# 6. Créer les stories dans status.json
+# 7. Assigner aux agents (AG-API, AG-UI, AG-TESTING)
+```
+
+## Heuristiques de décomposition
+
+**Taille de story idéale**: 1-2 jours de travail (S/M)
+
+**Trop gros** (XL):
+- "Implementer le système de paie complet"
+- Besoin de dépendances multiples
+- Multiples agents impliqués
+
+**Trop petit** (XS):
+- "Ajouter une étiquette de texte"
+- Ne pas avoir sa propre story (combiner)
+
+**Bon** (M):
+- "Créer l'endpoint POST /api/payments"
+- "Ajouter le composant de formulaire de paiement"
+- "Écrire les tests d'intégrité de paiement"
+
+## Structure des épiques
+
+**Épique = groupe de stories connexes**:
+```
+Epic: Payment Processing
+├── Story US-0001: Design payment schema
+├── Story US-0002: Implement POST /api/payments
+├── Story US-0003: Add payment form component
+├── Story US-0004: Implement webhook notifications
+├── Story US-0005: Add payment tests
+└── Story US-0006: Monitoring and alerting
+```
+
+**Chaque story peut être implémentée indépendamment** (après dépendances).
+
+## Critères d'acceptation
+
+**Format Given/When/Then**:
+```markdown
+As a customer,
+I want to pay for my order,
+so that I can complete my purchase.
+
+Acceptance Criteria:
+
+- Given a customer with items in cart
+  When they click "Pay Now"
+  Then the payment form appears
+
+- Given valid credit card
+  When they submit the form
+  Then payment succeeds and order is confirmed
+
+- Given invalid card number
+  When they submit the form
+  Then they see error "Invalid card number"
+
+- Given network error during payment
+  When the error occurs
+  Then they can retry without losing data
+```
+
+## Estimation
+
+**T-shirt sizing**:
+- **XS** (< 4 heures): Petites corrections, documentation
+- **S** (4-8 heures): Petits changements, formulaires simples
+- **M** (1-2 jours): Fonctionnalité complète, tests
+- **L** (3-5 jours): Fonctionnalité complexe, multiples composants
+- **XL** (> 1 semaine): Épique, nécessite décomposition
+
+## Dépendances
+
+**Chaîne de dépendances** (ordre d'implémentation):
+```
+1. Database schema (DB-001) [M]
+   ↓
+2. API endpoint (API-001) [M]
+   ↓
+3. UI component (UI-001) [M]
+   ↓
+4. Integration tests (TEST-001) [S]
+   ↓
+5. Monitoring (OPS-001) [S]
+```
+
+**Parallélisable** (peuvent travailler simultanément):
+- Database + API (API utilise DB)
+- UI + API tests (les deux utilisent l'API)
+
+## Stories de configuration
+
+**Travail d'infrastructure** souvent oublié:
+```
+- Setup: Create database migrations
+- Setup: Configure API routes
+- Setup: Add test fixtures
+- Setup: Configure monitoring
+- Setup: Document API changes
+```
+
+**Ces stories PRÉCÈDENT le travail d'implémentation**.
+
+## Infrastructure de test
+
+**Test stubs** (créer la structure de test):
+```javascript
+// test stubs for Payment API
+describe('POST /api/payments', () => {
+  it('succeeds with valid card', () => {
+    // TODO: Implement
+  });
+
+  it('fails with invalid card', () => {
+    // TODO: Implement
+  });
+
+  it('handles network errors', () => {
+    // TODO: Implement
+  });
+});
+```
+
+**Test fixtures** (données de test réutilisables):
+```javascript
+// Fixtures
+const validCard = {
+  number: '4111111111111111',
+  expiry: '12/25',
+  cvv: '123'
+};
+
+const invalidCard = {
+  number: '1234567890123456',
+  expiry: '12/25',
+  cvv: '123'
+};
+```
+
+## Modèle de story
+
+```markdown
+# US-0042: Implement POST /api/payments
+
+## Description
+API endpoint for processing payments. Integrates with Stripe.
+
+## Acceptance Criteria
+
+- Given valid payment data
+  When POST /api/payments is called
+  Then payment succeeds and returns transaction ID
+
+- Given invalid card
+  When POST /api/payments is called
+  Then returns 400 with error message
+
+## Story Points
+M (1-2 days)
+
+## Dependencies
+- DB-001 (payment schema must be created first)
+- SETUP-001 (Stripe API key configured)
+
+## Test Stubs
+- Unit tests for validation
+- Integration tests with Stripe mock
+- Error handling tests
+
+## Assigned To
+AG-API
+
+## Related
+- Epic: EP-003 (Payment Processing)
+- UI Story: US-0043 (Payment form component)
+```
+
+## Planification de release
+
+**Regrouper les stories par version**:
+```
+v1.0.0 (MVP)
+- Payment processing (6 stories, 2 weeks)
+- Order tracking (4 stories, 1 week)
+Total: 2-3 weeks
+
+v1.1.0 (Next)
+- Refund management (5 stories, 1 week)
+- Payment analytics (4 stories, 1 week)
+```
+
+**Critères de complétude d'épique**:
+- [ ] Toutes les stories implémentées
+- [ ] Tous les tests passants
+- [ ] Acceptation utilisateur obtenue
+- [ ] Performance validée
+- [ ] Documentation complète
+- [ ] Déploiement en staging réussi
+
+## Liste de contrôle
+
+Avant de valider la décomposition:
+
+- [ ] Épiques clairs et distincts
+- [ ] Stories de taille appropriée (pas XL)
+- [ ] Critères d'acceptation en format Given/When/Then
+- [ ] Dépendances identifiées et ordonnées
+- [ ] Estimation T-shirt cohérente
+- [ ] Test stubs créés
+- [ ] Assignations d'agents faites
+- [ ] Release planning clair
+- [ ] Documentation complète
+
+## Agents associés
+
+- [`product`](/agents/product) - Clarifier les exigences avant décomposition
+- [`research`](/agents/research) - Recherche technique pour les dépendances
+- [`mentor`](/agents/mentor) - Coordonne l'exécution des stories
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher les patterns de décomposition
+- `/agileflow:adr-new` - Documenter les décisions de planification
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut
+
+## Principes clés
+
+- **Stories petites et indépendantes**: Chacune peut être implémentée seule
+- **Dépendances explicites**: Pas de surprises pendant le développement
+- **Critères d'acceptation clairs**: Pas d'ambiguïté sur ce qui est "fait"
+- **Infrastructure de test incluse**: Pas d'ajustements tard
+- **Estimation réaliste**: Mieux vaut sous-estimer que sur-estimer

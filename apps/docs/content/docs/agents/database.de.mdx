@@ -1,0 +1,210 @@
+---
+title: Datenbank
+description: Datenbankfachmann für Schema-Design, Migrationen, Abfrage-Optimierung und Datenmodellierung.
+---
+
+# Datenbankagent
+
+Der Datenbankagent (AG-DATABASE) ist Ihr Datenbankfachmann für das Entwerfen effizienter Schemas, das Schreiben sicherer Migrationen, die Optimierung von Abfragen und die Verwaltung der Datenintegrität. Er stellt sicher, dass Ihre Datenbankschicht leistungsoptimiert, wartbar und zuverlässig ist.
+
+## Fähigkeiten
+
+- Effiziente Datenbankschemas entwerfen (Tabellen, Beziehungen, Einschränkungen)
+- Reversible Migrations-Scripts mit Rollback-Strategien schreiben
+- Langsame Abfragen optimieren (fehlende Indizes identifizieren, Abfragestruktur verbessern)
+- N+1 Abfrage-Probleme und SELECT * Anti-Muster verhindern
+- Datenintegrität durch Einschränkungen und Validierung sicherstellen
+- Abfragen von AG-API auf Performance-Probleme überprüfen
+- Datenmodelle und Beziehungen mit Architektur-ADRs dokumentieren
+- Mit AG-API auf ORM-Nutzung und Abfrage-Mustern koordinieren
+- Performance und Datenbankgesundheit überwachen
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie den Datenbankagent, wenn:
+
+- Sie eine neue Tabelle oder Beziehungsstruktur entwerfen müssen
+- Sie ein Migrations-Script für Schema-Änderungen erstellen müssen
+- Sie langsame Abfragen oder Performance-Probleme bemerken
+- Sie eine komplexe Datenbankabfrage optimieren möchten
+- Sie Indizes zu häufig abgefragten Spalten hinzufügen müssen
+- Sie Datenmodelle für ein neues Feature entwerfen
+- Sie N+1 Abfrage-Muster verhindern möchten, bevor sie auftreten
+- Sie Datenschicht-Arbeiten mit AG-API koordinieren müssen
+
+## Wie es funktioniert
+
+1. **Kontext-Laden**: Agent liest Expertise, CLAUDE.md und Datenbankkonfiguration
+2. **Story-Überprüfung**: Agent identifiziert Datenanforderungen und Beziehungen
+3. **Plan-Modus**: Agent entwirft Schema und Migrations-Strategie (für hochrisikante Änderungen)
+4. **Schema-Design**: Agent erstellt Entity-Relationship-Diagramme und normalisiert Daten
+5. **Migrations-Erstellung**: Agent schreibt reversible up/down Scripts mit Tests
+6. **Koordination**: Agent teilt Schema mit AG-API und überprüft deren Abfragen
+7. **Optimierung**: Agent fügt Indizes hinzu und verhindert N+1 Abfrage-Muster
+8. **Überprüfung**: Agent führt Tests aus, um sicherzustellen, dass alles bestanden ist
+9. **Dokumentation**: Agent aktualisiert status.json und fügt Bus-Nachrichten an
+
+## Beispiel
+
+```bash
+# Via /babysit (empfohlen)
+/agileflow:babysit
+> "Ich muss das Datenbankschema für Benutzer und Beiträge entwerfen"
+```
+
+Der Datenbankagent wird:
+1. Datenbez iehungen erfragen (ein Benutzer zu vielen Beiträgen?)
+2. Normalisiertes Schema entwerfen:
+   - `users` Tabelle: id, email, username, password_hash, created_at, updated_at
+   - `posts` Tabelle: id, user_id, title, content, created_at, updated_at
+   - Foreign Key Einschränkung: posts.user_id → users.id
+3. Indizes planen: idx_users_email (für Login), idx_posts_user_id (für Abfragen)
+4. Migrations-Script mit up/down Operationen erstellen
+5. Mit AG-API auf ORM-Modellen und Abfragen koordinieren
+6. Migrations-Rollback vor Abschluss testen
+
+## Wichtige Verhaltensweisen
+
+- **Niemals Änderungen ohne Migrationen**: Alle Schema-Änderungen erfordern reversible Migrations-Scripts
+- **Plan-Modus für hochrisikante Änderungen**: Verwendet immer Plan-Modus für Schema/Migrations-Strategie-Design
+- **Reversible Migrationen**: Jede "up" Migration hat entsprechende "down" Rollback
+- **Abfrage-Optimierung**: Analysiert Abfragen auf N+1 Probleme, fehlende Indizes, SELECT * Anti-Muster
+- **Namenskonventionen**: Tabellen lowercase plural (users, posts), Spalten snake_case (user_id, created_at)
+- **Erforderliche Spalten**: Jede Tabelle hat id, created_at, updated_at (und deleted_at für Soft Deletes)
+- **Koordination mit AG-API**: Überprüft deren Abfragen und ORM-Nutzung; schlägt Optimierungen vor
+
+## Tools verfügbar
+
+Dieser Agent hat Zugriff auf: Read, Write, Edit, Bash, Glob, Grep
+
+## Schema-Design-Prinzipien
+
+**Normalisierung**: Reduzieren Sie Datenredundanz bei Verbesserung der Datenintegrität
+
+- Minimieren Sie doppelte Daten
+- Eine Quelle der Wahrheit pro Feld
+- Denormalisieren Sie nur, wenn Performance es rechtfertigt (dokumentieren Sie warum)
+
+**Namenskonventionen**:
+
+- Tabellen: lowercase, plural (users, products, orders)
+- Spalten: lowercase, snake_case (first_name, created_at)
+- Foreign Keys: table_id Format (user_id, product_id)
+- Indizes: idx_table_column Format (idx_users_email)
+
+**Erforderliche Spalten**:
+
+- `id`: Primärschlüssel (UUID oder Auto-Increment)
+- `created_at`: Wann der Datensatz erstellt wurde
+- `updated_at`: Wann der Datensatz zuletzt modifiziert wurde
+- `deleted_at`: Soft-Delete Zeitstempel (falls Soft Deletes verwendet)
+
+**Beziehungen**:
+
+- One-to-Many: Foreign Key in Many-Tabelle
+- Many-to-Many: Junction-Tabelle mit zwei Foreign Keys
+- One-to-One: Foreign Key mit Unique Constraint
+
+## Abfrage-Optimierungs-Muster
+
+**Langsame Abfragen identifizieren**:
+
+```sql
+-- Abfrage-Protokollierung für Abfragen > 100ms aktivieren
+-- Verwenden Sie Datenbankplan-Analyse
+EXPLAIN ANALYZE SELECT ...
+```
+
+**Abfragen optimieren**:
+
+- Indizes auf häufig abgefragten Spalten hinzufügen (WHERE, JOIN, ORDER BY)
+- EXPLAIN PLAN verwenden, um Index-Nutzung zu überprüfen
+- Abfragen gruppieren (mehrere Datensätze in einzelner Abfrage laden)
+- CTEs/Window-Funktionen für komplexe Aggregationen verwenden
+
+**Häufige Probleme**:
+
+```sql
+-- SCHLECHT: N+1 Problem
+SELECT * FROM users;
+-- Loop: SELECT * FROM posts WHERE user_id = $1;
+
+-- GUT: Einzelne Abfrage mit JOIN
+SELECT users.*, posts.*
+FROM users
+LEFT JOIN posts ON users.id = posts.user_id;
+
+-- SCHLECHT: Fehlender Index
+SELECT * FROM users WHERE email = $1;
+
+-- GUT: Indizes auf Email hinzufügen
+CREATE INDEX idx_users_email ON users(email);
+```
+
+## Migrations-Best-Practices
+
+**Sichere Migrationen**:
+
+1. Neue Spalten als nullable hinzufügen (können graduell aufgefüllt werden)
+2. Indizes erstellen, bevor alte Spalten gelöscht werden
+3. Rollback-Plan vor dem Deployment testen
+4. Sicherung vor Durchführung destruktiver Migration
+5. In Wartungsfenster ausführen, wenn Produktionsauswirkung möglich
+
+**Reversible Migrationen**:
+
+- Jede "up" Migration hat entsprechende "down"
+- Down Migration vor dem Deployment von Up getestet
+- Beispiel: Spalte hinzufügen (up) / Spalte löschen (down)
+
+## Koordination mit AG-API
+
+**Schema-Design-Phase**:
+
+- AG-API beschreibt Datenanforderungen
+- AG-DATABASE entwirft Schema
+- Zusammen überprüfen für Optimierungschancen
+
+**Implementierungs-Phase**:
+
+- AG-DATABASE erstellt Migrations-Script
+- AG-API implementiert ORM-Modelle
+- Koordinieren Sie auf Beziehungs-Laden (eager vs lazy)
+
+**Abfrage-Optimierungs-Phase**:
+
+- AG-API entwickelt Abfrage
+- AG-DATABASE überprüft auf N+1 und Optimierungen
+- Indizes bei Bedarf hinzufügen
+
+## Schlüssel-Dateien
+
+- **Expertise**: `packages/cli/src/core/experts/database/expertise.yaml` (Agent-Speicher)
+- **Workflow**: `packages/cli/src/core/experts/database/workflow.md` (Plan → Build → Self-Improve)
+- **Status**: `docs/09-agents/status.json` (Story-Verfolgung)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (Koordinations-Nachrichten)
+- **CLAUDE.md**: Datenbanktyp und ORM-Information
+- **Forschung**: `docs/10-research/` (überprüfen Sie auf Schema-Design-Muster)
+- **ADRs**: `docs/03-decisions/` (Datenbankarchitektur-Entscheidungen)
+
+## Qualitäts-Checkliste
+
+Vor In-Review-Markierung:
+
+- [ ] Schema folgt Namenskonventionen
+- [ ] Alle erforderlichen Spalten vorhanden (id, created_at, updated_at)
+- [ ] Beziehungen ordnungsgemäß definiert (Foreign Keys, Einschränkungen)
+- [ ] Migrationen sind reversibel
+- [ ] Migrationen getestet (up und down)
+- [ ] Indizes auf häufig abgefragten Spalten
+- [ ] Keine N+1 Abfrage-Muster erwartet
+- [ ] Datenintegritäts-Einschränkungen durchgesetzt
+- [ ] Kommentare erklären komplexe Entscheidungen
+- [ ] Sicherungs- und Wiederherstellungsverfahren dokumentiert
+- [ ] Test-Status: bestanden (überprüft via /agileflow:verify)
+
+## Verwandte Agents
+
+- [`api`](/agents/api) - Implementiert ORM-Modelle und Abfragen basierend auf Schema
+- [`mentor`](/agents/mentor) - Orchestriert Datenbankarbeiten als Teil der Feature-Implementierung
+- [`ci`](/agents/ci) - Richtet Test-Datenbanken und Migrations-Test-Infrastruktur ein

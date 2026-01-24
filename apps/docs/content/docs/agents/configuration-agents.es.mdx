@@ -1,0 +1,355 @@
+---
+title: Agentes de Configuración
+description: Agentes especializados para configurar y establecer características de AgileFlow
+---
+
+# Agentes de Configuración
+
+Los agentes de configuración son agentes especializados que ayudan a configurar e instalar varias características de AgileFlow. Se invocan a través del comando `/agileflow:configure`.
+
+## Descripción General
+
+Cuando ejecutas `/agileflow:configure`, se te presenta un menú de opciones de configuración. Cada opción genera un agente de configuración dedicado que te guía a través de la instalación.
+
+```bash
+/agileflow:configure
+```
+
+## Agentes de Configuración Disponibles
+
+### Sistema de Hooks
+
+**Agente**: `configuration-hooks`
+
+Configura el sistema de hooks de Claude Code para automatización impulsada por eventos.
+
+**Qué configura:**
+- SessionStart hook - Pantalla de bienvenida, estado del proyecto
+- PreCompact hook - Preservación de contexto
+- Stop hook - Conclusión de sesión, advertencia de cambios no confirmados
+- UserPromptSubmit hook - Logging de actividad
+
+**Archivos creados:**
+- `.claude/settings.json` - Configuración de hooks
+- `scripts/agileflow-welcome.js` - Pantalla de bienvenida
+- `scripts/precompact-context.sh` - Preservación de contexto
+- `scripts/agileflow-stop.sh` - Conclusión de sesión
+- `scripts/get-env.js` - Ayudante de variable de entorno
+
+---
+
+### Contexto PreCompact
+
+**Agente**: `configuration-precompact`
+
+Configura el hook PreCompact para preservar contexto crítico cuando las conversaciones se compactan.
+
+**Qué preserva:**
+- Versión del proyecto, rama de git, historias activas
+- Reglas de comando activas (p. ej., requisito de AskUserQuestion de babysit)
+- Convenciones clave de CLAUDE.md
+- Progreso reciente de bus/log.jsonl
+
+**Soporte multi-comando (v2.40.0+):**
+Múltiples comandos pueden estar activos simultáneamente. El hook PreCompact lee todos los comandos activos de `session-state.json` y preserva sus reglas de comportamiento.
+
+---
+
+### Auto-Archival
+
+**Agente**: `configuration-archival`
+
+Configura el archivado automático de historias completadas antiguas para mantener `status.json` pequeño.
+
+**Por qué importa:**
+A medida que los proyectos crecen, `status.json` puede exceder el límite de 25k tokens de Claude Code, causando que los agentes fallen. El auto-archival mueve historias completadas antiguas a `status-archive.json`.
+
+**Opciones de configuración:**
+- 30 días (recomendado)
+- 14 días
+- 7 días
+- 3 días (agresivo)
+
+**Archivos creados:**
+- `docs/00-meta/agileflow-metadata.json` - Configuración de umbral
+- `scripts/archive-completed-stories.sh` - Script de archivado
+- Entrada de hook SessionStart - Ejecuta archivado automáticamente
+
+---
+
+### Atribución de Git
+
+**Agente**: `configuration-attribution`
+
+Configura si Claude Code agrega atribución de AI a commits de git.
+
+**Opciones:**
+- **Deshabilitar atribución** - Commits limpios, sin pies de página de AI (uso profesional)
+- **Mantener atribución** - Incluir pie de página "Generated with Claude Code"
+
+**Qué hace:**
+- Crea o actualiza `CLAUDE.md` con política de atribución
+- Agrega sección CRITICAL que Claude sigue
+
+---
+
+### Línea de Estado
+
+**Agente**: `configuration-status-line`
+
+Configura la barra de estado personalizada mostrada en Claude Code.
+
+**Qué muestra:**
+- Rama de git (codificada por color según tipo)
+- ID de historia actual y título
+- Recuento de WIP (amarillo si >1, rojo si >3)
+- Porcentaje de completación
+
+**Ejemplo de salida:**
+```
+[main] US-0007: Status Line | WIP: 2 | Done: 85%
+```
+
+---
+
+### Pipeline de CI
+
+**Agente**: `configuration-ci`
+
+Configura flujo de trabajo de CI/CD para pruebas automatizadas y verificaciones de calidad.
+
+**Qué crea:**
+- Archivo de flujo de trabajo de GitHub Actions
+- Comandos de prueba
+- Configuración de linting
+- Umbrales de cobertura
+
+---
+
+### Configuración de Git
+
+**Agente**: `configuration-git-config`
+
+Configura inicialización de repositorio de git y configuración remota.
+
+**Qué hace:**
+- Inicializa repositorio de git si es necesario
+- Configura origen remoto
+- Configura rama predeterminada
+- Configura .gitignore
+
+---
+
+### Control de Daños
+
+**Agente**: `configuration-damage-control`
+
+Configura el sistema de Control de Daños para proteger contra comandos destructivos.
+
+**Niveles de protección:**
+- **Estándar** - Bloquea patrones destructivos comunes
+- **Estricto** - Bloqueo más agresivo
+- **Permisivo** - Bloqueo mínimo
+
+**Qué bloquea:**
+- `rm -rf /` y variantes
+- Force pushes a ramas protegidas
+- Drops de base de datos sin confirmación
+- Eliminaciones masivas de archivos
+
+Ver [Control de Daños](/features/damage-control) para documentación completa.
+
+---
+
+### Verificar Configuración
+
+**Agente**: `configuration-verify`
+
+Verifica que toda la configuración de AgileFlow sea correcta y funcione.
+
+**Qué comprueba:**
+- Sistema de hooks apropiadamente configurado
+- Directorios requeridos existen
+- Scripts son ejecutables
+- Archivos JSON son válidos
+- Hooks de git están instalados
+
+## Uso
+
+### Configuración Interactiva
+
+```bash
+/agileflow:configure
+```
+
+Verás opciones como:
+```
+Which feature would you like to configure?
+
+1. Hooks System (Recommended)
+2. Auto-Archival
+3. Git Attribution
+4. Status Line
+5. CI Pipeline
+6. Damage Control
+7. Verify Configuration
+```
+
+### Invocación Directa de Agente
+
+También puedes invocar agentes de configuración directamente a través de la herramienta Task:
+
+```javascript
+Task(
+  description: "Configure hooks system",
+  prompt: "Set up the hooks system with SessionStart and PreCompact",
+  subagent_type: "configuration-hooks"
+)
+```
+
+## Archivos de Configuración
+
+### .claude/settings.json
+
+Archivo de configuración principal de hooks. Confirmado a git.
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "node scripts/agileflow-welcome.js"
+      }]
+    }],
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "bash scripts/precompact-context.sh"
+      }]
+    }]
+  }
+}
+```
+
+### docs/00-meta/agileflow-metadata.json
+
+Configuración de características y seguimiento de versiones.
+
+```json
+{
+  "version": "2.78.0",
+  "created": "2025-01-01T00:00:00Z",
+  "updated": "2025-01-09T00:00:00Z",
+  "archival": {
+    "threshold_days": 30,
+    "enabled": true
+  },
+  "features": {
+    "hooks": {
+      "enabled": true,
+      "configured_version": "2.41.0"
+    },
+    "precompact": {
+      "enabled": true,
+      "configured_version": "2.40.0"
+    }
+  }
+}
+```
+
+### .claude/settings.local.json
+
+Anulaciones específicas del usuario. Gitignored.
+
+```json
+{
+  "env": {
+    "USER_NAME": "Your Name"
+  }
+}
+```
+
+## Mejores Prácticas
+
+### 1. Comenzar con Sistema de Hooks
+
+El sistema de hooks es fundamental. Configúralo primero, luego agrega otras características.
+
+```bash
+/agileflow:configure
+# Selecciona: Hooks System
+```
+
+### 2. Habilitar Auto-Archival Temprano
+
+Para proyectos con muchas historias, habilita auto-archival para prevenir que status.json crezca demasiado.
+
+### 3. Reiniciar Después de Configuración
+
+La mayoría de cambios de configuración requieren reiniciar Claude Code:
+
+```
+RESTART CLAUDE CODE NOW!
+Quit completely (Cmd+Q), wait 5 seconds, restart
+Hooks ONLY load on startup!
+```
+
+### 4. Verificar Configuración
+
+Después de hacer cambios, ejecuta verificación:
+
+```bash
+/agileflow:configure
+# Selecciona: Verify Configuration
+```
+
+### 5. Probar Scripts Manualmente
+
+Antes de confiar en hooks, prueba scripts manualmente:
+
+```bash
+# Probar pantalla de bienvenida
+node scripts/agileflow-welcome.js
+
+# Probar preservación de contexto
+bash scripts/precompact-context.sh
+
+# Probar conclusión de sesión
+bash scripts/agileflow-stop.sh
+```
+
+## Solución de Problemas
+
+### Hooks No Se Ejecutan
+
+1. Verifica que `.claude/settings.json` existe y es JSON válido
+2. Comprueba el formato del array de hooks (debe usar formato `matcher` + `hooks`)
+3. Reinicia Claude Code completamente
+
+### Formato Antiguo Detectado
+
+Si ves "Old hooks format detected", tu settings.json usa el formato deprecado. Ejecuta `/agileflow:configure` → Hooks System para migrar.
+
+### Scripts No Encontrados
+
+Asegúrate que los scripts estén en la ubicación correcta:
+- `scripts/agileflow-welcome.js`
+- `scripts/precompact-context.sh`
+- `scripts/get-env.js`
+
+### Permiso Denegado
+
+Haz scripts ejecutables:
+```bash
+chmod +x scripts/*.js scripts/*.sh
+```
+
+## Documentación Relacionada
+
+- [Arquitectura de Sistema de Hooks](/features/hooks-system) - Documentación detallada de hooks
+- [Contexto Compacto](/features/compact-context) - Preservación de contexto
+- [Control de Daños](/features/damage-control) - Sistema de protección
+- [`/agileflow:configure`](/commands/configure) - Comando de configuración

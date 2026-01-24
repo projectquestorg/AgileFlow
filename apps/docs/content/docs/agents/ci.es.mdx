@@ -1,0 +1,183 @@
+---
+title: CI
+description: Especialista en CI/CD y calidad para configurar flujos de trabajo, infraestructura de pruebas, linting, verificación de tipos, cobertura y automatización de integración continua.
+---
+
+# AG-CI
+
+El Agente de CI/CD y Calidad se especializa en pipelines de integración continua, infraestructura de pruebas y automatización de calidad de código. AG-CI mantiene el CI verde y rápido, asegurando que cada commit cumpla con estándares de calidad.
+
+## Capacidades
+
+- **Configuración de Pipeline CI/CD**: GitHub Actions, GitLab CI y otras plataformas CI
+- **Configuración de Marco de Pruebas**: Jest, Vitest, Pytest, Playwright, Cypress setup
+- **Linting y Formateo**: ESLint, Prettier, Black configuration
+- **Verificación de Tipos**: TypeScript, mypy y otros sistemas de tipos
+- **Cobertura de Código**: Aplicación de umbral de cobertura e informes
+- **Escaneo de Seguridad**: SAST, verificación de dependencias, escaneo de vulnerabilidades
+- **Pruebas E2E**: Automatización de pruebas de extremo a extremo y detección de pruebas inestables
+- **Optimización de Compilación**: Caching, paralelización, división de trabajos
+- **Mantenimiento de CLAUDE.md**: Documentación de prácticas y convenciones de CI/prueba
+
+## Cuándo Usar
+
+Utiliza AG-CI cuando necesites:
+
+- Configurar u optimizar pipelines CI/CD
+- Configurar marcos de pruebas y arneses
+- Implementar linting, formateo o verificación de tipos
+- Configurar seguimiento y aplicación de cobertura de código
+- Optimizar tiempos de compilación
+- Arreglar pruebas inestables
+- Implementar escaneo de seguridad
+- Documentar prácticas de prueba en CLAUDE.md
+
+## Cómo Funciona
+
+1. **Carga de Contexto**: El agente lee el archivo de experiencia y verifica la configuración de CI
+2. **Análisis**: Revisa status.json en busca de historias relacionadas con pruebas y problemas de CI
+3. **Ejecución**: Configura flujos de trabajo, marcos de pruebas, herramientas de calidad
+4. **Verificación**: Ejecuta pipeline de CI en rama de características para asegurar que pase
+5. **Documentación**: Actualiza CLAUDE.md con nuevos patrones de prueba y convenciones
+6. **Coordinación**: Actualiza status.json y se comunica vía bus de agentes
+
+## Ejemplo
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "We need to set up a CI pipeline with unit and E2E tests"
+
+# O invoca directamente
+/agileflow:setup-tests
+
+# AG-CI hará:
+# 1. Detectar tipo de proyecto (Node.js, Python, etc.)
+# 2. Recomendar marcos de pruebas
+# 3. Configurar infraestructura de pruebas
+# 4. Configurar flujos de trabajo de CI
+# 5. Documentar patrones en CLAUDE.md
+```
+
+## Comportamientos Clave
+
+- **CI debe mantenerse verde** - No puede fusionar pruebas fallidas
+- **Mantener compilaciones rápidas** - Objetivo menor a 5 minutos para unidad/lint, menor a 15 minutos suite completa
+- **Enfoque de fallo rápido** - Detectar regresiones inmediatamente, no en revisión de PR
+- **Sin pruebas deshabilitadas sin aprobación** - Los umbrales de cobertura se aplican
+- **Escaneo de seguridad habilitado** - Cada pipeline de CI incluye verificaciones de seguridad
+- **CLAUDE.md actualizado proactivamente** - Patrones de prueba documentados para desarrollo futuro
+- **Preservación de Contexto**: Usa compact_context (prioridad: alta) para mantener enfoque en pipeline de CI durante conversaciones largas, preservando estrategia de compilación y objetivos de cobertura a través de compactación de contexto
+
+## Configuración de Contexto Compacto
+
+El agente CI usa **prioridad alta** compact_context para asegurar que la integridad de compilación se mantenga en enfoque:
+
+```yaml
+compact_context:
+  priority: high
+  preserve_rules:
+    - "LOAD EXPERTISE FIRST: Always read packages/cli/src/core/experts/ci/expertise.yaml"
+    - "CI MUST STAY GREEN: Cannot merge failing tests (non-negotiable)"
+    - "KEEP BUILDS FAST: Target under 5 minutes unit/lint, under 15 minutes full suite"
+    - "COVERAGE THRESHOLDS: Enforce minimums, no disabled tests without approval"
+    - "SECURITY SCANNING: Every CI pipeline includes security checks"
+    - "FAIL FAST APPROACH: Catch regressions immediately"
+  state_fields:
+    - current_story
+    - ci_pipeline_status
+    - coverage_targets
+    - flaky_tests_found
+    - build_optimization_progress
+```
+
+Esto asegura que las reglas críticas de CI (compilaciones verdes, umbrales de cobertura, escaneo de seguridad) y el estado actual (estado de pipeline, brechas de cobertura, pruebas inestables) permanezcan en enfoque a través de compactación de contexto.
+
+## Herramientas Disponibles
+
+Este agente tiene acceso a:
+
+- **Leer**: Acceso a archivos de flujo de trabajo y configuraciones de pruebas
+- **Escribir**: Crear nuevos archivos de pruebas y definiciones de flujo de trabajo
+- **Editar**: Actualizar configuraciones de CI existentes
+- **Bash**: Ejecutar comandos de CI y ejecutores de pruebas
+- **Glob**: Encontrar archivos de pruebas y patrones de flujo de trabajo
+- **Grep**: Buscar patrones de pruebas y problemas de cobertura
+
+## Responsabilidades Principales
+
+1. Mantener CI verde y rápido
+2. Asegurar al menos una prueba por historia que valide criterios de aceptación
+3. Mantener umbrales de cobertura de pruebas
+4. Configurar linting, formateo, verificación de tipos
+5. Configurar escaneo de seguridad
+6. Documentar prácticas de prueba en docs/02-practices/
+7. Actualizar status.json después de cada cambio de estado
+8. Agregar mensajes de coordinación al bus de agentes
+9. Arreglar pruebas inestables y problemas de CI
+10. Optimizar tiempos de compilación
+
+## Estándares de Calidad
+
+Antes de marcar el trabajo como completo, AG-CI asegura:
+
+- CI se ejecuta exitosamente en la rama de características
+- Trabajos de unidad/lint se completan en menos de 5 minutos
+- Pruebas de integración/E2E se ejecutan en paralelo donde sea posible
+- Pruebas fallidas proporcionan mensajes de error claros y procesables
+- Informes de cobertura generados y umbrales cumplidos
+- Verificaciones requeridas configuradas en ramas protegidas
+- Pruebas inestables identificadas y arregladas (o rastreadas)
+- Escaneo de seguridad habilitado
+- Secretos accedidos vía secretos de GitHub, no hardcoded
+
+## Agentes Relacionados
+
+- [`AG-DEVOPS`](/agents/devops) - Coordinar en optimización de compilación y rendimiento
+- [`AG-UI`](/agents/ui) - Proporcionar configuración de pruebas de componentes y pruebas de accesibilidad
+- [`AG-API`](/agents/api) - Proporcionar configuración de pruebas de integración y base de datos de pruebas
+- [`MENTOR`](/agents/mentor) - Reportar sobre brechas en infraestructura de pruebas
+
+## Comandos de Barra Diagonal
+
+AG-CI puede invocar directamente estos comandos:
+
+- `/agileflow:research:ask TOPIC=...` - Investigar marcos de pruebas y plataformas de CI
+- `/agileflow:ai-code-review` - Revisar configuración de CI antes de marcar in-review
+- `/agileflow:impact-analysis` - Analizar impacto de cambios de CI en tiempos de compilación
+- `/agileflow:adr-new` - Documentar decisiones de CI/prueba
+- `/agileflow:tech-debt` - Documentar pruebas inestables y compilaciones lentas
+- `/agileflow:board` - Visualizar estado de historia
+- `/agileflow:status STORY=... STATUS=...` - Actualizar estado de historia
+
+## Objetivos de Rendimiento
+
+AG-CI mantiene estos estándares de rendimiento:
+
+- **Trabajos de unidad/lint**: menos de 5 minutos
+- **Suite de pruebas completa**: menos de 15 minutos
+- **Tendencia de tiempo de compilación**: Estable o mejorando mes a mes
+- **Pruebas inestables**: Cero en rama principal
+
+## Mantenimiento de CLAUDE.md
+
+AG-CI actualiza proactivamente CLAUDE.md con patrones de CI/prueba cuando:
+
+- Configurar pipeline CI/CD por primera vez
+- Agregar nuevos marcos de pruebas o herramientas
+- Establecer convenciones de prueba
+- Configurar herramientas de calidad de código
+- Descubrir mejores prácticas de prueba específicas del proyecto
+
+Esto asegura que el desarrollo futuro use patrones consistentes.
+
+## Protocolo de Verificación
+
+AG-CI sigue el sistema Session Harness para prevenir romper funcionalidad:
+
+1. **Pre-Implementación**: Comprueba estado de prueba base y configuración de CI
+2. **Durante Trabajo**: Ejecuta pruebas incrementales, valida que CI pase
+3. **Post-Implementación**: Verifica que el pipeline de CI pase antes de marcar completo
+4. **Completación de Historia**: Solo puede marcar "in-review" si `test_status: "passing"`
+
+Ver el [Protocolo de Session Harness](/agents/session-harness) para detalles completos.

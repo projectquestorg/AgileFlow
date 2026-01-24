@@ -1,0 +1,261 @@
+---
+title: وكلاء التكوين
+description: وكلاء متخصصون لإعداد وتكوين ميزات AgileFlow
+---
+
+# وكلاء التكوين
+
+وكلاء التكوين هي وكلاء متخصصون يساعدون في إعداد وتكوين ميزات AgileFlow المختلفة. يتم استدعاؤهم من خلال أمر `/agileflow:configure`.
+
+## نظرة عامة
+
+عند تشغيل `/agileflow:configure`، يتم عرض قائمة من خيارات التكوين. يؤدي كل خيار إلى تفريخ وكيل تكوين مخصص يرشدك عبر الإعداد.
+
+```bash
+/agileflow:configure
+```
+
+## وكلاء التكوين المتاحة
+
+### نظام الخطاف (Hooks)
+
+**الوكيل**: `configuration-hooks`
+
+يكون نظام الخطاف لـ Claude Code للأتمتة الموجهة للأحداث.
+
+**ما الذي يتم تكوينه:**
+- SessionStart hook - عرض الترحيب وحالة المشروع
+- PreCompact hook - الحفاظ على السياق
+- Stop hook - إغلاق الجلسة والتحذير من التغييرات غير المرتكبة
+- UserPromptSubmit hook - تسجيل النشاط
+
+**الملفات المنشأة:**
+- `.claude/settings.json` - تكوين الخطاف
+- `scripts/agileflow-welcome.js` - عرض الترحيب
+- `scripts/precompact-context.sh` - الحفاظ على السياق
+- `scripts/agileflow-stop.sh` - إغلاق الجلسة
+- `scripts/get-env.js` - مساعد متغير البيئة
+
+---
+
+### سياق PreCompact
+
+**الوكيل**: `configuration-precompact`
+
+يكون خطاف PreCompact للحفاظ على السياق الحرج عند ضغط المحادثات.
+
+**ما يتم الحفاظ عليه:**
+- إصدار المشروع والفرع والقصص النشطة
+- قواعد الأوامر النشطة
+- الاتفاقيات الرئيسية من CLAUDE.md
+- التقدم الأخير من bus/log.jsonl
+
+**دعم الأوامر المتعددة (v2.40.0+):**
+يمكن أن تكون أوامر متعددة نشطة في نفس الوقت.
+
+---
+
+### الأرشفة التلقائية
+
+**الوكيل**: `configuration-archival`
+
+يكون الأرشفة التلقائية للقصص المكتملة القديمة للحفاظ على status.json صغيرًا.
+
+**لماذا يهم:**
+مع نمو المشاريع، يمكن أن يتجاوز status.json حد الرموز، مما يؤدي إلى فشل الوكلاء. تنقل الأرشفة التلقائية القصص المكتملة القديمة.
+
+**خيارات التكوين:**
+- 30 يومًا (موصى به)
+- 14 يومًا
+- 7 أيام
+- 3 أيام (عدواني)
+
+---
+
+### نسبة Git
+
+**الوكيل**: `configuration-attribution`
+
+يكون ما إذا كان Claude Code يضيف نسب AI إلى التزامات git.
+
+**الخيارات:**
+- **تعطيل النسب** - تزام نظيفة بدون تذييل AI
+- **الاحتفاظ بالنسب** - تضمين تذييل "تم إنشاؤها مع Claude Code"
+
+---
+
+### خط الحالة
+
+**الوكيل**: `configuration-status-line`
+
+يكون شريط الحالة المخصص المعروض في Claude Code.
+
+**ما الذي يعرضه:**
+- فرع Git (ملون حسب النوع)
+- معرّف القصة الحالية والعنوان
+- عدد WIP (أصفر إذا >1، أحمر إذا >3)
+- نسبة الإنجاز
+
+**مثال الإخراج:**
+```
+[main] US-0007: Status Line | WIP: 2 | Done: 85%
+```
+
+---
+
+### خط CI
+
+**الوكيل**: `configuration-ci`
+
+يكون سير عمل CI/CD للاختبار والفحوصات الآلية.
+
+**ما الذي ينشئه:**
+- ملف سير عمل GitHub Actions
+- أوامر الاختبار
+- تكوين الملاحظات
+- عتبات التغطية
+
+---
+
+### تكوين Git
+
+**الوكيل**: `configuration-git-config`
+
+يكون تهيئة مستودع git والإعداد البعيد.
+
+**ما الذي يفعله:**
+- تهيئة مستودع git إذا لزم الأمر
+- إعداد الأصل البعيد
+- تكوين الفرع الافتراضي
+- إعداد .gitignore
+
+---
+
+### تحكم الأضرار
+
+**الوكيل**: `configuration-damage-control`
+
+يكون نظام التحكم بالأضرار لحماية الأوامر المدمرة.
+
+**مستويات الحماية:**
+- **Standard** - يحجب الأنماط المدمرة الشائعة
+- **Strict** - حجب أكثر عدوانية
+- **Permissive** - حجب أدنى
+
+---
+
+### التحقق من التكوين
+
+**الوكيل**: `configuration-verify`
+
+يتحقق من صحة جميع تكوين AgileFlow وعمله.
+
+**ما الذي يتحقق منه:**
+- تكوين نظام الخطاف بشكل صحيح
+- الدلائل المطلوبة موجودة
+- السكريبتات قابلة للتنفيذ
+- ملفات JSON صحيحة
+- تم تثبيت خطاف Git
+
+## الاستخدام
+
+### التكوين التفاعلي
+
+```bash
+/agileflow:configure
+```
+
+سترى خيارات مثل:
+```
+Which feature would you like to configure?
+
+1. Hooks System (Recommended)
+2. Auto-Archival
+3. Git Attribution
+4. Status Line
+5. CI Pipeline
+6. Damage Control
+7. Verify Configuration
+```
+
+### استدعاء الوكيل المباشر
+
+يمكنك أيضًا استدعاء وكلاء التكوين مباشرة:
+
+```javascript
+Task(
+  description: "Configure hooks system",
+  prompt: "Set up the hooks system",
+  subagent_type: "configuration-hooks"
+)
+```
+
+## أفضل الممارسات
+
+### 1. ابدأ بنظام الخطاف
+
+نظام الخطاف أساسي. كونه أولاً ثم أضف ميزات أخرى.
+
+### 2. تمكين الأرشفة التلقائية مبكرًا
+
+للمشاريع ذات العديد من القصص، مكن الأرشفة التلقائية.
+
+### 3. إعادة التشغيل بعد التكوين
+
+معظم تغييرات التكوين تتطلب إعادة تشغيل Claude Code:
+
+```
+RESTART CLAUDE CODE NOW!
+```
+
+### 4. التحقق من التكوين
+
+بعد إجراء تغييرات، قم بتشغيل التحقق:
+
+```bash
+/agileflow:configure
+# Select: Verify Configuration
+```
+
+### 5. اختبر السكريبتات يدويًا
+
+قبل الاعتماد على الخطافات، اختبر السكريبتات يدويًا:
+
+```bash
+node scripts/agileflow-welcome.js
+bash scripts/precompact-context.sh
+bash scripts/agileflow-stop.sh
+```
+
+## استكشاف الأخطاء والإصلاح
+
+### الخطافات لا تعمل
+
+1. تحقق من وجود `.claude/settings.json` وهي JSON صحيحة
+2. تحقق من صيغة مصفوفة الخطاف
+3. إعادة تشغيل Claude Code بالكامل
+
+### الصيغة القديمة المكتشفة
+
+إذا رأيت "Old hooks format detected"، استخدم `/agileflow:configure` للهجرة.
+
+### السكريبتات غير مجدية
+
+تأكد من أن السكريبتات في المكان الصحيح:
+- `scripts/agileflow-welcome.js`
+- `scripts/precompact-context.sh`
+- `scripts/get-env.js`
+
+### إذن مرفوض
+
+اجعل السكريبتات قابلة للتنفيذ:
+```bash
+chmod +x scripts/*.js scripts/*.sh
+```
+
+## التوثيق المرتبط
+
+- [Hooks System Architecture](/features/hooks-system)
+- [Compact Context](/features/compact-context)
+- [Damage Control](/features/damage-control)
+- [`/agileflow:configure`](/commands/configure)

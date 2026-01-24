@@ -1,0 +1,281 @@
+---
+title: DevOps
+description: Spécialiste DevOps pour l'infrastructure, le déploiement, la containerisation, l'orchestration et la gestion des environnements.
+---
+
+# Spécialiste DevOps
+
+AG-DEVOPS est l'expert en infrastructure, déploiement, containerisation et gestion des environnements.
+
+## Capacités
+
+- **Infrastructure as Code**: Terraform, CloudFormation
+- **Containerisation**: Docker, images optimisées
+- **Orchestration**: Kubernetes, gestion des services
+- **Déploiement**: Stratégies blue-green, canary, rolling
+- **Gestion des environnements**: Dev, staging, production
+- **Monitoring d'infrastructure**: CPU, mémoire, disque, réseau
+- **Autoscaling**: Mettre à l'échelle selon la charge
+- **Disaster recovery**: Failover, haute disponibilité
+
+## Quand l'utiliser
+
+Utiliser AG-DEVOPS quand:
+
+- Configurer l'infrastructure
+- Déployer sur production
+- Mettre à l'échelle pour la croissance
+- Implémenter la haute disponibilité
+- Gérer les secrets et les configurations
+- Optimiser les coûts d'infrastructure
+- Configurer le monitoring d'infrastructure
+- Planifier la récupération après sinistre
+
+## Exemple
+
+```bash
+# Via /babysit
+/babysit
+> "Application growing. Deploy infrastructure for 10x traffic"
+
+# AG-DEVOPS fera:
+# 1. Configurer l'autoscaling
+# 2. Ajouter un load balancer
+# 3. Configurer Redis pour le cache
+# 4. Mettre en place la réplication BD
+# 5. Configurer le CDN pour les assets
+# 6. Tester le failover
+```
+
+## Infrastructure as Code
+
+**Terraform** (example):
+```hcl
+# vpc.tf
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+# rds.tf
+resource "aws_db_instance" "main" {
+  allocated_storage    = 100
+  engine              = "postgres"
+  instance_class      = "db.t3.medium"
+  skip_final_snapshot = false
+}
+
+# iam.tf
+resource "aws_iam_role" "app" {
+  name = "app-role"
+  assume_role_policy = jsonencode({...})
+}
+```
+
+## Containerisation
+
+**Dockerfile**:
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+**Build optimisé**:
+```dockerfile
+# Multi-stage build (reduce image size)
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+## Déploiement
+
+**Stratégies**:
+- **Blue-green**: Deux environnements identiques, switch traffic
+- **Canary**: Déployer à 10% utilisateurs, monitorer, augmenter
+- **Rolling**: Remplacer les instances graduellement
+- **Feature flags**: Activer/désactiver les fonctionnalités
+
+**Blue-green** (zéro temps d'arrêt):
+```
+Blue (old)  → Active, toutes les requêtes
+Green (new) → En attente, pas de requêtes
+
+Test Green:
+- Sanity checks OK? → Switcher traffic → Blue en attente
+
+Rollback facile: Switcher traffic back à Blue
+```
+
+## Autoscaling
+
+**Configuration** (example):
+```hcl
+resource "aws_autoscaling_group" "app" {
+  desired_capacity = 3
+  max_size         = 10
+  min_size         = 1
+
+  scaling_policies = [
+    {
+      name            = "scale_up"
+      adjustment      = "+2"
+      metric_name     = "CPUUtilization"
+      threshold       = 80
+    },
+    {
+      name            = "scale_down"
+      adjustment      = "-1"
+      metric_name     = "CPUUtilization"
+      threshold       = 20
+    }
+  ]
+}
+```
+
+## Monitoring d'infrastructure
+
+**Métriques clés**:
+- CPU utilization: < 80% (sinon scale up)
+- Memory usage: < 85% (sinon scale up)
+- Disk usage: < 90% (augmenter stockage)
+- Network I/O: Mesurer pour les pics
+- Latency: < 200ms (médian), < 500ms (p95)
+
+**Alertes**:
+```
+CPU > 85% → Scale up
+Memory > 90% → Scale up
+Disk > 95% → Alert, augmenter stockage
+Error rate > 1% → Page on-call
+Latency p95 > 500ms → Investigate
+```
+
+## Haute disponibilité
+
+**Architecture**:
+```
+        ┌─────────────┐
+        │ Load Balancer│
+        └──────┬──────┘
+        ┌──────┴──────┐
+    ┌───┴────┐    ┌──┴──────┐
+    │ Server1│    │ Server2 │
+    └────┬───┘    └───┬─────┘
+         │             │
+         └─────┬───────┘
+               │
+        ┌──────▼──────┐
+        │ RDS Primary │
+        └──────┬──────┘
+               │
+        ┌──────▼──────┐
+        │ RDS Standby │
+        │ (replica)   │
+        └─────────────┘
+```
+
+**Failover**:
+- Si serveur1 échoue → Load balancer route vers serveur2
+- Si RDS primary échoue → Promouvoir le standby (automatique)
+
+## Coûts d'infrastructure
+
+**Optimisation**:
+```
+Compute:
+- Reserved instances (1-3 ans) = 50% de réduction
+- Spot instances = 70% de réduction (mais interruptible)
+
+Storage:
+- Compression (données + backups)
+- Tiering (hot/cold)
+- S3 Glacier pour les archives anciennes (90 jours+)
+
+Bandwidth:
+- CDN pour les assets (moins de données originales)
+- Regional endpoints (moins de transfert inter-région)
+```
+
+## Disaster recovery
+
+**RTO/RPO**:
+- RTO (Recovery Time Objective): < 1 heure
+- RPO (Recovery Point Objective): < 15 minutes
+
+**Plan DR**:
+```
+1. Incident: Région AWS principale indisponible
+2. Détection: Automated health checks (< 1 min)
+3. Failover: Commuter à la région secondaire (< 5 min)
+4. Communication: Notifier les utilisateurs
+5. Resolution: Restaurer la région principale
+6. Switchback: Revenir à la région principale
+7. Post-mortem: Apprendre et améliorer
+```
+
+## Gestion des secrets
+
+**Ne pas coder en dur**:
+```javascript
+// Mauvais
+const DB_PASSWORD = "super-secret-123";
+
+// Bon
+const DB_PASSWORD = process.env.DB_PASSWORD;
+
+// Meilleur (AWS Secrets Manager)
+const secret = await secretsManager.getSecret('db-password');
+```
+
+## Infrastructure de surveillance
+
+**Stack recommandée**:
+- **Logs**: ELK (Elasticsearch, Logstash, Kibana), CloudWatch, Datadog
+- **Metrics**: Prometheus, Grafana, CloudWatch
+- **Traces**: Jaeger, Datadog
+- **Alertes**: PagerDuty, Opsgenie
+
+## Liste de contrôle
+
+Avant de lancer l'infrastructure:
+
+- [ ] Infrastructure as Code complète
+- [ ] Environnements dev, staging, prod configurés
+- [ ] Load balancers configurés
+- [ ] Autoscaling en place
+- [ ] Backups automatiques configurés
+- [ ] Monitoring et alertes en place
+- [ ] Secrets gérés sécurisément
+- [ ] Plan DR documenté et testé
+- [ ] Monitoring de coûts en place
+- [ ] Documentation infrastructure
+
+## Agents associés
+
+- [`ci`](/agents/ci) - Pipeline de déploiement
+- [`monitoring`](/agents/monitoring) - Monitoring et observabilité
+- [`security`](/agents/security) - Sécurité infrastructure
+- [`database`](/agents/database) - Configuration BD
+
+## Commandes slash
+
+- `/agileflow:research:ask TOPIC=...` - Rechercher patterns DevOps
+- `/agileflow:adr-new` - Documenter les décisions infrastructure
+- `/agileflow:status STORY=... STATUS=...` - Mettre à jour le statut

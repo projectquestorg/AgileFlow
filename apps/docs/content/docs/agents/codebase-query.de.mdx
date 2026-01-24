@@ -1,0 +1,270 @@
+---
+title: Codebase Query
+description: Intelligente Codebase-Suche mit programmatischen Abfragen statt RAG. Übersetzt natürliche Sprache in strukturierte Abfragen für schnelle, zielgerichtete Code-Erkundung.
+---
+
+# Codebase Query Agent
+
+Der Codebase Query Agent ist Ihr Spezialist für schnelle, zielgerichtete Codebase-Erkundung mit programmatischer Suche (RLM-Muster). Dieser Agent übersetzt Fragen in natürlicher Sprache in strukturierte Abfragen, was effiziente Code-Entdeckung ohne Laden ganzer Dateien in den Kontext ermöglicht.
+
+## Fähigkeiten
+
+- **Natürlichsprachliche Übersetzung**: Konvertieren Sie Fragen wie "wo wird Auth behandelt?" in strukturierte Abfragen
+- **Datei-Muster-Suche**: Suchen Sie Dateien nach Glob-Mustern und Namenskonventionen
+- **Content-Suche**: Grep-ähnliche Suchanfragen für Code-Muster, Funktionsnamen und Text
+- **Tag-basierte Suche**: Suchen Sie Dateien nach semantischen Tags (api, ui, auth, database, test)
+- **Export-Entdeckung**: Suchen Sie, wo Symbole exportiert und verwendet werden
+- **Abhängigkeits-Mapping**: Zeigen Sie, welche Dateien eine bestimmte Datei importieren/von ihr importiert werden
+- **Token-Budget-Verwaltung**: Respektieren Sie Kontextgrenzen durch Abschneiden großer Ergebnisse
+
+## Wann Sie diesen Agent verwenden sollten
+
+Verwenden Sie diesen Agent, wenn Sie:
+
+- Dateien im Zusammenhang mit einem Feature suchen müssen (Authentifizierung, API, Datenbank, etc.)
+- Funktionsdefinitionen oder Exporte suchen müssen
+- Datei-Abhängigkeiten und Import-Ketten entdecken müssen
+- Code-Inhalte durchsuchen müssen, ohne ganze Dateien zu lesen
+- Eine unbekannte Codebase schnell erforschen müssen
+- Kontext für die Implementierung eines Features aufbauen müssen
+
+## Wie es funktioniert
+
+### Abfrage-Übersetzung
+
+Der Agent übersetzt natürliche Sprache in strukturierte Abfragen:
+
+| Benutzer sagt | Abfrage-Typ | Übersetzung |
+|-----------|------------|-------------|
+| "Wo wird Authentifizierung behandelt?" | tag + query | `--tag="auth"` + `--query="auth"` |
+| "Welche Dateien verwenden die Login-Funktion?" | export | `--export="login"` |
+| "Suchen Sie Dateien mit Fehlerbehandlung" | content | `--content="try.*catch"` |
+| "Zeigen Sie mir API-Routen" | tag | `--tag="api"` |
+| "Wovon hängt user.ts ab?" | deps | `--deps="src/user.ts"` |
+| "Datenbankschema-Dateien" | tag + query | `--tag="database"` + `--query="schema"` |
+| "React-Komponenten, die Hooks verwenden" | content | `--content="use(State\|Effect\|Ref)"` |
+| "Alle Test-Dateien" | tag | `--tag="test"` |
+
+### Verfügbare Tags
+
+| Tag | Passt |
+|-----|---------|
+| api | `/api/`, `/routes/`, `/controllers/` |
+| ui | `/components/`, `/views/`, `/pages/` |
+| auth | `/auth/`, `/login/`, `/jwt/` |
+| database | `/db/`, `/models/`, `/migrations/` |
+| test | `/test/`, `/__tests__/`, `/spec/` |
+| config | `/config/`, `/settings/` |
+| lib | `/lib/`, `/utils/`, `/helpers/` |
+
+### Workflow
+
+1. **Abfrage analysieren**: Verstehen Sie, was der Benutzer sucht
+2. **Übersetzen**: Konvertieren Sie natürliche Sprache in strukturierte Abfragetypen
+3. **Index überprüfen**: Stellen Sie sicher, dass Codebase-Index verfügbar ist (bei Bedarf erstellen)
+4. **Abfrage ausführen**: Führen Sie Abfrage mit entsprechenden Flags aus
+5. **Ergebnisse formatieren**: Geben Sie Dateipfade mit Kontext zurück
+6. **Bei Bedarf abschneiden**: Respektieren Sie Token-Budget-Grenzen
+
+## Beispiel
+
+```bash
+# Via /babysit
+/agileflow:babysit
+> "Wo wird Authentifizierung in dieser Codebase behandelt?"
+```
+
+Der Codebase Query Agent würde:
+1. Übersetzen zu: `--tag="auth"` + `--query="auth"`
+2. Index überprüfen/erstellen
+3. Dateien suchen, die Auth-Mustern entsprechen
+4. Strukturierte Ergebnisse zurückgeben:
+```
+Abfrage: "Authentifizierungs-Dateien"
+Übersetzung: --tag="auth" + --query="auth"
+Gefunden: 8 Dateien
+
+Dateien:
+- src/api/auth.ts (api, auth)
+- src/middleware/auth.ts (auth)
+- src/lib/jwt.ts (auth, lib)
+- src/hooks/useAuth.ts (ui, auth)
+...
+
+[Kontext: Dateien mit Tag 'auth' und Muster 'auth' durchsucht]
+```
+
+## Wichtige Verhaltensweisen
+
+- **NUR LESEN**: Dieser Agent kann keine Dateien schreiben, bearbeiten oder modifizieren
+- **Index-First**: Überprüft/erstellt immer Codebase-Index vor der Abfrage
+- **Token-bewusst**: Schneidet Ergebnisse ab, um im Budget zu bleiben (Standard: 15000 Zeichen)
+- **Strukturierte Ausgabe**: Gibt konsistentes Format mit Abfrage, Übersetzung und Ergebnissen zurück
+- **Fallback-Strategie**: Verwendet direkt Glob/Grep, wenn Index nicht verfügbar
+
+## Verfügbare Tools
+
+Dieser Agent hat Zugriff auf:
+- **Read**: Durchsuchen Sie Dateien, um Kontext zu verstehen
+- **Glob**: Muster-basierte Datei-Entdeckung
+- **Grep**: Content-basierte Suche
+
+**Bemerkenswert fehlend** (NUR LESEN Agent):
+- Kein Write-Tool
+- Kein Edit-Tool
+- Kein Bash-Tool (außer für Ausführung des Query-Scripts)
+
+## Abfrage-Typen
+
+### Muster/Schlüsselwort-Abfrage
+```bash
+--query="auth"
+```
+Intelligente Suche, die Glob-Muster, Tag-Matching und Export-Suche kombiniert.
+
+### Content-Suche
+```bash
+--content="validateToken"
+```
+Grep-ähnliche Textsuche in Dateien.
+
+### Tag-Suche
+```bash
+--tag="api"
+```
+Suchen Sie Dateien, die semantische Tag-Muster entsprechen.
+
+### Export-Suche
+```bash
+--export="login"
+```
+Suchen Sie Dateien, die ein bestimmtes Symbol exportieren.
+
+### Abhängigkeits-Suche
+```bash
+--deps="src/auth.js"
+```
+Zeigen Sie an, was die Datei importiert und was sie importiert.
+
+### Index erstellen
+```bash
+--build-index
+```
+Codebase-Index neu erstellen (wenn veraltet oder fehlend).
+
+## Ausgabe-Format
+
+Standard-Response-Format:
+
+```
+Abfrage: "[ursprüngliche natürlichsprachige Abfrage]"
+Übersetzung: [verwendete Abfrage-Flags]
+Index-Status: [erstellt/veraltet/fehlend]
+Gefunden: [N] Dateien
+
+Dateien:
+- Pfad/zu/Datei.ts (Tags)
+- Pfad/zu/andere.ts (Tags)
+...
+
+[Kontext: Erklärung, was durchsucht wurde]
+```
+
+Für Content-Suchanfragen include passende Zeilen:
+```
+Übereinstimmungen in Pfad/zu/Datei.ts:
+  42: const token = validateToken(input);
+  85: if (!validateToken(refreshToken)) {
+```
+
+## Token-Budget-Verwaltung
+
+Der Agent respektiert Token-Grenzen:
+- Standard-Budget: 15000 Zeichen
+- Verwenden Sie `--budget=5000` für kleinere Ergebnisse
+- Große Ergebnisse werden mit Hinweis abgeschnitten
+- Zeigt Gesamtzahl auch beim Abschneiden
+
+## Fallback-Verhalten
+
+Falls Query-Script oder Index nicht verfügbar:
+
+1. **Datei-Muster**: Verwenden Sie Glob-Tool für Muster-Matching
+2. **Content-Suche**: Verwenden Sie Grep-Tool für Textsuche
+3. **Ergebnisse kombinieren**: Deduplizieren und manuell formatieren
+
+## Integration mit anderen Agents
+
+Der Codebase Query Agent wird typischerweise aufgerufen von:
+
+- **MENTOR**: Finden Sie relevanten Code für Feature-Implementierung
+- **AG-API**: Suchen Sie vorhandene API-Implementierungen
+- **REFACTOR**: Suchen Sie Code-Muster zu aktualisieren
+- **AG-DEVOPS**: Suchen Sie Konfigurationsdateien
+- **EPIC-PLANNER**: Verstehen Sie Codebase-Struktur
+
+Ergebnisse werden direkt zurückgegeben (keine Bus-Messaging nötig für Read-Only-Abfragen).
+
+## RLM-Muster
+
+Dieser Agent implementiert das Repository-Level-Modeling (RLM) Muster:
+
+- **Programmatische Suche**: Abfrage Codebase über strukturierte API, nicht RAG
+- **Index-basiert**: Verwendet vorgebauten Index für schnelle Lookups
+- **Token-effizient**: Gibt nur relevante Ergebnisse zurück, nicht ganze Dateien
+- **Deterministisch**: Gleiche Abfrage gibt immer gleiche Ergebnisse zurück
+
+Vorteile gegenüber RAG:
+- Schneller (keine Embedding-Berechnung)
+- Genauer (exakte Treffer)
+- Niedriger Kosten (kleinerer Kontext)
+- Deterministisch (keine Halluzinationen)
+
+## Häufige Muster
+
+**Suchen Sie Implementierungs-Dateien**
+```
+"Wo wird [Feature] implementiert?"
+→ --tag="[relevant-tag]" + --query="[Feature]"
+```
+
+**Suchen Sie Verwendungs-Sites**
+```
+"Was verwendet [Funktion/Klasse]?"
+→ --export="[Symbol]"
+```
+
+**Suchen Sie Konfiguration**
+```
+"Wo wird [Setting] konfiguriert?"
+→ --tag="config" + --content="[setting]"
+```
+
+**Map-Abhängigkeiten**
+```
+"Wovon hängt [Datei] ab?"
+→ --deps="[Dateipfad]"
+```
+
+## Verwandte Agents
+
+- [`research`](/agents/research) - Für tiefere technische Forschung über Code hinaus
+- [`mentor`](/agents/mentor) - Ruft oft Codebase-Query für Kontext auf
+- [`refactor`](/agents/refactor) - Verwendet Query-Ergebnisse zur Refactoring-Planung
+- [`devops`](/agents/devops) - Sucht Konfigurations- und Infrastruktur-Code
+
+## Anti-Muster
+
+**NICHT:**
+- Verwenden Sie Write/Edit-Tools (Sie sind NUR LESEN)
+- Laden Sie ganze Codebase in Kontext
+- Ignorieren Sie Index-Status (überprüfen/erstellen Sie zuerst)
+- Geben Sie rohe Datei-Inhalte zurück (geben Sie strukturierte Ergebnisse zurück)
+- Überschreiten Sie Token-Budget (schneiden Sie mit Hinweis ab)
+
+**TUST:**
+- Übersetzen Sie natürliche Sprache in Abfragetypen
+- Überprüfen Sie Index-Status vor der Abfrage
+- Kombinieren Sie Abfragetypen für komplexe Suchanfragen
+- Zeigen Sie Match-Anzahl und Dateipfade
+- Erklären Sie, was durchsucht wurde und wie
