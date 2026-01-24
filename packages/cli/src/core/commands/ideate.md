@@ -1,14 +1,14 @@
 ---
 description: Generate categorized improvement ideas using multi-expert analysis
-argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep] [OUTPUT=report|stories|both]
+argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both]
 compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:ideate - Ideation orchestrator with multi-expert analysis"
     - "CRITICAL: Deploy experts IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before synthesis (use TaskOutput with block=true)"
-    - "CRITICAL: Confidence scoring: HIGH (2+ experts agree) | MEDIUM (1 expert with evidence) | LOW (vague, exclude)"
-    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep) | OUTPUT (report/stories/both)"
+    - "CRITICAL: Confidence scoring varies by depth: quick/deep (HIGH=2+ agree) | ultradeep (HIGH=3+ agree)"
+    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both)"
     - "MUST categorize by domain: Security, Performance, Code Quality, UX, Testing, API/Architecture"
     - "MUST estimate effort for each idea: High/Medium/Low impact"
     - "Optional: Generate stories for HIGH-confidence items (if OUTPUT=stories or both)"
@@ -44,11 +44,11 @@ node .agileflow/scripts/obtain-context.js ideate
 /agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=report
 ```
 
-**What It Does**: Deploy 4-6 domain experts → Each generates 3-5 ideas → Synthesize with confidence scoring → Categorized report
+**What It Does**: Deploy 4-15 domain experts → Each generates 3-5 ideas → Synthesize with confidence scoring → Categorized report
 
 **Arguments**:
 - `SCOPE=all|security|perf|code|ux` (default: all)
-- `DEPTH=quick|deep` (default: quick)
+- `DEPTH=quick|deep|ultradeep` (default: quick) — ultradeep uses 13 experts for ~65 ideas
 - `OUTPUT=report|stories|both` (default: report)
 
 ### Tool Usage Examples
@@ -87,7 +87,7 @@ node .agileflow/scripts/obtain-context.js ideate
 ```
 
 **Categories**: Security, Performance, Code Quality, UX/Design, Testing, API/Architecture
-**Confidence**: High (2+ experts agree), Medium (1 expert with evidence)
+**Confidence**: High (2+ experts agree; 3+ for ultradeep), Medium (1 expert with evidence)
 **Output**: `docs/08-project/ideation-<YYYYMMDD>.md` | Optional stories
 <!-- COMPACT_SUMMARY_END -->
 
@@ -104,7 +104,7 @@ node .agileflow/scripts/obtain-context.js ideate
 ┌─────────────────────────────────────────────────────────────┐
 │              IDEATION ORCHESTRATOR                          │
 │  1. Parse SCOPE to determine which experts                  │
-│  2. Deploy 4-6 experts IN PARALLEL                          │
+│  2. Deploy 4-13 experts IN PARALLEL (13 for ultradeep)      │
 │  3. Each expert generates 3-5 improvement ideas             │
 │  4. Collect and synthesize with confidence scoring          │
 │  5. Generate categorized report                             │
@@ -153,17 +153,20 @@ You coordinate multiple domain experts to generate improvement suggestions for t
 Parse the input arguments:
 
 **SCOPE** (which experts to deploy):
-| SCOPE | Experts |
-|-------|---------|
-| `all` (default) | security, performance, refactor, ui, testing, api (6 experts) |
-| `security` | security, api, testing (3 experts) |
-| `perf` | performance, database, api (3 experts) |
-| `code` | refactor, testing, api (3 experts) |
-| `ux` | ui, accessibility, api (3 experts) |
+| SCOPE | Experts (quick/deep) | Experts (ultradeep adds) |
+|-------|----------------------|--------------------------|
+| `all` (default) | security, performance, refactor, ui, testing, api (6) | + accessibility, compliance, database, monitoring, qa, analytics, documentation (13 total) |
+| `security` | security, api, testing (3) | + compliance, monitoring (5 total) |
+| `perf` | performance, database, api (3) | + monitoring, analytics (5 total) |
+| `code` | refactor, testing, api (3) | + documentation, qa (5 total) |
+| `ux` | ui, accessibility, api (3) | + design, analytics (5 total) |
 
 **DEPTH**:
 - `quick` (default): Each expert generates 3 ideas, focuses on high-impact only
 - `deep`: Each expert generates 5 ideas, includes lower-priority items
+- `ultradeep`: Deploy 13 experts (SCOPE=all) with 5 ideas each (~65 ideas), comprehensive coverage
+
+> **Note**: `DEPTH=ultradeep` is recommended for comprehensive audits, pre-release reviews, or quarterly codebase assessments. It deploys significantly more experts and takes longer to complete.
 
 **OUTPUT**:
 - `report` (default): Generate ideation report only
@@ -255,6 +258,103 @@ FORMAT each idea as:
 </invoke>
 ```
 
+**Example deployment for SCOPE=all DEPTH=ultradeep** (13 experts):
+
+```xml
+<!-- Deploy ALL 13 experts in a SINGLE message -->
+<invoke name="Task">
+<parameter name="description">Security ideation</parameter>
+<parameter name="prompt">[prompt with domain=security]</parameter>
+<parameter name="subagent_type">agileflow-security</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Performance ideation</parameter>
+<parameter name="prompt">[prompt with domain=performance]</parameter>
+<parameter name="subagent_type">agileflow-performance</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Code quality ideation</parameter>
+<parameter name="prompt">[prompt with domain=refactor]</parameter>
+<parameter name="subagent_type">agileflow-refactor</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">UX ideation</parameter>
+<parameter name="prompt">[prompt with domain=ui]</parameter>
+<parameter name="subagent_type">agileflow-ui</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Testing ideation</parameter>
+<parameter name="prompt">[prompt with domain=testing]</parameter>
+<parameter name="subagent_type">agileflow-testing</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">API/Architecture ideation</parameter>
+<parameter name="prompt">[prompt with domain=api]</parameter>
+<parameter name="subagent_type">agileflow-api</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<!-- Additional ultradeep experts (7 more) -->
+<invoke name="Task">
+<parameter name="description">Accessibility ideation</parameter>
+<parameter name="prompt">[prompt with domain=accessibility]</parameter>
+<parameter name="subagent_type">agileflow-accessibility</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Compliance ideation</parameter>
+<parameter name="prompt">[prompt with domain=compliance]</parameter>
+<parameter name="subagent_type">agileflow-compliance</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Database ideation</parameter>
+<parameter name="prompt">[prompt with domain=database]</parameter>
+<parameter name="subagent_type">agileflow-database</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Monitoring ideation</parameter>
+<parameter name="prompt">[prompt with domain=monitoring]</parameter>
+<parameter name="subagent_type">agileflow-monitoring</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">QA ideation</parameter>
+<parameter name="prompt">[prompt with domain=qa]</parameter>
+<parameter name="subagent_type">agileflow-qa</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Analytics ideation</parameter>
+<parameter name="prompt">[prompt with domain=analytics]</parameter>
+<parameter name="subagent_type">agileflow-analytics</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Documentation ideation</parameter>
+<parameter name="prompt">[prompt with domain=documentation]</parameter>
+<parameter name="subagent_type">agileflow-documentation</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+```
+
 ### STEP 3: COLLECT RESULTS
 
 Wait for all experts to complete:
@@ -278,11 +378,13 @@ Analyze all expert ideas and synthesize:
 
 **Confidence Scoring**:
 
-| Confidence | Criteria | Action |
-|------------|----------|--------|
-| **HIGH** | 2+ experts suggest similar idea | Include prominently, recommend immediate action |
-| **MEDIUM** | 1 expert with specific evidence (file paths, metrics) | Include as opportunity |
-| **LOW** | 1 expert, vague/no evidence | Exclude from report |
+| Confidence | Criteria (quick/deep) | Criteria (ultradeep) | Action |
+|------------|----------------------|----------------------|--------|
+| **HIGH** | 2+ experts suggest similar idea | 3+ experts suggest similar idea | Include prominently, recommend immediate action |
+| **MEDIUM** | 1 expert with specific evidence | 1-2 experts with specific evidence | Include as opportunity |
+| **LOW** | 1 expert, vague/no evidence | 1-2 experts, vague/no evidence | Exclude from report |
+
+> For ultradeep mode, the higher threshold (3+) for HIGH confidence prevents noise from having many perspectives and ensures only truly cross-cutting concerns bubble up as top priorities.
 
 **Overlap Detection**:
 - Ideas about the same file/component from different experts = HIGH confidence
@@ -435,12 +537,35 @@ After generating output, present options:
 
 ---
 
+### Example: Ultradeep Execution
+
+**User**: `/agileflow:ideate SCOPE=all DEPTH=ultradeep OUTPUT=both`
+
+**Step 1**: Parse → SCOPE=all (13 experts), DEPTH=ultradeep (5 ideas each), OUTPUT=both
+
+**Step 2**: Deploy 13 experts in parallel (security, performance, refactor, ui, testing, api, accessibility, compliance, database, monitoring, qa, analytics, documentation)
+
+**Step 3**: Collect results (~65 raw ideas)
+
+**Step 4**: Synthesize with ultradeep thresholds:
+- 8 ideas mentioned by 3+ experts → HIGH confidence
+- 25 ideas with 1-2 experts + evidence → MEDIUM confidence
+- 32 ideas too vague or single expert without evidence → excluded
+
+**Step 5**: Generate report with 33 ideas, saved to `docs/08-project/ideation-20260106.md`
+
+**Step 6**: Generate 8 stories for HIGH-confidence items
+
+**Step 7**: Present next steps via AskUserQuestion
+
+---
+
 ## Arguments
 
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | SCOPE | all, security, perf, code, ux | all | Which domains to analyze |
-| DEPTH | quick, deep | quick | Number of ideas per expert (3 vs 5) |
+| DEPTH | quick, deep, ultradeep | quick | quick (3 ideas, 6 experts), deep (5 ideas, 6 experts), ultradeep (5 ideas, 13 experts) |
 | OUTPUT | report, stories, both | report | What to generate |
 
 {{argument}}
