@@ -382,6 +382,91 @@ PYTHON
 fi
 
 # ============================================================================
+# Task Complexity Assessment (RLM-inspired)
+# ============================================================================
+# Detects task complexity based on:
+# - Current story dependencies and blockers
+# - File count affected
+# - Cross-references needed
+#
+# Maps to context threshold recommendations:
+# - LOW complexity: 70% context is fine
+# - MEDIUM complexity: stay under 60%
+# - HIGH complexity: stay under 40% (dumb zone starts sooner)
+#
+COMPLEXITY_DISPLAY=""
+SHOW_COMPLEXITY=true
+
+# Check component setting
+if [ "$COMPONENTS" != "null" ] && [ -n "$COMPONENTS" ]; then
+  SHOW_COMPLEXITY=$(echo "$COMPONENTS" | jq -r '.complexity | if . == null then true else . end')
+fi
+
+if [ "$SHOW_COMPLEXITY" = "true" ]; then
+  TASK_COMPLEXITY="LOW"
+  COMPLEXITY_SCORE=0
+
+  # Check session-state.json for active task info
+  if [ -f "docs/09-agents/session-state.json" ]; then
+    SESSION_STATE=$(cat docs/09-agents/session-state.json 2>/dev/null)
+
+    # Check active commands (some commands are inherently complex)
+    # Get most recent active command name from array
+    ACTIVE_CMD=$(echo "$SESSION_STATE" | jq -r '.active_commands[-1].name // empty' 2>/dev/null)
+    case "$ACTIVE_CMD" in
+      babysit|mentor|orchestrator|multi-expert|rlm)
+        COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 2))
+        ;;
+      research*|ideate|rpi)
+        COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 1))
+        ;;
+    esac
+
+    # Check current story's dependencies
+    CURRENT_STORY=$(echo "$SESSION_STATE" | jq -r '.current_story // empty' 2>/dev/null)
+    if [ -n "$CURRENT_STORY" ] && [ -f "docs/09-agents/status.json" ]; then
+      STATUS_JSON=$(cat docs/09-agents/status.json 2>/dev/null)
+
+      # Count dependencies
+      DEP_COUNT=$(echo "$STATUS_JSON" | jq -r ".stories[\"$CURRENT_STORY\"].depends_on // [] | length" 2>/dev/null)
+      [ -n "$DEP_COUNT" ] && [ "$DEP_COUNT" -gt 2 ] 2>/dev/null && COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 1))
+
+      # Count acceptance criteria
+      AC_COUNT=$(echo "$STATUS_JSON" | jq -r ".stories[\"$CURRENT_STORY\"].acceptance_criteria // [] | length" 2>/dev/null)
+      [ -n "$AC_COUNT" ] && [ "$AC_COUNT" -gt 5 ] 2>/dev/null && COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 1))
+
+      # Check for blockers
+      BLOCKER_COUNT=$(echo "$STATUS_JSON" | jq -r ".stories[\"$CURRENT_STORY\"].blockers // [] | length" 2>/dev/null)
+      [ -n "$BLOCKER_COUNT" ] && [ "$BLOCKER_COUNT" -gt 0 ] 2>/dev/null && COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 1))
+    fi
+
+    # Check ralph loop mode (more complex)
+    LOOP_ENABLED=$(echo "$SESSION_STATE" | jq -r '.ralph_loop.enabled // false' 2>/dev/null)
+    [ "$LOOP_ENABLED" = "true" ] && COMPLEXITY_SCORE=$((COMPLEXITY_SCORE + 1))
+  fi
+
+  # Determine complexity level
+  if [ "$COMPLEXITY_SCORE" -ge 4 ]; then
+    TASK_COMPLEXITY="HIGH"
+    COMPLEXITY_COLOR="$RED"
+    COMPLEXITY_ICON="◆"  # Diamond for high complexity
+  elif [ "$COMPLEXITY_SCORE" -ge 2 ]; then
+    TASK_COMPLEXITY="MED"
+    COMPLEXITY_COLOR="$YELLOW"
+    COMPLEXITY_ICON="◇"  # Outline diamond for medium
+  else
+    TASK_COMPLEXITY="LOW"
+    COMPLEXITY_COLOR="$GREEN"
+    COMPLEXITY_ICON="○"  # Circle for low
+  fi
+
+  # Only show if not LOW (to reduce noise)
+  if [ "$TASK_COMPLEXITY" != "LOW" ]; then
+    COMPLEXITY_DISPLAY="${COMPLEXITY_COLOR}${COMPLEXITY_ICON}${TASK_COMPLEXITY}${RESET}"
+  fi
+fi
+
+# ============================================================================
 # AgileFlow Status - Read from status.json
 # ============================================================================
 STORY_DISPLAY=""
@@ -583,6 +668,21 @@ if [ "$SHOW_SESSION" = "true" ] && [ -n "$SESSION_INFO" ]; then
   fi
 fi
 
+# Session health indicator (shows warning icon + count if issues exist)
+if [ "$SHOW_SESSION" = "true" ]; then
+  SCRIPTS_DIR="$(dirname "$0")"
+  HEALTH_OUTPUT=$(node "$SCRIPTS_DIR/session-manager.js" health 2>/dev/null)
+  if [ -n "$HEALTH_OUTPUT" ]; then
+    HEALTH_ISSUES=$(echo "$HEALTH_OUTPUT" | jq -r '
+      (.uncommitted | length) + (.stale | length) + (.orphanedRegistry | length)
+    ' 2>/dev/null)
+    if [ -n "$HEALTH_ISSUES" ] && [ "$HEALTH_ISSUES" != "0" ] && [ "$HEALTH_ISSUES" != "null" ]; then
+      [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT} "
+      OUTPUT="${OUTPUT}${YELLOW}⚠${HEALTH_ISSUES}${RESET}"
+    fi
+  fi
+fi
+
 # Model with subtle styling (if enabled and available)
 if [ "$SHOW_MODEL" = "true" ] && [ -n "$MODEL_DISPLAY" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
@@ -621,6 +721,12 @@ if [ "$SHOW_CONTEXT" = "true" ] && [ -n "$CTX_DISPLAY" ]; then
   else
     OUTPUT="${OUTPUT}${CTX_DISPLAY}"
   fi
+fi
+
+# Add task complexity indicator (if enabled and not LOW)
+if [ "$SHOW_COMPLEXITY" = "true" ] && [ -n "$COMPLEXITY_DISPLAY" ]; then
+  [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
+  OUTPUT="${OUTPUT}${COMPLEXITY_DISPLAY}"
 fi
 
 # Add session time remaining (if enabled and available)

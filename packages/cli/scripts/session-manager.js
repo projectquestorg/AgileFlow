@@ -231,6 +231,159 @@ async function cleanupStaleLocksAsync(registry, options = {}) {
   return { count: cleanedSessions.length, sessions: cleanedSessions };
 }
 
+/**
+ * Get detailed file information for a session's changes
+ * @param {string} sessionPath - Path to session worktree
+ * @param {string[]} changes - Array of git status lines
+ * @returns {Object[]} Array of file details with analysis
+ */
+function getFileDetails(sessionPath, changes) {
+  return changes.map((change) => {
+    const status = change.substring(0, 2).trim();
+    const file = change.substring(3);
+
+    const detail = { status, file, trivial: false, existsInMain: false, diffLines: 0 };
+
+    // For modified files, get diff stats
+    if (status === 'M') {
+      try {
+        const diffStat = spawnSync('git', ['diff', '--numstat', file], {
+          cwd: sessionPath,
+          encoding: 'utf8',
+          timeout: 3000,
+        });
+        if (diffStat.stdout) {
+          const parts = diffStat.stdout.trim().split('\t');
+          const added = parseInt(parts[0], 10) || 0;
+          const removed = parseInt(parts[1], 10) || 0;
+          detail.diffLines = added + removed;
+          // Trivial if only 1-2 lines changed (likely whitespace)
+          detail.trivial = detail.diffLines <= 2;
+        }
+      } catch (e) {
+        // Can't get diff, assume not trivial
+      }
+    }
+
+    // For untracked files, check if exists in main
+    if (status === '??') {
+      detail.existsInMain = fs.existsSync(path.join(ROOT, file));
+      // Trivial if it's a duplicate
+      detail.trivial = detail.existsInMain;
+    }
+
+    // Config/cache files are trivial
+    if (file.includes('.claude/') || file.includes('.agileflow/cache')) {
+      detail.trivial = true;
+    }
+
+    return detail;
+  });
+}
+
+/**
+ * Get health status for all sessions
+ * Detects: stale sessions, uncommitted changes, orphaned entries
+ * @param {Object} options - { staleDays: 7, detailed: false }
+ * @returns {Object} Health report
+ */
+function getSessionsHealth(options = {}) {
+  const { staleDays = 7, detailed = false } = options;
+  const registry = loadRegistry();
+  const now = Date.now();
+  const staleThreshold = staleDays * 24 * 60 * 60 * 1000;
+
+  const health = {
+    stale: [],           // Sessions with no activity > staleDays
+    uncommitted: [],     // Sessions with uncommitted git changes
+    orphanedRegistry: [], // Registry entries where path doesn't exist
+    orphanedWorktrees: [], // Worktrees not in registry
+    healthy: 0,
+  };
+
+  // Check each registered session
+  for (const [id, session] of Object.entries(registry.sessions)) {
+    if (session.is_main) continue; // Skip main session
+
+    const age = now - new Date(session.last_active).getTime();
+    const pathExists = fs.existsSync(session.path);
+
+    // Check for orphaned registry entry (path missing)
+    if (!pathExists) {
+      health.orphanedRegistry.push({ id, ...session, reason: 'path_missing' });
+      continue;
+    }
+
+    // Check for stale session
+    if (age > staleThreshold) {
+      health.stale.push({
+        id,
+        ...session,
+        ageDays: Math.floor(age / (24 * 60 * 60 * 1000)),
+      });
+    }
+
+    // Check for uncommitted changes
+    try {
+      const result = spawnSync('git', ['status', '--porcelain'], {
+        cwd: session.path,
+        encoding: 'utf8',
+        timeout: 5000,
+      });
+      if (result.stdout && result.stdout.trim()) {
+        const changes = result.stdout.trim().split('\n');
+        const sessionData = {
+          id,
+          ...session,
+          changeCount: changes.length,
+          changes: detailed ? changes : changes.slice(0, 5), // All or first 5
+        };
+
+        // Add detailed file analysis if requested
+        if (detailed) {
+          sessionData.fileDetails = getFileDetails(session.path, changes);
+          // Calculate if session is safe to delete (all changes trivial)
+          sessionData.allTrivial = sessionData.fileDetails.every((f) => f.trivial);
+        }
+
+        health.uncommitted.push(sessionData);
+      } else {
+        health.healthy++;
+      }
+    } catch (e) {
+      // Can't check, skip
+    }
+  }
+
+  // Check for orphaned worktrees (directories not in registry)
+  try {
+    const worktreeList = spawnSync('git', ['worktree', 'list', '--porcelain'], {
+      encoding: 'utf8',
+    });
+    if (worktreeList.stdout) {
+      const worktrees = worktreeList.stdout
+        .split('\n')
+        .filter((line) => line.startsWith('worktree '))
+        .map((line) => line.replace('worktree ', ''));
+
+      const mainPath = ROOT;
+      for (const wtPath of worktrees) {
+        const inRegistry = Object.values(registry.sessions).some((s) => s.path === wtPath);
+        if (!inRegistry && wtPath !== mainPath) {
+          // Check if it's an AgileFlow worktree (has .agileflow folder)
+          if (fs.existsSync(path.join(wtPath, '.agileflow'))) {
+            health.orphanedWorktrees.push({ path: wtPath });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Can't list worktrees, skip
+  }
+
+  return health;
+}
+
 // Git command cache (10 second TTL to avoid stale data)
 const gitCache = {
   data: new Map(),
@@ -432,7 +585,11 @@ function progressIndicator(message) {
  * @param {number} timeoutMs - Timeout in milliseconds
  * @returns {Promise<{stdout: string, stderr: string}>}
  */
-function createWorktreeWithTimeout(worktreePath, branchName, timeoutMs = DEFAULT_WORKTREE_TIMEOUT_MS) {
+function createWorktreeWithTimeout(
+  worktreePath,
+  branchName,
+  timeoutMs = DEFAULT_WORKTREE_TIMEOUT_MS
+) {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
@@ -455,15 +612,15 @@ function createWorktreeWithTimeout(worktreePath, branchName, timeoutMs = DEFAULT
       }, 1000);
     }, timeoutMs);
 
-    proc.stdout.on('data', (data) => {
+    proc.stdout.on('data', data => {
       stdout += data.toString();
     });
 
-    proc.stderr.on('data', (data) => {
+    proc.stderr.on('data', data => {
       stderr += data.toString();
     });
 
-    proc.on('error', (err) => {
+    proc.on('error', err => {
       clearTimeout(timer);
       reject(new Error(`Failed to spawn git: ${err.message}`));
     });
@@ -472,7 +629,11 @@ function createWorktreeWithTimeout(worktreePath, branchName, timeoutMs = DEFAULT
       clearTimeout(timer);
 
       if (timedOut) {
-        reject(new Error(`Worktree creation timed out after ${timeoutMs / 1000}s. Try increasing timeout or check disk space.`));
+        reject(
+          new Error(
+            `Worktree creation timed out after ${timeoutMs / 1000}s. Try increasing timeout or check disk space.`
+          )
+        );
         return;
       }
 
@@ -601,7 +762,9 @@ async function createSession(options = {}) {
   const timeoutMs = options.timeout || DEFAULT_WORKTREE_TIMEOUT_MS;
 
   // Create worktree with timeout and progress feedback
-  const stopProgress = progressIndicator('Creating worktree (this may take a while for large repos)');
+  const stopProgress = progressIndicator(
+    'Creating worktree (this may take a while for large repos)'
+  );
   try {
     await createWorktreeWithTimeout(worktreePath, branchName, timeoutMs);
     stopProgress();
@@ -1300,16 +1463,23 @@ function main() {
       if (options.timeout) {
         options.timeout = parseInt(options.timeout, 10);
         if (isNaN(options.timeout) || options.timeout < 1000) {
-          console.log(JSON.stringify({ success: false, error: 'Timeout must be a number >= 1000 (milliseconds)' }));
+          console.log(
+            JSON.stringify({
+              success: false,
+              error: 'Timeout must be a number >= 1000 (milliseconds)',
+            })
+          );
           return;
         }
       }
       // Handle async createSession
-      createSession(options).then(result => {
-        console.log(JSON.stringify(result));
-      }).catch(err => {
-        console.log(JSON.stringify({ success: false, error: err.message }));
-      });
+      createSession(options)
+        .then(result => {
+          console.log(JSON.stringify(result));
+        })
+        .catch(err => {
+          console.log(JSON.stringify({ success: false, error: err.message }));
+        });
       break;
     }
 
@@ -1358,6 +1528,17 @@ function main() {
           total: sessions.length,
         })
       );
+      break;
+    }
+
+    case 'health': {
+      // Get health status for all sessions
+      // Usage: health [staleDays] [--detailed]
+      const staleDaysArg = args.find((a) => /^\d+$/.test(a));
+      const staleDays = staleDaysArg ? parseInt(staleDaysArg, 10) : 7;
+      const detailed = args.includes('--detailed');
+      const health = getSessionsHealth({ staleDays, detailed });
+      console.log(JSON.stringify(health));
       break;
     }
 

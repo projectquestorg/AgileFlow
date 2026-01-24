@@ -1753,6 +1753,63 @@ async function main() {
     );
   }
 
+  // === SESSION HEALTH WARNINGS ===
+  // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
+  try {
+    const healthResult = spawnSync(
+      'node',
+      [SESSION_MANAGER_PATH, 'health'],
+      { encoding: 'utf8', timeout: 10000 }
+    );
+
+    if (healthResult.stdout) {
+      const health = JSON.parse(healthResult.stdout);
+      const hasIssues =
+        health.uncommitted.length > 0 ||
+        health.stale.length > 0 ||
+        health.orphanedRegistry.length > 0;
+
+      if (hasIssues) {
+        console.log('');
+
+        // Uncommitted changes - MOST IMPORTANT (potential data loss)
+        if (health.uncommitted.length > 0) {
+          console.log(
+            `${c.coral}⚠️  ${health.uncommitted.length} session(s) have uncommitted changes:${c.reset}`
+          );
+          health.uncommitted.slice(0, 3).forEach((sess) => {
+            const name = sess.nickname ? `"${sess.nickname}"` : `Session ${sess.id}`;
+            console.log(`${c.dim}   └─ ${name}: ${sess.changeCount} file(s)${c.reset}`);
+          });
+          if (health.uncommitted.length > 3) {
+            console.log(
+              `${c.dim}   └─ ... and ${health.uncommitted.length - 3} more${c.reset}`
+            );
+          }
+          console.log(
+            `${c.slate}   Run: ${c.skyBlue}/agileflow:session:status${c.slate} to see details${c.reset}`
+          );
+        }
+
+        // Stale sessions (inactive 7+ days)
+        if (health.stale.length > 0) {
+          console.log(
+            `${c.amber}📅 ${health.stale.length} session(s) inactive for 7+ days${c.reset}`
+          );
+        }
+
+        // Orphaned registry entries (path doesn't exist)
+        if (health.orphanedRegistry.length > 0) {
+          console.log(
+            `${c.peach}🗑️  ${health.orphanedRegistry.length} session(s) have missing directories${c.reset}`
+          );
+        }
+      }
+    }
+  } catch (e) {
+    // Health check failed, skip silently
+  }
+
   // Story claiming: cleanup stale claims and show warnings
   if (storyClaiming) {
     try {
