@@ -134,23 +134,23 @@ Commandes spécialisées pour les tâches complexes :
 Explorez les commandes AgileFlow de manière interactive dans ce bac à sable :
 
 <CommandPlayground
-  command="/agileflow:statut"
-  title="Aire de jeux de commandes interactive"
-  description="Essayez les commandes AgileFlow courantes et consultez la sortie simulée"
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
 />
 
 <div className="mt-4 grid gap-4 sm:grid-cols-2">
   <CommandPlayground
     command="/agileflow:epic EP-0001"
-    title="Progrès épique"
-    description="Suivre l'achèvement épique"
-    readOnly={faux}
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
   />
   <CommandPlayground
     command="/agileflow:babysit"
-    title="Flux de travail guidé"
-    description="Démarrer le développement assisté"
-    readOnly={faux}
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
   />
 </div>
 

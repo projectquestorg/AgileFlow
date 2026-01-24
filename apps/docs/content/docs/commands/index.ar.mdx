@@ -134,23 +134,23 @@ description: مرجع كامل لجميع أوامر الشرطة المائلة
 استكشف أوامر AgileFlow بشكل تفاعلي في وضع الحماية هذا:
 
 <CommandPlayground
-  الأمر = "/ Agileflow: الحالة"
-  العنوان = "ملعب الأوامر التفاعلية"
-  description="جرب أوامر AgileFlow الشائعة وشاهد المخرجات المحاكية"
+  command="/agileflow:status"
+  title="Interactive Command Playground"
+  description="Try common AgileFlow commands and see simulated output"
 />
 
 <div className="mt-4 grid gap-4 sm:grid-cols-2">
   <CommandPlayground
-    الأمر = "/ Agileflow: ملحمة EP-0001"
-    العنوان = "التقدم الملحمي"
-    وصف = "تتبع الإكمال الملحمي"
-    قراءة فقط = {خطأ}
+    command="/agileflow:epic EP-0001"
+    title="Epic Progress"
+    description="Track epic completion"
+    readOnly={false}
   />
   <CommandPlayground
-    الأمر = "/ Agileflow: babysit"
-    العنوان = "سير العمل الموجه"
-    وصف = "بدء التطوير المساعد"
-    قراءة فقط = {خطأ}
+    command="/agileflow:babysit"
+    title="Guided Workflow"
+    description="Start assisted development"
+    readOnly={false}
   />
 </div>
 
