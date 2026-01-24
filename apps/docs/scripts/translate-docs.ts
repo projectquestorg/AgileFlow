@@ -107,7 +107,7 @@ interface LineInfo {
   suffix?: string            // non-translatable suffix
 }
 
-function classifyLine(line: string, inCodeBlock: boolean, inFrontmatter: boolean): LineInfo {
+function classifyLine(line: string, inCodeBlock: boolean, inFrontmatter: boolean, inJsxBlock: boolean): LineInfo {
   const trimmed = line.trim()
 
   // Empty line
@@ -160,6 +160,11 @@ function classifyLine(line: string, inCodeBlock: boolean, inFrontmatter: boolean
   // Import statement
   if (trimmed.startsWith("import ")) {
     return { original: line, type: "import" }
+  }
+
+  // Inside a multi-line JSX block - preserve everything
+  if (inJsxBlock) {
+    return { original: line, type: "jsx-component" }
   }
 
   // JSX component (starts with < and capital letter, or closing tag)
@@ -343,14 +348,17 @@ async function translateMdxFile(
   let inCodeBlock = false
   let inFrontmatter = false
   let frontmatterCount = 0
+  let inJsxBlock = false
+  let jsxDepth = 0
 
   const translatedLines: string[] = []
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
+    const trimmed = line.trim()
 
     // Track frontmatter boundaries
-    if (line.trim() === "---") {
+    if (trimmed === "---") {
       frontmatterCount++
       inFrontmatter = frontmatterCount === 1
       if (frontmatterCount === 2) {
@@ -359,11 +367,41 @@ async function translateMdxFile(
     }
 
     // Track code blocks
-    if (line.trim().startsWith("```") && !inFrontmatter) {
+    if (trimmed.startsWith("```") && !inFrontmatter) {
       inCodeBlock = !inCodeBlock
     }
 
-    const lineInfo = classifyLine(line, inCodeBlock, inFrontmatter)
+    // Track JSX blocks (multi-line components)
+    // Start: <Component or <div className (capital letter or lowercase with attributes)
+    // End: /> or </Component>
+    if (!inCodeBlock && !inFrontmatter) {
+      // Opening JSX tag (not self-closing on same line)
+      if (/^<[A-Z][A-Za-z]*(?:\s|$)/.test(trimmed) && !trimmed.endsWith("/>") && !trimmed.includes("</")) {
+        jsxDepth++
+        inJsxBlock = true
+      }
+      // Also track <div className=... style JSX
+      if (/^<div\s+className=/.test(trimmed) && !trimmed.endsWith("/>") && !trimmed.includes("</div>")) {
+        jsxDepth++
+        inJsxBlock = true
+      }
+      // Self-closing tag on its own line ends the block content tracking
+      if (trimmed === "/>" && jsxDepth > 0) {
+        jsxDepth--
+        if (jsxDepth === 0) {
+          inJsxBlock = false
+        }
+      }
+      // Closing tag
+      if (/^<\/[A-Za-z]+>$/.test(trimmed) && jsxDepth > 0) {
+        jsxDepth--
+        if (jsxDepth === 0) {
+          inJsxBlock = false
+        }
+      }
+    }
+
+    const lineInfo = classifyLine(line, inCodeBlock, inFrontmatter, inJsxBlock)
 
     // Translate if needed
     if (lineInfo.translatable) {
