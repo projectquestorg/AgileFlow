@@ -1,0 +1,42 @@
+{
+  "json_operations": [
+    "MUST use Edit tool or jq for JSON operations (never echo/cat > file.json)",
+    "MUST validate JSON after every modification (jq . file.json)"
+  ],
+  "file_preview": [
+    "MUST show diff preview before confirming writes (diff-first pattern)",
+    "Wait for YES/NO confirmation BEFORE writing any file"
+  ],
+  "user_confirmation": [
+    "MUST use AskUserQuestion tool for user decisions (not text prompts)",
+    "Options: YES to confirm, NO to cancel, or specific choices"
+  ],
+  "todo_tracking": [
+    "MUST create TodoWrite task list for 3+ step workflows",
+    "Mark tasks in_progress before starting, completed when done"
+  ],
+  "bus_messaging": [
+    "MUST append status update to docs/09-agents/bus/log.jsonl",
+    "Bus format: {ts, from, type, story, text} as single-line JSON"
+  ],
+  "plan_mode": [
+    "MUST use EnterPlanMode for non-trivial implementation tasks",
+    "Plan first, get approval, then implement"
+  ],
+  "commit_approval": [
+    "NEVER auto-commit without explicit user approval",
+    "Always show diff and ask before committing"
+  ],
+  "delegation": [
+    "Delegate complex work to domain experts (don't do everything yourself)",
+    "Simple task -> do yourself | Complex single-domain -> spawn expert"
+  ],
+  "research_first": [
+    "Check docs/10-research/ for existing research before starting",
+    "Invoke /agileflow:research:ask if research is missing or stale"
+  ],
+  "status_updates": [
+    "Update docs/09-agents/status.json after each status change",
+    "Valid statuses: ready|in-progress|blocked|in-review|done"
+  ]
+}
