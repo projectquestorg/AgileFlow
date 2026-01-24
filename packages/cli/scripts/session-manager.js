@@ -798,12 +798,11 @@ async function createSession(options = {}) {
     }
   }
 
-  // Copy Claude Code, AgileFlow config, and docs folders (gitignored contents won't copy with worktree)
+  // Copy Claude Code and AgileFlow config folders (gitignored contents won't copy with worktree)
   // Note: The folder may exist with some tracked files, but gitignored subfolders (commands/, agents/) won't be there
-  // docs/ contains gitignored state files like status.json, session-state.json that need to be shared
-  const configFolders = ['.claude', '.agileflow', 'docs'];
+  const configFoldersToCopy = ['.claude', '.agileflow'];
   const copiedFolders = [];
-  for (const folder of configFolders) {
+  for (const folder of configFoldersToCopy) {
     const src = path.join(ROOT, folder);
     const dest = path.join(worktreePath, folder);
     if (fs.existsSync(src)) {
@@ -814,6 +813,37 @@ async function createSession(options = {}) {
       } catch (e) {
         // Non-fatal: log but continue
         console.warn(`Warning: Could not copy ${folder}: ${e.message}`);
+      }
+    }
+  }
+
+  // Symlink docs/ to main project docs (shared state: status.json, session-state.json, bus/)
+  // This enables story claiming, status bus, and session coordination across worktrees
+  const foldersToSymlink = ['docs'];
+  const symlinkedFolders = [];
+  for (const folder of foldersToSymlink) {
+    const src = path.join(ROOT, folder);
+    const dest = path.join(worktreePath, folder);
+    if (fs.existsSync(src)) {
+      try {
+        // Remove if exists (worktree may have empty/partial tracked folder)
+        if (fs.existsSync(dest)) {
+          fs.rmSync(dest, { recursive: true, force: true });
+        }
+
+        // Create relative symlink (works across project moves)
+        const relPath = path.relative(worktreePath, src);
+        fs.symlinkSync(relPath, dest, 'dir');
+        symlinkedFolders.push(folder);
+      } catch (e) {
+        // Fallback to copy if symlink fails (e.g., Windows without dev mode)
+        console.warn(`Warning: Could not symlink ${folder}, copying instead: ${e.message}`);
+        try {
+          fs.cpSync(src, dest, { recursive: true, force: true });
+          copiedFolders.push(folder);
+        } catch (copyErr) {
+          console.warn(`Warning: Could not copy ${folder}: ${copyErr.message}`);
+        }
       }
     }
   }
@@ -842,6 +872,7 @@ async function createSession(options = {}) {
     command: `cd "${worktreePath}" && claude`,
     envFilesCopied: copiedEnvFiles,
     foldersCopied: copiedFolders,
+    foldersSymlinked: symlinkedFolders,
   };
 }
 

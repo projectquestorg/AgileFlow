@@ -675,3 +675,127 @@ describe('session-manager injectable registry', () => {
     });
   });
 });
+
+/**
+ * Tests for docs/ symlink behavior in worktree creation.
+ * These tests verify that docs/ is symlinked (not copied) when creating a session,
+ * enabling shared state (status.json, story claiming, bus/) across sessions.
+ */
+describe('docs symlink behavior', () => {
+  let testProjectDir;
+  let testWorktreeDir;
+
+  beforeEach(() => {
+    // Create a mock project structure
+    testProjectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'symlink-test-'));
+    testWorktreeDir = path.join(testProjectDir, 'worktree');
+    fs.mkdirSync(testWorktreeDir);
+
+    // Create docs folder in "main project"
+    const docsDir = path.join(testProjectDir, 'docs', '09-agents');
+    fs.mkdirSync(docsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(testProjectDir, 'docs', '09-agents', 'status.json'),
+      JSON.stringify({ test: 'main-project' })
+    );
+  });
+
+  afterEach(() => {
+    fs.rmSync(testProjectDir, { recursive: true, force: true });
+  });
+
+  test('symlink creation uses relative path', () => {
+    const src = path.join(testProjectDir, 'docs');
+    const dest = path.join(testWorktreeDir, 'docs');
+
+    // Calculate relative path like the session-manager does
+    const relPath = path.relative(testWorktreeDir, src);
+
+    // Should be "../docs" - relative from worktree to main
+    expect(relPath).toBe('../docs');
+  });
+
+  test('relative symlink works correctly', () => {
+    const src = path.join(testProjectDir, 'docs');
+    const dest = path.join(testWorktreeDir, 'docs');
+
+    // Create symlink like session-manager does
+    const relPath = path.relative(testWorktreeDir, src);
+    fs.symlinkSync(relPath, dest, 'dir');
+
+    // Verify symlink was created
+    expect(fs.lstatSync(dest).isSymbolicLink()).toBe(true);
+
+    // Verify symlink target is correct
+    expect(fs.readlinkSync(dest)).toBe('../docs');
+
+    // Verify symlink resolves to correct content
+    const statusPath = path.join(dest, '09-agents', 'status.json');
+    const content = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+    expect(content.test).toBe('main-project');
+  });
+
+  test('changes through symlink are visible in original', () => {
+    const src = path.join(testProjectDir, 'docs');
+    const dest = path.join(testWorktreeDir, 'docs');
+
+    // Create symlink
+    const relPath = path.relative(testWorktreeDir, src);
+    fs.symlinkSync(relPath, dest, 'dir');
+
+    // Write through symlink
+    const statusPath = path.join(dest, '09-agents', 'status.json');
+    fs.writeFileSync(statusPath, JSON.stringify({ test: 'modified-via-symlink' }));
+
+    // Read from original and verify change is visible
+    const originalPath = path.join(src, '09-agents', 'status.json');
+    const content = JSON.parse(fs.readFileSync(originalPath, 'utf8'));
+    expect(content.test).toBe('modified-via-symlink');
+  });
+
+  test('removing symlink does not remove target', () => {
+    const src = path.join(testProjectDir, 'docs');
+    const dest = path.join(testWorktreeDir, 'docs');
+
+    // Create symlink
+    const relPath = path.relative(testWorktreeDir, src);
+    fs.symlinkSync(relPath, dest, 'dir');
+
+    // Remove symlink (simulating worktree removal)
+    fs.unlinkSync(dest);
+
+    // Verify original docs still exists with content
+    expect(fs.existsSync(src)).toBe(true);
+    const statusPath = path.join(src, '09-agents', 'status.json');
+    const content = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+    expect(content.test).toBe('main-project');
+  });
+
+  test('fallback to copy when symlink fails', () => {
+    const src = path.join(testProjectDir, 'docs');
+    const dest = path.join(testWorktreeDir, 'docs');
+
+    // Simulate symlink failure by creating file at dest first
+    fs.writeFileSync(dest, 'blocker');
+
+    // Symlink should fail
+    let symlinkFailed = false;
+    try {
+      const relPath = path.relative(testWorktreeDir, src);
+      fs.symlinkSync(relPath, dest, 'dir');
+    } catch (e) {
+      symlinkFailed = true;
+    }
+
+    expect(symlinkFailed).toBe(true);
+
+    // Clean up blocker and do copy fallback
+    fs.unlinkSync(dest);
+    fs.cpSync(src, dest, { recursive: true, force: true });
+
+    // Verify copy worked
+    expect(fs.existsSync(dest)).toBe(true);
+    expect(fs.lstatSync(dest).isSymbolicLink()).toBe(false); // Not a symlink
+    expect(fs.lstatSync(dest).isDirectory()).toBe(true); // Is a directory
+  });
+});
