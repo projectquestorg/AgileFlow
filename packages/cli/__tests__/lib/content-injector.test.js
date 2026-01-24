@@ -819,10 +819,7 @@ End of protocol.
       const templatesDir = path.join(tempDir, 'templates');
       fs.mkdirSync(templatesDir);
 
-      fs.writeFileSync(
-        path.join(templatesDir, 'session-harness-protocol.md'),
-        'Agent: {AGENT_ID}'
-      );
+      fs.writeFileSync(path.join(templatesDir, 'session-harness-protocol.md'), 'Agent: {AGENT_ID}');
 
       const result = generateSessionHarnessContent(tempDir);
 
@@ -884,10 +881,7 @@ tools:
       const templatesDir = path.join(tempDir, 'templates');
       fs.mkdirSync(templatesDir);
 
-      fs.writeFileSync(
-        path.join(templatesDir, 'session-harness-protocol.md'),
-        'Protocol content'
-      );
+      fs.writeFileSync(path.join(templatesDir, 'session-harness-protocol.md'), 'Protocol content');
 
       const template = `---
 name: api
@@ -1006,10 +1000,7 @@ name: api
       const templatesDir = path.join(tempDir, 'templates');
       fs.mkdirSync(templatesDir);
 
-      fs.writeFileSync(
-        path.join(templatesDir, 'quality-gate-priorities.md'),
-        'Agent: {AGENT_ID}'
-      );
+      fs.writeFileSync(path.join(templatesDir, 'quality-gate-priorities.md'), 'Agent: {AGENT_ID}');
 
       const result = generateQualityGatePrioritiesContent(tempDir);
 
@@ -1076,10 +1067,7 @@ tools:
       const templatesDir = path.join(tempDir, 'templates');
       fs.mkdirSync(templatesDir);
 
-      fs.writeFileSync(
-        path.join(templatesDir, 'quality-gate-priorities.md'),
-        'Priority content'
-      );
+      fs.writeFileSync(path.join(templatesDir, 'quality-gate-priorities.md'), 'Priority content');
 
       const template = `---
 name: api

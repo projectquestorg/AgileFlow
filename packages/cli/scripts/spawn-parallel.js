@@ -64,7 +64,13 @@ function hasScreen() {
  * Build the Claude command for a session
  */
 function buildClaudeCommand(sessionPath, options = {}) {
-  const { init = false, dangerous = false, prompt = null, claudeArgs = null, noClaude = false } = options;
+  const {
+    init = false,
+    dangerous = false,
+    prompt = null,
+    claudeArgs = null,
+    noClaude = false,
+  } = options;
   const parts = [`cd "${sessionPath}"`];
 
   if (init) {
@@ -324,7 +330,13 @@ async function spawn(args) {
     outputCommands(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
   } else if (hasTmux()) {
     // Tmux available - use it
-    const tmuxResult = spawnInTmux(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
+    const tmuxResult = spawnInTmux(createdSessions, {
+      init,
+      dangerous,
+      prompt,
+      claudeArgs,
+      noClaude,
+    });
 
     if (tmuxResult.success) {
       console.log(success(`\n✅ Tmux session created: ${tmuxResult.sessionName}`));

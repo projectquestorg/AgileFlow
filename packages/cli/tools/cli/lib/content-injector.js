@@ -711,9 +711,11 @@ function getPlaceholderDocs() {
       '<!-- {{COMMAND_LIST}} -->': 'Full formatted command list',
     },
     templates: {
-      '<!-- {{SESSION_HARNESS}} -->': 'Session harness protocol (auto-detects agent ID from frontmatter)',
+      '<!-- {{SESSION_HARNESS}} -->':
+        'Session harness protocol (auto-detects agent ID from frontmatter)',
       '<!-- {{SESSION_HARNESS:AG-API}} -->': 'Session harness protocol with explicit agent ID',
-      '<!-- {{QUALITY_GATE_PRIORITIES}} -->': 'Quality gate priorities with CRITICAL/HIGH/MEDIUM levels',
+      '<!-- {{QUALITY_GATE_PRIORITIES}} -->':
+        'Quality gate priorities with CRITICAL/HIGH/MEDIUM levels',
     },
     preserve_rules: {
       '{{RULES:json_operations}}': 'Rules for safe JSON file modifications',

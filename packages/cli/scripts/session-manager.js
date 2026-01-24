@@ -238,7 +238,7 @@ async function cleanupStaleLocksAsync(registry, options = {}) {
  * @returns {Object[]} Array of file details with analysis
  */
 function getFileDetails(sessionPath, changes) {
-  return changes.map((change) => {
+  return changes.map(change => {
     const status = change.substring(0, 2).trim();
     const file = change.substring(3);
 
@@ -294,8 +294,8 @@ function getSessionsHealth(options = {}) {
   const staleThreshold = staleDays * 24 * 60 * 60 * 1000;
 
   const health = {
-    stale: [],           // Sessions with no activity > staleDays
-    uncommitted: [],     // Sessions with uncommitted git changes
+    stale: [], // Sessions with no activity > staleDays
+    uncommitted: [], // Sessions with uncommitted git changes
     orphanedRegistry: [], // Registry entries where path doesn't exist
     orphanedWorktrees: [], // Worktrees not in registry
     healthy: 0,
@@ -333,7 +333,7 @@ function getSessionsHealth(options = {}) {
       if (result.stdout && result.stdout.trim()) {
         // Don't use trim() on the whole string - it removes leading space from first status
         // Split by newline and filter empty lines instead
-        const changes = result.stdout.split('\n').filter((line) => line.length > 0);
+        const changes = result.stdout.split('\n').filter(line => line.length > 0);
         const sessionData = {
           id,
           ...session,
@@ -345,7 +345,7 @@ function getSessionsHealth(options = {}) {
         if (detailed) {
           sessionData.fileDetails = getFileDetails(session.path, changes);
           // Calculate if session is safe to delete (all changes trivial)
-          sessionData.allTrivial = sessionData.fileDetails.every((f) => f.trivial);
+          sessionData.allTrivial = sessionData.fileDetails.every(f => f.trivial);
         }
 
         health.uncommitted.push(sessionData);
@@ -365,12 +365,12 @@ function getSessionsHealth(options = {}) {
     if (worktreeList.stdout) {
       const worktrees = worktreeList.stdout
         .split('\n')
-        .filter((line) => line.startsWith('worktree '))
-        .map((line) => line.replace('worktree ', ''));
+        .filter(line => line.startsWith('worktree '))
+        .map(line => line.replace('worktree ', ''));
 
       const mainPath = ROOT;
       for (const wtPath of worktrees) {
-        const inRegistry = Object.values(registry.sessions).some((s) => s.path === wtPath);
+        const inRegistry = Object.values(registry.sessions).some(s => s.path === wtPath);
         if (!inRegistry && wtPath !== mainPath) {
           // Check if it's an AgileFlow worktree (has .agileflow folder)
           if (fs.existsSync(path.join(wtPath, '.agileflow'))) {
@@ -1536,7 +1536,7 @@ function main() {
     case 'health': {
       // Get health status for all sessions
       // Usage: health [staleDays] [--detailed]
-      const staleDaysArg = args.find((a) => /^\d+$/.test(a));
+      const staleDaysArg = args.find(a => /^\d+$/.test(a));
       const staleDays = staleDaysArg ? parseInt(staleDaysArg, 10) : 7;
       const detailed = args.includes('--detailed');
       const health = getSessionsHealth({ staleDays, detailed });

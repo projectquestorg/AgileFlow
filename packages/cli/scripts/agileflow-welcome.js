@@ -1756,11 +1756,10 @@ async function main() {
   // === SESSION HEALTH WARNINGS ===
   // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
   try {
-    const healthResult = spawnSync(
-      'node',
-      [SESSION_MANAGER_PATH, 'health'],
-      { encoding: 'utf8', timeout: 10000 }
-    );
+    const healthResult = spawnSync('node', [SESSION_MANAGER_PATH, 'health'], {
+      encoding: 'utf8',
+      timeout: 10000,
+    });
 
     if (healthResult.stdout) {
       const health = JSON.parse(healthResult.stdout);
@@ -1777,14 +1776,12 @@ async function main() {
           console.log(
             `${c.coral}⚠️  ${health.uncommitted.length} session(s) have uncommitted changes:${c.reset}`
           );
-          health.uncommitted.slice(0, 3).forEach((sess) => {
+          health.uncommitted.slice(0, 3).forEach(sess => {
             const name = sess.nickname ? `"${sess.nickname}"` : `Session ${sess.id}`;
             console.log(`${c.dim}   └─ ${name}: ${sess.changeCount} file(s)${c.reset}`);
           });
           if (health.uncommitted.length > 3) {
-            console.log(
-              `${c.dim}   └─ ... and ${health.uncommitted.length - 3} more${c.reset}`
-            );
+            console.log(`${c.dim}   └─ ... and ${health.uncommitted.length - 3} more${c.reset}`);
           }
           console.log(
             `${c.slate}   Run: ${c.skyBlue}/agileflow:session:status${c.slate} to see details${c.reset}`

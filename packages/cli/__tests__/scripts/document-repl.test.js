@@ -338,7 +338,7 @@ describe('Table of Contents', () => {
   test('TOC preserves heading hierarchy', () => {
     const result = runReplJson(`--load="${testFiles.markdown}" --toc`);
     expect(result.success).toBe(true);
-    const levels = result.data.toc.map((h) => h.level);
+    const levels = result.data.toc.map(h => h.level);
     // Should have h1, h2, and h3
     expect(levels).toContain(1);
     expect(levels).toContain(2);
