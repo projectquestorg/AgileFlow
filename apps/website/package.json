@@ -15,7 +15,7 @@
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.555.0",
     "next": "^15.1.0",
-    "react": "^19.0.0",
+    "react": "^19.2.3",
     "react-dom": "^19.0.0",
     "shiki": "^1.24.2",
     "tailwind-merge": "^2.6.0"
