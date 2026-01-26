@@ -63,7 +63,7 @@
     "inquirer": "^8.2.6",
     "js-yaml": "^4.1.0",
     "ora": "^5.4.1",
-    "react": "^17.0.2",
+    "react": "^19.2.3",
     "semver": "^7.6.3"
   },
   "optionalDependencies": {
