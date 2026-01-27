@@ -14,6 +14,8 @@ Project-specific practices, conventions, and standards for YOUR codebase.
 - **ask-user-question.md**: Using the AskUserQuestion tool effectively
 - **async-agent-spawning.md**: Launch, monitor, and retrieve background agents
 - **command-structure.md**: How to structure AgileFlow slash commands
+- **native-task-management.md**: Using Claude Code's native tasks alongside AgileFlow stories
+- **parallel-sessions.md**: Running multiple Claude Code agents simultaneously
 - **prompts/agents/**: Custom agent prompts for this project
 
 **Note**: This is for YOUR project's practices (styling, typography, component patterns, API conventions), NOT AgileFlow system practices (those go in 00-meta/).
