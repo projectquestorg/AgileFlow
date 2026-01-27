@@ -11,6 +11,7 @@ compact_context:
     - "{{RULES:delegation}}"
     - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with 200+ line detailed prompt"
     - "Research prompts MUST include: 50+ lines actual code, exact error, what was tried, 3+ specific questions"
+    - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js claim <id>' IMMEDIATELY after user selects story"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js others' BEFORE suggesting stories, exclude 🔒 claimed"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js release <id>' when story marked done"
@@ -328,6 +329,52 @@ Use TodoWrite for any task with 3+ steps. Update status as you complete each ste
 
 ---
 
+### 🚨 RULE #6: PLAN FILE CONTEXT PRESERVATION
+
+**BEFORE calling ExitPlanMode**, you MUST add a babysit rules header to your plan file.
+
+**WHY**: When user selects "Clear context and bypass permissions", the plan file is the ONLY context that survives. Embedding rules in the plan file ensures babysit workflow continues after context clear.
+
+**STEPS**:
+1. Before calling ExitPlanMode, use the Edit tool to add this header to the TOP of your plan file:
+
+```markdown
+## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
+
+These rules MUST be followed during implementation:
+1. **ALWAYS end your final response with AskUserQuestion tool** offering next steps
+2. **Use EnterPlanMode** if any NEW non-trivial tasks arise during implementation
+3. **Delegate complex work** to domain experts via Task tool
+4. **Track progress** with TodoWrite for multi-step work
+
+After implementation completes, you MUST call AskUserQuestion with options like:
+- "Run tests to verify"
+- "Continue to next task"
+- "Review changes"
+- "Pause here"
+
+---
+```
+
+2. Then call ExitPlanMode
+
+**EXAMPLE PLAN FILE STRUCTURE**:
+```markdown
+# Plan: Add User Profile Feature
+
+## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
+[rules as above]
+
+---
+
+## Implementation Plan
+1. Create database schema...
+2. Add API endpoint...
+3. Build UI component...
+```
+
+---
+
 ### ANTI-PATTERNS (DON'T DO THESE)
 
 ❌ End response with text question instead of AskUserQuestion tool
@@ -361,23 +408,28 @@ Use TodoWrite for any task with 3+ steps. Update status as you complete each ste
    ```
 
 **Phase 2: Plan Mode (for non-trivial tasks)**
-6. Call `EnterPlanMode` tool
-7. Explore codebase with Glob, Grep, Read
-8. Design approach, write to plan file
-9. Call `ExitPlanMode` for user approval
+6. **Set restoration flag** (backup for context clear):
+   ```bash
+   node -e "const fs=require('fs');const p='docs/09-agents/session-state.json';if(fs.existsSync(p)){const s=JSON.parse(fs.readFileSync(p,'utf8'));s.babysit_pending_restore=true;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');}"
+   ```
+7. Call `EnterPlanMode` tool
+8. Explore codebase with Glob, Grep, Read
+9. Design approach, write to plan file
+10. **CRITICAL: Add babysit rules header** to TOP of plan file (Rule #6)
+11. Call `ExitPlanMode` for user approval
 
 **Phase 3: Execution**
-10. Delegate to experts based on scope
-11. Collect results if async (TaskOutput)
-12. Verify tests pass
+12. Delegate to experts based on scope
+13. Collect results if async (TaskOutput)
+14. Verify tests pass
 
 **Phase 4: Completion**
-13. Update status.json (mark story done)
-14. **RELEASE THE STORY claim:**
+15. Update status.json (mark story done)
+16. **RELEASE THE STORY claim:**
     ```bash
     node .agileflow/scripts/lib/story-claiming.js release <story-id>
     ```
-15. Present next steps via AskUserQuestion
+17. Present next steps via AskUserQuestion
 
 ---
 
@@ -445,6 +497,9 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
 - Use state narration markers (📍🔀🔄⚠️✅) for visibility
+- **PLAN FILE CONTEXT - CRITICAL:**
+  BEFORE ExitPlanMode, EDIT the plan file to add babysit rules header at TOP
+  This ensures rules survive "Clear context and bypass permissions"
 - **STORY CLAIMING - CRITICAL:**
   1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
   2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
@@ -773,7 +828,7 @@ When stuck detection triggers:
 | Redo work when wrong | Get alignment before coding |
 | User surprises | User approves approach |
 
-### Plan Mode Flow
+### Plan Mode Flow (with Context Preservation)
 
 1. **Enter** - Call `EnterPlanMode` tool
 2. **Explore** - Use Glob, Grep, Read to understand:
@@ -786,8 +841,22 @@ When stuck detection triggers:
    - Files to modify/create
    - Key decisions and trade-offs
    - Testing approach
-4. **Approve** - Call `ExitPlanMode` for user review
-5. **Execute** - Implement the approved plan
+4. **CRITICAL: Add Babysit Header** - Edit the plan file to include this at the TOP:
+   ```markdown
+   ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
+
+   These rules MUST be followed during implementation:
+   1. ALWAYS end your final response with AskUserQuestion tool
+   2. Use EnterPlanMode if new non-trivial tasks arise
+   3. Delegate complex work to domain experts
+   4. Track progress with TodoWrite
+
+   After implementation, call AskUserQuestion with next step options.
+
+   ---
+   ```
+5. **Approve** - Call `ExitPlanMode` for user review
+6. **Execute** - Implement (rules survive context clear because they're in plan file)
 
 ### Plan Mode Examples
 

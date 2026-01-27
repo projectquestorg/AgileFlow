@@ -177,17 +177,42 @@ After handling issues (or if none), present the main category menu:
     {"label": "Full (Recommended)", "description": "All features: hooks, archival, status line, AskUserQuestion, TmuxAutoSpawn"},
     {"label": "Basic", "description": "SessionStart + PreCompact + Archival + AskUserQuestion + TmuxAutoSpawn"},
     {"label": "Minimal", "description": "SessionStart + Archival only"},
-    {"label": "None", "description": "Disable all AgileFlow features"}
+    {"label": "Experimental ⚠️", "description": "All features + full file injection during compact (CONTEXT HEAVY)"}
   ]
 }]</parameter>
 </invoke>
 ```
 
+**Note:** If user needs "None" (disable all), show as second page or via "Other" option.
+
 Then run:
 - "Full" → `node .agileflow/scripts/agileflow-configure.js --profile=full`
 - "Basic" → `node .agileflow/scripts/agileflow-configure.js --profile=basic`
 - "Minimal" → `node .agileflow/scripts/agileflow-configure.js --profile=minimal`
+- "Experimental" → `node .agileflow/scripts/agileflow-configure.js --profile=experimental`
 - "None" → `node .agileflow/scripts/agileflow-configure.js --profile=none`
+
+### Experimental Profile Details
+
+The **Experimental** profile enables all features like "Full", but changes how context is preserved during conversation compaction:
+
+| Aspect | Full Profile | Experimental Profile |
+|--------|--------------|---------------------|
+| Features | All enabled | All enabled |
+| PreCompact behavior | Extracts `COMPACT_SUMMARY` sections | Injects **entire command files** |
+| Context usage | ~200-500 tokens per command | ~2000-5000 tokens per command |
+| Reliability | Good for most cases | May improve instruction adherence |
+
+**When to use Experimental:**
+- Commands aren't being followed well after compaction
+- You have plenty of context budget
+- Working on long sessions with complex commands (babysit, mentor)
+
+**Trade-offs:**
+- ⚠️ Uses significantly more context tokens
+- ⚠️ May hit context limits faster
+- ✅ Full command instructions preserved
+- ✅ No loss of nuance from summarization
 
 #### If "Apply custom profile" selected
 
@@ -305,20 +330,37 @@ First, ask about hooks:
 </invoke>
 ```
 
-Then ask about other features:
+Then ask about other features (page 1):
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Which other features?",
+  "question": "Which other features? (Page 1/2)",
   "header": "Features",
   "multiSelect": true,
   "options": [
     {"label": "Archival", "description": "Auto-archive completed stories older than threshold"},
     {"label": "Status Line", "description": "Custom status bar showing story/epic info"},
     {"label": "Auto-Update", "description": "Automatically update AgileFlow on session start"},
+    {"label": "More options...", "description": "View additional features"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+If "More options..." selected, show page 2:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which other features? (Page 2/2)",
+  "header": "Features",
+  "multiSelect": true,
+  "options": [
     {"label": "AskUserQuestion Mode", "description": "End responses with guided options"},
-    {"label": "Tmux Auto-Spawn", "description": "Auto-start Claude in tmux session when using af/agileflow wrapper"}
+    {"label": "Tmux Auto-Spawn", "description": "Auto-start Claude in tmux session when using af/agileflow"},
+    {"label": "Shell Aliases", "description": "Add af/agileflow commands to ~/.bashrc and ~/.zshrc"},
+    {"label": "CLAUDE.md Rules", "description": "Add /babysit context preservation rules to CLAUDE.md"}
   ]
 }]</parameter>
 </invoke>
@@ -334,6 +376,8 @@ Map selections to commands:
 - Auto-Update → `autoupdate`
 - AskUserQuestion Mode → `askuserquestion`
 - Tmux Auto-Spawn → `tmuxautospawn`
+- Shell Aliases → `shellaliases`
+- CLAUDE.md Rules → `claudemdreinforcement`
 
 Then run:
 ```bash
@@ -490,12 +534,20 @@ If no new options: "✅ All configuration options are up to date!"
 
 ## Profile Details
 
-| Profile | SessionStart | PreCompact | RalphLoop | SelfImprove | Archival | StatusLine | AskUserQuestion |
-|---------|-------------|------------|-----------|-------------|----------|------------|-----------------|
-| `full` | ✅ | ✅ | ✅ | ✅ | ✅ 30 days | ✅ | ✅ |
-| `basic` | ✅ | ✅ | ❌ | ❌ | ✅ 30 days | ❌ | ✅ |
-| `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ 30 days | ❌ | ❌ |
-| `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Profile | SessionStart | PreCompact | RalphLoop | SelfImprove | Archival | StatusLine | AskUserQuestion | Full File Injection |
+|---------|-------------|------------|-----------|-------------|----------|------------|-----------------|---------------------|
+| `full` | ✅ | ✅ | ✅ | ✅ | ✅ 30 days | ✅ | ✅ | ❌ |
+| `basic` | ✅ | ✅ | ❌ | ❌ | ✅ 30 days | ❌ | ✅ | ❌ |
+| `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ 30 days | ❌ | ❌ | ❌ |
+| `experimental` | ✅ | ✅ | ✅ | ✅ | ✅ 30 days | ✅ | ✅ | ⚠️ **YES** |
+| `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**⚠️ Experimental Profile Warning:**
+The `experimental` profile enables **Full File Injection** during context compaction. Instead of injecting compact summaries (~200-500 tokens), it injects the **entire command file** (~2000-5000+ tokens per command). This is very context-heavy but may improve instruction adherence for complex commands like `/babysit`.
+
+**Note:** Shell Aliases and CLAUDE.md Rules are **not** included in any profile. These are per-user preferences that must be explicitly enabled:
+- `--enable=shellaliases` - Adds `af` and `agileflow` commands to ~/.bashrc and ~/.zshrc
+- `--enable=claudemdreinforcement` - Adds /babysit context preservation rules to CLAUDE.md
 
 ## CLI Commands Reference
 
@@ -504,6 +556,7 @@ If no new options: "✅ All configuration options are up to date!"
 node .agileflow/scripts/agileflow-configure.js --profile=full
 node .agileflow/scripts/agileflow-configure.js --profile=basic
 node .agileflow/scripts/agileflow-configure.js --profile=minimal
+node .agileflow/scripts/agileflow-configure.js --profile=experimental
 node .agileflow/scripts/agileflow-configure.js --profile=none
 
 # Custom Profiles
@@ -521,6 +574,8 @@ node .agileflow/scripts/agileflow-configure.js --import-profile=my-setup.json
 node .agileflow/scripts/agileflow-configure.js --enable=sessionstart,precompact
 node .agileflow/scripts/agileflow-configure.js --disable=statusline
 node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days=14
+node .agileflow/scripts/agileflow-configure.js --enable=shellaliases
+node .agileflow/scripts/agileflow-configure.js --enable=claudemdreinforcement
 
 # Maintenance
 node .agileflow/scripts/agileflow-configure.js --detect
