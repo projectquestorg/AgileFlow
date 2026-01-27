@@ -5,26 +5,123 @@
 #   ./claude-tmux.sh              # Start in tmux with default session
 #   ./claude-tmux.sh --no-tmux    # Start without tmux (regular claude)
 #   ./claude-tmux.sh -n           # Same as --no-tmux
+#   ./claude-tmux.sh --rescue     # Kill frozen session and restart fresh
+#   ./claude-tmux.sh --kill       # Kill existing session completely
+#   ./claude-tmux.sh --help       # Show help with keybinds
 #
 # When already in tmux: Just runs claude normally
 # When not in tmux: Creates a tmux session and runs claude inside it
+#
+# FREEZE RECOVERY:
+#   If Claude freezes inside tmux, use these keybinds:
+#   - Alt+k     Send Ctrl+C twice (soft interrupt)
+#   - Alt+K     Force kill the pane immediately
+#   - Alt+R     Respawn pane with fresh shell
+#   - Alt+q     Detach from tmux (session stays alive)
 
 set -e
 
-# Check for --no-tmux flag
+# Parse arguments
 NO_TMUX=false
+RESCUE=false
+KILL_SESSION=false
+SHOW_HELP=false
+
 for arg in "$@"; do
   case $arg in
     --no-tmux|-n)
       NO_TMUX=true
       shift
       ;;
+    --rescue|-r)
+      RESCUE=true
+      shift
+      ;;
+    --kill)
+      KILL_SESSION=true
+      shift
+      ;;
+    --help|-h)
+      SHOW_HELP=true
+      shift
+      ;;
   esac
 done
+
+# Show help
+if [ "$SHOW_HELP" = true ]; then
+  cat << 'EOF'
+AgileFlow Claude tmux Wrapper
+
+USAGE:
+  af [options] [claude-args...]
+  agileflow [options] [claude-args...]
+
+OPTIONS:
+  --no-tmux, -n    Run claude without tmux
+  --rescue, -r     Kill frozen session and restart fresh
+  --kill           Kill existing session completely
+  --help, -h       Show this help
+
+TMUX KEYBINDS:
+  Alt+1-9          Switch to window N
+  Alt+c            Create new window
+  Alt+n/p          Next/previous window
+  Alt+d            Split horizontally
+  Alt+s            Split vertically
+  Alt+arrows       Navigate panes
+  Alt+z            Zoom/unzoom pane
+  Alt+[            Enter copy mode (scroll)
+  Alt+r            Rename window
+  Alt+x            Close pane
+  Alt+w            Close window
+  Alt+q            Detach from tmux
+
+FREEZE RECOVERY:
+  Alt+k            Send Ctrl+C twice (soft interrupt)
+  Alt+K            Force kill pane immediately
+  Alt+R            Respawn pane with fresh shell
+
+If Claude is completely frozen and keybinds don't work:
+  1. Open a new terminal
+  2. Run: af --rescue   (kills and restarts)
+  3. Or:  af --kill     (just kills, doesn't restart)
+EOF
+  exit 0
+fi
 
 # If --no-tmux was specified, just run claude directly
 if [ "$NO_TMUX" = true ]; then
   exec claude "$@"
+fi
+
+# Generate session name based on current directory (needed for rescue/kill)
+DIR_NAME=$(basename "$(pwd)")
+SESSION_NAME="claude-${DIR_NAME}"
+
+# Handle --kill flag
+if [ "$KILL_SESSION" = true ]; then
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Killing session: $SESSION_NAME"
+    tmux kill-session -t "$SESSION_NAME"
+    echo "Session killed."
+  else
+    echo "No session named '$SESSION_NAME' found."
+  fi
+  exit 0
+fi
+
+# Handle --rescue flag (kill and restart)
+if [ "$RESCUE" = true ]; then
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Killing frozen session: $SESSION_NAME"
+    tmux kill-session -t "$SESSION_NAME"
+    echo "Session killed. Restarting..."
+    sleep 0.5
+  else
+    echo "No existing session to rescue. Starting fresh..."
+  fi
+  # Continue to create new session below
 fi
 
 # Check if tmux auto-spawn is disabled in config
@@ -62,9 +159,7 @@ if ! command -v tmux &> /dev/null; then
   exec claude "$@"
 fi
 
-# Generate session name based on current directory
-DIR_NAME=$(basename "$(pwd)")
-SESSION_NAME="claude-${DIR_NAME}"
+# SESSION_NAME already generated above (needed for --rescue and --kill)
 
 # Check if session already exists
 if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
@@ -102,7 +197,8 @@ tmux set-option -t "$SESSION_NAME" status 2
 tmux set-option -t "$SESSION_NAME" status-style "bg=#1a1b26,fg=#a9b1d6"
 
 # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-tmux set-option -t "$SESSION_NAME" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git branch --show-current 2>/dev/null || echo '-')  #[align=right]#[fg=#7a7e8a]Alt+1-9 tabs  Alt+x close  Alt+q detach  "
+# Shows freeze recovery keys: Alt+k (soft kill), Alt+K (hard kill)
+tmux set-option -t "$SESSION_NAME" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git branch --show-current 2>/dev/null || echo '-')  #[align=right]#[fg=#7a7e8a]Alt+k freeze  Alt+x close  Alt+q detach  "
 
 # Line 1 (bottom): Window tabs with smart truncation and brand color
 # - Active window: full name (max 15 chars), brand orange highlight
@@ -162,6 +258,16 @@ tmux bind-key -n M-z resize-pane -Z
 
 # Alt+[ to enter copy mode (for scrolling)
 tmux bind-key -n M-[ copy-mode
+
+# ─── Freeze Recovery Keybindings ─────────────────────────────────────────────
+# Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
+tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
+
+# Alt+K (shift+k) to force-kill pane immediately (nuclear option for hard freezes)
+tmux bind-key -n M-K kill-pane
+
+# Alt+R (shift+r) to respawn the pane (restart with a fresh shell)
+tmux bind-key -n M-R respawn-pane -k
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"
