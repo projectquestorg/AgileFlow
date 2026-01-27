@@ -20,8 +20,8 @@ module.exports = {
   name: 'session',
   description: 'Manage parallel Claude Code sessions',
   arguments: [
-    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn'],
-    ['[idOrNickname]', 'Session ID or nickname (for switch/end)'],
+    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn, status'],
+    ['[idOrNickname]', 'Session ID or nickname (for switch/end/status)'],
   ],
   options: [
     ['-d, --directory <path>', 'Project directory (default: current directory)'],
@@ -66,6 +66,10 @@ module.exports = {
           await handleSpawn(options, handler);
           break;
 
+        case 'status':
+          await handleStatus(idOrNickname, options, handler);
+          break;
+
         default:
           displayLogo();
           showHelp();
@@ -93,7 +97,8 @@ function showHelp() {
   console.log('  npx agileflow session new               Create a new session (interactive)');
   console.log('  npx agileflow session switch <id>       Switch active session context');
   console.log('  npx agileflow session end <id>          End session (optional merge)');
-  console.log('  npx agileflow session spawn             Spawn multiple parallel sessions\n');
+  console.log('  npx agileflow session spawn             Spawn multiple parallel sessions');
+  console.log('  npx agileflow session status <id>       Detailed view of a session\n');
   console.log(chalk.bold('Options:\n'));
   console.log('  --json                Output as JSON');
   console.log('  --kanban              Show Kanban-style board view (for list)');
@@ -124,7 +129,9 @@ function showHelp() {
   console.log('  npx agileflow session spawn --count 4');
   console.log('  npx agileflow session spawn --branches auth,dashboard,api');
   console.log('  npx agileflow session spawn --from-epic EP-0001');
-  console.log('  npx agileflow session spawn --count 2 --no-tmux\n');
+  console.log('  npx agileflow session spawn --count 2 --no-tmux');
+  console.log('  npx agileflow session status 2');
+  console.log('  npx agileflow session status auth --json\n');
 }
 
 /**
@@ -773,6 +780,264 @@ function outputSpawnCommands(sessions, options = {}) {
   }
 
   console.log(chalk.dim('Copy these commands to separate terminals to run in parallel.\n'));
+}
+
+/**
+ * Handle status subcommand - detailed view of a single session
+ */
+async function handleStatus(idOrNickname, options, handler) {
+  if (!idOrNickname) {
+    handler.warning(
+      'Session ID or nickname required',
+      'Provide a session identifier',
+      'npx agileflow session status <id>'
+    );
+  }
+
+  const session = sessionManager.getSession(idOrNickname);
+
+  if (!session) {
+    handler.warning(
+      `Session "${idOrNickname}" not found`,
+      'Check the session ID or nickname',
+      'npx agileflow session list'
+    );
+  }
+
+  // Gather git information from the session's worktree
+  const gitInfo = getSessionGitInfo(session.path);
+
+  // Build status data object
+  const statusData = {
+    id: session.id,
+    nickname: session.nickname || null,
+    branch: session.branch,
+    path: session.path,
+    created: session.created,
+    lastActive: session.last_active,
+    isMain: session.is_main,
+    active: session.active,
+    current: session.current,
+    git: gitInfo,
+  };
+
+  // JSON output
+  if (options.json) {
+    console.log(JSON.stringify(statusData, null, 2));
+    return;
+  }
+
+  // Rich display
+  displayLogo();
+  displaySection('Session Status', `Session ${session.id}`);
+
+  // Basic info
+  console.log(chalk.bold('Session Information'));
+  console.log(chalk.dim('─'.repeat(50)));
+  console.log(`  ${chalk.dim('ID:')}          ${chalk.cyan(session.id)}`);
+  if (session.nickname) {
+    console.log(`  ${chalk.dim('Nickname:')}    ${session.nickname}`);
+  }
+  console.log(`  ${chalk.dim('Branch:')}      ${session.branch}`);
+  console.log(`  ${chalk.dim('Path:')}        ${session.path}`);
+  console.log(`  ${chalk.dim('Created:')}     ${formatDate(session.created)}`);
+  console.log(`  ${chalk.dim('Last Active:')} ${formatDate(session.last_active)}`);
+
+  // Status badges
+  const badges = [];
+  if (session.is_main) badges.push(chalk.blue('[main]'));
+  if (session.current) badges.push(chalk.yellow('[current]'));
+  if (session.active) badges.push(chalk.green('[active]'));
+  if (badges.length > 0) {
+    console.log(`  ${chalk.dim('Status:')}      ${badges.join(' ')}`);
+  }
+  console.log();
+
+  // Git status
+  console.log(chalk.bold('Git Status'));
+  console.log(chalk.dim('─'.repeat(50)));
+
+  if (gitInfo.error) {
+    warning(`Could not get git info: ${gitInfo.error}`);
+  } else {
+    // Branch and tracking
+    console.log(`  ${chalk.dim('Branch:')}      ${gitInfo.branch}`);
+    if (gitInfo.upstream) {
+      console.log(`  ${chalk.dim('Tracking:')}    ${gitInfo.upstream}`);
+    }
+
+    // Ahead/behind
+    if (gitInfo.ahead > 0 || gitInfo.behind > 0) {
+      const aheadBehind = [];
+      if (gitInfo.ahead > 0) {
+        aheadBehind.push(chalk.green(`↑${gitInfo.ahead} ahead`));
+      }
+      if (gitInfo.behind > 0) {
+        aheadBehind.push(chalk.yellow(`↓${gitInfo.behind} behind`));
+      }
+      console.log(`  ${chalk.dim('Sync:')}        ${aheadBehind.join(', ')}`);
+    } else if (gitInfo.upstream) {
+      console.log(`  ${chalk.dim('Sync:')}        ${chalk.green('✓ up to date')}`);
+    }
+
+    // Uncommitted changes
+    if (gitInfo.uncommitted > 0) {
+      console.log(
+        `  ${chalk.dim('Changes:')}     ${chalk.yellow(`${gitInfo.uncommitted} uncommitted file(s)`)}`
+      );
+      // Show first few changed files
+      if (gitInfo.changedFiles && gitInfo.changedFiles.length > 0) {
+        const filesToShow = gitInfo.changedFiles.slice(0, 5);
+        for (const file of filesToShow) {
+          console.log(`                ${chalk.dim(file)}`);
+        }
+        if (gitInfo.changedFiles.length > 5) {
+          console.log(chalk.dim(`                ... and ${gitInfo.changedFiles.length - 5} more`));
+        }
+      }
+    } else {
+      console.log(`  ${chalk.dim('Changes:')}     ${chalk.green('✓ clean working tree')}`);
+    }
+
+    // Recent commits
+    if (gitInfo.recentCommits && gitInfo.recentCommits.length > 0) {
+      console.log();
+      console.log(chalk.bold('Recent Commits'));
+      console.log(chalk.dim('─'.repeat(50)));
+      for (const commit of gitInfo.recentCommits.slice(0, 5)) {
+        console.log(`  ${chalk.dim('•')} ${commit}`);
+      }
+    }
+  }
+
+  console.log();
+
+  // Navigation help
+  console.log(chalk.bold('Actions'));
+  console.log(chalk.dim('─'.repeat(50)));
+  console.log(`  ${chalk.cyan(`cd "${session.path}"`)}  ${chalk.dim('- Navigate to session')}`);
+  if (!session.is_main) {
+    console.log(
+      `  ${chalk.cyan(`npx agileflow session end ${session.id}`)}  ${chalk.dim('- End session')}`
+    );
+    console.log(
+      `  ${chalk.cyan(`npx agileflow session end ${session.id} --merge`)}  ${chalk.dim('- Merge and end')}`
+    );
+  }
+  console.log();
+}
+
+/**
+ * Get git information for a session path
+ */
+function getSessionGitInfo(sessionPath) {
+  const { execSync } = require('child_process');
+  const fs = require('fs-extra');
+
+  if (!fs.existsSync(sessionPath)) {
+    return { error: 'Path does not exist' };
+  }
+
+  const execOpts = { cwd: sessionPath, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] };
+
+  try {
+    // Get current branch
+    let branch = '';
+    try {
+      branch = execSync('git rev-parse --abbrev-ref HEAD', execOpts).trim();
+    } catch {
+      return { error: 'Not a git repository' };
+    }
+
+    // Get upstream tracking branch
+    let upstream = '';
+    try {
+      upstream = execSync(`git rev-parse --abbrev-ref ${branch}@{upstream}`, execOpts).trim();
+    } catch {
+      // No upstream configured
+    }
+
+    // Get ahead/behind counts
+    let ahead = 0;
+    let behind = 0;
+    if (upstream) {
+      try {
+        const counts = execSync(
+          `git rev-list --left-right --count ${branch}...${upstream}`,
+          execOpts
+        )
+          .trim()
+          .split('\t');
+        ahead = parseInt(counts[0], 10) || 0;
+        behind = parseInt(counts[1], 10) || 0;
+      } catch {
+        // Ignore errors
+      }
+    }
+
+    // Get uncommitted changes count
+    let uncommitted = 0;
+    let changedFiles = [];
+    try {
+      const status = execSync('git status --porcelain', execOpts);
+      // Split by newline, preserving line format (don't trim whole output)
+      // Git porcelain format: XY filename (where XY is 2 chars + space = 3 chars prefix)
+      const lines = status.split('\n').filter(line => line.length >= 3);
+      if (lines.length > 0) {
+        changedFiles = lines.map(line => line.slice(3));
+        uncommitted = changedFiles.length;
+      }
+    } catch {
+      // Ignore errors
+    }
+
+    // Get recent commits
+    let recentCommits = [];
+    try {
+      const log = execSync('git log --oneline -5', execOpts).trim();
+      if (log) {
+        recentCommits = log.split('\n');
+      }
+    } catch {
+      // Ignore errors
+    }
+
+    return {
+      branch,
+      upstream,
+      ahead,
+      behind,
+      uncommitted,
+      changedFiles,
+      recentCommits,
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+/**
+ * Format a date for display
+ */
+function formatDate(dateStr) {
+  if (!dateStr) return chalk.dim('unknown');
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+    return date.toLocaleDateString();
+  } catch {
+    return chalk.dim(dateStr);
+  }
 }
 
 /**
