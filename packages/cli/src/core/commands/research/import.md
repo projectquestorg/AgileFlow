@@ -11,7 +11,7 @@ compact_context:
     - "MUST use diff-first: show formatted result BEFORE saving"
     - "MUST update docs/10-research/README.md index after saving"
     - "DO NOT jump to artifacts: ask 'would you like analysis' FIRST"
-    - "If user wants analysis: EnterPlanMode → obtain-context → show benefits/changes/risks"
+    - "If user wants analysis: EnterPlanMode → deploy 3-5 experts IN PARALLEL → synthesize → Implementation Ideation Report"
     - "Intelligent artifact recommendation based on research type (not always Epic)"
   state_fields:
     - topic
@@ -20,6 +20,9 @@ compact_context:
     - formatted_research
     - file_saved
     - analysis_requested
+    - experts_deployed
+    - expert_results
+    - consensus_level
 ---
 
 # /agileflow:research:import
@@ -81,10 +84,11 @@ Phase 3: SAVE & INDEX
   ├─ Update docs/10-research/README.md index
   └─ Offer implementation analysis (ASK FIRST)
 
-Phase 4: ANALYSIS (If Requested)
-  ├─ Enter plan mode
-  ├─ Gather project context
-  ├─ Show benefits + implementation plan
+Phase 4: IMPLEMENTATION IDEATION (If Requested)
+  ├─ Enter plan mode + select 3-5 domain experts
+  ├─ Deploy experts IN PARALLEL (like /ideate)
+  ├─ Collect results + synthesize with confidence scoring
+  ├─ Present unified report with expert consensus
   └─ Suggest intelligent artifact (ADR/Epic/Story/Practice)
 ```
 
@@ -182,7 +186,7 @@ Add entry to the top of the table:
   "header": "Analyze",
   "multiSelect": false,
   "options": [
-    {"label": "Yes - Enter plan mode and explore (Recommended)", "description": "I'll analyze your codebase and show benefits, implementation steps, and what would change"},
+    {"label": "Yes - Implementation ideation with multi-expert analysis (Recommended)", "description": "Deploy 3-5 domain experts to analyze from security, performance, testing, and architecture perspectives"},
     {"label": "No - Just save the research", "description": "Keep as reference, I can analyze later"},
     {"label": "Link to existing Epic/Story", "description": "Reference from current work without full analysis"}
   ]
@@ -192,24 +196,29 @@ Add entry to the top of the table:
 
 **If "No"**: Research saved, exit gracefully.
 **If "Link"**: Add research reference to document, exit.
-**If "Yes"**: Continue to analysis (Phase 4).
+**If "Yes"**: Continue to Implementation Ideation (Phase 4).
 
 ---
 
-### 🚨 RULE #7: ANALYSIS = PLAN MODE + PROJECT CONTEXT
+### 🚨 RULE #7: IMPLEMENTATION IDEATION = PLAN MODE + MULTI-EXPERT ANALYSIS
 
-**When analyzing, you MUST enter plan mode and gather project context.**
+**When user requests analysis, you MUST:**
 
+1. **Enter plan mode**:
 ```xml
 <invoke name="EnterPlanMode"/>
 ```
 
-Then:
+2. **Gather project context**:
 ```bash
 node .agileflow/scripts/obtain-context.js babysit
 ```
 
-**Why**: Can't recommend artifacts without understanding their codebase, current patterns, tech stack.
+3. **Deploy 3-5 domain experts IN PARALLEL** (see RULE #10 for expert selection)
+
+4. **Synthesize results** with confidence scoring
+
+**Why**: Single-perspective analysis misses domain-specific considerations. Multi-expert analysis provides security, performance, testing, and architecture perspectives for comprehensive implementation guidance.
 
 ---
 
@@ -241,6 +250,42 @@ node .agileflow/scripts/obtain-context.js babysit
 - "Upgrade to Next.js 15" → ADR
 - "Add OAuth" → Epic + Stories (multiple domains)
 - "Fix cache bug" → Story (single issue)
+
+---
+
+### 🚨 RULE #10: IMPLEMENTATION IDEATION (Multi-Expert Analysis)
+
+When user requests "Yes - Implementation ideation with multi-expert analysis":
+
+1. **Enter Plan Mode** and auto-detect research type to select experts
+2. **Deploy 3-5 experts IN PARALLEL** (like /ideate pattern)
+3. **Each expert analyzes from their domain perspective**:
+   - Implementation fit for codebase
+   - Domain-specific considerations
+   - Recommended approach with specific files
+   - Risks and gotchas
+4. **Synthesize with confidence scoring**:
+   - HIGH CONFIDENCE: 2+ experts agree on approach/files
+   - MEDIUM CONFIDENCE: 1 expert with specific evidence
+5. **Present unified Implementation Ideation Report** with expert consensus
+
+**Expert Selection by Research Type:**
+
+| Research Type | Experts (Deploy ALL in parallel) |
+|--------------|--------------------------------|
+| Architecture/Framework | api, database, performance, security (4) |
+| Feature Implementation | api, ui, testing, database (4) |
+| Security/Compliance | security, api, testing, compliance (4) |
+| Performance | performance, database, api, monitoring (4) |
+| Best Practices | refactor, testing, documentation (3) |
+| Full-Stack (default) | api, ui, database, testing, security (5) |
+
+**Detection Keywords:**
+- **Security**: auth, oauth, jwt, encryption, vulnerability, compliance
+- **Performance**: cache, optimize, latency, throughput, benchmark
+- **Architecture**: migrate, upgrade, framework, refactor, redesign
+- **UI**: component, styling, accessibility, ux, design system
+- **Database**: schema, migration, query, index, model
 
 ---
 
@@ -313,7 +358,8 @@ Every imported research must be formatted as:
 ❌ Reformat or clean up code snippets
 ❌ Forget to update docs/10-research/README.md
 ❌ Jump straight to artifact creation without asking
-❌ Show generic benefits without project context
+❌ Single-perspective analysis (shallow, misses domain considerations)
+❌ Deploy experts one at a time (MUST be parallel)
 ❌ Assume Epic is the right artifact for all research
 
 ### DO THESE INSTEAD
@@ -322,10 +368,11 @@ Every imported research must be formatted as:
 ✅ Show formatted result before saving
 ✅ Preserve code snippets exactly as provided
 ✅ Always update the research index
-✅ Ask "Do you want analysis?" before proceeding
-✅ Enter plan mode to gather project context
-✅ Show specific, project-relevant benefits
-✅ Recommend artifact type based on research scope
+✅ Ask "Do you want implementation ideation?" before proceeding
+✅ Deploy 3-5 domain experts IN PARALLEL for multi-perspective analysis
+✅ Synthesize expert results with confidence scoring
+✅ Present Implementation Ideation Report with expert consensus
+✅ Recommend artifact type based on expert agreement
 
 ---
 
@@ -351,22 +398,24 @@ Every imported research must be formatted as:
 11. Update docs/10-research/README.md index
 
 **Phase 5: Offer Analysis**
-12. Ask "Do you want implementation analysis?"
+12. Ask "Do you want implementation ideation?"
 13. If "No": Done
 14. If "Link": Add reference to document, exit
 15. If "Yes": Continue to Phase 6
 
-**Phase 6: Analysis (If Requested)**
-16. Enter plan mode
-17. Run obtain-context.js
-18. Show implementation benefits + plan
-19. Recommend intelligent artifact type
-20. Create artifact if user confirms
+**Phase 6: Implementation Ideation (If Requested)**
+16. Enter plan mode + select 3-5 domain experts
+17. Deploy experts IN PARALLEL (Task tool with run_in_background)
+18. Collect results (TaskOutput) + synthesize with confidence scoring
+19. Present Implementation Ideation Report
+20. Confirm interest in proceeding
+21. Recommend artifact type based on expert consensus
+22. Create artifact if user confirms
 
 **Phase 7: Finish**
-21. Exit plan mode
-22. Confirm artifact created
-23. Research ready for implementation
+23. Exit plan mode
+24. Confirm artifact created with expert validation
+25. Research ready for implementation with expert-validated guidance
 
 ---
 
@@ -388,9 +437,11 @@ Every imported research must be formatted as:
 - Format into structured markdown
 - Show preview BEFORE saving (diff-first)
 - Always update docs/10-research/README.md
-- Ask "Do you want analysis?" BEFORE assuming
-- If analyzing: enter plan mode + gather context
-- Recommend artifact type based on research scope
+- Ask "Do you want implementation ideation?" BEFORE assuming
+- If ideation requested: enter plan mode + deploy 3-5 domain experts IN PARALLEL
+- Synthesize expert results with confidence scoring (HIGH = 2+ agree)
+- Present unified Implementation Ideation Report
+- Recommend artifact type based on expert consensus
 
 <!-- COMPACT_SUMMARY_END -->
 
@@ -423,9 +474,11 @@ Upon invocation, execute these steps:
   {"content": "Show diff for review", "status": "pending", "activeForm": "Showing preview"},
   {"content": "Save to docs/10-research/", "status": "pending", "activeForm": "Saving file"},
   {"content": "Update README.md index", "status": "pending", "activeForm": "Updating index"},
-  {"content": "Offer implementation analysis", "status": "pending", "activeForm": "Offering analysis"},
-  {"content": "Enter plan mode and gather context (if requested)", "status": "pending", "activeForm": "Gathering context"},
-  {"content": "Present implementation plan with benefits", "status": "pending", "activeForm": "Presenting plan"},
+  {"content": "Offer implementation ideation", "status": "pending", "activeForm": "Offering ideation"},
+  {"content": "Enter plan mode and select domain experts (if requested)", "status": "pending", "activeForm": "Selecting experts"},
+  {"content": "Deploy 3-5 experts in parallel", "status": "pending", "activeForm": "Deploying experts"},
+  {"content": "Synthesize expert results with confidence scoring", "status": "pending", "activeForm": "Synthesizing results"},
+  {"content": "Present Implementation Ideation Report", "status": "pending", "activeForm": "Presenting report"},
   {"content": "Suggest and create appropriate artifact", "status": "pending", "activeForm": "Creating artifact"}
 ]</parameter>
 </invoke>
@@ -613,7 +666,7 @@ After saving, ask if the user wants to understand how this research applies to t
   "header": "Analyze",
   "multiSelect": false,
   "options": [
-    {"label": "Yes - Enter plan mode and explore (Recommended)", "description": "I'll analyze your codebase and show benefits, implementation steps, and what would change"},
+    {"label": "Yes - Implementation ideation with multi-expert analysis (Recommended)", "description": "Deploy 3-5 domain experts to analyze from security, performance, testing, and architecture perspectives"},
     {"label": "No - Just save the research", "description": "Keep as reference, I can analyze later"},
     {"label": "Link to existing Epic/Story", "description": "Reference from current work without full analysis"}
   ]
@@ -632,7 +685,7 @@ After saving, ask if the user wants to understand how this research applies to t
 
 ---
 
-### Step 10: Enter Plan Mode and Gather Context
+### Step 10: Enter Plan Mode and Select Experts
 
 ```xml
 <invoke name="EnterPlanMode"/>
@@ -644,101 +697,220 @@ Then immediately gather project context:
 node .agileflow/scripts/obtain-context.js babysit
 ```
 
-Also read key files to understand the project:
-- `CLAUDE.md` or `README.md` for project overview
-- Relevant source files based on research topic
-- Existing architecture/pattern files
+**Auto-detect research type and select experts:**
 
-**Goal**: Understand:
-- Current project structure
-- Existing patterns that apply
-- Files that would be affected
-- Current tech stack
+Analyze the TOPIC and CONTENT to determine research type, then select 3-5 experts:
 
----
-
-### Step 11: Analyze and Present Implementation Plan
-
-Based on the research content AND project context, prepare a detailed analysis:
-
-```markdown
-## Implementation Analysis
-
-### 🎯 Benefits of Implementing This Research
-
-**What you would gain:**
-- [Benefit 1 - specific to this project]
-- [Benefit 2 - quantifiable if possible]
-- [Benefit 3 - addresses current gaps/pain points]
-
-**Problems this solves:**
-- [Current issue 1 this addresses]
-- [Current issue 2 this addresses]
+| Research Type | Detection Keywords | Experts |
+|--------------|-------------------|---------|
+| **Security/Compliance** | auth, oauth, jwt, encryption, vulnerability, compliance, csrf, xss | security, api, testing, compliance |
+| **Performance** | cache, optimize, latency, throughput, benchmark, profiling | performance, database, api, monitoring |
+| **Architecture/Framework** | migrate, upgrade, framework, refactor, redesign, architecture | api, database, performance, security |
+| **UI/Frontend** | component, styling, accessibility, ux, design system, responsive | ui, api, testing, accessibility |
+| **Database** | schema, migration, query, index, model, postgres, mongo | database, api, performance, datamigration |
+| **Full-Stack (default)** | multiple domains or unclear | api, ui, database, testing, security |
 
 ---
 
-### 🔧 How It Would Be Implemented
+### Step 11: Deploy Experts in Parallel
 
-**Files to modify:**
-| File | Change | Effort |
-|------|--------|--------|
-| `path/to/file1.ts` | [What changes] | Low |
-| `path/to/file2.ts` | [What changes] | Medium |
+**CRITICAL**: Deploy ALL selected experts in a SINGLE message using the Task tool.
 
-**New files to create:**
-- `path/to/new/file.ts` - [Purpose]
+Each expert receives this prompt template:
 
-**Implementation steps:**
-1. [Step 1 - specific action]
-2. [Step 2 - specific action]
-3. [Step 3 - specific action]
+```
+EXPERTISE FIRST: Read your expertise.yaml file if it exists at .agileflow/expertise/{domain}.yaml
 
----
+RESEARCH TOPIC: {TOPIC}
+RESEARCH SUMMARY: {2-3 paragraph summary from imported content}
+PROJECT CONTEXT: {from obtain-context.js output}
 
-### 🔄 What Would Change
+TASK: Analyze this research from your {DOMAIN} perspective:
 
-**Behavior changes:**
-- [User-facing change 1]
-- [Developer experience change]
+1. **Implementation Fit**: How well does this fit the current codebase?
+   - What patterns/files would need to change?
+   - Any conflicts with existing architecture?
 
-**Architecture impact:**
-- [How this affects current architecture]
-- [New patterns introduced]
+2. **Domain-Specific Considerations**: From your expertise:
+   - For SECURITY: What security implications? Risks? Compliance needs?
+   - For PERFORMANCE: What performance impacts? Bottlenecks? Optimization opportunities?
+   - For TESTING: What test coverage needed? Edge cases? Regression risks?
+   - For API: What API changes? Breaking changes? Versioning needs?
+   - For UI: What UX considerations? Accessibility? Design patterns?
+   - For DATABASE: What schema changes? Migration strategy? Query impact?
 
-**Dependencies:**
-- [New packages needed, if any]
-- [Internal dependencies affected]
+3. **Implementation Approach**: Your recommended approach:
+   - Key files to modify (specific paths from codebase)
+   - Effort estimate (hours/days/weeks)
+   - Dependencies or prerequisites
 
----
+4. **Risks & Gotchas**: What could go wrong?
+   - Technical risks
+   - Migration complexity
+   - Team adoption concerns
 
-### ⚠️ Risks & Considerations
-
-- [Risk 1 - migration complexity, breaking changes, etc.]
-- [Risk 2 - learning curve, team adoption]
-- [Mitigation strategy for each]
-
----
-
-### ⏱️ Effort Estimate
-
-**Scope**: [Small/Medium/Large]
-**Suggested approach**: [Epic with stories / Single story / Quick fix]
+FORMAT as structured markdown with specific file paths and evidence from codebase.
 ```
 
-Present this analysis to the user.
+**Deploy using Task tool (ALL in one message):**
+
+```xml
+<invoke name="Task">
+<parameter name="description">Security analysis of {TOPIC}</parameter>
+<parameter name="prompt">{prompt with DOMAIN=security}</parameter>
+<parameter name="subagent_type">agileflow-security</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">API analysis of {TOPIC}</parameter>
+<parameter name="prompt">{prompt with DOMAIN=api}</parameter>
+<parameter name="subagent_type">agileflow-api</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<invoke name="Task">
+<parameter name="description">Testing analysis of {TOPIC}</parameter>
+<parameter name="prompt">{prompt with DOMAIN=testing}</parameter>
+<parameter name="subagent_type">agileflow-testing</parameter>
+<parameter name="run_in_background">true</parameter>
+</invoke>
+
+<!-- Continue for all selected experts -->
+```
 
 ---
 
-### Step 12: Confirm Interest in Implementing
+### Step 12: Collect Results and Synthesize
+
+Collect all expert outputs:
+
+```xml
+<invoke name="TaskOutput">
+<parameter name="task_id">{security_task_id}</parameter>
+<parameter name="block">true</parameter>
+<parameter name="timeout">60000</parameter>
+</invoke>
+
+<!-- Repeat for each expert -->
+```
+
+**Synthesis Process:**
+
+1. **Find Consensus**: Group similar recommendations across experts
+   - **HIGH CONFIDENCE**: 2+ experts recommend same approach/files
+   - **MEDIUM CONFIDENCE**: 1 expert with specific evidence
+
+2. **Aggregate Effort Estimates**: Average across experts, note range
+
+3. **Collect All Risks**: Union of risks from all experts, prioritize by frequency
+
+4. **Validate Artifact Recommendation** via expert consensus:
+   - If experts mention "decision", "tradeoffs", "alternatives" → **ADR**
+   - If experts identify 5+ files across multiple domains → **Epic + Stories**
+   - If experts agree on single focus area, 1-3 files → **Story**
+   - If experts focus on guidelines, patterns → **Practice doc**
+
+---
+
+### Step 13: Present Implementation Ideation Report
+
+Present the synthesized analysis:
+
+```markdown
+## 🧠 Implementation Ideation Report
+
+**Research**: {TOPIC}
+**Experts Consulted**: {list of 3-5 experts with badges}
+**Consensus Level**: {High/Medium/Low based on agreement}
+
+---
+
+### 🎯 High-Confidence Implementation Steps
+*Agreed by 2+ experts*
+
+1. **{Step title}**
+   - Experts: 🔒 security, 🧪 testing
+   - Files: `path/to/file1.ts`, `path/to/file2.ts`
+   - Effort: {averaged estimate}
+   - Approach: {consensus approach}
+
+2. **{Step title}**
+   - Experts: ⚡ api, 🗄️ database
+   - Files: `path/to/file3.ts`
+   - Effort: {averaged estimate}
+   - Approach: {consensus approach}
+
+---
+
+### 💡 Domain-Specific Considerations
+
+**🔒 Security** (security expert):
+- {key consideration 1}
+- {risk flagged}
+- Mitigation: {recommended approach}
+
+**⚡ Performance** (performance expert):
+- {optimization opportunity}
+- {bottleneck identified}
+
+**🧪 Testing** (testing expert):
+- {coverage requirements}
+- {edge cases to handle}
+- {regression risk assessment}
+
+**🔧 API** (api expert):
+- {API changes needed}
+- {versioning considerations}
+
+---
+
+### ⚠️ Risks & Gotchas
+*Flagged by experts*
+
+| Risk | Expert(s) | Severity | Mitigation |
+|------|-----------|----------|------------|
+| {risk 1} | 🔒 security | High | {mitigation} |
+| {risk 2} | ⚡ performance | Medium | {mitigation} |
+| {risk 3} | 🧪 testing | Low | {mitigation} |
+
+---
+
+### 📊 Effort Estimate Summary
+
+| Expert | Estimate | Notes |
+|--------|----------|-------|
+| security | {estimate} | {notes} |
+| api | {estimate} | {notes} |
+| testing | {estimate} | {notes} |
+| **Consensus** | **{averaged}** | {range: min-max} |
+
+---
+
+### 📋 Recommended Artifact
+
+Based on expert consensus: **{ADR/Epic/Story/Practice}**
+
+**Reason**: {why this artifact type based on scope and expert recommendations}
+
+**Evidence**:
+- {expert 1} recommended: {artifact type}
+- {expert 2} recommended: {artifact type}
+- Scope assessment: {small/medium/large}
+```
+
+---
+
+### Step 14: Confirm Interest in Implementing
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Based on this analysis, would you like to proceed with implementation?",
+  "question": "Based on this multi-expert analysis, would you like to proceed with implementation?",
   "header": "Proceed?",
   "multiSelect": false,
   "options": [
-    {"label": "Yes - Create implementation artifacts", "description": "I'll suggest the best artifact type based on scope"},
+    {"label": "Yes - Create implementation artifacts", "description": "I'll create the recommended artifact based on expert consensus"},
     {"label": "Modify approach first", "description": "Let's adjust the plan before creating artifacts"},
     {"label": "Save analysis only", "description": "Exit plan mode, keep research + analysis for later"},
     {"label": "Cancel", "description": "Exit plan mode, research already saved"}
@@ -748,34 +920,24 @@ Present this analysis to the user.
 ```
 
 **If "Modify approach"**: Discuss changes, update analysis, re-ask.
-**If "Save analysis only"**: Append analysis to the research file, exit plan mode.
+**If "Save analysis only"**: Append Implementation Ideation Report to the research file, exit plan mode.
 **If "Cancel"**: Exit plan mode, done.
-**If "Yes"**: Continue to Step 13.
+**If "Yes"**: Continue to Step 15.
 
 ---
 
-### Step 13: Intelligently Suggest Artifact Type
+### Step 15: Intelligently Suggest Artifact Type
 
-Based on the research content and analysis, determine the BEST artifact to create:
-
-| Research Type | Suggested Artifact | Indicators |
-|---------------|-------------------|------------|
-| Architecture/technology decision | **ADR** | "Should we use X or Y?", trade-offs, alternatives |
-| Large feature with multiple parts | **Epic + Stories** | 5+ implementation steps, multiple domains |
-| Single focused improvement | **Story** | Clear scope, 1-3 files, can be done in one session |
-| Best practices/patterns | **Practice doc** | "How to do X", guidelines, not feature work |
-| Code quality improvement | **Tech debt item** | Refactoring, cleanup, no user-facing change |
-
-Present the recommendation:
+Based on expert consensus, present the recommendation:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Based on the scope, I recommend creating: [ARTIFACT TYPE]. What would you like to do?",
+  "question": "Based on expert consensus, I recommend creating: [ARTIFACT TYPE]. What would you like to do?",
   "header": "Create",
   "multiSelect": false,
   "options": [
-    {"label": "[Recommended artifact] (Recommended)", "description": "[Why this is the right choice]"},
+    {"label": "[Recommended artifact] (Recommended)", "description": "[Why experts agreed on this choice]"},
     {"label": "Create ADR instead", "description": "Document this as an architecture decision"},
     {"label": "Create Epic + Stories instead", "description": "Break down into trackable work items"},
     {"label": "Create single Story instead", "description": "Track as a single work item"},
@@ -787,35 +949,45 @@ Present the recommendation:
 
 ---
 
-### Step 14: Create Selected Artifact
+### Step 16: Create Selected Artifact
 
 **If ADR selected**:
 - Use `/agileflow:adr` command format
 - Reference the research file
-- Include key decisions from analysis
+- Include key decisions from expert analysis
+- Document trade-offs identified by experts
 
 **If Epic + Stories selected**:
 - Create epic in status.json
-- Generate stories based on implementation steps
+- Generate stories based on high-confidence implementation steps
+- Include expert-identified risks as acceptance criteria
 - Reference research in epic
 
 **If Story selected**:
 - Create single story with ACs from implementation steps
+- Include testing requirements from testing expert
 - Reference research
 
 **If Practice doc selected**:
 - Create doc in `docs/02-practices/`
 - Format as guidelines/best practices
+- Include expert-recommended patterns
 
 After creation, exit plan mode and confirm:
 
 ```
 ✅ Created [ARTIFACT] from research "[TOPIC]"
 
+**Multi-Expert Analysis Summary:**
+- Experts consulted: {list}
+- Consensus level: {High/Medium/Low}
+- Key insights preserved: {count}
+
+**Artifacts:**
 - Research: docs/10-research/YYYYMMDD-topic.md
 - [Artifact]: [path or ID]
 
-The implementation plan is now tracked and ready to execute.
+The implementation plan is now tracked and ready to execute with expert-validated guidance.
 ```
 
 ---
