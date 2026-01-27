@@ -20,7 +20,7 @@ module.exports = {
   name: 'session',
   description: 'Manage parallel Claude Code sessions',
   arguments: [
-    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn, status, cleanup'],
+    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn, status, cleanup, history'],
     ['[idOrNickname]', 'Session ID or nickname (for switch/end/status)'],
   ],
   options: [
@@ -40,6 +40,7 @@ module.exports = {
     ['--no-claude', 'Create worktrees but do not start Claude (for spawn)'],
     ['--dangerous', 'Use --dangerously-skip-permissions for Claude (for spawn)'],
     ['--prompt <text>', 'Initial prompt to send to each Claude instance (for spawn)'],
+    ['--limit <n>', 'Number of history entries to show (default: 20)'],
   ],
   action: async (subcommand, idOrNickname, options) => {
     const handler = new ErrorHandler('session');
@@ -74,6 +75,10 @@ module.exports = {
           await handleCleanup(options, handler);
           break;
 
+        case 'history':
+          await handleHistory(options);
+          break;
+
         default:
           displayLogo();
           showHelp();
@@ -103,7 +108,8 @@ function showHelp() {
   console.log('  npx agileflow session end <id>          End session (optional merge)');
   console.log('  npx agileflow session spawn             Spawn multiple parallel sessions');
   console.log('  npx agileflow session status <id>       Detailed view of a session');
-  console.log('  npx agileflow session cleanup           Clean up stale sessions\n');
+  console.log('  npx agileflow session cleanup           Clean up stale sessions');
+  console.log('  npx agileflow session history           View merge history\n');
   console.log(chalk.bold('Options:\n'));
   console.log('  --json                Output as JSON');
   console.log('  --kanban              Show Kanban-style board view (for list)');
@@ -121,6 +127,8 @@ function showHelp() {
   console.log('  --no-claude           Create worktrees but do not start Claude');
   console.log('  --dangerous           Use --dangerously-skip-permissions');
   console.log('  --prompt <text>       Initial prompt for each Claude instance\n');
+  console.log(chalk.bold('History Options:\n'));
+  console.log('  --limit <n>           Number of history entries to show (default: 20)\n');
   console.log(chalk.bold('Examples:\n'));
   console.log('  npx agileflow session list');
   console.log('  npx agileflow session list --json');
@@ -138,7 +146,10 @@ function showHelp() {
   console.log('  npx agileflow session status 2');
   console.log('  npx agileflow session status auth --json');
   console.log('  npx agileflow session cleanup');
-  console.log('  npx agileflow session cleanup --yes\n');
+  console.log('  npx agileflow session cleanup --yes');
+  console.log('  npx agileflow session history');
+  console.log('  npx agileflow session history --limit 10');
+  console.log('  npx agileflow session history --json\n');
 }
 
 /**
@@ -1354,6 +1365,103 @@ function getSessionGitInfo(sessionPath) {
     };
   } catch (err) {
     return { error: err.message };
+  }
+}
+
+/**
+ * Handle history subcommand - display merge history
+ */
+async function handleHistory(options) {
+  const limit = parseInt(options.limit) || 20;
+
+  // Get merge history from session manager
+  const historyResult = sessionManager.getMergeHistory();
+
+  if (!historyResult.success) {
+    if (options.json) {
+      console.log(JSON.stringify({ success: false, error: historyResult.error }));
+      return;
+    }
+    error(`Failed to read history: ${historyResult.error}`);
+    return;
+  }
+
+  const merges = historyResult.merges || [];
+
+  // JSON output mode
+  if (options.json) {
+    console.log(
+      JSON.stringify(
+        {
+          success: true,
+          total: merges.length,
+          showing: Math.min(limit, merges.length),
+          merges: merges.slice(0, limit),
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
+  // Standard display
+  displayLogo();
+  displaySection('Session History', `${merges.length} merge(s) recorded`);
+
+  if (merges.length === 0) {
+    info('No merge history recorded yet.');
+    console.log();
+    info('Merge history is created when sessions are integrated into main.');
+    console.log(chalk.dim('  Use: npx agileflow session end <id> --merge'));
+    return;
+  }
+
+  // Display merges (most recent first)
+  const toShow = merges.slice(-limit).reverse();
+
+  console.log();
+  for (const merge of toShow) {
+    const timestamp = merge.timestamp ? formatDate(merge.timestamp) : 'unknown';
+    const strategy = merge.strategy || 'unknown';
+    const commits = merge.commitsCount || merge.commits?.length || 0;
+
+    // Session info line
+    console.log(
+      chalk.bold(`Session ${merge.sessionId || 'unknown'}`) +
+        chalk.dim(` (${merge.nickname || 'no nickname'})`)
+    );
+
+    // Branch info
+    console.log(
+      chalk.dim('  Branch: ') +
+        chalk.cyan(merge.branch || 'unknown') +
+        chalk.dim(' → ') +
+        chalk.green(merge.targetBranch || 'main')
+    );
+
+    // Merge details
+    console.log(
+      chalk.dim('  Strategy: ') +
+        chalk.yellow(strategy) +
+        chalk.dim(' | Commits: ') +
+        chalk.white(commits) +
+        chalk.dim(' | ') +
+        timestamp
+    );
+
+    // Result status
+    if (merge.success === false) {
+      console.log(chalk.red('  ✗ Failed: ') + chalk.dim(merge.error || 'Unknown error'));
+    } else {
+      console.log(chalk.green('  ✓ Merged successfully'));
+    }
+
+    console.log();
+  }
+
+  if (merges.length > limit) {
+    info(`Showing ${limit} of ${merges.length} merges. Use --limit to see more.`);
   }
 }
 
