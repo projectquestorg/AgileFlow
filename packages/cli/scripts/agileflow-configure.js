@@ -23,7 +23,7 @@
  *   --detect                            Show current status
  *   --help                              Show help
  *
- * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol, askuserquestion, tmuxautospawn
+ * Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, autoupdate, damagecontrol, askuserquestion, tmuxautospawn, shellaliases, claudemdreinforcement
  */
 
 const fs = require('fs');
@@ -121,16 +121,17 @@ ${c.cyan}Usage:${c.reset}
   node .agileflow/scripts/agileflow-configure.js [options]
 
 ${c.cyan}Profiles:${c.reset}
-  --profile=full      All features (hooks, Stop hooks, archival, statusline)
-  --profile=basic     SessionStart + PreCompact + archival (no Stop hooks)
-  --profile=minimal   SessionStart + archival only
-  --profile=none      Disable all AgileFlow features
+  --profile=full         All features (hooks, Stop hooks, archival, statusline)
+  --profile=basic        SessionStart + PreCompact + archival (no Stop hooks)
+  --profile=minimal      SessionStart + archival only
+  --profile=experimental ⚠️ All features + FULL FILE injection during compact (CONTEXT HEAVY)
+  --profile=none         Disable all AgileFlow features
 
 ${c.cyan}Feature Control:${c.reset}
   --enable=<list>     Enable features (comma-separated)
   --disable=<list>    Disable features (comma-separated)
 
-  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol, askuserquestion, tmuxautospawn
+  Features: sessionstart, precompact, ralphloop, selfimprove, archival, statusline, damagecontrol, askuserquestion, tmuxautospawn, shellaliases, claudemdreinforcement
 
 ${c.cyan}Statusline Components:${c.reset}
   --show=<list>       Show statusline components (comma-separated)

@@ -164,10 +164,6 @@ class Installer {
       spinner.text = 'Installing changelog...';
       await this.installChangelog(agileflowDir, { force: effectiveForce });
 
-      // Set up shell aliases for claude command
-      spinner.text = 'Setting up shell aliases...';
-      const aliasResult = await this.setupShellAliases(directory, { force: effectiveForce });
-
       // Create config.yaml
       spinner.text = 'Creating configuration...';
       await this.createConfig(agileflowDir, userName, agileflowFolder, { force: effectiveForce });
@@ -195,7 +191,6 @@ class Installer {
         projectDir: directory,
         counts,
         fileOps,
-        shellAliases: aliasResult,
       };
     } catch (error) {
       spinner.fail('Installation failed');

@@ -3,9 +3,21 @@
 # AgileFlow PreCompact Hook
 # Outputs critical context that should survive conversation compaction.
 #
+# Supports two modes:
+# 1. Default: Extract COMPACT_SUMMARY sections from active command files
+# 2. Experimental (fullFileInjection): Inject entire command files (more context, may be more reliable)
+#
 
 # Get current version from package.json
 VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
+
+# Check if experimental full-file injection mode is enabled
+FULL_FILE_INJECTION=$(node -p "
+  try {
+    const meta = require('./docs/00-meta/agileflow-metadata.json');
+    meta.features?.experimental?.fullFileInjection === true ? 'true' : 'false';
+  } catch { 'false'; }
+" 2>/dev/null || echo "false")
 
 # Get current git branch
 BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
@@ -77,25 +89,50 @@ if [ -f "docs/09-agents/session-state.json" ]; then
       # Security: Validate COMMAND_FILE contains only safe characters (alphanumeric, /, -, _, .)
       # and doesn't contain path traversal sequences
       if [[ "$COMMAND_FILE" =~ ^[a-zA-Z0-9/_.-]+$ ]] && [[ ! "$COMMAND_FILE" =~ \.\. ]]; then
-        SUMMARY=$(COMMAND_FILE_PATH="$COMMAND_FILE" ACTIVE_CMD="$ACTIVE_COMMAND" node -e "
-          const fs = require('fs');
-          const filePath = process.env.COMMAND_FILE_PATH;
-          const activeCmd = process.env.ACTIVE_CMD;
-          // Double-check: only allow paths within expected directories
-          const allowedPrefixes = ['packages/cli/src/core/commands/', '.agileflow/commands/', '.claude/commands/agileflow/'];
-          if (!allowedPrefixes.some(p => filePath.startsWith(p))) {
-            process.exit(1);
-          }
-          try {
-            const content = fs.readFileSync(filePath, 'utf8');
-            const match = content.match(/<!-- COMPACT_SUMMARY_START[\\s\\S]*?-->([\\s\\S]*?)<!-- COMPACT_SUMMARY_END -->/);
-            if (match) {
-              console.log('## ACTIVE COMMAND: /agileflow:' + activeCmd);
-              console.log('');
-              console.log(match[1].trim());
+        if [ "$FULL_FILE_INJECTION" = "true" ]; then
+          # EXPERIMENTAL: Inject the entire command file content
+          SUMMARY=$(COMMAND_FILE_PATH="$COMMAND_FILE" ACTIVE_CMD="$ACTIVE_COMMAND" node -e "
+            const fs = require('fs');
+            const filePath = process.env.COMMAND_FILE_PATH;
+            const activeCmd = process.env.ACTIVE_CMD;
+            // Double-check: only allow paths within expected directories
+            const allowedPrefixes = ['packages/cli/src/core/commands/', '.agileflow/commands/', '.claude/commands/agileflow/'];
+            if (!allowedPrefixes.some(p => filePath.startsWith(p))) {
+              process.exit(1);
             }
-          } catch (e) {}
-        " 2>/dev/null || echo "")
+            try {
+              const content = fs.readFileSync(filePath, 'utf8');
+              console.log('## ⚠️ FULL COMMAND FILE (EXPERIMENTAL MODE): /agileflow:' + activeCmd);
+              console.log('');
+              console.log('The following is the COMPLETE command file. Follow ALL instructions below.');
+              console.log('');
+              console.log('---');
+              console.log('');
+              console.log(content);
+            } catch (e) {}
+          " 2>/dev/null || echo "")
+        else
+          # Default: Extract only the compact summary section
+          SUMMARY=$(COMMAND_FILE_PATH="$COMMAND_FILE" ACTIVE_CMD="$ACTIVE_COMMAND" node -e "
+            const fs = require('fs');
+            const filePath = process.env.COMMAND_FILE_PATH;
+            const activeCmd = process.env.ACTIVE_CMD;
+            // Double-check: only allow paths within expected directories
+            const allowedPrefixes = ['packages/cli/src/core/commands/', '.agileflow/commands/', '.claude/commands/agileflow/'];
+            if (!allowedPrefixes.some(p => filePath.startsWith(p))) {
+              process.exit(1);
+            }
+            try {
+              const content = fs.readFileSync(filePath, 'utf8');
+              const match = content.match(/<!-- COMPACT_SUMMARY_START[\\s\\S]*?-->([\\s\\S]*?)<!-- COMPACT_SUMMARY_END -->/);
+              if (match) {
+                console.log('## ACTIVE COMMAND: /agileflow:' + activeCmd);
+                console.log('');
+                console.log(match[1].trim());
+              }
+            } catch (e) {}
+          " 2>/dev/null || echo "")
+        fi
       fi
 
       if [ ! -z "$SUMMARY" ]; then

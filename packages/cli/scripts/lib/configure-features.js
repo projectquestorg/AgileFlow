@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const {
   c,
   log,
@@ -39,6 +40,14 @@ const FEATURES = {
   },
   askuserquestion: { metadataOnly: true },
   tmuxautospawn: { metadataOnly: true },
+  shellaliases: {
+    metadataOnly: false,
+    description: 'Shell aliases (af/agileflow) for tmux-wrapped Claude',
+  },
+  claudemdreinforcement: {
+    metadataOnly: false,
+    description: 'Add /babysit rules to CLAUDE.md for context preservation',
+  },
 };
 
 const PROFILES = {
@@ -87,6 +96,26 @@ const PROFILES = {
       'askuserquestion',
       'tmuxautospawn',
     ],
+  },
+  experimental: {
+    description:
+      '⚠️ CONTEXT HEAVY: Full command file injection during compact (uses more tokens but may be more reliable)',
+    enable: [
+      'sessionstart',
+      'precompact',
+      'archival',
+      'statusline',
+      'ralphloop',
+      'selfimprove',
+      'askuserquestion',
+      'tmuxautospawn',
+    ],
+    archivalDays: 30,
+    experimental: {
+      fullFileInjection: true,
+      description:
+        'Instead of compact summaries, injects entire command files during context compaction',
+    },
   },
 };
 
@@ -241,6 +270,65 @@ function enableFeature(feature, options = {}, version) {
     success('Tmux auto-spawn enabled');
     info('Running "af" or "agileflow" will auto-start Claude in tmux session');
     return true;
+  }
+
+  // Handle shell aliases
+  if (feature === 'shellaliases') {
+    const result = enableShellAliases();
+    if (result.configured.length > 0 || result.skipped.some(s => s.includes('already configured'))) {
+      updateMetadata(
+        {
+          features: {
+            shellAliases: {
+              enabled: true,
+              version,
+              at: new Date().toISOString(),
+              shells: result.configured,
+            },
+          },
+        },
+        version
+      );
+      if (result.configured.length > 0) {
+        success(`Shell aliases added to: ${result.configured.join(', ')}`);
+        info('Reload shell: source ~/.bashrc or source ~/.zshrc');
+        info('Then use "af" or "agileflow" to start Claude in tmux');
+      } else {
+        info('Shell aliases already configured');
+      }
+      return true;
+    }
+    if (result.skipped.length > 0) {
+      warn(`Shell aliases skipped: ${result.skipped.join(', ')}`);
+    }
+    return false;
+  }
+
+  // Handle CLAUDE.md reinforcement
+  if (feature === 'claudemdreinforcement') {
+    const result = enableClaudeMdReinforcement();
+    if (result.success) {
+      updateMetadata(
+        {
+          features: {
+            claudeMdReinforcement: {
+              enabled: true,
+              version,
+              at: new Date().toISOString(),
+            },
+          },
+        },
+        version
+      );
+      if (result.added) {
+        success('Added /babysit rules to CLAUDE.md');
+      } else {
+        info('CLAUDE.md already has /babysit rules');
+      }
+      return true;
+    }
+    error(`Failed to update CLAUDE.md: ${result.error}`);
+    return false;
   }
 
   // Handle damage control
@@ -547,6 +635,53 @@ function disableFeature(feature, version) {
     return true;
   }
 
+  // Disable shell aliases
+  if (feature === 'shellaliases') {
+    const result = disableShellAliases();
+    updateMetadata(
+      {
+        features: {
+          shellAliases: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    if (result.removed.length > 0) {
+      success(`Shell aliases removed from: ${result.removed.join(', ')}`);
+      info('Reload shell: source ~/.bashrc or source ~/.zshrc');
+    } else {
+      info('No shell aliases found to remove');
+    }
+    return true;
+  }
+
+  // Disable CLAUDE.md reinforcement
+  if (feature === 'claudemdreinforcement') {
+    const result = disableClaudeMdReinforcement();
+    updateMetadata(
+      {
+        features: {
+          claudeMdReinforcement: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    if (result.removed) {
+      success('Removed /babysit rules from CLAUDE.md');
+    } else {
+      info('CLAUDE.md did not have /babysit rules');
+    }
+    return true;
+  }
+
   // Disable damage control
   if (feature === 'damagecontrol') {
     if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
@@ -623,6 +758,43 @@ function applyProfile(profileName, options = {}, version) {
 
   if (profile.disable) {
     profile.disable.forEach(f => disableFeature(f, version));
+  }
+
+  // Handle experimental profile settings
+  if (profile.experimental) {
+    updateMetadata(
+      {
+        features: {
+          experimental: {
+            enabled: true,
+            fullFileInjection: profile.experimental.fullFileInjection || false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    if (profile.experimental.fullFileInjection) {
+      warn('⚠️  EXPERIMENTAL: Full file injection enabled');
+      info('   PreCompact will inject entire command files instead of compact summaries');
+      info('   This uses more context tokens but may provide better instruction adherence');
+    }
+  } else {
+    // Disable experimental mode if switching to non-experimental profile
+    updateMetadata(
+      {
+        features: {
+          experimental: {
+            enabled: false,
+            fullFileInjection: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
   }
 
   return true;
@@ -837,6 +1009,221 @@ function upgradeFeatures(status, version) {
   return upgraded > 0;
 }
 
+// ============================================================================
+// SHELL ALIASES
+// ============================================================================
+
+const SHELL_ALIAS_MARKER = '# AgileFlow tmux wrapper';
+const SHELL_ALIAS_BLOCK = `
+${SHELL_ALIAS_MARKER}
+# Use 'af' or 'agileflow' for tmux, 'claude' stays normal
+alias af="bash .agileflow/scripts/af"
+alias agileflow="bash .agileflow/scripts/af"
+`;
+
+/**
+ * Enable shell aliases by adding them to ~/.bashrc and ~/.zshrc
+ * @returns {object} Result with configured and skipped shells
+ */
+function enableShellAliases() {
+  const result = {
+    configured: [],
+    skipped: [],
+    error: null,
+  };
+
+  // Only set up aliases on Unix-like systems
+  if (process.platform === 'win32') {
+    result.skipped.push('Windows (not supported)');
+    return result;
+  }
+
+  const homeDir = os.homedir();
+  const rcFiles = [
+    { name: 'bash', path: path.join(homeDir, '.bashrc') },
+    { name: 'zsh', path: path.join(homeDir, '.zshrc') },
+  ];
+
+  for (const rc of rcFiles) {
+    try {
+      // Check if RC file exists
+      if (!fs.existsSync(rc.path)) {
+        result.skipped.push(`${rc.name} (no ${path.basename(rc.path)})`);
+        continue;
+      }
+
+      const content = fs.readFileSync(rc.path, 'utf8');
+
+      // Check if aliases already exist
+      if (content.includes(SHELL_ALIAS_MARKER)) {
+        result.skipped.push(`${rc.name} (already configured)`);
+        continue;
+      }
+
+      // Append aliases to RC file
+      fs.appendFileSync(rc.path, SHELL_ALIAS_BLOCK);
+      result.configured.push(rc.name);
+    } catch (err) {
+      result.skipped.push(`${rc.name} (error: ${err.message})`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Disable shell aliases by removing them from ~/.bashrc and ~/.zshrc
+ * @returns {object} Result with removed shells
+ */
+function disableShellAliases() {
+  const result = {
+    removed: [],
+    skipped: [],
+  };
+
+  if (process.platform === 'win32') {
+    return result;
+  }
+
+  const homeDir = os.homedir();
+  const rcFiles = [
+    { name: 'bash', path: path.join(homeDir, '.bashrc') },
+    { name: 'zsh', path: path.join(homeDir, '.zshrc') },
+  ];
+
+  for (const rc of rcFiles) {
+    try {
+      if (!fs.existsSync(rc.path)) {
+        continue;
+      }
+
+      const content = fs.readFileSync(rc.path, 'utf8');
+
+      if (!content.includes(SHELL_ALIAS_MARKER)) {
+        continue;
+      }
+
+      // Remove the alias block
+      const lines = content.split('\n');
+      const filteredLines = [];
+      let inBlock = false;
+
+      for (const line of lines) {
+        if (line.includes(SHELL_ALIAS_MARKER)) {
+          inBlock = true;
+          continue;
+        }
+        if (inBlock && (line.startsWith('# Use ') || line.startsWith('alias af=') || line.startsWith('alias agileflow='))) {
+          continue;
+        }
+        if (inBlock && line.trim() === '') {
+          inBlock = false;
+          continue;
+        }
+        inBlock = false;
+        filteredLines.push(line);
+      }
+
+      fs.writeFileSync(rc.path, filteredLines.join('\n'), 'utf8');
+      result.removed.push(rc.name);
+    } catch (err) {
+      result.skipped.push(`${rc.name} (error: ${err.message})`);
+    }
+  }
+
+  return result;
+}
+
+// ============================================================================
+// CLAUDE.MD REINFORCEMENT
+// ============================================================================
+
+const CLAUDE_MD_MARKER = '<!-- AGILEFLOW_BABYSIT_RULES -->';
+const CLAUDE_MD_CONTENT = `
+
+${CLAUDE_MD_MARKER}
+## AgileFlow /babysit Context Preservation Rules
+
+When \`/agileflow:babysit\` is active (check session-state.json), these rules are MANDATORY:
+
+1. **ALWAYS end responses with the AskUserQuestion tool** - Not text like "What next?" but the ACTUAL TOOL CALL
+2. **Use Plan Mode for non-trivial tasks** - Call \`EnterPlanMode\` before complex implementations
+3. **Delegate complex work to domain experts** - Use \`Task\` tool with appropriate \`subagent_type\`
+4. **Track progress with TodoWrite** - For any task with 3+ steps
+
+These rules persist across conversation compaction. Check \`docs/09-agents/session-state.json\` for active commands.
+${CLAUDE_MD_MARKER}
+`;
+
+/**
+ * Enable CLAUDE.md reinforcement by adding babysit rules
+ * @returns {object} Result with success, added, and error
+ */
+function enableClaudeMdReinforcement() {
+  const claudeMdPath = path.join(process.cwd(), 'CLAUDE.md');
+
+  try {
+    let existingContent = '';
+    if (fs.existsSync(claudeMdPath)) {
+      existingContent = fs.readFileSync(claudeMdPath, 'utf8');
+    }
+
+    // Only append if marker doesn't exist
+    if (existingContent.includes(CLAUDE_MD_MARKER)) {
+      return { success: true, added: false };
+    }
+
+    fs.appendFileSync(claudeMdPath, CLAUDE_MD_CONTENT);
+    return { success: true, added: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Disable CLAUDE.md reinforcement by removing babysit rules
+ * @returns {object} Result with removed flag
+ */
+function disableClaudeMdReinforcement() {
+  const claudeMdPath = path.join(process.cwd(), 'CLAUDE.md');
+
+  if (!fs.existsSync(claudeMdPath)) {
+    return { removed: false };
+  }
+
+  try {
+    const content = fs.readFileSync(claudeMdPath, 'utf8');
+
+    if (!content.includes(CLAUDE_MD_MARKER)) {
+      return { removed: false };
+    }
+
+    // Remove the section between markers (inclusive)
+    const startIdx = content.indexOf(CLAUDE_MD_MARKER);
+    const endMarkerIdx = content.indexOf(CLAUDE_MD_MARKER, startIdx + CLAUDE_MD_MARKER.length);
+
+    if (startIdx === -1 || endMarkerIdx === -1) {
+      return { removed: false };
+    }
+
+    // Find the start of the line containing the first marker
+    let lineStart = content.lastIndexOf('\n', startIdx);
+    if (lineStart === -1) lineStart = 0;
+
+    // Find the end of the line containing the second marker
+    let lineEnd = content.indexOf('\n', endMarkerIdx + CLAUDE_MD_MARKER.length);
+    if (lineEnd === -1) lineEnd = content.length;
+
+    const newContent = content.slice(0, lineStart) + content.slice(lineEnd);
+
+    // Clean up any trailing newlines
+    fs.writeFileSync(claudeMdPath, newContent.trimEnd() + '\n', 'utf8');
+    return { removed: true };
+  } catch (err) {
+    return { removed: false, error: err.message };
+  }
+}
+
 module.exports = {
   // Constants
   FEATURES,
@@ -856,4 +1243,10 @@ module.exports = {
   // Helpers
   scriptExists,
   getScriptPath,
+  // Shell aliases
+  enableShellAliases,
+  disableShellAliases,
+  // CLAUDE.md reinforcement
+  enableClaudeMdReinforcement,
+  disableClaudeMdReinforcement,
 };

@@ -19,7 +19,6 @@ const {
   info,
   displaySection,
   displayLogo,
-  warning,
 } = require('../lib/ui');
 const { createDocsStructure } = require('../lib/docs-setup');
 const { getLatestVersion } = require('../lib/npm-utils');
@@ -91,7 +90,6 @@ module.exports = {
           agileflowFolder: '.agileflow',
           docsFolder: 'docs',
           updateGitignore: true,
-          claudeMdReinforcement: true,
         };
       } else {
         // Interactive prompts
@@ -111,16 +109,6 @@ module.exports = {
       success(`Installed ${coreResult.counts.agents} agents`);
       success(`Installed ${coreResult.counts.commands} commands`);
       success(`Installed ${coreResult.counts.skills} skills`);
-
-      // Report shell alias setup
-      if (coreResult.shellAliases) {
-        if (coreResult.shellAliases.configured.length > 0) {
-          success(`Added 'af' alias to: ${coreResult.shellAliases.configured.join(', ')}`);
-        }
-        if (coreResult.shellAliases.skipped.length > 0) {
-          info(`Shell aliases skipped: ${coreResult.shellAliases.skipped.join(', ')}`);
-        }
-      }
 
       // Setup IDE configurations
       displaySection('Configuring IDEs');
@@ -145,44 +133,6 @@ module.exports = {
         }
       }
 
-      // CLAUDE.md reinforcement for /babysit AskUserQuestion rules
-      if (config.claudeMdReinforcement) {
-        const claudeMdPath = path.join(config.directory, 'CLAUDE.md');
-        const claudeMdMarker = '<!-- AGILEFLOW_BABYSIT_RULES -->';
-        const claudeMdContent = `
-
-${claudeMdMarker}
-## AgileFlow /babysit Context Preservation Rules
-
-When \`/agileflow:babysit\` is active (check session-state.json), these rules are MANDATORY:
-
-1. **ALWAYS end responses with the AskUserQuestion tool** - Not text like "What next?" but the ACTUAL TOOL CALL
-2. **Use Plan Mode for non-trivial tasks** - Call \`EnterPlanMode\` before complex implementations
-3. **Delegate complex work to domain experts** - Use \`Task\` tool with appropriate \`subagent_type\`
-4. **Track progress with TodoWrite** - For any task with 3+ steps
-
-These rules persist across conversation compaction. Check \`docs/09-agents/session-state.json\` for active commands.
-${claudeMdMarker}
-`;
-
-        try {
-          let existingContent = '';
-          if (fs.existsSync(claudeMdPath)) {
-            existingContent = fs.readFileSync(claudeMdPath, 'utf8');
-          }
-
-          // Only append if marker doesn't exist
-          if (!existingContent.includes(claudeMdMarker)) {
-            fs.appendFileSync(claudeMdPath, claudeMdContent);
-            success('Added /babysit rules to CLAUDE.md');
-          } else {
-            info('CLAUDE.md already has /babysit rules');
-          }
-        } catch (err) {
-          warning(`Could not update CLAUDE.md: ${err.message}`);
-        }
-      }
-
       // Update metadata with config tracking
       try {
         const metadataPath = path.join(
@@ -199,18 +149,6 @@ ${claudeMdMarker}
           metadata.config_schema_version = packageJson.version;
           metadata.active_profile = options.yes ? 'default' : null; // null = custom
 
-          // Track config options that were configured
-          if (!metadata.agileflow) metadata.agileflow = {};
-          if (!metadata.agileflow.config_options) metadata.agileflow.config_options = {};
-
-          metadata.agileflow.config_options.claudeMdReinforcement = {
-            available_since: '2.92.0',
-            configured: true,
-            enabled: config.claudeMdReinforcement,
-            configured_at: new Date().toISOString(),
-            description: 'Add /babysit AskUserQuestion rules to CLAUDE.md',
-          };
-
           fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
         }
       } catch (err) {
@@ -224,17 +162,7 @@ ${claudeMdMarker}
       info('Open your IDE and use /agileflow:help');
       info(`Run 'npx agileflow status' to check setup`);
       info(`Run 'npx agileflow update' to get updates`);
-
-      // Shell alias reload reminder
-      if (coreResult.shellAliases?.configured?.length > 0) {
-        console.log(chalk.bold('\nShell aliases:'));
-        info(
-          `Reload shell to use: ${chalk.cyan('source ~/.bashrc')} or ${chalk.cyan('source ~/.zshrc')}`
-        );
-        info(
-          `Then run ${chalk.cyan('af')} to start Claude in tmux (or ${chalk.cyan('claude')} for normal)`
-        );
-      }
+      info(`Run '/agileflow:configure' to enable optional features`);
 
       console.log(chalk.dim(`\nInstalled to: ${coreResult.path}\n`));
 
