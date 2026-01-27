@@ -20,7 +20,7 @@ module.exports = {
   name: 'session',
   description: 'Manage parallel Claude Code sessions',
   arguments: [
-    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn, status'],
+    ['<subcommand>', 'Subcommand: list, new, switch, end, spawn, status, cleanup'],
     ['[idOrNickname]', 'Session ID or nickname (for switch/end/status)'],
   ],
   options: [
@@ -70,6 +70,10 @@ module.exports = {
           await handleStatus(idOrNickname, options, handler);
           break;
 
+        case 'cleanup':
+          await handleCleanup(options, handler);
+          break;
+
         default:
           displayLogo();
           showHelp();
@@ -98,7 +102,8 @@ function showHelp() {
   console.log('  npx agileflow session switch <id>       Switch active session context');
   console.log('  npx agileflow session end <id>          End session (optional merge)');
   console.log('  npx agileflow session spawn             Spawn multiple parallel sessions');
-  console.log('  npx agileflow session status <id>       Detailed view of a session\n');
+  console.log('  npx agileflow session status <id>       Detailed view of a session');
+  console.log('  npx agileflow session cleanup           Clean up stale sessions\n');
   console.log(chalk.bold('Options:\n'));
   console.log('  --json                Output as JSON');
   console.log('  --kanban              Show Kanban-style board view (for list)');
@@ -131,7 +136,9 @@ function showHelp() {
   console.log('  npx agileflow session spawn --from-epic EP-0001');
   console.log('  npx agileflow session spawn --count 2 --no-tmux');
   console.log('  npx agileflow session status 2');
-  console.log('  npx agileflow session status auth --json\n');
+  console.log('  npx agileflow session status auth --json');
+  console.log('  npx agileflow session cleanup');
+  console.log('  npx agileflow session cleanup --yes\n');
 }
 
 /**
@@ -925,6 +932,340 @@ async function handleStatus(idOrNickname, options, handler) {
     );
   }
   console.log();
+}
+
+/**
+ * Handle cleanup subcommand - interactive cleanup wizard
+ */
+async function handleCleanup(options) {
+  const fs = require('fs-extra');
+
+  displayLogo();
+  displaySection('Session Cleanup Wizard');
+
+  const spinner = ora('Scanning for issues...').start();
+
+  // Gather all potential issues
+  const issues = [];
+
+  // 1. Get sessions and check for problems
+  const { sessions } = sessionManager.getSessions();
+
+  // 2. Check for orphaned worktrees (worktrees not in sessions registry)
+  const orphanedWorktrees = await findOrphanedWorktrees(sessions);
+  for (const wt of orphanedWorktrees) {
+    issues.push({
+      type: 'orphaned_worktree',
+      severity: 'warning',
+      description: `Orphaned worktree: ${wt.path}`,
+      detail: `Branch: ${wt.branch}`,
+      path: wt.path,
+      action: 'Remove worktree',
+    });
+  }
+
+  // 3. Check for sessions with missing worktrees
+  for (const session of sessions) {
+    if (session.is_main) continue;
+
+    if (!fs.existsSync(session.path)) {
+      issues.push({
+        type: 'missing_worktree',
+        severity: 'warning',
+        description: `Session ${session.id} (${session.nickname || session.branch}) has missing worktree`,
+        detail: `Path: ${session.path}`,
+        sessionId: session.id,
+        action: 'Remove session from registry',
+      });
+    }
+  }
+
+  // 4. Check for stale sessions (inactive for 7+ days with no uncommitted changes)
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  for (const session of sessions) {
+    if (session.is_main) continue;
+    if (!fs.existsSync(session.path)) continue;
+
+    const lastActive = new Date(session.last_active || session.created).getTime();
+    if (lastActive < sevenDaysAgo) {
+      const gitInfo = getSessionGitInfo(session.path);
+      if (!gitInfo.error && gitInfo.uncommitted === 0) {
+        issues.push({
+          type: 'stale_session',
+          severity: 'info',
+          description: `Stale session ${session.id} (${session.nickname || session.branch})`,
+          detail: `Last active: ${formatDate(session.last_active)}, no uncommitted changes`,
+          sessionId: session.id,
+          action: 'Consider ending session',
+        });
+      }
+    }
+  }
+
+  // 5. Check for dead tmux sessions
+  const deadTmuxSessions = await findDeadTmuxSessions();
+  for (const tmuxSession of deadTmuxSessions) {
+    issues.push({
+      type: 'dead_tmux',
+      severity: 'info',
+      description: `Dead tmux session: ${tmuxSession}`,
+      detail: 'No windows or all windows exited',
+      tmuxSession,
+      action: 'Kill tmux session',
+    });
+  }
+
+  spinner.succeed(`Scan complete. Found ${issues.length} issue(s).`);
+  console.log();
+
+  // Display issues
+  if (issues.length === 0) {
+    success('No issues found. All sessions are healthy!');
+    console.log();
+    return;
+  }
+
+  // Group issues by type
+  const byType = {
+    orphaned_worktree: issues.filter(i => i.type === 'orphaned_worktree'),
+    missing_worktree: issues.filter(i => i.type === 'missing_worktree'),
+    stale_session: issues.filter(i => i.type === 'stale_session'),
+    dead_tmux: issues.filter(i => i.type === 'dead_tmux'),
+  };
+
+  // Display summary
+  console.log(chalk.bold('Issues Found:'));
+  console.log(chalk.dim('─'.repeat(50)));
+
+  if (byType.orphaned_worktree.length > 0) {
+    console.log(chalk.yellow(`  ⚠ ${byType.orphaned_worktree.length} orphaned worktree(s)`));
+  }
+  if (byType.missing_worktree.length > 0) {
+    console.log(
+      chalk.yellow(`  ⚠ ${byType.missing_worktree.length} session(s) with missing worktree`)
+    );
+  }
+  if (byType.stale_session.length > 0) {
+    console.log(
+      chalk.dim(`  ○ ${byType.stale_session.length} stale session(s) (7+ days inactive)`)
+    );
+  }
+  if (byType.dead_tmux.length > 0) {
+    console.log(chalk.dim(`  ○ ${byType.dead_tmux.length} dead tmux session(s)`));
+  }
+  console.log();
+
+  // If --yes, auto-clean without prompts
+  if (options.yes) {
+    await performCleanup(issues);
+    return;
+  }
+
+  // Interactive cleanup
+  const { action } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'action',
+      message: 'What would you like to do?',
+      choices: [
+        { name: 'Clean all issues automatically', value: 'all' },
+        { name: 'Review and select issues to clean', value: 'select' },
+        { name: 'Cancel', value: 'cancel' },
+      ],
+    },
+  ]);
+
+  if (action === 'cancel') {
+    info('Cleanup cancelled');
+    return;
+  }
+
+  if (action === 'all') {
+    await performCleanup(issues);
+    return;
+  }
+
+  // Interactive selection
+  const { selectedIssues } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'selectedIssues',
+      message: 'Select issues to clean:',
+      choices: issues.map((issue, idx) => ({
+        name: `${issue.description} (${issue.action})`,
+        value: idx,
+        checked: issue.severity === 'warning',
+      })),
+    },
+  ]);
+
+  if (selectedIssues.length === 0) {
+    info('No issues selected');
+    return;
+  }
+
+  const toClean = selectedIssues.map(idx => issues[idx]);
+  await performCleanup(toClean);
+}
+
+/**
+ * Perform the actual cleanup of selected issues
+ */
+async function performCleanup(issues) {
+  const { execSync } = require('child_process');
+  const fs = require('fs-extra');
+
+  console.log();
+  console.log(chalk.bold('Cleaning up...'));
+  console.log(chalk.dim('─'.repeat(50)));
+
+  let cleaned = 0;
+  let failed = 0;
+
+  for (const issue of issues) {
+    const spinner = ora(issue.description).start();
+
+    try {
+      switch (issue.type) {
+        case 'orphaned_worktree':
+          // Remove orphaned worktree
+          try {
+            execSync(`git worktree remove --force "${issue.path}"`, {
+              encoding: 'utf8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+            });
+          } catch {
+            // If git command fails, try removing directory directly
+            if (fs.existsSync(issue.path)) {
+              fs.removeSync(issue.path);
+            }
+          }
+          spinner.succeed(`Removed orphaned worktree: ${path.basename(issue.path)}`);
+          cleaned++;
+          break;
+
+        case 'missing_worktree':
+          // Remove session from registry
+          sessionManager.deleteSession(issue.sessionId, false);
+          spinner.succeed(`Removed session ${issue.sessionId} from registry`);
+          cleaned++;
+          break;
+
+        case 'stale_session':
+          // End stale session
+          sessionManager.deleteSession(issue.sessionId, true);
+          spinner.succeed(`Ended stale session ${issue.sessionId}`);
+          cleaned++;
+          break;
+
+        case 'dead_tmux':
+          // Kill dead tmux session
+          try {
+            execSync(`tmux kill-session -t "${issue.tmuxSession}"`, {
+              encoding: 'utf8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+            });
+            spinner.succeed(`Killed tmux session: ${issue.tmuxSession}`);
+            cleaned++;
+          } catch {
+            spinner.warn(`Could not kill tmux session: ${issue.tmuxSession}`);
+            failed++;
+          }
+          break;
+
+        default:
+          spinner.skip(`Unknown issue type: ${issue.type}`);
+      }
+    } catch (err) {
+      spinner.fail(`Failed: ${err.message}`);
+      failed++;
+    }
+  }
+
+  console.log();
+  if (cleaned > 0) {
+    success(`Cleaned ${cleaned} issue(s)`);
+  }
+  if (failed > 0) {
+    warning(`Failed to clean ${failed} issue(s)`);
+  }
+  console.log();
+}
+
+/**
+ * Find orphaned worktrees (not tracked in sessions registry)
+ */
+async function findOrphanedWorktrees(sessions) {
+  const { execSync } = require('child_process');
+  const orphaned = [];
+
+  try {
+    // Get all git worktrees
+    const output = execSync('git worktree list --porcelain', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const lines = output.split('\n');
+    let currentWorktree = {};
+
+    for (const line of lines) {
+      if (line.startsWith('worktree ')) {
+        currentWorktree.path = line.substring(9);
+      } else if (line.startsWith('branch ')) {
+        currentWorktree.branch = line.substring(7);
+      } else if (line === '') {
+        // End of worktree entry
+        if (currentWorktree.path) {
+          // Check if this worktree is tracked in sessions
+          const isTracked = sessions.some(s => s.path === currentWorktree.path);
+          if (!isTracked) {
+            // Skip the main worktree
+            const isMain =
+              currentWorktree.branch === 'refs/heads/main' ||
+              currentWorktree.branch === 'refs/heads/master';
+            if (!isMain) {
+              orphaned.push(currentWorktree);
+            }
+          }
+        }
+        currentWorktree = {};
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  return orphaned;
+}
+
+/**
+ * Find dead tmux sessions (claude-parallel-* with no active windows)
+ */
+async function findDeadTmuxSessions() {
+  const { execSync } = require('child_process');
+  const dead = [];
+
+  if (!hasTmux()) return dead;
+
+  try {
+    const output = execSync('tmux list-sessions -F "#{session_name}:#{session_windows}"', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const lines = output.trim().split('\n');
+    for (const line of lines) {
+      const [name, windows] = line.split(':');
+      if (name.startsWith('claude-parallel-') && parseInt(windows, 10) === 0) {
+        dead.push(name);
+      }
+    }
+  } catch {
+    // Ignore errors (e.g., no tmux server running)
+  }
+
+  return dead;
 }
 
 /**
