@@ -781,6 +781,79 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Deployment Configured
+
+```
+🚀 Deployment Setup
+══════════════════════════════════════════════════════════════
+
+Analyzing project...
+✓ Detected: Next.js application
+✓ Package manager: npm
+✓ Build command: npm run build
+✓ Output: .next/
+
+Platform Recommendation: Vercel (optimal for Next.js)
+
+Creating configuration...
+✓ Created vercel.json
+✓ Created .github/workflows/deploy.yml
+✓ Updated package.json scripts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Deployment Setup Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Next steps:
+1. Connect GitHub repo to Vercel dashboard
+2. Set environment variables in Vercel
+3. Push to trigger first deployment
+
+Environments:
+- Preview: Automatic on PR
+- Production: On merge to main
+
+Rollback: vercel rollback <deployment-id>
+```
+
+### Success - Multi-Environment
+
+```
+🚀 Deployment Setup (Multi-Environment)
+══════════════════════════════════════════════════════════════
+
+Environments configured:
+┌─────────────┬─────────────────────┬──────────────────┐
+│ Environment │ URL                 │ Trigger          │
+├─────────────┼─────────────────────┼──────────────────┤
+│ Development │ dev.example.com     │ Push to dev/*    │
+│ Staging     │ staging.example.com │ Push to staging  │
+│ Production  │ example.com         │ Push to main     │
+└─────────────┴─────────────────────┴──────────────────┘
+
+✓ All environments configured
+```
+
+### Error - Unsupported Project
+
+```
+❌ Error: Could not detect project type
+
+No supported framework found. Supported:
+- Next.js
+- Remix
+- Vite
+- Create React App
+- Node.js API
+
+Specify manually:
+/agileflow:deploy TYPE=nodejs PLATFORM=railway
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:configure` - Manage AgileFlow features and hooks

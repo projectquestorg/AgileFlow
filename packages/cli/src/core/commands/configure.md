@@ -952,6 +952,67 @@ Repaired: 1, Errors: 0, Skipped: 18
 
 ---
 
+## Expected Output
+
+### Success - Feature Enabled
+
+```
+🔧 AgileFlow Configuration
+══════════════════════════════════════════════════════════════
+
+Enabling feature: damage-control
+
+✓ Created .claude/hooks/PreToolUse/damage-control-bash.js
+✓ Created .claude/hooks/PreToolUse/damage-control-edit.js
+✓ Created .claude/hooks/patterns.yaml
+✓ Updated settings.json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ damage-control enabled
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+31 protection patterns active.
+Test: Try running a blocked command to verify.
+```
+
+### Success - List Features
+
+```
+🔧 AgileFlow Configuration
+══════════════════════════════════════════════════════════════
+
+Installed Features:
+✅ damage-control (v2.94.1) - 31 patterns
+✅ precompact (v2.94.1) - context preservation
+✅ status-line (v2.94.1) - story tracking
+⚪ visual-e2e (not installed)
+⚪ hooks (not installed)
+
+Scripts:
+✅ obtain-context.js (v2.94.1)
+✅ archive-completed-stories.sh (v2.94.1)
+
+Run /agileflow:configure FEATURE=<name> to install features.
+```
+
+### Error - Unknown Feature
+
+```
+❌ Error: Unknown feature: super-ai
+
+Available features:
+- damage-control: Protect against destructive commands
+- precompact: Context preservation during compaction
+- status-line: Story status in Claude Code UI
+- visual-e2e: Screenshot-based testing
+- hooks: Event-driven automation
+- ci: CI/CD workflow setup
+
+Usage: /agileflow:configure FEATURE=damage-control
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:ci` - Bootstrap CI/CD workflow

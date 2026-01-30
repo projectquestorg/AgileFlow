@@ -25,6 +25,7 @@ const { safeReadJSON } = require('../lib/errors');
 const { isValidBranchName, isValidSessionNickname } = require('../lib/validate');
 
 const { SessionRegistry } = require('../lib/session-registry');
+const { sessionThreadMachine } = require('../lib/state-machine');
 
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(getAgileflowDir(ROOT), 'sessions');
@@ -32,6 +33,8 @@ const REGISTRY_PATH = path.join(SESSIONS_DIR, 'registry.json');
 
 // Injectable registry instance for testing
 let _registryInstance = null;
+// Track whether we've done the one-time initialization (file existence check)
+let _registryInitialized = false;
 
 /**
  * Get the registry instance (singleton, injectable for testing)
@@ -50,6 +53,18 @@ function getRegistryInstance() {
  */
 function injectRegistry(registry) {
   _registryInstance = registry;
+  _registryInitialized = false; // Reset initialization state when injecting
+}
+
+/**
+ * Reset registry cache state (for testing or forced refresh).
+ * Clears both the initialization flag and the underlying SessionRegistry cache.
+ */
+function resetRegistryCache() {
+  _registryInitialized = false;
+  if (_registryInstance) {
+    _registryInstance.invalidateCache();
+  }
 }
 
 // Ensure sessions directory exists
@@ -59,19 +74,36 @@ function ensureSessionsDir() {
   }
 }
 
-// Load or create registry (uses injectable SessionRegistry)
-// Preserves original behavior: saves default registry if file didn't exist
+/**
+ * Load registry with request-level caching.
+ *
+ * Uses SessionRegistry's built-in 10-second TTL cache for repeated reads.
+ * Only performs file existence check once per session-manager lifecycle,
+ * avoiding redundant fs.existsSync() calls on every loadRegistry() invocation.
+ *
+ * @returns {Object} Registry data
+ */
 function loadRegistry() {
   const registryInstance = getRegistryInstance();
-  const fileExistedBefore = fs.existsSync(registryInstance.registryPath);
-  const data = registryInstance.loadSync();
 
-  // If file didn't exist, save the default to disk (original behavior)
-  if (!fileExistedBefore) {
-    registryInstance.saveSync(data);
+  // One-time initialization: check if file exists and create default if needed
+  // This avoids calling fs.existsSync() on every loadRegistry() call
+  if (!_registryInitialized) {
+    const fileExistedBefore = fs.existsSync(registryInstance.registryPath);
+    const data = registryInstance.loadSync();
+
+    // If file didn't exist, save the default to disk (original behavior)
+    if (!fileExistedBefore) {
+      registryInstance.saveSync(data);
+    }
+
+    _registryInitialized = true;
+    return data;
   }
 
-  return data;
+  // Subsequent calls: rely on SessionRegistry's TTL cache (10 seconds)
+  // This avoids disk I/O for repeated reads within the same command execution
+  return registryInstance.loadSync();
 }
 
 // Save registry (uses injectable SessionRegistry)
@@ -148,6 +180,13 @@ function removeLock(sessionId) {
 // Check if session is active (has lock with alive PID)
 function isSessionActive(sessionId) {
   const lock = readLock(sessionId);
+  if (!lock || !lock.pid) return false;
+  return isPidAlive(parseInt(lock.pid, 10));
+}
+
+// Check if session is active (async version for parallel batch operations)
+async function isSessionActiveAsync(sessionId) {
+  const lock = await readLockAsync(sessionId);
   if (!lock || !lock.pid) return false;
   return isPidAlive(parseInt(lock.pid, 10));
 }
@@ -944,6 +983,39 @@ function getSessions() {
   };
 }
 
+// Get all sessions with status (async parallel version - faster for 10+ sessions)
+// US-0190: Uses Promise.all() to batch lock file reads instead of sequential
+async function getSessionsAsync() {
+  const registry = loadRegistry();
+  const cleanupResult = await cleanupStaleLocksAsync(registry);
+
+  const sessionEntries = Object.entries(registry.sessions);
+  const cwd = process.cwd();
+
+  // Read all locks in parallel using Promise.all()
+  const sessionResults = await Promise.all(
+    sessionEntries.map(async ([id, session]) => {
+      const active = await isSessionActiveAsync(id);
+      return {
+        id,
+        ...session,
+        active,
+        current: session.path === cwd,
+      };
+    })
+  );
+
+  // Sort by ID (numeric)
+  sessionResults.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+
+  // Return count for backward compat, plus detailed info
+  return {
+    sessions: sessionResults,
+    cleaned: cleanupResult.count,
+    cleanedSessions: cleanupResult.sessions,
+  };
+}
+
 // Get count of active sessions (excluding current)
 function getActiveSessionCount() {
   const { sessions } = getSessions();
@@ -1360,6 +1432,106 @@ function getSessionPhase(session) {
   }
 }
 
+// Execute git command asynchronously (US-0191: Promise-based, non-blocking)
+function execGitAsync(args, cwd) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('git', args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', data => {
+      stdout += data;
+    });
+    proc.stderr.on('data', data => {
+      stderr += data;
+    });
+
+    proc.on('error', err => {
+      reject(err);
+    });
+
+    proc.on('close', code => {
+      resolve({ stdout: stdout.trim(), stderr: stderr.trim(), code });
+    });
+  });
+}
+
+// Detect session phase asynchronously (US-0191: Non-blocking git calls)
+async function getSessionPhaseAsync(session) {
+  // If merged_at field exists, session was merged
+  if (session.merged_at) {
+    return SESSION_PHASES.MERGED;
+  }
+
+  // If is_main, it's the merged/main column
+  if (session.is_main) {
+    return SESSION_PHASES.MERGED;
+  }
+
+  // Check git state for the session
+  try {
+    const sessionPath = session.path;
+    if (!fs.existsSync(sessionPath)) {
+      return SESSION_PHASES.TODO;
+    }
+
+    // Cache key for this session's git state
+    const cacheKey = `phase:${sessionPath}`;
+    const cached = gitCache.get(cacheKey);
+    if (cached !== null) return cached;
+
+    // Count commits since branch diverged from main
+    const mainBranch = getMainBranch();
+    const commitResult = await execGitAsync(['rev-list', '--count', `${mainBranch}..HEAD`], sessionPath);
+    const commits = parseInt(commitResult.stdout || '0', 10);
+
+    if (commits === 0) {
+      gitCache.set(cacheKey, SESSION_PHASES.TODO);
+      return SESSION_PHASES.TODO;
+    }
+
+    // Check for uncommitted changes
+    const statusResult = await execGitAsync(['status', '--porcelain'], sessionPath);
+    const status = statusResult.stdout;
+
+    let phase;
+    if (status === '') {
+      // No uncommitted changes = ready for review
+      phase = SESSION_PHASES.REVIEW;
+    } else {
+      // Has commits but also uncommitted changes = still coding
+      phase = SESSION_PHASES.CODING;
+    }
+
+    gitCache.set(cacheKey, phase);
+    return phase;
+  } catch (e) {
+    // On error, assume coding phase
+    return SESSION_PHASES.CODING;
+  }
+}
+
+// Get phases for multiple sessions in parallel (US-0191: Promise.all batching)
+async function getSessionPhasesAsync(sessions) {
+  const phasePromises = sessions.map(async session => {
+    const phase = await getSessionPhaseAsync(session);
+    return { session, phase };
+  });
+
+  const results = await Promise.all(phasePromises);
+
+  // Return as array with phase included
+  return results.map(({ session, phase }) => ({
+    ...session,
+    phase,
+  }));
+}
+
 // Render Kanban-style board visualization
 function renderKanbanBoard(sessions) {
   const lines = [];
@@ -1375,6 +1547,115 @@ function renderKanbanBoard(sessions) {
   for (const session of sessions) {
     const phase = getSessionPhase(session);
     byPhase[phase].push(session);
+  }
+
+  // Calculate column widths (min 12 chars)
+  const colWidth = 14;
+  const separator = '  ';
+
+  // Header
+  lines.push(`${c.cyan}Sessions (Kanban View):${c.reset}`);
+  lines.push('');
+
+  // Column headers
+  const headers = [
+    `${c.dim}TO DO${c.reset}`,
+    `${c.yellow}CODING${c.reset}`,
+    `${c.blue}REVIEW${c.reset}`,
+    `${c.green}MERGED${c.reset}`,
+  ];
+  lines.push(headers.map(h => h.padEnd(colWidth + 10)).join(separator)); // +10 for ANSI codes
+
+  // Top borders
+  const topBorder = `┌${'─'.repeat(colWidth)}┐`;
+  lines.push([topBorder, topBorder, topBorder, topBorder].join(separator));
+
+  // Find max rows needed
+  const maxRows = Math.max(
+    1,
+    byPhase[SESSION_PHASES.TODO].length,
+    byPhase[SESSION_PHASES.CODING].length,
+    byPhase[SESSION_PHASES.REVIEW].length,
+    byPhase[SESSION_PHASES.MERGED].length
+  );
+
+  // Render rows
+  for (let i = 0; i < maxRows; i++) {
+    const cells = [
+      SESSION_PHASES.TODO,
+      SESSION_PHASES.CODING,
+      SESSION_PHASES.REVIEW,
+      SESSION_PHASES.MERGED,
+    ].map(phase => {
+      const session = byPhase[phase][i];
+      if (!session) {
+        return `│${' '.repeat(colWidth)}│`;
+      }
+
+      // Format session info
+      const id = `[${session.id}]`;
+      const name = session.nickname || session.branch || '';
+      const truncName = name.length > colWidth - 5 ? name.slice(0, colWidth - 8) + '...' : name;
+      const content = `${id} ${truncName}`.slice(0, colWidth);
+
+      return `│${content.padEnd(colWidth)}│`;
+    });
+    lines.push(cells.join(separator));
+
+    // Second line with story
+    const storyCells = [
+      SESSION_PHASES.TODO,
+      SESSION_PHASES.CODING,
+      SESSION_PHASES.REVIEW,
+      SESSION_PHASES.MERGED,
+    ].map(phase => {
+      const session = byPhase[phase][i];
+      if (!session) {
+        return `│${' '.repeat(colWidth)}│`;
+      }
+
+      const story = session.story || '-';
+      const storyTrunc = story.length > colWidth - 2 ? story.slice(0, colWidth - 5) + '...' : story;
+
+      return `│${c.dim}${storyTrunc.padEnd(colWidth)}${c.reset}│`;
+    });
+    lines.push(storyCells.join(separator));
+  }
+
+  // Bottom borders
+  const bottomBorder = `└${'─'.repeat(colWidth)}┘`;
+  lines.push([bottomBorder, bottomBorder, bottomBorder, bottomBorder].join(separator));
+
+  // Summary
+  lines.push('');
+  const summary = [
+    `${c.dim}To Do: ${byPhase[SESSION_PHASES.TODO].length}${c.reset}`,
+    `${c.yellow}Coding: ${byPhase[SESSION_PHASES.CODING].length}${c.reset}`,
+    `${c.blue}Review: ${byPhase[SESSION_PHASES.REVIEW].length}${c.reset}`,
+    `${c.green}Merged: ${byPhase[SESSION_PHASES.MERGED].length}${c.reset}`,
+  ].join(' │ ');
+  lines.push(summary);
+
+  return lines.join('\n');
+}
+
+// Render Kanban-style board visualization (async parallel version - US-0191)
+async function renderKanbanBoardAsync(sessions) {
+  const lines = [];
+
+  // Get all phases in parallel using Promise.all
+  const sessionsWithPhases = await getSessionPhasesAsync(sessions);
+
+  // Group sessions by phase
+  const byPhase = {
+    [SESSION_PHASES.TODO]: [],
+    [SESSION_PHASES.CODING]: [],
+    [SESSION_PHASES.REVIEW]: [],
+    [SESSION_PHASES.MERGED]: [],
+  };
+
+  for (const session of sessionsWithPhases) {
+    byPhase[session.phase].push(session);
   }
 
   // Calculate column widths (min 12 chars)
@@ -2577,7 +2858,9 @@ function getSessionThreadType(sessionId = null) {
 }
 
 /**
- * Update thread type for a session.
+ * Update thread type for a session (without transition validation).
+ * For backward compatibility. Prefer transitionThread() for new code.
+ *
  * @param {string} sessionId - Session ID
  * @param {string} threadType - New thread type
  * @returns {{ success: boolean, error?: string }}
@@ -2601,11 +2884,104 @@ function setSessionThreadType(sessionId, threadType) {
   return { success: true, thread_type: threadType };
 }
 
+/**
+ * Transition session to a new thread type with validation.
+ *
+ * Uses sessionThreadMachine to validate that the transition is allowed.
+ * For example: parallel → fusion is valid, but chained → base is not.
+ *
+ * Thread Type Transitions:
+ * - base → parallel, big, long
+ * - parallel → base, fusion, chained
+ * - chained → parallel, fusion
+ * - fusion → base
+ * - big → parallel, fusion
+ * - long → base, parallel
+ *
+ * @param {string} sessionId - Session ID
+ * @param {string} targetType - Target thread type
+ * @param {Object} [options={}] - Transition options
+ * @param {boolean} [options.force=false] - Force transition even if invalid
+ * @returns {{ success: boolean, from?: string, to?: string, error?: string, forced?: boolean }}
+ */
+function transitionThread(sessionId, targetType, options = {}) {
+  const { force = false } = options;
+
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  // Get current thread type (default to 'base' for legacy sessions)
+  const currentType = session.thread_type || (session.is_main ? 'base' : 'parallel');
+
+  // Validate transition using state machine
+  const result = sessionThreadMachine.transition(currentType, targetType, { force });
+
+  if (!result.success) {
+    return {
+      success: false,
+      from: currentType,
+      to: targetType,
+      error: result.error,
+    };
+  }
+
+  // No-op if same type
+  if (result.noop) {
+    return {
+      success: true,
+      from: currentType,
+      to: targetType,
+      noop: true,
+    };
+  }
+
+  // Update registry
+  registry.sessions[sessionId].thread_type = targetType;
+  registry.sessions[sessionId].thread_transitioned_at = new Date().toISOString();
+  saveRegistry(registry);
+
+  return {
+    success: true,
+    from: currentType,
+    to: targetType,
+    forced: result.forced || false,
+  };
+}
+
+/**
+ * Get valid thread type transitions from current state.
+ *
+ * @param {string} sessionId - Session ID
+ * @returns {{ success: boolean, current?: string, validTransitions?: string[], error?: string }}
+ */
+function getValidThreadTransitions(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  const currentType = session.thread_type || (session.is_main ? 'base' : 'parallel');
+  const validTransitions = sessionThreadMachine.getValidTransitions(currentType);
+
+  return {
+    success: true,
+    current: currentType,
+    validTransitions,
+  };
+}
+
 // Export for use as module
 module.exports = {
   // Registry injection (for testing)
   injectRegistry,
   getRegistryInstance,
+  resetRegistryCache, // US-0193: Reset initialization state for testing
   // Registry access (backward compatible)
   loadRegistry,
   saveRegistry,
@@ -2615,9 +2991,11 @@ module.exports = {
   getSession,
   createSession,
   getSessions,
+  getSessionsAsync, // US-0190: Parallel lock reads for 10+ sessions
   getActiveSessionCount,
   deleteSession,
   isSessionActive,
+  isSessionActiveAsync, // US-0190: Async version for batch operations
   cleanupStaleLocks,
   cleanupStaleLocksAsync,
   // Merge operations
@@ -2640,10 +3018,17 @@ module.exports = {
   detectThreadType,
   getSessionThreadType,
   setSessionThreadType,
+  transitionThread, // US-0202: Validated thread type transitions
+  getValidThreadTransitions, // US-0202: Get valid transitions from current state
   // Kanban visualization
   SESSION_PHASES,
   getSessionPhase,
+  getSessionPhaseAsync, // US-0191: Async version with non-blocking git
+  getSessionPhasesAsync, // US-0191: Batch version with Promise.all()
   renderKanbanBoard,
+  renderKanbanBoardAsync, // US-0191: Async version using parallel git ops
+  // Internal utilities (for testing)
+  execGitAsync, // US-0191: Promise-based git command execution
 };
 
 // Run CLI if executed directly

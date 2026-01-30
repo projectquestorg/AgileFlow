@@ -13,7 +13,7 @@
 const path = require('path');
 const fs = require('fs-extra');
 const { safeLoad, safeDump } = require('../../../lib/yaml-utils');
-const { hasUnsafePathPatterns } = require('../../../lib/validate-paths');
+const { hasUnsafePathPatterns, validatePath } = require('../../../lib/validate-paths');
 
 /**
  * Configuration schema definition
@@ -96,6 +96,11 @@ const VALID_CONFIG_KEYS = Object.keys(CONFIG_SCHEMA);
 const EDITABLE_CONFIG_KEYS = ['userName', 'ides', 'agileflowFolder', 'docsFolder'];
 
 /**
+ * Path fields that require validatePath() boundary checking
+ */
+const PATH_CONFIG_FIELDS = ['agileflowFolder', 'docsFolder'];
+
+/**
  * Configuration Manager class
  */
 class ConfigManager {
@@ -103,10 +108,12 @@ class ConfigManager {
    * Create a new ConfigManager instance
    * @param {Object} data - Configuration data
    * @param {string} manifestPath - Path to manifest file
+   * @param {string} projectDir - Project root directory for path validation
    */
-  constructor(data = {}, manifestPath = null) {
+  constructor(data = {}, manifestPath = null, projectDir = null) {
     this._data = { ...data };
     this._manifestPath = manifestPath;
+    this._projectDir = projectDir;
     this._dirty = false;
   }
 
@@ -142,7 +149,7 @@ class ConfigManager {
       }
     }
 
-    return new ConfigManager(data, manifestPath);
+    return new ConfigManager(data, manifestPath, projectDir);
   }
 
   /**
@@ -225,9 +232,20 @@ class ConfigManager {
       return { ok: false, error: typeError };
     }
 
-    // Custom validation
+    // Custom validation (basic schema-level checks)
     if (schema.validate && !schema.validate(value)) {
       return { ok: false, error: `Invalid value for '${key}'` };
+    }
+
+    // Security: Path fields require additional boundary validation (US-0189)
+    if (PATH_CONFIG_FIELDS.includes(key) && this._projectDir) {
+      const pathResult = validatePath(value, this._projectDir, { allowSymlinks: false });
+      if (!pathResult.ok) {
+        return {
+          ok: false,
+          error: `Path validation failed for '${key}': ${pathResult.error?.message || 'Invalid path'}`,
+        };
+      }
     }
 
     this._data[key] = value;
@@ -296,9 +314,20 @@ class ConfigManager {
         continue;
       }
 
-      // Custom validation
+      // Custom validation (basic schema-level checks)
       if (schema.validate && !schema.validate(value)) {
         errors.push(`Invalid value for '${key}'`);
+        continue;
+      }
+
+      // Security: Path fields require additional boundary validation (US-0189)
+      if (PATH_CONFIG_FIELDS.includes(key) && this._projectDir) {
+        const pathResult = validatePath(value, this._projectDir, { allowSymlinks: false });
+        if (!pathResult.ok) {
+          errors.push(
+            `Path validation failed for '${key}': ${pathResult.error?.message || 'Invalid path'}`
+          );
+        }
       }
     }
 
@@ -360,6 +389,14 @@ class ConfigManager {
    */
   getManifestPath() {
     return this._manifestPath;
+  }
+
+  /**
+   * Get the project directory (used for path validation)
+   * @returns {string|null}
+   */
+  getProjectDir() {
+    return this._projectDir;
   }
 
   /**

@@ -630,6 +630,78 @@ After displaying plan, ask:
 
 ---
 
+## Expected Output
+
+### Success - Sprint Planning
+
+```
+📅 Sprint Planning: Sprint 13
+══════════════════════════════════════════════════════════════
+
+📊 Capacity Analysis
+┌────────────────────────────────────────────────────────────┐
+│ Team Velocity (avg last 3 sprints): 38 points              │
+│ Available capacity: 36 points (1 dev on PTO)               │
+│ Recommended commitment: 32-36 points                       │
+└────────────────────────────────────────────────────────────┘
+
+📋 Suggested Sprint Backlog
+┌────────────────────────────────────────────────────────────┐
+│ MUST HAVE (P0-P1) - 24 points                              │
+├────────────────────────────────────────────────────────────┤
+│ US-0060: OAuth completion (8 pts) - AG-API                 │
+│ US-0061: Rate limiting (5 pts) - AG-CI                     │
+│ US-0062: Session security fix (3 pts) - AG-SECURITY        │
+│ US-0063: Dashboard updates (8 pts) - AG-UI                 │
+├────────────────────────────────────────────────────────────┤
+│ SHOULD HAVE (P2) - 12 points                               │
+├────────────────────────────────────────────────────────────┤
+│ US-0064: Email notifications (5 pts) - AG-API              │
+│ US-0065: Metrics dashboard (4 pts) - AG-UI                 │
+│ US-0066: Documentation update (3 pts) - AG-DOCS            │
+└────────────────────────────────────────────────────────────┘
+
+⚠️ Dependency Alert:
+US-0060 must complete before US-0064 can start
+
+Total: 36 points | Risk: Low
+
+Commit this sprint plan? [Y/n]
+```
+
+### Success - Sprint Started
+
+```
+📅 Sprint 13 Started
+══════════════════════════════════════════════════════════════
+
+Duration: 2026-01-29 to 2026-02-12 (14 days)
+Commitment: 7 stories (36 points)
+Goal: Complete OAuth and security hardening
+
+✓ Status.json updated
+✓ Sprint created in milestones.md
+✓ Stories moved to 'in_progress' column
+
+Next: /agileflow:board to see sprint view
+```
+
+### Error - Active Sprint Exists
+
+```
+❌ Error: Sprint 12 is still active
+
+Stories remaining: 2 (4 points)
+Days remaining: 1
+
+Options:
+1. Complete current sprint: /agileflow:sprint ACTION=end
+2. Carry over stories: /agileflow:sprint ACTION=carryover
+3. Force new sprint: /agileflow:sprint ACTION=start FORCE=true
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:board` - Visual kanban board

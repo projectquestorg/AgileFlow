@@ -31,6 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 const { createTypedError, getErrorCodeFromError, ErrorCodes } = require('./error-codes');
+const { success, failure, failureFromError } = require('./result-schema');
 
 // Debug logging
 const DEBUG = process.env.AGILEFLOW_DEBUG === '1';
@@ -54,7 +55,7 @@ const SECURE_FILE_MODE = 0o600;
 function checkFilePermissions(mode) {
   // Skip permission checks on Windows (different permission model)
   if (process.platform === 'win32') {
-    return { ok: true };
+    return success(undefined);
   }
 
   // Extract permission bits (last 9 bits)
@@ -106,7 +107,7 @@ function checkFilePermissions(mode) {
     };
   }
 
-  return { ok: true };
+  return success(undefined);
 }
 
 /**
@@ -117,13 +118,13 @@ function checkFilePermissions(mode) {
 function setSecurePermissions(filePath) {
   // Skip on Windows
   if (process.platform === 'win32') {
-    return { ok: true };
+    return success(undefined);
   }
 
   try {
     fs.chmodSync(filePath, SECURE_FILE_MODE);
     debugLog('setSecurePermissions', { filePath, mode: SECURE_FILE_MODE.toString(8) });
-    return { ok: true };
+    return success(undefined);
   } catch (err) {
     const error = createTypedError(
       `Failed to set secure permissions on ${filePath}: ${err.message}`,
@@ -133,7 +134,7 @@ function setSecurePermissions(filePath) {
         context: { filePath, mode: SECURE_FILE_MODE },
       }
     );
-    return { ok: false, error };
+    return failureFromError(error);
   }
 }
 
@@ -221,12 +222,12 @@ class SmartJsonFile {
         if (!fs.existsSync(this.filePath)) {
           if (this.defaultValue !== undefined) {
             debugLog('read', { status: 'using default value' });
-            return { ok: true, data: this.defaultValue };
+            return success(this.defaultValue);
           }
           const error = createTypedError(`File not found: ${this.filePath}`, 'ENOENT', {
             context: { filePath: this.filePath },
           });
-          return { ok: false, error };
+          return failureFromError(error);
         }
 
         // Read file
@@ -257,7 +258,7 @@ class SmartJsonFile {
             'EPARSE',
             { cause: parseError, context: { filePath: this.filePath } }
           );
-          return { ok: false, error };
+          return failureFromError(error);
         }
 
         // Validate schema if provided
@@ -270,12 +271,12 @@ class SmartJsonFile {
               'ESCHEMA',
               { cause: schemaError, context: { filePath: this.filePath } }
             );
-            return { ok: false, error };
+            return failureFromError(error);
           }
         }
 
         debugLog('read', { status: 'success' });
-        return { ok: true, data };
+        return success(data);
       } catch (err) {
         lastError = err;
         debugLog('read', { status: 'error', error: err.message, attempt });
@@ -288,7 +289,7 @@ class SmartJsonFile {
             cause: err,
             context: { filePath: this.filePath },
           });
-          return { ok: false, error };
+          return failureFromError(error);
         }
 
         // Wait before retrying
@@ -308,7 +309,7 @@ class SmartJsonFile {
       'EUNKNOWN',
       { cause: lastError, context: { filePath: this.filePath, attempts: this.retries + 1 } }
     );
-    return { ok: false, error };
+    return failureFromError(error);
   }
 
   /**
@@ -330,7 +331,7 @@ class SmartJsonFile {
           'ESCHEMA',
           { cause: schemaError, context: { filePath: this.filePath } }
         );
-        return { ok: false, error };
+        return failureFromError(error);
       }
     }
 
@@ -368,7 +369,7 @@ class SmartJsonFile {
 
         debugLog('write', { status: 'success' });
 
-        return { ok: true };
+        return success(undefined);
       } catch (err) {
         lastError = err;
         debugLog('write', { status: 'error', error: err.message, attempt });
@@ -394,7 +395,7 @@ class SmartJsonFile {
             errorCode.code,
             { cause: err, context: { filePath: this.filePath } }
           );
-          return { ok: false, error };
+          return failureFromError(error);
         }
 
         // Wait before retrying
@@ -414,7 +415,7 @@ class SmartJsonFile {
       'EUNKNOWN',
       { cause: lastError, context: { filePath: this.filePath, attempts: this.retries + 1 } }
     );
-    return { ok: false, error };
+    return failureFromError(error);
   }
 
   /**
@@ -447,7 +448,7 @@ class SmartJsonFile {
         cause: modifyError,
         context: { filePath: this.filePath },
       });
-      return { ok: false, error };
+      return failureFromError(error);
     }
 
     // Write modified data
@@ -456,7 +457,7 @@ class SmartJsonFile {
       return writeResult;
     }
 
-    return { ok: true, data: newData };
+    return success(newData);
   }
 
   /**
@@ -474,12 +475,12 @@ class SmartJsonFile {
   async delete() {
     try {
       if (!fs.existsSync(this.filePath)) {
-        return { ok: true }; // Already doesn't exist
+        return success(undefined); // Already doesn't exist
       }
 
       fs.unlinkSync(this.filePath);
       debugLog('delete', { filePath: this.filePath, status: 'success' });
-      return { ok: true };
+      return success(undefined);
     } catch (err) {
       const errorCode = getErrorCodeFromError(err);
       const error = createTypedError(
@@ -487,7 +488,7 @@ class SmartJsonFile {
         errorCode.code,
         { cause: err, context: { filePath: this.filePath } }
       );
-      return { ok: false, error };
+      return failureFromError(error);
     }
   }
 
@@ -499,12 +500,12 @@ class SmartJsonFile {
     try {
       if (!fs.existsSync(this.filePath)) {
         if (this.defaultValue !== undefined) {
-          return { ok: true, data: this.defaultValue };
+          return success(this.defaultValue);
         }
         const error = createTypedError(`File not found: ${this.filePath}`, 'ENOENT', {
           context: { filePath: this.filePath },
         });
-        return { ok: false, error };
+        return failureFromError(error);
       }
 
       const content = fs.readFileSync(this.filePath, 'utf8');
@@ -514,7 +515,7 @@ class SmartJsonFile {
         this.schema(data);
       }
 
-      return { ok: true, data };
+      return success(data);
     } catch (err) {
       const errorCode = getErrorCodeFromError(err);
       const error = createTypedError(
@@ -522,7 +523,7 @@ class SmartJsonFile {
         errorCode.code,
         { cause: err, context: { filePath: this.filePath } }
       );
-      return { ok: false, error };
+      return failureFromError(error);
     }
   }
 
@@ -559,7 +560,7 @@ class SmartJsonFile {
         }
       }
 
-      return { ok: true };
+      return success(undefined);
     } catch (err) {
       // Clean up temp file
       try {
@@ -576,7 +577,7 @@ class SmartJsonFile {
         errorCode.code,
         { cause: err, context: { filePath: this.filePath } }
       );
-      return { ok: false, error };
+      return failureFromError(error);
     }
   }
 }
@@ -594,7 +595,7 @@ const DEFAULT_TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
  * @param {Object} [options={}] - Cleanup options
  * @param {number} [options.maxAgeMs=86400000] - Max age in ms (default: 24 hours)
  * @param {boolean} [options.dryRun=false] - Don't delete, just report
- * @returns {{ok: boolean, cleaned: string[], errors: string[]}}
+ * @returns {Result<{cleaned: string[], errors: string[]}>}
  */
 function cleanupTempFiles(directory, options = {}) {
   const { maxAgeMs = DEFAULT_TEMP_MAX_AGE_MS, dryRun = false } = options;
@@ -604,7 +605,7 @@ function cleanupTempFiles(directory, options = {}) {
 
   try {
     if (!fs.existsSync(directory)) {
-      return { ok: true, cleaned, errors };
+      return success({ cleaned, errors });
     }
 
     const now = Date.now();
@@ -646,10 +647,13 @@ function cleanupTempFiles(directory, options = {}) {
       }
     }
 
-    return { ok: errors.length === 0, cleaned, errors };
+    if (errors.length > 0) {
+      return failure('EUNKNOWN', 'Some temp files could not be cleaned', { context: { cleaned, errors } });
+    }
+    return success({ cleaned, errors });
   } catch (err) {
     errors.push(`Directory read error: ${err.message}`);
-    return { ok: false, cleaned, errors };
+    return failure('EUNKNOWN', `Directory read error: ${err.message}`, { context: { cleaned, errors } });
   }
 }
 
@@ -658,7 +662,7 @@ function cleanupTempFiles(directory, options = {}) {
  *
  * @param {string} filePath - Path to the JSON file
  * @param {Object} [options={}] - Cleanup options
- * @returns {{ok: boolean, cleaned: string[], errors: string[]}}
+ * @returns {Result<{cleaned: string[], errors: string[]}>}
  */
 function cleanupTempFilesFor(filePath, options = {}) {
   const directory = path.dirname(filePath);

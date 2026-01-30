@@ -532,6 +532,66 @@ If yes, suggest:
 
 ---
 
+## Expected Output
+
+### Success - Blockers Found
+
+```
+🚧 Blocker Analysis
+══════════════════════════════════════════════════════════════
+
+📍 DEPENDENCY BLOCKERS (2)
+┌──────────────────────────────────────────────────────────────┐
+│ US-0053: OAuth Google integration                            │
+│ ⏳ Blocked by: US-0051 (User login) - in_progress            │
+│ ETA: ~2 days (based on story estimate)                       │
+├──────────────────────────────────────────────────────────────┤
+│ US-0056: Session management                                  │
+│ ⏳ Blocked by: US-0050 (User registration) - in_review       │
+│ ETA: <1 day (awaiting review)                                │
+└──────────────────────────────────────────────────────────────┘
+
+🔧 TECHNICAL BLOCKERS (1)
+┌──────────────────────────────────────────────────────────────┐
+│ US-0055: Rate limiting middleware                            │
+│ 🔧 Blocker: Missing Redis configuration                      │
+│ Suggested: See ADR-0015 for caching decisions                │
+└──────────────────────────────────────────────────────────────┘
+
+📊 Summary: 3 blockers across 3 stories
+Suggested Actions:
+- /agileflow:status US-0050 STATUS=done (if review passed)
+- /agileflow:adr for Redis decision
+```
+
+### Success - No Blockers
+
+```
+🚧 Blocker Analysis
+══════════════════════════════════════════════════════════════
+
+✅ No blockers found!
+
+All in-progress stories are unblocked.
+Ready: 5 stories awaiting assignment.
+
+Run /agileflow:board to see full status.
+```
+
+### Error - No Stories in Epic
+
+```
+❌ Error: No stories found in EP-0099
+
+Create stories first:
+  /agileflow:story EPIC=EP-0099 TITLE="..."
+
+Or check epic exists:
+  /agileflow:epic:view EP-0099
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:status` - Update story status

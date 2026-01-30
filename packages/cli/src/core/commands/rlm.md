@@ -347,6 +347,89 @@ For smaller research notes, `/agileflow:research:view` may be sufficient.
 
 ---
 
+## Expected Output
+
+### Success - Document Analysis
+
+```
+📄 RLM Document Analysis
+══════════════════════════════════════════════════════════════
+
+Document: docs/research/api-design-guide.pdf (156 pages)
+Question: What authentication methods are recommended?
+
+Launching RLM sub-agent...
+✓ Document loaded (2.3 MB)
+✓ Virtualized as 47 chunks
+✓ Cost estimate: $0.12
+
+Iteration 1/5: Searching for authentication...
+  Found: Chapter 4 "Security", pages 45-62
+
+Iteration 2/5: Extracting relevant sections...
+  Found: 3 authentication patterns described
+
+Iteration 3/5: Synthesizing answer...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 Answer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The guide recommends three authentication methods:
+
+1. **JWT Tokens** (Primary)
+   - For API-to-API communication
+   - 15-minute expiry with refresh tokens
+
+2. **OAuth 2.0** (External Users)
+   - For third-party integrations
+   - Support Google and GitHub providers
+
+3. **API Keys** (Internal Services)
+   - For trusted internal services
+   - Rotate every 90 days
+
+Source: Pages 47-52, Chapter 4 "Security"
+Confidence: High (direct quotes available)
+Cost: $0.08 (3 iterations)
+```
+
+### Success - Multi-Document Synthesis
+
+```
+📄 RLM Cross-Document Analysis
+══════════════════════════════════════════════════════════════
+
+Documents: 3 research papers
+Question: Compare approaches to rate limiting
+
+Processing...
+[============================] 100%
+
+Synthesis:
+All three papers recommend token bucket algorithm.
+Key difference: Paper A suggests per-user limits,
+Paper B recommends per-endpoint limits.
+
+See full comparison: .agileflow/research/synthesis-001.md
+```
+
+### Error - Document Too Large
+
+```
+⚠️ Document exceeds RLM budget
+
+File: enterprise-guide.pdf (500 pages)
+Estimated cost: $2.50
+
+Options:
+1. Increase budget: BUDGET=3.00
+2. Analyze specific pages: PAGES=1-50
+3. Use summary mode: MODE=summary
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:research:analyze` - Analyze research notes (uses RLM for large docs)

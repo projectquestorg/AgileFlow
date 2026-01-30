@@ -32,6 +32,7 @@ const EventEmitter = require('events');
 const fs = require('fs');
 const path = require('path');
 const SmartJsonFile = require('./smart-json-file');
+const { success, failure, failureFromError } = require('./result-schema');
 
 /**
  * Session Registry Event Bus
@@ -286,13 +287,13 @@ class SessionRegistry extends EventEmitter {
   /**
    * Unregister a session
    * @param {number|string} sessionId - Session ID
-   * @returns {Promise<{ok: boolean, found: boolean, error?: Error}>}
+   * @returns {Promise<Result<{found: boolean}>>}
    */
   async unregisterSession(sessionId) {
     const registry = await this.load(true);
 
     if (!registry.sessions || !registry.sessions[sessionId]) {
-      return { ok: true, found: false };
+      return success({ found: false });
     }
 
     delete registry.sessions[sessionId];
@@ -301,23 +302,23 @@ class SessionRegistry extends EventEmitter {
     if (result.ok) {
       this._auditLog('unregister', { sessionId });
       this.emit('unregistered', { sessionId });
-      return { ok: true, found: true };
+      return success({ found: true });
     }
 
-    return { ...result, found: true };
+    return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { found: true } });
   }
 
   /**
    * Update a session
    * @param {number|string} sessionId - Session ID
    * @param {Object} updates - Fields to update
-   * @returns {Promise<{ok: boolean, found: boolean, error?: Error}>}
+   * @returns {Promise<Result<{found: boolean}>>}
    */
   async updateSession(sessionId, updates) {
     const registry = await this.load(true);
 
     if (!registry.sessions || !registry.sessions[sessionId]) {
-      return { ok: false, found: false, error: new Error(`Session ${sessionId} not found`) };
+      return failure('ENOENT', `Session ${sessionId} not found`, { context: { found: false } });
     }
 
     registry.sessions[sessionId] = {
@@ -331,10 +332,10 @@ class SessionRegistry extends EventEmitter {
     if (result.ok) {
       this._auditLog('update', { sessionId, updates });
       this.emit('updated', { sessionId, changes: updates });
-      return { ok: true, found: true };
+      return success({ found: true });
     }
 
-    return { ...result, found: true };
+    return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { found: true } });
   }
 
   /**
@@ -359,11 +360,11 @@ class SessionRegistry extends EventEmitter {
 
   /**
    * Commit all batched changes in one write
-   * @returns {Promise<{ok: boolean, applied: number, error?: Error}>}
+   * @returns {Promise<Result<{applied: number}>>}
    */
   async commitBatch() {
     if (!this._batchMode) {
-      return { ok: false, applied: 0, error: new Error('Not in batch mode') };
+      return failure('EINVAL', 'Not in batch mode', { context: { applied: 0 } });
     }
 
     const registry = await this.load(true);
@@ -415,10 +416,10 @@ class SessionRegistry extends EventEmitter {
 
     if (result.ok) {
       this._auditLog('batch', { applied });
-      return { ok: true, applied };
+      return success({ applied });
     }
 
-    return { ...result, applied };
+    return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { applied } });
   }
 
   /**
@@ -447,7 +448,7 @@ class SessionRegistry extends EventEmitter {
   /**
    * Clean up stale sessions
    * @param {Function} isAlive - Function to check if session is alive (sessionId) => boolean
-   * @returns {Promise<{ok: boolean, cleaned: number}>}
+   * @returns {Promise<Result<{cleaned: number}>>}
    */
   async cleanupStaleSessions(isAlive) {
     const registry = await this.load(true);
@@ -464,10 +465,13 @@ class SessionRegistry extends EventEmitter {
 
     if (cleaned > 0) {
       const result = await this.save(registry);
-      return { ok: result.ok, cleaned };
+      if (!result.ok) {
+        return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { cleaned } });
+      }
+      return success({ cleaned });
     }
 
-    return { ok: true, cleaned: 0 };
+    return success({ cleaned: 0 });
   }
 }
 

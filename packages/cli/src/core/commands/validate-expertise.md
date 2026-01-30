@@ -221,6 +221,82 @@ RULES
 
 ---
 
+## Expected Output
+
+### Success - All Validations Pass
+
+```
+======================================
+EXPERTISE VALIDATION REPORT
+======================================
+
+Validating: database
+  [PASS] File exists: expertise.yaml
+  [PASS] Required sections present
+  [PASS] No stale learnings
+  [PASS] File size OK (142 lines)
+  [PASS] All referenced files exist
+
+Validating: api
+  [PASS] All checks passed
+
+Validating: ui
+  [PASS] All checks passed
+
+--------------------------------------
+SUMMARY
+--------------------------------------
+Total domains: 25
+Passed: 25
+Warnings: 0
+Failures: 0
+
+✅ All expertise files are valid and up-to-date.
+```
+
+### Success - Issues Found
+
+```
+======================================
+EXPERTISE VALIDATION REPORT
+======================================
+
+Validating: database
+  [PASS] File exists: expertise.yaml
+  [PASS] Required sections present
+  [WARN] 2 stale learnings (>30 days)
+  [FAIL] DRIFT: src/old/database.ts not found
+  [FAIL] DRIFT: lib/deprecated/orm.js not found
+
+Validating: api
+  [PASS] All checks passed
+
+--------------------------------------
+SUMMARY
+--------------------------------------
+Total domains: 25
+Passed: 23
+Warnings: 1
+Failures: 2
+
+RECOMMENDED ACTIONS:
+1. Update database expertise - remove reference to src/old/database.ts
+2. Update database expertise - remove reference to lib/deprecated/orm.js
+3. Review stale learnings in database domain
+```
+
+### Error - Expertise Not Found
+
+```
+❌ Expertise file not found: .agileflow/experts/mobile/expertise.yaml
+
+The 'mobile' domain has no expertise file.
+
+Create one with: /agileflow:agent mobile
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:diagnose` - System health diagnostics

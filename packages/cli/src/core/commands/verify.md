@@ -411,6 +411,97 @@ Run without story_id to verify all in_progress stories.
 
 ---
 
+## Expected Output
+
+### Success - Tests Passing
+
+```
+🧪 Test Verification Complete
+══════════════════════════════════════════════════════════════
+
+Command: npm test
+Duration: 12.3s
+Result: ✅ PASSED
+
+Tests: 42 passed, 0 failed, 42 total
+
+Updated stories:
+  • US-0042: passing
+  • US-0043: passing
+
+All in-progress stories have passing tests ✅
+```
+
+### Error - Tests Failing
+
+```
+🧪 Test Verification Complete
+══════════════════════════════════════════════════════════════
+
+Command: npm test
+Duration: 8.7s
+Result: ❌ FAILED
+
+Tests: 40 passed, 2 failed, 42 total
+
+Failed tests:
+  ❌ auth.test.ts:42
+     Expected redirect to /dashboard
+     Got redirect to /login
+
+  ❌ auth.test.ts:67
+     Session token not persisting
+     Cookie not set after login
+
+Updated stories:
+  • US-0042: failing
+  • US-0043: failing
+
+⚠️ WARNING: 2 stories now have failing tests
+```
+
+### Error - Timeout
+
+```
+🧪 Test Verification Failed
+══════════════════════════════════════════════════════════════
+
+Command: npm test
+Result: ⏱️ TIMEOUT (60s)
+
+The test suite did not complete within 60 seconds.
+
+Updated stories:
+  • US-0042: failing (timeout)
+
+⚠️ Consider:
+1. Increase test_timeout_ms in environment.json
+2. Optimize slow tests
+3. Run specific test suites instead of all tests
+```
+
+### Error - Session Not Initialized
+
+```
+⚠️ Session Harness Not Initialized
+══════════════════════════════════════════════════════════════
+
+The verify command requires session harness configuration.
+
+Run /agileflow:session:init to:
+1. Detect your project type and test command
+2. Create environment.json configuration
+3. Enable test verification for all stories
+
+Or manually create docs/00-meta/environment.json with:
+{
+  "test_command": "npm test",
+  "test_timeout_ms": 60000
+}
+```
+
+---
+
 ## Example Execution
 
 ```

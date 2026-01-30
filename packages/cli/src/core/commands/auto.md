@@ -474,6 +474,79 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Stories Generated
+
+```
+🔍 Analyzing source: docs/requirements/auth-prd.md
+✓ Source type: Product Requirements Document (PRD)
+✓ Found 7 feature areas
+
+📋 Story Generation Preview
+══════════════════════════════════════════════════════════════
+Source: docs/requirements/auth-prd.md
+Epic: EP-0010 (User Authentication)
+Stories to Create: 7
+
+1. US-0050: User registration form with validation (1.5d, AG-API)
+2. US-0051: User login with credentials (1d, AG-API)
+3. US-0052: Password reset flow (1d, AG-API)
+4. US-0053: OAuth Google integration (1.5d, AG-API)
+5. US-0054: OAuth GitHub integration (1.5d, AG-API)
+6. US-0055: Rate limiting middleware (0.5d, AG-CI)
+7. US-0056: Session management service (1d, AG-API)
+
+Total Estimate: 8.5 days
+Owners: AG-API (6), AG-CI (1)
+══════════════════════════════════════════════════════════════
+
+Create these stories? (YES/NO)
+```
+
+After confirmation:
+```
+✓ Created docs/06-stories/EP-0010/US-0050-user-registration.md
+✓ Created docs/06-stories/EP-0010/US-0051-user-login.md
+✓ Created docs/06-stories/EP-0010/US-0052-password-reset.md
+✓ Created docs/06-stories/EP-0010/US-0053-oauth-google.md
+✓ Created docs/06-stories/EP-0010/US-0054-oauth-github.md
+✓ Created docs/06-stories/EP-0010/US-0055-rate-limiting.md
+✓ Created docs/06-stories/EP-0010/US-0056-session-management.md
+✓ Created 7 test stubs in docs/07-testing/test-cases/
+✓ Updated status.json with 7 stories
+✓ Logged 7 assignments to bus
+
+🎉 Successfully generated 7 stories for EP-0010
+```
+
+### Error - Invalid Source
+
+```
+❌ Error: Source file not found
+Path: docs/requirements/nonexistent.md
+
+Please provide a valid source path:
+- PRD document (.md, .pdf)
+- API spec (openapi.yaml, swagger.json)
+- Mockup (Figma URL, .png, .jpg)
+```
+
+### Error - Source Not Parseable
+
+```
+❌ Error: Could not extract requirements from source
+File: docs/assets/logo.png
+
+Supported source types:
+- Product Requirements Documents (PRD)
+- API specifications (OpenAPI/Swagger)
+- Design mockups with annotations
+- Mermaid flow diagrams
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:story` - Create user stories manually

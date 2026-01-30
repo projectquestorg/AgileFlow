@@ -566,6 +566,75 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - List Templates
+
+```
+📋 Available Templates
+══════════════════════════════════════════════════════════════
+
+Built-in Templates (docs/00-meta/templates/):
+  • story-template.md      User stories with AC
+  • epic-template.md       Epics with milestones
+  • adr-template.md        Architecture Decision Records
+  • agent-profile-template.md  Agent profiles
+  • research-template.md   Research notes
+
+Custom Templates (docs/00-meta/templates/custom/):
+  • meeting-notes.md       (created 2025-10-15)
+  • incident-report.md     (created 2025-10-10)
+  • sprint-retro.md        (created 2025-10-01)
+
+Usage: /agileflow:template ACTION=use TYPE=custom NAME=meeting-notes
+```
+
+### Success - Create Template
+
+```
+📝 Creating Template: sprint-retro
+══════════════════════════════════════════════════════════════
+
+Template type: Sprint Retrospective
+Variables detected: {{SPRINT_NUMBER}}, {{START_DATE}}, {{END_DATE}}, {{TEAM}}
+
+Preview:
+─────────────────────────────────────────
+# Sprint {{SPRINT_NUMBER}} Retrospective
+
+**Dates**: {{START_DATE}} to {{END_DATE}}
+**Team**: {{TEAM}}
+
+## What Went Well?
+1.
+
+## What Didn't Go Well?
+1.
+
+## Action Items
+- [ ] {{ACTION_1}}
+─────────────────────────────────────────
+
+Save to: docs/00-meta/templates/custom/sprint-retro.md
+Proceed? (YES/NO)
+```
+
+### Error - Template Not Found
+
+```
+❌ Template not found: my-template
+
+Available templates:
+  • story-template
+  • epic-template
+  • adr-template
+  • meeting-notes (custom)
+
+Create new: /agileflow:template ACTION=create NAME=my-template
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:configure` - Manage AgileFlow features and hooks

@@ -525,6 +525,74 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Feedback Collected
+
+```
+📝 Feedback Collection
+══════════════════════════════════════════════════════════════
+
+Session: Sprint 12 Review
+Agent: AG-API
+
+Questions:
+1. What went well this sprint?
+   > "Testing workflow improvements saved significant time"
+
+2. What could be improved?
+   > "Better documentation for new patterns"
+
+3. Any blockers or concerns?
+   > "None currently"
+
+4. Rate sprint (1-5): ⭐⭐⭐⭐☆ (4/5)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Feedback Saved
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Saved to: docs/09-agents/feedback/sprint-12-AG-API.md
+
+Create improvement story for documentation? [Y/n]
+```
+
+### Success - Team Summary
+
+```
+📝 Sprint 12 Feedback Summary
+══════════════════════════════════════════════════════════════
+
+Responses: 5/6 agents (83%)
+Average Rating: 4.2/5
+
+🟢 Top Wins:
+- Testing workflow improvements (3 mentions)
+- Clear acceptance criteria (2 mentions)
+- Good collaboration on US-0050
+
+🟡 Areas for Improvement:
+- Documentation for new patterns (3 mentions)
+- Earlier blocker detection (2 mentions)
+
+📊 Sentiment: Positive
+Trend: ↑ from 3.8 last sprint
+```
+
+### Error - No Active Sprint
+
+```
+❌ Error: No active sprint found
+
+Start a sprint first:
+/agileflow:sprint ACTION=start
+
+Or provide sprint manually:
+/agileflow:feedback SPRINT=12
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:retro` - Sprint retrospective

@@ -660,6 +660,79 @@ Claude: 🧪 Verifying all requirements...
 
 ---
 
+## Expected Output
+
+### Success - Baseline Created
+
+```
+🧪 Verifying all requirements...
+
+✅ Tests: 42/42 passing (12.3s)
+✅ Git: Clean working tree
+✅ Stories: 3 in-progress (all verified)
+
+Creating baseline...
+✅ Git tag: agileflow-baseline-20251206-143000
+✅ environment.json updated
+✅ session-state.json updated
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Baseline Established
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tag: agileflow-baseline-20251206-143000
+Commit: abc123def456
+Message: Major milestone - v1.0 ready
+Tests: 42/42 passing
+Stories: US-0043, US-0044, US-0045
+
+To push to team:
+  git push origin agileflow-baseline-20251206-143000
+```
+
+### Error - Tests Failing
+
+```
+🧪 Verifying all requirements...
+
+❌ Tests FAILED: 40/42 passing (2 failed)
+
+Cannot create baseline with failing tests.
+
+Run /agileflow:verify to see details.
+Fix failing tests before creating baseline.
+```
+
+### Error - Uncommitted Changes
+
+```
+🧪 Verifying all requirements...
+
+❌ Git: Uncommitted changes detected
+
+   M  src/api/auth.js
+   ?? src/api/new-feature.js
+
+Commit or stash changes before creating baseline:
+  git add . && git commit -m "message"
+  # or
+  git stash
+```
+
+### Error - No Stories in Progress
+
+```
+🧪 Verifying all requirements...
+
+⚠️ No in-progress stories with passing tests
+
+Baselines should mark meaningful progress.
+Assign stories to work on first:
+  /agileflow:assign STORY=US-XXXX
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:verify` - Run tests and update status

@@ -11,8 +11,8 @@ const mockExistsSync = jest.fn();
 const mockStatSync = jest.fn();
 const mockPromisesReadFile = jest.fn();
 const mockPromisesReaddir = jest.fn();
-const mockExecSync = jest.fn();
-const mockExec = jest.fn();
+const mockSpawnSync = jest.fn();
+const mockSpawn = jest.fn();
 
 // Mock fs before requiring the module
 jest.mock('fs', () => ({
@@ -28,8 +28,8 @@ jest.mock('fs', () => ({
 }));
 
 jest.mock('child_process', () => ({
-  execSync: mockExecSync,
-  exec: mockExec,
+  spawnSync: mockSpawnSync,
+  spawn: mockSpawn,
 }));
 
 // Mock file-cache to avoid issues
@@ -47,9 +47,11 @@ const {
   safeReadJSONAsync,
   safeLsAsync,
   safeExecAsync,
-  SAFEEXEC_ALLOWED_COMMANDS,
+  SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS,
   SAFEEXEC_BLOCKED_PATTERNS,
   configureSafeExecLogger,
+  parseGitCommand,
+  isGitCommandAllowed,
   isCommandAllowed,
   RESEARCH_COMMANDS,
   determineSectionsToLoad,
@@ -113,33 +115,60 @@ describe('context-loader', () => {
 
   describe('safeExec', () => {
     it('returns command output for whitelisted commands', () => {
-      mockExecSync.mockReturnValue('  output  ');
+      mockSpawnSync.mockReturnValue({ status: 0, stdout: '  output  ', stderr: '' });
       expect(safeExec('git status')).toBe('output');
     });
 
+    it('uses spawnSync with shell: false (US-0187)', () => {
+      mockSpawnSync.mockReturnValue({ status: 0, stdout: 'main\n', stderr: '' });
+      safeExec('git branch --show-current');
+      expect(mockSpawnSync).toHaveBeenCalledWith(
+        'git',
+        ['branch', '--show-current'],
+        expect.objectContaining({ shell: false })
+      );
+    });
+
     it('returns null when command fails', () => {
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Command failed');
-      });
+      mockSpawnSync.mockReturnValue({ status: 1, stdout: '', stderr: 'error' });
       expect(safeExec('git status')).toBeNull();
     });
 
-    it('returns null for non-whitelisted commands', () => {
-      expect(safeExec('echo test')).toBeNull();
-      expect(mockExecSync).not.toHaveBeenCalled();
+    it('returns null when spawn errors', () => {
+      mockSpawnSync.mockReturnValue({ error: new Error('spawn failed'), stdout: '', stderr: '' });
+      expect(safeExec('git status')).toBeNull();
     });
 
-    it('allows bypass whitelist option', () => {
-      mockExecSync.mockReturnValue('  output  ');
-      expect(safeExec('echo test', { bypassWhitelist: true })).toBe('output');
-      expect(mockExecSync).toHaveBeenCalled();
+    it('returns null for non-git commands', () => {
+      expect(safeExec('echo test')).toBeNull();
+      expect(mockSpawnSync).not.toHaveBeenCalled();
+    });
+
+    it('returns null for non-whitelisted git subcommands', () => {
+      expect(safeExec('git push origin main')).toBeNull();
+      expect(safeExec('git checkout branch')).toBeNull();
+      expect(safeExec('git reset --hard')).toBeNull();
+      expect(mockSpawnSync).not.toHaveBeenCalled();
+    });
+
+    it('allows bypass whitelist option for git commands', () => {
+      mockSpawnSync.mockReturnValue({ status: 0, stdout: '  output  ', stderr: '' });
+      expect(safeExec('git push', { bypassWhitelist: true })).toBe('output');
+      expect(mockSpawnSync).toHaveBeenCalled();
     });
 
     it('blocks commands with dangerous patterns', () => {
       expect(safeExec('git status | grep foo')).toBeNull();
       expect(safeExec('git status; rm -rf /')).toBeNull();
       expect(safeExec('git status && echo hi')).toBeNull();
-      expect(mockExecSync).not.toHaveBeenCalled();
+      expect(mockSpawnSync).not.toHaveBeenCalled();
+    });
+
+    it('allows read-only git subcommands', () => {
+      mockSpawnSync.mockReturnValue({ status: 0, stdout: 'output', stderr: '' });
+      expect(safeExec('git log -1')).toBe('output');
+      expect(safeExec('git diff HEAD')).toBe('output');
+      expect(safeExec('git show HEAD')).toBe('output');
     });
   });
 
@@ -186,29 +215,61 @@ describe('context-loader', () => {
   });
 
   describe('safeExecAsync', () => {
+    // Helper to create mock spawn process
+    const createMockProcess = (stdout, code, stderr = '') => {
+      const events = {};
+      const proc = {
+        stdout: {
+          on: (event, cb) => {
+            if (event === 'data') setTimeout(() => cb(stdout), 0);
+          },
+        },
+        stderr: {
+          on: (event, cb) => {
+            if (event === 'data' && stderr) setTimeout(() => cb(stderr), 0);
+          },
+        },
+        on: (event, cb) => {
+          events[event] = cb;
+          if (event === 'close') setTimeout(() => cb(code), 10);
+        },
+      };
+      return proc;
+    };
+
     it('returns command output asynchronously for whitelisted commands', async () => {
-      mockExec.mockImplementation((cmd, opts, cb) => cb(null, '  result  '));
+      mockSpawn.mockReturnValue(createMockProcess('  result  ', 0));
       const result = await safeExecAsync('git branch');
       expect(result).toBe('result');
     });
 
+    it('uses spawn with shell: false (US-0187)', async () => {
+      mockSpawn.mockReturnValue(createMockProcess('main', 0));
+      await safeExecAsync('git branch --show-current');
+      expect(mockSpawn).toHaveBeenCalledWith(
+        'git',
+        ['branch', '--show-current'],
+        expect.objectContaining({ shell: false })
+      );
+    });
+
     it('returns null when command fails', async () => {
-      mockExec.mockImplementation((cmd, opts, cb) => cb(new Error('fail'), ''));
+      mockSpawn.mockReturnValue(createMockProcess('', 1, 'error'));
       const result = await safeExecAsync('git branch');
       expect(result).toBeNull();
     });
 
-    it('returns null for non-whitelisted commands', async () => {
+    it('returns null for non-git commands', async () => {
       const result = await safeExecAsync('echo test');
       expect(result).toBeNull();
-      expect(mockExec).not.toHaveBeenCalled();
+      expect(mockSpawn).not.toHaveBeenCalled();
     });
 
-    it('allows bypass whitelist option', async () => {
-      mockExec.mockImplementation((cmd, opts, cb) => cb(null, '  output  '));
-      const result = await safeExecAsync('echo test', { bypassWhitelist: true });
+    it('allows bypass whitelist option for git commands', async () => {
+      mockSpawn.mockReturnValue(createMockProcess('  output  ', 0));
+      const result = await safeExecAsync('git push', { bypassWhitelist: true });
       expect(result).toBe('output');
-      expect(mockExec).toHaveBeenCalled();
+      expect(mockSpawn).toHaveBeenCalled();
     });
 
     it('blocks commands with dangerous patterns', async () => {
@@ -216,27 +277,30 @@ describe('context-loader', () => {
       const result2 = await safeExecAsync('git status; cat /etc/passwd');
       expect(result1).toBeNull();
       expect(result2).toBeNull();
-      expect(mockExec).not.toHaveBeenCalled();
+      expect(mockSpawn).not.toHaveBeenCalled();
     });
   });
 
-  describe('Command Whitelist (US-0120)', () => {
-    describe('SAFEEXEC_ALLOWED_COMMANDS', () => {
-      it('includes git commands', () => {
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git ');
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git branch');
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git log');
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git status');
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git diff');
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('git rev-parse');
+  describe('Command Whitelist (US-0120, US-0187)', () => {
+    describe('SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS', () => {
+      it('includes read-only git subcommands', () => {
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.branch).toBeDefined();
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.log).toBe(true);
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.status).toBeDefined();
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.diff).toBe(true);
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS['rev-parse']).toBeDefined();
       });
 
-      it('includes node commands for internal scripts', () => {
-        expect(SAFEEXEC_ALLOWED_COMMANDS).toContain('node ');
+      it('does NOT include write operations', () => {
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.push).toBeUndefined();
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.checkout).toBeUndefined();
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.reset).toBeUndefined();
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS.merge).toBeUndefined();
       });
 
-      it('is an array', () => {
-        expect(Array.isArray(SAFEEXEC_ALLOWED_COMMANDS)).toBe(true);
+      it('is an object with subcommand configs', () => {
+        expect(typeof SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS).toBe('object');
+        expect(SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS).not.toBeNull();
       });
     });
 
@@ -260,7 +324,55 @@ describe('context-loader', () => {
       });
     });
 
-    describe('isCommandAllowed', () => {
+    describe('parseGitCommand (US-0187)', () => {
+      it('parses valid git commands', () => {
+        const result = parseGitCommand('git branch --show-current');
+        expect(result.ok).toBe(true);
+        expect(result.data.executable).toBe('git');
+        expect(result.data.subcommand).toBe('branch');
+        expect(result.data.args).toEqual(['--show-current']);
+        expect(result.data.fullArgs).toEqual(['branch', '--show-current']);
+      });
+
+      it('returns error for non-git commands', () => {
+        const result = parseGitCommand('echo hello');
+        expect(result.ok).toBe(false);
+        expect(result.error).toBe('Only git commands are supported');
+      });
+
+      it('returns error for bare git command', () => {
+        const result = parseGitCommand('git');
+        expect(result.ok).toBe(false);
+        expect(result.error).toBe('Git subcommand required');
+      });
+    });
+
+    describe('isGitCommandAllowed (US-0187)', () => {
+      it('allows read-only git subcommands', () => {
+        expect(isGitCommandAllowed('status', []).allowed).toBe(true);
+        expect(isGitCommandAllowed('log', ['-1']).allowed).toBe(true);
+        expect(isGitCommandAllowed('diff', ['HEAD']).allowed).toBe(true);
+        expect(isGitCommandAllowed('show', ['HEAD']).allowed).toBe(true);
+      });
+
+      it('allows branch with allowed args', () => {
+        expect(isGitCommandAllowed('branch', ['--show-current']).allowed).toBe(true);
+        expect(isGitCommandAllowed('branch', ['-a']).allowed).toBe(true);
+      });
+
+      it('blocks non-whitelisted git subcommands', () => {
+        expect(isGitCommandAllowed('push', ['origin', 'main']).allowed).toBe(false);
+        expect(isGitCommandAllowed('checkout', ['branch']).allowed).toBe(false);
+        expect(isGitCommandAllowed('reset', ['--hard']).allowed).toBe(false);
+      });
+
+      it('blocks config write operations', () => {
+        expect(isGitCommandAllowed('config', ['--local', 'user.name']).allowed).toBe(false);
+        expect(isGitCommandAllowed('config', ['--get']).allowed).toBe(true);
+      });
+    });
+
+    describe('isCommandAllowed (legacy wrapper)', () => {
       it('allows whitelisted git commands', () => {
         expect(isCommandAllowed('git status')).toEqual({ allowed: true });
         expect(isCommandAllowed('git branch --show-current')).toEqual({ allowed: true });
@@ -269,15 +381,16 @@ describe('context-loader', () => {
         expect(isCommandAllowed('git rev-parse HEAD')).toEqual({ allowed: true });
       });
 
-      it('allows whitelisted node commands', () => {
-        expect(isCommandAllowed('node script.js')).toEqual({ allowed: true });
-        expect(isCommandAllowed('node "/path/to/script.js" status')).toEqual({ allowed: true });
+      it('blocks node commands (no longer supported)', () => {
+        const result = isCommandAllowed('node script.js');
+        expect(result.allowed).toBe(false);
+        expect(result.reason).toBe('Only git commands are supported');
       });
 
-      it('blocks non-whitelisted commands', () => {
+      it('blocks non-git commands', () => {
         const result = isCommandAllowed('echo hello');
         expect(result.allowed).toBe(false);
-        expect(result.reason).toBe('Command not in whitelist');
+        expect(result.reason).toBe('Only git commands are supported');
       });
 
       it('blocks commands with dangerous patterns', () => {
@@ -303,7 +416,7 @@ describe('context-loader', () => {
 
         const nonWhitelisted = isCommandAllowed('ls -la');
         expect(nonWhitelisted.allowed).toBe(false);
-        expect(nonWhitelisted.reason).toBe('Command not in whitelist');
+        expect(nonWhitelisted.reason).toBe('Only git commands are supported');
       });
 
       it('handles invalid input', () => {
@@ -328,14 +441,33 @@ describe('context-loader', () => {
         const mockLogger = jest.fn();
         configureSafeExecLogger(mockLogger);
 
-        // Try a blocked command
+        // Try a non-git command (blocked as invalid format)
         safeExec('echo dangerous');
+
+        expect(mockLogger).toHaveBeenCalledWith(
+          'warn',
+          'Invalid command format',
+          expect.objectContaining({
+            error: 'Only git commands are supported',
+          })
+        );
+
+        // Clean up
+        configureSafeExecLogger(null);
+      });
+
+      it('logger receives log calls when git subcommand is blocked', () => {
+        const mockLogger = jest.fn();
+        configureSafeExecLogger(mockLogger);
+
+        // Try a blocked git subcommand
+        safeExec('git push origin main');
 
         expect(mockLogger).toHaveBeenCalledWith(
           'warn',
           'Command blocked by whitelist',
           expect.objectContaining({
-            reason: 'Command not in whitelist',
+            reason: expect.stringContaining('not in whitelist'),
           })
         );
 
@@ -346,7 +478,7 @@ describe('context-loader', () => {
       it('logger receives log calls on successful execution', () => {
         const mockLogger = jest.fn();
         configureSafeExecLogger(mockLogger);
-        mockExecSync.mockReturnValue('output');
+        mockSpawnSync.mockReturnValue({ status: 0, stdout: 'output', stderr: '' });
 
         safeExec('git status');
 

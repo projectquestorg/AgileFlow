@@ -62,7 +62,7 @@ describe('SmartJsonFile', () => {
       const result = await file.read();
 
       expect(result.ok).toBe(false);
-      expect(result.error.errorCode).toBe('ENOENT');
+      expect(result.errorCode).toBe('ENOENT');
     });
 
     it('returns default value for non-existent file when provided', async () => {
@@ -83,7 +83,7 @@ describe('SmartJsonFile', () => {
       const result = await file.read();
 
       expect(result.ok).toBe(false);
-      expect(result.error.errorCode).toBe('EPARSE');
+      expect(result.errorCode).toBe('EPARSE');
     });
   });
 
@@ -158,7 +158,7 @@ describe('SmartJsonFile', () => {
       });
 
       expect(result.ok).toBe(false);
-      expect(result.error.errorCode).toBe('EINVAL');
+      expect(result.errorCode).toBe('EINVAL');
     });
   });
 
@@ -239,7 +239,7 @@ describe('SmartJsonFile', () => {
       const result = await file.read();
 
       expect(result.ok).toBe(false);
-      expect(result.error.errorCode).toBe('ESCHEMA');
+      expect(result.errorCode).toBe('ESCHEMA');
     });
 
     it('validates on write', async () => {
@@ -249,7 +249,7 @@ describe('SmartJsonFile', () => {
       const result = await file.write({ other: true });
 
       expect(result.ok).toBe(false);
-      expect(result.error.errorCode).toBe('ESCHEMA');
+      expect(result.errorCode).toBe('ESCHEMA');
     });
 
     it('passes valid data', async () => {
@@ -268,10 +268,10 @@ describe('SmartJsonFile', () => {
       const file = new SmartJsonFile(filePath);
       const result = await file.read();
 
-      expect(result.error.errorCode).toBe('ENOENT');
-      expect(result.error.severity).toBe('high');
-      expect(result.error.category).toBe('filesystem');
-      expect(result.error.recoverable).toBe(true);
+      expect(result.errorCode).toBe('ENOENT');
+      expect(result.severity).toBe('high');
+      expect(result.category).toBe('filesystem');
+      expect(result.recoverable).toBe(true);
     });
 
     it('attaches EPARSE for invalid JSON', async () => {
@@ -281,9 +281,9 @@ describe('SmartJsonFile', () => {
       const file = new SmartJsonFile(filePath);
       const result = await file.read();
 
-      expect(result.error.errorCode).toBe('EPARSE');
-      expect(result.error.severity).toBe('high');
-      expect(result.error.category).toBe('configuration');
+      expect(result.errorCode).toBe('EPARSE');
+      expect(result.severity).toBe('high');
+      expect(result.category).toBe('configuration');
     });
   });
 
@@ -446,7 +446,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir, { maxAgeMs: 0 });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(0);
+      expect(result.data.cleaned.length).toBe(0);
       expect(fs.existsSync(normalFile)).toBe(true);
       expect(fs.existsSync(anotherFile)).toBe(true);
     });
@@ -463,7 +463,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000 });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(1);
+      expect(result.data.cleaned.length).toBe(1);
       expect(fs.existsSync(tempFile)).toBe(false);
     });
 
@@ -476,7 +476,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000 });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(0);
+      expect(result.data.cleaned.length).toBe(0);
       expect(fs.existsSync(tempFile)).toBe(true);
     });
 
@@ -491,7 +491,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir, { maxAgeMs: 24 * 60 * 60 * 1000, dryRun: true });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(1);
+      expect(result.data.cleaned.length).toBe(1);
       expect(fs.existsSync(tempFile)).toBe(true); // Still exists due to dryRun
     });
 
@@ -499,7 +499,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles('/nonexistent/path');
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(0);
+      expect(result.data.cleaned.length).toBe(0);
     });
 
     it('cleanupTempFilesFor cleans directory of file', () => {
@@ -516,7 +516,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFilesFor(jsonFile, { maxAgeMs: 24 * 60 * 60 * 1000 });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(1);
+      expect(result.data.cleaned.length).toBe(1);
       expect(fs.existsSync(jsonFile)).toBe(true); // Original preserved
       expect(fs.existsSync(tempFile)).toBe(false); // Temp deleted
     });
@@ -539,7 +539,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir);
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(3);
+      expect(result.data.cleaned.length).toBe(3);
     });
 
     it('does not match similar but invalid patterns', () => {
@@ -558,7 +558,7 @@ describe('SmartJsonFile', () => {
       const result = cleanupTempFiles(testDir, { maxAgeMs: 0 });
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned.length).toBe(0); // None should be deleted
+      expect(result.data.cleaned.length).toBe(0); // None should be deleted
     });
 
     it('reports errors for files that cannot be deleted', () => {
@@ -584,7 +584,7 @@ describe('SmartJsonFile', () => {
         const result = cleanupTempFiles(subDir);
 
         expect(result.ok).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
+        expect(result.context.errors.length).toBeGreaterThan(0);
       } finally {
         // Restore permissions for cleanup
         fs.chmodSync(subDir, 0o755);

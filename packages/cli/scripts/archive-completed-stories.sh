@@ -105,13 +105,87 @@ echo -e "${BLUE}Cutoff date: $CUTOFF_DATE${NC}"
 
 # Archive using Node.js (more reliable for JSON manipulation)
 if command -v node &> /dev/null; then
-  STATUS_FILE="$STATUS_FILE" ARCHIVE_DIR="$ARCHIVE_DIR" CUTOFF_DATE="$CUTOFF_DATE" node <<'EOF'
+  STATUS_FILE="$STATUS_FILE" ARCHIVE_DIR="$ARCHIVE_DIR" CUTOFF_DATE="$CUTOFF_DATE" PROJECT_ROOT="$PROJECT_ROOT" node <<'EOF'
 const fs = require('fs');
 const path = require('path');
 
 const statusFile = process.env.STATUS_FILE;
 const archiveDir = process.env.ARCHIVE_DIR;
 const cutoffDate = process.env.CUTOFF_DATE;
+const projectRoot = process.env.PROJECT_ROOT;
+
+// =============================================================================
+// Security: Inline validatePath equivalent (US-0188)
+// =============================================================================
+
+/**
+ * Validate a path is safe and within the base directory.
+ * Rejects direct symlinks within the path but allows symlinked parent directories
+ * (needed for git worktrees where docs/ is often symlinked).
+ * @param {string} inputPath - Path to validate
+ * @param {string} baseDir - Allowed base directory
+ * @returns {{ ok: boolean, resolvedPath?: string, realPath?: string, error?: string }}
+ */
+function validatePath(inputPath, baseDir) {
+  if (!inputPath || typeof inputPath !== 'string') {
+    return { ok: false, error: 'Path is required and must be a string' };
+  }
+  if (!baseDir || typeof baseDir !== 'string') {
+    return { ok: false, error: 'Base directory is required' };
+  }
+
+  // Resolve to absolute path
+  const resolvedPath = path.resolve(baseDir, inputPath);
+  const resolvedBase = path.resolve(baseDir);
+
+  // Check path stays within base directory (path traversal prevention)
+  if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
+    return { ok: false, error: `Path traversal detected: ${inputPath} escapes ${baseDir}` };
+  }
+
+  // Check if the final target path itself is a symlink (allowSymlinks: false for target)
+  // Note: We allow parent directories to be symlinks (needed for git worktrees)
+  try {
+    const stats = fs.lstatSync(resolvedPath);
+    if (stats.isSymbolicLink()) {
+      // The actual file/directory we're writing to is a symlink - reject
+      return { ok: false, error: `Target path is a symlink: ${resolvedPath}` };
+    }
+  } catch (e) {
+    // Path doesn't exist yet, that's OK for new files
+    if (e.code !== 'ENOENT') {
+      return { ok: false, error: `Cannot stat path: ${e.message}` };
+    }
+  }
+
+  // Use fs.realpathSync() to get the actual path after symlink resolution
+  let realPath = resolvedPath;
+  try {
+    realPath = fs.realpathSync(resolvedPath);
+    // We don't restrict realPath to baseDir because parent directories may be
+    // symlinked (e.g., git worktrees). The key protection is:
+    // 1. path.resolve() prevents ../../ traversal in the input
+    // 2. lstatSync() above prevents the target itself from being a symlink
+  } catch (e) {
+    // Path doesn't exist yet, use resolved path
+    if (e.code !== 'ENOENT') {
+      return { ok: false, error: `Cannot resolve real path: ${e.message}` };
+    }
+    realPath = resolvedPath;
+  }
+
+  return { ok: true, resolvedPath, realPath };
+}
+
+// =============================================================================
+// Validate archive directory (US-0188)
+// =============================================================================
+
+const archiveDirValidation = validatePath(archiveDir, projectRoot);
+if (!archiveDirValidation.ok) {
+  console.error(`\x1b[31mSecurity: ${archiveDirValidation.error}. Aborting.\x1b[0m`);
+  process.exit(1);
+}
 
 // Read status.json
 const status = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
@@ -146,7 +220,7 @@ for (const [storyId, story] of Object.entries(toArchive)) {
   const date = new Date(story.completed_at);
   const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-  // Security: Validate monthKey matches expected format (YYYY-MM) to prevent path traversal
+  // Security: Validate monthKey matches expected format (YYYY-MM) to prevent path traversal (US-0188 AC)
   if (!/^\d{4}-\d{2}$/.test(monthKey)) {
     console.error(`\x1b[31mSkipping story ${storyId}: invalid date format\x1b[0m`);
     continue;
@@ -165,27 +239,28 @@ for (const [storyId, story] of Object.entries(toArchive)) {
 
 // Write archive files
 for (const [monthKey, archiveData] of Object.entries(byMonth)) {
-  const archiveFile = path.join(archiveDir, `${monthKey}.json`);
+  const archiveFile = `${monthKey}.json`;
 
-  // Security: Verify resolved path stays within archive directory
-  const resolvedPath = path.resolve(archiveFile);
-  const resolvedArchiveDir = path.resolve(archiveDir);
-  if (!resolvedPath.startsWith(resolvedArchiveDir + path.sep) && resolvedPath !== resolvedArchiveDir) {
-    console.error(`\x1b[31mSecurity: Archive path ${archiveFile} escapes archive directory. Skipping.\x1b[0m`);
+  // Security: Use validatePath() with allowSymlinks: false (US-0188 AC)
+  const validation = validatePath(archiveFile, archiveDir);
+  if (!validation.ok) {
+    console.error(`\x1b[31mSecurity: ${validation.error}. Skipping ${monthKey}.\x1b[0m`);
     continue;
   }
 
+  const finalPath = validation.resolvedPath;
+
   // Merge with existing archive if it exists
-  if (fs.existsSync(archiveFile)) {
+  if (fs.existsSync(finalPath)) {
     try {
-      const existing = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
+      const existing = JSON.parse(fs.readFileSync(finalPath, 'utf8'));
       archiveData.stories = { ...existing.stories, ...archiveData.stories };
     } catch (e) {
       console.error(`\x1b[31mWarning: Could not parse existing ${monthKey}.json, will overwrite\x1b[0m`);
     }
   }
 
-  fs.writeFileSync(archiveFile, JSON.stringify(archiveData, null, 2));
+  fs.writeFileSync(finalPath, JSON.stringify(archiveData, null, 2));
   const count = Object.keys(archiveData.stories).length;
   console.log(`\x1b[32m✓ Archived ${count} stories to ${monthKey}.json\x1b[0m`);
 }

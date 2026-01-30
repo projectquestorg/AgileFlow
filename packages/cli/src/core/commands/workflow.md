@@ -350,6 +350,94 @@ Custom workflows (docs/08-project/workflows/):
 
 ---
 
+## Expected Output
+
+### Success - Workflow Executed
+
+```
+🔄 Workflow: review
+══════════════════════════════════════════════════════════════
+
+Arguments:
+  • path: src/auth.ts
+  • focus: security
+
+Executing workflow steps...
+
+Step 1: Reading target file(s)
+  ✓ Read src/auth.ts (245 lines)
+
+Step 2: Spawning security expert
+  ✓ agileflow-security analyzing...
+
+Step 3: Generating findings
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Review Results
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Security Analysis: src/auth.ts
+
+🔴 HIGH: Hardcoded JWT secret (line 42)
+   Suggestion: Use environment variable
+
+🟡 MEDIUM: No rate limiting on login endpoint
+   Suggestion: Add rate limiter middleware
+
+🟢 LOW: Console.log in production code (line 87)
+   Suggestion: Remove or use proper logging
+
+Summary: 1 high, 1 medium, 1 low severity issues
+```
+
+### Success - List Workflows
+
+```
+📋 Available Workflows
+══════════════════════════════════════════════════════════════
+
+Built-in workflows:
+  • review        Code review with configurable focus
+  • test-feature  Test a feature end-to-end
+  • implement     Implement a story/feature
+  • analyze       Analyze codebase for issues
+
+Custom workflows (docs/08-project/workflows/):
+  • deploy-staging   Deploy to staging environment
+  • release-check    Pre-release checklist
+
+Usage: /agileflow:workflow <name> [args...]
+```
+
+### Error - Unknown Workflow
+
+```
+❌ Workflow not found: my-workflow
+
+Available workflows:
+  • review
+  • test-feature
+  • implement
+  • analyze
+
+Create custom workflow:
+  docs/08-project/workflows/my-workflow.md
+```
+
+### Error - Missing Required Argument
+
+```
+❌ Missing required argument: path
+
+Workflow 'review' requires:
+  • path (required): File or glob pattern to review
+  • focus (optional): Review focus (default: all)
+
+Usage: /agileflow:workflow review path=src/auth.ts focus=security
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:babysit` - Interactive mentor workflow

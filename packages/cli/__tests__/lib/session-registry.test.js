@@ -143,7 +143,7 @@ describe('SessionRegistry', () => {
       const result = await registry.unregisterSession(1);
 
       expect(result.ok).toBe(true);
-      expect(result.found).toBe(true);
+      expect(result.data.found).toBe(true);
 
       const session = await registry.getSession(1);
       expect(session).toBeNull();
@@ -153,7 +153,7 @@ describe('SessionRegistry', () => {
       const result = await registry.unregisterSession(999);
 
       expect(result.ok).toBe(true);
-      expect(result.found).toBe(false);
+      expect(result.data.found).toBe(false);
     });
 
     it('emits unregistered event', async () => {
@@ -173,7 +173,7 @@ describe('SessionRegistry', () => {
       const result = await registry.updateSession(1, { status: 'inactive' });
 
       expect(result.ok).toBe(true);
-      expect(result.found).toBe(true);
+      expect(result.data.found).toBe(true);
 
       const session = await registry.getSession(1);
       expect(session.name).toBe('original'); // Preserved
@@ -185,7 +185,7 @@ describe('SessionRegistry', () => {
       const result = await registry.updateSession(999, { status: 'inactive' });
 
       expect(result.ok).toBe(false);
-      expect(result.found).toBe(false);
+      expect(result.context.found).toBe(false);
     });
 
     it('emits updated event', async () => {
@@ -270,7 +270,7 @@ describe('SessionRegistry', () => {
       const result = await registry.commitBatch();
 
       expect(result.ok).toBe(true);
-      expect(result.applied).toBe(2);
+      expect(result.data.applied).toBe(2);
 
       // Now saved
       const afterCommit = await registry.getSession(1);
@@ -307,7 +307,7 @@ describe('SessionRegistry', () => {
       const result = await registry.cleanupStaleSessions(isAlive);
 
       expect(result.ok).toBe(true);
-      expect(result.cleaned).toBe(2);
+      expect(result.data.cleaned).toBe(2);
 
       const sessions = await registry.getAllSessions();
       expect(Object.keys(sessions)).toHaveLength(1);

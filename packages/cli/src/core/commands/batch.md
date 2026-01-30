@@ -478,6 +478,70 @@ Future versions may add: coverage, lint, types gates.
 
 ---
 
+## Expected Output
+
+### Success - Batch Map Operation
+
+```
+🔄 Batch Processing: map
+Items: 5 files
+Processor: test-gate
+
+Processing...
+[1/5] ✅ src/api/auth.js - tests passed (2.1s)
+[2/5] ✅ src/api/users.js - tests passed (1.8s)
+[3/5] ❌ src/api/orders.js - 2 tests failed
+[4/5] ✅ src/api/products.js - tests passed (1.5s)
+[5/5] ✅ src/api/payments.js - tests passed (2.3s)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Batch Complete: 4/5 passed (80%)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Failed items:
+- src/api/orders.js: AssertionError: expected 200
+
+Run with FAIL_FAST=true to stop on first failure.
+```
+
+### Success - Parallel Batch
+
+```
+🔄 Batch Processing: pmap (parallel)
+Items: 8 stories
+Concurrency: 4
+
+[============================] 100% (8/8)
+
+Results:
+✅ US-0050: completed
+✅ US-0051: completed
+✅ US-0052: completed
+⏳ US-0053: in_progress (blocked by external API)
+✅ US-0054: completed
+✅ US-0055: completed
+✅ US-0056: completed
+✅ US-0057: completed
+
+Total time: 45.2s (parallel) vs ~180s (sequential)
+```
+
+### Error - Invalid Operation
+
+```
+❌ Error: Unknown batch operation: aggregate
+
+Supported operations:
+- map: Transform each item
+- pmap: Parallel map
+- filter: Select matching items
+- reduce: Aggregate results
+
+Usage: /agileflow:batch OP=map ITEMS=<list> FN=<processor>
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:babysit` - Mentor workflow

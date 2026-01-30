@@ -343,6 +343,83 @@ Use `/agileflow:choose` for decisions that:
 
 ---
 
+## Expected Output
+
+### Success - Decision Analysis
+
+```
+🤔 Decision Analysis: Database Selection
+══════════════════════════════════════════════════════════════
+
+Context: New microservice needs persistent storage for user data
+
+📊 Options Evaluated:
+
+┌─────────────────────────────────────────────────────────────┐
+│ Option A: PostgreSQL                                        │
+├─────────────────────────────────────────────────────────────┤
+│ ✅ Pros:                                                    │
+│    - ACID compliance                                        │
+│    - Rich query capabilities                                │
+│    - Team expertise exists                                  │
+│ ❌ Cons:                                                    │
+│    - Scaling complexity                                     │
+│    - Higher operational overhead                            │
+│ Score: 8/10                                                 │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ Option B: MongoDB                                           │
+├─────────────────────────────────────────────────────────────┤
+│ ✅ Pros:                                                    │
+│    - Flexible schema                                        │
+│    - Horizontal scaling                                     │
+│ ❌ Cons:                                                    │
+│    - No ACID by default                                     │
+│    - Learning curve                                         │
+│ Score: 6/10                                                 │
+└─────────────────────────────────────────────────────────────┘
+
+🎯 Recommendation: PostgreSQL
+
+Rationale: Given team expertise and ACID requirements,
+PostgreSQL provides better fit despite scaling concerns.
+
+Document this decision?
+→ /agileflow:adr TITLE="Database Selection for User Service"
+```
+
+### Success - Quick Choice
+
+```
+🤔 Quick Choice: Testing Framework
+
+Options: Jest vs Vitest vs Mocha
+
+✅ Recommended: Jest
+- Industry standard
+- Great TypeScript support
+- Existing config in project
+
+Accept recommendation? [Y/n]
+```
+
+### Error - Insufficient Context
+
+```
+❌ Error: Cannot make recommendation without context
+
+Please provide:
+- QUESTION: What decision needs to be made?
+- OPTIONS: At least 2 alternatives
+- CONTEXT: Relevant constraints and requirements
+
+Example:
+/agileflow:choose QUESTION="Which CI provider?" OPTIONS="GitHub Actions, CircleCI, Jenkins"
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:adr` - Create Architecture Decision Records

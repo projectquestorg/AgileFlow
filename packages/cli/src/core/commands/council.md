@@ -515,3 +515,77 @@ Final: Synthesized recommendation with confidence
 ```
 
 The council evaluates from three angles to provide balanced guidance.
+
+---
+
+## Expected Output
+
+### Success - Council Decision
+
+```
+🏛️ AI Council Convened
+══════════════════════════════════════════════════════════════
+Question: Should we migrate to microservices?
+Mode: standard (3 perspectives)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌟 OPTIMIST PERSPECTIVE
+Microservices offer significant benefits:
+- Independent scaling per service
+- Technology flexibility
+- Team autonomy and faster releases
+Recommendation: Proceed with migration
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+😈 ADVOCATE PERSPECTIVE
+Critical concerns to address:
+- Distributed systems complexity
+- Network latency overhead
+- Operational burden (monitoring, debugging)
+- Team may lack experience
+Recommendation: Caution - validate team readiness
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚖️ ANALYST SYNTHESIS
+Balanced assessment:
+- Current monolith pain points are real
+- Full migration is high-risk
+- Incremental approach reduces risk
+
+Recommendation: Start with one bounded context
+Confidence: 75%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 COUNCIL VERDICT: Proceed with caution
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Document decision? /agileflow:adr TITLE="Microservices Migration"
+```
+
+### Success - Debate Mode
+
+```
+🏛️ AI Council Debate (Round 2 of 2)
+══════════════════════════════════════════════════════════════
+
+[Optimist responds to Advocate's concerns...]
+[Advocate counters with specific risks...]
+[Analyst synthesizes final position...]
+
+Final Verdict: GraphQL for internal APIs, REST for public
+Confidence: 85%
+```
+
+### Error - Question Too Vague
+
+```
+❌ Error: Question too vague for meaningful analysis
+
+"Should we do it?" - What is "it"?
+
+Please provide specific context:
+/agileflow:council "Should we use Redis or Memcached for session caching given our 10k DAU scale?"
+```

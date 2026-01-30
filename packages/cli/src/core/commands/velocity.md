@@ -547,6 +547,80 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Velocity Report
+
+```
+📊 Velocity Report
+══════════════════════════════════════════════════════════════
+
+Generated: 2025-10-17 14:30
+Period: Last 4 sprints (8 weeks)
+Team: AG-UI, AG-API, AG-CI, AG-DEVOPS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📈 Current Velocity
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Average: 8.3 points/week
+Trend: ↗️ +15% (improving)
+Last sprint: 10 points
+Confidence: High (85%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 Forecast: EP-0010 (User Auth)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Stories: 8/12 completed (66%)
+Remaining: 6 points
+At current velocity: < 1 week
+Forecast completion: 2025-10-24
+Confidence: High (85%)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Saved to: docs/08-project/velocity/velocity-2025-10-17.md
+```
+
+### Success - Forecast Mode
+
+```
+📊 Epic Completion Forecast
+══════════════════════════════════════════════════════════════
+
+Epic: EP-0011 (Payment Integration)
+Current velocity: 8.3 points/week
+
+Stories: 2/8 completed (25%)
+Remaining: 6 stories, 9 points
+
+Forecast:
+  P50 (50% confidence): 2025-10-28 (11 days)
+  P80 (80% confidence): 2025-11-01 (15 days)
+  P90 (90% confidence): 2025-11-04 (18 days)
+
+⚠️ Risks:
+  - AG-API dependency (50% of velocity)
+  - 2 stories have external dependencies
+```
+
+### Error - Insufficient Data
+
+```
+⚠️ Insufficient velocity data
+
+Sample size: 3 stories completed
+Minimum required: 5 stories
+
+Velocity calculations require at least 5 completed stories
+over 3+ time periods for reliable forecasting.
+
+Complete more stories and try again.
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:sprint` - Sprint planning

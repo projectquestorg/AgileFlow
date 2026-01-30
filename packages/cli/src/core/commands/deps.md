@@ -651,6 +651,74 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Dependency Graph
+
+```
+📊 Dependency Analysis: EP-0026
+══════════════════════════════════════════════════════════════
+
+Story Dependency Graph:
+
+US-0050 (User registration)
+    ↓
+US-0051 (User login) ←──────┐
+    ↓                       │
+US-0053 (OAuth Google) ─────┤
+    ↓                       │
+US-0056 (Session mgmt) ─────┘
+    ↓
+US-0057 (Dashboard)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 Critical Path:
+US-0050 → US-0051 → US-0053 → US-0056 → US-0057
+Duration: 6.5 days
+
+⚡ Parallel Opportunities:
+- US-0054 (OAuth GitHub) can run parallel to US-0053
+- US-0055 (Rate limiting) has no dependencies
+
+⚠️ Bottleneck: US-0051 (blocks 3 stories)
+   Consider: Add second developer or reduce scope
+```
+
+### Success - Circular Dependency Warning
+
+```
+📊 Dependency Analysis
+══════════════════════════════════════════════════════════════
+
+⚠️ CIRCULAR DEPENDENCY DETECTED:
+
+US-0060 → US-0061 → US-0062 → US-0060
+
+This creates a deadlock. Suggested fix:
+1. Remove dependency: US-0062 → US-0060
+2. Or split US-0060 into two stories
+
+Show resolution options? [Y/n]
+```
+
+### Error - No Dependencies Defined
+
+```
+⚠️ No story dependencies found in EP-0026
+
+Stories exist but no depends_on defined.
+
+Add dependencies:
+/agileflow:story:view US-0050
+# Then edit to add depends_on: ["US-0049"]
+
+Or visualize by owner:
+/agileflow:deps VIEW=by-owner
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:blockers` - Track blockers

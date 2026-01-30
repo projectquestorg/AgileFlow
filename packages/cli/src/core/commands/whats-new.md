@@ -125,6 +125,75 @@ If a newer version exists, show:
 
 ---
 
+## Expected Output
+
+### Success - Changelog Display
+
+```
+╭─────────────────────────────────────────────────────╮
+│  AgileFlow Changelog                                │
+│  Current: v2.57.0                                   │
+╰─────────────────────────────────────────────────────╯
+
+## v2.57.0 (2025-12-27)
+
+### Added
+• Auto-update system with configurable check frequency
+• Update notifications in welcome message and status line
+• Changelog display after updates
+
+---
+
+## v2.56.0 (2025-12-27)
+
+### Added
+• Dynamic IDE discovery - Codex CLI now in setup
+
+### Changed
+• Replaced hardcoded IDE list with dynamic loading
+
+---
+
+## v2.55.0 (2025-12-26)
+
+### Changed
+• Consolidated code improvements and debugging
+
+---
+
+📖 Full changelog: https://github.com/projectquestorg/AgileFlow/blob/main/packages/cli/CHANGELOG.md
+🔄 Check for updates: npx agileflow update
+⚙️ Configure auto-update: /agileflow:configure --auto-update
+```
+
+### Success - Update Available
+
+```
+╭─────────────────────────────────────────────────────╮
+│  AgileFlow Changelog                                │
+│  Current: v2.57.0                                   │
+╰─────────────────────────────────────────────────────╯
+
+[changelog content...]
+
+⚡ Update available: v2.57.0 → v2.58.0
+   Run: npx agileflow update
+```
+
+### Error - Changelog Not Found
+
+```
+⚠️ Changelog not found
+
+Expected location: .agileflow/CHANGELOG.md
+
+The changelog file may be missing or AgileFlow may need to be reinstalled.
+
+Check: https://github.com/projectquestorg/AgileFlow/releases
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:changelog` - Generate changelog from commits

@@ -393,6 +393,99 @@ Then run audit again.
 
 ---
 
+## Expected Output
+
+### Success - Story Passes Audit
+
+```
+========================================
+      STORY AUDIT: US-0129
+========================================
+
+TESTS
+Command: npm test
+Result: PASSED (2,201 passed, 0 failed)
+Duration: 45.2s
+
+ACCEPTANCE CRITERIA
+[x] Create packages/cli/src/core/commands/audit.md
+[x] Accept story ID as argument
+[x] Run tests and report pass/fail
+[x] Check acceptance criteria met
+[x] Prompt for learnings to capture
+[x] Output: PASS/FAIL with recommended next action
+[x] On PASS, suggest marking story complete
+
+AC Verification: 7/7 (100%)
+
+========================================
+      AUDIT RESULT: PASS
+========================================
+Tests: PASSING
+AC: ALL VERIFIED (7/7)
+
+Learnings captured:
+- GSD audit pattern successfully integrated
+
+NEXT STEPS:
+1. Mark story complete: /agileflow:status US-0129 STATUS=done
+2. Review epic progress: /agileflow:epic EP-0022
+```
+
+### Error - Story Fails Audit
+
+```
+========================================
+      STORY AUDIT: US-0129
+========================================
+
+TESTS
+Command: npm test
+Result: FAILED (40 passed, 3 failed)
+Duration: 12.8s
+
+ACCEPTANCE CRITERIA
+[x] Create packages/cli/src/core/commands/audit.md
+[x] Accept story ID as argument
+[x] Run tests and report pass/fail
+[ ] Check acceptance criteria met
+[ ] Prompt for learnings to capture
+[x] Output: PASS/FAIL with recommended next action
+[x] On PASS, suggest marking story complete
+
+AC Verification: 5/7 (71%)
+
+========================================
+      AUDIT RESULT: FAIL
+========================================
+Tests: FAILING (3 failed)
+AC: PARTIAL (5/7)
+
+BLOCKING ISSUES:
+- Test: audit.test.ts:42 - Expected PASS verdict
+- AC: "Check acceptance criteria met" - Not implemented
+- AC: "Prompt for learnings" - Missing
+
+NEXT STEPS:
+1. Fix failing tests
+2. Complete missing AC items
+3. Re-run: /agileflow:audit US-0129
+```
+
+### Error - Story Not Found
+
+```
+❌ Story US-9999 not found in status.json
+
+Available in_progress stories:
+- US-0129: Create /agileflow:audit command
+- US-0130: Add phase handoff summaries
+
+Run: /agileflow:audit US-0129
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:verify` - Run tests only (no AC check)

@@ -413,6 +413,74 @@ After validation completes, offer context-aware next steps:
 
 ---
 
+## Expected Output
+
+### Success - Story Valid
+
+```
+✅ Story Validation: US-0050
+══════════════════════════════════════════════════════════════
+
+Checking story completeness...
+
+✓ Title: Clear and descriptive
+✓ Description: Contains user value
+✓ Acceptance Criteria: 5 criteria in Given/When/Then format
+✓ Estimate: 1.5d (within range)
+✓ Owner: AG-API (valid agent)
+✓ Dependencies: None or all exist
+✓ Epic: EP-0010 (linked)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Story is ready for development
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INVEST Score: 9/10
+- Independent: ✓
+- Negotiable: ✓
+- Valuable: ✓
+- Estimable: ✓
+- Small: ✓
+- Testable: ✓
+```
+
+### Partial Success - Issues Found
+
+```
+⚠️ Story Validation: US-0051
+══════════════════════════════════════════════════════════════
+
+Issues found (2):
+
+🔴 CRITICAL:
+1. Acceptance criteria missing Given/When/Then format
+   Found: "Login should work"
+   Expected: "Given a registered user, When they submit valid credentials, Then they receive a JWT token"
+
+🟡 WARNING:
+2. Estimate missing
+   Add estimate: 0.5d, 1d, 1.5d, or 2d
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ Story needs fixes before development
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix issues now? [Y/n]
+```
+
+### Error - Story Not Found
+
+```
+❌ Error: Story not found: US-9999
+
+Check story ID and try again.
+
+List available stories:
+/agileflow:story:list STATUS=ready
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:story:view` - View story details with contextual actions

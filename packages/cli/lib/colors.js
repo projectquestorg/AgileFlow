@@ -4,6 +4,9 @@
  * Centralized ANSI color codes and formatting helpers.
  * Uses 256-color palette for modern terminal support.
  *
+ * Color definitions are generated from config/colors.yaml.
+ * Run: node scripts/generate-colors.js
+ *
  * WCAG AA Contrast Ratios (verified against #1a1a1a dark terminal background):
  * - Green (#32CD32):     4.5:1 ✓ (meets AA for normal text)
  * - Red (#FF6B6B):       5.0:1 ✓ (meets AA for normal text)
@@ -21,6 +24,9 @@
  * Note: Standard ANSI colors vary by terminal theme. The above ratios
  * are for typical dark terminal configurations.
  */
+
+// Import generated color definitions from YAML source of truth
+const generated = require('./colors.generated');
 
 // High-contrast mode detection
 let _highContrastMode = null;
@@ -57,135 +63,79 @@ function resetHighContrast() {
  * Brand color hex value for chalk compatibility.
  * Use with chalk.hex(BRAND_HEX) in files that use chalk.
  */
-const BRAND_HEX = '#e8683a';
+const { BRAND_HEX } = generated;
 
 /**
  * WCAG AAA high-contrast color palette (7:1+ contrast ratio).
  * Used when AGILEFLOW_HIGH_CONTRAST=1 or --high-contrast flag.
+ * Built from generated highContrast values plus additional mappings.
  */
 const hc = {
-  // Reset and modifiers
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[0m', // No dimming in high-contrast (use regular text)
-  italic: '\x1b[3m',
-  underline: '\x1b[4m',
+  // Reset and modifiers from generated
+  reset: generated.modifiers.reset,
+  bold: generated.modifiers.bold,
+  dim: generated.highContrast.dim, // No dimming in high-contrast
+  italic: generated.modifiers.italic,
+  underline: generated.modifiers.underline,
 
-  // High-contrast standard colors (bright variants for max visibility)
-  red: '\x1b[91m', // Bright red
-  green: '\x1b[92m', // Bright green
-  yellow: '\x1b[93m', // Bright yellow
-  blue: '\x1b[94m', // Bright blue
-  magenta: '\x1b[95m', // Bright magenta
-  cyan: '\x1b[96m', // Bright cyan
-  white: '\x1b[97m', // Bright white
+  // High-contrast standard colors (from generated)
+  red: generated.highContrast.red,
+  green: generated.highContrast.green,
+  yellow: generated.highContrast.yellow,
+  blue: generated.highContrast.blue,
+  magenta: generated.highContrast.magenta,
+  cyan: generated.highContrast.cyan,
+  white: generated.highContrast.white,
 
   // Bright variants (same in high-contrast mode)
-  brightBlack: '\x1b[37m', // Use white instead of gray
-  brightRed: '\x1b[91m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightBlue: '\x1b[94m',
-  brightMagenta: '\x1b[95m',
-  brightCyan: '\x1b[96m',
-  brightWhite: '\x1b[97m',
+  brightBlack: generated.highContrast.brightBlack, // Use white instead of gray
+  brightRed: generated.highContrast.red,
+  brightGreen: generated.highContrast.green,
+  brightYellow: generated.highContrast.yellow,
+  brightBlue: generated.highContrast.blue,
+  brightMagenta: generated.highContrast.magenta,
+  brightCyan: generated.highContrast.cyan,
+  brightWhite: generated.highContrast.white,
 
   // 256-color high-contrast alternatives (all 7:1+ ratio)
-  mintGreen: '\x1b[92m', // Bright green
-  peach: '\x1b[93m', // Bright yellow
-  coral: '\x1b[91m', // Bright red
-  lightGreen: '\x1b[92m', // Bright green
-  lightYellow: '\x1b[93m', // Bright yellow
-  lightPink: '\x1b[91m', // Bright red
-  skyBlue: '\x1b[96m', // Bright cyan
-  lavender: '\x1b[95m', // Bright magenta
-  softGold: '\x1b[93m', // Bright yellow
-  teal: '\x1b[96m', // Bright cyan
-  slate: '\x1b[97m', // White (instead of gray)
-  rose: '\x1b[91m', // Bright red
-  amber: '\x1b[93m', // Bright yellow
-  powder: '\x1b[96m', // Bright cyan
+  mintGreen: generated.highContrast.green,
+  peach: generated.highContrast.yellow,
+  coral: generated.highContrast.red,
+  lightGreen: generated.highContrast.green,
+  lightYellow: generated.highContrast.yellow,
+  lightPink: generated.highContrast.red,
+  skyBlue: generated.highContrast.cyan,
+  lavender: generated.highContrast.magenta,
+  softGold: generated.highContrast.yellow,
+  teal: generated.highContrast.cyan,
+  slate: generated.highContrast.white, // White instead of gray
+  rose: generated.highContrast.red,
+  amber: generated.highContrast.yellow,
+  powder: generated.highContrast.cyan,
 
-  // Brand color - use bright orange/yellow for visibility
-  brand: '\x1b[38;2;255;165;0m', // Bright orange (#FFA500 - 8.0:1 ratio)
-  orange: '\x1b[38;2;255;165;0m',
+  // Brand color - from generated high-contrast brand
+  brand: generated.highContrast.brand,
+  orange: generated.highContrast.brand,
 
   // Background colors (same as standard)
-  bgRed: '\x1b[41m',
-  bgGreen: '\x1b[42m',
-  bgYellow: '\x1b[43m',
-  bgBlue: '\x1b[44m',
+  bgRed: generated.backgrounds.bgRed,
+  bgGreen: generated.backgrounds.bgGreen,
+  bgYellow: generated.backgrounds.bgYellow,
+  bgBlue: generated.backgrounds.bgBlue,
 
   // Semantic aliases
-  success: '\x1b[92m',
-  error: '\x1b[91m',
-  warning: '\x1b[93m',
-  info: '\x1b[96m',
+  success: generated.highContrast.green,
+  error: generated.highContrast.red,
+  warning: generated.highContrast.yellow,
+  info: generated.highContrast.cyan,
 };
 
 /**
  * ANSI color codes for terminal output.
  * Includes standard colors, 256-color palette, and brand colors.
+ * Values imported from generated colors (config/colors.yaml source of truth).
  */
-const cStandard = {
-  // Reset and modifiers
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  italic: '\x1b[3m',
-  underline: '\x1b[4m',
-
-  // Standard ANSI colors (8 colors)
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-
-  // Bright variants
-  brightBlack: '\x1b[90m',
-  brightRed: '\x1b[91m',
-  brightGreen: '\x1b[92m',
-  brightYellow: '\x1b[93m',
-  brightBlue: '\x1b[94m',
-  brightMagenta: '\x1b[95m',
-  brightCyan: '\x1b[96m',
-  brightWhite: '\x1b[97m',
-
-  // 256-color palette (vibrant, modern look)
-  mintGreen: '\x1b[38;5;158m', // Healthy/success states
-  peach: '\x1b[38;5;215m', // Warning states
-  coral: '\x1b[38;5;203m', // Critical/error states
-  lightGreen: '\x1b[38;5;194m', // Session healthy
-  lightYellow: '\x1b[38;5;228m', // Session warning
-  lightPink: '\x1b[38;5;210m', // Session critical
-  skyBlue: '\x1b[38;5;117m', // Directories/paths, ready states
-  lavender: '\x1b[38;5;147m', // Model info, story IDs
-  softGold: '\x1b[38;5;222m', // Cost/money
-  teal: '\x1b[38;5;80m', // Pending states
-  slate: '\x1b[38;5;103m', // Secondary info
-  rose: '\x1b[38;5;211m', // Blocked/critical accent
-  amber: '\x1b[38;5;214m', // WIP/in-progress accent
-  powder: '\x1b[38;5;153m', // Labels/headers
-
-  // Brand color (#e8683a - burnt orange/terracotta)
-  brand: '\x1b[38;2;232;104;58m',
-  orange: '\x1b[38;2;232;104;58m', // Alias for brand color
-
-  // Background colors
-  bgRed: '\x1b[41m',
-  bgGreen: '\x1b[42m',
-  bgYellow: '\x1b[43m',
-  bgBlue: '\x1b[44m',
-
-  // Semantic aliases (for consistent meaning across codebase)
-  success: '\x1b[32m', // Same as green
-  error: '\x1b[31m', // Same as red
-  warning: '\x1b[33m', // Same as yellow
-  info: '\x1b[36m', // Same as cyan
-};
+const cStandard = generated.cStandard;
 
 /**
  * Get the active color palette based on high-contrast mode.

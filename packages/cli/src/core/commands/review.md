@@ -588,6 +588,78 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Code Review
+
+```
+🔍 Code Review: src/api/auth.js
+══════════════════════════════════════════════════════════════
+
+Analyzing 127 lines changed across 3 files...
+
+📊 Quality Score: 85/100 🟢
+
+🔴 CRITICAL (1)
+┌──────────────────────────────────────────────────────────────┐
+│ Line 45: SQL injection vulnerability                         │
+│ `query("SELECT * FROM users WHERE id = " + userId)`         │
+│                                                              │
+│ Fix: Use parameterized query                                 │
+│ `query("SELECT * FROM users WHERE id = $1", [userId])`      │
+└──────────────────────────────────────────────────────────────┘
+
+🟡 WARNINGS (3)
+│ Line 23: Missing error handling for async operation          │
+│ Line 67: Magic number - consider named constant              │
+│ Line 89: Duplicate logic - extract to helper                 │
+
+🟢 GOOD PRACTICES
+│ ✓ Consistent naming conventions                              │
+│ ✓ Good test coverage (87%)                                   │
+│ ✓ Clear function documentation                               │
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Summary: 1 critical, 3 warnings, 3 good
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply auto-fixes for non-critical issues? [Y/n]
+```
+
+### Success - Clean Review
+
+```
+🔍 Code Review: src/utils/format.js
+══════════════════════════════════════════════════════════════
+
+📊 Quality Score: 98/100 🟢
+
+✅ No issues found!
+
+Good practices detected:
+- Clean function signatures
+- Comprehensive error handling
+- Well-documented edge cases
+- 95% test coverage
+
+LGTM! Ready for merge.
+```
+
+### Error - File Not Found
+
+```
+❌ Error: Cannot review - file not found
+
+Path: src/api/authh.js
+
+Did you mean: src/api/auth.js?
+
+Or review all changed files:
+/agileflow:review SCOPE=staged
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:pr` - Generate pull request description

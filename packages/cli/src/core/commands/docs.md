@@ -399,6 +399,66 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Gap Analysis
+
+```
+📚 Documentation Gap Analysis
+══════════════════════════════════════════════════════════════
+
+Scanning codebase...
+✓ Found 45 exported functions
+✓ Found 12 API endpoints
+✓ Found 8 React components
+
+📊 Coverage Report:
+┌────────────────────┬────────────┬────────────┬───────────┐
+│ Category           │ Documented │ Total      │ Coverage  │
+├────────────────────┼────────────┼────────────┼───────────┤
+│ API Endpoints      │ 10         │ 12         │ 83% 🟡    │
+│ Public Functions   │ 38         │ 45         │ 84% 🟡    │
+│ React Components   │ 8          │ 8          │ 100% 🟢   │
+│ README files       │ 5          │ 8          │ 63% 🔴    │
+└────────────────────┴────────────┴────────────┴───────────┘
+
+🔴 Missing Documentation:
+1. POST /api/orders/bulk - No JSDoc or OpenAPI spec
+2. POST /api/webhooks/stripe - No JSDoc or OpenAPI spec
+3. docs/06-stories/README.md - Folder missing README
+4. docs/07-testing/README.md - Folder missing README
+
+Generate missing docs? [Y/n]
+```
+
+### Success - Docs Updated
+
+```
+📚 Documentation Update
+══════════════════════════════════════════════════════════════
+
+✓ Updated docs/api/orders.md (added bulk endpoint)
+✓ Created docs/06-stories/README.md
+✓ Created docs/07-testing/README.md
+✓ Regenerated docs/api/openapi.yaml
+
+4 files updated.
+Coverage: 63% → 88% (+25%)
+```
+
+### Error - Source Not Found
+
+```
+❌ Error: Source directory not found
+
+Path: src/api/
+
+Please verify project structure or specify source:
+/agileflow:docs SOURCE=lib/
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:readme-sync` - Sync folder README with contents

@@ -400,6 +400,78 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Debt Report
+
+```
+📊 Technical Debt Analysis
+══════════════════════════════════════════════════════════════
+Scan date: 2026-01-29
+Files analyzed: 127
+
+🔴 HIGH PRIORITY (3)
+┌──────────────────────────────────────────────────────────────┐
+│ 1. Legacy auth module (src/auth/legacy.js)                   │
+│    Impact: Security risk, blocks OAuth work                  │
+│    Effort: 3 days                                            │
+│    ROI: High (unblocks US-0053, US-0054)                     │
+├──────────────────────────────────────────────────────────────┤
+│ 2. Untyped API responses                                     │
+│    Impact: Runtime errors, poor DX                           │
+│    Effort: 2 days                                            │
+│    ROI: High (prevents bugs)                                 │
+├──────────────────────────────────────────────────────────────┤
+│ 3. Test coverage gap in /api/orders                          │
+│    Impact: 23% coverage vs 80% target                        │
+│    Effort: 1 day                                             │
+│    ROI: Medium (risk reduction)                              │
+└──────────────────────────────────────────────────────────────┘
+
+🟡 MEDIUM PRIORITY (5)
+- Deprecated dependencies (lodash 3.x)
+- Console.log statements in production
+- Missing error boundaries
+- Hardcoded configuration
+- Duplicate validation logic
+
+📈 Trend: +2 items since last scan (2026-01-22)
+
+Create stories for high-priority items? [Y/n]
+```
+
+### Success - Debt Reduced
+
+```
+📊 Technical Debt Update
+══════════════════════════════════════════════════════════════
+
+✓ Resolved: Legacy auth module
+✓ Resolved: Test coverage gap
+
+Debt Score: 15 → 9 (-40%)
+Sprint Impact: Unblocked 2 stories
+
+🎉 Great progress on debt reduction!
+```
+
+### Error - No Analysis Available
+
+```
+⚠️ No technical debt analysis found
+
+Run initial scan first:
+/agileflow:debt SCAN=true
+
+This will analyze:
+- Code complexity
+- Test coverage
+- Dependency freshness
+- Security vulnerabilities
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:diagnose` - System health diagnostics

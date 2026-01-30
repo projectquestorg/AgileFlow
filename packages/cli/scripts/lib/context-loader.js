@@ -20,7 +20,7 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const { execSync, exec } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
 
 // Try to use cached reads if available
 let readJSONCached, readFileCached;
@@ -39,25 +39,26 @@ try {
 // =============================================================================
 
 /**
- * Whitelisted commands for safeExec
- * Only commands starting with these prefixes are allowed
+ * Whitelisted git subcommands with allowed arguments (US-0187)
+ * Only these specific read-only git operations are permitted.
+ *
+ * Format: { subcommand: true } allows any args (read-only commands)
+ *         { subcommand: ['--flag1', '--flag2'] } allows only listed first args
  */
-const SAFEEXEC_ALLOWED_COMMANDS = [
-  // Git commands (read-only operations)
-  'git ',
-  'git branch',
-  'git log',
-  'git status',
-  'git diff',
-  'git rev-parse',
-  'git describe',
-  'git show',
-  'git config',
-  'git remote',
-  'git tag',
-  // Node commands (for internal AgileFlow scripts only)
-  'node ',
-];
+const SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS = {
+  // Read-only git operations
+  branch: ['--show-current', '-a', '--list', '-r', '--all'],
+  log: true, // All log flags are read-only
+  status: ['--short', '--porcelain', '-s', '--ignored'],
+  diff: true, // All diff flags are read-only
+  'rev-parse': ['HEAD', '--git-dir', '--show-toplevel', '--abbrev-ref', '--is-inside-work-tree'],
+  describe: true, // Read-only
+  show: true, // Read-only
+  config: ['--get', '--list', '-l', '--get-all'], // Read-only config operations only
+  remote: ['-v', '--verbose', 'get-url'],
+  tag: ['--list', '-l'],
+  'ls-files': true, // Read-only listing
+};
 
 /**
  * Dangerous patterns that should never be executed
@@ -107,32 +108,86 @@ function logSafeExec(level, message, details = {}) {
 }
 
 /**
- * Check if a command is allowed
- * @param {string} cmd - Command to check
- * @returns {{allowed: boolean, reason?: string}}
+ * Parse a git command string into executable and arguments (US-0187)
+ * @param {string} cmd - Command string (e.g., "git branch --show-current")
+ * @returns {{ ok: boolean, data?: { executable: string, subcommand: string, args: string[], fullArgs: string[] }, error?: string }}
  */
-function isCommandAllowed(cmd) {
+function parseGitCommand(cmd) {
   if (!cmd || typeof cmd !== 'string') {
-    return { allowed: false, reason: 'Invalid command' };
+    return { ok: false, error: 'Invalid command' };
   }
 
-  const trimmed = cmd.trim();
+  const parts = cmd.trim().split(/\s+/);
+  if (parts.length < 1 || parts[0] !== 'git') {
+    return { ok: false, error: 'Only git commands are supported' };
+  }
 
-  // Check for blocked patterns
+  // Handle bare 'git' command
+  if (parts.length < 2) {
+    return { ok: false, error: 'Git subcommand required' };
+  }
+
+  return {
+    ok: true,
+    data: {
+      executable: 'git',
+      subcommand: parts[1],
+      args: parts.slice(2),
+      fullArgs: parts.slice(1), // ['branch', '--show-current']
+    },
+  };
+}
+
+/**
+ * Check if a git subcommand with args is allowed (US-0187)
+ * @param {string} subcommand - Git subcommand (e.g., 'branch')
+ * @param {string[]} args - Arguments to subcommand
+ * @returns {{ allowed: boolean, reason?: string }}
+ */
+function isGitCommandAllowed(subcommand, args) {
+  // First check blocked patterns in arguments
+  const fullCmd = `git ${subcommand} ${args.join(' ')}`;
   for (const pattern of SAFEEXEC_BLOCKED_PATTERNS) {
-    if (pattern.test(trimmed)) {
+    if (pattern.test(fullCmd)) {
       return { allowed: false, reason: `Blocked pattern: ${pattern}` };
     }
   }
 
-  // Check against whitelist
-  const isWhitelisted = SAFEEXEC_ALLOWED_COMMANDS.some(prefix => trimmed.startsWith(prefix));
-
-  if (!isWhitelisted) {
-    return { allowed: false, reason: 'Command not in whitelist' };
+  // Check against allowed subcommands
+  const allowedArgs = SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS[subcommand];
+  if (!allowedArgs) {
+    return { allowed: false, reason: `Git subcommand '${subcommand}' not in whitelist` };
   }
 
-  return { allowed: true };
+  // If allowedArgs is true, any args are allowed for this subcommand (read-only)
+  if (allowedArgs === true) {
+    return { allowed: true };
+  }
+
+  // If allowedArgs is an array, first arg must match one of the allowed values
+  // (or args can be empty for commands like 'git status')
+  if (args.length === 0) {
+    return { allowed: true };
+  }
+
+  if (allowedArgs.includes(args[0])) {
+    return { allowed: true };
+  }
+
+  return { allowed: false, reason: `Argument '${args[0]}' not allowed for 'git ${subcommand}'` };
+}
+
+/**
+ * Check if a command is allowed (legacy wrapper for backwards compatibility)
+ * @param {string} cmd - Command to check
+ * @returns {{allowed: boolean, reason?: string}}
+ */
+function isCommandAllowed(cmd) {
+  const parsed = parseGitCommand(cmd);
+  if (!parsed.ok) {
+    return { allowed: false, reason: parsed.error };
+  }
+  return isGitCommandAllowed(parsed.data.subcommand, parsed.data.args);
 }
 
 // =============================================================================
@@ -184,12 +239,13 @@ function safeLs(dirPath) {
 }
 
 /**
- * Safely execute a shell command with whitelist validation.
+ * Safely execute a git command with whitelist validation (US-0187).
  *
- * Only whitelisted commands (mainly git operations) are allowed.
+ * Uses spawnSync with shell: false to prevent shell injection.
+ * Only whitelisted read-only git commands are allowed.
  * Dangerous patterns (pipes, redirects, etc.) are blocked.
  *
- * @param {string} cmd - Command to execute
+ * @param {string} cmd - Command to execute (must be a git command)
  * @param {Object} [options] - Options
  * @param {boolean} [options.bypassWhitelist=false] - Skip whitelist check (use with caution)
  * @returns {string|null} Command output or null
@@ -197,9 +253,19 @@ function safeLs(dirPath) {
 function safeExec(cmd, options = {}) {
   const { bypassWhitelist = false } = options;
 
+  // Parse command into executable and arguments
+  const parsed = parseGitCommand(cmd);
+  if (!parsed.ok) {
+    logSafeExec('warn', 'Invalid command format', {
+      cmd: cmd?.substring(0, 100),
+      error: parsed.error,
+    });
+    return null;
+  }
+
   // Validate command unless bypassed
   if (!bypassWhitelist) {
-    const check = isCommandAllowed(cmd);
+    const check = isGitCommandAllowed(parsed.data.subcommand, parsed.data.args);
     if (!check.allowed) {
       logSafeExec('warn', 'Command blocked by whitelist', {
         cmd: cmd?.substring(0, 100),
@@ -215,14 +281,38 @@ function safeExec(cmd, options = {}) {
   });
 
   try {
-    const result = execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    // Use spawnSync with array arguments - NO SHELL INTERPRETATION (US-0187)
+    const result = spawnSync(parsed.data.executable, parsed.data.fullArgs, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false, // CRITICAL: Prevents shell injection
+    });
+
+    if (result.error) {
+      logSafeExec('error', 'Command spawn failed', {
+        cmd: cmd?.substring(0, 50),
+        error: result.error.message,
+      });
+      return null;
+    }
+
+    if (result.status !== 0) {
+      logSafeExec('debug', 'Command exited non-zero', {
+        cmd: cmd?.substring(0, 50),
+        status: result.status,
+        stderr: result.stderr?.substring(0, 100),
+      });
+      return null;
+    }
+
+    const output = (result.stdout || '').trim();
     logSafeExec('debug', 'Command succeeded', {
       cmd: cmd?.substring(0, 50),
-      outputLength: result?.length || 0,
+      outputLength: output.length,
     });
-    return result;
+    return output;
   } catch (error) {
-    logSafeExec('debug', 'Command failed', {
+    logSafeExec('error', 'Command execution error', {
       cmd: cmd?.substring(0, 50),
       error: error?.message?.substring(0, 100),
     });
@@ -275,12 +365,13 @@ async function safeLsAsync(dirPath) {
 }
 
 /**
- * Execute a command asynchronously with whitelist validation.
+ * Execute a git command asynchronously with whitelist validation (US-0187).
  *
- * Only whitelisted commands (mainly git operations) are allowed.
+ * Uses spawn with shell: false to prevent shell injection.
+ * Only whitelisted read-only git commands are allowed.
  * Dangerous patterns (pipes, redirects, etc.) are blocked.
  *
- * @param {string} cmd - Command to execute
+ * @param {string} cmd - Command to execute (must be a git command)
  * @param {Object} [options] - Options
  * @param {boolean} [options.bypassWhitelist=false] - Skip whitelist check (use with caution)
  * @returns {Promise<string|null>} Command output or null
@@ -288,9 +379,19 @@ async function safeLsAsync(dirPath) {
 async function safeExecAsync(cmd, options = {}) {
   const { bypassWhitelist = false } = options;
 
+  // Parse command into executable and arguments
+  const parsed = parseGitCommand(cmd);
+  if (!parsed.ok) {
+    logSafeExec('warn', 'Invalid async command format', {
+      cmd: cmd?.substring(0, 100),
+      error: parsed.error,
+    });
+    return null;
+  }
+
   // Validate command unless bypassed
   if (!bypassWhitelist) {
-    const check = isCommandAllowed(cmd);
+    const check = isGitCommandAllowed(parsed.data.subcommand, parsed.data.args);
     if (!check.allowed) {
       logSafeExec('warn', 'Async command blocked by whitelist', {
         cmd: cmd?.substring(0, 100),
@@ -306,18 +407,44 @@ async function safeExecAsync(cmd, options = {}) {
   });
 
   return new Promise(resolve => {
-    exec(cmd, { encoding: 'utf8' }, (error, stdout) => {
-      if (error) {
-        logSafeExec('debug', 'Async command failed', {
+    // Use spawn with array arguments - NO SHELL INTERPRETATION (US-0187)
+    const proc = spawn(parsed.data.executable, parsed.data.fullArgs, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: false, // CRITICAL: Prevents shell injection
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    proc.stdout.on('data', data => {
+      stdout += data;
+    });
+
+    proc.stderr.on('data', data => {
+      stderr += data;
+    });
+
+    proc.on('error', error => {
+      logSafeExec('error', 'Async spawn error', {
+        cmd: cmd?.substring(0, 50),
+        error: error.message,
+      });
+      resolve(null);
+    });
+
+    proc.on('close', code => {
+      if (code !== 0) {
+        logSafeExec('debug', 'Async command exited non-zero', {
           cmd: cmd?.substring(0, 50),
-          error: error?.message?.substring(0, 100),
+          code,
+          stderr: stderr?.substring(0, 100),
         });
         resolve(null);
       } else {
         const result = stdout.trim();
         logSafeExec('debug', 'Async command succeeded', {
           cmd: cmd?.substring(0, 50),
-          outputLength: result?.length || 0,
+          outputLength: result.length,
         });
         resolve(result);
       }
@@ -676,11 +803,13 @@ module.exports = {
   safeLsAsync,
   safeExecAsync,
 
-  // Command whitelist (US-0120)
-  SAFEEXEC_ALLOWED_COMMANDS,
+  // Command whitelist (US-0120, US-0187)
+  SAFEEXEC_ALLOWED_GIT_SUBCOMMANDS,
   SAFEEXEC_BLOCKED_PATTERNS,
   configureSafeExecLogger,
-  isCommandAllowed,
+  parseGitCommand,
+  isGitCommandAllowed,
+  isCommandAllowed, // Legacy wrapper for backward compatibility
 
   // Context tracking
   getContextPercentage,

@@ -433,6 +433,72 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Kanban Board
+
+```
+📋 AgileFlow Kanban Board
+Updated: 2026-01-29 09:45:00
+Epic: EP-0026 (Q1 2026 Improvements)
+══════════════════════════════════════════════════════════════════════════════
+
+│ READY (3)        │ IN PROGRESS (2)  │ IN REVIEW (1)    │ DONE (15)       │
+├──────────────────┼──────────────────┼──────────────────┼─────────────────┤
+│ US-0200 [P2]     │ US-0198 [P2]     │ US-0195 [P1]     │ US-0186 ✓       │
+│ DI for Gen..     │ Color consol..   │ Path valid..     │ US-0187 ✓       │
+│ AG-API           │ AG-DEVOPS ●      │ AG-API           │ US-0188 ✓       │
+│                  │                  │                  │ US-0189 ✓       │
+│ US-0203 [P2]     │ US-0199 [P2]     │                  │ US-0190 ✓       │
+│ Command docs     │ Path resolve..   │                  │ ...             │
+│ AG-DEVOPS        │ AG-API ●         │                  │ +10 more        │
+│                  │                  │                  │                 │
+│ US-0205 [P3]     │                  │                  │                 │
+│ Agent matrix     │                  │                  │                 │
+│ AG-DOCS          │                  │                  │                 │
+══════════════════════════════════════════════════════════════════════════════
+
+WIP Limit: 3/3 ⚠️ (at capacity)
+● = Currently active
+
+📊 Statistics:
+- Total: 21 stories
+- Velocity: 4.2 stories/week
+- Blocked: 0
+
+Suggested: Complete in-progress work before pulling new stories.
+```
+
+### Success - Filtered View
+
+```
+📋 AgileFlow Kanban Board (Filtered: AG-API)
+══════════════════════════════════════════════════════════════
+
+Stories owned by AG-API: 8 total
+- Ready: 2
+- In Progress: 1
+- In Review: 1
+- Done: 4
+
+[Board shows only AG-API stories...]
+```
+
+### Error - Epic Not Found
+
+```
+❌ Error: Epic not found: EP-9999
+
+Available epics:
+- EP-0026: Q1 2026 Improvements (21 stories)
+- EP-0025: Session System (8 stories)
+- EP-0024: Visual E2E Testing (6 stories)
+
+Usage: /agileflow:board [EPIC=EP-XXXX]
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:sprint` - Sprint planning

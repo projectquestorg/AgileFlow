@@ -572,6 +572,80 @@ After generating output, present options:
 
 ---
 
+## Expected Output
+
+### Success - Ideation Report
+
+```
+💡 Ideation Analysis: SCOPE=all DEPTH=deep
+══════════════════════════════════════════════════════════════
+
+Deploying 6 domain experts...
+✓ Security Expert
+✓ Performance Expert
+✓ Code Quality Expert
+✓ UX Expert
+✓ Architecture Expert
+✓ DevOps Expert
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔒 SECURITY (2 ideas)
+┌──────────────────────────────────────────────────────────────┐
+│ 1. Add rate limiting to /api/auth endpoints                  │
+│    Impact: HIGH | Effort: LOW | Confidence: 95%              │
+│    Experts: Security ✓, DevOps ✓                             │
+├──────────────────────────────────────────────────────────────┤
+│ 2. Implement CSRF protection                                 │
+│    Impact: HIGH | Effort: MEDIUM | Confidence: 90%           │
+│    Experts: Security ✓, Code Quality ✓                       │
+└──────────────────────────────────────────────────────────────┘
+
+⚡ PERFORMANCE (1 idea)
+│ 1. Add Redis caching for user sessions                       │
+│    Impact: MEDIUM | Effort: MEDIUM | Confidence: 85%         │
+
+🧹 CODE QUALITY (2 ideas)
+│ 1. Extract validation logic to shared module                 │
+│ 2. Add TypeScript strict mode                                │
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Summary: 5 ideas from 6 experts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Top recommendation: Rate limiting (#1 - 95% confidence)
+Create stories for these ideas? [Y/n]
+```
+
+### Success - Stories Created
+
+```
+✓ Created US-0200: Add rate limiting to auth endpoints
+✓ Created US-0201: Implement CSRF protection
+✓ Created US-0202: Add Redis session caching
+✓ Created US-0203: Extract validation module
+✓ Created US-0204: Enable TypeScript strict mode
+
+5 stories added to EP-0027 (Ideation Improvements)
+```
+
+### Error - Scope Invalid
+
+```
+❌ Error: Invalid scope: network
+
+Valid scopes:
+- all: Full codebase analysis
+- security: Security vulnerabilities
+- perf: Performance optimizations
+- code: Code quality improvements
+- ux: User experience enhancements
+
+Usage: /agileflow:ideate SCOPE=security DEPTH=deep
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:multi-expert` - Deploy multiple experts for analysis

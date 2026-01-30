@@ -457,6 +457,75 @@ Depending on ACTION:
 
 ---
 
+## Expected Output
+
+### Success - Dependency Dashboard
+
+```
+📦 Dependency Dashboard
+══════════════════════════════════════════════════════════════
+
+Total: 127 dependencies (89 prod, 38 dev)
+
+🔴 CRITICAL UPDATES (2)
+┌──────────────────────────────────────────────────────────────┐
+│ lodash 4.17.19 → 4.17.21 (security fix CVE-2021-23337)      │
+│ axios 0.21.0 → 0.21.4 (security fix CVE-2021-3749)          │
+└──────────────────────────────────────────────────────────────┘
+
+🟡 MAJOR UPDATES (5)
+│ react 17.0.2 → 18.2.0 (breaking changes)                    │
+│ typescript 4.9.5 → 5.3.3 (new features)                     │
+│ jest 28.1.3 → 29.7.0 (breaking changes)                     │
+│ eslint 8.45.0 → 9.0.0 (config format change)               │
+│ next 13.4.19 → 14.1.0 (breaking changes)                    │
+
+🟢 MINOR/PATCH (12)
+│ Various minor updates available...                          │
+
+📊 Health Score: 🟡 72/100
+Recommendation: Address security updates immediately
+
+Apply critical updates? [Y/n]
+```
+
+### Success - Security Audit
+
+```
+📦 Security Audit
+══════════════════════════════════════════════════════════════
+
+Running npm audit...
+
+Found 3 vulnerabilities:
+┌────────────┬──────────┬─────────────────────────────────────┐
+│ Severity   │ Package  │ Issue                               │
+├────────────┼──────────┼─────────────────────────────────────┤
+│ 🔴 High    │ lodash   │ Prototype Pollution (CVE-2021-23337)│
+│ 🔴 High    │ axios    │ SSRF vulnerability (CVE-2021-3749)  │
+│ 🟡 Moderate│ semver   │ ReDoS vulnerability                 │
+└────────────┴──────────┴─────────────────────────────────────┘
+
+Auto-fix available for 2 of 3 vulnerabilities.
+Run npm audit fix? [Y/n]
+```
+
+### Error - No Package.json
+
+```
+❌ Error: No package.json found
+
+This command requires a Node.js project.
+
+Initialize first:
+  npm init
+
+Or specify path:
+  /agileflow:packages PATH=./packages/api
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:diagnose` - System health diagnostics

@@ -1130,6 +1130,93 @@ Based on your project state:
 
 ---
 
+## Expected Output
+
+### Success - Mentor Ready
+
+```
+**AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
+
+Based on your project state:
+
+📍 Current: EP-0026 (Q1 2026 Codebase Improvements)
+   - 18/24 stories completed (75%)
+   - 1 in-progress: US-0203
+
+Suggested next steps:
+1. ⭐ US-0205: Add integration tests for color system (Ready)
+2. ⭐ US-0206: Create error handling patterns (Ready)
+3. ✓ US-0203: Interactive Command Documentation (Continue)
+
+**My approach:**
+1. You select a task
+2. I enter plan mode to explore and design the approach
+3. You approve the plan
+4. I execute (directly or via domain experts)
+```
+
+### Success - Loop Mode Started
+
+```
+🔄 Loop Mode Initialized
+══════════════════════════════════════════════════════════════
+
+Epic: EP-0042 (User Authentication)
+Stories: 8 total, 3 completed, 5 remaining
+Mode: loop (autonomous)
+Max iterations: 20
+
+Starting with: US-0050 (User Registration)
+Status: ready → in_progress
+
+📍 Working on: US-0050
+   Estimate: 1.5d
+   Owner: AG-API
+
+Proceeding with implementation...
+```
+
+### Success - Expert Delegation
+
+```
+🔀 Spawning domain expert...
+
+Task: Add sessions table for user login tracking
+Expert: agileflow-database
+Status: Running in background
+
+[Agent output will appear when complete]
+
+📍 Waiting for database expert...
+   Task ID: task-abc123
+```
+
+### Error - Stuck Detection
+
+```
+⚠️ Stuck Detection Triggered
+
+I've tried 2 approaches but we're still hitting the same error:
+
+Error: [auth] unauthorized_client
+  at AuthHandler (node_modules/next-auth/src/lib/...)
+
+This seems like a case where external research would help -
+the issue involves next-auth OAuth that needs more context.
+
+Generating research prompt with /agileflow:research:ask...
+
+The prompt includes:
+- 50+ lines of your auth implementation
+- Exact error message and stack trace
+- What I've already tried
+- 3 specific questions
+
+Copy and paste into ChatGPT/Claude web, then share results here.
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:sprint` - Sprint planning with velocity forecasting

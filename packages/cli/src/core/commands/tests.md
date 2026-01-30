@@ -638,6 +638,89 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Test Setup Complete
+
+```
+🧪 Test Infrastructure Setup
+══════════════════════════════════════════════════════════════
+
+Detected: Node.js (TypeScript)
+Framework: Jest
+
+✅ Installed dependencies:
+   • jest @types/jest ts-jest
+   • @testing-library/react @testing-library/jest-dom
+
+✅ Created configuration:
+   • jest.config.js (coverage threshold: 70%)
+
+✅ Created example tests:
+   • tests/unit/example.test.ts (2 tests)
+   • tests/integration/api.test.ts (2 tests)
+
+✅ Updated package.json scripts:
+   • test, test:watch, test:coverage, test:unit, test:integration
+
+✅ Updated CI workflow:
+   • .github/workflows/ci.yml (test job added)
+
+✅ Created documentation:
+   • docs/02-practices/testing.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Running verification...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+$ npm test
+PASS  tests/unit/example.test.ts (4 tests)
+PASS  tests/integration/api.test.ts (2 tests)
+
+Tests: 6 passed, 6 total
+Time: 2.3s
+
+✅ Test infrastructure ready!
+
+Try running: npm test
+```
+
+### Error - Tests Already Exist
+
+```
+⚠️ Existing Test Setup Detected
+══════════════════════════════════════════════════════════════
+
+Found:
+  • jest.config.js (existing configuration)
+  • tests/ directory (14 test files)
+  • package.json test script
+
+Current coverage: 72%
+
+Options:
+1. Skip setup (tests already configured)
+2. Add missing components only
+3. Reset and reconfigure
+
+What would you like to do?
+```
+
+### Error - Unknown Project Type
+
+```
+❌ Could not detect project type
+
+No package.json, requirements.txt, Gemfile, or go.mod found.
+
+Please specify framework manually:
+  /agileflow:tests FRAMEWORK=jest
+  /agileflow:tests FRAMEWORK=pytest
+  /agileflow:tests FRAMEWORK=rspec
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:configure` - Manage AgileFlow features and hooks

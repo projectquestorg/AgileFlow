@@ -484,14 +484,27 @@ describe('session-manager injectable registry', () => {
         sessions: {},
         ...initialData,
       };
+      // Simulate caching like real SessionRegistry
+      this._cache = null;
+      this._cacheTime = 0;
+      this.cacheTTL = 10000; // 10 second cache
     }
 
     loadSync() {
+      // Simulate caching behavior: return cached data if within TTL
+      if (this._cache && Date.now() - this._cacheTime < this.cacheTTL) {
+        return { ...this._cache };
+      }
+      // Update cache
+      this._cache = { ...this._data };
+      this._cacheTime = Date.now();
       return { ...this._data };
     }
 
     saveSync(data) {
       this._data = { ...data, updated: new Date().toISOString() };
+      this._cache = { ...this._data };
+      this._cacheTime = Date.now();
       return { ok: true };
     }
 
@@ -506,6 +519,12 @@ describe('session-manager injectable registry', () => {
     // Expose internal data for test assertions
     getData() {
       return this._data;
+    }
+
+    // Required for resetRegistryCache() to work - clears cache
+    invalidateCache() {
+      this._cache = null;
+      this._cacheTime = 0;
     }
   }
 
@@ -551,12 +570,22 @@ describe('session-manager injectable registry', () => {
       expect(data.sessions['1'].nickname).toBe('test-session');
     });
 
-    test('returns fresh data on each call', () => {
+    test('returns cached data within TTL', () => {
+      // First load caches the data
       const data1 = sessionManager.loadRegistry();
-      mockRegistry._data.next_id = 42;
-      const data2 = sessionManager.loadRegistry();
+      expect(data1.next_id).toBe(1);
 
-      expect(data2.next_id).toBe(42);
+      // Modify underlying data (simulating external change)
+      mockRegistry._data.next_id = 42;
+
+      // Without reset, cached data is returned
+      const data2 = sessionManager.loadRegistry();
+      expect(data2.next_id).toBe(1); // Still cached
+
+      // After invalidating cache, fresh data is returned
+      sessionManager.resetRegistryCache();
+      const data3 = sessionManager.loadRegistry();
+      expect(data3.next_id).toBe(42); // Fresh data
     });
   });
 
@@ -596,6 +625,97 @@ describe('session-manager injectable registry', () => {
       mockRegistry._data.sessions = {};
       const result = sessionManager.getSessions();
       expect(result.sessions).toEqual([]);
+    });
+  });
+
+  // US-0190: Parallel lock reads for performance
+  describe('getSessionsAsync()', () => {
+    test('returns sessions from injected registry', async () => {
+      mockRegistry._data.sessions = {
+        1: { nickname: 'session-1', branch: 'main' },
+        2: { nickname: 'session-2', branch: 'feature' },
+      };
+
+      const result = await sessionManager.getSessionsAsync();
+      // getSessionsAsync returns same shape as getSessions
+      expect(result.sessions).toHaveLength(2);
+      expect(result.sessions[0].nickname).toBe('session-1');
+      expect(result.sessions[1].nickname).toBe('session-2');
+    });
+
+    test('returns empty array when no sessions', async () => {
+      mockRegistry._data.sessions = {};
+      const result = await sessionManager.getSessionsAsync();
+      expect(result.sessions).toEqual([]);
+    });
+
+    test('includes cleaned and cleanedSessions in result', async () => {
+      mockRegistry._data.sessions = {};
+      const result = await sessionManager.getSessionsAsync();
+      expect(result).toHaveProperty('cleaned');
+      expect(result).toHaveProperty('cleanedSessions');
+    });
+  });
+
+  describe('isSessionActiveAsync()', () => {
+    test('returns false for non-existent session', async () => {
+      const result = await sessionManager.isSessionActiveAsync('nonexistent');
+      expect(result).toBe(false);
+    });
+  });
+
+  // US-0191: Lazy-load git commands with async parallelization
+  describe('getSessionPhaseAsync()', () => {
+    test('returns MERGED for sessions with merged_at', async () => {
+      const session = { merged_at: '2026-01-28T00:00:00Z' };
+      const phase = await sessionManager.getSessionPhaseAsync(session);
+      expect(phase).toBe(sessionManager.SESSION_PHASES.MERGED);
+    });
+
+    test('returns MERGED for main sessions', async () => {
+      const session = { is_main: true };
+      const phase = await sessionManager.getSessionPhaseAsync(session);
+      expect(phase).toBe(sessionManager.SESSION_PHASES.MERGED);
+    });
+
+    test('returns TODO for non-existent session path', async () => {
+      const session = { path: '/nonexistent/path' };
+      const phase = await sessionManager.getSessionPhaseAsync(session);
+      expect(phase).toBe(sessionManager.SESSION_PHASES.TODO);
+    });
+  });
+
+  describe('getSessionPhasesAsync()', () => {
+    test('processes multiple sessions in parallel', async () => {
+      const sessions = [
+        { merged_at: '2026-01-28T00:00:00Z' },
+        { is_main: true },
+        { path: '/nonexistent' },
+      ];
+      const results = await sessionManager.getSessionPhasesAsync(sessions);
+      expect(results).toHaveLength(3);
+      expect(results[0].phase).toBe(sessionManager.SESSION_PHASES.MERGED);
+      expect(results[1].phase).toBe(sessionManager.SESSION_PHASES.MERGED);
+      expect(results[2].phase).toBe(sessionManager.SESSION_PHASES.TODO);
+    });
+
+    test('returns empty array for empty input', async () => {
+      const results = await sessionManager.getSessionPhasesAsync([]);
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('execGitAsync()', () => {
+    test('executes git command and returns result', async () => {
+      // Test with a simple git command that works in any git repo
+      const result = await sessionManager.execGitAsync(['--version'], process.cwd());
+      expect(result.stdout).toContain('git version');
+      expect(result.code).toBe(0);
+    });
+
+    test('returns error code for invalid git command', async () => {
+      const result = await sessionManager.execGitAsync(['invalid-command-xyz'], process.cwd());
+      expect(result.code).not.toBe(0);
     });
   });
 
@@ -650,6 +770,126 @@ describe('session-manager injectable registry', () => {
     test('returns base for main sessions', () => {
       const session = { is_main: true };
       expect(sessionManager.detectThreadType(session, false)).toBe('base');
+    });
+  });
+
+  describe('resetRegistryCache()', () => {
+    test('resets initialization state for fresh load', () => {
+      // First load initializes cache
+      const data1 = sessionManager.loadRegistry();
+      expect(data1.sessions).toEqual({});
+
+      // Modify data directly in mock (simulating external change)
+      mockRegistry._data.sessions = { 999: { nickname: 'external-change' } };
+
+      // Without reset, should still return cached data
+      const data2 = sessionManager.loadRegistry();
+      expect(data2.sessions).toEqual({}); // Still cached
+
+      // After reset, should return fresh data
+      sessionManager.resetRegistryCache();
+      const data3 = sessionManager.loadRegistry();
+      expect(data3.sessions).toHaveProperty('999');
+    });
+
+    test('exported function is available', () => {
+      expect(typeof sessionManager.resetRegistryCache).toBe('function');
+    });
+  });
+
+  describe('transitionThread()', () => {
+    beforeEach(() => {
+      // Set up a session with parallel thread type
+      mockRegistry._data.sessions = {
+        1: { nickname: 'test', thread_type: 'parallel', is_main: false },
+      };
+      mockRegistry._cache = null; // Clear cache to pick up new data
+    });
+
+    test('validates and performs valid transition', () => {
+      const result = sessionManager.transitionThread('1', 'fusion');
+      expect(result.success).toBe(true);
+      expect(result.from).toBe('parallel');
+      expect(result.to).toBe('fusion');
+    });
+
+    test('rejects invalid transition', () => {
+      // parallel cannot go directly to big
+      const result = sessionManager.transitionThread('1', 'big');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid transition');
+      expect(result.error).toContain('parallel → big');
+    });
+
+    test('allows forced invalid transition', () => {
+      const result = sessionManager.transitionThread('1', 'big', { force: true });
+      expect(result.success).toBe(true);
+      expect(result.forced).toBe(true);
+    });
+
+    test('returns noop for same thread type', () => {
+      const result = sessionManager.transitionThread('1', 'parallel');
+      expect(result.success).toBe(true);
+      expect(result.noop).toBe(true);
+    });
+
+    test('returns error for non-existent session', () => {
+      const result = sessionManager.transitionThread('999', 'base');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
+    });
+
+    test('defaults legacy session to base/parallel', () => {
+      mockRegistry._data.sessions = {
+        2: { nickname: 'legacy', is_main: true }, // No thread_type
+      };
+      mockRegistry._cache = null;
+
+      const result = sessionManager.transitionThread('2', 'parallel');
+      expect(result.success).toBe(true);
+      expect(result.from).toBe('base'); // Defaulted to base for main session
+    });
+
+    test('exported function is available', () => {
+      expect(typeof sessionManager.transitionThread).toBe('function');
+    });
+  });
+
+  describe('getValidThreadTransitions()', () => {
+    beforeEach(() => {
+      mockRegistry._data.sessions = {
+        1: { nickname: 'test', thread_type: 'parallel', is_main: false },
+      };
+      mockRegistry._cache = null;
+    });
+
+    test('returns valid transitions for parallel', () => {
+      const result = sessionManager.getValidThreadTransitions('1');
+      expect(result.success).toBe(true);
+      expect(result.current).toBe('parallel');
+      expect(result.validTransitions).toContain('base');
+      expect(result.validTransitions).toContain('fusion');
+      expect(result.validTransitions).toContain('chained');
+    });
+
+    test('returns error for non-existent session', () => {
+      const result = sessionManager.getValidThreadTransitions('999');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
+    });
+
+    test('defaults legacy session thread type', () => {
+      mockRegistry._data.sessions = {
+        2: { nickname: 'legacy', is_main: false }, // No thread_type
+      };
+      mockRegistry._cache = null;
+
+      const result = sessionManager.getValidThreadTransitions('2');
+      expect(result.current).toBe('parallel'); // Defaulted for non-main
+    });
+
+    test('exported function is available', () => {
+      expect(typeof sessionManager.getValidThreadTransitions).toBe('function');
     });
   });
 

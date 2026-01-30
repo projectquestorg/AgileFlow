@@ -243,6 +243,83 @@ Diff-first; YES/NO.
 
 ---
 
+## Expected Output
+
+### Success - CI Workflow Created
+
+```
+🔧 CI/CD Setup
+══════════════════════════════════════════════════════════════
+
+Creating workflow configuration...
+
+✓ Created .github/workflows/ci.yml
+  - lint: ESLint + Prettier check
+  - typecheck: TypeScript compilation
+  - test: Jest with coverage
+  - Concurrency: cancel-in-progress enabled
+
+✓ Created CODEOWNERS
+  /src/  @team-lead @senior-dev
+  /docs/03-decisions/  @tech-lead
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ CI/CD Setup Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Next steps:
+1. Push workflow: git add . && git push
+2. Enable branch protection in GitHub settings
+3. Set required checks: lint, typecheck, test
+
+View workflow: .github/workflows/ci.yml
+```
+
+### Success - Workflow Updated
+
+```
+🔧 CI/CD Update
+══════════════════════════════════════════════════════════════
+
+Existing workflow detected. Updating...
+
+Changes:
++ Added code coverage threshold (80%)
++ Added security audit job
+~ Updated Node.js version to 20
+
+✓ Updated .github/workflows/ci.yml
+
+Review changes before committing:
+  git diff .github/workflows/ci.yml
+```
+
+### Error - Missing OWNERS
+
+```
+❌ Error: OWNERS parameter required
+
+Specify code owners for CODEOWNERS file:
+
+/agileflow:ci OWNERS="@username1, @username2"
+
+These users will be required reviewers for PR changes.
+```
+
+### Error - Invalid Workflow
+
+```
+❌ Error: Invalid workflow configuration
+
+.github/workflows/ci.yml has syntax errors:
+  Line 15: Invalid job name 'test!'
+  Line 23: Missing 'runs-on' field
+
+Fix errors or run with FORCE=true to overwrite.
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:configure` - Manage AgileFlow features and hooks

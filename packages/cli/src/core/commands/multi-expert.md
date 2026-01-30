@@ -363,6 +363,80 @@ Launching experts now...
 
 ---
 
+## Expected Output
+
+### Success - Multi-Expert Analysis
+
+```
+🧠 Multi-Expert Analysis
+══════════════════════════════════════════════════════════════
+
+Question: Should we add caching to the user API?
+
+Deploying 3 experts...
+✓ Performance Expert launched
+✓ Security Expert launched
+✓ Architecture Expert launched
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ PERFORMANCE EXPERT
+"Yes, caching would reduce DB load by ~60% based on
+read patterns. Recommend Redis with 5-minute TTL."
+Confidence: 90%
+
+🔒 SECURITY EXPERT
+"Ensure cache invalidation on sensitive updates.
+Use per-user cache keys to prevent data leakage."
+Confidence: 85%
+
+🏛️ ARCHITECTURE EXPERT
+"Start with single-node Redis. Cluster only if
+needed for HA. Consider cache-aside pattern."
+Confidence: 88%
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Consensus: YES (88% confidence)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Synthesized Recommendation:
+Add Redis caching with cache-aside pattern,
+5-minute TTL, per-user keys, and proper
+invalidation on user updates.
+
+Document this decision? /agileflow:adr
+```
+
+### Success - Experts Disagree
+
+```
+🧠 Multi-Expert Analysis
+══════════════════════════════════════════════════════════════
+
+⚠️ Expert Disagreement Detected
+
+Experts split on approach:
+- Performance: Recommends Redis (90%)
+- Cost Expert: Recommends in-memory (85%)
+- Ops Expert: Recommends managed service (80%)
+
+Run debate mode for resolution?
+/agileflow:council --mode debate
+```
+
+### Error - Insufficient Context
+
+```
+❌ Error: Question too vague for expert analysis
+
+"Is this good?" - What is "this"?
+
+Provide specific context:
+/agileflow:multi-expert "Should we use Redis or Memcached for session storage given our 10K DAU scale?"
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:review` - AI-powered code review

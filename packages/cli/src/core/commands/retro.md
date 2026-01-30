@@ -710,6 +710,82 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Retrospective Report
+
+```
+🔄 Sprint 12 Retrospective
+══════════════════════════════════════════════════════════════
+Period: 2026-01-15 to 2026-01-29
+
+📊 SPRINT METRICS
+┌────────────────────────────────────────────────────────────┐
+│ Planned: 15 stories (42 points)                            │
+│ Completed: 13 stories (38 points)                          │
+│ Carry-over: 2 stories (4 points)                           │
+│ Velocity: 90% of commitment                                │
+└────────────────────────────────────────────────────────────┘
+
+🟢 START (What should we start doing?)
+- [ ] Daily async standups in bus
+- [ ] Earlier blocker escalation
+- [ ] Pair programming for complex stories
+
+🔴 STOP (What should we stop doing?)
+- [ ] Skipping AC verification before done
+- [ ] Starting stories without clear requirements
+
+🟡 CONTINUE (What's working well?)
+- [x] Test-first development (reduced bugs 40%)
+- [x] Using /babysit for mentored workflows
+- [x] Clear acceptance criteria format
+
+🎉 WINS
+- Shipped OAuth integration ahead of schedule
+- Zero production bugs this sprint
+- Team collaboration improved significantly
+
+📈 PREDICTIONS
+- Next sprint velocity: ~40 points
+- Risk: US-0055 may need external help
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Retrospective saved to docs/08-project/retrospectives/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Success - Quick Retro
+
+```
+🔄 Quick Retrospective
+══════════════════════════════════════════════════════════════
+
+Based on sprint data:
+🟢 Win: 90% velocity achieved
+🟡 Watch: 2 stories carried over
+🔴 Risk: Blocker detection was slow
+
+Top action item:
+→ Add daily blocker check to routine
+
+Full retro? /agileflow:retro DEPTH=full
+```
+
+### Error - No Sprint Data
+
+```
+❌ Error: No sprint data available
+
+No completed stories found in the last 14 days.
+
+Options:
+1. Start tracking: /agileflow:sprint ACTION=start
+2. Specify range: /agileflow:retro RANGE="2026-01-01..2026-01-15"
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:sprint` - Sprint planning

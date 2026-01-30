@@ -257,6 +257,70 @@ Only the `## Contents` section of README.md:
 
 ---
 
+## Expected Output
+
+### Success - README Synced
+
+```
+📁 Syncing docs/02-practices/README.md
+══════════════════════════════════════════════════════════════
+
+Found 8 files:
+  • README.md (existing)
+  • testing.md – Test strategy, patterns, test infrastructure
+  • git-branching.md – Git workflow, branching strategy
+  • ci.md – CI/CD pipeline configuration, testing gates
+  • security.md – Security practices, input validation
+  • releasing.md – Release procedures, versioning
+
+Proposed Changes to ## Contents Section:
+─────────────────────────────────────────
+- **testing.md** – Test strategy, patterns, test infrastructure
+- **git-branching.md** – Git workflow, branching strategy
+- **ci.md** – CI/CD pipeline configuration, testing gates
+- **security.md** – Security practices, input validation
+- **releasing.md** – Release procedures, versioning
+
+Update README.md with these changes? (YES/NO)
+
+✅ README.md updated successfully!
+```
+
+### Success - All Folders Synced
+
+```
+📁 Syncing All Documentation Folders
+══════════════════════════════════════════════════════════════
+
+Spawning readme-updater agents...
+
+  ✓ docs/02-practices (8 files)
+  ✓ docs/03-decisions (12 files)
+  ✓ docs/04-architecture (15 files)
+  ✓ docs/05-epics (6 files)
+  ✓ docs/06-stories (42 files)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Summary: 5 READMEs updated
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Error - Folder Not Found
+
+```
+❌ Folder not found: docs/invalid-folder
+
+Available documentation folders:
+  • docs/02-practices
+  • docs/03-decisions
+  • docs/04-architecture
+  • docs/05-epics
+
+Usage: /agileflow:readme-sync FOLDER=docs/02-practices
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:docs` - Synchronize documentation with code

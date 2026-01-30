@@ -502,6 +502,96 @@ Human review should focus on highest leverage points:
 
 ---
 
+## Expected Output
+
+### Success - RPI Workflow
+
+```
+🔄 RPI Workflow: User Authentication Feature
+══════════════════════════════════════════════════════════════
+
+Phase 1: RESEARCH (Current)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Gathering context...
+✓ Read existing auth code (src/api/auth.js)
+✓ Analyzed 3 related components
+✓ Reviewed security requirements
+✓ Checked team patterns (JWT preferred)
+
+Research Summary:
+- Current: Basic session auth
+- Target: JWT with refresh tokens
+- Patterns: Use existing middleware structure
+- Risks: Token storage, refresh logic
+
+Ready for planning phase? [Y/n]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 2: PLAN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Proposed Implementation:
+1. Add JWT generation in auth.js
+2. Create refresh token middleware
+3. Update login endpoint
+4. Add token validation
+5. Write tests (unit + integration)
+
+Files to modify: 4
+New files: 2
+Estimated complexity: Medium
+
+Approve plan and proceed to implement? [Y/n]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 3: IMPLEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implementing...
+✓ Updated src/api/auth.js
+✓ Created src/middleware/jwt.js
+✓ Created src/utils/tokens.js
+✓ Added 12 tests (all passing)
+
+🎉 Implementation complete!
+```
+
+### Success - Phase Transition
+
+```
+🔄 RPI Phase Transition
+══════════════════════════════════════════════════════════════
+
+Current: RESEARCH → Next: PLAN
+
+⚠️ Context Health: 65% (approaching threshold)
+
+Before transitioning:
+1. Document key findings
+2. Save research notes
+3. Plan is LEVERAGE - quality > speed now
+
+Proceed with transition? [Y/n]
+```
+
+### Error - Wrong Phase
+
+```
+❌ Error: Cannot implement without planning
+
+Current phase: RESEARCH
+
+Complete the workflow in order:
+1. RESEARCH ✅ (current)
+2. PLAN ⏳
+3. IMPLEMENT ⏳
+
+Skip to plan: /agileflow:rpi PHASE=plan
+```
+
+---
+
 ## Related Documentation
 
 - [Context Engineering RPI Practice](../../docs/02-practices/context-engineering-rpi.md)

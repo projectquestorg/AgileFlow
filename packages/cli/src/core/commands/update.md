@@ -523,6 +523,65 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Update Generated
+
+```
+📊 Stakeholder Update Generated
+══════════════════════════════════════════════════════════════
+
+Period: Oct 9-16, 2025 (Week)
+Audience: Executive
+Format: Markdown
+
+Data collected from:
+  ✓ status.json (45 stories)
+  ✓ 3 epics
+  ✓ Git history (28 commits)
+  ✓ Bus log (142 events)
+  ✓ 2 ADRs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Preview
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## Executive Summary
+**Status**: 🟢 On Track
+
+We completed the user authentication epic this week,
+delivering all planned features on schedule.
+
+**Key Highlights**:
+- ✅ 12 stories completed (velocity: 18 points)
+- 🎯 Payment integration on track for end-of-month
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Save to: docs/08-project/updates/20251016-update.md
+
+Send update? (YES/NO/EDIT)
+```
+
+### Error - No Data for Period
+
+```
+⚠️ Insufficient data for update
+
+Period: Oct 1-7, 2025
+Stories completed: 0
+Commits: 3
+
+Not enough activity to generate meaningful update.
+
+Options:
+1. Expand period to last 2 weeks
+2. Generate minimal status report
+3. Cancel
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:docs` - Synchronize documentation with code

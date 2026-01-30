@@ -251,7 +251,9 @@ bash .agileflow/scripts/compress-status.sh
 - `/agileflow:status` - View current story statuses
 - `/agileflow:validate` - Validate AgileFlow system health
 
-## Example Output
+## Expected Output
+
+### Success - Compression Complete
 
 ```
 🗜️  AgileFlow Status Compression
@@ -297,6 +299,30 @@ bash .agileflow/scripts/compress-status.sh
 
 💾 To restore original: cp docs/09-agents/status.json.backup docs/09-agents/status.json
 ```
+
+### Error - File Not Found
+
+```
+❌ Error: status.json not found
+
+Expected location: docs/09-agents/status.json
+
+Run /agileflow:setup to initialize AgileFlow structure.
+```
+
+### Error - Invalid JSON
+
+```
+❌ Error: Invalid JSON in status.json
+
+Parse error at line 42: Unexpected token
+
+Fix the JSON syntax error and try again.
+Backup your current file first:
+  cp docs/09-agents/status.json docs/09-agents/status.json.broken
+```
+
+---
 
 ## Technical Notes
 

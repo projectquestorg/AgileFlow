@@ -760,6 +760,81 @@ OUTPUT
 
 ---
 
+## Expected Output
+
+### Success - Metrics Dashboard
+
+```
+📊 AgileFlow Metrics Dashboard
+══════════════════════════════════════════════════════════════
+Period: 2026-01-22 to 2026-01-29 (7 days)
+
+🎯 VELOCITY
+┌────────────────────────────────────────────────────────────┐
+│ Stories Completed: 12                                      │
+│ Story Points: 34                                           │
+│ Average: 4.9 stories/week                                  │
+│ Trend: ↑ 15% from previous week                           │
+└────────────────────────────────────────────────────────────┘
+
+⏱️ CYCLE TIME
+┌────────────────────────────────────────────────────────────┐
+│ Average: 2.3 days                                          │
+│ Median: 1.8 days                                           │
+│ P95: 4.1 days                                              │
+│ Trend: ↓ 10% (improving)                                   │
+└────────────────────────────────────────────────────────────┘
+
+📋 WORK DISTRIBUTION
+│ By Status:           │ By Owner:                          │
+│ ✅ Done: 24 (72%)    │ AG-API: 12 stories                 │
+│ 🔄 In Progress: 3    │ AG-UI: 8 stories                   │
+│ 📋 Ready: 5          │ AG-DEVOPS: 7 stories               │
+│ 🚧 Blocked: 1        │ AG-CI: 6 stories                   │
+
+🧪 QUALITY
+│ Test Pass Rate: 98.5%                                      │
+│ Coverage: 82%                                              │
+│ Bugs Found: 2 (both fixed)                                 │
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Health Score: 🟢 92/100 (Excellent)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Insights:
+- Velocity up 15% - team is hitting stride
+- 1 blocked story needs attention (US-0055)
+- Consider adding capacity to AG-CI (backlog growing)
+```
+
+### Success - Export to JSON
+
+```
+📊 Metrics exported to: docs/08-project/metrics-2026-01-29.json
+
+{
+  "period": { "start": "2026-01-22", "end": "2026-01-29" },
+  "velocity": { "stories": 12, "points": 34, "trend": 0.15 },
+  "cycleTime": { "average": 2.3, "median": 1.8, "p95": 4.1 },
+  "health": 92
+}
+```
+
+### Error - No Data Available
+
+```
+⚠️ Insufficient data for metrics
+
+No completed stories in the selected period.
+
+Try:
+- Expand date range: PERIOD=30d
+- Check status.json has story history
+- Run /agileflow:status to record completions
+```
+
+---
+
 ## Related Commands
 
 - `/agileflow:velocity` - Track velocity and forecast capacity
