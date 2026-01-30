@@ -12,14 +12,7 @@ const { spawnSync } = require('node:child_process');
 const semver = require('semver');
 const { Installer } = require('../installers/core/installer');
 const { IdeManager } = require('../installers/ide/manager');
-const {
-  promptInstall,
-  success,
-  error,
-  info,
-  displaySection,
-  displayLogo,
-} = require('../lib/ui');
+const { promptInstall, success, error, info, displaySection, displayLogo } = require('../lib/ui');
 const { createDocsStructure } = require('../lib/docs-setup');
 const { getLatestVersion } = require('../lib/npm-utils');
 const { ErrorHandler } = require('../lib/error-handler');

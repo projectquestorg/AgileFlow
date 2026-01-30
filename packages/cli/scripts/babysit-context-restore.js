@@ -43,17 +43,37 @@ function main() {
     // Output restoration context
     console.log('');
     console.log('\x1b[36m╔══════════════════════════════════════════════════════════════╗\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  \x1b[1m\x1b[33m/babysit CONTEXT RESTORED\x1b[0m                                   \x1b[36m║\x1b[0m');
+    console.log(
+      '\x1b[36m║\x1b[0m  \x1b[1m\x1b[33m/babysit CONTEXT RESTORED\x1b[0m                                   \x1b[36m║\x1b[0m'
+    );
     console.log('\x1b[36m╠══════════════════════════════════════════════════════════════╣\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  /agileflow:babysit was active before context clear.         \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  These rules are MANDATORY:                                  \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m                                                              \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  1. ALWAYS end responses with AskUserQuestion tool           \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  2. Use EnterPlanMode before non-trivial tasks               \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  3. Delegate complex work to domain experts                  \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  4. Track progress with TodoWrite for 3+ step tasks          \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m                                                              \x1b[36m║\x1b[0m');
-    console.log('\x1b[36m║\x1b[0m  For full context: /agileflow:babysit                        \x1b[36m║\x1b[0m');
+    console.log(
+      '\x1b[36m║\x1b[0m  /agileflow:babysit was active before context clear.         \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  These rules are MANDATORY:                                  \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m                                                              \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  1. ALWAYS end responses with AskUserQuestion tool           \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  2. Use EnterPlanMode before non-trivial tasks               \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  3. Delegate complex work to domain experts                  \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  4. Track progress with TodoWrite for 3+ step tasks          \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m                                                              \x1b[36m║\x1b[0m'
+    );
+    console.log(
+      '\x1b[36m║\x1b[0m  For full context: /agileflow:babysit                        \x1b[36m║\x1b[0m'
+    );
     console.log('\x1b[36m╚══════════════════════════════════════════════════════════════╝\x1b[0m');
     console.log('');
 

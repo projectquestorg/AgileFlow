@@ -73,12 +73,16 @@ describe('generator-factory', () => {
 
       test('throws on missing register method', () => {
         const generator = { generate: jest.fn() };
-        expect(() => factory.registerGenerator('test', generator)).toThrow('register(registry) method');
+        expect(() => factory.registerGenerator('test', generator)).toThrow(
+          'register(registry) method'
+        );
       });
 
       test('throws on missing generate method', () => {
         const generator = { register: jest.fn() };
-        expect(() => factory.registerGenerator('test', generator)).toThrow('generate(context) method');
+        expect(() => factory.registerGenerator('test', generator)).toThrow(
+          'generate(context) method'
+        );
       });
 
       test('supports generator classes', () => {
@@ -251,9 +255,7 @@ describe('generator-factory', () => {
         const context = factory.buildContext({ custom: 'value' });
         await factory.runGenerator('test', context);
 
-        expect(generateFn).toHaveBeenCalledWith(
-          expect.objectContaining({ custom: 'value' })
-        );
+        expect(generateFn).toHaveBeenCalledWith(expect.objectContaining({ custom: 'value' }));
       });
     });
 

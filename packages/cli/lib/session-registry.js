@@ -305,7 +305,9 @@ class SessionRegistry extends EventEmitter {
       return success({ found: true });
     }
 
-    return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { found: true } });
+    return failure('EUNKNOWN', result.error || 'Failed to save registry', {
+      context: { found: true },
+    });
   }
 
   /**
@@ -335,7 +337,9 @@ class SessionRegistry extends EventEmitter {
       return success({ found: true });
     }
 
-    return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { found: true } });
+    return failure('EUNKNOWN', result.error || 'Failed to save registry', {
+      context: { found: true },
+    });
   }
 
   /**
@@ -466,7 +470,9 @@ class SessionRegistry extends EventEmitter {
     if (cleaned > 0) {
       const result = await this.save(registry);
       if (!result.ok) {
-        return failure('EUNKNOWN', result.error || 'Failed to save registry', { context: { cleaned } });
+        return failure('EUNKNOWN', result.error || 'Failed to save registry', {
+          context: { cleaned },
+        });
       }
       return success({ cleaned });
     }

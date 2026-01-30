@@ -36,7 +36,7 @@ is_pid_alive() {
 cleanup_stale_sessions() {
     local now=$(date +%s)
 
-    for lockfile in "$SESSIONS_DIR"/session-*.lock 2>/dev/null; do
+    for lockfile in "$SESSIONS_DIR"/session-*.lock; do
         [[ -f "$lockfile" ]] || continue
 
         # Read lock file
@@ -63,7 +63,7 @@ cleanup_stale_sessions() {
 get_active_sessions() {
     local sessions=()
 
-    for lockfile in "$SESSIONS_DIR"/session-*.lock 2>/dev/null; do
+    for lockfile in "$SESSIONS_DIR"/session-*.lock; do
         [[ -f "$lockfile" ]] || continue
 
         local lock_pid=$(grep "^pid=" "$lockfile" 2>/dev/null | cut -d= -f2)

@@ -14,110 +14,110 @@
 
 # Brand color
 brand:
-  hex: "#e8683a"
-  ansi: "38;2;232;104;58"  # RGB true color
+  hex: '#e8683a'
+  ansi: '38;2;232;104;58' # RGB true color
 
 # Modifiers
 modifiers:
-  reset: "0"
-  bold: "1"
-  dim: "2"
-  italic: "3"
-  underline: "4"
+  reset: '0'
+  bold: '1'
+  dim: '2'
+  italic: '3'
+  underline: '4'
 
 # Standard ANSI colors (8 colors)
 standard:
-  red: "31"
-  green: "32"
-  yellow: "33"
-  blue: "34"
-  magenta: "35"
-  cyan: "36"
-  white: "37"
-  black: "30"
+  red: '31'
+  green: '32'
+  yellow: '33'
+  blue: '34'
+  magenta: '35'
+  cyan: '36'
+  white: '37'
+  black: '30'
 
 # Bright ANSI colors
 bright:
-  red: "91"
-  green: "92"
-  yellow: "93"
-  blue: "94"
-  magenta: "95"
-  cyan: "96"
-  white: "97"
-  black: "90"
+  red: '91'
+  green: '92'
+  yellow: '93'
+  blue: '94'
+  magenta: '95'
+  cyan: '96'
+  white: '97'
+  black: '90'
 
 # 256-color palette (vibrant, modern look)
 palette256:
   mintGreen:
-    code: "38;5;158"
-    comment: "Healthy/success states"
+    code: '38;5;158'
+    comment: 'Healthy/success states'
   peach:
-    code: "38;5;215"
-    comment: "Warning states"
+    code: '38;5;215'
+    comment: 'Warning states'
   coral:
-    code: "38;5;203"
-    comment: "Critical/error states"
+    code: '38;5;203'
+    comment: 'Critical/error states'
   lightGreen:
-    code: "38;5;194"
-    comment: "Session healthy"
+    code: '38;5;194'
+    comment: 'Session healthy'
   lightYellow:
-    code: "38;5;228"
-    comment: "Session warning"
+    code: '38;5;228'
+    comment: 'Session warning'
   lightPink:
-    code: "38;5;210"
-    comment: "Session critical"
+    code: '38;5;210'
+    comment: 'Session critical'
   skyBlue:
-    code: "38;5;117"
-    comment: "Directories/paths, ready states"
+    code: '38;5;117'
+    comment: 'Directories/paths, ready states'
   lavender:
-    code: "38;5;147"
-    comment: "Model info, story IDs"
+    code: '38;5;147'
+    comment: 'Model info, story IDs'
   softGold:
-    code: "38;5;222"
-    comment: "Cost/money"
+    code: '38;5;222'
+    comment: 'Cost/money'
   teal:
-    code: "38;5;80"
-    comment: "Pending states"
+    code: '38;5;80'
+    comment: 'Pending states'
   slate:
-    code: "38;5;103"
-    comment: "Secondary info"
+    code: '38;5;103'
+    comment: 'Secondary info'
   rose:
-    code: "38;5;211"
-    comment: "Blocked/critical accent"
+    code: '38;5;211'
+    comment: 'Blocked/critical accent'
   amber:
-    code: "38;5;214"
-    comment: "WIP/in-progress accent"
+    code: '38;5;214'
+    comment: 'WIP/in-progress accent'
   powder:
-    code: "38;5;153"
-    comment: "Labels/headers"
+    code: '38;5;153'
+    comment: 'Labels/headers'
 
 # Background colors
 backgrounds:
-  red: "41"
-  green: "42"
-  yellow: "43"
-  blue: "44"
+  red: '41'
+  green: '42'
+  yellow: '43'
+  blue: '44'
 
 # Semantic aliases (map to colors above)
 semantic:
-  success: "green"       # Maps to standard.green
-  error: "red"           # Maps to standard.red
-  warning: "yellow"      # Maps to standard.yellow
-  info: "cyan"           # Maps to standard.cyan
+  success: 'green' # Maps to standard.green
+  error: 'red' # Maps to standard.red
+  warning: 'yellow' # Maps to standard.yellow
+  info: 'cyan' # Maps to standard.cyan
 
 # High-contrast mode colors (WCAG AAA - 7:1+ ratio)
 # Used when AGILEFLOW_HIGH_CONTRAST=1
 highContrast:
   # Use bright variants for maximum visibility
-  red: "91"
-  green: "92"
-  yellow: "93"
-  blue: "94"
-  magenta: "95"
-  cyan: "96"
-  white: "97"
+  red: '91'
+  green: '92'
+  yellow: '93'
+  blue: '94'
+  magenta: '95'
+  cyan: '96'
+  white: '97'
   # Special handling
-  dim: "0"              # No dimming in high-contrast
-  brightBlack: "37"     # Use white instead of gray
-  brand: "38;2;255;165;0"  # Bright orange for visibility
+  dim: '0' # No dimming in high-contrast
+  brightBlack: '37' # Use white instead of gray
+  brand: '38;2;255;165;0' # Bright orange for visibility

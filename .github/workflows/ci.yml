@@ -104,6 +104,24 @@ jobs:
         run: npm audit --audit-level=moderate
         continue-on-error: false
 
+  shellcheck:
+    name: Shell Script Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck on shell scripts
+        run: |
+          # Check all shell scripts for errors (security/syntax issues)
+          # Start with errors only, add warnings progressively as scripts are improved
+          # SC2034: Unused vars - intentional for library files that export colors/utilities
+          find packages/cli/scripts -name "*.sh" -type f | \
+            xargs shellcheck --severity=error --exclude=SC2034
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
@@ -168,7 +186,7 @@ jobs:
   # Summary job that can be used as required status check
   ci-success:
     name: CI Success
-    needs: [test, security, e2e-tests]
+    needs: [test, security, shellcheck, e2e-tests]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -180,6 +198,10 @@ jobs:
           fi
           if [ "${{ needs.security.result }}" != "success" ]; then
             echo "Security audit failed!"
+            exit 1
+          fi
+          if [ "${{ needs.shellcheck.result }}" != "success" ]; then
+            echo "Shellcheck failed!"
             exit 1
           fi
           if [ "${{ needs.e2e-tests.result }}" != "success" ]; then

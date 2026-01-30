@@ -1416,7 +1416,10 @@ function commitChanges(sessionId, options = {}) {
     if (commitResult.stdout && commitResult.stdout.includes('nothing to commit')) {
       return { success: true, message: 'No changes to commit', commitHash: null };
     }
-    return { success: false, error: `Failed to commit: ${commitResult.stderr || commitResult.stdout}` };
+    return {
+      success: false,
+      error: `Failed to commit: ${commitResult.stderr || commitResult.stdout}`,
+    };
   }
 
   // Get commit hash
@@ -1655,7 +1658,10 @@ async function getSessionPhaseAsync(session) {
 
     // Count commits since branch diverged from main
     const mainBranch = getMainBranch();
-    const commitResult = await execGitAsync(['rev-list', '--count', `${mainBranch}..HEAD`], sessionPath);
+    const commitResult = await execGitAsync(
+      ['rev-list', '--count', `${mainBranch}..HEAD`],
+      sessionPath
+    );
     const commits = parseInt(commitResult.stdout || '0', 10);
 
     if (commits === 0) {

@@ -5,7 +5,11 @@
  * for story status and session thread type transitions.
  */
 
-const { StateMachine, storyStatusMachine, sessionThreadMachine } = require('../../lib/state-machine');
+const {
+  StateMachine,
+  storyStatusMachine,
+  sessionThreadMachine,
+} = require('../../lib/state-machine');
 
 describe('StateMachine', () => {
   describe('constructor', () => {

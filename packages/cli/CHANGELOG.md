@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.95.0] - 2026-01-30
+
+### Added
+- Global session management commands (status, history, cleanup)
+- `/agileflow:install` and `/agileflow:maintain` commands for quick setup
+- Multi-expert Implementation Ideation in `/research:import` and `/research:analyze`
+- Plan file context preservation with experimental profile
+- Tmux freeze recovery keybinds and `--rescue` flag
+- Shellcheck CI job for shell script linting
+
+### Fixed
+- Prevent worktree sessions from being marked as main
+- Prevent duplicate agents during install/update
+- Inline uncommitted changes handling for `/session:end`
+
 ## [2.94.1] - 2026-01-24
 
 ### Added

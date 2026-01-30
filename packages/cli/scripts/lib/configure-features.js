@@ -275,7 +275,10 @@ function enableFeature(feature, options = {}, version) {
   // Handle shell aliases
   if (feature === 'shellaliases') {
     const result = enableShellAliases();
-    if (result.configured.length > 0 || result.skipped.some(s => s.includes('already configured'))) {
+    if (
+      result.configured.length > 0 ||
+      result.skipped.some(s => s.includes('already configured'))
+    ) {
       updateMetadata(
         {
           features: {
@@ -1113,7 +1116,12 @@ function disableShellAliases() {
           inBlock = true;
           continue;
         }
-        if (inBlock && (line.startsWith('# Use ') || line.startsWith('alias af=') || line.startsWith('alias agileflow='))) {
+        if (
+          inBlock &&
+          (line.startsWith('# Use ') ||
+            line.startsWith('alias af=') ||
+            line.startsWith('alias agileflow='))
+        ) {
           continue;
         }
         if (inBlock && line.trim() === '') {

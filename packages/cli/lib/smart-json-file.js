@@ -648,12 +648,16 @@ function cleanupTempFiles(directory, options = {}) {
     }
 
     if (errors.length > 0) {
-      return failure('EUNKNOWN', 'Some temp files could not be cleaned', { context: { cleaned, errors } });
+      return failure('EUNKNOWN', 'Some temp files could not be cleaned', {
+        context: { cleaned, errors },
+      });
     }
     return success({ cleaned, errors });
   } catch (err) {
     errors.push(`Directory read error: ${err.message}`);
-    return failure('EUNKNOWN', `Directory read error: ${err.message}`, { context: { cleaned, errors } });
+    return failure('EUNKNOWN', `Directory read error: ${err.message}`, {
+      context: { cleaned, errors },
+    });
   }
 }
 
