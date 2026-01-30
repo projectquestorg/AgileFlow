@@ -80,16 +80,19 @@ cd ../..
 echo "✅ Format and lint checks passed"
 echo ""
 
-# Step 0.7: Check for npm audit vulnerabilities (high severity)
-echo "Step 0.7: Checking for high-severity npm vulnerabilities..."
+# Step 0.7: Check for npm audit vulnerabilities (high severity) in CLI package only
+echo "Step 0.7: Checking for high-severity npm vulnerabilities in packages/cli..."
+cd packages/cli
 if ! npm audit --audit-level=high 2>/dev/null; then
   echo ""
-  echo "❌ High-severity vulnerabilities found!"
-  echo "   Run 'npm audit fix' to resolve before releasing."
+  echo "❌ High-severity vulnerabilities found in packages/cli!"
+  echo "   Run 'cd packages/cli && npm audit fix' to resolve before releasing."
   echo "   If fixes require breaking changes, consider addressing manually."
+  cd ../..
   exit 1
 fi
-echo "✅ No high-severity vulnerabilities found"
+cd ../..
+echo "✅ No high-severity vulnerabilities in published package"
 echo ""
 
 # Step 1: Sync README from root to CLI (root is source of truth)
