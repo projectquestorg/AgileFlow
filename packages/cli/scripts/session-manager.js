@@ -840,6 +840,25 @@ async function createSession(options = {}) {
     }
   }
 
+  // Symlink .agileflow/sessions/ to main project (shared session registry across worktrees)
+  // This ensures all sessions see the same registry, preventing is_main bugs and sync issues
+  const sessionsSymlinkSrc = path.join(ROOT, '.agileflow', 'sessions');
+  const sessionsSymlinkDest = path.join(worktreePath, '.agileflow', 'sessions');
+  if (fs.existsSync(sessionsSymlinkSrc)) {
+    try {
+      // Remove the copied sessions directory (it was copied above with .agileflow)
+      if (fs.existsSync(sessionsSymlinkDest)) {
+        fs.rmSync(sessionsSymlinkDest, { recursive: true, force: true });
+      }
+      // Create relative symlink to main project's sessions directory
+      const relPath = path.relative(path.dirname(sessionsSymlinkDest), sessionsSymlinkSrc);
+      fs.symlinkSync(relPath, sessionsSymlinkDest, 'dir');
+    } catch (e) {
+      // Non-fatal: log but continue - the copied version will work, just won't be synchronized
+      console.warn(`Warning: Could not symlink sessions directory: ${e.message}`);
+    }
+  }
+
   // Symlink docs/ to main project docs (shared state: status.json, session-state.json, bus/)
   // This enables story claiming, status bus, and session coordination across worktrees
   const foldersToSymlink = ['docs'];
@@ -1652,7 +1671,9 @@ function main() {
         // Create new
         sessionId = String(registry.next_id);
         registry.next_id++;
-        const isMain = cwd === ROOT;
+        // A session is "main" only if it's at the project root AND not a git worktree
+        // Worktrees have .git as a file (not directory), pointing to the main repo
+        const isMain = cwd === ROOT && !isGitWorktree(cwd);
         registry.sessions[sessionId] = {
           path: cwd,
           branch,
