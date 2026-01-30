@@ -1363,6 +1363,174 @@ function integrateSession(sessionId, options = {}) {
   return result;
 }
 
+/**
+ * Generate auto commit message for session
+ * @param {Object} session - Session object
+ * @returns {string} Generated commit message
+ */
+function generateCommitMessage(session) {
+  const nickname = session.nickname || `session-${session.id || 'unknown'}`;
+  const branch = session.branch || 'unknown';
+  return `chore: commit uncommitted changes from ${nickname}\n\nBranch: ${branch}`;
+}
+
+/**
+ * Commit all changes in session worktree
+ * @param {string} sessionId - Session ID
+ * @param {Object} options - { message?: string }
+ * @returns {{ success: boolean, commitHash?: string, message?: string, error?: string }}
+ */
+function commitChanges(sessionId, options = {}) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (!fs.existsSync(session.path)) {
+    return { success: false, error: `Session directory not found: ${session.path}` };
+  }
+
+  // Stage all changes
+  const addResult = spawnSync('git', ['add', '-A'], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  if (addResult.status !== 0) {
+    return { success: false, error: `Failed to stage changes: ${addResult.stderr}` };
+  }
+
+  // Generate commit message if not provided
+  const message = options.message || generateCommitMessage({ ...session, id: sessionId });
+
+  // Create commit
+  const commitResult = spawnSync('git', ['commit', '-m', message], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  if (commitResult.status !== 0) {
+    // Check if nothing to commit (all changes already staged/committed)
+    if (commitResult.stdout && commitResult.stdout.includes('nothing to commit')) {
+      return { success: true, message: 'No changes to commit', commitHash: null };
+    }
+    return { success: false, error: `Failed to commit: ${commitResult.stderr || commitResult.stdout}` };
+  }
+
+  // Get commit hash
+  const hashResult = spawnSync('git', ['rev-parse', 'HEAD'], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  return {
+    success: true,
+    commitHash: hashResult.stdout?.trim(),
+    message,
+  };
+}
+
+/**
+ * Stash changes in session worktree
+ * @param {string} sessionId - Session ID
+ * @returns {{ success: boolean, message?: string, error?: string }}
+ */
+function stashChanges(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (!fs.existsSync(session.path)) {
+    return { success: false, error: `Session directory not found: ${session.path}` };
+  }
+
+  const stashMsg = `AgileFlow: session ${sessionId} merge prep`;
+  const result = spawnSync('git', ['stash', 'push', '-m', stashMsg], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  if (result.status !== 0) {
+    return { success: false, error: `Failed to stash: ${result.stderr}` };
+  }
+
+  // Check if stash was actually created (might be "No local changes to save")
+  if (result.stdout && result.stdout.includes('No local changes to save')) {
+    return { success: true, message: 'No changes to stash', stashCreated: false };
+  }
+
+  return { success: true, message: stashMsg, stashCreated: true };
+}
+
+/**
+ * Unstash changes (pop stash)
+ * @param {string} sessionId - Session ID (for error messages, uses current cwd)
+ * @returns {{ success: boolean, error?: string }}
+ */
+function unstashChanges(sessionId) {
+  // Note: After merge, the session worktree is deleted. Stash is popped on main.
+  // So we use ROOT instead of session.path
+
+  const result = spawnSync('git', ['stash', 'pop'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+
+  if (result.status !== 0) {
+    // Check if no stash exists
+    if (result.stderr && result.stderr.includes('No stash entries found')) {
+      return { success: true, message: 'No stash to pop' };
+    }
+    return { success: false, error: `Failed to unstash: ${result.stderr}` };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Discard all uncommitted changes in session worktree
+ * @param {string} sessionId - Session ID
+ * @returns {{ success: boolean, error?: string }}
+ */
+function discardChanges(sessionId) {
+  const registry = loadRegistry();
+  const session = registry.sessions[sessionId];
+
+  if (!session) {
+    return { success: false, error: `Session ${sessionId} not found` };
+  }
+
+  if (!fs.existsSync(session.path)) {
+    return { success: false, error: `Session directory not found: ${session.path}` };
+  }
+
+  // Reset staged changes
+  spawnSync('git', ['reset', 'HEAD'], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  // Discard working directory changes
+  const checkoutResult = spawnSync('git', ['checkout', '--', '.'], {
+    cwd: session.path,
+    encoding: 'utf8',
+  });
+
+  if (checkoutResult.status !== 0) {
+    return { success: false, error: `Failed to discard changes: ${checkoutResult.stderr}` };
+  }
+
+  // Note: Not cleaning untracked files by default (safety measure)
+  // Users can add --clean-untracked flag if needed
+
+  return { success: true };
+}
+
 // Session phases for Kanban-style visualization
 const SESSION_PHASES = {
   TODO: 'todo',
@@ -2066,6 +2234,60 @@ function main() {
       break;
     }
 
+    case 'commit-changes': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const options = {};
+      // Parse --message="..."
+      for (let i = 2; i < args.length; i++) {
+        const arg = args[i];
+        if (arg.startsWith('--message=')) {
+          options.message = arg.slice(10);
+        } else if (arg === '--message' && args[i + 1]) {
+          options.message = args[++i];
+        }
+      }
+      const result = commitChanges(sessionId, options);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
+    case 'stash': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const result = stashChanges(sessionId);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
+    case 'unstash': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const result = unstashChanges(sessionId);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
+    case 'discard-changes': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      const result = discardChanges(sessionId);
+      console.log(JSON.stringify(result));
+      break;
+    }
+
     case 'smart-merge': {
       const sessionId = args[1];
       if (!sessionId) {
@@ -2179,6 +2401,10 @@ ${c.cyan}Commands:${c.reset}
   integrate <id> [opts]   Merge session to main and cleanup
   smart-merge <id> [opts] Auto-resolve conflicts and merge
   merge-history           View merge audit log
+  commit-changes <id> [--message="..."]  Commit all uncommitted changes
+  stash <id>              Stash changes in session worktree
+  unstash <id>            Pop stash (after merge, on main)
+  discard-changes <id>    Discard all uncommitted changes
   help                    Show this help
 
 ${c.cyan}Merge Options (integrate & smart-merge):${c.reset}
@@ -3003,6 +3229,11 @@ module.exports = {
   checkMergeability,
   getMergePreview,
   integrateSession,
+  // Uncommitted changes handling (inline options for /session:end)
+  commitChanges,
+  stashChanges,
+  unstashChanges,
+  discardChanges,
   // Smart merge (auto-resolution)
   smartMerge,
   getConflictingFiles,

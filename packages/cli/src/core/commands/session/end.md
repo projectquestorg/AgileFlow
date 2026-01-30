@@ -7,7 +7,8 @@ compact_context:
     - "ACTIVE COMMAND: /agileflow:session:end - Terminate current session"
     - "For NON-MAIN sessions: 4 options (merge/end/delete/cancel)"
     - "For MAIN sessions: 2 options (end/cancel)"
-    - "Merge flow: check uncommitted → preview → check conflicts → strategy → confirm → execute"
+    - "Uncommitted changes: INLINE options (commit/commit-custom/stash/discard/cancel) - NOT blocking!"
+    - "Merge flow: check uncommitted → handle inline → preview → conflicts → strategy → confirm → execute → unstash if stashed"
     - "Main session can only be marked inactive, not deleted or merged"
     - "Use AskUserQuestion for all user choices"
   state_fields:
@@ -15,6 +16,7 @@ compact_context:
     - is_main_session
     - user_choice
     - merge_strategy
+    - stash_used
 ---
 
 # /agileflow:session:end
@@ -178,17 +180,123 @@ node .agileflow/scripts/session-manager.js check-merge {session_id}
 
 If response contains `reason: "uncommitted_changes"`:
 
+**Display change summary:**
 ```
 ⚠️ You have uncommitted changes in this session.
 
-Please commit your changes before merging:
-  git add .
-  git commit -m "your message"
+{details_from_response}
 
-Or discard changes:
-  git checkout -- .
+```
 
-Then run /agileflow:session:end again.
+**Present inline options with AskUserQuestion:**
+
+```
+AskUserQuestion:
+  question: "How would you like to handle these uncommitted changes?"
+  header: "Uncommitted changes"
+  multiSelect: false
+  options:
+    - label: "Commit all changes (Recommended)"
+      description: "Create a commit with auto-generated message"
+    - label: "Commit with custom message"
+      description: "Enter your own commit message"
+    - label: "Stash changes temporarily"
+      description: "Stash, merge, then restore after merge"
+    - label: "Discard all changes"
+      description: "Discard local changes and continue with merge"
+    - label: "Cancel"
+      description: "Keep session active with uncommitted changes"
+```
+
+#### If "Commit all changes" selected:
+
+```bash
+node .agileflow/scripts/session-manager.js commit-changes {session_id}
+```
+
+Display:
+```
+✓ Changes committed: {commitHash}
+  Message: {message}
+```
+
+Continue to **Merge Step 2**.
+
+#### If "Commit with custom message" selected:
+
+First, ask for the commit message:
+```
+AskUserQuestion:
+  question: "Enter your commit message:"
+  header: "Commit message"
+  multiSelect: false
+  options:
+    - label: "feat: ..."
+      description: "New feature"
+    - label: "fix: ..."
+      description: "Bug fix"
+    - label: "chore: ..."
+      description: "Maintenance/cleanup"
+```
+
+The user will select "Other" to enter a custom message. Then:
+
+```bash
+node .agileflow/scripts/session-manager.js commit-changes {session_id} --message="{user_message}"
+```
+
+Display:
+```
+✓ Changes committed: {commitHash}
+  Message: {message}
+```
+
+Continue to **Merge Step 2**.
+
+#### If "Stash changes temporarily" selected:
+
+```bash
+node .agileflow/scripts/session-manager.js stash {session_id}
+```
+
+Display:
+```
+✓ Changes stashed: {message}
+
+Note: After merge completes, stash will be restored on main branch.
+```
+
+Continue to **Merge Step 2**.
+
+**IMPORTANT**: After the merge completes successfully (at the end of Merge Step 7), run:
+```bash
+node .agileflow/scripts/session-manager.js unstash {session_id}
+```
+
+Display:
+```
+✓ Stashed changes restored to main branch.
+```
+
+#### If "Discard all changes" selected:
+
+```bash
+node .agileflow/scripts/session-manager.js discard-changes {session_id}
+```
+
+Display:
+```
+✓ All uncommitted changes discarded.
+
+⚠️ Note: Untracked files were NOT deleted.
+```
+
+Continue to **Merge Step 2**.
+
+#### If "Cancel" selected:
+
+```
+Session remains active with uncommitted changes.
 ```
 
 **Exit the flow here.** Do not continue to merge.
@@ -485,7 +593,30 @@ node .agileflow/scripts/session-manager.js status
 ```bash
 node .agileflow/scripts/session-manager.js check-merge {session_id}
 ```
-If `reason: "uncommitted_changes"` → Show commit instructions → EXIT
+If `reason: "uncommitted_changes"` → Show inline options (5 choices):
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "How would you like to handle these uncommitted changes?",
+  "header": "Uncommitted changes",
+  "multiSelect": false,
+  "options": [
+    {"label": "Commit all changes (Recommended)", "description": "Create a commit with auto-generated message"},
+    {"label": "Commit with custom message", "description": "Enter your own commit message"},
+    {"label": "Stash changes temporarily", "description": "Stash, merge, then restore after merge"},
+    {"label": "Discard all changes", "description": "Discard local changes and continue"},
+    {"label": "Cancel", "description": "Keep session active with uncommitted changes"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Step 1a: Handle uncommitted choice**
+- "Commit all": `node .agileflow/scripts/session-manager.js commit-changes {id}` → continue
+- "Commit custom": Ask for message → `commit-changes {id} --message="..."` → continue
+- "Stash": `node .agileflow/scripts/session-manager.js stash {id}` → continue (unstash after merge)
+- "Discard": `node .agileflow/scripts/session-manager.js discard-changes {id}` → continue
+- "Cancel": EXIT
 
 **Step 2: Get preview**
 ```bash
@@ -621,13 +752,15 @@ tmux kill-window
 2. Check is_main
 3. Show options (4 for non-main, 2 for main)
 4. If merge selected:
-   a. Check uncommitted → block if dirty
-   b. Preview commits/files
-   c. Check conflicts → offer alternatives if conflicts
-   d. Choose strategy (squash/merge)
-   e. Confirm cleanup
-   f. Execute integrate
-   g. Show success with cd command
+   a. Check uncommitted → show inline options (commit/stash/discard/cancel)
+   b. Handle uncommitted (commit-changes, stash, or discard-changes)
+   c. Preview commits/files
+   d. Check conflicts → offer alternatives if conflicts
+   e. Choose strategy (squash/merge)
+   f. Confirm cleanup
+   g. Execute integrate
+   h. If stash was used → unstash on main
+   i. Show success with cd command
 5. If end/delete → Execute and show result
 6. If in tmux → Offer to close tab
 ```
@@ -638,18 +771,22 @@ tmux kill-window
 
 ❌ Show merge option for main session
 ❌ Skip uncommitted check before merge
+❌ Block and exit on uncommitted changes (use inline options instead!)
 ❌ Merge without showing preview
 ❌ Merge when conflicts exist without warning
 ❌ Delete worktree before merge completes
+❌ Forget to unstash after merge if stash was used
 
 ### DO THESE
 
 ✅ Always check is_main first
-✅ Check uncommitted changes before anything
+✅ Check uncommitted changes and offer inline options
+✅ Handle uncommitted with commit-changes, stash, or discard-changes
 ✅ Show preview before merge
 ✅ Handle conflicts gracefully
 ✅ Squash as default strategy
 ✅ Show cd command after successful merge
+✅ If stash was used, unstash after merge completes
 
 ---
 
@@ -658,7 +795,8 @@ tmux kill-window
 - `/agileflow:session:end` IS ACTIVE
 - Non-main: 4 options (merge first!)
 - Main: 2 options only
-- Merge flow: uncommitted → preview → conflicts → strategy → confirm → execute
+- Uncommitted changes: inline options (commit/stash/discard/cancel) - NOT blocking!
+- Merge flow: uncommitted → handle → preview → conflicts → strategy → confirm → execute → unstash if needed
 - Default strategy: squash
 - Always show cd command to return to main
 - **After session ends: Offer to close tmux tab (if in tmux)**
