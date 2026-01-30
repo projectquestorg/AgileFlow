@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.95.1] - 2026-01-30
+
+### Fixed
+- Fix stale doc counts and scoped npm audit
+
 ## [2.95.0] - 2026-01-30
 
 ### Added
