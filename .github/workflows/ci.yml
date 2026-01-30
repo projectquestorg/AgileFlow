@@ -97,10 +97,12 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install CLI dependencies
+        working-directory: packages/cli
         run: npm ci --legacy-peer-deps
 
-      - name: Run npm audit
+      - name: Run npm audit on published package
+        working-directory: packages/cli
         run: npm audit --audit-level=moderate
         continue-on-error: false
 
