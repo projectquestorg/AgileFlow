@@ -124,7 +124,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/lodash": "^4.17.7",
     "@types/mdx": "^2.0.13",
-    "@types/node": "^20",
+    "@types/node": "^25",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "@typescript-eslint/parser": "^8.31.0",
