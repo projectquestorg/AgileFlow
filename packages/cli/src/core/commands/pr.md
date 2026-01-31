@@ -155,9 +155,9 @@ Suggest a commit message following conventional format:
 
 ### TOOL USAGE EXAMPLES
 
-**TodoWrite** (to track PR generation):
+**TaskCreate/TaskUpdate** (to track PR generation):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Parse inputs (STORY, TITLE, AC_CHECKED, TEST_EVIDENCE, NOTES)
 2. Read story file from docs/06-stories/
 3. Extract: epic, summary, deps, AC
@@ -206,7 +206,7 @@ Generate a complete PR description from story and test evidence.
 ROLE: PR Author
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track PR description generation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track PR description generation:
 ```
 1. Parse inputs (STORY, TITLE, AC_CHECKED, TEST_EVIDENCE, NOTES)
 2. Read story file to extract epic/summary/deps

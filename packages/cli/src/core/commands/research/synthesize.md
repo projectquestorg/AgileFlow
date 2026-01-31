@@ -310,7 +310,7 @@ Upon invocation, execute these steps:
 ### Step 1: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Validate TOPIC or FILES input", "status": "in_progress", "activeForm": "Validating inputs"},
   {"content": "Search/select research files", "status": "pending", "activeForm": "Selecting files"},

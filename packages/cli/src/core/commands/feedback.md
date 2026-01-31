@@ -180,9 +180,9 @@ Suggested Story: "US-XXXX: Improve story template with AC examples"
 
 ### TOOL USAGE EXAMPLES
 
-**TodoWrite** (to track feedback process):
+**TaskCreate/TaskUpdate** (to track feedback process):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Determine scope and required inputs
 2. Ask for feedback (optional)
 3. If YES: Show form with pre-filled context

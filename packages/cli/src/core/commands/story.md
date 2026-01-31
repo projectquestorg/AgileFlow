@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:story-new - Story creator with acceptance criteria"
-    - "{{RULES:todo_tracking}}"
+    - "{{RULES:task_tracking}}"
     - "{{RULES:file_preview}}"
     - "{{RULES:json_operations}}"
     - "{{RULES:user_confirmation}}"
@@ -46,11 +46,11 @@ node .agileflow/scripts/obtain-context.js story
 
 ---
 
-### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
+### 🚨 RULE #1: ALWAYS Create TaskCreate/TaskUpdate Task List FIRST
 
 Create a task list IMMEDIATELY (7 steps if TDD=true, 6 steps otherwise):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Parse inputs (EPIC, STORY, TITLE, OWNER, ESTIMATE, AC)
 2. Create story file from template
 3. Create test case stub
@@ -246,7 +246,7 @@ TDD=true|false             # TDD mode (smart default: true for code owners, fals
 - ALWAYS create test stub referencing AC
 - ALWAYS preview before confirming (prevents mistakes)
 - ALWAYS validate JSON after merge (prevents corruption)
-- Use TodoWrite for step tracking (6 steps, or 7 if TDD=true)
+- Use TaskCreate/TaskUpdate for step tracking (6 steps, or 7 if TDD=true)
 - Files: story file, test file, status.json, bus/log.jsonl
 - **TDD=true**: Also create framework-specific test code in `__tests__/` with pending tests
 
@@ -272,7 +272,7 @@ ROLE: Story Creator
 ```
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track story creation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track story creation:
 ```
 1. Parse inputs (EPIC, STORY, TITLE, OWNER, ESTIMATE, DEPENDENCIES, AC)
 2. Create docs/06-stories/<EPIC>/<STORY>-<slug>.md from template

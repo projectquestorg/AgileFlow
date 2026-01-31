@@ -76,9 +76,9 @@ A good Compact Summary includes:
 - Routine file writes, running commands, spawning agents
 - Obvious next steps with only one sensible path
 
-### TodoWrite Tracking
+### TaskCreate/TaskUpdate Tracking
 
-**CRITICAL**: Track progress with TodoWrite tool. Typical workflow:
+**CRITICAL**: Track progress with TaskCreate/TaskUpdate tool. Typical workflow:
 1. Run context loading (CLAUDE.md, README, status.json)
 2. Present suggestions using AskUserQuestion
 3. Plan implementation steps with file paths

@@ -6,7 +6,7 @@ compact_context:
   priority: medium
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:retro - Retrospective facilitator (read-only analysis)"
-    - "{{RULES:todo_tracking}}"
+    - "{{RULES:task_tracking}}"
     - "MUST focus on TEAM-LEVEL patterns (never individual blame)"
     - "MUST balance positive (Continue) with improvements (Start/Stop)"
     - "MUST use DATA to drive insights (no opinions without evidence)"
@@ -44,11 +44,11 @@ Automated retrospective generator that analyzes patterns and surfaces insights f
 
 ---
 
-### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
+### 🚨 RULE #1: ALWAYS Create TaskCreate/TaskUpdate Task List FIRST
 
 Create 9-step task list immediately:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Load data sources (bus/log.jsonl, status.json, stories, velocity)
 2. Analyze what went well (velocity, cycles, completions, estimation)
 3. Analyze improvements (velocity drops, cycles, WIP, blockers)
@@ -159,7 +159,7 @@ After displaying retrospective:
 ## REMEMBER AFTER COMPACTION
 
 - Command is read-only (analyzes data, no updates)
-- Creates 9-step TodoWrite task list (tracks progress)
+- Creates 9-step TaskCreate/TaskUpdate task list (tracks progress)
 - Focuses on TEAM-LEVEL patterns (never individual blame)
 - Balances Continue/Start/Stop with data evidence
 - Generates retrospective report with Start/Stop/Continue format
@@ -175,7 +175,7 @@ After displaying retrospective:
 ROLE: Retrospective Facilitator
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track retrospective generation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track retrospective generation:
 ```
 1. Load data sources (bus/log.jsonl, status.json, story data, velocity data)
 2. Analyze what went well (velocity, cycle time, epic completion, estimation)

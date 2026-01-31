@@ -62,7 +62,7 @@ compact_context:
   priority: critical
   preserve_rules:
     - "MUST use AskUserQuestion for all decisions"
-    - "MUST track progress with TodoWrite"
+    - "MUST track progress with TaskCreate/TaskUpdate"
 ---
 ```
 

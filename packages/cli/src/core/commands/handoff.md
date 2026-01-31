@@ -178,9 +178,9 @@ Fields:
 
 ### TOOL USAGE EXAMPLES
 
-**TodoWrite** (to track handoff creation):
+**TaskCreate/TaskUpdate** (to track handoff creation):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Parse inputs (STORY, FROM, TO, SUMMARY, BLOCKERS)
 2. Generate handoff note from template
 3. Generate bus log JSON line
@@ -223,7 +223,7 @@ Fields:
 ROLE: Handoff Scribe
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track handoff documentation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track handoff documentation:
 ```
 1. Parse inputs (STORY, FROM, TO, SUMMARY, BLOCKERS)
 2. Create docs/09-agents/comms/<STORY>-<YYYYMMDD>-handoff.md

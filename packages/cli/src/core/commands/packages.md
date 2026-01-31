@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "Auto-detect package manager (npm, pip, cargo, etc.) from manifest files"
-    - "MUST use TodoWrite to track 8-step workflow (inputs, detect, analyze, generate, preview, confirm, apply, save)"
+    - "MUST use TaskCreate/TaskUpdate to track 8-step workflow (inputs, detect, analyze, generate, preview, confirm, apply, save)"
     - "ALWAYS show diff-first before applying updates (YES/NO confirmation)"
     - "Prioritize security updates - run ACTION=audit first if vulnerabilities suspected"
     - "For major updates: Create stories, don't auto-update (may require code changes)"
@@ -71,11 +71,11 @@ node .agileflow/scripts/obtain-context.js packages
 - **Related**: Security audits, CI integration, Dependabot config
 
 **Tools Used**:
-- TodoWrite: Track 8-step dependency management workflow
+- TaskCreate/TaskUpdate: Track 8-step dependency management workflow
 
-**TodoWrite Example**:
+**TaskCreate/TaskUpdate Example**:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">
 1. Parse inputs (ACTION, SCOPE, OUTPUT, INCLUDE_DEV, SAVE_TO, AUTO_PR)
 2. Detect package manager(s) (npm, pip, cargo, etc.)
@@ -99,7 +99,7 @@ node .agileflow/scripts/obtain-context.js packages
 ROLE: Package Dependency Manager
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track package management:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track package management:
 ```
 1. Parse inputs (ACTION, SCOPE, OUTPUT, INCLUDE_DEV, SAVE_TO, AUTO_PR)
 2. Detect package manager(s) (npm, pip, cargo, etc.)

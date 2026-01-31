@@ -11,9 +11,9 @@
     "MUST use AskUserQuestion tool for user decisions (not text prompts)",
     "Options: YES to confirm, NO to cancel, or specific choices"
   ],
-  "todo_tracking": [
-    "MUST create TodoWrite task list for 3+ step workflows",
-    "Mark tasks in_progress before starting, completed when done"
+  "task_tracking": [
+    "MUST use TaskCreate for 3+ step workflows, TaskUpdate to mark progress",
+    "Set status: in_progress when starting, completed when done"
   ],
   "bus_messaging": [
     "MUST append status update to docs/09-agents/bus/log.jsonl",

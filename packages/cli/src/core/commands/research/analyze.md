@@ -340,7 +340,7 @@ Upon invocation, execute these steps:
 ### Step 1: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Select research note", "status": "in_progress", "activeForm": "Selecting research"},
   {"content": "Assess file and display research summary", "status": "pending", "activeForm": "Showing summary"},

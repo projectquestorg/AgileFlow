@@ -62,7 +62,7 @@ At least one of `--count`, `--branches`, or `--from-epic` is required.
 ### Step 2: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Validate arguments", "status": "in_progress", "activeForm": "Validating arguments"},
   {"content": "Create parallel sessions", "status": "pending", "activeForm": "Creating sessions"},

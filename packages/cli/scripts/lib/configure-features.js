@@ -1157,7 +1157,7 @@ When \`/agileflow:babysit\` is active (check session-state.json), these rules ar
 1. **ALWAYS end responses with the AskUserQuestion tool** - Not text like "What next?" but the ACTUAL TOOL CALL
 2. **Use Plan Mode for non-trivial tasks** - Call \`EnterPlanMode\` before complex implementations
 3. **Delegate complex work to domain experts** - Use \`Task\` tool with appropriate \`subagent_type\`
-4. **Track progress with TodoWrite** - For any task with 3+ steps
+4. **Track progress with TaskCreate/TaskUpdate** - For any task with 3+ steps
 
 These rules persist across conversation compaction. Check \`docs/09-agents/session-state.json\` for active commands.
 ${CLAUDE_MD_MARKER}

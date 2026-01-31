@@ -52,7 +52,7 @@ This gathers: git status, stories/epics, session state, docs structure, research
 **Key Rules:**
 1. ALWAYS end responses with `AskUserQuestion` tool (not text questions)
 2. Use `EnterPlanMode` before non-trivial implementation
-3. Use `TodoWrite` to track multi-step tasks
+3. Use `TaskCreate`/`TaskUpdate` to track multi-step tasks
 
 ---
 
@@ -312,9 +312,9 @@ Analysis/Review                   → /agileflow:multi-expert or Task(subagent_t
 
 ---
 
-### 🚨 RULE #4: TRACK PROGRESS WITH TodoWrite
+### 🚨 RULE #4: TRACK PROGRESS WITH Task Tools
 
-Use TodoWrite for any task with 3+ steps. Update status as you complete each step.
+Use TaskCreate for any task with 3+ steps. Use TaskUpdate to mark status as you complete each step.
 
 ---
 
@@ -345,7 +345,7 @@ These rules MUST be followed during implementation:
 1. **ALWAYS end your final response with AskUserQuestion tool** offering next steps
 2. **Use EnterPlanMode** if any NEW non-trivial tasks arise during implementation
 3. **Delegate complex work** to domain experts via Task tool
-4. **Track progress** with TodoWrite for multi-step work
+4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
 
 After implementation completes, you MUST call AskUserQuestion with options like:
 - "Run tests to verify"
@@ -849,7 +849,7 @@ When stuck detection triggers:
    1. ALWAYS end your final response with AskUserQuestion tool
    2. Use EnterPlanMode if new non-trivial tasks arise
    3. Delegate complex work to domain experts
-   4. Track progress with TodoWrite
+   4. Track progress with TaskCreate/TaskUpdate
 
    After implementation, call AskUserQuestion with next step options.
 
@@ -973,18 +973,32 @@ Use AskUserQuestion at natural pause points (task completion, decision needed) b
 </invoke>
 ```
 
-### TodoWrite
+### Task Tools (TaskCreate, TaskUpdate, TaskList, TaskGet)
 
-**USE:** Track all workflow steps. Update as you complete.
+**USE:** Track all workflow steps. Create tasks with TaskCreate, update status with TaskUpdate.
 
 ```xml
-<invoke name="TodoWrite">
-<parameter name="todos">[
-  {"content": "Run context script", "status": "completed", "activeForm": "Running context"},
-  {"content": "Spawn database expert", "status": "in_progress", "activeForm": "Spawning expert"},
-  {"content": "Update status.json", "status": "pending", "activeForm": "Updating status"}
-]</parameter>
+<!-- Create a task -->
+<invoke name="TaskCreate">
+<parameter name="subject">Run context script</parameter>
+<parameter name="description">Gather project context using obtain-context.js</parameter>
+<parameter name="activeForm">Running context script</parameter>
 </invoke>
+
+<!-- Mark task in progress -->
+<invoke name="TaskUpdate">
+<parameter name="taskId">1</parameter>
+<parameter name="status">in_progress</parameter>
+</invoke>
+
+<!-- Mark task completed -->
+<invoke name="TaskUpdate">
+<parameter name="taskId">1</parameter>
+<parameter name="status">completed</parameter>
+</invoke>
+
+<!-- List all tasks -->
+<invoke name="TaskList"></invoke>
 ```
 
 ### Task (Spawn Expert)

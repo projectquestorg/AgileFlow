@@ -89,9 +89,9 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 
 **Tool Usage Examples**:
 
-TodoWrite:
+TaskCreate/TaskUpdate:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Run pre-flight checks (session harness initialized)
 2. Load test configuration from environment.json
 3. Execute test command with timeout
@@ -135,7 +135,7 @@ Execute project tests and update `test_status` for stories in `docs/09-agents/st
 
 ## TODO LIST TRACKING
 
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track test verification:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track test verification:
 ```
 1. Run pre-flight checks (session harness initialized)
 2. Load configuration from docs/00-meta/environment.json

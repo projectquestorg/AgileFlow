@@ -396,7 +396,7 @@ Upon invocation, execute these steps:
 ### Step 1: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Gather codebase context", "status": "in_progress", "activeForm": "Gathering context"},
   {"content": "Extract relevant code snippets", "status": "pending", "activeForm": "Extracting code"},

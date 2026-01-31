@@ -36,11 +36,11 @@ Bootstrap minimal CI workflow and CODEOWNERS.
 
 ---
 
-### 🚨 RULE #1: ALWAYS USE TodoWrite FOR TRACKING
+### 🚨 RULE #1: ALWAYS USE TaskCreate/TaskUpdate FOR TRACKING
 
 Track all 5 steps explicitly:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">
 1. Parse OWNERS input (required, comma-separated)
 2. Generate .github/workflows/ci.yml with 3 jobs
@@ -139,7 +139,7 @@ Both paths MUST include the parsed OWNERS.
 ✅ Include concurrency with cancel-in-progress
 ✅ Use minimal permissions (contents: read)
 ✅ Include both required path mappings
-✅ Track with TodoWrite for safety
+✅ Track with TaskCreate/TaskUpdate for safety
 
 ---
 
@@ -208,7 +208,7 @@ Next steps:
 - ALWAYS show diff-first before creating files
 - Include lint, typecheck, test jobs
 - Map both /src/ and /docs/03-decisions/ in CODEOWNERS
-- Use TodoWrite to track 5 steps
+- Use TaskCreate/TaskUpdate to track 5 steps
 - Display next steps for GitHub configuration
 
 <!-- COMPACT_SUMMARY_END -->
@@ -218,7 +218,7 @@ Next steps:
 ROLE: CI Bootstrapper
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track CI setup:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track CI setup:
 ```
 1. Parse input (OWNERS)
 2. Create .github/workflows/ci.yml with lint/typecheck/test jobs

@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:context:full - Generates docs/context.md for external AI tools"
-    - "ALWAYS create TodoWrite list for multi-step workflow tracking"
+    - "ALWAYS create TaskCreate/TaskUpdate list for multi-step workflow tracking"
     - "ALWAYS show diff BEFORE ANY file writes - wait for YES/NO confirmation"
     - "PRESERVE user-written content - only update sections between MANAGED_SECTION markers"
     - "REQUIRED SOURCES: status.json, bus/log.jsonl, epics, stories, ADRs, practices, architecture, CI, CHANGELOG"
@@ -56,12 +56,12 @@ node .agileflow/scripts/obtain-context.js context:full
 
 ---
 
-### 🚨 RULE #1: ALWAYS START WITH TodoWrite LIST
+### 🚨 RULE #1: ALWAYS START WITH TaskCreate/TaskUpdate LIST
 
-**Before ANY gathering, create TodoWrite to track workflow:**
+**Before ANY gathering, create TaskCreate/TaskUpdate to track workflow:**
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Read existing docs/context.md", "status": "in_progress", "activeForm": "Reading context file"},
   {"content": "Gather sources (status.json, bus, epics, ADRs, practices, architecture, CI, CHANGELOG)", "status": "pending", "activeForm": "Gathering sources"},
@@ -234,7 +234,7 @@ Upon invocation, execute these steps:
 ### Step 1: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Read existing docs/context.md", "status": "in_progress", "activeForm": "Reading context file"},
   {"content": "Gather sources (status.json, bus, epics, ADRs)", "status": "pending", "activeForm": "Gathering sources"},

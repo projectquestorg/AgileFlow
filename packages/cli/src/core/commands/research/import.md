@@ -464,7 +464,7 @@ Upon invocation, execute these steps:
 ### Step 1: Create Todo List
 
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="todos">[
   {"content": "Validate TOPIC and CONTENT", "status": "in_progress", "activeForm": "Validating inputs"},
   {"content": "Analyze and summarize content", "status": "pending", "activeForm": "Analyzing content"},

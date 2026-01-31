@@ -18,7 +18,7 @@ compact_context:
     - "Create screenshots/ directory for visual verification workflow"
     - "Add test:e2e script to package.json"
     - "All screenshots must be visually reviewed and renamed with 'verified-' prefix"
-    - "Use TodoWrite to track all 8 setup steps"
+    - "Use TaskCreate/TaskUpdate to track all 8 setup steps"
     - "Run example test after setup to verify it works"
   state_fields:
     - playwright_installed

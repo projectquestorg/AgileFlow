@@ -100,11 +100,11 @@ git checkout agileflow-baseline-20251222-143000
 - Compare current state to baseline with `/agileflow:verify`
 
 **Tools Used**:
-- TodoWrite: Track 8-step baseline creation workflow
+- TaskCreate/TaskUpdate: Track 8-step baseline creation workflow
 
-**TodoWrite Example**:
+**TaskCreate/TaskUpdate Example**:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">
 1. Run pre-flight checks (session harness, tests, git status, story tests)
 2. Show baseline summary (what will be included)
@@ -152,7 +152,7 @@ Create a baseline marker (git tag + metadata) when all tests are passing and the
 
 ## TODO LIST TRACKING
 
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track baseline creation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track baseline creation:
 ```
 1. Run pre-flight checks (session harness, tests, git status, story tests)
 2. Show baseline summary (what will be included)

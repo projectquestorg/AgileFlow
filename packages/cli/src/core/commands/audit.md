@@ -70,17 +70,15 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 
 **Tool Usage Examples**:
 
-TodoWrite:
+Task Tracking:
 ```xml
-<invoke name="TodoWrite">
-<parameter name="todos">[
-  {"content": "Parse story ID and load story data", "status": "in_progress", "activeForm": "Loading story"},
-  {"content": "Run project tests", "status": "pending", "activeForm": "Running tests"},
-  {"content": "Verify acceptance criteria with user", "status": "pending", "activeForm": "Verifying AC"},
-  {"content": "Capture learnings", "status": "pending", "activeForm": "Capturing learnings"},
-  {"content": "Generate audit verdict and next steps", "status": "pending", "activeForm": "Generating verdict"}
-]</parameter>
+<!-- Create tasks for multi-step workflow -->
+<invoke name="TaskCreate">
+<parameter name="subject">Parse story ID and load story data</parameter>
+<parameter name="description">Load story from status.json and verify it exists</parameter>
+<parameter name="activeForm">Loading story</parameter>
 </invoke>
+<!-- Then use TaskUpdate with taskId to mark in_progress/completed -->
 ```
 
 AskUserQuestion (AC Verification):
@@ -111,8 +109,8 @@ ROLE: Story Auditor
 INPUTS
 STORY=<US-ID>   Required - story to audit
 
-TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool:
+TASK TRACKING
+**CRITICAL**: Immediately create tasks using TaskCreate tool:
 ```
 1. Parse story ID and load story data
 2. Run project tests

@@ -9,7 +9,7 @@ compact_context:
     - "OUTPUT LIMIT: ≤300 lines maximum for easy pasting into web AI tools"
     - "REQUIRED INPUT: docs/context.md must exist (run /agileflow:context:full first if missing)"
     - "EXTRACT ONLY: overview, focus, tech, decisions, features, next steps (skip progress, notes)"
-    - "NO TodoWrite needed - single-step read-only operation"
+    - "NO TaskCreate/TaskUpdate needed - single-step read-only operation"
   state_fields:
     - context_file_exists
     - output_line_count
@@ -285,7 +285,7 @@ Paste this excerpt into your web AI tool (ChatGPT, Perplexity, Gemini, etc.) to 
 
 - **LIMIT**: ≤300 lines total output
 - **NO FILE WRITES**: This is read-only
-- **NO TodoWrite needed**: Simple single-step operation
+- **NO TaskCreate/TaskUpdate needed**: Simple single-step operation
 
 ---
 

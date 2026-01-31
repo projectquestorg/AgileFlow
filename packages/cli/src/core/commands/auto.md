@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:auto-story - Auto-generate stories from product artifacts"
-    - "CRITICAL: Use TodoWrite to track 10-step generation process immediately"
+    - "CRITICAL: Use TaskCreate/TaskUpdate to track 10-step generation process immediately"
     - "CRITICAL: Always preview BEFORE creating (AUTO_CREATE=no default)"
     - "MUST generate stories with Given/When/Then Acceptance Criteria format"
     - "MUST estimate using INVEST: 0.5d (simple) | 1d (standard) | 1.5d (complex) | 2d (refactor)"
@@ -46,9 +46,9 @@ node .agileflow/scripts/obtain-context.js auto
 
 ### Tool Usage Examples
 
-**TodoWrite** (to track auto-generation):
+**TaskCreate/TaskUpdate** (to track auto-generation):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Read source file/URL
 2. Identify document type (PRD, API spec, mockup, etc.)
 3. Extract features and requirements
@@ -121,7 +121,7 @@ As a new user, I want to register with my email...
 ROLE: Story Generator
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track auto-generation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track auto-generation:
 ```
 1. Read source file/URL
 2. Identify document type (PRD, API spec, mockup, etc.)

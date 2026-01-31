@@ -191,9 +191,9 @@ Returns JWT token and user profile.
 
 ### TOOL USAGE EXAMPLES
 
-**TodoWrite** (to track sync process):
+**TaskCreate/TaskUpdate** (to track sync process):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Get git diff between BASE and BRANCH
 2. Categorize changes (API, UI, services, config, DB)
 3. Map to expected documentation locations

@@ -182,9 +182,9 @@ Include:
 
 ### TOOL USAGE EXAMPLES
 
-**TodoWrite** (to track review progress):
+**TaskCreate/TaskUpdate** (to track review progress):
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Get git diff between BASE and BRANCH
 2. Analyze code for 6 categories
 3. Identify issues and prioritize by severity

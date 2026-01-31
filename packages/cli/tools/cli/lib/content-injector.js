@@ -721,7 +721,7 @@ function getPlaceholderDocs() {
       '{{RULES:json_operations}}': 'Rules for safe JSON file modifications',
       '{{RULES:file_preview}}': 'Rules for showing previews before writing',
       '{{RULES:user_confirmation}}': 'Rules for using AskUserQuestion tool',
-      '{{RULES:todo_tracking}}': 'Rules for using TodoWrite tool',
+      '{{RULES:task_tracking}}': 'Rules for using TaskCreate/TaskUpdate tool',
       '{{RULES:bus_messaging}}': 'Rules for bus message logging',
       '{{RULES:plan_mode}}': 'Rules for using EnterPlanMode',
       '{{RULES:commit_approval}}': 'Rules about git commits',

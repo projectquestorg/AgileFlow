@@ -121,11 +121,11 @@ Both workflows deploy automatically on push.
 
 ---
 
-### 🚨 RULE #6: USE TodoWrite FOR TRACKING
+### 🚨 RULE #6: USE TaskCreate/TaskUpdate FOR TRACKING
 
 Track all 8 steps explicitly:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">
 1. Detect project type
 2. Recommend platform
@@ -238,7 +238,7 @@ Secrets guide: docs/02-practices/secrets-management.md
 - ALWAYS show preview before creating files
 - Create BOTH staging and production (unless specified)
 - Create .env.example template (never commit actual secrets)
-- Use TodoWrite to track 8 steps
+- Use TaskCreate/TaskUpdate to track 8 steps
 - Display next steps with exact commands
 
 <!-- COMPACT_SUMMARY_END -->
@@ -248,7 +248,7 @@ Secrets guide: docs/02-practices/secrets-management.md
 ROLE: Deployment Pipeline Configurator
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track deployment setup:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track deployment setup:
 ```
 1. Detect project type (static, full-stack, mobile, containers, serverless)
 2. Recommend platform based on project type

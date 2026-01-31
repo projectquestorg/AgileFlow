@@ -66,7 +66,7 @@ function main() {
       '\x1b[36m║\x1b[0m  3. Delegate complex work to domain experts                  \x1b[36m║\x1b[0m'
     );
     console.log(
-      '\x1b[36m║\x1b[0m  4. Track progress with TodoWrite for 3+ step tasks          \x1b[36m║\x1b[0m'
+      '\x1b[36m║\x1b[0m  4. Track progress with TaskCreate/TaskUpdate for 3+ step tasks          \x1b[36m║\x1b[0m'
     );
     console.log(
       '\x1b[36m║\x1b[0m                                                              \x1b[36m║\x1b[0m'

@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "Auto-detect language/runtime and testing framework (Node.js→Jest, Python→pytest, Ruby→RSpec, etc.)"
-    - "MUST use TodoWrite to track all 10 steps (detect, check existing, install, config, examples, structure, scripts, CI, docs, run)"
+    - "MUST use TaskCreate/TaskUpdate to track all 10 steps (detect, check existing, install, config, examples, structure, scripts, CI, docs, run)"
     - "Always show diff-first preview before creating files"
     - "Create working example tests (unit, integration, E2E if requested) - not just config"
     - "Set reasonable coverage thresholds (70%, not 100%)"
@@ -43,11 +43,11 @@ node .agileflow/scripts/obtain-context.js tests
 
 ---
 
-### 🚨 RULE #1: ALWAYS USE TodoWrite FOR 10 STEPS
+### 🚨 RULE #1: ALWAYS USE TaskCreate/TaskUpdate FOR 10 STEPS
 
 Track all steps explicitly:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">
 1. Detect language/runtime and framework
 2. Check existing test setup
@@ -264,7 +264,7 @@ tests/
 - ALWAYS create working example tests (not just config)
 - Set reasonable coverage (70%, not 100%)
 - Run tests after setup to verify they pass
-- Use TodoWrite to track 10 steps
+- Use TaskCreate/TaskUpdate to track 10 steps
 - Integrate with CI immediately
 - Create docs/02-practices/testing.md
 
@@ -290,7 +290,7 @@ ACTIONS
 8) Run tests to verify setup
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track test infrastructure setup:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track test infrastructure setup:
 ```
 1. Detect language/runtime and framework
 2. Check existing test setup

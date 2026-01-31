@@ -5,7 +5,7 @@ compact_context:
   priority: high
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:epic-new - Epic creator for feature planning"
-    - "{{RULES:todo_tracking}}"
+    - "{{RULES:task_tracking}}"
     - "{{RULES:file_preview}}"
     - "{{RULES:json_operations}}"
     - "{{RULES:user_confirmation}}"
@@ -43,11 +43,11 @@ Create a new epic with optional child stories.
 
 ---
 
-### 🚨 RULE #1: ALWAYS Create TodoWrite Task List FIRST
+### 🚨 RULE #1: ALWAYS Create TaskCreate/TaskUpdate Task List FIRST
 
 Create a 6-step task list IMMEDIATELY:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Parse inputs (EPIC, TITLE, OWNER, GOAL, STORIES)
 2. Create epic file from template
 3. For each story: create docs/06-stories/<EPIC>/<US_ID>-<slug>.md
@@ -183,7 +183,7 @@ RESEARCH=<file>        # Research note filename (optional)
 - ALWAYS parse and validate STORIES input (triplet format)
 - ALWAYS preview before confirming (prevents mistakes)
 - ALWAYS validate JSON after merge (prevents corruption)
-- Use TodoWrite for step tracking (6 steps)
+- Use TaskCreate/TaskUpdate for step tracking (6 steps)
 - Files: epic file, N story files, status.json, bus/log.jsonl
 - **RESEARCH-FIRST**: For complex epics (3+ stories), validate research exists; suggest /agileflow:research:ask if missing
 
@@ -197,7 +197,7 @@ OBJECTIVE
 Analyze feature requirements and create structured epics with associated stories. Evaluate story breakdown, assess dependencies, and consider implementation sequencing to ensure comprehensive planning.
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track epic creation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track epic creation:
 ```
 1. Parse inputs (EPIC, TITLE, OWNER, GOAL, STORIES)
 2. Create docs/05-epics/<EPIC>.md from template

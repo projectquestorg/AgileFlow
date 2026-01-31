@@ -43,12 +43,12 @@ Rules for using AskUserQuestion tool
 - "Options: YES to confirm, NO to cancel, or specific choices"
 ```
 
-### todo_tracking
-Rules for using TodoWrite tool
+### task_tracking
+Rules for using Task management tools (TaskCreate, TaskUpdate, TaskList, TaskGet)
 
 ```
-- "MUST create TodoWrite task list for 3+ step workflows"
-- "Mark tasks in_progress before starting, completed when done"
+- "MUST use TaskCreate for 3+ step workflows, TaskUpdate to mark progress"
+- "Set status: in_progress when starting, completed when done"
 ```
 
 ### bus_messaging

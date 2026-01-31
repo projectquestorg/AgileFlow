@@ -70,9 +70,9 @@ node .agileflow/scripts/obtain-context.js story-validate
 
 **Tool Usage Examples**:
 
-TodoWrite:
+TaskCreate/TaskUpdate:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Parse story ID from input
 2. Load story file from docs/06-stories/
 3. Parse YAML frontmatter and extract sections
@@ -108,7 +108,7 @@ AskUserQuestion:
 ROLE: Story Validator
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track story validation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track story validation:
 ```
 1. Parse story ID from input or ask user
 2. Load story file from docs/06-stories/

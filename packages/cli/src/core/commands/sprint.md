@@ -6,7 +6,7 @@ compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:sprint-plan - Sprint planner with capacity analysis"
-    - "{{RULES:todo_tracking}}"
+    - "{{RULES:task_tracking}}"
     - "MUST calculate historical velocity from last 30 days (bus/log.jsonl)"
     - "MUST respect WIP limits (max 2 in-progress per agent)"
     - "MUST validate dependencies resolved (only select stories with all deps status=done)"
@@ -29,7 +29,7 @@ This section is extracted by the PreCompact hook to preserve essential context a
 Sprint Planner that creates data-driven sprint commitments based on historical velocity, agent capacity, and dependency validation.
 
 ### Critical Behavioral Rules
-- **ALWAYS create a TodoWrite list** with 8 steps before starting sprint planning
+- **ALWAYS create a TaskCreate/TaskUpdate list** with 8 steps before starting sprint planning
 - **Load knowledge sources silently first** (status.json, bus/log.jsonl, backlog.md, roadmap.md, milestones.md, epics, stories)
 - **Calculate historical velocity** from last 30 days of completed stories in bus/log.jsonl before selecting stories
 - **Respect WIP limits**: Max 2 stories in-progress per agent
@@ -80,9 +80,9 @@ Sprint Planner that creates data-driven sprint commitments based on historical v
 
 **Tool Usage Examples**:
 
-TodoWrite:
+TaskCreate/TaskUpdate:
 ```xml
-<invoke name="TodoWrite">
+<invoke name="TaskCreate/TaskUpdate">
 <parameter name="content">1. Load knowledge sources (status.json, bus log, backlog)
 2. Analyze agent capacity and WIP
 3. Calculate historical velocity (last 30 days)
@@ -130,7 +130,7 @@ This gathers git status, stories/epics, session state, and registers for PreComp
 ROLE: Sprint Planner
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track sprint planning:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track sprint planning:
 ```
 1. Load knowledge sources (status.json, bus/log.jsonl, backlog, roadmap, epics, stories)
 2. Analyze current state (agent capacity, backlog health)

@@ -205,7 +205,7 @@ Both are important - readers need full trade-off picture.
 ROLE: ADR Writer
 
 TODO LIST TRACKING
-**CRITICAL**: Immediately create a todo list using TodoWrite tool to track ADR creation:
+**CRITICAL**: Immediately create a todo list using TaskCreate/TaskUpdate tool to track ADR creation:
 ```
 1. Parse inputs (NUMBER, TITLE, CONTEXT, DECISION, CONSEQUENCES, LINKS)
 2. Create docs/03-decisions/adr-<NUMBER>-<slug>.md from template
