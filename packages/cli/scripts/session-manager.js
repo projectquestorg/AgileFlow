@@ -26,6 +26,16 @@ const { isValidBranchName, isValidSessionNickname } = require('../lib/validate')
 
 const { SessionRegistry } = require('../lib/session-registry');
 const { sessionThreadMachine } = require('../lib/state-machine');
+const {
+  getLockPath: _getLockPath,
+  readLock: _readLock,
+  readLockAsync: _readLockAsync,
+  writeLock: _writeLock,
+  removeLock: _removeLock,
+  isPidAlive,
+  isSessionActive: _isSessionActive,
+  isSessionActiveAsync: _isSessionActiveAsync,
+} = require('../lib/lock-file');
 
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(getAgileflowDir(ROOT), 'sessions');
@@ -112,83 +122,33 @@ function saveRegistry(registryData) {
   return registry.saveSync(registryData);
 }
 
-// Check if PID is alive
-function isPidAlive(pid) {
-  if (!pid) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-// Get lock file path for session
+// Wrapper functions for lock-file module (bind to SESSIONS_DIR)
 function getLockPath(sessionId) {
-  return path.join(SESSIONS_DIR, `${sessionId}.lock`);
+  return _getLockPath(SESSIONS_DIR, sessionId);
 }
 
-// Read lock file (sync version for backward compatibility)
 function readLock(sessionId) {
-  const lockPath = getLockPath(sessionId);
-  if (!fs.existsSync(lockPath)) return null;
-
-  try {
-    const content = fs.readFileSync(lockPath, 'utf8');
-    const lock = {};
-    content.split('\n').forEach(line => {
-      const [key, value] = line.split('=');
-      if (key && value) lock[key.trim()] = value.trim();
-    });
-    return lock;
-  } catch (e) {
-    return null;
-  }
+  return _readLock(SESSIONS_DIR, sessionId);
 }
 
-// Read lock file (async version for parallel operations)
 async function readLockAsync(sessionId) {
-  const lockPath = getLockPath(sessionId);
-  try {
-    const content = await fs.promises.readFile(lockPath, 'utf8');
-    const lock = {};
-    content.split('\n').forEach(line => {
-      const [key, value] = line.split('=');
-      if (key && value) lock[key.trim()] = value.trim();
-    });
-    return lock;
-  } catch (e) {
-    return null;
-  }
+  return _readLockAsync(SESSIONS_DIR, sessionId);
 }
 
-// Write lock file
 function writeLock(sessionId, pid) {
-  const lockPath = getLockPath(sessionId);
-  const content = `pid=${pid}\nstarted=${Math.floor(Date.now() / 1000)}\n`;
-  fs.writeFileSync(lockPath, content);
+  return _writeLock(SESSIONS_DIR, sessionId, pid);
 }
 
-// Remove lock file
 function removeLock(sessionId) {
-  const lockPath = getLockPath(sessionId);
-  if (fs.existsSync(lockPath)) {
-    fs.unlinkSync(lockPath);
-  }
+  return _removeLock(SESSIONS_DIR, sessionId);
 }
 
-// Check if session is active (has lock with alive PID)
 function isSessionActive(sessionId) {
-  const lock = readLock(sessionId);
-  if (!lock || !lock.pid) return false;
-  return isPidAlive(parseInt(lock.pid, 10));
+  return _isSessionActive(SESSIONS_DIR, sessionId);
 }
 
-// Check if session is active (async version for parallel batch operations)
 async function isSessionActiveAsync(sessionId) {
-  const lock = await readLockAsync(sessionId);
-  if (!lock || !lock.pid) return false;
-  return isPidAlive(parseInt(lock.pid, 10));
+  return _isSessionActiveAsync(SESSIONS_DIR, sessionId);
 }
 
 // Clean up stale locks (with detailed tracking) - sync version for backward compatibility
