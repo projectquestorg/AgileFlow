@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.95.2] - 2026-02-01
+
+### Changed
+- Fix damage control hook MODULE_NOT_FOUND error
+
 ## [2.95.1] - 2026-01-30
 
 ### Fixed
