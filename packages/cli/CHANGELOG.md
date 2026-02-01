@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.95.3] - 2026-02-01
+
+### Added
+- Fresh restart flag for tmux with conversation auto-resume
+
 ## [2.95.2] - 2026-02-01
 
 ### Changed
