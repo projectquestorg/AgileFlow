@@ -312,6 +312,13 @@ tmux bind-key -n M-R respawn-pane -k
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"
+
+# Check for inherited session flags (set by parent Claude session)
+INHERITED_FLAGS=""
+if [ -n "$CLAUDE_SESSION_FLAGS" ]; then
+  INHERITED_FLAGS="$CLAUDE_SESSION_FLAGS"
+fi
+
 if [ "$USE_RESUME" = true ] && [ -n "$RESUME_SESSION_ID" ]; then
   # Fresh restart with specific conversation resume (skips picker)
   CLAUDE_CMD="claude --resume $RESUME_SESSION_ID"
@@ -319,6 +326,12 @@ elif [ "$USE_RESUME" = true ]; then
   # Fresh restart with conversation picker
   CLAUDE_CMD="claude --resume"
 fi
+
+# Add inherited flags if present (e.g., --dangerously-skip-permissions)
+if [ -n "$INHERITED_FLAGS" ]; then
+  CLAUDE_CMD="$CLAUDE_CMD $INHERITED_FLAGS"
+fi
+
 if [ $# -gt 0 ]; then
   # Pass any remaining arguments to claude
   CLAUDE_CMD="$CLAUDE_CMD $*"

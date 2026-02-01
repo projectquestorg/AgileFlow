@@ -30,6 +30,7 @@ const { execSync, spawnSync } = require('child_process');
 const { c, success, warning, error, dim, bold } = require('../lib/colors');
 const { getProjectRoot, getStatusPath } = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
+const { getInheritedFlags, detectParentSessionFlags } = require('../lib/flag-detection');
 
 // Import session manager functions
 const sessionManager = require('./session-manager');
@@ -70,6 +71,7 @@ function buildClaudeCommand(sessionPath, options = {}) {
     prompt = null,
     claudeArgs = null,
     noClaude = false,
+    inheritFlags = true,
   } = options;
   const parts = [`cd "${sessionPath}"`];
 
@@ -88,6 +90,12 @@ function buildClaudeCommand(sessionPath, options = {}) {
   } else if (claudeArgs) {
     // Custom claude arguments (e.g., --permission-mode acceptEdits)
     claudeCmd = `claude ${claudeArgs}`;
+  } else if (inheritFlags) {
+    // No explicit flags specified - try to inherit from parent session
+    const inherited = getInheritedFlags();
+    if (inherited) {
+      claudeCmd = `claude ${inherited}`;
+    }
   }
 
   if (prompt) {
@@ -239,6 +247,16 @@ async function spawn(args) {
   const prompt = args.prompt || null;
   const claudeArgs = args['claude-args'] || args.claudeArgs || null;
   const noClaude = args['no-claude'] || args.noClaude || false;
+  const noInherit = args['no-inherit'] || args.noInherit || false;
+
+  // Detect inherited flags from parent session (unless explicit flags provided)
+  let inheritedFlagsInfo = null;
+  if (!dangerous && !claudeArgs && !noInherit) {
+    const detection = detectParentSessionFlags();
+    if (detection.flags) {
+      inheritedFlagsInfo = detection;
+    }
+  }
 
   // Determine what to create
   let sessionsToCreate = [];
@@ -290,6 +308,15 @@ async function spawn(args) {
   // Create the sessions
   console.log(bold(`\n🚀 Creating ${sessionsToCreate.length} parallel sessions...\n`));
 
+  // Show inherited flags info if detected
+  if (inheritedFlagsInfo) {
+    console.log(`${c.cyan}📋 Inheriting flags from parent session:${c.reset} ${inheritedFlagsInfo.flags}`);
+    if (inheritedFlagsInfo.mode) {
+      console.log(`   ${dim(`Mode: ${inheritedFlagsInfo.mode}`)}`);
+    }
+    console.log('');
+  }
+
   const createdSessions = [];
   for (const sessionSpec of sessionsToCreate) {
     const result = await sessionManager.createSession({
@@ -324,19 +351,23 @@ async function spawn(args) {
 
   console.log('');
 
+  // Common options for buildClaudeCommand
+  const cmdOptions = {
+    init,
+    dangerous,
+    prompt,
+    claudeArgs,
+    noClaude,
+    inheritFlags: !noInherit,
+  };
+
   // Spawn in tmux or output commands
   if (noTmux) {
     // User explicitly requested manual mode
-    outputCommands(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
+    outputCommands(createdSessions, cmdOptions);
   } else if (hasTmux()) {
     // Tmux available - use it
-    const tmuxResult = spawnInTmux(createdSessions, {
-      init,
-      dangerous,
-      prompt,
-      claudeArgs,
-      noClaude,
-    });
+    const tmuxResult = spawnInTmux(createdSessions, cmdOptions);
 
     if (tmuxResult.success) {
       console.log(success(`\n✅ Tmux session created: ${tmuxResult.sessionName}`));
@@ -348,7 +379,7 @@ async function spawn(args) {
       console.log('');
     } else {
       console.error(error(`Failed to create tmux session: ${tmuxResult.error}`));
-      outputCommands(createdSessions, { init, dangerous, prompt, claudeArgs, noClaude });
+      outputCommands(createdSessions, cmdOptions);
     }
   } else {
     // Tmux NOT available - require it or use --no-tmux
@@ -580,7 +611,12 @@ ${c.cyan}SPAWN OPTIONS:${c.reset}
   --claude-args "..." Custom arguments for claude command
   --no-claude         Create worktree but don't start claude
   --no-tmux           Output commands without spawning in tmux
+  --no-inherit        Don't inherit flags from parent session
   --prompt "TEXT"     Initial prompt to send to each Claude instance
+
+${c.cyan}FLAG INHERITANCE:${c.reset}
+  By default, flags from the parent Claude session (like --dangerously-skip-permissions)
+  are automatically inherited by new sessions. Use --no-inherit to disable this.
 
 ${c.cyan}EXAMPLES:${c.reset}
   ${dim('# Create 4 parallel sessions')}
