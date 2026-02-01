@@ -93,6 +93,14 @@ class ClaudeCodeSetup extends BaseIdeSetup {
       }
     }
 
+    // Copy lib/damage-control-utils.js (required by hook scripts via ../lib/damage-control-utils)
+    const libSource = path.join(agileflowDir, 'scripts', 'lib', 'damage-control-utils.js');
+    const libTarget = path.join(claudeDir, 'hooks', 'lib', 'damage-control-utils.js');
+    if (fs.existsSync(libSource)) {
+      await this.ensureDir(path.dirname(libTarget));
+      await fs.copy(libSource, libTarget);
+    }
+
     // Copy patterns.yaml (preserve existing)
     const patternsSource = path.join(damageControlSource, 'patterns.yaml');
     const patternsTarget = path.join(damageControlTarget, 'patterns.yaml');

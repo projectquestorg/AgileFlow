@@ -5,6 +5,8 @@
 #   ./claude-tmux.sh              # Start in tmux with default session
 #   ./claude-tmux.sh --no-tmux    # Start without tmux (regular claude)
 #   ./claude-tmux.sh -n           # Same as --no-tmux
+#   ./claude-tmux.sh --fresh      # Kill and restart with latest scripts
+#   ./claude-tmux.sh -f           # Same as --fresh
 #   ./claude-tmux.sh --rescue     # Kill frozen session and restart fresh
 #   ./claude-tmux.sh --kill       # Kill existing session completely
 #   ./claude-tmux.sh --help       # Show help with keybinds
@@ -26,11 +28,18 @@ NO_TMUX=false
 RESCUE=false
 KILL_SESSION=false
 SHOW_HELP=false
+FRESH_START=false
+USE_RESUME=false
+RESUME_SESSION_ID=""
 
 for arg in "$@"; do
   case $arg in
     --no-tmux|-n)
       NO_TMUX=true
+      shift
+      ;;
+    --fresh|-f)
+      FRESH_START=true
       shift
       ;;
     --rescue|-r)
@@ -58,6 +67,7 @@ USAGE:
   agileflow [options] [claude-args...]
 
 OPTIONS:
+  --fresh, -f      Kill existing session and start fresh (use after updates)
   --no-tmux, -n    Run claude without tmux
   --rescue, -r     Kill frozen session and restart fresh
   --kill           Kill existing session completely
@@ -122,6 +132,37 @@ if [ "$RESCUE" = true ]; then
     echo "No existing session to rescue. Starting fresh..."
   fi
   # Continue to create new session below
+fi
+
+# Handle --fresh flag (kill old session and start fresh with latest scripts + resume conversation)
+if [ "$FRESH_START" = true ]; then
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    echo "Killing old session: $SESSION_NAME"
+    tmux kill-session -t "$SESSION_NAME"
+    echo "Starting fresh with latest scripts..."
+    sleep 0.3
+  else
+    echo "No existing session. Starting fresh..."
+  fi
+
+  # Find the most recent session for this directory
+  PROJ_DIR=$(pwd | sed 's|/|-|g' | sed 's|^-||')
+  SESSIONS_DIR="$HOME/.claude/projects/-$PROJ_DIR"
+
+  if [ -d "$SESSIONS_DIR" ]; then
+    # Get most recent non-agent session (main conversations only)
+    RECENT_SESSION=$(ls -t "$SESSIONS_DIR"/*.jsonl 2>/dev/null | grep -v "agent-" | head -1)
+    if [ -n "$RECENT_SESSION" ] && [ -s "$RECENT_SESSION" ]; then
+      # Extract session ID from filename (remove path and .jsonl extension)
+      RESUME_SESSION_ID=$(basename "$RECENT_SESSION" .jsonl)
+      echo "Found recent conversation: $RESUME_SESSION_ID"
+      USE_RESUME=true
+    else
+      echo "No previous conversation found. Starting fresh."
+    fi
+  else
+    echo "No session history found. Starting fresh."
+  fi
 fi
 
 # Check if tmux auto-spawn is disabled in config
@@ -271,9 +312,16 @@ tmux bind-key -n M-R respawn-pane -k
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"
+if [ "$USE_RESUME" = true ] && [ -n "$RESUME_SESSION_ID" ]; then
+  # Fresh restart with specific conversation resume (skips picker)
+  CLAUDE_CMD="claude --resume $RESUME_SESSION_ID"
+elif [ "$USE_RESUME" = true ]; then
+  # Fresh restart with conversation picker
+  CLAUDE_CMD="claude --resume"
+fi
 if [ $# -gt 0 ]; then
   # Pass any remaining arguments to claude
-  CLAUDE_CMD="claude $*"
+  CLAUDE_CMD="$CLAUDE_CMD $*"
 fi
 tmux send-keys -t "$SESSION_NAME" "$CLAUDE_CMD" Enter
 
