@@ -4,13 +4,13 @@ argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring]
 compact_context:
   priority: medium
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:ideate:new:history - Query ideation history"
+    - "ACTIVE COMMAND: /agileflow:ideate:history - Query ideation history"
     - "Read ideation index from docs/00-meta/ideation-index.json"
     - "Support filtering by status, category, or specific IDEA-XXXX"
     - "Show recurring ideas (appeared 2+ times) prominently"
 ---
 
-# /agileflow:ideate:new:history
+# /agileflow:ideate:history
 
 Query ideation history and track idea status across all previous ideation reports.
 
@@ -19,11 +19,11 @@ Query ideation history and track idea status across all previous ideation report
 ## Quick Usage
 
 ```
-/agileflow:ideate:new:history                      # Show summary
-/agileflow:ideate:new:history IDEA-0023            # View specific idea
-/agileflow:ideate:new:history STATUS=pending       # Filter by status
-/agileflow:ideate:new:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
-/agileflow:ideate:new:history CATEGORY=Security    # Filter by category
+/agileflow:ideate:history                      # Show summary
+/agileflow:ideate:history IDEA-0023            # View specific idea
+/agileflow:ideate:history STATUS=pending       # Filter by status
+/agileflow:ideate:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
+/agileflow:ideate:history CATEGORY=Security    # Filter by category
 ```
 
 ---
@@ -124,10 +124,10 @@ IDEATION HISTORY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 💡 Quick Actions:
-  • /agileflow:idea:history STATUS=pending    - View all pending ideas
-  • /agileflow:idea:history STATUS=recurring  - View all recurring ideas
-  • /agileflow:idea:history IDEA-0023         - View specific idea details
-  • /agileflow:ideate:new                         - Generate new ideas
+  • /agileflow:ideate:history STATUS=pending    - View all pending ideas
+  • /agileflow:ideate:history STATUS=recurring  - View all recurring ideas
+  • /agileflow:ideate:history IDEA-0023         - View specific idea details
+  • /agileflow:ideate:new                       - Generate new ideas
 ```
 
 **Specific Idea Output** (when IDEA-XXXX provided):
@@ -197,7 +197,7 @@ Standard Priority
 ... (showing first 10 of {N})
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Use /agileflow:idea:history IDEA-XXXX for details on any idea
+Use /agileflow:ideate:history IDEA-XXXX for details on any idea
 ```
 
 ### STEP 4: OFFER NEXT STEPS
@@ -233,7 +233,7 @@ Use /agileflow:idea:history IDEA-XXXX for details on any idea
 
 ## Example Execution
 
-**User**: `/agileflow:idea:history STATUS=recurring`
+**User**: `/agileflow:ideate:history STATUS=recurring`
 
 **Output**:
 ```
@@ -281,7 +281,7 @@ Total: 8 recurring ideas (5 pending, 3 implemented)
 
 ## Related Commands
 
-- `/agileflow:ideate:new:new` - Generate new improvement ideas
+- `/agileflow:ideate:new` - Generate new improvement ideas
 - `/agileflow:story` - Create user stories from ideas
 - `/agileflow:epic` - Create epic for grouped improvements
 - `/agileflow:debt` - Track technical debt items
