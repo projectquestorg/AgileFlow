@@ -543,7 +543,7 @@ For each idea:
 2. Address new high-confidence security items
 3. Schedule performance improvements for next sprint
 4. Add code quality items to tech debt backlog
-5. Run `/agileflow:idea:history` to see full idea backlog
+5. Run `/agileflow:ideate:history` to see full idea backlog
 ```
 
 **Save report to**: `docs/08-project/ideation-{YYYYMMDD}.md`
@@ -738,7 +738,7 @@ Usage: /agileflow:ideate SCOPE=security DEPTH=deep
 
 ## Related Commands
 
-- `/agileflow:idea:history` - Query ideation history and idea status (NEW!)
+- `/agileflow:ideate:history` - Query ideation history and idea status (NEW!)
 - `/agileflow:multi-expert` - Deploy multiple experts for analysis
 - `/agileflow:story` - Create user stories from ideas
 - `/agileflow:epic` - Create epic for grouped improvements

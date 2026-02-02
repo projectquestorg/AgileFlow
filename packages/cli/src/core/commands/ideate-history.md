@@ -4,13 +4,13 @@ argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring]
 compact_context:
   priority: medium
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:idea:history - Query ideation history"
+    - "ACTIVE COMMAND: /agileflow:ideate:history - Query ideation history"
     - "Read ideation index from docs/00-meta/ideation-index.json"
     - "Support filtering by status, category, or specific IDEA-XXXX"
     - "Show recurring ideas (appeared 2+ times) prominently"
 ---
 
-# /agileflow:idea:history
+# /agileflow:ideate:history
 
 Query ideation history and track idea status across all previous ideation reports.
 
@@ -19,11 +19,11 @@ Query ideation history and track idea status across all previous ideation report
 ## Quick Usage
 
 ```
-/agileflow:idea:history                      # Show summary
-/agileflow:idea:history IDEA-0023            # View specific idea
-/agileflow:idea:history STATUS=pending       # Filter by status
-/agileflow:idea:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
-/agileflow:idea:history CATEGORY=Security    # Filter by category
+/agileflow:ideate:history                      # Show summary
+/agileflow:ideate:history IDEA-0023            # View specific idea
+/agileflow:ideate:history STATUS=pending       # Filter by status
+/agileflow:ideate:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
+/agileflow:ideate:history CATEGORY=Security    # Filter by category
 ```
 
 ---
