@@ -1,6 +1,6 @@
 ---
 description: Generate categorized improvement ideas using multi-expert analysis
-argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both]
+argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false]
 compact_context:
   priority: high
   preserve_rules:
@@ -8,16 +8,21 @@ compact_context:
     - "CRITICAL: Deploy experts IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before synthesis (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring varies by depth: quick/deep (HIGH=2+ agree) | ultradeep (HIGH=3+ agree)"
-    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both)"
+    - "CRITICAL: Check ideation index for duplicates - show NEW vs RECURRING vs IMPLEMENTED"
+    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both) | HISTORY (true/false)"
     - "MUST categorize by domain: Security, Performance, Code Quality, UX, Testing, API/Architecture"
     - "MUST estimate effort for each idea: High/Medium/Low impact"
+    - "MUST assign IDEA-XXXX identifiers to all ideas and update ideation index"
     - "Optional: Generate stories for HIGH-confidence items (if OUTPUT=stories or both)"
   state_fields:
     - scope
     - depth
     - output_mode
+    - history_enabled
     - selected_experts
     - ideas_generated
+    - new_ideas
+    - recurring_ideas
 ---
 
 # /agileflow:ideate
@@ -31,6 +36,35 @@ Deploy multiple domain experts in parallel to generate categorized improvement s
 ```bash
 node .agileflow/scripts/obtain-context.js ideate
 ```
+
+---
+
+## STEP 0.5: Load Ideation Index (Deduplication)
+
+**Purpose**: Load the ideation index to detect recurring ideas and track history.
+
+Read the ideation index from `docs/00-meta/ideation-index.json`. If the file doesn't exist, create an empty index structure:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "updated": "ISO timestamp",
+  "ideas": {},
+  "reports": {},
+  "next_id": 1
+}
+```
+
+**If first run**: Execute the migration script to backfill from existing reports:
+```bash
+node .agileflow/scripts/migrate-ideation-index.js
+```
+
+This enables:
+- Assigning unique IDEA-XXXX identifiers to each idea
+- Detecting ideas that recur across multiple reports
+- Tracking which ideas have been implemented via linked stories/epics
+- Showing status (NEW / RECURRING / IMPLEMENTED) in reports
 
 ---
 
@@ -400,9 +434,43 @@ Group final ideas by category:
 - 🧪 Testing
 - 🏗️ API/Architecture
 
+### STEP 4.5: DEDUPLICATION & STATUS ENRICHMENT (if HISTORY=true)
+
+For each synthesized idea, check against the ideation index:
+
+1. **Generate Fingerprint**: Create normalized fingerprint from title + files
+2. **Check for Duplicates**: Search index for ideas with similar fingerprint or title (≥75% similarity)
+3. **Classify Status**:
+   - **🆕 NEW**: No match in index → Assign new IDEA-XXXX, add to index
+   - **🔄 RECURRING**: Match found → Record new occurrence, show first-seen date
+   - **✅ IMPLEMENTED**: Match has linked story with status=completed → Mark as addressed
+
+**Example classification logic**:
+```
+For each idea:
+  fingerprint = hash(normalize(title) + sort(files))
+  existing = findDuplicates(index, idea, threshold=0.75)
+
+  if existing.length > 0 and existing[0].similarity > 0.9:
+    # Recurring idea
+    idea.id = existing[0].id
+    idea.status = existing[0].status  # 'pending', 'implemented', etc.
+    idea.first_seen = existing[0].first_seen
+    idea.occurrence_count = existing[0].occurrences.length + 1
+    addOccurrence(index, idea.id, reportName)
+  else:
+    # New idea
+    idea.id = getNextId(index)  # IDEA-0145
+    idea.status = 'pending'
+    idea.first_seen = today
+    addIdeaToIndex(index, idea, reportName)
+```
+
+**Save updated index** after processing all ideas
+
 ### STEP 5: GENERATE OUTPUT
 
-**Report Format**:
+**Report Format** (with History/Deduplication enabled):
 
 ```markdown
 # Ideation Report
@@ -411,56 +479,76 @@ Group final ideas by category:
 **Scope**: {scope}
 **Depth**: {quick|deep}
 **Experts Consulted**: {list of experts}
-**Total Ideas**: {X} (High-Confidence: {Y}, Medium-Confidence: {Z})
+**Total Ideas**: {X} raw → {Y} qualified (New: {A}, Recurring: {B}, Implemented: {C})
 
 ---
 
-## 🎯 High-Confidence Improvements
-*Agreed by multiple experts - prioritize these*
+## 🆕 New Ideas (First Time Identified)
+*These ideas haven't appeared in previous ideation reports*
 
-### 1. {Title}
+### 1. {Title} [IDEA-0145]
 **Category**: {category} | **Impact**: High | **Effort**: {estimate}
 **Experts**: {expert1}, {expert2}
 **Files**: `{path1}`, `{path2}`
 **Why**: {reason}
 **Approach**: {brief approach}
 
-### 2. {Title}
-...
-
 ---
 
-## 💡 Medium-Confidence Opportunities
-*Single expert with evidence - worth exploring*
+## 🔄 Recurring Ideas (Previously Identified)
+*These ideas have appeared in prior reports - consider prioritizing*
 
-### {N}. {Title}
-**Category**: {category} | **Impact**: {level} | **Effort**: {estimate}
-**Expert**: {expert}
-**Files**: `{path}`
+### 2. {Title} [IDEA-0023]
+**Status**: Pending (first seen: ideation-20260114.md, occurrences: 3)
+**Category**: {category} | **Impact**: High | **Effort**: {estimate}
+**Experts**: {expert1}, {expert2}
+**Files**: `{path1}`, `{path2}`
 **Why**: {reason}
 **Approach**: {brief approach}
 
 ---
 
-## 📊 Summary by Category
+## ✅ Already Addressed
+*These ideas were implemented via linked stories/epics*
 
-| Category | High | Medium | Total |
-|----------|------|--------|-------|
-| 🔒 Security | X | Y | Z |
-| ⚡ Performance | X | Y | Z |
-| 🧹 Code Quality | X | Y | Z |
-| ... | | | |
+### 3. {Title} [IDEA-0005]
+**Implemented via**: US-0087 (completed 2026-01-14) in EP-0016
+**Category**: {category}
+**Original request**: {brief summary}
+
+---
+
+## 📊 Summary
+
+| Status | Count | Percentage |
+|--------|-------|------------|
+| 🆕 New | X | Y% |
+| 🔄 Recurring | X | Y% |
+| ✅ Implemented | X | Y% |
+
+| Category | New | Recurring | Implemented | Total |
+|----------|-----|-----------|-------------|-------|
+| 🔒 Security | X | Y | Z | W |
+| ⚡ Performance | X | Y | Z | W |
+| 🧹 Code Quality | X | Y | Z | W |
+| 🎨 UX/Design | X | Y | Z | W |
+| 🧪 Testing | X | Y | Z | W |
+| 🏗️ API/Architecture | X | Y | Z | W |
 
 ---
 
 ## 📋 Recommended Next Steps
 
-1. Address high-confidence security items first
-2. Schedule performance improvements for next sprint
-3. Add code quality items to tech debt backlog
+1. **Priority**: Address recurring high-confidence ideas (they keep coming up!)
+2. Address new high-confidence security items
+3. Schedule performance improvements for next sprint
+4. Add code quality items to tech debt backlog
+5. Run `/agileflow:idea:history` to see full idea backlog
 ```
 
 **Save report to**: `docs/08-project/ideation-{YYYYMMDD}.md`
+
+**Update ideation index**: Save the updated index to `docs/00-meta/ideation-index.json`
 
 ### STEP 6: STORY GENERATION (if OUTPUT=stories or both)
 
@@ -567,6 +655,8 @@ After generating output, present options:
 | SCOPE | all, security, perf, code, ux | all | Which domains to analyze |
 | DEPTH | quick, deep, ultradeep | quick | quick (3 ideas, 6 experts), deep (5 ideas, 6 experts), ultradeep (5 ideas, 13 experts) |
 | OUTPUT | report, stories, both | report | What to generate |
+| HISTORY | true, false | true | Enable deduplication and history tracking. Set to false for faster runs without history analysis |
+| SHOW_IMPLEMENTED | true, false | false | Include already-implemented ideas in report (useful for tracking) |
 
 {{argument}}
 
@@ -648,6 +738,7 @@ Usage: /agileflow:ideate SCOPE=security DEPTH=deep
 
 ## Related Commands
 
+- `/agileflow:idea:history` - Query ideation history and idea status (NEW!)
 - `/agileflow:multi-expert` - Deploy multiple experts for analysis
 - `/agileflow:story` - Create user stories from ideas
 - `/agileflow:epic` - Create epic for grouped improvements
