@@ -318,6 +318,9 @@ function parseSimpleYAML(content, sectionConfig) {
           .replace('flags:', '')
           .trim()
           .replace(/^["']|["']$/g, '');
+      } else if (trimmed.startsWith('ask:') && currentPattern) {
+        const askValue = trimmed.replace('ask:', '').trim().toLowerCase();
+        currentPattern.ask = askValue === 'true';
       }
     } else if (sectionType === 'list') {
       // List-based section (simple string arrays)
@@ -449,14 +452,22 @@ function createBashHook() {
      * Validate command against all patterns
      */
     function validateCommand(command, config) {
-      // Check blocked patterns (bashToolPatterns + agileflowProtections)
-      const blockedPatterns = [
+      // Check bashToolPatterns + agileflowProtections
+      // Rules with ask: true trigger confirmation, others block
+      const allPatterns = [
         ...(config.bashToolPatterns || []),
         ...(config.agileflowProtections || []),
       ];
 
-      for (const rule of blockedPatterns) {
+      for (const rule of allPatterns) {
         if (matchesPattern(command, rule)) {
+          // Check if this rule wants to ask instead of block
+          if (rule.ask === true || rule.ask === 'true') {
+            return {
+              action: 'ask',
+              reason: rule.reason || 'Please confirm this command',
+            };
+          }
           return {
             action: 'block',
             reason: rule.reason || 'Command blocked by damage control',
@@ -464,7 +475,7 @@ function createBashHook() {
         }
       }
 
-      // Check ask patterns
+      // Check askPatterns section (always ask)
       for (const rule of config.askPatterns || []) {
         if (matchesPattern(command, rule)) {
           return {
