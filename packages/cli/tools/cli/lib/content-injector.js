@@ -23,7 +23,12 @@
  *
  * FOLDER REFERENCES:
  *   {agileflow_folder} - Name of the agileflow folder (e.g., .agileflow)
+ *   {docs_folder}      - Name of the docs folder (e.g., docs, agileflow-docs)
  *   {project-root}     - Project root reference
+ *
+ * PATH INJECTION:
+ *   When docsFolder is not 'docs', all path references like `docs/` are replaced
+ *   with the actual folder name (e.g., `agileflow-docs/`).
  */
 
 const fs = require('fs');
@@ -473,11 +478,12 @@ function clearPreserveRulesCache() {
  * @param {Object} context - Context for replacements
  * @param {string} context.coreDir - Path to core directory (commands/, agents/, skills/)
  * @param {string} context.agileflowFolder - AgileFlow folder name
+ * @param {string} context.docsFolder - Docs folder name (default: 'docs')
  * @param {string} context.version - AgileFlow version
  * @returns {string} Content with all placeholders replaced
  */
 function injectContent(content, context = {}) {
-  const { coreDir, agileflowFolder = '.agileflow', version = 'unknown' } = context;
+  const { coreDir, agileflowFolder = '.agileflow', docsFolder = 'docs', version = 'unknown' } = context;
 
   let result = content;
 
@@ -501,6 +507,10 @@ function injectContent(content, context = {}) {
   const safeAgileflowFolder = validatePlaceholderValue(
     'agileflow_folder',
     agileflowFolder
+  ).sanitized;
+  const safeDocsFolder = validatePlaceholderValue(
+    'docs_folder',
+    docsFolder
   ).sanitized;
 
   // Replace count placeholders (both formats: {{X}} and <!-- {{X}} -->)
@@ -593,7 +603,21 @@ function injectContent(content, context = {}) {
 
   // Replace folder placeholders with sanitized values
   result = result.replace(/\{agileflow_folder\}/g, safeAgileflowFolder);
+  result = result.replace(/\{docs_folder\}/g, safeDocsFolder);
   result = result.replace(/\{project-root\}/g, '{project-root}'); // Keep as-is for runtime
+
+  // Replace docs/ path references with actual folder if different from default
+  // This ensures all path references point to the correct folder
+  // Pattern matches: `docs/`, "docs/", 'docs/' but NOT word boundaries like "documents/"
+  if (safeDocsFolder !== 'docs') {
+    // Replace in code/path contexts: `docs/xxx`, "docs/xxx", 'docs/xxx'
+    result = result.replace(/`docs\//g, `\`${safeDocsFolder}/`);
+    result = result.replace(/"docs\//g, `"${safeDocsFolder}/`);
+    result = result.replace(/'docs\//g, `'${safeDocsFolder}/`);
+    // Replace standalone path references like: docs/00-meta, docs/09-agents
+    // Must be followed by a path component (letter, number, or dash)
+    result = result.replace(/\bdocs\/([0-9a-zA-Z_-])/g, `${safeDocsFolder}/$1`);
+  }
 
   return result;
 }
@@ -690,6 +714,7 @@ function hasPlaceholders(content) {
     /\{\{QUALITY_GATE_PRIORITIES\}\}/,
     /\{\{RULES:\w+\}\}/,
     /\{agileflow_folder\}/,
+    /\{docs_folder\}/,
   ];
 
   return patterns.some(pattern => pattern.test(content));
@@ -735,6 +760,7 @@ function getPlaceholderDocs() {
     },
     folders: {
       '{agileflow_folder}': 'Name of the AgileFlow folder',
+      '{docs_folder}': 'Name of the docs folder (docs/ paths auto-replaced when different)',
       '{project-root}': 'Project root reference (kept as-is)',
     },
   };

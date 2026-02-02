@@ -139,6 +139,7 @@ class Installer {
           fileOps,
           force: effectiveForce,
           timestamp,
+          docsFolder: docsFolder || 'docs',
         });
       } else {
         // Fallback: copy from old structure (commands, agents, skills at root)
@@ -149,6 +150,7 @@ class Installer {
           fileOps,
           force: effectiveForce,
           timestamp,
+          docsFolder: docsFolder || 'docs',
         });
       }
 
@@ -295,8 +297,9 @@ class Installer {
    * @param {string} source - Source file path
    * @param {string} dest - Destination file path
    * @param {string} agileflowFolder - AgileFlow folder name
+   * @param {string} docsFolder - Docs folder name (default: 'docs')
    */
-  async copyFileWithReplacements(source, dest, agileflowFolder) {
+  async copyFileWithReplacements(source, dest, agileflowFolder, docsFolder = 'docs') {
     const ext = path.extname(source).toLowerCase();
 
     if (TEXT_EXTENSIONS.has(ext)) {
@@ -306,6 +309,7 @@ class Installer {
       content = injectContent(content, {
         coreDir: this.coreDir,
         agileflowFolder,
+        docsFolder,
         version: this.version,
       });
 
@@ -326,7 +330,7 @@ class Installer {
    * @param {Object} policy - Copy policy
    */
   async copyFileWithPolicy(source, dest, agileflowFolder, policy) {
-    const { agileflowDir, cfgDir, fileIndex, fileOps, force, timestamp } = policy;
+    const { agileflowDir, cfgDir, fileIndex, fileOps, force, timestamp, docsFolder = 'docs' } = policy;
 
     const relativePath = toPosixPath(path.relative(agileflowDir, dest));
     const maybeRecord = fileIndex.files[relativePath];
@@ -342,6 +346,7 @@ class Installer {
       content = injectContent(content, {
         coreDir: this.coreDir,
         agileflowFolder,
+        docsFolder,
         version: this.version,
       });
       newContent = content;

@@ -103,26 +103,21 @@ const IDE_CHOICES = IdeRegistry.getChoices();
 
 /**
  * Prompt for installation configuration
+ * Streamlined to ask only essential questions - uses smart defaults for the rest.
  * @returns {Promise<Object>} Installation configuration
  */
 async function promptInstall() {
   displayLogo();
 
-  const answers = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'directory',
-      message: 'Where would you like to install AgileFlow?',
-      default: '.',
-      validate: input => {
-        const resolved = path.resolve(input);
-        const parent = path.dirname(resolved);
-        if (!fs.existsSync(parent)) {
-          return `Parent directory does not exist: ${parent}`;
-        }
-        return true;
-      },
-    },
+  // Always install to current directory
+  const directory = path.resolve('.');
+
+  // Check if docs/ folder already exists (conflict detection)
+  const defaultDocsFolder = 'docs';
+  const docsExists = fs.existsSync(path.join(directory, defaultDocsFolder));
+
+  // Build questions dynamically - only ask what's necessary
+  const questions = [
     {
       type: 'checkbox',
       name: 'ides',
@@ -135,59 +130,33 @@ async function promptInstall() {
         return true;
       },
     },
-    {
-      type: 'input',
-      name: 'userName',
-      message: 'What should agents call you?',
-      default: 'Developer',
-    },
-    {
-      type: 'input',
-      name: 'agileflowFolder',
-      message: 'AgileFlow installation folder name:',
-      default: '.agileflow',
-      validate: input => {
-        if (!/^[a-zA-Z0-9._-]+$/.test(input)) {
-          return 'Folder name can only contain letters, numbers, dots, underscores, and hyphens';
-        }
-        return true;
-      },
-    },
-    {
+  ];
+
+  // Only ask about docs folder if it already exists (potential conflict)
+  if (docsExists) {
+    questions.push({
       type: 'input',
       name: 'docsFolder',
-      message: 'Documentation folder name:',
-      default: 'docs',
+      message: `A 'docs/' folder already exists. Use a different name for AgileFlow docs?`,
+      default: 'agileflow-docs',
       validate: input => {
         if (!/^[a-zA-Z0-9._-]+$/.test(input)) {
           return 'Folder name can only contain letters, numbers, dots, underscores, and hyphens';
         }
         return true;
       },
-    },
-    {
-      type: 'confirm',
-      name: 'updateGitignore',
-      message: 'Create/update .gitignore with recommended entries?',
-      default: true,
-    },
-    {
-      type: 'confirm',
-      name: 'claudeMdReinforcement',
-      message:
-        'Add /babysit AskUserQuestion rules to CLAUDE.md? (recommended for context preservation)',
-      default: true,
-    },
-  ]);
+    });
+  }
+
+  const answers = await inquirer.prompt(questions);
 
   return {
-    directory: path.resolve(answers.directory),
+    directory,
     ides: answers.ides,
-    userName: answers.userName,
-    agileflowFolder: answers.agileflowFolder,
-    docsFolder: answers.docsFolder,
-    updateGitignore: answers.updateGitignore,
-    claudeMdReinforcement: answers.claudeMdReinforcement,
+    userName: 'Developer', // Smart default - rarely customized
+    agileflowFolder: '.agileflow', // Smart default - never changed
+    docsFolder: answers.docsFolder || defaultDocsFolder,
+    updateGitignore: true, // Smart default - always want this
   };
 }
 
