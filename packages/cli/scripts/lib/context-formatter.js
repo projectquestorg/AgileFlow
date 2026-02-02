@@ -55,6 +55,14 @@ const {
   getContextPercentage,
 } = require('./context-loader');
 
+// Import ideation index for filtering suggestions
+let ideationIndex;
+try {
+  ideationIndex = require('./ideation-index');
+} catch {
+  // Ideation index not available
+}
+
 // =============================================================================
 // String Utilities
 // =============================================================================
@@ -748,6 +756,59 @@ function generateRemainingContent(prefetched, options = {}) {
     epicFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
   } else {
     content += `${C.dim}No epic files${C.reset}\n`;
+  }
+
+  // IDEATION SUGGESTIONS (filtered to exclude implemented)
+  if (ideationIndex) {
+    try {
+      const rootDir = process.cwd();
+      const indexResult = ideationIndex.loadIdeationIndex(rootDir);
+
+      if (indexResult.ok && indexResult.data) {
+        const index = indexResult.data;
+        const summary = ideationIndex.getIndexSummary(index);
+
+        // Only show if there are ideas
+        if (summary.totalIdeas > 0) {
+          content += `\n${C.cyan}${C.bold}═══ 💡 Ideation Summary ═══${C.reset}\n`;
+
+          // Show status breakdown
+          content += `${C.dim}Total ideas: ${summary.totalIdeas} | `;
+          content += `Pending: ${summary.byStatus.pending || 0} | `;
+          content += `Implemented: ${summary.byStatus.implemented || 0}${C.reset}\n`;
+
+          // Get recurring ideas that are NOT implemented
+          const recurringIdeas = ideationIndex.getRecurringIdeas(index, { excludeImplemented: true });
+
+          if (recurringIdeas.length > 0) {
+            content += `\n${C.amber}🔥 Top Recurring Ideas (Not Yet Implemented)${C.reset}\n`;
+            content += `${C.dim}These ideas appeared 2+ times across ideation reports - consider prioritizing them${C.reset}\n\n`;
+
+            recurringIdeas.slice(0, 5).forEach((item, i) => {
+              const { idea, occurrenceCount } = item;
+              content += `  ${i + 1}. ${C.lavender}[${idea.id}]${C.reset} ${idea.title}\n`;
+              content += `     ${C.dim}Category: ${idea.category} | Occurrences: ${occurrenceCount}x | Status: ${idea.status}${C.reset}\n`;
+            });
+
+            if (recurringIdeas.length > 5) {
+              content += `\n  ${C.dim}... and ${recurringIdeas.length - 5} more recurring ideas${C.reset}\n`;
+            }
+
+            content += `\n${C.dim}Run /agileflow:ideate:history STATUS=recurring to see all${C.reset}\n`;
+          } else if (summary.byStatus.pending > 0) {
+            // Has pending ideas but none recurring
+            content += `\n${C.dim}No recurring ideas found. ${summary.byStatus.pending} pending ideas available.${C.reset}\n`;
+            content += `${C.dim}Run /agileflow:ideate:history STATUS=pending to see them.${C.reset}\n`;
+          } else {
+            // All ideas implemented!
+            content += `\n${C.mintGreen}✓ All ideation items have been implemented!${C.reset}\n`;
+            content += `${C.dim}Run /agileflow:ideate:new to generate fresh improvement ideas.${C.reset}\n`;
+          }
+        }
+      }
+    } catch {
+      // Silently ignore ideation errors
+    }
   }
 
   // FOOTER

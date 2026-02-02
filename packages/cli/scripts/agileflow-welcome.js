@@ -46,12 +46,28 @@ try {
   // Story state machine not available
 }
 
+// Hook metrics module
+let hookMetrics;
+try {
+  hookMetrics = require('./lib/hook-metrics.js');
+} catch (e) {
+  // Hook metrics not available
+}
+
 // File tracking module
 let fileTracking;
 try {
   fileTracking = require('./lib/file-tracking.js');
 } catch (e) {
   // File tracking not available
+}
+
+// Ideation sync module
+let syncIdeationStatus;
+try {
+  syncIdeationStatus = require('./lib/sync-ideation-status.js');
+} catch (e) {
+  // Ideation sync not available
 }
 
 // Update checker module
@@ -1585,6 +1601,9 @@ function formatSessionBanner(parallelSessions) {
 
 // Main
 async function main() {
+  // Start hook timer for metrics
+  const timer = hookMetrics ? hookMetrics.startHookTimer('SessionStart', 'welcome') : null;
+
   const rootDir = getProjectRoot();
 
   // PERFORMANCE: Load all project files once into cache
@@ -1882,6 +1901,38 @@ async function main() {
       // Silently ignore epic completion errors
     }
   }
+
+  // Ideation sync: mark ideas as implemented when linked epics complete
+  if (syncIdeationStatus) {
+    try {
+      const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
+      if (syncResult.ok && syncResult.updated > 0) {
+        console.log('');
+        console.log(
+          `${c.dim}📊 Synced ${syncResult.updated} idea(s) as implemented${c.reset}`
+        );
+      }
+    } catch (e) {
+      // Silently ignore ideation sync errors
+    }
+  }
+
+  // Record hook metrics
+  if (timer && hookMetrics) {
+    hookMetrics.recordHookMetrics(timer, 'success', null, { rootDir });
+  }
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error(err);
+  // Record error in metrics if possible
+  if (hookMetrics) {
+    try {
+      const rootDir = getProjectRoot();
+      const timer = hookMetrics.startHookTimer('SessionStart', 'welcome');
+      hookMetrics.recordHookMetrics(timer, 'error', err.message, { rootDir });
+    } catch (e) {
+      // Silently ignore metrics errors
+    }
+  }
+});
