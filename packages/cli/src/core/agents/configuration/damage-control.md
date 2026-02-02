@@ -125,6 +125,7 @@ fi
     {"label": "Production database commands", "description": "Block psql/mysql/mongo production connections"},
     {"label": "Cloud CLI destructive ops", "description": "Block aws/gcloud/az delete commands"},
     {"label": "Extra env file protection", "description": "Block all .env.* and secrets.* files"},
+    {"label": "AI attribution blocking", "description": "Block Co-Authored-By: Claude/AI/GPT in git commits"},
     {"label": "Use defaults only", "description": "No additional protections needed"}
   ]
 }]</parameter>
@@ -180,6 +181,22 @@ Based on user selections from Step 4, append to patterns file:
   - ".env.*"
   - "secrets.*"
   - "credentials.*"
+```
+
+**AI attribution blocking** - add to bashToolPatterns:
+```yaml
+  # AI Attribution Prevention (added by configure)
+  # Match actual footer format: Co-Authored-By with AI name and email
+  - pattern: 'Co-Authored-By:\s*(Claude|AI|GPT|Copilot|Anthropic)[^/]*<[^>]+>'
+    reason: "AI co-author attribution blocked - follow project commit policy"
+    flags: "i"
+
+  - pattern: '🤖\s*(Generated|Created|Written)'
+    reason: "AI emoji attribution blocked - follow project commit policy"
+
+  - pattern: '\[Claude Code\]\(https?://'
+    reason: "Claude Code attribution links blocked - follow project commit policy"
+    flags: "i"
 ```
 
 ### Step 8: Configure PreToolUse Hooks
