@@ -1047,6 +1047,7 @@ function getChangelogEntries(version) {
 }
 
 // Run auto-update if enabled (quiet mode - minimal output)
+// DEPRECATED: Use spawnAutoUpdateInBackground() instead for non-blocking updates
 async function runAutoUpdate(rootDir, fromVersion, toVersion) {
   const runUpdate = () => {
     // Use stdio: 'pipe' to capture output instead of showing everything
@@ -1085,6 +1086,49 @@ async function runAutoUpdate(rootDir, fromVersion, toVersion) {
     console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
     return false;
   }
+}
+
+/**
+ * Spawn auto-update in a detached background process
+ * This allows the welcome hook to return immediately while the update runs
+ *
+ * @param {string} rootDir - Project root directory
+ * @param {string} fromVersion - Current version
+ * @param {string} toVersion - Target version
+ */
+function spawnAutoUpdateInBackground(rootDir, fromVersion, toVersion) {
+  const { spawn } = require('child_process');
+
+  // Track pending update in session-state.json
+  try {
+    const sessionStatePath = getSessionStatePath(rootDir);
+    let state = {};
+    if (fs.existsSync(sessionStatePath)) {
+      state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+    }
+    state.pending_update = {
+      from: fromVersion,
+      to: toVersion,
+      started_at: new Date().toISOString(),
+    };
+    fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+  } catch (e) {
+    // Silently continue - tracking is optional
+  }
+
+  // Create detached subprocess that survives parent exit
+  // Use shell: true to handle npx properly across platforms
+  const child = spawn('npx', ['agileflow@latest', 'update', '--force'], {
+    cwd: rootDir,
+    detached: true,
+    stdio: 'ignore', // Don't inherit stdout/stderr - prevents output after hook returns
+    shell: true,
+  });
+
+  // Allow parent to exit independently
+  child.unref();
+
+  console.log(`${c.dim}  Auto-update starting in background...${c.reset}`);
 }
 
 /**
@@ -1610,7 +1654,10 @@ async function main() {
   // This eliminates 6-8 duplicate file reads across functions
   const cache = loadProjectFiles(rootDir);
 
-  // All functions now use cached file data where possible
+  // ============================================
+  // PHASE 1: INSTANT WELCOME (< 300ms)
+  // All fast operations - no network, no auto-update
+  // ============================================
   const info = getProjectInfo(rootDir, cache);
   const archival = runArchival(rootDir, cache);
   const session = clearActiveCommands(rootDir, cache);
@@ -1621,33 +1668,38 @@ async function main() {
   const expertise = getExpertiseCountFast(rootDir);
   const damageControl = checkDamageControl(rootDir, cache);
 
-  // Check for updates (async, cached)
+  // Check if a previous background update completed successfully
+  // This allows us to show "just updated" even for background updates
   let updateInfo = {};
   try {
-    updateInfo = await checkUpdates();
+    const sessionStatePath = getSessionStatePath(rootDir);
+    if (fs.existsSync(sessionStatePath)) {
+      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
 
-    // If auto-update is enabled and update available, run it
-    if (updateInfo.available && updateInfo.autoUpdate && updateInfo.latest) {
-      const updated = await runAutoUpdate(rootDir, info.version, updateInfo.latest);
-      if (updated) {
-        // Mark as "just updated" so the welcome table shows it
-        updateInfo.justUpdated = true;
-        updateInfo.previousVersion = info.version;
-        // Update local info with new version
-        info.version = updateInfo.latest;
-        // Get changelog entries for the new version
-        updateInfo.changelog = getChangelogEntries(updateInfo.latest);
-        // Clear the "update available" flag since we just updated
-        updateInfo.available = false;
+      // Check if pending update from previous session completed
+      if (state.pending_update) {
+        const pendingUpdate = state.pending_update;
+        const startedAt = new Date(pendingUpdate.started_at);
+        const minutesAgo = (Date.now() - startedAt.getTime()) / (1000 * 60);
+
+        // If current version matches target, update succeeded
+        if (info.version === pendingUpdate.to) {
+          updateInfo.justUpdated = true;
+          updateInfo.previousVersion = pendingUpdate.from;
+          updateInfo.changelog = getChangelogEntries(info.version);
+          // Clear pending update
+          delete state.pending_update;
+          fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+        } else if (minutesAgo > 5) {
+          // Update timed out (5 minutes) - clear it
+          delete state.pending_update;
+          fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+        }
+        // If still pending and < 5 minutes, leave it (update may still be running)
       }
     }
-
-    // Mark current version as seen to track for next update
-    if (updateInfo.justUpdated && updateChecker) {
-      updateChecker.markVersionSeen(info.version);
-    }
   } catch (e) {
-    // Update check failed - continue without it
+    // Silently continue - pending update check is non-critical
   }
 
   // Check for new config options
@@ -1697,6 +1749,41 @@ async function main() {
       damageControl
     )
   );
+
+  // ============================================
+  // PHASE 2: BACKGROUND UPDATE CHECK (after table displays)
+  // This runs async and shows notification AFTER the table
+  // ============================================
+  try {
+    // Only check for updates if we didn't already detect a "just updated" from previous session
+    if (!updateInfo.justUpdated) {
+      const freshUpdateInfo = await checkUpdates();
+
+      // If update is available, show notification AFTER the table
+      if (freshUpdateInfo.available && freshUpdateInfo.latest) {
+        console.log('');
+        console.log(
+          `${c.amber}↑ Update available:${c.reset} v${info.version} → ${c.softGold}v${freshUpdateInfo.latest}${c.reset}`
+        );
+        console.log(`  Run: ${c.skyBlue}npx agileflow update${c.reset}`);
+
+        // If auto-update is enabled, spawn it in background (non-blocking)
+        if (freshUpdateInfo.autoUpdate) {
+          spawnAutoUpdateInBackground(rootDir, info.version, freshUpdateInfo.latest);
+        }
+      }
+
+      // Mark current version as seen to track for next update
+      if (freshUpdateInfo.justUpdated && updateChecker) {
+        updateChecker.markVersionSeen(info.version);
+      }
+    } else if (updateChecker) {
+      // Mark current version as seen (for "just updated" case)
+      updateChecker.markVersionSeen(info.version);
+    }
+  } catch (e) {
+    // Update check failed - continue without it (non-critical)
+  }
 
   // Show config auto-apply confirmation (for "full" profile)
   if (configAutoApplied > 0) {
