@@ -4,7 +4,7 @@ argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [O
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:ideate - Ideation orchestrator with multi-expert analysis"
+    - "ACTIVE COMMAND: /agileflow:ideate:new - Ideation orchestrator with multi-expert analysis"
     - "CRITICAL: Deploy experts IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before synthesis (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring varies by depth: quick/deep (HIGH=2+ agree) | ultradeep (HIGH=3+ agree)"
@@ -25,7 +25,7 @@ compact_context:
     - recurring_ideas
 ---
 
-# /agileflow:ideate
+# /agileflow:ideate:new
 
 Deploy multiple domain experts in parallel to generate categorized improvement suggestions for your codebase. Inspired by AutoClaude's ideation feature.
 
@@ -71,11 +71,11 @@ This enables:
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:ideate` - Generate improvement ideas via multi-expert analysis
+**Command**: `/agileflow:ideate:new` - Generate improvement ideas via multi-expert analysis
 
 **Quick Usage**:
 ```
-/agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=report
+/agileflow:ideate:new SCOPE=all DEPTH=quick OUTPUT=report
 ```
 
 **What It Does**: Deploy 4-15 domain experts → Each generates 3-5 ideas → Synthesize with confidence scoring → Categorized report
@@ -131,7 +131,7 @@ This enables:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    USER: /agileflow:ideate                  │
+│                    USER: /agileflow:ideate:new              │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -604,7 +604,7 @@ After generating output, present options:
 
 ## Example Execution
 
-**User**: `/agileflow:ideate SCOPE=all DEPTH=quick OUTPUT=report`
+**User**: `/agileflow:ideate:new SCOPE=all DEPTH=quick OUTPUT=report`
 
 **Step 1**: Parse → SCOPE=all (6 experts), DEPTH=quick (3 ideas each), OUTPUT=report
 
@@ -627,7 +627,7 @@ After generating output, present options:
 
 ### Example: Ultradeep Execution
 
-**User**: `/agileflow:ideate SCOPE=all DEPTH=ultradeep OUTPUT=both`
+**User**: `/agileflow:ideate:new SCOPE=all DEPTH=ultradeep OUTPUT=both`
 
 **Step 1**: Parse → SCOPE=all (13 experts), DEPTH=ultradeep (5 ideas each), OUTPUT=both
 
@@ -731,7 +731,7 @@ Valid scopes:
 - code: Code quality improvements
 - ux: User experience enhancements
 
-Usage: /agileflow:ideate SCOPE=security DEPTH=deep
+Usage: /agileflow:ideate:new SCOPE=security DEPTH=deep
 ```
 
 ---

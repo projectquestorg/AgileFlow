@@ -395,6 +395,6 @@ Features we have that competitors lack:
 
 ## Related Commands
 
-- `/agileflow:ideate` - Generate improvement ideas from internal analysis
+- `/agileflow:ideate:new` - Generate improvement ideas from internal analysis
 - `/agileflow:research:ask` - Generate detailed research prompts
 - `/agileflow:epic` - Create epic for implementing roadmap items

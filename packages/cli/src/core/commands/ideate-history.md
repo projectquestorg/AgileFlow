@@ -4,13 +4,13 @@ argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring]
 compact_context:
   priority: medium
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:ideate:history - Query ideation history"
+    - "ACTIVE COMMAND: /agileflow:ideate:new:history - Query ideation history"
     - "Read ideation index from docs/00-meta/ideation-index.json"
     - "Support filtering by status, category, or specific IDEA-XXXX"
     - "Show recurring ideas (appeared 2+ times) prominently"
 ---
 
-# /agileflow:ideate:history
+# /agileflow:ideate:new:history
 
 Query ideation history and track idea status across all previous ideation reports.
 
@@ -19,11 +19,11 @@ Query ideation history and track idea status across all previous ideation report
 ## Quick Usage
 
 ```
-/agileflow:ideate:history                      # Show summary
-/agileflow:ideate:history IDEA-0023            # View specific idea
-/agileflow:ideate:history STATUS=pending       # Filter by status
-/agileflow:ideate:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
-/agileflow:ideate:history CATEGORY=Security    # Filter by category
+/agileflow:ideate:new:history                      # Show summary
+/agileflow:ideate:new:history IDEA-0023            # View specific idea
+/agileflow:ideate:new:history STATUS=pending       # Filter by status
+/agileflow:ideate:new:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
+/agileflow:ideate:new:history CATEGORY=Security    # Filter by category
 ```
 
 ---
@@ -57,7 +57,7 @@ If the file doesn't exist:
 The ideation index hasn't been created yet.
 
 To populate it, either:
-1. Run /agileflow:ideate to generate new ideas (index created automatically)
+1. Run /agileflow:ideate:new to generate new ideas (index created automatically)
 2. Run the migration script to backfill from existing reports:
    node .agileflow/scripts/migrate-ideation-index.js
 ```
@@ -127,7 +127,7 @@ IDEATION HISTORY
   • /agileflow:idea:history STATUS=pending    - View all pending ideas
   • /agileflow:idea:history STATUS=recurring  - View all recurring ideas
   • /agileflow:idea:history IDEA-0023         - View specific idea details
-  • /agileflow:ideate                         - Generate new ideas
+  • /agileflow:ideate:new                         - Generate new ideas
 ```
 
 **Specific Idea Output** (when IDEA-XXXX provided):
@@ -211,7 +211,7 @@ Use /agileflow:idea:history IDEA-XXXX for details on any idea
   "options": [
     {"label": "Create story for top recurring idea", "description": "Generate a story for the most recurring pending idea"},
     {"label": "View pending ideas by category", "description": "Filter by Security, Performance, etc."},
-    {"label": "Run new ideation", "description": "Generate fresh ideas with /agileflow:ideate"},
+    {"label": "Run new ideation", "description": "Generate fresh ideas with /agileflow:ideate:new"},
     {"label": "Done", "description": "No further action needed"}
   ]
 }]</parameter>
@@ -281,7 +281,7 @@ Total: 8 recurring ideas (5 pending, 3 implemented)
 
 ## Related Commands
 
-- `/agileflow:ideate` - Generate new improvement ideas
+- `/agileflow:ideate:new:new` - Generate new improvement ideas
 - `/agileflow:story` - Create user stories from ideas
 - `/agileflow:epic` - Create epic for grouped improvements
 - `/agileflow:debt` - Track technical debt items

@@ -2,7 +2,7 @@
  * ideation-index.js - Ideation History & Deduplication System
  *
  * Provides persistent idea tracking, deduplication, and history querying
- * for the /agileflow:ideate command. Tracks all generated ideas with unique IDs,
+ * for the /agileflow:ideate:new command. Tracks all generated ideas with unique IDs,
  * detects duplicates across reports, and provides status tracking.
  *
  * Usage:
