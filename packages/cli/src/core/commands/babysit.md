@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: [EPIC=<EP-ID>] [MODE=loop|once] [MAX=<number>] [VISUAL=true|false] [COVERAGE=<number>]
+argument-hint: [EPIC=<EP-ID>]
 compact_context:
   priority: critical
   preserve_rules:
@@ -40,6 +40,75 @@ This gathers: git status, stories/epics, session state, docs structure, research
 
 ---
 
+## 🧠 SMART DETECTION (Auto-Enable Features)
+
+**After running context script, automatically detect and enable features.**
+
+Smart detection eliminates the need for users to specify parameters like `MODE=loop`, `VISUAL=true`, or `COVERAGE=80`. The mentor analyzes project context and enables appropriate features automatically.
+
+### Detection Rules
+
+| Feature | Auto-Enable When | Override |
+|---------|------------------|----------|
+| **Loop Mode** | Epic has 3+ ready stories AND test setup exists | User says "just one story" or `MODE=once` |
+| **Visual Mode** | Epic/story mentions UI/component/styling OR owner=AG-UI | User says "no screenshots" or `VISUAL=false` |
+| **Coverage Mode** | `coverage/` dir exists with baseline >50% | User says "skip coverage" or `COVERAGE=0` |
+| **Conditions** | Auto-detect from package.json scripts (lint, tsc, build) | N/A (always apply detected) |
+
+### Detection Flow
+
+1. Parse context output for signals
+2. Check each detection rule
+3. Enable applicable features silently
+4. Inform user: "🧠 Auto-enabled: Loop Mode, Visual Mode (UI epic detected)"
+5. Proceed with work
+
+### Signal Detection
+
+**Loop Mode signals:**
+- `status.json` has 3+ stories with status "ready" in same epic
+- `package.json` has "test" script
+- Stories have clear acceptance criteria
+
+**Visual Mode signals:**
+- Epic title contains: UI, component, frontend, styling, design
+- Story owner is "AG-UI"
+- Files in scope include: `src/components/`, `*.tsx`, `*.css`
+- `screenshots/` directory exists
+- Context shows "📸 VISUAL E2E TESTING: ENABLED"
+
+**Coverage Mode signals:**
+- `coverage/coverage-summary.json` exists
+- Current line coverage is >50%
+- Auto-set threshold to: current_coverage + 5%
+
+**Conditions signals (auto-add all detected):**
+- `package.json` has "lint" → add "no linting errors"
+- `tsconfig.json` exists → add "no type errors"
+- `package.json` has "build" → add "build succeeds"
+
+### Example Auto-Detection Output
+
+```
+🧠 Smart Detection Results:
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Loop Mode: ENABLED (5 ready stories in EP-0042)
+✓ Visual Mode: ENABLED (epic mentions "UI components")
+✓ Coverage Mode: ENABLED @ 75% (current baseline: 70%)
+✓ Conditions: lint ✓, types ✓, build ✓
+
+Proceeding with: US-0050 (first ready story)
+```
+
+### User Override
+
+If user explicitly specifies a parameter, respect it:
+- `/babysit EPIC=EP-0042 MODE=once` → Force single story mode
+- `/babysit VISUAL=false` → Disable visual even if detected
+- `/babysit COVERAGE=0` → Disable coverage mode
+
+---
+
 ## QUICK DECISION TREE
 
 | Task Type | Action |
@@ -59,10 +128,23 @@ This gathers: git status, stories/epics, session state, docs structure, research
 <!-- SECTION: loop-mode -->
 ## LOOP MODE (Autonomous Execution)
 
-When invoked with `MODE=loop`, babysit runs autonomously through an epic's stories:
+Loop mode is **auto-enabled** when:
+- Epic has 3+ ready stories
+- Test framework is detected (`npm test` exists)
+- Stories have acceptance criteria
 
+To force single-story mode, say "just work on one story" or specify `MODE=once`.
+
+**Example (auto-detected):**
 ```
-/agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+/agileflow:babysit EPIC=EP-0042
+→ 🧠 Auto-enabled: Loop Mode (5 ready stories)
+```
+
+**Example (explicit override):**
+```
+/agileflow:babysit EPIC=EP-0042 MODE=once
+→ Single story mode (user override)
 ```
 
 ### How Loop Mode Works
@@ -81,15 +163,17 @@ When invoked with `MODE=loop`, babysit runs autonomously through an epic's stori
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `EPIC` | Yes | Epic ID to process (e.g., EP-0042) |
-| `MODE` | Yes | Must be `loop` for autonomous mode |
+| `MODE` | No | `loop` (default, auto-detected) or `once` (single story) |
 | `MAX` | No | Max iterations (default: 20) |
-| `VISUAL` | No | Enable Visual Mode for UI development (screenshot verification) |
-| `COVERAGE` | No | Enable Coverage Mode - iterate until N% test coverage reached |
-| `CONDITIONS` | No | Semantic conditions for story completion (configured in metadata) |
+| `VISUAL` | No | Auto-detected for UI work; set `false` to disable |
+| `COVERAGE` | No | Auto-detected from coverage baseline; set `0` to disable |
+| `CONDITIONS` | No | Auto-detected from package.json; or configured in metadata |
+
+**Note:** Most parameters are auto-detected by Smart Detection. Only specify if you need to override the detected values.
 
 ### To Start Loop Mode
 
-After running the context script, if EPIC and MODE=loop are specified:
+After running the context script, if loop mode is auto-detected (or explicitly specified):
 
 ```bash
 # Initialize the loop
@@ -242,6 +326,26 @@ If you end your response without calling AskUserQuestion, you have violated thes
 
 ---
 
+### 🚨 RULE #0: SMART DETECTION (Before Starting)
+
+**After running context script, auto-detect and enable features:**
+
+| Feature | Auto-Enable When | Override |
+|---------|------------------|----------|
+| **Loop Mode** | 3+ ready stories + test setup | `MODE=once` or "just one story" |
+| **Visual Mode** | UI keywords or AG-UI owner | `VISUAL=false` or "no screenshots" |
+| **Coverage Mode** | coverage baseline >50% | `COVERAGE=0` or "skip coverage" |
+| **Conditions** | Auto-add from package.json scripts | N/A |
+
+**Detection flow:**
+1. Parse context output
+2. Check detection rules
+3. Enable applicable features
+4. Inform user: "🧠 Auto-enabled: Loop Mode, Visual Mode..."
+5. Proceed with work
+
+---
+
 ### 🚨 RULE #1: ALWAYS END WITH AskUserQuestion (NEVER SKIP)
 
 **EVERY response MUST end with the AskUserQuestion tool.** Not text like "Want me to...?" - the ACTUAL TOOL CALL.
@@ -315,6 +419,34 @@ Analysis/Review                   → /agileflow:multi-expert or Task(subagent_t
 ### 🚨 RULE #4: TRACK PROGRESS WITH Task Tools
 
 Use TaskCreate for any task with 3+ steps. Use TaskUpdate to mark status as you complete each step.
+
+---
+
+### 🚨 RULE #4b: TASK REGISTRY (Persistent State)
+
+**If task-registry enabled (check `agileflow-metadata.json`):**
+
+Before spawning expert:
+```bash
+node -e "const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const r=getTaskRegistry();const running=r.getAll({state:'running'});
+if(running.length)console.log('⚠️ Running:',running.map(t=>t.id).join(','));
+else console.log('✅ No running tasks')"
+```
+
+After spawning (store Claude task ID):
+```bash
+node -e "const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+getTaskRegistry().update('TASK_ID',{state:'running',metadata:{claude_task_id:'CLAUDE_ID'}})"
+```
+
+After expert completes:
+```bash
+node -e "const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const r=getTaskRegistry();r.complete('TASK_ID');
+const ready=r.getReadyTasks().filter(t=>t.metadata?.is_validator);
+if(ready.length)console.log('🔔 Validators ready:',ready.map(t=>t.id).join(','))"
+```
 
 ---
 
@@ -493,6 +625,7 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
+- **SMART DETECTION**: Auto-enable Loop/Visual/Coverage modes based on context
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
@@ -657,6 +790,106 @@ Attempt 3: Wait 15 seconds, then retry (final)
 - User explicitly asked to stop
 - Expert completed but result was wrong
 - Multiple experts all failed same way
+<!-- END_SECTION -->
+
+---
+
+<!-- SECTION: task-orchestration -->
+## TASK ORCHESTRATION (Persistent State)
+
+### When to Use Task Registry
+
+| Scenario | Use Task Registry? |
+|----------|-------------------|
+| Simple single-expert task | Optional |
+| Multi-expert coordination | Recommended |
+| Long-running work (>30 min) | Recommended |
+| Builder/Validator pairing | Required |
+
+### Task Registry Workflow
+
+**1. Check for Running Duplicates:**
+```bash
+node -e "
+const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const running=getTaskRegistry().getAll({state:'running',subagent_type:'agileflow-api'});
+running.forEach(t=>console.log('⚠️',t.id,':',t.description));
+"
+```
+
+**2. Register Task:**
+```bash
+node -e "
+const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const{linkTaskToStory}=require('./.agileflow/scripts/lib/status-task-bridge');
+const r=getTaskRegistry();
+const result=r.create({description:'DESCRIPTION',subagent_type:'AGENT',story_id:'STORY_ID'});
+if(result.success){linkTaskToStory('STORY_ID',result.task.id);console.log('✅',result.task.id)}
+"
+```
+
+**3. Spawn Expert (normal Task call):**
+```
+Task(
+  description: "...",
+  prompt: "...",
+  subagent_type: "agileflow-api",
+  run_in_background: true
+)
+```
+
+**4. Update Registry with Claude Task ID:**
+After Task() returns, store mapping for later TaskOutput:
+```bash
+node -e "const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+getTaskRegistry().update('REGISTRY_ID',{metadata:{claude_task_id:'CLAUDE_ID'}})"
+```
+
+**5. On Completion:**
+```bash
+node -e "
+const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const r=getTaskRegistry();r.complete('TASK_ID',{result:'success'});
+// Check for unblocked validators
+const validators=r.getReadyTasks().filter(t=>t.metadata?.is_validator);
+validators.forEach(v=>console.log('🔔 Validator ready:',v.id));
+"
+```
+
+### Builder/Validator Auto-Chaining
+
+Register both at start - validator blocked by builder:
+
+```bash
+# Builder
+BUILDER=$(node -e "
+const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+const r=getTaskRegistry().create({description:'Implement API',subagent_type:'agileflow-api',story_id:'US-0042'});
+console.log(r.task.id)
+")
+
+# Validator (blocked)
+node -e "
+const{getTaskRegistry}=require('./.agileflow/scripts/lib/task-registry');
+getTaskRegistry().create({description:'Validate API',subagent_type:'agileflow-api-validator',story_id:'US-0042',blockedBy:['$BUILDER'],metadata:{is_validator:true}})
+"
+```
+
+When builder completes, validator auto-unblocks.
+
+### Enable Task Registry
+
+Add to `docs/00-meta/agileflow-metadata.json`:
+
+```json
+{
+  "features": {
+    "taskRegistry": {
+      "enabled": true
+    }
+  }
+}
+```
 <!-- END_SECTION -->
 
 ---
@@ -1131,6 +1364,14 @@ After running context script:
 
 ```
 **AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
+
+🧠 Smart Detection Results:
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Show detected features based on context analysis]
+✓ Loop Mode: ENABLED/DISABLED (reason)
+✓ Visual Mode: ENABLED/DISABLED (reason)
+✓ Coverage Mode: ENABLED/DISABLED @ N% (reason)
+✓ Conditions: [detected from package.json]
 
 Based on your project state:
 [Present 3-5 ranked suggestions via AskUserQuestion]
