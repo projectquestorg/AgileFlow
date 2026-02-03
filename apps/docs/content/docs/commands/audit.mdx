@@ -1,0 +1,214 @@
+---
+title: /audit
+description: Verify story completion through tests and acceptance criteria
+---
+
+# /audit
+
+Verify story completion through the GSD (Get Stuff Done) audit cycle. Runs tests, checks acceptance criteria, captures learnings, and provides clear PASS/FAIL verdict.
+
+## Quick Start
+
+```bash
+/agileflow:audit STORY=US-0129
+```
+
+This will:
+1. Run project tests
+2. Verify acceptance criteria with you
+3. Capture learnings
+4. Generate clear PASS/FAIL report
+5. Suggest marking story complete (if passing)
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `STORY` | Yes | Story ID to audit (e.g., US-0129) |
+
+## Usage Examples
+
+### Audit a story
+
+```bash
+/agileflow:audit STORY=US-0129
+```
+
+Runs the full audit cycle for story US-0129.
+
+### Quick check without learnings
+
+```bash
+/agileflow:audit STORY=US-0130
+```
+
+The command will prompt for learnings if you want to capture them.
+
+## How It Works
+
+The audit runs a 4-step verification cycle:
+
+### Step 1: Parse Story
+
+The command loads the story from `status.json` and verifies it exists:
+- Gets story title, epic, and acceptance criteria
+- Checks current status
+- Validates all required fields
+
+### Step 2: Run Tests
+
+Executes your project tests using the configured test command:
+- Runs with timeout to prevent hanging
+- Captures test output (pass/fail counts)
+- Reports test duration
+
+### Step 3: Verify Acceptance Criteria
+
+Displays each acceptance criterion from the story and asks you to confirm:
+- Checkbox interface for each criterion
+- You manually verify each requirement is met
+- Counts total verified vs. total AC
+
+### Step 4: Capture Learnings
+
+Prompts you for insights and discoveries:
+- What patterns did you find?
+- What technical debt did you encounter?
+- What worked well?
+- Learnings are logged to the agent bus
+
+## Audit Results
+
+### PASS Verdict
+
+Story passes audit when:
+- ✅ Tests are all passing (exit code 0)
+- ✅ All acceptance criteria verified (100%)
+
+When a story passes, the command:
+1. Shows clear PASS report
+2. Lists verified learnings
+3. Suggests marking story complete
+4. Offers next steps (complete story, view epic progress)
+
+### FAIL Verdict
+
+Story fails audit when:
+- ❌ Tests are failing (any failed tests)
+- ❌ OR any acceptance criteria unverified
+
+When a story fails, the command:
+1. Shows clear FAIL report
+2. Lists blocking issues
+3. Offers help fixing tests or completing AC
+4. Suggests re-auditing after fixes
+
+## Output Format
+
+### Success - Story Passes Audit
+
+```
+========================================
+      STORY AUDIT: US-0129
+========================================
+
+TESTS
+Command: npm test
+Result: PASSED (2,201 passed, 0 failed)
+Duration: 45.2s
+
+ACCEPTANCE CRITERIA
+[x] Create packages/cli/src/core/commands/audit.md
+[x] Accept story ID as argument
+[x] Run tests and report pass/fail
+[x] Check acceptance criteria met
+[x] Prompt for learnings to capture
+[x] Output: PASS/FAIL with recommended next action
+[x] On PASS, suggest marking story complete
+
+AC Verification: 7/7 (100%)
+
+========================================
+      AUDIT RESULT: PASS
+========================================
+Tests: PASSING
+AC: ALL VERIFIED (7/7)
+
+Learnings captured:
+- GSD audit pattern successfully integrated
+
+NEXT STEPS:
+1. Mark story complete: /agileflow:status US-0129 STATUS=done
+2. Review epic progress: /agileflow:epic EP-0022
+```
+
+### Error - Story Fails Audit
+
+```
+========================================
+      STORY AUDIT: US-0129
+========================================
+
+TESTS
+Command: npm test
+Result: FAILED (40 passed, 3 failed)
+Duration: 12.8s
+
+ACCEPTANCE CRITERIA
+[x] Create packages/cli/src/core/commands/audit.md
+[x] Accept story ID as argument
+[x] Run tests and report pass/fail
+[ ] Check acceptance criteria met
+[ ] Prompt for learnings to capture
+[x] Output: PASS/FAIL with recommended next action
+[x] On PASS, suggest marking story complete
+
+AC Verification: 5/7 (71%)
+
+========================================
+      AUDIT RESULT: FAIL
+========================================
+Tests: FAILING (3 failed)
+AC: PARTIAL (5/7)
+
+BLOCKING ISSUES:
+- Test: audit.test.ts:42 - Expected PASS verdict
+- AC: "Check acceptance criteria met" - Not implemented
+- AC: "Prompt for learnings" - Missing
+
+NEXT STEPS:
+1. Fix failing tests
+2. Complete missing AC items
+3. Re-run: /agileflow:audit US-0129
+```
+
+## Best Practices
+
+1. **Audit before marking complete** - Always run audit before changing status to done
+2. **Verify acceptance criteria manually** - Don't rush through AC verification
+3. **Capture learnings** - Helps future stories in similar areas
+4. **Re-run after fixes** - Test fixes by re-auditing
+5. **Check epic progress** - See how close you are to completing epics
+
+## When to Use
+
+### Best For
+
+- **Verifying story completion** - Before marking story as done
+- **Catching test failures** - Before code review
+- **Documenting learnings** - Capture knowledge for the team
+- **Final verification** - Last step before PR or release
+
+### Not For
+
+- **Just running tests** - Use `/agileflow:verify` instead
+- **Validating story structure** - Use `/agileflow:story:validate` instead
+- **Updating status** - Use `/agileflow:status` for status changes only
+
+## Related Commands
+
+- [`/verify`](/commands/verify) - Run tests only (no AC check)
+- [`/story`](/commands/story) - Create user stories
+- [`/status`](/commands/status) - Update story status
+- [`/epic`](/commands/epic) - View epic progress
+- [`/board`](/commands/board) - View kanban board

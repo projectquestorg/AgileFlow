@@ -1,0 +1,109 @@
+---
+title: Logic Analyzer - Edge Cases
+description: Edge case analyzer for boundary conditions, off-by-one errors, empty inputs, and wraparound issues
+---
+
+# Logic Analyzer - Edge Cases
+
+The Logic Analyzer: Edge Cases agent is a specialized logic analyzer focused on **boundary conditions and edge cases**. It finds bugs that occur at the edges of input ranges, array boundaries, and exceptional conditions.
+
+## When to Use
+
+Use this agent when:
+- You need to identify off-by-one errors in loops and array access
+- You want to check empty input handling (empty arrays, strings, null/undefined)
+- You're analyzing code for boundary wraparound issues (integer overflow, index wraparound)
+- You need to verify default value handling and falsy value confusion
+- You're looking for range edge case bugs (start/end of ranges, first/last elements)
+
+## How It Works
+
+1. **Reads target code** - Focuses on loop constructs, array/string access patterns, conditional boundaries, and function parameters
+2. **Identifies patterns** - Looks for common edge case anti-patterns like off-by-one errors, empty array access, negative indices, default value confusion, and array slice/splice boundaries
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, concrete inputs that trigger bugs, and suggested fixes
+4. **Provides context** - Shows exactly what goes wrong with specific edge case examples
+
+## Focus Areas
+
+- **Off-by-one errors**: `<` vs `<=`, array index boundaries, loop termination
+- **Empty input handling**: Empty arrays, empty strings, null/undefined
+- **Boundary wraparound**: Integer overflow, index wraparound, modulo edge cases
+- **Range edge cases**: Start/end of ranges, first/last elements
+- **Default value issues**: Missing defaults, falsy value confusion (`0`, `""`, `false`)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+function getMiddleElement(arr) {
+  const midIndex = Math.floor(arr.length / 2);
+  return arr[midIndex];
+}
+```
+
+The Edge Cases analyzer would identify:
+
+### Finding: Empty array access in getMiddleElement
+
+**Location**: `utils.js:15`
+**Severity**: P1 (wrong result)
+**Confidence**: HIGH
+
+**Issue**: When `arr` is empty, `arr.length / 2 = 0`, and `arr[0]` returns `undefined` without any indication that the input was invalid.
+
+**Edge Case**:
+- Input: `[]`
+- Expected: `undefined` or error indicating empty array
+- Actual: Returns `undefined` silently (may mask bugs in calling code)
+
+**Suggested Fix**:
+```javascript
+function getMiddleElement(arr) {
+  if (arr.length === 0) {
+    return undefined; // or throw new Error('Cannot get middle of empty array')
+  }
+  const midIndex = Math.floor(arr.length / 2);
+  return arr[midIndex];
+}
+```
+
+## Best Practices
+
+- Always check for empty inputs before accessing array elements
+- Use `<` instead of `<=` for loop conditions when iterating arrays
+- Use optional chaining (`?.`) and nullish coalescing (`??`) instead of loose equality
+- Document edge case handling in function comments
+- Add assertions for invariants (e.g., array is never empty)
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: P0 (crash), P1 (wrong result), or P2 (edge case)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of what can go wrong
+- **Edge Case**: Specific input that triggers the bug with expected vs actual behavior
+- **Suggested Fix**: Corrected code
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze edge cases in user data processing",
+  prompt: "Review src/lib/user-processor.ts for edge case bugs. Focus on array operations, boundary conditions, and empty input handling.",
+  subagent_type: "agileflow-logic-analyzer-edge"
+)
+```
+
+## Related Agents
+
+- [`logic-analyzer-flow`](/agents/logic-analyzer-flow) - Control flow analysis
+- [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) - State consistency analysis
+- [`logic-analyzer-race`](/agents/logic-analyzer-race) - Concurrency issue detection
+- [`logic-analyzer-type`](/agents/logic-analyzer-type) - Type safety analysis
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit consensus coordinator

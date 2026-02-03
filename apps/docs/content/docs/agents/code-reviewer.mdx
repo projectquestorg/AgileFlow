@@ -1,0 +1,212 @@
+---
+title: Code Reviewer
+description: Comprehensive code review specialist with security, performance, maintainability, and best practices analysis
+---
+
+# Code Reviewer Agent
+
+The Code Reviewer provides **comprehensive, actionable feedback** on code changes across security, performance, maintainability, and best practices.
+
+## When to Use
+
+- Before merging pull requests
+- When implementing complex features
+- To identify security vulnerabilities
+- To catch performance issues early
+- To maintain code quality standards
+
+## How It Works
+
+1. **Reads the code** - Understands what changed
+2. **Analyzes context** - Looks at related code and patterns
+3. **Reviews dimensions** - Security, correctness, performance, maintainability, best practices
+4. **Identifies issues** - From critical security bugs to minor suggestions
+5. **Generates report** - Structured review with actionable feedback
+
+## Review Dimensions
+
+| Dimension | Weight | Focus Areas |
+|-----------|--------|-------------|
+| **Security** | High | Injection, XSS, auth, secrets, input validation |
+| **Correctness** | High | Logic bugs, edge cases, error handling |
+| **Performance** | Medium | N+1 queries, unnecessary computation, memory leaks |
+| **Maintainability** | Medium | Readability, complexity, naming, structure |
+| **Best Practices** | Low | Patterns, idioms, consistency with codebase |
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Security Checklist
+
+When reviewing, always verify:
+
+- [ ] **Input Validation**: User input validated/sanitized
+- [ ] **Output Encoding**: Data properly encoded for context (HTML, SQL, etc.)
+- [ ] **Authentication**: Protected routes check auth
+- [ ] **Authorization**: Users can only access their own data
+- [ ] **Secrets**: No hardcoded credentials, API keys, tokens
+- [ ] **Dependencies**: No known vulnerable dependencies
+- [ ] **Error Messages**: Don't leak sensitive information
+- [ ] **Logging**: No PII or credentials logged
+
+## Severity Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **Critical** | Security vulnerability, data loss risk, crash | Must fix before merge |
+| **Major** | Incorrect behavior, missing error handling | Should fix before merge |
+| **Minor** | Performance concern, code smell | Consider fixing |
+| **Suggestion** | Style, naming, minor improvement | Optional |
+| **Praise** | Good code worth highlighting | No action needed |
+
+## Output Format
+
+```markdown
+# Code Review: {file or PR title}
+
+**Reviewed**: {date}
+**Files**: {list of files reviewed}
+**Overall Assessment**: {APPROVED | APPROVED WITH SUGGESTIONS | NEEDS CHANGES}
+
+## Summary
+
+{2-3 sentence summary of the changes and overall quality}
+
+**Score**: {1-5 stars based on quality}
+- Security: {OK | Concern | Critical Issue}
+- Correctness: {OK | Minor Issues | Major Issues}
+- Performance: {OK | Could Improve | Problem}
+- Maintainability: {Good | Average | Needs Work}
+
+## Critical Issues (Must Fix)
+
+### 1. [SECURITY] {Title}
+
+**Location**: `{file}:{line}`
+**Severity**: Critical
+
+**Issue**: {Clear explanation of the security risk}
+
+**Current Code**:
+\`\`\`javascript
+// Problematic code
+\`\`\`
+
+**Suggested Fix**:
+\`\`\`javascript
+// Recommended fix
+\`\`\`
+
+## Suggestions (Should Consider)
+
+### 2. [PERFORMANCE] {Title}
+[Similar structure]
+
+## Minor/Style Comments
+
+- `{file}:{line}`: {brief comment}
+- `{file}:{line}`: {brief comment}
+
+## What's Good
+
+{Highlight positive aspects - good patterns, nice abstractions, etc.}
+
+## Checklist
+
+- [ ] Security vulnerabilities addressed
+- [ ] Error handling complete
+- [ ] Edge cases considered
+- [ ] Tests included/updated
+- [ ] Documentation updated if needed
+```
+
+## Common Issues by Language
+
+### JavaScript/TypeScript
+
+```javascript
+// BAD: Prototype pollution
+Object.assign(target, userInput);
+
+// GOOD: Validate keys
+const allowed = ['name', 'email'];
+const safe = pick(userInput, allowed);
+```
+
+### React
+
+```jsx
+// BAD: XSS via dangerouslySetInnerHTML
+<div dangerouslySetInnerHTML={{__html: userContent}} />
+
+// GOOD: Sanitize first
+import DOMPurify from 'dompurify';
+<div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(userContent)}} />
+```
+
+### SQL
+
+```javascript
+// BAD: SQL injection
+db.query(`SELECT * FROM users WHERE id = ${userId}`);
+
+// GOOD: Parameterized query
+db.query('SELECT * FROM users WHERE id = ?', [userId]);
+```
+
+### Shell
+
+```javascript
+// BAD: Command injection
+exec(`git clone ${repoUrl}`);
+
+// GOOD: Use array args
+execFile('git', ['clone', repoUrl]);
+```
+
+## Review Guidelines
+
+### Be Constructive
+- Explain WHY something is a problem
+- Provide concrete fix suggestions
+- Acknowledge what's done well
+
+### Be Specific
+- Include exact file and line numbers
+- Show problematic code
+- Show suggested improvement
+
+### Be Proportionate
+- Don't nitpick style in critical bug fixes
+- Focus on what matters most
+- One critical issue > ten style comments
+
+### Be Educational
+- Explain security concepts if needed
+- Link to relevant documentation
+- Help the author learn
+
+## Example Usage
+
+```text
+Task(
+  description: "Comprehensive code review",
+  prompt: "Review src/api/auth.ts for security, correctness, performance, and maintainability. Check for SQL injection, XSS, proper error handling, and code quality issues.",
+  subagent_type: "agileflow-code-reviewer"
+)
+```
+
+## Integration
+
+This agent is spawned by:
+- `/agileflow:review` command
+- `/agileflow:babysit` before marking implementation complete
+- `/agileflow:pr` to review changes before PR creation
+- Directly via Task tool when code review is needed
+
+## Related Agents
+
+- [`error-analyzer`](/agents/error-analyzer) - Error diagnosis
+- [`code-reviewer`](/agents/code-reviewer) - Code review specialist (this agent)
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit coordinator

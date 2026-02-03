@@ -1,0 +1,174 @@
+---
+title: Schema Validator
+description: Validator for database implementations. Verifies migrations are reversible, naming conventions followed, and data integrity maintained. Read-only access - cannot modify files.
+---
+
+# Schema Validator Agent
+
+The Schema Validator is a read-only validator agent. It verifies that database implementations created by the database builder meet quality standards without modifying any files.
+
+**CRITICAL**: This agent CANNOT modify files. It can only READ and REPORT findings.
+
+## When to Use
+
+Use this agent when:
+- You need to verify database migrations are reversible
+- You want to ensure naming conventions are followed
+- You need to validate foreign key constraints are proper
+- You want to verify indexes are present for performance
+- You need to check data safety of destructive operations
+
+## How It Works
+
+1. **Reads story requirements** - Understands the database changes needed
+2. **Finds migration files** - Locates SQL or migration scripts
+3. **Checks schema** - Reviews Prisma, Drizzle, TypeORM, or other schemas
+4. **Verifies quality gates** - Systematically checks all database standards
+5. **Generates report** - Returns structured validation report with APPROVE/REJECT recommendation
+
+## Quality Gates Checked
+
+### 1. Migration Reversibility
+- UP migration script exists
+- DOWN migration script exists
+- DOWN migration actually reverses UP
+- No destructive operations without explicit backup mention
+- Single responsibility (one change per migration)
+
+### 2. Naming Conventions
+- Tables: lowercase, plural (users, products, orders)
+- Columns: lowercase, snake_case (first_name, created_at)
+- Foreign keys: {table}_id pattern (user_id, product_id)
+- Indexes: idx_{table}_{column} pattern (idx_users_email)
+- Constraints: fk_{table}_{ref_table}, uq_{table}_{column}
+
+### 3. Required Columns
+- Primary key: id column exists
+- Timestamps: created_at column exists
+- Timestamps: updated_at column exists
+- Soft delete: deleted_at (if soft deletes used in project)
+
+### 4. Foreign Key Constraints
+- Foreign keys have explicit constraints
+- CASCADE/RESTRICT rules defined
+- Referenced tables exist
+- No orphan references possible
+
+### 5. Indexes
+- Primary key indexed (automatic)
+- Foreign keys indexed
+- Columns used in WHERE clauses indexed
+- Columns used in ORDER BY indexed
+- No redundant indexes
+
+### 6. Data Safety
+- No DROP TABLE without backup strategy
+- No DELETE operations without WHERE clause
+- No column drops with data loss risk
+- Data transformations are reversible
+- Large table operations use batching
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Validation Report Format
+
+```markdown
+## Validation Report: {story_id}
+
+**Builder**: agileflow-database
+**Validator**: agileflow-schema-validator
+**Timestamp**: {timestamp}
+
+### Overall Status: ✅ PASSED / ❌ FAILED
+
+### Gate Results
+
+#### ✅ Migration Reversibility
+- UP migration: 20240115_add_users_table.sql
+- DOWN migration: Verified (DROP TABLE users)
+
+#### ❌ Naming Conventions
+- Table name "User" should be lowercase plural "users"
+- Column "firstName" should be snake_case "first_name"
+
+#### ✅ Required Columns
+- id (UUID): Present
+- created_at (TIMESTAMP): Present
+- updated_at (TIMESTAMP): Present
+
+#### ❌ Indexes
+- Missing index on users.email (used in WHERE clause)
+
+### Issues Found
+
+1. **Naming Convention**: Table uses singular name
+   - File: migrations/20240115_add_users_table.sql:3
+   - Found: `CREATE TABLE User`
+   - Required: `CREATE TABLE users`
+
+2. **Missing Index**: Email column not indexed
+   - File: migrations/20240115_add_users_table.sql
+   - Required: `CREATE INDEX idx_users_email ON users(email)`
+
+### Recommendation
+
+❌ REJECT - Fix 2 issues before marking complete
+```
+
+## Best Practices
+
+- Always include DOWN migrations for reversibility
+- Use consistent naming conventions across all tables
+- Index columns used in WHERE, ORDER BY, and JOIN
+- Use foreign key constraints to prevent orphan data
+- Document complex migrations
+- Test migrations on actual data (in development)
+
+## Migration Safety Analysis
+
+| Operation | Reversible? | Notes |
+|-----------|-------------|-------|
+| CREATE TABLE | ✅ Yes | DOWN: DROP TABLE |
+| ADD COLUMN (nullable) | ✅ Yes | DOWN: DROP COLUMN |
+| ADD COLUMN (NOT NULL) | ⚠️ Risky | Needs DEFAULT or backfill |
+| DROP COLUMN | ❌ No | Data lost permanently |
+| RENAME COLUMN | ✅ Yes | DOWN: Rename back |
+| DROP TABLE | ❌ No | Data lost permanently |
+| CREATE INDEX | ✅ Yes | DOWN: DROP INDEX |
+| ADD CONSTRAINT | ✅ Yes | DOWN: DROP CONSTRAINT |
+
+## Example Usage
+
+```text
+Task(
+  description: "Validate database migration",
+  prompt: "Validate the database migration for story US-456. Check that migrations are reversible, naming follows conventions, required columns exist, and indexes are present for performance.",
+  subagent_type: "agileflow-schema-validator"
+)
+```
+
+## Important Rules
+
+1. **NEVER** try to fix issues - only report them
+2. **ALWAYS** provide specific file paths and line numbers
+3. **BE OBJECTIVE** - report facts, not opinions
+4. **BE THOROUGH** - check all quality gates
+5. **BE CLEAR** - make recommendations actionable
+
+## Integration with Orchestrator
+
+When spawned by the orchestrator:
+1. Receives task prompt with builder task ID and story ID
+2. Gathers all context (story requirements, migration files)
+3. Executes quality gate checks
+4. Returns structured validation report
+5. Orchestrator decides next action based on report
+
+## Related Agents
+
+- [`database`](/agents/database) - Database builder that creates migrations
+- [`api-validator`](/agents/api-validator) - Validates API implementations
+- [`ui-validator`](/agents/ui-validator) - Validates UI implementations
+- [`team-coordinator`](/agents/team-coordinator) - Orchestrates builder/validator pairs

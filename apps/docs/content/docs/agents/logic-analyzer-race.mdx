@@ -1,0 +1,152 @@
+---
+title: Logic Analyzer - Race Conditions & Concurrency
+description: Race condition analyzer for async patterns, event timing issues, shared state mutations, and concurrency bugs
+---
+
+# Logic Analyzer - Race Conditions & Concurrency
+
+The Logic Analyzer: Race Conditions & Concurrency agent is a specialized logic analyzer focused on **race conditions and concurrency bugs**. It finds bugs caused by timing issues, shared state mutations, and improper async patterns.
+
+## When to Use
+
+Use this agent when:
+- You need to identify race conditions from multiple async operations accessing shared state
+- You're analyzing order-dependent bugs and assumptions about operation ordering
+- You want to find stale closures in callbacks
+- You're checking for state mutations during await
+- You need to verify proper coordination of event handlers
+
+## How It Works
+
+1. **Identifies async patterns** - Focuses on async/await, callbacks, promises, event handlers, and parallel operations
+2. **Maps timing** - Creates timeline of operations to identify race conditions
+3. **Traces state** - Follows how shared state is accessed and modified
+4. **Reports races** - Generates structured findings with concrete race scenarios
+
+## Focus Areas
+
+- **Race conditions**: Multiple async operations accessing shared state
+- **Order-dependent bugs**: Assumptions about operation ordering
+- **Stale closures**: Callbacks capturing outdated values
+- **Async state mutation**: State changed during await
+- **Event timing**: Event handlers racing with each other
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+class ShoppingCart {
+  async addItem(itemId) {
+    const item = await fetchItem(itemId);
+    const currentCart = await this.getCart();
+    currentCart.items.push(item);
+    await this.saveCart(currentCart);
+  }
+}
+```
+
+The Race Conditions analyzer would identify:
+
+### Finding: Race condition in addItem
+
+**Location**: `cart.js:2-6`
+**Severity**: P1 (inconsistent state)
+**Confidence**: HIGH
+
+**Race Type**: Read-modify-write on shared cart state
+
+**Race Scenario**:
+```
+Timeline (user adds items A and B quickly):
+  T0: addItem(A) fetches item A
+  T1: addItem(B) fetches item B
+  T2: addItem(A) gets cart = {items: []}
+  T3: addItem(B) gets cart = {items: []} (same empty cart!)
+  T4: addItem(A) saves cart = {items: [A]}
+  T5: addItem(B) saves cart = {items: [B]} (overwrites A!)
+
+Result: Cart has only item B, item A is lost
+```
+
+**Impact**: Lost cart items when user adds multiple items quickly
+
+**Suggested Fix**:
+```javascript
+class ShoppingCart {
+  constructor() {
+    this.pendingOperation = Promise.resolve();
+  }
+
+  async addItem(itemId) {
+    // Serialize cart operations
+    this.pendingOperation = this.pendingOperation.then(async () => {
+      const item = await fetchItem(itemId);
+      const currentCart = await this.getCart();
+      currentCart.items.push(item);
+      await this.saveCart(currentCart);
+    });
+    return this.pendingOperation;
+  }
+}
+
+// Or use optimistic locking:
+async addItem(itemId) {
+  const item = await fetchItem(itemId);
+  const maxRetries = 3;
+  for (let i = 0; i < maxRetries; i++) {
+    const { cart, version } = await this.getCartWithVersion();
+    cart.items.push(item);
+    try {
+      await this.saveCart(cart, version); // Fails if version changed
+      return;
+    } catch (e) {
+      if (e.code !== 'VERSION_CONFLICT') throw e;
+      // Retry with fresh cart
+    }
+  }
+  throw new Error('Failed to add item after retries');
+}
+```
+
+## Best Practices
+
+- Serialize access to shared state when possible
+- Use optimistic locking or version checks for concurrent updates
+- Avoid state mutations during long-running async operations
+- Use proper synchronization primitives (locks, mutexes)
+- Make operations idempotent to handle retries safely
+- Test with multiple concurrent requests
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: P0 (data corruption), P1 (inconsistent state), P2 (timing issue)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Relevant code snippet
+- **Race Type**: Type of race condition identified
+- **Race Scenario**: Timeline showing how race occurs
+- **Impact**: What goes wrong
+- **Suggested Fix**: Corrected code with proper synchronization
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze concurrency bugs in database operations",
+  prompt: "Review src/db/operations.ts for race conditions. Focus on concurrent updates, shared state mutations, and async operations that access the same resources.",
+  subagent_type: "agileflow-logic-analyzer-race"
+)
+```
+
+## Related Agents
+
+- [`logic-analyzer-edge`](/agents/logic-analyzer-edge) - Boundary condition analysis
+- [`logic-analyzer-flow`](/agents/logic-analyzer-flow) - Control flow analysis
+- [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) - State consistency analysis
+- [`logic-analyzer-type`](/agents/logic-analyzer-type) - Type safety analysis
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit consensus coordinator

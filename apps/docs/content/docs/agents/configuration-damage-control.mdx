@@ -1,0 +1,151 @@
+---
+title: Configuration - Damage Control
+description: Configure AgileFlow damage control to protect against destructive commands
+---
+
+# Configuration - Damage Control
+
+This configuration agent sets up damage control protection to block destructive commands and protect sensitive paths through PreToolUse hooks.
+
+## What This Does
+
+Damage control protects your codebase through intelligent validation:
+
+1. **Bash Command Validation** - Blocks dangerous commands like `rm -rf`, `DROP TABLE`, force pushes
+2. **Path Protection** - Prevents access to sensitive files (`.env`, `~/.ssh/`, etc.)
+3. **Ask Confirmation** - Prompts before risky-but-valid operations
+
+## When to Use
+
+- When setting up a new AgileFlow project
+- When you want protection against accidental destructive commands
+- When running automated agents that need safe operation boundaries
+- When you want to enforce file access policies
+
+## Configuration Process
+
+### Step 1: Enable Damage Control
+Choose to enable protection (recommended) or skip for now.
+
+### Step 2: Choose Protection Level
+- **Standard (Recommended)**: Deterministic pattern matching - fast, no AI calls
+- **Enhanced**: Standard + AI prompt hook for unknown threats (slower)
+
+### Step 3: Create Hooks Directory
+```bash
+mkdir -p .claude/hooks/damage-control
+```
+
+### Step 4: Copy Hook Scripts
+Hook scripts are copied from AgileFlow installation to your project:
+- `bash-tool-damage-control.js` - Validates Bash commands
+- `edit-tool-damage-control.js` - Validates file edits
+- `write-tool-damage-control.js` - Validates file writes
+
+### Step 5: Create or Preserve patterns.yaml
+If `patterns.yaml` doesn't exist, it's copied with default patterns. If it exists, it's preserved to maintain your customizations.
+
+### Step 6: Update settings.json
+PreToolUse hooks are added to `.claude/settings.json` for Bash, Edit, and Write tools.
+
+### Step 7: Merge with Existing Hooks
+If PreToolUse hooks already exist, new hooks are merged rather than replaced.
+
+### Step 8: Completion Summary
+Shows what's been configured and how to customize.
+
+## Protection Patterns
+
+### Blocked Commands
+- Recursive delete: `rm -rf`
+- Database drops: `DROP TABLE`
+- Force pushes: `git push --force`
+- Hard resets: `git reset --hard`
+- And 20+ other dangerous patterns
+
+### Protected Paths
+**Zero Access** (cannot read, write, edit):
+- `~/.ssh/` - SSH keys
+- `.env` - Environment variables with secrets
+- `.env.local` - Local environment overrides
+
+**Read-Only** (can read, cannot modify):
+- `/etc/` - System configuration
+- `package-lock.json` - Dependency lock
+
+**No Delete** (can modify, cannot delete):
+- `.agileflow/` - AgileFlow configuration
+- `.claude/` - Claude Code settings
+
+## Customization
+
+Edit `.claude/hooks/damage-control/patterns.yaml` to:
+- Block additional patterns
+- Allow previously blocked commands
+- Change confirmation prompts
+- Add protected paths
+
+```yaml
+# Block dangerous bash commands
+bashToolPatterns:
+  - pattern: '\brm\s+-[rRf]'
+    reason: "rm with recursive or force flags"
+
+# Commands requiring confirmation
+askPatterns:
+  - pattern: 'git\s+push\s+.*--force'
+    reason: "Force push overwrites history"
+
+# Path protection levels
+zeroAccessPaths:
+  - ~/.ssh/
+  - .env
+
+readOnlyPaths:
+  - /etc/
+  - package-lock.json
+
+noDeletePaths:
+  - .agileflow/
+  - .claude/
+```
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Bash, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Configure damage control protection",
+  prompt: "Set up damage control to block destructive commands and protect sensitive paths. Use standard protection level. Configure for a Node.js project.",
+  subagent_type: "agileflow-configuration-damage-control"
+)
+```
+
+## Troubleshooting
+
+**Hooks not working after enabling:**
+- Restart Claude Code - hooks only load on startup
+
+**Command blocked that should be allowed:**
+- Edit patterns.yaml to remove or adjust the pattern
+- Use `ask: true` instead of blocking for confirmation
+
+**Need to disable damage control:**
+- Remove PreToolUse hooks from .claude/settings.json
+- Or delete .claude/hooks/damage-control/ directory
+
+## Best Practices
+
+- Use Standard protection level for most projects
+- Regularly review blocked commands in patterns.yaml
+- Test with critical operations before trusting completely
+- Keep .env and other secrets in proper locations
+- Use the Ask pattern for uncommon but valid operations
+
+## Related
+
+- [Damage Control Hooks Research](/research/claude-code-damage-control-hooks)
+- [Hook System Documentation](/docs/hooks)

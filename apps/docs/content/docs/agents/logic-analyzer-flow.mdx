@@ -1,0 +1,141 @@
+---
+title: Logic Analyzer - Control Flow
+description: Control flow analyzer for dead code, unreachable branches, infinite loops, and missing return paths
+---
+
+# Logic Analyzer - Control Flow
+
+The Logic Analyzer: Control Flow agent is a specialized logic analyzer focused on **control flow issues**. It finds bugs related to code execution paths, unreachable code, infinite loops, and missing returns.
+
+## When to Use
+
+Use this agent when:
+- You need to identify dead code that can never execute
+- You want to find unreachable branches with always true/false conditions
+- You're looking for infinite loops or infinite recursion
+- You need to verify all function return paths are complete
+- You want to find early exit issues (returns/breaks that skip necessary cleanup)
+
+## How It Works
+
+1. **Reads target code** - Focuses on conditional statements, loop constructs, function returns, and error handling flows
+2. **Analyzes paths** - Traces execution paths mentally to identify unreachable code or missing paths
+3. **Identifies patterns** - Looks for dead code after return/throw, always true/false conditions, infinite loops, missing return paths, and break statements that skip cleanup
+4. **Reports findings** - Generates structured findings with execution path analysis and suggested fixes
+
+## Focus Areas
+
+- **Dead code**: Code that can never execute
+- **Unreachable branches**: Conditions that are always true/false
+- **Infinite loops**: Loops that never terminate
+- **Missing return paths**: Functions that don't return in all cases
+- **Early exit issues**: Returns/breaks that skip necessary cleanup
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+async function fetchAndProcess(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Fetch failed');
+  }
+
+  const data = await response.json();
+
+  if (data.items.length === 0) {
+    return;
+  }
+
+  for (const item of data.items) {
+    await processItem(item);
+  }
+
+  // Missing explicit return
+}
+```
+
+The Control Flow analyzer would identify:
+
+### Finding: Inconsistent return values in fetchAndProcess
+
+**Location**: `api.js:1-17`
+**Severity**: P1 (wrong behavior)
+**Confidence**: HIGH
+
+**Flow Issue**: Missing return path consistency
+
+**Explanation**: Function returns `undefined` in both success cases (empty items, processed items), making it impossible for callers to distinguish between "no items to process" and "items processed successfully".
+
+**Execution Path**:
+1. Fetch succeeds, data has items
+2. Process all items
+3. Function ends without explicit return
+4. Caller receives `undefined`, same as empty case
+
+**Suggested Fix**:
+```javascript
+async function fetchAndProcess(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Fetch failed');
+  }
+
+  const data = await response.json();
+
+  if (data.items.length === 0) {
+    return { processed: 0, items: [] };
+  }
+
+  const results = [];
+  for (const item of data.items) {
+    results.push(await processItem(item));
+  }
+
+  return { processed: results.length, items: results };
+}
+```
+
+## Best Practices
+
+- Always return a value in all code paths (or throw)
+- Use switch statements with explicit fall-through comments
+- Ensure loops have a termination condition that progresses
+- Use TypeScript strict mode to catch missing returns
+- Check for resource cleanup before early returns
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: P0 (infinite loop/crash), P1 (wrong behavior), P2 (dead code)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Relevant code snippet
+- **Flow Issue**: Type of issue (dead code, unreachable, infinite loop, missing return)
+- **Explanation**: How the control flow is problematic
+- **Execution Path**: Step-by-step flow analysis
+- **Suggested Fix**: Corrected code
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze control flow issues in request handler",
+  prompt: "Review src/handlers/request.ts for control flow bugs. Check for dead code, unreachable branches, infinite loops, and missing return paths.",
+  subagent_type: "agileflow-logic-analyzer-flow"
+)
+```
+
+## Related Agents
+
+- [`logic-analyzer-edge`](/agents/logic-analyzer-edge) - Boundary condition analysis
+- [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) - State consistency analysis
+- [`logic-analyzer-race`](/agents/logic-analyzer-race) - Concurrency issue detection
+- [`logic-analyzer-type`](/agents/logic-analyzer-type) - Type safety analysis
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit consensus coordinator

@@ -1,0 +1,330 @@
+---
+title: /council
+description: Convene AI Council for strategic decisions with three perspectives
+---
+
+# /council
+
+Convene an AI Council for strategic decisions. Three perspectives (Optimist, Devil's Advocate, Neutral Analyst) deliberate in parallel to provide balanced, high-quality recommendations.
+
+## Quick Start
+
+```bash
+/agileflow:council Should we adopt microservices architecture?
+```
+
+Three council members analyze the question and provide recommendations.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<question>` | Yes | Strategic question to deliberate |
+| `--mode` | No | `parallel` (default) or `debate` |
+| `--rounds` | No | Number of rounds for debate mode (1-3) |
+
+## Usage Examples
+
+### Basic decision - parallel mode
+
+```bash
+/agileflow:council Should we migrate to microservices?
+```
+
+All three perspectives analyze once and synthesize.
+
+### Debate mode - multiple rounds
+
+```bash
+/agileflow:council --mode debate --rounds 2 Is GraphQL better than REST for our API?
+```
+
+Council members respond to each other's perspectives.
+
+### With full parameters
+
+```bash
+/agileflow:council --mode debate --rounds 3 Should we adopt feature flags?
+```
+
+## Council Members
+
+The council has three members with different perspectives:
+
+| Role | Focus | Strength |
+|------|-------|----------|
+| **Optimist** | Best-case scenarios, opportunities, success pathways | Finds what's possible |
+| **Devil's Advocate** | Risks, blind spots, stress-testing assumptions | Prevents blind spots |
+| **Neutral Analyst** | Trade-offs, evidence synthesis, decision criteria | Grounds decisions |
+
+Together, they produce balanced, high-quality recommendations.
+
+## How It Works
+
+```
+┌─────────────────────────────────┐
+│     USER QUESTION               │
+│  "Should we adopt microservices?"
+└─────────────────────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│   COUNCIL ORCHESTRATOR          │
+│  Create session, initialize     │
+│  Deploy 3 agents in PARALLEL    │
+└─────────────────────────────────┘
+              │
+    ┌─────────┼─────────┐
+    ▼         ▼         ▼
+┌─────────┐ ┌─────────┐ ┌─────────┐
+│ OPTIMIST │ │ ADVOCATE │ │ ANALYST │
+├─────────┤ ├─────────┤ ├─────────┤
+│Oppr.    │ │Risks    │ │Trade-   │
+│Success  │ │Blind    │ │offs     │
+│paths    │ │spots    │ │Evidence │
+└─────────┘ └─────────┘ └─────────┘
+    │         │         │
+    └─────────┼─────────┘
+              ▼
+┌─────────────────────────────────┐
+│      SYNTHESIS                  │
+│  • Common ground (high conf)    │
+│  • Opportunities                │
+│  • Risks to monitor             │
+│  • Recommendation               │
+└─────────────────────────────────┘
+```
+
+## When to Use
+
+Use the AI Council for **strategic, non-technical decisions** where balanced perspectives matter:
+
+### Good For
+
+- Architecture decisions: "Should we adopt microservices?"
+- Technology choices: "GraphQL vs REST for our API?"
+- Process decisions: "Should we implement feature flags?"
+- Business tradeoffs: "Build vs buy for this feature?"
+- Strategy questions: "Should we prioritize mobile or web?"
+
+### Not For
+
+- Code implementation (use domain experts)
+- Simple questions with clear answers
+- Tasks requiring codebase changes
+- Research tasks (use `/agileflow:research:ask`)
+
+## Output Format
+
+### Perspectives Section
+
+Each council member provides:
+
+**Optimist Strategist**:
+- Key opportunities (at least 3)
+- Success pathways
+- Enablers in the system
+
+**Devil's Advocate**:
+- Key risks with mitigations
+- Blind spots and assumptions
+- Stress tests and edge cases
+
+**Neutral Analyst**:
+- Evidence summary (for and against)
+- Trade-off analysis
+- Decision criteria
+
+### Synthesis Section
+
+The council synthesis includes:
+
+```markdown
+## AI Council Deliberation
+
+**Question**: Should we migrate to microservices?
+**Session**: [timestamp]
+**Mode**: parallel
+
+### Perspectives
+
+#### Optimist Strategist
+Key opportunities:
+- Independent scaling per service
+- Technology flexibility
+- Team autonomy and faster releases
+
+#### Devil's Advocate
+Critical concerns:
+- Distributed systems complexity
+- Network latency overhead
+- Operational burden
+
+#### Neutral Analyst
+Trade-offs:
+| Factor | For | Against | Weight |
+|--------|-----|---------|--------|
+| Scaling | Independent | Network overhead | High |
+| Ops | Flexibility | Complexity | High |
+
+### Synthesis
+
+#### Common Ground (High Confidence)
+All 3 council members agree:
+- Current monolith pain points are real
+- Incremental approach reduces risk
+
+#### Opportunities (Optimist Unique)
+- Independent team velocity
+
+#### Risks to Monitor (Advocate Unique)
+- Operational burden without proper tooling
+
+#### Key Trade-offs
+- Scalability vs. operational complexity
+
+### Recommendation
+
+**Decision**: Start with one bounded context migration
+
+**Confidence**: 75%
+
+**Rationale**: [explanation of why this recommendation is best]
+```
+
+## Modes
+
+### Parallel Mode (Default)
+
+All three council members analyze independently once, then results are synthesized.
+
+```bash
+/agileflow:council Should we migrate to microservices?
+```
+
+Best for:
+- Quick decisions
+- Well-defined questions
+- Time-sensitive decisions
+
+### Debate Mode
+
+Multiple rounds where council members respond to each other's perspectives.
+
+```bash
+/agileflow:council --mode debate --rounds 2 Is GraphQL better than REST?
+```
+
+Process:
+1. Round 1: Initial perspectives
+2. Round 2: Responses and rebuttals
+3. Final synthesis
+
+Best for:
+- Complex decisions needing deeper analysis
+- Questions with significant trade-offs
+- Strategic choices with high stakes
+
+## Example Session
+
+### Question
+
+```
+Should we migrate from monolith to microservices?
+```
+
+### Optimist's Perspective
+
+```
+Key opportunities:
+1. Independent scaling per service
+   - User service scales on demand
+   - Payment service independent scaling
+   - 40-50% reduction in infrastructure costs
+
+2. Technology flexibility
+   - Each service can use optimal technology
+   - Python for data services, Go for API services
+
+3. Team autonomy
+   - Teams own full stack per service
+   - Faster feature delivery
+   - Reduced coordination overhead
+```
+
+### Advocate's Perspective
+
+```
+Critical concerns:
+1. Distributed systems complexity (MITIGATE: Start with 1 service)
+   - Network latency
+   - Transaction coordination
+   - Debugging distributed failures
+
+2. Operational burden (MITIGATE: Invest in observability)
+   - Multiple services to monitor
+   - Service discovery and communication
+   - Deployment complexity
+
+3. Team readiness (MITIGATE: Training and phased rollout)
+   - Few team members understand microservices
+   - No experience with service mesh
+```
+
+### Analyst's Perspective
+
+```
+Trade-off analysis:
+- Current pain: Monolith scaling issues, coordination overhead
+- Proposed solution: Microservices addressing these directly
+- New risks: Operational complexity (mitigable with tooling)
+- Team capacity: Phased approach recommended
+
+Decision criteria:
+1. Can we migrate incrementally? (Yes)
+2. Do we have operations expertise? (Partial - needs investment)
+3. Will it solve current pain? (Yes)
+
+Recommendation: Start with one bounded context
+```
+
+### Synthesis
+
+```
+Common Ground (All Agree):
+- Current monolith has real pain points
+- Incremental migration reduces risk
+- Team needs training before full migration
+
+Recommendation: Start with one bounded context (User Service)
+- Proves microservices approach works
+- Limits risk exposure
+- Team gains experience for next migration
+- 6-12 month timeline for full migration
+
+Confidence: 75% (high pain points, mitigable risks, clear path)
+```
+
+## Integration with Other Commands
+
+After council deliberation:
+
+- **Document decision**: Use `/agileflow:adr` to create Architecture Decision Record
+- **Create work**: Use `/agileflow:story` to create stories for implementation
+- **Analyze impact**: Use `/agileflow:impact` to understand change impact
+- **Implement**: Use `/agileflow:babysit` for orchestrated implementation
+
+## Best Practices
+
+1. **Ask specific questions** - Vague questions produce vague recommendations
+2. **Provide context** - More context = better analysis
+3. **Define success criteria** - What matters most?
+4. **Use debate mode for complex decisions** - Let council members respond to each other
+5. **Document decisions** - Create ADR for important strategic choices
+
+## Related Commands
+
+- [`/choose`](/commands/choose) - Single-perspective decision making
+- [`/adr`](/commands/adr) - Create Architecture Decision Records
+- [`/research:ask`](/commands/research:ask) - Research before deciding
+- [`/rpi`](/commands/rpi) - Research-Plan-Implement workflow

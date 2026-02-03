@@ -1,0 +1,172 @@
+---
+title: Logic Consensus Coordinator
+description: Consensus coordinator for logic analysis - validates findings, votes on issues, resolves conflicts, and generates the final audit report
+---
+
+# Logic Consensus Coordinator
+
+The Logic Consensus Coordinator is the **consensus coordinator** for the Logic Audit system. It collects findings from all logic analyzers, validates them, votes on their legitimacy, and produces the final prioritized audit report.
+
+## When to Use
+
+Use this agent when:
+- You need to run a comprehensive logic audit across multiple analysis dimensions
+- You want to consolidate findings from multiple analyzers into one report
+- You need to resolve conflicting findings from different analyzers
+- You want a final, prioritized list of issues to fix
+- You need to distinguish confirmed issues from false positives
+
+## How It Works
+
+1. **Collects findings** - Reads output from all logic analyzers
+2. **Groups related issues** - Finds findings that reference the same location or related code
+3. **Votes on confidence** - Uses analyzer agreement to rate confidence levels
+4. **Validates disputed findings** - Reads full context when analyzers disagree
+5. **Generates report** - Produces prioritized, actionable audit output
+
+## Responsibilities
+
+- Collect findings from edge, flow, invariant, race, and type analyzers
+- Validate findings - check if issues are real or false positives
+- Vote on confidence - multiple analyzers flagging same issue = higher confidence
+- Resolve conflicts - when analyzers disagree, investigate and decide
+- Generate report - produce prioritized, actionable audit output
+
+## Consensus Process
+
+### Step 1: Parse All Findings
+Normalizes findings into a common structure with ID, location, analyzer, title, severity, confidence, code, explanation, and suggested fix.
+
+### Step 2: Group Related Findings
+Finds findings that reference the same location or related code, creating a matrix of which analyzers flagged what.
+
+### Step 3: Vote on Confidence
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak evidence | Low priority, investigate before including |
+| **DISPUTED** | Analyzers contradict each other | Document both sides, recommend review |
+| **FALSE POSITIVE** | Issue handled elsewhere in code | Exclude from report with note |
+
+### Step 4: Validate Disputed Findings
+When analyzers disagree:
+1. Read the full context
+2. Check for guards (is the issue handled elsewhere?)
+3. Consider the domain (some patterns are intentional)
+4. Make a reasoned decision and document reasoning
+
+### Step 5: Prioritize Findings
+
+**Severity + Confidence = Priority**:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|-----------|--------|-------------|
+| **P0 (crash)** | Critical | High | Medium |
+| **P1 (wrong result)** | High | Medium | Low |
+| **P2 (edge case)** | Medium | Low | Info |
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+The final Logic Audit Report includes:
+
+- **Summary**: Count by priority with descriptions
+- **Critical Issues**: Crash/data corruption - fix immediately
+- **High Priority Issues**: Wrong results - fix in current sprint
+- **Medium Priority Issues**: Edge cases - add to backlog
+- **Analyzer Agreement Matrix**: Shows which analyzers flagged which locations
+- **False Positives**: Issues excluded with reasons
+- **Disputes Resolved**: Conflicting findings with resolution reasoning
+- **Recommendations**: Next steps for addressing findings
+
+## Example Report Structure
+
+```markdown
+# Logic Audit Report
+
+**Generated**: 2024-02-03 10:30 UTC
+**Target**: src/lib/user-service.ts
+**Analyzers**: Edge, Invariant, Flow, Type, Race
+
+## Summary
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| Critical | 2 | Crash/data corruption - fix immediately |
+| High | 4 | Wrong results - fix in current sprint |
+| Medium | 7 | Edge cases - add to backlog |
+| Low | 3 | Minor issues - consider fixing |
+
+**Total Findings**: 16 (after consensus filtering)
+**False Positives Excluded**: 2
+**Disputes Resolved**: 1
+
+## Critical Issues (Fix Immediately)
+
+### 1. Race Condition in addItem [CONFIRMED by Race, Invariant]
+[detailed analysis with code and fix]
+
+### 2. Null Pointer in getUserProfile [LIKELY - Type Analyzer]
+[detailed analysis with code and fix]
+
+## High Priority Issues
+[4 more issues at high priority]
+
+## Medium Priority Issues
+[7 more issues at medium priority]
+
+## False Positives (Excluded)
+[analysis of excluded issues]
+
+## Disputes Resolved
+[conflicting findings and resolutions]
+```
+
+## Best Practices
+
+- Give each analyzer's finding fair consideration
+- Document reasoning for disputes thoroughly
+- Don't bury critical issues under minor ones
+- Acknowledge uncertainty and mark findings as INVESTIGATE
+- Don't over-exclude real bugs that look like false positives
+- Use evidence from the codebase to resolve disputes
+
+## Example Usage
+
+```text
+Task(
+  description: "Run comprehensive logic audit on payment processing",
+  prompt: "Execute a full logic audit on src/payments/ using all logic analyzers. Gather findings from edge, flow, invariant, race, and type analyzers. Consolidate into one prioritized report with consensus voting on confidence levels.",
+  subagent_type: "agileflow-logic-consensus"
+)
+```
+
+## Handling Common Situations
+
+### All analyzers agree
+→ CONFIRMED, high confidence, include prominently
+
+### One analyzer, strong evidence
+→ LIKELY, include with the evidence
+
+### One analyzer, weak evidence
+→ INVESTIGATE, include but mark as needing review
+
+### Analyzers contradict
+→ Read the code, make a decision, document reasoning
+
+### No findings
+→ Report "No issues found" with note about what was checked
+
+## Related Agents
+
+- [`logic-analyzer-edge`](/agents/logic-analyzer-edge) - Boundary condition analysis
+- [`logic-analyzer-flow`](/agents/logic-analyzer-flow) - Control flow analysis
+- [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) - State consistency analysis
+- [`logic-analyzer-race`](/agents/logic-analyzer-race) - Concurrency issue detection
+- [`logic-analyzer-type`](/agents/logic-analyzer-type) - Type safety analysis

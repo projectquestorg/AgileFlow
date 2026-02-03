@@ -1,0 +1,120 @@
+---
+title: Logic Analyzer - Type Safety
+description: Type safety analyzer for implicit coercion bugs, null propagation, undefined behavior, and type confusion
+---
+
+# Logic Analyzer - Type Safety
+
+The Logic Analyzer: Type Safety agent is a specialized logic analyzer focused on **type-related logic bugs**. It finds bugs caused by implicit type coercion, null/undefined propagation, and type confusion in dynamically-typed code.
+
+## When to Use
+
+Use this agent when:
+- You need to identify implicit coercion bugs (`==` vs `===`)
+- You're looking for null/undefined propagation issues
+- You want to find type confusion (arrays vs objects, strings vs numbers)
+- You need to verify truthiness handling for edge cases
+- You're analyzing code that receives data from external sources (APIs, user input)
+
+## How It Works
+
+1. **Identifies type operations** - Focuses on equality comparisons, arithmetic operations, property access chains, and function parameters
+2. **Traces type flow** - Follows values through operations to identify unexpected type conversions
+3. **Finds problem values** - Identifies specific inputs that cause type-related bugs
+4. **Reports issues** - Generates structured findings with concrete examples
+
+## Focus Areas
+
+- **Implicit coercion**: `==` vs `===`, string/number mixing
+- **Null propagation**: Null passed through without handling
+- **Undefined access**: Accessing properties of undefined
+- **Type confusion**: Arrays vs objects, strings vs numbers
+- **Truthiness bugs**: Falsy values (`0`, `""`, `false`, `null`, `undefined`)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+function calculateDiscount(price, discountPercent) {
+  const discount = price * (discountPercent / 100);
+  return price - discount;
+}
+
+// Called with:
+calculateDiscount("100", "20"); // From form inputs
+```
+
+The Type Safety analyzer would identify:
+
+### Finding: Type coercion in calculateDiscount
+
+**Location**: `pricing.js:1-4`
+**Severity**: P1 (wrong result)
+**Confidence**: HIGH
+
+**Type Issue**: String to number coercion with inconsistent behavior
+
+**Problem Values**:
+| Input | Expected Type | Actual Type | Result |
+|-------|---------------|-------------|--------|
+| `"100"` | number | string | Works (coerced) |
+| `"20"` | number | string | Works (coerced) |
+| `"$100"` | number | string | NaN |
+| `undefined` | number | undefined | NaN |
+
+**Suggested Fix**:
+```javascript
+function calculateDiscount(price, discountPercent) {
+  const numPrice = Number(price);
+  const numPercent = Number(discountPercent);
+
+  if (isNaN(numPrice) || isNaN(numPercent)) {
+    throw new Error('Invalid price or discount: must be numbers');
+  }
+
+  const discount = numPrice * (numPercent / 100);
+  return numPrice - discount;
+}
+```
+
+## Best Practices
+
+- Always use `===` instead of `==` in JavaScript
+- Explicitly convert types at system boundaries (API responses, form inputs)
+- Use optional chaining (`?.`) and nullish coalescing (`??`)
+- Validate input types before operations
+- Use TypeScript with strict mode for better type safety
+- Document expected types in function parameters
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: P0 (crash), P1 (wrong result), P2 (potential issue)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Relevant code snippet
+- **Type Issue**: Category of issue (coercion, null propagation, type confusion, truthiness)
+- **Problem Values**: Table showing inputs and their problematic results
+- **Suggested Fix**: Corrected code with proper type handling
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze type safety issues in API integration",
+  prompt: "Review src/api/client.ts for type-related bugs. Focus on handling API responses, form inputs, and implicit type coercions that could cause wrong results.",
+  subagent_type: "agileflow-logic-analyzer-type"
+)
+```
+
+## Related Agents
+
+- [`logic-analyzer-edge`](/agents/logic-analyzer-edge) - Boundary condition analysis
+- [`logic-analyzer-flow`](/agents/logic-analyzer-flow) - Control flow analysis
+- [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) - State consistency analysis
+- [`logic-analyzer-race`](/agents/logic-analyzer-race) - Concurrency issue detection
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit consensus coordinator

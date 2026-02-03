@@ -1,0 +1,299 @@
+---
+title: /batch
+description: Process multiple items with functional patterns
+---
+
+# /batch
+
+Process multiple items with functional patterns. Apply operations like `map`, `pmap` (parallel), `filter`, and `reduce` to batch items efficiently.
+
+## Quick Start
+
+```bash
+/agileflow:batch map "docs/06-stories/*.md" validate
+```
+
+This processes all story files sequentially and validates them.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<operation>` | Yes | One of: `map`, `pmap`, `filter`, `reduce` |
+| `<pattern>` | Yes | Glob pattern or item source |
+| `[action]` | No | Action to perform on each item |
+
+## Operations
+
+### map - Sequential Processing
+
+Process each item one at a time:
+
+```bash
+/agileflow:batch map "src/**/*.ts" lint
+```
+
+Best for:
+- Quick validation
+- Order-dependent operations
+- Small batches
+
+### pmap - Parallel Processing
+
+Process items in parallel using agent tasks:
+
+```bash
+/agileflow:batch pmap "src/components/*.tsx" add-tests
+```
+
+Best for:
+- Independent tasks
+- Large batches
+- Time-sensitive work
+
+### filter - Find Matching Items
+
+Return items matching criteria:
+
+```bash
+/agileflow:batch filter stories status=ready
+```
+
+Returns matching items without processing.
+
+### reduce - Aggregate Items
+
+Combine items into single output:
+
+```bash
+/agileflow:batch reduce "docs/06-stories/*.md" summary
+```
+
+Creates aggregated report from all items.
+
+## Usage Examples
+
+### Validate all stories
+
+```bash
+/agileflow:batch map "docs/06-stories/*.md" validate
+```
+
+Sequentially validates each story file:
+- Checks required frontmatter
+- Validates acceptance criteria format
+- Reports issues
+
+### Generate tests in parallel
+
+```bash
+/agileflow:batch pmap "src/components/*.tsx" add-tests
+```
+
+Spawns parallel agents to add tests:
+- Each component gets dedicated agent
+- Agents work simultaneously
+- Results collected when complete
+
+### Find ready stories
+
+```bash
+/agileflow:batch filter stories status=ready
+```
+
+Returns all stories ready to start:
+- Lists by epic
+- Shows priority
+- Shows estimates
+
+### Create summary report
+
+```bash
+/agileflow:batch reduce "docs/06-stories/*.md" summary
+```
+
+Generates summary statistics:
+- Stories by epic
+- Stories by status
+- Priority distribution
+
+## Loop Mode (pmap only)
+
+Process items iteratively until tests pass with `MODE=loop`:
+
+```bash
+/agileflow:batch pmap "src/components/*.tsx" add-tests MODE=loop
+```
+
+### How Loop Mode Works
+
+1. Process first item
+2. Run tests for that item
+3. If tests pass → move to next item
+4. If tests fail → continue fixing
+5. Repeat until all items pass or max iterations reached
+
+### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `MODE` | - | Set to `loop` for iterative mode |
+| `GATE` | `tests` | Quality gate type |
+| `MAX` | 50 | Maximum iterations total |
+
+### Loop Mode Example
+
+```bash
+/agileflow:batch pmap "src/components/*.tsx" add-tests MODE=loop MAX=30
+```
+
+Progress output shows:
+- Current item being processed
+- Test results for that item
+- Move to next item when tests pass
+- Overall progress count
+
+## Built-in Actions
+
+| Action | Description | Works With |
+|--------|-------------|------------|
+| `validate` | Check format/structure | stories, epics |
+| `add-tests` | Generate tests | source files |
+| `lint` | Run linter | source files |
+| `format` | Apply formatting | source files |
+| `summarize` | Generate summary | any |
+| `count` | Count items | any |
+
+## Custom Actions
+
+For `pmap`, any action becomes the agent prompt:
+
+```bash
+/agileflow:batch pmap "src/**/*.ts" "refactor to use async/await"
+```
+
+Each agent receives:
+- File path
+- Custom instruction (the action)
+- Instructions to complete the work
+
+## Filter Syntax
+
+Use `field=value` syntax:
+
+```bash
+/agileflow:batch filter stories status=ready epic=EP-0009
+```
+
+Multiple criteria are AND'd together.
+
+Common filters:
+- `status=ready|in_progress|completed|blocked`
+- `priority=high|medium|low`
+- `epic=EP-XXXX`
+
+## Output Examples
+
+### Map Operation Output
+
+```
+📦 Batch: map over 12 items
+
+📍 Processing: docs/06-stories/US-0042.md
+  ✅ Valid story format
+
+📍 Processing: docs/06-stories/US-0043.md
+  ⚠️ Missing acceptance criteria
+
+...
+
+✅ Complete: 10 passed, 2 warnings
+```
+
+### Pmap Operation Output
+
+```
+🔀 Batch: pmap over 8 items (parallel)
+
+🔀 Spawning 8 parallel agents...
+  📍 task-001: Button.tsx
+  📍 task-002: Input.tsx
+  📍 task-003: Select.tsx
+  ...
+
+⏳ Waiting for completion...
+
+✅ task-001: Button.tsx - 5 tests added
+✅ task-002: Input.tsx - 4 tests added
+✅ task-003: Select.tsx - 6 tests added
+
+✅ Complete: 8/8 successful, 38 tests added
+```
+
+### Filter Operation Output
+
+```
+🔍 Filter: stories where status=ready
+
+Found 3 matching stories:
+
+1. US-0042: Add user profile settings
+   Epic: EP-0009 | Priority: high
+
+2. US-0043: Implement password reset
+   Epic: EP-0009 | Priority: high
+
+3. US-0045: Add notification preferences
+   Epic: EP-0010 | Priority: medium
+```
+
+### Reduce Operation Output
+
+```
+📊 Reduce: 15 stories → summary
+
+Epic Distribution:
+  EP-0009: 8 stories (53%)
+  EP-0010: 4 stories (27%)
+  EP-0011: 3 stories (20%)
+
+Status Distribution:
+  ready: 5 (33%)
+  in_progress: 3 (20%)
+  completed: 7 (47%)
+
+Priority:
+  high: 6
+  medium: 7
+  low: 2
+```
+
+## Best Practices
+
+1. **Filter first** - Reduce scope before processing
+2. **Use map for validation** - Quick checks don't need parallelism
+3. **Use pmap for independent work** - Tests, linting, formatting
+4. **Monitor loop iterations** - Don't exceed MAX unnecessarily
+5. **Check results** - Review failed items after batch completes
+
+## When to Use
+
+### Best For
+
+- **Batch operations** - Apply same action to many items
+- **Parallel processing** - Speed up independent tasks
+- **Filtering and searching** - Find items matching criteria
+- **Reporting** - Aggregate data across files
+
+### Not For
+
+- **Single items** - Use direct commands instead
+- **Complex workflows** - Use `/agileflow:babysit` instead
+- **Exploratory work** - Use individual commands for learning
+
+## Related Commands
+
+- [`/babysit`](/commands/babysit) - Interactive mentor for stories
+- [`/story`](/commands/story) - Create user stories
+- [`/verify`](/commands/verify) - Run tests
+- [`/status`](/commands/status) - Update status

@@ -1,0 +1,258 @@
+---
+title: /install
+description: Validate AgileFlow installation after setup
+---
+
+# /install
+
+Validate your AgileFlow installation after running `npx agileflow setup`. Reports what's installed correctly and what needs attention.
+
+## Quick Start
+
+```bash
+/agileflow:install
+```
+
+This validates all aspects of your installation and reports health status.
+
+## Parameters
+
+No arguments required. The command validates the entire installation automatically.
+
+## What Gets Validated
+
+The installation validator checks:
+
+1. **Directory Structure** - Core folders exist (.agileflow/, .claude/, docs/)
+2. **Scripts** - Required scripts exist and are executable
+3. **Hook Configuration** - Hooks configured in .claude/settings.json
+4. **JSON File Integrity** - All JSON files are valid
+5. **Slash Commands** - Commands are installed
+6. **Version Information** - Installed vs. latest version
+
+## Validation Categories
+
+### Directory Structure
+
+**Required directories**:
+- `.agileflow/` - Core installation
+- `.agileflow/agents/` - Agent definitions
+- `.agileflow/commands/` - Command definitions
+- `.agileflow/scripts/` - Utility scripts
+- `.claude/` - Claude Code integration
+- `.claude/commands/agileflow/` - Slash commands
+- `docs/09-agents/` - Status tracking
+
+**Optional directories**:
+- `docs/00-meta/` - Metadata
+- `docs/03-decisions/` - Architecture Decision Records
+- `docs/04-architecture/` - Architecture docs
+- `docs/05-epics/` - Epic tracking
+
+### Scripts
+
+Checks for required scripts:
+- `agileflow-welcome.js` - Welcome message
+- `archive-completed-stories.sh` - Story archival
+- `precompact-context.sh` - Context preservation
+
+Optional scripts:
+- `agileflow-statusline.sh` - Custom status line
+- `obtain-context.js` - Context loader
+- `session-manager.js` - Session management
+
+### Hook Configuration
+
+Validates hooks in `.claude/settings.json`:
+- **SessionStart** - Runs on session start (welcome, archival)
+- **PreCompact** - Runs before context compaction
+- **PreToolUse** - Runs before tool execution (damage control)
+
+### JSON Files
+
+Validates integrity of:
+- `docs/00-meta/agileflow-metadata.json`
+- `docs/09-agents/status.json`
+- `.claude/settings.json`
+- `docs/09-agents/session-state.json`
+
+### Version Information
+
+Reports:
+- Installed version
+- Latest available version
+- Update availability
+
+## Output Format
+
+### Successful Installation
+
+```
+🔍 AgileFlow Installation Validation
+=====================================
+
+📁 Directory Structure
+----------------------
+  ✅ .agileflow
+  ✅ .agileflow/agents
+  ✅ .agileflow/commands
+  ✅ .agileflow/scripts
+  ✅ .claude
+  ✅ .claude/commands/agileflow
+  ✅ docs/09-agents
+  ✅ docs/00-meta
+  ✅ docs/03-decisions
+  ✅ docs/04-architecture
+
+📜 Script Installation
+----------------------
+  ✅ agileflow-welcome.js
+  ✅ archive-completed-stories.sh
+  ✅ precompact-context.sh
+  ✅ agileflow-statusline.sh
+
+🪝 Hook Configuration
+---------------------
+  ✅ .claude/settings.json is valid JSON
+  ✅ SessionStart hooks: 2 configured
+  ✅ PreCompact hooks: 1 configured
+  ✅ PreToolUse hooks: 3 configured (damage control)
+
+📋 JSON File Integrity
+----------------------
+  ✅ docs/00-meta/agileflow-metadata.json (2KB)
+  ✅ docs/09-agents/status.json (15KB)
+  ✅ .claude/settings.json (8KB)
+
+⚡ Slash Commands
+-----------------
+  ✅ 79 slash commands installed
+
+📦 Version Information
+----------------------
+  ✅ Installed version: v2.94.1
+  ℹ️  Latest available: v2.94.1
+
+📊 Installation Summary
+=======================
+✅ Installation validated successfully!
+
+Next steps:
+  • Run /agileflow:board to see your kanban board
+  • Run /agileflow:story to create your first story
+  • Run /agileflow:help for all available commands
+```
+
+### Installation with Issues
+
+```
+🔍 AgileFlow Installation Validation
+=====================================
+
+📁 Directory Structure
+----------------------
+  ✅ .agileflow
+  ❌ .agileflow/agents - MISSING (REQUIRED)
+  ✅ .agileflow/commands
+  ✅ .claude
+
+📜 Script Installation
+----------------------
+  ✅ agileflow-welcome.js
+  ⚠️  archive-completed-stories.sh - exists but not executable
+     Fix: chmod +x .agileflow/scripts/archive-completed-stories.sh
+  ✅ precompact-context.sh
+
+🪝 Hook Configuration
+---------------------
+  ✅ .claude/settings.json is valid JSON
+  ⚠️  SessionStart hooks: not configured
+     Run: /agileflow:configure to enable welcome display
+
+📊 Installation Summary
+=======================
+❌ Installation has 1 error(s) and 2 warning(s).
+
+Required actions:
+  1. Re-run setup: npx agileflow setup --force
+  2. Fix script permissions: chmod +x .agileflow/scripts/archive-completed-stories.sh
+  3. Run /agileflow:configure to enable hooks
+```
+
+## Status Indicators
+
+| Indicator | Meaning |
+|-----------|---------|
+| ✅ | Validation passed - item is healthy |
+| ❌ | Validation failed - item is missing or broken |
+| ⚠️ | Warning - item exists but needs attention |
+| ℹ️ | Informational - optional item not found |
+
+## Fixing Installation Issues
+
+### Missing Required Directories
+
+```bash
+# Re-run setup to restore missing directories
+npx agileflow setup --force
+```
+
+### Non-executable Scripts
+
+```bash
+# Make scripts executable
+chmod +x .agileflow/scripts/*.sh
+```
+
+### Invalid JSON Files
+
+Files with invalid JSON need manual repair:
+
+1. Check syntax errors in the file
+2. Use JSON validator to find issues
+3. Fix manually or re-run setup
+
+### Missing Hooks
+
+Configure hooks to enable features:
+
+```bash
+/agileflow:configure
+```
+
+This opens the configuration interface to set up hooks.
+
+## Common Issues and Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `.agileflow` missing | Incomplete setup | `npx agileflow setup --force` |
+| Scripts not executable | Permission issue | `chmod +x .agileflow/scripts/*.sh` |
+| Invalid JSON | Corrupted file | Re-run setup or manual fix |
+| No hooks configured | Setup skipped hooks | `/agileflow:configure` |
+| Slash commands missing | Installation failure | `npx agileflow setup --force` |
+| Version mismatch | Update available | `npx agileflow update` |
+
+## Running After Installation
+
+Once installation is validated:
+
+1. **Create your first story**: `/agileflow:story`
+2. **View kanban board**: `/agileflow:board`
+3. **Configure features**: `/agileflow:configure`
+4. **Get help**: `/agileflow:help`
+
+## When to Run
+
+Run this command:
+
+- **After setup**: Verify installation completed successfully
+- **Troubleshooting**: Check what's broken
+- **Regular maintenance**: Part of `/agileflow:maintain`
+
+## Related Commands
+
+- [`/maintain`](/commands/maintain) - Periodic maintenance checks
+- [`/diagnose`](/commands/diagnose) - Full system health diagnostics
+- [`/configure`](/commands/configure) - Configure AgileFlow features
+- [`/help`](/commands/help) - Display AgileFlow overview

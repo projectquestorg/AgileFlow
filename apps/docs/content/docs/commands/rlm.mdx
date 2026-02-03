@@ -1,0 +1,200 @@
+---
+title: /rlm
+description: Analyze complex documents using RLM (Recursive Language Models)
+---
+
+# /rlm
+
+Analyze complex documents using the RLM (Recursive Language Models) pattern. Virtualizes documents outside context and uses programmatic search instead of loading full content.
+
+## Quick Start
+
+```bash
+/agileflow:rlm DOCUMENT="contracts/merger-agreement.pdf" QUERY="What are the termination conditions?"
+```
+
+This analyzes the document without loading it fully into context.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `DOCUMENT` | Yes | Path to document file (.txt, .md, .pdf, .docx) |
+| `QUERY` | Yes | Question to answer about the document |
+| `MAX_ITERATIONS` | No | Max search iterations (default: 10) |
+| `DEPTH` | No | Recursion depth for sub-agents (default: 1) |
+
+## When to Use RLM
+
+| Document Size | Complexity | Use RLM? | Why |
+|---------------|-----------|----------|-----|
+| < 10k chars | Any | No | Direct read is fine |
+| 10-50k chars | Simple | No | Direct read is acceptable |
+| 50k+ chars | Any | **Yes** | Context rot risk |
+| Any size | High | **Yes** | Multi-hop reasoning needed |
+
+Use RLM when:
+- Document is large (50k+ characters)
+- Many cross-references needed
+- Multiple questions about same doc
+- Budget optimization needed
+
+## How RLM Works
+
+RLM prevents context rot by:
+
+1. **Virtualizing the document** - Never loads full content into context
+2. **Programmatic search** - Uses tools to search instead of reading
+3. **Targeted extraction** - Gets only relevant sections
+4. **Synthesis** - You (Sonnet) synthesize the answer
+
+### Workflow Phases
+
+**Phase 1: Assess**
+```bash
+node packages/cli/scripts/document-repl.js --load="DOCUMENT" --info
+```
+Get document info and complexity.
+
+**Phase 2: Explore Structure**
+```bash
+node packages/cli/scripts/document-repl.js --load="DOCUMENT" --toc
+```
+Get table of contents.
+
+**Phase 3: Targeted Search**
+```bash
+node packages/cli/scripts/document-repl.js --load="DOCUMENT" --search="keyword"
+```
+Search for relevant sections.
+
+**Phase 4: Extract Sections**
+```bash
+node packages/cli/scripts/document-repl.js --load="DOCUMENT" --section="Article 7"
+```
+Get specific sections.
+
+**Phase 5: Synthesize**
+You synthesize the final answer using extracted content.
+
+## Usage Examples
+
+### Legal Document Analysis
+
+```bash
+/agileflow:rlm DOCUMENT="contracts/merger-agreement.pdf" QUERY="What are the conditions precedent to closing for each party?"
+```
+
+Analyzes merger agreement to find conditions.
+
+### Technical Specification
+
+```bash
+/agileflow:rlm DOCUMENT="specs/api-specification.md" QUERY="What authentication methods are supported?"
+```
+
+Searches specification for auth methods.
+
+### Research Paper
+
+```bash
+/agileflow:rlm DOCUMENT="research/rlm-paper.pdf" QUERY="What are the limitations of the RLM approach?"
+```
+
+Extracts limitations from paper.
+
+## Output Format
+
+### Successful Analysis
+
+```
+📄 RLM Document Analysis
+══════════════════════════════════════════════════════════════
+
+Document: docs/research/api-design-guide.pdf (156 pages)
+Question: What authentication methods are recommended?
+
+Launching RLM sub-agent...
+✓ Document loaded (2.3 MB)
+✓ Virtualized as 47 chunks
+✓ Cost estimate: $0.12
+
+Iteration 1/5: Searching for authentication...
+  Found: Chapter 4 "Security", pages 45-62
+
+Iteration 2/5: Extracting relevant sections...
+  Found: 3 authentication patterns described
+
+Iteration 3/5: Synthesizing answer...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 Answer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The guide recommends three authentication methods:
+
+1. **JWT Tokens** (Primary)
+   - For API-to-API communication
+   - 15-minute expiry with refresh tokens
+
+2. **OAuth 2.0** (External Users)
+   - For third-party integrations
+   - Support Google and GitHub providers
+
+3. **API Keys** (Internal Services)
+   - For trusted internal services
+   - Rotate every 90 days
+
+Source: Pages 47-52, Chapter 4 "Security"
+Confidence: High (direct quotes available)
+Cost: $0.08 (3 iterations)
+```
+
+## Delegation
+
+For very large documents (50k+ chars), RLM can delegate search to a sub-agent:
+
+```bash
+/agileflow:rlm DOCUMENT="enterprise-guide.pdf" QUERY="What are all security requirements?" DEPTH=2
+```
+
+The sub-agent searches the document while you synthesize results.
+
+## Best Practices
+
+1. **Assess first** - Check complexity before starting
+2. **Search systematically** - Find all relevant sections
+3. **Extract completely** - Get full context for answers
+4. **Synthesize personally** - You provide the final answer
+5. **Track iterations** - Monitor toward MAX_ITERATIONS
+
+## Error Handling
+
+| Error | Recovery |
+|-------|----------|
+| Document not found | Provide correct path |
+| Unsupported format | Convert to .txt, .md, or .pdf |
+| PDF parse error | Ensure pdf-parse installed |
+| Budget exceeded | Summarize partial results |
+| Max iterations | Report findings so far |
+
+## Supported Document Types
+
+- `.txt` - Plain text files
+- `.md` - Markdown documents
+- `.pdf` - PDF files
+- `.docx` - Word documents
+
+## Integration
+
+RLM integrates with research commands:
+
+- Use with `/agileflow:research:analyze` for large documents
+- Use `/agileflow:research:view` for small notes
+- Works with `/agileflow:research:synthesize` for cross-document analysis
+
+## Related Commands
+
+- [`/research:analyze`](/commands/research:analyze) - Analyze research notes
+- [`/research:view`](/commands/research:view) - View research documents
+- [`/research:synthesize`](/commands/research:synthesize) - Cross-document analysis

@@ -1,11 +1,11 @@
 ---
 title: Agents
-description: 34 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
+description: 46 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
 ---
 
 # Agents
 
-AgileFlow includes **34 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
+AgileFlow includes **46 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
 
 ## How Agents Work
 
@@ -64,10 +64,10 @@ When Claude Code compresses context, it preserves these rules and state fields f
 
 ### Agent Priority Distribution
 
-- **Critical** (2 agents): mentor, api
-- **High** (9 agents): ui, database, ci, devops, testing, security, documentation, performance, codebase-query
-- **Medium** (15 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater
-- **Low** (2 agents): epic-planner, orchestrator
+- **Critical** (4 agents): mentor, api, ui, database
+- **High** (12 agents): ci, devops, testing, security, documentation, performance, codebase-query, orchestrator, team-coordinator, error-analyzer, code-reviewer, multi-expert
+- **Medium** (20 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, logic-analyzer-*, council-*, rlm-subcore
+- **Low** (10 agents): epic-planner, api-validator, schema-validator, ui-validator, configuration-*
 
 This tiered approach ensures the most critical agents always maintain focus while others gracefully degrade context when needed.
 
@@ -139,8 +139,53 @@ Agents that coordinate other agents:
 | Agent | Description |
 |-------|-------------|
 | [`multi-expert`](/agents/multi-expert) | Deploys 3-5 experts on the same problem for high-confidence answers |
+| [`orchestrator`](/agents/orchestrator) | Multi-expert orchestrator that coordinates parallel domain experts |
+| [`team-coordinator`](/agents/team-coordinator) | Orchestrates builder+validator pairs for systematic verification |
 | [`product`](/agents/product) | Requirements analysis, user stories, acceptance criteria |
 | [`refactor`](/agents/refactor) | Technical debt cleanup, legacy code modernization |
+
+### Logic Analysis
+
+Agents for automated code analysis and bug detection:
+
+| Agent | Description |
+|-------|-------------|
+| [`logic-analyzer-edge`](/agents/logic-analyzer-edge) | Edge case detection for boundary conditions and off-by-one errors |
+| [`logic-analyzer-flow`](/agents/logic-analyzer-flow) | Control flow analysis for dead code and unreachable branches |
+| [`logic-analyzer-invariant`](/agents/logic-analyzer-invariant) | State consistency analysis for invariant violations |
+| [`logic-analyzer-race`](/agents/logic-analyzer-race) | Race condition and concurrency issue detection |
+| [`logic-analyzer-type`](/agents/logic-analyzer-type) | Type safety analysis for coercion and null issues |
+| [`logic-consensus`](/agents/logic-consensus) | Consensus coordinator for logic audit voting |
+
+### Validation
+
+Read-only validator agents that verify implementations:
+
+| Agent | Description |
+|-------|-------------|
+| [`api-validator`](/agents/api-validator) | API contract validation and quality gates |
+| [`schema-validator`](/agents/schema-validator) | Database migration and schema validation |
+| [`ui-validator`](/agents/ui-validator) | UI accessibility and design system validation |
+
+### AI Council
+
+Three-perspective strategic decision making:
+
+| Agent | Description |
+|-------|-------------|
+| [`council-advocate`](/agents/council-advocate) | Devil's Advocate - critical examination of risks and blind spots |
+| [`council-analyst`](/agents/council-analyst) | Neutral Analyst - objective trade-off evaluation |
+| [`council-optimist`](/agents/council-optimist) | Optimist Strategist - identifies opportunities and success paths |
+
+### Debugging & Analysis
+
+Agents for debugging and problem diagnosis:
+
+| Agent | Description |
+|-------|-------------|
+| [`error-analyzer`](/agents/error-analyzer) | Error diagnosis, stack trace analysis, root cause identification |
+| [`code-reviewer`](/agents/code-reviewer) | Comprehensive code review with security and performance analysis |
+| [`rlm-subcore`](/agents/rlm-subcore) | Document search sub-agent for RLM pattern (cost-optimized) |
 
 ## Spawning Agents
 

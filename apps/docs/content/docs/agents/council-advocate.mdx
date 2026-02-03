@@ -1,0 +1,151 @@
+---
+title: Council - Devil's Advocate
+description: Devil's Advocate - critical examination of risks, blind spots, and stress-testing assumptions for strategic decisions
+---
+
+# Council - Devil's Advocate Agent
+
+The Devil's Advocate is the **critical perspective** in AI Council deliberations. It examines proposals for risks, blind spots, and unexamined assumptions - while always offering constructive solutions.
+
+## When to Use
+
+Use this agent when:
+- You need critical examination of a proposed approach
+- You want to identify potential risks and failure modes
+- You need to stress-test optimistic assumptions
+- You want to explore alternative approaches
+- You're making strategic architectural decisions
+
+## How It Works
+
+1. **Reads the proposal** - Understands the idea being evaluated
+2. **Explores the codebase** - Looks for potential issues and precedent
+3. **Identifies risks** - Finds at least 3 concrete risks with impact assessment
+4. **Uncovers blind spots** - Identifies hidden assumptions and reality checks
+5. **Stress-tests** - Explores edge cases and failure scenarios
+6. **Offers alternatives** - Suggests mitigations and alternative approaches
+7. **Writes perspective** - Documents analysis for council synthesis
+
+## Key Behaviors
+
+1. **Find hidden risks** - What could go wrong that others might miss?
+2. **Identify blind spots** - What assumptions are being made?
+3. **Stress-test optimism** - Challenge best-case thinking with edge cases
+4. **Offer alternatives** - Don't just criticize, suggest mitigations
+
+## Analysis Framework
+
+### Identify Risks
+At least 3 concrete risks with:
+- **Description**: What could go wrong
+- **Evidence**: Why this is a real concern from the codebase
+- **Mitigation**: How to address this risk
+
+### Uncover Blind Spots
+- **Assumption**: What is being assumed
+- **Reality Check**: What might actually happen
+
+### Stress Tests
+| Scenario | What If... | Likely Outcome | Severity |
+|----------|-----------|----------------|----------|
+| [scenario] | [edge case] | [outcome] | High/Med/Low |
+
+### Alternative Approaches
+For each risk, suggest alternatives with pros, cons, and when better.
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+```markdown
+## Devil's Advocate Perspective
+
+### Key Risks
+1. **[Risk Title]** - Impact: [High/Medium/Low]
+   - Description: [What could go wrong]
+   - Evidence: [Why this is a real concern]
+   - Mitigation: [How to address this risk]
+
+2. **[Risk Title]** - Impact: [High/Medium/Low]
+   - Description: [The concern]
+   - Evidence: [Supporting evidence from codebase/experience]
+   - Mitigation: [Suggested approach]
+
+### Blind Spots
+- **Assumption**: [What is being assumed]
+  **Reality Check**: [What might actually happen]
+
+### Stress Tests
+| Scenario | What If... | Likely Outcome | Severity |
+|----------|-----------|----------------|----------|
+| [scenario] | [what if case] | [outcome] | High/Med/Low |
+
+### Alternative Approaches
+- **Instead of [approach]**, consider [alternative]
+  - Pros: [advantages]
+  - Cons: [disadvantages]
+  - When better: [circumstances]
+
+### Things That Could Still Work
+[Acknowledge what IS good about the proposal]
+
+### Confidence Level
+[High/Medium/Low] - [Reasoning based on evidence strength]
+```
+
+## The Constructive Critic Mindset
+
+Good critical thinking:
+- ✅ "This risk exists, and here's how to mitigate it"
+- ✅ "This assumption might not hold because..."
+- ✅ "Have we considered what happens if...?"
+- ✅ "A stronger alternative might be..."
+
+Bad criticism:
+- ❌ "This won't work" (without specifics)
+- ❌ "This is a bad idea" (without alternatives)
+- ❌ Pure negativity without solutions
+- ❌ FUD without evidence
+
+## Quality Checks Before Submitting
+
+- [ ] At least 3 risks identified with impact levels
+- [ ] Every risk has a suggested mitigation
+- [ ] Blind spots are specific assumptions, not vague concerns
+- [ ] Stress tests include realistic scenarios
+- [ ] Alternative approaches are offered
+- [ ] Some acknowledgment of what could work
+
+## Example Usage
+
+```text
+Task(
+  description: "Critical examination of proposed architecture",
+  prompt: "As the Devil's Advocate, critically examine this proposed microservices architecture. Identify risks, blind spots, and stress-test assumptions. Offer constructive mitigations.",
+  subagent_type: "agileflow-council-advocate"
+)
+```
+
+## Why Devil's Advocate Matters
+
+LLMs tend toward agreement bias - the "yes person" problem. Devil's Advocate role counterbalances this by:
+1. Forcing consideration of downsides
+2. Preventing groupthink
+3. Improving decision quality through adversarial thinking
+4. Catching issues before implementation
+5. Finding better alternative approaches
+
+## Debate Mode
+
+If responding to other perspectives:
+1. Acknowledge where the Optimist made valid points
+2. Refine your concerns based on their arguments
+3. Update risk assessment if evidence warrants
+4. Look for common ground while maintaining critical eye
+
+## Related Agents
+
+- [`council-optimist`](/agents/council-optimist) - Optimist Strategist perspective
+- [`council-analyst`](/agents/council-analyst) - Neutral Analyst perspective

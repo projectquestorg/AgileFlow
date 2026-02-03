@@ -1,0 +1,216 @@
+---
+title: /choose
+description: AI-directed decision making with structured options
+---
+
+# /choose
+
+Use AI to analyze trade-offs and recommend the best option when multiple valid approaches exist.
+
+## Quick Start
+
+```bash
+/agileflow:choose best approach to fix slow API response times
+```
+
+This analyzes options and explains trade-offs to guide your decision.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<decision>` | Yes | The decision to analyze |
+| `CONTEXT` | No | Additional context for the decision |
+
+## Usage Examples
+
+### Performance decision
+
+```bash
+/agileflow:choose best approach to fix slow API response times
+```
+
+Analyzes options like caching, query optimization, pagination.
+
+### Architecture decision
+
+```bash
+/agileflow:choose authentication approach for new API CONTEXT="multi-tenant SaaS, 50K users"
+```
+
+Considers JWT, sessions, OAuth with your context.
+
+### Development approach
+
+```bash
+/agileflow:choose how to implement the new dashboard feature
+```
+
+Weighs quick prototype vs. full architecture vs. incremental TDD.
+
+## How It Works
+
+The command performs 4-step decision analysis:
+
+### Step 1: Analyze the Decision
+
+Understands what's being decided:
+- What are the constraints?
+- What matters most? (speed, quality, maintainability)
+- What's the current context?
+
+### Step 2: Generate Options
+
+For each viable approach:
+- **Name**: Clear label for the option
+- **Description**: What it entails
+- **Pros**: Benefits and strengths
+- **Cons**: Drawbacks and risks
+- **Effort**: Implementation cost
+- **Risk**: Potential failure modes
+
+### Step 3: Evaluate Against Criteria
+
+Scores each option against:
+- **Fit**: How well it matches requirements
+- **Feasibility**: How practical to implement
+- **Future-proof**: How well it handles change
+- **Team capacity**: Skills and time available
+
+### Step 4: Make Recommendation
+
+Selects the best option and explains:
+- Why this option wins
+- What trade-offs are accepted
+- What risks to monitor
+- What next steps to take
+
+## Examples
+
+### Performance Optimization
+
+**Decision**: Best approach to fix slow API response times
+
+**Options Considered**:
+1. Add Caching (Redis)
+2. Optimize Database Queries
+3. Add Pagination
+
+**Recommendation**: Start with database optimization, then add caching
+
+**Rationale**: Optimizing queries addresses the root cause. Adding caching on top of slow queries just hides the problem. Start with the foundation, then layer caching for frequently accessed data.
+
+### Architecture Decision
+
+**Decision**: Authentication approach for multi-tenant SaaS (50K users)
+
+**Options Considered**:
+1. JWT with short expiry
+2. Session-based auth
+3. OAuth 2.0 with Identity Provider
+
+**Recommendation**: OAuth 2.0 with Identity Provider
+
+**Rationale**: Enterprises will expect SSO. Managing auth in-house is a liability. Auth0/Okta handle the complexity. Worth the integration effort upfront.
+
+### Development Approach
+
+**Decision**: Development approach for new dashboard
+
+**Options Considered**:
+1. Quick prototype (fast, risky)
+2. Full architecture first (solid, slow)
+3. Incremental TDD (balanced)
+
+**Recommendation**: Incremental TDD
+
+**Rationale**: Dashboard is user-facing with many edge cases. TDD ensures components work correctly from the start, and refactoring is safe when design evolves.
+
+## Output Format
+
+Every decision outputs this format:
+
+```markdown
+## Decision: [question]
+
+### Context
+[Summary of situation and constraints]
+
+### Options Analyzed
+
+#### Option 1: [name]
+**Description**: [what it is]
+**Pros**: [benefits]
+**Cons**: [drawbacks]
+**Effort**: [low/medium/high]
+**Risk**: [potential issues]
+
+#### Option 2: [name]
+...
+
+### Analysis
+
+[Comparison matrix or discussion]
+
+### Recommendation
+
+**Selected: [option name]**
+
+**Rationale**: [why this option is best for this situation]
+
+**Trade-offs Accepted**:
+- [trade-off 1]
+- [trade-off 2]
+
+### Next Steps
+1. [immediate action]
+2. [follow-up action]
+3. [verification step]
+```
+
+## Expert Delegation
+
+For complex decisions, delegate analysis to domain experts:
+
+```bash
+/agileflow:choose best database for this workload
+# With expert delegation to database and performance specialists
+```
+
+The command can spawn experts in parallel to analyze from different angles before synthesis.
+
+## When NOT to Use
+
+- **Simple yes/no questions** - Just answer directly
+- **Only one viable option** - Just proceed
+- **User has already decided** - Just implement
+- **Trivial decisions** - Don't over-engineer the process
+
+Use `/agileflow:choose` for decisions that:
+- Have 2+ viable options
+- Involve trade-offs worth analyzing
+- Benefit from structured thinking
+- Need documented rationale
+
+## Best Practices
+
+1. **Include context** - More context = better recommendations
+2. **Define success criteria** - What matters most?
+3. **Be honest about trade-offs** - Every option has downsides
+4. **Document decisions** - Use `/agileflow:adr` for important architectural choices
+5. **Revisit decisions** - Circumstances change; choices may need updating
+
+## Integration with Other Commands
+
+After making a decision:
+
+- **Document it**: Use `/agileflow:adr` to create Architecture Decision Record
+- **Create work**: Use `/agileflow:story` to create stories for implementation
+- **Implement it**: Use `/agileflow:babysit` to implement the selected approach
+
+## Related Commands
+
+- [`/adr`](/commands/adr) - Create Architecture Decision Records
+- [`/council`](/commands/council) - Multi-perspective decision making
+- [`/rpi`](/commands/rpi) - Research-Plan-Implement workflow
+- [`/babysit`](/commands/babysit) - Interactive mentor workflow

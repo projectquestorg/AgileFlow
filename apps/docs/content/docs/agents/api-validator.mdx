@@ -1,0 +1,146 @@
+---
+title: API Validator
+description: Validator for API implementations. Verifies endpoints meet quality gates. Read-only access - cannot modify files.
+---
+
+# API Validator Agent
+
+The API Validator is a read-only validator agent. It verifies that API implementations created by the API builder meet quality standards without modifying any files.
+
+**CRITICAL**: This agent CANNOT modify files. It can only READ and REPORT findings.
+
+## When to Use
+
+Use this agent when:
+- You need to verify API endpoints meet quality standards
+- You want to ensure test coverage is adequate
+- You need to validate error handling is consistent
+- You want to verify documentation completeness
+- You need to check for security vulnerabilities in API code
+
+## How It Works
+
+1. **Reads story requirements** - Understands what should be implemented
+2. **Finds implementation** - Locates endpoint, route, and controller files
+3. **Checks tests** - Verifies test coverage exists
+4. **Verifies quality gates** - Systematically checks all quality standards
+5. **Generates report** - Returns structured validation report with APPROVE/REJECT recommendation
+
+## Quality Gates Checked
+
+### 1. Endpoint Implementation
+- All specified endpoints exist
+- HTTP methods are correct (GET, POST, PUT, DELETE)
+- Request/response schemas match specification
+- Error responses follow consistent format
+
+### 2. Test Coverage
+- Tests exist for each endpoint
+- Happy path tests present
+- Error case tests present
+- Edge case tests present
+- Coverage threshold met (if specified)
+
+### 3. Error Handling
+- 400 Bad Request for invalid input
+- 401 Unauthorized for auth failures
+- 404 Not Found for missing resources
+- 500 errors are logged properly
+- No sensitive data in error messages
+
+### 4. Documentation
+- Endpoint documented in README or OpenAPI spec
+- Request/response examples provided
+- Error codes documented
+
+### 5. Security
+- No hardcoded secrets
+- Input validation present
+- SQL injection prevention
+- Authentication required where appropriate
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Validation Report Format
+
+```markdown
+## Validation Report: {story_id}
+
+**Builder**: agileflow-api
+**Validator**: agileflow-api-validator
+**Timestamp**: {timestamp}
+
+### Overall Status: ✅ PASSED / ❌ FAILED
+
+### Gate Results
+
+#### ✅ Endpoint Implementation
+- All 3 endpoints implemented correctly
+- Schemas match specification
+
+#### ❌ Test Coverage
+- Missing test for error case: 404 response
+- Coverage: 72% (threshold: 80%)
+
+### Issues Found
+
+1. **Missing Test**: No test for 404 response on GET /api/users/:id
+   - File: src/routes/users.ts:45
+   - Required: Test case for non-existent user
+
+2. **Coverage Below Threshold**: 72% < 80%
+   - Uncovered lines: src/routes/users.ts:67-72
+
+### Recommendation
+
+❌ REJECT - Fix issues before marking complete
+
+OR
+
+✅ APPROVE - All quality gates passed
+```
+
+## Best Practices
+
+- Address all security concerns before shipping APIs
+- Ensure comprehensive test coverage (target 80%+)
+- Document error codes and handling
+- Use consistent HTTP status codes
+- Validate and sanitize all inputs
+- Implement proper authentication/authorization
+
+## Example Usage
+
+```text
+Task(
+  description: "Validate API implementation",
+  prompt: "Validate the API implementation for story US-123. Check that all endpoints are implemented, tests cover happy path and error cases, error handling is consistent, and no hardcoded secrets exist.",
+  subagent_type: "agileflow-api-validator"
+)
+```
+
+## Important Rules
+
+1. **NEVER** try to fix issues - only report them
+2. **ALWAYS** provide specific file paths and line numbers
+3. **BE OBJECTIVE** - report facts, not opinions
+4. **BE THOROUGH** - check all quality gates
+5. **BE CLEAR** - make recommendations actionable
+
+## Integration with Orchestrator
+
+When spawned by the orchestrator:
+1. Receives task prompt with builder task ID and story ID
+2. Gathers all context (story requirements, implementation)
+3. Executes quality gate checks
+4. Returns structured validation report
+5. Orchestrator decides next action based on report
+
+## Related Agents
+
+- [`api`](/agents/api) - API builder that creates endpoints
+- [`schema-validator`](/agents/schema-validator) - Validates database schemas
+- [`ui-validator`](/agents/ui-validator) - Validates UI implementations
+- [`team-coordinator`](/agents/team-coordinator) - Orchestrates builder/validator pairs

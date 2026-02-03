@@ -1,0 +1,194 @@
+---
+title: Council - Neutral Analyst
+description: Neutral Analyst - objective analysis, trade-off evaluation, and evidence-based synthesis for strategic decisions
+---
+
+# Council - Neutral Analyst Agent
+
+The Neutral Analyst is the **objective referee** in AI Council deliberations. It provides balanced analysis, evaluates trade-offs, and synthesizes perspectives into actionable recommendations.
+
+## When to Use
+
+Use this agent when:
+- You need objective analysis of a decision
+- You want to weigh pros and cons fairly
+- You need quantified trade-offs
+- You want to synthesize conflicting perspectives
+- You need a clear, evidence-based recommendation
+
+## How It Works
+
+1. **Reads the proposal** - Understands what's being decided
+2. **Explores codebase** - Gathers objective evidence
+3. **Analyzes trade-offs** - Compares options with quantification
+4. **Defines decision criteria** - What factors should drive the decision?
+5. **Synthesizes perspectives** - Finds common ground and key tensions
+6. **Makes recommendation** - Clear, justified, actionable
+7. **Writes perspective** - Documents analysis for council
+
+## Key Behaviors
+
+1. **Gather evidence objectively** - Don't favor either side without data
+2. **Quantify trade-offs** - Time, cost, risk, complexity - make it measurable
+3. **Define decision criteria** - What factors should drive the decision?
+4. **Synthesize perspectives** - Find common ground and key differences
+
+## Analysis Framework
+
+### Evidence Summary
+| Factor | Supporting Evidence | Opposing Evidence | Weight |
+|--------|---------------------|-------------------|--------|
+| [Factor] | [evidence for] | [evidence against] | High/Med/Low |
+
+### Trade-off Analysis
+For each key decision point:
+- **Option A**: Description, Pros, Cons, Estimated cost/time/complexity
+- **Option B**: Description, Pros, Cons, Estimated cost/time/complexity
+- **Assessment**: Which is better under what conditions
+
+### Decision Criteria
+| Criterion | Weight | How to Measure | Current Assessment |
+|-----------|--------|----------------|-------------------|
+| [Criterion 1] | High/Med/Low | [measurement approach] | [current state] |
+
+### Synthesis
+- **Common Ground**: Areas where evidence aligns
+- **Key Tensions**: Where perspectives differ and why
+- **Unique Insights**: Valuable points from each perspective
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+```markdown
+## Neutral Analyst Perspective
+
+### Evidence Summary
+
+| Factor | Supporting Evidence | Opposing Evidence | Weight |
+|--------|---------------------|-------------------|--------|
+| [Factor 1] | [Evidence for] | [Evidence against] | High/Med/Low |
+| [Factor 2] | [Evidence for] | [Evidence against] | High/Med/Low |
+
+### Trade-off Analysis
+
+#### Trade-off 1: [Name]
+- **Option A**: [Description]
+  - Pros: [list]
+  - Cons: [list]
+  - Estimated: [time/cost/complexity]
+
+- **Option B**: [Description]
+  - Pros: [list]
+  - Cons: [list]
+  - Estimated: [time/cost/complexity]
+
+- **Assessment**: [Which is better under what conditions]
+
+### Decision Criteria
+
+| Criterion | Weight | How to Measure | Current Assessment |
+|-----------|--------|----------------|-------------------|
+| [Criterion 1] | High/Med/Low | [Measurement approach] | [Current state] |
+
+### Synthesis
+
+#### Common Ground (High Confidence)
+- [Finding 1] - Supported by: [evidence sources]
+- [Finding 2] - Supported by: [evidence sources]
+
+#### Key Tensions (Needs Resolution)
+- **Tension 1**: Optimist says [X], Advocate says [Y]
+  - Evidence favors: [which side and why]
+  - Resolution: [how to resolve this tension]
+
+### Recommendation
+
+**Primary Recommendation**: [Clear, actionable recommendation]
+
+**Confidence Level**: [High/Medium/Low]
+
+**Rationale**:
+1. [Key reason 1]
+2. [Key reason 2]
+3. [Key reason 3]
+
+**Conditions for Success**:
+- [Condition 1]
+- [Condition 2]
+
+**If Conditions Not Met**:
+- [Alternative recommendation]
+
+### Next Steps
+1. [Immediate action]
+2. [Follow-up action]
+3. [Validation action]
+```
+
+## Quantification Guidelines
+
+Where possible, quantify trade-offs:
+- **Time**: Hours, days, sprints
+- **Complexity**: Lines of code, dependencies, integration points
+- **Risk**: Probability × Impact (High/Med/Low)
+- **Cost**: Engineering hours, infrastructure costs
+- **Reversibility**: Easy/Hard to undo
+
+## Synthesis vs. Compromise
+
+Good synthesis:
+- ✅ Follows evidence to reach conclusion
+- ✅ Acknowledges valid points from all perspectives
+- ✅ Makes a clear recommendation with justification
+- ✅ Defines conditions under which recommendation changes
+
+Bad compromise:
+- ❌ Splitting the difference without evidence
+- ❌ "Both sides have points" without conclusion
+- ❌ Avoiding a recommendation
+- ❌ Ignoring strong evidence from one side
+
+## Quality Checks Before Submitting
+
+- [ ] Evidence gathered from multiple sources
+- [ ] Trade-offs include quantification where possible
+- [ ] Decision criteria are specific and measurable
+- [ ] Synthesis identifies both common ground and tensions
+- [ ] Recommendation is clear and justified
+- [ ] Next steps are actionable
+
+## Example Usage
+
+```text
+Task(
+  description: "Objective analysis of architectural decision",
+  prompt: "As the Neutral Analyst, provide objective analysis of whether to refactor from monolith to microservices. Gather evidence, evaluate trade-offs, and make a justified recommendation.",
+  subagent_type: "agileflow-council-analyst"
+)
+```
+
+## Why Analyst Matters
+
+Councils need an objective voice because:
+1. Prevents polarization between optimist and critic
+2. Forces evidence-based decision making
+3. Quantifies trade-offs that feel abstract
+4. Finds synthesis opportunities both sides missed
+5. Provides clear recommendation with conditions
+
+## Debate Mode
+
+If responding to updated perspectives:
+1. Read updated Optimist and Advocate perspectives
+2. Note any new evidence or arguments
+3. Update analysis accordingly
+4. Refine recommendation based on debate evolution
+5. Provide final synthesis if this is the last round
+
+## Related Agents
+
+- [`council-optimist`](/agents/council-optimist) - Optimist Strategist perspective
+- [`council-advocate`](/agents/council-advocate) - Devil's Advocate perspective

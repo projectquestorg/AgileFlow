@@ -1,0 +1,127 @@
+---
+title: Logic Analyzer - Invariants & State Consistency
+description: Invariant analyzer for pre/post conditions, state consistency, loop invariants, and contract violations
+---
+
+# Logic Analyzer - Invariants & State Consistency
+
+The Logic Analyzer: Invariants & State Consistency agent is a specialized logic analyzer focused on **invariants and state consistency**. It finds bugs where code violates expected pre-conditions, post-conditions, or maintains inconsistent state.
+
+## When to Use
+
+Use this agent when:
+- You need to verify pre-conditions are checked before function calls
+- You want to verify post-conditions are established after function execution
+- You're analyzing state machine code for invalid transitions
+- You need to identify loop invariant violations
+- You're looking for data invariant relationships that should always hold
+
+## How It Works
+
+1. **Identifies invariants** - Reads code to understand implicit assumptions about state
+2. **Maps state changes** - Traces how state is modified through functions and loops
+3. **Checks consistency** - Verifies invariants are maintained after every state change
+4. **Reports violations** - Generates structured findings showing how invariants are violated
+
+## Focus Areas
+
+- **Pre-condition violations**: Function called with invalid state
+- **Post-condition violations**: Function doesn't establish expected state
+- **State machine violations**: Invalid state transitions
+- **Loop invariants**: Conditions that should hold on each iteration
+- **Data invariants**: Relationships between data that should always hold
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+class ShoppingCart {
+  constructor() {
+    this.items = [];
+    this.totalPrice = 0;
+  }
+
+  addItem(item) {
+    this.items.push(item);
+    this.totalPrice += item.price;
+  }
+
+  removeItem(itemId) {
+    const index = this.items.findIndex(i => i.id === itemId);
+    if (index !== -1) {
+      this.items.splice(index, 1);
+    }
+    // BUG: totalPrice not updated!
+  }
+}
+```
+
+The Invariant analyzer would identify:
+
+### Finding: Price invariant violated in removeItem
+
+**Location**: `cart.js:15-20`
+**Severity**: P1 (inconsistent state)
+**Confidence**: HIGH
+
+**Invariant Violated**: `totalPrice === sum(items.map(i => i.price))`
+
+**Violation Scenario**:
+1. Cart has item `{id: 1, price: 100}`, totalPrice = 100
+2. Call removeItem(1)
+3. items = `[]`, but totalPrice = 100 (should be 0)
+4. Further operations use incorrect total
+
+**Suggested Fix**:
+```javascript
+removeItem(itemId) {
+  const index = this.items.findIndex(i => i.id === itemId);
+  if (index !== -1) {
+    const removedItem = this.items[index];
+    this.items.splice(index, 1);
+    this.totalPrice -= removedItem.price;
+  }
+}
+```
+
+## Best Practices
+
+- Explicitly state invariants in comments
+- Group related state changes together
+- Use transactions or try/catch for multi-step updates
+- Validate pre-conditions at function entry
+- Use assertions to document invariants
+- Keep state updates atomic
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: P0 (data corruption), P1 (inconsistent state), P2 (subtle violation)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Relevant code snippet
+- **Invariant Violated**: The condition that should always hold
+- **Violation Scenario**: Step-by-step how violation occurs
+- **Suggested Fix**: Corrected code with invariant preserved
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze state consistency in order processing",
+  prompt: "Review src/models/Order.ts for invariant violations. Check that order totals remain consistent, status transitions are valid, and line items match totals.",
+  subagent_type: "agileflow-logic-analyzer-invariant"
+)
+```
+
+## Related Agents
+
+- [`logic-analyzer-edge`](/agents/logic-analyzer-edge) - Boundary condition analysis
+- [`logic-analyzer-flow`](/agents/logic-analyzer-flow) - Control flow analysis
+- [`logic-analyzer-race`](/agents/logic-analyzer-race) - Concurrency issue detection
+- [`logic-analyzer-type`](/agents/logic-analyzer-type) - Type safety analysis
+- [`logic-consensus`](/agents/logic-consensus) - Logic audit consensus coordinator

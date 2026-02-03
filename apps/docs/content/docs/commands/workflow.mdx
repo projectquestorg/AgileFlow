@@ -1,0 +1,379 @@
+---
+title: /workflow
+description: Run parameterized workflow templates
+---
+
+# /workflow
+
+Run parameterized workflow templates. Enables DRY patterns for common multi-step operations.
+
+## Quick Start
+
+```bash
+/agileflow:workflow review path=src/auth.ts focus=security
+```
+
+This runs the built-in code review workflow on the specified file.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<template>` | Yes | Workflow name (built-in or custom) |
+| `[arguments]` | No | Key=value pairs for template variables |
+
+## Built-in Workflows
+
+### review
+
+Review code with configurable focus.
+
+**Arguments**:
+- `path` (required): File or glob pattern to review
+- `focus` (optional): `security`, `performance`, `quality`, or `all` (default: all)
+
+**Example**:
+```bash
+/agileflow:workflow review path=src/auth.ts focus=security
+```
+
+**What it does**:
+1. Reads the target file(s)
+2. Analyzes for specified focus areas
+3. Generates findings with severity
+4. Suggests fixes
+
+---
+
+### test-feature
+
+Test a feature end-to-end.
+
+**Arguments**:
+- `feature` (required): Feature name or path
+- `coverage` (optional): Minimum coverage threshold (default: 80)
+
+**Example**:
+```bash
+/agileflow:workflow test-feature feature=user-auth coverage=90
+```
+
+**What it does**:
+1. Identifies test files for feature
+2. Runs existing tests
+3. Generates missing tests
+4. Verifies coverage meets threshold
+
+---
+
+### implement
+
+Implement a story or feature.
+
+**Arguments**:
+- `story` (required): Story ID or description
+- `mode` (optional): `quick`, `thorough`, or `tdd` (default: thorough)
+
+**Example**:
+```bash
+/agileflow:workflow implement story=US-0042 mode=tdd
+```
+
+**Modes**:
+- **quick**: Minimal implementation, basic tests, quick review
+- **thorough**: Full planning, comprehensive tests, code review, documentation
+- **tdd**: Write tests first, implement, refactor, verify coverage
+
+---
+
+### analyze
+
+Analyze codebase for issues.
+
+**Arguments**:
+- `target` (required): Path or glob pattern
+- `type` (required): `security`, `performance`, `complexity`, or `all`
+
+**Example**:
+```bash
+/agileflow:workflow analyze target=src/**/*.ts type=all
+```
+
+**What it does**:
+1. Gathers files matching pattern
+2. Runs analysis for specified type
+3. Generates report with findings
+4. Prioritizes by severity
+
+## Custom Workflows
+
+Create custom workflows in `docs/08-project/workflows/`:
+
+```bash
+docs/08-project/workflows/
+├── deploy-staging.md
+├── release-check.md
+└── onboard-feature.md
+```
+
+### Custom Workflow Format
+
+```markdown
+---
+name: deploy-staging
+description: Deploy to staging environment
+arguments:
+  - name: version
+    required: true
+    description: Version to deploy
+  - name: notify
+    required: false
+    default: true
+    description: Send Slack notification
+---
+
+# Deploy to Staging: {{version}}
+
+## Pre-checks
+1. Verify tests passing
+2. Check no blocking PRs
+
+## Deployment
+1. Build version {{version}}
+2. Deploy to staging cluster
+3. Run smoke tests
+
+## Post-deploy
+{{#if notify}}
+4. Send Slack notification
+{{/if}}
+```
+
+### Using Custom Workflows
+
+```bash
+/agileflow:workflow deploy-staging version=2.42.0 notify=false
+```
+
+## Template Syntax
+
+### Variable Substitution
+
+```markdown
+Version: {{version}}
+```
+
+### Default Values
+
+```markdown
+Coverage threshold: {{coverage:80}}%
+Mode: {{mode:thorough}}
+```
+
+### Conditional Sections
+
+```markdown
+{{#if verbose}}
+### Verbose Output
+Show detailed logs...
+{{/if}}
+```
+
+### Lists
+
+```markdown
+Files to process:
+{{#each files}}
+- {{this}}
+{{/each}}
+```
+
+## Workflow Discovery
+
+List available workflows:
+
+```bash
+/agileflow:workflow --list
+```
+
+Output:
+
+```
+📋 Available Workflows
+══════════════════════════════════════════════════════════════
+
+Built-in workflows:
+  • review        Code review with configurable focus
+  • test-feature  Test a feature end-to-end
+  • implement     Implement a story/feature
+  • analyze       Analyze codebase for issues
+
+Custom workflows (docs/08-project/workflows/):
+  • deploy-staging   Deploy to staging environment
+  • release-check    Pre-release checklist
+
+Usage: /agileflow:workflow <name> [args...]
+```
+
+## Usage Examples
+
+### Code Review
+
+```bash
+/agileflow:workflow review path=src/api/auth.ts focus=security
+```
+
+Performs security-focused review of auth module.
+
+### Test Coverage
+
+```bash
+/agileflow:workflow test-feature feature=user-auth coverage=90
+```
+
+Tests user auth feature with 90% coverage requirement.
+
+### TDD Implementation
+
+```bash
+/agileflow:workflow implement story=US-0042 mode=tdd
+```
+
+Implements story using test-driven development approach.
+
+### Full Analysis
+
+```bash
+/agileflow:workflow analyze target=src/**/*.ts type=all
+```
+
+Analyzes all TypeScript files for security, performance, and complexity issues.
+
+## Composition
+
+Workflows can reference other workflows:
+
+```markdown
+## Full Release
+
+1. /agileflow:workflow test-feature feature=all coverage=90
+2. /agileflow:workflow analyze target=src type=security
+3. /agileflow:workflow deploy-staging version={{version}}
+```
+
+## Output Format
+
+### Workflow Execution
+
+```
+🔄 Workflow: review
+══════════════════════════════════════════════════════════════
+
+Arguments:
+  • path: src/auth.ts
+  • focus: security
+
+Executing workflow steps...
+
+Step 1: Reading target file(s)
+  ✓ Read src/auth.ts (245 lines)
+
+Step 2: Spawning security expert
+  ✓ agileflow-security analyzing...
+
+Step 3: Generating findings
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Review Results
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Security Analysis: src/auth.ts
+
+🔴 HIGH: Hardcoded JWT secret (line 42)
+   Suggestion: Use environment variable
+
+🟡 MEDIUM: No rate limiting on login endpoint
+   Suggestion: Add rate limiter middleware
+
+🟢 LOW: Console.log in production code (line 87)
+   Suggestion: Remove or use proper logging
+
+Summary: 1 high, 1 medium, 1 low severity issues
+```
+
+### Workflow List
+
+```
+📋 Available Workflows
+══════════════════════════════════════════════════════════════
+
+Built-in workflows:
+  • review        Code review with configurable focus
+  • test-feature  Test a feature end-to-end
+  • implement     Implement a story/feature
+  • analyze       Analyze codebase for issues
+
+Custom workflows (docs/08-project/workflows/):
+  • deploy-staging   Deploy to staging environment
+  • release-check    Pre-release checklist
+
+Usage: /agileflow:workflow <name> [args...]
+```
+
+## Error Handling
+
+### Unknown Workflow
+
+```
+❌ Workflow not found: my-workflow
+
+Available workflows:
+  • review
+  • test-feature
+  • implement
+  • analyze
+
+Create custom workflow:
+  docs/08-project/workflows/my-workflow.md
+```
+
+### Missing Required Argument
+
+```
+❌ Missing required argument: path
+
+Workflow 'review' requires:
+  • path (required): File or glob pattern to review
+  • focus (optional): Review focus (default: all)
+
+Usage: /agileflow:workflow review path=src/auth.ts focus=security
+```
+
+## Best Practices
+
+1. **Use descriptive names** - `deploy-staging` not `ds`
+2. **Document arguments** - Include types and defaults
+3. **Keep workflows focused** - One purpose per workflow
+4. **Use composition** - Build complex flows from simple ones
+5. **Version workflows** - Track changes in git
+
+## When to Use
+
+### Best For
+
+- **Repeated operations** - DRY patterns for common tasks
+- **Multi-step processes** - Automate complex workflows
+- **Team standards** - Consistent process across team
+- **Documentation** - Workflows serve as living docs
+
+### Not For
+
+- **One-off tasks** - Use direct commands instead
+- **Exploratory work** - Use individual commands for learning
+
+## Related Commands
+
+- [`/babysit`](/commands/babysit) - Interactive mentor workflow
+- [`/batch`](/commands/batch) - Process multiple items
+- [`/story`](/commands/story) - Create user stories
+- [`/verify`](/commands/verify) - Run tests

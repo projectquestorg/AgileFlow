@@ -1,0 +1,281 @@
+---
+title: /maintain
+description: Periodic maintenance checks for ongoing health
+---
+
+# /maintain
+
+Run periodic health checks on your AgileFlow installation. Use weekly or monthly to keep your setup healthy and optimize performance.
+
+## Quick Start
+
+```bash
+/agileflow:maintain
+```
+
+This runs all maintenance checks and reports health status.
+
+## Parameters
+
+No arguments required. The command runs the full maintenance suite automatically.
+
+## What Gets Checked
+
+Maintenance performs 6 health checks:
+
+1. **Update Check** - Compare installed vs npm latest version
+2. **Configuration Validity** - Validate hooks and metadata integrity
+3. **Status.json Health** - Check size, story count, archival needs
+4. **Session Cleanup** - Detect stale or orphaned sessions
+5. **Expertise Staleness** - Check for outdated expertise files
+6. **Metrics Report** - Show velocity, completion rates, trends
+
+## Checks in Detail
+
+### Update Check
+
+Compares your installed version with the latest available:
+- Shows installed version
+- Shows latest available version
+- Reports update command if newer available
+
+### Configuration Validity
+
+Validates all configuration files:
+- Metadata JSON syntax and schema
+- Settings JSON for hook configuration
+- Config.yaml presence
+- Reports any misconfigurations
+
+### Status.json Health
+
+Monitors story tracking file:
+- **File size warning**: >50KB (large, consider archival)
+- **File size critical**: >100KB (needs archival)
+- Counts stories by status (ready, in progress, blocked, completed)
+- Detects invalid/orphaned stories
+
+### Session Cleanup
+
+Detects stale sessions:
+- Registered sessions count
+- Sessions inactive >7 days
+- Suggests cleanup when needed
+- Identifies uncommitted changes
+
+### Expertise Staleness
+
+Checks expertise files for updates:
+- Total expertise files
+- Files >30 days old
+- Recommends refresh for stale files
+- Reports missing required fields
+
+### Metrics Report
+
+Shows project velocity and health:
+- Stories completed this week
+- Current work in progress count
+- WIP limit adherence
+- Blocked stories requiring attention
+
+## Output Format
+
+### Healthy System
+
+```
+🔧 AgileFlow Maintenance Check
+==============================
+
+2026-01-27 09:15:32
+
+📦 Update Check
+---------------
+  Installed: v2.94.1
+  Latest:    v2.94.1
+  ✅ Up to date
+
+⚙️  Configuration Validity
+--------------------------
+  ✅ Metadata valid (schema: 2.94.0)
+  ✅ Settings valid (6 hooks configured)
+  ✅ Config.yaml present
+
+📊 Status.json Health
+---------------------
+  File size: 45KB
+  Total stories: 127
+    • In Progress: 2
+    • Blocked: 0
+    • Ready: 5
+    • Completed: 120
+
+  ✅ File size healthy
+
+🔄 Session Health
+-----------------
+  Registered sessions: 1
+  ✅ No stale sessions
+
+🧠 Expertise Files
+------------------
+  Total expertise files: 26
+  ✅ Expertise files up to date
+
+📈 Project Metrics
+------------------
+  Completed this week: 8 stories
+  Current WIP: 2
+  ✅ WIP within limit (2 / 3)
+
+📋 Maintenance Summary
+======================
+✅ System is healthy!
+
+No maintenance actions required.
+
+Run /agileflow:diagnose for detailed system health check.
+```
+
+### System Needing Attention
+
+```
+🔧 AgileFlow Maintenance Check
+==============================
+
+📦 Update Check
+---------------
+  Installed: v2.93.0
+  Latest:    v2.94.1
+  ⚠️  Update available!
+     Run: npx agileflow update
+
+📊 Status.json Health
+---------------------
+  File size: 156KB
+  ⚠️  File size exceeds 100KB - archival recommended
+     Run: bash scripts/archive-completed-stories.sh
+
+🔄 Session Health
+-----------------
+  ⚠️  2 stale session(s) (>7 days inactive)
+     Run: /agileflow:session:cleanup
+
+📈 Project Metrics
+------------------
+  Current WIP: 5
+  ⚠️  WIP exceeds limit (5 > 3)
+  ⚠️  2 blocked story/stories need attention
+
+📋 Maintenance Summary
+======================
+⚠️  Found 6 item(s) needing attention
+
+Recommended actions (4):
+  • Update AgileFlow: npx agileflow update
+  • Archive old stories: bash scripts/archive-completed-stories.sh
+  • Clean up sessions: /agileflow:session:cleanup
+  • Review expertise: /agileflow:validate-expertise
+
+Run /agileflow:diagnose for detailed system health check.
+```
+
+## Status Indicators
+
+| Indicator | Meaning |
+|-----------|---------|
+| ✅ | Healthy - no action needed |
+| ⚠️ | Needs attention - specific recommendation provided |
+| ℹ️ | Informational - optional or non-critical |
+
+## Common Recommendations
+
+### Update Available
+
+```
+⚠️  Update available!
+Run: npx agileflow update
+```
+
+Install the latest version to get improvements and bug fixes.
+
+### Archive Needed
+
+```
+⚠️  File size exceeds 100KB - archival recommended
+Run: bash scripts/archive-completed-stories.sh
+```
+
+Archiving moves old completed stories to monthly archives, keeping status.json lean.
+
+### Session Cleanup
+
+```
+⚠️  2 stale session(s) (>7 days inactive)
+Run: /agileflow:session:cleanup
+```
+
+Clean up sessions that haven't been used recently.
+
+### WIP Limit Exceeded
+
+```
+⚠️  WIP exceeds limit (5 > 3)
+```
+
+You're working on more stories than recommended. Focus on completing in-progress work.
+
+### Blocked Stories
+
+```
+⚠️  2 blocked story/stories need attention
+```
+
+Unblock stories or resolve their dependencies.
+
+## Maintenance Schedule
+
+### Weekly
+
+Run `/agileflow:maintain` weekly to:
+- Track velocity and WIP
+- Detect blockers early
+- Stay aware of stale sessions
+
+### Monthly
+
+Run `/agileflow:maintain` monthly to:
+- Review comprehensive metrics
+- Archive old stories if needed
+- Update expertise files if stale
+- Check for security updates
+
+### Quarterly
+
+Combine with other maintenance:
+- Full system diagnostics (`/agileflow:diagnose`)
+- Configuration review (`/agileflow:configure`)
+- Expertise refresh (`/agileflow:validate-expertise`)
+
+## Best Practices
+
+1. **Run regularly** - Weekly or monthly for ongoing health
+2. **Act on recommendations** - Address warnings promptly
+3. **Monitor trends** - Track velocity and WIP over time
+4. **Keep it clean** - Archive old stories, clean sessions
+5. **Stay updated** - Install updates when available
+
+## When to Run
+
+- **Startup health check** - After installation complete
+- **Routine maintenance** - Weekly or monthly
+- **Troubleshooting** - When issues arise
+- **Before major work** - Before starting new epics
+- **Post-release** - After deploying to verify health
+
+## Related Commands
+
+- [`/install`](/commands/install) - Validate initial installation
+- [`/diagnose`](/commands/diagnose) - Full system diagnostics
+- [`/configure`](/commands/configure) - Configure features
+- [`/board`](/commands/board) - View current status

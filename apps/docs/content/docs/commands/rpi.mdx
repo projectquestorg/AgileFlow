@@ -1,0 +1,299 @@
+---
+title: /rpi
+description: Orchestrate Research-Plan-Implement workflow
+---
+
+# /rpi
+
+Orchestrate the Research-Plan-Implement workflow for maximum effectiveness. Guides complex tasks through three phases, each producing a compressed artifact for the next phase.
+
+## Quick Start
+
+```bash
+/agileflow:rpi
+```
+
+The command assesses your task complexity and guides you through the appropriate phases.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `TASK` | No | Description of what to implement |
+| `PHASE` | No | Start at specific phase: `research`, `plan`, or `implement` |
+| `SKIP_RESEARCH` | No | Set `true` to skip research phase for simpler tasks |
+
+## The Three Phases
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  RESEARCH   │ ──► │    PLAN     │ ──► │  IMPLEMENT  │
+│             │     │             │     │             │
+│ Understand  │     │ Design      │     │ Execute     │
+│ the system  │     │ the change  │     │ the plan    │
+│             │     │             │     │             │
+│ Output:     │     │ Output:     │     │ Output:     │
+│ research.md │     │ plan.md     │     │ code + tests│
+└─────────────┘     └─────────────┘     └─────────────┘
+      │                   │                   │
+      ▼                   ▼                   ▼
+  NEW CONVERSATION    NEW CONVERSATION    DONE
+```
+
+Each phase produces a compressed artifact for the next phase. Start a new conversation between phases to maintain fresh context.
+
+## Complexity Scaling
+
+The command assesses task complexity and determines which phases to use:
+
+| Complexity | Signs | Approach |
+|------------|-------|----------|
+| Trivial | Typo, config tweak | Just do it |
+| Simple | Single file, clear path | Plan → Implement |
+| Moderate | Multi-file, known patterns | Plan → Implement |
+| Complex | Brownfield, unfamiliar code | Research → Plan → Implement |
+| Exploratory | Unknown territory, multi-repo | Full RPI with iteration |
+
+## Usage Examples
+
+### Quick assessment
+
+```bash
+/agileflow:rpi
+```
+
+Asks you to describe the task, assesses complexity, suggests approach.
+
+### Specific task
+
+```bash
+/agileflow:rpi TASK="Add OAuth 2.0 authentication to API"
+```
+
+Analyzes the task and determines which phases to run.
+
+### Skip research (simple task)
+
+```bash
+/agileflow:rpi TASK="Fix typo in README" SKIP_RESEARCH=true
+```
+
+Goes directly to plan and implement phases.
+
+### Start at specific phase
+
+```bash
+/agileflow:rpi PHASE=implement TASK="Implement from the plan"
+```
+
+Assumes previous phases are complete, starts implementation.
+
+## Phase Details
+
+### Phase 1: Research
+
+When to use: Complex work in unfamiliar areas
+
+**Workflow**:
+1. Generate research prompt
+2. You paste it to external AI (ChatGPT, Claude web, Perplexity)
+3. Get back research results
+4. Save research artifact
+5. Transition to plan phase
+
+**Output**: `docs/10-research/YYYYMMDD-topic.md`
+- Exact files and line numbers that matter
+- How the system actually works (from code inspection)
+- Key patterns and constraints discovered
+- Risks and edge cases identified
+
+### Phase 2: Plan
+
+When to use: Before implementing anything
+
+**Workflow**:
+1. Reference research artifact (if exists)
+2. Use plan mode for read-only exploration
+3. Design implementation approach
+4. Save plan artifact
+5. Get user approval
+6. Transition to implement phase
+
+**Output**: `.claude/plans/[slug].md`
+- Exact steps with file paths and line numbers
+- Actual code snippets (not pseudocode)
+- Testing strategy per change
+- Edge cases and risks
+
+**Plan quality is LEVERAGE**:
+- Bad plan = 100+ bad lines of code
+- Good plan = smooth implementation
+- Take time to get it right
+
+### Phase 3: Implement
+
+When to use: Following the plan
+
+**Workflow**:
+1. Reference plan artifact
+2. Execute step-by-step
+3. Test after each change
+4. Follow plan exactly (don't deviate)
+5. Mark story complete
+
+**Output**: Code + tests
+- Implementation follows plan exactly
+- Tests passing
+- Stories marked complete
+
+## Context Health Warning
+
+If conversation grows too large, the command warns:
+
+```
+⚠️  Context Health Warning
+
+This conversation has grown significantly.
+We may be approaching the "dumb zone" where quality degrades.
+
+Current phase: [phase]
+Recommendation: Complete phase and start fresh
+```
+
+The "dumb zone" is 70%+ context utilization where performance degrades significantly.
+
+## The Dumb Zone
+
+Context utilization affects performance:
+
+| Utilization | Zone | Performance |
+|-------------|------|-------------|
+| 0-40% | Smart Zone | Full reasoning capability |
+| 40-70% | Diminishing Returns | Reduced quality |
+| 70%+ | Dumb Zone | Significant degradation |
+
+**Signs you're in the Dumb Zone**:
+- Agent makes obvious mistakes
+- Responses become repetitive
+- Less accurate tool calls
+- Loss of context awareness
+
+**Solution**: Complete current phase, save artifact, start fresh.
+
+## Output Format
+
+### Phase Transition
+
+At the end of each phase:
+
+```
+---
+
+## Phase Complete: [PHASE_NAME]
+
+**Artifact saved**: `[path/to/artifact.md]`
+
+### Key Findings Summary
+- [3-5 bullet points]
+
+### Recommended Next Step
+
+Start a **new conversation** with this context:
+
+> I need to [NEXT_PHASE] based on the [ARTIFACT_TYPE] at `[path]`.
+>
+> [Brief summary of artifact content]
+
+**Why new conversation?** Fresh context window starts in the "smart zone"
+(<40% utilization). The artifact compresses all previous understanding.
+
+---
+```
+
+## Examples
+
+### Complex Feature Implementation
+
+```
+Task: Add OAuth 2.0 authentication to multi-tenant SaaS API
+
+Assessment: Complex (brownfield, unfamiliar OAuth patterns)
+→ Use: Research → Plan → Implement
+
+Phase 1: Research
+  ✓ Understand OAuth 2.0 flow
+  ✓ Check current auth implementation
+  ✓ Identify integration points
+  → Save research artifact
+
+Phase 2: Plan
+  ✓ Design OAuth integration approach
+  ✓ Plan changes step-by-step
+  ✓ Get approval
+  → Save plan artifact
+
+Phase 3: Implement
+  ✓ Add OAuth library
+  ✓ Create login endpoint
+  ✓ Add token storage
+  ✓ Update middleware
+  ✓ Write tests
+  → Tests pass, story complete
+```
+
+### Simple Bug Fix
+
+```
+Task: Fix authentication timeout issue
+
+Assessment: Simple (single file, known pattern)
+→ Use: Plan → Implement (skip research)
+
+Phase 1: Plan
+  ✓ Understand current timeout logic
+  ✓ Plan fix
+  → Save plan artifact
+
+Phase 2: Implement
+  ✓ Update timeout value
+  ✓ Test change
+  → Tests pass, done
+```
+
+## Leverage Math
+
+```
+Bad line of code        = 1 bad line
+Bad part of plan        = 100+ bad lines
+Bad line of research    = entire direction is hosed
+```
+
+Human review focus should be on highest leverage:
+1. **Research quality** - Is our understanding correct?
+2. **Plan quality** - Are these the right steps?
+3. **Code quality** - Implementation details
+
+## Best Practices
+
+1. **Assess complexity first** - Don't skip phases for complex work
+2. **Complete research** - Understand system before planning
+3. **Get plan approval** - Don't implement without consensus
+4. **Start fresh between phases** - New conversation preserves context
+5. **Follow plan exactly** - Don't deviate during implementation
+6. **Monitor context health** - Complete phase before hitting 70%
+
+## Integration
+
+RPI works with other commands:
+
+- **Research**: `/agileflow:research:ask` generates prompts
+- **Planning**: `EnterPlanMode` for read-only exploration
+- **Implementation**: `/agileflow:babysit` for interactive guidance
+- **Documentation**: `/agileflow:adr` to document decisions
+
+## Related Commands
+
+- [`/research:ask`](/commands/research:ask) - Generate research prompts
+- [`/research:import`](/commands/research:import) - Save research artifacts
+- [`/babysit`](/commands/babysit) - Interactive implementation mentor
+- [`/adr`](/commands/adr) - Document architectural decisions
