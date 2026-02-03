@@ -603,6 +603,372 @@ function updateReportMetadata(index, reportName, metadata) {
 }
 
 // ============================================================================
+// TREND ANALYSIS (US-0210)
+// ============================================================================
+
+/**
+ * Get category hotspots - percentage of recurring ideas per category
+ * @param {object} index - Ideation index
+ * @returns {Array<{ category: string, total: number, recurring: number, percentage: number }>}
+ */
+function getCategoryHotspots(index) {
+  const categories = {};
+
+  for (const idea of Object.values(index.ideas || {})) {
+    const cat = idea.category || 'Uncategorized';
+    if (!categories[cat]) {
+      categories[cat] = { total: 0, recurring: 0, implemented: 0, pending: 0 };
+    }
+    categories[cat].total++;
+
+    const occurrenceCount = (idea.occurrences || []).length;
+    if (occurrenceCount >= 2) {
+      categories[cat].recurring++;
+    }
+    if (idea.status === 'implemented') {
+      categories[cat].implemented++;
+    }
+    if (idea.status === 'pending') {
+      categories[cat].pending++;
+    }
+  }
+
+  return Object.entries(categories)
+    .map(([category, stats]) => ({
+      category,
+      total: stats.total,
+      recurring: stats.recurring,
+      implemented: stats.implemented,
+      pending: stats.pending,
+      recurringPercentage: stats.total > 0 ? Math.round((stats.recurring / stats.total) * 100) : 0,
+      implementedPercentage: stats.total > 0 ? Math.round((stats.implemented / stats.total) * 100) : 0,
+    }))
+    .sort((a, b) => b.recurringPercentage - a.recurringPercentage);
+}
+
+/**
+ * Get implementation velocity - ideas resolved per month
+ * @param {object} index - Ideation index
+ * @returns {{ monthly: Array<{ month: string, implemented: number, new: number }>, averageVelocity: number }}
+ */
+function getImplementationVelocity(index) {
+  const monthlyNew = {};
+  const monthlyImplemented = {};
+
+  // Track when ideas were first seen (new)
+  for (const idea of Object.values(index.ideas || {})) {
+    const firstSeen = idea.first_seen;
+    if (firstSeen) {
+      const month = firstSeen.substring(0, 7); // YYYY-MM
+      monthlyNew[month] = (monthlyNew[month] || 0) + 1;
+    }
+
+    // Track when ideas were implemented (based on linked story creation)
+    // Since we don't have implementation dates, approximate from last_seen when status is implemented
+    if (idea.status === 'implemented' && idea.last_seen) {
+      const month = idea.last_seen.substring(0, 7);
+      monthlyImplemented[month] = (monthlyImplemented[month] || 0) + 1;
+    }
+  }
+
+  // Get all months
+  const allMonths = new Set([...Object.keys(monthlyNew), ...Object.keys(monthlyImplemented)]);
+  const sortedMonths = Array.from(allMonths).sort();
+
+  const monthly = sortedMonths.map(month => ({
+    month,
+    new: monthlyNew[month] || 0,
+    implemented: monthlyImplemented[month] || 0,
+  }));
+
+  // Calculate average velocity (implemented per month)
+  const totalImplemented = Object.values(monthlyImplemented).reduce((a, b) => a + b, 0);
+  const numMonths = sortedMonths.length || 1;
+  const averageVelocity = Math.round((totalImplemented / numMonths) * 10) / 10;
+
+  return { monthly, averageVelocity };
+}
+
+/**
+ * Get stale ideas - ideas that appeared multiple times but never addressed
+ * @param {object} index - Ideation index
+ * @param {number} minOccurrences - Minimum occurrences to be considered stale (default: 4)
+ * @returns {Array<{ idea: object, occurrenceCount: number, staleDays: number }>}
+ */
+function getStaleIdeas(index, minOccurrences = 4) {
+  const now = new Date();
+
+  return Object.values(index.ideas || {})
+    .filter(idea => {
+      if (idea.status === 'implemented' || idea.status === 'rejected') return false;
+      return (idea.occurrences || []).length >= minOccurrences;
+    })
+    .map(idea => {
+      const firstSeen = idea.first_seen ? new Date(idea.first_seen) : now;
+      const staleDays = Math.floor((now - firstSeen) / (1000 * 60 * 60 * 24));
+      return {
+        idea,
+        occurrenceCount: (idea.occurrences || []).length,
+        staleDays,
+      };
+    })
+    .sort((a, b) => b.occurrenceCount - a.occurrenceCount || b.staleDays - a.staleDays);
+}
+
+/**
+ * Get expert agreement patterns - which expert pairs agree most often
+ * @param {object} index - Ideation index
+ * @returns {Array<{ pair: [string, string], agreements: number, ideas: string[] }>}
+ */
+function getExpertAgreementPatterns(index) {
+  const pairAgreements = {};
+
+  for (const idea of Object.values(index.ideas || {})) {
+    // Collect all experts across all occurrences
+    const allExperts = new Set();
+    for (const occ of idea.occurrences || []) {
+      for (const expert of occ.experts || []) {
+        allExperts.add(expert);
+      }
+    }
+
+    // Generate pairs and track agreements
+    const expertList = Array.from(allExperts).sort();
+    for (let i = 0; i < expertList.length; i++) {
+      for (let j = i + 1; j < expertList.length; j++) {
+        const pairKey = `${expertList[i]}|${expertList[j]}`;
+        if (!pairAgreements[pairKey]) {
+          pairAgreements[pairKey] = { ideas: [] };
+        }
+        pairAgreements[pairKey].ideas.push(idea.id);
+      }
+    }
+  }
+
+  return Object.entries(pairAgreements)
+    .map(([pairKey, data]) => {
+      const [expert1, expert2] = pairKey.split('|');
+      return {
+        pair: [expert1, expert2],
+        agreements: data.ideas.length,
+        ideas: data.ideas,
+      };
+    })
+    .filter(p => p.agreements >= 2)
+    .sort((a, b) => b.agreements - a.agreements);
+}
+
+/**
+ * Generate full trend analysis
+ * @param {object} index - Ideation index
+ * @returns {object} Complete trend analysis
+ */
+function getTrendAnalysis(index) {
+  return {
+    categoryHotspots: getCategoryHotspots(index),
+    velocity: getImplementationVelocity(index),
+    staleIdeas: getStaleIdeas(index, 4),
+    expertAgreement: getExpertAgreementPatterns(index),
+    summary: getIndexSummary(index),
+  };
+}
+
+// ============================================================================
+// COMPARISON MODE (US-0211)
+// ============================================================================
+
+/**
+ * Compare two ideation reports and classify ideas
+ * @param {object} index - Ideation index
+ * @param {string} report1Name - First report name (e.g., 'ideation-20260114.md')
+ * @param {string} report2Name - Second report name
+ * @returns {{ resolved: array, new: array, persisted: array, dropped: array, error?: string }}
+ */
+function compareReports(index, report1Name, report2Name) {
+  // Normalize report names (allow shorthand like '20260114')
+  const normalizeReportName = name => {
+    if (!name) return null;
+    if (name.startsWith('ideation-') && name.endsWith('.md')) return name;
+    if (name.match(/^\d{8}$/)) return `ideation-${name}.md`;
+    return name.endsWith('.md') ? name : `${name}.md`;
+  };
+
+  const r1 = normalizeReportName(report1Name);
+  const r2 = normalizeReportName(report2Name);
+
+  if (!index.reports[r1]) {
+    return { error: `Report not found: ${r1}. Available: ${Object.keys(index.reports).join(', ')}` };
+  }
+  if (!index.reports[r2]) {
+    return { error: `Report not found: ${r2}. Available: ${Object.keys(index.reports).join(', ')}` };
+  }
+
+  const report1Ideas = new Set(index.reports[r1].ideas || []);
+  const report2Ideas = new Set(index.reports[r2].ideas || []);
+
+  const resolved = []; // In report1, now implemented
+  const newIdeas = []; // Only in report2
+  const persisted = []; // In both reports
+  const dropped = []; // Only in report1, not recurring
+
+  // Analyze report1 ideas
+  for (const ideaId of report1Ideas) {
+    const idea = index.ideas[ideaId];
+    if (!idea) continue;
+
+    if (report2Ideas.has(ideaId)) {
+      // In both - persisted
+      persisted.push({
+        id: ideaId,
+        title: idea.title,
+        category: idea.category,
+        status: idea.status,
+        occurrenceCount: (idea.occurrences || []).length,
+      });
+    } else if (idea.status === 'implemented') {
+      // Only in report1, now implemented - resolved
+      resolved.push({
+        id: ideaId,
+        title: idea.title,
+        category: idea.category,
+        linkedStory: idea.linked_story,
+        linkedEpic: idea.linked_epic,
+      });
+    } else {
+      // Only in report1, not implemented, didn't recur - dropped
+      dropped.push({
+        id: ideaId,
+        title: idea.title,
+        category: idea.category,
+        status: idea.status,
+      });
+    }
+  }
+
+  // Analyze report2-only ideas
+  for (const ideaId of report2Ideas) {
+    if (report1Ideas.has(ideaId)) continue; // Already handled as persisted
+
+    const idea = index.ideas[ideaId];
+    if (!idea) continue;
+
+    newIdeas.push({
+      id: ideaId,
+      title: idea.title,
+      category: idea.category,
+      confidence: idea.confidence,
+      status: idea.status,
+    });
+  }
+
+  return {
+    report1: r1,
+    report2: r2,
+    report1Date: index.reports[r1].generated,
+    report2Date: index.reports[r2].generated,
+    resolved,
+    new: newIdeas,
+    persisted,
+    dropped,
+    counts: {
+      resolved: resolved.length,
+      new: newIdeas.length,
+      persisted: persisted.length,
+      dropped: dropped.length,
+    },
+  };
+}
+
+/**
+ * List available reports for comparison
+ * @param {object} index - Ideation index
+ * @returns {Array<{ name: string, date: string, ideaCount: number }>}
+ */
+function listReports(index) {
+  return Object.entries(index.reports || {})
+    .map(([name, data]) => ({
+      name,
+      date: data.generated,
+      ideaCount: data.idea_count || (data.ideas || []).length,
+      scope: data.scope,
+      depth: data.depth,
+    }))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+}
+
+// ============================================================================
+// FOCUSED RE-IDEATION (US-0209)
+// ============================================================================
+
+/**
+ * Get focused context for a specific idea (for re-ideation)
+ * @param {object} index - Ideation index
+ * @param {string} ideaId - Idea ID (e.g., 'IDEA-0023')
+ * @returns {{ ok: boolean, idea?: object, history?: array, error?: string }}
+ */
+function getIdeaForFocus(index, ideaId) {
+  const normalizedId = ideaId.toUpperCase();
+  const idea = index.ideas[normalizedId];
+
+  if (!idea) {
+    // Try finding by partial ID
+    const matches = Object.keys(index.ideas).filter(
+      id => id.includes(normalizedId) || normalizedId.includes(id.replace('IDEA-', ''))
+    );
+    if (matches.length === 1) {
+      return getIdeaForFocus(index, matches[0]);
+    }
+    if (matches.length > 1) {
+      return { ok: false, error: `Ambiguous ID. Matches: ${matches.join(', ')}` };
+    }
+    return { ok: false, error: `Idea not found: ${ideaId}` };
+  }
+
+  // Build full context for focused re-ideation
+  const context = {
+    ok: true,
+    idea: {
+      id: idea.id,
+      title: idea.title,
+      category: idea.category,
+      status: idea.status,
+      confidence: idea.confidence,
+      files: idea.files || [],
+      linkedStory: idea.linked_story,
+      linkedEpic: idea.linked_epic,
+    },
+    history: {
+      firstSeen: idea.first_seen,
+      lastSeen: idea.last_seen,
+      occurrenceCount: (idea.occurrences || []).length,
+      occurrences: (idea.occurrences || []).map(occ => ({
+        report: occ.report,
+        date: occ.date,
+        experts: occ.experts || [],
+      })),
+    },
+    allExperts: [...new Set((idea.occurrences || []).flatMap(occ => occ.experts || []))],
+    sourceReport: idea.source_report,
+  };
+
+  return context;
+}
+
+/**
+ * Get ideas by category
+ * @param {object} index - Ideation index
+ * @param {string} category - Category to filter by
+ * @returns {Array<object>} Matching ideas
+ */
+function getIdeasByCategory(index, category) {
+  const normalizedCat = category.toLowerCase();
+  return Object.values(index.ideas || {}).filter(idea => {
+    const ideaCat = (idea.category || '').toLowerCase();
+    return ideaCat.includes(normalizedCat) || normalizedCat.includes(ideaCat);
+  });
+}
+
+// ============================================================================
 // CLI INTERFACE
 // ============================================================================
 
@@ -661,6 +1027,77 @@ function main() {
       break;
     }
 
+    case 'trends': {
+      const trends = getTrendAnalysis(index);
+      console.log(JSON.stringify(trends, null, 2));
+      break;
+    }
+
+    case 'hotspots': {
+      const hotspots = getCategoryHotspots(index);
+      console.log(JSON.stringify(hotspots, null, 2));
+      break;
+    }
+
+    case 'velocity': {
+      const velocity = getImplementationVelocity(index);
+      console.log(JSON.stringify(velocity, null, 2));
+      break;
+    }
+
+    case 'stale': {
+      const minOccurrences = parseInt(args[1], 10) || 4;
+      const stale = getStaleIdeas(index, minOccurrences);
+      console.log(JSON.stringify(stale, null, 2));
+      break;
+    }
+
+    case 'agreements': {
+      const agreements = getExpertAgreementPatterns(index);
+      console.log(JSON.stringify(agreements, null, 2));
+      break;
+    }
+
+    case 'compare': {
+      const report1 = args[1];
+      const report2 = args[2];
+      if (!report1 || !report2) {
+        console.log(JSON.stringify({ ok: false, error: 'Usage: compare <report1> <report2>' }));
+        break;
+      }
+      const comparison = compareReports(index, report1, report2);
+      console.log(JSON.stringify(comparison, null, 2));
+      break;
+    }
+
+    case 'reports': {
+      const reports = listReports(index);
+      console.log(JSON.stringify(reports, null, 2));
+      break;
+    }
+
+    case 'focus': {
+      const ideaId = args[1];
+      if (!ideaId) {
+        console.log(JSON.stringify({ ok: false, error: 'Idea ID required. Usage: focus IDEA-0023' }));
+        break;
+      }
+      const focused = getIdeaForFocus(index, ideaId);
+      console.log(JSON.stringify(focused, null, 2));
+      break;
+    }
+
+    case 'category': {
+      const category = args[1];
+      if (!category) {
+        console.log(JSON.stringify({ ok: false, error: 'Category required. Usage: category Security' }));
+        break;
+      }
+      const ideas = getIdeasByCategory(index, category);
+      console.log(JSON.stringify(ideas, null, 2));
+      break;
+    }
+
     case 'help':
     default:
       console.log(`
@@ -672,14 +1109,27 @@ Commands:
   recurring          List recurring ideas (seen 2+ times)
   get <id>           Get idea by ID (e.g., IDEA-0001)
   search <query>     Search ideas by title keyword
-  help               Show this help
+
+Trend Analysis (US-0210):
+  trends             Full trend analysis (hotspots + velocity + stale + agreements)
+  hotspots           Category hotspots (recurring ideas per category)
+  velocity           Implementation velocity (ideas resolved per month)
+  stale [min]        Stale ideas (appeared min+ times, never addressed, default: 4)
+  agreements         Expert agreement patterns (which pairs agree most)
+
+Comparison Mode (US-0211):
+  compare <r1> <r2>  Compare two reports (e.g., compare 20260114 20260130)
+  reports            List all available reports
+
+Focused Re-ideation (US-0209):
+  focus <id>         Get full context for focused re-ideation
+  category <cat>     List ideas by category
 
 Examples:
   node ideation-index.js summary
-  node ideation-index.js status pending
-  node ideation-index.js recurring
-  node ideation-index.js get IDEA-0001
-  node ideation-index.js search "error handling"
+  node ideation-index.js trends
+  node ideation-index.js compare 20260114 20260130
+  node ideation-index.js focus IDEA-0023
 `);
   }
 }
@@ -723,6 +1173,21 @@ module.exports = {
   getIdeaById,
   searchIdeas,
   updateReportMetadata,
+
+  // Trend Analysis (US-0210)
+  getCategoryHotspots,
+  getImplementationVelocity,
+  getStaleIdeas,
+  getExpertAgreementPatterns,
+  getTrendAnalysis,
+
+  // Comparison Mode (US-0211)
+  compareReports,
+  listReports,
+
+  // Focused Re-ideation (US-0209)
+  getIdeaForFocus,
+  getIdeasByCategory,
 };
 
 // Run CLI if executed directly

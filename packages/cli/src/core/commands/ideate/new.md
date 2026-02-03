@@ -1,6 +1,6 @@
 ---
 description: Generate categorized improvement ideas using multi-expert analysis
-argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false]
+argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false] [FOCUS=IDEA-XXXX]
 compact_context:
   priority: high
   preserve_rules:
@@ -9,7 +9,8 @@ compact_context:
     - "CRITICAL: Wait for all results before synthesis (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring varies by depth: quick/deep (HIGH=2+ agree) | ultradeep (HIGH=3+ agree)"
     - "CRITICAL: Check ideation index for duplicates - show NEW vs RECURRING vs IMPLEMENTED"
-    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both) | HISTORY (true/false)"
+    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both) | HISTORY (true/false) | FOCUS (IDEA-XXXX)"
+    - "FOCUS mode: All experts analyze the same recurring idea - generate Implementation Brief"
     - "MUST categorize by domain: Security, Performance, Code Quality, UX, Testing, API/Architecture"
     - "MUST estimate effort for each idea: High/Medium/Low impact"
     - "MUST assign IDEA-XXXX identifiers to all ideas and update ideation index"
@@ -19,6 +20,7 @@ compact_context:
     - depth
     - output_mode
     - history_enabled
+    - focus_idea
     - selected_experts
     - ideas_generated
     - new_ideas
@@ -68,6 +70,121 @@ This enables:
 
 ---
 
+## STEP 0.6: Check for FOCUS Mode (US-0209)
+
+**If `FOCUS=IDEA-XXXX` is provided**, switch to Focused Re-ideation mode:
+
+1. **Load the idea** using helper: `node .agileflow/scripts/lib/ideation-index.js focus IDEA-XXXX`
+2. **Verify the idea exists** - if not found, show error and available ideas
+3. **Skip normal ideation** - instead, ALL experts analyze THIS SPECIFIC idea
+4. **Generate Implementation Brief** instead of regular report
+
+**Focused Re-ideation Prompt for Each Expert**:
+
+```
+TASK: Analyze this SPECIFIC recurring idea and provide your expert perspective for implementation.
+
+IDEA CONTEXT:
+- ID: {IDEA-XXXX}
+- Title: {title}
+- Category: {category}
+- Occurrences: {count} times across {reports}
+- Files Affected: {files}
+- Original Experts: {experts who identified it}
+- Status: {pending/in-progress}
+
+From your {DOMAIN} expertise, provide:
+
+1. **Recommended Approach**: Your specific implementation strategy (2-3 paragraphs)
+2. **Potential Blockers**: What could prevent or complicate implementation?
+3. **Dependencies**: Other systems/files that need changes
+4. **Effort Breakdown**:
+   - Research: {hours/days}
+   - Implementation: {hours/days}
+   - Testing: {hours/days}
+   - Total: {estimate}
+5. **Risk Assessment**: HIGH/MEDIUM/LOW with explanation
+6. **Quick Wins**: Any partial improvements that could be done immediately?
+
+Be SPECIFIC - reference actual file paths, function names, and code patterns.
+```
+
+**Focused Re-ideation Output** (Implementation Brief):
+
+```markdown
+# Implementation Brief: {IDEA-XXXX}
+
+**Idea**: {title}
+**Generated**: {date}
+**Consensus**: {N}/{total} experts agree on approach
+
+---
+
+## Executive Summary
+
+{1-2 sentence overview of the recommended approach based on expert consensus}
+
+---
+
+## Background
+
+- **First Identified**: {first_seen} in {source_report}
+- **Recurrence**: Appeared {N} times across {reports}
+- **Original Category**: {category}
+- **Files Involved**: {files}
+
+---
+
+## Expert Analysis
+
+### 🔒 Security Expert
+**Approach**: {approach}
+**Blockers**: {blockers}
+**Effort**: {estimate}
+
+### ⚡ Performance Expert
+**Approach**: {approach}
+**Blockers**: {blockers}
+**Effort**: {estimate}
+
+[... all experts ...]
+
+---
+
+## Consensus Recommendations
+
+### Agreed Approach
+{Areas where 2+ experts align}
+
+### Key Blockers (Mentioned by Multiple Experts)
+1. {blocker1} - mentioned by {experts}
+2. {blocker2} - mentioned by {experts}
+
+### Dependencies
+{Combined dependency list from all experts}
+
+### Effort Estimate
+| Phase | Consensus Estimate | Range |
+|-------|-------------------|-------|
+| Research | {avg} | {min}-{max} |
+| Implementation | {avg} | {min}-{max} |
+| Testing | {avg} | {min}-{max} |
+| **Total** | **{avg}** | **{min}-{max}** |
+
+---
+
+## Quick Wins
+{List of immediate partial improvements identified by experts}
+
+---
+
+## Recommended Next Steps
+1. Create story: /agileflow:story "{title}"
+2. Or create epic with stories: /agileflow:epic "{title}"
+```
+
+---
+
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
@@ -76,6 +193,7 @@ This enables:
 **Quick Usage**:
 ```
 /agileflow:ideate:new SCOPE=all DEPTH=quick OUTPUT=report
+/agileflow:ideate:new FOCUS=IDEA-0023   # Deep dive into specific idea
 ```
 
 **What It Does**: Deploy 4-15 domain experts → Each generates 3-5 ideas → Synthesize with confidence scoring → Categorized report
@@ -657,6 +775,7 @@ After generating output, present options:
 | OUTPUT | report, stories, both | report | What to generate |
 | HISTORY | true, false | true | Enable deduplication and history tracking. Set to false for faster runs without history analysis |
 | SHOW_IMPLEMENTED | true, false | false | Include already-implemented ideas in report (useful for tracking) |
+| FOCUS | IDEA-XXXX | - | Focus on a specific recurring idea (activates Implementation Brief mode) |
 
 {{argument}}
 

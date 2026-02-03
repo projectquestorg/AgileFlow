@@ -1,6 +1,6 @@
 ---
 description: Query ideation history and idea status
-argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring]
+argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring] [MODE=trends] [COMPARE=report1,report2]
 compact_context:
   priority: medium
   preserve_rules:
@@ -8,6 +8,8 @@ compact_context:
     - "Read ideation index from docs/00-meta/ideation-index.json"
     - "Support filtering by status, category, or specific IDEA-XXXX"
     - "Show recurring ideas (appeared 2+ times) prominently"
+    - "MODE=trends: Show aggregate statistics across all reports"
+    - "COMPARE=r1,r2: Diff two reports (Resolved/New/Persisted/Dropped)"
 ---
 
 # /agileflow:ideate:history
@@ -24,6 +26,8 @@ Query ideation history and track idea status across all previous ideation report
 /agileflow:ideate:history STATUS=pending       # Filter by status
 /agileflow:ideate:history STATUS=recurring     # Show recurring ideas (2+ occurrences)
 /agileflow:ideate:history CATEGORY=Security    # Filter by category
+/agileflow:ideate:history MODE=trends          # Show trend analysis across all reports
+/agileflow:ideate:history COMPARE=20260114,20260130  # Compare two reports
 ```
 
 ---
@@ -73,6 +77,8 @@ To populate it, either:
   - `rejected`: Ideas that were rejected
   - `recurring`: Special filter for ideas seen 2+ times
 - `CATEGORY=<category>`: Filter by category (Security, Performance, Code Quality, UX/Design, Testing, API/Architecture)
+- `MODE=trends`: Show aggregate trend analysis across all reports (US-0210)
+- `COMPARE=<r1>,<r2>`: Compare two reports to see progress (US-0211)
 
 ### STEP 3: GENERATE OUTPUT
 
@@ -200,6 +206,114 @@ Standard Priority
 Use /agileflow:ideate:history IDEA-XXXX for details on any idea
 ```
 
+**Trend Analysis Output** (when MODE=trends):
+
+Use helper script: `node .agileflow/scripts/lib/ideation-index.js trends`
+
+```
+IDEATION TREND ANALYSIS
+════════════════════════════════════════════════════════════════
+
+📊 Overview ({N} ideas across {M} reports)
+  Implementation Rate: {P}% ({X}/{N} ideas implemented)
+  Avg. Velocity: {V} ideas/month resolved
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 Category Hotspots (by implementation success)
+  ⚡ Performance:      76% resolved (16/21 ideas)
+  🧪 Testing:         57% resolved (16/28 ideas)
+  🔒 Security:        74% resolved (14/19 ideas)
+  🧹 Code Quality:    56% resolved (14/25 ideas)
+  🏗️ API/Architecture: 20% resolved (1/5 ideas)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Stale Ideas (appeared 4+ times, never addressed)
+These ideas keep appearing but aren't being worked on:
+
+1. [IDEA-XXXX] {Title} (appeared {N}x)
+   First seen: {date} ({D} days ago)
+   Category: {category}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤝 Expert Agreement Patterns
+These expert pairs frequently agree on the same ideas:
+
+  AG-REFACTOR + AG-API:       {N} shared ideas
+  AG-TESTING + AG-SECURITY:   {N} shared ideas
+  AG-PERFORMANCE + AG-API:    {N} shared ideas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📅 Implementation Velocity by Month
+  2026-01: +{new} new, {impl} resolved
+  2026-02: +{new} new, {impl} resolved
+
+════════════════════════════════════════════════════════════════
+💡 Insights:
+  • Performance ideas have highest success rate - consider prioritizing these
+  • {N} ideas stale for 4+ occurrences - need attention
+  • Most common expert agreement: {pair} ({N} ideas)
+```
+
+**Comparison Output** (when COMPARE=report1,report2):
+
+Use helper script: `node .agileflow/scripts/lib/ideation-index.js compare {r1} {r2}`
+
+```
+REPORT COMPARISON
+════════════════════════════════════════════════════════════════
+
+📅 Comparing: ideation-{r1}.md → ideation-{r2}.md
+   {date1}  →  {date2}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ RESOLVED ({N} ideas)
+Ideas from {r1} that have since been implemented:
+
+1. [IDEA-0095] Unified Error Handling API
+   Implemented via: EP-0018
+   Category: API/Architecture + Security
+
+2. [IDEA-0099] Unified Progress Feedback System
+   Implemented via: EP-0018
+   Category: UX/Design + Performance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆕 NEW ({N} ideas)
+Ideas that first appeared in {r2}:
+
+1. [IDEA-0180] New Performance Optimization
+   Category: Performance | Confidence: HIGH
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔄 PERSISTED ({N} ideas)
+Ideas that appeared in both reports (recurring):
+
+1. [IDEA-0023] Error Handling Consolidation
+   Status: pending | Occurrences: 4
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📉 DROPPED ({N} ideas)
+Ideas from {r1} that didn't recur and weren't implemented:
+
+1. [IDEA-0087] Low-priority suggestion
+   Category: Code Quality | Status: pending
+
+════════════════════════════════════════════════════════════════
+Summary:
+  ✅ Resolved: {X} ideas addressed since {r1}
+  🆕 New: {Y} fresh ideas in {r2}
+  🔄 Persisted: {Z} recurring concerns
+  📉 Dropped: {W} one-time ideas (may be low priority)
+```
+
 ### STEP 4: OFFER NEXT STEPS
 
 ```xml
@@ -227,6 +341,8 @@ Use /agileflow:ideate:history IDEA-XXXX for details on any idea
 | IDEA-XXXX | Idea ID | - | Show details for specific idea |
 | STATUS | pending, in-progress, implemented, rejected, recurring | - | Filter by status |
 | CATEGORY | Security, Performance, Code Quality, UX/Design, Testing, API/Architecture | - | Filter by category |
+| MODE | trends | - | Show aggregate trend analysis across all reports |
+| COMPARE | report1,report2 | - | Compare two reports (e.g., COMPARE=20260114,20260130) |
 | LIMIT | number | 10 | Maximum ideas to show in list views |
 
 ---
