@@ -94,7 +94,7 @@ function runTests(rootDir, testCommand) {
     result.output = output;
   } catch (e) {
     result.passed = false;
-    result.output = e.stdout || '' + '\n' + (e.stderr || '');
+    result.output = (e.stdout || '') + '\n' + (e.stderr || '');
     if (e.message) {
       result.output += '\n' + e.message;
     }
@@ -376,7 +376,7 @@ function runCoverage(rootDir) {
   } catch (e) {
     // Coverage command might fail but still generate report
     result.passed = true; // We'll check the report
-    result.output = e.stdout || '' + '\n' + (e.stderr || '');
+    result.output = (e.stdout || '') + '\n' + (e.stderr || '');
   }
 
   result.duration = Date.now() - startTime;

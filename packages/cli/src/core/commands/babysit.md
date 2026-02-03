@@ -15,6 +15,7 @@ compact_context:
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js claim <id>' IMMEDIATELY after user selects story"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js others' BEFORE suggesting stories, exclude 🔒 claimed"
     - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js release <id>' when story marked done"
+    - "LOGIC AUDIT: After implementation, offer '🔍 Run logic audit' option via AskUserQuestion (not automatic)"
   state_fields:
     - current_story
     - current_epic
@@ -481,6 +482,7 @@ These rules MUST be followed during implementation:
 
 After implementation completes, you MUST call AskUserQuestion with options like:
 - "Run tests to verify"
+- "🔍 Run logic audit" (for complex code - uses /agileflow:logic:audit)
 - "Continue to next task"
 - "Review changes"
 - "Pause here"
@@ -561,7 +563,14 @@ After implementation completes, you MUST call AskUserQuestion with options like:
     ```bash
     node .agileflow/scripts/lib/story-claiming.js release <story-id>
     ```
-17. Present next steps via AskUserQuestion
+17. Present next steps via AskUserQuestion **(including Logic Audit option)**
+
+**Post-Implementation Options** (offer via AskUserQuestion):
+- "Run tests to verify" - Standard verification
+- "🔍 Run logic audit" - Multi-agent analysis for logic bugs (recommended for complex code)
+- "Continue to next story" - Move on
+- "Review changes" - Manual review
+- "Pause here" - Stop for now
 
 ---
 
@@ -619,6 +628,36 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 | 🔄 | Loop iterations |
 | ⚠️ | Errors |
 | ✅ | Completions |
+| 🔍 | Running logic audit |
+
+---
+
+### LOGIC AUDIT INTEGRATION
+
+After completing an implementation, offer logic audit as an **optional quality check**:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Implementation complete. What would you like to do?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "Run tests (Recommended)", "description": "Verify with test suite"},
+    {"label": "🔍 Run logic audit", "description": "Multi-agent analysis for edge cases, race conditions, type bugs"},
+    {"label": "Continue to next story", "description": "Move on without additional checks"},
+    {"label": "Pause here", "description": "Stop for now"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**When user selects "🔍 Run logic audit":**
+1. Identify files that were modified during implementation
+2. Run: `/agileflow:logic:audit <modified-files> DEPTH=quick`
+3. Review findings with user
+4. Offer to fix any P0/P1 issues immediately
+5. Then present next steps again
 
 ---
 
@@ -1481,3 +1520,4 @@ Copy and paste into ChatGPT/Claude web, then share results here.
 - `/agileflow:status` - Update story status
 - `/agileflow:blockers` - Track and resolve blockers
 - `/agileflow:research:ask` - Generate research prompts when stuck
+- `/agileflow:logic:audit` - Multi-agent logic analysis (offered post-implementation)
