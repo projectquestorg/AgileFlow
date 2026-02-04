@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Send, Terminal, Plus, GitBranch, Folder, Bot, Settings,
   Menu, X, PanelRightOpen, PanelRightClose, Sparkles, Code, TestTube,
@@ -21,7 +22,7 @@ import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
 import { AutomationsList, InboxList, SessionsList, Session, SkillsBrowser } from "@/components/sidebar";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
-import { Bell, Wand2, Copy, RotateCcw, Bot as AgentIcon, Save, Workflow } from "lucide-react";
+import { Bell, Wand2, Copy, RotateCcw, Bot as AgentIcon, Save, Workflow, LayoutGrid } from "lucide-react";
 import { useProvider } from "@/hooks/useProvider";
 import { IRSource } from "@/lib/protocol";
 
@@ -200,6 +201,13 @@ export default function Dashboard() {
                connectionStatus === "error" ? "Error" : "Offline"}
             </span>
           </div>
+          <Link
+            href="/board"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            title="Kanban Board"
+          >
+            <LayoutGrid className="h-5 w-5" />
+          </Link>
           <button
             onClick={() => setShowReviewPane(!showReviewPane)}
             className="p-2 hover:bg-muted rounded-lg lg:hidden transition-colors"
