@@ -59,6 +59,10 @@
           {
             "type": "command",
             "command": "bash /home/coder/AgileFlow/.agileflow/scripts/archive-completed-stories.sh --quiet"
+          },
+          {
+            "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/context-loader.js 2>/dev/null || true"
           }
         ]
       }
