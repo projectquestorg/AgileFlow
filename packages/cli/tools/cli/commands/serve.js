@@ -17,7 +17,8 @@ module.exports = {
     ['-H, --host <host>', 'Host to bind to (default: 0.0.0.0)'],
     ['-k, --api-key <key>', 'API key for authentication'],
     ['--require-auth', 'Require API key for connections'],
-    ['-t, --tunnel', 'Start ngrok tunnel (if installed)'],
+    ['--no-tunnel', 'Disable automatic tunnel (local only)'],
+    ['--tunnel-provider <provider>', 'Tunnel provider: cloudflared (default) or ngrok'],
   ],
   action: async options => {
     try {
@@ -54,15 +55,31 @@ module.exports = {
       // Start server
       const { wsUrl } = await startDashboardServer(server);
 
-      // Start tunnel if requested
-      if (options.tunnel) {
-        await startTunnel(serverOptions.port);
+      // Start tunnel automatically (unless --no-tunnel)
+      let tunnelUrl = null;
+      if (options.tunnel !== false) {
+        const provider = options.tunnelProvider || 'cloudflared';
+        console.log(chalk.dim(`  Starting ${provider} tunnel...`));
+        tunnelUrl = await startTunnel(serverOptions.port, provider);
       }
 
       console.log('─────────────────────────────────────────────────────────────');
       console.log('');
-      console.log(chalk.green('  Ready!') + ' Connect your dashboard to:');
-      console.log(chalk.cyan(`  ${wsUrl}`));
+      if (tunnelUrl) {
+        console.log(chalk.green('  Ready!') + ' Connect your dashboard to:');
+        console.log('');
+        console.log(chalk.cyan.bold(`  ${tunnelUrl}`));
+        console.log('');
+        console.log(chalk.dim(`  Dashboard: https://dashboard.agileflow.projectquestorg.com`));
+        console.log(chalk.dim(`  Paste the URL above into the WebSocket URL field.`));
+      } else {
+        console.log(chalk.green('  Ready!') + ' Local connection:');
+        console.log(chalk.cyan(`  ${wsUrl}`));
+        console.log('');
+        console.log(chalk.yellow('  ⚠️  For cloud dashboard, run with tunnel:'));
+        console.log(chalk.dim('     npx agileflow serve'));
+        console.log(chalk.dim('     (tunnels are enabled by default)'));
+      }
       console.log('');
       if (serverOptions.apiKey) {
         console.log(chalk.dim(`  API Key: ${serverOptions.apiKey.slice(0, 8)}...`));
@@ -190,49 +207,115 @@ To integrate with Claude, the server emits events that can be connected to the C
   session.setState('idle');
 }
 
-async function startTunnel(port) {
-  try {
-    const { exec } = require('child_process');
+async function startTunnel(port, provider = 'cloudflared') {
+  const { spawn, exec } = require('child_process');
 
-    return new Promise((resolve, reject) => {
-      // Check if ngrok is installed
-      exec('which ngrok', error => {
-        if (error) {
-          console.log(chalk.yellow('  Tunnel: ngrok not found. Install with: npm install -g ngrok'));
-          resolve(null);
-          return;
-        }
-
-        // Start ngrok tunnel
-        const ngrok = exec(`ngrok http ${port} --log stdout`, { encoding: 'utf8' });
-
-        ngrok.stdout.on('data', data => {
-          // Parse ngrok output for public URL
-          const urlMatch = data.match(/url=(https?:\/\/[^\s]+)/);
-          if (urlMatch) {
-            const tunnelUrl = urlMatch[1].replace('https://', 'wss://').replace('http://', 'ws://');
-            console.log(chalk.green(`  Tunnel: ${tunnelUrl}`));
-            resolve(tunnelUrl);
-          }
-        });
-
-        ngrok.stderr.on('data', data => {
-          console.error(chalk.red('  Tunnel error:'), data);
-        });
-
-        // Give ngrok a moment to start
-        setTimeout(() => {
-          if (!ngrok.killed) {
-            console.log(chalk.dim('  Tunnel: Starting... check ngrok dashboard'));
-            resolve(null);
-          }
-        }, 5000);
-      });
-    });
-  } catch (error) {
-    console.log(chalk.yellow('  Tunnel: Failed to start -'), error.message);
-    return null;
+  // Try cloudflared first (free, no signup needed)
+  if (provider === 'cloudflared') {
+    const url = await startCloudflaredTunnel(port, spawn, exec);
+    if (url) return url;
+    // Fall back to ngrok if cloudflared fails
+    console.log(chalk.dim('  Trying ngrok as fallback...'));
   }
+
+  // Try ngrok
+  return startNgrokTunnel(port, exec);
+}
+
+async function startCloudflaredTunnel(port, spawn, exec) {
+  return new Promise((resolve) => {
+    // Check if cloudflared is installed
+    exec('which cloudflared', (error) => {
+      if (error) {
+        console.log(chalk.yellow('  cloudflared not found.'));
+        console.log(chalk.dim('  Install: brew install cloudflared (mac) or sudo apt install cloudflared (linux)'));
+        console.log(chalk.dim('  Or download from: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'));
+        resolve(null);
+        return;
+      }
+
+      // Start cloudflared tunnel (quick tunnel, no account needed)
+      const tunnel = spawn('cloudflared', ['tunnel', '--url', `http://localhost:${port}`], {
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+
+      let resolved = false;
+
+      const handleOutput = (data) => {
+        const output = data.toString();
+        // Look for the tunnel URL in output
+        const urlMatch = output.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
+        if (urlMatch && !resolved) {
+          resolved = true;
+          const httpsUrl = urlMatch[0];
+          const wssUrl = httpsUrl.replace('https://', 'wss://');
+          console.log(chalk.green('  ✓ Tunnel ready'));
+          resolve(wssUrl);
+        }
+      };
+
+      tunnel.stdout.on('data', handleOutput);
+      tunnel.stderr.on('data', handleOutput);
+
+      tunnel.on('error', (err) => {
+        if (!resolved) {
+          console.log(chalk.yellow(`  cloudflared error: ${err.message}`));
+          resolve(null);
+        }
+      });
+
+      // Timeout after 15 seconds
+      setTimeout(() => {
+        if (!resolved) {
+          console.log(chalk.yellow('  cloudflared tunnel timeout'));
+          resolve(null);
+        }
+      }, 15000);
+    });
+  });
+}
+
+async function startNgrokTunnel(port, exec) {
+  return new Promise((resolve) => {
+    exec('which ngrok', (error) => {
+      if (error) {
+        console.log(chalk.yellow('  ngrok not found either.'));
+        console.log('');
+        console.log(chalk.yellow('  To enable cloud dashboard access, install a tunnel:'));
+        console.log(chalk.dim('    brew install cloudflared   # Recommended (free, no signup)'));
+        console.log(chalk.dim('    npm install -g ngrok       # Alternative (requires signup)'));
+        resolve(null);
+        return;
+      }
+
+      const ngrok = exec(`ngrok http ${port} --log stdout`, { encoding: 'utf8' });
+
+      let resolved = false;
+
+      ngrok.stdout.on('data', data => {
+        const urlMatch = data.match(/url=(https?:\/\/[^\s]+)/);
+        if (urlMatch && !resolved) {
+          resolved = true;
+          const tunnelUrl = urlMatch[1].replace('https://', 'wss://').replace('http://', 'ws://');
+          console.log(chalk.green('  ✓ ngrok tunnel ready'));
+          resolve(tunnelUrl);
+        }
+      });
+
+      ngrok.stderr.on('data', data => {
+        if (!resolved && data.includes('error')) {
+          console.error(chalk.red('  ngrok error:'), data);
+        }
+      });
+
+      setTimeout(() => {
+        if (!resolved) {
+          console.log(chalk.yellow('  ngrok tunnel timeout'));
+          resolve(null);
+        }
+      }, 10000);
+    });
+  });
 }
 
 function sleep(ms) {
