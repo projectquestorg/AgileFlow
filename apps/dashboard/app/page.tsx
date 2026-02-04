@@ -346,8 +346,8 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Input */}
-              <div className="border-t border-border p-3">
+              {/* Input - sticky at bottom */}
+              <div className="sticky bottom-0 z-20 border-t border-border p-3 bg-background">
                 {pendingImage && (
                   <div className="max-w-3xl mx-auto mb-2 flex items-center gap-2 px-2 py-1.5 bg-muted text-xs">
                     <FileCode className="h-3 w-3" />
