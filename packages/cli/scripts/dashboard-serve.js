@@ -23,6 +23,7 @@
 const path = require('path');
 const { createDashboardServer, startDashboardServer, stopDashboardServer } = require('../lib/dashboard-server');
 const { createNotification, createTextDelta, createToolStart, createToolResult } = require('../lib/dashboard-protocol');
+const { createClaudeBridge } = require('../lib/claude-cli-bridge');
 
 // Parse command line arguments
 function parseArgs() {
@@ -238,13 +239,17 @@ function setupEventHandlers(server) {
     console.log(`[${new Date().toISOString()}] Session disconnected: ${sessionId}`);
   });
 
-  // User message handler
+  // User message handler - use Claude CLI bridge
   server.on('user:message', async (session, content) => {
     console.log(`[${new Date().toISOString()}] Message from ${session.id}: ${content.slice(0, 50)}...`);
 
-    // For now, send a demo response
-    // In production, this would integrate with Claude API
-    await handleDemoMessage(session, content);
+    try {
+      await handleClaudeMessage(session, content, server.projectRoot);
+    } catch (error) {
+      console.error(`[${new Date().toISOString()}] Claude error:`, error.message);
+      session.send(createNotification('error', 'Error', error.message));
+      session.setState('error');
+    }
   });
 
   // Cancel handler
@@ -265,51 +270,49 @@ function setupEventHandlers(server) {
 }
 
 /**
- * Handle a demo message (placeholder for Claude integration)
+ * Handle message by calling Claude CLI
  */
-async function handleDemoMessage(session, content) {
-  // Simulate thinking delay
-  await sleep(500);
+async function handleClaudeMessage(session, content, projectRoot) {
+  let fullResponse = '';
 
-  // Simulate tool call
-  const toolId = `tool_${Date.now()}`;
-  session.send(createToolStart(toolId, 'Read', { file_path: 'package.json' }));
+  const bridge = createClaudeBridge({
+    cwd: projectRoot,
+    onInit: (info) => {
+      console.log(`[${new Date().toISOString()}] Claude session: ${info.sessionId}, model: ${info.model}`);
+    },
+    onText: (text, done) => {
+      if (text) {
+        fullResponse += text;
+        session.send(createTextDelta(text, done));
+      }
+      if (done) {
+        session.addMessage('assistant', fullResponse);
+        session.setState('idle');
+        console.log(`[${new Date().toISOString()}] Response complete`);
+      }
+    },
+    onToolStart: (id, name, input) => {
+      session.send(createToolStart(id, name, input));
+    },
+    onToolResult: (id, output, isError, toolName) => {
+      session.send(createToolResult(id, { content: output, error: isError }, toolName));
+    },
+    onError: (error) => {
+      console.error(`[${new Date().toISOString()}] Claude error:`, error);
+      session.send(createNotification('error', 'Claude Error', error));
+    },
+    onComplete: (response) => {
+      // Already handled in onText with done=true
+    },
+  });
 
-  await sleep(300);
-
-  session.send(createToolResult(toolId, { content: '{"name": "demo", "version": "1.0.0"}' }));
-
-  await sleep(200);
-
-  // Stream a response
-  const response = `I received your message: "${content.slice(0, 50)}..."
-
-This is a demo response from the AgileFlow Dashboard Server. In production, this would be connected to Claude Code and stream real responses.
-
-The server is working correctly! You can:
-- Send messages (they'll be echoed back)
-- See tool call visualizations
-- Monitor git status updates
-
-To integrate with Claude, the server emits events that can be connected to the Claude API.`;
-
-  // Stream word by word
-  const words = response.split(' ');
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i] + (i < words.length - 1 ? ' ' : '');
-    session.send(createTextDelta(word, i === words.length - 1));
-    await sleep(30);
+  try {
+    await bridge.sendMessage(content);
+  } catch (error) {
+    session.send(createNotification('error', 'Error', error.message));
+    session.setState('error');
+    throw error;
   }
-
-  // Add to history
-  session.addMessage('assistant', response);
-
-  // Set idle state
-  session.setState('idle');
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Run main
