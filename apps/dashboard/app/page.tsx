@@ -23,8 +23,9 @@ import { IRSource } from "@/lib/protocol";
 export default function Dashboard() {
   const [message, setMessage] = useState("");
   const [showTerminal, setShowTerminal] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showReviewPane, setShowReviewPane] = useState(true);
+  // Mobile: sidebar and review pane hidden by default
+  const [showSidebar, setShowSidebar] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 : true);
+  const [showReviewPane, setShowReviewPane] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : true);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
 
   const { provider, providerInfo, providers, selectProvider } = useProvider("claude");
@@ -108,6 +109,21 @@ export default function Dashboard() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Handle responsive sidebar/review pane
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setShowSidebar(false);
+        setShowReviewPane(false);
+      } else if (window.innerWidth < 1024) {
+        setShowReviewPane(false);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "j") {
@@ -157,40 +173,54 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen flex-col bg-background text-foreground font-mono text-sm">
       {/* Header */}
-      <header className="flex h-10 items-center justify-between border-b border-border px-3 bg-card">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowSidebar(!showSidebar)} className="p-1 hover:bg-muted">
-            <Menu className="h-4 w-4" />
+      <header className="flex h-12 md:h-10 items-center justify-between border-b border-border px-3 bg-card">
+        <div className="flex items-center gap-2 md:gap-3">
+          <button onClick={() => setShowSidebar(!showSidebar)} className="p-2 md:p-1 hover:bg-muted -ml-1">
+            <Menu className="h-5 w-5 md:h-4 md:w-4" />
           </button>
-          <span className="text-xs font-bold tracking-wide">AGILEFLOW</span>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-xs">my-project</span>
+          <span className="text-sm md:text-xs font-bold tracking-wide">AGILEFLOW</span>
+          <span className="text-muted-foreground hidden sm:inline">/</span>
+          <span className="text-sm md:text-xs hidden sm:inline">my-project</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <div className="flex items-center gap-1.5 px-2 py-1 text-xs">
-            <Circle className={`h-2 w-2 fill-current ${
+            <Circle className={`h-2.5 w-2.5 md:h-2 md:w-2 fill-current ${
               connectionStatus === "connected" ? "text-primary" :
               connectionStatus === "connecting" ? "text-yellow-500 animate-pulse" :
               connectionStatus === "error" ? "text-destructive" : "text-muted-foreground"
             }`} />
-            <span className="text-muted-foreground">
+            <span className="text-muted-foreground hidden sm:inline">
               {connectionStatus === "connected" ? "connected" : connectionStatus}
             </span>
           </div>
-          <button onClick={() => setShowNotificationSettings(true)} className="p-1.5 hover:bg-muted relative">
-            <Bell className="h-4 w-4" />
+          <button onClick={() => setShowNotificationSettings(true)} className="p-2 md:p-1.5 hover:bg-muted relative">
+            <Bell className="h-5 w-5 md:h-4 md:w-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-primary text-[8px] font-bold flex items-center justify-center">{unreadCount}</span>
+              <span className="absolute top-0.5 right-0.5 md:-top-0.5 md:-right-0.5 h-4 w-4 md:h-3 md:w-3 bg-primary text-[9px] md:text-[8px] font-bold flex items-center justify-center">{unreadCount}</span>
             )}
           </button>
-          <button className="p-1.5 hover:bg-muted"><Settings className="h-4 w-4" /></button>
+          <button className="p-2 md:p-1.5 hover:bg-muted"><Settings className="h-5 w-5 md:h-4 md:w-4" /></button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
+        {/* Left Sidebar - overlay on mobile */}
         {showSidebar && (
-          <aside className="w-56 border-r border-border bg-background flex flex-col overflow-hidden">
+          <>
+            {/* Mobile backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setShowSidebar(false)}
+            />
+            <aside className="fixed md:relative left-0 top-0 bottom-0 w-64 md:w-56 border-r border-border bg-background flex flex-col overflow-hidden z-50">
+            {/* Mobile close button */}
+            <div className="flex items-center justify-between p-3 border-b border-border md:hidden">
+              <span className="text-xs font-bold tracking-wide">AGILEFLOW</span>
+              <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-muted">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
             {/* Provider */}
             <div className="p-3 border-b border-border">
               <div className="relative">
@@ -251,6 +281,7 @@ export default function Dashboard() {
               </div>
             </div>
           </aside>
+          </>
         )}
 
         {/* Main Chat Area */}
@@ -273,14 +304,14 @@ export default function Dashboard() {
                     value={wsUrl}
                     onChange={(e) => setWsUrl(e.target.value)}
                     placeholder="ws://localhost:8765"
-                    className="w-full bg-muted border-0 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full bg-muted border-0 px-3 py-3 text-base font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 {error && <div className="text-destructive text-xs">{error}</div>}
                 <button
                   onClick={handleConnect}
                   disabled={connectionStatus === "connecting"}
-                  className="w-full bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 text-base font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {connectionStatus === "connecting" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" />Connecting...</>
@@ -333,19 +364,19 @@ export default function Dashboard() {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Message or /command..."
-                    className="flex-1 bg-muted border-0 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="flex-1 bg-muted border-0 px-3 py-3 text-base focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   {isThinking ? (
-                    <button onClick={cancelOperation} className="bg-destructive text-white p-2 hover:bg-destructive/90">
-                      <StopCircle className="h-4 w-4" />
+                    <button onClick={cancelOperation} className="bg-destructive text-white p-3 md:p-2 hover:bg-destructive/90">
+                      <StopCircle className="h-5 w-5 md:h-4 md:w-4" />
                     </button>
                   ) : (
                     <button
                       onClick={handleSendMessage}
                       disabled={!message.trim() && !pendingImage}
-                      className="bg-primary text-primary-foreground p-2 hover:bg-primary/90 disabled:opacity-50"
+                      className="bg-primary text-primary-foreground p-3 md:p-2 hover:bg-primary/90 disabled:opacity-50"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-5 w-5 md:h-4 md:w-4" />
                     </button>
                   )}
                 </div>
@@ -354,9 +385,23 @@ export default function Dashboard() {
           )}
         </main>
 
-        {/* Right Panel - Review */}
+        {/* Right Panel - Review - overlay on mobile/tablet */}
         {showReviewPane && connectionStatus === "connected" && (
-          <aside className="w-72 border-l border-border bg-background flex flex-col overflow-hidden">
+          <>
+            {/* Backdrop on smaller screens */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              onClick={() => setShowReviewPane(false)}
+            />
+            <aside className="fixed lg:relative right-0 top-0 bottom-0 w-80 lg:w-72 border-l border-border bg-background flex flex-col overflow-hidden z-50">
+            {/* Mobile close button */}
+            <div className="flex items-center justify-between p-3 border-b border-border lg:hidden">
+              <span className="text-xs font-bold">Review</span>
+              <button onClick={() => setShowReviewPane(false)} className="p-2 hover:bg-muted">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
             {showDiffViewer && currentDiff ? (
               <DiffViewer
                 diff={currentDiff}
@@ -480,6 +525,7 @@ export default function Dashboard() {
               </>
             )}
           </aside>
+          </>
         )}
       </div>
 
@@ -508,25 +554,25 @@ export default function Dashboard() {
       <NotificationSettings isOpen={showNotificationSettings} onClose={() => setShowNotificationSettings(false)} />
 
       {/* Footer */}
-      <footer className="flex h-7 items-center justify-between border-t border-border px-3 text-[10px] text-muted-foreground bg-card">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setShowTerminal(!showTerminal)} className={`flex items-center gap-1 hover:text-foreground ${showTerminal ? "text-primary" : ""}`}>
-            <Terminal className="h-3 w-3" />
-            <span>Terminal</span>
-            <span className="text-muted-foreground/50">⌘J</span>
+      <footer className="flex h-10 md:h-7 items-center justify-between border-t border-border px-3 text-xs md:text-[10px] text-muted-foreground bg-card">
+        <div className="flex items-center gap-1 md:gap-3">
+          <button onClick={() => setShowTerminal(!showTerminal)} className={`flex items-center gap-1 p-2 md:p-0 hover:text-foreground ${showTerminal ? "text-primary" : ""}`}>
+            <Terminal className="h-4 w-4 md:h-3 md:w-3" />
+            <span className="hidden sm:inline">Terminal</span>
+            <span className="hidden md:inline text-muted-foreground/50">⌘J</span>
           </button>
-          <button onClick={() => setShowReviewPane(!showReviewPane)} className={`flex items-center gap-1 hover:text-foreground ${showReviewPane ? "text-primary" : ""}`}>
-            <FileCode className="h-3 w-3" />
-            <span>Review</span>
+          <button onClick={() => setShowReviewPane(!showReviewPane)} className={`flex items-center gap-1 p-2 md:p-0 hover:text-foreground ${showReviewPane ? "text-primary" : ""}`}>
+            <FileCode className="h-4 w-4 md:h-3 md:w-3" />
+            <span className="hidden sm:inline">Review</span>
           </button>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="hidden sm:flex items-center gap-1">
             <Folder className="h-3 w-3" />
             ~/my-project
           </span>
           <span className="flex items-center gap-1">
-            <GitBranch className="h-3 w-3" />
+            <GitBranch className="h-4 w-4 md:h-3 md:w-3" />
             {gitStatus?.branch || "main"}
           </span>
         </div>
