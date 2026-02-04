@@ -21,7 +21,7 @@ import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
 import { AutomationsList, InboxList, SessionsList, Session, SkillsBrowser } from "@/components/sidebar";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
-import { Bell, Wand2, Copy, RotateCcw, Bot as AgentIcon } from "lucide-react";
+import { Bell, Wand2, Copy, RotateCcw, Bot as AgentIcon, Save, Workflow } from "lucide-react";
 import { useProvider } from "@/hooks/useProvider";
 import { IRSource } from "@/lib/protocol";
 
@@ -352,6 +352,18 @@ export default function Dashboard() {
                 <span className="flex items-center gap-1 text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full" title="Can rollback changes">
                   <RotateCcw className="h-2.5 w-2.5" />
                   Rollback
+                </span>
+              )}
+              {features.canUseCheckpoints && (
+                <span className="flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full" title="Checkpoint support">
+                  <Save className="h-2.5 w-2.5" />
+                  Checkpoints
+                </span>
+              )}
+              {features.canUseConductor && (
+                <span className="flex items-center gap-1 text-[10px] bg-purple-500/10 text-purple-500 px-2 py-0.5 rounded-full" title="Conductor workflows">
+                  <Workflow className="h-2.5 w-2.5" />
+                  Conductor
                 </span>
               )}
               {features.hasVision && (

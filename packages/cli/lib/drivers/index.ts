@@ -9,3 +9,9 @@ export { DefaultDriverManager, getDriverManager, resetDriverManager } from "./dr
 
 // Claude Driver
 export { ClaudeDriver, createClaudeDriver, type ClaudeNativeMessage } from "./claude-driver";
+
+// Codex Driver
+export { CodexDriver, createCodexDriver, type CodexJsonRpcMessage } from "./codex-driver";
+
+// Gemini Driver
+export { GeminiDriver, createGeminiDriver, type GeminiNdjsonMessage } from "./gemini-driver";
