@@ -34,10 +34,18 @@ module.exports = {
         createToolStart,
         createToolResult,
       } = require('../../../lib/dashboard-protocol');
+      const { execSync } = require('child_process');
+      const readline = require('readline');
+
+      let port = parseInt(options.port, 10) || 8765;
+      const host = options.host || '0.0.0.0';
+
+      // Check if port is in use and handle it
+      port = await handlePortConflict(port, readline);
 
       const serverOptions = {
-        port: parseInt(options.port, 10) || 8765,
-        host: options.host || '0.0.0.0',
+        port,
+        host,
         apiKey: options.apiKey || null,
         requireAuth: options.requireAuth || !!options.apiKey,
       };
@@ -334,4 +342,115 @@ async function startNgrokTunnel(port, exec) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Check if port is in use and handle conflict
+ */
+async function handlePortConflict(port, readline) {
+  const { execSync } = require('child_process');
+  const net = require('net');
+
+  // Check if port is in use
+  const isPortInUse = await new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+    server.once('listening', () => {
+      server.close();
+      resolve(false);
+    });
+    server.listen(port);
+  });
+
+  if (!isPortInUse) {
+    return port;
+  }
+
+  // Port is in use - find out what's using it
+  let processInfo = '';
+  try {
+    processInfo = execSync(`lsof -i :${port} -t 2>/dev/null`, { encoding: 'utf-8' }).trim();
+  } catch (e) {
+    // lsof might not be available or port check failed
+  }
+
+  console.log(chalk.yellow(`\n  Port ${port} is already in use.`));
+
+  if (processInfo) {
+    console.log(chalk.dim(`  Process ID: ${processInfo}`));
+  }
+
+  // Ask user what to do
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    console.log('');
+    console.log('  Options:');
+    console.log(chalk.cyan('    [k]') + ' Kill existing process and use this port');
+    console.log(chalk.cyan('    [n]') + ' Use next available port');
+    console.log(chalk.cyan('    [q]') + ' Quit');
+    console.log('');
+
+    rl.question('  Your choice (k/n/q): ', async (answer) => {
+      rl.close();
+      const choice = answer.toLowerCase().trim();
+
+      if (choice === 'k' && processInfo) {
+        // Kill the process
+        try {
+          execSync(`kill ${processInfo}`, { encoding: 'utf-8' });
+          console.log(chalk.green(`  Killed process ${processInfo}`));
+          await sleep(500); // Give it a moment to release the port
+          resolve(port);
+        } catch (e) {
+          console.log(chalk.red(`  Failed to kill process: ${e.message}`));
+          console.log(chalk.dim('  Trying next available port instead...'));
+          resolve(await findNextAvailablePort(port));
+        }
+      } else if (choice === 'n') {
+        const newPort = await findNextAvailablePort(port);
+        console.log(chalk.green(`  Using port ${newPort}`));
+        resolve(newPort);
+      } else {
+        console.log(chalk.dim('  Exiting.'));
+        process.exit(0);
+      }
+    });
+  });
+}
+
+/**
+ * Find next available port starting from given port
+ */
+async function findNextAvailablePort(startPort) {
+  const net = require('net');
+  let port = startPort + 1;
+
+  while (port < startPort + 100) {
+    const available = await new Promise((resolve) => {
+      const server = net.createServer();
+      server.once('error', () => resolve(false));
+      server.once('listening', () => {
+        server.close();
+        resolve(true);
+      });
+      server.listen(port);
+    });
+
+    if (available) {
+      return port;
+    }
+    port++;
+  }
+
+  throw new Error('Could not find an available port');
 }
