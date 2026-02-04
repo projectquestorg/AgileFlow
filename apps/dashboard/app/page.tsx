@@ -21,14 +21,9 @@ import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
 import { AutomationsList, InboxList, SessionsList, Session, SkillsBrowser } from "@/components/sidebar";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
-import { Bell, Wand2 } from "lucide-react";
-
-// Provider configurations with icons
-const providers = [
-  { id: "claude", name: "Claude Code", icon: "🤖", color: "text-orange-400" },
-  { id: "codex", name: "Codex CLI", icon: "⚡", color: "text-green-400" },
-  { id: "gemini", name: "Gemini CLI", icon: "✨", color: "text-blue-400" },
-];
+import { Bell, Wand2, Copy, RotateCcw, Bot as AgentIcon } from "lucide-react";
+import { useProvider } from "@/hooks/useProvider";
+import { IRSource } from "@/lib/protocol";
 
 // Suggestion pills for quick actions
 const suggestions = [
@@ -43,8 +38,10 @@ export default function Dashboard() {
   const [showTerminal, setShowTerminal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showReviewPane, setShowReviewPane] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState("claude");
   const [showProviderMenu, setShowProviderMenu] = useState(false);
+
+  // Multi-CLI provider support
+  const { provider, providerInfo, providers, features, selectProvider } = useProvider("claude");
   const [wsUrl, setWsUrl] = useState("ws://localhost:8765");
   const [reviewTab, setReviewTab] = useState<"staged" | "unstaged" | "all">("all");
   const [showCommitDialog, setShowCommitDialog] = useState(false);
@@ -133,8 +130,6 @@ export default function Dashboard() {
       setShowDiffViewer(true);
     }
   };
-
-  const currentProvider = providers.find(p => p.id === selectedProvider) || providers[0];
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -303,7 +298,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Provider Selector */}
+          {/* Provider Selector with Capabilities */}
           <div className="border-t border-border p-4">
             <div className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Provider</div>
             <div className="relative">
@@ -312,30 +307,57 @@ export default function Dashboard() {
                 className="w-full flex items-center justify-between gap-2 bg-card border border-border px-3 py-2.5 text-sm rounded-lg hover:border-primary/50 transition-colors"
               >
                 <span className="flex items-center gap-2">
-                  <span className="text-lg">{currentProvider.icon}</span>
-                  <span className="font-medium">{currentProvider.name}</span>
+                  <span className="text-lg">{providerInfo.icon}</span>
+                  <span className="font-medium">{providerInfo.name}</span>
                 </span>
                 <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showProviderMenu ? 'rotate-180' : ''}`} />
               </button>
 
               {showProviderMenu && (
                 <div className="absolute bottom-full left-0 right-0 mb-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50">
-                  {providers.map((provider) => (
+                  {providers.map((p) => (
                     <button
-                      key={provider.id}
-                      onClick={() => { setSelectedProvider(provider.id); setShowProviderMenu(false); }}
+                      key={p.id}
+                      onClick={() => { selectProvider(p.id as IRSource); setShowProviderMenu(false); }}
                       className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted transition-colors ${
-                        selectedProvider === provider.id ? 'bg-primary/10 text-primary' : ''
+                        provider === p.id ? 'bg-primary/10 text-primary' : ''
                       }`}
                     >
-                      <span className="text-lg">{provider.icon}</span>
-                      <span className="font-medium">{provider.name}</span>
-                      {selectedProvider === provider.id && (
+                      <span className="text-lg">{p.icon}</span>
+                      <span className="font-medium">{p.name}</span>
+                      {provider === p.id && (
                         <span className="ml-auto text-primary">✓</span>
                       )}
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Capability-based feature indicators */}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {features.canSpawnAgents && (
+                <span className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full" title="Can spawn sub-agents">
+                  <AgentIcon className="h-2.5 w-2.5" />
+                  Agents
+                </span>
+              )}
+              {features.canForkThread && (
+                <span className="flex items-center gap-1 text-[10px] bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full" title="Can fork threads">
+                  <Copy className="h-2.5 w-2.5" />
+                  Fork
+                </span>
+              )}
+              {features.canRollbackThread && (
+                <span className="flex items-center gap-1 text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-full" title="Can rollback changes">
+                  <RotateCcw className="h-2.5 w-2.5" />
+                  Rollback
+                </span>
+              )}
+              {features.hasVision && (
+                <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full" title="Vision support">
+                  Vision
+                </span>
               )}
             </div>
           </div>
