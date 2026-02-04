@@ -57,18 +57,24 @@ function createClaudeBridge(options = {}) {
 
       let fullResponse = '';
       let toolUseBuffer = new Map();
+      let hadAssistantText = false;
 
       rl.on('line', (line) => {
         try {
           const event = JSON.parse(line);
-          processEvent(event, {
+          const result = processEvent(event, {
             onText,
             onToolStart,
             onToolResult,
             onInit,
-            fullResponse,
-            toolUseBuffer
+            toolUseBuffer,
+            hadAssistantText
           });
+
+          // Track if we've sent assistant text
+          if (result?.sentText) {
+            hadAssistantText = true;
+          }
 
           // Accumulate text response
           if (event.type === 'assistant' && event.message?.content) {
@@ -77,6 +83,10 @@ function createClaudeBridge(options = {}) {
                 fullResponse += block.text;
               }
             }
+          }
+          // Also accumulate from result (for slash commands)
+          if (event.type === 'result' && event.result) {
+            fullResponse = event.result;
           }
         } catch (err) {
           // Skip non-JSON lines
@@ -138,9 +148,11 @@ function createClaudeBridge(options = {}) {
 
 /**
  * Process a stream-json event from Claude CLI
+ * @returns {{ sentText: boolean }} - Whether text was sent
  */
 function processEvent(event, handlers) {
-  const { onText, onToolStart, onToolResult, onInit, toolUseBuffer } = handlers;
+  const { onText, onToolStart, onToolResult, onInit, toolUseBuffer, hadAssistantText } = handlers;
+  let sentText = false;
 
   switch (event.type) {
     case 'system':
@@ -159,6 +171,7 @@ function processEvent(event, handlers) {
           if (block.type === 'text' && onText) {
             // Stream text
             onText(block.text, false);
+            sentText = true;
           } else if (block.type === 'tool_use' && onToolStart) {
             // Tool call started
             toolUseBuffer.set(block.id, block);
@@ -186,12 +199,21 @@ function processEvent(event, handlers) {
       break;
 
     case 'result':
-      if (event.subtype === 'success' && onText) {
+      if (event.subtype === 'success') {
+        // For slash commands (no assistant text), send the result text
+        if (event.result && onText && !hadAssistantText) {
+          onText(event.result, false);
+          sentText = true;
+        }
         // Signal completion
-        onText('', true);
+        if (onText) {
+          onText('', true);
+        }
       }
       break;
   }
+
+  return { sentText };
 }
 
 module.exports = {
