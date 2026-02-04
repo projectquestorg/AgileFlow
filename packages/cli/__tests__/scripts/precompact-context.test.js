@@ -478,4 +478,134 @@ Some other content here.
       expect(result.status).toBe(0);
     });
   });
+
+  describe('task orchestration state', () => {
+    // Helper to create task-dependencies.json
+    function createTaskDependencies(tasks = {}, groups = {}) {
+      const stateDir = path.join(testDir, '.agileflow', 'state');
+      fs.mkdirSync(stateDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stateDir, 'task-dependencies.json'),
+        JSON.stringify({
+          schema_version: '1.0.0',
+          tasks,
+          task_groups: groups,
+          audit_trail: [],
+        }, null, 2)
+      );
+    }
+
+    test('includes task orchestration state section', () => {
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Task Orchestration State');
+    });
+
+    test('shows running tasks when present', () => {
+      createTaskDependencies({
+        'task-abc123': {
+          id: 'task-abc123',
+          description: 'Implement API endpoint',
+          state: 'running',
+          subagent_type: 'agileflow-api',
+        },
+      });
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Running (1)');
+      expect(result.stdout).toContain('task-abc123');
+      expect(result.stdout).toContain('Implement API');
+      expect(result.stdout).toContain('agileflow-api');
+    });
+
+    test('shows queued tasks when present', () => {
+      createTaskDependencies({
+        'task-1': {
+          id: 'task-1',
+          description: 'First task',
+          state: 'queued',
+        },
+        'task-2': {
+          id: 'task-2',
+          description: 'Second task',
+          state: 'queued',
+        },
+      });
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Queued (2)');
+    });
+
+    test('shows blocked tasks with dependencies', () => {
+      createTaskDependencies({
+        'task-api': {
+          id: 'task-api',
+          description: 'API endpoint',
+          state: 'running',
+        },
+        'task-tests': {
+          id: 'task-tests',
+          description: 'Write tests',
+          state: 'blocked',
+          blockedBy: ['task-api'],
+        },
+      });
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Blocked (1)');
+      expect(result.stdout).toContain('blocked by');
+      expect(result.stdout).toContain('task-api');
+    });
+
+    test('shows dependency chain info', () => {
+      createTaskDependencies({
+        'task-1': { id: 'task-1', state: 'running', blockedBy: [] },
+        'task-2': { id: 'task-2', state: 'blocked', blockedBy: ['task-1'] },
+      });
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Dependency Chain');
+      expect(result.stdout).toContain('task-dependencies.json');
+    });
+
+    test('handles no task state gracefully', () => {
+      // Don't create task-dependencies.json
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('No active task orchestration');
+    });
+
+    test('handles invalid task state file gracefully', () => {
+      const stateDir = path.join(testDir, '.agileflow', 'state');
+      fs.mkdirSync(stateDir, { recursive: true });
+      fs.writeFileSync(path.join(stateDir, 'task-dependencies.json'), 'not json');
+
+      const result = runPrecompact();
+
+      // Should not crash
+      expect(result.status).toBe(0);
+    });
+
+    test('includes TaskOutput reminder in post-compact actions', () => {
+      createTaskDependencies({
+        'task-1': { id: 'task-1', state: 'running' },
+      });
+
+      const result = runPrecompact();
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('TaskOutput');
+    });
+  });
 });

@@ -1,0 +1,49 @@
+# Project Context
+
+This file is loaded at session start by AgileFlow's context-loader hook.
+It provides project-specific context that Claude should be aware of.
+
+## How to Use
+
+1. Copy this file to `CONTEXT.md` in your project root
+2. Edit the sections below with your project details
+3. The context will be loaded automatically at each session start
+
+**Size Guidelines:**
+- Recommended: <10KB (focused, essential info)
+- Maximum: 50KB (will be truncated if larger)
+
+---
+
+## Current Sprint
+
+<!-- Add your current sprint/iteration focus here -->
+- [ ] Feature: _describe current feature work_
+- [ ] Bug fix: _any critical bugs being addressed_
+- [ ] Tech debt: _any cleanup work in progress_
+
+## Key Constraints
+
+<!-- Add project-specific rules that Claude should always follow -->
+- Never modify files in `config/` without explicit permission
+- Always run tests before committing
+- Follow existing code patterns in the codebase
+
+## Known Issues
+
+<!-- Document any known issues that might affect development -->
+- None currently documented
+
+## Quick Links
+
+<!-- Add links to key documentation or resources -->
+- Architecture: `docs/04-architecture/`
+- Practices: `docs/02-practices/`
+- Stories: `docs/06-stories/`
+
+## Team Conventions
+
+<!-- Document any team-specific conventions -->
+- Commit message format: `type(scope): description`
+- Branch naming: `feature/ticket-description` or `fix/ticket-description`
+- PR template in `.github/pull_request_template.md`

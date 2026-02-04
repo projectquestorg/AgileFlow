@@ -5,6 +5,9 @@
 
 set -e
 
+# Track start time for hook metrics
+HOOK_START_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+
 # Source shared utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -278,6 +281,25 @@ EOF
 else
   echo -e "${RED}Error: Node.js not found. Cannot perform archival.${NC}"
   exit 1
+fi
+
+# Record hook metrics
+if command -v node &> /dev/null && [[ -f "$SCRIPT_DIR/lib/hook-metrics.js" ]]; then
+  HOOK_END_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+  HOOK_DURATION=$((HOOK_END_TIME - HOOK_START_TIME))
+  PROJECT_ROOT="$PROJECT_ROOT" HOOK_DURATION="$HOOK_DURATION" node -e '
+    try {
+      const hookMetrics = require("'"$SCRIPT_DIR"'/lib/hook-metrics.js");
+      const timer = {
+        hookEvent: "SessionStart",
+        hookName: "archive",
+        startTime: Date.now() - parseInt(process.env.HOOK_DURATION || "0"),
+      };
+      hookMetrics.recordHookMetrics(timer, "success", null, { rootDir: process.env.PROJECT_ROOT });
+    } catch (e) {
+      // Silently ignore metrics errors
+    }
+  ' 2>/dev/null || true
 fi
 
 exit 0

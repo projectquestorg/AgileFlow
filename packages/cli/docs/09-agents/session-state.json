@@ -1,0 +1,33 @@
+{
+  "hook_metrics": {
+    "last_updated": "2026-02-04T08:22:40.401Z",
+    "session_total_ms": 310,
+    "hooks": {
+      "SessionStart": {
+        "welcome": {
+          "duration_ms": 310,
+          "status": "success",
+          "at": "2026-02-04T08:22:40.401Z"
+        }
+      }
+    }
+  },
+  "active_commands": [
+    {
+      "name": "test",
+      "type": "interactive",
+      "activated_at": "2026-02-03T09:14:56.631Z",
+      "state": {},
+      "active_sections": [],
+      "params": {}
+    },
+    {
+      "name": "babysit",
+      "type": "interactive",
+      "activated_at": "2026-02-04T08:22:48.581Z",
+      "state": {},
+      "active_sections": [],
+      "params": {}
+    }
+  ]
+}

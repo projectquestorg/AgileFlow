@@ -8,6 +8,10 @@
 # 2. Experimental (fullFileInjection): Inject entire command files (more context, may be more reliable)
 #
 
+# Track start time for hook metrics
+HOOK_START_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Get current version from package.json
 VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
 
@@ -175,6 +179,86 @@ if [ ! -z "$COMMAND_SUMMARIES" ]; then
   echo "$COMMAND_SUMMARIES"
 fi
 
+# Output Task Orchestration State section
+echo ""
+echo "## Task Orchestration State"
+TASK_STATE=$(node -e "
+  const path = require('path');
+  const fs = require('fs');
+
+  // Try to load task registry
+  try {
+    const taskRegistryPath = path.join(process.cwd(), '.agileflow', 'state', 'task-dependencies.json');
+    if (!fs.existsSync(taskRegistryPath)) {
+      console.log('No active task orchestration');
+      process.exit(0);
+    }
+
+    const taskState = JSON.parse(fs.readFileSync(taskRegistryPath, 'utf8'));
+    const tasks = Object.values(taskState.tasks || {});
+
+    if (tasks.length === 0) {
+      console.log('No active task orchestration');
+      process.exit(0);
+    }
+
+    // Group by state
+    const running = tasks.filter(t => t.state === 'running');
+    const queued = tasks.filter(t => t.state === 'queued');
+    const blocked = tasks.filter(t => t.state === 'blocked');
+
+    // If no active tasks (all completed/failed/cancelled), show no activity
+    if (running.length === 0 && queued.length === 0 && blocked.length === 0) {
+      console.log('No active task orchestration');
+      process.exit(0);
+    }
+
+    console.log('### Active Task Graph');
+    console.log('');
+
+    if (running.length > 0) {
+      console.log('**Running (' + running.length + '):**');
+      running.forEach(t => {
+        console.log('- ' + t.id + ': ' + (t.description || 'No description').slice(0, 50));
+        if (t.subagent_type) console.log('  Agent: ' + t.subagent_type);
+        if (t.metadata?.claude_task_id) console.log('  Claude ID: ' + t.metadata.claude_task_id + ' (use TaskOutput to check)');
+        if (t.story_id) console.log('  Story: ' + t.story_id);
+      });
+      console.log('');
+    }
+
+    if (queued.length > 0) {
+      console.log('**Queued (' + queued.length + '):**');
+      queued.slice(0, 5).forEach(t => {
+        console.log('- ' + t.id + ': ' + (t.description || 'No description').slice(0, 50));
+        if (t.story_id) console.log('  Story: ' + t.story_id);
+      });
+      if (queued.length > 5) console.log('  ... and ' + (queued.length - 5) + ' more');
+      console.log('');
+    }
+
+    if (blocked.length > 0) {
+      console.log('**Blocked (' + blocked.length + '):**');
+      blocked.slice(0, 3).forEach(t => {
+        console.log('- ' + t.id + ' (blocked by: ' + (t.blockedBy || []).join(', ') + ')');
+      });
+      console.log('');
+    }
+
+    // Show dependency graph summary
+    const withDeps = tasks.filter(t => (t.blockedBy || []).length > 0);
+    if (withDeps.length > 0) {
+      console.log('**Dependency Chain:**');
+      console.log('Task state file: .agileflow/state/task-dependencies.json');
+      console.log('Use TaskOutput to collect results from running tasks.');
+    }
+  } catch (e) {
+    // Error reading/parsing - show no activity
+    console.log('No active task orchestration');
+  }
+" 2>/dev/null || echo "No active task orchestration")
+echo "$TASK_STATE"
+
 cat << EOF
 
 ## Post-Compact Actions
@@ -182,6 +266,7 @@ cat << EOF
 2. Check status.json for current story state
 3. Review docs/02-practices/ for implementation patterns
 4. Check git log for recent changes
+5. If tasks were running, use TaskOutput to check results
 EOF
 
 # Mark that PreCompact just ran - tells SessionStart to preserve active_commands
@@ -196,4 +281,23 @@ if [ -f "docs/09-agents/session-state.json" ]; then
       fs.writeFileSync(path, JSON.stringify(state, null, 2) + '\n');
     } catch (e) {}
   " 2>/dev/null
+fi
+
+# Record hook metrics
+if command -v node &> /dev/null && [[ -f "$SCRIPT_DIR/lib/hook-metrics.js" ]]; then
+  HOOK_END_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+  HOOK_DURATION=$((HOOK_END_TIME - HOOK_START_TIME))
+  HOOK_DURATION="$HOOK_DURATION" node -e '
+    try {
+      const hookMetrics = require("'"$SCRIPT_DIR"'/lib/hook-metrics.js");
+      const timer = {
+        hookEvent: "PreCompact",
+        hookName: "context",
+        startTime: Date.now() - parseInt(process.env.HOOK_DURATION || "0"),
+      };
+      hookMetrics.recordHookMetrics(timer, "success");
+    } catch (e) {
+      // Silently ignore metrics errors
+    }
+  ' 2>/dev/null || true
 fi

@@ -45,13 +45,18 @@
   },
   "dependencies": {
     "agileflow": "^2.61.0",
-    "ink": "^4.4.1",
+    "ink": "^5.0.1",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
-    "react": "^18.3.1"
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "overrides": {
     "diff": ">=8.0.3",
-    "xml2js": ">=0.5.0"
+    "xml2js": ">=0.5.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
   }
 }

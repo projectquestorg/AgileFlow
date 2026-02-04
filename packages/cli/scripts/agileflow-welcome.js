@@ -70,12 +70,29 @@ try {
   // Ideation sync not available
 }
 
+// Automation registry and runner
+let automationRegistry, automationRunner;
+try {
+  automationRegistry = require('./lib/automation-registry.js');
+  automationRunner = require('./lib/automation-runner.js');
+} catch (e) {
+  // Automation system not available
+}
+
 // Update checker module
 let updateChecker;
 try {
   updateChecker = require('./check-update.js');
 } catch (e) {
   // Update checker not available
+}
+
+// Process cleanup module (duplicate Claude detection)
+let processCleanup;
+try {
+  processCleanup = require('./lib/process-cleanup.js');
+} catch (e) {
+  // Process cleanup not available
 }
 
 /**
@@ -1913,6 +1930,54 @@ async function main() {
     // Health check failed, skip silently
   }
 
+  // === DUPLICATE CLAUDE PROCESS DETECTION ===
+  // Check for multiple Claude processes in the same working directory
+  if (processCleanup) {
+    try {
+      // Check if auto-kill is enabled in metadata
+      const metadata = cache?.metadata;
+      const autoKill = metadata?.features?.processCleanup?.autoKill === true;
+
+      const cleanupResult = processCleanup.cleanupDuplicateProcesses({
+        rootDir,
+        autoKill,
+        dryRun: false,
+      });
+
+      if (cleanupResult.duplicates > 0) {
+        console.log('');
+
+        if (cleanupResult.killed.length > 0) {
+          // Auto-kill was enabled and processes were terminated
+          console.log(
+            `${c.mintGreen}🔧 Cleaned ${cleanupResult.killed.length} duplicate Claude process(es)${c.reset}`
+          );
+          cleanupResult.killed.forEach(proc => {
+            console.log(`${c.dim}   └─ PID ${proc.pid} (${proc.method})${c.reset}`);
+          });
+        } else {
+          // Warn only (auto-kill not enabled)
+          console.log(
+            `${c.amber}⚠️  ${cleanupResult.duplicates} other Claude process(es) in same directory${c.reset}`
+          );
+          console.log(`${c.slate}   This may cause slowdowns and freezing. Options:${c.reset}`);
+          console.log(`${c.slate}   • Close duplicate Claude windows/tabs${c.reset}`);
+          console.log(
+            `${c.slate}   • Run ${c.skyBlue}/agileflow:configure --enable=processcleanup${c.slate} for auto-cleanup${c.reset}`
+          );
+        }
+
+        if (cleanupResult.errors.length > 0) {
+          cleanupResult.errors.forEach(err => {
+            console.log(`${c.coral}   ⚠ Failed to kill PID ${err.pid}: ${err.error}${c.reset}`);
+          });
+        }
+      }
+    } catch (e) {
+      // Silently ignore process cleanup errors
+    }
+  }
+
   // Story claiming: cleanup stale claims and show warnings
   if (storyClaiming) {
     try {
@@ -2001,6 +2066,51 @@ async function main() {
       }
     } catch (e) {
       // Silently ignore ideation sync errors
+    }
+  }
+
+  // === SCHEDULED AUTOMATIONS ===
+  // Check for and run due automations (non-blocking)
+  if (automationRegistry && automationRunner) {
+    try {
+      const registry = automationRegistry.getAutomationRegistry({ rootDir });
+      const runner = automationRunner.getAutomationRunner({ rootDir });
+      const dueStatus = runner.getDueStatus();
+
+      if (dueStatus.due > 0) {
+        console.log('');
+        console.log(
+          `${c.teal}🤖 ${dueStatus.due} automation(s) due to run${c.reset}`
+        );
+
+        // Show what's due
+        for (const auto of dueStatus.dueAutomations.slice(0, 3)) {
+          console.log(`${c.dim}   └─ ${auto.name}${c.reset}`);
+        }
+        if (dueStatus.due > 3) {
+          console.log(`${c.dim}   └─ ... and ${dueStatus.due - 3} more${c.reset}`);
+        }
+
+        // Run due automations in background (spawn detached process)
+        // This prevents blocking the welcome hook
+        const { spawn } = require('child_process');
+        const runnerScriptPath = path.join(__dirname, 'automation-run-due.js');
+
+        // Only spawn if the runner script exists
+        if (fs.existsSync(runnerScriptPath)) {
+          const child = spawn('node', [runnerScriptPath], {
+            cwd: rootDir,
+            detached: true,
+            stdio: 'ignore',
+          });
+          child.unref();
+          console.log(`${c.dim}   Running in background...${c.reset}`);
+        } else {
+          console.log(`${c.slate}   Run: ${c.skyBlue}/agileflow:automate ACTION=run-due${c.reset}`);
+        }
+      }
+    } catch (e) {
+      // Silently ignore automation errors
     }
   }
 

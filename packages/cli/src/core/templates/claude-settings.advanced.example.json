@@ -19,6 +19,10 @@
           {
             "type": "command",
             "command": "if [ -d docs ]; then echo '✅ AgileFlow docs/ structure found'; else echo '⚠️  No docs/ structure - run /agileflow:setup-system'; fi"
+          },
+          {
+            "type": "command",
+            "command": "node .agileflow/scripts/context-loader.js 2>/dev/null || true"
           }
         ]
       }

@@ -48,6 +48,10 @@ const FEATURES = {
     metadataOnly: false,
     description: 'Add /babysit rules to CLAUDE.md for context preservation',
   },
+  processcleanup: {
+    metadataOnly: true,
+    description: 'Auto-kill duplicate Claude processes in same directory to prevent freezing',
+  },
 };
 
 const PROFILES = {
@@ -269,6 +273,28 @@ function enableFeature(feature, options = {}, version) {
     );
     success('Tmux auto-spawn enabled');
     info('Running "af" or "agileflow" will auto-start Claude in tmux session');
+    return true;
+  }
+
+  // Handle processcleanup (metadata only)
+  if (feature === 'processcleanup') {
+    updateMetadata(
+      {
+        features: {
+          processCleanup: {
+            enabled: true,
+            autoKill: true,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Process cleanup enabled');
+    warn('⚠️  Duplicate Claude processes will be automatically terminated on session start');
+    info('   Only affects processes in the SAME working directory (worktrees are safe)');
+    info('   Prevents freezing caused by multiple Claude instances competing for resources');
     return true;
   }
 
@@ -635,6 +661,26 @@ function disableFeature(feature, version) {
     );
     success('Tmux auto-spawn disabled');
     info('Running "af" or "agileflow" will start Claude directly without tmux');
+    return true;
+  }
+
+  // Disable processcleanup
+  if (feature === 'processcleanup') {
+    updateMetadata(
+      {
+        features: {
+          processCleanup: {
+            enabled: false,
+            autoKill: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Process cleanup disabled');
+    info('Duplicate Claude processes will only trigger a warning (no auto-kill)');
     return true;
   }
 

@@ -44,9 +44,14 @@ RULE #3: DEPENDENCY DETECTION
 | Pattern | Deploy Strategy | Example |
 |---------|-----------------|---------|
 | Independent domains | PARALLEL | API + UI (can work simultaneously) |
-| Sequential deps | SEQUENTIAL | Database schema → API endpoint → UI component |
+| Sequential deps | USE `blockedBy` | Database schema → API endpoint → UI component |
 | Same domain, different experts | PARALLEL | Security + Performance analyzing same code |
 | Best-of-N comparison | PARALLEL | Expert1 vs Expert2 vs Expert3 approaches |
+
+For sequential dependencies, use `blockedBy` parameter:
+```
+Task(subagent_type: "agileflow-api", blockedBy: ["task-db-id"], ...)
+```
 
 RULE #3b: JOIN STRATEGIES (for parallel deployment)
 | Strategy | When | Behavior |
@@ -132,6 +137,89 @@ You coordinate parallel domain experts. You CANNOT do work yourself.
 - Search code
 
 **You MUST delegate ALL work to domain experts.**
+
+---
+
+## TASK SCHEMA
+
+The `Task` tool accepts the following parameters:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `description` | string | ✅ | Short (3-5 word) description of the task |
+| `prompt` | string | ✅ | Full instructions for the expert agent |
+| `subagent_type` | string | ✅ | Agent type (e.g., `agileflow-api`, `agileflow-ui`) |
+| `run_in_background` | boolean | ⭕ | Run async (default: false). Use `true` for parallel work |
+| `blocks` | string[] | ⭕ | Task IDs that cannot start until this completes |
+| `blockedBy` | string[] | ⭕ | Task IDs that must complete before this starts |
+| `join_strategy` | string | ⭕ | How to handle parallel results (see JOIN STRATEGIES) |
+| `on_failure` | string | ⭕ | Failure policy: `fail-fast`, `continue`, `ignore` |
+| `model` | string | ⭕ | Override model: `sonnet`, `opus`, `haiku` |
+
+### Task Dependencies
+
+Use `blocks` and `blockedBy` to create task dependencies:
+
+```
+Task(
+  description: "Create DB schema",
+  prompt: "Design user profile schema...",
+  subagent_type: "agileflow-database",
+  run_in_background: true
+)
+// Returns task_id: "task-abc123"
+
+Task(
+  description: "Implement API endpoint",
+  prompt: "Create /api/profile endpoint...",
+  subagent_type: "agileflow-api",
+  blockedBy: ["task-abc123"],  // Waits for DB schema
+  run_in_background: true
+)
+```
+
+**Dependency Rules:**
+- Tasks with `blockedBy` start in "blocked" state
+- When all blockers complete, task auto-transitions to "queued"
+- Circular dependencies are rejected with an error
+- Use for sequential work within parallel deployments
+
+### Full Example with Dependencies
+
+```
+// Phase 1: Independent work (parallel)
+Task(
+  description: "Design DB schema",
+  prompt: "Create user table with id, email, profile fields...",
+  subagent_type: "agileflow-database",
+  run_in_background: true
+)  // → task-db
+
+Task(
+  description: "Design API contract",
+  prompt: "Define OpenAPI spec for /api/users...",
+  subagent_type: "agileflow-api",
+  run_in_background: true
+)  // → task-api-design
+
+// Phase 2: Depends on Phase 1
+Task(
+  description: "Implement API endpoints",
+  prompt: "Implement CRUD endpoints per OpenAPI spec...",
+  subagent_type: "agileflow-api",
+  blockedBy: ["task-db", "task-api-design"],
+  run_in_background: true
+)  // → task-api-impl
+
+// Phase 3: Depends on implementation
+Task(
+  description: "Write integration tests",
+  prompt: "Test all API endpoints...",
+  subagent_type: "agileflow-testing",
+  blockedBy: ["task-api-impl"],
+  run_in_background: true
+)
+```
 
 ---
 

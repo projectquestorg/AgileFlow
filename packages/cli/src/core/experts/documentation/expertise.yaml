@@ -1,6 +1,6 @@
 domain: documentation
-last_updated: 2025-12-24
-version: 1.2
+last_updated: 2026-02-03
+version: 1.3
 
 # AgileFlow-specific documentation structure (learned from actual codebase)
 files:
@@ -175,3 +175,30 @@ learnings:
       - "Best practices for IDE selection and multi-IDE usage"
       - "Configuration management and version control"
     notes: "Comprehensive 700+ line documentation covering all 4 IDEs with detailed setup, command access, and unique features. Includes handler architecture for IDE developers extending with new IDEs."
+
+  - date: 2026-02-03
+    context: "Generated command documentation (batch 9 - missing commands)"
+    insight: "Created 9 comprehensive command docs for audit, batch, choose, council, install, maintain, rlm, rpi, and workflow commands. All follow consistent template with quick start, parameters table, detailed explanations, usage examples, output formats, and related commands"
+    created_files:
+      - "apps/docs/content/docs/commands/audit.mdx (5.4K)"
+      - "apps/docs/content/docs/commands/batch.mdx (6.2K)"
+      - "apps/docs/content/docs/commands/choose.mdx (5.5K)"
+      - "apps/docs/content/docs/commands/council.mdx (9.3K)"
+      - "apps/docs/content/docs/commands/install.mdx (6.7K)"
+      - "apps/docs/content/docs/commands/maintain.mdx (6.5K)"
+      - "apps/docs/content/docs/commands/rlm.mdx (5.8K)"
+      - "apps/docs/content/docs/commands/rpi.mdx (8.0K)"
+      - "apps/docs/content/docs/commands/workflow.mdx (8.2K)"
+    total_lines: 61_700_characters
+    source: "packages/cli/src/core/commands/*.md (source command files)"
+    coverage:
+      - "audit: Story verification through GSD cycle (tests + acceptance criteria)"
+      - "batch: Functional processing patterns (map/pmap/filter/reduce with loop mode)"
+      - "choose: AI-directed decision making with structured options analysis"
+      - "council: Multi-perspective strategic decisions (3 council members in parallel)"
+      - "install: Post-installation validation with 6 check categories"
+      - "maintain: Periodic health checks (updates, config, status.json, sessions)"
+      - "rlm: Recursive document analysis without context rot (virtualized documents)"
+      - "rpi: Research-Plan-Implement workflow with phase transitions"
+      - "workflow: Parameterized workflow templates (built-in + custom)"
+    notes: "All 9 files follow consistent documentation template extracted from source .md files: quick start, parameters table, detailed descriptions, usage examples with output, status indicators, best practices, error handling, and related commands. Ready for docs site publication."

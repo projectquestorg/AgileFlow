@@ -1,6 +1,20 @@
 /**
  * damage-control-utils.js - Shared utilities for damage-control hooks
  *
+ * EXIT CODE SEMANTICS (Claude Code Hook Protocol):
+ * ================================================
+ *   0 - Allow operation (or ask via JSON output)
+ *   1 - Error (operation proceeds - fail-open)
+ *   2 - Block operation (stderr message shown to user)
+ *
+ * For blocking (exit 2), output reason to stderr:
+ *   console.error('[BLOCKED] Reason');
+ *   process.exit(2);
+ *
+ * For "ask" confirmation (exit 0 with JSON):
+ *   console.log(JSON.stringify({ result: 'ask', message: 'Confirm?' }));
+ *   process.exit(0);
+ *
  * IMPORTANT: These scripts must FAIL OPEN (exit 0 on error)
  * to avoid blocking users when config is broken.
  *
