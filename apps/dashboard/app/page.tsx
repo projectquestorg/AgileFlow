@@ -17,7 +17,9 @@ import {
 } from "@/components/chat";
 import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
-import { AutomationsList, InboxList } from "@/components/sidebar";
+import { AutomationsList, InboxList, SessionsList, Session } from "@/components/sidebar";
+import { useNotifications, NotificationSettings } from "@/components/notifications";
+import { Bell } from "lucide-react";
 
 // Provider configurations with icons
 const providers = [
@@ -45,8 +47,17 @@ export default function Dashboard() {
   const [reviewTab, setReviewTab] = useState<"staged" | "unstaged" | "all">("all");
   const [showCommitDialog, setShowCommitDialog] = useState(false);
   const [showDiffViewer, setShowDiffViewer] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>("session-1");
+
+  // Mock sessions data for now - will be replaced with real data from useDashboard
+  const [sessions] = useState<Session[]>([
+    { id: "session-1", name: "Auth Refactor", type: "local", status: "active", branch: "feature/auth", messageCount: 15, lastActivity: new Date().toISOString() },
+    { id: "session-2", name: "Add OAuth", type: "worktree", status: "idle", branch: "feature/oauth", messageCount: 8, lastActivity: new Date(Date.now() - 3600000).toISOString() },
+  ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { addNotification, unreadCount } = useNotifications();
 
   const {
     messages,
@@ -196,6 +207,17 @@ export default function Dashboard() {
           >
             {showReviewPane ? <PanelRightClose className="h-5 w-5" /> : <PanelRightOpen className="h-5 w-5" />}
           </button>
+          <button
+            onClick={() => setShowNotificationSettings(true)}
+            className="p-2 hover:bg-muted rounded-lg transition-colors relative"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
           <button className="p-2 hover:bg-muted rounded-lg transition-colors">
             <Settings className="h-5 w-5" />
           </button>
@@ -224,22 +246,21 @@ export default function Dashboard() {
             <div className="mb-6">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sessions</span>
-                <button className="p-1.5 hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
-                  <Plus className="h-4 w-4" />
-                </button>
               </div>
-              <div className="space-y-1">
-                <button className="flex w-full items-center gap-3 bg-primary/10 border border-primary/20 px-3 py-2.5 text-left text-sm rounded-lg transition-all hover:bg-primary/15">
-                  <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="truncate flex-1 font-medium">Auth Refactor</span>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Local</span>
-                </button>
-                <button className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/50 rounded-lg transition-colors">
-                  <span className="h-2 w-2 bg-yellow-500 rounded-full" />
-                  <span className="truncate flex-1">Add OAuth</span>
-                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Worktree</span>
-                </button>
-              </div>
+              <SessionsList
+                sessions={sessions}
+                activeSessionId={activeSessionId}
+                onSelect={setActiveSessionId}
+                onCreate={() => {
+                  addNotification("info", "Coming Soon", "Session creation will be available in a future update");
+                }}
+                onDelete={() => {
+                  addNotification("info", "Coming Soon", "Session deletion will be available in a future update");
+                }}
+                onRename={(id, newName) => {
+                  addNotification("success", "Session Renamed", `Session renamed to "${newName}"`);
+                }}
+              />
             </div>
 
             {/* Automations */}
@@ -757,6 +778,12 @@ export default function Dashboard() {
         onClose={closeTerminal}
         terminalOutputs={terminal.outputs}
         onOutputProcessed={clearTerminalOutput}
+      />
+
+      {/* Notification Settings Modal */}
+      <NotificationSettings
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
       />
 
       {/* Bottom Bar */}
