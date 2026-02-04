@@ -172,8 +172,8 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground font-mono text-sm">
-      {/* Header */}
-      <header className="flex h-12 md:h-10 items-center justify-between border-b border-border px-3 bg-card">
+      {/* Header - sticky on mobile */}
+      <header className="sticky top-0 z-30 flex h-12 md:h-10 items-center justify-between border-b border-border px-3 bg-card">
         <div className="flex items-center gap-2 md:gap-3">
           <button onClick={() => setShowSidebar(!showSidebar)} className="p-2 md:p-1 hover:bg-muted -ml-1">
             <Menu className="h-5 w-5 md:h-4 md:w-4" />
