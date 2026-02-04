@@ -179,10 +179,13 @@ async function handleClaudeMessage(session, content, protocol) {
       cwd: process.cwd(),
 
       onText: (text, done) => {
+        // Always send text deltas (even empty ones with done=true to signal completion)
         if (text) {
-          session.send(createTextDelta(text, done));
+          console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Text: ${chalk.green(text.slice(0, 50))}${text.length > 50 ? '...' : ''}`);
         }
+        session.send(createTextDelta(text || '', done));
         if (done) {
+          console.log(chalk.dim(`[${new Date().toISOString()}]`) + chalk.green(' Response complete'));
           session.setState('idle');
         }
       },
