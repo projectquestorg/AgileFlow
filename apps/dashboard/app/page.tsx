@@ -11,6 +11,7 @@ import {
   MessageBubble,
   ImageUpload,
   VoiceDictation,
+  QuestionDialog,
 } from "@/components/chat";
 import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
@@ -80,6 +81,9 @@ export default function Dashboard() {
     acceptInboxItem,
     dismissInboxItem,
     markInboxRead,
+    pendingQuestion,
+    answerQuestion,
+    dismissQuestion,
   } = useDashboard();
 
   const getFilteredFiles = () => {
@@ -552,6 +556,15 @@ export default function Dashboard() {
 
       {/* Notification Settings */}
       <NotificationSettings isOpen={showNotificationSettings} onClose={() => setShowNotificationSettings(false)} />
+
+      {/* Question Dialog */}
+      {pendingQuestion && (
+        <QuestionDialog
+          question={pendingQuestion}
+          onAnswer={answerQuestion}
+          onDismiss={dismissQuestion}
+        />
+      )}
 
       {/* Footer */}
       <footer className="flex h-10 md:h-7 items-center justify-between border-t border-border px-3 text-xs md:text-[10px] text-muted-foreground bg-card">

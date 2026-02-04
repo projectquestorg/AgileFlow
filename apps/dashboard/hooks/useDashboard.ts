@@ -92,6 +92,24 @@ export interface InboxItem {
   };
 }
 
+export interface QuestionOption {
+  label: string;
+  description: string;
+}
+
+export interface Question {
+  question: string;
+  header: string;
+  options: QuestionOption[];
+  multiSelect: boolean;
+}
+
+export interface PendingQuestion {
+  toolId: string;
+  questions: Question[];
+  timestamp: string;
+}
+
 export interface DashboardState {
   messages: Message[];
   tasks: Task[];
@@ -104,6 +122,7 @@ export interface DashboardState {
   terminal: TerminalState;
   automations: Automation[];
   inbox: InboxItem[];
+  pendingQuestion: PendingQuestion | null;
 }
 
 export interface DashboardHook extends DashboardState {
@@ -139,6 +158,9 @@ export interface DashboardHook extends DashboardState {
   markInboxRead: (id: string) => void;
   acceptInboxItem: (id: string) => void;
   dismissInboxItem: (id: string) => void;
+  // Question operations
+  answerQuestion: (answers: Record<string, string | string[]>) => void;
+  dismissQuestion: () => void;
 }
 
 export function useDashboard(): DashboardHook {
@@ -158,6 +180,7 @@ export function useDashboard(): DashboardHook {
   });
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null);
 
   // For handling terminal spawn promise
   const terminalSpawnResolvers = useRef<Map<string, (id: string | null) => void>>(new Map());
@@ -439,6 +462,18 @@ export function useDashboard(): DashboardHook {
         }
         break;
 
+      case "ask_user_question":
+        // Claude is asking the user a question
+        if (data.toolId && data.questions) {
+          setPendingQuestion({
+            toolId: data.toolId,
+            questions: data.questions,
+            timestamp: data.timestamp || new Date().toISOString(),
+          });
+          setIsThinking(false); // Pause thinking indicator while waiting for user
+        }
+        break;
+
       default:
         console.log("[Dashboard] Unknown message type:", data.type, data);
     }
@@ -671,6 +706,40 @@ export function useDashboard(): DashboardHook {
     [send]
   );
 
+  // Question operations
+  const answerQuestion = useCallback(
+    (answers: Record<string, string | string[]>) => {
+      if (!pendingQuestion) return;
+
+      // Send the answer back
+      send({
+        type: "user_answer",
+        toolId: pendingQuestion.toolId,
+        answers,
+      });
+
+      // Clear the pending question
+      setPendingQuestion(null);
+      setIsThinking(true); // Resume thinking indicator
+    },
+    [send, pendingQuestion]
+  );
+
+  const dismissQuestion = useCallback(() => {
+    if (!pendingQuestion) return;
+
+    // Send cancel/skip
+    send({
+      type: "user_answer",
+      toolId: pendingQuestion.toolId,
+      answers: {}, // Empty answers = skipped
+      skipped: true,
+    });
+
+    setPendingQuestion(null);
+    setIsThinking(true);
+  }, [send, pendingQuestion]);
+
   return {
     // State
     messages,
@@ -724,5 +793,10 @@ export function useDashboard(): DashboardHook {
     markInboxRead,
     acceptInboxItem,
     dismissInboxItem,
+
+    // Question operations
+    pendingQuestion,
+    answerQuestion,
+    dismissQuestion,
   };
 }

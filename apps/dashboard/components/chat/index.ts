@@ -10,3 +10,4 @@ export {
 } from "./LoadingSkeletons";
 export { ImageUpload } from "./ImageUpload";
 export { VoiceDictation } from "./VoiceDictation";
+export { QuestionDialog } from "./QuestionDialog";

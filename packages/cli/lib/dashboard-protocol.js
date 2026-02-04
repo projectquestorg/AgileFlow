@@ -75,6 +75,9 @@ const OutboundMessageType = {
   INBOX_LIST: 'inbox_list',             // List of inbox items
   INBOX_ITEM: 'inbox_item',             // Single inbox item
 
+  // User Interaction
+  ASK_USER_QUESTION: 'ask_user_question', // Claude is asking user a question
+
   // Errors
   ERROR: 'error',                       // General error
 };
@@ -119,6 +122,9 @@ const InboundMessageType = {
   AUTOMATION_LIST_REQUEST: 'automation_list_request', // Request automation list
   INBOX_LIST_REQUEST: 'inbox_list_request', // Request inbox list
   INBOX_ACTION: 'inbox_action',         // Accept/dismiss inbox item
+
+  // User Interaction Response
+  USER_ANSWER: 'user_answer',           // User's answer to AskUserQuestion
 };
 
 // ============================================================================
@@ -429,6 +435,26 @@ function createInboxItem(item) {
   };
 }
 
+/**
+ * Create an AskUserQuestion message
+ * @param {string} toolId - Tool call ID for response correlation
+ * @param {Object[]} questions - Array of questions with options
+ * @param {string} questions[].question - The question text
+ * @param {string} questions[].header - Short label for the question
+ * @param {Object[]} questions[].options - Available options
+ * @param {string} questions[].options[].label - Option label
+ * @param {string} questions[].options[].description - Option description
+ * @param {boolean} questions[].multiSelect - Whether multiple options can be selected
+ */
+function createAskUserQuestion(toolId, questions) {
+  return {
+    type: OutboundMessageType.ASK_USER_QUESTION,
+    toolId,
+    questions,
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // ============================================================================
 // Message Parsing & Validation
 // ============================================================================
@@ -506,6 +532,7 @@ module.exports = {
   createAutomationResult,
   createInboxList,
   createInboxItem,
+  createAskUserQuestion,
 
   // Parsing
   parseInboundMessage,

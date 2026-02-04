@@ -22,7 +22,7 @@
 
 const path = require('path');
 const { createDashboardServer, startDashboardServer, stopDashboardServer } = require('../lib/dashboard-server');
-const { createNotification, createTextDelta, createToolStart, createToolResult } = require('../lib/dashboard-protocol');
+const { createNotification, createTextDelta, createToolStart, createToolResult, createAskUserQuestion } = require('../lib/dashboard-protocol');
 const { createClaudeBridge } = require('../lib/claude-cli-bridge');
 
 // Parse command line arguments
@@ -292,6 +292,10 @@ async function handleClaudeMessage(session, content, projectRoot) {
       }
     },
     onToolStart: (id, name, input) => {
+      // Special handling for AskUserQuestion - send to dashboard for UI
+      if (name === 'AskUserQuestion' && input?.questions) {
+        session.send(createAskUserQuestion(id, input.questions));
+      }
       session.send(createToolStart(id, name, input));
     },
     onToolResult: (id, output, isError, toolName) => {
