@@ -327,8 +327,8 @@ export default function Dashboard() {
             </div>
           ) : (
             <>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4">
+              {/* Messages - extra bottom padding on mobile for fixed input */}
+              <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center">
                     <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-3" />
@@ -350,8 +350,8 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Input - sticky at bottom */}
-              <div className="sticky bottom-0 z-20 border-t border-border p-3 bg-background">
+              {/* Input - fixed at bottom on mobile for keyboard handling */}
+              <div className="md:relative fixed bottom-0 left-0 right-0 z-20 border-t border-border p-3 bg-background">
                 {pendingImage && (
                   <div className="max-w-3xl mx-auto mb-2 flex items-center gap-2 px-2 py-1.5 bg-muted text-xs">
                     <FileCode className="h-3 w-3" />
