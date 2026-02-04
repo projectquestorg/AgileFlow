@@ -30,11 +30,39 @@ const {
   createError,
   createNotification,
   createGitDiff,
+  createTerminalOutput,
+  createTerminalExit,
+  createAutomationList,
+  createAutomationStatus,
+  createAutomationResult,
+  createInboxList,
+  createInboxItem,
   parseInboundMessage,
   serializeMessage,
 } = require('./dashboard-protocol');
-const { getProjectRoot, isAgileflowProject } = require('./paths');
-const { execSync } = require('child_process');
+const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
+const { execSync, spawn } = require('child_process');
+const os = require('os');
+
+// Lazy-load automation modules to avoid circular dependencies
+let AutomationRegistry = null;
+let AutomationRunner = null;
+
+function getAutomationRegistry(rootDir) {
+  if (!AutomationRegistry) {
+    const mod = require('../scripts/lib/automation-registry');
+    AutomationRegistry = mod.getAutomationRegistry;
+  }
+  return AutomationRegistry({ rootDir });
+}
+
+function getAutomationRunner(rootDir) {
+  if (!AutomationRunner) {
+    const mod = require('../scripts/lib/automation-runner');
+    AutomationRunner = mod.getAutomationRunner;
+  }
+  return AutomationRunner({ rootDir });
+}
 
 // Default configuration
 const DEFAULT_PORT = 8765;
@@ -109,6 +137,300 @@ class DashboardSession {
 }
 
 /**
+ * Terminal instance for integrated terminal
+ */
+class TerminalInstance {
+  constructor(id, session, options = {}) {
+    this.id = id;
+    this.session = session;
+    this.cwd = options.cwd || session.projectRoot;
+    this.shell = options.shell || this.getDefaultShell();
+    this.cols = options.cols || 80;
+    this.rows = options.rows || 24;
+    this.pty = null;
+    this.closed = false;
+  }
+
+  /**
+   * Get the default shell for the current OS
+   */
+  getDefaultShell() {
+    if (process.platform === 'win32') {
+      return process.env.COMSPEC || 'cmd.exe';
+    }
+    return process.env.SHELL || '/bin/bash';
+  }
+
+  /**
+   * Start the terminal process
+   */
+  start() {
+    try {
+      // Try to use node-pty for proper PTY support
+      const pty = require('node-pty');
+
+      this.pty = pty.spawn(this.shell, [], {
+        name: 'xterm-256color',
+        cols: this.cols,
+        rows: this.rows,
+        cwd: this.cwd,
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          COLORTERM: 'truecolor',
+        },
+      });
+
+      this.pty.onData((data) => {
+        if (!this.closed) {
+          this.session.send(createTerminalOutput(this.id, data));
+        }
+      });
+
+      this.pty.onExit(({ exitCode }) => {
+        this.closed = true;
+        this.session.send(createTerminalExit(this.id, exitCode));
+      });
+
+      return true;
+    } catch (error) {
+      // Fallback to basic spawn if node-pty is not available
+      console.warn('[Terminal] node-pty not available, using basic spawn:', error.message);
+      return this.startBasicShell();
+    }
+  }
+
+  /**
+   * Fallback shell using basic spawn (no PTY)
+   * Note: This provides limited functionality without node-pty
+   */
+  startBasicShell() {
+    try {
+      // Use bash with interactive flag for better compatibility
+      this.pty = spawn(this.shell, ['-i'], {
+        cwd: this.cwd,
+        env: {
+          ...process.env,
+          TERM: 'dumb',
+          PS1: '\\w $ ', // Simple prompt
+        },
+        shell: false,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      // Track input buffer for local echo (since no PTY)
+      this.inputBuffer = '';
+
+      this.pty.stdout.on('data', (data) => {
+        if (!this.closed) {
+          this.session.send(createTerminalOutput(this.id, data.toString()));
+        }
+      });
+
+      this.pty.stderr.on('data', (data) => {
+        if (!this.closed) {
+          this.session.send(createTerminalOutput(this.id, data.toString()));
+        }
+      });
+
+      this.pty.on('close', (exitCode) => {
+        this.closed = true;
+        this.session.send(createTerminalExit(this.id, exitCode));
+      });
+
+      this.pty.on('error', (error) => {
+        console.error('[Terminal] Shell error:', error.message);
+        if (!this.closed) {
+          this.session.send(createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`));
+        }
+      });
+
+      // Send welcome message
+      setTimeout(() => {
+        if (!this.closed) {
+          const welcomeMsg = `\x1b[32mAgileFlow Terminal\x1b[0m (basic mode - node-pty not available)\r\n`;
+          const cwdMsg = `Working directory: ${this.cwd}\r\n\r\n`;
+          this.session.send(createTerminalOutput(this.id, welcomeMsg + cwdMsg));
+        }
+      }, 100);
+
+      return true;
+    } catch (error) {
+      console.error('[Terminal] Failed to start basic shell:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Write data to the terminal
+   * @param {string} data - Data to write (user input)
+   */
+  write(data) {
+    if (this.pty && !this.closed) {
+      if (this.pty.write) {
+        // node-pty style - has built-in echo
+        this.pty.write(data);
+      } else if (this.pty.stdin) {
+        // basic spawn style - need manual echo
+        // Echo the input back to the terminal (since no PTY)
+        let echoData = data;
+
+        // Handle special characters
+        if (data === '\r' || data === '\n') {
+          echoData = '\r\n';
+        } else if (data === '\x7f' || data === '\b') {
+          // Backspace - move cursor back and clear
+          echoData = '\b \b';
+        } else if (data === '\x03') {
+          // Ctrl+C
+          echoData = '^C\r\n';
+        }
+
+        // Echo to terminal
+        this.session.send(createTerminalOutput(this.id, echoData));
+
+        // Send to shell stdin
+        this.pty.stdin.write(data);
+      }
+    }
+  }
+
+  /**
+   * Resize the terminal
+   * @param {number} cols - New column count
+   * @param {number} rows - New row count
+   */
+  resize(cols, rows) {
+    this.cols = cols;
+    this.rows = rows;
+    if (this.pty && this.pty.resize && !this.closed) {
+      this.pty.resize(cols, rows);
+    }
+  }
+
+  /**
+   * Close the terminal
+   */
+  close() {
+    this.closed = true;
+    if (this.pty) {
+      if (this.pty.kill) {
+        this.pty.kill();
+      } else if (this.pty.destroy) {
+        this.pty.destroy();
+      }
+    }
+  }
+}
+
+/**
+ * Terminal manager for handling multiple terminals per session
+ */
+class TerminalManager {
+  constructor() {
+    this.terminals = new Map();
+  }
+
+  /**
+   * Create a new terminal for a session
+   * @param {DashboardSession} session - The session
+   * @param {Object} options - Terminal options
+   * @returns {string} - Terminal ID
+   */
+  createTerminal(session, options = {}) {
+    const terminalId = options.id || crypto.randomBytes(8).toString('hex');
+    const terminal = new TerminalInstance(terminalId, session, {
+      cwd: options.cwd || session.projectRoot,
+      cols: options.cols,
+      rows: options.rows,
+    });
+
+    if (terminal.start()) {
+      this.terminals.set(terminalId, terminal);
+      console.log(`[Terminal ${terminalId}] Created for session ${session.id}`);
+      return terminalId;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get a terminal by ID
+   * @param {string} terminalId - Terminal ID
+   * @returns {TerminalInstance | undefined}
+   */
+  getTerminal(terminalId) {
+    return this.terminals.get(terminalId);
+  }
+
+  /**
+   * Write to a terminal
+   * @param {string} terminalId - Terminal ID
+   * @param {string} data - Data to write
+   */
+  writeToTerminal(terminalId, data) {
+    const terminal = this.terminals.get(terminalId);
+    if (terminal) {
+      terminal.write(data);
+    }
+  }
+
+  /**
+   * Resize a terminal
+   * @param {string} terminalId - Terminal ID
+   * @param {number} cols - New columns
+   * @param {number} rows - New rows
+   */
+  resizeTerminal(terminalId, cols, rows) {
+    const terminal = this.terminals.get(terminalId);
+    if (terminal) {
+      terminal.resize(cols, rows);
+    }
+  }
+
+  /**
+   * Close a terminal
+   * @param {string} terminalId - Terminal ID
+   */
+  closeTerminal(terminalId) {
+    const terminal = this.terminals.get(terminalId);
+    if (terminal) {
+      terminal.close();
+      this.terminals.delete(terminalId);
+      console.log(`[Terminal ${terminalId}] Closed`);
+    }
+  }
+
+  /**
+   * Close all terminals for a session
+   * @param {string} sessionId - Session ID
+   */
+  closeSessionTerminals(sessionId) {
+    for (const [terminalId, terminal] of this.terminals) {
+      if (terminal.session.id === sessionId) {
+        terminal.close();
+        this.terminals.delete(terminalId);
+      }
+    }
+  }
+
+  /**
+   * Get all terminals for a session
+   * @param {string} sessionId - Session ID
+   * @returns {Array<string>} - Terminal IDs
+   */
+  getSessionTerminals(sessionId) {
+    const terminalIds = [];
+    for (const [terminalId, terminal] of this.terminals) {
+      if (terminal.session.id === sessionId) {
+        terminalIds.push(terminalId);
+      }
+    }
+    return terminalIds;
+  }
+}
+
+/**
  * Dashboard WebSocket Server
  */
 class DashboardServer extends EventEmitter {
@@ -124,6 +446,17 @@ class DashboardServer extends EventEmitter {
     // Session management
     this.sessions = new Map();
 
+    // Terminal management
+    this.terminalManager = new TerminalManager();
+
+    // Automation management
+    this._automationRegistry = null;
+    this._automationRunner = null;
+    this._runningAutomations = new Map(); // automationId -> { startTime, session }
+
+    // Inbox management
+    this._inbox = new Map(); // itemId -> InboxItem
+
     // HTTP server for WebSocket upgrade
     this.httpServer = null;
 
@@ -131,6 +464,75 @@ class DashboardServer extends EventEmitter {
     if (!isAgileflowProject(this.projectRoot)) {
       throw new Error(`Not an AgileFlow project: ${this.projectRoot}`);
     }
+
+    // Initialize automation registry lazily
+    this._initAutomations();
+  }
+
+  /**
+   * Initialize automation registry and runner
+   */
+  _initAutomations() {
+    try {
+      this._automationRegistry = getAutomationRegistry(this.projectRoot);
+      this._automationRunner = getAutomationRunner(this.projectRoot);
+
+      // Listen to runner events
+      this._automationRunner.on('started', ({ automationId }) => {
+        this._runningAutomations.set(automationId, { startTime: Date.now() });
+        this.broadcast(createAutomationStatus(automationId, 'running'));
+      });
+
+      this._automationRunner.on('completed', ({ automationId, result }) => {
+        this._runningAutomations.delete(automationId);
+        this.broadcast(createAutomationStatus(automationId, 'completed', result));
+
+        // Add result to inbox if it has output or changes
+        if (result.output || result.changes) {
+          this._addToInbox(automationId, result);
+        }
+      });
+
+      this._automationRunner.on('failed', ({ automationId, result }) => {
+        this._runningAutomations.delete(automationId);
+        this.broadcast(createAutomationStatus(automationId, 'error', { error: result.error }));
+
+        // Add failure to inbox
+        this._addToInbox(automationId, result);
+      });
+    } catch (error) {
+      console.error('[DashboardServer] Failed to init automations:', error.message);
+    }
+  }
+
+  /**
+   * Add an automation result to the inbox
+   * @param {string} automationId - Automation ID
+   * @param {Object} result - Run result
+   */
+  _addToInbox(automationId, result) {
+    const automation = this._automationRegistry?.get(automationId);
+    const itemId = `inbox_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const item = {
+      id: itemId,
+      automationId,
+      title: automation?.name || automationId,
+      summary: result.success
+        ? (result.output?.slice(0, 200) || 'Completed successfully')
+        : (result.error?.slice(0, 200) || 'Failed'),
+      timestamp: new Date().toISOString(),
+      status: 'unread',
+      result: {
+        success: result.success,
+        output: result.output,
+        error: result.error,
+        duration_ms: result.duration_ms,
+      },
+    };
+
+    this._inbox.set(itemId, item);
+    this.broadcast(createInboxItem(item));
   }
 
   /**
@@ -284,6 +686,10 @@ class DashboardServer extends EventEmitter {
     // Send initial git status
     this.sendGitStatus(session);
 
+    // Send initial automation list and inbox
+    this.sendAutomationList(session);
+    this.sendInboxList(session);
+
     // Handle incoming messages
     let buffer = Buffer.alloc(0);
 
@@ -371,6 +777,42 @@ class DashboardServer extends EventEmitter {
         this.closeSession(session.id);
         break;
 
+      case InboundMessageType.TERMINAL_SPAWN:
+        this.handleTerminalSpawn(session, message);
+        break;
+
+      case InboundMessageType.TERMINAL_INPUT:
+        this.handleTerminalInput(session, message);
+        break;
+
+      case InboundMessageType.TERMINAL_RESIZE:
+        this.handleTerminalResize(session, message);
+        break;
+
+      case InboundMessageType.TERMINAL_CLOSE:
+        this.handleTerminalClose(session, message);
+        break;
+
+      case InboundMessageType.AUTOMATION_LIST_REQUEST:
+        this.sendAutomationList(session);
+        break;
+
+      case InboundMessageType.AUTOMATION_RUN:
+        this.handleAutomationRun(session, message);
+        break;
+
+      case InboundMessageType.AUTOMATION_STOP:
+        this.handleAutomationStop(session, message);
+        break;
+
+      case InboundMessageType.INBOX_LIST_REQUEST:
+        this.sendInboxList(session);
+        break;
+
+      case InboundMessageType.INBOX_ACTION:
+        this.handleInboxAction(session, message);
+        break;
+
       default:
         console.log(`[Session ${session.id}] Unhandled message type: ${message.type}`);
         this.emit('message', session, message);
@@ -422,8 +864,16 @@ class DashboardServer extends EventEmitter {
       case 'status':
         this.emit('refresh:status', session);
         break;
+      case 'automations':
+        this.sendAutomationList(session);
+        break;
+      case 'inbox':
+        this.sendInboxList(session);
+        break;
       default:
         this.sendGitStatus(session);
+        this.sendAutomationList(session);
+        this.sendInboxList(session);
         this.emit('refresh:all', session);
     }
   }
@@ -647,11 +1097,288 @@ class DashboardServer extends EventEmitter {
   }
 
   /**
+   * Handle terminal spawn request
+   */
+  handleTerminalSpawn(session, message) {
+    const { cols, rows, cwd } = message;
+
+    const terminalId = this.terminalManager.createTerminal(session, {
+      cols: cols || 80,
+      rows: rows || 24,
+      cwd: cwd || this.projectRoot,
+    });
+
+    if (terminalId) {
+      session.send({
+        type: 'terminal_spawned',
+        terminalId,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      session.send(createError('TERMINAL_ERROR', 'Failed to spawn terminal'));
+    }
+  }
+
+  /**
+   * Handle terminal input
+   */
+  handleTerminalInput(session, message) {
+    const { terminalId, data } = message;
+
+    if (!terminalId || !data) {
+      return;
+    }
+
+    this.terminalManager.writeToTerminal(terminalId, data);
+  }
+
+  /**
+   * Handle terminal resize
+   */
+  handleTerminalResize(session, message) {
+    const { terminalId, cols, rows } = message;
+
+    if (!terminalId || !cols || !rows) {
+      return;
+    }
+
+    this.terminalManager.resizeTerminal(terminalId, cols, rows);
+  }
+
+  /**
+   * Handle terminal close
+   */
+  handleTerminalClose(session, message) {
+    const { terminalId } = message;
+
+    if (!terminalId) {
+      return;
+    }
+
+    this.terminalManager.closeTerminal(terminalId);
+    session.send(createNotification('info', 'Terminal', 'Terminal closed'));
+  }
+
+  // ==========================================================================
+  // Automation Handlers
+  // ==========================================================================
+
+  /**
+   * Send automation list to session
+   */
+  sendAutomationList(session) {
+    if (!this._automationRegistry) {
+      session.send(createAutomationList([]));
+      return;
+    }
+
+    try {
+      const automations = this._automationRegistry.list();
+
+      // Enrich with running status and next run time
+      const enriched = automations.map(automation => {
+        const isRunning = this._runningAutomations.has(automation.id);
+        const lastRun = this._automationRegistry.getRunHistory(automation.id, 1)[0];
+        const nextRun = this._calculateNextRun(automation);
+
+        return {
+          ...automation,
+          status: isRunning ? 'running' : (automation.enabled ? 'idle' : 'disabled'),
+          lastRun: lastRun?.at,
+          lastRunSuccess: lastRun?.success,
+          nextRun,
+        };
+      });
+
+      session.send(createAutomationList(enriched));
+    } catch (error) {
+      console.error('[Automations] List error:', error.message);
+      session.send(createAutomationList([]));
+    }
+  }
+
+  /**
+   * Calculate next run time for an automation
+   */
+  _calculateNextRun(automation) {
+    if (!automation.enabled || !automation.schedule) return null;
+
+    const now = new Date();
+    const schedule = automation.schedule;
+
+    switch (schedule.type) {
+      case 'on_session':
+        return 'Every session';
+      case 'daily':
+        // Next day at midnight (or specified hour)
+        const nextDaily = new Date(now);
+        nextDaily.setDate(nextDaily.getDate() + 1);
+        nextDaily.setHours(schedule.hour || 0, 0, 0, 0);
+        return nextDaily.toISOString();
+      case 'weekly':
+        // Next occurrence of the specified day
+        const targetDay = typeof schedule.day === 'string'
+          ? ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(schedule.day.toLowerCase())
+          : (schedule.day || 0);
+        const nextWeekly = new Date(now);
+        const daysUntil = (targetDay - now.getDay() + 7) % 7 || 7;
+        nextWeekly.setDate(nextWeekly.getDate() + daysUntil);
+        nextWeekly.setHours(schedule.hour || 0, 0, 0, 0);
+        return nextWeekly.toISOString();
+      case 'monthly':
+        // Next occurrence of the specified date
+        const nextMonthly = new Date(now);
+        const targetDate = schedule.date || 1;
+        if (now.getDate() >= targetDate) {
+          nextMonthly.setMonth(nextMonthly.getMonth() + 1);
+        }
+        nextMonthly.setDate(targetDate);
+        nextMonthly.setHours(schedule.hour || 0, 0, 0, 0);
+        return nextMonthly.toISOString();
+      case 'interval':
+        const hours = schedule.hours || 24;
+        return `Every ${hours} hour${hours > 1 ? 's' : ''}`;
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Handle automation run request
+   */
+  async handleAutomationRun(session, message) {
+    const { id: automationId } = message;
+
+    if (!automationId) {
+      session.send(createError('INVALID_REQUEST', 'Automation ID is required'));
+      return;
+    }
+
+    if (!this._automationRunner) {
+      session.send(createError('AUTOMATION_ERROR', 'Automation runner not initialized'));
+      return;
+    }
+
+    try {
+      // Check if already running
+      if (this._runningAutomations.has(automationId)) {
+        session.send(createNotification('warning', 'Automation', `${automationId} is already running`));
+        return;
+      }
+
+      session.send(createNotification('info', 'Automation', `Starting ${automationId}...`));
+
+      // Run the automation (async)
+      const result = await this._automationRunner.run(automationId);
+
+      // Send result notification
+      if (result.success) {
+        session.send(createNotification('success', 'Automation', `${automationId} completed successfully`));
+      } else {
+        session.send(createNotification('error', 'Automation', `${automationId} failed: ${result.error}`));
+      }
+
+      // Send final status
+      session.send(createAutomationStatus(automationId, result.success ? 'idle' : 'error', result));
+
+      // Refresh the list
+      this.sendAutomationList(session);
+    } catch (error) {
+      session.send(createError('AUTOMATION_ERROR', error.message));
+      session.send(createAutomationStatus(automationId, 'error', { error: error.message }));
+    }
+  }
+
+  /**
+   * Handle automation stop request
+   */
+  handleAutomationStop(session, message) {
+    const { id: automationId } = message;
+
+    if (!automationId) {
+      session.send(createError('INVALID_REQUEST', 'Automation ID is required'));
+      return;
+    }
+
+    // Cancel via runner
+    if (this._automationRunner) {
+      this._automationRunner.cancelAll(); // TODO: Add single automation cancel
+    }
+
+    this._runningAutomations.delete(automationId);
+    session.send(createAutomationStatus(automationId, 'idle'));
+    session.send(createNotification('info', 'Automation', `${automationId} stopped`));
+  }
+
+  // ==========================================================================
+  // Inbox Handlers
+  // ==========================================================================
+
+  /**
+   * Send inbox list to session
+   */
+  sendInboxList(session) {
+    const items = Array.from(this._inbox.values())
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    session.send(createInboxList(items));
+  }
+
+  /**
+   * Handle inbox action (accept, dismiss, mark read)
+   */
+  handleInboxAction(session, message) {
+    const { id: itemId, action } = message;
+
+    if (!itemId) {
+      session.send(createError('INVALID_REQUEST', 'Item ID is required'));
+      return;
+    }
+
+    const item = this._inbox.get(itemId);
+    if (!item) {
+      session.send(createError('NOT_FOUND', `Inbox item ${itemId} not found`));
+      return;
+    }
+
+    switch (action) {
+      case 'accept':
+        // Mark as accepted and remove
+        item.status = 'accepted';
+        session.send(createNotification('success', 'Inbox', `Accepted: ${item.title}`));
+        this._inbox.delete(itemId);
+        break;
+
+      case 'dismiss':
+        // Mark as dismissed and remove
+        item.status = 'dismissed';
+        session.send(createNotification('info', 'Inbox', `Dismissed: ${item.title}`));
+        this._inbox.delete(itemId);
+        break;
+
+      case 'read':
+        // Mark as read
+        item.status = 'read';
+        break;
+
+      default:
+        session.send(createError('INVALID_ACTION', `Unknown action: ${action}`));
+        return;
+    }
+
+    // Send updated inbox list
+    this.sendInboxList(session);
+  }
+
+  /**
    * Close a session
    */
   closeSession(sessionId) {
     const session = this.sessions.get(sessionId);
     if (session) {
+      // Close all terminals for this session
+      this.terminalManager.closeSessionTerminals(sessionId);
+
       if (session.ws) {
         session.ws.end();
       }
@@ -827,6 +1554,8 @@ async function stopDashboardServer(server) {
 module.exports = {
   DashboardServer,
   DashboardSession,
+  TerminalInstance,
+  TerminalManager,
   createDashboardServer,
   startDashboardServer,
   stopDashboardServer,

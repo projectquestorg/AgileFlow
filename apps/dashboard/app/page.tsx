@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
-  Send, Terminal, Plus, GitBranch, Folder, Bot, Settings, Timer, Inbox,
+  Send, Terminal, Plus, GitBranch, Folder, Bot, Settings,
   Menu, X, PanelRightOpen, PanelRightClose, Sparkles, Code, TestTube,
   FileText, Zap, ChevronDown, MessageSquare, Play, Loader2, StopCircle,
   Minus, GitCommit,
@@ -16,6 +16,8 @@ import {
   GitStatusSkeleton,
 } from "@/components/chat";
 import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
+import { TerminalPanel } from "@/components/terminal";
+import { AutomationsList, InboxList } from "@/components/sidebar";
 
 // Provider configurations with icons
 const providers = [
@@ -69,6 +71,22 @@ export default function Dashboard() {
     unstageAll,
     commit,
     clearDiff,
+    // Terminal operations
+    terminal,
+    spawnTerminal,
+    terminalInput,
+    terminalResize,
+    closeTerminal,
+    clearTerminalOutput,
+    // Automation operations
+    automations,
+    runAutomation,
+    stopAutomation,
+    // Inbox operations
+    inbox,
+    acceptInboxItem,
+    dismissInboxItem,
+    markInboxRead,
   } = useDashboard();
 
   // Filter files based on active tab
@@ -107,6 +125,19 @@ export default function Dashboard() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Keyboard shortcut: Cmd/Ctrl+J to toggle terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "j") {
+        e.preventDefault();
+        setShowTerminal((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -215,29 +246,35 @@ export default function Dashboard() {
             <div className="mb-6">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Automations</span>
+                {automations.filter(a => a.status === "running").length > 0 && (
+                  <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                    {automations.filter(a => a.status === "running").length} running
+                  </span>
+                )}
               </div>
-              <div className="space-y-1">
-                <button className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/50 rounded-lg transition-colors group">
-                  <Timer className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="truncate flex-1">Daily CI</span>
-                  <span className="text-[10px] text-muted-foreground">8:00 AM</span>
-                </button>
-              </div>
+              <AutomationsList
+                automations={automations}
+                onRun={runAutomation}
+                onStop={stopAutomation}
+              />
             </div>
 
             {/* Inbox */}
             <div className="mb-6">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Inbox</span>
-                <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">2</span>
+                {inbox.filter(i => i.status === "unread").length > 0 && (
+                  <span className="text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-semibold">
+                    {inbox.filter(i => i.status === "unread").length}
+                  </span>
+                )}
               </div>
-              <div className="space-y-1">
-                <button className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/50 rounded-lg transition-colors group">
-                  <Inbox className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="truncate flex-1">Bug fix ready</span>
-                  <span className="h-2 w-2 bg-primary rounded-full" />
-                </button>
-              </div>
+              <InboxList
+                items={inbox}
+                onAccept={acceptInboxItem}
+                onDismiss={dismissInboxItem}
+                onMarkRead={markInboxRead}
+              />
             </div>
           </div>
 
@@ -709,32 +746,18 @@ export default function Dashboard() {
         stagedFiles={gitStatus?.staged || []}
       />
 
-      {/* Terminal (Toggle) */}
-      {showTerminal && (
-        <div className="h-40 sm:h-52 border-t border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground">Terminal</span>
-            </div>
-            <button
-              onClick={() => setShowTerminal(false)}
-              className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="p-4 font-mono text-xs sm:text-sm text-muted-foreground overflow-auto h-[calc(100%-40px)]">
-            <div className="text-green-400">$ agileflow serve --port 8765</div>
-            <div className="text-primary mt-1">✓ WebSocket server running on ws://localhost:8765</div>
-            <div className="text-muted-foreground/70 mt-1">Waiting for connections...</div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-green-400">$</span>
-              <span className="animate-pulse">_</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Integrated Terminal Panel */}
+      <TerminalPanel
+        isConnected={connectionStatus === "connected"}
+        isExpanded={showTerminal}
+        onToggle={() => setShowTerminal(!showTerminal)}
+        onSpawn={spawnTerminal}
+        onInput={terminalInput}
+        onResize={terminalResize}
+        onClose={closeTerminal}
+        terminalOutputs={terminal.outputs}
+        onOutputProcessed={clearTerminalOutput}
+      />
 
       {/* Bottom Bar */}
       <footer className="flex h-9 items-center justify-between border-t border-border px-4 text-xs text-muted-foreground bg-card/30">

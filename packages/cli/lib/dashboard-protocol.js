@@ -63,6 +63,17 @@ const OutboundMessageType = {
 
   // Terminal
   TERMINAL_OUTPUT: 'terminal_output',   // Terminal output data
+  TERMINAL_RESIZE: 'terminal_resize',   // Terminal resize acknowledgment
+  TERMINAL_EXIT: 'terminal_exit',       // Terminal process exited
+
+  // Automations
+  AUTOMATION_LIST: 'automation_list',   // List of all automations
+  AUTOMATION_STATUS: 'automation_status', // Automation run status update
+  AUTOMATION_RESULT: 'automation_result', // Automation run completed
+
+  // Inbox
+  INBOX_LIST: 'inbox_list',             // List of inbox items
+  INBOX_ITEM: 'inbox_item',             // Single inbox item
 
   // Errors
   ERROR: 'error',                       // General error
@@ -98,10 +109,16 @@ const InboundMessageType = {
 
   // Terminal
   TERMINAL_INPUT: 'terminal_input',     // Terminal stdin
+  TERMINAL_RESIZE: 'terminal_resize',   // Resize terminal
+  TERMINAL_SPAWN: 'terminal_spawn',     // Spawn new terminal
+  TERMINAL_CLOSE: 'terminal_close',     // Close terminal
 
   // Automation
   AUTOMATION_RUN: 'automation_run',     // Run automation
   AUTOMATION_STOP: 'automation_stop',   // Stop automation
+  AUTOMATION_LIST_REQUEST: 'automation_list_request', // Request automation list
+  INBOX_LIST_REQUEST: 'inbox_list_request', // Request inbox list
+  INBOX_ACTION: 'inbox_action',         // Accept/dismiss inbox item
 };
 
 // ============================================================================
@@ -318,6 +335,100 @@ function createGitDiff(filePath, diff, stats = {}) {
   };
 }
 
+/**
+ * Create a terminal output message
+ * @param {string} terminalId - Terminal instance ID
+ * @param {string} data - Output data (can include ANSI codes)
+ */
+function createTerminalOutput(terminalId, data) {
+  return {
+    type: OutboundMessageType.TERMINAL_OUTPUT,
+    terminalId,
+    data,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create a terminal exit message
+ * @param {string} terminalId - Terminal instance ID
+ * @param {number} exitCode - Process exit code
+ */
+function createTerminalExit(terminalId, exitCode) {
+  return {
+    type: OutboundMessageType.TERMINAL_EXIT,
+    terminalId,
+    exitCode,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an automation list message
+ * @param {Object[]} automations - Array of automation objects
+ */
+function createAutomationList(automations) {
+  return {
+    type: OutboundMessageType.AUTOMATION_LIST,
+    automations,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an automation status update message
+ * @param {string} automationId - Automation ID
+ * @param {string} status - Status (idle, running, completed, error)
+ * @param {Object} [progress] - Progress information
+ */
+function createAutomationStatus(automationId, status, progress = {}) {
+  return {
+    type: OutboundMessageType.AUTOMATION_STATUS,
+    automationId,
+    status,
+    ...progress,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an automation result message
+ * @param {string} automationId - Automation ID
+ * @param {Object} result - Automation run result
+ */
+function createAutomationResult(automationId, result) {
+  return {
+    type: OutboundMessageType.AUTOMATION_RESULT,
+    automationId,
+    ...result,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an inbox list message
+ * @param {Object[]} items - Array of inbox items
+ */
+function createInboxList(items) {
+  return {
+    type: OutboundMessageType.INBOX_LIST,
+    items,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create an inbox item message
+ * @param {Object} item - Inbox item
+ */
+function createInboxItem(item) {
+  return {
+    type: OutboundMessageType.INBOX_ITEM,
+    ...item,
+    timestamp: new Date().toISOString(),
+  };
+}
+
 // ============================================================================
 // Message Parsing & Validation
 // ============================================================================
@@ -385,9 +496,16 @@ module.exports = {
   createBashOutput,
   createGitStatus,
   createGitDiff,
+  createTerminalOutput,
+  createTerminalExit,
   createTaskUpdate,
   createNotification,
   createError,
+  createAutomationList,
+  createAutomationStatus,
+  createAutomationResult,
+  createInboxList,
+  createInboxItem,
 
   // Parsing
   parseInboundMessage,

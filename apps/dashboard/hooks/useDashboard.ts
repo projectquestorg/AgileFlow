@@ -51,6 +51,47 @@ export interface FileDiff {
   staged: boolean;
 }
 
+export interface TerminalState {
+  activeTerminals: string[];
+  outputs: Record<string, string>;
+}
+
+export interface Automation {
+  id: string;
+  name: string;
+  description?: string;
+  schedule?: {
+    type: "daily" | "weekly" | "monthly" | "interval" | "on_session";
+    hour?: number;
+    day?: string | number;
+    date?: number;
+    hours?: number;
+  };
+  command?: string;
+  script?: string;
+  enabled: boolean;
+  timeout?: number;
+  status: "idle" | "running" | "error" | "disabled";
+  lastRun?: string;
+  lastRunSuccess?: boolean;
+  nextRun?: string | null;
+}
+
+export interface InboxItem {
+  id: string;
+  automationId: string;
+  title: string;
+  summary: string;
+  timestamp: string;
+  status: "unread" | "read" | "accepted" | "dismissed";
+  result?: {
+    success: boolean;
+    output?: string;
+    error?: string;
+    duration_ms?: number;
+  };
+}
+
 export interface DashboardState {
   messages: Message[];
   tasks: Task[];
@@ -60,6 +101,9 @@ export interface DashboardState {
   currentDiff: FileDiff | null;
   diffLoading: boolean;
   selectedFile: string | null;
+  terminal: TerminalState;
+  automations: Automation[];
+  inbox: InboxItem[];
 }
 
 export interface DashboardHook extends DashboardState {
@@ -80,6 +124,21 @@ export interface DashboardHook extends DashboardState {
   unstageAll: () => void;
   commit: (message: string, options?: { push?: boolean }) => void;
   clearDiff: () => void;
+  // Terminal operations
+  spawnTerminal: () => Promise<string | null>;
+  terminalInput: (terminalId: string, data: string) => void;
+  terminalResize: (terminalId: string, cols: number, rows: number) => void;
+  closeTerminal: (terminalId: string) => void;
+  clearTerminalOutput: (terminalId: string) => void;
+  // Automation operations
+  refreshAutomations: () => void;
+  runAutomation: (id: string) => void;
+  stopAutomation: (id: string) => void;
+  // Inbox operations
+  refreshInbox: () => void;
+  markInboxRead: (id: string) => void;
+  acceptInboxItem: (id: string) => void;
+  dismissInboxItem: (id: string) => void;
 }
 
 export function useDashboard(): DashboardHook {
@@ -93,6 +152,15 @@ export function useDashboard(): DashboardHook {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [wsUrl, setWsUrl] = useState<string>("ws://localhost:8765");
   const [wsApiKey, setWsApiKey] = useState<string | undefined>(undefined);
+  const [terminal, setTerminal] = useState<TerminalState>({
+    activeTerminals: [],
+    outputs: {},
+  });
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
+
+  // For handling terminal spawn promise
+  const terminalSpawnResolvers = useRef<Map<string, (id: string | null) => void>>(new Map());
 
   const streamingMessageRef = useRef<string>("");
   const streamingMessageIdRef = useRef<string>("");
@@ -284,6 +352,93 @@ export function useDashboard(): DashboardHook {
         console.error("[Dashboard] Error:", data.code, data.message);
         break;
 
+      case "terminal_spawned":
+        // Terminal was created
+        if (data.terminalId) {
+          setTerminal((prev) => ({
+            ...prev,
+            activeTerminals: [...prev.activeTerminals, data.terminalId],
+          }));
+          // Resolve any pending spawn promise
+          const resolver = terminalSpawnResolvers.current.get("pending");
+          if (resolver) {
+            resolver(data.terminalId);
+            terminalSpawnResolvers.current.delete("pending");
+          }
+        }
+        break;
+
+      case "terminal_output":
+        // Terminal output received
+        if (data.terminalId && data.data) {
+          setTerminal((prev) => ({
+            ...prev,
+            outputs: {
+              ...prev.outputs,
+              [data.terminalId]: (prev.outputs[data.terminalId] || "") + data.data,
+            },
+          }));
+        }
+        break;
+
+      case "terminal_exit":
+        // Terminal exited
+        if (data.terminalId) {
+          setTerminal((prev) => ({
+            ...prev,
+            activeTerminals: prev.activeTerminals.filter((id) => id !== data.terminalId),
+          }));
+        }
+        break;
+
+      case "automation_list":
+        // Full automation list
+        if (data.automations) {
+          setAutomations(data.automations);
+        }
+        break;
+
+      case "automation_status":
+        // Automation status update
+        if (data.automationId) {
+          setAutomations((prev) =>
+            prev.map((a) =>
+              a.id === data.automationId
+                ? { ...a, status: data.status as Automation["status"] }
+                : a
+            )
+          );
+        }
+        break;
+
+      case "automation_result":
+        // Automation completed - refresh list
+        // Result will be added to inbox via inbox_item message
+        break;
+
+      case "inbox_list":
+        // Full inbox list
+        if (data.items) {
+          setInbox(data.items);
+        }
+        break;
+
+      case "inbox_item":
+        // New inbox item
+        if (data.id) {
+          setInbox((prev) => {
+            // Check if item already exists
+            const exists = prev.some((item) => item.id === data.id);
+            if (exists) {
+              return prev.map((item) =>
+                item.id === data.id ? { ...item, ...data } : item
+              );
+            }
+            return [data, ...prev];
+          });
+        }
+        break;
+
       default:
         console.log("[Dashboard] Unknown message type:", data.type, data);
     }
@@ -424,6 +579,98 @@ export function useDashboard(): DashboardHook {
     setSelectedFile(null);
   }, []);
 
+  // Terminal operations
+  const spawnTerminal = useCallback((): Promise<string | null> => {
+    return new Promise((resolve) => {
+      terminalSpawnResolvers.current.set("pending", resolve);
+      send({ type: "terminal_spawn", cols: 80, rows: 24 });
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        const resolver = terminalSpawnResolvers.current.get("pending");
+        if (resolver) {
+          resolver(null);
+          terminalSpawnResolvers.current.delete("pending");
+        }
+      }, 5000);
+    });
+  }, [send]);
+
+  const terminalInput = useCallback(
+    (terminalId: string, data: string) => {
+      send({ type: "terminal_input", terminalId, data });
+    },
+    [send]
+  );
+
+  const terminalResize = useCallback(
+    (terminalId: string, cols: number, rows: number) => {
+      send({ type: "terminal_resize", terminalId, cols, rows });
+    },
+    [send]
+  );
+
+  const closeTerminal = useCallback(
+    (terminalId: string) => {
+      send({ type: "terminal_close", terminalId });
+    },
+    [send]
+  );
+
+  const clearTerminalOutput = useCallback((terminalId: string) => {
+    setTerminal((prev) => ({
+      ...prev,
+      outputs: {
+        ...prev.outputs,
+        [terminalId]: "",
+      },
+    }));
+  }, []);
+
+  // Automation operations
+  const refreshAutomations = useCallback(() => {
+    send({ type: "automation_list_request" });
+  }, [send]);
+
+  const runAutomation = useCallback(
+    (id: string) => {
+      send({ type: "automation_run", id });
+    },
+    [send]
+  );
+
+  const stopAutomation = useCallback(
+    (id: string) => {
+      send({ type: "automation_stop", id });
+    },
+    [send]
+  );
+
+  // Inbox operations
+  const refreshInbox = useCallback(() => {
+    send({ type: "inbox_list_request" });
+  }, [send]);
+
+  const markInboxRead = useCallback(
+    (id: string) => {
+      send({ type: "inbox_action", id, action: "read" });
+    },
+    [send]
+  );
+
+  const acceptInboxItem = useCallback(
+    (id: string) => {
+      send({ type: "inbox_action", id, action: "accept" });
+    },
+    [send]
+  );
+
+  const dismissInboxItem = useCallback(
+    (id: string) => {
+      send({ type: "inbox_action", id, action: "dismiss" });
+    },
+    [send]
+  );
+
   return {
     // State
     messages,
@@ -434,6 +681,8 @@ export function useDashboard(): DashboardHook {
     currentDiff,
     diffLoading,
     selectedFile,
+    automations,
+    inbox,
 
     // Connection
     connectionStatus,
@@ -456,5 +705,24 @@ export function useDashboard(): DashboardHook {
     unstageAll,
     commit,
     clearDiff,
+
+    // Terminal operations
+    terminal,
+    spawnTerminal,
+    terminalInput,
+    terminalResize,
+    closeTerminal,
+    clearTerminalOutput,
+
+    // Automation operations
+    refreshAutomations,
+    runAutomation,
+    stopAutomation,
+
+    // Inbox operations
+    refreshInbox,
+    markInboxRead,
+    acceptInboxItem,
+    dismissInboxItem,
   };
 }
