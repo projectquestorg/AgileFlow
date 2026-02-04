@@ -14,12 +14,14 @@ import {
   ConnectionStatusBar,
   TaskPanelSkeleton,
   GitStatusSkeleton,
+  ImageUpload,
+  VoiceDictation,
 } from "@/components/chat";
 import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
-import { AutomationsList, InboxList, SessionsList, Session } from "@/components/sidebar";
+import { AutomationsList, InboxList, SessionsList, Session, SkillsBrowser } from "@/components/sidebar";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
-import { Bell } from "lucide-react";
+import { Bell, Wand2 } from "lucide-react";
 
 // Provider configurations with icons
 const providers = [
@@ -49,6 +51,8 @@ export default function Dashboard() {
   const [showDiffViewer, setShowDiffViewer] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>("session-1");
+  const [showSkillsBrowser, setShowSkillsBrowser] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string; name: string } | null>(null);
 
   // Mock sessions data for now - will be replaced with real data from useDashboard
   const [sessions] = useState<Session[]>([
@@ -464,9 +468,60 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Pending Image Preview */}
+          {pendingImage && (
+            <div className="px-4 pb-2">
+              <div className="max-w-3xl mx-auto flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg">
+                <div className="h-10 w-10 rounded overflow-hidden flex-shrink-0 bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`data:${pendingImage.mimeType};base64,${pendingImage.base64}`}
+                    alt={pendingImage.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{pendingImage.name}</p>
+                  <p className="text-xs text-muted-foreground">Image attached - will be sent with your message</p>
+                </div>
+                <button
+                  onClick={() => setPendingImage(null)}
+                  className="p-1.5 hover:bg-red-500/20 rounded text-red-500 transition-colors"
+                  title="Remove image"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="border-t border-border p-3 sm:p-4 bg-card/50 backdrop-blur-sm">
-            <div className="flex items-center gap-3 max-w-3xl mx-auto">
+            <div className="flex items-center gap-2 max-w-3xl mx-auto">
+              {/* Skills browser toggle */}
+              <button
+                onClick={() => setShowSkillsBrowser(!showSkillsBrowser)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showSkillsBrowser ? "bg-primary/20 text-primary" : "hover:bg-muted text-muted-foreground"
+                }`}
+                disabled={connectionStatus !== "connected"}
+                title="Browse skills"
+              >
+                <Wand2 className="h-5 w-5" />
+              </button>
+
+              {/* Image upload */}
+              <ImageUpload
+                onImageSelect={(img) => setPendingImage(img)}
+                disabled={connectionStatus !== "connected"}
+              />
+
+              {/* Voice dictation */}
+              <VoiceDictation
+                onTranscript={(text) => setMessage((prev) => prev + text)}
+                disabled={connectionStatus !== "connected"}
+              />
+
               <div className="flex-1 relative">
                 <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -491,12 +546,33 @@ export default function Dashboard() {
                 <button
                   onClick={handleSendMessage}
                   className="bg-primary text-primary-foreground p-3 hover:opacity-90 disabled:opacity-50 rounded-xl transition-all hover:scale-105 shadow-lg shadow-primary/25"
-                  disabled={connectionStatus !== "connected" || !message.trim()}
+                  disabled={connectionStatus !== "connected" || (!message.trim() && !pendingImage)}
                 >
                   <Send className="h-5 w-5" />
                 </button>
               )}
             </div>
+
+            {/* Skills Browser Panel */}
+            {showSkillsBrowser && (
+              <div className="max-w-3xl mx-auto mt-3 p-3 bg-card border border-border rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Skills</span>
+                  <button
+                    onClick={() => setShowSkillsBrowser(false)}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+                <SkillsBrowser
+                  onSelectSkill={(command) => {
+                    setMessage(command + " ");
+                    setShowSkillsBrowser(false);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </main>
 
