@@ -138,20 +138,23 @@ function setupEventHandlers(server, protocol) {
     console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Session disconnected: ${chalk.yellow(sessionId)}`);
   });
 
-  // User message handler
+  // User message handler - uses real Claude CLI
   server.on('user:message', async (session, content) => {
     console.log(
       chalk.dim(`[${new Date().toISOString()}]`) +
         ` Message from ${chalk.cyan(session.id)}: ${chalk.white(content.slice(0, 50))}...`
     );
 
-    // Demo response - in production, integrate with Claude API
-    await handleDemoMessage(session, content, { createTextDelta, createToolStart, createToolResult });
+    // Use real Claude CLI
+    await handleClaudeMessage(session, content, { createTextDelta, createToolStart, createToolResult });
   });
 
   // Cancel handler
   server.on('user:cancel', session => {
     console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Cancel from ${chalk.yellow(session.id)}`);
+    // Note: To properly cancel, we'd need to track the bridge per session
+    // For now, this just logs the cancel request
+    session.setState('idle');
   });
 
   // Refresh handlers
@@ -164,47 +167,55 @@ function setupEventHandlers(server, protocol) {
   });
 }
 
-async function handleDemoMessage(session, content, protocol) {
+async function handleClaudeMessage(session, content, protocol) {
   const { createTextDelta, createToolStart, createToolResult } = protocol;
+  const { createClaudeBridge } = require('../../../lib/claude-cli-bridge');
 
-  // Simulate thinking delay
-  await sleep(500);
+  // Set session state to thinking
+  session.setState('thinking');
 
-  // Simulate tool call
-  const toolId = `tool_${Date.now()}`;
-  session.send(createToolStart(toolId, 'Read', { file_path: 'package.json' }));
+  try {
+    const bridge = createClaudeBridge({
+      cwd: process.cwd(),
 
-  await sleep(300);
+      onText: (text, done) => {
+        if (text) {
+          session.send(createTextDelta(text, done));
+        }
+        if (done) {
+          session.setState('idle');
+        }
+      },
 
-  session.send(createToolResult(toolId, { content: '{"name": "demo", "version": "1.0.0"}' }));
+      onToolStart: (id, name, input) => {
+        console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Tool: ${chalk.yellow(name)}`);
+        session.send(createToolStart(id, name, input));
+      },
 
-  await sleep(200);
+      onToolResult: (id, output, isError, toolName) => {
+        session.send(createToolResult(id, output, isError ? output : null));
+      },
 
-  // Stream a response
-  const response = `I received your message: "${content.slice(0, 50)}..."
+      onError: (error) => {
+        console.error(chalk.red(`[${new Date().toISOString()}]`) + ` Error: ${error}`);
+        session.send(createTextDelta(`\n\nError: ${error}`, true));
+        session.setState('error');
+      },
 
-This is a demo response from the AgileFlow Dashboard Server. In production, this would be connected to Claude Code and stream real responses.
+      onComplete: (fullResponse) => {
+        session.addMessage('assistant', fullResponse);
+        session.setState('idle');
+      }
+    });
 
-The server is working correctly! You can:
-- Send messages (they'll be echoed back)
-- See tool call visualizations
-- Monitor git status updates
+    // Send the message to Claude
+    await bridge.sendMessage(content);
 
-To integrate with Claude, the server emits events that can be connected to the Claude API.`;
-
-  // Stream word by word
-  const words = response.split(' ');
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i] + (i < words.length - 1 ? ' ' : '');
-    session.send(createTextDelta(word, i === words.length - 1));
-    await sleep(30);
+  } catch (err) {
+    console.error(chalk.red('Claude error:'), err.message);
+    session.send(createTextDelta(`Error: ${err.message}`, true));
+    session.setState('error');
   }
-
-  // Add to history
-  session.addMessage('assistant', response);
-
-  // Set idle state
-  session.setState('idle');
 }
 
 async function startTunnel(port, provider = 'cloudflared') {
