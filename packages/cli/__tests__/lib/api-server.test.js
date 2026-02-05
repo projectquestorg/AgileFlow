@@ -1,3 +1,4 @@
+/* global URL */
 /**
  * Tests for api-server.js - REST API Server for AgileFlow State Exposure
  */
@@ -7,7 +8,13 @@ const path = require('path');
 const os = require('os');
 const http = require('http');
 
-const { createApiServer, startApiServer, stopApiServer, ApiCache, DEFAULT_PORT } = require('../../lib/api-server');
+const {
+  createApiServer,
+  startApiServer,
+  stopApiServer,
+  ApiCache,
+  DEFAULT_PORT,
+} = require('../../lib/api-server');
 
 // Test directory setup
 let testDir;
@@ -39,7 +46,7 @@ beforeEach(() => {
     schema_version: '1.0.0',
     next_id: 2,
     sessions: {
-      '1': { status: 'active', worktree: '/path/to/worktree' },
+      1: { status: 'active', worktree: '/path/to/worktree' },
     },
   };
   fs.writeFileSync(
@@ -164,20 +171,24 @@ describe('API Endpoints', () => {
     }
   });
 
-  const fetch = (path) => {
+  const fetch = path => {
     return new Promise((resolve, reject) => {
       const url = new URL(path, baseUrl);
-      http.get(url, (res) => {
-        let data = '';
-        res.on('data', chunk => { data += chunk; });
-        res.on('end', () => {
-          try {
-            resolve({ status: res.statusCode, data: JSON.parse(data) });
-          } catch (e) {
-            resolve({ status: res.statusCode, data });
-          }
-        });
-      }).on('error', reject);
+      http
+        .get(url, res => {
+          let data = '';
+          res.on('data', chunk => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            try {
+              resolve({ status: res.statusCode, data: JSON.parse(data) });
+            } catch (e) {
+              resolve({ status: res.statusCode, data });
+            }
+          });
+        })
+        .on('error', reject);
     });
   };
 
@@ -248,9 +259,11 @@ describe('API Endpoints', () => {
   it('POST returns 405 Method Not Allowed', async () => {
     const result = await new Promise((resolve, reject) => {
       const url = new URL('/api', baseUrl);
-      const req = http.request(url, { method: 'POST' }, (res) => {
+      const req = http.request(url, { method: 'POST' }, res => {
         let data = '';
-        res.on('data', chunk => { data += chunk; });
+        res.on('data', chunk => {
+          data += chunk;
+        });
         res.on('end', () => {
           resolve({ status: res.statusCode, data: JSON.parse(data) });
         });

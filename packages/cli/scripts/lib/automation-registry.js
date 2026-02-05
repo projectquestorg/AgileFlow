@@ -282,25 +282,29 @@ class AutomationRegistry extends EventEmitter {
         if (!lastRun) return true;
         return !this._isSameDay(lastRun, now);
 
-      case ScheduleType.WEEKLY:
+      case ScheduleType.WEEKLY: {
         // Run on specified day of week
         if (!lastRun) return true;
         const targetDay = automation.schedule?.day || 0; // Default Sunday
-        const dayIndex = typeof targetDay === 'string' ? DAYS.indexOf(targetDay.toLowerCase()) : targetDay;
+        const dayIndex =
+          typeof targetDay === 'string' ? DAYS.indexOf(targetDay.toLowerCase()) : targetDay;
         return now.getDay() === dayIndex && !this._isSameDay(lastRun, now);
+      }
 
-      case ScheduleType.MONTHLY:
+      case ScheduleType.MONTHLY: {
         // Run on specified day of month
         if (!lastRun) return true;
         const targetDate = automation.schedule?.date || 1;
         return now.getDate() === targetDate && !this._isSameDay(lastRun, now);
+      }
 
-      case ScheduleType.INTERVAL:
+      case ScheduleType.INTERVAL: {
         // Run every N hours
         if (!lastRun) return true;
         const intervalHours = automation.schedule?.hours || 24;
         const hoursSinceLastRun = (now - lastRun) / (1000 * 60 * 60);
         return hoursSinceLastRun >= intervalHours;
+      }
 
       default:
         return false;

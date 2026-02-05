@@ -1,3 +1,4 @@
+/* global URL */
 /**
  * dashboard-server.js - WebSocket Server for AgileFlow Dashboard
  *
@@ -129,10 +130,12 @@ class DashboardSession {
    */
   setState(state) {
     this.state = state;
-    this.send(createSessionState(this.id, state, {
-      messageCount: this.messages.length,
-      lastActivity: this.lastActivity.toISOString(),
-    }));
+    this.send(
+      createSessionState(this.id, state, {
+        messageCount: this.messages.length,
+        lastActivity: this.lastActivity.toISOString(),
+      })
+    );
   }
 }
 
@@ -181,7 +184,7 @@ class TerminalInstance {
         },
       });
 
-      this.pty.onData((data) => {
+      this.pty.onData(data => {
         if (!this.closed) {
           this.session.send(createTerminalOutput(this.id, data));
         }
@@ -221,24 +224,24 @@ class TerminalInstance {
       // Track input buffer for local echo (since no PTY)
       this.inputBuffer = '';
 
-      this.pty.stdout.on('data', (data) => {
+      this.pty.stdout.on('data', data => {
         if (!this.closed) {
           this.session.send(createTerminalOutput(this.id, data.toString()));
         }
       });
 
-      this.pty.stderr.on('data', (data) => {
+      this.pty.stderr.on('data', data => {
         if (!this.closed) {
           this.session.send(createTerminalOutput(this.id, data.toString()));
         }
       });
 
-      this.pty.on('close', (exitCode) => {
+      this.pty.on('close', exitCode => {
         this.closed = true;
         this.session.send(createTerminalExit(this.id, exitCode));
       });
 
-      this.pty.on('error', (error) => {
+      this.pty.on('error', error => {
         console.error('[Terminal] Shell error:', error.message);
         if (!this.closed) {
           this.session.send(createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`));
@@ -519,8 +522,8 @@ class DashboardServer extends EventEmitter {
       automationId,
       title: automation?.name || automationId,
       summary: result.success
-        ? (result.output?.slice(0, 200) || 'Completed successfully')
-        : (result.error?.slice(0, 200) || 'Failed'),
+        ? result.output?.slice(0, 200) || 'Completed successfully'
+        : result.error?.slice(0, 200) || 'Failed',
       timestamp: new Date().toISOString(),
       status: 'unread',
       result: {
@@ -545,23 +548,27 @@ class DashboardServer extends EventEmitter {
         // Simple health check endpoint
         if (req.url === '/health') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            status: 'ok',
-            sessions: this.sessions.size,
-            project: require('path').basename(this.projectRoot),
-          }));
+          res.end(
+            JSON.stringify({
+              status: 'ok',
+              sessions: this.sessions.size,
+              project: require('path').basename(this.projectRoot),
+            })
+          );
           return;
         }
 
         // Info endpoint
         if (req.url === '/') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            name: 'AgileFlow Dashboard Server',
-            version: '1.0.0',
-            ws: `ws://${this.host === '0.0.0.0' ? 'localhost' : this.host}:${this.port}`,
-            sessions: this.sessions.size,
-          }));
+          res.end(
+            JSON.stringify({
+              name: 'AgileFlow Dashboard Server',
+              version: '1.0.0',
+              ws: `ws://${this.host === '0.0.0.0' ? 'localhost' : this.host}:${this.port}`,
+              sessions: this.sessions.size,
+            })
+          );
           return;
         }
 
@@ -574,7 +581,7 @@ class DashboardServer extends EventEmitter {
         this.handleUpgrade(req, socket, head);
       });
 
-      this.httpServer.on('error', (err) => {
+      this.httpServer.on('error', err => {
         if (err.code === 'EADDRINUSE') {
           reject(new Error(`Port ${this.port} is already in use`));
         } else {
@@ -677,11 +684,13 @@ class DashboardServer extends EventEmitter {
     console.log(`[Session ${sessionId}] ${isResume ? 'Resumed' : 'Connected'}`);
 
     // Send initial state
-    session.send(createSessionState(sessionId, 'connected', {
-      resumed: isResume,
-      messageCount: session.messages.length,
-      project: require('path').basename(this.projectRoot),
-    }));
+    session.send(
+      createSessionState(sessionId, 'connected', {
+        resumed: isResume,
+        messageCount: session.messages.length,
+        project: require('path').basename(this.projectRoot),
+      })
+    );
 
     // Send initial git status
     this.sendGitStatus(session);
@@ -693,7 +702,7 @@ class DashboardServer extends EventEmitter {
     // Handle incoming messages
     let buffer = Buffer.alloc(0);
 
-    socket.on('data', (data) => {
+    socket.on('data', data => {
       buffer = Buffer.concat([buffer, data]);
 
       // Process complete WebSocket frames
@@ -711,7 +720,7 @@ class DashboardServer extends EventEmitter {
 
         if (frame.opcode === 0x9) {
           // Ping - send pong
-          socket.write(encodeWebSocketFrame('', 0x0A));
+          socket.write(encodeWebSocketFrame('', 0x0a));
           continue;
         }
 
@@ -730,7 +739,7 @@ class DashboardServer extends EventEmitter {
       this.emit('session:disconnected', sessionId);
     });
 
-    socket.on('error', (err) => {
+    socket.on('error', err => {
       console.error(`[Session ${sessionId}] Socket error:`, err.message);
     });
 
@@ -885,9 +894,8 @@ class DashboardServer extends EventEmitter {
     const { type, files, message: commitMessage } = message;
 
     // Properly quote file paths for shell execution
-    const quotedFiles = files && files.length > 0
-      ? files.map(f => `"${f.replace(/"/g, '\\"')}"`).join(' ')
-      : null;
+    const quotedFiles =
+      files && files.length > 0 ? files.map(f => `"${f.replace(/"/g, '\\"')}"`).join(' ') : null;
 
     try {
       switch (type) {
@@ -967,15 +975,22 @@ class DashboardServer extends EventEmitter {
         const file = line.slice(3);
 
         // Parse the status character to a descriptive status
-        const parseStatus = (char) => {
+        const parseStatus = char => {
           switch (char) {
-            case 'A': return 'added';
-            case 'M': return 'modified';
-            case 'D': return 'deleted';
-            case 'R': return 'renamed';
-            case 'C': return 'copied';
-            case '?': return 'untracked';
-            default: return 'modified';
+            case 'A':
+              return 'added';
+            case 'M':
+              return 'modified';
+            case 'D':
+              return 'deleted';
+            case 'R':
+              return 'renamed';
+            case 'C':
+              return 'copied';
+            case '?':
+              return 'untracked';
+            default:
+              return 'modified';
           }
         };
 
@@ -986,7 +1001,7 @@ class DashboardServer extends EventEmitter {
           unstaged.push({
             path: file,
             file,
-            status: workTreeStatus === '?' ? 'untracked' : parseStatus(workTreeStatus)
+            status: workTreeStatus === '?' ? 'untracked' : parseStatus(workTreeStatus),
           });
         }
       }
@@ -1012,11 +1027,13 @@ class DashboardServer extends EventEmitter {
       const diff = this.getFileDiff(filePath, staged);
       const stats = this.parseDiffStats(diff);
 
-      session.send(createGitDiff(filePath, diff, {
-        additions: stats.additions,
-        deletions: stats.deletions,
-        staged: !!staged,
-      }));
+      session.send(
+        createGitDiff(filePath, diff, {
+          additions: stats.additions,
+          deletions: stats.deletions,
+          staged: !!staged,
+        })
+      );
     } catch (error) {
       session.send(createError('DIFF_ERROR', error.message));
     }
@@ -1030,9 +1047,7 @@ class DashboardServer extends EventEmitter {
    */
   getFileDiff(filePath, staged = false) {
     try {
-      const cmd = staged
-        ? `git diff --cached -- "${filePath}"`
-        : `git diff -- "${filePath}"`;
+      const cmd = staged ? `git diff --cached -- "${filePath}"` : `git diff -- "${filePath}"`;
 
       const diff = execSync(cmd, {
         cwd: this.projectRoot,
@@ -1061,7 +1076,7 @@ class DashboardServer extends EventEmitter {
               `--- /dev/null`,
               `+++ b/${filePath}`,
               `@@ -0,0 +1,${lines.length} @@`,
-              ...lines.map(line => `+${line}`)
+              ...lines.map(line => `+${line}`),
             ].join('\n');
           } catch {
             return '';
@@ -1183,7 +1198,7 @@ class DashboardServer extends EventEmitter {
 
         return {
           ...automation,
-          status: isRunning ? 'running' : (automation.enabled ? 'idle' : 'disabled'),
+          status: isRunning ? 'running' : automation.enabled ? 'idle' : 'disabled',
           lastRun: lastRun?.at,
           lastRunSuccess: lastRun?.success,
           nextRun,
@@ -1209,23 +1224,34 @@ class DashboardServer extends EventEmitter {
     switch (schedule.type) {
       case 'on_session':
         return 'Every session';
-      case 'daily':
+      case 'daily': {
         // Next day at midnight (or specified hour)
         const nextDaily = new Date(now);
         nextDaily.setDate(nextDaily.getDate() + 1);
         nextDaily.setHours(schedule.hour || 0, 0, 0, 0);
         return nextDaily.toISOString();
-      case 'weekly':
+      }
+      case 'weekly': {
         // Next occurrence of the specified day
-        const targetDay = typeof schedule.day === 'string'
-          ? ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(schedule.day.toLowerCase())
-          : (schedule.day || 0);
+        const targetDay =
+          typeof schedule.day === 'string'
+            ? [
+                'sunday',
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+                'saturday',
+              ].indexOf(schedule.day.toLowerCase())
+            : schedule.day || 0;
         const nextWeekly = new Date(now);
         const daysUntil = (targetDay - now.getDay() + 7) % 7 || 7;
         nextWeekly.setDate(nextWeekly.getDate() + daysUntil);
         nextWeekly.setHours(schedule.hour || 0, 0, 0, 0);
         return nextWeekly.toISOString();
-      case 'monthly':
+      }
+      case 'monthly': {
         // Next occurrence of the specified date
         const nextMonthly = new Date(now);
         const targetDate = schedule.date || 1;
@@ -1235,9 +1261,11 @@ class DashboardServer extends EventEmitter {
         nextMonthly.setDate(targetDate);
         nextMonthly.setHours(schedule.hour || 0, 0, 0, 0);
         return nextMonthly.toISOString();
-      case 'interval':
+      }
+      case 'interval': {
         const hours = schedule.hours || 24;
         return `Every ${hours} hour${hours > 1 ? 's' : ''}`;
+      }
       default:
         return null;
     }
@@ -1262,7 +1290,9 @@ class DashboardServer extends EventEmitter {
     try {
       // Check if already running
       if (this._runningAutomations.has(automationId)) {
-        session.send(createNotification('warning', 'Automation', `${automationId} is already running`));
+        session.send(
+          createNotification('warning', 'Automation', `${automationId} is already running`)
+        );
         return;
       }
 
@@ -1273,9 +1303,13 @@ class DashboardServer extends EventEmitter {
 
       // Send result notification
       if (result.success) {
-        session.send(createNotification('success', 'Automation', `${automationId} completed successfully`));
+        session.send(
+          createNotification('success', 'Automation', `${automationId} completed successfully`)
+        );
       } else {
-        session.send(createNotification('error', 'Automation', `${automationId} failed: ${result.error}`));
+        session.send(
+          createNotification('error', 'Automation', `${automationId} failed: ${result.error}`)
+        );
       }
 
       // Send final status
@@ -1318,8 +1352,9 @@ class DashboardServer extends EventEmitter {
    * Send inbox list to session
    */
   sendInboxList(session) {
-    const items = Array.from(this._inbox.values())
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const items = Array.from(this._inbox.values()).sort(
+      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+    );
 
     session.send(createInboxList(items));
   }
@@ -1410,7 +1445,7 @@ class DashboardServer extends EventEmitter {
    * Stop the server
    */
   stop() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       // Close all sessions
       for (const session of this.sessions.values()) {
         if (session.ws) {
@@ -1477,9 +1512,9 @@ function decodeWebSocketFrame(buffer) {
   const firstByte = buffer[0];
   const secondByte = buffer[1];
 
-  const opcode = firstByte & 0x0F;
+  const opcode = firstByte & 0x0f;
   const masked = (secondByte & 0x80) !== 0;
-  let payloadLength = secondByte & 0x7F;
+  let payloadLength = secondByte & 0x7f;
 
   let headerLength = 2;
   if (payloadLength === 126) {
