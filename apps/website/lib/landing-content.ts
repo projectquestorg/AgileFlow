@@ -389,8 +389,8 @@ index 3b18c71..8c2aa0f 100644
           configPath: '.claude/commands/agileflow/',
           setupCommand: 'npx agileflow setup',
           features: [
-            '81 slash commands',
-            '34 specialized agents',
+            '85 slash commands',
+            '46 specialized agents',
             'Status line integration',
             'Hooks system for automation',
           ],
