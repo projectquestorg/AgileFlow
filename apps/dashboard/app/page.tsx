@@ -20,6 +20,10 @@ import { useNotifications, NotificationSettings } from "@/components/notificatio
 import { Bell, X } from "lucide-react";
 import { useProvider } from "@/hooks/useProvider";
 import { IRSource } from "@/lib/protocol";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +36,7 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
+
 export default function Dashboard() {
   return (
     <SidebarProvider defaultOpen={true}>
@@ -130,7 +135,6 @@ function DashboardContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle responsive review pane
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -179,7 +183,7 @@ function DashboardContent() {
         <span className="uppercase tracking-wider text-[10px]">{title}</span>
         <div className="flex items-center gap-2 ml-auto">
           {count !== undefined && count > 0 && (
-            <span className="text-[10px] bg-primary/20 text-primary px-1.5 rounded">{count}</span>
+            <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">{count}</Badge>
           )}
           <ChevronRight className={`h-3 w-3 transition-transform ${expandedSection === id ? "rotate-90" : ""}`} />
         </div>
@@ -193,29 +197,30 @@ function DashboardContent() {
       {/* Left Sidebar */}
       <Sidebar collapsible="offcanvas" className="border-r border-border">
         <SidebarHeader className="border-b border-border">
-          {/* Provider */}
           <div className="relative">
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setShowProviderMenu(!showProviderMenu)}
-              className="w-full flex items-center justify-between gap-2 bg-muted px-2 py-1.5 text-xs hover:bg-muted/80"
+              className="w-full justify-between gap-2 text-xs"
             >
               <span className="flex items-center gap-2">
                 <span>{providerInfo.icon}</span>
                 <span>{providerInfo.name}</span>
               </span>
               <ChevronDown className={`h-3 w-3 transition-transform ${showProviderMenu ? "rotate-180" : ""}`} />
-            </button>
+            </Button>
             {showProviderMenu && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border z-50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md z-50 overflow-hidden">
                 {providers.map((p) => (
-                  <button
+                  <Button
                     key={p.id}
+                    variant="ghost"
                     onClick={() => { selectProvider(p.id as IRSource); setShowProviderMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-muted ${provider === p.id ? "bg-muted text-primary" : ""}`}
+                    className={`w-full justify-start gap-2 rounded-none text-xs ${provider === p.id ? "bg-accent text-primary" : ""}`}
                   >
                     <span>{p.icon}</span>
                     <span>{p.name}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -253,18 +258,19 @@ function DashboardContent() {
 
       {/* Main Content Area */}
       <SidebarInset className="flex flex-col min-h-screen">
-        {/* Header - sticky on mobile */}
+        {/* Header */}
         <header className="sticky top-0 z-30 flex h-12 md:h-10 items-center justify-between border-b border-border px-3 bg-card">
           <div className="flex items-center gap-2 md:gap-3">
             <SidebarTrigger className="-ml-1" />
-            <span className="text-sm md:text-xs font-bold tracking-wide">AGILEFLOW</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span className="text-sm md:text-xs font-semibold tracking-wide">AGILEFLOW</span>
             <span className="text-muted-foreground hidden sm:inline">/</span>
-            <span className="text-sm md:text-xs hidden sm:inline">my-project</span>
+            <span className="text-sm md:text-xs text-muted-foreground hidden sm:inline">my-project</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="flex items-center gap-1.5 px-2 py-1 text-xs">
               <Circle className={`h-2.5 w-2.5 md:h-2 md:w-2 fill-current ${
-                connectionStatus === "connected" ? "text-primary" :
+                connectionStatus === "connected" ? "text-green-500" :
                 connectionStatus === "connecting" ? "text-yellow-500 animate-pulse" :
                 connectionStatus === "error" ? "text-destructive" : "text-muted-foreground"
               }`} />
@@ -272,13 +278,15 @@ function DashboardContent() {
                 {connectionStatus === "connected" ? "connected" : connectionStatus}
               </span>
             </div>
-            <button onClick={() => setShowNotificationSettings(true)} className="p-2 md:p-1.5 hover:bg-muted relative">
-              <Bell className="h-5 w-5 md:h-4 md:w-4" />
+            <Button variant="ghost" size="icon-sm" onClick={() => setShowNotificationSettings(true)} className="relative">
+              <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 md:-top-0.5 md:-right-0.5 h-4 w-4 md:h-3 md:w-3 bg-primary text-[9px] md:text-[8px] font-bold flex items-center justify-center">{unreadCount}</span>
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[8px] flex items-center justify-center">{unreadCount}</Badge>
               )}
-            </button>
-            <button className="p-2 md:p-1.5 hover:bg-muted"><Settings className="h-5 w-5 md:h-4 md:w-4" /></button>
+            </Button>
+            <Button variant="ghost" size="icon-sm">
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
         </header>
 
@@ -291,38 +299,39 @@ function DashboardContent() {
                 <div className="w-full max-w-sm space-y-4">
                   <div className="text-center mb-6">
                     <Bot className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                    <h2 className="text-lg font-medium">Connect to CLI</h2>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Run <code className="bg-muted px-1">agileflow serve</code> in your project
+                    <h2 className="text-lg font-semibold">Connect to CLI</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Run <code className="bg-muted px-1.5 py-0.5 rounded-md text-xs">agileflow serve</code> in your project
                     </p>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground block mb-1">WebSocket URL</label>
-                    <input
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">WebSocket URL</label>
+                    <Input
                       type="text"
                       value={wsUrl}
                       onChange={(e) => setWsUrl(e.target.value)}
                       placeholder="ws://localhost:8765"
-                      className="w-full bg-muted border-0 px-3 py-3 text-base font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="font-mono"
                     />
                   </div>
-                  {error && <div className="text-destructive text-xs">{error}</div>}
-                  <button
+                  {error && <div className="text-destructive text-sm">{error}</div>}
+                  <Button
                     onClick={handleConnect}
                     disabled={connectionStatus === "connecting"}
-                    className="w-full bg-primary text-primary-foreground px-4 py-3 text-base font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full"
+                    size="lg"
                   >
                     {connectionStatus === "connecting" ? (
                       <><Loader2 className="h-4 w-4 animate-spin" />Connecting...</>
                     ) : (
                       <><Play className="h-4 w-4" />Connect</>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
               <>
-                {/* Messages - extra bottom padding on mobile for fixed input + footer */}
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 pb-32 md:pb-4">
                   {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center">
@@ -345,38 +354,40 @@ function DashboardContent() {
                   )}
                 </div>
 
-                {/* Input - fixed above footer on mobile for keyboard handling */}
+                {/* Input */}
                 <div className="md:relative fixed bottom-10 md:bottom-auto left-0 right-0 z-20 border-t border-border p-3 bg-background">
                   {pendingImage && (
-                    <div className="max-w-3xl mx-auto mb-2 flex items-center gap-2 px-2 py-1.5 bg-muted text-xs">
+                    <div className="max-w-3xl mx-auto mb-2 flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md text-xs">
                       <FileCode className="h-3 w-3" />
                       <span className="flex-1 truncate">{pendingImage.name}</span>
-                      <button onClick={() => setPendingImage(null)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => setPendingImage(null)}>
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
                   )}
                   <div className="flex items-center gap-2 max-w-3xl mx-auto">
                     <ImageUpload onImageSelect={(img) => setPendingImage(img)} disabled={false} />
                     <VoiceDictation onTranscript={(text) => setMessage((prev) => prev + text)} disabled={false} />
-                    <input
+                    <Input
                       type="text"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="Message or /command..."
-                      className="flex-1 bg-muted border-0 px-3 py-3 text-base focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="flex-1"
                     />
                     {isThinking ? (
-                      <button onClick={cancelOperation} className="bg-destructive text-white p-3 md:p-2 hover:bg-destructive/90">
-                        <StopCircle className="h-5 w-5 md:h-4 md:w-4" />
-                      </button>
+                      <Button variant="destructive" size="icon" onClick={cancelOperation}>
+                        <StopCircle className="h-4 w-4" />
+                      </Button>
                     ) : (
-                      <button
+                      <Button
+                        size="icon"
                         onClick={handleSendMessage}
                         disabled={!message.trim() && !pendingImage}
-                        className="bg-primary text-primary-foreground p-3 md:p-2 hover:bg-primary/90 disabled:opacity-50"
                       >
-                        <Send className="h-5 w-5 md:h-4 md:w-4" />
-                      </button>
+                        <Send className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -384,146 +395,146 @@ function DashboardContent() {
             )}
           </main>
 
-          {/* Right Panel - Review - overlay on mobile/tablet */}
+          {/* Right Panel - Review */}
           {showReviewPane && connectionStatus === "connected" && (
             <>
-              {/* Backdrop on smaller screens */}
               <div
                 className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                 onClick={() => setShowReviewPane(false)}
               />
               <aside className="fixed lg:relative right-0 top-0 bottom-0 w-80 lg:w-72 border-l border-border bg-background flex flex-col overflow-hidden z-50">
-              {/* Mobile close button */}
-              <div className="flex items-center justify-between p-3 border-b border-border lg:hidden">
-                <span className="text-xs font-bold">Review</span>
-                <button onClick={() => setShowReviewPane(false)} className="p-2 hover:bg-muted">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+                {/* Mobile close */}
+                <div className="flex items-center justify-between p-3 border-b border-border lg:hidden">
+                  <span className="text-sm font-semibold">Review</span>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setShowReviewPane(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
 
-              {showDiffViewer && currentDiff ? (
-                <DiffViewer
-                  diff={currentDiff}
-                  onStage={() => stageFile(currentDiff.path)}
-                  onUnstage={() => unstageFile(currentDiff.path)}
-                  onRevert={() => revertFile(currentDiff.path)}
-                  onClose={() => { clearDiff(); setShowDiffViewer(false); }}
-                />
-              ) : (
-                <>
-                  {/* Tabs */}
-                  <div className="flex border-b border-border text-xs">
-                    {(["staged", "unstaged", "all"] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setReviewTab(tab)}
-                        className={`flex-1 px-3 py-2 font-medium transition-colors ${
-                          reviewTab === tab ? "border-b border-primary text-primary" : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {tab === "staged" ? `Staged${gitStatus?.staged.length ? ` (${gitStatus.staged.length})` : ""}` :
-                         tab === "unstaged" ? `Unstaged${gitStatus?.unstaged.length ? ` (${gitStatus.unstaged.length})` : ""}` :
-                         "All"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Actions */}
-                  {hasChanges && (
-                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-border text-xs">
-                      <span className="text-muted-foreground">Changes</span>
-                      <div className="flex gap-1">
-                        {gitStatus?.unstaged.length ? (
-                          <button onClick={stageAll} className="px-2 py-0.5 text-primary hover:bg-primary/10">+all</button>
-                        ) : null}
-                        {gitStatus?.staged.length ? (
-                          <button onClick={unstageAll} className="px-2 py-0.5 text-muted-foreground hover:bg-muted">-all</button>
-                        ) : null}
-                      </div>
+                {showDiffViewer && currentDiff ? (
+                  <DiffViewer
+                    diff={currentDiff}
+                    onStage={() => stageFile(currentDiff.path)}
+                    onUnstage={() => unstageFile(currentDiff.path)}
+                    onRevert={() => revertFile(currentDiff.path)}
+                    onClose={() => { clearDiff(); setShowDiffViewer(false); }}
+                  />
+                ) : (
+                  <>
+                    {/* Tabs */}
+                    <div className="flex border-b border-border text-xs">
+                      {(["staged", "unstaged", "all"] as const).map((tab) => (
+                        <Button
+                          key={tab}
+                          variant="ghost"
+                          onClick={() => setReviewTab(tab)}
+                          className={`flex-1 rounded-none text-xs font-medium h-9 ${
+                            reviewTab === tab ? "border-b-2 border-primary text-primary" : "text-muted-foreground"
+                          }`}
+                        >
+                          {tab === "staged" ? `Staged${gitStatus?.staged.length ? ` (${gitStatus.staged.length})` : ""}` :
+                           tab === "unstaged" ? `Unstaged${gitStatus?.unstaged.length ? ` (${gitStatus.unstaged.length})` : ""}` :
+                           "All"}
+                        </Button>
+                      ))}
                     </div>
-                  )}
 
-                  {/* Files */}
-                  <div className="flex-1 overflow-y-auto p-2">
-                    {hasChanges ? (
-                      <div className="space-y-1">
-                        {filteredFiles.staged.length > 0 && reviewTab === "all" && (
-                          <div className="text-[10px] uppercase text-primary px-2 py-1 font-medium">Staged</div>
-                        )}
-                        {filteredFiles.staged.map((file, i) => (
-                          <FileChangeRow
-                            key={`s-${i}`}
-                            file={file}
-                            isSelected={selectedFile === file.path}
-                            isLoading={diffLoading && selectedFile === file.path}
-                            isStaged={true}
-                            onSelect={() => handleFileSelect(file, true)}
-                            onUnstage={() => unstageFile(file.path)}
-                          />
-                        ))}
-                        {filteredFiles.unstaged.length > 0 && reviewTab === "all" && filteredFiles.staged.length > 0 && (
-                          <div className="text-[10px] uppercase text-yellow-500 px-2 py-1 font-medium mt-2">Unstaged</div>
-                        )}
-                        {filteredFiles.unstaged.map((file, i) => (
-                          <FileChangeRow
-                            key={`u-${i}`}
-                            file={file}
-                            isSelected={selectedFile === file.path}
-                            isLoading={diffLoading && selectedFile === file.path}
-                            isStaged={false}
-                            onSelect={() => handleFileSelect(file, false)}
-                            onStage={() => stageFile(file.path)}
-                            onRevert={() => revertFile(file.path)}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-xs text-muted-foreground">
-                        <GitBranch className="h-6 w-6 mx-auto mb-2 opacity-30" />
-                        No changes
+                    {/* Actions */}
+                    {hasChanges && (
+                      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border text-xs">
+                        <span className="text-muted-foreground">Changes</span>
+                        <div className="flex gap-1">
+                          {gitStatus?.unstaged.length ? (
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={stageAll}>+all</Button>
+                          ) : null}
+                          {gitStatus?.staged.length ? (
+                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={unstageAll}>-all</Button>
+                          ) : null}
+                        </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Tasks */}
-                  <div className="border-t border-border p-3">
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Tasks</div>
-                    {tasks.length > 0 ? (
-                      <div className="space-y-1">
-                        {tasks.slice(0, 5).map((task) => (
-                          <div key={task.id} className="flex items-center gap-2 text-xs py-1">
-                            <span className={`h-3 w-3 flex items-center justify-center text-[8px] ${
-                              task.status === "completed" ? "bg-primary text-primary-foreground" :
-                              task.status === "in_progress" ? "border border-primary" : "border border-muted-foreground/30"
-                            }`}>
-                              {task.status === "completed" && "✓"}
-                            </span>
-                            <span className={`flex-1 truncate ${task.status === "completed" ? "text-muted-foreground line-through" : ""}`}>
-                              {task.subject}
-                            </span>
-                            {task.status === "in_progress" && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">No tasks</p>
-                    )}
-                  </div>
+                    {/* Files */}
+                    <div className="flex-1 overflow-y-auto p-2">
+                      {hasChanges ? (
+                        <div className="space-y-1">
+                          {filteredFiles.staged.length > 0 && reviewTab === "all" && (
+                            <div className="text-[10px] uppercase text-primary px-2 py-1 font-medium">Staged</div>
+                          )}
+                          {filteredFiles.staged.map((file, i) => (
+                            <FileChangeRow
+                              key={`s-${i}`}
+                              file={file}
+                              isSelected={selectedFile === file.path}
+                              isLoading={diffLoading && selectedFile === file.path}
+                              isStaged={true}
+                              onSelect={() => handleFileSelect(file, true)}
+                              onUnstage={() => unstageFile(file.path)}
+                            />
+                          ))}
+                          {filteredFiles.unstaged.length > 0 && reviewTab === "all" && filteredFiles.staged.length > 0 && (
+                            <div className="text-[10px] uppercase text-yellow-500 px-2 py-1 font-medium mt-2">Unstaged</div>
+                          )}
+                          {filteredFiles.unstaged.map((file, i) => (
+                            <FileChangeRow
+                              key={`u-${i}`}
+                              file={file}
+                              isSelected={selectedFile === file.path}
+                              isLoading={diffLoading && selectedFile === file.path}
+                              isStaged={false}
+                              onSelect={() => handleFileSelect(file, false)}
+                              onStage={() => stageFile(file.path)}
+                              onRevert={() => revertFile(file.path)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-sm text-muted-foreground">
+                          <GitBranch className="h-6 w-6 mx-auto mb-2 opacity-30" />
+                          No changes
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Commit */}
-                  <div className="p-3">
-                    <button
-                      onClick={() => setShowCommitDialog(true)}
-                      disabled={!hasStagedChanges}
-                      className="w-full bg-primary text-primary-foreground py-2 text-xs font-medium hover:bg-primary/90 disabled:opacity-30 flex items-center justify-center gap-2"
-                    >
-                      <GitCommit className="h-3 w-3" />
-                      Commit
-                    </button>
-                  </div>
-                </>
-              )}
-            </aside>
+                    {/* Tasks */}
+                    <div className="border-t border-border p-3">
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Tasks</div>
+                      {tasks.length > 0 ? (
+                        <div className="space-y-1">
+                          {tasks.slice(0, 5).map((task) => (
+                            <div key={task.id} className="flex items-center gap-2 text-xs py-1">
+                              <span className={`h-4 w-4 rounded-sm flex items-center justify-center text-[8px] ${
+                                task.status === "completed" ? "bg-primary text-primary-foreground" :
+                                task.status === "in_progress" ? "border border-primary" : "border border-muted-foreground/30"
+                              }`}>
+                                {task.status === "completed" && "✓"}
+                              </span>
+                              <span className={`flex-1 truncate ${task.status === "completed" ? "text-muted-foreground line-through" : ""}`}>
+                                {task.subject}
+                              </span>
+                              {task.status === "in_progress" && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No tasks</p>
+                      )}
+                    </div>
+
+                    {/* Commit */}
+                    <div className="p-3">
+                      <Button
+                        onClick={() => setShowCommitDialog(true)}
+                        disabled={!hasStagedChanges}
+                        className="w-full"
+                      >
+                        <GitCommit className="h-3.5 w-3.5" />
+                        Commit
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </aside>
             </>
           )}
         </div>
@@ -561,26 +572,37 @@ function DashboardContent() {
           />
         )}
 
-        {/* Footer - fixed at bottom on mobile */}
-        <footer className="md:relative fixed bottom-0 left-0 right-0 z-20 flex h-10 md:h-7 items-center justify-between border-t border-border px-3 text-xs md:text-[10px] text-muted-foreground bg-card">
-          <div className="flex items-center gap-1 md:gap-3">
-            <button onClick={() => setShowTerminal(!showTerminal)} className={`flex items-center gap-1 p-2 md:p-0 hover:text-foreground ${showTerminal ? "text-primary" : ""}`}>
-              <Terminal className="h-4 w-4 md:h-3 md:w-3" />
+        {/* Footer */}
+        <footer className="md:relative fixed bottom-0 left-0 right-0 z-20 flex h-10 md:h-8 items-center justify-between border-t border-border px-3 text-xs text-muted-foreground bg-card">
+          <div className="flex items-center gap-1 md:gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTerminal(!showTerminal)}
+              className={`h-7 gap-1.5 text-xs ${showTerminal ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <Terminal className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Terminal</span>
-              <span className="hidden md:inline text-muted-foreground/50">⌘J</span>
-            </button>
-            <button onClick={() => setShowReviewPane(!showReviewPane)} className={`flex items-center gap-1 p-2 md:p-0 hover:text-foreground ${showReviewPane ? "text-primary" : ""}`}>
-              <FileCode className="h-4 w-4 md:h-3 md:w-3" />
+              <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">⌘J</kbd>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowReviewPane(!showReviewPane)}
+              className={`h-7 gap-1.5 text-xs ${showReviewPane ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <FileCode className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Review</span>
-            </button>
+            </Button>
           </div>
-          <div className="flex items-center gap-2 md:gap-3">
-            <span className="hidden sm:flex items-center gap-1">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="hidden sm:flex items-center gap-1.5">
               <Folder className="h-3 w-3" />
               ~/my-project
             </span>
-            <span className="flex items-center gap-1">
-              <GitBranch className="h-4 w-4 md:h-3 md:w-3" />
+            <Separator orientation="vertical" className="h-3.5 hidden sm:block" />
+            <span className="flex items-center gap-1.5">
+              <GitBranch className="h-3.5 w-3.5" />
               {gitStatus?.branch || "main"}
             </span>
           </div>
