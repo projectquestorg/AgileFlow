@@ -269,9 +269,10 @@ class BaseIdeSetup {
    * Scan a directory for files with a specific extension
    * @param {string} dirPath - Directory path
    * @param {string} extension - File extension (e.g., '.md')
-   * @returns {Promise<Array>} List of files
+   * @param {string} [prefix=''] - Prefix for nested names (used for recursion)
+   * @returns {Promise<Array>} List of files with name, path, filename
    */
-  async scanDirectory(dirPath, extension) {
+  async scanDirectory(dirPath, extension, prefix = '') {
     const results = [];
 
     if (!(await this.exists(dirPath))) {
@@ -281,12 +282,23 @@ class BaseIdeSetup {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
     for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+
       if (entry.isFile() && entry.name.endsWith(extension)) {
+        // Build name with prefix for subcommands (e.g., ideate-new from ideate/new.md)
+        const baseName = entry.name.replace(extension, '');
+        const fullName = prefix ? `${prefix}-${baseName}` : baseName;
+
         results.push({
-          name: entry.name.replace(extension, ''),
-          path: path.join(dirPath, entry.name),
+          name: fullName,
+          path: fullPath,
           filename: entry.name,
         });
+      } else if (entry.isDirectory()) {
+        // Recursively scan subdirectories with prefix
+        const subPrefix = prefix ? `${prefix}-${entry.name}` : entry.name;
+        const subResults = await this.scanDirectory(fullPath, extension, subPrefix);
+        results.push(...subResults);
       }
     }
 
