@@ -35,6 +35,11 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     const { ideDir, agileflowTargetDir } = result;
     const agentsSource = path.join(agileflowDir, 'agents');
 
+    // Claude Code specific: Check for duplicates in user-level ~/.claude/commands/
+    // Commands in both ~/.claude/commands/ and .claude/commands/agileflow/ cause
+    // "command 2" entries in autocomplete
+    await this.removeUserLevelDuplicates(agileflowDir);
+
     // Claude Code specific: Install agents as spawnable subagents (.claude/agents/agileflow/)
     // This allows Task tool to spawn them with subagent_type: "agileflow-ui"
     const spawnableAgentsDir = path.join(ideDir, 'agents', 'agileflow');
@@ -281,6 +286,71 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     // Write settings
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
     console.log(chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader`));
+  }
+
+  /**
+   * Remove AgileFlow command duplicates from user-level ~/.claude/commands/
+   * When the same command exists in both ~/.claude/commands/ and
+   * <project>/.claude/commands/agileflow/, Claude Code shows duplicates.
+   * @param {string} agileflowDir - AgileFlow installation directory (to get command names)
+   */
+  async removeUserLevelDuplicates(agileflowDir) {
+    const os = require('os');
+    const userCommandsDir = path.join(os.homedir(), '.claude', 'commands');
+
+    if (!(await fs.pathExists(userCommandsDir))) return;
+
+    // Collect AgileFlow command names from source
+    const agileflowNames = new Set();
+    const commandsSource = path.join(agileflowDir, 'commands');
+    const agentsSource = path.join(agileflowDir, 'agents');
+
+    for (const sourceDir of [commandsSource, agentsSource]) {
+      if (await fs.pathExists(sourceDir)) {
+        const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+        for (const entry of entries) {
+          agileflowNames.add(entry.name);
+        }
+      }
+    }
+
+    if (agileflowNames.size === 0) return;
+
+    // Check for agileflow-related items in user-level commands
+    let removedCount = 0;
+    const entries = await fs.readdir(userCommandsDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      // Only remove items that match AgileFlow command names
+      if (agileflowNames.has(entry.name)) {
+        const duplicatePath = path.join(userCommandsDir, entry.name);
+        try {
+          await fs.remove(duplicatePath);
+          removedCount++;
+        } catch {
+          // Best effort - don't fail setup over cleanup
+        }
+      }
+    }
+
+    // Also remove any agileflow/ subfolder from user-level commands
+    for (const folderName of ['agileflow', 'AgileFlow']) {
+      const userAgileflowDir = path.join(userCommandsDir, folderName);
+      if (await fs.pathExists(userAgileflowDir)) {
+        try {
+          await fs.remove(userAgileflowDir);
+          removedCount++;
+        } catch {
+          // Best effort
+        }
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(
+        chalk.dim(`    - Removed ${removedCount} duplicate(s) from ~/.claude/commands/`)
+      );
+    }
   }
 }
 

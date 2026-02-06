@@ -208,6 +208,69 @@ class BaseIdeSetup {
           }
         }
       }
+
+      // Remove duplicate command files that exist outside the agileflow/ subfolder
+      // These cause "command 2" entries in Claude Code's autocomplete
+      await this.removeDuplicateCommands(projectDir);
+    }
+  }
+
+  /**
+   * Remove duplicate AgileFlow command files from the parent commands directory.
+   * When commands exist both in .claude/commands/agileflow/foo.md AND .claude/commands/foo.md,
+   * Claude Code shows them as "foo" and "foo 2" in autocomplete. This removes the loose copies.
+   * @param {string} projectDir - Project directory
+   */
+  async removeDuplicateCommands(projectDir) {
+    const commandsDir = path.join(projectDir, this.configDir, 'commands');
+    const agileflowDir = path.join(commandsDir, 'agileflow');
+
+    if (!(await fs.pathExists(commandsDir))) return;
+
+    // Get list of AgileFlow command names (files and directories)
+    const agileflowNames = new Set();
+    if (await fs.pathExists(agileflowDir)) {
+      const entries = await fs.readdir(agileflowDir, { withFileTypes: true });
+      for (const entry of entries) {
+        agileflowNames.add(entry.name);
+      }
+    }
+
+    // Also collect names from the source commands to catch pre-existing stale copies
+    const coreCommandsDir = path.join(projectDir, this.agileflowFolder, 'commands');
+    if (await fs.pathExists(coreCommandsDir)) {
+      const entries = await fs.readdir(coreCommandsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        agileflowNames.add(entry.name);
+      }
+    }
+
+    if (agileflowNames.size === 0) return;
+
+    // Scan the parent commands directory for loose duplicates
+    let removedCount = 0;
+    const entries = await fs.readdir(commandsDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      // Skip the agileflow subfolder itself and non-agileflow items
+      if (entry.name === 'agileflow' || entry.name === 'AgileFlow') continue;
+
+      // Check if this file/directory matches an AgileFlow command name
+      if (agileflowNames.has(entry.name)) {
+        const duplicatePath = path.join(commandsDir, entry.name);
+        try {
+          await fs.remove(duplicatePath);
+          removedCount++;
+        } catch {
+          // Best effort - don't fail setup over cleanup
+        }
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(
+        chalk.dim(`  Removed ${removedCount} duplicate command(s) from ${this.displayName}`)
+      );
     }
   }
 
