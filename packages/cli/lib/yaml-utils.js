@@ -12,31 +12,44 @@
  * - Input validation
  * - Consistent error handling
  * - Future-proofing for library changes
+ * - Lazy loading: js-yaml is only loaded when YAML parsing is actually needed,
+ *   so scripts that import paths.js but never parse YAML won't crash if
+ *   js-yaml isn't installed in the user's project.
  */
 
 const path = require('path');
 
-// Resolve js-yaml from multiple locations:
-// 1. User's project node_modules (may not exist or be corrupted)
-// 2. AgileFlow npm package node_modules (always available)
-// 3. Global fallback
-let yaml;
-const tryPaths = [
-  'js-yaml', // Standard require (user's node_modules or global)
-  path.join(__dirname, '..', 'node_modules', 'js-yaml'), // AgileFlow package
-  path.join(__dirname, '..', '..', 'node_modules', 'js-yaml'), // .agileflow/../node_modules
-];
+// Lazy-loaded js-yaml instance (resolved on first use)
+let _yaml = null;
 
-for (const tryPath of tryPaths) {
-  try {
-    yaml = require(tryPath);
-    break;
-  } catch (_e) {
-    // Continue to next path
+/**
+ * Resolve and load js-yaml from multiple locations.
+ * Called lazily on first actual YAML operation.
+ * @returns {Object} The js-yaml module
+ * @throws {Error} If js-yaml cannot be found anywhere
+ */
+function getYaml() {
+  if (_yaml) return _yaml;
+
+  // Resolve js-yaml from multiple locations:
+  // 1. User's project node_modules (may not exist)
+  // 2. AgileFlow npm package node_modules (always available when run via npx)
+  // 3. Parent of .agileflow directory
+  const tryPaths = [
+    'js-yaml', // Standard require (user's node_modules or global)
+    path.join(__dirname, '..', 'node_modules', 'js-yaml'), // AgileFlow package
+    path.join(__dirname, '..', '..', 'node_modules', 'js-yaml'), // .agileflow/../node_modules
+  ];
+
+  for (const tryPath of tryPaths) {
+    try {
+      _yaml = require(tryPath);
+      return _yaml;
+    } catch (_e) {
+      // Continue to next path
+    }
   }
-}
 
-if (!yaml) {
   throw new Error(
     'js-yaml not found. Please run: npm install js-yaml\n' +
       'Or reinstall AgileFlow: npx agileflow setup --force'
@@ -57,6 +70,7 @@ function safeLoad(content, options = {}) {
     throw new TypeError('YAML content must be a string');
   }
 
+  const yaml = getYaml();
   // In js-yaml v4+, load() uses DEFAULT_SCHEMA which is safe.
   // Explicitly pass schema to make the security guarantee clear
   // and protect against future library changes.
@@ -79,6 +93,7 @@ function safeLoadAll(content, options = {}) {
     throw new TypeError('YAML content must be a string');
   }
 
+  const yaml = getYaml();
   const documents = [];
   yaml.loadAll(content, doc => documents.push(doc), { schema: yaml.DEFAULT_SCHEMA, ...options });
   return documents;
@@ -92,6 +107,7 @@ function safeLoadAll(content, options = {}) {
  * @returns {string} YAML string representation
  */
 function safeDump(data, options = {}) {
+  const yaml = getYaml();
   return yaml.dump(data, {
     schema: yaml.DEFAULT_SCHEMA,
     ...options,
@@ -135,11 +151,14 @@ undef: !!js/undefined ''
   }
 }
 
-module.exports = {
-  safeLoad,
-  safeLoadAll,
-  safeDump,
-  isSecureConfiguration,
-  // Re-export yaml module for edge cases that need direct access
-  yaml,
-};
+// Use a getter for the yaml export so tests can access the raw module
+// without triggering eager loading at require() time
+Object.defineProperty(module.exports, 'yaml', {
+  get: () => getYaml(),
+  enumerable: true,
+});
+
+module.exports.safeLoad = safeLoad;
+module.exports.safeLoadAll = safeLoadAll;
+module.exports.safeDump = safeDump;
+module.exports.isSecureConfiguration = isSecureConfiguration;
