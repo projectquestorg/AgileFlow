@@ -417,24 +417,44 @@ Document your CI/CD workflows and configuration here.
 }
 
 /**
+ * Check if a folder is an AgileFlow docs folder
+ * @param {string} folderPath - Path to check
+ * @returns {boolean} True if it's an AgileFlow docs folder
+ */
+function isAgileFlowDocsFolder(folderPath) {
+  const metadataPath = path.join(folderPath, '00-meta', 'agileflow-metadata.json');
+  return fs.existsSync(metadataPath);
+}
+
+/**
  * Get the docs folder name from metadata or default
+ * Checks both 'docs' and 'agileflow-docs' folders
  * @param {string} targetDir - Target directory
  * @returns {Promise<string>} Docs folder name
  */
 async function getDocsFolderName(targetDir) {
-  try {
-    const metadataPath = path.join(targetDir, 'docs', '00-meta', 'agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
-      return metadata.docsFolder || 'docs';
+  // Check in order of preference: existing metadata, then probe folders
+  const candidateFolders = ['docs', 'agileflow-docs'];
+
+  for (const folder of candidateFolders) {
+    try {
+      const folderPath = path.join(targetDir, folder);
+      const metadataPath = path.join(folderPath, '00-meta', 'agileflow-metadata.json');
+      if (fs.existsSync(metadataPath)) {
+        const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf8'));
+        return metadata.docsFolder || folder;
+      }
+    } catch (_err) {
+      // Continue to next candidate
     }
-  } catch (err) {
-    // Ignore errors, return default
   }
+
+  // No existing AgileFlow docs found, default to 'docs'
   return 'docs';
 }
 
 module.exports = {
   createDocsStructure,
   getDocsFolderName,
+  isAgileFlowDocsFolder,
 };

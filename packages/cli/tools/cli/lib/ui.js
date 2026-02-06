@@ -112,9 +112,15 @@ async function promptInstall() {
   // Always install to current directory
   const directory = path.resolve('.');
 
-  // Check if docs/ folder already exists (conflict detection)
+  // Check if docs/ folder already exists and if it's an AgileFlow docs folder
   const defaultDocsFolder = 'docs';
-  const docsExists = fs.existsSync(path.join(directory, defaultDocsFolder));
+  const docsPath = path.join(directory, defaultDocsFolder);
+  const docsExists = fs.existsSync(docsPath);
+
+  // Check if existing docs/ is an AgileFlow docs folder
+  // AgileFlow docs have 00-meta/agileflow-metadata.json
+  const isAgileFlowDocs =
+    docsExists && fs.existsSync(path.join(docsPath, '00-meta', 'agileflow-metadata.json'));
 
   // Build questions dynamically - only ask what's necessary
   const questions = [
@@ -132,12 +138,13 @@ async function promptInstall() {
     },
   ];
 
-  // Only ask about docs folder if it already exists (potential conflict)
-  if (docsExists) {
+  // Only ask about docs folder if it exists AND is not an AgileFlow folder
+  // If it's already an AgileFlow folder, reuse it silently
+  if (docsExists && !isAgileFlowDocs) {
     questions.push({
       type: 'input',
       name: 'docsFolder',
-      message: `A 'docs/' folder already exists. Use a different name for AgileFlow docs?`,
+      message: `A 'docs/' folder already exists (not AgileFlow). Use a different name?`,
       default: 'agileflow-docs',
       validate: input => {
         if (!/^[a-zA-Z0-9._-]+$/.test(input)) {
