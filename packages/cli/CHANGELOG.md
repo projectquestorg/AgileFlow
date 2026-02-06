@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.96.3] - 2026-02-06
+
+### Fixed
+- Codex CLI subcommand support for nested commands
+
 ## [2.96.2] - 2026-02-06
 
 ### Fixed
