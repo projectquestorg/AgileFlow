@@ -110,8 +110,12 @@ ${c.yellow}Example:${c.reset}
       const statusAfter = getSyncStatus(rootDir);
       console.log(`${c.dim}Updated status:${c.reset}`);
       console.log(`  Total ideas:  ${statusAfter.totalIdeas}`);
-      console.log(`  Pending:      ${statusAfter.pending} ${c.dim}(was ${statusBefore.pending})${c.reset}`);
-      console.log(`  Implemented:  ${statusAfter.implemented} ${c.green}(+${result.updated})${c.reset}`);
+      console.log(
+        `  Pending:      ${statusAfter.pending} ${c.dim}(was ${statusBefore.pending})${c.reset}`
+      );
+      console.log(
+        `  Implemented:  ${statusAfter.implemented} ${c.green}(+${result.updated})${c.reset}`
+      );
       console.log();
     }
   }

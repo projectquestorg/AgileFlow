@@ -159,7 +159,9 @@ describe('session-display', () => {
 
     it('truncates long nicknames', () => {
       const byPhase = {
-        [SESSION_PHASES.TODO]: [{ id: '1', nickname: 'very-long-nickname-that-should-be-truncated' }],
+        [SESSION_PHASES.TODO]: [
+          { id: '1', nickname: 'very-long-nickname-that-should-be-truncated' },
+        ],
         [SESSION_PHASES.CODING]: [],
         [SESSION_PHASES.REVIEW]: [],
         [SESSION_PHASES.MERGED]: [],
@@ -175,8 +177,22 @@ describe('session-display', () => {
   describe('formatSessionsTable', () => {
     it('formats sessions as table', () => {
       const sessions = [
-        { id: '1', nickname: 'test', branch: 'main', path: '/path/1', active: true, current: false },
-        { id: '2', nickname: null, branch: 'feature', path: '/path/2', active: false, current: true },
+        {
+          id: '1',
+          nickname: 'test',
+          branch: 'main',
+          path: '/path/1',
+          active: true,
+          current: false,
+        },
+        {
+          id: '2',
+          nickname: null,
+          branch: 'feature',
+          path: '/path/2',
+          active: false,
+          current: true,
+        },
       ];
 
       const result = formatSessionsTable(sessions);
@@ -263,7 +279,7 @@ describe('session-display', () => {
     it('detects orphaned registry entries', () => {
       const mockRegistry = {
         sessions: {
-          '1': { is_main: false, path: '/nonexistent/path', last_active: new Date().toISOString() },
+          1: { is_main: false, path: '/nonexistent/path', last_active: new Date().toISOString() },
         },
       };
       const loadRegistry = () => mockRegistry;
@@ -281,7 +297,7 @@ describe('session-display', () => {
 
       const mockRegistry = {
         sessions: {
-          '1': { is_main: false, path: os.tmpdir(), last_active: oldDate.toISOString() },
+          1: { is_main: false, path: os.tmpdir(), last_active: oldDate.toISOString() },
         },
       };
       const loadRegistry = () => mockRegistry;
@@ -294,7 +310,7 @@ describe('session-display', () => {
     it('skips main session', () => {
       const mockRegistry = {
         sessions: {
-          '1': { is_main: true, path: '/nonexistent', last_active: new Date().toISOString() },
+          1: { is_main: true, path: '/nonexistent', last_active: new Date().toISOString() },
         },
       };
       const loadRegistry = () => mockRegistry;
@@ -311,7 +327,7 @@ describe('session-display', () => {
 
       const mockRegistry = {
         sessions: {
-          '1': { is_main: false, path: os.tmpdir(), last_active: recentDate.toISOString() },
+          1: { is_main: false, path: os.tmpdir(), last_active: recentDate.toISOString() },
         },
       };
       const loadRegistry = () => mockRegistry;

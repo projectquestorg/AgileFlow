@@ -483,7 +483,12 @@ function clearPreserveRulesCache() {
  * @returns {string} Content with all placeholders replaced
  */
 function injectContent(content, context = {}) {
-  const { coreDir, agileflowFolder = '.agileflow', docsFolder = 'docs', version = 'unknown' } = context;
+  const {
+    coreDir,
+    agileflowFolder = '.agileflow',
+    docsFolder = 'docs',
+    version = 'unknown',
+  } = context;
 
   let result = content;
 
@@ -508,10 +513,7 @@ function injectContent(content, context = {}) {
     'agileflow_folder',
     agileflowFolder
   ).sanitized;
-  const safeDocsFolder = validatePlaceholderValue(
-    'docs_folder',
-    docsFolder
-  ).sanitized;
+  const safeDocsFolder = validatePlaceholderValue('docs_folder', docsFolder).sanitized;
 
   // Replace count placeholders (both formats: {{X}} and <!-- {{X}} -->)
   result = result.replace(/\{\{COMMAND_COUNT\}\}/g, String(safeCommandCount));

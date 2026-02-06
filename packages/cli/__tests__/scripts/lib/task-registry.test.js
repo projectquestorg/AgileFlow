@@ -1182,7 +1182,10 @@ describe('Edge Cases', () => {
       // Create a fresh lock that will be held
       const lockPath = path.join(testDir, '.agileflow', 'state', 'timeout-test.lock');
       fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-      fs.writeFileSync(lockPath, JSON.stringify({ pid: process.pid, acquired: new Date().toISOString() }));
+      fs.writeFileSync(
+        lockPath,
+        JSON.stringify({ pid: process.pid, acquired: new Date().toISOString() })
+      );
 
       // Try to acquire with very short timeout
       const lock = new FileLock(lockPath, { timeoutMs: 50, staleMs: 60000 });
@@ -1377,7 +1380,12 @@ describe('Edge Cases', () => {
     it('getAll with multiple filters', () => {
       registry.create({ id: 't1', description: 'API task', subagent_type: 'api', story_id: 'S1' });
       registry.create({ id: 't2', description: 'UI task', subagent_type: 'ui', story_id: 'S1' });
-      registry.create({ id: 't3', description: 'API task 2', subagent_type: 'api', story_id: 'S2' });
+      registry.create({
+        id: 't3',
+        description: 'API task 2',
+        subagent_type: 'api',
+        story_id: 'S2',
+      });
 
       // Filter by subagent_type
       const apiTasks = registry.getAll({ subagent_type: 'api' });
@@ -1403,8 +1411,9 @@ describe('Edge Cases', () => {
 
       // Check chronological order (audit trail uses 'at' field)
       for (let i = 1; i < trail.length; i++) {
-        expect(new Date(trail[i].at).getTime())
-          .toBeGreaterThanOrEqual(new Date(trail[i - 1].at).getTime());
+        expect(new Date(trail[i].at).getTime()).toBeGreaterThanOrEqual(
+          new Date(trail[i - 1].at).getTime()
+        );
       }
     });
   });

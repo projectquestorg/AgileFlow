@@ -152,13 +152,27 @@ function saveRegistry(registryData) {
 // Lock File Wrappers (bind to SESSIONS_DIR)
 // ============================================================================
 
-function getLockPath(sessionId) { return _getLockPath(SESSIONS_DIR, sessionId); }
-function readLock(sessionId) { return _readLock(SESSIONS_DIR, sessionId); }
-async function readLockAsync(sessionId) { return _readLockAsync(SESSIONS_DIR, sessionId); }
-function writeLock(sessionId, pid) { return _writeLock(SESSIONS_DIR, sessionId, pid); }
-function removeLock(sessionId) { return _removeLock(SESSIONS_DIR, sessionId); }
-function isSessionActive(sessionId) { return _isSessionActive(SESSIONS_DIR, sessionId); }
-async function isSessionActiveAsync(sessionId) { return _isSessionActiveAsync(SESSIONS_DIR, sessionId); }
+function getLockPath(sessionId) {
+  return _getLockPath(SESSIONS_DIR, sessionId);
+}
+function readLock(sessionId) {
+  return _readLock(SESSIONS_DIR, sessionId);
+}
+async function readLockAsync(sessionId) {
+  return _readLockAsync(SESSIONS_DIR, sessionId);
+}
+function writeLock(sessionId, pid) {
+  return _writeLock(SESSIONS_DIR, sessionId, pid);
+}
+function removeLock(sessionId) {
+  return _removeLock(SESSIONS_DIR, sessionId);
+}
+function isSessionActive(sessionId) {
+  return _isSessionActive(SESSIONS_DIR, sessionId);
+}
+async function isSessionActiveAsync(sessionId) {
+  return _isSessionActiveAsync(SESSIONS_DIR, sessionId);
+}
 
 // ============================================================================
 // Stale Lock Cleanup
@@ -169,7 +183,14 @@ function processStalelock(id, session, lock, dryRun) {
   const pid = parseInt(lock.pid, 10);
   if (isPidAlive(pid)) return null;
   if (!dryRun) removeLock(id);
-  return { id, nickname: session.nickname, branch: session.branch, pid, reason: 'pid_dead', path: session.path };
+  return {
+    id,
+    nickname: session.nickname,
+    branch: session.branch,
+    pid,
+    reason: 'pid_dead',
+    path: session.path,
+  };
 }
 
 function cleanupStaleLocks(registry, options = {}) {
@@ -189,7 +210,9 @@ async function cleanupStaleLocksAsync(registry, options = {}) {
 
   const lockResults = await Promise.all(
     sessionEntries.map(async ([id, session]) => ({
-      id, session, lock: await readLockAsync(id),
+      id,
+      session,
+      lock: await readLockAsync(id),
     }))
   );
 
@@ -235,7 +258,10 @@ function registerSession(nickname = null, threadType = null) {
 
   let existingId = null;
   for (const [id, session] of Object.entries(registry.sessions)) {
-    if (session.path === cwd) { existingId = id; break; }
+    if (session.path === cwd) {
+      existingId = id;
+      break;
+    }
   }
 
   if (existingId) {
@@ -254,13 +280,18 @@ function registerSession(nickname = null, threadType = null) {
   const sessionId = String(registry.next_id);
   registry.next_id++;
   const isMain = cwd === ROOT && !isGitWorktree(cwd);
-  const detectedType = threadType && THREAD_TYPES.includes(threadType)
-    ? threadType : detectThreadType(null, !isMain);
+  const detectedType =
+    threadType && THREAD_TYPES.includes(threadType) ? threadType : detectThreadType(null, !isMain);
 
   registry.sessions[sessionId] = {
-    path: cwd, branch, story: story ? story.id : null, nickname: nickname || null,
-    created: new Date().toISOString(), last_active: new Date().toISOString(),
-    is_main: isMain, thread_type: detectedType,
+    path: cwd,
+    branch,
+    story: story ? story.id : null,
+    nickname: nickname || null,
+    created: new Date().toISOString(),
+    last_active: new Date().toISOString(),
+    is_main: isMain,
+    thread_type: detectedType,
   };
 
   writeLock(sessionId, pid);
@@ -295,10 +326,16 @@ async function createSession(options = {}) {
   const dirName = nickname || sessionId;
 
   if (!isValidBranchName(branchName)) {
-    return { success: false, error: `Invalid branch name: "${branchName}". Use only letters, numbers, hyphens, underscores, and forward slashes.` };
+    return {
+      success: false,
+      error: `Invalid branch name: "${branchName}". Use only letters, numbers, hyphens, underscores, and forward slashes.`,
+    };
   }
   if (nickname && !isValidSessionNickname(nickname)) {
-    return { success: false, error: `Invalid nickname: "${nickname}". Use only letters, numbers, hyphens, and underscores.` };
+    return {
+      success: false,
+      error: `Invalid nickname: "${nickname}". Use only letters, numbers, hyphens, and underscores.`,
+    };
   }
 
   const worktreePath = path.resolve(ROOT, '..', `${projectName}-${dirName}`);
@@ -307,18 +344,27 @@ async function createSession(options = {}) {
   }
 
   // Create branch if needed
-  const checkRef = spawnSync('git', ['show-ref', '--verify', '--quiet', `refs/heads/${branchName}`], { cwd: ROOT, encoding: 'utf8' });
+  const checkRef = spawnSync(
+    'git',
+    ['show-ref', '--verify', '--quiet', `refs/heads/${branchName}`],
+    { cwd: ROOT, encoding: 'utf8' }
+  );
   let branchCreatedByUs = false;
   if (checkRef.status !== 0) {
     const createBranch = spawnSync('git', ['branch', branchName], { cwd: ROOT, encoding: 'utf8' });
     if (createBranch.status !== 0) {
-      return { success: false, error: `Failed to create branch: ${createBranch.stderr || 'unknown error'}` };
+      return {
+        success: false,
+        error: `Failed to create branch: ${createBranch.stderr || 'unknown error'}`,
+      };
     }
     branchCreatedByUs = true;
   }
 
   const timeoutMs = options.timeout || DEFAULT_WORKTREE_TIMEOUT_MS;
-  const stopProgress = progressIndicator('Creating worktree (this may take a while for large repos)');
+  const stopProgress = progressIndicator(
+    'Creating worktree (this may take a while for large repos)'
+  );
 
   try {
     await createWorktreeWithTimeout(worktreePath, branchName, timeoutMs);
@@ -337,7 +383,12 @@ async function createSession(options = {}) {
     const src = path.join(ROOT, envFile);
     const dest = path.join(worktreePath, envFile);
     if (fs.existsSync(src) && !fs.existsSync(dest)) {
-      try { fs.copyFileSync(src, dest); copiedEnvFiles.push(envFile); } catch (e) { /* ignore */ }
+      try {
+        fs.copyFileSync(src, dest);
+        copiedEnvFiles.push(envFile);
+      } catch (e) {
+        /* ignore */
+      }
     }
   }
 
@@ -348,7 +399,12 @@ async function createSession(options = {}) {
     const src = path.join(ROOT, folder);
     const dest = path.join(worktreePath, folder);
     if (fs.existsSync(src)) {
-      try { fs.cpSync(src, dest, { recursive: true, force: true }); copiedFolders.push(folder); } catch (e) { /* ignore */ }
+      try {
+        fs.cpSync(src, dest, { recursive: true, force: true });
+        copiedFolders.push(folder);
+      } catch (e) {
+        /* ignore */
+      }
     }
   }
 
@@ -357,10 +413,13 @@ async function createSession(options = {}) {
   const sessionsSymlinkDest = path.join(worktreePath, '.agileflow', 'sessions');
   if (fs.existsSync(sessionsSymlinkSrc)) {
     try {
-      if (fs.existsSync(sessionsSymlinkDest)) fs.rmSync(sessionsSymlinkDest, { recursive: true, force: true });
+      if (fs.existsSync(sessionsSymlinkDest))
+        fs.rmSync(sessionsSymlinkDest, { recursive: true, force: true });
       const relPath = path.relative(path.dirname(sessionsSymlinkDest), sessionsSymlinkSrc);
       fs.symlinkSync(relPath, sessionsSymlinkDest, 'dir');
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   // Symlink docs
@@ -376,7 +435,12 @@ async function createSession(options = {}) {
         fs.symlinkSync(relPath, dest, 'dir');
         symlinkedFolders.push(folder);
       } catch (e) {
-        try { fs.cpSync(src, dest, { recursive: true, force: true }); copiedFolders.push(folder); } catch (copyErr) { /* ignore */ }
+        try {
+          fs.cpSync(src, dest, { recursive: true, force: true });
+          copiedFolders.push(folder);
+        } catch (copyErr) {
+          /* ignore */
+        }
       }
     }
   }
@@ -386,9 +450,14 @@ async function createSession(options = {}) {
 
   registry.next_id++;
   registry.sessions[sessionId] = {
-    path: worktreePath, branch: branchName, story: null, nickname,
-    created: new Date().toISOString(), last_active: new Date().toISOString(),
-    is_main: false, thread_type: options.thread_type || 'parallel',
+    path: worktreePath,
+    branch: branchName,
+    story: null,
+    nickname,
+    created: new Date().toISOString(),
+    last_active: new Date().toISOString(),
+    is_main: false,
+    thread_type: options.thread_type || 'parallel',
     inherited_flags: inheritedFlags || null,
   };
   saveRegistry(registry);
@@ -397,17 +466,25 @@ async function createSession(options = {}) {
   const claudeCmd = inheritedFlags ? `claude ${inheritedFlags}` : 'claude';
 
   return {
-    success: true, sessionId, path: worktreePath, branch: branchName,
+    success: true,
+    sessionId,
+    path: worktreePath,
+    branch: branchName,
     thread_type: registry.sessions[sessionId].thread_type,
     command: `cd "${worktreePath}" && ${claudeCmd}`,
     inheritedFlags: inheritedFlags || null,
-    envFilesCopied: copiedEnvFiles, foldersCopied: copiedFolders, foldersSymlinked: symlinkedFolders,
+    envFilesCopied: copiedEnvFiles,
+    foldersCopied: copiedFolders,
+    foldersSymlinked: symlinkedFolders,
   };
 }
 
 function buildSessionsList(registrySessions, activeChecks, cwd) {
   const sessions = Object.entries(registrySessions).map(([id, session]) => ({
-    id, ...session, active: activeChecks[id] || false, current: session.path === cwd,
+    id,
+    ...session,
+    active: activeChecks[id] || false,
+    current: session.path === cwd,
   }));
   sessions.sort((a, b) => parseInt(a.id) - parseInt(b.id));
   return sessions;
@@ -419,7 +496,11 @@ function getSessions() {
   const cwd = process.cwd();
   const activeChecks = {};
   for (const id of Object.keys(registry.sessions)) activeChecks[id] = isSessionActive(id);
-  return { sessions: buildSessionsList(registry.sessions, activeChecks, cwd), cleaned: cleanupResult.count, cleanedSessions: cleanupResult.sessions };
+  return {
+    sessions: buildSessionsList(registry.sessions, activeChecks, cwd),
+    cleaned: cleanupResult.count,
+    cleanedSessions: cleanupResult.sessions,
+  };
 }
 
 async function getSessionsAsync() {
@@ -427,9 +508,15 @@ async function getSessionsAsync() {
   const cleanupResult = await cleanupStaleLocksAsync(registry);
   const sessionEntries = Object.entries(registry.sessions);
   const cwd = process.cwd();
-  const activeResults = await Promise.all(sessionEntries.map(async ([id]) => [id, await isSessionActiveAsync(id)]));
+  const activeResults = await Promise.all(
+    sessionEntries.map(async ([id]) => [id, await isSessionActiveAsync(id)])
+  );
   const activeChecks = Object.fromEntries(activeResults);
-  return { sessions: buildSessionsList(registry.sessions, activeChecks, cwd), cleaned: cleanupResult.count, cleanedSessions: cleanupResult.sessions };
+  return {
+    sessions: buildSessionsList(registry.sessions, activeChecks, cwd),
+    cleaned: cleanupResult.count,
+    cleanedSessions: cleanupResult.sessions,
+  };
 }
 
 function getActiveSessionCount() {
@@ -447,10 +534,14 @@ function deleteSession(sessionId, removeWorktree = false) {
   removeLock(sessionId);
   if (removeWorktree && fs.existsSync(session.path)) {
     const { execSync } = require('child_process');
-    try { execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' }); }
-    catch (e) {
-      try { execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' }); }
-      catch (e2) { return { success: false, error: `Failed to remove worktree: ${e2.message}` }; }
+    try {
+      execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+    } catch (e) {
+      try {
+        execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+      } catch (e2) {
+        return { success: false, error: `Failed to remove worktree: ${e2.message}` };
+      }
     }
   }
   delete registry.sessions[sessionId];
@@ -466,23 +557,36 @@ const SESSION_STATE_PATH = getSessionStatePath(ROOT);
 
 function switchSession(sessionIdOrNickname) {
   const registry = loadRegistry();
-  let targetSession = null, targetId = null;
+  let targetSession = null,
+    targetId = null;
   for (const [id, session] of Object.entries(registry.sessions)) {
     if (id === sessionIdOrNickname || session.nickname === sessionIdOrNickname) {
-      targetSession = session; targetId = id; break;
+      targetSession = session;
+      targetId = id;
+      break;
     }
   }
-  if (!targetSession) return { success: false, error: `Session "${sessionIdOrNickname}" not found` };
-  if (!fs.existsSync(targetSession.path)) return { success: false, error: `Session directory does not exist: ${targetSession.path}` };
+  if (!targetSession)
+    return { success: false, error: `Session "${sessionIdOrNickname}" not found` };
+  if (!fs.existsSync(targetSession.path))
+    return { success: false, error: `Session directory does not exist: ${targetSession.path}` };
 
   let sessionState = {};
   if (fs.existsSync(SESSION_STATE_PATH)) {
-    try { sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8')); } catch (e) { /* start fresh */ }
+    try {
+      sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8'));
+    } catch (e) {
+      /* start fresh */
+    }
   }
 
   sessionState.active_session = {
-    id: targetId, nickname: targetSession.nickname, path: targetSession.path,
-    branch: targetSession.branch, switched_at: new Date().toISOString(), original_cwd: ROOT,
+    id: targetId,
+    nickname: targetSession.nickname,
+    path: targetSession.path,
+    branch: targetSession.branch,
+    switched_at: new Date().toISOString(),
+    original_cwd: ROOT,
   };
 
   const stateDir = path.dirname(SESSION_STATE_PATH);
@@ -492,7 +596,17 @@ function switchSession(sessionIdOrNickname) {
   registry.sessions[targetId].last_active = new Date().toISOString();
   saveRegistry(registry);
 
-  return { success: true, session: { id: targetId, nickname: targetSession.nickname, path: targetSession.path, branch: targetSession.branch }, path: targetSession.path, addDirCommand: `/add-dir ${targetSession.path}` };
+  return {
+    success: true,
+    session: {
+      id: targetId,
+      nickname: targetSession.nickname,
+      path: targetSession.path,
+      branch: targetSession.branch,
+    },
+    path: targetSession.path,
+    addDirCommand: `/add-dir ${targetSession.path}`,
+  };
 }
 
 function clearActiveSession() {
@@ -502,15 +616,21 @@ function clearActiveSession() {
     delete sessionState.active_session;
     fs.writeFileSync(SESSION_STATE_PATH, JSON.stringify(sessionState, null, 2) + '\n');
     return { success: true };
-  } catch (e) { return { success: false, error: e.message }; }
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 }
 
 function getActiveSession() {
   if (!fs.existsSync(SESSION_STATE_PATH)) return { active: false };
   try {
     const sessionState = JSON.parse(fs.readFileSync(SESSION_STATE_PATH, 'utf8'));
-    return sessionState.active_session ? { active: true, session: sessionState.active_session } : { active: false };
-  } catch (e) { return { active: false }; }
+    return sessionState.active_session
+      ? { active: true, session: sessionState.active_session }
+      : { active: false };
+  } catch (e) {
+    return { active: false };
+  }
 }
 
 // ============================================================================
@@ -523,10 +643,14 @@ function getSessionThreadType(sessionId = null) {
   let targetId = sessionId;
   if (!targetId) {
     for (const [id, session] of Object.entries(registry.sessions)) {
-      if (session.path === cwd) { targetId = id; break; }
+      if (session.path === cwd) {
+        targetId = id;
+        break;
+      }
     }
   }
-  if (!targetId || !registry.sessions[targetId]) return { success: false, error: 'Session not found' };
+  if (!targetId || !registry.sessions[targetId])
+    return { success: false, error: 'Session not found' };
   const session = registry.sessions[targetId];
   const threadType = session.thread_type || (session.is_main ? 'base' : 'parallel');
   return { success: true, thread_type: threadType, session_id: targetId, is_main: session.is_main };
@@ -534,10 +658,14 @@ function getSessionThreadType(sessionId = null) {
 
 function setSessionThreadType(sessionId, threadType) {
   if (!THREAD_TYPES.includes(threadType)) {
-    return { success: false, error: `Invalid thread type: ${threadType}. Valid: ${THREAD_TYPES.join(', ')}` };
+    return {
+      success: false,
+      error: `Invalid thread type: ${threadType}. Valid: ${THREAD_TYPES.join(', ')}`,
+    };
   }
   const registry = loadRegistry();
-  if (!registry.sessions[sessionId]) return { success: false, error: `Session ${sessionId} not found` };
+  if (!registry.sessions[sessionId])
+    return { success: false, error: `Session ${sessionId} not found` };
   registry.sessions[sessionId].thread_type = threadType;
   saveRegistry(registry);
   return { success: true, thread_type: threadType };
@@ -551,7 +679,8 @@ function transitionThread(sessionId, targetType, options = {}) {
 
   const currentType = session.thread_type || (session.is_main ? 'base' : 'parallel');
   const result = sessionThreadMachine.transition(currentType, targetType, { force });
-  if (!result.success) return { success: false, from: currentType, to: targetType, error: result.error };
+  if (!result.success)
+    return { success: false, from: currentType, to: targetType, error: result.error };
   if (result.noop) return { success: true, from: currentType, to: targetType, noop: true };
 
   registry.sessions[sessionId].thread_type = targetType;
@@ -573,19 +702,52 @@ function getValidThreadTransitions(sessionId) {
 // Merge Operation Wrappers (delegate to merge-operations module)
 // ============================================================================
 
-function checkMergeability(sessionId) { return mergeOps.checkMergeability(sessionId, loadRegistry); }
-function getMergePreview(sessionId) { return mergeOps.getMergePreview(sessionId, loadRegistry); }
-function integrateSession(sessionId, options = {}) { return mergeOps.integrateSession(sessionId, options, loadRegistry, saveRegistry, removeLock); }
-function generateCommitMessage(session) { return mergeOps.generateCommitMessage(session); }
-function commitChanges(sessionId, options = {}) { return mergeOps.commitChanges(sessionId, options, loadRegistry); }
-function stashChanges(sessionId) { return mergeOps.stashChanges(sessionId, loadRegistry); }
-function unstashChanges(sessionId) { return mergeOps.unstashChanges(sessionId); }
-function discardChanges(sessionId) { return mergeOps.discardChanges(sessionId, loadRegistry); }
-function categorizeFile(filePath) { return mergeOps.categorizeFile(filePath); }
-function getMergeStrategy(category) { return mergeOps.getMergeStrategy(category); }
-function getConflictingFiles(sessionId) { return mergeOps.getConflictingFiles(sessionId, loadRegistry); }
-function getMergeHistory() { return mergeOps.getMergeHistory(); }
-function smartMerge(sessionId, options = {}) { return mergeOps.smartMerge(sessionId, options, loadRegistry, saveRegistry, removeLock, unregisterSession); }
+function checkMergeability(sessionId) {
+  return mergeOps.checkMergeability(sessionId, loadRegistry);
+}
+function getMergePreview(sessionId) {
+  return mergeOps.getMergePreview(sessionId, loadRegistry);
+}
+function integrateSession(sessionId, options = {}) {
+  return mergeOps.integrateSession(sessionId, options, loadRegistry, saveRegistry, removeLock);
+}
+function generateCommitMessage(session) {
+  return mergeOps.generateCommitMessage(session);
+}
+function commitChanges(sessionId, options = {}) {
+  return mergeOps.commitChanges(sessionId, options, loadRegistry);
+}
+function stashChanges(sessionId) {
+  return mergeOps.stashChanges(sessionId, loadRegistry);
+}
+function unstashChanges(sessionId) {
+  return mergeOps.unstashChanges(sessionId);
+}
+function discardChanges(sessionId) {
+  return mergeOps.discardChanges(sessionId, loadRegistry);
+}
+function categorizeFile(filePath) {
+  return mergeOps.categorizeFile(filePath);
+}
+function getMergeStrategy(category) {
+  return mergeOps.getMergeStrategy(category);
+}
+function getConflictingFiles(sessionId) {
+  return mergeOps.getConflictingFiles(sessionId, loadRegistry);
+}
+function getMergeHistory() {
+  return mergeOps.getMergeHistory();
+}
+function smartMerge(sessionId, options = {}) {
+  return mergeOps.smartMerge(
+    sessionId,
+    options,
+    loadRegistry,
+    saveRegistry,
+    removeLock,
+    unregisterSession
+  );
+}
 
 // ============================================================================
 // CLI Interface
@@ -605,8 +767,10 @@ function main() {
 
     case 'unregister': {
       const sessionId = args[1];
-      if (sessionId) { unregisterSession(sessionId); console.log(JSON.stringify({ success: true })); }
-      else console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+      if (sessionId) {
+        unregisterSession(sessionId);
+        console.log(JSON.stringify({ success: true }));
+      } else console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
       break;
     }
 
@@ -617,7 +781,10 @@ function main() {
         const arg = args[i];
         if (arg.startsWith('--')) {
           const key = arg.slice(2).split('=')[0];
-          if (!allowedKeys.includes(key)) { console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` })); return; }
+          if (!allowedKeys.includes(key)) {
+            console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
+            return;
+          }
           const eqIndex = arg.indexOf('=');
           if (eqIndex !== -1) options[key] = arg.slice(eqIndex + 1);
           else if (args[i + 1] && !args[i + 1].startsWith('--')) options[key] = args[++i];
@@ -625,21 +792,39 @@ function main() {
       }
       if (options.timeout) {
         options.timeout = parseInt(options.timeout, 10);
-        if (isNaN(options.timeout) || options.timeout < 1000) { console.log(JSON.stringify({ success: false, error: 'Timeout must be a number >= 1000 (milliseconds)' })); return; }
+        if (isNaN(options.timeout) || options.timeout < 1000) {
+          console.log(
+            JSON.stringify({
+              success: false,
+              error: 'Timeout must be a number >= 1000 (milliseconds)',
+            })
+          );
+          return;
+        }
       }
-      createSession(options).then(result => console.log(JSON.stringify(result))).catch(err => console.log(JSON.stringify({ success: false, error: err.message })));
+      createSession(options)
+        .then(result => console.log(JSON.stringify(result)))
+        .catch(err => console.log(JSON.stringify({ success: false, error: err.message })));
       break;
     }
 
     case 'list': {
       const { sessions, cleaned } = getSessions();
       if (args.includes('--json')) console.log(JSON.stringify({ sessions, cleaned }));
-      else if (args.includes('--kanban')) { console.log(renderKanbanBoard(sessions)); if (cleaned > 0) console.log(`${c.dim}Cleaned ${cleaned} stale lock(s)${c.reset}`); }
-      else { console.log(formatSessionsTable(sessions)); if (cleaned > 0) console.log(`${c.dim}Cleaned ${cleaned} stale lock(s)${c.reset}`); }
+      else if (args.includes('--kanban')) {
+        console.log(renderKanbanBoard(sessions));
+        if (cleaned > 0) console.log(`${c.dim}Cleaned ${cleaned} stale lock(s)${c.reset}`);
+      } else {
+        console.log(formatSessionsTable(sessions));
+        if (cleaned > 0) console.log(`${c.dim}Cleaned ${cleaned} stale lock(s)${c.reset}`);
+      }
       break;
     }
 
-    case 'count': { console.log(JSON.stringify({ count: getActiveSessionCount() })); break; }
+    case 'count': {
+      console.log(JSON.stringify({ count: getActiveSessionCount() }));
+      break;
+    }
 
     case 'delete': {
       const sessionId = args[1];
@@ -653,7 +838,13 @@ function main() {
       const cwd = process.cwd();
       const current = sessions.find(s => s.path === cwd);
       const others = sessions.filter(s => s.active && s.path !== cwd);
-      console.log(JSON.stringify({ current: current || null, otherActive: others.length, total: sessions.length }));
+      console.log(
+        JSON.stringify({
+          current: current || null,
+          otherActive: others.length,
+          total: sessions.length,
+        })
+      );
       break;
     }
 
@@ -667,9 +858,15 @@ function main() {
 
     case 'get': {
       const sessionId = args[1];
-      if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; }
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
       const session = getSession(sessionId);
-      if (!session) { console.log(JSON.stringify({ success: false, error: `Session ${sessionId} not found` })); return; }
+      if (!session) {
+        console.log(JSON.stringify({ success: false, error: `Session ${sessionId} not found` }));
+        return;
+      }
       console.log(JSON.stringify({ success: true, ...session }));
       break;
     }
@@ -682,28 +879,49 @@ function main() {
       const story = getCurrentStory();
       const pid = process.ppid || process.pid;
 
-      let sessionId = null, isNew = false;
-      for (const [id, session] of Object.entries(registry.sessions)) { if (session.path === cwd) { sessionId = id; break; } }
+      let sessionId = null,
+        isNew = false;
+      for (const [id, session] of Object.entries(registry.sessions)) {
+        if (session.path === cwd) {
+          sessionId = id;
+          break;
+        }
+      }
 
       if (sessionId) {
         registry.sessions[sessionId].branch = branch;
         registry.sessions[sessionId].story = story ? story.id : null;
         registry.sessions[sessionId].last_active = new Date().toISOString();
         if (nickname) registry.sessions[sessionId].nickname = nickname;
-        if (!registry.sessions[sessionId].thread_type) registry.sessions[sessionId].thread_type = registry.sessions[sessionId].is_main ? 'base' : 'parallel';
+        if (!registry.sessions[sessionId].thread_type)
+          registry.sessions[sessionId].thread_type = registry.sessions[sessionId].is_main
+            ? 'base'
+            : 'parallel';
         writeLock(sessionId, pid);
       } else {
         sessionId = String(registry.next_id);
         registry.next_id++;
         const isMain = cwd === ROOT && !isGitWorktree(cwd);
-        registry.sessions[sessionId] = { path: cwd, branch, story: story ? story.id : null, nickname: nickname || null, created: new Date().toISOString(), last_active: new Date().toISOString(), is_main: isMain, thread_type: isMain ? 'base' : 'parallel' };
+        registry.sessions[sessionId] = {
+          path: cwd,
+          branch,
+          story: story ? story.id : null,
+          nickname: nickname || null,
+          created: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+          is_main: isMain,
+          thread_type: isMain ? 'base' : 'parallel',
+        };
         writeLock(sessionId, pid);
         isNew = true;
       }
       saveRegistry(registry);
 
       const cleanupResult = cleanupStaleLocks(registry);
-      const filteredCleanup = { count: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)).length, sessions: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)) };
+      const filteredCleanup = {
+        count: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)).length,
+        sessions: cleanupResult.sessions.filter(s => String(s.id) !== String(sessionId)),
+      };
 
       const sessions = [];
       let otherActive = 0;
@@ -714,16 +932,46 @@ function main() {
         if (active && !isCurrent) otherActive++;
       }
 
-      console.log(JSON.stringify({ registered: true, id: sessionId, isNew, current: sessions.find(s => s.current) || null, otherActive, total: sessions.length, cleaned: filteredCleanup.count, cleanedSessions: filteredCleanup.sessions }));
+      console.log(
+        JSON.stringify({
+          registered: true,
+          id: sessionId,
+          isNew,
+          current: sessions.find(s => s.current) || null,
+          otherActive,
+          total: sessions.length,
+          cleaned: filteredCleanup.count,
+          cleanedSessions: filteredCleanup.sessions,
+        })
+      );
       break;
     }
 
-    case 'check-merge': { const sessionId = args[1]; if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; } console.log(JSON.stringify(checkMergeability(sessionId))); break; }
-    case 'merge-preview': { const sessionId = args[1]; if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; } console.log(JSON.stringify(getMergePreview(sessionId))); break; }
+    case 'check-merge': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      console.log(JSON.stringify(checkMergeability(sessionId)));
+      break;
+    }
+    case 'merge-preview': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      console.log(JSON.stringify(getMergePreview(sessionId)));
+      break;
+    }
 
     case 'integrate': {
       const sessionId = args[1];
-      if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; }
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
       const options = {};
       const allowedKeys = ['strategy', 'deleteBranch', 'deleteWorktree', 'message'];
       for (let i = 2; i < args.length; i++) {
@@ -731,9 +979,17 @@ function main() {
         if (arg.startsWith('--')) {
           const eqIndex = arg.indexOf('=');
           let key, value;
-          if (eqIndex !== -1) { key = arg.slice(2, eqIndex); value = arg.slice(eqIndex + 1); }
-          else { key = arg.slice(2); value = args[++i]; }
-          if (!allowedKeys.includes(key)) { console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` })); return; }
+          if (eqIndex !== -1) {
+            key = arg.slice(2, eqIndex);
+            value = arg.slice(eqIndex + 1);
+          } else {
+            key = arg.slice(2);
+            value = args[++i];
+          }
+          if (!allowedKeys.includes(key)) {
+            console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
+            return;
+          }
           if (key === 'deleteBranch' || key === 'deleteWorktree') options[key] = value !== 'false';
           else options[key] = value;
         }
@@ -744,7 +1000,10 @@ function main() {
 
     case 'commit-changes': {
       const sessionId = args[1];
-      if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; }
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
       const options = {};
       for (let i = 2; i < args.length; i++) {
         const arg = args[i];
@@ -755,13 +1014,40 @@ function main() {
       break;
     }
 
-    case 'stash': { const sessionId = args[1]; if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; } console.log(JSON.stringify(stashChanges(sessionId))); break; }
-    case 'unstash': { const sessionId = args[1]; if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; } console.log(JSON.stringify(unstashChanges(sessionId))); break; }
-    case 'discard-changes': { const sessionId = args[1]; if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; } console.log(JSON.stringify(discardChanges(sessionId))); break; }
+    case 'stash': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      console.log(JSON.stringify(stashChanges(sessionId)));
+      break;
+    }
+    case 'unstash': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      console.log(JSON.stringify(unstashChanges(sessionId)));
+      break;
+    }
+    case 'discard-changes': {
+      const sessionId = args[1];
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
+      console.log(JSON.stringify(discardChanges(sessionId)));
+      break;
+    }
 
     case 'smart-merge': {
       const sessionId = args[1];
-      if (!sessionId) { console.log(JSON.stringify({ success: false, error: 'Session ID required' })); return; }
+      if (!sessionId) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID required' }));
+        return;
+      }
       const options = {};
       const allowedKeys = ['strategy', 'deleteBranch', 'deleteWorktree', 'message'];
       for (let i = 2; i < args.length; i++) {
@@ -769,9 +1055,17 @@ function main() {
         if (arg.startsWith('--')) {
           const eqIndex = arg.indexOf('=');
           let key, value;
-          if (eqIndex !== -1) { key = arg.slice(2, eqIndex); value = arg.slice(eqIndex + 1); }
-          else { key = arg.slice(2); value = args[++i]; }
-          if (!allowedKeys.includes(key)) { console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` })); return; }
+          if (eqIndex !== -1) {
+            key = arg.slice(2, eqIndex);
+            value = arg.slice(eqIndex + 1);
+          } else {
+            key = arg.slice(2);
+            value = args[++i];
+          }
+          if (!allowedKeys.includes(key)) {
+            console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
+            return;
+          }
           if (key === 'deleteBranch' || key === 'deleteWorktree') options[key] = value !== 'false';
           else options[key] = value;
         }
@@ -780,16 +1074,39 @@ function main() {
       break;
     }
 
-    case 'merge-history': { console.log(JSON.stringify(getMergeHistory(), null, 2)); break; }
-    case 'switch': { const sessionIdOrNickname = args[1]; if (!sessionIdOrNickname) { console.log(JSON.stringify({ success: false, error: 'Session ID or nickname required' })); return; } console.log(JSON.stringify(switchSession(sessionIdOrNickname), null, 2)); break; }
-    case 'active': { console.log(JSON.stringify(getActiveSession(), null, 2)); break; }
-    case 'clear-active': { console.log(JSON.stringify(clearActiveSession())); break; }
+    case 'merge-history': {
+      console.log(JSON.stringify(getMergeHistory(), null, 2));
+      break;
+    }
+    case 'switch': {
+      const sessionIdOrNickname = args[1];
+      if (!sessionIdOrNickname) {
+        console.log(JSON.stringify({ success: false, error: 'Session ID or nickname required' }));
+        return;
+      }
+      console.log(JSON.stringify(switchSession(sessionIdOrNickname), null, 2));
+      break;
+    }
+    case 'active': {
+      console.log(JSON.stringify(getActiveSession(), null, 2));
+      break;
+    }
+    case 'clear-active': {
+      console.log(JSON.stringify(clearActiveSession()));
+      break;
+    }
 
     case 'thread-type': {
       const subCommand = args[1];
       if (subCommand === 'set') {
-        const sessionId = args[2], threadType = args[3];
-        if (!sessionId || !threadType) { console.log(JSON.stringify({ success: false, error: 'Usage: thread-type set <sessionId> <type>' })); return; }
+        const sessionId = args[2],
+          threadType = args[3];
+        if (!sessionId || !threadType) {
+          console.log(
+            JSON.stringify({ success: false, error: 'Usage: thread-type set <sessionId> <type>' })
+          );
+          return;
+        }
         console.log(JSON.stringify(setSessionThreadType(sessionId, threadType)));
       } else {
         const sessionId = args[1] || null;
@@ -839,29 +1156,64 @@ ${c.cyan}Commands:${c.reset}
 
 module.exports = {
   // Registry injection (for testing)
-  injectRegistry, getRegistryInstance, resetRegistryCache,
+  injectRegistry,
+  getRegistryInstance,
+  resetRegistryCache,
   // Registry access
-  loadRegistry, saveRegistry,
+  loadRegistry,
+  saveRegistry,
   // Session management
-  registerSession, unregisterSession, getSession, createSession,
-  getSessions, getSessionsAsync, getActiveSessionCount, deleteSession,
-  isSessionActive, isSessionActiveAsync, cleanupStaleLocks, cleanupStaleLocksAsync,
+  registerSession,
+  unregisterSession,
+  getSession,
+  createSession,
+  getSessions,
+  getSessionsAsync,
+  getActiveSessionCount,
+  deleteSession,
+  isSessionActive,
+  isSessionActiveAsync,
+  cleanupStaleLocks,
+  cleanupStaleLocksAsync,
   // Session switching
-  switchSession, clearActiveSession, getActiveSession,
+  switchSession,
+  clearActiveSession,
+  getActiveSession,
   // Thread type tracking
-  THREAD_TYPES, detectThreadType, getSessionThreadType, setSessionThreadType,
-  transitionThread, getValidThreadTransitions,
+  THREAD_TYPES,
+  detectThreadType,
+  getSessionThreadType,
+  setSessionThreadType,
+  transitionThread,
+  getValidThreadTransitions,
   // Merge operations (delegated to module)
-  getMainBranch, checkMergeability, getMergePreview, integrateSession,
-  commitChanges, stashChanges, unstashChanges, discardChanges,
-  smartMerge, getConflictingFiles, categorizeFile, getMergeStrategy, getMergeHistory,
+  getMainBranch,
+  checkMergeability,
+  getMergePreview,
+  integrateSession,
+  commitChanges,
+  stashChanges,
+  unstashChanges,
+  discardChanges,
+  smartMerge,
+  getConflictingFiles,
+  categorizeFile,
+  getMergeStrategy,
+  getMergeHistory,
   // Kanban visualization
-  SESSION_PHASES, getSessionPhase, getSessionPhaseAsync, getSessionPhasesAsync,
-  renderKanbanBoard, renderKanbanBoardAsync,
+  SESSION_PHASES,
+  getSessionPhase,
+  getSessionPhaseAsync,
+  getSessionPhasesAsync,
+  renderKanbanBoard,
+  renderKanbanBoardAsync,
   // Display
-  formatSessionsTable, getFileDetails, getSessionsHealth,
+  formatSessionsTable,
+  getFileDetails,
+  getSessionsHealth,
   // Internal utilities (for testing)
-  execGitAsync, gitCache,
+  execGitAsync,
+  gitCache,
 };
 
 if (require.main === module) main();

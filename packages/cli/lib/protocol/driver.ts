@@ -5,7 +5,7 @@
  * Each driver translates its native CLI protocol into the unified IR format.
  */
 
-import { IREnvelope, IRSource } from "./ir";
+import { IREnvelope, IRSource } from './ir';
 
 // ============================================================================
 // Capability Types
@@ -15,21 +15,21 @@ import { IREnvelope, IRSource } from "./ir";
  * Named capabilities that drivers can support
  */
 export type CapabilityName =
-  | "file.read"
-  | "file.write"
-  | "file.edit"
-  | "shell.exec"
-  | "web.search"
-  | "web.fetch"
-  | "session.resume"
-  | "session.fork"      // Codex only
-  | "session.rollback"  // Codex only
-  | "agent.spawn"       // Claude only
-  | "todo.manage"
-  | "checkpoint"        // Gemini only
-  | "conductor"         // Gemini only
-  | "mcp.support"
-  | "image.vision";
+  | 'file.read'
+  | 'file.write'
+  | 'file.edit'
+  | 'shell.exec'
+  | 'web.search'
+  | 'web.fetch'
+  | 'session.resume'
+  | 'session.fork' // Codex only
+  | 'session.rollback' // Codex only
+  | 'agent.spawn' // Claude only
+  | 'todo.manage'
+  | 'checkpoint' // Gemini only
+  | 'conductor' // Gemini only
+  | 'mcp.support'
+  | 'image.vision';
 
 /**
  * Capability descriptor
@@ -37,7 +37,7 @@ export type CapabilityName =
 export interface Capability {
   name: CapabilityName;
   available: boolean;
-  viaMcp?: boolean;  // True if available via MCP extension
+  viaMcp?: boolean; // True if available via MCP extension
   details?: string;
 }
 
@@ -72,7 +72,7 @@ export interface DriverConfig {
  * Driver status information
  */
 export interface DriverStatus {
-  state: "starting" | "ready" | "busy" | "error" | "stopped";
+  state: 'starting' | 'ready' | 'busy' | 'error' | 'stopped';
   provider: IRSource;
   version?: string;
   model?: string;
@@ -89,27 +89,21 @@ export interface DriverStatus {
 /**
  * Command types that can be sent to a driver
  */
-export type CLICommandType =
-  | "message"
-  | "cancel"
-  | "refresh"
-  | "git"
-  | "terminal"
-  | "image";
+export type CLICommandType = 'message' | 'cancel' | 'refresh' | 'git' | 'terminal' | 'image';
 
 /**
  * Base command interface
  */
 export interface CLICommandBase {
   type: CLICommandType;
-  id?: string;  // Optional correlation ID
+  id?: string; // Optional correlation ID
 }
 
 /**
  * Send a message to the AI
  */
 export interface CLIMessageCommand extends CLICommandBase {
-  type: "message";
+  type: 'message';
   content: string;
   images?: Array<{
     base64: string;
@@ -121,23 +115,23 @@ export interface CLIMessageCommand extends CLICommandBase {
  * Cancel current operation
  */
 export interface CLICancelCommand extends CLICommandBase {
-  type: "cancel";
+  type: 'cancel';
 }
 
 /**
  * Request data refresh
  */
 export interface CLIRefreshCommand extends CLICommandBase {
-  type: "refresh";
-  what: "tasks" | "status" | "files" | "git" | "automations" | "inbox";
+  type: 'refresh';
+  what: 'tasks' | 'status' | 'files' | 'git' | 'automations' | 'inbox';
 }
 
 /**
  * Git operation
  */
 export interface CLIGitCommand extends CLICommandBase {
-  type: "git";
-  action: "stage" | "unstage" | "revert" | "commit" | "push" | "pr" | "diff" | "status";
+  type: 'git';
+  action: 'stage' | 'unstage' | 'revert' | 'commit' | 'push' | 'pr' | 'diff' | 'status';
   path?: string;
   message?: string;
   push?: boolean;
@@ -149,8 +143,8 @@ export interface CLIGitCommand extends CLICommandBase {
  * Terminal operation
  */
 export interface CLITerminalCommand extends CLICommandBase {
-  type: "terminal";
-  action: "spawn" | "input" | "resize" | "close";
+  type: 'terminal';
+  action: 'spawn' | 'input' | 'resize' | 'close';
   terminalId?: string;
   data?: string;
   cols?: number;
@@ -290,57 +284,57 @@ export interface DriverManager {
 // ============================================================================
 
 export const CLAUDE_CAPABILITIES: Capability[] = [
-  { name: "file.read", available: true },
-  { name: "file.write", available: true },
-  { name: "file.edit", available: true },
-  { name: "shell.exec", available: true },
-  { name: "web.search", available: true },
-  { name: "web.fetch", available: true },
-  { name: "session.resume", available: true },
-  { name: "session.fork", available: false },
-  { name: "session.rollback", available: false },
-  { name: "agent.spawn", available: true },
-  { name: "todo.manage", available: true },
-  { name: "checkpoint", available: false },
-  { name: "conductor", available: false },
-  { name: "mcp.support", available: true },
-  { name: "image.vision", available: true },
+  { name: 'file.read', available: true },
+  { name: 'file.write', available: true },
+  { name: 'file.edit', available: true },
+  { name: 'shell.exec', available: true },
+  { name: 'web.search', available: true },
+  { name: 'web.fetch', available: true },
+  { name: 'session.resume', available: true },
+  { name: 'session.fork', available: false },
+  { name: 'session.rollback', available: false },
+  { name: 'agent.spawn', available: true },
+  { name: 'todo.manage', available: true },
+  { name: 'checkpoint', available: false },
+  { name: 'conductor', available: false },
+  { name: 'mcp.support', available: true },
+  { name: 'image.vision', available: true },
 ];
 
 export const CODEX_CAPABILITIES: Capability[] = [
-  { name: "file.read", available: true },
-  { name: "file.write", available: true },
-  { name: "file.edit", available: true },
-  { name: "shell.exec", available: true },
-  { name: "web.search", available: true },
-  { name: "web.fetch", available: true },
-  { name: "session.resume", available: true },
-  { name: "session.fork", available: true },
-  { name: "session.rollback", available: true },
-  { name: "agent.spawn", available: false },
-  { name: "todo.manage", available: false },
-  { name: "checkpoint", available: false },
-  { name: "conductor", available: false },
-  { name: "mcp.support", available: true },
-  { name: "image.vision", available: true },
+  { name: 'file.read', available: true },
+  { name: 'file.write', available: true },
+  { name: 'file.edit', available: true },
+  { name: 'shell.exec', available: true },
+  { name: 'web.search', available: true },
+  { name: 'web.fetch', available: true },
+  { name: 'session.resume', available: true },
+  { name: 'session.fork', available: true },
+  { name: 'session.rollback', available: true },
+  { name: 'agent.spawn', available: false },
+  { name: 'todo.manage', available: false },
+  { name: 'checkpoint', available: false },
+  { name: 'conductor', available: false },
+  { name: 'mcp.support', available: true },
+  { name: 'image.vision', available: true },
 ];
 
 export const GEMINI_CAPABILITIES: Capability[] = [
-  { name: "file.read", available: true },
-  { name: "file.write", available: true },
-  { name: "file.edit", available: true },
-  { name: "shell.exec", available: true },
-  { name: "web.search", available: true },
-  { name: "web.fetch", available: true },
-  { name: "session.resume", available: true },
-  { name: "session.fork", available: false },
-  { name: "session.rollback", available: false },
-  { name: "agent.spawn", available: false },
-  { name: "todo.manage", available: true },
-  { name: "checkpoint", available: true },
-  { name: "conductor", available: true },
-  { name: "mcp.support", available: true },
-  { name: "image.vision", available: true },
+  { name: 'file.read', available: true },
+  { name: 'file.write', available: true },
+  { name: 'file.edit', available: true },
+  { name: 'shell.exec', available: true },
+  { name: 'web.search', available: true },
+  { name: 'web.fetch', available: true },
+  { name: 'session.resume', available: true },
+  { name: 'session.fork', available: false },
+  { name: 'session.rollback', available: false },
+  { name: 'agent.spawn', available: false },
+  { name: 'todo.manage', available: true },
+  { name: 'checkpoint', available: true },
+  { name: 'conductor', available: true },
+  { name: 'mcp.support', available: true },
+  { name: 'image.vision', available: true },
 ];
 
 /**
@@ -348,11 +342,11 @@ export const GEMINI_CAPABILITIES: Capability[] = [
  */
 export function getDefaultCapabilities(source: IRSource): Capability[] {
   switch (source) {
-    case "claude":
+    case 'claude':
       return CLAUDE_CAPABILITIES;
-    case "codex":
+    case 'codex':
       return CODEX_CAPABILITIES;
-    case "gemini":
+    case 'gemini':
       return GEMINI_CAPABILITIES;
     default:
       return [];

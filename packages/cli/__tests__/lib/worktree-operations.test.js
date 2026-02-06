@@ -57,10 +57,18 @@ describe('worktree-operations', () => {
       // Clean up worktree first if it exists
       if (worktreeDir && fs.existsSync(worktreeDir)) {
         try {
-          execSync(`git worktree remove "${worktreeDir}"`, { cwd: mainRepo, encoding: 'utf8', stdio: 'ignore' });
+          execSync(`git worktree remove "${worktreeDir}"`, {
+            cwd: mainRepo,
+            encoding: 'utf8',
+            stdio: 'ignore',
+          });
         } catch (e) {
           try {
-            execSync(`git worktree remove --force "${worktreeDir}"`, { cwd: mainRepo, encoding: 'utf8', stdio: 'ignore' });
+            execSync(`git worktree remove --force "${worktreeDir}"`, {
+              cwd: mainRepo,
+              encoding: 'utf8',
+              stdio: 'ignore',
+            });
           } catch (e2) {
             // Try direct removal
             fs.rmSync(worktreeDir, { recursive: true, force: true });
@@ -78,7 +86,10 @@ describe('worktree-operations', () => {
       // Create a worktree
       worktreeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'worktree-wt-'));
       fs.rmSync(worktreeDir, { recursive: true }); // Remove so git can create it
-      execSync(`git worktree add "${worktreeDir}" -b test-branch`, { cwd: mainRepo, encoding: 'utf8' });
+      execSync(`git worktree add "${worktreeDir}" -b test-branch`, {
+        cwd: mainRepo,
+        encoding: 'utf8',
+      });
 
       expect(isGitWorktree(worktreeDir)).toBe(true);
     });
@@ -168,7 +179,11 @@ describe('worktree-operations', () => {
       // Clean up worktree if it exists
       if (fs.existsSync(worktreePath)) {
         try {
-          execSync(`git worktree remove "${worktreePath}"`, { cwd: mainRepo, encoding: 'utf8', stdio: 'ignore' });
+          execSync(`git worktree remove "${worktreePath}"`, {
+            cwd: mainRepo,
+            encoding: 'utf8',
+            stdio: 'ignore',
+          });
         } catch (e) {
           fs.rmSync(worktreePath, { recursive: true, force: true });
         }
@@ -247,7 +262,9 @@ describe('worktree-operations', () => {
       execSync('git branch cleanup-test-branch', { cwd: mainRepo, encoding: 'utf8' });
 
       // Should not throw even if branch cleanup fails
-      expect(() => cleanupFailedWorktree('/nonexistent', 'cleanup-test-branch', true)).not.toThrow();
+      expect(() =>
+        cleanupFailedWorktree('/nonexistent', 'cleanup-test-branch', true)
+      ).not.toThrow();
 
       process.stderr.write = originalWrite;
     });

@@ -236,13 +236,7 @@ describe('merge-operations', () => {
     // and are better tested via the session-manager integration tests
 
     it('categorizeFile and getMergeStrategy work together', () => {
-      const files = [
-        'README.md',
-        'src/app.js',
-        'tests/unit.test.js',
-        'package.json',
-        'schema.sql',
-      ];
+      const files = ['README.md', 'src/app.js', 'tests/unit.test.js', 'package.json', 'schema.sql'];
 
       const strategies = files.map(f => ({
         file: f,

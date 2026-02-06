@@ -778,7 +778,9 @@ function generateRemainingContent(prefetched, options = {}) {
           content += `Implemented: ${summary.byStatus.implemented || 0}${C.reset}\n`;
 
           // Get recurring ideas that are NOT implemented
-          const recurringIdeas = ideationIndex.getRecurringIdeas(index, { excludeImplemented: true });
+          const recurringIdeas = ideationIndex.getRecurringIdeas(index, {
+            excludeImplemented: true,
+          });
 
           if (recurringIdeas.length > 0) {
             content += `\n${C.amber}🔥 Top Recurring Ideas (Not Yet Implemented)${C.reset}\n`;

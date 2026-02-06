@@ -14,36 +14,36 @@
  * All possible IR message kinds
  */
 export type IRKind =
-  | "init"           // Session initialization complete
-  | "text"           // Text content (non-streaming)
-  | "text_delta"     // Streaming text delta
-  | "tool_start"     // Tool execution started
-  | "tool_result"    // Tool execution completed
-  | "file_op"        // File operation (read/write/edit)
-  | "shell"          // Shell command execution
-  | "task"           // Task management (create/update/list)
-  | "session"        // Session state change
-  | "status"         // Status update (stories, epics)
-  | "git"            // Git operation
-  | "terminal"       // Terminal output
-  | "notification"   // Notification
-  | "error"          // Error occurred
-  | "done";          // Response complete
+  | 'init' // Session initialization complete
+  | 'text' // Text content (non-streaming)
+  | 'text_delta' // Streaming text delta
+  | 'tool_start' // Tool execution started
+  | 'tool_result' // Tool execution completed
+  | 'file_op' // File operation (read/write/edit)
+  | 'shell' // Shell command execution
+  | 'task' // Task management (create/update/list)
+  | 'session' // Session state change
+  | 'status' // Status update (stories, epics)
+  | 'git' // Git operation
+  | 'terminal' // Terminal output
+  | 'notification' // Notification
+  | 'error' // Error occurred
+  | 'done'; // Response complete
 
 /**
  * Source CLI provider identifier
  */
-export type IRSource = "claude" | "codex" | "gemini";
+export type IRSource = 'claude' | 'codex' | 'gemini';
 
 /**
  * Envelope wrapping all IR messages
  */
 export interface IREnvelope<T = unknown> {
   kind: IRKind;
-  ts: number;           // Unix timestamp (Date.now())
-  seq: number;          // Monotonic sequence number per session
-  sessionId: string;    // Session identifier
-  source: IRSource;     // Which CLI produced this
+  ts: number; // Unix timestamp (Date.now())
+  seq: number; // Monotonic sequence number per session
+  sessionId: string; // Session identifier
+  source: IRSource; // Which CLI produced this
   payload: T;
 }
 
@@ -66,7 +66,7 @@ export interface IRInit {
  */
 export interface IRText {
   text: string;
-  role: "assistant" | "system";
+  role: 'assistant' | 'system';
 }
 
 /**
@@ -82,8 +82,8 @@ export interface IRTextDelta {
  */
 export interface IRToolStart {
   id: string;
-  name: string;         // Normalized tool name (e.g., "file_read")
-  nativeName: string;   // Original CLI tool name (e.g., "Read")
+  name: string; // Normalized tool name (e.g., "file_read")
+  nativeName: string; // Original CLI tool name (e.g., "Read")
   input: Record<string, unknown>;
 }
 
@@ -102,7 +102,7 @@ export interface IRToolResult {
  * File operation payload
  */
 export interface IRFileOp {
-  action: "read" | "write" | "edit";
+  action: 'read' | 'write' | 'edit';
   path: string;
   content?: string;
   diff?: {
@@ -134,18 +134,18 @@ export interface IRShell {
  * Task operation payload
  */
 export interface IRTask {
-  action: "create" | "update" | "delete" | "list";
+  action: 'create' | 'update' | 'delete' | 'list';
   task?: {
     id: string;
     subject: string;
     description?: string;
-    status: "pending" | "in_progress" | "completed";
+    status: 'pending' | 'in_progress' | 'completed';
     activeForm?: string;
   };
   tasks?: Array<{
     id: string;
     subject: string;
-    status: "pending" | "in_progress" | "completed";
+    status: 'pending' | 'in_progress' | 'completed';
   }>;
 }
 
@@ -153,7 +153,7 @@ export interface IRTask {
  * Session state change payload
  */
 export interface IRSession {
-  state: "connected" | "thinking" | "idle" | "error" | "disconnected";
+  state: 'connected' | 'thinking' | 'idle' | 'error' | 'disconnected';
   message?: string;
 }
 
@@ -161,7 +161,7 @@ export interface IRSession {
  * Git operation payload
  */
 export interface IRGit {
-  action: "status" | "commit" | "push" | "stage" | "unstage" | "diff";
+  action: 'status' | 'commit' | 'push' | 'stage' | 'unstage' | 'diff';
   branch?: string;
   staged?: Array<{ path: string; status: string; additions?: number; deletions?: number }>;
   unstaged?: Array<{ path: string; status: string; additions?: number; deletions?: number }>;
@@ -175,7 +175,7 @@ export interface IRGit {
 export interface IRTerminal {
   terminalId: string;
   data: string;
-  type: "stdout" | "stderr" | "exit";
+  type: 'stdout' | 'stderr' | 'exit';
   exitCode?: number;
 }
 
@@ -183,7 +183,7 @@ export interface IRTerminal {
  * Notification payload
  */
 export interface IRNotification {
-  level: "info" | "success" | "warning" | "error";
+  level: 'info' | 'success' | 'warning' | 'error';
   title: string;
   message: string;
 }
@@ -235,37 +235,37 @@ export function resetIRSequence(): void {
 // ============================================================================
 
 export function isIRTextDelta(env: IREnvelope): env is IREnvelope<IRTextDelta> {
-  return env.kind === "text_delta";
+  return env.kind === 'text_delta';
 }
 
 export function isIRToolStart(env: IREnvelope): env is IREnvelope<IRToolStart> {
-  return env.kind === "tool_start";
+  return env.kind === 'tool_start';
 }
 
 export function isIRToolResult(env: IREnvelope): env is IREnvelope<IRToolResult> {
-  return env.kind === "tool_result";
+  return env.kind === 'tool_result';
 }
 
 export function isIRFileOp(env: IREnvelope): env is IREnvelope<IRFileOp> {
-  return env.kind === "file_op";
+  return env.kind === 'file_op';
 }
 
 export function isIRShell(env: IREnvelope): env is IREnvelope<IRShell> {
-  return env.kind === "shell";
+  return env.kind === 'shell';
 }
 
 export function isIRTask(env: IREnvelope): env is IREnvelope<IRTask> {
-  return env.kind === "task";
+  return env.kind === 'task';
 }
 
 export function isIRSession(env: IREnvelope): env is IREnvelope<IRSession> {
-  return env.kind === "session";
+  return env.kind === 'session';
 }
 
 export function isIRGit(env: IREnvelope): env is IREnvelope<IRGit> {
-  return env.kind === "git";
+  return env.kind === 'git';
 }
 
 export function isIRError(env: IREnvelope): env is IREnvelope<IRError> {
-  return env.kind === "error";
+  return env.kind === 'error';
 }

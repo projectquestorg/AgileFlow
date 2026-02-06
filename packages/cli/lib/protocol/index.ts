@@ -6,7 +6,7 @@
  */
 
 // IR Types
-export * from "./ir";
+export * from './ir';
 
 // Driver Interface
-export * from "./driver";
+export * from './driver';

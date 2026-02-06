@@ -310,7 +310,9 @@ async function spawn(args) {
 
   // Show inherited flags info if detected
   if (inheritedFlagsInfo) {
-    console.log(`${c.cyan}📋 Inheriting flags from parent session:${c.reset} ${inheritedFlagsInfo.flags}`);
+    console.log(
+      `${c.cyan}📋 Inheriting flags from parent session:${c.reset} ${inheritedFlagsInfo.flags}`
+    );
     if (inheritedFlagsInfo.mode) {
       console.log(`   ${dim(`Mode: ${inheritedFlagsInfo.mode}`)}`);
     }

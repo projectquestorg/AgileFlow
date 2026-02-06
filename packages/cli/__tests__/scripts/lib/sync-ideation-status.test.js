@@ -49,7 +49,9 @@ describe('sync-ideation-status', () => {
     });
 
     it('removes path prefix and lowercases', () => {
-      expect(normalizeReportName('docs/10-research/ideation-20260114.md')).toBe('ideation-20260114.md');
+      expect(normalizeReportName('docs/10-research/ideation-20260114.md')).toBe(
+        'ideation-20260114.md'
+      );
       expect(normalizeReportName('IDEATION-20260114.md')).toBe('ideation-20260114.md');
     });
 
@@ -404,16 +406,18 @@ describe('sync-ideation-status', () => {
 
     it('returns counts from index', () => {
       fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue(JSON.stringify({
-        ideas: {
-          'IDEA-0001': { status: 'pending' },
-          'IDEA-0002': { status: 'pending' },
-          'IDEA-0003': { status: 'implemented', linked_epic: 'EP-0017' },
-          'IDEA-0004': { status: 'implemented', linked_epic: 'EP-0017' },
-          'IDEA-0005': { status: 'implemented', linked_epic: 'EP-0018' },
-          'IDEA-0006': { status: 'rejected' },
-        },
-      }));
+      fs.readFileSync.mockReturnValue(
+        JSON.stringify({
+          ideas: {
+            'IDEA-0001': { status: 'pending' },
+            'IDEA-0002': { status: 'pending' },
+            'IDEA-0003': { status: 'implemented', linked_epic: 'EP-0017' },
+            'IDEA-0004': { status: 'implemented', linked_epic: 'EP-0017' },
+            'IDEA-0005': { status: 'implemented', linked_epic: 'EP-0018' },
+            'IDEA-0006': { status: 'rejected' },
+          },
+        })
+      );
 
       const result = getSyncStatus('/test/root');
 

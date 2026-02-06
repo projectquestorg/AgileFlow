@@ -251,10 +251,9 @@ describe('ideation-index.js', () => {
 
       saveIdeationIndex('/project', index);
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('docs/00-meta'),
-        { recursive: true }
-      );
+      expect(fs.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('docs/00-meta'), {
+        recursive: true,
+      });
     });
 
     it('updates timestamp on save', () => {
@@ -616,9 +615,7 @@ describe('ideation-index.js', () => {
       });
 
       if (result.length >= 2) {
-        expect(result[0].similarity.score).toBeGreaterThanOrEqual(
-          result[1].similarity.score
-        );
+        expect(result[0].similarity.score).toBeGreaterThanOrEqual(result[1].similarity.score);
       }
     });
   });
@@ -745,11 +742,7 @@ describe('ideation-index.js', () => {
       };
       index.ideas['IDEA-0002'] = {
         status: 'pending',
-        occurrences: [
-          { report: 'r1.md' },
-          { report: 'r2.md' },
-          { report: 'r3.md' },
-        ],
+        occurrences: [{ report: 'r1.md' }, { report: 'r2.md' }, { report: 'r3.md' }],
       };
 
       const result = getRecurringIdeas(index);

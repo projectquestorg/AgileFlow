@@ -235,7 +235,8 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     const sessionStartHooks = [
       {
         type: 'command',
-        command: 'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-welcome.js 2>/dev/null || true',
+        command:
+          'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-welcome.js 2>/dev/null || true',
         timeout: 10000,
       },
       {
@@ -246,7 +247,8 @@ class ClaudeCodeSetup extends BaseIdeSetup {
       },
       {
         type: 'command',
-        command: 'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/context-loader.js 2>/dev/null || true',
+        command:
+          'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/context-loader.js 2>/dev/null || true',
         timeout: 5000,
       },
     ];

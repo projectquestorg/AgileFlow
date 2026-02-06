@@ -38,28 +38,27 @@ function createClaudeBridge(options = {}) {
 
     return new Promise((resolve, reject) => {
       // Spawn claude with streaming JSON output
-      claudeProcess = spawn('claude', [
-        '--print',
-        '--output-format', 'stream-json',
-        '--permission-mode', 'default',
-        content
-      ], {
-        cwd,
-        env: { ...process.env },
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
+      claudeProcess = spawn(
+        'claude',
+        ['--print', '--output-format', 'stream-json', '--permission-mode', 'default', content],
+        {
+          cwd,
+          env: { ...process.env },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
 
       // Parse NDJSON output line by line
       const rl = readline.createInterface({
         input: claudeProcess.stdout,
-        crlfDelay: Infinity
+        crlfDelay: Infinity,
       });
 
       let fullResponse = '';
       let toolUseBuffer = new Map();
       let hadAssistantText = false;
 
-      rl.on('line', (line) => {
+      rl.on('line', line => {
         try {
           const event = JSON.parse(line);
           const result = processEvent(event, {
@@ -68,7 +67,7 @@ function createClaudeBridge(options = {}) {
             onToolResult,
             onInit,
             toolUseBuffer,
-            hadAssistantText
+            hadAssistantText,
           });
 
           // Track if we've sent assistant text
@@ -93,12 +92,12 @@ function createClaudeBridge(options = {}) {
         }
       });
 
-      claudeProcess.stderr.on('data', (data) => {
+      claudeProcess.stderr.on('data', data => {
         const errorText = data.toString();
         if (onError) onError(errorText);
       });
 
-      claudeProcess.on('close', (code) => {
+      claudeProcess.on('close', code => {
         isRunning = false;
         claudeProcess = null;
 
@@ -112,7 +111,7 @@ function createClaudeBridge(options = {}) {
         }
       });
 
-      claudeProcess.on('error', (err) => {
+      claudeProcess.on('error', err => {
         isRunning = false;
         claudeProcess = null;
         if (onError) onError(err.message);
@@ -142,7 +141,7 @@ function createClaudeBridge(options = {}) {
   return {
     sendMessage,
     cancel,
-    isBusy
+    isBusy,
   };
 }
 
@@ -187,12 +186,7 @@ function processEvent(event, handlers) {
         for (const block of event.message.content) {
           if (block.type === 'tool_result' && onToolResult) {
             const toolUse = toolUseBuffer.get(block.tool_use_id);
-            onToolResult(
-              block.tool_use_id,
-              block.content,
-              block.is_error,
-              toolUse?.name
-            );
+            onToolResult(block.tool_use_id, block.content, block.is_error, toolUse?.name);
           }
         }
       }
@@ -217,5 +211,5 @@ function processEvent(event, handlers) {
 }
 
 module.exports = {
-  createClaudeBridge
+  createClaudeBridge,
 };

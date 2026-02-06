@@ -21,7 +21,7 @@ import {
   CLICommand,
   IREventHandler,
   GEMINI_CAPABILITIES,
-} from "../protocol/driver";
+} from '../protocol/driver';
 import {
   IREnvelope,
   IRSource,
@@ -34,28 +34,28 @@ import {
   IRError,
   IRTask,
   IRNotification,
-} from "../protocol/ir";
+} from '../protocol/ir';
 
 // ============================================================================
 // Tool Name Mapping (Gemini -> IR normalized names)
 // ============================================================================
 
 const GEMINI_TOOL_MAPPING: Record<string, string> = {
-  "read_file": "file_read",
-  "write_file": "file_write",
-  "replace": "file_edit",
-  "run_shell_command": "shell_exec",
-  "glob": "file_glob",
-  "search_file_content": "file_grep",
-  "google_web_search": "web_search",
-  "fetch_url": "web_fetch",
-  "create_checkpoint": "checkpoint_create",
-  "restore_checkpoint": "checkpoint_restore",
-  "list_checkpoints": "checkpoint_list",
-  "conductor_run": "conductor_run",
-  "task_create": "todo_create",
-  "task_update": "todo_update",
-  "task_list": "todo_list",
+  read_file: 'file_read',
+  write_file: 'file_write',
+  replace: 'file_edit',
+  run_shell_command: 'shell_exec',
+  glob: 'file_glob',
+  search_file_content: 'file_grep',
+  google_web_search: 'web_search',
+  fetch_url: 'web_fetch',
+  create_checkpoint: 'checkpoint_create',
+  restore_checkpoint: 'checkpoint_restore',
+  list_checkpoints: 'checkpoint_list',
+  conductor_run: 'conductor_run',
+  task_create: 'todo_create',
+  task_update: 'todo_update',
+  task_list: 'todo_list',
 };
 
 /**
@@ -77,7 +77,7 @@ interface RateLimitState {
 }
 
 const RATE_LIMITS = {
-  rpm: 60,   // Requests per minute
+  rpm: 60, // Requests per minute
   rpd: 1000, // Requests per day
 };
 
@@ -86,22 +86,25 @@ const RATE_LIMITS = {
 // ============================================================================
 
 export class GeminiDriver implements Driver {
-  readonly id: IRSource = "gemini";
-  readonly name = "Gemini CLI";
+  readonly id: IRSource = 'gemini';
+  readonly name = 'Gemini CLI';
 
   private _status: DriverStatus = {
-    state: "stopped",
-    provider: "gemini",
+    state: 'stopped',
+    provider: 'gemini',
   };
 
   private _capabilities: Capability[] = [...GEMINI_CAPABILITIES];
   private _eventHandlers: Set<IREventHandler> = new Set();
-  private _sessions: Map<string, {
-    config: DriverConfig;
-    seqCounter: number;
-    checkpoints: string[];
-    conductorWorkflow?: string;
-  }> = new Map();
+  private _sessions: Map<
+    string,
+    {
+      config: DriverConfig;
+      seqCounter: number;
+      checkpoints: string[];
+      conductorWorkflow?: string;
+    }
+  > = new Map();
 
   // Rate limiting state
   private _rateLimit: RateLimitState = {
@@ -131,21 +134,21 @@ export class GeminiDriver implements Driver {
     });
 
     this._status = {
-      state: "ready",
-      provider: "gemini",
-      model: config.model || "gemini-2.0-flash",
+      state: 'ready',
+      provider: 'gemini',
+      model: config.model || 'gemini-2.0-flash',
       contextMax: config.maxTokens || 1000000, // 1M context
     };
 
     // Emit init event
     const initPayload: IRInit = {
-      provider: "gemini",
-      version: "1.0.0",
+      provider: 'gemini',
+      version: '1.0.0',
       capabilities: this._capabilities.filter(c => c.available).map(c => c.name),
       maxContext: config.maxTokens || 1000000,
     };
 
-    this._emit(createIREnvelope("init", sessionId, "gemini", initPayload));
+    this._emit(createIREnvelope('init', sessionId, 'gemini', initPayload));
   }
 
   async stop(sessionId: string): Promise<void> {
@@ -154,7 +157,7 @@ export class GeminiDriver implements Driver {
     if (this._sessions.size === 0) {
       this._status = {
         ...this._status,
-        state: "stopped",
+        state: 'stopped',
       };
     }
   }
@@ -223,26 +226,28 @@ export class GeminiDriver implements Driver {
     // Check rate limits
     const rateCheck = this._checkRateLimit();
     if (!rateCheck.allowed) {
-      this._emit(createIREnvelope<IRError>("error", sessionId, "gemini", {
-        code: "RATE_LIMITED",
-        message: `Rate limit exceeded. Retry after ${Math.ceil((rateCheck.retryAfterMs || 0) / 1000)} seconds.`,
-        details: {
-          rpm: this._rateLimit.requestsThisMinute,
-          rpd: this._rateLimit.requestsToday,
-          limits: RATE_LIMITS,
-        },
-        recoverable: true,
-      }));
+      this._emit(
+        createIREnvelope<IRError>('error', sessionId, 'gemini', {
+          code: 'RATE_LIMITED',
+          message: `Rate limit exceeded. Retry after ${Math.ceil((rateCheck.retryAfterMs || 0) / 1000)} seconds.`,
+          details: {
+            rpm: this._rateLimit.requestsThisMinute,
+            rpd: this._rateLimit.requestsToday,
+            limits: RATE_LIMITS,
+          },
+          recoverable: true,
+        })
+      );
       return;
     }
 
     this._recordRequest();
-    this._status = { ...this._status, state: "busy" };
+    this._status = { ...this._status, state: 'busy' };
 
     const sessionPayload: IRSession = {
-      state: "thinking",
+      state: 'thinking',
     };
-    this._emit(createIREnvelope("session", sessionId, "gemini", sessionPayload));
+    this._emit(createIREnvelope('session', sessionId, 'gemini', sessionPayload));
   }
 
   // -------------------------------------------------------------------------
@@ -254,16 +259,18 @@ export class GeminiDriver implements Driver {
    */
   async createCheckpoint(sessionId: string, name: string): Promise<string> {
     const session = this._sessions.get(sessionId);
-    if (!session) throw new Error("Session not found");
+    if (!session) throw new Error('Session not found');
 
     const checkpointId = `ckpt_${Date.now()}_${name}`;
     session.checkpoints.push(checkpointId);
 
-    this._emit(createIREnvelope<IRNotification>("notification", sessionId, "gemini", {
-      level: "info",
-      title: "Checkpoint Created",
-      message: `Checkpoint "${name}" created (${checkpointId})`,
-    }));
+    this._emit(
+      createIREnvelope<IRNotification>('notification', sessionId, 'gemini', {
+        level: 'info',
+        title: 'Checkpoint Created',
+        message: `Checkpoint "${name}" created (${checkpointId})`,
+      })
+    );
 
     return checkpointId;
   }
@@ -273,16 +280,18 @@ export class GeminiDriver implements Driver {
    */
   async restoreCheckpoint(sessionId: string, checkpointId: string): Promise<void> {
     const session = this._sessions.get(sessionId);
-    if (!session) throw new Error("Session not found");
+    if (!session) throw new Error('Session not found');
 
     if (!session.checkpoints.includes(checkpointId)) {
       throw new Error(`Checkpoint not found: ${checkpointId}`);
     }
 
-    this._emit(createIREnvelope<IRSession>("session", sessionId, "gemini", {
-      state: "idle",
-      message: `Restored checkpoint: ${checkpointId}`,
-    }));
+    this._emit(
+      createIREnvelope<IRSession>('session', sessionId, 'gemini', {
+        state: 'idle',
+        message: `Restored checkpoint: ${checkpointId}`,
+      })
+    );
   }
 
   /**
@@ -302,15 +311,17 @@ export class GeminiDriver implements Driver {
    */
   async startConductor(sessionId: string, workflowName: string): Promise<void> {
     const session = this._sessions.get(sessionId);
-    if (!session) throw new Error("Session not found");
+    if (!session) throw new Error('Session not found');
 
     session.conductorWorkflow = workflowName;
 
-    this._emit(createIREnvelope<IRNotification>("notification", sessionId, "gemini", {
-      level: "info",
-      title: "Conductor Started",
-      message: `Starting workflow: ${workflowName}`,
-    }));
+    this._emit(
+      createIREnvelope<IRNotification>('notification', sessionId, 'gemini', {
+        level: 'info',
+        title: 'Conductor Started',
+        message: `Starting workflow: ${workflowName}`,
+      })
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -325,78 +336,80 @@ export class GeminiDriver implements Driver {
     if (!session) return null;
 
     switch (geminiMessage.type) {
-      case "message":
-        return createIREnvelope<IRTextDelta>("text_delta", sessionId, "gemini", {
-          text: geminiMessage.content || "",
+      case 'message':
+        return createIREnvelope<IRTextDelta>('text_delta', sessionId, 'gemini', {
+          text: geminiMessage.content || '',
           done: !geminiMessage.delta,
         });
 
-      case "tool_use":
-        return createIREnvelope<IRToolStart>("tool_start", sessionId, "gemini", {
+      case 'tool_use':
+        return createIREnvelope<IRToolStart>('tool_start', sessionId, 'gemini', {
           id: geminiMessage.id || `tool_${Date.now()}`,
-          name: normalizeToolName(geminiMessage.tool || ""),
-          nativeName: geminiMessage.tool || "",
+          name: normalizeToolName(geminiMessage.tool || ''),
+          nativeName: geminiMessage.tool || '',
           input: geminiMessage.input || {},
         });
 
-      case "tool_result":
-        return createIREnvelope<IRToolResult>("tool_result", sessionId, "gemini", {
-          id: geminiMessage.id || "",
+      case 'tool_result':
+        return createIREnvelope<IRToolResult>('tool_result', sessionId, 'gemini', {
+          id: geminiMessage.id || '',
           ok: !geminiMessage.error,
           output: geminiMessage.output,
           error: geminiMessage.error,
         });
 
-      case "checkpoint":
+      case 'checkpoint':
         // Checkpoint created/restored
-        return createIREnvelope<IRNotification>("notification", sessionId, "gemini", {
-          level: "info",
-          title: geminiMessage.action === "create" ? "Checkpoint Created" : "Checkpoint Restored",
+        return createIREnvelope<IRNotification>('notification', sessionId, 'gemini', {
+          level: 'info',
+          title: geminiMessage.action === 'create' ? 'Checkpoint Created' : 'Checkpoint Restored',
           message: `Checkpoint: ${geminiMessage.checkpointId}`,
         });
 
-      case "conductor":
+      case 'conductor':
         // Conductor workflow event
-        return createIREnvelope<IRNotification>("notification", sessionId, "gemini", {
-          level: "info",
-          title: "Conductor",
+        return createIREnvelope<IRNotification>('notification', sessionId, 'gemini', {
+          level: 'info',
+          title: 'Conductor',
           message: `Workflow ${geminiMessage.workflow}: ${geminiMessage.status}`,
         });
 
-      case "task":
-        return createIREnvelope<IRTask>("task", sessionId, "gemini", {
-          action: geminiMessage.action as "create" | "update" | "delete" | "list",
-          task: geminiMessage.task ? {
-            id: geminiMessage.task.id,
-            subject: geminiMessage.task.subject,
-            description: geminiMessage.task.description,
-            status: geminiMessage.task.status as "pending" | "in_progress" | "completed",
-          } : undefined,
-          tasks: geminiMessage.tasks?.map((t) => ({
+      case 'task':
+        return createIREnvelope<IRTask>('task', sessionId, 'gemini', {
+          action: geminiMessage.action as 'create' | 'update' | 'delete' | 'list',
+          task: geminiMessage.task
+            ? {
+                id: geminiMessage.task.id,
+                subject: geminiMessage.task.subject,
+                description: geminiMessage.task.description,
+                status: geminiMessage.task.status as 'pending' | 'in_progress' | 'completed',
+              }
+            : undefined,
+          tasks: geminiMessage.tasks?.map(t => ({
             id: t.id,
             subject: t.subject,
-            status: t.status as "pending" | "in_progress" | "completed",
+            status: t.status as 'pending' | 'in_progress' | 'completed',
           })),
         });
 
-      case "result":
-        this._status = { ...this._status, state: "ready" };
-        return createIREnvelope<IRSession>("session", sessionId, "gemini", {
-          state: "idle",
+      case 'result':
+        this._status = { ...this._status, state: 'ready' };
+        return createIREnvelope<IRSession>('session', sessionId, 'gemini', {
+          state: 'idle',
         });
 
-      case "error":
-        return createIREnvelope<IRError>("error", sessionId, "gemini", {
-          code: geminiMessage.code || "UNKNOWN",
-          message: geminiMessage.message || "Unknown error",
+      case 'error':
+        return createIREnvelope<IRError>('error', sessionId, 'gemini', {
+          code: geminiMessage.code || 'UNKNOWN',
+          message: geminiMessage.message || 'Unknown error',
           details: geminiMessage.details,
           recoverable: geminiMessage.recoverable ?? true,
         });
 
-      case "rate_limit":
-        return createIREnvelope<IRError>("error", sessionId, "gemini", {
-          code: "RATE_LIMITED",
-          message: geminiMessage.message || "Rate limit exceeded",
+      case 'rate_limit':
+        return createIREnvelope<IRError>('error', sessionId, 'gemini', {
+          code: 'RATE_LIMITED',
+          message: geminiMessage.message || 'Rate limit exceeded',
           details: {
             retryAfterSeconds: geminiMessage.retryAfter,
           },
@@ -428,11 +441,11 @@ export class GeminiDriver implements Driver {
   }
 
   private _emit(envelope: IREnvelope): void {
-    Array.from(this._eventHandlers).forEach((handler) => {
+    Array.from(this._eventHandlers).forEach(handler => {
       try {
         handler(envelope);
       } catch (error) {
-        console.error("[GeminiDriver] Event handler error:", error);
+        console.error('[GeminiDriver] Event handler error:', error);
       }
     });
   }

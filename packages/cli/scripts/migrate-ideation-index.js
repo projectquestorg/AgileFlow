@@ -66,11 +66,16 @@ function parseReportHeader(content) {
   // Parse **Experts Consulted**: Security, Performance, Code Quality...
   const expertsMatch = content.match(/\*\*Experts Consulted\*\*:\s*([^\n]+)/);
   if (expertsMatch) {
-    metadata.experts = expertsMatch[1].split(',').map(e => e.trim()).filter(Boolean);
+    metadata.experts = expertsMatch[1]
+      .split(',')
+      .map(e => e.trim())
+      .filter(Boolean);
   }
 
   // Parse **Total Ideas**: 30 raw / 22 after synthesis (High-Confidence: 8, Medium-Confidence: 14)
-  const totalMatch = content.match(/\*\*Total Ideas\*\*:[^(]*\(High-Confidence:\s*(\d+),\s*Medium-Confidence:\s*(\d+)\)/);
+  const totalMatch = content.match(
+    /\*\*Total Ideas\*\*:[^(]*\(High-Confidence:\s*(\d+),\s*Medium-Confidence:\s*(\d+)\)/
+  );
   if (totalMatch) {
     metadata.highConfidence = parseInt(totalMatch[1], 10);
     metadata.mediumConfidence = parseInt(totalMatch[2], 10);
@@ -146,7 +151,10 @@ function parseIdeaContent(title, content) {
   // Parse **Experts**: Security, Code Quality (Refactor)
   const expertsMatch = content.match(/\*\*Experts?\*\*:\s*([^\n]+)/);
   if (expertsMatch) {
-    idea.experts = expertsMatch[1].split(',').map(e => e.trim()).filter(Boolean);
+    idea.experts = expertsMatch[1]
+      .split(',')
+      .map(e => e.trim())
+      .filter(Boolean);
     // If multiple experts, it's high confidence
     if (idea.experts.length >= 2) {
       idea.confidence = 'HIGH';
@@ -288,7 +296,8 @@ function migrateIdeationReports(rootDir, options = {}) {
     return { ok: false, error: `Reports directory not found: ${reportsDir}` };
   }
 
-  const reportFiles = fs.readdirSync(reportsDir)
+  const reportFiles = fs
+    .readdirSync(reportsDir)
     .filter(f => f.startsWith('ideation-') && f.endsWith('.md'))
     .sort(); // Sort chronologically
 
@@ -325,7 +334,10 @@ function migrateIdeationReports(rootDir, options = {}) {
       // Detect confidence for each idea based on section
       for (const idea of ideas) {
         // Find the idea in the content to determine its position
-        const ideaPattern = new RegExp(`###\\s*${idea.number}\\.\\s*${escapeRegex(idea.title.substring(0, 30))}`, 'i');
+        const ideaPattern = new RegExp(
+          `###\\s*${idea.number}\\.\\s*${escapeRegex(idea.title.substring(0, 30))}`,
+          'i'
+        );
         const ideaMatch = content.match(ideaPattern);
         if (ideaMatch) {
           const sectionConf = detectConfidenceSection(content, ideaMatch.index);
@@ -349,13 +361,17 @@ function migrateIdeationReports(rootDir, options = {}) {
       let reportDuplicates = 0;
 
       for (const idea of ideas) {
-        const result = addIdeaToIndex(index, {
-          title: idea.title,
-          category: idea.category || 'Uncategorized',
-          files: idea.files,
-          confidence: idea.confidence,
-          experts: idea.experts,
-        }, reportFile);
+        const result = addIdeaToIndex(
+          index,
+          {
+            title: idea.title,
+            category: idea.category || 'Uncategorized',
+            files: idea.files,
+            confidence: idea.confidence,
+            experts: idea.experts,
+          },
+          reportFile
+        );
 
         if (result.ok) {
           if (result.recurring) {
@@ -379,7 +395,6 @@ function migrateIdeationReports(rootDir, options = {}) {
 
       console.log(`  Added: ${reportIdeasAdded}, Recurring: ${reportDuplicates}\n`);
       stats.reportsProcessed++;
-
     } catch (err) {
       console.log(`  ERROR: ${err.message}\n`);
       stats.errors++;

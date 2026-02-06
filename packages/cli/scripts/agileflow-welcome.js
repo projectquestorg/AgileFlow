@@ -2060,9 +2060,7 @@ async function main() {
       const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
       if (syncResult.ok && syncResult.updated > 0) {
         console.log('');
-        console.log(
-          `${c.dim}📊 Synced ${syncResult.updated} idea(s) as implemented${c.reset}`
-        );
+        console.log(`${c.dim}📊 Synced ${syncResult.updated} idea(s) as implemented${c.reset}`);
       }
     } catch (e) {
       // Silently ignore ideation sync errors
@@ -2079,9 +2077,7 @@ async function main() {
 
       if (dueStatus.due > 0) {
         console.log('');
-        console.log(
-          `${c.teal}🤖 ${dueStatus.due} automation(s) due to run${c.reset}`
-        );
+        console.log(`${c.teal}🤖 ${dueStatus.due} automation(s) due to run${c.reset}`);
 
         // Show what's due
         for (const auto of dueStatus.dueAutomations.slice(0, 3)) {

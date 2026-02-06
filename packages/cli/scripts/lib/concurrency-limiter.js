@@ -324,9 +324,7 @@ class ConcurrencyLimiter extends EventEmitter {
         : 0;
 
     const avgRunTime =
-      this._stats.completed > 0
-        ? Math.round(this._stats.totalRunTime / this._stats.completed)
-        : 0;
+      this._stats.completed > 0 ? Math.round(this._stats.totalRunTime / this._stats.completed) : 0;
 
     return {
       ...this._stats,

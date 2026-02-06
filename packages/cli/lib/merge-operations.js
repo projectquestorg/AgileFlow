@@ -732,7 +732,14 @@ function getMergeHistory() {
  * @param {Function} unregisterSession - Session unregisterer
  * @returns {Object} Smart merge result
  */
-function smartMerge(sessionId, options = {}, loadRegistry, saveRegistry, removeLock, unregisterSession) {
+function smartMerge(
+  sessionId,
+  options = {},
+  loadRegistry,
+  saveRegistry,
+  removeLock,
+  unregisterSession
+) {
   const { c } = require('./colors');
   const {
     strategy = 'squash',

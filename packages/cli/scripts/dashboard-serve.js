@@ -21,8 +21,18 @@
 'use strict';
 
 const path = require('path');
-const { createDashboardServer, startDashboardServer, stopDashboardServer } = require('../lib/dashboard-server');
-const { createNotification, createTextDelta, createToolStart, createToolResult, createAskUserQuestion } = require('../lib/dashboard-protocol');
+const {
+  createDashboardServer,
+  startDashboardServer,
+  stopDashboardServer,
+} = require('../lib/dashboard-server');
+const {
+  createNotification,
+  createTextDelta,
+  createToolStart,
+  createToolResult,
+  createAskUserQuestion,
+} = require('../lib/dashboard-protocol');
 const { createClaudeBridge } = require('../lib/claude-cli-bridge');
 
 // Parse command line arguments
@@ -130,7 +140,7 @@ async function startTunnel(port) {
 
     return new Promise((resolve, reject) => {
       // Check if ngrok is installed
-      exec('which ngrok', (error) => {
+      exec('which ngrok', error => {
         if (error) {
           console.log('  Tunnel: ngrok not found. Install with: npm install -g ngrok');
           resolve(null);
@@ -140,7 +150,7 @@ async function startTunnel(port) {
         // Start ngrok tunnel
         const ngrok = exec(`ngrok http ${port} --log stdout`, { encoding: 'utf8' });
 
-        ngrok.stdout.on('data', (data) => {
+        ngrok.stdout.on('data', data => {
           // Parse ngrok output for public URL
           const urlMatch = data.match(/url=(https?:\/\/[^\s]+)/);
           if (urlMatch) {
@@ -150,7 +160,7 @@ async function startTunnel(port) {
           }
         });
 
-        ngrok.stderr.on('data', (data) => {
+        ngrok.stderr.on('data', data => {
           console.error('  Tunnel error:', data);
         });
 
@@ -219,7 +229,6 @@ async function main() {
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
-
   } catch (error) {
     console.error('Failed to start server:', error.message);
     process.exit(1);
@@ -235,13 +244,15 @@ function setupEventHandlers(server) {
     console.log(`[${new Date().toISOString()}] Session connected: ${sessionId}`);
   });
 
-  server.on('session:disconnected', (sessionId) => {
+  server.on('session:disconnected', sessionId => {
     console.log(`[${new Date().toISOString()}] Session disconnected: ${sessionId}`);
   });
 
   // User message handler - use Claude CLI bridge
   server.on('user:message', async (session, content) => {
-    console.log(`[${new Date().toISOString()}] Message from ${session.id}: ${content.slice(0, 50)}...`);
+    console.log(
+      `[${new Date().toISOString()}] Message from ${session.id}: ${content.slice(0, 50)}...`
+    );
 
     try {
       await handleClaudeMessage(session, content, server.projectRoot);
@@ -253,17 +264,17 @@ function setupEventHandlers(server) {
   });
 
   // Cancel handler
-  server.on('user:cancel', (session) => {
+  server.on('user:cancel', session => {
     console.log(`[${new Date().toISOString()}] Cancel from ${session.id}`);
   });
 
   // Refresh handlers
-  server.on('refresh:tasks', (session) => {
+  server.on('refresh:tasks', session => {
     // Send task list update
     console.log(`[${new Date().toISOString()}] Task refresh for ${session.id}`);
   });
 
-  server.on('refresh:status', (session) => {
+  server.on('refresh:status', session => {
     // Send status update
     console.log(`[${new Date().toISOString()}] Status refresh for ${session.id}`);
   });
@@ -277,8 +288,10 @@ async function handleClaudeMessage(session, content, projectRoot) {
 
   const bridge = createClaudeBridge({
     cwd: projectRoot,
-    onInit: (info) => {
-      console.log(`[${new Date().toISOString()}] Claude session: ${info.sessionId}, model: ${info.model}`);
+    onInit: info => {
+      console.log(
+        `[${new Date().toISOString()}] Claude session: ${info.sessionId}, model: ${info.model}`
+      );
     },
     onText: (text, done) => {
       if (text) {
@@ -301,11 +314,11 @@ async function handleClaudeMessage(session, content, projectRoot) {
     onToolResult: (id, output, isError, toolName) => {
       session.send(createToolResult(id, { content: output, error: isError }, toolName));
     },
-    onError: (error) => {
+    onError: error => {
       console.error(`[${new Date().toISOString()}] Claude error:`, error);
       session.send(createNotification('error', 'Claude Error', error));
     },
-    onComplete: (response) => {
+    onComplete: response => {
       // Already handled in onText with done=true
     },
   });

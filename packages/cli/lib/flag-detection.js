@@ -61,8 +61,7 @@ function extractClaudeFlags(args) {
     else if (arg === '--model' && args[i + 1]) {
       flags.push(`${arg} ${args[i + 1]}`);
       i++;
-    }
-    else if (arg.startsWith('--model=')) {
+    } else if (arg.startsWith('--model=')) {
       flags.push(arg);
     }
 
@@ -127,13 +126,15 @@ function isClaudeProcess(args) {
   if (!args || args.length === 0) return false;
 
   // Check if any arg contains 'claude' (handles various ways claude can be invoked)
-  for (const arg of args.slice(0, 3)) { // Only check first few args
-    if (arg && (
-      arg.endsWith('/claude') ||
-      arg === 'claude' ||
-      arg.includes('claude-code') ||
-      arg.includes('@anthropic')
-    )) {
+  for (const arg of args.slice(0, 3)) {
+    // Only check first few args
+    if (
+      arg &&
+      (arg.endsWith('/claude') ||
+        arg === 'claude' ||
+        arg.includes('claude-code') ||
+        arg.includes('@anthropic'))
+    ) {
       return true;
     }
   }

@@ -192,7 +192,9 @@ function syncImplementedIdeas(rootDir, options = {}) {
       };
 
       if (verbose) {
-        console.log(`  ${epicId}: ${syncResult.updated} ideas marked implemented (${epic.research})`);
+        console.log(
+          `  ${epicId}: ${syncResult.updated} ideas marked implemented (${epic.research})`
+        );
       }
     } else {
       result.skipped++;
@@ -228,9 +230,7 @@ function getSyncStatus(rootDir) {
   const index = indexResult.data;
   const ideas = Object.values(index.ideas || {});
 
-  const linkedEpics = new Set(
-    ideas.filter(i => i.linked_epic).map(i => i.linked_epic)
-  ).size;
+  const linkedEpics = new Set(ideas.filter(i => i.linked_epic).map(i => i.linked_epic)).size;
 
   return {
     totalIdeas: ideas.length,

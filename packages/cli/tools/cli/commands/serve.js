@@ -139,11 +139,16 @@ function setupEventHandlers(server, protocol) {
 
   // Session events
   server.on('session:connected', (sessionId, session) => {
-    console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Session connected: ${chalk.cyan(sessionId)}`);
+    console.log(
+      chalk.dim(`[${new Date().toISOString()}]`) + ` Session connected: ${chalk.cyan(sessionId)}`
+    );
   });
 
   server.on('session:disconnected', sessionId => {
-    console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Session disconnected: ${chalk.yellow(sessionId)}`);
+    console.log(
+      chalk.dim(`[${new Date().toISOString()}]`) +
+        ` Session disconnected: ${chalk.yellow(sessionId)}`
+    );
   });
 
   // User message handler - uses real Claude CLI
@@ -154,12 +159,18 @@ function setupEventHandlers(server, protocol) {
     );
 
     // Use real Claude CLI
-    await handleClaudeMessage(session, content, { createTextDelta, createToolStart, createToolResult });
+    await handleClaudeMessage(session, content, {
+      createTextDelta,
+      createToolStart,
+      createToolResult,
+    });
   });
 
   // Cancel handler
   server.on('user:cancel', session => {
-    console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Cancel from ${chalk.yellow(session.id)}`);
+    console.log(
+      chalk.dim(`[${new Date().toISOString()}]`) + ` Cancel from ${chalk.yellow(session.id)}`
+    );
     // Note: To properly cancel, we'd need to track the bridge per session
     // For now, this just logs the cancel request
     session.setState('idle');
@@ -167,11 +178,15 @@ function setupEventHandlers(server, protocol) {
 
   // Refresh handlers
   server.on('refresh:tasks', session => {
-    console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Task refresh for ${chalk.cyan(session.id)}`);
+    console.log(
+      chalk.dim(`[${new Date().toISOString()}]`) + ` Task refresh for ${chalk.cyan(session.id)}`
+    );
   });
 
   server.on('refresh:status', session => {
-    console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Status refresh for ${chalk.cyan(session.id)}`);
+    console.log(
+      chalk.dim(`[${new Date().toISOString()}]`) + ` Status refresh for ${chalk.cyan(session.id)}`
+    );
   });
 }
 
@@ -189,11 +204,16 @@ async function handleClaudeMessage(session, content, protocol) {
       onText: (text, done) => {
         // Always send text deltas (even empty ones with done=true to signal completion)
         if (text) {
-          console.log(chalk.dim(`[${new Date().toISOString()}]`) + ` Text: ${chalk.green(text.slice(0, 50))}${text.length > 50 ? '...' : ''}`);
+          console.log(
+            chalk.dim(`[${new Date().toISOString()}]`) +
+              ` Text: ${chalk.green(text.slice(0, 50))}${text.length > 50 ? '...' : ''}`
+          );
         }
         session.send(createTextDelta(text || '', done));
         if (done) {
-          console.log(chalk.dim(`[${new Date().toISOString()}]`) + chalk.green(' Response complete'));
+          console.log(
+            chalk.dim(`[${new Date().toISOString()}]`) + chalk.green(' Response complete')
+          );
           session.setState('idle');
         }
       },
@@ -207,21 +227,20 @@ async function handleClaudeMessage(session, content, protocol) {
         session.send(createToolResult(id, output, isError ? output : null));
       },
 
-      onError: (error) => {
+      onError: error => {
         console.error(chalk.red(`[${new Date().toISOString()}]`) + ` Error: ${error}`);
         session.send(createTextDelta(`\n\nError: ${error}`, true));
         session.setState('error');
       },
 
-      onComplete: (fullResponse) => {
+      onComplete: fullResponse => {
         session.addMessage('assistant', fullResponse);
         session.setState('idle');
-      }
+      },
     });
 
     // Send the message to Claude
     await bridge.sendMessage(content);
-
   } catch (err) {
     console.error(chalk.red('Claude error:'), err.message);
     session.send(createTextDelta(`Error: ${err.message}`, true));
@@ -245,25 +264,33 @@ async function startTunnel(port, provider = 'cloudflared') {
 }
 
 async function startCloudflaredTunnel(port, spawn, exec) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     // Check if cloudflared is installed
-    exec('which cloudflared', (error) => {
+    exec('which cloudflared', error => {
       if (error) {
         console.log(chalk.yellow('  cloudflared not found.'));
-        console.log(chalk.dim('  Install: brew install cloudflared (mac) or sudo apt install cloudflared (linux)'));
-        console.log(chalk.dim('  Or download from: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'));
+        console.log(
+          chalk.dim(
+            '  Install: brew install cloudflared (mac) or sudo apt install cloudflared (linux)'
+          )
+        );
+        console.log(
+          chalk.dim(
+            '  Or download from: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'
+          )
+        );
         resolve(null);
         return;
       }
 
       // Start cloudflared tunnel (quick tunnel, no account needed)
       const tunnel = spawn('cloudflared', ['tunnel', '--url', `http://localhost:${port}`], {
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
       });
 
       let resolved = false;
 
-      const handleOutput = (data) => {
+      const handleOutput = data => {
         const output = data.toString();
         // Look for the tunnel URL in output
         const urlMatch = output.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
@@ -279,7 +306,7 @@ async function startCloudflaredTunnel(port, spawn, exec) {
       tunnel.stdout.on('data', handleOutput);
       tunnel.stderr.on('data', handleOutput);
 
-      tunnel.on('error', (err) => {
+      tunnel.on('error', err => {
         if (!resolved) {
           console.log(chalk.yellow(`  cloudflared error: ${err.message}`));
           resolve(null);
@@ -298,8 +325,8 @@ async function startCloudflaredTunnel(port, spawn, exec) {
 }
 
 async function startNgrokTunnel(port, exec) {
-  return new Promise((resolve) => {
-    exec('which ngrok', (error) => {
+  return new Promise(resolve => {
+    exec('which ngrok', error => {
       if (error) {
         console.log(chalk.yellow('  ngrok not found either.'));
         console.log('');
@@ -352,9 +379,9 @@ async function handlePortConflict(port, readline) {
   const net = require('net');
 
   // Check if port is in use
-  const isPortInUse = await new Promise((resolve) => {
+  const isPortInUse = await new Promise(resolve => {
     const server = net.createServer();
-    server.once('error', (err) => {
+    server.once('error', err => {
       if (err.code === 'EADDRINUSE') {
         resolve(true);
       } else {
@@ -389,10 +416,10 @@ async function handlePortConflict(port, readline) {
   // Ask user what to do
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     console.log('');
     console.log('  Options:');
     console.log(chalk.cyan('    [k]') + ' Kill existing process and use this port');
@@ -400,7 +427,7 @@ async function handlePortConflict(port, readline) {
     console.log(chalk.cyan('    [q]') + ' Quit');
     console.log('');
 
-    rl.question('  Your choice (k/n/q): ', async (answer) => {
+    rl.question('  Your choice (k/n/q): ', async answer => {
       rl.close();
       const choice = answer.toLowerCase().trim();
 
@@ -436,7 +463,7 @@ async function findNextAvailablePort(startPort) {
   let port = startPort + 1;
 
   while (port < startPort + 100) {
-    const available = await new Promise((resolve) => {
+    const available = await new Promise(resolve => {
       const server = net.createServer();
       server.once('error', () => resolve(false));
       server.once('listening', () => {

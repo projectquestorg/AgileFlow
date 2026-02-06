@@ -486,12 +486,16 @@ Some other content here.
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'task-dependencies.json'),
-        JSON.stringify({
-          schema_version: '1.0.0',
-          tasks,
-          task_groups: groups,
-          audit_trail: [],
-        }, null, 2)
+        JSON.stringify(
+          {
+            schema_version: '1.0.0',
+            tasks,
+            task_groups: groups,
+            audit_trail: [],
+          },
+          null,
+          2
+        )
       );
     }
 

@@ -249,7 +249,12 @@ function killProcessGracefully(pid, options = {}) {
       if (!isPidAlive(pid)) {
         return { success: true, method: 'SIGKILL', pid };
       } else {
-        return { success: false, method: 'SIGKILL_failed', pid, error: 'Process did not respond to SIGKILL' };
+        return {
+          success: false,
+          method: 'SIGKILL_failed',
+          pid,
+          error: 'Process did not respond to SIGKILL',
+        };
       }
     }
 

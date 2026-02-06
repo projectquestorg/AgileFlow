@@ -21,65 +21,65 @@
  */
 const OutboundMessageType = {
   // Connection & Session
-  SESSION_STATE: 'session_state',       // Session connected/resumed
-  SESSION_ERROR: 'session_error',       // Session error
+  SESSION_STATE: 'session_state', // Session connected/resumed
+  SESSION_ERROR: 'session_error', // Session error
 
   // Text Streaming
-  TEXT: 'text',                         // Claude text response
-  TEXT_DELTA: 'text_delta',             // Streaming text chunk
+  TEXT: 'text', // Claude text response
+  TEXT_DELTA: 'text_delta', // Streaming text chunk
 
   // Tool Calls
-  TOOL_START: 'tool_start',             // Tool call started
-  TOOL_RESULT: 'tool_result',           // Tool call completed
+  TOOL_START: 'tool_start', // Tool call started
+  TOOL_RESULT: 'tool_result', // Tool call completed
 
   // File Operations
-  FILE_READ: 'file_read',               // File was read
-  FILE_WRITE: 'file_write',             // File was written
-  FILE_EDIT: 'file_edit',               // File was edited (diff)
+  FILE_READ: 'file_read', // File was read
+  FILE_WRITE: 'file_write', // File was written
+  FILE_EDIT: 'file_edit', // File was edited (diff)
 
   // Shell Operations
-  BASH_START: 'bash_start',             // Bash command started
-  BASH_OUTPUT: 'bash_output',           // Bash output chunk
-  BASH_END: 'bash_end',                 // Bash command completed
+  BASH_START: 'bash_start', // Bash command started
+  BASH_OUTPUT: 'bash_output', // Bash output chunk
+  BASH_END: 'bash_end', // Bash command completed
 
   // Task Management
-  TASK_CREATED: 'task_created',         // Task was created
-  TASK_UPDATED: 'task_updated',         // Task status changed
-  TASK_LIST: 'task_list',               // Full task list
+  TASK_CREATED: 'task_created', // Task was created
+  TASK_UPDATED: 'task_updated', // Task status changed
+  TASK_LIST: 'task_list', // Full task list
 
   // Git Status
-  GIT_STATUS: 'git_status',             // Git status update
-  GIT_DIFF: 'git_diff',                 // Git diff content
+  GIT_STATUS: 'git_status', // Git status update
+  GIT_DIFF: 'git_diff', // Git diff content
 
   // Project Status
-  STATUS_UPDATE: 'status_update',       // Story/epic status update
+  STATUS_UPDATE: 'status_update', // Story/epic status update
 
   // Agent Communication
-  AGENT_SPAWN: 'agent_spawn',           // Sub-agent spawned
-  AGENT_RESULT: 'agent_result',         // Sub-agent completed
+  AGENT_SPAWN: 'agent_spawn', // Sub-agent spawned
+  AGENT_RESULT: 'agent_result', // Sub-agent completed
 
   // Notifications
-  NOTIFICATION: 'notification',         // General notification
+  NOTIFICATION: 'notification', // General notification
 
   // Terminal
-  TERMINAL_OUTPUT: 'terminal_output',   // Terminal output data
-  TERMINAL_RESIZE: 'terminal_resize',   // Terminal resize acknowledgment
-  TERMINAL_EXIT: 'terminal_exit',       // Terminal process exited
+  TERMINAL_OUTPUT: 'terminal_output', // Terminal output data
+  TERMINAL_RESIZE: 'terminal_resize', // Terminal resize acknowledgment
+  TERMINAL_EXIT: 'terminal_exit', // Terminal process exited
 
   // Automations
-  AUTOMATION_LIST: 'automation_list',   // List of all automations
+  AUTOMATION_LIST: 'automation_list', // List of all automations
   AUTOMATION_STATUS: 'automation_status', // Automation run status update
   AUTOMATION_RESULT: 'automation_result', // Automation run completed
 
   // Inbox
-  INBOX_LIST: 'inbox_list',             // List of inbox items
-  INBOX_ITEM: 'inbox_item',             // Single inbox item
+  INBOX_LIST: 'inbox_list', // List of inbox items
+  INBOX_ITEM: 'inbox_item', // Single inbox item
 
   // User Interaction
   ASK_USER_QUESTION: 'ask_user_question', // Claude is asking user a question
 
   // Errors
-  ERROR: 'error',                       // General error
+  ERROR: 'error', // General error
 };
 
 /**
@@ -88,43 +88,43 @@ const OutboundMessageType = {
  */
 const InboundMessageType = {
   // Messages
-  MESSAGE: 'message',                   // User message to Claude
-  CANCEL: 'cancel',                     // Cancel current operation
+  MESSAGE: 'message', // User message to Claude
+  CANCEL: 'cancel', // Cancel current operation
 
   // Session
-  SESSION_INIT: 'session_init',         // Initialize/resume session
-  SESSION_CLOSE: 'session_close',       // Close session
+  SESSION_INIT: 'session_init', // Initialize/resume session
+  SESSION_CLOSE: 'session_close', // Close session
 
   // Requests
-  REFRESH: 'refresh',                   // Request status refresh
+  REFRESH: 'refresh', // Request status refresh
 
   // Git Operations
-  GIT_STAGE: 'git_stage',               // Stage file(s)
-  GIT_UNSTAGE: 'git_unstage',           // Unstage file(s)
-  GIT_REVERT: 'git_revert',             // Revert file(s)
-  GIT_COMMIT: 'git_commit',             // Create commit
-  GIT_PUSH: 'git_push',                 // Push to remote
-  GIT_PR: 'git_pr',                     // Create pull request
+  GIT_STAGE: 'git_stage', // Stage file(s)
+  GIT_UNSTAGE: 'git_unstage', // Unstage file(s)
+  GIT_REVERT: 'git_revert', // Revert file(s)
+  GIT_COMMIT: 'git_commit', // Create commit
+  GIT_PUSH: 'git_push', // Push to remote
+  GIT_PR: 'git_pr', // Create pull request
   GIT_DIFF_REQUEST: 'git_diff_request', // Request diff for a file
 
   // Feedback
-  INLINE_COMMENT: 'inline_comment',     // Comment on diff line
+  INLINE_COMMENT: 'inline_comment', // Comment on diff line
 
   // Terminal
-  TERMINAL_INPUT: 'terminal_input',     // Terminal stdin
-  TERMINAL_RESIZE: 'terminal_resize',   // Resize terminal
-  TERMINAL_SPAWN: 'terminal_spawn',     // Spawn new terminal
-  TERMINAL_CLOSE: 'terminal_close',     // Close terminal
+  TERMINAL_INPUT: 'terminal_input', // Terminal stdin
+  TERMINAL_RESIZE: 'terminal_resize', // Resize terminal
+  TERMINAL_SPAWN: 'terminal_spawn', // Spawn new terminal
+  TERMINAL_CLOSE: 'terminal_close', // Close terminal
 
   // Automation
-  AUTOMATION_RUN: 'automation_run',     // Run automation
-  AUTOMATION_STOP: 'automation_stop',   // Stop automation
+  AUTOMATION_RUN: 'automation_run', // Run automation
+  AUTOMATION_STOP: 'automation_stop', // Stop automation
   AUTOMATION_LIST_REQUEST: 'automation_list_request', // Request automation list
   INBOX_LIST_REQUEST: 'inbox_list_request', // Request inbox list
-  INBOX_ACTION: 'inbox_action',         // Accept/dismiss inbox item
+  INBOX_ACTION: 'inbox_action', // Accept/dismiss inbox item
 
   // User Interaction Response
-  USER_ANSWER: 'user_answer',           // User's answer to AskUserQuestion
+  USER_ANSWER: 'user_answer', // User's answer to AskUserQuestion
 };
 
 // ============================================================================

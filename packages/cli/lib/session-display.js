@@ -10,11 +10,7 @@ const { spawnSync } = require('child_process');
 
 const { c } = require('./colors');
 const { getProjectRoot } = require('./paths');
-const {
-  SESSION_PHASES,
-  getSessionPhase,
-  getSessionPhasesAsync,
-} = require('./git-operations');
+const { SESSION_PHASES, getSessionPhase, getSessionPhasesAsync } = require('./git-operations');
 
 const ROOT = getProjectRoot();
 
@@ -180,7 +176,12 @@ function formatKanbanBoard(byPhase) {
   const lines = [];
   const colWidth = 14;
   const separator = '  ';
-  const phaseOrder = [SESSION_PHASES.TODO, SESSION_PHASES.CODING, SESSION_PHASES.REVIEW, SESSION_PHASES.MERGED];
+  const phaseOrder = [
+    SESSION_PHASES.TODO,
+    SESSION_PHASES.CODING,
+    SESSION_PHASES.REVIEW,
+    SESSION_PHASES.MERGED,
+  ];
 
   // Header
   lines.push(`${c.cyan}Sessions (Kanban View):${c.reset}`);

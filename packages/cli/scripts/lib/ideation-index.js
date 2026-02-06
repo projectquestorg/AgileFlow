@@ -461,7 +461,10 @@ function updateIdeaStatus(index, ideaId, status, options = {}) {
 
   const validStatuses = ['pending', 'in-progress', 'implemented', 'rejected'];
   if (!validStatuses.includes(status)) {
-    return { ok: false, error: `Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}` };
+    return {
+      ok: false,
+      error: `Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}`,
+    };
   }
 
   idea.status = status;
@@ -641,7 +644,8 @@ function getCategoryHotspots(index) {
       implemented: stats.implemented,
       pending: stats.pending,
       recurringPercentage: stats.total > 0 ? Math.round((stats.recurring / stats.total) * 100) : 0,
-      implementedPercentage: stats.total > 0 ? Math.round((stats.implemented / stats.total) * 100) : 0,
+      implementedPercentage:
+        stats.total > 0 ? Math.round((stats.implemented / stats.total) * 100) : 0,
     }))
     .sort((a, b) => b.recurringPercentage - a.recurringPercentage);
 }
@@ -797,10 +801,14 @@ function compareReports(index, report1Name, report2Name) {
   const r2 = normalizeReportName(report2Name);
 
   if (!index.reports[r1]) {
-    return { error: `Report not found: ${r1}. Available: ${Object.keys(index.reports).join(', ')}` };
+    return {
+      error: `Report not found: ${r1}. Available: ${Object.keys(index.reports).join(', ')}`,
+    };
   }
   if (!index.reports[r2]) {
-    return { error: `Report not found: ${r2}. Available: ${Object.keys(index.reports).join(', ')}` };
+    return {
+      error: `Report not found: ${r2}. Available: ${Object.keys(index.reports).join(', ')}`,
+    };
   }
 
   const report1Ideas = new Set(index.reports[r1].ideas || []);
@@ -1079,7 +1087,9 @@ function main() {
     case 'focus': {
       const ideaId = args[1];
       if (!ideaId) {
-        console.log(JSON.stringify({ ok: false, error: 'Idea ID required. Usage: focus IDEA-0023' }));
+        console.log(
+          JSON.stringify({ ok: false, error: 'Idea ID required. Usage: focus IDEA-0023' })
+        );
         break;
       }
       const focused = getIdeaForFocus(index, ideaId);
@@ -1090,7 +1100,9 @@ function main() {
     case 'category': {
       const category = args[1];
       if (!category) {
-        console.log(JSON.stringify({ ok: false, error: 'Category required. Usage: category Security' }));
+        console.log(
+          JSON.stringify({ ok: false, error: 'Category required. Usage: category Security' })
+        );
         break;
       }
       const ideas = getIdeasByCategory(index, category);

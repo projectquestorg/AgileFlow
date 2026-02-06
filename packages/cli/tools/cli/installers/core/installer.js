@@ -330,7 +330,15 @@ class Installer {
    * @param {Object} policy - Copy policy
    */
   async copyFileWithPolicy(source, dest, agileflowFolder, policy) {
-    const { agileflowDir, cfgDir, fileIndex, fileOps, force, timestamp, docsFolder = 'docs' } = policy;
+    const {
+      agileflowDir,
+      cfgDir,
+      fileIndex,
+      fileOps,
+      force,
+      timestamp,
+      docsFolder = 'docs',
+    } = policy;
 
     const relativePath = toPosixPath(path.relative(agileflowDir, dest));
     const maybeRecord = fileIndex.files[relativePath];

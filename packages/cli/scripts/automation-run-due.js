@@ -98,7 +98,9 @@ async function main() {
     });
 
     if (verbose) {
-      console.log(`[Automation] Ran ${ran} automation(s): ${successful} succeeded, ${failed} failed`);
+      console.log(
+        `[Automation] Ran ${ran} automation(s): ${successful} succeeded, ${failed} failed`
+      );
       for (const result of results) {
         const status = result.success ? '✓' : '✗';
         console.log(`  ${status} ${result.id} (${result.duration_ms}ms)`);

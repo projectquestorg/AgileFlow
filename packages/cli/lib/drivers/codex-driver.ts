@@ -20,7 +20,7 @@ import {
   CLICommand,
   IREventHandler,
   CODEX_CAPABILITIES,
-} from "../protocol/driver";
+} from '../protocol/driver';
 import {
   IREnvelope,
   IRSource,
@@ -33,19 +33,19 @@ import {
   IRError,
   IRFileOp,
   IRShell,
-} from "../protocol/ir";
+} from '../protocol/ir';
 
 // ============================================================================
 // Tool Name Mapping (Codex -> IR normalized names)
 // ============================================================================
 
 const CODEX_TOOL_MAPPING: Record<string, string> = {
-  "exec_command": "shell_exec",  // Used for both shell and file reads
-  "apply_patch": "file_edit",
-  "web_search": "web_search",
-  "read_file": "file_read",
-  "write_file": "file_write",
-  "container_exec": "shell_exec",
+  exec_command: 'shell_exec', // Used for both shell and file reads
+  apply_patch: 'file_edit',
+  web_search: 'web_search',
+  read_file: 'file_read',
+  write_file: 'file_write',
+  container_exec: 'shell_exec',
 };
 
 /**
@@ -59,8 +59,8 @@ function normalizeToolName(codexName: string): string {
  * Determine if an exec_command is a file read operation
  */
 function isFileReadCommand(params: CodexExecCommandParams): boolean {
-  const cmd = params.command?.trim() || "";
-  return cmd.startsWith("cat ") || cmd.startsWith("head ") || cmd.startsWith("tail ");
+  const cmd = params.command?.trim() || '';
+  return cmd.startsWith('cat ') || cmd.startsWith('head ') || cmd.startsWith('tail ');
 }
 
 /**
@@ -70,11 +70,11 @@ function extractFilePath(command: string): string {
   const parts = command.trim().split(/\s+/);
   // Skip command and flags, find the file path
   for (let i = 1; i < parts.length; i++) {
-    if (!parts[i].startsWith("-")) {
-      return parts[i].replace(/^['"]|['"]$/g, ""); // Remove quotes
+    if (!parts[i].startsWith('-')) {
+      return parts[i].replace(/^['"]|['"]$/g, ''); // Remove quotes
     }
   }
-  return "";
+  return '';
 }
 
 // ============================================================================
@@ -82,22 +82,25 @@ function extractFilePath(command: string): string {
 // ============================================================================
 
 export class CodexDriver implements Driver {
-  readonly id: IRSource = "codex";
-  readonly name = "Codex CLI";
+  readonly id: IRSource = 'codex';
+  readonly name = 'Codex CLI';
 
   private _status: DriverStatus = {
-    state: "stopped",
-    provider: "codex",
+    state: 'stopped',
+    provider: 'codex',
   };
 
   private _capabilities: Capability[] = [...CODEX_CAPABILITIES];
   private _eventHandlers: Set<IREventHandler> = new Set();
-  private _sessions: Map<string, {
-    config: DriverConfig;
-    seqCounter: number;
-    threadId?: string;
-    parentThreadId?: string;
-  }> = new Map();
+  private _sessions: Map<
+    string,
+    {
+      config: DriverConfig;
+      seqCounter: number;
+      threadId?: string;
+      parentThreadId?: string;
+    }
+  > = new Map();
 
   // Rate limiting
   private _lastRequestTime = 0;
@@ -119,21 +122,21 @@ export class CodexDriver implements Driver {
     this._sessions.set(sessionId, { config, seqCounter: 0 });
 
     this._status = {
-      state: "ready",
-      provider: "codex",
-      model: config.model || "codex-1",
+      state: 'ready',
+      provider: 'codex',
+      model: config.model || 'codex-1',
       contextMax: config.maxTokens || 128000,
     };
 
     // Emit init event
     const initPayload: IRInit = {
-      provider: "codex",
-      version: "1.0.0",
+      provider: 'codex',
+      version: '1.0.0',
       capabilities: this._capabilities.filter(c => c.available).map(c => c.name),
       maxContext: config.maxTokens || 128000,
     };
 
-    this._emit(createIREnvelope("init", sessionId, "codex", initPayload));
+    this._emit(createIREnvelope('init', sessionId, 'codex', initPayload));
   }
 
   async stop(sessionId: string): Promise<void> {
@@ -142,7 +145,7 @@ export class CodexDriver implements Driver {
     if (this._sessions.size === 0) {
       this._status = {
         ...this._status,
-        state: "stopped",
+        state: 'stopped',
       };
     }
   }
@@ -171,12 +174,12 @@ export class CodexDriver implements Driver {
   // -------------------------------------------------------------------------
 
   async send(sessionId: string, command: CLICommand): Promise<void> {
-    this._status = { ...this._status, state: "busy" };
+    this._status = { ...this._status, state: 'busy' };
 
     const sessionPayload: IRSession = {
-      state: "thinking",
+      state: 'thinking',
     };
-    this._emit(createIREnvelope("session", sessionId, "codex", sessionPayload));
+    this._emit(createIREnvelope('session', sessionId, 'codex', sessionPayload));
   }
 
   // -------------------------------------------------------------------------
@@ -199,10 +202,12 @@ export class CodexDriver implements Driver {
     });
 
     // Emit session fork event
-    this._emit(createIREnvelope<IRSession>("session", newSessionId, "codex", {
-      state: "connected",
-      message: `Forked from ${sessionId}`,
-    }));
+    this._emit(
+      createIREnvelope<IRSession>('session', newSessionId, 'codex', {
+        state: 'connected',
+        message: `Forked from ${sessionId}`,
+      })
+    );
   }
 
   /**
@@ -213,10 +218,12 @@ export class CodexDriver implements Driver {
     if (!session) return;
 
     // In a real implementation, this would call the Codex CLI rollback command
-    this._emit(createIREnvelope<IRSession>("session", sessionId, "codex", {
-      state: "idle",
-      message: `Rolled back to sequence ${targetSeq}`,
-    }));
+    this._emit(
+      createIREnvelope<IRSession>('session', sessionId, 'codex', {
+        state: 'idle',
+        message: `Rolled back to sequence ${targetSeq}`,
+      })
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -245,39 +252,42 @@ export class CodexDriver implements Driver {
 
   private _translateMethod(sessionId: string, msg: CodexJsonRpcMessage): IREnvelope | null {
     switch (msg.method) {
-      case "item/agentMessage/delta":
+      case 'item/agentMessage/delta':
         // Streaming text delta
-        return createIREnvelope<IRTextDelta>("text_delta", sessionId, "codex", {
-          text: msg.params?.content || "",
+        return createIREnvelope<IRTextDelta>('text_delta', sessionId, 'codex', {
+          text: msg.params?.content || '',
           done: false,
         });
 
-      case "item/agentMessage":
+      case 'item/agentMessage':
         // Complete text message
-        return createIREnvelope<IRTextDelta>("text_delta", sessionId, "codex", {
-          text: msg.params?.content || "",
+        return createIREnvelope<IRTextDelta>('text_delta', sessionId, 'codex', {
+          text: msg.params?.content || '',
           done: true,
         });
 
-      case "item/started":
+      case 'item/started':
         // Tool call started
-        if (msg.params?.item?.type === "function_call") {
-          const toolName = msg.params.item.name || "unknown";
+        if (msg.params?.item?.type === 'function_call') {
+          const toolName = msg.params.item.name || 'unknown';
           const toolInput = msg.params.item.arguments || {};
 
           // Check if this is exec_command being used as file_read
-          if (toolName === "exec_command" && isFileReadCommand(toolInput as CodexExecCommandParams)) {
-            return createIREnvelope<IRToolStart>("tool_start", sessionId, "codex", {
+          if (
+            toolName === 'exec_command' &&
+            isFileReadCommand(toolInput as CodexExecCommandParams)
+          ) {
+            return createIREnvelope<IRToolStart>('tool_start', sessionId, 'codex', {
               id: msg.params.item.id || `tool_${Date.now()}`,
-              name: "file_read",
-              nativeName: "exec_command",
+              name: 'file_read',
+              nativeName: 'exec_command',
               input: {
-                path: extractFilePath((toolInput as CodexExecCommandParams).command || ""),
+                path: extractFilePath((toolInput as CodexExecCommandParams).command || ''),
               },
             });
           }
 
-          return createIREnvelope<IRToolStart>("tool_start", sessionId, "codex", {
+          return createIREnvelope<IRToolStart>('tool_start', sessionId, 'codex', {
             id: msg.params.item.id || `tool_${Date.now()}`,
             name: normalizeToolName(toolName),
             nativeName: toolName,
@@ -286,17 +296,17 @@ export class CodexDriver implements Driver {
         }
         return null;
 
-      case "item/completed":
+      case 'item/completed':
         // Tool call completed
         const output = msg.params?.item?.output;
-        const isError = msg.params?.item?.status === "error";
+        const isError = msg.params?.item?.status === 'error';
 
         // Check if this was a file operation
-        if (msg.params?.item?.name === "exec_command" && msg.params?.item?.arguments) {
+        if (msg.params?.item?.name === 'exec_command' && msg.params?.item?.arguments) {
           const args = msg.params.item.arguments as CodexExecCommandParams;
           if (isFileReadCommand(args)) {
-            return createIREnvelope<IRToolResult>("tool_result", sessionId, "codex", {
-              id: msg.params.item.id || "",
+            return createIREnvelope<IRToolResult>('tool_result', sessionId, 'codex', {
+              id: msg.params.item.id || '',
               ok: !isError,
               output: output,
               error: isError ? String(output) : undefined,
@@ -305,49 +315,49 @@ export class CodexDriver implements Driver {
         }
 
         // Check if this was apply_patch (file edit)
-        if (msg.params?.item?.name === "apply_patch") {
+        if (msg.params?.item?.name === 'apply_patch') {
           const patchArgs = msg.params.item.arguments as CodexApplyPatchParams;
-          return createIREnvelope<IRFileOp>("file_op", sessionId, "codex", {
-            action: "edit",
-            path: patchArgs.path || "",
+          return createIREnvelope<IRFileOp>('file_op', sessionId, 'codex', {
+            action: 'edit',
+            path: patchArgs.path || '',
             diff: {
-              before: "",  // Would need to parse from patch
-              after: "",
+              before: '', // Would need to parse from patch
+              after: '',
             },
           });
         }
 
-        return createIREnvelope<IRToolResult>("tool_result", sessionId, "codex", {
-          id: msg.params?.item?.id || "",
+        return createIREnvelope<IRToolResult>('tool_result', sessionId, 'codex', {
+          id: msg.params?.item?.id || '',
           ok: !isError,
           output: output,
           error: isError ? String(output) : undefined,
         });
 
-      case "turn/started":
-        return createIREnvelope<IRSession>("session", sessionId, "codex", {
-          state: "thinking",
+      case 'turn/started':
+        return createIREnvelope<IRSession>('session', sessionId, 'codex', {
+          state: 'thinking',
         });
 
-      case "turn/completed":
-        this._status = { ...this._status, state: "ready" };
-        return createIREnvelope<IRSession>("session", sessionId, "codex", {
-          state: "idle",
+      case 'turn/completed':
+        this._status = { ...this._status, state: 'ready' };
+        return createIREnvelope<IRSession>('session', sessionId, 'codex', {
+          state: 'idle',
         });
 
-      case "thread/created":
+      case 'thread/created':
         const session = this._sessions.get(sessionId);
         if (session) {
           session.threadId = msg.params?.threadId;
         }
-        return createIREnvelope<IRSession>("session", sessionId, "codex", {
-          state: "connected",
+        return createIREnvelope<IRSession>('session', sessionId, 'codex', {
+          state: 'connected',
           message: `Thread created: ${msg.params?.threadId}`,
         });
 
-      case "thread/forked":
-        return createIREnvelope<IRSession>("session", sessionId, "codex", {
-          state: "connected",
+      case 'thread/forked':
+        return createIREnvelope<IRSession>('session', sessionId, 'codex', {
+          state: 'connected',
           message: `Thread forked from ${msg.params?.parentThreadId}`,
         });
 
@@ -358,9 +368,9 @@ export class CodexDriver implements Driver {
 
   private _translateResult(sessionId: string, msg: CodexJsonRpcMessage): IREnvelope | null {
     if (msg.error) {
-      return createIREnvelope<IRError>("error", sessionId, "codex", {
-        code: String(msg.error.code || "UNKNOWN"),
-        message: msg.error.message || "Unknown error",
+      return createIREnvelope<IRError>('error', sessionId, 'codex', {
+        code: String(msg.error.code || 'UNKNOWN'),
+        message: msg.error.message || 'Unknown error',
         details: msg.error.data,
         recoverable: true,
       });
@@ -390,11 +400,11 @@ export class CodexDriver implements Driver {
   }
 
   private _emit(envelope: IREnvelope): void {
-    Array.from(this._eventHandlers).forEach((handler) => {
+    Array.from(this._eventHandlers).forEach(handler => {
       try {
         handler(envelope);
       } catch (error) {
-        console.error("[CodexDriver] Event handler error:", error);
+        console.error('[CodexDriver] Event handler error:', error);
       }
     });
   }
@@ -405,7 +415,7 @@ export class CodexDriver implements Driver {
 // ============================================================================
 
 export interface CodexJsonRpcMessage {
-  jsonrpc?: "2.0";
+  jsonrpc?: '2.0';
   id?: string | number;
   method?: string;
   params?: {

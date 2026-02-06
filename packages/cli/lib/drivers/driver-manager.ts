@@ -5,8 +5,8 @@
  * for the dashboard to interact with any supported CLI.
  */
 
-import { Driver, DriverManager, IREventHandler } from "../protocol/driver";
-import { IRSource, IREnvelope } from "../protocol/ir";
+import { Driver, DriverManager, IREventHandler } from '../protocol/driver';
+import { IRSource, IREnvelope } from '../protocol/ir';
 
 /**
  * Default driver manager implementation
@@ -29,7 +29,7 @@ export class DefaultDriverManager implements DriverManager {
     }
 
     // Forward driver events to global handlers
-    driver.onEvent((envelope) => {
+    driver.onEvent(envelope => {
       this._emitGlobal(envelope);
     });
 
@@ -99,11 +99,11 @@ export class DefaultDriverManager implements DriverManager {
   }
 
   private _emitGlobal(envelope: IREnvelope): void {
-    Array.from(this._globalHandlers).forEach((handler) => {
+    Array.from(this._globalHandlers).forEach(handler => {
       try {
         handler(envelope);
       } catch (error) {
-        console.error("[DriverManager] Global handler error:", error);
+        console.error('[DriverManager] Global handler error:', error);
       }
     });
   }
@@ -126,8 +126,9 @@ export class DefaultDriverManager implements DriverManager {
       id: driver.id,
       name: driver.name,
       status: driver.status.state,
-      available: driver.status.state !== "error",
-      capabilities: driver.capabilities()
+      available: driver.status.state !== 'error',
+      capabilities: driver
+        .capabilities()
         .filter(c => c.available)
         .map(c => c.name),
     }));

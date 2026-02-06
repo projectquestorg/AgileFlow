@@ -511,7 +511,13 @@ describe('Reporting', () => {
         failed_count: 0,
         skipped_count: 0,
         results: [
-          { gate: 'Tests', type: 'tests', status: 'passed', message: 'All tests pass', duration_ms: 1000 },
+          {
+            gate: 'Tests',
+            type: 'tests',
+            status: 'passed',
+            message: 'All tests pass',
+            duration_ms: 1000,
+          },
           { gate: 'Lint', type: 'lint', status: 'passed', message: 'No errors', duration_ms: 500 },
         ],
         executed_at: '2026-01-01T00:00:00.000Z',
@@ -540,7 +546,14 @@ describe('Reporting', () => {
         skipped_count: 0,
         results: [
           { gate: 'Tests', type: 'tests', status: 'passed', message: 'Pass' },
-          { gate: 'Coverage', type: 'coverage', status: 'failed', message: 'Below threshold', value: 72, threshold: 80 },
+          {
+            gate: 'Coverage',
+            type: 'coverage',
+            status: 'failed',
+            message: 'Below threshold',
+            value: 72,
+            threshold: 80,
+          },
         ],
         executed_at: '2026-01-01T00:00:00.000Z',
       };
