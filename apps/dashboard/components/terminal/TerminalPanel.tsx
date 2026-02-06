@@ -8,7 +8,6 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { IntegratedTerminal } from "./IntegratedTerminal";
 
@@ -144,16 +143,8 @@ export function TerminalPanel({
   }, [activeTab, onOutputProcessed]);
 
   if (!isExpanded) {
-    return (
-      <button
-        onClick={onToggle}
-        className="fixed bottom-4 right-4 p-3 bg-card border border-border rounded-lg shadow-lg hover:bg-muted transition-colors z-50 flex items-center gap-2"
-      >
-        <Terminal className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">Terminal</span>
-        <ChevronUp className="h-3 w-3 text-muted-foreground" />
-      </button>
-    );
+    // No floating button - terminal toggle is in the footer
+    return null;
   }
 
   return (

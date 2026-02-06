@@ -2,20 +2,20 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Send, Terminal, GitBranch, Folder, Bot, Settings,
-  ChevronRight, MessageSquare, Play, Loader2, StopCircle,
-  GitCommit, FileCode, ChevronDown, Circle,
+  Terminal, GitBranch, Folder, Bot, Settings,
+  MessageSquare, Play, Loader2,
+  GitCommit, FileCode, Circle,
 } from "lucide-react";
 import { useDashboard, FileChange } from "@/hooks/useDashboard";
 import {
   MessageBubble,
-  ImageUpload,
-  VoiceDictation,
+  ChatInput,
   QuestionDialog,
 } from "@/components/chat";
 import { FileChangeRow, DiffViewer, CommitDialog } from "@/components/review";
 import { TerminalPanel } from "@/components/terminal";
-import { AutomationsList, InboxList, SessionsList, Session } from "@/components/sidebar";
+import { AppSidebar, type Automation, type InboxItem } from "@/components/sidebar";
+import type { Session } from "@/components/sidebar/NavSessions";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
 import { Bell, X } from "lucide-react";
 import { useProvider } from "@/hooks/useProvider";
@@ -25,13 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
   SidebarInset,
@@ -49,7 +42,6 @@ function DashboardContent() {
   const [message, setMessage] = useState("");
   const [showTerminal, setShowTerminal] = useState(false);
   const [showReviewPane, setShowReviewPane] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : true);
-  const [showProviderMenu, setShowProviderMenu] = useState(false);
 
   const { provider, providerInfo, providers, selectProvider } = useProvider("claude");
   const [wsUrl, setWsUrl] = useState("ws://localhost:8765");
@@ -59,7 +51,6 @@ function DashboardContent() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>("session-1");
   const [pendingImage, setPendingImage] = useState<{ base64: string; mimeType: string; name: string } | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>("sessions");
 
   const [sessions] = useState<Session[]>([
     { id: "session-1", name: "Main", type: "local", status: "active", branch: "main", messageCount: 15, lastActivity: new Date().toISOString() },
@@ -163,98 +154,33 @@ function DashboardContent() {
     setMessage("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   const handleConnect = () => {
     connect(wsUrl);
   };
 
-  const SidebarSection = ({ id, title, count, children }: { id: string; title: string; count?: number; children: React.ReactNode }) => (
-    <SidebarGroup>
-      <SidebarGroupLabel
-        onClick={() => setExpandedSection(expandedSection === id ? null : id)}
-        className="cursor-pointer hover:bg-sidebar-accent"
-      >
-        <span className="uppercase tracking-wider text-[10px]">{title}</span>
-        <div className="flex items-center gap-2 ml-auto">
-          {count !== undefined && count > 0 && (
-            <Badge variant="secondary" className="h-5 min-w-5 px-1.5 text-[10px]">{count}</Badge>
-          )}
-          <ChevronRight className={`h-3 w-3 transition-transform ${expandedSection === id ? "rotate-90" : ""}`} />
-        </div>
-      </SidebarGroupLabel>
-      {expandedSection === id && <SidebarGroupContent>{children}</SidebarGroupContent>}
-    </SidebarGroup>
-  );
-
   return (
     <>
       {/* Left Sidebar */}
-      <Sidebar collapsible="offcanvas" className="border-r border-border">
-        <SidebarHeader className="border-b border-border">
-          <div className="relative">
-            <Button
-              variant="secondary"
-              onClick={() => setShowProviderMenu(!showProviderMenu)}
-              className="w-full justify-between gap-2 text-xs"
-            >
-              <span className="flex items-center gap-2">
-                <span>{providerInfo.icon}</span>
-                <span>{providerInfo.name}</span>
-              </span>
-              <ChevronDown className={`h-3 w-3 transition-transform ${showProviderMenu ? "rotate-180" : ""}`} />
-            </Button>
-            {showProviderMenu && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md z-50 overflow-hidden">
-                {providers.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="ghost"
-                    onClick={() => { selectProvider(p.id as IRSource); setShowProviderMenu(false); }}
-                    className={`w-full justify-start gap-2 rounded-none text-xs ${provider === p.id ? "bg-accent text-primary" : ""}`}
-                  >
-                    <span>{p.icon}</span>
-                    <span>{p.name}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent>
-          <SidebarSection id="sessions" title="Sessions" count={sessions.length}>
-            <SessionsList
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onSelect={setActiveSessionId}
-              onCreate={() => addNotification("info", "Coming Soon", "Session creation will be available soon")}
-              onDelete={() => addNotification("info", "Coming Soon", "Session deletion will be available soon")}
-              onRename={(id, name) => addNotification("success", "Renamed", `Session renamed to "${name}"`)}
-            />
-          </SidebarSection>
-
-          <SidebarSection id="automations" title="Automations" count={automations.filter(a => a.status === "running").length}>
-            <AutomationsList automations={automations} onRun={runAutomation} onStop={stopAutomation} />
-          </SidebarSection>
-
-          <SidebarSection id="inbox" title="Inbox" count={inbox.filter(i => i.status === "unread").length}>
-            <InboxList items={inbox} onAccept={acceptInboxItem} onDismiss={dismissInboxItem} onMarkRead={markInboxRead} />
-          </SidebarSection>
-        </SidebarContent>
-
-        <SidebarFooter className="border-t border-border">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground px-2">
-            <GitBranch className="h-3 w-3" />
-            <span className="font-mono">{gitStatus?.branch || "main"}</span>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
+      <AppSidebar
+        provider={provider}
+        providerInfo={providerInfo}
+        providers={providers}
+        onProviderChange={(id) => selectProvider(id as IRSource)}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSessionSelect={setActiveSessionId}
+        onSessionCreate={() => addNotification("info", "Coming Soon", "Session creation will be available soon")}
+        onSessionDelete={() => addNotification("info", "Coming Soon", "Session deletion will be available soon")}
+        onSessionRename={(id, name) => addNotification("success", "Renamed", `Session renamed to "${name}"`)}
+        automations={automations as Automation[]}
+        onAutomationRun={runAutomation}
+        onAutomationStop={stopAutomation}
+        inbox={inbox as InboxItem[]}
+        onInboxAccept={acceptInboxItem}
+        onInboxDismiss={dismissInboxItem}
+        onInboxMarkRead={markInboxRead}
+        gitBranch={gitStatus?.branch || "main"}
+      />
 
       {/* Main Content Area */}
       <SidebarInset className="flex flex-col min-h-screen">
@@ -355,42 +281,18 @@ function DashboardContent() {
                 </div>
 
                 {/* Input */}
-                <div className="md:relative fixed bottom-10 md:bottom-auto left-0 right-0 z-20 border-t border-border p-3 bg-background">
-                  {pendingImage && (
-                    <div className="max-w-3xl mx-auto mb-2 flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md text-xs">
-                      <FileCode className="h-3 w-3" />
-                      <span className="flex-1 truncate">{pendingImage.name}</span>
-                      <Button variant="ghost" size="icon-xs" onClick={() => setPendingImage(null)}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 max-w-3xl mx-auto">
-                    <ImageUpload onImageSelect={(img) => setPendingImage(img)} disabled={false} />
-                    <VoiceDictation onTranscript={(text) => setMessage((prev) => prev + text)} disabled={false} />
-                    <Input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Message or /command..."
-                      className="flex-1"
-                    />
-                    {isThinking ? (
-                      <Button variant="destructive" size="icon" onClick={cancelOperation}>
-                        <StopCircle className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        size="icon"
-                        onClick={handleSendMessage}
-                        disabled={!message.trim() && !pendingImage}
-                      >
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                <ChatInput
+                  value={message}
+                  onChange={setMessage}
+                  onSend={handleSendMessage}
+                  onCancel={cancelOperation}
+                  isThinking={isThinking}
+                  providerInfo={providerInfo}
+                  pendingImage={pendingImage}
+                  onImageSelect={(img) => setPendingImage(img)}
+                  onImageClear={() => setPendingImage(null)}
+                  onVoiceTranscript={(text) => setMessage((prev) => prev + text)}
+                />
               </>
             )}
           </main>
