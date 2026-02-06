@@ -155,12 +155,16 @@ class Installer {
       }
 
       // Copy essential scripts to user's scripts/ directory
+      // Always force-overwrite scripts - they are internal AgileFlow code,
+      // never user-edited, and must stay in sync with the installed version.
       spinner.text = 'Installing scripts...';
-      await this.installScripts(directory, { force: effectiveForce });
+      await this.installScripts(directory, { force: true });
 
       // Copy lib/ directory (shared utilities used by scripts)
+      // Always force-overwrite lib files - they are internal AgileFlow code,
+      // never user-edited, and must stay in sync with the installed version.
       spinner.text = 'Installing shared libraries...';
-      await this.installLib(directory, { force: effectiveForce });
+      await this.installLib(directory, { force: true });
 
       // Copy CHANGELOG.md for /agileflow:whats-new command
       spinner.text = 'Installing changelog...';
