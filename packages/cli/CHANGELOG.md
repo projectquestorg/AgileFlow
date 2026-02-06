@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.96.2] - 2026-02-06
+
+### Fixed
+- Smart docs folder detection for existing AgileFlow installations
+
 ## [2.96.1] - 2026-02-06
 
 ### Fixed
