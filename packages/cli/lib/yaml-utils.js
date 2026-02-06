@@ -14,7 +14,34 @@
  * - Future-proofing for library changes
  */
 
-const yaml = require('js-yaml');
+const path = require('path');
+
+// Resolve js-yaml from multiple locations:
+// 1. User's project node_modules (may not exist or be corrupted)
+// 2. AgileFlow npm package node_modules (always available)
+// 3. Global fallback
+let yaml;
+const tryPaths = [
+  'js-yaml', // Standard require (user's node_modules or global)
+  path.join(__dirname, '..', 'node_modules', 'js-yaml'), // AgileFlow package
+  path.join(__dirname, '..', '..', 'node_modules', 'js-yaml'), // .agileflow/../node_modules
+];
+
+for (const tryPath of tryPaths) {
+  try {
+    yaml = require(tryPath);
+    break;
+  } catch (_e) {
+    // Continue to next path
+  }
+}
+
+if (!yaml) {
+  throw new Error(
+    'js-yaml not found. Please run: npm install js-yaml\n' +
+      'Or reinstall AgileFlow: npx agileflow setup --force'
+  );
+}
 
 /**
  * Safely parse YAML content. Uses js-yaml's DEFAULT_SCHEMA which is
