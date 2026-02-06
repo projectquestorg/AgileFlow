@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.96.5] - 2026-02-06
+
+### Fixed
+- Fix SessionStart hook crash when js-yaml not installed in user projects
+
 ## [2.96.4] - 2026-02-06
 
 ### Added
