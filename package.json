@@ -54,6 +54,7 @@
   "overrides": {
     "diff": ">=8.0.3",
     "xml2js": ">=0.5.0",
+    "lodash-es": ">=4.17.23",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "@types/react": "^19",
