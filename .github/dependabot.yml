@@ -45,6 +45,13 @@ updates:
       - "cli"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Docs app dependencies
   - package-ecosystem: "npm"
@@ -60,6 +67,13 @@ updates:
       - "docs"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Website app dependencies
   - package-ecosystem: "npm"
@@ -75,6 +89,13 @@ updates:
       - "website"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions updates
   - package-ecosystem: "github-actions"
