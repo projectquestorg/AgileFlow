@@ -97,12 +97,16 @@ function runTestsForFile(rootDir, filePath) {
   const testPattern = basename.replace(/\.(test|spec)$/, '');
 
   try {
-    const output = execFileSync('npm', ['test', '--', `--testPathPattern=${testPattern}`, '--passWithNoTests'], {
-      cwd: rootDir,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 120000, // 2 minute timeout per file
-    });
+    const output = execFileSync(
+      'npm',
+      ['test', '--', `--testPathPattern=${testPattern}`, '--passWithNoTests'],
+      {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 120000, // 2 minute timeout per file
+      }
+    );
     result.passed = true;
     result.output = output;
   } catch (e) {

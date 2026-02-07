@@ -11,8 +11,12 @@ const os = require('os');
 jest.mock('../../lib/paths', () => ({
   getProjectRoot: jest.fn(() => '/test/project'),
   getStatusPath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/status.json`),
-  getSessionStatePath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/session-state.json`),
-  getMetadataPath: jest.fn(root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`),
+  getSessionStatePath: jest.fn(
+    root => `${root || '/test/project'}/docs/09-agents/session-state.json`
+  ),
+  getMetadataPath: jest.fn(
+    root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`
+  ),
 }));
 
 // Must clear the require cache between tests to reset lazy-loaded modules

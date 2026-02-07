@@ -14,17 +14,17 @@
   },
   "active_commands": [
     {
-      "name": "test",
+      "name": "babysit",
       "type": "interactive",
-      "activated_at": "2026-02-03T09:14:56.631Z",
+      "activated_at": "2026-02-04T08:22:48.581Z",
       "state": {},
       "active_sections": [],
       "params": {}
     },
     {
-      "name": "babysit",
+      "name": "test",
       "type": "interactive",
-      "activated_at": "2026-02-04T08:22:48.581Z",
+      "activated_at": "2026-02-07T05:16:45.138Z",
       "state": {},
       "active_sections": [],
       "params": {}

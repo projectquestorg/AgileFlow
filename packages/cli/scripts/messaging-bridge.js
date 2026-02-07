@@ -113,13 +113,16 @@ function readMessages(rootDir, filters = {}) {
     const content = fs.readFileSync(logPath, 'utf8').trim();
     if (!content) return { ok: true, messages: [] };
 
-    let messages = content.split('\n').map(line => {
-      try {
-        return JSON.parse(line);
-      } catch (e) {
-        return null;
-      }
-    }).filter(Boolean);
+    let messages = content
+      .split('\n')
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean);
 
     // Apply filters
     if (filters.from) {
@@ -274,7 +277,10 @@ function main() {
     }
 
     default:
-      result = { ok: false, error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context>` };
+      result = {
+        ok: false,
+        error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context>`,
+      };
   }
 
   console.log(JSON.stringify(result, null, 2));

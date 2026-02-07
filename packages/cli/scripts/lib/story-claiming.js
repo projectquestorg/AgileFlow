@@ -32,13 +32,21 @@ const DEFAULT_CLAIM_TTL_HOURS = 4;
 let _featureFlags, _taskSync;
 function getFeatureFlags() {
   if (!_featureFlags) {
-    try { _featureFlags = require('../../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+    try {
+      _featureFlags = require('../../lib/feature-flags');
+    } catch (e) {
+      _featureFlags = null;
+    }
   }
   return _featureFlags;
 }
 function getTaskSync() {
   if (!_taskSync) {
-    try { _taskSync = require('./task-sync'); } catch (e) { _taskSync = null; }
+    try {
+      _taskSync = require('./task-sync');
+    } catch (e) {
+      _taskSync = null;
+    }
   }
   return _taskSync;
 }

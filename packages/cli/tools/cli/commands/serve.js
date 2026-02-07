@@ -438,7 +438,10 @@ async function handlePortConflict(port, readline) {
       if (choice === 'k' && processInfo) {
         // Kill the process - validate PID is numeric
         try {
-          const pids = processInfo.split('\n').map(p => p.trim()).filter(p => /^\d+$/.test(p));
+          const pids = processInfo
+            .split('\n')
+            .map(p => p.trim())
+            .filter(p => /^\d+$/.test(p));
           for (const pid of pids) {
             execFileSync('kill', [pid], { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
           }

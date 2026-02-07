@@ -33,11 +33,11 @@ function getPaths() {
  */
 function storyStatusToTaskStatus(storyStatus) {
   const mapping = {
-    'ready': 'pending',
-    'in_progress': 'in_progress',
-    'in_review': 'in_progress',
-    'blocked': 'pending',
-    'completed': 'completed',
+    ready: 'pending',
+    in_progress: 'in_progress',
+    in_review: 'in_progress',
+    blocked: 'pending',
+    completed: 'completed',
   };
   return mapping[storyStatus] || 'pending';
 }
@@ -47,9 +47,9 @@ function storyStatusToTaskStatus(storyStatus) {
  */
 function taskStatusToStoryStatus(taskStatus) {
   const mapping = {
-    'pending': 'ready',
-    'in_progress': 'in_progress',
-    'completed': 'completed',
+    pending: 'ready',
+    in_progress: 'in_progress',
+    completed: 'completed',
   };
   return mapping[taskStatus] || 'ready';
 }
@@ -60,7 +60,9 @@ function taskStatusToStoryStatus(taskStatus) {
 function readStatusStories(rootDir) {
   try {
     const paths = getPaths();
-    const statusPath = paths ? paths.getStatusPath(rootDir) : path.join(rootDir, 'docs', '09-agents', 'status.json');
+    const statusPath = paths
+      ? paths.getStatusPath(rootDir)
+      : path.join(rootDir, 'docs', '09-agents', 'status.json');
 
     if (!fs.existsSync(statusPath)) return {};
 
@@ -77,7 +79,9 @@ function readStatusStories(rootDir) {
 function writeStatusStories(rootDir, stories) {
   try {
     const paths = getPaths();
-    const statusPath = paths ? paths.getStatusPath(rootDir) : path.join(rootDir, 'docs', '09-agents', 'status.json');
+    const statusPath = paths
+      ? paths.getStatusPath(rootDir)
+      : path.join(rootDir, 'docs', '09-agents', 'status.json');
 
     let data = {};
     if (fs.existsSync(statusPath)) {
@@ -103,7 +107,9 @@ function writeStatusStories(rootDir, stories) {
 function syncToStatus(rootDir, storyId, updates) {
   try {
     const paths = getPaths();
-    const statusPath = paths ? paths.getStatusPath(rootDir) : path.join(rootDir, 'docs', '09-agents', 'status.json');
+    const statusPath = paths
+      ? paths.getStatusPath(rootDir)
+      : path.join(rootDir, 'docs', '09-agents', 'status.json');
 
     if (!fs.existsSync(statusPath)) {
       return { ok: false, error: 'status.json not found' };
@@ -181,7 +187,9 @@ function reconcile(rootDir, nativeTasks) {
 
   try {
     const paths = getPaths();
-    const statusPath = paths ? paths.getStatusPath(rootDir) : path.join(rootDir, 'docs', '09-agents', 'status.json');
+    const statusPath = paths
+      ? paths.getStatusPath(rootDir)
+      : path.join(rootDir, 'docs', '09-agents', 'status.json');
 
     if (!fs.existsSync(statusPath)) {
       return { ok: false, error: 'status.json not found', updated: 0 };

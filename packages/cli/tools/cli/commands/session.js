@@ -963,7 +963,11 @@ function getSessionGitInfo(sessionPath) {
     // Get upstream tracking branch
     let upstream = '';
     try {
-      upstream = execFileSync('git', ['rev-parse', '--abbrev-ref', `${branch}@{upstream}`], execOpts).trim();
+      upstream = execFileSync(
+        'git',
+        ['rev-parse', '--abbrev-ref', `${branch}@{upstream}`],
+        execOpts
+      ).trim();
     } catch {
       // No upstream configured
     }

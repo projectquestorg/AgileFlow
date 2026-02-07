@@ -11,8 +11,12 @@ const os = require('os');
 jest.mock('../../lib/paths', () => ({
   getProjectRoot: jest.fn(() => '/test/project'),
   getStatusPath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/status.json`),
-  getSessionStatePath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/session-state.json`),
-  getMetadataPath: jest.fn(root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`),
+  getSessionStatePath: jest.fn(
+    root => `${root || '/test/project'}/docs/09-agents/session-state.json`
+  ),
+  getMetadataPath: jest.fn(
+    root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`
+  ),
 }));
 
 const { paths } = jest.requireMock('../../lib/paths');
@@ -526,8 +530,9 @@ describe('task-sync.js', () => {
       taskSync.reconcile(testDir, nativeTasks);
 
       const updated = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-      expect(new Date(updated.stories['US-0001'].updated_at).getTime())
-        .toBeGreaterThan(new Date('2026-01-01T00:00:00.000Z').getTime());
+      expect(new Date(updated.stories['US-0001'].updated_at).getTime()).toBeGreaterThan(
+        new Date('2026-01-01T00:00:00.000Z').getTime()
+      );
     });
   });
 

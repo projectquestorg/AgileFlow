@@ -67,12 +67,14 @@ function getPaths() {
  * Read stdin for hook input (non-blocking with timeout)
  */
 function readStdin() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let data = '';
     const timeout = setTimeout(() => resolve(data), 1000);
 
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', chunk => { data += chunk; });
+    process.stdin.on('data', chunk => {
+      data += chunk;
+    });
     process.stdin.on('end', () => {
       clearTimeout(timeout);
       resolve(data);
@@ -179,11 +181,16 @@ async function main() {
           const sessionStatePath = paths.getSessionStatePath(rootDir);
           if (fs.existsSync(sessionStatePath)) {
             const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
-            if (!state.hook_metrics) state.hook_metrics = { last_updated: new Date().toISOString(), session_total_ms: 0, hooks: {} };
+            if (!state.hook_metrics)
+              state.hook_metrics = {
+                last_updated: new Date().toISOString(),
+                session_total_ms: 0,
+                hooks: {},
+              };
             if (!state.hook_metrics.hooks) state.hook_metrics.hooks = {};
             if (!state.hook_metrics.hooks.TeammateIdle) state.hook_metrics.hooks.TeammateIdle = {};
             state.hook_metrics.hooks.TeammateIdle.quality_gate = {
-              duration_ms: timer.end ? Math.round((timer.end - timer.start)) : 0,
+              duration_ms: timer.end ? Math.round(timer.end - timer.start) : 0,
               status: results.allPassed ? 'success' : 'blocked',
               at: new Date().toISOString(),
               gates_evaluated: results.results ? results.results.length : 0,

@@ -910,7 +910,11 @@ class DashboardServer extends EventEmitter {
 
     // Validate commit message
     if (commitMessage !== undefined && commitMessage !== null) {
-      if (typeof commitMessage !== 'string' || commitMessage.length > 10000 || commitMessage.includes('\0')) {
+      if (
+        typeof commitMessage !== 'string' ||
+        commitMessage.length > 10000 ||
+        commitMessage.includes('\0')
+      ) {
         session.send(createError('GIT_ERROR', 'Invalid commit message'));
         return;
       }
@@ -929,7 +933,9 @@ class DashboardServer extends EventEmitter {
           break;
         case InboundMessageType.GIT_UNSTAGE:
           if (fileArgs) {
-            execFileSync('git', ['restore', '--staged', '--', ...fileArgs], { cwd: this.projectRoot });
+            execFileSync('git', ['restore', '--staged', '--', ...fileArgs], {
+              cwd: this.projectRoot,
+            });
           } else {
             execFileSync('git', ['restore', '--staged', '.'], { cwd: this.projectRoot });
           }
@@ -1066,9 +1072,7 @@ class DashboardServer extends EventEmitter {
    */
   getFileDiff(filePath, staged = false) {
     try {
-      const diffArgs = staged
-        ? ['diff', '--cached', '--', filePath]
-        : ['diff', '--', filePath];
+      const diffArgs = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
 
       const diff = execFileSync('git', diffArgs, {
         cwd: this.projectRoot,

@@ -270,7 +270,10 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
       result.worktreeDeleted = true;
     } catch (e) {
       try {
-        execFileSync('git', ['worktree', 'remove', '--force', session.path], { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['worktree', 'remove', '--force', session.path], {
+          cwd: ROOT,
+          encoding: 'utf8',
+        });
         result.worktreeDeleted = true;
       } catch (e2) {
         result.worktreeDeleted = false;
@@ -649,10 +652,16 @@ function resolveConflict(resolution) {
             fs.unlinkSync(tmpOurs);
             fs.unlinkSync(tmpTheirs);
           } else {
-            execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
+            execFileSync('git', ['checkout', '--theirs', '--', file], {
+              cwd: ROOT,
+              encoding: 'utf8',
+            });
           }
         } catch (unionError) {
-          execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
+          execFileSync('git', ['checkout', '--theirs', '--', file], {
+            cwd: ROOT,
+            encoding: 'utf8',
+          });
         }
         break;
 

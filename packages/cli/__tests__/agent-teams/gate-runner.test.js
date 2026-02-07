@@ -77,10 +77,7 @@ describe('gate-runner.js', () => {
 
       gateRunner.evaluateGate('tests', testDir, { command: 'custom test' });
 
-      expect(execSync).toHaveBeenCalledWith(
-        'custom test',
-        expect.any(Object)
-      );
+      expect(execSync).toHaveBeenCalledWith('custom test', expect.any(Object));
     });
 
     test('respects timeout option', () => {
@@ -130,10 +127,7 @@ describe('gate-runner.js', () => {
 
       gateRunner.evaluateGate('lint', testDir);
 
-      expect(execSync).toHaveBeenCalledWith(
-        'npm run lint',
-        expect.any(Object)
-      );
+      expect(execSync).toHaveBeenCalledWith('npm run lint', expect.any(Object));
     });
 
     test('returns failed when linting fails', () => {
@@ -171,10 +165,7 @@ describe('gate-runner.js', () => {
 
       gateRunner.evaluateGate('types', testDir);
 
-      expect(execSync).toHaveBeenCalledWith(
-        'npx tsc --noEmit',
-        expect.any(Object)
-      );
+      expect(execSync).toHaveBeenCalledWith('npx tsc --noEmit', expect.any(Object));
     });
 
     test('returns failed when type-check fails', () => {
@@ -252,10 +243,7 @@ describe('gate-runner.js', () => {
     test('returns allPassed true when all pass', () => {
       execSync.mockImplementation(() => 'Passing\n');
 
-      const result = gateRunner.evaluateGates(
-        { tests: true, lint: true },
-        testDir
-      );
+      const result = gateRunner.evaluateGates({ tests: true, lint: true }, testDir);
 
       expect(result.allPassed).toBe(true);
     });
@@ -278,10 +266,7 @@ describe('gate-runner.js', () => {
         throw error;
       });
 
-      const result = gateRunner.evaluateGates(
-        { tests: true, lint: true },
-        testDir
-      );
+      const result = gateRunner.evaluateGates({ tests: true, lint: true }, testDir);
 
       expect(result.allPassed).toBe(false);
       expect(result.results).toHaveLength(2);
@@ -297,10 +282,7 @@ describe('gate-runner.js', () => {
         return 'Passing\n';
       });
 
-      const result = gateRunner.evaluateGates(
-        { tests: true, types: true },
-        testDir
-      );
+      const result = gateRunner.evaluateGates({ tests: true, types: true }, testDir);
 
       // Should have run two gates
       expect(result.results).toHaveLength(2);
@@ -313,10 +295,7 @@ describe('gate-runner.js', () => {
     test('skips disabled gates', () => {
       execSync.mockImplementation(() => 'Passing\n');
 
-      const result = gateRunner.evaluateGates(
-        { tests: true, lint: false },
-        testDir
-      );
+      const result = gateRunner.evaluateGates({ tests: true, lint: false }, testDir);
 
       expect(result.results.length).toBe(1);
       expect(result.results[0].gate).toBe('tests');
@@ -325,11 +304,7 @@ describe('gate-runner.js', () => {
     test('passes gate-specific options', () => {
       execSync.mockImplementation(() => 'Passing\n');
 
-      gateRunner.evaluateGates(
-        { tests: true },
-        testDir,
-        { tests: { timeout: 600000 } }
-      );
+      gateRunner.evaluateGates({ tests: true }, testDir, { tests: { timeout: 600000 } });
 
       expect(execSync).toHaveBeenCalledWith(
         expect.any(String),
@@ -509,10 +484,7 @@ describe('gate-runner.js', () => {
 
       gateRunner.runCommand('test-cmd', testDir, 5000);
 
-      expect(execSync).toHaveBeenCalledWith(
-        'test-cmd',
-        expect.objectContaining({ cwd: testDir })
-      );
+      expect(execSync).toHaveBeenCalledWith('test-cmd', expect.objectContaining({ cwd: testDir }));
     });
 
     test('passes timeout to execSync', () => {

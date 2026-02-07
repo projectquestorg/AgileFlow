@@ -95,13 +95,21 @@ const mergeOps = require('../lib/merge-operations');
 let _featureFlags, _teamManager;
 function getFeatureFlags() {
   if (!_featureFlags) {
-    try { _featureFlags = require('../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+    try {
+      _featureFlags = require('../lib/feature-flags');
+    } catch (e) {
+      _featureFlags = null;
+    }
   }
   return _featureFlags;
 }
 function getTeamManager() {
   if (!_teamManager) {
-    try { _teamManager = require('./team-manager'); } catch (e) { _teamManager = null; }
+    try {
+      _teamManager = require('./team-manager');
+    } catch (e) {
+      _teamManager = null;
+    }
   }
   return _teamManager;
 }
@@ -507,9 +515,7 @@ function createTeamSession(options = {}) {
 
   // Check if Agent Teams is enabled
   if (!ff || !ff.isAgentTeamsEnabled({ rootDir: ROOT })) {
-    console.error(
-      `${c.yellow}Agent Teams not enabled. Falling back to worktree mode.${c.reset}`
-    );
+    console.error(`${c.yellow}Agent Teams not enabled. Falling back to worktree mode.${c.reset}`);
     return createSession({
       nickname: options.nickname || `team-${templateName}`,
       thread_type: 'parallel',
@@ -619,7 +625,10 @@ function deleteSession(sessionId, removeWorktree = false) {
       execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
     } catch (e) {
       try {
-        execFileSync('git', ['worktree', 'remove', '--force', session.path], { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['worktree', 'remove', '--force', session.path], {
+          cwd: ROOT,
+          encoding: 'utf8',
+        });
       } catch (e2) {
         return { success: false, error: `Failed to remove worktree: ${e2.message}` };
       }

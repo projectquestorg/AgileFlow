@@ -42,19 +42,31 @@ const { isValidEpicId, parseIntBounded } = require('../lib/validate');
 let _featureFlags, _taskSync, _messagingBridge;
 function getFeatureFlags() {
   if (!_featureFlags) {
-    try { _featureFlags = require('../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+    try {
+      _featureFlags = require('../lib/feature-flags');
+    } catch (e) {
+      _featureFlags = null;
+    }
   }
   return _featureFlags;
 }
 function getTaskSync() {
   if (!_taskSync) {
-    try { _taskSync = require('./lib/task-sync'); } catch (e) { _taskSync = null; }
+    try {
+      _taskSync = require('./lib/task-sync');
+    } catch (e) {
+      _taskSync = null;
+    }
   }
   return _taskSync;
 }
 function getMessagingBridge() {
   if (!_messagingBridge) {
-    try { _messagingBridge = require('./messaging-bridge'); } catch (e) { _messagingBridge = null; }
+    try {
+      _messagingBridge = require('./messaging-bridge');
+    } catch (e) {
+      _messagingBridge = null;
+    }
   }
   return _messagingBridge;
 }
@@ -831,8 +843,13 @@ function handleLoop(rootDir) {
       if (isTeamSessionActive(rootDir)) {
         const bridge = getMessagingBridge();
         if (bridge) {
-          bridge.sendTaskAssignment(rootDir, 'ralph-loop', 'team-lead', nextStory.id,
-            `${nextStory.id}: ${nextStory.title || 'Untitled'}`);
+          bridge.sendTaskAssignment(
+            rootDir,
+            'ralph-loop',
+            'team-lead',
+            nextStory.id,
+            `${nextStory.id}: ${nextStory.title || 'Untitled'}`
+          );
           console.log(`${c.dim}  Sent next-story assignment to team${c.reset}`);
         }
       }

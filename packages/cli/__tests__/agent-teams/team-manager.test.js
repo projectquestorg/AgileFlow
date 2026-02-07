@@ -11,8 +11,12 @@ const os = require('os');
 jest.mock('../../lib/paths', () => ({
   getProjectRoot: jest.fn(() => '/test/project'),
   getStatusPath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/status.json`),
-  getSessionStatePath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/session-state.json`),
-  getMetadataPath: jest.fn(root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`),
+  getSessionStatePath: jest.fn(
+    root => `${root || '/test/project'}/docs/09-agents/session-state.json`
+  ),
+  getMetadataPath: jest.fn(
+    root => `${root || '/test/project'}/docs/00-meta/agileflow-metadata.json`
+  ),
 }));
 
 jest.mock('../../lib/feature-flags', () => ({
@@ -394,7 +398,9 @@ describe('team-manager.js', () => {
       const devTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agileflow-dev-only-test-'));
 
       try {
-        fs.mkdirSync(path.join(devTestDir, 'packages', 'cli', 'src', 'core', 'teams'), { recursive: true });
+        fs.mkdirSync(path.join(devTestDir, 'packages', 'cli', 'src', 'core', 'teams'), {
+          recursive: true,
+        });
         const devTemplate = { ...mockTeamTemplate, name: 'dev-template' };
         fs.writeFileSync(
           path.join(devTestDir, 'packages', 'cli', 'src', 'core', 'teams', 'dev-template.json'),

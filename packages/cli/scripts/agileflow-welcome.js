@@ -1705,7 +1705,10 @@ async function main() {
   let agentTeamsInfo = {};
   if (featureFlags) {
     try {
-      agentTeamsInfo = featureFlags.getAgentTeamsDisplayInfo({ rootDir, metadata: cache?.metadata });
+      agentTeamsInfo = featureFlags.getAgentTeamsDisplayInfo({
+        rootDir,
+        metadata: cache?.metadata,
+      });
     } catch (e) {
       // Silently fail - Agent Teams info is non-critical
     }

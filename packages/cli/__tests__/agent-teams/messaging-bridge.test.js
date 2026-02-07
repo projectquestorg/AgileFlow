@@ -11,7 +11,9 @@ const os = require('os');
 jest.mock('../../lib/paths', () => ({
   getProjectRoot: jest.fn(() => '/test/project'),
   getStatusPath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/status.json`),
-  getSessionStatePath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/session-state.json`),
+  getSessionStatePath: jest.fn(
+    root => `${root || '/test/project'}/docs/09-agents/session-state.json`
+  ),
   getBusLogPath: jest.fn(root => `${root || '/test/project'}/docs/09-agents/bus/log.jsonl`),
 }));
 
@@ -161,7 +163,12 @@ describe('messaging-bridge.js', () => {
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const messages = [
         JSON.stringify({ from: 'AG-API', to: 'AG-UI', type: 'test', at: new Date().toISOString() }),
-        JSON.stringify({ from: 'AG-API', to: 'AG-DATABASE', type: 'test', at: new Date().toISOString() }),
+        JSON.stringify({
+          from: 'AG-API',
+          to: 'AG-DATABASE',
+          type: 'test',
+          at: new Date().toISOString(),
+        }),
       ];
       fs.writeFileSync(logPath, messages.join('\n'));
 
@@ -196,7 +203,9 @@ describe('messaging-bridge.js', () => {
       ];
       fs.writeFileSync(logPath, messages.join('\n'));
 
-      const result = messagingBridge.readMessages(testDir, { since: new Date(Date.now() - 30000).toISOString() });
+      const result = messagingBridge.readMessages(testDir, {
+        since: new Date(Date.now() - 30000).toISOString(),
+      });
 
       expect(result.messages).toHaveLength(1);
       expect(result.messages[0].from).toBe('AG-UI');
@@ -242,9 +251,24 @@ describe('messaging-bridge.js', () => {
     test('applies multiple filters together', () => {
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const messages = [
-        JSON.stringify({ from: 'AG-API', to: 'AG-UI', type: 'coordination', at: new Date().toISOString() }),
-        JSON.stringify({ from: 'AG-API', to: 'AG-UI', type: 'task_assignment', at: new Date().toISOString() }),
-        JSON.stringify({ from: 'AG-UI', to: 'AG-API', type: 'coordination', at: new Date().toISOString() }),
+        JSON.stringify({
+          from: 'AG-API',
+          to: 'AG-UI',
+          type: 'coordination',
+          at: new Date().toISOString(),
+        }),
+        JSON.stringify({
+          from: 'AG-API',
+          to: 'AG-UI',
+          type: 'task_assignment',
+          at: new Date().toISOString(),
+        }),
+        JSON.stringify({
+          from: 'AG-UI',
+          to: 'AG-API',
+          type: 'coordination',
+          at: new Date().toISOString(),
+        }),
       ];
       fs.writeFileSync(logPath, messages.join('\n'));
 
@@ -304,7 +328,9 @@ describe('messaging-bridge.js', () => {
       const result = messagingBridge.getAgentContext(testDir, 'AG-API');
 
       // Should deduplicate duplicates
-      const coordMessages = result.context.filter(m => m.type === 'coordination' && m.from === 'AG-LEAD');
+      const coordMessages = result.context.filter(
+        m => m.type === 'coordination' && m.from === 'AG-LEAD'
+      );
       expect(coordMessages.length).toBeLessThanOrEqual(2);
     });
 
@@ -335,11 +361,13 @@ describe('messaging-bridge.js', () => {
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const messages = [];
       for (let i = 0; i < 100; i++) {
-        messages.push(JSON.stringify({
-          from: 'AG-LEAD',
-          type: 'msg',
-          at: new Date().toISOString(),
-        }));
+        messages.push(
+          JSON.stringify({
+            from: 'AG-LEAD',
+            type: 'msg',
+            at: new Date().toISOString(),
+          })
+        );
       }
       fs.writeFileSync(logPath, messages.join('\n'));
 
@@ -352,7 +380,13 @@ describe('messaging-bridge.js', () => {
 
   describe('sendTaskAssignment()', () => {
     test('sends task assignment message', () => {
-      messagingBridge.sendTaskAssignment(testDir, 'AG-LEAD', 'AG-API', 'US-0001', 'Build API endpoint');
+      messagingBridge.sendTaskAssignment(
+        testDir,
+        'AG-LEAD',
+        'AG-API',
+        'US-0001',
+        'Build API endpoint'
+      );
 
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
@@ -390,7 +424,14 @@ describe('messaging-bridge.js', () => {
     });
 
     test('sends rejection message', () => {
-      messagingBridge.sendPlanDecision(testDir, 'AG-LEAD', 'AG-API', 'US-0001', false, 'Need changes');
+      messagingBridge.sendPlanDecision(
+        testDir,
+        'AG-LEAD',
+        'AG-API',
+        'US-0001',
+        false,
+        'Need changes'
+      );
 
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
@@ -401,7 +442,13 @@ describe('messaging-bridge.js', () => {
 
   describe('sendValidationResult()', () => {
     test('sends validation approved message', () => {
-      messagingBridge.sendValidationResult(testDir, 'AG-API-VALIDATOR', 'US-0001', 'approved', 'Meets criteria');
+      messagingBridge.sendValidationResult(
+        testDir,
+        'AG-API-VALIDATOR',
+        'US-0001',
+        'approved',
+        'Meets criteria'
+      );
 
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
@@ -414,7 +461,13 @@ describe('messaging-bridge.js', () => {
     });
 
     test('sends validation rejected message', () => {
-      messagingBridge.sendValidationResult(testDir, 'AG-API-VALIDATOR', 'US-0001', 'rejected', 'Issues found');
+      messagingBridge.sendValidationResult(
+        testDir,
+        'AG-API-VALIDATOR',
+        'US-0001',
+        'rejected',
+        'Issues found'
+      );
 
       const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
       const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));

@@ -301,20 +301,24 @@ describe('validation-registry.js', () => {
 
       const messages = [];
       for (let i = 0; i < 150; i++) {
-        messages.push(JSON.stringify({
-          from: 'some-agent',
-          type: 'msg',
-          at: new Date().toISOString(),
-        }));
+        messages.push(
+          JSON.stringify({
+            from: 'some-agent',
+            type: 'msg',
+            at: new Date().toISOString(),
+          })
+        );
       }
       // Add approval at end
-      messages.push(JSON.stringify({
-        from: 'agileflow-api-validator',
-        type: 'validation',
-        task_id: 'US-0001',
-        status: 'approved',
-        at: new Date().toISOString(),
-      }));
+      messages.push(
+        JSON.stringify({
+          from: 'agileflow-api-validator',
+          type: 'validation',
+          task_id: 'US-0001',
+          status: 'approved',
+          at: new Date().toISOString(),
+        })
+      );
       fs.writeFileSync(busLogPath, messages.join('\n'));
 
       const result = validationRegistry.isValidatorApproved('US-0001', 'agileflow-api-validator', {
@@ -356,7 +360,11 @@ describe('validation-registry.js', () => {
     });
 
     test('returns false when rootDir not provided', () => {
-      const result = validationRegistry.isValidatorApproved('US-0001', 'agileflow-api-validator', {});
+      const result = validationRegistry.isValidatorApproved(
+        'US-0001',
+        'agileflow-api-validator',
+        {}
+      );
 
       expect(result).toBe(false);
     });
@@ -446,7 +454,9 @@ describe('validation-registry.js', () => {
     test('contains expected pairs', () => {
       expect(validationRegistry.BUILT_IN_PAIRS['agileflow-api']).toBe('agileflow-api-validator');
       expect(validationRegistry.BUILT_IN_PAIRS['agileflow-ui']).toBe('agileflow-ui-validator');
-      expect(validationRegistry.BUILT_IN_PAIRS['agileflow-database']).toBe('agileflow-schema-validator');
+      expect(validationRegistry.BUILT_IN_PAIRS['agileflow-database']).toBe(
+        'agileflow-schema-validator'
+      );
     });
   });
 
@@ -481,7 +491,9 @@ describe('validation-registry.js', () => {
       fs.writeFileSync(busLogPath, messages.join('\n'));
 
       // Verify workflow
-      expect(validationRegistry.requiresValidation('agileflow-api', { rootDir: testDir })).toBe(true);
+      expect(validationRegistry.requiresValidation('agileflow-api', { rootDir: testDir })).toBe(
+        true
+      );
       expect(validationRegistry.getValidator('agileflow-api', { rootDir: testDir })).toBe(
         'api-validator-v2'
       );

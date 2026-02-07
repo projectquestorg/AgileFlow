@@ -155,7 +155,12 @@ function evaluateGate(gateName, rootDir, options = {}) {
     case 'lint': {
       command = command || detectLintCommand(rootDir);
       if (!command) {
-        return { gate: 'lint', passed: true, message: 'No lint command found (skipped)', duration: 0 };
+        return {
+          gate: 'lint',
+          passed: true,
+          message: 'No lint command found (skipped)',
+          duration: 0,
+        };
       }
       const result = runCommand(command, rootDir, timeout);
       return {
@@ -171,7 +176,12 @@ function evaluateGate(gateName, rootDir, options = {}) {
     case 'types': {
       command = command || detectTypeCheckCommand(rootDir);
       if (!command) {
-        return { gate: 'types', passed: true, message: 'No type-check command found (skipped)', duration: 0 };
+        return {
+          gate: 'types',
+          passed: true,
+          message: 'No type-check command found (skipped)',
+          duration: 0,
+        };
       }
       const result = runCommand(command, rootDir, timeout);
       return {

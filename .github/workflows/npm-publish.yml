@@ -50,6 +50,15 @@ jobs:
             echo "No package-lock.json, skipping install"
           fi
 
+      - name: Security audit
+        working-directory: packages/cli
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm audit --audit-level=high || echo "⚠️ Audit found high/critical vulnerabilities (non-blocking for now)"
+          else
+            echo "No package-lock.json, skipping audit"
+          fi
+
       - name: Publish to npm
         working-directory: packages/cli
         env:
