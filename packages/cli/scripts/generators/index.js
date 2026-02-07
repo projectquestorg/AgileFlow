@@ -8,14 +8,17 @@
  */
 
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+
+const execFileAsync = promisify(execFile);
 
 /**
- * Run a generator script
+ * Run a generator script asynchronously
  * @param {string} scriptName - Name of the generator script
- * @returns {boolean} Success status
+ * @returns {Promise<{generator: string, success: boolean}>} Result with status
  */
-function runGenerator(scriptName) {
+async function runGenerator(scriptName) {
   const scriptPath = path.join(__dirname, scriptName);
 
   console.log(`\n${'='.repeat(60)}`);
@@ -23,33 +26,29 @@ function runGenerator(scriptName) {
   console.log('='.repeat(60));
 
   try {
-    execSync(`node "${scriptPath}"`, {
+    await execFileAsync('node', [scriptPath], {
       cwd: __dirname,
       stdio: 'inherit',
     });
     console.log(`✅ ${scriptName} completed successfully`);
-    return true;
+    return { generator: scriptName, success: true };
   } catch (error) {
     console.error(`❌ ${scriptName} failed:`, error.message);
-    return false;
+    return { generator: scriptName, success: false };
   }
 }
 
 /**
  * Main orchestrator
  */
-function main() {
+async function main() {
   console.log('🚀 AgileFlow Content Generation System');
   console.log('Generating content from metadata...\n');
 
   const generators = ['inject-help.js', 'inject-babysit.js', 'inject-readme.js'];
 
-  const results = [];
-
-  for (const generator of generators) {
-    const success = runGenerator(generator);
-    results.push({ generator, success });
-  }
+  // Run all generators in parallel
+  const results = await Promise.all(generators.map(g => runGenerator(g)));
 
   // Summary
   console.log(`\n${'='.repeat(60)}`);
@@ -77,7 +76,10 @@ function main() {
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 module.exports = { runGenerator };

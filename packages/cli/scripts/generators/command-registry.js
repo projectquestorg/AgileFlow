@@ -10,8 +10,10 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { extractFrontmatter } = require('../lib/frontmatter-parser');
+const { getCached, setCached } = require('../../lib/registry-cache');
 
 // Debug mode: set DEBUG_REGISTRY=1 to see why files are skipped
 const DEBUG = process.env.DEBUG_REGISTRY === '1';
@@ -58,15 +60,22 @@ function categorizeCommand(name, description) {
 /**
  * Scan commands directory and build registry
  * @param {string} commandsDir - Path to commands directory
- * @returns {Array} Array of command metadata objects
+ * @returns {Promise<Array>} Array of command metadata objects
  */
-function scanCommands(commandsDir) {
+async function scanCommands(commandsDir) {
+  // Check cache first
+  const cached = getCached(commandsDir);
+  if (cached) {
+    debugLog(`Using cached commands for ${commandsDir}`);
+    return cached;
+  }
+
   const commands = [];
   const skipped = [];
 
   let files;
   try {
-    files = fs.readdirSync(commandsDir);
+    files = await fsp.readdir(commandsDir);
   } catch (err) {
     debugLog(`Failed to read directory: ${err.message}`);
     return commands;
@@ -117,13 +126,16 @@ function scanCommands(commandsDir) {
 
   debugLog(`Found ${commands.length} commands`);
 
+  // Cache the result
+  setCached(commandsDir, commands);
+
   return commands;
 }
 
 /**
  * Main function
  */
-function main() {
+async function main() {
   const rootDir = path.resolve(__dirname, '../..');
   const commandsDir = path.join(rootDir, 'src/core/commands');
 
@@ -132,7 +144,7 @@ function main() {
     process.exit(1);
   }
 
-  const commands = scanCommands(commandsDir);
+  const commands = await scanCommands(commandsDir);
 
   // If called directly, output JSON
   if (require.main === module) {
@@ -147,5 +159,8 @@ module.exports = { scanCommands, categorizeCommand };
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
 }

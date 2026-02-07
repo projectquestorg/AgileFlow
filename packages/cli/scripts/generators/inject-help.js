@@ -8,6 +8,7 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { scanCommands } = require('./command-registry');
 
@@ -70,7 +71,7 @@ function injectContent(content, generated) {
 /**
  * Main function
  */
-function main() {
+async function main() {
   const rootDir = path.resolve(__dirname, '../..');
   const helpFile = path.join(rootDir, 'src/core/commands/help.md');
   const commandsDir = path.join(rootDir, 'src/core/commands');
@@ -91,14 +92,14 @@ function main() {
   const commandList = generateCommandList(commands);
 
   // Read help file
-  const helpContent = fs.readFileSync(helpFile, 'utf-8');
+  const helpContent = await fsp.readFile(helpFile, 'utf-8');
 
   // Inject content
   console.log('Injecting content into help.md...');
   const updatedContent = injectContent(helpContent, commandList);
 
   // Write back
-  fs.writeFileSync(helpFile, updatedContent, 'utf-8');
+  await fsp.writeFile(helpFile, updatedContent, 'utf-8');
   console.log('✅ Successfully updated help.md');
 }
 
@@ -107,5 +108,8 @@ module.exports = { generateCommandList, injectContent };
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
 }

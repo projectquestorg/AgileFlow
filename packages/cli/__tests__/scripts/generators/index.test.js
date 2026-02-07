@@ -4,13 +4,20 @@
  * Tests the content generation orchestrator
  */
 
-const { execSync } = require('child_process');
 const path = require('path');
 
-// Mock child_process
+// Mock child_process with execFile as a callback-style function
 jest.mock('child_process', () => ({
-  execSync: jest.fn(),
+  execFile: jest.fn((cmd, args, opts, cb) => {
+    // If 3 args (no opts), shift callback
+    if (typeof opts === 'function') {
+      cb = opts;
+    }
+    if (cb) cb(null, '', '');
+  }),
 }));
+
+const { execFile } = require('child_process');
 
 // Capture console output
 let consoleOutput = [];
@@ -26,6 +33,13 @@ beforeEach(() => {
     consoleOutput.push(args.join(' '));
   });
   jest.clearAllMocks();
+  // Re-setup the default mock (success)
+  execFile.mockImplementation((cmd, args, opts, cb) => {
+    if (typeof opts === 'function') {
+      cb = opts;
+    }
+    if (cb) cb(null, '', '');
+  });
 });
 
 afterEach(() => {
@@ -33,92 +47,64 @@ afterEach(() => {
   console.error = originalConsoleError;
 });
 
-// Clear module cache to get fresh require each time
-beforeEach(() => {
-  jest.resetModules();
-});
-
 const { runGenerator } = require('../../../scripts/generators/index');
 
 describe('generators/index.js', () => {
   describe('runGenerator', () => {
-    it('returns true on successful execution', () => {
-      execSync.mockImplementation(() => '');
+    it('returns success result on successful execution', async () => {
+      const result = await runGenerator('test-generator.js');
 
-      const result = runGenerator('test-generator.js');
-
-      expect(result).toBe(true);
-      expect(execSync).toHaveBeenCalled();
+      expect(result).toEqual({ generator: 'test-generator.js', success: true });
+      expect(execFile).toHaveBeenCalled();
     });
 
-    it('constructs correct script path', () => {
-      execSync.mockImplementation(() => '');
+    it('constructs correct script path', async () => {
+      await runGenerator('my-script.js');
 
-      runGenerator('my-script.js');
-
-      const expectedPath = path.join(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        'scripts',
-        'generators',
-        'my-script.js'
-      );
-
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('my-script.js'),
-        expect.any(Object)
+      expect(execFile).toHaveBeenCalledWith(
+        'node',
+        expect.arrayContaining([expect.stringContaining('my-script.js')]),
+        expect.any(Object),
+        expect.any(Function)
       );
     });
 
-    it('uses inherit stdio option', () => {
-      execSync.mockImplementation(() => '');
-
-      runGenerator('test.js');
-
-      expect(execSync).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          stdio: 'inherit',
-        })
-      );
-    });
-
-    it('returns false when script throws error', () => {
-      execSync.mockImplementation(() => {
-        throw new Error('Script failed');
+    it('returns failure result when script throws error', async () => {
+      execFile.mockImplementation((cmd, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        if (cb) cb(new Error('Script failed'));
       });
 
-      const result = runGenerator('failing-script.js');
+      const result = await runGenerator('failing-script.js');
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ generator: 'failing-script.js', success: false });
     });
 
-    it('logs success message on completion', () => {
-      execSync.mockImplementation(() => '');
-
-      runGenerator('success-generator.js');
+    it('logs success message on completion', async () => {
+      await runGenerator('success-generator.js');
 
       const output = consoleOutput.join('\n');
       expect(output).toContain('success-generator.js completed successfully');
     });
 
-    it('logs error message on failure', () => {
-      execSync.mockImplementation(() => {
-        throw new Error('Execution failed');
+    it('logs error message on failure', async () => {
+      execFile.mockImplementation((cmd, args, opts, cb) => {
+        if (typeof opts === 'function') {
+          cb = opts;
+        }
+        if (cb) cb(new Error('Execution failed'));
       });
 
-      runGenerator('error-generator.js');
+      await runGenerator('error-generator.js');
 
       const output = consoleOutput.join('\n');
       expect(output).toContain('error-generator.js failed');
     });
 
-    it('logs script name when running', () => {
-      execSync.mockImplementation(() => '');
-
-      runGenerator('my-generator.js');
+    it('logs script name when running', async () => {
+      await runGenerator('my-generator.js');
 
       const output = consoleOutput.join('\n');
       expect(output).toContain('Running: my-generator.js');
@@ -126,10 +112,8 @@ describe('generators/index.js', () => {
   });
 
   describe('generator output format', () => {
-    it('prints separator lines', () => {
-      execSync.mockImplementation(() => '');
-
-      runGenerator('test.js');
+    it('prints separator lines', async () => {
+      await runGenerator('test.js');
 
       const output = consoleOutput.join('\n');
       expect(output).toContain('='.repeat(60));

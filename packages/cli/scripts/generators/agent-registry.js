@@ -10,8 +10,10 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { extractFrontmatter, normalizeTools } = require('../lib/frontmatter-parser');
+const { getCached, setCached } = require('../../lib/registry-cache');
 
 // Debug mode: set DEBUG_REGISTRY=1 to see why files are skipped
 const DEBUG = process.env.DEBUG_REGISTRY === '1';
@@ -56,15 +58,22 @@ function categorizeAgent(name, description) {
 /**
  * Scan agents directory and build registry
  * @param {string} agentsDir - Path to agents directory
- * @returns {Array} Array of agent metadata objects
+ * @returns {Promise<Array>} Array of agent metadata objects
  */
-function scanAgents(agentsDir) {
+async function scanAgents(agentsDir) {
+  // Check cache first
+  const cached = getCached(agentsDir);
+  if (cached) {
+    debugLog(`Using cached agents for ${agentsDir}`);
+    return cached;
+  }
+
   const agents = [];
   const skipped = [];
 
   let files;
   try {
-    files = fs.readdirSync(agentsDir);
+    files = await fsp.readdir(agentsDir);
   } catch (err) {
     debugLog(`Failed to read directory: ${err.message}`);
     return agents;
@@ -121,13 +130,16 @@ function scanAgents(agentsDir) {
 
   debugLog(`Found ${agents.length} agents`);
 
+  // Cache the result
+  setCached(agentsDir, agents);
+
   return agents;
 }
 
 /**
  * Main function
  */
-function main() {
+async function main() {
   const rootDir = path.resolve(__dirname, '../..');
   const agentsDir = path.join(rootDir, 'src/core/agents');
 
@@ -136,7 +148,7 @@ function main() {
     process.exit(1);
   }
 
-  const agents = scanAgents(agentsDir);
+  const agents = await scanAgents(agentsDir);
 
   // If called directly, output JSON
   if (require.main === module) {
@@ -151,5 +163,8 @@ module.exports = { scanAgents, categorizeAgent };
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
 }

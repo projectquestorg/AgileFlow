@@ -8,6 +8,7 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { scanAgents } = require('./agent-registry');
 const { scanCommands } = require('./command-registry');
@@ -99,7 +100,7 @@ function injectContentByMarker(content, markerName, generated) {
 /**
  * Main function
  */
-function main() {
+async function main() {
   const cliDir = path.resolve(__dirname, '../..');
   const rootDir = path.resolve(cliDir, '../..');
   const readmeFile = path.join(rootDir, 'README.md');
@@ -113,18 +114,20 @@ function main() {
     process.exit(1);
   }
 
-  // Scan all registries
+  // Scan all registries in parallel
   console.log('Scanning commands, agents, and skills...');
-  const commands = scanCommands(commandsDir);
-  const agents = scanAgents(agentsDir);
-  const skills = scanSkills(skillsDir);
+  const [commands, agents, skills] = await Promise.all([
+    Promise.resolve(scanCommands(commandsDir)),
+    Promise.resolve(scanAgents(agentsDir)),
+    Promise.resolve(scanSkills(skillsDir)),
+  ]);
 
   console.log(
     `Found: ${commands.length} commands, ${agents.length} agents, ${skills.length} skills`
   );
 
   // Read README
-  let readmeContent = fs.readFileSync(readmeFile, 'utf-8');
+  let readmeContent = await fsp.readFile(readmeFile, 'utf-8');
 
   // Generate content
   console.log('Generating stats...');
@@ -147,7 +150,7 @@ function main() {
   readmeContent = injectContentByMarker(readmeContent, 'SKILL_LIST', skillList);
 
   // Write back
-  fs.writeFileSync(readmeFile, readmeContent, 'utf-8');
+  await fsp.writeFile(readmeFile, readmeContent, 'utf-8');
   console.log('✅ Successfully updated README.md');
 }
 
@@ -156,5 +159,8 @@ module.exports = { generateStats, generateAgentTable, generateSkillList, injectC
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
 }

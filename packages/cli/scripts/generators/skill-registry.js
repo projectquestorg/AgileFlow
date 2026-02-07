@@ -10,8 +10,10 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { extractFrontmatter } = require('../lib/frontmatter-parser');
+const { getCached, setCached } = require('../../lib/registry-cache');
 
 // Debug mode: set DEBUG_REGISTRY=1 to see why files are skipped
 const DEBUG = process.env.DEBUG_REGISTRY === '1';
@@ -57,15 +59,22 @@ function categorizeSkill(name, description) {
 /**
  * Scan skills directory and build registry
  * @param {string} skillsDir - Path to skills directory
- * @returns {Array} Array of skill metadata objects
+ * @returns {Promise<Array>} Array of skill metadata objects
  */
-function scanSkills(skillsDir) {
+async function scanSkills(skillsDir) {
+  // Check cache first
+  const cached = getCached(skillsDir);
+  if (cached) {
+    debugLog(`Using cached skills for ${skillsDir}`);
+    return cached;
+  }
+
   const skills = [];
   const skipped = [];
 
   let skillDirs;
   try {
-    skillDirs = fs.readdirSync(skillsDir);
+    skillDirs = await fsp.readdir(skillsDir);
   } catch (err) {
     debugLog(`Failed to read directory: ${err.message}`);
     return skills;
@@ -79,7 +88,7 @@ function scanSkills(skillsDir) {
     // Skip if not a directory
     let stat;
     try {
-      stat = fs.statSync(skillPath);
+      stat = await fsp.stat(skillPath);
     } catch (err) {
       debugLog(`Failed to stat ${skillDir}: ${err.message}`);
       continue;
@@ -93,7 +102,9 @@ function scanSkills(skillsDir) {
     const skillFile = path.join(skillPath, 'SKILL.md');
 
     // Skip if SKILL.md doesn't exist
-    if (!fs.existsSync(skillFile)) {
+    try {
+      await fsp.access(skillFile);
+    } catch (err) {
       skipped.push({ dir: skillDir, reason: 'no SKILL.md file' });
       debugLog(`Skipping ${skillDir}: no SKILL.md found`);
       continue;
@@ -137,13 +148,16 @@ function scanSkills(skillsDir) {
 
   debugLog(`Found ${skills.length} skills`);
 
+  // Cache the result
+  setCached(skillsDir, skills);
+
   return skills;
 }
 
 /**
  * Main function
  */
-function main() {
+async function main() {
   const rootDir = path.resolve(__dirname, '../..');
   const skillsDir = path.join(rootDir, 'src/core/skills');
 
@@ -152,7 +166,7 @@ function main() {
     process.exit(1);
   }
 
-  const skills = scanSkills(skillsDir);
+  const skills = await scanSkills(skillsDir);
 
   // If called directly, output JSON
   if (require.main === module) {
@@ -167,5 +181,8 @@ module.exports = { scanSkills, categorizeSkill };
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
 }

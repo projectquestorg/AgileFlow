@@ -8,6 +8,7 @@
  */
 
 const fs = require('fs');
+const fsp = require('fs').promises;
 const path = require('path');
 const { scanAgents } = require('./agent-registry');
 const { scanCommands } = require('./command-registry');
@@ -120,7 +121,7 @@ function addMarkersIfMissing(content) {
 /**
  * Main function
  */
-function main() {
+async function main() {
   const rootDir = path.resolve(__dirname, '../..');
   const babysitFile = path.join(rootDir, 'src/core/commands/babysit.md');
   const agentsDir = path.join(rootDir, 'src/core/agents');
@@ -142,7 +143,7 @@ function main() {
   console.log(`Found ${commands.length} commands`);
 
   // Read babysit file
-  let babysitContent = fs.readFileSync(babysitFile, 'utf-8');
+  let babysitContent = await fsp.readFile(babysitFile, 'utf-8');
 
   // Add markers if missing
   babysitContent = addMarkersIfMissing(babysitContent);
@@ -156,7 +157,7 @@ function main() {
   babysitContent = injectContentByMarker(babysitContent, 'AGENT_LIST', agentList);
 
   // Write back
-  fs.writeFileSync(babysitFile, babysitContent, 'utf-8');
+  await fsp.writeFile(babysitFile, babysitContent, 'utf-8');
   console.log('✅ Successfully updated babysit.md');
 }
 
@@ -170,5 +171,8 @@ module.exports = {
 
 // Run if called directly
 if (require.main === module) {
-  main();
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
 }
