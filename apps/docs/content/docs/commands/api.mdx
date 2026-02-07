@@ -1,0 +1,204 @@
+---
+title: /api
+description: REST API server for exposing AgileFlow state
+---
+
+# /api
+
+Start, stop, or check status of the AgileFlow REST API server that exposes project state via JSON endpoints.
+
+## Quick Start
+
+```bash
+/agileflow:api ACTION=start
+# API server started at http://127.0.0.1:3456/api
+
+/agileflow:api ACTION=status
+# Shows running status and available endpoints
+
+/agileflow:api ACTION=stop
+# Stops the running server
+```
+
+## Overview
+
+The API server exposes AgileFlow state (sessions, status, tasks, bus messages) via REST endpoints for external integrations like dashboards, monitoring tools, and custom applications.
+
+**Key Principles**:
+- **READ-ONLY**: API exposes state but never mutates it (writes go through CLI)
+- **JSON source of truth**: All data comes from existing JSON files
+- **Localhost-only**: Binds to 127.0.0.1 by default for security
+- **No authentication needed**: Local access only
+
+## Usage
+
+### Start the API Server
+
+```bash
+/agileflow:api ACTION=start [PORT=3456]
+```
+
+Starts the REST API server on the specified port (default: 3456).
+
+### Stop the API Server
+
+```bash
+/agileflow:api ACTION=stop
+```
+
+Stops the running API server.
+
+### Check Server Status
+
+```bash
+/agileflow:api ACTION=status
+```
+
+Shows whether the server is running, which port it's using, uptime, and available endpoints.
+
+## Available Endpoints
+
+Once the server is running, these endpoints are available:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api` | API information and available endpoints |
+| `GET /api/health` | Health check |
+| `GET /api/sessions` | List active sessions |
+| `GET /api/sessions/:id` | Get session by ID |
+| `GET /api/status` | Get status.json (epics/stories state) |
+| `GET /api/tasks` | List tasks (filterable) |
+| `GET /api/tasks/:id` | Get task by ID |
+| `GET /api/bus/messages` | Get bus messages (paginated) |
+| `GET /api/metrics` | Aggregated metrics |
+| `GET /api/epics` | List epics |
+| `GET /api/epics/:id` | Get epic by ID |
+| `GET /api/stories` | List stories (filterable) |
+| `GET /api/stories/:id` | Get story by ID |
+
+### Query Parameters
+
+**GET /api/tasks**:
+- `state`: Filter by state (queued, running, completed, failed, blocked)
+- `story_id`: Filter by story ID
+- `subagent_type`: Filter by agent type
+
+**GET /api/bus/messages**:
+- `limit`: Max messages to return (default: 100)
+- `offset`: Skip first N messages
+- `story_id`: Filter by story ID
+- `from`: Filter by sender agent
+- `since`: Filter by timestamp (ISO string)
+
+**GET /api/stories**:
+- `status`: Filter by status
+- `epic_id`: Filter by epic ID
+- `owner`: Filter by owner
+
+## Examples
+
+### Start the server and test it
+
+```bash
+# Start API server
+/agileflow:api ACTION=start PORT=3456
+
+# Check health
+curl http://127.0.0.1:3456/api/health
+
+# Get all stories
+curl http://127.0.0.1:3456/api/stories
+
+# Get stories filtered by status
+curl http://127.0.0.1:3456/api/stories?status=completed
+
+# Get metrics
+curl http://127.0.0.1:3456/api/metrics
+```
+
+### Check status before starting
+
+```bash
+/agileflow:api ACTION=status
+# If not running, start it
+/agileflow:api ACTION=start
+```
+
+### Integrate with external dashboard
+
+```javascript
+// Fetch project metrics from API
+async function getProjectMetrics() {
+  const response = await fetch('http://127.0.0.1:3456/api/metrics');
+  const metrics = await response.json();
+  console.log(`${metrics.stories_completed} / ${metrics.stories_total} stories done`);
+}
+```
+
+## Configuration
+
+### Default Settings
+
+- **Host**: 127.0.0.1 (localhost only)
+- **Port**: 3456 (configurable)
+- **PID File**: `.agileflow/api-server.pid`
+
+### Custom Port
+
+```bash
+/agileflow:api ACTION=start PORT=4000
+# Now available at http://127.0.0.1:4000/api
+```
+
+### External Access (Advanced)
+
+To expose the API externally, use a reverse proxy with authentication:
+
+```bash
+# Using nginx as reverse proxy
+# Configure nginx to forward requests to 127.0.0.1:3456 with auth
+```
+
+## Security Notes
+
+- Server binds to **localhost only** (127.0.0.1) by default
+- No authentication required (local access only)
+- All endpoints are **read-only** (no mutations through API)
+- To expose externally, use a reverse proxy with authentication
+- API data is the same as files on disk (no privileged access)
+
+## Troubleshooting
+
+### Port already in use
+
+If port 3456 is already in use, specify a different port:
+
+```bash
+/agileflow:api ACTION=start PORT=4000
+```
+
+### Server won't start
+
+Check if a server is already running:
+
+```bash
+/agileflow:api ACTION=status
+```
+
+If a stale PID file exists, remove it:
+
+```bash
+rm .agileflow/api-server.pid
+/agileflow:api ACTION=start
+```
+
+### Can't connect from external machine
+
+The API binds to localhost only for security. To expose externally, use a reverse proxy (nginx, Apache) with authentication on your own infrastructure.
+
+## Related Commands
+
+- [`/status`](/commands/status) - Update story status
+- [`/board`](/commands/board) - Visual kanban board
+- [`/metrics`](/commands/velocity) - View project metrics
+- [`/session`](/commands/session-new) - Manage agent sessions

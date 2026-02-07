@@ -6,13 +6,17 @@
     "skills",
     "agent-expertise-system",
     "parallel-sessions",
-    "---Automation---",
+    "---Automation & Execution---",
+    "hooks-system",
     "loop-mode",
     "visual-mode",
     "compact-context",
     "---Setup & Safety---",
     "configuration",
     "ide-integrations",
-    "damage-control"
+    "damage-control",
+    "---UI & Accessibility---",
+    "component-specs",
+    "rtl-support"
   ]
 }

@@ -1,0 +1,307 @@
+---
+title: /automate
+description: Manage scheduled automations for recurring tasks
+---
+
+# /automate
+
+Manage scheduled automations for recurring tasks like changelog generation, dependency audits, and tech debt scans. Automations run during user sessions without requiring a daemon.
+
+## Quick Start
+
+```bash
+/agileflow:automate ACTION=list
+# Show all configured automations
+
+/agileflow:automate ACTION=presets
+# See available automation templates
+
+/agileflow:automate ACTION=add ID=weekly-changelog PRESET=true
+# Add a preset automation
+
+/agileflow:automate ACTION=run ID=weekly-changelog
+# Run an automation immediately
+```
+
+## Overview
+
+AgileFlow's automation system enables recurring tasks without requiring a daemon process. Automations run during user sessions, triggered by the SessionStart hook.
+
+**Key Features**:
+- **No daemon required** - Runs when you start a session
+- **Simple scheduling** - Daily, weekly, monthly, or custom intervals
+- **Loop detection** - Prevents runaway automation chains
+- **Timeout protection** - Kills stuck processes
+- **Retry logic** - Automatic retries with exponential backoff
+
+## Usage
+
+### List Automations
+
+```bash
+/agileflow:automate ACTION=list
+```
+
+Shows all configured automations with their schedules, enabled status, and when they last ran.
+
+### View Presets
+
+```bash
+/agileflow:automate ACTION=presets
+```
+
+Shows available preset automations that can be installed quickly.
+
+### Add Automation
+
+```bash
+/agileflow:automate ACTION=add ID=my-backup
+```
+
+Creates a new automation using an interactive wizard. You'll be asked for:
+- Name and description
+- Command or script to run
+- Schedule type (daily, weekly, monthly, interval, on_session)
+- Timeout duration
+- Retry count
+
+### Install Preset
+
+```bash
+/agileflow:automate ACTION=add ID=weekly-changelog PRESET=true
+```
+
+Install a predefined automation template.
+
+### Edit Automation
+
+```bash
+/agileflow:automate ACTION=edit ID=weekly-changelog
+```
+
+Modify an existing automation's settings.
+
+### Remove Automation
+
+```bash
+/agileflow:automate ACTION=remove ID=weekly-changelog
+```
+
+Delete an automation.
+
+### Run Automation Manually
+
+```bash
+/agileflow:automate ACTION=run ID=weekly-changelog
+```
+
+Run an automation immediately without waiting for its schedule.
+
+### Run All Due
+
+```bash
+/agileflow:automate ACTION=run-due
+```
+
+Run all automations that are due based on their schedules.
+
+## Schedule Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `daily` | Run once per day | Every day at session start |
+| `weekly` | Run on specific day | Every Sunday |
+| `monthly` | Run on specific date | 1st of every month |
+| `interval` | Run every N hours | Every 12 hours |
+| `on_session` | Run every session | Every time you start Claude |
+
+## Preset Automations
+
+Available presets that can be installed:
+
+| Preset | Description | Schedule |
+|--------|-------------|----------|
+| `weekly-changelog` | Generate changelog from commits | Weekly (Sunday) |
+| `daily-ci-summary` | Summarize CI failures | Daily |
+| `monthly-debt-scan` | Scan for tech debt | Monthly (1st) |
+| `weekly-dependency-audit` | Check for vulnerabilities | Weekly (Monday) |
+| `session-context-refresh` | Refresh CONTEXT.md | Every session |
+
+### Install a Preset
+
+```bash
+/agileflow:automate ACTION=add ID=weekly-changelog PRESET=true
+# Creates automation configured to generate changelog every Sunday
+```
+
+## Examples
+
+### Install and run the weekly changelog preset
+
+```bash
+# Install the preset
+/agileflow:automate ACTION=add ID=weekly-changelog PRESET=true
+
+# Run it immediately to test
+/agileflow:automate ACTION=run ID=weekly-changelog
+
+# Check your CHANGELOG.md was updated
+```
+
+### Create a custom daily backup automation
+
+```bash
+/agileflow:automate ACTION=add ID=daily-backup
+
+# Interactive wizard asks:
+# → Name: "Daily Database Backup"
+# → Command: "./scripts/backup-db.sh"
+# → Schedule: "daily"
+# → Timeout: "10" (minutes)
+# → Retry count: "2"
+
+# Automation is now configured to run every day
+```
+
+### Run all due automations
+
+```bash
+/agileflow:automate ACTION=run-due
+
+# Runs weekly-changelog (due Sunday)
+# Runs daily-ci-summary (due today)
+# Shows results for each
+```
+
+### Edit automation settings
+
+```bash
+/agileflow:automate ACTION=edit ID=weekly-changelog
+
+# Interactive editor shows current settings
+# Select which to modify
+# Update and save
+```
+
+## Configuration File
+
+Automations are stored in `docs/09-agents/automation-schedule.json`:
+
+```json
+{
+  "schema_version": "1.0.0",
+  "automations": {
+    "weekly-changelog": {
+      "name": "Weekly Changelog Generation",
+      "description": "Generate changelog from commits every Sunday",
+      "command": "/agileflow:changelog ACTION=generate",
+      "schedule": {
+        "type": "weekly",
+        "day": "sunday"
+      },
+      "timeout": 300000,
+      "enabled": true
+    }
+  },
+  "run_history": [
+    {
+      "automation_id": "weekly-changelog",
+      "at": "2026-01-26T10:00:00Z",
+      "success": true,
+      "duration_ms": 6200,
+      "output": "CHANGELOG.md updated with 15 commits"
+    }
+  ]
+}
+```
+
+## Safety Features
+
+### Loop Detection
+
+Prevents runaway automation chains by detecting if an automation runs more than 3 times in 5 minutes. When detected, a warning is logged and the automation is paused.
+
+### Timeout Protection
+
+Each automation has a configurable timeout (default: 5 minutes). If the process exceeds the timeout, it receives SIGTERM, then SIGKILL after 5 seconds.
+
+### Retry Logic
+
+Failed automations are retried automatically with exponential backoff:
+- 1st retry: 5 seconds
+- 2nd retry: 10 seconds
+- 3rd retry: 20 seconds
+
+All attempts are recorded in run history.
+
+## Parameters
+
+| Parameter | Required | Values | Description |
+|-----------|----------|--------|-------------|
+| `ACTION` | Yes | list, add, edit, remove, run, run-due, presets | What to do |
+| `ID` | Yes (except list, presets) | automation ID | Which automation |
+| `PRESET` | No | true | Load from preset template |
+
+## Troubleshooting
+
+### Automation isn't running
+
+1. Check if it's enabled: `/agileflow:automate ACTION=list`
+2. Check if schedule is due: Look at "Next run" time
+3. Make sure you're starting Claude Code sessions (automations run at SessionStart)
+
+### Automation keeps timing out
+
+Increase the timeout:
+```bash
+/agileflow:automate ACTION=edit ID=slow-task
+# Set timeout to 10 minutes instead of 5
+```
+
+### Want to see what happened
+
+Check the run history in `docs/09-agents/automation-schedule.json` under `run_history`.
+
+### Need to stop an automation temporarily
+
+Disable it without removing:
+```bash
+/agileflow:automate ACTION=edit ID=weekly-changelog
+# Set enabled: false
+```
+
+## When to Use
+
+### Good For
+
+- Recurring tasks that should happen automatically (weekly changelogs, daily reports)
+- Maintenance jobs that don't need human review (dependency audits)
+- Building up state over time (changelog entries, metrics)
+
+### Not For
+
+- One-time manual work (use `/babysit` instead)
+- Tasks requiring human decision-making
+- Anything that mutates user code (use commands instead)
+
+## Advanced: Custom Automation Commands
+
+You can create automations that run any AgileFlow command:
+
+```bash
+/agileflow:automate ACTION=add ID=weekly-review
+
+# Command: /agileflow:review ACTION=weekly
+# Schedule: Weekly (Sunday)
+# Timeout: 10 minutes
+```
+
+The command runs in a shell with full access to your AgileFlow scripts.
+
+## Related Commands
+
+- [`/changelog`](/commands/changelog) - Generate changelogs
+- [`/debt`](/commands/deps) - Tech debt scanning
+- [`/ci`](/commands/ci) - CI/CD operations
+- [`/configure`](/commands/configure) - Configure hooks and features
+- [`/session`](/commands/session-new) - Manage agent sessions

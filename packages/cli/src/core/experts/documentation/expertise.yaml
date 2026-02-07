@@ -202,3 +202,36 @@ learnings:
       - "rpi: Research-Plan-Implement workflow with phase transitions"
       - "workflow: Parameterized workflow templates (built-in + custom)"
     notes: "All 9 files follow consistent documentation template extracted from source .md files: quick start, parameters table, detailed descriptions, usage examples with output, status indicators, best practices, error handling, and related commands. Ready for docs site publication."
+
+  - date: 2026-02-07
+    context: "Audited and fixed command documentation drift"
+    insight: "Systematically compared all 50 source commands against their documentation counterparts. Found critical drift in configure.mdx (50% outdated) and babysit.mdx (missing Smart Detection, Story Claiming, Logic Audit features). Fixed both with comprehensive updates preserving all source details."
+    modified_files:
+      - "apps/docs/content/docs/commands/configure.mdx (major rewrite - 200+ lines added)"
+      - "apps/docs/content/docs/commands/babysit.mdx (200+ lines added)"
+    drift_issues_fixed:
+      - "configure.mdx: Added 5 profile types (full, basic, minimal, experimental, none)"
+      - "configure.mdx: Added hierarchical menu system documentation (5 categories, 4 max options)"
+      - "configure.mdx: Added custom profiles (save, export, import, delete)"
+      - "configure.mdx: Added all available features (8 total: SessionStart, PreCompact, RalphLoop, SelfImprove, Archival, StatusLine, AskUserQuestion, Tmux, Shell Aliases, Auto-Update, CLAUDE.md Rules)"
+      - "configure.mdx: Added maintenance commands (detect, migrate, upgrade, repair, list-scripts)"
+      - "configure.mdx: Added troubleshooting section with solutions"
+      - "babysit.mdx: Added Smart Detection section (auto-enable Loop/Visual/Coverage/Conditions modes)"
+      - "babysit.mdx: Added Story Claiming section (multi-session coordination, prevent conflicts)"
+      - "babysit.mdx: Added Logic Audit integration (post-implementation quality check)"
+      - "babysit.mdx: Updated Loop Mode to show auto-detection instead of explicit parameters"
+    verified_good:
+      - "council.mdx: Comprehensive and current"
+      - "audit.mdx: Good alignment with source"
+      - "choose.mdx: Good alignment with source"
+    quality_gates:
+      - "Description matches source frontmatter ✓"
+      - "Parameters documented with types and defaults ✓"
+      - "Examples are copy-paste ready ✓"
+      - "Usage patterns match source implementation ✓"
+      - "Links to related commands accurate ✓"
+      - "No outdated information remains ✓"
+      - "All new features from source documented ✓"
+      - "Formatting consistent (tables, code blocks, bullets) ✓"
+    source: "packages/cli/src/core/commands/*.md vs apps/docs/content/docs/commands/*.mdx"
+    notes: "Used systematic comparison approach: extracted descriptions, parameters, and features from 50 source commands against documentation. Prioritized commands with most feature additions: babysit (Smart Detection, Story Claiming, Logic Audit), configure (profiles, hierarchical menus). All changes preserve source accuracy while making docs more discoverable and comprehensive."

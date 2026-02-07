@@ -22,6 +22,17 @@ The command will:
 
 ## Key Features
 
+### Smart Detection (Auto-Enable Features)
+
+When you start babysit, it automatically detects and enables appropriate features:
+
+- **Loop Mode**: Auto-enabled for epics with 3+ ready stories and test setup
+- **Visual Mode**: Auto-enabled for UI/component work or AG-UI owner
+- **Coverage Mode**: Auto-enabled if coverage baseline >50%
+- **Discretion Conditions**: Auto-detected from package.json scripts (lint, types, build)
+
+You can override auto-detection with parameters like `MODE=once`, `VISUAL=false`, or `COVERAGE=0`.
+
 ### Intelligent Task Suggestions
 
 When you start `/babysit`, it analyzes your project and recommends:
@@ -60,23 +71,46 @@ For complex work, babysit automatically detects the domain and spawns specialist
 
 Specialists handle focused deep work while babysit coordinates overall flow.
 
+### Story Claiming (Multi-Session Coordination)
+
+In multi-session projects, babysit prevents conflicts:
+
+- **Before suggesting stories**: Run story-claiming check to exclude stories claimed by other sessions
+- **After user selects**: Claim the story to mark it as in-progress
+- **When complete**: Release the claim so others can work on it
+- **Story badges**: ⭐ Ready/available, 🔒 Claimed by other session, ✓ Claimed by this session
+
+This prevents accidental merge conflicts when multiple Claude sessions work on the same repo.
+
+### Post-Implementation Quality Check
+
+After implementation completes, babysit offers optional quality checks:
+
+- **Run tests** - Standard verification
+- **🔍 Run logic audit** - Multi-agent analysis for edge cases, race conditions, type bugs
+- **Continue to next story** - Move on without additional checks
+- **Review changes** - Manual review before PR
+- **Pause here** - Stop for now
+
+Logic audit is recommended for complex code to catch issues tests might miss.
+
 ### Progress Tracking
 
-All work is tracked with a todo list:
+All work is tracked step-by-step:
 
-```text
-1. Run context script (loads all project state)
-2. Present task suggestions
-3. Read task-specific documentation
-4. Validate story readiness
-5. Plan implementation steps
-6. Apply code changes with tests
-7. Update project status
-8. Generate PR description
-9. Mark complete
-```
+1. Run context script (loads project state)
+2. Check for claimed stories (prevent conflicts)
+3. Present task suggestions
+4. Claim selected story
+5. Read story & architecture docs
+6. Enter plan mode (for non-trivial tasks)
+7. Implement code changes with tests
+8. (Optional) Run logic audit
+9. Update status.json
+10. Release story claim
+11. Present next steps
 
-You can see exactly where you are and what's left.
+You can see exactly where you are and what's left at each step.
 
 ## Usage
 
@@ -117,24 +151,48 @@ Babysit accepts free-form natural language input:
 
 ## Autonomous Loop Mode
 
-Babysit supports autonomous execution through **Loop Mode**, which processes an entire epic's stories automatically.
+Babysit supports autonomous execution through **Loop Mode**, which processes an entire epic's stories automatically with optional Visual Mode (screenshots) and Coverage Mode (test coverage tracking).
 
 ### Quick Start
 
 ```bash
+# Basic loop - test-driven automation
 /agileflow:babysit EPIC=EP-0042 MODE=loop MAX=20
+
+# With Visual Mode for UI development
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+
+# With Coverage Mode for TDD (iterate until 80% coverage)
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
 ```
+
+### Auto-Detection
+
+You don't always need to specify parameters. Babysit auto-detects:
+
+| Feature | Auto-Enabled When | Override |
+|---------|------------------|----------|
+| **Loop** | 3+ ready stories + test setup | `MODE=once` |
+| **Visual** | UI epic/component or AG-UI owner | `VISUAL=false` |
+| **Coverage** | coverage baseline >50% | `COVERAGE=0` |
+| **Conditions** | lint/type/build scripts exist | N/A |
 
 ### How It Works
 
 ```text
-1. Initialize loop for epic
-2. Load first "ready" story
-3. Work on implementation
-4. When Claude stops → Stop hook runs tests
-   - If tests PASS → mark story complete, load next
-   - If tests FAIL → show errors, continue fixing
-5. Repeat until epic complete or max iterations
+1. Smart Detection: Analyze project, auto-enable features
+2. Initialize loop for epic
+3. Load first "ready" story, mark in_progress
+4. Implement story (with Visual/Coverage checks if enabled)
+5. When Claude stops → Stop hook runs tests & gates
+   - Run npm test
+   - If Visual Mode: verify screenshots
+   - If Coverage Mode: check coverage threshold
+   - If Conditions: run lint/types/build checks
+6. Based on results:
+   - PASS all gates → mark story complete, load next
+   - FAIL any gate → show errors, continue fixing
+7. Repeat until epic complete or max iterations
 ```
 
 ### Parameters
@@ -142,8 +200,12 @@ Babysit supports autonomous execution through **Loop Mode**, which processes an 
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `EPIC` | Yes | - | Epic ID to process (e.g., EP-0042) |
-| `MODE` | Yes | - | Must be `loop` for autonomous mode |
+| `MODE` | No | auto | `loop` (autonomous) or `once` (single story) |
 | `MAX` | No | 20 | Maximum iterations (safety limit) |
+| `VISUAL` | No | auto | `true` for UI work, `false` to disable |
+| `COVERAGE` | No | auto | Coverage threshold (e.g., 80), or `0` to disable |
+
+**Note**: Most parameters are auto-detected. Only override if needed.
 
 ### Loop Control
 

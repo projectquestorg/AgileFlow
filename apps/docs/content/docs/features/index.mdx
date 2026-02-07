@@ -33,6 +33,16 @@ Enable self-improving agents that maintain domain knowledge and accelerate task 
 
 [Learn about Agent Expertise](/docs/features/agent-expertise-system)
 
+### Agent Teams
+
+Coordinate multiple domain experts to work together on complex multi-domain tasks.
+
+- **Native team coordination** - Agent Teams work natively in Claude Code environments
+- **Multi-domain orchestration** - Automatically delegate subtasks to specialists
+- **Team templates** - Predefined teams for common patterns (fullstack, code-review, security)
+- **Shared context** - Team members share understanding of goals and progress
+- **Automatic synthesis** - Results synthesized into actionable next steps
+
 ### Parallel Sessions
 
 Work on multiple features, bugs, or experiments simultaneously with isolated workspaces and boundary protection.
@@ -47,7 +57,7 @@ Work on multiple features, bugs, or experiments simultaneously with isolated wor
 
 ---
 
-## Automation
+## Automation & Execution
 
 ### Hooks System
 
@@ -60,25 +70,36 @@ Event-driven automation using Claude Code's official hooks for triggers and resp
 
 [Learn about Hooks System](/docs/features/hooks-system)
 
+### Automations System
+
+Schedule recurring tasks to run automatically without requiring a daemon.
+
+- **No daemon required** - Runs during user sessions via SessionStart hook
+- **Multiple schedule types** - Daily, weekly, monthly, or custom intervals
+- **Preset automations** - Pre-built automation templates (changelog, CI summary, dependency audit)
+- **Loop detection** - Prevents runaway automation chains
+- **Timeout protection** - Built-in safeguards for stuck processes
+
 ### Loop Mode
 
-Run Claude autonomously with continuous task execution until completion.
+Run Claude autonomously with continuous story execution until epic completion.
 
-- **Autonomous execution** - Claude works through tasks without interruption
-- **Configurable limits** - Set iteration limits and timeouts
-- **Progress tracking** - See what's happening at each step
-- **Safe fallbacks** - Built-in safety checks prevent runaway loops
+- **Autonomous story processing** - Claude works through an epic without manual intervention
+- **Test-based verification** - Stories verified complete via test suite
+- **Configurable limits** - Set max iterations and timeouts
+- **Smart detection** - Auto-enabled for epics with clear acceptance criteria
+- **Multi-mode support** - Normal (test-based), Visual (UI), or Coverage-focused modes
 
 [Learn about Loop Mode](/docs/features/loop-mode)
 
 ### Visual Mode
 
-Let Claude see and interact with visual interfaces through screenshots and browser automation.
+Screenshot verification system for UI development with automated visual progress tracking.
 
-- **Screenshot analysis** - Claude can analyze visual content
-- **Browser automation** - Playwright integration for web testing
-- **UI verification** - Validate visual changes automatically
-- **Cross-platform** - Works on any OS with browser support
+- **Verified-prefix protocol** - Screenshots must be reviewed and renamed with `verified-` prefix
+- **Integrated with Loop Mode** - Adds visual verification step in autonomous execution
+- **Multiple states capture** - Test default, hover, disabled, and other UI states
+- **Auto-cleanup** - Optional cleanup of verified screenshots after completion
 
 [Learn about Visual Mode](/docs/features/visual-mode)
 
@@ -93,6 +114,55 @@ Preserve critical agent knowledge and state during automatic context compaction.
 - **Zero-overhead** - Automatic, no manual configuration needed
 
 [Learn about Compact Context](/docs/features/compact-context)
+
+---
+
+## Decision Making & Analysis
+
+### AI Council
+
+Get balanced strategic perspectives on complex architectural and business decisions.
+
+- **Three perspectives** - Optimist (opportunities), Advocate (risks), Analyst (trade-offs)
+- **Parallel deliberation** - All three agents analyze simultaneously
+- **Debate mode** - Multi-round deliberation where agents respond to each other
+- **Consensus synthesis** - Final recommendation balancing all viewpoints
+
+### Logic Audit
+
+Find logic bugs with multi-agent specialized analyzers and consensus voting.
+
+- **Five analyzer types** - Edge cases, invariants, control flow, type errors, race conditions
+- **Parallel analysis** - All analyzers run simultaneously for efficiency
+- **Confidence scoring** - CONFIRMED (2+ agree), LIKELY (evidence-based), INVESTIGATE
+- **Actionable reports** - Prioritized findings with reproduction steps
+
+### RLM (Recursive Language Models)
+
+Analyze complex large documents without context bloat using virtualization.
+
+- **Document virtualization** - Never loads full document into context
+- **Programmatic search** - Use document-repl for targeted extraction
+- **Multi-hop reasoning** - Support for cross-referenced content (contracts, specs)
+- **Iteration limits** - Built-in budget constraints and iteration tracking
+
+### Research Pipeline
+
+Structured research workflow for gathering and synthesizing knowledge.
+
+- **Research prompts** - Generate detailed 200+ line prompts for external AI tools
+- **Import & organize** - Save research findings from external sources
+- **Analysis** - Extract structured insights from research notes
+- **Synthesis** - Combine multiple research sources into actionable conclusions
+
+### API Server
+
+REST API for external integrations and dashboard applications.
+
+- **Read-only access** - Exposes state without mutations
+- **Localhost-only** - Secure by default (127.0.0.1)
+- **JSON endpoints** - Access sessions, status, tasks, and metrics
+- **No daemon needed** - Starts and stops on demand
 
 ---
 
@@ -144,14 +214,21 @@ Protect your codebase from destructive commands using PreToolUse hooks.
 |---------|---------|-------------|
 | **Skills** | Custom AI prompts that learn | `/agileflow:skill:create` |
 | **Agent Expertise** | Self-improving domain knowledge | Built-in |
+| **Agent Teams** | Multi-domain expert coordination | `/agileflow:team:start` |
 | **Parallel Sessions** | Work on multiple features | `/agileflow:session:new` |
 | **Hooks System** | Event-driven automation | `/agileflow:configure` |
-| **Loop Mode** | Autonomous task execution | `/agileflow:loop` |
-| **Visual Mode** | Screenshot and browser automation | `/agileflow:visual` |
+| **Automations** | Scheduled recurring tasks | `/agileflow:automate` |
+| **Loop Mode** | Autonomous epic execution | `/agileflow:babysit EPIC=... MODE=loop` |
+| **Visual Mode** | UI screenshot verification | `/agileflow:babysit EPIC=... VISUAL=true` |
+| **AI Council** | Strategic decision perspectives | `/agileflow:council <question>` |
+| **Logic Audit** | Find logic bugs with consensus | `/agileflow:logic:audit [file]` |
+| **RLM** | Large document analysis | `/agileflow:rlm DOCUMENT=...` |
+| **Research Pipeline** | Structured research workflow | `/agileflow:research:ask` |
 | **Compact Context** | Preserve state through compression | Built-in |
 | **Configuration** | Setup and customize workflow | `/agileflow:configure` |
 | **IDE Integrations** | Multi-IDE support | `npx agileflow setup` |
-| **Damage Control** | Block dangerous commands | `/agileflow:configure damagecontrol` |
+| **Damage Control** | Block dangerous commands | `/agileflow:configure` |
+| **API Server** | REST API for external integrations | `/agileflow:api ACTION=start` |
 
 ## Next Steps
 

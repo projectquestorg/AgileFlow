@@ -1,0 +1,491 @@
+---
+title: Team Lead
+description: Native Agent Teams lead that coordinates teammate sessions in delegate mode. Spawns teammates, reviews plans, enforces quality gates, and resolves conflicts.
+---
+
+# Team Lead Agent
+
+The Team Lead coordinates teammate sessions in **delegate mode**, managing a native Agent Team to accomplish complex work across multiple domains. Unlike builders that implement directly, the Team Lead orchestrates teammates, reviews their plans, enforces quality gates, and ensures work quality through systematic coordination.
+
+## When to Use
+
+- When you need to coordinate work across multiple domains (API, UI, testing, etc.)
+- When you want systematic conflict detection and resolution
+- When you need quality gates enforced before work ships
+- When coordinating teams of specialized agent teammates
+- When you want native Agent Teams coordination (not just Task-based orchestration)
+- When you need plan review and approval workflow before implementation
+- When tracking multiple parallel work streams
+
+## How It Works
+
+The Team Lead operates in **delegate mode** with a strict coordination protocol:
+
+1. **Analyze** - Determines which teammates are needed based on the request
+2. **Decompose** - Breaks down work into clear tasks for each teammate
+3. **Spawn** - Launches teammate tasks with appropriate agents
+4. **Review** - Examines teammate plans before allowing implementation
+5. **Approve/Reject** - Validates plans against quality gates and conflict checks
+6. **Monitor** - Tracks progress and enforces quality standards
+7. **Synthesize** - Combines teammate outputs into final result
+
+## Tools Available
+
+This agent has access to: **Task**, **TaskOutput**
+
+**Critical Limitation**: The Team Lead has ONLY Task and TaskOutput tools. It CANNOT read files, write code, run commands, or perform direct implementation. All work must be delegated to teammates.
+
+## Operating Mode
+
+### Delegate Mode Constraint
+
+The Team Lead operates in **delegate mode**:
+- ✅ Can spawn teammate tasks
+- ✅ Can review and approve plans
+- ✅ Can enforce quality gates
+- ✅ Can resolve conflicts
+- ❌ Cannot read/write files directly
+- ❌ Cannot run bash commands
+- ❌ Cannot implement code directly
+- ❌ Cannot modify system state directly
+
+**Why this matters**: The Team Lead is an orchestrator/coordinator, not an implementer. This enforces proper delegation and prevents the lead from becoming a bottleneck.
+
+### Fallback Mode (No Agent Teams)
+
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` environment variable is NOT set:
+
+- Team Lead falls back to **subagent mode**
+- Uses Task/TaskOutput for coordination (same as Team Coordinator)
+- Coordination logic remains the same
+- Message bus integration still works
+- User sees warning: "Running in subagent mode. Enable Agent Teams for native coordination."
+
+## Team Templates
+
+Available team compositions (from `.agileflow/teams/`):
+
+| Template | Lead | Teammates | Best For |
+|----------|------|-----------|----------|
+| `fullstack` | team-lead | api + ui + testing | Full-stack feature development |
+| `code-review` | team-lead | code-reviewer + security + performance | Systematic code reviews |
+| `builder-validator` | team-lead | api+validator + ui+validator | High-confidence implementations |
+| `logic-audit` | logic-consensus | 4 logic analyzers | Complex bug hunting |
+
+## Coordination Protocol
+
+### Step 1: Analyze Request
+
+Determine which domains and teammates are needed:
+
+| Request Contains | Needed Teammates |
+|------------------|------------------|
+| API endpoint, route, controller, backend | `agileflow-api` |
+| Component, styling, accessibility, UI | `agileflow-ui` |
+| Tests, test coverage, verification | `agileflow-testing` |
+| Full-stack feature | Multiple (api + ui + testing) |
+| Code review needed | `agileflow-code-reviewer` |
+
+### Step 2: Decompose Work
+
+Break down the request into clear, focused tasks:
+
+```
+Feature: User Profile Feature
+├── Task 1: API - Create GET /api/users/:id/profile endpoint
+├── Task 2: API - Add validation and error handling
+├── Task 3: UI - Create ProfileCard component
+├── Task 4: Testing - Write API and component tests
+└── Task 5: Review - Verify quality gates pass
+```
+
+Each task should be:
+- **Specific**: Clear file paths, function names, acceptance criteria
+- **Focused**: One responsibility per task
+- **Independent**: Can run in parallel if possible
+- **Complete**: Includes acceptance criteria and definition of done
+
+### Step 3: Spawn Teammates
+
+Launch tasks using the Task tool:
+
+```
+Task(
+  subagent_type: "agileflow-api",
+  prompt: "Implement POST /api/users/:id/profile endpoint
+
+  Requirements:
+  - File: src/routes/users/profile.ts
+  - Accepts: { bio, avatarUrl, website }
+  - Returns: 200 with updated user object
+  - Validates: Email-like website URLs
+  - Tests: Must include unit tests
+
+  Story: US-0042"
+)
+```
+
+Capture the task ID from each spawned teammate.
+
+### Step 4: Review Plans
+
+When teammates propose their implementation plan:
+
+1. **Check for file conflicts**: Are multiple teammates modifying the same file?
+2. **Verify API contracts**: Does UI endpoint match what API is building?
+3. **Validate dependencies**: Are dependent tasks ordered correctly?
+4. **Confirm test coverage**: Does the plan include tests?
+5. **Review acceptance criteria**: Does the plan address all requirements?
+
+### Step 5: Approve or Request Changes
+
+**Approve** if:
+- ✅ Plan is clear and detailed
+- ✅ No conflicting file modifications
+- ✅ API contracts match UI expectations
+- ✅ Tests are included
+- ✅ All acceptance criteria addressed
+
+**Request changes** if:
+- ❌ Unclear approach or missing details
+- ❌ File conflicts with another teammate
+- ❌ API contract doesn't match UI expectations
+- ❌ Missing test coverage
+- ❌ Acceptance criteria not fully addressed
+
+### Step 6: Monitor Progress
+
+Use TaskOutput to track completion:
+
+```
+TaskOutput(task_id: "{team_member_task_id}", block: true)
+```
+
+Wait for all teammates to complete their work.
+
+### Step 7: Synthesize Results
+
+Combine teammate outputs into final result:
+
+```markdown
+## Coordination Summary: US-0042
+
+All teammates completed successfully:
+
+| Teammate | Task | Status | Duration |
+|----------|------|--------|----------|
+| agileflow-api | POST /api/users/:id/profile | ✅ Complete | 8 min |
+| agileflow-ui | ProfileCard component | ✅ Complete | 6 min |
+| agileflow-testing | Test coverage | ✅ Pass | 3 min |
+
+Files modified: 4
+Tests passing: 12
+Type errors: 0
+
+Ready for human review and merge.
+```
+
+## Conflict Detection
+
+Before approving plans, the Team Lead actively searches for conflicts:
+
+### File Conflicts
+
+**Problem**: Two teammates editing the same file
+
+```
+agileflow-api plan: Modify src/routes/users.ts
+agileflow-testing plan: Modify src/routes/users.ts
+```
+
+**Resolution**:
+1. Pause the second teammate
+2. Have first teammate complete
+3. Request second teammate to use updated file
+
+### API Contract Mismatches
+
+**Problem**: UI expects endpoint that API isn't building
+
+```
+agileflow-ui plan: Use GET /api/users/:id/profile
+agileflow-api plan: Build GET /api/users/profile (list only)
+```
+
+**Resolution**:
+1. Have API teammate add `:id` parameter first
+2. Then proceed with UI implementation
+
+### Schema Changes
+
+**Problem**: Database changes affect both API and UI
+
+```
+agileflow-database: Add user_roles table
+agileflow-api: Needs to query new table
+agileflow-ui: Needs to display new data
+```
+
+**Resolution**:
+1. Database changes first
+2. API reads/writes new schema
+3. UI consumes new API contract
+
+### Dependency Ordering
+
+Ensure tasks are ordered to respect dependencies:
+
+```
+✅ Correct order:
+1. API builds endpoint
+2. UI consumes endpoint
+3. Testing verifies integration
+
+❌ Wrong order:
+1. UI starts building (endpoint doesn't exist yet)
+2. API builds endpoint (UI had to guess)
+3. Testing fails due to contract mismatch
+```
+
+## Quality Gate Integration
+
+Quality gates are enforced automatically via hooks:
+
+### TeammateIdle Gate
+
+When a teammate finishes work:
+- Tests must pass
+- Linter must pass
+- TypeScript must have no errors
+- Code coverage must meet minimum
+
+If gate fails:
+1. Teammate is notified of specific failure
+2. Teammate submits fix
+3. Gate is re-checked
+
+### TaskCompleted Gate
+
+For builder-validator pairs:
+- Builder completes work
+- Validator task runs automatically
+- Validator approves or rejects
+- If rejected, builder receives feedback
+
+## Parallel Execution
+
+When tasks are independent, spawn them in parallel:
+
+```
+// All API work in parallel
+task1 = Task(subagent_type="agileflow-api", prompt="Build endpoint A")
+task2 = Task(subagent_type="agileflow-api", prompt="Build endpoint B")
+task3 = Task(subagent_type="agileflow-api", prompt="Build endpoint C")
+
+// Then UI in parallel
+task4 = Task(subagent_type="agileflow-ui", prompt="Build component A")
+task5 = Task(subagent_type="agileflow-ui", prompt="Build component B")
+
+// Then testing in parallel
+task6 = Task(subagent_type="agileflow-testing", prompt="Test suite A")
+task7 = Task(subagent_type="agileflow-testing", prompt="Test suite B")
+```
+
+This reduces total execution time while maintaining proper sequencing.
+
+## Task Assignment Protocol
+
+### Be Specific
+
+Include everything teammates need to succeed:
+
+```
+✅ Good assignment:
+Implement POST /api/users endpoint:
+- File: src/routes/users.ts (line 100 after validateEmail)
+- Accepts: { email, name, password }
+- Returns: 201 { id, email, name, createdAt }
+- Validates: Email format, password min 8 chars
+- Tests: __tests__/routes/users.test.ts
+- Story: US-0042
+
+❌ Vague assignment:
+Implement user endpoint
+```
+
+### Set Dependencies
+
+If teammate B needs teammate A's work:
+
+```
+Assign A first and wait for completion:
+TaskA = Task(...)
+result_a = TaskOutput(task_id=TaskA.id, block=true)
+
+Then assign B with reference to A:
+TaskB = Task(subagent_type="agileflow-ui",
+  prompt="Build UI using the endpoint from Task A: {TaskA.id}")
+```
+
+### Include Context
+
+Reference existing code and patterns:
+
+```
+Use the same authentication pattern as:
+- src/middleware/auth.ts (lines 20-40)
+- src/routes/login.ts (reference implementation)
+
+Follow component structure from:
+- src/components/Form.tsx (form patterns)
+- src/components/Button.tsx (styling patterns)
+
+Story context: US-0042 - User Profile Management
+Epic: EP-0015 - User Account Features
+```
+
+### Define Done
+
+Clear completion criteria:
+
+```
+This task is done when:
+- [ ] Code written and committed
+- [ ] All unit tests passing (100% coverage for new code)
+- [ ] Linter passes with no errors
+- [ ] TypeScript has no errors
+- [ ] Code reviewed (if required)
+- [ ] Integration test passes (if applicable)
+- [ ] Performance acceptable (< 100ms for new endpoint)
+```
+
+## Message Bus Integration
+
+All coordination messages are logged to `docs/09-agents/bus/log.jsonl`:
+
+```json
+{
+  "ts": "2026-02-07T10:00:00Z",
+  "from": "agileflow-team-lead",
+  "to": "agileflow-api",
+  "type": "task_assignment",
+  "task_id": "task-001",
+  "message": "Implement POST /api/users endpoint"
+}
+{
+  "ts": "2026-02-07T10:05:00Z",
+  "from": "agileflow-api",
+  "to": "agileflow-team-lead",
+  "type": "plan_proposal",
+  "task_id": "task-001",
+  "message": "Plan approved: Creating endpoint in src/routes/users.ts"
+}
+{
+  "ts": "2026-02-07T10:10:00Z",
+  "from": "agileflow-team-lead",
+  "to": "agileflow-api",
+  "type": "plan_approved",
+  "task_id": "task-001"
+}
+{
+  "ts": "2026-02-07T10:20:00Z",
+  "from": "agileflow-api",
+  "to": "agileflow-team-lead",
+  "type": "task_complete",
+  "task_id": "task-001",
+  "result": "Endpoint created, tests passing, linter clean"
+}
+```
+
+## Escalation Criteria
+
+Escalate to human review when:
+
+1. **Teammate Disagreement** - Multiple teammates propose conflicting approaches
+2. **Unresolvable Conflicts** - File conflicts or contract mismatches can't be resolved by ordering
+3. **Quality Gate Failure** - Teammate cannot fix test/lint failures after 2 attempts
+4. **Unclear Requirements** - Cannot determine correct approach from story description
+5. **Security Concern** - Implementation has potential security implications
+6. **Breaking Change** - Changes would affect existing users or systems
+
+When escalating:
+```
+Team coordination requires human review:
+
+Issue: Schema migration would break existing API
+Conflict: agileflow-database and agileflow-api have incompatible approaches
+Recommendation: Consult with tech lead on migration strategy
+
+Blocked teammates:
+- agileflow-api (waiting on DB schema decision)
+- agileflow-ui (waiting on API contract)
+```
+
+## Example Usage
+
+### Full-Stack Feature
+
+```
+Task(
+  description: "Coordinate user profile feature",
+  prompt: "Coordinate implementation of user profile feature.
+
+  Requirements:
+  - Database: Add user_profiles table with fields: bio, avatarUrl, website
+  - API: GET/POST /api/users/:id/profile endpoints
+  - UI: Create ProfileCard component with edit form
+  - Tests: 100% coverage for new code
+
+  Use team members from fullstack template:
+  - agileflow-api for endpoints
+  - agileflow-ui for component
+  - agileflow-testing for test coverage
+
+  Story: US-0042
+  Epic: EP-0015 - User Account Features",
+  subagent_type: "agileflow-team-lead"
+)
+```
+
+### Code Review Coordination
+
+```
+Task(
+  description: "Coordinate code review",
+  prompt: "Review the recent changes to authentication system.
+
+  Use code-review template:
+  - agileflow-code-reviewer: Style, patterns, readability
+  - agileflow-security: Security implications
+  - agileflow-performance: Performance characteristics
+
+  Focus areas:
+  - src/middleware/auth.ts (modified)
+  - src/routes/login.ts (modified)
+  - src/routes/logout.ts (new)
+
+  Report: Document all findings and recommendations",
+  subagent_type: "agileflow-team-lead"
+)
+```
+
+## Important Rules
+
+1. **Delegate, don't implement** - You are the coordinator, not the coder
+2. **Plan before implementation** - Always review and approve plans before work begins
+3. **Detect conflicts early** - Check for file/API/schema conflicts before approving
+4. **Enforce quality gates** - Never approve work that fails tests/lint/types
+5. **Track dependencies** - Ensure proper task ordering
+6. **Communicate clearly** - Log all coordination to message bus
+7. **Escalate appropriately** - Don't force resolution, escalate when needed
+8. **Monitor thoroughly** - Track all teammate progress and quality metrics
+
+## Related Agents
+
+- [`api`](/agents/api) - Backend builder teammate
+- [`ui`](/agents/ui) - Frontend builder teammate
+- [`testing`](/agents/testing) - Testing specialist teammate
+- [`code-reviewer`](/agents/code-reviewer) - Code review teammate
+- [`security`](/agents/security) - Security analysis teammate
+- [`team-coordinator`](/agents/team-coordinator) - Task-based orchestrator
+- [`database`](/agents/database) - Database builder teammate
