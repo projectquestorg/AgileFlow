@@ -3,7 +3,7 @@
  */
 
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Mock dependencies
 jest.mock('fs');
@@ -57,7 +57,7 @@ describe('configure-detect', () => {
 
     it('detects git initialization', () => {
       fs.existsSync.mockImplementation(p => p === '.git');
-      execSync.mockReturnValue('https://github.com/test/repo.git\n');
+      execFileSync.mockReturnValue('https://github.com/test/repo.git\n');
 
       const status = detectConfig('2.0.0');
 
@@ -67,7 +67,7 @@ describe('configure-detect', () => {
 
     it('handles missing git remote gracefully', () => {
       fs.existsSync.mockImplementation(p => p === '.git');
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw new Error('No remote');
       });
 

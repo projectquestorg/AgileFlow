@@ -19,7 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
@@ -79,27 +79,30 @@ function getSessionState(rootDir) {
 function getGitDiff(rootDir) {
   try {
     // Get list of changed files (staged and unstaged)
-    const diffFiles = execSync('git diff --name-only HEAD 2>/dev/null || git diff --name-only', {
+    const diffFiles = execFileSync('git', ['diff', '--name-only', 'HEAD'], {
       cwd: rootDir,
       encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
       .trim()
       .split('\n')
       .filter(Boolean);
 
     // Get staged files
-    const stagedFiles = execSync('git diff --cached --name-only 2>/dev/null', {
+    const stagedFiles = execFileSync('git', ['diff', '--cached', '--name-only'], {
       cwd: rootDir,
       encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
       .trim()
       .split('\n')
       .filter(Boolean);
 
     // Get untracked files
-    const untrackedFiles = execSync('git ls-files --others --exclude-standard 2>/dev/null', {
+    const untrackedFiles = execFileSync('git', ['ls-files', '--others', '--exclude-standard'], {
       cwd: rootDir,
       encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
       .trim()
       .split('\n')
@@ -112,9 +115,10 @@ function getGitDiff(rootDir) {
     let additions = 0;
     let deletions = 0;
     try {
-      const stats = execSync('git diff --shortstat HEAD 2>/dev/null || echo ""', {
+      const stats = execFileSync('git', ['diff', '--shortstat', 'HEAD'], {
         cwd: rootDir,
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       const addMatch = stats.match(/(\d+) insertion/);
       const delMatch = stats.match(/(\d+) deletion/);

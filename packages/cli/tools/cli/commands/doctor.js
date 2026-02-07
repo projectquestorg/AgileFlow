@@ -65,8 +65,8 @@ module.exports = {
 
       // Check npm
       try {
-        const { execSync } = require('node:child_process');
-        const npmVersion = execSync('npm --version', { encoding: 'utf8' }).trim();
+        const { execFileSync } = require('node:child_process');
+        const npmVersion = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
         success(`npm v${npmVersion}`);
       } catch {
         warning('npm not found');

@@ -20,7 +20,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
@@ -46,12 +46,14 @@ function saveSessionState(rootDir, state) {
 async function resolveGlob(pattern, rootDir) {
   // Use bash globbing for pattern expansion
   try {
-    const result = execSync(
-      `bash -c 'shopt -s nullglob; for f in ${pattern}; do echo "$f"; done'`,
+    const result = execFileSync(
+      'bash',
+      ['-c', `shopt -s nullglob; for f in ${pattern}; do echo "$f"; done`],
       {
         cwd: rootDir,
         encoding: 'utf8',
         timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       }
     );
     const files = result

@@ -955,7 +955,7 @@ function getSessionGitInfo(sessionPath) {
     // Get current branch
     let branch = '';
     try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD', execOpts).trim();
+      branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], execOpts).trim();
     } catch {
       return { error: 'Not a git repository' };
     }
@@ -977,8 +977,9 @@ function getSessionGitInfo(sessionPath) {
     let behind = 0;
     if (upstream) {
       try {
-        const counts = execSync(
-          `git rev-list --left-right --count ${branch}...${upstream}`,
+        const counts = execFileSync(
+          'git',
+          ['rev-list', '--left-right', '--count', `${branch}...${upstream}`],
           execOpts
         )
           .trim()
@@ -994,7 +995,7 @@ function getSessionGitInfo(sessionPath) {
     let uncommitted = 0;
     let changedFiles = [];
     try {
-      const status = execSync('git status --porcelain', execOpts);
+      const status = execFileSync('git', ['status', '--porcelain'], execOpts);
       // Split by newline, preserving line format (don't trim whole output)
       // Git porcelain format: XY filename (where XY is 2 chars + space = 3 chars prefix)
       const lines = status.split('\n').filter(line => line.length >= 3);
@@ -1009,7 +1010,7 @@ function getSessionGitInfo(sessionPath) {
     // Get recent commits
     let recentCommits = [];
     try {
-      const log = execSync('git log --oneline -5', execOpts).trim();
+      const log = execFileSync('git', ['log', '--oneline', '-5'], execOpts).trim();
       if (log) {
         recentCommits = log.split('\n');
       }

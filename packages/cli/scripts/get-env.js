@@ -17,7 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Import centralized path utilities
 const { getStatusPath } = require('../lib/paths');
@@ -52,17 +52,17 @@ function getProjectInfo() {
   let recentCommits = [];
 
   try {
-    gitBranch = execSync('git branch --show-current', {
+    gitBranch = execFileSync('git', ['branch', '--show-current'], {
       cwd: rootDir,
       encoding: 'utf8',
     }).trim();
-    gitCommit = execSync('git rev-parse --short HEAD', {
+    gitCommit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
       cwd: rootDir,
       encoding: 'utf8',
     }).trim();
 
     // Get recent commits (last 5)
-    const commitLog = execSync('git log --oneline -5 2>/dev/null', {
+    const commitLog = execFileSync('git', ['log', '--oneline', '-5'], {
       cwd: rootDir,
       encoding: 'utf8',
     }).trim();

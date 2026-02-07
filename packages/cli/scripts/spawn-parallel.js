@@ -24,7 +24,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c, success, warning, error, dim, bold } = require('../lib/colors');
@@ -42,7 +42,7 @@ const ROOT = getProjectRoot();
  */
 function hasTmux() {
   try {
-    execSync('which tmux', { encoding: 'utf8', stdio: 'pipe' });
+    execFileSync('which', ['tmux'], { encoding: 'utf8', stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -54,7 +54,7 @@ function hasTmux() {
  */
 function hasScreen() {
   try {
-    execSync('which screen', { encoding: 'utf8', stdio: 'pipe' });
+    execFileSync('which', ['screen'], { encoding: 'utf8', stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -468,7 +468,7 @@ async function addWindow(args) {
   // Get current tmux session name
   let currentSession;
   try {
-    currentSession = execSync('tmux display-message -p "#S"', {
+    currentSession = execFileSync('tmux', ['display-message', '-p', '#S'], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
@@ -520,13 +520,17 @@ async function addWindow(args) {
   // Get window number
   let windowIndex;
   try {
-    windowIndex = execSync(
-      `tmux list-windows -t ${currentSession} -F "#I:#W" | grep ":${windowName}$" | cut -d: -f1`,
+    windowIndex = execFileSync(
+      'tmux',
+      ['list-windows', '-t', currentSession, '-F', '#I:#W'],
       {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
       }
-    ).trim();
+    )
+      .split('\n')
+      .find(line => line.endsWith(`:${windowName}`))
+      ?.split(':')[0] || '?';
   } catch {
     windowIndex = '?';
   }
@@ -558,7 +562,7 @@ async function addWindow(args) {
  */
 function killAll() {
   try {
-    const result = execSync('tmux list-sessions -F "#{session_name}"', {
+    const result = execFileSync('tmux', ['list-sessions', '-F', '#{session_name}'], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });

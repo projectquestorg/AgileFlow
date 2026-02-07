@@ -4,7 +4,7 @@
  * Provides cached git operations and session phase detection for Kanban visualization.
  */
 
-const { execSync, execFileSync, spawnSync, spawn } = require('child_process');
+const { execFileSync, spawnSync, spawn } = require('child_process');
 const fs = require('fs');
 
 const { getProjectRoot } = require('./paths');
@@ -80,7 +80,7 @@ function getCurrentBranch(cwd = ROOT) {
   if (cached !== null) return cached;
 
   try {
-    const branch = execSync('git branch --show-current', { cwd, encoding: 'utf8' }).trim();
+    const branch = execFileSync('git', ['branch', '--show-current'], { cwd, encoding: 'utf8' }).trim();
     gitCache.set(cacheKey, branch);
     return branch;
   } catch (e) {
@@ -189,10 +189,16 @@ function getSessionPhase(session) {
     }
     const commits = parseInt(commitCount, 10);
 
-    const status = execSync('git status --porcelain 2>/dev/null || echo ""', {
-      cwd: sessionPath,
-      encoding: 'utf8',
-    }).trim();
+    let status = '';
+    try {
+      status = execFileSync('git', ['status', '--porcelain'], {
+        cwd: sessionPath,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim();
+    } catch {
+      // git status failed, treat as no changes
+    }
 
     const phase = determinePhaseFromGitState(commits, status !== '');
     gitCache.set(cacheKey, phase);

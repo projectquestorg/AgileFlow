@@ -340,7 +340,7 @@ function readProjectFiles(rootDir, options = {}) {
 // Command Caching (for git and other shell commands)
 // =============================================================================
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Separate cache for command output with shorter TTL
 const commandCache = new LRUCache({
@@ -372,7 +372,7 @@ function execCached(command, options = {}) {
 
   // Execute command
   try {
-    const output = execSync(command, {
+    const output = execFileSync('bash', ['-c', command], {
       cwd,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],

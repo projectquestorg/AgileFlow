@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Import loader and formatter modules
 const {
@@ -123,7 +123,7 @@ function executeQueryMode(query) {
   }
 
   try {
-    const result = execSync(`node "${queryScript}" --query="${query}" --budget=15000`, {
+    const result = execFileSync('node', [queryScript, `--query=${query}`, '--budget=15000'], {
       encoding: 'utf8',
       maxBuffer: 50 * 1024 * 1024,
     });

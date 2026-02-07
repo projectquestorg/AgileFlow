@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c, box } = require('../lib/colors');
@@ -178,7 +178,7 @@ function detectPlatform() {
  */
 function checkTmuxAvailability() {
   try {
-    execSync('which tmux', { encoding: 'utf8', stdio: 'pipe' });
+    execFileSync('which', ['tmux'], { encoding: 'utf8', stdio: 'pipe' });
     return { available: true };
   } catch (e) {
     const platform = detectPlatform();
@@ -197,8 +197,9 @@ function checkTmuxAvailability() {
  */
 function getGitInfo(rootDir) {
   try {
-    const output = execSync(
-      'git branch --show-current && git rev-parse --short HEAD && git log -1 --format="%s"',
+    const output = execFileSync(
+      'bash',
+      ['-c', 'git branch --show-current && git rev-parse --short HEAD && git log -1 --format="%s"'],
       { cwd: rootDir, encoding: 'utf8', timeout: 5000 }
     );
     const lines = output.trim().split('\n');
@@ -376,7 +377,7 @@ function runArchival(rootDir, cache = null) {
     if (toArchiveCount > 0) {
       // Run archival
       try {
-        execSync('bash scripts/archive-completed-stories.sh', {
+        execFileSync('bash', ['scripts/archive-completed-stories.sh'], {
           cwd: rootDir,
           encoding: 'utf8',
           stdio: 'pipe',
@@ -493,7 +494,7 @@ function checkParallelSessions(rootDir) {
 
     try {
       // PERFORMANCE: Single subprocess call instead of 3 (register + count + status)
-      const fullStatusOutput = execSync(`node "${scriptPath}" full-status`, {
+      const fullStatusOutput = execFileSync('node', [scriptPath, 'full-status'], {
         cwd: rootDir,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -515,7 +516,7 @@ function checkParallelSessions(rootDir) {
     } catch (e) {
       // Fall back to individual calls if full-status not available (older version)
       try {
-        const registerOutput = execSync(`node "${scriptPath}" register`, {
+        const registerOutput = execFileSync('node', [scriptPath, 'register'], {
           cwd: rootDir,
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -528,7 +529,7 @@ function checkParallelSessions(rootDir) {
       }
 
       try {
-        const countOutput = execSync(`node "${scriptPath}" count`, {
+        const countOutput = execFileSync('node', [scriptPath, 'count'], {
           cwd: rootDir,
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -540,7 +541,7 @@ function checkParallelSessions(rootDir) {
       }
 
       try {
-        const statusOutput = execSync(`node "${scriptPath}" status`, {
+        const statusOutput = execFileSync('node', [scriptPath, 'status'], {
           cwd: rootDir,
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -1076,7 +1077,7 @@ function getChangelogEntries(version) {
 async function runAutoUpdate(rootDir, fromVersion, toVersion) {
   const runUpdate = () => {
     // Use stdio: 'pipe' to capture output instead of showing everything
-    return execSync('npx agileflow@latest update --force', {
+    return execFileSync('npx', ['agileflow@latest', 'update', '--force'], {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: 'pipe',
@@ -1097,7 +1098,7 @@ async function runAutoUpdate(rootDir, fromVersion, toVersion) {
     if (e.message && (e.message.includes('ETARGET') || e.message.includes('notarget'))) {
       console.log(`${c.dim}  Clearing npm cache and retrying...${c.reset}`);
       try {
-        execSync('npm cache clean --force', { stdio: 'pipe', timeout: 30000 });
+        execFileSync('npm', ['cache', 'clean', '--force'], { stdio: 'pipe', timeout: 30000 });
         runUpdate();
         console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
         return true;

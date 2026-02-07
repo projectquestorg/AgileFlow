@@ -18,7 +18,7 @@
  *   --help         Show help
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -103,9 +103,10 @@ ${c.cyan}Examples:${c.reset}
  */
 function runAudit() {
   try {
-    const output = execSync('npm audit --json 2>&1', {
+    const output = execFileSync('npm', ['audit', '--json'], {
       encoding: 'utf8',
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return JSON.parse(output);
   } catch (error) {
@@ -125,11 +126,11 @@ function runAudit() {
  * Apply npm audit fix
  */
 function runFix(force = false) {
-  const cmd = force
-    ? 'npm audit fix --force --legacy-peer-deps'
-    : 'npm audit fix --legacy-peer-deps';
+  const args = force
+    ? ['audit', 'fix', '--force', '--legacy-peer-deps']
+    : ['audit', 'fix', '--legacy-peer-deps'];
   try {
-    const output = execSync(cmd, { encoding: 'utf8', stdio: 'pipe' });
+    const output = execFileSync('npm', args, { encoding: 'utf8', stdio: 'pipe' });
     return { success: true, output };
   } catch (error) {
     return { success: false, error: error.message, output: error.stdout || '' };

@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 jest.mock('child_process');
 
@@ -34,7 +34,7 @@ describe('gate-runner.js', () => {
 
   describe('evaluateGate() - tests', () => {
     test('returns passed when tests pass', () => {
-      execSync.mockImplementation((cmd, opts) => 'Tests passing\n');
+      execFileSync.mockImplementation((cmd, opts) => 'Tests passing\n');
 
       const result = gateRunner.evaluateGate('tests', testDir);
 
@@ -47,7 +47,7 @@ describe('gate-runner.js', () => {
       const error = new Error('Test failed');
       error.stdout = 'Some tests failed\n';
       error.stderr = '';
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw error;
       });
 
@@ -62,37 +62,43 @@ describe('gate-runner.js', () => {
       const pkgPath = path.join(testDir, 'package.json');
       fs.writeFileSync(pkgPath, JSON.stringify({ scripts: { test: 'jest' } }));
 
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGate('tests', testDir);
 
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('npm test'),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', expect.stringContaining('npm test')]),
         expect.any(Object)
       );
     });
 
     test('accepts custom test command', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGate('tests', testDir, { command: 'custom test' });
 
-      expect(execSync).toHaveBeenCalledWith('custom test', expect.any(Object));
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', 'custom test']),
+        expect.any(Object)
+      );
     });
 
     test('respects timeout option', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGate('tests', testDir, { timeout: 500000 });
 
-      expect(execSync).toHaveBeenCalledWith(
-        expect.any(String),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.any(Array),
         expect.objectContaining({ timeout: 500000 })
       );
     });
 
     test('measures execution duration', () => {
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         // Simulate delay
         const start = Date.now();
         while (Date.now() - start < 50) {
@@ -123,11 +129,15 @@ describe('gate-runner.js', () => {
       const pkgPath = path.join(testDir, 'package.json');
       fs.writeFileSync(pkgPath, JSON.stringify({ scripts: { lint: 'eslint' } }));
 
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGate('lint', testDir);
 
-      expect(execSync).toHaveBeenCalledWith('npm run lint', expect.any(Object));
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', 'npm run lint']),
+        expect.any(Object)
+      );
     });
 
     test('returns failed when linting fails', () => {
@@ -136,7 +146,7 @@ describe('gate-runner.js', () => {
 
       const error = new Error('Lint failed');
       error.stdout = 'Linting errors\n';
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw error;
       });
 
@@ -161,11 +171,15 @@ describe('gate-runner.js', () => {
     test('detects tsconfig.json and uses tsc', () => {
       fs.writeFileSync(path.join(testDir, 'tsconfig.json'), '{}');
 
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGate('types', testDir);
 
-      expect(execSync).toHaveBeenCalledWith('npx tsc --noEmit', expect.any(Object));
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', 'npx tsc --noEmit']),
+        expect.any(Object)
+      );
     });
 
     test('returns failed when type-check fails', () => {
@@ -173,7 +187,7 @@ describe('gate-runner.js', () => {
 
       const error = new Error('Type check failed');
       error.stdout = 'Type errors\n';
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw error;
       });
 
@@ -185,7 +199,7 @@ describe('gate-runner.js', () => {
 
   describe('evaluateGate() - coverage', () => {
     test('returns passed when coverage passes', () => {
-      execSync.mockImplementation(() => 'Coverage: 85%\n');
+      execFileSync.mockImplementation(() => 'Coverage: 85%\n');
 
       const result = gateRunner.evaluateGate('coverage', testDir, { threshold: 80 });
 
@@ -194,7 +208,7 @@ describe('gate-runner.js', () => {
     });
 
     test('accepts custom threshold', () => {
-      execSync.mockImplementation(() => 'Coverage check\n');
+      execFileSync.mockImplementation(() => 'Coverage check\n');
 
       const result = gateRunner.evaluateGate('coverage', testDir, { threshold: 90 });
 
@@ -205,12 +219,13 @@ describe('gate-runner.js', () => {
       const pkgPath = path.join(testDir, 'package.json');
       fs.writeFileSync(pkgPath, JSON.stringify({ scripts: { test: 'jest' } }));
 
-      execSync.mockImplementation(() => 'Coverage\n');
+      execFileSync.mockImplementation(() => 'Coverage\n');
 
       gateRunner.evaluateGate('coverage', testDir);
 
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('--coverage'),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', expect.stringContaining('--coverage')]),
         expect.any(Object)
       );
     });
@@ -228,7 +243,7 @@ describe('gate-runner.js', () => {
 
   describe('evaluateGates()', () => {
     test('runs multiple gates', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       const result = gateRunner.evaluateGates(
         { tests: true, lint: false, types: true, coverage: false },
@@ -241,7 +256,7 @@ describe('gate-runner.js', () => {
     });
 
     test('returns allPassed true when all pass', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       const result = gateRunner.evaluateGates({ tests: true, lint: true }, testDir);
 
@@ -254,7 +269,7 @@ describe('gate-runner.js', () => {
       fs.writeFileSync(pkgPath, JSON.stringify({ scripts: { lint: 'eslint', test: 'jest' } }));
 
       let callCount = 0;
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           // tests pass
@@ -274,7 +289,7 @@ describe('gate-runner.js', () => {
     });
 
     test('aggregates total duration', () => {
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         const start = Date.now();
         while (Date.now() - start < 20) {
           // Busy wait
@@ -293,7 +308,7 @@ describe('gate-runner.js', () => {
     });
 
     test('skips disabled gates', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       const result = gateRunner.evaluateGates({ tests: true, lint: false }, testDir);
 
@@ -302,12 +317,13 @@ describe('gate-runner.js', () => {
     });
 
     test('passes gate-specific options', () => {
-      execSync.mockImplementation(() => 'Passing\n');
+      execFileSync.mockImplementation(() => 'Passing\n');
 
       gateRunner.evaluateGates({ tests: true }, testDir, { tests: { timeout: 600000 } });
 
-      expect(execSync).toHaveBeenCalledWith(
-        expect.any(String),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.any(Array),
         expect.objectContaining({ timeout: 600000 })
       );
     });
@@ -457,7 +473,7 @@ describe('gate-runner.js', () => {
 
   describe('runCommand()', () => {
     test('returns success when command passes', () => {
-      execSync.mockImplementation(() => 'Success output\n');
+      execFileSync.mockImplementation(() => 'Success output\n');
 
       const result = gateRunner.runCommand('test-cmd', testDir, 5000);
 
@@ -469,7 +485,7 @@ describe('gate-runner.js', () => {
       const error = new Error('Failed');
       error.stdout = 'stdout content';
       error.stderr = 'stderr content';
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw error;
       });
 
@@ -480,26 +496,31 @@ describe('gate-runner.js', () => {
     });
 
     test('passes cwd to execSync', () => {
-      execSync.mockImplementation(() => 'Success\n');
+      execFileSync.mockImplementation(() => 'Success\n');
 
       gateRunner.runCommand('test-cmd', testDir, 5000);
 
-      expect(execSync).toHaveBeenCalledWith('test-cmd', expect.objectContaining({ cwd: testDir }));
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', 'test-cmd']),
+        expect.objectContaining({ cwd: testDir })
+      );
     });
 
     test('passes timeout to execSync', () => {
-      execSync.mockImplementation(() => 'Success\n');
+      execFileSync.mockImplementation(() => 'Success\n');
 
       gateRunner.runCommand('test-cmd', testDir, 12345);
 
-      expect(execSync).toHaveBeenCalledWith(
-        'test-cmd',
+      expect(execFileSync).toHaveBeenCalledWith(
+        'bash',
+        expect.arrayContaining(['-c', 'test-cmd']),
         expect.objectContaining({ timeout: 12345 })
       );
     });
 
     test('measures execution time', () => {
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         const start = Date.now();
         while (Date.now() - start < 50) {
           // Busy wait

@@ -30,7 +30,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
@@ -117,7 +117,12 @@ function runTests(rootDir, testCommand) {
   const startTime = Date.now();
 
   try {
-    const output = execSync(testCommand, {
+    // Parse test command into executable and args
+    const parts = testCommand.split(/\s+/);
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    const output = execFileSync(cmd, args, {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -205,7 +210,7 @@ const DISCRETION_CONDITIONS = {
   // Lint conditions
   'no linting errors': (rootDir, _ctx) => {
     try {
-      execSync('npm run lint', {
+      execFileSync('npm', ['run', 'lint'], {
         cwd: rootDir,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -220,7 +225,7 @@ const DISCRETION_CONDITIONS = {
   // Type checking conditions
   'no type errors': (rootDir, _ctx) => {
     try {
-      execSync('npx tsc --noEmit', {
+      execFileSync('npx', ['tsc', '--noEmit'], {
         cwd: rootDir,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -235,7 +240,7 @@ const DISCRETION_CONDITIONS = {
   // Build conditions
   'build succeeds': (rootDir, _ctx) => {
     try {
-      execSync('npm run build', {
+      execFileSync('npm', ['run', 'build'], {
         cwd: rootDir,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -398,7 +403,12 @@ function runCoverage(rootDir) {
   const startTime = Date.now();
 
   try {
-    const output = execSync(coverageCmd, {
+    // Parse coverage command into executable and args
+    const parts = coverageCmd.split(/\s+/);
+    const cmd = parts[0];
+    const args = parts.slice(1);
+
+    const output = execFileSync(cmd, args, {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],

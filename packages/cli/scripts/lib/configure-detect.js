@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { c, log, header, readJSON } = require('./configure-utils');
 
 // ============================================================================
@@ -65,8 +65,9 @@ function detectConfig(version) {
   if (fs.existsSync('.git')) {
     status.git.initialized = true;
     try {
-      status.git.remote = execSync('git remote get-url origin 2>/dev/null', {
+      status.git.remote = execFileSync('git', ['remote', 'get-url', 'origin'], {
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
     } catch {}
   }

@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Optional: hook metrics integration
 let hookMetrics;
@@ -99,14 +99,14 @@ function getStoriesContext(projectRoot) {
  */
 function getGitContext(projectRoot) {
   try {
-    const branch = execSync('git branch --show-current', {
+    const branch = execFileSync('git', ['branch', '--show-current'], {
       cwd: projectRoot,
       encoding: 'utf8',
       timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
 
-    const recentCommits = execSync('git log -3 --oneline', {
+    const recentCommits = execFileSync('git', ['log', '-3', '--oneline'], {
       cwd: projectRoot,
       encoding: 'utf8',
       timeout: 5000,
@@ -117,7 +117,7 @@ function getGitContext(projectRoot) {
       .filter(Boolean);
 
     // Check for uncommitted changes
-    const status = execSync('git status --porcelain', {
+    const status = execFileSync('git', ['status', '--porcelain'], {
       cwd: projectRoot,
       encoding: 'utf8',
       timeout: 5000,

@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const {
   c,
   log,
@@ -165,7 +165,10 @@ function showVersionInfo(version) {
   // Check npm for latest
   let latestVersion = null;
   try {
-    latestVersion = execSync('npm view agileflow version 2>/dev/null', { encoding: 'utf8' }).trim();
+    latestVersion = execFileSync('npm', ['view', 'agileflow', 'version'], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).toString().trim();
     log(`Latest:     v${latestVersion}`);
 
     if (installedVersion !== 'unknown' && latestVersion && installedVersion !== latestVersion) {

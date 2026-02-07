@@ -14,7 +14,7 @@
  *   const result = await evaluateGate('tests', rootDir, { timeout: 300000 });
  */
 
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -106,7 +106,7 @@ function runCommand(command, rootDir, timeout) {
   const result = { passed: false, output: '', duration: 0 };
 
   try {
-    const output = execSync(command, {
+    const output = execFileSync('bash', ['-c', command], {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],

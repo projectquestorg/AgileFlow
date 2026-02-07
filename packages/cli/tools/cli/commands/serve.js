@@ -34,7 +34,6 @@ module.exports = {
         createToolStart,
         createToolResult,
       } = require('../../../lib/dashboard-protocol');
-      const { execSync } = require('child_process');
       const readline = require('readline');
 
       let port = parseInt(options.port, 10) || 8765;

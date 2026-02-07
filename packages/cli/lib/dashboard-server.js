@@ -42,7 +42,7 @@ const {
   serializeMessage,
 } = require('./dashboard-protocol');
 const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
-const { execSync, execFileSync, spawn } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const os = require('os');
 
 // Lazy-load automation modules to avoid circular dependencies
@@ -981,14 +981,16 @@ class DashboardServer extends EventEmitter {
    */
   getGitStatus() {
     try {
-      const branch = execSync('git branch --show-current', {
+      const branch = execFileSync('git', ['branch', '--show-current'], {
         cwd: this.projectRoot,
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
 
-      const statusOutput = execSync('git status --porcelain', {
+      const statusOutput = execFileSync('git', ['status', '--porcelain'], {
         cwd: this.projectRoot,
         encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       const staged = [];

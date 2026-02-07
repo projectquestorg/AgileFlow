@@ -62,7 +62,7 @@ jest.mock('../../tools/cli/installers/ide/manager', () => ({
 }));
 
 jest.mock('child_process', () => ({
-  execSync: jest.fn(() => '10.0.0'),
+  execFileSync: jest.fn(() => '10.0.0'),
 }));
 
 const fs = require('fs-extra');

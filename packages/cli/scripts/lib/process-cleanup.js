@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, execFileSync, spawnSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
 // Configuration constants
 const KILL_GRACE_PERIOD_MS = 5000; // Wait before SIGKILL
@@ -137,9 +137,10 @@ function findClaudeProcesses() {
   } else if (process.platform === 'darwin') {
     // macOS: Use ps command
     try {
-      const output = execSync("ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep", {
+      const output = execFileSync('bash', ['-c', "ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep"], {
         encoding: 'utf8',
         timeout: 5000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       for (const line of output.split('\n')) {

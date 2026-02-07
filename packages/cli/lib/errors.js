@@ -16,7 +16,7 @@
  */
 
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Debug logging (opt-in via AGILEFLOW_DEBUG=1)
 const DEBUG = process.env.AGILEFLOW_DEBUG === '1';
@@ -421,7 +421,7 @@ function safeExec(command, options = {}) {
   }
 
   try {
-    const output = execSync(command, {
+    const output = execFileSync('bash', ['-c', command], {
       cwd,
       encoding: 'utf8',
       timeout,

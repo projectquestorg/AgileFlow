@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // Mock dependencies
 jest.mock('fs');
@@ -152,7 +152,7 @@ describe('configure-repair', () => {
   describe('showVersionInfo', () => {
     it('displays version information', () => {
       readJSON.mockReturnValue({ version: '2.0.0' });
-      execSync.mockReturnValue('2.1.0\n');
+      execFileSync.mockReturnValue('2.1.0\n');
 
       showVersionInfo('2.0.0');
 
@@ -164,7 +164,7 @@ describe('configure-repair', () => {
 
     it('handles npm check failure gracefully', () => {
       readJSON.mockReturnValue({ version: '2.0.0' });
-      execSync.mockImplementation(() => {
+      execFileSync.mockImplementation(() => {
         throw new Error('Network error');
       });
 
@@ -178,7 +178,7 @@ describe('configure-repair', () => {
 
     it('shows update available when newer version exists', () => {
       readJSON.mockReturnValue({ version: '1.0.0' });
-      execSync.mockReturnValue('2.0.0\n');
+      execFileSync.mockReturnValue('2.0.0\n');
 
       showVersionInfo('1.0.0');
 
@@ -196,7 +196,7 @@ describe('configure-repair', () => {
           precompact: { enabled: false, version: '1.9.0' },
         },
       });
-      execSync.mockReturnValue('2.0.0\n');
+      execFileSync.mockReturnValue('2.0.0\n');
 
       showVersionInfo('2.0.0');
 

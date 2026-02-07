@@ -7,7 +7,7 @@
  * Includes smart detection to avoid running in inappropriate contexts.
  */
 
-const { execSync } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const { c: colors } = require('../lib/colors');
@@ -148,7 +148,7 @@ async function runAutoInstall() {
       console.log('');
 
       // Run setup command (interactive mode, no --yes flag)
-      execSync(`node "${cliPath}" setup`, {
+      execFileSync('node', [cliPath, 'setup'], {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
@@ -157,7 +157,7 @@ async function runAutoInstall() {
       log('🚀 Setting up AgileFlow in your project...', 'green');
       console.log('');
 
-      execSync(`node "${cliPath}" setup --yes`, {
+      execFileSync('node', [cliPath, 'setup', '--yes'], {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
