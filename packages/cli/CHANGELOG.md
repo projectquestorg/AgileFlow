@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.97.0] - 2026-02-07
+
+### Added
+- Native Agent Teams integration with quality gate hooks and dual-mode orchestration
+
 ## [2.96.6] - 2026-02-06
 
 ### Fixed

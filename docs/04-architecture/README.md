@@ -8,8 +8,8 @@ System architecture, component design, and technical documentation for AgileFlow
 
 | Document | Description |
 |----------|-------------|
-| [Commands](./commands.md) | All 85 slash commands |
-| [Subagents](./subagents.md) | All 46 specialized agents |
+| [Commands](./commands.md) | All 90 slash commands |
+| [Subagents](./subagents.md) | All 47 specialized agents |
 | [Skills](./skills.md) | Dynamic skill generator |
 
 ---
@@ -62,15 +62,15 @@ System architecture, component design, and technical documentation for AgileFlow
 ```
 Presentation    →  Slash Commands, CLI Interface
 Orchestration   →  Babysit, Multi-Expert, Session
-Agent           →  46 Domain Experts
+Agent           →  47 Domain Experts
 Expert          →  Expertise Files, Mental Models
 Storage         →  status.json, docs/, bus/
 ```
 
 ### Key Components
 
-- **Commands**: 85 slash commands for agile workflows
-- **Agents**: 46 domain-specialized experts
+- **Commands**: 90 slash commands for agile workflows
+- **Agents**: 47 domain-specialized experts
 - **Skills**: Dynamic generation via `/agileflow:skill:create`
 - **Experts**: Self-improving knowledge bases per domain
 - **State**: JSON-based tracking (status.json, bus/log.jsonl)
