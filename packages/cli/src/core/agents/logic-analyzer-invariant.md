@@ -1,9 +1,7 @@
 ---
 name: logic-analyzer-invariant
 description: Invariant analyzer for pre/post conditions, state consistency, loop invariants, and contract violations
-tools:   - Read
-  - Glob
-  - Grep
+tools: Read, Glob, Grep
 model: haiku
 team_role: utility
 ---

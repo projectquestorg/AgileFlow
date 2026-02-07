@@ -1,10 +1,7 @@
 ---
 name: error-analyzer
 description: Error diagnosis specialist that analyzes stack traces, correlates logs, identifies root causes, and suggests fixes before external research is needed
-tools:   - Read
-  - Glob
-  - Grep
-  - Bash
+tools: Read, Glob, Grep, Bash
 model: sonnet
 team_role: utility
 ---

@@ -1,9 +1,7 @@
 ---
 name: logic-analyzer-flow
 description: Control flow analyzer for dead code, unreachable branches, infinite loops, and missing return paths
-tools:   - Read
-  - Glob
-  - Grep
+tools: Read, Glob, Grep
 model: haiku
 team_role: utility
 ---

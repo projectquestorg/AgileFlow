@@ -1,11 +1,7 @@
 ---
 name: logic-consensus
 description: Consensus coordinator for logic analysis - validates findings, votes on issues, resolves conflicts, and generates the final audit report
-tools:   - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
+tools: Read, Write, Edit, Glob, Grep
 model: sonnet
 team_role: lead
 ---

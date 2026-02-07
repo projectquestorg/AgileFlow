@@ -1,9 +1,7 @@
 ---
 name: code-reviewer
 description: Comprehensive code review specialist with security, performance, maintainability, and best practices analysis
-tools:   - Read
-  - Glob
-  - Grep
+tools: Read, Glob, Grep
 model: sonnet
 team_role: utility
 ---

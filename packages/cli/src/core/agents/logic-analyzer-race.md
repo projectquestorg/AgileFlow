@@ -1,9 +1,7 @@
 ---
 name: logic-analyzer-race
 description: Race condition analyzer for async patterns, event timing issues, shared state mutations, and concurrency bugs
-tools:   - Read
-  - Glob
-  - Grep
+tools: Read, Glob, Grep
 model: haiku
 team_role: utility
 ---
