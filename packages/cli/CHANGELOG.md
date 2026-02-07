@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.98.0] - 2026-02-07
+
+### Fixed
+- Shell injection cleanup, shared lib tests, and async I/O pipeline
+
 ## [2.97.0] - 2026-02-07
 
 ### Added
