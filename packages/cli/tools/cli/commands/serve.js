@@ -325,6 +325,7 @@ async function startCloudflaredTunnel(port, spawn, exec) {
 }
 
 async function startNgrokTunnel(port, exec) {
+  const { spawn: spawnProcess } = require('child_process');
   return new Promise(resolve => {
     exec('which ngrok', error => {
       if (error) {
@@ -337,7 +338,7 @@ async function startNgrokTunnel(port, exec) {
         return;
       }
 
-      const ngrok = exec(`ngrok http ${port} --log stdout`, { encoding: 'utf8' });
+      const ngrok = spawnProcess('ngrok', ['http', String(port), '--log', 'stdout']);
 
       let resolved = false;
 
@@ -375,7 +376,7 @@ function sleep(ms) {
  * Check if port is in use and handle conflict
  */
 async function handlePortConflict(port, readline) {
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
   const net = require('net');
 
   // Check if port is in use
@@ -402,7 +403,10 @@ async function handlePortConflict(port, readline) {
   // Port is in use - find out what's using it
   let processInfo = '';
   try {
-    processInfo = execSync(`lsof -i :${port} -t 2>/dev/null`, { encoding: 'utf-8' }).trim();
+    processInfo = execFileSync('lsof', ['-i', `:${Number(port)}`, '-t'], {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
   } catch (e) {
     // lsof might not be available or port check failed
   }
@@ -432,9 +436,12 @@ async function handlePortConflict(port, readline) {
       const choice = answer.toLowerCase().trim();
 
       if (choice === 'k' && processInfo) {
-        // Kill the process
+        // Kill the process - validate PID is numeric
         try {
-          execSync(`kill ${processInfo}`, { encoding: 'utf-8' });
+          const pids = processInfo.split('\n').map(p => p.trim()).filter(p => /^\d+$/.test(p));
+          for (const pid of pids) {
+            execFileSync('kill', [pid], { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+          }
           console.log(chalk.green(`  Killed process ${processInfo}`));
           await sleep(500); // Give it a moment to release the port
           resolve(port);

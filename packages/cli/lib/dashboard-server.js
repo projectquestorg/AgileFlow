@@ -42,7 +42,7 @@ const {
   serializeMessage,
 } = require('./dashboard-protocol');
 const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
-const { execSync, spawn } = require('child_process');
+const { execSync, execFileSync, spawn } = require('child_process');
 const os = require('os');
 
 // Lazy-load automation modules to avoid circular dependencies
@@ -893,36 +893,55 @@ class DashboardServer extends EventEmitter {
   handleGitAction(session, message) {
     const { type, files, message: commitMessage } = message;
 
-    // Properly quote file paths for shell execution
-    const quotedFiles =
-      files && files.length > 0 ? files.map(f => `"${f.replace(/"/g, '\\"')}"`).join(' ') : null;
+    // Validate file paths - reject path traversal attempts
+    if (files && files.length > 0) {
+      for (const f of files) {
+        if (typeof f !== 'string' || f.includes('\0')) {
+          session.send(createError('GIT_ERROR', 'Invalid file path'));
+          return;
+        }
+        const resolved = require('path').resolve(this.projectRoot, f);
+        if (!resolved.startsWith(this.projectRoot)) {
+          session.send(createError('GIT_ERROR', 'File path outside project'));
+          return;
+        }
+      }
+    }
+
+    // Validate commit message
+    if (commitMessage !== undefined && commitMessage !== null) {
+      if (typeof commitMessage !== 'string' || commitMessage.length > 10000 || commitMessage.includes('\0')) {
+        session.send(createError('GIT_ERROR', 'Invalid commit message'));
+        return;
+      }
+    }
+
+    const fileArgs = files && files.length > 0 ? files : null;
 
     try {
       switch (type) {
         case InboundMessageType.GIT_STAGE:
-          if (quotedFiles) {
-            execSync(`git add ${quotedFiles}`, { cwd: this.projectRoot });
+          if (fileArgs) {
+            execFileSync('git', ['add', '--', ...fileArgs], { cwd: this.projectRoot });
           } else {
-            execSync('git add -A', { cwd: this.projectRoot });
+            execFileSync('git', ['add', '-A'], { cwd: this.projectRoot });
           }
           break;
         case InboundMessageType.GIT_UNSTAGE:
-          if (quotedFiles) {
-            execSync(`git restore --staged ${quotedFiles}`, { cwd: this.projectRoot });
+          if (fileArgs) {
+            execFileSync('git', ['restore', '--staged', '--', ...fileArgs], { cwd: this.projectRoot });
           } else {
-            execSync('git restore --staged .', { cwd: this.projectRoot });
+            execFileSync('git', ['restore', '--staged', '.'], { cwd: this.projectRoot });
           }
           break;
         case InboundMessageType.GIT_REVERT:
-          if (quotedFiles) {
-            execSync(`git checkout -- ${quotedFiles}`, { cwd: this.projectRoot });
+          if (fileArgs) {
+            execFileSync('git', ['checkout', '--', ...fileArgs], { cwd: this.projectRoot });
           }
           break;
         case InboundMessageType.GIT_COMMIT:
           if (commitMessage) {
-            // Use heredoc-style for commit message to handle special characters
-            const escapedMsg = commitMessage.replace(/'/g, "'\\''");
-            execSync(`git commit -m '${escapedMsg}'`, { cwd: this.projectRoot });
+            execFileSync('git', ['commit', '-m', commitMessage], { cwd: this.projectRoot });
           }
           break;
       }
@@ -1047,16 +1066,18 @@ class DashboardServer extends EventEmitter {
    */
   getFileDiff(filePath, staged = false) {
     try {
-      const cmd = staged ? `git diff --cached -- "${filePath}"` : `git diff -- "${filePath}"`;
+      const diffArgs = staged
+        ? ['diff', '--cached', '--', filePath]
+        : ['diff', '--', filePath];
 
-      const diff = execSync(cmd, {
+      const diff = execFileSync('git', diffArgs, {
         cwd: this.projectRoot,
         encoding: 'utf8',
       });
 
       // If no diff, file might be untracked - show entire file content as addition
       if (!diff && !staged) {
-        const statusOutput = execSync(`git status --porcelain -- "${filePath}"`, {
+        const statusOutput = execFileSync('git', ['status', '--porcelain', '--', filePath], {
           cwd: this.projectRoot,
           encoding: 'utf8',
         }).trim();

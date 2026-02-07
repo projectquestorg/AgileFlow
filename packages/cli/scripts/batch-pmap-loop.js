@@ -20,7 +20,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 // Shared utilities
 const { c } = require('../lib/colors');
@@ -62,10 +62,11 @@ async function resolveGlob(pattern, rootDir) {
   } catch (e) {
     // Fallback: use ls
     try {
-      const result = execSync(`ls -1 ${pattern} 2>/dev/null | head -100`, {
+      const result = execFileSync('ls', ['-1', pattern], {
         cwd: rootDir,
         encoding: 'utf8',
         timeout: 10000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       const files = result
         .split('\n')
@@ -96,7 +97,7 @@ function runTestsForFile(rootDir, filePath) {
   const testPattern = basename.replace(/\.(test|spec)$/, '');
 
   try {
-    const output = execSync(`npm test -- --testPathPattern="${testPattern}" --passWithNoTests`, {
+    const output = execFileSync('npm', ['test', '--', `--testPathPattern=${testPattern}`, '--passWithNoTests'], {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],

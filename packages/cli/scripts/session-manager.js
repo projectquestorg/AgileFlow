@@ -533,12 +533,12 @@ function deleteSession(sessionId, removeWorktree = false) {
 
   removeLock(sessionId);
   if (removeWorktree && fs.existsSync(session.path)) {
-    const { execSync } = require('child_process');
+    const { execFileSync } = require('child_process');
     try {
-      execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+      execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
     } catch (e) {
       try {
-        execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['worktree', 'remove', '--force', session.path], { cwd: ROOT, encoding: 'utf8' });
       } catch (e2) {
         return { success: false, error: `Failed to remove worktree: ${e2.message}` };
       }

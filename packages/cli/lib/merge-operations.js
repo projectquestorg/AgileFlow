@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execSync, execFileSync, spawnSync } = require('child_process');
 
 const { getProjectRoot, getAgileflowDir } = require('./paths');
 const { getMainBranch, getCurrentBranch, gitCache } = require('./git-operations');
@@ -266,11 +266,11 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
   // Delete worktree first (before branch, as worktree holds ref)
   if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
     try {
-      execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+      execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
       result.worktreeDeleted = true;
     } catch (e) {
       try {
-        execSync(`git worktree remove --force "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['worktree', 'remove', '--force', session.path], { cwd: ROOT, encoding: 'utf8' });
         result.worktreeDeleted = true;
       } catch (e2) {
         result.worktreeDeleted = false;
@@ -649,28 +649,28 @@ function resolveConflict(resolution) {
             fs.unlinkSync(tmpOurs);
             fs.unlinkSync(tmpTheirs);
           } else {
-            execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+            execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
           }
         } catch (unionError) {
-          execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+          execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
         }
         break;
 
       case 'theirs':
-        execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
         break;
 
       case 'ours':
-        execSync(`git checkout --ours "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['checkout', '--ours', '--', file], { cwd: ROOT, encoding: 'utf8' });
         break;
 
       case 'recursive':
       default:
-        execSync(`git checkout --theirs "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['checkout', '--theirs', '--', file], { cwd: ROOT, encoding: 'utf8' });
         break;
     }
 
-    execSync(`git add "${file}"`, { cwd: ROOT, encoding: 'utf8' });
+    execFileSync('git', ['add', '--', file], { cwd: ROOT, encoding: 'utf8' });
     return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
@@ -888,11 +888,11 @@ function smartMerge(
     // Cleanup worktree and branch
     if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
       try {
-        execSync(`git worktree remove "${session.path}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
         result.worktreeDeleted = true;
       } catch (e) {
         try {
-          execSync(`git worktree remove --force "${session.path}"`, {
+          execFileSync('git', ['worktree', 'remove', '--force', session.path], {
             cwd: ROOT,
             encoding: 'utf8',
           });
@@ -905,7 +905,7 @@ function smartMerge(
 
     if (deleteBranch) {
       try {
-        execSync(`git branch -D "${branchName}"`, { cwd: ROOT, encoding: 'utf8' });
+        execFileSync('git', ['branch', '-D', branchName], { cwd: ROOT, encoding: 'utf8' });
         result.branchDeleted = true;
       } catch (e) {
         result.branchDeleted = false;

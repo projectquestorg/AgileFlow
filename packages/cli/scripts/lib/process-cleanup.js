@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execSync, execFileSync, spawnSync } = require('child_process');
 
 // Configuration constants
 const KILL_GRACE_PERIOD_MS = 5000; // Wait before SIGKILL
@@ -159,11 +159,13 @@ function findClaudeProcesses() {
         // Get cwd via lsof (slower but works on macOS)
         let cwd = null;
         try {
-          const lsofOutput = execSync(`lsof -p ${pid} 2>/dev/null | grep cwd | awk '{print $NF}'`, {
+          const lsofOutput = execFileSync('lsof', ['-p', String(pid)], {
             encoding: 'utf8',
             timeout: 1000,
+            stdio: ['pipe', 'pipe', 'pipe'],
           });
-          cwd = lsofOutput.trim() || null;
+          const cwdLine = lsofOutput.split('\n').find(l => l.includes('cwd'));
+          cwd = cwdLine ? cwdLine.split(/\s+/).pop().trim() : null;
         } catch (e) {
           // lsof failed
         }

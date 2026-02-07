@@ -11,7 +11,7 @@
  */
 
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 /**
  * Known Claude flags that should be propagated to child sessions
@@ -219,7 +219,7 @@ function detectFromPs() {
       // Get command line for this PID
       let cmdline;
       try {
-        cmdline = execSync(`ps -p ${pid} -o args=`, {
+        cmdline = execFileSync('ps', ['-p', String(pid), '-o', 'args='], {
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
           timeout: 1000,
@@ -243,7 +243,7 @@ function detectFromPs() {
 
       // Get parent PID
       try {
-        const ppidStr = execSync(`ps -p ${pid} -o ppid=`, {
+        const ppidStr = execFileSync('ps', ['-p', String(pid), '-o', 'ppid='], {
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
           timeout: 1000,

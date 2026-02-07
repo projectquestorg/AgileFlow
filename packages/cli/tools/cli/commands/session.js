@@ -942,7 +942,7 @@ async function handleStatus(idOrNickname, options, handler) {
  * Get git information for a session path
  */
 function getSessionGitInfo(sessionPath) {
-  const { execSync } = require('child_process');
+  const { execSync, execFileSync } = require('child_process');
   const fs = require('fs-extra');
 
   if (!fs.existsSync(sessionPath)) {
@@ -963,7 +963,7 @@ function getSessionGitInfo(sessionPath) {
     // Get upstream tracking branch
     let upstream = '';
     try {
-      upstream = execSync(`git rev-parse --abbrev-ref ${branch}@{upstream}`, execOpts).trim();
+      upstream = execFileSync('git', ['rev-parse', '--abbrev-ref', `${branch}@{upstream}`], execOpts).trim();
     } catch {
       // No upstream configured
     }
