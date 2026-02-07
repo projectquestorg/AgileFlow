@@ -51,6 +51,52 @@ function extractFrontmatter(filePath) {
 }
 
 /**
+ * Parse AGILEFLOW_META comment block from markdown content.
+ * These are AgileFlow-specific fields stored as HTML comments
+ * to avoid polluting native YAML frontmatter.
+ *
+ * @param {string} content - Markdown content
+ * @returns {object} Parsed meta fields, or empty object if none found
+ */
+function parseAgileflowMeta(content) {
+  const metaMatch = content.match(/<!-- AGILEFLOW_META\n([\s\S]*?)AGILEFLOW_META -->/);
+  if (!metaMatch) return {};
+
+  try {
+    const parsed = safeLoad(metaMatch[1]);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (err) {
+    // Fallback: simple key-value parsing for top-level fields
+    const result = {};
+    const lines = metaMatch[1].split('\n');
+    for (const line of lines) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0 && !line.startsWith(' ') && !line.startsWith('\t')) {
+        const key = line.slice(0, colonIdx).trim();
+        let value = line.slice(colonIdx + 1).trim();
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+}
+
+/**
+ * Parse full agent config: YAML frontmatter + AGILEFLOW_META comment block.
+ * Merges both into a single object (YAML fields take priority).
+ *
+ * @param {string} content - Markdown content
+ * @returns {object} Merged config object
+ */
+function parseFullAgentConfig(content) {
+  const frontmatter = parseFrontmatter(content);
+  const meta = parseAgileflowMeta(content);
+  return { ...meta, ...frontmatter };
+}
+
+/**
  * Extract markdown body (content after frontmatter)
  * @param {string} content - Full markdown content
  * @returns {string} Content after frontmatter, or original if no frontmatter
@@ -79,6 +125,8 @@ function normalizeTools(tools) {
 
 module.exports = {
   parseFrontmatter,
+  parseAgileflowMeta,
+  parseFullAgentConfig,
   extractFrontmatter,
   extractBody,
   normalizeTools,

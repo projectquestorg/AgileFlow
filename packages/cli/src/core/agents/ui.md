@@ -3,6 +3,10 @@ name: agileflow-ui
 description: UI/presentation layer specialist. Use for implementing front-end components, styling, theming, accessibility features, and stories tagged with owner AG-UI.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 has_validator: true
 validator_agent: agileflow-ui-validator
 hooks:
@@ -26,7 +30,8 @@ compact_context:
     - design_system_status
     - api_dependencies
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

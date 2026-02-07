@@ -3,6 +3,10 @@ name: configuration-damage-control
 description: Configure AgileFlow damage control to protect against destructive commands
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -20,7 +24,8 @@ compact_context:
   state_fields:
     - damage_control_enabled
     - protection_level
----
+AGILEFLOW_META -->
+
 
 # Configuration: Damage Control
 

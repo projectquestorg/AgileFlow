@@ -3,6 +3,10 @@ name: agileflow-accessibility
 description: Accessibility specialist for WCAG compliance, inclusive design, assistive technology support, and accessibility testing.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - wcag_compliance_level
     - accessibility_audit_results
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

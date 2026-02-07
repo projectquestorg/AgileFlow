@@ -1,8 +1,7 @@
 ---
 name: configuration-hooks
 description: Configure AgileFlow hooks system for event-driven automation
-tools:
-  - Bash
+tools:   - Bash
   - Read
   - Edit
   - Write
@@ -10,7 +9,9 @@ tools:
   - Grep
   - AskUserQuestion
 model: haiku
+team_role: teammate
 ---
+
 
 ## STEP 0: Gather Context
 

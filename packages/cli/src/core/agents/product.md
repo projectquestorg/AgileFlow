@@ -3,6 +3,10 @@ name: agileflow-product
 description: Product specialist for requirements analysis, user stories, acceptance criteria clarity, and feature validation before epic planning.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - requirements_clarity_level
     - acceptance_criteria_completeness
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

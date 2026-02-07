@@ -3,6 +3,10 @@ name: agileflow-compliance
 description: Compliance specialist for regulatory compliance, GDPR, HIPAA, SOC2, audit trails, legal requirements, and compliance documentation.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - applicable_frameworks
     - audit_trail_implementation
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

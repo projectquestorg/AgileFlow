@@ -91,6 +91,21 @@ const {
 // Merge operations module
 const mergeOps = require('../lib/merge-operations');
 
+// Agent Teams integration (lazy-loaded)
+let _featureFlags, _teamManager;
+function getFeatureFlags() {
+  if (!_featureFlags) {
+    try { _featureFlags = require('../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+  }
+  return _featureFlags;
+}
+function getTeamManager() {
+  if (!_teamManager) {
+    try { _teamManager = require('./team-manager'); } catch (e) { _teamManager = null; }
+  }
+  return _teamManager;
+}
+
 // Constants
 const ROOT = getProjectRoot();
 const SESSIONS_DIR = path.join(getAgileflowDir(ROOT), 'sessions');
@@ -479,6 +494,72 @@ async function createSession(options = {}) {
   };
 }
 
+/**
+ * Create a native Agent Teams session instead of a worktree session.
+ * Falls back to worktree mode if Agent Teams is not enabled.
+ *
+ * @param {object} options - { template, nickname }
+ * @returns {object} Result with session info
+ */
+function createTeamSession(options = {}) {
+  const ff = getFeatureFlags();
+  const templateName = options.template || 'fullstack';
+
+  // Check if Agent Teams is enabled
+  if (!ff || !ff.isAgentTeamsEnabled({ rootDir: ROOT })) {
+    console.error(
+      `${c.yellow}Agent Teams not enabled. Falling back to worktree mode.${c.reset}`
+    );
+    return createSession({
+      nickname: options.nickname || `team-${templateName}`,
+      thread_type: 'parallel',
+    });
+  }
+
+  // Use team-manager to start the team
+  const tm = getTeamManager();
+  if (!tm) {
+    return { success: false, error: 'team-manager module not available' };
+  }
+
+  const teamResult = tm.startTeam(ROOT, templateName);
+  if (!teamResult.ok) {
+    return { success: false, error: teamResult.error || 'Failed to start team' };
+  }
+
+  // Register as a session in the registry
+  const registry = loadRegistry();
+  const sessionId = String(registry.next_id);
+  registry.next_id++;
+
+  registry.sessions[sessionId] = {
+    path: ROOT,
+    branch: getCurrentBranch(),
+    story: null,
+    nickname: options.nickname || `team-${templateName}`,
+    created: new Date().toISOString(),
+    last_active: new Date().toISOString(),
+    is_main: true,
+    type: 'team',
+    thread_type: 'team',
+    team_name: templateName,
+    team_lead: teamResult.lead || null,
+    teammates: teamResult.teammates || [],
+  };
+  saveRegistry(registry);
+
+  return {
+    success: true,
+    sessionId,
+    type: 'team',
+    template: templateName,
+    mode: teamResult.mode,
+    teammates: teamResult.teammates || [],
+    path: ROOT,
+    branch: getCurrentBranch(),
+  };
+}
+
 function buildSessionsList(registrySessions, activeChecks, cwd) {
   const sessions = Object.entries(registrySessions).map(([id, session]) => ({
     id,
@@ -776,7 +857,7 @@ function main() {
 
     case 'create': {
       const options = {};
-      const allowedKeys = ['nickname', 'branch', 'timeout'];
+      const allowedKeys = ['nickname', 'branch', 'timeout', 'mode', 'template'];
       for (let i = 1; i < args.length; i++) {
         const arg = args[i];
         if (arg.startsWith('--')) {
@@ -790,6 +871,17 @@ function main() {
           else if (args[i + 1] && !args[i + 1].startsWith('--')) options[key] = args[++i];
         }
       }
+
+      // Team mode: create a native Agent Teams session
+      if (options.mode === 'team') {
+        const result = createTeamSession({
+          template: options.template || 'fullstack',
+          nickname: options.nickname,
+        });
+        console.log(JSON.stringify(result));
+        break;
+      }
+
       if (options.timeout) {
         options.timeout = parseInt(options.timeout, 10);
         if (isNaN(options.timeout) || options.timeout < 1000) {
@@ -1124,6 +1216,7 @@ ${c.cyan}Commands:${c.reset}
   register [nickname]     Register current directory as a session
   unregister <id>         Unregister a session (remove lock)
   create [--nickname X] [--timeout MS]  Create session with worktree
+  create --mode=team [--template X]     Create native Agent Teams session
   list [--json|--kanban]  List all sessions
   count                   Count other active sessions
   delete <id> [--remove-worktree]  Delete session
@@ -1167,6 +1260,7 @@ module.exports = {
   unregisterSession,
   getSession,
   createSession,
+  createTeamSession,
   getSessions,
   getSessionsAsync,
   getActiveSessionCount,

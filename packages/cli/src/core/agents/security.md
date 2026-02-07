@@ -3,6 +3,10 @@ name: agileflow-security
 description: Security specialist for vulnerability analysis, authentication patterns, authorization, compliance, and security reviews before release.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -24,7 +28,8 @@ compact_context:
     - security_findings
     - vulnerabilities_count
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

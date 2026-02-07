@@ -3,6 +3,10 @@ name: agileflow-monitoring
 description: Monitoring specialist for observability, logging strategies, alerting rules, metrics dashboards, and production visibility.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - observability_coverage
     - alert_noise_level
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

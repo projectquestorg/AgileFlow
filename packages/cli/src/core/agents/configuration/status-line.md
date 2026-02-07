@@ -1,15 +1,16 @@
 ---
 name: configuration-status-line
 description: Configure AgileFlow status line for Claude Code
-tools:
-  - Bash
+tools:   - Bash
   - Read
   - Edit
   - Write
   - Glob
   - Grep
 model: haiku
+team_role: teammate
 ---
+
 
 ## STEP 0: Gather Context
 

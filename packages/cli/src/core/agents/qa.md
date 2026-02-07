@@ -3,6 +3,10 @@ name: agileflow-qa
 description: QA specialist for test strategy, test planning, quality metrics, regression testing, and release readiness validation.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Bash"
@@ -19,7 +23,8 @@ compact_context:
     - test_coverage_percentage
     - regression_test_completeness
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

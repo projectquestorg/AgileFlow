@@ -3,6 +3,10 @@ name: agileflow-documentation
 description: Documentation specialist for technical docs, API documentation, user guides, tutorials, and documentation maintenance.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -24,7 +28,8 @@ compact_context:
     - documentation_coverage
     - broken_links_count
     - outdated_sections
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

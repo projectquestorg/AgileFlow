@@ -55,6 +55,7 @@ Smart detection eliminates the need for users to specify parameters like `MODE=l
 | **Visual Mode** | Epic/story mentions UI/component/styling OR owner=AG-UI | User says "no screenshots" or `VISUAL=false` |
 | **Coverage Mode** | `coverage/` dir exists with baseline >50% | User says "skip coverage" or `COVERAGE=0` |
 | **Conditions** | Auto-detect from package.json scripts (lint, tsc, build) | N/A (always apply detected) |
+| **Team Mode** | Agent Teams enabled + task spans multiple domains (API+UI) | User says "no teams" or `TEAM=false` |
 
 ### Detection Flow
 
@@ -82,6 +83,13 @@ Smart detection eliminates the need for users to specify parameters like `MODE=l
 - `coverage/coverage-summary.json` exists
 - Current line coverage is >50%
 - Auto-set threshold to: current_coverage + 5%
+
+**Team Mode signals:**
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` env var is set
+- Epic has stories with different owners (AG-API + AG-UI)
+- Task description mentions multiple domains (backend + frontend)
+- Template auto-selection: API+UI stories → `fullstack`, security review → `code-review`
+- When detected: Start native team via `/agileflow:team:start <template>`
 
 **Conditions signals (auto-add all detected):**
 - `package.json` has "lint" → add "no linting errors"

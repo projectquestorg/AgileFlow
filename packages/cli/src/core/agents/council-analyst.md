@@ -3,7 +3,10 @@ name: agileflow-council-analyst
 description: Neutral Analyst - objective analysis, trade-off evaluation, and evidence-based synthesis for strategic decisions
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
-role_type: council
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: high
   preserve_rules:
@@ -16,7 +19,8 @@ compact_context:
     - evidence_gathered
     - decision_criteria_defined
     - synthesis_complete
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

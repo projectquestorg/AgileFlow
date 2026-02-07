@@ -3,6 +3,10 @@ name: agileflow-devops
 description: DevOps and automation specialist. Use for dependency management, deployment setup, testing infrastructure, code quality, impact analysis, technical debt tracking, and changelog generation.
 tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -24,7 +28,8 @@ compact_context:
     - dependency_health
     - critical_vulnerabilities
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

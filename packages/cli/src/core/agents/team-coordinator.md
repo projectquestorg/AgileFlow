@@ -3,6 +3,10 @@ name: agileflow-team-coordinator
 description: Orchestrates builder+validator pairs using Task System. Creates tasks with dependencies to ensure validators run after builders complete.
 tools: Task, TaskOutput, Read, Glob, Grep
 model: sonnet
+team_role: lead
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: critical
   preserve_rules:
@@ -10,7 +14,8 @@ compact_context:
     - "Create validator task with blockedBy builder task"
     - "Use structured pairing: (api, api-validator), (ui, ui-validator), (database, schema-validator)"
     - "Report final validation status"
----
+AGILEFLOW_META -->
+
 
 # Team Coordinator Agent
 

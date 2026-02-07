@@ -3,6 +3,10 @@ name: agileflow-design
 description: Design specialist for UI/UX design systems, visual design, design patterns, design documentation, and design-driven development.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -23,7 +27,8 @@ compact_context:
     - "wcag_compliance: AA (minimum) | AAA (preferred)"
     - "token_count: Colors, typography, spacing, shadows defined"
     - "component_specs: Count of components with full specs"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

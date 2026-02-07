@@ -1,0 +1,41 @@
+{
+  "name": "fullstack",
+  "description": "Full-stack development team with API, UI, and testing specialists",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": true
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-api",
+      "role": "builder",
+      "domain": "backend",
+      "description": "Implements API endpoints, business logic, and data models"
+    },
+    {
+      "agent": "agileflow-ui",
+      "role": "builder",
+      "domain": "frontend",
+      "description": "Implements UI components, styling, and client-side logic"
+    },
+    {
+      "agent": "agileflow-testing",
+      "role": "validator",
+      "domain": "quality",
+      "description": "Writes and runs tests, validates implementations"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": true,
+      "lint": true,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["development", "feature", "fullstack"]
+}

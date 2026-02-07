@@ -3,6 +3,10 @@ name: agileflow-orchestrator
 description: Multi-expert orchestrator that coordinates parallel domain experts. Has ONLY Task/TaskOutput tools - MUST delegate all work.
 tools: Task, TaskOutput
 model: sonnet
+team_role: lead
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: "critical"
   preserve_rules:
@@ -15,7 +19,8 @@ compact_context:
     - "expert_count: Number of experts spawned"
     - "dependency_graph: Expert dependencies (parallel vs sequential)"
     - "synthesis_conflicts: Any conflicting recommendations between experts"
----
+AGILEFLOW_META -->
+
 
 <!-- COMPACT_SUMMARY_START -->
 

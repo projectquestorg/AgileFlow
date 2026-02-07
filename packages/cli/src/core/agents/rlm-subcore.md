@@ -3,6 +3,10 @@ name: agileflow-rlm-subcore
 description: RLM sub-agent for document search operations. Runs on Haiku for cost-effective REPL loops over virtualized documents. Search-only, no reasoning.
 tools: Bash, Read, Grep
 model: haiku
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: "high"
   preserve_rules:
@@ -16,7 +20,8 @@ compact_context:
     - "document_chars: Character count"
     - "complexity: low | medium | high"
     - "last_operation: info | search | slice | section | toc"
----
+AGILEFLOW_META -->
+
 
 ## RLM Sub-Core Agent
 

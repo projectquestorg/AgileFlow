@@ -3,6 +3,10 @@ name: agileflow-ci
 description: CI/CD and quality specialist. Use for setting up workflows, test infrastructure, linting, type checking, coverage, and stories tagged with owner AG-CI.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -24,7 +28,8 @@ compact_context:
     - ci_platform
     - test_frameworks
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

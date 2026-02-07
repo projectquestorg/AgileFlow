@@ -413,9 +413,12 @@ function createValidatorConfig(builderConfig) {
 }
 
 /**
- * Parse frontmatter from agent markdown
+ * Parse frontmatter from agent markdown.
+ * Reads both YAML frontmatter and AGILEFLOW_META comment block.
+ * Native fields come from YAML, AgileFlow fields from comment block.
+ *
  * @param {string} content - Agent markdown content
- * @returns {Object|null} Parsed frontmatter or null
+ * @returns {Object|null} Parsed frontmatter (merged) or null
  */
 function parseAgentFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
@@ -448,6 +451,27 @@ function parseAgentFrontmatter(content) {
   const toolsMatch = match[1].match(/tools:\s*([^\n]+)/);
   if (toolsMatch) {
     frontmatter.tools = toolsMatch[1].split(',').map(t => t.trim());
+  }
+
+  // Parse AGILEFLOW_META comment block (for migrated agents)
+  const metaMatch = content.match(/<!-- AGILEFLOW_META\n([\s\S]*?)AGILEFLOW_META -->/);
+  if (metaMatch) {
+    const metaLines = metaMatch[1].split('\n');
+    for (const line of metaLines) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0 && !line.startsWith(' ') && !line.startsWith('\t')) {
+        const key = line.slice(0, colonIdx).trim();
+        let value = line.slice(colonIdx + 1).trim();
+
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+
+        // Only set if not already in frontmatter (YAML takes priority)
+        if (!(key in frontmatter)) {
+          frontmatter[key] = value;
+        }
+      }
+    }
   }
 
   return frontmatter;

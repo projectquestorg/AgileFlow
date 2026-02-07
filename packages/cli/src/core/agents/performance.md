@@ -3,13 +3,18 @@ name: agileflow-performance
 description: Performance specialist for optimization, profiling, benchmarking, scalability, and performance-critical features.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Bash"
       hooks:
         - type: command
           command: "node .agileflow/hooks/validators/test-result-validator.js"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

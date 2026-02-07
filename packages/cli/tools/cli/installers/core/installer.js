@@ -57,7 +57,7 @@ class Installer {
    * @param {string} agileflowDir - AgileFlow installation directory
    */
   async cleanup(agileflowDir) {
-    const dirsToRemove = ['agents', 'commands', 'skills', 'scripts', 'templates'];
+    const dirsToRemove = ['agents', 'commands', 'skills', 'scripts', 'templates', 'teams'];
 
     for (const dir of dirsToRemove) {
       const dirPath = path.join(agileflowDir, dir);

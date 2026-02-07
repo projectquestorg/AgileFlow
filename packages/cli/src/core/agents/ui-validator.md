@@ -3,8 +3,10 @@ name: agileflow-ui-validator
 description: Validator for UI implementations. Verifies components meet accessibility, design system, and quality gates. Read-only access - cannot modify files.
 tools: Read, Glob, Grep
 model: haiku
-is_validator: true
-validates_builder: agileflow-ui
+team_role: validator
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: high
   preserve_rules:
@@ -13,7 +15,8 @@ compact_context:
     - "Report issues but do NOT fix them"
     - "Focus: Accessibility (WCAG 2.1 AA), design tokens, tests, responsive design"
     - "Return structured validation report for orchestrator"
----
+AGILEFLOW_META -->
+
 
 # UI Validator Agent
 

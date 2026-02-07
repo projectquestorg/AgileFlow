@@ -38,6 +38,27 @@ const { getProjectRoot, getStatusPath, getSessionStatePath } = require('../lib/p
 const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
 const { isValidEpicId, parseIntBounded } = require('../lib/validate');
 
+// Agent Teams integration (lazy-loaded)
+let _featureFlags, _taskSync, _messagingBridge;
+function getFeatureFlags() {
+  if (!_featureFlags) {
+    try { _featureFlags = require('../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+  }
+  return _featureFlags;
+}
+function getTaskSync() {
+  if (!_taskSync) {
+    try { _taskSync = require('./lib/task-sync'); } catch (e) { _taskSync = null; }
+  }
+  return _taskSync;
+}
+function getMessagingBridge() {
+  if (!_messagingBridge) {
+    try { _messagingBridge = require('./messaging-bridge'); } catch (e) { _messagingBridge = null; }
+  }
+  return _messagingBridge;
+}
+
 // Read session state
 function getSessionState(rootDir) {
   const statePath = getSessionStatePath(rootDir);
@@ -472,6 +493,15 @@ function getNextStory(status, epicId, currentStoryId) {
   return null;
 }
 
+// Check if a native team session is active
+function isTeamSessionActive(rootDir) {
+  const ff = getFeatureFlags();
+  if (!ff || !ff.isAgentTeamsEnabled({ rootDir })) return false;
+
+  const state = getSessionState(rootDir);
+  return !!(state.active_team && state.active_team.status === 'running');
+}
+
 // Mark story as completed
 function markStoryComplete(rootDir, storyId) {
   const status = getStatus(rootDir);
@@ -479,6 +509,18 @@ function markStoryComplete(rootDir, storyId) {
     status.stories[storyId].status = 'completed';
     status.stories[storyId].completed_at = new Date().toISOString();
     saveStatus(rootDir, status);
+
+    // Sync to native task list when team session is active
+    if (isTeamSessionActive(rootDir)) {
+      const taskSync = getTaskSync();
+      if (taskSync) {
+        taskSync.syncToStatus(rootDir, storyId, {
+          status: 'completed',
+          completed_at: status.stories[storyId].completed_at,
+        });
+      }
+    }
+
     return true;
   }
   return false;
@@ -491,6 +533,18 @@ function markStoryInProgress(rootDir, storyId) {
     status.stories[storyId].status = 'in_progress';
     status.stories[storyId].started_at = new Date().toISOString();
     saveStatus(rootDir, status);
+
+    // Sync to native task list when team session is active
+    if (isTeamSessionActive(rootDir)) {
+      const taskSync = getTaskSync();
+      if (taskSync) {
+        taskSync.syncToStatus(rootDir, storyId, {
+          status: 'in_progress',
+          started_at: status.stories[storyId].started_at,
+        });
+      }
+    }
+
     return true;
   }
   return false;
@@ -732,6 +786,21 @@ function handleLoop(rootDir) {
     console.log(`✅ Story complete: ${currentStoryId}`);
     console.log(`${c.green}✓ Marked ${currentStoryId} as completed${c.reset}`);
 
+    // Notify team via messaging bridge if team session is active
+    if (isTeamSessionActive(rootDir)) {
+      const bridge = getMessagingBridge();
+      if (bridge) {
+        bridge.sendMessage(rootDir, {
+          from: 'ralph-loop',
+          to: 'team-lead',
+          type: 'story_completed',
+          story_id: currentStoryId,
+          iteration,
+        });
+        console.log(`${c.dim}  Notified team of completion${c.reset}`);
+      }
+    }
+
     // Get next story
     const nextStory = getNextStory(status, epicId, currentStoryId);
 
@@ -757,6 +826,17 @@ function handleLoop(rootDir) {
       console.log(
         `${c.dim}Epic Progress: ${progress.completed}/${progress.total} stories complete${c.reset}`
       );
+
+      // Send next-story details to idle teammates via messaging bridge
+      if (isTeamSessionActive(rootDir)) {
+        const bridge = getMessagingBridge();
+        if (bridge) {
+          bridge.sendTaskAssignment(rootDir, 'ralph-loop', 'team-lead', nextStory.id,
+            `${nextStory.id}: ${nextStory.title || 'Untitled'}`);
+          console.log(`${c.dim}  Sent next-story assignment to team${c.reset}`);
+        }
+      }
+
       console.log('');
       console.log(`${c.brand}▶ Continue implementing ${nextStory.id}${c.reset}`);
       console.log(`${c.dim}  Run tests when ready. Loop will validate and continue.${c.reset}`);
@@ -767,6 +847,26 @@ function handleLoop(rootDir) {
       state.ralph_loop.stopped_reason = 'epic_complete';
       state.ralph_loop.completed_at = new Date().toISOString();
       saveSessionState(rootDir, state);
+
+      // Reconcile native task states back to status.json on epic completion
+      if (isTeamSessionActive(rootDir)) {
+        const taskSync = getTaskSync();
+        const bridge = getMessagingBridge();
+        if (taskSync) {
+          const syncResult = taskSync.syncFromStatus(rootDir, { epic: epicId });
+          if (syncResult.ok && syncResult.tasks.length > 0) {
+            taskSync.reconcile(rootDir, syncResult.tasks);
+          }
+        }
+        if (bridge) {
+          bridge.sendMessage(rootDir, {
+            from: 'ralph-loop',
+            to: 'team-lead',
+            type: 'coordination',
+            message: `Epic ${epicId} complete. All stories finished in ${iteration} iterations.`,
+          });
+        }
+      }
 
       console.log('');
       console.log(

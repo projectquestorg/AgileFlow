@@ -347,9 +347,7 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     }
 
     if (removedCount > 0) {
-      console.log(
-        chalk.dim(`    - Removed ${removedCount} duplicate(s) from ~/.claude/commands/`)
-      );
+      console.log(chalk.dim(`    - Removed ${removedCount} duplicate(s) from ~/.claude/commands/`));
     }
   }
 }

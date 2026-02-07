@@ -3,6 +3,10 @@ name: configuration-visual-e2e
 description: Configure Visual E2E testing infrastructure with Playwright and screenshot verification
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -25,7 +29,8 @@ compact_context:
     - config_created
     - example_test_created
     - screenshots_dir_created
----
+AGILEFLOW_META -->
+
 
 # Configuration: Visual E2E Testing
 

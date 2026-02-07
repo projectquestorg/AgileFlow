@@ -3,6 +3,10 @@ name: agileflow-multi-expert
 description: Multi-expert orchestrator that deploys 3-5 domain experts on the same problem and synthesizes results for high-confidence answers.
 tools: Read, Write, Edit, Bash, Glob, Grep, Task, TaskOutput
 model: sonnet
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -22,7 +26,8 @@ compact_context:
     - "confidence_level: High (3+ agree) | Medium (2 agree) | Low (1 only)"
     - "disagreements: List of conflicting expert opinions"
     - "synthesis_ready: Only true after ALL experts respond"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

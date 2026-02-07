@@ -3,6 +3,10 @@ name: agileflow-mobile
 description: Mobile specialist for React Native, Flutter, cross-platform mobile development, and mobile-specific features.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - platform_selection
     - real_device_testing_status
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

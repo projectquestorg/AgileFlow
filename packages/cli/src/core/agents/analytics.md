@@ -3,6 +3,10 @@ name: agileflow-analytics
 description: Analytics specialist for event tracking, data analysis, metrics dashboards, user behavior analysis, and data-driven insights.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - event_tracking_coverage
     - privacy_compliance_status
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

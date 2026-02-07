@@ -3,7 +3,10 @@ name: agileflow-council-optimist
 description: Optimist Strategist - identifies opportunities, best-case scenarios, and success pathways for strategic decisions
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
-role_type: council
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: high
   preserve_rules:
@@ -16,7 +19,8 @@ compact_context:
     - success_pathways
     - enablers_found
     - evidence_cited
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

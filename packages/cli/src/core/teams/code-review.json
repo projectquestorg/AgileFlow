@@ -1,0 +1,41 @@
+{
+  "name": "code-review",
+  "description": "Code review team with security, performance, and accessibility reviewers",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-code-reviewer",
+      "role": "reviewer",
+      "domain": "quality",
+      "description": "Comprehensive code review for maintainability and best practices"
+    },
+    {
+      "agent": "agileflow-security",
+      "role": "reviewer",
+      "domain": "security",
+      "description": "Security vulnerability analysis and compliance checks"
+    },
+    {
+      "agent": "agileflow-performance",
+      "role": "reviewer",
+      "domain": "performance",
+      "description": "Performance profiling and optimization recommendations"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": false,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["review", "quality", "security"]
+}

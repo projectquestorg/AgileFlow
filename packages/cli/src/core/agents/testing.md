@@ -3,6 +3,10 @@ name: agileflow-testing
 description: Testing specialist for test strategy, test patterns, coverage optimization, and comprehensive test suite design (different from CI infrastructure).
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Bash"
@@ -28,7 +32,8 @@ compact_context:
     - coverage_metrics
     - flaky_tests_found
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

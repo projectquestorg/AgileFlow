@@ -3,6 +3,10 @@ name: agileflow-database
 description: Database specialist for schema design, migrations, query optimization, data modeling, and database-intensive features.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 has_validator: true
 validator_agent: agileflow-schema-validator
 hooks:
@@ -30,7 +34,8 @@ compact_context:
     - schema_files_affected
     - migration_strategy
     - performance_metrics
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

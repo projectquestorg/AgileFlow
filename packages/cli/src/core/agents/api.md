@@ -3,6 +3,10 @@ name: agileflow-api
 description: Services/data layer specialist. Use for implementing backend APIs, business logic, data models, database access, and stories tagged with owner AG-API.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 has_validator: true
 validator_agent: agileflow-api-validator
 hooks:
@@ -26,7 +30,8 @@ compact_context:
     - endpoints_implemented
     - blocked_ui_stories
     - test_status_baseline
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

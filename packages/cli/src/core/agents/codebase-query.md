@@ -3,6 +3,10 @@ name: agileflow-codebase-query
 description: Intelligent codebase search using programmatic queries instead of RAG. Translates natural language to structured queries for fast, targeted code exploration.
 tools: Read, Glob, Grep
 model: haiku
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: "high"
   preserve_rules:
@@ -16,7 +20,8 @@ compact_context:
     - "last_query: Natural language query"
     - "query_type: files | content | deps | tag | export"
     - "result_count: Number of matches"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Check Index Status
 

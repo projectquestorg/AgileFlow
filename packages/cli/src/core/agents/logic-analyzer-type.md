@@ -1,12 +1,13 @@
 ---
 name: logic-analyzer-type
 description: Type safety analyzer for implicit coercion bugs, null propagation, undefined behavior, and type confusion
-tools:
-  - Read
+tools:   - Read
   - Glob
   - Grep
 model: haiku
+team_role: utility
 ---
+
 
 # Logic Analyzer: Type Safety
 

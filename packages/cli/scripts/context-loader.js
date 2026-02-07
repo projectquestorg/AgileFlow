@@ -31,6 +31,14 @@ try {
   // Hook metrics not available
 }
 
+// Feature flags (Agent Teams detection)
+let featureFlags;
+try {
+  featureFlags = require('../lib/feature-flags');
+} catch (e) {
+  // Feature flags not available
+}
+
 // Colors for output
 const c = {
   dim: '\x1b[2m',
@@ -265,6 +273,21 @@ function generateContext() {
     console.log(`${c.yellow}## Active Epics${c.reset}`);
     for (const epic of epics) {
       console.log(`  - ${epic.id}: ${epic.title}`);
+    }
+  }
+
+  // Agent Teams capability
+  if (featureFlags) {
+    try {
+      const teamsInfo = featureFlags.getAgentTeamsDisplayInfo({ rootDir: projectRoot });
+      if (teamsInfo.status === 'enabled') {
+        console.log('');
+        console.log(`${c.yellow}## Agent Teams${c.reset}`);
+        console.log(`Mode: ${c.green}native${c.reset} (Claude Code Agent Teams enabled)`);
+        console.log(`${c.dim}Use /agileflow:team:start <template> to create a team${c.reset}`);
+      }
+    } catch (e) {
+      // Silently ignore
     }
   }
 

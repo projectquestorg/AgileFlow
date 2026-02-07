@@ -3,7 +3,10 @@ name: agileflow-council-advocate
 description: Devil's Advocate - critical examination of risks, blind spots, and stress-testing assumptions for strategic decisions
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
-role_type: council
+team_role: utility
+---
+
+<!-- AGILEFLOW_META
 compact_context:
   priority: high
   preserve_rules:
@@ -16,7 +19,8 @@ compact_context:
     - blind_spots_found
     - stress_tests_performed
     - mitigations_suggested
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

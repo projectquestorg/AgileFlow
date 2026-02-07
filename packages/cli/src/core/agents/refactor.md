@@ -3,6 +3,10 @@ name: agileflow-refactor
 description: Refactoring specialist for technical debt cleanup, legacy code modernization, codebase health, and code quality improvements.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Bash"
@@ -23,7 +27,8 @@ compact_context:
     - "metrics_baseline: Complexity, duplication, LOC before refactor"
     - "test_status: passing (before) → verify after changes"
     - "breaking_changes: List of any behavior changes (should be none)"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

@@ -1,0 +1,51 @@
+{
+  "name": "builder-validator",
+  "description": "Paired builder and validator teams for high-confidence implementations",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": true
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-api",
+      "role": "builder",
+      "domain": "backend",
+      "description": "Implements API endpoints and business logic",
+      "paired_validator": "agileflow-api-validator"
+    },
+    {
+      "agent": "agileflow-api-validator",
+      "role": "validator",
+      "domain": "backend",
+      "description": "Validates API implementations against quality gates",
+      "validates": "agileflow-api"
+    },
+    {
+      "agent": "agileflow-ui",
+      "role": "builder",
+      "domain": "frontend",
+      "description": "Implements UI components and styling",
+      "paired_validator": "agileflow-ui-validator"
+    },
+    {
+      "agent": "agileflow-ui-validator",
+      "role": "validator",
+      "domain": "frontend",
+      "description": "Validates UI implementations against accessibility and design standards",
+      "validates": "agileflow-ui"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": true,
+      "lint": true,
+      "types": true
+    },
+    "task_completed": {
+      "require_validator_approval": true
+    }
+  },
+  "tags": ["development", "validation", "high-confidence"]
+}

@@ -41,7 +41,7 @@ Main Menu → "What would you like to configure?"
 │                   └─ Hooks (4) + Other Features (4)
 ├─ Sessions       → Default startup mode for new sessions
 │                   └─ Normal | Skip permissions | Accept edits | No Claude
-├─ Infrastructure → Visual E2E | Damage Control | CI/CD
+├─ Infrastructure → Visual E2E | Damage Control | CI/CD | Quality Gates
 └─ Maintenance    → Fix format | Upgrade | Repair | Check status
 ```
 
@@ -456,7 +456,8 @@ recommended option. You can still choose a different mode per-session.
   "options": [
     {"label": "Visual E2E Testing", "description": "Playwright + screenshot verification workflow"},
     {"label": "Damage Control", "description": "Block destructive commands, protect sensitive paths"},
-    {"label": "CI/CD Workflow", "description": "GitHub Actions for automated testing"}
+    {"label": "CI/CD Workflow", "description": "GitHub Actions for automated testing"},
+    {"label": "Quality Gates", "description": "Configure TeammateIdle and TaskCompleted gate thresholds"}
   ]
 }]</parameter>
 </invoke>
@@ -473,6 +474,11 @@ Task({ subagent_type: "configuration-damage-control", description: "Configure Da
 
 // CI/CD
 Task({ subagent_type: "configuration-ci", description: "Configure CI/CD", prompt: "..." })
+
+// Quality Gates - configure TeammateIdle and TaskCompleted hooks
+// Writes gate config to agileflow-metadata.json under quality_gates key
+// Options: enable/disable tests, lint, types gates per hook
+// Sets thresholds for coverage gates
 ```
 
 ---

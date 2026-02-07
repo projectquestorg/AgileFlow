@@ -1,8 +1,7 @@
 ---
 name: precompact
 description: Configure PreCompact hook for context preservation during conversation compacts
-tools:
-  - Read
+tools:   - Read
   - Write
   - Edit
   - Bash
@@ -10,7 +9,9 @@ tools:
   - Grep
   - AskUserQuestion
 model: haiku
+team_role: teammate
 ---
+
 
 ## STEP 0: Gather Context
 

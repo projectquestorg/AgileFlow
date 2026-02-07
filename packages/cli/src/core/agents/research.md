@@ -3,6 +3,10 @@ name: agileflow-research
 description: Research specialist. Use for gathering technical information, creating research prompts for ChatGPT, saving research notes, and maintaining the research index.
 tools: Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -22,7 +26,8 @@ compact_context:
     - "research_count: Total research notes (from README.md)"
     - "stale_research: List of notes >90 days old"
     - "pending_requests: Research requests in bus from other agents"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

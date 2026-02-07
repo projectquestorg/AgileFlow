@@ -1,0 +1,47 @@
+{
+  "name": "logic-audit",
+  "description": "Multi-perspective logic analysis team for finding bugs and edge cases",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "agileflow-logic-consensus",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-logic-analyzer-edge",
+      "role": "analyzer",
+      "domain": "edge-cases",
+      "description": "Analyzes boundary conditions, off-by-one errors, and empty inputs"
+    },
+    {
+      "agent": "agileflow-logic-analyzer-flow",
+      "role": "analyzer",
+      "domain": "control-flow",
+      "description": "Analyzes dead code, unreachable branches, and missing returns"
+    },
+    {
+      "agent": "agileflow-logic-analyzer-race",
+      "role": "analyzer",
+      "domain": "concurrency",
+      "description": "Analyzes async patterns, race conditions, and shared state"
+    },
+    {
+      "agent": "agileflow-logic-analyzer-type",
+      "role": "analyzer",
+      "domain": "type-safety",
+      "description": "Analyzes type coercion, null propagation, and type confusion"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": false,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["analysis", "bugs", "logic", "audit"]
+}

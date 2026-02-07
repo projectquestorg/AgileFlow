@@ -21,12 +21,39 @@ const fs = require('fs');
 const path = require('path');
 
 // Shared utilities
-const { getProjectRoot, getStatusPath } = require('../../lib/paths');
+const { getProjectRoot, getStatusPath, getSessionStatePath } = require('../../lib/paths');
 const { safeReadJSON, safeWriteJSON } = require('../../lib/errors');
 const { c } = require('../../lib/colors');
 
 // Default claim expiration: 4 hours
 const DEFAULT_CLAIM_TTL_HOURS = 4;
+
+// Agent Teams integration (lazy-loaded)
+let _featureFlags, _taskSync;
+function getFeatureFlags() {
+  if (!_featureFlags) {
+    try { _featureFlags = require('../../lib/feature-flags'); } catch (e) { _featureFlags = null; }
+  }
+  return _featureFlags;
+}
+function getTaskSync() {
+  if (!_taskSync) {
+    try { _taskSync = require('./task-sync'); } catch (e) { _taskSync = null; }
+  }
+  return _taskSync;
+}
+
+/**
+ * Check if a native team session is active.
+ */
+function isTeamSessionActive(rootDir) {
+  const ff = getFeatureFlags();
+  if (!ff || !ff.isAgentTeamsEnabled({ rootDir })) return false;
+  const statePath = getSessionStatePath(rootDir);
+  const result = safeReadJSON(statePath, { defaultValue: {} });
+  const state = result.ok ? result.data : {};
+  return !!(state.active_team && state.active_team.status === 'running');
+}
 
 /**
  * Check if a PID is alive.
@@ -129,10 +156,11 @@ function isClaimValid(claimedBy) {
 
 /**
  * Check if a story is claimed by another session.
+ * Includes cross-protection: worktree claims block team claims and vice versa.
  *
  * @param {object} story - Story object from status.json
  * @param {string} [currentSessionId] - Current session ID (auto-detected if not provided)
- * @returns {{ claimed: boolean, claimedBy?: object, stale: boolean }}
+ * @returns {{ claimed: boolean, claimedBy?: object, stale: boolean, crossType?: string }}
  */
 function isStoryClaimed(story, currentSessionId) {
   if (!story || !story.claimed_by) {
@@ -152,7 +180,13 @@ function isStoryClaimed(story, currentSessionId) {
     return { claimed: false, stale: true, claimedBy: story.claimed_by };
   }
 
-  return { claimed: true, stale: false, claimedBy: story.claimed_by };
+  // Cross-type protection: worktree claims block team and vice versa
+  const claimType = story.claimed_by.claim_type || 'worktree';
+  const rootDir = current ? path.dirname(path.dirname(current.path)) : null;
+  const myType = rootDir && isTeamSessionActive(rootDir) ? 'team' : 'worktree';
+  const crossType = claimType !== myType ? claimType : undefined;
+
+  return { claimed: true, stale: false, claimedBy: story.claimed_by, crossType };
 }
 
 /**
@@ -205,6 +239,7 @@ function claimStory(storyId, options = {}) {
     pid: currentSession.pid,
     path: currentSession.path,
     claimed_at: new Date().toISOString(),
+    claim_type: isTeamSessionActive(root) ? 'team' : 'worktree',
   };
 
   // Save status.json
@@ -212,6 +247,16 @@ function claimStory(storyId, options = {}) {
   const writeResult = safeWriteJSON(statusPath, status);
   if (!writeResult.ok) {
     return { ok: false, error: writeResult.error };
+  }
+
+  // Sync claim to native task list when team session is active
+  if (isTeamSessionActive(root)) {
+    const taskSync = getTaskSync();
+    if (taskSync) {
+      taskSync.syncToStatus(root, storyId, {
+        claimed_by: story.claimed_by,
+      });
+    }
   }
 
   return { ok: true, claimed: true };
@@ -263,6 +308,16 @@ function releaseStory(storyId, options = {}) {
   const writeResult = safeWriteJSON(statusPath, status);
   if (!writeResult.ok) {
     return { ok: false, error: writeResult.error };
+  }
+
+  // Sync release to native task list when team session is active
+  if (isTeamSessionActive(root)) {
+    const taskSync = getTaskSync();
+    if (taskSync) {
+      taskSync.syncToStatus(root, storyId, {
+        claimed_by: null,
+      });
+    }
   }
 
   return { ok: true, released: true };

@@ -1,12 +1,13 @@
 ---
 name: logic-analyzer-edge
 description: Edge case analyzer for boundary conditions, off-by-one errors, empty inputs, and wraparound issues
-tools:
-  - Read
+tools:   - Read
   - Glob
   - Grep
 model: haiku
+team_role: utility
 ---
+
 
 # Logic Analyzer: Edge Cases
 

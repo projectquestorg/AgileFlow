@@ -1,8 +1,7 @@
 ---
 name: configuration-verify
 description: Verify configuration and test that everything works
-tools:
-  - Bash
+tools:   - Bash
   - Read
   - Edit
   - Write
@@ -10,7 +9,9 @@ tools:
   - Grep
   - AskUserQuestion
 model: haiku
+team_role: teammate
 ---
+
 
 ## STEP 0: Gather Context
 

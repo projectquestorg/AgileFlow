@@ -3,6 +3,10 @@ name: agileflow-mentor
 description: End-to-end implementation mentor. Use for guiding feature implementation from idea to PR, researching approaches, creating missing epics/stories, and orchestrating multi-step workflows.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -24,7 +28,8 @@ compact_context:
     - "wip_count: Current stories in-progress per agent"
     - "blockers: List of blocking dependencies"
     - "next_actions: 3-7 prioritized next steps"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

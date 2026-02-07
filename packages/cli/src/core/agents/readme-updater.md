@@ -3,6 +3,10 @@ name: agileflow-readme-updater
 description: README specialist for auditing and updating all documentation files across project folders.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -19,7 +23,8 @@ compact_context:
     - folder_path
     - audit_completeness
     - test_status
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

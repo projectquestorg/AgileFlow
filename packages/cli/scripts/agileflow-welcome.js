@@ -95,6 +95,14 @@ try {
   // Process cleanup not available
 }
 
+// Feature flags module (Agent Teams detection)
+let featureFlags;
+try {
+  featureFlags = require('../lib/feature-flags');
+} catch (e) {
+  // Feature flags not available
+}
+
 /**
  * PERFORMANCE OPTIMIZATION: Load all project files using LRU cache
  * Uses file-cache module for automatic caching with 30s TTL.
@@ -1377,7 +1385,8 @@ function formatTable(
   parallelSessions,
   updateInfo = {},
   expertise = {},
-  damageControl = {}
+  damageControl = {},
+  agentTeamsInfo = {}
 ) {
   const W = 58; // inner width (total table = W + 2 = 60)
   const R = W - 25; // right column width (33 chars) to match total of 60
@@ -1599,6 +1608,13 @@ function formatTable(
     lines.push(row('Damage control', 'not configured', c.slate, c.slate));
   }
 
+  // Agent Teams status
+  if (agentTeamsInfo && agentTeamsInfo.status === 'enabled') {
+    lines.push(row('Agent Teams', `${agentTeamsInfo.value}`, c.lavender, c.mintGreen));
+  } else if (agentTeamsInfo && agentTeamsInfo.status === 'fallback') {
+    lines.push(row('Agent Teams', `${agentTeamsInfo.value}`, c.lavender, c.dim));
+  }
+
   lines.push(divider());
 
   // Current story (colorful like obtain-context)
@@ -1685,6 +1701,16 @@ async function main() {
   const expertise = getExpertiseCountFast(rootDir);
   const damageControl = checkDamageControl(rootDir, cache);
 
+  // Agent Teams feature flag detection
+  let agentTeamsInfo = {};
+  if (featureFlags) {
+    try {
+      agentTeamsInfo = featureFlags.getAgentTeamsDisplayInfo({ rootDir, metadata: cache?.metadata });
+    } catch (e) {
+      // Silently fail - Agent Teams info is non-critical
+    }
+  }
+
   // Check if a previous background update completed successfully
   // This allows us to show "just updated" even for background updates
   let updateInfo = {};
@@ -1763,7 +1789,8 @@ async function main() {
       parallelSessions,
       updateInfo,
       expertise,
-      damageControl
+      damageControl,
+      agentTeamsInfo
     )
   );
 

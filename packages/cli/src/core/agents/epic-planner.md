@@ -3,6 +3,10 @@ name: agileflow-epic-planner
 description: Epic and story planning specialist. Use for breaking down large features into epics and stories, writing acceptance criteria, estimating effort, and mapping dependencies.
 tools: Read, Write, Edit, Glob, Grep
 model: sonnet
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -23,7 +27,8 @@ compact_context:
     - "story_count: 3-8 stories per epic"
     - "architecture_citations: Source references required"
     - "definition_of_ready_met: AC + test_stub + owner + no_blockers"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

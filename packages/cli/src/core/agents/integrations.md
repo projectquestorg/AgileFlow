@@ -3,6 +3,10 @@ name: agileflow-integrations
 description: Integration specialist for third-party APIs, webhooks, payment processors, external services, and API connectivity.
 tools: Read, Write, Edit, Bash, Glob, Grep
 model: haiku
+team_role: teammate
+---
+
+<!-- AGILEFLOW_META
 hooks:
   PostToolUse:
     - matcher: "Write"
@@ -25,7 +29,8 @@ compact_context:
     - "retry_strategy: exponential_backoff | linear | none"
     - "webhook_validation: signature_verified (yes|no)"
     - "health_monitoring: active | missing"
----
+AGILEFLOW_META -->
+
 
 ## STEP 0: Gather Context
 

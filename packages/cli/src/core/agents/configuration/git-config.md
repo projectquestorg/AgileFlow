@@ -1,8 +1,7 @@
 ---
 name: configuration-git-config
 description: Configure git repository initialization and remote setup
-tools:
-  - Bash
+tools:   - Bash
   - Read
   - Edit
   - Write
@@ -10,7 +9,9 @@ tools:
   - Grep
   - AskUserQuestion
 model: haiku
+team_role: teammate
 ---
+
 
 ## STEP 0: Gather Context
 
