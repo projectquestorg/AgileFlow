@@ -52,6 +52,10 @@ const FEATURES = {
     metadataOnly: true,
     description: 'Auto-kill duplicate Claude processes in same directory to prevent freezing',
   },
+  claudeflags: {
+    metadataOnly: true,
+    description: 'Default flags for Claude CLI (e.g., --dangerously-skip-permissions)',
+  },
 };
 
 const PROFILES = {
@@ -295,6 +299,27 @@ function enableFeature(feature, options = {}, version) {
     warn('⚠️  Duplicate Claude processes will be automatically terminated on session start');
     info('   Only affects processes in the SAME working directory (worktrees are safe)');
     info('   Prevents freezing caused by multiple Claude instances competing for resources');
+    return true;
+  }
+
+  // Handle claude flags (e.g., --dangerously-skip-permissions)
+  if (feature === 'claudeflags') {
+    const defaultFlags = options.flags || '--dangerously-skip-permissions';
+    updateMetadata(
+      {
+        features: {
+          claudeFlags: {
+            enabled: true,
+            defaultFlags,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success(`Default Claude flags configured: ${defaultFlags}`);
+    info('These flags will be passed to Claude when launched via "af" or "agileflow"');
     return true;
   }
 
@@ -681,6 +706,26 @@ function disableFeature(feature, version) {
     );
     success('Process cleanup disabled');
     info('Duplicate Claude processes will only trigger a warning (no auto-kill)');
+    return true;
+  }
+
+  // Disable claude flags
+  if (feature === 'claudeflags') {
+    updateMetadata(
+      {
+        features: {
+          claudeFlags: {
+            enabled: false,
+            defaultFlags: '',
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Default Claude flags disabled');
+    info('Claude will launch with default permissions (prompts for each action)');
     return true;
   }
 
@@ -1093,6 +1138,15 @@ function enableShellAliases() {
     { name: 'zsh', path: path.join(homeDir, '.zshrc') },
   ];
 
+  // Lines that belong to AgileFlow alias blocks (old and new markers)
+  const ALIAS_BLOCK_LINES = [
+    '# AgileFlow tmux wrapper',
+    '# AgileFlow tmux shortcuts (claude stays normal)',
+    '# Use \'af\' or \'agileflow\' for tmux, \'claude\' stays normal',
+    'alias af="bash .agileflow/scripts/af"',
+    'alias agileflow="bash .agileflow/scripts/af"',
+  ];
+
   for (const rc of rcFiles) {
     try {
       // Check if RC file exists
@@ -1103,13 +1157,24 @@ function enableShellAliases() {
 
       const content = fs.readFileSync(rc.path, 'utf8');
 
-      // Check if aliases already exist
-      if (content.includes(SHELL_ALIAS_MARKER)) {
-        result.skipped.push(`${rc.name} (already configured)`);
+      // Check for ANY existing af alias (covers old and new markers)
+      if (content.includes('alias af="bash .agileflow/scripts/af"')) {
+        // Clean up: remove ALL existing alias block lines, then re-add one clean copy
+        const lines = content.split('\n');
+        const cleaned = lines.filter(line => {
+          const trimmed = line.trim();
+          return !ALIAS_BLOCK_LINES.includes(trimmed);
+        });
+        // Remove trailing empty lines from cleanup
+        while (cleaned.length > 0 && cleaned[cleaned.length - 1].trim() === '') {
+          cleaned.pop();
+        }
+        fs.writeFileSync(rc.path, cleaned.join('\n') + SHELL_ALIAS_BLOCK);
+        result.configured.push(rc.name);
         continue;
       }
 
-      // Append aliases to RC file
+      // First time: just append
       fs.appendFileSync(rc.path, SHELL_ALIAS_BLOCK);
       result.configured.push(rc.name);
     } catch (err) {
@@ -1140,6 +1205,15 @@ function disableShellAliases() {
     { name: 'zsh', path: path.join(homeDir, '.zshrc') },
   ];
 
+  // Lines that belong to AgileFlow alias blocks (old and new markers)
+  const ALIAS_BLOCK_LINES = [
+    '# AgileFlow tmux wrapper',
+    '# AgileFlow tmux shortcuts (claude stays normal)',
+    '# Use \'af\' or \'agileflow\' for tmux, \'claude\' stays normal',
+    'alias af="bash .agileflow/scripts/af"',
+    'alias agileflow="bash .agileflow/scripts/af"',
+  ];
+
   for (const rc of rcFiles) {
     try {
       if (!fs.existsSync(rc.path)) {
@@ -1148,37 +1222,25 @@ function disableShellAliases() {
 
       const content = fs.readFileSync(rc.path, 'utf8');
 
-      if (!content.includes(SHELL_ALIAS_MARKER)) {
+      // Check for any AgileFlow alias (covers old and new markers)
+      if (!content.includes('alias af="bash .agileflow/scripts/af"') &&
+          !content.includes(SHELL_ALIAS_MARKER)) {
         continue;
       }
 
-      // Remove the alias block
+      // Remove all alias block lines
       const lines = content.split('\n');
-      const filteredLines = [];
-      let inBlock = false;
+      const filteredLines = lines.filter(line => {
+        const trimmed = line.trim();
+        return !ALIAS_BLOCK_LINES.includes(trimmed);
+      });
 
-      for (const line of lines) {
-        if (line.includes(SHELL_ALIAS_MARKER)) {
-          inBlock = true;
-          continue;
-        }
-        if (
-          inBlock &&
-          (line.startsWith('# Use ') ||
-            line.startsWith('alias af=') ||
-            line.startsWith('alias agileflow='))
-        ) {
-          continue;
-        }
-        if (inBlock && line.trim() === '') {
-          inBlock = false;
-          continue;
-        }
-        inBlock = false;
-        filteredLines.push(line);
+      // Remove trailing empty lines from cleanup
+      while (filteredLines.length > 0 && filteredLines[filteredLines.length - 1].trim() === '') {
+        filteredLines.pop();
       }
 
-      fs.writeFileSync(rc.path, filteredLines.join('\n'), 'utf8');
+      fs.writeFileSync(rc.path, filteredLines.join('\n') + '\n', 'utf8');
       result.removed.push(rc.name);
     } catch (err) {
       result.skipped.push(`${rc.name} (error: ${err.message})`);

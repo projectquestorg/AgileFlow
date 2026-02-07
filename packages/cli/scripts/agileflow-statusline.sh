@@ -78,14 +78,14 @@ fmt_time_hm() {
 # ============================================================================
 # Default: all components enabled
 SHOW_AGILEFLOW=true
-SHOW_MODEL=true
+SHOW_MODEL=false
 SHOW_STORY=true
 SHOW_EPIC=true
 SHOW_WIP=true
 SHOW_CONTEXT=true
 SHOW_CONTEXT_BAR=true
-SHOW_SESSION_TIME=true
-SHOW_COST=true
+SHOW_SESSION_TIME=false
+SHOW_COST=false
 SHOW_GIT=true
 
 # Check agileflow-metadata.json for component settings
@@ -668,21 +668,6 @@ if [ "$SHOW_SESSION" = "true" ] && [ -n "$SESSION_INFO" ]; then
   fi
 fi
 
-# Session health indicator (shows warning icon + count if issues exist)
-if [ "$SHOW_SESSION" = "true" ]; then
-  SCRIPTS_DIR="$(dirname "$0")"
-  HEALTH_OUTPUT=$(node "$SCRIPTS_DIR/session-manager.js" health 2>/dev/null)
-  if [ -n "$HEALTH_OUTPUT" ]; then
-    HEALTH_ISSUES=$(echo "$HEALTH_OUTPUT" | jq -r '
-      (.uncommitted | length) + (.stale | length) + (.orphanedRegistry | length)
-    ' 2>/dev/null)
-    if [ -n "$HEALTH_ISSUES" ] && [ "$HEALTH_ISSUES" != "0" ] && [ "$HEALTH_ISSUES" != "null" ]; then
-      [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT} "
-      OUTPUT="${OUTPUT}${YELLOW}⚠${HEALTH_ISSUES}${RESET}"
-    fi
-  fi
-fi
-
 # Model with subtle styling (if enabled and available)
 if [ "$SHOW_MODEL" = "true" ] && [ -n "$MODEL_DISPLAY" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
@@ -694,9 +679,6 @@ if [ "$SHOW_STORY" = "true" ]; then
   if [ -n "$STORY_DISPLAY" ]; then
     [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
     OUTPUT="${OUTPUT}${STORY_DISPLAY}"
-  elif [ -n "$NEXT_STORY" ]; then
-    [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
-    OUTPUT="${OUTPUT}${NEXT_STORY}"
   fi
 fi
 
@@ -745,6 +727,20 @@ fi
 if [ "$SHOW_GIT" = "true" ] && [ -n "$GIT_DISPLAY" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
   OUTPUT="${OUTPUT}${GIT_DISPLAY}"
+fi
+
+# Session health indicator (next to git branch)
+if [ "$SHOW_SESSION" = "true" ]; then
+  SCRIPTS_DIR="$(dirname "$0")"
+  HEALTH_OUTPUT=$(node "$SCRIPTS_DIR/session-manager.js" health 2>/dev/null)
+  if [ -n "$HEALTH_OUTPUT" ]; then
+    HEALTH_ISSUES=$(echo "$HEALTH_OUTPUT" | jq -r '
+      (.uncommitted | length) + (.stale | length) + (.orphanedRegistry | length)
+    ' 2>/dev/null)
+    if [ -n "$HEALTH_ISSUES" ] && [ "$HEALTH_ISSUES" != "0" ] && [ "$HEALTH_ISSUES" != "null" ]; then
+      OUTPUT="${OUTPUT} ${YELLOW}⚠${HEALTH_ISSUES}${RESET}"
+    fi
+  fi
 fi
 
 echo -e "$OUTPUT"

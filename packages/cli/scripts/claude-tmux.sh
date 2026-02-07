@@ -2,20 +2,21 @@
 # claude-tmux.sh - Wrapper script that auto-starts Claude Code in a tmux session
 #
 # Usage:
-#   ./claude-tmux.sh              # Start in tmux with default session
+#   ./claude-tmux.sh              # Always creates fresh tmux + resumes Claude conversation
+#   ./claude-tmux.sh --attach     # Reattach to existing session (if you know it's alive)
 #   ./claude-tmux.sh --no-tmux    # Start without tmux (regular claude)
 #   ./claude-tmux.sh -n           # Same as --no-tmux
-#   ./claude-tmux.sh --fresh      # Kill and restart with latest scripts
-#   ./claude-tmux.sh -f           # Same as --fresh
-#   ./claude-tmux.sh --rescue     # Kill frozen session and restart fresh
 #   ./claude-tmux.sh --kill       # Kill existing session completely
 #   ./claude-tmux.sh --help       # Show help with keybinds
 #
 # When already in tmux: Just runs claude normally
 # When not in tmux: Creates a tmux session and runs claude inside it
 #
-# FREEZE RECOVERY:
-#   If Claude freezes inside tmux, use these keybinds:
+# The default behavior always kills any existing session and creates a fresh one.
+# This prevents frozen sessions from blocking you. Your Claude conversation is
+# preserved via --resume regardless of the tmux session state.
+#
+# FREEZE RECOVERY (while inside tmux):
 #   - Alt+k     Send Ctrl+C twice (soft interrupt)
 #   - Alt+K     Force kill the pane immediately
 #   - Alt+R     Respawn pane with fresh shell
@@ -25,10 +26,9 @@ set -e
 
 # Parse arguments
 NO_TMUX=false
-RESCUE=false
 KILL_SESSION=false
 SHOW_HELP=false
-FRESH_START=false
+ATTACH_ONLY=false
 USE_RESUME=false
 RESUME_SESSION_ID=""
 
@@ -38,12 +38,16 @@ for arg in "$@"; do
       NO_TMUX=true
       shift
       ;;
+    --attach|-a)
+      ATTACH_ONLY=true
+      shift
+      ;;
     --fresh|-f)
-      FRESH_START=true
+      # Kept for backwards compat, but this is now the default behavior
       shift
       ;;
     --rescue|-r)
-      RESCUE=true
+      # Kept for backwards compat, same as default now
       shift
       ;;
     --kill)
@@ -67,11 +71,13 @@ USAGE:
   agileflow [options] [claude-args...]
 
 OPTIONS:
-  --fresh, -f      Kill existing session and start fresh (use after updates)
+  --attach, -a     Reattach to existing session (skip fresh start)
   --no-tmux, -n    Run claude without tmux
-  --rescue, -r     Kill frozen session and restart fresh
   --kill           Kill existing session completely
   --help, -h       Show this help
+
+By default, af always creates a fresh tmux session and resumes your
+Claude conversation. This prevents frozen sessions from blocking you.
 
 TMUX KEYBINDS:
   Alt+1-9          Switch to window N
@@ -91,11 +97,6 @@ FREEZE RECOVERY:
   Alt+k            Send Ctrl+C twice (soft interrupt)
   Alt+K            Force kill pane immediately
   Alt+R            Respawn pane with fresh shell
-
-If Claude is completely frozen and keybinds don't work:
-  1. Open a new terminal
-  2. Run: af --rescue   (kills and restarts)
-  3. Or:  af --kill     (just kills, doesn't restart)
 EOF
   exit 0
 fi
@@ -105,7 +106,7 @@ if [ "$NO_TMUX" = true ]; then
   exec claude "$@"
 fi
 
-# Generate session name based on current directory (needed for rescue/kill)
+# Generate session name based on current directory (needed for all modes)
 DIR_NAME=$(basename "$(pwd)")
 SESSION_NAME="claude-${DIR_NAME}"
 
@@ -121,47 +122,33 @@ if [ "$KILL_SESSION" = true ]; then
   exit 0
 fi
 
-# Handle --rescue flag (kill and restart)
-if [ "$RESCUE" = true ]; then
+# Handle --attach flag (reattach to existing session without killing it)
+if [ "$ATTACH_ONLY" = true ]; then
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Killing frozen session: $SESSION_NAME"
-    tmux kill-session -t "$SESSION_NAME"
-    echo "Session killed. Restarting..."
-    sleep 0.5
+    echo "Attaching to existing session: $SESSION_NAME"
+    exec tmux attach-session -t "$SESSION_NAME"
   else
-    echo "No existing session to rescue. Starting fresh..."
+    echo "No existing session. Creating new one..."
+    # Fall through to create new session
   fi
-  # Continue to create new session below
 fi
 
-# Handle --fresh flag (kill old session and start fresh with latest scripts + resume conversation)
-if [ "$FRESH_START" = true ]; then
-  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Killing old session: $SESSION_NAME"
-    tmux kill-session -t "$SESSION_NAME"
-    echo "Starting fresh with latest scripts..."
-    sleep 0.3
-  else
-    echo "No existing session. Starting fresh..."
-  fi
+# Default behavior: always kill existing session and start fresh
+# This prevents frozen sessions from blocking you
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  tmux kill-session -t "$SESSION_NAME" 2>/dev/null || true
+fi
 
-  # Find the most recent session for this directory
-  PROJ_DIR=$(pwd | sed 's|/|-|g' | sed 's|^-||')
-  SESSIONS_DIR="$HOME/.claude/projects/-$PROJ_DIR"
+# Find the most recent conversation to resume
+PROJ_DIR=$(pwd | sed 's|/|-|g' | sed 's|^-||')
+SESSIONS_DIR="$HOME/.claude/projects/-$PROJ_DIR"
 
-  if [ -d "$SESSIONS_DIR" ]; then
-    # Get most recent non-agent session (main conversations only)
-    RECENT_SESSION=$(ls -t "$SESSIONS_DIR"/*.jsonl 2>/dev/null | grep -v "agent-" | head -1)
-    if [ -n "$RECENT_SESSION" ] && [ -s "$RECENT_SESSION" ]; then
-      # Extract session ID from filename (remove path and .jsonl extension)
-      RESUME_SESSION_ID=$(basename "$RECENT_SESSION" .jsonl)
-      echo "Found recent conversation: $RESUME_SESSION_ID"
-      USE_RESUME=true
-    else
-      echo "No previous conversation found. Starting fresh."
-    fi
-  else
-    echo "No session history found. Starting fresh."
+if [ -d "$SESSIONS_DIR" ]; then
+  # Get most recent non-agent session (main conversations only)
+  RECENT_SESSION=$(ls -t "$SESSIONS_DIR"/*.jsonl 2>/dev/null | grep -v "agent-" | head -1)
+  if [ -n "$RECENT_SESSION" ] && [ -s "$RECENT_SESSION" ]; then
+    RESUME_SESSION_ID=$(basename "$RECENT_SESSION" .jsonl)
+    USE_RESUME=true
   fi
 fi
 
@@ -184,6 +171,20 @@ if [ -f "$METADATA_FILE" ]; then
   fi
 fi
 
+# Check for default Claude flags from metadata (e.g., --dangerously-skip-permissions)
+if [ -f "$METADATA_FILE" ]; then
+  META_FLAGS=$(node -e "
+    try {
+      const meta = JSON.parse(require('fs').readFileSync('$METADATA_FILE', 'utf8'));
+      console.log(meta.features?.claudeFlags?.enabled ? (meta.features.claudeFlags.defaultFlags || '') : '');
+    } catch(e) { console.log(''); }
+  " 2>/dev/null || echo "")
+  if [ -n "$META_FLAGS" ]; then
+    CLAUDE_SESSION_FLAGS="${CLAUDE_SESSION_FLAGS:+$CLAUDE_SESSION_FLAGS }$META_FLAGS"
+    export CLAUDE_SESSION_FLAGS
+  fi
+fi
+
 # Check if we're already inside tmux
 if [ -n "$TMUX" ]; then
   # Already in tmux, just run claude
@@ -200,18 +201,13 @@ if ! command -v tmux &> /dev/null; then
   exec claude "$@"
 fi
 
-# SESSION_NAME already generated above (needed for --rescue and --kill)
-
-# Check if session already exists
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-  echo "Attaching to existing session: $SESSION_NAME"
-  exec tmux attach-session -t "$SESSION_NAME"
-fi
-
 # Create new tmux session with Claude
 echo "Starting Claude in tmux session: $SESSION_NAME"
 
-# Create session in detached mode first
+# Set base-index globally BEFORE creating session so first window gets index 1
+tmux set-option -g base-index 1
+
+# Create session in detached mode first (will use base-index 1)
 tmux new-session -d -s "$SESSION_NAME" -n "main"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -229,7 +225,8 @@ tmux set-option -t "$SESSION_NAME" -ga terminal-overrides ",xterm-256color:Tc"
 
 # Status bar position and refresh
 tmux set-option -t "$SESSION_NAME" status-position bottom
-tmux set-option -t "$SESSION_NAME" status-interval 5
+# Reduce refresh rate to prevent CPU overhead and freezes (was 5s, now 30s)
+tmux set-option -t "$SESSION_NAME" status-interval 30
 
 # Enable 2-line status bar
 tmux set-option -t "$SESSION_NAME" status 2
@@ -237,9 +234,11 @@ tmux set-option -t "$SESSION_NAME" status 2
 # Base styling - Tokyo Night inspired dark theme
 tmux set-option -t "$SESSION_NAME" status-style "bg=#1a1b26,fg=#a9b1d6"
 
+# Capture git branch once at startup (avoids spawning process every refresh)
+GIT_BRANCH=$(git branch --show-current 2>/dev/null || echo '-')
+
 # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-# Shows freeze recovery keys: Alt+k (soft kill), Alt+K (hard kill)
-tmux set-option -t "$SESSION_NAME" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git branch --show-current 2>/dev/null || echo '-')  #[align=right]#[fg=#7a7e8a]Alt+k freeze  Alt+x close  Alt+q detach  "
+tmux set-option -t "$SESSION_NAME" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${GIT_BRANCH}  #[align=right]#[fg=#7a7e8a]Alt+k interrupt  Alt+x close  Alt+q detach  "
 
 # Line 1 (bottom): Window tabs with smart truncation and brand color
 # - Active window: full name (max 15 chars), brand orange highlight
@@ -255,8 +254,7 @@ tmux set-option -t "$SESSION_NAME" message-style "bg=#e8683a,fg=#1a1b26,bold"
 
 # ─── Keybindings ──────────────────────────────────────────────────────────────
 
-# Window numbering starts at 1 (not 0)
-tmux set-option -t "$SESSION_NAME" base-index 1
+# base-index 1 is set globally before session creation (so first window is 1)
 
 # Alt+number to switch windows (1-9)
 for i in 1 2 3 4 5 6 7 8 9; do
