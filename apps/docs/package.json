@@ -86,7 +86,7 @@
     "fumadocs-core": "16.0.5",
     "fumadocs-docgen": "2.0.0",
     "fumadocs-mdx": "13.0.2",
-    "glob": "^11.0.0",
+    "glob": "^13.0.1",
     "fumadocs-ui": "16.0.5",
     "input-otp": "^1.4.2",
     "jotai": "^2.15.0",
