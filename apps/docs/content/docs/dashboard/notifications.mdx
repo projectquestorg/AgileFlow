@@ -1,0 +1,33 @@
+---
+title: Notifications
+description: Browser notification system in the dashboard
+---
+
+# Notifications
+
+The dashboard supports browser notifications to keep you informed of important events.
+
+## Notification Types
+
+- **Info** - General information (session created, operation complete)
+- **Success** - Successful operations (commit created, automation passed)
+- **Warning** - Potential issues (rate limited, connection unstable)
+- **Error** - Failures (git error, connection lost)
+
+## Notification Modes
+
+Configure when notifications appear via the settings panel (click the bell icon):
+
+| Mode | Behavior |
+|------|----------|
+| **Background** | Only notify when the dashboard tab is not focused |
+| **Always** | Notify on all events regardless of focus |
+| **Never** | Disable all notifications |
+
+## Browser Permissions
+
+The dashboard requests browser notification permission on first use. You can manage this in your browser's site settings.
+
+## Unread Badge
+
+The bell icon in the header shows an unread count badge when there are unseen notifications.

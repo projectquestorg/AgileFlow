@@ -9,3 +9,4 @@ export { AppSidebar } from "./AppSidebar";
 export { NavSessions, type Session as NavSession } from "./NavSessions";
 export { NavAutomations, type Automation } from "./NavAutomations";
 export { NavInbox, type InboxItem } from "./NavInbox";
+export { NavStatus } from "./NavStatus";

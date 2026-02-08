@@ -38,6 +38,8 @@ const {
   createAutomationResult,
   createInboxList,
   createInboxItem,
+  createStatusUpdate,
+  createSessionList,
   parseInboundMessage,
   serializeMessage,
 } = require('./dashboard-protocol');
@@ -809,6 +811,12 @@ class DashboardServer extends EventEmitter {
     // Send initial git status
     this.sendGitStatus(session);
 
+    // Send project status (stories/epics)
+    this.sendStatusUpdate(session);
+
+    // Send session list with sync info
+    this.sendSessionList(session);
+
     // Send initial automation list and inbox
     this.sendAutomationList(session);
     this.sendInboxList(session);
@@ -942,6 +950,10 @@ class DashboardServer extends EventEmitter {
         this.handleInboxAction(session, message);
         break;
 
+      case InboundMessageType.OPEN_FILE:
+        this.handleOpenFile(session, message);
+        break;
+
       default:
         console.log(`[Session ${session.id}] Unhandled message type: ${message.type}`);
         this.emit('message', session, message);
@@ -991,7 +1003,11 @@ class DashboardServer extends EventEmitter {
         this.emit('refresh:tasks', session);
         break;
       case 'status':
+        this.sendStatusUpdate(session);
         this.emit('refresh:status', session);
+        break;
+      case 'sessions':
+        this.sendSessionList(session);
         break;
       case 'automations':
         this.sendAutomationList(session);
@@ -1001,6 +1017,8 @@ class DashboardServer extends EventEmitter {
         break;
       default:
         this.sendGitStatus(session);
+        this.sendStatusUpdate(session);
+        this.sendSessionList(session);
         this.sendAutomationList(session);
         this.sendInboxList(session);
         this.emit('refresh:all', session);
@@ -1264,6 +1282,162 @@ class DashboardServer extends EventEmitter {
     }
 
     return { additions, deletions };
+  }
+
+  /**
+   * Send project status update (stories/epics summary) to session
+   */
+  sendStatusUpdate(session) {
+    const path = require('path');
+    const fs = require('fs');
+    const statusPath = path.join(this.projectRoot, 'docs', '09-agents', 'status.json');
+    if (!fs.existsSync(statusPath)) return;
+
+    try {
+      const data = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      const stories = data.stories || {};
+      const epics = data.epics || {};
+
+      const storyValues = Object.values(stories);
+      const summary = {
+        total: storyValues.length,
+        done: storyValues.filter(s => s.status === 'done' || s.status === 'completed').length,
+        inProgress: storyValues.filter(s => s.status === 'in-progress').length,
+        ready: storyValues.filter(s => s.status === 'ready').length,
+        blocked: storyValues.filter(s => s.status === 'blocked').length,
+        epics: Object.entries(epics).map(([id, e]) => ({
+          id,
+          title: e.title || id,
+          status: e.status || 'unknown',
+          storyCount: (e.stories || []).length,
+          doneCount: (e.stories || []).filter(sid =>
+            stories[sid] && (stories[sid].status === 'done' || stories[sid].status === 'completed')
+          ).length,
+        })),
+      };
+
+      session.send(createStatusUpdate(summary));
+    } catch (error) {
+      console.error('[Status Update Error]', error.message);
+    }
+  }
+
+  /**
+   * Send session list with sync status to dashboard
+   */
+  sendSessionList(session) {
+    const sessions = [];
+
+    for (const [id, s] of this.sessions) {
+      const entry = {
+        id,
+        name: s.metadata.name || id,
+        type: s.metadata.type || 'local',
+        status: s.state === 'connected' ? 'active' : s.state === 'disconnected' ? 'idle' : s.state,
+        branch: null,
+        messageCount: s.messages.length,
+        lastActivity: s.lastActivity.toISOString(),
+        syncStatus: 'offline',
+        ahead: 0,
+        behind: 0,
+      };
+
+      // Get branch and sync status via git
+      try {
+        const cwd = s.metadata.worktreePath || this.projectRoot;
+        entry.branch = execFileSync('git', ['branch', '--show-current'], {
+          cwd,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }).trim();
+
+        // Get ahead/behind counts relative to upstream
+        try {
+          const counts = execFileSync('git', ['rev-list', '--left-right', '--count', 'HEAD...@{u}'], {
+            cwd,
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+          }).trim();
+          const [ahead, behind] = counts.split(/\s+/).map(Number);
+          entry.ahead = ahead || 0;
+          entry.behind = behind || 0;
+
+          if (ahead > 0 && behind > 0) {
+            entry.syncStatus = 'diverged';
+          } else if (ahead > 0) {
+            entry.syncStatus = 'ahead';
+          } else if (behind > 0) {
+            entry.syncStatus = 'behind';
+          } else {
+            entry.syncStatus = 'synced';
+          }
+        } catch {
+          // No upstream configured
+          entry.syncStatus = 'synced';
+        }
+      } catch {
+        entry.syncStatus = 'offline';
+      }
+
+      sessions.push(entry);
+    }
+
+    session.send(createSessionList(sessions));
+  }
+
+  /**
+   * Handle open file in editor request
+   */
+  handleOpenFile(session, message) {
+    const { path: filePath, line } = message;
+
+    if (!filePath || typeof filePath !== 'string') {
+      session.send(createError('INVALID_REQUEST', 'File path is required'));
+      return;
+    }
+
+    // Validate the path stays within project root
+    const pathResult = validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    if (!pathResult.ok) {
+      session.send(createError('OPEN_FILE_ERROR', 'File path outside project'));
+      return;
+    }
+
+    const fullPath = pathResult.resolvedPath;
+
+    // Detect editor from environment
+    const editor = process.env.VISUAL || process.env.EDITOR || 'code';
+    const editorBase = require('path').basename(editor).toLowerCase();
+
+    try {
+      const lineNum = Number.isFinite(line) && line > 0 ? line : null;
+
+      switch (editorBase) {
+        case 'code':
+        case 'cursor':
+        case 'windsurf': {
+          const gotoArg = lineNum ? `${fullPath}:${lineNum}` : fullPath;
+          spawn(editor, ['--goto', gotoArg], { detached: true, stdio: 'ignore' }).unref();
+          break;
+        }
+        case 'subl':
+        case 'sublime_text': {
+          const sublArg = lineNum ? `${fullPath}:${lineNum}` : fullPath;
+          spawn(editor, [sublArg], { detached: true, stdio: 'ignore' }).unref();
+          break;
+        }
+        default: {
+          // Generic: just open the file
+          spawn(editor, [fullPath], { detached: true, stdio: 'ignore' }).unref();
+          break;
+        }
+      }
+
+      session.send(createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`));
+    } catch (error) {
+      console.error('[Open File Error]', error.message);
+      session.send(createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`));
+    }
   }
 
   /**

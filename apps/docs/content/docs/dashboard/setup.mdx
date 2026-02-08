@@ -1,0 +1,69 @@
+---
+title: Setup
+description: How to set up and connect the AgileFlow Dashboard
+---
+
+# Dashboard Setup
+
+## Prerequisites
+
+- AgileFlow CLI installed (`npm install -g agileflow`)
+- An AgileFlow project (run `npx agileflow setup` in your project)
+- Node.js >= 18
+
+## Starting the Server
+
+Start the dashboard WebSocket server from your project directory:
+
+```bash
+agileflow serve
+```
+
+Or use the slash command within Claude Code:
+
+```
+/agileflow:serve
+```
+
+The server starts on `ws://localhost:8765` by default.
+
+### Server Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--port` | `8765` | WebSocket server port |
+| `--host` | `127.0.0.1` | Server host (localhost only for security) |
+
+## Connecting the Dashboard
+
+1. Open the dashboard application in your browser
+2. Enter the WebSocket URL (default: `ws://localhost:8765`)
+3. Click **Connect**
+
+Once connected, the dashboard will automatically receive:
+- Current git status
+- Active automations
+- Inbox items
+- Project status updates
+
+## Authentication
+
+For security, the dashboard server binds to localhost by default. If you need remote access, configure an API key:
+
+```bash
+agileflow serve --api-key your-secret-key
+```
+
+Then enter the API key in the dashboard connection dialog.
+
+## Troubleshooting
+
+### Connection Failed
+- Verify the server is running: check for `[Dashboard Server] Listening on ws://127.0.0.1:8765`
+- Ensure the port is not in use by another process
+- Check firewall settings if connecting remotely
+
+### No Data Appearing
+- Click the refresh button to request updated status
+- Check the browser console for WebSocket errors
+- Verify your project has a `docs/09-agents/status.json` file

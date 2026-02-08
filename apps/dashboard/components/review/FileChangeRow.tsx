@@ -19,6 +19,7 @@ interface FileChangeRowProps {
   onStage?: () => void;
   onUnstage?: () => void;
   onRevert?: () => void;
+  onOpenFile?: (path: string) => void;
 }
 
 // Get color classes for status
@@ -83,6 +84,7 @@ export function FileChangeRow({
   onStage,
   onUnstage,
   onRevert,
+  onOpenFile,
 }: FileChangeRowProps) {
   const [showActions, setShowActions] = useState(false);
   const colors = getStatusColors(file.status, isStaged);
@@ -125,7 +127,15 @@ export function FileChangeRow({
           <span className="text-muted-foreground/50 text-xs font-mono truncate">
             {dirPath}
           </span>
-          <span className="text-foreground text-xs font-mono font-medium truncate">
+          <span
+            className={`text-foreground text-xs font-mono font-medium truncate ${
+              onOpenFile ? "hover:underline hover:text-primary cursor-pointer" : ""
+            }`}
+            onClick={onOpenFile ? (e) => {
+              e.stopPropagation();
+              onOpenFile(file.path);
+            } : undefined}
+          >
             {fileName}
           </span>
         </div>

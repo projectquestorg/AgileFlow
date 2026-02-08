@@ -78,6 +78,9 @@ const OutboundMessageType = {
   // User Interaction
   ASK_USER_QUESTION: 'ask_user_question', // Claude is asking user a question
 
+  // Sessions
+  SESSION_LIST: 'session_list', // Session list with sync status
+
   // Errors
   ERROR: 'error', // General error
 };
@@ -122,6 +125,9 @@ const InboundMessageType = {
   AUTOMATION_LIST_REQUEST: 'automation_list_request', // Request automation list
   INBOX_LIST_REQUEST: 'inbox_list_request', // Request inbox list
   INBOX_ACTION: 'inbox_action', // Accept/dismiss inbox item
+
+  // File Operations
+  OPEN_FILE: 'open_file', // Open file in editor
 
   // User Interaction Response
   USER_ANSWER: 'user_answer', // User's answer to AskUserQuestion
@@ -436,6 +442,36 @@ function createInboxItem(item) {
 }
 
 /**
+ * Create a project status update message
+ * @param {Object} summary - Status summary
+ * @param {number} summary.total - Total stories
+ * @param {number} summary.done - Completed stories
+ * @param {number} summary.inProgress - In-progress stories
+ * @param {number} summary.ready - Ready stories
+ * @param {number} summary.blocked - Blocked stories
+ * @param {Object[]} summary.epics - Epic summaries
+ */
+function createStatusUpdate(summary) {
+  return {
+    type: OutboundMessageType.STATUS_UPDATE,
+    ...summary,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Create a session list message with sync status
+ * @param {Object[]} sessions - Array of session objects with sync info
+ */
+function createSessionList(sessions) {
+  return {
+    type: OutboundMessageType.SESSION_LIST,
+    sessions,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
  * Create an AskUserQuestion message
  * @param {string} toolId - Tool call ID for response correlation
  * @param {Object[]} questions - Array of questions with options
@@ -533,6 +569,8 @@ module.exports = {
   createInboxList,
   createInboxItem,
   createAskUserQuestion,
+  createStatusUpdate,
+  createSessionList,
 
   // Parsing
   parseInboundMessage,

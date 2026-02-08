@@ -1,0 +1,16 @@
+{
+  "title": "Dashboard",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "setup",
+    "---Features---",
+    "chat",
+    "git-review",
+    "terminal",
+    "automations",
+    "notifications",
+    "---Reference---",
+    "websocket-api"
+  ]
+}

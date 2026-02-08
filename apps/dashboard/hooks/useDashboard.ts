@@ -92,6 +92,36 @@ export interface InboxItem {
   };
 }
 
+export interface ProjectStatus {
+  total: number;
+  done: number;
+  inProgress: number;
+  ready: number;
+  blocked: number;
+  epics: EpicSummary[];
+}
+
+export interface EpicSummary {
+  id: string;
+  title: string;
+  status: string;
+  storyCount: number;
+  doneCount: number;
+}
+
+export interface SessionInfo {
+  id: string;
+  name: string;
+  type: "local" | "worktree" | "cloud";
+  status: "active" | "idle" | "closed" | "error";
+  branch: string | null;
+  messageCount: number;
+  lastActivity: string;
+  syncStatus: "synced" | "ahead" | "behind" | "diverged" | "offline";
+  ahead: number;
+  behind: number;
+}
+
 export interface QuestionOption {
   label: string;
   description: string;
@@ -123,6 +153,8 @@ export interface DashboardState {
   automations: Automation[];
   inbox: InboxItem[];
   pendingQuestion: PendingQuestion | null;
+  projectStatus: ProjectStatus | null;
+  sessionList: SessionInfo[];
 }
 
 export interface DashboardHook extends DashboardState {
@@ -161,6 +193,8 @@ export interface DashboardHook extends DashboardState {
   // Question operations
   answerQuestion: (answers: Record<string, string | string[]>) => void;
   dismissQuestion: () => void;
+  // File operations
+  openFile: (path: string, line?: number) => void;
 }
 
 export function useDashboard(): DashboardHook {
@@ -181,6 +215,8 @@ export function useDashboard(): DashboardHook {
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null);
+  const [projectStatus, setProjectStatus] = useState<ProjectStatus | null>(null);
+  const [sessionList, setSessionList] = useState<SessionInfo[]>([]);
 
   // For handling terminal spawn promise
   const terminalSpawnResolvers = useRef<Map<string, (id: string | null) => void>>(new Map());
@@ -474,6 +510,25 @@ export function useDashboard(): DashboardHook {
         }
         break;
 
+      case "status_update":
+        // Project status (stories/epics)
+        setProjectStatus({
+          total: data.total || 0,
+          done: data.done || 0,
+          inProgress: data.inProgress || 0,
+          ready: data.ready || 0,
+          blocked: data.blocked || 0,
+          epics: data.epics || [],
+        });
+        break;
+
+      case "session_list":
+        // Session list with sync status
+        if (data.sessions) {
+          setSessionList(data.sessions);
+        }
+        break;
+
       default:
         console.log("[Dashboard] Unknown message type:", data.type, data);
     }
@@ -725,6 +780,14 @@ export function useDashboard(): DashboardHook {
     [send, pendingQuestion]
   );
 
+  // File operations
+  const openFile = useCallback(
+    (path: string, line?: number) => {
+      send({ type: "open_file", path, line });
+    },
+    [send]
+  );
+
   const dismissQuestion = useCallback(() => {
     if (!pendingQuestion) return;
 
@@ -798,5 +861,12 @@ export function useDashboard(): DashboardHook {
     pendingQuestion,
     answerQuestion,
     dismissQuestion,
+
+    // Project status
+    projectStatus,
+    sessionList,
+
+    // File operations
+    openFile,
   };
 }

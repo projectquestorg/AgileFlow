@@ -4322,7 +4322,7 @@
       "title": "Build StatusPanel with story/epic summary",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4332,7 +4332,8 @@
         "Given the dashboard needs build statuspanel with story/epic summary, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 4
+      "phase": 4,
+      "completed_at": "2026-02-08T18:30:00.000Z"
     },
     "US-0244": {
       "title": "Implement KanbanBoard with drag-drop",
@@ -4433,14 +4434,15 @@
       "title": "Write documentation and setup guide",
       "epic": "EP-0031",
       "owner": "AG-DOCS",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [],
       "acceptance_criteria": [
         "Given the requirement, When write documentation and setup guide, Then acceptance criteria met"
       ],
-      "phase": 5
+      "phase": 5,
+      "completed_at": "2026-02-08T18:30:00.000Z"
     },
     "US-0251": {
       "title": "Build ReviewPane with file list and diff view",
@@ -4461,7 +4463,7 @@
       "title": "Implement DiffHunk with stage/unstage/revert per hunk",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4471,13 +4473,14 @@
         "Given the dashboard needs implement diffhunk with stage/unstage/revert per hunk, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 6
+      "phase": 6,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0253": {
       "title": "Add InlineComment - click + on any line to leave feedback",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4487,13 +4490,14 @@
         "Given existing functionality, When add inlinecomment - click + on any line to leave feedback, Then feature is available",
         "Given the feature, When used, Then it behaves as expected"
       ],
-      "phase": 6
+      "phase": 6,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0254": {
       "title": "Build CommitDialog with message, push option, create PR",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4503,7 +4507,8 @@
         "Given the dashboard needs build commitdialog with message, push option, create pr, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 6
+      "phase": 6,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0255": {
       "title": "Implement git status WebSocket messages in CLI serve",
@@ -4543,7 +4548,7 @@
       "title": "Click file name opens in editor, click line jumps",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4552,7 +4557,8 @@
       "acceptance_criteria": [
         "Given the requirement, When click file name opens in editor, click line jumps, Then acceptance criteria met"
       ],
-      "phase": 6
+      "phase": 6,
+      "completed_at": "2026-02-08T18:30:00.000Z"
     },
     "US-0258": {
       "title": "Integrate xterm.js for browser terminal",
@@ -4654,7 +4660,7 @@
       "title": "Create automation editor (cron schedule, command)",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4664,7 +4670,8 @@
         "Given the dashboard needs create automation editor (cron schedule, command), When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 8
+      "phase": 8,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0265": {
       "title": "Implement InboxList for automation results",
@@ -4716,7 +4723,7 @@
       "title": "Show automation run history and status",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4725,7 +4732,8 @@
       "acceptance_criteria": [
         "Given the requirement, When show automation run history and status, Then acceptance criteria met"
       ],
-      "phase": 8
+      "phase": 8,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0269": {
       "title": "Implement NotificationProvider with browser notifications",
@@ -4746,7 +4754,7 @@
       "title": "Notify when task completes (background)",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4755,13 +4763,14 @@
       "acceptance_criteria": [
         "Given the requirement, When notify when task completes (background), Then acceptance criteria met"
       ],
-      "phase": 9
+      "phase": 9,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0271": {
       "title": "Notify when approval needed (inline comment, PR)",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4770,7 +4779,8 @@
       "acceptance_criteria": [
         "Given the requirement, When notify when approval needed (inline comment, pr), Then acceptance criteria met"
       ],
-      "phase": 9
+      "phase": 9,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0272": {
       "title": "Add NotificationSettings (never/background/always)",
@@ -4808,7 +4818,7 @@
       "title": "Show session sync status (local, cloud, worktree)",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4817,7 +4827,8 @@
       "acceptance_criteria": [
         "Given the requirement, When show session sync status (local, cloud, worktree), Then acceptance criteria met"
       ],
-      "phase": 9
+      "phase": 9,
+      "completed_at": "2026-02-08T18:30:00.000Z"
     },
     "US-0275": {
       "title": "Voice dictation with Web Speech API (hold to talk)",
@@ -4878,7 +4889,7 @@
       "title": "Worktree visualization in sessions panel",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4887,7 +4898,8 @@
       "acceptance_criteria": [
         "Given the requirement, When worktree visualization in sessions panel, Then acceptance criteria met"
       ],
-      "phase": 10
+      "phase": 10,
+      "completed_at": "2026-02-08T18:30:00.000Z"
     },
     "US-0280": {
       "title": "Define IR types and WS envelope format",
@@ -4907,7 +4919,7 @@
       "title": "Implement ClaudeDriver with --output-format stream-json",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "2d",
       "depends_on": [
@@ -4917,13 +4929,14 @@
         "Given the dashboard needs implement claudedriver with --output-format stream-json, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 11
+      "phase": 11,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0282": {
       "title": "Create base Driver interface and manager",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4933,7 +4946,8 @@
         "Given the dashboard needs create base driver interface and manager, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 11
+      "phase": 11,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0283": {
       "title": "Update dashboard to consume IR instead of Claude-specific",
@@ -4990,7 +5004,7 @@
       "title": "Implement CodexDriver with JSON-RPC parsing",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "2d",
       "depends_on": [
@@ -5000,13 +5014,14 @@
         "Given the dashboard needs implement codexdriver with json-rpc parsing, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0287": {
       "title": "Add tool name mapping for Codex (exec_command → shell_exec)",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -5016,13 +5031,14 @@
         "Given existing functionality, When add tool name mapping for codex (exec_command → shell_exec), Then feature is available",
         "Given the feature, When used, Then it behaves as expected"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0288": {
       "title": "Handle apply_patch format for Codex file edits",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -5031,13 +5047,14 @@
       "acceptance_criteria": [
         "Given the requirement, When handle apply_patch format for codex file edits, Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0289": {
       "title": "Implement GeminiDriver with streaming JSON",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "2d",
       "depends_on": [
@@ -5047,13 +5064,14 @@
         "Given the dashboard needs implement geminidriver with streaming json, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0290": {
       "title": "Handle Gemini rate limits (60 RPM / 1000 RPD)",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -5062,13 +5080,14 @@
       "acceptance_criteria": [
         "Given the requirement, When handle gemini rate limits (60 rpm / 1000 rpd), Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0291": {
       "title": "Add MCP client for tool discovery across CLIs",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -5078,13 +5097,14 @@
         "Given existing functionality, When add mcp client for tool discovery across clis, Then feature is available",
         "Given the feature, When used, Then it behaves as expected"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0292": {
       "title": "Capability negotiation handshake",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -5093,13 +5113,14 @@
       "acceptance_criteria": [
         "Given the requirement, When capability negotiation handshake, Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0293": {
       "title": "Graceful degradation for missing features",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -5108,13 +5129,14 @@
       "acceptance_criteria": [
         "Given the requirement, When graceful degradation for missing features, Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:15:00.000Z"
     },
     "US-0294": {
       "title": "Connection pooling for concurrent sessions",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -5123,13 +5145,14 @@
       "acceptance_criteria": [
         "Given the requirement, When connection pooling for concurrent sessions, Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0295": {
       "title": "Health monitoring and auto-restart for drivers",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -5138,7 +5161,8 @@
       "acceptance_criteria": [
         "Given the requirement, When health monitoring and auto-restart for drivers, Then acceptance criteria met"
       ],
-      "phase": 12
+      "phase": 12,
+      "completed_at": "2026-02-08T18:09:00.000Z"
     },
     "US-0296": {
       "title": "Fix Critical npm Dependency Vulnerabilities [RECURRING]",

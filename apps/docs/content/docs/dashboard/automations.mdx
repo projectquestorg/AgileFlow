@@ -1,0 +1,48 @@
+---
+title: Automations
+description: Managing automated tasks from the dashboard
+---
+
+# Automations
+
+The automations panel in the sidebar shows all configured AgileFlow automations and their status.
+
+## Viewing Automations
+
+Each automation displays:
+
+- **Name** and description
+- **Schedule** (daily, weekly, monthly, interval, or on-session)
+- **Status** indicator (idle, running, error, disabled)
+- **Next run** time
+- **Last run** result
+
+## Schedule Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `daily` | Runs once per day | Daily at 9:00 |
+| `weekly` | Runs once per week | Weekly on Monday |
+| `monthly` | Runs once per month | Monthly on the 1st |
+| `interval` | Runs at fixed intervals | Every 24 hours |
+| `on_session` | Runs when session starts | On each session |
+
+## Running Automations
+
+Click the **play** button on an automation to run it manually. While running:
+
+- A spinning indicator shows it's in progress
+- The **stop** button becomes available to cancel
+
+## Automation Results
+
+When an automation completes, its result is added to the **Inbox**. Results include:
+
+- Success/failure status
+- Output text
+- Error details (if failed)
+- Execution duration
+
+## Configuring Automations
+
+Automations are configured in your AgileFlow project settings. See the [Hooks System](/docs/features/hooks-system) documentation for setup details.

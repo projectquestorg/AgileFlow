@@ -1,0 +1,69 @@
+---
+title: Git Review
+description: Reviewing, staging, and committing changes from the dashboard
+---
+
+# Git Review Panel
+
+The right-side review panel provides a complete git workflow within the dashboard.
+
+## File Change List
+
+Files are displayed with:
+
+- **Status indicator** (A=added, M=modified, D=deleted, ?=untracked)
+- **File path** with directory in muted color and filename highlighted
+- **Addition/deletion counts** when available
+- **Color coding** based on change type
+
+### Filtering
+
+Use the tab bar to filter files:
+
+- **Staged** - Files ready to commit
+- **Unstaged** - Modified files not yet staged
+- **All** - Both staged and unstaged
+
+## Diff Viewer
+
+Click a file to view its diff. The diff viewer shows:
+
+- **Unified diff** with line numbers (old and new)
+- **Syntax highlighting** for additions (green) and deletions (red)
+- **Hunk navigation** with collapsible sections
+- **Copy button** to copy the raw diff
+
+### Inline Comments
+
+Hover over a line and click the **+** button to add an inline comment. Comments are sent back to the server for review tracking.
+
+## Staging and Unstaging
+
+- Click the **+** button on an unstaged file to stage it
+- Click the **-** button on a staged file to unstage it
+- Use **+all** / **-all** buttons to stage or unstage everything
+- Per-hunk staging is available in the diff viewer
+
+## Reverting Changes
+
+Click the **revert** icon on an unstaged file to discard changes. This runs `git checkout -- <file>`.
+
+> **Warning**: Reverting is destructive and cannot be undone.
+
+## Committing
+
+1. Stage the files you want to commit
+2. Click the **Commit** button at the bottom of the review panel
+3. Enter a commit message in the dialog
+4. Optionally check **Push after commit**
+5. Click **Commit** to create the commit
+
+## Opening Files in Editor
+
+Click on a filename to open it in your default editor. Line numbers in the diff viewer are also clickable - clicking jumps directly to that line.
+
+Supported editors are detected automatically:
+- VS Code (`code`)
+- Cursor (`cursor`)
+- Windsurf (`windsurf`)
+- Sublime Text (`subl`)

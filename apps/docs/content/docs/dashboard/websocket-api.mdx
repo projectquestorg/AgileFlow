@@ -1,0 +1,133 @@
+---
+title: WebSocket API
+description: WebSocket message protocol reference for the dashboard
+---
+
+# WebSocket API Reference
+
+The dashboard communicates with the CLI server using a JSON-based WebSocket protocol.
+
+## Connection
+
+```
+ws://localhost:8765
+```
+
+All messages are JSON-encoded strings sent over the WebSocket connection.
+
+## Message Envelope
+
+Every message includes a `type` field and a `timestamp`:
+
+```json
+{
+  "type": "message_type",
+  "timestamp": "2026-01-15T10:30:00.000Z",
+  "...": "additional fields"
+}
+```
+
+## Outbound Messages (Server to Dashboard)
+
+| Type | Description | Key Fields |
+|------|-------------|------------|
+| `session_state` | Session connected/state change | `sessionId`, `state`, `resumed` |
+| `session_error` | Session error | `message` |
+| `text` | Complete text response | `content`, `done` |
+| `text_delta` | Streaming text chunk | `delta`, `done` |
+| `tool_start` | Tool call started | `id`, `tool`, `input` |
+| `tool_result` | Tool call completed | `id`, `output`, `error`, `success` |
+| `git_status` | Git status update | `branch`, `staged[]`, `unstaged[]` |
+| `git_diff` | Diff content | `path`, `diff`, `additions`, `deletions`, `staged` |
+| `status_update` | Project status | `total`, `done`, `inProgress`, `ready`, `blocked`, `epics[]` |
+| `task_created` | Task created | `task` |
+| `task_updated` | Task status changed | `task` |
+| `task_list` | Full task list | `tasks[]` |
+| `terminal_output` | Terminal output | `terminalId`, `data` |
+| `terminal_exit` | Terminal exited | `terminalId`, `exitCode` |
+| `automation_list` | All automations | `automations[]` |
+| `automation_status` | Automation state change | `automationId`, `status` |
+| `inbox_list` | All inbox items | `items[]` |
+| `inbox_item` | Single inbox item | `id`, `title`, `summary`, `status` |
+| `ask_user_question` | User question prompt | `toolId`, `questions[]` |
+| `notification` | General notification | `level`, `title`, `message` |
+| `error` | Error | `code`, `message` |
+| `session_list` | Session list with sync status | `sessions[]` |
+
+## Inbound Messages (Dashboard to Server)
+
+| Type | Description | Key Fields |
+|------|-------------|------------|
+| `message` | User message | `content` |
+| `cancel` | Cancel operation | - |
+| `refresh` | Request refresh | `what` (git, tasks, status, automations, inbox, all) |
+| `session_init` | Initialize session | `sessionId`, `apiKey` |
+| `session_close` | Close session | - |
+| `git_stage` | Stage files | `files[]` |
+| `git_unstage` | Unstage files | `files[]` |
+| `git_revert` | Revert files | `files[]` |
+| `git_commit` | Create commit | `message`, `push` |
+| `git_diff_request` | Request file diff | `path`, `staged` |
+| `open_file` | Open file in editor | `path`, `line` |
+| `terminal_spawn` | Spawn terminal | `cols`, `rows` |
+| `terminal_input` | Terminal stdin | `terminalId`, `data` |
+| `terminal_resize` | Resize terminal | `terminalId`, `cols`, `rows` |
+| `terminal_close` | Close terminal | `terminalId` |
+| `automation_run` | Run automation | `id` |
+| `automation_stop` | Stop automation | `id` |
+| `automation_list_request` | List automations | - |
+| `inbox_list_request` | List inbox | - |
+| `inbox_action` | Inbox action | `id`, `action` (read, accept, dismiss) |
+| `user_answer` | Answer to question | `toolId`, `answers` |
+
+## Example: Git Status Response
+
+```json
+{
+  "type": "git_status",
+  "branch": "main",
+  "staged": [
+    { "path": "src/app.ts", "status": "modified" }
+  ],
+  "unstaged": [
+    { "path": "README.md", "status": "modified", "additions": 5, "deletions": 2 }
+  ],
+  "timestamp": "2026-01-15T10:30:00.000Z"
+}
+```
+
+## Example: Status Update
+
+```json
+{
+  "type": "status_update",
+  "total": 66,
+  "done": 55,
+  "inProgress": 2,
+  "ready": 9,
+  "blocked": 0,
+  "epics": [
+    {
+      "id": "EP-0031",
+      "title": "Dashboard",
+      "status": "in-progress",
+      "storyCount": 66,
+      "doneCount": 55
+    }
+  ],
+  "timestamp": "2026-01-15T10:30:00.000Z"
+}
+```
+
+## Example: Text Streaming
+
+```json
+// First chunk
+{ "type": "text_delta", "delta": "Here is ", "done": false, "timestamp": "..." }
+
+// More chunks
+{ "type": "text_delta", "delta": "my response.", "done": false, "timestamp": "..." }
+
+// Final chunk
+{ "type": "text_delta", "delta": "", "done": true, "timestamp": "..." }
+```

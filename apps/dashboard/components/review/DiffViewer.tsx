@@ -35,6 +35,7 @@ interface DiffViewerProps {
   onRevert?: () => void;
   onClose?: () => void;
   onComment?: (lineNum: number, content: string) => void;
+  onOpenLine?: (path: string, line: number) => void;
 }
 
 // Parse diff into hunks
@@ -140,10 +141,12 @@ function DiffLineView({
   line,
   showCommentButton,
   onComment,
+  onClickLine,
 }: {
   line: DiffLine;
   showCommentButton?: boolean;
   onComment?: () => void;
+  onClickLine?: (lineNum: number) => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -185,10 +188,20 @@ function DiffLineView({
       onMouseLeave={() => setHovered(false)}
     >
       {/* Line numbers */}
-      <span className="text-muted-foreground/30 w-8 text-right pr-2 select-none flex-shrink-0 py-0.5">
+      <span
+        className={`text-muted-foreground/30 w-8 text-right pr-2 select-none flex-shrink-0 py-0.5 ${
+          onClickLine && line.lineNumOld ? "cursor-pointer hover:text-primary" : ""
+        }`}
+        onClick={onClickLine && line.lineNumOld ? () => onClickLine(line.lineNumOld!) : undefined}
+      >
         {line.lineNumOld || ""}
       </span>
-      <span className="text-muted-foreground/30 w-8 text-right pr-2 select-none border-r border-border mr-2 flex-shrink-0 py-0.5">
+      <span
+        className={`text-muted-foreground/30 w-8 text-right pr-2 select-none border-r border-border mr-2 flex-shrink-0 py-0.5 ${
+          onClickLine && line.lineNumNew ? "cursor-pointer hover:text-primary" : ""
+        }`}
+        onClick={onClickLine && line.lineNumNew ? () => onClickLine(line.lineNumNew!) : undefined}
+      >
         {line.lineNumNew || ""}
       </span>
 
@@ -221,12 +234,14 @@ function DiffHunkView({
   onStageHunk,
   onRevertHunk,
   onComment,
+  onClickLine,
 }: {
   hunk: DiffHunk;
   index: number;
   onStageHunk?: () => void;
   onRevertHunk?: () => void;
   onComment?: (lineNum: number) => void;
+  onClickLine?: (lineNum: number) => void;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -279,6 +294,7 @@ function DiffHunkView({
                   ? () => onComment(line.lineNumNew!)
                   : undefined
               }
+              onClickLine={onClickLine}
             />
           ))}
         </div>
@@ -294,6 +310,7 @@ export function DiffViewer({
   onRevert,
   onClose,
   onComment,
+  onOpenLine,
 }: DiffViewerProps) {
   const hunks = useMemo(() => parseDiff(diff.diff), [diff.diff]);
   const fileName = diff.path.split("/").pop() || diff.path;
@@ -356,6 +373,7 @@ export function DiffViewer({
                 onStageHunk={!diff.staged ? onStage : undefined}
                 onRevertHunk={!diff.staged ? onRevert : undefined}
                 onComment={(lineNum) => setCommentLine(lineNum)}
+                onClickLine={onOpenLine ? (lineNum) => onOpenLine(diff.path, lineNum) : undefined}
               />
             ))}
 

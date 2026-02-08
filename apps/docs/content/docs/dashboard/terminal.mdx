@@ -1,0 +1,37 @@
+---
+title: Terminal
+description: Using the integrated terminal in the dashboard
+---
+
+# Integrated Terminal
+
+The dashboard includes an embedded terminal panel for running commands without leaving the interface.
+
+## Opening the Terminal
+
+- Click the **Terminal** button in the footer bar
+- Or press **Cmd+J** (Mac) / **Ctrl+J** (Windows/Linux)
+
+## Spawning a Session
+
+Click **New Terminal** to spawn a terminal process on the server. The terminal runs in the project directory with a clean environment (sensitive environment variables are stripped for security).
+
+## Input and Output
+
+- Type commands directly in the terminal
+- Output streams in real-time via WebSocket
+- ANSI color codes are rendered for colored output
+
+## Resizing
+
+The terminal automatically resizes when the panel dimensions change. The server is notified of the new dimensions to ensure proper text wrapping.
+
+## Closing
+
+Click the **X** button or use `exit` to close a terminal session. The server process is terminated and cleaned up.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl+J` | Toggle terminal panel |

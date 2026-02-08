@@ -1,0 +1,60 @@
+---
+title: Chat Interface
+description: Sending messages and viewing AI responses in the dashboard
+---
+
+# Chat Interface
+
+The chat panel is the primary way to interact with Claude through the dashboard.
+
+## Sending Messages
+
+Type your message in the input field at the bottom and press **Enter** or click **Send**. Messages are forwarded to Claude via the WebSocket connection.
+
+### Slash Commands
+
+You can use AgileFlow slash commands directly in the chat:
+
+```
+/agileflow:status
+/agileflow:plan
+/agileflow:commit
+```
+
+## Response Streaming
+
+Claude's responses stream in real-time via `text_delta` messages. You'll see text appear character by character as it's generated.
+
+## Tool Call Visualization
+
+When Claude uses tools (Read, Write, Edit, Bash, etc.), the dashboard shows:
+
+- **Tool name** and input parameters
+- **Spinning indicator** while the tool runs
+- **Result** or error when complete
+- Tool calls are nested within the assistant message that triggered them
+
+## Question Dialogs
+
+When Claude uses the `AskUserQuestion` tool, a dialog appears with:
+
+- The question text
+- Available options as buttons
+- Multi-select support when applicable
+- Option to dismiss (skip the question)
+
+## Image Upload
+
+Click the image icon in the chat input to upload an image. Supported formats:
+
+- PNG, JPG, JPEG, GIF, WebP
+
+The image is sent as base64-encoded data alongside your message.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Shift+Enter` | New line |
+| `Escape` | Cancel current operation |

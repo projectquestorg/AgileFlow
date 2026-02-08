@@ -1,0 +1,39 @@
+---
+title: Dashboard
+description: Real-time web dashboard for AgileFlow projects
+---
+
+# Dashboard
+
+The AgileFlow Dashboard is a real-time web application that provides a visual interface for managing your AI-assisted development workflow. It connects to the AgileFlow CLI via WebSocket and displays live updates as Claude works on your project.
+
+## Key Features
+
+- **Live Chat** - Send messages to Claude and see streaming responses with tool call visualization
+- **Git Review** - View file changes, diffs, stage/unstage files, and commit directly from the UI
+- **Integrated Terminal** - Spawn terminal sessions within the dashboard
+- **Automation Management** - View, run, and monitor automated tasks
+- **Notification System** - Browser notifications for important events
+- **Multi-Session Support** - Switch between parallel development sessions
+- **Project Status** - Real-time story and epic progress tracking
+
+## Architecture
+
+The dashboard consists of two parts:
+
+1. **Dashboard Server** (`agileflow serve`) - A WebSocket server that runs alongside your CLI, providing real-time data
+2. **Dashboard App** - A Next.js web application that connects to the server
+
+Communication happens over WebSocket with a structured message protocol supporting streaming text, tool calls, git operations, terminal I/O, and more.
+
+## Quick Start
+
+```bash
+# Start the dashboard server in your project
+agileflow serve
+
+# Open the dashboard in your browser
+# Default: http://localhost:3000
+```
+
+See [Setup Guide](/docs/dashboard/setup) for detailed instructions.

@@ -16,6 +16,8 @@ import {
 import { NavSessions, Session } from "./NavSessions";
 import { NavAutomations, Automation } from "./NavAutomations";
 import { NavInbox, InboxItem } from "./NavInbox";
+import { NavStatus } from "./NavStatus";
+import type { ProjectStatus, SessionInfo } from "@/hooks/useDashboard";
 
 interface ProviderInfo {
   id: string;
@@ -51,6 +53,12 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
   // Git
   gitBranch?: string;
+
+  // Project Status
+  projectStatus?: ProjectStatus | null;
+
+  // Session sync info
+  sessionList?: SessionInfo[];
 }
 
 export function AppSidebar({
@@ -72,6 +80,8 @@ export function AppSidebar({
   onInboxDismiss,
   onInboxMarkRead,
   gitBranch = "main",
+  projectStatus,
+  sessionList,
   ...props
 }: AppSidebarProps) {
   const [showProviderMenu, setShowProviderMenu] = React.useState(false);
@@ -128,6 +138,7 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent>
+        <NavStatus status={projectStatus ?? null} />
         <NavSessions
           sessions={sessions}
           activeSessionId={activeSessionId}
@@ -135,6 +146,7 @@ export function AppSidebar({
           onCreate={onSessionCreate}
           onDelete={onSessionDelete}
           onRename={onSessionRename}
+          sessionList={sessionList}
         />
         <NavAutomations
           automations={automations}

@@ -97,6 +97,9 @@ function DashboardContent() {
     pendingQuestion,
     answerQuestion,
     dismissQuestion,
+    projectStatus,
+    sessionList,
+    openFile,
   } = useDashboard();
 
   const getFilteredFiles = () => {
@@ -180,6 +183,8 @@ function DashboardContent() {
         onInboxDismiss={dismissInboxItem}
         onInboxMarkRead={markInboxRead}
         gitBranch={gitStatus?.branch || "main"}
+        projectStatus={projectStatus}
+        sessionList={sessionList}
       />
 
       {/* Main Content Area */}
@@ -320,6 +325,7 @@ function DashboardContent() {
                     onUnstage={() => unstageFile(currentDiff.path)}
                     onRevert={() => revertFile(currentDiff.path)}
                     onClose={() => { clearDiff(); setShowDiffViewer(false); }}
+                    onOpenLine={(path, line) => openFile(path, line)}
                   />
                 ) : (
                   <>
@@ -372,6 +378,7 @@ function DashboardContent() {
                               isStaged={true}
                               onSelect={() => handleFileSelect(file, true)}
                               onUnstage={() => unstageFile(file.path)}
+                              onOpenFile={(path) => openFile(path)}
                             />
                           ))}
                           {filteredFiles.unstaged.length > 0 && reviewTab === "all" && filteredFiles.staged.length > 0 && (
@@ -387,6 +394,7 @@ function DashboardContent() {
                               onSelect={() => handleFileSelect(file, false)}
                               onStage={() => stageFile(file.path)}
                               onRevert={() => revertFile(file.path)}
+                              onOpenFile={(path) => openFile(path)}
                             />
                           ))}
                         </div>
