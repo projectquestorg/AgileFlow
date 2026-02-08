@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.1] - 2026-02-08
+
+### Added
+- Smart session management with context-aware naming and tmux quick-create keybinds
+
 ## [2.99.0] - 2026-02-08
 
 ### Added
