@@ -1,5 +1,5 @@
 {
-  "updated": "2026-02-08T17:00:36.663Z",
+  "updated": "2026-02-08T17:08:39.551Z",
   "epics": {
     "EP-0020": {
       "title": "Ralph TUI - Terminal User Interface for Session Visualization",
@@ -4171,7 +4171,7 @@
       "title": "Implement agileflow serve command with WebSocket",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "2d",
       "depends_on": [],
@@ -4179,13 +4179,14 @@
         "Given the dashboard needs implement agileflow serve command with websocket, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 2
+      "phase": 2,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0235": {
       "title": "Add Claude API proxy with streaming",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4195,7 +4196,8 @@
         "Given existing functionality, When add claude api proxy with streaming, Then feature is available",
         "Given the feature, When used, Then it behaves as expected"
       ],
-      "phase": 2
+      "phase": 2,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0236": {
       "title": "Implement tool call forwarding protocol",
@@ -4218,7 +4220,7 @@
       "title": "Add tunnel support (ngrok integration)",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4228,7 +4230,8 @@
         "Given existing functionality, When add tunnel support (ngrok integration), Then feature is available",
         "Given the feature, When used, Then it behaves as expected"
       ],
-      "phase": 2
+      "phase": 2,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0238": {
       "title": "Build ChatPanel with message list",
@@ -4506,7 +4509,7 @@
       "title": "Implement git status WebSocket messages in CLI serve",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4516,7 +4519,8 @@
         "Given the dashboard needs implement git status websocket messages in cli serve, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 6
+      "phase": 6,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0256": {
       "title": "Add staged/unstaged/all branch filter tabs",
@@ -4585,7 +4589,7 @@
       "title": "Implement terminal WebSocket channel in CLI serve",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [
@@ -4595,7 +4599,8 @@
         "Given the dashboard needs implement terminal websocket channel in cli serve, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 7
+      "phase": 7,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0261": {
       "title": "Add terminal tabs (multiple terminals per session)",
@@ -4618,7 +4623,7 @@
       "title": "Scope terminal to project/worktree directory",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4627,6 +4632,7 @@
       "acceptance_criteria": [
         "Given the requirement, When scope terminal to project/worktree directory, Then acceptance criteria met"
       ],
+      "completed_at": "2026-02-08T17:10:00.000Z",
       "phase": 7
     },
     "US-0263": {
@@ -4696,14 +4702,15 @@
       "title": "Connect automations to CLI AutomationRegistry",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [],
       "acceptance_criteria": [
         "Given the requirement, When connect automations to cli automationregistry, Then acceptance criteria met"
       ],
-      "phase": 8
+      "phase": 8,
+      "completed_at": "2026-02-08T17:10:00.000Z"
     },
     "US-0268": {
       "title": "Show automation run history and status",
