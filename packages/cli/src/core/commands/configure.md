@@ -443,6 +443,61 @@ When creating new sessions with /agileflow:session:new, this will be the
 recommended option. You can still choose a different mode per-session.
 ```
 
+**If user selected "Skip permissions" or "Accept edits only"**, offer Claude settings integration:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Also configure Claude to default to this mode?",
+  "header": "Claude settings",
+  "multiSelect": false,
+  "options": [
+    {"label": "af wrapper only (Recommended)", "description": "The 'af' command already uses this setting. No other changes needed."},
+    {"label": "Also add shell alias", "description": "Add alias to your shell profile so 'claude' also uses this mode"},
+    {"label": "No thanks", "description": "Keep current setup"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Also add shell alias" selected:**
+
+Determine the flag based on the selected mode:
+- `skip-permissions` → `--dangerously-skip-permissions`
+- `accept-edits` → `--permission-mode acceptEdits`
+
+```bash
+# Detect shell config file
+SHELL_RC="$HOME/.bashrc"
+[ -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.zshrc"
+
+# Check if alias already exists
+grep -q 'alias claude=' "$SHELL_RC" 2>/dev/null
+```
+
+If alias doesn't exist, add it using the Edit tool on the shell RC file:
+```bash
+# Append alias (idempotent - only if not already present)
+# For skip-permissions:
+echo 'alias claude="claude --dangerously-skip-permissions"' >> "$SHELL_RC"
+# For accept-edits:
+echo 'alias claude="claude --permission-mode acceptEdits"' >> "$SHELL_RC"
+```
+
+Display:
+```
+✅ Shell alias added to {SHELL_RC}
+Run `source {SHELL_RC}` or open a new terminal for the alias to take effect.
+
+To remove later: edit {SHELL_RC} and remove the 'alias claude=' line.
+```
+
+**If "af wrapper only" or "No thanks" selected:**
+```
+The 'af' command already reads the configured startup mode automatically.
+No additional changes needed.
+```
+
 ---
 
 ### If "Infrastructure" selected

@@ -224,22 +224,33 @@ Continue to **Merge Step 2**.
 
 #### If "Commit with custom message" selected:
 
-First, ask for the commit message:
+First, analyze changes to suggest a meaningful commit message:
+
+```bash
+# Get changed files summary for commit message suggestion
+git diff --stat HEAD
+```
+
+Based on the files changed, generate 2-3 contextual commit message suggestions:
+- Examine which directories/files changed to determine the type (feat/fix/chore/docs)
+- Read the diff summary to understand what was modified
+- Suggest messages that describe the "why" not just the "what"
+
 ```
 AskUserQuestion:
-  question: "Enter your commit message:"
+  question: "Choose or customize your commit message:"
   header: "Commit message"
   multiSelect: false
   options:
-    - label: "feat: ..."
-      description: "New feature"
-    - label: "fix: ..."
-      description: "Bug fix"
-    - label: "chore: ..."
-      description: "Maintenance/cleanup"
+    # 2-3 suggestions based on git diff analysis. Examples:
+    # - label: "feat: add OAuth support for session auth"
+    #   description: "Based on changes to auth/ files"
+    # - label: "fix: resolve merge conflict in config"
+    #   description: "Based on config file changes"
+    # Always include at least one option. User can select "Other" for custom.
 ```
 
-The user will select "Other" to enter a custom message. Then:
+The user will select a suggestion or "Other" to enter a custom message. Then:
 
 ```bash
 node .agileflow/scripts/session-manager.js commit-changes {session_id} --message="{user_message}"
@@ -342,26 +353,42 @@ From the `check-merge` response, check `hasConflicts`:
 
 If `hasConflicts: true`:
 
+First, get detailed conflict info:
+```bash
+# Get list of files that conflict (without actually merging)
+git merge --no-commit --no-ff {branchName} 2>&1 || true
+git diff --name-only --diff-filter=U
+git merge --abort
 ```
-⚠️ Merge conflicts detected!
 
-This branch has conflicts with {mainBranch}. Smart merge can attempt automatic resolution.
+Display specific files with context:
+```
+⚠️ Merge conflicts detected in {N} file(s):
+
+  {file1} - Both branches modified
+  {file2} - Conflicting changes
+  {file3} - Both added content (likely auto-resolvable)
 ```
 
-Then show conflict options:
+Analyze the conflicting files to make a smart recommendation:
+- If ALL conflicts are in docs/config files → recommend "Auto-resolve"
+- If conflicts include source code → recommend "Review first, then auto-resolve"
+- Count files by category (docs, tests, config, source) for the description
+
+Then present AI-recommended options:
 
 ```
 AskUserQuestion:
-  question: "How would you like to proceed?"
-  header: "Merge conflicts"
+  question: "How to handle {N} conflicting file(s)?"
+  header: "Conflicts"
   multiSelect: false
   options:
-    - label: "Auto-resolve conflicts (Recommended)"
-      description: "Smart merge will resolve based on file types automatically"
-    - label: "Resolve manually"
-      description: "Keep session active and resolve conflicts yourself"
-    - label: "End session without merging"
-      description: "Keep worktree for later resolution"
+    - label: "{AI recommended option} (Recommended)"
+      description: "{reason based on conflict analysis - e.g., 'All conflicts are in docs/config - safe to auto-resolve'}"
+    - label: "Auto-resolve all"
+      description: "Smart merge resolves by file type (docs=accept_both, source=theirs, config=ours)"
+    - label: "Keep session, resolve manually"
+      description: "Stay in session and fix conflicts yourself"
     - label: "Cancel"
       description: "Keep session as-is"
 ```
@@ -490,6 +517,29 @@ Summary:
 💡 To push your changes: git push
 ```
 
+### Post-Merge: Notify Other Sessions
+
+After successful merge, check if in tmux and send notification:
+
+```bash
+# Check if in tmux
+echo $TMUX
+```
+
+If in tmux:
+```bash
+# Send visible notification to all windows
+tmux display-message -d 5000 "Session {id} merged to {mainBranch} - changes are live"
+```
+
+Display to user:
+```
+The main branch working directory ({mainPath}) now has your merged changes.
+If you have a Claude session on main, its files are already updated.
+
+To push to remote: git push
+```
+
 Then proceed to **Step 4: Offer to Close Tab**.
 
 If failed:
@@ -613,7 +663,7 @@ If `reason: "uncommitted_changes"` → Show inline options (5 choices):
 
 **Step 1a: Handle uncommitted choice**
 - "Commit all": `node .agileflow/scripts/session-manager.js commit-changes {id}` → continue
-- "Commit custom": Ask for message → `commit-changes {id} --message="..."` → continue
+- "Commit custom": Analyze `git diff --stat`, suggest 2-3 contextual messages → `commit-changes {id} --message="..."` → continue
 - "Stash": `node .agileflow/scripts/session-manager.js stash {id}` → continue (unstash after merge)
 - "Discard": `node .agileflow/scripts/session-manager.js discard-changes {id}` → continue
 - "Cancel": EXIT
@@ -625,7 +675,11 @@ node .agileflow/scripts/session-manager.js merge-preview {session_id}
 Display commits and files to be merged.
 
 **Step 3: Check conflicts**
-If `hasConflicts: true` → Show conflict options (auto-resolve/manual/end/cancel)
+If `hasConflicts: true`:
+- Get detailed file list: `git merge --no-commit --no-ff {branch}`, `git diff --name-only --diff-filter=U`, `git merge --abort`
+- Display per-file conflict details
+- Analyze file types to recommend best option (docs/config → auto-resolve, source → review)
+- Show conflict options with AI recommendation first (auto-resolve/manual/cancel)
 
 **Step 3a: If auto-resolve selected**
 ```bash
@@ -680,6 +734,12 @@ node .agileflow/scripts/session-manager.js integrate {id} --strategy={squash|mer
   cd {mainPath}
 💡 To push: git push
 ```
+
+**Step 7a: Notify other sessions (if in tmux)**
+```bash
+tmux display-message -d 5000 "Session {id} merged to {mainBranch} - changes are live"
+```
+Display: "Main branch working directory now has your merged changes."
 
 ---
 
@@ -761,6 +821,7 @@ tmux kill-window
    g. Execute integrate
    h. If stash was used → unstash on main
    i. Show success with cd command
+   j. If in tmux → notify other sessions via tmux display-message
 5. If end/delete → Execute and show result
 6. If in tmux → Offer to close tab
 ```

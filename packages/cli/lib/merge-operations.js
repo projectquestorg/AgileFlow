@@ -263,6 +263,22 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
     mainPath: ROOT,
   };
 
+  // Write merge notification for other sessions to pick up
+  try {
+    const notifyDir = path.join(getAgileflowDir(ROOT), 'sessions');
+    if (!fs.existsSync(notifyDir)) {
+      fs.mkdirSync(notifyDir, { recursive: true });
+    }
+    const notifyPath = path.join(notifyDir, 'last-merge.json');
+    fs.writeFileSync(notifyPath, JSON.stringify({
+      merged_at: new Date().toISOString(),
+      session_id: sessionId,
+      branch: branchName,
+      strategy,
+      commit_message: commitMessage,
+    }, null, 2));
+  } catch (e) { /* ignore notification write failures */ }
+
   // Delete worktree first (before branch, as worktree holds ref)
   if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
     try {

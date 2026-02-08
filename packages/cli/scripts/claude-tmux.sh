@@ -2,19 +2,24 @@
 # claude-tmux.sh - Wrapper script that auto-starts Claude Code in a tmux session
 #
 # Usage:
-#   ./claude-tmux.sh              # Always creates fresh tmux + resumes Claude conversation
-#   ./claude-tmux.sh --attach     # Reattach to existing session (if you know it's alive)
+#   ./claude-tmux.sh              # Create new tmux session (supports multiple from same dir)
+#   ./claude-tmux.sh --attach     # Reattach to most recent session
 #   ./claude-tmux.sh --no-tmux    # Start without tmux (regular claude)
 #   ./claude-tmux.sh -n           # Same as --no-tmux
-#   ./claude-tmux.sh --kill       # Kill existing session completely
+#   ./claude-tmux.sh --kill       # Kill ALL sessions for this directory
+#   ./claude-tmux.sh --refresh    # Refresh tmux config on all existing sessions
 #   ./claude-tmux.sh --help       # Show help with keybinds
 #
 # When already in tmux: Just runs claude normally
 # When not in tmux: Creates a tmux session and runs claude inside it
 #
-# The default behavior always kills any existing session and creates a fresh one.
-# This prevents frozen sessions from blocking you. Your Claude conversation is
-# preserved via --resume regardless of the tmux session state.
+# Multiple terminals can run `af` from the same directory simultaneously.
+# Sessions are named: claude-<dir>, claude-<dir>-2, claude-<dir>-3, etc.
+# Your Claude conversation is preserved via --resume regardless of tmux state.
+#
+# SESSION CREATION (while inside tmux):
+#   - Alt+N     New worktree session (isolated branch + directory)
+#   - Alt+S     Same-directory session (quick, no worktree)
 #
 # FREEZE RECOVERY (while inside tmux):
 #   - Alt+k     Send Ctrl+C twice (soft interrupt)
@@ -29,6 +34,7 @@ NO_TMUX=false
 KILL_SESSION=false
 SHOW_HELP=false
 ATTACH_ONLY=false
+REFRESH_CONFIG=false
 USE_RESUME=false
 RESUME_SESSION_ID=""
 
@@ -54,6 +60,10 @@ for arg in "$@"; do
       KILL_SESSION=true
       shift
       ;;
+    --refresh)
+      REFRESH_CONFIG=true
+      shift
+      ;;
     --help|-h)
       SHOW_HELP=true
       shift
@@ -71,13 +81,15 @@ USAGE:
   agileflow [options] [claude-args...]
 
 OPTIONS:
-  --attach, -a     Reattach to existing session (skip fresh start)
+  --attach, -a     Reattach to most recent session for this directory
   --no-tmux, -n    Run claude without tmux
-  --kill           Kill existing session completely
+  --kill           Kill ALL sessions for this directory
+  --refresh        Refresh tmux config on all existing sessions
   --help, -h       Show this help
 
-By default, af always creates a fresh tmux session and resumes your
-Claude conversation. This prevents frozen sessions from blocking you.
+By default, af creates a new tmux session. Multiple terminals can run
+af from the same directory simultaneously (sessions: claude-dir,
+claude-dir-2, claude-dir-3, etc.).
 
 TMUX KEYBINDS:
   Alt+1-9          Switch to window N
@@ -93,6 +105,10 @@ TMUX KEYBINDS:
   Alt+w            Close window
   Alt+q            Detach from tmux
 
+SESSION CREATION:
+  Alt+N            New worktree session (isolated branch + directory)
+  Alt+S            Same-directory session (quick, no worktree)
+
 FREEZE RECOVERY:
   Alt+k            Send Ctrl+C twice (soft interrupt)
   Alt+K            Force kill pane immediately
@@ -106,38 +122,59 @@ if [ "$NO_TMUX" = true ]; then
   exec claude "$@"
 fi
 
-# Generate session name based on current directory (needed for all modes)
+# Generate directory name (used for session name patterns)
 DIR_NAME=$(basename "$(pwd)")
-SESSION_NAME="claude-${DIR_NAME}"
 
-# Handle --kill flag
+# Handle --kill flag — kill ALL sessions for this directory
 if [ "$KILL_SESSION" = true ]; then
-  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Killing session: $SESSION_NAME"
-    tmux kill-session -t "$SESSION_NAME"
-    echo "Session killed."
+  SESSION_BASE="claude-${DIR_NAME}"
+  KILLED=0
+  # Kill exact base session
+  if tmux has-session -t "$SESSION_BASE" 2>/dev/null; then
+    tmux kill-session -t "$SESSION_BASE" 2>/dev/null || true
+    KILLED=$((KILLED + 1))
+  fi
+  # Kill numbered sessions (claude-dir-2, claude-dir-3, etc.)
+  for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}-[0-9]*$"); do
+    tmux kill-session -t "$sid" 2>/dev/null || true
+    KILLED=$((KILLED + 1))
+  done
+  if [ "$KILLED" -gt 0 ]; then
+    echo "Killed $KILLED session(s) for $DIR_NAME."
   else
-    echo "No session named '$SESSION_NAME' found."
+    echo "No sessions found for '$DIR_NAME'."
   fi
   exit 0
 fi
 
-# Handle --attach flag (reattach to existing session without killing it)
+# Handle --attach flag (reattach to most recent session for this directory)
 if [ "$ATTACH_ONLY" = true ]; then
-  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Attaching to existing session: $SESSION_NAME"
-    exec tmux attach-session -t "$SESSION_NAME"
+  SESSION_BASE="claude-${DIR_NAME}"
+  # Find the highest-numbered existing session
+  LATEST=""
+  if tmux has-session -t "$SESSION_BASE" 2>/dev/null; then
+    LATEST="$SESSION_BASE"
+  fi
+  for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}-[0-9]*$" | sort -t- -k3 -n); do
+    LATEST="$sid"
+  done
+  if [ -n "$LATEST" ]; then
+    echo "Attaching to session: $LATEST"
+    exec tmux attach-session -t "$LATEST"
   else
     echo "No existing session. Creating new one..."
     # Fall through to create new session
   fi
 fi
 
-# Default behavior: always kill existing session and start fresh
-# This prevents frozen sessions from blocking you
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-  tmux kill-session -t "$SESSION_NAME" 2>/dev/null || true
-fi
+# Find next available session name (supports multiple from same directory)
+SESSION_BASE="claude-${DIR_NAME}"
+SESSION_NAME="$SESSION_BASE"
+SESSION_NUM=1
+while tmux has-session -t "$SESSION_NAME" 2>/dev/null; do
+  SESSION_NUM=$((SESSION_NUM + 1))
+  SESSION_NAME="${SESSION_BASE}-${SESSION_NUM}"
+done
 
 # Find the most recent conversation to resume
 PROJ_DIR=$(pwd | sed 's|/|-|g' | sed 's|^-||')
@@ -172,11 +209,31 @@ if [ -f "$METADATA_FILE" ]; then
 fi
 
 # Check for default Claude flags from metadata (e.g., --dangerously-skip-permissions)
+# Priority: 1) sessions.defaultStartupMode (from /configure), 2) features.claudeFlags
 if [ -f "$METADATA_FILE" ]; then
   META_FLAGS=$(node -e "
     try {
       const meta = JSON.parse(require('fs').readFileSync('$METADATA_FILE', 'utf8'));
-      console.log(meta.features?.claudeFlags?.enabled ? (meta.features.claudeFlags.defaultFlags || '') : '');
+      // Check sessions config first (from /configure)
+      const mode = meta.sessions?.defaultStartupMode;
+      if (mode && mode !== 'normal') {
+        const modeConfig = meta.sessions?.startupModes?.[mode];
+        if (modeConfig?.flags) {
+          // Normalize short flags to canonical form
+          let flags = modeConfig.flags;
+          if (flags === '--dangerous') flags = '--dangerously-skip-permissions';
+          console.log(flags);
+          process.exit(0);
+        }
+      }
+      // Fallback to claudeFlags feature
+      if (meta.features?.claudeFlags?.enabled) {
+        let flags = meta.features.claudeFlags.defaultFlags || '';
+        if (flags === '--dangerous') flags = '--dangerously-skip-permissions';
+        console.log(flags);
+      } else {
+        console.log('');
+      }
     } catch(e) { console.log(''); }
   " 2>/dev/null || echo "")
   if [ -n "$META_FLAGS" ]; then
@@ -201,6 +258,127 @@ if ! command -v tmux &> /dev/null; then
   exec claude "$@"
 fi
 
+# ══════════════════════════════════════════════════════════════════════════════
+# TMUX CONFIGURATION FUNCTION — applies theme, keybinds, and status bar
+# Extracted so --refresh can re-apply to existing sessions
+# ══════════════════════════════════════════════════════════════════════════════
+configure_tmux_session() {
+  local target_session="$1"
+
+  # Enable mouse support
+  tmux set-option -t "$target_session" mouse on
+
+  # Fix colors - proper terminal support
+  tmux set-option -t "$target_session" default-terminal "xterm-256color"
+  tmux set-option -t "$target_session" -ga terminal-overrides ",xterm-256color:Tc"
+
+  # ─── Status Bar Styling (2-line) ────────────────────────────────────────────
+
+  # Status bar position and refresh
+  tmux set-option -t "$target_session" status-position bottom
+  # Reduce refresh rate to prevent CPU overhead and freezes (was 5s, now 30s)
+  tmux set-option -t "$target_session" status-interval 30
+
+  # Enable 2-line status bar
+  tmux set-option -t "$target_session" status 2
+
+  # Base styling - Tokyo Night inspired dark theme
+  tmux set-option -t "$target_session" status-style "bg=#1a1b26,fg=#a9b1d6"
+
+  # Capture git branch once (avoids spawning process every refresh)
+  local git_branch
+  git_branch=$(git branch --show-current 2>/dev/null || echo '-')
+
+  # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+N new session  Alt+k interrupt  Alt+q detach  "
+
+  # Line 1 (bottom): Window tabs with smart truncation and brand color
+  tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
+
+  # Pane border styling - blue inactive, orange active
+  tmux set-option -t "$target_session" pane-border-style "fg=#3d59a1"
+  tmux set-option -t "$target_session" pane-active-border-style "fg=#e8683a"
+
+  # Message styling - orange highlight
+  tmux set-option -t "$target_session" message-style "bg=#e8683a,fg=#1a1b26,bold"
+
+  # ─── Keybindings ────────────────────────────────────────────────────────────
+
+  # Alt+number to switch windows (1-9)
+  for i in 1 2 3 4 5 6 7 8 9; do
+    tmux bind-key -n "M-$i" select-window -t ":$i"
+  done
+
+  # Alt+c to create new window
+  tmux bind-key -n M-c new-window -c "#{pane_current_path}"
+
+  # Alt+q to detach
+  tmux bind-key -n M-q detach-client
+
+  # Alt+d to split horizontally (side by side)
+  tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
+
+  # Alt+s to split vertically (top/bottom)
+  tmux bind-key -n M-s split-window -v -c "#{pane_current_path}"
+
+  # Alt+arrow to navigate panes
+  tmux bind-key -n M-Left select-pane -L
+  tmux bind-key -n M-Right select-pane -R
+  tmux bind-key -n M-Up select-pane -U
+  tmux bind-key -n M-Down select-pane -D
+
+  # Alt+x to close current pane (with confirmation)
+  tmux bind-key -n M-x confirm-before -p "Close pane? (y/n)" kill-pane
+
+  # Alt+w to close current window (with confirmation)
+  tmux bind-key -n M-w confirm-before -p "Close window? (y/n)" kill-window
+
+  # Alt+n/p for next/previous window
+  tmux bind-key -n M-n next-window
+  tmux bind-key -n M-p previous-window
+
+  # Alt+r to rename window
+  tmux bind-key -n M-r command-prompt -I "#W" "rename-window '%%'"
+
+  # Alt+z to zoom/unzoom pane (fullscreen toggle)
+  tmux bind-key -n M-z resize-pane -Z
+
+  # Alt+[ to enter copy mode (for scrolling)
+  tmux bind-key -n M-[ copy-mode
+
+  # ─── Session Creation Keybindings ──────────────────────────────────────────
+  # Alt+N (shift+n) to create a new worktree session window
+  tmux bind-key -n M-N run-shell "node .agileflow/scripts/spawn-parallel.js add-window --name auto-\$(date +%s) 2>/dev/null && tmux display-message 'New worktree session created' || tmux display-message 'Session creation failed'"
+
+  # Alt+S (shift+s) to create a same-directory Claude window (no worktree)
+  tmux bind-key -n M-S run-shell "tmux new-window -c '#{pane_current_path}' && tmux send-keys 'claude \$CLAUDE_SESSION_FLAGS' Enter && tmux display-message 'Same-dir session created'"
+
+  # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
+  # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
+  tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
+
+  # Alt+K (shift+k) to force-kill pane immediately (nuclear option for hard freezes)
+  tmux bind-key -n M-K kill-pane
+
+  # Alt+R (shift+r) to respawn the pane (restart with a fresh shell)
+  tmux bind-key -n M-R respawn-pane -k
+}
+
+# Handle --refresh flag — re-apply config to all existing claude-* sessions
+if [ "$REFRESH_CONFIG" = true ]; then
+  REFRESHED=0
+  for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^claude-"); do
+    configure_tmux_session "$sid"
+    REFRESHED=$((REFRESHED + 1))
+  done
+  if [ "$REFRESHED" -gt 0 ]; then
+    echo "Refreshed config on $REFRESHED session(s)."
+  else
+    echo "No claude-* sessions found to refresh."
+  fi
+  exit 0
+fi
+
 # Create new tmux session with Claude
 echo "Starting Claude in tmux session: $SESSION_NAME"
 
@@ -210,103 +388,8 @@ tmux set-option -g base-index 1
 # Create session in detached mode first (will use base-index 1)
 tmux new-session -d -s "$SESSION_NAME" -n "main"
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TMUX CONFIGURATION - Modern status bar with keybinds
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Enable mouse support
-tmux set-option -t "$SESSION_NAME" mouse on
-
-# Fix colors - proper terminal support
-tmux set-option -t "$SESSION_NAME" default-terminal "xterm-256color"
-tmux set-option -t "$SESSION_NAME" -ga terminal-overrides ",xterm-256color:Tc"
-
-# ─── Status Bar Styling (2-line) ──────────────────────────────────────────────
-
-# Status bar position and refresh
-tmux set-option -t "$SESSION_NAME" status-position bottom
-# Reduce refresh rate to prevent CPU overhead and freezes (was 5s, now 30s)
-tmux set-option -t "$SESSION_NAME" status-interval 30
-
-# Enable 2-line status bar
-tmux set-option -t "$SESSION_NAME" status 2
-
-# Base styling - Tokyo Night inspired dark theme
-tmux set-option -t "$SESSION_NAME" status-style "bg=#1a1b26,fg=#a9b1d6"
-
-# Capture git branch once at startup (avoids spawning process every refresh)
-GIT_BRANCH=$(git branch --show-current 2>/dev/null || echo '-')
-
-# Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-tmux set-option -t "$SESSION_NAME" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${GIT_BRANCH}  #[align=right]#[fg=#7a7e8a]Alt+k interrupt  Alt+x close  Alt+q detach  "
-
-# Line 1 (bottom): Window tabs with smart truncation and brand color
-# - Active window: full name (max 15 chars), brand orange highlight
-# - Inactive windows: truncate to 8 chars with ... suffix, warm gray
-tmux set-option -t "$SESSION_NAME" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
-
-# Pane border styling - blue inactive, orange active
-tmux set-option -t "$SESSION_NAME" pane-border-style "fg=#3d59a1"
-tmux set-option -t "$SESSION_NAME" pane-active-border-style "fg=#e8683a"
-
-# Message styling - orange highlight
-tmux set-option -t "$SESSION_NAME" message-style "bg=#e8683a,fg=#1a1b26,bold"
-
-# ─── Keybindings ──────────────────────────────────────────────────────────────
-
-# base-index 1 is set globally before session creation (so first window is 1)
-
-# Alt+number to switch windows (1-9)
-for i in 1 2 3 4 5 6 7 8 9; do
-  tmux bind-key -n "M-$i" select-window -t ":$i"
-done
-
-# Alt+c to create new window
-tmux bind-key -n M-c new-window -c "#{pane_current_path}"
-
-# Alt+q to detach
-tmux bind-key -n M-q detach-client
-
-# Alt+d to split horizontally (side by side)
-tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
-
-# Alt+s to split vertically (top/bottom)
-tmux bind-key -n M-s split-window -v -c "#{pane_current_path}"
-
-# Alt+arrow to navigate panes
-tmux bind-key -n M-Left select-pane -L
-tmux bind-key -n M-Right select-pane -R
-tmux bind-key -n M-Up select-pane -U
-tmux bind-key -n M-Down select-pane -D
-
-# Alt+x to close current pane (with confirmation)
-tmux bind-key -n M-x confirm-before -p "Close pane? (y/n)" kill-pane
-
-# Alt+w to close current window (with confirmation)
-tmux bind-key -n M-w confirm-before -p "Close window? (y/n)" kill-window
-
-# Alt+n/p for next/previous window
-tmux bind-key -n M-n next-window
-tmux bind-key -n M-p previous-window
-
-# Alt+r to rename window
-tmux bind-key -n M-r command-prompt -I "#W" "rename-window '%%'"
-
-# Alt+z to zoom/unzoom pane (fullscreen toggle)
-tmux bind-key -n M-z resize-pane -Z
-
-# Alt+[ to enter copy mode (for scrolling)
-tmux bind-key -n M-[ copy-mode
-
-# ─── Freeze Recovery Keybindings ─────────────────────────────────────────────
-# Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
-tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
-
-# Alt+K (shift+k) to force-kill pane immediately (nuclear option for hard freezes)
-tmux bind-key -n M-K kill-pane
-
-# Alt+R (shift+r) to respawn the pane (restart with a fresh shell)
-tmux bind-key -n M-R respawn-pane -k
+# Apply tmux configuration
+configure_tmux_session "$SESSION_NAME"
 
 # Send the claude command to the first window
 CLAUDE_CMD="claude"

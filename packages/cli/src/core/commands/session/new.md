@@ -6,7 +6,7 @@ compact_context:
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:session:new - Create parallel session with worktree"
     - "Validates git repo and prerequisites before proceeding"
-    - "Prompts user with 3 creation options: auto-create / named / existing branch"
+    - "Prompts user with 4 creation options: auto-create / named / existing branch / same-directory"
     - "Each option leads to different AskUserQuestion prompt"
     - "Returns success message with `cd` command to activate new session"
     - "Worktrees created in ../project-{id} or ../project-{name} directories"
@@ -79,7 +79,96 @@ Parse the JSON output to understand current sessions.
 
 ### Step 2B: Tmux Flow (INSIDE tmux)
 
-When inside tmux, use the simplified add-window flow:
+When inside tmux, first ask what type of session:
+
+#### Step 2B.0: Ask Session Type
+
+```
+AskUserQuestion:
+  question: "What type of session?"
+  header: "Session type"
+  multiSelect: false
+  options:
+    - label: "Parallel worktree (Recommended)"
+      description: "Isolated branch + directory. Safe for concurrent work."
+    - label: "Same directory (quick)"
+      description: "No worktree. Multiple Claude instances in same dir. Best for small, non-overlapping changes."
+```
+
+**If "Same directory (quick)" selected:**
+
+```bash
+# Get the session name (or auto-generate)
+```
+
+Ask for a window name (simple, no worktree context needed):
+```
+AskUserQuestion:
+  question: "Name for the new window?"
+  header: "Window name"
+  multiSelect: false
+  options:
+    - label: "Auto-name"
+      description: "Uses 'quick-{timestamp}' automatically"
+    - label: "helper"
+      description: "Helper session for small tasks"
+```
+
+Then create the same-directory session:
+```bash
+# Create new tmux window in current directory and run Claude
+tmux new-window -c "#{pane_current_path}" -n "{name}"
+tmux send-keys "claude $CLAUDE_SESSION_FLAGS" Enter
+```
+
+Display:
+```
+Created same-directory session "{name}".
+Changes apply to current branch. No git isolation.
+
+Note: Multiple AIs editing the same files can cause conflicts.
+Best for non-overlapping work (e.g., tests in one, docs in another).
+```
+
+**Done - skip remaining steps.**
+
+**If "Parallel worktree" selected:**
+
+Continue with the worktree flow below.
+
+#### Step 2B.1: Ask Session Name (worktree flow)
+
+Before presenting name options, gather context for smart suggestions:
+
+```bash
+# Get WIP/ready stories, recent commits, and existing branches in one pass
+node -e "
+const fs = require('fs');
+const { execFileSync } = require('child_process');
+const suggestions = [];
+try {
+  const status = JSON.parse(fs.readFileSync('docs/09-agents/status.json', 'utf8'));
+  const stories = Object.entries(status.stories || {});
+  const wip = stories.filter(([,s]) => s.status === 'in-progress' || s.status === 'ready');
+  wip.slice(0, 3).forEach(([id, s]) => {
+    const name = (s.title || id).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+    suggestions.push({ label: name, desc: id + ': ' + (s.title || '').slice(0, 40) });
+  });
+} catch(e) {}
+try {
+  const log = execFileSync('git', ['log', '--oneline', '-5'], { encoding: 'utf8' }).trim().split('\n');
+  const topics = log.map(l => l.replace(/^[a-f0-9]+ /, '').replace(/^(feat|fix|chore|docs|refactor|test)[\(:].*?\)?:?\s*/, ''));
+  const seen = new Set(suggestions.map(s => s.label));
+  topics.slice(0, 2).forEach(t => {
+    const name = t.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+    if (!seen.has(name)) { suggestions.push({ label: name, desc: 'From recent commit: ' + t.slice(0, 40) }); seen.add(name); }
+  });
+} catch(e) {}
+console.log(JSON.stringify(suggestions.slice(0, 3)));
+"
+```
+
+Use the output to generate contextual name suggestions. Present with AskUserQuestion:
 
 ```
 AskUserQuestion:
@@ -89,26 +178,34 @@ AskUserQuestion:
   options:
     - label: "Auto-generate name"
       description: "Creates parallel-{timestamp} automatically"
-    - label: "auth"
-      description: "Authentication work"
-    - label: "feature"
-      description: "New feature development"
-    - label: "bugfix"
-      description: "Bug fixing"
+    # Then 2-3 contextual suggestions from the script output above.
+    # Example if WIP story US-0042 "OAuth Support" exists:
+    # - label: "oauth-support"
+    #   description: "US-0042: OAuth Support"
+    # If no context available, use descriptive generics:
+    # - label: "hotfix"
+    #   description: "Quick bug fix"
+    # - label: "experiment"
+    #   description: "Try something out"
 ```
 
-### Step 2B.2: Ask Startup Mode (OPTIONAL but recommended)
+### Step 2B.2: Determine Startup Mode
 
-After getting the session name, check for configured default startup mode:
+Read the startup mode configuration:
 
 ```bash
-# Read the default startup mode from metadata (if exists)
-cat docs/00-meta/agileflow-metadata.json | grep -A1 '"defaultStartupMode"' 2>/dev/null
+node -e "try{const m=JSON.parse(require('fs').readFileSync('docs/00-meta/agileflow-metadata.json','utf8'));console.log(JSON.stringify({mode:m.sessions?.defaultStartupMode||'normal'}))}catch(e){console.log(JSON.stringify({mode:'normal'}))}"
 ```
 
 The `defaultStartupMode` can be: `normal`, `skip-permissions`, `accept-edits`, or `no-claude`.
 
-Then ask how Claude should start, putting the configured default first with "(Recommended)":
+**If mode is NOT "normal":**
+- Skip the question entirely. Use the configured mode directly.
+- Display: `Using configured startup mode: {mode}`
+- Map directly to flags and proceed to spawn (see Mode to Flag Mapping below)
+
+**If mode IS "normal" (or not set):**
+- Ask the startup mode question:
 
 ```
 AskUserQuestion:
@@ -116,8 +213,6 @@ AskUserQuestion:
   header: "Startup mode"
   multiSelect: false
   options:
-    # Put the defaultStartupMode option FIRST with "(Recommended)" suffix
-    # Example if defaultStartupMode is "normal":
     - label: "Normal (Recommended)"
       description: "Standard Claude with permission prompts"
     - label: "Skip permissions"
@@ -126,16 +221,6 @@ AskUserQuestion:
       description: "claude --permission-mode acceptEdits"
     - label: "Don't start Claude"
       description: "Create worktree only, start Claude manually"
-
-    # Example if defaultStartupMode is "skip-permissions":
-    # - label: "Skip permissions (Recommended)"
-    #   description: "claude --dangerously-skip-permissions (trusted mode)"
-    # - label: "Normal"
-    #   description: "Standard Claude with permission prompts"
-    # - label: "Accept edits only"
-    #   description: "claude --permission-mode acceptEdits"
-    # - label: "Don't start Claude"
-    #   description: "Create worktree only, start Claude manually"
 ```
 
 **Mode to Flag Mapping:**
@@ -186,6 +271,27 @@ AskUserQuestion:
       description: "Give it a memorable name like 'auth' or 'bugfix'"
     - label: "Use existing branch"
       description: "Create session from one of your existing branches"
+    - label: "Same directory (no worktree)"
+      description: "Run another Claude here - fast for small changes, no git isolation"
+```
+
+### Step 4d: If "Same directory" Selected
+
+Display the command for the user to run in a new terminal:
+
+```
+To start another Claude instance in this directory, run in a new terminal:
+
+  cd {current_directory}
+  claude
+
+Or if you want skip-permissions mode:
+
+  cd {current_directory}
+  claude --dangerously-skip-permissions
+
+Note: Multiple AIs editing the same files can cause conflicts.
+Best for non-overlapping work (e.g., tests in one, docs in another).
 ```
 
 ### Step 4a: If "Auto-create" Selected
@@ -215,7 +321,36 @@ Note: Worktree sessions default to "parallel" thread type. See docs/02-practices
 
 ### Step 4b: If "Name this session" Selected
 
-Use AskUserQuestion to get the name:
+Gather context for smart name suggestions (same script as tmux flow):
+
+```bash
+node -e "
+const fs = require('fs');
+const { execFileSync } = require('child_process');
+const suggestions = [];
+try {
+  const status = JSON.parse(fs.readFileSync('docs/09-agents/status.json', 'utf8'));
+  const stories = Object.entries(status.stories || {});
+  const wip = stories.filter(([,s]) => s.status === 'in-progress' || s.status === 'ready');
+  wip.slice(0, 3).forEach(([id, s]) => {
+    const name = (s.title || id).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+    suggestions.push({ label: name, desc: id + ': ' + (s.title || '').slice(0, 40) });
+  });
+} catch(e) {}
+try {
+  const log = execFileSync('git', ['log', '--oneline', '-5'], { encoding: 'utf8' }).trim().split('\n');
+  const topics = log.map(l => l.replace(/^[a-f0-9]+ /, '').replace(/^(feat|fix|chore|docs|refactor|test)[\(:].*?\)?:?\s*/, ''));
+  const seen = new Set(suggestions.map(s => s.label));
+  topics.slice(0, 2).forEach(t => {
+    const name = t.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+    if (!seen.has(name)) { suggestions.push({ label: name, desc: 'From recent commit: ' + t.slice(0, 40) }); seen.add(name); }
+  });
+} catch(e) {}
+console.log(JSON.stringify(suggestions.slice(0, 3)));
+"
+```
+
+Use AskUserQuestion with contextual suggestions from the script output:
 
 ```
 AskUserQuestion:
@@ -223,14 +358,11 @@ AskUserQuestion:
   header: "Session name"
   multiSelect: false
   options:
-    - label: "auth"
-      description: "Working on authentication"
-    - label: "bugfix"
-      description: "Fixing bugs"
-    - label: "feature"
-      description: "New feature work"
-    - label: "experiment"
-      description: "Trying something out"
+    # 2-3 contextual suggestions from script output above
+    # Example: {"label": "oauth-support", "description": "US-0042: OAuth Support"}
+    # If no context available, use descriptive generics:
+    # {"label": "hotfix", "description": "Quick bug fix"}
+    # {"label": "spike", "description": "Exploratory work"}
 ```
 
 Then create with nickname:
@@ -346,30 +478,22 @@ echo $TMUX
 
 ### 🚨 RULE #1B: TMUX FLOW (when in tmux)
 
-**Step 1: Ask for session name:**
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "Name for the new session window?",
-  "header": "New window",
-  "multiSelect": false,
-  "options": [
-    {"label": "Auto-generate name", "description": "Creates parallel-{timestamp} automatically"},
-    {"label": "auth", "description": "Authentication work"},
-    {"label": "feature", "description": "New feature development"},
-    {"label": "bugfix", "description": "Bug fixing"}
-  ]
-}]</parameter>
-</invoke>
-```
+**Step 0: Ask session type:**
+- "Parallel worktree (Recommended)" → continue to Step 1
+- "Same directory (quick)" → create tmux window in current dir, run claude, display warning, DONE
 
-**Step 2: Read default startup mode and ask:**
+**Step 1: Gather context and ask for session name:**
+First run the context-gathering script to get WIP stories and recent commits for smart name suggestions.
+Then present AskUserQuestion with "Auto-generate name" first, followed by 2-3 contextual suggestions.
+If no context available, use descriptive generics (hotfix, experiment, spike).
+
+**Step 2: Determine startup mode:**
 ```bash
-# Check configured default (normal if not set)
-cat docs/00-meta/agileflow-metadata.json | grep '"defaultStartupMode"' 2>/dev/null
+node -e "try{const m=JSON.parse(require('fs').readFileSync('docs/00-meta/agileflow-metadata.json','utf8'));console.log(JSON.stringify({mode:m.sessions?.defaultStartupMode||'normal'}))}catch(e){console.log(JSON.stringify({mode:'normal'}))}"
 ```
 
-Then ask with configured default first + "(Recommended)":
+**If mode is NOT "normal"** → Skip question, use configured mode directly, display `Using configured startup mode: {mode}`
+**If mode IS "normal"** → Ask:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -377,8 +501,7 @@ Then ask with configured default first + "(Recommended)":
   "header": "Startup",
   "multiSelect": false,
   "options": [
-    {"label": "{default} (Recommended)", "description": "Configured default"},
-    {"label": "Normal", "description": "Standard with prompts"},
+    {"label": "Normal (Recommended)", "description": "Standard with prompts"},
     {"label": "Skip permissions", "description": "--dangerously-skip-permissions"},
     {"label": "Accept edits only", "description": "--permission-mode acceptEdits"},
     {"label": "Don't start Claude", "description": "Manual start later"}
@@ -386,7 +509,6 @@ Then ask with configured default first + "(Recommended)":
 }]</parameter>
 </invoke>
 ```
-Note: Put the defaultStartupMode FIRST with "(Recommended)", remove duplicate.
 
 **Step 3: Run with selected options:**
 ```bash
@@ -430,7 +552,7 @@ Get current session count first:
 node .agileflow/scripts/session-manager.js status
 ```
 
-Then show exactly these 3 options:
+Then show these 4 options:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -443,7 +565,9 @@ Then show exactly these 3 options:
     {"label": "Name this session",
      "description": "Give it a memorable name like 'auth' or 'bugfix'"},
     {"label": "Use existing branch",
-     "description": "Create session from one of your existing branches"}
+     "description": "Create session from one of your existing branches"},
+    {"label": "Same directory (no worktree)",
+     "description": "Run another Claude here - fast, no git isolation"}
   ]
 }]</parameter>
 </invoke>
@@ -487,23 +611,11 @@ To switch to this session, run:
 
 ### 🚨 RULE #4: HANDLE OPTION #2 - NAME THIS SESSION
 
-If user selects "Name this session", present suggestions:
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What should this session be called?",
-  "header": "Session name",
-  "multiSelect": false,
-  "options": [
-    {"label": "auth", "description": "Working on authentication"},
-    {"label": "bugfix", "description": "Fixing bugs"},
-    {"label": "feature", "description": "New feature work"},
-    {"label": "experiment", "description": "Trying something out"},
-    {"label": "Other", "description": "Custom name"}
-  ]
-}]</parameter>
-</invoke>
-```
+If user selects "Name this session", gather context for smart suggestions:
+Run the context-gathering script to get WIP stories and recent commits.
+Present AskUserQuestion with 2-3 contextual suggestions from the output.
+If no context, use generics (hotfix, spike, experiment).
+User can always select "Other" for a custom name.
 
 If user selects "Other", prompt for custom input (AskUserQuestion with text input if available).
 
@@ -665,13 +777,14 @@ To switch to this session, run:
 | Auto-create | ../project-{id} | session-{id} | create |
 | Named | ../project-{name} | session-{id}-{name} | create --nickname {name} |
 | Existing branch | ../project-{name} | {branch_name} | create --branch {branch} |
+| Same directory | (current dir) | (current branch) | (just run claude) |
 
 ---
 
 ### ANTI-PATTERNS (DON'T DO THESE)
 
 ❌ Don't validate git repo in the middle of process
-❌ Don't show more/fewer than 3 initial options
+❌ Don't show more/fewer than 4 initial options
 ❌ Don't create session without explicit user choice
 ❌ Don't skip error handling (directory exists, branch conflict)
 ❌ Don't show old "cd && claude" command - use /add-dir instead
@@ -680,7 +793,7 @@ To switch to this session, run:
 ### DO THESE INSTEAD
 
 ✅ Validate git first, exit if not in repo
-✅ Always show exactly 3 options
+✅ Always show exactly 4 options
 ✅ Wait for user to select before creating
 ✅ Handle all error cases gracefully
 ✅ Show `/add-dir {path}` command for user to switch
@@ -692,19 +805,20 @@ To switch to this session, run:
 
 - `/agileflow:session:new` IS ACTIVE
 - **CHECK $TMUX FIRST** - determines which flow to use
-- **In tmux**: Use `spawn-parallel.js add-window` → fast, Alt+N to switch
-- **Not in tmux**: Standard worktree flow → /add-dir to switch
+- **In tmux**: Ask session type first (worktree vs same-dir), then `spawn-parallel.js add-window` for worktree or `tmux new-window` for same-dir
+- **Not in tmux**: Standard flow with 4 options → /add-dir to switch (or same-dir instructions)
 - ALWAYS validate git repo first (for standard flow)
-- Present 3 options: auto-create / named / existing branch (standard flow)
+- Present 4 options: auto-create / named / existing branch / same-directory (standard flow)
 - Each option leads to different flow
 - Use AskUserQuestion for user selections
 - Handle all error cases (directory, branch, git)
 - **Run `session-manager.js switch {new_id}` AFTER creating session** (enables boundary protection)
 - Show `/add-dir {path}` command for user to switch (NOT cd && claude)
 - Show tip to use /agileflow:session:resume
-- **STARTUP OPTIONS (tmux flow)**: After name, ask startup mode:
+- **STARTUP OPTIONS (tmux flow)**: After name, check startup mode:
   - Read `defaultStartupMode` from `docs/00-meta/agileflow-metadata.json`
-  - Put configured default FIRST with "(Recommended)" suffix
+  - **If mode is NOT "normal"** → Skip question, use configured mode directly
+  - **If mode IS "normal"** → Ask the startup mode question
   - Normal → (no extra flags)
   - Skip permissions → `--dangerous`
   - Accept edits → `--claude-args "--permission-mode acceptEdits"`
