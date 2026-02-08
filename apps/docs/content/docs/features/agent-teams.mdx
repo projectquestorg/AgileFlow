@@ -1,0 +1,293 @@
+---
+title: Agent Teams
+description: Coordinate multiple specialized AI agents to work together on complex multi-domain tasks using Claude Code's native Agent Teams or AgileFlow's subagent orchestrator.
+---
+
+# Agent Teams
+
+AgileFlow integrates with [Claude Code's native Agent Teams](https://code.claude.com/docs/en/agent-teams) to coordinate multiple specialized agents working together on complex tasks. A team lead orchestrates domain experts (API, UI, testing, security) who work in parallel with shared task lists, inter-agent messaging, and quality gates.
+
+When Agent Teams isn't available, AgileFlow falls back to its subagent orchestrator model, producing the same results through a different execution mechanism.
+
+## How It Works
+
+AgileFlow wraps Claude Code's Agent Teams with project-aware coordination:
+
+1. **You start a team** from a predefined template (or the `/babysit` mentor auto-detects when a team is needed)
+2. **A team lead** spawns specialized teammates, each running as an independent Claude Code session
+3. **Teammates work in parallel** on their assigned domain (backend, frontend, testing, etc.)
+4. **Quality gates** enforce standards (tests pass, no lint errors, no type errors) before work is accepted
+5. **Task synchronization** keeps AgileFlow's `status.json` in sync with Claude Code's native task list
+6. **A messaging bridge** translates between AgileFlow's internal bus and Claude Code's inter-agent messaging
+
+## Dual-Mode Architecture
+
+AgileFlow supports two execution modes. Both produce the same results:
+
+### Native Agent Teams Mode (Recommended)
+
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled, teammates run as fully independent Claude Code sessions:
+
+```
+Team Lead (delegate mode - coordinates only, no direct implementation)
+  |-- Teammate A (independent session, file-locked)
+  |-- Teammate B (independent session, file-locked)
+  |-- Teammate C (independent session, file-locked)
+  |-- Shared task list (~/.claude/tasks/)
+```
+
+**Advantages:**
+- Each teammate has its own context window (no context bloat)
+- File-locking prevents concurrent modification conflicts
+- Teammates can message each other directly
+- Better for long-running, complex work
+
+### Subagent Orchestrator Mode (Fallback)
+
+When Agent Teams is not enabled, AgileFlow uses its built-in orchestrator with subagents:
+
+```
+Orchestrator (coordinates via Task tool)
+  |-- Task -> Expert A (within shared context)
+  |-- Task -> Expert B (within shared context)
+  |-- Task -> Expert C (within shared context)
+  |-- AgileFlow bus messaging (docs/09-agents/bus/log.jsonl)
+```
+
+**Advantages:**
+- Works in any environment (no experimental flag needed)
+- Lower token cost (results summarized back to orchestrator)
+- Simpler debugging (everything in one session)
+- Better for short, focused tasks
+
+## Getting Started
+
+### Enable Agent Teams
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+Or add to your Claude Code settings:
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}
+```
+
+### Start a Team
+
+```
+/agileflow:team:start fullstack
+```
+
+### Check Available Templates
+
+```
+/agileflow:team:list
+```
+
+### Monitor Team Status
+
+```
+/agileflow:team:status
+```
+
+### Stop a Team
+
+```
+/agileflow:team:stop
+```
+
+## Team Templates
+
+AgileFlow includes 4 predefined team templates for common development patterns:
+
+### fullstack
+
+Full-stack feature development with integrated testing.
+
+| Role | Agent | Domain |
+|------|-------|--------|
+| Lead | `team-lead` (delegate mode) | Coordination |
+| Builder | `agileflow-api` | Backend |
+| Builder | `agileflow-ui` | Frontend |
+| Validator | `agileflow-testing` | Quality |
+
+**Best for:** Building features that span backend and frontend with automated testing.
+
+### code-review
+
+Comprehensive code review from multiple quality perspectives.
+
+| Role | Agent | Domain |
+|------|-------|--------|
+| Lead | `team-lead` (delegate mode) | Coordination |
+| Reviewer | `code-reviewer` | Code quality |
+| Reviewer | `agileflow-security` | Security |
+| Reviewer | `agileflow-performance` | Performance |
+
+**Best for:** Thorough code reviews where security, performance, and general quality are all important.
+
+### builder-validator
+
+Paired builders and validators for high-confidence implementations.
+
+| Role | Agent | Domain |
+|------|-------|--------|
+| Lead | `team-lead` (delegate mode) | Coordination |
+| Builder | `agileflow-api` | Backend |
+| Validator | `agileflow-api-validator` | Backend validation |
+| Builder | `agileflow-ui` | Frontend |
+| Validator | `agileflow-ui-validator` | Frontend validation |
+
+**Best for:** Critical features where every implementation must be independently verified.
+
+### logic-audit
+
+Deep analysis of complex logic with multiple specialized analyzers.
+
+| Role | Agent | Domain |
+|------|-------|--------|
+| Lead | `logic-consensus` | Consensus voting |
+| Analyzer | `logic-analyzer-edge` | Boundary conditions |
+| Analyzer | `logic-analyzer-flow` | Control flow |
+| Analyzer | `logic-analyzer-invariant` | State consistency |
+| Analyzer | `logic-analyzer-race` | Concurrency |
+| Analyzer | `logic-analyzer-type` | Type safety |
+
+**Best for:** Finding bugs in complex algorithms, async code, or critical business logic.
+
+### Custom Templates
+
+Create your own templates in `.agileflow/teams/<name>.json`:
+
+```json
+{
+  "name": "my-team",
+  "description": "Custom team for my project",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": true
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-api",
+      "role": "builder",
+      "domain": "backend",
+      "description": "Implements API endpoints"
+    },
+    {
+      "agent": "agileflow-testing",
+      "role": "validator",
+      "domain": "quality",
+      "description": "Validates implementations"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": { "tests": true, "lint": true, "types": false },
+    "task_completed": { "require_validator_approval": false }
+  }
+}
+```
+
+## Quality Gates
+
+Quality gates enforce standards automatically via Claude Code hooks. They prevent incomplete or broken code from being accepted.
+
+### TeammateIdle Gate
+
+Runs when a teammate finishes work and is about to go idle.
+
+- **Script:** `scripts/teammate-idle-gate.js`
+- **Exit 0:** Allow teammate to go idle (work accepted)
+- **Exit 2:** Block idle, display failures (teammate must fix issues)
+
+**Checks:** Tests passing, lint passing, type checking, code coverage threshold.
+
+### TaskCompleted Gate
+
+Runs when a builder marks a task as complete.
+
+- **Script:** `scripts/task-completed-gate.js`
+- **Exit 0:** Allow task completion
+- **Exit 2:** Block completion until validator approves
+
+**Checks:** Validator approval (for builder-validator teams), test coverage threshold.
+
+### Configuration
+
+Configure quality gates via `/agileflow:configure` or directly in your config:
+
+```yaml
+quality_gates:
+  teammate_idle:
+    tests: required
+    lint: required
+    types: optional
+    coverage: 75
+  task_completed:
+    validator_approval: required
+    test_coverage: 80
+```
+
+## Task Synchronization
+
+Tasks are bidirectionally synchronized between two systems:
+
+| System | Location | Purpose |
+|--------|----------|---------|
+| **Native Task List** | `~/.claude/tasks/` | Source of truth for teammates during active work |
+| **AgileFlow Status** | `docs/09-agents/status.json` | Persistent project state and historical record |
+
+When a teammate completes a task, the result syncs to `status.json`. When the team shuts down, all final states reconcile back to AgileFlow's status tracking.
+
+## Messaging Bridge
+
+The messaging bridge (`scripts/messaging-bridge.js`) translates between:
+
+- **AgileFlow bus** (`docs/09-agents/bus/log.jsonl`) - internal message logging
+- **Claude Code inter-agent messaging** - native teammate communication
+
+All messages flow through both systems, giving you full observability regardless of which mode you're using.
+
+## Auto-Detection with /babysit
+
+The `/babysit` mentor automatically detects when Agent Teams should be used:
+
+| Signal | Detection |
+|--------|-----------|
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set | Teams mode available |
+| Epic has stories with different owners (AG-API + AG-UI) | Multi-domain task |
+| Task description mentions multiple domains | Cross-layer work |
+
+When detected, `/babysit` suggests the appropriate template:
+- API + UI stories -> `fullstack`
+- Security review needed -> `code-review`
+- High-confidence required -> `builder-validator`
+
+## When to Use Agent Teams vs Subagents
+
+| Use Agent Teams when... | Use Subagents when... |
+|-------------------------|----------------------|
+| Task spans multiple domains | Task is focused on one domain |
+| Teammates need to communicate | Only the result matters |
+| Work will be long-running | Work is quick and focused |
+| You need file-locking | No concurrent file edits |
+| You want independent context per agent | You prefer everything in one session |
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/agileflow:team:start <template>` | Start a team from a template |
+| `/agileflow:team:list` | List available templates |
+| `/agileflow:team:status` | Show current team status |
+| `/agileflow:team:stop` | Gracefully stop a running team |
+| `/agileflow:team:guide` | Full migration guide and troubleshooting |
+| `/agileflow:babysit` | Mentor mode (auto-detects when teams are needed) |
+| `/agileflow:configure` | Configure quality gates and hooks |

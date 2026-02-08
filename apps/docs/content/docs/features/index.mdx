@@ -35,13 +35,15 @@ Enable self-improving agents that maintain domain knowledge and accelerate task 
 
 ### Agent Teams
 
-Coordinate multiple domain experts to work together on complex multi-domain tasks.
+Coordinate multiple domain experts to work together on complex multi-domain tasks using [Claude Code's native Agent Teams](https://code.claude.com/docs/en/agent-teams).
 
-- **Native team coordination** - Agent Teams work natively in Claude Code environments
-- **Multi-domain orchestration** - Automatically delegate subtasks to specialists
-- **Team templates** - Predefined teams for common patterns (fullstack, code-review, security)
-- **Shared context** - Team members share understanding of goals and progress
-- **Automatic synthesis** - Results synthesized into actionable next steps
+- **Dual-mode architecture** - Native Agent Teams when enabled, subagent orchestrator as fallback
+- **Team templates** - Predefined teams for fullstack, code-review, builder-validator, and logic-audit
+- **Quality gates** - Enforce tests, lint, types, and coverage before work is accepted
+- **Task synchronization** - Bidirectional sync between Claude Code's task list and AgileFlow status
+- **Auto-detection** - `/babysit` automatically suggests teams for multi-domain tasks
+
+[Learn about Agent Teams](/docs/features/agent-teams)
 
 ### Parallel Sessions
 
