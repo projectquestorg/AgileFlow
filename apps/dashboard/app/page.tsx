@@ -19,6 +19,7 @@ import type { Session } from "@/components/sidebar/NavSessions";
 import { useNotifications, NotificationSettings } from "@/components/notifications";
 import { Bell, X } from "lucide-react";
 import { useProvider } from "@/hooks/useProvider";
+import { useProjects } from "@/hooks/useProjects";
 import { IRSource } from "@/lib/protocol";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ function DashboardContent() {
   const [showReviewPane, setShowReviewPane] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : true);
 
   const { provider, providerInfo, providers, selectProvider } = useProvider("claude");
+  const { activeProject } = useProjects();
   const [wsUrl, setWsUrl] = useState("ws://localhost:8765");
   const [reviewTab, setReviewTab] = useState<"staged" | "unstaged" | "all">("all");
   const [showCommitDialog, setShowCommitDialog] = useState(false);
@@ -125,6 +127,13 @@ function DashboardContent() {
     }
   };
 
+  // Sync wsUrl with active project
+  useEffect(() => {
+    if (activeProject?.websocket_url && connectionStatus === "disconnected") {
+      setWsUrl(activeProject.websocket_url);
+    }
+  }, [activeProject?.websocket_url, connectionStatus]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -196,7 +205,7 @@ function DashboardContent() {
             <Separator orientation="vertical" className="h-4" />
             <span className="text-sm md:text-xs font-semibold tracking-wide">AGILEFLOW</span>
             <span className="text-muted-foreground hidden sm:inline">/</span>
-            <span className="text-sm md:text-xs text-muted-foreground hidden sm:inline">my-project</span>
+            <span className="text-sm md:text-xs text-muted-foreground hidden sm:inline">{activeProject?.name ?? "my-project"}</span>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <div className="flex items-center gap-1.5 px-2 py-1 text-xs">
@@ -508,7 +517,7 @@ function DashboardContent() {
           <div className="flex items-center gap-3 text-xs">
             <span className="hidden sm:flex items-center gap-1.5">
               <Folder className="h-3 w-3" />
-              ~/my-project
+              ~/{activeProject?.name ?? "my-project"}
             </span>
             <Separator orientation="vertical" className="h-3.5 hidden sm:block" />
             <span className="flex items-center gap-1.5">

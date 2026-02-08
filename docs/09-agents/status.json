@@ -1,5 +1,5 @@
 {
-  "updated": "2026-02-08T17:08:39.551Z",
+  "updated": "2026-02-08T19:15:00.000Z",
   "epics": {
     "EP-0020": {
       "title": "Ralph TUI - Terminal User Interface for Session Visualization",
@@ -4130,20 +4130,22 @@
       "title": "Set up Supabase project with MCP, deploy schema",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [],
       "acceptance_criteria": [
         "Given the requirement, When set up supabase project with mcp, deploy schema, Then acceptance criteria met"
       ],
-      "phase": 1
+      "phase": 1,
+      "completed_at": "2026-02-08T19:15:00.000Z",
+      "summary": "Installed @supabase/supabase-js and @supabase/ssr. Created browser/server/middleware clients, database types with Relationships, and SQL migration with 3 tables (user_profiles, projects, api_keys) with RLS policies."
     },
     "US-0232": {
       "title": "Implement GitHub OAuth with Supabase Auth",
       "epic": "EP-0031",
       "owner": "AG-API",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [],
@@ -4151,13 +4153,15 @@
         "Given the dashboard needs implement github oauth with supabase auth, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 1
+      "phase": 1,
+      "completed_at": "2026-02-08T19:15:00.000Z",
+      "summary": "Created login page with GitHub OAuth button, auth callback route for code exchange, Next.js middleware for session refresh and route protection, useAuth hook for client auth state, and UserMenu component with avatar/signout in sidebar footer."
     },
     "US-0233": {
       "title": "Create API key management UI",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "1d",
       "depends_on": [],
@@ -4165,7 +4169,9 @@
         "Given the dashboard needs create api key management ui, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 1
+      "phase": 1,
+      "completed_at": "2026-02-08T19:15:00.000Z",
+      "summary": "Created API routes for key generation (af_ prefix + SHA-256 hash) and revocation (soft-delete), settings layout with back nav, and ApiKeysManager client component with create dialog (shows key once), table list, and revoke buttons. Installed dialog, label, table, dropdown-menu, avatar shadcn components."
     },
     "US-0234": {
       "title": "Implement agileflow serve command with WebSocket",
@@ -4373,7 +4379,7 @@
       "title": "Build project selection page",
       "epic": "EP-0031",
       "owner": "AG-UI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [
@@ -4383,7 +4389,9 @@
         "Given the dashboard needs build project selection page, When implemented, Then it functions as specified in plan",
         "Given the implementation, When tested, Then all acceptance tests pass"
       ],
-      "phase": 4
+      "phase": 4,
+      "completed_at": "2026-02-08T19:15:00.000Z",
+      "summary": "Created project CRUD API routes, useProjects hook, ProjectSelector dropdown in sidebar header, and /settings/projects management page. Made main dashboard project-aware: active project's name in header/footer, wsUrl synced from active project."
     },
     "US-0247": {
       "title": "Add loading states, error handling, empty states",
@@ -4421,14 +4429,16 @@
       "title": "Deploy to Vercel with custom domain",
       "epic": "EP-0031",
       "owner": "AG-CI",
-      "status": "ready",
+      "status": "done",
       "priority": "P2",
       "estimate": "0.5d",
       "depends_on": [],
       "acceptance_criteria": [
         "Given the requirement, When deploy to vercel with custom domain, Then acceptance criteria met"
       ],
-      "phase": 5
+      "phase": 5,
+      "completed_at": "2026-02-08T19:15:00.000Z",
+      "summary": "Added Referrer-Policy header to vercel.json, configured next.config.ts with GitHub avatar and Supabase image remote patterns, created DEPLOY.md with Supabase setup, OAuth config, env vars, and Vercel deployment guide."
     },
     "US-0250": {
       "title": "Write documentation and setup guide",

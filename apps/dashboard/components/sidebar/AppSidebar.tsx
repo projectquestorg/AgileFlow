@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, GitBranch, Settings, HelpCircle } from "lucide-react";
+import { ChevronDown, GitBranch, Settings, HelpCircle, Key } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +18,8 @@ import { NavSessions, Session } from "./NavSessions";
 import { NavAutomations, Automation } from "./NavAutomations";
 import { NavInbox, InboxItem } from "./NavInbox";
 import { NavStatus } from "./NavStatus";
+import { UserMenu } from "./UserMenu";
+import { ProjectSelector } from "./ProjectSelector";
 import type { ProjectStatus, SessionInfo } from "@/hooks/useDashboard";
 
 interface ProviderInfo {
@@ -84,6 +87,7 @@ export function AppSidebar({
   sessionList,
   ...props
 }: AppSidebarProps) {
+  const router = useRouter();
   const [showProviderMenu, setShowProviderMenu] = React.useState(false);
 
   return (
@@ -135,6 +139,7 @@ export function AppSidebar({
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
+        <ProjectSelector />
       </SidebarHeader>
 
       <SidebarContent>
@@ -165,9 +170,15 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Settings">
+                <SidebarMenuButton tooltip="API Keys" onClick={() => router.push("/settings/keys")}>
+                  <Key className="size-4" />
+                  <span>API Keys</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Projects" onClick={() => router.push("/settings/projects")}>
                   <Settings className="size-4" />
-                  <span>Settings</span>
+                  <span>Projects</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -182,6 +193,7 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
+        <UserMenu />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={gitBranch}>
