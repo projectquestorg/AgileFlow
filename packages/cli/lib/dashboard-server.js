@@ -42,6 +42,7 @@ const {
   serializeMessage,
 } = require('./dashboard-protocol');
 const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
+const { validatePath } = require('./validate-paths');
 const { execFileSync, spawn } = require('child_process');
 const os = require('os');
 
@@ -67,7 +68,18 @@ function getAutomationRunner(rootDir) {
 
 // Default configuration
 const DEFAULT_PORT = 8765;
-const DEFAULT_HOST = '0.0.0.0'; // Allow external connections (for tunnels)
+const DEFAULT_HOST = '127.0.0.1'; // Localhost only for security
+
+// Session lifecycle
+const SESSION_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
+const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Rate limiting (token bucket)
+const RATE_LIMIT_TOKENS = 100; // max messages per second
+const RATE_LIMIT_REFILL_MS = 1000; // refill interval
+
+// Sensitive env var patterns to strip from terminal spawn
+const SENSITIVE_ENV_PATTERNS = /SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|PRIVATE_KEY|AUTH/i;
 
 // WebSocket magic GUID for handshake
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -83,7 +95,42 @@ class DashboardSession {
     this.messages = [];
     this.state = 'connected';
     this.lastActivity = new Date();
+    this.createdAt = new Date();
     this.metadata = {};
+
+    // Token bucket rate limiter
+    this._rateTokens = RATE_LIMIT_TOKENS;
+    this._rateLastRefill = Date.now();
+  }
+
+  /**
+   * Check if session has expired
+   * @returns {boolean}
+   */
+  isExpired() {
+    return Date.now() - this.lastActivity.getTime() > SESSION_TIMEOUT_MS;
+  }
+
+  /**
+   * Rate-limit incoming messages (token bucket)
+   * @returns {boolean} true if allowed, false if rate-limited
+   */
+  checkRateLimit() {
+    const now = Date.now();
+    const elapsed = now - this._rateLastRefill;
+
+    // Refill tokens based on elapsed time
+    if (elapsed >= RATE_LIMIT_REFILL_MS) {
+      this._rateTokens = RATE_LIMIT_TOKENS;
+      this._rateLastRefill = now;
+    }
+
+    if (this._rateTokens <= 0) {
+      return false;
+    }
+
+    this._rateTokens--;
+    return true;
   }
 
   /**
@@ -167,10 +214,24 @@ class TerminalInstance {
   /**
    * Start the terminal process
    */
+  /**
+   * Get a filtered copy of environment variables with secrets removed
+   */
+  _getFilteredEnv() {
+    const filtered = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (!SENSITIVE_ENV_PATTERNS.test(key)) {
+        filtered[key] = value;
+      }
+    }
+    return filtered;
+  }
+
   start() {
     try {
       // Try to use node-pty for proper PTY support
       const pty = require('node-pty');
+      const filteredEnv = this._getFilteredEnv();
 
       this.pty = pty.spawn(this.shell, [], {
         name: 'xterm-256color',
@@ -178,7 +239,7 @@ class TerminalInstance {
         rows: this.rows,
         cwd: this.cwd,
         env: {
-          ...process.env,
+          ...filteredEnv,
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
         },
@@ -209,11 +270,13 @@ class TerminalInstance {
    */
   startBasicShell() {
     try {
+      const filteredEnv = this._getFilteredEnv();
+
       // Use bash with interactive flag for better compatibility
       this.pty = spawn(this.shell, ['-i'], {
         cwd: this.cwd,
         env: {
-          ...process.env,
+          ...filteredEnv,
           TERM: 'dumb',
           PS1: '\\w $ ', // Simple prompt
         },
@@ -443,8 +506,11 @@ class DashboardServer extends EventEmitter {
     this.port = options.port || DEFAULT_PORT;
     this.host = options.host || DEFAULT_HOST;
     this.projectRoot = options.projectRoot || getProjectRoot();
-    this.apiKey = options.apiKey || null;
-    this.requireAuth = options.requireAuth || false;
+
+    // Auth is on by default - auto-generate key if not provided
+    // Set requireAuth: false explicitly to disable
+    this.requireAuth = options.requireAuth !== false;
+    this.apiKey = options.apiKey || (this.requireAuth ? crypto.randomBytes(32).toString('hex') : null);
 
     // Session management
     this.sessions = new Map();
@@ -459,6 +525,9 @@ class DashboardServer extends EventEmitter {
 
     // Inbox management
     this._inbox = new Map(); // itemId -> InboxItem
+
+    // Session cleanup interval
+    this._cleanupInterval = null;
 
     // HTTP server for WebSocket upgrade
     this.httpServer = null;
@@ -544,10 +613,17 @@ class DashboardServer extends EventEmitter {
    */
   start() {
     return new Promise((resolve, reject) => {
+      const securityHeaders = {
+        'Content-Type': 'application/json',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Cache-Control': 'no-store',
+      };
+
       this.httpServer = http.createServer((req, res) => {
         // Simple health check endpoint
         if (req.url === '/health') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, securityHeaders);
           res.end(
             JSON.stringify({
               status: 'ok',
@@ -560,12 +636,12 @@ class DashboardServer extends EventEmitter {
 
         // Info endpoint
         if (req.url === '/') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, securityHeaders);
           res.end(
             JSON.stringify({
               name: 'AgileFlow Dashboard Server',
               version: '1.0.0',
-              ws: `ws://${this.host === '0.0.0.0' ? 'localhost' : this.host}:${this.port}`,
+              ws: `ws://${this.host === '127.0.0.1' ? 'localhost' : this.host}:${this.port}`,
               sessions: this.sessions.size,
             })
           );
@@ -597,9 +673,19 @@ class DashboardServer extends EventEmitter {
         console.log(`  WebSocket: ${wsUrl}`);
         console.log(`  Health:    ${url}/health`);
         console.log(`  Project:   ${this.projectRoot}`);
-        console.log(`  Auth:      ${this.requireAuth ? 'Required' : 'Not required'}\n`);
+        console.log(`  Auth:      ${this.requireAuth ? 'Required' : 'Not required'}`);
+        if (this.requireAuth && this.apiKey) {
+          console.log(`  API Key:   ${this.apiKey.slice(0, 8)}...`);
+        }
+        console.log('');
 
-        resolve({ url, wsUrl });
+        // Start session cleanup interval
+        this._cleanupInterval = setInterval(() => {
+          this._cleanupExpiredSessions();
+        }, SESSION_CLEANUP_INTERVAL_MS);
+        this._cleanupInterval.unref();
+
+        resolve({ url, wsUrl, apiKey: this.apiKey });
       });
     });
   }
@@ -617,10 +703,32 @@ class DashboardServer extends EventEmitter {
     // Check API key if required
     if (this.requireAuth && this.apiKey) {
       const authHeader = req.headers['x-api-key'] || req.headers.authorization;
-      const providedKey = authHeader?.replace('Bearer ', '');
+      const providedKey = authHeader?.replace('Bearer ', '') || '';
 
-      if (providedKey !== this.apiKey) {
+      // Use timing-safe comparison to prevent timing attacks
+      const keyBuffer = Buffer.from(this.apiKey, 'utf8');
+      const providedBuffer = Buffer.from(providedKey, 'utf8');
+      if (keyBuffer.length !== providedBuffer.length ||
+          !crypto.timingSafeEqual(keyBuffer, providedBuffer)) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+    }
+
+    // Check WebSocket origin against localhost allowlist
+    const origin = req.headers.origin;
+    if (origin) {
+      const LOCALHOST_ORIGINS = [
+        'http://localhost', 'https://localhost',
+        'http://127.0.0.1', 'https://127.0.0.1',
+        'http://[::1]', 'https://[::1]',
+      ];
+      const isLocalhost = LOCALHOST_ORIGINS.some(
+        allowed => origin === allowed || origin.startsWith(allowed + ':')
+      );
+      if (!isLocalhost) {
+        socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
         socket.destroy();
         return;
       }
@@ -750,6 +858,12 @@ class DashboardServer extends EventEmitter {
    * Handle incoming message from dashboard
    */
   handleMessage(session, data) {
+    // Rate limit incoming messages
+    if (!session.checkRateLimit()) {
+      session.send(createError('RATE_LIMITED', 'Too many messages, please slow down'));
+      return;
+    }
+
     const message = parseInboundMessage(data);
     if (!message) {
       session.send(createError('INVALID_MESSAGE', 'Failed to parse message'));
@@ -956,7 +1070,8 @@ class DashboardServer extends EventEmitter {
       this.sendGitStatus(session);
       session.send(createNotification('success', 'Git', `${type.replace('git_', '')} completed`));
     } catch (error) {
-      session.send(createError('GIT_ERROR', error.message));
+      console.error('[Git Error]', error.message);
+      session.send(createError('GIT_ERROR', 'Git operation failed'));
     }
   }
 
@@ -1062,7 +1177,8 @@ class DashboardServer extends EventEmitter {
         })
       );
     } catch (error) {
-      session.send(createError('DIFF_ERROR', error.message));
+      console.error('[Diff Error]', error.message);
+      session.send(createError('DIFF_ERROR', 'Failed to get diff'));
     }
   }
 
@@ -1073,6 +1189,12 @@ class DashboardServer extends EventEmitter {
    * @returns {string} - The diff content
    */
   getFileDiff(filePath, staged = false) {
+    // Validate filePath stays within project root
+    const pathResult = validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    if (!pathResult.ok) {
+      return '';
+    }
+
     try {
       const diffArgs = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
 
@@ -1144,10 +1266,21 @@ class DashboardServer extends EventEmitter {
   handleTerminalSpawn(session, message) {
     const { cols, rows, cwd } = message;
 
+    // Validate cwd stays within project root
+    let safeCwd = this.projectRoot;
+    if (cwd) {
+      const cwdResult = validatePath(cwd, this.projectRoot, { allowSymlinks: true });
+      if (!cwdResult.ok) {
+        session.send(createError('TERMINAL_ERROR', 'Working directory must be within project root'));
+        return;
+      }
+      safeCwd = cwdResult.resolvedPath;
+    }
+
     const terminalId = this.terminalManager.createTerminal(session, {
       cols: cols || 80,
       rows: rows || 24,
-      cwd: cwd || this.projectRoot,
+      cwd: safeCwd,
     });
 
     if (terminalId) {
@@ -1345,8 +1478,9 @@ class DashboardServer extends EventEmitter {
       // Refresh the list
       this.sendAutomationList(session);
     } catch (error) {
-      session.send(createError('AUTOMATION_ERROR', error.message));
-      session.send(createAutomationStatus(automationId, 'error', { error: error.message }));
+      console.error('[Automation Error]', error.message);
+      session.send(createError('AUTOMATION_ERROR', 'Automation execution failed'));
+      session.send(createAutomationStatus(automationId, 'error', { error: 'Execution failed' }));
     }
   }
 
@@ -1433,6 +1567,18 @@ class DashboardServer extends EventEmitter {
   }
 
   /**
+   * Cleanup expired sessions
+   */
+  _cleanupExpiredSessions() {
+    for (const [sessionId, session] of this.sessions) {
+      if (session.isExpired()) {
+        console.log(`[Session ${sessionId}] Expired (idle > ${SESSION_TIMEOUT_MS / 3600000}h)`);
+        this.closeSession(sessionId);
+      }
+    }
+  }
+
+  /**
    * Close a session
    */
   closeSession(sessionId) {
@@ -1473,6 +1619,12 @@ class DashboardServer extends EventEmitter {
    */
   stop() {
     return new Promise(resolve => {
+      // Clear cleanup interval
+      if (this._cleanupInterval) {
+        clearInterval(this._cleanupInterval);
+        this._cleanupInterval = null;
+      }
+
       // Close all sessions
       for (const session of this.sessions.values()) {
         if (session.ws) {
@@ -1623,6 +1775,10 @@ module.exports = {
   stopDashboardServer,
   DEFAULT_PORT,
   DEFAULT_HOST,
+  SESSION_TIMEOUT_MS,
+  SESSION_CLEANUP_INTERVAL_MS,
+  RATE_LIMIT_TOKENS,
+  SENSITIVE_ENV_PATTERNS,
   encodeWebSocketFrame,
   decodeWebSocketFrame,
 };

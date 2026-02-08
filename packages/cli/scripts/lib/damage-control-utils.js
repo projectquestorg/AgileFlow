@@ -450,9 +450,15 @@ function createBashHook() {
 
     /**
      * Test command against a single pattern rule
+     * Skips patterns that fail ReDoS validation
      */
     function matchesPattern(command, rule) {
       try {
+        // Validate pattern for ReDoS safety before use
+        const validation = validatePattern(rule.pattern);
+        if (!validation.safe) {
+          return false;
+        }
         const flags = rule.flags || '';
         const regex = new RegExp(rule.pattern, flags);
         return regex.test(command);
@@ -517,6 +523,37 @@ function createBashHook() {
   };
 }
 
+/**
+ * Detect ReDoS-vulnerable patterns (nested quantifiers)
+ *
+ * Checks for patterns like (a+)+ or (a*b?)* that cause
+ * catastrophic backtracking on pathological inputs.
+ *
+ * @param {string} pattern - Regex pattern string to validate
+ * @returns {{ safe: boolean, reason?: string }}
+ */
+function validatePattern(pattern) {
+  if (!pattern || typeof pattern !== 'string') {
+    return { safe: false, reason: 'Empty or invalid pattern' };
+  }
+
+  // Detect nested quantifiers: a group with a quantifier containing inner quantifiers
+  // Matches patterns like (x+)*, (x+)+, (x*)+, (x+){2,}, etc.
+  const nestedQuantifierRe = /\([^)]*[+*][^)]*\)[+*{]/;
+  if (nestedQuantifierRe.test(pattern)) {
+    return { safe: false, reason: `Nested quantifier detected in: ${pattern}` };
+  }
+
+  // Try to compile the regex to catch syntax errors
+  try {
+    new RegExp(pattern);
+  } catch (e) {
+    return { safe: false, reason: `Invalid regex: ${e.message}` };
+  }
+
+  return { safe: true };
+}
+
 module.exports = {
   c,
   findProjectRoot,
@@ -529,6 +566,7 @@ module.exports = {
   parseBashPatterns,
   parsePathPatterns,
   validatePathAgainstPatterns,
+  validatePattern,
   createPathHook,
   createBashHook,
   CONFIG_PATHS,

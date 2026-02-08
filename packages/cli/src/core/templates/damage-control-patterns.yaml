@@ -16,7 +16,7 @@ version: "1.0.0"
 
 bashToolPatterns:
   # ─── File System Destruction ───
-  - pattern: '\brm\s+(-[rRf]+\s+)*/'
+  - pattern: '\brm\s+(-[rRf]+\s+)?/'
     reason: "rm with absolute path - could delete system files"
 
   - pattern: '\brm\s+-[rRf]*\s+\.\.'
@@ -25,7 +25,7 @@ bashToolPatterns:
   - pattern: '\brm\s+-rf\s+'
     reason: "Recursive force delete - extremely dangerous"
 
-  - pattern: '\brmdir\s+(-p\s+)*/'
+  - pattern: '\brmdir\s+(-p\s+)?/'
     reason: "rmdir with absolute path"
 
   # ─── Git Destructive Operations ───

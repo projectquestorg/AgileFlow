@@ -292,7 +292,8 @@ describe('/api/status route', () => {
 
     // Assert
     expect(result).toHaveProperty('error', 'Failed to parse status file');
-    expect(result).toHaveProperty('message');
+    // Error messages are intentionally sanitized (EP-0034) - no raw error.message exposed
+    expect(result).not.toHaveProperty('message');
   });
 
   it('caches status result on subsequent calls', () => {
@@ -420,7 +421,8 @@ describe('/api/tasks route', () => {
 
     // Assert
     expect(result).toHaveProperty('error', 'Failed to load tasks');
-    expect(result).toHaveProperty('message');
+    // Error messages are intentionally sanitized (EP-0034) - no raw error.message exposed
+    expect(result).not.toHaveProperty('message');
   });
 
   it('caches task results', () => {
@@ -496,7 +498,10 @@ describe('/api/tasks/:id route', () => {
     getTaskByIdHandler(new Map(), params);
 
     // Assert
-    expect(cache.set).toHaveBeenCalledWith('task-task-1', expect.objectContaining({ id: 'task-1' }));
+    expect(cache.set).toHaveBeenCalledWith(
+      'task-task-1',
+      expect.objectContaining({ id: 'task-1' })
+    );
   });
 });
 
@@ -1280,9 +1285,7 @@ describe('Utility functions (indirect testing via routes)', () => {
       // Arrange
       fs.existsSync.mockReturnValue(true);
       fs.readdirSync.mockReturnValue(['EP-001.md']);
-      fs.readFileSync.mockReturnValue(
-        '---\nstatus: active\n---\n# Title\n\n**Status**: blocked'
-      );
+      fs.readFileSync.mockReturnValue('---\nstatus: active\n---\n# Title\n\n**Status**: blocked');
 
       routes = getApiRoutes(mockRootDir, cache);
       const epicsHandler = routes.static['/api/epics'];

@@ -87,13 +87,31 @@ function createApiServer(options = {}) {
   // Get route handlers
   const routes = getApiRoutes(rootDir, cache);
 
+  // Localhost CORS allowlist
+  const ALLOWED_ORIGINS = [
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ];
+
   // Create HTTP server
   const server = http.createServer(async (req, res) => {
-    // CORS headers for browser access
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Type', 'application/json');
+
+    // CORS - restrict to localhost origins
+    const origin = req.headers.origin;
+    if (origin && ALLOWED_ORIGINS.some(allowed => origin === allowed)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    res.setHeader('Content-Type', 'application/json');
 
     // Handle preflight
     if (req.method === 'OPTIONS') {
@@ -155,7 +173,6 @@ function createApiServer(options = {}) {
       res.end(
         JSON.stringify({
           error: 'Internal server error',
-          message: error.message,
         })
       );
     }

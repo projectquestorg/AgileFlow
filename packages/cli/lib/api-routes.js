@@ -26,6 +26,10 @@ const {
 } = require('./paths');
 const { SessionRegistry } = require('./session-registry');
 const { getTaskRegistry } = require('../scripts/lib/task-registry');
+const { validatePath } = require('./validate-paths');
+
+// Allow-list regex for resource IDs (epics, stories, tasks, sessions)
+const SAFE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Get API route handlers
@@ -139,6 +143,10 @@ async function getSessions(sessionRegistry, cache) {
  * GET /api/sessions/:id - Get session by ID
  */
 async function getSessionById(sessionRegistry, id, cache) {
+  if (!SAFE_ID_PATTERN.test(id)) {
+    return { error: 'Invalid session ID format' };
+  }
+
   const cacheKey = `session-${id}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -183,7 +191,7 @@ function getStatus(rootDir, cache) {
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    return { error: 'Failed to parse status file', message: error.message };
+    return { error: 'Failed to parse status file' };
   }
 }
 
@@ -226,7 +234,7 @@ function getTasks(rootDir, queryParams, cache) {
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    return { error: 'Failed to load tasks', message: error.message };
+    return { error: 'Failed to load tasks' };
   }
 }
 
@@ -234,6 +242,10 @@ function getTasks(rootDir, queryParams, cache) {
  * GET /api/tasks/:id - Get task by ID
  */
 function getTaskById(rootDir, id, cache) {
+  if (!SAFE_ID_PATTERN.test(id)) {
+    return { error: 'Invalid task ID format' };
+  }
+
   const cacheKey = `task-${id}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -249,7 +261,7 @@ function getTaskById(rootDir, id, cache) {
     cache.set(cacheKey, task);
     return task;
   } catch (error) {
-    return { error: 'Failed to load task', message: error.message };
+    return { error: 'Failed to load task' };
   }
 }
 
@@ -300,7 +312,7 @@ async function getBusMessages(rootDir, queryParams, cache) {
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    return { error: 'Failed to read bus log', message: error.message };
+    return { error: 'Failed to read bus log' };
   }
 }
 
@@ -448,7 +460,7 @@ function getEpics(rootDir, cache) {
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    return { error: 'Failed to list epics', message: error.message };
+    return { error: 'Failed to list epics' };
   }
 }
 
@@ -456,6 +468,10 @@ function getEpics(rootDir, cache) {
  * GET /api/epics/:id - Get epic by ID
  */
 function getEpicById(rootDir, id, cache) {
+  if (!SAFE_ID_PATTERN.test(id)) {
+    return { error: 'Invalid epic ID format' };
+  }
+
   const cacheKey = `epic-${id}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -479,7 +495,7 @@ function getEpicById(rootDir, id, cache) {
     cache.set(cacheKey, result);
     return result;
   } catch (error) {
-    return { error: 'Failed to read epic', message: error.message };
+    return { error: 'Failed to read epic' };
   }
 }
 
@@ -533,7 +549,7 @@ function getStories(rootDir, queryParams, cache) {
 
     return { stories: [], count: 0, timestamp: new Date().toISOString() };
   } catch (error) {
-    return { error: 'Failed to list stories', message: error.message };
+    return { error: 'Failed to list stories' };
   }
 }
 
@@ -541,6 +557,10 @@ function getStories(rootDir, queryParams, cache) {
  * GET /api/stories/:id - Get story by ID
  */
 function getStoryById(rootDir, id, cache) {
+  if (!SAFE_ID_PATTERN.test(id)) {
+    return { error: 'Invalid story ID format' };
+  }
+
   const cacheKey = `story-${id}`;
   const cached = cache.get(cacheKey);
   if (cached) return cached;
@@ -569,7 +589,7 @@ function getStoryById(rootDir, id, cache) {
 
     return { error: 'Story not found', id };
   } catch (error) {
-    return { error: 'Failed to read story', message: error.message };
+    return { error: 'Failed to read story' };
   }
 }
 
