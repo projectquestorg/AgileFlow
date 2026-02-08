@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.0] - 2026-02-08
+
+### Added
+- Security Hardening Phase 2 - path traversal, auth, CORS, ReDoS, rate limiting
+
 ## [2.98.1] - 2026-02-07
 
 ### Added
