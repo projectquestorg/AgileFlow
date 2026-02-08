@@ -297,10 +297,7 @@ describe('WebSocket Frame Encoding/Decoding', () => {
 
       test('decodes 125-byte frame', () => {
         const payload = Buffer.alloc(125, 'a');
-        const frame = Buffer.concat([
-          Buffer.from([0x81, 125]),
-          payload,
-        ]);
+        const frame = Buffer.concat([Buffer.from([0x81, 125]), payload]);
 
         const result = decodeWebSocketFrame(frame);
 
@@ -567,10 +564,7 @@ describe('WebSocket Frame Encoding/Decoding', () => {
 
       test('returns null for incomplete 64-bit extended length', () => {
         // Only 4 bytes of 8-byte length
-        const frame = Buffer.concat([
-          Buffer.from([0x81, 127]),
-          Buffer.alloc(4),
-        ]);
+        const frame = Buffer.concat([Buffer.from([0x81, 127]), Buffer.alloc(4)]);
 
         const result = decodeWebSocketFrame(frame);
 

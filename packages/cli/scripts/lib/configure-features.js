@@ -1142,7 +1142,7 @@ function enableShellAliases() {
   const ALIAS_BLOCK_LINES = [
     '# AgileFlow tmux wrapper',
     '# AgileFlow tmux shortcuts (claude stays normal)',
-    '# Use \'af\' or \'agileflow\' for tmux, \'claude\' stays normal',
+    "# Use 'af' or 'agileflow' for tmux, 'claude' stays normal",
     'alias af="bash .agileflow/scripts/af"',
     'alias agileflow="bash .agileflow/scripts/af"',
   ];
@@ -1209,7 +1209,7 @@ function disableShellAliases() {
   const ALIAS_BLOCK_LINES = [
     '# AgileFlow tmux wrapper',
     '# AgileFlow tmux shortcuts (claude stays normal)',
-    '# Use \'af\' or \'agileflow\' for tmux, \'claude\' stays normal',
+    "# Use 'af' or 'agileflow' for tmux, 'claude' stays normal",
     'alias af="bash .agileflow/scripts/af"',
     'alias agileflow="bash .agileflow/scripts/af"',
   ];
@@ -1223,8 +1223,10 @@ function disableShellAliases() {
       const content = fs.readFileSync(rc.path, 'utf8');
 
       // Check for any AgileFlow alias (covers old and new markers)
-      if (!content.includes('alias af="bash .agileflow/scripts/af"') &&
-          !content.includes(SHELL_ALIAS_MARKER)) {
+      if (
+        !content.includes('alias af="bash .agileflow/scripts/af"') &&
+        !content.includes(SHELL_ALIAS_MARKER)
+      ) {
         continue;
       }
 

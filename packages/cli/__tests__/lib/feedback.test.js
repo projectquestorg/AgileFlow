@@ -8,6 +8,7 @@ const {
   FeedbackTask,
   FeedbackProgressBar,
   feedback,
+  createFeedback,
   SYMBOLS,
   SPINNER_FRAMES,
   DOHERTY_THRESHOLD_MS,
@@ -420,6 +421,100 @@ describe('feedback', () => {
     it('respects width option', () => {
       const bar = new FeedbackProgressBar('Test', 100, { width: 20 });
       expect(bar.width).toBe(20);
+    });
+  });
+
+  describe('AGILEFLOW_QUIET env var', () => {
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = process.env.AGILEFLOW_QUIET;
+    });
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.AGILEFLOW_QUIET;
+      } else {
+        process.env.AGILEFLOW_QUIET = originalEnv;
+      }
+    });
+
+    it('AGILEFLOW_QUIET=1 enables quiet mode', () => {
+      process.env.AGILEFLOW_QUIET = '1';
+      const fb = new Feedback();
+      expect(fb.quiet).toBe(true);
+    });
+
+    it('AGILEFLOW_QUIET=true enables quiet mode', () => {
+      process.env.AGILEFLOW_QUIET = 'true';
+      const fb = new Feedback();
+      expect(fb.quiet).toBe(true);
+    });
+
+    it('unset AGILEFLOW_QUIET does not enable quiet mode', () => {
+      delete process.env.AGILEFLOW_QUIET;
+      const fb = new Feedback();
+      expect(fb.quiet).toBe(false);
+    });
+
+    it('explicit quiet: false overrides env var', () => {
+      process.env.AGILEFLOW_QUIET = '1';
+      const fb = new Feedback({ quiet: false });
+      expect(fb.quiet).toBe(false);
+    });
+
+    it('AGILEFLOW_QUIET=1 suppresses output', () => {
+      process.env.AGILEFLOW_QUIET = '1';
+      const fb = new Feedback();
+      fb.success('Hidden');
+      fb.error('Hidden');
+      fb.warning('Hidden');
+      expect(consoleOutput.length).toBe(0);
+    });
+  });
+
+  describe('FeedbackSpinner stream option', () => {
+    it('uses custom stream for rendering', () => {
+      const mockStream = {
+        isTTY: true,
+        clearLine: jest.fn(),
+        cursorTo: jest.fn(),
+        write: jest.fn(),
+      };
+      jest.useFakeTimers();
+      const spinner = new FeedbackSpinner('Loading', { stream: mockStream });
+      spinner.start();
+      expect(mockStream.write).toHaveBeenCalled();
+      spinner.stop('✓', 'Done');
+      jest.useRealTimers();
+    });
+
+    it('writes stop message to custom stream', () => {
+      const mockStream = {
+        isTTY: false,
+        write: jest.fn(),
+      };
+      const spinner = new FeedbackSpinner('Loading', { stream: mockStream, isTTY: false });
+      spinner.start();
+      spinner.succeed('Done');
+      // Should have written to mockStream, not console.log
+      expect(mockStream.write).toHaveBeenCalled();
+      const allWrites = mockStream.write.mock.calls.map(c => c[0]).join('');
+      expect(allWrites).toContain('Done');
+    });
+  });
+
+  describe('createFeedback factory', () => {
+    it('creates a Feedback instance', () => {
+      const fb = createFeedback();
+      expect(fb).toBeInstanceOf(Feedback);
+    });
+
+    it('passes options through', () => {
+      const fb = createFeedback({ quiet: true, verbose: true, indent: 2 });
+      expect(fb.quiet).toBe(true);
+      expect(fb.verbose).toBe(true);
+      expect(fb.indent).toBe(2);
     });
   });
 

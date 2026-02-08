@@ -80,7 +80,10 @@ function getCurrentBranch(cwd = ROOT) {
   if (cached !== null) return cached;
 
   try {
-    const branch = execFileSync('git', ['branch', '--show-current'], { cwd, encoding: 'utf8' }).trim();
+    const branch = execFileSync('git', ['branch', '--show-current'], {
+      cwd,
+      encoding: 'utf8',
+    }).trim();
     gitCache.set(cacheKey, branch);
     return branch;
   } catch (e) {

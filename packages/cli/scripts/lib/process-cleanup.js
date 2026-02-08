@@ -137,11 +137,15 @@ function findClaudeProcesses() {
   } else if (process.platform === 'darwin') {
     // macOS: Use ps command
     try {
-      const output = execFileSync('bash', ['-c', "ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep"], {
-        encoding: 'utf8',
-        timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const output = execFileSync(
+        'bash',
+        ['-c', "ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep"],
+        {
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }
+      );
 
       for (const line of output.split('\n')) {
         if (!line.trim()) continue;

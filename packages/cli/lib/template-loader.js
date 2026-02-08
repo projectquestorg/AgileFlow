@@ -90,8 +90,10 @@ function extractSimpleFrontmatter(raw) {
       const key = line.substring(0, colonIdx).trim();
       let value = line.substring(colonIdx + 1).trim();
       // Remove quotes if present
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
       frontmatter[key] = value;

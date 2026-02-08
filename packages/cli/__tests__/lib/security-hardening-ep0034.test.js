@@ -380,7 +380,7 @@ describe('DashboardSession Rate Limiting', () => {
     expect(results[RATE_LIMIT_TOKENS]).toBe(false);
   });
 
-  it('refills tokens after time interval', (done) => {
+  it('refills tokens after time interval', done => {
     // Use all tokens
     for (let i = 0; i < RATE_LIMIT_TOKENS; i++) {
       session.checkRateLimit();
@@ -426,7 +426,7 @@ describe('DashboardSession Expiry', () => {
     expect(session.isExpired()).toBe(false);
   });
 
-  it('session expires after SESSION_TIMEOUT_MS of inactivity', (done) => {
+  it('session expires after SESSION_TIMEOUT_MS of inactivity', done => {
     // Set lastActivity to far past
     session.lastActivity = new Date(Date.now() - SESSION_TIMEOUT_MS - 1000);
 
@@ -441,7 +441,7 @@ describe('DashboardSession Expiry', () => {
     expect(session.isExpired()).toBe(false);
   });
 
-  it('activity updates lastActivity timestamp', (done) => {
+  it('activity updates lastActivity timestamp', done => {
     const originalTime = session.lastActivity.getTime();
 
     // Wait a bit to ensure timestamp difference

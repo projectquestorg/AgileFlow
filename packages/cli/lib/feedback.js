@@ -72,7 +72,9 @@ class Feedback {
   constructor(options = {}) {
     this.isTTY = options.isTTY !== undefined ? options.isTTY : process.stdout.isTTY;
     this.indent = options.indent || 0;
-    this.quiet = options.quiet || false;
+    this.quiet = options.quiet !== undefined
+      ? options.quiet
+      : (process.env.AGILEFLOW_QUIET === '1' || process.env.AGILEFLOW_QUIET === 'true');
     this.verbose = options.verbose || false;
   }
 
@@ -274,7 +276,8 @@ class Feedback {
 class FeedbackSpinner {
   constructor(message, options = {}) {
     this.message = message;
-    this.isTTY = options.isTTY !== undefined ? options.isTTY : process.stdout.isTTY;
+    this.stream = options.stream || process.stdout;
+    this.isTTY = options.isTTY !== undefined ? options.isTTY : this.stream.isTTY;
     this.indent = options.indent || 0;
     this.interval = options.interval || 80;
     this.frameIndex = 0;
@@ -287,12 +290,25 @@ class FeedbackSpinner {
   }
 
   /**
+   * Write a line to the appropriate stream
+   * @param {string} text - Text to write
+   * @private
+   */
+  _writeln(text) {
+    if (this.stream !== process.stdout) {
+      this.stream.write(text + '\n');
+    } else {
+      console.log(text);
+    }
+  }
+
+  /**
    * Start the spinner
    * @returns {FeedbackSpinner}
    */
   start() {
     if (!this.isTTY) {
-      console.log(`${this._prefix()}${c.dim}${this.message}${c.reset}`);
+      this._writeln(`${this._prefix()}${c.dim}${this.message}${c.reset}`);
       return this;
     }
 
@@ -327,9 +343,9 @@ class FeedbackSpinner {
     if (!this.isTTY) return;
     const frame = SPINNER_FRAMES[this.frameIndex];
     const line = `${this._prefix()}${c.cyan}${frame}${c.reset} ${this.message}`;
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    process.stdout.write(line);
+    this.stream.clearLine(0);
+    this.stream.cursorTo(0);
+    this.stream.write(line);
   }
 
   /**
@@ -346,8 +362,8 @@ class FeedbackSpinner {
     }
 
     if (this.isTTY) {
-      process.stdout.clearLine(0);
-      process.stdout.cursorTo(0);
+      this.stream.clearLine(0);
+      this.stream.cursorTo(0);
     }
 
     const elapsed = this.startTime ? Date.now() - this.startTime : 0;
@@ -355,7 +371,7 @@ class FeedbackSpinner {
       elapsed > DOHERTY_THRESHOLD_MS ? ` ${c.dim}(${formatDuration(elapsed)})${c.reset}` : '';
     const msg = message || this.message;
 
-    console.log(`${this._prefix()}${color}${symbol}${c.reset} ${msg}${suffix}`);
+    this._writeln(`${this._prefix()}${color}${symbol}${c.reset} ${msg}${suffix}`);
     return this;
   }
 
@@ -548,12 +564,22 @@ class FeedbackProgressBar {
 // Singleton instance for convenience
 const feedback = new Feedback();
 
+/**
+ * Factory function to create a configured Feedback instance
+ * @param {Object} [options={}] - Feedback options
+ * @returns {Feedback}
+ */
+function createFeedback(options = {}) {
+  return new Feedback(options);
+}
+
 module.exports = {
   Feedback,
   FeedbackSpinner,
   FeedbackTask,
   FeedbackProgressBar,
   feedback,
+  createFeedback,
   SYMBOLS,
   SPINNER_FRAMES,
   DOHERTY_THRESHOLD_MS,

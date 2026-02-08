@@ -57,36 +57,16 @@ function detectThreadType(session, isWorktree = false) {
 /**
  * Display progress feedback during long operations.
  * Returns a function to stop the progress indicator.
+ * Uses stderr to avoid corrupting stdout JSON output from callers.
  *
  * @param {string} message - Progress message
  * @returns {function} Stop function
  */
 function progressIndicator(message) {
-  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-  let frameIndex = 0;
-  let elapsed = 0;
-
-  // For TTY (interactive terminal), show spinner
-  if (process.stderr.isTTY) {
-    const interval = setInterval(() => {
-      process.stderr.write(`\r${frames[frameIndex++ % frames.length]} ${message}`);
-    }, 80);
-    return () => {
-      clearInterval(interval);
-      process.stderr.write(`\r${' '.repeat(message.length + 2)}\r`);
-    };
-  }
-
-  // For non-TTY (Claude Code, piped output), emit periodic updates to stderr
-  process.stderr.write(`⏳ ${message}...\n`);
-  const interval = setInterval(() => {
-    elapsed += 10;
-    process.stderr.write(`⏳ Still working... (${elapsed}s elapsed)\n`);
-  }, 10000); // Update every 10 seconds
-
-  return () => {
-    clearInterval(interval);
-  };
+  const { FeedbackSpinner } = require('./feedback');
+  const spinner = new FeedbackSpinner(message, { stream: process.stderr });
+  spinner.start();
+  return () => spinner.succeed();
 }
 
 /**

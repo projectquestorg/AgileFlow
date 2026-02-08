@@ -31,6 +31,7 @@ const { c, success, warning, error, dim, bold } = require('../lib/colors');
 const { getProjectRoot, getStatusPath } = require('../lib/paths');
 const { safeReadJSON } = require('../lib/errors');
 const { getInheritedFlags, detectParentSessionFlags } = require('../lib/flag-detection');
+const { feedback } = require('../lib/feedback');
 
 // Import session manager functions
 const sessionManager = require('./session-manager');
@@ -319,15 +320,19 @@ async function spawn(args) {
     console.log('');
   }
 
+  const task = feedback.task('Creating parallel sessions', sessionsToCreate.length);
   const createdSessions = [];
   for (const sessionSpec of sessionsToCreate) {
+    const spinner = feedback.spinner(`Creating session: ${sessionSpec.nickname}`);
+    spinner.start();
+
     const result = await sessionManager.createSession({
       nickname: sessionSpec.nickname,
       branch: sessionSpec.branch,
     });
 
     if (!result.success) {
-      console.error(error(`Failed to create session ${sessionSpec.nickname}: ${result.error}`));
+      spinner.fail(`Failed: ${sessionSpec.nickname} - ${result.error}`);
       continue;
     }
 
@@ -343,8 +348,10 @@ async function spawn(args) {
     // Show what was copied
     const copied = [...(result.envFilesCopied || []), ...(result.foldersCopied || [])];
     const copyInfo = copied.length ? dim(` (copied: ${copied.join(', ')})`) : '';
-    console.log(success(`  ✓ Session ${result.sessionId}: ${sessionSpec.nickname}${copyInfo}`));
+    spinner.succeed(`Session ${result.sessionId}: ${sessionSpec.nickname}${copyInfo}`);
+    task.step(`${sessionSpec.nickname}`);
   }
+  task.complete(`Created ${createdSessions.length} sessions`);
 
   if (createdSessions.length === 0) {
     console.error(error('\nNo sessions were created.'));
@@ -520,17 +527,14 @@ async function addWindow(args) {
   // Get window number
   let windowIndex;
   try {
-    windowIndex = execFileSync(
-      'tmux',
-      ['list-windows', '-t', currentSession, '-F', '#I:#W'],
-      {
+    windowIndex =
+      execFileSync('tmux', ['list-windows', '-t', currentSession, '-F', '#I:#W'], {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
-      }
-    )
-      .split('\n')
-      .find(line => line.endsWith(`:${windowName}`))
-      ?.split(':')[0] || '?';
+      })
+        .split('\n')
+        .find(line => line.endsWith(`:${windowName}`))
+        ?.split(':')[0] || '?';
   } catch {
     windowIndex = '?';
   }

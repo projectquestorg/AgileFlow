@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const { feedback } = require('../../lib/feedback');
 const {
   c,
   log,
@@ -168,7 +169,9 @@ function showVersionInfo(version) {
     latestVersion = execFileSync('npm', ['view', 'agileflow', 'version'], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
-    }).toString().trim();
+    })
+      .toString()
+      .trim();
     log(`Latest:     v${latestVersion}`);
 
     if (installedVersion !== 'unknown' && latestVersion && installedVersion !== latestVersion) {
@@ -262,7 +265,11 @@ function repairScripts(targetFeature = null) {
   // Ensure scripts directory exists
   ensureDir(scriptsDir);
 
-  for (const [script, info] of scriptsToCheck) {
+  const bar = scriptsToCheck.length > 5
+    ? feedback.progressBar('Checking scripts', scriptsToCheck.length)
+    : null;
+
+  for (const [script, scriptInfo] of scriptsToCheck) {
     const destPath = path.join(scriptsDir, script);
     const srcPath = path.join(sourceDir, script);
 
@@ -287,7 +294,9 @@ function repairScripts(targetFeature = null) {
     } else {
       skipped++;
     }
+    if (bar) bar.increment(script);
   }
+  if (bar) bar.complete('Script check complete');
 
   // Summary
   log('');

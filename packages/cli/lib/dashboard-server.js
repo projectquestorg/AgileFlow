@@ -510,7 +510,8 @@ class DashboardServer extends EventEmitter {
     // Auth is on by default - auto-generate key if not provided
     // Set requireAuth: false explicitly to disable
     this.requireAuth = options.requireAuth !== false;
-    this.apiKey = options.apiKey || (this.requireAuth ? crypto.randomBytes(32).toString('hex') : null);
+    this.apiKey =
+      options.apiKey || (this.requireAuth ? crypto.randomBytes(32).toString('hex') : null);
 
     // Session management
     this.sessions = new Map();
@@ -708,8 +709,10 @@ class DashboardServer extends EventEmitter {
       // Use timing-safe comparison to prevent timing attacks
       const keyBuffer = Buffer.from(this.apiKey, 'utf8');
       const providedBuffer = Buffer.from(providedKey, 'utf8');
-      if (keyBuffer.length !== providedBuffer.length ||
-          !crypto.timingSafeEqual(keyBuffer, providedBuffer)) {
+      if (
+        keyBuffer.length !== providedBuffer.length ||
+        !crypto.timingSafeEqual(keyBuffer, providedBuffer)
+      ) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
         return;
@@ -720,9 +723,12 @@ class DashboardServer extends EventEmitter {
     const origin = req.headers.origin;
     if (origin) {
       const LOCALHOST_ORIGINS = [
-        'http://localhost', 'https://localhost',
-        'http://127.0.0.1', 'https://127.0.0.1',
-        'http://[::1]', 'https://[::1]',
+        'http://localhost',
+        'https://localhost',
+        'http://127.0.0.1',
+        'https://127.0.0.1',
+        'http://[::1]',
+        'https://[::1]',
       ];
       const isLocalhost = LOCALHOST_ORIGINS.some(
         allowed => origin === allowed || origin.startsWith(allowed + ':')
@@ -1271,7 +1277,9 @@ class DashboardServer extends EventEmitter {
     if (cwd) {
       const cwdResult = validatePath(cwd, this.projectRoot, { allowSymlinks: true });
       if (!cwdResult.ok) {
-        session.send(createError('TERMINAL_ERROR', 'Working directory must be within project root'));
+        session.send(
+          createError('TERMINAL_ERROR', 'Working directory must be within project root')
+        );
         return;
       }
       safeCwd = cwdResult.resolvedPath;

@@ -44,6 +44,7 @@ const {
   upgradeFeatures,
 } = require('./lib/configure-features');
 const { listScripts, showVersionInfo, repairScripts } = require('./lib/configure-repair');
+const { feedback } = require('../lib/feedback');
 
 // ============================================================================
 // VERSION
@@ -281,7 +282,10 @@ function main() {
   }
 
   // Always detect first
+  const spinner = feedback.spinner('Detecting configuration...');
+  spinner.start();
   const status = detectConfig(VERSION);
+  spinner.succeed('Configuration detected');
   const { hasIssues, hasOutdated } = printStatus(status);
 
   // Detect only mode
@@ -317,11 +321,16 @@ function main() {
     actions.disabled = p.disable || [];
   }
 
+  // Enable/disable specific features with progress tracking
+  const totalChanges = enable.length + disable.length;
+  const featureTask = totalChanges > 1 ? feedback.task('Applying feature changes', totalChanges) : null;
+
   // Enable specific features
   enable.forEach(f => {
     if (enableFeature(f, { archivalDays }, VERSION)) {
       actions.enabled.push(f);
     }
+    if (featureTask) featureTask.step(`Enabled ${f}`);
   });
 
   // Disable specific features
@@ -329,7 +338,10 @@ function main() {
     if (disableFeature(f, VERSION)) {
       actions.disabled.push(f);
     }
+    if (featureTask) featureTask.step(`Disabled ${f}`);
   });
+
+  if (featureTask) featureTask.complete('Feature changes applied');
 
   // Print summary if anything changed
   if (actions.enabled.length > 0 || actions.disabled.length > 0) {

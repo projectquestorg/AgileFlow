@@ -181,7 +181,12 @@ async function main() {
   const sectionsToLoad = determineSectionsToLoad(commandName, lazyConfig, isMultiSession);
 
   // Pre-fetch all data in parallel
+  const prefetchStart = Date.now();
   const prefetched = await prefetchAllData({ sectionsToLoad });
+  const prefetchElapsed = Date.now() - prefetchStart;
+  if (prefetchElapsed > 400) {
+    process.stderr.write(`Context loaded in ${(prefetchElapsed / 1000).toFixed(1)}s\n`);
+  }
 
   // Generate formatted output
   const formatOptions = { commandName, activeSections };

@@ -127,7 +127,11 @@ describe('worktree-operations', () => {
     it('returns a stop function', () => {
       // Suppress stderr output during test
       const originalWrite = process.stderr.write;
+      const originalClearLine = process.stderr.clearLine;
+      const originalCursorTo = process.stderr.cursorTo;
       process.stderr.write = jest.fn();
+      process.stderr.clearLine = jest.fn();
+      process.stderr.cursorTo = jest.fn();
 
       const stop = progressIndicator('Testing');
 
@@ -135,11 +139,17 @@ describe('worktree-operations', () => {
       stop(); // Clean up
 
       process.stderr.write = originalWrite;
+      process.stderr.clearLine = originalClearLine;
+      process.stderr.cursorTo = originalCursorTo;
     });
 
     it('stop function clears the interval', () => {
       const originalWrite = process.stderr.write;
+      const originalClearLine = process.stderr.clearLine;
+      const originalCursorTo = process.stderr.cursorTo;
       process.stderr.write = jest.fn();
+      process.stderr.clearLine = jest.fn();
+      process.stderr.cursorTo = jest.fn();
 
       const stop = progressIndicator('Testing');
       stop();
@@ -152,6 +162,8 @@ describe('worktree-operations', () => {
         setTimeout(() => {
           expect(process.stderr.write.mock.calls.length).toBe(callCount);
           process.stderr.write = originalWrite;
+          process.stderr.clearLine = originalClearLine;
+          process.stderr.cursorTo = originalCursorTo;
           resolve();
         }, 100);
       });

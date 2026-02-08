@@ -116,19 +116,25 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       // Simulate assistant response with text
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'Hello ' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'Hello ' }],
+          },
+        })
+      );
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'world' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'world' }],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       const result = await messagePromise;
@@ -193,12 +199,15 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'response' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'response' }],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -211,10 +220,13 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'result',
-        result: 'slash command result',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'result',
+          result: 'slash command result',
+        })
+      );
 
       mockProcess.emit('close', 0);
       const result = await messagePromise;
@@ -229,12 +241,15 @@ describe('createClaudeBridge', () => {
 
       mockReadlineInterface.emit('line', 'not valid json');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'valid' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'valid' }],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       const result = await messagePromise;
@@ -295,13 +310,16 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'system',
-        subtype: 'init',
-        session_id: 'sess-123',
-        model: 'claude-opus',
-        tools: ['read', 'write'],
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'system',
+          subtype: 'init',
+          session_id: 'sess-123',
+          model: 'claude-opus',
+          tools: ['read', 'write'],
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -319,10 +337,13 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'system',
-        subtype: 'other',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'system',
+          subtype: 'other',
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -336,11 +357,14 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       expect(() => {
-        mockReadlineInterface.emit('line', JSON.stringify({
-          type: 'system',
-          subtype: 'init',
-          session_id: 'sess-123',
-        }));
+        mockReadlineInterface.emit(
+          'line',
+          JSON.stringify({
+            type: 'system',
+            subtype: 'init',
+            session_id: 'sess-123',
+          })
+        );
       }).not.toThrow();
 
       mockProcess.emit('close', 0);
@@ -355,12 +379,15 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'hello' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'hello' }],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -374,17 +401,22 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'tool_use',
-            id: 'tool-123',
-            name: 'read_file',
-            input: { path: '/test.txt' },
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                id: 'tool-123',
+                name: 'read_file',
+                input: { path: '/test.txt' },
+              },
+            ],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -399,20 +431,23 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [
-            { type: 'text', text: 'About to read file' },
-            {
-              type: 'tool_use',
-              id: 'tool-123',
-              name: 'read_file',
-              input: { path: '/test.txt' },
-            },
-          ],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [
+              { type: 'text', text: 'About to read file' },
+              {
+                type: 'tool_use',
+                id: 'tool-123',
+                name: 'read_file',
+                input: { path: '/test.txt' },
+              },
+            ],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -427,10 +462,13 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {},
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {},
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -448,33 +486,43 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       // First, buffer the tool use
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'tool_use',
-            id: 'tool-123',
-            name: 'read_file',
-            input: { path: '/test.txt' },
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                id: 'tool-123',
+                name: 'read_file',
+                input: { path: '/test.txt' },
+              },
+            ],
+          },
+        })
+      );
 
       // Verify tool use was registered
       expect(onToolStart).toHaveBeenCalledWith('tool-123', 'read_file', { path: '/test.txt' });
 
       // Then send the result
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'user',
-        message: {
-          content: [{
-            type: 'tool_result',
-            tool_use_id: 'tool-123',
-            content: 'File contents',
-            is_error: false,
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'user',
+          message: {
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: 'tool-123',
+                content: 'File contents',
+                is_error: false,
+              },
+            ],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -490,33 +538,43 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       // Buffer the tool use with specific name
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'tool_use',
-            id: 'tool-456',
-            name: 'write_file',
-            input: {},
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                id: 'tool-456',
+                name: 'write_file',
+                input: {},
+              },
+            ],
+          },
+        })
+      );
 
       // Verify tool use was registered
       expect(onToolStart).toHaveBeenCalledWith('tool-456', 'write_file', {});
 
       // Send result for that tool
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'user',
-        message: {
-          content: [{
-            type: 'tool_result',
-            tool_use_id: 'tool-456',
-            content: 'Written',
-            is_error: false,
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'user',
+          message: {
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: 'tool-456',
+                content: 'Written',
+                is_error: false,
+              },
+            ],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -531,32 +589,42 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'tool_use',
-            id: 'tool-123',
-            name: 'read_file',
-            input: {},
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [
+              {
+                type: 'tool_use',
+                id: 'tool-123',
+                name: 'read_file',
+                input: {},
+              },
+            ],
+          },
+        })
+      );
 
       // Verify tool use was registered
       expect(onToolStart).toHaveBeenCalledWith('tool-123', 'read_file', {});
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'user',
-        message: {
-          content: [{
-            type: 'tool_result',
-            tool_use_id: 'tool-123',
-            content: 'File not found',
-            is_error: true,
-          }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'user',
+          message: {
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: 'tool-123',
+                content: 'File not found',
+                is_error: true,
+              },
+            ],
+          },
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -570,10 +638,13 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'user',
-        message: {},
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'user',
+          message: {},
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -589,10 +660,13 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'result',
-        subtype: 'success',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -607,11 +681,14 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       // Send result event without any prior assistant text
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'result',
-        subtype: 'success',
-        result: 'command output',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+          result: 'command output',
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -627,19 +704,25 @@ describe('createClaudeBridge', () => {
       const messagePromise = bridge.sendMessage('test');
 
       // Send assistant text first
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{ type: 'text', text: 'response' }],
-        },
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'response' }],
+          },
+        })
+      );
 
       // Then send result
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'result',
-        subtype: 'success',
-        result: 'should be ignored',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'result',
+          subtype: 'success',
+          result: 'should be ignored',
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;
@@ -658,11 +741,14 @@ describe('createClaudeBridge', () => {
 
       const messagePromise = bridge.sendMessage('test');
 
-      mockReadlineInterface.emit('line', JSON.stringify({
-        type: 'result',
-        subtype: 'error',
-        result: 'error output',
-      }));
+      mockReadlineInterface.emit(
+        'line',
+        JSON.stringify({
+          type: 'result',
+          subtype: 'error',
+          result: 'error output',
+        })
+      );
 
       mockProcess.emit('close', 0);
       await messagePromise;

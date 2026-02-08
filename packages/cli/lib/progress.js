@@ -34,7 +34,8 @@ class Spinner {
   constructor(message, options = {}) {
     this.message = message;
     this.interval = options.interval || 80;
-    this.enabled = options.enabled !== false && process.stdout.isTTY;
+    this.stream = options.stream || process.stdout;
+    this.enabled = options.enabled !== false && this.stream.isTTY;
     this.frameIndex = 0;
     this.timer = null;
     this.startTime = null;
@@ -108,9 +109,9 @@ class Spinner {
     const line = `${c.cyan}${frame}${c.reset} ${this.message}`;
 
     // Clear line and write new content
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    process.stdout.write(line);
+    this.stream.clearLine(0);
+    this.stream.cursorTo(0);
+    this.stream.write(line);
   }
 
   /**
@@ -163,8 +164,8 @@ class Spinner {
     }
 
     if (this.enabled) {
-      process.stdout.clearLine(0);
-      process.stdout.cursorTo(0);
+      this.stream.clearLine(0);
+      this.stream.cursorTo(0);
     }
 
     const elapsed = this.startTime ? Date.now() - this.startTime : 0;

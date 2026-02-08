@@ -27,6 +27,7 @@ const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
 const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
 const { parseIntBounded } = require('../lib/validate');
+const { feedback } = require('../lib/feedback');
 
 // ===== SESSION STATE HELPERS =====
 
@@ -261,10 +262,14 @@ function handleBatchLoop(rootDir) {
   items[currentItem].iterations = (items[currentItem].iterations || 0) + 1;
 
   // Run tests for this file
-  console.log(`${c.blue}Running tests for:${c.reset} ${currentItem}`);
-  console.log(`${c.dim}${'─'.repeat(50)}${c.reset}`);
-
+  const testSpinner = feedback.spinner(`Running tests for: ${currentItem}`);
+  testSpinner.start();
   const testResult = runTestsForFile(rootDir, currentItem);
+  if (testResult.passed) {
+    testSpinner.succeed(`Tests passed for: ${currentItem}`);
+  } else {
+    testSpinner.fail(`Tests failed for: ${currentItem}`);
+  }
 
   if (testResult.passed) {
     console.log(`${c.green}✓ Tests passed${c.reset} (${(testResult.duration / 1000).toFixed(1)}s)`);
@@ -373,8 +378,10 @@ async function handleInit(args, rootDir) {
   const maxIterations = parseIntBounded(maxArg ? maxArg.split('=')[1] : null, 50, 1, 200);
 
   // Resolve glob pattern
-  console.log(`${c.dim}Resolving pattern: ${pattern}${c.reset}`);
+  const globSpinner = feedback.spinner(`Resolving pattern: ${pattern}`);
+  globSpinner.start();
   const files = await resolveGlob(pattern, rootDir);
+  globSpinner.succeed(`Resolved ${files.length} files`);
 
   if (files.length === 0) {
     console.log(`${c.yellow}No files found matching: ${pattern}${c.reset}`);
