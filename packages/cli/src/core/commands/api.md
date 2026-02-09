@@ -1,6 +1,6 @@
 ---
 description: Start REST API server to expose AgileFlow state
-argument-hint: ACTION=start|stop|status [PORT=3456]
+argument-hint: "ACTION=start|stop|status [PORT=3456]"
 compact_context:
   priority: medium
   preserve_rules:

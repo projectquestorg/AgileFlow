@@ -223,8 +223,13 @@ function main() {
       if (!arg.startsWith('--')) continue;
       const eqIndex = arg.indexOf('=');
       let key, value;
-      if (eqIndex !== -1) { key = arg.slice(2, eqIndex); value = arg.slice(eqIndex + 1); }
-      else { key = arg.slice(2); value = args[++i]; }
+      if (eqIndex !== -1) {
+        key = arg.slice(2, eqIndex);
+        value = arg.slice(eqIndex + 1);
+      } else {
+        key = arg.slice(2);
+        value = args[++i];
+      }
       if (!allowedKeys.includes(key)) {
         console.log(JSON.stringify({ success: false, error: `Unknown option: --${key}` }));
         return null;
@@ -243,7 +248,8 @@ function main() {
     }
 
     case 'unregister': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       unregisterSession(id);
       console.log(JSON.stringify({ success: true }));
       break;
@@ -253,15 +259,25 @@ function main() {
       const options = parseOpts(1, ['nickname', 'branch', 'timeout', 'mode', 'template']);
       if (!options) return;
       if (options.mode === 'team') {
-        console.log(JSON.stringify(createTeamSession({
-          template: options.template || 'fullstack', nickname: options.nickname,
-        })));
+        console.log(
+          JSON.stringify(
+            createTeamSession({
+              template: options.template || 'fullstack',
+              nickname: options.nickname,
+            })
+          )
+        );
         break;
       }
       if (options.timeout) {
         options.timeout = parseInt(options.timeout, 10);
         if (isNaN(options.timeout) || options.timeout < 1000) {
-          console.log(JSON.stringify({ success: false, error: 'Timeout must be a number >= 1000 (milliseconds)' }));
+          console.log(
+            JSON.stringify({
+              success: false,
+              error: 'Timeout must be a number >= 1000 (milliseconds)',
+            })
+          );
           return;
         }
       }
@@ -320,9 +336,13 @@ function main() {
     }
 
     case 'get': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       const session = getSession(id);
-      if (!session) { console.log(JSON.stringify({ success: false, error: `Session ${id} not found` })); return; }
+      if (!session) {
+        console.log(JSON.stringify({ success: false, error: `Session ${id} not found` }));
+        return;
+      }
       console.log(JSON.stringify({ success: true, ...session }));
       break;
     }
@@ -333,47 +353,63 @@ function main() {
     }
 
     case 'check-merge': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       console.log(JSON.stringify(checkMergeability(id)));
       break;
     }
     case 'merge-preview': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       console.log(JSON.stringify(getMergePreview(id)));
       break;
     }
     case 'integrate': {
-      const id = requireId(); if (!id) return;
-      const opts = parseOpts(2, ['strategy', 'deleteBranch', 'deleteWorktree', 'message'], ['deleteBranch', 'deleteWorktree']);
+      const id = requireId();
+      if (!id) return;
+      const opts = parseOpts(
+        2,
+        ['strategy', 'deleteBranch', 'deleteWorktree', 'message'],
+        ['deleteBranch', 'deleteWorktree']
+      );
       if (!opts) return;
       console.log(JSON.stringify(integrateSession(id, opts)));
       break;
     }
     case 'commit-changes': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       const opts = parseOpts(2, ['message']);
       if (!opts) return;
       console.log(JSON.stringify(commitChanges(id, opts)));
       break;
     }
     case 'stash': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       console.log(JSON.stringify(stashChanges(id)));
       break;
     }
     case 'unstash': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       console.log(JSON.stringify(unstashChanges(id)));
       break;
     }
     case 'discard-changes': {
-      const id = requireId(); if (!id) return;
+      const id = requireId();
+      if (!id) return;
       console.log(JSON.stringify(discardChanges(id)));
       break;
     }
     case 'smart-merge': {
-      const id = requireId(); if (!id) return;
-      const opts = parseOpts(2, ['strategy', 'deleteBranch', 'deleteWorktree', 'message'], ['deleteBranch', 'deleteWorktree']);
+      const id = requireId();
+      if (!id) return;
+      const opts = parseOpts(
+        2,
+        ['strategy', 'deleteBranch', 'deleteWorktree', 'message'],
+        ['deleteBranch', 'deleteWorktree']
+      );
       if (!opts) return;
       console.log(JSON.stringify(smartMerge(id, opts), null, 2));
       break;
@@ -383,7 +419,8 @@ function main() {
       break;
     }
     case 'switch': {
-      const id = requireId('Session ID or nickname'); if (!id) return;
+      const id = requireId('Session ID or nickname');
+      if (!id) return;
       console.log(JSON.stringify(switchSession(id), null, 2));
       break;
     }
@@ -453,21 +490,57 @@ ${c.cyan}Commands:${c.reset}
 
 // --- Exports ---
 module.exports = {
-  injectRegistry, getRegistryInstance, resetRegistryCache,
-  loadRegistry, saveRegistry,
-  registerSession, unregisterSession, getSession, createSession, createTeamSession,
-  getSessions, getSessionsAsync, getActiveSessionCount, deleteSession,
-  isSessionActive, isSessionActiveAsync, cleanupStaleLocks, cleanupStaleLocksAsync,
-  switchSession, clearActiveSession, getActiveSession,
-  THREAD_TYPES, detectThreadType, getSessionThreadType, setSessionThreadType,
-  transitionThread, getValidThreadTransitions,
-  getMainBranch, checkMergeability, getMergePreview, integrateSession,
-  commitChanges, stashChanges, unstashChanges, discardChanges,
-  smartMerge, getConflictingFiles, categorizeFile, getMergeStrategy, getMergeHistory,
-  SESSION_PHASES, getSessionPhase, getSessionPhaseAsync, getSessionPhasesAsync,
-  renderKanbanBoard, renderKanbanBoardAsync,
-  formatSessionsTable, getFileDetails, getSessionsHealth,
-  execGitAsync, gitCache,
+  injectRegistry,
+  getRegistryInstance,
+  resetRegistryCache,
+  loadRegistry,
+  saveRegistry,
+  registerSession,
+  unregisterSession,
+  getSession,
+  createSession,
+  createTeamSession,
+  getSessions,
+  getSessionsAsync,
+  getActiveSessionCount,
+  deleteSession,
+  isSessionActive,
+  isSessionActiveAsync,
+  cleanupStaleLocks,
+  cleanupStaleLocksAsync,
+  switchSession,
+  clearActiveSession,
+  getActiveSession,
+  THREAD_TYPES,
+  detectThreadType,
+  getSessionThreadType,
+  setSessionThreadType,
+  transitionThread,
+  getValidThreadTransitions,
+  getMainBranch,
+  checkMergeability,
+  getMergePreview,
+  integrateSession,
+  commitChanges,
+  stashChanges,
+  unstashChanges,
+  discardChanges,
+  smartMerge,
+  getConflictingFiles,
+  categorizeFile,
+  getMergeStrategy,
+  getMergeHistory,
+  SESSION_PHASES,
+  getSessionPhase,
+  getSessionPhaseAsync,
+  getSessionPhasesAsync,
+  renderKanbanBoard,
+  renderKanbanBoardAsync,
+  formatSessionsTable,
+  getFileDetails,
+  getSessionsHealth,
+  execGitAsync,
+  gitCache,
 };
 
 if (require.main === module) main();

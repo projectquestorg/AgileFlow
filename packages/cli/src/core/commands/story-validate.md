@@ -1,6 +1,6 @@
 ---
 description: Validate story completeness before development
-argument-hint: STORY=<US-ID>
+argument-hint: "STORY=<US-ID>"
 compact_context:
   priority: high
   preserve_rules:

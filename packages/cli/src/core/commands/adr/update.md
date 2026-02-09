@@ -1,6 +1,6 @@
 ---
 description: Update ADR status or content
-argument-hint: NUMBER=<number> [STATUS=<status>] [REASON=<text>]
+argument-hint: "NUMBER=<number> [STATUS=<status>] [REASON=<text>]"
 compact_context:
   priority: high
   preserve_rules:

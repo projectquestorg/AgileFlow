@@ -1,6 +1,6 @@
 ---
 description: Document work handoff between agents
-argument-hint: STORY=<US-ID> FROM=<id> TO=<id> [SUMMARY=<text>] [BLOCKERS=<list>]
+argument-hint: "STORY=<US-ID> FROM=<id> TO=<id> [SUMMARY=<text>] [BLOCKERS=<list>]"
 compact_context:
   priority: high
   preserve_rules:

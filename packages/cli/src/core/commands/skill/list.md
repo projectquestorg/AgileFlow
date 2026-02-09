@@ -1,6 +1,6 @@
 ---
 description: List all installed skills with their descriptions and status
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: medium
   preserve_rules:

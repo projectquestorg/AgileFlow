@@ -287,7 +287,7 @@ function enableFeature(feature, options = {}, version) {
         features: {
           processCleanup: {
             enabled: true,
-            autoKill: true,
+            autoKill: false,
             version,
             at: new Date().toISOString(),
           },
@@ -296,9 +296,10 @@ function enableFeature(feature, options = {}, version) {
       version
     );
     success('Process cleanup enabled');
-    warn('⚠️  Duplicate Claude processes will be automatically terminated on session start');
+    info('Duplicate Claude processes will be detected and reported on session start');
+    info('Auto-kill is disabled by default for safety');
     info('   Only affects processes in the SAME working directory (worktrees are safe)');
-    info('   Prevents freezing caused by multiple Claude instances competing for resources');
+    info('   Set AGILEFLOW_PROCESS_CLEANUP_AUTOKILL=1 to opt in to auto-kill at runtime');
     return true;
   }
 

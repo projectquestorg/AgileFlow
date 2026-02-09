@@ -1,6 +1,6 @@
 ---
 description: Generate categorized improvement ideas using multi-expert analysis
-argument-hint: [SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false] [FOCUS=IDEA-XXXX]
+argument-hint: "[SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false] [FOCUS=IDEA-XXXX]"
 compact_context:
   priority: high
   preserve_rules:

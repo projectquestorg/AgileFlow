@@ -1,6 +1,6 @@
 ---
 description: Bootstrap CI/CD workflow with testing and quality checks
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

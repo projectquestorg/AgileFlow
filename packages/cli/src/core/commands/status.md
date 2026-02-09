@@ -1,6 +1,6 @@
 ---
 description: Update story status and progress
-argument-hint: STORY=<US-ID> STATUS=<status> [SUMMARY=<text>] [PR=<url>] [TO=<agent-id>]
+argument-hint: "STORY=<US-ID> STATUS=<status> [SUMMARY=<text>] [PR=<url>] [TO=<agent-id>]"
 compact_context:
   priority: high
   preserve_rules:

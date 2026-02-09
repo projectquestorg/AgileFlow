@@ -1,6 +1,6 @@
 ---
 description: Synthesize insights across multiple research files
-argument-hint: [TOPIC=<text>] [FILES=<list>]
+argument-hint: "[TOPIC=<text>] [FILES=<list>]"
 compact_context:
   priority: high
   preserve_rules:

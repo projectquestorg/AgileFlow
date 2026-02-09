@@ -1,6 +1,6 @@
 ---
 description: Compress status.json by removing verbose fields and keeping only tracking metadata
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

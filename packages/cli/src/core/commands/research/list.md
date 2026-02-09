@@ -1,6 +1,6 @@
 ---
 description: Show research notes index
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 type: output-only  # This command displays output - not an ongoing task
 compact_context:
   priority: medium

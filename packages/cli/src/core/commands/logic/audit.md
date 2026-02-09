@@ -1,6 +1,6 @@
 ---
 description: Multi-agent logic analysis with consensus voting for finding logic bugs
-argument-hint: [file|directory] [DEPTH=quick|deep] [FOCUS=edge|invariant|flow|type|race|all]
+argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=edge|invariant|flow|type|race|all]"
 compact_context:
   priority: high
   preserve_rules:

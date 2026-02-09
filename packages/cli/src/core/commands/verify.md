@@ -1,6 +1,6 @@
 ---
 description: Run project tests and update story test status
-argument-hint: [<US-ID>]
+argument-hint: "[<US-ID>]"
 compact_context:
   priority: critical
   preserve_rules:

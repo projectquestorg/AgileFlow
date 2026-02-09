@@ -1,6 +1,6 @@
 ---
 description: View current session state and activity
-argument-hint: [--kanban]
+argument-hint: "[--kanban]"
 compact_context:
   priority: medium
   preserve_rules:

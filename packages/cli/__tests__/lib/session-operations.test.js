@@ -22,23 +22,29 @@ function createMockDeps(overrides = {}) {
       sessions: { ...sessions },
       ...overrides.registryOverrides,
     })),
-    saveRegistry: jest.fn((data) => {
+    saveRegistry: jest.fn(data => {
       // Update nextId from saved data
       if (data.next_id) nextId = data.next_id;
       // Sync sessions
       Object.assign(sessions, data.sessions || {});
     }),
-    readLock: jest.fn((id) => locks[id] || null),
-    readLockAsync: jest.fn(async (id) => locks[id] || null),
-    writeLock: jest.fn((id, pid) => { locks[id] = { pid: String(pid), started: Date.now() }; }),
-    removeLock: jest.fn((id) => { delete locks[id]; }),
+    readLock: jest.fn(id => locks[id] || null),
+    readLockAsync: jest.fn(async id => locks[id] || null),
+    writeLock: jest.fn((id, pid) => {
+      locks[id] = { pid: String(pid), started: Date.now() };
+    }),
+    removeLock: jest.fn(id => {
+      delete locks[id];
+    }),
     isSessionActive: jest.fn(() => false),
     isSessionActiveAsync: jest.fn(async () => false),
     c: { yellow: '', reset: '' },
     // Expose internal state for assertions
     _sessions: sessions,
     _locks: locks,
-    _setNextId: (id) => { nextId = id; },
+    _setNextId: id => {
+      nextId = id;
+    },
     ...overrides,
   };
 
@@ -80,7 +86,12 @@ describe('session-operations', () => {
       const deps = createMockDeps();
       const ops = createSessionOperations(deps);
       // Current process PID is always alive
-      const result = ops.processStalelock('1', { nickname: 'test' }, { pid: String(process.pid) }, false);
+      const result = ops.processStalelock(
+        '1',
+        { nickname: 'test' },
+        { pid: String(process.pid) },
+        false
+      );
       expect(result).toBeNull();
     });
 
@@ -129,7 +140,7 @@ describe('session-operations', () => {
       const ops = createSessionOperations(deps);
       const registry = {
         sessions: {
-          '1': { nickname: 'test', branch: 'main', path: '/test' },
+          1: { nickname: 'test', branch: 'main', path: '/test' },
         },
       };
       const result = ops.cleanupStaleLocks(registry);
@@ -142,7 +153,7 @@ describe('session-operations', () => {
       deps.readLock.mockReturnValue({ pid: '999999999' });
       const ops = createSessionOperations(deps);
       const registry = {
-        sessions: { '1': { nickname: 'test', branch: 'main', path: '/test' } },
+        sessions: { 1: { nickname: 'test', branch: 'main', path: '/test' } },
       };
       const result = ops.cleanupStaleLocks(registry, { dryRun: true });
       expect(result.count).toBe(1);
@@ -164,8 +175,8 @@ describe('session-operations', () => {
       const ops = createSessionOperations(deps);
       const registry = {
         sessions: {
-          '1': { nickname: 'a', branch: 'main', path: '/a' },
-          '2': { nickname: 'b', branch: 'feat', path: '/b' },
+          1: { nickname: 'a', branch: 'main', path: '/a' },
+          2: { nickname: 'b', branch: 'feat', path: '/b' },
         },
       };
       const result = await ops.cleanupStaleLocksAsync(registry);
@@ -179,8 +190,8 @@ describe('session-operations', () => {
       const deps = createMockDeps();
       const ops = createSessionOperations(deps);
       const sessions = ops.buildSessionsList(
-        { '10': { path: '/a' }, '2': { path: '/b' }, '1': { path: '/c' } },
-        { '10': false, '2': true, '1': false },
+        { 10: { path: '/a' }, 2: { path: '/b' }, 1: { path: '/c' } },
+        { 10: false, 2: true, 1: false },
         '/b'
       );
       expect(sessions[0].id).toBe('1');
@@ -192,8 +203,8 @@ describe('session-operations', () => {
       const deps = createMockDeps();
       const ops = createSessionOperations(deps);
       const sessions = ops.buildSessionsList(
-        { '1': { path: '/a' }, '2': { path: '/b' } },
-        { '1': true, '2': false },
+        { 1: { path: '/a' }, 2: { path: '/b' } },
+        { 1: true, 2: false },
         '/b'
       );
       expect(sessions[0].current).toBe(false);
@@ -203,22 +214,14 @@ describe('session-operations', () => {
     test('applies active checks from map', () => {
       const deps = createMockDeps();
       const ops = createSessionOperations(deps);
-      const sessions = ops.buildSessionsList(
-        { '1': { path: '/a' } },
-        { '1': true },
-        '/x'
-      );
+      const sessions = ops.buildSessionsList({ 1: { path: '/a' } }, { 1: true }, '/x');
       expect(sessions[0].active).toBe(true);
     });
 
     test('defaults active to false when not in map', () => {
       const deps = createMockDeps();
       const ops = createSessionOperations(deps);
-      const sessions = ops.buildSessionsList(
-        { '1': { path: '/a' } },
-        {},
-        '/x'
-      );
+      const sessions = ops.buildSessionsList({ 1: { path: '/a' } }, {}, '/x');
       expect(sessions[0].active).toBe(false);
     });
   });
@@ -233,7 +236,7 @@ describe('session-operations', () => {
     test('returns session with thread_type defaulted for legacy main session', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '1': { path: '/test', is_main: true, branch: 'main' } },
+          sessions: { 1: { path: '/test', is_main: true, branch: 'main' } },
         },
       });
       const ops = createSessionOperations(deps);
@@ -244,7 +247,7 @@ describe('session-operations', () => {
     test('returns session with thread_type defaulted for legacy non-main session', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '1': { path: '/test', is_main: false, branch: 'feat' } },
+          sessions: { 1: { path: '/test', is_main: false, branch: 'feat' } },
         },
       });
       const ops = createSessionOperations(deps);
@@ -255,7 +258,7 @@ describe('session-operations', () => {
     test('preserves explicit thread_type', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '1': { path: '/test', thread_type: 'fusion', branch: 'feat' } },
+          sessions: { 1: { path: '/test', thread_type: 'fusion', branch: 'feat' } },
         },
       });
       const ops = createSessionOperations(deps);
@@ -266,7 +269,7 @@ describe('session-operations', () => {
     test('includes active status', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '1': { path: '/test', branch: 'main' } },
+          sessions: { 1: { path: '/test', branch: 'main' } },
         },
       });
       deps.isSessionActive.mockReturnValue(true);
@@ -288,7 +291,7 @@ describe('session-operations', () => {
     test('prevents deletion of main session', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '1': { path: '/test', is_main: true } },
+          sessions: { 1: { path: '/test', is_main: true } },
         },
       });
       const ops = createSessionOperations(deps);
@@ -300,7 +303,7 @@ describe('session-operations', () => {
     test('removes lock and deletes session from registry', () => {
       const deps = createMockDeps({
         registryOverrides: {
-          sessions: { '2': { path: '/other', is_main: false } },
+          sessions: { 2: { path: '/other', is_main: false } },
         },
       });
       const ops = createSessionOperations(deps);
@@ -326,7 +329,7 @@ describe('session-operations', () => {
       const deps = createMockDeps({
         registryOverrides: {
           sessions: {
-            '5': { path: cwd, branch: 'old-branch', is_main: false },
+            5: { path: cwd, branch: 'old-branch', is_main: false },
           },
           next_id: 10,
         },
@@ -342,7 +345,7 @@ describe('session-operations', () => {
       const deps = createMockDeps({
         registryOverrides: {
           sessions: {
-            '5': { path: cwd, branch: 'main', is_main: false, nickname: null },
+            5: { path: cwd, branch: 'main', is_main: false, nickname: null },
           },
           next_id: 10,
         },

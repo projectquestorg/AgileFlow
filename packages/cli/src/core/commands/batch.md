@@ -1,6 +1,6 @@
 ---
 description: Process multiple items with functional patterns (map/pmap/filter/reduce)
-argument-hint: <operation> <pattern> [<action>]
+argument-hint: "<operation> <pattern> [<action>]"
 compact_context:
   priority: normal
   preserve_rules:

@@ -1,6 +1,6 @@
 ---
 description: Generate stakeholder progress report
-argument-hint: [PERIOD=week|sprint|month|quarter] [AUDIENCE=exec|client|team|board] [FORMAT=email|markdown]
+argument-hint: "[PERIOD=week|sprint|month|quarter] [AUDIENCE=exec|client|team|board] [FORMAT=email|markdown]"
 compact_context:
   priority: high
   preserve_rules:

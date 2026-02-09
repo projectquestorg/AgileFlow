@@ -270,14 +270,23 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
       fs.mkdirSync(notifyDir, { recursive: true });
     }
     const notifyPath = path.join(notifyDir, 'last-merge.json');
-    fs.writeFileSync(notifyPath, JSON.stringify({
-      merged_at: new Date().toISOString(),
-      session_id: sessionId,
-      branch: branchName,
-      strategy,
-      commit_message: commitMessage,
-    }, null, 2));
-  } catch (e) { /* ignore notification write failures */ }
+    fs.writeFileSync(
+      notifyPath,
+      JSON.stringify(
+        {
+          merged_at: new Date().toISOString(),
+          session_id: sessionId,
+          branch: branchName,
+          strategy,
+          commit_message: commitMessage,
+        },
+        null,
+        2
+      )
+    );
+  } catch (e) {
+    /* ignore notification write failures */
+  }
 
   // Delete worktree first (before branch, as worktree holds ref)
   if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {

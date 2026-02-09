@@ -1,6 +1,6 @@
 ---
 description: List all Architecture Decision Records
-argument-hint: [STATUS=<status>]
+argument-hint: "[STATUS=<status>]"
 compact_context:
   priority: medium
   preserve_rules:

@@ -1,6 +1,6 @@
 ---
 description: Generate retrospective with Start/Stop/Continue format
-argument-hint: [TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<EP-ID>] [FORMAT=ascii|markdown|html] [SAVE=true|false]
+argument-hint: "[TIMEFRAME=sprint|2weeks|30d|90d] [EPIC=<EP-ID>] [FORMAT=ascii|markdown|html] [SAVE=true|false]"
 model: haiku
 compact_context:
   priority: medium

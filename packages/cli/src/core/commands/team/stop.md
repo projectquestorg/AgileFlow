@@ -1,6 +1,6 @@
 ---
 description: Gracefully shut down a team
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

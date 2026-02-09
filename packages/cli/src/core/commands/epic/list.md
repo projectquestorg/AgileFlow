@@ -1,6 +1,6 @@
 ---
 description: List all epics with status and progress
-argument-hint: [STATUS=<status>]
+argument-hint: "[STATUS=<status>]"
 compact_context:
   priority: medium
   preserve_rules:

@@ -1,7 +1,8 @@
 ---
 name: precompact
 description: Configure PreCompact hook for context preservation during conversation compacts
-tools:   - Read
+tools:
+  - Read
   - Write
   - Edit
   - Bash

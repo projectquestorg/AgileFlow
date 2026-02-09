@@ -1,6 +1,6 @@
 ---
 description: Edit an existing skill's SKILL.md, cookbook entries, or references
-argument-hint: [<name>]
+argument-hint: "[<name>]"
 compact_context:
   priority: medium
   preserve_rules:

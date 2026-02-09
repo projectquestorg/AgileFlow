@@ -265,9 +265,10 @@ function repairScripts(targetFeature = null) {
   // Ensure scripts directory exists
   ensureDir(scriptsDir);
 
-  const bar = scriptsToCheck.length > 5
-    ? feedback.progressBar('Checking scripts', scriptsToCheck.length)
-    : null;
+  const bar =
+    scriptsToCheck.length > 5
+      ? feedback.progressBar('Checking scripts', scriptsToCheck.length)
+      : null;
 
   for (const [script, scriptInfo] of scriptsToCheck) {
     const destPath = path.join(scriptsDir, script);

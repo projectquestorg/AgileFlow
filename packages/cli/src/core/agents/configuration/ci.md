@@ -1,7 +1,8 @@
 ---
 name: configuration-ci
 description: Configure CI/CD workflow for automated testing and quality checks
-tools:   - Bash
+tools:
+  - Bash
   - Read
   - Edit
   - Write

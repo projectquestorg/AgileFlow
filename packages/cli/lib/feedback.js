@@ -72,9 +72,10 @@ class Feedback {
   constructor(options = {}) {
     this.isTTY = options.isTTY !== undefined ? options.isTTY : process.stdout.isTTY;
     this.indent = options.indent || 0;
-    this.quiet = options.quiet !== undefined
-      ? options.quiet
-      : (process.env.AGILEFLOW_QUIET === '1' || process.env.AGILEFLOW_QUIET === 'true');
+    this.quiet =
+      options.quiet !== undefined
+        ? options.quiet
+        : process.env.AGILEFLOW_QUIET === '1' || process.env.AGILEFLOW_QUIET === 'true';
     this.verbose = options.verbose || false;
   }
 

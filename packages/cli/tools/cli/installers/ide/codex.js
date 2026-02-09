@@ -92,6 +92,12 @@ class CodexSetup extends BaseIdeSetup {
     // Replace Claude-specific references using content-transformer
     bodyContent = replaceReferences(bodyContent, IDE_REPLACEMENTS.codex);
 
+    // Replace /agileflow: prefix and all subsequent colons for Codex compatibility
+    // e.g., /agileflow:story:list → $agileflow-story-list
+    bodyContent = bodyContent.replace(/\/agileflow:([a-zA-Z0-9:_-]+)/g, (_match, rest) => {
+      return '$agileflow-' + rest.replace(/:/g, '-');
+    });
+
     return `---
 ${skillFrontmatter}
 ---
@@ -115,10 +121,12 @@ ${codexHeader}${bodyContent}`;
     let bodyContent = stripFrontmatter(content);
 
     // Replace Claude-specific references using content-transformer
-    // Use codex replacements plus command-specific pattern
-    bodyContent = replaceReferences(bodyContent, {
-      ...IDE_REPLACEMENTS.codex,
-      '/agileflow:': '$agileflow-',
+    bodyContent = replaceReferences(bodyContent, IDE_REPLACEMENTS.codex);
+
+    // Replace /agileflow: prefix and all subsequent colons for Codex compatibility
+    // e.g., /agileflow:story:list → $agileflow-story-list
+    bodyContent = bodyContent.replace(/\/agileflow:([a-zA-Z0-9:_-]+)/g, (_match, rest) => {
+      return '$agileflow-' + rest.replace(/:/g, '-');
     });
 
     // Add Codex prompt header

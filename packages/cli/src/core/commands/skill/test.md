@@ -1,6 +1,6 @@
 ---
 description: Verify a skill works correctly by testing its activation and functionality
-argument-hint: [<name>]
+argument-hint: "[<name>]"
 compact_context:
   priority: medium
   preserve_rules:

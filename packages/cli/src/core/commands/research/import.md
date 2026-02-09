@@ -1,6 +1,6 @@
 ---
 description: Import research results and save to research folder
-argument-hint: TOPIC=<text> [CONTENT=<text>] [SOURCE=<url>]
+argument-hint: "TOPIC=<text> [CONTENT=<text>] [SOURCE=<url>]"
 compact_context:
   priority: critical
   preserve_rules:

@@ -1,6 +1,6 @@
 ---
 description: Orchestrate Research-Plan-Implement workflow with explicit phase transitions
-argument-hint: [TASK=<text>] [PHASE=research|plan|implement] [SKIP_RESEARCH=true|false]
+argument-hint: "[TASK=<text>] [PHASE=research|plan|implement] [SKIP_RESEARCH=true|false]"
 compact_context:
   priority: critical
   preserve_rules:

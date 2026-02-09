@@ -1,6 +1,6 @@
 ---
 description: Define and run parameterized workflow templates
-argument-hint: <template> [<arguments>]
+argument-hint: "<template> [<arguments>]"
 compact_context:
   priority: normal
   preserve_rules:

@@ -1,6 +1,6 @@
 ---
 description: Pick a session to switch to or resume
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

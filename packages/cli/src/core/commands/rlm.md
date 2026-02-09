@@ -1,6 +1,6 @@
 ---
 description: Analyze complex documents using RLM (Recursive Language Models) pattern
-argument-hint: DOCUMENT=<path> QUERY=<text> [MAX_ITERATIONS=<number>] [DEPTH=<number>]
+argument-hint: "DOCUMENT=<path> QUERY=<text> [MAX_ITERATIONS=<number>] [DEPTH=<number>]"
 compact_context:
   priority: high
   preserve_rules:

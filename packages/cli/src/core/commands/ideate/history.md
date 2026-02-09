@@ -1,6 +1,6 @@
 ---
 description: Query ideation history and idea status
-argument-hint: [IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring] [MODE=trends] [COMPARE=report1,report2]
+argument-hint: "[IDEA-XXXX] [STATUS=pending|in-progress|implemented|recurring] [MODE=trends] [COMPARE=report1,report2]"
 compact_context:
   priority: medium
   preserve_rules:

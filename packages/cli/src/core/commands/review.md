@@ -1,6 +1,6 @@
 ---
 description: AI-powered code review with quality suggestions
-argument-hint: [BRANCH=<name>] [BASE=<branch>] [FOCUS=all|security|performance|style]
+argument-hint: "[BRANCH=<name>] [BASE=<branch>] [FOCUS=all|security|performance|style]"
 compact_context:
   priority: critical
   preserve_rules:

@@ -1,6 +1,6 @@
 ---
 description: Add timestamped note to context file
-argument-hint: NOTE=<text>
+argument-hint: "NOTE=<text>"
 compact_context:
   priority: high
   preserve_rules:

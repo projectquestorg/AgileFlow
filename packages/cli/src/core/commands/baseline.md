@@ -1,6 +1,6 @@
 ---
 description: Mark current state as verified baseline
-argument-hint: [<message>]
+argument-hint: "[<message>]"
 compact_context:
   priority: critical
   preserve_rules:

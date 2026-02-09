@@ -1,6 +1,6 @@
 ---
 description: Create an Architecture Decision Record
-argument-hint: NUMBER=<number> TITLE=<text> CONTEXT=<text> DECISION=<text> CONSEQUENCES=<text> [LINKS=<text>]
+argument-hint: "NUMBER=<number> TITLE=<text> CONTEXT=<text> DECISION=<text> CONSEQUENCES=<text> [LINKS=<text>]"
 compact_context:
   priority: medium
   preserve_rules:

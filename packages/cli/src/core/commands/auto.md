@@ -1,6 +1,6 @@
 ---
 description: Auto-generate stories from PRDs, mockups, or specs
-argument-hint: SOURCE=<path|url> [EPIC=<EP-ID>] [OWNER=<id>] [AUTO_CREATE=true|false]
+argument-hint: "SOURCE=<path|url> [EPIC=<EP-ID>] [OWNER=<id>] [AUTO_CREATE=true|false]"
 compact_context:
   priority: high
   preserve_rules:

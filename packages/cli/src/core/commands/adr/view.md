@@ -1,6 +1,6 @@
 ---
 description: View ADR details with contextual actions
-argument-hint: NUMBER=<number>
+argument-hint: "NUMBER=<number>"
 compact_context:
   priority: medium
   preserve_rules:

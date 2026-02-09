@@ -1,6 +1,6 @@
 ---
 description: AI-directed decision making with structured options
-argument-hint: <decision> [<context>]
+argument-hint: "<decision> [<context>]"
 compact_context:
   priority: normal
   preserve_rules:

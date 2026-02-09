@@ -1,6 +1,6 @@
 ---
 description: Generate/refresh full context brief for web AI tools
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

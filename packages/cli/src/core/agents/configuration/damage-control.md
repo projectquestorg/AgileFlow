@@ -1,7 +1,8 @@
 ---
 name: configuration-damage-control
 description: Configure AgileFlow damage control to protect against destructive commands
-tools:   - Read
+tools:
+  - Read
   - Write
   - Edit
   - Bash

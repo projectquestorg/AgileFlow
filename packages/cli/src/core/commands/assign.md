@@ -1,6 +1,6 @@
 ---
 description: Assign or reassign a story to an owner
-argument-hint: STORY=<US-ID> NEW_OWNER=<id> [NEW_STATUS=<status>] [NOTE=<text>]
+argument-hint: "STORY=<US-ID> NEW_OWNER=<id> [NEW_STATUS=<status>] [NOTE=<text>]"
 compact_context:
   priority: high
   preserve_rules:

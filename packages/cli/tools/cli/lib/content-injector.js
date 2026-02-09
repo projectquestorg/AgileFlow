@@ -492,6 +492,19 @@ function injectContent(content, context = {}) {
 
   let result = content;
 
+  // Multi-line list placeholders can corrupt YAML if injected into frontmatter.
+  // Keep frontmatter untouched for these placeholders and inject only in body.
+  const replaceInBodyOnly = (input, replacer) => {
+    const frontmatterMatch = input.match(/^(---\n[\s\S]*?\n---\n?)([\s\S]*)$/);
+    if (!frontmatterMatch) {
+      return replacer(input);
+    }
+
+    const frontmatter = frontmatterMatch[1];
+    const body = frontmatterMatch[2];
+    return `${frontmatter}${replacer(body)}`;
+  };
+
   // Expand preserve rules placeholders first (YAML frontmatter processing)
   if (coreDir && fs.existsSync(coreDir) && result.includes('{{RULES:')) {
     result = expandPreserveRules(result, coreDir);
@@ -529,14 +542,20 @@ function injectContent(content, context = {}) {
   if (coreDir && fs.existsSync(coreDir)) {
     if (result.includes('{{AGENT_LIST}}')) {
       const agentList = generateAgentList(path.join(coreDir, 'agents'));
-      result = result.replace(/<!-- \{\{AGENT_LIST\}\} -->/g, agentList);
-      result = result.replace(/\{\{AGENT_LIST\}\}/g, agentList);
+      result = replaceInBodyOnly(result, body => {
+        let updated = body.replace(/<!-- \{\{AGENT_LIST\}\} -->/g, agentList);
+        updated = updated.replace(/\{\{AGENT_LIST\}\}/g, agentList);
+        return updated;
+      });
     }
 
     if (result.includes('{{COMMAND_LIST}}')) {
       const commandList = generateCommandList(path.join(coreDir, 'commands'));
-      result = result.replace(/<!-- \{\{COMMAND_LIST\}\} -->/g, commandList);
-      result = result.replace(/\{\{COMMAND_LIST\}\}/g, commandList);
+      result = replaceInBodyOnly(result, body => {
+        let updated = body.replace(/<!-- \{\{COMMAND_LIST\}\} -->/g, commandList);
+        updated = updated.replace(/\{\{COMMAND_LIST\}\}/g, commandList);
+        return updated;
+      });
     }
 
     // Replace session harness template placeholder

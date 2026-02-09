@@ -1,6 +1,6 @@
 ---
 description: Analyze existing research for implementation in your project
-argument-hint: [FILE=<filename>]
+argument-hint: "[FILE=<filename>]"
 compact_context:
   priority: high
   preserve_rules:

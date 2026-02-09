@@ -323,7 +323,8 @@ function main() {
 
   // Enable/disable specific features with progress tracking
   const totalChanges = enable.length + disable.length;
-  const featureTask = totalChanges > 1 ? feedback.task('Applying feature changes', totalChanges) : null;
+  const featureTask =
+    totalChanges > 1 ? feedback.task('Applying feature changes', totalChanges) : null;
 
   // Enable specific features
   enable.forEach(f => {

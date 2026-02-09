@@ -1,6 +1,6 @@
 ---
 description: Configure AgileFlow features, hooks, and project infrastructure (Visual E2E, CI, git)
-argument-hint: [--profile=<name>] [--save-profile=<name>] [--list-profiles] [--export-profile=<name>] [--import-profile=<file>] [--enable/--disable=features]
+argument-hint: "[--profile=<name>] [--save-profile=<name>] [--list-profiles] [--export-profile=<name>] [--import-profile=<file>] [--enable/--disable=features]"
 compact_context:
   priority: critical
   preserve_rules:

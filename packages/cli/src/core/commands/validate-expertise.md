@@ -1,6 +1,6 @@
 ---
 description: Validate expertise files for drift and staleness
-argument-hint: [<domain>]
+argument-hint: "[<domain>]"
 model: haiku
 compact_context:
   priority: medium

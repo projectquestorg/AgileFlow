@@ -178,7 +178,9 @@ function createSessionOperations(deps) {
     registry.next_id++;
     const isMain = cwd === ROOT && !isGitWorktree(cwd);
     const detectedType =
-      threadType && THREAD_TYPES.includes(threadType) ? threadType : detectThreadType(null, !isMain);
+      threadType && THREAD_TYPES.includes(threadType)
+        ? threadType
+        : detectThreadType(null, !isMain);
 
     registry.sessions[sessionId] = {
       path: cwd,
@@ -210,7 +212,12 @@ function createSessionOperations(deps) {
     const session = registry.sessions[sessionId];
     if (!session) return null;
     const threadType = session.thread_type || (session.is_main ? 'base' : 'parallel');
-    return { id: sessionId, ...session, thread_type: threadType, active: isSessionActive(sessionId) };
+    return {
+      id: sessionId,
+      ...session,
+      thread_type: threadType,
+      active: isSessionActive(sessionId),
+    };
   }
 
   async function createSession(options = {}) {
@@ -248,7 +255,10 @@ function createSessionOperations(deps) {
     );
     let branchCreatedByUs = false;
     if (checkRef.status !== 0) {
-      const createBranch = spawnSync('git', ['branch', branchName], { cwd: ROOT, encoding: 'utf8' });
+      const createBranch = spawnSync('git', ['branch', branchName], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
       if (createBranch.status !== 0) {
         return {
           success: false,

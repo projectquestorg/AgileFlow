@@ -1,6 +1,6 @@
 ---
 description: View story details with contextual actions
-argument-hint: STORY=<US-ID>
+argument-hint: "STORY=<US-ID>"
 compact_context:
   priority: medium
   preserve_rules:

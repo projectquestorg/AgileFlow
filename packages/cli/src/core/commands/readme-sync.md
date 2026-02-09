@@ -1,6 +1,6 @@
 ---
 description: Synchronize a folder's README.md with its current contents
-argument-hint: FOLDER=<path>|all
+argument-hint: "FOLDER=<path>|all"
 compact_context:
   priority: medium
   preserve_rules:

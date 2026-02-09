@@ -1965,9 +1965,12 @@ async function main() {
   // Check for multiple Claude processes in the same working directory
   if (processCleanup) {
     try {
-      // Check if auto-kill is enabled in metadata
+      // Auto-kill is explicitly opt-in at runtime.
+      // Even if metadata has autoKill=true from older configs, we require
+      // AGILEFLOW_PROCESS_CLEANUP_AUTOKILL=1 to prevent accidental session kills.
       const metadata = cache?.metadata;
-      const autoKill = metadata?.features?.processCleanup?.autoKill === true;
+      const autoKillConfigured = metadata?.features?.processCleanup?.autoKill === true;
+      const autoKill = autoKillConfigured && process.env.AGILEFLOW_PROCESS_CLEANUP_AUTOKILL === '1';
 
       const cleanupResult = processCleanup.cleanupDuplicateProcesses({
         rootDir,
@@ -1987,15 +1990,17 @@ async function main() {
             console.log(`${c.dim}   └─ PID ${proc.pid} (${proc.method})${c.reset}`);
           });
         } else {
-          // Warn only (auto-kill not enabled)
+          // Warn only (auto-kill disabled or skipped by safety guards)
           console.log(
             `${c.amber}⚠️  ${cleanupResult.duplicates} other Claude process(es) in same directory${c.reset}`
           );
           console.log(`${c.slate}   This may cause slowdowns and freezing. Options:${c.reset}`);
           console.log(`${c.slate}   • Close duplicate Claude windows/tabs${c.reset}`);
-          console.log(
-            `${c.slate}   • Run ${c.skyBlue}/agileflow:configure --enable=processcleanup${c.slate} for auto-cleanup${c.reset}`
-          );
+          if (autoKillConfigured) {
+            console.log(
+              `${c.slate}   • Auto-kill configured but runtime opt-in is off (safer default)${c.reset}`
+            );
+          }
         }
 
         if (cleanupResult.errors.length > 0) {

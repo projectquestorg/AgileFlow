@@ -1,6 +1,6 @@
 ---
 description: Generate a custom skill with web research, cookbook pattern, and MCP integration
-argument-hint: [<name>]
+argument-hint: "[<name>]"
 compact_context:
   priority: high
   preserve_rules:

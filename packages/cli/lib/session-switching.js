@@ -127,7 +127,12 @@ function createSessionSwitching(deps) {
       return { success: false, error: 'Session not found' };
     const session = registry.sessions[targetId];
     const threadType = session.thread_type || (session.is_main ? 'base' : 'parallel');
-    return { success: true, thread_type: threadType, session_id: targetId, is_main: session.is_main };
+    return {
+      success: true,
+      thread_type: threadType,
+      session_id: targetId,
+      is_main: session.is_main,
+    };
   }
 
   function setSessionThreadType(sessionId, threadType) {

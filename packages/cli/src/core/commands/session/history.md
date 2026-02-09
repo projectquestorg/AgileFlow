@@ -1,6 +1,6 @@
 ---
 description: View past session history and metrics
-argument-hint: [DAYS=7|30|90|all]
+argument-hint: "[DAYS=7|30|90|all]"
 compact_context:
   priority: medium
   preserve_rules:

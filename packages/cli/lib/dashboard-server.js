@@ -1310,8 +1310,10 @@ class DashboardServer extends EventEmitter {
           title: e.title || id,
           status: e.status || 'unknown',
           storyCount: (e.stories || []).length,
-          doneCount: (e.stories || []).filter(sid =>
-            stories[sid] && (stories[sid].status === 'done' || stories[sid].status === 'completed')
+          doneCount: (e.stories || []).filter(
+            sid =>
+              stories[sid] &&
+              (stories[sid].status === 'done' || stories[sid].status === 'completed')
           ).length,
         })),
       };
@@ -1353,11 +1355,15 @@ class DashboardServer extends EventEmitter {
 
         // Get ahead/behind counts relative to upstream
         try {
-          const counts = execFileSync('git', ['rev-list', '--left-right', '--count', 'HEAD...@{u}'], {
-            cwd,
-            encoding: 'utf8',
-            stdio: ['pipe', 'pipe', 'pipe'],
-          }).trim();
+          const counts = execFileSync(
+            'git',
+            ['rev-list', '--left-right', '--count', 'HEAD...@{u}'],
+            {
+              cwd,
+              encoding: 'utf8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+            }
+          ).trim();
           const [ahead, behind] = counts.split(/\s+/).map(Number);
           entry.ahead = ahead || 0;
           entry.behind = behind || 0;
@@ -1433,7 +1439,9 @@ class DashboardServer extends EventEmitter {
         }
       }
 
-      session.send(createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`));
+      session.send(
+        createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`)
+      );
     } catch (error) {
       console.error('[Open File Error]', error.message);
       session.send(createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`));

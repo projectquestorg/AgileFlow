@@ -83,6 +83,153 @@ function getCwdForPid(pid) {
 }
 
 /**
+ * Get process start time in milliseconds.
+ * Used for safety checks when deciding whether a process is older/newer.
+ *
+ * @param {number} pid - Process ID
+ * @returns {number|null}
+ */
+function getProcessStartTime(pid) {
+  if (!pid || typeof pid !== 'number') return null;
+
+  if (process.platform === 'linux') {
+    try {
+      const stat = fs.statSync(`/proc/${pid}`);
+      return Number.isFinite(stat.ctimeMs) ? stat.ctimeMs : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  if (process.platform === 'darwin') {
+    try {
+      const output = execFileSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
+        encoding: 'utf8',
+        timeout: 2000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const ts = new Date(output.trim()).getTime();
+      return Number.isFinite(ts) ? ts : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get parent PID for a process.
+ * Works on Linux (/proc) and macOS (ps).
+ *
+ * @param {number} pid - Process ID
+ * @returns {number|null}
+ */
+function getParentPid(pid) {
+  if (!pid || typeof pid !== 'number') return null;
+
+  if (process.platform === 'linux') {
+    try {
+      // /proc/<pid>/stat format:
+      // pid (comm) state ppid ...
+      const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+      const closeParen = stat.lastIndexOf(')');
+      if (closeParen === -1) return null;
+      const remainder = stat.slice(closeParen + 2).trim(); // state ppid ...
+      const fields = remainder.split(/\s+/);
+      const ppid = parseInt(fields[1], 10);
+      return Number.isFinite(ppid) ? ppid : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  if (process.platform === 'darwin') {
+    try {
+      const output = execFileSync('ps', ['-o', 'ppid=', '-p', String(pid)], {
+        encoding: 'utf8',
+        timeout: 2000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const ppid = parseInt(output.trim(), 10);
+      return Number.isFinite(ppid) ? ppid : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get command-line args for a PID.
+ *
+ * @param {number} pid - Process ID
+ * @returns {string[]}
+ */
+function getArgsForPid(pid) {
+  if (!pid || typeof pid !== 'number') return [];
+
+  if (process.platform === 'linux') {
+    try {
+      const cmdline = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8');
+      return parseCmdline(cmdline);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  if (process.platform === 'darwin') {
+    try {
+      const output = execFileSync('ps', ['-o', 'command=', '-p', String(pid)], {
+        encoding: 'utf8',
+        timeout: 2000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const cmd = output.trim();
+      return cmd ? [cmd] : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Walk process ancestry and find the nearest Claude process.
+ *
+ * Hooks are typically executed as:
+ *   claude -> shell (bash/sh) -> hook command (node)
+ * so `process.ppid` is often the shell, not Claude.
+ *
+ * @param {number} startPid - PID to start from (defaults to current process)
+ * @param {number} maxDepth - Max parent hops
+ * @returns {number|null}
+ */
+function findClaudeAncestorPid(startPid = process.pid, maxDepth = 12) {
+  let pid = startPid;
+  const visited = new Set();
+
+  for (let depth = 0; depth < maxDepth; depth++) {
+    const parentPid = getParentPid(pid);
+    if (!parentPid || parentPid <= 1 || visited.has(parentPid)) {
+      return null;
+    }
+    visited.add(parentPid);
+
+    const parentArgs = getArgsForPid(parentPid);
+    if (isClaudeProcess(parentArgs)) {
+      return parentPid;
+    }
+
+    pid = parentPid;
+  }
+
+  return null;
+}
+
+/**
  * Find all Claude Code processes on the system
  * @returns {Array<{pid: number, cwd: string|null, cmdline: string, startTime: number}>}
  */
@@ -195,14 +342,14 @@ function findClaudeProcesses() {
  *
  * @param {string} currentCwd - Current working directory
  * @param {number} currentPid - Current session's PID (to exclude)
- * @returns {Array} Duplicate processes (excluding current)
+ * @returns {Array} Duplicate processes (excluding current if known)
  */
 function findDuplicatesInCwd(currentCwd, currentPid) {
   const allClaude = findClaudeProcesses();
 
   return allClaude.filter(proc => {
-    // Exclude current session
-    if (proc.pid === currentPid) return false;
+    // Exclude current session when known
+    if (currentPid && proc.pid === currentPid) return false;
 
     // Must have cwd to compare
     if (!proc.cwd || !currentCwd) return false;
@@ -274,14 +421,15 @@ function killProcessGracefully(pid, options = {}) {
 /**
  * Get current session's PID from process ancestry
  *
- * The Claude Code process is typically the parent of this script.
- * We use process.ppid to identify it.
+ * The Claude process is usually an ancestor (often grandparent):
+ *   claude -> bash -> node hook
  *
- * @returns {number}
+ * If no Claude ancestor is found, returns null.
+ *
+ * @returns {number|null}
  */
 function getCurrentSessionPid() {
-  // The claude process is our parent (this script is run by claude)
-  return process.ppid || process.pid;
+  return findClaudeAncestorPid(process.pid);
 }
 
 /**
@@ -298,6 +446,7 @@ function cleanupDuplicateProcesses(options = {}) {
 
   const currentCwd = rootDir || process.cwd();
   const currentPid = getCurrentSessionPid();
+  const currentStartTime = getProcessStartTime(currentPid);
   const duplicates = findDuplicatesInCwd(currentCwd, currentPid);
 
   const result = {
@@ -305,8 +454,9 @@ function cleanupDuplicateProcesses(options = {}) {
     processes: duplicates,
     killed: [],
     errors: [],
-    autoKillEnabled: autoKill,
+    autoKillEnabled: autoKill && !!currentPid,
     currentPid,
+    currentStartTime,
   };
 
   if (duplicates.length === 0) {
@@ -318,8 +468,32 @@ function cleanupDuplicateProcesses(options = {}) {
     return result;
   }
 
+  // Safety gate: if we can't identify the current Claude session PID,
+  // never auto-kill anything.
+  if (!currentPid) {
+    result.errors.push({
+      error: 'Could not determine current Claude session PID; auto-kill skipped',
+    });
+    return result;
+  }
+
+  // Safety gate: only kill processes that are clearly older than current session.
+  // This prevents terminating the session that just started.
+  const olderDuplicates = duplicates.filter(proc => {
+    if (!proc || !proc.pid || proc.pid === currentPid) return false;
+    if (!currentStartTime || !proc.startTime) return false;
+    return proc.startTime < currentStartTime;
+  });
+
+  if (olderDuplicates.length === 0) {
+    result.errors.push({
+      error: 'No clearly older duplicate processes found; auto-kill skipped',
+    });
+    return result;
+  }
+
   // Safety limit - don't kill more than MAX_PROCESSES_TO_KILL
-  const toKill = duplicates.slice(0, MAX_PROCESSES_TO_KILL);
+  const toKill = olderDuplicates.slice(0, MAX_PROCESSES_TO_KILL);
 
   for (const proc of toKill) {
     const killResult = killProcessGracefully(proc.pid, { dryRun });
@@ -364,6 +538,10 @@ module.exports = {
   parseCmdline,
   isClaudeProcess,
   getCwdForPid,
+  getProcessStartTime,
+  getParentPid,
+  getArgsForPid,
+  findClaudeAncestorPid,
 
   // Constants
   KILL_GRACE_PERIOD_MS,

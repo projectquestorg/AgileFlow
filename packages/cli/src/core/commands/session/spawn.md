@@ -1,6 +1,6 @@
 ---
 description: Spawn multiple parallel Claude Code sessions in git worktrees
-argument-hint: [--count N | --branches a,b,c | --from-epic EP-XXX]
+argument-hint: "[--count N | --branches a,b,c | --from-epic EP-XXX]"
 compact_context:
   priority: high
   preserve_rules:

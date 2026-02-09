@@ -1,6 +1,6 @@
 ---
 description: Manage scheduled automations for recurring tasks
-argument-hint: ACTION=list|add|edit|remove|run|presets [ID=<automation-id>]
+argument-hint: "ACTION=list|add|edit|remove|run|presets [ID=<automation-id>]"
 compact_context:
   priority: medium
   preserve_rules:

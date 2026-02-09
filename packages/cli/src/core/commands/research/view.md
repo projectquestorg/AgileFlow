@@ -1,6 +1,6 @@
 ---
 description: Read a specific research note
-argument-hint: FILE=<filename>
+argument-hint: "FILE=<filename>"
 type: output-only  # This command displays output - not an ongoing task
 compact_context:
   priority: medium

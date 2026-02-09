@@ -1,7 +1,8 @@
 ---
 name: configuration-git-config
 description: Configure git repository initialization and remote setup
-tools:   - Bash
+tools:
+  - Bash
   - Read
   - Edit
   - Write

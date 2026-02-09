@@ -1,6 +1,6 @@
 ---
 description: List all stories with status and filters
-argument-hint: [EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>]
+argument-hint: "[EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>]"
 compact_context:
   priority: medium
   preserve_rules:

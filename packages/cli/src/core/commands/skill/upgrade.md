@@ -1,6 +1,6 @@
 ---
 description: Upgrade existing skills with self-improving learning capability
-argument-hint: [<name>]
+argument-hint: "[<name>]"
 compact_context:
   priority: medium
   preserve_rules:

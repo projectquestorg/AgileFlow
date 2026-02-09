@@ -1,6 +1,6 @@
 ---
 description: Cleanly end session with optional merge to main
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

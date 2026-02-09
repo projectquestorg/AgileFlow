@@ -1,6 +1,6 @@
 ---
 description: Export concise context excerpt for web AI tools
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: medium
   preserve_rules:

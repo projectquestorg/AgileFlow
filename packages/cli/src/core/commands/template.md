@@ -1,6 +1,6 @@
 ---
 description: Create and manage custom document templates
-argument-hint: ACTION=create|edit|list|use [TYPE=story|epic|adr|custom] [NAME=<name>]
+argument-hint: "ACTION=create|edit|list|use [TYPE=story|epic|adr|custom] [NAME=<name>]"
 compact_context:
   priority: high
   preserve_rules:

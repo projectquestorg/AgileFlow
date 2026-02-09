@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: [EPIC=<EP-ID>]
+argument-hint: "[EPIC=<EP-ID>]"
 compact_context:
   priority: critical
   preserve_rules:

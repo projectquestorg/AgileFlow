@@ -1,6 +1,6 @@
 ---
 description: Start a team from a template
-argument-hint: <template-name>
+argument-hint: "<template-name>"
 compact_context:
   priority: high
   preserve_rules:

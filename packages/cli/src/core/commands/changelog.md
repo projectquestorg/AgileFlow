@@ -1,6 +1,6 @@
 ---
 description: Auto-generate changelog from commit history
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: high
   preserve_rules:

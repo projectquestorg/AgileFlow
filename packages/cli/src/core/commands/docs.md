@@ -1,6 +1,6 @@
 ---
 description: Synchronize documentation with code changes
-argument-hint: [BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=true|false]
+argument-hint: "[BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=true|false]"
 compact_context:
   priority: high
   preserve_rules:

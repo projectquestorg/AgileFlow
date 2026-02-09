@@ -1,6 +1,6 @@
 ---
 description: Collect and process agent feedback
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: medium
   preserve_rules:

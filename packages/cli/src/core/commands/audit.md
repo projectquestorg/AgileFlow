@@ -1,6 +1,6 @@
 ---
 description: Audit story completion - tests + acceptance criteria verification (GSD pattern)
-argument-hint: STORY=<US-ID>
+argument-hint: "STORY=<US-ID>"
 compact_context:
   priority: high
   preserve_rules:

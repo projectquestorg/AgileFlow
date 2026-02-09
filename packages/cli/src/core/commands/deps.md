@@ -1,6 +1,6 @@
 ---
 description: Visualize dependency graph with critical path detection
-argument-hint: [SCOPE=story|epic|all] [EPIC=<EP-ID>] [STORY=<US-ID>] [FORMAT=ascii|mermaid|graphviz|json] [ANALYSIS=critical-path|circular|blocking|all]
+argument-hint: "[SCOPE=story|epic|all] [EPIC=<EP-ID>] [STORY=<US-ID>] [FORMAT=ascii|mermaid|graphviz|json] [ANALYSIS=critical-path|circular|blocking|all]"
 model: haiku
 compact_context:
   priority: high

@@ -431,6 +431,36 @@ Done.
       expect(result).not.toContain('<!-- {{COMMAND_LIST}} -->');
     });
 
+    it('does not inject command list into frontmatter', () => {
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(path.join(tempDir, 'agents'));
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(commandsDir, 'status.md'),
+        `---
+description: Show status
+---
+`
+      );
+
+      const template = `---
+description: test
+compact_context:
+  preserve_rules:
+    - "Keep token {{COMMAND_LIST}} in frontmatter"
+---
+
+<!-- {{COMMAND_LIST}} -->
+`;
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      expect(result).toContain('Keep token {{COMMAND_LIST}} in frontmatter');
+      expect(result).toContain('Available commands (1 total)');
+      expect(result).toContain('/agileflow:status');
+    });
+
     it('replaces both placeholders', () => {
       const agentsDir = path.join(tempDir, 'agents');
       const commandsDir = path.join(tempDir, 'commands');

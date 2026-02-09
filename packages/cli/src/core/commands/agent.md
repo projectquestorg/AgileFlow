@@ -1,6 +1,6 @@
 ---
 description: Onboard a new agent with profile and contract
-argument-hint: AGENT_ID=<id> ROLE=<text> [TOOLS=<list>] [SCOPE=<list>]
+argument-hint: "AGENT_ID=<id> ROLE=<text> [TOOLS=<list>] [SCOPE=<list>]"
 compact_context:
   priority: high
   preserve_rules:

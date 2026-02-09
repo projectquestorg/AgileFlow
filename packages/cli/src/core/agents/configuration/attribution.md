@@ -1,7 +1,8 @@
 ---
 name: configuration-attribution
 description: Configure CLAUDE.md file with git attribution preferences
-tools:   - Bash
+tools:
+  - Bash
   - Read
   - Edit
   - Write

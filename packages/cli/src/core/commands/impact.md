@@ -1,6 +1,6 @@
 ---
 description: Analyze change impact across codebase
-argument-hint: [FILES=<paths>] [BASE=<branch>] [RUN_TESTS=true|false]
+argument-hint: "[FILES=<paths>] [BASE=<branch>] [RUN_TESTS=true|false]"
 compact_context:
   priority: high
   preserve_rules:

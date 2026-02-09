@@ -1,6 +1,6 @@
 ---
 description: Generate detailed research prompt for web AI tools (ChatGPT, Perplexity, etc.)
-argument-hint: TOPIC=<text> [DETAILS=<text>] [ERROR=<text>]
+argument-hint: "TOPIC=<text> [DETAILS=<text>] [ERROR=<text>]"
 type: output-only  # This command generates output for user to copy - not an ongoing task
 compact_context:
   priority: critical

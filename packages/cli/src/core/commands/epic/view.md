@@ -1,6 +1,6 @@
 ---
 description: View epic details with stories and contextual actions
-argument-hint: EPIC=<EP-ID>
+argument-hint: "EPIC=<EP-ID>"
 compact_context:
   priority: medium
   preserve_rules:

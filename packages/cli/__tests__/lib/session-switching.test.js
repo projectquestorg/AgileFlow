@@ -22,7 +22,9 @@ function createMockDeps(sessions = {}, overrides = {}) {
       project_name: 'test-project',
       sessions: { ...sessions },
     })),
-    saveRegistry: jest.fn((data) => { savedRegistry = data; }),
+    saveRegistry: jest.fn(data => {
+      savedRegistry = data;
+    }),
     getSavedRegistry: () => savedRegistry,
     ...overrides,
   };
@@ -68,9 +70,12 @@ describe('session-switching', () => {
     });
 
     test('returns error when directory does not exist', () => {
-      const deps = createMockDeps({
-        '1': { path: '/nonexistent/path', nickname: 'test', branch: 'main' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { path: '/nonexistent/path', nickname: 'test', branch: 'main' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.switchSession('1');
       expect(result.success).toBe(false);
@@ -78,9 +83,12 @@ describe('session-switching', () => {
     });
 
     test('switches session by ID when path exists', () => {
-      const deps = createMockDeps({
-        '1': { path: tempDir, nickname: 'test', branch: 'main' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { path: tempDir, nickname: 'test', branch: 'main' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.switchSession('1');
       expect(result.success).toBe(true);
@@ -89,9 +97,12 @@ describe('session-switching', () => {
     });
 
     test('switches session by nickname', () => {
-      const deps = createMockDeps({
-        '5': { path: tempDir, nickname: 'my-feat', branch: 'feature' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          5: { path: tempDir, nickname: 'my-feat', branch: 'feature' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.switchSession('my-feat');
       expect(result.success).toBe(true);
@@ -99,9 +110,12 @@ describe('session-switching', () => {
     });
 
     test('writes session state file', () => {
-      const deps = createMockDeps({
-        '1': { path: tempDir, nickname: 'test', branch: 'main' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { path: tempDir, nickname: 'test', branch: 'main' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       ops.switchSession('1');
 
@@ -112,18 +126,24 @@ describe('session-switching', () => {
     });
 
     test('updates last_active and saves registry', () => {
-      const deps = createMockDeps({
-        '1': { path: tempDir, nickname: 'test', branch: 'main' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { path: tempDir, nickname: 'test', branch: 'main' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       ops.switchSession('1');
       expect(deps.saveRegistry).toHaveBeenCalled();
     });
 
     test('includes addDirCommand in result', () => {
-      const deps = createMockDeps({
-        '1': { path: tempDir, nickname: 'test', branch: 'main' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { path: tempDir, nickname: 'test', branch: 'main' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.switchSession('1');
       expect(result.addDirCommand).toContain('/add-dir');
@@ -141,10 +161,13 @@ describe('session-switching', () => {
 
     test('removes active_session from state file', () => {
       const statePath = path.join(tempDir, 'docs', '09-agents', 'session-state.json');
-      fs.writeFileSync(statePath, JSON.stringify({
-        active_session: { id: '1' },
-        other_data: 'preserved',
-      }));
+      fs.writeFileSync(
+        statePath,
+        JSON.stringify({
+          active_session: { id: '1' },
+          other_data: 'preserved',
+        })
+      );
 
       const deps = createMockDeps({}, { ROOT: tempDir });
       const ops = createSessionSwitching(deps);
@@ -167,9 +190,12 @@ describe('session-switching', () => {
 
     test('returns active session when state has active_session', () => {
       const statePath = path.join(tempDir, 'docs', '09-agents', 'session-state.json');
-      fs.writeFileSync(statePath, JSON.stringify({
-        active_session: { id: '3', nickname: 'feat' },
-      }));
+      fs.writeFileSync(
+        statePath,
+        JSON.stringify({
+          active_session: { id: '3', nickname: 'feat' },
+        })
+      );
 
       const deps = createMockDeps({}, { ROOT: tempDir });
       const ops = createSessionSwitching(deps);
@@ -208,9 +234,12 @@ describe('session-switching', () => {
     });
 
     test('returns thread type for existing session', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'fusion', is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'fusion', is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.getSessionThreadType('1');
       expect(result.success).toBe(true);
@@ -218,18 +247,24 @@ describe('session-switching', () => {
     });
 
     test('defaults to base for main session without thread_type', () => {
-      const deps = createMockDeps({
-        '1': { is_main: true },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { is_main: true },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.getSessionThreadType('1');
       expect(result.thread_type).toBe('base');
     });
 
     test('defaults to parallel for non-main session without thread_type', () => {
-      const deps = createMockDeps({
-        '1': { is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.getSessionThreadType('1');
       expect(result.thread_type).toBe('parallel');
@@ -238,7 +273,7 @@ describe('session-switching', () => {
 
   describe('setSessionThreadType', () => {
     test('rejects invalid thread type', () => {
-      const deps = createMockDeps({ '1': {} }, { ROOT: tempDir });
+      const deps = createMockDeps({ 1: {} }, { ROOT: tempDir });
       const ops = createSessionSwitching(deps);
       const result = ops.setSessionThreadType('1', 'invalid-type');
       expect(result.success).toBe(false);
@@ -253,9 +288,12 @@ describe('session-switching', () => {
     });
 
     test('updates thread type and saves', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'parallel' },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'parallel' },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.setSessionThreadType('1', 'fusion');
       expect(result.success).toBe(true);
@@ -273,9 +311,12 @@ describe('session-switching', () => {
     });
 
     test('performs valid transition', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'parallel', is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'parallel', is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.transitionThread('1', 'fusion');
       expect(result.success).toBe(true);
@@ -284,9 +325,12 @@ describe('session-switching', () => {
     });
 
     test('returns noop for same thread type', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'parallel', is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'parallel', is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.transitionThread('1', 'parallel');
       expect(result.success).toBe(true);
@@ -294,9 +338,12 @@ describe('session-switching', () => {
     });
 
     test('force allows invalid transition', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'parallel', is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'parallel', is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.transitionThread('1', 'big', { force: true });
       expect(result.success).toBe(true);
@@ -313,9 +360,12 @@ describe('session-switching', () => {
     });
 
     test('returns valid transitions for parallel session', () => {
-      const deps = createMockDeps({
-        '1': { thread_type: 'parallel', is_main: false },
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { thread_type: 'parallel', is_main: false },
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.getValidThreadTransitions('1');
       expect(result.success).toBe(true);
@@ -324,9 +374,12 @@ describe('session-switching', () => {
     });
 
     test('defaults legacy session to correct thread type', () => {
-      const deps = createMockDeps({
-        '1': { is_main: true }, // No thread_type
-      }, { ROOT: tempDir });
+      const deps = createMockDeps(
+        {
+          1: { is_main: true }, // No thread_type
+        },
+        { ROOT: tempDir }
+      );
       const ops = createSessionSwitching(deps);
       const result = ops.getValidThreadTransitions('1');
       expect(result.current).toBe('base');

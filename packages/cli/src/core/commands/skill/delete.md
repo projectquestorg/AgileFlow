@@ -1,6 +1,6 @@
 ---
 description: Remove an installed skill from .claude/skills/
-argument-hint: [<name>]
+argument-hint: "[<name>]"
 compact_context:
   priority: medium
   preserve_rules:

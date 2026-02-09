@@ -1,6 +1,6 @@
 ---
 description: Deploy multiple domain experts on the same problem for higher confidence
-argument-hint: <question>
+argument-hint: "<question>"
 compact_context:
   priority: high
   preserve_rules:

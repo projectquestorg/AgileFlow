@@ -1,7 +1,8 @@
 ---
 name: configuration-archival
 description: Configure AgileFlow auto-archival system for story status management
-tools:   - Bash
+tools:
+  - Bash
   - Read
   - Edit
   - Write

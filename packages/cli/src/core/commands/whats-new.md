@@ -1,6 +1,6 @@
 ---
 description: Show what's new in AgileFlow
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: low
   preserve_rules:

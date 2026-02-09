@@ -1,7 +1,8 @@
 ---
 name: configuration-hooks
 description: Configure AgileFlow hooks system for event-driven automation
-tools:   - Bash
+tools:
+  - Bash
   - Read
   - Edit
   - Write

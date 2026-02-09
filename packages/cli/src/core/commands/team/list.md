@@ -1,6 +1,6 @@
 ---
 description: List available team templates
-argument-hint: (no arguments)
+argument-hint: "(no arguments)"
 compact_context:
   priority: low
   preserve_rules:
