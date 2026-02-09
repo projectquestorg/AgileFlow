@@ -127,9 +127,11 @@ fi
 # This causes "error connecting to ... (No such file or directory)" on every
 # tmux command. We fix it automatically so users never see this error.
 # Must run BEFORE any tmux command (including --kill, --attach, --refresh).
+#
+# IMPORTANT: tmux uses $TMUX_TMPDIR, then falls back to /tmp (NOT $TMPDIR).
+# On macOS, $TMPDIR is /var/folders/.../T/ but tmux uses /private/tmp/.
 if command -v tmux &> /dev/null; then
-  _TMUX_BASE="${TMUX_TMPDIR:-${TMPDIR:-/tmp}}"
-  # Strip trailing slash(es) to avoid double-slash in path
+  _TMUX_BASE="${TMUX_TMPDIR:-/tmp}"
   _TMUX_BASE="${_TMUX_BASE%/}"
   _TMUX_SOCK_DIR="${_TMUX_BASE}/tmux-$(id -u)"
   if [ ! -d "$_TMUX_SOCK_DIR" ]; then
