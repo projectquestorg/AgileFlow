@@ -1,0 +1,39 @@
+---
+title: /team:stop
+description: Gracefully shut down a running team
+---
+
+# /team:stop
+
+Gracefully shut down the currently active team, syncing all final states back to AgileFlow's `status.json`.
+
+## Quick Start
+
+```bash
+/agileflow:team:stop
+```
+
+## How It Works
+
+1. Verifies an active team exists
+2. Asks for confirmation via AskUserQuestion
+3. Syncs final task states to `status.json`
+4. Stops all teammate sessions (native mode) or subagent tasks (fallback mode)
+5. Clears team state from `session-state.json`
+6. Displays a final summary report with tasks completed
+
+## Summary Report
+
+After shutdown, shows:
+- Total tasks completed
+- Quality gate pass/fail counts
+- Any incomplete tasks that need manual attention
+- Time elapsed
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/team:start`](/docs/commands/team-start) | Start a new team |
+| [`/team:status`](/docs/commands/team-status) | Check team status before stopping |
+| [`/team:guide`](/docs/commands/team-guide) | Full migration guide |

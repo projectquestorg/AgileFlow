@@ -1,0 +1,48 @@
+---
+title: /team:list
+description: List available team templates
+---
+
+# /team:list
+
+List all available team templates with their descriptions, team sizes, and Agent Teams status.
+
+## Quick Start
+
+```bash
+/agileflow:team:list
+```
+
+## Output
+
+Displays a table with:
+
+| Column | Description |
+|--------|-------------|
+| Template | Template name |
+| Description | What the team does |
+| Size | Number of teammates |
+| Tags | Category tags (e.g., fullstack, review) |
+
+Also shows:
+- Whether Agent Teams is enabled or disabled
+- Currently active team (if any)
+
+## Template Sources
+
+Templates are loaded from `.agileflow/teams/` directory. AgileFlow ships with 4 built-in templates:
+
+- **fullstack** - API + UI + Testing
+- **code-review** - Code quality + Security + Performance
+- **builder-validator** - Paired builders and validators
+- **logic-audit** - Multi-analyzer logic analysis
+
+Custom templates can be added as JSON files in `.agileflow/teams/`.
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/team:start`](/docs/commands/team-start) | Start a team from a template |
+| [`/team:status`](/docs/commands/team-status) | Monitor team progress |
+| [`/team:guide`](/docs/commands/team-guide) | Full migration guide |

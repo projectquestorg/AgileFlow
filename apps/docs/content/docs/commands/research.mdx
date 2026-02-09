@@ -1,9 +1,9 @@
 ---
-title: /agileflow:research
+title: /research
 description: Research subdirectory commands for AI-powered investigation and knowledge import
 ---
 
-# /agileflow:research
+# /research
 
 Comprehensive research system for generating detailed investigation prompts, importing findings, and managing research notes.
 
@@ -12,10 +12,10 @@ Comprehensive research system for generating detailed investigation prompts, imp
 The research system provides four specialized commands:
 
 ```bash
-/agileflow:research:ask TOPIC="your research topic"       # Generate research prompt
-/agileflow:research:import TOPIC="title"                  # Import external results
-/agileflow:research:list                                   # View all research notes
-/agileflow:research:view FILE=<filename>                  # Read specific note
+/research:ask TOPIC="your research topic"       # Generate research prompt
+/research:import TOPIC="title"                  # Import external results
+/research:list                                   # View all research notes
+/research:view FILE=<filename>                  # Read specific note
 ```
 
 ## Overview
@@ -35,7 +35,7 @@ Research is essential for:
 
 ## Subcommands
 
-### /agileflow:research:ask - Generate Research Prompt
+### /research:ask - Generate Research Prompt
 
 Generate a comprehensive, context-rich research prompt for web AI tools.
 
@@ -43,7 +43,7 @@ Generate a comprehensive, context-rich research prompt for web AI tools.
 
 **Command**:
 ```bash
-/agileflow:research:ask TOPIC="your topic" [DETAILS="constraints"] [ERROR="error message"]
+/research:ask TOPIC="your topic" [DETAILS="constraints"] [ERROR="error message"]
 ```
 
 **Parameters**:
@@ -89,22 +89,22 @@ Before outputting, the command verifies:
 
 ```bash
 # Research OAuth issue
-/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
+/research:ask TOPIC="next-auth Google OAuth unauthorized_client" ERROR="[auth][error] CallbackRouteError: unauthorized_client"
 
 # Output: 250+ line prompt with code, error details, what was tried, and specific questions
 # Copy output → ChatGPT/Claude web → Get expert analysis
-# Then use /agileflow:research:import to save the response
+# Then use /research:import to save the response
 ```
 
 **Workflow**:
 
 ```
-1. /agileflow:research:ask TOPIC="..."
+1. /research:ask TOPIC="..."
    ↓ (command generates prompt)
 2. Copy prompt output
 3. Paste into ChatGPT/Claude web/Perplexity
 4. Get expert analysis
-5. /agileflow:research:import TOPIC="..." CONTENT="paste response"
+5. /research:import TOPIC="..." CONTENT="paste response"
    ↓ (command saves and structures results)
 6. Results saved to docs/10-research/YYYYMMDD-topic-slug.md
 ```
@@ -114,12 +114,12 @@ Before outputting, the command verifies:
 When `/babysit` detects you're stuck, it suggests:
 ```
 Looks like you're stuck on this problem.
-Try: /agileflow:research:ask TOPIC="describe your problem"
+Try: /research:ask TOPIC="describe your problem"
 ```
 
 ---
 
-### /agileflow:research:import - Import Research Results
+### /research:import - Import Research Results
 
 Import research results from external AI tools into your research folder with structured formatting.
 
@@ -127,7 +127,7 @@ Import research results from external AI tools into your research folder with st
 
 **Command**:
 ```bash
-/agileflow:research:import TOPIC="topic" [CONTENT="results"] [SOURCE="url"]
+/research:import TOPIC="topic" [CONTENT="results"] [SOURCE="url"]
 ```
 
 **Parameters**:
@@ -177,7 +177,7 @@ Research entry added to `docs/10-research/README.md`:
 
 ```bash
 # After getting ChatGPT response about OAuth
-/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+/research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
 
 # Prompts: "Paste the ChatGPT response"
 # You paste content
@@ -199,7 +199,7 @@ Research entry added to `docs/10-research/README.md`:
 
 ---
 
-### /agileflow:research:list - Show Research Notes Index
+### /research:list - Show Research Notes Index
 
 Display all research notes in your project with a quick overview.
 
@@ -207,7 +207,7 @@ Display all research notes in your project with a quick overview.
 
 **Command**:
 ```bash
-/agileflow:research:list
+/research:list
 ```
 
 **Parameters**: None
@@ -233,9 +233,9 @@ Display all research notes in your project with a quick overview.
 Total: 3 research notes
 
 Quick actions:
-- /agileflow:research:view FILE=20250101-oauth-setup.md - Read a note
-- /agileflow:research:ask TOPIC="new topic" - Create new research
-- /agileflow:research:import - Import external content
+- /research:view FILE=20250101-oauth-setup.md - Read a note
+- /research:ask TOPIC="new topic" - Create new research
+- /research:import - Import external content
 ```
 
 **When to Use**:
@@ -246,7 +246,7 @@ Quick actions:
 
 ---
 
-### /agileflow:research:view - Read Specific Research Note
+### /research:view - Read Specific Research Note
 
 Display the full content of a research note from your research folder.
 
@@ -254,7 +254,7 @@ Display the full content of a research note from your research folder.
 
 **Command**:
 ```bash
-/agileflow:research:view FILE=<filename>
+/research:view FILE=<filename>
 ```
 
 **Parameters**:
@@ -297,7 +297,7 @@ Display the full content of a research note from your research folder.
 
 ```bash
 # Step 1: Generate detailed research prompt
-/agileflow:research:ask TOPIC="next-auth Google OAuth unauthorized_client error" \
+/research:ask TOPIC="next-auth Google OAuth unauthorized_client error" \
   ERROR="[auth][error] CallbackRouteError: unauthorized_client"
 
 # Output: 250+ line detailed prompt with your code, error, what you tried, questions
@@ -307,7 +307,7 @@ Display the full content of a research note from your research folder.
 # → Get expert analysis back
 
 # Step 3: Import the results
-/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+/research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
 
 # Prompts for content → paste ChatGPT response
 # → Shows preview of formatted file
@@ -319,28 +319,28 @@ Display the full content of a research note from your research folder.
 # - Check action items when implementing
 
 # Step 5: Review research when implementing
-/agileflow:research:list                    # See all research
-/agileflow:research:view FILE=<filename>    # Review details
+/research:list                    # See all research
+/research:view FILE=<filename>    # Review details
 ```
 
 ### Investigating Before Architecture Decision
 
 ```bash
 # Step 1: Research database options
-/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time collaboration"
+/research:ask TOPIC="PostgreSQL vs MongoDB for real-time collaboration"
 
 # Step 2: Get expert comparison, use cases, tradeoffs
 # → Copy response from ChatGPT/Perplexity
 
 # Step 3: Import results
-/agileflow:research:import TOPIC="Database Selection Analysis"
+/research:import TOPIC="Database Selection Analysis"
 
 # Step 4: Create ADR referencing research
-# /agileflow:adr NEW
+# /adr NEW
 # Mention: "See research in docs/10-research/"
 
 # Step 5: Team reviews research before decision
-/agileflow:research:view FILE=20250101-database-selection.md
+/research:view FILE=20250101-database-selection.md
 ```
 
 ### Learning from External Content
@@ -349,7 +349,7 @@ Display the full content of a research note from your research folder.
 # You find a great article/YouTube video about your tech
 
 # Step 1: Import the content
-/agileflow:research:import TOPIC="Next.js App Router Advanced Patterns" \
+/research:import TOPIC="Next.js App Router Advanced Patterns" \
   SOURCE="https://example.com/article"
 
 # Copy/paste key sections → saves to research folder
@@ -373,7 +373,7 @@ When `/babysit` detects you're stuck on a problem:
 ⚠️ You're working on this for a while. Need help?
 
 Try:
-  /agileflow:research:ask TOPIC="describe your problem"
+  /research:ask TOPIC="describe your problem"
 ```
 
 ### ADR - Architecture Decisions
@@ -394,10 +394,10 @@ Create work from research findings:
 
 ```bash
 # After importing research results
-/agileflow:research:import TOPIC="Auth Pattern"
+/research:import TOPIC="Auth Pattern"
 
 # Then create story based on action items
-/agileflow:epic NEW
+/epic NEW
 # Include: "Based on research: docs/10-research/20250101-auth-pattern.md"
 ```
 
@@ -485,9 +485,9 @@ The `docs/10-research/README.md` maintains a table of all research notes:
 Research tools and frameworks before recommending them:
 
 ```bash
-/agileflow:research:ask TOPIC="PostgreSQL vs MongoDB for real-time sync"
+/research:ask TOPIC="PostgreSQL vs MongoDB for real-time sync"
 # → Get expert comparison
-/agileflow:research:import  # Import results
+/research:import  # Import results
 # → Create ADR referencing the research
 ```
 
@@ -495,16 +495,16 @@ Research tools and frameworks before recommending them:
 Deep-dive into how to implement complex features:
 
 ```bash
-/agileflow:research:ask TOPIC="Next.js App Router middleware patterns"
-/agileflow:research:ask TOPIC="OAuth 2.0 implementation with security best practices"
-/agileflow:research:ask TOPIC="Real-time WebSocket architecture in Node.js"
+/research:ask TOPIC="Next.js App Router middleware patterns"
+/research:ask TOPIC="OAuth 2.0 implementation with security best practices"
+/research:ask TOPIC="Real-time WebSocket architecture in Node.js"
 ```
 
 ### Troubleshooting Difficult Problems
 Get expert help when stuck:
 
 ```bash
-/agileflow:research:ask TOPIC="TypeScript strict mode in monorepo" \
+/research:ask TOPIC="TypeScript strict mode in monorepo" \
   ERROR="error TS1149: File is a CommonJS module..."
 ```
 
@@ -512,7 +512,7 @@ Get expert help when stuck:
 Document learnings from courses, tutorials, or documentation:
 
 ```bash
-/agileflow:research:import TOPIC="React 18 Suspense and Streaming" \
+/research:import TOPIC="React 18 Suspense and Streaming" \
   SOURCE="https://react.dev/reference/react/Suspense"
 ```
 
@@ -520,8 +520,8 @@ Document learnings from courses, tutorials, or documentation:
 Compare options before adoption:
 
 ```bash
-/agileflow:research:ask TOPIC="GraphQL vs tRPC for type-safe APIs"
-/agileflow:research:ask TOPIC="SvelteKit vs Next.js for new project"
+/research:ask TOPIC="GraphQL vs tRPC for type-safe APIs"
+/research:ask TOPIC="SvelteKit vs Next.js for new project"
 ```
 
 ---
@@ -545,11 +545,11 @@ The index (`docs/10-research/README.md`) is automatically created and updated. I
 
 ### Can't Find Research File
 
-Use `/agileflow:research:list` to see all available files:
+Use `/research:list` to see all available files:
 
 ```bash
-/agileflow:research:list
-# Shows all files with correct filenames for /agileflow:research:view
+/research:list
+# Shows all files with correct filenames for /research:view
 ```
 
 ### Research Folder Doesn't Exist
@@ -560,7 +560,7 @@ First research import or list command creates the `docs/10-research/` directory 
 
 ## Related Commands
 
-- [`/agileflow:babysit`](/commands/babysit) - Detects stuck situations and suggests research:ask
-- [`/agileflow:adr`](/commands/adr) - Create architecture decisions referencing research
-- [`/agileflow:epic`](/commands/epic) - Create epics based on research findings
-- [`/agileflow:story`](/commands/story) - Create stories with research references
+- [`/babysit`](/commands/babysit) - Detects stuck situations and suggests research:ask
+- [`/adr`](/commands/adr) - Create architecture decisions referencing research
+- [`/epic`](/commands/epic) - Create epics based on research findings
+- [`/story`](/commands/story) - Create stories with research references

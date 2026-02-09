@@ -1,0 +1,48 @@
+---
+title: /session:cleanup
+description: Interactive session cleanup with AI assessment
+---
+
+# /session:cleanup
+
+Interactively clean up finished sessions with AI-powered assessment of each session's importance and merge eligibility.
+
+## Quick Start
+
+```bash
+/agileflow:session:cleanup
+```
+
+## How It Works
+
+1. Shows a detailed health report for all sessions
+2. Walks through **each session with issues** one-by-one
+3. AI assesses each session: **SAFE TO DELETE** vs **IMPORTANT - KEEP**
+4. Checks merge eligibility for sessions with branches
+5. Presents options based on assessment and merge status
+
+## Assessment Options
+
+| Scenario | Options Available |
+|----------|-------------------|
+| Safe + Mergeable | Delete, Merge and delete, Keep |
+| Important + Mergeable | Merge and delete, Keep, Switch to session |
+| Cannot merge (uncommitted changes) | Keep, Switch to fix, Delete anyway |
+| Safe + No merge needed | Delete, Keep |
+| Has conflicts | Keep, Switch to resolve, Delete anyway |
+
+## Session Tracking
+
+After cleanup, displays:
+- Sessions deleted
+- Sessions merged
+- Sessions kept
+- Orphaned registry entries cleaned
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/session:status`](/docs/commands/session-status) | View session health before cleanup |
+| [`/session:spawn`](/docs/commands/session-spawn) | Spawn new sessions |
+| [`/session:end`](/docs/commands/session-end) | End the current session |

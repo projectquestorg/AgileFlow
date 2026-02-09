@@ -1,16 +1,16 @@
 ---
-title: /agileflow:research:view
+title: /research:view
 description: Read and display the full content of a specific research note
 ---
 
-# /agileflow:research:view
+# /research:view
 
 Display the complete content of a research note from your research folder.
 
 ## Quick Start
 
 ```bash
-/agileflow:research:view FILE=20250101-oauth-setup.md
+/research:view FILE=20250101-oauth-setup.md
 ```
 
 ## Purpose
@@ -34,10 +34,10 @@ This is a **read-only command**—no files are modified.
 
 ```bash
 # View specific research
-/agileflow:research:view FILE=20250101-oauth-setup.md
+/research:view FILE=20250101-oauth-setup.md
 
 # View another note
-/agileflow:research:view FILE=20241231-typescript-perf.md
+/research:view FILE=20241231-typescript-perf.md
 ```
 
 ## Interactive Selection
@@ -120,10 +120,10 @@ What would you like to do with this research?
 Don't know the filename? Use list first:
 
 ```bash
-/agileflow:research:list
+/research:list
 # Shows all files with correct names
 
-/agileflow:research:view FILE=<filename from list>
+/research:view FILE=<filename from list>
 ```
 
 ## Missing File Handling
@@ -133,13 +133,13 @@ If the file doesn't exist:
 ```
 Research note not found: [FILENAME]
 
-Use /agileflow:research:list to see all available research notes.
+Use /research:list to see all available research notes.
 ```
 
 ## Related Commands
 
-- [`/agileflow:research`](/commands/research) - Overview of research system
-- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompts
-- [`/agileflow:research:import`](/commands/research-import) - Import research results
-- [`/agileflow:research:list`](/commands/research-list) - View all research notes
-- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyze for implementation
+- [`/research`](/commands/research) - Overview of research system
+- [`/research:ask`](/commands/research-ask) - Generate research prompts
+- [`/research:import`](/commands/research-import) - Import research results
+- [`/research:list`](/commands/research-list) - View all research notes
+- [`/research:analyze`](/commands/research-analyze) - Analyze for implementation

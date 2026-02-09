@@ -1,27 +1,27 @@
 ---
-title: /agileflow:research:import
+title: /research:import
 description: Import research results from ChatGPT, Claude, Perplexity, or external content into your research folder
 ---
 
-# /agileflow:research:import
+# /research:import
 
 Import research results from external AI tools or content into your project's research folder with structured formatting.
 
 ## Quick Start
 
 ```bash
-/agileflow:research:import TOPIC="OAuth 2.0 Setup"
+/research:import TOPIC="OAuth 2.0 Setup"
 ```
 
 Then paste the content when prompted. Or provide it inline:
 
 ```bash
-/agileflow:research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
+/research:import TOPIC="OAuth 2.0 Setup" SOURCE="https://chatgpt.com"
 ```
 
 ## Purpose
 
-After using [`/agileflow:research:ask`](/commands/research-ask) to get answers from external AI, this command:
+After using [`/research:ask`](/commands/research-ask) to get answers from external AI, this command:
 
 - Formats the results into structured markdown
 - Saves to `docs/10-research/YYYYMMDD-topic-slug.md`
@@ -205,11 +205,11 @@ If you choose "Yes", the command:
 
 ```bash
 # Step 1: Get help from ChatGPT
-/agileflow:research:ask TOPIC="next-auth OAuth setup"
+/research:ask TOPIC="next-auth OAuth setup"
 # Copy the generated prompt, paste into ChatGPT
 
 # Step 2: Import the response
-/agileflow:research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
+/research:import TOPIC="next-auth OAuth Fix" SOURCE="https://chatgpt.com"
 # Paste ChatGPT's response when prompted
 
 # Step 3: Review and confirm
@@ -224,14 +224,14 @@ If you choose "Yes", the command:
 ### Import YouTube Transcript
 
 ```bash
-/agileflow:research:import TOPIC="React 18 Streaming SSR" SOURCE="https://youtube.com/watch?v=..."
+/research:import TOPIC="React 18 Streaming SSR" SOURCE="https://youtube.com/watch?v=..."
 # Paste the transcript
 ```
 
 ### Import Blog Post
 
 ```bash
-/agileflow:research:import TOPIC="Vercel Edge Functions" SOURCE="https://vercel.com/blog/..."
+/research:import TOPIC="Vercel Edge Functions" SOURCE="https://vercel.com/blog/..."
 # Paste relevant sections
 ```
 
@@ -245,8 +245,8 @@ If you choose "Yes", the command:
 
 ## Related Commands
 
-- [`/agileflow:research`](/commands/research) - Overview of research system
-- [`/agileflow:research:ask`](/commands/research-ask) - Generate research prompts
-- [`/agileflow:research:list`](/commands/research-list) - View all research notes
-- [`/agileflow:research:view`](/commands/research-view) - Read specific research note
-- [`/agileflow:research:analyze`](/commands/research-analyze) - Analyze existing research
+- [`/research`](/commands/research) - Overview of research system
+- [`/research:ask`](/commands/research-ask) - Generate research prompts
+- [`/research:list`](/commands/research-list) - View all research notes
+- [`/research:view`](/commands/research-view) - Read specific research note
+- [`/research:analyze`](/commands/research-analyze) - Analyze existing research

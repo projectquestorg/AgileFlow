@@ -5,6 +5,7 @@
     "---Core Features---",
     "skills",
     "agent-expertise-system",
+    "agent-teams",
     "parallel-sessions",
     "---Automation & Execution---",
     "hooks-system",
@@ -14,9 +15,6 @@
     "---Setup & Safety---",
     "configuration",
     "ide-integrations",
-    "damage-control",
-    "---UI & Accessibility---",
-    "component-specs",
-    "rtl-support"
+    "damage-control"
   ]
 }

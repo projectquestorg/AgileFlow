@@ -1,0 +1,54 @@
+---
+title: /session:spawn
+description: Spawn multiple parallel Claude Code sessions in git worktrees
+---
+
+# /session:spawn
+
+Spawn multiple parallel Claude Code sessions, each in its own git worktree with optional tmux integration for easy navigation.
+
+## Quick Start
+
+```bash
+/agileflow:session:spawn --count 3
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--count N` | Number of sessions to spawn |
+| `--branches a,b,c` | Explicit branch names for each session |
+| `--from-epic EP-XXX` | Auto-create branches from epic stories |
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--init` | Initialize sessions with test verification |
+| `--no-tmux` | Skip tmux window creation |
+| `--dangerous` | Skip safety confirmations |
+
+## How It Works
+
+1. Creates N git worktrees from current branch
+2. Auto-copies `.env` files to each worktree
+3. Spawns Claude Code in tmux windows (one per session)
+4. Registers sessions in session state for tracking
+
+## Tmux Navigation
+
+After spawning, use tmux key bindings to switch between sessions:
+
+- `Ctrl+b n` - Next session window
+- `Ctrl+b p` - Previous session window
+- `Ctrl+b [number]` - Jump to specific window
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/session:status`](/docs/commands/session-status) | View all session states |
+| [`/session:resume`](/docs/commands/session-resume) | Switch to a session |
+| [`/session:cleanup`](/docs/commands/session-cleanup) | Clean up finished sessions |
+| [`/session:end`](/docs/commands/session-end) | End current session |

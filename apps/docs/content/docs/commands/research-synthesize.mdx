@@ -1,0 +1,61 @@
+---
+title: /research:synthesize
+description: Synthesize insights across multiple research files
+---
+
+# /research:synthesize
+
+Analyze multiple research notes together to find consensus, conflicts, unique insights, and technology patterns across your research.
+
+## Quick Start
+
+```bash
+/agileflow:research:synthesize TOPIC="authentication patterns"
+```
+
+Or specify files directly:
+
+```bash
+/agileflow:research:synthesize FILES="20260115-oauth-research.md,20260120-jwt-comparison.md"
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `TOPIC=<text>` | Find and synthesize research files matching this topic |
+| `FILES=<list>` | Comma-separated list of specific research files to analyze |
+
+## How It Works
+
+1. **Input validation** - Requires either TOPIC or FILES
+2. **File selection** - Finds matching research files and confirms selection
+3. **Metadata extraction** - Pulls key findings, technologies, and recommendations from each file
+4. **Synthesis analysis** - Cross-references findings using confidence scoring
+5. **Report generation** - Produces a structured synthesis report
+
+## Confidence Scoring
+
+| Level | Meaning |
+|-------|---------|
+| **HIGH** | Finding appears in 2+ research files (consensus) |
+| **UNIQUE** | Finding appears in only 1 file (needs verification) |
+| **CONFLICT** | Files disagree on a finding (requires resolution) |
+
+## Report Sections
+
+- **Files Analyzed** - Source research notes
+- **Consensus Findings** - High-confidence findings from multiple sources
+- **Unique Insights** - Single-source findings worth verifying
+- **Conflicts Detected** - Disagreements flagged for review
+- **Technology Patterns** - Common technologies and approaches
+- **Timeline** - Chronological view of research progression
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/research:ask`](/docs/commands/research-ask) | Generate a research prompt |
+| [`/research:import`](/docs/commands/research-import) | Import research results |
+| [`/research:list`](/docs/commands/research-list) | View all research notes |
+| [`/research:view`](/docs/commands/research-view) | Read a specific note |

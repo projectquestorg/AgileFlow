@@ -255,20 +255,57 @@ The messaging bridge (`scripts/messaging-bridge.js`) translates between:
 
 All messages flow through both systems, giving you full observability regardless of which mode you're using.
 
-## Auto-Detection with /babysit
+## Integration with /babysit
 
-The `/babysit` mentor automatically detects when Agent Teams should be used:
+The `/babysit` mentor deeply integrates with Agent Teams, automatically detecting when a team is needed and managing the full lifecycle.
 
-| Signal | Detection |
-|--------|-----------|
-| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set | Teams mode available |
-| Epic has stories with different owners (AG-API + AG-UI) | Multi-domain task |
-| Task description mentions multiple domains | Cross-layer work |
+### Smart Detection
 
-When detected, `/babysit` suggests the appropriate template:
-- API + UI stories -> `fullstack`
-- Security review needed -> `code-review`
-- High-confidence required -> `builder-validator`
+During its initial context gathering phase, `/babysit` checks for team mode signals:
+
+| Signal | Detection | Template Selected |
+|--------|-----------|-------------------|
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is set | Teams mode available | - |
+| Epic has stories with different owners (AG-API + AG-UI) | Multi-domain task | `fullstack` |
+| Task description mentions multiple domains | Cross-layer work | `fullstack` |
+| Security review requested or pre-release | Security audit needed | `code-review` |
+| High-confidence implementation required | Critical feature | `builder-validator` |
+
+When detected, babysit reports:
+
+```
+Smart Detection Results:
+  Team Mode: ENABLED (epic has AG-API + AG-UI stories)
+  Template: fullstack (auto-selected)
+```
+
+### How Babysit Delegates to Teams
+
+When team mode is active, `/babysit` changes its delegation behavior:
+
+1. **Without teams**: Babysit spawns individual domain experts via the Task tool for each piece of work
+2. **With teams**: Babysit starts a team via `/team:start` and the team lead coordinates all teammates in parallel
+
+This means multi-domain stories that would normally require sequential expert spawning (API first, then UI, then testing) can run **all three teammates simultaneously** with file-locking preventing conflicts.
+
+### Task Registry Integration
+
+Babysit tracks team tasks through AgileFlow's task registry:
+
+1. **Before spawning**: Checks for running duplicates to avoid conflicts
+2. **During work**: Registers tasks with story IDs for traceability
+3. **On completion**: Marks tasks complete and triggers validator chains (for builder-validator teams)
+4. **Quality gates**: Enforces test/lint/type checks before accepting teammate output
+
+### Override
+
+If babysit auto-detects team mode but you prefer individual expert delegation:
+
+```bash
+/agileflow:babysit TEAM=false
+```
+
+Or say "no teams" in your initial message to babysit.
 
 ## When to Use Agent Teams vs Subagents
 
@@ -284,10 +321,10 @@ When detected, `/babysit` suggests the appropriate template:
 
 | Command | Purpose |
 |---------|---------|
-| `/agileflow:team:start <template>` | Start a team from a template |
-| `/agileflow:team:list` | List available templates |
-| `/agileflow:team:status` | Show current team status |
-| `/agileflow:team:stop` | Gracefully stop a running team |
-| `/agileflow:team:guide` | Full migration guide and troubleshooting |
-| `/agileflow:babysit` | Mentor mode (auto-detects when teams are needed) |
-| `/agileflow:configure` | Configure quality gates and hooks |
+| [`/team:start`](/docs/commands/team-start) | Start a team from a template |
+| [`/team:list`](/docs/commands/team-list) | List available templates |
+| [`/team:status`](/docs/commands/team-status) | Show current team status |
+| [`/team:stop`](/docs/commands/team-stop) | Gracefully stop a running team |
+| [`/team:guide`](/docs/commands/team-guide) | Full migration guide and troubleshooting |
+| [`/babysit`](/docs/commands/babysit) | Mentor mode (auto-detects when teams are needed) |
+| [`/configure`](/docs/commands/configure) | Configure quality gates and hooks |

@@ -1,16 +1,16 @@
 ---
-title: /agileflow:context:note
+title: /context:note
 description: Add a timestamped note to your project context file
 ---
 
-# /agileflow:context:note
+# /context:note
 
 Append a timestamped note to the project context file.
 
 ## Quick Start
 
 ```bash
-/agileflow:context:note NOTE="Your note here"
+/context:note NOTE="Your note here"
 ```
 
 ## Purpose
@@ -33,19 +33,19 @@ Quickly add a note to `docs/context.md` under the "Notes" section. Useful for re
 
 ```bash
 # Record a decision
-/agileflow:context:note NOTE="Decided to use JWT instead of sessions"
+/context:note NOTE="Decided to use JWT instead of sessions"
 
 # Document an issue
-/agileflow:context:note NOTE="User reported auth bug in production, investigating"
+/context:note NOTE="User reported auth bug in production, investigating"
 
 # Sprint planning note
-/agileflow:context:note NOTE="Sprint planning: focusing on US-0042 and US-0045 this week"
+/context:note NOTE="Sprint planning: focusing on US-0042 and US-0045 this week"
 
 # Technical discovery
-/agileflow:context:note NOTE="Performance issue fixed: reduced API response time by 40%"
+/context:note NOTE="Performance issue fixed: reduced API response time by 40%"
 
 # Stakeholder feedback
-/agileflow:context:note NOTE="Stakeholder meeting: new feature request added to backlog"
+/context:note NOTE="Stakeholder meeting: new feature request added to backlog"
 ```
 
 ## Note Format
@@ -146,19 +146,19 @@ This provides a chronological history of decisions and discoveries.
 
 ```bash
 # Technical decisions
-/agileflow:context:note NOTE="Switched from REST to GraphQL for complex queries"
+/context:note NOTE="Switched from REST to GraphQL for complex queries"
 
 # Bug tracking
-/agileflow:context:note NOTE="Fixed race condition in user auth - PR #245"
+/context:note NOTE="Fixed race condition in user auth - PR #245"
 
 # Team coordination
-/agileflow:context:note NOTE="API team ready for integration - contact @john"
+/context:note NOTE="API team ready for integration - contact @john"
 
 # Environment changes
-/agileflow:context:note NOTE="Upgraded Node.js to v20 in CI - all tests passing"
+/context:note NOTE="Upgraded Node.js to v20 in CI - all tests passing"
 
 # External dependencies
-/agileflow:context:note NOTE="Stripe API v2 deprecation - migrate by March 2025"
+/context:note NOTE="Stripe API v2 deprecation - migrate by March 2025"
 ```
 
 ## When to Use
@@ -178,19 +178,19 @@ This provides a chronological history of decisions and discoveries.
 | Day-to-day tracking | Decisions needing justification |
 | Team communications | Choices with alternatives considered |
 
-For significant technical decisions, use [`/agileflow:adr`](/commands/adr) instead.
+For significant technical decisions, use [`/adr`](/commands/adr) instead.
 
 ## Viewing Notes
 
 Notes are visible when you:
 
 1. View `docs/context.md` directly
-2. Run `/agileflow:context:export` (if space allows)
-3. Run `/agileflow:context:full` to refresh context
+2. Run `/context:export` (if space allows)
+3. Run `/context:full` to refresh context
 
 ## Related Commands
 
-- [`/agileflow:context`](/commands/context) - Overview of context commands
-- [`/agileflow:context:full`](/commands/context-full) - Generate full context
-- [`/agileflow:context:export`](/commands/context-export) - Export concise excerpt
-- [`/agileflow:adr`](/commands/adr) - Create architecture decision records
+- [`/context`](/commands/context) - Overview of context commands
+- [`/context:full`](/commands/context-full) - Generate full context
+- [`/context:export`](/commands/context-export) - Export concise excerpt
+- [`/adr`](/commands/adr) - Create architecture decision records

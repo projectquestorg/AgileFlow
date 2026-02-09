@@ -1,0 +1,47 @@
+---
+title: /team:status
+description: Show current team member statuses and tasks
+---
+
+# /team:status
+
+Display the status of the currently active team, including each teammate's progress, tasks, and quality gate results.
+
+## Quick Start
+
+```bash
+/agileflow:team:status
+```
+
+## Output
+
+Shows:
+
+- **Team info**: Template name, mode (native/subagent), lead agent, start time
+- **Per-teammate status**: Working, idle, or blocked
+- **Current tasks**: What each teammate is working on
+- **Quality gates**: Pass/fail results for tests, lint, types
+- **Team metrics**: Elapsed time, tasks completed, quality gate pass rate
+
+## Example Output
+
+```
+Team: fullstack (native mode)
+Lead: team-lead | Started: 2m ago
+
+Teammates:
+  agileflow-api     [working] Implementing GET /api/users
+  agileflow-ui      [working] Building UserList component
+  agileflow-testing [idle]    Waiting for implementations
+
+Quality Gates: 2/3 passing
+Tasks: 1/4 complete
+```
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/team:start`](/docs/commands/team-start) | Start a team |
+| [`/team:stop`](/docs/commands/team-stop) | Stop the team |
+| [`/team:guide`](/docs/commands/team-guide) | Full migration guide |

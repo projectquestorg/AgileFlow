@@ -1,0 +1,61 @@
+---
+title: /team:start
+description: Start a team from a predefined or custom template
+---
+
+# /team:start
+
+Start a multi-agent team from a template. The team lead coordinates specialized teammates working in parallel on complex tasks.
+
+## Quick Start
+
+```bash
+/agileflow:team:start fullstack
+```
+
+## How It Works
+
+1. Detects whether Claude Code native Agent Teams is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`)
+2. Loads the specified template from `.agileflow/teams/`
+3. In **native mode**: operates as team lead in delegate mode, spawning independent teammate sessions with file-locking
+4. In **fallback mode**: uses the orchestrator subagent to coordinate experts within a single session
+
+## Available Templates
+
+| Template | Description | Teammates |
+|----------|-------------|-----------|
+| `fullstack` | Full-stack feature development | API builder, UI builder, Testing validator |
+| `code-review` | Multi-perspective code review | Code reviewer, Security, Performance |
+| `builder-validator` | Paired build and verify | API + API validator, UI + UI validator |
+| `logic-audit` | Deep logic analysis | Edge, Flow, Invariant, Race, Type analyzers |
+
+## Usage
+
+```bash
+# Start a full-stack team
+/agileflow:team:start fullstack
+
+# Start a code review team
+/agileflow:team:start code-review
+
+# Start a custom team
+/agileflow:team:start my-custom-template
+```
+
+## Quality Gates
+
+Each template includes quality gate configuration that enforces standards before work is accepted:
+
+- **Tests passing**: Required before teammate can go idle
+- **Lint passing**: Configurable per template
+- **Type checking**: Optional per template
+- **Validator approval**: Required for builder-validator teams
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/team:list`](/docs/commands/team-list) | List available templates |
+| [`/team:status`](/docs/commands/team-status) | Monitor team progress |
+| [`/team:stop`](/docs/commands/team-stop) | Stop a running team |
+| [`/team:guide`](/docs/commands/team-guide) | Full migration guide |

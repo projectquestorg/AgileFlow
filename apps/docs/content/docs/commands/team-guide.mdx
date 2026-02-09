@@ -1,0 +1,67 @@
+---
+title: /team:guide
+description: Agent Teams migration guide and architecture reference
+---
+
+# /team:guide
+
+Comprehensive guide covering Agent Teams architecture, migration from subagent mode, quality gates configuration, troubleshooting, and best practices.
+
+## Quick Start
+
+```bash
+/agileflow:team:guide
+```
+
+## What This Covers
+
+### Architecture
+
+- **Native Agent Teams mode**: Team lead in delegate mode, independent teammate sessions with file-locking, shared task lists, inter-agent messaging
+- **Subagent orchestrator mode**: Fallback using AgileFlow's built-in orchestrator with Task/TaskOutput coordination
+- **Dual-mode architecture**: Both modes produce the same results through different execution mechanisms
+
+### Quality Gates
+
+- **TeammateIdle gate**: Runs when a teammate finishes work (tests, lint, types)
+- **TaskCompleted gate**: Runs when a builder marks a task complete (validator approval)
+- Configuration via `/agileflow:configure` or template JSON
+
+### Task Synchronization
+
+- Bidirectional sync between Claude Code's native task list (`~/.claude/tasks/`) and AgileFlow's `status.json`
+- Messaging bridge translates between AgileFlow bus and Claude Code inter-agent messaging
+
+### Migration Guide
+
+Step-by-step instructions for migrating from subagent orchestrator mode to native Agent Teams:
+
+1. Enable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+2. Verify templates work with `/team:list`
+3. Start a team with `/team:start`
+4. Monitor with `/team:status`
+
+### Troubleshooting
+
+Common issues and solutions for:
+- Team startup failures
+- Quality gate configuration
+- Task synchronization problems
+- Messaging bridge issues
+- Teammate crashes and recovery
+
+### Custom Templates
+
+How to create custom team templates in `.agileflow/teams/<name>.json` with:
+- Lead configuration (delegate mode, plan approval)
+- Teammate definitions (agent, role, domain)
+- Quality gate rules
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/team:start`](/docs/commands/team-start) | Start a team |
+| [`/team:list`](/docs/commands/team-list) | List templates |
+| [`/team:status`](/docs/commands/team-status) | Monitor team |
+| [`/team:stop`](/docs/commands/team-stop) | Stop a team |
