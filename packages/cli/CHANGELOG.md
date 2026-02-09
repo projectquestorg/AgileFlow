@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.5] - 2026-02-09
+
+### Fixed
+- Fix tmux startup after reboot by starting server before global options
+
 ## [2.99.4] - 2026-02-09
 
 ### Fixed
