@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.2] - 2026-02-09
+
+### Added
+- Documentation overhaul with teams commands, frontmatter fixes, and damage control resilience
+
 ## [2.99.1] - 2026-02-08
 
 ### Added
