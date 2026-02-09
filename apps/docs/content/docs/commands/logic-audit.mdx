@@ -1,0 +1,58 @@
+---
+title: /logic:audit
+description: Multi-agent logic analysis with consensus voting for finding logic bugs
+---
+
+# /logic:audit
+
+Deploy multiple specialized logic analyzers in parallel to find bugs, edge cases, race conditions, and type safety issues in your code.
+
+## Quick Start
+
+```bash
+/agileflow:logic:audit src/auth/
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `[file\|directory]` | Target file or directory to analyze |
+| `DEPTH=quick\|deep` | Analysis depth (default: quick) |
+| `FOCUS=edge\|invariant\|flow\|type\|race\|all` | Focus on specific analysis type (default: all) |
+
+## How It Works
+
+1. Deploys 5 specialized analyzers **in parallel**:
+   - **Edge case analyzer** - Boundary conditions, off-by-one errors, empty inputs
+   - **Flow analyzer** - Dead code, unreachable branches, infinite loops
+   - **Invariant analyzer** - Pre/post conditions, state consistency
+   - **Race condition analyzer** - Async patterns, timing issues, shared state
+   - **Type safety analyzer** - Implicit coercion, null propagation
+2. Each analyzer independently examines the target code
+3. A **consensus coordinator** collects all findings and votes on severity
+4. Final report uses confidence scoring:
+   - **CONFIRMED** - 2+ analyzers agree (high confidence)
+   - **LIKELY** - 1 analyzer with strong evidence
+   - **INVESTIGATE** - 1 analyzer with weak evidence
+
+## Examples
+
+```bash
+# Quick audit of a specific file
+/agileflow:logic:audit src/auth/token.js DEPTH=quick
+
+# Deep audit focusing on race conditions
+/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+
+# Full audit of all types
+/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+```
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/review`](/docs/commands/review) | AI-powered code review |
+| [`/verify`](/docs/commands/verify) | Run tests and update status |
+| [`/audit`](/docs/commands/audit) | Story completion audit |

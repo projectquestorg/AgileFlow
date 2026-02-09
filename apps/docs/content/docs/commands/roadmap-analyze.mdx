@@ -1,0 +1,49 @@
+---
+title: /roadmap:analyze
+description: Automated competitor analysis with feature gap identification
+---
+
+# /roadmap:analyze
+
+Run automated competitor analysis using web research to identify feature gaps, compare capabilities, and generate actionable roadmap items.
+
+## Quick Start
+
+```bash
+/agileflow:roadmap:analyze COMPETITORS="Jira,Linear,Shortcut"
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `COMPETITORS=<text>` | Comma-separated list of competitors to analyze (max 5) |
+| `FOCUS=all\|features\|security\|perf\|ux` | Analysis focus area (default: all) |
+| `OUTPUT=matrix\|report\|stories` | Output format (default: report) |
+
+## How It Works
+
+1. Researches each competitor via web search
+2. Compares findings against current project capabilities from your codebase
+3. Categorizes features:
+   - **Must-have** - Found in 2+ competitors
+   - **Nice-to-have** - Found in 1 competitor
+4. Assigns confidence levels: HIGH (verified), MEDIUM (inferred), LOW (uncertain)
+5. Shows preview before saving
+6. Outputs to `docs/08-project/roadmap-{date}.md`
+
+## Output Formats
+
+| Format | Description |
+|--------|-------------|
+| `matrix` | Feature comparison matrix across competitors |
+| `report` | Detailed analysis report with recommendations |
+| `stories` | Auto-generate user stories for identified gaps |
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate`](/docs/commands/ideate) | Generate improvement ideas |
+| [`/epic`](/docs/commands/epic) | Create epics from roadmap items |
+| [`/sprint`](/docs/commands/sprint) | Plan sprints with roadmap priorities |
