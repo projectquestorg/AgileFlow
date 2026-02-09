@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.3] - 2026-02-09
+
+### Fixed
+- Auto-heal tmux socket directory after macOS reboot
+
 ## [2.99.2] - 2026-02-09
 
 ### Added
