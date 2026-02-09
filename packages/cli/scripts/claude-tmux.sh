@@ -405,16 +405,11 @@ fi
 # Create new tmux session with Claude
 echo "Starting Claude in tmux session: $SESSION_NAME"
 
-# Ensure tmux server is running (required for set-option when no sessions exist).
-# Only new-session, start-server, and kill-server can start a server.
-# Without this, set-option fails with "error connecting to..." after a reboot.
-tmux start-server
-
-# Set base-index globally BEFORE creating session so first window gets index 1
-tmux set-option -g base-index 1
-
-# Create session in detached mode first (will use base-index 1)
-tmux new-session -d -s "$SESSION_NAME" -n "main"
+# Create session, set base-index, and move window to index 1 in one atomic command.
+# new-session starts the server (required after reboot when no server exists).
+# Separate start-server/set-option calls fail because the server exits immediately
+# when no sessions exist. The \; syntax chains commands on the same server instance.
+tmux new-session -d -s "$SESSION_NAME" -n "main" \; set-option -g base-index 1 \; move-window -t 1
 
 # Apply tmux configuration
 configure_tmux_session "$SESSION_NAME"
