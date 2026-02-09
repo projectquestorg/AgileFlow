@@ -1,0 +1,49 @@
+---
+title: /خريطة الطريق: تحليل
+description: التحليل الآلي للمنافسين مع تحديد فجوة الميزات
+---
+
+# /خريطة الطريق: تحليل
+
+قم بإجراء تحليل آلي للمنافسين باستخدام بحث الويب لتحديد فجوات الميزات ومقارنة القدرات وإنشاء عناصر خريطة طريق قابلة للتنفيذ.
+
+## بداية سريعة
+
+```bash
+/agileflow:roadmap:analyze COMPETITORS="Jira,Linear,Shortcut"
+```
+
+## الحجج
+
+| Argument | Description |
+|----------|-------------|
+| `COMPETITORS=<text>` | Comma-separated list of competitors to analyze (max 5) |
+| `FOCUS=all\|features\|security\|perf\|ux` | Analysis focus area (default: all) |
+| `OUTPUT=matrix\|report\|stories` | Output format (default: report) |
+
+## كيف يعمل
+
+1. يبحث في كل منافس عبر البحث على شبكة الإنترنت
+2. يقارن النتائج مع قدرات المشروع الحالية من قاعدة التعليمات البرمجية الخاصة بك
+3. ميزات التصنيف:
+   - **Must-have** - وجدت في 2+ المنافسين
+   - **Nice-to-have** - وجدت في 1 منافس
+4. يعين مستويات الثقة: عالية (تم التحقق منها)، متوسطة (مستنتجة)، منخفضة (غير مؤكدة)
+5. يظهر المعاينة قبل الحفظ
+6. المخرجات إلى `docs/08-project/roadmap-{date}.md`
+
+## تنسيقات الإخراج
+
+| Format | Description |
+|--------|-------------|
+| `matrix` | Feature comparison matrix across competitors |
+| `report` | Detailed analysis report with recommendations |
+| `stories` | Auto-generate user stories for identified gaps |
+
+## الأوامر ذات الصلة
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate`](/docs/commands/ideate) | Generate improvement ideas |
+| [`/epic`](/docs/commands/epic) | Create epics from roadmap items |
+| [`/sprint`](/docs/commands/sprint) | Plan sprints with roadmap priorities |

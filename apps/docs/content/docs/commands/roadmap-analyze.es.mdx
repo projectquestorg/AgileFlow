@@ -1,0 +1,49 @@
+---
+title: /hoja de ruta:analizar
+description: Análisis automatizado de la competencia con identificación de brechas de características
+---
+
+# /hoja de ruta:analizar
+
+Ejecute análisis automatizados de la competencia utilizando investigaciones web para identificar brechas de funciones, comparar capacidades y generar elementos de hoja de ruta procesables.
+
+## Inicio rápido
+
+```bash
+/agileflow:roadmap:analyze COMPETITORS="Jira,Linear,Shortcut"
+```
+
+## Argumentos
+
+| Argument | Description |
+|----------|-------------|
+| `COMPETITORS=<text>` | Comma-separated list of competitors to analyze (max 5) |
+| `FOCUS=all\|features\|security\|perf\|ux` | Analysis focus area (default: all) |
+| `OUTPUT=matrix\|report\|stories` | Output format (default: report) |
+
+## Cómo funciona
+
+1. Investiga a cada competidor a través de la búsqueda web.
+2. Compara los hallazgos con las capacidades actuales del proyecto desde su base de código.
+3. Clasifica características:
+   - **Must-have** - Encontrado en más de 2 competidores
+   - **Nice-to-have** - Encontrado en 1 competidor
+4. Asigna niveles de confianza: ALTO (verificado), MEDIO (inferido), BAJO (incierto)
+5. Muestra una vista previa antes de guardar
+6. Salidas a `docs/08-project/roadmap-{date}.md`
+
+## Formatos de salida
+
+| Format | Description |
+|--------|-------------|
+| `matrix` | Feature comparison matrix across competitors |
+| `report` | Detailed analysis report with recommendations |
+| `stories` | Auto-generate user stories for identified gaps |
+
+## Comandos relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate`](/docs/commands/ideate) | Generate improvement ideas |
+| [`/epic`](/docs/commands/epic) | Create epics from roadmap items |
+| [`/sprint`](/docs/commands/sprint) | Plan sprints with roadmap priorities |

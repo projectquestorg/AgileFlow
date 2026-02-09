@@ -1,0 +1,58 @@
+---
+title: /lógica:auditoria
+description: Análise lógica multiagente com votação de consenso para encontrar bugs lógicos
+---
+
+# /lógica:auditoria
+
+Implante vários analisadores lógicos especializados em paralelo para encontrar bugs, casos extremos, condições de corrida e digitar problemas de segurança em seu código.
+
+## Início rápido
+
+```bash
+/agileflow:logic:audit src/auth/
+```
+
+## Argumentos
+
+| Argument | Description |
+|----------|-------------|
+| `[file\|directory]` | Target file or directory to analyze |
+| `DEPTH=quick\|deep` | Analysis depth (default: quick) |
+| `FOCUS=edge\|invariant\|flow\|type\|race\|all` | Focus on specific analysis type (default: all) |
+
+## Como funciona
+
+1. Implanta 5 analisadores especializados **in parallel**:
+   - **Edge case analyzer** - Condições de limite, erros off-by-one, entradas vazias
+   - **Flow analyzer** - Código morto, ramificações inacessíveis, loops infinitos
+   - **Invariant analyzer** - Condições pré/pós, consistência do estado
+   - **Race condition analyzer** - Padrões assíncronos, problemas de temporização, estado compartilhado
+   - **Type safety analyzer** - Coerção implícita, propagação nula
+2. Cada analisador examina independentemente o código alvo
+3. A **consensus coordinator** coleta todas as descobertas e vota na gravidade
+4. O relatório final usa pontuação de confiança:
+   - **CONFIRMED** - 2+ analisadores concordam (alta confiança)
+   - **LIKELY** - 1 analisador com evidências fortes
+   - **INVESTIGATE** - 1 analisador com evidência fraca
+
+## Exemplos
+
+```bash
+# Quick audit of a specific file
+/agileflow:logic:audit src/auth/token.js DEPTH=quick
+
+# Deep audit focusing on race conditions
+/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+
+# Full audit of all types
+/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+```
+
+## Comandos Relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/review`](/docs/commands/review) | AI-powered code review |
+| [`/verify`](/docs/commands/verify) | Run tests and update status |
+| [`/audit`](/docs/commands/audit) | Story completion audit |

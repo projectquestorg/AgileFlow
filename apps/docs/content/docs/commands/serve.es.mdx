@@ -1,0 +1,35 @@
+---
+title: /atender
+description: Inicie el servidor Dashboard WebSocket para comunicación UI en tiempo real
+---
+
+# /atender
+
+Inicie el servidor WebSocket de AgileFlow Dashboard para comunicarse en tiempo real con la interfaz de usuario de Cloud Dashboard.
+
+## Inicio rápido
+
+```bash
+/agileflow:serve
+```
+
+## Opciones
+
+| Option | Description |
+|--------|-------------|
+| `--port 8765` | Port number (default: 8765) |
+| `--api-key KEY` | API key for authentication |
+| `--tunnel` | Enable tunnel for remote access |
+
+## Cómo funciona
+
+1. Inicia un servidor WebSocket vinculado a `0.0.0.0` en el puerto especificado
+2. Permite la comunicación en tiempo real entre Claude Code y Cloud Dashboard
+3. Admite operaciones de git, comandos de terminal y chat a través de la interfaz de usuario del panel
+
+## Comandos relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/configure`](/docs/commands/configure) | Configure AgileFlow settings |
+| [`/api`](/docs/commands/api) | Start REST API server |

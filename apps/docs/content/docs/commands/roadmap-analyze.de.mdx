@@ -1,0 +1,49 @@
+---
+title: /roadmap:analyze
+description: Automatisierte Konkurrenzanalyse mit Erkennung von Funktionslücken
+---
+
+# /roadmap:analyze
+
+Führen Sie mithilfe von Webrecherchen eine automatisierte Wettbewerbsanalyse durch, um Funktionslücken zu identifizieren, Funktionen zu vergleichen und umsetzbare Roadmap-Elemente zu generieren.
+
+## Schnellstart
+
+```bash
+/agileflow:roadmap:analyze COMPETITORS="Jira,Linear,Shortcut"
+```
+
+## Argumente
+
+| Argument | Description |
+|----------|-------------|
+| `COMPETITORS=<text>` | Comma-separated list of competitors to analyze (max 5) |
+| `FOCUS=all\|features\|security\|perf\|ux` | Analysis focus area (default: all) |
+| `OUTPUT=matrix\|report\|stories` | Output format (default: report) |
+
+## Wie es funktioniert
+
+1. Recherchiert jeden Konkurrenten per Websuche
+2. Vergleicht Ergebnisse mit aktuellen Projektfunktionen aus Ihrer Codebasis
+3. Kategorisiert Funktionen:
+   - **Must-have** - Gefunden bei mehr als 2 Mitbewerbern
+   - **Nice-to-have** - Gefunden bei 1 Mitbewerber
+4. Weist Konfidenzniveaus zu: HOCH (verifiziert), MITTEL (abgeleitet), NIEDRIG (unsicher)
+5. Zeigt eine Vorschau vor dem Speichern an
+6. Gibt aus an `docs/08-project/roadmap-{date}.md`
+
+## Ausgabeformate
+
+| Format | Description |
+|--------|-------------|
+| `matrix` | Feature comparison matrix across competitors |
+| `report` | Detailed analysis report with recommendations |
+| `stories` | Auto-generate user stories for identified gaps |
+
+## Verwandte Befehle
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate`](/docs/commands/ideate) | Generate improvement ideas |
+| [`/epic`](/docs/commands/epic) | Create epics from roadmap items |
+| [`/sprint`](/docs/commands/sprint) | Plan sprints with roadmap priorities |

@@ -1,0 +1,35 @@
+---
+title: /servir
+description: Démarrez le serveur Dashboard WebSocket pour la communication de l'interface utilisateur en temps réel
+---
+
+# /servir
+
+Démarrez le serveur AgileFlow Dashboard WebSocket pour une communication en temps réel avec l'interface utilisateur de Cloud Dashboard.
+
+## Démarrage rapide
+
+```bash
+/agileflow:serve
+```
+
+## Possibilités
+
+| Option | Description |
+|--------|-------------|
+| `--port 8765` | Port number (default: 8765) |
+| `--api-key KEY` | API key for authentication |
+| `--tunnel` | Enable tunnel for remote access |
+
+## Comment ça marche
+
+1. Démarre un serveur WebSocket lié à `0.0.0.0` sur le port spécifié
+2. Permet la communication en temps réel entre Claude Code et le Cloud Dashboard
+3. Prend en charge les opérations git, les commandes de terminal et le chat via l'interface utilisateur du tableau de bord
+
+## Commandes associées
+
+| Command | Purpose |
+|---------|---------|
+| [`/configure`](/docs/commands/configure) | Configure AgileFlow settings |
+| [`/api`](/docs/commands/api) | Start REST API server |

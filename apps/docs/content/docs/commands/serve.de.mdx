@@ -1,0 +1,35 @@
+---
+title: /Aufschlag
+description: Starten Sie den Dashboard-WebSocket-Server für die Echtzeit-UI-Kommunikation
+---
+
+# /Aufschlag
+
+Starten Sie den AgileFlow Dashboard-WebSocket-Server für die Echtzeitkommunikation mit der Cloud Dashboard-Benutzeroberfläche.
+
+## Schnellstart
+
+```bash
+/agileflow:serve
+```
+
+## Optionen
+
+| Option | Description |
+|--------|-------------|
+| `--port 8765` | Port number (default: 8765) |
+| `--api-key KEY` | API key for authentication |
+| `--tunnel` | Enable tunnel for remote access |
+
+## Wie es funktioniert
+
+1. Startet einen WebSocket-Server, an den gebunden ist `0.0.0.0` auf dem angegebenen Port
+2. Ermöglicht Echtzeitkommunikation zwischen Claude Code und dem Cloud Dashboard
+3. Unterstützt Git-Operationen, Terminalbefehle und Chat über die Dashboard-Benutzeroberfläche
+
+## Verwandte Befehle
+
+| Command | Purpose |
+|---------|---------|
+| [`/configure`](/docs/commands/configure) | Configure AgileFlow settings |
+| [`/api`](/docs/commands/api) | Start REST API server |

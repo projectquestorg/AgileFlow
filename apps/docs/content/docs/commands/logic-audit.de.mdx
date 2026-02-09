@@ -1,0 +1,58 @@
+---
+title: /logic:audit
+description: Multi-Agent-Logikanalyse mit Konsensabstimmung zum Auffinden von Logikfehlern
+---
+
+# /logic:audit
+
+Setzen Sie mehrere spezialisierte Logikanalysatoren parallel ein, um Fehler, Grenzfälle, Race Conditions und Typsicherheitsprobleme in Ihrem Code zu finden.
+
+## Schnellstart
+
+```bash
+/agileflow:logic:audit src/auth/
+```
+
+## Argumente
+
+| Argument | Description |
+|----------|-------------|
+| `[file\|directory]` | Target file or directory to analyze |
+| `DEPTH=quick\|deep` | Analysis depth (default: quick) |
+| `FOCUS=edge\|invariant\|flow\|type\|race\|all` | Focus on specific analysis type (default: all) |
+
+## Wie es funktioniert
+
+1. Setzt 5 spezialisierte Analysegeräte ein **in parallel**:
+   - **Edge case analyzer** - Randbedingungen, Off-by-One-Fehler, leere Eingaben
+   - **Flow analyzer** - Toter Code, nicht erreichbare Zweige, Endlosschleifen
+   - **Invariant analyzer** - Vor-/Nachbedingungen, Zustandskonsistenz
+   - **Race condition analyzer** – Asynchrone Muster, Zeitprobleme, gemeinsamer Status
+   - **Type safety analyzer** - Impliziter Zwang, Nullausbreitung
+2. Jeder Analysator untersucht unabhängig den Zielcode
+3. A **consensus coordinator** sammelt alle Erkenntnisse und stimmt über den Schweregrad ab
+4. Der Abschlussbericht verwendet die Vertrauensbewertung:
+   - **CONFIRMED** - 2+ Analysatoren stimmen zu (hohes Vertrauen)
+   - **LIKELY** - 1 Analysegerät mit starker Evidenz
+   - **INVESTIGATE** - 1 Analysegerät mit schwacher Evidenz
+
+## Beispiele
+
+```bash
+# Quick audit of a specific file
+/agileflow:logic:audit src/auth/token.js DEPTH=quick
+
+# Deep audit focusing on race conditions
+/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+
+# Full audit of all types
+/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+```
+
+## Verwandte Befehle
+
+| Command | Purpose |
+|---------|---------|
+| [`/review`](/docs/commands/review) | AI-powered code review |
+| [`/verify`](/docs/commands/verify) | Run tests and update status |
+| [`/audit`](/docs/commands/audit) | Story completion audit |

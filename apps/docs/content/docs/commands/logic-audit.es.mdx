@@ -1,0 +1,58 @@
+---
+title: /lógica:auditoría
+description: Análisis lógico de múltiples agentes con votación por consenso para encontrar errores lógicos
+---
+
+# /lógica:auditoría
+
+Implemente múltiples analizadores lógicos especializados en paralelo para encontrar errores, casos extremos, condiciones de carrera y problemas de seguridad de tipos en su código.
+
+## Inicio rápido
+
+```bash
+/agileflow:logic:audit src/auth/
+```
+
+## Argumentos
+
+| Argument | Description |
+|----------|-------------|
+| `[file\|directory]` | Target file or directory to analyze |
+| `DEPTH=quick\|deep` | Analysis depth (default: quick) |
+| `FOCUS=edge\|invariant\|flow\|type\|race\|all` | Focus on specific analysis type (default: all) |
+
+## Cómo funciona
+
+1. Implementa 5 analizadores especializados. **in parallel**:
+   - **Edge case analyzer** - Condiciones de límite, errores uno por uno, entradas vacías
+   - **Flow analyzer** - Código muerto, ramas inalcanzables, bucles infinitos
+   - **Invariant analyzer** - Condiciones previas y posteriores, coherencia del estado.
+   - **Race condition analyzer** - Patrones asíncronos, problemas de sincronización, estado compartido
+   - **Type safety analyzer** - Coerción implícita, propagación nula.
+2. Cada analizador examina de forma independiente el código de destino.
+3. A **consensus coordinator** recopila todos los hallazgos y vota sobre la gravedad
+4. El informe final utiliza puntuación de confianza:
+   - **CONFIRMED** - Más de 2 analizadores están de acuerdo (nivel de confianza alto)
+   - **LIKELY** - 1 analizador con evidencia fuerte
+   - **INVESTIGATE** - 1 analizador con evidencia débil
+
+## Ejemplos
+
+```bash
+# Quick audit of a specific file
+/agileflow:logic:audit src/auth/token.js DEPTH=quick
+
+# Deep audit focusing on race conditions
+/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+
+# Full audit of all types
+/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+```
+
+## Comandos relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/review`](/docs/commands/review) | AI-powered code review |
+| [`/verify`](/docs/commands/verify) | Run tests and update status |
+| [`/audit`](/docs/commands/audit) | Story completion audit |

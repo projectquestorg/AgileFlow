@@ -1,0 +1,58 @@
+---
+title: / المنطق: التدقيق
+description: التحليل المنطقي متعدد الوكلاء مع التصويت بالإجماع للعثور على الأخطاء المنطقية
+---
+
+# / المنطق: التدقيق
+
+قم بنشر العديد من أدوات التحليل المنطقي المتخصصة بالتوازي للعثور على الأخطاء وحالات الحافة وظروف السباق ومشكلات أمان الكتابة في التعليمات البرمجية الخاصة بك.
+
+## بداية سريعة
+
+```bash
+/agileflow:logic:audit src/auth/
+```
+
+## الحجج
+
+| Argument | Description |
+|----------|-------------|
+| `[file\|directory]` | Target file or directory to analyze |
+| `DEPTH=quick\|deep` | Analysis depth (default: quick) |
+| `FOCUS=edge\|invariant\|flow\|type\|race\|all` | Focus on specific analysis type (default: all) |
+
+## كيف يعمل
+
+1. نشر 5 محللين متخصصين **in parallel**:
+   - **Edge case analyzer** - الشروط الحدودية، الأخطاء الفردية، المدخلات الفارغة
+   - **Flow analyzer** - رمز ميت، فروع لا يمكن الوصول إليها، حلقات لا نهاية لها
+   - **Invariant analyzer** - شروط ما قبل / ما بعد، اتساق الدولة
+   - **Race condition analyzer** - أنماط غير متزامنة، ومشكلات التوقيت، والحالة المشتركة
+   - **Type safety analyzer** - الإكراه الضمني، نشر العدم
+2. يقوم كل محلل بفحص الكود المستهدف بشكل مستقل
+3. A **consensus coordinator** يجمع كل النتائج ويصوت على مدى خطورتها
+4. يستخدم التقرير النهائي نقاط الثقة:
+   - **CONFIRMED** - 2+ محللين موافقون (ثقة عالية)
+   - **LIKELY** - 1 محلل ذو أدلة قوية
+   - **INVESTIGATE** - 1 محلل ضعيف الأدلة
+
+## أمثلة
+
+```bash
+# Quick audit of a specific file
+/agileflow:logic:audit src/auth/token.js DEPTH=quick
+
+# Deep audit focusing on race conditions
+/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+
+# Full audit of all types
+/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+```
+
+## الأوامر ذات الصلة
+
+| Command | Purpose |
+|---------|---------|
+| [`/review`](/docs/commands/review) | AI-powered code review |
+| [`/verify`](/docs/commands/verify) | Run tests and update status |
+| [`/audit`](/docs/commands/audit) | Story completion audit |

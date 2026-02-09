@@ -1,0 +1,35 @@
+---
+title: /يخدم
+description: ابدأ تشغيل خادم Dashboard WebSocket للاتصال بواجهة المستخدم في الوقت الفعلي
+---
+
+# /يخدم
+
+ابدأ تشغيل خادم AgileFlow Dashboard WebSocket للاتصال في الوقت الفعلي باستخدام Cloud Dashboard UI.
+
+## بداية سريعة
+
+```bash
+/agileflow:serve
+```
+
+## خيارات
+
+| Option | Description |
+|--------|-------------|
+| `--port 8765` | Port number (default: 8765) |
+| `--api-key KEY` | API key for authentication |
+| `--tunnel` | Enable tunnel for remote access |
+
+## كيف يعمل
+
+1. يبدأ تشغيل خادم WebSocket المرتبط بـ `0.0.0.0` على المنفذ المحدد
+2. يتيح الاتصال في الوقت الفعلي بين Claude Code وCloud Dashboard
+3. يدعم عمليات git والأوامر الطرفية والدردشة من خلال واجهة مستخدم لوحة المعلومات
+
+## الأوامر ذات الصلة
+
+| Command | Purpose |
+|---------|---------|
+| [`/configure`](/docs/commands/configure) | Configure AgileFlow settings |
+| [`/api`](/docs/commands/api) | Start REST API server |

@@ -1,0 +1,46 @@
+---
+title: /ideate:neu
+description: Generieren Sie kategorisierte Verbesserungsideen mithilfe einer Multi-Experten-Analyse
+---
+
+# /ideate:neu
+
+Setzen Sie mehrere Domänenexperten parallel ein, um Ihre Codebasis zu analysieren und kategorisierte Verbesserungsideen mit Konfidenzbewertung zu generieren.
+
+## Schnellstart
+
+```bash
+/agileflow:ideate:new
+```
+
+## Argumente
+
+| Argument | Description |
+|----------|-------------|
+| `SCOPE=all\|security\|perf\|code\|ux` | Analysis scope (default: all) |
+| `DEPTH=quick\|deep\|ultradeep` | Analysis depth |
+| `OUTPUT=report\|stories\|both` | Output format (default: report) |
+| `HISTORY=true\|false` | Check against past ideation reports |
+| `FOCUS=IDEA-XXXX` | All experts analyze one recurring idea |
+
+## Wie es funktioniert
+
+1. Setzt Domänenexperten parallel ein (Sicherheit, Leistung, Codequalität, UX)
+2. Jeder Experte analysiert die Codebasis aus seiner Sicht
+3. Die Ergebnisse werden mit der Konfidenzbewertung synthetisiert:
+   - **quick/deep**: HOCH = 2+ Experten sind sich einig
+   - **ultradeep**: HOCH = 3+ Experten stimmen zu
+4. Überprüft den Ideenindex auf Duplikate (NEU vs. WIEDERKEHREND vs. IMPLEMENTIERT)
+5. Kategorisiert nach Domäne und schätzt den Aufwand (Hoch/Mittel/Niedrig)
+
+## Fokusmodus
+
+Verwenden `FOCUS=IDEA-XXXX` alle Experten eine bestimmte wiederkehrende Idee analysieren und einen Implementierungsbericht erstellen lassen.
+
+## Verwandte Befehle
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate:history`](/docs/commands/ideate-history) | View past ideation reports |
+| [`/epic`](/docs/commands/epic) | Create epics from ideas |
+| [`/auto`](/docs/commands/auto) | Auto-generate stories from specs |

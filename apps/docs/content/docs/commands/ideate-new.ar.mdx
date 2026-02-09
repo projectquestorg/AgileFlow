@@ -1,0 +1,46 @@
+---
+title: / فكرة: جديد
+description: قم بإنشاء أفكار تحسين مصنفة باستخدام التحليل متعدد الخبراء
+---
+
+# / فكرة: جديد
+
+قم بنشر العديد من خبراء المجال بالتوازي لتحليل قاعدة التعليمات البرمجية الخاصة بك وإنشاء أفكار تحسين مصنفة مع تسجيل الثقة.
+
+## بداية سريعة
+
+```bash
+/agileflow:ideate:new
+```
+
+## الحجج
+
+| Argument | Description |
+|----------|-------------|
+| `SCOPE=all\|security\|perf\|code\|ux` | Analysis scope (default: all) |
+| `DEPTH=quick\|deep\|ultradeep` | Analysis depth |
+| `OUTPUT=report\|stories\|both` | Output format (default: report) |
+| `HISTORY=true\|false` | Check against past ideation reports |
+| `FOCUS=IDEA-XXXX` | All experts analyze one recurring idea |
+
+## كيف يعمل
+
+1. نشر خبراء المجال بالتوازي (الأمان والأداء وجودة التعليمات البرمجية وتجربة المستخدم)
+2. يقوم كل خبير بتحليل قاعدة التعليمات البرمجية من وجهة نظره
+3. يتم تجميع النتائج مع تسجيل الثقة:
+   - **quick/deep**: عالي = 2+ خبراء يتفقون
+   - **ultradeep**: عالي = 3+ خبراء يتفقون
+4. التحقق من فهرس التفكير بحثًا عن التكرارات (جديد مقابل متكرر مقابل مطبق)
+5. التصنيف حسب المجال وتقدير الجهد (عالي/متوسط/منخفض)
+
+## وضع التركيز
+
+يستخدم `FOCUS=IDEA-XXXX` لجعل جميع الخبراء يقومون بتحليل فكرة متكررة محددة وإنشاء ملخص التنفيذ.
+
+## الأوامر ذات الصلة
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate:history`](/docs/commands/ideate-history) | View past ideation reports |
+| [`/epic`](/docs/commands/epic) | Create epics from ideas |
+| [`/auto`](/docs/commands/auto) | Auto-generate stories from specs |

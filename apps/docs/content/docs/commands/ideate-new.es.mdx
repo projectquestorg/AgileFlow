@@ -1,0 +1,46 @@
+---
+title: /idear:nuevo
+description: Genere ideas de mejora categorizadas mediante análisis de múltiples expertos
+---
+
+# /idear:nuevo
+
+Implemente varios expertos en dominios en paralelo para analizar su código base y generar ideas de mejora categorizadas con puntuación de confianza.
+
+## Inicio rápido
+
+```bash
+/agileflow:ideate:new
+```
+
+## Argumentos
+
+| Argument | Description |
+|----------|-------------|
+| `SCOPE=all\|security\|perf\|code\|ux` | Analysis scope (default: all) |
+| `DEPTH=quick\|deep\|ultradeep` | Analysis depth |
+| `OUTPUT=report\|stories\|both` | Output format (default: report) |
+| `HISTORY=true\|false` | Check against past ideation reports |
+| `FOCUS=IDEA-XXXX` | All experts analyze one recurring idea |
+
+## Cómo funciona
+
+1. Implementa expertos en el dominio en paralelo (seguridad, rendimiento, calidad del código, UX)
+2. Cada experto analiza el código base desde su perspectiva.
+3. Los resultados se sintetizan con puntuación de confianza:
+   - **quick/deep**: ALTO = 2+ expertos están de acuerdo
+   - **ultradeep**: ALTO = 3+ expertos están de acuerdo
+4. Comprueba el índice de ideación en busca de duplicados (NUEVO vs RECURRENTE vs IMPLEMENTADO)
+5. Clasifica por dominio y estima el esfuerzo (Alto/Medio/Bajo)
+
+## Modo de enfoque
+
+Usar `FOCUS=IDEA-XXXX` hacer que todos los expertos analicen una idea recurrente específica y generen un resumen de implementación.
+
+## Comandos relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/ideate:history`](/docs/commands/ideate-history) | View past ideation reports |
+| [`/epic`](/docs/commands/epic) | Create epics from ideas |
+| [`/auto`](/docs/commands/auto) | Auto-generate stories from specs |
