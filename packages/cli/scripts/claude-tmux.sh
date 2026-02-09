@@ -122,6 +122,27 @@ if [ "$NO_TMUX" = true ]; then
   exec claude "$@"
 fi
 
+# ── Self-healing: ensure tmux socket directory exists ──────────────────────
+# macOS clears /private/tmp/ on reboot, which removes the tmux socket dir.
+# This causes "error connecting to ... (No such file or directory)" on every
+# tmux command. We fix it automatically so users never see this error.
+# Must run BEFORE any tmux command (including --kill, --attach, --refresh).
+if command -v tmux &> /dev/null; then
+  _TMUX_BASE="${TMUX_TMPDIR:-${TMPDIR:-/tmp}}"
+  # Strip trailing slash(es) to avoid double-slash in path
+  _TMUX_BASE="${_TMUX_BASE%/}"
+  _TMUX_SOCK_DIR="${_TMUX_BASE}/tmux-$(id -u)"
+  if [ ! -d "$_TMUX_SOCK_DIR" ]; then
+    mkdir -p "$_TMUX_SOCK_DIR" 2>/dev/null && chmod 700 "$_TMUX_SOCK_DIR" 2>/dev/null
+    if [ ! -d "$_TMUX_SOCK_DIR" ]; then
+      echo "Warning: Could not create tmux socket directory ($_TMUX_SOCK_DIR)."
+      echo "Running claude without tmux."
+      exec claude "$@"
+    fi
+  fi
+  unset _TMUX_BASE _TMUX_SOCK_DIR
+fi
+
 # Generate directory name (used for session name patterns)
 DIR_NAME=$(basename "$(pwd)")
 
