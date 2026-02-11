@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.7] - 2026-02-11
+
+### Fixed
+- Suppress tmux same-index message on session start
+
 ## [2.99.6] - 2026-02-09
 
 ### Fixed
