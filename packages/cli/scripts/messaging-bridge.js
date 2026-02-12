@@ -49,6 +49,18 @@ function getFeatureFlags() {
   return _featureFlags;
 }
 
+let _busUtils;
+function getBusUtils() {
+  if (!_busUtils) {
+    try {
+      _busUtils = require('./lib/bus-utils');
+    } catch (e) {
+      return null;
+    }
+  }
+  return _busUtils;
+}
+
 /**
  * Get the bus log path.
  */
@@ -74,26 +86,73 @@ function ensureBusDir(rootDir) {
 /**
  * Send a message to the AgileFlow bus.
  *
+ * When Agent Teams is enabled (native mode), the message is formatted for
+ * both the JSONL bus AND the native SendMessage channel. The JSONL bus
+ * remains the source of truth; native messaging is supplementary.
+ *
+ * Also triggers log rotation when the bus exceeds 1000 lines.
+ *
  * @param {string} rootDir - Project root
  * @param {object} message - Message object { from, to, type, ... }
- * @returns {{ ok: boolean }}
+ * @returns {{ ok: boolean, native?: boolean }}
  */
 function sendMessage(rootDir, message) {
   try {
     ensureBusDir(rootDir);
     const logPath = getBusLogPath(rootDir);
+    const isNative = getFeatureFlags().isAgentTeamsEnabled({ rootDir });
 
     const entry = {
       ...message,
       at: new Date().toISOString(),
-      agent_teams: getFeatureFlags().isAgentTeamsEnabled({ rootDir }),
+      agent_teams: isNative,
     };
 
+    // When native Agent Teams is enabled, also format for native SendMessage
+    if (isNative) {
+      entry.native_format = {
+        tool: 'SendMessage',
+        to: message.to || 'team-lead',
+        content: formatForNative(message),
+      };
+    }
+
+    // Always write to JSONL bus (source of truth)
     fs.appendFileSync(logPath, JSON.stringify(entry) + '\n');
-    return { ok: true };
+
+    // Trigger rotation check (non-blocking, fail-safe)
+    try {
+      const busUtils = getBusUtils();
+      if (busUtils && busUtils.shouldRotate(logPath, 1000)) {
+        busUtils.rotateLog(logPath, { keepRecent: 100 });
+      }
+    } catch (e) {
+      // Rotation failure is non-critical
+    }
+
+    return { ok: true, native: isNative };
   } catch (e) {
     return { ok: false, error: e.message };
   }
+}
+
+/**
+ * Format a message for the native SendMessage tool.
+ * Converts AgileFlow message types into a structured content string.
+ *
+ * @param {object} message - AgileFlow message object
+ * @returns {string} Formatted content for native SendMessage
+ * @private
+ */
+function formatForNative(message) {
+  const parts = [];
+  if (message.type) parts.push(`[${message.type}]`);
+  if (message.from) parts.push(`from:${message.from}`);
+  if (message.task_id) parts.push(`task:${message.task_id}`);
+  if (message.message) parts.push(message.message);
+  if (message.description) parts.push(message.description);
+  if (message.status) parts.push(`status:${message.status}`);
+  return parts.join(' ');
 }
 
 /**
@@ -188,54 +247,37 @@ function getAgentContext(rootDir, agentName) {
 /**
  * Send a task assignment message.
  */
-function sendTaskAssignment(rootDir, from, to, taskId, description) {
-  return sendMessage(rootDir, {
-    from,
-    to,
-    type: 'task_assignment',
-    task_id: taskId,
-    description,
-  });
+function sendTaskAssignment(rootDir, from, to, taskId, description, traceId) {
+  const msg = { from, to, type: 'task_assignment', task_id: taskId, description };
+  if (traceId) msg.trace_id = traceId;
+  return sendMessage(rootDir, msg);
 }
 
 /**
  * Send a plan proposal message.
  */
-function sendPlanProposal(rootDir, from, to, taskId, plan) {
-  return sendMessage(rootDir, {
-    from,
-    to,
-    type: 'plan_proposal',
-    task_id: taskId,
-    plan,
-  });
+function sendPlanProposal(rootDir, from, to, taskId, plan, traceId) {
+  const msg = { from, to, type: 'plan_proposal', task_id: taskId, plan };
+  if (traceId) msg.trace_id = traceId;
+  return sendMessage(rootDir, msg);
 }
 
 /**
  * Send a plan approval/rejection message.
  */
-function sendPlanDecision(rootDir, from, to, taskId, approved, reason) {
-  return sendMessage(rootDir, {
-    from,
-    to,
-    type: approved ? 'plan_approved' : 'plan_rejected',
-    task_id: taskId,
-    reason,
-  });
+function sendPlanDecision(rootDir, from, to, taskId, approved, reason, traceId) {
+  const msg = { from, to, type: approved ? 'plan_approved' : 'plan_rejected', task_id: taskId, reason };
+  if (traceId) msg.trace_id = traceId;
+  return sendMessage(rootDir, msg);
 }
 
 /**
  * Send a validation result message.
  */
-function sendValidationResult(rootDir, from, taskId, status, details) {
-  return sendMessage(rootDir, {
-    from,
-    to: 'team-lead',
-    type: 'validation',
-    task_id: taskId,
-    status, // 'approved' | 'rejected'
-    details,
-  });
+function sendValidationResult(rootDir, from, taskId, status, details, traceId) {
+  const msg = { from, to: 'team-lead', type: 'validation', task_id: taskId, status, details };
+  if (traceId) msg.trace_id = traceId;
+  return sendMessage(rootDir, msg);
 }
 
 // CLI entry point
@@ -297,6 +339,7 @@ module.exports = {
   sendPlanDecision,
   sendValidationResult,
   getBusLogPath,
+  formatForNative,
 };
 
 if (require.main === module) {

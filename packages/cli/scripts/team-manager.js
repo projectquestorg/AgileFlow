@@ -54,6 +54,33 @@ function getFeatureFlags() {
   return _featureFlags;
 }
 
+// Lazy-load file-lock for atomic writes
+let _fileLock;
+function getFileLock() {
+  if (!_fileLock) {
+    try {
+      _fileLock = require('./lib/file-lock');
+    } catch (e) {
+      // Fall back to direct writes
+      _fileLock = null;
+    }
+  }
+  return _fileLock;
+}
+
+// Lazy-load messaging bridge for event logging
+let _messagingBridge;
+function getMessagingBridge() {
+  if (!_messagingBridge) {
+    try {
+      _messagingBridge = require('./messaging-bridge');
+    } catch (e) {
+      _messagingBridge = null;
+    }
+  }
+  return _messagingBridge;
+}
+
 /**
  * Find the teams directory
  */
@@ -124,7 +151,33 @@ function getTemplate(rootDir, name) {
 }
 
 /**
- * Start a team from a template
+ * Build the native TeamCreate payload from an AgileFlow template.
+ * This structures the template data in the format expected by Claude Code's
+ * experimental Agent Teams TeamCreate tool.
+ *
+ * @param {object} template - Parsed team template
+ * @param {string} templateName - Template name
+ * @returns {object} Native TeamCreate payload
+ */
+function buildNativeTeamPayload(template, templateName) {
+  return {
+    name: template.name || templateName,
+    description: template.description || `AgileFlow team: ${templateName}`,
+    teammates: (template.teammates || []).map(t => ({
+      name: t.agent,
+      role: t.role || t.domain,
+      instructions: t.instructions || `${t.role} agent for ${t.domain}`,
+    })),
+    delegate_mode: template.delegate_mode !== false,
+  };
+}
+
+/**
+ * Start a team from a template.
+ * When native Agent Teams is enabled, builds a TeamCreate-compatible payload.
+ * When disabled, falls back to subagent orchestration mode.
+ *
+ * Uses atomic writes for session-state.json to prevent concurrent write conflicts.
  */
 function startTeam(rootDir, templateName) {
   const ff = getFeatureFlags();
@@ -136,51 +189,100 @@ function startTeam(rootDir, templateName) {
 
   const template = result.template;
 
-  // Record active team in session-state.json
+  // Build native payload when in native mode
+  let nativePayload = null;
+  if (mode === 'native') {
+    nativePayload = buildNativeTeamPayload(template, templateName);
+  }
+
+  // Generate trace ID for correlating events across the team lifecycle
+  const traceId = `trace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Record active team in session-state.json using atomic writes
   try {
     const paths = getPaths();
     const sessionStatePath = paths.getSessionStatePath(rootDir);
-    let state = {};
-    if (fs.existsSync(sessionStatePath)) {
-      state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+    const fileLock = getFileLock();
+
+    const updateState = (state) => {
+      state.active_team = {
+        template: templateName,
+        mode,
+        trace_id: traceId,
+        native_payload: nativePayload,
+        lead: template.lead,
+        teammates: template.teammates.map(t => ({
+          agent: t.agent,
+          role: t.role,
+          domain: t.domain,
+          status: 'pending',
+        })),
+        quality_gates: template.quality_gates,
+        started_at: new Date().toISOString(),
+      };
+
+      state.team_metrics = {
+        started_at: new Date().toISOString(),
+        template: templateName,
+        mode,
+        trace_id: traceId,
+        teammate_count: template.teammates.length,
+        tasks_assigned: 0,
+        tasks_completed: 0,
+        messages_sent: 0,
+        gate_runs: [],
+      };
+
+      return state;
+    };
+
+    if (fileLock) {
+      // Use atomic read-modify-write when available
+      if (fs.existsSync(sessionStatePath)) {
+        fileLock.atomicReadModifyWrite(sessionStatePath, updateState);
+      } else {
+        fileLock.atomicWriteJSON(sessionStatePath, updateState({}));
+      }
+    } else {
+      // Fallback to direct write
+      let state = {};
+      if (fs.existsSync(sessionStatePath)) {
+        state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+      }
+      state = updateState(state);
+      fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
-
-    state.active_team = {
-      template: templateName,
-      mode,
-      lead: template.lead,
-      teammates: template.teammates.map(t => ({
-        agent: t.agent,
-        role: t.role,
-        domain: t.domain,
-        status: 'pending',
-      })),
-      quality_gates: template.quality_gates,
-      started_at: new Date().toISOString(),
-    };
-
-    state.team_metrics = {
-      started_at: new Date().toISOString(),
-      template: templateName,
-      teammate_count: template.teammates.length,
-      tasks_assigned: 0,
-      tasks_completed: 0,
-      messages_sent: 0,
-      gate_runs: [],
-    };
-
-    fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
   } catch (e) {
     // Non-critical - team can still function without state tracking
+  }
+
+  // Log team_created event to bus
+  try {
+    const bridge = getMessagingBridge();
+    if (bridge) {
+      bridge.sendMessage(rootDir, {
+        from: 'team-manager',
+        to: 'team-lead',
+        type: 'team_created',
+        template: templateName,
+        mode,
+        trace_id: traceId,
+        teammate_count: template.teammates.length,
+      });
+    }
+  } catch (e) {
+    // Non-critical
   }
 
   return {
     ok: true,
     mode,
+    trace_id: traceId,
     template: templateName,
     lead: template.lead,
     teammates: template.teammates,
     quality_gates: template.quality_gates,
+    native_payload: nativePayload,
   };
 }
 
@@ -212,7 +314,9 @@ function getTeamStatus(rootDir) {
 }
 
 /**
- * Stop active team
+ * Stop active team.
+ * Uses atomic writes for session-state.json.
+ * Logs team_stopped event to bus.
  */
 function stopTeam(rootDir) {
   try {
@@ -238,7 +342,33 @@ function stopTeam(rootDir) {
 
     // Clear active team
     delete state.active_team;
-    fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+
+    // Write atomically
+    const fileLock = getFileLock();
+    if (fileLock) {
+      fileLock.atomicWriteJSON(sessionStatePath, state);
+    } else {
+      fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+    }
+
+    // Log team_stopped event
+    try {
+      const bridge = getMessagingBridge();
+      if (bridge) {
+        bridge.sendMessage(rootDir, {
+          from: 'team-manager',
+          to: 'system',
+          type: 'team_stopped',
+          template: team.template,
+          mode: team.mode,
+          trace_id: team.trace_id,
+          duration_ms: duration,
+          tasks_completed: state.team_metrics ? state.team_metrics.tasks_completed : 0,
+        });
+      }
+    } catch (e) {
+      // Non-critical
+    }
 
     return {
       ok: true,
@@ -314,6 +444,7 @@ module.exports = {
   getTeamStatus,
   stopTeam,
   getTeamsDir,
+  buildNativeTeamPayload,
 };
 
 // Run CLI if invoked directly
