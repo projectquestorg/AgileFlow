@@ -1,0 +1,76 @@
+---
+title: Raccourcis clavier Tmux
+description: Raccourcis clavier pour naviguer dans les fenêtres, les sessions et les volets dans l'intégration AgileFlow tmux.
+---
+
+# Raccourcis clavier Tmux
+
+Lorsque vous démarrez Claude Code avec le `af` commande, AgileFlow crée une session tmux avec des raccourcis clavier préconfigurés. Tous les raccourcis utilisent **Alt** (Option sur Mac) comme touche de modification.
+
+## Référence rapide
+
+### Essentiel (affiché dans la barre d'état)
+
+| Key | Action |
+|-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
+| **Alt+s** | New Claude session (same directory) |
+| **Alt+q** | Detach (leave session running in background) |
+
+### Fenêtres
+
+| Key | Action |
+|-----|--------|
+| **Alt+c** | Create new empty window |
+| **Alt+n** | Next window |
+| **Alt+p** | Previous window |
+| **Alt+r** | Rename current window |
+| **Alt+w** | Close window (with confirmation) |
+
+### Volets
+
+| Key | Action |
+|-----|--------|
+| **Alt+d** | Split horizontally (side by side) |
+| **Alt+v** | Split vertically (top/bottom) |
+| **Alt+Arrow** | Navigate between panes |
+| **Alt+z** | Zoom/unzoom pane (fullscreen toggle) |
+| **Alt+x** | Close pane (with confirmation) |
+
+### Utilitaire
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
+| **Alt+[** | Enter copy/scroll mode |
+
+## Barre d'état
+
+La barre d'état de tmux comporte deux lignes :
+
+**Top line**: Nom du projet, branche git et astuces de raccourcis clavier
+
+**Bottom line**: Onglets de fenêtre avec la fenêtre active surlignée en orange
+
+## Se reconnecter à une session
+
+Si vous vous détachez avec **Alt+q** ou fermez votre terminal, la session continue de fonctionner. Pour refixer :
+
+```bash
+af
+```
+
+AgileFlow détecte automatiquement les sessions existantes pour le répertoire actuel et se rattache.
+
+## Utilisateurs Mac
+
+Sur macOS, **Alt** est le **Option** clé. Si les raccourcis clavier Alt ne fonctionnent pas, vérifiez les paramètres de votre terminal :
+
+- **iTerm2**: Préférences > Profils > Touches > Touche Option gauche > définie sur "Esc+"
+- **Terminal.app**: Préférences > Profils > Clavier > cochez "Utiliser l'option comme touche méta"
+- **Alacritty / Kitty / WezTerm**: Fonctionne généralement immédiatement
+
+## En rapport
+
+- [Séances parallèles](/docs/features/parallel-sessions) - Travailler dans plusieurs espaces de travail isolés
+- [Intégrations IDE](/docs/features/ide-integrations) - Mise en place d'AgileFlow avec votre éditeur

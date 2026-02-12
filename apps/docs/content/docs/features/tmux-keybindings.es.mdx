@@ -1,0 +1,76 @@
+---
+title: Combinaciones de teclas Tmux
+description: Atajos de teclado para navegar por ventanas, sesiones y paneles en la integración AgileFlow tmux.
+---
+
+# Combinaciones de teclas Tmux
+
+Cuando inicias Claude Code con el `af` comando, AgileFlow crea una sesión tmux con combinaciones de teclas preconfiguradas. Todos los atajos usan **Alt** (Opción en Mac) como tecla modificadora.
+
+## Referencia rápida
+
+### Esencial (se muestra en la barra de estado)
+
+| Key | Action |
+|-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
+| **Alt+s** | New Claude session (same directory) |
+| **Alt+q** | Detach (leave session running in background) |
+
+### ventanas
+
+| Key | Action |
+|-----|--------|
+| **Alt+c** | Create new empty window |
+| **Alt+n** | Next window |
+| **Alt+p** | Previous window |
+| **Alt+r** | Rename current window |
+| **Alt+w** | Close window (with confirmation) |
+
+### Paneles
+
+| Key | Action |
+|-----|--------|
+| **Alt+d** | Split horizontally (side by side) |
+| **Alt+v** | Split vertically (top/bottom) |
+| **Alt+Arrow** | Navigate between panes |
+| **Alt+z** | Zoom/unzoom pane (fullscreen toggle) |
+| **Alt+x** | Close pane (with confirmation) |
+
+### Utilidad
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
+| **Alt+[** | Enter copy/scroll mode |
+
+## Barra de estado
+
+La barra de estado de tmux tiene dos líneas:
+
+**Top line**: nombre del proyecto, rama git y sugerencias de combinación de teclas
+
+**Bottom line**: pestañas de ventana con la ventana activa resaltada en naranja
+
+## Volver a conectarse a una sesión
+
+Si te separas con **Alt+q** o cierras tu terminal, la sesión continúa ejecutándose. Para volver a conectar:
+
+```bash
+af
+```
+
+AgileFlow detecta automáticamente las sesiones existentes para el directorio actual y las vuelve a adjuntar.
+
+## Usuarios de Mac
+
+En MacOS, **Alt** es el **Option** llave. Si las combinaciones de teclas Alt no funcionan, verifique la configuración de su terminal:
+
+- **iTerm2**: Preferencias > Perfiles > Teclas > Tecla de opción izquierda > configurada en "Esc+"
+- **Terminal.app**: Preferencias > Perfiles > Teclado > marque "Usar opción como tecla Meta"
+- **Alacritty / Kitty / WezTerm**: Por lo general, funciona de inmediato
+
+## Relacionado
+
+- [Sesiones paralelas](/docs/features/parallel-sessions) - Trabajar en múltiples espacios de trabajo aislados
+- [Integraciones IDE](/docs/features/ide-integrations) - Configurar AgileFlow con su editor

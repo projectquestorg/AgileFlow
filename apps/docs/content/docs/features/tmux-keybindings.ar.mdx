@@ -1,0 +1,76 @@
+---
+title: روابط مفاتيح Tmux
+description: اختصارات لوحة المفاتيح للتنقل بين النوافذ والجلسات والأجزاء في تكامل AgileFlow tmux.
+---
+
+# روابط مفاتيح Tmux
+
+عند بدء تشغيل Claude Code باستخدام ملف `af` الأمر، يقوم AgileFlow بإنشاء جلسة tmux باستخدام روابط المفاتيح المكونة مسبقًا. جميع الاختصارات تستخدم **Alt** (الخيار على نظام Mac) كمفتاح التعديل.
+
+## مرجع سريع
+
+### أساسي (يظهر في شريط الحالة)
+
+| Key | Action |
+|-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
+| **Alt+s** | New Claude session (same directory) |
+| **Alt+q** | Detach (leave session running in background) |
+
+### ويندوز
+
+| Key | Action |
+|-----|--------|
+| **Alt+c** | Create new empty window |
+| **Alt+n** | Next window |
+| **Alt+p** | Previous window |
+| **Alt+r** | Rename current window |
+| **Alt+w** | Close window (with confirmation) |
+
+### أجزاء
+
+| Key | Action |
+|-----|--------|
+| **Alt+d** | Split horizontally (side by side) |
+| **Alt+v** | Split vertically (top/bottom) |
+| **Alt+Arrow** | Navigate between panes |
+| **Alt+z** | Zoom/unzoom pane (fullscreen toggle) |
+| **Alt+x** | Close pane (with confirmation) |
+
+### جدوى
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
+| **Alt+[** | Enter copy/scroll mode |
+
+## شريط الحالة
+
+يحتوي شريط الحالة tmux على سطرين:
+
+**Top line**: اسم المشروع وفرع git وتلميحات ربط المفاتيح
+
+**Bottom line**: علامات تبويب النافذة مع تمييز النافذة النشطة باللون البرتقالي
+
+## إعادة الاتصال بالجلسة
+
+إذا انفصلت مع **Alt+q** أو أغلق المحطة الطرفية الخاصة بك، وستستمر الجلسة في العمل. لإعادة التوصيل:
+
+```bash
+af
+```
+
+يكتشف AgileFlow تلقائيًا الجلسات الحالية للدليل الحالي ويعيد ربطه.
+
+## مستخدمي ماك
+
+على نظام التشغيل ماك، **Alt** هو **Option** مفتاح. إذا لم تعمل روابط المفاتيح Alt، فتحقق من إعدادات الوحدة الطرفية لديك:
+
+- **iTerm2**: التفضيلات > الملفات الشخصية > المفاتيح > مفتاح الخيار الأيسر > اضبط على "Esc+"
+- **Terminal.app**: التفضيلات > الملفات الشخصية > لوحة المفاتيح > حدد "استخدام الخيار كمفتاح Meta"
+- **Alacritty / Kitty / WezTerm**: يعمل عادة خارج منطقة الجزاء
+
+## متعلق ب
+
+- [الجلسات الموازية](/docs/features/parallel-sessions) - العمل في مساحات عمل متعددة ومعزولة
+- [تكاملات IDE](/docs/features/ide-integrations) - إعداد AgileFlow مع المحرر الخاص بك

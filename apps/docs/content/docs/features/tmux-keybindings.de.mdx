@@ -1,0 +1,76 @@
+---
+title: Tmux-Tastenkombinationen
+description: Tastaturkürzel zum Navigieren in Fenstern, Sitzungen und Bereichen in der AgileFlow tmux-Integration.
+---
+
+# Tmux-Tastenkombinationen
+
+Wenn Sie Claude Code mit dem starten `af` Mit dem Befehl erstellt AgileFlow eine tmux-Sitzung mit vorkonfigurierten Tastenkombinationen. Alle Tastenkombinationen verwenden **Alt** (Option auf dem Mac) als Zusatztaste.
+
+## Kurzreferenz
+
+### Wesentlich (in der Statusleiste angezeigt)
+
+| Key | Action |
+|-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
+| **Alt+s** | New Claude session (same directory) |
+| **Alt+q** | Detach (leave session running in background) |
+
+### Windows
+
+| Key | Action |
+|-----|--------|
+| **Alt+c** | Create new empty window |
+| **Alt+n** | Next window |
+| **Alt+p** | Previous window |
+| **Alt+r** | Rename current window |
+| **Alt+w** | Close window (with confirmation) |
+
+### Scheiben
+
+| Key | Action |
+|-----|--------|
+| **Alt+d** | Split horizontally (side by side) |
+| **Alt+v** | Split vertically (top/bottom) |
+| **Alt+Arrow** | Navigate between panes |
+| **Alt+z** | Zoom/unzoom pane (fullscreen toggle) |
+| **Alt+x** | Close pane (with confirmation) |
+
+### Dienstprogramm
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
+| **Alt+[** | Enter copy/scroll mode |
+
+## Statusleiste
+
+Die tmux-Statusleiste besteht aus zwei Zeilen:
+
+**Top line**: Projektname, Git-Zweig und Hinweise zur Tastenkombination
+
+**Bottom line**: Fensterregisterkarten, wobei das aktive Fenster orange hervorgehoben ist
+
+## Erneutes Anhängen an eine Sitzung
+
+Wenn Sie sich mit trennen **Alt+q** oder schließen Sie Ihr Terminal, die Sitzung läuft weiter. Zum erneuten Anbringen:
+
+```bash
+af
+```
+
+AgileFlow erkennt automatisch vorhandene Sitzungen für das aktuelle Verzeichnis und verbindet sie erneut.
+
+## Mac-Benutzer
+
+Auf macOS, **Alt** ist das **Option** Schlüssel. Wenn die Alt-Tastenkombinationen nicht funktionieren, überprüfen Sie Ihre Terminaleinstellungen:
+
+- **iTerm2**: Einstellungen > Profile > Tasten > Linke Wahltaste > auf „Esc+“ setzen
+- **Terminal.app**: Einstellungen > Profile > Tastatur > „Option als Metataste verwenden“ aktivieren
+- **Alacritty / Kitty / WezTerm**: Funktioniert normalerweise sofort
+
+## Verwandt
+
+- [Parallele Sitzungen](/docs/features/parallel-sessions) - Arbeiten in mehreren isolierten Arbeitsbereichen
+- [IDE-Integrationen](/docs/features/ide-integrations) - Einrichten von AgileFlow mit Ihrem Editor
