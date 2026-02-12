@@ -299,6 +299,12 @@ if [ "$REFRESH_CONFIG" = true ]; then
   exit 0
 fi
 
+# Check if we're already inside tmux — use smart wrapper instead of session management
+if [ -n "$TMUX" ]; then
+  # shellcheck disable=SC2086
+  exec "$SCRIPT_DIR/claude-smart.sh" $CLAUDE_SESSION_FLAGS "$@"
+fi
+
 # Generate directory name (used for session name patterns)
 DIR_NAME=$(basename "$(pwd)")
 
@@ -468,13 +474,6 @@ if [ -f "$METADATA_FILE" ]; then
     CLAUDE_SESSION_FLAGS="${CLAUDE_SESSION_FLAGS:+$CLAUDE_SESSION_FLAGS }$META_FLAGS"
     export CLAUDE_SESSION_FLAGS
   fi
-fi
-
-# Check if we're already inside tmux
-if [ -n "$TMUX" ]; then
-  # Already in tmux — use smart wrapper for per-pane resume tracking
-  # shellcheck disable=SC2086
-  exec "$SCRIPT_DIR/claude-smart.sh" $CLAUDE_SESSION_FLAGS "$@"
 fi
 
 # Check if tmux is available
