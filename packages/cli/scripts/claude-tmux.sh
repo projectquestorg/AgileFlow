@@ -181,7 +181,7 @@ configure_tmux_session() {
 
   # Line 0 (top): Session name + live git branch + keybind hints
   # Uses #() for live branch updates (runs on status-interval, every 30s)
-  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')  "
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')#[align=right]#[fg=#565a6e]Alt+h help  "
 
   # Line 1 (bottom): Window tabs with smart truncation and brand color
   tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
@@ -247,6 +247,36 @@ configure_tmux_session() {
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
   tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
+
+  # ─── Help Panel ──────────────────────────────────────────────────────────
+  # Alt+h to show keybind cheat sheet in a popup
+  tmux bind-key -n M-h display-popup -E -w 52 -h 24 "\
+    printf '\\n';\
+    printf '  \\033[1;38;5;208mSESSIONS\\033[0m\\n';\
+    printf '  Alt+s   New Claude window\\n';\
+    printf '  Alt+l   Switch session\\n';\
+    printf '  Alt+q   Detach (af to resume)\\n';\
+    printf '\\n';\
+    printf '  \\033[1;38;5;208mWINDOWS\\033[0m\\n';\
+    printf '  Alt+1-9 Switch to window\\n';\
+    printf '  Alt+c   New empty window\\n';\
+    printf '  Alt+n/p Next / previous\\n';\
+    printf '  Alt+r   Rename window\\n';\
+    printf '  Alt+w   Close window\\n';\
+    printf '\\n';\
+    printf '  \\033[1;38;5;208mPANES\\033[0m\\n';\
+    printf '  Alt+d   Split side by side\\n';\
+    printf '  Alt+v   Split top / bottom\\n';\
+    printf '  Alt+←→↑↓  Navigate\\n';\
+    printf '  Alt+z   Zoom / unzoom\\n';\
+    printf '  Alt+x   Close pane\\n';\
+    printf '\\n';\
+    printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
+    printf '  Alt+[   Scroll mode\\n';\
+    printf '  Alt+k   Unfreeze (Ctrl+C×2)\\n';\
+    printf '  Alt+h   This help\\n';\
+    printf '\\n';\
+    read -n 1 -s -r -p '  Press any key to close'"
 }
 
 # Handle --refresh flag — re-apply config to all existing claude-* sessions
