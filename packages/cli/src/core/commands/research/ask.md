@@ -779,6 +779,49 @@ After clicking "Sign in with Google", immediately get unauthorized_client error.
 
 ---
 
+## Smart Next Steps (AskUserQuestion)
+
+After generating the research prompt, suggest contextual next steps:
+
+**After prompt generation:**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Research prompt for '[TOPIC]' generated ([LINE_COUNT] lines, [CODE_LINES] lines of code). What would you like to do?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "Copy & paste to ChatGPT/Perplexity (Recommended)", "description": "Prompt covers [N] files and [M] specific questions - ready to paste"},
+    {"label": "Regenerate with more detail", "description": "Add [missing element: more code from X / error details / attempted solutions]"},
+    {"label": "Save prompt to docs/10-research/", "description": "Save as [YYYYMMDD]-prompt-[topic-slug].md for later use"},
+    {"label": "Done", "description": "Prompt generated, no further action needed"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Key**: Always populate `[TOPIC]` with the actual research topic, `[LINE_COUNT]` with the real line count, `[CODE_LINES]` with code snippet line count, `[N]` with number of source files referenced, and `[M]` with number of specific questions. For "Regenerate", identify what's weakest (fewest code lines? no error details? only 1 attempt listed?) and mention it specifically.
+
+**After user returns with results:**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Got results for '[TOPIC]'. What would you like to do?",
+  "header": "Import",
+  "multiSelect": false,
+  "options": [
+    {"label": "Import with /research:import (Recommended)", "description": "Save to docs/10-research/ and optionally run multi-expert ideation"},
+    {"label": "Analyze for implementation in [current epic/project]", "description": "Deploy domain experts to map findings to your codebase"},
+    {"label": "Ask follow-up about [specific gap]", "description": "Generate deeper prompt on [area needing more detail]"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Key**: Populate `[TOPIC]` with the research topic. For "Analyze", reference the active epic/story from status.json if one exists, otherwise use "your project". For "Ask follow-up", identify the weakest area of the response (incomplete code example? missing edge case? unclear on versioning?) and reference it specifically.
+
+---
+
 ## Related Commands
 
 - `/agileflow:research:analyze` - Analyze existing research for implementation

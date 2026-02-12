@@ -246,22 +246,25 @@ Output the full content of the research note.
 
 ### Step 4: Suggest Actions
 
-After displaying:
+After displaying, offer contextual actions based on the research content:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do with this research?",
+  "question": "Viewed '[TOPIC]' research ([N] action items found). What next?",
   "header": "Actions",
   "multiSelect": false,
   "options": [
-    {"label": "Analyze for implementation", "description": "Enter plan mode and see how to implement this in your project"},
-    {"label": "View another research note", "description": "Switch to a different note"},
-    {"label": "Done", "description": "Exit"}
+    {"label": "Analyze for implementation in [current epic/project] (Recommended)", "description": "Deploy multi-expert analysis to map research to your codebase"},
+    {"label": "Synthesize with related notes on [detected topic]", "description": "Cross-reference with [count] other notes on similar topics"},
+    {"label": "Create story from [N] action items", "description": "Turn research action items into trackable stories"},
+    {"label": "View another note", "description": "Browse other research notes"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Always include specific counts (action items found), detected topics, and reference the current epic if one is active. If no action items exist, replace that option with "Import additional research on [topic]".
 
 If "Analyze for implementation" selected, invoke:
 ```

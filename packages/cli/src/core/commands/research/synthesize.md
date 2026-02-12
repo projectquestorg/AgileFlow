@@ -10,12 +10,19 @@ compact_context:
     - "Find CONSENSUS (2+ files agree = HIGH), UNIQUE (1 file = verify), CONFLICTS (disagreement = flag)"
     - "Show synthesis BEFORE recommending artifacts (diff-first)"
     - "Use confidence scoring: HIGH (2+ agree), UNIQUE (1 file), CONFLICT (disagree)"
+    - "After synthesis, offer Implementation Ideation with multi-expert analysis (like /research:import)"
+    - "If ideation requested: EnterPlanMode → deploy 3-5 experts IN PARALLEL → synthesize → Implementation Ideation Report"
+    - "Intelligent artifact recommendation based on research type (not always ADR/Epic)"
     - "Always end with AskUserQuestion for next steps"
   state_fields:
     - selected_files
     - metadata_extracted
     - consensus_findings
     - conflicts_found
+    - analysis_requested
+    - experts_deployed
+    - expert_results
+    - consensus_level
 ---
 
 # /agileflow:research:synthesize
@@ -48,9 +55,9 @@ node .agileflow/scripts/obtain-context.js research:synthesize
 
 ## ⚠️ COMPACT SUMMARY - /agileflow:research:synthesize IS ACTIVE
 
-**CRITICAL**: You are running `/agileflow:research:synthesize`. This command queries across multiple research files.
+**CRITICAL**: You are running `/agileflow:research:synthesize`. This command queries across multiple research files and optionally analyzes for implementation.
 
-**ROLE**: Find patterns, consensus, and conflicts across research. Apply confidence scoring.
+**ROLE**: Find patterns, consensus, and conflicts across research. Apply confidence scoring. Optionally deploy multi-expert analysis for implementation ideation.
 
 ---
 
@@ -175,27 +182,117 @@ Different approaches recommended:
 
 ---
 
-### 🚨 RULE #6: END WITH AskUserQuestion
+### 🚨 RULE #6: END WITH AskUserQuestion (OFFER IDEATION)
 
-**After showing synthesis, ask what to do next:**
+**After showing synthesis, offer implementation ideation (like /research:import):**
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do with this synthesis?",
+  "question": "Synthesis of '[TOPIC]': [N] consensus findings, [M] conflicts across [K] files. What next?",
   "header": "Next step",
   "multiSelect": false,
   "options": [
-    {"label": "Save synthesis report", "description": "Save to docs/10-research/ as synthesis note"},
-    {"label": "Create ADR from consensus", "description": "Document architectural decision"},
-    {"label": "Create Epic + Stories", "description": "Break down into trackable work"},
-    {"label": "Flag conflicts for review", "description": "Mark outdated research for update"},
-    {"label": "Narrow scope - different topic", "description": "Try different search keywords"},
-    {"label": "Done", "description": "Exit synthesis"}
+    {"label": "Implementation ideation with [detected-type] experts (Recommended)", "description": "Deploy [3-5] experts ([expert list]) to analyze [N] consensus findings for your codebase"},
+    {"label": "Save synthesis report", "description": "Save to docs/10-research/[YYYYMMDD]-synthesis-[slug].md"},
+    {"label": "Flag [M] conflicts for review", "description": "Mark conflicting research on [conflict topics] for update"},
+    {"label": "Narrow scope - different topic", "description": "Current: '[TOPIC]' matched [K] files - try different keywords"},
+    {"label": "Done", "description": "Synthesis complete, [N] consensus + [M] conflicts documented"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Populate `[TOPIC]` with search topic, `[N]` with consensus finding count, `[M]` with conflict count, `[K]` with files analyzed count. For ideation, auto-detect expert type from synthesis content and list specific experts (e.g., "security, api, testing"). For "Flag conflicts", reference the actual conflict topics found. If no conflicts found (M=0), replace that option with "Synthesize with additional files" or remove it.
+
+---
+
+### 🚨 RULE #7: IMPLEMENTATION IDEATION = PLAN MODE + MULTI-EXPERT ANALYSIS
+
+**When user requests ideation, you MUST:**
+
+1. **Enter plan mode**:
+```xml
+<invoke name="EnterPlanMode"/>
+```
+
+2. **Gather project context**:
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+3. **Deploy 3-5 domain experts IN PARALLEL** (see RULE #9 for expert selection)
+
+4. **Synthesize results** with confidence scoring
+
+**Why**: Single-perspective analysis misses domain-specific considerations. Multi-expert analysis provides security, performance, testing, and architecture perspectives for comprehensive implementation guidance.
+
+---
+
+### 🚨 RULE #8: SHOW BENEFITS FIRST IN ANALYSIS
+
+**Order matters: Benefits → Implementation → Complexity → Risks.**
+
+```
+❌ WRONG: "We'd modify 5 files, add 2 dependencies, refactor the system..."
+✅ RIGHT: "You'd gain: 40% faster auth, better security, cleaner codebase.
+           To implement, we'd modify 5 files, add 2 dependencies..."
+```
+
+---
+
+### 🚨 RULE #9: IMPLEMENTATION IDEATION (Multi-Expert Analysis)
+
+When user requests "Implementation ideation with multi-expert analysis":
+
+1. **Enter Plan Mode** and auto-detect research type to select experts
+2. **Deploy 3-5 experts IN PARALLEL** (like /ideate pattern)
+3. **Each expert analyzes from their domain perspective**:
+   - Implementation fit for codebase
+   - Domain-specific considerations
+   - Recommended approach with specific files
+   - Risks and gotchas
+4. **Synthesize with confidence scoring**:
+   - HIGH CONFIDENCE: 2+ experts agree on approach/files
+   - MEDIUM CONFIDENCE: 1 expert with specific evidence
+5. **Present unified Implementation Ideation Report** with expert consensus
+
+**Expert Selection by Research Type:**
+
+| Research Type | Experts (Deploy ALL in parallel) |
+|--------------|--------------------------------|
+| Architecture/Framework | api, database, performance, security (4) |
+| Feature Implementation | api, ui, testing, database (4) |
+| Security/Compliance | security, api, testing, compliance (4) |
+| Performance | performance, database, api, monitoring (4) |
+| Best Practices | refactor, testing, documentation (3) |
+| Full-Stack (default) | api, ui, database, testing, security (5) |
+
+**Detection Keywords:**
+- **Security**: auth, oauth, jwt, encryption, vulnerability, compliance
+- **Performance**: cache, optimize, latency, throughput, benchmark
+- **Architecture**: migrate, upgrade, framework, refactor, redesign
+- **UI**: component, styling, accessibility, ux, design system
+- **Database**: schema, migration, query, index, model
+
+---
+
+### 🚨 RULE #10: INTELLIGENT ARTIFACT SELECTION
+
+**Recommend artifact type based on expert consensus. DON'T default to ADR or Epic.**
+
+| Research Type | Artifact | Indicators |
+|---|---|---|
+| Architecture/tech decision | **ADR** | Trade-offs, "use X or Y?", one-time decision |
+| Large feature (5+ steps) | **Epic + Stories** | Multiple files, multiple domains, 3+ days |
+| Single focused task | **Story** | 1-3 files, 1-4 hours, single domain |
+| Best practices/guidelines | **Practice doc** | "How to do X", guidelines, no feature work |
+| Code quality/refactoring | **Tech debt item** | No user-facing change, improvement |
+
+**Example recommendations:**
+- "Upgrade to Next.js 15" → ADR
+- "Add OAuth" → Epic + Stories (multiple domains)
+- "Fix cache bug" → Story (single issue)
 
 ---
 
@@ -207,6 +304,9 @@ Different approaches recommended:
 ❌ Jump to artifact creation without showing synthesis first
 ❌ Ignore conflicts - they must be flagged
 ❌ Treat all findings as equal - use confidence scoring
+❌ Single-perspective analysis (shallow, misses domain considerations)
+❌ Deploy experts one at a time (MUST be parallel)
+❌ Assume ADR is the right artifact for all synthesis
 ❌ End without AskUserQuestion
 
 ### DO THESE INSTEAD
@@ -217,6 +317,10 @@ Different approaches recommended:
 ✅ Apply confidence scoring (HIGH/UNIQUE/CONFLICT)
 ✅ Show full synthesis before offering artifacts
 ✅ Flag conflicts for human review
+✅ Offer implementation ideation with multi-expert analysis
+✅ Deploy 3-5 domain experts IN PARALLEL for multi-perspective analysis
+✅ Synthesize expert results with confidence scoring
+✅ Recommend artifact type based on expert consensus (not always ADR)
 ✅ Always end with AskUserQuestion
 
 ---
@@ -256,9 +360,18 @@ Different approaches recommended:
     - Related Artifacts
     - Timeline
 
-**Phase 6: Present & Next Steps**
+**Phase 6: Present & Offer Ideation**
 14. Show synthesis report to user
-15. Ask what to do next via AskUserQuestion
+15. Ask what to do next via AskUserQuestion (offer ideation)
+
+**Phase 7: Implementation Ideation (If Requested)**
+16. Enter plan mode + select 3-5 domain experts
+17. Deploy experts IN PARALLEL (Task tool with run_in_background)
+18. Collect results (TaskOutput) + synthesize with confidence scoring
+19. Present Implementation Ideation Report
+20. Confirm interest in proceeding
+21. Recommend artifact type based on expert consensus
+22. Create artifact if user confirms
 
 ---
 
@@ -281,6 +394,11 @@ Different approaches recommended:
 - Apply confidence scoring: HIGH (2+ agree), UNIQUE (1 file), CONFLICT (disagree)
 - Show synthesis BEFORE offering artifacts
 - Flag conflicts for human review
+- Offer Implementation Ideation with multi-expert analysis (like /research:import)
+- If ideation requested: enter plan mode + deploy 3-5 domain experts IN PARALLEL
+- Synthesize expert results with confidence scoring (HIGH = 2+ agree)
+- Present Implementation Ideation Report with expert consensus
+- Recommend artifact type based on expert consensus (not always ADR)
 - End with AskUserQuestion for next steps
 
 <!-- COMPACT_SUMMARY_END -->
@@ -529,19 +647,237 @@ Show the full synthesis report, then:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do with this synthesis?",
+  "question": "Synthesis of '[TOPIC]': [N] consensus findings, [M] conflicts across [K] files. What next?",
   "header": "Next step",
   "multiSelect": false,
   "options": [
-    {"label": "Save synthesis report (Recommended)", "description": "Save to docs/10-research/ as synthesis note"},
-    {"label": "Create ADR from consensus", "description": "Document architectural decision based on agreed findings"},
-    {"label": "Create Epic + Stories", "description": "Break down implementation based on synthesis"},
-    {"label": "Flag conflicts for review", "description": "Mark conflicting research for update"},
-    {"label": "Try different topic", "description": "Synthesize different research area"},
-    {"label": "Done", "description": "Exit synthesis"}
+    {"label": "Implementation ideation with [detected-type] experts (Recommended)", "description": "Deploy [3-5] experts ([expert list]) to analyze [N] consensus findings for your codebase"},
+    {"label": "Save synthesis report", "description": "Save to docs/10-research/[YYYYMMDD]-synthesis-[slug].md"},
+    {"label": "Flag [M] conflicts for review", "description": "Mark conflicting research on [conflict topics] for update"},
+    {"label": "Try different topic", "description": "Current: '[TOPIC]' matched [K] files - try different keywords"},
+    {"label": "Done", "description": "Synthesis complete, [N] consensus + [M] conflicts documented"}
   ]
 }]</parameter>
 </invoke>
+```
+
+**Key**: Same smart population rules as RULE #6 above. Populate all `[bracketed]` values with actual data from the synthesis. If no conflicts (M=0), replace "Flag conflicts" with "Synthesize with additional files". Auto-detect expert type from synthesis findings.
+
+**If "Implementation ideation"**: Continue to Step 8.
+**If "Save synthesis report"**: Save and update index (see Saving section below).
+**If other**: Handle accordingly.
+
+---
+
+### Step 8: Enter Plan Mode and Select Experts
+
+```xml
+<invoke name="EnterPlanMode"/>
+```
+
+Then immediately gather project context:
+
+```bash
+node .agileflow/scripts/obtain-context.js babysit
+```
+
+**Auto-detect research type and select experts:**
+
+Analyze the TOPIC and synthesis findings to determine research type, then select 3-5 experts:
+
+| Research Type | Detection Keywords | Experts |
+|--------------|-------------------|---------|
+| **Security/Compliance** | auth, oauth, jwt, encryption, vulnerability, compliance, csrf, xss | security, api, testing, compliance |
+| **Performance** | cache, optimize, latency, throughput, benchmark, profiling | performance, database, api, monitoring |
+| **Architecture/Framework** | migrate, upgrade, framework, refactor, redesign, architecture | api, database, performance, security |
+| **UI/Frontend** | component, styling, accessibility, ux, design system, responsive | ui, api, testing, accessibility |
+| **Database** | schema, migration, query, index, model, postgres, mongo | database, api, performance, datamigration |
+| **Full-Stack (default)** | multiple domains or unclear | api, ui, database, testing, security |
+
+---
+
+### Step 9: Deploy Experts in Parallel
+
+**CRITICAL**: Deploy ALL selected experts in a SINGLE message using the Task tool.
+
+Each expert receives this prompt template:
+
+```
+EXPERTISE FIRST: Read your expertise.yaml file if it exists at .agileflow/expertise/{domain}.yaml
+
+RESEARCH SYNTHESIS: {synthesis report summary}
+CONSENSUS FINDINGS: {list of HIGH confidence findings}
+CONFLICTS: {list of conflicts found}
+PROJECT CONTEXT: {from obtain-context.js output}
+
+TASK: Analyze this research synthesis from your {DOMAIN} perspective:
+
+1. **Implementation Fit**: How well do the consensus findings fit the current codebase?
+   - What patterns/files would need to change?
+   - Any conflicts with existing architecture?
+
+2. **Domain-Specific Considerations**: From your expertise:
+   - For SECURITY: What security implications? Risks? Compliance needs?
+   - For PERFORMANCE: What performance impacts? Bottlenecks? Optimization opportunities?
+   - For TESTING: What test coverage needed? Edge cases? Regression risks?
+   - For API: What API changes? Breaking changes? Versioning needs?
+   - For UI: What UX considerations? Accessibility? Design patterns?
+   - For DATABASE: What schema changes? Migration strategy? Query impact?
+
+3. **Implementation Approach**: Your recommended approach:
+   - Key files to modify (specific paths from codebase)
+   - Effort estimate (hours/days/weeks)
+   - Dependencies or prerequisites
+
+4. **Risks & Gotchas**: What could go wrong?
+   - Technical risks
+   - Migration complexity
+   - Team adoption concerns
+
+FORMAT as structured markdown with specific file paths and evidence from codebase.
+```
+
+---
+
+### Step 10: Collect Results and Synthesize
+
+Collect all expert outputs using TaskOutput, then synthesize:
+
+1. **Find Consensus**: Group similar recommendations across experts
+   - **HIGH CONFIDENCE**: 2+ experts recommend same approach/files
+   - **MEDIUM CONFIDENCE**: 1 expert with specific evidence
+
+2. **Aggregate Effort Estimates**: Average across experts, note range
+
+3. **Collect All Risks**: Union of risks from all experts, prioritize by frequency
+
+4. **Validate Artifact Recommendation** via expert consensus:
+   - If experts mention "decision", "tradeoffs", "alternatives" → **ADR**
+   - If experts identify 5+ files across multiple domains → **Epic + Stories**
+   - If experts agree on single focus area, 1-3 files → **Story**
+   - If experts focus on guidelines, patterns → **Practice doc**
+
+---
+
+### Step 11: Present Implementation Ideation Report
+
+```markdown
+## Implementation Ideation Report
+
+**Research Synthesis**: {TOPIC}
+**Experts Consulted**: {list of 3-5 experts with badges}
+**Consensus Level**: {High/Medium/Low based on agreement}
+
+---
+
+### High-Confidence Implementation Steps
+*Agreed by 2+ experts*
+
+1. **{Step title}**
+   - Experts: {badges}
+   - Files: `path/to/file1.ts`, `path/to/file2.ts`
+   - Effort: {averaged estimate}
+   - Approach: {consensus approach}
+
+---
+
+### Domain-Specific Considerations
+
+**Security** (security expert):
+- {key consideration}
+- Mitigation: {recommended approach}
+
+**Performance** (performance expert):
+- {optimization opportunity}
+
+**Testing** (testing expert):
+- {coverage requirements}
+- {edge cases}
+
+---
+
+### Risks & Gotchas
+
+| Risk | Expert(s) | Severity | Mitigation |
+|------|-----------|----------|------------|
+| {risk 1} | security | High | {mitigation} |
+
+---
+
+### Effort Estimate Summary
+
+| Expert | Estimate | Notes |
+|--------|----------|-------|
+| {expert} | {estimate} | {notes} |
+| **Consensus** | **{averaged}** | {range} |
+
+---
+
+### Recommended Artifact
+
+Based on expert consensus: **{ADR/Epic/Story/Practice}**
+**Reason**: {why this artifact type}
+```
+
+---
+
+### Step 12: Confirm and Create Artifact
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "[N] experts analyzed '[TOPIC]' ([CONSENSUS_LEVEL] consensus). Proceed with implementation?",
+  "header": "Proceed?",
+  "multiSelect": false,
+  "options": [
+    {"label": "Yes - Create [RECOMMENDED_ARTIFACT] (Recommended)", "description": "[N] high-confidence steps identified across [M] files"},
+    {"label": "Modify approach first", "description": "Adjust [specific area of disagreement or concern]"},
+    {"label": "Save analysis to synthesis file", "description": "Append ideation report to [FILENAME] for later"},
+    {"label": "Cancel", "description": "Exit plan mode, synthesis already shown"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Key**: Populate `[N]` with expert count, `[TOPIC]` with research topic, `[CONSENSUS_LEVEL]` with High/Medium/Low. For "Create", use the actual recommended artifact type. For "Modify", reference specific disagreement areas from expert results.
+
+**If "Yes"**: Present intelligent artifact selection:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Expert consensus recommends [ARTIFACT_TYPE] for '[TOPIC]'. What would you like to create?",
+  "header": "Create",
+  "multiSelect": false,
+  "options": [
+    {"label": "[Recommended artifact]: [suggested title] (Recommended)", "description": "[N] experts agreed - [brief reason from consensus]"},
+    {"label": "Create Epic + Stories instead", "description": "Break into [estimated N] stories across [domains detected]"},
+    {"label": "Create single Story instead", "description": "Track as one work item (~[effort estimate])"},
+    {"label": "Create Practice doc instead", "description": "Document as guidelines in docs/02-practices/"},
+    {"label": "Skip artifact creation", "description": "Synthesis + ideation report saved, implement later"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Key**: First option MUST be the actual expert-recommended artifact with a suggested title. Include expert count and brief consensus reason. For alternatives, populate with specifics from expert analysis. Remove the recommended artifact from the alternatives list.
+
+**If "Save analysis only"**: Append Implementation Ideation Report to the synthesis file, exit plan mode.
+**If "Cancel"**: Exit plan mode.
+
+After artifact creation, exit plan mode and confirm:
+
+```
+Created [ARTIFACT] from synthesis "[TOPIC]"
+
+**Multi-Expert Analysis Summary:**
+- Experts consulted: {list}
+- Consensus level: {High/Medium/Low}
+- Key insights preserved: {count}
+
+**Artifacts:**
+- Synthesis: docs/10-research/YYYYMMDD-synthesis-topic.md
+- [Artifact]: [path or ID]
 ```
 
 ---

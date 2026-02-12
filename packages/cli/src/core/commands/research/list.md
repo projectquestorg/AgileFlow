@@ -125,24 +125,25 @@ Quick actions:
 - /agileflow:research:import TOPIC="..." - Import external content
 ```
 
-Or use AskUserQuestion:
+Use AskUserQuestion with contextual options based on what was found:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do?",
+  "question": "Found N research notes. What would you like to do?",
   "header": "Actions",
   "multiSelect": false,
   "options": [
-    {"label": "View a research note", "description": "Read specific research"},
-    {"label": "Analyze research for implementation", "description": "Enter plan mode"},
-    {"label": "Create new research prompt", "description": "/agileflow:research:ask"},
-    {"label": "Import external content", "description": "/agileflow:research:import"},
-    {"label": "Done", "description": "Exit"}
+    {"label": "View '[most-recent-filename]' (Recommended)", "description": "Most recent note from [date] on [topic]"},
+    {"label": "Analyze research for implementation", "description": "Deploy multi-expert analysis on a specific note"},
+    {"label": "Generate new research prompt", "description": "Create a detailed prompt for ChatGPT/Perplexity"},
+    {"label": "Done", "description": "N notes listed, no further action"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Always populate the first option with the ACTUAL most recent filename and topic, not a generic "View a note".
 
 ---
 

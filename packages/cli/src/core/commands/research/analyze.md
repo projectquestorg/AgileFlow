@@ -367,18 +367,20 @@ ls docs/10-research/*.md
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Which research would you like to analyze for implementation?",
+  "question": "Found [N] research notes. Which would you like to analyze for implementation?",
   "header": "Select",
   "multiSelect": false,
   "options": [
-    {"label": "[Most recent research file]", "description": "[Topic from filename]"},
-    {"label": "[Second most recent]", "description": "[Topic]"},
-    {"label": "[Third most recent]", "description": "[Topic]"},
-    {"label": "Show full list", "description": "See all research notes"}
+    {"label": "[actual-filename.md] (Recommended)", "description": "[Actual topic] - imported [date], [N] action items"},
+    {"label": "[second-filename.md]", "description": "[Actual topic] - imported [date]"},
+    {"label": "[third-filename.md]", "description": "[Actual topic] - imported [date]"},
+    {"label": "Show full list", "description": "Browse all [N] research notes"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Always populate with ACTUAL filenames and topics from `docs/10-research/`, sorted most-recent first. Include import date and action item count if visible from the index. Mark the most recent as "(Recommended)". If an active story/epic relates to a research topic, prioritize that file instead.
 
 ### Step 3: Assess and Read Research
 
@@ -434,17 +436,19 @@ Display a brief summary:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Would you like me to analyze how this research could be implemented in your project?",
+  "question": "'[TOPIC]' has [N] findings and [M] action items. Analyze for implementation?",
   "header": "Analyze",
   "multiSelect": false,
   "options": [
-    {"label": "Yes - Implementation ideation with multi-expert analysis (Recommended)", "description": "Deploy 3-5 domain experts to analyze from security, performance, testing, and architecture perspectives"},
-    {"label": "Just view the full research", "description": "Display without analysis"},
-    {"label": "Cancel", "description": "Exit"}
+    {"label": "Implementation ideation with [detected-type] experts (Recommended)", "description": "Deploy [3-5] [expert list] to map [N] findings to your codebase"},
+    {"label": "View full research ([SIZE])", "description": "Display the complete note ([LINE_COUNT] lines) for reading"},
+    {"label": "Skip for now", "description": "Research saved at docs/10-research/[FILENAME]"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Populate `[TOPIC]` with research topic, `[N]`/`[M]` with actual finding and action item counts from the file. Auto-detect research type from content keywords to determine expert list. `[SIZE]` shows file size context (e.g., "12KB" or "small"). `[FILENAME]` is the actual filename. For RLM-needed files (50k+), add "(using RLM for targeted extraction)" to the view description.
 
 **If "Just view"**: Display full research content, exit.
 **If "Cancel"**: Exit.
@@ -671,18 +675,20 @@ Based on expert consensus: **{ADR/Epic/Story/Practice}**
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Based on this multi-expert analysis, would you like to proceed with implementation?",
+  "question": "[N] experts analyzed '[TOPIC]' ([CONSENSUS_LEVEL] consensus, [STEPS] implementation steps). Proceed?",
   "header": "Proceed?",
   "multiSelect": false,
   "options": [
-    {"label": "Yes - Create implementation artifacts", "description": "I'll create the recommended artifact based on expert consensus"},
-    {"label": "Modify approach first", "description": "Let's adjust the plan before creating artifacts"},
-    {"label": "Save analysis to research file", "description": "Append Implementation Ideation Report to the research note for later"},
-    {"label": "Cancel", "description": "Exit plan mode, no changes"}
+    {"label": "Yes - Create [RECOMMENDED_ARTIFACT] (Recommended)", "description": "[STEPS] high-confidence steps across [M] files, ~[EFFORT] effort"},
+    {"label": "Modify approach first", "description": "Adjust [specific disagreement or concern area]"},
+    {"label": "Save analysis to research file", "description": "Append ideation report to docs/10-research/[FILENAME]"},
+    {"label": "Cancel", "description": "Exit plan mode, research unchanged"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: Populate `[N]` with expert count, `[CONSENSUS_LEVEL]` with High/Medium/Low, `[STEPS]` with count of high-confidence steps, `[M]` with files affected, `[EFFORT]` with consensus effort estimate. For "Modify", reference the specific area where experts had lowest agreement.
 
 **If "Modify approach"**: Discuss changes, update analysis, re-ask.
 **If "Save analysis"**: Append the Implementation Ideation Report to the research file, exit plan mode.
@@ -698,19 +704,21 @@ Based on expert consensus, present the recommendation:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Based on expert consensus, I recommend creating: [ARTIFACT TYPE]. What would you like to do?",
+  "question": "Expert consensus recommends [ARTIFACT_TYPE] for '[TOPIC]'. What would you like to create?",
   "header": "Create",
   "multiSelect": false,
   "options": [
-    {"label": "[Recommended artifact] (Recommended)", "description": "[Why experts agreed on this choice]"},
-    {"label": "Create ADR instead", "description": "Document this as an architecture decision"},
-    {"label": "Create Epic + Stories instead", "description": "Break down into trackable work items"},
-    {"label": "Create single Story instead", "description": "Track as a single work item"},
-    {"label": "Skip artifact creation", "description": "Analysis is enough for now"}
+    {"label": "[Recommended artifact]: [suggested title] (Recommended)", "description": "[N] experts agreed - [brief reason from consensus]"},
+    {"label": "Create Epic + Stories instead", "description": "Break into [estimated N] stories across [domains detected]"},
+    {"label": "Create single Story instead", "description": "Track as one work item (~[effort estimate])"},
+    {"label": "Create Practice doc instead", "description": "Document as guidelines in docs/02-practices/"},
+    {"label": "Skip artifact creation", "description": "Research + ideation report saved, implement later"}
   ]
 }]</parameter>
 </invoke>
 ```
+
+**Key**: First option MUST be the actual expert-recommended artifact with a suggested title (e.g., "Epic: OAuth Integration" or "Story: Fix cache invalidation"). Include expert count and brief consensus reason. For alternatives, populate with specifics from expert analysis: estimated story count, detected domains, effort estimate. Remove the recommended artifact from the alternatives list (don't show "Create Epic instead" if Epic is the recommendation).
 
 ---
 
