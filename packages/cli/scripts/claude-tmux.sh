@@ -17,7 +17,7 @@
 #
 # Multiple terminals can run `af` from the same directory simultaneously.
 # Sessions are named: claude-<dir>, claude-<dir>-2, claude-<dir>-3, etc.
-# Your Claude conversation is preserved via --resume regardless of tmux state.
+# Your Claude conversation is preserved via smart resume (per-pane UUID tracking).
 #
 # SESSION CREATION (while inside tmux):
 #   - Alt+N     New worktree session (isolated branch + directory)
@@ -30,6 +30,9 @@
 #   - Alt+q     Detach from tmux (session stays alive)
 
 set -e
+
+# Resolve script directory (used for claude-smart.sh and other helpers)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Parse arguments
 NO_TMUX=false
@@ -99,7 +102,7 @@ By default, af reattaches to a detached session if one exists (so Alt+Q
 then af gets you right back). Use --new to force a new session.
 
 SESSIONS:
-  Alt+s            New Claude window (with --resume)
+  Alt+s            New Claude window
   Alt+l            Switch between sessions (picker)
   Alt+q            Detach (run af to reattach)
 
@@ -241,8 +244,8 @@ configure_tmux_session() {
   tmux bind-key -n M-[ copy-mode
 
   # ─── Session Creation Keybindings ──────────────────────────────────────────
-  # Alt+s to create a same-directory Claude window (with --resume for conversation context)
-  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys 'claude --resume \$CLAUDE_SESSION_FLAGS' Enter"
+  # Alt+s to create a new Claude window (starts fresh, future re-runs in same pane resume)
+  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys '\"\$AGILEFLOW_SCRIPTS/claude-smart.sh\" --fresh \$CLAUDE_SESSION_FLAGS' Enter"
 
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
@@ -284,6 +287,8 @@ if [ "$REFRESH_CONFIG" = true ]; then
   REFRESHED=0
   for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^claude-"); do
     configure_tmux_session "$sid"
+    # Ensure AGILEFLOW_SCRIPTS is set (needed by Alt+S keybind)
+    tmux set-environment -t "$sid" AGILEFLOW_SCRIPTS "$SCRIPT_DIR" 2>/dev/null || true
     REFRESHED=$((REFRESHED + 1))
   done
   if [ "$REFRESHED" -gt 0 ]; then
@@ -467,8 +472,9 @@ fi
 
 # Check if we're already inside tmux
 if [ -n "$TMUX" ]; then
-  # Already in tmux, just run claude
-  exec claude "$@"
+  # Already in tmux — use smart wrapper for per-pane resume tracking
+  # shellcheck disable=SC2086
+  exec "$SCRIPT_DIR/claude-smart.sh" $CLAUDE_SESSION_FLAGS "$@"
 fi
 
 # Check if tmux is available
@@ -496,34 +502,27 @@ tmux move-window -t "$SESSION_NAME":1 >/dev/null 2>&1 || true
 # Apply tmux configuration
 configure_tmux_session "$SESSION_NAME"
 
-# Send the claude command to the first window
-CLAUDE_CMD="claude"
-
-# Check for inherited session flags (set by parent Claude session)
-INHERITED_FLAGS=""
+# Export scripts directory to tmux session environment (used by keybinds)
+tmux set-environment -t "$SESSION_NAME" AGILEFLOW_SCRIPTS "$SCRIPT_DIR"
 if [ -n "$CLAUDE_SESSION_FLAGS" ]; then
-  INHERITED_FLAGS="$CLAUDE_SESSION_FLAGS"
+  tmux set-environment -t "$SESSION_NAME" CLAUDE_SESSION_FLAGS "$CLAUDE_SESSION_FLAGS"
 fi
 
+# Pre-seed @claude_uuid on initial pane if we found a recent conversation
 if [ "$USE_RESUME" = true ] && [ -n "$RESUME_SESSION_ID" ]; then
-  # Fresh restart with specific conversation resume (skips picker)
-  CLAUDE_CMD="claude --resume $RESUME_SESSION_ID"
-elif [ "$USE_RESUME" = true ]; then
-  # Fresh restart with conversation picker
-  CLAUDE_CMD="claude --resume"
+  tmux set-option -p -t "$SESSION_NAME" @claude_uuid "$RESUME_SESSION_ID" 2>/dev/null || true
 fi
 
-# Add inherited flags if present (e.g., --dangerously-skip-permissions)
-if [ -n "$INHERITED_FLAGS" ]; then
-  CLAUDE_CMD="$CLAUDE_CMD $INHERITED_FLAGS"
+# Launch Claude via smart wrapper (handles resume from @claude_uuid)
+SMART_CMD="\"$SCRIPT_DIR/claude-smart.sh\""
+if [ -n "$CLAUDE_SESSION_FLAGS" ]; then
+  SMART_CMD="$SMART_CMD $CLAUDE_SESSION_FLAGS"
 fi
-
 if [ $# -gt 0 ]; then
-  # Pass any remaining arguments to claude
-  CLAUDE_CMD="$CLAUDE_CMD $*"
+  SMART_CMD="$SMART_CMD $*"
 fi
 
-tmux send-keys -t "$SESSION_NAME" "$CLAUDE_CMD" Enter
+tmux send-keys -t "$SESSION_NAME" "$SMART_CMD" Enter
 
 # Attach to the session
 exec tmux attach-session -t "$SESSION_NAME"
