@@ -313,7 +313,7 @@ configure_tmux_session() {
   git_branch=$(git branch --show-current 2>/dev/null || echo '-')
 
   # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+N new session  Alt+k interrupt  Alt+q detach  "
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+1-9 windows  Alt+s new session  Alt+q detach  "
 
   # Line 1 (bottom): Window tabs with smart truncation and brand color
   tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
@@ -341,8 +341,8 @@ configure_tmux_session() {
   # Alt+d to split horizontally (side by side)
   tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
 
-  # Alt+s to split vertically (top/bottom)
-  tmux bind-key -n M-s split-window -v -c "#{pane_current_path}"
+  # Alt+v to split vertically (top/bottom)
+  tmux bind-key -n M-v split-window -v -c "#{pane_current_path}"
 
   # Alt+arrow to navigate panes
   tmux bind-key -n M-Left select-pane -L
@@ -370,21 +370,12 @@ configure_tmux_session() {
   tmux bind-key -n M-[ copy-mode
 
   # ─── Session Creation Keybindings ──────────────────────────────────────────
-  # Alt+N (shift+n) to create a new worktree session window
-  tmux bind-key -n M-N run-shell "node .agileflow/scripts/spawn-parallel.js add-window --name auto-\$(date +%s) 2>/dev/null && tmux display-message 'New worktree session created' || tmux display-message 'Session creation failed'"
-
-  # Alt+S (shift+s) to create a same-directory Claude window (no worktree)
-  tmux bind-key -n M-S run-shell "tmux new-window -c '#{pane_current_path}' && tmux send-keys 'claude \$CLAUDE_SESSION_FLAGS' Enter && tmux display-message 'Same-dir session created'"
+  # Alt+s to create a same-directory Claude window
+  tmux bind-key -n M-s run-shell "tmux new-window -c '#{pane_current_path}' && tmux send-keys 'claude \$CLAUDE_SESSION_FLAGS' Enter && tmux display-message 'New Claude session created'"
 
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
   tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
-
-  # Alt+K (shift+k) to force-kill pane immediately (nuclear option for hard freezes)
-  tmux bind-key -n M-K kill-pane
-
-  # Alt+R (shift+r) to respawn the pane (restart with a fresh shell)
-  tmux bind-key -n M-R respawn-pane -k
 }
 
 # Handle --refresh flag — re-apply config to all existing claude-* sessions
