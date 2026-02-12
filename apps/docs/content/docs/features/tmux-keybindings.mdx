@@ -1,0 +1,76 @@
+---
+title: Tmux Keybindings
+description: Keyboard shortcuts for navigating windows, sessions, and panes in the AgileFlow tmux integration.
+---
+
+# Tmux Keybindings
+
+When you start Claude Code with the `af` command, AgileFlow creates a tmux session with preconfigured keybindings. All shortcuts use **Alt** (Option on Mac) as the modifier key.
+
+## Quick Reference
+
+### Essential (shown in status bar)
+
+| Key | Action |
+|-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
+| **Alt+s** | New Claude session (same directory) |
+| **Alt+q** | Detach (leave session running in background) |
+
+### Windows
+
+| Key | Action |
+|-----|--------|
+| **Alt+c** | Create new empty window |
+| **Alt+n** | Next window |
+| **Alt+p** | Previous window |
+| **Alt+r** | Rename current window |
+| **Alt+w** | Close window (with confirmation) |
+
+### Panes
+
+| Key | Action |
+|-----|--------|
+| **Alt+d** | Split horizontally (side by side) |
+| **Alt+v** | Split vertically (top/bottom) |
+| **Alt+Arrow** | Navigate between panes |
+| **Alt+z** | Zoom/unzoom pane (fullscreen toggle) |
+| **Alt+x** | Close pane (with confirmation) |
+
+### Utility
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
+| **Alt+[** | Enter copy/scroll mode |
+
+## Status Bar
+
+The tmux status bar has two lines:
+
+**Top line**: Project name, git branch, and keybinding hints
+
+**Bottom line**: Window tabs with the active window highlighted in orange
+
+## Reattaching to a Session
+
+If you detach with **Alt+q** or close your terminal, the session keeps running. To reattach:
+
+```bash
+af
+```
+
+AgileFlow automatically detects existing sessions for the current directory and reattaches.
+
+## Mac Users
+
+On macOS, **Alt** is the **Option** key. If Alt keybindings don't work, check your terminal settings:
+
+- **iTerm2**: Preferences > Profiles > Keys > Left Option key > set to "Esc+"
+- **Terminal.app**: Preferences > Profiles > Keyboard > check "Use Option as Meta key"
+- **Alacritty / Kitty / WezTerm**: Usually works out of the box
+
+## Related
+
+- [Parallel Sessions](/docs/features/parallel-sessions) - Working in multiple isolated workspaces
+- [IDE Integrations](/docs/features/ide-integrations) - Setting up AgileFlow with your editor
