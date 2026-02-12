@@ -26,26 +26,12 @@ The result: you get the right tool at the right time, without needing to know it
 
 Smart Detection runs as part of the `obtain-context.js` pipeline that powers `/babysit`:
 
-```
-obtain-context.js (gather project data)
-        |
-        v
-smart-detect.js (orchestrator)
-    |           |
-    v           v
-lifecycle-     signal-
-detector.js    detectors.js
-    |           |
-    v           v
-Detect phase   Run 42 detectors
-(5 phases)     against signals
-        |
-        v
-smart-detect.json (recommendations)
-        |
-        v
-babysit reads and acts on recommendations
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/smart-detection-arch.dark.svg" />
+  <img alt="Smart Detection Architecture" src="/images/docs/features/smart-detection-arch.light.svg" />
+</picture>
+
+> Smart Detection pipeline: obtain-context.js gathers project data, smart-detect.js orchestrates signal extraction and lifecycle phase detection, 42 feature detectors run against signals filtered by phase, and recommendations are written to smart-detect.json for /babysit to act on.
 
 All detection is **deterministic and script-based** - not LLM guesswork. The scripts analyze concrete signals (file existence, git status, story counts) and output structured recommendations.
 
