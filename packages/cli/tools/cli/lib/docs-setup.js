@@ -48,6 +48,8 @@ function getDirectoryStructure(docsFolder = 'docs') {
     `${docsFolder}/07-testing/acceptance`,
     `${docsFolder}/07-testing/test-cases`,
     `${docsFolder}/08-project`,
+    `${docsFolder}/08-project/ideation`,
+    `${docsFolder}/08-project/logic-audits`,
     `${docsFolder}/09-agents/bus`,
     `${docsFolder}/10-research`,
   ];
@@ -187,6 +189,8 @@ Project-level planning and tracking.
 - **backlog.md**: Prioritized backlog
 - **milestones.md**: Release milestones
 - **risks.md**: Project risks and mitigation strategies
+- **ideation/**: Ideation reports from \`/agileflow:ideate:new\`
+- **logic-audits/**: Logic audit reports from \`/agileflow:logic:audit\`
 `,
 
     [`${docsFolder}/09-agents/README.md`]: `# Agent Status Tracking

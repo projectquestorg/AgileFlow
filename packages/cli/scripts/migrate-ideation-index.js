@@ -3,7 +3,8 @@
 /**
  * migrate-ideation-index.js - Backfill ideation index from existing reports
  *
- * Parses all existing ideation reports (docs/08-project/ideation-*.md) and
+ * Parses all existing ideation reports (docs/08-project/ideation/ideation-*.md,
+ * with fallback to legacy docs/08-project/ideation-*.md) and
  * populates the ideation index with ideas, detecting duplicates across reports
  * and linking to stories/epics where possible.
  *
@@ -290,19 +291,40 @@ function migrateIdeationReports(rootDir, options = {}) {
 
   const index = loadResult.data;
 
-  // Find all ideation reports
-  const reportsDir = path.join(rootDir, 'docs/08-project');
-  if (!fs.existsSync(reportsDir)) {
-    return { ok: false, error: `Reports directory not found: ${reportsDir}` };
+  // Find all ideation reports (new path first, then legacy fallback)
+  const newReportsDir = path.join(rootDir, 'docs/08-project/ideation');
+  const legacyReportsDir = path.join(rootDir, 'docs/08-project');
+
+  const reportFiles = [];
+
+  // Check new subdirectory first
+  if (fs.existsSync(newReportsDir)) {
+    const newFiles = fs
+      .readdirSync(newReportsDir)
+      .filter(f => f.startsWith('ideation-') && f.endsWith('.md'));
+    for (const f of newFiles) {
+      reportFiles.push({ file: f, dir: newReportsDir });
+    }
   }
 
-  const reportFiles = fs
-    .readdirSync(reportsDir)
-    .filter(f => f.startsWith('ideation-') && f.endsWith('.md'))
-    .sort(); // Sort chronologically
+  // Also check legacy location for backward compatibility
+  if (fs.existsSync(legacyReportsDir)) {
+    const legacyFiles = fs
+      .readdirSync(legacyReportsDir)
+      .filter(f => f.startsWith('ideation-') && f.endsWith('.md'));
+    for (const f of legacyFiles) {
+      // Avoid duplicates if same file exists in both locations
+      if (!reportFiles.some(r => r.file === f)) {
+        reportFiles.push({ file: f, dir: legacyReportsDir });
+      }
+    }
+  }
+
+  // Sort chronologically by filename
+  reportFiles.sort((a, b) => a.file.localeCompare(b.file));
 
   if (reportFiles.length === 0) {
-    console.log('No ideation reports found in docs/08-project/');
+    console.log('No ideation reports found in docs/08-project/ideation/ or docs/08-project/');
     return { ok: true, stats: { reportsProcessed: 0, ideasAdded: 0, duplicates: 0 } };
   }
 
@@ -315,7 +337,7 @@ function migrateIdeationReports(rootDir, options = {}) {
     errors: 0,
   };
 
-  for (const reportFile of reportFiles) {
+  for (const { file: reportFile, dir: reportsDir } of reportFiles) {
     const reportPath = path.join(reportsDir, reportFile);
     console.log(`Processing: ${reportFile}`);
 
@@ -499,9 +521,10 @@ Options:
   --help       Show this help
 
 Description:
-  Parses all ideation reports in docs/08-project/ideation-*.md and populates
-  the ideation index at docs/00-meta/ideation-index.json with ideas, detecting
-  duplicates across reports and linking to epics where possible.
+  Parses all ideation reports in docs/08-project/ideation/ideation-*.md (and
+  legacy docs/08-project/ideation-*.md) and populates the ideation index at
+  docs/00-meta/ideation-index.json with ideas, detecting duplicates across
+  reports and linking to epics where possible.
 `);
     process.exit(0);
   }

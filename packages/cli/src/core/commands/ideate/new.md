@@ -226,7 +226,7 @@ Be SPECIFIC - reference actual file paths, function names, and code patterns.
 **Write** (save report):
 ```xml
 <invoke name="Write">
-<parameter name="file_path">/path/to/docs/08-project/ideation-YYYYMMDD.md</parameter>
+<parameter name="file_path">/path/to/docs/08-project/ideation/ideation-YYYYMMDD.md</parameter>
 <parameter name="content"># Ideation Report...</parameter>
 </invoke>
 ```
@@ -240,7 +240,7 @@ Be SPECIFIC - reference actual file paths, function names, and code patterns.
 
 **Categories**: Security, Performance, Code Quality, UX/Design, Testing, API/Architecture
 **Confidence**: High (2+ experts agree; 3+ for ultradeep), Medium (1 expert with evidence)
-**Output**: `docs/08-project/ideation-<YYYYMMDD>.md` | Optional stories
+**Output**: `docs/08-project/ideation/ideation-<YYYYMMDD>.md` | Optional stories
 <!-- COMPACT_SUMMARY_END -->
 
 ---
@@ -664,7 +664,7 @@ For each idea:
 5. Run `/agileflow:ideate:history` to see full idea backlog
 ```
 
-**Save report to**: `docs/08-project/ideation-{YYYYMMDD}.md`
+**Save report to**: `docs/08-project/ideation/ideation-{YYYYMMDD}.md`
 
 **Update ideation index**: Save the updated index to `docs/00-meta/ideation-index.json`
 
@@ -735,7 +735,7 @@ After generating output, present options:
 - 8 ideas with specific evidence → MEDIUM confidence
 - 6 ideas too vague → excluded
 
-**Step 5**: Generate report with 12 ideas, saved to `docs/08-project/ideation-20260106.md`
+**Step 5**: Generate report with 12 ideas, saved to `docs/08-project/ideation/ideation-20260106.md`
 
 **Step 6**: Skipped (OUTPUT=report only)
 
@@ -758,7 +758,7 @@ After generating output, present options:
 - 25 ideas with 1-2 experts + evidence → MEDIUM confidence
 - 32 ideas too vague or single expert without evidence → excluded
 
-**Step 5**: Generate report with 33 ideas, saved to `docs/08-project/ideation-20260106.md`
+**Step 5**: Generate report with 33 ideas, saved to `docs/08-project/ideation/ideation-20260106.md`
 
 **Step 6**: Generate 8 stories for HIGH-confidence items
 

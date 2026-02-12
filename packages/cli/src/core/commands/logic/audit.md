@@ -299,7 +299,7 @@ Total: 7 findings (2 false positives excluded)
 2. Empty cart not handled in checkout [CONFIRMED by Edge, Flow]
 3. Type coercion in price calculation [LIKELY - Type]
 
-[Full report saved to docs/08-project/logic-audit-20260203.md]
+[Full report saved to docs/08-project/logic-audits/logic-audit-20260203.md]
 ```
 
 ---
@@ -330,7 +330,7 @@ Total: 7 findings (2 false positives excluded)
 - LIKELY: 1 analyzer with evidence → Medium priority
 - INVESTIGATE: 1 analyzer, weak evidence → Low priority
 
-**Output**: `docs/08-project/logic-audit-{YYYYMMDD}.md`
+**Output**: `docs/08-project/logic-audits/logic-audit-{YYYYMMDD}.md`
 <!-- COMPACT_SUMMARY_END -->
 
 ---

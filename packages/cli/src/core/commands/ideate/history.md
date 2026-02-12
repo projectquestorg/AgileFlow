@@ -173,7 +173,7 @@ Consolidate into unified error handling with typed exceptions.
 💡 Actions:
   • Create story: /agileflow:story "Error Handling Consolidation"
   • Mark in progress: Update ideation index manually
-  • View original report: Read docs/08-project/ideation-20260106.md
+  • View original report: Read docs/08-project/ideation/ideation-20260106.md
 ```
 
 **Status Filter Output** (when STATUS=pending):
