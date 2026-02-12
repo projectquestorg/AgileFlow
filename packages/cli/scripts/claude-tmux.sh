@@ -98,29 +98,28 @@ OPTIONS:
 By default, af reattaches to a detached session if one exists (so Alt+Q
 then af gets you right back). Use --new to force a new session.
 
-TMUX KEYBINDS:
+SESSIONS:
+  Alt+s            New Claude window (with --resume)
   Alt+l            Switch between sessions (picker)
-  Alt+q            Detach from tmux (af to reattach)
+  Alt+q            Detach (run af to reattach)
+
+WINDOWS:
   Alt+1-9          Switch to window N
-  Alt+c            Create new window
+  Alt+c            Create empty window
   Alt+n/p          Next/previous window
-  Alt+d            Split horizontally
-  Alt+s            Split vertically
-  Alt+arrows       Navigate panes
-  Alt+z            Zoom/unzoom pane
-  Alt+[            Enter copy mode (scroll)
   Alt+r            Rename window
-  Alt+x            Close pane
   Alt+w            Close window
 
-SESSION CREATION:
-  Alt+N            New worktree session (isolated branch + directory)
-  Alt+S            Same-directory session (quick, no worktree)
+PANES:
+  Alt+d            Split side by side
+  Alt+v            Split top/bottom
+  Alt+arrows       Navigate panes
+  Alt+z            Zoom/unzoom pane
+  Alt+x            Close pane
 
-FREEZE RECOVERY:
-  Alt+k            Send Ctrl+C twice (soft interrupt)
-  Alt+K            Force kill pane immediately
-  Alt+R            Respawn pane with fresh shell
+OTHER:
+  Alt+[            Scroll mode
+  Alt+k            Send Ctrl+C twice (unfreeze)
 EOF
   exit 0
 fi
@@ -367,12 +366,9 @@ configure_tmux_session() {
   # Base styling - Tokyo Night inspired dark theme
   tmux set-option -t "$target_session" status-style "bg=#1a1b26,fg=#a9b1d6"
 
-  # Capture git branch once (avoids spawning process every refresh)
-  local git_branch
-  git_branch=$(git branch --show-current 2>/dev/null || echo '-')
-
-  # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+l sessions  Alt+q detach  "
+  # Line 0 (top): Session name + live git branch + keybind hints
+  # Uses #() for live branch updates (runs on status-interval, every 30s)
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')  #[align=right]#[fg=#7a7e8a]Alt+l sessions  Alt+q detach  "
 
   # Line 1 (bottom): Window tabs with smart truncation and brand color
   tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
@@ -432,8 +428,8 @@ configure_tmux_session() {
   tmux bind-key -n M-[ copy-mode
 
   # ─── Session Creation Keybindings ──────────────────────────────────────────
-  # Alt+s to create a same-directory Claude window
-  tmux bind-key -n M-s run-shell "tmux new-window -c '#{pane_current_path}' && tmux send-keys 'claude \$CLAUDE_SESSION_FLAGS' Enter && tmux display-message 'New Claude session created'"
+  # Alt+s to create a same-directory Claude window (with --resume for conversation context)
+  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys 'claude --resume \$CLAUDE_SESSION_FLAGS' Enter"
 
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
