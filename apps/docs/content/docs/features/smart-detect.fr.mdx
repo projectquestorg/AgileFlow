@@ -1,0 +1,347 @@
+---
+title: Détection intelligente
+description: Routeur de fonctionnalités contextuelles qui recommande automatiquement les bonnes fonctionnalités AgileFlow au bon moment en fonction des signaux du projet
+---
+
+# Détection intelligente
+
+La détection intelligente est celle d'AgileFlow **Contextual Feature Router** - un système qui analyse automatiquement l'état de votre projet et recommande les fonctionnalités pertinentes au bon moment dans votre flux de travail. Au lieu de mémoriser plus de 90 commandes, vous travaillez naturellement et AgileFlow fait apparaître ce dont vous avez besoin.
+
+La détection intelligente est intégrée au [`/agileflow:baby-sit`](/docs/commands/babysit) et s'exécute automatiquement dans le cadre du pipeline de collecte de contexte.
+
+## Aperçu
+
+AgileFlow compte plus de 90 commandes et 47 agents. La plupart des utilisateurs n’en connaissent qu’une poignée. Smart Detection résout ce problème de découverte en :
+
+1. **Analyzing project signals** - Statut Git, état de l'histoire, résultats des tests, modifications de fichiers
+2. **Detecting your workflow phase** - Tu choisis une histoire ? Écrire du code ? Prêt pour les relations publiques ?
+3. **Running 42 feature detectors** - Chacun vérifie si une fonctionnalité spécifique est pertinente en ce moment
+4. **Recommending only what matters** - Affichage de 2 à 5 suggestions contextuelles, pas les 90 commandes
+
+Le résultat : vous obtenez le bon outil au bon moment, sans avoir besoin de savoir qu’il existe.
+
+## Comment ça marche
+
+### Architecture
+
+La détection intelligente s'exécute dans le cadre du `obtain-context.js` pipeline qui alimente `/babysit`:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/smart-detection-arch.dark.svg" />
+  <img alt="Smart Detection Architecture" src="/images/docs/features/smart-detection-arch.light.svg" />
+</picture>
+
+> Pipeline de détection intelligente : get-context.js collecte les données du projet, smart-detect.js orchestre l'extraction des signaux et la détection des phases du cycle de vie, 42 détecteurs de fonctionnalités s'exécutent sur des signaux filtrés par phase et des recommandations sont écrites dans smart-detect.json pour que /babysit puisse agir.
+
+Toute détection est **deterministic and script-based** - pas de conjectures LLM. Les scripts analysent des signaux concrets (existence de fichiers, statut git, nombre d'histoires) et génèrent des recommandations structurées.
+
+### Les trois étapes
+
+**Step 1: Signal Extraction**
+
+Le système collecte les signaux de votre projet :
+
+| Signal Source | What It Provides |
+|---------------|------------------|
+| `status.json` | Story statuses, blockers, epic progress |
+| Git | Branch, changed files, diff stats, clean/dirty |
+| `session-state.json` | Active commands, session duration, failure count |
+| `package.json` | Available scripts (test, lint, build) |
+| File system | Config files, coverage data, CI setup |
+| `agileflow-metadata.json` | Feature configuration, thresholds |
+
+**Step 2: Lifecycle Phase Detection**
+
+Sur la base de signaux, le système détermine dans quelle phase du flux de travail vous vous trouvez :
+
+| Phase | When | What You're Doing |
+|-------|------|-------------------|
+| **pre-story** | No active story, or story not started | Choosing what to work on |
+| **planning** | Story selected, plan mode active, no files changed | Designing your approach |
+| **implementation** | Story in-progress, files being modified | Writing code |
+| **post-impl** | Tests passing, changes still uncommitted | Reviewing and documenting |
+| **pre-pr** | Tests pass, git clean, on feature branch | Ready to create a pull request |
+
+La détection de phase utilise une cascade de priorités : la phase correspondante la plus spécifique l'emporte.
+
+**Step 3: Feature Detection**
+
+42 détecteurs fonctionnent sur vos signaux, filtrés par phase du cycle de vie. Chaque détecteur se déclenche (renvoyant une recommandation) ou reste silencieux (renvoyant null). Seuls les détecteurs pertinents pour la phase fonctionnent, ce qui permet de maintenir les recommandations ciblées.
+
+## Phases du cycle de vie
+
+### Phase pré-histoire
+
+Lorsque vous n'avez pas encore sélectionné d'histoire, Smart Detection vous aide à choisir :
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **blockers** | Blocked stories exist | High |
+| **story-validate** | Story missing acceptance criteria | High |
+| **choose** | 2+ ready stories available | Medium |
+| **batch** | 3+ ready stories in same epic | Medium |
+| **sprint** | 3+ ready stories for planning | Low |
+| **board** | 5+ stories tracked | Low |
+| **assign** | Ready stories without owner | Low |
+
+### Phase de planification
+
+Lorsque vous concevez votre approche :
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **impact** | 3+ core/shared files being modified | High |
+| **adr** | Story involves architecture decisions | Medium |
+| **research** | Story involves investigation/spike | Medium |
+| **baseline** | Coverage data exists, mark before changes | Medium |
+| **council** | Story involves strategic trade-offs | Low |
+| **multi-expert** | Story spans multiple domains | Low |
+
+### Phase de mise en œuvre
+
+Lorsque vous écrivez activement du code :
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **verify** | Tests are failing | High |
+| **diagnose** | 2+ recent failures detected | High |
+| **tests** | No test script found in package.json | Medium |
+| **audit** | 5+ files changed, audit completion | Medium |
+| **ci** | No CI configuration detected | Low |
+| **deps** | 10+ dependencies, graph available | Low |
+
+### Phase post-mise en œuvre
+
+Lorsque le code est terminé et que vous révisez :
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **review** | 100+ lines changed | High |
+| **logic-audit** | 3+ source files modified | Medium |
+| **docs** | API/interface files changed | Medium |
+| **retro** | Epic is 90%+ complete | Medium |
+| **changelog** | 3+ commits on feature branch | Low |
+| **metrics** | 5+ completed stories | Low |
+
+### Phase pré-RP
+
+Lorsque vous êtes prêt à expédier :
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **pr** | Tests passing, on feature branch | High |
+| **compress** | 100+ stories in status.json | Medium |
+
+## Catégories de recommandations
+
+Smart Detection classe les recommandations en trois groupes :
+
+### Immédiat (haute priorité)
+
+Fonctionnalités qui nécessitent une attention immédiate. Présenté via `AskUserQuestion` avec l’action recommandée comme option par défaut.
+
+Exemples :
+- Les tests échouent - exécutez `/agileflow:verify`
+- Des histoires bloquées existent - exécutez `/agileflow:blockers`
+- 200 lignes modifiées - exécutez `/agileflow:review`
+
+### Disponible (priorité moyenne/faible)
+
+Fonctionnalités disponibles mais pas urgentes. Inclus comme options supplémentaires dans la prochaine invite d’interaction.
+
+Exemples :
+- Graphique de dépendance disponible - `/agileflow:deps`
+- Planification de sprint disponible - `/agileflow:sprint`
+- Entrée du journal des modifications recommandée - `/agileflow:changelog`
+
+### Modes activés automatiquement
+
+Modes de garde d'enfants existants qui s'activent silencieusement en fonction des signaux :
+
+| Mode | Auto-Enabled When |
+|------|-------------------|
+| **Loop Mode** | 3+ ready stories in epic + test setup exists |
+| **Visual Mode** | Playwright + screenshots directory present |
+| **Coverage Mode** | Coverage summary data exists |
+
+## Exemple de sortie
+
+Quand `/babysit` s'exécute, la sortie contextuelle comprend une section Recommandations intelligentes :
+
+```
+Smart Recommendations
+Phase: implementation (5 files changed)
+
+Immediate:
+  ! verify: Tests are failing (/agileflow:verify)
+  ! review: 250 lines changed - code review recommended (/agileflow:review)
+
+Available:
+  > docs: 2 API files changed - docs sync recommended (/agileflow:docs)
+  > logic-audit: 4 source files modified (/agileflow:logic:audit)
+
+Auto-enabled: loop mode, coverage mode
+```
+
+Le mentor du babysitting agit ensuite sur ces recommandations - en présentant les éléments immédiats comme des actions suggérées et en incluant les éléments disponibles comme options.
+
+## Configuration
+
+### Activation/Désactivation
+
+La détection intelligente est activée par défaut. Configurez-le dans `docs/00-meta/agileflow-metadata.json`:
+
+```json
+{
+  "features": {
+    "smartDetect": {
+      "enabled": true,
+      "disabled_features": [],
+      "priority_overrides": {},
+      "thresholds": {
+        "impact_min_files": 3,
+        "review_min_lines": 100,
+        "compress_min_stories": 100
+      }
+    }
+  }
+}
+```
+
+### Désactivation de fonctionnalités spécifiques
+
+Si un détecteur est bruyant pour votre projet, désactivez-le :
+
+```json
+{
+  "smartDetect": {
+    "disabled_features": ["ci", "deps", "changelog"]
+  }
+}
+```
+
+### Ajustement des seuils
+
+Personnalisez le moment où les détecteurs se déclenchent :
+
+```json
+{
+  "smartDetect": {
+    "thresholds": {
+      "impact_min_files": 5,
+      "review_min_lines": 200,
+      "compress_min_stories": 50
+    }
+  }
+}
+```
+
+### Remplacements de priorité
+
+Modifiez la priorité de n'importe quelle fonctionnalité :
+
+```json
+{
+  "smartDetect": {
+    "priority_overrides": {
+      "docs": "high",
+      "changelog": "medium"
+    }
+  }
+}
+```
+
+## Suivi de l'état de la session
+
+La détection intelligente suit les fonctionnalités qui ont été proposées, utilisées et ignorées au cours d'une session pour éviter d'être répétitives :
+
+```json
+{
+  "smart_detect": {
+    "last_run": "2026-02-12T10:00:00Z",
+    "current_phase": "implementation",
+    "features_offered": ["impact", "tests"],
+    "features_used": ["impact"],
+    "features_skipped": ["tests"]
+  }
+}
+```
+
+- **features_offered**: Fonctionnalités présentées à l'utilisateur
+- **features_used**: Caractéristiques que l'utilisateur a réellement invoquées
+- **features_skipped**: fonctionnalités refusées par l'utilisateur (ne seront pas proposées à nouveau)
+
+## Remplacements par l'utilisateur
+
+Les utilisateurs peuvent toujours ignorer la détection intelligente :
+
+- **Skip a feature**: Dites "ignorer les tests" ou "pas de révision" - la fonctionnalité ne sera plus proposée cette session
+- **Force a mode**: `/babysit MODE=once` remplace le mode de boucle détecté automatiquement
+- **Disable visual**: `/babysit VISUAL=false` remplace le mode visuel détecté automatiquement
+- **Disable coverage**: `/babysit COVERAGE=0` remplace le mode de couverture détecté automatiquement
+
+## Exécution autonome
+
+Smart Detection peut être exécuté indépendamment pour le débogage :
+
+```bash
+node .agileflow/scripts/smart-detect.js
+```
+
+Cela génère un résumé sur stderr et écrit les résultats complets dans `docs/09-agents/smart-detect.json`.
+
+## Détails architecturaux
+
+### Fichiers
+
+| File | Purpose |
+|------|---------|
+| `scripts/smart-detect.js` | Orchestrator - extracts signals, runs detectors, writes output |
+| `scripts/lib/signal-detectors.js` | 42 feature detector functions organized by phase |
+| `scripts/lib/lifecycle-detector.js` | Workflow phase detection (5 phases) |
+| `docs/09-agents/smart-detect.json` | Output file with recommendations |
+
+### Modèle de détecteur
+
+Chaque détecteur suit le même schéma :
+
+```javascript
+'feature-name': (signals) => {
+  // Check if conditions are met
+  if (!signals.story || signals.story.status !== 'in-progress') return null;
+
+  // Return recommendation or null
+  return {
+    feature: 'feature-name',
+    priority: 'high',        // high, medium, low
+    trigger: 'Why this triggered',
+    action: 'suggest',       // auto, suggest, offer
+    command: '/agileflow:feature-name',
+    phase: 'implementation',
+  };
+}
+```
+
+Les détecteurs sont de pures fonctions : ils captent des signaux, renvoient une recommandation ou une valeur nulle. Aucun effet secondaire, aucune E/S.
+
+### Adjacence des phases
+
+Pour gérer des transitions fluides entre les phases, chaque phase comprend également des détecteurs de phases adjacentes :
+
+| Current Phase | Also Runs Detectors From |
+|---------------|--------------------------|
+| pre-story | (only pre-story) |
+| planning | pre-story |
+| implementation | planning |
+| post-impl | implementation |
+| pre-pr | post-impl |
+
+Cela garantit que les fonctionnalités ne sont pas manquées aux limites de phase.
+
+## Fonctionnalités associées
+
+- [Mode boucle](/docs/features/loop-mode) - Traitement d'histoire autonome (auto-activé par Smart Detection)
+- [Mode visuel](/docs/features/visual-mode) - Vérification de capture d'écran de l'interface utilisateur (auto-activée par Smart Detection)
+- [Contexte compact](/docs/features/compact-context) - Préservation du contexte lors de longues sessions
+- [Configuration](/docs/features/configuration) - Configurer les seuils de détection intelligente
+- [Système de crochets](/docs/features/hooks-system) - Le système d'événements auquel Smart Detection s'intègre

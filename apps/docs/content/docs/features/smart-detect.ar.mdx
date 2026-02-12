@@ -1,0 +1,347 @@
+---
+title: الكشف الذكي
+description: جهاز توجيه الميزات السياقية الذي يوصي تلقائيًا بميزات AgileFlow المناسبة في الوقت المناسب بناءً على إشارات المشروع
+---
+
+# الكشف الذكي
+
+الكشف الذكي هو AgileFlow **Contextual Feature Router** - نظام يقوم تلقائيًا بتحليل حالة مشروعك والتوصية بالميزات ذات الصلة في اللحظة المناسبة في سير عملك. بدلاً من حفظ أكثر من 90 أمرًا، يمكنك العمل بشكل طبيعي ويظهر AgileFlow ما تحتاجه.
+
+الكشف الذكي مدمج في [`/ Agileflow:babysit`](/docs/commands/babysit) الأمر ويتم تشغيله تلقائيًا كجزء من مسار تجميع السياق.
+
+## ملخص
+
+لدى AgileFlow أكثر من 90 أمرًا و47 وكيلًا. يعرف معظم المستخدمين حفنة فقط. يعمل الاكتشاف الذكي على حل مشكلة الاكتشاف هذه عن طريق:
+
+1. **Analyzing project signals** - حالة Git، حالة القصة، نتائج الاختبار، تغييرات الملف
+2. **Detecting your workflow phase** - هل تختار القصة؟ كتابة الكود؟ على استعداد للعلاقات العامة؟
+3. **Running 42 feature detectors** - يتحقق كل منها مما إذا كانت هناك ميزة معينة ذات صلة في الوقت الحالي
+4. **Recommending only what matters** - عرض 2-5 اقتراحات سياقية، وليس جميع الأوامر الـ 90
+
+النتيجة: تحصل على الأداة المناسبة في الوقت المناسب، دون الحاجة إلى معرفة وجودها.
+
+## كيف يعمل
+
+### بنيان
+
+يعمل الكشف الذكي كجزء من `obtain-context.js` خط الأنابيب الذي القوى `/babysit`:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/images/docs/features/smart-detection-arch.dark.svg" />
+  <img alt="Smart Detection Architecture" src="/images/docs/features/smart-detection-arch.light.svg" />
+</picture>
+
+> خط أنابيب الكشف الذكي: يجمع موقع get-context.js بيانات المشروع، وينظم Smart-detect.js استخراج الإشارة والكشف عن مرحلة دورة الحياة، ويعمل 42 كاشفًا للميزات على الإشارات التي تمت تصفيتها حسب الطور، وتتم كتابة التوصيات إلى Smart-detect.json لكي يعمل /babysit.
+
+كل الكشف هو **deterministic and script-based** - ليس تخمين LLM. تقوم البرامج النصية بتحليل الإشارات الملموسة (وجود الملف، وحالة git، وعدد القصص) وإخراج التوصيات المنظمة.
+
+### الخطوات الثلاث
+
+**Step 1: Signal Extraction**
+
+يقوم النظام بجمع الإشارات من مشروعك:
+
+| Signal Source | What It Provides |
+|---------------|------------------|
+| `status.json` | Story statuses, blockers, epic progress |
+| Git | Branch, changed files, diff stats, clean/dirty |
+| `session-state.json` | Active commands, session duration, failure count |
+| `package.json` | Available scripts (test, lint, build) |
+| File system | Config files, coverage data, CI setup |
+| `agileflow-metadata.json` | Feature configuration, thresholds |
+
+**Step 2: Lifecycle Phase Detection**
+
+بناءً على الإشارات، يحدد النظام مرحلة سير العمل التي أنت فيها:
+
+| Phase | When | What You're Doing |
+|-------|------|-------------------|
+| **pre-story** | No active story, or story not started | Choosing what to work on |
+| **planning** | Story selected, plan mode active, no files changed | Designing your approach |
+| **implementation** | Story in-progress, files being modified | Writing code |
+| **post-impl** | Tests passing, changes still uncommitted | Reviewing and documenting |
+| **pre-pr** | Tests pass, git clean, on feature branch | Ready to create a pull request |
+
+يستخدم اكتشاف المرحلة سلسلة من الأولويات - تفوز مرحلة المطابقة الأكثر تحديدًا.
+
+**Step 3: Feature Detection**
+
+يعمل 42 كاشفًا ضد إشاراتك، ويتم تصفيتها حسب مرحلة دورة الحياة. يقوم كل كاشف إما بتشغيل (إرجاع توصية) أو يظل صامتًا (إرجاع قيمة فارغة). يتم تشغيل أجهزة الكشف ذات الصلة بالمرحلة فقط، مع الحفاظ على تركيز التوصيات.
+
+## مراحل دورة الحياة
+
+### مرحلة ما قبل القصة
+
+عندما لا تحدد قصة بعد، يساعدك الاكتشاف الذكي على اختيار:
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **blockers** | Blocked stories exist | High |
+| **story-validate** | Story missing acceptance criteria | High |
+| **choose** | 2+ ready stories available | Medium |
+| **batch** | 3+ ready stories in same epic | Medium |
+| **sprint** | 3+ ready stories for planning | Low |
+| **board** | 5+ stories tracked | Low |
+| **assign** | Ready stories without owner | Low |
+
+### مرحلة التخطيط
+
+عندما تقوم بتصميم النهج الخاص بك:
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **impact** | 3+ core/shared files being modified | High |
+| **adr** | Story involves architecture decisions | Medium |
+| **research** | Story involves investigation/spike | Medium |
+| **baseline** | Coverage data exists, mark before changes | Medium |
+| **council** | Story involves strategic trade-offs | Low |
+| **multi-expert** | Story spans multiple domains | Low |
+
+### مرحلة التنفيذ
+
+عندما تكتب التعليمات البرمجية بشكل نشط:
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **verify** | Tests are failing | High |
+| **diagnose** | 2+ recent failures detected | High |
+| **tests** | No test script found in package.json | Medium |
+| **audit** | 5+ files changed, audit completion | Medium |
+| **ci** | No CI configuration detected | Low |
+| **deps** | 10+ dependencies, graph available | Low |
+
+### مرحلة ما بعد التنفيذ
+
+عند الانتهاء من الكود ومراجعته:
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **review** | 100+ lines changed | High |
+| **logic-audit** | 3+ source files modified | Medium |
+| **docs** | API/interface files changed | Medium |
+| **retro** | Epic is 90%+ complete | Medium |
+| **changelog** | 3+ commits on feature branch | Low |
+| **metrics** | 5+ completed stories | Low |
+
+### مرحلة ما قبل العلاقات العامة
+
+عندما تكون جاهزًا للشحن:
+
+| Feature | Triggers When | Priority |
+|---------|---------------|----------|
+| **pr** | Tests passing, on feature branch | High |
+| **compress** | 100+ stories in status.json | Medium |
+
+## فئات التوصية
+
+يصنف Smart Detection التوصيات إلى ثلاث مجموعات:
+
+### فوري (أولوية عالية)
+
+الميزات التي تحتاج إلى الاهتمام الآن. يتم تقديمه عبر `AskUserQuestion` مع الإجراء الموصى به كخيار افتراضي.
+
+أمثلة:
+- الاختبارات فاشلة - تشغيل `/agileflow:verify`
+- القصص المحظورة موجودة - تشغيل `/agileflow:blockers`
+- تم تغيير 200 سطر - تشغيل `/agileflow:review`
+
+### متاح (أولوية متوسطة/منخفضة)
+
+الميزات متاحة ولكنها ليست عاجلة. تم تضمينها كخيارات إضافية في موجه التفاعل التالي.
+
+أمثلة:
+- الرسم البياني للتبعية متاح - `/agileflow:deps`
+- التخطيط السريع متاح - `/agileflow:sprint`
+- يوصى بإدخال سجل التغيير - `/agileflow:changelog`
+
+### أوضاع تمكين تلقائية
+
+أوضاع مجالسة الأطفال الحالية التي يتم تنشيطها بصمت بناءً على الإشارات:
+
+| Mode | Auto-Enabled When |
+|------|-------------------|
+| **Loop Mode** | 3+ ready stories in epic + test setup exists |
+| **Visual Mode** | Playwright + screenshots directory present |
+| **Coverage Mode** | Coverage summary data exists |
+
+## إخراج المثال
+
+متى `/babysit` يتم تشغيله، ويتضمن إخراج السياق قسم التوصيات الذكية:
+
+```
+Smart Recommendations
+Phase: implementation (5 files changed)
+
+Immediate:
+  ! verify: Tests are failing (/agileflow:verify)
+  ! review: 250 lines changed - code review recommended (/agileflow:review)
+
+Available:
+  > docs: 2 API files changed - docs sync recommended (/agileflow:docs)
+  > logic-audit: 4 source files modified (/agileflow:logic:audit)
+
+Auto-enabled: loop mode, coverage mode
+```
+
+يقوم مرشد مجالسة الأطفال بعد ذلك بتنفيذ هذه التوصيات - حيث يقدم العناصر الفورية كإجراءات مقترحة ويتضمن العناصر المتاحة كخيارات.
+
+## إعدادات
+
+### تمكين/تعطيل
+
+يتم تمكين الكشف الذكي بشكل افتراضي. تكوينه في `docs/00-meta/agileflow-metadata.json`:
+
+```json
+{
+  "features": {
+    "smartDetect": {
+      "enabled": true,
+      "disabled_features": [],
+      "priority_overrides": {},
+      "thresholds": {
+        "impact_min_files": 3,
+        "review_min_lines": 100,
+        "compress_min_stories": 100
+      }
+    }
+  }
+}
+```
+
+### تعطيل ميزات محددة
+
+إذا كان الكاشف مزعجًا لمشروعك، فقم بتعطيله:
+
+```json
+{
+  "smartDetect": {
+    "disabled_features": ["ci", "deps", "changelog"]
+  }
+}
+```
+
+### ضبط العتبات
+
+التخصيص عند تشغيل أجهزة الكشف:
+
+```json
+{
+  "smartDetect": {
+    "thresholds": {
+      "impact_min_files": 5,
+      "review_min_lines": 200,
+      "compress_min_stories": 50
+    }
+  }
+}
+```
+
+### تجاوزات الأولوية
+
+تغيير أولوية أي ميزة:
+
+```json
+{
+  "smartDetect": {
+    "priority_overrides": {
+      "docs": "high",
+      "changelog": "medium"
+    }
+  }
+}
+```
+
+## تتبع حالة الجلسة
+
+يقوم الاكتشاف الذكي بتتبع الميزات التي تم تقديمها واستخدامها وتخطيها أثناء الجلسة لتجنب تكرارها:
+
+```json
+{
+  "smart_detect": {
+    "last_run": "2026-02-12T10:00:00Z",
+    "current_phase": "implementation",
+    "features_offered": ["impact", "tests"],
+    "features_used": ["impact"],
+    "features_skipped": ["tests"]
+  }
+}
+```
+
+- **features_offered**: الميزات المقدمة للمستخدم
+- **features_used**: الميزات التي استدعاها المستخدم بالفعل
+- **features_skipped**: الميزات التي رفضها المستخدم (لن يتم إعادة عرضها)
+
+## تجاوزات المستخدم
+
+يمكن للمستخدمين دائمًا تجاوز الاكتشاف الذكي:
+
+- **Skip a feature**: قل "تخطي الاختبارات" أو "لا توجد مراجعة" - لن يتم عرض الميزة مرة أخرى في هذه الجلسة
+- **Force a mode**: `/babysit MODE=once` يتجاوز وضع الحلقة المكتشفة تلقائيًا
+- **Disable visual**: `/babysit VISUAL=false` يتجاوز الوضع المرئي الذي تم اكتشافه تلقائيًا
+- **Disable coverage**: `/babysit COVERAGE=0` يتجاوز وضع التغطية المكتشفة تلقائيًا
+
+## تشغيل مستقل
+
+يمكن تشغيل الكشف الذكي بشكل مستقل لتصحيح الأخطاء:
+
+```bash
+node .agileflow/scripts/smart-detect.js
+```
+
+يؤدي هذا إلى إخراج ملخص إلى stderr ويكتب النتائج الكاملة إليه `docs/09-agents/smart-detect.json`.
+
+## تفاصيل الهندسة المعمارية
+
+### ملفات
+
+| File | Purpose |
+|------|---------|
+| `scripts/smart-detect.js` | Orchestrator - extracts signals, runs detectors, writes output |
+| `scripts/lib/signal-detectors.js` | 42 feature detector functions organized by phase |
+| `scripts/lib/lifecycle-detector.js` | Workflow phase detection (5 phases) |
+| `docs/09-agents/smart-detect.json` | Output file with recommendations |
+
+### نمط الكاشف
+
+يتبع كل كاشف نفس النمط:
+
+```javascript
+'feature-name': (signals) => {
+  // Check if conditions are met
+  if (!signals.story || signals.story.status !== 'in-progress') return null;
+
+  // Return recommendation or null
+  return {
+    feature: 'feature-name',
+    priority: 'high',        // high, medium, low
+    trigger: 'Why this triggered',
+    action: 'suggest',       // auto, suggest, offer
+    command: '/agileflow:feature-name',
+    phase: 'implementation',
+  };
+}
+```
+
+إن أجهزة الكشف عبارة عن وظائف خالصة: فهي تستقبل الإشارات أو تعيد توصية أو لاغية. لا آثار جانبية، لا I/O.
+
+### مجاورة المرحلة
+
+للتعامل مع التحولات السلسة بين المراحل، تتضمن كل مرحلة أيضًا كاشفات من المراحل المجاورة:
+
+| Current Phase | Also Runs Detectors From |
+|---------------|--------------------------|
+| pre-story | (only pre-story) |
+| planning | pre-story |
+| implementation | planning |
+| post-impl | implementation |
+| pre-pr | post-impl |
+
+وهذا يضمن عدم تفويت الميزات عند حدود الطور.
+
+## الميزات ذات الصلة
+
+- [وضع الحلقة](/docs/features/loop-mode) - معالجة مستقلة للقصة (يتم تمكينها تلقائيًا عن طريق الكشف الذكي)
+- [الوضع المرئي](/docs/features/visual-mode) - التحقق من لقطة شاشة واجهة المستخدم (يتم تمكينه تلقائيًا بواسطة Smart Detection)
+- [سياق مدمج](/docs/features/compact-context) - الحفاظ على السياق خلال الجلسات الطويلة
+- [إعدادات](/docs/features/configuration) - تكوين عتبات الكشف الذكي
+- [نظام السنانير](/docs/features/hooks-system) - نظام الأحداث الذي يتكامل معه نظام الكشف الذكي
