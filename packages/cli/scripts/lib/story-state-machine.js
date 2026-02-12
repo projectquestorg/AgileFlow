@@ -325,7 +325,7 @@ function checkEpicCompletion(statusData, epicId) {
   }
 
   const storyIds = epic.stories || [];
-  const completedStatuses = ['completed', 'done', 'archived'];
+  const completedStatuses = COMPLETED_STATUSES;
   const completed = [];
   const remaining = [];
 

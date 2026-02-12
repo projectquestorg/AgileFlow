@@ -159,6 +159,7 @@ function removeControlChars(text) {
 function truncate(text, maxLength) {
   if (!text || typeof text !== 'string') return '';
   if (text.length <= maxLength) return text;
+  if (maxLength < 4) return text.substring(0, maxLength);
   return text.substring(0, maxLength - 3) + '...';
 }
 

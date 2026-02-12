@@ -332,6 +332,7 @@ class FileLock {
       }
 
       // Try to acquire
+      let fd = null;
       try {
         const dir = path.dirname(this.lockPath);
         if (!fs.existsSync(dir)) {
@@ -339,7 +340,7 @@ class FileLock {
         }
 
         // Use exclusive flag to prevent race
-        const fd = fs.openSync(this.lockPath, 'wx');
+        fd = fs.openSync(this.lockPath, 'wx');
         const lockInfo = {
           pid: process.pid,
           hostname: os.hostname(),
@@ -347,9 +348,14 @@ class FileLock {
         };
         fs.writeSync(fd, JSON.stringify(lockInfo));
         fs.closeSync(fd);
+        fd = null;
         this.held = true;
         return true;
       } catch (e) {
+        // Clean up fd if still open
+        if (fd !== null) {
+          try { fs.closeSync(fd); } catch (_) { /* ignore */ }
+        }
         if (e.code === 'EEXIST') {
           // Another process got the lock
           this._sleep(50);

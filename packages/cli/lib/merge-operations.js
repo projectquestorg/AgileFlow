@@ -62,7 +62,9 @@ function checkMergeability(sessionId, loadRegistry) {
     }
   );
 
-  const [behind, ahead] = (aheadBehind.stdout || '0\t0').trim().split('\t').map(Number);
+  const parts = (aheadBehind.stdout || '0\t0').trim().split('\t').map(Number);
+  const behind = isNaN(parts[0]) ? 0 : parts[0];
+  const ahead = isNaN(parts[1]) ? 0 : parts[1];
 
   if (ahead === 0) {
     return {
@@ -79,46 +81,50 @@ function checkMergeability(sessionId, loadRegistry) {
 
   // Try merge --no-commit --no-ff to check for conflicts (dry run)
   const currentBranch = getCurrentBranch();
+  let checkedOutMain = false;
 
-  // Checkout main in ROOT for the test merge
-  const checkoutMain = spawnSync('git', ['checkout', mainBranch], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
+  try {
+    // Checkout main in ROOT for the test merge
+    const checkoutMain = spawnSync('git', ['checkout', mainBranch], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
 
-  if (checkoutMain.status !== 0) {
+    if (checkoutMain.status !== 0) {
+      return {
+        success: false,
+        error: `Failed to checkout ${mainBranch}: ${checkoutMain.stderr}`,
+      };
+    }
+    checkedOutMain = true;
+
+    // Try the merge
+    const testMerge = spawnSync('git', ['merge', '--no-commit', '--no-ff', branchName], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+
+    const hasConflicts = testMerge.status !== 0;
+
+    // Abort the test merge
+    spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
+
     return {
-      success: false,
-      error: `Failed to checkout ${mainBranch}: ${checkoutMain.stderr}`,
+      success: true,
+      mergeable: !hasConflicts,
+      branchName,
+      mainBranch,
+      commitsAhead: ahead,
+      commitsBehind: behind,
+      hasConflicts,
+      conflictDetails: hasConflicts ? testMerge.stderr : null,
     };
+  } finally {
+    // Always restore original branch
+    if (checkedOutMain && currentBranch && currentBranch !== mainBranch) {
+      spawnSync('git', ['checkout', currentBranch], { cwd: ROOT, encoding: 'utf8' });
+    }
   }
-
-  // Try the merge
-  const testMerge = spawnSync('git', ['merge', '--no-commit', '--no-ff', branchName], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
-
-  const hasConflicts = testMerge.status !== 0;
-
-  // Abort the test merge
-  spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
-
-  // Go back to original branch if different
-  if (currentBranch && currentBranch !== mainBranch) {
-    spawnSync('git', ['checkout', currentBranch], { cwd: ROOT, encoding: 'utf8' });
-  }
-
-  return {
-    success: true,
-    mergeable: !hasConflicts,
-    branchName,
-    mainBranch,
-    commitsAhead: ahead,
-    commitsBehind: behind,
-    hasConflicts,
-    conflictDetails: hasConflicts ? testMerge.stderr : null,
-  };
 }
 
 /**

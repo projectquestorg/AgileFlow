@@ -427,13 +427,11 @@ class SmartJsonFile {
     debugLog('modify', { filePath: this.filePath });
 
     // Read current data
-    const readResult = await this.read();
+    let readResult = await this.read();
     if (!readResult.ok) {
       // If file doesn't exist but we have a default value, use that
       if (readResult.error?.errorCode === 'ENOENT' && this.defaultValue !== undefined) {
-        readResult.ok = true;
-        readResult.data = this.defaultValue;
-        delete readResult.error;
+        readResult = success(this.defaultValue);
       } else {
         return readResult;
       }
