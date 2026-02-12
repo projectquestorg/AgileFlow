@@ -2,8 +2,9 @@
 # claude-tmux.sh - Wrapper script that auto-starts Claude Code in a tmux session
 #
 # Usage:
-#   ./claude-tmux.sh              # Create new tmux session (supports multiple from same dir)
-#   ./claude-tmux.sh --attach     # Reattach to most recent session
+#   ./claude-tmux.sh              # Reattach to detached session, or create new
+#   ./claude-tmux.sh --new        # Force create a new session
+#   ./claude-tmux.sh --attach     # Reattach to most recent session (any state)
 #   ./claude-tmux.sh --no-tmux    # Start without tmux (regular claude)
 #   ./claude-tmux.sh -n           # Same as --no-tmux
 #   ./claude-tmux.sh --kill       # Kill ALL sessions for this directory
@@ -11,7 +12,8 @@
 #   ./claude-tmux.sh --help       # Show help with keybinds
 #
 # When already in tmux: Just runs claude normally
-# When not in tmux: Creates a tmux session and runs claude inside it
+# When not in tmux: Reattaches to a detached session if one exists, otherwise
+#   creates a new tmux session. Use --new to always create a fresh session.
 #
 # Multiple terminals can run `af` from the same directory simultaneously.
 # Sessions are named: claude-<dir>, claude-<dir>-2, claude-<dir>-3, etc.
@@ -34,6 +36,7 @@ NO_TMUX=false
 KILL_SESSION=false
 SHOW_HELP=false
 ATTACH_ONLY=false
+FORCE_NEW=false
 REFRESH_CONFIG=false
 USE_RESUME=false
 RESUME_SESSION_ID=""
@@ -46,6 +49,10 @@ for arg in "$@"; do
       ;;
     --attach|-a)
       ATTACH_ONLY=true
+      shift
+      ;;
+    --new)
+      FORCE_NEW=true
       shift
       ;;
     --fresh|-f)
@@ -81,17 +88,19 @@ USAGE:
   agileflow [options] [claude-args...]
 
 OPTIONS:
-  --attach, -a     Reattach to most recent session for this directory
+  --attach, -a     Reattach to most recent session (attached or detached)
+  --new            Force create a new session (skip auto-reattach)
   --no-tmux, -n    Run claude without tmux
   --kill           Kill ALL sessions for this directory
   --refresh        Refresh tmux config on all existing sessions
   --help, -h       Show this help
 
-By default, af creates a new tmux session. Multiple terminals can run
-af from the same directory simultaneously (sessions: claude-dir,
-claude-dir-2, claude-dir-3, etc.).
+By default, af reattaches to a detached session if one exists (so Alt+Q
+then af gets you right back). Use --new to force a new session.
 
 TMUX KEYBINDS:
+  Alt+l            Switch between sessions (picker)
+  Alt+q            Detach from tmux (af to reattach)
   Alt+1-9          Switch to window N
   Alt+c            Create new window
   Alt+n/p          Next/previous window
@@ -103,7 +112,6 @@ TMUX KEYBINDS:
   Alt+r            Rename window
   Alt+x            Close pane
   Alt+w            Close window
-  Alt+q            Detach from tmux
 
 SESSION CREATION:
   Alt+N            New worktree session (isolated branch + directory)
@@ -190,8 +198,59 @@ if [ "$ATTACH_ONLY" = true ]; then
   fi
 fi
 
-# Find next available session name (supports multiple from same directory)
+# ── Auto-cleanup dead sessions ────────────────────────────────────────────
+# Silently remove sessions where all panes have exited (dead/empty shells).
+# This prevents accumulation of orphan sessions over time.
 SESSION_BASE="claude-${DIR_NAME}"
+for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)"); do
+  # Count alive panes (pane_dead=0 means alive)
+  ALIVE=$(tmux list-panes -t "$sid" -F '#{pane_dead}' 2>/dev/null | grep -c '^0$' || true)
+  if [ "$ALIVE" = "0" ]; then
+    tmux kill-session -t "$sid" 2>/dev/null || true
+  fi
+done
+
+# ── Auto-reattach to detached session ──────────────────────────────────────
+# When user does Alt+Q (detach) and then runs `af` again, reattach to the
+# existing session instead of creating a new one. This preserves tmux windows,
+# pane layout, and the live Claude chat session.
+# If multiple detached sessions exist, show a picker so user can choose.
+if [ "$FORCE_NEW" = false ]; then
+  DETACHED=()
+  while IFS= read -r sid; do
+    [ -n "$sid" ] && DETACHED+=("$sid")
+  done < <(tmux list-sessions -F '#{session_name} #{session_attached}' 2>/dev/null | awk '$2 == "0" {print $1}' | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)")
+
+  if [ "${#DETACHED[@]}" -eq 1 ]; then
+    # Single detached session — just reattach
+    echo "Reattaching to: ${DETACHED[0]}"
+    exec tmux attach-session -t "${DETACHED[0]}"
+  elif [ "${#DETACHED[@]}" -gt 1 ]; then
+    # Multiple detached sessions — let user pick
+    echo ""
+    echo "  Multiple detached sessions found:"
+    echo ""
+    i=1
+    for sid in "${DETACHED[@]}"; do
+      WINS=$(tmux list-windows -t "$sid" -F '#{window_name}' 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+      printf "    %d) %s  (%s)\n" "$i" "$sid" "$WINS"
+      i=$((i + 1))
+    done
+    printf "    %d) Create new session\n" "$i"
+    echo ""
+    printf "  Pick [1]: "
+    read -r CHOICE
+    CHOICE=${CHOICE:-1}
+    if [ "$CHOICE" -ge 1 ] 2>/dev/null && [ "$CHOICE" -lt "$i" ] 2>/dev/null; then
+      IDX=$((CHOICE - 1))
+      echo "Reattaching to: ${DETACHED[$IDX]}"
+      exec tmux attach-session -t "${DETACHED[$IDX]}"
+    fi
+    # Fall through to create new session
+  fi
+fi
+
+# No detached session found — create a new one
 SESSION_NAME="$SESSION_BASE"
 SESSION_NUM=1
 while tmux has-session -t "$SESSION_NAME" 2>/dev/null; do
@@ -313,7 +372,7 @@ configure_tmux_session() {
   git_branch=$(git branch --show-current 2>/dev/null || echo '-')
 
   # Line 0 (top): Session name (stripped of claude- prefix) + Keybinds + Git branch
-  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+1-9 windows  Alt+s new session  Alt+q detach  "
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 ${git_branch}  #[align=right]#[fg=#7a7e8a]Alt+l sessions  Alt+q detach  "
 
   # Line 1 (bottom): Window tabs with smart truncation and brand color
   tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
@@ -337,6 +396,9 @@ configure_tmux_session() {
 
   # Alt+q to detach
   tmux bind-key -n M-q detach-client
+
+  # Alt+l to list and switch between sessions (interactive picker)
+  tmux bind-key -n M-l choose-tree -s -Z
 
   # Alt+d to split horizontally (side by side)
   tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
@@ -434,6 +496,7 @@ if [ $# -gt 0 ]; then
   # Pass any remaining arguments to claude
   CLAUDE_CMD="$CLAUDE_CMD $*"
 fi
+
 tmux send-keys -t "$SESSION_NAME" "$CLAUDE_CMD" Enter
 
 # Attach to the session
