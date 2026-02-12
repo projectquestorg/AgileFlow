@@ -152,6 +152,118 @@ if command -v tmux &> /dev/null; then
   unset _TMUX_BASE _TMUX_SOCK_DIR
 fi
 
+# ══════════════════════════════════════════════════════════════════════════════
+# TMUX CONFIGURATION FUNCTION — applies theme, keybinds, and status bar
+# Defined early so --refresh can use it before any session logic
+# ══════════════════════════════════════════════════════════════════════════════
+configure_tmux_session() {
+  local target_session="$1"
+
+  # Enable mouse support
+  tmux set-option -t "$target_session" mouse on
+
+  # Fix colors - proper terminal support
+  tmux set-option -t "$target_session" default-terminal "xterm-256color"
+  tmux set-option -t "$target_session" -ga terminal-overrides ",xterm-256color:Tc"
+
+  # ─── Status Bar Styling (2-line) ────────────────────────────────────────────
+
+  # Status bar position and refresh
+  tmux set-option -t "$target_session" status-position bottom
+  # Reduce refresh rate to prevent CPU overhead and freezes (was 5s, now 30s)
+  tmux set-option -t "$target_session" status-interval 30
+
+  # Enable 2-line status bar
+  tmux set-option -t "$target_session" status 2
+
+  # Base styling - Tokyo Night inspired dark theme
+  tmux set-option -t "$target_session" status-style "bg=#1a1b26,fg=#a9b1d6"
+
+  # Line 0 (top): Session name + live git branch + keybind hints
+  # Uses #() for live branch updates (runs on status-interval, every 30s)
+  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')#[align=right]#[fg=#565a6e]⌥L switch  ⌥Q detach  "
+
+  # Line 1 (bottom): Window tabs with smart truncation and brand color
+  tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
+
+  # Pane border styling - blue inactive, orange active
+  tmux set-option -t "$target_session" pane-border-style "fg=#3d59a1"
+  tmux set-option -t "$target_session" pane-active-border-style "fg=#e8683a"
+
+  # Message styling - orange highlight
+  tmux set-option -t "$target_session" message-style "bg=#e8683a,fg=#1a1b26,bold"
+
+  # ─── Keybindings ────────────────────────────────────────────────────────────
+
+  # Alt+number to switch windows (1-9)
+  for i in 1 2 3 4 5 6 7 8 9; do
+    tmux bind-key -n "M-$i" select-window -t ":$i"
+  done
+
+  # Alt+c to create new window
+  tmux bind-key -n M-c new-window -c "#{pane_current_path}"
+
+  # Alt+q to detach
+  tmux bind-key -n M-q detach-client
+
+  # Alt+l to list and switch between sessions (interactive picker)
+  tmux bind-key -n M-l choose-tree -s -Z
+
+  # Alt+d to split horizontally (side by side)
+  tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
+
+  # Alt+v to split vertically (top/bottom)
+  tmux bind-key -n M-v split-window -v -c "#{pane_current_path}"
+
+  # Alt+arrow to navigate panes
+  tmux bind-key -n M-Left select-pane -L
+  tmux bind-key -n M-Right select-pane -R
+  tmux bind-key -n M-Up select-pane -U
+  tmux bind-key -n M-Down select-pane -D
+
+  # Alt+x to close current pane (with confirmation)
+  tmux bind-key -n M-x confirm-before -p "Close pane? (y/n)" kill-pane
+
+  # Alt+w to close current window (with confirmation)
+  tmux bind-key -n M-w confirm-before -p "Close window? (y/n)" kill-window
+
+  # Alt+n/p for next/previous window
+  tmux bind-key -n M-n next-window
+  tmux bind-key -n M-p previous-window
+
+  # Alt+r to rename window
+  tmux bind-key -n M-r command-prompt -I "#W" "rename-window '%%'"
+
+  # Alt+z to zoom/unzoom pane (fullscreen toggle)
+  tmux bind-key -n M-z resize-pane -Z
+
+  # Alt+[ to enter copy mode (for scrolling)
+  tmux bind-key -n M-[ copy-mode
+
+  # ─── Session Creation Keybindings ──────────────────────────────────────────
+  # Alt+s to create a same-directory Claude window (with --resume for conversation context)
+  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys 'claude --resume \$CLAUDE_SESSION_FLAGS' Enter"
+
+  # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
+  # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
+  tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
+}
+
+# Handle --refresh flag — re-apply config to all existing claude-* sessions
+if [ "$REFRESH_CONFIG" = true ]; then
+  REFRESHED=0
+  for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^claude-"); do
+    configure_tmux_session "$sid"
+    REFRESHED=$((REFRESHED + 1))
+  done
+  if [ "$REFRESHED" -gt 0 ]; then
+    echo "Refreshed config on $REFRESHED session(s)."
+  else
+    echo "No claude-* sessions found to refresh."
+  fi
+  exit 0
+fi
+
 # Generate directory name (used for session name patterns)
 DIR_NAME=$(basename "$(pwd)")
 
@@ -337,118 +449,6 @@ if ! command -v tmux &> /dev/null; then
   echo "  Ubuntu/Debian: sudo apt install tmux"
   echo ""
   exec claude "$@"
-fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TMUX CONFIGURATION FUNCTION — applies theme, keybinds, and status bar
-# Extracted so --refresh can re-apply to existing sessions
-# ══════════════════════════════════════════════════════════════════════════════
-configure_tmux_session() {
-  local target_session="$1"
-
-  # Enable mouse support
-  tmux set-option -t "$target_session" mouse on
-
-  # Fix colors - proper terminal support
-  tmux set-option -t "$target_session" default-terminal "xterm-256color"
-  tmux set-option -t "$target_session" -ga terminal-overrides ",xterm-256color:Tc"
-
-  # ─── Status Bar Styling (2-line) ────────────────────────────────────────────
-
-  # Status bar position and refresh
-  tmux set-option -t "$target_session" status-position bottom
-  # Reduce refresh rate to prevent CPU overhead and freezes (was 5s, now 30s)
-  tmux set-option -t "$target_session" status-interval 30
-
-  # Enable 2-line status bar
-  tmux set-option -t "$target_session" status 2
-
-  # Base styling - Tokyo Night inspired dark theme
-  tmux set-option -t "$target_session" status-style "bg=#1a1b26,fg=#a9b1d6"
-
-  # Line 0 (top): Session name + live git branch + keybind hints
-  # Uses #() for live branch updates (runs on status-interval, every 30s)
-  tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')  #[align=right]#[fg=#7a7e8a]Alt+l sessions  Alt+q detach  "
-
-  # Line 1 (bottom): Window tabs with smart truncation and brand color
-  tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
-
-  # Pane border styling - blue inactive, orange active
-  tmux set-option -t "$target_session" pane-border-style "fg=#3d59a1"
-  tmux set-option -t "$target_session" pane-active-border-style "fg=#e8683a"
-
-  # Message styling - orange highlight
-  tmux set-option -t "$target_session" message-style "bg=#e8683a,fg=#1a1b26,bold"
-
-  # ─── Keybindings ────────────────────────────────────────────────────────────
-
-  # Alt+number to switch windows (1-9)
-  for i in 1 2 3 4 5 6 7 8 9; do
-    tmux bind-key -n "M-$i" select-window -t ":$i"
-  done
-
-  # Alt+c to create new window
-  tmux bind-key -n M-c new-window -c "#{pane_current_path}"
-
-  # Alt+q to detach
-  tmux bind-key -n M-q detach-client
-
-  # Alt+l to list and switch between sessions (interactive picker)
-  tmux bind-key -n M-l choose-tree -s -Z
-
-  # Alt+d to split horizontally (side by side)
-  tmux bind-key -n M-d split-window -h -c "#{pane_current_path}"
-
-  # Alt+v to split vertically (top/bottom)
-  tmux bind-key -n M-v split-window -v -c "#{pane_current_path}"
-
-  # Alt+arrow to navigate panes
-  tmux bind-key -n M-Left select-pane -L
-  tmux bind-key -n M-Right select-pane -R
-  tmux bind-key -n M-Up select-pane -U
-  tmux bind-key -n M-Down select-pane -D
-
-  # Alt+x to close current pane (with confirmation)
-  tmux bind-key -n M-x confirm-before -p "Close pane? (y/n)" kill-pane
-
-  # Alt+w to close current window (with confirmation)
-  tmux bind-key -n M-w confirm-before -p "Close window? (y/n)" kill-window
-
-  # Alt+n/p for next/previous window
-  tmux bind-key -n M-n next-window
-  tmux bind-key -n M-p previous-window
-
-  # Alt+r to rename window
-  tmux bind-key -n M-r command-prompt -I "#W" "rename-window '%%'"
-
-  # Alt+z to zoom/unzoom pane (fullscreen toggle)
-  tmux bind-key -n M-z resize-pane -Z
-
-  # Alt+[ to enter copy mode (for scrolling)
-  tmux bind-key -n M-[ copy-mode
-
-  # ─── Session Creation Keybindings ──────────────────────────────────────────
-  # Alt+s to create a same-directory Claude window (with --resume for conversation context)
-  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys 'claude --resume \$CLAUDE_SESSION_FLAGS' Enter"
-
-  # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
-  # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
-  tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
-}
-
-# Handle --refresh flag — re-apply config to all existing claude-* sessions
-if [ "$REFRESH_CONFIG" = true ]; then
-  REFRESHED=0
-  for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^claude-"); do
-    configure_tmux_session "$sid"
-    REFRESHED=$((REFRESHED + 1))
-  done
-  if [ "$REFRESHED" -gt 0 ]; then
-    echo "Refreshed config on $REFRESHED session(s)."
-  else
-    echo "No claude-* sessions found to refresh."
-  fi
-  exit 0
 fi
 
 # Create new tmux session with Claude
