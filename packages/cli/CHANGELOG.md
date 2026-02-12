@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.99.8] - 2026-02-12
+
+### Fixed
+- Simplify tmux keybindings and clean up status line
+
 ## [2.99.7] - 2026-02-11
 
 ### Fixed
