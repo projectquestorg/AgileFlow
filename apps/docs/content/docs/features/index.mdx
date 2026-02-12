@@ -61,6 +61,18 @@ Work on multiple features, bugs, or experiments simultaneously with isolated wor
 
 ## Automation & Execution
 
+### Smart Detection
+
+Contextual Feature Router that automatically recommends the right AgileFlow features at the right time.
+
+- **42 feature detectors** - Analyze project signals and recommend relevant commands
+- **Lifecycle-aware** - 5 workflow phases ensure recommendations match what you're doing
+- **Script-based** - Deterministic detection, not LLM guesswork
+- **Anti-repetition** - Tracks offered/used/skipped features to avoid nagging
+- **Configurable** - Disable features, adjust thresholds, override priorities
+
+[Learn about Smart Detection](/docs/features/smart-detect)
+
 ### Hooks System
 
 Event-driven automation using Claude Code's official hooks for triggers and responses.
@@ -218,6 +230,7 @@ Protect your codebase from destructive commands using PreToolUse hooks.
 | **Agent Expertise** | Self-improving domain knowledge | Built-in |
 | **Agent Teams** | Multi-domain expert coordination | `/agileflow:team:start` |
 | **Parallel Sessions** | Work on multiple features | `/agileflow:session:new` |
+| **Smart Detection** | Contextual feature recommendations | Built-in with `/agileflow:babysit` |
 | **Hooks System** | Event-driven automation | `/agileflow:configure` |
 | **Automations** | Scheduled recurring tasks | `/agileflow:automate` |
 | **Loop Mode** | Autonomous epic execution | `/agileflow:babysit EPIC=... MODE=loop` |

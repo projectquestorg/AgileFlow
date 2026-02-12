@@ -41,80 +41,84 @@ This gathers: git status, stories/epics, session state, docs structure, research
 
 ---
 
-## 🧠 SMART DETECTION (Auto-Enable Features)
+## 🧠 CONTEXTUAL FEATURE ROUTER
 
-**After running context script, automatically detect and enable features.**
+**After running context script, read `docs/09-agents/smart-detect.json` for programmatic recommendations.**
 
-Smart detection eliminates the need for users to specify parameters like `MODE=loop`, `VISUAL=true`, or `COVERAGE=80`. The mentor analyzes project context and enables appropriate features automatically.
+The smart detection system analyzes project signals deterministically (via `smart-detect.js`) and outputs contextual feature recommendations. This replaces manual signal analysis with script-driven detection.
 
-### Detection Rules
+### How It Works
 
-| Feature | Auto-Enable When | Override |
-|---------|------------------|----------|
-| **Loop Mode** | Epic has 3+ ready stories AND test setup exists | User says "just one story" or `MODE=once` |
-| **Visual Mode** | Epic/story mentions UI/component/styling OR owner=AG-UI | User says "no screenshots" or `VISUAL=false` |
-| **Coverage Mode** | `coverage/` dir exists with baseline >50% | User says "skip coverage" or `COVERAGE=0` |
-| **Conditions** | Auto-detect from package.json scripts (lint, tsc, build) | N/A (always apply detected) |
-| **Team Mode** | Agent Teams enabled + task spans multiple domains (API+UI) | User says "no teams" or `TEAM=false` |
+1. `obtain-context.js` gathers project data (status.json, git, metadata, session state)
+2. `smart-detect.js` runs 42 feature detectors against the data
+3. Results are written to `docs/09-agents/smart-detect.json`
+4. Context output includes a "Smart Recommendations" section
+5. You act on the recommendations below
 
-### Detection Flow
+### Reading Recommendations
 
-1. Parse context output for signals
-2. Check each detection rule
-3. Enable applicable features silently
-4. Inform user: "🧠 Auto-enabled: Loop Mode, Visual Mode (UI epic detected)"
-5. Proceed with work
+The context output's "Smart Recommendations" section contains:
 
-### Signal Detection
+- **Phase**: Current lifecycle phase (pre-story, planning, implementation, post-impl, pre-pr)
+- **Immediate**: High-priority features to act on NOW (suggest via AskUserQuestion or auto-run)
+- **Available**: Medium/low-priority features to include as AskUserQuestion options
+- **Auto-enabled**: Existing mode flags (loop_mode, visual_mode, coverage_mode)
 
-**Loop Mode signals:**
-- `status.json` has 3+ stories with status "ready" in same epic
-- `package.json` has "test" script
-- Stories have clear acceptance criteria
+### Acting on Recommendations
 
-**Visual Mode signals:**
-- Epic title contains: UI, component, frontend, styling, design
-- Story owner is "AG-UI"
-- Files in scope include: `src/components/`, `*.tsx`, `*.css`
-- `screenshots/` directory exists
-- Context shows "📸 VISUAL E2E TESTING: ENABLED"
+| Category | Action |
+|----------|--------|
+| **immediate** (high priority) | Present via AskUserQuestion with YES as default. If action=auto, run without asking. |
+| **available** (medium/low) | Include as options in your next AskUserQuestion. Group related features. |
+| **auto_enabled** modes | Enable Loop/Visual/Coverage modes silently, inform user. |
+| **skipped features** | Do NOT re-offer features the user already declined this session. |
 
-**Coverage Mode signals:**
-- `coverage/coverage-summary.json` exists
-- Current line coverage is >50%
-- Auto-set threshold to: current_coverage + 5%
+### Lifecycle-Aware Feature Routing
 
-**Team Mode signals:**
-- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` env var is set
-- Epic has stories with different owners (AG-API + AG-UI)
-- Task description mentions multiple domains (backend + frontend)
-- Template auto-selection: API+UI stories → `fullstack`, security review → `code-review`
-- When detected: Start native team via `/agileflow:team:start <template>`
+Features are filtered by lifecycle phase. Only phase-relevant features appear:
 
-**Conditions signals (auto-add all detected):**
-- `package.json` has "lint" → add "no linting errors"
-- `tsconfig.json` exists → add "no type errors"
-- `package.json` has "build" → add "build succeeds"
+| Phase | Focus | Example Features |
+|-------|-------|-----------------|
+| **pre-story** | Story selection, project planning | blockers, choose, board, sprint, batch |
+| **planning** | Impact analysis, architecture | impact, adr, research, council |
+| **implementation** | Code quality, testing | verify, tests, diagnose, ci, deps |
+| **post-impl** | Review, documentation | review, logic-audit, docs, changelog |
+| **pre-pr** | Final checks, PR creation | pr, compress |
 
-### Example Auto-Detection Output
+### User Overrides
 
-```
-🧠 Smart Detection Results:
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ Loop Mode: ENABLED (5 ready stories in EP-0042)
-✓ Visual Mode: ENABLED (epic mentions "UI components")
-✓ Coverage Mode: ENABLED @ 75% (current baseline: 70%)
-✓ Conditions: lint ✓, types ✓, build ✓
-
-Proceeding with: US-0050 (first ready story)
-```
-
-### User Override
-
-If user explicitly specifies a parameter, respect it:
-- `/babysit EPIC=EP-0042 MODE=once` → Force single story mode
+Respect explicit user parameters (these override smart detection):
+- `/babysit MODE=once` → Force single story mode (overrides loop_mode)
 - `/babysit VISUAL=false` → Disable visual even if detected
 - `/babysit COVERAGE=0` → Disable coverage mode
+- User says "skip X" → Add to `features_skipped` in session state, don't re-offer
+
+### Session State Tracking
+
+Track offered/used/skipped features in session state to prevent re-offering:
+```json
+{
+  "smart_detect": {
+    "features_offered": ["impact", "tests"],
+    "features_used": ["impact"],
+    "features_skipped": ["tests"]
+  }
+}
+```
+
+### Example Router Output
+
+```
+🧠 Contextual Feature Router:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase: implementation (5 files changed)
+Auto-enabled: loop mode, coverage mode
+
+! verify: Tests are failing (/agileflow:verify)
+! review: 250 lines changed - code review recommended (/agileflow:review)
+> docs: 2 API files changed - docs sync recommended (/agileflow:docs)
+> logic-audit: 4 source files modified (/agileflow:logic:audit)
+```
 
 ---
 
@@ -178,7 +182,7 @@ To force single-story mode, say "just work on one story" or specify `MODE=once`.
 | `COVERAGE` | No | Auto-detected from coverage baseline; set `0` to disable |
 | `CONDITIONS` | No | Auto-detected from package.json; or configured in metadata |
 
-**Note:** Most parameters are auto-detected by Smart Detection. Only specify if you need to override the detected values.
+**Note:** Most parameters are auto-detected by the Contextual Feature Router. Only specify if you need to override the detected values.
 
 ### To Start Loop Mode
 
@@ -335,23 +339,16 @@ If you end your response without calling AskUserQuestion, you have violated thes
 
 ---
 
-### 🚨 RULE #0: SMART DETECTION (Before Starting)
+### 🚨 RULE #0: CONTEXTUAL FEATURE ROUTER (Before Starting)
 
-**After running context script, auto-detect and enable features:**
+**After running context script, read the "Smart Recommendations" section and act on it:**
 
-| Feature | Auto-Enable When | Override |
-|---------|------------------|----------|
-| **Loop Mode** | 3+ ready stories + test setup | `MODE=once` or "just one story" |
-| **Visual Mode** | UI keywords or AG-UI owner | `VISUAL=false` or "no screenshots" |
-| **Coverage Mode** | coverage baseline >50% | `COVERAGE=0` or "skip coverage" |
-| **Conditions** | Auto-add from package.json scripts | N/A |
-
-**Detection flow:**
-1. Parse context output
-2. Check detection rules
-3. Enable applicable features
-4. Inform user: "🧠 Auto-enabled: Loop Mode, Visual Mode..."
-5. Proceed with work
+1. Read `docs/09-agents/smart-detect.json` (or the recommendations in context output)
+2. Note the lifecycle phase and auto-enabled modes (loop/visual/coverage)
+3. **Immediate** recommendations → present via AskUserQuestion or auto-run
+4. **Available** recommendations → include as options in your next AskUserQuestion
+5. Inform user: "🧠 Phase: X | Auto-enabled: Y | Recommended: Z"
+6. Track offered/used/skipped features in session state
 
 ---
 
@@ -672,7 +669,7 @@ After completing an implementation, offer logic audit as an **optional quality c
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
-- **SMART DETECTION**: Auto-enable Loop/Visual/Coverage modes based on context
+- **CONTEXTUAL ROUTER**: Read smart-detect.json for recommendations, act on immediate items
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
@@ -1412,16 +1409,14 @@ After running context script:
 ```
 **AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
 
-🧠 Smart Detection Results:
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-[Show detected features based on context analysis]
-✓ Loop Mode: ENABLED/DISABLED (reason)
-✓ Visual Mode: ENABLED/DISABLED (reason)
-✓ Coverage Mode: ENABLED/DISABLED @ N% (reason)
-✓ Conditions: [detected from package.json]
+🧠 Contextual Router:
+━━━━━━━━━━━━━━━━━━━━
+Phase: [lifecycle phase] | [phase reason]
+[Show auto-enabled modes: loop/visual/coverage]
+[Show immediate recommendations if any]
 
 Based on your project state:
-[Present 3-5 ranked suggestions via AskUserQuestion]
+[Present 3-5 ranked suggestions via AskUserQuestion, incorporating smart-detect recommendations]
 
 **My approach:**
 1. You select a task

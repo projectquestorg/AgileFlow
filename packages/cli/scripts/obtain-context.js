@@ -35,6 +35,14 @@ const {
 
 const { generateSummary, generateFullContent } = require('./lib/context-formatter');
 
+// Smart detection for contextual feature routing
+let smartDetect;
+try {
+  smartDetect = require('./smart-detect');
+} catch {
+  // smart-detect not available
+}
+
 // Import validation
 let isValidCommandName;
 try {
@@ -188,8 +196,19 @@ async function main() {
     process.stderr.write(`Context loaded in ${(prefetchElapsed / 1000).toFixed(1)}s\n`);
   }
 
+  // Run smart detection (contextual feature routing)
+  let smartDetectResults = null;
+  if (smartDetect) {
+    try {
+      smartDetectResults = smartDetect.analyze(prefetched);
+      smartDetect.writeRecommendations(smartDetectResults);
+    } catch {
+      // Smart detection is optional - don't block context output
+    }
+  }
+
   // Generate formatted output
-  const formatOptions = { commandName, activeSections };
+  const formatOptions = { commandName, activeSections, smartDetectResults };
   const summary = generateSummary(prefetched, formatOptions);
   const fullContent = generateFullContent(prefetched, formatOptions);
 

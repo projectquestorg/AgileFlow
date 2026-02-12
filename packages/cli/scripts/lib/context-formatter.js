@@ -378,7 +378,7 @@ function generateSummary(prefetched = null, options = {}) {
  * @returns {string} Full content
  */
 function generateFullContent(prefetched = null, options = {}) {
-  const { commandName = null, activeSections = [] } = options;
+  const { commandName = null, activeSections = [], smartDetectResults = null } = options;
 
   let content = '';
 
@@ -533,7 +533,7 @@ function generateFullContent(prefetched = null, options = {}) {
     if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
       const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
       content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
-    } else if (sessionState.active_command) {
+    } else if (sessionState.active_command && sessionState.active_command.name) {
       content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
     }
 
@@ -592,7 +592,7 @@ function generateRemainingContent(prefetched, options = {}) {
             const sessionDir = story.claimedBy?.path
               ? path.basename(story.claimedBy.path)
               : 'unknown';
-            content += `  ${C.coral}🔒${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}" ${C.dim}→ Session ${story.claimedBy?.session_id || '?'} (${sessionDir})${C.reset}\n`;
+            content += `  ${C.coral}🔒${C.reset} ${C.lavender}${story.id ?? '?'}${C.reset} "${story.title ?? 'untitled'}" ${C.dim}→ Session ${story.claimedBy?.session_id ?? '?'} (${sessionDir})${C.reset}\n`;
           });
           content += '\n';
         }
@@ -601,7 +601,7 @@ function generateRemainingContent(prefetched, options = {}) {
         if (myResult.ok && myResult.stories && myResult.stories.length > 0) {
           content += `\n${C.mintGreen}${C.bold}═══ ✓ Your Claimed Stories ═══${C.reset}\n`;
           myResult.stories.forEach(story => {
-            content += `  ${C.mintGreen}✓${C.reset} ${C.lavender}${story.id}${C.reset} "${story.title}"\n`;
+            content += `  ${C.mintGreen}✓${C.reset} ${C.lavender}${story.id ?? '?'}${C.reset} "${story.title ?? 'untitled'}"\n`;
           });
           content += '\n';
         }
@@ -810,6 +810,42 @@ function generateRemainingContent(prefetched, options = {}) {
       }
     } catch {
       // Silently ignore ideation errors
+    }
+  }
+
+  // SMART RECOMMENDATIONS (Contextual Feature Router)
+  const smartDetectResults = options.smartDetectResults;
+  if (smartDetectResults && !smartDetectResults.disabled) {
+    const { immediate, available, auto_enabled } = smartDetectResults.recommendations;
+    const hasRecommendations = immediate.length > 0 || available.length > 0;
+
+    if (hasRecommendations) {
+      content += `\n${C.brand}${C.bold}═══ Smart Recommendations ═══${C.reset}\n`;
+      content += `${C.dim}Phase: ${smartDetectResults.lifecycle_phase} (${smartDetectResults.phase_reason})${C.reset}\n`;
+
+      if (immediate.length > 0) {
+        content += `\n${C.coral}${C.bold}Immediate:${C.reset}\n`;
+        immediate.forEach(r => {
+          content += `  ${C.coral}!${C.reset} ${C.bold}${r.feature}${C.reset}: ${r.trigger} ${C.dim}(${r.command})${C.reset}\n`;
+        });
+      }
+
+      if (available.length > 0) {
+        content += `\n${C.skyBlue}Available:${C.reset}\n`;
+        available.slice(0, 5).forEach(r => {
+          content += `  ${C.skyBlue}>${C.reset} ${r.feature}: ${r.trigger} ${C.dim}(${r.command})${C.reset}\n`;
+        });
+        if (available.length > 5) {
+          content += `  ${C.dim}... and ${available.length - 5} more${C.reset}\n`;
+        }
+      }
+    }
+
+    // Show auto-enabled modes
+    const modes = auto_enabled || {};
+    const enabledModes = Object.entries(modes).filter(([, v]) => v).map(([k]) => k.replace('_', ' '));
+    if (enabledModes.length > 0) {
+      content += `\n${C.mintGreen}Auto-enabled:${C.reset} ${enabledModes.join(', ')}\n`;
     }
   }
 
