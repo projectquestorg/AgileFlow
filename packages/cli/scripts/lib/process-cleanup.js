@@ -16,7 +16,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
+const { executeCommandSync } = require('../../lib/process-executor');
 
 // Configuration constants
 const KILL_GRACE_PERIOD_MS = 5000; // Wait before SIGKILL
@@ -102,17 +103,12 @@ function getProcessStartTime(pid) {
   }
 
   if (process.platform === 'darwin') {
-    try {
-      const output = execFileSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
-        encoding: 'utf8',
-        timeout: 2000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const ts = new Date(output.trim()).getTime();
-      return Number.isFinite(ts) ? ts : null;
-    } catch (e) {
-      return null;
-    }
+    const result = executeCommandSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
+      timeout: 2000, fallback: null,
+    });
+    if (result.data === null) return null;
+    const ts = new Date(result.data).getTime();
+    return Number.isFinite(ts) ? ts : null;
   }
 
   return null;
@@ -145,17 +141,12 @@ function getParentPid(pid) {
   }
 
   if (process.platform === 'darwin') {
-    try {
-      const output = execFileSync('ps', ['-o', 'ppid=', '-p', String(pid)], {
-        encoding: 'utf8',
-        timeout: 2000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const ppid = parseInt(output.trim(), 10);
-      return Number.isFinite(ppid) ? ppid : null;
-    } catch (e) {
-      return null;
-    }
+    const result = executeCommandSync('ps', ['-o', 'ppid=', '-p', String(pid)], {
+      timeout: 2000, fallback: null,
+    });
+    if (result.data === null) return null;
+    const ppid = parseInt(result.data, 10);
+    return Number.isFinite(ppid) ? ppid : null;
   }
 
   return null;
@@ -180,17 +171,11 @@ function getArgsForPid(pid) {
   }
 
   if (process.platform === 'darwin') {
-    try {
-      const output = execFileSync('ps', ['-o', 'command=', '-p', String(pid)], {
-        encoding: 'utf8',
-        timeout: 2000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const cmd = output.trim();
-      return cmd ? [cmd] : [];
-    } catch (e) {
-      return [];
-    }
+    const result = executeCommandSync('ps', ['-o', 'command=', '-p', String(pid)], {
+      timeout: 2000, fallback: null,
+    });
+    if (result.data === null) return [];
+    return result.data ? [result.data] : [];
   }
 
   return [];
@@ -283,54 +268,43 @@ function findClaudeProcesses() {
     }
   } else if (process.platform === 'darwin') {
     // macOS: Use ps command
-    try {
-      const output = execFileSync(
-        'bash',
-        ['-c', "ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep"],
-        {
-          encoding: 'utf8',
-          timeout: 5000,
-          stdio: ['pipe', 'pipe', 'pipe'],
-        }
-      );
+    // Note: uses bash -c for pipeline (grep) which can't be expressed with execFileSync
+    const psResult = executeCommandSync(
+      'bash',
+      ['-c', "ps -axo pid,lstart,command | grep -E 'claude' | grep -v grep"],
+      { timeout: 5000, fallback: '' }
+    );
 
-      for (const line of output.split('\n')) {
-        if (!line.trim()) continue;
+    for (const line of psResult.data.split('\n')) {
+      if (!line.trim()) continue;
 
-        // Parse: PID  LSTART                       COMMAND
-        // e.g.:  1234 Mon Feb  3 08:00:00 2026    claude --flag
-        const match = line.match(/^\s*(\d+)\s+(\w+\s+\w+\s+\d+\s+[\d:]+\s+\d+)\s+(.*)$/);
-        if (!match) continue;
+      // Parse: PID  LSTART                       COMMAND
+      // e.g.:  1234 Mon Feb  3 08:00:00 2026    claude --flag
+      const match = line.match(/^\s*(\d+)\s+(\w+\s+\w+\s+\d+\s+[\d:]+\s+\d+)\s+(.*)$/);
+      if (!match) continue;
 
-        const pid = parseInt(match[1], 10);
-        if (pid === currentPid || pid === parentPid) continue;
+      const pid = parseInt(match[1], 10);
+      if (pid === currentPid || pid === parentPid) continue;
 
-        const cmdline = match[3];
-        if (!isClaudeProcess([cmdline])) continue;
+      const cmdline = match[3];
+      if (!isClaudeProcess([cmdline])) continue;
 
-        // Get cwd via lsof (slower but works on macOS)
-        let cwd = null;
-        try {
-          const lsofOutput = execFileSync('lsof', ['-p', String(pid)], {
-            encoding: 'utf8',
-            timeout: 1000,
-            stdio: ['pipe', 'pipe', 'pipe'],
-          });
-          const cwdLine = lsofOutput.split('\n').find(l => l.includes('cwd'));
-          cwd = cwdLine ? cwdLine.split(/\s+/).pop().trim() : null;
-        } catch (e) {
-          // lsof failed
-        }
-
-        processes.push({
-          pid,
-          cwd,
-          cmdline,
-          startTime: new Date(match[2]).getTime(),
-        });
+      // Get cwd via lsof (slower but works on macOS)
+      let cwd = null;
+      const lsofResult = executeCommandSync('lsof', ['-p', String(pid)], {
+        timeout: 1000, fallback: null,
+      });
+      if (lsofResult.data) {
+        const cwdLine = lsofResult.data.split('\n').find(l => l.includes('cwd'));
+        cwd = cwdLine ? cwdLine.split(/\s+/).pop().trim() : null;
       }
-    } catch (e) {
-      // ps/grep failed (no claude processes found)
+
+      processes.push({
+        pid,
+        cwd,
+        cmdline,
+        startTime: new Date(match[2]).getTime(),
+      });
     }
   }
 

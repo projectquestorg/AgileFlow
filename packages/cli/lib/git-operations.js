@@ -4,10 +4,11 @@
  * Provides cached git operations and session phase detection for Kanban visualization.
  */
 
-const { execFileSync, spawnSync, spawn } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
 
 const { getProjectRoot } = require('./paths');
+const { git } = require('./process-executor');
 
 const ROOT = getProjectRoot();
 
@@ -79,16 +80,10 @@ function getCurrentBranch(cwd = ROOT) {
   const cached = gitCache.get(cacheKey);
   if (cached !== null) return cached;
 
-  try {
-    const branch = execFileSync('git', ['branch', '--show-current'], {
-      cwd,
-      encoding: 'utf8',
-    }).trim();
-    gitCache.set(cacheKey, branch);
-    return branch;
-  } catch (e) {
-    return 'unknown';
-  }
+  const result = git(['branch', '--show-current'], { cwd, fallback: 'unknown' });
+  const branch = result.data;
+  gitCache.set(cacheKey, branch);
+  return branch;
 }
 
 /**
@@ -180,28 +175,15 @@ function getSessionPhase(session) {
 
   try {
     const mainBranch = getMainBranch(sessionPath);
-    let commitCount;
-    try {
-      commitCount = execFileSync('git', ['rev-list', '--count', `${mainBranch}..HEAD`], {
-        cwd: sessionPath,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-    } catch {
-      commitCount = '0';
-    }
-    const commits = parseInt(commitCount, 10);
+    const commitResult = git(['rev-list', '--count', `${mainBranch}..HEAD`], {
+      cwd: sessionPath, fallback: '0',
+    });
+    const commits = parseInt(commitResult.data, 10);
 
-    let status = '';
-    try {
-      status = execFileSync('git', ['status', '--porcelain'], {
-        cwd: sessionPath,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-    } catch {
-      // git status failed, treat as no changes
-    }
+    const statusResult = git(['status', '--porcelain'], {
+      cwd: sessionPath, fallback: '',
+    });
+    const status = statusResult.data;
 
     const phase = determinePhaseFromGitState(commits, status !== '');
     gitCache.set(cacheKey, phase);

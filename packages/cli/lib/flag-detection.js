@@ -11,7 +11,7 @@
  */
 
 const fs = require('fs');
-const { execFileSync } = require('child_process');
+const { executeCommandSync } = require('./process-executor');
 
 /**
  * Known Claude flags that should be propagated to child sessions
@@ -218,15 +218,11 @@ function detectFromPs() {
 
       // Get command line for this PID
       let cmdline;
-      try {
-        cmdline = execFileSync('ps', ['-p', String(pid), '-o', 'args='], {
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: 1000,
-        }).trim();
-      } catch {
-        break;
-      }
+      const cmdResult = executeCommandSync('ps', ['-p', String(pid), '-o', 'args='], {
+        timeout: 1000, fallback: null,
+      });
+      if (!cmdResult.ok || cmdResult.data === null) break;
+      cmdline = cmdResult.data;
 
       if (!cmdline) break;
 
@@ -242,16 +238,11 @@ function detectFromPs() {
       }
 
       // Get parent PID
-      try {
-        const ppidStr = execFileSync('ps', ['-p', String(pid), '-o', 'ppid='], {
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: 1000,
-        }).trim();
-        pid = parseInt(ppidStr, 10);
-      } catch {
-        break;
-      }
+      const ppidResult = executeCommandSync('ps', ['-p', String(pid), '-o', 'ppid='], {
+        timeout: 1000, fallback: null,
+      });
+      if (!ppidResult.ok || ppidResult.data === null) break;
+      pid = parseInt(ppidResult.data, 10);
     }
   } catch (e) {
     // ps command failed - ignore

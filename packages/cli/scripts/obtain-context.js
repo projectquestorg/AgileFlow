@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { executeCommandSync } = require('../lib/process-executor');
 
 // Import loader and formatter modules
 const {
@@ -130,28 +130,27 @@ function executeQueryMode(query) {
     return null;
   }
 
-  try {
-    const result = execFileSync('node', [queryScript, `--query=${query}`, '--budget=15000'], {
-      encoding: 'utf8',
-      maxBuffer: 50 * 1024 * 1024,
-    });
+  const result = executeCommandSync('node', [queryScript, `--query=${query}`, '--budget=15000'], {
+    timeout: 30000,
+  });
 
-    if (result.includes('No files found') || result.trim() === '') {
-      return null;
-    }
-
-    return {
-      mode: 'query',
-      query: query,
-      results: result.trim(),
-    };
-  } catch (err) {
-    if (err.status === 2) {
+  if (!result.ok) {
+    if (result.exitCode === 2) {
       return null; // No results, fall back
     }
-    console.error(`Query error: ${err.message}`);
+    console.error(`Query error: ${result.error}`);
     return null;
   }
+
+  if (result.data.includes('No files found') || result.data === '') {
+    return null;
+  }
+
+  return {
+    mode: 'query',
+    query: query,
+    results: result.data,
+  };
 }
 
 // =============================================================================

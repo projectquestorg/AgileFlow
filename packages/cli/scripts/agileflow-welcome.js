@@ -13,7 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync, spawnSync } = require('child_process');
+const { executeCommandSync, git, spawnBackground } = require('../lib/process-executor');
 
 // Shared utilities
 const { c, box } = require('../lib/colors');
@@ -112,17 +112,16 @@ function detectPlatform() {
  * Returns object with availability info and platform-specific install suggestion
  */
 function checkTmuxAvailability() {
-  try {
-    execFileSync('which', ['tmux'], { encoding: 'utf8', stdio: 'pipe' });
+  const result = executeCommandSync('which', ['tmux'], { fallback: null });
+  if (result.data !== null) {
     return { available: true };
-  } catch (e) {
-    const platform = detectPlatform();
-    return {
-      available: false,
-      platform,
-      noSudoCmd: 'conda install -c conda-forge tmux',
-    };
   }
+  const platform = detectPlatform();
+  return {
+    available: false,
+    platform,
+    noSudoCmd: 'conda install -c conda-forge tmux',
+  };
 }
 
 /**
@@ -131,21 +130,11 @@ function checkTmuxAvailability() {
  * Estimated savings: 20-40ms
  */
 function getGitInfo(rootDir) {
-  try {
-    const output = execFileSync(
-      'bash',
-      ['-c', 'git branch --show-current && git rev-parse --short HEAD && git log -1 --format="%s"'],
-      { cwd: rootDir, encoding: 'utf8', timeout: 5000 }
-    );
-    const lines = output.trim().split('\n');
-    return {
-      branch: lines[0] || 'unknown',
-      commit: lines[1] || 'unknown',
-      lastCommit: lines[2] || '',
-    };
-  } catch (e) {
-    return { branch: 'unknown', commit: 'unknown', lastCommit: '' };
-  }
+  const opts = { cwd: rootDir, timeout: 5000, fallback: 'unknown' };
+  const branch = git(['branch', '--show-current'], opts).data;
+  const commit = git(['rev-parse', '--short', 'HEAD'], opts).data;
+  const lastCommit = git(['log', '-1', '--format=%s'], { ...opts, fallback: '' }).data;
+  return { branch, commit, lastCommit };
 }
 
 function getProjectInfo(rootDir, cache = null) {
@@ -311,15 +300,13 @@ function runArchival(rootDir, cache = null) {
 
     if (toArchiveCount > 0) {
       // Run archival
-      try {
-        execFileSync('bash', ['scripts/archive-completed-stories.sh'], {
-          cwd: rootDir,
-          encoding: 'utf8',
-          stdio: 'pipe',
-        });
+      const archiveResult = executeCommandSync('bash', ['scripts/archive-completed-stories.sh'], {
+        cwd: rootDir,
+      });
+      if (archiveResult.ok) {
         result.archived = toArchiveCount;
         result.remaining -= toArchiveCount;
-      } catch (e) {}
+      }
     }
   } catch (e) {}
 
@@ -427,69 +414,68 @@ function checkParallelSessions(rootDir) {
     // Try to use combined full-status command (saves ~200ms vs 3 separate calls)
     const scriptPath = fs.existsSync(managerPath) ? managerPath : SESSION_MANAGER_PATH;
 
-    try {
-      // PERFORMANCE: Single subprocess call instead of 3 (register + count + status)
-      const fullStatusOutput = execFileSync('node', [scriptPath, 'full-status'], {
-        cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const data = JSON.parse(fullStatusOutput);
+    // PERFORMANCE: Single subprocess call instead of 3 (register + count + status)
+    const fullStatusResult = executeCommandSync('node', [scriptPath, 'full-status'], {
+      cwd: rootDir, fallback: null,
+    });
 
-      result.registered = data.registered;
-      result.currentId = data.id;
-      result.otherActive = data.otherActive || 0;
-      result.cleaned = data.cleaned || 0;
-      result.cleanedSessions = data.cleanedSessions || [];
-
-      if (data.current) {
-        result.isMain = data.current.is_main === true;
-        result.nickname = data.current.nickname;
-        result.branch = data.current.branch;
-        result.sessionPath = data.current.path;
-      }
-    } catch (e) {
-      // Fall back to individual calls if full-status not available (older version)
+    if (fullStatusResult.data) {
       try {
-        const registerOutput = execFileSync('node', [scriptPath, 'register'], {
-          cwd: rootDir,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-        const registerData = JSON.parse(registerOutput);
-        result.registered = true;
-        result.currentId = registerData.id;
-      } catch (e) {
-        // Registration failed
-      }
+        const data = JSON.parse(fullStatusResult.data);
+        result.registered = data.registered;
+        result.currentId = data.id;
+        result.otherActive = data.otherActive || 0;
+        result.cleaned = data.cleaned || 0;
+        result.cleanedSessions = data.cleanedSessions || [];
 
-      try {
-        const countOutput = execFileSync('node', [scriptPath, 'count'], {
-          cwd: rootDir,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-        const countData = JSON.parse(countOutput);
-        result.otherActive = countData.count || 0;
-      } catch (e) {
-        // Count failed
-      }
-
-      try {
-        const statusOutput = execFileSync('node', [scriptPath, 'status'], {
-          cwd: rootDir,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        });
-        const statusData = JSON.parse(statusOutput);
-        if (statusData.current) {
-          result.isMain = statusData.current.is_main === true;
-          result.nickname = statusData.current.nickname;
-          result.branch = statusData.current.branch;
-          result.sessionPath = statusData.current.path;
+        if (data.current) {
+          result.isMain = data.current.is_main === true;
+          result.nickname = data.current.nickname;
+          result.branch = data.current.branch;
+          result.sessionPath = data.current.path;
         }
       } catch (e) {
-        // Status failed
+        // JSON parse failed, fall through to individual calls
+        fullStatusResult.data = null;
+      }
+    }
+
+    if (!fullStatusResult.data) {
+      // Fall back to individual calls if full-status not available (older version)
+      const registerResult = executeCommandSync('node', [scriptPath, 'register'], {
+        cwd: rootDir, fallback: null,
+      });
+      if (registerResult.data) {
+        try {
+          const registerData = JSON.parse(registerResult.data);
+          result.registered = true;
+          result.currentId = registerData.id;
+        } catch (e) {}
+      }
+
+      const countResult = executeCommandSync('node', [scriptPath, 'count'], {
+        cwd: rootDir, fallback: null,
+      });
+      if (countResult.data) {
+        try {
+          const countData = JSON.parse(countResult.data);
+          result.otherActive = countData.count || 0;
+        } catch (e) {}
+      }
+
+      const statusCmdResult = executeCommandSync('node', [scriptPath, 'status'], {
+        cwd: rootDir, fallback: null,
+      });
+      if (statusCmdResult.data) {
+        try {
+          const statusData = JSON.parse(statusCmdResult.data);
+          if (statusData.current) {
+            result.isMain = statusData.current.is_main === true;
+            result.nickname = statusData.current.nickname;
+            result.branch = statusData.current.branch;
+            result.sessionPath = statusData.current.path;
+          }
+        } catch (e) {}
       }
     }
   } catch (e) {
@@ -1013,42 +999,36 @@ function getChangelogEntries(version) {
 // DEPRECATED: Use spawnAutoUpdateInBackground() instead for non-blocking updates
 async function runAutoUpdate(rootDir, fromVersion, toVersion) {
   const runUpdate = () => {
-    // Use stdio: 'pipe' to capture output instead of showing everything
-    return execFileSync('npx', ['agileflow@latest', 'update', '--force'], {
-      cwd: rootDir,
-      encoding: 'utf8',
-      stdio: 'pipe',
-      timeout: 120000, // 2 minute timeout
+    return executeCommandSync('npx', ['agileflow@latest', 'update', '--force'], {
+      cwd: rootDir, timeout: 120000,
     });
   };
 
-  try {
-    console.log(
-      `${c.skyBlue}Updating AgileFlow${c.reset} ${c.dim}v${fromVersion} → v${toVersion}${c.reset}`
-    );
-    // Use --force to skip prompts for non-interactive auto-update
-    runUpdate();
+  console.log(
+    `${c.skyBlue}Updating AgileFlow${c.reset} ${c.dim}v${fromVersion} → v${toVersion}${c.reset}`
+  );
+  const result = runUpdate();
+  if (result.ok) {
     console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
     return true;
-  } catch (e) {
-    // Check if this is a stale npm cache issue (ETARGET = version not found)
-    if (e.message && (e.message.includes('ETARGET') || e.message.includes('notarget'))) {
-      console.log(`${c.dim}  Clearing npm cache and retrying...${c.reset}`);
-      try {
-        execFileSync('npm', ['cache', 'clean', '--force'], { stdio: 'pipe', timeout: 30000 });
-        runUpdate();
-        console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
-        return true;
-      } catch (retryError) {
-        console.log(`${c.peach}Auto-update failed after cache clean${c.reset}`);
-        console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
-        return false;
-      }
+  }
+
+  // Check if this is a stale npm cache issue (ETARGET = version not found)
+  if (result.error && (result.error.includes('ETARGET') || result.error.includes('notarget'))) {
+    console.log(`${c.dim}  Clearing npm cache and retrying...${c.reset}`);
+    executeCommandSync('npm', ['cache', 'clean', '--force'], { timeout: 30000 });
+    const retryResult = runUpdate();
+    if (retryResult.ok) {
+      console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
+      return true;
     }
-    console.log(`${c.peach}Auto-update failed${c.reset}`);
+    console.log(`${c.peach}Auto-update failed after cache clean${c.reset}`);
     console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
     return false;
   }
+  console.log(`${c.peach}Auto-update failed${c.reset}`);
+  console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
+  return false;
 }
 
 /**
@@ -1060,8 +1040,6 @@ async function runAutoUpdate(rootDir, fromVersion, toVersion) {
  * @param {string} toVersion - Target version
  */
 function spawnAutoUpdateInBackground(rootDir, fromVersion, toVersion) {
-  const { spawn } = require('child_process');
-
   // Track pending update in session-state.json
   try {
     const sessionStatePath = getSessionStatePath(rootDir);
@@ -1080,16 +1058,7 @@ function spawnAutoUpdateInBackground(rootDir, fromVersion, toVersion) {
   }
 
   // Create detached subprocess that survives parent exit
-  // Use shell: true to handle npx properly across platforms
-  const child = spawn('npx', ['agileflow@latest', 'update', '--force'], {
-    cwd: rootDir,
-    detached: true,
-    stdio: 'ignore', // Don't inherit stdout/stderr - prevents output after hook returns
-    shell: true,
-  });
-
-  // Allow parent to exit independently
-  child.unref();
+  spawnBackground('npx', ['agileflow@latest', 'update', '--force'], { cwd: rootDir });
 
   console.log(`${c.dim}  Auto-update starting in background...${c.reset}`);
 }
@@ -1900,13 +1869,12 @@ async function main() {
   // === SESSION HEALTH WARNINGS ===
   // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
   try {
-    const healthResult = spawnSync('node', [SESSION_MANAGER_PATH, 'health'], {
-      encoding: 'utf8',
-      timeout: 10000,
+    const healthResult = executeCommandSync('node', [SESSION_MANAGER_PATH, 'health'], {
+      timeout: 10000, fallback: null,
     });
 
-    if (healthResult.stdout) {
-      const health = JSON.parse(healthResult.stdout);
+    if (healthResult.data) {
+      const health = JSON.parse(healthResult.data);
       const hasIssues =
         health.uncommitted.length > 0 ||
         health.stale.length > 0 ||
@@ -2132,17 +2100,11 @@ async function main() {
 
         // Run due automations in background (spawn detached process)
         // This prevents blocking the welcome hook
-        const { spawn } = require('child_process');
         const runnerScriptPath = path.join(__dirname, 'automation-run-due.js');
 
         // Only spawn if the runner script exists
         if (fs.existsSync(runnerScriptPath)) {
-          const child = spawn('node', [runnerScriptPath], {
-            cwd: rootDir,
-            detached: true,
-            stdio: 'ignore',
-          });
-          child.unref();
+          spawnBackground('node', [runnerScriptPath], { cwd: rootDir });
           console.log(`${c.dim}   Running in background...${c.reset}`);
         } else {
           console.log(`${c.slate}   Run: ${c.skyBlue}/agileflow:automate ACTION=run-due${c.reset}`);
