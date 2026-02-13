@@ -50,6 +50,24 @@ CMD+=("${ARGS[@]}")
 "${CMD[@]}"
 EXIT_CODE=$?
 
+# ── Auto-retry on expired session ────────────────────────────────────────
+# Exit code 1 with a stored UUID means Claude couldn't find the session
+# in its internal index (even though the .jsonl file exists on disk).
+if [ $EXIT_CODE -eq 1 ] && [ -n "$STORED_UUID" ]; then
+  echo ""
+  echo "Session expired. Starting fresh..."
+  echo ""
+  # Clear stale UUID from tmux pane
+  if [ -n "$TMUX" ]; then
+    tmux set-option -p -u @claude_uuid 2>/dev/null || true
+  fi
+  # Retry without --resume
+  STORED_UUID=""
+  CMD=(claude "${ARGS[@]}")
+  "${CMD[@]}"
+  EXIT_CODE=$?
+fi
+
 # ── Capture UUID after exit ────────────────────────────────────────────────
 # Store the most recent non-agent .jsonl as the pane's conversation UUID
 if [ -n "$TMUX" ]; then
