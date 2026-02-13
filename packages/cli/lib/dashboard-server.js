@@ -21,32 +21,17 @@
 
 'use strict';
 
-const http = require('http');
-const crypto = require('crypto');
 const { EventEmitter } = require('events');
-const {
-  OutboundMessageType,
-  InboundMessageType,
-  createSessionState,
-  createError,
-  createNotification,
-  createGitDiff,
-  createTerminalOutput,
-  createTerminalExit,
-  createAutomationList,
-  createAutomationStatus,
-  createAutomationResult,
-  createInboxList,
-  createInboxItem,
-  createStatusUpdate,
-  createSessionList,
-  createTeamMetrics,
-  parseInboundMessage,
-  serializeMessage,
-} = require('./dashboard-protocol');
-const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
-const { validatePath } = require('./validate-paths');
-const { execFileSync, spawn } = require('child_process');
+
+// Lazy-loaded dependencies - deferred until first use
+let _http, _crypto, _protocol, _paths, _validatePaths, _childProcess;
+
+function getHttp() { if (!_http) _http = require('http'); return _http; }
+function getCrypto() { if (!_crypto) _crypto = require('crypto'); return _crypto; }
+function getProtocol() { if (!_protocol) _protocol = require('./dashboard-protocol'); return _protocol; }
+function getPaths() { if (!_paths) _paths = require('./paths'); return _paths; }
+function getValidatePaths() { if (!_validatePaths) _validatePaths = require('./validate-paths'); return _validatePaths; }
+function getChildProcess() { if (!_childProcess) _childProcess = require('child_process'); return _childProcess; }
 
 // Lazy-load automation modules to avoid circular dependencies
 let AutomationRegistry = null;
@@ -142,7 +127,7 @@ class DashboardSession {
   send(message) {
     if (this.ws && this.ws.writable) {
       try {
-        const frame = encodeWebSocketFrame(serializeMessage(message));
+        const frame = encodeWebSocketFrame(getProtocol().serializeMessage(message));
         this.ws.write(frame);
         this.lastActivity = new Date();
       } catch (error) {
@@ -180,7 +165,7 @@ class DashboardSession {
   setState(state) {
     this.state = state;
     this.send(
-      createSessionState(this.id, state, {
+      getProtocol().createSessionState(this.id, state, {
         messageCount: this.messages.length,
         lastActivity: this.lastActivity.toISOString(),
       })
@@ -249,13 +234,13 @@ class TerminalInstance {
 
       this.pty.onData(data => {
         if (!this.closed) {
-          this.session.send(createTerminalOutput(this.id, data));
+          this.session.send(getProtocol().createTerminalOutput(this.id, data));
         }
       });
 
       this.pty.onExit(({ exitCode }) => {
         this.closed = true;
-        this.session.send(createTerminalExit(this.id, exitCode));
+        this.session.send(getProtocol().createTerminalExit(this.id, exitCode));
       });
 
       return true;
@@ -275,7 +260,7 @@ class TerminalInstance {
       const filteredEnv = this._getFilteredEnv();
 
       // Use bash with interactive flag for better compatibility
-      this.pty = spawn(this.shell, ['-i'], {
+      this.pty = getChildProcess().spawn(this.shell, ['-i'], {
         cwd: this.cwd,
         env: {
           ...filteredEnv,
@@ -291,25 +276,25 @@ class TerminalInstance {
 
       this.pty.stdout.on('data', data => {
         if (!this.closed) {
-          this.session.send(createTerminalOutput(this.id, data.toString()));
+          this.session.send(getProtocol().createTerminalOutput(this.id, data.toString()));
         }
       });
 
       this.pty.stderr.on('data', data => {
         if (!this.closed) {
-          this.session.send(createTerminalOutput(this.id, data.toString()));
+          this.session.send(getProtocol().createTerminalOutput(this.id, data.toString()));
         }
       });
 
       this.pty.on('close', exitCode => {
         this.closed = true;
-        this.session.send(createTerminalExit(this.id, exitCode));
+        this.session.send(getProtocol().createTerminalExit(this.id, exitCode));
       });
 
       this.pty.on('error', error => {
         console.error('[Terminal] Shell error:', error.message);
         if (!this.closed) {
-          this.session.send(createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`));
+          this.session.send(getProtocol().createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`));
         }
       });
 
@@ -318,7 +303,7 @@ class TerminalInstance {
         if (!this.closed) {
           const welcomeMsg = `\x1b[32mAgileFlow Terminal\x1b[0m (basic mode - node-pty not available)\r\n`;
           const cwdMsg = `Working directory: ${this.cwd}\r\n\r\n`;
-          this.session.send(createTerminalOutput(this.id, welcomeMsg + cwdMsg));
+          this.session.send(getProtocol().createTerminalOutput(this.id, welcomeMsg + cwdMsg));
         }
       }, 100);
 
@@ -355,7 +340,7 @@ class TerminalInstance {
         }
 
         // Echo to terminal
-        this.session.send(createTerminalOutput(this.id, echoData));
+        this.session.send(getProtocol().createTerminalOutput(this.id, echoData));
 
         // Send to shell stdin
         this.pty.stdin.write(data);
@@ -406,7 +391,7 @@ class TerminalManager {
    * @returns {string} - Terminal ID
    */
   createTerminal(session, options = {}) {
-    const terminalId = options.id || crypto.randomBytes(8).toString('hex');
+    const terminalId = options.id || getCrypto().randomBytes(8).toString('hex');
     const terminal = new TerminalInstance(terminalId, session, {
       cwd: options.cwd || session.projectRoot,
       cols: options.cols,
@@ -507,13 +492,13 @@ class DashboardServer extends EventEmitter {
 
     this.port = options.port || DEFAULT_PORT;
     this.host = options.host || DEFAULT_HOST;
-    this.projectRoot = options.projectRoot || getProjectRoot();
+    this.projectRoot = options.projectRoot || getPaths().getProjectRoot();
 
     // Auth is on by default - auto-generate key if not provided
     // Set requireAuth: false explicitly to disable
     this.requireAuth = options.requireAuth !== false;
     this.apiKey =
-      options.apiKey || (this.requireAuth ? crypto.randomBytes(32).toString('hex') : null);
+      options.apiKey || (this.requireAuth ? getCrypto().randomBytes(32).toString('hex') : null);
 
     // Session management
     this.sessions = new Map();
@@ -536,7 +521,7 @@ class DashboardServer extends EventEmitter {
     this.httpServer = null;
 
     // Validate project
-    if (!isAgileflowProject(this.projectRoot)) {
+    if (!getPaths().isAgileflowProject(this.projectRoot)) {
       throw new Error(`Not an AgileFlow project: ${this.projectRoot}`);
     }
 
@@ -558,12 +543,12 @@ class DashboardServer extends EventEmitter {
       // Listen to runner events
       this._automationRunner.on('started', ({ automationId }) => {
         this._runningAutomations.set(automationId, { startTime: Date.now() });
-        this.broadcast(createAutomationStatus(automationId, 'running'));
+        this.broadcast(getProtocol().createAutomationStatus(automationId, 'running'));
       });
 
       this._automationRunner.on('completed', ({ automationId, result }) => {
         this._runningAutomations.delete(automationId);
-        this.broadcast(createAutomationStatus(automationId, 'completed', result));
+        this.broadcast(getProtocol().createAutomationStatus(automationId, 'completed', result));
 
         // Add result to inbox if it has output or changes
         if (result.output || result.changes) {
@@ -573,7 +558,7 @@ class DashboardServer extends EventEmitter {
 
       this._automationRunner.on('failed', ({ automationId, result }) => {
         this._runningAutomations.delete(automationId);
-        this.broadcast(createAutomationStatus(automationId, 'error', { error: result.error }));
+        this.broadcast(getProtocol().createAutomationStatus(automationId, 'error', { error: result.error }));
 
         // Add failure to inbox
         this._addToInbox(automationId, result);
@@ -610,7 +595,7 @@ class DashboardServer extends EventEmitter {
     };
 
     this._inbox.set(itemId, item);
-    this.broadcast(createInboxItem(item));
+    this.broadcast(getProtocol().createInboxItem(item));
   }
 
   /**
@@ -626,7 +611,7 @@ class DashboardServer extends EventEmitter {
         'Cache-Control': 'no-store',
       };
 
-      this.httpServer = http.createServer((req, res) => {
+      this.httpServer = getHttp().createServer((req, res) => {
         // Simple health check endpoint
         if (req.url === '/health') {
           res.writeHead(200, securityHeaders);
@@ -716,7 +701,7 @@ class DashboardServer extends EventEmitter {
       const providedBuffer = Buffer.from(providedKey, 'utf8');
       if (
         keyBuffer.length !== providedBuffer.length ||
-        !crypto.timingSafeEqual(keyBuffer, providedBuffer)
+        !getCrypto().timingSafeEqual(keyBuffer, providedBuffer)
       ) {
         socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
         socket.destroy();
@@ -781,7 +766,7 @@ class DashboardServer extends EventEmitter {
     }
 
     // Generate new session ID
-    return crypto.randomBytes(16).toString('hex');
+    return getCrypto().randomBytes(16).toString('hex');
   }
 
   /**
@@ -804,7 +789,7 @@ class DashboardServer extends EventEmitter {
 
     // Send initial state
     session.send(
-      createSessionState(sessionId, 'connected', {
+      getProtocol().createSessionState(sessionId, 'connected', {
         resumed: isResume,
         messageCount: session.messages.length,
         project: require('path').basename(this.projectRoot),
@@ -880,83 +865,83 @@ class DashboardServer extends EventEmitter {
   handleMessage(session, data) {
     // Rate limit incoming messages
     if (!session.checkRateLimit()) {
-      session.send(createError('RATE_LIMITED', 'Too many messages, please slow down'));
+      session.send(getProtocol().createError('RATE_LIMITED', 'Too many messages, please slow down'));
       return;
     }
 
-    const message = parseInboundMessage(data);
+    const message = getProtocol().parseInboundMessage(data);
     if (!message) {
-      session.send(createError('INVALID_MESSAGE', 'Failed to parse message'));
+      session.send(getProtocol().createError('INVALID_MESSAGE', 'Failed to parse message'));
       return;
     }
 
     console.log(`[Session ${session.id}] Received: ${message.type}`);
 
     switch (message.type) {
-      case InboundMessageType.MESSAGE:
+      case getProtocol().InboundMessageType.MESSAGE:
         this.handleUserMessage(session, message);
         break;
 
-      case InboundMessageType.CANCEL:
+      case getProtocol().InboundMessageType.CANCEL:
         this.handleCancel(session);
         break;
 
-      case InboundMessageType.REFRESH:
+      case getProtocol().InboundMessageType.REFRESH:
         this.handleRefresh(session, message);
         break;
 
-      case InboundMessageType.GIT_STAGE:
-      case InboundMessageType.GIT_UNSTAGE:
-      case InboundMessageType.GIT_REVERT:
-      case InboundMessageType.GIT_COMMIT:
+      case getProtocol().InboundMessageType.GIT_STAGE:
+      case getProtocol().InboundMessageType.GIT_UNSTAGE:
+      case getProtocol().InboundMessageType.GIT_REVERT:
+      case getProtocol().InboundMessageType.GIT_COMMIT:
         this.handleGitAction(session, message);
         break;
 
-      case InboundMessageType.GIT_DIFF_REQUEST:
+      case getProtocol().InboundMessageType.GIT_DIFF_REQUEST:
         this.handleDiffRequest(session, message);
         break;
 
-      case InboundMessageType.SESSION_CLOSE:
+      case getProtocol().InboundMessageType.SESSION_CLOSE:
         this.closeSession(session.id);
         break;
 
-      case InboundMessageType.TERMINAL_SPAWN:
+      case getProtocol().InboundMessageType.TERMINAL_SPAWN:
         this.handleTerminalSpawn(session, message);
         break;
 
-      case InboundMessageType.TERMINAL_INPUT:
+      case getProtocol().InboundMessageType.TERMINAL_INPUT:
         this.handleTerminalInput(session, message);
         break;
 
-      case InboundMessageType.TERMINAL_RESIZE:
+      case getProtocol().InboundMessageType.TERMINAL_RESIZE:
         this.handleTerminalResize(session, message);
         break;
 
-      case InboundMessageType.TERMINAL_CLOSE:
+      case getProtocol().InboundMessageType.TERMINAL_CLOSE:
         this.handleTerminalClose(session, message);
         break;
 
-      case InboundMessageType.AUTOMATION_LIST_REQUEST:
+      case getProtocol().InboundMessageType.AUTOMATION_LIST_REQUEST:
         this.sendAutomationList(session);
         break;
 
-      case InboundMessageType.AUTOMATION_RUN:
+      case getProtocol().InboundMessageType.AUTOMATION_RUN:
         this.handleAutomationRun(session, message);
         break;
 
-      case InboundMessageType.AUTOMATION_STOP:
+      case getProtocol().InboundMessageType.AUTOMATION_STOP:
         this.handleAutomationStop(session, message);
         break;
 
-      case InboundMessageType.INBOX_LIST_REQUEST:
+      case getProtocol().InboundMessageType.INBOX_LIST_REQUEST:
         this.sendInboxList(session);
         break;
 
-      case InboundMessageType.INBOX_ACTION:
+      case getProtocol().InboundMessageType.INBOX_ACTION:
         this.handleInboxAction(session, message);
         break;
 
-      case InboundMessageType.OPEN_FILE:
+      case getProtocol().InboundMessageType.OPEN_FILE:
         this.handleOpenFile(session, message);
         break;
 
@@ -972,7 +957,7 @@ class DashboardServer extends EventEmitter {
   handleUserMessage(session, message) {
     const content = message.content?.trim();
     if (!content) {
-      session.send(createError('EMPTY_MESSAGE', 'Message content is empty'));
+      session.send(getProtocol().createError('EMPTY_MESSAGE', 'Message content is empty'));
       return;
     }
 
@@ -991,7 +976,7 @@ class DashboardServer extends EventEmitter {
    */
   handleCancel(session) {
     session.setState('idle');
-    session.send(createNotification('info', 'Cancelled', 'Operation cancelled'));
+    session.send(getProtocol().createNotification('info', 'Cancelled', 'Operation cancelled'));
     this.emit('user:cancel', session);
   }
 
@@ -1045,12 +1030,12 @@ class DashboardServer extends EventEmitter {
     if (files && files.length > 0) {
       for (const f of files) {
         if (typeof f !== 'string' || f.includes('\0')) {
-          session.send(createError('GIT_ERROR', 'Invalid file path'));
+          session.send(getProtocol().createError('GIT_ERROR', 'Invalid file path'));
           return;
         }
         const resolved = require('path').resolve(this.projectRoot, f);
         if (!resolved.startsWith(this.projectRoot)) {
-          session.send(createError('GIT_ERROR', 'File path outside project'));
+          session.send(getProtocol().createError('GIT_ERROR', 'File path outside project'));
           return;
         }
       }
@@ -1063,7 +1048,7 @@ class DashboardServer extends EventEmitter {
         commitMessage.length > 10000 ||
         commitMessage.includes('\0')
       ) {
-        session.send(createError('GIT_ERROR', 'Invalid commit message'));
+        session.send(getProtocol().createError('GIT_ERROR', 'Invalid commit message'));
         return;
       }
     }
@@ -1072,40 +1057,40 @@ class DashboardServer extends EventEmitter {
 
     try {
       switch (type) {
-        case InboundMessageType.GIT_STAGE:
+        case getProtocol().InboundMessageType.GIT_STAGE:
           if (fileArgs) {
-            execFileSync('git', ['add', '--', ...fileArgs], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['add', '--', ...fileArgs], { cwd: this.projectRoot });
           } else {
-            execFileSync('git', ['add', '-A'], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['add', '-A'], { cwd: this.projectRoot });
           }
           break;
-        case InboundMessageType.GIT_UNSTAGE:
+        case getProtocol().InboundMessageType.GIT_UNSTAGE:
           if (fileArgs) {
-            execFileSync('git', ['restore', '--staged', '--', ...fileArgs], {
+            getChildProcess().execFileSync('git', ['restore', '--staged', '--', ...fileArgs], {
               cwd: this.projectRoot,
             });
           } else {
-            execFileSync('git', ['restore', '--staged', '.'], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['restore', '--staged', '.'], { cwd: this.projectRoot });
           }
           break;
-        case InboundMessageType.GIT_REVERT:
+        case getProtocol().InboundMessageType.GIT_REVERT:
           if (fileArgs) {
-            execFileSync('git', ['checkout', '--', ...fileArgs], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['checkout', '--', ...fileArgs], { cwd: this.projectRoot });
           }
           break;
-        case InboundMessageType.GIT_COMMIT:
+        case getProtocol().InboundMessageType.GIT_COMMIT:
           if (commitMessage) {
-            execFileSync('git', ['commit', '-m', commitMessage], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['commit', '-m', commitMessage], { cwd: this.projectRoot });
           }
           break;
       }
 
       // Send updated git status
       this.sendGitStatus(session);
-      session.send(createNotification('success', 'Git', `${type.replace('git_', '')} completed`));
+      session.send(getProtocol().createNotification('success', 'Git', `${type.replace('git_', '')} completed`));
     } catch (error) {
       console.error('[Git Error]', error.message);
-      session.send(createError('GIT_ERROR', 'Git operation failed'));
+      session.send(getProtocol().createError('GIT_ERROR', 'Git operation failed'));
     }
   }
 
@@ -1116,7 +1101,7 @@ class DashboardServer extends EventEmitter {
     try {
       const status = this.getGitStatus();
       session.send({
-        type: OutboundMessageType.GIT_STATUS,
+        type: getProtocol().OutboundMessageType.GIT_STATUS,
         ...status,
         timestamp: new Date().toISOString(),
       });
@@ -1130,13 +1115,13 @@ class DashboardServer extends EventEmitter {
    */
   getGitStatus() {
     try {
-      const branch = execFileSync('git', ['branch', '--show-current'], {
+      const branch = getChildProcess().execFileSync('git', ['branch', '--show-current'], {
         cwd: this.projectRoot,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
       }).trim();
 
-      const statusOutput = execFileSync('git', ['status', '--porcelain'], {
+      const statusOutput = getChildProcess().execFileSync('git', ['status', '--porcelain'], {
         cwd: this.projectRoot,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -1195,7 +1180,7 @@ class DashboardServer extends EventEmitter {
     const { path: filePath, staged } = message;
 
     if (!filePath) {
-      session.send(createError('INVALID_REQUEST', 'File path is required'));
+      session.send(getProtocol().createError('INVALID_REQUEST', 'File path is required'));
       return;
     }
 
@@ -1204,7 +1189,7 @@ class DashboardServer extends EventEmitter {
       const stats = this.parseDiffStats(diff);
 
       session.send(
-        createGitDiff(filePath, diff, {
+        getProtocol().createGitDiff(filePath, diff, {
           additions: stats.additions,
           deletions: stats.deletions,
           staged: !!staged,
@@ -1212,7 +1197,7 @@ class DashboardServer extends EventEmitter {
       );
     } catch (error) {
       console.error('[Diff Error]', error.message);
-      session.send(createError('DIFF_ERROR', 'Failed to get diff'));
+      session.send(getProtocol().createError('DIFF_ERROR', 'Failed to get diff'));
     }
   }
 
@@ -1224,7 +1209,7 @@ class DashboardServer extends EventEmitter {
    */
   getFileDiff(filePath, staged = false) {
     // Validate filePath stays within project root
-    const pathResult = validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, { allowSymlinks: true });
     if (!pathResult.ok) {
       return '';
     }
@@ -1232,14 +1217,14 @@ class DashboardServer extends EventEmitter {
     try {
       const diffArgs = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
 
-      const diff = execFileSync('git', diffArgs, {
+      const diff = getChildProcess().execFileSync('git', diffArgs, {
         cwd: this.projectRoot,
         encoding: 'utf8',
       });
 
       // If no diff, file might be untracked - show entire file content as addition
       if (!diff && !staged) {
-        const statusOutput = execFileSync('git', ['status', '--porcelain', '--', filePath], {
+        const statusOutput = getChildProcess().execFileSync('git', ['status', '--porcelain', '--', filePath], {
           cwd: this.projectRoot,
           encoding: 'utf8',
         }).trim();
@@ -1328,7 +1313,7 @@ class DashboardServer extends EventEmitter {
         })),
       };
 
-      session.send(createStatusUpdate(summary));
+      session.send(getProtocol().createStatusUpdate(summary));
     } catch (error) {
       console.error('[Status Update Error]', error.message);
     }
@@ -1362,7 +1347,7 @@ class DashboardServer extends EventEmitter {
       const traces = (state.team_metrics && state.team_metrics.traces) || {};
 
       for (const [traceId, metrics] of Object.entries(traces)) {
-        session.send(createTeamMetrics(traceId, metrics));
+        session.send(getProtocol().createTeamMetrics(traceId, metrics));
       }
     } catch (error) {
       // Non-critical
@@ -1383,7 +1368,7 @@ class DashboardServer extends EventEmitter {
       const traces = (state.team_metrics && state.team_metrics.traces) || {};
 
       for (const [traceId, metrics] of Object.entries(traces)) {
-        this.broadcast(createTeamMetrics(traceId, metrics));
+        this.broadcast(getProtocol().createTeamMetrics(traceId, metrics));
       }
     } catch (error) {
       // Non-critical
@@ -1413,7 +1398,7 @@ class DashboardServer extends EventEmitter {
       // Get branch and sync status via git
       try {
         const cwd = s.metadata.worktreePath || this.projectRoot;
-        entry.branch = execFileSync('git', ['branch', '--show-current'], {
+        entry.branch = getChildProcess().execFileSync('git', ['branch', '--show-current'], {
           cwd,
           encoding: 'utf8',
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -1421,7 +1406,7 @@ class DashboardServer extends EventEmitter {
 
         // Get ahead/behind counts relative to upstream
         try {
-          const counts = execFileSync(
+          const counts = getChildProcess().execFileSync(
             'git',
             ['rev-list', '--left-right', '--count', 'HEAD...@{u}'],
             {
@@ -1454,7 +1439,7 @@ class DashboardServer extends EventEmitter {
       sessions.push(entry);
     }
 
-    session.send(createSessionList(sessions));
+    session.send(getProtocol().createSessionList(sessions));
   }
 
   /**
@@ -1464,14 +1449,14 @@ class DashboardServer extends EventEmitter {
     const { path: filePath, line } = message;
 
     if (!filePath || typeof filePath !== 'string') {
-      session.send(createError('INVALID_REQUEST', 'File path is required'));
+      session.send(getProtocol().createError('INVALID_REQUEST', 'File path is required'));
       return;
     }
 
     // Validate the path stays within project root
-    const pathResult = validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, { allowSymlinks: true });
     if (!pathResult.ok) {
-      session.send(createError('OPEN_FILE_ERROR', 'File path outside project'));
+      session.send(getProtocol().createError('OPEN_FILE_ERROR', 'File path outside project'));
       return;
     }
 
@@ -1489,28 +1474,28 @@ class DashboardServer extends EventEmitter {
         case 'cursor':
         case 'windsurf': {
           const gotoArg = lineNum ? `${fullPath}:${lineNum}` : fullPath;
-          spawn(editor, ['--goto', gotoArg], { detached: true, stdio: 'ignore' }).unref();
+          getChildProcess().spawn(editor, ['--goto', gotoArg], { detached: true, stdio: 'ignore' }).unref();
           break;
         }
         case 'subl':
         case 'sublime_text': {
           const sublArg = lineNum ? `${fullPath}:${lineNum}` : fullPath;
-          spawn(editor, [sublArg], { detached: true, stdio: 'ignore' }).unref();
+          getChildProcess().spawn(editor, [sublArg], { detached: true, stdio: 'ignore' }).unref();
           break;
         }
         default: {
           // Generic: just open the file
-          spawn(editor, [fullPath], { detached: true, stdio: 'ignore' }).unref();
+          getChildProcess().spawn(editor, [fullPath], { detached: true, stdio: 'ignore' }).unref();
           break;
         }
       }
 
       session.send(
-        createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`)
+        getProtocol().createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`)
       );
     } catch (error) {
       console.error('[Open File Error]', error.message);
-      session.send(createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`));
+      session.send(getProtocol().createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`));
     }
   }
 
@@ -1523,10 +1508,10 @@ class DashboardServer extends EventEmitter {
     // Validate cwd stays within project root
     let safeCwd = this.projectRoot;
     if (cwd) {
-      const cwdResult = validatePath(cwd, this.projectRoot, { allowSymlinks: true });
+      const cwdResult = getValidatePaths().validatePath(cwd, this.projectRoot, { allowSymlinks: true });
       if (!cwdResult.ok) {
         session.send(
-          createError('TERMINAL_ERROR', 'Working directory must be within project root')
+          getProtocol().createError('TERMINAL_ERROR', 'Working directory must be within project root')
         );
         return;
       }
@@ -1546,7 +1531,7 @@ class DashboardServer extends EventEmitter {
         timestamp: new Date().toISOString(),
       });
     } else {
-      session.send(createError('TERMINAL_ERROR', 'Failed to spawn terminal'));
+      session.send(getProtocol().createError('TERMINAL_ERROR', 'Failed to spawn terminal'));
     }
   }
 
@@ -1587,7 +1572,7 @@ class DashboardServer extends EventEmitter {
     }
 
     this.terminalManager.closeTerminal(terminalId);
-    session.send(createNotification('info', 'Terminal', 'Terminal closed'));
+    session.send(getProtocol().createNotification('info', 'Terminal', 'Terminal closed'));
   }
 
   // ==========================================================================
@@ -1599,7 +1584,7 @@ class DashboardServer extends EventEmitter {
    */
   sendAutomationList(session) {
     if (!this._automationRegistry) {
-      session.send(createAutomationList([]));
+      session.send(getProtocol().createAutomationList([]));
       return;
     }
 
@@ -1621,10 +1606,10 @@ class DashboardServer extends EventEmitter {
         };
       });
 
-      session.send(createAutomationList(enriched));
+      session.send(getProtocol().createAutomationList(enriched));
     } catch (error) {
       console.error('[Automations] List error:', error.message);
-      session.send(createAutomationList([]));
+      session.send(getProtocol().createAutomationList([]));
     }
   }
 
@@ -1694,12 +1679,12 @@ class DashboardServer extends EventEmitter {
     const { id: automationId } = message;
 
     if (!automationId) {
-      session.send(createError('INVALID_REQUEST', 'Automation ID is required'));
+      session.send(getProtocol().createError('INVALID_REQUEST', 'Automation ID is required'));
       return;
     }
 
     if (!this._automationRunner) {
-      session.send(createError('AUTOMATION_ERROR', 'Automation runner not initialized'));
+      session.send(getProtocol().createError('AUTOMATION_ERROR', 'Automation runner not initialized'));
       return;
     }
 
@@ -1707,12 +1692,12 @@ class DashboardServer extends EventEmitter {
       // Check if already running
       if (this._runningAutomations.has(automationId)) {
         session.send(
-          createNotification('warning', 'Automation', `${automationId} is already running`)
+          getProtocol().createNotification('warning', 'Automation', `${automationId} is already running`)
         );
         return;
       }
 
-      session.send(createNotification('info', 'Automation', `Starting ${automationId}...`));
+      session.send(getProtocol().createNotification('info', 'Automation', `Starting ${automationId}...`));
 
       // Run the automation (async)
       const result = await this._automationRunner.run(automationId);
@@ -1720,23 +1705,23 @@ class DashboardServer extends EventEmitter {
       // Send result notification
       if (result.success) {
         session.send(
-          createNotification('success', 'Automation', `${automationId} completed successfully`)
+          getProtocol().createNotification('success', 'Automation', `${automationId} completed successfully`)
         );
       } else {
         session.send(
-          createNotification('error', 'Automation', `${automationId} failed: ${result.error}`)
+          getProtocol().createNotification('error', 'Automation', `${automationId} failed: ${result.error}`)
         );
       }
 
       // Send final status
-      session.send(createAutomationStatus(automationId, result.success ? 'idle' : 'error', result));
+      session.send(getProtocol().createAutomationStatus(automationId, result.success ? 'idle' : 'error', result));
 
       // Refresh the list
       this.sendAutomationList(session);
     } catch (error) {
       console.error('[Automation Error]', error.message);
-      session.send(createError('AUTOMATION_ERROR', 'Automation execution failed'));
-      session.send(createAutomationStatus(automationId, 'error', { error: 'Execution failed' }));
+      session.send(getProtocol().createError('AUTOMATION_ERROR', 'Automation execution failed'));
+      session.send(getProtocol().createAutomationStatus(automationId, 'error', { error: 'Execution failed' }));
     }
   }
 
@@ -1747,7 +1732,7 @@ class DashboardServer extends EventEmitter {
     const { id: automationId } = message;
 
     if (!automationId) {
-      session.send(createError('INVALID_REQUEST', 'Automation ID is required'));
+      session.send(getProtocol().createError('INVALID_REQUEST', 'Automation ID is required'));
       return;
     }
 
@@ -1757,8 +1742,8 @@ class DashboardServer extends EventEmitter {
     }
 
     this._runningAutomations.delete(automationId);
-    session.send(createAutomationStatus(automationId, 'idle'));
-    session.send(createNotification('info', 'Automation', `${automationId} stopped`));
+    session.send(getProtocol().createAutomationStatus(automationId, 'idle'));
+    session.send(getProtocol().createNotification('info', 'Automation', `${automationId} stopped`));
   }
 
   // ==========================================================================
@@ -1773,7 +1758,7 @@ class DashboardServer extends EventEmitter {
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
-    session.send(createInboxList(items));
+    session.send(getProtocol().createInboxList(items));
   }
 
   /**
@@ -1783,13 +1768,13 @@ class DashboardServer extends EventEmitter {
     const { id: itemId, action } = message;
 
     if (!itemId) {
-      session.send(createError('INVALID_REQUEST', 'Item ID is required'));
+      session.send(getProtocol().createError('INVALID_REQUEST', 'Item ID is required'));
       return;
     }
 
     const item = this._inbox.get(itemId);
     if (!item) {
-      session.send(createError('NOT_FOUND', `Inbox item ${itemId} not found`));
+      session.send(getProtocol().createError('NOT_FOUND', `Inbox item ${itemId} not found`));
       return;
     }
 
@@ -1797,14 +1782,14 @@ class DashboardServer extends EventEmitter {
       case 'accept':
         // Mark as accepted and remove
         item.status = 'accepted';
-        session.send(createNotification('success', 'Inbox', `Accepted: ${item.title}`));
+        session.send(getProtocol().createNotification('success', 'Inbox', `Accepted: ${item.title}`));
         this._inbox.delete(itemId);
         break;
 
       case 'dismiss':
         // Mark as dismissed and remove
         item.status = 'dismissed';
-        session.send(createNotification('info', 'Inbox', `Dismissed: ${item.title}`));
+        session.send(getProtocol().createNotification('info', 'Inbox', `Dismissed: ${item.title}`));
         this._inbox.delete(itemId);
         break;
 
@@ -1814,7 +1799,7 @@ class DashboardServer extends EventEmitter {
         break;
 
       default:
-        session.send(createError('INVALID_ACTION', `Unknown action: ${action}`));
+        session.send(getProtocol().createError('INVALID_ACTION', `Unknown action: ${action}`));
         return;
     }
 
