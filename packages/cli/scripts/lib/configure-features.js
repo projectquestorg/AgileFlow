@@ -54,12 +54,12 @@ const FEATURES = {
     description: 'Auto-kill duplicate Claude processes in same directory to prevent freezing',
   },
   claudeflags: {
-    metadataOnly: true,
-    description: 'Default flags for Claude CLI (e.g., --dangerously-skip-permissions)',
+    metadataOnly: false,
+    description: 'Default flags for Claude CLI (sets permissions.defaultMode in .claude/settings.json)',
   },
   agentteams: {
-    metadataOnly: true,
-    description: 'Enable Claude Code native Agent Teams (experimental multi-agent orchestration)',
+    metadataOnly: false,
+    description: 'Enable Claude Code native Agent Teams (sets env var in .claude/settings.json)',
   },
 };
 
@@ -323,8 +323,24 @@ function enableFeature(feature, options = {}, version) {
   }
 
   // Handle claude flags (e.g., --dangerously-skip-permissions)
+  // Also sets permissions.defaultMode in .claude/settings.json
   if (feature === 'claudeflags') {
     const defaultFlags = options.flags || '--dangerously-skip-permissions';
+
+    // Map CLI flags to settings.json defaultMode values
+    const flagToMode = {
+      '--dangerously-skip-permissions': 'bypassPermissions',
+      '--permission-mode acceptEdits': 'acceptEdits',
+    };
+    const defaultMode = flagToMode[defaultFlags];
+
+    if (defaultMode) {
+      settings.permissions = settings.permissions || {};
+      settings.permissions.defaultMode = defaultMode;
+      writeJSON('.claude/settings.json', settings);
+      info(`Set permissions.defaultMode = "${defaultMode}" in .claude/settings.json`);
+    }
+
     updateMetadata(
       {
         features: {
@@ -340,11 +356,17 @@ function enableFeature(feature, options = {}, version) {
     );
     success(`Default Claude flags configured: ${defaultFlags}`);
     info('These flags will be passed to Claude when launched via "af" or "agileflow"');
+    if (defaultMode) {
+      info('Restart Claude Code for the new default mode to take effect');
+    }
     return true;
   }
 
-  // Handle agent teams (metadata only)
+  // Handle agent teams - set env var in .claude/settings.json
   if (feature === 'agentteams') {
+    settings.env = settings.env || {};
+    settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+    writeJSON('.claude/settings.json', settings);
     updateMetadata(
       {
         features: {
@@ -358,8 +380,8 @@ function enableFeature(feature, options = {}, version) {
       version
     );
     success('Native Agent Teams enabled');
-    info('Claude Code will use native TeamCreate/SendMessage tools when available');
-    info('Requires: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (set by Claude Code)');
+    info('Set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.json');
+    info('Claude Code will use native TeamCreate/SendMessage tools');
     info('Fallback: subagent mode (Task/TaskOutput) when native is unavailable');
     return true;
   }
@@ -761,8 +783,13 @@ function disableFeature(feature, version) {
     return true;
   }
 
-  // Disable claude flags
+  // Disable claude flags - also reset permissions.defaultMode in settings.json
   if (feature === 'claudeflags') {
+    if (settings.permissions?.defaultMode) {
+      delete settings.permissions.defaultMode;
+      writeJSON('.claude/settings.json', settings);
+      info('Removed permissions.defaultMode from .claude/settings.json');
+    }
     updateMetadata(
       {
         features: {
@@ -778,11 +805,19 @@ function disableFeature(feature, version) {
     );
     success('Default Claude flags disabled');
     info('Claude will launch with default permissions (prompts for each action)');
+    info('Restart Claude Code for the change to take effect');
     return true;
   }
 
-  // Disable agent teams
+  // Disable agent teams - remove env var from .claude/settings.json
   if (feature === 'agentteams') {
+    if (settings.env) {
+      delete settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+      if (Object.keys(settings.env).length === 0) {
+        delete settings.env;
+      }
+    }
+    writeJSON('.claude/settings.json', settings);
     updateMetadata(
       {
         features: {
@@ -796,6 +831,7 @@ function disableFeature(feature, version) {
       version
     );
     success('Native Agent Teams disabled');
+    info('Removed CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS from .claude/settings.json');
     info('AgileFlow will use subagent mode (Task/TaskOutput) for multi-agent orchestration');
     return true;
   }

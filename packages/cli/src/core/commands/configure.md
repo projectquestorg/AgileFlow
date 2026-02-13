@@ -411,6 +411,8 @@ Present the Sessions sub-menu:
 
 Configure default startup mode for new sessions created with `/agileflow:session:new`.
 
+**How it works**: When skip-permissions is selected, `/configure` sets `permissions.defaultMode = "bypassPermissions"` in `.claude/settings.json`. Claude Code reads this on startup and skips all permission prompts automatically. No CLI flags needed.
+
 First, read current setting:
 ```bash
 cat docs/00-meta/agileflow-metadata.json | grep '"defaultStartupMode"' 2>/dev/null || echo "normal"
@@ -441,38 +443,45 @@ Map selection to value:
 | Accept edits only | `accept-edits` |
 | Don't start Claude | `no-claude` |
 
-Update the metadata file:
-```bash
-# Read current metadata
-metadata=$(cat docs/00-meta/agileflow-metadata.json)
+Update the metadata file AND configure the CLI flags:
 
-# Update defaultStartupMode (using jq if available, or manual edit)
-# The value should be one of: normal, skip-permissions, accept-edits, no-claude
+1. Update `docs/00-meta/agileflow-metadata.json`:
+   - Find: `"defaultStartupMode": "..."`
+   - Replace with: `"defaultStartupMode": "{selected_value}"`
+
+2. **Also run** the configure script to set Claude Code's permission mode:
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=claudeflags --flags="{cli_flag}"
 ```
 
-Or use the Edit tool to update `docs/00-meta/agileflow-metadata.json`:
-- Find: `"defaultStartupMode": "..."`
-- Replace with: `"defaultStartupMode": "{selected_value}"`
+Where `{cli_flag}` is:
+- `skip-permissions` → `--dangerously-skip-permissions` (sets `permissions.defaultMode = "bypassPermissions"`)
+- `accept-edits` → `--permission-mode acceptEdits` (sets `permissions.defaultMode = "acceptEdits"`)
+- `normal` → (disable claudeflags instead: `--disable=claudeflags`, removes `defaultMode`)
 
 Display confirmation:
 ```
 ✅ Default session startup mode set to: {selected_value}
 
-When creating new sessions with /agileflow:session:new, this will be the
-recommended option. You can still choose a different mode per-session.
+What was configured:
+  • .claude/settings.json: permissions.defaultMode = "{defaultMode}"
+  • Metadata: defaultStartupMode = "{selected_value}"
+  • AgileFlow commands (af, /session:new) will also use this mode
+
+⚠️  Restart Claude Code for the new permission mode to take effect.
 ```
 
-**If user selected "Skip permissions" or "Accept edits only"**, offer Claude settings integration:
+**If user selected "Skip permissions" or "Accept edits only"**, offer shell alias:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Also configure Claude to default to this mode?",
-  "header": "Claude settings",
+  "question": "Also add a shell alias so 'claude' always uses this mode?",
+  "header": "Shell alias",
   "multiSelect": false,
   "options": [
-    {"label": "af wrapper only (Recommended)", "description": "The 'af' command already uses this setting. No other changes needed."},
-    {"label": "Also add shell alias", "description": "Add alias to your shell profile so 'claude' also uses this mode"},
+    {"label": "AgileFlow commands only (Recommended)", "description": "Only 'af' and /session:new use this mode. Direct 'claude' command unchanged."},
+    {"label": "Also add shell alias", "description": "Add 'alias claude=\"claude {flag}\"' to shell profile"},
     {"label": "No thanks", "description": "Keep current setup"}
   ]
 }]</parameter>
@@ -511,10 +520,10 @@ Run `source {SHELL_RC}` or open a new terminal for the alias to take effect.
 To remove later: edit {SHELL_RC} and remove the 'alias claude=' line.
 ```
 
-**If "af wrapper only" or "No thanks" selected:**
+**If "AgileFlow commands only" or "No thanks" selected:**
 ```
-The 'af' command already reads the configured startup mode automatically.
-No additional changes needed.
+AgileFlow commands (af, /session:new) will use the configured mode automatically.
+Direct 'claude' command remains unchanged.
 ```
 
 #### If "Agent Teams" selected
@@ -547,16 +556,19 @@ Then present options:
 node .agileflow/scripts/agileflow-configure.js --enable=agentteams
 ```
 
+This sets `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `.claude/settings.json` under the `env` key.
+Claude Code reads this automatically on startup - no manual env var setup needed.
+
 Display:
 ```
 ✅ Native Agent Teams enabled
 
-When Claude Code sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, AgileFlow will:
-  • Use native TeamCreate for parallel agent spawning
-  • Send messages via both native SendMessage AND JSONL bus
-  • Track team lifecycle events in session-state.json
+What was configured:
+  • Set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.json
+  • Claude Code will use native TeamCreate/SendMessage tools
+  • Fallback: subagent mode (Task/TaskOutput) when native is unavailable
 
-When the flag is not set, AgileFlow falls back to subagent mode automatically.
+⚠️  Restart Claude Code for the env var to take effect.
 ```
 
 **If "Disable" selected:**
@@ -564,12 +576,17 @@ When the flag is not set, AgileFlow falls back to subagent mode automatically.
 node .agileflow/scripts/agileflow-configure.js --disable=agentteams
 ```
 
+This removes `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` from `.claude/settings.json`.
+
 Display:
 ```
 ✅ Native Agent Teams disabled
 
-AgileFlow will use subagent mode (Task/TaskOutput) for all multi-agent
-orchestration. This is the stable, well-tested mode.
+What was configured:
+  • Removed CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS from .claude/settings.json
+  • AgileFlow will use subagent mode (Task/TaskOutput) for all multi-agent orchestration
+
+⚠️  Restart Claude Code for the change to take effect.
 ```
 
 **If "What is this?" selected:**
@@ -592,7 +609,7 @@ How AgileFlow integrates:
   4. Subagent mode remains available as automatic fallback
 
 Requirements:
-  • Claude Code must set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+  • /configure sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.json automatically
   • Feature is opt-in per project via this configuration
   • CI/CD always uses subagent mode (safety gate)
 ```
