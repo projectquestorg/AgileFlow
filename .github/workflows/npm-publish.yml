@@ -12,6 +12,10 @@ permissions:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    env:
+      # Safety: Disable native Agent Teams in CI to prevent accidental agent spawning
+      # in headless containers. AgileFlow uses subagent mode (Task/TaskOutput) in CI.
+      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -19,6 +19,7 @@ const {
   sanitizeDebugOutput,
   wrapSafe,
   wrapSafeAsync,
+  tryOptional,
 } = require('../../lib/errors');
 
 describe('errors.js', () => {
@@ -684,6 +685,61 @@ describe('errors.js', () => {
       // but it won't be blocked by sanitize
       const result = safeExec('echo test', { sanitize: false, silent: true });
       expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('tryOptional', () => {
+    it('returns value on success', () => {
+      const result = tryOptional(() => 42, 'test');
+      expect(result).toBe(42);
+    });
+
+    it('returns undefined on error', () => {
+      const result = tryOptional(() => { throw new Error('fail'); }, 'test');
+      expect(result).toBeUndefined();
+    });
+
+    it('works without label parameter', () => {
+      const result = tryOptional(() => 'hello');
+      expect(result).toBe('hello');
+    });
+
+    it('returns undefined without label on error', () => {
+      const result = tryOptional(() => { throw new Error('fail'); });
+      expect(result).toBeUndefined();
+    });
+
+    it('logs to debug when AGILEFLOW_DEBUG=1', () => {
+      // DEBUG is cached at module load time, so re-require with env set
+      const originalDebug = process.env.AGILEFLOW_DEBUG;
+      process.env.AGILEFLOW_DEBUG = '1';
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      try {
+        jest.resetModules();
+        const { tryOptional: freshTryOptional } = require('../../lib/errors');
+        freshTryOptional(() => { throw new Error('test error'); }, 'myLabel');
+        const output = consoleSpy.mock.calls.map(c => c.join(' ')).join(' ');
+        expect(output).toContain('tryOptional');
+        expect(output).toContain('myLabel');
+      } finally {
+        process.env.AGILEFLOW_DEBUG = originalDebug;
+        consoleSpy.mockRestore();
+        jest.resetModules();
+      }
+    });
+
+    it('returns complex values', () => {
+      const obj = { a: 1, b: [2, 3] };
+      const result = tryOptional(() => obj, 'complex');
+      expect(result).toEqual({ a: 1, b: [2, 3] });
+    });
+
+    it('returns falsy values correctly', () => {
+      expect(tryOptional(() => 0, 'zero')).toBe(0);
+      expect(tryOptional(() => '', 'empty')).toBe('');
+      expect(tryOptional(() => false, 'false')).toBe(false);
+      expect(tryOptional(() => null, 'null')).toBeNull();
     });
   });
 

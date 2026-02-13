@@ -66,10 +66,12 @@ describe('process-cleanup', () => {
         throw new Error(`Unexpected path: ${filePath}`);
       });
       fs.readFileSync.mockImplementation(filePath => {
-        if (filePath === `/proc/${process.pid}/stat`) return makeStat(process.pid, shellPid, 'node');
+        if (filePath === `/proc/${process.pid}/stat`)
+          return makeStat(process.pid, shellPid, 'node');
         if (filePath === `/proc/${shellPid}/stat`) return makeStat(shellPid, 1, 'bash');
         if (filePath === `/proc/${shellPid}/cmdline`) return '/bin/bash\0-c\0node\0';
-        if (filePath === `/proc/${duplicatePid}/cmdline`) return '/usr/local/bin/claude\0--resume\0';
+        if (filePath === `/proc/${duplicatePid}/cmdline`)
+          return '/usr/local/bin/claude\0--resume\0';
         throw new Error(`Unexpected path: ${filePath}`);
       });
 
@@ -115,12 +117,15 @@ describe('process-cleanup', () => {
         throw new Error(`Unexpected path: ${filePath}`);
       });
       fs.readFileSync.mockImplementation(filePath => {
-        if (filePath === `/proc/${process.pid}/stat`) return makeStat(process.pid, shellPid, 'node');
-        if (filePath === `/proc/${shellPid}/stat`) return makeStat(shellPid, claudeAncestorPid, 'bash');
+        if (filePath === `/proc/${process.pid}/stat`)
+          return makeStat(process.pid, shellPid, 'node');
+        if (filePath === `/proc/${shellPid}/stat`)
+          return makeStat(shellPid, claudeAncestorPid, 'bash');
         if (filePath === `/proc/${shellPid}/cmdline`) return '/bin/bash\0-c\0node\0';
         if (filePath === `/proc/${claudeAncestorPid}/cmdline`)
           return '/usr/local/bin/claude\0--resume\0';
-        if (filePath === `/proc/${duplicatePid}/cmdline`) return '/usr/local/bin/claude\0--resume\0';
+        if (filePath === `/proc/${duplicatePid}/cmdline`)
+          return '/usr/local/bin/claude\0--resume\0';
         throw new Error(`Unexpected path: ${filePath}`);
       });
 

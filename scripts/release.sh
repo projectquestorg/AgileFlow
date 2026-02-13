@@ -95,6 +95,19 @@ cd ../..
 echo "✅ No high-severity vulnerabilities in published package"
 echo ""
 
+# Step 0.8: Run test suite
+echo "Step 0.8: Running test suite..."
+cd packages/cli
+if ! npm test 2>&1 | tail -5; then
+  echo ""
+  echo "❌ Tests failed! Fix failing tests before releasing."
+  cd ../..
+  exit 1
+fi
+cd ../..
+echo "✅ All tests passed"
+echo ""
+
 # Step 1: Sync README from root to CLI (root is source of truth)
 echo "Step 1: Syncing README.md from root to packages/cli/..."
 cp README.md packages/cli/README.md

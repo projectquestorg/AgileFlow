@@ -24,11 +24,12 @@ const path = require('path');
 const { detectLifecyclePhase, getRelevantPhases } = require('./lib/lifecycle-detector');
 const { runDetectorsForPhases } = require('./lib/signal-detectors');
 
-let safeReadJSON, safeWriteJSON;
+let safeReadJSON, safeWriteJSON, tryOptional;
 try {
   const errors = require('../lib/errors');
   safeReadJSON = errors.safeReadJSON;
   safeWriteJSON = errors.safeWriteJSON;
+  tryOptional = errors.tryOptional;
 } catch {
   // Fallback for when running outside package context
   safeReadJSON = (filePath, opts = {}) => {
@@ -53,6 +54,7 @@ try {
       return { ok: false, error: e.message };
     }
   };
+  tryOptional = (fn, _label) => { try { return fn(); } catch { return undefined; } };
 }
 
 // =============================================================================
@@ -355,9 +357,8 @@ if (require.main === module) {
 
   // Build minimal prefetched structure
   const { execSync } = require('child_process');
-  let gitBranch = '', gitStatus = '';
-  try { gitBranch = execSync('git branch --show-current', { encoding: 'utf8' }).trim(); } catch { /* */ }
-  try { gitStatus = execSync('git status --short', { encoding: 'utf8' }).trim(); } catch { /* */ }
+  const gitBranch = tryOptional(() => execSync('git branch --show-current', { encoding: 'utf8' }).trim(), 'git branch') || '';
+  const gitStatus = tryOptional(() => execSync('git status --short', { encoding: 'utf8' }).trim(), 'git status') || '';
 
   const prefetched = {
     json: {

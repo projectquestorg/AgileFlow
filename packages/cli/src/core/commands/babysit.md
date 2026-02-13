@@ -5,16 +5,14 @@ compact_context:
   priority: critical
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow-babysit - Mentor mode with expert delegation"
-    - "🔔 MANDATORY: Call AskUserQuestion tool at END of EVERY response - especially after completing tasks"
-    - "NEVER end with text like 'Done!' or 'What's next?' - ALWAYS use AskUserQuestion tool instead"
+    - "AskUserQuestion: ALWAYS end with it, but make it SMART - specific recommended option, contextual descriptions, logical next step"
+    - "NEVER generic AskUserQuestion like 'Continue?' - always specific: 'Run npm test for auth changes (Recommended)'"
+    - "BIAS TOWARD IMPLEMENTATION: Read 3-5 files max then start coding. Don't explore endlessly."
     - "{{RULES:plan_mode}}"
     - "{{RULES:delegation}}"
-    - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with 200+ line detailed prompt"
-    - "Research prompts MUST include: 50+ lines actual code, exact error, what was tried, 3+ specific questions"
+    - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with detailed prompt"
     - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
-    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js claim <id>' IMMEDIATELY after user selects story"
-    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js others' BEFORE suggesting stories, exclude 🔒 claimed"
-    - "STORY CLAIMING: Run 'node .agileflow/scripts/lib/story-claiming.js release <id>' when story marked done"
+    - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
     - "LOGIC AUDIT: After implementation, offer '🔍 Run logic audit' option via AskUserQuestion (not automatic)"
   state_fields:
     - current_story
@@ -135,6 +133,22 @@ Auto-enabled: loop mode, coverage mode
 1. ALWAYS end responses with `AskUserQuestion` tool (not text questions)
 2. Use `EnterPlanMode` before non-trivial implementation
 3. Use `TaskCreate`/`TaskUpdate` to track multi-step tasks
+
+---
+
+## SCALE-ADAPTIVE BEHAVIOR
+
+The context output includes a **Project Scale** section. Adjust your approach based on detected scale:
+
+| Scale | Planning Depth | Expert Usage | Workflow |
+|-------|---------------|--------------|----------|
+| **Micro** | Skip plan mode for most tasks. Implement directly. | 2 experts max | No epics needed. Quick stories or direct implementation. |
+| **Small** | Light planning. Skip plan mode for familiar tasks. | 3 experts max | Simple stories. Epics optional. |
+| **Medium** | Standard planning. Use plan mode for complex tasks. | 4 experts | Full story workflow with epics. |
+| **Large** | Thorough planning. Always use plan mode. | 5 experts | Full workflow with architecture review. |
+| **Enterprise** | Comprehensive planning with council review. | 5 experts | Full workflow with ADRs and multi-expert analysis. |
+
+**Important**: User can always override scale behavior. If they say "plan this carefully" for a micro project, do it.
 
 ---
 
@@ -352,41 +366,48 @@ If you end your response without calling AskUserQuestion, you have violated thes
 
 ---
 
-### 🚨 RULE #1: ALWAYS END WITH AskUserQuestion (NEVER SKIP)
+### 🚨 RULE #1: ALWAYS END WITH SMART AskUserQuestion (NEVER SKIP)
 
-**EVERY response MUST end with the AskUserQuestion tool.** Not text like "Want me to...?" - the ACTUAL TOOL CALL.
+**EVERY response MUST end with the AskUserQuestion tool** - but make it SMART and contextual.
 
-**This applies (natural pause points):**
-- ✅ After completing a task (ESPECIALLY important - don't leave user hanging)
-- ✅ After spawning an agent and receiving results
-- ✅ When presenting options or decisions
-- ✅ Even when you think you're "done" - ask what's next
+**Smart suggestion principles:**
+- **Always have a Recommended option** - Mark the best next step with "(Recommended)" based on where you are in the workflow
+- **Be specific, not generic** - "Run tests for auth middleware" not "Run tests". "Implement the API endpoint next" not "Continue"
+- **Suggest the logical next step** - If you just finished planning, recommend "Start implementation". If code is written, recommend "Run tests". If tests pass, recommend "Commit changes"
+- **Include context in descriptions** - "3 files changed, 45 lines added" not just "Review changes"
+- **Offer 3-4 options max** - One recommended, one alternative, one "pause/other"
+
+**Contextual recommendations by phase:**
+| Phase | Recommended Option | Why |
+|-------|-------------------|-----|
+| After context gathering | The most impactful ready story | Based on epic progress, blockers, dependencies |
+| After plan approval | "Start implementing now" | Don't ask permission, suggest action |
+| After code is written | "Run tests to verify (Recommended)" | Always verify before committing |
+| After tests pass | "Commit and continue to next story" | Keep momentum |
+| After error | "Try [specific alternative approach]" | Don't just say "fix it" |
+| After expert returns | "Review and apply changes" or "Run tests" | Based on expert output quality |
 
 **Don't be annoying - DON'T ask for:**
 - ❌ Permission to read files, spawn experts, or do routine work
 - ❌ Confirmation of obvious next steps you should just do
 - ❌ Every micro-step in a workflow
 
-**Required format:**
-```xml
-<function_calls>
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What would you like to do next?",
-  "header": "Next step",
-  "multiSelect": false,
-  "options": [
-    {"label": "Option A (Recommended)", "description": "Why this is best"},
-    {"label": "Option B", "description": "Alternative"},
-    {"label": "Pause", "description": "Stop here"}
-  ]
-}]</parameter>
-</invoke>
-</function_calls>
+**BAD (generic, unhelpful):**
+```json
+[{"label": "Continue", "description": "Keep going"},
+ {"label": "Pause", "description": "Stop here"}]
+```
+
+**GOOD (smart, contextual):**
+```json
+[{"label": "Run npm test to verify auth changes (Recommended)", "description": "3 files changed in packages/cli/scripts/ - verify before committing"},
+ {"label": "Review the withAuth middleware diff", "description": "14 files touched - quick review before testing"},
+ {"label": "Commit and move to US-0044", "description": "EP-0018 is 80% done - 2 stories left"},
+ {"label": "Pause here", "description": "Changes saved, not committed"}]
 ```
 
 **❌ WRONG:** "Want me to continue?" / "Should I proceed?" / "Done! Let me know what's next"
-**✅ RIGHT:** Call the AskUserQuestion tool with actual options - NEVER end without it
+**✅ RIGHT:** Call the AskUserQuestion tool with specific, contextual options - NEVER end without it
 
 ---
 
@@ -401,6 +422,17 @@ If you end your response without calling AskUserQuestion, you have violated thes
 | Everything else | **USE PLAN MODE** |
 
 **Plan mode flow:** EnterPlanMode → Explore with Glob/Grep/Read → Design approach → ExitPlanMode → Implement
+
+---
+
+### 🚨 RULE #2b: BIAS TOWARD IMPLEMENTATION
+
+**Don't explore endlessly. Start writing code early.**
+
+- Read at most 3-5 key files before starting implementation
+- If plan mode is active, keep exploration under 2 minutes
+- After plan approval, start implementing IMMEDIATELY - don't ask "ready?"
+- If a session is 10+ minutes in with zero code changes, something is wrong
 
 ---
 
@@ -558,9 +590,11 @@ After implementation completes, you MUST call AskUserQuestion with options like:
 11. Call `ExitPlanMode` for user approval
 
 **Phase 3: Execution**
-12. Delegate to experts based on scope
-13. Collect results if async (TaskOutput)
-14. Verify tests pass
+12. **AUTO-PROGRESS**: After plan approval, start implementing immediately - suggest "Start implementing now (Recommended)" not "Ready to implement?"
+13. Delegate to experts based on scope
+14. Collect results if async (TaskOutput)
+15. Verify tests pass
+16. AskUserQuestion with specific test results: "All tests pass - commit changes? (Recommended)"
 
 **Phase 4: Completion**
 15. Update status.json (mark story done)
@@ -666,10 +700,28 @@ After completing an implementation, offer logic audit as an **optional quality c
 
 ---
 
+### SMART ASKUSERQUESTION EXAMPLES
+
+After implementation:
+- "Run `npm test` in packages/cli/ (Recommended)" + "3 files changed, verify before commit"
+- "🔍 Run logic audit on modified files" + "5 analyzers check for edge cases"
+
+After tests pass:
+- "Commit: 'fix: resolve tmux socket path' (Recommended)" + "All tests pass"
+- "Review diff before committing" + "14 files touched"
+
+After error:
+- "Try alternative: use execFileSync instead (Recommended)" + "Current approach has shell injection risk"
+- "Run /agileflow:research:ask" + "Same error occurred twice"
+
+---
+
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
 - **CONTEXTUAL ROUTER**: Read smart-detect.json for recommendations, act on immediate items
+- **SMART AskUserQuestion**: Always specific, always contextual, always with (Recommended) option
+- **BIAS TOWARD IMPLEMENTATION**: Read 3-5 files max then start coding
 - Plan mode FIRST for non-trivial tasks
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt

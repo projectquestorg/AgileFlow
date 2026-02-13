@@ -119,10 +119,20 @@ Clear separation: AuthService, AuthRepository, AuthController...</parameter>
 </invoke>
 ```
 
-**AskUserQuestion** (for approval):
+**AskUserQuestion** (use actual counts from scan):
 ```xml
 <invoke name="AskUserQuestion">
-<parameter name="questions">[{"question": "Generate stories for critical debt?", "header": "Action", "multiSelect": false, "options": [{"label": "Yes, create stories", "description": "Generate stories for top 5 critical items"}, {"label": "No, report only", "description": "Save report without creating stories"}]}]</parameter>
+<parameter name="questions">[{
+  "question": "Found [N] debt items ([critical] critical, [high] high). Total effort: ~[days] days. What next?",
+  "header": "Action",
+  "multiSelect": false,
+  "options": [
+    {"label": "Generate [N] stories for critical items (Recommended)", "description": "Create trackable stories for the [critical] critical-severity debt items"},
+    {"label": "Review debt items in detail first", "description": "Show full analysis for each item before deciding"},
+    {"label": "Export debt report to docs/08-project/", "description": "Save report as tech-debt-[date].md for team review"},
+    {"label": "Skip for now", "description": "Scan complete, [N] items identified"}
+  ]
+}]</parameter>
 </invoke>
 ```
 

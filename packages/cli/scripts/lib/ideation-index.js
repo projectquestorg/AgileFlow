@@ -29,6 +29,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { tryOptional } = require('../../lib/errors');
 
 // Default index file location
 const DEFAULT_INDEX_PATH = 'docs/00-meta/ideation-index.json';
@@ -151,11 +152,7 @@ function saveIdeationIndex(rootDir, index) {
     return { ok: true };
   } catch (err) {
     // Clean up temp file if it exists
-    try {
-      if (fs.existsSync(tempPath)) {
-        fs.unlinkSync(tempPath);
-      }
-    } catch {}
+    tryOptional(() => fs.unlinkSync(tempPath), 'cleanup temp');
     return { ok: false, error: `Failed to save ideation index: ${err.message}` };
   }
 }

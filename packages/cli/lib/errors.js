@@ -539,6 +539,23 @@ function wrapSafeAsync(fn, operationName = 'operation', options = {}) {
 }
 
 /**
+ * Execute a function and return its result, or undefined if it throws.
+ * Logs suppressed errors when AGILEFLOW_DEBUG=1.
+ *
+ * @param {Function} fn - Function to execute
+ * @param {string} [label] - Optional label for debug logging
+ * @returns {*} Function result on success, undefined on error
+ */
+function tryOptional(fn, label) {
+  try {
+    return fn();
+  } catch (err) {
+    debugLog('tryOptional', { label: label || 'anonymous', error: err.message });
+    return undefined;
+  }
+}
+
+/**
  * Safely parse JSON string with optional field validation
  * @param {string} content - JSON string to parse
  * @param {object} options - Optional settings
@@ -646,6 +663,7 @@ module.exports = {
   // Utility wrappers
   wrapSafe,
   wrapSafeAsync,
+  tryOptional,
 
   // Debug helper
   debugLog,

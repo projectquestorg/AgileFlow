@@ -87,6 +87,7 @@ SHOW_CONTEXT_BAR=true
 SHOW_SESSION_TIME=false
 SHOW_COST=false
 SHOW_GIT=true
+SHOW_SCALE=true
 
 # Check agileflow-metadata.json for component settings
 if [ -f "docs/00-meta/agileflow-metadata.json" ]; then
@@ -104,6 +105,7 @@ if [ -f "docs/00-meta/agileflow-metadata.json" ]; then
     SHOW_SESSION_TIME=$(echo "$COMPONENTS" | jq -r '.session_time | if . == null then true else . end')
     SHOW_COST=$(echo "$COMPONENTS" | jq -r '.cost | if . == null then true else . end')
     SHOW_GIT=$(echo "$COMPONENTS" | jq -r '.git | if . == null then true else . end')
+    SHOW_SCALE=$(echo "$COMPONENTS" | jq -r '.scale | if . == null then true else . end')
   fi
 fi
 
@@ -646,6 +648,28 @@ if [ "$SHOW_SESSION" = "true" ]; then
 fi
 
 # ============================================================================
+# Scale Detection (EP-0033: Scale-Adaptive Workflows)
+# ============================================================================
+# Reads cached scale from session-state.json (written by welcome hook)
+SCALE_DISPLAY=""
+if [ "$SHOW_SCALE" = "true" ] && [ -f "docs/09-agents/session-state.json" ]; then
+  DETECTED_SCALE=$(jq -r '.scale_detection.scale // empty' docs/09-agents/session-state.json 2>/dev/null)
+  if [ -n "$DETECTED_SCALE" ] && [ "$DETECTED_SCALE" != "null" ]; then
+    case "$DETECTED_SCALE" in
+      micro)      SCALE_COLOR="$CYAN";  SCALE_ICON="◦" ;;
+      small)      SCALE_COLOR="$CYAN";  SCALE_ICON="○" ;;
+      medium)     SCALE_COLOR="$GREEN"; SCALE_ICON="◎" ;;
+      large)      SCALE_COLOR="$YELLOW"; SCALE_ICON="●" ;;
+      enterprise) SCALE_COLOR="$RED";   SCALE_ICON="◉" ;;
+      *)          SCALE_COLOR="$DIM";   SCALE_ICON="◎" ;;
+    esac
+    # Capitalize first letter
+    SCALE_LABEL="$(echo "$DETECTED_SCALE" | sed 's/^./\U&/')"
+    SCALE_DISPLAY="${SCALE_COLOR}${SCALE_ICON}${SCALE_LABEL}${RESET}"
+  fi
+fi
+
+# ============================================================================
 # Build Status Line
 # ============================================================================
 OUTPUT=""
@@ -727,6 +751,12 @@ fi
 if [ "$SHOW_GIT" = "true" ] && [ -n "$GIT_DISPLAY" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
   OUTPUT="${OUTPUT}${GIT_DISPLAY}"
+fi
+
+# Add scale indicator (if enabled)
+if [ "$SHOW_SCALE" = "true" ] && [ -n "$SCALE_DISPLAY" ]; then
+  [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
+  OUTPUT="${OUTPUT}${SCALE_DISPLAY}"
 fi
 
 # Session health indicator (next to git branch)

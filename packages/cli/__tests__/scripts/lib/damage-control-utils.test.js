@@ -26,6 +26,7 @@ const {
   parseBashPatterns,
   parsePathPatterns,
   validatePathAgainstPatterns,
+  clearPatternCache,
   CONFIG_PATHS,
   STDIN_TIMEOUT_MS,
 } = require('../../../scripts/lib/damage-control-utils');
@@ -34,6 +35,7 @@ const {
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
+  statSync: jest.fn(),
 }));
 
 const fs = require('fs');
@@ -41,6 +43,9 @@ const fs = require('fs');
 describe('damage-control-utils', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearPatternCache();
+    // Default statSync mock for pattern cache
+    fs.statSync.mockReturnValue({ mtimeMs: Date.now() });
   });
 
   describe('expandPath', () => {

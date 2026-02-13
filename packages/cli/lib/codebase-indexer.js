@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { LRUCache } = require('./file-cache');
+const { LRUCache } = require('./cache-provider');
 const { safeReadJSON, safeWriteJSON, debugLog } = require('./errors');
 
 // Debug mode via env var

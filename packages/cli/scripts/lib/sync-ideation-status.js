@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { tryOptional } = require('../../lib/errors');
 
 // Paths relative to project root
 const STATUS_PATH = 'docs/09-agents/status.json';
@@ -49,9 +50,7 @@ function saveJSON(filePath, data) {
     fs.renameSync(tempPath, filePath);
     return { ok: true };
   } catch (err) {
-    try {
-      if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
-    } catch {}
+    tryOptional(() => fs.unlinkSync(tempPath), 'cleanup temp');
     return { ok: false, error: `Failed to save ${filePath}: ${err.message}` };
   }
 }

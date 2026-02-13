@@ -321,6 +321,23 @@ function generateSummary(prefetched = null, options = {}) {
 
   summary += divider();
 
+  // Scale indicator (EP-0033)
+  let scaleDetectorSummary;
+  try { scaleDetectorSummary = require('./scale-detector'); } catch { /* not available */ }
+  if (scaleDetectorSummary) {
+    try {
+      const scaleResult = scaleDetectorSummary.detectScale({
+        rootDir: process.cwd(),
+        statusJson: prefetched?.json?.statusJson,
+        sessionState: prefetched?.json?.sessionState,
+      });
+      const label = scaleDetectorSummary.getScaleLabel(scaleResult.scale);
+      summary += row('Scale', label, C.lavender, C.cyan);
+    } catch {
+      // Silently ignore
+    }
+  }
+
   // Key files
   const keyFileChecks = [
     { path: 'CLAUDE.md', label: 'CLAUDE' },
@@ -437,12 +454,17 @@ function generateFullContent(prefetched = null, options = {}) {
 
   if (askUserQuestionConfig?.enabled) {
     content += `${C.coral}${C.bold}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${C.reset}\n`;
-    content += `${C.coral}${C.bold}┃ 🔔 MANDATORY: AskUserQuestion After EVERY Response      ┃${C.reset}\n`;
+    content += `${C.coral}${C.bold}┃ 🔔 SMART AskUserQuestion After EVERY Response           ┃${C.reset}\n`;
     content += `${C.coral}${C.bold}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${C.reset}\n`;
     content += `${C.bold}After completing ANY task${C.reset} (implementation, fix, etc.):\n`;
-    content += `${C.mintGreen}→ ALWAYS${C.reset} call ${C.skyBlue}AskUserQuestion${C.reset} tool to offer next steps\n`;
-    content += `${C.coral}→ NEVER${C.reset} end with text like "Done!" or "What's next?"\n\n`;
-    content += `${C.dim}Balance: Use at natural pause points. Don't ask permission for routine work.${C.reset}\n\n`;
+    content += `${C.mintGreen}→ ALWAYS${C.reset} call ${C.skyBlue}AskUserQuestion${C.reset} tool with ${C.bold}SMART, contextual${C.reset} options\n`;
+    content += `${C.coral}→ NEVER${C.reset} generic options like "Continue" or "What next?"\n\n`;
+    content += `${C.bold}Smart Suggestion Principles:${C.reset}\n`;
+    content += `${C.mintGreen}→${C.reset} Always mark one option ${C.bold}"(Recommended)"${C.reset} based on logical next step\n`;
+    content += `${C.mintGreen}→${C.reset} Be specific: ${C.dim}"Run npm test for auth changes"${C.reset} not ${C.dim}"Run tests"${C.reset}\n`;
+    content += `${C.mintGreen}→${C.reset} Include context: ${C.dim}"3 files changed"${C.reset}, story IDs, test results\n`;
+    content += `${C.mintGreen}→${C.reset} Suggest workflow progression: plan → implement → test → commit\n`;
+    content += `${C.mintGreen}→${C.reset} After errors: suggest specific alternative, not ${C.dim}"fix it"${C.reset}\n\n`;
   }
 
   // CONTEXT BUDGET WARNING
@@ -477,6 +499,27 @@ function generateFullContent(prefetched = null, options = {}) {
       content += `  ${C.dim}• ${section}: ${desc}${C.reset}\n`;
     });
     content += '\n';
+  }
+
+  // SCALE DETECTION (EP-0033)
+  let scaleDetector;
+  try { scaleDetector = require('./scale-detector'); } catch { /* not available */ }
+  if (scaleDetector) {
+    try {
+      const scaleResult = scaleDetector.detectScale({
+        rootDir: process.cwd(),
+        statusJson: prefetched?.json?.statusJson,
+        sessionState: prefetched?.json?.sessionState,
+      });
+      const recs = scaleDetector.getScaleRecommendations(scaleResult.scale);
+      const label = scaleDetector.getScaleLabel(scaleResult.scale);
+      content += `\n${C.cyan}${C.bold}═══ Project Scale: ${label} ═══${C.reset}\n`;
+      content += `${C.dim}Detected: ${scaleResult.metrics.files} files, ${scaleResult.metrics.stories} stories, ${scaleResult.metrics.commits} commits (6mo)${C.reset}\n`;
+      content += `Planning depth: ${C.mintGreen}${recs.planningDepth}${C.reset} | Experts: ${C.mintGreen}${recs.expertCount}${C.reset}\n`;
+      content += `${C.dim}${recs.description}${C.reset}\n`;
+    } catch {
+      // Silently ignore scale detection errors
+    }
   }
 
   // GIT STATUS

@@ -95,19 +95,36 @@ Automatically generate changelog from PR titles, commits, and tags.
 - Memory leak in WebSocket handler (#139)
 ```
 
-**Tool Usage Example**:
+**Tool Usage Examples**:
+
+Post-generation (use actual commit counts):
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Changelog preview: [N] entries ([added] added, [fixed] fixed, [changed] changed). Suggested version: [version]. What next?",
+  "header": "Changelog",
+  "multiSelect": false,
+  "options": [
+    {"label": "Add [N] entries to CHANGELOG.md (Recommended)", "description": "Update changelog with [version] section and commit"},
+    {"label": "Preview entries first", "description": "Show full formatted changelog section before writing"},
+    {"label": "Edit entries manually", "description": "Adjust wording, recategorize, or remove entries"},
+    {"label": "Skip", "description": "Preview generated, no changes to CHANGELOG.md"}
+  ]
+}]</parameter>
+</invoke>
+```
+
 When commits need manual categorization:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "How should this commit be categorized?",
-  "header": "Categorize Commit",
+  "question": "How should '[commit message]' be categorized?",
+  "header": "Categorize",
   "multiSelect": false,
   "options": [
     {"label": "Added", "description": "New feature or capability (feat:)"},
     {"label": "Changed", "description": "Modification or enhancement (refactor:, perf:)"},
     {"label": "Fixed", "description": "Bug fix (fix:)"},
-    {"label": "Security", "description": "Security fix (security:)"},
     {"label": "Skip", "description": "Don't include in changelog"}
   ]
 }]</parameter>

@@ -122,6 +122,34 @@ Extract from user's description:
 - Primary use cases
 - Target workflow
 
+**STEP 2b**: Ask for skill metadata (model and category)
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Which AI model should this skill prefer?",
+  "header": "Model",
+  "multiSelect": false,
+  "options": [
+    {"label": "Haiku (Recommended)", "description": "Fast and cheap - good for most skills"},
+    {"label": "Sonnet", "description": "Balanced - good for complex analysis"},
+    {"label": "Opus", "description": "Most capable - for critical decisions"},
+    {"label": "No preference", "description": "Let the caller decide"}
+  ]
+}, {
+  "question": "What category best describes this skill?",
+  "header": "Category",
+  "multiSelect": false,
+  "options": [
+    {"label": "Database", "description": "Database operations, queries, migrations"},
+    {"label": "API", "description": "REST APIs, GraphQL, webhooks"},
+    {"label": "UI", "description": "Components, styling, design system"},
+    {"label": "DevOps", "description": "CI/CD, deployment, infrastructure"}
+  ]
+}]</parameter>
+</invoke>
+```
+
 ---
 
 ### Phase 2: Plan Mode Research (CRITICAL)
@@ -265,10 +293,16 @@ User reviews the plan and approves or requests changes.
 
 **STEP 8**: Generate SKILL.md
 
+Include enhanced metadata frontmatter for skill discovery and delegation:
+
 ```markdown
 ---
 name: <skill-name-with-hyphens>
+type: skill
 description: Use when <triggering conditions and symptoms>
+model: <haiku|sonnet|opus>
+category: <database|api|ui|testing|devops|security|custom>
+version: 1.0.0
 ---
 
 # <Skill Title>

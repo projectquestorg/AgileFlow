@@ -194,17 +194,18 @@ Suggested Story: "US-XXXX: Improve story template with AC examples"
 </invoke>
 ```
 
-**AskUserQuestion** (for feedback permission):
+**AskUserQuestion** (use actual story/sprint context):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Provide feedback on US-0042 completion?",
-  "header": "Optional Feedback",
+  "question": "[STORY] completed in [duration]. Quick feedback? (optional, ~2 min)",
+  "header": "Feedback",
   "multiSelect": false,
   "options": [
-    {"label": "Yes, provide feedback", "description": "Take 2-3 min to share insights"},
-    {"label": "Not now", "description": "Skip feedback"},
-    {"label": "Remind me later", "description": "Ask again next time"}
+    {"label": "Rate this story's workflow (Recommended)", "description": "Quick 1-5 ratings on AC clarity, estimate accuracy, and smoothness"},
+    {"label": "Report a workflow issue", "description": "Flag a specific problem encountered during [STORY]"},
+    {"label": "Suggest process improvement", "description": "Share an idea based on what you learned"},
+    {"label": "Skip for now", "description": "No feedback needed for [STORY]"}
   ]
 }]</parameter>
 </invoke>

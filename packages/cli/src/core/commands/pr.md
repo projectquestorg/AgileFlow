@@ -168,17 +168,18 @@ Suggest a commit message following conventional format:
 </invoke>
 ```
 
-**AskUserQuestion** (for confirmation):
+**AskUserQuestion** (for confirmation - include context from story):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Use this PR description?",
-  "header": "Confirm",
+  "question": "PR description ready for [STORY]: [N] files changed, [AC_count] AC items. What next?",
+  "header": "PR Action",
   "multiSelect": false,
   "options": [
-    {"label": "Copy to clipboard", "description": "Ready to paste into GitHub"},
-    {"label": "Edit it", "description": "Let me modify sections"},
-    {"label": "Cancel", "description": "Don't create PR now"}
+    {"label": "Create PR with gh CLI (Recommended)", "description": "Push branch and create PR linking [STORY] with [N] files changed"},
+    {"label": "Edit description first", "description": "Modify summary, add test evidence, or adjust sections"},
+    {"label": "Add test plan section", "description": "Include testing instructions before creating PR"},
+    {"label": "Cancel", "description": "PR description saved, create later"}
   ]
 }]</parameter>
 </invoke>

@@ -35,7 +35,7 @@ const { execFileSync, spawnSync } = require('child_process');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot, getStatusPath, getSessionStatePath } = require('../lib/paths');
-const { safeReadJSON, safeWriteJSON } = require('../lib/errors');
+const { safeReadJSON, safeWriteJSON, tryOptional } = require('../lib/errors');
 const { isValidEpicId, parseIntBounded } = require('../lib/validate');
 
 // Agent Teams integration (lazy-loaded)
@@ -428,7 +428,7 @@ function runCoverage(rootDir) {
 
 // Get screenshots directory from metadata or default
 function getScreenshotsDir(rootDir) {
-  try {
+  return tryOptional(() => {
     const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
     if (fs.existsSync(metadataPath)) {
       const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
@@ -436,8 +436,7 @@ function getScreenshotsDir(rootDir) {
         return metadata.ralph_loop.screenshots_dir;
       }
     }
-  } catch (e) {}
-  return './screenshots';
+  }, 'metadata read') || './screenshots';
 }
 
 // Run screenshot verification (Visual Mode)

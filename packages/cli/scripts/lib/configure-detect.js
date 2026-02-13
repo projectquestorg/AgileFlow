@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { c, log, header, readJSON } = require('./configure-utils');
+const { tryOptional } = require('../../lib/errors');
 
 // ============================================================================
 // DETECTION
@@ -64,12 +65,10 @@ function detectConfig(version) {
   // Git detection
   if (fs.existsSync('.git')) {
     status.git.initialized = true;
-    try {
-      status.git.remote = execFileSync('git', ['remote', 'get-url', 'origin'], {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-    } catch {}
+    status.git.remote = tryOptional(() => execFileSync('git', ['remote', 'get-url', 'origin'], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim(), 'git remote') ?? null;
   }
 
   // Settings file detection

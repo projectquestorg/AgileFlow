@@ -39,8 +39,9 @@ Main Menu → "What would you like to configure?"
 │                   └─ Custom: Save, Export, Import, Delete
 ├─ Features       → Enable | Disable | View status
 │                   └─ Hooks (4) + Other Features (4)
-├─ Sessions       → Default startup mode for new sessions
-│                   └─ Normal | Skip permissions | Accept edits | No Claude
+├─ Sessions       → Startup mode and Agent Teams configuration
+│                   ├─ Startup Mode: Normal | Skip permissions | Accept edits | No Claude
+│                   └─ Agent Teams: Enable/disable native multi-agent orchestration
 ├─ Infrastructure → Visual E2E | Damage Control | CI/CD | Quality Gates
 └─ Maintenance    → Fix format | Upgrade | Repair | Check status
 ```
@@ -390,6 +391,24 @@ node .agileflow/scripts/agileflow-configure.js --disable=feature1,feature2
 
 ### If "Sessions" selected
 
+Present the Sessions sub-menu:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "What session setting would you like to configure?",
+  "header": "Sessions",
+  "multiSelect": false,
+  "options": [
+    {"label": "Default startup mode", "description": "How Claude launches in new sessions (permissions, worktree-only)"},
+    {"label": "Agent Teams", "description": "Enable/disable native multi-agent orchestration (experimental)"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+#### If "Default startup mode" selected
+
 Configure default startup mode for new sessions created with `/agileflow:session:new`.
 
 First, read current setting:
@@ -497,6 +516,88 @@ To remove later: edit {SHELL_RC} and remove the 'alias claude=' line.
 The 'af' command already reads the configured startup mode automatically.
 No additional changes needed.
 ```
+
+#### If "Agent Teams" selected
+
+Configure Claude Code's native multi-agent orchestration (experimental feature).
+
+First, read current setting:
+```bash
+node -e "try{const m=JSON.parse(require('fs').readFileSync('docs/00-meta/agileflow-metadata.json','utf8'));console.log(JSON.stringify({enabled:m.features?.agentTeams?.enabled||false}))}catch(e){console.log(JSON.stringify({enabled:false}))}"
+```
+
+Then present options:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Enable native Agent Teams? This uses Claude Code's experimental multi-agent orchestration (TeamCreate, SendMessage) for parallel agent coordination.",
+  "header": "Agent Teams",
+  "multiSelect": false,
+  "options": [
+    {"label": "Enable (Recommended)", "description": "Use native Agent Teams when available, subagent fallback when not"},
+    {"label": "Disable", "description": "Always use subagent mode (Task/TaskOutput) for multi-agent work"},
+    {"label": "What is this?", "description": "Learn more about Agent Teams before deciding"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**If "Enable" selected:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --enable=agentteams
+```
+
+Display:
+```
+✅ Native Agent Teams enabled
+
+When Claude Code sets CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1, AgileFlow will:
+  • Use native TeamCreate for parallel agent spawning
+  • Send messages via both native SendMessage AND JSONL bus
+  • Track team lifecycle events in session-state.json
+
+When the flag is not set, AgileFlow falls back to subagent mode automatically.
+```
+
+**If "Disable" selected:**
+```bash
+node .agileflow/scripts/agileflow-configure.js --disable=agentteams
+```
+
+Display:
+```
+✅ Native Agent Teams disabled
+
+AgileFlow will use subagent mode (Task/TaskOutput) for all multi-agent
+orchestration. This is the stable, well-tested mode.
+```
+
+**If "What is this?" selected:**
+
+Display this explanation:
+```
+## Agent Teams (Experimental)
+
+Claude Code's native Agent Teams feature enables parallel multi-agent
+orchestration with explicit coordination tools:
+
+  • TeamCreate/TeamDelete - Spawn and manage agent teams
+  • SendMessage - Direct agent-to-agent communication (3ms vs 150ms JSONL)
+  • Enhanced TaskCreate/Update - Native task coordination
+
+How AgileFlow integrates:
+  1. When enabled, team-manager.js builds native TeamCreate payloads
+  2. messaging-bridge.js sends to BOTH native channel AND JSONL bus
+  3. damage-control-multi-agent.js validates Team/Task operations
+  4. Subagent mode remains available as automatic fallback
+
+Requirements:
+  • Claude Code must set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+  • Feature is opt-in per project via this configuration
+  • CI/CD always uses subagent mode (safety gate)
+```
+
+Then re-ask the enable/disable question.
 
 ---
 
@@ -637,6 +738,8 @@ node .agileflow/scripts/agileflow-configure.js --disable=statusline
 node .agileflow/scripts/agileflow-configure.js --enable=archival --archival-days=14
 node .agileflow/scripts/agileflow-configure.js --enable=shellaliases
 node .agileflow/scripts/agileflow-configure.js --enable=claudemdreinforcement
+node .agileflow/scripts/agileflow-configure.js --enable=agentteams
+node .agileflow/scripts/agileflow-configure.js --disable=agentteams
 
 # Maintenance
 node .agileflow/scripts/agileflow-configure.js --detect

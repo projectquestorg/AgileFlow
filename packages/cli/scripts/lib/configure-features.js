@@ -56,6 +56,10 @@ const FEATURES = {
     metadataOnly: true,
     description: 'Default flags for Claude CLI (e.g., --dangerously-skip-permissions)',
   },
+  agentteams: {
+    metadataOnly: true,
+    description: 'Enable Claude Code native Agent Teams (experimental multi-agent orchestration)',
+  },
 };
 
 const PROFILES = {
@@ -321,6 +325,27 @@ function enableFeature(feature, options = {}, version) {
     );
     success(`Default Claude flags configured: ${defaultFlags}`);
     info('These flags will be passed to Claude when launched via "af" or "agileflow"');
+    return true;
+  }
+
+  // Handle agent teams (metadata only)
+  if (feature === 'agentteams') {
+    updateMetadata(
+      {
+        features: {
+          agentTeams: {
+            enabled: true,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Native Agent Teams enabled');
+    info('Claude Code will use native TeamCreate/SendMessage tools when available');
+    info('Requires: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (set by Claude Code)');
+    info('Fallback: subagent mode (Task/TaskOutput) when native is unavailable');
     return true;
   }
 
@@ -727,6 +752,25 @@ function disableFeature(feature, version) {
     );
     success('Default Claude flags disabled');
     info('Claude will launch with default permissions (prompts for each action)');
+    return true;
+  }
+
+  // Disable agent teams
+  if (feature === 'agentteams') {
+    updateMetadata(
+      {
+        features: {
+          agentTeams: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Native Agent Teams disabled');
+    info('AgileFlow will use subagent mode (Task/TaskOutput) for multi-agent orchestration');
     return true;
   }
 

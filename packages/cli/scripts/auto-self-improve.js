@@ -24,7 +24,7 @@ const { execFileSync } = require('child_process');
 // Shared utilities
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
-const { safeReadJSON, safeReadFile, safeWriteFile } = require('../lib/errors');
+const { safeReadJSON, safeReadFile, safeWriteFile, tryOptional } = require('../lib/errors');
 
 // Agents that have expertise files
 const AGENTS_WITH_EXPERTISE = [
@@ -114,7 +114,7 @@ function getGitDiff(rootDir) {
     // Get diff stats
     let additions = 0;
     let deletions = 0;
-    try {
+    tryOptional(() => {
       const stats = execFileSync('git', ['diff', '--shortstat', 'HEAD'], {
         cwd: rootDir,
         encoding: 'utf8',
@@ -124,7 +124,7 @@ function getGitDiff(rootDir) {
       const delMatch = stats.match(/(\d+) deletion/);
       if (addMatch) additions = parseInt(addMatch[1]);
       if (delMatch) deletions = parseInt(delMatch[1]);
-    } catch (e) {}
+    }, 'git diff stats');
 
     return {
       files: allFiles,

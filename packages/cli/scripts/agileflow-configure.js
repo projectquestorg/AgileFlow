@@ -45,6 +45,7 @@ const {
 } = require('./lib/configure-features');
 const { listScripts, showVersionInfo, repairScripts } = require('./lib/configure-repair');
 const { feedback } = require('../lib/feedback');
+const { tryOptional } = require('../lib/errors');
 
 // ============================================================================
 // VERSION
@@ -52,31 +53,31 @@ const { feedback } = require('../lib/feedback');
 
 function getVersion() {
   // Try agileflow-metadata.json first
-  try {
+  const metaVersion = tryOptional(() => {
     const metaPath = path.join(process.cwd(), 'docs/00-meta/agileflow-metadata.json');
     if (fs.existsSync(metaPath)) {
-      const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-      if (meta.version) return meta.version;
+      return JSON.parse(fs.readFileSync(metaPath, 'utf8')).version;
     }
-  } catch {}
+  }, 'read metadata version');
+  if (metaVersion) return metaVersion;
 
   // Try .agileflow/package.json
-  try {
+  const agileflowVersion = tryOptional(() => {
     const pkgPath = path.join(process.cwd(), '.agileflow/package.json');
     if (fs.existsSync(pkgPath)) {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      if (pkg.version) return pkg.version;
+      return JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version;
     }
-  } catch {}
+  }, 'read agileflow package version');
+  if (agileflowVersion) return agileflowVersion;
 
   // Fallback to script's own package.json
-  try {
+  const pkgVersion = tryOptional(() => {
     const pkgPath = path.join(__dirname, '..', 'package.json');
     if (fs.existsSync(pkgPath)) {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      if (pkg.version) return pkg.version;
+      return JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version;
     }
-  } catch {}
+  }, 'read package version');
+  if (pkgVersion) return pkgVersion;
 
   return 'unknown';
 }

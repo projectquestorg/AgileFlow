@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { tryOptional } = require('../../lib/errors');
 
 // ============================================================================
 // COLORS & LOGGING
@@ -58,9 +59,7 @@ const copyTemplate = (templateName, destPath) => {
   for (const src of sources) {
     if (fs.existsSync(src)) {
       fs.copyFileSync(src, destPath);
-      try {
-        fs.chmodSync(destPath, '755');
-      } catch {}
+      tryOptional(() => fs.chmodSync(destPath, '755'), 'chmod');
       return true;
     }
   }

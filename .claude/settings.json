@@ -59,6 +59,11 @@
           {
             "type": "command",
             "command": "bash /home/coder/AgileFlow/.agileflow/scripts/archive-completed-stories.sh --quiet"
+          },
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-welcome.js 2>/dev/null || true",
+            "timeout": 10000
           }
         ]
       }

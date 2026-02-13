@@ -196,17 +196,35 @@ Include:
 </invoke>
 ```
 
-**AskUserQuestion** (for auto-fix approval):
+**AskUserQuestion** (for auto-fix approval - use actual counts from review):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Auto-fix these issues?",
-  "header": "Code Review",
+  "question": "Review found [N] issues ([critical] critical, [high] high). How to proceed?",
+  "header": "Fixes",
   "multiSelect": false,
   "options": [
-    {"label": "Auto-fix all (Recommended)", "description": "Fix 8 style issues automatically"},
-    {"label": "Review each one", "description": "Show diffs for approval"},
-    {"label": "Skip auto-fixes", "description": "Just report, no changes"}
+    {"label": "Auto-fix [N] style issues (Recommended)", "description": "Safe auto-fixes for formatting, imports, and lint errors"},
+    {"label": "Fix [N] security issue(s) manually", "description": "Review each security fix with diff before applying"},
+    {"label": "View diff of all suggested changes", "description": "Preview all [N] fixes before deciding"},
+    {"label": "Skip auto-fixes", "description": "Keep report only, no code changes"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Post-review AskUserQuestion** (after fixes are applied):
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Applied [N] fixes. Score improved [old]→[new]/100. What next?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "Run tests to verify fixes (Recommended)", "description": "Execute test suite to confirm fixes don't break anything"},
+    {"label": "Commit fixes", "description": "Stage and commit the [N] auto-fixed files"},
+    {"label": "Create stories for [N] follow-up items", "description": "Track medium/low issues as future work"},
+    {"label": "Done", "description": "Review complete, report saved to docs/08-project/code-reviews/"}
   ]
 }]</parameter>
 </invoke>

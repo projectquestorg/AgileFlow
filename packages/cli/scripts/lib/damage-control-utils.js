@@ -33,6 +33,14 @@ const c = {
   reset: '\x1b[0m',
 };
 
+// Pattern cache: avoids re-reading and re-parsing YAML on every hook invocation.
+// Invalidated when the config file's mtime changes.
+const _patternCache = {
+  /** @type {string|null} */ filePath: null,
+  /** @type {number} */ mtime: 0,
+  /** @type {object|null} */ config: null,
+};
+
 // Shared constants
 const CONFIG_PATHS = [
   '.agileflow/config/damage-control-patterns.yaml',
@@ -70,8 +78,9 @@ function expandPath(p) {
 }
 
 /**
- * Load patterns configuration from YAML file
- * Returns empty config if not found (fail-open)
+ * Load patterns configuration from YAML file with caching.
+ * Returns cached config when the file hasn't changed (mtime check).
+ * Returns empty config if not found (fail-open).
  *
  * @param {string} projectRoot - Project root directory
  * @param {function} parseYAML - Function to parse YAML content
@@ -83,8 +92,23 @@ function loadPatterns(projectRoot, parseYAML, defaultConfig = {}) {
     const fullPath = path.join(projectRoot, configPath);
     if (fs.existsSync(fullPath)) {
       try {
+        // Check mtime for cache invalidation
+        const stat = fs.statSync(fullPath);
+        const mtime = stat.mtimeMs;
+
+        if (_patternCache.filePath === fullPath && _patternCache.mtime === mtime && _patternCache.config) {
+          return _patternCache.config;
+        }
+
         const content = fs.readFileSync(fullPath, 'utf8');
-        return parseYAML(content);
+        const config = parseYAML(content);
+
+        // Store in cache
+        _patternCache.filePath = fullPath;
+        _patternCache.mtime = mtime;
+        _patternCache.config = config;
+
+        return config;
       } catch (e) {
         // Continue to next path
       }
@@ -93,6 +117,15 @@ function loadPatterns(projectRoot, parseYAML, defaultConfig = {}) {
 
   // Return empty config if no file found (fail-open)
   return defaultConfig;
+}
+
+/**
+ * Clear the pattern cache (for testing or forced reload).
+ */
+function clearPatternCache() {
+  _patternCache.filePath = null;
+  _patternCache.mtime = 0;
+  _patternCache.config = null;
 }
 
 /**
@@ -559,6 +592,7 @@ module.exports = {
   findProjectRoot,
   expandPath,
   loadPatterns,
+  clearPatternCache,
   pathMatches,
   outputBlocked,
   runDamageControlHook,

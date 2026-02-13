@@ -9,6 +9,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { feedback } = require('../../lib/feedback');
+const { tryOptional } = require('../../lib/errors');
 const {
   c,
   log,
@@ -115,11 +116,11 @@ function listScripts() {
     // Check if modified
     let isModified = false;
     if (exists && fileIndex?.files?.[`scripts/${script}`]) {
-      try {
+      isModified = tryOptional(() => {
         const currentHash = sha256(fs.readFileSync(scriptPath));
         const indexHash = fileIndex.files[`scripts/${script}`].sha256;
-        isModified = currentHash !== indexHash;
-      } catch {}
+        return currentHash !== indexHash;
+      }, 'hash check') ?? false;
     }
 
     // Print status
@@ -279,9 +280,7 @@ function repairScripts(targetFeature = null) {
       if (fs.existsSync(srcPath)) {
         try {
           fs.copyFileSync(srcPath, destPath);
-          try {
-            fs.chmodSync(destPath, 0o755);
-          } catch {}
+          tryOptional(() => fs.chmodSync(destPath, 0o755), 'chmod');
           success(`Restored ${script}`);
           repaired++;
         } catch (err) {

@@ -312,18 +312,19 @@ NEXT STEPS:
 
 ### If PASS
 
-Offer to mark story complete:
+Offer to mark story complete with full context:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Story US-0129 passed audit! What would you like to do?",
-  "header": "Next Steps",
+  "question": "[STORY] passed audit: [test_count] tests passing, [ac_count]/[ac_total] AC verified. What next?",
+  "header": "Complete",
   "multiSelect": false,
   "options": [
-    {"label": "Mark complete (Recommended)", "description": "Update status to done"},
-    {"label": "View epic progress", "description": "Check EP-0022 status"},
-    {"label": "Done", "description": "Exit without changes"}
+    {"label": "Mark [STORY] complete (Recommended)", "description": "Update status to done - all AC verified, tests passing"},
+    {"label": "Run tests once more before completing", "description": "Re-run test suite to double-check [test_count] tests"},
+    {"label": "View [EPIC] progress", "description": "Check epic completion: [completed]/[total] stories done ([percent]%)"},
+    {"label": "Done without marking complete", "description": "Audit passed but don't update status yet"}
   ]
 }]</parameter>
 </invoke>
@@ -336,18 +337,19 @@ If "Mark complete":
 
 ### If FAIL
 
-Offer to help fix issues:
+Offer to help fix issues with specific context:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Story US-0129 failed audit. What would you like to do?",
+  "question": "[STORY] failed audit: [fail_count] tests failing, [unverified] AC unverified. How to proceed?",
   "header": "Fix Issues",
   "multiSelect": false,
   "options": [
-    {"label": "Fix failing tests", "description": "I'll help debug test failures"},
-    {"label": "Review AC requirements", "description": "Check what's missing"},
-    {"label": "Done", "description": "Exit and fix later"}
+    {"label": "Fix [fail_count] failing test(s) (Recommended)", "description": "Debug: [first_failing_test_name] and [fail_count-1] other(s)"},
+    {"label": "Implement [unverified] missing AC item(s)", "description": "AC not met: [first_unverified_ac_text]"},
+    {"label": "Re-run audit after manual fixes", "description": "I'll fix issues myself, then re-audit"},
+    {"label": "Done for now", "description": "Audit failed - [STORY] stays in_progress"}
   ]
 }]</parameter>
 </invoke>
