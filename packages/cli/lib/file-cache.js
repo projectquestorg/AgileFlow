@@ -153,7 +153,7 @@ class LRUCache {
 // Global cache instance (persists across requires in same process)
 const fileCache = new LRUCache({
   maxSize: 50,
-  ttlMs: 30000, // 30 seconds
+  ttlMs: 15000, // 15 seconds
 });
 
 /**

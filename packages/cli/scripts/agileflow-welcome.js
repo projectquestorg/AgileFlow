@@ -30,23 +30,7 @@ const { readJSONCached, readFileCached } = require('../lib/file-cache');
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
 
-// Story claiming module
-let storyClaiming;
-try {
-  storyClaiming = require('./lib/story-claiming.js');
-} catch (e) {
-  // Story claiming not available
-}
-
-// Story state machine (for epic completion check)
-let storyStateMachine;
-try {
-  storyStateMachine = require('./lib/story-state-machine.js');
-} catch (e) {
-  // Story state machine not available
-}
-
-// Hook metrics module
+// Hook metrics module (kept at top level - needed early for timer)
 let hookMetrics;
 try {
   hookMetrics = require('./lib/hook-metrics.js');
@@ -54,58 +38,9 @@ try {
   // Hook metrics not available
 }
 
-// File tracking module
-let fileTracking;
-try {
-  fileTracking = require('./lib/file-tracking.js');
-} catch (e) {
-  // File tracking not available
-}
-
-// Ideation sync module
-let syncIdeationStatus;
-try {
-  syncIdeationStatus = require('./lib/sync-ideation-status.js');
-} catch (e) {
-  // Ideation sync not available
-}
-
-// Automation registry and runner
-let automationRegistry, automationRunner;
-try {
-  automationRegistry = require('./lib/automation-registry.js');
-  automationRunner = require('./lib/automation-runner.js');
-} catch (e) {
-  // Automation system not available
-}
-
-// Update checker module
-let updateChecker;
-try {
-  updateChecker = require('./check-update.js');
-} catch (e) {
-  // Update checker not available
-}
-
-// Process cleanup module (duplicate Claude detection)
-let processCleanup;
-try {
-  processCleanup = require('./lib/process-cleanup.js');
-} catch (e) {
-  // Process cleanup not available
-}
-
-// Feature flags module (Agent Teams detection)
-let featureFlags;
-try {
-  featureFlags = require('../lib/feature-flags');
-} catch (e) {
-  // Feature flags not available
-}
-
 /**
  * PERFORMANCE OPTIMIZATION: Load all project files using LRU cache
- * Uses file-cache module for automatic caching with 30s TTL.
+ * Uses file-cache module for automatic caching with 15s TTL.
  * Files are cached across script invocations within TTL window.
  * Estimated savings: 60-120ms on cache hits
  */
@@ -1008,6 +943,8 @@ async function checkUpdates() {
     changelog: [],
   };
 
+  let updateChecker;
+  try { updateChecker = require('./check-update.js'); } catch (e) {}
   if (!updateChecker) return result;
 
   try {
@@ -1387,7 +1324,8 @@ function formatTable(
   updateInfo = {},
   expertise = {},
   damageControl = {},
-  agentTeamsInfo = {}
+  agentTeamsInfo = {},
+  scaleDetection = {}
 ) {
   const W = 58; // inner width (total table = W + 2 = 60)
   const R = W - 25; // right column width (33 chars) to match total of 60
@@ -1528,6 +1466,8 @@ function formatTable(
   // System section (colorful labels like obtain-context)
   if (archival.disabled) {
     lines.push(row('Auto-archival', 'disabled', c.lavender, c.slate));
+  } else if (archival.skippedByScale) {
+    lines.push(row('Auto-archival', 'skipped (small project)', c.lavender, c.dim));
   } else {
     const archivalStatus =
       archival.archived > 0 ? `archived ${archival.archived} stories` : `nothing to archive`;
@@ -1616,6 +1556,22 @@ function formatTable(
     lines.push(row('Agent Teams', `${agentTeamsInfo.value}`, c.lavender, c.dim));
   }
 
+  // Scale detection (EP-0033)
+  if (scaleDetection && scaleDetection.scale) {
+    const scaleColors = {
+      micro: c.cyan, small: c.teal, medium: c.mintGreen,
+      large: c.peach, enterprise: c.coral,
+    };
+    const scaleIcons = {
+      micro: '◦', small: '○', medium: '◎', large: '●', enterprise: '◉',
+    };
+    const scale = scaleDetection.scale;
+    const icon = scaleIcons[scale] || '◎';
+    const label = scale.charAt(0).toUpperCase() + scale.slice(1);
+    const cacheNote = scaleDetection.fromCache ? '' : ` (${scaleDetection.detection_ms}ms)`;
+    lines.push(row('Scale', `${icon} ${label}${cacheNote}`, c.lavender, scaleColors[scale] || c.dim));
+  }
+
   lines.push(divider());
 
   // Current story (colorful like obtain-context)
@@ -1693,7 +1649,29 @@ async function main() {
   // All fast operations - no network, no auto-update
   // ============================================
   const info = getProjectInfo(rootDir, cache);
-  const archival = runArchival(rootDir, cache);
+
+  // Smart hook scheduling: skip archival for micro/small projects (EP-0033)
+  // Scale detection is done early to inform hook scheduling
+  let earlyScale = null;
+  try {
+    const scaleDetector = require('./lib/scale-detector');
+    // Check cache only (fast path, no full detection yet)
+    earlyScale = scaleDetector.detectScale({
+      rootDir,
+      statusJson: cache?.status,
+      sessionState: cache?.sessionState,
+    });
+  } catch (e) {
+    // Scale detection not available
+  }
+
+  const scaleRecommendations = earlyScale ? (() => {
+    try { return require('./lib/scale-detector').getScaleRecommendations(earlyScale.scale); } catch { return null; }
+  })() : null;
+
+  const archival = (scaleRecommendations && scaleRecommendations.skipArchival)
+    ? { ran: false, threshold: 0, archived: 0, remaining: 0, skippedByScale: true }
+    : runArchival(rootDir, cache);
   const session = clearActiveCommands(rootDir, cache);
   const precompact = checkPreCompact(rootDir, cache);
   const parallelSessions = checkParallelSessions(rootDir);
@@ -1702,7 +1680,12 @@ async function main() {
   const expertise = getExpertiseCountFast(rootDir);
   const damageControl = checkDamageControl(rootDir, cache);
 
+  // Use early scale detection result (already computed for hook scheduling)
+  const scaleDetection = earlyScale || { scale: 'medium' };
+
   // Agent Teams feature flag detection
+  let featureFlags;
+  try { featureFlags = require('../lib/feature-flags'); } catch (e) {}
   let agentTeamsInfo = {};
   if (featureFlags) {
     try {
@@ -1794,7 +1777,8 @@ async function main() {
       updateInfo,
       expertise,
       damageControl,
-      agentTeamsInfo
+      agentTeamsInfo,
+      scaleDetection
     )
   );
 
@@ -1822,12 +1806,18 @@ async function main() {
       }
 
       // Mark current version as seen to track for next update
+      let updateChecker;
+      try { updateChecker = require('./check-update.js'); } catch (e) {}
       if (freshUpdateInfo.justUpdated && updateChecker) {
         updateChecker.markVersionSeen(info.version);
       }
-    } else if (updateChecker) {
+    } else {
       // Mark current version as seen (for "just updated" case)
-      updateChecker.markVersionSeen(info.version);
+      let updateChecker;
+      try { updateChecker = require('./check-update.js'); } catch (e) {}
+      if (updateChecker) {
+        updateChecker.markVersionSeen(info.version);
+      }
     }
   } catch (e) {
     // Update check failed - continue without it (non-critical)
@@ -1963,6 +1953,8 @@ async function main() {
 
   // === DUPLICATE CLAUDE PROCESS DETECTION ===
   // Check for multiple Claude processes in the same working directory
+  let processCleanup;
+  try { processCleanup = require('./lib/process-cleanup.js'); } catch (e) {}
   if (processCleanup) {
     try {
       // Auto-kill is explicitly opt-in at runtime.
@@ -2015,6 +2007,8 @@ async function main() {
   }
 
   // Story claiming: cleanup stale claims and show warnings
+  let storyClaiming;
+  try { storyClaiming = require('./lib/story-claiming.js'); } catch (e) {}
   if (storyClaiming) {
     try {
       // Clean up stale claims (dead PIDs, expired TTL)
@@ -2040,6 +2034,8 @@ async function main() {
   }
 
   // File tracking: cleanup stale touches and show overlap warnings
+  let fileTracking;
+  try { fileTracking = require('./lib/file-tracking.js'); } catch (e) {}
   if (fileTracking) {
     try {
       // Clean up stale file touches (dead PIDs, expired TTL)
@@ -2063,6 +2059,8 @@ async function main() {
   }
 
   // Epic completion check: auto-complete epics where all stories are done
+  let storyStateMachine;
+  try { storyStateMachine = require('./lib/story-state-machine.js'); } catch (e) {}
   if (storyStateMachine && cache.status) {
     try {
       const statusPath = getStatusPath(rootDir);
@@ -2091,6 +2089,8 @@ async function main() {
   }
 
   // Ideation sync: mark ideas as implemented when linked epics complete
+  let syncIdeationStatus;
+  try { syncIdeationStatus = require('./lib/sync-ideation-status.js'); } catch (e) {}
   if (syncIdeationStatus) {
     try {
       const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
@@ -2105,6 +2105,13 @@ async function main() {
 
   // === SCHEDULED AUTOMATIONS ===
   // Check for and run due automations (non-blocking)
+  let automationRegistry, automationRunner;
+  try {
+    automationRegistry = require('./lib/automation-registry.js');
+    automationRunner = require('./lib/automation-runner.js');
+  } catch (e) {
+    // Automation system not available
+  }
   if (automationRegistry && automationRunner) {
     try {
       const registry = automationRegistry.getAutomationRegistry({ rootDir });
