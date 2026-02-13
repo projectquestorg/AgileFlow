@@ -370,6 +370,19 @@ function stopTeam(rootDir) {
       // Non-critical
     }
 
+    // Aggregate and save team metrics by trace_id
+    try {
+      if (team.trace_id) {
+        const teamEvents = require('./lib/team-events');
+        const metrics = teamEvents.aggregateTeamMetrics(rootDir, team.trace_id);
+        if (metrics.ok) {
+          teamEvents.saveAggregatedMetrics(rootDir, metrics);
+        }
+      }
+    } catch (e) {
+      // Non-critical - metrics aggregation is best-effort
+    }
+
     return {
       ok: true,
       template: team.template,
