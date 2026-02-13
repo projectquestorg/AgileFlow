@@ -402,7 +402,31 @@ if [ "$FORCE_NEW" = false ]; then
   fi
 fi
 
-# No detached session found — create a new one
+# ── Reuse existing attached session ──────────────────────────────────────
+# If a session exists but is attached in another terminal, attach to it
+# as a second client rather than creating a duplicate session (e.g. -2).
+# Use --new to force creating a separate session.
+if [ "$FORCE_NEW" = false ]; then
+  EXISTING=()
+  while IFS= read -r sid; do
+    [ -n "$sid" ] && EXISTING+=("$sid")
+  done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)")
+
+  if [ "${#EXISTING[@]}" -gt 0 ]; then
+    # Prefer the base session, otherwise pick the first one
+    TARGET="${EXISTING[0]}"
+    for sid in "${EXISTING[@]}"; do
+      if [ "$sid" = "$SESSION_BASE" ]; then
+        TARGET="$sid"
+        break
+      fi
+    done
+    echo "Attaching to existing session: $TARGET"
+    exec tmux attach-session -t "$TARGET"
+  fi
+fi
+
+# No existing session found — create a new one
 SESSION_NAME="$SESSION_BASE"
 SESSION_NUM=1
 while tmux has-session -t "$SESSION_NAME" 2>/dev/null; do
