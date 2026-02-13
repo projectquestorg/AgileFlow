@@ -10,6 +10,8 @@
 
 # Track start time for hook metrics
 HOOK_START_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+# macOS date doesn't support %N - outputs literal "3N" instead of millis
+[[ ! "$HOOK_START_TIME" =~ ^[0-9]+$ ]] && HOOK_START_TIME="$(date +%s)000"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Get current version from package.json
@@ -286,6 +288,7 @@ fi
 # Record hook metrics
 if command -v node &> /dev/null && [[ -f "$SCRIPT_DIR/lib/hook-metrics.js" ]]; then
   HOOK_END_TIME=$(date +%s%3N 2>/dev/null || date +%s)
+  [[ ! "$HOOK_END_TIME" =~ ^[0-9]+$ ]] && HOOK_END_TIME="$(date +%s)000"
   HOOK_DURATION=$((HOOK_END_TIME - HOOK_START_TIME))
   HOOK_DURATION="$HOOK_DURATION" node -e '
     try {
