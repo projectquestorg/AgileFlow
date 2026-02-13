@@ -132,6 +132,29 @@ function getCurrentSession(rootDir) {
 }
 
 /**
+ * Auto-rename the current tmux window to reflect the active story.
+ * Best-effort: silently ignored if not inside tmux or if rename fails.
+ *
+ * @param {string} storyId - Story ID (e.g., 'US-0042')
+ * @param {string} [storyTitle] - Story title for display
+ */
+function renameTmuxWindow(storyId, storyTitle) {
+  if (!process.env.TMUX) return;
+  try {
+    const { execFileSync } = require('child_process');
+    // Build concise window name: "US-0042:Auth API" (title truncated to 15 chars)
+    let name = storyId;
+    if (storyTitle) {
+      const short = storyTitle.length > 15 ? storyTitle.substring(0, 14) + '\u2026' : storyTitle;
+      name = `${storyId}:${short}`;
+    }
+    execFileSync('tmux', ['rename-window', name], { stdio: 'ignore' });
+  } catch (e) {
+    // Best-effort, ignore errors
+  }
+}
+
+/**
  * Check if a claim is still valid.
  * Claims are valid if:
  * 1. The claiming session's PID is still alive
@@ -266,6 +289,9 @@ function claimStory(storyId, options = {}) {
       });
     }
   }
+
+  // Auto-rename tmux window to show the story being worked on
+  renameTmuxWindow(storyId, story.title);
 
   return { ok: true, claimed: true };
 }

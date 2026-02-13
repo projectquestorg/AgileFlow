@@ -248,7 +248,8 @@ configure_tmux_session() {
 
   # ─── Session Creation Keybindings ──────────────────────────────────────────
   # Alt+s to create a new Claude window (starts fresh, future re-runs in same pane resume)
-  tmux bind-key -n M-s run-shell "tmux new-window -n claude -c '#{pane_current_path}' && tmux send-keys '\"\$AGILEFLOW_SCRIPTS/claude-smart.sh\" --fresh \$CLAUDE_SESSION_FLAGS' Enter"
+  # Window gets sequential name (claude-2, claude-3, ...) so windows are distinguishable
+  tmux bind-key -n M-s run-shell "N=\$(( \$(tmux list-windows -F '#{window_name}' 2>/dev/null | grep -c '^claude') + 1 )); tmux new-window -n \"claude-\$N\" -c '#{pane_current_path}' && tmux send-keys '\"\$AGILEFLOW_SCRIPTS/claude-smart.sh\" --fresh \$CLAUDE_SESSION_FLAGS' Enter"
 
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
@@ -256,7 +257,7 @@ configure_tmux_session() {
 
   # ─── Help Panel ──────────────────────────────────────────────────────────
   # Alt+h to show all Alt keybindings in a popup
-  tmux bind-key -n M-h display-popup -E -w 52 -h 26 "\
+  tmux bind-key -n M-h display-popup -E -w 52 -h 30 "\
     printf '\\n';\
     printf '  \\033[1;38;5;208mSESSIONS\\033[0m\\n';\
     printf '  Alt+s      New Claude session\\n';\
@@ -275,7 +276,9 @@ configure_tmux_session() {
     printf '  Alt+v      Split top / bottom\\n';\
     printf '  Alt+arrows Navigate panes\\n';\
     printf '  Alt+z      Zoom / unzoom\\n';\
-    printf '  Alt+x      Close pane\\n';\
+    printf '  Alt+x      Close pane (confirm)\\n';\
+    printf '  Alt+K      Kill pane (no confirm)\\n';\
+    printf '  Alt+R      Restart pane\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
     printf '  Alt+[      Scroll mode\\n';\
