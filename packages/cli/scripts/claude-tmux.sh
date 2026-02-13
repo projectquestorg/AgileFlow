@@ -252,32 +252,32 @@ configure_tmux_session() {
   tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
 
   # ─── Help Panel ──────────────────────────────────────────────────────────
-  # Alt+h to show keybind cheat sheet in a popup
-  tmux bind-key -n M-h display-popup -E -w 52 -h 24 "\
+  # Alt+h to show all Alt keybindings in a popup
+  tmux bind-key -n M-h display-popup -E -w 52 -h 26 "\
     printf '\\n';\
     printf '  \\033[1;38;5;208mSESSIONS\\033[0m\\n';\
-    printf '  Alt+s   New Claude window\\n';\
-    printf '  Alt+l   Switch session\\n';\
-    printf '  Alt+q   Detach (af to resume)\\n';\
+    printf '  Alt+s      New Claude session\\n';\
+    printf '  Alt+l      Switch session (picker)\\n';\
+    printf '  Alt+q      Detach (af to resume)\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mWINDOWS\\033[0m\\n';\
-    printf '  Alt+1-9 Switch to window\\n';\
-    printf '  Alt+c   New empty window\\n';\
-    printf '  Alt+n/p Next / previous\\n';\
-    printf '  Alt+r   Rename window\\n';\
-    printf '  Alt+w   Close window\\n';\
+    printf '  Alt+c      New empty window\\n';\
+    printf '  Alt+1-9    Switch to window N\\n';\
+    printf '  Alt+n/p    Next / previous window\\n';\
+    printf '  Alt+r      Rename window\\n';\
+    printf '  Alt+w      Close window\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mPANES\\033[0m\\n';\
-    printf '  Alt+d   Split side by side\\n';\
-    printf '  Alt+v   Split top / bottom\\n';\
-    printf '  Alt+←→↑↓  Navigate\\n';\
-    printf '  Alt+z   Zoom / unzoom\\n';\
-    printf '  Alt+x   Close pane\\n';\
+    printf '  Alt+d      Split side by side\\n';\
+    printf '  Alt+v      Split top / bottom\\n';\
+    printf '  Alt+arrows Navigate panes\\n';\
+    printf '  Alt+z      Zoom / unzoom\\n';\
+    printf '  Alt+x      Close pane\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
-    printf '  Alt+[   Scroll mode\\n';\
-    printf '  Alt+k   Unfreeze (Ctrl+C×2)\\n';\
-    printf '  Alt+h   This help\\n';\
+    printf '  Alt+[      Scroll mode\\n';\
+    printf '  Alt+k      Unfreeze (Ctrl+C x2)\\n';\
+    printf '  Alt+h      This help\\n';\
     printf '\\n';\
     read -n 1 -s -r -p '  Press any key to close'"
 }
