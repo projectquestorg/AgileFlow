@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-02-13
+
+### Added
+- Scale-adaptive architecture, smart tmux sessions, and team observability
+
 ## [2.99.8] - 2026-02-12
 
 ### Fixed
