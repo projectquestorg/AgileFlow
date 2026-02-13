@@ -165,6 +165,9 @@ configure_tmux_session() {
   # Enable mouse support
   tmux set-option -t "$target_session" mouse on
 
+  # Automatically renumber windows when one is closed (no gaps)
+  tmux set-option -t "$target_session" renumber-windows on
+
   # Fix colors - proper terminal support
   tmux set-option -t "$target_session" default-terminal "xterm-256color"
   tmux set-option -t "$target_session" -ga terminal-overrides ",xterm-256color:Tc"
