@@ -71,7 +71,7 @@ class ApiCache {
  * @returns {{ server: http.Server, options: Object, cache: ApiCache }}
  */
 function createApiServer(options = {}) {
-  const port = options.port || DEFAULT_PORT;
+  const port = options.port != null ? options.port : DEFAULT_PORT;
   const host = options.host || DEFAULT_HOST;
   const rootDir = options.rootDir || getProjectRoot();
   const cacheTTL = options.cacheTTL || 2000;
@@ -238,7 +238,8 @@ function startApiServer(serverInstance) {
     });
 
     server.listen(port, host, () => {
-      const url = `http://${host}:${port}`;
+      const actualPort = server.address().port;
+      const url = `http://${host}:${actualPort}`;
       console.log(`[AgileFlow API] Server running at ${url}`);
       console.log(`[AgileFlow API] Project root: ${options.rootDir}`);
       resolve({
