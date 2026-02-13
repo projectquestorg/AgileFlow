@@ -26,12 +26,30 @@ const { EventEmitter } = require('events');
 // Lazy-loaded dependencies - deferred until first use
 let _http, _crypto, _protocol, _paths, _validatePaths, _childProcess;
 
-function getHttp() { if (!_http) _http = require('http'); return _http; }
-function getCrypto() { if (!_crypto) _crypto = require('crypto'); return _crypto; }
-function getProtocol() { if (!_protocol) _protocol = require('./dashboard-protocol'); return _protocol; }
-function getPaths() { if (!_paths) _paths = require('./paths'); return _paths; }
-function getValidatePaths() { if (!_validatePaths) _validatePaths = require('./validate-paths'); return _validatePaths; }
-function getChildProcess() { if (!_childProcess) _childProcess = require('child_process'); return _childProcess; }
+function getHttp() {
+  if (!_http) _http = require('http');
+  return _http;
+}
+function getCrypto() {
+  if (!_crypto) _crypto = require('crypto');
+  return _crypto;
+}
+function getProtocol() {
+  if (!_protocol) _protocol = require('./dashboard-protocol');
+  return _protocol;
+}
+function getPaths() {
+  if (!_paths) _paths = require('./paths');
+  return _paths;
+}
+function getValidatePaths() {
+  if (!_validatePaths) _validatePaths = require('./validate-paths');
+  return _validatePaths;
+}
+function getChildProcess() {
+  if (!_childProcess) _childProcess = require('child_process');
+  return _childProcess;
+}
 
 // Lazy-load automation modules to avoid circular dependencies
 let AutomationRegistry = null;
@@ -294,7 +312,9 @@ class TerminalInstance {
       this.pty.on('error', error => {
         console.error('[Terminal] Shell error:', error.message);
         if (!this.closed) {
-          this.session.send(getProtocol().createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`));
+          this.session.send(
+            getProtocol().createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`)
+          );
         }
       });
 
@@ -558,7 +578,9 @@ class DashboardServer extends EventEmitter {
 
       this._automationRunner.on('failed', ({ automationId, result }) => {
         this._runningAutomations.delete(automationId);
-        this.broadcast(getProtocol().createAutomationStatus(automationId, 'error', { error: result.error }));
+        this.broadcast(
+          getProtocol().createAutomationStatus(automationId, 'error', { error: result.error })
+        );
 
         // Add failure to inbox
         this._addToInbox(automationId, result);
@@ -732,7 +754,7 @@ class DashboardServer extends EventEmitter {
 
     // Complete WebSocket handshake
     const key = req.headers['sec-websocket-key'];
-    const acceptKey = crypto
+    const acceptKey = getCrypto()
       .createHash('sha1')
       .update(key + WS_GUID)
       .digest('base64');
@@ -865,7 +887,9 @@ class DashboardServer extends EventEmitter {
   handleMessage(session, data) {
     // Rate limit incoming messages
     if (!session.checkRateLimit()) {
-      session.send(getProtocol().createError('RATE_LIMITED', 'Too many messages, please slow down'));
+      session.send(
+        getProtocol().createError('RATE_LIMITED', 'Too many messages, please slow down')
+      );
       return;
     }
 
@@ -1059,7 +1083,9 @@ class DashboardServer extends EventEmitter {
       switch (type) {
         case getProtocol().InboundMessageType.GIT_STAGE:
           if (fileArgs) {
-            getChildProcess().execFileSync('git', ['add', '--', ...fileArgs], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['add', '--', ...fileArgs], {
+              cwd: this.projectRoot,
+            });
           } else {
             getChildProcess().execFileSync('git', ['add', '-A'], { cwd: this.projectRoot });
           }
@@ -1070,24 +1096,32 @@ class DashboardServer extends EventEmitter {
               cwd: this.projectRoot,
             });
           } else {
-            getChildProcess().execFileSync('git', ['restore', '--staged', '.'], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['restore', '--staged', '.'], {
+              cwd: this.projectRoot,
+            });
           }
           break;
         case getProtocol().InboundMessageType.GIT_REVERT:
           if (fileArgs) {
-            getChildProcess().execFileSync('git', ['checkout', '--', ...fileArgs], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['checkout', '--', ...fileArgs], {
+              cwd: this.projectRoot,
+            });
           }
           break;
         case getProtocol().InboundMessageType.GIT_COMMIT:
           if (commitMessage) {
-            getChildProcess().execFileSync('git', ['commit', '-m', commitMessage], { cwd: this.projectRoot });
+            getChildProcess().execFileSync('git', ['commit', '-m', commitMessage], {
+              cwd: this.projectRoot,
+            });
           }
           break;
       }
 
       // Send updated git status
       this.sendGitStatus(session);
-      session.send(getProtocol().createNotification('success', 'Git', `${type.replace('git_', '')} completed`));
+      session.send(
+        getProtocol().createNotification('success', 'Git', `${type.replace('git_', '')} completed`)
+      );
     } catch (error) {
       console.error('[Git Error]', error.message);
       session.send(getProtocol().createError('GIT_ERROR', 'Git operation failed'));
@@ -1115,11 +1149,13 @@ class DashboardServer extends EventEmitter {
    */
   getGitStatus() {
     try {
-      const branch = getChildProcess().execFileSync('git', ['branch', '--show-current'], {
-        cwd: this.projectRoot,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
+      const branch = getChildProcess()
+        .execFileSync('git', ['branch', '--show-current'], {
+          cwd: this.projectRoot,
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        })
+        .trim();
 
       const statusOutput = getChildProcess().execFileSync('git', ['status', '--porcelain'], {
         cwd: this.projectRoot,
@@ -1209,7 +1245,9 @@ class DashboardServer extends EventEmitter {
    */
   getFileDiff(filePath, staged = false) {
     // Validate filePath stays within project root
-    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, {
+      allowSymlinks: true,
+    });
     if (!pathResult.ok) {
       return '';
     }
@@ -1224,10 +1262,12 @@ class DashboardServer extends EventEmitter {
 
       // If no diff, file might be untracked - show entire file content as addition
       if (!diff && !staged) {
-        const statusOutput = getChildProcess().execFileSync('git', ['status', '--porcelain', '--', filePath], {
-          cwd: this.projectRoot,
-          encoding: 'utf8',
-        }).trim();
+        const statusOutput = getChildProcess()
+          .execFileSync('git', ['status', '--porcelain', '--', filePath], {
+            cwd: this.projectRoot,
+            encoding: 'utf8',
+          })
+          .trim();
 
         // Check if file is untracked
         if (statusOutput.startsWith('??')) {
@@ -1398,23 +1438,23 @@ class DashboardServer extends EventEmitter {
       // Get branch and sync status via git
       try {
         const cwd = s.metadata.worktreePath || this.projectRoot;
-        entry.branch = getChildProcess().execFileSync('git', ['branch', '--show-current'], {
-          cwd,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        }).trim();
+        entry.branch = getChildProcess()
+          .execFileSync('git', ['branch', '--show-current'], {
+            cwd,
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+          })
+          .trim();
 
         // Get ahead/behind counts relative to upstream
         try {
-          const counts = getChildProcess().execFileSync(
-            'git',
-            ['rev-list', '--left-right', '--count', 'HEAD...@{u}'],
-            {
+          const counts = getChildProcess()
+            .execFileSync('git', ['rev-list', '--left-right', '--count', 'HEAD...@{u}'], {
               cwd,
               encoding: 'utf8',
               stdio: ['pipe', 'pipe', 'pipe'],
-            }
-          ).trim();
+            })
+            .trim();
           const [ahead, behind] = counts.split(/\s+/).map(Number);
           entry.ahead = ahead || 0;
           entry.behind = behind || 0;
@@ -1454,7 +1494,9 @@ class DashboardServer extends EventEmitter {
     }
 
     // Validate the path stays within project root
-    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, { allowSymlinks: true });
+    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, {
+      allowSymlinks: true,
+    });
     if (!pathResult.ok) {
       session.send(getProtocol().createError('OPEN_FILE_ERROR', 'File path outside project'));
       return;
@@ -1474,7 +1516,9 @@ class DashboardServer extends EventEmitter {
         case 'cursor':
         case 'windsurf': {
           const gotoArg = lineNum ? `${fullPath}:${lineNum}` : fullPath;
-          getChildProcess().spawn(editor, ['--goto', gotoArg], { detached: true, stdio: 'ignore' }).unref();
+          getChildProcess()
+            .spawn(editor, ['--goto', gotoArg], { detached: true, stdio: 'ignore' })
+            .unref();
           break;
         }
         case 'subl':
@@ -1491,11 +1535,17 @@ class DashboardServer extends EventEmitter {
       }
 
       session.send(
-        getProtocol().createNotification('info', 'Editor', `Opened ${require('path').basename(fullPath)}`)
+        getProtocol().createNotification(
+          'info',
+          'Editor',
+          `Opened ${require('path').basename(fullPath)}`
+        )
       );
     } catch (error) {
       console.error('[Open File Error]', error.message);
-      session.send(getProtocol().createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`));
+      session.send(
+        getProtocol().createError('OPEN_FILE_ERROR', `Failed to open file: ${error.message}`)
+      );
     }
   }
 
@@ -1508,10 +1558,15 @@ class DashboardServer extends EventEmitter {
     // Validate cwd stays within project root
     let safeCwd = this.projectRoot;
     if (cwd) {
-      const cwdResult = getValidatePaths().validatePath(cwd, this.projectRoot, { allowSymlinks: true });
+      const cwdResult = getValidatePaths().validatePath(cwd, this.projectRoot, {
+        allowSymlinks: true,
+      });
       if (!cwdResult.ok) {
         session.send(
-          getProtocol().createError('TERMINAL_ERROR', 'Working directory must be within project root')
+          getProtocol().createError(
+            'TERMINAL_ERROR',
+            'Working directory must be within project root'
+          )
         );
         return;
       }
@@ -1684,7 +1739,9 @@ class DashboardServer extends EventEmitter {
     }
 
     if (!this._automationRunner) {
-      session.send(getProtocol().createError('AUTOMATION_ERROR', 'Automation runner not initialized'));
+      session.send(
+        getProtocol().createError('AUTOMATION_ERROR', 'Automation runner not initialized')
+      );
       return;
     }
 
@@ -1692,12 +1749,18 @@ class DashboardServer extends EventEmitter {
       // Check if already running
       if (this._runningAutomations.has(automationId)) {
         session.send(
-          getProtocol().createNotification('warning', 'Automation', `${automationId} is already running`)
+          getProtocol().createNotification(
+            'warning',
+            'Automation',
+            `${automationId} is already running`
+          )
         );
         return;
       }
 
-      session.send(getProtocol().createNotification('info', 'Automation', `Starting ${automationId}...`));
+      session.send(
+        getProtocol().createNotification('info', 'Automation', `Starting ${automationId}...`)
+      );
 
       // Run the automation (async)
       const result = await this._automationRunner.run(automationId);
@@ -1705,23 +1768,39 @@ class DashboardServer extends EventEmitter {
       // Send result notification
       if (result.success) {
         session.send(
-          getProtocol().createNotification('success', 'Automation', `${automationId} completed successfully`)
+          getProtocol().createNotification(
+            'success',
+            'Automation',
+            `${automationId} completed successfully`
+          )
         );
       } else {
         session.send(
-          getProtocol().createNotification('error', 'Automation', `${automationId} failed: ${result.error}`)
+          getProtocol().createNotification(
+            'error',
+            'Automation',
+            `${automationId} failed: ${result.error}`
+          )
         );
       }
 
       // Send final status
-      session.send(getProtocol().createAutomationStatus(automationId, result.success ? 'idle' : 'error', result));
+      session.send(
+        getProtocol().createAutomationStatus(
+          automationId,
+          result.success ? 'idle' : 'error',
+          result
+        )
+      );
 
       // Refresh the list
       this.sendAutomationList(session);
     } catch (error) {
       console.error('[Automation Error]', error.message);
       session.send(getProtocol().createError('AUTOMATION_ERROR', 'Automation execution failed'));
-      session.send(getProtocol().createAutomationStatus(automationId, 'error', { error: 'Execution failed' }));
+      session.send(
+        getProtocol().createAutomationStatus(automationId, 'error', { error: 'Execution failed' })
+      );
     }
   }
 
@@ -1782,7 +1861,9 @@ class DashboardServer extends EventEmitter {
       case 'accept':
         // Mark as accepted and remove
         item.status = 'accepted';
-        session.send(getProtocol().createNotification('success', 'Inbox', `Accepted: ${item.title}`));
+        session.send(
+          getProtocol().createNotification('success', 'Inbox', `Accepted: ${item.title}`)
+        );
         this._inbox.delete(itemId);
         break;
 
