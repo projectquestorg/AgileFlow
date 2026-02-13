@@ -81,6 +81,9 @@ const OutboundMessageType = {
   // Sessions
   SESSION_LIST: 'session_list', // Session list with sync status
 
+  // Team Metrics
+  TEAM_METRICS: 'team_metrics', // Team metrics update (per-agent, per-gate)
+
   // Errors
   ERROR: 'error', // General error
 };
@@ -472,6 +475,27 @@ function createSessionList(sessions) {
 }
 
 /**
+ * Create a team metrics message
+ * @param {string} traceId - Trace ID for the team run
+ * @param {Object} metrics - Aggregated metrics
+ * @param {Object} metrics.per_agent - Per-agent metrics
+ * @param {Object} metrics.per_gate - Per-gate metrics
+ * @param {number|null} metrics.team_completion_ms - Team completion time in ms
+ * @param {string} metrics.computed_at - When metrics were computed
+ */
+function createTeamMetrics(traceId, metrics) {
+  return {
+    type: OutboundMessageType.TEAM_METRICS,
+    trace_id: traceId,
+    per_agent: (metrics && metrics.per_agent) || {},
+    per_gate: (metrics && metrics.per_gate) || {},
+    team_completion_ms: metrics && metrics.team_completion_ms,
+    computed_at: metrics && metrics.computed_at,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
  * Create an AskUserQuestion message
  * @param {string} toolId - Tool call ID for response correlation
  * @param {Object[]} questions - Array of questions with options
@@ -571,6 +595,7 @@ module.exports = {
   createAskUserQuestion,
   createStatusUpdate,
   createSessionList,
+  createTeamMetrics,
 
   // Parsing
   parseInboundMessage,

@@ -157,6 +157,14 @@ describe('dashboard-protocol.js', () => {
       expect(OutboundMessageType.ASK_USER_QUESTION).toBe('ask_user_question');
     });
 
+    it('has SESSION_LIST key', () => {
+      expect(OutboundMessageType.SESSION_LIST).toBe('session_list');
+    });
+
+    it('has TEAM_METRICS key', () => {
+      expect(OutboundMessageType.TEAM_METRICS).toBe('team_metrics');
+    });
+
     it('has ERROR key', () => {
       expect(OutboundMessageType.ERROR).toBe('error');
     });

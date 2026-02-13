@@ -40,13 +40,13 @@ const {
   createInboxItem,
   createStatusUpdate,
   createSessionList,
+  createTeamMetrics,
   parseInboundMessage,
   serializeMessage,
 } = require('./dashboard-protocol');
 const { getProjectRoot, isAgileflowProject, getAgentsDir } = require('./paths');
 const { validatePath } = require('./validate-paths');
 const { execFileSync, spawn } = require('child_process');
-const os = require('os');
 
 // Lazy-load automation modules to avoid circular dependencies
 let AutomationRegistry = null;
@@ -542,6 +542,9 @@ class DashboardServer extends EventEmitter {
 
     // Initialize automation registry lazily
     this._initAutomations();
+
+    // Listen for team metrics saves to broadcast to clients
+    this._initTeamMetricsListener();
   }
 
   /**
@@ -814,6 +817,9 @@ class DashboardServer extends EventEmitter {
     // Send project status (stories/epics)
     this.sendStatusUpdate(session);
 
+    // Send team metrics
+    this.sendTeamMetrics(session);
+
     // Send session list with sync info
     this.sendSessionList(session);
 
@@ -1015,9 +1021,13 @@ class DashboardServer extends EventEmitter {
       case 'inbox':
         this.sendInboxList(session);
         break;
+      case 'team_metrics':
+        this.sendTeamMetrics(session);
+        break;
       default:
         this.sendGitStatus(session);
         this.sendStatusUpdate(session);
+        this.sendTeamMetrics(session);
         this.sendSessionList(session);
         this.sendAutomationList(session);
         this.sendInboxList(session);
@@ -1321,6 +1331,62 @@ class DashboardServer extends EventEmitter {
       session.send(createStatusUpdate(summary));
     } catch (error) {
       console.error('[Status Update Error]', error.message);
+    }
+  }
+
+  /**
+   * Initialize listener for team metrics events
+   */
+  _initTeamMetricsListener() {
+    try {
+      const { teamMetricsEmitter } = require('../scripts/lib/team-events');
+      teamMetricsEmitter.on('metrics_saved', () => {
+        this.broadcastTeamMetrics();
+      });
+    } catch (e) {
+      // team-events not available - non-critical
+    }
+  }
+
+  /**
+   * Send team metrics to a single session
+   */
+  sendTeamMetrics(session) {
+    const path = require('path');
+    const fs = require('fs');
+    const sessionStatePath = path.join(this.projectRoot, 'docs', '09-agents', 'session-state.json');
+    if (!fs.existsSync(sessionStatePath)) return;
+
+    try {
+      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+      const traces = (state.team_metrics && state.team_metrics.traces) || {};
+
+      for (const [traceId, metrics] of Object.entries(traces)) {
+        session.send(createTeamMetrics(traceId, metrics));
+      }
+    } catch (error) {
+      // Non-critical
+    }
+  }
+
+  /**
+   * Broadcast team metrics to all connected clients
+   */
+  broadcastTeamMetrics() {
+    const path = require('path');
+    const fs = require('fs');
+    const sessionStatePath = path.join(this.projectRoot, 'docs', '09-agents', 'session-state.json');
+    if (!fs.existsSync(sessionStatePath)) return;
+
+    try {
+      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+      const traces = (state.team_metrics && state.team_metrics.traces) || {};
+
+      for (const [traceId, metrics] of Object.entries(traces)) {
+        this.broadcast(createTeamMetrics(traceId, metrics));
+      }
+    } catch (error) {
+      // Non-critical
     }
   }
 
