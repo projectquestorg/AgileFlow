@@ -13,7 +13,7 @@ compact_context:
     - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with detailed prompt"
     - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
     - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
-    - "LOGIC AUDIT: After implementation, offer '🔍 Run logic audit' option via AskUserQuestion (not automatic)"
+    - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
   state_fields:
     - current_story
     - current_epic
@@ -382,8 +382,9 @@ If you end your response without calling AskUserQuestion, you have violated thes
 |-------|-------------------|-----|
 | After context gathering | The most impactful ready story | Based on epic progress, blockers, dependencies |
 | After plan approval | "Start implementing now" | Don't ask permission, suggest action |
-| After code is written | "Run tests to verify (Recommended)" | Always verify before committing |
-| After tests pass | "Commit and continue to next story" | Keep momentum |
+| After code is written | "Run tests to verify (Recommended)" + logic audit option | Always verify before committing |
+| After tests pass | "🔍 Run logic audit (Recommended)" or "Commit" | Logic audit catches what tests miss |
+| After logic audit | "Commit: '[type]: [summary]' (Recommended)" | All checks done, ready to commit |
 | After error | "Try [specific alternative approach]" | Don't just say "fix it" |
 | After expert returns | "Review and apply changes" or "Run tests" | Based on expert output quality |
 
@@ -421,7 +422,7 @@ If you end your response without calling AskUserQuestion, you have violated thes
 | User gave detailed instructions | Skip plan mode, follow them |
 | Everything else | **USE PLAN MODE** |
 
-**Plan mode flow:** EnterPlanMode → Explore with Glob/Grep/Read → Design approach → ExitPlanMode → Implement
+**Plan mode flow:** EnterPlanMode → Explore with Glob/Grep/Read → Design approach → Add smart babysit header to plan → ExitPlanMode → Implement → Smart AskUserQuestion (with logic audit)
 
 ---
 
@@ -457,6 +458,14 @@ Analysis/Review                   → /agileflow:multi-expert or Task(subagent_t
 ### 🚨 RULE #4: TRACK PROGRESS WITH Task Tools
 
 Use TaskCreate for any task with 3+ steps. Use TaskUpdate to mark status as you complete each step.
+
+**TMUX WINDOW NAMING**: After calling TaskCreate or TaskUpdate (status → in_progress), rename the tmux window to match the task subject:
+
+```bash
+bash .agileflow/scripts/tmux-task-name.sh "Task subject here"
+```
+
+This makes tmux windows show what each Claude session is working on (e.g., `Fix auth middleware` instead of `claude-2`). Best-effort: silently ignored if not in tmux.
 
 ---
 
@@ -512,17 +521,21 @@ if(ready.length)console.log('🔔 Validators ready:',ready.map(t=>t.id).join(','
 ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
 
 These rules MUST be followed during implementation:
-1. **ALWAYS end your final response with AskUserQuestion tool** offering next steps
+1. **ALWAYS end your final response with SMART AskUserQuestion tool** - specific, contextual options with (Recommended) label
 2. **Use EnterPlanMode** if any NEW non-trivial tasks arise during implementation
 3. **Delegate complex work** to domain experts via Task tool
 4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
 
-After implementation completes, you MUST call AskUserQuestion with options like:
-- "Run tests to verify"
-- "🔍 Run logic audit" (for complex code - uses /agileflow:logic:audit)
-- "Continue to next task"
-- "Review changes"
-- "Pause here"
+**Smart AskUserQuestion format** (NEVER generic - always contextual):
+- Options must reference specific files, test commands, story IDs, and change counts
+- Always mark the best next step with "(Recommended)"
+- Include descriptions with concrete context (e.g., "3 files changed in scripts/")
+
+After implementation completes, you MUST call AskUserQuestion. **ALWAYS include logic audit**:
+- "Run `npm test` in packages/cli/ (Recommended)" + description with file count
+- "🔍 Run logic audit on [N] modified files" + "5 analyzers check for edge cases, race conditions, type bugs"
+- "Commit: '[type]: [summary]'" + "All tests pass, ready to commit"
+- "Pause here" + "Changes saved, not committed"
 
 ---
 ```
@@ -534,7 +547,7 @@ After implementation completes, you MUST call AskUserQuestion with options like:
 # Plan: Add User Profile Feature
 
 ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
-[rules as above]
+[rules as above - with SMART AskUserQuestion and logic audit]
 
 ---
 
@@ -594,22 +607,22 @@ After implementation completes, you MUST call AskUserQuestion with options like:
 13. Delegate to experts based on scope
 14. Collect results if async (TaskOutput)
 15. Verify tests pass
-16. AskUserQuestion with specific test results: "All tests pass - commit changes? (Recommended)"
+16. **ALWAYS offer logic audit** via smart AskUserQuestion with specific file counts and test results
 
 **Phase 4: Completion**
-15. Update status.json (mark story done)
-16. **RELEASE THE STORY claim:**
+17. Update status.json (mark story done)
+18. **RELEASE THE STORY claim:**
     ```bash
     node .agileflow/scripts/lib/story-claiming.js release <story-id>
     ```
-17. Present next steps via AskUserQuestion **(including Logic Audit option)**
+19. Present next steps via smart AskUserQuestion
 
-**Post-Implementation Options** (offer via AskUserQuestion):
-- "Run tests to verify" - Standard verification
-- "🔍 Run logic audit" - Multi-agent analysis for logic bugs (recommended for complex code)
-- "Continue to next story" - Move on
-- "Review changes" - Manual review
-- "Pause here" - Stop for now
+**Post-Implementation Options** (ALWAYS offer via smart AskUserQuestion):
+- "Run tests to verify (Recommended)" - with specific test command and file count
+- "🔍 Run logic audit on N modified files" - **ALWAYS include this** - 5 analyzers check edge cases, race conditions, type bugs
+- "Commit: '[type]: [summary]'" - with specific commit message suggestion
+- "Continue to next story" - with story ID and epic progress
+- "Pause here" - with summary of what's saved/uncommitted
 
 ---
 
@@ -673,19 +686,37 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 
 ### LOGIC AUDIT INTEGRATION
 
-After completing an implementation, offer logic audit as an **optional quality check**:
+**ALWAYS suggest logic audit after ANY implementation** - whether from a plan, direct coding, or expert delegation. This is a standard post-implementation step, not optional.
 
+**Smart AskUserQuestion after implementation:**
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Implementation complete. What would you like to do?",
+  "question": "Implementation complete (3 files changed, 85 lines added). What's next?",
   "header": "Next step",
   "multiSelect": false,
   "options": [
-    {"label": "Run tests (Recommended)", "description": "Verify with test suite"},
-    {"label": "🔍 Run logic audit", "description": "Multi-agent analysis for edge cases, race conditions, type bugs"},
-    {"label": "Continue to next story", "description": "Move on without additional checks"},
-    {"label": "Pause here", "description": "Stop for now"}
+    {"label": "Run npm test in packages/cli/ (Recommended)", "description": "3 files changed in scripts/ - verify before committing"},
+    {"label": "🔍 Run logic audit on 3 modified files", "description": "5 analyzers check for edge cases, race conditions, type bugs - catches issues tests miss"},
+    {"label": "Commit: 'feat: add session tracking'", "description": "Skip verification - only if changes are trivial"},
+    {"label": "Pause here", "description": "Changes saved, not committed"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**After tests pass, suggest logic audit again if not yet run:**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "All 4373 tests pass. Ready to finalize?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "🔍 Run logic audit on 3 modified files (Recommended)", "description": "5 analyzers catch edge cases tests miss - quick check before commit"},
+    {"label": "Commit: 'feat: add session tracking'", "description": "All tests pass, skip logic audit"},
+    {"label": "Continue to US-0044", "description": "EP-0018 is 85% done - 2 stories left"},
+    {"label": "Pause here", "description": "Tests pass, changes not committed"}
   ]
 }]</parameter>
 </invoke>
@@ -696,19 +727,25 @@ After completing an implementation, offer logic audit as an **optional quality c
 2. Run: `/agileflow:logic:audit <modified-files> DEPTH=quick`
 3. Review findings with user
 4. Offer to fix any P0/P1 issues immediately
-5. Then present next steps again
+5. Then present next steps again with smart AskUserQuestion
 
 ---
 
 ### SMART ASKUSERQUESTION EXAMPLES
 
 After implementation:
-- "Run `npm test` in packages/cli/ (Recommended)" + "3 files changed, verify before commit"
-- "🔍 Run logic audit on modified files" + "5 analyzers check for edge cases"
+- "Run `npm test` in packages/cli/ (Recommended)" + "3 files changed in scripts/ - verify before committing"
+- "🔍 Run logic audit on 3 modified files" + "5 analyzers check edge cases, race conditions, type bugs"
+- "Pause here" + "Changes saved, not committed"
 
-After tests pass:
-- "Commit: 'fix: resolve tmux socket path' (Recommended)" + "All tests pass"
-- "Review diff before committing" + "14 files touched"
+After tests pass (logic audit NOT yet run):
+- "🔍 Run logic audit on 3 modified files (Recommended)" + "Quick check catches what tests miss - edge cases, race conditions"
+- "Commit: 'fix: resolve tmux socket path'" + "All 4373 tests pass, skip audit"
+- "Continue to US-0044" + "EP-0018 is 85% done"
+
+After tests pass (logic audit already done):
+- "Commit: 'fix: resolve tmux socket path' (Recommended)" + "All tests pass, logic audit clean"
+- "Review diff before committing" + "14 files touched across 3 directories"
 
 After error:
 - "Try alternative: use execFileSync instead (Recommended)" + "Current approach has shell injection risk"
@@ -726,13 +763,16 @@ After error:
 - Delegate complex work to experts
 - If stuck 2+ times → research prompt
 - Use state narration markers (📍🔀🔄⚠️✅) for visibility
+- **LOGIC AUDIT - ALWAYS SUGGEST**: After ANY implementation (plan or direct), ALWAYS include "🔍 Run logic audit" as an option. After tests pass but before commit, make it (Recommended).
 - **PLAN FILE CONTEXT - CRITICAL:**
-  BEFORE ExitPlanMode, EDIT the plan file to add babysit rules header at TOP
+  BEFORE ExitPlanMode, EDIT the plan file to add babysit rules header at TOP (with smart AskUserQuestion format and logic audit)
   This ensures rules survive "Clear context and bypass permissions"
 - **STORY CLAIMING - CRITICAL:**
   1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
   2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
   3. WHEN done: `node .agileflow/scripts/lib/story-claiming.js release <id>`
+- **TMUX WINDOW NAMING**: After TaskCreate/TaskUpdate to in_progress, run:
+  `bash .agileflow/scripts/tmux-task-name.sh "Task subject"` to show task in tmux window title
 
 ---
 
@@ -1175,12 +1215,16 @@ When stuck detection triggers:
    ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
 
    These rules MUST be followed during implementation:
-   1. ALWAYS end your final response with AskUserQuestion tool
-   2. Use EnterPlanMode if new non-trivial tasks arise
-   3. Delegate complex work to domain experts
-   4. Track progress with TaskCreate/TaskUpdate
+   1. **ALWAYS end with SMART AskUserQuestion** - specific options with (Recommended), contextual descriptions, file counts
+   2. **Use EnterPlanMode** if new non-trivial tasks arise
+   3. **Delegate complex work** to domain experts via Task tool
+   4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
 
-   After implementation, call AskUserQuestion with next step options.
+   After implementation, ALWAYS call AskUserQuestion with:
+   - "Run tests (Recommended)" with specific command and file count
+   - "🔍 Run logic audit on N modified files" - ALWAYS include this
+   - "Commit: '[type]: [summary]'" with suggested message
+   - "Pause here" with save state summary
 
    ---
    ```
