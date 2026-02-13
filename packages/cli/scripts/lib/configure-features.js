@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const os = require('os');
 const {
   c,
@@ -151,6 +152,20 @@ const SCRIPTS_DIR = path.join(process.cwd(), '.agileflow', 'scripts');
 
 const scriptExists = scriptName => fs.existsSync(path.join(SCRIPTS_DIR, scriptName));
 const getScriptPath = scriptName => `.agileflow/scripts/${scriptName}`;
+
+/**
+ * Hash a file's content using SHA-256 (first 16 hex chars)
+ * @param {string} filePath - Path to the file
+ * @returns {string|null} 16-char hex hash, or null if file can't be read
+ */
+function hashFile(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+  } catch {
+    return null;
+  }
+}
 
 // ============================================================================
 // METADATA MANAGEMENT
@@ -416,9 +431,18 @@ function enableFeature(feature, options = {}, version) {
     return enableDamageControl(settings, options, version);
   }
 
+  const featureConfig = FEATURES[feature];
+  const contentHash = featureConfig?.script
+    ? hashFile(path.join(SCRIPTS_DIR, featureConfig.script))
+    : null;
   writeJSON('.claude/settings.json', settings);
   updateMetadata(
-    { features: { [feature]: { enabled: true, version, at: new Date().toISOString() } } },
+    { features: { [feature]: {
+      enabled: true,
+      version,
+      ...(contentHash ? { contentHash } : {}),
+      at: new Date().toISOString(),
+    } } },
     version
   );
   updateGitignore();
@@ -583,6 +607,7 @@ function enableDamageControl(settings, options, version) {
 
   success('Damage control PreToolUse hooks enabled');
 
+  const primaryHash = hashFile(path.join(SCRIPTS_DIR, 'damage-control-bash.js'));
   updateMetadata(
     {
       features: {
@@ -590,6 +615,7 @@ function enableDamageControl(settings, options, version) {
           enabled: true,
           protectionLevel: level,
           version,
+          ...(primaryHash ? { contentHash: primaryHash } : {}),
           at: new Date().toISOString(),
         },
       },

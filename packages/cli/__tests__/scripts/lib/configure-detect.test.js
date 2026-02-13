@@ -26,6 +26,25 @@ jest.mock('../../../scripts/lib/configure-utils', () => ({
 }));
 
 const { readJSON } = require('../../../scripts/lib/configure-utils');
+// Mock configure-features FEATURES constant (must be before require)
+jest.mock('../../../scripts/lib/configure-features', () => ({
+  FEATURES: {
+    sessionstart: { hook: 'SessionStart', script: 'agileflow-welcome.js', type: 'node' },
+    precompact: { hook: 'PreCompact', script: 'precompact-context.sh', type: 'bash' },
+    ralphloop: { hook: 'Stop', script: 'ralph-loop.js', type: 'node' },
+    selfimprove: { hook: 'Stop', script: 'auto-self-improve.js', type: 'node' },
+    archival: { script: 'archive-completed-stories.sh', requiresHook: 'sessionstart' },
+    statusline: { script: 'agileflow-statusline.sh' },
+    autoupdate: { metadataOnly: true },
+    damagecontrol: {
+      preToolUseHooks: true,
+      scripts: ['damage-control-bash.js', 'damage-control-edit.js', 'damage-control-write.js'],
+    },
+    askuserquestion: { metadataOnly: true },
+    tmuxautospawn: { metadataOnly: true },
+  },
+}));
+
 const {
   detectConfig,
   printStatus,
@@ -36,6 +55,8 @@ const {
   detectPreToolUseHooks,
   detectStatusLine,
   detectMetadata,
+  hashFile,
+  findPackageScriptDir,
 } = require('../../../scripts/lib/configure-detect');
 
 describe('configure-detect', () => {
@@ -308,7 +329,7 @@ describe('configure-detect', () => {
       expect(status.features.archival.threshold).toBe(14);
     });
 
-    it('detects outdated features', () => {
+    it('detects outdated features when script content has changed', () => {
       const status = {
         metadata: { exists: false, version: null },
         features: {
@@ -318,14 +339,88 @@ describe('configure-detect', () => {
         hasOutdated: false,
       };
       fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockImplementation((filePath) => {
+        if (typeof filePath === 'string' && filePath.includes('.agileflow')) {
+          return 'old installed content';
+        }
+        return 'new package content';
+      });
       readJSON.mockReturnValue({
         version: '1.0.0',
         features: { sessionstart: { enabled: true, version: '1.0.0' } },
       });
 
-      detectMetadata(status, '2.0.0'); // Current version is newer
+      detectMetadata(status, '2.0.0');
 
       expect(status.features.sessionstart.outdated).toBe(true);
+      expect(status.hasOutdated).toBe(true);
+    });
+
+    it('does NOT mark outdated when content matches despite version mismatch', () => {
+      const status = {
+        metadata: { exists: false, version: null },
+        features: {
+          sessionstart: { enabled: true, version: null, outdated: false },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+        },
+        hasOutdated: false,
+      };
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('identical script content');
+      readJSON.mockReturnValue({
+        version: '1.0.0',
+        features: { sessionstart: { enabled: true, version: '1.0.0' } },
+      });
+
+      detectMetadata(status, '2.0.0'); // Different version, same content
+
+      expect(status.features.sessionstart.outdated).toBe(false);
+      expect(status.hasOutdated).toBe(false);
+    });
+
+    it('does not mark outdated when package source is unavailable (fail open)', () => {
+      const status = {
+        metadata: { exists: false, version: null },
+        features: {
+          sessionstart: { enabled: true, version: null, outdated: false },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+        },
+        hasOutdated: false,
+      };
+      // Only metadata file exists, no package script directories
+      fs.existsSync.mockImplementation(p => p === 'docs/00-meta/agileflow-metadata.json');
+      readJSON.mockReturnValue({
+        version: '1.0.0',
+        features: { sessionstart: { enabled: true, version: '1.0.0' } },
+      });
+
+      detectMetadata(status, '2.0.0');
+
+      expect(status.features.sessionstart.outdated).toBe(false);
+      expect(status.hasOutdated).toBe(false);
+    });
+
+    it('uses version comparison for metadataOnly features', () => {
+      const status = {
+        metadata: { exists: false, version: null },
+        features: {
+          askuserquestion: { enabled: true, version: null, outdated: false, mode: null },
+          tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+        },
+        hasOutdated: false,
+      };
+      fs.existsSync.mockReturnValue(true);
+      readJSON.mockReturnValue({
+        version: '1.0.0',
+        features: {
+          askUserQuestion: { enabled: true, mode: 'all', version: '1.0.0' },
+        },
+      });
+
+      detectMetadata(status, '2.0.0');
+
+      // metadataOnly features still use version comparison
+      expect(status.features.askuserquestion.outdated).toBe(true);
       expect(status.hasOutdated).toBe(true);
     });
 

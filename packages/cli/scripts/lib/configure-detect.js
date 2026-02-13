@@ -6,9 +6,51 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { c, log, header, readJSON } = require('./configure-utils');
 const { tryOptional } = require('../../lib/errors');
+const { FEATURES } = require('./configure-features');
+
+// ============================================================================
+// CONTENT HASH HELPERS
+// ============================================================================
+
+/**
+ * Hash a file's content using SHA-256 (first 16 hex chars)
+ * @param {string} filePath - Path to the file
+ * @returns {string|null} 16-char hex hash, or null if file can't be read
+ */
+function hashFile(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Find the directory containing package source scripts.
+ * Checks require.resolve first, then common fallback locations.
+ * @returns {string|null} Path to the scripts directory, or null
+ */
+function findPackageScriptDir() {
+  try {
+    const pkgPath = require.resolve('agileflow/package.json');
+    return path.join(path.dirname(pkgPath), 'scripts');
+  } catch {
+    // Fallback: check common locations
+    const candidates = [
+      path.join(process.cwd(), 'node_modules', 'agileflow', 'scripts'),
+      path.join(process.cwd(), 'packages', 'cli', 'scripts'), // monorepo dev
+    ];
+    for (const dir of candidates) {
+      if (fs.existsSync(dir)) return dir;
+    }
+    return null;
+  }
+}
 
 // ============================================================================
 // DETECTION
@@ -256,17 +298,51 @@ function detectMetadata(status, version) {
     status.features.tmuxautospawn.enabled = true; // Default enabled
   }
 
-  // Read feature versions and check if outdated
+  // Read feature versions and check if outdated (content-based)
   if (meta.features) {
     const featureKeyMap = { askUserQuestion: 'askuserquestion', tmuxAutoSpawn: 'tmuxautospawn' };
+    const packageScriptDir = findPackageScriptDir();
+
     Object.entries(meta.features).forEach(([feature, data]) => {
       const statusKey = featureKeyMap[feature] || feature.toLowerCase();
       if (status.features[statusKey] && data.version) {
         status.features[statusKey].version = data.version;
-        if (data.version !== version && status.features[statusKey].enabled) {
-          status.features[statusKey].outdated = true;
-          status.hasOutdated = true;
+
+        if (!status.features[statusKey].enabled) return;
+
+        // Content-based outdated detection
+        const featureConfig = FEATURES[statusKey];
+        const scriptsToCheck = featureConfig?.scripts
+          || (featureConfig?.script ? [featureConfig.script] : []);
+
+        if (scriptsToCheck.length > 0 && packageScriptDir) {
+          // Compare installed scripts against package source
+          let isOutdated = false;
+          for (const scriptName of scriptsToCheck) {
+            const packageScript = path.join(packageScriptDir, scriptName);
+            const installedScript = path.join(
+              process.cwd(), '.agileflow', 'scripts', scriptName
+            );
+            const packageHash = hashFile(packageScript);
+            const installedHash = hashFile(installedScript);
+
+            if (packageHash && installedHash && packageHash !== installedHash) {
+              isOutdated = true;
+              break;
+            }
+          }
+          if (isOutdated) {
+            status.features[statusKey].outdated = true;
+            status.hasOutdated = true;
+          }
+        } else if (featureConfig?.metadataOnly) {
+          // Metadata-only features: use version comparison (no scripts to hash)
+          if (data.version !== version) {
+            status.features[statusKey].outdated = true;
+            status.hasOutdated = true;
+          }
         }
+        // If no package source found or no scripts, don't mark outdated (fail open)
       }
     });
   }
@@ -402,4 +478,6 @@ module.exports = {
   detectPreToolUseHooks,
   detectStatusLine,
   detectMetadata,
+  hashFile,
+  findPackageScriptDir,
 };
