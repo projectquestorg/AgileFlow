@@ -204,7 +204,7 @@ function startTeam(rootDir, templateName) {
     const sessionStatePath = paths.getSessionStatePath(rootDir);
     const fileLock = getFileLock();
 
-    const updateState = (state) => {
+    const updateState = state => {
       state.active_team = {
         template: templateName,
         mode,

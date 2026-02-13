@@ -55,7 +55,8 @@ const FEATURES = {
   },
   claudeflags: {
     metadataOnly: false,
-    description: 'Default flags for Claude CLI (sets permissions.defaultMode in .claude/settings.json)',
+    description:
+      'Default flags for Claude CLI (sets permissions.defaultMode in .claude/settings.json)',
   },
   agentteams: {
     metadataOnly: false,
@@ -459,12 +460,16 @@ function enableFeature(feature, options = {}, version) {
     : null;
   writeJSON('.claude/settings.json', settings);
   updateMetadata(
-    { features: { [feature]: {
-      enabled: true,
-      version,
-      ...(contentHash ? { contentHash } : {}),
-      at: new Date().toISOString(),
-    } } },
+    {
+      features: {
+        [feature]: {
+          enabled: true,
+          version,
+          ...(contentHash ? { contentHash } : {}),
+          at: new Date().toISOString(),
+        },
+      },
+    },
     version
   );
   updateGitignore();

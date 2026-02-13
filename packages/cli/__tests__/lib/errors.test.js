@@ -695,7 +695,9 @@ describe('errors.js', () => {
     });
 
     it('returns undefined on error', () => {
-      const result = tryOptional(() => { throw new Error('fail'); }, 'test');
+      const result = tryOptional(() => {
+        throw new Error('fail');
+      }, 'test');
       expect(result).toBeUndefined();
     });
 
@@ -705,7 +707,9 @@ describe('errors.js', () => {
     });
 
     it('returns undefined without label on error', () => {
-      const result = tryOptional(() => { throw new Error('fail'); });
+      const result = tryOptional(() => {
+        throw new Error('fail');
+      });
       expect(result).toBeUndefined();
     });
 
@@ -718,7 +722,9 @@ describe('errors.js', () => {
       try {
         jest.resetModules();
         const { tryOptional: freshTryOptional } = require('../../lib/errors');
-        freshTryOptional(() => { throw new Error('test error'); }, 'myLabel');
+        freshTryOptional(() => {
+          throw new Error('test error');
+        }, 'myLabel');
         const output = consoleSpy.mock.calls.map(c => c.join(' ')).join(' ');
         expect(output).toContain('tryOptional');
         expect(output).toContain('myLabel');

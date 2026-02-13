@@ -91,13 +91,20 @@ function executeCommand(cmd, args = [], opts = {}) {
     let stderr = '';
     let timedOut = false;
 
-    const timer = timeout > 0 ? setTimeout(() => {
-      timedOut = true;
-      proc.kill('SIGTERM');
-    }, timeout) : null;
+    const timer =
+      timeout > 0
+        ? setTimeout(() => {
+            timedOut = true;
+            proc.kill('SIGTERM');
+          }, timeout)
+        : null;
 
-    proc.stdout.on('data', chunk => { stdout += chunk; });
-    proc.stderr.on('data', chunk => { stderr += chunk; });
+    proc.stdout.on('data', chunk => {
+      stdout += chunk;
+    });
+    proc.stderr.on('data', chunk => {
+      stderr += chunk;
+    });
 
     proc.on('error', err => {
       if (timer) clearTimeout(timer);
@@ -115,7 +122,11 @@ function executeCommand(cmd, args = [], opts = {}) {
         if (fallback !== undefined) {
           resolve({ ok: true, data: fallback });
         } else {
-          resolve({ ok: false, error: `Command timed out after ${timeout}ms: ${cmd}`, exitCode: null });
+          resolve({
+            ok: false,
+            error: `Command timed out after ${timeout}ms: ${cmd}`,
+            exitCode: null,
+          });
         }
         return;
       }
@@ -124,7 +135,11 @@ function executeCommand(cmd, args = [], opts = {}) {
         if (fallback !== undefined) {
           resolve({ ok: true, data: fallback });
         } else {
-          const result = { ok: false, error: `Command failed: ${cmd} ${args.join(' ')} (exit ${code})`, exitCode: code };
+          const result = {
+            ok: false,
+            error: `Command failed: ${cmd} ${args.join(' ')} (exit ${code})`,
+            exitCode: code,
+          };
           if (captureStderr) {
             result.stderr = trim ? stderr.trim() : stderr;
           }

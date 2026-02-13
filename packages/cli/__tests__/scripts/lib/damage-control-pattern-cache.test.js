@@ -216,9 +216,7 @@ describe('damage-control-pattern-cache', () => {
       const result1 = loadPatterns(projectRoot, mockParser);
 
       // Mock existsSync to make only CONFIG_PATHS[1] exist
-      fs.existsSync.mockImplementation(
-        p => p === path.join(projectRoot, CONFIG_PATHS[1])
-      );
+      fs.existsSync.mockImplementation(p => p === path.join(projectRoot, CONFIG_PATHS[1]));
       fs.readFileSync.mockReturnValue('different content');
 
       // Second call - should load CONFIG_PATHS[1] (different file)
@@ -232,9 +230,7 @@ describe('damage-control-pattern-cache', () => {
       const path0 = path.join(projectRoot, CONFIG_PATHS[0]);
       const path1 = path.join(projectRoot, CONFIG_PATHS[1]);
 
-      fs.existsSync.mockImplementation(
-        p => p === path0 || p === path1
-      );
+      fs.existsSync.mockImplementation(p => p === path0 || p === path1);
       fs.statSync.mockReturnValue({ mtimeMs: 1000 });
 
       // First call - load from path0

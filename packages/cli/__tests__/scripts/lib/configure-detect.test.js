@@ -339,7 +339,7 @@ describe('configure-detect', () => {
         hasOutdated: false,
       };
       fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockImplementation((filePath) => {
+      fs.readFileSync.mockImplementation(filePath => {
         if (typeof filePath === 'string' && filePath.includes('.agileflow')) {
           return 'old installed content';
         }

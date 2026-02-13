@@ -2,10 +2,7 @@
  * Tests for TEAM_METRICS protocol message type in dashboard-protocol.js
  */
 
-const {
-  OutboundMessageType,
-  createTeamMetrics,
-} = require('../../lib/dashboard-protocol');
+const { OutboundMessageType, createTeamMetrics } = require('../../lib/dashboard-protocol');
 
 describe('TEAM_METRICS protocol message', () => {
   describe('OutboundMessageType.TEAM_METRICS', () => {

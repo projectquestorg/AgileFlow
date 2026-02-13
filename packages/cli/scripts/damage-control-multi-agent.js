@@ -48,8 +48,12 @@ if (!utils || typeof utils.runDamageControlHook !== 'function') {
 
 // Tools this hook handles
 const MULTI_AGENT_TOOLS = [
-  'TeamCreate', 'TeamDelete',
-  'TaskCreate', 'TaskUpdate', 'TaskGet', 'TaskList',
+  'TeamCreate',
+  'TeamDelete',
+  'TaskCreate',
+  'TaskUpdate',
+  'TaskGet',
+  'TaskList',
   'SendMessage',
 ];
 
@@ -65,10 +69,10 @@ const MAX_MESSAGE_SIZE = 10240;
 // Blocked patterns in SendMessage content
 const BLOCKED_MESSAGE_PATTERNS = [
   // Command injection attempts
-  /\$\{.*\}/,           // Template injection ${...}
-  /`[^`]*`/,             // Backtick execution
-  /\bexec\s*\(/,         // exec() calls
-  /\beval\s*\(/,         // eval() calls
+  /\$\{.*\}/, // Template injection ${...}
+  /`[^`]*`/, // Backtick execution
+  /\bexec\s*\(/, // exec() calls
+  /\beval\s*\(/, // eval() calls
   // Dangerous git operations
   /\bgit\s+push\s+--force\b/i,
   /\bgit\s+reset\s+--hard\b/i,
@@ -143,9 +147,9 @@ function validateTaskOperation(input) {
   // Check for secrets in task descriptions
   const secretPatterns = [
     /\b(?:API_KEY|SECRET|PASSWORD|TOKEN|CREDENTIALS)\s*[:=]\s*\S+/i,
-    /\bsk-[a-zA-Z0-9]{20,}/,      // API keys starting with sk-
-    /\bghp_[a-zA-Z0-9]{36}/,      // GitHub personal access tokens
-    /\bnpm_[a-zA-Z0-9]{36}/,      // npm tokens
+    /\bsk-[a-zA-Z0-9]{20,}/, // API keys starting with sk-
+    /\bghp_[a-zA-Z0-9]{36}/, // GitHub personal access tokens
+    /\bnpm_[a-zA-Z0-9]{36}/, // npm tokens
   ];
 
   for (const pattern of secretPatterns) {
@@ -163,7 +167,7 @@ function validateTaskOperation(input) {
 
 try {
   utils.runDamageControlHook({
-    getInputValue: (input) => {
+    getInputValue: input => {
       // Check if this is a multi-agent tool
       const toolName = input.tool_name || '';
       if (!MULTI_AGENT_TOOLS.includes(toolName)) {

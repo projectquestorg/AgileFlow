@@ -341,7 +341,9 @@ function formatLogStats(stats) {
     lines.push('Archives:');
     if (stats.archives && stats.archives.length > 0) {
       for (const archive of stats.archives) {
-        lines.push(`  ${archive.filename}: ${archive.lineCount} lines (${Math.round(archive.size / 1024)} KB)`);
+        lines.push(
+          `  ${archive.filename}: ${archive.lineCount} lines (${Math.round(archive.size / 1024)} KB)`
+        );
       }
     }
 

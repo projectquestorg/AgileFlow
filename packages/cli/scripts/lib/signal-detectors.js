@@ -100,7 +100,7 @@ const FEATURE_DETECTORS = {
   // PRE-STORY PHASE
   // =========================================================================
 
-  'story-validate': (signals) => {
+  'story-validate': signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (story.status !== 'ready' && story.status !== 'in-progress') return null;
@@ -115,7 +115,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'blockers': (signals) => {
+  blockers: signals => {
     const blocked = getStoriesByStatus(signals.statusJson, 'blocked');
     if (blocked.length === 0) return null;
     return recommend('blockers', {
@@ -126,7 +126,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'choose': (signals) => {
+  choose: signals => {
     const { story, counts } = signals;
     if (story && story.id) return null; // Already have a story
     if ((counts.ready || 0) < 2) return null;
@@ -138,7 +138,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'assign': (signals) => {
+  assign: signals => {
     const ready = getStoriesByStatus(signals.statusJson, 'ready');
     const unassigned = ready.filter(s => !s.owner);
     if (unassigned.length === 0) return null;
@@ -150,7 +150,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'board': (signals) => {
+  board: signals => {
     const { storyCount } = signals;
     if (!storyCount || storyCount < 5) return null;
     return recommend('board', {
@@ -161,7 +161,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'sprint': (signals) => {
+  sprint: signals => {
     const { counts } = signals;
     if ((counts.ready || 0) < 3) return null;
     return recommend('sprint', {
@@ -172,7 +172,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'batch': (signals) => {
+  batch: signals => {
     const ready = getStoriesByStatus(signals.statusJson, 'ready');
     if (ready.length < 5) return null;
     // Check if stories share same epic (good batch candidate)
@@ -193,7 +193,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'workflow': (signals) => {
+  workflow: signals => {
     const { metadata } = signals;
     const workflows = metadata?.workflows;
     if (!workflows || Object.keys(workflows).length === 0) return null;
@@ -205,7 +205,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'template': (signals) => {
+  template: signals => {
     const { story } = signals;
     if (!story || story.status !== 'ready') return null;
     if (!story.title) return null;
@@ -221,7 +221,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'configure': (signals) => {
+  configure: signals => {
     const { metadata } = signals;
     // Only suggest if metadata is minimal/missing
     if (metadata && Object.keys(metadata).length > 3) return null;
@@ -237,7 +237,7 @@ const FEATURE_DETECTORS = {
   // PLANNING PHASE
   // =========================================================================
 
-  'impact': (signals) => {
+  impact: signals => {
     const { git, story } = signals;
     if (!story || story.status !== 'in-progress') return null;
     // Suggest impact analysis if touching core/shared files
@@ -253,10 +253,19 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'adr': (signals) => {
+  adr: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
-    if (storyMentions(story, ['architecture', 'redesign', 'migrate', 'replace', 'new system', 'framework'])) {
+    if (
+      storyMentions(story, [
+        'architecture',
+        'redesign',
+        'migrate',
+        'replace',
+        'new system',
+        'framework',
+      ])
+    ) {
       return recommend('adr', {
         priority: 'medium',
         trigger: 'Story involves architectural decisions',
@@ -268,10 +277,20 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'research': (signals) => {
+  research: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
-    if (storyMentions(story, ['research', 'investigate', 'evaluate', 'compare', 'POC', 'proof of concept', 'spike'])) {
+    if (
+      storyMentions(story, [
+        'research',
+        'investigate',
+        'evaluate',
+        'compare',
+        'POC',
+        'proof of concept',
+        'spike',
+      ])
+    ) {
       return recommend('research', {
         priority: 'medium',
         trigger: 'Story involves research/investigation',
@@ -283,7 +302,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'baseline': (signals) => {
+  baseline: signals => {
     const { story, files } = signals;
     if (!story || story.status !== 'in-progress') return null;
     if (!files.coverage) return null;
@@ -296,7 +315,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'council': (signals) => {
+  council: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (storyMentions(story, ['strategic', 'trade-off', 'decision', 'approach', 'architecture'])) {
@@ -310,7 +329,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'multi-expert': (signals) => {
+  'multi-expert': signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (storyMentions(story, ['complex', 'cross-cutting', 'full-stack', 'multi-domain'])) {
@@ -324,7 +343,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'validate-expertise': (signals) => {
+  'validate-expertise': signals => {
     const { files } = signals;
     if (!files.expertiseDir) return null;
     return recommend('validate-expertise', {
@@ -339,7 +358,7 @@ const FEATURE_DETECTORS = {
   // IMPLEMENTATION PHASE
   // =========================================================================
 
-  'verify': (signals) => {
+  verify: signals => {
     const { story, tests, git } = signals;
     if (!story || story.status !== 'in-progress') return null;
     if ((git.filesChanged || 0) === 0) return null;
@@ -354,7 +373,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'tests': (signals) => {
+  tests: signals => {
     const { story, files, packageJson } = signals;
     if (!story || story.status !== 'in-progress') return null;
     if (!hasPackageScript(packageJson, 'test')) {
@@ -368,7 +387,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'audit': (signals) => {
+  audit: signals => {
     const { story, git } = signals;
     if (!story || story.status !== 'in-progress') return null;
     if ((git.filesChanged || 0) < 5) return null;
@@ -381,7 +400,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'ci': (signals) => {
+  ci: signals => {
     const { files } = signals;
     if (files.ciConfig) return null; // Already has CI
     return recommend('ci', {
@@ -392,11 +411,12 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'deps': (signals) => {
+  deps: signals => {
     const { packageJson } = signals;
     if (!packageJson) return null;
     // Check for outdated or vulnerable deps signal
-    const depCount = Object.keys(packageJson.dependencies || {}).length +
+    const depCount =
+      Object.keys(packageJson.dependencies || {}).length +
       Object.keys(packageJson.devDependencies || {}).length;
     if (depCount < 10) return null;
     return recommend('deps', {
@@ -407,7 +427,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'diagnose': (signals) => {
+  diagnose: signals => {
     const { sessionState } = signals;
     // Detect if there have been recent errors or stuck patterns
     const failCount = sessionState?.failure_count || 0;
@@ -420,7 +440,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'debt': (signals) => {
+  debt: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (storyMentions(story, ['refactor', 'cleanup', 'tech debt', 'legacy', 'deprecat'])) {
@@ -434,7 +454,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'maintain': (signals) => {
+  maintain: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (storyMentions(story, ['maintenance', 'update', 'upgrade', 'patch', 'housekeeping'])) {
@@ -448,10 +468,19 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'packages': (signals) => {
+  packages: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
-    if (storyMentions(story, ['dependency', 'dependencies', 'package', 'upgrade', 'npm', 'vulnerability'])) {
+    if (
+      storyMentions(story, [
+        'dependency',
+        'dependencies',
+        'package',
+        'upgrade',
+        'npm',
+        'vulnerability',
+      ])
+    ) {
       return recommend('packages', {
         priority: 'medium',
         trigger: 'Story involves dependency management',
@@ -462,7 +491,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'deploy': (signals) => {
+  deploy: signals => {
     const { story } = signals;
     if (!story || !story.id) return null;
     if (storyMentions(story, ['deploy', 'deployment', 'CD', 'pipeline', 'staging', 'production'])) {
@@ -476,7 +505,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'serve': (signals) => {
+  serve: signals => {
     const { metadata } = signals;
     const dashboardEnabled = metadata?.features?.dashboard?.enabled;
     if (!dashboardEnabled) return null;
@@ -492,7 +521,7 @@ const FEATURE_DETECTORS = {
   // POST-IMPLEMENTATION PHASE
   // =========================================================================
 
-  'review': (signals) => {
+  review: signals => {
     const { git, story } = signals;
     if (!story || story.status !== 'in-progress') return null;
     const linesChanged = (git.diffStats?.insertions || 0) + (git.diffStats?.deletions || 0);
@@ -505,7 +534,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'logic-audit': (signals) => {
+  'logic-audit': signals => {
     const { git, story } = signals;
     if (!story || story.status !== 'in-progress') return null;
     // Suggest logic audit for complex changes
@@ -522,7 +551,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'docs': (signals) => {
+  docs: signals => {
     const { git, story } = signals;
     if (!story || story.status !== 'in-progress') return null;
     // Detect API or public interface changes
@@ -538,7 +567,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'changelog': (signals) => {
+  changelog: signals => {
     const { git } = signals;
     // Suggest changelog if there are multiple commits on feature branch
     if (!git.onFeatureBranch) return null;
@@ -551,7 +580,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'metrics': (signals) => {
+  metrics: signals => {
     const { statusJson } = signals;
     if (!statusJson || !statusJson.stories) return null;
     const doneCount = getStoriesByStatus(statusJson, 'done').length;
@@ -564,7 +593,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'retro': (signals) => {
+  retro: signals => {
     const { statusJson } = signals;
     if (!statusJson || !statusJson.epics) return null;
     // Suggest retro when an epic is mostly complete
@@ -583,7 +612,7 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  'velocity': (signals) => {
+  velocity: signals => {
     const { statusJson } = signals;
     if (!statusJson || !statusJson.stories) return null;
     const doneCount = getStoriesByStatus(statusJson, 'done').length;
@@ -596,11 +625,11 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'readme-sync': (signals) => {
+  'readme-sync': signals => {
     const { git } = signals;
     // Check if any README files were potentially affected
-    const readmeAffected = (git.changedFiles || []).some(f =>
-      /readme/i.test(f) || /^(src|packages|apps)\/[^/]+\//.test(f)
+    const readmeAffected = (git.changedFiles || []).some(
+      f => /readme/i.test(f) || /^(src|packages|apps)\/[^/]+\//.test(f)
     );
     if (!readmeAffected) return null;
     return recommend('readme-sync', {
@@ -611,11 +640,13 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'feedback': (signals) => {
+  feedback: signals => {
     const { sessionState } = signals;
     // Suggest feedback collection after extended sessions
     const sessionDuration = sessionState?.current_session?.started_at
-      ? Math.round((Date.now() - new Date(sessionState.current_session.started_at).getTime()) / 60000)
+      ? Math.round(
+          (Date.now() - new Date(sessionState.current_session.started_at).getTime()) / 60000
+        )
       : 0;
     if (isNaN(sessionDuration) || sessionDuration < 30) return null;
     return recommend('feedback', {
@@ -630,7 +661,7 @@ const FEATURE_DETECTORS = {
   // PRE-PR PHASE
   // =========================================================================
 
-  'pr': (signals) => {
+  pr: signals => {
     const { git, tests, story } = signals;
     if (!story || story.status !== 'in-progress') return null;
     if (!git.onFeatureBranch) return null;
@@ -643,7 +674,7 @@ const FEATURE_DETECTORS = {
     });
   },
 
-  'compress': (signals) => {
+  compress: signals => {
     const { statusJson } = signals;
     if (!statusJson || !statusJson.stories) return null;
     const totalStories = Object.keys(statusJson.stories).length;
@@ -663,24 +694,51 @@ const FEATURE_DETECTORS = {
 
 const PHASE_MAP = {
   'pre-story': [
-    'story-validate', 'blockers', 'choose', 'assign', 'board',
-    'sprint', 'batch', 'workflow', 'template', 'configure',
+    'story-validate',
+    'blockers',
+    'choose',
+    'assign',
+    'board',
+    'sprint',
+    'batch',
+    'workflow',
+    'template',
+    'configure',
   ],
-  'planning': [
-    'impact', 'adr', 'research', 'baseline', 'council',
-    'multi-expert', 'validate-expertise',
+  planning: [
+    'impact',
+    'adr',
+    'research',
+    'baseline',
+    'council',
+    'multi-expert',
+    'validate-expertise',
   ],
-  'implementation': [
-    'verify', 'tests', 'audit', 'ci', 'deps',
-    'diagnose', 'debt', 'maintain', 'packages', 'deploy', 'serve',
+  implementation: [
+    'verify',
+    'tests',
+    'audit',
+    'ci',
+    'deps',
+    'diagnose',
+    'debt',
+    'maintain',
+    'packages',
+    'deploy',
+    'serve',
   ],
   'post-impl': [
-    'review', 'logic-audit', 'docs', 'changelog', 'metrics',
-    'retro', 'velocity', 'readme-sync', 'feedback',
+    'review',
+    'logic-audit',
+    'docs',
+    'changelog',
+    'metrics',
+    'retro',
+    'velocity',
+    'readme-sync',
+    'feedback',
   ],
-  'pre-pr': [
-    'pr', 'compress',
-  ],
+  'pre-pr': ['pr', 'compress'],
 };
 
 /**

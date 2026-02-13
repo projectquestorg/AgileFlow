@@ -5,7 +5,13 @@
  */
 
 const path = require('path');
-const { executeCommandSync, executeCommand, spawnBackground, git, gitAsync } = require('../../lib/process-executor');
+const {
+  executeCommandSync,
+  executeCommand,
+  spawnBackground,
+  git,
+  gitAsync,
+} = require('../../lib/process-executor');
 
 describe('process-executor', () => {
   // =========================================================================
@@ -133,7 +139,9 @@ describe('process-executor', () => {
     });
 
     it('captures stderr when captureStderr=true', async () => {
-      const result = await executeCommand('ls', ['--nonexistent-flag-xyz'], { captureStderr: true });
+      const result = await executeCommand('ls', ['--nonexistent-flag-xyz'], {
+        captureStderr: true,
+      });
       expect(result.ok).toBe(false);
       if (result.stderr) {
         expect(typeof result.stderr).toBe('string');

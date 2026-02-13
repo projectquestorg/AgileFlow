@@ -54,7 +54,13 @@ try {
       return { ok: false, error: e.message };
     }
   };
-  tryOptional = (fn, _label) => { try { return fn(); } catch { return undefined; } };
+  tryOptional = (fn, _label) => {
+    try {
+      return fn();
+    } catch {
+      return undefined;
+    }
+  };
 }
 
 // =============================================================================
@@ -121,11 +127,17 @@ function extractSignals(prefetched, sessionState, metadata) {
   // File existence checks
   const files = {
     tsconfig: fs.existsSync('tsconfig.json'),
-    eslintrc: fs.existsSync('.eslintrc.js') || fs.existsSync('.eslintrc.json') || fs.existsSync('.eslintrc.yml'),
+    eslintrc:
+      fs.existsSync('.eslintrc.js') ||
+      fs.existsSync('.eslintrc.json') ||
+      fs.existsSync('.eslintrc.yml'),
     coverage: fs.existsSync('coverage/coverage-summary.json'),
     playwright: fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js'),
     screenshots: fs.existsSync('screenshots'),
-    ciConfig: fs.existsSync('.github/workflows') || fs.existsSync('.gitlab-ci.yml') || fs.existsSync('Jenkinsfile'),
+    ciConfig:
+      fs.existsSync('.github/workflows') ||
+      fs.existsSync('.gitlab-ci.yml') ||
+      fs.existsSync('Jenkinsfile'),
     expertiseDir: fs.existsSync('.agileflow/expertise'),
   };
 
@@ -255,7 +267,11 @@ function analyze(prefetched, sessionState, metadata) {
   const rawRecommendations = runDetectorsForPhases(relevantPhases, signals);
 
   // Filter and categorize
-  const { immediate, available } = filterRecommendations(rawRecommendations, metadata, sessionState);
+  const { immediate, available } = filterRecommendations(
+    rawRecommendations,
+    metadata,
+    sessionState
+  );
 
   // Auto-enabled features (existing babysit modes)
   const autoEnabled = detectAutoModes(signals);
@@ -304,7 +320,7 @@ function detectAutoModes(signals) {
     const readyInEpic = Object.entries(statusJson.stories).filter(
       ([, s]) => s.epic === story.epic && s.status === 'ready'
     ).length;
-    loopMode = readyInEpic >= 3 && !!(packageJson?.scripts?.test);
+    loopMode = readyInEpic >= 3 && !!packageJson?.scripts?.test;
   }
 
   // Visual mode: UI-related story or visual e2e setup
@@ -342,10 +358,9 @@ function writeRecommendations(results, outputPath) {
 
 if (require.main === module) {
   // Run standalone - gather our own data
-  const statusJsonResult = safeReadJSON(
-    path.join(process.cwd(), 'docs/09-agents/status.json'),
-    { defaultValue: {} }
-  );
+  const statusJsonResult = safeReadJSON(path.join(process.cwd(), 'docs/09-agents/status.json'), {
+    defaultValue: {},
+  });
   const sessionStateResult = safeReadJSON(
     path.join(process.cwd(), 'docs/09-agents/session-state.json'),
     { defaultValue: {} }
@@ -357,8 +372,14 @@ if (require.main === module) {
 
   // Build minimal prefetched structure
   const { execSync } = require('child_process');
-  const gitBranch = tryOptional(() => execSync('git branch --show-current', { encoding: 'utf8' }).trim(), 'git branch') || '';
-  const gitStatus = tryOptional(() => execSync('git status --short', { encoding: 'utf8' }).trim(), 'git status') || '';
+  const gitBranch =
+    tryOptional(
+      () => execSync('git branch --show-current', { encoding: 'utf8' }).trim(),
+      'git branch'
+    ) || '';
+  const gitStatus =
+    tryOptional(() => execSync('git status --short', { encoding: 'utf8' }).trim(), 'git status') ||
+    '';
 
   const prefetched = {
     json: {

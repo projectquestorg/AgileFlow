@@ -54,9 +54,7 @@ describe('trace_id propagation', () => {
     return {
       name: name || 'Test Team',
       lead: 'AG-LEAD',
-      teammates: [
-        { agent: 'AG-WORKER', role: 'worker', domain: 'work' },
-      ],
+      teammates: [{ agent: 'AG-WORKER', role: 'worker', domain: 'work' }],
       quality_gates: {},
     };
   }

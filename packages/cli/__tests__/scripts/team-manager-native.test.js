@@ -193,8 +193,9 @@ describe('team-manager native Agent Teams', () => {
       expect(result.ok).toBe(true);
       expect(result.native_payload).toBeDefined();
       // Either atomicWriteJSON or atomicReadModifyWrite was called
-      const atomicCalled = fileLock.atomicWriteJSON.mock.calls.length > 0 ||
-                           fileLock.atomicReadModifyWrite.mock.calls.length > 0;
+      const atomicCalled =
+        fileLock.atomicWriteJSON.mock.calls.length > 0 ||
+        fileLock.atomicReadModifyWrite.mock.calls.length > 0;
       expect(atomicCalled).toBe(true);
     });
 
@@ -225,8 +226,9 @@ describe('team-manager native Agent Teams', () => {
       expect(result.teammates).toHaveLength(2);
       expect(result.mode).toBe('native');
       // Verify atomicWriteJSON or atomicReadModifyWrite was called (file-lock operations)
-      const atomicCalled = fileLock.atomicWriteJSON.mock.calls.length > 0 ||
-                           fileLock.atomicReadModifyWrite.mock.calls.length > 0;
+      const atomicCalled =
+        fileLock.atomicWriteJSON.mock.calls.length > 0 ||
+        fileLock.atomicReadModifyWrite.mock.calls.length > 0;
       expect(atomicCalled).toBe(true);
     });
   });
@@ -268,9 +270,7 @@ describe('team-manager native Agent Teams', () => {
       const template = {
         name: 'Subagent Team',
         lead: 'AG-ORCHESTRATOR',
-        teammates: [
-          { agent: 'AG-TASK', role: 'task', domain: 'work' },
-        ],
+        teammates: [{ agent: 'AG-TASK', role: 'task', domain: 'work' }],
         quality_gates: {},
       };
 
@@ -288,8 +288,9 @@ describe('team-manager native Agent Teams', () => {
       expect(result.native_payload).toBeNull();
       expect(result.teammates).toHaveLength(1);
       // Verify session state was updated
-      const atomicCalled = fileLock.atomicWriteJSON.mock.calls.length > 0 ||
-                           fileLock.atomicReadModifyWrite.mock.calls.length > 0;
+      const atomicCalled =
+        fileLock.atomicWriteJSON.mock.calls.length > 0 ||
+        fileLock.atomicReadModifyWrite.mock.calls.length > 0;
       expect(atomicCalled).toBe(true);
     });
   });
@@ -529,9 +530,7 @@ describe('team-manager native Agent Teams', () => {
     });
 
     it('preserves other fields when switching modes', () => {
-      featureFlags.getAgentTeamsMode
-        .mockReturnValueOnce('native')
-        .mockReturnValueOnce('subagent');
+      featureFlags.getAgentTeamsMode.mockReturnValueOnce('native').mockReturnValueOnce('subagent');
 
       const template = {
         name: 'Preserved Team',

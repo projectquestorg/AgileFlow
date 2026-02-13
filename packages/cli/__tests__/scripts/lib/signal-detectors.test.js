@@ -27,10 +27,25 @@ function makeSignals(overrides = {}) {
     statusJson: { stories: {}, epics: {} },
     sessionState: {},
     metadata: {},
-    git: { branch: 'main', filesChanged: 0, changedFiles: [], isClean: true, onFeatureBranch: false, diffStats: null },
+    git: {
+      branch: 'main',
+      filesChanged: 0,
+      changedFiles: [],
+      isClean: true,
+      onFeatureBranch: false,
+      diffStats: null,
+    },
     packageJson: { scripts: { test: 'jest' } },
     story: null,
-    files: { tsconfig: false, eslintrc: false, coverage: false, playwright: false, screenshots: false, ciConfig: false, expertiseDir: false },
+    files: {
+      tsconfig: false,
+      eslintrc: false,
+      coverage: false,
+      playwright: false,
+      screenshots: false,
+      ciConfig: false,
+      expertiseDir: false,
+    },
     tests: { passing: null, hasTestSetup: true },
     counts: { ready: 0, 'in-progress': 0, blocked: 0, done: 0 },
     storyCount: 0,
@@ -59,7 +74,13 @@ describe('signal-detectors utilities', () => {
     });
 
     it('should respect explicit priority and action', () => {
-      const result = recommend('foo', { priority: 'high', action: 'auto', trigger: 'x', phase: 'pre-story', command: '/custom' });
+      const result = recommend('foo', {
+        priority: 'high',
+        action: 'auto',
+        trigger: 'x',
+        phase: 'pre-story',
+        command: '/custom',
+      });
       expect(result.priority).toBe('high');
       expect(result.action).toBe('auto');
       expect(result.command).toBe('/custom');
@@ -137,11 +158,15 @@ describe('signal-detectors utilities', () => {
 
   describe('storyMentions', () => {
     it('should match keywords in title', () => {
-      expect(storyMentions({ title: 'Implement authentication', description: '' }, ['auth'])).toBe(true);
+      expect(storyMentions({ title: 'Implement authentication', description: '' }, ['auth'])).toBe(
+        true
+      );
     });
 
     it('should match keywords in description', () => {
-      expect(storyMentions({ title: 'Story', description: 'Add research spike' }, ['research'])).toBe(true);
+      expect(
+        storyMentions({ title: 'Story', description: 'Add research spike' }, ['research'])
+      ).toBe(true);
     });
 
     it('should be case insensitive', () => {
@@ -176,7 +201,13 @@ describe('FEATURE_DETECTORS registry', () => {
 
 describe('PHASE_MAP', () => {
   it('should map all 5 phases', () => {
-    expect(Object.keys(PHASE_MAP)).toEqual(['pre-story', 'planning', 'implementation', 'post-impl', 'pre-pr']);
+    expect(Object.keys(PHASE_MAP)).toEqual([
+      'pre-story',
+      'planning',
+      'implementation',
+      'post-impl',
+      'pre-pr',
+    ]);
   });
 
   it('should reference only existing detectors', () => {
@@ -311,7 +342,12 @@ describe('planning detectors', () => {
         story: { id: 'US-001', status: 'in-progress' },
         git: {
           filesChanged: 5,
-          changedFiles: ['src/core/auth.js', 'src/lib/utils.js', 'lib/errors.js', 'src/shared/types.ts'],
+          changedFiles: [
+            'src/core/auth.js',
+            'src/lib/utils.js',
+            'lib/errors.js',
+            'src/shared/types.ts',
+          ],
           isClean: false,
           onFeatureBranch: true,
         },

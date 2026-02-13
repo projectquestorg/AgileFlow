@@ -416,7 +416,8 @@ function checkParallelSessions(rootDir) {
 
     // PERFORMANCE: Single subprocess call instead of 3 (register + count + status)
     const fullStatusResult = executeCommandSync('node', [scriptPath, 'full-status'], {
-      cwd: rootDir, fallback: null,
+      cwd: rootDir,
+      fallback: null,
     });
 
     if (fullStatusResult.data) {
@@ -443,7 +444,8 @@ function checkParallelSessions(rootDir) {
     if (!fullStatusResult.data) {
       // Fall back to individual calls if full-status not available (older version)
       const registerResult = executeCommandSync('node', [scriptPath, 'register'], {
-        cwd: rootDir, fallback: null,
+        cwd: rootDir,
+        fallback: null,
       });
       if (registerResult.data) {
         try {
@@ -454,7 +456,8 @@ function checkParallelSessions(rootDir) {
       }
 
       const countResult = executeCommandSync('node', [scriptPath, 'count'], {
-        cwd: rootDir, fallback: null,
+        cwd: rootDir,
+        fallback: null,
       });
       if (countResult.data) {
         try {
@@ -464,7 +467,8 @@ function checkParallelSessions(rootDir) {
       }
 
       const statusCmdResult = executeCommandSync('node', [scriptPath, 'status'], {
-        cwd: rootDir, fallback: null,
+        cwd: rootDir,
+        fallback: null,
       });
       if (statusCmdResult.data) {
         try {
@@ -930,7 +934,9 @@ async function checkUpdates() {
   };
 
   let updateChecker;
-  try { updateChecker = require('./check-update.js'); } catch (e) {}
+  try {
+    updateChecker = require('./check-update.js');
+  } catch (e) {}
   if (!updateChecker) return result;
 
   try {
@@ -1000,7 +1006,8 @@ function getChangelogEntries(version) {
 async function runAutoUpdate(rootDir, fromVersion, toVersion) {
   const runUpdate = () => {
     return executeCommandSync('npx', ['agileflow@latest', 'update', '--force'], {
-      cwd: rootDir, timeout: 120000,
+      cwd: rootDir,
+      timeout: 120000,
     });
   };
 
@@ -1528,17 +1535,26 @@ function formatTable(
   // Scale detection (EP-0033)
   if (scaleDetection && scaleDetection.scale) {
     const scaleColors = {
-      micro: c.cyan, small: c.teal, medium: c.mintGreen,
-      large: c.peach, enterprise: c.coral,
+      micro: c.cyan,
+      small: c.teal,
+      medium: c.mintGreen,
+      large: c.peach,
+      enterprise: c.coral,
     };
     const scaleIcons = {
-      micro: '◦', small: '○', medium: '◎', large: '●', enterprise: '◉',
+      micro: '◦',
+      small: '○',
+      medium: '◎',
+      large: '●',
+      enterprise: '◉',
     };
     const scale = scaleDetection.scale;
     const icon = scaleIcons[scale] || '◎';
     const label = scale.charAt(0).toUpperCase() + scale.slice(1);
     const cacheNote = scaleDetection.fromCache ? '' : ` (${scaleDetection.detection_ms}ms)`;
-    lines.push(row('Scale', `${icon} ${label}${cacheNote}`, c.lavender, scaleColors[scale] || c.dim));
+    lines.push(
+      row('Scale', `${icon} ${label}${cacheNote}`, c.lavender, scaleColors[scale] || c.dim)
+    );
   }
 
   lines.push(divider());
@@ -1634,13 +1650,20 @@ async function main() {
     // Scale detection not available
   }
 
-  const scaleRecommendations = earlyScale ? (() => {
-    try { return require('./lib/scale-detector').getScaleRecommendations(earlyScale.scale); } catch { return null; }
-  })() : null;
+  const scaleRecommendations = earlyScale
+    ? (() => {
+        try {
+          return require('./lib/scale-detector').getScaleRecommendations(earlyScale.scale);
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
-  const archival = (scaleRecommendations && scaleRecommendations.skipArchival)
-    ? { ran: false, threshold: 0, archived: 0, remaining: 0, skippedByScale: true }
-    : runArchival(rootDir, cache);
+  const archival =
+    scaleRecommendations && scaleRecommendations.skipArchival
+      ? { ran: false, threshold: 0, archived: 0, remaining: 0, skippedByScale: true }
+      : runArchival(rootDir, cache);
   const session = clearActiveCommands(rootDir, cache);
   const precompact = checkPreCompact(rootDir, cache);
   const parallelSessions = checkParallelSessions(rootDir);
@@ -1654,7 +1677,9 @@ async function main() {
 
   // Agent Teams feature flag detection
   let featureFlags;
-  try { featureFlags = require('../lib/feature-flags'); } catch (e) {}
+  try {
+    featureFlags = require('../lib/feature-flags');
+  } catch (e) {}
   let agentTeamsInfo = {};
   if (featureFlags) {
     try {
@@ -1776,14 +1801,18 @@ async function main() {
 
       // Mark current version as seen to track for next update
       let updateChecker;
-      try { updateChecker = require('./check-update.js'); } catch (e) {}
+      try {
+        updateChecker = require('./check-update.js');
+      } catch (e) {}
       if (freshUpdateInfo.justUpdated && updateChecker) {
         updateChecker.markVersionSeen(info.version);
       }
     } else {
       // Mark current version as seen (for "just updated" case)
       let updateChecker;
-      try { updateChecker = require('./check-update.js'); } catch (e) {}
+      try {
+        updateChecker = require('./check-update.js');
+      } catch (e) {}
       if (updateChecker) {
         updateChecker.markVersionSeen(info.version);
       }
@@ -1870,7 +1899,8 @@ async function main() {
   // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
   try {
     const healthResult = executeCommandSync('node', [SESSION_MANAGER_PATH, 'health'], {
-      timeout: 10000, fallback: null,
+      timeout: 10000,
+      fallback: null,
     });
 
     if (healthResult.data) {
@@ -1922,7 +1952,9 @@ async function main() {
   // === DUPLICATE CLAUDE PROCESS DETECTION ===
   // Check for multiple Claude processes in the same working directory
   let processCleanup;
-  try { processCleanup = require('./lib/process-cleanup.js'); } catch (e) {}
+  try {
+    processCleanup = require('./lib/process-cleanup.js');
+  } catch (e) {}
   if (processCleanup) {
     try {
       // Auto-kill is explicitly opt-in at runtime.
@@ -1976,7 +2008,9 @@ async function main() {
 
   // Story claiming: cleanup stale claims and show warnings
   let storyClaiming;
-  try { storyClaiming = require('./lib/story-claiming.js'); } catch (e) {}
+  try {
+    storyClaiming = require('./lib/story-claiming.js');
+  } catch (e) {}
   if (storyClaiming) {
     try {
       // Clean up stale claims (dead PIDs, expired TTL)
@@ -2003,7 +2037,9 @@ async function main() {
 
   // File tracking: cleanup stale touches and show overlap warnings
   let fileTracking;
-  try { fileTracking = require('./lib/file-tracking.js'); } catch (e) {}
+  try {
+    fileTracking = require('./lib/file-tracking.js');
+  } catch (e) {}
   if (fileTracking) {
     try {
       // Clean up stale file touches (dead PIDs, expired TTL)
@@ -2028,7 +2064,9 @@ async function main() {
 
   // Epic completion check: auto-complete epics where all stories are done
   let storyStateMachine;
-  try { storyStateMachine = require('./lib/story-state-machine.js'); } catch (e) {}
+  try {
+    storyStateMachine = require('./lib/story-state-machine.js');
+  } catch (e) {}
   if (storyStateMachine && cache.status) {
     try {
       const statusPath = getStatusPath(rootDir);
@@ -2058,7 +2096,9 @@ async function main() {
 
   // Ideation sync: mark ideas as implemented when linked epics complete
   let syncIdeationStatus;
-  try { syncIdeationStatus = require('./lib/sync-ideation-status.js'); } catch (e) {}
+  try {
+    syncIdeationStatus = require('./lib/sync-ideation-status.js');
+  } catch (e) {}
   if (syncIdeationStatus) {
     try {
       const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);

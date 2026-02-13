@@ -405,10 +405,8 @@ describe('writeRecommendations', () => {
     const errors = require('../../lib/errors');
     const results = { detected_at: '2026-01-01', recommendations: {} };
     writeRecommendations(results, '/tmp/test-output.json');
-    expect(errors.safeWriteJSON).toHaveBeenCalledWith(
-      '/tmp/test-output.json',
-      results,
-      { createDir: true }
-    );
+    expect(errors.safeWriteJSON).toHaveBeenCalledWith('/tmp/test-output.json', results, {
+      createDir: true,
+    });
   });
 });

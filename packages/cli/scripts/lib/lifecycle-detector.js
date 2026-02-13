@@ -92,7 +92,9 @@ function detectLifecyclePhase(signals = {}) {
   return {
     phase: 'pre-story',
     confidence: story.id ? 0.6 : 0.9,
-    reason: story.id ? `Story ${story.id} not yet started (status: ${story.status || 'unknown'})` : 'No active story',
+    reason: story.id
+      ? `Story ${story.id} not yet started (status: ${story.status || 'unknown'})`
+      : 'No active story',
   };
 }
 
@@ -107,8 +109,8 @@ function getRelevantPhases(phase) {
   // Each phase also includes adjacent phase features (for smooth transitions)
   const phaseMap = {
     'pre-story': ['pre-story'],
-    'planning': ['pre-story', 'planning'],
-    'implementation': ['planning', 'implementation'],
+    planning: ['pre-story', 'planning'],
+    implementation: ['planning', 'implementation'],
     'post-impl': ['implementation', 'post-impl'],
     'pre-pr': ['post-impl', 'pre-pr'],
   };

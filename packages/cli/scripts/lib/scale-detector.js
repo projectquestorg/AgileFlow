@@ -38,17 +38,54 @@ const SCALE_THRESHOLDS = {
 
 // Directories to exclude from file counting
 const EXCLUDE_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next', '.nuxt',
-  'coverage', '.agileflow', '.claude', '__pycache__', '.venv',
-  'vendor', 'target', 'out', '.cache', '.turbo', '.vercel',
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.nuxt',
+  'coverage',
+  '.agileflow',
+  '.claude',
+  '__pycache__',
+  '.venv',
+  'vendor',
+  'target',
+  'out',
+  '.cache',
+  '.turbo',
+  '.vercel',
 ]);
 
 // Source file extensions to count
 const SOURCE_EXTENSIONS = new Set([
-  '.js', '.jsx', '.ts', '.tsx', '.py', '.rb', '.go', '.rs',
-  '.java', '.kt', '.swift', '.c', '.cpp', '.h', '.cs',
-  '.vue', '.svelte', '.astro', '.php', '.sh', '.bash',
-  '.css', '.scss', '.less', '.html', '.sql', '.graphql',
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.py',
+  '.rb',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.swift',
+  '.c',
+  '.cpp',
+  '.h',
+  '.cs',
+  '.vue',
+  '.svelte',
+  '.astro',
+  '.php',
+  '.sh',
+  '.bash',
+  '.css',
+  '.scss',
+  '.less',
+  '.html',
+  '.sql',
+  '.graphql',
 ]);
 
 /**
@@ -123,7 +160,9 @@ function countStories(statusJson, rootDir) {
  */
 function countGitCommits(rootDir) {
   const result = git(['rev-list', '--count', '--since=6 months ago', 'HEAD'], {
-    cwd: rootDir, timeout: 5000, fallback: '0',
+    cwd: rootDir,
+    timeout: 5000,
+    fallback: '0',
   });
   const count = parseInt(result.data, 10);
   return isNaN(count) ? 0 : count;

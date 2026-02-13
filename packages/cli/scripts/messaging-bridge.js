@@ -266,7 +266,13 @@ function sendPlanProposal(rootDir, from, to, taskId, plan, traceId) {
  * Send a plan approval/rejection message.
  */
 function sendPlanDecision(rootDir, from, to, taskId, approved, reason, traceId) {
-  const msg = { from, to, type: approved ? 'plan_approved' : 'plan_rejected', task_id: taskId, reason };
+  const msg = {
+    from,
+    to,
+    type: approved ? 'plan_approved' : 'plan_rejected',
+    task_id: taskId,
+    reason,
+  };
   if (traceId) msg.trace_id = traceId;
   return sendMessage(rootDir, msg);
 }

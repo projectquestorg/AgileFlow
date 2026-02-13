@@ -219,7 +219,8 @@ function detectFromPs() {
       // Get command line for this PID
       let cmdline;
       const cmdResult = executeCommandSync('ps', ['-p', String(pid), '-o', 'args='], {
-        timeout: 1000, fallback: null,
+        timeout: 1000,
+        fallback: null,
       });
       if (!cmdResult.ok || cmdResult.data === null) break;
       cmdline = cmdResult.data;
@@ -239,7 +240,8 @@ function detectFromPs() {
 
       // Get parent PID
       const ppidResult = executeCommandSync('ps', ['-p', String(pid), '-o', 'ppid='], {
-        timeout: 1000, fallback: null,
+        timeout: 1000,
+        fallback: null,
       });
       if (!ppidResult.ok || ppidResult.data === null) break;
       pid = parseInt(ppidResult.data, 10);

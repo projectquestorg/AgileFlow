@@ -176,12 +176,14 @@ function getSessionPhase(session) {
   try {
     const mainBranch = getMainBranch(sessionPath);
     const commitResult = git(['rev-list', '--count', `${mainBranch}..HEAD`], {
-      cwd: sessionPath, fallback: '0',
+      cwd: sessionPath,
+      fallback: '0',
     });
     const commits = parseInt(commitResult.data, 10);
 
     const statusResult = git(['status', '--porcelain'], {
-      cwd: sessionPath, fallback: '',
+      cwd: sessionPath,
+      fallback: '',
     });
     const status = statusResult.data;
 

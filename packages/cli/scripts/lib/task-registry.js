@@ -354,7 +354,11 @@ class FileLock {
       } catch (e) {
         // Clean up fd if still open
         if (fd !== null) {
-          try { fs.closeSync(fd); } catch (_) { /* ignore */ }
+          try {
+            fs.closeSync(fd);
+          } catch (_) {
+            /* ignore */
+          }
         }
         if (e.code === 'EEXIST') {
           // Another process got the lock

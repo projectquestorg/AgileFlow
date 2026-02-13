@@ -323,7 +323,11 @@ function generateSummary(prefetched = null, options = {}) {
 
   // Scale indicator (EP-0033)
   let scaleDetectorSummary;
-  try { scaleDetectorSummary = require('./scale-detector'); } catch { /* not available */ }
+  try {
+    scaleDetectorSummary = require('./scale-detector');
+  } catch {
+    /* not available */
+  }
   if (scaleDetectorSummary) {
     try {
       const scaleResult = scaleDetectorSummary.detectScale({
@@ -503,7 +507,11 @@ function generateFullContent(prefetched = null, options = {}) {
 
   // SCALE DETECTION (EP-0033)
   let scaleDetector;
-  try { scaleDetector = require('./scale-detector'); } catch { /* not available */ }
+  try {
+    scaleDetector = require('./scale-detector');
+  } catch {
+    /* not available */
+  }
   if (scaleDetector) {
     try {
       const scaleResult = scaleDetector.detectScale({
@@ -886,7 +894,9 @@ function generateRemainingContent(prefetched, options = {}) {
 
     // Show auto-enabled modes
     const modes = auto_enabled || {};
-    const enabledModes = Object.entries(modes).filter(([, v]) => v).map(([k]) => k.replace('_', ' '));
+    const enabledModes = Object.entries(modes)
+      .filter(([, v]) => v)
+      .map(([k]) => k.replace('_', ' '));
     if (enabledModes.length > 0) {
       content += `\n${C.mintGreen}Auto-enabled:${C.reset} ${enabledModes.join(', ')}\n`;
     }

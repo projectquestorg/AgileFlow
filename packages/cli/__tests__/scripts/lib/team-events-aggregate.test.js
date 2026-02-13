@@ -20,7 +20,11 @@ jest.mock('../../../lib/feature-flags');
 jest.mock('../../../scripts/lib/file-lock');
 jest.mock('../../../scripts/messaging-bridge');
 
-const { aggregateTeamMetrics, saveAggregatedMetrics, getTeamEvents } = require('../../../scripts/lib/team-events');
+const {
+  aggregateTeamMetrics,
+  saveAggregatedMetrics,
+  getTeamEvents,
+} = require('../../../scripts/lib/team-events');
 const paths = require('../../../lib/paths');
 const fileLock = require('../../../scripts/lib/file-lock');
 
@@ -51,7 +55,13 @@ describe('aggregateTeamMetrics', () => {
 
   it('returns empty metrics when no events match trace_id', () => {
     mockEvents([
-      { type: 'task_completed', agent: 'a', trace_id: 'other-trace', duration_ms: 100, at: '2026-01-01T00:00:00Z' },
+      {
+        type: 'task_completed',
+        agent: 'a',
+        trace_id: 'other-trace',
+        duration_ms: 100,
+        at: '2026-01-01T00:00:00Z',
+      },
     ]);
 
     const result = aggregateTeamMetrics(testRootDir, 'trace-no-match');
@@ -66,9 +76,27 @@ describe('aggregateTeamMetrics', () => {
     it('computes total duration from task_completed events', () => {
       const traceId = 'trace-111';
       mockEvents([
-        { type: 'task_completed', agent: 'api-builder', trace_id: traceId, duration_ms: 3000, at: '2026-01-01T00:01:00Z' },
-        { type: 'task_completed', agent: 'api-builder', trace_id: traceId, duration_ms: 2000, at: '2026-01-01T00:02:00Z' },
-        { type: 'task_completed', agent: 'ui-builder', trace_id: traceId, duration_ms: 4000, at: '2026-01-01T00:03:00Z' },
+        {
+          type: 'task_completed',
+          agent: 'api-builder',
+          trace_id: traceId,
+          duration_ms: 3000,
+          at: '2026-01-01T00:01:00Z',
+        },
+        {
+          type: 'task_completed',
+          agent: 'api-builder',
+          trace_id: traceId,
+          duration_ms: 2000,
+          at: '2026-01-01T00:02:00Z',
+        },
+        {
+          type: 'task_completed',
+          agent: 'ui-builder',
+          trace_id: traceId,
+          duration_ms: 4000,
+          at: '2026-01-01T00:03:00Z',
+        },
       ]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
@@ -82,8 +110,18 @@ describe('aggregateTeamMetrics', () => {
     it('counts errors per agent', () => {
       const traceId = 'trace-222';
       mockEvents([
-        { type: 'agent_error', agent: 'api-builder', trace_id: traceId, at: '2026-01-01T00:01:00Z' },
-        { type: 'agent_error', agent: 'api-builder', trace_id: traceId, at: '2026-01-01T00:02:00Z' },
+        {
+          type: 'agent_error',
+          agent: 'api-builder',
+          trace_id: traceId,
+          at: '2026-01-01T00:01:00Z',
+        },
+        {
+          type: 'agent_error',
+          agent: 'api-builder',
+          trace_id: traceId,
+          at: '2026-01-01T00:02:00Z',
+        },
         { type: 'agent_error', agent: 'ui-builder', trace_id: traceId, at: '2026-01-01T00:03:00Z' },
       ]);
 
@@ -96,7 +134,12 @@ describe('aggregateTeamMetrics', () => {
     it('counts timeouts per agent', () => {
       const traceId = 'trace-333';
       mockEvents([
-        { type: 'agent_timeout', agent: 'slow-agent', trace_id: traceId, at: '2026-01-01T00:01:00Z' },
+        {
+          type: 'agent_timeout',
+          agent: 'slow-agent',
+          trace_id: traceId,
+          at: '2026-01-01T00:01:00Z',
+        },
       ]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
@@ -108,7 +151,12 @@ describe('aggregateTeamMetrics', () => {
     it('handles events without duration_ms', () => {
       const traceId = 'trace-444';
       mockEvents([
-        { type: 'task_completed', agent: 'fast-agent', trace_id: traceId, at: '2026-01-01T00:01:00Z' },
+        {
+          type: 'task_completed',
+          agent: 'fast-agent',
+          trace_id: traceId,
+          at: '2026-01-01T00:01:00Z',
+        },
         // No duration_ms field
       ]);
 
@@ -121,10 +169,27 @@ describe('aggregateTeamMetrics', () => {
     it('combines completions, errors, and timeouts for same agent', () => {
       const traceId = 'trace-555';
       mockEvents([
-        { type: 'task_completed', agent: 'busy-agent', trace_id: traceId, duration_ms: 1000, at: '2026-01-01T00:01:00Z' },
+        {
+          type: 'task_completed',
+          agent: 'busy-agent',
+          trace_id: traceId,
+          duration_ms: 1000,
+          at: '2026-01-01T00:01:00Z',
+        },
         { type: 'agent_error', agent: 'busy-agent', trace_id: traceId, at: '2026-01-01T00:02:00Z' },
-        { type: 'agent_timeout', agent: 'busy-agent', trace_id: traceId, at: '2026-01-01T00:03:00Z' },
-        { type: 'task_completed', agent: 'busy-agent', trace_id: traceId, duration_ms: 2000, at: '2026-01-01T00:04:00Z' },
+        {
+          type: 'agent_timeout',
+          agent: 'busy-agent',
+          trace_id: traceId,
+          at: '2026-01-01T00:03:00Z',
+        },
+        {
+          type: 'task_completed',
+          agent: 'busy-agent',
+          trace_id: traceId,
+          duration_ms: 2000,
+          at: '2026-01-01T00:04:00Z',
+        },
       ]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
@@ -181,7 +246,13 @@ describe('aggregateTeamMetrics', () => {
     it('returns empty per_gate when no gate events exist', () => {
       const traceId = 'trace-gate-3';
       mockEvents([
-        { type: 'task_completed', agent: 'a', trace_id: traceId, duration_ms: 100, at: '2026-01-01T00:01:00Z' },
+        {
+          type: 'task_completed',
+          agent: 'a',
+          trace_id: traceId,
+          duration_ms: 100,
+          at: '2026-01-01T00:01:00Z',
+        },
       ]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
@@ -195,7 +266,13 @@ describe('aggregateTeamMetrics', () => {
       const traceId = 'trace-time-1';
       mockEvents([
         { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00.000Z' },
-        { type: 'task_completed', agent: 'a', trace_id: traceId, duration_ms: 100, at: '2026-01-01T00:00:30.000Z' },
+        {
+          type: 'task_completed',
+          agent: 'a',
+          trace_id: traceId,
+          duration_ms: 100,
+          at: '2026-01-01T00:00:30.000Z',
+        },
         { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:01:00.000Z' },
       ]);
 
@@ -208,7 +285,13 @@ describe('aggregateTeamMetrics', () => {
       const traceId = 'trace-time-2';
       mockEvents([
         { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00.000Z' },
-        { type: 'task_completed', agent: 'a', trace_id: traceId, duration_ms: 100, at: '2026-01-01T00:00:30.000Z' },
+        {
+          type: 'task_completed',
+          agent: 'a',
+          trace_id: traceId,
+          duration_ms: 100,
+          at: '2026-01-01T00:00:30.000Z',
+        },
       ]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
@@ -218,9 +301,7 @@ describe('aggregateTeamMetrics', () => {
 
     it('returns null when team_created is missing', () => {
       const traceId = 'trace-time-3';
-      mockEvents([
-        { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:01:00.000Z' },
-      ]);
+      mockEvents([{ type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:01:00.000Z' }]);
 
       const result = aggregateTeamMetrics(testRootDir, traceId);
 
@@ -271,7 +352,9 @@ describe('saveAggregatedMetrics', () => {
     const metrics = {
       ok: true,
       trace_id: 'trace-save-1',
-      per_agent: { 'agent-a': { total_duration_ms: 5000, tasks_completed: 2, errors: 0, timeouts: 0 } },
+      per_agent: {
+        'agent-a': { total_duration_ms: 5000, tasks_completed: 2, errors: 0, timeouts: 0 },
+      },
       per_gate: { tests: { passed: 3, failed: 1, pass_rate: 0.75 } },
       team_completion_ms: 30000,
       computed_at: '2026-01-01T00:00:00Z',
@@ -319,7 +402,9 @@ describe('saveAggregatedMetrics', () => {
 
     expect(capturedState.team_metrics.traces['trace-existing']).toEqual(existingTraceData);
     expect(capturedState.team_metrics.traces['trace-new']).toBeDefined();
-    expect(capturedState.team_metrics.traces['trace-new'].per_agent.new.total_duration_ms).toBe(2000);
+    expect(capturedState.team_metrics.traces['trace-new'].per_agent.new.total_duration_ms).toBe(
+      2000
+    );
   });
 
   it('creates team_metrics.traces when it does not exist', () => {
@@ -400,8 +485,18 @@ describe('stopTeam aggregation integration', () => {
       hook_metrics: {
         teams: {
           events: [
-            { type: 'team_created', trace_id: traceId, at: new Date(Date.now() - 5000).toISOString() },
-            { type: 'task_completed', agent: 'worker', trace_id: traceId, duration_ms: 3000, at: new Date(Date.now() - 2000).toISOString() },
+            {
+              type: 'team_created',
+              trace_id: traceId,
+              at: new Date(Date.now() - 5000).toISOString(),
+            },
+            {
+              type: 'task_completed',
+              agent: 'worker',
+              trace_id: traceId,
+              duration_ms: 3000,
+              at: new Date(Date.now() - 2000).toISOString(),
+            },
           ],
           summary: {},
         },

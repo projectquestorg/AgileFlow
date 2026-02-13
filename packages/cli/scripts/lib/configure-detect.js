@@ -107,10 +107,15 @@ function detectConfig(version) {
   // Git detection
   if (fs.existsSync('.git')) {
     status.git.initialized = true;
-    status.git.remote = tryOptional(() => execFileSync('git', ['remote', 'get-url', 'origin'], {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim(), 'git remote') ?? null;
+    status.git.remote =
+      tryOptional(
+        () =>
+          execFileSync('git', ['remote', 'get-url', 'origin'], {
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+          }).trim(),
+        'git remote'
+      ) ?? null;
   }
 
   // Settings file detection
@@ -312,17 +317,15 @@ function detectMetadata(status, version) {
 
         // Content-based outdated detection
         const featureConfig = FEATURES[statusKey];
-        const scriptsToCheck = featureConfig?.scripts
-          || (featureConfig?.script ? [featureConfig.script] : []);
+        const scriptsToCheck =
+          featureConfig?.scripts || (featureConfig?.script ? [featureConfig.script] : []);
 
         if (scriptsToCheck.length > 0 && packageScriptDir) {
           // Compare installed scripts against package source
           let isOutdated = false;
           for (const scriptName of scriptsToCheck) {
             const packageScript = path.join(packageScriptDir, scriptName);
-            const installedScript = path.join(
-              process.cwd(), '.agileflow', 'scripts', scriptName
-            );
+            const installedScript = path.join(process.cwd(), '.agileflow', 'scripts', scriptName);
             const packageHash = hashFile(packageScript);
             const installedHash = hashFile(installedScript);
 

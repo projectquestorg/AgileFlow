@@ -111,7 +111,7 @@ function trackEvent(rootDir, eventType, data = {}) {
     const fileLock = getFileLock();
 
     if (fileLock && fs.existsSync(sessionStatePath)) {
-      fileLock.atomicReadModifyWrite(sessionStatePath, (state) => {
+      fileLock.atomicReadModifyWrite(sessionStatePath, state => {
         if (!state.hook_metrics) state.hook_metrics = {};
         if (!state.hook_metrics.teams) state.hook_metrics.teams = { events: [], summary: {} };
 
@@ -230,7 +230,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
 
   // Per-agent metrics from task_completed, agent_error, agent_timeout
   const perAgent = {};
-  const ensureAgent = (agent) => {
+  const ensureAgent = agent => {
     if (!perAgent[agent]) {
       perAgent[agent] = { total_duration_ms: 0, tasks_completed: 0, errors: 0, timeouts: 0 };
     }
@@ -239,7 +239,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
   for (const e of events) {
     if (e.type === 'task_completed' && e.agent) {
       ensureAgent(e.agent);
-      perAgent[e.agent].total_duration_ms += (e.duration_ms || 0);
+      perAgent[e.agent].total_duration_ms += e.duration_ms || 0;
       perAgent[e.agent].tasks_completed++;
     }
     if (e.type === 'agent_error' && e.agent) {
@@ -306,7 +306,7 @@ function saveAggregatedMetrics(rootDir, metrics) {
     const fileLock = getFileLock();
 
     if (fileLock && fs.existsSync(sessionStatePath)) {
-      fileLock.atomicReadModifyWrite(sessionStatePath, (state) => {
+      fileLock.atomicReadModifyWrite(sessionStatePath, state => {
         if (!state.team_metrics) state.team_metrics = {};
         if (!state.team_metrics.traces) state.team_metrics.traces = {};
         state.team_metrics.traces[metrics.trace_id] = {

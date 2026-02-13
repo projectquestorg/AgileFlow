@@ -104,7 +104,8 @@ function getProcessStartTime(pid) {
 
   if (process.platform === 'darwin') {
     const result = executeCommandSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
-      timeout: 2000, fallback: null,
+      timeout: 2000,
+      fallback: null,
     });
     if (result.data === null) return null;
     const ts = new Date(result.data).getTime();
@@ -142,7 +143,8 @@ function getParentPid(pid) {
 
   if (process.platform === 'darwin') {
     const result = executeCommandSync('ps', ['-o', 'ppid=', '-p', String(pid)], {
-      timeout: 2000, fallback: null,
+      timeout: 2000,
+      fallback: null,
     });
     if (result.data === null) return null;
     const ppid = parseInt(result.data, 10);
@@ -172,7 +174,8 @@ function getArgsForPid(pid) {
 
   if (process.platform === 'darwin') {
     const result = executeCommandSync('ps', ['-o', 'command=', '-p', String(pid)], {
-      timeout: 2000, fallback: null,
+      timeout: 2000,
+      fallback: null,
     });
     if (result.data === null) return [];
     return result.data ? [result.data] : [];
@@ -292,7 +295,8 @@ function findClaudeProcesses() {
       // Get cwd via lsof (slower but works on macOS)
       let cwd = null;
       const lsofResult = executeCommandSync('lsof', ['-p', String(pid)], {
-        timeout: 1000, fallback: null,
+        timeout: 1000,
+        fallback: null,
       });
       if (lsofResult.data) {
         const cwdLine = lsofResult.data.split('\n').find(l => l.includes('cwd'));

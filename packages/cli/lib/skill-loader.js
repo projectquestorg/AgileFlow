@@ -57,13 +57,21 @@ function parseSkillFrontmatter(content) {
     let value = trimmed.substring(colonIndex + 1).trim();
 
     // Remove surrounding quotes
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
 
     // Type coercion for known fields
-    if (key === 'version' || key === 'model' || key === 'category' || key === 'name' || key === 'type') {
+    if (
+      key === 'version' ||
+      key === 'model' ||
+      key === 'category' ||
+      key === 'name' ||
+      key === 'type'
+    ) {
       result.metadata[key] = value;
     } else if (value === 'true') {
       result.metadata[key] = true;

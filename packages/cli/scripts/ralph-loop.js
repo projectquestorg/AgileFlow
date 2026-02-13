@@ -428,15 +428,17 @@ function runCoverage(rootDir) {
 
 // Get screenshots directory from metadata or default
 function getScreenshotsDir(rootDir) {
-  return tryOptional(() => {
-    const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
-    if (fs.existsSync(metadataPath)) {
-      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-      if (metadata.ralph_loop?.screenshots_dir) {
-        return metadata.ralph_loop.screenshots_dir;
+  return (
+    tryOptional(() => {
+      const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+      if (fs.existsSync(metadataPath)) {
+        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+        if (metadata.ralph_loop?.screenshots_dir) {
+          return metadata.ralph_loop.screenshots_dir;
+        }
       }
-    }
-  }, 'metadata read') || './screenshots';
+    }, 'metadata read') || './screenshots'
+  );
 }
 
 // Run screenshot verification (Visual Mode)

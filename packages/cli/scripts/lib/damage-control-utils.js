@@ -96,7 +96,11 @@ function loadPatterns(projectRoot, parseYAML, defaultConfig = {}) {
         const stat = fs.statSync(fullPath);
         const mtime = stat.mtimeMs;
 
-        if (_patternCache.filePath === fullPath && _patternCache.mtime === mtime && _patternCache.config) {
+        if (
+          _patternCache.filePath === fullPath &&
+          _patternCache.mtime === mtime &&
+          _patternCache.config
+        ) {
           return _patternCache.config;
         }
 

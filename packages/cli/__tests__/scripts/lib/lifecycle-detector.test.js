@@ -2,7 +2,11 @@
  * Tests for lifecycle-detector.js - Workflow phase detection
  */
 
-const { PHASES, detectLifecyclePhase, getRelevantPhases } = require('../../../scripts/lib/lifecycle-detector');
+const {
+  PHASES,
+  detectLifecyclePhase,
+  getRelevantPhases,
+} = require('../../../scripts/lib/lifecycle-detector');
 
 describe('lifecycle-detector', () => {
   describe('PHASES', () => {

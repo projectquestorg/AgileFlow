@@ -1,0 +1,32 @@
+{
+  "detected_at": "2026-02-13T22:44:58.038Z",
+  "lifecycle_phase": "pre-story",
+  "phase_confidence": 0.9,
+  "phase_reason": "No active story",
+  "recommendations": {
+    "immediate": [],
+    "available": [
+      {
+        "feature": "configure",
+        "priority": "low",
+        "trigger": "Minimal AgileFlow configuration detected",
+        "action": "offer",
+        "command": "/agileflow:configure",
+        "phase": "pre-story"
+      }
+    ],
+    "auto_enabled": {
+      "loop_mode": false,
+      "visual_mode": false,
+      "coverage_mode": false
+    }
+  },
+  "signals_summary": {
+    "story": "none",
+    "files_changed": 67,
+    "core_files": 13,
+    "tests_passing": null,
+    "on_feature_branch": false,
+    "story_counts": {}
+  }
+}

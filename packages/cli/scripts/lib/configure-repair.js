@@ -116,11 +116,12 @@ function listScripts() {
     // Check if modified
     let isModified = false;
     if (exists && fileIndex?.files?.[`scripts/${script}`]) {
-      isModified = tryOptional(() => {
-        const currentHash = sha256(fs.readFileSync(scriptPath));
-        const indexHash = fileIndex.files[`scripts/${script}`].sha256;
-        return currentHash !== indexHash;
-      }, 'hash check') ?? false;
+      isModified =
+        tryOptional(() => {
+          const currentHash = sha256(fs.readFileSync(scriptPath));
+          const indexHash = fileIndex.files[`scripts/${script}`].sha256;
+          return currentHash !== indexHash;
+        }, 'hash check') ?? false;
     }
 
     // Print status

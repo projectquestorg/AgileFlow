@@ -42,7 +42,12 @@ describe('messaging-bridge trace_id propagation', () => {
   describe('sendTaskAssignment', () => {
     it('includes trace_id when provided', () => {
       messagingBridge.sendTaskAssignment(
-        testRootDir, 'lead', 'worker', 'task_1', 'Build feature', 'trace-aaa'
+        testRootDir,
+        'lead',
+        'worker',
+        'task_1',
+        'Build feature',
+        'trace-aaa'
       );
 
       const entry = getLastAppendedEntry();
@@ -52,9 +57,7 @@ describe('messaging-bridge trace_id propagation', () => {
     });
 
     it('omits trace_id when not provided', () => {
-      messagingBridge.sendTaskAssignment(
-        testRootDir, 'lead', 'worker', 'task_1', 'Build feature'
-      );
+      messagingBridge.sendTaskAssignment(testRootDir, 'lead', 'worker', 'task_1', 'Build feature');
 
       const entry = getLastAppendedEntry();
       expect(entry.trace_id).toBeUndefined();
@@ -65,7 +68,12 @@ describe('messaging-bridge trace_id propagation', () => {
   describe('sendPlanProposal', () => {
     it('includes trace_id when provided', () => {
       messagingBridge.sendPlanProposal(
-        testRootDir, 'worker', 'lead', 'task_1', 'My plan here', 'trace-bbb'
+        testRootDir,
+        'worker',
+        'lead',
+        'task_1',
+        'My plan here',
+        'trace-bbb'
       );
 
       const entry = getLastAppendedEntry();
@@ -74,9 +82,7 @@ describe('messaging-bridge trace_id propagation', () => {
     });
 
     it('omits trace_id when not provided', () => {
-      messagingBridge.sendPlanProposal(
-        testRootDir, 'worker', 'lead', 'task_1', 'My plan'
-      );
+      messagingBridge.sendPlanProposal(testRootDir, 'worker', 'lead', 'task_1', 'My plan');
 
       const entry = getLastAppendedEntry();
       expect(entry.trace_id).toBeUndefined();
@@ -86,7 +92,13 @@ describe('messaging-bridge trace_id propagation', () => {
   describe('sendPlanDecision', () => {
     it('includes trace_id when approving', () => {
       messagingBridge.sendPlanDecision(
-        testRootDir, 'lead', 'worker', 'task_1', true, 'Looks good', 'trace-ccc'
+        testRootDir,
+        'lead',
+        'worker',
+        'task_1',
+        true,
+        'Looks good',
+        'trace-ccc'
       );
 
       const entry = getLastAppendedEntry();
@@ -96,7 +108,13 @@ describe('messaging-bridge trace_id propagation', () => {
 
     it('includes trace_id when rejecting', () => {
       messagingBridge.sendPlanDecision(
-        testRootDir, 'lead', 'worker', 'task_1', false, 'Needs work', 'trace-ccc'
+        testRootDir,
+        'lead',
+        'worker',
+        'task_1',
+        false,
+        'Needs work',
+        'trace-ccc'
       );
 
       const entry = getLastAppendedEntry();
@@ -105,9 +123,7 @@ describe('messaging-bridge trace_id propagation', () => {
     });
 
     it('omits trace_id when not provided', () => {
-      messagingBridge.sendPlanDecision(
-        testRootDir, 'lead', 'worker', 'task_1', true, 'OK'
-      );
+      messagingBridge.sendPlanDecision(testRootDir, 'lead', 'worker', 'task_1', true, 'OK');
 
       const entry = getLastAppendedEntry();
       expect(entry.trace_id).toBeUndefined();
@@ -117,7 +133,12 @@ describe('messaging-bridge trace_id propagation', () => {
   describe('sendValidationResult', () => {
     it('includes trace_id when provided', () => {
       messagingBridge.sendValidationResult(
-        testRootDir, 'validator', 'task_1', 'approved', { score: 95 }, 'trace-ddd'
+        testRootDir,
+        'validator',
+        'task_1',
+        'approved',
+        { score: 95 },
+        'trace-ddd'
       );
 
       const entry = getLastAppendedEntry();
@@ -127,9 +148,7 @@ describe('messaging-bridge trace_id propagation', () => {
     });
 
     it('omits trace_id when not provided', () => {
-      messagingBridge.sendValidationResult(
-        testRootDir, 'validator', 'task_1', 'approved', {}
-      );
+      messagingBridge.sendValidationResult(testRootDir, 'validator', 'task_1', 'approved', {});
 
       const entry = getLastAppendedEntry();
       expect(entry.trace_id).toBeUndefined();

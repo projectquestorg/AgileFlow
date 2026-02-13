@@ -468,10 +468,7 @@ describe('bus-utils', () => {
       fs.mkdirSync(archiveDir, { recursive: true });
 
       // Create archives
-      fs.writeFileSync(
-        path.join(archiveDir, '2026-01-archive.jsonl'),
-        '{"id":1}\n{"id":2}\n'
-      );
+      fs.writeFileSync(path.join(archiveDir, '2026-01-archive.jsonl'), '{"id":1}\n{"id":2}\n');
       fs.writeFileSync(
         path.join(archiveDir, '2026-02-archive.jsonl'),
         '{"id":3}\n{"id":4}\n{"id":5}\n'

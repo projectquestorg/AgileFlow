@@ -269,10 +269,7 @@ describe('file-lock', () => {
       const data = { test: true };
       atomicWriteJSON('/data/deep/nested/file.json', data);
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith(
-        '/data/deep/nested',
-        { recursive: true }
-      );
+      expect(fs.mkdirSync).toHaveBeenCalledWith('/data/deep/nested', { recursive: true });
     });
 
     it('skips lock when force option is set', () => {
@@ -355,7 +352,7 @@ describe('file-lock', () => {
       const original = { stories: { 'US-001': { status: 'todo' } } };
       fs.readFileSync.mockReturnValue(JSON.stringify(original));
 
-      const modifyFn = (data) => {
+      const modifyFn = data => {
         data.stories['US-001'].status = 'done';
         return data;
       };
@@ -370,7 +367,7 @@ describe('file-lock', () => {
     it('returns error when file does not exist', () => {
       fs.existsSync.mockReturnValue(false);
 
-      const modifyFn = jest.fn((data) => data);
+      const modifyFn = jest.fn(data => data);
       const result = atomicReadModifyWrite('/tmp/nonexistent.json', modifyFn);
 
       expect(result.success).toBe(false);
@@ -385,7 +382,7 @@ describe('file-lock', () => {
       });
 
       const lastGood = { version: 1, data: 'backup' };
-      fs.readFileSync.mockImplementation((path) => {
+      fs.readFileSync.mockImplementation(path => {
         if (path.includes('.lock')) {
           return String(process.pid) + '\n';
         }
@@ -394,7 +391,7 @@ describe('file-lock', () => {
 
       process.kill = jest.fn(() => true); // Live process
 
-      const modifyFn = jest.fn((data) => data);
+      const modifyFn = jest.fn(data => data);
       const result = atomicReadModifyWrite('/tmp/test.json', modifyFn, {
         lockTimeoutMs: 10,
       });
@@ -407,7 +404,7 @@ describe('file-lock', () => {
       const original = { count: 5 };
       fs.readFileSync.mockReturnValue(JSON.stringify(original));
 
-      const modifyFn = jest.fn((data) => {
+      const modifyFn = jest.fn(data => {
         // Create new object to avoid test data mutation issues
         const modified = { ...data };
         modified.count += 1;
@@ -424,7 +421,7 @@ describe('file-lock', () => {
     it('releases lock after write completes', () => {
       fs.readFileSync.mockReturnValue(JSON.stringify({ test: true }));
 
-      const modifyFn = (data) => ({ ...data, modified: true });
+      const modifyFn = data => ({ ...data, modified: true });
       atomicReadModifyWrite('/tmp/test.json', modifyFn);
 
       // Verify lock was attempted
@@ -432,13 +429,13 @@ describe('file-lock', () => {
     });
 
     it('creates directory if needed', () => {
-      fs.existsSync.mockImplementation((path) => {
+      fs.existsSync.mockImplementation(path => {
         if (path === '/data/deep') return false;
         return true;
       });
       fs.readFileSync.mockReturnValue(JSON.stringify({ test: true }));
 
-      const modifyFn = (data) => data;
+      const modifyFn = data => data;
       atomicReadModifyWrite('/data/deep/file.json', modifyFn);
 
       expect(fs.mkdirSync).toHaveBeenCalledWith('/data/deep', {
@@ -449,7 +446,7 @@ describe('file-lock', () => {
     it('returns error without throwing on JSON parse error', () => {
       fs.readFileSync.mockReturnValue('invalid json {');
 
-      const modifyFn = jest.fn((data) => data);
+      const modifyFn = jest.fn(data => data);
       const result = atomicReadModifyWrite('/tmp/test.json', modifyFn);
 
       expect(result.success).toBe(false);

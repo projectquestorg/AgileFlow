@@ -142,7 +142,7 @@ describe('MtimeCache TTL', () => {
 // =============================================================================
 
 describe('MtimeCache mtime invalidation', () => {
-  test('invalidates when file is modified', (done) => {
+  test('invalidates when file is modified', done => {
     const cache = new MtimeCache({ ttlMs: 60000 });
     const filePath = createFile('test.txt', 'original');
 
@@ -229,7 +229,7 @@ describe('MtimeCache with directories', () => {
     expect(cache.get(testDir)).toEqual(['file1.js', 'file2.js']);
   });
 
-  test('invalidates when directory mtime changes', (done) => {
+  test('invalidates when directory mtime changes', done => {
     const cache = new MtimeCache({ ttlMs: 60000 });
     cache.set(testDir, ['old-list']);
     expect(cache.get(testDir)).toEqual(['old-list']);

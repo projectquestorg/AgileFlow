@@ -197,10 +197,7 @@ A test skill for database operations.`
     it('discovers skills in .agileflow/skills/', () => {
       const skillsDir = path.join(tmpDir, '.agileflow', 'skills', 'af-skill');
       fs.mkdirSync(skillsDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(skillsDir, 'SKILL.md'),
-        '---\nname: af-skill\n---\n# AF Skill'
-      );
+      fs.writeFileSync(path.join(skillsDir, 'SKILL.md'), '---\nname: af-skill\n---\n# AF Skill');
 
       const skills = discoverSkills(tmpDir);
       expect(skills).toHaveLength(1);
@@ -256,14 +253,20 @@ A test skill for database operations.`
   describe('formatSkillSummary', () => {
     it('formats full skill info', () => {
       const result = formatSkillSummary({
-        name: 'test', category: 'database', model: 'haiku', version: '1.0.0',
+        name: 'test',
+        category: 'database',
+        model: 'haiku',
+        version: '1.0.0',
       });
       expect(result).toBe('test [database] (haiku) v1.0.0');
     });
 
     it('formats minimal skill info', () => {
       const result = formatSkillSummary({
-        name: 'test', category: null, model: null, version: null,
+        name: 'test',
+        category: null,
+        model: null,
+        version: null,
       });
       expect(result).toBe('test');
     });
