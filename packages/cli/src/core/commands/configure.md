@@ -636,23 +636,12 @@ Then re-ask the enable/disable question.
 </invoke>
 ```
 
-Spawn the appropriate configuration agent:
+Handle each selection directly:
 
-```javascript
-// Visual E2E
-Task({ subagent_type: "configuration-visual-e2e", description: "Configure Visual E2E", prompt: "..." })
-
-// Damage Control
-Task({ subagent_type: "configuration-damage-control", description: "Configure Damage Control", prompt: "..." })
-
-// CI/CD
-Task({ subagent_type: "configuration-ci", description: "Configure CI/CD", prompt: "..." })
-
-// Quality Gates - configure TeammateIdle and TaskCompleted hooks
-// Writes gate config to agileflow-metadata.json under quality_gates key
-// Options: enable/disable tests, lint, types gates per hook
-// Sets thresholds for coverage gates
-```
+- **Visual E2E**: `node .agileflow/scripts/agileflow-configure.js --enable=visuale2e`
+- **Damage Control**: `node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol`
+- **CI/CD**: `node .agileflow/scripts/agileflow-configure.js --enable=ci`
+- **Quality Gates**: Update `docs/00-meta/agileflow-metadata.json` under the `quality_gates` key with enable/disable for tests, lint, types gates per hook and coverage thresholds
 
 ---
 
@@ -982,26 +971,6 @@ The script updates `docs/00-meta/agileflow-metadata.json`:
     "statusline": {"enabled": true, "version": "2.71.0", "at": "..."}
   }
 }
-```
-
-## Complex Features (Spawn Agents)
-
-For features needing extra user input, spawn specialized agents:
-
-```javascript
-// CI/CD - needs provider and commands
-Task({
-  subagent_type: "agileflow-configuration:ci",
-  description: "Configure CI/CD",
-  prompt: "Set up CI/CD workflow. Ask for provider (GitHub Actions, GitLab CI, CircleCI) and commands."
-})
-
-// Git config - needs remote URL
-Task({
-  subagent_type: "agileflow-configuration:git-config",
-  description: "Configure git",
-  prompt: "Set up git remote. Ask for URL."
-})
 ```
 
 ## Rules

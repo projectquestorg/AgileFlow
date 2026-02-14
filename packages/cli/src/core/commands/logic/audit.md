@@ -239,14 +239,14 @@ After consensus completes, show the report summary and offer next steps:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do with the audit results?",
+  "question": "Logic audit: [N] findings ([critical] CONFIRMED, [likely] LIKELY). [files_count] files analyzed.",
   "header": "Next steps",
   "multiSelect": false,
   "options": [
-    {"label": "Fix critical issues now (Recommended)", "description": "Address P0/P1 issues immediately"},
-    {"label": "Create stories for findings", "description": "Add to backlog as user stories"},
-    {"label": "Run deeper analysis", "description": "Re-run with DEPTH=deep for more coverage"},
-    {"label": "Save report and done", "description": "Keep the report, no further action"}
+    {"label": "Fix [critical] CONFIRMED issues now (Recommended)", "description": "[top_issue_summary] at [file:line] - [fix_hint]"},
+    {"label": "Create [N] stories for all findings", "description": "Track [critical] critical + [high] high priority items in backlog"},
+    {"label": "Re-run with DEPTH=deep on [target]", "description": "Current was quick - deep adds P2 issues and comprehensive coverage"},
+    {"label": "Save report and done", "description": "Report saved to docs/08-project/logic-audits/"}
   ]
 }]</parameter>
 </invoke>

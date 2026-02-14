@@ -705,14 +705,14 @@ After generating output, present options:
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do with these ideas?",
+  "question": "[total] ideas from [expert_count] experts ([high] HIGH confidence, [medium] MEDIUM). [new] new, [recurring] recurring.",
   "header": "Next Steps",
   "multiSelect": false,
   "options": [
-    {"label": "Create stories for high-confidence items", "description": "Generate stories in docs/06-stories/"},
-    {"label": "Create epic grouping all improvements", "description": "Bundle into EP-XXXX: Ideation Improvements"},
-    {"label": "Run deeper analysis on specific category", "description": "Re-run with SCOPE={category} DEPTH=deep"},
-    {"label": "Save report and done", "description": "Keep the report, no further action"}
+    {"label": "Create [high] stories for HIGH-confidence items (Recommended)", "description": "Top idea: [top_idea_title] ([impact] impact, agreed by [N] experts)"},
+    {"label": "Create epic: '[epic_title]'", "description": "Bundle all [high] HIGH + [medium] MEDIUM items into EP-XXXX"},
+    {"label": "Deep dive on [top_category] ([count] ideas)", "description": "Re-run SCOPE=[category] DEPTH=deep for more detail"},
+    {"label": "Save report and done", "description": "Report saved to docs/08-project/ideation/ideation-[date].md"}
   ]
 }]</parameter>
 </invoke>

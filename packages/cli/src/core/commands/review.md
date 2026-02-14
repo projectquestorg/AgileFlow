@@ -641,7 +641,13 @@ Analyzing 127 lines changed across 3 files...
 Summary: 1 critical, 3 warnings, 3 good
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Apply auto-fixes for non-critical issues? [Y/n]
+AskUserQuestion:
+  question: "Review: 85/100 score. 1 critical (SQL injection at :45), 3 warnings. How to proceed?"
+  options:
+    - "Fix SQL injection at line 45 first (Recommended)" → "Critical - blocks merge"
+    - "Auto-fix 3 style warnings" → "Safe formatting fixes only"
+    - "View full diff of all fixes" → "Preview 4 changes before applying"
+    - "Skip fixes, save report only" → "Report saved to docs/08-project/code-reviews/"
 ```
 
 ### Success - Clean Review

@@ -156,18 +156,18 @@ DETAILED=true        # Show extended details (dependencies, ADRs, research)
 
 ## Confirmation & Integration
 
-After displaying blockers:
+After displaying blockers (use actual counts and data from analysis):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "What would you like to do?",
-  "header": "Blocker Actions",
+  "question": "[N] blockers found ([critical] critical, [stale] stale >14d). What next?",
+  "header": "Resolve",
   "multiSelect": false,
   "options": [
-    {"label": "Update blocker status", "description": "Mark blocker as resolved"},
-    {"label": "Create unblocking story", "description": "Create story to unblock"},
-    {"label": "View ADR details", "description": "See related architecture decisions"},
-    {"label": "Escalate blocker", "description": "Escalate for decision"}
+    {"label": "Resolve [top_blocker_id]: [reason] (Recommended)", "description": "[category] blocker, [age] days old - [resolution_hint]"},
+    {"label": "Create unblocking story for [blocker_id]", "description": "[blocker_summary] - needs [effort] to unblock [N] downstream stories"},
+    {"label": "View [N] related ADRs/research", "description": "Found [adr_count] ADRs and [research_count] research notes matching blockers"},
+    {"label": "Done - report only", "description": "[N] blockers documented, no action needed now"}
   ]
 }]</parameter>
 </invoke>

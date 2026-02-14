@@ -2,10 +2,6 @@
   "title": "Agents",
   "pages": [
     "index",
-    "---Configuration---",
-    "configuration-agents",
-    "configuration-damage-control",
-    "configuration-visual-e2e",
     "---Orchestration---",
     "mentor",
     "orchestrator",

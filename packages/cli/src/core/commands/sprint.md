@@ -95,17 +95,18 @@ TaskCreate/TaskUpdate:
 </invoke>
 ```
 
-AskUserQuestion:
+AskUserQuestion (use actual counts and data from analysis):
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Commit this sprint plan: 5 stories, 8.5 days?",
-  "header": "Confirm Sprint Commitment",
+  "question": "Sprint [ID]: [N] stories, [X]d estimated ([Y]% of [Z]d capacity). [Risk level]. Commit?",
+  "header": "Sprint",
   "multiSelect": false,
   "options": [
-    {"label": "Yes, commit plan", "description": "Update status.json and create milestone"},
-    {"label": "No, adjust", "description": "Modify story selection"},
-    {"label": "Cancel", "description": "Exit without changes"}
+    {"label": "Commit sprint plan (Recommended)", "description": "[N] stories across [agents] - [epic summary]. Starts today, ends [date]"},
+    {"label": "Adjust story selection", "description": "Currently at [Y]% capacity - add/remove stories before committing"},
+    {"label": "View dependency risks first", "description": "[risk_count] risks detected: [top risk summary]"},
+    {"label": "Cancel", "description": "Exit without changes to status.json"}
   ]
 }]</parameter>
 </invoke>

@@ -392,7 +392,7 @@ Reading plan: `.claude/plans/[slug].md`
 Running tests to verify step 1...
 ```
 
-4. **Complete implementation**:
+4. **Complete implementation** with smart AskUserQuestion:
 ```markdown
 ---
 
@@ -404,13 +404,23 @@ All [N] steps executed successfully.
 - [X] files modified
 - [Y] tests added/updated
 - [Z] tests passing
+```
 
-### Next Actions
-- [ ] Run full test suite: `npm test`
-- [ ] Create PR: `/agileflow:pr-template`
-- [ ] Update story status: `/agileflow:status STORY=US-#### STATUS=in-review`
-
----
+Then present smart next steps:
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Implementation complete: [N] steps done, [X] files modified, [Z] tests passing. What next?",
+  "header": "Next step",
+  "multiSelect": false,
+  "options": [
+    {"label": "Run full test suite (Recommended)", "description": "Verify all [Z] tests still pass after [X] file changes"},
+    {"label": "🔍 Run logic audit on [X] modified files", "description": "5 analyzers check for edge cases, race conditions, type bugs"},
+    {"label": "Create PR with /agileflow:pr", "description": "[X] files changed across [N] implementation steps"},
+    {"label": "Pause here", "description": "Implementation saved, tests can be run later"}
+  ]
+}]</parameter>
+</invoke>
 ```
 
 ### Step 4: Monitor Context Health
@@ -423,18 +433,22 @@ Throughout execution, monitor for signs of context degradation:
 - Heavy tool output (JSON, logs)
 - Repetitive or generic responses
 
-**If detected, warn**:
-```markdown
-⚠️ **Context Health Warning**
+**If detected, use smart AskUserQuestion**:
 
-This conversation has grown significantly. We may be approaching the "dumb zone" where agent quality degrades.
-
-**Current phase**: [phase]
-**Recommendation**: [Complete phase and start fresh / Save progress and compact]
-
-Would you like to:
-1. Complete current phase and save artifact now
-2. Continue (understanding quality may degrade)
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "⚠️ Context at ~[utilization]% ([phase] phase). [files_read] files read, [tool_calls] tool calls. Save progress?",
+  "header": "Context health",
+  "multiSelect": false,
+  "options": [
+    {"label": "Save [phase] artifact and start fresh (Recommended)", "description": "New conversation starts in smart zone (<40%). Artifact preserves all understanding."},
+    {"label": "Compact context and continue", "description": "Reduce utilization but may lose some nuance"},
+    {"label": "Continue without saving", "description": "⚠️ Quality may degrade - currently at [utilization]%"},
+    {"label": "Pause here", "description": "Progress saved to [artifact_path]"}
+  ]
+}]</parameter>
+</invoke>
 ```
 
 ---
@@ -525,7 +539,13 @@ Research Summary:
 - Patterns: Use existing middleware structure
 - Risks: Token storage, refresh logic
 
-Ready for planning phase? [Y/n]
+AskUserQuestion:
+  question: "Research complete: 4 findings, 2 risks identified. Ready for planning phase?"
+  options:
+    - "Start planning in new conversation (Recommended)" → "Fresh context with research artifact compressed"
+    - "Continue planning in this conversation" → "Context at ~35% - still in smart zone"
+    - "Refine research first" → "4 findings may need deeper investigation"
+    - "Pause here" → "Research saved to docs/10-research/"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 2: PLAN
@@ -542,7 +562,13 @@ Files to modify: 4
 New files: 2
 Estimated complexity: Medium
 
-Approve plan and proceed to implement? [Y/n]
+AskUserQuestion:
+  question: "Plan ready: 5 steps, 6 files, ~medium complexity. Approve and proceed?"
+  options:
+    - "Approve - start implementing in new conversation (Recommended)" → "Fresh context with plan artifact"
+    - "Approve - implement in this conversation" → "Context at ~50% - proceed with caution"
+    - "Revise step 3 (update login endpoint)" → "Adjust plan before implementing"
+    - "Pause here" → "Plan saved to .claude/plans/"
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 3: IMPLEMENT
@@ -555,6 +581,14 @@ Implementing...
 ✓ Added 12 tests (all passing)
 
 🎉 Implementation complete!
+
+AskUserQuestion:
+  question: "Implementation complete: 5 steps, 4 files modified, 12 tests passing. What next?"
+  options:
+    - "Run full test suite (Recommended)" → "Verify all 12 tests pass"
+    - "🔍 Run logic audit on 4 modified files" → "5 analyzers check for edge cases"
+    - "Create PR" → "4 files changed across 5 steps"
+    - "Pause here" → "Implementation saved"
 ```
 
 ### Success - Phase Transition
@@ -567,12 +601,13 @@ Current: RESEARCH → Next: PLAN
 
 ⚠️ Context Health: 65% (approaching threshold)
 
-Before transitioning:
-1. Document key findings
-2. Save research notes
-3. Plan is LEVERAGE - quality > speed now
-
-Proceed with transition? [Y/n]
+AskUserQuestion:
+  question: "Context at 65% - approaching dumb zone. Save artifact and transition?"
+  options:
+    - "Save artifact and start new conversation (Recommended)" → "Fresh context in smart zone (<40%)"
+    - "Continue in this conversation" → "⚠️ Quality may degrade past 70%"
+    - "Compact context first" → "Reduce utilization, then continue"
+    - "Pause here" → "Progress saved, resume later"
 ```
 
 ### Error - Wrong Phase
