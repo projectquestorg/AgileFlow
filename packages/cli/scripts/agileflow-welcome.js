@@ -30,6 +30,20 @@ const { readJSONCached, readFileCached } = require('../lib/file-cache');
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
 
+// PERFORMANCE OPTIMIZATION: Lazy-loaded session-manager module
+// Importing directly avoids ~50-150ms subprocess overhead per call.
+let _sessionManager;
+function getSessionManager() {
+  if (_sessionManager === undefined) {
+    try {
+      _sessionManager = require('./session-manager.js');
+    } catch (e) {
+      _sessionManager = null;
+    }
+  }
+  return _sessionManager;
+}
+
 // Hook metrics module (kept at top level - needed early for timer)
 let hookMetrics;
 try {
@@ -43,6 +57,12 @@ try {
  * Uses file-cache module for automatic caching with 15s TTL.
  * Files are cached across script invocations within TTL window.
  * Estimated savings: 60-120ms on cache hits
+ *
+ * Additional optimizations in this file (US-0356):
+ * - Git batching: 3 subprocess calls → 1 (~20-40ms savings)
+ * - Session-manager inline: subprocess → direct require() (~50-150ms savings)
+ * - Tmux cache: subprocess → session-state lookup (~10-20ms after first run)
+ * Total estimated savings: ~130-260ms
  */
 function loadProjectFiles(rootDir) {
   const paths = {
@@ -109,32 +129,57 @@ function detectPlatform() {
 
 /**
  * Check if tmux is installed
+ * PERFORMANCE OPTIMIZATION: Caches result in session-state.json (~10-20ms savings on subsequent runs)
  * Returns object with availability info and platform-specific install suggestion
  */
-function checkTmuxAvailability() {
-  const result = executeCommandSync('which', ['tmux'], { fallback: null });
-  if (result.data !== null) {
-    return { available: true };
+function checkTmuxAvailability(cache) {
+  // Check session state cache first (tmux availability doesn't change within a session)
+  if (cache?.sessionState?.tmux_available !== undefined) {
+    if (cache.sessionState.tmux_available) return { available: true };
+    return { available: false, platform: detectPlatform(), noSudoCmd: 'conda install -c conda-forge tmux' };
   }
-  const platform = detectPlatform();
-  return {
-    available: false,
-    platform,
-    noSudoCmd: 'conda install -c conda-forge tmux',
-  };
+
+  // Actually check (first run or no cache)
+  const result = executeCommandSync('which', ['tmux'], { fallback: null });
+  const available = result.data !== null;
+
+  // Cache in session state for next invocation
+  try {
+    const rootDir = getProjectRoot();
+    const sessionStatePath = getSessionStatePath(rootDir);
+    if (fs.existsSync(sessionStatePath)) {
+      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+      state.tmux_available = available;
+      fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+    }
+  } catch (e) {
+    // Cache write failed, non-critical
+  }
+
+  if (available) return { available: true };
+  return { available: false, platform: detectPlatform(), noSudoCmd: 'conda install -c conda-forge tmux' };
 }
 
 /**
  * PERFORMANCE OPTIMIZATION: Batch git commands into single call
- * Reduces subprocess overhead from 3 calls to 1.
- * Estimated savings: 20-40ms
+ * Uses `git log -1 --format=%D%n%h%n%s` to get branch, short hash, and subject
+ * in a single subprocess instead of 3 separate calls.
+ * Savings: ~20-40ms (eliminates 2 subprocess spawns)
  */
 function getGitInfo(rootDir) {
-  const opts = { cwd: rootDir, timeout: 5000, fallback: 'unknown' };
-  const branch = git(['branch', '--show-current'], opts).data;
-  const commit = git(['rev-parse', '--short', 'HEAD'], opts).data;
-  const lastCommit = git(['log', '-1', '--format=%s'], { ...opts, fallback: '' }).data;
-  return { branch, commit, lastCommit };
+  const opts = { cwd: rootDir, timeout: 5000, fallback: '' };
+  const result = git(['log', '-1', '--format=%D%n%h%n%s'], opts);
+  if (result.data) {
+    const lines = result.data.split('\n');
+    // %D gives decorations like "HEAD -> main, origin/main, tag: v3.0.0"
+    const branchMatch = (lines[0] || '').match(/HEAD -> ([^,\s]+)/);
+    return {
+      branch: branchMatch ? branchMatch[1] : 'detached',
+      commit: (lines[1] || 'unknown').trim(),
+      lastCommit: lines.slice(2).join('\n').trim(),
+    };
+  }
+  return { branch: 'unknown', commit: 'unknown', lastCommit: '' };
 }
 
 function getProjectInfo(rootDir, cache = null) {
@@ -403,18 +448,36 @@ function checkParallelSessions(rootDir) {
   };
 
   try {
-    // Check if session manager exists
+    // PERFORMANCE OPTIMIZATION: Import session-manager directly instead of subprocess
+    // Saves ~50-150ms by avoiding Node subprocess spawn overhead
+    const sm = getSessionManager();
+    if (sm && sm.fullStatus) {
+      result.available = true;
+      const data = sm.fullStatus();
+      result.registered = data.registered;
+      result.currentId = data.id;
+      result.otherActive = data.otherActive || 0;
+      result.cleaned = data.cleaned || 0;
+      result.cleanedSessions = data.cleanedSessions || [];
+
+      if (data.current) {
+        result.isMain = data.current.is_main === true;
+        result.nickname = data.current.nickname;
+        result.branch = data.current.branch;
+        result.sessionPath = data.current.path;
+      }
+      return result;
+    }
+
+    // Fallback: check if session manager script exists for subprocess call
     const managerPath = path.join(getAgileflowDir(rootDir), 'scripts', 'session-manager.js');
     if (!fs.existsSync(managerPath) && !fs.existsSync(SESSION_MANAGER_PATH)) {
       return result;
     }
 
     result.available = true;
-
-    // Try to use combined full-status command (saves ~200ms vs 3 separate calls)
     const scriptPath = fs.existsSync(managerPath) ? managerPath : SESSION_MANAGER_PATH;
 
-    // PERFORMANCE: Single subprocess call instead of 3 (register + count + status)
     const fullStatusResult = executeCommandSync('node', [scriptPath, 'full-status'], {
       cwd: rootDir,
       fallback: null,
@@ -435,52 +498,7 @@ function checkParallelSessions(rootDir) {
           result.branch = data.current.branch;
           result.sessionPath = data.current.path;
         }
-      } catch (e) {
-        // JSON parse failed, fall through to individual calls
-        fullStatusResult.data = null;
-      }
-    }
-
-    if (!fullStatusResult.data) {
-      // Fall back to individual calls if full-status not available (older version)
-      const registerResult = executeCommandSync('node', [scriptPath, 'register'], {
-        cwd: rootDir,
-        fallback: null,
-      });
-      if (registerResult.data) {
-        try {
-          const registerData = JSON.parse(registerResult.data);
-          result.registered = true;
-          result.currentId = registerData.id;
-        } catch (e) {}
-      }
-
-      const countResult = executeCommandSync('node', [scriptPath, 'count'], {
-        cwd: rootDir,
-        fallback: null,
-      });
-      if (countResult.data) {
-        try {
-          const countData = JSON.parse(countResult.data);
-          result.otherActive = countData.count || 0;
-        } catch (e) {}
-      }
-
-      const statusCmdResult = executeCommandSync('node', [scriptPath, 'status'], {
-        cwd: rootDir,
-        fallback: null,
-      });
-      if (statusCmdResult.data) {
-        try {
-          const statusData = JSON.parse(statusCmdResult.data);
-          if (statusData.current) {
-            result.isMain = statusData.current.is_main === true;
-            result.nickname = statusData.current.nickname;
-            result.branch = statusData.current.branch;
-            result.sessionPath = statusData.current.path;
-          }
-        } catch (e) {}
-      }
+      } catch (e) {}
     }
   } catch (e) {
     // Session system not available
@@ -1752,7 +1770,7 @@ async function main() {
   let tmuxCheck = { available: true };
   const tmuxAutoSpawnEnabled = cache?.metadata?.features?.tmuxAutoSpawn?.enabled !== false;
   if (tmuxAutoSpawnEnabled) {
-    tmuxCheck = checkTmuxAvailability();
+    tmuxCheck = checkTmuxAvailability(cache);
   }
 
   // Show session banner FIRST if in a non-main session
@@ -1897,14 +1915,12 @@ async function main() {
 
   // === SESSION HEALTH WARNINGS ===
   // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
+  // PERFORMANCE OPTIMIZATION: Direct function call instead of subprocess (~50-100ms savings)
   try {
-    const healthResult = executeCommandSync('node', [SESSION_MANAGER_PATH, 'health'], {
-      timeout: 10000,
-      fallback: null,
-    });
+    const sm = getSessionManager();
+    const health = sm ? sm.getSessionsHealth({ staleDays: 7 }) : null;
 
-    if (healthResult.data) {
-      const health = JSON.parse(healthResult.data);
+    if (health) {
       const hasIssues =
         health.uncommitted.length > 0 ||
         health.stale.length > 0 ||
