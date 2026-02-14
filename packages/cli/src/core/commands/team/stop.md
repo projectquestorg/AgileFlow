@@ -43,8 +43,11 @@ Before stopping:
 
 ### Native Mode
 
-Teammates will be stopped when the team lead session ends.
-The native Agent Teams runtime handles cleanup.
+When `active_team.mode === "native"` in session-state.json:
+
+1. **Stop running teammate tasks**: Use `TaskStop` for any background teammate tasks still running
+2. **Attempt TeamDelete**: If the `TeamDelete` tool is available in your tool list, call it with the team name from `active_team.native_payload.name` to clean up the native team session
+3. **If TeamDelete is not available**: This is fine — teammate sessions will end naturally when their tasks complete. Log: "TeamDelete not available, teammates will complete naturally."
 
 ### Subagent Mode
 

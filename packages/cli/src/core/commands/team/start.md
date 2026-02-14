@@ -56,13 +56,42 @@ If no argument given, use AskUserQuestion to let user choose.
 
 ### Native Mode (Agent Teams enabled)
 
-When Agent Teams is enabled, operate as the **team lead** in delegate mode:
+When Agent Teams is enabled, use native tools to create and coordinate the team:
 
-1. Read the template JSON from `.agileflow/teams/<template>.json`
-2. Announce the team composition to the user
-3. Create tasks for each teammate using the native task list
-4. Spawn teammate sessions as defined in the template
-5. Monitor progress and coordinate handoffs
+1. **Run the team-manager script** to load the template and build the native payload:
+   ```bash
+   node .agileflow/scripts/team-manager.js start <template-name>
+   ```
+   Parse the JSON output. The `native_payload` field contains the team configuration.
+
+2. **Announce the team composition** to the user — list each teammate's name, role, and domain.
+
+3. **Spawn teammates using the Task tool with native parameters**:
+   For each teammate in `native_payload.teammates`:
+   ```
+   Task tool call:
+     subagent_type: <teammate.name>     (e.g. "agileflow-api")
+     description: "<role> - <domain>"
+     prompt: <built from teammate instructions + project context>
+   ```
+   The prompt for each teammate should include:
+   - Their role and domain from the template
+   - The specific task or story they should work on
+   - A pointer to read CLAUDE.md and check `docs/09-agents/status.json` for context
+   - Quality gate requirements from the template
+
+4. **If native tools fail** (e.g., TeamCreate not available, tool not found errors):
+   - Log a warning: "Native Agent Teams tools not available. Falling back to subagent mode."
+   - Proceed with the **Fallback Mode** instructions below instead
+   - Update `session-state.json` to reflect `mode: "subagent"`
+
+5. **Create shared tasks** using TaskCreate for the work to be done:
+   - One task per teammate with clear acceptance criteria
+   - Set up dependencies (e.g., UI tasks blocked by API tasks)
+
+6. **Report** which mode was actually used (native vs fallback) and the spawned teammates.
+
+> **Tip**: For teams with 3+ teammates, consider using tmux sessions (`/agileflow:session:spawn`) to run teammates in parallel windows for better visibility.
 
 ### Fallback Mode (Agent Teams disabled)
 

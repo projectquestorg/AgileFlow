@@ -127,6 +127,124 @@ describe('team-manager native Agent Teams', () => {
     });
   });
 
+  describe('buildTeammatePrompt', () => {
+    it('builds prompt with explicit instructions', () => {
+      const teammate = {
+        agent: 'agileflow-api',
+        role: 'builder',
+        domain: 'backend',
+        instructions: 'Implement REST API endpoints following OpenAPI spec',
+      };
+      const template = {
+        quality_gates: {
+          teammate_idle: { tests: true, lint: true, types: false },
+        },
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, template);
+
+      expect(prompt).toContain('## Role: builder (backend)');
+      expect(prompt).toContain('Implement REST API endpoints following OpenAPI spec');
+      expect(prompt).toContain('## Quality Gates');
+      expect(prompt).toContain('tests must pass');
+      expect(prompt).toContain('linting must pass');
+      expect(prompt).not.toContain('type checking must pass');
+      expect(prompt).toContain('CLAUDE.md');
+      expect(prompt).toContain('status.json');
+    });
+
+    it('falls back to description when no instructions', () => {
+      const teammate = {
+        agent: 'agileflow-ui',
+        role: 'builder',
+        domain: 'frontend',
+        description: 'Implements UI components and styling',
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, {});
+
+      expect(prompt).toContain('Implements UI components and styling');
+      expect(prompt).not.toContain('## Quality Gates');
+    });
+
+    it('auto-generates description when no instructions or description', () => {
+      const teammate = {
+        agent: 'agileflow-testing',
+        role: 'validator',
+        domain: 'quality',
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, {});
+
+      expect(prompt).toContain('validator');
+      expect(prompt).toContain('quality');
+    });
+
+    it('includes validator approval requirement', () => {
+      const teammate = {
+        agent: 'agileflow-api',
+        role: 'builder',
+        domain: 'backend',
+        description: 'Build stuff',
+      };
+      const template = {
+        quality_gates: {
+          task_completed: { require_validator_approval: true },
+        },
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, template);
+
+      expect(prompt).toContain('validator approval required');
+    });
+
+    it('handles missing quality_gates gracefully', () => {
+      const teammate = {
+        agent: 'agileflow-api',
+        role: 'builder',
+        domain: 'backend',
+        description: 'Build stuff',
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, null);
+
+      expect(prompt).toContain('## Role: builder (backend)');
+      expect(prompt).toContain('## Context');
+      expect(prompt).not.toContain('## Quality Gates');
+    });
+
+    it('handles missing role and domain with defaults', () => {
+      const teammate = { agent: 'custom-agent' };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, {});
+
+      expect(prompt).toContain('## Role: teammate (general)');
+      expect(prompt).toContain('teammate agent');
+    });
+
+    it('includes all quality gate types when all enabled', () => {
+      const teammate = {
+        agent: 'agileflow-api',
+        role: 'builder',
+        domain: 'backend',
+        instructions: 'Do work',
+      };
+      const template = {
+        quality_gates: {
+          teammate_idle: { tests: true, lint: true, types: true },
+          task_completed: { require_validator_approval: true },
+        },
+      };
+
+      const prompt = teamManager.buildTeammatePrompt(teammate, template);
+
+      expect(prompt).toContain('tests must pass');
+      expect(prompt).toContain('linting must pass');
+      expect(prompt).toContain('type checking must pass');
+      expect(prompt).toContain('validator approval required');
+    });
+  });
+
   describe('startTeam in native mode', () => {
     it('includes native_payload when Agent Teams is enabled', () => {
       featureFlags.getAgentTeamsMode.mockReturnValue('native');

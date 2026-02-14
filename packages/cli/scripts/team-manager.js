@@ -200,6 +200,62 @@ function buildNativeTeamPayload(template, templateName) {
 }
 
 /**
+ * Build a rich prompt for a teammate from template data.
+ * Used when spawning teammates via the Task tool to give them
+ * full context about their role, quality gates, and project state.
+ *
+ * @param {object} teammate - Teammate entry from template (agent, role, domain, description, instructions)
+ * @param {object} template - Full team template (for quality_gates context)
+ * @returns {string} Formatted prompt string
+ */
+function buildTeammatePrompt(teammate, template) {
+  const parts = [];
+
+  // Role and domain header
+  parts.push(`## Role: ${teammate.role || 'teammate'} (${teammate.domain || 'general'})`);
+  parts.push('');
+
+  // Instructions - prefer explicit instructions, fall back to description, then auto-generate
+  if (teammate.instructions) {
+    parts.push(teammate.instructions);
+  } else if (teammate.description) {
+    parts.push(teammate.description);
+  } else {
+    parts.push(`You are the ${teammate.role || 'teammate'} agent responsible for the ${teammate.domain || 'general'} domain.`);
+  }
+  parts.push('');
+
+  // Quality gate awareness
+  if (template && template.quality_gates) {
+    const gates = template.quality_gates;
+    const requirements = [];
+
+    if (gates.teammate_idle) {
+      if (gates.teammate_idle.tests) requirements.push('tests must pass');
+      if (gates.teammate_idle.lint) requirements.push('linting must pass');
+      if (gates.teammate_idle.types) requirements.push('type checking must pass');
+    }
+    if (gates.task_completed && gates.task_completed.require_validator_approval) {
+      requirements.push('validator approval required');
+    }
+
+    if (requirements.length > 0) {
+      parts.push('## Quality Gates');
+      parts.push(`Before marking work complete: ${requirements.join(', ')}.`);
+      parts.push('');
+    }
+  }
+
+  // Project context pointers
+  parts.push('## Context');
+  parts.push('- Read CLAUDE.md for project conventions');
+  parts.push('- Check `docs/09-agents/status.json` for current work items and team state');
+  parts.push('');
+
+  return parts.join('\n');
+}
+
+/**
  * Start a team from a template.
  * When native Agent Teams is enabled, builds a TeamCreate-compatible payload.
  * When disabled, falls back to subagent orchestration mode.
@@ -485,6 +541,7 @@ module.exports = {
   stopTeam,
   getTeamsDir,
   buildNativeTeamPayload,
+  buildTeammatePrompt,
   validateTemplateName,
 };
 
