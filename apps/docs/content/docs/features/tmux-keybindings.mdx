@@ -1,26 +1,92 @@
 ---
-title: Tmux Keybindings
-description: Keyboard shortcuts for navigating windows, sessions, and panes in the AgileFlow tmux integration.
+title: Tmux Integration
+description: Run Claude Code in managed tmux sessions with multi-window support, smart resume, freeze recovery, and custom keybindings.
 ---
 
-# Tmux Keybindings
+# Tmux Integration
 
-When you start Claude Code with the `af` command, AgileFlow creates a tmux session with preconfigured keybindings. All shortcuts use **Alt** (Option on Mac) as the modifier key.
+AgileFlow wraps Claude Code in tmux sessions, giving you multi-window terminal management, smart conversation resume, freeze recovery, and a themed status bar - all with a single `af` command.
 
-## Quick Reference
+## Getting Started
 
-### Essential (shown in status bar)
+After installing AgileFlow, use the `af` command instead of `claude`:
+
+```bash
+af              # Start Claude in tmux (or reattach to existing session)
+af --new        # Force a new session
+af --no-tmux    # Run Claude without tmux
+af --kill       # Kill all sessions for this directory
+af --help       # Show keybinding reference
+```
+
+To install `af` globally:
+
+```bash
+sudo ln -s $(pwd)/.agileflow/scripts/af /usr/local/bin/af
+```
+
+## Session Management
+
+### Automatic Session Handling
+
+When you run `af`, it automatically:
+
+1. **Reattaches to detached sessions** - If you previously detached with Alt+Q, `af` brings you right back
+2. **Joins existing sessions** - If a session is active in another terminal, it attaches as a second client
+3. **Creates new sessions** - Only when no existing session is found
+
+Sessions are named by directory: `claude-myproject`, `claude-myproject-2`, etc.
+
+### Smart Resume
+
+Each tmux pane tracks its Claude conversation UUID. When you re-run Claude in the same pane, it automatically resumes the previous conversation. New windows start fresh conversations.
+
+### Session Lifecycle
+
+```
+af                  → Reattach to detached session (or create new)
+af --new            → Force new session (skip reattach)
+Alt+s (in tmux)     → New Claude window in current session
+Alt+q               → Detach (session stays alive in background)
+af                  → Reattach to the detached session
+af --kill           → Kill all sessions for current directory
+```
+
+### Multiple Sessions
+
+Multiple terminals can run `af` from the same directory:
+
+- First `af` creates `claude-myproject`
+- Running `af --new` creates `claude-myproject-2`
+- When multiple detached sessions exist, `af` shows a picker
+
+## Status Bar
+
+The tmux session has a two-line status bar with a Tokyo Night-inspired dark theme:
+
+**Top line**: Session name, live git branch, and keybinding hints
+
+**Bottom line**: Window tabs with the active window highlighted in AgileFlow's brand orange
+
+The status bar refreshes every 30 seconds to show the current git branch.
+
+## Keybindings
+
+All keybindings use **Alt** as the modifier key (Option on Mac). Press **Alt+h** inside tmux to see the full reference as a popup.
+
+### Sessions
 
 | Key | Action |
 |-----|--------|
-| **Alt+1** through **Alt+9** | Switch to window 1-9 |
-| **Alt+s** | New Claude session (same directory) |
-| **Alt+q** | Detach (leave session running in background) |
+| **Alt+s** | New Claude session (new window) |
+| **Alt+l** | Switch between sessions (interactive picker) |
+| **Alt+q** | Detach (session stays alive, `af` to resume) |
 
 ### Windows
 
 | Key | Action |
 |-----|--------|
+| **Alt+1** through **Alt+9** | Switch to window 1-9 |
 | **Alt+c** | Create new empty window |
 | **Alt+n** | Next window |
 | **Alt+p** | Previous window |
@@ -43,44 +109,95 @@ When you start Claude Code with the `af` command, AgileFlow creates a tmux sessi
 |-----|--------|
 | **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
 | **Alt+[** | Enter copy/scroll mode |
+| **Alt+h** | Show keybinding help popup |
+
+## Freeze Recovery
+
+If Claude freezes or hangs:
+
+| Key | Action |
+|-----|--------|
+| **Alt+k** | Send Ctrl+C twice (soft interrupt) |
+| **Alt+K** | Force kill the pane immediately |
+| **Alt+R** | Respawn pane with fresh shell |
+| **Alt+q** | Detach from tmux, then `af` to start fresh |
+
+## Auto-Cleanup
+
+AgileFlow automatically cleans up:
+
+- **Dead sessions** - Sessions where all panes have exited are removed
+- **Duplicate sessions** - Numbered duplicates are consolidated
+- **Socket directory** - Recreated automatically after macOS reboot clears `/tmp`
 
 ## Window Naming
 
-When you create new Claude sessions inside tmux, windows are automatically named sequentially:
+New Claude sessions get sequential names:
 
-- **First window**: `claude-1` (or just `claude` for the initial session)
-- **Second window**: `claude-2`
-- **Third window**: `claude-3`
+- **First window**: `main`
+- **Alt+s windows**: `claude-2`, `claude-3`, etc.
 
-This makes it easy to identify which session is which, especially when working on multiple tasks simultaneously. Windows are automatically renumbered when you close one.
+Windows are automatically renumbered when you close one (no gaps).
 
-## Status Bar
+## Configuration
 
-The tmux status bar has two lines:
+### Disable Tmux
 
-**Top line**: Project name, git branch, and keybinding hints
+Add to `docs/00-meta/agileflow-metadata.json`:
 
-**Bottom line**: Window tabs with the active window highlighted in orange
-
-## Reattaching to a Session
-
-If you detach with **Alt+q** or close your terminal, the session keeps running. To reattach:
-
-```bash
-af
+```json
+{
+  "features": {
+    "tmuxAutoSpawn": {
+      "enabled": false
+    }
+  }
+}
 ```
 
-AgileFlow automatically detects existing sessions for the current directory and reattaches.
+### Default Claude Flags
+
+Configure startup flags (e.g., `--dangerously-skip-permissions`) via `/agileflow:configure` or in metadata:
+
+```json
+{
+  "sessions": {
+    "defaultStartupMode": "dangerous"
+  }
+}
+```
+
+### Refresh Config
+
+If you update the tmux configuration, apply it to all running sessions:
+
+```bash
+af --refresh
+```
 
 ## Mac Users
 
-On macOS, **Alt** is the **Option** key. If Alt keybindings don't work, check your terminal settings:
+On macOS, **Alt** is the **Option** key. If keybindings don't work, check your terminal settings:
 
 - **iTerm2**: Preferences > Profiles > Keys > Left Option key > set to "Esc+"
 - **Terminal.app**: Preferences > Profiles > Keyboard > check "Use Option as Meta key"
 - **Alacritty / Kitty / WezTerm**: Usually works out of the box
 
+## Prerequisites
+
+Tmux must be installed:
+
+```bash
+# macOS
+brew install tmux
+
+# Ubuntu/Debian
+sudo apt install tmux
+```
+
+If tmux isn't available, `af` falls back to running Claude directly.
+
 ## Related
 
-- [Parallel Sessions](/docs/features/parallel-sessions) - Working in multiple isolated workspaces
+- [Parallel Sessions](/docs/features/parallel-sessions) - Working in multiple isolated git worktrees
 - [IDE Integrations](/docs/features/ide-integrations) - Setting up AgileFlow with your editor

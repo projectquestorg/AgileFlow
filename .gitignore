@@ -46,7 +46,7 @@ CLAUDE.md
 .agileflow/
 
 # Internal development docs (not for public repo)
-docs/
+/docs/
 
 # Next.js (for apps/website and apps/docs)
 .next/
