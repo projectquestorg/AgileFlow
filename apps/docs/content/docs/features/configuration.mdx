@@ -1,11 +1,11 @@
 ---
 title: Configuration
-description: Complete guide to AgileFlow's configuration system - 9 agents for customizing your development workflow
+description: Complete guide to AgileFlow's configuration system - unified script for managing hooks, safety, and automation
 ---
 
 # Configuration System
 
-AgileFlow's configuration system provides 9 specialized agents that set up, customize, and verify every aspect of your development workflow. Access them through `/agileflow:configure`.
+AgileFlow's configuration system provides a unified script for setting up, customizing, and verifying every aspect of your development workflow. Access it through `/agileflow:configure`.
 
 ## Quick Start
 
@@ -23,272 +23,328 @@ AgileFlow's configuration system provides 9 specialized agents that set up, cust
 /agileflow:configure --upgrade
 ```
 
-## The 9 Configuration Agents
+## Configuration Features
 
-| Agent | Purpose | Key Feature |
-|-------|---------|-------------|
-| **git-config** | Initialize git and remote repos | SSH/HTTPS support |
-| **hooks** | Event-driven automation | SessionStart, PreCompact, Stop |
-| **precompact** | Context preservation | Survives conversation compression |
-| **status-line** | Custom status bar | Story, WIP, context display |
-| **archival** | Auto-manage status.json | Threshold-based cleanup |
-| **attribution** | Git commit policy | Control AI disclosure |
-| **ci** | CI/CD workflows | GitHub Actions, GitLab, CircleCI |
-| **damage-control** | Destructive command protection | Pattern-based blocking |
-| **verify** | Test configurations | Token management |
+AgileFlow's configuration system includes 12 configurable features that can be enabled/disabled individually or through preset profiles:
+
+| Feature | Type | Purpose |
+|---------|------|---------|
+| **SessionStart** | Hook | Welcome message and project status on session start |
+| **PreCompact** | Hook | Context preservation during conversation compression |
+| **RalphLoop** | Hook | Autonomous story processing loop (Stop hook) |
+| **SelfImprove** | Hook | Automatic expertise updates (Stop hook) |
+| **Archival** | Script | Auto-manage status.json file size |
+| **StatusLine** | Script | Real-time project status bar |
+| **AutoUpdate** | Metadata | Auto-check for AgileFlow updates |
+| **DamageControl** | PreToolUse Hooks | Block dangerous commands (Bash, Edit, Write) |
+| **AskUserQuestion** | Metadata | Enable interactive user prompts |
+| **TmuxAutoSpawn** | Metadata | Auto-create tmux sessions |
+| **ShellAliases** | Shell | Install `af`/`agileflow` command aliases |
+| **CLAUDE.md Reinforcement** | Metadata | Enforce project rules in context preservation |
+
+## Setup Profiles
+
+Choose a preset profile to configure multiple features at once:
+
+### Full Profile (Recommended for Active Development)
+
+Enables all features including experimental Stop hooks:
+```bash
+/agileflow:configure --profile=full
+```
+Includes: SessionStart, PreCompact, RalphLoop, SelfImprove, Archival, StatusLine, AskUserQuestion, TmuxAutoSpawn
+
+### Basic Profile (Recommended for New Projects)
+
+Essential hooks + archival:
+```bash
+/agileflow:configure --profile=basic
+```
+Includes: SessionStart, PreCompact, Archival, AskUserQuestion, TmuxAutoSpawn
+
+### Minimal Profile (Safety First)
+
+No automation - full manual control:
+```bash
+/agileflow:configure --profile=minimal
+```
+Includes: AskUserQuestion, TmuxAutoSpawn
+
+### None Profile
+
+No hooks at all:
+```bash
+/agileflow:configure --profile=none
+```
 
 ## Recommended Setup Order
 
+If configuring features manually:
+
 ```
-Phase 1: Foundation (10-15 min)
-├─ 1. git-config      → Enable version control
-├─ 2. hooks           → Enable automation
-└─ 3. attribution     → Establish commit policy
+Phase 1: Safety (5 min)
+├─ DamageControl      → Protect codebase first
+└─ Validate settings
 
-Phase 2: Safety (5-10 min)
-├─ 4. damage-control  → Protect codebase
-└─ 5. verify          → Validate setup
+Phase 2: Foundation (10 min)
+├─ SessionStart       → Enable basic automation
+├─ PreCompact        → Preserve context
+└─ AskUserQuestion   → Enable user interactions
 
-Phase 3: Productivity (15-20 min)
-├─ 6. archival        → Manage status.json size
-├─ 7. status-line     → Real-time visibility
-├─ 8. ci              → Automated testing
-└─ 9. precompact      → Long conversation support
+Phase 3: Productivity (10 min)
+├─ Archival          → Manage status.json
+├─ StatusLine        → Real-time visibility
+└─ ShellAliases      → Install quick-access commands
+
+Phase 4: Advanced (5 min, optional)
+├─ RalphLoop         → Autonomous story processing
+├─ SelfImprove       → Auto-update expertise
+└─ AutoUpdate        → Check for updates
 ```
 
 ---
 
-## Agent Details
+## Feature Configuration Details
 
-### 1. Git Configuration
+### SessionStart Hook
 
-**Purpose:** Initialize git repository and connect to remote (GitHub, GitLab, etc.)
+**Purpose:** Run scripts when Claude Code session begins
 
 **What it does:**
-- Initializes git repository if needed
-- Configures remote URL (SSH or HTTPS)
-- Verifies remote connection
-- Stores configuration in metadata
+- Displays welcome message with project info
+- Shows current git branch and active story
+- Lists any blocked stories
+- Runs archival if enabled
 
-**Options:**
-```
-Initialize git:      Yes / No
-Remote protocol:     SSH / HTTPS
-Private repo:        Yes / No (for auth)
-Verify connection:   Yes / No
+**Controlled by:**
+```bash
+/agileflow:configure --enable=sessionstart
+/agileflow:configure --disable=sessionstart
 ```
 
-**Files modified:**
-- `.git/` - Git repository
-- `docs/00-meta/agileflow-metadata.json` - Git config stored
-- `.claude/settings.local.json` - Tokens (if needed)
+**Script:** `scripts/agileflow-welcome.js`
 
 ---
 
-### 2. Hooks System
+### PreCompact Hook
 
-**Purpose:** Enable event-driven automation through Claude Code's hooks
-
-**Available hooks:**
-- **SessionStart** - Welcome info when Claude Code starts
-- **PreCompact** - Preserve context before compression
-- **Stop** - Session summary when Claude stops
-- **UserPromptSubmit** - Activity logging
-
-**Options:**
-```
-SessionStart:        Enable / Disable
-PreCompact:          Enable / Disable
-Stop:                Enable / Disable
-UserPromptSubmit:    Enable / Disable
-```
-
-**Files created:**
-- `.claude/settings.json` - Hook configuration
-- `scripts/agileflow-welcome.js` - SessionStart script
-- `scripts/precompact-context.sh` - PreCompact script
-- `scripts/agileflow-stop.sh` - Stop hook script
-
-**Important:** Requires Claude Code restart for hooks to take effect.
-
----
-
-### 3. PreCompact Configuration
-
-**Purpose:** Preserve critical project context when Claude Code compacts conversations
+**Purpose:** Preserve critical context when Claude Code compresses conversation
 
 **Benefits:**
-- Project conventions survive compression
-- Active command rules preserved
+- Project rules survive compression
 - Current story and WIP status maintained
-- Team conventions don't get lost
+- Active commands preserved
+- Long conversations stay focused
 
-**Example output during compact:**
-```
-Project: MyProject v2.40.0 | Branch: main
-
-Active Stories:
-- US-0042 (in-progress): Login API
-- US-0043 (blocked): Payment Integration
-
-WIP Count: 2/3
-Context Preservation: ENABLED
+**Controlled by:**
+```bash
+/agileflow:configure --enable=precompact
+/agileflow:configure --disable=precompact
 ```
 
-**Requires:** Hooks System configured first
+**Script:** `scripts/precompact-context.sh`
 
 ---
 
-### 4. Status Line Configuration
+### RalphLoop (Stop Hook)
 
-**Purpose:** Configure a custom status bar in Claude Code
+**Purpose:** Autonomous story processing - advance to next story after tests pass
 
-**Available components:**
-- Current story ID and title
-- Epic progress (X/Y stories)
-- WIP count vs WIP limit
-- Context usage percentage
-- Session cost in USD
-- Git branch name
+**When to use:**
+- Large epics with clear acceptance criteria
+- Well-tested projects
+- Batch processing overnight
 
-**Example status lines:**
-```
-[Opus] US-0042: Login API | WIP 2/3 | 45% ctx | main
-agileflow v2.40.0 | US-0003 | main
+**Controlled by:**
+```bash
+/agileflow:configure --enable=ralphloop
+/agileflow:configure --disable=ralphloop
 ```
 
-**Options:**
-```
-Display components:  story, epic, wip, context, cost, git (multiselect)
-Show git branch:     Yes / No
-```
+**Script:** `scripts/ralph-loop.js`
 
-**Important:** Requires Claude Code restart.
+**Related:** [Loop Mode](/docs/features/loop-mode)
 
 ---
 
-### 5. Archival Configuration
+### SelfImprove (Stop Hook)
 
-**Purpose:** Automatically manage status.json file size
+**Purpose:** Automatically update agent expertise files based on changes made
+
+**When to use:**
+- Domain agents that build expertise
+- Projects using expertise-based agents
+- Long-running agent coordination
+
+**Controlled by:**
+```bash
+/agileflow:configure --enable=selfimprove
+/agileflow:configure --disable=selfimprove
+```
+
+**Script:** `scripts/auto-self-improve.js`
+
+**Related:** [Agent Expertise System](/docs/features/agent-expertise-system)
+
+---
+
+### Archival
+
+**Purpose:** Automatically clean up completed stories from status.json
 
 **Why it matters:**
-- status.json can exceed 25k token limit
-- When too large, agents can't read it
-- Auto-archival prevents this silently
+- status.json can exceed 25k tokens
+- Archival keeps it lean and fast
+- Completed stories moved to monthly archives
 
 **Threshold options:**
-- **30 days** (recommended) - Balance between context and history
-- **14 days** - Fast-moving projects
-- **7 days** - Large teams with many stories
-- **3 days** - Very aggressive, minimal status.json
+```bash
+/agileflow:configure --archival-days=30   # Default
+/agileflow:configure --archival-days=14   # Fast-moving projects
+/agileflow:configure --archival-days=7    # Large teams
+```
 
 **Archive structure:**
 ```
 docs/09-agents/
 ├── status.json           # Active work
-├── status-archive.json   # Historical
 └── archive/
     ├── 2025-01.json      # Monthly archives
     └── 2025-02.json
 ```
 
-**Manual commands:**
+**Script:** `scripts/archive-completed-stories.sh`
+
+---
+
+### StatusLine
+
+**Purpose:** Display project status bar in Claude Code
+
+**Shows:**
+- Current story ID and title
+- WIP count vs limit
+- Git branch
+- Epic progress
+
+**Available components:**
 ```bash
-# Archive with default threshold
-bash scripts/archive-completed-stories.sh
+# List available components
+/agileflow:configure --list-statusline-components
 
-# Archive with custom threshold (days)
-bash scripts/archive-completed-stories.sh 7
+# Set specific components
+/agileflow:configure --statusline=story,branch,wip
+```
 
-# Compress status.json (removes verbose fields)
-bash scripts/compress-status.sh
+**Script:** `scripts/agileflow-statusline.sh`
+
+---
+
+### DamageControl
+
+**Purpose:** Block dangerous commands before execution
+
+**What it protects:**
+- Destructive deletions (`rm -rf /`)
+- Force git operations (`git push --force`)
+- Database destruction (`DROP TABLE`)
+- Cloud CLI deletes (`aws delete`)
+
+**Enable/disable:**
+```bash
+/agileflow:configure --enable=damagecontrol
+/agileflow:configure --disable=damagecontrol
+```
+
+**Scripts:**
+- `scripts/damage-control-bash.js`
+- `scripts/damage-control-edit.js`
+- `scripts/damage-control-write.js`
+
+**Related:** [Damage Control](/docs/features/damage-control)
+
+---
+
+### AskUserQuestion
+
+**Purpose:** Enable interactive user prompts
+
+**When enabled:**
+- Agents use AskUserQuestion tool for confirmations
+- Smart Detection recommends features via prompts
+- Users choose from options when ambiguous
+
+**Controlled by:**
+```bash
+/agileflow:configure --enable=askuserquestion
+/agileflow:configure --disable=askuserquestion
 ```
 
 ---
 
-### 6. Attribution Configuration
+### TmuxAutoSpawn
 
-**Purpose:** Configure git commit attribution preferences
+**Purpose:** Automatically create tmux sessions for Claude Code
 
-**Options:**
-- **No attribution** (recommended): Clean commits without AI mentions
-- **Keep attribution** (default): Include Claude Code footer
+**When enabled:**
+- `af` command creates/reattaches tmux session
+- Session named based on directory
+- All Claude Code in tmux windows
 
-**Example CLAUDE.md with disabled attribution:**
-```markdown
-## CRITICAL: NO AI Attribution in Git Commits
-
-❌ FORBIDDEN:
-- 🤖 Generated with Claude Code
-- Co-Authored-By: Claude
-
-✅ REQUIRED:
-- Clean, professional commit messages
-- Conventional commit format
+**Controlled by:**
+```bash
+/agileflow:configure --enable=tmuxautospawn
+/agileflow:configure --disable=tmuxautospawn
 ```
 
 ---
 
-### 7. CI/CD Configuration
+### ShellAliases
 
-**Purpose:** Set up continuous integration workflows
+**Purpose:** Install `af`/`agileflow` shell aliases
 
-**Supported providers:**
-- GitHub Actions (`.github/workflows/ci.yml`)
-- GitLab CI (`.gitlab-ci.yml`)
-- CircleCI (`.circleci/config.yml`)
+**What it does:**
+- Adds `af` alias (shorthand for agileflow)
+- Adds `agileflow` as full command
+- Works with .bashrc, .zshrc, .config/fish/config.fish
 
-**Configurable commands:**
-- Install dependencies
-- Run tests
-- Run linter
-- Run type checker
-- Build project
-
-**Options:**
-```
-CI provider:         GitHub Actions / GitLab CI / CircleCI
-Commands to run:     install, test, lint, type-check, build (multiselect)
-Test locally:        Yes / No
-Trigger remote CI:   Yes / No
+**Enable:**
+```bash
+/agileflow:configure --enable=shellaliases
 ```
 
 ---
 
-### 8. Damage Control Configuration
+### AutoUpdate
 
-**Purpose:** Protect your codebase from destructive commands
+**Purpose:** Check for AgileFlow updates automatically
 
-See [Damage Control](/docs/features/damage-control) for full documentation.
+**When enabled:**
+- SessionStart checks for new version
+- Notifies if updates available
+- Manual upgrade via `/agileflow:update`
 
-**Protection levels:**
-- **Standard** - Fast pattern matching, 40+ patterns
-- **Enhanced** - Standard + AI evaluation
-- **Minimal** - Path protection only
-
-**Options:**
-```
-Protection level:    Standard / Enhanced / Minimal
-Custom protections:  Prod DB / Cloud CLI / Env files (multiselect)
+**Controlled by:**
+```bash
+/agileflow:configure --enable=autoupdate
+/agileflow:configure --disable=autoupdate
 ```
 
 ---
 
-### 9. Verification Agent
+### CLAUDE.md Reinforcement
 
-**Purpose:** Test and validate configurations work correctly
+**Purpose:** Enforce project rules during context compression
 
-**What it validates:**
-- JSON file syntax (settings, metadata)
-- Hook script execution
-- YAML workflow syntax
-- CI commands (local testing)
-- Remote connections
+**When enabled:**
+- PreCompact preserves CLAUDE.md critical sections
+- Project rules never forgotten during long sessions
+- Babysit rules always active
 
-**Token management:**
-- Stores tokens in `.claude/settings.local.json` (gitignored)
-- Supports GitHub, GitLab, CircleCI tokens
-- Never echoes tokens to console
+**Controlled by:**
+```bash
+/agileflow:configure --enable=claudemdreinforcement
+```
 
 ---
 
@@ -351,19 +407,17 @@ project/
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | Config not taking effect | Claude Code not restarted | Quit (Cmd+Q) and restart |
-| Token auth fails | Expired/invalid token | Regenerate at provider |
-| YAML syntax error | Invalid workflow file | Validate with yamllint |
-| status.json too large | Exceeds token limit | Enable archival (3-7 days) |
-| Hooks don't run | settings.json invalid | Check JSON with `jq` |
+| Hooks don't run | settings.json invalid | Check JSON syntax with `jq` |
 | Status line missing | Script not executable | `chmod +x scripts/*.sh` |
+| status.json too large | Exceeds token limit | Enable archival (`--archival-days=7`) |
 
 ### Restart Requirement
 
-These agents require **Claude Code restart**:
-- hooks
-- precompact
-- status-line
-- damage-control
+These features require **Claude Code restart**:
+- SessionStart
+- PreCompact
+- RalphLoop
+- DamageControl
 
 ```bash
 # Complete quit (not just closing window)
@@ -371,13 +425,26 @@ Cmd+Q (Mac) or Ctrl+Q (Windows/Linux)
 # Wait 5 seconds, then reopen
 ```
 
+### Checking Configuration Status
+
+View current configuration:
+```bash
+/agileflow:configure --detect
+```
+
+This shows:
+- Which features are enabled/disabled
+- Profile in use (full, basic, minimal, none)
+- Archival threshold (days)
+- Version information
+
 ### Rollback
 
 ```bash
 # Restore from git
 git checkout .claude/settings.json
 
-# Remove problematic hook
+# Remove specific hook
 jq 'del(.hooks.HookName)' .claude/settings.json > tmp.json && mv tmp.json .claude/settings.json
 
 # Disable all hooks
@@ -388,23 +455,37 @@ jq 'del(.hooks)' .claude/settings.json > tmp.json && mv tmp.json .claude/setting
 
 ### Fresh Project Setup
 ```bash
-/agileflow:configure  # Select: Git Repository
-/agileflow:configure  # Select: Hooks System
-/agileflow:configure  # Select: Damage Control
-/agileflow:configure  # Select: Verification
+# Apply basic profile (recommended)
+/agileflow:configure --profile=basic
+
+# Or build custom setup
+/agileflow:configure --enable=sessionstart,precompact,archival,damagecontrol
 ```
 
-### Add CI/CD
+### Minimal Setup (Safety First)
 ```bash
-/agileflow:configure  # Select: CI/CD Workflow
-# Choose provider, commands, test locally
-git add .github/workflows/ci.yml
-git commit -m "ci: add GitHub Actions workflow"
+/agileflow:configure --profile=minimal
+```
+
+### Full Setup (All Features)
+```bash
+/agileflow:configure --profile=full
 ```
 
 ### Optimize for Large Projects
 ```bash
-/agileflow:configure  # Select: Archival (7-14 days)
-/agileflow:configure  # Select: Status Line
-/agileflow:configure  # Select: PreCompact
+/agileflow:configure --archival-days=7
+/agileflow:configure --enable=statusline,ralphloop
+```
+
+### Team Setup (with shared config)
+```bash
+# Setup project config
+git add .claude/settings.json
+git commit -m "chore: configure AgileFlow for team"
+
+# Create template for developers
+cp .claude/settings.local.json .claude/settings.local.example.json
+git add .claude/settings.local.example.json
+git commit -m "docs: add settings template for team members"
 ```

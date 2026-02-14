@@ -44,6 +44,16 @@ When you start Claude Code with the `af` command, AgileFlow creates a tmux sessi
 | **Alt+k** | Interrupt (sends Ctrl+C twice, useful for frozen processes) |
 | **Alt+[** | Enter copy/scroll mode |
 
+## Window Naming
+
+When you create new Claude sessions inside tmux, windows are automatically named sequentially:
+
+- **First window**: `claude-1` (or just `claude` for the initial session)
+- **Second window**: `claude-2`
+- **Third window**: `claude-3`
+
+This makes it easy to identify which session is which, especially when working on multiple tasks simultaneously. Windows are automatically renumbered when you close one.
+
 ## Status Bar
 
 The tmux status bar has two lines:
