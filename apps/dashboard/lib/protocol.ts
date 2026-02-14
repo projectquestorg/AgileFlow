@@ -91,7 +91,7 @@ export const PROVIDER_INFO: Record<IRSource, Omit<ProviderInfo, "status" | "avai
   },
   codex: {
     id: "codex",
-    name: "Codex CLI",
+    name: "OpenAI Codex",
     icon: "⚡",
     color: "text-green-400",
   },

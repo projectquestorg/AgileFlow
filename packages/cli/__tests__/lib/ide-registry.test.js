@@ -118,7 +118,7 @@ describe('IdeRegistry', () => {
       expect(IdeRegistry.getDisplayName('claude-code')).toBe('Claude Code');
       expect(IdeRegistry.getDisplayName('cursor')).toBe('Cursor');
       expect(IdeRegistry.getDisplayName('windsurf')).toBe('Windsurf');
-      expect(IdeRegistry.getDisplayName('codex')).toBe('OpenAI Codex CLI');
+      expect(IdeRegistry.getDisplayName('codex')).toBe('OpenAI Codex');
     });
 
     it('returns original name for invalid IDE', () => {

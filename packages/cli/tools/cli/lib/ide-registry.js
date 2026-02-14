@@ -98,13 +98,13 @@ const IDE_REGISTRY = {
   },
   codex: {
     name: 'codex',
-    displayName: 'OpenAI Codex CLI',
+    displayName: 'OpenAI Codex',
     configDir: '.codex',
     commandsSubdir: 'skills',
     agileflowFolder: 'agileflow',
     targetSubdir: 'skills', // Codex uses skills directory
     preferred: false,
-    description: "OpenAI's Codex CLI",
+    description: "OpenAI's Codex",
     handler: 'CodexSetup',
     labels: {
       commands: 'prompts',

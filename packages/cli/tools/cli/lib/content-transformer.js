@@ -23,7 +23,7 @@ const { parseFrontmatter, extractBody } = require('../../../scripts/lib/frontmat
  * @example
  * // Object form (simple string replacement)
  * replaceReferences(content, {
- *   'Claude Code': 'Codex CLI',
+ *   'Claude Code': 'OpenAI Codex',
  *   '.claude/': '.codex/',
  *   'CLAUDE.md': 'AGENTS.md'
  * });
@@ -31,7 +31,7 @@ const { parseFrontmatter, extractBody } = require('../../../scripts/lib/frontmat
  * @example
  * // Array form (with regex flags)
  * replaceReferences(content, [
- *   { pattern: 'Claude Code', replacement: 'Codex CLI', flags: 'gi' },
+ *   { pattern: 'Claude Code', replacement: 'OpenAI Codex', flags: 'gi' },
  *   { pattern: /\.claude\//g, replacement: '.codex/' }
  * ]);
  */
@@ -176,11 +176,11 @@ function getFrontmatter(content) {
  */
 const IDE_REPLACEMENTS = {
   /**
-   * Claude Code to Codex CLI conversions
+   * Claude Code to OpenAI Codex conversions
    */
   codex: {
-    'Claude Code': 'Codex CLI',
-    'claude code': 'Codex CLI',
+    'Claude Code': 'OpenAI Codex',
+    'claude code': 'OpenAI Codex',
     CLAUDE_CODE: 'CODEX_CLI',
     'CLAUDE.md': 'AGENTS.md',
     '.claude/': '.codex/',

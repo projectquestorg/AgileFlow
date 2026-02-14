@@ -421,7 +421,7 @@ index 3b18c71..8c2aa0f 100644
         },
         {
           id: 'codex',
-          name: 'Codex CLI',
+          name: 'OpenAI Codex',
           configPath: '~/.codex/prompts/',
           setupCommand: 'npx agileflow setup --ide codex',
           features: [
@@ -430,7 +430,7 @@ index 3b18c71..8c2aa0f 100644
             'OpenAI integration',
             'CLI-first workflow',
           ],
-          note: 'OpenAI Codex CLI',
+          note: 'OpenAI Codex',
         },
       ],
     },

@@ -62,9 +62,9 @@ describe('content-transformer.js', () => {
       it('replaces simple string patterns', () => {
         const content = 'Hello Claude Code, welcome to Claude Code!';
         const result = replaceReferences(content, {
-          'Claude Code': 'Codex CLI',
+          'Claude Code': 'OpenAI Codex',
         });
-        expect(result).toBe('Hello Codex CLI, welcome to Codex CLI!');
+        expect(result).toBe('Hello OpenAI Codex, welcome to OpenAI Codex!');
       });
 
       it('replaces multiple patterns', () => {
@@ -111,17 +111,17 @@ describe('content-transformer.js', () => {
       it('replaces using array of pattern objects', () => {
         const content = 'Claude Code is great';
         const result = replaceReferences(content, [
-          { pattern: 'Claude Code', replacement: 'Codex CLI' },
+          { pattern: 'Claude Code', replacement: 'OpenAI Codex' },
         ]);
-        expect(result).toBe('Codex CLI is great');
+        expect(result).toBe('OpenAI Codex is great');
       });
 
       it('supports regex patterns', () => {
         const content = 'claude code and CLAUDE CODE';
         const result = replaceReferences(content, [
-          { pattern: /claude code/gi, replacement: 'Codex CLI' },
+          { pattern: /claude code/gi, replacement: 'OpenAI Codex' },
         ]);
-        expect(result).toBe('Codex CLI and Codex CLI');
+        expect(result).toBe('OpenAI Codex and OpenAI Codex');
       });
 
       it('supports flags parameter for string patterns', () => {
@@ -304,7 +304,7 @@ Content here`;
   describe('IDE_REPLACEMENTS', () => {
     it('has codex replacements', () => {
       expect(IDE_REPLACEMENTS.codex).toBeDefined();
-      expect(IDE_REPLACEMENTS.codex['Claude Code']).toBe('Codex CLI');
+      expect(IDE_REPLACEMENTS.codex['Claude Code']).toBe('OpenAI Codex');
       expect(IDE_REPLACEMENTS.codex['CLAUDE.md']).toBe('AGENTS.md');
       expect(IDE_REPLACEMENTS.codex['.claude/']).toBe('.codex/');
     });
@@ -343,7 +343,7 @@ Content here`;
     it('transforms content for codex', () => {
       const content = 'Use Claude Code with .claude/ folder';
       const result = transformForIde(content, 'codex');
-      expect(result).toBe('Use Codex CLI with .codex/ folder');
+      expect(result).toBe('Use OpenAI Codex with .codex/ folder');
     });
 
     it('transforms content for cursor', () => {

@@ -83,7 +83,7 @@ Parse the CHANGELOG.md and display:
 ## v2.56.0 (2025-12-27)
 
 ### Added
-• Dynamic IDE discovery - Codex CLI now in setup
+• Dynamic IDE discovery - OpenAI Codex now in setup
 
 ### Changed
 • Replaced hardcoded IDE list with dynamic loading
@@ -147,7 +147,7 @@ If a newer version exists, show:
 ## v2.56.0 (2025-12-27)
 
 ### Added
-• Dynamic IDE discovery - Codex CLI now in setup
+• Dynamic IDE discovery - OpenAI Codex now in setup
 
 ### Changed
 • Replaced hardcoded IDE list with dynamic loading

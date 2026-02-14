@@ -35,6 +35,6 @@ export function getAgileFlowStats() {
     commands: countFiles('commands', '.md'),
     agents: countFiles('agents', '.md'),
     skills: countFiles('skills', 'SKILL.md'),
-    ides: 4, // Claude Code, Cursor, Windsurf, Codex CLI
+    ides: 4, // Claude Code, Cursor, Windsurf, OpenAI Codex
   };
 }

@@ -1,13 +1,13 @@
 /**
- * AgileFlow CLI - OpenAI Codex CLI Installer
+ * AgileFlow CLI - OpenAI Codex Installer
  *
- * Installs AgileFlow for OpenAI Codex CLI:
+ * Installs AgileFlow for OpenAI Codex:
  * - Agents become Codex Skills (.codex/skills/agileflow-NAME/)
  * - Commands become Codex Prompts (~/.codex/prompts/agileflow-NAME.md)
  * - AGENTS.md provides project instructions at repo root
  *
  * @see https://developers.openai.com/codex/
- * @see ADR-0002: Codex CLI Integration Strategy
+ * @see ADR-0002: OpenAI Codex Integration Strategy
  */
 
 const path = require('node:path');
@@ -24,11 +24,11 @@ const {
 } = require('../../lib/content-transformer');
 
 /**
- * OpenAI Codex CLI setup handler
+ * OpenAI Codex setup handler
  */
 class CodexSetup extends BaseIdeSetup {
   constructor() {
-    super('codex', 'OpenAI Codex CLI', false);
+    super('codex', 'OpenAI Codex', false);
     // Per-repo config directory
     this.configDir = '.codex';
     // User-level Codex home (can be overridden by $CODEX_HOME)
@@ -44,12 +44,12 @@ class CodexSetup extends BaseIdeSetup {
   }
 
   /**
-   * Detect if Codex CLI is installed/configured
+   * Detect if OpenAI Codex is installed/configured
    * @param {string} projectDir - Project directory
    * @returns {Promise<boolean>}
    */
   async detect(projectDir) {
-    // Check if Codex home exists (user has Codex CLI)
+    // Check if Codex home exists (user has OpenAI Codex)
     const codexHomeExists = await this.exists(this.codexHome);
     // Check if project has .codex/ or AGENTS.md
     const projectCodexExists = await this.exists(path.join(projectDir, this.configDir));
@@ -229,7 +229,7 @@ ${codexHeader}${bodyContent}`;
 
     const content = `# AGENTS.md
 
-> Project instructions for Codex CLI with AgileFlow integration
+> Project instructions for OpenAI Codex with AgileFlow integration
 
 ## Project Commands
 
@@ -334,7 +334,7 @@ This directory contains: [describe purpose]
   }
 
   /**
-   * Setup Codex CLI configuration
+   * Setup OpenAI Codex configuration
    * @param {string} projectDir - Project directory
    * @param {string} agileflowDir - AgileFlow installation directory
    * @param {Object} options - Setup options

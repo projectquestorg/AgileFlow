@@ -1,7 +1,7 @@
 /**
- * Codex CLI Driver
+ * OpenAI Codex Driver
  *
- * Driver implementation for OpenAI Codex CLI.
+ * Driver implementation for OpenAI Codex.
  * Translates Codex's JSON-RPC protocol to the unified IR format.
  *
  * Key differences from Claude:
@@ -83,7 +83,7 @@ function extractFilePath(command: string): string {
 
 export class CodexDriver implements Driver {
   readonly id: IRSource = 'codex';
-  readonly name = 'Codex CLI';
+  readonly name = 'OpenAI Codex';
 
   private _status: DriverStatus = {
     state: 'stopped',
@@ -217,7 +217,7 @@ export class CodexDriver implements Driver {
     const session = this._sessions.get(sessionId);
     if (!session) return;
 
-    // In a real implementation, this would call the Codex CLI rollback command
+    // In a real implementation, this would call the OpenAI Codex rollback command
     this._emit(
       createIREnvelope<IRSession>('session', sessionId, 'codex', {
         state: 'idle',

@@ -1,5 +1,5 @@
 /**
- * Tests for OpenAI Codex CLI installer
+ * Tests for OpenAI Codex installer
  * This is the largest IDE installer at 436 LOC - requires comprehensive testing
  */
 
@@ -36,7 +36,7 @@ describe('CodexSetup', () => {
   describe('constructor', () => {
     it('initializes with correct name and configDir', () => {
       expect(codexSetup.name).toBe('codex');
-      expect(codexSetup.displayName).toBe('OpenAI Codex CLI');
+      expect(codexSetup.displayName).toBe('OpenAI Codex');
       expect(codexSetup.preferred).toBe(false);
       expect(codexSetup.configDir).toBe('.codex');
     });
@@ -116,7 +116,7 @@ This is a test agent for Claude Code.`;
       expect(result).toContain('description: Test agent description');
       expect(result).toContain('version: 1.0.0');
       expect(result).toContain('# AgileFlow: Test Agent');
-      expect(result).toContain('Codex CLI'); // Claude Code replaced
+      expect(result).toContain('OpenAI Codex'); // Claude Code replaced
     });
 
     it('replaces Claude-specific references', () => {
@@ -128,7 +128,7 @@ Uses Claude Code and CLAUDE.md in .claude/ with Task tool.`;
 
       const result = codexSetup.convertAgentToSkill(agentContent, 'test');
 
-      expect(result).toContain('Codex CLI');
+      expect(result).toContain('OpenAI Codex');
       expect(result).toContain('AGENTS.md');
       expect(result).toContain('.codex/');
       expect(result).toContain('skill invocation');
@@ -173,7 +173,7 @@ Use /agileflow:board with Claude Code.`;
 
       const result = codexSetup.convertCommandToPrompt(commandContent, 'board');
 
-      expect(result).toContain('Codex CLI');
+      expect(result).toContain('OpenAI Codex');
       expect(result).toContain('$agileflow-');
     });
 

@@ -7,7 +7,7 @@
 [![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-55-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
 [![Skills](https://img.shields.io/badge/skills-dynamic-purple)](https://docs.agileflow.projectquestorg.com/docs/features/skills)
 
-**AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex CLI, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
+**AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
 
 ---
 
@@ -34,7 +34,7 @@ That's it! The `npx` command always fetches the latest version.
 | Claude Code | Supported | `.claude/commands/agileflow/` |
 | Cursor | Supported | `.cursor/commands/agileflow/` |
 | Windsurf | Supported | `.windsurf/workflows/agileflow/` |
-| OpenAI Codex CLI | Supported | `.codex/skills/` and `~/.codex/prompts/` |
+| OpenAI Codex | Supported | `.codex/skills/` and `~/.codex/prompts/` |
 
 ---
 
@@ -77,7 +77,7 @@ Traditional project management tools create friction between planning and execut
 | Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
 | Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
 | Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
-| IDE Integrations | Claude Code, Cursor, Windsurf, Codex CLI support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
+| IDE Integrations | Claude Code, Cursor, Windsurf, OpenAI Codex support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
 
 See the [full features overview](https://docs.agileflow.projectquestorg.com/docs/features) for details.
 
