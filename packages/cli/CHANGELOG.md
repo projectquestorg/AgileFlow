@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-02-14
+
+### Added
+- Legal audit system, native Agent Teams integration, and startup performance improvements
+
 ## [3.0.2] - 2026-02-14
 
 ### Added
