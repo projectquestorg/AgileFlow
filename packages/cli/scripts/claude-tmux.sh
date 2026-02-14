@@ -360,13 +360,43 @@ fi
 # Silently remove sessions where all panes have exited (dead/empty shells).
 # This prevents accumulation of orphan sessions over time.
 SESSION_BASE="claude-${DIR_NAME}"
-for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)"); do
+for sid in $(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -E "^${SESSION_BASE}($|-[0-9]+$)"); do
   # Count alive panes (pane_dead=0 means alive)
   ALIVE=$(tmux list-panes -t "$sid" -F '#{pane_dead}' 2>/dev/null | grep -c '^0$' || true)
   if [ "$ALIVE" = "0" ]; then
     tmux kill-session -t "$sid" 2>/dev/null || true
   fi
 done
+
+# ── Consolidate duplicate sessions ───────────────────────────────────────
+# Kill numbered duplicates (e.g. claude-Acuide-2, -3) that were created by
+# a previous bug. If the base session exists, duplicates are unnecessary.
+# If only numbered sessions remain, promote the lowest to the base name.
+if [ "$FORCE_NEW" = false ]; then
+  HAS_BASE=false
+  NUMBERED=()
+  if tmux has-session -t "$SESSION_BASE" 2>/dev/null; then
+    HAS_BASE=true
+  fi
+  while IFS= read -r sid; do
+    [ -n "$sid" ] && NUMBERED+=("$sid")
+  done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -E "^${SESSION_BASE}-[0-9]+$" | sort -t- -k3 -n)
+
+  if [ "$HAS_BASE" = true ] && [ "${#NUMBERED[@]}" -gt 0 ]; then
+    # Base exists — kill all numbered duplicates
+    for sid in "${NUMBERED[@]}"; do
+      tmux kill-session -t "$sid" 2>/dev/null || true
+    done
+  elif [ "$HAS_BASE" = false ] && [ "${#NUMBERED[@]}" -gt 0 ]; then
+    # No base — promote lowest numbered session to base name
+    PROMOTE="${NUMBERED[0]}"
+    tmux rename-session -t "$PROMOTE" "$SESSION_BASE" 2>/dev/null || true
+    # Kill remaining duplicates
+    for sid in "${NUMBERED[@]:1}"; do
+      tmux kill-session -t "$sid" 2>/dev/null || true
+    done
+  fi
+fi
 
 # ── Auto-reattach to detached session ──────────────────────────────────────
 # When user does Alt+Q (detach) and then runs `af` again, reattach to the
@@ -377,7 +407,7 @@ if [ "$FORCE_NEW" = false ]; then
   DETACHED=()
   while IFS= read -r sid; do
     [ -n "$sid" ] && DETACHED+=("$sid")
-  done < <(tmux list-sessions -F '#{session_name} #{session_attached}' 2>/dev/null | awk '$2 == "0" {print $1}' | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)")
+  done < <(tmux list-sessions -F '#{session_name} #{session_attached}' 2>/dev/null | awk '$2 == "0" {print $1}' | grep -E "^${SESSION_BASE}($|-[0-9]+$)")
 
   if [ "${#DETACHED[@]}" -eq 1 ]; then
     # Single detached session — just reattach
@@ -416,7 +446,7 @@ if [ "$FORCE_NEW" = false ]; then
   EXISTING=()
   while IFS= read -r sid; do
     [ -n "$sid" ] && EXISTING+=("$sid")
-  done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep "^${SESSION_BASE}\(\$\|-[0-9]*\$\)")
+  done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -E "^${SESSION_BASE}($|-[0-9]+$)")
 
   if [ "${#EXISTING[@]}" -gt 0 ]; then
     # Prefer the base session, otherwise pick the first one
