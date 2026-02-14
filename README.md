@@ -3,9 +3,9 @@
 </p>
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
-[![Commands](https://img.shields.io/badge/commands-94-blue)](docs/04-architecture/commands.md)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-55-orange)](docs/04-architecture/subagents.md)
-[![Skills](https://img.shields.io/badge/skills-dynamic-purple)](docs/04-architecture/skills.md)
+[![Commands](https://img.shields.io/badge/commands-94-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
+[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-55-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
+[![Skills](https://img.shields.io/badge/skills-dynamic-purple)](https://docs.agileflow.projectquestorg.com/docs/features/skills)
 
 **AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex CLI, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
 
@@ -13,20 +13,13 @@
 
 ## Quick Start
 
-### Installation
-
 ```bash
 npx agileflow@latest setup
 ```
 
 That's it! The `npx` command always fetches the latest version.
 
-**Updates:**
-```bash
-npx agileflow@latest update
-```
-
-### After Setup
+**Updates:** `npx agileflow@latest update`
 
 ```bash
 /agileflow:help              # View all commands
@@ -47,17 +40,13 @@ npx agileflow@latest update
 
 ## Why AgileFlow?
 
-AgileFlow combines three proven methodologies:
+Traditional project management tools create friction between planning and execution. AgileFlow eliminates this gap by embedding project management directly into your AI-assisted coding workflow.
 
-- **Agile (Scrum/Kanban)** - Break work into Epics → Stories → Acceptance Criteria
-- **ADRs** - Record architectural decisions so future teams don't re-debate
-- **Docs-as-Code** - Humans and AI agents coordinate via versioned files
-
-**Key Benefits:**
-- Clear priorities and testable increments
-- Durable memory and decision history
-- Multi-agent collaboration via message bus
-- Works with any tech stack or framework
+- **No context switching** - Manage epics, stories, and status without leaving your terminal
+- **AI-native workflows** - Purpose-built for Claude Code's capabilities
+- **Docs-as-code** - All project artifacts live in your repository as plain text
+- **Intelligent agents** - 55 specialized AI agents for different domains
+- **Framework-agnostic** - Works with any tech stack
 
 ---
 
@@ -65,86 +54,67 @@ AgileFlow combines three proven methodologies:
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| [Commands](docs/04-architecture/commands.md) | 94 | Slash commands for agile workflows |
-| [Agents/Experts](docs/04-architecture/subagents.md) | 55 | Specialized agents with self-improving knowledge bases |
-| [Skills](docs/04-architecture/skills.md) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
+| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 94 | Slash commands for agile workflows |
+| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 55 | Specialized agents with self-improving knowledge bases |
+| [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
 
 ---
 
-## Documentation
+## Features
 
-Full documentation lives in [`docs/04-architecture/`](docs/04-architecture/):
+| Feature | Description | Docs |
+|---------|-------------|------|
+| Agent Expertise | Self-improving agents that maintain domain knowledge | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-expertise-system) |
+| Agent Teams | Multi-domain expert coordination with quality gates | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-teams) |
+| Skills System | Custom AI prompts that learn from your feedback | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/skills) |
+| Parallel Sessions | Isolated workspaces with boundary protection | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/parallel-sessions) |
+| Loop Mode | Autonomous story execution until epic completion | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/loop-mode) |
+| AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Logic Audit | Multi-agent logic bug detection with consensus voting | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Damage Control | Block destructive commands with PreToolUse hooks | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/damage-control) |
+| Smart Detection | Contextual feature recommendations with 42 detectors | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Visual Mode | Screenshot verification for UI development | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/visual-mode) |
+| Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
+| Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| IDE Integrations | Claude Code, Cursor, Windsurf, Codex CLI support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
 
-### Reference
-- [Commands](docs/04-architecture/commands.md) - All 94 slash commands
-- [Agents/Experts](docs/04-architecture/subagents.md) - 55 specialized agents with self-improving knowledge
-- [Skills](docs/04-architecture/skills.md) - Dynamic skill generator with MCP integration
-
-### Architecture
-- [AgileFlow CLI Overview](docs/04-architecture/agileflow-cli-overview.md) - System architecture
-- [Agent Expert System](docs/04-architecture/agent-expert-system.md) - Self-improving agents
-- [Multi-Expert Orchestration](docs/04-architecture/multi-expert-orchestration.md) - Parallel expert analysis
-- [Multi-Session Coordination](docs/04-architecture/multi-session-coordination.md) - Parallel Claude Code sessions
-
-### Configuration
-- [Configuration System](docs/04-architecture/configuration-system.md) - 8 configuration agents
-- [Hooks System](docs/04-architecture/hooks-system.md) - Event-driven automation
-- [Session Harness](docs/04-architecture/session-harness.md) - Test verification and sessions
-- [PreCompact Context](docs/04-architecture/precompact-context.md) - Context preservation during compacts
+See the [full features overview](https://docs.agileflow.projectquestorg.com/docs/features) for details.
 
 ---
 
 ## Examples
 
-### Create an Epic with Stories
 ```bash
+# Create an epic
 /agileflow:epic EPIC=EP-0001 TITLE="User Authentication" OWNER=AG-API GOAL="Secure login"
-```
 
-### Work on a Story
-```bash
-/agileflow:assign STORY=US-0001 NEW_OWNER=AG-UI NEW_STATUS=in-progress
-# ... implement ...
-/agileflow:status STORY=US-0001 STATUS=in-review SUMMARY="Login form complete"
-```
+# Work on a story
+/agileflow:babysit
 
-### Use Multi-Expert Analysis
-```bash
+# Multi-expert analysis
 /agileflow:multi-expert Is this authentication implementation secure?
-```
 
-### Work in Parallel Sessions
-```bash
-/agileflow:session:new       # Create isolated workspace
-/agileflow:session:status    # View all sessions
-```
+# AI Council for strategic decisions
+/agileflow:council Should we use microservices or a monolith?
 
----
-
-## Project Structure
-
-After running `agileflow setup`:
-
-```
-docs/
-  00-meta/             # Templates, conventions
-  01-brainstorming/    # Ideas and sketches
-  02-practices/        # Testing, git, CI practices
-  03-decisions/        # ADRs
-  04-architecture/     # Architecture documentation
-  05-epics/            # Epic definitions
-  06-stories/          # User stories
-  07-testing/          # Test cases
-  08-project/          # Roadmap, backlog
-  09-agents/           # Agent status, message bus
-  10-research/         # Research notes
+# Parallel sessions
+/agileflow:session:new
 ```
 
 ---
 
-## Online Documentation
+## Documentation
 
-Visit [docs.agileflow.projectquestorg.com](https://docs.agileflow.projectquestorg.com) for the full documentation site.
+Full documentation at **[docs.agileflow.projectquestorg.com](https://docs.agileflow.projectquestorg.com)**.
+
+| Section | Link |
+|---------|------|
+| Getting Started | [docs.agileflow.projectquestorg.com/docs/getting-started](https://docs.agileflow.projectquestorg.com/docs/getting-started) |
+| Installation | [docs.agileflow.projectquestorg.com/docs/installation](https://docs.agileflow.projectquestorg.com/docs/installation) |
+| Commands | [docs.agileflow.projectquestorg.com/docs/commands](https://docs.agileflow.projectquestorg.com/docs/commands) |
+| Agents | [docs.agileflow.projectquestorg.com/docs/agents](https://docs.agileflow.projectquestorg.com/docs/agents) |
+| Features | [docs.agileflow.projectquestorg.com/docs/features](https://docs.agileflow.projectquestorg.com/docs/features) |
 
 ---
 
@@ -154,4 +124,5 @@ MIT
 
 ## Support
 
-For issues or questions, visit the [GitHub repository](https://github.com/projectquestorg/AgileFlow).
+- [Documentation](https://docs.agileflow.projectquestorg.com) - Full docs site
+- [GitHub Issues](https://github.com/projectquestorg/AgileFlow/issues) - Bug reports and feature requests

@@ -45,13 +45,8 @@ CLAUDE.md
 # AgileFlow installed files (created by /agileflow:setup)
 .agileflow/
 
-# Sensitive/internal docs files (keep private)
-docs/00-meta/
-docs/01-brainstorming/
-docs/05-epics/
-docs/06-stories/
-docs/08-project/
-docs/09-agents/
+# Internal development docs (not for public repo)
+docs/
 
 # Next.js (for apps/website and apps/docs)
 .next/
