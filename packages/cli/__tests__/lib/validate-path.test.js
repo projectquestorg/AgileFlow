@@ -625,4 +625,273 @@ describe('Path Traversal Protection', () => {
       });
     });
   });
+
+  // ======================================================================
+  // Coverage gap tests (US-0355)
+  // ======================================================================
+
+  describe('checkSymlinkChainDepth - relative symlink targets (line 80)', () => {
+    const describeSymlinks = process.platform === 'win32' ? describe.skip : describe;
+
+    describeSymlinks('relative target resolution (Unix only)', () => {
+      let relTestDir;
+
+      beforeAll(() => {
+        relTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rel-symlink-test-'));
+        // Create: relTestDir/subdir/target.txt
+        fs.mkdirSync(path.join(relTestDir, 'subdir'));
+        fs.writeFileSync(path.join(relTestDir, 'subdir', 'target.txt'), 'content');
+
+        // Create symlink with RELATIVE target: relTestDir/rel-link -> subdir/target.txt
+        fs.symlinkSync('subdir/target.txt', path.join(relTestDir, 'rel-link'));
+
+        // Create chain with relative target: relTestDir/rel-chain -> rel-link (relative)
+        fs.symlinkSync('rel-link', path.join(relTestDir, 'rel-chain'));
+      });
+
+      afterAll(() => {
+        fs.rmSync(relTestDir, { recursive: true, force: true });
+      });
+
+      it('resolves relative symlink target correctly (depth 1)', () => {
+        const result = checkSymlinkChainDepth(path.join(relTestDir, 'rel-link'), 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(1);
+      });
+
+      it('resolves chained relative symlink targets correctly (depth 2)', () => {
+        const result = checkSymlinkChainDepth(path.join(relTestDir, 'rel-chain'), 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(2);
+      });
+
+      it('resolves relative target using dirname of current link', () => {
+        // Create: relTestDir/deep/link -> ../subdir/target.txt (relative, goes up)
+        fs.mkdirSync(path.join(relTestDir, 'deep'));
+        fs.symlinkSync('../subdir/target.txt', path.join(relTestDir, 'deep', 'up-link'));
+
+        const result = checkSymlinkChainDepth(path.join(relTestDir, 'deep', 'up-link'), 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(1);
+      });
+    });
+  });
+
+  describe('checkSymlinkChainDepth - non-ENOENT error handling (line 88)', () => {
+    it('returns ok:true on permission error (fail-open)', () => {
+      // Mock lstatSync to throw EACCES for a specific path
+      const mockPath = '/mock/permission-denied-path';
+      const origLstatSync = fs.lstatSync;
+      jest.spyOn(fs, 'lstatSync').mockImplementation(p => {
+        if (p === mockPath) {
+          const err = new Error('EACCES: permission denied');
+          err.code = 'EACCES';
+          throw err;
+        }
+        return origLstatSync.call(fs, p);
+      });
+
+      try {
+        const result = checkSymlinkChainDepth(mockPath, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(0);
+      } finally {
+        fs.lstatSync.mockRestore();
+      }
+    });
+
+    it('returns ok:true on EPERM error (fail-open)', () => {
+      const mockPath = '/mock/eperm-path';
+      const origLstatSync = fs.lstatSync;
+      jest.spyOn(fs, 'lstatSync').mockImplementation(p => {
+        if (p === mockPath) {
+          const err = new Error('EPERM: operation not permitted');
+          err.code = 'EPERM';
+          throw err;
+        }
+        return origLstatSync.call(fs, p);
+      });
+
+      try {
+        const result = checkSymlinkChainDepth(mockPath, 3);
+        expect(result.ok).toBe(true);
+        expect(result.depth).toBe(0);
+      } finally {
+        fs.lstatSync.mockRestore();
+      }
+    });
+  });
+
+  describe('validatePath - symlink in parent path, allowSymlinks=false (lines 238-239)', () => {
+    const describeSymlinks = process.platform === 'win32' ? describe.skip : describe;
+
+    describeSymlinks('parent symlink detection (Unix only)', () => {
+      let parentSymDir;
+
+      beforeAll(() => {
+        parentSymDir = fs.mkdtempSync(path.join(os.tmpdir(), 'parent-sym-test-'));
+        // Create: parentSymDir/realdir/existing.txt
+        fs.mkdirSync(path.join(parentSymDir, 'realdir'));
+        fs.writeFileSync(path.join(parentSymDir, 'realdir', 'existing.txt'), 'content');
+
+        // Create symlink dir: parentSymDir/symdir -> parentSymDir/realdir
+        fs.symlinkSync(
+          path.join(parentSymDir, 'realdir'),
+          path.join(parentSymDir, 'symdir')
+        );
+      });
+
+      afterAll(() => {
+        fs.rmSync(parentSymDir, { recursive: true, force: true });
+      });
+
+      it('detects symlink in parent path when file does not exist', () => {
+        // symdir is a symlink; symdir/nonexistent.txt does not exist
+        // lstat on resolved path throws ENOENT -> falls to parent-checking loop
+        // Parent symdir is detected as symlink -> symlink_in_path
+        const result = validatePath('symdir/nonexistent.txt', parentSymDir);
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_in_path');
+      });
+
+      it('still rejects when parent is a symlink even with nested paths', () => {
+        const result = validatePath('symdir/deep/nested/file.txt', parentSymDir);
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_in_path');
+      });
+    });
+  });
+
+  describe('validatePath - parent symlink checking with allowSymlinks=true (lines 295-328)', () => {
+    const describeSymlinks = process.platform === 'win32' ? describe.skip : describe;
+
+    describeSymlinks('parent symlink escape detection (Unix only)', () => {
+      let escapeTestDir;
+      let outsideDir;
+
+      beforeAll(() => {
+        escapeTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'escape-parent-test-'));
+        outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'outside-base-'));
+
+        // Create real directory inside base
+        fs.mkdirSync(path.join(escapeTestDir, 'realdir'));
+        fs.writeFileSync(path.join(escapeTestDir, 'realdir', 'file.txt'), 'content');
+
+        // Create outside target
+        fs.writeFileSync(path.join(outsideDir, 'secret.txt'), 'secret');
+
+        // Safe parent symlink: stays within base
+        fs.symlinkSync(
+          path.join(escapeTestDir, 'realdir'),
+          path.join(escapeTestDir, 'safe-symdir')
+        );
+
+        // Escaping parent symlink: points outside base
+        fs.symlinkSync(
+          outsideDir,
+          path.join(escapeTestDir, 'escape-symdir')
+        );
+      });
+
+      afterAll(() => {
+        fs.rmSync(escapeTestDir, { recursive: true, force: true });
+        fs.rmSync(outsideDir, { recursive: true, force: true });
+      });
+
+      it('allows safe parent symlink within base (allowSymlinks=true)', () => {
+        // safe-symdir -> realdir (within base), file doesn't exist
+        // Falls to parent checking, symlink resolves within base -> ok
+        const result = validatePath('safe-symdir/nonexistent.txt', escapeTestDir, {
+          allowSymlinks: true,
+        });
+        expect(result.ok).toBe(true);
+      });
+
+      it('rejects escaping parent symlink (allowSymlinks=true)', () => {
+        // escape-symdir -> outsideDir (outside base), file doesn't exist
+        // Falls to parent checking, symlink resolves outside base -> symlink_escape
+        const result = validatePath('escape-symdir/nonexistent.txt', escapeTestDir, {
+          allowSymlinks: true,
+        });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_escape');
+      });
+
+      it('rejects circular parent symlink (allowSymlinks=true)', () => {
+        // Create circular symlinks in parent path
+        const circA = path.join(escapeTestDir, 'circ-a');
+        const circB = path.join(escapeTestDir, 'circ-b');
+        fs.symlinkSync(circB, circA);
+        fs.symlinkSync(circA, circB);
+
+        const result = validatePath('circ-a/nonexistent.txt', escapeTestDir, {
+          allowSymlinks: true,
+        });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_circular');
+
+        // Cleanup
+        fs.unlinkSync(circA);
+        fs.unlinkSync(circB);
+      });
+
+      it('rejects deep chain parent symlink (allowSymlinks=true)', () => {
+        // Create chain deeper than maxSymlinkDepth (default 3) in parent
+        const target = path.join(escapeTestDir, 'realdir');
+        const l3 = path.join(escapeTestDir, 'chain-l3');
+        fs.symlinkSync(target, l3);
+        const l2 = path.join(escapeTestDir, 'chain-l2');
+        fs.symlinkSync(l3, l2);
+        const l1 = path.join(escapeTestDir, 'chain-l1');
+        fs.symlinkSync(l2, l1);
+        const l0 = path.join(escapeTestDir, 'chain-l0');
+        fs.symlinkSync(l1, l0);
+
+        // chain-l0 has depth 4, default maxSymlinkDepth is 3
+        const result = validatePath('chain-l0/nonexistent.txt', escapeTestDir, {
+          allowSymlinks: true,
+        });
+        expect(result.ok).toBe(false);
+        expect(result.error.reason).toBe('symlink_chain_too_deep');
+
+        // Cleanup
+        fs.unlinkSync(l0);
+        fs.unlinkSync(l1);
+        fs.unlinkSync(l2);
+        fs.unlinkSync(l3);
+      });
+    });
+  });
+
+  describe('hasUnsafePathPatterns - unexpected_absolute check (line 382)', () => {
+    it('does not trigger unexpected_absolute on Unix normally', () => {
+      // On Unix, startsWith('/') always means path.isAbsolute() is true,
+      // so the condition is unreachable under normal Node.js behavior.
+      const result = hasUnsafePathPatterns('/some/absolute/path');
+      expect(result.safe).toBe(true);
+    });
+
+    it('detects unexpected_absolute when path.isAbsolute returns false for slash path', () => {
+      // Exercise line 382: startsWith('/') && !path.isAbsolute()
+      // This guards against non-standard path implementations.
+      const spy = jest.spyOn(path, 'isAbsolute').mockReturnValue(false);
+      try {
+        const result = hasUnsafePathPatterns('/suspicious/path');
+        expect(result.safe).toBe(false);
+        expect(result.reason).toBe('unexpected_absolute');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('does not detect root path as unexpected_absolute', () => {
+      const result = hasUnsafePathPatterns('/');
+      expect(result.safe).toBe(true);
+    });
+
+    it('handles path with only slashes', () => {
+      const result = hasUnsafePathPatterns('///');
+      expect(result.safe).toBe(true);
+    });
+  });
 });
