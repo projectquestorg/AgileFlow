@@ -77,6 +77,7 @@ Traditional project management tools create friction between planning and execut
 | Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
 | Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/research) |
 | Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/automate) |
+| Tmux Integration | Multi-window terminal sessions with keybindings and status bar | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/tmux-keybindings) |
 | IDE Integrations | Claude Code, Cursor, Windsurf, OpenAI Codex support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
 
 See the [full features overview](https://docs.agileflow.projectquestorg.com/docs/features) for details.
