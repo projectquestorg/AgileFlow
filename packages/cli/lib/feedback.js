@@ -34,7 +34,14 @@
  */
 
 const { c, BRAND_HEX } = require('./colors');
-const chalk = require('chalk');
+const { lazyRequire } = require('./lazy-require');
+
+// Lazy-load chalk: feedback.js is imported by scripts that run as hooks in
+// user projects (.agileflow/scripts/).  If chalk isn't resolvable from the
+// user's node_modules the eager require() would crash every hook that
+// imports feedback.  Deferring the require() to the single call-site that
+// actually needs chalk (brand()) avoids the crash entirely.
+const getChalk = lazyRequire('chalk');
 
 // Symbols for consistent output
 const SYMBOLS = {
@@ -182,7 +189,7 @@ class Feedback {
   brand(message) {
     if (this.quiet) return this;
     const prefix = this._indent();
-    console.log(`${prefix}${chalk.hex(BRAND_HEX)(message)}`);
+    console.log(`${prefix}${getChalk().hex(BRAND_HEX)(message)}`);
     return this;
   }
 
