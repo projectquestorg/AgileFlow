@@ -166,7 +166,7 @@ Most commands accept parameters in `KEY=value` format:
 
 ## Related Documentation
 
-- [Subagents](./subagents.md) - 47 specialized agents
+- [Subagents](./subagents.md) - 45 specialized agents
 - [Skills](./skills.md) - Dynamic skill generation
 - [AgileFlow CLI Overview](./agileflow-cli-overview.md) - System architecture
 - [Command & Agent Flow](./command-agent-flow.md) - How commands and agents work together

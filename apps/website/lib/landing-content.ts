@@ -390,7 +390,7 @@ index 3b18c71..8c2aa0f 100644
           setupCommand: 'npx agileflow setup',
           features: [
             '93 slash commands',
-            '47 specialized agents',
+            '45 specialized agents',
             'Status line integration',
             'Hooks system for automation',
           ],

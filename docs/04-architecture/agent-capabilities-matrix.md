@@ -105,17 +105,6 @@ Purpose-built agents for specific tasks.
 | **refactor** | Full | Technical debt cleanup, legacy code modernization, code quality. |
 | **analytics** | Full | Event tracking, data analysis, metrics dashboards, user behavior. |
 
-### Configuration Agents (haiku models)
-
-Agents for setting up AgileFlow features.
-
-| Agent | Tools | Description |
-|-------|-------|-------------|
-| **configuration-damage-control** | Full | Configure destructive command protection. |
-| **configuration-visual-e2e** | Full | Set up Playwright visual E2E testing infrastructure. |
-
----
-
 ## Tool Availability Matrix
 
 | Agent | Read | Write | Edit | Bash | Glob | Grep | Task | TaskOutput | WebFetch | WebSearch |

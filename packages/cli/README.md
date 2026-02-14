@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
 [![Commands](https://img.shields.io/badge/commands-93-blue)](docs/04-architecture/commands.md)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-47-orange)](docs/04-architecture/subagents.md)
+[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-45-orange)](docs/04-architecture/subagents.md)
 [![Skills](https://img.shields.io/badge/skills-dynamic-purple)](docs/04-architecture/skills.md)
 
 **AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex CLI, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
@@ -66,7 +66,7 @@ AgileFlow combines three proven methodologies:
 | Component | Count | Description |
 |-----------|-------|-------------|
 | [Commands](docs/04-architecture/commands.md) | 93 | Slash commands for agile workflows |
-| [Agents/Experts](docs/04-architecture/subagents.md) | 47 | Specialized agents with self-improving knowledge bases |
+| [Agents/Experts](docs/04-architecture/subagents.md) | 45 | Specialized agents with self-improving knowledge bases |
 | [Skills](docs/04-architecture/skills.md) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
 
 ---
@@ -77,7 +77,7 @@ Full documentation lives in [`docs/04-architecture/`](docs/04-architecture/):
 
 ### Reference
 - [Commands](docs/04-architecture/commands.md) - All 93 slash commands
-- [Agents/Experts](docs/04-architecture/subagents.md) - 47 specialized agents with self-improving knowledge
+- [Agents/Experts](docs/04-architecture/subagents.md) - 45 specialized agents with self-improving knowledge
 - [Skills](docs/04-architecture/skills.md) - Dynamic skill generator with MCP integration
 
 ### Architecture

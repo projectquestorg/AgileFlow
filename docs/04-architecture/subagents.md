@@ -1,6 +1,6 @@
 # Subagents Reference
 
-AgileFlow includes **47 specialized subagents** that operate in separate context windows for focused work.
+AgileFlow includes **45 specialized subagents** that operate in separate context windows for focused work.
 
 ---
 
@@ -158,7 +158,7 @@ See [Multi-Expert Orchestration](./multi-expert-orchestration.md) for details.
 
 ---
 
-## All 47 Specialized Agents
+## All 45 Specialized Agents
 
 | Agent | Focus Area |
 |-------|------------|
