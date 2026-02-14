@@ -26,6 +26,7 @@ const {
   getClaudeDir,
 } = require('../lib/paths');
 const { readJSONCached, readFileCached } = require('../lib/file-cache');
+const { tryOptional, debugLog } = require('../lib/errors');
 
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
@@ -136,7 +137,11 @@ function checkTmuxAvailability(cache) {
   // Check session state cache first (tmux availability doesn't change within a session)
   if (cache?.sessionState?.tmux_available !== undefined) {
     if (cache.sessionState.tmux_available) return { available: true };
-    return { available: false, platform: detectPlatform(), noSudoCmd: 'conda install -c conda-forge tmux' };
+    return {
+      available: false,
+      platform: detectPlatform(),
+      noSudoCmd: 'conda install -c conda-forge tmux',
+    };
   }
 
   // Actually check (first run or no cache)
@@ -157,7 +162,11 @@ function checkTmuxAvailability(cache) {
   }
 
   if (available) return { available: true };
-  return { available: false, platform: detectPlatform(), noSudoCmd: 'conda install -c conda-forge tmux' };
+  return {
+    available: false,
+    platform: detectPlatform(),
+    noSudoCmd: 'conda install -c conda-forge tmux',
+  };
 }
 
 /**
@@ -289,7 +298,9 @@ function getProjectInfo(rootDir, cache = null) {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('getProjectInfo', { error: e?.message || String(e) });
+  }
 
   return info;
 }
@@ -353,7 +364,9 @@ function runArchival(rootDir, cache = null) {
         result.remaining -= toArchiveCount;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('runArchival', { error: e?.message || String(e) });
+  }
 
   return result;
 }
@@ -426,7 +439,9 @@ function clearActiveCommands(rootDir, cache = null) {
     if (result.cleared > 0) {
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('clearActiveCommands', { error: e?.message || String(e) });
+  }
 
   return result;
 }
@@ -498,7 +513,9 @@ function checkParallelSessions(rootDir) {
           result.branch = data.current.branch;
           result.sessionPath = data.current.path;
         }
-      } catch (e) {}
+      } catch (e) {
+        debugLog('checkParallelSessions:parse', { error: e?.message || String(e) });
+      }
     }
   } catch (e) {
     // Session system not available
@@ -560,7 +577,9 @@ function checkPreCompact(rootDir, cache = null) {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('checkPreCompact', { error: e?.message || String(e) });
+  }
 
   return result;
 }
@@ -633,7 +652,9 @@ function checkDamageControl(rootDir, cache = null) {
         break;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('checkDamageControl', { error: e?.message || String(e) });
+  }
 
   return result;
 }
@@ -911,7 +932,9 @@ ${marker}
             const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
             currentVersion = pkg.version;
           }
-        } catch (e) {}
+        } catch (e) {
+          debugLog('getPackageVersion', { error: e?.message || String(e) });
+        }
 
         // Update config_schema_version
         metadata.config_schema_version = currentVersion;
@@ -951,10 +974,7 @@ async function checkUpdates() {
     changelog: [],
   };
 
-  let updateChecker;
-  try {
-    updateChecker = require('./check-update.js');
-  } catch (e) {}
+  const updateChecker = tryOptional(() => require('./check-update.js'), 'check-update');
   if (!updateChecker) return result;
 
   try {
@@ -1266,7 +1286,9 @@ function getFeatureVersions(rootDir) {
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    debugLog('getFeatureVersions', { error: e?.message || String(e) });
+  }
 
   return result;
 }
@@ -1694,10 +1716,7 @@ async function main() {
   const scaleDetection = earlyScale || { scale: 'medium' };
 
   // Agent Teams feature flag detection
-  let featureFlags;
-  try {
-    featureFlags = require('../lib/feature-flags');
-  } catch (e) {}
+  const featureFlags = tryOptional(() => require('../lib/feature-flags'), 'feature-flags');
   let agentTeamsInfo = {};
   if (featureFlags) {
     try {
@@ -1818,19 +1837,13 @@ async function main() {
       }
 
       // Mark current version as seen to track for next update
-      let updateChecker;
-      try {
-        updateChecker = require('./check-update.js');
-      } catch (e) {}
+      const updateChecker = tryOptional(() => require('./check-update.js'), 'check-update');
       if (freshUpdateInfo.justUpdated && updateChecker) {
         updateChecker.markVersionSeen(info.version);
       }
     } else {
       // Mark current version as seen (for "just updated" case)
-      let updateChecker;
-      try {
-        updateChecker = require('./check-update.js');
-      } catch (e) {}
+      const updateChecker = tryOptional(() => require('./check-update.js'), 'check-update');
       if (updateChecker) {
         updateChecker.markVersionSeen(info.version);
       }
@@ -1967,10 +1980,7 @@ async function main() {
 
   // === DUPLICATE CLAUDE PROCESS DETECTION ===
   // Check for multiple Claude processes in the same working directory
-  let processCleanup;
-  try {
-    processCleanup = require('./lib/process-cleanup.js');
-  } catch (e) {}
+  const processCleanup = tryOptional(() => require('./lib/process-cleanup.js'), 'process-cleanup');
   if (processCleanup) {
     try {
       // Auto-kill is explicitly opt-in at runtime.
@@ -2023,10 +2033,7 @@ async function main() {
   }
 
   // Story claiming: cleanup stale claims and show warnings
-  let storyClaiming;
-  try {
-    storyClaiming = require('./lib/story-claiming.js');
-  } catch (e) {}
+  const storyClaiming = tryOptional(() => require('./lib/story-claiming.js'), 'story-claiming');
   if (storyClaiming) {
     try {
       // Clean up stale claims (dead PIDs, expired TTL)
@@ -2052,10 +2059,7 @@ async function main() {
   }
 
   // File tracking: cleanup stale touches and show overlap warnings
-  let fileTracking;
-  try {
-    fileTracking = require('./lib/file-tracking.js');
-  } catch (e) {}
+  const fileTracking = tryOptional(() => require('./lib/file-tracking.js'), 'file-tracking');
   if (fileTracking) {
     try {
       // Clean up stale file touches (dead PIDs, expired TTL)
@@ -2079,10 +2083,7 @@ async function main() {
   }
 
   // Epic completion check: auto-complete epics where all stories are done
-  let storyStateMachine;
-  try {
-    storyStateMachine = require('./lib/story-state-machine.js');
-  } catch (e) {}
+  const storyStateMachine = tryOptional(() => require('./lib/story-state-machine.js'), 'story-state-machine');
   if (storyStateMachine && cache.status) {
     try {
       const statusPath = getStatusPath(rootDir);
@@ -2111,10 +2112,7 @@ async function main() {
   }
 
   // Ideation sync: mark ideas as implemented when linked epics complete
-  let syncIdeationStatus;
-  try {
-    syncIdeationStatus = require('./lib/sync-ideation-status.js');
-  } catch (e) {}
+  const syncIdeationStatus = tryOptional(() => require('./lib/sync-ideation-status.js'), 'sync-ideation-status');
   if (syncIdeationStatus) {
     try {
       const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
