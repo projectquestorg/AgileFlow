@@ -53,6 +53,8 @@ const {
   upgradeFeatures,
   scriptExists,
   getScriptPath,
+  enableStartupMode,
+  STARTUP_MODES,
 } = require('../../../scripts/lib/configure-features');
 
 describe('configure-features', () => {
@@ -393,6 +395,154 @@ describe('configure-features', () => {
           }),
         })
       );
+    });
+  });
+
+  describe('STARTUP_MODES constant', () => {
+    it('defines all expected modes', () => {
+      expect(STARTUP_MODES['skip-permissions']).toBeDefined();
+      expect(STARTUP_MODES['accept-edits']).toBeDefined();
+      expect(STARTUP_MODES.normal).toBeDefined();
+      expect(STARTUP_MODES['no-claude']).toBeDefined();
+    });
+
+    it('skip-permissions maps to bypassPermissions', () => {
+      expect(STARTUP_MODES['skip-permissions'].defaultMode).toBe('bypassPermissions');
+      expect(STARTUP_MODES['skip-permissions'].flags).toBe('--dangerously-skip-permissions');
+    });
+
+    it('accept-edits maps to acceptEdits', () => {
+      expect(STARTUP_MODES['accept-edits'].defaultMode).toBe('acceptEdits');
+    });
+
+    it('normal has null defaultMode', () => {
+      expect(STARTUP_MODES.normal.defaultMode).toBeNull();
+      expect(STARTUP_MODES.normal.flags).toBeNull();
+    });
+  });
+
+  describe('enableStartupMode', () => {
+    it('returns false for invalid mode', () => {
+      const result = enableStartupMode('invalid-mode', '3.0.0');
+      expect(result).toBe(false);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('Unknown startup mode'));
+    });
+
+    it('sets bypassPermissions for skip-permissions mode', () => {
+      readJSON.mockReturnValue({});
+      fs.existsSync.mockReturnValue(false);
+
+      const result = enableStartupMode('skip-permissions', '3.0.0');
+
+      expect(result).toBe(true);
+      // Should write settings.json with permissions.defaultMode
+      expect(writeJSON).toHaveBeenCalledWith(
+        '.claude/settings.json',
+        expect.objectContaining({
+          permissions: expect.objectContaining({
+            defaultMode: 'bypassPermissions',
+          }),
+        })
+      );
+      expect(success).toHaveBeenCalledWith(
+        expect.stringContaining('skip-permissions')
+      );
+    });
+
+    it('sets acceptEdits for accept-edits mode', () => {
+      readJSON.mockReturnValue({});
+      fs.existsSync.mockReturnValue(false);
+
+      const result = enableStartupMode('accept-edits', '3.0.0');
+
+      expect(result).toBe(true);
+      expect(writeJSON).toHaveBeenCalledWith(
+        '.claude/settings.json',
+        expect.objectContaining({
+          permissions: expect.objectContaining({
+            defaultMode: 'acceptEdits',
+          }),
+        })
+      );
+    });
+
+    it('removes defaultMode for normal mode', () => {
+      readJSON.mockReturnValue({
+        permissions: { defaultMode: 'bypassPermissions', allow: [], deny: [], ask: [] },
+      });
+      fs.existsSync.mockReturnValue(false);
+
+      const result = enableStartupMode('normal', '3.0.0');
+
+      expect(result).toBe(true);
+      // Should write settings without defaultMode
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      expect(settingsCall).toBeDefined();
+      expect(settingsCall[1].permissions.defaultMode).toBeUndefined();
+    });
+
+    it('removes defaultMode for no-claude mode', () => {
+      readJSON.mockReturnValue({
+        permissions: { defaultMode: 'bypassPermissions', allow: [], deny: [], ask: [] },
+      });
+      fs.existsSync.mockReturnValue(false);
+
+      const result = enableStartupMode('no-claude', '3.0.0');
+
+      expect(result).toBe(true);
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      expect(settingsCall).toBeDefined();
+      expect(settingsCall[1].permissions.defaultMode).toBeUndefined();
+    });
+
+    it('updates metadata defaultStartupMode', () => {
+      readJSON.mockReturnValue({});
+      fs.existsSync.mockReturnValue(false);
+
+      enableStartupMode('skip-permissions', '3.0.0');
+
+      // Last writeJSON call should be metadata with defaultStartupMode
+      const metaCalls = writeJSON.mock.calls.filter(
+        c => c[0] === 'docs/00-meta/agileflow-metadata.json'
+      );
+      expect(metaCalls.length).toBeGreaterThan(0);
+      const lastMetaCall = metaCalls[metaCalls.length - 1];
+      expect(lastMetaCall[1].defaultStartupMode).toBe('skip-permissions');
+    });
+
+    it('handles null settings.json gracefully', () => {
+      readJSON.mockReturnValue(null);
+      fs.existsSync.mockReturnValue(false);
+
+      const result = enableStartupMode('skip-permissions', '3.0.0');
+
+      expect(result).toBe(true);
+      expect(writeJSON).toHaveBeenCalledWith(
+        '.claude/settings.json',
+        expect.objectContaining({
+          permissions: expect.objectContaining({
+            defaultMode: 'bypassPermissions',
+          }),
+        })
+      );
+    });
+
+    it('preserves existing permissions arrays', () => {
+      readJSON.mockReturnValue({
+        permissions: {
+          allow: ['Bash(npm test)'],
+          deny: ['Bash(rm -rf)'],
+          ask: [],
+        },
+      });
+      fs.existsSync.mockReturnValue(false);
+
+      enableStartupMode('skip-permissions', '3.0.0');
+
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      expect(settingsCall[1].permissions.allow).toEqual(['Bash(npm test)']);
+      expect(settingsCall[1].permissions.deny).toEqual(['Bash(rm -rf)']);
+      expect(settingsCall[1].permissions.defaultMode).toBe('bypassPermissions');
     });
   });
 });

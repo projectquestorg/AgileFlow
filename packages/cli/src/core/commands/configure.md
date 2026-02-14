@@ -436,40 +436,25 @@ Then present options:
 ```
 
 Map selection to value:
-| Selection | defaultStartupMode value |
-|-----------|--------------------------|
+| Selection | Mode value |
+|-----------|------------|
 | Normal | `normal` |
 | Skip permissions | `skip-permissions` |
 | Accept edits only | `accept-edits` |
 | Don't start Claude | `no-claude` |
 
-Update the metadata file AND configure the CLI flags:
-
-1. Update `docs/00-meta/agileflow-metadata.json`:
-   - Find: `"defaultStartupMode": "..."`
-   - Replace with: `"defaultStartupMode": "{selected_value}"`
-
-2. **Also run** the configure script to set Claude Code's permission mode:
+Run the configure script with `--startup-mode` to set BOTH metadata AND `.claude/settings.json` atomically:
 ```bash
-node .agileflow/scripts/agileflow-configure.js --enable=claudeflags --flags="{cli_flag}"
+node .agileflow/scripts/agileflow-configure.js --startup-mode={mode_value}
 ```
 
-Where `{cli_flag}` is:
-- `skip-permissions` → `--dangerously-skip-permissions` (sets `permissions.defaultMode = "bypassPermissions"`)
-- `accept-edits` → `--permission-mode acceptEdits` (sets `permissions.defaultMode = "acceptEdits"`)
-- `normal` → (disable claudeflags instead: `--disable=claudeflags`, removes `defaultMode`)
+This single command handles everything:
+- Sets `permissions.defaultMode` in `.claude/settings.json` (for skip-permissions/accept-edits)
+- Removes `permissions.defaultMode` from `.claude/settings.json` (for normal/no-claude)
+- Updates `defaultStartupMode` in `docs/00-meta/agileflow-metadata.json`
+- Updates the `claudeFlags` feature metadata
 
-Display confirmation:
-```
-✅ Default session startup mode set to: {selected_value}
-
-What was configured:
-  • .claude/settings.json: permissions.defaultMode = "{defaultMode}"
-  • Metadata: defaultStartupMode = "{selected_value}"
-  • AgileFlow commands (af, /session:new) will also use this mode
-
-⚠️  Restart Claude Code for the new permission mode to take effect.
-```
+**IMPORTANT**: Do NOT manually edit metadata or settings.json for startup mode. Always use `--startup-mode=` to ensure both files stay in sync.
 
 **If user selected "Skip permissions" or "Accept edits only"**, offer shell alias:
 

@@ -18,6 +18,7 @@
  *   --enable=<features>                 Enable specific features
  *   --disable=<features>                Disable specific features
  *   --archival-days=<N>                 Set archival threshold
+ *   --startup-mode=<MODE>              Set default startup mode (atomic)
  *   --migrate                           Fix old formats without changing features
  *   --validate                          Check for issues
  *   --detect                            Show current status
@@ -42,6 +43,7 @@ const {
   listStatuslineComponents,
   migrateSettings,
   upgradeFeatures,
+  enableStartupMode,
 } = require('./lib/configure-features');
 const { listScripts, showVersionInfo, repairScripts } = require('./lib/configure-repair');
 const { feedback } = require('../lib/feedback');
@@ -144,6 +146,7 @@ ${c.cyan}Statusline Components:${c.reset}
 
 ${c.cyan}Settings:${c.reset}
   --archival-days=N   Set archival threshold (default: 30)
+  --startup-mode=MODE Set default startup mode (skip-permissions, accept-edits, normal, no-claude)
 
 ${c.cyan}Maintenance:${c.reset}
   --migrate           Fix old/invalid formats
@@ -201,6 +204,7 @@ function main() {
   let repairFeature = null;
   let showVersion = false;
   let listScriptsMode = false;
+  let startupMode = null;
 
   args.forEach(arg => {
     if (arg.startsWith('--profile=')) profile = arg.split('=')[1];
@@ -237,6 +241,8 @@ function main() {
       repairFeature = arg.split('=')[1].trim().toLowerCase();
     } else if (arg === '--version' || arg === '-v') showVersion = true;
     else if (arg === '--list-scripts' || arg === '--scripts') listScriptsMode = true;
+    else if (arg.startsWith('--startup-mode='))
+      startupMode = arg.split('=')[1].trim().toLowerCase();
   });
 
   // Help mode
@@ -288,6 +294,12 @@ function main() {
   const status = detectConfig(VERSION);
   spinner.succeed('Configuration detected');
   const { hasIssues, hasOutdated } = printStatus(status);
+
+  // Startup mode (atomic - sets BOTH metadata AND settings.json)
+  if (startupMode) {
+    enableStartupMode(startupMode, VERSION);
+    return;
+  }
 
   // Detect only mode
   if (detect && !migrate && !upgrade && !profile && enable.length === 0 && disable.length === 0) {

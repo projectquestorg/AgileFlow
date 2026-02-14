@@ -1216,6 +1216,119 @@ function upgradeFeatures(status, version) {
 }
 
 // ============================================================================
+// STARTUP MODE (atomic command)
+// ============================================================================
+
+/**
+ * Valid startup modes and their mappings
+ */
+const STARTUP_MODES = {
+  'skip-permissions': {
+    flags: '--dangerously-skip-permissions',
+    defaultMode: 'bypassPermissions',
+    description: 'Skip all permission prompts (trusted mode)',
+  },
+  'accept-edits': {
+    flags: '--permission-mode acceptEdits',
+    defaultMode: 'acceptEdits',
+    description: 'Auto-accept file edits, prompt for other actions',
+  },
+  normal: {
+    flags: null,
+    defaultMode: null,
+    description: 'Standard Claude with permission prompts',
+  },
+  'no-claude': {
+    flags: null,
+    defaultMode: null,
+    description: 'Create worktree only, start Claude manually',
+  },
+};
+
+/**
+ * Set startup mode atomically - updates BOTH metadata AND .claude/settings.json
+ * This replaces the fragile two-step process of updating metadata + running --enable=claudeflags
+ *
+ * @param {string} mode - One of: skip-permissions, accept-edits, normal, no-claude
+ * @param {string} version - Current version string
+ * @returns {boolean} Success
+ */
+function enableStartupMode(mode, version) {
+  const modeConfig = STARTUP_MODES[mode];
+  if (!modeConfig) {
+    error(`Unknown startup mode: ${mode}`);
+    log(`  Valid modes: ${Object.keys(STARTUP_MODES).join(', ')}`, c.dim);
+    return false;
+  }
+
+  ensureDir('.claude');
+  const settings = readJSON('.claude/settings.json') || {};
+  settings.permissions = settings.permissions || { allow: [], deny: [], ask: [] };
+
+  if (mode === 'normal' || mode === 'no-claude') {
+    // Remove defaultMode from settings
+    if (settings.permissions.defaultMode) {
+      delete settings.permissions.defaultMode;
+    }
+    writeJSON('.claude/settings.json', settings);
+
+    // Disable claudeflags + set defaultStartupMode in metadata (single write)
+    updateMetadata(
+      {
+        features: {
+          claudeFlags: {
+            enabled: false,
+            defaultFlags: '',
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+  } else {
+    // Set defaultMode in settings.json
+    settings.permissions.defaultMode = modeConfig.defaultMode;
+    writeJSON('.claude/settings.json', settings);
+
+    // Enable claudeflags + set defaultStartupMode in metadata (single write)
+    updateMetadata(
+      {
+        features: {
+          claudeFlags: {
+            enabled: true,
+            defaultFlags: modeConfig.flags,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+  }
+
+  // Set defaultStartupMode in metadata (updateMetadata already created file if missing)
+  const metaPath = 'docs/00-meta/agileflow-metadata.json';
+  const meta = readJSON(metaPath) || {};
+  meta.defaultStartupMode = mode;
+  meta.updated = new Date().toISOString();
+  writeJSON(metaPath, meta);
+
+  success(`Default startup mode set to: ${mode}`);
+  if (modeConfig.defaultMode) {
+    info(`Set permissions.defaultMode = "${modeConfig.defaultMode}" in .claude/settings.json`);
+  } else {
+    info('Removed permissions.defaultMode from .claude/settings.json');
+  }
+  info(`Metadata: defaultStartupMode = "${mode}"`);
+  if (mode !== 'normal') {
+    info('Restart Claude Code for the new mode to take effect');
+  }
+
+  return true;
+}
+
+// ============================================================================
 // SHELL ALIASES
 // ============================================================================
 
@@ -1473,6 +1586,9 @@ module.exports = {
   // Helpers
   scriptExists,
   getScriptPath,
+  // Startup mode
+  enableStartupMode,
+  STARTUP_MODES,
   // Shell aliases
   enableShellAliases,
   disableShellAliases,
