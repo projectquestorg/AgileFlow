@@ -459,14 +459,6 @@ Analysis/Review                   → /agileflow:multi-expert or Task(subagent_t
 
 Use TaskCreate for any task with 3+ steps. Use TaskUpdate to mark status as you complete each step.
 
-**TMUX WINDOW NAMING**: After calling TaskCreate or TaskUpdate (status → in_progress), rename the tmux window to match the task subject:
-
-```bash
-bash .agileflow/scripts/tmux-task-name.sh "Task subject here"
-```
-
-This makes tmux windows show what each Claude session is working on (e.g., `Fix auth middleware` instead of `claude-2`). Best-effort: silently ignored if not in tmux.
-
 ---
 
 ### 🚨 RULE #4b: TASK REGISTRY (Persistent State)
@@ -771,9 +763,6 @@ After error:
   1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
   2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
   3. WHEN done: `node .agileflow/scripts/lib/story-claiming.js release <id>`
-- **TMUX WINDOW NAMING**: After TaskCreate/TaskUpdate to in_progress, run:
-  `bash .agileflow/scripts/tmux-task-name.sh "Task subject"` to show task in tmux window title
-
 ---
 
 ## 🛑 FINAL ACTION REQUIRED - DO NOT SKIP

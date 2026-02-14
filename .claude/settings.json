@@ -64,6 +64,11 @@
             "type": "command",
             "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-welcome.js 2>/dev/null || true",
             "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/tmux-task-watcher.sh 2>/dev/null || true",
+            "timeout": 5000
           }
         ]
       }
@@ -90,6 +95,10 @@
           {
             "type": "command",
             "command": "node /home/coder/AgileFlow/.agileflow/scripts/auto-self-improve.js 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/tmux-task-watcher.sh stop 2>/dev/null || true"
           }
         ]
       }
