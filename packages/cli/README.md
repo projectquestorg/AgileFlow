@@ -69,14 +69,14 @@ Traditional project management tools create friction between planning and execut
 | Skills System | Custom AI prompts that learn from your feedback | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/skills) |
 | Parallel Sessions | Isolated workspaces with boundary protection | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/parallel-sessions) |
 | Loop Mode | Autonomous story execution until epic completion | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/loop-mode) |
-| AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
-| Logic Audit | Multi-agent logic bug detection with consensus voting | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/council) |
+| Logic Audit | Multi-agent logic bug detection with consensus voting | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/logic-audit) |
 | Damage Control | Block destructive commands with PreToolUse hooks | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/damage-control) |
 | Smart Detection | Contextual feature recommendations with 42 detectors | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/smart-detect) |
 | Visual Mode | Screenshot verification for UI development | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/visual-mode) |
 | Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
-| Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
-| Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/research) |
+| Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/automate) |
 | IDE Integrations | Claude Code, Cursor, Windsurf, OpenAI Codex support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
 
 See the [full features overview](https://docs.agileflow.projectquestorg.com/docs/features) for details.
