@@ -72,7 +72,7 @@ Traditional project management tools create friction between planning and execut
 | AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
 | Logic Audit | Multi-agent logic bug detection with consensus voting | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
 | Damage Control | Block destructive commands with PreToolUse hooks | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/damage-control) |
-| Smart Detection | Contextual feature recommendations with 42 detectors | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
+| Smart Detection | Contextual feature recommendations with 42 detectors | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/smart-detect) |
 | Visual Mode | Screenshot verification for UI development | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/visual-mode) |
 | Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
 | Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features) |
