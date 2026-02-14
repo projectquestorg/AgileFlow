@@ -129,15 +129,42 @@ function listTemplates(rootDir) {
 }
 
 /**
+ * Validate template name to prevent path traversal.
+ * Only allows alphanumeric characters, hyphens, and underscores.
+ */
+function validateTemplateName(name) {
+  if (typeof name !== 'string' || name.length === 0 || name.length > 255) {
+    return { valid: false, error: 'Template name must be 1-255 characters' };
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    return { valid: false, error: 'Template name must contain only alphanumeric characters, hyphens, and underscores' };
+  }
+  return { valid: true };
+}
+
+/**
  * Get a specific template by name
  */
 function getTemplate(rootDir, name) {
+  const validation = validateTemplateName(name);
+  if (!validation.valid) {
+    return { ok: false, error: validation.error };
+  }
+
   const teamsDir = getTeamsDir(rootDir);
   if (!teamsDir) {
     return { ok: false, error: 'No teams directory found' };
   }
 
   const filePath = path.join(teamsDir, `${name}.json`);
+
+  // Defense-in-depth: verify resolved path stays within teams directory
+  const resolvedPath = path.resolve(filePath);
+  const resolvedTeamsDir = path.resolve(teamsDir);
+  if (!resolvedPath.startsWith(resolvedTeamsDir + path.sep)) {
+    return { ok: false, error: 'Invalid template path' };
+  }
+
   if (!fs.existsSync(filePath)) {
     return { ok: false, error: `Template "${name}" not found` };
   }
@@ -458,6 +485,7 @@ module.exports = {
   stopTeam,
   getTeamsDir,
   buildNativeTeamPayload,
+  validateTemplateName,
 };
 
 // Run CLI if invoked directly
