@@ -61,11 +61,8 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     // Claude Code specific: Setup damage control hooks
     await this.setupDamageControl(projectDir, agileflowDir, ideDir, options);
 
-    // Claude Code specific: Setup SessionStart hooks (welcome, archive, context-loader, tmux-task-watcher)
+    // Claude Code specific: Setup SessionStart hooks (welcome, archive, context-loader)
     await this.setupSessionStartHooks(projectDir, agileflowDir, ideDir, options);
-
-    // Claude Code specific: Setup Stop hooks (tmux-task-watcher cleanup)
-    await this.setupStopHooks(projectDir, agileflowDir, ideDir, options);
 
     return result;
   }
@@ -259,12 +256,6 @@ class ClaudeCodeSetup extends BaseIdeSetup {
           'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/context-loader.js 2>/dev/null || true',
         timeout: 5000,
       },
-      {
-        type: 'command',
-        command:
-          'bash $CLAUDE_PROJECT_DIR/.agileflow/scripts/tmux-task-watcher.sh 2>/dev/null || true',
-        timeout: 5000,
-      },
     ];
 
     // Check if SessionStart hooks already exist
@@ -295,64 +286,8 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     // Write settings
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
     console.log(
-      chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader, tmux-task-watcher`)
+      chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader`)
     );
-  }
-
-  /**
-   * Setup Stop hooks (tmux-task-watcher cleanup)
-   * @param {string} projectDir - Project directory
-   * @param {string} agileflowDir - AgileFlow installation directory
-   * @param {string} claudeDir - .claude directory path
-   * @param {Object} options - Setup options
-   */
-  async setupStopHooks(projectDir, agileflowDir, claudeDir, options = {}) {
-    const settingsPath = path.join(claudeDir, 'settings.json');
-    let settings = {};
-
-    if (fs.existsSync(settingsPath)) {
-      try {
-        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      } catch (e) {
-        settings = {};
-      }
-    }
-
-    if (!settings.hooks) settings.hooks = {};
-    if (!settings.hooks.Stop) settings.hooks.Stop = [];
-
-    const stopHooks = [
-      {
-        type: 'command',
-        command:
-          'bash $CLAUDE_PROJECT_DIR/.agileflow/scripts/tmux-task-watcher.sh stop 2>/dev/null || true',
-        timeout: 3000,
-      },
-    ];
-
-    const existingEntry = settings.hooks.Stop.find(
-      h => h.matcher === '' || h.matcher === undefined
-    );
-
-    if (existingEntry) {
-      if (!existingEntry.hooks) existingEntry.hooks = [];
-      for (const newHook of stopHooks) {
-        const alreadyExists = existingEntry.hooks.some(
-          h => h.command && h.command.includes('tmux-task-watcher')
-        );
-        if (!alreadyExists) {
-          existingEntry.hooks.push(newHook);
-        }
-      }
-    } else {
-      settings.hooks.Stop.push({
-        matcher: '',
-        hooks: stopHooks,
-      });
-    }
-
-    await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
-    console.log(chalk.dim(`    - Stop hooks: tmux-task-watcher cleanup`));
   }
 
   /**
