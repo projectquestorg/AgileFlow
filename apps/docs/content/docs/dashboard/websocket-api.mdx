@@ -51,6 +51,7 @@ Every message includes a `type` field and a `timestamp`:
 | `inbox_item` | Single inbox item | `id`, `title`, `summary`, `status` |
 | `ask_user_question` | User question prompt | `toolId`, `questions[]` |
 | `notification` | General notification | `level`, `title`, `message` |
+| `team_metrics` | Team metrics update | `trace_id`, `per_agent`, `per_gate` |
 | `error` | Error | `code`, `message` |
 | `session_list` | Session list with sync status | `sessions[]` |
 
@@ -60,7 +61,7 @@ Every message includes a `type` field and a `timestamp`:
 |------|-------------|------------|
 | `message` | User message | `content` |
 | `cancel` | Cancel operation | - |
-| `refresh` | Request refresh | `what` (git, tasks, status, automations, inbox, all) |
+| `refresh` | Request refresh | `what` (git, tasks, status, automations, inbox, team_metrics, all) |
 | `session_init` | Initialize session | `sessionId`, `apiKey` |
 | `session_close` | Close session | - |
 | `git_stage` | Stage files | `files[]` |
@@ -131,3 +132,46 @@ Every message includes a `type` field and a `timestamp`:
 // Final chunk
 { "type": "text_delta", "delta": "", "done": true, "timestamp": "..." }
 ```
+
+## Example: Team Metrics
+
+```json
+{
+  "type": "team_metrics",
+  "trace_id": "trace-abc123",
+  "per_agent": {
+    "AG-PLANNING": {
+      "status": "completed",
+      "tokens_in": 45000,
+      "tokens_out": 12000,
+      "duration_ms": 3400
+    },
+    "AG-IMPLEMENTATION": {
+      "status": "in-progress",
+      "tokens_in": 28000,
+      "tokens_out": 8500,
+      "duration_ms": 2100
+    }
+  },
+  "per_gate": {
+    "context_gathering": {
+      "status": "completed",
+      "agents": ["AG-PLANNING"],
+      "duration_ms": 1200
+    },
+    "implementation": {
+      "status": "in-progress",
+      "agents": ["AG-IMPLEMENTATION"],
+      "duration_ms": 2100
+    }
+  },
+  "timestamp": "2026-02-15T14:30:00.000Z"
+}
+```
+
+Team metrics are sent:
+- When a session connects (if metrics exist)
+- When the client requests a refresh
+- When metrics are updated in `docs/09-agents/session-state.json`
+
+Each `trace_id` represents a unique execution context. Per-agent metrics show performance per agent, while per-gate metrics show performance per quality gate.

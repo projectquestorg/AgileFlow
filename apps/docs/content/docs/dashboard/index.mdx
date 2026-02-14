@@ -16,6 +16,7 @@ The AgileFlow Dashboard is a real-time web application that provides a visual in
 - **Notification System** - Browser notifications for important events
 - **Multi-Session Support** - Switch between parallel development sessions
 - **Project Status** - Real-time story and epic progress tracking
+- **Team Metrics** - Real-time visibility into per-agent and per-gate performance across your AI team
 
 ## Architecture
 
@@ -29,11 +30,15 @@ Communication happens over WebSocket with a structured message protocol supporti
 ## Quick Start
 
 ```bash
-# Start the dashboard server in your project
+# Start the dashboard server (automatically creates tunnel for remote access)
 agileflow serve
 
-# Open the dashboard in your browser
-# Default: http://localhost:3000
+# Copy the provided WebSocket URL and open the AgileFlow Dashboard
+# A tunnel URL will be displayed: wss://xxx.trycloudflare.com
+
+# Or for local-only access, disable the tunnel
+agileflow serve --no-tunnel
+# Then connect to ws://localhost:8765
 ```
 
 See [Setup Guide](/docs/dashboard/setup) for detailed instructions.

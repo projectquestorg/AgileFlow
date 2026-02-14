@@ -1,0 +1,341 @@
+---
+title: /discovery:new
+description: Run structured discovery workflow - brainstorm, research, and generate a Product Brief
+---
+
+# /discovery:new
+
+Run a complete structured discovery workflow that orchestrates brainstorming, optional research, and Product Brief synthesis into a single end-to-end process.
+
+## Quick Start
+
+```bash
+/agileflow:discovery:new TOPIC="Mobile time tracking app"
+```
+
+With depth control:
+
+```bash
+/agileflow:discovery:new TOPIC="Dashboard" DEPTH=quick
+/agileflow:discovery:new TOPIC="Analytics" DEPTH=deep
+```
+
+## Purpose
+
+Bridge the gap between "vague idea" and "epic planning". This command validates product viability BEFORE decomposing into stories and epics.
+
+```
+Vague Idea → /discovery:new → Product Brief → /epic → Stories → Implementation
+```
+
+Instead of jumping straight to coding, invest 5-45 minutes in structured discovery to:
+
+- **Validate the idea** - Is it worth building?
+- **Identify edge cases** - What could go wrong?
+- **Surface competitive advantages** - How is this different?
+- **Estimate scope** - What's the MVP?
+- **Plan strategically** - What's the sequencing?
+
+## Parameters
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| TOPIC | Yes | — | Product or feature name |
+| DEPTH | No | `guided` | Discovery depth: `quick`, `guided`, or `deep` |
+
+## Depth Modes
+
+### Quick (5-10 minutes)
+
+Best for: Well-understood features or iterations
+
+```bash
+/agileflow:discovery:new TOPIC="Dark mode toggle" DEPTH=quick
+```
+
+**Flow**:
+1. Brainstorm via `/ideate:new SCOPE=all` (auto-run, no interaction)
+2. Skip research phase
+3. Generate Product Brief immediately
+
+**Output**: Product Brief with feature ideas and MoSCoW prioritization
+
+### Guided (30-45 minutes) - **Recommended**
+
+Best for: New features or significant changes
+
+```bash
+/agileflow:discovery:new TOPIC="OAuth integration" DEPTH=guided
+```
+
+**Flow**:
+1. Interactive brainstorm via `/ideate:new` (you select scope and depth)
+2. Optional research phase (ask if you want to research)
+3. Review ideation findings
+4. Curate features before brief generation
+5. Generate Product Brief
+
+**Output**: Curated Product Brief with validated features
+
+### Deep (2+ hours)
+
+Best for: Major products or architectural decisions
+
+```bash
+/agileflow:discovery:new TOPIC="Microservices migration" DEPTH=deep
+```
+
+**Flow**:
+1. Comprehensive brainstorm via `/ideate:new SCOPE=all DEPTH=ultradeep`
+2. Multi-stage research:
+   - Market analysis
+   - Competitive feature mapping
+   - Technical feasibility
+   - User research
+3. Synthesize research findings
+4. Detailed Product Brief with competitive positioning
+
+**Output**: Comprehensive Product Brief with market context
+
+## Phase Breakdown
+
+### Phase 1: Brainstorm
+
+Delegates to `/ideate:new` to deploy multiple domain experts:
+
+- **Security expert** - Security features and compliance
+- **Performance expert** - Scalability and optimization
+- **Code quality expert** - Maintainability and refactoring
+- **UX expert** - User experience and accessibility
+- **Testing expert** - Test coverage and reliability
+- **API expert** - API design and integration
+
+Each expert generates 3-5 ideas, which are synthesized with confidence scoring.
+
+**Output**: Ideation report with ranked ideas
+
+### Phase 2: Research (optional in quick mode)
+
+Delegates to `/research:ask` to investigate:
+
+- **Market sizing** - Is there demand?
+- **Competitive landscape** - What exists? What's different?
+- **Technical feasibility** - Can we build it?
+- **User needs** - What do users actually want?
+- **Best practices** - How do others solve this?
+
+**Output**: Research findings and analysis
+
+### Phase 3: Synthesis
+
+Delegates to `/discovery:brief` to:
+
+1. Cross-reference ideation and research
+2. Identify consensus features (2+ experts agree)
+3. Spot contradictions requiring more research
+4. Assign MoSCoW priorities
+5. Generate Product Brief
+
+**Output**: Professional Product Brief ready for epic planning
+
+## Example Workflows
+
+### Quick Discovery: Add Dark Mode
+
+```bash
+# Run quick discovery
+/agileflow:discovery:new TOPIC="Dark mode support" DEPTH=quick
+
+# Review generated brief
+cat docs/08-project/briefs/20250214-dark-mode-support-brief.md
+
+# Create epic for MVP
+/epic EP-0123 TITLE="Dark Mode Support"
+```
+
+Takes ~10 minutes. Ideal for well-scoped features.
+
+### Guided Discovery: New Dashboard
+
+```bash
+# Run guided discovery (interactive)
+/agileflow:discovery:new TOPIC="Analytics Dashboard" DEPTH=guided
+
+# You'll be asked:
+# 1. What scope of analysis? (security, perf, code, ux, all)
+# 2. How deep? (quick, deep, ultradeep)
+# 3. Create stories or just report? (report, stories, both)
+
+# System runs ideation, asks if you want research
+# Shows findings and asks you to curate features
+# Generates Product Brief
+
+# Create epic with multiple stories
+/epic EP-0124 TITLE="Analytics Dashboard MVP" \
+  GOAL="Give users insights into their usage patterns"
+```
+
+Takes ~30-45 minutes. Includes research and curation.
+
+### Deep Discovery: Microservices Migration
+
+```bash
+# Run deep discovery (comprehensive)
+/agileflow:discovery:new TOPIC="Microservices Replatforming" DEPTH=deep
+
+# System runs comprehensive analysis:
+# - Codebase analysis from 6 domains
+# - Technical feasibility research
+# - Competitive/market research
+# - Risk analysis
+
+# Review comprehensive brief
+cat docs/08-project/briefs/20250214-microservices-replatforming-brief.md
+
+# Schedule architectural review
+# Create epic with architectural ADR reference
+/epic EP-0125 \
+  TITLE="Microservices Migration" \
+  RESEARCH=docs/08-project/briefs/20250214-microservices-replatforming-brief.md
+```
+
+Takes 2-3 hours. Includes deep research and architectural context.
+
+## Understanding the Output
+
+The command produces a **Product Brief** saved to:
+
+```
+docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md
+```
+
+The brief contains:
+
+1. **Executive Summary** - What we're building and why
+2. **User Personas** - Who we're building for
+3. **Feature List with MoSCoW Prioritization**:
+   - MUST HAVE - High confidence, build first
+   - SHOULD HAVE - Medium confidence, build next
+   - COULD HAVE - Nice-to-have, build if capacity
+   - WON'T HAVE - Explicitly out of scope
+4. **Success Metrics** - How we measure success
+5. **Business Case** - ROI or strategic value
+6. **Competitive Context** - Market positioning
+7. **Risks & Mitigation** - Known challenges
+8. **Next Steps** - Path to epic and implementation
+
+Example brief excerpt:
+
+```markdown
+## Features with MoSCoW Prioritization
+
+### MUST HAVE (2+ Experts Agree)
+- Time tracking with start/stop
+- Project categorization
+- Export to invoice format
+- Mobile responsive
+
+### SHOULD HAVE (1 Expert, Validated by Research)
+- Offline sync capability
+- Automatic rate lookup
+- Team collaboration
+
+### COULD HAVE
+- Receipt photo attachment
+- Geolocation tagging
+
+### WON'T HAVE (Out of Scope for v1)
+- Full accounting integration
+- Multi-currency support
+```
+
+## Workflow Integration
+
+### From Brief to Epic
+
+After brief generation:
+
+```bash
+# 1. Review the brief
+cat docs/08-project/briefs/{date}-{topic}-brief.md
+
+# 2. Create epic with brief as reference
+/epic EP-0123 \
+  TITLE="Mobile Time Tracking" \
+  GOAL="Reduce timesheet creation from 30 min to 2 min" \
+  RESEARCH=docs/08-project/briefs/{date}-{topic}-brief.md
+
+# 3. Decompose into stories based on MoSCoW
+/story US-0001 TITLE="Basic Timer" EPIC=EP-0123 \
+  ACCEPTANCE_CRITERIA="Timer starts and stops. Time is saved locally."
+
+/story US-0002 TITLE="Project Selection" EPIC=EP-0123
+
+# 4. Assign and implement
+/assign STORY=US-0001 NEW_OWNER=claude
+```
+
+### Iterating on the Brief
+
+Briefs aren't final—refine as you learn:
+
+```bash
+# Initial discovery
+/discovery:new TOPIC="Mobile app" DEPTH=quick
+
+# Gather feedback
+# Review brief and identify gaps
+
+# Refine and regenerate
+/discovery:brief TOPIC="Mobile app" RESEARCH=docs/10-research/user-feedback.md
+
+# Or start fresh with more research
+/discovery:new TOPIC="Mobile app" DEPTH=deep
+```
+
+## Best Practices
+
+### 1. Choose the Right Depth
+
+| Choosing | Depth | Time |
+|----------|-------|------|
+| Small feature or iteration | quick | 5-10 min |
+| New feature with some uncertainty | guided | 30-45 min |
+| Major product or architecture | deep | 2-3 hours |
+
+### 2. Save Time with Quick Mode
+
+For routine iterations:
+
+```bash
+# MVP-ready in 5 minutes
+/agileflow:discovery:new TOPIC="Add export to CSV" DEPTH=quick
+```
+
+### 3. Use Guided Mode by Default
+
+Most features need some validation:
+
+```bash
+# Recommended: Interactive, balanced
+/agileflow:discovery:new TOPIC="..." DEPTH=guided  # (default)
+```
+
+### 4. Invest in Deep Mode for Big Decisions
+
+When considering major architectural changes:
+
+```bash
+# Comprehensive analysis for 2-3 hours
+/agileflow:discovery:new TOPIC="Rewrite auth system" DEPTH=deep
+```
+
+## Related Commands
+
+- [`/discovery:brief`](/commands/discovery-brief) - Synthesize findings into brief (standalone)
+- [`/ideate:new`](/commands/ideate-new) - Generate improvement ideas
+- [`/research:ask`](/commands/research-ask) - Generate research prompts
+- [`/research:import`](/commands/research-import) - Import research findings
+- [`/epic`](/commands/epic) - Create epic from brief
+- [`/story`](/commands/story) - Decompose epic into stories
+- [`/babysit`](/commands/babysit) - Guided implementation

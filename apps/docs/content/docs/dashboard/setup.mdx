@@ -25,45 +25,97 @@ Or use the slash command within Claude Code:
 /agileflow:serve
 ```
 
-The server starts on `ws://localhost:8765` by default.
+The server starts on port `8765` by default and automatically creates a tunnel for remote access.
 
 ### Server Options
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--port` | `8765` | WebSocket server port |
-| `--host` | `127.0.0.1` | Server host (localhost only for security) |
+| `--host` | `0.0.0.0` | Server host (listens on all interfaces) |
+| `--api-key` | none | Optional API key for authentication |
+| `--require-auth` | `false` | Require API key for all connections |
+| `--no-tunnel` | `false` | Disable automatic tunnel (local only) |
+| `--tunnel-provider` | `cloudflared` | Tunnel provider: `cloudflared` or `ngrok` |
 
 ## Connecting the Dashboard
 
-1. Open the dashboard application in your browser
-2. Enter the WebSocket URL (default: `ws://localhost:8765`)
-3. Click **Connect**
+By default, the serve command creates an automatic tunnel (cloudflared) for remote access:
+
+1. Run `agileflow serve`
+2. Copy the provided tunnel URL (looks like `wss://xxx.trycloudflare.com`)
+3. Open the AgileFlow Dashboard at https://dashboard.agileflow.projectquestorg.com
+4. Paste the URL into the WebSocket connection field
+5. Click **Connect**
+
+### Local Connection
+
+For local-only access, disable the tunnel:
+
+```bash
+agileflow serve --no-tunnel
+```
+
+Then connect to `ws://localhost:8765` from your local machine.
 
 Once connected, the dashboard will automatically receive:
 - Current git status
 - Active automations
 - Inbox items
 - Project status updates
+- Real-time team metrics (per-agent and per-gate)
 
 ## Authentication
 
-For security, the dashboard server binds to localhost by default. If you need remote access, configure an API key:
+The server listens on all interfaces (`0.0.0.0`) by default but uses tunnels (cloudflared or ngrok) for secure remote access. To add authentication:
 
 ```bash
 agileflow serve --api-key your-secret-key
 ```
 
-Then enter the API key in the dashboard connection dialog.
+With `--api-key` set, the dashboard must provide the API key in the connection dialog. Use `--require-auth` to enforce authentication:
+
+```bash
+agileflow serve --api-key your-secret-key --require-auth
+```
+
+## Tunnel Configuration
+
+The server automatically starts a tunnel by default for remote access:
+
+**Cloudflared (default):**
+```bash
+agileflow serve
+```
+Creates a secure tunnel via cloudflare.com, no installation needed.
+
+**ngrok (alternative):**
+```bash
+agileflow serve --tunnel-provider ngrok
+```
+Requires ngrok to be installed and configured.
+
+**Disable tunnel (local only):**
+```bash
+agileflow serve --no-tunnel
+```
+Only allows connections from your local machine.
 
 ## Troubleshooting
 
 ### Connection Failed
-- Verify the server is running: check for `[Dashboard Server] Listening on ws://127.0.0.1:8765`
-- Ensure the port is not in use by another process
-- Check firewall settings if connecting remotely
+- Verify the server is running and check the URL it reports
+- If using tunnel, ensure the provided URL is correct
+- For local connections, verify the port is not in use: `lsof -i :8765`
+- Check browser console for WebSocket errors
 
 ### No Data Appearing
-- Click the refresh button to request updated status
-- Check the browser console for WebSocket errors
+- Click the refresh button in the dashboard to request updated status
 - Verify your project has a `docs/09-agents/status.json` file
+- Check the server console for error messages
+- Enable debug mode: `DEBUG=* agileflow serve`
+
+### Tunnel Issues
+- For cloudflared: ensure internet connection is stable
+- For ngrok: verify your account is connected (`ngrok config`)
+- If tunnel keeps disconnecting, try `--no-tunnel` for local development

@@ -1,0 +1,283 @@
+---
+title: /discovery:brief
+description: Synthesize ideation and research findings into a structured Product Brief
+---
+
+# /discovery:brief
+
+Synthesize brainstorming results and research findings into a professional Product Brief artifact.
+
+## Quick Start
+
+```bash
+/agileflow:discovery:brief TOPIC="Mobile time tracking app"
+```
+
+With existing ideation file:
+
+```bash
+/agileflow:discovery:brief TOPIC="Mobile app" IDEATION=docs/08-project/ideation/ideation-20250214.md
+```
+
+With research findings:
+
+```bash
+/agileflow:discovery:brief TOPIC="Dashboard" RESEARCH=docs/10-research/research-dashboard.md,docs/10-research/ui-analysis.md
+```
+
+## Purpose
+
+Generate a structured Product Brief that combines:
+
+- **Ideation report findings** - Feature ideas, confidence levels, expert perspectives from `/ideate:new`
+- **Research data** - Competitive analysis, market sizing, best practices, user research
+- **Your knowledge synthesis** - Context-specific insights and constraints
+
+This can be used standalone (with existing ideation/research files) or as Phase 3 of the `/discovery:new` workflow.
+
+## Parameters
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Product or feature name (e.g., "Mobile time tracking app") |
+| IDEATION | No | Path to ideation report file (if not provided, searches recent files) |
+| RESEARCH | No | Comma-separated paths to research files |
+
+## Output
+
+Creates a structured Product Brief at: `docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md`
+
+The brief includes:
+
+1. **Executive Summary** - Problem statement and value proposition
+2. **User Personas** - Target users derived from research/brainstorming
+3. **Features with MoSCoW Prioritization**:
+   - **MUST HAVE** - High-confidence ideas (2+ experts agree)
+   - **SHOULD HAVE** - Medium-confidence ideas
+   - **COULD HAVE** - Single-expert ideas
+   - **WON'T HAVE** - Explicitly ruled out
+4. **Success Metrics** - How we measure product viability
+5. **Business Case & ROI** - Simplified return on investment analysis
+6. **Competitive Context** - Market positioning and differentiation
+7. **Risks & Edge Cases** - Known challenges and mitigation strategies
+8. **Next Steps** - Path to epic creation and implementation
+
+## How It Works
+
+### Confidence Mapping
+
+The command uses confidence levels from ideation reports to prioritize features:
+
+```
+2+ Experts Agree  →  MUST HAVE (high confidence, build first)
+1 Expert Agrees   →  SHOULD HAVE (medium confidence, build if capacity)
+Contradictory     →  Research needed (investigate further)
+```
+
+### Input Detection
+
+If `IDEATION` or `RESEARCH` parameters are omitted:
+
+1. Searches `docs/08-project/ideation/` for the most recent ideation report
+2. Searches `docs/10-research/` for matching research files
+3. Prompts you to select from found files
+
+### Synthesis Algorithm
+
+1. Extracts feature ideas and confidence scores from ideation report
+2. Cross-references with research findings (market validation, competitive features)
+3. Groups related ideas into feature categories
+4. Assigns MoSCoW priority based on confidence and strategic value
+5. Estimates effort (High/Medium/Low) for each feature
+6. Identifies gaps and contradictions requiring further research
+
+## Workflow: From Idea to Epic
+
+```
+1. Brainstorm
+   /discovery:new TOPIC="..." DEPTH=quick
+
+2. OR Use Existing Ideation
+   /ideate:new SCOPE=all OUTPUT=report
+   /discovery:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-20250214.md
+
+3. Add Research (Optional)
+   /research:ask TOPIC="..."
+   /research:import TOPIC="..."
+   /discovery:brief TOPIC="..." RESEARCH=docs/10-research/...
+
+4. Review Brief
+   cat docs/08-project/briefs/20250214-{topic}-brief.md
+
+5. Create Epic
+   /epic EP-0001 TITLE="..." OWNER=... GOAL="..." RESEARCH=docs/08-project/briefs/...
+
+6. Decompose into Stories
+   /story US-0001 TITLE="..." ACCEPTANCE_CRITERIA="..."
+```
+
+## Example Brief Output
+
+A generated Product Brief looks like this:
+
+```markdown
+# Product Brief: Mobile Time Tracking App
+
+**Date**: 2025-02-14
+**Status**: Ready for Epic Planning
+**Input**: Ideation Report + User Research
+
+---
+
+## Executive Summary
+
+Mobile time tracking app for freelancers to track billable hours with automatic rate calculation.
+Solves the problem of manual timesheet management and invoice generation delays.
+
+**Value Proposition**: Reduce timesheet creation time from 30 minutes to 2 minutes per week.
+
+---
+
+## User Personas
+
+### Persona 1: Independent Freelancer
+- Manages 5-10 projects simultaneously
+- Bills hourly or by milestone
+- Pain point: Manual tracking loses time details
+- Goal: Quick and accurate invoicing
+
+### Persona 2: Agency PM
+- Oversees 20+ contractor hours/week
+- Needs team visibility
+- Pain point: Contractor inconsistency in reporting
+- Goal: Standardized tracking across team
+
+---
+
+## Features with MoSCoW Prioritization
+
+### MUST HAVE (Build First)
+- Timer with start/stop controls
+- Project/task categorization (2+ experts agree on essentiality)
+- Time entry export to invoice
+- Mobile-responsive design
+
+### SHOULD HAVE (Build Next)
+- Automatic rate lookup per project
+- Offline timer capability
+- Export to CSV for accounting software
+
+### COULD HAVE (Build if Capacity)
+- Team collaboration features
+- Receipt photo attachment
+- Geolocation tagging
+
+### WON'T HAVE (Out of Scope)
+- Full accounting software features
+- Multi-currency support (v1)
+
+---
+
+## Success Metrics
+
+- Users can track time in <10 seconds
+- Invoices generated in <2 minutes
+- 80% of users create invoices weekly
+- 4.5+ star rating after 30 reviews
+
+---
+
+## Business Case
+
+**Development Cost**: ~80 hours
+**ROI**: User saves 2 hours/week × $75/hr = $150/week = $7,800/year per user
+
+---
+
+## Competitive Context
+
+- Toggl: Full-featured, expensive ($20/user/month)
+- Harvest: Project management integration, complex UI
+- Our advantage: Simple, mobile-first, offline-capable
+
+---
+
+## Risks & Mitigation
+
+| Risk | Mitigation |
+|------|-----------|
+| Users forget to stop timer | Auto-stop after 8 hours |
+| Offline sync conflicts | Last-write-wins strategy |
+| Privacy concerns with location | Make location optional, no server storage |
+
+---
+
+## Next Steps
+
+1. Create epic: `/epic EP-0001 TITLE="Mobile Time Tracking MVP"`
+2. Decompose into stories: Payment, Timer, Export
+3. Start development sprint
+
+```
+
+## Next Steps After Brief Generation
+
+After the brief is created, you'll see options:
+
+- **Create Epic** - Convert brief directly to epic: `/epic EP-0001 TITLE="..." GOAL=...`
+- **Refine Brief** - Make adjustments (personas, features, metrics) and regenerate
+- **Done** - Brief is ready, decompose into stories manually
+
+## Best Practices
+
+### 1. Validate with Research
+
+Always include research findings for better feature prioritization:
+
+```bash
+/research:ask TOPIC="Mobile time tracking market"
+/research:import TOPIC="..."
+/discovery:brief TOPIC="..." RESEARCH=docs/10-research/...
+```
+
+### 2. Bridge from Multiple Experts
+
+Combine ideation from different domains:
+
+```bash
+/ideate:new SCOPE=security DEPTH=deep OUTPUT=report
+/ideate:new SCOPE=ux DEPTH=deep OUTPUT=report
+/discovery:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-security.md,docs/08-project/ideation/ideation-ux.md
+```
+
+### 3. Iterate on the Brief
+
+Briefs aren't final—they're living documents:
+
+```bash
+# Generate initial brief
+/discovery:brief TOPIC="..." IDEATION=...
+
+# Review and improve based on feedback
+# Edit docs/08-project/briefs/...
+
+# Create epic when ready
+/epic EP-0001 TITLE="..." RESEARCH=docs/08-project/briefs/...
+```
+
+### 4. Use MoSCoW for Release Planning
+
+```
+MVP Release 1: MUST HAVE features
+Release 2: SHOULD HAVE features
+Release 3+: COULD HAVE features
+```
+
+## Related Commands
+
+- [`/discovery:new`](/commands/discovery-new) - Full discovery workflow (brainstorm + research + brief)
+- [`/ideate:new`](/commands/ideate-new) - Generate ideas from codebase
+- [`/research:ask`](/commands/research-ask) - Research external AI tools
+- [`/research:import`](/commands/research-import) - Import research findings
+- [`/epic`](/commands/epic) - Create epic from brief
+- [`/story`](/commands/story) - Decompose epic into stories

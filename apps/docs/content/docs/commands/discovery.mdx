@@ -1,0 +1,327 @@
+---
+title: /discovery
+description: Structured discovery workflow for product validation and planning
+---
+
+# /discovery
+
+Comprehensive discovery system for validating product ideas, gathering requirements, and generating professional Product Briefs before implementation.
+
+## Quick Start
+
+The discovery system provides two specialized commands:
+
+```bash
+/discovery:new TOPIC="your product idea"                    # Complete discovery workflow
+/discovery:brief TOPIC="..." IDEATION=... RESEARCH=...      # Generate brief from existing files
+```
+
+## Overview
+
+The discovery system enables:
+
+1. **Validate ideas before implementation** - Run structured analysis on features and products
+2. **Gather insights from multiple perspectives** - Deploy domain experts (security, performance, UX, etc.)
+3. **Research market and competitive landscape** - Understand market context
+4. **Generate professional Product Briefs** - Create artifacts ready for epic planning
+5. **Bridge from idea to implementation** - Structured path from vague idea to detailed stories
+
+Discovery is essential for:
+
+- **New features** - Is it worth building? How should it work?
+- **Major products** - What's the market opportunity? What's competitive?
+- **Architecture decisions** - What are the tradeoffs? What could go wrong?
+- **MVP planning** - What's the minimum viable set of features?
+- **Stakeholder alignment** - Clear, shared understanding before development
+
+## Subcommands
+
+### /discovery:new - Complete Discovery Workflow
+
+Run a full structured discovery process that orchestrates brainstorming, optional research, and Product Brief generation.
+
+**Purpose**: Bridge gap between vague idea and epic planning with validated requirements.
+
+**Command**:
+```bash
+/discovery:new TOPIC="your product" [DEPTH=quick|guided|deep]
+```
+
+**Parameters**:
+
+| Argument | Required | Default | Description |
+|----------|----------|---------|-------------|
+| TOPIC | Yes | — | Product or feature name |
+| DEPTH | No | `guided` | Discovery depth: `quick` (5-10 min), `guided` (30-45 min), `deep` (2+ hours) |
+
+**What It Does**:
+
+1. **Brainstorm** via multi-expert analysis (6 domain experts in parallel)
+2. **Research** (optional in quick mode) - Market, competitive, technical feasibility
+3. **Synthesize** - Generate Product Brief with feature prioritization
+
+**Output**: Professional Product Brief saved to `docs/08-project/briefs/{date}-{topic}-brief.md`
+
+**Use Cases**:
+
+- `DEPTH=quick` - Well-understood features or iterations (5-10 min)
+- `DEPTH=guided` - New features with some uncertainty (30-45 min) - **Recommended**
+- `DEPTH=deep` - Major products or architectural decisions (2+ hours)
+
+**Learn more**: [/discovery:new](/commands/discovery-new)
+
+---
+
+### /discovery:brief - Synthesize Findings into Brief
+
+Generate a Product Brief from existing ideation and research files, or search for recent files automatically.
+
+**Purpose**: Convert brainstorming results and research findings into structured Product Brief artifact.
+
+**Command**:
+```bash
+/discovery:brief TOPIC="your product" [IDEATION=path] [RESEARCH=paths]
+```
+
+**Parameters**:
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| TOPIC | Yes | Product or feature name |
+| IDEATION | No | Path to ideation report (searches if not provided) |
+| RESEARCH | No | Comma-separated paths to research files |
+
+**What It Does**:
+
+1. Reads ideation report and research findings
+2. Cross-references confidence levels with research validation
+3. Prioritizes features using MoSCoW method
+4. Generates professional Product Brief
+5. Saves to `docs/08-project/briefs/{date}-{topic}-brief.md`
+
+**Use Cases**:
+
+- You already ran `/ideate:new` and want to synthesize results
+- You have research files and want to generate a brief
+- You want to combine ideation from multiple expert sessions
+- You want to refine/iterate on a brief with new research
+
+**Learn more**: [/discovery:brief](/commands/discovery-brief)
+
+---
+
+## Workflow Example: From Idea to Implementation
+
+```
+Step 1: Discover
+  /discovery:new TOPIC="Mobile Time Tracking App" DEPTH=guided
+  ↓
+  Output: docs/08-project/briefs/20250214-mobile-time-tracking-app-brief.md
+
+Step 2: Review Brief
+  cat docs/08-project/briefs/20250214-mobile-time-tracking-app-brief.md
+  ↓
+  Validated features with MoSCoW prioritization
+
+Step 3: Create Epic
+  /epic EP-0123 TITLE="Mobile Time Tracking App" \
+    GOAL="Reduce timesheet creation from 30 min to 2 min" \
+    RESEARCH=docs/08-project/briefs/20250214-mobile-time-tracking-app-brief.md
+  ↓
+  Epic ready for decomposition
+
+Step 4: Create Stories
+  /story US-0001 TITLE="Basic Timer" EPIC=EP-0123
+  /story US-0002 TITLE="Project Selection" EPIC=EP-0123
+  /story US-0003 TITLE="Export to Invoice" EPIC=EP-0123
+  ↓
+  Stories ready for assignment
+
+Step 5: Implement
+  /assign STORY=US-0001 NEW_OWNER=claude
+  /babysit EPIC=EP-0123
+  ↓
+  Implementation with guided mentoring
+```
+
+## Discovery Phases
+
+### Phase 1: Brainstorm (via /ideate:new)
+
+Deploy domain experts to analyze your codebase:
+
+- **Security Expert** - Security features, compliance requirements
+- **Performance Expert** - Scalability, optimization opportunities
+- **Code Quality Expert** - Maintainability, refactoring opportunities
+- **UX Expert** - User experience, accessibility improvements
+- **Testing Expert** - Test coverage, reliability requirements
+- **API Expert** - API design, integration patterns
+
+Each expert generates ideas with confidence scores.
+
+### Phase 2: Research (optional in quick mode)
+
+Investigate external context:
+
+- **Market analysis** - Is there demand? Market size?
+- **Competitive features** - What do competitors offer?
+- **Technical feasibility** - Can we build it? What are tradeoffs?
+- **User research** - What do actual users want?
+- **Best practices** - How do others solve similar problems?
+
+Use `/research:ask` to generate detailed research prompts for external AI tools.
+
+### Phase 3: Synthesis (via /discovery:brief)
+
+Convert findings into Product Brief:
+
+1. Extract feature ideas and confidence scores
+2. Cross-reference with research validation
+3. Group related ideas
+4. Assign MoSCoW priorities (MUST/SHOULD/COULD/WON'T)
+5. Estimate effort (High/Medium/Low)
+6. Generate professional document
+
+## Output Structure
+
+Discovery produces a **Product Brief** with:
+
+```
+docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md
+```
+
+### Brief Sections
+
+1. **Executive Summary** - Problem, value proposition, success criteria
+2. **User Personas** - Who we're building for
+3. **Features with MoSCoW Prioritization**:
+   - **MUST HAVE** - High confidence (2+ experts), build first
+   - **SHOULD HAVE** - Medium confidence (1 expert, validated), build next
+   - **COULD HAVE** - Low confidence, build if capacity
+   - **WON'T HAVE** - Explicitly out of scope
+4. **Success Metrics** - How we measure success
+5. **Business Case** - ROI, strategic value, competitive advantage
+6. **Risks & Mitigation** - Known challenges and solutions
+7. **Next Steps** - Path to epic creation and implementation
+
+## Depth Modes Explained
+
+### Quick (5-10 minutes)
+
+**When to use**: Well-scoped features, iterations, minor changes
+
+```bash
+/discovery:new TOPIC="Add dark mode toggle" DEPTH=quick
+```
+
+**Process**:
+1. Auto-run brainstorming (6 experts, quick analysis)
+2. Skip research phase
+3. Generate brief immediately
+
+**Output**: Feature list with expert perspectives, no market research
+
+**Example**: Dark mode, CSV export, new dashboard view
+
+---
+
+### Guided (30-45 minutes) - Recommended
+
+**When to use**: New features, moderate uncertainty, standard development
+
+```bash
+/discovery:new TOPIC="OAuth integration" DEPTH=guided
+```
+
+**Process**:
+1. Interactive brainstorming (you select scope and depth)
+2. Optional research (system asks if you want to research)
+3. Review expert findings
+4. Curate features before brief generation
+5. Generate brief
+
+**Output**: Curated Product Brief with research context
+
+**Example**: New authentication system, payment processing, analytics dashboard
+
+---
+
+### Deep (2+ hours)
+
+**When to use**: Major products, architectural changes, significant investment
+
+```bash
+/discovery:new TOPIC="Microservices migration" DEPTH=deep
+```
+
+**Process**:
+1. Comprehensive brainstorming (6 experts, detailed analysis)
+2. Multi-stage research (market, competitive, technical)
+3. Synthesize all findings
+4. Detailed brief with competitive positioning
+
+**Output**: Comprehensive Product Brief with market context
+
+**Example**: Platform rewrite, new service offering, major architecture change
+
+## Best Practices
+
+### 1. Choose Appropriate Depth
+
+Balance thoroughness with speed:
+
+```bash
+# Quick for routine changes
+/discovery:new TOPIC="Fix login bug" DEPTH=quick
+
+# Guided for new features (recommended)
+/discovery:new TOPIC="Export to PDF" DEPTH=guided
+
+# Deep for major decisions
+/discovery:new TOPIC="Database migration to PostgreSQL" DEPTH=deep
+```
+
+### 2. Include Research for Validation
+
+Combine brainstorming with research:
+
+```bash
+/discovery:new TOPIC="Mobile app" DEPTH=guided
+# System will ask if you want to research
+# Say yes to validate ideas
+```
+
+### 3. Iterate on Briefs
+
+Briefs improve with feedback:
+
+```bash
+# Initial discovery
+/discovery:new TOPIC="Feature X" DEPTH=quick
+
+# Get feedback from team
+# Additional research
+
+# Refine brief
+/discovery:brief TOPIC="Feature X" RESEARCH=docs/10-research/feedback.md
+```
+
+### 4. Use Brief as Epic Reference
+
+Link epic to brief for traceability:
+
+```bash
+/epic EP-0001 TITLE="Feature X" \
+  RESEARCH=docs/08-project/briefs/20250214-feature-x-brief.md
+```
+
+This preserves context about why features were prioritized.
+
+## Related Commands
+
+- [`/ideate:new`](/commands/ideate-new) - Generate improvement ideas (phase 1)
+- [`/research:ask`](/commands/research-ask) - Generate research prompts (phase 2)
+- [`/research:import`](/commands/research-import) - Import research findings
+- [`/epic`](/commands/epic) - Create epic from brief
+- [`/story`](/commands/story) - Decompose epic into stories
+- [`/babysit`](/commands/babysit) - Guided implementation

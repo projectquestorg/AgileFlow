@@ -1,0 +1,219 @@
+---
+title: Accessibility
+description: Accessibility specialist for WCAG compliance, inclusive design, assistive technology support, and accessibility testing.
+---
+
+# Accessibility Agent
+
+The Accessibility agent (AG-ACCESSIBILITY) is your WCAG compliance and inclusive design specialist. It audits for accessibility issues, tests with assistive technologies, ensures keyboard navigation, verifies color contrast, and provides remediation guidance to ensure your product is accessible to all users.
+
+## Capabilities
+
+- Audit for WCAG 2.1 Level AA compliance (minimum) and AAA (preferred)
+- Test with real assistive technologies (screen readers, keyboard navigation)
+- Verify color contrast ratios (4.5:1 for text, 3:1 for UI)
+- Test keyboard navigation and focus management
+- Create accessibility test plans and documentation
+- Coordinate with AG-UI and AG-DESIGN on remediation
+- Validate ARIA patterns and semantic HTML
+- Test with NVDA, JAWS, VoiceOver, and TalkBack
+- Create accessibility remediation guides
+
+## When to Use
+
+Use the Accessibility agent when:
+
+- You need to audit a codebase for accessibility issues
+- You need to ensure WCAG 2.1 AA compliance
+- You need to test with screen readers and assistive technologies
+- You need guidance on accessible forms, tables, or components
+- You need to remediate accessibility violations
+- You're building an accessible component library
+- You need accessibility testing strategy and best practices
+- You want to ensure keyboard-only navigation works
+
+## How It Works
+
+1. **Context Loading**: Agent loads expertise and WCAG standards
+2. **Accessibility Audit**: Automated testing (axe, Lighthouse) + manual testing
+3. **Testing Plan**: Creates manual keyboard and screen reader tests
+4. **Issue Documentation**: Reports issues with severity and remediation guidance
+5. **Coordination**: Works with AG-UI and AG-DESIGN on fixes
+6. **Remediation Verification**: Re-tests after fixes are applied
+7. **Documentation**: Creates accessibility testing guide and compliance status
+
+## Example
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "Audit login form for accessibility"
+```
+
+The Accessibility agent will:
+1. Audit the form with automated tools
+2. Manually test keyboard navigation (Tab, Enter, Escape)
+3. Test with screen reader (NVDA, VoiceOver)
+4. Check color contrast ratios
+5. Document issues found (critical, major, minor)
+6. Suggest remediation for each issue
+7. Coordinate with AG-UI on fixes
+
+Or spawn directly:
+
+```text
+Task(
+  description: "Accessibility audit for user profile page",
+  prompt: "Audit the user profile page for WCAG 2.1 AA compliance. Test keyboard navigation, screen readers, and color contrast.",
+  subagent_type: "agileflow-accessibility"
+)
+```
+
+## Key Behaviors
+
+- **Load Expertise First**: Reads expertise.yaml before any work
+- **Test with Real Assistive Tech**: NVDA, JAWS, VoiceOver mandatory (not just automated tools)
+- **Keyboard-First Testing**: Manual keyboard navigation before screen readers
+- **WCAG Standards**: Ensures WCAG 2.1 AA minimum, aims for AAA where possible
+- **Semantic HTML First**: Recommends semantic HTML before adding ARIA
+- **Comprehensive Documentation**: Reports include severity, remediation steps, testing methodology
+- **Coordination**: Works with AG-UI and AG-DESIGN on fixes
+- **Proactive Standards**: Establishes accessibility standards early (WCAG AA vs AAA target)
+
+## WCAG 2.1 Standards
+
+**Three Levels**:
+- **Level A**: Minimum accessibility
+- **Level AA**: Enhanced accessibility (recommended, legal minimum in many jurisdictions)
+- **Level AAA**: Optimal accessibility (preferred target)
+
+**Key WCAG 2.1 AA Requirements**:
+- Color contrast: 4.5:1 for text, 3:1 for UI components
+- Keyboard accessible: All functionality via keyboard
+- No keyboard traps: Can Tab out of any component
+- Focus visible: Visible focus indicator (≥2px outline)
+- Touch targets: ≥44×44 CSS pixels
+- Semantic HTML: Use `<button>`, `<label>`, `<nav>`, `<main>`
+- ARIA labels: Icon-only buttons need `aria-label`
+- Form labels: All inputs have associated `<label>` or `aria-label`
+- Alt text: All images have descriptive alt text (or `alt=""` if decorative)
+
+## Accessibility Testing Approach
+
+### Automated Testing (Baseline)
+- axe DevTools (browser extension)
+- Lighthouse accessibility audit
+- WAVE (WebAIM tool)
+- Automated contrast checking
+
+### Manual Testing (Mandatory)
+1. **Keyboard Navigation**: Tab through entire page (no mouse)
+2. **Tab Order**: Verify focus order matches visual order
+3. **Screen Reader Testing**: NVDA (Windows), VoiceOver (Mac), TalkBack (Android)
+4. **Contrast Verification**: Use WebAIM Contrast Checker or WAVE
+5. **Focus Indicators**: Verify visible on every interactive element
+
+### Screen Readers to Test
+- NVDA (Windows, free)
+- JAWS (Windows, paid)
+- VoiceOver (macOS/iOS, built-in)
+- TalkBack (Android, built-in)
+
+## Common Accessibility Issues
+
+| Issue | Impact | How to Fix |
+|-------|--------|-----------|
+| Icon button without aria-label | Screen reader announces nothing | Add `aria-label="Close"` |
+| Low color contrast | Unreadable for colorblind users | Use WCAG contrast checker, increase ratio |
+| No focus indicator | Keyboard users can't see focus | Add `:focus { outline: 2px solid }` |
+| Placeholder-only form fields | Screen readers don't announce requirement | Add associated `<label>` element |
+| Images without alt text | Screen readers don't describe images | Add descriptive alt text |
+| Keyboard trap in modal | Users can't escape | Add Escape key handler |
+| Missing form labels | Screen readers don't associate fields | Use `<label for="id">` |
+| Non-semantic buttons (divs) | Screen readers don't announce as buttons | Use `<button>` element |
+
+## Tools & Resources
+
+**Testing Tools**:
+- axe DevTools - Browser extension for automated testing
+- Lighthouse - Chrome DevTools built-in accessibility audit
+- WAVE - Automated accessibility checker
+- WebAIM Contrast Checker - Color contrast verification
+
+**Screen Readers**:
+- NVDA - Free Windows screen reader
+- JAWS - Paid Windows screen reader
+- VoiceOver - Built-in macOS/iOS screen reader
+- TalkBack - Built-in Android screen reader
+
+**Standards**:
+- WCAG 2.1 - Web Content Accessibility Guidelines
+- Section 508 - US legal requirement
+- ADA - Americans with Disabilities Act (applies to websites)
+
+## Key Files
+
+- **Expertise**: `packages/cli/src/core/experts/accessibility/expertise.yaml` (agent memory)
+- **Status**: `docs/09-agents/status.json` (story tracking)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (coordination messages)
+- **CLAUDE.md**: Accessibility standards and requirements
+- **Research**: `docs/10-research/` (check for a11y patterns)
+- **ADRs**: `docs/03-decisions/` (accessibility decisions)
+
+## Workflow Steps
+
+1. **Load Expertise**: Read expertise.yaml
+2. **Define Target**: WCAG AA or AAA? Which assistive tech to test?
+3. **Automated Audit**: Run axe, Lighthouse, WAVE
+4. **Manual Keyboard Test**: Tab through everything without mouse
+5. **Screen Reader Test**: NVDA, JAWS, or VoiceOver
+6. **Contrast Testing**: WebAIM Contrast Checker
+7. **Document Issues**: Severity (critical, major, minor), remediation steps
+8. **Coordinate Fixes**: Work with AG-UI and AG-DESIGN
+9. **Retest**: Verify all issues resolved
+10. **Document Compliance**: Create accessibility status report
+
+## Quality Checklist
+
+Before marking complete:
+
+- [ ] WCAG 2.1 Level AA compliance verified
+- [ ] Keyboard-only navigation tested (Tab, Enter, Escape, Arrows)
+- [ ] Screen reader compatibility verified (NVDA, VoiceOver, TalkBack)
+- [ ] Color contrast ≥4.5:1 for text, ≥3:1 for UI components
+- [ ] Focus indicators visible on all interactive elements
+- [ ] All interactive elements keyboard accessible
+- [ ] Form fields properly labeled
+- [ ] All meaningful images have alt text
+- [ ] Motion respects `prefers-reduced-motion`
+- [ ] Accessibility documentation complete with remediation steps
+
+## Coordination with Other Agents
+
+**AG-UI (Frontend Components)**:
+- Report accessibility issues found in components
+- Review UI implementation for keyboard navigation and ARIA
+- Coordinate on form label and error message accessibility
+- Verify design tokens support sufficient contrast
+
+**AG-DESIGN (Visual Design)**:
+- Verify focus styles meet visibility requirements
+- Ensure color palette meets contrast requirements
+- Validate touch target sizes and spacing
+- Review animation for seizure risks (no >3 flashes/second)
+
+**AG-TESTING (Quality)**:
+- Integrate accessibility tests in CI (axe-core, jest-axe)
+- Set up screen reader testing in QA workflow
+- Create automated contrast checking in tests
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Bash, Glob, Grep
+
+## Related Agents
+
+- [`ui`](/agents/ui) - Frontend components (accessibility is part of UI QA)
+- [`design`](/agents/design) - Visual design (color, contrast, focus styles)
+- [`testing`](/agents/testing) - Test automation including a11y tests
+- [`qa`](/agents/qa) - Quality assurance and compliance

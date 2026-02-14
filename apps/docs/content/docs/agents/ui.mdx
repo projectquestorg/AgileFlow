@@ -1,0 +1,346 @@
+---
+title: UI
+description: UI/presentation layer specialist. Implements front-end components, styling, theming, design systems, accessibility features, and stories tagged with owner AG-UI.
+---
+
+# UI Agent
+
+The UI agent (AG-UI) is your frontend specialist. It implements components, styling systems, accessibility features, responsive design, and ensures your interface follows UX best practices and design system standards. It works closely with AG-API on dependencies and AG-ACCESSIBILITY on inclusive design.
+
+## Capabilities
+
+- Implement React/Vue/Angular/Svelte components with state management
+- Create and maintain design systems with design tokens
+- Build responsive layouts (mobile-first, multiple breakpoints)
+- Implement accessibility features (WCAG 2.1 AA minimum)
+- Apply UX laws and psychological principles
+- Write comprehensive component tests (unit, integration, accessibility)
+- Ensure keyboard navigation and screen reader compatibility
+- Create theming systems (dark mode, brand variations)
+- Optimize perceived performance (skeleton screens, optimistic UI)
+- Coordinate with AG-API on blocked endpoints
+
+## When to Use
+
+Use the UI agent when:
+
+- You need to implement a new component or feature
+- You need to build a design system with design tokens
+- You need to refactor styling or apply a new CSS approach
+- You need to ensure accessibility (WCAG 2.1 AA)
+- You need responsive design across mobile/tablet/desktop
+- You need to implement theming (dark mode, brand switching)
+- You need to optimize perceived performance
+- You want to ensure consistency with design system
+
+## How It Works
+
+1. **Design System Check**: Detects and optionally creates design tokens
+2. **Context Loading**: Reads expertise, CLAUDE.md, and design system docs
+3. **Story Analysis**: Checks acceptance criteria and API dependencies
+4. **Planning**: For complex work, designs component structure before implementing
+5. **Implementation**: Builds components using design tokens and design system
+6. **Testing**: Writes unit, integration, and accessibility tests
+7. **Accessibility**: Tests keyboard nav, screen readers, contrast, focus
+8. **Verification**: Runs tests and ensures quality gates pass
+9. **Documentation**: Updates CLAUDE.md with new patterns discovered
+
+## Example
+
+```bash
+# Via /babysit (recommended)
+/agileflow:babysit
+> "I need a user profile card component"
+```
+
+The UI agent will:
+1. Check for design system (create if missing)
+2. Design the ProfileCard component structure
+3. Build using design tokens (no hardcoded colors/spacing)
+4. Implement responsive design (mobile/tablet/desktop)
+5. Add accessibility features (WCAG 2.1 AA)
+6. Write comprehensive tests
+7. Verify keyboard navigation and screen reader compatibility
+8. Mark ready for review when tests pass
+
+Or spawn directly:
+
+```text
+Task(
+  description: "Implement notification toast component",
+  prompt: "Create a reusable Toast component with success/error/warning states, dismiss button, and accessibility features",
+  subagent_type: "agileflow-ui"
+)
+```
+
+## Key Behaviors
+
+- **Load Expertise First**: Reads expertise.yaml to understand component patterns
+- **Design System Priority**: Detects design tokens, offers to create if missing
+- **Accessibility Required**: WCAG 2.1 AA minimum - keyboard, screen readers, contrast
+- **UX Laws Applied**: Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End, Doherty
+- **Design Tokens Only**: No hardcoded colors, spacing, or fonts
+- **Responsive Mobile-First**: Tests at 320px, 768px, 1024px breakpoints
+- **Coordinate Dependencies**: Checks status.json for AG-API endpoint readiness
+- **Test-Driven**: Writes tests before/during implementation, requires passing before in-review
+- **CLAUDE.md Updates**: Documents new patterns and conventions discovered
+- **Proactive README Updates**: Suggests README updates after UI changes
+
+## Design System Approach
+
+### Tokens (Never Hardcode)
+
+**Colors**:
+```typescript
+// DO: Use design tokens
+style={{ color: colors.primary, backgroundColor: colors.surface }}
+
+// DON'T: Hardcode hex values
+style={{ color: '#3b82f6', backgroundColor: '#ffffff' }}
+```
+
+**Spacing**:
+```typescript
+// DO: Use design tokens
+style={{ padding: spacing.md, gap: spacing.sm }}
+
+// DON'T: Hardcode pixels
+style={{ padding: '16px', gap: '8px' }}
+```
+
+**Typography**:
+```typescript
+// DO: Use design tokens
+style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.bold }}
+
+// DON'T: Hardcode font sizes
+style={{ fontSize: '14px', fontWeight: 600 }}
+```
+
+### Token Structure
+
+Common design system tokens:
+
+```typescript
+const colors = {
+  primary: '#3b82f6',
+  secondary: '#6366f1',
+  error: '#ef4444',
+  success: '#10b981',
+  warning: '#f59e0b',
+  text: '#1f2937',
+  textSecondary: '#6b7280',
+  border: '#e5e7eb',
+  surface: '#ffffff',
+  background: '#f9fafb',
+};
+
+const spacing = {
+  xs: '0.25rem',  // 4px
+  sm: '0.5rem',   // 8px
+  md: '1rem',     // 16px
+  lg: '1.5rem',   // 24px
+  xl: '2rem',     // 32px
+};
+
+const typography = {
+  fontSize: { xs: '0.75rem', sm: '0.875rem', base: '1rem', lg: '1.125rem' },
+  fontWeight: { normal: 400, medium: 500, bold: 700 },
+  lineHeight: { tight: 1.25, normal: 1.5, relaxed: 1.75 },
+};
+```
+
+## Accessibility (WCAG 2.1 AA)
+
+Every component must be accessible:
+
+### Keyboard Navigation
+- Tab through all interactive elements
+- Enter/Space activates buttons
+- Escape closes modals
+- Arrow keys navigate lists/menus
+- No keyboard traps
+
+### Screen Reader Compatibility
+- Semantic HTML: `<button>`, `<nav>`, `<main>`, `<label>`
+- ARIA labels: Icon-only buttons need `aria-label`
+- Form labels: Associated with inputs
+- Error announcements: `role="alert"` for errors
+- Live regions: `aria-live="polite"` for updates
+
+### Color Contrast
+- Text: 4.5:1 ratio (AA) or 7:1 (AAA)
+- UI components: 3:1 ratio
+- Don't rely on color alone (add icons/text)
+
+### Focus Management
+- Visible focus indicator (≥2px outline)
+- Focus order matches visual order
+- Focus trap management in modals
+
+## UX Laws Applied
+
+Every component must follow these psychological principles:
+
+**Jakob's Law**: Users expect familiar patterns
+- Use common navigation, button styles, form layouts
+- Don't innovate at micro-interaction level
+
+**Hick's Law**: More choices = slower decisions
+- Minimize options on critical screens
+- Break complex tasks into steps
+- Use filters/search for large item sets
+
+**Fitts's Law**: Time to target = distance/size
+- Touch targets ≥44×44px mobile, ≥40×40px desktop
+- Ample spacing between buttons
+- Important actions within thumb reach
+
+**Gestalt Principles**: Humans group visual info predictably
+- Proximity: Group related elements close together
+- Similarity: Same color/shape = same category
+- Common region: Borders show grouping
+- Simplicity: Use simplest visual form
+
+**Von Restorff Effect**: Distinctive items stand out
+- Only ONE primary CTA per screen stands out
+- Rest use secondary/tertiary styling
+- Example: Netflix red button, neutral rest
+
+**Peak-End Rule**: Users remember peaks and endings
+- Create memorable moments at success states
+- Make endings delightful (celebration, confirmation)
+- High-five animation on success
+
+**Doherty Threshold**: Sub-400ms response = addictive
+- Provide immediate visual feedback (<400ms)
+- Use optimistic UI (show result before server confirms)
+- Skeleton screens while loading
+
+## Responsive Design
+
+Test at three breakpoints minimum:
+
+| Breakpoint | Width | Test For |
+|-----------|-------|----------|
+| Mobile | 320px-639px | Stack layout, full-width buttons, 44px touch targets |
+| Tablet | 640px-1023px | 2-column layouts, navigation adjustments |
+| Desktop | 1024px+ | Multi-column layouts, hover states |
+
+## Component Testing
+
+Every component needs tests:
+
+```typescript
+// Unit tests - Component rendering and props
+test('renders button with correct label', () => {
+  render(<Button label="Click me" />);
+  expect(screen.getByText('Click me')).toBeInTheDocument();
+});
+
+// Integration tests - User interactions
+test('calls onClick when clicked', () => {
+  const onClick = jest.fn();
+  render(<Button onClick={onClick} />);
+  userEvent.click(screen.getByRole('button'));
+  expect(onClick).toHaveBeenCalled();
+});
+
+// Accessibility tests - a11y compliance
+test('button is keyboard accessible', () => {
+  render(<Button />);
+  const button = screen.getByRole('button');
+  button.focus();
+  expect(button).toHaveFocus();
+  userEvent.keyboard('{Enter}');
+  // Verify action triggered
+});
+
+// Visual tests - Optional but recommended
+test('matches snapshot', () => {
+  const { container } = render(<Button />);
+  expect(container).toMatchSnapshot();
+});
+```
+
+## Key Files
+
+- **Expertise**: `packages/cli/src/core/experts/ui/expertise.yaml` (component registry, patterns)
+- **Status**: `docs/09-agents/status.json` (story tracking)
+- **Bus**: `docs/09-agents/bus/log.jsonl` (coordination messages)
+- **CLAUDE.md**: Design system location, styling approach, conventions
+- **Research**: `docs/10-research/` (UI patterns, design research)
+- **Tests**: `docs/07-testing/test-cases/` (test stubs)
+- **ADRs**: `docs/03-decisions/` (UI architecture decisions)
+
+## Workflow Steps
+
+1. **Check Design System**: Create if missing, document in CLAUDE.md
+2. **Load Expertise**: Read expertise.yaml to understand patterns
+3. **Verify Definition of Ready**: AC exists, test stub created
+4. **Check Dependencies**: Is AG-API endpoint ready? Mark blocked if not
+5. **Create Branch**: `feature/<US_ID>-<slug>`
+6. **Update Status**: Mark "in-progress", append bus message
+7. **Implement**: Use design tokens, ensure accessibility, apply UX laws
+8. **Write Tests**: Unit, integration, accessibility tests
+9. **Verify Accessibility**: Keyboard, screen reader, contrast tests
+10. **Run Tests**: Ensure all tests pass
+11. **Update CLAUDE.md**: Document new patterns discovered
+12. **Update README**: If UI changes are significant
+13. **Mark In-Review**: Only when tests pass and accessibility verified
+14. **Generate PR**: Use /agileflow:pr-template
+15. **Self-Improve**: Run self-improve.md after completion
+
+## Quality Checklist
+
+Before marking in-review:
+
+- [ ] Component renders in all states (loading, error, empty, success)
+- [ ] Responsive across mobile/tablet/desktop (320px to 1920px+)
+- [ ] Hover/focus/active states visible
+- [ ] No console errors or warnings
+- [ ] Design tokens used (no hardcoded colors/spacing/fonts)
+- [ ] Accessibility: Keyboard navigation fully functional
+- [ ] Accessibility: Screen reader compatible
+- [ ] Accessibility: Color contrast ≥4.5:1
+- [ ] Accessibility: Focus indicators visible
+- [ ] UX Laws applied (Jakob's, Hick's, Fitts's, Gestalt, Von Restorff, Peak-End, Doherty)
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Accessibility tests pass (axe-core/jest-axe)
+- [ ] Tests cover happy path, error states, edge cases
+
+## Coordination with Other Agents
+
+**AG-API (Backend)**:
+- Check docs/09-agents/bus/log.jsonl for API endpoint readiness
+- If endpoint not ready: Mark story as `blocked`, request in bus
+- When AG-API signals endpoint ready: Resume implementation
+- Coordinate on request/response format and error handling
+
+**AG-DESIGN (Visual Design)**:
+- Design tokens should match visual design system
+- Color palette, typography, spacing from design guidelines
+- Request design tokens/specs if not provided
+
+**AG-ACCESSIBILITY (Inclusive Design)**:
+- Request accessibility audit if WCAG AA target is unclear
+- Report accessibility findings for remediation
+- Coordinate on focus styles, color contrast, ARIA patterns
+
+**AG-TESTING (QA)**:
+- Integrate accessibility tests (axe-core, jest-axe)
+- Set up visual regression testing if available
+- Ensure E2E tests cover critical flows
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Bash, Glob, Grep
+
+## Related Agents
+
+- [`api`](/agents/api) - Backend endpoints that UI consumes
+- [`design`](/agents/design) - Visual design and design systems
+- [`accessibility`](/agents/accessibility) - WCAG compliance and accessible design
+- [`testing`](/agents/testing) - Test automation and quality gates
+- [`ui-validator`](/agents/ui-validator) - Validates UI implementations meet quality gates

@@ -1,11 +1,11 @@
 ---
 title: Commands
-description: Complete reference for all 90+ AgileFlow slash commands. Each command is designed for a specific task in your AI-powered development workflow.
+description: Complete reference for all 94 AgileFlow slash commands. Each command is designed for a specific task in your AI-powered development workflow.
 ---
 
 # Commands
 
-AgileFlow provides **90+ slash commands** that you can use directly in Claude Code. All commands follow the pattern `/agileflow:command-name`.
+AgileFlow provides **94 slash commands** that you can use directly in Claude Code. All commands follow the pattern `/agileflow:command-name`.
 
 ## Command Categories
 
@@ -15,12 +15,14 @@ Commands for creating and organizing work:
 
 | Command | Description |
 |---------|-------------|
+| [`/discovery`](/commands/discovery) | Structured discovery workflow with brainstorming and product briefs (subcommands: new, brief) |
 | [`/ideate`](/commands/ideate) | Generate improvement ideas using multi-expert analysis |
 | [`/epic`](/commands/epic) | Create a new epic with stories (subcommands: list, view) |
 | [`/story`](/commands/story) | Create a user story with acceptance criteria (subcommands: list, view) |
 | [`/sprint`](/commands/sprint) | Data-driven sprint planning with velocity forecasting |
 | [`/deps`](/commands/deps) | Visualize dependency graph with critical path detection |
 | [`/auto`](/commands/auto) | Auto-generate stories from PRDs, mockups, or specs |
+| [`/roadmap:analyze`](/commands/roadmap-analyze) | Automated competitor analysis with feature gap identification |
 
 ### Tracking
 
@@ -46,6 +48,8 @@ Commands for implementing features:
 | [`/pr`](/commands/pr) | Generate pull request description from story |
 | [`/impact`](/commands/impact) | Analyze change impact across codebase |
 | [`/audit`](/commands/audit) | Verify story completion (tests + acceptance criteria) |
+| [`/story-validate`](/commands/story-validate) | Validate story completeness before development |
+| [`/logic:audit`](/commands/logic-audit) | Multi-agent logic analysis with consensus voting for finding logic bugs |
 
 ### Operations
 
@@ -61,6 +65,7 @@ Commands for DevOps and releases:
 | [`/debt`](/commands/debt) | Track and prioritize technical debt items |
 | [`/automate`](/commands/automate) | Manage scheduled automations for recurring tasks |
 | [`/api`](/commands/api) | Start REST API server for external dashboard integrations |
+| [`/serve`](/commands/serve) | Start Dashboard WebSocket server for real-time UI communication |
 
 ### Documentation
 
@@ -200,3 +205,15 @@ Commands for managing dynamic skills:
 | [`/skill:delete`](/commands/skill-delete) | Remove an installed skill |
 | [`/skill:test`](/commands/skill-test) | Verify a skill works correctly |
 | [`/skill:upgrade`](/commands/skill-upgrade) | Add self-improving learning capability to existing skills |
+
+## Team Commands
+
+Commands for orchestrating multi-agent teams:
+
+| Command | Description |
+|---------|-------------|
+| [`/team:start`](/commands/team-start) | Start a team of specialized agents from a template |
+| [`/team:list`](/commands/team-list) | List available team templates |
+| [`/team:status`](/commands/team-status) | Show team member statuses and current tasks |
+| [`/team:stop`](/commands/team-stop) | Gracefully shut down a team |
+| [`/team:guide`](/commands/team-guide) | Agent Teams migration guide and architecture reference |

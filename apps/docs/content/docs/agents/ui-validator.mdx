@@ -1,0 +1,376 @@
+---
+title: UI Validator
+description: Validator for UI implementations. Verifies components meet accessibility, design system, and quality gates. Read-only access - cannot modify files.
+---
+
+# UI Validator Agent
+
+The UI Validator (AG-UI-VALIDATOR) is a read-only validator agent that verifies UI implementations meet quality standards. It checks accessibility (WCAG 2.1 AA), design system compliance, responsive design, testing coverage, and UX law application. Unlike builders, validators only READ and REPORT.
+
+## Role
+
+The UI Validator:
+1. **Verifies** - Checks that UI implementation matches quality gates
+2. **Reports** - Documents any issues found with specific file paths
+3. **Never Fixes** - Can only READ, not modify files
+4. **Provides Recommendations** - APPROVE or REJECT with clear guidance
+
+## When Used
+
+The UI Validator is typically invoked:
+
+- By the Team Coordinator after AG-UI completes implementation
+- To verify component meets quality standards before merge
+- To check accessibility compliance (WCAG 2.1 AA)
+- To verify design system compliance (no hardcoded colors/spacing)
+- To validate responsive design across breakpoints
+- To ensure tests are comprehensive
+- To verify UX laws are applied
+
+## How It Works
+
+1. **Read Requirements**: Gets story requirements and acceptance criteria
+2. **Find Implementation**: Locates component files and test files
+3. **Check Design Tokens**: Searches for hardcoded colors, spacing, fonts
+4. **Verify Tests**: Checks unit, integration, and accessibility test coverage
+5. **Validate Accessibility**: Reviews keyboard navigation, ARIA, contrast
+6. **Check Responsive Design**: Verifies mobile/tablet/desktop breakpoints
+7. **Verify UX Laws**: Confirms UX principles are applied
+8. **Generate Report**: Returns structured validation report with APPROVE/REJECT
+
+## Quality Gates to Check
+
+### 1. Accessibility (WCAG 2.1 AA)
+
+- [ ] Keyboard navigation works (Tab, Enter, Escape, Arrows)
+- [ ] Screen reader compatible (semantic HTML, ARIA attributes)
+- [ ] Color contrast meets minimum (4.5:1 text, 3:1 UI)
+- [ ] Focus indicators visible
+- [ ] Alt text for meaningful images
+- [ ] Form labels properly associated
+- [ ] Accessibility tests present (axe-core/jest-axe)
+
+### 2. Design System Compliance
+
+- [ ] Design tokens used (no hardcoded colors)
+- [ ] Design tokens used (no hardcoded spacing)
+- [ ] Design tokens used (no hardcoded fonts)
+- [ ] Consistent spacing (8px grid or design system scale)
+- [ ] Typography hierarchy follows system
+
+### 3. Responsive Design
+
+- [ ] Mobile breakpoint tested (320px-639px)
+- [ ] Tablet breakpoint tested (640px-1023px)
+- [ ] Desktop breakpoint tested (1024px+)
+- [ ] Touch targets ≥44px on mobile
+- [ ] No horizontal scroll on mobile
+
+### 4. Component Tests
+
+- [ ] Unit tests exist for component
+- [ ] Tests cover happy path
+- [ ] Tests cover error states
+- [ ] Tests cover loading states
+- [ ] Accessibility tests present (axe-core/jest-axe)
+
+### 5. UX Laws Applied
+
+- [ ] Jakob's Law: Familiar patterns used
+- [ ] Hick's Law: Minimal choices on critical screens
+- [ ] Fitts's Law: Touch targets adequately sized and spaced
+- [ ] Gestalt: Related elements grouped visually
+- [ ] Von Restorff: Only ONE primary CTA per screen stands out
+- [ ] Peak-End Rule: Success states are memorable
+- [ ] Doherty Threshold: Feedback within 400ms (loading states exist)
+
+### 6. Visual Verification (if Visual E2E enabled)
+
+- [ ] Screenshots captured for key states
+- [ ] Screenshots verified (have `verified-` prefix)
+- [ ] No visual artifacts or misalignments
+- [ ] Colors match design system
+
+## Validation Checklist
+
+When validating a UI implementation, check:
+
+**Files to Examine**:
+- Component file (e.g., `src/components/Button.tsx`)
+- Test file (e.g., `src/components/Button.test.tsx`)
+- Style files (CSS Modules, Tailwind classes, etc.)
+- Any README or documentation
+
+**Things to Search For**:
+
+Hardcoded colors:
+```typescript
+// Search for these patterns
+style={{ color: '#3b82f6' }}
+style={{ backgroundColor: '#ffffff' }}
+className="text-[#3b82f6]"
+```
+
+Hardcoded spacing:
+```typescript
+// Search for these patterns
+style={{ padding: '16px' }}
+style={{ margin: '8px' }}
+className="p-[16px]"
+```
+
+Hardcoded fonts:
+```typescript
+// Search for these patterns
+style={{ fontSize: '14px', fontWeight: 600 }}
+className="text-[14px]"
+```
+
+Accessibility patterns to verify:
+```typescript
+// Should find these
+<button aria-label="Close">X</button>
+<label htmlFor="email">Email</label>
+role="alert"
+aria-live="polite"
+aria-invalid="true"
+```
+
+## Common Issues to Look For
+
+| Issue | How to Detect | Severity |
+|-------|---------------|----------|
+| Hardcoded color | `color: '#3b82f6'` in component | High |
+| Hardcoded spacing | `padding: '16px'` in component | High |
+| No alt text | `<img>` without `alt` attribute | High |
+| No color contrast | Light color on light background | High |
+| Icon button no label | `<button><Icon /></button>` without aria-label | Medium |
+| Missing form label | `<input>` without associated `<label>` | Medium |
+| No focus indicator | Can't see where focus is | Medium |
+| No accessibility tests | No axe-core or jest-axe in tests | Medium |
+| No responsive test | Only tested desktop size | Low |
+
+## Validation Report Template
+
+```markdown
+## Validation Report: {story_id}
+
+**Builder**: agileflow-ui
+**Validator**: agileflow-ui-validator
+**Timestamp**: {timestamp}
+
+### Overall Status: APPROVED / REJECTED
+
+### Gate Results
+
+#### Accessibility (WCAG 2.1 AA): PASS / FAIL
+- Keyboard navigation functional ✅
+- ARIA attributes present ✅
+- Color contrast verified ✅
+- Issue: Missing form label in search field ❌
+
+#### Design System Compliance: PASS / FAIL
+- Design tokens used ✅
+- Spacing consistent ✅
+- Issue: Found hardcoded color `#3b82f6` in Button.tsx:42 ❌
+
+#### Responsive Design: PASS / FAIL
+- Mobile 320px tested ✅
+- Tablet 768px tested ✅
+- Desktop 1024px tested ✅
+
+#### Component Tests: PASS / FAIL
+- Unit tests present ✅
+- Happy path covered ✅
+- Error states covered ✅
+- Accessibility tests present ✅
+
+#### UX Laws Applied: PASS / FAIL
+- Jakob's Law: Familiar patterns ✅
+- Hick's Law: Minimal choices ✅
+- Fitts's Law: Touch targets 44px ✅
+
+### Issues Found
+
+1. **Hardcoded Color** (High severity)
+   - File: `src/components/Button.tsx:42`
+   - Issue: `color: '#3b82f6'` hardcoded
+   - Solution: Use design token `colors.primary`
+
+2. **Missing Form Label** (Medium severity)
+   - File: `src/components/SearchInput.tsx:15`
+   - Issue: `<input>` without associated `<label>`
+   - Solution: Add `<label htmlFor="search">` or `aria-label`
+
+### Recommendation
+
+❌ **REJECT** - Fix 2 issues before approval:
+1. Replace hardcoded color with design token
+2. Add form label for search input
+
+Re-submit validation when fixed.
+
+---
+
+OR
+
+✅ **APPROVE** - All quality gates passed. Ready to merge.
+```
+
+## Tools Available
+
+This agent has access to: **Read, Glob, Grep** only
+
+**Important**: The validator CANNOT use Write, Edit, or Bash. It can only READ and REPORT.
+
+## Key Behaviors
+
+- **Read-Only**: Never attempts to modify files
+- **Systematic**: Checks all quality gates methodically
+- **Specific**: Reports exact file paths and line numbers
+- **Objective**: Reports facts, not opinions
+- **Thorough**: Doesn't skip any quality gate
+- **Clear**: Provides actionable recommendations
+- **Efficient**: Focuses on high-impact issues
+
+## Accessibility Deep Dive
+
+### Keyboard Navigation Checklist
+
+| Element | Expected Keys | What to Check |
+|---------|---------------|---------------|
+| Button | Enter, Space | Can activate with keyboard |
+| Link | Enter | Can navigate with keyboard |
+| Modal | Escape | Can close with Escape |
+| Dropdown | Arrow keys | Can navigate options |
+| Form | Tab | Focus moves logically |
+
+### ARIA Patterns to Verify
+
+```html
+<!-- Icon button with label -->
+<button aria-label="Close">×</button>
+
+<!-- Form field with label -->
+<label for="email">Email</label>
+<input id="email" type="email">
+
+<!-- Form error announcement -->
+<input aria-invalid="true" aria-describedby="error">
+<span id="error" role="alert">Email is required</span>
+
+<!-- Live region for updates -->
+<div aria-live="polite">Loading...</div>
+```
+
+### Color Contrast Verification
+
+Use WebAIM Contrast Checker:
+- Text on background: 4.5:1 minimum (AA), 7:1 preferred (AAA)
+- UI components: 3:1 minimum
+- Check normal, hover, focus, and disabled states
+
+## Design Token Verification
+
+### What NOT to Find
+
+```typescript
+// BAD - Hardcoded colors
+style={{ color: '#3b82f6' }}
+className="text-[#3b82f6]"
+style={{ backgroundColor: '#ffffff' }}
+
+// BAD - Hardcoded spacing
+style={{ padding: '16px', margin: '8px' }}
+className="p-[16px] m-[8px]"
+
+// BAD - Hardcoded fonts
+style={{ fontSize: '14px', fontWeight: 600 }}
+className="text-[14px] font-[600]"
+```
+
+### What to Find Instead
+
+```typescript
+// GOOD - Design tokens
+style={{ color: colors.primary }}
+className="text-primary"
+style={{ padding: spacing.md, margin: spacing.sm }}
+className="p-4 m-2"  // Tailwind scale
+style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold }}
+className="text-sm font-semibold"
+```
+
+## Responsive Design Verification
+
+Test using browser DevTools responsive mode:
+
+| Breakpoint | Width | Mobile Checks |
+|-----------|-------|---------------|
+| Mobile | 320px | Stack layout, full-width buttons, ≥44px targets |
+| Mobile | 375px | iPhone SE size |
+| Mobile | 425px | Larger phone size |
+| Tablet | 768px | iPad size, 2-column layout |
+| Desktop | 1024px | Desktop, full multi-column layout |
+| Large | 1920px | Large screen compatibility |
+
+Common issues:
+- Content wider than viewport (horizontal scroll on mobile)
+- Touch targets too small (<44px on mobile)
+- Text too small (<16px on mobile)
+- Images not responsive (fixed width)
+
+## Integration with Team Coordinator
+
+When used by Team Coordinator:
+
+1. **Input**: Receives builder task ID and story ID
+2. **Analyze**: Gathers context and implementation files
+3. **Validate**: Executes all quality gates
+4. **Output**: Returns structured validation report
+5. **Decision**: Team Coordinator decides next action:
+   - APPROVED: Mark task complete, merge PR
+   - REJECTED: Send feedback to builder for fixes
+   - ESCALATE: Request human review if uncertain
+
+## Testing Coverage Verification
+
+### Unit Tests Required
+- Component renders with props
+- Props affect rendering correctly
+- User interactions work (clicks, keyboard)
+- State changes work as expected
+
+### Integration Tests Required
+- Component works within parent components
+- Data flows correctly from parents
+- Events bubble/propagate correctly
+
+### Accessibility Tests Required
+- axe-core automated a11y checks
+- Manual keyboard navigation tests
+- Focus management tests
+- ARIA attribute validation
+
+### Example Test Search
+
+Look for test files:
+- `*.test.js`, `*.test.tsx`
+- `*.spec.js`, `*.spec.tsx`
+
+Search for test coverage:
+```typescript
+describe('Button', () => {
+  test('renders with label', () => {});  // Unit test
+  test('calls onClick when clicked', () => {});  // Interaction test
+  test('is keyboard accessible', () => {});  // A11y test
+  test('has sufficient contrast', () => {});  // A11y test
+});
+```
+
+## Related Agents
+
+- [`ui`](/agents/ui) - Builder agent that creates UI implementations
+- [`team-coordinator`](/agents/team-coordinator) - Orchestrates builder-validator pairs
+- [`accessibility`](/agents/accessibility) - Expert consultation on a11y issues
+- [`design`](/agents/design) - Expert consultation on design system issues

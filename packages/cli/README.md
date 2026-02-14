@@ -39,9 +39,9 @@ npx agileflow@latest update
 | IDE | Status | Config Location |
 |-----|--------|-----------------|
 | Claude Code | Supported | `.claude/commands/agileflow/` |
-| Cursor | Supported | `.cursor/rules/agileflow/` |
+| Cursor | Supported | `.cursor/commands/agileflow/` |
 | Windsurf | Supported | `.windsurf/workflows/agileflow/` |
-| OpenAI Codex CLI | Supported | `.codex/skills/` |
+| OpenAI Codex CLI | Supported | `.codex/skills/` and `~/.codex/prompts/` |
 
 ---
 
