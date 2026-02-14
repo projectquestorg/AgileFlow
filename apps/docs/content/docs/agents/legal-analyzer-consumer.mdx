@@ -1,0 +1,248 @@
+---
+title: Legal Analyzer - Consumer Protection
+description: Consumer protection analyzer for dark patterns, FTC violations, COPPA compliance, and deceptive practices.
+---
+
+# Legal Analyzer - Consumer Protection
+
+The Legal Analyzer - Consumer agent (AG-LEGAL-CONSUMER) is a compliance specialist who identifies consumer protection violations that expose your organization to FTC enforcement and class action litigation. This agent analyzes designs and features for dark patterns, COPPA violations, deceptive practices, and predatory patterns that are specifically prohibited by consumer protection laws.
+
+## Capabilities
+
+- **Dark Pattern Detection**: Identify manipulative UI patterns that trick users (roach motel, misdirection, hidden costs)
+- **FTC Violation Analysis**: Detect unfair or deceptive acts and practices
+- **COPPA Compliance**: Verify Children's Online Privacy Protection Act requirements when serving children
+- **Predatory Pattern Identification**: Find patterns targeting vulnerable populations
+- **Consent Mechanics**: Analyze whether consent is informed, voluntary, and specific
+- **Cancellation & Refund Policies**: Verify compliance with consumer-friendly requirements
+- **Subscription Traps**: Identify negative option billing that violates regulations
+- **Deceptive Claims**: Analyze marketing language for false or misleading statements
+
+## When to Use
+
+Use the Legal Analyzer - Consumer when:
+
+- Designing user flows, forms, or signup processes
+- Implementing subscription or payment systems
+- Creating or updating terms of service
+- Implementing free trial features
+- Targeting children or minors
+- Collecting user data or consent
+- Implementing cancellation or account deletion
+- Analyzing competitor features for best practices
+- Responding to FTC complaints or regulatory inquiries
+
+## How It Works
+
+1. **UI/UX Analysis**: Agent reviews user flows, forms, and interfaces
+2. **Pattern Identification**: Agent identifies dark patterns and deceptive practices
+3. **Regulatory Mapping**: Agent maps issues to FTC regulations, COPPA, state laws
+4. **Risk Assessment**: Agent rates violation severity (Critical/High/Medium)
+5. **Compliance Audit**: Agent documents all violations with evidence
+6. **Remediation Plan**: Agent recommends UX fixes with implementation effort
+7. **Testing Strategy**: Agent outlines testing approach to verify compliance
+8. **Documentation**: Agent creates compliance records and policy language
+
+## Example
+
+```bash
+# Via babysit - Consumer protection audit
+/agileflow:babysit
+> "We're designing a free trial flow for our fitness app. Can you check for legal issues?"
+
+# Agent output:
+# Consumer Protection Compliance Audit
+#
+# Feature: Free Trial to Paid Subscription
+# Risk Level: CRITICAL
+# Regulations: FTC Negative Option Rule, State Deceptive Trade Practices
+#
+# DARK PATTERNS DETECTED:
+# 1. Misdirection - Consent button design
+#    Issue: "Subscribe Now" button is large, blue, and prominent
+#    Compare: "Cancel Subscription" is tiny gray text
+#    Violation: ROSCA Rule requires equally prominent consent buttons
+#    Risk: FTC enforcement + $50K/day penalties
+#    Fix: Make cancellation button same size/prominence as subscription (2 hours)
+#
+# 2. Roach Motel - Cancellation Process
+#    Issue: Users must:
+#      - Go to Settings > Billing > Subscriptions > [Find App] > Manage
+#      - Click "Cancel Subscription"
+#      - Answer 3 questions why they're leaving
+#      - Wait 5 days for cancellation
+#    Violation: ROSCA requires simple cancellation mechanism
+#    Case law: Amazon, Apple, Disney all fined for difficult cancellation
+#    Fix: Add 1-click "Cancel" button in account page (4 hours)
+#
+# 3. Hidden Costs - Surprise Charges
+#    Issue: Trial page shows "$0.00 for 7 days" but doesn't clearly state:
+#      - Exact date trial ends
+#      - Exact charge amount after trial
+#      - Renewal frequency
+#    Violation: FTC Endorsement Guides - must clearly disclose material terms
+#    Risk: Class action lawsuits over surprise charges
+#    Fix: Add clear countdown timer and charge amount on trial page (2 hours)
+#
+# 4. Absence of Simple Cancellation
+#    Issue: No 1-click cancel button; must call customer service
+#    Violation: ROSCA explicitly prohibits requiring phone calls for cancellation
+#    Case law: Apple, Amazon required 1-click cancel
+#    Fix: Implement 1-click cancel in account settings (4 hours)
+#
+# COPPA COMPLIANCE (if serving under 13):
+# - No parental consent mechanism
+# - No privacy policy targeting parents
+# - Unclear data collection disclosures
+# Penalty: $50K per child violation
+#
+# Compliance Roadmap:
+# 1. Fix button prominence (2 hours)
+# 2. Implement 1-click cancel (4 hours)
+# 3. Clear countdown + charge disclosure (2 hours)
+# 4. Parental consent flow if under-13 users (8 hours)
+# Total: 16 hours
+#
+# Risk after remediation: LOW
+```
+
+## Key Behaviors
+
+- **User Protection First**: Prioritize clear, transparent consumer interactions
+- **Legal Precedent**: Reference known FTC enforcement cases and outcomes
+- **UX Impact**: Ensure compliance fixes don't degrade user experience (they often improve it)
+- **Vulnerability Focus**: Identify patterns that exploit elderly, low-income, or less sophisticated users
+- **Data Honesty**: Ensure consent flows are informed and voluntary
+- **Cancellation Parity**: Cancellation must be as easy as signup
+- **Testing Verification**: Verify compliance fixes are tested and working
+
+## Common Dark Patterns
+
+| Pattern | Example | Violation | Case Law |
+|---------|---------|-----------|----------|
+| **Roach Motel** | Signup 1-click, cancel via phone | ROSCA | Amazon, Apple, Disney |
+| **Misdirection** | Big "Buy" button, tiny "Cancel" link | ROSCA | Google (Google Play) |
+| **Hidden Costs** | Free trial without clear charge date | FTC Act § 5 | Amazon Prime Video |
+| **Negative Option** | Auto-renewing subscriptions not disclosed | ROSCA | Vonage, Amazon |
+| **Bait & Switch** | Promise free, then charge | FTC Endorsement Guides | WeChat, ByteDance |
+| **Obstruction** | Cancellation requires multiple steps | ROSCA | AOL (famous case) |
+| **Trick Questions** | Pre-checked opt-in boxes | CAN-SPAM | Microsoft Outlook |
+| **Forced Continuity** | Free to paid without clear consent | ROSCA | Sketchers, ABCMouse |
+
+## FTC Enforcement Actions
+
+| Company | Violation | Penalty | Year |
+|---------|-----------|---------|------|
+| **Amazon** | Difficult Prime cancellation | $25M settlement | 2023 |
+| **Apple** | Hidden App Store charges | Returned $100M+ to consumers | 2021 |
+| **Google** | Difficult subscription cancellation | $100M penalty | 2019 |
+| **Disney** | Roach motel cancellation pattern | $300M penalty | 2023 |
+| **Microsoft** | Pre-checked Xbox Game Pass | Class action settlement | 2021 |
+| **WeChat** | Deceptive free-to-paid conversion | Banned by FTC | 2021 |
+
+## Deceptive Practice Examples
+
+**Bad - Unclear trial terms**:
+```html
+<!-- Dark: No clear disclosure of charges -->
+<div class="signup-form">
+  <h2>Start your free trial</h2>
+  <button>Start Now</button>
+  <small>Terms apply</small>
+</div>
+```
+
+**Good - Clear, transparent terms**:
+```html
+<!-- Clear: Specific charges and dates disclosed -->
+<div class="signup-form">
+  <h2>Start your free 7-day trial</h2>
+  <p class="highlight">
+    <strong>Trial ends: December 25, 2024</strong><br>
+    Then $9.99/month unless you cancel
+  </p>
+  <button>Start 7-Day Free Trial</button>
+  <p class="cancel-info">
+    <a href="/cancel-anytime">Cancel anytime with 1 click</a>
+  </p>
+</div>
+```
+
+**Bad - Hidden cancellation**:
+```javascript
+// Dark: Cancellation buried in settings
+// Account > Settings > Subscription > Manage > Cancel
+// Then 3 confirmation questions, 5-day wait
+```
+
+**Good - Easy cancellation**:
+```html
+<!-- Clear: Cancellation at account top level -->
+<button class="danger-button" onClick={handleCancel}>
+  Cancel Subscription
+</button>
+<p>Your subscription will end on December 25, 2024</p>
+<p>You will lose access to:</p>
+<ul>
+  <li>Premium features</li>
+  <li>Cloud storage</li>
+</ul>
+```
+
+## COPPA Compliance Checklist (if serving under 13)
+
+- [ ] Parental consent obtained before collecting any data
+- [ ] Privacy policy clearly explains data collection, use, and disclosure
+- [ ] No targeted advertising to children
+- [ ] No sharing of children's data with third parties
+- [ ] Parent account controls to review/delete child data
+- [ ] Mechanism for parents to verify reasonable parental consent
+- [ ] No retargeting cookies or tracking of children
+- [ ] Parental opt-in for email/SMS communications
+
+## Tools Available
+
+- Read, Glob, Grep (analyze code and UI)
+
+## Consumer Protection Checklist
+
+Before launch:
+
+- [ ] Free trial terms clearly stated (duration, cost after trial, renewal frequency)
+- [ ] Trial expiration date shown with countdown
+- [ ] Charge amount clearly disclosed before consent
+- [ ] Subscription button equally prominent as cancellation button
+- [ ] 1-click cancellation available
+- [ ] Cancellation doesn't require phone call or customer service
+- [ ] Refund/return policy clearly stated
+- [ ] No pre-checked boxes for opt-in
+- [ ] Email confirmation of subscription and cancellation
+- [ ] Billing history and cancellation confirmation sent to user
+- [ ] Terms of Service clearly written (plain English, not legal jargon)
+- [ ] Negative option disclosures clearly visible before purchase
+- [ ] User can change billing address/payment method
+- [ ] No auto-renewal surprises
+
+## Related Agents
+
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - Terms of service compliance
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Data collection and consent
+- [`legal-analyzer-content`](/agents/legal-analyzer-content) - Content and misleading claims
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Consumer coordinates with:
+
+- **AG-UI**: Review user flows and form design
+- **AG-PRODUCT**: Document consumer protection requirements
+- **AG-API**: Verify billing and cancellation logic
+- **AG-TESTING**: Test cancellation and consent flows
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report
+
+## Slash Commands
+
+- `/agileflow:research:ask TOPIC=...` - Research FTC regulations and case law
+- `/agileflow:ai-code-review` - Review UI/UX for dark patterns
+- `/agileflow:adr-new` - Document consumer protection decisions
+- `/agileflow:status STORY=... STATUS=...` - Update story status

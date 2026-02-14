@@ -1,0 +1,223 @@
+---
+title: /legal:audit
+description: Multi-agent legal risk analysis with consensus voting for finding compliance gaps
+---
+
+# /legal:audit
+
+Deploy multiple specialized legal risk analyzers in parallel to find compliance gaps, then synthesize results through consensus voting into a prioritized Legal Risk Report.
+
+## Quick Start
+
+```bash
+/agileflow:legal:audit src/
+```
+
+## Arguments
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | Target file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep | quick | Analysis depth (quick = core 5 analyzers, deep = all 9) |
+| `FOCUS` | privacy, terms, a11y, licensing, consumer, security, ai, content, international, all | all | Which analyzers to deploy |
+
+## How It Works
+
+The command deploys specialized legal risk analyzers in parallel to examine your codebase for compliance gaps:
+
+1. **Deploy Analyzers** - 5-9 specialized analyzers examine code simultaneously
+2. **Parallel Analysis** - Each analyzer runs independently on the target files
+3. **Consensus Voting** - Results are collected and evaluated for confidence
+4. **Generate Report** - A prioritized Legal Risk Report is produced with actionable fixes
+
+### Analyzer Coverage
+
+**Core Analyzers (DEPTH=quick)**:
+- **Privacy** - GDPR, CCPA, cookie consent, data collection practices
+- **Terms & Legal** - Terms of Service, disclaimers, refund policies
+- **Accessibility** - ADA, WCAG 2.1, Section 508 compliance
+- **Licensing** - Open source licenses, IP rights, attribution
+- **Consumer Protection** - Dark patterns, FTC compliance, COPPA
+
+**Additional Analyzers (DEPTH=deep adds)**:
+- **Security** - Breach notification obligations, PCI-DSS, encryption requirements
+- **AI & Algorithms** - EU AI Act, algorithmic bias, disclosure requirements
+- **Content & IP** - DMCA, Digital Services Act, UGC moderation obligations
+- **International** - LGPD (Brazil), PIPL (China), data localization, cross-border regulations
+
+## Examples
+
+```bash
+# Quick scan of app directory (core 5 analyzers)
+/agileflow:legal:audit app/
+
+# Deep analysis with all 9 analyzers
+/agileflow:legal:audit . DEPTH=deep
+
+# Focus on specific compliance areas
+/agileflow:legal:audit src/ FOCUS=privacy,a11y
+
+# Single file AI compliance check
+/agileflow:legal:audit app/page.tsx FOCUS=ai
+
+# Comprehensive audit with all analyzers
+/agileflow:legal:audit . DEPTH=deep FOCUS=all
+```
+
+## Understanding Results
+
+### Risk Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **CRITICAL** | Active lawsuit risk | Fix before launch |
+| **HIGH** | Regulatory fine risk | Fix this sprint |
+| **MEDIUM** | Best practice gap | Backlog for later |
+| **LOW** | Advisory improvement | Consider for next release |
+
+### Confidence Scoring
+
+| Confidence | Meaning |
+|------------|---------|
+| **CONFIRMED** | 2+ analyzers agree (high priority) |
+| **LIKELY** | 1 analyzer with strong evidence (medium priority) |
+| **INVESTIGATE** | 1 analyzer with weak evidence (low priority) |
+
+## Example Output
+
+```
+⚖️  Legal Audit: app/
+══════════════════════════════════════════════════════════════
+
+Deploying 5 legal analyzers (quick mode)...
+✓ Privacy Analyzer
+✓ Terms Analyzer
+✓ Accessibility Analyzer
+✓ Licensing Analyzer
+✓ Consumer Protection Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: SaaS Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 RISK SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Risk Level | Count |
+|------------|-------|
+| Critical   | 2     |
+| High       | 3     |
+| Medium     | 4     |
+| Low        | 1     |
+
+Total: 10 findings (3 false positives excluded)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 FIX BEFORE LAUNCH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. No privacy policy but collecting email [CONFIRMED by Privacy, Terms]
+   Location: app/page.tsx:42
+   Legal Basis: GDPR Article 13, CCPA
+   Fix: Add /privacy page and link from footer
+
+2. Images without alt text (12 instances) [CONFIRMED by A11y]
+   Location: components/*.tsx
+   Legal Basis: ADA Title III, WCAG 2.1 AA 1.1.1
+   Fix: Add descriptive alt attributes to all images
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX THIS SPRINT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. Missing Terms of Service [LIKELY - Terms]
+4. Cookie consent banner absent [LIKELY - Privacy]
+5. GPL dependency in MIT project [LIKELY - Licensing]
+
+[Full report saved to docs/08-project/legal-audits/legal-audit-20260214.md]
+```
+
+## Depth Modes
+
+### Quick Mode (Default)
+- Deploys **5 core analyzers**
+- Focuses on **CRITICAL and HIGH** risk issues
+- Skips advisory/best-practice findings
+- Fast turnaround for rapid compliance checks
+- Use when: You need quick baseline assessment
+
+### Deep Mode
+- Deploys **all 9 analyzers**
+- Includes **MEDIUM and LOW** risk findings
+- Comprehensive coverage including Security, AI, Content, International
+- Use when: Preparing for regulatory audit, launch, or compliance review
+
+## Focus Areas
+
+Use `FOCUS` to analyze specific domains:
+
+```bash
+# Only privacy and GDPR
+/agileflow:legal:audit app/ FOCUS=privacy
+
+# Multiple specific areas
+/agileflow:legal:audit app/ FOCUS=privacy,a11y,licensing
+
+# All analyzers
+/agileflow:legal:audit app/ FOCUS=all
+```
+
+Available focus areas:
+- `privacy` - Data protection, GDPR, CCPA
+- `terms` - Legal documents, terms of service
+- `a11y` - Accessibility compliance
+- `licensing` - Open source licenses, IP
+- `consumer` - Consumer protection laws
+- `security` - Security obligations (deep only)
+- `ai` - AI compliance (deep only)
+- `content` - Content & IP obligations (deep only)
+- `international` - International regulations (deep only)
+- `all` - Run all applicable analyzers (default)
+
+## Report Location
+
+Legal audit reports are saved to:
+```
+docs/08-project/legal-audits/legal-audit-{YYYYMMDD}.md
+```
+
+Each report includes:
+- Executive summary with risk overview
+- Detailed findings with legal citations
+- Remediation steps for each issue
+- Affected files and code locations
+- Confidence scores and analyzer agreement
+
+## Integration with Development
+
+### In Code Review
+Run legal audit on pull requests to catch compliance issues before merge:
+
+```bash
+/agileflow:legal:audit --pr
+```
+
+### Before Launch
+Run full deep audit before going live:
+
+```bash
+/agileflow:legal:audit . DEPTH=deep
+```
+
+### Continuous Compliance
+Schedule periodic audits in CI/CD to maintain ongoing compliance.
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/logic:audit`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
+| [`/review`](/docs/commands/review) | Code review (includes some compliance checks) |
+| [`/multi-expert`](/docs/commands/multi-expert) | General multi-expert analysis |
+| [`/verify`](/docs/commands/verify) | Run tests and verify quality |

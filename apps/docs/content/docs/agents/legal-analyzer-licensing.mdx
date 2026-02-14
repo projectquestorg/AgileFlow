@@ -1,0 +1,129 @@
+---
+title: Legal Analyzer - Licensing & IP
+description: Open source license compliance analyzer for copyleft violations, missing attribution, and IP infringement risks.
+---
+
+# Legal Analyzer - Licensing & IP
+
+The Legal Analyzer - Licensing agent (AG-LEGAL-LICENSING) is a compliance specialist who identifies open source license violations and intellectual property risks. This agent analyzes dependencies, code, and assets for copyleft violations, missing attributions, and license incompatibilities that could result in legal action.
+
+## Capabilities
+
+- **License Compatibility Analysis**: Detect conflicting licenses in dependency tree
+- **Copyleft Violation Detection**: Identify GPL/AGPL code in proprietary projects
+- **Attribution Compliance**: Find missing attribution notices required by licenses
+- **Asset License Verification**: Check fonts, images, and media for proper licensing
+- **Dependency License Scanning**: Audit all npm/pip/cargo dependencies for license terms
+- **Code Provenance**: Detect copy-pasted code that may carry license obligations
+- **IP Risk Assessment**: Identify potential intellectual property infringement
+- **License Documentation**: Generate required NOTICE and LICENSE files
+
+## When to Use
+
+Use the Legal Analyzer - Licensing when:
+
+- Adding new open source dependencies
+- Using third-party code, fonts, images, or media
+- Distributing software (SaaS is usually lower risk than distributed)
+- Preparing for acquisition due diligence
+- Auditing existing dependency licenses
+- Mixing open source and proprietary code
+- Using code from Stack Overflow, GitHub, or AI-generated sources
+- Publishing an open source project
+
+## How It Works
+
+1. **Dependency Scan**: Agent reads package.json, requirements.txt, Cargo.toml for dependencies
+2. **License Detection**: Agent identifies license type for each dependency
+3. **Compatibility Analysis**: Agent checks license compatibility with project license
+4. **Copyleft Check**: Agent flags GPL/AGPL dependencies in non-GPL projects
+5. **Attribution Audit**: Agent verifies required attribution notices exist
+6. **Asset Scan**: Agent checks fonts, images, and media for license compliance
+7. **Risk Rating**: Agent rates each finding by legal exposure
+8. **Remediation Plan**: Agent recommends fixes (replace dependency, add attribution, etc.)
+
+## Example
+
+```bash
+# Via legal audit - licensing compliance check
+/agileflow:legal:audit . FOCUS=licensing
+
+# Agent output:
+# Licensing & IP Compliance Audit
+#
+# Project License: MIT
+# Dependencies Scanned: 142
+# License Conflicts: 3
+# Missing Attributions: 5
+# Risk Level: HIGH
+#
+# CRITICAL FINDINGS:
+# 1. GPL-3.0 dependency in MIT project
+#    Package: chart-library@2.1.0
+#    Issue: GPL requires derivative works to also be GPL
+#    Risk: Must open-source your code or replace dependency
+#    Fix: Replace with MIT-licensed alternative (4 hours)
+#
+# HIGH FINDINGS:
+# 2. AGPL-3.0 transitive dependency
+#    Package: some-util@1.0.0 (via chart-library)
+#    Issue: AGPL extends to network use (SaaS counts)
+#    Fix: Remove dependency chain (included in fix #1)
+#
+# 3. Missing attribution for 5 BSD/Apache packages
+#    Packages: react-icons, date-fns, lodash, uuid, zod
+#    Issue: BSD/Apache require attribution in NOTICE file
+#    Fix: Generate NOTICE file with attributions (1 hour)
+#
+# MEDIUM FINDINGS:
+# 4. Google Font used without checking license
+# 5. Stock image without license documentation
+#
+# License Distribution:
+# MIT: 98 (69%)  |  ISC: 15 (11%)  |  Apache-2.0: 12 (8%)
+# BSD-3: 8 (6%)  |  BSD-2: 4 (3%)  |  GPL-3.0: 2 (1%)
+# Other: 3 (2%)
+```
+
+## Key Behaviors
+
+- **License Compatibility**: Never allow incompatible licenses to ship together
+- **Copyleft Awareness**: Flag GPL/AGPL immediately as they have viral requirements
+- **Attribution Diligence**: Ensure all required notices are included
+- **Asset Licensing**: Don't forget fonts, images, icons, and media
+- **AI Code Risk**: Flag AI-generated code that may carry unknown license obligations
+- **Due Diligence**: Create documentation suitable for legal review or acquisition
+
+## Common License Types
+
+| License | Type | Key Requirement | Risk Level |
+|---------|------|-----------------|------------|
+| **MIT** | Permissive | Attribution in source | LOW |
+| **Apache-2.0** | Permissive | Attribution + NOTICE file | LOW |
+| **BSD-2/3** | Permissive | Attribution in binary | LOW |
+| **ISC** | Permissive | Attribution | LOW |
+| **GPL-2.0/3.0** | Copyleft | Derivative works must be GPL | HIGH |
+| **AGPL-3.0** | Strong copyleft | Network use triggers copyleft | CRITICAL |
+| **LGPL** | Weak copyleft | Dynamic linking usually OK | MEDIUM |
+| **CC-BY** | Creative Commons | Attribution required | LOW |
+| **CC-BY-NC** | Creative Commons | No commercial use | HIGH |
+| **Unlicensed** | No license | Cannot legally use | CRITICAL |
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase and dependencies)
+
+## Related Agents
+
+- [`legal-analyzer-content`](/agents/legal-analyzer-content) - Content IP and DMCA
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - License disclaimers in TOS
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Licensing coordinates with:
+
+- **AG-DEVOPS**: Dependency management and updates
+- **AG-CI**: License scanning in CI pipeline
+- **AG-SECURITY**: Dependency vulnerability overlap
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

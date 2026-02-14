@@ -1,0 +1,124 @@
+---
+title: Legal Analyzer - International
+description: International compliance analyzer for LGPD, PIPL, data localization, cross-border transfers, and multi-jurisdiction requirements.
+---
+
+# Legal Analyzer - International
+
+The Legal Analyzer - International agent (AG-LEGAL-INTL) is a compliance specialist who identifies multi-jurisdiction compliance gaps for globally accessible applications. This agent analyzes legal risks from serving users in multiple countries without meeting their local data protection and consumer laws.
+
+## Capabilities
+
+- **LGPD Compliance**: Brazilian General Data Protection Law requirements
+- **PIPL Analysis**: China's Personal Information Protection Law obligations
+- **Data Localization**: Identify data residency requirements by jurisdiction
+- **Cross-Border Transfers**: Evaluate data transfer mechanisms (SCCs, adequacy decisions)
+- **Multi-Jurisdiction Mapping**: Map which laws apply based on user locations
+- **Language Requirements**: Identify mandatory translation obligations for legal documents
+- **Local Representative**: Determine when local representative appointment is required
+- **Regulatory Differences**: Highlight where requirements differ between jurisdictions
+
+## When to Use
+
+Use the Legal Analyzer - International when:
+
+- Application is accessible globally (most web apps)
+- Specifically targeting users in EU, Brazil, China, or other regulated jurisdictions
+- Storing data in cloud providers across multiple regions
+- Need to evaluate data localization requirements
+- Expanding to new geographic markets
+- Processing data from users in multiple countries
+- Need cross-border data transfer compliance (Standard Contractual Clauses, etc.)
+- Preparing for international regulatory audit
+
+## How It Works
+
+1. **Jurisdiction Detection**: Agent identifies which countries users likely come from
+2. **Law Mapping**: Agent maps applicable data protection laws per jurisdiction
+3. **Gap Analysis**: Agent compares current compliance against each jurisdiction's requirements
+4. **Transfer Assessment**: Agent evaluates cross-border data flows
+5. **Localization Check**: Agent verifies data residency compliance
+6. **Language Review**: Agent checks for required translations of legal documents
+7. **Risk Rating**: Agent rates exposure by jurisdiction
+8. **Remediation Plan**: Agent prioritizes compliance actions by user concentration
+
+## Example
+
+```bash
+# Via legal audit - international compliance check
+/agileflow:legal:audit . DEPTH=deep FOCUS=international
+
+# Agent output:
+# International Compliance Audit
+#
+# Application: SaaS with global users
+# Data Hosting: US (AWS us-east-1)
+# Jurisdictions Detected: EU, Brazil, India, Japan
+# Risk Level: HIGH
+#
+# CRITICAL FINDINGS:
+# 1. EU data stored in US without SCCs
+#    Issue: EU user data transfers to US servers
+#    Since Schrems II: Standard Contractual Clauses required
+#    Risk: GDPR fines up to 4% annual revenue
+#    Fix: Implement SCCs or use EU data center (varies)
+#
+# 2. No LGPD compliance for Brazilian users
+#    Issue: Application collects data from Brazil without LGPD compliance
+#    Requirements: Consent, DPO appointment, data subject rights
+#    Risk: LGPD fines up to 2% revenue (capped at R$50M)
+#    Fix: Add LGPD-specific consent and rights mechanisms (16 hours)
+#
+# HIGH FINDINGS:
+# 3. Privacy policy only in English (EU requires local language)
+# 4. No data localization for Russian users (242-FZ)
+# 5. Missing APPI compliance for Japanese users
+#
+# Jurisdiction Priority (by user concentration):
+# 1. EU (40% of users) - GDPR: 3 gaps
+# 2. Brazil (15%) - LGPD: 4 gaps
+# 3. Japan (8%) - APPI: 2 gaps
+# 4. India (5%) - DPDP: 1 gap
+```
+
+## Key Behaviors
+
+- **Jurisdiction Awareness**: Know which laws apply based on where users are located
+- **Transfer Mechanisms**: Understand SCCs, adequacy decisions, and binding corporate rules
+- **Localization Focus**: Identify data residency requirements before they cause violations
+- **Prioritization**: Focus on jurisdictions with most users and highest penalties
+- **Regulatory Currency**: Reference current enforcement trends and recent decisions
+- **Practical Guidance**: Recommend achievable compliance steps, not theoretical perfection
+
+## Key International Privacy Laws
+
+| Law | Country | Key Requirement | Max Penalty |
+|-----|---------|-----------------|-------------|
+| **GDPR** | EU/EEA | Consent, data rights, DPA | 4% revenue or 20M EUR |
+| **LGPD** | Brazil | Consent, DPO, data rights | 2% revenue (max R$50M) |
+| **PIPL** | China | Consent, data localization | 5% revenue or 50M CNY |
+| **PIPA** | South Korea | Consent, cross-border notice | 3% revenue |
+| **APPI** | Japan | Consent, purpose limitation | 100M JPY |
+| **DPDP** | India | Consent, data localization | 250 Cr INR |
+| **PDPA** | Thailand | Consent, DPO | 5M THB |
+| **242-FZ** | Russia | Data localization | Service blocking |
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Related Agents
+
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Core privacy compliance (GDPR/CCPA)
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - Legal document translation requirements
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - International coordinates with:
+
+- **AG-DEVOPS**: Data center and hosting decisions
+- **AG-DATABASE**: Data localization and residency
+- **AG-UI**: Language and localization requirements
+- **AG-API**: Cross-border data transfer endpoints
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

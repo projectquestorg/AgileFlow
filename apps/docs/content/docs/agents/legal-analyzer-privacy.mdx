@@ -1,0 +1,197 @@
+---
+title: Legal Analyzer - Privacy
+description: Privacy and data protection analyzer for GDPR, CCPA, cookie consent, and data collection compliance risks.
+---
+
+# Legal Analyzer - Privacy
+
+The Legal Analyzer - Privacy agent (AG-LEGAL-PRIVACY) is a compliance specialist who identifies privacy and data protection violations that expose your organization to regulatory fines and litigation. This agent analyzes code for GDPR, CCPA, cookie consent, and data collection compliance gaps.
+
+## Capabilities
+
+- **GDPR Compliance**: Identify violations of EU General Data Protection Regulation requirements
+- **CCPA Analysis**: Detect California Consumer Privacy Act compliance gaps
+- **Cookie Consent Auditing**: Verify cookie banners and consent mechanisms
+- **Data Collection Assessment**: Find PII collection without proper disclosure
+- **Third-Party Data Sharing**: Identify undisclosed data sharing with external services
+- **Storage Compliance**: Detect PII in local/session storage without consent
+- **Data Rights Verification**: Check for GDPR right-to-delete and CCPA "Do Not Sell" mechanisms
+- **Cross-Border Transfer Analysis**: Identify data transfers without proper safeguards
+
+## When to Use
+
+Use the Legal Analyzer - Privacy when:
+
+- Collecting user data via forms, APIs, or tracking
+- Implementing analytics or tracking scripts (Google Analytics, Meta Pixel, etc.)
+- Storing user data in databases, cookies, or local storage
+- Sharing data with third-party services
+- Building features that process PII (names, emails, addresses, payment info)
+- Deploying to regions with strict privacy laws (EU, California, Brazil)
+- Need GDPR or CCPA compliance documentation
+- Responding to data subject access requests
+
+## How It Works
+
+1. **Codebase Scan**: Agent analyzes HTML, forms, API routes, and configuration for data collection points
+2. **Tracking Detection**: Agent identifies analytics scripts, pixels, and tracking mechanisms
+3. **Consent Assessment**: Agent evaluates cookie banners and consent flows
+4. **PII Mapping**: Agent maps where personal data is collected, stored, and transmitted
+5. **Compliance Mapping**: Agent maps findings to GDPR articles, CCPA sections, and ePrivacy Directive
+6. **Risk Rating**: Agent rates each finding by regulatory fine risk (Critical/High/Medium/Low)
+7. **Remediation Plan**: Agent recommends fixes with effort estimates
+8. **Documentation**: Agent creates compliance checklist and privacy policy requirements
+
+## Example
+
+```bash
+# Via legal audit - privacy compliance check
+/agileflow:legal:audit app/ FOCUS=privacy
+
+# Agent output:
+# Privacy & Data Protection Audit
+#
+# Data Collection Points Found: 8
+# Privacy Policy: MISSING
+# Cookie Consent Banner: MISSING
+# Risk Level: CRITICAL
+#
+# CRITICAL FINDINGS:
+# 1. Email collection without privacy notice
+#    Location: app/page.tsx:42
+#    Issue: <input type="email"> collects PII without privacy disclosure
+#    Legal Basis: GDPR Article 13, CCPA 1798.100
+#    Fine Risk: Up to 4% annual revenue (GDPR) or $7,500/violation (CCPA)
+#    Fix: Add privacy notice linking to privacy policy (2 hours)
+#
+# 2. Google Analytics without consent
+#    Location: app/layout.tsx:8
+#    Issue: GA4 tracking script loads without user consent
+#    Legal Basis: ePrivacy Directive, GDPR Article 6
+#    Fine Risk: EU regulators actively enforcing (Google fined $170M)
+#    Fix: Add cookie consent banner, defer GA loading (4 hours)
+#
+# 3. No privacy policy page
+#    Issue: Application collects user data but has no privacy policy
+#    Legal Basis: GDPR Article 13, CCPA 1798.130
+#    Fine Risk: CRITICAL - virtually guaranteed enforcement action
+#    Fix: Create /privacy page with required disclosures (8 hours)
+#
+# HIGH FINDINGS:
+# 4. Local storage contains email addresses
+#    Location: lib/auth.ts:15
+#    Issue: User email stored in localStorage without consent
+#    Fix: Move to secure httpOnly cookie or encrypt (3 hours)
+#
+# 5. No data deletion mechanism
+#    Issue: No way for users to request data deletion
+#    Legal Basis: GDPR Article 17 (Right to Erasure), CCPA 1798.105
+#    Fix: Add account deletion endpoint and UI (6 hours)
+#
+# Remediation Priority:
+# 1. Create privacy policy (8 hours)
+# 2. Add cookie consent banner (4 hours)
+# 3. Add privacy notice on forms (2 hours)
+# 4. Secure PII storage (3 hours)
+# 5. Data deletion mechanism (6 hours)
+# Total: 23 hours
+#
+# Risk after remediation: LOW
+```
+
+## Key Behaviors
+
+- **Privacy by Design**: Identify data collection early and ensure compliance from the start
+- **Consent Verification**: Ensure all consent is informed, specific, and freely given
+- **Data Minimization**: Flag unnecessary data collection that increases compliance burden
+- **Third-Party Risk**: Audit all external services for data sharing implications
+- **Cross-Border Awareness**: Identify data transfers that trigger additional requirements
+- **Documentation Trail**: Create records proving good-faith privacy compliance efforts
+- **Regulatory Currency**: Reference current GDPR enforcement actions and CCPA penalties
+
+## GDPR Key Requirements
+
+| Article | Requirement | Common Violation |
+|---------|-------------|-----------------|
+| **Art. 5** | Data minimization | Collecting more data than needed |
+| **Art. 6** | Lawful basis for processing | No consent or legitimate interest |
+| **Art. 7** | Conditions for consent | Pre-checked boxes, bundled consent |
+| **Art. 13** | Information at collection | Missing privacy notice |
+| **Art. 15** | Right of access | No data export mechanism |
+| **Art. 17** | Right to erasure | No account deletion |
+| **Art. 25** | Privacy by design | No data protection measures |
+| **Art. 33** | Breach notification | No incident response plan |
+
+## CCPA Key Requirements
+
+| Section | Requirement | Penalty |
+|---------|-------------|---------|
+| **1798.100** | Right to know | $7,500/intentional violation |
+| **1798.105** | Right to delete | $7,500/intentional violation |
+| **1798.120** | Right to opt-out of sale | $7,500/intentional violation |
+| **1798.130** | Privacy policy disclosures | $2,500/unintentional violation |
+| **1798.150** | Private right of action (breaches) | $100-$750/consumer/incident |
+
+## Common Privacy Violations
+
+**Tracking without consent**:
+```javascript
+// Bad: Analytics loads without consent
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA_ID"></script>
+
+// Good: Load only after consent
+if (userConsent.analytics) {
+  loadGoogleAnalytics();
+}
+```
+
+**PII in local storage**:
+```javascript
+// Bad: PII accessible to any script
+localStorage.setItem('user_email', email);
+
+// Good: Use secure, httpOnly cookie
+res.cookie('session', token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'strict'
+});
+```
+
+## Privacy Compliance Checklist
+
+Before launch:
+
+- [ ] Privacy policy page exists and is linked from all data collection points
+- [ ] Cookie consent banner implemented (opt-in, not opt-out)
+- [ ] Analytics/tracking only loads after consent
+- [ ] Forms include privacy notice before submission
+- [ ] Data deletion mechanism available to users
+- [ ] Data export/portability mechanism available
+- [ ] Third-party data sharing disclosed in privacy policy
+- [ ] Cross-border data transfers documented with safeguards
+- [ ] Data retention periods defined and enforced
+- [ ] Breach notification process documented
+- [ ] Data Processing Agreements with vendors
+- [ ] No PII in client-side storage without encryption
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Related Agents
+
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - Terms of service requirements
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Consent and dark patterns
+- [`legal-analyzer-international`](/agents/legal-analyzer-international) - Cross-border data transfers
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Privacy coordinates with:
+
+- **AG-API**: Review data collection endpoints and storage
+- **AG-UI**: Verify consent banners and privacy notices
+- **AG-DATABASE**: Assess data storage and retention practices
+- **AG-SECURITY**: Coordinate on data protection measures
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

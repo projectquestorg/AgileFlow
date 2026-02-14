@@ -1,0 +1,123 @@
+---
+title: Legal Consensus Coordinator
+description: Consensus coordinator for legal audit - validates findings, votes on confidence, filters by project type, and generates prioritized Legal Risk Report.
+---
+
+# Legal Consensus Coordinator
+
+The Legal Consensus Coordinator (AG-LEGAL-CONSENSUS) collects findings from all legal analyzers, validates them against the project type, votes on confidence, and produces the final prioritized Legal Risk Report.
+
+## Capabilities
+
+- **Project Type Detection**: Automatically determine if project is SaaS, e-commerce, healthcare, etc.
+- **Finding Collection**: Parse and normalize outputs from all 9 legal analyzers
+- **Relevance Filtering**: Exclude findings irrelevant to the detected project type
+- **Confidence Voting**: Score findings based on multi-analyzer agreement
+- **Conflict Resolution**: When analyzers disagree, investigate and decide
+- **Report Generation**: Produce prioritized, actionable Legal Risk Report
+- **Remediation Checklist**: Generate step-by-step fix list with effort estimates
+- **False Positive Elimination**: Filter out findings that don't apply to the project context
+
+## When to Use
+
+The Legal Consensus Coordinator is automatically invoked by the `/legal:audit` command after all analyzers complete. You typically don't invoke it directly.
+
+## How It Works
+
+1. **Detect Project Type**: Reads codebase to determine application type (SaaS, e-commerce, etc.)
+2. **Collect Findings**: Parses all analyzer outputs into normalized structure
+3. **Filter by Relevance**: Excludes findings irrelevant to the detected project type
+4. **Vote on Confidence**: Multiple analyzers flagging same issue = higher confidence
+5. **Resolve Conflicts**: When analyzers disagree, investigates and decides
+6. **Generate Report**: Produces prioritized, actionable Legal Risk Report
+
+### Confidence Scoring
+
+| Confidence | Criteria | Priority |
+|------------|----------|----------|
+| **CONFIRMED** | 2+ analyzers independently identified the same issue | High - fix immediately |
+| **LIKELY** | 1 analyzer with strong evidence (specific code location, clear regulation) | Medium - fix this sprint |
+| **INVESTIGATE** | 1 analyzer with circumstantial evidence | Low - verify manually |
+
+### Project Type Filtering
+
+The consensus coordinator adjusts findings based on detected project type:
+
+| Project Type | Key Indicators | Most Relevant Analyzers |
+|-------------|---------------|------------------------|
+| **SaaS** | Subscription billing, user accounts | Privacy, Terms, Security, AI |
+| **E-commerce** | Shopping cart, checkout, products | Consumer, Terms, Privacy, Security |
+| **Healthcare** | Patient data, HIPAA references | Privacy, Security, Terms, A11y |
+| **Social/UGC** | User posts, uploads, profiles | Content, Privacy, Consumer, A11y |
+| **Static/Blog** | No user data, informational | A11y, Licensing |
+| **AI/ML App** | AI API calls, model inference | AI, Privacy, Terms, Consumer |
+
+## Example Output
+
+```
+LEGAL RISK REPORT
+Generated: 2026-02-14
+Project Type: SaaS Application (detected)
+
+RISK SUMMARY
+| Risk Level | Count |
+|------------|-------|
+| Critical   | 2     |
+| High       | 3     |
+| Medium     | 4     |
+| Low        | 1     |
+
+Total: 10 findings (3 false positives excluded)
+
+FIX BEFORE LAUNCH (Critical)
+1. [CONFIRMED] No privacy policy but collecting email
+   Flagged by: Privacy Analyzer, Terms Analyzer
+   Location: app/page.tsx:42
+   Legal Basis: GDPR Art. 13, CCPA 1798.130
+   Remediation: Create /privacy page, link from footer
+
+2. [CONFIRMED] Images without alt text (12 instances)
+   Flagged by: A11y Analyzer
+   Location: components/*.tsx
+   Legal Basis: ADA Title III, WCAG 2.1 AA
+   Remediation: Add descriptive alt attributes
+
+FALSE POSITIVES EXCLUDED:
+- PIPL data localization (no Chinese users detected)
+- DMCA designated agent (no user-uploaded content)
+- PCI-DSS encryption (no payment processing)
+```
+
+## Key Behaviors
+
+- **Context Sensitivity**: Filters findings based on what the project actually does
+- **Multi-Analyzer Agreement**: Higher confidence when multiple analyzers agree
+- **False Positive Reduction**: Actively removes irrelevant findings to reduce noise
+- **Actionable Output**: Every finding includes specific remediation steps
+- **Priority Ordering**: Report organized by fix urgency (critical first)
+- **Effort Estimates**: Include approximate time to remediate each finding
+
+## Tools Available
+
+- Read, Write, Edit (file operations for report generation)
+- Glob, Grep (search for project type indicators)
+
+## Related Agents
+
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Privacy and data protection findings
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - Terms and legal document findings
+- [`legal-analyzer-a11y`](/agents/legal-analyzer-a11y) - Accessibility compliance findings
+- [`legal-analyzer-licensing`](/agents/legal-analyzer-licensing) - License and IP findings
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Consumer protection findings
+- [`legal-analyzer-security`](/agents/legal-analyzer-security) - Security obligation findings
+- [`legal-analyzer-ai`](/agents/legal-analyzer-ai) - AI compliance findings
+- [`legal-analyzer-content`](/agents/legal-analyzer-content) - Content and IP findings
+- [`legal-analyzer-international`](/agents/legal-analyzer-international) - International compliance findings
+
+## Coordination
+
+The Legal Consensus Coordinator:
+
+- **Receives from**: All 9 legal analyzers
+- **Produces**: Final Legal Risk Report saved to `docs/08-project/legal-audits/`
+- **Architecture**: Mirrors the logic-consensus pattern used by `/logic:audit`

@@ -1,0 +1,217 @@
+---
+title: Legal Analyzer - AI & Algorithms
+description: AI and algorithmic compliance analyzer for EU AI Act, FTC AI disclosure, automated decision-making, and bias risks.
+---
+
+# Legal Analyzer - AI & Algorithms
+
+The Legal Analyzer - AI agent (AG-LEGAL-AI) is a compliance specialist who identifies legal risks in AI and algorithmic systems. This agent analyzes code and data pipelines for EU AI Act, FTC AI disclosure requirements, automated decision-making liability, and bias risks that expose your organization to regulatory action and litigation.
+
+## Capabilities
+
+- **EU AI Act Compliance**: Identify high-risk AI systems requiring compliance documentation
+- **FTC AI Disclosure Requirements**: Ensure transparent disclosure of AI-generated content and automated decisions
+- **Algorithmic Bias Detection**: Identify discriminatory patterns and fairness issues
+- **Automated Decision Accountability**: Verify systems make explainable decisions
+- **Training Data Analysis**: Assess data quality and potential bias sources
+- **Model Fairness Assessment**: Evaluate performance across demographic groups
+- **Transparency Documentation**: Generate required disclosures and explanations
+- **Regulatory Exposure**: Map compliance gaps to FTC, EEOC, state regulations
+
+## When to Use
+
+Use the Legal Analyzer - AI when:
+
+- Implementing machine learning or AI features
+- Using algorithmic decision-making (hiring, lending, content moderation, pricing)
+- Training models on user data
+- Deploying large language models or generative AI
+- Generating AI content (text, images, code)
+- Making automated decisions affecting user rights
+- Need FTC compliance documentation for AI features
+- Evaluating third-party AI/ML services
+- Responding to bias complaints or discrimination claims
+
+## How It Works
+
+1. **System Inventory**: Agent identifies all AI/ML components and decision points
+2. **Compliance Assessment**: Agent maps systems to EU AI Act risk categories and FTC requirements
+3. **Training Data Audit**: Agent analyzes data for bias sources and documentation gaps
+4. **Fairness Analysis**: Agent evaluates model performance across demographic groups
+5. **Disclosure Requirements**: Agent identifies required transparency disclosures
+6. **Risk Mapping**: Agent rates regulatory exposure (High/Medium/Low)
+7. **Remediation Plan**: Agent recommends compliance actions with effort estimates
+8. **Documentation**: Agent creates audit trail and disclosure language
+
+## Example
+
+```bash
+# Via babysit - AI compliance audit
+/agileflow:babysit
+> "We're using ML for loan approval decisions. What are our legal compliance requirements?"
+
+# Agent output:
+# AI & Algorithmic Compliance Audit
+#
+# System: Loan Approval ML Model
+# Risk Level: HIGH
+# Regulatory Requirements: Fair Lending Act, FTC Endorsement Guides, EU AI Act
+#
+# CRITICAL COMPLIANCE GAPS:
+# 1. No training data bias assessment
+#    - Data includes 47% minority applicants but model approves only 23%
+#    - Disparate impact risk: EEOC investigation likely
+#    - Fix: Retrain with balanced data or fairness constraints (16 hours)
+#
+# 2. Missing explainability for denied loans
+#    - System can't explain why individual loans were rejected
+#    - Fair Lending Act requires disclosure of denial reasons
+#    - Fix: Implement LIME or SHAP explanations (20 hours)
+#
+# 3. No transparency disclosure
+#    - Users not informed that AI makes decision
+#    - FTC requires clear disclosure of AI/automated systems
+#    - Fix: Update UI with AI disclosure (4 hours)
+#
+# 4. Insufficient bias monitoring
+#    - No ongoing fairness metrics in production
+#    - Discriminatory drift could occur without detection
+#    - Fix: Add fairness monitoring dashboard (12 hours)
+#
+# MEDIUM COMPLIANCE ISSUES:
+# - Model trained on historical data with documented discrimination
+# - Performance gap: 85% approval for majority group vs 67% for minority groups
+# - No human review process for borderline cases
+#
+# Regulatory Exposure:
+# - FTC: Deceptive practices (undisclosed AI) - fines up to $43K per violation
+# - EEOC: Disparate impact discrimination - potential class action
+# - State regulators: Algorithmic accountability laws (CA, NY, IL)
+#
+# Compliance Roadmap:
+# 1. Bias assessment and retraining (16 hours)
+# 2. Explainability implementation (20 hours)
+# 3. Transparency disclosure (4 hours)
+# 4. Bias monitoring system (12 hours)
+# 5. Documentation and audit trail (8 hours)
+# Total: 60 hours
+#
+# After remediation: LOW risk
+```
+
+## Key Behaviors
+
+- **Compliance First**: Never downplay AI regulatory risks
+- **Fairness Focus**: Identify discriminatory patterns that trigger EEOC complaints
+- **Transparency Requirement**: Ensure AI/automated decision-making is disclosed to users
+- **Documentation Trail**: Create audit logs proving good-faith compliance efforts
+- **Data Governance**: Assess training data for bias and governance gaps
+- **Monitoring**: Verify bias and fairness metrics tracked in production
+- **Accountability**: Map decisions to explainable factors users can understand
+
+## EU AI Act Risk Categories
+
+| Category | Risk Level | Compliance Requirements |
+|----------|-----------|------------------------|
+| **High-Risk AI** | CRITICAL | Extensive documentation, human oversight, bias testing |
+| **Biometric systems** | CRITICAL | Prohibited in many cases, strict limitations if allowed |
+| **Critical infrastructure** | HIGH | Detailed impact assessment, monitoring |
+| **Employment decisions** | HIGH | Explainability, human review, non-discrimination |
+| **Educational decisions** | MEDIUM | Transparency, monitoring for bias |
+| **Law enforcement** | CRITICAL | Strict limitations, transparency, human review |
+| **General-purpose AI** | MEDIUM | Transparency to downstream users |
+
+## FTC AI Requirements
+
+| Requirement | What to Document | Penalty |
+|-------------|-----------------|---------|
+| **AI Disclosure** | Inform users when AI is used | $43,000+ per violation |
+| **Explainability** | Users can understand decision | False advertising claims |
+| **Bias Testing** | Evidence of fairness evaluation | Deceptive practices claims |
+| **Human Review** | High-risk decisions reviewed by human | Unfair practice findings |
+| **Data Provenance** | Where training data came from | Discriminatory practice claims |
+| **Performance Parity** | Same accuracy across demographics | Disparate impact liability |
+
+## Common AI Compliance Failures
+
+**Undisclosed AI-generated content**:
+```javascript
+// Bad: No disclosure that content is AI-generated
+const review = await generateReview(product);
+displayReview(review); // Users think it's human-written
+
+// Good: Clear disclosure of AI involvement
+const review = await generateReview(product);
+displayReview({
+  text: review,
+  disclosure: "This review was generated by AI"
+});
+```
+
+**Biased model decisions**:
+```python
+# Bad: Training data has demographic bias
+model.fit(historical_loan_data)  # Data reflects past discrimination
+predictions = model.predict(applications)  # Perpetuates bias
+
+# Good: Assess and mitigate bias
+fairness_metrics = evaluate_fairness(predictions, demographics)
+if fairness_metrics.disparate_impact > 0.8:
+    retrain_with_fairness_constraints()  # Ensure equitable outcomes
+```
+
+**No explainability**:
+```javascript
+// Bad: Decision is a black box
+const approved = model.predict(loanApplication);
+
+// Good: Provide explanation
+const result = model.predictWithExplanation(loanApplication);
+console.log(result.decision); // "APPROVED"
+console.log(result.explanation); // "Strong credit history, 20-year employment, 40% debt-to-income"
+```
+
+## Bias Detection Checklist
+
+Before deploying AI systems:
+
+- [ ] Training data composition documented (demographics, sources)
+- [ ] Bias assessment completed across demographic groups
+- [ ] Model performance parity verified (same accuracy for all groups)
+- [ ] Disparate impact ratio measured (80% rule: min group ≥80% of majority group approval rate)
+- [ ] Explainability mechanism implemented (users understand decisions)
+- [ ] Human review process for high-impact decisions
+- [ ] Fairness metrics monitored in production
+- [ ] Retraining process includes bias re-assessment
+- [ ] Audit trail documents decisions and reasoning
+- [ ] Disclosure language added to UI for AI/automated decisions
+- [ ] User appeals process for automated decisions
+- [ ] Regular fairness audits scheduled
+
+## Tools Available
+
+- Read, Glob, Grep (analyze code and data pipelines)
+
+## Related Agents
+
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Deceptive AI practices
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Training data privacy
+- [`legal-analyzer-security`](/agents/legal-analyzer-security) - Model security and poisoning attacks
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - AI coordinates with:
+
+- **AG-API**: Review model inference endpoints and explainability
+- **AG-DATABASE**: Assess training data governance and bias sources
+- **AG-TESTING**: Verify fairness testing in test suite
+- **AG-PRODUCT**: Document AI requirements in user stories
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report
+
+## Slash Commands
+
+- `/agileflow:research:ask TOPIC=...` - Research AI regulation and compliance
+- `/agileflow:ai-code-review` - Review code for bias and fairness issues
+- `/agileflow:adr-new` - Document AI/fairness decisions
+- `/agileflow:status STORY=... STATUS=...` - Update story status

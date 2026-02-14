@@ -1,0 +1,113 @@
+---
+title: Legal Analyzer - Content & IP
+description: Content moderation and IP obligations analyzer for DMCA compliance, UGC platforms, and Digital Services Act requirements.
+---
+
+# Legal Analyzer - Content & IP
+
+The Legal Analyzer - Content agent (AG-LEGAL-CONTENT) is a compliance specialist who identifies content moderation obligations and intellectual property compliance gaps. This agent analyzes platforms that host user-generated content, embed third-party content, or handle copyrighted material for legal risks.
+
+## Capabilities
+
+- **DMCA Compliance**: Verify Digital Millennium Copyright Act safe harbor requirements
+- **UGC Platform Obligations**: Identify content moderation requirements for user content
+- **Digital Services Act**: Assess EU DSA transparency and moderation obligations
+- **Copyright Risk**: Detect unauthorized use of copyrighted material
+- **Content Licensing**: Verify media assets are properly licensed
+- **Takedown Procedures**: Evaluate DMCA takedown and counter-notice processes
+- **User Rights**: Verify content ownership and licensing terms in user agreements
+- **Safe Harbor Protection**: Ensure platform qualifies for intermediary liability protection
+
+## When to Use
+
+Use the Legal Analyzer - Content when:
+
+- Building platforms that accept user uploads (images, videos, text)
+- Embedding third-party content (social media feeds, news articles)
+- Using stock photos, fonts, or media assets
+- Implementing content moderation systems
+- Need DMCA safe harbor compliance
+- Operating in the EU (Digital Services Act)
+- Handling copyright complaints or takedown requests
+- Scraping or aggregating content from other sources
+
+## How It Works
+
+1. **Platform Assessment**: Agent determines if application hosts user-generated content
+2. **Content Flow Analysis**: Agent maps how content enters, is stored, and is displayed
+3. **DMCA Audit**: Agent verifies safe harbor requirements (designated agent, takedown process)
+4. **Moderation Review**: Agent evaluates content moderation capabilities
+5. **Asset Audit**: Agent checks embedded media for licensing compliance
+6. **Compliance Mapping**: Agent maps gaps to DMCA, DSA, and copyright law
+7. **Risk Rating**: Agent rates each finding by litigation exposure
+8. **Remediation Plan**: Agent recommends compliance actions
+
+## Example
+
+```bash
+# Via legal audit - content compliance check
+/agileflow:legal:audit app/ FOCUS=content
+
+# Agent output:
+# Content & IP Compliance Audit
+#
+# Platform Type: Social media with user uploads
+# UGC Features: Image uploads, comments, profiles
+# Risk Level: HIGH
+#
+# CRITICAL FINDINGS:
+# 1. No DMCA designated agent registered
+#    Issue: Platform accepts uploads but no DMCA agent filed
+#    Risk: Lose safe harbor protection for ALL user content
+#    Fix: Register DMCA agent with Copyright Office ($6 filing fee)
+#
+# 2. No content takedown procedure
+#    Issue: No mechanism to handle copyright complaints
+#    Risk: Platform liable for infringing user uploads
+#    Fix: Implement takedown request form and process (8 hours)
+#
+# HIGH FINDINGS:
+# 3. User TOS doesn't address content licensing
+# 4. No content moderation for illegal material
+# 5. Stock images used without license documentation
+```
+
+## Key Behaviors
+
+- **Safe Harbor Priority**: Ensure platforms maintain DMCA safe harbor eligibility
+- **Proactive Moderation**: Identify where automated moderation is legally required
+- **Asset Compliance**: Verify all non-user media is properly licensed
+- **Documentation**: Create records of moderation efforts and takedown responses
+- **Platform Awareness**: Differentiate obligations for publishers vs. platforms vs. aggregators
+
+## DMCA Safe Harbor Requirements
+
+| Requirement | What It Means | Status if Missing |
+|-------------|--------------|-------------------|
+| **Designated agent** | Register with Copyright Office | No safe harbor |
+| **Takedown procedure** | Process to remove infringing content | No safe harbor |
+| **Counter-notice** | Allow users to dispute takedowns | No safe harbor |
+| **No knowledge** | Remove content when notified | Liable for damages |
+| **No financial benefit** | Don't profit directly from infringement | Reduced protection |
+| **Repeat infringer policy** | Terminate repeat offenders | No safe harbor |
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Related Agents
+
+- [`legal-analyzer-licensing`](/agents/legal-analyzer-licensing) - Open source and code licensing
+- [`legal-analyzer-terms`](/agents/legal-analyzer-terms) - Content terms in TOS
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Deceptive content practices
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Content coordinates with:
+
+- **AG-UI**: Content upload and moderation interfaces
+- **AG-API**: Takedown endpoints and content management
+- **AG-DATABASE**: Content storage and removal procedures
+- **AG-PRODUCT**: Content policy requirements in stories
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

@@ -1,11 +1,11 @@
 ---
 title: Agents
-description: 55 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
+description: 65 specialized AI agents for every aspect of software development. Each agent is an expert in their domain, ready to help with specific tasks.
 ---
 
 # Agents
 
-AgileFlow includes **55 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
+AgileFlow includes **65 specialized agents**, each an expert in their domain. Agents can be spawned by the `/babysit` mentor or invoked directly using the Task tool.
 
 ## How Agents Work
 
@@ -66,7 +66,7 @@ When Claude Code compresses context, it preserves these rules and state fields f
 
 - **Critical** (4 agents): mentor, api, ui, database
 - **High** (12 agents): ci, devops, testing, security, documentation, performance, codebase-query, orchestrator, team-coordinator, error-analyzer, code-reviewer, multi-expert
-- **Medium** (20 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, logic-analyzer-*, council-*, rlm-subcore
+- **Medium** (30 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, logic-analyzer-*, council-*, rlm-subcore, legal-analyzer-*, legal-consensus
 - **Low** (10 agents): epic-planner, api-validator, schema-validator, ui-validator, configuration-*
 
 This tiered approach ensures the most critical agents always maintain focus while others gracefully degrade context when needed.
@@ -157,6 +157,23 @@ Agents for automated code analysis and bug detection:
 | [`logic-analyzer-race`](/agents/logic-analyzer-race) | Race condition and concurrency issue detection |
 | [`logic-analyzer-type`](/agents/logic-analyzer-type) | Type safety analysis for coercion and null issues |
 | [`logic-consensus`](/agents/logic-consensus) | Consensus coordinator for logic audit voting |
+
+### Legal Analysis
+
+Agents for automated legal risk analysis and compliance auditing:
+
+| Agent | Description |
+|-------|-------------|
+| [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) | Privacy and data protection (GDPR, CCPA, cookie consent) |
+| [`legal-analyzer-terms`](/agents/legal-analyzer-terms) | Terms of service, disclaimers, and legal documents |
+| [`legal-analyzer-a11y`](/agents/legal-analyzer-a11y) | Accessibility compliance (ADA, WCAG, Section 508) |
+| [`legal-analyzer-licensing`](/agents/legal-analyzer-licensing) | Open source license compliance and IP risks |
+| [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) | Consumer protection, dark patterns, FTC/COPPA |
+| [`legal-analyzer-security`](/agents/legal-analyzer-security) | Security legal obligations (breach notification, PCI-DSS) |
+| [`legal-analyzer-ai`](/agents/legal-analyzer-ai) | AI compliance (EU AI Act, FTC disclosure, bias) |
+| [`legal-analyzer-content`](/agents/legal-analyzer-content) | Content moderation, DMCA, Digital Services Act |
+| [`legal-analyzer-international`](/agents/legal-analyzer-international) | International compliance (LGPD, PIPL, data localization) |
+| [`legal-consensus`](/agents/legal-consensus) | Consensus coordinator for legal audit findings |
 
 ### Validation
 

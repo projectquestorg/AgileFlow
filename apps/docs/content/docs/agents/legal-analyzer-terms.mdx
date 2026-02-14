@@ -1,0 +1,122 @@
+---
+title: Legal Analyzer - Terms & Legal Documents
+description: Terms of service and legal document analyzer for missing disclaimers, refund policies, and contractual obligations.
+---
+
+# Legal Analyzer - Terms & Legal Documents
+
+The Legal Analyzer - Terms agent (AG-LEGAL-TERMS) is a compliance specialist who identifies missing legal documents and contractual obligations that expose your organization to liability. This agent analyzes applications for absent Terms of Service, disclaimers, refund policies, and other legally required documents.
+
+## Capabilities
+
+- **Terms of Service Analysis**: Verify TOS completeness and enforceability
+- **Disclaimer Detection**: Identify missing disclaimers for medical, financial, and legal content
+- **Refund Policy Compliance**: Verify refund/return policies meet regulatory requirements
+- **Limitation of Liability**: Check for proper liability limitations and warranty disclaimers
+- **User Agreement Gaps**: Find missing clauses that create legal exposure
+- **Regulatory Document Requirements**: Identify industry-specific required documents
+- **Plain Language Assessment**: Evaluate readability and enforceability of legal documents
+- **Document Cross-Referencing**: Verify consistency across legal documents
+
+## When to Use
+
+Use the Legal Analyzer - Terms when:
+
+- Launching a new application or service
+- Implementing e-commerce or payment features
+- Providing professional advice (medical, financial, legal)
+- Hosting user-generated content
+- Offering SaaS or subscription services
+- Updating existing terms or policies
+- Expanding to new markets or jurisdictions
+- Need to verify legal document completeness
+
+## How It Works
+
+1. **Document Inventory**: Agent scans for existing legal pages (terms, privacy, disclaimers)
+2. **Gap Analysis**: Agent identifies missing required documents based on application type
+3. **Content Review**: Agent evaluates existing documents for completeness
+4. **Enforceability Check**: Agent verifies terms are properly presented (click-wrap, browse-wrap)
+5. **Compliance Mapping**: Agent maps gaps to legal requirements
+6. **Risk Rating**: Agent rates each finding by litigation risk
+7. **Remediation Plan**: Agent recommends document additions with template language
+8. **Documentation**: Agent creates checklist of required legal documents
+
+## Example
+
+```bash
+# Via legal audit - terms and legal document check
+/agileflow:legal:audit app/ FOCUS=terms
+
+# Agent output:
+# Terms & Legal Documents Audit
+#
+# Application Type: SaaS Web Application
+# Legal Documents Found: 0 of 5 required
+# Risk Level: CRITICAL
+#
+# CRITICAL FINDINGS:
+# 1. No Terms of Service
+#    Issue: Application has user accounts but no TOS
+#    Risk: Cannot enforce usage rules or limit liability
+#    Fix: Create /terms page with required clauses (12 hours)
+#
+# 2. No Disclaimer for AI-Generated Content
+#    Issue: Application uses AI but lacks accuracy disclaimer
+#    Risk: Liability for AI errors and hallucinations
+#    Fix: Add "AI-generated content" disclaimer (2 hours)
+#
+# HIGH FINDINGS:
+# 3. Missing refund policy for paid features
+# 4. No warranty disclaimer
+# 5. Missing limitation of liability clause
+#
+# Required Documents Checklist:
+# - [ ] Terms of Service
+# - [ ] Privacy Policy (see privacy analyzer)
+# - [ ] Cookie Policy
+# - [ ] Acceptable Use Policy
+# - [ ] Refund/Return Policy (if paid features)
+# - [ ] AI Disclaimer (if using AI features)
+# - [ ] DMCA Policy (if user content)
+```
+
+## Key Behaviors
+
+- **Document Completeness**: Ensure all legally required documents exist
+- **Enforceability**: Verify terms are properly presented and accepted
+- **Industry Awareness**: Know which documents are required for each business type
+- **Plain Language**: Flag overly complex legal language that reduces enforceability
+- **Consistency**: Verify claims across documents don't contradict each other
+- **Update Tracking**: Identify when documents need updates after feature changes
+
+## Required Legal Documents by Type
+
+| Application Type | Required Documents |
+|-----------------|-------------------|
+| **SaaS** | TOS, Privacy Policy, Cookie Policy, Acceptable Use |
+| **E-commerce** | TOS, Privacy Policy, Return/Refund Policy, Shipping Policy |
+| **Healthcare** | TOS, Privacy Policy, HIPAA Notice, Medical Disclaimer |
+| **Financial** | TOS, Privacy Policy, Risk Disclaimer, Regulatory Disclosures |
+| **Social/UGC** | TOS, Privacy Policy, Community Guidelines, DMCA Policy |
+| **AI/ML App** | TOS, Privacy Policy, AI Disclaimer, Accuracy Notice |
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Related Agents
+
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Privacy policy requirements
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Consumer-facing policy requirements
+- [`legal-analyzer-content`](/agents/legal-analyzer-content) - Content policies and DMCA
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Terms coordinates with:
+
+- **AG-UI**: Verify legal pages are linked and accessible
+- **AG-PRODUCT**: Document legal requirements in stories
+- **AG-API**: Verify consent capture endpoints
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

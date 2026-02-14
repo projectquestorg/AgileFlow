@@ -1,0 +1,116 @@
+---
+title: Legal Analyzer - Security Obligations
+description: Security-related legal obligation analyzer for breach notification, PCI-DSS, encryption requirements, and negligence liability.
+---
+
+# Legal Analyzer - Security Obligations
+
+The Legal Analyzer - Security agent (AG-LEGAL-SECURITY) is a compliance specialist who identifies legal obligations around security practices. Unlike the technical security agent that finds CVEs, this agent focuses on cases where poor security creates **legal liability** - breach notification failures, negligence, and regulatory non-compliance.
+
+## Capabilities
+
+- **Breach Notification Compliance**: Verify incident response and notification procedures
+- **PCI-DSS Requirements**: Identify payment card data handling obligations
+- **Encryption Obligations**: Find legally required encryption that's missing
+- **Negligence Liability**: Detect security practices so poor they constitute negligence
+- **Industry Regulations**: Map security requirements from HIPAA, SOX, GLBA, etc.
+- **Data Protection Standards**: Verify security measures meet regulatory minimums
+- **Vendor Security Assessment**: Evaluate third-party service security obligations
+- **Documentation Requirements**: Identify required security documentation and policies
+
+## When to Use
+
+Use the Legal Analyzer - Security when:
+
+- Processing payment card data (PCI-DSS)
+- Handling healthcare data (HIPAA)
+- Storing sensitive PII (encryption requirements)
+- Preparing breach notification procedures
+- Evaluating security practices for regulatory compliance
+- Conducting due diligence on third-party vendors
+- Need to document security controls for auditors
+- Assessing negligence liability for security practices
+
+## How It Works
+
+1. **Obligation Mapping**: Agent identifies which security regulations apply to your application
+2. **Control Assessment**: Agent evaluates whether required security controls are implemented
+3. **Encryption Audit**: Agent checks encryption at rest and in transit
+4. **Breach Preparedness**: Agent verifies incident response procedures exist
+5. **Vendor Assessment**: Agent evaluates third-party security obligations
+6. **Compliance Mapping**: Agent maps gaps to specific regulatory requirements
+7. **Risk Rating**: Agent rates each finding by legal liability exposure
+8. **Remediation Plan**: Agent recommends security controls with priority
+
+## Example
+
+```bash
+# Via legal audit - security obligations check
+/agileflow:legal:audit app/ FOCUS=security
+
+# Agent output:
+# Security Legal Obligations Audit
+#
+# Application Type: E-commerce with payments
+# Applicable Regulations: PCI-DSS, State breach laws, GDPR Art. 32
+# Risk Level: HIGH
+#
+# CRITICAL FINDINGS:
+# 1. Payment data transmitted without TLS
+#    Location: api/checkout.ts:28
+#    Issue: Credit card data sent over HTTP in development config
+#    Regulation: PCI-DSS Requirement 4
+#    Liability: Negligence per se if breached
+#    Fix: Enforce HTTPS for all payment endpoints (2 hours)
+#
+# 2. No breach notification procedure
+#    Issue: No documented incident response plan
+#    Regulation: 50 state breach notification laws, GDPR Art. 33
+#    Liability: Failure to notify within 72 hours = regulatory action
+#    Fix: Create incident response plan (8 hours)
+#
+# HIGH FINDINGS:
+# 3. Passwords stored with weak hashing (MD5)
+# 4. No encryption at rest for PII database
+# 5. Missing security headers (HSTS, CSP, X-Frame-Options)
+```
+
+## Key Behaviors
+
+- **Legal Focus**: Focus on legal liability, not just technical vulnerabilities
+- **Regulatory Awareness**: Know which regulations apply to each business type
+- **Negligence Standard**: Identify practices so poor they constitute legal negligence
+- **Breach Preparedness**: Ensure incident response procedures exist before they're needed
+- **Documentation**: Create security documentation that satisfies auditors
+- **Vendor Risk**: Evaluate whether vendor security meets contractual obligations
+
+## Common Security Regulations
+
+| Regulation | Applies To | Key Requirements |
+|-----------|-----------|-----------------|
+| **PCI-DSS** | Payment card data | Encryption, access control, monitoring |
+| **HIPAA** | Healthcare data | Administrative, physical, technical safeguards |
+| **SOX** | Public companies | Internal controls, audit trails |
+| **GLBA** | Financial data | Safeguards rule, privacy notices |
+| **GDPR Art. 32** | EU personal data | Appropriate technical measures |
+| **State breach laws** | All PII | Notification within 30-72 hours |
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Related Agents
+
+- [`legal-analyzer-privacy`](/agents/legal-analyzer-privacy) - Data protection requirements
+- [`security`](/agents/security) - Technical vulnerability analysis
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Security coordinates with:
+
+- **AG-SECURITY**: Technical vulnerability analysis and remediation
+- **AG-API**: Payment and data endpoint security
+- **AG-DATABASE**: Data encryption and access controls
+- **AG-DEVOPS**: Infrastructure security and deployment
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report

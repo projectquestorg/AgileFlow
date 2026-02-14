@@ -1,0 +1,206 @@
+---
+title: Legal Analyzer - Accessibility
+description: Accessibility compliance analyzer for ADA, Section 508, and WCAG violations that trigger lawsuits.
+---
+
+# Legal Analyzer - Accessibility
+
+The Legal Analyzer - Accessibility agent (AG-LEGAL-A11Y) is a compliance specialist who identifies accessibility violations that expose your organization to legal liability. This agent analyzes code and designs for ADA, Section 508, and WCAG compliance gaps that commonly trigger lawsuits.
+
+## Capabilities
+
+- **ADA Compliance Analysis**: Detect violations of Americans with Disabilities Act requirements
+- **Section 508 Standards**: Identify federal electronic accessibility violations
+- **WCAG Compliance Scanning**: Verify Web Content Accessibility Guidelines (WCAG 2.1 Level AA) compliance
+- **Lawsuit Risk Assessment**: Identify high-risk accessibility gaps that trigger litigation
+- **Remediation Recommendations**: Provide specific fixes with cost and complexity estimates
+- **Accessibility Testing**: Analyze automated test coverage for accessibility
+- **Design Review**: Evaluate UI/UX for accessibility barriers
+- **Documentation Analysis**: Verify accessibility claims and disclosures are accurate
+
+## When to Use
+
+Use the Legal Analyzer - Accessibility when:
+
+- Building or updating user-facing applications
+- Designing new UI components or workflows
+- Implementing authentication or form systems
+- Creating mobile or responsive designs
+- Reviewing accessibility test coverage
+- Evaluating third-party components for accessibility compliance
+- Need documentation of accessibility efforts (defense in lawsuit)
+- Receiving accessibility complaints from users
+- Planning accessibility remediation efforts
+
+## How It Works
+
+1. **Codebase Scan**: Agent analyzes HTML, React components, CSS, and JavaScript for accessibility issues
+2. **Pattern Detection**: Agent identifies common accessibility violations (alt text, ARIA, keyboard navigation, color contrast)
+3. **Compliance Assessment**: Agent maps violations to specific ADA, Section 508, and WCAG requirements
+4. **Lawsuit Risk Rating**: Agent rates each violation by litigation risk (High/Medium/Low)
+5. **Remediation Plan**: Agent recommends fixes with effort estimates
+6. **Testing Analysis**: Agent reviews accessibility test coverage and gaps
+7. **Documentation**: Agent creates remediation checklist and compliance records
+8. **Coordinate**: Agent updates status.json with findings and next steps
+
+## Example
+
+```bash
+# Via babysit - accessibility compliance audit
+/agileflow:babysit
+> "Can you audit our e-commerce site for accessibility issues? We're concerned about legal liability."
+
+# Agent output:
+# Accessibility Compliance Audit
+#
+# WCAG 2.1 Level AA Violations Found: 47
+# Lawsuit Risk Level: HIGH
+#
+# Critical Issues (immediate lawsuit risk):
+# - 12 images missing alt text (WCAG 1.1.1, Level A)
+# - 8 form fields missing labels (WCAG 3.3.2, Level A)
+# - 5 color-only instructions (WCAG 1.4.1, Level A)
+# - 3 keyboard traps preventing navigation (WCAG 2.1.1, Level A)
+#
+# Medium Issues (ADA Title III complaints likely):
+# - 23 low contrast text (WCAG 1.4.3, Level AA) - 4.5:1 minimum
+# - 6 missing page structure headings (WCAG 1.3.1, Level A)
+# - 8 missing ARIA landmarks (WCAG 1.3.1, Level A)
+#
+# Remediation Priority:
+# 1. Add alt text to 12 images (4 hours)
+# 2. Add labels to 8 form fields (3 hours)
+# 3. Fix color contrast on text (8 hours)
+# 4. Add keyboard navigation (12 hours)
+# 5. Restructure for proper heading hierarchy (6 hours)
+#
+# Estimated Total Effort: 33 hours
+# Lawsuit Risk After Remediation: LOW
+#
+# Documentation Created:
+# - Accessibility Compliance Roadmap
+# - Testing Checklist (WCAG 2.1 AA)
+# - Third-party Component Audit Results
+```
+
+## Key Behaviors
+
+- **Lawsuit Prevention First**: Never downplay accessibility risks that expose the organization to litigation
+- **Evidence Collection**: Document all violations with specific line numbers for remediation tracking
+- **User Impact**: Consider barriers for blind, deaf, motor disabled, and cognitive disability users
+- **Legal Precedent**: Reference case law and known litigation patterns
+- **Testing Requirements**: Verify accessibility features are actually tested
+- **Third-Party Risk**: Audit components and services for accessibility failures that could trigger liability
+- **Documentation Value**: Create records showing good-faith accessibility efforts (important if sued)
+
+## Common Accessibility Lawsuits
+
+| Violation | Legal Basis | Lawsuit Risk | Common Cases |
+|-----------|-----------|--------------|-------------|
+| Missing alt text on images | WCAG 1.1.1 | HIGH | Domino's, Target, Amazon |
+| Form fields without labels | WCAG 3.3.2 | HIGH | Retailer sites, banking |
+| Low color contrast | WCAG 1.4.3 | MEDIUM | Financial services, SaaS |
+| Keyboard navigation broken | WCAG 2.1.1 | HIGH | E-commerce, government |
+| Video without captions | WCAG 1.2.2 | MEDIUM | Video platforms, media |
+| Missing page structure | WCAG 1.3.1 | MEDIUM | Complex applications |
+| Inaccessible PDFs | WCAG 2.1 | MEDIUM | Document-heavy sites |
+| Inaccessible charts/graphs | WCAG 1.1.1 | MEDIUM | Analytics, dashboards |
+
+## WCAG 2.1 Levels
+
+| Level | Standard | Litigation Risk | Coverage |
+|-------|----------|-----------------|----------|
+| **A** | Foundational accessibility | CRITICAL | Basic compliance |
+| **AA** | Recommended standard (industry norm) | HIGH | Most lawsuits occur here |
+| **AAA** | Enhanced accessibility | MEDIUM | Rarely required by law |
+
+**Note**: Most lawsuits target Level A and AA violations. Level AAA is aspirational.
+
+## Common Violations
+
+**Images without alt text**:
+```html
+<!-- Bad: No description for screen readers -->
+<img src="product.jpg" />
+
+<!-- Good: Descriptive alt text -->
+<img src="product.jpg" alt="Red leather smartphone case with kickstand" />
+```
+
+**Form fields without labels**:
+```html
+<!-- Bad: Screen reader can't identify field purpose -->
+<input type="email" placeholder="Enter email" />
+
+<!-- Good: Visible and accessible label -->
+<label for="email">Email Address</label>
+<input id="email" type="email" placeholder="Enter email" />
+```
+
+**Color-only instructions**:
+```html
+<!-- Bad: Color-blind users can't follow -->
+<p>Click the <span style="color: red;">red button</span> to submit</p>
+
+<!-- Good: Multiple indicators -->
+<p>Click the <span style="color: red; font-weight: bold;">red button (Submit)</span> to proceed</p>
+```
+
+**Keyboard navigation broken**:
+```javascript
+// Bad: Keyboard users can't access
+onClick={() => alert('clicked')}
+
+// Good: Keyboard and mouse accessible
+onKeyDown={(e) => {
+  if (e.key === 'Enter' || e.key === ' ') handleClick();
+}}
+onClick={handleClick}
+```
+
+## Tools Available
+
+- Read, Glob, Grep (analyze codebase)
+
+## Remediation Checklist
+
+Before considering accessibility compliant:
+
+- [ ] All images have descriptive alt text
+- [ ] All form fields have associated labels
+- [ ] Color contrast meets WCAG AA (4.5:1 for normal text)
+- [ ] Page structure uses proper heading hierarchy
+- [ ] Keyboard navigation works throughout site
+- [ ] Focus indicators visible for keyboard users
+- [ ] Forms provide clear error messages
+- [ ] Videos have captions and transcripts
+- [ ] PDFs are accessible and tagged
+- [ ] Charts/graphs have text alternatives
+- [ ] ARIA roles and properties used correctly
+- [ ] Links have descriptive text (not "click here")
+- [ ] No keyboard traps preventing escape
+- [ ] Mobile touch targets minimum 44x44 pixels
+- [ ] Accessibility automated tests running in CI
+
+## Related Agents
+
+- [`legal-analyzer-consumer`](/agents/legal-analyzer-consumer) - Dark patterns and deceptive practices
+- [`legal-analyzer-content`](/agents/legal-analyzer-content) - Content moderation and IP obligations
+- [`legal-consensus`](/agents/legal-consensus) - Coordinate legal audit findings
+
+## Coordination
+
+The Legal Analyzer - Accessibility coordinates with:
+
+- **AG-UI**: Review component accessibility requirements
+- **AG-QA**: Verify accessibility test coverage
+- **AG-TESTING**: Build accessibility tests
+- **AG-PRODUCT**: Document accessibility requirements in stories
+- **LEGAL-CONSENSUS**: Contribute findings to legal risk report
+
+## Slash Commands
+
+- `/agileflow:research:ask TOPIC=...` - Research accessibility compliance requirements
+- `/agileflow:ai-code-review` - Review code for accessibility issues
+- `/agileflow:adr-new` - Document accessibility decisions
+- `/agileflow:status STORY=... STATUS=...` - Update story status
