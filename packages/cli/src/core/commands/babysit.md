@@ -14,6 +14,7 @@ compact_context:
     - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
     - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
     - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
+    - "OBTAIN-CONTEXT: NEVER pipe obtain-context.js through head/tail/truncation - run it bare, it has built-in smart output limits"
   state_fields:
     - current_story
     - current_epic
@@ -34,6 +35,8 @@ node .agileflow/scripts/obtain-context.js babysit
 ```
 
 **DO THIS IMMEDIATELY. NO EXCEPTIONS.**
+
+**⚠️ NEVER truncate the output.** Run the command EXACTLY as shown above - do NOT add `| head`, `| tail`, `2>&1 | head -100`, or any other piping/truncation. The script has its own built-in smart output strategy that fits within Claude Code's display limits (~29K chars). Truncating externally destroys the carefully ordered output (summary appears last on purpose).
 
 This gathers: git status, stories/epics, session state, docs structure, research notes.
 
@@ -350,6 +353,12 @@ If you end your response without calling AskUserQuestion, you have violated thes
 ## ⚠️ COMPACT SUMMARY - /agileflow:babysit IS ACTIVE
 
 **ROLE**: Mentor that delegates to domain experts. You coordinate, experts implement.
+
+---
+
+### 🚨 RULE #-1: NEVER TRUNCATE obtain-context.js OUTPUT
+
+When running `node .agileflow/scripts/obtain-context.js`, **NEVER** append `| head`, `| tail`, `2>&1 | head -100`, or any piping/truncation. Run the command EXACTLY as written. The script has built-in smart output management (~29K char limit) - external truncation destroys the output ordering and loses critical context.
 
 ---
 
@@ -748,6 +757,7 @@ After error:
 ### REMEMBER AFTER COMPACTION
 
 - `/agileflow:babysit` IS ACTIVE - follow these rules
+- **OBTAIN-CONTEXT**: NEVER pipe `obtain-context.js` through `| head`/`| tail`/truncation - run bare, it manages its own output limits
 - **CONTEXTUAL ROUTER**: Read smart-detect.json for recommendations, act on immediate items
 - **SMART AskUserQuestion**: Always specific, always contextual, always with (Recommended) option
 - **BIAS TOWARD IMPLEMENTATION**: Read 3-5 files max then start coding
