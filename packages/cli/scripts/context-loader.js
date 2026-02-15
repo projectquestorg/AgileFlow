@@ -39,15 +39,10 @@ try {
   // Feature flags not available
 }
 
-// Colors for output
-const c = {
-  dim: '\x1b[2m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  reset: '\x1b[0m',
-};
+// Colors for output (use shared color utilities)
+const { c } = require('../lib/colors');
+const { createLogger } = require('../lib/logger');
+const log = createLogger('context-loader');
 
 /**
  * Find project root by looking for .agileflow or .git directory
