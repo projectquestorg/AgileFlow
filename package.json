@@ -23,7 +23,8 @@
     "validate-docs:ci": "node scripts/validate-docs.js --ci",
     "validate": "npm run sync-counts:check && npm run validate-docs:ci",
     "check": "bash packages/cli/scripts/pre-push-check.sh",
-    "precheck": "cd packages/cli && npm run lint && npm test"
+    "precheck": "cd packages/cli && npm run lint && npm test",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -40,6 +41,8 @@
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.7.4",
     "tailwindcss": "3.4.1"
   },
@@ -50,6 +53,11 @@
     "ink-text-input": "^6.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
+  },
+  "lint-staged": {
+    "packages/cli/**/*.{js,jsx,ts,tsx,json,css}": [
+      "prettier --write --config packages/cli/.prettierrc --ignore-path packages/cli/.prettierignore"
+    ]
   },
   "overrides": {
     "diff": ">=8.0.3",

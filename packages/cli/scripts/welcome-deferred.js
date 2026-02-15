@@ -171,7 +171,10 @@ async function main() {
 
   // === DUPLICATE CLAUDE PROCESS DETECTION ===
   try {
-    const processCleanup = tryOptional(() => require('./lib/process-cleanup.js'), 'process-cleanup');
+    const processCleanup = tryOptional(
+      () => require('./lib/process-cleanup.js'),
+      'process-cleanup'
+    );
     if (processCleanup) {
       const cache = { metadata: readJSONCached(getMetadataPath(rootDir)) };
       const autoKillConfigured = cache.metadata?.features?.processCleanup?.autoKill === true;
@@ -228,7 +231,10 @@ async function main() {
 
   // === EPIC COMPLETION CHECK ===
   try {
-    const storyStateMachine = tryOptional(() => require('./lib/story-state-machine.js'), 'story-state-machine');
+    const storyStateMachine = tryOptional(
+      () => require('./lib/story-state-machine.js'),
+      'story-state-machine'
+    );
     if (storyStateMachine) {
       const statusPath = getStatusPath(rootDir);
       if (fs.existsSync(statusPath)) {
@@ -256,7 +262,10 @@ async function main() {
 
   // === IDEATION SYNC ===
   try {
-    const syncIdeationStatus = tryOptional(() => require('./lib/sync-ideation-status.js'), 'sync-ideation-status');
+    const syncIdeationStatus = tryOptional(
+      () => require('./lib/sync-ideation-status.js'),
+      'sync-ideation-status'
+    );
     if (syncIdeationStatus) {
       const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
       if (syncResult.ok && syncResult.updated > 0) {
@@ -267,8 +276,14 @@ async function main() {
 
   // === SCHEDULED AUTOMATIONS ===
   try {
-    const automationRegistry = tryOptional(() => require('./lib/automation-registry.js'), 'automation-registry');
-    const automationRunner = tryOptional(() => require('./lib/automation-runner.js'), 'automation-runner');
+    const automationRegistry = tryOptional(
+      () => require('./lib/automation-registry.js'),
+      'automation-registry'
+    );
+    const automationRunner = tryOptional(
+      () => require('./lib/automation-runner.js'),
+      'automation-runner'
+    );
 
     if (automationRegistry && automationRunner) {
       automationRegistry.getAutomationRegistry({ rootDir });

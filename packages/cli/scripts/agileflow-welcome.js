@@ -37,7 +37,9 @@ const {
   getClaudeDir,
 } = require('../lib/paths');
 const { readJSONCached, readFileCached } = require('../lib/file-cache');
-const { tryOptional, debugLog } = require('../lib/errors');
+const { tryOptional } = require('../lib/errors');
+const { createLogger } = require('../lib/logger');
+const log = createLogger('welcome');
 
 // Session manager path (relative to script location)
 const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
@@ -310,7 +312,7 @@ function getProjectInfo(rootDir, cache = null) {
       }
     }
   } catch (e) {
-    debugLog('getProjectInfo', { error: e?.message || String(e) });
+    log.debug('getProjectInfo:', e?.message || String(e));
   }
 
   return info;
@@ -376,7 +378,7 @@ function runArchival(rootDir, cache = null) {
       }
     }
   } catch (e) {
-    debugLog('runArchival', { error: e?.message || String(e) });
+    log.debug('runArchival:', e?.message || String(e));
   }
 
   return result;
@@ -451,7 +453,7 @@ function clearActiveCommands(rootDir, cache = null) {
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
   } catch (e) {
-    debugLog('clearActiveCommands', { error: e?.message || String(e) });
+    log.debug('clearActiveCommands:', e?.message || String(e));
   }
 
   return result;
@@ -525,7 +527,7 @@ function checkParallelSessions(rootDir) {
           result.sessionPath = data.current.path;
         }
       } catch (e) {
-        debugLog('checkParallelSessions:parse', { error: e?.message || String(e) });
+        log.debug('checkParallelSessions:parse:', e?.message || String(e));
       }
     }
   } catch (e) {
@@ -589,7 +591,7 @@ function checkPreCompact(rootDir, cache = null) {
       }
     }
   } catch (e) {
-    debugLog('checkPreCompact', { error: e?.message || String(e) });
+    log.debug('checkPreCompact:', e?.message || String(e));
   }
 
   return result;
@@ -664,7 +666,7 @@ function checkDamageControl(rootDir, cache = null) {
       }
     }
   } catch (e) {
-    debugLog('checkDamageControl', { error: e?.message || String(e) });
+    log.debug('checkDamageControl:', e?.message || String(e));
   }
 
   return result;
@@ -944,7 +946,7 @@ ${marker}
             currentVersion = pkg.version;
           }
         } catch (e) {
-          debugLog('getPackageVersion', { error: e?.message || String(e) });
+          log.debug('getPackageVersion:', e?.message || String(e));
         }
 
         // Update config_schema_version
@@ -1014,7 +1016,8 @@ function displayDeferredWarnings(rootDir) {
 
     const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
     const deferredWarnings = state.deferred_warnings;
-    if (!deferredWarnings || !Array.isArray(deferredWarnings) || deferredWarnings.length === 0) return;
+    if (!deferredWarnings || !Array.isArray(deferredWarnings) || deferredWarnings.length === 0)
+      return;
 
     for (const warning of deferredWarnings) {
       if (!warning.lines || warning.lines.length === 0) continue;
@@ -1405,7 +1408,7 @@ function getFeatureVersions(rootDir) {
       }
     }
   } catch (e) {
-    debugLog('getFeatureVersions', { error: e?.message || String(e) });
+    log.debug('getFeatureVersions:', e?.message || String(e));
   }
 
   return result;
@@ -2064,7 +2067,7 @@ function main() {
 try {
   main();
 } catch (err) {
-  console.error(err);
+  log.error(err.message || String(err));
   // Record error in metrics if possible
   if (hookMetrics) {
     try {

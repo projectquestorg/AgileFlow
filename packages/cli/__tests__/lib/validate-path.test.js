@@ -735,10 +735,7 @@ describe('Path Traversal Protection', () => {
         fs.writeFileSync(path.join(parentSymDir, 'realdir', 'existing.txt'), 'content');
 
         // Create symlink dir: parentSymDir/symdir -> parentSymDir/realdir
-        fs.symlinkSync(
-          path.join(parentSymDir, 'realdir'),
-          path.join(parentSymDir, 'symdir')
-        );
+        fs.symlinkSync(path.join(parentSymDir, 'realdir'), path.join(parentSymDir, 'symdir'));
       });
 
       afterAll(() => {
@@ -787,10 +784,7 @@ describe('Path Traversal Protection', () => {
         );
 
         // Escaping parent symlink: points outside base
-        fs.symlinkSync(
-          outsideDir,
-          path.join(escapeTestDir, 'escape-symdir')
-        );
+        fs.symlinkSync(outsideDir, path.join(escapeTestDir, 'escape-symdir'));
       });
 
       afterAll(() => {

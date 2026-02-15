@@ -137,7 +137,10 @@ function validateTemplateName(name) {
     return { valid: false, error: 'Template name must be 1-255 characters' };
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-    return { valid: false, error: 'Template name must contain only alphanumeric characters, hyphens, and underscores' };
+    return {
+      valid: false,
+      error: 'Template name must contain only alphanumeric characters, hyphens, and underscores',
+    };
   }
   return { valid: true };
 }
@@ -221,7 +224,9 @@ function buildTeammatePrompt(teammate, template) {
   } else if (teammate.description) {
     parts.push(teammate.description);
   } else {
-    parts.push(`You are the ${teammate.role || 'teammate'} agent responsible for the ${teammate.domain || 'general'} domain.`);
+    parts.push(
+      `You are the ${teammate.role || 'teammate'} agent responsible for the ${teammate.domain || 'general'} domain.`
+    );
   }
   parts.push('');
 

@@ -285,9 +285,7 @@ class ClaudeCodeSetup extends BaseIdeSetup {
 
     // Write settings
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
-    console.log(
-      chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader`)
-    );
+    console.log(chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader`));
   }
 
   /**

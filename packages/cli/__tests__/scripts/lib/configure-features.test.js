@@ -341,9 +341,7 @@ describe('configure-features', () => {
           PreToolUse: [
             {
               matcher: 'Bash',
-              hooks: [
-                { type: 'command', command: 'node /path/to/strip-ai-attribution.js' },
-              ],
+              hooks: [{ type: 'command', command: 'node /path/to/strip-ai-attribution.js' }],
             },
           ],
         },
