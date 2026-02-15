@@ -9,6 +9,17 @@
  * - Archival status
  * - Session cleanup status
  * - Last commit
+ *
+ * PERFORMANCE OPTIMIZATION (US-0356):
+ * Phase 1: Table display + instant notifications (~300-350ms)
+ * Phase 2: Cached update check + instant post-table notifications
+ * Phase 3: Background deferred work via welcome-deferred.js
+ *   - npm update check (with cache write)
+ *   - Session health warnings
+ *   - Duplicate process detection
+ *   - Story claiming/file tracking cleanup
+ *   - Epic completion, ideation sync, automations
+ *   Deferred warnings saved to session-state.json, displayed next session.
  */
 
 const fs = require('fs');
@@ -962,7 +973,114 @@ ${marker}
   return applied;
 }
 
-// Check for updates (async but we'll use sync approach for welcome)
+/**
+ * PERFORMANCE OPTIMIZATION: Check update cache in session-state.json (1-hour TTL)
+ * Avoids ~139ms npm registry network call when cache is fresh.
+ * Returns cached update result or null if stale/missing.
+ */
+function getUpdateFromCache(cache) {
+  try {
+    const updateCache = cache?.sessionState?.update_cache;
+    if (!updateCache || typeof updateCache !== 'object') return null;
+    if (!updateCache.checked_at || !updateCache.result) return null;
+
+    const checkedAt = new Date(updateCache.checked_at).getTime();
+    if (!Number.isFinite(checkedAt)) return null;
+
+    const age = Date.now() - checkedAt;
+    const ONE_HOUR = 60 * 60 * 1000;
+
+    // Reject negative age (future timestamps from clock skew) or absurdly old
+    if (age < 0 || age > 24 * ONE_HOUR) return null;
+
+    if (age < ONE_HOUR) {
+      return updateCache.result;
+    }
+  } catch (e) {
+    // Cache read failed
+  }
+  return null;
+}
+
+/**
+ * Display deferred warnings from previous session's background work.
+ * Warnings are saved by welcome-deferred.js and displayed here on next start.
+ * Clears warnings after display.
+ */
+function displayDeferredWarnings(rootDir) {
+  try {
+    const sessionStatePath = getSessionStatePath(rootDir);
+    if (!fs.existsSync(sessionStatePath)) return;
+
+    const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+    const deferredWarnings = state.deferred_warnings;
+    if (!deferredWarnings || !Array.isArray(deferredWarnings) || deferredWarnings.length === 0) return;
+
+    for (const warning of deferredWarnings) {
+      if (!warning.lines || warning.lines.length === 0) continue;
+
+      console.log('');
+      switch (warning.type) {
+        case 'update_available':
+          console.log(`${c.amber}↑ ${warning.lines[0]}${c.reset}`);
+          if (warning.lines[1]) console.log(`  ${c.skyBlue}${warning.lines[1]}${c.reset}`);
+          break;
+        case 'session_health':
+          for (const line of warning.lines) {
+            if (line.startsWith('  ')) {
+              console.log(`${c.dim}   └─ ${line.trim()}${c.reset}`);
+            } else {
+              console.log(`${c.coral}⚠️  ${line}${c.reset}`);
+            }
+          }
+          break;
+        case 'process_cleanup':
+          console.log(`${c.amber}⚠️  ${warning.lines[0]}${c.reset}`);
+          if (warning.lines.length > 1) {
+            for (const line of warning.lines.slice(1)) {
+              console.log(`${c.slate}   ${line}${c.reset}`);
+            }
+          }
+          break;
+        case 'epic_completion':
+          for (const line of warning.lines) {
+            console.log(`${c.mintGreen}✅ ${line}${c.reset}`);
+          }
+          break;
+        case 'ideation_sync':
+          console.log(`${c.dim}📊 ${warning.lines[0]}${c.reset}`);
+          break;
+        case 'automations':
+          console.log(`${c.teal}🤖 ${warning.lines[0]}${c.reset}`);
+          for (const line of warning.lines.slice(1)) {
+            console.log(`${c.dim}   └─ ${line}${c.reset}`);
+          }
+          break;
+        case 'story_claiming':
+          console.log(`${c.amber}🔒 ${warning.lines[0]}${c.reset}`);
+          for (const line of warning.lines.slice(1)) {
+            console.log(`${c.dim}   └─ ${line.trim()}${c.reset}`);
+          }
+          break;
+        case 'file_tracking':
+          console.log(`${c.amber}📁 ${warning.lines[0]}${c.reset}`);
+          break;
+        default:
+          for (const line of warning.lines) {
+            console.log(`${c.dim}${line}${c.reset}`);
+          }
+      }
+    }
+
+    // Clear deferred warnings after display
+    delete state.deferred_warnings;
+    fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+  } catch (e) {
+    // Display failed, non-critical
+  }
+}
+
+// Check for updates (now handled by welcome-deferred.js, kept for backward compatibility)
 async function checkUpdates() {
   const result = {
     available: false,
@@ -1658,8 +1776,8 @@ function formatSessionBanner(parallelSessions) {
   return lines.join('\n');
 }
 
-// Main
-async function main() {
+// Main (synchronous - async work deferred to welcome-deferred.js)
+function main() {
   // Start hook timer for metrics
   const timer = hookMetrics ? hookMetrics.startHookTimer('SessionStart', 'welcome') : null;
 
@@ -1814,42 +1932,31 @@ async function main() {
   );
 
   // ============================================
-  // PHASE 2: BACKGROUND UPDATE CHECK (after table displays)
-  // This runs async and shows notification AFTER the table
+  // PHASE 2: FAST POST-TABLE NOTIFICATIONS + DEFERRED BACKGROUND WORK
+  // Only instant operations here. Expensive work deferred to welcome-deferred.js
   // ============================================
-  try {
-    // Only check for updates if we didn't already detect a "just updated" from previous session
-    if (!updateInfo.justUpdated) {
-      const freshUpdateInfo = await checkUpdates();
 
-      // If update is available, show notification AFTER the table
-      if (freshUpdateInfo.available && freshUpdateInfo.latest) {
+  // Display deferred warnings from previous session's background work
+  displayDeferredWarnings(rootDir);
+
+  // Check update cache (1-hour TTL) - instant if cached, skipped if stale
+  let skipUpdateInDeferred = false;
+  try {
+    const cachedUpdate = getUpdateFromCache(cache);
+    if (cachedUpdate) {
+      skipUpdateInDeferred = true;
+      // Use cached result for notification
+      if (cachedUpdate.available && cachedUpdate.latest && !updateInfo.justUpdated) {
         console.log('');
         console.log(
-          `${c.amber}↑ Update available:${c.reset} v${info.version} → ${c.softGold}v${freshUpdateInfo.latest}${c.reset}`
+          `${c.amber}↑ Update available:${c.reset} v${info.version} → ${c.softGold}v${cachedUpdate.latest}${c.reset}`
         );
         console.log(`  Run: ${c.skyBlue}npx agileflow update${c.reset}`);
-
-        // If auto-update is enabled, spawn it in background (non-blocking)
-        if (freshUpdateInfo.autoUpdate) {
-          spawnAutoUpdateInBackground(rootDir, info.version, freshUpdateInfo.latest);
-        }
-      }
-
-      // Mark current version as seen to track for next update
-      const updateChecker = tryOptional(() => require('./check-update.js'), 'check-update');
-      if (freshUpdateInfo.justUpdated && updateChecker) {
-        updateChecker.markVersionSeen(info.version);
-      }
-    } else {
-      // Mark current version as seen (for "just updated" case)
-      const updateChecker = tryOptional(() => require('./check-update.js'), 'check-update');
-      if (updateChecker) {
-        updateChecker.markVersionSeen(info.version);
       }
     }
+    // If no cache or stale, the deferred script will check and cache the result
   } catch (e) {
-    // Update check failed - continue without it (non-critical)
+    // Cache check failed, deferred script will handle it
   }
 
   // Show config auto-apply confirmation (for "full" profile)
@@ -1926,247 +2033,26 @@ async function main() {
     );
   }
 
-  // === SESSION HEALTH WARNINGS ===
-  // Check for forgotten sessions with uncommitted changes, stale sessions, orphaned entries
-  // PERFORMANCE OPTIMIZATION: Direct function call instead of subprocess (~50-100ms savings)
+  // ============================================
+  // PHASE 3: SPAWN DEFERRED BACKGROUND WORK
+  // Session health, process cleanup, story claiming, file tracking,
+  // epic completion, ideation sync, automations, update check (if stale)
+  // Results saved to session-state.json for next session display.
+  // ============================================
   try {
-    const sm = getSessionManager();
-    const health = sm ? sm.getSessionsHealth({ staleDays: 7 }) : null;
-
-    if (health) {
-      const hasIssues =
-        health.uncommitted.length > 0 ||
-        health.stale.length > 0 ||
-        health.orphanedRegistry.length > 0;
-
-      if (hasIssues) {
-        console.log('');
-
-        // Uncommitted changes - MOST IMPORTANT (potential data loss)
-        if (health.uncommitted.length > 0) {
-          console.log(
-            `${c.coral}⚠️  ${health.uncommitted.length} session(s) have uncommitted changes:${c.reset}`
-          );
-          health.uncommitted.slice(0, 3).forEach(sess => {
-            const name = sess.nickname ? `"${sess.nickname}"` : `Session ${sess.id}`;
-            console.log(`${c.dim}   └─ ${name}: ${sess.changeCount} file(s)${c.reset}`);
-          });
-          if (health.uncommitted.length > 3) {
-            console.log(`${c.dim}   └─ ... and ${health.uncommitted.length - 3} more${c.reset}`);
-          }
-          console.log(
-            `${c.slate}   Run: ${c.skyBlue}/agileflow:session:status${c.slate} to see details${c.reset}`
-          );
-        }
-
-        // Stale sessions (inactive 7+ days)
-        if (health.stale.length > 0) {
-          console.log(
-            `${c.amber}📅 ${health.stale.length} session(s) inactive for 7+ days${c.reset}`
-          );
-        }
-
-        // Orphaned registry entries (path doesn't exist)
-        if (health.orphanedRegistry.length > 0) {
-          console.log(
-            `${c.peach}🗑️  ${health.orphanedRegistry.length} session(s) have missing directories${c.reset}`
-          );
-        }
+    const deferredScript = path.join(__dirname, 'welcome-deferred.js');
+    if (fs.existsSync(deferredScript)) {
+      const deferredArgs = [deferredScript, rootDir, `--version=${info.version}`];
+      if (skipUpdateInDeferred) {
+        deferredArgs.push('--skip-update');
       }
+      if (updateInfo.justUpdated) {
+        deferredArgs.push('--just-updated');
+      }
+      spawnBackground('node', deferredArgs, { cwd: rootDir });
     }
   } catch (e) {
-    // Health check failed, skip silently
-  }
-
-  // === DUPLICATE CLAUDE PROCESS DETECTION ===
-  // Check for multiple Claude processes in the same working directory
-  const processCleanup = tryOptional(() => require('./lib/process-cleanup.js'), 'process-cleanup');
-  if (processCleanup) {
-    try {
-      // Auto-kill is explicitly opt-in at runtime.
-      // Even if metadata has autoKill=true from older configs, we require
-      // AGILEFLOW_PROCESS_CLEANUP_AUTOKILL=1 to prevent accidental session kills.
-      const metadata = cache?.metadata;
-      const autoKillConfigured = metadata?.features?.processCleanup?.autoKill === true;
-      const autoKill = autoKillConfigured && process.env.AGILEFLOW_PROCESS_CLEANUP_AUTOKILL === '1';
-
-      const cleanupResult = processCleanup.cleanupDuplicateProcesses({
-        rootDir,
-        autoKill,
-        dryRun: false,
-      });
-
-      if (cleanupResult.duplicates > 0) {
-        console.log('');
-
-        if (cleanupResult.killed.length > 0) {
-          // Auto-kill was enabled and processes were terminated
-          console.log(
-            `${c.mintGreen}🔧 Cleaned ${cleanupResult.killed.length} duplicate Claude process(es)${c.reset}`
-          );
-          cleanupResult.killed.forEach(proc => {
-            console.log(`${c.dim}   └─ PID ${proc.pid} (${proc.method})${c.reset}`);
-          });
-        } else {
-          // Warn only (auto-kill disabled or skipped by safety guards)
-          console.log(
-            `${c.amber}⚠️  ${cleanupResult.duplicates} other Claude process(es) in same directory${c.reset}`
-          );
-          console.log(`${c.slate}   This may cause slowdowns and freezing. Options:${c.reset}`);
-          console.log(`${c.slate}   • Close duplicate Claude windows/tabs${c.reset}`);
-          if (autoKillConfigured) {
-            console.log(
-              `${c.slate}   • Auto-kill configured but runtime opt-in is off (safer default)${c.reset}`
-            );
-          }
-        }
-
-        if (cleanupResult.errors.length > 0) {
-          cleanupResult.errors.forEach(err => {
-            console.log(`${c.coral}   ⚠ Failed to kill PID ${err.pid}: ${err.error}${c.reset}`);
-          });
-        }
-      }
-    } catch (e) {
-      // Silently ignore process cleanup errors
-    }
-  }
-
-  // Story claiming: cleanup stale claims and show warnings
-  const storyClaiming = tryOptional(() => require('./lib/story-claiming.js'), 'story-claiming');
-  if (storyClaiming) {
-    try {
-      // Clean up stale claims (dead PIDs, expired TTL)
-      const cleanupResult = storyClaiming.cleanupStaleClaims({ rootDir });
-      if (cleanupResult.ok && cleanupResult.cleaned > 0) {
-        console.log('');
-        console.log(`${c.dim}Cleaned ${cleanupResult.cleaned} stale story claim(s)${c.reset}`);
-      }
-
-      // Show stories claimed by other sessions
-      const othersResult = storyClaiming.getStoriesClaimedByOthers({ rootDir });
-      if (othersResult.ok && othersResult.stories && othersResult.stories.length > 0) {
-        console.log('');
-        console.log(storyClaiming.formatClaimedStories(othersResult.stories));
-        console.log('');
-        console.log(
-          `${c.slate}   These stories are locked - pick a different one to avoid conflicts.${c.reset}`
-        );
-      }
-    } catch (e) {
-      // Silently ignore story claiming errors
-    }
-  }
-
-  // File tracking: cleanup stale touches and show overlap warnings
-  const fileTracking = tryOptional(() => require('./lib/file-tracking.js'), 'file-tracking');
-  if (fileTracking) {
-    try {
-      // Clean up stale file touches (dead PIDs, expired TTL)
-      const cleanupResult = fileTracking.cleanupStaleTouches({ rootDir });
-      if (cleanupResult.ok && cleanupResult.cleaned > 0) {
-        console.log('');
-        console.log(
-          `${c.dim}Cleaned ${cleanupResult.cleaned} stale file tracking session(s)${c.reset}`
-        );
-      }
-
-      // Show file overlaps with other sessions
-      const overlapsResult = fileTracking.getMyFileOverlaps({ rootDir });
-      if (overlapsResult.ok && overlapsResult.overlaps && overlapsResult.overlaps.length > 0) {
-        console.log('');
-        console.log(fileTracking.formatFileOverlaps(overlapsResult.overlaps));
-      }
-    } catch (e) {
-      // Silently ignore file tracking errors
-    }
-  }
-
-  // Epic completion check: auto-complete epics where all stories are done
-  const storyStateMachine = tryOptional(() => require('./lib/story-state-machine.js'), 'story-state-machine');
-  if (storyStateMachine && cache.status) {
-    try {
-      const statusPath = getStatusPath(rootDir);
-      const statusData = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-      const incompleteEpics = storyStateMachine.findIncompleteEpics(statusData);
-
-      if (incompleteEpics.length > 0) {
-        let autoCompleted = 0;
-        for (const { epicId, completed, total } of incompleteEpics) {
-          const result = storyStateMachine.autoCompleteEpic(statusData, epicId);
-          if (result.updated) {
-            autoCompleted++;
-            console.log('');
-            console.log(
-              `${c.mintGreen}✅ Auto-completed ${c.bold}${epicId}${c.reset}${c.mintGreen} (${completed}/${total} stories done)${c.reset}`
-            );
-          }
-        }
-        if (autoCompleted > 0) {
-          fs.writeFileSync(statusPath, JSON.stringify(statusData, null, 2) + '\n');
-        }
-      }
-    } catch (e) {
-      // Silently ignore epic completion errors
-    }
-  }
-
-  // Ideation sync: mark ideas as implemented when linked epics complete
-  const syncIdeationStatus = tryOptional(() => require('./lib/sync-ideation-status.js'), 'sync-ideation-status');
-  if (syncIdeationStatus) {
-    try {
-      const syncResult = syncIdeationStatus.syncImplementedIdeas(rootDir);
-      if (syncResult.ok && syncResult.updated > 0) {
-        console.log('');
-        console.log(`${c.dim}📊 Synced ${syncResult.updated} idea(s) as implemented${c.reset}`);
-      }
-    } catch (e) {
-      // Silently ignore ideation sync errors
-    }
-  }
-
-  // === SCHEDULED AUTOMATIONS ===
-  // Check for and run due automations (non-blocking)
-  let automationRegistry, automationRunner;
-  try {
-    automationRegistry = require('./lib/automation-registry.js');
-    automationRunner = require('./lib/automation-runner.js');
-  } catch (e) {
-    // Automation system not available
-  }
-  if (automationRegistry && automationRunner) {
-    try {
-      const registry = automationRegistry.getAutomationRegistry({ rootDir });
-      const runner = automationRunner.getAutomationRunner({ rootDir });
-      const dueStatus = runner.getDueStatus();
-
-      if (dueStatus.due > 0) {
-        console.log('');
-        console.log(`${c.teal}🤖 ${dueStatus.due} automation(s) due to run${c.reset}`);
-
-        // Show what's due
-        for (const auto of dueStatus.dueAutomations.slice(0, 3)) {
-          console.log(`${c.dim}   └─ ${auto.name}${c.reset}`);
-        }
-        if (dueStatus.due > 3) {
-          console.log(`${c.dim}   └─ ... and ${dueStatus.due - 3} more${c.reset}`);
-        }
-
-        // Run due automations in background (spawn detached process)
-        // This prevents blocking the welcome hook
-        const runnerScriptPath = path.join(__dirname, 'automation-run-due.js');
-
-        // Only spawn if the runner script exists
-        if (fs.existsSync(runnerScriptPath)) {
-          spawnBackground('node', [runnerScriptPath], { cwd: rootDir });
-          console.log(`${c.dim}   Running in background...${c.reset}`);
-        } else {
-          console.log(`${c.slate}   Run: ${c.skyBlue}/agileflow:automate ACTION=run-due${c.reset}`);
-        }
-      }
-    } catch (e) {
-      // Silently ignore automation errors
-    }
+    // Deferred script spawn failed, non-critical
   }
 
   // Record hook metrics
@@ -2175,7 +2061,9 @@ async function main() {
   }
 }
 
-main().catch(err => {
+try {
+  main();
+} catch (err) {
   console.error(err);
   // Record error in metrics if possible
   if (hookMetrics) {
@@ -2187,4 +2075,4 @@ main().catch(err => {
       // Silently ignore metrics errors
     }
   }
-});
+}
