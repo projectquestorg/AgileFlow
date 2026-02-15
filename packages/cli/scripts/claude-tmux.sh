@@ -156,6 +156,38 @@ if command -v tmux &> /dev/null; then
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
+# TAB FORMAT BUILDER — dynamic compaction based on window count & terminal width
+# Uses tmux 3.2+ #{e|...} numeric operators for cascading tier selection
+# ══════════════════════════════════════════════════════════════════════════════
+build_tab_format() {
+  # Active window formats per tier (Tokyo Night + AgileFlow orange #e8683a)
+  local a0='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a1='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=8:window_name} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a2='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a]#{=4:window_name}#[bg=#1a1b26 fg=#2d2f3a]'
+  local a3='#[fg=#1a1b26 bg=#e8683a bold] #I #[bg=#1a1b26 fg=#e8683a]'
+  local a4='#[fg=#e8683a bold]#I#[fg=default]'
+
+  # Inactive window formats per tier
+  local i0='#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  '
+  local i1='#[fg=#8a8a8a] #I:#{=|6|...:window_name} '
+  local i2='#[fg=#8a8a8a] #I:#{=3:window_name} '
+  local i3='#[fg=#8a8a8a] #I '
+  local i4='#[fg=#565a6e]#I '
+
+  # Tier condition prefix/middle/suffix:
+  #   #{?#{e|<=:#{e|*:#{session_windows},WIDTH},#{client_width}},YES,NO}
+  local cp='#{?#{e|<=:#{e|*:#{session_windows},'
+  local cm='},#{client_width}},'
+  local cs='}'
+
+  # Cascading tier selector: T0 -> T1 -> T2 -> T3 -> T4 (fallback)
+  local active="${cp}21${cm}${a0},${cp}14${cm}${a1},${cp}10${cm}${a2},${cp}7${cm}${a3},${a4}${cs}${cs}${cs}${cs}"
+  local inactive="${cp}21${cm}${i0},${cp}14${cm}${i1},${cp}10${cm}${i2},${cp}7${cm}${i3},${i4}${cs}${cs}${cs}${cs}"
+
+  echo "#[bg=#1a1b26]#{W:#{?window_active,${active},${inactive}}}"
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
 # TMUX CONFIGURATION FUNCTION — applies theme, keybinds, and status bar
 # Defined early so --refresh can use it before any session logic
 # ══════════════════════════════════════════════════════════════════════════════
@@ -189,8 +221,11 @@ configure_tmux_session() {
   # Uses #() for live branch updates (runs on status-interval, every 30s)
   tmux set-option -t "$target_session" status-format[0] "#[bg=#1a1b26]  #[fg=#e8683a bold]#{s/claude-//:session_name}  #[fg=#3b4261]·  #[fg=#7aa2f7]󰘬 #(git -C #{pane_current_path} branch --show-current 2>/dev/null || echo '-')#[align=right]#[fg=#565a6e]Alt+h help  "
 
-  # Line 1 (bottom): Window tabs with smart truncation and brand color
-  tmux set-option -t "$target_session" status-format[1] "#[bg=#1a1b26]#{W:#{?window_active,#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a],#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  }}"
+  # Line 1 (bottom): Window tabs with dynamic compaction
+  # Tabs auto-shrink based on window count and terminal width
+  local tab_format
+  tab_format=$(build_tab_format)
+  tmux set-option -t "$target_session" status-format[1] "$tab_format"
 
   # Pane border styling - blue inactive, orange active
   tmux set-option -t "$target_session" pane-border-style "fg=#3d59a1"

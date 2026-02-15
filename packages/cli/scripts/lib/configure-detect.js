@@ -83,6 +83,13 @@ function detectConfig(version) {
         level: null,
         patternCount: 0,
       },
+      noaiattribution: {
+        enabled: false,
+        valid: true,
+        issues: [],
+        version: null,
+        outdated: false,
+      },
       askuserquestion: {
         enabled: false,
         valid: true,
@@ -225,7 +232,7 @@ function detectStopHooks(hook, status) {
 }
 
 /**
- * Detect PreToolUse hooks (damage control)
+ * Detect PreToolUse hooks (damage control, no AI attribution)
  */
 function detectPreToolUseHooks(hooks, status) {
   if (!Array.isArray(hooks) || hooks.length === 0) return;
@@ -247,6 +254,17 @@ function detectPreToolUseHooks(hooks, status) {
       status.features.damagecontrol.valid = false;
       status.features.damagecontrol.issues.push(`Only ${hookCount}/3 hooks configured`);
     }
+  }
+
+  // Detect no AI attribution hook
+  const hasNoAiHook = hooks.some(
+    h =>
+      h.matcher === 'Bash' &&
+      Array.isArray(h.hooks) &&
+      h.hooks.some(hk => hk.command?.includes('strip-ai-attribution'))
+  );
+  if (hasNoAiHook) {
+    status.features.noaiattribution.enabled = true;
   }
 }
 
@@ -301,6 +319,11 @@ function detectMetadata(status, version) {
     status.features.tmuxautospawn.enabled = meta.features.tmuxAutoSpawn.enabled !== false;
   } else {
     status.features.tmuxautospawn.enabled = true; // Default enabled
+  }
+
+  // No AI attribution metadata
+  if (meta.features?.noaiattribution?.enabled) {
+    status.features.noaiattribution.enabled = true;
   }
 
   // Read feature versions and check if outdated (content-based)
@@ -432,6 +455,14 @@ function printStatus(status) {
     }
   } else {
     log(`   Damage Control: disabled`, c.dim);
+  }
+
+  // No AI Attribution
+  const naa = status.features.noaiattribution;
+  if (naa.enabled) {
+    log(`   No AI Attribution: enabled`, c.green);
+  } else {
+    log(`   No AI Attribution: disabled`, c.dim);
   }
 
   // AskUserQuestion

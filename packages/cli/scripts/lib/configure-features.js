@@ -62,6 +62,11 @@ const FEATURES = {
     metadataOnly: false,
     description: 'Enable Claude Code native Agent Teams (sets env var in .claude/settings.json)',
   },
+  noaiattribution: {
+    preToolUseHook: true,
+    script: 'strip-ai-attribution.js',
+    description: 'Block git commits containing AI attribution (Co-Authored-By, etc.)',
+  },
 };
 
 const PROFILES = {
@@ -76,12 +81,20 @@ const PROFILES = {
       'selfimprove',
       'askuserquestion',
       'tmuxautospawn',
+      'noaiattribution',
     ],
     archivalDays: 30,
   },
   basic: {
     description: 'Essential hooks + archival (SessionStart + PreCompact + Archival)',
-    enable: ['sessionstart', 'precompact', 'archival', 'askuserquestion', 'tmuxautospawn'],
+    enable: [
+      'sessionstart',
+      'precompact',
+      'archival',
+      'askuserquestion',
+      'tmuxautospawn',
+      'noaiattribution',
+    ],
     disable: ['statusline', 'ralphloop', 'selfimprove'],
     archivalDays: 30,
   },
@@ -109,6 +122,7 @@ const PROFILES = {
       'selfimprove',
       'askuserquestion',
       'tmuxautospawn',
+      'noaiattribution',
     ],
   },
   experimental: {
@@ -123,6 +137,7 @@ const PROFILES = {
       'selfimprove',
       'askuserquestion',
       'tmuxautospawn',
+      'noaiattribution',
     ],
     archivalDays: 30,
     experimental: {
@@ -454,6 +469,11 @@ function enableFeature(feature, options = {}, version) {
     return enableDamageControl(settings, options, version);
   }
 
+  // Handle no AI attribution
+  if (feature === 'noaiattribution') {
+    return enableNoAiAttribution(settings, version);
+  }
+
   const featureConfig = FEATURES[feature];
   const contentHash = featureConfig?.script
     ? hashFile(path.join(SCRIPTS_DIR, featureConfig.script))
@@ -653,6 +673,70 @@ function enableDamageControl(settings, options, version) {
   writeJSON('.claude/settings.json', settings);
   updateGitignore();
 
+  return true;
+}
+
+/**
+ * Enable no AI attribution feature
+ */
+function enableNoAiAttribution(settings, version) {
+  const scriptName = 'strip-ai-attribution.js';
+
+  if (!scriptExists(scriptName)) {
+    error(`Script not found: ${getScriptPath(scriptName)}`);
+    info('Run "npx agileflow update" to reinstall scripts');
+    return false;
+  }
+
+  // Initialize PreToolUse array
+  if (!settings.hooks.PreToolUse) {
+    settings.hooks.PreToolUse = [];
+  }
+
+  const scriptFullPath = path.join(process.cwd(), '.agileflow', 'scripts', scriptName);
+
+  // Remove existing hook if any
+  for (const entry of settings.hooks.PreToolUse) {
+    if (entry.matcher === 'Bash' && Array.isArray(entry.hooks)) {
+      entry.hooks = entry.hooks.filter(h => !h.command?.includes('strip-ai-attribution'));
+    }
+  }
+  // Clean up empty entries
+  settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
+    h => Array.isArray(h.hooks) && h.hooks.length > 0
+  );
+
+  // Add to existing Bash matcher or create new one
+  const bashEntry = settings.hooks.PreToolUse.find(h => h.matcher === 'Bash');
+  if (bashEntry) {
+    bashEntry.hooks.push({ type: 'command', command: `node ${scriptFullPath}`, timeout: 5 });
+  } else {
+    settings.hooks.PreToolUse.push({
+      matcher: 'Bash',
+      hooks: [{ type: 'command', command: `node ${scriptFullPath}`, timeout: 5 }],
+    });
+  }
+
+  const contentHash = hashFile(path.join(SCRIPTS_DIR, scriptName));
+  updateMetadata(
+    {
+      features: {
+        noaiattribution: {
+          enabled: true,
+          version,
+          ...(contentHash ? { contentHash } : {}),
+          at: new Date().toISOString(),
+        },
+      },
+    },
+    version
+  );
+
+  writeJSON('.claude/settings.json', settings);
+  updateGitignore();
+
+  success('AI attribution blocking enabled');
+  info('Git commits with AI footers (Co-Authored-By, etc.) will be blocked');
   return true;
 }
 
@@ -922,6 +1006,41 @@ function disableFeature(feature, version) {
 
     writeJSON('.claude/settings.json', settings);
     success('Damage control disabled');
+    return true;
+  }
+
+  // Disable no AI attribution
+  if (feature === 'noaiattribution') {
+    if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
+      for (const entry of settings.hooks.PreToolUse) {
+        if (entry.matcher === 'Bash' && Array.isArray(entry.hooks)) {
+          entry.hooks = entry.hooks.filter(h => !h.command?.includes('strip-ai-attribution'));
+        }
+      }
+      // Clean up empty entries
+      settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
+        h => Array.isArray(h.hooks) && h.hooks.length > 0
+      );
+      if (settings.hooks.PreToolUse.length === 0) {
+        delete settings.hooks.PreToolUse;
+      }
+    }
+
+    updateMetadata(
+      {
+        features: {
+          noaiattribution: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+
+    writeJSON('.claude/settings.json', settings);
+    success('AI attribution blocking disabled');
     return true;
   }
 

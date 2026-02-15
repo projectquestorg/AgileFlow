@@ -75,12 +75,18 @@ describe('configure-features', () => {
       expect(FEATURES.autoupdate).toBeDefined();
       expect(FEATURES.damagecontrol).toBeDefined();
       expect(FEATURES.askuserquestion).toBeDefined();
+      expect(FEATURES.noaiattribution).toBeDefined();
     });
 
     it('hook features have required properties', () => {
       expect(FEATURES.sessionstart.hook).toBe('SessionStart');
       expect(FEATURES.sessionstart.script).toBe('agileflow-welcome.js');
       expect(FEATURES.sessionstart.type).toBe('node');
+    });
+
+    it('noaiattribution has correct config', () => {
+      expect(FEATURES.noaiattribution.preToolUseHook).toBe(true);
+      expect(FEATURES.noaiattribution.script).toBe('strip-ai-attribution.js');
     });
   });
 
@@ -97,11 +103,17 @@ describe('configure-features', () => {
       expect(PROFILES.full.enable).toContain('precompact');
       expect(PROFILES.full.enable).toContain('archival');
       expect(PROFILES.full.enable).toContain('statusline');
+      expect(PROFILES.full.enable).toContain('noaiattribution');
+    });
+
+    it('basic profile includes noaiattribution', () => {
+      expect(PROFILES.basic.enable).toContain('noaiattribution');
     });
 
     it('none profile disables all features', () => {
       expect(PROFILES.none.disable).toContain('sessionstart');
       expect(PROFILES.none.disable).toContain('precompact');
+      expect(PROFILES.none.disable).toContain('noaiattribution');
     });
   });
 
@@ -177,6 +189,75 @@ describe('configure-features', () => {
       expect(result).toBe(true);
       expect(success).toHaveBeenCalledWith(expect.stringContaining('AskUserQuestion enabled'));
     });
+
+    it('enables noaiattribution when script exists', () => {
+      fs.existsSync.mockImplementation(p => {
+        if (p.includes('strip-ai-attribution.js')) return true;
+        return false;
+      });
+      readJSON.mockReturnValue({});
+      fs.readFileSync.mockReturnValue('script-content');
+
+      const result = enableFeature('noaiattribution', {}, '2.0.0');
+
+      expect(result).toBe(true);
+      expect(success).toHaveBeenCalledWith('AI attribution blocking enabled');
+      expect(writeJSON).toHaveBeenCalledWith(
+        '.claude/settings.json',
+        expect.objectContaining({
+          hooks: expect.objectContaining({
+            PreToolUse: expect.arrayContaining([
+              expect.objectContaining({
+                matcher: 'Bash',
+                hooks: expect.arrayContaining([
+                  expect.objectContaining({
+                    command: expect.stringContaining('strip-ai-attribution'),
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        })
+      );
+    });
+
+    it('returns false if strip-ai-attribution script not found', () => {
+      fs.existsSync.mockReturnValue(false);
+      readJSON.mockReturnValue({});
+
+      const result = enableFeature('noaiattribution', {}, '2.0.0');
+
+      expect(result).toBe(false);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('Script not found'));
+    });
+
+    it('adds noaiattribution to existing Bash PreToolUse matcher', () => {
+      fs.existsSync.mockImplementation(p => {
+        if (p.includes('strip-ai-attribution.js')) return true;
+        return false;
+      });
+      readJSON.mockReturnValue({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [{ type: 'command', command: 'node damage-control-bash.js' }],
+            },
+          ],
+        },
+      });
+      fs.readFileSync.mockReturnValue('script-content');
+
+      const result = enableFeature('noaiattribution', {}, '2.0.0');
+
+      expect(result).toBe(true);
+      // Should have both hooks on the Bash matcher
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      const bashEntry = settingsCall[1].hooks.PreToolUse.find(h => h.matcher === 'Bash');
+      expect(bashEntry.hooks).toHaveLength(2);
+      expect(bashEntry.hooks[0].command).toContain('damage-control-bash');
+      expect(bashEntry.hooks[1].command).toContain('strip-ai-attribution');
+    });
   });
 
   describe('disableFeature', () => {
@@ -223,6 +304,56 @@ describe('configure-features', () => {
 
       expect(result).toBe(true);
       expect(success).toHaveBeenCalledWith('Status line disabled');
+    });
+
+    it('disables noaiattribution and removes hook', () => {
+      fs.existsSync.mockReturnValue(true);
+      readJSON.mockReturnValue({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                { type: 'command', command: 'node /path/to/damage-control-bash.js' },
+                { type: 'command', command: 'node /path/to/strip-ai-attribution.js' },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = disableFeature('noaiattribution', '2.0.0');
+
+      expect(result).toBe(true);
+      expect(success).toHaveBeenCalledWith('AI attribution blocking disabled');
+
+      // Should keep damage-control but remove strip-ai-attribution
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      const bashEntry = settingsCall[1].hooks.PreToolUse.find(h => h.matcher === 'Bash');
+      expect(bashEntry.hooks).toHaveLength(1);
+      expect(bashEntry.hooks[0].command).toContain('damage-control-bash');
+    });
+
+    it('removes empty PreToolUse array when disabling noaiattribution', () => {
+      fs.existsSync.mockReturnValue(true);
+      readJSON.mockReturnValue({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                { type: 'command', command: 'node /path/to/strip-ai-attribution.js' },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = disableFeature('noaiattribution', '2.0.0');
+
+      expect(result).toBe(true);
+      const settingsCall = writeJSON.mock.calls.find(c => c[0] === '.claude/settings.json');
+      expect(settingsCall[1].hooks.PreToolUse).toBeUndefined();
     });
   });
 
@@ -444,9 +575,7 @@ describe('configure-features', () => {
           }),
         })
       );
-      expect(success).toHaveBeenCalledWith(
-        expect.stringContaining('skip-permissions')
-      );
+      expect(success).toHaveBeenCalledWith(expect.stringContaining('skip-permissions'));
     });
 
     it('sets acceptEdits for accept-edits mode', () => {
