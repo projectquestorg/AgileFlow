@@ -17,7 +17,7 @@
 npx agileflow@latest setup
 ```
 
-That's it! The `npx` command always fetches the latest version.
+The `npx` command always fetches the latest version.
 
 **Updates:** `npx agileflow@latest update`
 
