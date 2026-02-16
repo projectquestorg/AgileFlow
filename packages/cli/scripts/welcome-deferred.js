@@ -308,6 +308,102 @@ async function main() {
     }
   } catch (e) {}
 
+  // === US-0356: DEFERRED SESSION REGISTRATION ===
+  // Full session-manager registration (lock write, branch/story update, stale cleanup)
+  // was deferred from Phase 1 for startup performance.
+  if (flags['run-session-register']) {
+    try {
+      const sm = require('./session-manager.js');
+      if (sm && sm.fullStatus) {
+        sm.fullStatus();
+      }
+    } catch (e) {
+      // Session registration failed, non-critical
+    }
+  }
+
+  // === US-0356: DEFERRED EXPERTISE SCAN ===
+  // Cache expertise count in session-state for next session's fast display
+  if (flags['run-expertise-scan']) {
+    try {
+      const agileflowDir = path.join(rootDir, '.agileflow');
+      let expertsDir = path.join(agileflowDir, 'experts');
+      if (!fs.existsSync(expertsDir)) {
+        expertsDir = path.join(rootDir, 'packages', 'cli', 'src', 'core', 'experts');
+      }
+      if (fs.existsSync(expertsDir)) {
+        const domains = fs
+          .readdirSync(expertsDir, { withFileTypes: true })
+          .filter(d => d.isDirectory() && d.name !== 'templates');
+        const total = domains.length;
+        let passed = 0,
+          warnings_count = 0,
+          failed = 0;
+        const issues = [];
+        for (const domain of domains) {
+          const filePath = path.join(expertsDir, domain.name, 'expertise.yaml');
+          if (!fs.existsSync(filePath)) {
+            failed++;
+            issues.push(`${domain.name}: missing file`);
+          } else if (passed < 3) {
+            try {
+              const content = fs.readFileSync(filePath, 'utf8');
+              const m = content.match(/^last_updated:\s*['"]?(\d{4}-\d{2}-\d{2})/m);
+              if (m) {
+                const days = Math.floor((Date.now() - new Date(m[1]).getTime()) / 86400000);
+                if (days > 30) {
+                  warnings_count++;
+                  issues.push(`${domain.name}: stale (${days}d)`);
+                } else passed++;
+              } else passed++;
+            } catch (e) {
+              passed++;
+            }
+          } else {
+            passed++;
+          }
+        }
+        stateMutations.expertise_count = {
+          total,
+          passed,
+          warnings: warnings_count,
+          failed,
+          issues,
+        };
+      }
+    } catch (e) {
+      // Expertise scan failed, non-critical
+    }
+  }
+
+  // === US-0356: DEFERRED CONFIG STALENESS CHECK ===
+  // Cache config staleness result in session-state for next session's fast display.
+  // Uses a simplified check: just count unconfigured options in metadata.
+  if (flags['run-config-staleness']) {
+    try {
+      const metadata = safeReadJSON(getMetadataPath(rootDir));
+      if (metadata) {
+        const configOptions = metadata.agileflow?.config_options || {};
+        let unconfigured = 0;
+        const newOptions = [];
+        for (const [name, option] of Object.entries(configOptions)) {
+          if (option.configured === false) {
+            unconfigured++;
+            newOptions.push({ name, description: option.description || name });
+          }
+        }
+        stateMutations.config_staleness = {
+          outdated: unconfigured > 0,
+          newOptionsCount: unconfigured,
+          newOptions: newOptions.slice(0, 5),
+          cached_at: new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      // Config staleness check failed, non-critical
+    }
+  }
+
   // === SINGLE CONSOLIDATED WRITE TO SESSION STATE ===
   // Read once, apply all mutations, write once. Avoids race conditions.
   try {

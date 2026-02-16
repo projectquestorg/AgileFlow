@@ -41,21 +41,30 @@ const { tryOptional } = require('../lib/errors');
 const { createLogger } = require('../lib/logger');
 const log = createLogger('welcome');
 
-// Session manager path (relative to script location)
-const SESSION_MANAGER_PATH = path.join(__dirname, 'session-manager.js');
-
-// PERFORMANCE OPTIMIZATION: Lazy-loaded session-manager module
-// Importing directly avoids ~50-150ms subprocess overhead per call.
-let _sessionManager;
-function getSessionManager() {
-  if (_sessionManager === undefined) {
-    try {
-      _sessionManager = require('./session-manager.js');
-    } catch (e) {
-      _sessionManager = null;
-    }
+// PERFORMANCE OPTIMIZATION (US-0356): Profiling helper
+// Only active when AGILEFLOW_DEBUG=welcome is set
+const _profiling = process.env.AGILEFLOW_DEBUG === 'welcome';
+const _timings = {};
+function _mark(label) {
+  if (_profiling) _timings[label] = process.hrtime.bigint();
+}
+function _elapsed(from, to) {
+  if (!_profiling) return '';
+  const ns = Number((_timings[to] || process.hrtime.bigint()) - (_timings[from] || 0n));
+  return `${(ns / 1e6).toFixed(1)}ms`;
+}
+function _logTimings() {
+  if (!_profiling) return;
+  const labels = Object.keys(_timings);
+  const pairs = [];
+  for (let i = 1; i < labels.length; i++) {
+    pairs.push(`${labels[i]}=${_elapsed(labels[i - 1], labels[i])}`);
   }
-  return _sessionManager;
+  if (labels.length >= 2) {
+    pairs.push(`TOTAL=${_elapsed(labels[0], labels[labels.length - 1])}`);
+  }
+  // Output to stderr so it doesn't mix with the welcome table
+  console.error(`[welcome:timing] ${pairs.join(' ')}`);
 }
 
 // Hook metrics module (kept at top level - needed early for timer)
@@ -459,15 +468,24 @@ function clearActiveCommands(rootDir, cache = null) {
   return result;
 }
 
-function checkParallelSessions(rootDir) {
+/**
+ * PERFORMANCE OPTIMIZATION (US-0356): Lightweight session check
+ *
+ * Replaces the full session-manager require chain (~3,600 lines across 8 modules)
+ * with direct file I/O on the registry.json and lock files (~30 lines).
+ * Only checks active session count and current session info.
+ * Full registration, cleanup, and worktree detection deferred to Phase 3 (welcome-deferred.js).
+ *
+ * Estimated savings: 100-200ms
+ */
+function checkParallelSessionsFast(rootDir) {
   const result = {
     available: false,
     registered: false,
     otherActive: 0,
     currentId: null,
     cleaned: 0,
-    cleanedSessions: [], // Detailed info about cleaned sessions
-    // Extended session info for non-main sessions
+    cleanedSessions: [],
     isMain: true,
     nickname: null,
     branch: null,
@@ -476,62 +494,67 @@ function checkParallelSessions(rootDir) {
   };
 
   try {
-    // PERFORMANCE OPTIMIZATION: Import session-manager directly instead of subprocess
-    // Saves ~50-150ms by avoiding Node subprocess spawn overhead
-    const sm = getSessionManager();
-    if (sm && sm.fullStatus) {
-      result.available = true;
-      const data = sm.fullStatus();
-      result.registered = data.registered;
-      result.currentId = data.id;
-      result.otherActive = data.otherActive || 0;
-      result.cleaned = data.cleaned || 0;
-      result.cleanedSessions = data.cleanedSessions || [];
+    const sessionsDir = path.join(getAgileflowDir(rootDir), 'sessions');
+    const registryPath = path.join(sessionsDir, 'registry.json');
 
-      if (data.current) {
-        result.isMain = data.current.is_main === true;
-        result.nickname = data.current.nickname;
-        result.branch = data.current.branch;
-        result.sessionPath = data.current.path;
-      }
-      return result;
-    }
+    if (!fs.existsSync(registryPath)) return result;
 
-    // Fallback: check if session manager script exists for subprocess call
-    const managerPath = path.join(getAgileflowDir(rootDir), 'scripts', 'session-manager.js');
-    if (!fs.existsSync(managerPath) && !fs.existsSync(SESSION_MANAGER_PATH)) {
-      return result;
-    }
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    if (!registry.sessions) return result;
 
     result.available = true;
-    const scriptPath = fs.existsSync(managerPath) ? managerPath : SESSION_MANAGER_PATH;
+    const cwd = process.cwd();
+    const staleLocks = [];
 
-    const fullStatusResult = executeCommandSync('node', [scriptPath, 'full-status'], {
-      cwd: rootDir,
-      fallback: null,
-    });
-
-    if (fullStatusResult.data) {
-      try {
-        const data = JSON.parse(fullStatusResult.data);
-        result.registered = data.registered;
-        result.currentId = data.id;
-        result.otherActive = data.otherActive || 0;
-        result.cleaned = data.cleaned || 0;
-        result.cleanedSessions = data.cleanedSessions || [];
-
-        if (data.current) {
-          result.isMain = data.current.is_main === true;
-          result.nickname = data.current.nickname;
-          result.branch = data.current.branch;
-          result.sessionPath = data.current.path;
+    for (const [id, session] of Object.entries(registry.sessions)) {
+      if (session.path === cwd) {
+        // Found current session
+        result.registered = true;
+        result.currentId = id;
+        result.isMain = session.is_main === true;
+        result.nickname = session.nickname || null;
+        result.branch = session.branch || null;
+        result.sessionPath = session.path;
+      } else {
+        // Check if other session is alive via lock file
+        const lockPath = path.join(sessionsDir, `${id}.lock`);
+        if (fs.existsSync(lockPath)) {
+          try {
+            const content = fs.readFileSync(lockPath, 'utf8');
+            const pidMatch = content.match(/^pid=(\d+)/m);
+            if (pidMatch) {
+              const pid = parseInt(pidMatch[1], 10);
+              try {
+                process.kill(pid, 0); // Signal 0 = check alive
+                result.otherActive++;
+              } catch (e) {
+                // Process dead - collect for cleanup
+                staleLocks.push({ id, lockPath, pid });
+              }
+            }
+          } catch (e) {
+            // Lock read failed
+          }
         }
+      }
+    }
+
+    // Quick cleanup of stale locks (prevents ghost session counts)
+    for (const stale of staleLocks) {
+      try {
+        fs.unlinkSync(stale.lockPath);
+        result.cleaned++;
+        result.cleanedSessions.push({
+          id: stale.id,
+          pid: stale.pid,
+          reason: 'pid_dead',
+        });
       } catch (e) {
-        log.debug('checkParallelSessions:parse:', e?.message || String(e));
+        // Cleanup failed, deferred will retry
       }
     }
   } catch (e) {
-    // Session system not available
+    log.debug('checkParallelSessionsFast:', e?.message || String(e));
   }
 
   return result;
@@ -1781,6 +1804,8 @@ function formatSessionBanner(parallelSessions) {
 
 // Main (synchronous - async work deferred to welcome-deferred.js)
 function main() {
+  _mark('start');
+
   // Start hook timer for metrics
   const timer = hookMetrics ? hookMetrics.startHookTimer('SessionStart', 'welcome') : null;
 
@@ -1789,26 +1814,36 @@ function main() {
   // PERFORMANCE: Load all project files once into cache
   // This eliminates 6-8 duplicate file reads across functions
   const cache = loadProjectFiles(rootDir);
+  _mark('loadFiles');
 
   // ============================================
   // PHASE 1: INSTANT WELCOME (< 300ms)
   // All fast operations - no network, no auto-update
   // ============================================
   const info = getProjectInfo(rootDir, cache);
+  _mark('getInfo');
 
-  // Smart hook scheduling: skip archival for micro/small projects (EP-0033)
-  // Scale detection is done early to inform hook scheduling
+  // PERFORMANCE OPTIMIZATION (US-0356): Read scale from session-state cache
+  // Avoids requiring scale-detector module + git subprocess when cache is fresh (< 5 min)
   let earlyScale = null;
-  try {
-    const scaleDetector = require('./lib/scale-detector');
-    // Check cache only (fast path, no full detection yet)
-    earlyScale = scaleDetector.detectScale({
-      rootDir,
-      statusJson: cache?.status,
-      sessionState: cache?.sessionState,
-    });
-  } catch (e) {
-    // Scale detection not available
+  const cachedScale = cache?.sessionState?.scale_detection;
+  const scaleFresh =
+    cachedScale &&
+    cachedScale.detected_at &&
+    Date.now() - new Date(cachedScale.detected_at).getTime() < 300000; // 5 min
+  if (scaleFresh) {
+    earlyScale = { ...cachedScale, fromCache: true };
+  } else {
+    try {
+      const scaleDetector = require('./lib/scale-detector');
+      earlyScale = scaleDetector.detectScale({
+        rootDir,
+        statusJson: cache?.status,
+        sessionState: cache?.sessionState,
+      });
+    } catch (e) {
+      // Scale detection not available
+    }
   }
 
   const scaleRecommendations = earlyScale
@@ -1820,91 +1855,127 @@ function main() {
         }
       })()
     : null;
+  _mark('scale');
 
   const archival =
     scaleRecommendations && scaleRecommendations.skipArchival
       ? { ran: false, threshold: 0, archived: 0, remaining: 0, skippedByScale: true }
       : runArchival(rootDir, cache);
+  _mark('archival');
+
   const session = clearActiveCommands(rootDir, cache);
+  _mark('clearCmds');
+
   const precompact = checkPreCompact(rootDir, cache);
-  const parallelSessions = checkParallelSessions(rootDir);
-  // PERFORMANCE: Use fast expertise count (directory scan only, ~3 file samples)
-  // Full validation available via /agileflow:validate-expertise
-  const expertise = getExpertiseCountFast(rootDir);
+  _mark('precompact');
+
+  // PERFORMANCE OPTIMIZATION (US-0356): Use lightweight session check
+  // Reads registry.json + lock files directly (~30 lines) instead of
+  // requiring the full session-manager module chain (~3,600 lines across 8 modules).
+  // Full session registration deferred to Phase 3 (welcome-deferred.js).
+  const parallelSessions = checkParallelSessionsFast(rootDir);
+  _mark('sessions');
+
+  // PERFORMANCE OPTIMIZATION (US-0356): Defer expertise count to Phase 3
+  // Directory scan with file reads is non-critical for the table.
+  // Use cached result from session-state if available, otherwise show placeholder.
+  let expertise;
+  const cachedExpertise = cache?.sessionState?.expertise_count;
+  const validExpertiseCache =
+    cachedExpertise &&
+    cachedExpertise.total > 0 &&
+    typeof cachedExpertise.passed === 'number' &&
+    typeof cachedExpertise.warnings === 'number' &&
+    typeof cachedExpertise.failed === 'number';
+  if (validExpertiseCache) {
+    expertise = cachedExpertise;
+  } else {
+    expertise = getExpertiseCountFast(rootDir);
+  }
+  _mark('expertise');
+
   const damageControl = checkDamageControl(rootDir, cache);
+  _mark('damageCtl');
 
   // Use early scale detection result (already computed for hook scheduling)
   const scaleDetection = earlyScale || { scale: 'medium' };
 
-  // Agent Teams feature flag detection
-  const featureFlags = tryOptional(() => require('../lib/feature-flags'), 'feature-flags');
+  // PERFORMANCE OPTIMIZATION (US-0356): Read Agent Teams mode from metadata cache
+  // Avoids requiring feature-flags module when metadata is already loaded.
+  // Uses same { label, value, status } format as getAgentTeamsDisplayInfo().
   let agentTeamsInfo = {};
-  if (featureFlags) {
-    try {
-      agentTeamsInfo = featureFlags.getAgentTeamsDisplayInfo({
-        rootDir,
-        metadata: cache?.metadata,
-      });
-    } catch (e) {
-      // Silently fail - Agent Teams info is non-critical
-    }
+  const envTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+  const envTeamsEnabled = envTeams === '1' || envTeams === 'true' || envTeams === 'yes';
+  const metaTeamsEnabled = cache?.metadata?.features?.agentTeams?.enabled === true;
+  if (envTeamsEnabled || metaTeamsEnabled) {
+    agentTeamsInfo = { label: 'Agent Teams', value: 'ENABLED (native)', status: 'enabled' };
+  } else {
+    agentTeamsInfo = { label: 'Agent Teams', value: 'subagent mode', status: 'fallback' };
   }
+  _mark('agentTeams');
 
   // Check if a previous background update completed successfully
   // This allows us to show "just updated" even for background updates
   let updateInfo = {};
   try {
-    const sessionStatePath = getSessionStatePath(rootDir);
-    if (fs.existsSync(sessionStatePath)) {
-      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
+    // Use already-loaded session state from cache instead of re-reading
+    const state = cache?.sessionState;
+    if (state?.pending_update) {
+      const pendingUpdate = state.pending_update;
+      const startedAt = new Date(pendingUpdate.started_at);
+      const minutesAgo = (Date.now() - startedAt.getTime()) / (1000 * 60);
 
-      // Check if pending update from previous session completed
-      if (state.pending_update) {
-        const pendingUpdate = state.pending_update;
-        const startedAt = new Date(pendingUpdate.started_at);
-        const minutesAgo = (Date.now() - startedAt.getTime()) / (1000 * 60);
-
-        // If current version matches target, update succeeded
-        if (info.version === pendingUpdate.to) {
-          updateInfo.justUpdated = true;
-          updateInfo.previousVersion = pendingUpdate.from;
-          updateInfo.changelog = getChangelogEntries(info.version);
-          // Clear pending update
-          delete state.pending_update;
-          fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
-        } else if (minutesAgo > 5) {
-          // Update timed out (5 minutes) - clear it
-          delete state.pending_update;
-          fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
-        }
-        // If still pending and < 5 minutes, leave it (update may still be running)
+      if (info.version === pendingUpdate.to) {
+        updateInfo.justUpdated = true;
+        updateInfo.previousVersion = pendingUpdate.from;
+        updateInfo.changelog = getChangelogEntries(info.version);
+        // Clear pending update
+        const sessionStatePath = getSessionStatePath(rootDir);
+        delete state.pending_update;
+        fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
+      } else if (minutesAgo > 5) {
+        const sessionStatePath = getSessionStatePath(rootDir);
+        delete state.pending_update;
+        fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
       }
     }
   } catch (e) {
     // Silently continue - pending update check is non-critical
   }
+  _mark('updateInfo');
 
-  // Check for new config options
+  // PERFORMANCE OPTIMIZATION (US-0356): Defer config staleness to Phase 3
+  // Only produces a notification; not needed for the main table.
+  // Read cached result from session-state if available.
   let configStaleness = { outdated: false, autoApply: false };
   let configAutoApplied = 0;
-  try {
-    configStaleness = checkConfigStaleness(rootDir, info.version, cache);
+  const cachedConfigStaleness = cache?.sessionState?.config_staleness;
+  const configCacheAge = cachedConfigStaleness?.cached_at
+    ? Date.now() - new Date(cachedConfigStaleness.cached_at).getTime()
+    : Infinity;
+  const configCacheFresh = configCacheAge < 300000; // 5 min TTL
+  if (cachedConfigStaleness && configCacheFresh) {
+    configStaleness = cachedConfigStaleness;
+  } else {
+    try {
+      configStaleness = checkConfigStaleness(rootDir, info.version, cache);
 
-    // Auto-apply new options if profile is "full" (only auto-applyable ones)
-    if (configStaleness.autoApply && configStaleness.autoApplyOptions?.length > 0) {
-      configAutoApplied = autoApplyConfigOptions(rootDir, configStaleness.autoApplyOptions);
-      if (configAutoApplied > 0) {
-        // Remove auto-applied options from the list, keep non-auto-applyable ones
-        configStaleness.newOptions = configStaleness.newOptions.filter(o => !o.autoApplyable);
-        configStaleness.newOptionsCount = configStaleness.newOptions.length;
-        if (configStaleness.newOptionsCount === 0) {
-          configStaleness.outdated = false;
+      // Auto-apply new options if profile is "full" (only auto-applyable ones)
+      if (configStaleness.autoApply && configStaleness.autoApplyOptions?.length > 0) {
+        configAutoApplied = autoApplyConfigOptions(rootDir, configStaleness.autoApplyOptions);
+        if (configAutoApplied > 0) {
+          configStaleness.newOptions = configStaleness.newOptions.filter(o => !o.autoApplyable);
+          configStaleness.newOptionsCount = configStaleness.newOptions.length;
+          if (configStaleness.newOptionsCount === 0) {
+            configStaleness.outdated = false;
+          }
         }
       }
+    } catch (e) {
+      // Config check failed - continue without it
     }
-  } catch (e) {
-    // Config check failed - continue without it
   }
+  _mark('configStale');
 
   // Check tmux availability (only if tmuxAutoSpawn is enabled)
   let tmuxCheck = { available: true };
@@ -1912,6 +1983,7 @@ function main() {
   if (tmuxAutoSpawnEnabled) {
     tmuxCheck = checkTmuxAvailability(cache);
   }
+  _mark('tmux');
 
   // Show session banner FIRST if in a non-main session
   const sessionBanner = formatSessionBanner(parallelSessions);
@@ -2036,10 +2108,13 @@ function main() {
     );
   }
 
+  _mark('postTable');
+
   // ============================================
   // PHASE 3: SPAWN DEFERRED BACKGROUND WORK
   // Session health, process cleanup, story claiming, file tracking,
   // epic completion, ideation sync, automations, update check (if stale)
+  // Also: full session registration, expertise re-scan, config staleness check
   // Results saved to session-state.json for next session display.
   // ============================================
   try {
@@ -2052,16 +2127,27 @@ function main() {
       if (updateInfo.justUpdated) {
         deferredArgs.push('--just-updated');
       }
+      // US-0356: Signal deferred to run full session registration and expertise scan
+      deferredArgs.push('--run-session-register');
+      deferredArgs.push('--run-expertise-scan');
+      if (!cachedConfigStaleness || !configCacheFresh) {
+        deferredArgs.push('--run-config-staleness');
+      }
       spawnBackground('node', deferredArgs, { cwd: rootDir });
     }
   } catch (e) {
     // Deferred script spawn failed, non-critical
   }
 
+  _mark('deferred');
+
   // Record hook metrics
   if (timer && hookMetrics) {
     hookMetrics.recordHookMetrics(timer, 'success', null, { rootDir });
   }
+
+  // Output profiling data if enabled
+  _logTimings();
 }
 
 try {
