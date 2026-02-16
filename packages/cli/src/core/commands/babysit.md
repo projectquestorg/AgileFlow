@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<EP-ID>]"
+argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -39,6 +39,30 @@ node .agileflow/scripts/obtain-context.js babysit
 **⚠️ NEVER truncate the output.** Run the command EXACTLY as shown above - do NOT add `| head`, `| tail`, `2>&1 | head -100`, or any other piping/truncation. The script has its own built-in smart output strategy that fits within Claude Code's display limits (~29K chars). Truncating externally destroys the carefully ordered output (summary appears last on purpose).
 
 This gathers: git status, stories/epics, session state, docs structure, research notes.
+
+---
+
+## Parameters
+
+All parameters are optional. Most are auto-detected by the Contextual Feature Router.
+
+| Parameter | Default | Example | Description |
+|-----------|---------|---------|-------------|
+| `EPIC` | none | `EP-0042` | Target epic for loop mode |
+| `MODE` | auto | `once` | `loop` (auto when 3+ ready stories) or `once` (single story) |
+| `MAX` | 20 | `10` | Max loop iterations before stopping |
+| `VISUAL` | auto | `false` | Screenshot verification for UI work. Auto-enabled for AG-UI stories |
+| `COVERAGE` | auto | `80` | Test coverage threshold (%). Set `0` to disable |
+
+**Auto-detection**: When `EPIC` is specified with 3+ ready stories, `MODE=loop` is auto-enabled. `VISUAL` auto-enables for UI-tagged stories. `COVERAGE` auto-enables when a coverage baseline exists.
+
+**Override examples**:
+```
+/agileflow:babysit EPIC=EP-0042                    # Auto-detect everything
+/agileflow:babysit EPIC=EP-0042 MODE=once          # Single story only
+/agileflow:babysit EPIC=EP-0042 VISUAL=false       # Skip screenshots
+/agileflow:babysit EPIC=EP-0042 COVERAGE=90 MAX=30 # Strict coverage, more iterations
+```
 
 ---
 
@@ -190,14 +214,7 @@ To force single-story mode, say "just work on one story" or specify `MODE=once`.
 
 ### Parameters
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `EPIC` | Yes | Epic ID to process (e.g., EP-0042) |
-| `MODE` | No | `loop` (default, auto-detected) or `once` (single story) |
-| `MAX` | No | Max iterations (default: 20) |
-| `VISUAL` | No | Auto-detected for UI work; set `false` to disable |
-| `COVERAGE` | No | Auto-detected from coverage baseline; set `0` to disable |
-| `CONDITIONS` | No | Auto-detected from package.json; or configured in metadata |
+See the [Parameters](#parameters) table above for the full reference. All loop mode parameters are documented there.
 
 **Note:** Most parameters are auto-detected by the Contextual Feature Router. Only specify if you need to override the detected values.
 
@@ -237,9 +254,9 @@ Or manually write to session-state.json:
 }
 ```
 
-### Discretion Conditions Mode
+### Discretion Conditions (Metadata Config)
 
-Configure semantic conditions in `docs/00-meta/agileflow-metadata.json`:
+Conditions are configured in `docs/00-meta/agileflow-metadata.json` (not a CLI parameter):
 
 ```json
 {
