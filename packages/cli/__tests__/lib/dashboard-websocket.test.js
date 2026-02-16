@@ -2,13 +2,13 @@
  * WebSocket Frame Encoding/Decoding Tests
  *
  * Tests for encodeWebSocketFrame and decodeWebSocketFrame functions
- * from lib/dashboard-server.js. These are pure functions that don't
- * require server infrastructure or ports.
+ * Pure functions extracted to lib/dashboard-websocket.js.
+ * These don't require server infrastructure or ports.
  */
 
 'use strict';
 
-const { encodeWebSocketFrame, decodeWebSocketFrame } = require('../../lib/dashboard-server');
+const { encodeWebSocketFrame, decodeWebSocketFrame } = require('../../lib/dashboard-websocket');
 
 describe('WebSocket Frame Encoding/Decoding', () => {
   // ============================================================================

@@ -684,6 +684,23 @@ function generateRemainingContent(prefetched, options = {}) {
     content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
   }
 
+  // BROWSER QA STATUS
+  const browserQaConfig = metadata?.features?.browserqa;
+  const browserQaSpecsExist = fs.existsSync('.agileflow/ui-review/specs');
+  const browserQaEnabled = browserQaConfig?.enabled || browserQaSpecsExist;
+
+  if (browserQaEnabled) {
+    const browserQaRunsExist = fs.existsSync('.agileflow/ui-review/runs');
+    content += `\n${C.brand}${C.bold}═══ Browser QA (Bowser): ENABLED ═══${C.reset}\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+    content += `${C.mintGreen}✓ Specs:${C.reset} ${browserQaSpecsExist ? '.agileflow/ui-review/specs/' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ Evidence:${C.reset} ${browserQaRunsExist ? '.agileflow/ui-review/runs/' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n\n`;
+    content += `${C.bold}RUN TESTS:${C.reset} ${C.skyBlue}/agileflow:browser-qa SCENARIO=<spec.yaml>${C.reset}\n`;
+    content += `${C.dim}  Pass rate threshold: 80% | Results are informational (not merge-blocking)${C.reset}\n\n`;
+    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
+  }
+
   // DOCS STRUCTURE
   content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
   const docsDir = 'docs';
@@ -899,6 +916,48 @@ function generateRemainingContent(prefetched, options = {}) {
       .map(([k]) => k.replace('_', ' '));
     if (enabledModes.length > 0) {
       content += `\n${C.mintGreen}Auto-enabled:${C.reset} ${enabledModes.join(', ')}\n`;
+    }
+
+    // Feature catalog - show all major features with status
+    const catalog = smartDetectResults.feature_catalog;
+    if (catalog && catalog.length > 0) {
+      const categoryLabels = {
+        modes: 'Modes',
+        collaboration: 'Collaboration',
+        workflow: 'Workflow',
+        analysis: 'Analysis',
+        automation: 'Automation',
+      };
+      const statusIcons = {
+        triggered: `${C.mintGreen}*${C.reset}`,
+        available: `${C.skyBlue}>${C.reset}`,
+        unavailable: `${C.dim}-${C.reset}`,
+      };
+
+      // Group by category, skip disabled
+      const grouped = {};
+      for (const entry of catalog) {
+        if (entry.status === 'disabled') continue;
+        if (!grouped[entry.category]) grouped[entry.category] = [];
+        grouped[entry.category].push(entry);
+      }
+
+      const categoryOrder = ['modes', 'collaboration', 'workflow', 'analysis', 'automation'];
+      const hasEntries = Object.keys(grouped).length > 0;
+
+      if (hasEntries) {
+        content += `\n${C.brand}${C.bold}═══ Feature Catalog ═══${C.reset}\n`;
+
+        for (const cat of categoryOrder) {
+          const entries = grouped[cat];
+          if (!entries || entries.length === 0) continue;
+          content += `\n${C.bold}${categoryLabels[cat] || cat}:${C.reset}\n`;
+          for (const entry of entries) {
+            const icon = statusIcons[entry.status] || `${C.dim}?${C.reset}`;
+            content += `  ${icon} ${C.bold}${entry.name}${C.reset} - ${entry.description} ${C.dim}(${entry.how_to_use})${C.reset}\n`;
+          }
+        }
+      }
     }
   }
 

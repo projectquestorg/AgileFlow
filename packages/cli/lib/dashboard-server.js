@@ -2,15 +2,14 @@
 /**
  * dashboard-server.js - WebSocket Server for AgileFlow Dashboard
  *
- * Provides real-time bidirectional communication between the CLI and
- * the AgileFlow Dashboard web application.
- *
- * Features:
- * - WebSocket server with session management
- * - Message streaming (text, tool calls, etc.)
- * - Git status updates
- * - Task tracking integration
- * - Multiple client support
+ * Coordinator module that delegates to focused domain modules:
+ * - dashboard-websocket.js  - WebSocket frame encode/decode
+ * - dashboard-session.js    - Session lifecycle and rate limiting
+ * - dashboard-terminal.js   - Terminal management (PTY/fallback)
+ * - dashboard-git.js        - Git operations (status, diff, actions)
+ * - dashboard-automations.js - Automation scheduling
+ * - dashboard-status.js     - Project status and team metrics
+ * - dashboard-inbox.js      - Inbox management
  *
  * Usage:
  *   const { createDashboardServer, startDashboardServer } = require('./dashboard-server');
@@ -22,6 +21,28 @@
 'use strict';
 
 const { EventEmitter } = require('events');
+
+// Import extracted modules
+const { encodeWebSocketFrame, decodeWebSocketFrame } = require('./dashboard-websocket');
+const {
+  DashboardSession,
+  SESSION_TIMEOUT_MS,
+  SESSION_CLEANUP_INTERVAL_MS,
+  RATE_LIMIT_TOKENS,
+} = require('./dashboard-session');
+const {
+  TerminalInstance,
+  TerminalManager,
+  SENSITIVE_ENV_PATTERNS,
+} = require('./dashboard-terminal');
+const { getGitStatus, getFileDiff, parseDiffStats, handleGitAction } = require('./dashboard-git');
+const {
+  calculateNextRun,
+  createInboxItem,
+  enrichAutomationList,
+} = require('./dashboard-automations');
+const { buildStatusSummary, readTeamMetrics } = require('./dashboard-status');
+const { getSortedInboxItems, handleInboxAction } = require('./dashboard-inbox');
 
 // Lazy-loaded dependencies - deferred until first use
 let _http, _crypto, _protocol, _paths, _validatePaths, _childProcess;
@@ -75,433 +96,8 @@ function getAutomationRunner(rootDir) {
 const DEFAULT_PORT = 8765;
 const DEFAULT_HOST = '127.0.0.1'; // Localhost only for security
 
-// Session lifecycle
-const SESSION_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
-const SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-
-// Rate limiting (token bucket)
-const RATE_LIMIT_TOKENS = 100; // max messages per second
-const RATE_LIMIT_REFILL_MS = 1000; // refill interval
-
-// Sensitive env var patterns to strip from terminal spawn
-const SENSITIVE_ENV_PATTERNS = /SECRET|TOKEN|PASSWORD|CREDENTIAL|API_KEY|PRIVATE_KEY|AUTH/i;
-
 // WebSocket magic GUID for handshake
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-
-/**
- * Session state for a connected dashboard
- */
-class DashboardSession {
-  constructor(id, ws, projectRoot) {
-    this.id = id;
-    this.ws = ws;
-    this.projectRoot = projectRoot;
-    this.messages = [];
-    this.state = 'connected';
-    this.lastActivity = new Date();
-    this.createdAt = new Date();
-    this.metadata = {};
-
-    // Token bucket rate limiter
-    this._rateTokens = RATE_LIMIT_TOKENS;
-    this._rateLastRefill = Date.now();
-  }
-
-  /**
-   * Check if session has expired
-   * @returns {boolean}
-   */
-  isExpired() {
-    return Date.now() - this.lastActivity.getTime() > SESSION_TIMEOUT_MS;
-  }
-
-  /**
-   * Rate-limit incoming messages (token bucket)
-   * @returns {boolean} true if allowed, false if rate-limited
-   */
-  checkRateLimit() {
-    const now = Date.now();
-    const elapsed = now - this._rateLastRefill;
-
-    // Refill tokens based on elapsed time
-    if (elapsed >= RATE_LIMIT_REFILL_MS) {
-      this._rateTokens = RATE_LIMIT_TOKENS;
-      this._rateLastRefill = now;
-    }
-
-    if (this._rateTokens <= 0) {
-      return false;
-    }
-
-    this._rateTokens--;
-    return true;
-  }
-
-  /**
-   * Send a message to the dashboard
-   * @param {Object} message - Message object
-   */
-  send(message) {
-    if (this.ws && this.ws.writable) {
-      try {
-        const frame = encodeWebSocketFrame(getProtocol().serializeMessage(message));
-        this.ws.write(frame);
-        this.lastActivity = new Date();
-      } catch (error) {
-        console.error(`[Session ${this.id}] Send error:`, error.message);
-      }
-    }
-  }
-
-  /**
-   * Add a message to conversation history
-   * @param {string} role - 'user' or 'assistant'
-   * @param {string} content - Message content
-   */
-  addMessage(role, content) {
-    this.messages.push({
-      role,
-      content,
-      timestamp: new Date().toISOString(),
-    });
-    this.lastActivity = new Date();
-  }
-
-  /**
-   * Get conversation history
-   * @returns {Array}
-   */
-  getHistory() {
-    return this.messages;
-  }
-
-  /**
-   * Update session state
-   * @param {string} state - New state (connected, thinking, idle, error)
-   */
-  setState(state) {
-    this.state = state;
-    this.send(
-      getProtocol().createSessionState(this.id, state, {
-        messageCount: this.messages.length,
-        lastActivity: this.lastActivity.toISOString(),
-      })
-    );
-  }
-}
-
-/**
- * Terminal instance for integrated terminal
- */
-class TerminalInstance {
-  constructor(id, session, options = {}) {
-    this.id = id;
-    this.session = session;
-    this.cwd = options.cwd || session.projectRoot;
-    this.shell = options.shell || this.getDefaultShell();
-    this.cols = options.cols || 80;
-    this.rows = options.rows || 24;
-    this.pty = null;
-    this.closed = false;
-  }
-
-  /**
-   * Get the default shell for the current OS
-   */
-  getDefaultShell() {
-    if (process.platform === 'win32') {
-      return process.env.COMSPEC || 'cmd.exe';
-    }
-    return process.env.SHELL || '/bin/bash';
-  }
-
-  /**
-   * Start the terminal process
-   */
-  /**
-   * Get a filtered copy of environment variables with secrets removed
-   */
-  _getFilteredEnv() {
-    const filtered = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (!SENSITIVE_ENV_PATTERNS.test(key)) {
-        filtered[key] = value;
-      }
-    }
-    return filtered;
-  }
-
-  start() {
-    try {
-      // Try to use node-pty for proper PTY support
-      const pty = require('node-pty');
-      const filteredEnv = this._getFilteredEnv();
-
-      this.pty = pty.spawn(this.shell, [], {
-        name: 'xterm-256color',
-        cols: this.cols,
-        rows: this.rows,
-        cwd: this.cwd,
-        env: {
-          ...filteredEnv,
-          TERM: 'xterm-256color',
-          COLORTERM: 'truecolor',
-        },
-      });
-
-      this.pty.onData(data => {
-        if (!this.closed) {
-          this.session.send(getProtocol().createTerminalOutput(this.id, data));
-        }
-      });
-
-      this.pty.onExit(({ exitCode }) => {
-        this.closed = true;
-        this.session.send(getProtocol().createTerminalExit(this.id, exitCode));
-      });
-
-      return true;
-    } catch (error) {
-      // Fallback to basic spawn if node-pty is not available
-      console.warn('[Terminal] node-pty not available, using basic spawn:', error.message);
-      return this.startBasicShell();
-    }
-  }
-
-  /**
-   * Fallback shell using basic spawn (no PTY)
-   * Note: This provides limited functionality without node-pty
-   */
-  startBasicShell() {
-    try {
-      const filteredEnv = this._getFilteredEnv();
-
-      // Use bash with interactive flag for better compatibility
-      this.pty = getChildProcess().spawn(this.shell, ['-i'], {
-        cwd: this.cwd,
-        env: {
-          ...filteredEnv,
-          TERM: 'dumb',
-          PS1: '\\w $ ', // Simple prompt
-        },
-        shell: false,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      // Track input buffer for local echo (since no PTY)
-      this.inputBuffer = '';
-
-      this.pty.stdout.on('data', data => {
-        if (!this.closed) {
-          this.session.send(getProtocol().createTerminalOutput(this.id, data.toString()));
-        }
-      });
-
-      this.pty.stderr.on('data', data => {
-        if (!this.closed) {
-          this.session.send(getProtocol().createTerminalOutput(this.id, data.toString()));
-        }
-      });
-
-      this.pty.on('close', exitCode => {
-        this.closed = true;
-        this.session.send(getProtocol().createTerminalExit(this.id, exitCode));
-      });
-
-      this.pty.on('error', error => {
-        console.error('[Terminal] Shell error:', error.message);
-        if (!this.closed) {
-          this.session.send(
-            getProtocol().createTerminalOutput(this.id, `\r\nError: ${error.message}\r\n`)
-          );
-        }
-      });
-
-      // Send welcome message
-      setTimeout(() => {
-        if (!this.closed) {
-          const welcomeMsg = `\x1b[32mAgileFlow Terminal\x1b[0m (basic mode - node-pty not available)\r\n`;
-          const cwdMsg = `Working directory: ${this.cwd}\r\n\r\n`;
-          this.session.send(getProtocol().createTerminalOutput(this.id, welcomeMsg + cwdMsg));
-        }
-      }, 100);
-
-      return true;
-    } catch (error) {
-      console.error('[Terminal] Failed to start basic shell:', error.message);
-      return false;
-    }
-  }
-
-  /**
-   * Write data to the terminal
-   * @param {string} data - Data to write (user input)
-   */
-  write(data) {
-    if (this.pty && !this.closed) {
-      if (this.pty.write) {
-        // node-pty style - has built-in echo
-        this.pty.write(data);
-      } else if (this.pty.stdin) {
-        // basic spawn style - need manual echo
-        // Echo the input back to the terminal (since no PTY)
-        let echoData = data;
-
-        // Handle special characters
-        if (data === '\r' || data === '\n') {
-          echoData = '\r\n';
-        } else if (data === '\x7f' || data === '\b') {
-          // Backspace - move cursor back and clear
-          echoData = '\b \b';
-        } else if (data === '\x03') {
-          // Ctrl+C
-          echoData = '^C\r\n';
-        }
-
-        // Echo to terminal
-        this.session.send(getProtocol().createTerminalOutput(this.id, echoData));
-
-        // Send to shell stdin
-        this.pty.stdin.write(data);
-      }
-    }
-  }
-
-  /**
-   * Resize the terminal
-   * @param {number} cols - New column count
-   * @param {number} rows - New row count
-   */
-  resize(cols, rows) {
-    this.cols = cols;
-    this.rows = rows;
-    if (this.pty && this.pty.resize && !this.closed) {
-      this.pty.resize(cols, rows);
-    }
-  }
-
-  /**
-   * Close the terminal
-   */
-  close() {
-    this.closed = true;
-    if (this.pty) {
-      if (this.pty.kill) {
-        this.pty.kill();
-      } else if (this.pty.destroy) {
-        this.pty.destroy();
-      }
-    }
-  }
-}
-
-/**
- * Terminal manager for handling multiple terminals per session
- */
-class TerminalManager {
-  constructor() {
-    this.terminals = new Map();
-  }
-
-  /**
-   * Create a new terminal for a session
-   * @param {DashboardSession} session - The session
-   * @param {Object} options - Terminal options
-   * @returns {string} - Terminal ID
-   */
-  createTerminal(session, options = {}) {
-    const terminalId = options.id || getCrypto().randomBytes(8).toString('hex');
-    const terminal = new TerminalInstance(terminalId, session, {
-      cwd: options.cwd || session.projectRoot,
-      cols: options.cols,
-      rows: options.rows,
-    });
-
-    if (terminal.start()) {
-      this.terminals.set(terminalId, terminal);
-      console.log(`[Terminal ${terminalId}] Created for session ${session.id}`);
-      return terminalId;
-    }
-
-    return null;
-  }
-
-  /**
-   * Get a terminal by ID
-   * @param {string} terminalId - Terminal ID
-   * @returns {TerminalInstance | undefined}
-   */
-  getTerminal(terminalId) {
-    return this.terminals.get(terminalId);
-  }
-
-  /**
-   * Write to a terminal
-   * @param {string} terminalId - Terminal ID
-   * @param {string} data - Data to write
-   */
-  writeToTerminal(terminalId, data) {
-    const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.write(data);
-    }
-  }
-
-  /**
-   * Resize a terminal
-   * @param {string} terminalId - Terminal ID
-   * @param {number} cols - New columns
-   * @param {number} rows - New rows
-   */
-  resizeTerminal(terminalId, cols, rows) {
-    const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.resize(cols, rows);
-    }
-  }
-
-  /**
-   * Close a terminal
-   * @param {string} terminalId - Terminal ID
-   */
-  closeTerminal(terminalId) {
-    const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.close();
-      this.terminals.delete(terminalId);
-      console.log(`[Terminal ${terminalId}] Closed`);
-    }
-  }
-
-  /**
-   * Close all terminals for a session
-   * @param {string} sessionId - Session ID
-   */
-  closeSessionTerminals(sessionId) {
-    for (const [terminalId, terminal] of this.terminals) {
-      if (terminal.session.id === sessionId) {
-        terminal.close();
-        this.terminals.delete(terminalId);
-      }
-    }
-  }
-
-  /**
-   * Get all terminals for a session
-   * @param {string} sessionId - Session ID
-   * @returns {Array<string>} - Terminal IDs
-   */
-  getSessionTerminals(sessionId) {
-    const terminalIds = [];
-    for (const [terminalId, terminal] of this.terminals) {
-      if (terminal.session.id === sessionId) {
-        terminalIds.push(terminalId);
-      }
-    }
-    return terminalIds;
-  }
-}
 
 /**
  * Dashboard WebSocket Server
@@ -592,31 +188,11 @@ class DashboardServer extends EventEmitter {
 
   /**
    * Add an automation result to the inbox
-   * @param {string} automationId - Automation ID
-   * @param {Object} result - Run result
    */
   _addToInbox(automationId, result) {
     const automation = this._automationRegistry?.get(automationId);
-    const itemId = `inbox_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    const item = {
-      id: itemId,
-      automationId,
-      title: automation?.name || automationId,
-      summary: result.success
-        ? result.output?.slice(0, 200) || 'Completed successfully'
-        : result.error?.slice(0, 200) || 'Failed',
-      timestamp: new Date().toISOString(),
-      status: 'unread',
-      result: {
-        success: result.success,
-        output: result.output,
-        error: result.error,
-        duration_ms: result.duration_ms,
-      },
-    };
-
-    this._inbox.set(itemId, item);
+    const item = createInboxItem(automationId, result, automation?.name);
+    this._inbox.set(item.id, item);
     this.broadcast(getProtocol().createInboxItem(item));
   }
 
@@ -803,7 +379,11 @@ class DashboardServer extends EventEmitter {
       session = new DashboardSession(sessionId, socket, this.projectRoot);
       this.sessions.set(sessionId, session);
     } else {
-      // Update socket for resumed session
+      // Clean up old socket before replacing
+      if (session.ws && session.ws !== socket) {
+        session.ws.removeAllListeners();
+        session.ws.destroy();
+      }
       session.ws = socket;
     }
 
@@ -1044,78 +624,18 @@ class DashboardServer extends EventEmitter {
     }
   }
 
+  // ==========================================================================
+  // Git Handlers (delegating to dashboard-git.js)
+  // ==========================================================================
+
   /**
    * Handle git actions
    */
   handleGitAction(session, message) {
     const { type, files, message: commitMessage } = message;
 
-    // Validate file paths - reject path traversal attempts
-    if (files && files.length > 0) {
-      for (const f of files) {
-        if (typeof f !== 'string' || f.includes('\0')) {
-          session.send(getProtocol().createError('GIT_ERROR', 'Invalid file path'));
-          return;
-        }
-        const resolved = require('path').resolve(this.projectRoot, f);
-        if (!resolved.startsWith(this.projectRoot)) {
-          session.send(getProtocol().createError('GIT_ERROR', 'File path outside project'));
-          return;
-        }
-      }
-    }
-
-    // Validate commit message
-    if (commitMessage !== undefined && commitMessage !== null) {
-      if (
-        typeof commitMessage !== 'string' ||
-        commitMessage.length > 10000 ||
-        commitMessage.includes('\0')
-      ) {
-        session.send(getProtocol().createError('GIT_ERROR', 'Invalid commit message'));
-        return;
-      }
-    }
-
-    const fileArgs = files && files.length > 0 ? files : null;
-
     try {
-      switch (type) {
-        case getProtocol().InboundMessageType.GIT_STAGE:
-          if (fileArgs) {
-            getChildProcess().execFileSync('git', ['add', '--', ...fileArgs], {
-              cwd: this.projectRoot,
-            });
-          } else {
-            getChildProcess().execFileSync('git', ['add', '-A'], { cwd: this.projectRoot });
-          }
-          break;
-        case getProtocol().InboundMessageType.GIT_UNSTAGE:
-          if (fileArgs) {
-            getChildProcess().execFileSync('git', ['restore', '--staged', '--', ...fileArgs], {
-              cwd: this.projectRoot,
-            });
-          } else {
-            getChildProcess().execFileSync('git', ['restore', '--staged', '.'], {
-              cwd: this.projectRoot,
-            });
-          }
-          break;
-        case getProtocol().InboundMessageType.GIT_REVERT:
-          if (fileArgs) {
-            getChildProcess().execFileSync('git', ['checkout', '--', ...fileArgs], {
-              cwd: this.projectRoot,
-            });
-          }
-          break;
-        case getProtocol().InboundMessageType.GIT_COMMIT:
-          if (commitMessage) {
-            getChildProcess().execFileSync('git', ['commit', '-m', commitMessage], {
-              cwd: this.projectRoot,
-            });
-          }
-          break;
-      }
+      handleGitAction(type, this.projectRoot, { files, commitMessage }, getProtocol());
 
       // Send updated git status
       this.sendGitStatus(session);
@@ -1124,7 +644,7 @@ class DashboardServer extends EventEmitter {
       );
     } catch (error) {
       console.error('[Git Error]', error.message);
-      session.send(getProtocol().createError('GIT_ERROR', 'Git operation failed'));
+      session.send(getProtocol().createError('GIT_ERROR', error.message || 'Git operation failed'));
     }
   }
 
@@ -1133,7 +653,7 @@ class DashboardServer extends EventEmitter {
    */
   sendGitStatus(session) {
     try {
-      const status = this.getGitStatus();
+      const status = getGitStatus(this.projectRoot);
       session.send({
         type: getProtocol().OutboundMessageType.GIT_STATUS,
         ...status,
@@ -1141,71 +661,6 @@ class DashboardServer extends EventEmitter {
       });
     } catch (error) {
       console.error('[Git Status Error]', error.message);
-    }
-  }
-
-  /**
-   * Get current git status
-   */
-  getGitStatus() {
-    try {
-      const branch = getChildProcess()
-        .execFileSync('git', ['branch', '--show-current'], {
-          cwd: this.projectRoot,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-        })
-        .trim();
-
-      const statusOutput = getChildProcess().execFileSync('git', ['status', '--porcelain'], {
-        cwd: this.projectRoot,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      const staged = [];
-      const unstaged = [];
-
-      for (const line of statusOutput.split('\n').filter(Boolean)) {
-        const indexStatus = line[0];
-        const workTreeStatus = line[1];
-        const file = line.slice(3);
-
-        // Parse the status character to a descriptive status
-        const parseStatus = char => {
-          switch (char) {
-            case 'A':
-              return 'added';
-            case 'M':
-              return 'modified';
-            case 'D':
-              return 'deleted';
-            case 'R':
-              return 'renamed';
-            case 'C':
-              return 'copied';
-            case '?':
-              return 'untracked';
-            default:
-              return 'modified';
-          }
-        };
-
-        if (indexStatus !== ' ' && indexStatus !== '?') {
-          staged.push({ path: file, file, status: parseStatus(indexStatus) });
-        }
-        if (workTreeStatus !== ' ') {
-          unstaged.push({
-            path: file,
-            file,
-            status: workTreeStatus === '?' ? 'untracked' : parseStatus(workTreeStatus),
-          });
-        }
-      }
-
-      return { branch, staged, unstaged };
-    } catch {
-      return { branch: 'unknown', staged: [], unstaged: [] };
     }
   }
 
@@ -1221,8 +676,8 @@ class DashboardServer extends EventEmitter {
     }
 
     try {
-      const diff = this.getFileDiff(filePath, staged);
-      const stats = this.parseDiffStats(diff);
+      const diff = getFileDiff(filePath, this.projectRoot, staged);
+      const stats = parseDiffStats(diff);
 
       session.send(
         getProtocol().createGitDiff(filePath, diff, {
@@ -1237,123 +692,19 @@ class DashboardServer extends EventEmitter {
     }
   }
 
-  /**
-   * Get diff for a specific file
-   * @param {string} filePath - Path to the file
-   * @param {boolean} staged - Whether to get staged diff
-   * @returns {string} - The diff content
-   */
-  getFileDiff(filePath, staged = false) {
-    // Validate filePath stays within project root
-    const pathResult = getValidatePaths().validatePath(filePath, this.projectRoot, {
-      allowSymlinks: true,
-    });
-    if (!pathResult.ok) {
-      return '';
-    }
-
-    try {
-      const diffArgs = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
-
-      const diff = getChildProcess().execFileSync('git', diffArgs, {
-        cwd: this.projectRoot,
-        encoding: 'utf8',
-      });
-
-      // If no diff, file might be untracked - show entire file content as addition
-      if (!diff && !staged) {
-        const statusOutput = getChildProcess()
-          .execFileSync('git', ['status', '--porcelain', '--', filePath], {
-            cwd: this.projectRoot,
-            encoding: 'utf8',
-          })
-          .trim();
-
-        // Check if file is untracked
-        if (statusOutput.startsWith('??')) {
-          try {
-            const content = require('fs').readFileSync(
-              require('path').join(this.projectRoot, filePath),
-              'utf8'
-            );
-            // Format as a new file diff
-            const lines = content.split('\n');
-            return [
-              `diff --git a/${filePath} b/${filePath}`,
-              `new file mode 100644`,
-              `--- /dev/null`,
-              `+++ b/${filePath}`,
-              `@@ -0,0 +1,${lines.length} @@`,
-              ...lines.map(line => `+${line}`),
-            ].join('\n');
-          } catch {
-            return '';
-          }
-        }
-      }
-
-      return diff;
-    } catch (error) {
-      console.error('[Diff Error]', error.message);
-      return '';
-    }
-  }
-
-  /**
-   * Parse diff statistics from diff content
-   * @param {string} diff - The diff content
-   * @returns {{ additions: number, deletions: number }}
-   */
-  parseDiffStats(diff) {
-    let additions = 0;
-    let deletions = 0;
-
-    for (const line of diff.split('\n')) {
-      if (line.startsWith('+') && !line.startsWith('+++')) {
-        additions++;
-      } else if (line.startsWith('-') && !line.startsWith('---')) {
-        deletions++;
-      }
-    }
-
-    return { additions, deletions };
-  }
+  // ==========================================================================
+  // Status/Metrics Handlers (delegating to dashboard-status.js)
+  // ==========================================================================
 
   /**
    * Send project status update (stories/epics summary) to session
    */
   sendStatusUpdate(session) {
-    const path = require('path');
-    const fs = require('fs');
-    const statusPath = path.join(this.projectRoot, 'docs', '09-agents', 'status.json');
-    if (!fs.existsSync(statusPath)) return;
-
     try {
-      const data = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-      const stories = data.stories || {};
-      const epics = data.epics || {};
-
-      const storyValues = Object.values(stories);
-      const summary = {
-        total: storyValues.length,
-        done: storyValues.filter(s => s.status === 'done' || s.status === 'completed').length,
-        inProgress: storyValues.filter(s => s.status === 'in-progress').length,
-        ready: storyValues.filter(s => s.status === 'ready').length,
-        blocked: storyValues.filter(s => s.status === 'blocked').length,
-        epics: Object.entries(epics).map(([id, e]) => ({
-          id,
-          title: e.title || id,
-          status: e.status || 'unknown',
-          storyCount: (e.stories || []).length,
-          doneCount: (e.stories || []).filter(
-            sid =>
-              stories[sid] &&
-              (stories[sid].status === 'done' || stories[sid].status === 'completed')
-          ).length,
-        })),
-      };
-
-      session.send(getProtocol().createStatusUpdate(summary));
+      const summary = buildStatusSummary(this.projectRoot);
+      if (summary) {
+        session.send(getProtocol().createStatusUpdate(summary));
+      }
     } catch (error) {
       console.error('[Status Update Error]', error.message);
     }
@@ -1365,9 +716,10 @@ class DashboardServer extends EventEmitter {
   _initTeamMetricsListener() {
     try {
       const { teamMetricsEmitter } = require('../scripts/lib/team-events');
-      teamMetricsEmitter.on('metrics_saved', () => {
+      this._teamMetricsListener = () => {
         this.broadcastTeamMetrics();
-      });
+      };
+      teamMetricsEmitter.on('metrics_saved', this._teamMetricsListener);
     } catch (e) {
       // team-events not available - non-critical
     }
@@ -1377,20 +729,9 @@ class DashboardServer extends EventEmitter {
    * Send team metrics to a single session
    */
   sendTeamMetrics(session) {
-    const path = require('path');
-    const fs = require('fs');
-    const sessionStatePath = path.join(this.projectRoot, 'docs', '09-agents', 'session-state.json');
-    if (!fs.existsSync(sessionStatePath)) return;
-
-    try {
-      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
-      const traces = (state.team_metrics && state.team_metrics.traces) || {};
-
-      for (const [traceId, metrics] of Object.entries(traces)) {
-        session.send(getProtocol().createTeamMetrics(traceId, metrics));
-      }
-    } catch (error) {
-      // Non-critical
+    const traces = readTeamMetrics(this.projectRoot);
+    for (const [traceId, metrics] of Object.entries(traces)) {
+      session.send(getProtocol().createTeamMetrics(traceId, metrics));
     }
   }
 
@@ -1398,20 +739,9 @@ class DashboardServer extends EventEmitter {
    * Broadcast team metrics to all connected clients
    */
   broadcastTeamMetrics() {
-    const path = require('path');
-    const fs = require('fs');
-    const sessionStatePath = path.join(this.projectRoot, 'docs', '09-agents', 'session-state.json');
-    if (!fs.existsSync(sessionStatePath)) return;
-
-    try {
-      const state = JSON.parse(fs.readFileSync(sessionStatePath, 'utf8'));
-      const traces = (state.team_metrics && state.team_metrics.traces) || {};
-
-      for (const [traceId, metrics] of Object.entries(traces)) {
-        this.broadcast(getProtocol().createTeamMetrics(traceId, metrics));
-      }
-    } catch (error) {
-      // Non-critical
+    const traces = readTeamMetrics(this.projectRoot);
+    for (const [traceId, metrics] of Object.entries(traces)) {
+      this.broadcast(getProtocol().createTeamMetrics(traceId, metrics));
     }
   }
 
@@ -1549,6 +879,10 @@ class DashboardServer extends EventEmitter {
     }
   }
 
+  // ==========================================================================
+  // Terminal Handlers (delegating to dashboard-terminal.js)
+  // ==========================================================================
+
   /**
    * Handle terminal spawn request
    */
@@ -1631,7 +965,7 @@ class DashboardServer extends EventEmitter {
   }
 
   // ==========================================================================
-  // Automation Handlers
+  // Automation Handlers (delegating to dashboard-automations.js)
   // ==========================================================================
 
   /**
@@ -1644,86 +978,16 @@ class DashboardServer extends EventEmitter {
     }
 
     try {
-      const automations = this._automationRegistry.list();
-
-      // Enrich with running status and next run time
-      const enriched = automations.map(automation => {
-        const isRunning = this._runningAutomations.has(automation.id);
-        const lastRun = this._automationRegistry.getRunHistory(automation.id, 1)[0];
-        const nextRun = this._calculateNextRun(automation);
-
-        return {
-          ...automation,
-          status: isRunning ? 'running' : automation.enabled ? 'idle' : 'disabled',
-          lastRun: lastRun?.at,
-          lastRunSuccess: lastRun?.success,
-          nextRun,
-        };
-      });
-
+      const automations = this._automationRegistry.list() || [];
+      const enriched = enrichAutomationList(
+        automations,
+        this._runningAutomations,
+        this._automationRegistry
+      );
       session.send(getProtocol().createAutomationList(enriched));
     } catch (error) {
       console.error('[Automations] List error:', error.message);
       session.send(getProtocol().createAutomationList([]));
-    }
-  }
-
-  /**
-   * Calculate next run time for an automation
-   */
-  _calculateNextRun(automation) {
-    if (!automation.enabled || !automation.schedule) return null;
-
-    const now = new Date();
-    const schedule = automation.schedule;
-
-    switch (schedule.type) {
-      case 'on_session':
-        return 'Every session';
-      case 'daily': {
-        // Next day at midnight (or specified hour)
-        const nextDaily = new Date(now);
-        nextDaily.setDate(nextDaily.getDate() + 1);
-        nextDaily.setHours(schedule.hour || 0, 0, 0, 0);
-        return nextDaily.toISOString();
-      }
-      case 'weekly': {
-        // Next occurrence of the specified day
-        const targetDay =
-          typeof schedule.day === 'string'
-            ? [
-                'sunday',
-                'monday',
-                'tuesday',
-                'wednesday',
-                'thursday',
-                'friday',
-                'saturday',
-              ].indexOf(schedule.day.toLowerCase())
-            : schedule.day || 0;
-        const nextWeekly = new Date(now);
-        const daysUntil = (targetDay - now.getDay() + 7) % 7 || 7;
-        nextWeekly.setDate(nextWeekly.getDate() + daysUntil);
-        nextWeekly.setHours(schedule.hour || 0, 0, 0, 0);
-        return nextWeekly.toISOString();
-      }
-      case 'monthly': {
-        // Next occurrence of the specified date
-        const nextMonthly = new Date(now);
-        const targetDate = schedule.date || 1;
-        if (now.getDate() >= targetDate) {
-          nextMonthly.setMonth(nextMonthly.getMonth() + 1);
-        }
-        nextMonthly.setDate(targetDate);
-        nextMonthly.setHours(schedule.hour || 0, 0, 0, 0);
-        return nextMonthly.toISOString();
-      }
-      case 'interval': {
-        const hours = schedule.hours || 24;
-        return `Every ${hours} hour${hours > 1 ? 's' : ''}`;
-      }
-      default:
-        return null;
     }
   }
 
@@ -1757,6 +1021,9 @@ class DashboardServer extends EventEmitter {
         );
         return;
       }
+
+      // Mark as running BEFORE the async call to prevent duplicate execution
+      this._runningAutomations.set(automationId, { startTime: Date.now() });
 
       session.send(
         getProtocol().createNotification('info', 'Automation', `Starting ${automationId}...`)
@@ -1826,17 +1093,14 @@ class DashboardServer extends EventEmitter {
   }
 
   // ==========================================================================
-  // Inbox Handlers
+  // Inbox Handlers (delegating to dashboard-inbox.js)
   // ==========================================================================
 
   /**
    * Send inbox list to session
    */
   sendInboxList(session) {
-    const items = Array.from(this._inbox.values()).sort(
-      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    );
-
+    const items = getSortedInboxItems(this._inbox);
     session.send(getProtocol().createInboxList(items));
   }
 
@@ -1851,52 +1115,46 @@ class DashboardServer extends EventEmitter {
       return;
     }
 
-    const item = this._inbox.get(itemId);
-    if (!item) {
-      session.send(getProtocol().createError('NOT_FOUND', `Inbox item ${itemId} not found`));
+    const result = handleInboxAction(this._inbox, itemId, action);
+
+    if (!result.success) {
+      const errorCode = result.error.includes('not found') ? 'NOT_FOUND' : 'INVALID_ACTION';
+      session.send(getProtocol().createError(errorCode, result.error));
       return;
     }
 
-    switch (action) {
-      case 'accept':
-        // Mark as accepted and remove
-        item.status = 'accepted';
-        session.send(
-          getProtocol().createNotification('success', 'Inbox', `Accepted: ${item.title}`)
-        );
-        this._inbox.delete(itemId);
-        break;
-
-      case 'dismiss':
-        // Mark as dismissed and remove
-        item.status = 'dismissed';
-        session.send(getProtocol().createNotification('info', 'Inbox', `Dismissed: ${item.title}`));
-        this._inbox.delete(itemId);
-        break;
-
-      case 'read':
-        // Mark as read
-        item.status = 'read';
-        break;
-
-      default:
-        session.send(getProtocol().createError('INVALID_ACTION', `Unknown action: ${action}`));
-        return;
+    if (result.notification) {
+      session.send(
+        getProtocol().createNotification(
+          result.notification.level,
+          'Inbox',
+          result.notification.message
+        )
+      );
     }
 
     // Send updated inbox list
     this.sendInboxList(session);
   }
 
+  // ==========================================================================
+  // Session Lifecycle
+  // ==========================================================================
+
   /**
    * Cleanup expired sessions
    */
   _cleanupExpiredSessions() {
+    // Collect expired IDs first to avoid mutating Map during iteration
+    const expiredIds = [];
     for (const [sessionId, session] of this.sessions) {
       if (session.isExpired()) {
-        console.log(`[Session ${sessionId}] Expired (idle > ${SESSION_TIMEOUT_MS / 3600000}h)`);
-        this.closeSession(sessionId);
+        expiredIds.push(sessionId);
       }
+    }
+    for (const sessionId of expiredIds) {
+      console.log(`[Session ${sessionId}] Expired (idle > ${SESSION_TIMEOUT_MS / 3600000}h)`);
+      this.closeSession(sessionId);
     }
   }
 
@@ -1941,6 +1199,17 @@ class DashboardServer extends EventEmitter {
    */
   stop() {
     return new Promise(resolve => {
+      // Remove team metrics listener to prevent leak
+      if (this._teamMetricsListener) {
+        try {
+          const { teamMetricsEmitter } = require('../scripts/lib/team-events');
+          teamMetricsEmitter.removeListener('metrics_saved', this._teamMetricsListener);
+        } catch (e) {
+          // Ignore if module not available
+        }
+        this._teamMetricsListener = null;
+      }
+
       // Clear cleanup interval
       if (this._cleanupInterval) {
         clearInterval(this._cleanupInterval);
@@ -1966,85 +1235,6 @@ class DashboardServer extends EventEmitter {
       }
     });
   }
-}
-
-// ============================================================================
-// WebSocket Frame Encoding/Decoding
-// ============================================================================
-
-/**
- * Encode a WebSocket frame
- * @param {string|Buffer} data - Data to encode
- * @param {number} [opcode=0x1] - Frame opcode (0x1 = text, 0x2 = binary)
- * @returns {Buffer}
- */
-function encodeWebSocketFrame(data, opcode = 0x1) {
-  const payload = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  const length = payload.length;
-
-  let header;
-  if (length < 126) {
-    header = Buffer.alloc(2);
-    header[0] = 0x80 | opcode; // FIN + opcode
-    header[1] = length;
-  } else if (length < 65536) {
-    header = Buffer.alloc(4);
-    header[0] = 0x80 | opcode;
-    header[1] = 126;
-    header.writeUInt16BE(length, 2);
-  } else {
-    header = Buffer.alloc(10);
-    header[0] = 0x80 | opcode;
-    header[1] = 127;
-    header.writeBigUInt64BE(BigInt(length), 2);
-  }
-
-  return Buffer.concat([header, payload]);
-}
-
-/**
- * Decode a WebSocket frame
- * @param {Buffer} buffer - Buffer containing frame data
- * @returns {{ opcode: number, payload: Buffer, totalLength: number } | null}
- */
-function decodeWebSocketFrame(buffer) {
-  if (buffer.length < 2) return null;
-
-  const firstByte = buffer[0];
-  const secondByte = buffer[1];
-
-  const opcode = firstByte & 0x0f;
-  const masked = (secondByte & 0x80) !== 0;
-  let payloadLength = secondByte & 0x7f;
-
-  let headerLength = 2;
-  if (payloadLength === 126) {
-    if (buffer.length < 4) return null;
-    payloadLength = buffer.readUInt16BE(2);
-    headerLength = 4;
-  } else if (payloadLength === 127) {
-    if (buffer.length < 10) return null;
-    payloadLength = Number(buffer.readBigUInt64BE(2));
-    headerLength = 10;
-  }
-
-  if (masked) headerLength += 4;
-
-  const totalLength = headerLength + payloadLength;
-  if (buffer.length < totalLength) return null;
-
-  let payload = buffer.slice(headerLength, totalLength);
-
-  // Unmask if needed
-  if (masked) {
-    const mask = buffer.slice(headerLength - 4, headerLength);
-    payload = Buffer.alloc(payloadLength);
-    for (let i = 0; i < payloadLength; i++) {
-      payload[i] = buffer[headerLength + i] ^ mask[i % 4];
-    }
-  }
-
-  return { opcode, payload, totalLength };
 }
 
 // ============================================================================
@@ -2084,7 +1274,7 @@ async function stopDashboardServer(server) {
 }
 
 // ============================================================================
-// Exports
+// Exports (backward-compatible - re-exports from extracted modules)
 // ============================================================================
 
 module.exports = {

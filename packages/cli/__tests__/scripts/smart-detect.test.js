@@ -394,6 +394,70 @@ describe('analyze', () => {
     // With high threshold, review should NOT trigger
     expect(result.recommendations.immediate.some(r => r.feature === 'review')).toBe(false);
   });
+
+  // Feature catalog integration tests
+  it('should include feature_catalog in output', () => {
+    const result = analyze(makePrefetched());
+    expect(result).toHaveProperty('feature_catalog');
+    expect(Array.isArray(result.feature_catalog)).toBe(true);
+    expect(result.feature_catalog.length).toBeGreaterThan(0);
+  });
+
+  it('should have required fields on all catalog entries', () => {
+    const result = analyze(makePrefetched());
+    for (const entry of result.feature_catalog) {
+      expect(entry).toHaveProperty('feature');
+      expect(entry).toHaveProperty('name');
+      expect(entry).toHaveProperty('description');
+      expect(entry).toHaveProperty('how_to_use');
+      expect(entry).toHaveProperty('category');
+      expect(entry).toHaveProperty('status');
+    }
+  });
+
+  it('should have valid status values in catalog', () => {
+    const result = analyze(makePrefetched());
+    const validStatuses = ['triggered', 'available', 'unavailable', 'disabled'];
+    for (const entry of result.feature_catalog) {
+      expect(validStatuses).toContain(entry.status);
+    }
+  });
+
+  it('should return empty catalog when smart_detect is disabled', () => {
+    const metadata = { smart_detect: { enabled: false } };
+    const result = analyze(makePrefetched(), {}, metadata);
+    expect(result.feature_catalog).toEqual([]);
+  });
+
+  it('should mark auto-enabled modes as triggered in catalog', () => {
+    // Set up signals that trigger loop mode: 3+ ready stories in epic + test setup
+    fs.existsSync.mockReturnValue(false);
+    fs.existsSync.mockImplementation(p => {
+      if (p === 'package.json' || p.endsWith('package.json')) return true;
+      return false;
+    });
+    fs.readFileSync.mockImplementation(p => {
+      if (p.endsWith('package.json')) return JSON.stringify({ scripts: { test: 'jest' } });
+      return '';
+    });
+
+    const prefetched = makePrefetched({
+      json: {
+        statusJson: {
+          stories: {
+            'US-001': { epic: 'EP-001', status: 'ready' },
+            'US-002': { epic: 'EP-001', status: 'ready' },
+            'US-003': { epic: 'EP-001', status: 'ready' },
+            'US-010': { epic: 'EP-001', status: 'in-progress', title: 'Current' },
+          },
+        },
+        sessionState: { current_session: { current_story: 'US-010' } },
+      },
+    });
+    const result = analyze(prefetched, { current_session: { current_story: 'US-010' } }, {});
+    const loopMode = result.feature_catalog.find(e => e.feature === 'loop-mode');
+    expect(loopMode.status).toBe('triggered');
+  });
 });
 
 // =============================================================================

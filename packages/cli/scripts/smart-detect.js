@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const { detectLifecyclePhase, getRelevantPhases } = require('./lib/lifecycle-detector');
 const { runDetectorsForPhases } = require('./lib/signal-detectors');
+const { buildCatalogWithStatus } = require('./lib/feature-catalog');
 
 let safeReadJSON, safeWriteJSON, tryOptional;
 try {
@@ -134,6 +135,8 @@ function extractSignals(prefetched, sessionState, metadata) {
     coverage: fs.existsSync('coverage/coverage-summary.json'),
     playwright: fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js'),
     screenshots: fs.existsSync('screenshots'),
+    browserQaSpecs: fs.existsSync('.agileflow/ui-review/specs'),
+    browserQaRuns: fs.existsSync('.agileflow/ui-review/runs'),
     ciConfig:
       fs.existsSync('.github/workflows') ||
       fs.existsSync('.gitlab-ci.yml') ||
@@ -251,6 +254,7 @@ function analyze(prefetched, sessionState, metadata) {
       detected_at: new Date().toISOString(),
       lifecycle_phase: 'unknown',
       recommendations: { immediate: [], available: [], auto_enabled: {} },
+      feature_catalog: [],
       signals_summary: {},
       disabled: true,
     };
@@ -276,6 +280,14 @@ function analyze(prefetched, sessionState, metadata) {
   // Auto-enabled features (existing babysit modes)
   const autoEnabled = detectAutoModes(signals);
 
+  // Build feature catalog with dynamic status
+  const featureCatalog = buildCatalogWithStatus(
+    signals,
+    { immediate, available },
+    autoEnabled,
+    metadata
+  );
+
   // Build signals summary
   const signalsSummary = {
     story: signals.story
@@ -300,6 +312,7 @@ function analyze(prefetched, sessionState, metadata) {
       available,
       auto_enabled: autoEnabled,
     },
+    feature_catalog: featureCatalog,
     signals_summary: signalsSummary,
   };
 }
@@ -329,10 +342,14 @@ function detectAutoModes(signals) {
   // Coverage mode: coverage data exists
   const coverageMode = !!files.coverage;
 
+  // Browser QA mode: agentic browser testing enabled with specs
+  const browserQaMode = !!files.browserQaSpecs;
+
   return {
     loop_mode: loopMode,
     visual_mode: visualMode,
     coverage_mode: coverageMode,
+    browser_qa_mode: browserQaMode,
   };
 }
 
