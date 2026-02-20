@@ -1,0 +1,243 @@
+---
+title: Infrastructure Security
+description: Infrastructure security analyzer for Docker misconfigurations, missing security headers, HTTPS enforcement, exposed endpoints, and sensitive data in logs
+---
+
+# Infrastructure Security
+
+The Security Analyzer: Infrastructure Security is a specialized security analyzer focused on **infrastructure and deployment security**. It finds misconfigurations in containers, web servers, security headers, and deployment settings that could expose the application to attacks.
+
+## When to Use
+
+Use this agent when:
+- You need to check Docker configurations for security issues
+- You want to identify missing security headers (CSP, HSTS, X-Frame-Options)
+- You're checking for HTTPS enforcement and mixed content
+- You need to find exposed admin or debug endpoints in production
+- You want to identify sensitive data in application logs
+- You're analyzing environment separation and credential management
+- You need to verify file permissions and configuration security
+
+## How It Works
+
+1. **Reads target code** - Focuses on Dockerfile, docker-compose.yml, web server configuration, security header middleware, logging setup, and deployment manifests
+2. **Identifies patterns** - Looks for missing USER directives, secrets in ENV, missing headers, debug endpoints, sensitive data in logs, and `latest` tags
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, exploitation scenarios, and suggested fixes
+4. **Validates safeguards** - Checks for header middleware, environment conditionals, and secure deployment practices
+
+## Focus Areas
+
+- **Docker security**: Running as root, using `latest` tag, secrets in image layers, excessive capabilities
+- **Missing security headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- **HTTPS enforcement**: HTTP endpoints without TLS redirect, mixed content
+- **Exposed admin/debug endpoints**: Admin panels, debug routes, profiling endpoints accessible in production
+- **Sensitive data in logs**: Passwords, tokens, PII logged in application or access logs
+- **Environment separation**: Production secrets in dev config, shared credentials across environments
+- **File permissions**: World-readable config files, overly permissive directory listings
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```dockerfile
+# VULN: No USER directive — container runs as root
+FROM node:18
+WORKDIR /app
+COPY . .
+RUN npm install
+CMD ["node", "server.js"]
+
+# VULN: Secret visible in image layer
+ENV DATABASE_URL=postgres://admin:password123@db:5432/myapp
+```
+
+```javascript
+// VULN: Debug endpoint without auth or environment check
+app.get('/debug/env', (req, res) => {
+  res.json(process.env); // exposes all environment variables
+});
+
+// VULN: No security headers set
+app.listen(3000);
+
+// VULN: Password logged
+console.log(`User login: ${email} / ${password}`);
+```
+
+The Infrastructure Security analyzer would identify:
+
+### Finding: Docker container running as root
+
+**Location**: `Dockerfile:1`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-250 (Execution with Unnecessary Privileges)
+**OWASP**: A05:2021 Security Misconfiguration
+
+**Issue**: The Dockerfile has no `USER` directive, so the container runs as root. If an attacker gains code execution inside the container, they have root privileges.
+
+**Exploit Scenario**:
+- Attack: Application vulnerability allows arbitrary code execution, attacker runs commands as root
+- Impact: Full container compromise, ability to modify system files, escape to host
+
+**Remediation**:
+```dockerfile
+# SAFE: Run as unprivileged user
+FROM node:18
+WORKDIR /app
+COPY . .
+RUN npm install
+# Create a non-root user
+RUN useradd -m -u 1000 appuser
+USER appuser
+CMD ["node", "server.js"]
+```
+
+### Finding: Exposed debug endpoint
+
+**Location**: `server.ts:45`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-489 (Active Debug Code)
+**OWASP**: A05:2021 Security Misconfiguration
+
+**Issue**: Debug endpoint `/debug/env` exposes all environment variables without authentication. This includes API keys, database passwords, and other secrets.
+
+**Exploit Scenario**:
+- Attack: Access `/debug/env`, retrieve all environment variables
+- Impact: Complete credential exposure, ability to access all backend systems
+
+**Remediation**:
+```javascript
+// SAFE: Debug endpoint only in development
+app.get('/debug/env', (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.json(process.env);
+});
+```
+
+### Finding: Missing security headers
+
+**Location**: `server.ts:8`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-693 (Protection Mechanism Failure)
+**OWASP**: A05:2021 Security Misconfiguration
+
+**Issue**: Application does not set security headers, leaving it vulnerable to various attacks:
+- Missing `Content-Security-Policy` → XSS attacks
+- Missing `Strict-Transport-Security` (HSTS) → Man-in-the-middle attacks
+- Missing `X-Frame-Options` → Clickjacking attacks
+- Missing `X-Content-Type-Options` → MIME type sniffing
+
+**Remediation**:
+```javascript
+// SAFE: Use helmet to add security headers
+const helmet = require('helmet');
+app.use(helmet());
+
+// Or manually set headers:
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+```
+
+### Finding: Sensitive data in logs
+
+**Location**: `auth/login.ts:28`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-532 (Insertion of Sensitive Information into Log File)
+**OWASP**: A09:2021 Logging and Monitoring Failures
+
+**Issue**: Password is logged in plaintext during login attempts. If logs are accessed or leaked, passwords are exposed.
+
+**Exploit Scenario**:
+- Attack: Access application logs, find plaintext passwords
+- Impact: Account compromise, credential reuse across systems
+
+**Remediation**:
+```javascript
+// SAFE: Never log passwords or tokens
+console.log(`User login attempt: ${email}`);
+// Don't log: password, token, API keys, credit cards
+
+// Better: Use structured logging with field redaction
+const logger = require('pino')();
+logger.info({ email, action: 'login_attempt' }); // no password
+```
+
+### Finding: Docker using latest tag
+
+**Location**: `Dockerfile:1`
+**Severity**: LOW
+**Confidence**: HIGH
+**CWE**: CWE-829 (Inclusion of Functionality from Untrusted Control Sphere)
+**OWASP**: A06:2021 Vulnerable and Outdated Components
+
+**Issue**: Using `FROM node:latest` means the base image is not reproducible. A new build pulls a different Node version, potentially with vulnerabilities.
+
+**Remediation**:
+```dockerfile
+# SAFE: Pin specific version
+FROM node:18.19.0-alpine3.19
+```
+
+## Best Practices
+
+- Run containers as non-root user using `USER` directive
+- Pin base image versions (not `latest`)
+- Never pass secrets through `ENV` in Dockerfile (use build secrets or runtime environment)
+- Add all security headers using `helmet` or manually
+- Enforce HTTPS with redirect middleware
+- Disable debug endpoints in production (use `NODE_ENV` checks)
+- Never log passwords, tokens, API keys, or PII
+- Use proper secrets management (HashiCorp Vault, AWS Secrets Manager)
+- Regularly scan container images for CVEs
+- Implement proper file permissions (no world-readable secrets)
+- Enable HTTPS certificate verification by default
+- Use environment-specific configuration files
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (credential exposure), HIGH (attack surface), MEDIUM (misconfiguration), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code or configuration snippet
+- **Issue**: Clear explanation of the infrastructure security risk
+- **Exploit Scenario**: How an attacker could exploit this with expected impact
+- **Remediation**: Specific fix with code/config example
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit infrastructure and deployment security",
+  prompt: "Review Dockerfile, configuration, logging, and security headers for infrastructure vulnerabilities.",
+  subagent_type: "agileflow-security-analyzer-infra"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

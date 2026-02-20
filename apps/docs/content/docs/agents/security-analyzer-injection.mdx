@@ -1,0 +1,114 @@
+---
+title: Injection Vulnerabilities
+description: Injection vulnerability analyzer for SQL injection, command injection, NoSQL injection, template injection, LDAP injection, and header/CRLF injection
+---
+
+# Injection Vulnerabilities
+
+The Security Analyzer: Injection Vulnerabilities is a specialized security analyzer focused on **injection vulnerabilities**. It finds code patterns where untrusted input is concatenated into commands, queries, or templates, enabling attackers to inject malicious payloads.
+
+## When to Use
+
+Use this agent when:
+- You need to find SQL injection vulnerabilities in query construction
+- You want to identify command injection in `exec`, `execSync`, or `spawn` calls
+- You're checking for NoSQL injection via operator injection or `$where` clauses
+- You need to detect template injection (SSTI) with user-supplied template strings
+- You want to find LDAP injection in filter strings
+- You're analyzing HTTP header construction for CRLF injection risks
+
+## How It Works
+
+1. **Reads target code** - Focuses on database query construction, system command execution, template rendering, and HTTP header manipulation
+2. **Identifies patterns** - Looks for string concatenation and template literals with user input, missing parameterization, and unsafe string interpolation
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, exploit scenarios, and suggested fixes
+4. **Validates safeguards** - Checks if input is sanitized, parameterized, or escaped upstream
+
+## Focus Areas
+
+- **SQL injection**: String concatenation in SQL queries, missing parameterization
+- **Command injection**: `exec`, `execSync`, `spawn` with user-controlled arguments, shell metacharacter injection
+- **NoSQL injection**: MongoDB `$where`, `$regex` with user input, operator injection in query objects
+- **Template injection (SSTI)**: User input in template strings evaluated server-side (Jinja2, EJS, Handlebars, Pug)
+- **LDAP injection**: Unescaped user input in LDAP filter strings
+- **Header/CRLF injection**: User input in HTTP headers without newline sanitization
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```javascript
+// VULN: User input directly in SQL string
+const query = `SELECT * FROM users WHERE id = ${req.params.id}`;
+db.query(query);
+```
+
+The Injection analyzer would identify:
+
+### Finding: SQL injection via template literal
+
+**Location**: `api/users.ts:28`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+**CWE**: CWE-89 (SQL Injection)
+**OWASP**: A03:2021 Injection
+
+**Issue**: The `id` parameter from the URL is directly interpolated into the SQL query string without parameterization. An attacker can modify the parameter to inject arbitrary SQL.
+
+**Exploit Scenario**:
+- Input: `/api/users/1 OR 1=1`
+- Result: Query becomes `SELECT * FROM users WHERE id = 1 OR 1=1`, returning all users instead of just one
+
+**Remediation**:
+```javascript
+// SAFE: Use parameterized query
+const query = 'SELECT * FROM users WHERE id = $1';
+db.query(query, [req.params.id]);
+```
+
+## Best Practices
+
+- Always use parameterized queries or prepared statements for database access
+- Use `execFileSync` with array arguments instead of `execSync` with template literals
+- Never evaluate user input as code (avoid `eval`, `Function()`, template rendering of user data)
+- Sanitize user input for shell commands using libraries like `shell-escape`
+- Use auto-escaping template engines (React JSX, Go `html/template`) for HTML output
+- Apply input validation in addition to parameterization (defense in depth)
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (RCE/data access), HIGH (limited injection), MEDIUM (conditional), LOW (theoretical)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of how an attacker could exploit this
+- **Exploit Scenario**: Specific input that triggers the vulnerability with expected vs actual behavior
+- **Remediation**: Corrected code or approach
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze SQL and command injection risks",
+  prompt: "Review src/api/ for injection vulnerabilities. Focus on database queries, system command execution, and template rendering.",
+  subagent_type: "agileflow-security-analyzer-injection"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

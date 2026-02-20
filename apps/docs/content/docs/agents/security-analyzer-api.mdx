@@ -1,0 +1,202 @@
+---
+title: API Security
+description: API security analyzer for mass assignment, excessive data exposure, missing rate limiting, GraphQL vulnerabilities, and webhook security
+---
+
+# API Security
+
+The Security Analyzer: API Security is a specialized security analyzer focused on **API security vulnerabilities**. It finds weaknesses in how APIs handle data, enforce limits, and expose functionality that could be exploited by attackers.
+
+## When to Use
+
+Use this agent when:
+- You need to find mass assignment vulnerabilities in API endpoints
+- You want to identify excessive data exposure in API responses
+- You're checking for missing rate limiting on expensive or sensitive endpoints
+- You need to detect GraphQL security issues (deep nesting, query complexity, introspection)
+- You're analyzing for webhook security flaws (missing signatures, SSRF)
+- You want to find unbounded batch operations
+- You're checking for deprecated API versions still in production
+
+## How It Works
+
+1. **Reads target code** - Focuses on API route handlers, data serialization, request body processing, GraphQL configuration, and webhook handlers
+2. **Identifies patterns** - Looks for direct object assignment with user input, sensitive fields in responses, missing rate limiting middleware, and unvalidated webhook URLs
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, exploitation scenarios, and suggested fixes
+4. **Validates safeguards** - Checks for serialization layers, rate limiting middleware, GraphQL security configuration, and webhook signature verification
+
+## Focus Areas
+
+- **Mass assignment**: `Object.assign(model, req.body)`, spread operator merging user input into models
+- **Excessive data exposure**: Returning password hashes, internal IDs, admin flags, or debug info in API responses
+- **Missing rate limiting**: No rate limiting on expensive/sensitive endpoints
+- **GraphQL vulnerabilities**: Deep query nesting, introspection enabled in production, query complexity not limited
+- **Deprecated API versions**: Old API versions with known issues still accessible
+- **Webhook security**: Missing signature verification, no replay protection, SSRF via webhook URLs
+- **Batch/bulk endpoint abuse**: Unbounded batch operations, no pagination limits
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```javascript
+// VULN: All user-supplied fields applied to model
+app.put('/api/users/:id', auth, async (req, res) => {
+  const user = await User.findById(req.params.id);
+  Object.assign(user, req.body); // attacker sends { role: "admin", verified: true }
+  await user.save();
+});
+
+// VULN: Returning entire user object including sensitive fields
+app.get('/api/users/:id', async (req, res) => {
+  const user = await User.findById(req.params.id);
+  res.json(user); // includes passwordHash, resetToken, internalNotes
+});
+
+// VULN: No rate limiting on expensive operation
+app.post('/api/reports/generate', auth, async (req, res) => {
+  const report = await generateReport(req.body.params);
+  res.json(report);
+});
+```
+
+The API Security analyzer would identify:
+
+### Finding: Mass assignment vulnerability
+
+**Location**: `api/users.ts:18`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-915 (Improperly Controlled Modification of Dynamically-Determined Object Attributes)
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: All request body fields are directly assigned to the user model without validation or filtering. An attacker can modify protected fields like `role`, `verified`, or `isAdmin`.
+
+**Exploit Scenario**:
+- Input: `PUT /api/users/123` with body `{ "role": "admin", "verified": true, "balance": 1000 }`
+- Result: User 123 becomes admin, is verified, and has increased balance
+
+**Remediation**:
+```javascript
+// SAFE: Explicitly whitelist allowed fields
+app.put('/api/users/:id', auth, async (req, res) => {
+  const user = await User.findById(req.params.id);
+  const allowedFields = ['email', 'fullName', 'bio'];
+  allowedFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      user[field] = req.body[field];
+    }
+  });
+  await user.save();
+});
+```
+
+### Finding: Excessive data exposure in API response
+
+**Location**: `api/users.ts:28`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-213 (Intentional Information Exposure)
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: The entire user object is returned in API responses, including sensitive internal fields like password hashes, reset tokens, and internal notes.
+
+**Exploit Scenario**:
+- Attack: Query `/api/users/123`, receive full user object with passwordHash
+- Impact: Attacker can attempt to crack password hash offline
+
+**Remediation**:
+```javascript
+// SAFE: Return only safe fields using a DTO or serializer
+app.get('/api/users/:id', async (req, res) => {
+  const user = await User.findById(req.params.id);
+  res.json({
+    id: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    avatar: user.avatar
+    // passwordHash, resetToken, internalNotes NOT included
+  });
+});
+```
+
+### Finding: Missing rate limiting on expensive operation
+
+**Location**: `api/reports.ts:42`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-770 (Allocation of Resources Without Limits or Throttling)
+**OWASP**: A04:2021 Insecure Design
+
+**Issue**: The report generation endpoint is CPU-intensive but has no rate limiting. An attacker can consume all server resources by requesting many reports simultaneously.
+
+**Exploit Scenario**:
+- Attack: Send 100 concurrent requests to `/api/reports/generate`
+- Impact: Server CPU usage spikes to 100%, legitimate users get 503 timeouts
+
+**Remediation**:
+```javascript
+// SAFE: Add rate limiting
+const rateLimit = require('express-rate-limit');
+const reportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 reports per hour per user
+  keyGenerator: (req) => req.user.id // rate limit per user
+});
+
+app.post('/api/reports/generate', auth, reportLimiter, async (req, res) => {
+  const report = await generateReport(req.body.params);
+  res.json(report);
+});
+```
+
+## Best Practices
+
+- Use DTOs or serializers to explicitly define what fields are returned in API responses
+- Never return password hashes, tokens, or internal identifiers in API responses
+- Whitelist allowed fields in request body processing (don't use mass assignment)
+- Implement rate limiting on all authentication endpoints and expensive operations
+- Validate and limit pagination parameters (max page size, max offset)
+- Use GraphQL query depth limiting and query cost analysis in production
+- Disable GraphQL introspection in production (enable only for development)
+- Verify webhook signatures using HMAC and timestamp checks
+- Restrict server-side HTTP requests to allowlisted domains
+- Implement request validation and sanitization on all endpoints
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (data breach), HIGH (data exposure), MEDIUM (abuse potential), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of the API security weakness
+- **Exploit Scenario**: How an attacker could exploit this with expected impact
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit API security",
+  prompt: "Review src/api/ for API security vulnerabilities. Check for mass assignment, data exposure, rate limiting, and webhook security.",
+  subagent_type: "agileflow-security-analyzer-api"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

@@ -1,0 +1,168 @@
+---
+title: Dependency Vulnerabilities
+description: Dependency vulnerability analyzer for known CVEs, typosquatting indicators, overly permissive version ranges, and malicious postinstall scripts
+---
+
+# Dependency Vulnerabilities
+
+The Security Analyzer: Dependency Vulnerabilities is a specialized security analyzer focused on **dependency and supply chain vulnerabilities**. It finds risks in third-party packages, outdated security-critical libraries, and supply chain attack indicators.
+
+## When to Use
+
+Use this agent when:
+- You need to find known CVEs in project dependencies
+- You want to identify outdated security-critical packages (crypto, auth, framework)
+- You're checking for typosquatting indicators in dependency names
+- You need to identify overly permissive version ranges in package manifests
+- You want to find suspicious postinstall scripts in dependencies
+- You're analyzing for deprecated or unmaintained packages
+- You need to assess supply chain attack risks
+
+## How It Works
+
+1. **Reads dependency files** - Analyzes `package.json`, `package-lock.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, and other manifest files
+2. **Identifies patterns** - Looks for known vulnerable versions, typosquatting indicators, overly permissive ranges (`*`, `>=1.0.0`), suspicious postinstall scripts, and deprecated packages
+3. **Reports findings** - Generates structured findings with package names, versions, CVE numbers, severity levels, and suggested updates
+4. **Validates alternatives** - Suggests replacement packages for deprecated dependencies
+
+## Focus Areas
+
+- **Known CVEs in dependencies**: Outdated packages with publicly disclosed vulnerabilities
+- **Outdated security-critical packages**: Old versions of crypto, auth, or framework packages
+- **Typosquatting indicators**: Package names suspiciously similar to popular packages
+- **Overly permissive version ranges**: `*`, `>=1.0.0`, wide ranges that could pull malicious updates
+- **Unnecessary broad-access packages**: Packages requesting more permissions/capabilities than needed
+- **Postinstall scripts**: Scripts that execute during `npm install` — potential supply chain attack vector
+- **Deprecated packages**: Packages no longer maintained with no security patches
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this `package.json`:
+
+```json
+{
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "minimist": "^1.2.0",
+    "request": "^2.88.0",
+    "some-package": "*"
+  }
+}
+```
+
+The Dependency Vulnerabilities analyzer would identify:
+
+### Finding: Known CVE in lodash (Prototype Pollution)
+
+**Location**: `package.json`
+**Package**: `lodash@^4.17.15`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-1321 (Improperly Controlled Modification of Object Prototype)
+**OWASP**: A06:2021 Vulnerable and Outdated Components
+
+**Issue**: lodash versions before 4.17.21 contain a prototype pollution vulnerability (CVE-2021-23337). The vulnerability allows attackers to modify the prototype of Object.prototype and affect all objects.
+
+**CVE/Advisory**: CVE-2021-23337
+**Fixed In**: lodash >= 4.17.21
+
+**Remediation**:
+```json
+{
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
+```
+
+### Finding: Overly permissive version range
+
+**Location**: `package.json`
+**Package**: `some-package@*`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-829 (Inclusion of Functionality from Untrusted Control Sphere)
+**OWASP**: A06:2021 Vulnerable and Outdated Components
+
+**Issue**: Using `*` as the version range allows any version to be installed, including potentially malicious releases. This is a supply chain attack vector.
+
+**Remediation**:
+```json
+{
+  "dependencies": {
+    "some-package": "^1.2.3"
+  }
+}
+```
+
+### Finding: Deprecated package (request)
+
+**Location**: `package.json`
+**Package**: `request@^2.88.0`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-1104 (Use of Unmaintained Third Party Components)
+**OWASP**: A06:2021 Vulnerable and Outdated Components
+
+**Issue**: The `request` package is deprecated and no longer receives security updates. Maintainers recommend migrating to `node-fetch`, `axios`, or built-in `fetch` API.
+
+**Remediation**:
+Replace with a maintained alternative:
+```json
+{
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
+```
+
+## Best Practices
+
+- Pin dependency versions or use conservative ranges (`^` or `~`) rather than `*` or `>=`
+- Regularly update dependencies using `npm update` and `npm audit`
+- Review `npm audit` output and fix HIGH and CRITICAL vulnerabilities immediately
+- Monitor for deprecated packages and plan migrations
+- Verify no suspicious postinstall scripts in new dependencies
+- Use lock files (`package-lock.json`, `yarn.lock`) to ensure deterministic installs
+- Regularly scan for CVEs using tools like `npm audit`, `snyk`, or `dependabot`
+- Pin transitive dependency versions in `overrides` (npm) or `resolutions` (yarn) if needed
+- Review all major version updates before upgrading
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Manifest file name
+- **Package**: Package name and version range
+- **Severity**: CRITICAL (known RCE CVE), HIGH (known exploit CVE), MEDIUM (theoretical CVE), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Issue**: Clear explanation of the dependency risk
+- **CVE/Advisory**: CVE number or advisory link if applicable
+- **Fixed In**: Version that fixes the issue, if known
+- **Remediation**: Update command or alternative package
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit dependencies for known vulnerabilities",
+  prompt: "Review package.json and lock files for known CVEs, deprecated packages, and supply chain risks.",
+  subagent_type: "agileflow-security-analyzer-deps"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

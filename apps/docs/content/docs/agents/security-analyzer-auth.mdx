@@ -1,0 +1,152 @@
+---
+title: Authentication Vulnerabilities
+description: Authentication vulnerability analyzer for weak password hashing, JWT flaws, session fixation, broken auth flows, and insecure token storage
+---
+
+# Authentication Vulnerabilities
+
+The Security Analyzer: Authentication Vulnerabilities is a specialized security analyzer focused on **authentication vulnerabilities**. It finds weaknesses in how the application verifies user identity, manages sessions, and handles credentials.
+
+## When to Use
+
+Use this agent when:
+- You need to identify weak password hashing implementations
+- You want to check JWT configuration for missing expiry or weak signing keys
+- You're analyzing session management for fixation or reuse vulnerabilities
+- You need to find missing rate limiting on login endpoints
+- You want to detect plaintext password storage or comparison
+- You're checking for missing authentication on protected routes
+- You need to verify MFA bypass vectors or weak password reset flows
+
+## How It Works
+
+1. **Reads target code** - Focuses on authentication middleware, password hashing, JWT logic, session management, and login/register/reset endpoints
+2. **Identifies patterns** - Looks for weak hashing algorithms (MD5, SHA1, SHA256 without salt), JWT misconfigurations, missing rate limiting, and insecure token storage
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, attack scenarios, and suggested fixes
+4. **Validates implementations** - Checks if proper libraries (bcrypt, scrypt, argon2) are used
+
+## Focus Areas
+
+- **Weak password hashing**: MD5, SHA1, SHA256 (without salt/iterations), plaintext storage
+- **JWT vulnerabilities**: `alg:none` accepted, missing expiry, weak signing keys, secrets in code
+- **Session fixation**: Session ID not regenerated after login
+- **Broken auth flows**: No rate limiting on login, no account lockout, no brute force protection
+- **Insecure token storage**: Tokens/credentials in localStorage, cookies without Secure/HttpOnly flags
+- **Missing authentication**: Routes/endpoints accessible without auth checks
+- **MFA bypass**: MFA that can be skipped, backup codes not properly protected
+- **Password reset flaws**: Predictable tokens, no expiry, token reuse
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```javascript
+// VULN: MD5 is not suitable for password hashing
+const hash = crypto.createHash('md5').update(password).digest('hex');
+
+// VULN: No rate limiting on login
+app.post('/api/login', async (req, res) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (user && user.password === req.body.password) { // plaintext comparison
+    res.json({ token: 'jwt...' });
+  }
+});
+```
+
+The Authentication analyzer would identify:
+
+### Finding: Weak password hashing with MD5
+
+**Location**: `auth/password.ts:12`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+**CWE**: CWE-327 (Use of a Broken or Risky Cryptographic Algorithm)
+**OWASP**: A07:2021 Identification and Authentication Failures
+
+**Issue**: MD5 is cryptographically broken and unsuitable for further use. Passwords hashed with MD5 can be quickly reversed with lookup tables or GPU attacks.
+
+**Exploit Scenario**:
+- Attack: Download password hashes from database, crack with MD5 rainbow tables in seconds
+- Impact: Complete account takeover for all users
+
+**Remediation**:
+```javascript
+// SAFE: Use bcrypt with strong salt rounds
+const bcrypt = require('bcrypt');
+const hash = await bcrypt.hash(password, 12);
+```
+
+### Finding: Missing rate limiting on login endpoint
+
+**Location**: `auth/routes.ts:28`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-307 (Improper Restriction of Rendered UI Layers or Frames)
+**OWASP**: A07:2021 Identification and Authentication Failures
+
+**Issue**: Login endpoint has no rate limiting, allowing attackers to brute force credentials without restriction.
+
+**Exploit Scenario**:
+- Attack: Script tries 100 password combinations per second on login endpoint
+- Impact: Account takeover through brute force password guessing
+
+**Remediation**:
+```javascript
+// SAFE: Add rate limiting
+const rateLimit = require('express-rate-limit');
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5 // 5 attempts per window
+});
+app.post('/api/login', loginLimiter, async (req, res) => { /* ... */ });
+```
+
+## Best Practices
+
+- Always use bcrypt, scrypt, or argon2 for password hashing (never MD5, SHA1, or unsalted SHA256)
+- Enforce JWT expiry (short-lived access tokens with refresh tokens)
+- Regenerate session IDs after successful login
+- Implement rate limiting on all authentication endpoints (login, password reset, MFA)
+- Store tokens in HttpOnly, Secure cookies instead of localStorage
+- Add account lockout after N failed attempts
+- Never send sensitive auth data in error messages
+- Use multi-factor authentication for sensitive accounts
+- Implement strong password reset with time-limited tokens
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (auth bypass), HIGH (credential exposure), MEDIUM (weakness), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of the authentication weakness
+- **Exploit Scenario**: How an attacker would exploit this with expected impact
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit authentication implementation",
+  prompt: "Review src/auth/ for authentication vulnerabilities. Check password hashing, JWT configuration, session management, and rate limiting.",
+  subagent_type: "agileflow-security-analyzer-auth"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

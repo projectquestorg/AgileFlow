@@ -1,0 +1,230 @@
+---
+title: Authorization Vulnerabilities
+description: Authorization vulnerability analyzer for IDOR, privilege escalation, path traversal, CORS misconfiguration, and CSRF
+---
+
+# Authorization Vulnerabilities
+
+The Security Analyzer: Authorization Vulnerabilities is a specialized security analyzer focused on **authorization and access control vulnerabilities**. It finds weaknesses in how the application controls who can access what resources and perform what actions.
+
+## When to Use
+
+Use this agent when:
+- You need to find IDOR (Insecure Direct Object Reference) vulnerabilities
+- You want to identify privilege escalation opportunities
+- You're checking for path traversal vulnerabilities in file access
+- You need to detect missing resource-level permission checks
+- You're analyzing CORS configuration for misconfigurations
+- You want to find CSRF vulnerabilities on state-changing endpoints
+- You're checking for client-side only authorization
+
+## How It Works
+
+1. **Reads target code** - Focuses on API route handlers, middleware for authorization, file access patterns, CORS configuration, and role/permission checking
+2. **Identifies patterns** - Looks for user-controlled IDs without ownership verification, missing role checks, path traversal sequences, overly permissive CORS, and missing CSRF tokens
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, exploitation scenarios, and suggested fixes
+4. **Validates safeguards** - Checks for ownership verification, role-based access control, path normalization, and CSRF protection
+
+## Focus Areas
+
+- **IDOR (Insecure Direct Object Reference)**: User-controlled IDs used to access resources without ownership verification
+- **Privilege escalation**: Users able to perform admin actions or access elevated roles
+- **Path traversal**: `../` sequences allowing access to files outside intended directory
+- **Missing resource-level permissions**: Bulk operations without per-item authorization checks
+- **CORS misconfiguration**: Overly permissive `Access-Control-Allow-Origin`, reflecting origin, allowing credentials
+- **CSRF (Cross-Site Request Forgery)**: State-changing endpoints without CSRF tokens or SameSite cookies
+- **Broken access control**: Missing role checks, client-side only authorization
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```javascript
+// VULN: Any authenticated user can access any user's data
+app.get('/api/users/:id/profile', auth, async (req, res) => {
+  const profile = await User.findById(req.params.id);
+  res.json(profile);
+});
+
+// VULN: User can set their own role
+app.post('/api/register', async (req, res) => {
+  const user = await User.create({
+    email: req.body.email,
+    password: req.body.password,
+    role: req.body.role // attacker sends role: "admin"
+  });
+});
+
+// VULN: No CSRF protection on account deletion
+app.post('/api/account/delete', auth, async (req, res) => {
+  await User.deleteOne({ _id: req.user.id });
+  res.json({ success: true });
+});
+
+// VULN: User can escape uploads directory
+app.get('/api/files/:filename', (req, res) => {
+  const filepath = path.join('/uploads', req.params.filename);
+  res.sendFile(filepath);
+});
+```
+
+The Authorization analyzer would identify:
+
+### Finding: IDOR on user profile access
+
+**Location**: `api/users.ts:12`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-639 (Authorization Through User-Controlled Key)
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: Any authenticated user can access any other user's profile by changing the ID parameter. There is no ownership verification.
+
+**Exploit Scenario**:
+- Attack: Query `/api/users/999/profile` to read another user's private data
+- Impact: Privacy violation, exposure of personal information, email addresses, phone numbers
+
+**Remediation**:
+```javascript
+// SAFE: Verify user owns the profile they're accessing
+app.get('/api/users/:id/profile', auth, async (req, res) => {
+  if (req.params.id !== req.user.id && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const profile = await User.findById(req.params.id);
+  res.json(profile);
+});
+```
+
+### Finding: Privilege escalation via role parameter
+
+**Location**: `api/auth.ts:28`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+**CWE**: CWE-269 (Improper Access Control (Authorization))
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: New users can set their own role during registration. An attacker can immediately register as an admin.
+
+**Exploit Scenario**:
+- Attack: Send `POST /api/register` with `{ "email": "attacker@evil.com", "password": "...", "role": "admin" }`
+- Impact: Attacker gains admin access to entire system
+
+**Remediation**:
+```javascript
+// SAFE: Server sets role, user cannot specify it
+app.post('/api/register', async (req, res) => {
+  const user = await User.create({
+    email: req.body.email,
+    password: req.body.password,
+    role: 'user' // hardcoded, user cannot change
+  });
+});
+```
+
+### Finding: Path traversal in file access
+
+**Location**: `api/files.ts:42`
+**Severity**: HIGH
+**Confidence**: HIGH
+**CWE**: CWE-22 (Improper Limitation of a Pathname to a Restricted Directory)
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: User-supplied filename is not validated, allowing `../` sequences to escape the uploads directory and access any file.
+
+**Exploit Scenario**:
+- Attack: Request `/api/files/../../../../../../etc/passwd`
+- Impact: Read system files, configuration files, source code outside uploads directory
+
+**Remediation**:
+```javascript
+// SAFE: Normalize path and verify it's within uploads directory
+app.get('/api/files/:filename', (req, res) => {
+  const filepath = path.resolve(path.join('/uploads', req.params.filename));
+  const uploadsDir = path.resolve('/uploads');
+  if (!filepath.startsWith(uploadsDir)) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  res.sendFile(filepath);
+});
+```
+
+### Finding: Missing CSRF protection on account deletion
+
+**Location**: `api/account.ts:58`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**CWE**: CWE-352 (Cross-Site Request Forgery (CSRF))
+**OWASP**: A01:2021 Broken Access Control
+
+**Issue**: Account deletion is a state-changing operation but has no CSRF token verification. An attacker can trick a user into deleting their account.
+
+**Exploit Scenario**:
+- Attack: Create a malicious website that sends `POST /api/account/delete` when victim visits
+- Impact: User's account is deleted without their knowledge
+
+**Remediation**:
+```javascript
+// SAFE: Require CSRF token or use SameSite cookies
+const csrf = require('csurf');
+const csrfProtection = csrf({ cookie: false });
+
+app.post('/api/account/delete', auth, csrfProtection, async (req, res) => {
+  await User.deleteOne({ _id: req.user.id });
+  res.json({ success: true });
+});
+
+// In Express setup:
+app.use(session({ cookie: { httpOnly: true, secure: true, sameSite: 'strict' } }));
+```
+
+## Best Practices
+
+- Always verify resource ownership before returning data (check `req.user.id === resource.userId`)
+- Never trust user-supplied role or permission values (set them server-side)
+- Use `path.resolve()` and prefix validation to prevent path traversal
+- Implement fine-grained authorization checks on all operations (not just at route level)
+- Use CSRF tokens for state-changing operations (POST, PUT, DELETE)
+- Configure SameSite cookies (SameSite=Strict or SameSite=Lax by default)
+- Configure CORS strictly (allowlist specific origins, don't use wildcard with credentials)
+- Implement proper role-based access control (RBAC) with clear role definitions
+- Test authorization thoroughly (try accessing other users' resources)
+- Fail securely (deny access by default, only allow if explicitly authorized)
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (data breach), HIGH (unauthorized access), MEDIUM (limited escalation), LOW (hardening)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **CWE**: Standard CWE identifier
+- **OWASP**: OWASP Top 10 category
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of the access control weakness
+- **Exploit Scenario**: How an attacker exploits this with expected impact
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit authorization and access control",
+  prompt: "Review src/api/ for authorization vulnerabilities. Check IDOR, privilege escalation, role checks, path traversal, and CSRF protection.",
+  subagent_type: "agileflow-security-analyzer-authz"
+)
+```
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
+- [`security-consensus`](/agents/security-consensus) - Security audit consensus coordinator

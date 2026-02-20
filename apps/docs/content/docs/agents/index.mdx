@@ -145,6 +145,22 @@ Agents that coordinate other agents:
 | [`product`](/agents/product) | Requirements analysis, user stories, acceptance criteria |
 | [`refactor`](/agents/refactor) | Technical debt cleanup, legacy code modernization |
 
+### Security Analysis
+
+Agents for automated security vulnerability detection:
+
+| Agent | Description |
+|-------|-------------|
+| [`security-analyzer-injection`](/agents/security-analyzer-injection) | SQL injection, command injection, XSS, template injection, path traversal |
+| [`security-analyzer-auth`](/agents/security-analyzer-auth) | Authentication weaknesses, password handling, session management, token security |
+| [`security-analyzer-input`](/agents/security-analyzer-input) | Input validation, sanitization, type coercion attacks, prototype pollution |
+| [`security-analyzer-secrets`](/agents/security-analyzer-secrets) | Hardcoded secrets, API keys in code, credential exposure, insecure storage |
+| [`security-analyzer-deps`](/agents/security-analyzer-deps) | Known vulnerable dependencies, outdated packages, supply chain risks |
+| [`security-analyzer-api`](/agents/security-analyzer-api) | API security, rate limiting, CORS misconfiguration, data exposure |
+| [`security-analyzer-authz`](/agents/security-analyzer-authz) | Authorization flaws, IDOR, privilege escalation, access control gaps |
+| [`security-analyzer-infra`](/agents/security-analyzer-infra) | Infrastructure security, headers, TLS configuration, CSP, HSTS |
+| [`security-consensus`](/agents/security-consensus) | Consensus coordinator for security audit findings |
+
 ### Logic Analysis
 
 Agents for automated code analysis and bug detection:

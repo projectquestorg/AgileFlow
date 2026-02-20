@@ -1,0 +1,230 @@
+---
+title: /audit:security
+description: Multi-agent security vulnerability analysis with consensus voting for finding exploitable weaknesses
+---
+
+# /audit:security
+
+Deploy multiple specialized security vulnerability analyzers in parallel to find exploitable weaknesses, then synthesize results through consensus voting into a prioritized Security Audit Report.
+
+## Quick Start
+
+```bash
+/agileflow:audit:security src/
+```
+
+## Arguments
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | Target file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep | quick | Analysis depth (quick = core 5 analyzers, deep = all 8) |
+| `FOCUS` | injection, auth, authz, secrets, input, deps, infra, api, all | all | Which analyzers to deploy |
+
+## How It Works
+
+The command deploys specialized security vulnerability analyzers in parallel to examine your codebase for exploitable weaknesses:
+
+1. **Deploy Analyzers** - 5-8 specialized analyzers examine code simultaneously
+2. **Parallel Analysis** - Each analyzer runs independently on the target files
+3. **Consensus Voting** - Results are collected and evaluated for confidence
+4. **Generate Report** - A prioritized Security Audit Report is produced with actionable remediation steps
+
+### Analyzer Coverage
+
+**Core Analyzers (DEPTH=quick)**:
+- **Injection** - SQL injection, command injection, template injection, NoSQL injection, LDAP injection
+- **Authentication** - Weak hashing, JWT flaws, broken authentication flows, password validation
+- **Authorization** - IDOR (Insecure Direct Object References), privilege escalation, path traversal
+- **Secrets & Cryptography** - Hardcoded keys, weak crypto, insecure defaults, Math.random() misuse
+- **Input Validation** - XSS, prototype pollution, SSRF, file upload vulnerabilities, ReDoS
+
+**Additional Analyzers (DEPTH=deep adds)**:
+- **Dependency Vulnerabilities** - Known CVEs, typosquatting, dangerous postinstall scripts
+- **Infrastructure Security** - Docker security, missing security headers, HTTPS validation, exposed endpoints
+- **API Security** - Mass assignment, data exposure, rate limiting, GraphQL introspection, overfetching
+
+## Examples
+
+```bash
+# Quick scan of app directory (core 5 analyzers)
+/agileflow:audit:security app/
+
+# Deep analysis with all 8 analyzers
+/agileflow:audit:security . DEPTH=deep
+
+# Focus on specific vulnerability areas
+/agileflow:audit:security src/ FOCUS=injection,auth
+
+# Single file input validation check
+/agileflow:audit:security app/page.tsx FOCUS=input
+
+# Comprehensive audit with all analyzers
+/agileflow:audit:security . DEPTH=deep FOCUS=all
+
+# API routes security analysis
+/agileflow:audit:security app/api/ FOCUS=api
+```
+
+## Understanding Results
+
+### Severity Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **CRITICAL** | Directly exploitable, high impact | Fix immediately before any deployment |
+| **HIGH** | Likely exploitable, significant impact | Fix this sprint before release |
+| **MEDIUM** | Exploitable under specific conditions | Backlog for next sprint |
+| **LOW** | Hardening improvement, defensive coding | Consider for next release |
+
+### Confidence Scoring
+
+| Confidence | Meaning |
+|------------|---------|
+| **CONFIRMED** | 2+ analyzers agree (high priority) |
+| **LIKELY** | 1 analyzer with strong evidence (medium priority) |
+| **INVESTIGATE** | 1 analyzer with weak evidence (low priority) |
+
+## Example Output
+
+```
+🔒 Security Audit: app/
+══════════════════════════════════════════════════════════════
+
+Deploying 5 security analyzers (quick mode)...
+✓ Injection Analyzer
+✓ Authentication Analyzer
+✓ Authorization Analyzer
+✓ Secrets & Crypto Analyzer
+✓ Input Validation Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: Full-stack Web Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 VULNERABILITY SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Severity | Count | OWASP Category |
+|----------|-------|----------------|
+| Critical | 1     | A03:2021 Injection |
+| High     | 2     | A01:2021 Broken Access Control |
+| Medium   | 3     | A02:2021 Cryptographic Failures |
+| Low      | 1     | A05:2021 Security Misconfiguration |
+
+Total: 7 findings (2 false positives excluded)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 FIX IMMEDIATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Command injection via execSync with user input [CONFIRMED by Injection, Input]
+   Location: api/exec.ts:28
+   CWE-78 | OWASP A03:2021 - Injection
+   Proof: User-controlled input passed directly to execSync string
+   Fix: Use execFileSync with argument array instead of string interpolation
+
+2. IDOR - user can access any record by changing ID [CONFIRMED by Authorization]
+   Location: api/users/[id]/route.ts:15
+   CWE-639 | OWASP A01:2021 - Broken Access Control
+   Proof: No ownership check on GET /api/users/:id endpoint
+   Fix: Verify current user owns the record before returning resource
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX THIS SPRINT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. JWT secret from environment variable not validated [LIKELY - Authentication]
+4. Math.random() used for token generation [LIKELY - Secrets & Crypto]
+5. Missing rate limiting on login endpoint [LIKELY - Authentication]
+
+[Full report saved to docs/08-project/security-audits/security-audit-20260220.md]
+```
+
+## Depth Modes
+
+### Quick Mode (Default)
+- Deploys **5 core analyzers**
+- Focuses on **CRITICAL and HIGH** severity issues
+- Skips hardening improvements
+- Fast turnaround for rapid vulnerability checks
+- Use when: You need a quick baseline assessment before deployment
+
+### Deep Mode
+- Deploys **all 8 analyzers**
+- Includes **MEDIUM and LOW** severity findings
+- Comprehensive coverage including Dependency, Infrastructure, and API security
+- Use when: Preparing for security review, launch, or compliance audit
+
+## Focus Areas
+
+Use `FOCUS` to analyze specific vulnerability domains:
+
+```bash
+# Only injection vulnerabilities
+/agileflow:audit:security app/ FOCUS=injection
+
+# Multiple specific areas
+/agileflow:audit:security app/ FOCUS=injection,auth,secrets
+
+# All analyzers
+/agileflow:audit:security app/ FOCUS=all
+```
+
+Available focus areas:
+- `injection` - SQL, command, template, NoSQL, LDAP injection
+- `auth` - Authentication weaknesses, weak hashing, JWT flaws
+- `authz` - Authorization issues, IDOR, privilege escalation, path traversal
+- `secrets` - Hardcoded keys, weak cryptography, insecure defaults
+- `input` - XSS, prototype pollution, SSRF, file upload, ReDoS
+- `deps` - Dependency vulnerabilities (deep only)
+- `infra` - Infrastructure security, headers, Docker, HTTPS (deep only)
+- `api` - API security, mass assignment, data exposure, rate limiting (deep only)
+- `all` - Run all applicable analyzers (default)
+
+## Report Location
+
+Security audit reports are saved to:
+```
+docs/08-project/security-audits/security-audit-{YYYYMMDD}.md
+```
+
+Each report includes:
+- Executive summary with vulnerability overview
+- Detailed findings with CWE and OWASP Top 10 mappings
+- Proof of concept code or vulnerable code snippet
+- Remediation steps for each issue
+- Affected files and code locations
+- Confidence scores and analyzer agreement
+- Project type detection and context
+
+## Integration with Development
+
+### In Code Review
+Run security audit on pull requests to catch vulnerabilities before merge:
+
+```bash
+/agileflow:audit:security --pr
+```
+
+### Before Deployment
+Run full deep audit before going live:
+
+```bash
+/agileflow:audit:security . DEPTH=deep
+```
+
+### Continuous Security
+Schedule periodic audits in CI/CD to maintain ongoing vulnerability detection.
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/logic:audit`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
+| [`/legal:audit`](/docs/commands/legal-audit) | Legal compliance analysis (similar architecture) |
+| [`/performance:audit`](/docs/commands/performance-audit) | Performance bottleneck analysis |
+| [`/test:audit`](/docs/commands/test-audit) | Test coverage and quality analysis |
+| [`/review`](/docs/commands/review) | Code review (includes some security checks) |
+| [`/multi-expert`](/docs/commands/multi-expert) | General multi-expert analysis |

@@ -1,0 +1,291 @@
+---
+title: Consensus Coordinator
+description: Consensus coordinator for security audit - validates findings, votes on confidence, filters by project type, maps to OWASP/CWE, and generates prioritized Security Audit Report
+---
+
+# Security Consensus Coordinator
+
+The Security Consensus Coordinator is the **consensus coordinator** for the Security Audit system. It collects findings from all security analyzers, validates them against the project type, votes on confidence levels, maps to OWASP Top 10 and CWE standards, and produces the final prioritized Security Audit Report.
+
+## When to Use
+
+Use this agent when:
+- You need to run a comprehensive security audit across multiple vulnerability types
+- You want to consolidate findings from all 8 security analyzers into one report
+- You need to resolve conflicting findings from different analyzers
+- You want a final, prioritized list of security issues to fix
+- You need to filter out false positives and irrelevant findings for your project type
+- You want findings mapped to OWASP Top 10 2021 and CWE standards
+- You need a professional security audit report for stakeholders
+
+## How It Works
+
+1. **Detects project type** - Analyzes the codebase to determine if it's API-only, SPA, full-stack, CLI, library, mobile, or microservice
+2. **Collects findings** - Reads output from all 8 security analyzers and normalizes them into a common structure
+3. **Filters by relevance** - Removes findings that don't apply to the detected project type
+4. **Votes on confidence** - Uses analyzer agreement to rate confidence levels (CONFIRMED, LIKELY, INVESTIGATE, FALSE POSITIVE)
+5. **Maps to standards** - Adds OWASP Top 10 2021 categories and CWE numbers
+6. **Resolves conflicts** - When analyzers disagree, investigates and makes final decision
+7. **Generates report** - Produces prioritized, actionable Security Audit Report
+
+## Responsibilities
+
+- Detect project type and determine relevant vulnerability categories
+- Collect and normalize findings from all 8 security analyzers (injection, auth, input, secrets, deps, api, authz, infra)
+- Validate findings for technical accuracy and applicability
+- Vote on confidence using analyzer agreement and evidence strength
+- Resolve conflicting findings from different analyzers
+- Map all findings to OWASP Top 10 2021 and CWE standards
+- Filter false positives with documented reasoning
+- Prioritize by exploitability (severity + confidence)
+- Generate final Security Audit Report with actionable remediation
+- Save report to `docs/08-project/security-audits/security-audit-{YYYYMMDD}.md`
+
+## Consensus Process
+
+### Step 1: Detect Project Type
+
+The coordinator reads the codebase to determine project type. This affects which findings are relevant:
+
+| Project Type | Key Indicators | Irrelevant Finding Types |
+|-------------|----------------|------------------------|
+| **API-only** | Express/Fastify/Koa, no HTML templates | XSS, CSRF (no browser context) |
+| **SPA** | React/Vue/Angular, client-side routing | Server-side injection (unless API exists) |
+| **Full-stack** | Both server + client code | None - all findings potentially relevant |
+| **CLI tool** | `process.argv`, `commander`, no HTTP server | XSS, CORS, CSRF, session fixation |
+| **Library** | `exports`, no `app.listen`, published to npm | Auth, sessions, CORS (not library's responsibility) |
+| **Mobile** | React Native, Flutter, Expo | Server-side issues (unless has API) |
+| **Microservice** | Docker, small focused API, message queues | Client-side issues |
+
+### Step 2: Parse All Findings
+
+Extracts findings from each analyzer's output and normalizes them:
+
+```javascript
+{
+  id: 'INJ-1',
+  analyzer: 'security-analyzer-injection',
+  location: 'api/exec.ts:28',
+  title: 'Command injection via execSync',
+  severity: 'CRITICAL',
+  confidence: 'HIGH',
+  cwe: 'CWE-78',
+  owasp: 'A03:2021 Injection',
+  code: '...',
+  explanation: '...',
+  remediation: '...'
+}
+```
+
+### Step 3: Group Related Findings
+
+Finds findings that reference the same location or related vulnerability:
+
+| Location | Inj | Auth | Authz | Secrets | Input | Deps | Infra | API | Consensus |
+|----------|:---:|:----:|:-----:|:-------:|:-----:|:----:|:-----:|:---:|-----------|
+| api/exec.ts:28 | ! | - | - | - | ! | - | - | - | CONFIRMED |
+| api/users.ts:15 | - | - | ! | - | - | - | - | ! | CONFIRMED |
+
+### Step 4: Vote on Confidence
+
+The coordinator uses analyzer agreement and evidence strength to rate confidence:
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence (clear exploit path) | Medium priority, include with evidence |
+| **INVESTIGATE** | 1 analyzer, circumstantial evidence | Low priority, include but mark for review |
+| **FALSE POSITIVE** | Issue not relevant to project type or mitigated elsewhere | Exclude from report with documented reasoning |
+
+### Step 5: Filter by Project Type and False Positives
+
+Remove findings that don't apply to the project. Common false positive scenarios:
+
+- **Framework auto-escaping**: React JSX auto-escapes output → XSS via `{variable}` is false positive
+- **ORM parameterization**: Sequelize/Prisma use parameterized queries → SQL injection via ORM is false positive
+- **Upstream validation**: Input validated at API gateway → duplicate validation is false positive
+- **Dev-only code**: Debug endpoints behind `NODE_ENV === 'development'` → debug in prod is false positive
+- **Test files**: Hardcoded credentials in tests are lower severity (note but don't flag CRITICAL)
+- **CLI tools**: No browser context → XSS, CORS, CSRF are false positives
+- **Libraries**: Auth/session is consumer's responsibility → missing auth is false positive
+
+### Step 6: Prioritize by Exploitability
+
+**Severity + Confidence = Priority**:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|-----------|--------|-------------|
+| **CRITICAL** (RCE, SQLi, auth bypass) | Fix Immediately | Fix Immediately | Fix This Sprint |
+| **HIGH** (Stored XSS, IDOR, weak crypto) | Fix Immediately | Fix This Sprint | Backlog |
+| **MEDIUM** (Reflected XSS, missing headers, CSRF) | Fix This Sprint | Backlog | Backlog |
+| **LOW** (Info disclosure, verbose errors) | Backlog | Backlog | Info |
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+The final Security Audit Report includes:
+
+```markdown
+# Security Audit Report
+
+**Generated**: {YYYY-MM-DD}
+**Target**: {file or directory analyzed}
+**Depth**: quick or deep
+**Analyzers**: {list of deployed analyzers}
+**Project Type**: {detected type with reasoning}
+
+---
+
+## Vulnerability Summary
+
+| Severity | Count | OWASP Category |
+|----------|-------|----------------|
+| Critical | X | {categories} |
+| High | Y | {categories} |
+| Medium | Z | {categories} |
+| Low | W | {categories} |
+
+**Total Findings**: {N} (after consensus filtering)
+**False Positives Excluded**: {M}
+
+---
+
+## Fix Immediately
+
+### 1. {Title} [CONFIRMED by {Analyzer1}, {Analyzer2}]
+
+**Location**: `{file}:{line}`
+**Severity**: {CRITICAL/HIGH}
+**CWE**: {CWE-number} ({name})
+**OWASP**: {A0X:2021 Category}
+
+**Code**:
+\`\`\`{language}
+{code snippet}
+\`\`\`
+
+**Analysis**:
+- **{Analyzer1}**: {finding summary}
+- **{Analyzer2}**: {finding summary}
+- **Consensus**: {why this is confirmed and exploitable}
+
+**Exploit Scenario**: {brief attack description}
+
+**Remediation**:
+- {Step 1 with code example}
+- {Step 2}
+
+---
+
+## Fix This Sprint
+
+### 2. {Title} [LIKELY - {Analyzer}]
+
+[Same structure as above]
+
+---
+
+## Backlog
+
+### 3. {Title} [INVESTIGATE]
+
+[Abbreviated format]
+
+---
+
+## False Positives (Excluded)
+
+| Finding | Analyzer | Reason for Exclusion |
+|---------|----------|---------------------|
+| {title} | {analyzer} | {reasoning} |
+
+---
+
+## Analyzer Agreement Matrix
+
+| Location | Inj | Auth | Authz | Secrets | Input | Deps | Infra | API | Consensus |
+|----------|:---:|:----:|:-----:|:-------:|:-----:|:----:|:-----:|:---:|-----------|
+| file:28 | ! | - | - | - | ! | - | - | - | CONFIRMED |
+
+---
+
+## OWASP Top 10 Coverage
+
+| OWASP Category | Findings | Status |
+|---------------|----------|--------|
+| A01:2021 Broken Access Control | {count} | {✅/⚠️/❌} |
+| A02:2021 Cryptographic Failures | {count} | {✅/⚠️/❌} |
+| ... | ... | ... |
+
+---
+
+## Remediation Checklist
+
+- [ ] {Actionable item 1}
+- [ ] {Actionable item 2}
+- [ ] {Actionable item 3}
+
+---
+
+## Recommendations
+
+1. **Immediate**: Fix {N} critical vulnerabilities before next release
+2. **Sprint**: Address {M} high-priority issues
+3. **Backlog**: Add {K} medium issues to tech debt
+4. **Process**: {Any process recommendations}
+```
+
+## Best Practices
+
+- Give each analyzer's finding fair consideration
+- Document reasoning for all exclusions thoroughly
+- Prioritize exploitability over theoretical risk
+- Acknowledge uncertainty and mark findings as INVESTIGATE
+- Don't over-exclude real bugs that look like false positives
+- Use evidence from the codebase to resolve disputes
+- Make the report actionable with specific remediation steps
+- Include code examples for all fixes
+
+## Example Usage
+
+```text
+Task(
+  description: "Run comprehensive security audit",
+  prompt: "Execute a full security audit using all 8 security analyzers (injection, auth, authz, input, secrets, deps, api, infra). Detect project type, consolidate findings, vote on confidence, and generate prioritized report.",
+  subagent_type: "agileflow-security-consensus"
+)
+```
+
+## Handling Common Situations
+
+### All analyzers agree
+→ CONFIRMED, highest confidence, include prominently in "Fix Immediately"
+
+### One analyzer, strong evidence
+→ LIKELY, include with the evidence in "Fix This Sprint"
+
+### One analyzer, weak evidence
+→ INVESTIGATE, include but mark as needing review in "Backlog"
+
+### Analyzers contradict
+→ Read the code, make a decision, document reasoning
+
+### Finding not relevant to project type
+→ FALSE POSITIVE with documented reasoning, exclude from report
+
+### No findings at all
+→ Report "No security vulnerabilities found" with note about what was checked and project type detected
+
+## Related Agents
+
+- [`security-analyzer-injection`](/agents/security-analyzer-injection) - SQL and command injection detection
+- [`security-analyzer-auth`](/agents/security-analyzer-auth) - Authentication weakness detection
+- [`security-analyzer-authz`](/agents/security-analyzer-authz) - Authorization and access control analysis
+- [`security-analyzer-input`](/agents/security-analyzer-input) - Input validation and XSS analysis
+- [`security-analyzer-secrets`](/agents/security-analyzer-secrets) - Hardcoded credentials and weak crypto detection
+- [`security-analyzer-deps`](/agents/security-analyzer-deps) - Vulnerable dependency analysis
+- [`security-analyzer-api`](/agents/security-analyzer-api) - API security weakness detection
+- [`security-analyzer-infra`](/agents/security-analyzer-infra) - Infrastructure and deployment security analysis
