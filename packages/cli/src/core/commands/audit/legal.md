@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=privacy|terms|a11y|li
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:legal:audit - Multi-agent legal risk analysis"
+    - "ACTIVE COMMAND: /agileflow:audit:legal - Multi-agent legal risk analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
@@ -18,7 +18,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:legal:audit
+# /agileflow:audit:legal
 
 Deploy multiple specialized legal risk analyzers in parallel to find compliance gaps, then synthesize results through consensus voting into a prioritized Legal Risk Report.
 
@@ -27,11 +27,11 @@ Deploy multiple specialized legal risk analyzers in parallel to find compliance 
 ## Quick Reference
 
 ```
-/agileflow:legal:audit app/                                # Analyze app directory (quick, core 5 analyzers)
-/agileflow:legal:audit . DEPTH=deep                        # Deep analysis - all 9 analyzers
-/agileflow:legal:audit src/ FOCUS=privacy,a11y             # Focus on specific areas
-/agileflow:legal:audit . DEPTH=deep FOCUS=all              # Comprehensive full audit
-/agileflow:legal:audit app/page.tsx FOCUS=ai               # Check single file for AI compliance
+/agileflow:audit:legal app/                                # Analyze app directory (quick, core 5 analyzers)
+/agileflow:audit:legal . DEPTH=deep                        # Deep analysis - all 9 analyzers
+/agileflow:audit:legal src/ FOCUS=privacy,a11y             # Focus on specific areas
+/agileflow:audit:legal . DEPTH=deep FOCUS=all              # Comprehensive full audit
+/agileflow:audit:legal app/page.tsx FOCUS=ai               # Check single file for AI compliance
 ```
 
 ---
@@ -40,7 +40,7 @@ Deploy multiple specialized legal risk analyzers in parallel to find compliance 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 /agileflow:legal:audit                       │
+│                 /agileflow:audit:legal                       │
 │                                                              │
 │  1. Parse arguments (target, depth, focus)                   │
 │  2. Deploy analyzers IN PARALLEL                             │
@@ -379,13 +379,13 @@ Total: 10 findings (3 false positives excluded)
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:legal:audit` - Multi-agent legal risk analysis with consensus
+**Command**: `/agileflow:audit:legal` - Multi-agent legal risk analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:legal:audit app/                        # Quick scan (core 5 analyzers)
-/agileflow:legal:audit . DEPTH=deep                # All 9 analyzers
-/agileflow:legal:audit src/ FOCUS=privacy,a11y     # Specific areas
+/agileflow:audit:legal app/                        # Quick scan (core 5 analyzers)
+/agileflow:audit:legal . DEPTH=deep                # All 9 analyzers
+/agileflow:audit:legal src/ FOCUS=privacy,a11y     # Specific areas
 ```
 
 **What It Does**: Deploy legal analyzers in parallel → Each finds different compliance gaps → Consensus coordinator validates, filters by project type, prioritizes → Actionable Legal Risk Report
@@ -440,7 +440,7 @@ Fix before launch? [Y/n]
 
 ## Related Commands
 
-- `/agileflow:logic:audit` - Logic bug analysis (similar architecture)
+- `/agileflow:audit:logic` - Logic bug analysis (similar architecture)
 - `/agileflow:review` - Code review (includes some compliance checks)
 - `/agileflow:multi-expert` - General multi-expert analysis
 - `/agileflow:verify` - Run tests

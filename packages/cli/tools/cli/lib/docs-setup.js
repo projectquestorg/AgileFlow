@@ -190,7 +190,7 @@ Project-level planning and tracking.
 - **milestones.md**: Release milestones
 - **risks.md**: Project risks and mitigation strategies
 - **ideation/**: Ideation reports from \`/agileflow:ideate:new\`
-- **logic-audits/**: Logic audit reports from \`/agileflow:logic:audit\`
+- **logic-audits/**: Logic audit reports from \`/agileflow:audit:logic\`
 `,
 
     [`${docsFolder}/09-agents/README.md`]: `# Agent Status Tracking

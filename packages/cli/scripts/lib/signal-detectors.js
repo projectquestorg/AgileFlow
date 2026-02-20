@@ -546,7 +546,7 @@ const FEATURE_DETECTORS = {
       priority: 'medium',
       trigger: `${coreFiles} source files modified - logic audit available`,
       action: 'offer',
-      command: '/agileflow:logic:audit',
+      command: '/agileflow:audit:logic',
       phase: 'post-impl',
     });
   },
