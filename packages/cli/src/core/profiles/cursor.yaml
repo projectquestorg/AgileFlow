@@ -130,4 +130,5 @@ notes:
   - "MDC rule format is modern YAML-based (legacy .cursorrules still supported)"
   - "Plan mode fully built-in; no explicit enter/exit needed"
   - "Hook events have different names but similar functionality to Claude Code"
+  - "CAVEAT: Task tools (TaskCreate/TaskUpdate) bypass PreToolUse/PostToolUse hooks"
   - "Background agents enable true parallel task execution"

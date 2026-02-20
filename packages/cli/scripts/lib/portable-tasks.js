@@ -156,6 +156,20 @@ function parseTasksFile(content) {
  * @param {Array} completedTasks - Completed task objects
  * @returns {string} Formatted markdown content
  */
+/**
+ * Sanitize a string value to prevent markdown injection.
+ * Strips newlines and markdown heading markers that could create fake entries.
+ * @param {string} value - Raw string value
+ * @returns {string} Sanitized value safe for single-line markdown fields
+ */
+function sanitizeField(value) {
+  if (!value || typeof value !== 'string') return value;
+  return value
+    .replace(/[\n\r]/g, ' ')
+    .replace(/#{2,}/g, '')
+    .trim();
+}
+
 function formatTasksFile(activeTasks, completedTasks) {
   const now = new Date().toISOString();
   let content = `# AgileFlow Tasks
@@ -169,12 +183,12 @@ function formatTasksFile(activeTasks, completedTasks) {
   if (activeTasks.length > 0) {
     content += '## Active Tasks\n\n';
     for (const task of activeTasks) {
-      content += `### ${task.id}: ${task.title} [${task.status}]\n`;
-      if (task.owner) content += `- **Owner**: ${task.owner}\n`;
+      content += `### ${task.id}: ${sanitizeField(task.title)} [${task.status}]\n`;
+      if (task.owner) content += `- **Owner**: ${sanitizeField(task.owner)}\n`;
       if (task.created) content += `- **Created**: ${task.created}\n`;
-      if (task.story) content += `- **Story**: ${task.story}\n`;
-      if (task.blockedBy) content += `- **Blocked by**: ${task.blockedBy}\n`;
-      if (task.description) content += `- **Description**: ${task.description}\n`;
+      if (task.story) content += `- **Story**: ${sanitizeField(task.story)}\n`;
+      if (task.blockedBy) content += `- **Blocked by**: ${sanitizeField(task.blockedBy)}\n`;
+      if (task.description) content += `- **Description**: ${sanitizeField(task.description)}\n`;
       content += '\n';
     }
   }
@@ -183,12 +197,12 @@ function formatTasksFile(activeTasks, completedTasks) {
   if (completedTasks.length > 0) {
     content += '## Completed Tasks\n\n';
     for (const task of completedTasks) {
-      content += `### ${task.id}: ${task.title} [${task.status}]\n`;
-      if (task.owner) content += `- **Owner**: ${task.owner}\n`;
+      content += `### ${task.id}: ${sanitizeField(task.title)} [${task.status}]\n`;
+      if (task.owner) content += `- **Owner**: ${sanitizeField(task.owner)}\n`;
       if (task.created) content += `- **Created**: ${task.created}\n`;
       if (task.completed) content += `- **Completed**: ${task.completed}\n`;
-      if (task.story) content += `- **Story**: ${task.story}\n`;
-      if (task.description) content += `- **Description**: ${task.description}\n`;
+      if (task.story) content += `- **Story**: ${sanitizeField(task.story)}\n`;
+      if (task.description) content += `- **Description**: ${sanitizeField(task.description)}\n`;
       content += '\n';
     }
   }
@@ -428,8 +442,8 @@ function getTask(projectDir, taskId) {
 function listTasks(projectDir, filters = {}) {
   const { activeTasks, completedTasks } = loadTasks(projectDir);
 
-  let tasks = activeTasks;
-  if (filters.includeCompleted !== false) {
+  let tasks = [...activeTasks];
+  if (filters.includeCompleted === true) {
     tasks = [...activeTasks, ...completedTasks];
   }
 
@@ -437,7 +451,7 @@ function listTasks(projectDir, filters = {}) {
   if (filters.status) {
     const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
     tasks = tasks.filter(t => statuses.includes(t.status));
-  } else if (!filters.includeCompleted) {
+  } else if (filters.includeCompleted !== true) {
     // Default: show only active statuses
     tasks = tasks.filter(t => STATUS_ACTIVE.includes(t.status));
   }
@@ -461,4 +475,5 @@ module.exports = {
   getNextId,
   parseTasksFile,
   formatTasksFile,
+  sanitizeField,
 };

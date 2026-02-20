@@ -155,12 +155,19 @@ ${windsurfHeader}${bodyContent}`;
     if (fs.existsSync(hooksPath)) {
       try {
         const content = await fs.readFile(hooksPath, 'utf8');
-        hooks = JSON.parse(content);
-        if (!Array.isArray(hooks)) {
-          hooks = [];
+        const parsed = JSON.parse(content);
+        if (!Array.isArray(parsed)) {
+          console.warn(
+            '[AgileFlow] hooks.json exists but is not an array, preserving existing file'
+          );
+          return;
         }
+        hooks = parsed;
       } catch (e) {
-        hooks = [];
+        console.warn(
+          `[AgileFlow] hooks.json exists but is malformed (${e.message}), preserving existing file`
+        );
+        return;
       }
     }
 
@@ -215,8 +222,7 @@ ${windsurfHeader}${bodyContent}`;
   async setup(projectDir, agileflowDir, options = {}) {
     console.log(chalk.hex('#e8683a')(`  Setting up ${this.displayName}...`));
 
-    // Clean up old installation first
-    await this.cleanup(projectDir);
+    // Note: cleanup is handled inside setupStandard(), no need to call explicitly
 
     // 1. Install workflows using standard setup
     const workflowsResult = await this.setupStandard(projectDir, agileflowDir, {

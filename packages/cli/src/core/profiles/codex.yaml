@@ -27,11 +27,11 @@ capabilities:
     shell: true               # Via sandbox
     fileSearch: true          # Via sandbox search
     interactiveInput: true    # ask_user_question (text-only, no structured menus)
-    subAgents: false          # Skills cannot spawn other skills
-    nestedSubAgents: false    # No nested delegation
+    subAgents: false          # Experimental multi-agent support (disabled by default)
+    nestedSubAgents: false    # No nested delegation; experimental agents are flat
   planning:
-    planMode: false           # Not available
-    planModeEditable: false
+    planMode: true            # On by default since v0.96
+    planModeEditable: true    # Plans are editable
   lifecycle:
     hooks: false              # No lifecycle hooks
     approvalPolicies: true    # Approval gates only
@@ -97,7 +97,7 @@ installation:
 notes:
   - "Skills are the primary extension mechanism"
   - "Per-repo skills in .codex/skills/, global prompts in ~/.codex/prompts/"
-  - "No plan mode, hooks, or true sub-agent delegation"
+  - "Plan mode available (on by default since v0.96); no hooks or true sub-agent delegation"
   - "AgileFlow /babysit features must fallback to conversational prompts"
   - "Best used for simple linear workflows"
   - "ask_user_question produces text output, not structured menus"

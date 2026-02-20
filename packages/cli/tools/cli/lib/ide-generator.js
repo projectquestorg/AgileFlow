@@ -108,13 +108,13 @@ function convertCommandPrefixes(content, targetIde) {
  * const cursorVersion = generateForIde(content, 'cursor', { transformTools: true });
  */
 function generateForIde(content, targetIde, options = {}) {
+  if (!content || typeof content !== 'string') {
+    return content || '';
+  }
+
   // Claude Code is canonical format - return as-is
   if (targetIde === 'claude-code') {
     return content;
-  }
-
-  if (!content || typeof content !== 'string') {
-    return content || '';
   }
 
   const {

@@ -216,16 +216,16 @@ describe('content-transformer.js - Tool Reference Transformations', () => {
         expect(result).toContain('skill: "$agileflow-security"');
       });
 
-      it('replaces EnterPlanMode with not available', () => {
+      it('preserves EnterPlanMode for Codex (plan mode available since v0.96)', () => {
         const content = 'EnterPlanMode to design solution';
         const result = transformToolReferences(content, 'codex');
-        expect(result).toContain('not available - no plan mode in Codex');
+        expect(result).toContain('EnterPlanMode');
       });
 
-      it('replaces ExitPlanMode with not available', () => {
+      it('preserves ExitPlanMode for Codex (plan mode available since v0.96)', () => {
         const content = 'Then ExitPlanMode to implement';
         const result = transformToolReferences(content, 'codex');
-        expect(result).toContain('not available');
+        expect(result).toContain('ExitPlanMode');
       });
 
       it('removes hook references (PreToolUse)', () => {

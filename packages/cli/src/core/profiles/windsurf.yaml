@@ -37,7 +37,7 @@ capabilities:
     planMode: true            # Native via "megaplan" keyword
     planModeEditable: true    # Editable plans in ~/.windsurf/plans/
   lifecycle:
-    hooks: true               # 11 lifecycle events (most comprehensive)
+    hooks: true               # 9 lifecycle events (per official docs Feb 2026)
     hookEvents:
       - pre_read_code
       - post_read_code
@@ -48,8 +48,6 @@ capabilities:
       - pre_mcp_tool_use
       - post_mcp_tool_use
       - pre_user_prompt
-      - post_cascade_response
-      - post_setup_worktree
   external:
     webSearch: true           # Web Search tool
     webFetch: true            # URL Read and View Chunk

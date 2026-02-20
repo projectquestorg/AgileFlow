@@ -45,7 +45,9 @@ function parseArgs() {
   for (let i = taskId ? 2 : 1; i < args.length; i++) {
     const arg = args[i];
     if (arg.startsWith('--')) {
-      const [key, value] = arg.substring(2).split('=');
+      const eqIndex = arg.indexOf('=');
+      const key = eqIndex === -1 ? arg.substring(2) : arg.substring(2, eqIndex);
+      const value = eqIndex === -1 ? undefined : arg.substring(eqIndex + 1);
       options[key] = value === undefined ? true : value;
     }
   }
@@ -75,7 +77,8 @@ function run() {
       const tasks = listTasks(projectDir, {
         status: options.status,
         owner: options.owner,
-        includeCompleted: options['include-completed'] === true,
+        includeCompleted:
+          options['include-completed'] === true || options['include-completed'] === 'true',
       });
 
       if (options.json) {
@@ -129,12 +132,17 @@ function run() {
       }
 
       const updates = {};
-      if (options.status) updates.status = options.status;
-      if (options.description !== undefined) updates.description = options.description;
-      if (options.owner !== undefined) updates.owner = options.owner;
-      if (options.title !== undefined) updates.title = options.title;
-      if (options.story !== undefined) updates.story = options.story;
-      if (options['blocked-by'] !== undefined) updates.blockedBy = options['blocked-by'];
+      if (options.status && typeof options.status === 'string') updates.status = options.status;
+      if (options.description !== undefined && typeof options.description === 'string')
+        updates.description = options.description;
+      if (options.owner !== undefined && typeof options.owner === 'string')
+        updates.owner = options.owner;
+      if (options.title !== undefined && typeof options.title === 'string')
+        updates.title = options.title;
+      if (options.story !== undefined && typeof options.story === 'string')
+        updates.story = options.story;
+      if (options['blocked-by'] !== undefined && typeof options['blocked-by'] === 'string')
+        updates.blockedBy = options['blocked-by'];
 
       if (Object.keys(updates).length === 0) {
         console.error('[ERROR] No updates specified');

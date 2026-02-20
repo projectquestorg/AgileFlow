@@ -54,7 +54,10 @@ function replaceReferences(content, replacements) {
         const flags = item.flags || 'g';
         regex = new RegExp(escapeRegex(item.pattern), flags);
       }
-      result = result.replace(regex, item.replacement || '');
+      result = result.replace(
+        regex,
+        item.replacement !== undefined && item.replacement !== null ? item.replacement : ''
+      );
     }
   } else if (typeof replacements === 'object' && replacements !== null) {
     // Object form: {pattern: replacement}
@@ -360,15 +363,8 @@ const TOOL_REFERENCE_REPLACEMENTS = {
       pattern: /TaskList\b/g,
       replacement: '(not available)',
     },
-    // Plan mode (not available)
-    {
-      pattern: /EnterPlanMode/g,
-      replacement: '(not available - no plan mode in Codex)',
-    },
-    {
-      pattern: /ExitPlanMode/g,
-      replacement: '(not available)',
-    },
+    // Plan mode (available in Codex since v0.96 - keep references)
+    // EnterPlanMode and ExitPlanMode are native in Codex, no transformation needed
     // Hooks (not available)
     {
       pattern: /PreToolUse\b/g,

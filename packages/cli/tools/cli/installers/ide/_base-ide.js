@@ -71,7 +71,8 @@ class BaseIdeSetup {
     });
 
     // Replace standalone "docs" word (not followed by .)
-    result = result.replace(/\bdocs\b(?!\.)/g, this.docsFolder);
+    // Use replacement function to avoid $ in docsFolder being interpreted as regex backreference
+    result = result.replace(/\bdocs\b(?!\.)/g, () => this.docsFolder);
 
     return result;
   }
