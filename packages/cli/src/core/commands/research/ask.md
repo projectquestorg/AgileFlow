@@ -11,7 +11,7 @@ compact_context:
     - "MUST include exact error messages verbatim if troubleshooting"
     - "MUST list 2+ approaches already tried with detailed results"
     - "MUST ask 3+ specific questions (not vague)"
-    - "NO FILE WRITES - output only, user will copy/paste to external AI"
+    - "OUTPUT-ONLY by default - optional save to docs/10-research/prompts/"
     - "Validation required before output: length, code snippets, error details, attempts, questions"
     - "If validation fails: gather missing info and regenerate"
   state_fields:
@@ -202,14 +202,20 @@ Every research prompt MUST have:
 
 ---
 
-### 🚨 RULE #7: NO FILE WRITES
+### 🚨 RULE #7: OUTPUT-ONLY BY DEFAULT (OPTIONAL SAVE)
 
-**This command outputs a prompt only. User will copy/paste to ChatGPT/Claude/Perplexity.**
+**This command generates a prompt for copy/paste. Optionally save to prompts directory after displaying.**
 
 ```
-❌ WRONG: Write prompt to file
-✅ RIGHT: Output prompt in code block, instruct user to copy
+❌ WRONG: Save prompt WITHOUT also displaying for copy/paste
+✅ RIGHT: Output prompt in code block, then offer to save to docs/10-research/prompts/
 ```
+
+**Save flow (if user selects save):**
+1. Create `docs/10-research/prompts/` directory if needed
+2. Save as `docs/10-research/prompts/YYYYMMDD-prompt-<topic-slug>.md`
+3. Update `docs/10-research/README.md` with 5-column entry (Type=Prompt)
+4. Confirm save location
 
 ---
 
@@ -240,7 +246,7 @@ Every research prompt MUST have:
 ❌ List no or vague attempted solutions
 ❌ Ask generic questions without context
 ❌ Output prompt shorter than 200 lines
-❌ Save prompt to file instead of displaying for copy/paste
+❌ Save prompt WITHOUT also displaying for copy/paste
 ❌ Skip validation before outputting
 
 ### DO THESE INSTEAD
@@ -252,6 +258,7 @@ Every research prompt MUST have:
 ✅ Ask 3+ specific, contextualized questions
 ✅ Validate prompt quality before outputting
 ✅ Display prompt in code block for user copy/paste
+✅ Offer to save prompt to docs/10-research/prompts/ after displaying
 ✅ Instruct user where to paste results back
 
 ---
@@ -287,6 +294,7 @@ Every research prompt MUST have:
 18. Display prompt in code block
 19. Instruct user: "Copy this prompt and paste into ChatGPT/Claude/Perplexity"
 20. Provide post-answer instructions: "When you get results, use /agileflow:research:import to save"
+21. Offer to save prompt to `docs/10-research/prompts/YYYYMMDD-prompt-<topic-slug>.md`
 
 ---
 
@@ -372,7 +380,7 @@ Actual: [What actually happens]
 - MUST list 2+ attempts with detailed results
 - MUST ask 3+ specific questions
 - Validate all checks BEFORE outputting
-- NO file writes - output for user to copy/paste
+- Output-only by default - optional save to docs/10-research/prompts/
 - After user gets results, they use /agileflow:research:import to save
 
 <!-- COMPACT_SUMMARY_END -->
@@ -607,6 +615,31 @@ Copy this prompt and paste it into ChatGPT, Claude web, Perplexity, or Gemini.
 When you get the answer, paste the results here and I'll save them to your research folder using `/agileflow:research:import`.
 ```
 
+### Step 8b: Save Prompt (if user selects save)
+
+If the user selects "Save prompt to docs/10-research/prompts/":
+
+1. **Create directories** if they don't exist:
+   - Ensure `docs/10-research/` exists (create if needed on fresh projects)
+   - Ensure `docs/10-research/prompts/` exists
+
+2. **Generate filename**: `YYYYMMDD-prompt-<topic-slug>.md`
+   - Use today's date
+   - Slugify the TOPIC (lowercase, hyphens, no special chars)
+
+3. **Save the prompt** to `docs/10-research/prompts/YYYYMMDD-prompt-<topic-slug>.md`
+
+4. **Update README index** - Add entry to `docs/10-research/README.md`:
+   ```markdown
+   | YYYY-MM-DD | [TOPIC] Research Prompt | Prompt | [prompts/YYYYMMDD-prompt-topic-slug.md](./prompts/YYYYMMDD-prompt-topic-slug.md) | Research prompt for [TOPIC]: [N] files referenced, [M] questions |
+   ```
+
+5. **Confirm save**:
+   ```
+   Saved prompt to docs/10-research/prompts/YYYYMMDD-prompt-<topic-slug>.md
+   Updated research index (README.md)
+   ```
+
 ---
 
 ## Anti-Pattern: Lazy Prompts
@@ -772,7 +805,7 @@ After clicking "Sign in with Google", immediately get unauthorized_client error.
 
 ## Rules
 
-- **NO file writes** - This is output-only
+- **Output-only by default** - Display prompt for copy/paste, optionally save to prompts/
 - **MUST validate quality** before outputting
 - **MUST include actual code** from the codebase
 - **MUST be detailed** - 200+ lines minimum
@@ -792,8 +825,8 @@ After generating the research prompt, suggest contextual next steps:
   "multiSelect": false,
   "options": [
     {"label": "Copy & paste to ChatGPT/Perplexity (Recommended)", "description": "Prompt covers [N] files and [M] specific questions - ready to paste"},
+    {"label": "Save prompt to docs/10-research/prompts/", "description": "Save as prompts/YYYYMMDD-prompt-[topic-slug].md and update README index"},
     {"label": "Regenerate with more detail", "description": "Add [missing element: more code from X / error details / attempted solutions]"},
-    {"label": "Save prompt to docs/10-research/", "description": "Save as [YYYYMMDD]-prompt-[topic-slug].md for later use"},
     {"label": "Done", "description": "Prompt generated, no further action needed"}
   ]
 }]</parameter>

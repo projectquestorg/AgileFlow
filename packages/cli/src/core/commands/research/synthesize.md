@@ -88,13 +88,13 @@ If neither provided, ask user:
 ### 🚨 RULE #2: SEARCH OR SELECT RESEARCH FILES
 
 **If TOPIC provided:**
-1. Search `docs/10-research/*.md` for files containing keyword
+1. Search `docs/10-research/*.md` AND `docs/10-research/prompts/*.md` for files containing keyword
 2. Check filename, title (# header), key findings, summary
 3. Present matching files to user for confirmation
 
 **If FILES provided:**
-1. Validate each file exists in `docs/10-research/`
-2. Warn if any file not found
+1. Validate each file exists in `docs/10-research/` or `docs/10-research/prompts/`
+2. Warn if any file not found in either location
 3. Proceed with valid files
 
 **Auto-select if <5 matches. Ask user to confirm if 5+ matches.**
@@ -470,7 +470,7 @@ Upon invocation, execute these steps:
 ### Step 3: Search/Select Research Files
 
 **If TOPIC search:**
-1. List all files in `docs/10-research/`
+1. List all files in `docs/10-research/` and `docs/10-research/prompts/` (if exists)
 2. For each file, check if topic keyword appears in:
    - Filename
    - First `# ` header (title)
@@ -888,11 +888,11 @@ If user chooses to save:
 
 **Filename format**: `YYYYMMDD-synthesis-[topic-slug].md`
 
-**Add to docs/10-research/README.md index:**
+**Add to docs/10-research/README.md index (5-column format):**
 ```markdown
-| Date | Topic | File | Summary |
-|------|-------|------|---------|
-| 2026-01-17 | Synthesis: Authentication | 20260117-synthesis-authentication.md | Cross-research synthesis of N files... |
+| Date | Topic | Type | Path | Summary |
+|------|-------|------|------|---------|
+| 2026-01-17 | Synthesis: Authentication | Synthesis | [20260117-synthesis-authentication.md](./20260117-synthesis-authentication.md) | Cross-research synthesis of N files... |
 ```
 
 **Mark as synthesis type** in file header:

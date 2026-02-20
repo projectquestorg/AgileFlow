@@ -233,9 +233,15 @@ If FILE not provided, show available files:
 
 Read `docs/10-research/[FILE]`.
 
-If file doesn't exist:
+If file doesn't exist, check `docs/10-research/prompts/[FILE]` as a fallback (prompts are stored in a subdirectory).
+
+If file doesn't exist in either location:
 ```
 Research note not found: [FILE]
+
+Checked:
+- docs/10-research/[FILE]
+- docs/10-research/prompts/[FILE]
 
 Use /agileflow:research:list to see available notes.
 ```
@@ -246,8 +252,9 @@ Output the full content of the research note.
 
 ### Step 4: Suggest Actions
 
-After displaying, offer contextual actions based on the research content:
+After displaying, count action items (lines starting with `- [ ]` in the file) and build contextual options:
 
+**If N > 0 action items found:**
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
@@ -256,15 +263,32 @@ After displaying, offer contextual actions based on the research content:
   "multiSelect": false,
   "options": [
     {"label": "Analyze for implementation in [current epic/project] (Recommended)", "description": "Deploy multi-expert analysis to map research to your codebase"},
-    {"label": "Synthesize with related notes on [detected topic]", "description": "Cross-reference with [count] other notes on similar topics"},
     {"label": "Create story from [N] action items", "description": "Turn research action items into trackable stories"},
+    {"label": "Synthesize with related notes on [detected topic]", "description": "Cross-reference with [count] other notes on similar topics"},
     {"label": "View another note", "description": "Browse other research notes"}
   ]
 }]</parameter>
 </invoke>
 ```
 
-**Key**: Always include specific counts (action items found), detected topics, and reference the current epic if one is active. If no action items exist, replace that option with "Import additional research on [topic]".
+**If N = 0 (no action items - informational research):**
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Viewed '[TOPIC]' research (reference material). What next?",
+  "header": "Actions",
+  "multiSelect": false,
+  "options": [
+    {"label": "Analyze for implementation in [current epic/project] (Recommended)", "description": "Deploy multi-expert analysis to map research to your codebase"},
+    {"label": "Import additional research on [detected topic]", "description": "Gather more detailed research to build on this note"},
+    {"label": "Synthesize with related notes on [detected topic]", "description": "Cross-reference with [count] other notes on similar topics"},
+    {"label": "View another note", "description": "Browse other research notes"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+**Key**: Always populate placeholders - `[TOPIC]` from file title, `[N]` from action item count, `[detected topic]` from content keywords, `[current epic/project]` from status.json (or "your project" if none active), `[count]` from related file count.
 
 If "Analyze for implementation" selected, invoke:
 ```

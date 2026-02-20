@@ -65,18 +65,19 @@ node .agileflow/scripts/obtain-context.js research:list
 
 ### 🚨 RULE #2: READ INDEX FROM docs/10-research/README.md
 
-**Primary source: `docs/10-research/README.md` should contain a table:**
+**Primary source: `docs/10-research/README.md` should contain a 5-column table:**
 
 ```markdown
 ## Research Notes
 
-| Date | Topic | File | Summary |
-|------|-------|------|---------|
-| 2026-01-07 | OAuth Integration | 20260107-oauth.md | Setup Google OAuth |
-| 2026-01-06 | Performance Tips | 20260106-perf.md | Caching strategies |
+| Date | Topic | Type | Path | Summary |
+|------|-------|------|------|---------|
+| 2026-01-07 | OAuth Integration | Research | 20260107-oauth.md | Setup Google OAuth |
+| 2026-01-06 | Performance Tips | Research | 20260106-perf.md | Caching strategies |
 ```
 
-**If README doesn't exist:** List files from the directory directly.
+**If README doesn't exist:** List files from `docs/10-research/` directory and from `docs/10-research/prompts/` (if it exists), merging results sorted by date.
+**If README uses old 4-column format (no Type):** Handle gracefully - display without Type column and note the format is outdated.
 
 ---
 
@@ -102,11 +103,11 @@ Quick start:
 Research Notes
 ==============
 
-| Date       | Topic                  | File                        |
-|------------|------------------------|-----------------------------|
-| 2026-01-07 | OAuth Integration       | 20260107-oauth.md           |
-| 2026-01-06 | Performance Tips        | 20260106-perf.md            |
-| 2026-01-05 | Database Migrations     | 20260105-migrations.md      |
+| Date       | Topic                  | Type     | File                        |
+|------------|------------------------|----------|-----------------------------|
+| 2026-01-07 | OAuth Integration       | Research | 20260107-oauth.md           |
+| 2026-01-06 | Performance Tips        | Research | 20260106-perf.md            |
+| 2026-01-05 | DB Migration Guide      | Prompt   | prompts/20260105-prompt-db-migrations.md |
 
 Total: 3 research notes
 ```
@@ -231,11 +232,11 @@ Format output:
 ```
 ## Research Notes
 
-| Date | Topic | File |
-|------|-------|------|
-| 2024-12-31 | OAuth 2.0 Setup | 20241231-oauth-setup.md |
-| 2024-12-30 | Session Tracking | 20241230-session-tracking.md |
-| 2024-12-28 | Mermaid Diagrams | 20241228-mermaid-diagrams.md |
+| Date | Topic | Type | File |
+|------|-------|------|------|
+| 2024-12-31 | OAuth 2.0 Setup | Research | 20241231-oauth-setup.md |
+| 2024-12-30 | Session Tracking | Research | 20241230-session-tracking.md |
+| 2024-12-28 | Mermaid Diagrams | Research | 20241228-mermaid-diagrams.md |
 
 Total: 3 research notes
 

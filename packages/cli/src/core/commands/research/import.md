@@ -163,13 +163,19 @@ Phase 4: IMPLEMENTATION IDEATION (If Requested)
 
 **After saving, ALWAYS update `docs/10-research/README.md` with new entry.**
 
-Add entry to the top of the table:
+Add entry to the top of the table (5-column format with Type):
 ```markdown
-| Date | Topic | File | Summary |
-|------|-------|------|---------|
-| 2026-01-07 | New Research Title | 20260107-topic-slug.md | One-line summary |
+| Date | Topic | Type | Path | Summary |
+|------|-------|------|------|---------|
+| 2026-01-07 | New Research Title | Research | [20260107-topic-slug.md](./20260107-topic-slug.md) | One-line summary |
 | [older entries...] |
 ```
+
+**Note**: If existing README.md uses 4-column format (no Type column), migrate first:
+1. Insert `Type` as the 3rd column in the header row (between Topic and Path)
+2. Add `------|` to the separator row in the same position
+3. For existing entries, assign Type = `Research` (safe default)
+4. Then insert the new 5-column entry
 
 **Never skip this step.** Index is how users discover research.
 
@@ -647,12 +653,12 @@ If YES:
 
 ### Step 8: Update Index
 
-Add entry to `docs/10-research/README.md`:
+Add entry to `docs/10-research/README.md` (5-column format):
 
 ```markdown
-| Date | Topic | File | Summary |
-|------|-------|------|---------|
-| YYYY-MM-DD | [Topic] | [filename.md] | [One-line summary] |
+| Date | Topic | Type | Path | Summary |
+|------|-------|------|------|---------|
+| YYYY-MM-DD | [Topic] | Research | [filename.md](./filename.md) | [One-line summary] |
 ```
 
 Insert newest entries at the top of the table.
