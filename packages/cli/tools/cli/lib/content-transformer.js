@@ -211,7 +211,178 @@ const IDE_REPLACEMENTS = {
     'claude code': 'Windsurf',
     '.claude/': '.windsurf/',
     '.claude\\': '.windsurf\\',
+    'Task tool': 'workflow chaining',
+    'Task agent': 'workflow',
+    AskUserQuestion: 'numbered list prompt',
+    '.claude/agents/agileflow': '.windsurf/skills/agileflow',
   },
+};
+
+/**
+ * Tool reference replacements for IDE capability-aware transformation
+ * Maps Claude Code tool/pattern names to IDE-appropriate alternatives
+ *
+ * @private
+ */
+const TOOL_REFERENCE_REPLACEMENTS = {
+  /**
+   * Cursor: Has subagents but no structured AskUserQuestion
+   * Replaces abstract tool patterns with concrete instructions
+   */
+  cursor: [
+    // AskUserQuestion references
+    {
+      pattern: /call the AskUserQuestion tool/gi,
+      replacement: 'ask the user to reply with their choice (as a numbered list)',
+    },
+    {
+      pattern: /\bAskUserQuestion\b/g,
+      replacement: 'numbered list prompt',
+    },
+    // Task-related references (keep Task, but clarify it's for subagents)
+    {
+      pattern: /Task\(\s*$/gm,
+      replacement: '/* Use Cursor subagents to spawn async work */',
+    },
+    // Task tracking references (not available in Cursor)
+    {
+      pattern: /TaskCreate\b/g,
+      replacement: '(not available - track progress in conversation)',
+    },
+    {
+      pattern: /TaskUpdate\b/g,
+      replacement: '(not available in Cursor)',
+    },
+    {
+      pattern: /TaskList\b/g,
+      replacement: '(not available in Cursor)',
+    },
+  ],
+
+  /**
+   * Windsurf: No subagents, suggests workflow chaining instead
+   * Uses "megaplan" for plan mode
+   */
+  windsurf: [
+    // AskUserQuestion references
+    {
+      pattern: /call the AskUserQuestion tool/gi,
+      replacement: 'ask the user to reply with their choice (as a numbered list)',
+    },
+    {
+      pattern: /\bAskUserQuestion\b/g,
+      replacement: 'numbered list prompt',
+    },
+    // Task references - suggest workflows instead
+    {
+      pattern: /\bTask\s*tool\b/gi,
+      replacement: 'workflow chaining',
+    },
+    {
+      pattern: /call the Task tool/gi,
+      replacement: 'suggest running the relevant /workflow',
+    },
+    {
+      pattern: /Task\(\s*$/gm,
+      replacement: '/* Suggest running /agileflow workflow via cascade */',
+    },
+    // Subagent type references - convert to workflow
+    {
+      pattern: /subagent_type:\s*"agileflow-([^"]+)"/g,
+      replacement: 'workflow: "/agileflow-$1"',
+    },
+    // Task tracking (not available)
+    {
+      pattern: /TaskCreate\b/g,
+      replacement: '(not available - use conversation comments)',
+    },
+    {
+      pattern: /TaskUpdate\b/g,
+      replacement: '(not available)',
+    },
+    {
+      pattern: /TaskList\b/g,
+      replacement: '(not available)',
+    },
+    // Plan mode - use megaplan keyword
+    {
+      pattern: /EnterPlanMode/g,
+      replacement: 'megaplan',
+    },
+    {
+      pattern: /ExitPlanMode/g,
+      replacement: '(end megaplan)',
+    },
+  ],
+
+  /**
+   * Codex: Most limited - no plan mode, hooks, or subagents
+   * Suggests skills and text-only interaction instead
+   */
+  codex: [
+    // AskUserQuestion references - use text-only function
+    {
+      pattern: /call the AskUserQuestion tool/gi,
+      replacement: 'call ask_user_question (text-only, no menus)',
+    },
+    {
+      pattern: /\bAskUserQuestion\b/g,
+      replacement: 'ask_user_question',
+    },
+    // Task/delegation references - suggest skills instead
+    {
+      pattern: /\bTask\s*tool\b/gi,
+      replacement: 'skill invocation',
+    },
+    {
+      pattern: /call the Task tool/gi,
+      replacement: 'invoke the relevant $agileflow skill',
+    },
+    {
+      pattern: /Task\(\s*$/gm,
+      replacement: '/* Invoke relevant skill via $agileflow-name */',
+    },
+    // Subagent type references - convert to skill syntax
+    {
+      pattern: /subagent_type:\s*"agileflow-([^"]+)"/g,
+      replacement: 'skill: "$agileflow-$1"',
+    },
+    // Task tracking (not available)
+    {
+      pattern: /TaskCreate\b/g,
+      replacement: '(not available in Codex)',
+    },
+    {
+      pattern: /TaskUpdate\b/g,
+      replacement: '(not available)',
+    },
+    {
+      pattern: /TaskList\b/g,
+      replacement: '(not available)',
+    },
+    // Plan mode (not available)
+    {
+      pattern: /EnterPlanMode/g,
+      replacement: '(not available - no plan mode in Codex)',
+    },
+    {
+      pattern: /ExitPlanMode/g,
+      replacement: '(not available)',
+    },
+    // Hooks (not available)
+    {
+      pattern: /PreToolUse\b/g,
+      replacement: '(not available - no hooks)',
+    },
+    {
+      pattern: /PostToolUse\b/g,
+      replacement: '(not available - no hooks)',
+    },
+    {
+      pattern: /SessionStart\b/g,
+      replacement: '(not available - no hooks)',
+    },
+  ],
 };
 
 /**
@@ -236,17 +407,62 @@ function createDocsReplacements(targetFolder) {
 }
 
 /**
+ * Transform tool references in content based on IDE capabilities.
+ * Replaces Claude Code tool names and patterns with IDE-appropriate alternatives.
+ *
+ * For Claude Code (canonical format), returns content unchanged.
+ * For other IDEs, replaces tool references with alternatives based on capabilities:
+ * - Cursor: Converts AskUserQuestion to "numbered list prompt", Task stays as subagents
+ * - Windsurf: Converts to "megaplan" and workflow suggestions, removes Task references
+ * - Codex: Converts to skill invocations, text-only prompts, removes Plan mode
+ *
+ * @param {string} content - Content with Claude Code tool references
+ * @param {string} targetIde - Target IDE name: 'claude-code', 'cursor', 'windsurf', 'codex'
+ * @returns {string} Content with IDE-appropriate tool references
+ *
+ * @example
+ * const content = 'Use the AskUserQuestion tool to get user input';
+ * const cursor = transformToolReferences(content, 'cursor');
+ * // Returns: 'Use numbered list prompt to get user input'
+ *
+ * @example
+ * const content = 'Call the Task tool with subagent_type: "agileflow-test"';
+ * const windsurf = transformToolReferences(content, 'windsurf');
+ * // Returns: 'Suggest running the relevant /workflow with workflow: "/agileflow-test"'
+ */
+function transformToolReferences(content, targetIde) {
+  // Claude Code is the canonical format - return unchanged
+  if (targetIde === 'claude-code') {
+    return content;
+  }
+
+  if (!content || typeof content !== 'string') {
+    return content || '';
+  }
+
+  const replacements = TOOL_REFERENCE_REPLACEMENTS[targetIde];
+  if (!replacements) {
+    // Unknown IDE - return unchanged
+    return content;
+  }
+
+  // Apply all replacements in order
+  return replaceReferences(content, replacements);
+}
+
+/**
  * Transform content for a specific IDE target
  *
  * @param {string} content - Source content
- * @param {string} targetIde - Target IDE: 'codex', 'cursor', 'windsurf'
+ * @param {string} targetIde - Target IDE: 'codex', 'cursor', 'windsurf', 'claude-code'
  * @param {Object} [options] - Additional options
  * @param {string} [options.docsFolder] - Custom docs folder name
  * @param {Object} [options.additionalReplacements] - Extra replacements to apply
+ * @param {boolean} [options.transformTools] - Apply tool reference transformations (default: false for backward compatibility)
  * @returns {string} Transformed content
  */
 function transformForIde(content, targetIde, options = {}) {
-  const { docsFolder, additionalReplacements = {} } = options;
+  const { docsFolder, additionalReplacements = {}, transformTools = false } = options;
 
   // Start with IDE-specific replacements
   const replacements = { ...(IDE_REPLACEMENTS[targetIde] || {}) };
@@ -259,7 +475,14 @@ function transformForIde(content, targetIde, options = {}) {
   // Add any additional custom replacements
   Object.assign(replacements, additionalReplacements);
 
-  return replaceReferences(content, replacements);
+  let result = replaceReferences(content, replacements);
+
+  // Apply tool reference transformations if requested
+  if (transformTools) {
+    result = transformToolReferences(result, targetIde);
+  }
+
+  return result;
 }
 
 module.exports = {
@@ -270,6 +493,8 @@ module.exports = {
   getFrontmatter,
   escapeRegex,
   IDE_REPLACEMENTS,
+  TOOL_REFERENCE_REPLACEMENTS,
   createDocsReplacements,
+  transformToolReferences,
   transformForIde,
 };
