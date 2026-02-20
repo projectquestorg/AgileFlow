@@ -1,0 +1,122 @@
+---
+title: Bundle Size
+description: Bundle size analyzer for large imports, missing tree-shaking, absent dynamic imports, duplicate dependencies, and unoptimized build output
+---
+
+# Bundle Size
+
+The Performance Analyzer: Bundle Size agent is a specialized performance analyzer focused on **JavaScript/CSS bundle size bottlenecks**. It finds code patterns where bundle size is unnecessarily large, increasing load times and bandwidth usage.
+
+## When to Use
+
+Use this agent when:
+- You need to identify large library imports that could be optimized
+- You want to check for missing tree-shaking and ES module imports
+- You're analyzing code for missing dynamic imports on heavy dependencies
+- You need to find duplicate dependencies and version conflicts
+- You're looking for development code or large polyfills bundled in production
+
+## How It Works
+
+1. **Reads target code** - Focuses on import statements, package.json, dynamic import usage, build configuration, route-level code splitting
+2. **Identifies patterns** - Looks for full library imports when only functions needed, CommonJS preventing tree-shaking, heavy dependencies loaded eagerly, duplicate dependencies, dev-only code in production
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, size impacts, and remediation steps
+4. **Provides context** - Shows exact code and quantifies bundle size reduction potential
+
+## Focus Areas
+
+- **Large library imports**: Importing entire lodash/moment.js/date-fns when only 1-2 functions are used
+- **Missing tree-shaking**: CommonJS `require()` instead of ES module `import` preventing dead code elimination
+- **Missing dynamic imports**: Heavy dependencies loaded eagerly that could be lazy-loaded (code splitting)
+- **Duplicate dependencies**: Same library imported from different paths or versions
+- **Unminified/unoptimized assets**: Development builds in production, missing compression
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+import _ from 'lodash';
+const sorted = _.sortBy(items, 'name');
+```
+
+The Bundle Size analyzer would identify:
+
+### Finding: Entire lodash imported for single function
+
+**Location**: `src/utils/sorting.js:3`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: This code imports the entire lodash library (~527KB) to use only the `sortBy` function. This adds unnecessary size to the bundle and prevents tree-shaking from removing unused functions.
+
+**Size Impact**:
+- Added: "~527KB (lodash full bundle)"
+- Could be: "~5KB (lodash-es tree-shakeable or sortBy alone)"
+- Savings: "~522KB reduction"
+
+**Suggested Fix**:
+```javascript
+import sortBy from 'lodash-es/sortBy';
+// or
+import { sortBy } from 'lodash-es';
+```
+
+## Best Practices
+
+- Use `lodash-es` instead of `lodash` for better tree-shaking
+- Use `date-fns` or `dayjs` instead of `moment.js`
+- Import only specific functions from large libraries
+- Use dynamic imports (`import()`) for routes and heavy components
+- Enable code splitting in webpack/Vite/Rollup configuration
+- Use ES modules throughout your codebase for tree-shaking
+- Analyze bundle with `webpack-bundle-analyzer` or `source-map-explorer`
+- Avoid importing development tools (console, debugger) in production
+- Use `@babel/preset-env` with `useBuiltIns: 'usage'` for minimal polyfills
+- Monitor bundle size in CI/CD with tools like `bundlesize` or `size-limit`
+
+## Common Library Sizes
+
+| Library | Full Import | Optimized Alternative | Savings |
+|---------|------------|----------------------|---------|
+| lodash | ~527KB | lodash-es (tree-shake) or per-function | ~500KB+ |
+| moment | ~330KB | dayjs (2KB) or date-fns | ~328KB |
+| chart.js | ~200KB | Dynamic import | Initial load savings |
+| highlight.js | ~1MB+ | Dynamic import + select languages | ~900KB+ |
+| three.js | ~600KB+ | Dynamic import | Initial load savings |
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (>500KB waste), HIGH (100-500KB), MEDIUM (20-100KB), or LOW (<20KB)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Large Import, Missing Tree-Shaking, Missing Code Split, Duplicate Dep, or Dev in Prod
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of bundle size impact
+- **Size Impact**: Added vs could be with quantified savings
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Optimize bundle size in React application",
+  prompt: "Review src/ for large library imports and missing dynamic imports. Identify all opportunities to reduce bundle size.",
+  subagent_type: "agileflow-perf-analyzer-bundle"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

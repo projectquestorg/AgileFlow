@@ -1,0 +1,221 @@
+---
+title: /audit:test
+description: Multi-agent test quality analysis with consensus voting for finding test suite weaknesses
+---
+
+# /audit:test
+
+Deploy multiple specialized test quality analyzers in parallel to find weaknesses in the test suite, then synthesize results through consensus voting into a prioritized Test Quality Audit Report.
+
+## Quick Start
+
+```bash
+/agileflow:audit:test src/
+```
+
+## Arguments
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | Target file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep | quick | Analysis depth (quick = core 5 analyzers, deep = all 8) |
+| `FOCUS` | coverage, fragility, mocking, assertions, structure, integration, maintenance, patterns, all | all | Which analyzers to deploy |
+
+## How It Works
+
+The command deploys specialized test quality analyzers in parallel to examine your test suite for weaknesses:
+
+1. **Deploy Analyzers** - 5-8 specialized analyzers examine test code simultaneously
+2. **Parallel Analysis** - Each analyzer runs independently on the target files
+3. **Consensus Voting** - Results are collected and evaluated for confidence
+4. **Generate Report** - A prioritized Test Quality Audit Report is produced with actionable improvements
+
+### Analyzer Coverage
+
+**Core Analyzers (DEPTH=quick)**:
+- **Coverage** - Untested critical paths, missing error path tests, low branch coverage
+- **Fragility** - Timing-dependent tests, order-dependent tests, environment-dependent tests
+- **Mocking** - Over-mocking, mock leakage, testing mocks instead of code
+- **Assertions** - Weak assertions, missing negative tests, snapshot overuse
+- **Structure** - Missing describe/it nesting, unclear names, code duplication
+
+**Additional Analyzers (DEPTH=deep adds)**:
+- **Integration** - Missing API tests, no E2E coverage, missing contract tests
+- **Maintenance** - Dead tests, outdated assertions, tests passing for wrong reasons
+- **Patterns** - Anti-patterns: testing privates, deep mock chains, God test objects
+
+## Examples
+
+```bash
+# Quick scan of source directory (core 5 analyzers)
+/agileflow:audit:test src/
+
+# Deep analysis with all 8 analyzers
+/agileflow:audit:test . DEPTH=deep
+
+# Focus on specific test quality areas
+/agileflow:audit:test __tests__/ FOCUS=coverage,fragility
+
+# Single area analysis
+/agileflow:audit:test __tests__/ FOCUS=fragility
+
+# Comprehensive audit with all analyzers
+/agileflow:audit:test . DEPTH=deep FOCUS=all
+```
+
+## Understanding Results
+
+### Severity Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **CRITICAL** | False confidence — tests pass but code is broken | Fix before merging |
+| **HIGH** | Missing coverage on critical path | Fix this sprint |
+| **MEDIUM** | Test quality issue | Backlog for later |
+| **LOW** | Improvement opportunity | Consider for next release |
+
+### Confidence Scoring
+
+| Confidence | Meaning |
+|------------|---------|
+| **CONFIRMED** | 2+ analyzers agree (high priority) |
+| **LIKELY** | 1 analyzer with strong evidence (medium priority) |
+| **INVESTIGATE** | 1 analyzer with weak evidence (low priority) |
+
+## Example Output
+
+```
+Test Quality Audit: src/
+═════════════════════════════════════════════════════════════
+
+Deploying 5 test quality analyzers (quick mode)...
+✓ Coverage Analyzer
+✓ Fragility Analyzer
+✓ Mocking Analyzer
+✓ Assertions Analyzer
+✓ Structure Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: Full-stack Web Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 TEST QUALITY SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Severity | Count | Category |
+|----------|-------|----------|
+| Critical | 2     | False Confidence, Missing Coverage |
+| High     | 3     | Over-Mocking, Weak Assertions |
+| Medium   | 2     | Fragile Tests, Structure |
+| Low      | 1     | Naming |
+
+Total: 8 findings (1 false positive excluded)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 FIX IMMEDIATELY (False Confidence Risk)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Payment test mocks entire payment service — never calls real code [CONFIRMED by Mocking, Assertions]
+   Location: __tests__/payment.test.ts:28
+   Risk: Tests pass but payment flow is completely untested
+   Fix: Test real payment service with test API keys, mock only external HTTP
+
+2. No tests for error handling in auth middleware [CONFIRMED by Coverage, Assertions]
+   Location: middleware/auth.ts (0 test coverage on catch blocks)
+   Risk: Auth errors may crash the app — no test verifies graceful handling
+   Fix: Add tests for expired token, invalid token, missing token scenarios
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX THIS SPRINT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. 15 tests use setTimeout assertions — timing-dependent [LIKELY - Fragility]
+4. Snapshot files > 500 lines each — rubber stamp reviews [LIKELY - Assertions]
+5. Mock not restored between tests — leaks into next test [LIKELY - Mocking]
+
+[Full report saved to docs/08-project/test-audits/test-audit-20260220.md]
+```
+
+## Depth Modes
+
+### Quick Mode (Default)
+- Deploys **5 core analyzers**
+- Focuses on **CRITICAL and HIGH** severity issues
+- Skips minor naming improvements
+- Fast turnaround for rapid test quality checks
+- Use when: You need quick baseline assessment
+
+### Deep Mode
+- Deploys **all 8 analyzers**
+- Includes **MEDIUM and LOW** severity findings
+- Comprehensive coverage including Integration, Maintenance, Patterns
+- Use when: Preparing for test review, launch, or quality improvement sprint
+
+## Focus Areas
+
+Use `FOCUS` to analyze specific test quality domains:
+
+```bash
+# Only coverage analysis
+/agileflow:audit:test src/ FOCUS=coverage
+
+# Multiple specific areas
+/agileflow:audit:test src/ FOCUS=coverage,mocking,assertions
+
+# All analyzers
+/agileflow:audit:test src/ FOCUS=all
+```
+
+Available focus areas:
+- `coverage` - Test coverage gaps, missing error path tests
+- `fragility` - Flaky tests, timing-dependent tests
+- `mocking` - Mock quality, over-mocking issues
+- `assertions` - Assertion strength, negative tests
+- `structure` - Test organization, naming clarity
+- `integration` - API tests, E2E coverage (deep only)
+- `maintenance` - Dead tests, outdated assertions (deep only)
+- `patterns` - Test anti-patterns, problematic practices (deep only)
+- `all` - Run all applicable analyzers (default)
+
+## Report Location
+
+Test quality audit reports are saved to:
+```
+docs/08-project/test-audits/test-audit-{YYYYMMDD}.md
+```
+
+Each report includes:
+- Executive summary with test health score
+- Detailed findings with false confidence risks
+- Test improvement recommendations
+- Affected test files and code locations
+- Confidence scores and analyzer agreement
+
+## Integration with Development
+
+### In Code Review
+Run test audit on pull requests to catch test weaknesses before merge:
+
+```bash
+/agileflow:audit:test --pr
+```
+
+### Before Release
+Run full deep audit before going live:
+
+```bash
+/agileflow:audit:test . DEPTH=deep
+```
+
+### Continuous Quality
+Schedule periodic audits in CI/CD to maintain test suite health.
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/audit:logic`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
+| [`/audit:performance`](/docs/commands/performance-audit) | Performance bottleneck analysis (similar multi-agent architecture) |
+| [`/review`](/docs/commands/review) | Code review (includes some test quality checks) |
+| [`/verify`](/docs/commands/verify) | Run tests and verify quality |

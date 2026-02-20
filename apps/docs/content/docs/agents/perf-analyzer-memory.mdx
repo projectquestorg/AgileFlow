@@ -1,0 +1,115 @@
+---
+title: Memory Analysis
+description: Memory performance analyzer for memory leaks, event listener cleanup, subscription management, closure captures, growing collections, and large object retention
+---
+
+# Memory Analysis
+
+The Performance Analyzer: Memory Analysis agent is a specialized performance analyzer focused on **memory leaks and excessive memory usage**. It finds code patterns where memory is not properly released, grows unboundedly, or is retained unnecessarily.
+
+## When to Use
+
+Use this agent when:
+- You need to identify event listener leaks
+- You want to check for timer and subscription cleanup
+- You're analyzing code for unbounded growing collections
+- You need to find closure captures retaining large objects
+- You're looking for excessive object retention patterns
+
+## How It Works
+
+1. **Reads target code** - Focuses on component lifecycles, event handlers, timer setup/teardown, global caches, long-lived services
+2. **Identifies patterns** - Looks for missing cleanup in useEffect, missing removeEventListener, uncleaned subscriptions, growing collections without bounds, closure captures, large object retention
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, memory growth rates, and remediation steps
+4. **Provides context** - Shows exact code and quantifies memory impact over time
+
+## Focus Areas
+
+- **Event listener leaks**: `addEventListener` without corresponding `removeEventListener`, especially in component lifecycles
+- **Timer leaks**: `setInterval`/`setTimeout` not cleared on cleanup/unmount
+- **Subscription leaks**: Observable/EventEmitter subscriptions without unsubscribe in cleanup
+- **Growing collections**: Arrays, Maps, Sets that grow without bounds (caches without eviction, accumulating logs)
+- **Closure captures**: Closures retaining references to large objects that should be garbage collected
+- **Large object retention**: Storing entire response objects when only a subset is needed, global caches without size limits
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+useEffect(() => {
+  window.addEventListener('resize', handleResize);
+  // Missing cleanup function
+}, []);
+```
+
+The Memory Analysis analyzer would identify:
+
+### Finding: Event listener not removed in useEffect cleanup
+
+**Location**: `components/Header.tsx:42`
+**Severity**: HIGH
+**Confidence**: HIGH
+
+**Issue**: The resize listener is added on mount but never removed on unmount. Each time the component mounts, a new listener is added without removing the old one, causing a memory leak that grows with component re-mounts.
+
+**Impact Estimate**:
+- Growth rate: "1 listener per mount, ~1KB per listener"
+- Time to impact: "OOM after ~1000 mounts (significant on long-running SPA)"
+- Affected scope: "Per-component instance, multiple instances compound"
+
+**Suggested Fix**:
+```javascript
+useEffect(() => {
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+```
+
+## Best Practices
+
+- Always return cleanup function from useEffect with side effects
+- Verify `addEventListener` has matching `removeEventListener`
+- Use `useEffect` return to clean up timers, subscriptions, event listeners
+- For global caches, implement eviction (LRU, TTL, max size)
+- Avoid storing large objects in closures unnecessarily
+- Use weak references (WeakMap, WeakSet) for caches when possible
+- Monitor memory in production with tools like New Relic, DataDog
+- Profile with Chrome DevTools Memory tab for long-running applications
+- Test component mount/unmount cycles to verify cleanup
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (causes OOM or crash), HIGH (measurable growth), MEDIUM (inefficiency), or LOW (minor retention)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Event Listener Leak, Timer Leak, Subscription Leak, Growing Collection, Closure Capture, or Object Retention
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of memory impact
+- **Impact Estimate**: Growth rate, time to impact, affected scope
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze memory leaks in UI components",
+  prompt: "Review components/ for event listener leaks, timer cleanup, and growing collections. Focus on components that mount/unmount frequently.",
+  subagent_type: "agileflow-perf-analyzer-memory"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

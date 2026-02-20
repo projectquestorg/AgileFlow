@@ -1,0 +1,111 @@
+---
+title: Query Performance
+description: Query performance analyzer for N+1 queries, unindexed DB lookups, missing pagination, ORM anti-patterns, and raw queries inside loops
+---
+
+# Query Performance
+
+The Performance Analyzer: Query Performance agent is a specialized performance analyzer focused on **database query bottlenecks**. It finds code patterns where database access is inefficient, causing slow response times, excessive load, or scalability issues.
+
+## When to Use
+
+Use this agent when:
+- You need to identify N+1 query patterns in database access code
+- You want to check for missing pagination on list endpoints
+- You're analyzing code for unindexed database lookups
+- You need to find ORM anti-patterns (eager loading, lazy loading in loops)
+- You're looking for raw SQL queries inside loops
+
+## How It Works
+
+1. **Reads target code** - Focuses on database query construction, SQL/ORM calls, loop bodies with database calls, API handlers
+2. **Identifies patterns** - Looks for N+1 queries, missing pagination, ORM anti-patterns, unindexed lookups, sequential queries that could be parallel
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, impact estimates, and remediation steps
+4. **Provides context** - Shows exact code and quantifies performance impact
+
+## Focus Areas
+
+- **N+1 queries**: Database queries inside loops, fetching related records one-by-one instead of batch/JOIN
+- **Unindexed lookups**: Queries filtering on columns that likely lack indexes (non-PK, non-FK fields in WHERE clauses)
+- **Missing pagination**: `findAll()`, `SELECT *` without LIMIT, unbounded result sets
+- **ORM anti-patterns**: Eager loading everything, lazy loading in loops, `findAll` without constraints
+- **Raw queries in loops**: SQL/NoSQL queries constructed and executed inside iteration
+- **Missing query optimization**: No `SELECT` column pruning, fetching unnecessary fields, missing aggregation push-down
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+const users = await User.findAll();
+for (const user of users) {
+  user.orders = await Order.findAll({ where: { userId: user.id } });
+}
+```
+
+The Query Performance analyzer would identify:
+
+### Finding: N+1 queries in user orders fetch
+
+**Location**: `api/users.ts:45`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: This code fetches all users with 1 query, then runs N additional queries to get orders for each user. With 100 users, this becomes 101 database calls instead of 1 optimized query.
+
+**Impact Estimate**:
+- Current: "100 users = 101 DB calls (~2.5s)"
+- Expected: "1 DB call with JOIN (~50ms)"
+- Improvement: "~98% reduction in DB calls"
+
+**Suggested Fix**:
+```javascript
+const users = await User.findAll({
+  include: [{ association: 'orders' }]
+});
+```
+
+## Best Practices
+
+- Always use batch operations or JOINs to fetch related data
+- Ensure frequently queried columns have indexes
+- Implement pagination with LIMIT/OFFSET on all list endpoints
+- Use query profiling tools to measure actual database performance
+- Check for query optimization: use `EXPLAIN ANALYZE` on complex queries
+- Batch multiple independent queries with `Promise.all()`
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (P95 latency >2x or timeout/OOM), HIGH (measurable impact), MEDIUM (optimization), or LOW (micro)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: N+1 Query, Missing Pagination, ORM Anti-Pattern, Unindexed Lookup, or Sequential Queries
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of performance impact
+- **Impact Estimate**: Current vs expected queries with quantified improvement
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze database queries in user service",
+  prompt: "Review api/users.ts for query bottlenecks. Focus on N+1 patterns, missing pagination, and unindexed lookups.",
+  subagent_type: "agileflow-perf-analyzer-queries"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

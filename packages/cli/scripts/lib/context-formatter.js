@@ -342,6 +342,14 @@ function generateSummary(prefetched = null, options = {}) {
     }
   }
 
+  // Command prerequisites
+  if (options.prereqResult && !options.prereqResult.allMet) {
+    const n = options.prereqResult.unmet.length;
+    const crit = options.prereqResult.criticalUnmet;
+    const prereqText = crit > 0 ? `${crit} critical missing` : `${n} unmet`;
+    summary += row('Prereqs', prereqText, C.coral, C.coral);
+  }
+
   // Key files
   const keyFileChecks = [
     { path: 'CLAUDE.md', label: 'CLAUDE' },
@@ -475,6 +483,20 @@ function generateFullContent(prefetched = null, options = {}) {
   const contextUsage = getContextPercentage();
   if (contextUsage && contextUsage.percent >= 50) {
     content += generateContextWarning(contextUsage.percent);
+  }
+
+  // COMMAND PREREQUISITES WARNING
+  if (
+    options.prereqResult &&
+    !options.prereqResult.allMet &&
+    options.prereqResult.unmet.length > 0
+  ) {
+    try {
+      const { formatPrereqWarnings } = require('./command-prereqs');
+      content += formatPrereqWarnings(options.prereqResult);
+    } catch {
+      // Fail open
+    }
   }
 
   // PROGRESSIVE DISCLOSURE
@@ -662,42 +684,30 @@ function generateRemainingContent(prefetched, options = {}) {
     }
   }
 
-  // VISUAL E2E STATUS
+  // UI TESTING STATUS (unified Visual E2E + Browser QA)
   const metadata =
     prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
-  const visualE2eConfig = metadata?.features?.visual_e2e;
+  const browserQaConfig = metadata?.features?.browserqa;
   const playwrightExists =
     fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
   const screenshotsExists = fs.existsSync('screenshots');
-  const testsE2eExists = fs.existsSync('tests/e2e');
+  const browserQaSpecsExist = fs.existsSync('.agileflow/ui-review/specs');
 
-  const visualE2eEnabled = visualE2eConfig?.enabled || (playwrightExists && screenshotsExists);
+  const uiTestingEnabled =
+    playwrightExists || screenshotsExists || browserQaConfig?.enabled || browserQaSpecsExist;
 
-  if (visualE2eEnabled) {
-    content += `\n${C.brand}${C.bold}═══ 📸 VISUAL E2E TESTING: ENABLED ═══${C.reset}\n`;
+  if (uiTestingEnabled) {
+    const browserQaRunsExist = fs.existsSync('.agileflow/ui-review/runs');
+    content += `\n${C.brand}${C.bold}═══ UI Testing (Bowser): ENABLED ═══${C.reset}\n`;
     content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
     content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ E2E Tests:${C.reset} ${testsE2eExists ? 'tests/e2e/' : 'not found'}\n\n`;
-    content += `${C.bold}FOR UI WORK:${C.reset} Use ${C.skyBlue}VISUAL=true${C.reset} flag with babysit:\n`;
+    content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/ (for visual verification)' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ Browser QA Specs:${C.reset} ${browserQaSpecsExist ? '.agileflow/ui-review/specs/' : 'not found'}\n`;
+    content += `${C.mintGreen}✓ Evidence Runs:${C.reset} ${browserQaRunsExist ? '.agileflow/ui-review/runs/' : 'not found'}\n\n`;
+    content += `${C.bold}AGENTIC TESTING:${C.reset} ${C.skyBlue}/agileflow:browser-qa SCENARIO=<spec.yaml>${C.reset}\n`;
+    content += `${C.dim}  Pass rate: 80% threshold | Results are informational (not merge-blocking)${C.reset}\n`;
+    content += `${C.bold}VISUAL VERIFICATION:${C.reset} ${C.skyBlue}VISUAL=true${C.reset} flag with babysit\n`;
     content += `${C.dim}  /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true${C.reset}\n\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
-  }
-
-  // BROWSER QA STATUS
-  const browserQaConfig = metadata?.features?.browserqa;
-  const browserQaSpecsExist = fs.existsSync('.agileflow/ui-review/specs');
-  const browserQaEnabled = browserQaConfig?.enabled || browserQaSpecsExist;
-
-  if (browserQaEnabled) {
-    const browserQaRunsExist = fs.existsSync('.agileflow/ui-review/runs');
-    content += `\n${C.brand}${C.bold}═══ Browser QA (Bowser): ENABLED ═══${C.reset}\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    content += `${C.mintGreen}✓ Specs:${C.reset} ${browserQaSpecsExist ? '.agileflow/ui-review/specs/' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Evidence:${C.reset} ${browserQaRunsExist ? '.agileflow/ui-review/runs/' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n\n`;
-    content += `${C.bold}RUN TESTS:${C.reset} ${C.skyBlue}/agileflow:browser-qa SCENARIO=<spec.yaml>${C.reset}\n`;
-    content += `${C.dim}  Pass rate threshold: 80% | Results are informational (not merge-blocking)${C.reset}\n\n`;
     content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
   }
 
@@ -926,6 +936,7 @@ function generateRemainingContent(prefetched, options = {}) {
         collaboration: 'Collaboration',
         workflow: 'Workflow',
         analysis: 'Analysis',
+        testing: 'Testing',
         automation: 'Automation',
       };
       const statusIcons = {
@@ -942,7 +953,14 @@ function generateRemainingContent(prefetched, options = {}) {
         grouped[entry.category].push(entry);
       }
 
-      const categoryOrder = ['modes', 'collaboration', 'workflow', 'analysis', 'automation'];
+      const categoryOrder = [
+        'modes',
+        'collaboration',
+        'workflow',
+        'analysis',
+        'testing',
+        'automation',
+      ];
       const hasEntries = Object.keys(grouped).length > 0;
 
       if (hasEntries) {

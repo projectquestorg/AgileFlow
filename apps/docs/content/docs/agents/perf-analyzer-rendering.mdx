@@ -1,0 +1,118 @@
+---
+title: Rendering Performance
+description: Rendering performance analyzer for unnecessary re-renders, missing memoization, expensive computations in render, large component trees, and state update patterns
+---
+
+# Rendering Performance
+
+The Performance Analyzer: Rendering Performance agent is a specialized performance analyzer focused on **UI rendering bottlenecks**. It finds code patterns where component rendering is inefficient, causing janky UI, slow interactions, or wasted CPU cycles.
+
+## When to Use
+
+Use this agent when:
+- You need to identify unnecessary component re-renders
+- You want to check for missing memoization (React.memo, useMemo, useCallback)
+- You're analyzing code for expensive computations in render functions
+- You need to find large component trees and missing virtualization
+- You're looking for state update patterns that cause cascading re-renders
+
+## How It Works
+
+1. **Reads target code** - Focuses on React/Vue/Angular components, custom hooks, list/table rendering, complex prop handling
+2. **Identifies patterns** - Looks for missing memoization, expensive computations in render, large lists without virtualization, cascading state updates, inline objects/functions breaking memoization
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, re-render counts, and optimization steps
+4. **Provides context** - Shows exact code and quantifies rendering performance impact
+
+## Focus Areas
+
+- **Unnecessary re-renders**: Components re-rendering when their props/state haven't meaningfully changed
+- **Missing memoization**: Absent `React.memo`, `useMemo`, `useCallback` on expensive operations
+- **Expensive computations in render**: Heavy calculations, sorting, filtering done on every render
+- **Large component trees**: Deep nesting without proper code splitting, rendering too many items without virtualization
+- **State update patterns**: State updates in loops, redundant setState calls, state that should be derived
+- **Missing key props**: Array rendering without stable keys, index-as-key anti-pattern
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+const MyComponent = ({ items, filter }) => {
+  const filtered = items.filter(i => i.type === filter).sort((a, b) => a.name.localeCompare(b.name));
+  return <List items={filtered} />;
+};
+```
+
+The Rendering Performance analyzer would identify:
+
+### Finding: Missing memoization on expensive sort/filter operation
+
+**Location**: `components/List.tsx:28`
+**Severity**: HIGH
+**Confidence**: HIGH
+
+**Issue**: The filter and sort operations are performed on every render, even when `items` and `filter` haven't changed. This wastes CPU cycles and causes unnecessary re-renders of the List component.
+
+**Impact Estimate**:
+- Current: "Sorts and filters 1000 items on every parent render"
+- Expected: "Only re-computes when items or filter change"
+- Improvement: "~95% fewer DOM updates and computations"
+
+**Suggested Fix**:
+```javascript
+const MyComponent = ({ items, filter }) => {
+  const filtered = useMemo(
+    () => items.filter(i => i.type === filter).sort((a, b) => a.name.localeCompare(b.name)),
+    [items, filter]
+  );
+  return <List items={filtered} />;
+};
+```
+
+## Best Practices
+
+- Use `React.memo()` on components that receive complex props
+- Use `useMemo()` for expensive computations in render
+- Use `useCallback()` for callbacks passed to memoized components
+- Use `useState` for state that changes frequently; derive other data
+- Avoid inline objects and functions in JSX
+- Use virtualization (react-window, react-virtualized) for large lists
+- Profile components with React DevTools Profiler
+- Avoid using array index as key in lists
+- Consider using `flushSync()` carefully, as it bypasses automatic batching
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (visible jank >100ms), HIGH (measurable slowness), MEDIUM (wasted renders), or LOW (minor optimization)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Missing Memo, Expensive Render, Large List, State Pattern, or Inline Creation
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of rendering performance impact
+- **Impact Estimate**: Current re-render count vs expected with improvement percentage
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze rendering performance in dashboard",
+  prompt: "Review components/ for unnecessary re-renders and missing memoization. Focus on list components and expensive calculations.",
+  subagent_type: "agileflow-perf-analyzer-rendering"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

@@ -206,8 +206,21 @@ async function main() {
     }
   }
 
+  // Check command prerequisites
+  let prereqResult = null;
+  if (commandName && smartDetect) {
+    try {
+      const { checkCommandPrereqs, loadPrereqConfig } = require('./lib/command-prereqs');
+      const config = loadPrereqConfig();
+      const signals = smartDetect.extractSignals(prefetched);
+      prereqResult = checkCommandPrereqs(commandName, signals, config);
+    } catch {
+      // Fail open - prereq checking is optional
+    }
+  }
+
   // Generate formatted output
-  const formatOptions = { commandName, activeSections, smartDetectResults };
+  const formatOptions = { commandName, activeSections, smartDetectResults, prereqResult };
   const summary = generateSummary(prefetched, formatOptions);
   const fullContent = generateFullContent(prefetched, formatOptions);
 

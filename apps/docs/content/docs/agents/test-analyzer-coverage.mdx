@@ -1,0 +1,131 @@
+---
+title: Test Coverage
+description: Test coverage analyzer for untested critical paths, missing error/catch path tests, low branch coverage, untested public API methods, and missing edge case tests
+---
+
+# Test Coverage
+
+The Test Analyzer: Coverage agent is a specialized test analyzer focused on **missing test coverage**. It finds critical code paths, error handlers, and public APIs that lack test coverage, creating blind spots where bugs can hide.
+
+## When to Use
+
+Use this agent when:
+- You need to identify untested critical paths (payment flows, authentication, data mutation)
+- You want to find missing error/catch path tests
+- You're checking branch coverage on complex conditionals
+- You need to verify all public API methods have test coverage
+- You're looking for missing edge case tests in business logic
+
+## How It Works
+
+1. **Reads target code** - Examines both source files and their corresponding test files
+2. **Identifies patterns** - Looks for critical business logic, error handlers, complex conditionals, exported APIs, and edge case handling
+3. **Checks coverage** - Compares what's tested against what exists in source code
+4. **Reports findings** - Generates structured findings with specific file locations, severity levels, and remediation steps
+
+## Focus Areas
+
+- **Untested critical paths**: Payment flows, authentication, data mutation, user-facing features without tests
+- **Missing error/catch path tests**: try/catch blocks, error handlers, fallback logic with no test coverage
+- **Low branch coverage**: Complex conditionals (if/else, switch, ternary) where only the happy path is tested
+- **Untested public API methods**: Exported functions/classes with no corresponding test
+- **Missing edge case tests**: Boundary conditions in business logic (empty arrays, null values, max limits)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+
+```typescript
+export async function processPayment(amount: number, card: string) {
+  const charge = await stripe.charges.create({ amount, source: card });
+  await db.transactions.insert({ chargeId: charge.id, amount });
+  await sendReceipt(charge.receipt_email);
+  return charge;
+}
+```
+
+The Coverage analyzer would identify:
+
+### Finding: Payment processing without test coverage
+
+**Location**: `api/payments.ts:15`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: The `processPayment` function is a critical business operation handling real money, but no test file exists to verify its behavior. This creates false confidence that the system is tested.
+
+**Coverage Gap**:
+- No test verifies successful payment flow
+- No test verifies database transaction creation
+- No test verifies receipt email sending
+- No error case testing (invalid card, stripe API failure, database error)
+
+**Suggested Fix**:
+
+```typescript
+// Create api/payments.test.ts
+describe('processPayment', () => {
+  it('processes successful payment and sends receipt', async () => {
+    const mockCharge = { id: 'charge_123', receipt_email: 'user@test.com' };
+    jest.spyOn(stripe.charges, 'create').mockResolvedValue(mockCharge);
+    jest.spyOn(db.transactions, 'insert').mockResolvedValue({ id: 1 });
+    jest.spyOn(emailService, 'send').mockResolvedValue(true);
+
+    const result = await processPayment(100, 'tok_visa');
+
+    expect(result.id).toBe('charge_123');
+    expect(db.transactions.insert).toHaveBeenCalledWith({ chargeId: 'charge_123', amount: 100 });
+    expect(emailService.send).toHaveBeenCalledWith('user@test.com');
+  });
+
+  it('handles payment failure gracefully', async () => {
+    jest.spyOn(stripe.charges, 'create').mockRejectedValue(new Error('Card declined'));
+    expect(() => processPayment(100, 'tok_chargeDeclined')).rejects.toThrow('Card declined');
+  });
+});
+```
+
+## Best Practices
+
+- Prioritize testing by criticality: payment > auth > data mutation > display > utility
+- Always test error paths, not just happy paths
+- Test all branches of complex conditionals
+- Test boundary conditions in business logic (empty, null, max values)
+- For exported APIs, check that every public method has at least one test
+- Document test file locations near exported functions
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number (source) or "NO TEST FILE"
+- **Severity**: CRITICAL (false confidence), HIGH (missing coverage), MEDIUM (quality), LOW (improvement)
+- **Category**: Missing Test File, Untested Error Path, Low Branch Coverage, Untested Export, Missing Edge Cases
+- **Source Code**: Relevant code snippet
+- **Issue**: Clear explanation of what's not tested and why it matters
+- **Risk**: What could go wrong without this test coverage
+- **Remediation**: Specific test cases to add
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze test coverage gaps in payment processing",
+  prompt: "Review src/payments/ for untested critical paths. Focus on error handlers, edge cases, and public API coverage.",
+  subagent_type: "agileflow-test-analyzer-coverage"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

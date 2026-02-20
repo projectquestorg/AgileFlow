@@ -1,0 +1,126 @@
+---
+title: Test Fragility
+description: Test fragility analyzer for timing-dependent tests, order-dependent tests, hardcoded values, flaky indicators, and environment-dependent tests
+---
+
+# Test Fragility
+
+The Test Analyzer: Fragility agent is a specialized test analyzer focused on **fragile and flaky tests**. It finds tests that pass or fail unpredictably due to timing dependencies, order dependencies, environment assumptions, or other non-deterministic factors.
+
+## When to Use
+
+Use this agent when:
+- You need to identify timing-dependent tests using setTimeout or Date.now()
+- You want to find order-dependent tests that fail in different test execution orders
+- You're checking for hardcoded environment values that break in different environments
+- You need to detect flaky tests with retry logic or skip markers
+- You're looking for tests that assume specific OS, timezone, or locale
+
+## How It Works
+
+1. **Reads target tests** - Examines test files for fragility indicators
+2. **Identifies patterns** - Looks for timing dependencies, shared state, hardcoded values, environment assumptions, and flaky indicators
+3. **Assesses impact** - Determines which conditions cause failure and estimated failure frequency
+4. **Reports findings** - Generates findings with reproduction conditions and specific fixes
+
+## Focus Areas
+
+- **Timing-dependent tests**: Using `setTimeout`, `Date.now()`, `new Date()` for assertions, race conditions in async tests
+- **Order-dependent tests**: Tests that pass only when run in a specific order, shared mutable state between tests
+- **Hardcoded values**: Hardcoded ports, file paths, URLs, or timestamps that break in different environments
+- **Flaky indicators**: Retry logic in tests, `.skip` with TODO comments, intermittent failure patterns
+- **Environment-dependent tests**: Tests that assume specific OS, timezone, locale, or network availability
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test:
+
+```javascript
+it('debounces input', async () => {
+  fireEvent.change(input, { target: { value: 'test' } });
+  await new Promise(resolve => setTimeout(resolve, 500));
+  expect(mockFn).toHaveBeenCalledTimes(1);
+});
+```
+
+The Fragility analyzer would identify:
+
+### Finding: Timing-dependent assertion in debounce test
+
+**Location**: `components/input.test.ts:42`
+**Severity**: HIGH
+**Confidence**: HIGH
+**Category**: Timing Dependent
+
+**Issue**: Test uses `setTimeout(resolve, 500)` to wait for debounce, then immediately asserts. Under CPU load or in slow CI environments, the debounce may not complete within 500ms, causing intermittent failures.
+
+**Flakiness Risk**:
+- Trigger: High CPU load (CI server, other tests running), slow disk I/O
+- Frequency: ~3-5% of CI runs on shared runners, higher on resource-constrained machines
+
+**Remediation**:
+
+```javascript
+// Use jest fake timers instead of real setTimeout
+it('debounces input', async () => {
+  jest.useFakeTimers();
+  fireEvent.change(input, { target: { value: 'test' } });
+  jest.advanceTimersByTime(500);
+  expect(mockFn).toHaveBeenCalledTimes(1);
+  jest.useRealTimers();
+});
+
+// OR use waitFor with timeout
+it('debounces input', async () => {
+  fireEvent.change(input, { target: { value: 'test' } });
+  await waitFor(() => {
+    expect(mockFn).toHaveBeenCalledTimes(1);
+  }, { timeout: 1000 });
+});
+```
+
+## Best Practices
+
+- Use `jest.useFakeTimers()` instead of real `setTimeout` in tests
+- Use `waitFor()` for async assertions with generous timeouts
+- Reset shared state in `beforeEach()`, not relying on test order
+- Use environment variables or dependency injection instead of hardcoded values
+- For OS-specific code, skip tests on incompatible platforms with clear skip messages
+- Document why tests are skipped (don't skip without reason)
+- Remove retry logic unless testing resilience feature specifically
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (blocks deployments), HIGH (fails in certain environments), MEDIUM (occasionally flaky), LOW (minor risk)
+- **Category**: Timing Dependent, Order Dependent, Hardcoded Values, Flaky Indicator, Environment Dependent
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of why this test is fragile
+- **Flakiness Risk**: Trigger conditions and estimated failure frequency
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Detect flaky tests in component test suite",
+  prompt: "Analyze src/components/__tests__/ for timing dependencies, hardcoded values, and environment assumptions.",
+  subagent_type: "agileflow-test-analyzer-fragility"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

@@ -1,0 +1,220 @@
+---
+title: Test Consensus Coordinator
+description: Consensus coordinator for test audit - validates findings, votes on confidence, filters by project type, assesses false confidence risk, and generates prioritized Test Quality Audit Report
+---
+
+# Test Consensus Coordinator
+
+The Test Consensus Coordinator is the **consensus coordinator** for the Test Quality Audit system. It collects findings from all test quality analyzers, validates them against the project type, votes on confidence, assesses false confidence risk, and produces the final prioritized Test Quality Audit Report.
+
+## When to Use
+
+Use this agent when:
+- You need to run a comprehensive test quality audit across multiple analysis dimensions
+- You want to consolidate findings from multiple test analyzers into one report
+- You need to resolve conflicting findings from different analyzers
+- You want a final, prioritized list of test issues to fix
+- You need to distinguish confirmed issues from false positives
+
+## How It Works
+
+1. **Detects project type** - Determines if project is API, SPA, Full-stack, CLI, Library, Mobile, or Microservice
+2. **Collects findings** - Reads output from all test analyzers
+3. **Groups related issues** - Finds findings that reference the same test file or related quality issue
+4. **Votes on confidence** - Uses analyzer agreement to rate confidence levels
+5. **Filters by relevance** - Excludes findings irrelevant to the project type
+6. **Assesses false confidence** - Rates the risk that tests give false sense of security
+7. **Generates report** - Produces prioritized, actionable Test Quality Audit Report
+
+## Responsibilities
+
+- Detect project type and filter irrelevant findings
+- Collect findings from coverage, fragility, mocking, assertions, structure, integration, maintenance, and pattern analyzers
+- Validate findings - check if issues are real or false positives
+- Vote on confidence - multiple analyzers flagging same issue = higher confidence
+- Resolve conflicts - when analyzers disagree, investigate and decide
+- Assess false confidence risk - what bugs could slip through current tests
+- Generate report - produce prioritized, actionable audit output
+
+## Project Type Detection
+
+Project type affects which findings are relevant:
+
+| Project Type | Key Indicators | Irrelevant Finding Types |
+|-------------|---------------|------------------------|
+| **API-only** | Express/Fastify/Koa, no HTML templates | Snapshot tests, E2E browser tests, rendering tests |
+| **SPA** | React/Vue/Angular, client-side routing | Server integration tests, DB integration tests |
+| **Full-stack** | Both server + client code | None - all findings potentially relevant |
+| **CLI tool** | `process.argv`, `commander`, no HTTP server | Browser E2E, snapshot tests, rendering tests |
+| **Library** | `exports`, no `app.listen`, published to npm | Integration/E2E less critical, unit coverage paramount |
+| **Mobile** | React Native, Flutter, Expo | Server integration tests (unless has API) |
+| **Microservice** | Docker, small focused API, message queues | Browser E2E, snapshot tests |
+
+## Consensus Process
+
+### Step 1: Parse All Findings
+
+Normalizes findings into a common structure with ID, location, analyzer, title, severity, confidence, category, code, issue, risk, and remediation.
+
+### Step 2: Group Related Findings
+
+Finds findings that reference the same test file or related quality issue, creating a matrix of which analyzers flagged what:
+
+| Test File | Coverage | Fragility | Mocking | Assertions | Structure | Integration | Maintenance | Patterns | Consensus |
+|-----------|:--------:|:---------:|:-------:|:----------:|:---------:|:-----------:|:-----------:|:--------:|-----------|
+| payment.test.ts | ! | - | ! | ! | - | - | - | - | CONFIRMED |
+| auth.test.ts | ! | - | - | - | - | ! | - | - | CONFIRMED |
+
+### Step 3: Vote on Confidence
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence (clear false confidence risk) | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, circumstantial evidence | Low priority, investigate before acting |
+| **FALSE POSITIVE** | Issue not relevant to project type or test is correct | Exclude from report with note |
+
+### Step 4: Validate Disputed Findings
+
+When analyzers disagree:
+1. Read the full context
+2. Check if issue is handled elsewhere
+3. Consider project type (some patterns are intentional)
+4. Make a reasoned decision and document reasoning
+
+### Step 5: Filter by Project Type and False Positives
+
+Remove findings that don't apply to the detected project type. Common false positive scenarios:
+- **Libraries**: Missing E2E tests — libraries are tested through unit tests
+- **CLI tools**: No browser snapshot tests — CLIs don't have browser UI
+- **API-only**: No component rendering tests — no frontend components
+- **Intentional skips**: `.skip` with active JIRA/GitHub issue reference
+- **Generated tests**: Auto-generated test files may have different standards
+
+Document reasoning for each exclusion.
+
+### Step 6: Assess False Confidence Risk
+
+For each confirmed finding, rate the risk of false confidence:
+
+| Risk Level | Meaning | Example |
+|------------|---------|---------|
+| **HIGH** | Tests pass but code is effectively untested | Over-mocked test, assertion on mock only, missing await |
+| **MEDIUM** | Tests cover some but miss important cases | Only happy path, missing error handling test |
+| **LOW** | Tests are correct but could be stronger | Weak matchers, minor structure issues |
+
+### Step 7: Prioritize by Impact
+
+**Severity + Confidence = Priority**:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|-----------|--------|-------------|
+| **CRITICAL** (false confidence, code untested) | Fix Immediately | Fix Immediately | Fix This Sprint |
+| **HIGH** (missing critical coverage) | Fix Immediately | Fix This Sprint | Backlog |
+| **MEDIUM** (quality issue) | Fix This Sprint | Backlog | Backlog |
+| **LOW** (minor improvement) | Backlog | Backlog | Info |
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+Generate the final Test Quality Audit Report with:
+
+- **Summary**: Count by priority with descriptions
+- **Critical Issues**: False confidence - fix immediately
+- **High Priority Issues**: Missing critical coverage - fix in current sprint
+- **Medium Priority Issues**: Quality issues - add to backlog
+- **Test Suite Overview**: Metrics on test files, coverage, skipped tests
+- **Analyzer Agreement Matrix**: Which analyzers flagged which locations
+- **False Positives**: Issues excluded with reasons
+- **Test Health Score**: A-F grades across coverage, assertions, mocks, stability, maintenance
+- **Remediation Checklist**: Actionable items in priority order
+- **Recommendations**: Process improvements and next steps
+
+## Example Output Structure
+
+```markdown
+# Test Quality Audit Report
+
+**Generated**: 2024-02-21
+**Target**: src/payments/
+**Project Type**: Full-stack (API + React frontend)
+
+## Summary
+
+| Priority | Count | Category |
+|----------|-------|----------|
+| Critical | 2 | Over-mocked tests, missing await |
+| High | 4 | Missing API integration tests, error path gaps |
+| Medium | 7 | Weak assertions, snapshot overuse |
+
+**Total Findings**: 13 (after consensus filtering)
+**False Confidence Risk**: HIGH
+
+## Fix Immediately
+
+### 1. Payment processing over-mocked [CONFIRMED by Mocking, Assertions]
+**Location**: `__tests__/payment-service.test.ts:15`
+**Risk**: HIGH - Test passes but real payment logic untested
+...
+
+## Remediation Checklist
+
+- [ ] Fix 2 critical false confidence issues
+- [ ] Add 4 API integration tests
+- [ ] Strengthen 7 weak assertions
+...
+```
+
+## Best Practices
+
+- Give each analyzer's finding fair consideration
+- Document reasoning for disputes thoroughly
+- Don't bury critical issues under minor ones
+- Acknowledge uncertainty and mark findings as INVESTIGATE
+- Don't over-exclude real bugs that look like false positives
+- Use evidence from the codebase to resolve disputes
+- Prioritize by false confidence risk, not just severity
+
+## Example Usage
+
+```text
+Task(
+  description: "Run comprehensive test quality audit on payments module",
+  prompt: "Execute a full test audit on src/payments/ using all test analyzers. Gather findings from coverage, fragility, mocking, assertions, structure, integration, maintenance, and patterns analyzers. Consolidate into one prioritized report with consensus voting on confidence levels. Detect project type, filter irrelevant findings, and assess false confidence risk.",
+  subagent_type: "agileflow-test-consensus"
+)
+```
+
+## Handling Common Situations
+
+### All analyzers agree
+→ CONFIRMED, highest confidence, include prominently
+
+### One analyzer, strong evidence (clear false confidence risk)
+→ LIKELY, include with the evidence
+
+### One analyzer, weak evidence (theoretical)
+→ INVESTIGATE, include but mark as needing review
+
+### Analyzers contradict
+→ Read the code, make a decision, document reasoning
+
+### Finding not relevant to project type
+→ FALSE POSITIVE with documented reasoning
+
+### No findings at all
+→ Report "Test suite in good health" with note about what was checked
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection

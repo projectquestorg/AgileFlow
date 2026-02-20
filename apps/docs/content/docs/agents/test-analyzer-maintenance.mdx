@@ -1,0 +1,164 @@
+---
+title: Test Maintenance
+description: Test maintenance analyzer for dead tests, outdated assertions, tests passing for wrong reasons, commented-out tests, and unused test utilities
+---
+
+# Test Maintenance
+
+The Test Analyzer: Test Maintenance agent is a specialized test analyzer focused on **test maintenance debt**. It finds dead tests, outdated assertions, and tests that pass for the wrong reasons — creating a false sense of security while the test suite rots.
+
+## When to Use
+
+Use this agent when:
+- You need to identify dead or skipped tests hiding coverage gaps
+- You want to find outdated assertions checking removed features
+- You're looking for tests passing for wrong reasons (mock returning hardcoded values)
+- You need to clean up commented-out tests
+- You want to identify unused test utilities and fixtures
+
+## How It Works
+
+1. **Reads target tests** - Examines test files for maintenance issues
+2. **Identifies patterns** - Looks for skipped/commented tests, outdated assertions, mock setup issues, and unused utilities
+3. **Assesses impact** - Determines how long tests have been stale and what coverage they hide
+4. **Reports findings** - Generates findings with cleanup and remediation steps
+
+## Focus Areas
+
+- **Dead tests**: Commented out, always skipped (`.skip`/`xit`/`xdescribe`), or disabled by condition
+- **Outdated assertions**: Tests asserting removed behavior, checking deprecated fields, or verifying old API shape
+- **Tests passing for wrong reasons**: Tests that pass due to mock setup, not because code works correctly
+- **Unused test utilities**: Helper functions, fixtures, factories that are no longer referenced
+- **Stale snapshots**: Snapshot files that don't match current component output (auto-updated without review)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test file:
+
+```javascript
+describe.skip('PaymentService', () => {
+  // Disabled 6 months ago, never re-enabled
+  it('processes refund', () => { ... });
+  it('handles failed refund', () => { ... });
+  it('sends refund notification', () => { ... });
+});
+
+it('returns user data', async () => {
+  const result = await getUser(1);
+  expect(result.firstName).toBeDefined(); // Field renamed to 'name' months ago
+  expect(result.lastName).toBeDefined();  // Field removed entirely
+  // Test still passes because mock returns old shape
+});
+```
+
+The Maintenance analyzer would identify:
+
+### Finding 1: Dead tests hiding coverage gaps
+
+**Location**: `payments.test.ts:5`
+**Severity**: HIGH
+**Confidence**: HIGH
+**Category**: Dead Test
+
+**Issue**: Entire `PaymentService` test suite (3 tests) has been skipped with no clear reason. Refund functionality is completely untested, yet no failing tests indicate this gap.
+
+**Staleness Indicator**: Skipped 6 months ago, no JIRA ticket or clear reason documented.
+
+**Remediation**:
+
+```javascript
+// Option 1: Re-enable and fix tests
+describe('PaymentService', () => {
+  it('processes refund', () => { ... });
+  // Fix any broken tests, verify they pass
+});
+
+// Option 2: Document why skipped with ticket reference
+describe.skip('PaymentService', () => {
+  // TODO(TICKET-123): Re-enable after payment API redesign
+  // Expected to be fixed by end of Q1 2024
+  it('processes refund', () => { ... });
+});
+
+// Option 3: Remove tests if feature no longer exists
+// (if refunds were removed, delete entire describe block)
+```
+
+### Finding 2: Outdated assertions checking removed fields
+
+**Location**: `users.test.ts:28`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**Category**: Outdated Assertion
+
+**Issue**: Test asserts on `firstName` and `lastName` fields that no longer exist in the user object. Test passes because mock returns old shape, giving false confidence that user retrieval works correctly.
+
+**Remediation**:
+
+```javascript
+// OUTDATED: Checking removed fields
+it('returns user data', async () => {
+  const result = await getUser(1);
+  expect(result.firstName).toBeDefined();
+  expect(result.lastName).toBeDefined();
+});
+
+// UPDATED: Check current fields
+it('returns user data', async () => {
+  const result = await getUser(1);
+  expect(result.name).toBeDefined();
+  expect(result.email).toBeDefined();
+  expect(result).toEqual({
+    id: 1,
+    name: 'Test User',
+    email: 'test@test.com'
+  });
+});
+```
+
+## Best Practices
+
+- Remove dead tests immediately; don't let them accumulate
+- If skipping a test, document the reason and expected fix date with ticket reference
+- When refactoring code, update all corresponding test assertions
+- Regularly audit test suite for `describe.skip`, `it.skip`, commented tests
+- Use grep to find unused test utilities
+- Review snapshot changes carefully; don't auto-update without reviewing
+- For async tests, always use `await` on async operations to catch rejections
+- Document why test utilities exist if they're not obvious from names
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (false pass), HIGH (dead tests hiding gaps), MEDIUM (outdated), LOW (minor cleanup)
+- **Category**: Dead Test, Outdated Assertion, False Pass, Unused Utility, Stale Snapshot, Missing Await
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of the maintenance problem
+- **Staleness Indicator**: How long this has been dead/outdated
+- **Remediation**: Fix: update, remove, or restore the test
+
+## Example Usage
+
+```text
+Task(
+  description: "Clean up test maintenance debt",
+  prompt: "Audit src/__tests__/ for skipped tests, commented code, outdated assertions, and unused fixtures. Report what should be re-enabled, updated, or deleted.",
+  subagent_type: "agileflow-test-analyzer-maintenance"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

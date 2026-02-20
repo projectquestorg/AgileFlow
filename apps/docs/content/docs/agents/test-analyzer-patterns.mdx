@@ -1,0 +1,138 @@
+---
+title: Test Anti-Patterns
+description: Test anti-pattern analyzer for testing private methods, deep mock chains, oversized snapshots, test setup longer than test, and God test objects
+---
+
+# Test Anti-Patterns
+
+The Test Analyzer: Anti-Patterns agent is a specialized test analyzer focused on **test anti-patterns**. It finds structural patterns in tests that make them brittle, hard to maintain, or misleading — patterns that experienced developers know to avoid.
+
+## When to Use
+
+Use this agent when:
+- You need to identify tests accessing private methods or internal APIs
+- You want to find deep mock chains that mirror internal implementation
+- You're checking for oversized snapshots that are hard to review
+- You need to refactor tests with more setup than assertions
+- You're looking for God test objects used across many tests
+
+## How It Works
+
+1. **Reads target tests** - Examines test structure and patterns
+2. **Identifies patterns** - Looks for private access, deep mocking, large snapshots, setup ratios, and shared fixtures
+3. **Assesses impact** - Determines maintenance burden when code is refactored
+4. **Reports findings** - Generates findings with specific refactoring suggestions
+
+## Focus Areas
+
+- **Testing private methods directly**: Accessing internal implementation via workarounds instead of testing through public API
+- **Deep mock chains**: Mocking 3+ levels deep, mirroring internal implementation structure
+- **Oversized snapshots**: Snapshot files > 500 lines, testing entire page output instead of specific elements
+- **Test setup longer than test**: More lines of setup/mock configuration than actual assertions
+- **God test objects**: Single fixture/factory that creates everything, used by all tests
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test:
+
+```javascript
+it('validates internal format', () => {
+  const service = new UserService();
+  // Accessing private method with @ts-ignore
+  // @ts-ignore
+  const result = service['_validateFormat']('test');
+  expect(result).toBe(true);
+});
+```
+
+The Anti-Patterns analyzer would identify:
+
+### Finding: Testing private method through bracket notation
+
+**Location**: `services/user.test.ts:42`
+**Severity**: MEDIUM
+**Confidence**: HIGH
+**Category**: Testing Privates
+
+**Issue**: Test directly accesses private method `_validateFormat` using bracket notation and `@ts-ignore`. This test breaks if the method is renamed or refactored, and tests implementation details instead of behavior.
+
+**Maintenance Cost**: When refactoring UserService internals, this test fails even if public API still works correctly. Tests private implementation, not public contract.
+
+**Remediation**:
+
+```javascript
+// ANTI-PATTERN: Tests private method
+it('validates internal format', () => {
+  const service = new UserService();
+  // @ts-ignore
+  const result = service['_validateFormat']('test');
+  expect(result).toBe(true);
+});
+
+// BETTER: Test through public API
+it('rejects invalid user data', () => {
+  const service = new UserService();
+  // Public method calls _validateFormat internally
+  expect(() => service.createUser({ name: 'invalid<script>' }))
+    .toThrow(ValidationError);
+});
+
+// BETTER: Export private function as separate, testable utility
+// In service.ts
+export function validateFormat(input: string): boolean {
+  // validation logic
+}
+
+// In test
+import { validateFormat } from '../services/user';
+it('validates format correctly', () => {
+  expect(validateFormat('test')).toBe(true);
+});
+```
+
+## Best Practices
+
+- Test behavior through public APIs, not private methods
+- Keep mock chains shallow (1-2 levels max); if deeper, refactor code
+- Keep snapshots small (<50 lines); use specific assertions instead
+- Keep test setup and assertions balanced; if setup >> assertions, refactor
+- Create specific factories per domain: `createTestUser()`, `createTestPayment()`
+- Avoid God objects; use composable, focused factories
+- When testing is hard (lots of setup, deep mocking), the code design likely needs improvement
+- Document why complex setup is necessary
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (systemic brittleness), HIGH (significant burden), MEDIUM (friction), LOW (smell)
+- **Category**: Testing Privates, Deep Mock Chain, Oversized Snapshot, Setup > Test, God Object, Redundant Assertions
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of the anti-pattern
+- **Maintenance Cost**: How this affects test maintenance when code changes
+- **Remediation**: Specific refactoring suggestion with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Refactor test anti-patterns in payment service tests",
+  prompt: "Audit src/__tests__/payments.test.ts for deep mock chains, oversized snapshots, and God objects. Suggest refactored factory functions and simplified mocks.",
+  subagent_type: "agileflow-test-analyzer-patterns"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

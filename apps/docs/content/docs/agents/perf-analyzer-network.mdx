@@ -1,0 +1,117 @@
+---
+title: Network Performance
+description: Network performance analyzer for HTTP waterfall patterns, missing request batching, absent compression, large payloads, excessive polling, and sequential awaits
+---
+
+# Network Performance
+
+The Performance Analyzer: Network Performance agent is a specialized performance analyzer focused on **network and HTTP bottlenecks**. It finds code patterns where network usage is inefficient, causing slow page loads, high bandwidth costs, or unnecessary latency.
+
+## When to Use
+
+Use this agent when:
+- You need to identify HTTP waterfall patterns (sequential API calls)
+- You want to check for missing request batching opportunities
+- You're analyzing code for large or uncompressed API payloads
+- You need to find excessive polling patterns
+- You're looking for missing HTTP/2, keep-alive, or compression optimizations
+
+## How It Works
+
+1. **Reads target code** - Focuses on fetch/axios calls, API route handlers, polling mechanisms, server configuration, data transfer patterns
+2. **Identifies patterns** - Looks for sequential awaits, missing Promise.all, individual API calls instead of batching, over-fetching (full objects vs needed fields), polling at short intervals, missing compression
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, latency impact, and remediation steps
+4. **Provides context** - Shows exact code and quantifies network performance improvement
+
+## Focus Areas
+
+- **HTTP waterfall**: Sequential `await fetch()` calls that could be parallelized with `Promise.all`
+- **Missing request batching**: Multiple individual API calls that could be combined into one batch request
+- **No compression**: Missing gzip/brotli compression on server responses, uncompressed API payloads
+- **Large payloads**: API responses returning full objects when only a few fields are needed (over-fetching)
+- **Excessive polling**: Short polling intervals, polling when WebSocket/SSE would be more efficient
+- **Missing connection optimization**: No HTTP/2, no keep-alive, no connection pooling
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+const user = await fetch('/api/user');
+const orders = await fetch('/api/orders');
+const notifications = await fetch('/api/notifications');
+```
+
+The Network Performance analyzer would identify:
+
+### Finding: Sequential API calls in HTTP waterfall
+
+**Location**: `pages/dashboard.ts:42`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: Three independent API calls are made sequentially instead of in parallel. If each call takes ~300ms, the total latency is ~900ms instead of ~300ms.
+
+**Impact Estimate**:
+- Current: "3 sequential requests = 900ms total latency"
+- Expected: "3 parallel requests = 300ms total latency"
+- Savings: "~600ms per page load (67% improvement)"
+
+**Suggested Fix**:
+```javascript
+const [user, orders, notifications] = await Promise.all([
+  fetch('/api/user'),
+  fetch('/api/orders'),
+  fetch('/api/notifications')
+]);
+```
+
+## Best Practices
+
+- Parallelize independent API calls with `Promise.all()`
+- Use batch endpoints to combine multiple queries into one request
+- Implement HTTP compression middleware (gzip, brotli)
+- Use HTTP/2 for connection multiplexing (most modern servers support this)
+- Implement caching with proper Cache-Control headers
+- Minimize payload size by selecting only needed fields (projections)
+- Use pagination for large result sets
+- Implement proper ETags and conditional requests
+- Consider WebSocket for real-time data instead of polling
+- Use GraphQL or JSON:API for flexible field selection
+- Monitor with tools like WebPageTest or Lighthouse
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (major latency or bandwidth waste), HIGH (noticeable impact), MEDIUM (optimization), or LOW (minor improvement)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: HTTP Waterfall, Missing Batching, Over-Fetching, Excessive Polling, Missing Compression, or Missing Cache Headers
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of network performance impact
+- **Impact Estimate**: Current vs expected latency/bandwidth with quantified savings
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze network performance in React application",
+  prompt: "Review src/ for HTTP waterfall patterns, sequential API calls, and large payloads. Focus on page load and interaction critical paths.",
+  subagent_type: "agileflow-perf-analyzer-network"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

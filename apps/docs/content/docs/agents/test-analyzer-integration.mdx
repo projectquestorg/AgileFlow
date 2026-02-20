@@ -1,0 +1,187 @@
+---
+title: Integration Gaps
+description: Integration test analyzer for missing API endpoint tests, absent E2E coverage, unit-only test suites, missing database integration tests, and absent contract tests
+---
+
+# Integration Gaps
+
+The Test Analyzer: Integration Gaps agent is a specialized test analyzer focused on **missing integration and end-to-end tests**. It finds codebases that rely solely on unit tests, missing the bugs that only surface when components interact — API endpoints, database operations, service boundaries, and user flows.
+
+## When to Use
+
+Use this agent when:
+- You need to identify API endpoints without integration test coverage
+- You want to find missing end-to-end tests for critical user flows
+- You're checking for unit-only test suites missing integration coverage
+- You need to verify database operations are tested with real databases
+- You're looking for missing contract tests between services
+
+## How It Works
+
+1. **Reads target code** - Examines both source files and test structure
+2. **Identifies patterns** - Looks for API routes, database operations, service boundaries, and user flows
+3. **Checks coverage** - Verifies integration/E2E tests exist for critical paths
+4. **Reports findings** - Generates findings with specific missing tests and remediation steps
+
+## Focus Areas
+
+- **Missing API endpoint tests**: API routes with no integration test that makes real HTTP requests
+- **No E2E coverage**: User-facing features without end-to-end test coverage
+- **Unit-only test suite**: Only unit tests exist, no integration or acceptance tests
+- **Missing database integration tests**: Database operations only tested with mocks, no real DB tests
+- **No contract tests**: Service-to-service or API-to-frontend contracts untested
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this codebase structure:
+
+```
+src/
+  api/
+    routes/
+      users.ts          (5 API endpoints)
+      payments.ts       (3 API endpoints)
+  __tests__/
+    unit/
+      users.test.ts     ✓ (Unit tests for controller)
+      payments.test.ts  ✓ (Unit tests for controller)
+    # Missing: integration/ or e2e/ directory
+```
+
+The Integration analyzer would identify:
+
+### Finding: API endpoints without integration tests
+
+**Location**: `src/api/routes/payments.ts`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+**Category**: Missing API Test
+
+**Issue**: 3 payment API endpoints (`POST /api/payments`, `GET /api/payments/:id`, `PUT /api/payments/:id`) have unit tests for controller logic but no integration tests that verify the actual HTTP layer, middleware, validation, and database operations work end-to-end.
+
+**Risk**: Unit tests pass but HTTP endpoint is broken (middleware error, serialization issue, database transaction failure). Payments work in test environment but fail in production.
+
+**Remediation**:
+
+```typescript
+// Create src/__tests__/integration/payments.test.ts
+import request from 'supertest';
+import app from '../../../app';
+import { getTestDatabase } from '../helpers/test-db';
+
+describe('Payment API Integration', () => {
+  let db;
+
+  beforeAll(async () => {
+    db = await getTestDatabase();
+  });
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  beforeEach(async () => {
+    await db.clear('payments');
+  });
+
+  describe('POST /api/payments', () => {
+    it('processes payment and returns confirmation', async () => {
+      const response = await request(app)
+        .post('/api/payments')
+        .send({
+          amount: 100,
+          currency: 'USD',
+          cardToken: 'tok_visa'
+        })
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: expect.any(String),
+        status: 'completed',
+        amount: 100
+      });
+
+      // Verify saved to database
+      const saved = await db.getPayment(response.body.id);
+      expect(saved.amount).toBe(100);
+    });
+
+    it('returns 400 when amount is missing', async () => {
+      const response = await request(app)
+        .post('/api/payments')
+        .send({ currency: 'USD', cardToken: 'tok_visa' })
+        .expect(400);
+
+      expect(response.body.error).toContain('amount');
+    });
+  });
+
+  describe('GET /api/payments/:id', () => {
+    it('returns payment by ID', async () => {
+      const payment = await db.create('payments', {
+        amount: 100,
+        status: 'completed'
+      });
+
+      const response = await request(app)
+        .get(`/api/payments/${payment.id}`)
+        .expect(200);
+
+      expect(response.body.amount).toBe(100);
+    });
+
+    it('returns 404 when payment not found', async () => {
+      await request(app)
+        .get('/api/payments/nonexistent')
+        .expect(404);
+    });
+  });
+});
+```
+
+## Best Practices
+
+- Write integration tests for critical user flows (payment, auth, data mutation)
+- Test API endpoints with real HTTP layer, not mocked
+- Use test database for integration tests, separate from unit test mocks
+- E2E tests for complete user journeys (signup -> verify email -> login -> profile)
+- Contract tests verify API shape matches frontend expectations
+- Organize tests: `__tests__/unit/`, `__tests__/integration/`, `__tests__/e2e/`
+- Create separate test configuration for integration tests (may be slower, need DB, etc.)
+- Document critical flows that must have E2E coverage
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Source file path or route definition
+- **Severity**: CRITICAL (critical flow untested), HIGH (important endpoints untested), MEDIUM (secondary features), LOW (internal)
+- **Category**: Missing API Test, No E2E, Unit-Only, Missing DB Integration, No Contract Test
+- **Source Code**: Relevant code showing what's not integration-tested
+- **Issue**: Clear explanation of what integration gap exists
+- **Risk**: What class of bugs can slip through unit tests alone
+- **Remediation**: Specific integration test to add with brief description
+
+## Example Usage
+
+```text
+Task(
+  description: "Add integration tests for checkout flow",
+  prompt: "Create integration tests for src/api/routes/checkout.ts. Test the complete flow: POST /api/checkout, verify database state, verify email sent, verify inventory updated.",
+  subagent_type: "agileflow-test-analyzer-integration"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

@@ -1,0 +1,168 @@
+---
+title: Test Structure
+description: Test structure analyzer for missing describe/it nesting, unclear test names, test code duplication, overly long test files, and missing setup/teardown
+---
+
+# Test Structure
+
+The Test Analyzer: Test Structure agent is a specialized test analyzer focused on **test organization and structure**. It finds test files that are poorly structured, making them hard to maintain, debug, and understand.
+
+## When to Use
+
+Use this agent when:
+- You need to organize flat test files with no grouping
+- You want to clarify unclear test names like "test1", "works", "should work correctly"
+- You're looking to eliminate duplicated test setup patterns
+- You need to refactor overly long test files (500+ lines)
+- You want to consolidate repeated initialization into beforeEach/afterEach
+
+## How It Works
+
+1. **Reads target tests** - Examines test file organization and naming
+2. **Identifies patterns** - Looks for flat structure, unclear names, duplication, length, and missing setup/teardown
+3. **Analyzes impact** - Determines maintenance burden and refactoring opportunities
+4. **Reports findings** - Generates findings with specific restructuring suggestions
+
+## Focus Areas
+
+- **Missing describe/it nesting**: Flat test structure without grouping related tests
+- **Unclear test names**: Generic names like "test1", "works", "should work correctly"
+- **Test code duplication**: Same setup/assertion pattern copy-pasted across tests
+- **Overly long test files**: Files with 500+ lines, mixing concerns, hard to navigate
+- **Missing setup/teardown**: Repeated initialization in each test instead of beforeEach/afterEach
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test structure:
+
+```javascript
+// FLAT, UNCLEAR NAMES, DUPLICATED SETUP
+it('test1', () => {
+  const user = { id: 1, name: 'Test', role: 'admin' };
+  const result = createUser(user);
+  expect(result).toBeTruthy();
+});
+
+it('test2', () => {
+  const user = { id: 1, name: 'Test', role: 'admin' };
+  const result = updateUser(1, user);
+  expect(result).toBeTruthy();
+});
+
+it('test3', () => {
+  const user = { id: 1, name: 'Test', role: 'admin' };
+  const result = deleteUser(1);
+  expect(result).toBeTruthy();
+});
+```
+
+The Structure analyzer would identify:
+
+### Finding: Flat structure with unclear names and duplicated setup
+
+**Location**: `users.test.ts`
+**Severity**: HIGH
+**Confidence**: HIGH
+**Category**: Flat Structure, Unclear Names, Duplication, Missing Setup
+
+**Issue**: File uses flat test structure with unclear names ("test1", "test2", "test3") and duplicates the same user setup in every test. Hard to understand relationships and tedious to maintain.
+
+**Maintenance Impact**: When user schema changes, must update setup in 3+ places. When test fails, unclear name provides no context about what failed.
+
+**Remediation**:
+
+```javascript
+describe('UserService', () => {
+  let testUser;
+
+  beforeEach(() => {
+    testUser = { id: 1, name: 'Test', role: 'admin' };
+  });
+
+  describe('create', () => {
+    it('creates user with provided data', () => {
+      const result = createUser(testUser);
+      expect(result.id).toBe(1);
+      expect(result.name).toBe('Test');
+    });
+
+    it('throws ValidationError when name is missing', () => {
+      const invalidUser = { id: 1, role: 'admin' };
+      expect(() => createUser(invalidUser)).toThrow(ValidationError);
+    });
+  });
+
+  describe('update', () => {
+    it('updates user with new data', () => {
+      const updated = { name: 'Updated' };
+      const result = updateUser(1, updated);
+      expect(result.name).toBe('Updated');
+    });
+
+    it('preserves unchanged fields', () => {
+      const updated = { name: 'Updated' };
+      const result = updateUser(1, updated);
+      expect(result.role).toBe('admin');
+    });
+  });
+
+  describe('delete', () => {
+    it('removes user from database', async () => {
+      await deleteUser(1);
+      const result = await getUserById(1);
+      expect(result).toBeUndefined();
+    });
+
+    it('throws NotFoundError when user does not exist', () => {
+      expect(() => deleteUser(999)).toThrow(NotFoundError);
+    });
+  });
+});
+```
+
+## Best Practices
+
+- Group related tests in `describe` blocks (by function or feature)
+- Use clear, specific test names that describe what is being tested and expected outcome
+- Move shared setup to `beforeEach` or factory functions
+- Limit test file size to ~200-300 lines; split into multiple files if larger
+- Use clear nesting (2-3 levels deep); avoid 5+ level nesting
+- Name tests using "it should..." pattern: "it returns user when found", not "test1"
+- Create factory functions for complex test data
+- Document why setup is needed in comments
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (tests misleading or interdependent), HIGH (significant burden), MEDIUM (readability issue), LOW (minor)
+- **Category**: Flat Structure, Unclear Names, Duplication, Long File, Missing Setup, Over-Nesting
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of the structural problem
+- **Maintenance Impact**: How this affects debugging, reviewing, and maintaining tests
+- **Remediation**: Specific restructuring suggestion
+
+## Example Usage
+
+```text
+Task(
+  description: "Reorganize authentication test suite",
+  prompt: "Refactor src/__tests__/auth.test.ts to use describe blocks, clear names, and shared setup. Current file is 800 lines with duplicate setup.",
+  subagent_type: "agileflow-test-analyzer-structure"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

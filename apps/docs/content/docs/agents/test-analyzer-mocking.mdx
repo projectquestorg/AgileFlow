@@ -1,0 +1,146 @@
+---
+title: Mock Quality
+description: Test mocking analyzer for over-mocking, mock leakage between tests, mocking what you own, testing mocks instead of code, and missing mock restoration
+---
+
+# Mock Quality
+
+The Test Analyzer: Mocking Quality agent is a specialized test analyzer focused on **mocking anti-patterns**. It finds tests where mocking is misused, creating false confidence by testing mocks instead of actual code, or causing cross-test contamination through mock leakage.
+
+## When to Use
+
+Use this agent when:
+- You need to identify over-mocking that tests mocks instead of real code
+- You want to find mock leakage between tests causing test interdependencies
+- You're checking for tests that mock their own code instead of testing it
+- You need to verify mocks are properly restored between tests
+- You're looking for tests with deep mock chains that are brittle
+
+## How It Works
+
+1. **Reads target tests** - Examines test files for mocking patterns
+2. **Identifies patterns** - Looks for over-mocking, mock leakage, deep chains, and missing restoration
+3. **Assesses impact** - Determines what real code is never tested and what false confidence exists
+4. **Reports findings** - Generates findings with specific locations and remediation steps
+
+## Focus Areas
+
+- **Over-mocking**: Mocking implementation details instead of behavior, mocking so much that no real code runs
+- **Mock leakage**: Mocks not restored between tests, `jest.mock` at module level affecting all tests in file
+- **Mocking what you own**: Mocking your own modules instead of testing them, only testing the integration layer
+- **Testing mocks instead of code**: Assertions that only verify mock was called, not that the outcome is correct
+- **Missing mock restoration**: `jest.spyOn` without `mockRestore`, manual mocks without cleanup
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test:
+
+```javascript
+jest.mock('./database');
+jest.mock('./emailService');
+jest.mock('./logger');
+
+it('processes order', async () => {
+  await processOrder(mockOrder);
+  expect(database.save).toHaveBeenCalledWith(mockOrder);
+  expect(emailService.send).toHaveBeenCalled();
+});
+```
+
+The Mocking analyzer would identify:
+
+### Finding: Over-mocking with assertions only on mock calls
+
+**Location**: `orders.test.ts:15`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+**Category**: Over-Mocking
+
+**Issue**: Every dependency is mocked — no real code executes. Assertions only verify that mocks were called, not that `processOrder` actually works correctly. If the real database.save had a bug, this test would still pass.
+
+**Risk**: Tests pass in CI but code fails in production. False confidence in order processing pipeline.
+
+**Remediation**:
+
+```javascript
+// Option 1: Use real database (test/integration level)
+it('processes order end-to-end', async () => {
+  const testDb = new TestDatabase();
+  const mockEmailService = jest.fn();
+  const order = { items: [{ id: 1, qty: 2 }], total: 50 };
+
+  await processOrder(order, testDb, mockEmailService);
+
+  const saved = await testDb.getTransaction(order.id);
+  expect(saved.amount).toBe(50);
+  expect(mockEmailService).toHaveBeenCalled();
+});
+
+// Option 2: Mock only external APIs, test real business logic
+const mockStripe = { charges: { create: jest.fn() } };
+const realValidator = require('./validator');
+
+it('processes order with real validation', async () => {
+  mockStripe.charges.create.mockResolvedValue({ id: 'ch_123' });
+  const result = await processOrder(order, mockStripe);
+  expect(result.status).toBe('processed');
+  expect(result.chargeId).toBe('ch_123');
+});
+
+// Option 3: Assert on actual outcomes, not just mock calls
+it('saves order to database', async () => {
+  const mockDb = { save: jest.fn() };
+  await processOrder(order, mockDb);
+
+  // Verify mock was called with correct data
+  expect(mockDb.save).toHaveBeenCalledWith(
+    expect.objectContaining({ orderId: order.id, total: order.total })
+  );
+});
+```
+
+## Best Practices
+
+- Mock only external dependencies (HTTP APIs, databases, external services)
+- Test your own code as real code, not as mocks
+- Assertions should verify outcomes, not mock calls
+- Use `jest.config.restoreMocks: true` to auto-restore mocks between tests
+- For tests with spyOn, use `afterEach(() => jest.restoreAllMocks())`
+- Deep mock chains (3+ levels) are a red flag — consider refactoring
+- If a test requires extensive mocking, the code may need better design
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (false confidence), HIGH (mock contamination), MEDIUM (suboptimal), LOW (minor)
+- **Category**: Over-Mocking, Mock Leakage, Mocking Own Code, Testing Mocks, Deep Mock Chain, Missing Restore
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of the mocking problem
+- **Risk**: What false confidence or test contamination this creates
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit mock quality in user service tests",
+  prompt: "Review src/__tests__/user-service.test.ts for over-mocking, mock leakage, and assertions that test mocks instead of code.",
+  subagent_type: "agileflow-test-analyzer-mocking"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-assertions`](/agents/test-analyzer-assertions) - Assertion strength analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator

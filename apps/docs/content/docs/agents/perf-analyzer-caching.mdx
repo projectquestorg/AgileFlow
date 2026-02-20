@@ -1,0 +1,127 @@
+---
+title: Caching Analysis
+description: Caching analyzer for missing memoization, redundant repeated computations, absent HTTP cache headers, missing in-memory caches, and cache invalidation issues
+---
+
+# Caching Analysis
+
+The Performance Analyzer: Caching Analysis agent is a specialized performance analyzer focused on **missing caching and memoization**. It finds code patterns where the same expensive work is repeated unnecessarily, and caching could provide significant performance gains.
+
+## When to Use
+
+Use this agent when:
+- You need to identify repeated expensive function calls with same arguments
+- You want to check for missing HTTP cache headers on static API responses
+- You're analyzing code for repeated database queries or file reads
+- You need to find redundant computations that could be cached
+- You're looking for missing in-memory caches or memoization strategies
+
+## How It Works
+
+1. **Reads target code** - Focuses on functions with repeated calls, API response headers, database queries, external API calls, configuration/reference data lookups
+2. **Identifies patterns** - Looks for repeated expensive computations, missing API caching headers, redundant DB queries without caching, external API calls without TTL, computed values without memoization
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, caching strategies, and remediation steps
+4. **Provides context** - Shows exact code and suggests appropriate caching mechanisms with TTL/eviction strategies
+
+## Focus Areas
+
+- **Missing memoization**: Pure functions called repeatedly with same arguments, no caching of results
+- **Redundant repeated computations**: Same calculation performed multiple times in a request/render cycle
+- **Missing HTTP cache headers**: API responses without Cache-Control, ETag, or Last-Modified headers
+- **Missing in-memory caches**: Expensive operations (DB queries, API calls, file reads) repeated without caching
+- **Cache invalidation issues**: Stale caches, no TTL, no eviction strategy
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+app.get('/api/config', async (req, res) => {
+  const config = await loadConfigFromDB(); // DB hit every time
+  res.json(config);
+});
+```
+
+The Caching Analysis analyzer would identify:
+
+### Finding: Missing cache headers on rarely-changing config endpoint
+
+**Location**: `api/config.ts:15`
+**Severity**: HIGH
+**Confidence**: HIGH
+
+**Issue**: The `/api/config` endpoint calls the database on every request to fetch configuration data that rarely changes. Without HTTP cache headers, the client cannot cache this response, resulting in unnecessary database load.
+
+**Cache Strategy Recommendation**:
+- Type: "HTTP headers (primary) + in-memory cache (secondary)"
+- TTL: "1 hour (3600s) for config data that changes infrequently"
+- Invalidation: "Clear cache on config update, use ETag for client validation"
+- Expected hit rate: "~95% for config data in single-user session"
+
+**Suggested Fix**:
+```javascript
+app.get('/api/config', async (req, res) => {
+  // Set HTTP cache headers
+  res.set('Cache-Control', 'public, max-age=3600');
+
+  // Optional: in-memory cache for server-side benefit
+  if (!configCache || Date.now() - configCache.time > 3600000) {
+    configCache = {
+      data: await loadConfigFromDB(),
+      time: Date.now()
+    };
+  }
+
+  res.json(configCache.data);
+});
+```
+
+## Best Practices
+
+- Use Cache-Control headers with appropriate max-age values
+- Implement ETags for conditional requests (If-None-Match)
+- Use Last-Modified headers for cache validation
+- Implement TTL-based cache eviction for in-memory caches
+- Use LRU (Least Recently Used) cache for bounded memory
+- Cache frequently accessed, rarely-changing data
+- Invalidate cache on data mutations (updates, deletes)
+- Profile cache hit rates to verify effectiveness
+- Use Redis or Memcached for distributed caching
+- Document cache TTL and invalidation strategy
+- Never cache security-sensitive data (authentication tokens, user balances)
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (repeated expensive ops per-request), HIGH (noticeable repeated work), MEDIUM (optimization), or LOW (minor improvement)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Missing Memoization, Redundant Computation, Missing HTTP Cache, Missing In-Memory Cache, or No TTL/Eviction
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of repeated work
+- **Cache Strategy Recommendation**: Type, TTL, invalidation, expected hit rate
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze caching opportunities in backend API",
+  prompt: "Review api/ for repeated database queries, missing HTTP cache headers, and expensive operations that could be cached. Focus on read-heavy endpoints.",
+  subagent_type: "agileflow-perf-analyzer-caching"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

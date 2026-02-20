@@ -175,6 +175,38 @@ Agents for automated legal risk analysis and compliance auditing:
 | [`legal-analyzer-international`](/agents/legal-analyzer-international) | International compliance (LGPD, PIPL, data localization) |
 | [`legal-consensus`](/agents/legal-consensus) | Consensus coordinator for legal audit findings |
 
+### Performance Analysis
+
+Agents for automated performance bottleneck detection:
+
+| Agent | Description |
+|-------|-------------|
+| [`perf-analyzer-queries`](/agents/perf-analyzer-queries) | N+1 queries, unindexed lookups, missing pagination, ORM anti-patterns |
+| [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) | Unnecessary re-renders, missing memoization, expensive render computations |
+| [`perf-analyzer-memory`](/agents/perf-analyzer-memory) | Memory leaks, event listener cleanup, closure captures, large object retention |
+| [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) | Large imports, missing tree-shaking, missing dynamic imports, duplicate dependencies |
+| [`perf-analyzer-compute`](/agents/perf-analyzer-compute) | Sync I/O on main thread, CPU-intensive loops, blocking operations |
+| [`perf-analyzer-network`](/agents/perf-analyzer-network) | HTTP waterfall, missing request batching, no compression, large payloads |
+| [`perf-analyzer-caching`](/agents/perf-analyzer-caching) | Missing memoization, redundant computations, no HTTP cache headers |
+| [`perf-analyzer-assets`](/agents/perf-analyzer-assets) | Unoptimized images, render-blocking resources, missing lazy loading |
+| [`perf-consensus`](/agents/perf-consensus) | Consensus coordinator for performance audit findings |
+
+### Test Analysis
+
+Agents for automated test quality analysis:
+
+| Agent | Description |
+|-------|-------------|
+| [`test-analyzer-coverage`](/agents/test-analyzer-coverage) | Untested critical paths, missing error path tests, low branch coverage |
+| [`test-analyzer-fragility`](/agents/test-analyzer-fragility) | Timing-dependent tests, order-dependent tests, flaky indicators |
+| [`test-analyzer-mocking`](/agents/test-analyzer-mocking) | Over-mocking, mock leakage, mocking what you own, testing mocks not code |
+| [`test-analyzer-assertions`](/agents/test-analyzer-assertions) | Weak assertions, missing negative tests, snapshot overuse |
+| [`test-analyzer-structure`](/agents/test-analyzer-structure) | Missing describe/it nesting, unclear test names, duplication |
+| [`test-analyzer-integration`](/agents/test-analyzer-integration) | Missing API endpoint tests, no E2E coverage, unit-only suites |
+| [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) | Dead tests, outdated assertions, tests passing for wrong reasons |
+| [`test-analyzer-patterns`](/agents/test-analyzer-patterns) | Testing private methods, deep mock chains, oversized snapshots |
+| [`test-consensus`](/agents/test-consensus) | Consensus coordinator for test audit findings |
+
 ### Validation
 
 Read-only validator agents that verify implementations:

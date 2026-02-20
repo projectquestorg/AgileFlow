@@ -1,0 +1,222 @@
+---
+title: Performance Consensus
+description: Consensus coordinator for performance audit - validates findings, votes on confidence, filters by project type, estimates impact, and generates prioritized Performance Audit Report
+---
+
+# Performance Consensus
+
+The Performance Consensus Coordinator is the **consensus coordinator** for the Performance Audit system. It collects findings from all performance analyzers, validates them against the project type, votes on their legitimacy, and produces the final prioritized Performance Audit Report.
+
+## When to Use
+
+Use this agent when:
+- You need to run a comprehensive performance audit across multiple analysis dimensions
+- You want to consolidate findings from multiple performance analyzers into one report
+- You need to resolve conflicting findings from different analyzers
+- You want a final, prioritized list of performance bottlenecks to fix
+- You need to distinguish real issues from false positives based on project type
+
+## How It Works
+
+1. **Detects project type** - Determines if the project is API-only, SPA, Full-stack, CLI, Library, Mobile, or Microservice
+2. **Collects findings** - Reads output from all performance analyzers (queries, rendering, memory, bundle, compute, network, caching, assets)
+3. **Groups related issues** - Finds findings that reference the same location or related bottleneck
+4. **Votes on confidence** - Uses analyzer agreement to rate confidence levels
+5. **Filters by relevance** - Excludes findings irrelevant to the detected project type
+6. **Estimates impact** - Quantifies performance improvement for each finding
+7. **Generates report** - Produces prioritized, actionable Performance Audit Report
+
+## Responsibilities
+
+- Detect project type (API-only, SPA, Full-stack, CLI, Library, Mobile, Microservice)
+- Collect findings from queries, rendering, memory, bundle, compute, network, caching, and assets analyzers
+- Validate findings - check if issues are real or false positives
+- Vote on confidence - multiple analyzers flagging same issue = higher confidence
+- Filter by project relevance - exclude findings that don't apply to detected type
+- Estimate real-world impact - quantify performance improvement for each finding
+- Generate report - produce prioritized, actionable audit output with remediation steps
+
+## Consensus Process
+
+### Step 1: Detect Project Type
+
+Read the codebase to determine project type. This affects which findings are relevant:
+
+| Project Type | Key Indicators | Irrelevant Finding Types |
+|-------------|---------------|------------------------|
+| **API-only** | Express/Fastify/Koa, no HTML templates | Rendering, bundle size, assets, lazy loading, code splitting |
+| **SPA** | React/Vue/Angular, client-side routing | N+1 queries, server memory leaks, sync I/O |
+| **Full-stack** | Both server + client code | None - all findings potentially relevant |
+| **CLI tool** | `process.argv`, `commander`, no HTTP server | Rendering, bundle size, assets, lazy loading, HTTP cache headers |
+| **Library** | `exports`, no `app.listen`, published to npm | Rendering, queries, server memory, assets. Bundle size IS critical. |
+| **Mobile** | React Native, Flutter, Expo | Server-side issues (unless has API) |
+| **Microservice** | Docker, small focused API, message queues | Client-side rendering, bundle size, assets |
+
+### Step 2: Parse All Findings
+
+Extract findings from each analyzer's output. Normalize into a common structure with ID, analyzer, location, title, severity, confidence, category, code, impact, and remediation.
+
+### Step 3: Group Related Findings
+
+Find findings that reference the same location or related bottleneck, creating a matrix of which analyzers flagged what:
+
+| Location | Queries | Rendering | Memory | Bundle | Compute | Network | Caching | Assets | Consensus |
+|----------|:-------:|:---------:|:------:|:------:|:-------:|:-------:|:-------:|:------:|-----------|
+| api/users.ts:45 | ! | - | - | - | ! | - | - | - | CONFIRMED |
+| components/List.tsx:28 | - | ! | - | - | - | - | ! | - | CONFIRMED |
+
+### Step 4: Vote on Confidence
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence (clear impact path) | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, circumstantial evidence | Low priority, investigate before acting |
+| **FALSE POSITIVE** | Issue not relevant to project type or already optimized | Exclude from report with note |
+
+### Step 5: Filter by Project Type and False Positives
+
+Remove findings that don't apply. Common false positive scenarios:
+
+- **CLI tools**: Bundle size, rendering, assets, HTTP caching don't apply
+- **API-only**: Rendering, code splitting, lazy loading don't apply
+- **SPA without API**: N+1 queries, server sync I/O don't apply
+- **Already optimized**: React.memo already in place, compression middleware present
+- **Small data sets**: O(n^2) on 10 items is negligible
+- **Startup-only code**: `readFileSync` at module load is acceptable
+- **Libraries**: Server memory, rendering, queries are consumer's responsibility
+
+Document reasoning for each exclusion.
+
+### Step 6: Estimate Real-World Impact
+
+For each confirmed finding, estimate the performance improvement:
+
+| Metric | How to Estimate |
+|--------|----------------|
+| **Latency** | "~500ms saved per request" based on query count reduction |
+| **Memory** | "~10MB/hour growth eliminated" based on leak size |
+| **Bundle** | "~500KB reduced" based on library size |
+| **Throughput** | "~3x more concurrent requests" based on blocking removal |
+
+### Step 7: Prioritize by Impact
+
+**Severity + Confidence = Priority**:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|-----------|--------|-------------|
+| **CRITICAL** (timeout/OOM, >2x latency) | Fix Immediately | Fix Immediately | Fix This Sprint |
+| **HIGH** (measurable user impact) | Fix Immediately | Fix This Sprint | Backlog |
+| **MEDIUM** (optimization opportunity) | Fix This Sprint | Backlog | Backlog |
+| **LOW** (micro-optimization) | Backlog | Backlog | Info |
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+The final Performance Audit Report includes:
+
+- **Summary**: Count by severity with descriptions
+- **Fix Immediately**: Critical and high-priority issues requiring immediate action
+- **Fix This Sprint**: Medium-priority optimizations to add to current sprint
+- **Backlog**: Lower-priority items for future improvement
+- **Analyzer Agreement Matrix**: Shows which analyzers flagged which locations
+- **False Positives**: Issues excluded with reasons
+- **Performance Impact Summary**: Quantified improvements (latency, memory, bundle size, throughput)
+- **Remediation Checklist**: Actionable items for each finding
+- **Recommendations**: Next steps for addressing findings
+
+## Example Report Structure
+
+```markdown
+# Performance Audit Report
+
+**Generated**: 2024-02-03
+**Target**: src/ and api/
+**Depth**: comprehensive
+**Analyzers**: Queries, Rendering, Memory, Bundle, Compute, Network, Caching, Assets
+**Project Type**: Full-stack (React + Express)
+
+## Bottleneck Summary
+
+| Severity | Count | Category |
+|----------|-------|----------|
+| Critical | 2 | N+1 queries, memory leak |
+| High | 4 | Missing memoization, bundle size |
+| Medium | 7 | Caching opportunities, image optimization |
+
+**Total Findings**: 13 (after consensus filtering)
+**False Positives Excluded**: 2
+**Estimated Total Impact**: ~2.5s latency reduction, ~300KB bundle savings, 0KB/hour memory leak fixed
+
+## Performance Impact Summary
+
+| Category | Current | Optimized | Improvement |
+|----------|---------|-----------|-------------|
+| API latency (P95) | ~2.5s | ~500ms | 5x faster |
+| Bundle size | 1.2MB | 400KB | 67% smaller |
+| Memory growth | 10MB/hr | Stable | Leak eliminated |
+| Page load time | ~3.2s | ~1.1s | 65% faster |
+
+## Analyzer Agreement Matrix
+
+| Location | Qry | Rnd | Mem | Bnd | Cmp | Net | Cch | Ast | Consensus |
+|----------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|-----------|
+| api/users.ts:45 | ! | - | - | - | ! | - | - | - | CONFIRMED |
+| components/List.tsx:28 | - | ! | - | - | - | - | ! | - | CONFIRMED |
+```
+
+## Best Practices
+
+- Give each analyzer's finding fair consideration
+- Document reasoning for exclusions thoroughly
+- Don't bury critical issues under minor ones
+- Acknowledge uncertainty and mark findings as INVESTIGATE
+- Don't over-exclude real bugs that look like false positives
+- Use evidence from the codebase to resolve disputes
+- Quantify every performance improvement
+- Provide actionable remediation steps with code examples
+- Save report to `docs/08-project/perf-audits/perf-audit-{YYYYMMDD}.md`
+
+## Handling Common Situations
+
+### All analyzers agree
+-> CONFIRMED, highest confidence, include prominently in "Fix Immediately"
+
+### One analyzer, strong evidence (clear impact path)
+-> LIKELY, include in "Fix This Sprint" with the evidence
+
+### One analyzer, weak evidence (theoretical)
+-> INVESTIGATE, include in "Backlog" but mark as needing profiling
+
+### Analyzers contradict
+-> Read the code, make a decision, document reasoning
+
+### Finding not relevant to project type
+-> FALSE POSITIVE with documented reasoning
+
+### No findings at all
+-> Report "No performance bottlenecks found" with note about what was checked and project type
+
+## Example Usage
+
+```text
+Task(
+  description: "Run comprehensive performance audit",
+  prompt: "Execute a full performance audit on src/ and api/ using all performance analyzers. Gather findings from queries, rendering, memory, bundle, compute, network, caching, and assets analyzers. Consolidate into one prioritized report with consensus voting on confidence levels and filtering by full-stack project type.",
+  subagent_type: "agileflow-perf-consensus"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization

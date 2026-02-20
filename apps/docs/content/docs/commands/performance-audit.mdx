@@ -1,0 +1,221 @@
+---
+title: /audit:performance
+description: Multi-agent performance bottleneck analysis with consensus voting for finding optimization opportunities
+---
+
+# /audit:performance
+
+Deploy multiple specialized performance analyzers in parallel to find bottlenecks and optimization opportunities, then synthesize results through consensus voting into a prioritized Performance Audit Report.
+
+## Quick Start
+
+```bash
+/agileflow:audit:performance app/
+```
+
+## Arguments
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | Target file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep | quick | Analysis depth (quick = core 5 analyzers, deep = all 8) |
+| `FOCUS` | queries, rendering, memory, bundle, compute, network, caching, assets, all | all | Which analyzers to deploy |
+
+## How It Works
+
+The command deploys specialized performance analyzers in parallel to examine your codebase for bottlenecks:
+
+1. **Deploy Analyzers** - 5-8 specialized analyzers examine code simultaneously
+2. **Parallel Analysis** - Each analyzer runs independently on the target files
+3. **Consensus Voting** - Results are collected and evaluated for confidence
+4. **Generate Report** - A prioritized Performance Audit Report is produced with actionable fixes
+
+### Analyzer Coverage
+
+**Core Analyzers (DEPTH=quick)**:
+- **Queries** - N+1 queries, unindexed lookups, missing pagination, ORM anti-patterns
+- **Rendering** - Unnecessary re-renders, expensive computations in render, missing memoization
+- **Memory** - Memory leaks, event listener cleanup, closure captures, large object retention
+- **Bundle** - Large imports, no tree-shaking, missing dynamic imports, duplicate dependencies
+- **Compute** - Synchronous I/O, CPU-intensive loops, blocking operations, missing worker threads
+
+**Additional Analyzers (DEPTH=deep adds)**:
+- **Network** - HTTP waterfall, missing batching, no compression, large payloads
+- **Caching** - Missing memoization, redundant computations, no HTTP cache headers
+- **Assets** - Unoptimized images, render-blocking resources, missing lazy loading
+
+## Examples
+
+```bash
+# Quick scan of app directory (core 5 analyzers)
+/agileflow:audit:performance app/
+
+# Deep analysis with all 8 analyzers
+/agileflow:audit:performance . DEPTH=deep
+
+# Focus on specific optimization areas
+/agileflow:audit:performance src/ FOCUS=queries,memory
+
+# Single area analysis
+/agileflow:audit:performance app/api/ FOCUS=queries
+
+# Comprehensive audit with all analyzers
+/agileflow:audit:performance . DEPTH=deep FOCUS=all
+```
+
+## Understanding Results
+
+### Severity Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| **CRITICAL** | P95 latency >2x or causes timeout/OOM | Fix before launch |
+| **HIGH** | Measurable user-facing impact | Fix this sprint |
+| **MEDIUM** | Optimization opportunity | Backlog for later |
+| **LOW** | Micro-optimization | Consider for next release |
+
+### Confidence Scoring
+
+| Confidence | Meaning |
+|------------|---------|
+| **CONFIRMED** | 2+ analyzers agree (high priority) |
+| **LIKELY** | 1 analyzer with strong evidence (medium priority) |
+| **INVESTIGATE** | 1 analyzer with weak evidence (low priority) |
+
+## Example Output
+
+```
+Performance Audit: app/
+═════════════════════════════════════════════════════════════
+
+Deploying 5 performance analyzers (quick mode)...
+✓ Queries Analyzer
+✓ Rendering Analyzer
+✓ Memory Analyzer
+✓ Bundle Analyzer
+✓ Compute Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: Full-stack Web Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 BOTTLENECK SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Severity | Count | Category |
+|----------|-------|----------|
+| Critical | 1     | N+1 Queries |
+| High     | 2     | Bundle Size, Memory Leak |
+| Medium   | 3     | Rendering, Compute |
+| Low      | 1     | Minor Optimization |
+
+Total: 7 findings (1 false positive excluded)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ FIX IMMEDIATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. N+1 query in user list endpoint [CONFIRMED by Queries, Compute]
+   Location: api/users.ts:45
+   Impact: ~500ms added per request with 100 users
+   Fix: Use eager loading / JOIN instead of loop query
+
+2. Memory leak from uncleared setInterval [CONFIRMED by Memory, Compute]
+   Location: services/poller.ts:28
+   Impact: Memory grows ~10MB/hour, eventual OOM
+   Fix: Clear interval in cleanup/destroy handler
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX THIS SPRINT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. Importing entire lodash (527KB) for one function [LIKELY - Bundle]
+4. Missing React.memo on frequently re-rendered list [LIKELY - Rendering]
+5. Synchronous file read in API handler [LIKELY - Compute]
+
+[Full report saved to docs/08-project/perf-audits/perf-audit-20260220.md]
+```
+
+## Depth Modes
+
+### Quick Mode (Default)
+- Deploys **5 core analyzers**
+- Focuses on **CRITICAL and HIGH** severity issues
+- Skips micro-optimizations
+- Fast turnaround for rapid performance checks
+- Use when: You need quick baseline assessment
+
+### Deep Mode
+- Deploys **all 8 analyzers**
+- Includes **MEDIUM and LOW** severity findings
+- Comprehensive coverage including Network, Caching, Assets
+- Use when: Preparing for performance review, launch, or optimization sprint
+
+## Focus Areas
+
+Use `FOCUS` to analyze specific performance domains:
+
+```bash
+# Only query performance
+/agileflow:audit:performance app/ FOCUS=queries
+
+# Multiple specific areas
+/agileflow:audit:performance app/ FOCUS=queries,memory,bundle
+
+# All analyzers
+/agileflow:audit:performance app/ FOCUS=all
+```
+
+Available focus areas:
+- `queries` - Database queries, N+1 problems, indexing
+- `rendering` - React re-renders, expensive computations
+- `memory` - Memory leaks, retention, cleanup
+- `bundle` - Bundle size, tree-shaking, imports
+- `compute` - CPU-intensive operations, blocking I/O
+- `network` - HTTP performance, compression (deep only)
+- `caching` - Memoization, cache headers (deep only)
+- `assets` - Image optimization, resource loading (deep only)
+- `all` - Run all applicable analyzers (default)
+
+## Report Location
+
+Performance audit reports are saved to:
+```
+docs/08-project/perf-audits/perf-audit-{YYYYMMDD}.md
+```
+
+Each report includes:
+- Executive summary with bottleneck overview
+- Detailed findings with impact estimates
+- Performance improvement recommendations
+- Affected files and code locations
+- Confidence scores and analyzer agreement
+
+## Integration with Development
+
+### In Code Review
+Run performance audit on pull requests to catch bottlenecks before merge:
+
+```bash
+/agileflow:audit:performance --pr
+```
+
+### Before Launch
+Run full deep audit before going live:
+
+```bash
+/agileflow:audit:performance . DEPTH=deep
+```
+
+### Continuous Optimization
+Schedule periodic audits in CI/CD to maintain performance standards.
+
+## Related Commands
+
+| Command | Purpose |
+|---------|---------|
+| [`/audit:logic`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
+| [`/audit:test`](/docs/commands/test-audit) | Test quality analysis (similar multi-agent architecture) |
+| [`/review`](/docs/commands/review) | Code review (includes some performance checks) |
+| [`/verify`](/docs/commands/verify) | Run tests and verify quality |

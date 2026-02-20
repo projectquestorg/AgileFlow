@@ -1,0 +1,129 @@
+---
+title: Compute Performance
+description: Compute performance analyzer for synchronous I/O on main thread, CPU-intensive loops, blocking operations, missing worker threads, and algorithmic inefficiency
+---
+
+# Compute Performance
+
+The Performance Analyzer: Compute Performance agent is a specialized performance analyzer focused on **CPU and compute bottlenecks**. It finds code patterns where computation is blocking, inefficient, or poorly structured, causing slow response times or unresponsive applications.
+
+## When to Use
+
+Use this agent when:
+- You need to identify synchronous I/O operations in request handlers
+- You want to check for CPU-intensive nested loops and high algorithmic complexity
+- You're analyzing code for blocking operations on the main thread
+- You need to find opportunities for worker threads or process pooling
+- You're looking for algorithmic inefficiencies (O(n^2) vs O(n) patterns)
+
+## How It Works
+
+1. **Reads target code** - Focuses on API handlers, data processing functions, file I/O, loop complexity, data structure choices
+2. **Identifies patterns** - Looks for readFileSync/writeFileSync in handlers, nested loops with high complexity, blocking computations, missing workers, inefficient algorithms (Array.includes in loops, repeated sorting)
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, complexity analysis, and remediation steps
+4. **Provides context** - Shows exact code and quantifies compute performance impact
+
+## Focus Areas
+
+- **Synchronous I/O on main thread**: `readFileSync`, `writeFileSync`, `execSync` in server request handlers
+- **CPU-intensive loops**: Nested loops with high complexity (O(n^2), O(n^3)), large data processing without chunking
+- **Blocking operations**: Long-running synchronous computations that block the event loop
+- **Missing worker threads**: Heavy computation that should be offloaded to workers/child processes
+- **Algorithmic inefficiency**: Using arrays where Sets/Maps would be O(1), repeated linear searches, unnecessary sorting
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```javascript
+app.get('/config', (req, res) => {
+  const config = fs.readFileSync('/etc/config.json', 'utf8');
+  res.json(JSON.parse(config));
+});
+```
+
+The Compute Performance analyzer would identify:
+
+### Finding: Synchronous file read in request handler
+
+**Location**: `api/config.ts:23`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: `readFileSync` blocks the event loop for all incoming requests. While one request is reading the file, all other requests must wait, causing request queueing and degraded throughput.
+
+**Complexity Analysis**:
+- Current: "Blocks event loop, all concurrent requests serialized"
+- Optimal: "Read on startup or use caching with async reads"
+- At scale: "10 concurrent requests: one waits while others block"
+
+**Suggested Fix**:
+```javascript
+// Option 1: Read at startup
+const config = fs.readFileSync('/etc/config.json', 'utf8');
+const configData = JSON.parse(config);
+
+app.get('/config', (req, res) => {
+  res.json(configData);
+});
+
+// Option 2: Async read with caching
+const configCache = new Map();
+
+app.get('/config', async (req, res) => {
+  if (!configCache.has('config')) {
+    const data = await fs.promises.readFile('/etc/config.json', 'utf8');
+    configCache.set('config', JSON.parse(data));
+  }
+  res.json(configCache.get('config'));
+});
+```
+
+## Best Practices
+
+- Use async/await for I/O operations (fs.promises, fetch, database queries)
+- Move `readFileSync` to application startup, not request handlers
+- Use `execFile` or `execFileSync` with `shell: false` instead of `execSync` with shell commands
+- Break CPU-intensive work into chunks with `setImmediate()` to not block event loop
+- Use worker_threads or child_process for heavy computation offloading
+- Replace O(n^2) algorithms with O(n) using Set/Map for lookups
+- Use `Array.includes()` only on small arrays; prefer Set.has() for large datasets
+- Profile with Node.js profiler (`node --prof` and `node --prof-process`)
+- Measure impact with `console.time()` / `console.timeEnd()` or real profiler
+- Use algorithms with appropriate Big-O complexity for your data sizes
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (blocks event loop or timeout), HIGH (measurable latency), MEDIUM (suboptimal), or LOW (micro-optimization)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Sync I/O, Nested Loop, Blocking Compute, Missing Workers, or Algorithm Inefficiency
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of compute performance impact
+- **Complexity Analysis**: Current vs optimal with Big-O notation and scale impact
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze compute performance in data processor",
+  prompt: "Review src/processors/ for blocking operations, synchronous I/O, and inefficient algorithms. Focus on request handlers and data transformation functions.",
+  subagent_type: "agileflow-perf-analyzer-compute"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-analyzer-assets`](/agents/perf-analyzer-assets) - Asset optimization
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

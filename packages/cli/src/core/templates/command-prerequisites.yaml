@@ -1,0 +1,169 @@
+# command-prerequisites.yaml
+#
+# Declarative prerequisites for AgileFlow commands.
+# Checked before command execution to warn about unmet requirements.
+#
+# Schema:
+#   commands.<name>.prerequisites[]:
+#     signal      - Dot-path into extracted signals (e.g. git.branch, statusJson)
+#     description - Human-readable explanation of what's needed
+#     fix         - Actionable instruction to resolve
+#     severity    - critical (will fail) | high (poor results) | medium (suboptimal)
+#
+# Signals are extracted by smart-detect.js extractSignals() and include:
+#   git.branch, git.onFeatureBranch, git.isClean, git.filesChanged
+#   statusJson, storyCount, story, story.epic
+#   packageJson, tests.hasTestSetup
+#   files.playwright, files.tsconfig, files.coverage, files.ciConfig
+
+version: "1.0.0"
+
+settings:
+  fail_open: true
+  max_warnings: 5
+
+commands:
+  verify:
+    prerequisites:
+      - signal: tests.hasTestSetup
+        description: "Test framework must be configured (scripts.test in package.json)"
+        fix: "Add a test script to package.json, e.g. \"test\": \"jest\" or \"test\": \"vitest\""
+        severity: critical
+
+  babysit:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist with stories to work on"
+        fix: "Run: /agileflow:story to create stories, or /agileflow:epic to plan an epic"
+        severity: critical
+
+  pr:
+    prerequisites:
+      - signal: git.onFeatureBranch
+        description: "Must be on a feature branch (not main/master)"
+        fix: "Create a feature branch: git checkout -b feat/your-feature"
+        severity: critical
+      - signal: story
+        description: "An active story should be set for PR description"
+        fix: "Run: /agileflow:status to set a current story"
+        severity: high
+
+  deploy:
+    prerequisites:
+      - signal: git.branch
+        description: "Git repository must be initialized"
+        fix: "Run: git init"
+        severity: critical
+      - signal: packageJson
+        description: "package.json must exist for deployment configuration"
+        fix: "Run: npm init -y"
+        severity: critical
+
+  audit:
+    prerequisites:
+      - signal: story
+        description: "An active story is needed to audit completion"
+        fix: "Run: /agileflow:status to set a current story"
+        severity: critical
+      - signal: statusJson
+        description: "status.json must exist with story data"
+        fix: "Run: /agileflow:story to create stories"
+        severity: critical
+
+  board:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist to display the board"
+        fix: "Run: /agileflow:story to create your first story"
+        severity: critical
+      - signal: storyCount
+        description: "At least one story must exist"
+        fix: "Run: /agileflow:story to create a story"
+        severity: high
+
+  sprint:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist for sprint planning"
+        fix: "Run: /agileflow:story to create stories first"
+        severity: critical
+      - signal: storyCount
+        description: "Stories are needed for sprint planning"
+        fix: "Run: /agileflow:epic to break down features into stories"
+        severity: high
+
+  browser-qa:
+    prerequisites:
+      - signal: files.playwright
+        description: "Playwright must be configured (playwright.config.ts or .js)"
+        fix: "Run: npm init playwright@latest"
+        severity: critical
+
+  review:
+    prerequisites:
+      - signal: git.onFeatureBranch
+        description: "Must be on a feature branch for code review"
+        fix: "Create a feature branch: git checkout -b feat/your-feature"
+        severity: critical
+      - signal: git.filesChanged
+        description: "There should be changed files to review"
+        fix: "Make some code changes before requesting a review"
+        severity: high
+
+  baseline:
+    prerequisites:
+      - signal: tests.hasTestSetup
+        description: "Test framework must be configured to establish a baseline"
+        fix: "Add a test script to package.json"
+        severity: critical
+      - signal: git.branch
+        description: "Git repository must be initialized"
+        fix: "Run: git init"
+        severity: high
+
+  metrics:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist for metrics calculation"
+        fix: "Run: /agileflow:story to start tracking work"
+        severity: critical
+      - signal: storyCount
+        description: "Stories are needed to compute metrics"
+        fix: "Run: /agileflow:story to create stories"
+        severity: high
+
+  velocity:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist for velocity tracking"
+        fix: "Run: /agileflow:story to start tracking work"
+        severity: critical
+      - signal: storyCount
+        description: "Completed stories are needed for velocity calculation"
+        fix: "Complete some stories to build velocity history"
+        severity: high
+
+  compress:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist to compress"
+        fix: "No status.json to compress - create stories first with /agileflow:story"
+        severity: critical
+
+  retro:
+    prerequisites:
+      - signal: statusJson
+        description: "status.json must exist for retrospective data"
+        fix: "Run: /agileflow:story to start tracking work"
+        severity: critical
+      - signal: storyCount
+        description: "Stories are needed for meaningful retrospective"
+        fix: "Complete some stories before running a retrospective"
+        severity: high
+
+  changelog:
+    prerequisites:
+      - signal: git.branch
+        description: "Git repository must be initialized with commit history"
+        fix: "Run: git init && git add -A && git commit -m 'initial commit'"
+        severity: critical

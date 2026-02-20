@@ -1,0 +1,142 @@
+---
+title: Asset Optimization
+description: Asset optimization analyzer for unoptimized images, render-blocking resources, missing lazy loading, absent code splitting, and missing preload/prefetch hints
+---
+
+# Asset Optimization
+
+The Performance Analyzer: Asset Optimization agent is a specialized performance analyzer focused on **static asset delivery bottlenecks**. It finds code patterns where images, CSS, JavaScript, and other assets are delivered inefficiently, causing slow page loads and poor Core Web Vitals.
+
+## When to Use
+
+Use this agent when:
+- You need to identify unoptimized images (missing WebP/AVIF, large files)
+- You want to check for render-blocking CSS/JS in the document head
+- You're analyzing code for missing lazy loading on below-fold content
+- You need to find missing code splitting opportunities on routes
+- You're looking for missing preload/prefetch hints or font loading issues
+
+## How It Works
+
+1. **Reads target code** - Focuses on HTML templates, image usage, CSS/JS loading patterns, route configuration, font loading
+2. **Identifies patterns** - Looks for unoptimized images, render-blocking scripts, missing lazy loading, monolithic bundles, missing preload/prefetch, FOIT issues
+3. **Reports findings** - Generates structured findings with specific locations, severity levels, Core Web Vitals impact, and remediation steps
+4. **Provides context** - Shows exact code and quantifies page load performance improvement
+
+## Focus Areas
+
+- **Unoptimized images**: No WebP/AVIF format, no responsive images (srcset), oversized images
+- **Render-blocking resources**: CSS/JS in `<head>` without async/defer, blocking first paint
+- **Missing lazy loading**: Below-the-fold images and components loaded eagerly
+- **Missing code splitting**: Single large JS bundle instead of route-based chunks
+- **Missing preload/prefetch hints**: Critical resources not preloaded, next-page resources not prefetched
+- **Font loading issues**: Flash of invisible text (FOIT), no `font-display: swap`, loading unused font weights
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this code:
+```html
+<img src="/images/hero.png" width="1200" height="600" />
+```
+
+The Asset Optimization analyzer would identify:
+
+### Finding: Large PNG image without optimization
+
+**Location**: `index.html:42`
+**Severity**: CRITICAL
+**Confidence**: HIGH
+
+**Issue**: The hero image is served as a large PNG without responsive sizes or modern formats. A 1200x600 PNG can be 500KB+, while a WebP with responsive sizes would be 50-100KB, significantly impacting LCP (Largest Contentful Paint).
+
+**Core Web Vitals Impact**:
+- LCP: "Delayed by ~2s due to large image download"
+- FID/INP: "No direct impact, but overall page load slower"
+- CLS: "Potential layout shift if image dimensions not specified"
+
+**Suggested Fix**:
+```html
+<!-- Option 1: Next.js Image (recommended) -->
+<Image
+  src={heroPng}
+  alt="Hero"
+  width={1200}
+  height={600}
+  priority
+  quality={85}
+/>
+
+<!-- Option 2: HTML with srcset and modern formats -->
+<picture>
+  <source
+    srcSet="/images/hero.avif 1x, /images/hero-2x.avif 2x"
+    type="image/avif"
+  />
+  <source
+    srcSet="/images/hero.webp 1x, /images/hero-2x.webp 2x"
+    type="image/webp"
+  />
+  <img
+    src="/images/hero.png"
+    srcSet="/images/hero-2x.png 2x"
+    alt="Hero"
+    width="1200"
+    height="600"
+    loading="lazy"
+  />
+</picture>
+```
+
+## Best Practices
+
+- Use Next.js Image component for automatic optimization
+- Convert images to WebP/AVIF with PNG fallback
+- Use responsive images with `srcset` and `sizes` attributes
+- Add `loading="lazy"` to below-fold images
+- Minify and optimize SVGs
+- Use `async` or `defer` on non-critical scripts
+- Move non-critical scripts to end of body
+- Use `preload` for critical resources (fonts, LCP image)
+- Use `prefetch` for resources needed on next page
+- Implement code splitting per route
+- Use `dynamic` imports for heavy components
+- Specify `font-display: swap` to avoid FOIT
+- Monitor Core Web Vitals with Lighthouse or Web Vitals API
+- Set up bundle size budgets in CI/CD
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (major LCP/FID impact), HIGH (noticeable slowdown), MEDIUM (optimization), or LOW (minor improvement)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Category**: Image Optimization, Render Blocking, Missing Lazy Load, Missing Code Split, Missing Preload, or Font Loading
+- **Code**: Relevant code snippet
+- **Issue**: Clear explanation of asset loading impact
+- **Core Web Vitals Impact**: Effect on LCP, FID/INP, and CLS
+- **Remediation**: Specific fix with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Optimize asset delivery in Next.js application",
+  prompt: "Review pages/ and components/ for unoptimized images, render-blocking scripts, and missing lazy loading. Focus on Core Web Vitals improvement.",
+  subagent_type: "agileflow-perf-analyzer-assets"
+)
+```
+
+## Related Agents
+
+- [`perf-analyzer-queries`](/agents/perf-analyzer-queries) - Database query optimization
+- [`perf-analyzer-rendering`](/agents/perf-analyzer-rendering) - UI rendering performance
+- [`perf-analyzer-memory`](/agents/perf-analyzer-memory) - Memory leaks and retention
+- [`perf-analyzer-bundle`](/agents/perf-analyzer-bundle) - Bundle size optimization
+- [`perf-analyzer-compute`](/agents/perf-analyzer-compute) - CPU and compute efficiency
+- [`perf-analyzer-network`](/agents/perf-analyzer-network) - Network and HTTP performance
+- [`perf-analyzer-caching`](/agents/perf-analyzer-caching) - Caching opportunities
+- [`perf-consensus`](/agents/perf-consensus) - Performance audit consensus coordinator

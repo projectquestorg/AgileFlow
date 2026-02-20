@@ -1,0 +1,127 @@
+---
+title: Assertion Quality
+description: Test assertion analyzer for weak assertions, missing negative test cases, snapshot overuse, assertion on implementation details, and missing error type assertions
+---
+
+# Assertion Quality
+
+The Test Analyzer: Assertion Quality agent is a specialized test analyzer focused on **assertion strength and quality**. It finds tests with weak assertions that can pass even when code is broken, missing negative test cases, and assertions that test implementation details instead of behavior.
+
+## When to Use
+
+Use this agent when:
+- You need to identify weak assertions like `toBeTruthy()` on specific values
+- You want to find missing negative test cases (invalid input, error conditions)
+- You're checking error handling assertions for missing type/message checks
+- You need to audit snapshot test usage and sizes
+- You're looking for assertions on implementation details instead of outcomes
+
+## How It Works
+
+1. **Reads target tests** - Examines test files for assertion patterns
+2. **Identifies patterns** - Looks for weak matchers, missing negative tests, snapshots, and implementation assertions
+3. **Assesses impact** - Determines what bugs would slip through each weak assertion
+4. **Reports findings** - Generates findings with specific locations and stronger alternatives
+
+## Focus Areas
+
+- **Weak assertions**: `toBeTruthy()` instead of specific value, `toBeDefined()` when type/value matters
+- **Missing negative test cases**: Only testing success paths, no tests for invalid input or error conditions
+- **No error type/message assertions**: Catching errors without verifying the right error was thrown
+- **Snapshot overuse**: Large snapshots that get rubber-stamped, snapshot testing for logic
+- **Assertions on implementation details**: Asserting function call count instead of outcome, testing internal state
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given this test:
+
+```javascript
+it('returns user data', async () => {
+  const user = await getUser(1);
+  expect(user).toBeTruthy();
+  // Missing: specific value assertion
+});
+```
+
+The Assertion Quality analyzer would identify:
+
+### Finding: Weak assertion accepts any truthy value
+
+**Location**: `users.test.ts:28`
+**Severity**: HIGH
+**Confidence**: HIGH
+**Category**: Weak Assertion
+
+**Issue**: `toBeTruthy()` passes for any truthy value: `{}`, `[]`, `1`, `"anything"`. If `getUser` returns a string or wrong object shape, the test still passes.
+
+**False Confidence Risk**: Test passes but returned data is wrong format, causing downstream crashes in components or APIs expecting specific properties.
+
+**Remediation**:
+
+```javascript
+// WEAK: Accepts any truthy value
+expect(user).toBeTruthy();
+
+// STRONG: Specific shape and values
+expect(user).toEqual({
+  id: 1,
+  name: 'Test User',
+  email: 'test@test.com'
+});
+
+// STRONG: Specific properties
+expect(user).toMatchObject({
+  id: 1,
+  name: expect.any(String)
+});
+
+// STRONG: For numbers, be specific
+expect(userId).toBeGreaterThan(0);
+// NOT: expect(userId).toBeDefined()
+```
+
+## Best Practices
+
+- Use specific matchers: `toBe(value)`, `toEqual(object)`, `toMatch(pattern)` instead of `toBeTruthy()`
+- For every success test, add a negative test with invalid input
+- Verify both error type AND message: `toThrow(ValidationError)`, `toThrow('Input required')`
+- Keep snapshots small (<50 lines) and review changes carefully
+- Assert on outcomes, not implementation: `expect(result.total).toBe(100)` not `expect(calculateTotal).toHaveBeenCalled()`
+- Test error cases: null, undefined, empty array, invalid type, missing required field, max value exceeded
+- Document what each assertion verifies
+
+## Output Format
+
+For each potential issue, the agent provides:
+- **Location**: Exact file path and line number
+- **Severity**: CRITICAL (test with no assertion), HIGH (weak assertion missing bugs), MEDIUM (suboptimal), LOW (minor)
+- **Category**: Weak Assertion, Missing Negative Test, No Error Assertion, Snapshot Overuse, Implementation Detail, No Assertion
+- **Code**: Relevant test code snippet
+- **Issue**: Clear explanation of the assertion quality problem
+- **False Confidence Risk**: What bugs would slip through this weak assertion
+- **Remediation**: Specific stronger assertion with code example
+
+## Example Usage
+
+```text
+Task(
+  description: "Strengthen assertions in validation tests",
+  prompt: "Review src/__tests__/validation.test.ts for weak assertions, missing error cases, and assertions that test mocks instead of outcomes.",
+  subagent_type: "agileflow-test-analyzer-assertions"
+)
+```
+
+## Related Agents
+
+- [`test-analyzer-coverage`](/agents/test-analyzer-coverage) - Coverage gap detection
+- [`test-analyzer-fragility`](/agents/test-analyzer-fragility) - Test flakiness detection
+- [`test-analyzer-mocking`](/agents/test-analyzer-mocking) - Mock quality analysis
+- [`test-analyzer-structure`](/agents/test-analyzer-structure) - Test organization analysis
+- [`test-analyzer-integration`](/agents/test-analyzer-integration) - Integration test gaps
+- [`test-analyzer-maintenance`](/agents/test-analyzer-maintenance) - Test maintenance debt
+- [`test-analyzer-patterns`](/agents/test-analyzer-patterns) - Test anti-pattern detection
+- [`test-consensus`](/agents/test-consensus) - Test audit consensus coordinator
