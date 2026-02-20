@@ -371,15 +371,38 @@ class BaseIdeSetup {
   /**
    * Recursively install markdown files from source to target directory
    * Handles content injection and docs reference replacement.
+   * Optionally applies IDE-specific transformations via ideTransform callback.
+   *
    * @param {string} sourceDir - Source directory path
    * @param {string} targetDir - Target directory path
    * @param {string} agileflowDir - AgileFlow installation directory (for dynamic content)
    * @param {boolean} injectDynamic - Whether to inject dynamic content (only for top-level commands)
+   * @param {Function} [ideTransform] - Optional IDE transformation function: (content, filename) => string
    * @returns {Promise<{commands: number, subdirs: number}>} Count of installed items
    * @throws {CommandInstallationError} If command installation fails
    * @throws {FilePermissionError} If permission denied
+   *
+   * @example
+   * // Without transformation (backward compatible)
+   * await installer.installCommandsRecursive(src, target, agileflow, true);
+   *
+   * @example
+   * // With IDE transformation
+   * await installer.installCommandsRecursive(
+   *   src,
+   *   target,
+   *   agileflow,
+   *   true,
+   *   (content, filename) => ideGenerator.generateForIde(content, 'cursor')
+   * );
    */
-  async installCommandsRecursive(sourceDir, targetDir, agileflowDir, injectDynamic = false) {
+  async installCommandsRecursive(
+    sourceDir,
+    targetDir,
+    agileflowDir,
+    injectDynamic = false,
+    ideTransform = null
+  ) {
     let commandCount = 0;
     let subdirCount = 0;
 
@@ -419,6 +442,11 @@ class BaseIdeSetup {
           // Replace docs/ references with custom folder name
           content = this.replaceDocsReferences(content);
 
+          // Apply IDE-specific transformation if provided
+          if (ideTransform && typeof ideTransform === 'function') {
+            content = ideTransform(content, entry.name);
+          }
+
           await this.writeFile(targetPath, content);
           commandCount++;
         } catch (error) {
@@ -437,7 +465,8 @@ class BaseIdeSetup {
           sourcePath,
           targetPath,
           agileflowDir,
-          false // Don't inject dynamic content in subdirectories
+          false, // Don't inject dynamic content in subdirectories
+          ideTransform // Pass ideTransform to recursive calls
         );
         commandCount += subResult.commands;
         subdirCount += 1 + subResult.subdirs;
