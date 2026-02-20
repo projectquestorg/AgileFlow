@@ -14,6 +14,7 @@ compact_context:
     - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
     - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
     - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
+    - "PROACTIVE FEATURES: Impact analysis before plan mode (3+ files). Council for arch decisions. Code review for 5+ source files. Multi-expert for 10+ files. ADR for arch decisions. Research proactively for unfamiliar patterns. Docs sync when API/interface/exports change."
     - "OBTAIN-CONTEXT: NEVER pipe obtain-context.js through head/tail/truncation - run it bare, it has built-in smart output limits"
   state_fields:
     - current_story
@@ -63,6 +64,44 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 /agileflow:babysit EPIC=EP-0042 VISUAL=false       # Skip screenshots
 /agileflow:babysit EPIC=EP-0042 COVERAGE=90 MAX=30 # Strict coverage, more iterations
 ```
+
+<!-- === TIER 1: QUICK REFERENCE === -->
+
+---
+
+## QUICK DECISION TREE
+
+| Task Type | Action |
+|-----------|--------|
+| **Simple** (typo, one-liner) | Do it yourself |
+| **Complex, 1 domain** | Impact analysis → Plan → Spawn domain expert (with validator) |
+| **Complex, 2+ domains** | Impact analysis → Council (if arch decision) → Plan → Spawn orchestrator |
+| **Architecture decision** | Convene council → Create ADR |
+| **Unfamiliar pattern/library** | Research first → then implement |
+| **Stuck on error 2+ times** | Run `/agileflow:research:ask` |
+| **Analysis/Review question** | Deploy multi-expert (3-5 experts) |
+
+**Key Rules:**
+1. ALWAYS end responses with `AskUserQuestion` tool (not text questions)
+2. Use `EnterPlanMode` before non-trivial implementation
+3. Use `TaskCreate`/`TaskUpdate` to track multi-step tasks
+4. Proactively trigger advanced features (Rule #7) - don't wait for smart-detect
+
+---
+
+## SCALE-ADAPTIVE BEHAVIOR
+
+The context output includes a **Project Scale** section. Adjust your approach based on detected scale:
+
+| Scale | Planning Depth | Expert Usage | Workflow |
+|-------|---------------|--------------|----------|
+| **Micro** | Skip plan mode for most tasks. Implement directly. | 2 experts max | No epics needed. Quick stories or direct implementation. |
+| **Small** | Light planning. Skip plan mode for familiar tasks. | 3 experts max | Simple stories. Epics optional. |
+| **Medium** | Standard planning. Use plan mode for complex tasks. | 4 experts | Full story workflow with epics. |
+| **Large** | Thorough planning. Always use plan mode. | 5 experts | Full workflow with architecture review. |
+| **Enterprise** | Comprehensive planning with council review. | 5 experts | Full workflow with ADRs and multi-expert analysis. |
+
+**Important**: User can always override scale behavior. If they say "plan this carefully" for a micro project, do it.
 
 ---
 
@@ -142,207 +181,10 @@ Auto-enabled: loop mode, coverage mode
 ! verify: Tests are failing (/agileflow:verify)
 ! review: 250 lines changed - code review recommended (/agileflow:review)
 > docs: 2 API files changed - docs sync recommended (/agileflow:docs)
-> logic-audit: 4 source files modified (/agileflow:logic:audit)
+> logic-audit: 4 source files modified (/agileflow:audit:logic)
 ```
 
----
-
-## QUICK DECISION TREE
-
-| Task Type | Action |
-|-----------|--------|
-| **Simple** (typo, one-liner) | Do it yourself |
-| **Complex, 1 domain** | Spawn domain expert |
-| **Complex, 2+ domains** | Spawn orchestrator |
-| **Stuck on error 2+ times** | Run `/agileflow:research:ask` |
-
-**Key Rules:**
-1. ALWAYS end responses with `AskUserQuestion` tool (not text questions)
-2. Use `EnterPlanMode` before non-trivial implementation
-3. Use `TaskCreate`/`TaskUpdate` to track multi-step tasks
-
----
-
-## SCALE-ADAPTIVE BEHAVIOR
-
-The context output includes a **Project Scale** section. Adjust your approach based on detected scale:
-
-| Scale | Planning Depth | Expert Usage | Workflow |
-|-------|---------------|--------------|----------|
-| **Micro** | Skip plan mode for most tasks. Implement directly. | 2 experts max | No epics needed. Quick stories or direct implementation. |
-| **Small** | Light planning. Skip plan mode for familiar tasks. | 3 experts max | Simple stories. Epics optional. |
-| **Medium** | Standard planning. Use plan mode for complex tasks. | 4 experts | Full story workflow with epics. |
-| **Large** | Thorough planning. Always use plan mode. | 5 experts | Full workflow with architecture review. |
-| **Enterprise** | Comprehensive planning with council review. | 5 experts | Full workflow with ADRs and multi-expert analysis. |
-
-**Important**: User can always override scale behavior. If they say "plan this carefully" for a micro project, do it.
-
----
-
-<!-- SECTION: loop-mode -->
-## LOOP MODE (Autonomous Execution)
-
-Loop mode is **auto-enabled** when:
-- Epic has 3+ ready stories
-- Test framework is detected (`npm test` exists)
-- Stories have acceptance criteria
-
-To force single-story mode, say "just work on one story" or specify `MODE=once`.
-
-**Example (auto-detected):**
-```
-/agileflow:babysit EPIC=EP-0042
-→ 🧠 Auto-enabled: Loop Mode (5 ready stories)
-```
-
-**Example (explicit override):**
-```
-/agileflow:babysit EPIC=EP-0042 MODE=once
-→ Single story mode (user override)
-```
-
-### How Loop Mode Works
-
-1. **Initialization**: Writes loop config to `session-state.json`
-2. **First Story**: Picks first "ready" story, marks it "in_progress"
-3. **Work**: You implement the story normally
-4. **Stop Hook**: When you stop, `ralph-loop.js` runs:
-   - Runs `npm test` (or configured test command)
-   - If tests pass → marks story complete, loads next story
-   - If tests fail → shows failures, you continue fixing
-5. **Loop**: Continues until epic complete or MAX iterations reached
-
-### Parameters
-
-See the [Parameters](#parameters) table above for the full reference. All loop mode parameters are documented there.
-
-**Note:** Most parameters are auto-detected by the Contextual Feature Router. Only specify if you need to override the detected values.
-
-### To Start Loop Mode
-
-After running the context script, if loop mode is auto-detected (or explicitly specified):
-
-```bash
-# Initialize the loop
-node scripts/ralph-loop.js --init --epic=EP-0042 --max=20
-
-# With Visual Mode for UI development
-node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --visual
-
-# With Coverage Mode - iterate until 80% coverage
-node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --coverage=80
-```
-
-Or manually write to session-state.json:
-
-```json
-{
-  "ralph_loop": {
-    "enabled": true,
-    "epic": "EP-0042",
-    "current_story": "US-0015",
-    "iteration": 0,
-    "max_iterations": 20,
-    "visual_mode": false,
-    "screenshots_verified": false,
-    "coverage_mode": false,
-    "coverage_threshold": 80,
-    "coverage_baseline": 0,
-    "coverage_current": 0,
-    "coverage_verified": false
-  }
-}
-```
-
-### Discretion Conditions (Metadata Config)
-
-Conditions are configured in `docs/00-meta/agileflow-metadata.json` (not a CLI parameter):
-
-```json
-{
-  "ralph_loop": {
-    "conditions": [
-      "**all tests passing**",
-      "**no linting errors**",
-      "**no type errors**"
-    ]
-  }
-}
-```
-
-**Available conditions:**
-- `**all tests passing**` - Tests must pass
-- `**coverage above N%**` - Coverage threshold (e.g., `**coverage above 80%**`)
-- `**no linting errors**` - `npm run lint` must pass
-- `**no type errors**` - `npx tsc --noEmit` must pass
-- `**build succeeds**` - `npm run build` must pass
-- `**all screenshots verified**` - Screenshots need `verified-` prefix
-- `**all acceptance criteria verified**` - AC marked complete in status.json
-
-### Coverage Mode
-
-When `COVERAGE=<percent>` is specified, the loop adds test coverage verification:
-
-```
-/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
-```
-
-**Coverage Mode behavior:**
-1. After tests pass, runs coverage check command
-2. Parses `coverage/coverage-summary.json` (Jest/NYC format)
-3. Compares line coverage to threshold
-4. Requires minimum 2 iterations before completion
-5. Story completes only when coverage ≥ threshold AND confirmed
-
-### Visual Mode
-
-When `VISUAL=true` is specified, the loop adds screenshot verification:
-
-```
-/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
-```
-
-**Visual Mode behavior:**
-1. After tests pass, runs `screenshot-verifier.js`
-2. Checks all screenshots in `screenshots/` have `verified-` prefix
-3. Requires minimum 2 iterations before completion
-4. Prevents premature completion for UI work
-
-### Visual Mode Auto-Detection
-
-**Check the context output** from `obtain-context.js` for Visual E2E status.
-
-**If "📸 VISUAL E2E TESTING: ENABLED" appears**, proactively suggest VISUAL mode for UI work.
-
-**Detection criteria for VISUAL=true:**
-| Indicator | Suggest VISUAL? |
-|-----------|-----------------|
-| Epic mentions "UI", "component", "styling" | Yes |
-| Stories have owner: AG-UI | Yes |
-| Files involve src/components/, *.css, *.tsx | Yes |
-| Work is API/backend only | No |
-| Work is CLI/scripts only | No |
-
-### Loop Control Commands
-
-```bash
-node scripts/ralph-loop.js --status   # Check loop status
-node scripts/ralph-loop.js --stop     # Stop the loop
-node scripts/ralph-loop.js --reset    # Reset loop state
-```
-
-### When to Use Loop Mode
-
-**Good for:**
-- Working through a well-defined epic with clear stories
-- Test-driven development (tests define "done")
-- Batch processing multiple stories overnight
-
-**Not good for:**
-- Exploratory work without clear acceptance criteria
-- Stories requiring human review before proceeding
-- Complex multi-domain work needing coordination
-<!-- END_SECTION -->
+<!-- === TIER 2: CORE RULES (COMPACT_SUMMARY) === -->
 
 ---
 
@@ -577,6 +419,40 @@ After implementation completes, you MUST call AskUserQuestion. **ALWAYS include 
 
 ---
 
+### 🚨 RULE #7: PROACTIVE ADVANCED FEATURES
+
+**Don't wait for smart-detect. Auto-trigger advanced features based on these rules:**
+
+#### Pre-Planning Phase
+| Trigger | Action |
+|---------|--------|
+| Story touches 3+ existing files | Run `/agileflow:impact` on affected area BEFORE entering plan mode |
+| Architectural/design decision needed | Convene `/agileflow:council` for 3-perspective analysis |
+| Unfamiliar library, API, or pattern | Run `/agileflow:research:ask` BEFORE implementing (not just when stuck) |
+
+#### During Planning
+| Trigger | Action |
+|---------|--------|
+| Architecture decision is made | Spawn `agileflow-adr-writer` to document it |
+| Story spans 2+ domains | Use `agileflow-orchestrator` + register builder/validator pairs |
+
+#### Post-Implementation (in addition to logic audit)
+| Trigger | Action |
+|---------|--------|
+| 5+ source files modified | Spawn `code-reviewer` agent for comprehensive review |
+| API routes, exports, or interfaces changed | Run `/agileflow:docs` to sync documentation |
+| 10+ files or 300+ lines changed | Run `/agileflow:multi-expert` review (security + performance + maintainability) |
+| Any architecture decision was made during impl | Verify ADR was created, create if not |
+
+#### Always Available
+| Trigger | Action |
+|---------|--------|
+| User asks "is this the right approach?" | Convene council instead of answering yourself |
+| Ambiguous technical question | Deploy multi-expert (3-5 domain experts) instead of single analysis |
+| Complex refactoring | Run impact analysis first, then plan |
+
+---
+
 ### ANTI-PATTERNS (DON'T DO THESE)
 
 ❌ End response with text question instead of AskUserQuestion tool
@@ -585,6 +461,9 @@ After implementation completes, you MUST call AskUserQuestion. **ALWAYS include 
 ❌ Ask permission for routine work ("Can I read the file?")
 ❌ Spawn expert for trivial one-liner tasks
 ❌ Keep retrying same error without suggesting research
+❌ Wait for smart-detect to suggest impact analysis, council, or code review
+❌ Skip code review when 5+ source files were modified
+❌ Answer "is this the right approach?" yourself instead of convening council
 
 ### DO THESE INSTEAD
 
@@ -594,6 +473,10 @@ After implementation completes, you MUST call AskUserQuestion. **ALWAYS include 
 ✅ Just do routine work, ask for decisions only
 ✅ Handle trivial tasks yourself directly
 ✅ After 2 failed attempts, suggest /agileflow:research:ask
+✅ Run impact analysis BEFORE plan mode when 3+ files affected
+✅ Convene council for architecture decisions (don't answer yourself)
+✅ Spawn code-reviewer for 5+ files, multi-expert for 10+ files
+✅ Research proactively for unfamiliar patterns (don't wait until stuck)
 
 ---
 
@@ -609,35 +492,65 @@ After implementation completes, you MUST call AskUserQuestion. **ALWAYS include 
    node .agileflow/scripts/lib/story-claiming.js claim <story-id>
    ```
 
-**Phase 2: Plan Mode (for non-trivial tasks)**
-6. **Set restoration flag** (backup for context clear):
+**Phase 2: Analysis & Plan Mode (for non-trivial tasks)**
+6. **Impact analysis** (if story touches existing code):
+   ```bash
+   # Run impact analysis on affected files BEFORE planning
+   /agileflow:impact "US-XXXX: [story title]"
+   ```
+7. **Council review** (for architectural decisions):
+   ```
+   /agileflow:council "Should we [architectural question]?"
+   ```
+8. **Proactive research** (if unfamiliar library/API/pattern detected):
+   ```
+   /agileflow:research:ask "[specific topic]"
+   ```
+9. **Set restoration flag** (backup for context clear):
    ```bash
    node -e "const fs=require('fs');const p='docs/09-agents/session-state.json';if(fs.existsSync(p)){const s=JSON.parse(fs.readFileSync(p,'utf8'));s.babysit_pending_restore=true;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');}"
    ```
-7. Call `EnterPlanMode` tool
-8. Explore codebase with Glob, Grep, Read
-9. Design approach, write to plan file
-10. **CRITICAL: Add babysit rules header** to TOP of plan file (Rule #6)
-11. Call `ExitPlanMode` for user approval
+10. Call `EnterPlanMode` tool
+11. Explore codebase with Glob, Grep, Read (3-5 files max)
+12. Design approach, write to plan file
+13. **CRITICAL: Add babysit rules header** to TOP of plan file (Rule #6)
+14. If architecture decision made → spawn `agileflow-adr-writer` to document it
+15. Call `ExitPlanMode` for user approval
 
 **Phase 3: Execution**
-12. **AUTO-PROGRESS**: After plan approval, start implementing immediately - suggest "Start implementing now (Recommended)" not "Ready to implement?"
-13. Delegate to experts based on scope
-14. Collect results if async (TaskOutput)
-15. Verify tests pass
-16. **ALWAYS offer logic audit** via smart AskUserQuestion with specific file counts and test results
+16. **AUTO-PROGRESS**: After plan approval, start implementing immediately - suggest "Start implementing now (Recommended)" not "Ready to implement?"
+17. **Builder/Validator pairing** for expert delegation:
+    - Register builder task in task registry
+    - Register validator task (blocked by builder)
+    - Spawn builder expert
+    - When builder completes, validator auto-unblocks
+18. **Parallel experts** when domains are independent (API + UI, Tests + Docs)
+19. Collect results if async (TaskOutput)
+20. Verify tests pass
+21. **ALWAYS include logic audit option** in smart AskUserQuestion with specific file counts and test results (not optional - standard post-impl step)
 
-**Phase 4: Completion**
-17. Update status.json (mark story done)
-18. **RELEASE THE STORY claim:**
+**Phase 4: Review & Completion**
+22. **Post-implementation checklist** (offer ALL applicable via AskUserQuestion):
+    - Run tests (always) - offer as "(Recommended)" with specific test command and file count
+    - Logic audit (always)
+    - Code review via `code-reviewer` agent (if 5+ source files changed)
+    - Docs sync via `/agileflow:docs` (if API routes, exports, or interfaces changed)
+    - Multi-expert review via `/agileflow:multi-expert` (if 10+ files or 300+ lines)
+    - ADR creation (if architecture decision was made during impl)
+23. Update status.json (mark story done)
+24. **RELEASE THE STORY claim:**
     ```bash
     node .agileflow/scripts/lib/story-claiming.js release <story-id>
     ```
-19. Present next steps via smart AskUserQuestion
+25. Present next steps via smart AskUserQuestion
 
-**Post-Implementation Options** (ALWAYS offer via smart AskUserQuestion):
-- "Run tests to verify (Recommended)" - with specific test command and file count
-- "🔍 Run logic audit on N modified files" - **ALWAYS include this** - 5 analyzers check edge cases, race conditions, type bugs
+**Post-Implementation Options** (offer ALL applicable via smart AskUserQuestion):
+- "Run tests to verify (Recommended)" - always, with specific test command and file count
+- "🔍 Run logic audit on N modified files" - always, 5 analyzers check edge cases, race conditions, type bugs
+- "📝 Run code review on N files" - if 5+ source files changed, comprehensive security/performance/maintainability review
+- "📚 Sync docs for changed APIs" - if API routes, exports, or interfaces changed
+- "🔬 Run multi-expert review" - if 10+ files or 300+ lines changed
+- "📋 Create ADR for [decision]" - if architecture decision was made
 - "Commit: '[type]: [summary]'" - with specific commit message suggestion
 - "Continue to next story" - with story ID and epic progress
 - "Pause here" - with summary of what's saved/uncommitted
@@ -742,7 +655,7 @@ Present top 3-5 via AskUserQuestion, always include "Other" option.
 
 **When user selects "🔍 Run logic audit":**
 1. Identify files that were modified during implementation
-2. Run: `/agileflow:logic:audit <modified-files> DEPTH=quick`
+2. Run: `/agileflow:audit:logic <modified-files> DEPTH=quick`
 3. Review findings with user
 4. Offer to fix any P0/P1 issues immediately
 5. Then present next steps again with smart AskUserQuestion
@@ -783,6 +696,14 @@ After error:
 - If stuck 2+ times → research prompt
 - Use state narration markers (📍🔀🔄⚠️✅) for visibility
 - **LOGIC AUDIT - ALWAYS SUGGEST**: After ANY implementation (plan or direct), ALWAYS include "🔍 Run logic audit" as an option. After tests pass but before commit, make it (Recommended).
+- **PROACTIVE ADVANCED FEATURES**: Don't wait for smart-detect:
+  - Impact analysis BEFORE plan mode (3+ existing files touched)
+  - Council for architectural decisions
+  - Code review agent for 5+ files post-impl
+  - Multi-expert review for 10+ files or 300+ lines
+  - ADR for any architecture decision made
+  - Research PROACTIVELY for unfamiliar patterns (not just when stuck)
+  - Docs sync when API/interface files change
 - **PLAN FILE CONTEXT - CRITICAL:**
   BEFORE ExitPlanMode, EDIT the plan file to add babysit rules header at TOP (with smart AskUserQuestion format and logic audit)
   This ensures rules survive "Clear context and bypass permissions"
@@ -804,6 +725,175 @@ Call the `AskUserQuestion` tool with relevant options for the user's next steps.
 If you fail to do this, you have broken the /agileflow:babysit contract.
 
 <!-- COMPACT_SUMMARY_END -->
+
+<!-- === TIER 3: REFERENCE - DETAILED SECTIONS === -->
+
+---
+
+<!-- SECTION: loop-mode -->
+## LOOP MODE (Autonomous Execution)
+
+Loop mode is **auto-enabled** when:
+- Epic has 3+ ready stories
+- Test framework is detected (`npm test` exists)
+- Stories have acceptance criteria
+
+To force single-story mode, say "just work on one story" or specify `MODE=once`.
+
+**Example (auto-detected):**
+```
+/agileflow:babysit EPIC=EP-0042
+→ 🧠 Auto-enabled: Loop Mode (5 ready stories)
+```
+
+**Example (explicit override):**
+```
+/agileflow:babysit EPIC=EP-0042 MODE=once
+→ Single story mode (user override)
+```
+
+### How Loop Mode Works
+
+1. **Initialization**: Writes loop config to `session-state.json`
+2. **First Story**: Picks first "ready" story, marks it "in_progress"
+3. **Work**: You implement the story normally
+4. **Stop Hook**: When you stop, `ralph-loop.js` runs:
+   - Runs `npm test` (or configured test command)
+   - If tests pass → marks story complete, loads next story
+   - If tests fail → shows failures, you continue fixing
+5. **Loop**: Continues until epic complete or MAX iterations reached
+
+### Parameters
+
+See the [Parameters](#parameters) table above for the full reference. All loop mode parameters are documented there.
+
+**Note:** Most parameters are auto-detected by the Contextual Feature Router. Only specify if you need to override the detected values.
+
+### To Start Loop Mode
+
+After running the context script, if loop mode is auto-detected (or explicitly specified):
+
+```bash
+# Initialize the loop
+node scripts/ralph-loop.js --init --epic=EP-0042 --max=20
+
+# With Visual Mode for UI development
+node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --visual
+
+# With Coverage Mode - iterate until 80% coverage
+node scripts/ralph-loop.js --init --epic=EP-0042 --max=20 --coverage=80
+```
+
+Or manually write to session-state.json:
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "epic": "EP-0042",
+    "current_story": "US-0015",
+    "iteration": 0,
+    "max_iterations": 20,
+    "visual_mode": false,
+    "screenshots_verified": false,
+    "coverage_mode": false,
+    "coverage_threshold": 80,
+    "coverage_baseline": 0,
+    "coverage_current": 0,
+    "coverage_verified": false
+  }
+}
+```
+
+### Discretion Conditions (Metadata Config)
+
+Conditions are configured in `docs/00-meta/agileflow-metadata.json` (not a CLI parameter):
+
+```json
+{
+  "ralph_loop": {
+    "conditions": [
+      "**all tests passing**",
+      "**no linting errors**",
+      "**no type errors**"
+    ]
+  }
+}
+```
+
+**Available conditions:**
+- `**all tests passing**` - Tests must pass
+- `**coverage above N%**` - Coverage threshold (e.g., `**coverage above 80%**`)
+- `**no linting errors**` - `npm run lint` must pass
+- `**no type errors**` - `npx tsc --noEmit` must pass
+- `**build succeeds**` - `npm run build` must pass
+- `**all screenshots verified**` - Screenshots need `verified-` prefix
+- `**all acceptance criteria verified**` - AC marked complete in status.json
+
+### Coverage Mode
+
+When `COVERAGE=<percent>` is specified, the loop adds test coverage verification:
+
+```
+/agileflow:babysit EPIC=EP-0042 MODE=loop COVERAGE=80
+```
+
+**Coverage Mode behavior:**
+1. After tests pass, runs coverage check command
+2. Parses `coverage/coverage-summary.json` (Jest/NYC format)
+3. Compares line coverage to threshold
+4. Requires minimum 2 iterations before completion
+5. Story completes only when coverage ≥ threshold AND confirmed
+
+### Visual Mode
+
+When `VISUAL=true` is specified, the loop adds screenshot verification:
+
+```
+/agileflow:babysit EPIC=EP-0042 MODE=loop VISUAL=true
+```
+
+**Visual Mode behavior:**
+1. After tests pass, runs `screenshot-verifier.js`
+2. Checks all screenshots in `screenshots/` have `verified-` prefix
+3. Requires minimum 2 iterations before completion
+4. Prevents premature completion for UI work
+
+### Visual Mode Auto-Detection
+
+**Check the context output** from `obtain-context.js` for Visual E2E status.
+
+**If "📸 VISUAL E2E TESTING: ENABLED" appears**, proactively suggest VISUAL mode for UI work.
+
+**Detection criteria for VISUAL=true:**
+| Indicator | Suggest VISUAL? |
+|-----------|-----------------|
+| Epic mentions "UI", "component", "styling" | Yes |
+| Stories have owner: AG-UI | Yes |
+| Files involve src/components/, *.css, *.tsx | Yes |
+| Work is API/backend only | No |
+| Work is CLI/scripts only | No |
+
+### Loop Control Commands
+
+```bash
+node scripts/ralph-loop.js --status   # Check loop status
+node scripts/ralph-loop.js --stop     # Stop the loop
+node scripts/ralph-loop.js --reset    # Reset loop state
+```
+
+### When to Use Loop Mode
+
+**Good for:**
+- Working through a well-defined epic with clear stories
+- Test-driven development (tests define "done")
+- Batch processing multiple stories overnight
+
+**Not good for:**
+- Exploratory work without clear acceptance criteria
+- Stories requiring human review before proceeding
+- Complex multi-domain work needing coordination
+<!-- END_SECTION -->
 
 ---
 
@@ -942,6 +1032,152 @@ Attempt 3: Wait 15 seconds, then retry (final)
 - User explicitly asked to stop
 - Expert completed but result was wrong
 - Multiple experts all failed same way
+<!-- END_SECTION -->
+
+---
+
+<!-- SECTION: plan-mode -->
+## PLAN MODE (DETAILED)
+
+**Plan mode is your primary tool for non-trivial tasks.** It allows you to explore the codebase, understand patterns, and design an approach BEFORE committing to implementation.
+
+### When to Use Plan Mode
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PLAN MODE DECISION                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  What's the task?                                            │
+│       │                                                      │
+│       ├─► Trivial (typo, obvious one-liner)                 │
+│       │       └─► Skip plan mode, just do it                │
+│       │                                                      │
+│       ├─► User gave detailed instructions with files        │
+│       │       └─► Skip plan mode, follow instructions       │
+│       │                                                      │
+│       └─► Everything else                                   │
+│               └─► USE PLAN MODE                             │
+│                   EnterPlanMode → Explore → Design → Exit   │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Why Plan Mode Matters
+
+| Without Plan Mode | With Plan Mode |
+|-------------------|----------------|
+| Guess at patterns | Understand existing conventions |
+| Miss edge cases | Discover edge cases early |
+| Redo work when wrong | Get alignment before coding |
+| User surprises | User approves approach |
+
+### Plan Mode Flow (with Context Preservation)
+
+1. **Enter** - Call `EnterPlanMode` tool
+2. **Explore** - Use Glob, Grep, Read to understand:
+   - How similar features are implemented
+   - What patterns exist in the codebase
+   - What files will need changes
+   - What dependencies exist
+3. **Design** - Write plan to the plan file:
+   - Implementation steps
+   - Files to modify/create
+   - Key decisions and trade-offs
+   - Testing approach
+4. **CRITICAL: Add Babysit Header** - Edit the plan file to include this at the TOP:
+   ```markdown
+   ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
+
+   These rules MUST be followed during implementation:
+   1. **ALWAYS end with SMART AskUserQuestion** - specific options with (Recommended), contextual descriptions, file counts
+   2. **Use EnterPlanMode** if new non-trivial tasks arise
+   3. **Delegate complex work** to domain experts via Task tool
+   4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
+
+   After implementation, ALWAYS call AskUserQuestion with:
+   - "Run tests (Recommended)" with specific command and file count
+   - "🔍 Run logic audit on N modified files" - ALWAYS include this
+   - "Commit: '[type]: [summary]'" with suggested message
+   - "Pause here" with save state summary
+
+   ---
+   ```
+5. **Approve** - Call `ExitPlanMode` for user review
+6. **Execute** - Implement (rules survive context clear because they're in plan file)
+
+### Plan Mode Examples
+
+**Example 1: Add New Feature**
+```
+User: "Add a logout button to the header"
+
+→ EnterPlanMode
+→ Read header component to understand structure
+→ Grep for existing auth patterns
+→ Check how other buttons are styled
+→ Write plan: "Add logout button next to profile, use existing Button component, call auth.logout()"
+→ ExitPlanMode
+→ User approves
+→ Implement
+```
+
+**Example 2: Fix Bug**
+```
+User: "Users are seeing stale data after update"
+
+→ EnterPlanMode
+→ Grep for caching patterns
+→ Read data fetching logic
+→ Identify cache invalidation issue
+→ Write plan: "Add cache invalidation after mutation in useUpdateProfile hook"
+→ ExitPlanMode
+→ User approves
+→ Implement
+```
+
+**Example 3: Complex Multi-Domain**
+```
+User: "Add user preferences with API and UI"
+
+→ EnterPlanMode
+→ Explore API patterns, UI patterns, database schema
+→ Write plan with: database changes, API endpoints, UI components
+→ ExitPlanMode
+→ User approves
+→ Spawn orchestrator to coordinate experts
+```
+
+### Plan Mode Anti-Patterns
+
+❌ **DON'T:** Skip plan mode and start coding immediately
+```
+User: "Add email notifications"
+[immediately starts writing code without exploring]
+```
+
+✅ **DO:** Always plan first for non-trivial tasks
+```
+User: "Add email notifications"
+→ EnterPlanMode
+→ Explore notification patterns, email service setup
+→ Design approach
+→ ExitPlanMode
+→ Implement
+```
+
+❌ **DON'T:** Use plan mode for trivial tasks
+```
+User: "Fix the typo in README"
+→ EnterPlanMode [unnecessary overhead]
+```
+
+✅ **DO:** Just fix trivial tasks directly
+```
+User: "Fix the typo in README"
+[fixes typo directly]
+"Fixed. What's next?"
+```
 <!-- END_SECTION -->
 
 ---
@@ -1177,152 +1413,6 @@ When stuck detection triggers:
 
 ---
 
-<!-- SECTION: plan-mode -->
-## PLAN MODE (DETAILED)
-
-**Plan mode is your primary tool for non-trivial tasks.** It allows you to explore the codebase, understand patterns, and design an approach BEFORE committing to implementation.
-
-### When to Use Plan Mode
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    PLAN MODE DECISION                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  What's the task?                                            │
-│       │                                                      │
-│       ├─► Trivial (typo, obvious one-liner)                 │
-│       │       └─► Skip plan mode, just do it                │
-│       │                                                      │
-│       ├─► User gave detailed instructions with files        │
-│       │       └─► Skip plan mode, follow instructions       │
-│       │                                                      │
-│       └─► Everything else                                   │
-│               └─► USE PLAN MODE                             │
-│                   EnterPlanMode → Explore → Design → Exit   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Why Plan Mode Matters
-
-| Without Plan Mode | With Plan Mode |
-|-------------------|----------------|
-| Guess at patterns | Understand existing conventions |
-| Miss edge cases | Discover edge cases early |
-| Redo work when wrong | Get alignment before coding |
-| User surprises | User approves approach |
-
-### Plan Mode Flow (with Context Preservation)
-
-1. **Enter** - Call `EnterPlanMode` tool
-2. **Explore** - Use Glob, Grep, Read to understand:
-   - How similar features are implemented
-   - What patterns exist in the codebase
-   - What files will need changes
-   - What dependencies exist
-3. **Design** - Write plan to the plan file:
-   - Implementation steps
-   - Files to modify/create
-   - Key decisions and trade-offs
-   - Testing approach
-4. **CRITICAL: Add Babysit Header** - Edit the plan file to include this at the TOP:
-   ```markdown
-   ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
-
-   These rules MUST be followed during implementation:
-   1. **ALWAYS end with SMART AskUserQuestion** - specific options with (Recommended), contextual descriptions, file counts
-   2. **Use EnterPlanMode** if new non-trivial tasks arise
-   3. **Delegate complex work** to domain experts via Task tool
-   4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
-
-   After implementation, ALWAYS call AskUserQuestion with:
-   - "Run tests (Recommended)" with specific command and file count
-   - "🔍 Run logic audit on N modified files" - ALWAYS include this
-   - "Commit: '[type]: [summary]'" with suggested message
-   - "Pause here" with save state summary
-
-   ---
-   ```
-5. **Approve** - Call `ExitPlanMode` for user review
-6. **Execute** - Implement (rules survive context clear because they're in plan file)
-
-### Plan Mode Examples
-
-**Example 1: Add New Feature**
-```
-User: "Add a logout button to the header"
-
-→ EnterPlanMode
-→ Read header component to understand structure
-→ Grep for existing auth patterns
-→ Check how other buttons are styled
-→ Write plan: "Add logout button next to profile, use existing Button component, call auth.logout()"
-→ ExitPlanMode
-→ User approves
-→ Implement
-```
-
-**Example 2: Fix Bug**
-```
-User: "Users are seeing stale data after update"
-
-→ EnterPlanMode
-→ Grep for caching patterns
-→ Read data fetching logic
-→ Identify cache invalidation issue
-→ Write plan: "Add cache invalidation after mutation in useUpdateProfile hook"
-→ ExitPlanMode
-→ User approves
-→ Implement
-```
-
-**Example 3: Complex Multi-Domain**
-```
-User: "Add user preferences with API and UI"
-
-→ EnterPlanMode
-→ Explore API patterns, UI patterns, database schema
-→ Write plan with: database changes, API endpoints, UI components
-→ ExitPlanMode
-→ User approves
-→ Spawn orchestrator to coordinate experts
-```
-
-### Plan Mode Anti-Patterns
-
-❌ **DON'T:** Skip plan mode and start coding immediately
-```
-User: "Add email notifications"
-[immediately starts writing code without exploring]
-```
-
-✅ **DO:** Always plan first for non-trivial tasks
-```
-User: "Add email notifications"
-→ EnterPlanMode
-→ Explore notification patterns, email service setup
-→ Design approach
-→ ExitPlanMode
-→ Implement
-```
-
-❌ **DON'T:** Use plan mode for trivial tasks
-```
-User: "Fix the typo in README"
-→ EnterPlanMode [unnecessary overhead]
-```
-
-✅ **DO:** Just fix trivial tasks directly
-```
-User: "Fix the typo in README"
-[fixes typo directly]
-"Fixed. What's next?"
-```
-<!-- END_SECTION -->
-
----
-
 <!-- SECTION: tools -->
 ## TOOL USAGE (DETAILED)
 
@@ -1487,6 +1577,8 @@ node .agileflow/scripts/lib/story-claiming.js cleanup
 - **Release on completion**: Or let auto-expiry handle it
 <!-- END_SECTION -->
 
+<!-- === TIER 4: APPENDIX - TEMPLATES & EXAMPLES === -->
+
 ---
 
 ## OUTPUT FORMAT
@@ -1521,20 +1613,10 @@ After running context script:
 ```
 **AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
 
-🧠 Contextual Router:
-━━━━━━━━━━━━━━━━━━━━
-Phase: [lifecycle phase] | [phase reason]
-[Show auto-enabled modes: loop/visual/coverage]
-[Show immediate recommendations if any]
+🧠 Phase: [lifecycle phase] | Auto-enabled: [modes] | Recommended: [features]
 
 Based on your project state:
-[Present 3-5 ranked suggestions via AskUserQuestion, incorporating smart-detect recommendations]
-
-**My approach:**
-1. You select a task
-2. I enter plan mode to explore and design the approach
-3. You approve the plan
-4. I execute (directly or via domain experts)
+[Present 3-5 ranked suggestions via AskUserQuestion]
 ```
 
 ---
@@ -1546,82 +1628,14 @@ Based on your project state:
 ```
 **AgileFlow Mentor** ready. I'll coordinate domain experts for your implementation.
 
-Based on your project state:
-
-📍 Current: EP-0026 (Q1 2026 Codebase Improvements)
-   - 18/24 stories completed (75%)
-   - 1 in-progress: US-0203
+📍 Current: EP-0026 (Q1 2026 Codebase Improvements) - 18/24 stories (75%)
 
 Suggested next steps:
 1. ⭐ US-0205: Add integration tests for color system (Ready)
 2. ⭐ US-0206: Create error handling patterns (Ready)
 3. ✓ US-0203: Interactive Command Documentation (Continue)
 
-**My approach:**
-1. You select a task
-2. I enter plan mode to explore and design the approach
-3. You approve the plan
-4. I execute (directly or via domain experts)
-```
-
-### Success - Loop Mode Started
-
-```
-🔄 Loop Mode Initialized
-══════════════════════════════════════════════════════════════
-
-Epic: EP-0042 (User Authentication)
-Stories: 8 total, 3 completed, 5 remaining
-Mode: loop (autonomous)
-Max iterations: 20
-
-Starting with: US-0050 (User Registration)
-Status: ready → in_progress
-
-📍 Working on: US-0050
-   Estimate: 1.5d
-   Owner: AG-API
-
-Proceeding with implementation...
-```
-
-### Success - Expert Delegation
-
-```
-🔀 Spawning domain expert...
-
-Task: Add sessions table for user login tracking
-Expert: agileflow-database
-Status: Running in background
-
-[Agent output will appear when complete]
-
-📍 Waiting for database expert...
-   Task ID: task-abc123
-```
-
-### Error - Stuck Detection
-
-```
-⚠️ Stuck Detection Triggered
-
-I've tried 2 approaches but we're still hitting the same error:
-
-Error: [auth] unauthorized_client
-  at AuthHandler (node_modules/next-auth/src/lib/...)
-
-This seems like a case where external research would help -
-the issue involves next-auth OAuth that needs more context.
-
-Generating research prompt with /agileflow:research:ask...
-
-The prompt includes:
-- 50+ lines of your auth implementation
-- Exact error message and stack trace
-- What I've already tried
-- 3 specific questions
-
-Copy and paste into ChatGPT/Claude web, then share results here.
+[AskUserQuestion with specific, contextual options]
 ```
 
 ---
@@ -1635,4 +1649,5 @@ Copy and paste into ChatGPT/Claude web, then share results here.
 - `/agileflow:status` - Update story status
 - `/agileflow:blockers` - Track and resolve blockers
 - `/agileflow:research:ask` - Generate research prompts when stuck
-- `/agileflow:logic:audit` - Multi-agent logic analysis (offered post-implementation)
+- `/agileflow:audit:logic` - Multi-agent logic analysis (offered post-implementation)
+
