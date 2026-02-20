@@ -1,0 +1,133 @@
+# Cursor IDE Capability Profile
+# v2.5 (Feb 2026) - Closest competitor to Claude Code
+# Reference: Cross-IDE Compatibility Findings (20260220)
+
+ide:
+  id: cursor
+  name: Cursor
+  displayName: Cursor
+  description: AI-native code editor with async subagents and hooks
+  configDir: .cursor
+  instructionsFile: CURSOR.md
+  fileFormat: markdown
+  commandPrefix: "/"
+  agentPrefix: "agileflow-"
+  marketplaceId: cursor.com/marketplace
+
+paths:
+  commands: .cursor/commands/
+  agents: .cursor/agents/
+  skills: null                # Uses agents instead
+  rules: .cursor/rules/
+  hooks: .cursor/hooks.json
+  mcp: .cursor/mcp.json
+
+capabilities:
+  core:
+    fileOperations: true      # read_file, edit_file, ApplyPatch
+    shell: true               # run_terminal_cmd, YOLO mode for auto-execution
+    fileSearch: true          # codebase_search, grep_search, file_search, list_dir
+    interactiveInput: true    # Conversational only (no structured AskUserQuestion)
+    subAgents: true           # Async subagents with nesting
+    nestedSubAgents: true     # Sub-agents can spawn sub-sub-agents
+  planning:
+    planMode: true            # Native plan mode with Markdown plans
+    planModeEditable: true    # User can edit plans during execution
+  lifecycle:
+    hooks: true               # Beta - 6 hook events
+    hookEvents:
+      - beforeSubmitPrompt
+      - beforeShellExecution
+      - beforeMCPExecution
+      - beforeReadFile
+      - afterFileEdit
+      - stop
+  external:
+    webSearch: true           # Native web_search + @web syntax + MCP
+    webFetch: true            # Can fetch URLs
+    mcp: true                 # Full MCP support
+    mcpToolLimit: 40          # 40-tool cap (binding constraint)
+    browser: true             # Native browser tool (v2.0+)
+  collaboration:
+    taskTracking: false       # Plan mode checklists only (not persistent)
+    persistentTasks: false
+    worktrees: false          # Background agents use branches instead
+
+toolNames:
+  # Interactive
+  askUser: null               # Conversational only, no AskUserQuestion
+  # Delegation
+  spawnAgent: null            # Use native async subagents in .cursor/agents/
+  # Planning
+  planModeEnter: null         # Native, activated via interface
+  planModeExit: null          # Native
+  # Execution
+  bash: run_terminal_cmd
+  # Files
+  read: read_file
+  write: null                 # Use ApplyPatch or edit_file
+  edit: edit_file
+  # Search
+  glob: file_search
+  grep: grep_search
+  # Web
+  webSearch: web_search
+  webFetch: null              # Use web_search with @web
+  # Browser
+  browser: native_browser
+
+frontmatter:
+  agents:
+    format: yaml
+    fields:
+      - name
+      - description
+      - model
+      - readonly
+      - is_background
+  commands:
+    format: markdown           # Slash commands
+  rules:
+    format: mdc                # MDC format (YAML: description, globs, alwaysApply)
+
+subAgentConfig:
+  format: yaml
+  fields:
+    name: "Agent display name"
+    description: "What this agent does"
+    model: "claude-3-5-sonnet or gpt-4-turbo"
+    readonly: "boolean - read-only workspace"
+    is_background: "boolean - runs without user interaction"
+  async: true
+  supportsNesting: true
+  resultsAreAccessible: true
+
+limits:
+  maxFileSize: 0              # 0 = unlimited
+  maxCommandLength: 0         # 0 = unlimited
+  maxToolsPerMCP: 40          # Hard limit
+  maxBackgroundAgents: 5      # Practical limit
+
+installation:
+  supportsFileOps: true
+  supportsHooks: true         # Beta support
+  supportsMCP: true
+  commandsRequireApproval: false
+  agentFilesCanBeNestedDirs: false
+  rulesFormat: MDC            # Modern YAML-based rule format
+
+features:
+  marketplace: "Plugin marketplace at cursor.com/marketplace"
+  backendAgents: "Can run agents in background without UI blocking"
+  asyncModel: "Agents don't wait for each other - true parallelism"
+  hookBeta: "6 hooks in beta; more events coming in Wave 2.6"
+
+notes:
+  - "Cursor v2.5 now rivals Claude Code with async subagents"
+  - "Agents are native; no separate Task tool needed"
+  - "Conversational input instead of structured menus (AskUserQuestion replacement)"
+  - "40-tool MCP limit is binding constraint for multi-IDE installations"
+  - "MDC rule format is modern YAML-based (legacy .cursorrules still supported)"
+  - "Plan mode fully built-in; no explicit enter/exit needed"
+  - "Hook events have different names but similar functionality to Claude Code"
+  - "Background agents enable true parallel task execution"

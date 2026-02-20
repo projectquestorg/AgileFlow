@@ -197,6 +197,10 @@ const IDE_REPLACEMENTS = {
     'claude code': 'Cursor',
     '.claude/': '.cursor/',
     '.claude\\': '.cursor\\',
+    '.claude/agents/agileflow': '.cursor/agents/AgileFlow',
+    'Task tool': 'subagent spawning',
+    'Task agent': 'subagent',
+    AskUserQuestion: 'numbered list prompt',
   },
 
   /**

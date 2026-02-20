@@ -1,0 +1,103 @@
+# OpenAI Codex CLI Capability Profile
+# Reference: Cross-IDE Compatibility Findings (20260220)
+
+ide:
+  id: codex
+  name: OpenAI Codex CLI
+  displayName: Codex
+  description: OpenAI's CLI-based development assistant
+  configDir: .codex
+  configDirUser: ~/.codex
+  instructionsFile: AGENTS.md
+  fileFormat: markdown
+  commandPrefix: "$agileflow-"
+  agentPrefix: "agileflow-"
+
+paths:
+  commands: null              # Not directly supported
+  agents: null                # Not directly supported
+  skills: .codex/skills/agileflow-*/SKILL.md
+  skillsUser: ~/.codex/prompts/agileflow-*.md
+  hooks: null                 # Not supported
+  mcp: null                   # Not supported
+
+capabilities:
+  core:
+    fileOperations: true      # Via skills (no direct tools)
+    shell: true               # Via sandbox
+    fileSearch: true          # Via sandbox search
+    interactiveInput: true    # ask_user_question (text-only, no structured menus)
+    subAgents: false          # Skills cannot spawn other skills
+    nestedSubAgents: false    # No nested delegation
+  planning:
+    planMode: false           # Not available
+    planModeEditable: false
+  lifecycle:
+    hooks: false              # No lifecycle hooks
+    approvalPolicies: true    # Approval gates only
+  external:
+    webSearch: false          # Not built-in
+    webFetch: false           # Not built-in
+    mcp: true                 # Via MCP extension
+    mcpToolLimit: 0           # 0 = unlimited
+    browser: false            # Not available
+  collaboration:
+    taskTracking: false       # No task tracking
+    persistentTasks: false
+    worktrees: false          # Manual git operations
+
+sandboxModes:
+  - id: read-only
+    description: "No file modifications, workspace read access"
+  - id: auto
+    description: "Auto-approved operations within workspace"
+  - id: full-access
+    description: "Full system access with approval"
+
+toolNames:
+  # Interactive
+  askUser: ask_user_question  # Text-only, not structured
+  # File operations (via skill)
+  read: null                  # Use skill instead
+  write: null                 # Use skill instead
+  edit: null                  # Use skill instead
+  # Execution (via skill)
+  bash: null                  # Use sandbox instead
+  # Search (via skill)
+  glob: null                  # Use sandbox instead
+  grep: null                  # Use sandbox instead
+  # Web (not available)
+  webSearch: null
+  webFetch: null
+
+frontmatter:
+  skills:
+    format: yaml
+    fields:
+      - name
+      - description
+      - model
+      - requiredPermissions
+
+limitations:
+  noSubAgents: "Cannot spawn other skills; use numbered prompts for sequential work"
+  noInteractiveMenus: "ask_user_question is text-only; convert to numbered options"
+  noPlanning: "No plan mode; use sequential skill instructions instead"
+  noHooks: "No lifecycle hooks; use approval policies"
+  noTaskTracking: "No persistent task tracking; use external tools"
+  skillScope: "Skills are repository-scoped, user prompts are global"
+
+installation:
+  supportsFileOps: false      # Via skills, not native tools
+  supportsHooks: false
+  supportsMCP: true           # Via MCP extension
+  commandsRequireApproval: true
+  skillsCanBeNestedDirs: false
+
+notes:
+  - "Skills are the primary extension mechanism"
+  - "Per-repo skills in .codex/skills/, global prompts in ~/.codex/prompts/"
+  - "No plan mode, hooks, or true sub-agent delegation"
+  - "AgileFlow /babysit features must fallback to conversational prompts"
+  - "Best used for simple linear workflows"
+  - "ask_user_question produces text output, not structured menus"

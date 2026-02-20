@@ -1,0 +1,111 @@
+# Claude Code IDE Capability Profile
+# Anthropic CLI - Primary target, fully supported
+# Reference: Cross-IDE Compatibility Findings (20260220)
+
+ide:
+  id: claude-code
+  name: Claude Code
+  displayName: Claude Code
+  description: Anthropic's native CLI-based development environment
+  configDir: .claude
+  instructionsFile: CLAUDE.md
+  fileFormat: markdown
+  commandPrefix: "/agileflow:"
+  agentPrefix: "agileflow-"
+
+paths:
+  commands: .claude/commands/agileflow/
+  agents: .claude/agents/agileflow/
+  skills: .claude/skills/
+  hooks: .claude/settings.json
+  mcp: .claude/settings.json
+
+capabilities:
+  core:
+    fileOperations: true      # Read, Write, Edit tools
+    shell: true               # Bash tool with full execution
+    fileSearch: true          # Glob and Grep tools
+    interactiveInput: true    # AskUserQuestion with structured options
+    subAgents: true           # Task tool for spawning subagents
+    nestedSubAgents: true     # Sub-agents can spawn sub-sub-agents
+  planning:
+    planMode: true            # EnterPlanMode/ExitPlanMode
+    planModeEditable: true    # User can edit plans mid-execution
+  lifecycle:
+    hooks: true               # PreToolUse, PostToolUse, SessionStart
+    hookEvents:
+      - SessionStart
+      - PreToolUse
+      - PostToolUse
+      - Notification
+      - Stop
+  external:
+    webSearch: true           # WebSearch tool
+    webFetch: true            # WebFetch tool
+    mcp: true                 # Model Context Protocol
+    mcpToolLimit: 0           # 0 = unlimited
+    browser: true             # Playwright MCP for screenshots
+  collaboration:
+    taskTracking: true        # TaskCreate, TaskUpdate, TaskList
+    persistentTasks: true     # Tasks survive across sessions
+    worktrees: true           # EnterWorktree for parallel branches
+
+toolNames:
+  # Interactive
+  askUser: AskUserQuestion
+  # Delegation
+  spawnAgent: Task
+  createTask: TaskCreate
+  updateTask: TaskUpdate
+  listTasks: TaskList
+  # Planning
+  planModeEnter: EnterPlanMode
+  planModeExit: ExitPlanMode
+  # Execution
+  bash: Bash
+  # Files
+  read: Read
+  write: Write
+  edit: Edit
+  # Search
+  glob: Glob
+  grep: Grep
+  # Web
+  webSearch: WebSearch
+  webFetch: WebFetch
+  # Branching
+  worktree: EnterWorktree
+
+frontmatter:
+  agents:
+    format: yaml
+    fields:
+      - name
+      - description
+      - tools
+      - model
+  commands:
+    format: yaml
+    fields:
+      - description
+      - argument-hint
+
+limits:
+  maxFileSize: 0              # 0 = unlimited
+  maxCommandLength: 0         # 0 = unlimited
+  maxToolsPerMCP: 0           # 0 = unlimited
+
+installation:
+  supportsFileOps: true
+  supportsHooks: true
+  supportsMCP: true
+  commandsRequireApproval: false
+  agentFilesCanBeNestedDirs: true
+
+notes:
+  - "Primary target for AgileFlow development"
+  - "All new capabilities are validated against Claude Code first"
+  - "AskUserQuestion provides structured menu presentation with JSON options"
+  - "Task tool supports full async delegation with result callbacks"
+  - "Plan mode integrated via native EnterPlanMode/ExitPlanMode"
+  - "No tool count limits - can install entire MCP ecosystem"

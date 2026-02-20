@@ -1,0 +1,161 @@
+# Windsurf IDE Capability Profile
+# Wave 13+ - Most comprehensive hooks but no true sub-agent spawning
+# Reference: Cross-IDE Compatibility Findings (20260220)
+
+ide:
+  id: windsurf
+  name: Windsurf
+  displayName: Windsurf
+  description: Codeium's AI editor with native worktrees and 11 lifecycle hooks
+  configDir: .windsurf
+  configDirGlobal: ~/.codeium/windsurf
+  instructionsFile: WINDSURF.md
+  fileFormat: markdown
+  commandPrefix: "/"
+  agentPrefix: "agileflow-"
+
+paths:
+  commands: .windsurf/workflows/
+  agents: null                # Uses workflows + cascades instead
+  skills: .windsurf/skills/*/SKILL.md
+  rules: .windsurf/rules/
+  workflows: .windsurf/workflows/
+  hooks: .windsurf/hooks.json
+  hooksGlobal: ~/.codeium/windsurf/hooks.json
+  mcp: ~/.codeium/windsurf/mcp_config.json
+  mcpGlobal: true             # MCP config is global-only
+
+capabilities:
+  core:
+    fileOperations: true      # Native file read/write
+    shell: true               # Native shell (4-level auto-execution)
+    fileSearch: true          # Native search + analyze tools
+    interactiveInput: true    # Conversational only (no structured menus)
+    subAgents: false          # No true sub-agent spawning
+    nestedSubAgents: false    # Parallel Cascades via worktrees instead
+  planning:
+    planMode: true            # Native via "megaplan" keyword
+    planModeEditable: true    # Editable plans in ~/.windsurf/plans/
+  lifecycle:
+    hooks: true               # 11 lifecycle events (most comprehensive)
+    hookEvents:
+      - pre_read_code
+      - post_read_code
+      - pre_write_code
+      - post_write_code
+      - pre_run_command
+      - post_run_command
+      - pre_mcp_tool_use
+      - post_mcp_tool_use
+      - pre_user_prompt
+      - post_cascade_response
+      - post_setup_worktree
+  external:
+    webSearch: true           # Web Search tool
+    webFetch: true            # URL Read and View Chunk
+    mcp: true                 # Full MCP support
+    mcpToolLimit: 100         # 100-tool cap
+    browser: true             # Browser Preview (in-IDE)
+  collaboration:
+    taskTracking: false       # Conversation-embedded only (not persistent)
+    persistentTasks: false
+    worktrees: true           # Native worktrees (up to 20 per workspace)
+    maxWorktrees: 20
+
+toolNames:
+  # Interactive
+  askUser: null               # Conversational only
+  # Delegation
+  spawnAgent: null            # Use workflows + cascades instead
+  # Planning
+  planModeEnter: null         # Native, use "megaplan" keyword
+  planModeExit: null          # Native
+  # Execution
+  bash: run_command
+  # Files
+  read: read_file
+  write: write_file
+  edit: edit_file
+  # Search
+  glob: search_files
+  grep: search_codebase
+  # Web
+  webSearch: web_search
+  webFetch: url_read
+  # Cascades
+  cascade: null               # Use /workflow-name chaining
+
+workflowModel:
+  format: markdown
+  maxCharacters: 12000        # Hard limit per workflow file
+  splitStrategy: "Split large workflows into multiple files"
+  chaining: "Use /workflow-name in instructions to chain workflows"
+  cascades: "Use @cascade to run multiple workflows in parallel"
+
+skillModel:
+  format: markdown
+  frontmatterFormat: yaml
+  spec: "agentskills.io"
+  fields:
+    - name
+    - description
+    - model
+    - requiredCapabilities
+
+frontmatter:
+  workflows:
+    format: null              # Workflows are commands, not structured prompts
+  rules:
+    format: markdown
+    fields:
+      - description
+      - globs
+      - alwaysApply
+  skills:
+    format: yaml
+    fields:
+      - name
+      - description
+      - model
+      - requiredCapabilities
+
+limits:
+  maxFileSize: 0              # 0 = unlimited
+  maxCommandLength: 0         # 0 = unlimited
+  maxWorkflowSize: 12000      # Hard limit per workflow file
+  maxToolsPerMCP: 100         # MCP tool limit
+  maxWorktreesPerWorkspace: 20
+  autoExecutionLevels: 4      # Shell auto-execution levels
+
+installation:
+  supportsFileOps: true
+  supportsHooks: true         # Native
+  supportsMCP: true           # Global-only config
+  commandsRequireApproval: false
+  skillsCanBeNestedDirs: true
+  projectLevelMCP: false      # MCP config is global-only
+
+worktreeModel:
+  supported: true
+  maxConcurrent: 20
+  useCase: "Parallel feature branches or multi-task execution"
+  gitIntegration: "Native git worktree support"
+  hostedOn: "Wave 13+"
+
+cascadeModel:
+  description: "Run multiple workflows in parallel"
+  syntax: "@cascade /workflow1 /workflow2"
+  useCase: "Execute independent tasks without blocking"
+  limitSubstitution: "Use cascades instead of Task tool"
+
+notes:
+  - "Windsurf has the most comprehensive hooks (11 events)"
+  - "NO true sub-agent spawning; use workflow chaining or cascades"
+  - "12,000 character limit per workflow - split large commands"
+  - "MCP config is global-only (in ~/.codeium/windsurf/mcp_config.json)"
+  - "Conversational input, no structured menus"
+  - "Native worktrees enable parallel development (up to 20 per workspace)"
+  - "Skills follow agentskills.io specification"
+  - "Use 'megaplan' keyword for advanced planning"
+  - "100-tool MCP limit; good balance between capability and performance"
+  - "Plan files stored in ~/.windsurf/plans/ (user's home, not project)"
