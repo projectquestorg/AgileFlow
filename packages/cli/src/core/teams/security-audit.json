@@ -1,0 +1,71 @@
+{
+  "name": "security-audit",
+  "description": "Multi-perspective security vulnerability analysis team for finding exploitable weaknesses",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "agileflow-security-consensus",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-security-analyzer-injection",
+      "role": "analyzer",
+      "domain": "injection",
+      "description": "Analyzes SQL injection, command injection, NoSQL injection, template injection"
+    },
+    {
+      "agent": "agileflow-security-analyzer-auth",
+      "role": "analyzer",
+      "domain": "authentication",
+      "description": "Analyzes weak hashing, JWT flaws, session fixation, broken auth flows"
+    },
+    {
+      "agent": "agileflow-security-analyzer-authz",
+      "role": "analyzer",
+      "domain": "authorization",
+      "description": "Analyzes IDOR, privilege escalation, path traversal, CORS, CSRF"
+    },
+    {
+      "agent": "agileflow-security-analyzer-secrets",
+      "role": "analyzer",
+      "domain": "secrets-crypto",
+      "description": "Analyzes hardcoded credentials, weak crypto, insecure randomness"
+    },
+    {
+      "agent": "agileflow-security-analyzer-input",
+      "role": "analyzer",
+      "domain": "input-validation",
+      "description": "Analyzes XSS, prototype pollution, SSRF, file upload, ReDoS"
+    },
+    {
+      "agent": "agileflow-security-analyzer-deps",
+      "role": "analyzer",
+      "domain": "dependencies",
+      "description": "Analyzes known CVEs, typosquatting, overly permissive version ranges"
+    },
+    {
+      "agent": "agileflow-security-analyzer-infra",
+      "role": "analyzer",
+      "domain": "infrastructure",
+      "description": "Analyzes Docker security, security headers, HTTPS, exposed endpoints"
+    },
+    {
+      "agent": "agileflow-security-analyzer-api",
+      "role": "analyzer",
+      "domain": "api-security",
+      "description": "Analyzes mass assignment, data exposure, rate limiting, GraphQL"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": false,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["analysis", "security", "vulnerabilities", "audit"]
+}
