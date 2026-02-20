@@ -21,6 +21,12 @@
       "description": "Analyzes dead code, unreachable branches, and missing returns"
     },
     {
+      "agent": "agileflow-logic-analyzer-invariant",
+      "role": "analyzer",
+      "domain": "invariants",
+      "description": "Analyzes pre/post conditions, state consistency, and contract violations"
+    },
+    {
       "agent": "agileflow-logic-analyzer-race",
       "role": "analyzer",
       "domain": "concurrency",
