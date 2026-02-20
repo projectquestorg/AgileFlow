@@ -35,17 +35,17 @@ compact_context:
 ```
 
 **Priority Levels**:
-- `critical` (2 agents): Always preserved even in aggressive compaction
-  - Mentor, API Agent
+- `critical` (4 agents): Always preserved even in aggressive compaction
+  - Mentor, API, UI, Database
   - Handle orchestration and core implementation
-- `high` (8 agents): Preserved in most compactions
-  - UI, Database, CI, DevOps, Testing, Security, Documentation, Performance
+- `high` (12 agents): Preserved in most compactions
+  - CI, DevOps, Testing, Security, Documentation, Performance, Codebase-Query, Orchestrator, Team-Coordinator, Error-Analyzer, Code-Reviewer, Multi-Expert
   - Run long-duration work with sustained focus
-- `medium` (15 agents): Preserved when possible
-  - Most specialized agents (analytics, integrations, mobile, etc.)
+- `medium` (30 agents): Preserved when possible
+  - Specialized agents (analytics, integrations, mobile, etc.) plus logic/legal/security/perf/test analyzers
   - Handle domain-specific tasks
-- `low` (2 agents): First to be removed
-  - Advisory agents, rarely used (epic-planner, orchestrator)
+- `low` (10 agents): First to be removed
+  - Validators, configuration agents, epic-planner
   - Only included if room allows
 
 ### 2. Preserve Rules
@@ -128,7 +128,7 @@ During a 2-day API implementation with 50+ exchanges:
 
 ## All Agent Configurations
 
-### Critical Priority (2 agents)
+### Critical Priority (4 agents)
 
 **mentor**
 ```yaml
@@ -165,7 +165,7 @@ state_fields:
   - test_status_baseline
 ```
 
-### High Priority (8 agents)
+### High Priority (12 agents)
 
 **ui**
 ```yaml
@@ -223,7 +223,7 @@ state_fields:
 
 **ci, devops, security, documentation, performance** also use `priority: high` with domain-specific rules and state fields.
 
-### Medium Priority (15 agents)
+### Medium Priority (30 agents)
 
 Specialized agents for analytics, integrations, mobile, compliance, design, datamigration, qa, accessibility, monitoring, adr-writer, research, refactor, readme-updater.
 

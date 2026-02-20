@@ -35,16 +35,16 @@ compact_context:
 ```
 
 **Priority Levels**:
-- `critical` (2 agents) : Toujours conservé même en compactage agressif
+- `critical` (4 agents) : Toujours conservé même en compactage agressif
   - Mentor, Agent API
   - Gérer l'orchestration et la mise en œuvre du noyau
-- `high` (8 agents) : Préservé dans la plupart des compactages
+- `high` (12 agents) : Préservé dans la plupart des compactages
   - UI, base de données, CI, DevOps, tests, sécurité, documentation, performances
   - Exécuter un travail de longue durée avec une concentration soutenue
-- `medium` (15 agents) : Préservé lorsque cela est possible
+- `medium` (30 agents) : Préservé lorsque cela est possible
   - Les agents les plus spécialisés (analytics, intégrations, mobile, etc.)
   - Gérer les tâches spécifiques au domaine
-- `low` (2 agents) : Premier à être supprimé
+- `low` (10 agents) : Premier à être supprimé
   - Agents-conseils, rarement utilisés (epic-planner, orchestrateur)
   - Inclus uniquement si la chambre le permet
 
