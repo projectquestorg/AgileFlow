@@ -105,6 +105,22 @@ function detectConfig(version) {
         version: null,
         outdated: false,
       },
+      browserqa: {
+        enabled: false,
+        valid: true,
+        issues: [],
+        version: null,
+        outdated: false,
+        playwright_detected: false,
+      },
+      contextverbosity: {
+        enabled: false,
+        valid: true,
+        issues: [],
+        version: null,
+        outdated: false,
+        mode: 'full',
+      },
     },
     metadata: { exists: false, version: null },
     currentVersion: version,
@@ -326,9 +342,26 @@ function detectMetadata(status, version) {
     status.features.noaiattribution.enabled = true;
   }
 
+  // Browser QA metadata
+  if (meta.features?.browserqa?.enabled) {
+    status.features.browserqa.enabled = true;
+    status.features.browserqa.playwright_detected =
+      meta.features.browserqa.playwright_detected || false;
+  }
+
+  // Context verbosity metadata
+  if (meta.features?.contextVerbosity?.enabled) {
+    status.features.contextverbosity.enabled = true;
+    status.features.contextverbosity.mode = meta.features.contextVerbosity.mode || 'full';
+  }
+
   // Read feature versions and check if outdated (content-based)
   if (meta.features) {
-    const featureKeyMap = { askUserQuestion: 'askuserquestion', tmuxAutoSpawn: 'tmuxautospawn' };
+    const featureKeyMap = {
+      askUserQuestion: 'askuserquestion',
+      tmuxAutoSpawn: 'tmuxautospawn',
+      contextVerbosity: 'contextverbosity',
+    };
     const packageScriptDir = findPackageScriptDir();
 
     Object.entries(meta.features).forEach(([feature, data]) => {
@@ -481,6 +514,32 @@ function printStatus(status) {
     log(`   Tmux Auto-Spawn: enabled`, c.green);
   } else {
     log(`   Tmux Auto-Spawn: disabled`, c.dim);
+  }
+
+  // Browser QA
+  const bqa = status.features.browserqa;
+  if (bqa) {
+    if (bqa.enabled) {
+      let bqaText = 'enabled';
+      if (bqa.playwright_detected) bqaText += ' (Playwright detected)';
+      else bqaText += ' (Playwright not found)';
+      log(
+        `  ${bqa.playwright_detected ? '' : ''} Browser QA: ${bqaText}`,
+        bqa.playwright_detected ? c.green : c.yellow
+      );
+    } else {
+      log(`   Browser QA: disabled`, c.dim);
+    }
+  }
+
+  // Context Verbosity
+  const cv = status.features.contextverbosity;
+  if (cv) {
+    if (cv.enabled) {
+      log(`   Context Verbosity: ${cv.mode}`, c.green);
+    } else {
+      log(`   Context Verbosity: full (default)`, c.dim);
+    }
   }
 
   // Metadata version

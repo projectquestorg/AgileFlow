@@ -55,6 +55,7 @@ const {
   generateContextWarning,
   generateSummary,
   generateFullContent,
+  generateMinimalContent,
 } = require('../../../scripts/lib/context-formatter');
 
 const {
@@ -319,14 +320,178 @@ describe('context-formatter', () => {
       expect(content).toContain('xyz789 prefetched');
     });
 
-    it('shows visual e2e status when enabled', () => {
+    it('shows unified UI Testing status when enabled', () => {
       fs.existsSync.mockImplementation(p => {
         if (p.includes('playwright')) return true;
         if (p === 'screenshots') return true;
         return false;
       });
       const content = generateFullContent(null, {});
-      expect(content).toContain('VISUAL E2E TESTING');
+      expect(content).toContain('UI Testing (Bowser): ENABLED');
+    });
+  });
+
+  describe('verbosity modes', () => {
+    beforeEach(() => {
+      safeExec.mockImplementation(cmd => {
+        if (cmd.includes('branch')) return 'main';
+        if (cmd.includes('%h %s')) return 'abc123 test commit';
+        if (cmd.includes('%h')) return 'abc123';
+        if (cmd.includes('%s')) return 'test commit';
+        if (cmd.includes('status')) return 'M file1.js';
+        return null;
+      });
+      safeReadJSON.mockImplementation(p => {
+        if (p.includes('status.json')) {
+          return {
+            stories: {
+              'US-001': { status: 'ready', title: 'First story' },
+              'US-002': { status: 'in-progress', title: 'Second story' },
+              'US-003': { status: 'done', title: 'Third story' },
+            },
+          };
+        }
+        return null;
+      });
+      safeLs.mockReturnValue([]);
+      safeRead.mockReturnValue(null);
+    });
+
+    it('defaults to full mode when verbosityMode not specified', () => {
+      const content = generateFullContent(null, {});
+      expect(content).toContain('Key Context Files');
+      expect(content).toContain('Status.json (Full Content)');
+    });
+
+    it('lite mode skips key file dumps', () => {
+      const prefetched = {
+        git: { branch: 'main', commitFull: 'abc123 test', status: 'M file1.js' },
+        json: {
+          metadata: null,
+          statusJson: {
+            stories: {
+              'US-001': { status: 'ready', title: 'First story' },
+              'US-002': { status: 'in-progress', title: 'Second story' },
+            },
+          },
+          sessionState: null,
+        },
+        text: {},
+        dirs: { docs: [], epics: [], research: [] },
+        researchFiles: [],
+        sectionsToLoad: { researchContent: true, sessionClaims: true, fileOverlaps: true },
+      };
+      const content = generateFullContent(prefetched, { verbosityMode: 'lite' });
+      expect(content).not.toContain('Key Context Files');
+      expect(content).toContain('Active Stories');
+      expect(content).toContain('[lite]');
+    });
+
+    it('lite mode shows active stories instead of full status dump', () => {
+      const prefetched = {
+        git: { branch: 'main', commitFull: 'abc123 test', status: '' },
+        json: {
+          metadata: null,
+          statusJson: {
+            stories: {
+              'US-001': { status: 'ready', title: 'First story' },
+              'US-002': { status: 'in-progress', title: 'Second story' },
+              'US-003': { status: 'done', title: 'Third story' },
+            },
+          },
+          sessionState: null,
+        },
+        text: {},
+        dirs: { docs: [], epics: [] },
+        researchFiles: [],
+        sectionsToLoad: { researchContent: true, sessionClaims: true, fileOverlaps: true },
+      };
+      const content = generateFullContent(prefetched, { verbosityMode: 'lite' });
+      expect(content).toContain('Active Stories');
+      expect(content).toContain('US-001');
+      expect(content).toContain('US-002');
+      expect(content).not.toContain('Full Content');
+    });
+
+    it('minimal mode returns compact output', () => {
+      const prefetched = {
+        git: { branch: 'feature-x', commitFull: 'def456 feat', status: 'M a.js\nM b.js' },
+        json: {
+          metadata: null,
+          statusJson: {
+            stories: {
+              'US-001': { status: 'ready', title: 'Story A' },
+              'US-002': { status: 'done', title: 'Story B' },
+            },
+          },
+          sessionState: null,
+        },
+        text: {},
+        dirs: { epics: [] },
+        researchFiles: [],
+        sectionsToLoad: {},
+      };
+      const content = generateFullContent(prefetched, { verbosityMode: 'minimal' });
+      expect(content).toContain('minimal');
+      expect(content).toContain('feature-x');
+      expect(content).toContain('2 uncommitted');
+      expect(content).toContain('1 ready');
+      expect(content).toContain('1 done');
+      expect(content).not.toContain('Status.json');
+      expect(content).not.toContain('Key Context Files');
+      expect(content).not.toContain('Documentation');
+    });
+
+    it('minimal mode is significantly shorter than full mode', () => {
+      const prefetched = {
+        git: { branch: 'main', commitFull: 'abc test', status: '' },
+        json: { metadata: null, statusJson: null, sessionState: null },
+        text: {},
+        dirs: { docs: [], epics: [] },
+        researchFiles: [],
+        sectionsToLoad: {},
+      };
+      const full = generateFullContent(prefetched, { verbosityMode: 'full' });
+      const minimal = generateFullContent(prefetched, { verbosityMode: 'minimal' });
+      // Minimal should be much shorter
+      expect(minimal.length).toBeLessThan(full.length * 0.5);
+    });
+
+    it('lite mode skips feature catalog and ideation', () => {
+      const prefetched = {
+        git: { branch: 'main', commitFull: 'abc test', status: '' },
+        json: { metadata: null, statusJson: null, sessionState: null },
+        text: {},
+        dirs: { docs: [], epics: [] },
+        researchFiles: [],
+        sectionsToLoad: { researchContent: true, sessionClaims: true, fileOverlaps: true },
+      };
+      const content = generateFullContent(prefetched, {
+        verbosityMode: 'lite',
+        smartDetectResults: {
+          disabled: false,
+          lifecycle_phase: 'development',
+          phase_reason: 'test',
+          recommendations: {
+            immediate: [{ feature: 'test', trigger: 'test', command: 'test' }],
+            available: [{ feature: 'avail', trigger: 'test', command: 'test' }],
+            auto_enabled: {},
+          },
+          feature_catalog: [
+            {
+              name: 'test',
+              category: 'modes',
+              status: 'available',
+              description: 'test',
+              how_to_use: 'test',
+            },
+          ],
+        },
+      });
+      // Immediate recommendations should be present
+      expect(content).toContain('Immediate');
+      // Available and feature catalog should be absent in lite
+      expect(content).not.toContain('Feature Catalog');
     });
   });
 });

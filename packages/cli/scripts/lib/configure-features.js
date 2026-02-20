@@ -67,6 +67,15 @@ const FEATURES = {
     script: 'strip-ai-attribution.js',
     description: 'Block git commits containing AI attribution (Co-Authored-By, etc.)',
   },
+  browserqa: {
+    metadataOnly: false,
+    description:
+      'Agentic browser testing with Playwright (Bowser four-layer pattern). Screenshot evidence, 80% pass rate threshold.',
+  },
+  contextverbosity: {
+    metadataOnly: true,
+    description: 'Control how much context is loaded per command (full/lite/minimal)',
+  },
 };
 
 const PROFILES = {
@@ -97,6 +106,7 @@ const PROFILES = {
     ],
     disable: ['statusline', 'ralphloop', 'selfimprove'],
     archivalDays: 30,
+    contextVerbosity: 'lite',
   },
   minimal: {
     description: 'SessionStart + archival only',
@@ -110,6 +120,7 @@ const PROFILES = {
       'tmuxautospawn',
     ],
     archivalDays: 30,
+    contextVerbosity: 'lite',
   },
   none: {
     description: 'Disable all AgileFlow features',
@@ -472,6 +483,43 @@ function enableFeature(feature, options = {}, version) {
   // Handle no AI attribution
   if (feature === 'noaiattribution') {
     return enableNoAiAttribution(settings, version);
+  }
+
+  // Handle browser QA (agentic browser testing)
+  if (feature === 'browserqa') {
+    return enableBrowserQa(version);
+  }
+
+  // Handle context verbosity (metadata only)
+  if (feature === 'contextverbosity') {
+    const mode = options.mode || 'lite';
+    const validModes = ['full', 'lite', 'minimal'];
+    if (!validModes.includes(mode)) {
+      error(`Invalid verbosity mode: ${mode}. Valid: ${validModes.join(', ')}`);
+      return false;
+    }
+    updateMetadata(
+      {
+        features: {
+          contextVerbosity: {
+            enabled: true,
+            mode,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success(`Context verbosity set to: ${mode}`);
+    if (mode === 'lite') {
+      info('Lite: summary table + git status + active stories + smart recommendations');
+      info('Skips: full file dumps, feature catalog, research content, ideation');
+    } else if (mode === 'minimal') {
+      info('Minimal: summary table only with story counts');
+      info('Skips: everything except compact summary');
+    }
+    return true;
   }
 
   const featureConfig = FEATURES[feature];
@@ -1009,6 +1057,44 @@ function disableFeature(feature, version) {
     return true;
   }
 
+  // Disable browser QA
+  if (feature === 'browserqa') {
+    updateMetadata(
+      {
+        features: {
+          browserqa: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Browser QA disabled');
+    info('Agentic browser testing deactivated');
+    return true;
+  }
+
+  // Disable context verbosity (reset to full)
+  if (feature === 'contextverbosity') {
+    updateMetadata(
+      {
+        features: {
+          contextVerbosity: {
+            enabled: false,
+            mode: 'full',
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Context verbosity reset to full');
+    return true;
+  }
+
   // Disable no AI attribution
   if (feature === 'noaiattribution') {
     if (settings.hooks?.PreToolUse && Array.isArray(settings.hooks.PreToolUse)) {
@@ -1083,6 +1169,11 @@ function applyProfile(profileName, options = {}, version) {
 
   if (profile.disable) {
     profile.disable.forEach(f => disableFeature(f, version));
+  }
+
+  // Apply context verbosity if specified in profile
+  if (profile.contextVerbosity) {
+    enableFeature('contextverbosity', { mode: profile.contextVerbosity }, version);
   }
 
   // Handle experimental profile settings
@@ -1599,6 +1690,90 @@ function disableShellAliases() {
 // ============================================================================
 // CLAUDE.MD REINFORCEMENT
 // ============================================================================
+
+// ============================================================================
+// BROWSER QA
+// ============================================================================
+
+/**
+ * Enable browser QA (agentic browser testing)
+ * Creates evidence directory structure, deploys spec template, updates metadata
+ */
+function enableBrowserQa(version) {
+  // Create evidence directory structure + screenshots dir for visual verification
+  const dirs = [
+    '.agileflow/ui-review',
+    '.agileflow/ui-review/runs',
+    '.agileflow/ui-review/specs',
+    '.agileflow/ui-review/baselines',
+    'screenshots',
+  ];
+  for (const dir of dirs) {
+    ensureDir(dir);
+  }
+
+  // Deploy spec template if not exists
+  const templateDest = path.join(
+    process.cwd(),
+    '.agileflow',
+    'ui-review',
+    'specs',
+    '_template.yaml'
+  );
+  if (!fs.existsSync(templateDest)) {
+    const templateSrc = path.join(process.cwd(), '.agileflow', 'templates', 'browser-qa-spec.yaml');
+    if (fs.existsSync(templateSrc)) {
+      fs.copyFileSync(templateSrc, templateDest);
+      success('Deployed browser-qa spec template');
+    } else {
+      info('No spec template found - create YAML specs manually in .agileflow/ui-review/specs/');
+    }
+  }
+
+  // Check for Playwright
+  let playwrightAvailable = false;
+  try {
+    require.resolve('playwright');
+    playwrightAvailable = true;
+  } catch {
+    // Not installed
+  }
+
+  if (!playwrightAvailable) {
+    warn('Playwright not found - install for browser automation:');
+    info('  npm install --save-optional playwright');
+    info('  npx playwright install chromium');
+  }
+
+  // Update gitignore - evidence runs should not be committed
+  updateGitignore();
+
+  updateMetadata(
+    {
+      features: {
+        browserqa: {
+          enabled: true,
+          version,
+          at: new Date().toISOString(),
+          playwright_detected: playwrightAvailable,
+        },
+      },
+    },
+    version
+  );
+
+  success('UI Testing enabled (agentic browser testing + visual verification)');
+  info('Evidence directory: .agileflow/ui-review/');
+  info('Screenshots directory: screenshots/ (for visual verification with VISUAL=true)');
+  info('Spec template: .agileflow/ui-review/specs/_template.yaml');
+  info('Agentic testing: /agileflow:browser-qa SCENARIO=<spec.yaml>');
+  info('Visual verification: /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true');
+  if (playwrightAvailable) {
+    info('Playwright: detected');
+  }
+
+  return true;
+}
 
 const CLAUDE_MD_MARKER = '<!-- AGILEFLOW_BABYSIT_RULES -->';
 const CLAUDE_MD_CONTENT = `

@@ -37,12 +37,12 @@ Main Menu → "What would you like to configure?"
 ├─ Profiles       → Apply preset | Apply custom | Save current | Manage
 │                   ├─ Presets: Full | Basic | Minimal | None
 │                   └─ Custom: Save, Export, Import, Delete
-├─ Features       → Enable | Disable | View status
-│                   └─ Hooks (4) + Other Features (4)
+├─ Features       → Enable | Disable | Context Verbosity | View status
+│                   └─ Hooks (4) + Other Features (4) + Context Verbosity (full/lite/minimal)
 ├─ Sessions       → Startup mode and Agent Teams configuration
 │                   ├─ Startup Mode: Normal | Skip permissions | Accept edits | No Claude
 │                   └─ Agent Teams: Enable/disable native multi-agent orchestration
-├─ Infrastructure → Visual E2E | Damage Control | CI/CD | Quality Gates
+├─ Infrastructure → UI Testing | Damage Control | CI/CD | Quality Gates
 └─ Maintenance    → Fix format | Upgrade | Repair | Check status
 ```
 
@@ -137,7 +137,7 @@ After handling issues (or if none), present the main category menu:
     {"label": "Profiles", "description": "Quick setup with preset configurations (full, basic, minimal)"},
     {"label": "Features", "description": "Enable or disable individual hooks and features"},
     {"label": "Sessions", "description": "Configure default startup mode for new sessions"},
-    {"label": "Infrastructure", "description": "Set up Visual E2E, Damage Control, or CI/CD"},
+    {"label": "Infrastructure", "description": "Set up UI Testing, Damage Control, or CI/CD"},
     {"label": "Maintenance", "description": "Fix issues, repair scripts, or check status"}
   ]
 }]</parameter>
@@ -612,7 +612,7 @@ Then re-ask the enable/disable question.
   "header": "Setup",
   "multiSelect": false,
   "options": [
-    {"label": "Visual E2E Testing", "description": "Playwright + screenshot verification workflow"},
+    {"label": "UI Testing (Bowser)", "description": "Agentic browser testing + visual verification with Playwright"},
     {"label": "Damage Control", "description": "Block destructive commands, protect sensitive paths"},
     {"label": "CI/CD Workflow", "description": "GitHub Actions for automated testing"},
     {"label": "Quality Gates", "description": "Configure TeammateIdle and TaskCompleted gate thresholds"}
@@ -623,7 +623,7 @@ Then re-ask the enable/disable question.
 
 Handle each selection directly:
 
-- **Visual E2E**: `node .agileflow/scripts/agileflow-configure.js --enable=visuale2e`
+- **UI Testing (Bowser)**: `node .agileflow/scripts/agileflow-configure.js --enable=browserqa`
 - **Damage Control**: `node .agileflow/scripts/agileflow-configure.js --enable=damagecontrol`
 - **CI/CD**: `node .agileflow/scripts/agileflow-configure.js --enable=ci`
 - **Quality Gates**: Update `docs/00-meta/agileflow-metadata.json` under the `quality_gates` key with enable/disable for tests, lint, types gates per hook and coverage thresholds
@@ -1120,7 +1120,7 @@ Installed Features:
 ✅ damage-control (v2.94.1) - 31 patterns
 ✅ precompact (v2.94.1) - context preservation
 ✅ status-line (v2.94.1) - story tracking
-⚪ visual-e2e (not installed)
+⚪ browserqa (not installed)
 ⚪ hooks (not installed)
 
 Scripts:
@@ -1139,7 +1139,7 @@ Available features:
 - damage-control: Protect against destructive commands
 - precompact: Context preservation during compaction
 - status-line: Story status in Claude Code UI
-- visual-e2e: Screenshot-based testing
+- browserqa: Agentic browser testing + visual verification
 - hooks: Event-driven automation
 - ci: CI/CD workflow setup
 

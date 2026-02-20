@@ -407,57 +407,72 @@ function generateSummary(prefetched = null, options = {}) {
  * @returns {string} Full content
  */
 function generateFullContent(prefetched = null, options = {}) {
-  const { commandName = null, activeSections = [], smartDetectResults = null } = options;
+  const {
+    commandName = null,
+    activeSections = [],
+    smartDetectResults = null,
+    verbosityMode = 'full',
+  } = options;
+
+  // MINIMAL MODE: Return compact output only
+  if (verbosityMode === 'minimal') {
+    return generateMinimalContent(prefetched, options);
+  }
 
   let content = '';
 
-  const title = commandName ? `AgileFlow Context [${commandName}]` : 'AgileFlow Context';
+  const modeLabel = verbosityMode !== 'full' ? ` [${verbosityMode}]` : '';
+  const title = commandName
+    ? `AgileFlow Context [${commandName}]${modeLabel}`
+    : `AgileFlow Context${modeLabel}`;
   content += `${C.lavender}${C.bold}${title}${C.reset}\n`;
   content += `${C.dim}Generated: ${new Date().toISOString()}${C.reset}\n`;
 
-  // SESSION CONTEXT BANNER
-  const sessionManagerPath = path.join(__dirname, '..', 'session-manager.js');
-  const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
+  // SESSION CONTEXT BANNER - skip in lite mode
+  if (verbosityMode === 'full') {
+    const sessionManagerPath = path.join(__dirname, '..', 'session-manager.js');
+    const altSessionManagerPath = '.agileflow/scripts/session-manager.js';
 
-  if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
-    const managerPath = fs.existsSync(sessionManagerPath)
-      ? sessionManagerPath
-      : altSessionManagerPath;
-    const sessionStatus = safeExec(`node "${managerPath}" status`);
+    if (fs.existsSync(sessionManagerPath) || fs.existsSync(altSessionManagerPath)) {
+      const managerPath = fs.existsSync(sessionManagerPath)
+        ? sessionManagerPath
+        : altSessionManagerPath;
+      const sessionStatus = safeExec(`node "${managerPath}" status`);
 
-    if (sessionStatus) {
-      try {
-        const statusData = JSON.parse(sessionStatus);
-        if (statusData.current) {
-          const session = statusData.current;
-          const isMain = session.is_main === true;
-          const sessionName = session.nickname
-            ? `Session ${session.id} "${session.nickname}"`
-            : `Session ${session.id}`;
+      if (sessionStatus) {
+        try {
+          const statusData = JSON.parse(sessionStatus);
+          if (statusData.current) {
+            const session = statusData.current;
+            const isMain = session.is_main === true;
+            const sessionName = session.nickname
+              ? `Session ${session.id} "${session.nickname}"`
+              : `Session ${session.id}`;
 
-          content += `\n${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
-          content += `${C.teal}${C.bold}📍 SESSION CONTEXT${C.reset}\n`;
-          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
+            content += `\n${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
+            content += `${C.teal}${C.bold}📍 SESSION CONTEXT${C.reset}\n`;
+            content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n`;
 
-          if (isMain) {
-            content += `${C.mintGreen}${C.bold}${sessionName}${C.reset} ${C.dim}(main project)${C.reset}\n`;
-          } else {
-            content += `${C.peach}${C.bold}🔀 ${sessionName}${C.reset} ${C.dim}(worktree)${C.reset}\n`;
-            content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
-            content += `${C.dim}Path: ${session.path || process.cwd()}${C.reset}\n`;
+            if (isMain) {
+              content += `${C.mintGreen}${C.bold}${sessionName}${C.reset} ${C.dim}(main project)${C.reset}\n`;
+            } else {
+              content += `${C.peach}${C.bold}🔀 ${sessionName}${C.reset} ${C.dim}(worktree)${C.reset}\n`;
+              content += `Branch: ${C.skyBlue}${session.branch || 'unknown'}${C.reset}\n`;
+              content += `${C.dim}Path: ${session.path || process.cwd()}${C.reset}\n`;
+            }
+
+            if (statusData.otherActive > 0) {
+              content += `${C.amber}⚠️ ${statusData.otherActive} other active session(s)${C.reset} - check story claims below\n`;
+            }
+
+            content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n\n`;
           }
-
-          if (statusData.otherActive > 0) {
-            content += `${C.amber}⚠️ ${statusData.otherActive} other active session(s)${C.reset} - check story claims below\n`;
-          }
-
-          content += `${C.teal}${C.bold}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}\n\n`;
+        } catch {
+          // Silently ignore session parse errors
         }
-      } catch {
-        // Silently ignore session parse errors
       }
     }
-  }
+  } // end verbosityMode === 'full' (session context banner)
 
   // INTERACTION MODE (AskUserQuestion)
   const earlyMetadata =
@@ -499,8 +514,8 @@ function generateFullContent(prefetched = null, options = {}) {
     }
   }
 
-  // PROGRESSIVE DISCLOSURE
-  if (activeSections.length > 0) {
+  // PROGRESSIVE DISCLOSURE - skip in lite mode
+  if (activeSections.length > 0 && verbosityMode === 'full') {
     content += `\n${C.cyan}${C.bold}═══ 📖 Progressive Disclosure: Active Sections ═══${C.reset}\n`;
     content += `${C.dim}The following sections are activated based on command parameters.${C.reset}\n`;
     content += `${C.dim}Look for <!-- SECTION: name --> markers in the command file.${C.reset}\n\n`;
@@ -527,30 +542,32 @@ function generateFullContent(prefetched = null, options = {}) {
     content += '\n';
   }
 
-  // SCALE DETECTION (EP-0033)
-  let scaleDetector;
-  try {
-    scaleDetector = require('./scale-detector');
-  } catch {
-    /* not available */
-  }
-  if (scaleDetector) {
+  // SCALE DETECTION (EP-0033) - skip in lite mode
+  if (verbosityMode === 'full') {
+    let scaleDetector;
     try {
-      const scaleResult = scaleDetector.detectScale({
-        rootDir: process.cwd(),
-        statusJson: prefetched?.json?.statusJson,
-        sessionState: prefetched?.json?.sessionState,
-      });
-      const recs = scaleDetector.getScaleRecommendations(scaleResult.scale);
-      const label = scaleDetector.getScaleLabel(scaleResult.scale);
-      content += `\n${C.cyan}${C.bold}═══ Project Scale: ${label} ═══${C.reset}\n`;
-      content += `${C.dim}Detected: ${scaleResult.metrics.files} files, ${scaleResult.metrics.stories} stories, ${scaleResult.metrics.commits} commits (6mo)${C.reset}\n`;
-      content += `Planning depth: ${C.mintGreen}${recs.planningDepth}${C.reset} | Experts: ${C.mintGreen}${recs.expertCount}${C.reset}\n`;
-      content += `${C.dim}${recs.description}${C.reset}\n`;
+      scaleDetector = require('./scale-detector');
     } catch {
-      // Silently ignore scale detection errors
+      /* not available */
     }
-  }
+    if (scaleDetector) {
+      try {
+        const scaleResult = scaleDetector.detectScale({
+          rootDir: process.cwd(),
+          statusJson: prefetched?.json?.statusJson,
+          sessionState: prefetched?.json?.sessionState,
+        });
+        const recs = scaleDetector.getScaleRecommendations(scaleResult.scale);
+        const label = scaleDetector.getScaleLabel(scaleResult.scale);
+        content += `\n${C.cyan}${C.bold}═══ Project Scale: ${label} ═══${C.reset}\n`;
+        content += `${C.dim}Detected: ${scaleResult.metrics.files} files, ${scaleResult.metrics.stories} stories, ${scaleResult.metrics.commits} commits (6mo)${C.reset}\n`;
+        content += `Planning depth: ${C.mintGreen}${recs.planningDepth}${C.reset} | Experts: ${C.mintGreen}${recs.expertCount}${C.reset}\n`;
+        content += `${C.dim}${recs.description}${C.reset}\n`;
+      } catch {
+        // Silently ignore scale detection errors
+      }
+    }
+  } // end verbosityMode === 'full' (scale detection)
 
   // GIT STATUS
   content += `\n${C.skyBlue}${C.bold}═══ Git Status ═══${C.reset}\n`;
@@ -572,65 +589,108 @@ function generateFullContent(prefetched = null, options = {}) {
   }
 
   // STATUS.JSON
-  content += `\n${C.skyBlue}${C.bold}═══ Status.json (Full Content) ═══${C.reset}\n`;
   const statusJson = prefetched?.json?.statusJson ?? safeReadJSON('docs/09-agents/status.json');
 
-  if (statusJson) {
-    content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
-    content +=
-      JSON.stringify(statusJson, null, 2)
-        .split('\n')
-        .map(l => `  ${l}`)
-        .join('\n') + '\n';
-    content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
+  if (verbosityMode === 'lite') {
+    // Lite mode: show counts and active stories only
+    content += `\n${C.skyBlue}${C.bold}═══ Status.json (Active Stories) ═══${C.reset}\n`;
+    if (statusJson?.stories) {
+      const active = Object.entries(statusJson.stories)
+        .filter(([, s]) => s.status === 'in-progress' || s.status === 'ready')
+        .slice(0, 10);
+      if (active.length > 0) {
+        content += `Active stories (${active.length}):\n`;
+        active.forEach(([id, s]) => {
+          content += `  ${C.lavender}${id}${C.reset}: ${s.title || 'untitled'} ${C.dim}[${s.status}]${C.reset}\n`;
+        });
+      } else {
+        content += `${C.dim}No active stories${C.reset}\n`;
+      }
+    } else {
+      content += `${C.dim}No status.json found${C.reset}\n`;
+    }
   } else {
-    content += `${C.dim}No status.json found${C.reset}\n`;
+    // Full mode: dump entire JSON
+    content += `\n${C.skyBlue}${C.bold}═══ Status.json (Full Content) ═══${C.reset}\n`;
+    if (statusJson) {
+      content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
+      content +=
+        JSON.stringify(statusJson, null, 2)
+          .split('\n')
+          .map(l => `  ${l}`)
+          .join('\n') + '\n';
+      content += `${C.dim}${'─'.repeat(50)}${C.reset}\n`;
+    } else {
+      content += `${C.dim}No status.json found${C.reset}\n`;
+    }
   }
 
   // SESSION STATE
-  content += `\n${C.skyBlue}${C.bold}═══ Session State ═══${C.reset}\n`;
   const sessionState =
     prefetched?.json?.sessionState ?? safeReadJSON('docs/09-agents/session-state.json');
-  if (sessionState) {
-    const current = sessionState.current_session;
-    if (current && current.started_at) {
-      const started = new Date(current.started_at);
+
+  if (verbosityMode === 'lite') {
+    // Brief session state in lite mode
+    content += `\n${C.skyBlue}${C.bold}═══ Session State ═══${C.reset}\n`;
+    if (sessionState?.current_session?.started_at) {
+      const started = new Date(sessionState.current_session.started_at);
       const duration = Math.round((Date.now() - started.getTime()) / 60000);
-      content += `Active session: ${C.lightGreen}${duration} min${C.reset}\n`;
-      if (current.current_story) {
-        content += `Working on: ${C.lightYellow}${current.current_story}${C.reset}\n`;
+      content += `Session: ${C.lightGreen}${duration} min${C.reset}`;
+      if (sessionState.current_session.current_story) {
+        content += ` | Working on: ${C.lightYellow}${sessionState.current_session.current_story}${C.reset}`;
+      }
+      content += '\n';
+      if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
+        const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
+        content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
       }
     } else {
       content += `${C.dim}No active session${C.reset}\n`;
     }
-    if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
-      const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
-      content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
-    } else if (sessionState.active_command && sessionState.active_command.name) {
-      content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
-    }
-
-    const batchLoop = sessionState.batch_loop;
-    if (batchLoop && batchLoop.enabled) {
-      content += `\n${C.skyBlue}${C.bold}── Batch Loop Active ──${C.reset}\n`;
-      content += `Pattern: ${C.cyan}${batchLoop.pattern}${C.reset}\n`;
-      content += `Action: ${C.cyan}${batchLoop.action}${C.reset}\n`;
-      content += `Current: ${C.lightYellow}${batchLoop.current_item || 'none'}${C.reset}\n`;
-      const summary = batchLoop.summary || {};
-      content += `Progress: ${C.lightGreen}${summary.completed || 0}${C.reset}/${summary.total || 0} `;
-      content += `(${C.lightYellow}${summary.in_progress || 0}${C.reset} in progress)\n`;
-      content += `Iteration: ${batchLoop.iteration || 0}/${batchLoop.max_iterations || 50}\n`;
-    }
   } else {
-    content += `${C.dim}No session-state.json found${C.reset}\n`;
+    // Full session state
+    content += `\n${C.skyBlue}${C.bold}═══ Session State ═══${C.reset}\n`;
+    if (sessionState) {
+      const current = sessionState.current_session;
+      if (current && current.started_at) {
+        const started = new Date(current.started_at);
+        const duration = Math.round((Date.now() - started.getTime()) / 60000);
+        content += `Active session: ${C.lightGreen}${duration} min${C.reset}\n`;
+        if (current.current_story) {
+          content += `Working on: ${C.lightYellow}${current.current_story}${C.reset}\n`;
+        }
+      } else {
+        content += `${C.dim}No active session${C.reset}\n`;
+      }
+      if (Array.isArray(sessionState.active_commands) && sessionState.active_commands.length > 0) {
+        const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
+        content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
+      } else if (sessionState.active_command && sessionState.active_command.name) {
+        content += `Active command: ${C.skyBlue}${sessionState.active_command.name}${C.reset}\n`;
+      }
+
+      const batchLoop = sessionState.batch_loop;
+      if (batchLoop && batchLoop.enabled) {
+        content += `\n${C.skyBlue}${C.bold}── Batch Loop Active ──${C.reset}\n`;
+        content += `Pattern: ${C.cyan}${batchLoop.pattern}${C.reset}\n`;
+        content += `Action: ${C.cyan}${batchLoop.action}${C.reset}\n`;
+        content += `Current: ${C.lightYellow}${batchLoop.current_item || 'none'}${C.reset}\n`;
+        const summary = batchLoop.summary || {};
+        content += `Progress: ${C.lightGreen}${summary.completed || 0}${C.reset}/${summary.total || 0} `;
+        content += `(${C.lightYellow}${summary.in_progress || 0}${C.reset} in progress)\n`;
+        content += `Iteration: ${batchLoop.iteration || 0}/${batchLoop.max_iterations || 50}\n`;
+      }
+    } else {
+      content += `${C.dim}No session-state.json found${C.reset}\n`;
+    }
   }
 
   // Remaining content would continue here...
   // For brevity, returning the core content
   // The full implementation would include all remaining sections
 
-  // Add remaining sections
-  content += generateRemainingContent(prefetched, options);
+  // Add remaining sections (pass verbosityMode through options)
+  content += generateRemainingContent(prefetched, { ...options, verbosityMode });
 
   return content;
 }
@@ -642,11 +702,12 @@ function generateFullContent(prefetched = null, options = {}) {
  * @returns {string} Remaining content
  */
 function generateRemainingContent(prefetched, options = {}) {
+  const { verbosityMode = 'full' } = options;
   let content = '';
 
-  // STORY CLAIMS
+  // STORY CLAIMS - skip in lite mode
   const shouldLoadClaims = prefetched?.sectionsToLoad?.sessionClaims !== false;
-  if (shouldLoadClaims) {
+  if (shouldLoadClaims && verbosityMode === 'full') {
     const storyClaimingPath = path.join(__dirname, 'story-claiming.js');
     const altStoryClaimingPath = '.agileflow/scripts/lib/story-claiming.js';
 
@@ -684,160 +745,177 @@ function generateRemainingContent(prefetched, options = {}) {
     }
   }
 
-  // UI TESTING STATUS (unified Visual E2E + Browser QA)
-  const metadata =
-    prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
-  const browserQaConfig = metadata?.features?.browserqa;
-  const playwrightExists =
-    fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
-  const screenshotsExists = fs.existsSync('screenshots');
-  const browserQaSpecsExist = fs.existsSync('.agileflow/ui-review/specs');
+  // UI TESTING STATUS (unified Visual E2E + Browser QA) - skip in lite mode
+  if (verbosityMode === 'full') {
+    const metadata =
+      prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
+    const browserQaConfig = metadata?.features?.browserqa;
+    const playwrightExists =
+      fs.existsSync('playwright.config.ts') || fs.existsSync('playwright.config.js');
+    const screenshotsExists = fs.existsSync('screenshots');
+    const browserQaSpecsExist = fs.existsSync('.agileflow/ui-review/specs');
 
-  const uiTestingEnabled =
-    playwrightExists || screenshotsExists || browserQaConfig?.enabled || browserQaSpecsExist;
+    const uiTestingEnabled =
+      playwrightExists || screenshotsExists || browserQaConfig?.enabled || browserQaSpecsExist;
 
-  if (uiTestingEnabled) {
-    const browserQaRunsExist = fs.existsSync('.agileflow/ui-review/runs');
-    content += `\n${C.brand}${C.bold}═══ UI Testing (Bowser): ENABLED ═══${C.reset}\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/ (for visual verification)' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Browser QA Specs:${C.reset} ${browserQaSpecsExist ? '.agileflow/ui-review/specs/' : 'not found'}\n`;
-    content += `${C.mintGreen}✓ Evidence Runs:${C.reset} ${browserQaRunsExist ? '.agileflow/ui-review/runs/' : 'not found'}\n\n`;
-    content += `${C.bold}AGENTIC TESTING:${C.reset} ${C.skyBlue}/agileflow:browser-qa SCENARIO=<spec.yaml>${C.reset}\n`;
-    content += `${C.dim}  Pass rate: 80% threshold | Results are informational (not merge-blocking)${C.reset}\n`;
-    content += `${C.bold}VISUAL VERIFICATION:${C.reset} ${C.skyBlue}VISUAL=true${C.reset} flag with babysit\n`;
-    content += `${C.dim}  /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true${C.reset}\n\n`;
-    content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
-  }
-
-  // DOCS STRUCTURE
-  content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
-  const docsDir = 'docs';
-  const docFolders = (prefetched?.dirs?.docs ?? safeLs(docsDir)).filter(f => {
-    try {
-      return fs.statSync(path.join(docsDir, f)).isDirectory();
-    } catch {
-      return false;
+    if (uiTestingEnabled) {
+      const browserQaRunsExist = fs.existsSync('.agileflow/ui-review/runs');
+      content += `\n${C.brand}${C.bold}═══ UI Testing (Bowser): ENABLED ═══${C.reset}\n`;
+      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+      content += `${C.mintGreen}✓ Playwright:${C.reset} ${playwrightExists ? 'configured' : 'not found'}\n`;
+      content += `${C.mintGreen}✓ Screenshots:${C.reset} ${screenshotsExists ? 'screenshots/ (for visual verification)' : 'not found'}\n`;
+      content += `${C.mintGreen}✓ Browser QA Specs:${C.reset} ${browserQaSpecsExist ? '.agileflow/ui-review/specs/' : 'not found'}\n`;
+      content += `${C.mintGreen}✓ Evidence Runs:${C.reset} ${browserQaRunsExist ? '.agileflow/ui-review/runs/' : 'not found'}\n\n`;
+      content += `${C.bold}AGENTIC TESTING:${C.reset} ${C.skyBlue}/agileflow:browser-qa SCENARIO=<spec.yaml>${C.reset}\n`;
+      content += `${C.dim}  Pass rate: 80% threshold | Results are informational (not merge-blocking)${C.reset}\n`;
+      content += `${C.bold}VISUAL VERIFICATION:${C.reset} ${C.skyBlue}VISUAL=true${C.reset} flag with babysit\n`;
+      content += `${C.dim}  /agileflow:babysit EPIC=EP-XXXX MODE=loop VISUAL=true${C.reset}\n\n`;
+      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n\n`;
     }
-  });
+  } // end verbosityMode === 'full' (UI testing status)
 
-  if (docFolders.length > 0) {
-    docFolders.forEach(folder => {
-      const folderPath = path.join(docsDir, folder);
-      const files = safeLs(folderPath);
-      const mdFiles = files.filter(f => f.endsWith('.md'));
-      const jsonFiles = files.filter(f => f.endsWith('.json') || f.endsWith('.jsonl'));
-      const info = [];
-      if (mdFiles.length > 0) info.push(`${mdFiles.length} md`);
-      if (jsonFiles.length > 0) info.push(`${jsonFiles.length} json`);
-      content += `  ${C.dim}${folder}/${C.reset} ${info.length > 0 ? `(${info.join(', ')})` : ''}\n`;
+  // DOCS STRUCTURE - skip in lite mode
+  if (verbosityMode === 'full') {
+    content += `\n${C.skyBlue}${C.bold}═══ Documentation ═══${C.reset}\n`;
+    const docsDir = 'docs';
+    const docFolders = (prefetched?.dirs?.docs ?? safeLs(docsDir)).filter(f => {
+      try {
+        return fs.statSync(path.join(docsDir, f)).isDirectory();
+      } catch {
+        return false;
+      }
     });
-  }
 
-  // RESEARCH NOTES
-  const shouldLoadResearch = prefetched?.sectionsToLoad?.researchContent !== false;
-  content += `\n${C.skyBlue}${C.bold}═══ Research Notes ═══${C.reset}\n`;
-  const researchDir = 'docs/10-research';
-  const researchFiles =
-    prefetched?.researchFiles ??
-    safeLs(researchDir)
-      .filter(f => f.endsWith('.md') && f !== 'README.md')
-      .sort()
-      .reverse();
-  if (researchFiles.length > 0) {
-    content += `${C.dim}───${C.reset} Available Research Notes\n`;
-    researchFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
-
-    const mostRecentFile = researchFiles[0];
-    const mostRecentPath = path.join(researchDir, mostRecentFile);
-    const mostRecentContent =
-      prefetched?.mostRecentResearch ?? (shouldLoadResearch ? safeRead(mostRecentPath) : null);
-
-    if (mostRecentContent) {
-      content += `\n${C.mintGreen}📄 Most Recent: ${mostRecentFile}${C.reset}\n`;
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-      content += mostRecentContent + '\n';
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-    } else if (!shouldLoadResearch) {
-      content += `\n${C.dim}📄 Content deferred (lazy loading). Use /agileflow:research to access.${C.reset}\n`;
-    }
-  } else {
-    content += `${C.dim}No research notes${C.reset}\n`;
-  }
-
-  // BUS MESSAGES
-  content += `\n${C.skyBlue}${C.bold}═══ Recent Agent Messages ═══${C.reset}\n`;
-  const busPath = 'docs/09-agents/bus/log.jsonl';
-  const busContent = prefetched?.text?.busLog ?? safeRead(busPath);
-  if (busContent) {
-    const lines = busContent.trim().split('\n').filter(Boolean);
-    const recent = lines.slice(-5);
-    if (recent.length > 0) {
-      recent.forEach(line => {
-        try {
-          const msg = JSON.parse(line);
-          const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '?';
-          content += `  ${C.dim}[${time}]${C.reset} ${msg.from || '?'}: ${msg.type || msg.message || '?'}\n`;
-        } catch {
-          content += `  ${C.dim}${line.substring(0, 80)}...${C.reset}\n`;
-        }
+    if (docFolders.length > 0) {
+      docFolders.forEach(folder => {
+        const folderPath = path.join(docsDir, folder);
+        const files = safeLs(folderPath);
+        const mdFiles = files.filter(f => f.endsWith('.md'));
+        const jsonFiles = files.filter(f => f.endsWith('.json') || f.endsWith('.jsonl'));
+        const info = [];
+        if (mdFiles.length > 0) info.push(`${mdFiles.length} md`);
+        if (jsonFiles.length > 0) info.push(`${jsonFiles.length} json`);
+        content += `  ${C.dim}${folder}/${C.reset} ${info.length > 0 ? `(${info.join(', ')})` : ''}\n`;
       });
-    } else {
-      content += `${C.dim}No messages${C.reset}\n`;
     }
-  } else {
-    content += `${C.dim}No bus log found${C.reset}\n`;
-  }
+  } // end verbosityMode === 'full' (docs structure)
 
-  // KEY FILES
-  content += `\n${C.cyan}${C.bold}═══ Key Context Files (Full Content) ═══${C.reset}\n`;
+  // RESEARCH NOTES - lite shows list only, minimal skips entirely
+  if (verbosityMode === 'full' || verbosityMode === 'lite') {
+    const shouldLoadResearch = prefetched?.sectionsToLoad?.researchContent !== false;
+    content += `\n${C.skyBlue}${C.bold}═══ Research Notes ═══${C.reset}\n`;
+    const researchDir = 'docs/10-research';
+    const researchFiles =
+      prefetched?.researchFiles ??
+      safeLs(researchDir)
+        .filter(f => f.endsWith('.md') && f !== 'README.md')
+        .sort()
+        .reverse();
+    if (researchFiles.length > 0) {
+      content += `${C.dim}───${C.reset} Available Research Notes\n`;
+      researchFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
 
-  const prefetchedKeyMap = {
-    'CLAUDE.md': 'claudeMd',
-    'README.md': 'readmeMd',
-    'docs/04-architecture/README.md': 'archReadme',
-    'docs/02-practices/README.md': 'practicesReadme',
-    'docs/08-project/roadmap.md': 'roadmap',
-  };
+      // In lite mode, only show the list - no content dump
+      if (verbosityMode === 'full') {
+        const mostRecentFile = researchFiles[0];
+        const mostRecentPath = path.join(researchDir, mostRecentFile);
+        const mostRecentContent =
+          prefetched?.mostRecentResearch ?? (shouldLoadResearch ? safeRead(mostRecentPath) : null);
 
-  const keyFilesToRead = [
-    { path: 'CLAUDE.md', label: 'CLAUDE.md (Project Instructions)' },
-    { path: 'README.md', label: 'README.md (Project Overview)' },
-    { path: 'docs/04-architecture/README.md', label: 'Architecture Index' },
-    { path: 'docs/02-practices/README.md', label: 'Practices Index' },
-    { path: 'docs/08-project/roadmap.md', label: 'Roadmap' },
-  ];
-
-  keyFilesToRead.forEach(({ path: filePath, label }) => {
-    const prefetchKey = prefetchedKeyMap[filePath];
-    const fileContent = prefetched?.text?.[prefetchKey] ?? safeRead(filePath);
-    if (fileContent) {
-      content += `\n${C.green}✓ ${label}${C.reset} ${C.dim}(${filePath})${C.reset}\n`;
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
-      content += fileContent + '\n';
-      content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+        if (mostRecentContent) {
+          content += `\n${C.mintGreen}📄 Most Recent: ${mostRecentFile}${C.reset}\n`;
+          content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+          content += mostRecentContent + '\n';
+          content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+        } else if (!shouldLoadResearch) {
+          content += `\n${C.dim}📄 Content deferred (lazy loading). Use /agileflow:research to access.${C.reset}\n`;
+        }
+      }
     } else {
-      content += `${C.dim}○ ${label} (not found)${C.reset}\n`;
+      content += `${C.dim}No research notes${C.reset}\n`;
     }
-  });
+  } // end research notes (full/lite)
 
-  const settingsExists = fs.existsSync('.claude/settings.json');
-  content += `\n  ${settingsExists ? `${C.green}✓${C.reset}` : `${C.dim}○${C.reset}`} .claude/settings.json\n`;
+  // BUS MESSAGES - skip in lite mode
+  if (verbosityMode === 'full') {
+    content += `\n${C.skyBlue}${C.bold}═══ Recent Agent Messages ═══${C.reset}\n`;
+    const busPath = 'docs/09-agents/bus/log.jsonl';
+    const busContent = prefetched?.text?.busLog ?? safeRead(busPath);
+    if (busContent) {
+      const lines = busContent.trim().split('\n').filter(Boolean);
+      const recent = lines.slice(-5);
+      if (recent.length > 0) {
+        recent.forEach(line => {
+          try {
+            const msg = JSON.parse(line);
+            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '?';
+            content += `  ${C.dim}[${time}]${C.reset} ${msg.from || '?'}: ${msg.type || msg.message || '?'}\n`;
+          } catch {
+            content += `  ${C.dim}${line.substring(0, 80)}...${C.reset}\n`;
+          }
+        });
+      } else {
+        content += `${C.dim}No messages${C.reset}\n`;
+      }
+    } else {
+      content += `${C.dim}No bus log found${C.reset}\n`;
+    }
+  } // end verbosityMode === 'full' (bus messages)
 
-  // EPICS FOLDER
+  // KEY FILES - full dumps in full mode, existence check in lite
+  if (verbosityMode === 'full') {
+    content += `\n${C.cyan}${C.bold}═══ Key Context Files (Full Content) ═══${C.reset}\n`;
+
+    const prefetchedKeyMap = {
+      'CLAUDE.md': 'claudeMd',
+      'README.md': 'readmeMd',
+      'docs/04-architecture/README.md': 'archReadme',
+      'docs/02-practices/README.md': 'practicesReadme',
+      'docs/08-project/roadmap.md': 'roadmap',
+    };
+
+    const keyFilesToRead = [
+      { path: 'CLAUDE.md', label: 'CLAUDE.md (Project Instructions)' },
+      { path: 'README.md', label: 'README.md (Project Overview)' },
+      { path: 'docs/04-architecture/README.md', label: 'Architecture Index' },
+      { path: 'docs/02-practices/README.md', label: 'Practices Index' },
+      { path: 'docs/08-project/roadmap.md', label: 'Roadmap' },
+    ];
+
+    keyFilesToRead.forEach(({ path: filePath, label }) => {
+      const prefetchKey = prefetchedKeyMap[filePath];
+      const fileContent = prefetched?.text?.[prefetchKey] ?? safeRead(filePath);
+      if (fileContent) {
+        content += `\n${C.green}✓ ${label}${C.reset} ${C.dim}(${filePath})${C.reset}\n`;
+        content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+        content += fileContent + '\n';
+        content += `${C.dim}${'─'.repeat(60)}${C.reset}\n`;
+      } else {
+        content += `${C.dim}○ ${label} (not found)${C.reset}\n`;
+      }
+    });
+
+    const settingsExists = fs.existsSync('.claude/settings.json');
+    content += `\n  ${settingsExists ? `${C.green}✓${C.reset}` : `${C.dim}○${C.reset}`} .claude/settings.json\n`;
+  } // end verbosityMode === 'full' (key files)
+
+  // EPICS FOLDER - count only in lite mode
   content += `\n${C.cyan}${C.bold}═══ Epic Files ═══${C.reset}\n`;
   const epicFiles =
     prefetched?.dirs?.epics?.filter(f => f.endsWith('.md') && f !== 'README.md') ??
     safeLs('docs/05-epics').filter(f => f.endsWith('.md') && f !== 'README.md');
   if (epicFiles.length > 0) {
-    epicFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
+    if (verbosityMode === 'lite') {
+      content += `${C.dim}${epicFiles.length} epic file(s)${C.reset}\n`;
+    } else {
+      epicFiles.forEach(file => (content += `  ${C.dim}${file}${C.reset}\n`));
+    }
   } else {
     content += `${C.dim}No epic files${C.reset}\n`;
   }
 
-  // IDEATION SUGGESTIONS (filtered to exclude implemented)
-  if (ideationIndex) {
+  // IDEATION SUGGESTIONS (filtered to exclude implemented) - skip in lite mode
+  if (ideationIndex && verbosityMode === 'full') {
     try {
       const rootDir = process.cwd();
       const indexResult = ideationIndex.loadIdeationIndex(rootDir);
@@ -891,11 +969,12 @@ function generateRemainingContent(prefetched, options = {}) {
     }
   }
 
-  // SMART RECOMMENDATIONS (Contextual Feature Router)
+  // SMART RECOMMENDATIONS (Contextual Feature Router) - immediate only in lite mode
   const smartDetectResults = options.smartDetectResults;
   if (smartDetectResults && !smartDetectResults.disabled) {
     const { immediate, available, auto_enabled } = smartDetectResults.recommendations;
-    const hasRecommendations = immediate.length > 0 || available.length > 0;
+    const hasRecommendations =
+      immediate.length > 0 || (verbosityMode === 'full' && available.length > 0);
 
     if (hasRecommendations) {
       content += `\n${C.brand}${C.bold}═══ Smart Recommendations ═══${C.reset}\n`;
@@ -908,7 +987,8 @@ function generateRemainingContent(prefetched, options = {}) {
         });
       }
 
-      if (available.length > 0) {
+      // Available recommendations - full mode only
+      if (verbosityMode === 'full' && available.length > 0) {
         content += `\n${C.skyBlue}Available:${C.reset}\n`;
         available.slice(0, 5).forEach(r => {
           content += `  ${C.skyBlue}>${C.reset} ${r.feature}: ${r.trigger} ${C.dim}(${r.command})${C.reset}\n`;
@@ -928,9 +1008,9 @@ function generateRemainingContent(prefetched, options = {}) {
       content += `\n${C.mintGreen}Auto-enabled:${C.reset} ${enabledModes.join(', ')}\n`;
     }
 
-    // Feature catalog - show all major features with status
+    // Feature catalog - show all major features with status (full mode only)
     const catalog = smartDetectResults.feature_catalog;
-    if (catalog && catalog.length > 0) {
+    if (catalog && catalog.length > 0 && verbosityMode === 'full') {
       const categoryLabels = {
         modes: 'Modes',
         collaboration: 'Collaboration',
@@ -986,6 +1066,83 @@ function generateRemainingContent(prefetched, options = {}) {
   return content;
 }
 
+/**
+ * Generate minimal content - compact summary only.
+ * Used when verbosityMode is 'minimal' to save ~80% of context tokens.
+ *
+ * @param {Object} prefetched - Pre-fetched data from prefetchAllData()
+ * @param {Object} options - Additional options
+ * @returns {string} Minimal content
+ */
+function generateMinimalContent(prefetched, options = {}) {
+  const { commandName = null } = options;
+  let content = '';
+
+  // Title
+  const title = commandName
+    ? `AgileFlow Context [${commandName}] [minimal]`
+    : 'AgileFlow Context [minimal]';
+  content += `${C.lavender}${C.bold}${title}${C.reset}\n`;
+
+  // Git (compact)
+  const branch = prefetched?.git?.branch ?? safeExec('git branch --show-current') ?? 'unknown';
+  const statusStr = prefetched?.git?.status ?? safeExec('git status --short') ?? '';
+  const uncommitted = statusStr.split('\n').filter(Boolean).length;
+  const lastCommit =
+    prefetched?.git?.commitFull ?? safeExec('git log -1 --format="%h %s"') ?? 'no commits';
+  content += `Git: ${C.mintGreen}${branch}${C.reset} | ${uncommitted > 0 ? `${C.peach}${uncommitted} uncommitted${C.reset}` : `${C.mintGreen}clean${C.reset}`} | ${C.dim}${lastCommit}${C.reset}\n`;
+
+  // Story counts
+  const statusJson = prefetched?.json?.statusJson ?? safeReadJSON('docs/09-agents/status.json');
+  if (statusJson?.stories) {
+    const counts = {};
+    Object.values(statusJson.stories).forEach(s => {
+      const st = s.status || 'unknown';
+      counts[st] = (counts[st] || 0) + 1;
+    });
+    content += `Stories: ${C.skyBlue}${counts.ready || 0} ready${C.reset}, ${C.peach}${counts['in-progress'] || 0} in-progress${C.reset}, ${C.mintGreen}${counts.done || 0} done${C.reset}`;
+    if (counts.blocked) content += `, ${C.coral}${counts.blocked} blocked${C.reset}`;
+    content += '\n';
+  }
+
+  // Active session (one-liner)
+  const sessionState =
+    prefetched?.json?.sessionState ?? safeReadJSON('docs/09-agents/session-state.json');
+  if (sessionState?.current_session?.started_at) {
+    const started = new Date(sessionState.current_session.started_at);
+    const duration = Math.round((Date.now() - started.getTime()) / 60000);
+    content += `Session: ${C.lightGreen}${duration} min${C.reset}`;
+    if (sessionState.current_session.current_story) {
+      content += ` | Working on: ${C.lightYellow}${sessionState.current_session.current_story}${C.reset}`;
+    }
+    content += '\n';
+  }
+
+  // Active commands
+  if (Array.isArray(sessionState?.active_commands) && sessionState.active_commands.length > 0) {
+    const cmdNames = sessionState.active_commands.map(c => c.name).join(', ');
+    content += `Active commands: ${C.skyBlue}${cmdNames}${C.reset}\n`;
+  }
+
+  // Context budget warning (always show)
+  const contextUsage = getContextPercentage();
+  if (contextUsage && contextUsage.percent >= 50) {
+    content += generateContextWarning(contextUsage.percent);
+  }
+
+  // AskUserQuestion banner (keep in minimal - it's an instruction, not data)
+  const earlyMetadata =
+    prefetched?.json?.metadata ?? safeReadJSON('docs/00-meta/agileflow-metadata.json');
+  if (earlyMetadata?.features?.askUserQuestion?.enabled) {
+    content += `\n${C.coral}${C.bold}🔔 SMART AskUserQuestion After EVERY Response${C.reset}\n`;
+    content += `${C.mintGreen}→ ALWAYS${C.reset} call AskUserQuestion with contextual options. ${C.coral}→ NEVER${C.reset} generic.\n`;
+  }
+
+  content += `\n${C.dim}[minimal mode - run /agileflow:configure to change context verbosity]${C.reset}\n`;
+
+  return content;
+}
+
 module.exports = {
   // String utilities
   pad,
@@ -997,4 +1154,5 @@ module.exports = {
   // Main generators
   generateSummary,
   generateFullContent,
+  generateMinimalContent,
 };

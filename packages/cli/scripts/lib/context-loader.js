@@ -682,6 +682,7 @@ async function prefetchAllData(options = {}) {
     sessionClaims: true,
     fileOverlaps: true,
   };
+  const verbosityMode = options.verbosityMode || 'full';
 
   // Define all files to read
   const jsonFiles = {
@@ -690,20 +691,31 @@ async function prefetchAllData(options = {}) {
     sessionState: 'docs/09-agents/session-state.json',
   };
 
-  const textFiles = {
-    busLog: 'docs/09-agents/bus/log.jsonl',
-    claudeMd: 'CLAUDE.md',
-    readmeMd: 'README.md',
-    archReadme: 'docs/04-architecture/README.md',
-    practicesReadme: 'docs/02-practices/README.md',
-    roadmap: 'docs/08-project/roadmap.md',
-  };
+  // Text files: skip heavy content in lite/minimal modes
+  const textFiles = {};
+  if (verbosityMode === 'full') {
+    textFiles.busLog = 'docs/09-agents/bus/log.jsonl';
+    textFiles.claudeMd = 'CLAUDE.md';
+    textFiles.readmeMd = 'README.md';
+    textFiles.archReadme = 'docs/04-architecture/README.md';
+    textFiles.practicesReadme = 'docs/02-practices/README.md';
+    textFiles.roadmap = 'docs/08-project/roadmap.md';
+  } else if (verbosityMode === 'lite') {
+    textFiles.busLog = 'docs/09-agents/bus/log.jsonl';
+    // Skip: claudeMd, readmeMd, archReadme, practicesReadme, roadmap
+  }
+  // minimal: skip all text files
 
-  const directories = {
-    docs: 'docs',
-    research: 'docs/10-research',
-    epics: 'docs/05-epics',
-  };
+  // Directories: skip in minimal mode
+  const directories = {};
+  if (verbosityMode !== 'minimal') {
+    directories.docs = 'docs';
+    directories.research = 'docs/10-research';
+    directories.epics = 'docs/05-epics';
+  } else {
+    // minimal still needs epics dir for count
+    directories.epics = 'docs/05-epics';
+  }
 
   // Git commands to run in parallel
   const gitCommands = {
@@ -750,7 +762,7 @@ async function prefetchAllData(options = {}) {
   const git = Object.fromEntries(gitResults);
 
   // Determine most recent research file
-  const researchFiles = dirs.research
+  const researchFiles = (dirs.research || [])
     .filter(f => f.endsWith('.md') && f !== 'README.md')
     .sort()
     .reverse();

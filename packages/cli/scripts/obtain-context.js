@@ -184,20 +184,25 @@ async function main() {
   const metadata = safeReadJSON('docs/00-meta/agileflow-metadata.json');
   const lazyConfig = metadata?.features?.lazyContext;
 
+  // Read context verbosity mode
+  const verbosityMode = metadata?.features?.contextVerbosity?.enabled
+    ? metadata.features.contextVerbosity.mode || 'full'
+    : 'full';
+
   // Determine which sections need full content (US-0093)
   const sectionsToLoad = determineSectionsToLoad(commandName, lazyConfig, isMultiSession);
 
   // Pre-fetch all data in parallel
   const prefetchStart = Date.now();
-  const prefetched = await prefetchAllData({ sectionsToLoad });
+  const prefetched = await prefetchAllData({ sectionsToLoad, verbosityMode });
   const prefetchElapsed = Date.now() - prefetchStart;
   if (prefetchElapsed > 400) {
     process.stderr.write(`Context loaded in ${(prefetchElapsed / 1000).toFixed(1)}s\n`);
   }
 
-  // Run smart detection (contextual feature routing)
+  // Run smart detection (contextual feature routing) - skip in minimal mode
   let smartDetectResults = null;
-  if (smartDetect) {
+  if (smartDetect && verbosityMode !== 'minimal') {
     try {
       smartDetectResults = smartDetect.analyze(prefetched);
       smartDetect.writeRecommendations(smartDetectResults);
@@ -220,7 +225,13 @@ async function main() {
   }
 
   // Generate formatted output
-  const formatOptions = { commandName, activeSections, smartDetectResults, prereqResult };
+  const formatOptions = {
+    commandName,
+    activeSections,
+    smartDetectResults,
+    prereqResult,
+    verbosityMode,
+  };
   const summary = generateSummary(prefetched, formatOptions);
   const fullContent = generateFullContent(prefetched, formatOptions);
 
