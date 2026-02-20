@@ -1,0 +1,71 @@
+{
+  "name": "perf-audit",
+  "description": "Multi-perspective performance bottleneck analysis team for finding optimization opportunities",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "agileflow-perf-consensus",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-perf-analyzer-queries",
+      "role": "analyzer",
+      "domain": "queries",
+      "description": "Analyzes N+1 queries, unindexed lookups, missing pagination, ORM anti-patterns"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-rendering",
+      "role": "analyzer",
+      "domain": "rendering",
+      "description": "Analyzes unnecessary re-renders, missing memoization, expensive computations in render"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-memory",
+      "role": "analyzer",
+      "domain": "memory",
+      "description": "Analyzes memory leaks, event listener cleanup, growing collections, closure captures"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-bundle",
+      "role": "analyzer",
+      "domain": "bundle",
+      "description": "Analyzes large imports, missing tree-shaking, absent dynamic imports, duplicate deps"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-compute",
+      "role": "analyzer",
+      "domain": "compute",
+      "description": "Analyzes sync I/O, CPU-intensive loops, blocking operations, algorithmic inefficiency"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-network",
+      "role": "analyzer",
+      "domain": "network",
+      "description": "Analyzes HTTP waterfall, missing batching, no compression, large payloads"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-caching",
+      "role": "analyzer",
+      "domain": "caching",
+      "description": "Analyzes missing memoization, redundant computations, no HTTP cache headers"
+    },
+    {
+      "agent": "agileflow-perf-analyzer-assets",
+      "role": "analyzer",
+      "domain": "assets",
+      "description": "Analyzes unoptimized images, render-blocking resources, missing lazy loading"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": false,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["analysis", "performance", "optimization", "audit"]
+}

@@ -1,0 +1,71 @@
+{
+  "name": "test-audit",
+  "description": "Multi-perspective test quality analysis team for finding test suite weaknesses",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "agileflow-test-consensus",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-test-analyzer-coverage",
+      "role": "analyzer",
+      "domain": "coverage",
+      "description": "Analyzes untested critical paths, missing error path tests, low branch coverage"
+    },
+    {
+      "agent": "agileflow-test-analyzer-fragility",
+      "role": "analyzer",
+      "domain": "fragility",
+      "description": "Analyzes timing-dependent tests, order-dependent tests, environment-dependent tests"
+    },
+    {
+      "agent": "agileflow-test-analyzer-mocking",
+      "role": "analyzer",
+      "domain": "mocking",
+      "description": "Analyzes over-mocking, mock leakage, testing mocks instead of code"
+    },
+    {
+      "agent": "agileflow-test-analyzer-assertions",
+      "role": "analyzer",
+      "domain": "assertions",
+      "description": "Analyzes weak assertions, missing negative tests, snapshot overuse"
+    },
+    {
+      "agent": "agileflow-test-analyzer-structure",
+      "role": "analyzer",
+      "domain": "structure",
+      "description": "Analyzes test organization, naming clarity, code duplication, file length"
+    },
+    {
+      "agent": "agileflow-test-analyzer-integration",
+      "role": "analyzer",
+      "domain": "integration",
+      "description": "Analyzes missing API tests, absent E2E coverage, unit-only test suites"
+    },
+    {
+      "agent": "agileflow-test-analyzer-maintenance",
+      "role": "analyzer",
+      "domain": "maintenance",
+      "description": "Analyzes dead tests, outdated assertions, tests passing for wrong reasons"
+    },
+    {
+      "agent": "agileflow-test-analyzer-patterns",
+      "role": "analyzer",
+      "domain": "patterns",
+      "description": "Analyzes anti-patterns: testing privates, deep mock chains, God test objects"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": false,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": false
+    }
+  },
+  "tags": ["analysis", "testing", "quality", "audit"]
+}
