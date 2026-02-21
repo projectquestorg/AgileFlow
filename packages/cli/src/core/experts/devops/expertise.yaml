@@ -1,6 +1,7 @@
 domain: devops
-last_updated: 2025-12-21
-version: 1.1
+last_updated: 2026-02-15
+last_audit_date: 2026-02-15
+version: 1.2
 
 # AgileFlow-specific file structure (learned from actual codebase)
 files:
@@ -103,3 +104,13 @@ learnings:
     context: "Analyzed session hooks"
     insight: "get-env.js outputs project info on session start; archive-completed-stories.sh runs automatically"
     source: "CLAUDE.md, .claude/settings.json"
+
+  - date: 2026-02-15
+    context: "Analyzed Claude Code Feb 2026 planning/hooks/MCP research"
+    insight: "plansDirectory, PostToolUse ExitPlanMode, --init/--maintenance flags, MCP tool search align well with AgileFlow architecture. Ready for Phase 1 implementation: 2 weeks, 28-40 hours"
+    source: "docs/10-research/20260215-claude-code-planning-hooks-mcp-updates.md"
+
+  - date: 2026-02-15
+    context: "Planned Claude Code feature integration"
+    insight: "5 features categorized: Phase 1 (plansDirectory, PostToolUse, MCP search - high priority), Phase 2 (--init/--maintenance, PreToolUse context - medium priority). Effort estimate: 13-18 days, 56-76 hours total"
+    source: "docs/10-research/20260215-devops-analysis-claude-code-features.md"

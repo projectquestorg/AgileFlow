@@ -160,29 +160,72 @@ fi
 # Uses tmux 3.2+ #{e|...} numeric operators for cascading tier selection
 # ══════════════════════════════════════════════════════════════════════════════
 build_tab_format() {
-  # Active window formats per tier (Tokyo Night + AgileFlow orange #e8683a)
-  local a0='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=15:window_name} #[bg=#1a1b26 fg=#2d2f3a]'
-  local a1='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{=8:window_name} #[bg=#1a1b26 fg=#2d2f3a]'
-  local a2='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a]#{=4:window_name}#[bg=#1a1b26 fg=#2d2f3a]'
-  local a3='#[fg=#1a1b26 bg=#e8683a bold] #I #[bg=#1a1b26 fg=#e8683a]'
-  local a4='#[fg=#e8683a bold]#I#[fg=default]'
+  # Chrome-like tab compaction: 14 tiers with threshold = width for minimal waste.
+  # Per-window budget (width/windows) picks the largest tier that fits.
+  # #{pN:#{=N:var}} = exactly N visible chars (truncate long + pad short names).
 
-  # Inactive window formats per tier
-  local i0='#[fg=#8a8a8a]  #I:#{=|8|...:window_name}  '
-  local i1='#[fg=#8a8a8a] #I:#{=|6|...:window_name} '
-  local i2='#[fg=#8a8a8a] #I:#{=3:window_name} '
-  local i3='#[fg=#8a8a8a] #I '
-  local i4='#[fg=#565a6e]#I '
+  # ── Active tab: orange bg index + dark bg name ──────────────────────────
+  # "  I  " prefix = 5 visible chars (wide); " I " = 3 chars (narrow)
+  # Width = prefix + 1(space) + pN(name) + 1(space)
+  local a0='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p33:#{=33:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a1='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p20:#{=20:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a2='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p13:#{=13:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a3='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p11:#{=11:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a4='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p8:#{=8:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a5='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e8683a bg=#2d2f3a]#[fg=#e0e0e0] #{p6:#{=6:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a6='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a] #{p5:#{=5:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a7='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a] #{p4:#{=4:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a8='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a] #{p3:#{=3:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a9='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a] #{p2:#{=2:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a10='#[fg=#1a1b26 bg=#e8683a bold] #I #[fg=#e0e0e0 bg=#2d2f3a] #{p1:#{=1:window_name}} #[bg=#1a1b26 fg=#2d2f3a]'
+  local a11='#[fg=#1a1b26 bg=#e8683a bold]  #I  #[bg=#1a1b26 fg=#e8683a]'
+  local a12='#[fg=#1a1b26 bg=#e8683a bold] #I #[bg=#1a1b26 fg=#e8683a]'
+  local a13='#[fg=#e8683a bold]#I#[fg=default]'
 
-  # Tier condition prefix/middle/suffix:
-  #   #{?#{e|<=:#{e|*:#{session_windows},WIDTH},#{client_width}},YES,NO}
-  local cp='#{?#{e|<=:#{e|*:#{session_windows},'
-  local cm='},#{client_width}},'
+  # ── Inactive tab: gray text ─────────────────────────────────────────────
+  # "  I:" prefix = 4 visible chars (wide); " I:" = 3 chars (narrow)
+  # Width = prefix + pN(name) + 1(space)
+  local i0='#[fg=#8a8a8a]  #I:#{p35:#{=35:window_name}} '
+  local i1='#[fg=#8a8a8a]  #I:#{p22:#{=22:window_name}} '
+  local i2='#[fg=#8a8a8a]  #I:#{p15:#{=15:window_name}} '
+  local i3='#[fg=#8a8a8a] #I:#{p12:#{=12:window_name}} '
+  local i4='#[fg=#8a8a8a] #I:#{p9:#{=9:window_name}} '
+  local i5='#[fg=#8a8a8a] #I:#{p7:#{=7:window_name}} '
+  local i6='#[fg=#8a8a8a] #I:#{p6:#{=6:window_name}} '
+  local i7='#[fg=#8a8a8a] #I:#{p5:#{=5:window_name}} '
+  local i8='#[fg=#8a8a8a] #I:#{p4:#{=4:window_name}} '
+  local i9='#[fg=#8a8a8a] #I:#{p3:#{=3:window_name}} '
+  local i10='#[fg=#8a8a8a] #I:#{p2:#{=2:window_name}} '
+  local i11='#[fg=#8a8a8a] #I:#{p1:#{=1:window_name}} '
+  local i12='#[fg=#8a8a8a] #I '
+  local i13='#[fg=#565a6e]#I'
+
+  # ── Tier selection: budget = width / windows ─────────────────────────────
+  local budget='#{e|/|:#{client_width},#{session_windows}}'
+  local cp="#{?#{e|>=|:${budget},"
+  local cm='},'
   local cs='}'
 
-  # Cascading tier selector: T0 -> T1 -> T2 -> T3 -> T4 (fallback)
-  local active="${cp}21${cm}${a0},${cp}14${cm}${a1},${cp}10${cm}${a2},${cp}7${cm}${a3},${a4}${cs}${cs}${cs}${cs}"
-  local inactive="${cp}21${cm}${i0},${cp}14${cm}${i1},${cp}10${cm}${i2},${cp}7${cm}${i3},${i4}${cs}${cs}${cs}${cs}"
+  # 14 tiers: threshold = format width → minimal wasted space.
+  # 81-col fill: 2-11 wins >=95%, 12-16 wins >=86%.
+  #
+  #   Tier  >=Thr  Width  81-col example       Fill%
+  #   T0     40     40    2 wins (40ea)          98%
+  #   T1     27     27    3 wins (27ea)         100%
+  #   T2     20     20    4 wins (20ea)          98%
+  #   T3     16     16    5 wins (16ea)          98%
+  #   T4     13     13    6 wins (13ea)          96%
+  #   T5     11     11    7 wins (11ea)          95%
+  #   T6     10     10    8 wins (10ea)          98%
+  #   T7      9      9    9 wins (9ea)          100%
+  #   T8      8      8   10 wins (8ea)           98%
+  #   T9      7      7   11 wins (7ea)           95%
+  #   T10     6      6   12-13 wins            88-96%
+  #   T11     5      5   14-16 wins            86-98%
+  #   T12     3      3   17-27 wins
+  #   T13  fallback  1   28+ wins
+  local active="${cp}40${cm}${a0},${cp}27${cm}${a1},${cp}20${cm}${a2},${cp}16${cm}${a3},${cp}13${cm}${a4},${cp}11${cm}${a5},${cp}10${cm}${a6},${cp}9${cm}${a7},${cp}8${cm}${a8},${cp}7${cm}${a9},${cp}6${cm}${a10},${cp}5${cm}${a11},${cp}3${cm}${a12},${a13}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}"
+  local inactive="${cp}40${cm}${i0},${cp}27${cm}${i1},${cp}20${cm}${i2},${cp}16${cm}${i3},${cp}13${cm}${i4},${cp}11${cm}${i5},${cp}10${cm}${i6},${cp}9${cm}${i7},${cp}8${cm}${i8},${cp}7${cm}${i9},${cp}6${cm}${i10},${cp}5${cm}${i11},${cp}3${cm}${i12},${i13}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}${cs}"
 
   echo "#[bg=#1a1b26]#{W:#{?window_active,${active},${inactive}}}"
 }

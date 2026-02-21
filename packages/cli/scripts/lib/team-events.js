@@ -80,7 +80,61 @@ const EVENT_TYPES = [
   'gate_passed',
   'gate_failed',
   'model_usage',
+  'cost_warning',
 ];
+
+/**
+ * Model pricing per million tokens (USD).
+ * Includes both shorthand aliases and full model IDs.
+ */
+const MODEL_PRICING = {
+  haiku: { input: 0.8, output: 4.0 },
+  sonnet: { input: 3.0, output: 15.0 },
+  opus: { input: 15.0, output: 75.0 },
+  'claude-haiku-4-5-20251001': { input: 0.8, output: 4.0 },
+  'claude-sonnet-4-6': { input: 3.0, output: 15.0 },
+  'claude-opus-4-6': { input: 15.0, output: 75.0 },
+};
+
+const DEFAULT_COST_THRESHOLD_USD = 5.0;
+
+/**
+ * Compute estimated cost for an agent's token usage.
+ *
+ * @param {number} inputTokens - Number of input tokens
+ * @param {number} outputTokens - Number of output tokens
+ * @param {string} [model='haiku'] - Model name or alias
+ * @returns {number} Estimated cost in USD (6 decimal places)
+ */
+function computeAgentCost(inputTokens, outputTokens, model) {
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['haiku'];
+  const inputCost = (inputTokens / 1_000_000) * pricing.input;
+  const outputCost = (outputTokens / 1_000_000) * pricing.output;
+  return Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000;
+}
+
+/**
+ * Check if team cost exceeds threshold and emit warning event.
+ *
+ * @param {string} rootDir - Project root directory
+ * @param {string} traceId - Trace ID for the team run
+ * @param {number} totalCostUsd - Total cost in USD
+ * @param {number} [threshold] - Cost threshold in USD (default: DEFAULT_COST_THRESHOLD_USD)
+ * @returns {boolean} True if threshold was exceeded
+ */
+function checkCostThreshold(rootDir, traceId, totalCostUsd, threshold) {
+  const limit = threshold || DEFAULT_COST_THRESHOLD_USD;
+  if (totalCostUsd > limit) {
+    trackEvent(rootDir, 'cost_warning', {
+      trace_id: traceId,
+      total_cost_usd: totalCostUsd,
+      threshold_usd: limit,
+      message: `Team cost $${totalCostUsd.toFixed(4)} exceeds threshold $${limit.toFixed(2)}`,
+    });
+    return true;
+  }
+  return false;
+}
 
 /**
  * Track an agent teams event.
@@ -232,15 +286,29 @@ function aggregateTeamMetrics(rootDir, traceId) {
   const perAgent = {};
   const ensureAgent = agent => {
     if (!perAgent[agent]) {
-      perAgent[agent] = { total_duration_ms: 0, tasks_completed: 0, errors: 0, timeouts: 0 };
+      perAgent[agent] = {
+        total_duration_ms: 0,
+        tasks_completed: 0,
+        errors: 0,
+        timeouts: 0,
+        input_tokens: 0,
+        output_tokens: 0,
+        cost_usd: 0,
+      };
     }
   };
+
+  // Track model per agent for cost computation
+  const agentModels = {};
 
   for (const e of events) {
     if (e.type === 'task_completed' && e.agent) {
       ensureAgent(e.agent);
       perAgent[e.agent].total_duration_ms += e.duration_ms || 0;
       perAgent[e.agent].tasks_completed++;
+      perAgent[e.agent].input_tokens += e.input_tokens || 0;
+      perAgent[e.agent].output_tokens += e.output_tokens || 0;
+      if (e.model) agentModels[e.agent] = e.model;
     }
     if (e.type === 'agent_error' && e.agent) {
       ensureAgent(e.agent);
@@ -251,6 +319,16 @@ function aggregateTeamMetrics(rootDir, traceId) {
       perAgent[e.agent].timeouts++;
     }
   }
+
+  // Compute per-agent costs
+  for (const [agent, metrics] of Object.entries(perAgent)) {
+    metrics.cost_usd = computeAgentCost(
+      metrics.input_tokens,
+      metrics.output_tokens,
+      agentModels[agent] || 'haiku'
+    );
+  }
+  const totalCostUsd = Object.values(perAgent).reduce((sum, a) => sum + a.cost_usd, 0);
 
   // Per-gate metrics from gate_passed, gate_failed
   const perGate = {};
@@ -281,6 +359,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
     per_agent: perAgent,
     per_gate: perGate,
     team_completion_ms: teamCompletionMs,
+    total_cost_usd: Math.round(totalCostUsd * 1_000_000) / 1_000_000,
     computed_at: new Date().toISOString(),
   };
 }
@@ -313,6 +392,7 @@ function saveAggregatedMetrics(rootDir, metrics) {
           per_agent: metrics.per_agent,
           per_gate: metrics.per_gate,
           team_completion_ms: metrics.team_completion_ms,
+          total_cost_usd: metrics.total_cost_usd,
           computed_at: metrics.computed_at,
         };
         return state;
@@ -329,6 +409,7 @@ function saveAggregatedMetrics(rootDir, metrics) {
         per_agent: metrics.per_agent,
         per_gate: metrics.per_gate,
         team_completion_ms: metrics.team_completion_ms,
+        total_cost_usd: metrics.total_cost_usd,
         computed_at: metrics.computed_at,
       };
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
@@ -349,9 +430,13 @@ function saveAggregatedMetrics(rootDir, metrics) {
 
 module.exports = {
   EVENT_TYPES,
+  MODEL_PRICING,
+  DEFAULT_COST_THRESHOLD_USD,
   trackEvent,
   getTeamEvents,
   aggregateTeamMetrics,
   saveAggregatedMetrics,
+  computeAgentCost,
+  checkCostThreshold,
   teamMetricsEmitter,
 };

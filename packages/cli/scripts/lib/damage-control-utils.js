@@ -393,6 +393,7 @@ function parseBashPatterns(content) {
     bashToolPatterns: 'patterns',
     askPatterns: 'patterns',
     agileflowProtections: 'patterns',
+    releaseProtections: 'patterns',
   });
 }
 
@@ -483,7 +484,12 @@ function createPathHook(operation) {
 function createBashHook() {
   return function runHook() {
     const projectRoot = findProjectRoot();
-    const defaultConfig = { bashToolPatterns: [], askPatterns: [], agileflowProtections: [] };
+    const defaultConfig = {
+      bashToolPatterns: [],
+      askPatterns: [],
+      agileflowProtections: [],
+      releaseProtections: [],
+    };
 
     /**
      * Test command against a single pattern rule
@@ -514,6 +520,7 @@ function createBashHook() {
       const allPatterns = [
         ...(config.bashToolPatterns || []),
         ...(config.agileflowProtections || []),
+        ...(config.releaseProtections || []),
       ];
 
       for (const rule of allPatterns) {

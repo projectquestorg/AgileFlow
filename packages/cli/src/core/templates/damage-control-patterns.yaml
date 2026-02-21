@@ -228,6 +228,15 @@ agileflowProtections:
 #
 # =====================================================
 
+# ─── Release Process Enforcement ───
+# Forces use of ./scripts/release.sh instead of manual commands
+releaseProtections:
+  - pattern: '\bnpm\s+version\s+'
+    reason: "Use ./scripts/release.sh instead of npm version"
+
+  - pattern: '\bgit\s+tag\s+v\d+\.\d+\.\d+'
+    reason: "Use ./scripts/release.sh instead of manual git tag"
+
 # ─── Project-Specific Patterns (add yours below) ───
 # customPatterns:
 #   - pattern: 'your-pattern-here'

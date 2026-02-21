@@ -199,6 +199,9 @@ describe('aggregateTeamMetrics', () => {
         tasks_completed: 2,
         errors: 1,
         timeouts: 1,
+        input_tokens: 0,
+        output_tokens: 0,
+        cost_usd: 0,
       });
     });
   });

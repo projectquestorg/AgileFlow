@@ -49,19 +49,6 @@ const FEATURE_CATALOG = [
     ],
   },
   {
-    feature: 'visual-mode',
-    name: 'Visual Mode',
-    description: 'Run Playwright visual regression tests alongside implementation',
-    how_to_use: 'Playwright config + screenshots directory',
-    category: 'modes',
-    detector: null,
-    auto_mode: 'visual_mode',
-    prerequisites: [
-      { signal_path: 'files.playwright', description: 'Playwright config exists' },
-      { signal_path: 'files.screenshots', description: 'Screenshots directory exists' },
-    ],
-  },
-  {
     feature: 'coverage-mode',
     name: 'Coverage Mode',
     description: 'Track and enforce code coverage thresholds during implementation',
@@ -181,7 +168,7 @@ const FEATURE_CATALOG = [
     feature: 'logic-audit',
     name: 'Logic Audit',
     description: 'Multi-agent analysis for edge cases, race conditions, type bugs, and dead code',
-    how_to_use: '/agileflow:logic:audit',
+    how_to_use: '/agileflow:audit:logic',
     category: 'analysis',
     detector: null,
     auto_mode: null,
@@ -201,14 +188,14 @@ const FEATURE_CATALOG = [
   // --- testing ---
   {
     feature: 'browser-qa',
-    name: 'Browser QA',
+    name: 'UI Testing (Bowser)',
     description:
-      'Agentic browser testing with Playwright using Bowser four-layer pattern. Screenshot evidence and 80% pass rate threshold.',
-    how_to_use: '/agileflow:browser-qa SCENARIO=<spec.yaml>',
-    category: 'analysis',
+      'Agentic browser testing + visual verification during development. Playwright-based screenshot evidence and workflow validation.',
+    how_to_use: '/agileflow:browser-qa SCENARIO=<spec.yaml> or VISUAL=true on babysit',
+    category: 'testing',
     detector: null,
     auto_mode: 'browser_qa_mode',
-    prerequisites: [{ signal_path: 'files.browserQaSpecs', description: 'Browser QA specs exist' }],
+    prerequisites: [{ signal_path: 'files.playwright', description: 'Playwright config exists' }],
   },
 
   // --- automation ---
@@ -225,7 +212,14 @@ const FEATURE_CATALOG = [
 ];
 
 // Valid categories for validation
-const VALID_CATEGORIES = ['modes', 'collaboration', 'workflow', 'analysis', 'automation'];
+const VALID_CATEGORIES = [
+  'modes',
+  'collaboration',
+  'workflow',
+  'analysis',
+  'testing',
+  'automation',
+];
 
 // Valid statuses
 const VALID_STATUSES = ['triggered', 'available', 'unavailable', 'disabled'];

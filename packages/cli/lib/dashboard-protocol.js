@@ -490,6 +490,7 @@ function createTeamMetrics(traceId, metrics) {
     per_agent: (metrics && metrics.per_agent) || {},
     per_gate: (metrics && metrics.per_gate) || {},
     team_completion_ms: metrics && metrics.team_completion_ms,
+    total_cost_usd: (metrics && metrics.total_cost_usd) || 0,
     computed_at: metrics && metrics.computed_at,
     timestamp: new Date().toISOString(),
   };
