@@ -1,0 +1,94 @@
+# Browser QA Test Spec Template
+# Part of AgileFlow Bowser Four-Layer Browser Automation
+#
+# Usage: Copy this template and fill in your scenario details.
+# Place specs in: .agileflow/ui-review/specs/ or docs/07-testing/agentic/
+# Run with: /agileflow:browser-qa SCENARIO=<path-to-this-file>
+#
+# Schema Version: 1.0.0
+
+# --- Required Fields ---
+
+# Unique test identifier (format: AGENTIC-NNN)
+test_id: AGENTIC-001
+
+# Associated user story (optional, links results to status.json)
+story_id: US-XXXX
+
+# Human-readable name for this test scenario
+name: "Example User Login Flow"
+
+# What this test validates
+description: "Verify that a user can log in with valid credentials and reach the dashboard"
+
+# --- Configuration ---
+
+# Base URL of the application under test
+url: http://localhost:3000
+
+# Maximum time for entire scenario (default: 60s)
+timeout: 60s
+
+# Retry attempts on failure before marking as failed (default: 2)
+max_retries: 2
+
+# Minimum pass rate to consider validated (default: 0.80)
+pass_rate_threshold: 0.80
+
+# Browsers to test against (default: [chromium])
+browsers:
+  - chromium
+
+# --- Test Steps ---
+# Each step has: name, action, and action-specific fields
+# Supported actions: navigate, click, fill, assert, wait, screenshot
+#
+# Optional per-step fields:
+#   wait_for: CSS selector to wait for before proceeding
+#   screenshot: true/false - capture screenshot after this step
+#   timeout: per-step timeout override
+
+steps:
+  - name: Navigate to login page
+    action: navigate
+    url: /login
+    wait_for: "[data-testid='login-form']"
+    screenshot: true
+
+  - name: Fill email field
+    action: fill
+    fields:
+      - selector: "[data-testid='email-input']"
+        value: "test@example.com"
+
+  - name: Fill password field
+    action: fill
+    fields:
+      - selector: "[data-testid='password-input']"
+        value: "testpassword123"
+
+  - name: Click login button
+    action: click
+    selector: "[data-testid='login-button']"
+    screenshot: true
+
+  - name: Verify dashboard loaded
+    action: assert
+    assertion: "User sees the dashboard page with a welcome message"
+    wait_for: "[data-testid='dashboard']"
+    screenshot: true
+
+# --- Expected Result ---
+# Natural language description of what success looks like
+expected_result: "User is logged in and sees the dashboard with their name displayed"
+
+# --- Metadata ---
+# Optional fields for tracking and reporting
+
+metadata:
+  author: AG-BROWSER-QA
+  created: "2026-02-16"
+  tags:
+    - authentication
+    - critical-path
+  priority: high

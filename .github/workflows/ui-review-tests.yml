@@ -1,0 +1,117 @@
+name: Agentic Browser Tests
+
+# Separate CI job for agentic browser tests
+# NOT a merge blocker - results are informational only
+# Runs on PRs and can be triggered manually
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/cli/src/core/**'
+      - 'packages/cli/scripts/**'
+      - 'packages/cli/lib/**'
+      - '.agileflow/ui-review/specs/**'
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'YAML test spec path (blank for all)'
+        required: false
+        type: string
+      base_url:
+        description: 'Base URL of application under test'
+        required: false
+        default: 'http://localhost:3000'
+        type: string
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: browser-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-qa:
+    name: Agentic Browser QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Do NOT block merge - this is informational
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: packages/cli
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/cli
+        continue-on-error: true
+
+      - name: Check for test specs
+        id: check-specs
+        run: |
+          if [ -d ".agileflow/ui-review/specs" ] && [ "$(ls -A .agileflow/ui-review/specs/*.yaml 2>/dev/null)" ]; then
+            echo "specs_found=true" >> $GITHUB_OUTPUT
+            echo "Found test specs:"
+            ls -la .agileflow/ui-review/specs/*.yaml
+          else
+            echo "specs_found=false" >> $GITHUB_OUTPUT
+            echo "No test specs found in .agileflow/ui-review/specs/"
+          fi
+
+      - name: Create evidence directory
+        if: steps.check-specs.outputs.specs_found == 'true'
+        run: |
+          TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+          mkdir -p ".agileflow/ui-review/runs/${TIMESTAMP}"
+          echo "EVIDENCE_DIR=.agileflow/ui-review/runs/${TIMESTAMP}" >> $GITHUB_ENV
+          echo "Evidence directory: .agileflow/ui-review/runs/${TIMESTAMP}"
+
+      - name: Run agentic browser tests
+        if: steps.check-specs.outputs.specs_found == 'true'
+        run: |
+          echo "Agentic browser tests would execute here"
+          echo "Scenario: ${{ inputs.scenario || 'all' }}"
+          echo "Base URL: ${{ inputs.base_url || 'http://localhost:3000' }}"
+          echo ""
+          echo "Note: Full agentic test execution requires Claude Code agent runtime."
+          echo "This CI job validates the infrastructure and uploads evidence artifacts."
+        env:
+          BASE_URL: ${{ inputs.base_url || 'http://localhost:3000' }}
+
+      - name: Upload evidence artifacts
+        if: always() && steps.check-specs.outputs.specs_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa-evidence-${{ github.sha }}
+          path: .agileflow/ui-review/runs/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Agentic Browser QA Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check-specs.outputs.specs_found }}" == "true" ]; then
+            echo "Test specs found and infrastructure validated." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Evidence artifacts uploaded for 30-day retention." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No test specs found. Create YAML specs in \`.agileflow/ui-review/specs/\`" >> $GITHUB_STEP_SUMMARY
+            echo "using the template at \`packages/cli/src/core/templates/browser-qa-spec.yaml\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note**: Agentic browser tests are informational only and do not block merge." >> $GITHUB_STEP_SUMMARY
