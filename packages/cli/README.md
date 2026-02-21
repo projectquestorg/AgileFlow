@@ -3,8 +3,8 @@
 </p>
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
-[![Commands](https://img.shields.io/badge/commands-94-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-55-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
+[![Commands](https://img.shields.io/badge/commands-98-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
+[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-83-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
 [![Skills](https://img.shields.io/badge/skills-dynamic-purple)](https://docs.agileflow.projectquestorg.com/docs/features/skills)
 
 **AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
@@ -54,8 +54,8 @@ Traditional project management tools create friction between planning and execut
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 94 | Slash commands for agile workflows |
-| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 55 | Specialized agents with self-improving knowledge bases |
+| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 98 | Slash commands for agile workflows |
+| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 83 | Specialized agents with self-improving knowledge bases |
 | [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
 
 ---
