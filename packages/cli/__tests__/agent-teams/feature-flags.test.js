@@ -228,6 +228,66 @@ describe('feature-flags.js', () => {
     });
   });
 
+  describe('AGENT_TEAMS_TOOLS', () => {
+    test('exports expected tool names', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.AGENT_TEAMS_TOOLS).toEqual(['TeamCreate', 'SendMessage', 'ListTeams']);
+    });
+
+    test('is a frozen-length array (not accidentally mutable via getAvailableTools)', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      const tools = featureFlags.AGENT_TEAMS_TOOLS;
+      expect(Array.isArray(tools)).toBe(true);
+      expect(tools.length).toBe(3);
+    });
+  });
+
+  describe('getAvailableTools()', () => {
+    test('returns tool names when Agent Teams is enabled', () => {
+      process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      const result = featureFlags.getAvailableTools();
+
+      expect(result).toEqual(['TeamCreate', 'SendMessage', 'ListTeams']);
+    });
+
+    test('returns empty array when Agent Teams is disabled', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      const result = featureFlags.getAvailableTools({ rootDir: testDir });
+
+      expect(result).toEqual([]);
+    });
+
+    test('returns a copy, not the original array', () => {
+      process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      const result1 = featureFlags.getAvailableTools();
+      const result2 = featureFlags.getAvailableTools();
+
+      expect(result1).not.toBe(result2);
+      expect(result1).toEqual(result2);
+    });
+
+    test('respects metadata-based enablement', () => {
+      const metadata = {
+        features: {
+          agentTeams: {
+            enabled: true,
+          },
+        },
+      };
+
+      const featureFlags = require('../../lib/feature-flags');
+      const result = featureFlags.getAvailableTools({ metadata });
+
+      expect(result).toEqual(['TeamCreate', 'SendMessage', 'ListTeams']);
+    });
+  });
+
   describe('getAgentTeamsDisplayInfo()', () => {
     test('returns display info when enabled', () => {
       process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
@@ -238,7 +298,7 @@ describe('feature-flags.js', () => {
 
       expect(result).toMatchObject({
         label: 'Agent Teams',
-        value: 'ENABLED (native)',
+        value: 'ENABLED (native, 3 tools)',
         status: 'enabled',
       });
     });
@@ -267,7 +327,7 @@ describe('feature-flags.js', () => {
   });
 
   describe('getFeatureFlags()', () => {
-    test('returns all feature flags', () => {
+    test('returns all feature flags including availableTools when enabled', () => {
       process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
       delete require.cache[require.resolve('../../lib/feature-flags')];
 
@@ -277,16 +337,18 @@ describe('feature-flags.js', () => {
       expect(result).toMatchObject({
         agentTeams: true,
         agentTeamsMode: 'native',
+        availableTools: ['TeamCreate', 'SendMessage', 'ListTeams'],
       });
     });
 
-    test('returns flags with Agent Teams disabled', () => {
+    test('returns empty availableTools when Agent Teams disabled', () => {
       const featureFlags = require('../../lib/feature-flags');
       const result = featureFlags.getFeatureFlags({ rootDir: testDir });
 
       expect(result).toMatchObject({
         agentTeams: false,
         agentTeamsMode: 'subagent',
+        availableTools: [],
       });
     });
 
@@ -304,6 +366,7 @@ describe('feature-flags.js', () => {
 
       expect(result.agentTeams).toBe(true);
       expect(result.agentTeamsMode).toBe('native');
+      expect(result.availableTools).toEqual(['TeamCreate', 'SendMessage', 'ListTeams']);
     });
   });
 

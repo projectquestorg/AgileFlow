@@ -11,6 +11,12 @@
 
 const fs = require('fs');
 
+/**
+ * Tools expected to be available when Agent Teams native mode is enabled.
+ * Used for feature detection and capability reporting.
+ */
+const AGENT_TEAMS_TOOLS = Object.freeze(['TeamCreate', 'SendMessage', 'ListTeams']);
+
 // Lazy-load paths to avoid circular dependency issues
 let _paths;
 function getPaths() {
@@ -68,6 +74,24 @@ function getAgentTeamsMode(options = {}) {
 }
 
 /**
+ * Get the list of Agent Teams tools available in the current environment.
+ *
+ * When Agent Teams is enabled (native mode), returns the expected tool names.
+ * When disabled, returns an empty array.
+ *
+ * @param {object} [options] - Options
+ * @param {string} [options.rootDir] - Project root directory
+ * @param {object} [options.metadata] - Pre-loaded metadata
+ * @returns {string[]} Array of available tool names
+ */
+function getAvailableTools(options = {}) {
+  if (!isAgentTeamsEnabled(options)) {
+    return [];
+  }
+  return [...AGENT_TEAMS_TOOLS];
+}
+
+/**
  * Get all feature flags as an object.
  *
  * @param {object} [options] - Options
@@ -77,10 +101,12 @@ function getAgentTeamsMode(options = {}) {
  */
 function getFeatureFlags(options = {}) {
   const metadata = options.metadata || loadMetadataSafe(options.rootDir);
+  const opts = { ...options, metadata };
 
   return {
-    agentTeams: isAgentTeamsEnabled({ ...options, metadata }),
-    agentTeamsMode: getAgentTeamsMode({ ...options, metadata }),
+    agentTeams: isAgentTeamsEnabled(opts),
+    agentTeamsMode: getAgentTeamsMode(opts),
+    availableTools: getAvailableTools(opts),
   };
 }
 
@@ -93,12 +119,12 @@ function getFeatureFlags(options = {}) {
  */
 function getAgentTeamsDisplayInfo(options = {}) {
   const enabled = isAgentTeamsEnabled(options);
-  const mode = getAgentTeamsMode(options);
 
   if (enabled) {
+    const tools = getAvailableTools(options);
     return {
       label: 'Agent Teams',
-      value: 'ENABLED (native)',
+      value: `ENABLED (native, ${tools.length} tools)`,
       status: 'enabled',
     };
   }
@@ -136,8 +162,10 @@ function loadMetadataSafe(rootDir) {
 }
 
 module.exports = {
+  AGENT_TEAMS_TOOLS,
   isAgentTeamsEnabled,
   getAgentTeamsMode,
+  getAvailableTools,
   getFeatureFlags,
   getAgentTeamsDisplayInfo,
 };

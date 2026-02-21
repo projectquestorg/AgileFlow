@@ -11,6 +11,7 @@ const { execFileSync } = require('child_process');
 const { c, log, header, readJSON } = require('./configure-utils');
 const { tryOptional } = require('../../lib/errors');
 const { FEATURES } = require('./configure-features');
+const ff = require('../../lib/feature-flags');
 
 // ============================================================================
 // CONTENT HASH HELPERS
@@ -120,6 +121,11 @@ function detectConfig(version) {
         version: null,
         outdated: false,
         mode: 'full',
+      },
+      agentteams: {
+        enabled: false,
+        mode: 'subagent',
+        tools: [],
       },
     },
     metadata: { exists: false, version: null },
@@ -304,6 +310,12 @@ function detectStatusLine(settings, status) {
  * Detect metadata file configuration
  */
 function detectMetadata(status, version) {
+  // Agent Teams detection (independent of metadata file - reads env vars)
+  const rootDir = process.cwd();
+  status.features.agentteams.enabled = ff.isAgentTeamsEnabled({ rootDir });
+  status.features.agentteams.mode = ff.getAgentTeamsMode({ rootDir });
+  status.features.agentteams.tools = ff.getAvailableTools({ rootDir });
+
   const metaPath = 'docs/00-meta/agileflow-metadata.json';
   if (!fs.existsSync(metaPath)) return;
 
@@ -540,6 +552,14 @@ function printStatus(status) {
     } else {
       log(`   Context Verbosity: full (default)`, c.dim);
     }
+  }
+
+  // Agent Teams
+  const at = status.features.agentteams;
+  if (at.enabled) {
+    log(`   Agent Teams: ${at.mode} (${at.tools.length} tools)`, c.green);
+  } else {
+    log(`   Agent Teams: ${at.mode}`, c.dim);
   }
 
   // Metadata version

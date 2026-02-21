@@ -26,6 +26,24 @@ jest.mock('../../../scripts/lib/configure-utils', () => ({
 }));
 
 const { readJSON } = require('../../../scripts/lib/configure-utils');
+// Mock feature-flags module (used by detectMetadata for agent teams detection)
+jest.mock('../../../lib/feature-flags', () => ({
+  AGENT_TEAMS_TOOLS: Object.freeze(['TeamCreate', 'SendMessage', 'ListTeams']),
+  isAgentTeamsEnabled: jest.fn(() => false),
+  getAgentTeamsMode: jest.fn(() => 'subagent'),
+  getAvailableTools: jest.fn(() => []),
+  getFeatureFlags: jest.fn(() => ({
+    agentTeams: false,
+    agentTeamsMode: 'subagent',
+    availableTools: [],
+  })),
+  getAgentTeamsDisplayInfo: jest.fn(() => ({
+    label: 'Agent Teams',
+    value: 'subagent mode',
+    status: 'fallback',
+  })),
+}));
+
 // Mock configure-features FEATURES constant (must be before require)
 jest.mock('../../../scripts/lib/configure-features', () => ({
   FEATURES: {
@@ -312,6 +330,7 @@ describe('configure-detect', () => {
         features: {
           archival: { enabled: false, threshold: null },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -335,6 +354,7 @@ describe('configure-detect', () => {
         features: {
           sessionstart: { enabled: true, version: null, outdated: false },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -362,6 +382,7 @@ describe('configure-detect', () => {
         features: {
           sessionstart: { enabled: true, version: null, outdated: false },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -384,6 +405,7 @@ describe('configure-detect', () => {
         features: {
           sessionstart: { enabled: true, version: null, outdated: false },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -406,6 +428,7 @@ describe('configure-detect', () => {
         features: {
           askuserquestion: { enabled: true, version: null, outdated: false, mode: null },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -430,6 +453,7 @@ describe('configure-detect', () => {
         features: {
           askuserquestion: { enabled: false, version: null, outdated: false, mode: null },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         hasOutdated: false,
       };
@@ -463,6 +487,7 @@ describe('configure-detect', () => {
           askuserquestion: { enabled: false, valid: true, issues: [], outdated: false },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
           noaiattribution: { enabled: false, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         metadata: { exists: false, version: null },
         currentVersion: '2.0.0',
@@ -491,6 +516,7 @@ describe('configure-detect', () => {
           askuserquestion: { enabled: false, valid: true, issues: [], outdated: false },
           tmuxautospawn: { enabled: true, valid: true, issues: [], outdated: false },
           noaiattribution: { enabled: false, valid: true, issues: [], outdated: false },
+          agentteams: { enabled: false, mode: 'subagent', tools: [] },
         },
         metadata: { exists: false, version: null },
         currentVersion: '2.0.0',
