@@ -123,13 +123,14 @@ function computeAgentCost(inputTokens, outputTokens, model) {
  * @returns {boolean} True if threshold was exceeded
  */
 function checkCostThreshold(rootDir, traceId, totalCostUsd, threshold) {
-  const limit = threshold || DEFAULT_COST_THRESHOLD_USD;
-  if (totalCostUsd > limit) {
+  const limit = typeof threshold === 'number' ? threshold : DEFAULT_COST_THRESHOLD_USD;
+  const cost = typeof totalCostUsd === 'number' && isFinite(totalCostUsd) ? totalCostUsd : 0;
+  if (cost > limit) {
     trackEvent(rootDir, 'cost_warning', {
       trace_id: traceId,
-      total_cost_usd: totalCostUsd,
+      total_cost_usd: cost,
       threshold_usd: limit,
-      message: `Team cost $${totalCostUsd.toFixed(4)} exceeds threshold $${limit.toFixed(2)}`,
+      message: `Team cost $${cost.toFixed(4)} exceeds threshold $${limit.toFixed(2)}`,
     });
     return true;
   }
@@ -320,7 +321,8 @@ function aggregateTeamMetrics(rootDir, traceId) {
     }
   }
 
-  // Compute per-agent costs
+  // Compute per-agent costs (uses last-seen model for all tokens; acceptable
+  // approximation since agents typically use a single model throughout)
   for (const [agent, metrics] of Object.entries(perAgent)) {
     metrics.cost_usd = computeAgentCost(
       metrics.input_tokens,

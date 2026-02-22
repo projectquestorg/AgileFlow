@@ -360,6 +360,7 @@ describe('saveAggregatedMetrics', () => {
       },
       per_gate: { tests: { passed: 3, failed: 1, pass_rate: 0.75 } },
       team_completion_ms: 30000,
+      total_cost_usd: 1.25,
       computed_at: '2026-01-01T00:00:00Z',
     };
 
@@ -370,6 +371,7 @@ describe('saveAggregatedMetrics', () => {
       per_agent: metrics.per_agent,
       per_gate: metrics.per_gate,
       team_completion_ms: 30000,
+      total_cost_usd: 1.25,
       computed_at: '2026-01-01T00:00:00Z',
     });
     // Preserves existing team_metrics fields
