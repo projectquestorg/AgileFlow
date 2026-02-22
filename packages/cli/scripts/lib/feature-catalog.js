@@ -175,6 +175,17 @@ const FEATURE_CATALOG = [
     prerequisites: null,
   },
   {
+    feature: 'completeness-audit',
+    name: 'Completeness Audit',
+    description:
+      'Multi-agent analysis for forgotten features, dead handlers, stub code, and incomplete implementations',
+    how_to_use: '/agileflow:audit:completeness',
+    category: 'analysis',
+    detector: null,
+    auto_mode: null,
+    prerequisites: null,
+  },
+  {
     feature: 'diagnose',
     name: 'Diagnose',
     description: 'System health diagnostics for hooks, config, and runtime issues',
