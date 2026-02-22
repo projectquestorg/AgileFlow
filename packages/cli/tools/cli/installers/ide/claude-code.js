@@ -237,7 +237,14 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
 
     // Define SessionStart hooks
+    // babysit-clear-restore MUST run before welcome to set last_precompact_at flag
     const sessionStartHooks = [
+      {
+        type: 'command',
+        command:
+          'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/babysit-clear-restore.js 2>/dev/null || true',
+        timeout: 5000,
+      },
       {
         type: 'command',
         command:
@@ -285,7 +292,9 @@ class ClaudeCodeSetup extends BaseIdeSetup {
 
     // Write settings
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
-    console.log(chalk.dim(`    - SessionStart hooks: welcome, archive, context-loader`));
+    console.log(
+      chalk.dim(`    - SessionStart hooks: babysit-restore, welcome, archive, context-loader`)
+    );
   }
 
   /**

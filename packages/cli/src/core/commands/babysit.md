@@ -11,7 +11,7 @@ compact_context:
     - "{{RULES:plan_mode}}"
     - "{{RULES:delegation}}"
     - "STUCK DETECTION: If same error 2+ times, suggest /agileflow:research:ask with detailed prompt"
-    - "PLAN FILE CONTEXT: BEFORE ExitPlanMode, EDIT plan file to add babysit rules header at TOP - rules survive context clear"
+    - "PLAN FILE CONTEXT: Handled automatically by babysit-clear-restore.js SessionStart hook - no manual plan file editing needed"
     - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
     - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
     - "PROACTIVE FEATURES: Impact analysis before plan mode (3+ files). Council for arch decisions. Code review for 5+ source files. Multi-expert for 10+ files. ADR for arch decisions. Research proactively for unfamiliar patterns. Docs sync when API/interface/exports change."
@@ -290,7 +290,7 @@ When running `node .agileflow/scripts/obtain-context.js`, **NEVER** append `| he
 | User gave detailed instructions | Skip plan mode, follow them |
 | Everything else | **USE PLAN MODE** |
 
-**Plan mode flow:** EnterPlanMode → Explore with Glob/Grep/Read → Design approach → Add smart babysit header to plan → ExitPlanMode → Implement → Smart AskUserQuestion (with logic audit)
+**Plan mode flow:** EnterPlanMode → Explore with Glob/Grep/Read → Design approach → ExitPlanMode → Implement → Smart AskUserQuestion (with logic audit)
 
 ---
 
@@ -368,54 +368,17 @@ if(ready.length)console.log('🔔 Validators ready:',ready.map(t=>t.id).join(','
 
 ---
 
-### 🚨 RULE #6: PLAN FILE CONTEXT PRESERVATION
+### RULE #6: PLAN FILE CONTEXT PRESERVATION (AUTOMATED)
 
-**BEFORE calling ExitPlanMode**, you MUST add a babysit rules header to your plan file.
+**This rule is now handled automatically by the `babysit-clear-restore.js` SessionStart hook.**
 
-**WHY**: When user selects "Clear context and bypass permissions", the plan file is the ONLY context that survives. Embedding rules in the plan file ensures babysit workflow continues after context clear.
+When context is cleared (e.g., after plan approval), the hook:
+1. Detects `source: "clear"` from Claude Code's SessionStart event
+2. Checks if `/babysit` is active in session-state.json
+3. Outputs the full COMPACT_SUMMARY as a system-reminder in the fresh context
+4. Sets `last_precompact_at` so the welcome script preserves `active_commands`
 
-**STEPS**:
-1. Before calling ExitPlanMode, use the Edit tool to add this header to the TOP of your plan file:
-
-```markdown
-## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
-
-These rules MUST be followed during implementation:
-1. **ALWAYS end your final response with SMART AskUserQuestion tool** - specific, contextual options with (Recommended) label
-2. **Use EnterPlanMode** if any NEW non-trivial tasks arise during implementation
-3. **Delegate complex work** to domain experts via Task tool
-4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
-
-**Smart AskUserQuestion format** (NEVER generic - always contextual):
-- Options must reference specific files, test commands, story IDs, and change counts
-- Always mark the best next step with "(Recommended)"
-- Include descriptions with concrete context (e.g., "3 files changed in scripts/")
-
-After implementation completes, you MUST call AskUserQuestion. **ALWAYS include logic audit**:
-- "Run `npm test` in packages/cli/ (Recommended)" + description with file count
-- "🔍 Run logic audit on [N] modified files" + "5 analyzers check for edge cases, race conditions, type bugs"
-- "Commit: '[type]: [summary]'" + "All tests pass, ready to commit"
-- "Pause here" + "Changes saved, not committed"
-
----
-```
-
-2. Then call ExitPlanMode
-
-**EXAMPLE PLAN FILE STRUCTURE**:
-```markdown
-# Plan: Add User Profile Feature
-
-## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
-[rules as above - with SMART AskUserQuestion and logic audit]
-
----
-
-## Implementation Plan
-1. Create database schema...
-2. Add API endpoint...
-3. Build UI component...
-```
+**You do NOT need to manually embed babysit rules in plan files.** Just write your plan and call ExitPlanMode normally. The hook ensures babysit rules survive context clear automatically.
 
 ---
 
@@ -506,16 +469,12 @@ After implementation completes, you MUST call AskUserQuestion. **ALWAYS include 
    ```
    /agileflow:research:ask "[specific topic]"
    ```
-9. **Set restoration flag** (backup for context clear):
-   ```bash
-   node -e "const fs=require('fs');const p='docs/09-agents/session-state.json';if(fs.existsSync(p)){const s=JSON.parse(fs.readFileSync(p,'utf8'));s.babysit_pending_restore=true;fs.writeFileSync(p,JSON.stringify(s,null,2)+'\n');}"
-   ```
-10. Call `EnterPlanMode` tool
-11. Explore codebase with Glob, Grep, Read (3-5 files max)
-12. Design approach, write to plan file
-13. **CRITICAL: Add babysit rules header** to TOP of plan file (Rule #6)
-14. If architecture decision made → spawn `agileflow-adr-writer` to document it
-15. Call `ExitPlanMode` for user approval
+9. Call `EnterPlanMode` tool
+10. Explore codebase with Glob, Grep, Read (3-5 files max)
+11. Design approach, write to plan file
+12. If architecture decision made → spawn `agileflow-adr-writer` to document it
+13. Call `ExitPlanMode` for user approval
+    *(babysit rules are auto-restored after context clear by `babysit-clear-restore.js` hook)*
 
 **Phase 3: Execution**
 16. **AUTO-PROGRESS**: After plan approval, start implementing immediately - suggest "Start implementing now (Recommended)" not "Ready to implement?"
@@ -704,9 +663,9 @@ After error:
   - ADR for any architecture decision made
   - Research PROACTIVELY for unfamiliar patterns (not just when stuck)
   - Docs sync when API/interface files change
-- **PLAN FILE CONTEXT - CRITICAL:**
-  BEFORE ExitPlanMode, EDIT the plan file to add babysit rules header at TOP (with smart AskUserQuestion format and logic audit)
-  This ensures rules survive "Clear context and bypass permissions"
+- **PLAN FILE CONTEXT - AUTOMATED:**
+  `babysit-clear-restore.js` SessionStart hook auto-injects babysit rules on context clear.
+  No manual plan file editing needed - just call ExitPlanMode normally.
 - **STORY CLAIMING - CRITICAL:**
   1. BEFORE suggesting: `node .agileflow/scripts/lib/story-claiming.js others` → exclude 🔒
   2. AFTER user selects: `node .agileflow/scripts/lib/story-claiming.js claim <id>`
@@ -1085,26 +1044,8 @@ Attempt 3: Wait 15 seconds, then retry (final)
    - Files to modify/create
    - Key decisions and trade-offs
    - Testing approach
-4. **CRITICAL: Add Babysit Header** - Edit the plan file to include this at the TOP:
-   ```markdown
-   ## ⚠️ MANDATORY IMPLEMENTATION RULES (from /babysit)
-
-   These rules MUST be followed during implementation:
-   1. **ALWAYS end with SMART AskUserQuestion** - specific options with (Recommended), contextual descriptions, file counts
-   2. **Use EnterPlanMode** if new non-trivial tasks arise
-   3. **Delegate complex work** to domain experts via Task tool
-   4. **Track progress** with TaskCreate/TaskUpdate for multi-step work
-
-   After implementation, ALWAYS call AskUserQuestion with:
-   - "Run tests (Recommended)" with specific command and file count
-   - "🔍 Run logic audit on N modified files" - ALWAYS include this
-   - "Commit: '[type]: [summary]'" with suggested message
-   - "Pause here" with save state summary
-
-   ---
-   ```
-5. **Approve** - Call `ExitPlanMode` for user review
-6. **Execute** - Implement (rules survive context clear because they're in plan file)
+4. **Approve** - Call `ExitPlanMode` for user review
+5. **Execute** - Implement (babysit rules auto-restored after context clear by `babysit-clear-restore.js` hook)
 
 ### Plan Mode Examples
 

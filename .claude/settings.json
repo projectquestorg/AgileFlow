@@ -54,6 +54,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node /home/coder/AgileFlow/.agileflow/scripts/babysit-clear-restore.js",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
             "command": "node /home/coder/AgileFlow/.agileflow/scripts/agileflow-welcome.js"
           },
           {
