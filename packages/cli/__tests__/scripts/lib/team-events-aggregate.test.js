@@ -202,6 +202,7 @@ describe('aggregateTeamMetrics', () => {
         input_tokens: 0,
         output_tokens: 0,
         cost_usd: 0,
+        files_modified: [],
       });
     });
   });

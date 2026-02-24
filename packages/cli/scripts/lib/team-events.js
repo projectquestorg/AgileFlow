@@ -99,6 +99,27 @@ const MODEL_PRICING = {
 const DEFAULT_COST_THRESHOLD_USD = 5.0;
 
 /**
+ * Get list of files modified since a git reference.
+ *
+ * @param {string} rootDir - Project root directory (git working tree)
+ * @param {string} [sinceRef='HEAD'] - Git ref to diff against
+ * @returns {string[]} Sorted, deduplicated list of modified file paths
+ */
+function getModifiedFiles(rootDir, sinceRef) {
+  try {
+    const { execFileSync } = require('child_process');
+    const output = execFileSync('git', ['diff', '--name-only', sinceRef || 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    return output ? [...new Set(output.split('\n'))].sort() : [];
+  } catch (e) {
+    return []; // fail-open
+  }
+}
+
+/**
  * Compute estimated cost for an agent's token usage.
  *
  * @param {number} inputTokens - Number of input tokens
@@ -295,6 +316,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
         input_tokens: 0,
         output_tokens: 0,
         cost_usd: 0,
+        files_modified: [],
       };
     }
   };
@@ -310,6 +332,9 @@ function aggregateTeamMetrics(rootDir, traceId) {
       perAgent[e.agent].input_tokens += e.input_tokens || 0;
       perAgent[e.agent].output_tokens += e.output_tokens || 0;
       if (e.model) agentModels[e.agent] = e.model;
+      if (Array.isArray(e.files_modified)) {
+        perAgent[e.agent].files_modified.push(...e.files_modified);
+      }
     }
     if (e.type === 'agent_error' && e.agent) {
       ensureAgent(e.agent);
@@ -331,6 +356,14 @@ function aggregateTeamMetrics(rootDir, traceId) {
     );
   }
   const totalCostUsd = Object.values(perAgent).reduce((sum, a) => sum + a.cost_usd, 0);
+
+  // Deduplicate and sort per-agent files_modified, compute union
+  const allFilesSet = new Set();
+  for (const metrics of Object.values(perAgent)) {
+    metrics.files_modified = [...new Set(metrics.files_modified)].sort();
+    metrics.files_modified.forEach(f => allFilesSet.add(f));
+  }
+  const allFilesModified = [...allFilesSet].sort();
 
   // Per-gate metrics from gate_passed, gate_failed
   const perGate = {};
@@ -360,6 +393,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
     trace_id: traceId,
     per_agent: perAgent,
     per_gate: perGate,
+    all_files_modified: allFilesModified,
     team_completion_ms: teamCompletionMs,
     total_cost_usd: Math.round(totalCostUsd * 1_000_000) / 1_000_000,
     computed_at: new Date().toISOString(),
@@ -440,5 +474,6 @@ module.exports = {
   saveAggregatedMetrics,
   computeAgentCost,
   checkCostThreshold,
+  getModifiedFiles,
   teamMetricsEmitter,
 };
