@@ -122,7 +122,7 @@ PANES:
   Alt+x            Close pane
 
 OTHER:
-  Alt+[            Scroll mode
+  Alt+b            Scroll mode (browse history)
   Alt+k            Send Ctrl+C twice (unfreeze)
 EOF
   exit 0
@@ -241,6 +241,14 @@ configure_tmux_session() {
   # Enable mouse support
   tmux set-option -t "$target_session" mouse on
 
+  # Reduce escape-time from default 500ms to 10ms.
+  # The default causes two problems:
+  #   1) Arrow keys (which send \e[A etc.) get misinterpreted as Alt+[ if
+  #      there's any delivery delay, accidentally triggering copy-mode.
+  #   2) Pressing Escape in Claude Code has a 500ms lag before tmux forwards it.
+  # 10ms is enough to detect genuine escape sequences on localhost/fast SSH.
+  tmux set-option -t "$target_session" escape-time 10
+
   # Automatically renumber windows when one is closed (no gaps)
   tmux set-option -t "$target_session" renumber-windows on
 
@@ -325,8 +333,12 @@ configure_tmux_session() {
   # Alt+z to zoom/unzoom pane (fullscreen toggle)
   tmux bind-key -n M-z resize-pane -Z
 
-  # Alt+[ to enter copy mode (for scrolling)
-  tmux bind-key -n M-[ copy-mode
+  # Alt+b to enter copy mode (for scrolling / browsing history)
+  # NOTE: Do NOT use Alt+[ here — \e[ is the CSI prefix for arrow keys and
+  # function keys. Binding M-[ in the root table causes accidental copy-mode
+  # entry whenever an escape sequence is split by network latency, making the
+  # terminal appear to "lose focus" until Escape is pressed.
+  tmux bind-key -n M-b copy-mode
 
   # ─── Session Creation Keybindings ──────────────────────────────────────────
   # Alt+s to create a new Claude window (starts fresh, future re-runs in same pane resume)
@@ -364,7 +376,7 @@ configure_tmux_session() {
     printf '  Alt+R      Restart pane\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
-    printf '  Alt+[      Scroll mode\\n';\
+    printf '  Alt+b      Scroll mode\\n';\
     printf '  Alt+k      Unfreeze (Ctrl+C x2)\\n';\
     printf '  Alt+h      This help\\n';\
     printf '\\n';\
