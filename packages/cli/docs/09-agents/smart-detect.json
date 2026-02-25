@@ -1,5 +1,5 @@
 {
-  "detected_at": "2026-02-13T22:44:58.038Z",
+  "detected_at": "2026-02-25T23:26:58.359Z",
   "lifecycle_phase": "pre-story",
   "phase_confidence": 0.9,
   "phase_reason": "No active story",
@@ -18,13 +18,227 @@
     "auto_enabled": {
       "loop_mode": false,
       "visual_mode": false,
-      "coverage_mode": false
+      "coverage_mode": false,
+      "browser_qa_mode": false
     }
   },
+  "feature_catalog": [
+    {
+      "feature": "loop-mode",
+      "name": "Loop Mode",
+      "description": "Auto-claim and implement multiple stories in sequence without pausing",
+      "how_to_use": "3+ ready stories in same epic + test setup",
+      "category": "modes",
+      "detector": null,
+      "auto_mode": "loop_mode",
+      "prerequisites": [
+        {
+          "signal_path": "story.epic",
+          "description": "Active story with epic"
+        },
+        {
+          "signal_path": "tests.hasTestSetup",
+          "description": "Test setup configured"
+        }
+      ],
+      "status": "unavailable"
+    },
+    {
+      "feature": "coverage-mode",
+      "name": "Coverage Mode",
+      "description": "Track and enforce code coverage thresholds during implementation",
+      "how_to_use": "Coverage data in coverage/coverage-summary.json",
+      "category": "modes",
+      "detector": null,
+      "auto_mode": "coverage_mode",
+      "prerequisites": [
+        {
+          "signal_path": "files.coverage",
+          "description": "Coverage summary exists"
+        }
+      ],
+      "status": "unavailable"
+    },
+    {
+      "feature": "agent-teams",
+      "name": "Agent Teams",
+      "description": "Coordinate multiple specialized agents working in parallel on complex tasks",
+      "how_to_use": "/agileflow:team:start <template>",
+      "category": "collaboration",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "council",
+      "name": "AI Council",
+      "description": "Three-perspective decision making: Optimist, Advocate, and Analyst",
+      "how_to_use": "/agileflow:council \"<decision>\"",
+      "category": "collaboration",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "multi-expert",
+      "name": "Multi-Expert",
+      "description": "Deploy 3-5 domain experts on the same problem and synthesize results",
+      "how_to_use": "/agileflow:multi-expert \"<question>\"",
+      "category": "collaboration",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "sessions",
+      "name": "Parallel Sessions",
+      "description": "Run multiple Claude instances in git worktrees for parallel development",
+      "how_to_use": "/agileflow:session:new <name>",
+      "category": "collaboration",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "rpi",
+      "name": "RPI Workflow",
+      "description": "Structured Research-Plan-Implement cycle with phase gates",
+      "how_to_use": "/agileflow:rpi \"<feature>\"",
+      "category": "workflow",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "discovery",
+      "name": "Discovery",
+      "description": "Brainstorm, research, and synthesize findings into a Product Brief",
+      "how_to_use": "/agileflow:discovery:new \"<topic>\"",
+      "category": "workflow",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "batch",
+      "name": "Batch Processing",
+      "description": "Process multiple items with map/pmap/filter patterns",
+      "how_to_use": "/agileflow:batch <pattern> <items>",
+      "category": "workflow",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "sprint",
+      "name": "Sprint Planning",
+      "description": "Data-driven sprint planning with velocity forecasting",
+      "how_to_use": "/agileflow:sprint",
+      "category": "workflow",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": [
+        {
+          "signal_path": "storyCount",
+          "description": "Stories exist in status.json"
+        }
+      ],
+      "status": "unavailable"
+    },
+    {
+      "feature": "research",
+      "name": "Research",
+      "description": "Generate research prompts, save notes, and maintain a research index",
+      "how_to_use": "/agileflow:research:ask \"<question>\"",
+      "category": "analysis",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "impact-analysis",
+      "name": "Impact Analysis",
+      "description": "Analyze change impact across the codebase before making modifications",
+      "how_to_use": "/agileflow:impact \"<change>\"",
+      "category": "analysis",
+      "detector": "impact",
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "logic-audit",
+      "name": "Logic Audit",
+      "description": "Multi-agent analysis for edge cases, race conditions, type bugs, and dead code",
+      "how_to_use": "/agileflow:audit:logic",
+      "category": "analysis",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "completeness-audit",
+      "name": "Completeness Audit",
+      "description": "Multi-agent analysis for forgotten features, dead handlers, stub code, and incomplete implementations",
+      "how_to_use": "/agileflow:audit:completeness",
+      "category": "analysis",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "diagnose",
+      "name": "Diagnose",
+      "description": "System health diagnostics for hooks, config, and runtime issues",
+      "how_to_use": "/agileflow:diagnose",
+      "category": "analysis",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    },
+    {
+      "feature": "browser-qa",
+      "name": "UI Testing (Bowser)",
+      "description": "Agentic browser testing + visual verification during development. Playwright-based screenshot evidence and workflow validation.",
+      "how_to_use": "/agileflow:browser-qa SCENARIO=<spec.yaml> or VISUAL=true on babysit",
+      "category": "testing",
+      "detector": null,
+      "auto_mode": "browser_qa_mode",
+      "prerequisites": [
+        {
+          "signal_path": "files.playwright",
+          "description": "Playwright config exists"
+        }
+      ],
+      "status": "unavailable"
+    },
+    {
+      "feature": "ideation",
+      "name": "Ideation",
+      "description": "Generate categorized improvement ideas using multi-expert analysis",
+      "how_to_use": "/agileflow:ideate:new",
+      "category": "automation",
+      "detector": null,
+      "auto_mode": null,
+      "prerequisites": null,
+      "status": "available"
+    }
+  ],
   "signals_summary": {
     "story": "none",
-    "files_changed": 67,
-    "core_files": 13,
+    "files_changed": 30,
+    "core_files": 22,
     "tests_passing": null,
     "on_feature_branch": false,
     "story_counts": {}

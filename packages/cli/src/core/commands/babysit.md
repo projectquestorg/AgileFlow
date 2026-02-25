@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>]"
+argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>] [STRICT=true|false] [TDD=true|false]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -16,11 +16,15 @@ compact_context:
     - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
     - "PROACTIVE FEATURES: Impact analysis before plan mode (3+ files). Council for arch decisions. Code review for 5+ source files. Multi-expert for 10+ files. ADR for arch decisions. Research proactively for unfamiliar patterns. Docs sync when API/interface/exports change."
     - "OBTAIN-CONTEXT: NEVER pipe obtain-context.js through head/tail/truncation - run it bare, it has built-in smart output limits"
+    - "STRICT MODE: When STRICT=true, enforce gates - hide commit option until tests pass, auto-trigger code review for 5+ files, remove skip options"
+    - "TDD MODE: When TDD=true, start stories in RED phase via /agileflow:tdd. Follow RED→GREEN→REFACTOR phases."
   state_fields:
     - current_story
     - current_epic
     - delegation_mode
     - claimed_story_id
+    - strict_mode
+    - tdd_mode
 ---
 
 # /agileflow-babysit
@@ -54,6 +58,8 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 | `MAX` | 20 | `10` | Max loop iterations before stopping |
 | `VISUAL` | auto | `false` | Screenshot verification for UI work. Auto-enabled for AG-UI stories |
 | `COVERAGE` | auto | `80` | Test coverage threshold (%). Set `0` to disable |
+| `STRICT` | `false` | `true` | Enforce workflow gates (tests required before commit, code review for 5+ files) |
+| `TDD` | `false` | `true` | Enable TDD mode (RED→GREEN→REFACTOR phases) for each story |
 
 **Auto-detection**: When `EPIC` is specified with 3+ ready stories, `MODE=loop` is auto-enabled. `VISUAL` auto-enables for UI-tagged stories. `COVERAGE` auto-enables when a coverage baseline exists.
 
@@ -63,6 +69,8 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 /agileflow:babysit EPIC=EP-0042 MODE=once          # Single story only
 /agileflow:babysit EPIC=EP-0042 VISUAL=false       # Skip screenshots
 /agileflow:babysit EPIC=EP-0042 COVERAGE=90 MAX=30 # Strict coverage, more iterations
+/agileflow:babysit STRICT=true                     # Enforce gates (tests before commit, review for 5+ files)
+/agileflow:babysit STRICT=true TDD=true            # Full discipline: TDD phases + strict gates
 ```
 
 <!-- === TIER 1: QUICK REFERENCE === -->
@@ -86,6 +94,59 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 2. Use `EnterPlanMode` before non-trivial implementation
 3. Use `TaskCreate`/`TaskUpdate` to track multi-step tasks
 4. Proactively trigger advanced features (Rule #7) - don't wait for smart-detect
+
+---
+
+## STRICT MODE (`STRICT=true`)
+
+When `STRICT=true`, workflow gates are **enforced** - not just suggested.
+
+### What Changes in Strict Mode
+
+| Gate | Non-Strict (default) | Strict |
+|------|---------------------|--------|
+| **Tests before commit** | Suggested as option | **Required** - commit option hidden until tests pass |
+| **Code review (5+ files)** | Suggested as option | **Required** - commit blocked until review done |
+| **Logic audit** | Suggested as option | Suggested (still advisory) |
+| **Skip options** | Available | **Removed** from AskUserQuestion |
+
+### Gate Enforcement Rules
+
+1. **Test Gate**: After implementation, the "Commit" option is NOT shown in AskUserQuestion until `test_status: "passing"` is confirmed via `/agileflow:verify`.
+
+2. **Review Gate (5+ source files)**: When 5+ source files are modified, the `code-reviewer` agent is auto-triggered. Commit option is hidden until review completes.
+
+3. **No Skip Options**: In strict mode, options like "Skip tests", "Skip review", "Commit without testing" are removed from AskUserQuestion choices.
+
+4. **Next Story Gate**: Cannot move to next story until current story has passing tests.
+
+### How It Works
+
+Track gate state during the session:
+```
+Gate State:
+  ⬜ tests_passed    → Run /agileflow:verify
+  ⬜ review_done     → Auto-triggered at 5+ files
+  ⬜ logic_audit     → Optional (advisory)
+```
+
+As gates are satisfied, they update:
+```
+Gate State:
+  ✅ tests_passed    → 42 passed, 0 failed
+  ✅ review_done     → No critical issues
+  ⬜ logic_audit     → Optional
+```
+
+Only then does the "Commit" option appear in AskUserQuestion.
+
+### Strict + TDD Mode (`STRICT=true TDD=true`)
+
+When both are enabled, the strongest enforcement applies:
+- Stories start in TDD RED phase automatically
+- Phase gates are enforced (RED needs failing tests, GREEN needs passing)
+- After TDD COMPLETE, strict mode gates also apply (review, etc.)
+- Full discipline: test-first + verification gates
 
 ---
 
@@ -478,30 +539,37 @@ When context is cleared (e.g., after plan approval), the hook:
 
 **Phase 3: Execution**
 16. **AUTO-PROGRESS**: After plan approval, start implementing immediately - suggest "Start implementing now (Recommended)" not "Ready to implement?"
-17. **Builder/Validator pairing** for expert delegation:
+17. **TDD Mode** (if `TDD=true`): Start `/agileflow:tdd <story-id>` instead of direct implementation. Follow RED→GREEN→REFACTOR phases.
+18. **Builder/Validator pairing** for expert delegation:
     - Register builder task in task registry
     - Register validator task (blocked by builder)
     - Spawn builder expert
     - When builder completes, validator auto-unblocks
-18. **Parallel experts** when domains are independent (API + UI, Tests + Docs)
-19. Collect results if async (TaskOutput)
-20. Verify tests pass
-21. **ALWAYS include logic audit option** in smart AskUserQuestion with specific file counts and test results (not optional - standard post-impl step)
+19. **Parallel experts** when domains are independent (API + UI, Tests + Docs)
+20. Collect results if async (TaskOutput)
+21. Verify tests pass
+22. **ALWAYS include logic audit option** in smart AskUserQuestion with specific file counts and test results (not optional - standard post-impl step)
 
 **Phase 4: Review & Completion**
-22. **Post-implementation checklist** (offer ALL applicable via AskUserQuestion):
+23. **Post-implementation checklist** (offer ALL applicable via AskUserQuestion):
     - Run tests (always) - offer as "(Recommended)" with specific test command and file count
     - Logic audit (always)
     - Code review via `code-reviewer` agent (if 5+ source files changed)
     - Docs sync via `/agileflow:docs` (if API routes, exports, or interfaces changed)
     - Multi-expert review via `/agileflow:multi-expert` (if 10+ files or 300+ lines)
     - ADR creation (if architecture decision was made during impl)
-23. Update status.json (mark story done)
-24. **RELEASE THE STORY claim:**
+24. **STRICT MODE GATE CHECK**: If `STRICT=true`:
+    - Count modified source files (exclude test/config/docs)
+    - If commit option requested but tests not passed → hide commit, show "Run tests first"
+    - If 5+ source files and review not done → auto-spawn `code-reviewer`, hide commit
+    - Track gate state: `tests_passed`, `review_done`, `logic_audit_done`
+    - Show gate status in AskUserQuestion descriptions: `[Gates: tests passed, review done]`
+25. Update status.json (mark story done)
+26. **RELEASE THE STORY claim:**
     ```bash
     node .agileflow/scripts/lib/story-claiming.js release <story-id>
     ```
-25. Present next steps via smart AskUserQuestion
+27. Present next steps via smart AskUserQuestion
 
 **Post-Implementation Options** (offer ALL applicable via smart AskUserQuestion):
 - "Run tests to verify (Recommended)" - always, with specific test command and file count
@@ -510,8 +578,8 @@ When context is cleared (e.g., after plan approval), the hook:
 - "📚 Sync docs for changed APIs" - if API routes, exports, or interfaces changed
 - "🔬 Run multi-expert review" - if 10+ files or 300+ lines changed
 - "📋 Create ADR for [decision]" - if architecture decision was made
-- "Commit: '[type]: [summary]'" - with specific commit message suggestion
-- "Continue to next story" - with story ID and epic progress
+- "Commit: '[type]: [summary]'" - with specific commit message suggestion (**STRICT**: hidden until gates pass)
+- "Continue to next story" - with story ID and epic progress (**STRICT**: hidden until tests pass)
 - "Pause here" - with summary of what's saved/uncommitted
 
 ---
