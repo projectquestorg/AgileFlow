@@ -112,6 +112,7 @@ WINDOWS:
   Alt+n/p          Next/previous window
   Alt+r            Rename window
   Alt+w            Close window
+  Alt+W            Batch close windows (picker)
   Alt+t            Reopen closed window
 
 PANES:
@@ -325,6 +326,9 @@ configure_tmux_session() {
   # Alt+w to close current window (save state for Alt+T restore, then kill)
   tmux bind-key -n M-w confirm-before -p "Close window? (y/n)" "run-shell '\"\$AGILEFLOW_SCRIPTS/tmux-save-closed-window.sh\"' ; kill-window"
 
+  # Alt+W (uppercase) to batch-close windows via multi-select picker
+  tmux bind-key -n M-W display-popup -E -w 60 -h 20 "\"$AGILEFLOW_SCRIPTS/tmux-close-windows.sh\""
+
   # Alt+t to restore the most recently closed window (like Ctrl+Shift+T in browsers)
   tmux bind-key -n M-t run-shell '"$AGILEFLOW_SCRIPTS/tmux-restore-window.sh"'
 
@@ -376,7 +380,7 @@ configure_tmux_session() {
 
   # ─── Help Panel ──────────────────────────────────────────────────────────
   # Alt+h to show all Alt keybindings in a popup
-  tmux bind-key -n M-h display-popup -E -w 52 -h 31 "\
+  tmux bind-key -n M-h display-popup -E -w 52 -h 32 "\
     printf '\\n';\
     printf '  \\033[1;38;5;208mSESSIONS\\033[0m\\n';\
     printf '  Alt+s      New Claude session\\n';\
@@ -389,6 +393,7 @@ configure_tmux_session() {
     printf '  Alt+n/p    Next / previous window\\n';\
     printf '  Alt+r      Rename window\\n';\
     printf '  Alt+w      Close window\\n';\
+    printf '  Alt+W      Batch close windows\\n';\
     printf '  Alt+t      Reopen closed window\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mPANES\\033[0m\\n';\
