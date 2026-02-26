@@ -121,9 +121,14 @@ PANES:
   Alt+z            Zoom/unzoom pane
   Alt+x            Close pane
 
+FREEZE RECOVERY:
+  Alt+k            Send Ctrl+C twice (soft unfreeze)
+  Alt+K            Force kill Claude process (keeps tab)
+  Alt+R            Respawn pane (fresh shell)
+
 OTHER:
   Alt+b            Scroll mode (browse history)
-  Alt+k            Send Ctrl+C twice (unfreeze)
+  Alt+h            Show keybind help panel
 EOF
   exit 0
 fi
@@ -347,7 +352,27 @@ configure_tmux_session() {
 
   # ─── Freeze Recovery Keybindings ───────────────────────────────────────────
   # Alt+k to send Ctrl+C twice (soft interrupt for frozen processes)
-  tmux bind-key -n M-k run-shell "tmux send-keys C-c; sleep 0.5; tmux send-keys C-c"
+  # Uses #{pane_id} to target the correct pane even if focus shifts during the sleep
+  tmux bind-key -n M-k run-shell "tmux send-keys -t '#{pane_id}' C-c; sleep 0.5; tmux send-keys -t '#{pane_id}' C-c"
+
+  # Alt+K (uppercase) to force kill Claude process in pane without closing tab
+  # Finds the claude child process under the pane's shell and kills it,
+  # leaving the shell prompt intact so the user can restart or continue.
+  # Uses ps -o pid=,args= with grep to find claude, then cuts the PID (avoids awk quoting issues in tmux run-shell).
+  tmux bind-key -n M-K run-shell '\
+    PANE_PID=$(tmux display-message -p "#{pane_pid}"); \
+    CLAUDE_PID=$(ps --ppid "$PANE_PID" -o pid=,args= 2>/dev/null | grep -v "watchdog" | grep "claude" | head -1 | sed "s/^[[:space:]]*//" | cut -d" " -f1); \
+    if [ -n "$CLAUDE_PID" ]; then \
+      kill -TERM "$CLAUDE_PID" 2>/dev/null; \
+      sleep 2; \
+      kill -0 "$CLAUDE_PID" 2>/dev/null && kill -KILL "$CLAUDE_PID" 2>/dev/null; \
+      tmux display-message "Killed Claude process (PID $CLAUDE_PID)"; \
+    else \
+      tmux display-message "No Claude process found in this pane"; \
+    fi'
+
+  # Alt+R to respawn pane (kills everything in the pane, starts fresh shell)
+  tmux bind-key -n M-R respawn-pane -k
 
   # ─── Help Panel ──────────────────────────────────────────────────────────
   # Alt+h to show all Alt keybindings in a popup
@@ -372,8 +397,8 @@ configure_tmux_session() {
     printf '  Alt+arrows Navigate panes\\n';\
     printf '  Alt+z      Zoom / unzoom\\n';\
     printf '  Alt+x      Close pane (confirm)\\n';\
-    printf '  Alt+K      Kill pane (no confirm)\\n';\
-    printf '  Alt+R      Restart pane\\n';\
+    printf '  Alt+K      Force kill process\\n';\
+    printf '  Alt+R      Respawn pane (fresh)\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
     printf '  Alt+b      Scroll mode\\n';\
@@ -390,6 +415,14 @@ if [ "$REFRESH_CONFIG" = true ]; then
     configure_tmux_session "$sid"
     # Ensure AGILEFLOW_SCRIPTS is set (needed by Alt+S keybind)
     tmux set-environment -t "$sid" AGILEFLOW_SCRIPTS "$SCRIPT_DIR" 2>/dev/null || true
+    # (Re)start watchdog if not running for this session
+    _EXISTING_WD=$(tmux show-environment -t "$sid" WATCHDOG_PID 2>/dev/null | cut -d= -f2)
+    if [ -z "$_EXISTING_WD" ] || ! kill -0 "$_EXISTING_WD" 2>/dev/null; then
+      "$SCRIPT_DIR/claude-watchdog.sh" "$sid" &
+      _WD_PID=$!
+      tmux set-environment -t "$sid" WATCHDOG_PID "$_WD_PID"
+      disown "$_WD_PID"
+    fi
     REFRESHED=$((REFRESHED + 1))
   done
   if [ "$REFRESHED" -gt 0 ]; then
@@ -660,6 +693,15 @@ configure_tmux_session "$SESSION_NAME"
 tmux set-environment -t "$SESSION_NAME" AGILEFLOW_SCRIPTS "$SCRIPT_DIR"
 if [ -n "$CLAUDE_SESSION_FLAGS" ]; then
   tmux set-environment -t "$SESSION_NAME" CLAUDE_SESSION_FLAGS "$CLAUDE_SESSION_FLAGS"
+fi
+
+# Start watchdog to auto-detect and kill frozen Claude processes
+EXISTING_WD=$(tmux show-environment -t "$SESSION_NAME" WATCHDOG_PID 2>/dev/null | cut -d= -f2)
+if [ -z "$EXISTING_WD" ] || ! kill -0 "$EXISTING_WD" 2>/dev/null; then
+  "$SCRIPT_DIR/claude-watchdog.sh" "$SESSION_NAME" &
+  _WD_PID=$!
+  tmux set-environment -t "$SESSION_NAME" WATCHDOG_PID "$_WD_PID"
+  disown "$_WD_PID"
 fi
 
 # Pre-seed @claude_uuid on initial pane if we found a recent conversation
