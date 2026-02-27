@@ -284,6 +284,21 @@ Three-perspective strategic decision making:
 | [`council-analyst`](/agents/council-analyst) | Neutral Analyst - objective trade-off evaluation |
 | [`council-optimist`](/agents/council-optimist) | Optimist Strategist - identifies opportunities and success paths |
 
+### Completeness Analysis
+
+Agents for detecting forgotten features, dead code, and incomplete implementations:
+
+| Agent | Description |
+|-------|-------------|
+| [`completeness-analyzer-api`](/agents/completeness-analyzer-api) | Frontend-backend endpoint mismatches, missing API handlers, orphaned endpoints |
+| [`completeness-analyzer-conditional`](/agents/completeness-analyzer-conditional) | Dead feature flags, hardcoded false conditions, unreachable code blocks |
+| [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) | Empty onClick/onSubmit/onChange, console-only handlers, noop callbacks |
+| [`completeness-analyzer-imports`](/agents/completeness-analyzer-imports) | Dead exports, orphaned source files, unused dependencies, dead barrel re-exports |
+| [`completeness-analyzer-routes`](/agents/completeness-analyzer-routes) | Placeholder hrefs, missing route targets, orphaned navigation items |
+| [`completeness-analyzer-state`](/agents/completeness-analyzer-state) | Unused useState/useReducer, orphaned context providers, dead store slices |
+| [`completeness-analyzer-stubs`](/agents/completeness-analyzer-stubs) | TODO/FIXME comments, empty function bodies, hardcoded mock data, placeholder text |
+| [`completeness-consensus`](/agents/completeness-consensus) | Consensus coordinator for completeness audit findings |
+
 ### Debugging & Analysis
 
 Agents for debugging and problem diagnosis:
@@ -291,6 +306,7 @@ Agents for debugging and problem diagnosis:
 | Agent | Description |
 |-------|-------------|
 | [`error-analyzer`](/agents/error-analyzer) | Error diagnosis, stack trace analysis, root cause identification |
+| [`browser-qa`](/agents/browser-qa) | Agentic browser automation for exploratory UI testing with Playwright |
 | [`code-reviewer`](/agents/code-reviewer) | Comprehensive code review with security and performance analysis |
 | [`rlm-subcore`](/agents/rlm-subcore) | Document search sub-agent for RLM pattern (cost-optimized) |
 

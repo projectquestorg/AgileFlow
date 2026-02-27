@@ -1,0 +1,83 @@
+---
+title: Dead Route Analyzer
+description: Dead navigation and broken link analyzer for placeholder hrefs, missing route targets, and orphaned nav items
+---
+
+# Dead Route Analyzer
+
+The Completeness Analyzer: Dead Routes agent is a specialized analyzer focused on **dead navigation and broken links**. It finds placeholder hrefs (`#`), links pointing to routes that don't exist, orphaned navigation items, and dead internal links that would result in 404 errors.
+
+## When to Use
+
+Use this agent when:
+- You need to find broken internal navigation links
+- You want to identify placeholder `#` hrefs that were never filled in
+- You're looking for orphaned nav items pointing to missing pages
+- You need to verify all routes have corresponding page components
+- You're auditing link integrity before a release
+
+## How It Works
+
+1. **Scans navigation** - Finds all `<a>`, `<Link>`, and router navigation calls
+2. **Maps routes** - Builds a map of all defined routes in the application
+3. **Cross-references** - Checks every link target against the route map
+4. **Identifies placeholders** - Finds `href="#"`, `href=""`, and `href="javascript:void(0)"`
+5. **Finds orphaned items** - Navigation entries pointing to undefined routes
+6. **Reports findings** - Lists broken links with location and suggested fixes
+
+## Focus Areas
+
+- **Placeholder hrefs**: `href="#"`, `href=""`, `href="javascript:void(0)"` in production
+- **Missing route targets**: Links to `/dashboard` when no `/dashboard` route exists
+- **Orphaned nav items**: Sidebar or menu entries pointing to dead pages
+- **Dead internal links**: `<Link to="/old-page">` where the page was removed
+- **Route-component mismatches**: Route defined but component returns null or placeholder
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given navigation with dead links:
+```jsx
+// Navigation component with broken links
+<nav>
+  <Link to="/dashboard">Dashboard</Link>        {/* Route exists */}
+  <Link to="/settings">Settings</Link>          {/* Route exists */}
+  <Link to="/analytics">Analytics</Link>        {/* NO ROUTE - 404 */}
+  <a href="#">Reports</a>                       {/* Placeholder */}
+  <Link to="/admin/users">User Management</Link> {/* NO ROUTE - 404 */}
+</nav>
+
+// Router definition
+<Routes>
+  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/settings" element={<Settings />} />
+  {/* No /analytics route */}
+  {/* No /admin/users route */}
+</Routes>
+```
+
+The Dead Route analyzer would identify:
+
+- **BROKEN**: Link to `/analytics` has no matching route (404 for users)
+- **BROKEN**: Link to `/admin/users` has no matching route (404 for users)
+- **PLACEHOLDER**: `href="#"` on Reports link (user clicks, nothing happens)
+
+## Example Usage
+
+```text
+Task(
+  description: "Find broken navigation links",
+  prompt: "Scan src/components/ and src/pages/ for dead navigation links, placeholder hrefs, and routes pointing to missing pages.",
+  subagent_type: "agileflow-completeness-analyzer-routes"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-api`](/agents/completeness-analyzer-api) - API mismatch analyzer
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-stubs`](/agents/completeness-analyzer-stubs) - Stub code analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

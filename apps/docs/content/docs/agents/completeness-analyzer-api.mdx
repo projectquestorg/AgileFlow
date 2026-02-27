@@ -1,0 +1,125 @@
+---
+title: API Mismatch Analyzer
+description: Frontend-backend endpoint mismatch analyzer for missing API handlers, orphaned endpoints, method mismatches, and partial CRUD implementation
+---
+
+# API Mismatch Analyzer
+
+The Completeness Analyzer: API Mismatch agent is a specialized analyzer focused on **frontend-backend API mismatches**. It identifies missing API handlers that frontend code expects, orphaned backend endpoints with no callers, HTTP method mismatches, partial CRUD implementations, and response shape mismatches.
+
+## When to Use
+
+Use this agent when:
+- You need to identify missing backend handlers that frontend code expects
+- You want to find orphaned backend endpoints no frontend code calls
+- You're checking for HTTP method mismatches (frontend POST but backend GET)
+- You need to verify complete CRUD implementations (Create, Read, Update, Delete)
+- You're analyzing response shape mismatches between frontend and backend
+
+## How It Works
+
+1. **Reads frontend code** - Scans API client code for all endpoint calls (fetch, axios, etc.)
+2. **Reads backend code** - Scans backend routes/handlers for all registered endpoints
+3. **Identifies mismatches** - Finds frontend calls without backend handlers, backend endpoints with no frontend callers
+4. **Checks methods** - Verifies HTTP methods match between frontend and backend
+5. **Analyzes CRUD** - Identifies partial implementations (e.g., Create + Read but no Update/Delete)
+6. **Reports shapes** - Flags when response objects differ between expected and actual
+
+## Focus Areas
+
+- **Missing backend handlers**: Frontend code calls endpoints that don't exist
+- **Orphaned backend endpoints**: Backend endpoints no frontend code calls
+- **HTTP method mismatches**: Frontend uses POST but backend only accepts GET
+- **Partial CRUD**: Missing Update, Delete, or Create operations
+- **Response shape mismatches**: Frontend expects different fields than backend provides
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given a frontend API client:
+```javascript
+// frontend/api/users.js
+export const getUser = (id) => fetch(`/api/users/${id}`);
+export const createUser = (data) => fetch(`/api/users`, { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) => fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => fetch(`/api/users/${id}`, { method: 'DELETE' });
+```
+
+And a backend with only:
+```javascript
+// backend/routes/users.js
+app.get('/api/users/:id', getUserHandler);
+app.post('/api/users', createUserHandler);
+// Missing PUT and DELETE
+```
+
+The API Mismatch analyzer would identify:
+
+### Finding: Missing DELETE handler for user deletion
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (frontend calls non-existent endpoint)
+**Confidence**: HIGH
+
+**Issue**: Frontend code calls `DELETE /api/users/:id` but backend has no DELETE handler registered. This causes 404 errors when users try to delete items.
+
+**Impact**: User delete feature broken in production
+**Suggested Fix**: Add DELETE handler to users route
+
+```javascript
+app.delete('/api/users/:id', deleteUserHandler);
+```
+
+### Finding: Missing PUT handler for user updates
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (frontend calls non-existent endpoint)
+**Confidence**: HIGH
+
+**Issue**: Frontend code calls `PUT /api/users/:id` but backend only has POST. User updates are broken.
+
+**Suggested Fix**: Add PUT handler
+
+```javascript
+app.put('/api/users/:id', updateUserHandler);
+```
+
+## Best Practices
+
+- Synchronize API schemas between frontend and backend
+- Use code generation (OpenAPI, tRPC) to keep schemas in sync
+- Test all frontend API calls against backend in integration tests
+- Document all required endpoints in API specification
+- Use TypeScript types for request/response validation
+
+## Output Format
+
+For each mismatch, the agent provides:
+- **Location**: File path and line number
+- **Type**: Missing handler, orphaned endpoint, method mismatch, missing CRUD operation, or shape mismatch
+- **Severity**: P0 (feature broken), P1 (partial feature), or P2 (minor issue)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Frontend Code**: Exact code making the call
+- **Backend Code**: Exact backend handler (or missing)
+- **Impact**: What users experience
+- **Suggested Fix**: Code to add/change
+
+## Example Usage
+
+```text
+Task(
+  description: "Find API mismatches in user service",
+  prompt: "Analyze frontend code in src/api/ and backend handlers in src/routes/ for endpoint mismatches. Check for missing handlers, orphaned endpoints, and method mismatches.",
+  subagent_type: "agileflow-completeness-analyzer-api"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-imports`](/agents/completeness-analyzer-imports) - Dead export analyzer
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-routes`](/agents/completeness-analyzer-routes) - Dead route analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

@@ -1,0 +1,207 @@
+---
+title: Dead Handler Analyzer
+description: Dead/empty event handler analyzer for empty onClick/onSubmit/onChange, console-only handlers, partial handlers, and noop callbacks
+---
+
+# Dead Handler Analyzer
+
+The Completeness Analyzer: Dead Handler agent is a specialized analyzer focused on **empty and stub event handlers**. It finds onClick/onSubmit/onChange handlers that do nothing, handlers that only log to console, partial handlers missing implementation, and noop callbacks left behind during development.
+
+## When to Use
+
+Use this agent when:
+- You need to find empty onClick/onSubmit/onChange handlers
+- You want to identify handlers that only log to console
+- You're looking for stub handlers with TODO/FIXME comments
+- You need to find noop callbacks left behind during development
+- You're cleaning up incomplete feature implementations
+
+## How It Works
+
+1. **Scans event handlers** - Finds all onClick, onSubmit, onChange, onError, etc. callbacks
+2. **Checks body content** - Identifies handlers with empty, console-only, or stub bodies
+3. **Detects patterns** - Looks for () => {}, () => console.log(), noop(), etc.
+4. **Finds TODOs** - Identifies handlers with unimplemented TODO/FIXME comments
+5. **Checks call chains** - Verifies that partial handlers actually do something
+6. **Reports findings** - Lists dead handlers with context and suggested fixes
+
+## Focus Areas
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: Handlers that start but don't complete work
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given React components with dead handlers:
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+The Dead Handler analyzer would identify:
+
+### Finding: Empty delete button handler
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (feature broken)
+**Confidence**: HIGH
+
+**Issue**: Delete button has empty handler `() => {}`. Button click does nothing. User expects item to be deleted.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: Users cannot delete items. Feature appears to work but has no effect.
+
+**Suggested Fix**: Implement the delete handler
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### Finding: Console-only search input handler
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (partial implementation)
+**Confidence**: HIGH
+
+**Issue**: Search input only logs to console. Search doesn't actually filter results.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: Search appears to work (logs show activity) but users don't see filtered results.
+
+**Suggested Fix**: Connect handler to state and filter logic
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### Finding: TODO stub in payment form
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (critical - payment doesn't work)
+**Confidence**: HIGH
+
+**Issue**: Submit handler has TODO comment and no implementation. Users who click "Pay Now" are charged but payment is never processed.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: User payment feature is non-functional. Money might be lost.
+
+**Suggested Fix**: Implement payment processing
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### Finding: Partial update handler without persistence
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (wrong result)
+**Confidence**: HIGH
+
+**Issue**: Update button shows success message but doesn't actually update the item. Changes are only in UI, not persisted.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: Users think item is updated, but changes are lost when page refreshes.
+
+**Suggested Fix**: Call API before showing success
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## Best Practices
+
+- Every event handler should have real implementation (no empty handlers)
+- Avoid console-only handlers in production code
+- Complete TODO/FIXME handlers before committing
+- Use TypeScript to catch unimplemented handlers
+- Test all button clicks and form submissions
+- Document complex handler logic with comments
+
+## Output Format
+
+For each finding, the agent provides:
+- **Location**: File path and line number
+- **Type**: Empty, console-only, partial, or stub handler
+- **Severity**: P0 (feature broken), P1 (incomplete feature), or P2 (minor issue)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code**: Exact handler code
+- **Issue**: What doesn't work and user impact
+- **Suggested Fix**: How to implement properly
+
+## Example Usage
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-state`](/agents/completeness-analyzer-state) - Unused state analyzer
+- [`completeness-analyzer-conditional`](/agents/completeness-analyzer-conditional) - Dead feature branch analyzer
+- [`completeness-analyzer-routes`](/agents/completeness-analyzer-routes) - Dead route analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

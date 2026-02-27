@@ -1,0 +1,96 @@
+---
+title: Stub Code Analyzer
+description: Placeholder code analyzer for TODO/FIXME comments, empty function bodies, NotImplementedError, hardcoded mock data, and "coming soon" text
+---
+
+# Stub Code Analyzer
+
+The Completeness Analyzer: Stub Code agent is a specialized analyzer focused on **placeholder and stub code in production files**. It finds TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data that should come from a database or API, and "coming soon" text that indicates unfinished features.
+
+## When to Use
+
+Use this agent when:
+- You need to find TODO/FIXME/HACK comments in production code
+- You want to identify empty function bodies that silently do nothing
+- You're looking for `throw new Error('Not implemented')` patterns
+- You need to find hardcoded mock data that should be dynamic
+- You're auditing for placeholder UI text before release
+
+## How It Works
+
+1. **Scans comments** - Finds TODO, FIXME, HACK, XXX, BUG markers
+2. **Checks functions** - Identifies non-trivial functions with empty bodies
+3. **Finds throws** - Locates NotImplementedError and similar throws
+4. **Detects mock data** - Identifies hardcoded arrays/objects that should be dynamic
+5. **Checks UI text** - Finds "coming soon", "under construction", "lorem ipsum"
+6. **Finds temp returns** - Functions returning hardcoded values as placeholders
+7. **Reports findings** - Lists stubs with severity and remediation paths
+
+## Focus Areas
+
+- **TODO/FIXME/HACK comments**: Markers of incomplete work in production code
+- **Empty function bodies**: Functions that exist but do nothing when called
+- **NotImplementedError throws**: Explicit "not implemented" markers that crash at runtime
+- **Hardcoded mock data**: Fake data arrays/objects that should come from DB or API
+- **Placeholder UI text**: "Coming soon", "Under construction", "Lorem ipsum" in production
+- **Temporary return values**: Functions returning hardcoded values instead of real logic
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given production code with stubs:
+```javascript
+// TODO: implement actual validation
+function validateInput(input) {
+  return true; // Always passes
+}
+
+class PaymentService {
+  async processPayment(amount, currency) {
+    throw new Error('Not implemented');
+  }
+}
+
+const users = [
+  { id: 1, name: 'John Doe', email: 'john@example.com' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+];
+// Should come from database
+```
+
+The Stub Code analyzer would identify:
+
+- **PLACEHOLDER**: TODO comment with always-true validation (security risk)
+- **BROKEN**: `processPayment` throws NotImplementedError (crashes at runtime)
+- **INCOMPLETE**: Hardcoded user array should be fetched from database
+
+## Severity Guide
+
+| Pattern | Severity | Rationale |
+|---------|----------|-----------|
+| Empty function body (called in production) | BROKEN | Feature silently fails |
+| NotImplementedError throw | BROKEN | Feature crashes |
+| Hardcoded mock data (user-visible) | INCOMPLETE | Users see fake data |
+| TODO/FIXME in critical path | PLACEHOLDER | Known incomplete work |
+| "Coming soon" text in UI | INCOMPLETE | Feature advertised but missing |
+| Temporary return value | PLACEHOLDER | Logic bypassed |
+
+## Example Usage
+
+```text
+Task(
+  description: "Find placeholder code in production",
+  prompt: "Scan src/ for TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data, and placeholder UI text. Exclude test files and examples.",
+  subagent_type: "agileflow-completeness-analyzer-stubs"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-api`](/agents/completeness-analyzer-api) - API mismatch analyzer
+- [`completeness-analyzer-conditional`](/agents/completeness-analyzer-conditional) - Dead feature branch analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

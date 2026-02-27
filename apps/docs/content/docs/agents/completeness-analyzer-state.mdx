@@ -1,0 +1,83 @@
+---
+title: Unused State Analyzer
+description: Unused state declaration analyzer for useState never read, useReducer never dispatched, orphaned context providers, and dead store slices
+---
+
+# Unused State Analyzer
+
+The Completeness Analyzer: Unused State agent is a specialized analyzer focused on **dead state declarations and unused context**. It finds React hooks (useState, useReducer) that are declared but never read, orphaned context providers that no component consumes, and dead Redux/Zustand store slices.
+
+## When to Use
+
+Use this agent when:
+- You need to find useState declarations never used in render
+- You want to identify useReducer hooks never dispatched
+- You're looking for orphaned context providers
+- You need to find dead Redux or Zustand store slices
+- You're cleaning up unused state management code
+
+## How It Works
+
+1. **Scans state declarations** - Finds all useState, useReducer, useContext calls
+2. **Tracks reads** - Maps where state values are actually read in render
+3. **Tracks writes** - Maps where setState/dispatch is called
+4. **Identifies unused** - Finds state declared but never read or written
+5. **Checks contexts** - Verifies context providers are actually consumed
+6. **Analyzes stores** - Checks Redux/Zustand slices for actual selector usage
+7. **Reports findings** - Lists dead state with context and removal suggestions
+
+## Focus Areas
+
+- **useState never read**: `const [value, setValue] = useState()` where `value` is never referenced
+- **useReducer never dispatched**: Reducer hooks with no dispatch calls anywhere
+- **Orphaned context providers**: Contexts created but no components consume them
+- **Dead store slices**: Redux/Zustand slices with no selectors or dispatches
+- **Unused setters**: State setters declared but never called
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given React code with unused state:
+```jsx
+export function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);    // Never read
+  const [theme, setTheme] = useState('light');       // Never used
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return (
+    <div>
+      <h1>{user?.name}</h1>
+      {/* loading and theme are never referenced */}
+    </div>
+  );
+}
+```
+
+The Unused State analyzer would identify:
+
+- **INCOMPLETE**: `loading` state declared but never read in render or conditionals
+- **DORMANT**: `theme` state declared, initialized, but never read or updated
+
+## Example Usage
+
+```text
+Task(
+  description: "Find unused React state and context",
+  prompt: "Scan src/components/ for unused useState, useReducer, useContext, and orphaned context providers. Check src/store/ for unused Redux/Zustand slices.",
+  subagent_type: "agileflow-completeness-analyzer-state"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-conditional`](/agents/completeness-analyzer-conditional) - Dead feature branch analyzer
+- [`completeness-analyzer-imports`](/agents/completeness-analyzer-imports) - Dead export analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

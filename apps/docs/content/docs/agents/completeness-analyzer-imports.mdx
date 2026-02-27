@@ -1,0 +1,201 @@
+---
+title: Dead Export Analyzer
+description: Dead export and module analyzer for exported functions never imported, orphaned source files, unused dependencies, and dead barrel re-exports
+---
+
+# Dead Export Analyzer
+
+The Completeness Analyzer: Dead Export agent is a specialized analyzer focused on **unused exports and module bloat**. It finds exported functions that no other code imports, orphaned source files with no callers, unused dependencies in package.json, and dead barrel re-exports in index files.
+
+## When to Use
+
+Use this agent when:
+- You need to identify exported functions never imported anywhere
+- You want to find orphaned source files with no callers
+- You're cleaning up unused dependencies from package.json
+- You need to identify dead barrel re-exports
+- You're reducing module surface area and technical debt
+
+## How It Works
+
+1. **Scans exports** - Finds all `export` statements across the codebase
+2. **Tracks imports** - Maps where each export is imported from
+3. **Identifies unused** - Finds exports with zero imports
+4. **Finds orphaned files** - Files with no importers anywhere
+5. **Analyzes dependencies** - Checks if node_modules packages are actually used
+6. **Reports findings** - Lists dead code with removal suggestions
+
+## Focus Areas
+
+- **Exported functions never imported**: `export function unused() {}` with no callers
+- **Orphaned source files**: Files that exist but no code imports from them
+- **Unused dependencies**: Packages in package.json never referenced in code
+- **Dead barrel re-exports**: Index files re-exporting unused things
+- **Legacy exports**: Functions kept for backwards compatibility but unused
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Analysis
+
+Given a module structure:
+```javascript
+// src/lib/utils.ts
+export function formatDate(d) { /* ... */ }       // Used
+export function deprecatedHelper() { /* ... */ }  // NOT USED
+export function oldValidation() { /* ... */ }     // NOT USED
+
+// src/lib/index.ts (barrel export)
+export * from './utils.ts';  // Re-exports everything, including unused
+
+// src/components/unused-component.tsx
+// This file exists but nothing imports it
+
+// package.json
+{
+  "dependencies": {
+    "lodash": "^4.17.0",     // NOT USED
+    "axios": "^1.0.0"        // Used
+  }
+}
+```
+
+The Dead Export analyzer would identify:
+
+### Finding: Exported function never imported
+
+**Location**: `src/lib/utils.ts:23`
+**Severity**: P2 (dead export)
+**Confidence**: HIGH
+
+**Issue**: Function `deprecatedHelper` is exported but never imported anywhere in the codebase. It's dead code taking up space.
+
+**Code**:
+```javascript
+export function deprecatedHelper() {
+  // Not called from anywhere
+  return 'This is never used';
+}
+```
+
+**Search**: Searched entire codebase for `deprecatedHelper` - 0 matches
+**Suggested Fix**: Delete the function or move it to a deprecated file if keeping for backwards compatibility
+
+```javascript
+// Remove this line:
+export function deprecatedHelper() { /* ... */ }
+```
+
+### Finding: Orphaned source file
+
+**Location**: `src/components/unused-component.tsx`
+**Severity**: P2 (dead code)
+**Confidence**: HIGH
+
+**Issue**: File exists but no code imports from it. The entire component is orphaned.
+
+**File Stats**:
+- Created: 3 months ago
+- Last modified: 2 months ago
+- Imports: 0
+- Exports**: Component never used anywhere
+
+**Suggested Fix**: Delete the file or check if it was meant to be used
+
+```javascript
+// Delete src/components/unused-component.tsx
+```
+
+### Finding: Unused dependency in package.json
+
+**Location**: `package.json:15`
+**Severity**: P2 (bloat)
+**Confidence**: MEDIUM
+
+**Issue**: `lodash` is in dependencies but never imported in code. Increases bundle size and dependency count.
+
+**Search Results**:
+- Grep for `import.*lodash` - 0 matches
+- Grep for `require.*lodash` - 0 matches
+- Bundle impact: +30KB (uncompressed)
+
+**Suggested Fix**: Remove unused dependency
+
+```bash
+npm uninstall lodash
+```
+
+And remove from package.json:
+```json
+// Before
+"dependencies": {
+  "lodash": "^4.17.0",
+  "axios": "^1.0.0"
+}
+
+// After
+"dependencies": {
+  "axios": "^1.0.0"
+}
+```
+
+### Finding: Dead barrel re-export
+
+**Location**: `src/lib/index.ts:2`
+**Severity**: P1 (misleading API)
+**Confidence**: HIGH
+
+**Issue**: Barrel export `export * from './utils'` re-exports unused functions, making the public API surface larger than necessary.
+
+**Code**:
+```javascript
+// src/lib/index.ts
+export * from './utils';  // Re-exports 3 items, 2 are unused
+```
+
+**Suggested Fix**: Explicit imports only
+
+```javascript
+// src/lib/index.ts
+export { formatDate } from './utils';
+// Remove unused: deprecatedHelper, oldValidation
+```
+
+## Best Practices
+
+- Regularly audit exports (monthly in large projects)
+- Keep barrel exports small and intentional
+- Delete orphaned files immediately
+- Remove unused dependencies after each major refactoring
+- Use `npm ls` and tools like `depcheck` to find unused packages
+- Mark deprecations clearly if keeping for backwards compatibility
+
+## Output Format
+
+For each finding, the agent provides:
+- **Location**: File path and line number (or package.json)
+- **Type**: Unused export, orphaned file, unused dependency, or dead re-export
+- **Severity**: P0 (incorrect API), P1 (misleading), or P2 (dead code)
+- **Confidence**: HIGH, MEDIUM, or LOW
+- **Code/Details**: Exact export or file
+- **Usage**: How many places import it (0 for dead code)
+- **Impact**: Bundle size increase, maintenance burden
+- **Suggested Fix**: How to remove or what to do
+
+## Example Usage
+
+```text
+Task(
+  description: "Find unused exports and orphaned modules",
+  prompt: "Scan src/ for exported functions never imported, orphaned source files, unused node_modules packages, and dead barrel re-exports. Check package.json dependencies for unused packages.",
+  subagent_type: "agileflow-completeness-analyzer-imports"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-state`](/agents/completeness-analyzer-state) - Unused state analyzer
+- [`completeness-analyzer-routes`](/agents/completeness-analyzer-routes) - Dead route analyzer
+- [`completeness-consensus`](/agents/completeness-consensus) - Completeness consensus coordinator

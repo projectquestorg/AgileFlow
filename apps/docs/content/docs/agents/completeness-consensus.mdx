@@ -1,0 +1,105 @@
+---
+title: Completeness Consensus Coordinator
+description: Consensus coordinator for completeness audit - validates findings, votes on confidence, filters by project type, assesses user impact, and generates prioritized Completeness Audit Report
+---
+
+# Completeness Consensus Coordinator
+
+The Completeness Consensus Coordinator collects findings from all completeness analyzers, applies intentionality filtering, votes on confidence, classifies user impact, filters by project type, and produces the final prioritized Completeness Audit Report.
+
+## When to Use
+
+Use this agent when:
+- You need to consolidate findings from multiple completeness analyzers into one report
+- You want to filter out false positives and intentional patterns (test stubs, abstract methods)
+- You need to classify findings by user impact (blocking, confusing, silent data loss)
+- You want to detect project type and exclude irrelevant findings
+- You need a prioritized "Complete or Remove" checklist
+
+## How It Works
+
+1. **Detects project type** - Determines if CLI, API-only, SPA, Library, Full-stack, Mobile, or Microservice
+2. **Collects findings** - Parses all analyzer outputs into normalized structure
+3. **Applies intentionality filtering** - Excludes test stubs, abstract methods, generated code, extension points
+4. **Votes on confidence** - Multiple analyzers flagging same issue = higher confidence
+5. **Classifies user impact** - Categorizes each finding by how it affects end users
+6. **Filters by project type** - Excludes findings irrelevant to the detected project type
+7. **Generates report** - Produces prioritized, actionable Completeness Audit Report
+
+## Consensus Process
+
+### Confidence Voting
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same location or related issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak or circumstantial evidence | Low priority, needs manual review |
+| **INTENTIONAL** | Analyzer flags it but intentionality filter applies | Exclude from report with note |
+
+### User Impact Classification
+
+| Impact | Definition | Examples |
+|--------|-----------|---------|
+| **user-blocking** | User cannot complete a core workflow | Empty form handler, broken checkout, dead navigation |
+| **user-confusing** | UI element exists but does nothing | Button with no action, link to nowhere |
+| **data-silent** | Data loss happens silently | State set but never persisted, API response ignored |
+| **developer-only** | Maintenance burden, no user-visible impact | Dead exports, unused dependencies |
+
+### Priority Matrix
+
+Severity x Confidence determines priority:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|:---------:|:------:|:-----------:|
+| **BROKEN** | Ship Blocker | Fix Before Release | Fix This Sprint |
+| **INCOMPLETE** | Fix Before Release | Fix This Sprint | Backlog |
+| **PLACEHOLDER** | Fix Before Release | Fix This Sprint | Backlog |
+| **DORMANT** | Fix This Sprint | Backlog | Info |
+
+## Project Type Filtering
+
+| Project Type | Irrelevant Findings |
+|-------------|-------------------|
+| **CLI** | Dead UI handlers, dead routes, unused React state |
+| **API-only** | Empty onClick, dead navigation links, unused React state |
+| **SPA** | Orphaned backend endpoints, server-side stubs |
+| **Library** | Dead routes, API mismatches (but dead exports are HIGHER severity) |
+| **Full-stack** | None excluded - all findings potentially relevant |
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Output Format
+
+The final Completeness Audit Report includes:
+
+- **Summary**: Counts by severity with user impact categories
+- **Ship Blockers**: BROKEN + CONFIRMED findings to fix immediately
+- **Fix Before Release**: High-priority incomplete features
+- **Fix This Sprint**: Medium-priority items
+- **Backlog/Info**: Low-priority dormant code
+- **Intentional Exclusions**: Findings excluded with reasoning
+- **Analyzer Agreement Matrix**: Which analyzers flagged which locations
+- **Complete or Remove Checklist**: Actionable items with both remediation paths
+
+## Example Usage
+
+```text
+Task(
+  description: "Run completeness audit consensus",
+  prompt: "Consolidate findings from all 7 completeness analyzers. Detect project type, apply intentionality filtering, vote on confidence, classify user impact, and generate the prioritized Completeness Audit Report.",
+  subagent_type: "agileflow-completeness-consensus"
+)
+```
+
+## Related Agents
+
+- [`completeness-analyzer-api`](/agents/completeness-analyzer-api) - API mismatch analyzer
+- [`completeness-analyzer-conditional`](/agents/completeness-analyzer-conditional) - Dead feature branch analyzer
+- [`completeness-analyzer-handlers`](/agents/completeness-analyzer-handlers) - Dead handler analyzer
+- [`completeness-analyzer-imports`](/agents/completeness-analyzer-imports) - Dead export analyzer
+- [`completeness-analyzer-routes`](/agents/completeness-analyzer-routes) - Dead route analyzer
+- [`completeness-analyzer-state`](/agents/completeness-analyzer-state) - Unused state analyzer
+- [`completeness-analyzer-stubs`](/agents/completeness-analyzer-stubs) - Stub code analyzer
