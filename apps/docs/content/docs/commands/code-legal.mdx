@@ -1,16 +1,16 @@
 ---
-title: /legal:audit
+title: /code:legal
 description: Multi-agent legal risk analysis with consensus voting for finding compliance gaps
 ---
 
-# /legal:audit
+# /code:legal
 
 Deploy multiple specialized legal risk analyzers in parallel to find compliance gaps, then synthesize results through consensus voting into a prioritized Legal Risk Report.
 
 ## Quick Start
 
 ```bash
-/agileflow:legal:audit src/
+/agileflow:code:legal src/
 ```
 
 ## Arguments
@@ -49,19 +49,19 @@ The command deploys specialized legal risk analyzers in parallel to examine your
 
 ```bash
 # Quick scan of app directory (core 5 analyzers)
-/agileflow:legal:audit app/
+/agileflow:code:legal app/
 
 # Deep analysis with all 9 analyzers
-/agileflow:legal:audit . DEPTH=deep
+/agileflow:code:legal . DEPTH=deep
 
 # Focus on specific compliance areas
-/agileflow:legal:audit src/ FOCUS=privacy,a11y
+/agileflow:code:legal src/ FOCUS=privacy,a11y
 
 # Single file AI compliance check
-/agileflow:legal:audit app/page.tsx FOCUS=ai
+/agileflow:code:legal app/page.tsx FOCUS=ai
 
 # Comprehensive audit with all analyzers
-/agileflow:legal:audit . DEPTH=deep FOCUS=all
+/agileflow:code:legal . DEPTH=deep FOCUS=all
 ```
 
 ## Understanding Results
@@ -159,13 +159,13 @@ Use `FOCUS` to analyze specific domains:
 
 ```bash
 # Only privacy and GDPR
-/agileflow:legal:audit app/ FOCUS=privacy
+/agileflow:code:legal app/ FOCUS=privacy
 
 # Multiple specific areas
-/agileflow:legal:audit app/ FOCUS=privacy,a11y,licensing
+/agileflow:code:legal app/ FOCUS=privacy,a11y,licensing
 
 # All analyzers
-/agileflow:legal:audit app/ FOCUS=all
+/agileflow:code:legal app/ FOCUS=all
 ```
 
 Available focus areas:
@@ -200,14 +200,14 @@ Each report includes:
 Run legal audit on pull requests to catch compliance issues before merge:
 
 ```bash
-/agileflow:legal:audit --pr
+/agileflow:code:legal --pr
 ```
 
 ### Before Launch
 Run full deep audit before going live:
 
 ```bash
-/agileflow:legal:audit . DEPTH=deep
+/agileflow:code:legal . DEPTH=deep
 ```
 
 ### Continuous Compliance
@@ -217,7 +217,7 @@ Schedule periodic audits in CI/CD to maintain ongoing compliance.
 
 | Command | Purpose |
 |---------|---------|
-| [`/logic:audit`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
+| [`/code:logic`](/docs/commands/code-logic) | Logic bug analysis (similar multi-agent architecture) |
 | [`/review`](/docs/commands/review) | Code review (includes some compliance checks) |
 | [`/multi-expert`](/docs/commands/multi-expert) | General multi-expert analysis |
 | [`/verify`](/docs/commands/verify) | Run tests and verify quality |

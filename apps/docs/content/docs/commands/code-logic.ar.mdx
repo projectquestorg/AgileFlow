@@ -10,7 +10,7 @@ description: التحليل المنطقي متعدد الوكلاء مع الت
 ## بداية سريعة
 
 ```bash
-/agileflow:logic:audit src/auth/
+/agileflow:code:logic src/auth/
 ```
 
 ## الحجج
@@ -40,13 +40,13 @@ description: التحليل المنطقي متعدد الوكلاء مع الت
 
 ```bash
 # Quick audit of a specific file
-/agileflow:logic:audit src/auth/token.js DEPTH=quick
+/agileflow:code:logic src/auth/token.js DEPTH=quick
 
 # Deep audit focusing on race conditions
-/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+/agileflow:code:logic src/server/ DEPTH=deep FOCUS=race
 
 # Full audit of all types
-/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+/agileflow:code:logic lib/ DEPTH=deep FOCUS=all
 ```
 
 ## الأوامر ذات الصلة

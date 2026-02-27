@@ -275,6 +275,6 @@ Legend: ! = flagged, - = not flagged, X = not applicable to project type
 
 ## Boundary Rules
 
-- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:audit:logic`
-- **Do NOT report security vulnerabilities** (injection, auth bypass) - that's `/agileflow:audit:security`
+- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:code:logic`
+- **Do NOT report security vulnerabilities** (injection, auth bypass) - that's `/agileflow:code:security`
 - **Focus on measurable performance impact** that affects user experience or system resources

@@ -20,7 +20,7 @@ The Legal Consensus Coordinator (AG-LEGAL-CONSENSUS) collects findings from all 
 
 ## When to Use
 
-The Legal Consensus Coordinator is automatically invoked by the `/legal:audit` command after all analyzers complete. You typically don't invoke it directly.
+The Legal Consensus Coordinator is automatically invoked by the `/code:legal` command after all analyzers complete. You typically don't invoke it directly.
 
 ## How It Works
 
@@ -120,4 +120,4 @@ The Legal Consensus Coordinator:
 
 - **Receives from**: All 9 legal analyzers
 - **Produces**: Final Legal Risk Report saved to `docs/08-project/legal-audits/`
-- **Architecture**: Mirrors the logic-consensus pattern used by `/logic:audit`
+- **Architecture**: Mirrors the logic-consensus pattern used by `/code:logic`

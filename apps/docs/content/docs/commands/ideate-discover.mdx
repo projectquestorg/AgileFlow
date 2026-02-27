@@ -1,23 +1,23 @@
 ---
-title: /discovery:new
+title: /ideate:discover
 description: Run structured discovery workflow - brainstorm, research, and generate a Product Brief
 ---
 
-# /discovery:new
+# /ideate:discover
 
 Run a complete structured discovery workflow that orchestrates brainstorming, optional research, and Product Brief synthesis into a single end-to-end process.
 
 ## Quick Start
 
 ```bash
-/agileflow:discovery:new TOPIC="Mobile time tracking app"
+/agileflow:ideate:discover TOPIC="Mobile time tracking app"
 ```
 
 With depth control:
 
 ```bash
-/agileflow:discovery:new TOPIC="Dashboard" DEPTH=quick
-/agileflow:discovery:new TOPIC="Analytics" DEPTH=deep
+/agileflow:ideate:discover TOPIC="Dashboard" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Analytics" DEPTH=deep
 ```
 
 ## Purpose
@@ -25,7 +25,7 @@ With depth control:
 Bridge the gap between "vague idea" and "epic planning". This command validates product viability BEFORE decomposing into stories and epics.
 
 ```
-Vague Idea → /discovery:new → Product Brief → /epic → Stories → Implementation
+Vague Idea → /ideate:discover → Product Brief → /epic → Stories → Implementation
 ```
 
 Instead of jumping straight to coding, invest 5-45 minutes in structured discovery to:
@@ -50,7 +50,7 @@ Instead of jumping straight to coding, invest 5-45 minutes in structured discove
 Best for: Well-understood features or iterations
 
 ```bash
-/agileflow:discovery:new TOPIC="Dark mode toggle" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Dark mode toggle" DEPTH=quick
 ```
 
 **Flow**:
@@ -65,7 +65,7 @@ Best for: Well-understood features or iterations
 Best for: New features or significant changes
 
 ```bash
-/agileflow:discovery:new TOPIC="OAuth integration" DEPTH=guided
+/agileflow:ideate:discover TOPIC="OAuth integration" DEPTH=guided
 ```
 
 **Flow**:
@@ -82,7 +82,7 @@ Best for: New features or significant changes
 Best for: Major products or architectural decisions
 
 ```bash
-/agileflow:discovery:new TOPIC="Microservices migration" DEPTH=deep
+/agileflow:ideate:discover TOPIC="Microservices migration" DEPTH=deep
 ```
 
 **Flow**:
@@ -128,7 +128,7 @@ Delegates to `/research:ask` to investigate:
 
 ### Phase 3: Synthesis
 
-Delegates to `/discovery:brief` to:
+Delegates to `/ideate:brief` to:
 
 1. Cross-reference ideation and research
 2. Identify consensus features (2+ experts agree)
@@ -144,7 +144,7 @@ Delegates to `/discovery:brief` to:
 
 ```bash
 # Run quick discovery
-/agileflow:discovery:new TOPIC="Dark mode support" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Dark mode support" DEPTH=quick
 
 # Review generated brief
 cat docs/08-project/briefs/20250214-dark-mode-support-brief.md
@@ -159,7 +159,7 @@ Takes ~10 minutes. Ideal for well-scoped features.
 
 ```bash
 # Run guided discovery (interactive)
-/agileflow:discovery:new TOPIC="Analytics Dashboard" DEPTH=guided
+/agileflow:ideate:discover TOPIC="Analytics Dashboard" DEPTH=guided
 
 # You'll be asked:
 # 1. What scope of analysis? (security, perf, code, ux, all)
@@ -181,7 +181,7 @@ Takes ~30-45 minutes. Includes research and curation.
 
 ```bash
 # Run deep discovery (comprehensive)
-/agileflow:discovery:new TOPIC="Microservices Replatforming" DEPTH=deep
+/agileflow:ideate:discover TOPIC="Microservices Replatforming" DEPTH=deep
 
 # System runs comprehensive analysis:
 # - Codebase analysis from 6 domains
@@ -281,16 +281,16 @@ Briefs aren't final—refine as you learn:
 
 ```bash
 # Initial discovery
-/discovery:new TOPIC="Mobile app" DEPTH=quick
+/ideate:discover TOPIC="Mobile app" DEPTH=quick
 
 # Gather feedback
 # Review brief and identify gaps
 
 # Refine and regenerate
-/discovery:brief TOPIC="Mobile app" RESEARCH=docs/10-research/user-feedback.md
+/ideate:brief TOPIC="Mobile app" RESEARCH=docs/10-research/user-feedback.md
 
 # Or start fresh with more research
-/discovery:new TOPIC="Mobile app" DEPTH=deep
+/ideate:discover TOPIC="Mobile app" DEPTH=deep
 ```
 
 ## Best Practices
@@ -309,7 +309,7 @@ For routine iterations:
 
 ```bash
 # MVP-ready in 5 minutes
-/agileflow:discovery:new TOPIC="Add export to CSV" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Add export to CSV" DEPTH=quick
 ```
 
 ### 3. Use Guided Mode by Default
@@ -318,7 +318,7 @@ Most features need some validation:
 
 ```bash
 # Recommended: Interactive, balanced
-/agileflow:discovery:new TOPIC="..." DEPTH=guided  # (default)
+/agileflow:ideate:discover TOPIC="..." DEPTH=guided  # (default)
 ```
 
 ### 4. Invest in Deep Mode for Big Decisions
@@ -327,12 +327,12 @@ When considering major architectural changes:
 
 ```bash
 # Comprehensive analysis for 2-3 hours
-/agileflow:discovery:new TOPIC="Rewrite auth system" DEPTH=deep
+/agileflow:ideate:discover TOPIC="Rewrite auth system" DEPTH=deep
 ```
 
 ## Related Commands
 
-- [`/discovery:brief`](/commands/discovery-brief) - Synthesize findings into brief (standalone)
+- [`/ideate:brief`](/commands/ideate-brief) - Synthesize findings into brief (standalone)
 - [`/ideate:new`](/commands/ideate-new) - Generate improvement ideas
 - [`/research:ask`](/commands/research-ask) - Generate research prompts
 - [`/research:import`](/commands/research-import) - Import research findings

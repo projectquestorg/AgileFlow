@@ -1,16 +1,16 @@
 ---
-title: /audit:performance
+title: /code:performance
 description: Multi-agent performance bottleneck analysis with consensus voting for finding optimization opportunities
 ---
 
-# /audit:performance
+# /code:performance
 
 Deploy multiple specialized performance analyzers in parallel to find bottlenecks and optimization opportunities, then synthesize results through consensus voting into a prioritized Performance Audit Report.
 
 ## Quick Start
 
 ```bash
-/agileflow:audit:performance app/
+/agileflow:code:performance app/
 ```
 
 ## Arguments
@@ -48,19 +48,19 @@ The command deploys specialized performance analyzers in parallel to examine you
 
 ```bash
 # Quick scan of app directory (core 5 analyzers)
-/agileflow:audit:performance app/
+/agileflow:code:performance app/
 
 # Deep analysis with all 8 analyzers
-/agileflow:audit:performance . DEPTH=deep
+/agileflow:code:performance . DEPTH=deep
 
 # Focus on specific optimization areas
-/agileflow:audit:performance src/ FOCUS=queries,memory
+/agileflow:code:performance src/ FOCUS=queries,memory
 
 # Single area analysis
-/agileflow:audit:performance app/api/ FOCUS=queries
+/agileflow:code:performance app/api/ FOCUS=queries
 
 # Comprehensive audit with all analyzers
-/agileflow:audit:performance . DEPTH=deep FOCUS=all
+/agileflow:code:performance . DEPTH=deep FOCUS=all
 ```
 
 ## Understanding Results
@@ -158,13 +158,13 @@ Use `FOCUS` to analyze specific performance domains:
 
 ```bash
 # Only query performance
-/agileflow:audit:performance app/ FOCUS=queries
+/agileflow:code:performance app/ FOCUS=queries
 
 # Multiple specific areas
-/agileflow:audit:performance app/ FOCUS=queries,memory,bundle
+/agileflow:code:performance app/ FOCUS=queries,memory,bundle
 
 # All analyzers
-/agileflow:audit:performance app/ FOCUS=all
+/agileflow:code:performance app/ FOCUS=all
 ```
 
 Available focus areas:
@@ -198,14 +198,14 @@ Each report includes:
 Run performance audit on pull requests to catch bottlenecks before merge:
 
 ```bash
-/agileflow:audit:performance --pr
+/agileflow:code:performance --pr
 ```
 
 ### Before Launch
 Run full deep audit before going live:
 
 ```bash
-/agileflow:audit:performance . DEPTH=deep
+/agileflow:code:performance . DEPTH=deep
 ```
 
 ### Continuous Optimization
@@ -215,7 +215,7 @@ Schedule periodic audits in CI/CD to maintain performance standards.
 
 | Command | Purpose |
 |---------|---------|
-| [`/audit:logic`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
-| [`/audit:test`](/docs/commands/test-audit) | Test quality analysis (similar multi-agent architecture) |
+| [`/code:logic`](/docs/commands/code-logic) | Logic bug analysis (similar multi-agent architecture) |
+| [`/code:test`](/docs/commands/code-test) | Test quality analysis (similar multi-agent architecture) |
 | [`/review`](/docs/commands/review) | Code review (includes some performance checks) |
 | [`/verify`](/docs/commands/verify) | Run tests and verify quality |

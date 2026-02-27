@@ -4,7 +4,7 @@ argument-hint: "TOPIC=<text> [IDEATION=<path>] [RESEARCH=<path,...>]"
 compact_context:
   priority: critical
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:discovery:brief - Product Brief synthesis"
+    - "ACTIVE COMMAND: /agileflow:ideate:brief - Product Brief synthesis"
     - "MUST read ideation report and/or research files as input"
     - "MUST generate a Product Brief using the product-brief template structure"
     - "MoSCoW mapping: HIGH-confidence ideas = MUST HAVE, single-expert ideas = SHOULD HAVE"
@@ -20,7 +20,7 @@ compact_context:
     - brief_generated
 ---
 
-# /agileflow:discovery:brief
+# /agileflow:ideate:brief
 
 Synthesize brainstorming results and research findings into a professional Product Brief artifact.
 
@@ -33,14 +33,14 @@ Generate a structured Product Brief that combines:
 - Research data (competitive analysis, market sizing, best practices)
 - Your own knowledge synthesis
 
-This can be used standalone (with existing ideation/research files) or as Phase 3 of the `/agileflow:discovery:new` workflow.
+This can be used standalone (with existing ideation/research files) or as Phase 3 of the `/agileflow:ideate:discover` workflow.
 
 ---
 
 ## STEP 0: Gather Context
 
 ```bash
-node .agileflow/scripts/obtain-context.js discovery:brief
+node .agileflow/scripts/obtain-context.js ideate:brief
 ```
 
 ---
@@ -49,13 +49,13 @@ node .agileflow/scripts/obtain-context.js discovery:brief
 
 ## Compact Summary
 
-**Command**: `/agileflow:discovery:brief` - Generate Product Brief from ideation + research
+**Command**: `/agileflow:ideate:brief` - Generate Product Brief from ideation + research
 
 **Quick Usage**:
 ```
-/agileflow:discovery:brief TOPIC="Mobile time tracking app"
-/agileflow:discovery:brief TOPIC="AI code review" IDEATION=docs/08-project/ideation/ideation-20260213.md
-/agileflow:discovery:brief TOPIC="Dashboard" RESEARCH=docs/10-research/20260213-dashboard-research.md
+/agileflow:ideate:brief TOPIC="Mobile time tracking app"
+/agileflow:ideate:brief TOPIC="AI code review" IDEATION=docs/08-project/ideation/ideation-20260213.md
+/agileflow:ideate:brief TOPIC="Dashboard" RESEARCH=docs/10-research/20260213-dashboard-research.md
 ```
 
 **What It Does**: Read ideation + research inputs -> Synthesize into Product Brief -> Save to docs/08-project/briefs/
@@ -307,19 +307,19 @@ Summary:
 
 ### Standalone (no prior ideation)
 ```
-/agileflow:discovery:brief TOPIC="Real-time collaboration for docs"
+/agileflow:ideate:brief TOPIC="Real-time collaboration for docs"
 ```
 Generates a brief from internal knowledge + topic analysis.
 
 ### With existing ideation
 ```
-/agileflow:discovery:brief TOPIC="API rate limiter" IDEATION=docs/08-project/ideation/ideation-20260213-api-rate-limiter.md
+/agileflow:ideate:brief TOPIC="API rate limiter" IDEATION=docs/08-project/ideation/ideation-20260213-api-rate-limiter.md
 ```
 Reads the ideation report and synthesizes into a brief.
 
 ### With ideation + research
 ```
-/agileflow:discovery:brief TOPIC="Mobile app" IDEATION=docs/08-project/ideation/ideation-20260213-mobile-app.md RESEARCH=docs/10-research/20260213-mobile-market-research.md,docs/10-research/20260213-mobile-competitors.md
+/agileflow:ideate:brief TOPIC="Mobile app" IDEATION=docs/08-project/ideation/ideation-20260213-mobile-app.md RESEARCH=docs/10-research/20260213-mobile-market-research.md,docs/10-research/20260213-mobile-competitors.md
 ```
 Full synthesis from both sources.
 
@@ -355,7 +355,7 @@ What would you like to do next?
 
 ## Related Commands
 
-- `/agileflow:discovery:new` - Full discovery workflow (brainstorm + research + brief)
+- `/agileflow:ideate:discover` - Full discovery workflow (brainstorm + research + brief)
 - `/agileflow:ideate:new` - Generate ideation report
 - `/agileflow:research:ask` - Generate research prompts
 - `/agileflow:research:synthesize` - Synthesize multiple research files

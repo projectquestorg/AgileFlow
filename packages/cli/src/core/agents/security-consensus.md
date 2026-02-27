@@ -271,6 +271,6 @@ Legend: ! = flagged, - = not flagged, X = explicitly not applicable
 
 ## Boundary Rules
 
-- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:audit:logic`
-- **Do NOT report legal compliance** (GDPR, PCI-DSS, breach notification) - that's `/agileflow:audit:legal`
+- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:code:logic`
+- **Do NOT report legal compliance** (GDPR, PCI-DSS, breach notification) - that's `/agileflow:code:legal`
 - **Focus on exploitable technical vulnerabilities** that an attacker could use

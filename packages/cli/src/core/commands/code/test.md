@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=coverage|fragility|mo
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:audit:test - Multi-agent test quality analysis"
+    - "ACTIVE COMMAND: /agileflow:code:test - Multi-agent test quality analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
@@ -18,7 +18,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:audit:test
+# /agileflow:code:test
 
 Deploy multiple specialized test quality analyzers in parallel to find weaknesses in the test suite, then synthesize results through consensus voting into a prioritized Test Quality Audit Report.
 
@@ -27,11 +27,11 @@ Deploy multiple specialized test quality analyzers in parallel to find weaknesse
 ## Quick Reference
 
 ```
-/agileflow:audit:test app/                                # Analyze app tests (quick, core 5 analyzers)
-/agileflow:audit:test . DEPTH=deep                        # Deep analysis - all 8 analyzers
-/agileflow:audit:test src/ FOCUS=coverage,mocking          # Focus on specific areas
-/agileflow:audit:test . DEPTH=deep FOCUS=all               # Comprehensive full audit
-/agileflow:audit:test __tests__/ FOCUS=fragility            # Check test fragility specifically
+/agileflow:code:test app/                                # Analyze app tests (quick, core 5 analyzers)
+/agileflow:code:test . DEPTH=deep                        # Deep analysis - all 8 analyzers
+/agileflow:code:test src/ FOCUS=coverage,mocking          # Focus on specific areas
+/agileflow:code:test . DEPTH=deep FOCUS=all               # Comprehensive full audit
+/agileflow:code:test __tests__/ FOCUS=fragility            # Check test fragility specifically
 ```
 
 ---
@@ -40,7 +40,7 @@ Deploy multiple specialized test quality analyzers in parallel to find weaknesse
 
 ```
 +-------------------------------------------------------------+
-|                    /agileflow:audit:test                      |
+|                    /agileflow:code:test                      |
 |                                                               |
 |  1. Parse arguments (target, depth, focus)                    |
 |  2. Deploy analyzers IN PARALLEL                              |
@@ -368,13 +368,13 @@ FIX THIS SPRINT
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:audit:test` - Multi-agent test quality analysis with consensus
+**Command**: `/agileflow:code:test` - Multi-agent test quality analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:audit:test app/                        # Quick scan (core 5 analyzers)
-/agileflow:audit:test . DEPTH=deep                # All 8 analyzers
-/agileflow:audit:test src/ FOCUS=coverage,mocking  # Specific areas
+/agileflow:code:test app/                        # Quick scan (core 5 analyzers)
+/agileflow:code:test . DEPTH=deep                # All 8 analyzers
+/agileflow:code:test src/ FOCUS=coverage,mocking  # Specific areas
 ```
 
 **What It Does**: Deploy test quality analyzers in parallel -> Each finds different test weakness classes -> Consensus coordinator validates, filters by project type, assesses false confidence risk -> Actionable Test Quality Audit Report
@@ -409,7 +409,7 @@ FIX THIS SPRINT
 
 ## Boundary Rules (No Overlap)
 
-- **vs audit:logic**: No logic bugs in application code — only test quality
+- **vs code:logic**: No logic bugs in application code — only test quality
 - **vs qa agent**: The `qa.md` agent is a team member for story work. This is an on-demand test analysis tool
 
 ---
@@ -435,8 +435,8 @@ Add error handling tests before merging? [Y/n]
 
 ## Related Commands
 
-- `/agileflow:audit:logic` - Logic bug analysis (similar architecture)
-- `/agileflow:audit:security` - Security vulnerability analysis (similar architecture)
-- `/agileflow:audit:performance` - Performance bottleneck analysis (similar architecture)
-- `/agileflow:audit:legal` - Legal compliance analysis (similar architecture)
+- `/agileflow:code:logic` - Logic bug analysis (similar architecture)
+- `/agileflow:code:security` - Security vulnerability analysis (similar architecture)
+- `/agileflow:code:performance` - Performance bottleneck analysis (similar architecture)
+- `/agileflow:code:legal` - Legal compliance analysis (similar architecture)
 - `/agileflow:verify` - Run tests

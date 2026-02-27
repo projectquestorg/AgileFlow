@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=injection|auth|authz|
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:audit:security - Multi-agent security vulnerability analysis"
+    - "ACTIVE COMMAND: /agileflow:code:security - Multi-agent security vulnerability analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
@@ -18,7 +18,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:audit:security
+# /agileflow:code:security
 
 Deploy multiple specialized security vulnerability analyzers in parallel to find exploitable weaknesses, then synthesize results through consensus voting into a prioritized Security Audit Report.
 
@@ -27,11 +27,11 @@ Deploy multiple specialized security vulnerability analyzers in parallel to find
 ## Quick Reference
 
 ```
-/agileflow:audit:security app/                                # Analyze app directory (quick, core 5 analyzers)
-/agileflow:audit:security . DEPTH=deep                        # Deep analysis - all 8 analyzers
-/agileflow:audit:security src/ FOCUS=injection,auth            # Focus on specific areas
-/agileflow:audit:security . DEPTH=deep FOCUS=all               # Comprehensive full audit
-/agileflow:audit:security app/api/ FOCUS=api                   # Check API routes specifically
+/agileflow:code:security app/                                # Analyze app directory (quick, core 5 analyzers)
+/agileflow:code:security . DEPTH=deep                        # Deep analysis - all 8 analyzers
+/agileflow:code:security src/ FOCUS=injection,auth            # Focus on specific areas
+/agileflow:code:security . DEPTH=deep FOCUS=all               # Comprehensive full audit
+/agileflow:code:security app/api/ FOCUS=api                   # Check API routes specifically
 ```
 
 ---
@@ -40,7 +40,7 @@ Deploy multiple specialized security vulnerability analyzers in parallel to find
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 /agileflow:audit:security                    │
+│                 /agileflow:code:security                    │
 │                                                              │
 │  1. Parse arguments (target, depth, focus)                   │
 │  2. Deploy analyzers IN PARALLEL                             │
@@ -368,13 +368,13 @@ Total: 7 findings (2 false positives excluded)
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:audit:security` - Multi-agent security vulnerability analysis with consensus
+**Command**: `/agileflow:code:security` - Multi-agent security vulnerability analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:audit:security app/                        # Quick scan (core 5 analyzers)
-/agileflow:audit:security . DEPTH=deep                # All 8 analyzers
-/agileflow:audit:security src/ FOCUS=injection,auth    # Specific areas
+/agileflow:code:security app/                        # Quick scan (core 5 analyzers)
+/agileflow:code:security . DEPTH=deep                # All 8 analyzers
+/agileflow:code:security src/ FOCUS=injection,auth    # Specific areas
 ```
 
 **What It Does**: Deploy security analyzers in parallel -> Each finds different vulnerability classes -> Consensus coordinator validates, filters by project type, maps to OWASP/CWE -> Actionable Security Audit Report
@@ -409,8 +409,8 @@ Total: 7 findings (2 false positives excluded)
 
 ## Boundary Rules (No Overlap)
 
-- **vs audit:logic**: No race conditions, type bugs, control flow, edge cases - those are logic domain
-- **vs audit:legal**: No breach notification, PCI-DSS compliance, encryption requirements, negligence liability - those are legal domain
+- **vs code:logic**: No race conditions, type bugs, control flow, edge cases - those are logic domain
+- **vs code:legal**: No breach notification, PCI-DSS compliance, encryption requirements, negligence liability - those are legal domain
 - **vs security agent**: The `security.md` agent is a team member for story work. This is an on-demand analysis tool
 
 ---
@@ -436,8 +436,8 @@ Fix before merging? [Y/n]
 
 ## Related Commands
 
-- `/agileflow:audit:logic` - Logic bug analysis (similar architecture)
-- `/agileflow:audit:legal` - Legal compliance analysis (similar architecture)
+- `/agileflow:code:logic` - Logic bug analysis (similar architecture)
+- `/agileflow:code:legal` - Legal compliance analysis (similar architecture)
 - `/agileflow:review` - Code review (includes some security checks)
 - `/agileflow:multi-expert` - General multi-expert analysis
 - `/agileflow:verify` - Run tests

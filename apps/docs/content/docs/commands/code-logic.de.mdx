@@ -1,16 +1,16 @@
 ---
-title: "/logic:audit"
+title: "/code:logic"
 description: Multi-Agent-Logikanalyse mit Konsensabstimmung zum Auffinden von Logikfehlern
 ---
 
-# /logic:audit
+# /code:logic
 
 Setzen Sie mehrere spezialisierte Logikanalysatoren parallel ein, um Fehler, Grenzfälle, Race Conditions und Typsicherheitsprobleme in Ihrem Code zu finden.
 
 ## Schnellstart
 
 ```bash
-/agileflow:logic:audit src/auth/
+/agileflow:code:logic src/auth/
 ```
 
 ## Argumente
@@ -40,13 +40,13 @@ Setzen Sie mehrere spezialisierte Logikanalysatoren parallel ein, um Fehler, Gre
 
 ```bash
 # Quick audit of a specific file
-/agileflow:logic:audit src/auth/token.js DEPTH=quick
+/agileflow:code:logic src/auth/token.js DEPTH=quick
 
 # Deep audit focusing on race conditions
-/agileflow:logic:audit src/server/ DEPTH=deep FOCUS=race
+/agileflow:code:logic src/server/ DEPTH=deep FOCUS=race
 
 # Full audit of all types
-/agileflow:logic:audit lib/ DEPTH=deep FOCUS=all
+/agileflow:code:logic lib/ DEPTH=deep FOCUS=all
 ```
 
 ## Verwandte Befehle

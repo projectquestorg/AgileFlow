@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=queries|rendering|mem
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:audit:performance - Multi-agent performance bottleneck analysis"
+    - "ACTIVE COMMAND: /agileflow:code:performance - Multi-agent performance bottleneck analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
@@ -18,7 +18,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:audit:performance
+# /agileflow:code:performance
 
 Deploy multiple specialized performance analyzers in parallel to find bottlenecks and optimization opportunities, then synthesize results through consensus voting into a prioritized Performance Audit Report.
 
@@ -27,11 +27,11 @@ Deploy multiple specialized performance analyzers in parallel to find bottleneck
 ## Quick Reference
 
 ```
-/agileflow:audit:performance app/                                # Analyze app directory (quick, core 5 analyzers)
-/agileflow:audit:performance . DEPTH=deep                        # Deep analysis - all 8 analyzers
-/agileflow:audit:performance src/ FOCUS=queries,memory            # Focus on specific areas
-/agileflow:audit:performance . DEPTH=deep FOCUS=all               # Comprehensive full audit
-/agileflow:audit:performance app/api/ FOCUS=queries               # Check API queries specifically
+/agileflow:code:performance app/                                # Analyze app directory (quick, core 5 analyzers)
+/agileflow:code:performance . DEPTH=deep                        # Deep analysis - all 8 analyzers
+/agileflow:code:performance src/ FOCUS=queries,memory            # Focus on specific areas
+/agileflow:code:performance . DEPTH=deep FOCUS=all               # Comprehensive full audit
+/agileflow:code:performance app/api/ FOCUS=queries               # Check API queries specifically
 ```
 
 ---
@@ -40,7 +40,7 @@ Deploy multiple specialized performance analyzers in parallel to find bottleneck
 
 ```
 +-------------------------------------------------------------+
-|                 /agileflow:audit:performance                  |
+|                 /agileflow:code:performance                  |
 |                                                               |
 |  1. Parse arguments (target, depth, focus)                    |
 |  2. Deploy analyzers IN PARALLEL                              |
@@ -368,13 +368,13 @@ FIX THIS SPRINT
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:audit:performance` - Multi-agent performance bottleneck analysis with consensus
+**Command**: `/agileflow:code:performance` - Multi-agent performance bottleneck analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:audit:performance app/                        # Quick scan (core 5 analyzers)
-/agileflow:audit:performance . DEPTH=deep                # All 8 analyzers
-/agileflow:audit:performance src/ FOCUS=queries,memory    # Specific areas
+/agileflow:code:performance app/                        # Quick scan (core 5 analyzers)
+/agileflow:code:performance . DEPTH=deep                # All 8 analyzers
+/agileflow:code:performance src/ FOCUS=queries,memory    # Specific areas
 ```
 
 **What It Does**: Deploy performance analyzers in parallel -> Each finds different bottleneck classes -> Consensus coordinator validates, filters by project type, estimates impact -> Actionable Performance Audit Report
@@ -409,8 +409,8 @@ FIX THIS SPRINT
 
 ## Boundary Rules (No Overlap)
 
-- **vs audit:logic**: No correctness bugs — only performance implications
-- **vs audit:security**: No vulnerability analysis — only efficiency
+- **vs code:logic**: No correctness bugs — only performance implications
+- **vs code:security**: No vulnerability analysis — only efficiency
 - **vs performance agent**: The `performance.md` agent is a team member for story work. This is an on-demand analysis tool
 
 ---
@@ -436,8 +436,8 @@ Fix before merging? [Y/n]
 
 ## Related Commands
 
-- `/agileflow:audit:logic` - Logic bug analysis (similar architecture)
-- `/agileflow:audit:security` - Security vulnerability analysis (similar architecture)
-- `/agileflow:audit:legal` - Legal compliance analysis (similar architecture)
+- `/agileflow:code:logic` - Logic bug analysis (similar architecture)
+- `/agileflow:code:security` - Security vulnerability analysis (similar architecture)
+- `/agileflow:code:legal` - Legal compliance analysis (similar architecture)
 - `/agileflow:multi-expert` - General multi-expert analysis
 - `/agileflow:verify` - Run tests

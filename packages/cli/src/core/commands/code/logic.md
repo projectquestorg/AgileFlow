@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=edge|invariant|flow|t
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:audit:logic - Multi-agent logic analysis"
+    - "ACTIVE COMMAND: /agileflow:code:logic - Multi-agent logic analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
@@ -18,7 +18,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:audit:logic
+# /agileflow:code:logic
 
 Deploy multiple specialized logic analyzers in parallel to find bugs, then synthesize results through consensus voting.
 
@@ -27,10 +27,10 @@ Deploy multiple specialized logic analyzers in parallel to find bugs, then synth
 ## Quick Reference
 
 ```
-/agileflow:audit:logic src/utils.js                    # Analyze single file
-/agileflow:audit:logic src/ DEPTH=deep                 # Deep analysis of directory
-/agileflow:audit:logic . FOCUS=race,type               # Focus on race conditions and type issues
-/agileflow:audit:logic src/cart.js DEPTH=quick         # Quick scan of specific file
+/agileflow:code:logic src/utils.js                    # Analyze single file
+/agileflow:code:logic src/ DEPTH=deep                 # Deep analysis of directory
+/agileflow:code:logic . FOCUS=race,type               # Focus on race conditions and type issues
+/agileflow:code:logic src/cart.js DEPTH=quick         # Quick scan of specific file
 ```
 
 ---
@@ -39,7 +39,7 @@ Deploy multiple specialized logic analyzers in parallel to find bugs, then synth
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 /agileflow:audit:logic                       │
+│                 /agileflow:code:logic                       │
 │                                                              │
 │  1. Parse arguments (target, depth, focus)                   │
 │  2. Deploy 5 analyzers IN PARALLEL                           │
@@ -307,13 +307,13 @@ Total: 7 findings (2 false positives excluded)
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:audit:logic` - Multi-agent logic analysis with consensus
+**Command**: `/agileflow:code:logic` - Multi-agent logic analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:audit:logic src/utils.js                # Single file
-/agileflow:audit:logic src/ DEPTH=deep            # Deep analysis
-/agileflow:audit:logic . FOCUS=race,type          # Specific analyzers
+/agileflow:code:logic src/utils.js                # Single file
+/agileflow:code:logic src/ DEPTH=deep            # Deep analysis
+/agileflow:code:logic . FOCUS=race,type          # Specific analyzers
 ```
 
 **What It Does**: Deploy 5 logic analyzers in parallel → Each finds different bug classes → Consensus coordinator validates and prioritizes → Actionable report
@@ -354,7 +354,7 @@ Proceed with tests? [Y/n]
 
 To integrate with babysit, add to implementation workflow:
 1. Complete implementation
-2. Run `/agileflow:audit:logic {changed_files} DEPTH=quick`
+2. Run `/agileflow:code:logic {changed_files} DEPTH=quick`
 3. If critical issues → block, show findings
 4. If no critical → proceed to tests
 

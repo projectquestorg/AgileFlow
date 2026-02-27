@@ -1,9 +1,9 @@
 ---
-title: /discovery
-description: Structured discovery workflow for product validation and planning
+title: /ideate (Discovery)
+description: Structured ideation and discovery workflow for product validation and planning
 ---
 
-# /discovery
+# /ideate
 
 Comprehensive discovery system for validating product ideas, gathering requirements, and generating professional Product Briefs before implementation.
 
@@ -12,8 +12,8 @@ Comprehensive discovery system for validating product ideas, gathering requireme
 The discovery system provides two specialized commands:
 
 ```bash
-/discovery:new TOPIC="your product idea"                    # Complete discovery workflow
-/discovery:brief TOPIC="..." IDEATION=... RESEARCH=...      # Generate brief from existing files
+/ideate:discover TOPIC="your product idea"                    # Complete discovery workflow
+/ideate:brief TOPIC="..." IDEATION=... RESEARCH=...      # Generate brief from existing files
 ```
 
 ## Overview
@@ -36,7 +36,7 @@ Discovery is essential for:
 
 ## Subcommands
 
-### /discovery:new - Complete Discovery Workflow
+### /ideate:discover - Complete Discovery Workflow
 
 Run a full structured discovery process that orchestrates brainstorming, optional research, and Product Brief generation.
 
@@ -44,7 +44,7 @@ Run a full structured discovery process that orchestrates brainstorming, optiona
 
 **Command**:
 ```bash
-/discovery:new TOPIC="your product" [DEPTH=quick|guided|deep]
+/ideate:discover TOPIC="your product" [DEPTH=quick|guided|deep]
 ```
 
 **Parameters**:
@@ -68,11 +68,11 @@ Run a full structured discovery process that orchestrates brainstorming, optiona
 - `DEPTH=guided` - New features with some uncertainty (30-45 min) - **Recommended**
 - `DEPTH=deep` - Major products or architectural decisions (2+ hours)
 
-**Learn more**: [/discovery:new](/commands/discovery-new)
+**Learn more**: [/ideate:discover](/commands/ideate-new)
 
 ---
 
-### /discovery:brief - Synthesize Findings into Brief
+### /ideate:brief - Synthesize Findings into Brief
 
 Generate a Product Brief from existing ideation and research files, or search for recent files automatically.
 
@@ -80,7 +80,7 @@ Generate a Product Brief from existing ideation and research files, or search fo
 
 **Command**:
 ```bash
-/discovery:brief TOPIC="your product" [IDEATION=path] [RESEARCH=paths]
+/ideate:brief TOPIC="your product" [IDEATION=path] [RESEARCH=paths]
 ```
 
 **Parameters**:
@@ -106,7 +106,7 @@ Generate a Product Brief from existing ideation and research files, or search fo
 - You want to combine ideation from multiple expert sessions
 - You want to refine/iterate on a brief with new research
 
-**Learn more**: [/discovery:brief](/commands/discovery-brief)
+**Learn more**: [/ideate:brief](/commands/ideate-brief)
 
 ---
 
@@ -114,7 +114,7 @@ Generate a Product Brief from existing ideation and research files, or search fo
 
 ```
 Step 1: Discover
-  /discovery:new TOPIC="Mobile Time Tracking App" DEPTH=guided
+  /ideate:discover TOPIC="Mobile Time Tracking App" DEPTH=guided
   ↓
   Output: docs/08-project/briefs/20250214-mobile-time-tracking-app-brief.md
 
@@ -171,7 +171,7 @@ Investigate external context:
 
 Use `/research:ask` to generate detailed research prompts for external AI tools.
 
-### Phase 3: Synthesis (via /discovery:brief)
+### Phase 3: Synthesis (via /ideate:brief)
 
 Convert findings into Product Brief:
 
@@ -211,7 +211,7 @@ docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md
 **When to use**: Well-scoped features, iterations, minor changes
 
 ```bash
-/discovery:new TOPIC="Add dark mode toggle" DEPTH=quick
+/ideate:discover TOPIC="Add dark mode toggle" DEPTH=quick
 ```
 
 **Process**:
@@ -230,7 +230,7 @@ docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md
 **When to use**: New features, moderate uncertainty, standard development
 
 ```bash
-/discovery:new TOPIC="OAuth integration" DEPTH=guided
+/ideate:discover TOPIC="OAuth integration" DEPTH=guided
 ```
 
 **Process**:
@@ -251,7 +251,7 @@ docs/08-project/briefs/{YYYYMMDD}-{topic-slug}-brief.md
 **When to use**: Major products, architectural changes, significant investment
 
 ```bash
-/discovery:new TOPIC="Microservices migration" DEPTH=deep
+/ideate:discover TOPIC="Microservices migration" DEPTH=deep
 ```
 
 **Process**:
@@ -272,13 +272,13 @@ Balance thoroughness with speed:
 
 ```bash
 # Quick for routine changes
-/discovery:new TOPIC="Fix login bug" DEPTH=quick
+/ideate:discover TOPIC="Fix login bug" DEPTH=quick
 
 # Guided for new features (recommended)
-/discovery:new TOPIC="Export to PDF" DEPTH=guided
+/ideate:discover TOPIC="Export to PDF" DEPTH=guided
 
 # Deep for major decisions
-/discovery:new TOPIC="Database migration to PostgreSQL" DEPTH=deep
+/ideate:discover TOPIC="Database migration to PostgreSQL" DEPTH=deep
 ```
 
 ### 2. Include Research for Validation
@@ -286,7 +286,7 @@ Balance thoroughness with speed:
 Combine brainstorming with research:
 
 ```bash
-/discovery:new TOPIC="Mobile app" DEPTH=guided
+/ideate:discover TOPIC="Mobile app" DEPTH=guided
 # System will ask if you want to research
 # Say yes to validate ideas
 ```
@@ -297,13 +297,13 @@ Briefs improve with feedback:
 
 ```bash
 # Initial discovery
-/discovery:new TOPIC="Feature X" DEPTH=quick
+/ideate:discover TOPIC="Feature X" DEPTH=quick
 
 # Get feedback from team
 # Additional research
 
 # Refine brief
-/discovery:brief TOPIC="Feature X" RESEARCH=docs/10-research/feedback.md
+/ideate:brief TOPIC="Feature X" RESEARCH=docs/10-research/feedback.md
 ```
 
 ### 4. Use Brief as Epic Reference

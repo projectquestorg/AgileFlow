@@ -4,11 +4,11 @@ argument-hint: "TOPIC=<text> [DEPTH=quick|guided|deep]"
 compact_context:
   priority: critical
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:discovery:new - Discovery workflow orchestrator"
+    - "ACTIVE COMMAND: /agileflow:ideate:discover - Discovery workflow orchestrator"
     - "DEPTH modes: quick (skip research, auto-generate), guided (interactive, optional research), deep (comprehensive research + curation)"
     - "Phase 1: Brainstorm via /agileflow:ideate:new SCOPE=all"
     - "Phase 2: Research via /agileflow:research:ask (optional in quick mode)"
-    - "Phase 3: Generate Product Brief via /agileflow:discovery:brief"
+    - "Phase 3: Generate Product Brief via /agileflow:ideate:brief"
     - "Output: docs/08-project/briefs/{date}-{topic-slug}-brief.md"
     - "MUST parse TOPIC (required) and DEPTH (default: guided)"
     - "After brief generation, offer: create epic, refine brief, or done"
@@ -22,7 +22,7 @@ compact_context:
     - research_files
 ---
 
-# /agileflow:discovery:new
+# /agileflow:ideate:discover
 
 Run a structured discovery workflow that produces a professional Product Brief. Chains brainstorming, optional research, and synthesis into a single orchestrated flow.
 
@@ -33,7 +33,7 @@ Run a structured discovery workflow that produces a professional Product Brief. 
 Bridge the gap between "vague idea" and "epic planning". This command validates product viability BEFORE decomposing into stories/epics.
 
 ```
-Vague Idea --> /discovery:new --> Product Brief --> /epic --> Stories --> Implementation
+Vague Idea --> /ideate:discover --> Product Brief --> /epic --> Stories --> Implementation
 ```
 
 ---
@@ -41,7 +41,7 @@ Vague Idea --> /discovery:new --> Product Brief --> /epic --> Stories --> Implem
 ## STEP 0: Gather Context
 
 ```bash
-node .agileflow/scripts/obtain-context.js discovery
+node .agileflow/scripts/obtain-context.js ideate:discover
 ```
 
 ---
@@ -50,19 +50,19 @@ node .agileflow/scripts/obtain-context.js discovery
 
 ## Compact Summary
 
-**Command**: `/agileflow:discovery:new` - Orchestrate brainstorm + research + Product Brief generation
+**Command**: `/agileflow:ideate:discover` - Orchestrate brainstorm + research + Product Brief generation
 
 **Quick Usage**:
 ```
-/agileflow:discovery:new TOPIC="Mobile time tracking app"
-/agileflow:discovery:new TOPIC="AI code review tool" DEPTH=deep
-/agileflow:discovery:new TOPIC="Internal dashboard" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Mobile time tracking app"
+/agileflow:ideate:discover TOPIC="AI code review tool" DEPTH=deep
+/agileflow:ideate:discover TOPIC="Internal dashboard" DEPTH=quick
 ```
 
 **Phases**:
 1. Brainstorm (delegates to `/agileflow:ideate:new`)
 2. Research (delegates to `/agileflow:research:ask` - optional in quick mode)
-3. Brief Generation (delegates to `/agileflow:discovery:brief`)
+3. Brief Generation (delegates to `/agileflow:ideate:brief`)
 
 **Depth Modes**:
 - `quick`: Auto-run brainstorm, skip research, generate brief immediately (~5-10 min)
@@ -87,7 +87,7 @@ node .agileflow/scripts/obtain-context.js discovery
 ## How It Works
 
 ```
-USER: /agileflow:discovery:new TOPIC="..." DEPTH=guided
+USER: /agileflow:ideate:discover TOPIC="..." DEPTH=guided
                     |
                     v
     +-------------------------------+
@@ -114,7 +114,7 @@ USER: /agileflow:discovery:new TOPIC="..." DEPTH=guided
                     v
     +-------------------------------+
     |   STEP 4: GENERATE BRIEF      |
-    |   Delegate to discovery:brief |
+    |   Delegate to ideate:brief    |
     |   Synthesize all inputs       |
     |   Output: Product Brief       |
     +-------------------------------+
@@ -386,7 +386,7 @@ What would you like to do next?
 
 ## Related Commands
 
-- `/agileflow:discovery:brief` - Generate a Product Brief from existing ideation + research
+- `/agileflow:ideate:brief` - Generate a Product Brief from existing ideation + research
 - `/agileflow:ideate:new` - Run multi-expert brainstorming
 - `/agileflow:research:ask` - Generate external research prompts
 - `/agileflow:research:import` - Import research results

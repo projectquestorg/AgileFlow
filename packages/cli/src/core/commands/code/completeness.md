@@ -4,7 +4,7 @@ argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=handlers|routes|api|s
 compact_context:
   priority: high
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:audit:completeness - Multi-agent forgotten features analysis"
+    - "ACTIVE COMMAND: /agileflow:code:completeness - Multi-agent forgotten features analysis"
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Severity scale: BROKEN > INCOMPLETE > PLACEHOLDER > DORMANT"
@@ -19,7 +19,7 @@ compact_context:
     - findings_collected
 ---
 
-# /agileflow:audit:completeness
+# /agileflow:code:completeness
 
 Deploy multiple specialized completeness analyzers in parallel to find forgotten features, dead handlers, stub code, and incomplete implementations, then synthesize results through consensus voting into a prioritized Completeness Audit Report.
 
@@ -28,11 +28,11 @@ Deploy multiple specialized completeness analyzers in parallel to find forgotten
 ## Quick Reference
 
 ```
-/agileflow:audit:completeness app/                                    # Analyze app directory (quick, core 5 analyzers)
-/agileflow:audit:completeness . DEPTH=deep                            # Deep analysis - all 7 analyzers
-/agileflow:audit:completeness src/ FOCUS=handlers,routes               # Focus on specific areas
-/agileflow:audit:completeness . DEPTH=deep FOCUS=all                   # Comprehensive full audit
-/agileflow:audit:completeness components/ FOCUS=stubs,state            # Check stubs and unused state
+/agileflow:code:completeness app/                                    # Analyze app directory (quick, core 5 analyzers)
+/agileflow:code:completeness . DEPTH=deep                            # Deep analysis - all 7 analyzers
+/agileflow:code:completeness src/ FOCUS=handlers,routes               # Focus on specific areas
+/agileflow:code:completeness . DEPTH=deep FOCUS=all                   # Comprehensive full audit
+/agileflow:code:completeness components/ FOCUS=stubs,state            # Check stubs and unused state
 ```
 
 ---
@@ -41,7 +41,7 @@ Deploy multiple specialized completeness analyzers in parallel to find forgotten
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              /agileflow:audit:completeness                    │
+│              /agileflow:code:completeness                    │
 │                                                              │
 │  1. Parse arguments (target, depth, focus)                   │
 │  2. Deploy analyzers IN PARALLEL                             │
@@ -377,13 +377,13 @@ Total: 10 findings (3 intentional exclusions)
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:audit:completeness` - Multi-agent forgotten features analysis with consensus
+**Command**: `/agileflow:code:completeness` - Multi-agent forgotten features analysis with consensus
 
 **Quick Usage**:
 ```
-/agileflow:audit:completeness app/                           # Quick scan (core 5 analyzers)
-/agileflow:audit:completeness . DEPTH=deep                   # All 7 analyzers
-/agileflow:audit:completeness src/ FOCUS=handlers,routes      # Specific areas
+/agileflow:code:completeness app/                           # Quick scan (core 5 analyzers)
+/agileflow:code:completeness . DEPTH=deep                   # All 7 analyzers
+/agileflow:code:completeness src/ FOCUS=handlers,routes      # Specific areas
 ```
 
 **What It Does**: Deploy completeness analyzers in parallel -> Each finds different incomplete implementation classes -> Consensus coordinator validates, filters by project type, classifies user impact -> Actionable Completeness Audit Report
@@ -417,11 +417,11 @@ Total: 10 findings (3 intentional exclusions)
 
 ## Boundary Rules (No Overlap)
 
-- **vs audit:security**: No vulnerabilities, XSS, injection, auth bypass - those are security domain
-- **vs audit:logic**: No race conditions, type bugs, edge cases, control flow - those are logic domain
-- **vs audit:performance**: No slow queries, memory leaks, bundle size - those are performance domain
-- **vs audit:test**: No missing tests, weak assertions, test patterns - those are test domain
-- **vs audit:legal**: No compliance, GDPR, licensing - those are legal domain
+- **vs code:security**: No vulnerabilities, XSS, injection, auth bypass - those are security domain
+- **vs code:logic**: No race conditions, type bugs, edge cases, control flow - those are logic domain
+- **vs code:performance**: No slow queries, memory leaks, bundle size - those are performance domain
+- **vs code:test**: No missing tests, weak assertions, test patterns - those are test domain
+- **vs code:legal**: No compliance, GDPR, licensing - those are legal domain
 - **This audit asks**: Are features fully wired up? Do buttons work? Is stub code shipped?
 
 ---
@@ -447,10 +447,10 @@ Fix before merging? [Y/n]
 
 ## Related Commands
 
-- `/agileflow:audit:security` - Security vulnerability analysis (similar architecture)
-- `/agileflow:audit:logic` - Logic bug analysis (similar architecture)
-- `/agileflow:audit:performance` - Performance bottleneck analysis (similar architecture)
-- `/agileflow:audit:test` - Test quality analysis (similar architecture)
-- `/agileflow:audit:legal` - Legal compliance analysis (similar architecture)
+- `/agileflow:code:security` - Security vulnerability analysis (similar architecture)
+- `/agileflow:code:logic` - Logic bug analysis (similar architecture)
+- `/agileflow:code:performance` - Performance bottleneck analysis (similar architecture)
+- `/agileflow:code:test` - Test quality analysis (similar architecture)
+- `/agileflow:code:legal` - Legal compliance analysis (similar architecture)
 - `/agileflow:review` - Code review (includes some completeness checks)
 - `/agileflow:multi-expert` - General multi-expert analysis

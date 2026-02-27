@@ -1,28 +1,28 @@
 ---
-title: /discovery:brief
+title: /ideate:brief
 description: Synthesize ideation and research findings into a structured Product Brief
 ---
 
-# /discovery:brief
+# /ideate:brief
 
 Synthesize brainstorming results and research findings into a professional Product Brief artifact.
 
 ## Quick Start
 
 ```bash
-/agileflow:discovery:brief TOPIC="Mobile time tracking app"
+/agileflow:ideate:brief TOPIC="Mobile time tracking app"
 ```
 
 With existing ideation file:
 
 ```bash
-/agileflow:discovery:brief TOPIC="Mobile app" IDEATION=docs/08-project/ideation/ideation-20250214.md
+/agileflow:ideate:brief TOPIC="Mobile app" IDEATION=docs/08-project/ideation/ideation-20250214.md
 ```
 
 With research findings:
 
 ```bash
-/agileflow:discovery:brief TOPIC="Dashboard" RESEARCH=docs/10-research/research-dashboard.md,docs/10-research/ui-analysis.md
+/agileflow:ideate:brief TOPIC="Dashboard" RESEARCH=docs/10-research/research-dashboard.md,docs/10-research/ui-analysis.md
 ```
 
 ## Purpose
@@ -33,7 +33,7 @@ Generate a structured Product Brief that combines:
 - **Research data** - Competitive analysis, market sizing, best practices, user research
 - **Your knowledge synthesis** - Context-specific insights and constraints
 
-This can be used standalone (with existing ideation/research files) or as Phase 3 of the `/discovery:new` workflow.
+This can be used standalone (with existing ideation/research files) or as Phase 3 of the `/ideate:discover` workflow.
 
 ## Parameters
 
@@ -95,16 +95,16 @@ If `IDEATION` or `RESEARCH` parameters are omitted:
 
 ```
 1. Brainstorm
-   /discovery:new TOPIC="..." DEPTH=quick
+   /ideate:discover TOPIC="..." DEPTH=quick
 
 2. OR Use Existing Ideation
    /ideate:new SCOPE=all OUTPUT=report
-   /discovery:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-20250214.md
+   /ideate:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-20250214.md
 
 3. Add Research (Optional)
    /research:ask TOPIC="..."
    /research:import TOPIC="..."
-   /discovery:brief TOPIC="..." RESEARCH=docs/10-research/...
+   /ideate:brief TOPIC="..." RESEARCH=docs/10-research/...
 
 4. Review Brief
    cat docs/08-project/briefs/20250214-{topic}-brief.md
@@ -237,7 +237,7 @@ Always include research findings for better feature prioritization:
 ```bash
 /research:ask TOPIC="Mobile time tracking market"
 /research:import TOPIC="..."
-/discovery:brief TOPIC="..." RESEARCH=docs/10-research/...
+/ideate:brief TOPIC="..." RESEARCH=docs/10-research/...
 ```
 
 ### 2. Bridge from Multiple Experts
@@ -247,7 +247,7 @@ Combine ideation from different domains:
 ```bash
 /ideate:new SCOPE=security DEPTH=deep OUTPUT=report
 /ideate:new SCOPE=ux DEPTH=deep OUTPUT=report
-/discovery:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-security.md,docs/08-project/ideation/ideation-ux.md
+/ideate:brief TOPIC="..." IDEATION=docs/08-project/ideation/ideation-security.md,docs/08-project/ideation/ideation-ux.md
 ```
 
 ### 3. Iterate on the Brief
@@ -256,7 +256,7 @@ Briefs aren't final—they're living documents:
 
 ```bash
 # Generate initial brief
-/discovery:brief TOPIC="..." IDEATION=...
+/ideate:brief TOPIC="..." IDEATION=...
 
 # Review and improve based on feedback
 # Edit docs/08-project/briefs/...
@@ -275,7 +275,7 @@ Release 3+: COULD HAVE features
 
 ## Related Commands
 
-- [`/discovery:new`](/commands/discovery-new) - Full discovery workflow (brainstorm + research + brief)
+- [`/ideate:discover`](/commands/ideate-new) - Full discovery workflow (brainstorm + research + brief)
 - [`/ideate:new`](/commands/ideate-new) - Generate ideas from codebase
 - [`/research:ask`](/commands/research-ask) - Research external AI tools
 - [`/research:import`](/commands/research-import) - Import research findings

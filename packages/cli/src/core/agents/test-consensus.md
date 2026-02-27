@@ -289,6 +289,6 @@ Legend: ! = flagged, - = not flagged, X = not applicable to project type
 
 ## Boundary Rules
 
-- **Do NOT report logic bugs in application code** - that's `/agileflow:audit:logic`
-- **Do NOT report security vulnerabilities** - that's `/agileflow:audit:security`
+- **Do NOT report logic bugs in application code** - that's `/agileflow:code:logic`
+- **Do NOT report security vulnerabilities** - that's `/agileflow:code:security`
 - **Focus on test suite quality** that affects confidence in code correctness

@@ -38,7 +38,7 @@ Enable self-improving agents that maintain domain knowledge and accelerate task 
 Coordinate multiple domain experts to work together on complex multi-domain tasks using [Claude Code's native Agent Teams](https://code.claude.com/docs/en/agent-teams).
 
 - **Dual-mode architecture** - Native Agent Teams when enabled, subagent orchestrator as fallback
-- **Team templates** - Predefined teams for fullstack, code-review, builder-validator, and logic-audit
+- **Team templates** - Predefined teams for fullstack, code-review, builder-validator, and code-logic
 - **Quality gates** - Enforce tests, lint, types, and coverage before work is accepted
 - **Task synchronization** - Bidirectional sync between Claude Code's task list and AgileFlow status
 - **Auto-detection** - `/babysit` automatically suggests teams for multi-domain tasks
@@ -236,7 +236,7 @@ Protect your codebase from destructive commands using PreToolUse hooks.
 | **Loop Mode** | Autonomous epic execution | `/agileflow:babysit EPIC=... MODE=loop` |
 | **Visual Mode** | UI screenshot verification | `/agileflow:babysit EPIC=... VISUAL=true` |
 | **AI Council** | Strategic decision perspectives | `/agileflow:council <question>` |
-| **Logic Audit** | Find logic bugs with consensus | `/agileflow:logic:audit [file]` |
+| **Code Logic Audit** | Find logic bugs with consensus | `/agileflow:code:logic [file]` |
 | **RLM** | Large document analysis | `/agileflow:rlm DOCUMENT=...` |
 | **Research Pipeline** | Structured research workflow | `/agileflow:research:ask` |
 | **Compact Context** | Preserve state through compression | Built-in |

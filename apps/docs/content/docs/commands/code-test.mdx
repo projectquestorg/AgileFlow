@@ -1,16 +1,16 @@
 ---
-title: /audit:test
+title: /code:test
 description: Multi-agent test quality analysis with consensus voting for finding test suite weaknesses
 ---
 
-# /audit:test
+# /code:test
 
 Deploy multiple specialized test quality analyzers in parallel to find weaknesses in the test suite, then synthesize results through consensus voting into a prioritized Test Quality Audit Report.
 
 ## Quick Start
 
 ```bash
-/agileflow:audit:test src/
+/agileflow:code:test src/
 ```
 
 ## Arguments
@@ -48,19 +48,19 @@ The command deploys specialized test quality analyzers in parallel to examine yo
 
 ```bash
 # Quick scan of source directory (core 5 analyzers)
-/agileflow:audit:test src/
+/agileflow:code:test src/
 
 # Deep analysis with all 8 analyzers
-/agileflow:audit:test . DEPTH=deep
+/agileflow:code:test . DEPTH=deep
 
 # Focus on specific test quality areas
-/agileflow:audit:test __tests__/ FOCUS=coverage,fragility
+/agileflow:code:test __tests__/ FOCUS=coverage,fragility
 
 # Single area analysis
-/agileflow:audit:test __tests__/ FOCUS=fragility
+/agileflow:code:test __tests__/ FOCUS=fragility
 
 # Comprehensive audit with all analyzers
-/agileflow:audit:test . DEPTH=deep FOCUS=all
+/agileflow:code:test . DEPTH=deep FOCUS=all
 ```
 
 ## Understanding Results
@@ -158,13 +158,13 @@ Use `FOCUS` to analyze specific test quality domains:
 
 ```bash
 # Only coverage analysis
-/agileflow:audit:test src/ FOCUS=coverage
+/agileflow:code:test src/ FOCUS=coverage
 
 # Multiple specific areas
-/agileflow:audit:test src/ FOCUS=coverage,mocking,assertions
+/agileflow:code:test src/ FOCUS=coverage,mocking,assertions
 
 # All analyzers
-/agileflow:audit:test src/ FOCUS=all
+/agileflow:code:test src/ FOCUS=all
 ```
 
 Available focus areas:
@@ -198,14 +198,14 @@ Each report includes:
 Run test audit on pull requests to catch test weaknesses before merge:
 
 ```bash
-/agileflow:audit:test --pr
+/agileflow:code:test --pr
 ```
 
 ### Before Release
 Run full deep audit before going live:
 
 ```bash
-/agileflow:audit:test . DEPTH=deep
+/agileflow:code:test . DEPTH=deep
 ```
 
 ### Continuous Quality
@@ -215,7 +215,7 @@ Schedule periodic audits in CI/CD to maintain test suite health.
 
 | Command | Purpose |
 |---------|---------|
-| [`/audit:logic`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
-| [`/audit:performance`](/docs/commands/performance-audit) | Performance bottleneck analysis (similar multi-agent architecture) |
+| [`/code:logic`](/docs/commands/code-logic) | Logic bug analysis (similar multi-agent architecture) |
+| [`/code:performance`](/docs/commands/code-performance) | Performance bottleneck analysis (similar multi-agent architecture) |
 | [`/review`](/docs/commands/review) | Code review (includes some test quality checks) |
 | [`/verify`](/docs/commands/verify) | Run tests and verify quality |

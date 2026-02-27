@@ -1,16 +1,16 @@
 ---
-title: /audit:security
+title: /code:security
 description: Multi-agent security vulnerability analysis with consensus voting for finding exploitable weaknesses
 ---
 
-# /audit:security
+# /code:security
 
 Deploy multiple specialized security vulnerability analyzers in parallel to find exploitable weaknesses, then synthesize results through consensus voting into a prioritized Security Audit Report.
 
 ## Quick Start
 
 ```bash
-/agileflow:audit:security src/
+/agileflow:code:security src/
 ```
 
 ## Arguments
@@ -48,22 +48,22 @@ The command deploys specialized security vulnerability analyzers in parallel to 
 
 ```bash
 # Quick scan of app directory (core 5 analyzers)
-/agileflow:audit:security app/
+/agileflow:code:security app/
 
 # Deep analysis with all 8 analyzers
-/agileflow:audit:security . DEPTH=deep
+/agileflow:code:security . DEPTH=deep
 
 # Focus on specific vulnerability areas
-/agileflow:audit:security src/ FOCUS=injection,auth
+/agileflow:code:security src/ FOCUS=injection,auth
 
 # Single file input validation check
-/agileflow:audit:security app/page.tsx FOCUS=input
+/agileflow:code:security app/page.tsx FOCUS=input
 
 # Comprehensive audit with all analyzers
-/agileflow:audit:security . DEPTH=deep FOCUS=all
+/agileflow:code:security . DEPTH=deep FOCUS=all
 
 # API routes security analysis
-/agileflow:audit:security app/api/ FOCUS=api
+/agileflow:code:security app/api/ FOCUS=api
 ```
 
 ## Understanding Results
@@ -163,13 +163,13 @@ Use `FOCUS` to analyze specific vulnerability domains:
 
 ```bash
 # Only injection vulnerabilities
-/agileflow:audit:security app/ FOCUS=injection
+/agileflow:code:security app/ FOCUS=injection
 
 # Multiple specific areas
-/agileflow:audit:security app/ FOCUS=injection,auth,secrets
+/agileflow:code:security app/ FOCUS=injection,auth,secrets
 
 # All analyzers
-/agileflow:audit:security app/ FOCUS=all
+/agileflow:code:security app/ FOCUS=all
 ```
 
 Available focus areas:
@@ -205,14 +205,14 @@ Each report includes:
 Run security audit on pull requests to catch vulnerabilities before merge:
 
 ```bash
-/agileflow:audit:security --pr
+/agileflow:code:security --pr
 ```
 
 ### Before Deployment
 Run full deep audit before going live:
 
 ```bash
-/agileflow:audit:security . DEPTH=deep
+/agileflow:code:security . DEPTH=deep
 ```
 
 ### Continuous Security
@@ -222,9 +222,9 @@ Schedule periodic audits in CI/CD to maintain ongoing vulnerability detection.
 
 | Command | Purpose |
 |---------|---------|
-| [`/logic:audit`](/docs/commands/logic-audit) | Logic bug analysis (similar multi-agent architecture) |
-| [`/legal:audit`](/docs/commands/legal-audit) | Legal compliance analysis (similar architecture) |
-| [`/performance:audit`](/docs/commands/performance-audit) | Performance bottleneck analysis |
-| [`/test:audit`](/docs/commands/test-audit) | Test coverage and quality analysis |
+| [`/code:logic`](/docs/commands/code-logic) | Logic bug analysis (similar multi-agent architecture) |
+| [`/code:legal`](/docs/commands/code-legal) | Legal compliance analysis (similar architecture) |
+| [`/code:performance`](/docs/commands/code-performance) | Performance bottleneck analysis |
+| [`/code:test`](/docs/commands/code-test) | Test coverage and quality analysis |
 | [`/review`](/docs/commands/review) | Code review (includes some security checks) |
 | [`/multi-expert`](/docs/commands/multi-expert) | General multi-expert analysis |

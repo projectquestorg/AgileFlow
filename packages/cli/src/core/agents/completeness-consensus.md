@@ -278,9 +278,9 @@ For each finding, both paths are offered:
 
 ## Boundary Rules
 
-- **Do NOT report security vulnerabilities** - that's `/agileflow:audit:security`
-- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:audit:logic`
-- **Do NOT report performance issues** (slow queries, memory leaks) - that's `/agileflow:audit:performance`
-- **Do NOT report test quality** (missing tests, weak assertions) - that's `/agileflow:audit:test`
-- **Do NOT report legal compliance** (GDPR, licensing) - that's `/agileflow:audit:legal`
+- **Do NOT report security vulnerabilities** - that's `/agileflow:code:security`
+- **Do NOT report logic bugs** (race conditions, off-by-one, type confusion) - that's `/agileflow:code:logic`
+- **Do NOT report performance issues** (slow queries, memory leaks) - that's `/agileflow:code:performance`
+- **Do NOT report test quality** (missing tests, weak assertions) - that's `/agileflow:code:test`
+- **Do NOT report legal compliance** (GDPR, licensing) - that's `/agileflow:code:legal`
 - **Focus on**: Is the feature wired up? Does the button work? Is stub code shipped?
