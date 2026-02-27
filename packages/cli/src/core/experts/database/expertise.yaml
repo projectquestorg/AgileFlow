@@ -74,30 +74,7 @@ relationships:
 
 # Database patterns the expert should recognize and follow
 patterns:
-  - name: "Soft deletes"
-    description: "Use deleted_at timestamp instead of hard DELETE"
-    location: Tables with user data
-    applies_to: [users, posts, comments]
-
-  - name: "Timestamps"
-    description: "All tables have created_at and updated_at"
-    location: Every table
-    convention: "Auto-managed by ORM or triggers"
-
-  - name: "UUID primary keys"
-    description: "Use UUIDs instead of auto-increment for distributed systems"
-    location: Primary key columns
-    alternative: "Auto-increment for simpler setups"
-
-  - name: "Foreign key naming"
-    description: "Foreign keys follow <table_singular>_id pattern"
-    location: All relationship columns
-    example: "user_id, post_id, category_id"
-
-  - name: "Index naming"
-    description: "Indexes follow idx_<table>_<columns> pattern"
-    location: Index definitions
-    example: "idx_users_email, idx_posts_user_id_created_at"
+  # Generic SQL patterns (soft deletes, timestamps, UUID, FK/index naming) omitted - models know these
 
   - name: "JSON Single Source of Truth"
     description: "AgileFlow uses status.json as primary data store"
@@ -114,39 +91,19 @@ patterns:
     location: docs/09-agents/archive/YYYY-MM.json
     script: scripts/archive-completed-stories.sh
 
-# Conventions the database expert should follow
+# Conventions (AgileFlow-specific only; generic SQL conventions omitted)
 conventions:
-  - "Tables: lowercase, plural (users, posts, categories)"
-  - "Columns: lowercase, snake_case (first_name, created_at)"
-  - "Foreign keys: <table_singular>_id (user_id, post_id)"
-  - "Required columns: id, created_at, updated_at"
-  - "Soft delete column: deleted_at (nullable timestamp)"
-  - "All queries use parameterized statements (prevent SQL injection)"
-  - "Transactions for multi-table operations"
-  - "Migrations must be reversible (up and down)"
-  - "No SELECT * in production code"
-  - "Index columns used in WHERE, JOIN, ORDER BY"
   - "JSON stores: always update 'updated' timestamp when modifying"
   - "JSON Lines: append only, never modify existing lines"
+  - "All queries use parameterized statements (prevent SQL injection)"
+  - "Migrations must be reversible (up and down)"
 
-# Learned from AgileFlow codebase exploration
+# Learnings (trimmed - keep 2 most actionable)
 learnings:
   - date: 2025-12-21
-    context: "Analyzed AgileFlow data storage"
-    insight: "AgileFlow uses JSON files instead of SQL: status.json for tracking, log.jsonl for coordination, archive/ for historical data"
-    source: "docs/09-agents/"
+    context: "AgileFlow data storage"
+    insight: "JSON files not SQL: status.json (epics EP-ID, stories US-ID with owner/status/priority/estimate/depends_on/test_status), log.jsonl (coordination), archive/ (historical)"
 
   - date: 2025-12-21
-    context: "Analyzed status.json schema"
-    insight: "Two main collections: epics (EP-ID keys) and stories (US-ID keys); stories have owner, status, priority, estimate, depends_on, test_status"
-    source: "docs/09-agents/status.json"
-
-  - date: 2025-12-21
-    context: "Analyzed archival pattern"
-    insight: "scripts/archive-completed-stories.sh moves done stories >7 days old to archive/YYYY-MM.json to keep status.json performant"
-    source: "scripts/archive-completed-stories.sh, CLAUDE.md"
-
-  - date: 2025-12-21
-    context: "Analyzed JSON Lines pattern"
-    insight: "bus/log.jsonl uses append-only JSON Lines format for agent messages; each line is independent JSON object"
-    source: "docs/09-agents/bus/log.jsonl"
+    context: "Archival pattern"
+    insight: "archive-completed-stories.sh moves done stories >7 days to archive/YYYY-MM.json. Keeps status.json performant."

@@ -111,42 +111,15 @@ conventions:
   - "Research notes inform epic planning"
   - "NO AI attribution in commits (per CLAUDE.md)"
 
-agent_roster:
-  - id: AG-UI
-    scope: "Frontend, components, styling, accessibility"
-  - id: AG-API
-    scope: "Backend, endpoints, business logic, database"
-  - id: AG-CI
-    scope: "Test infrastructure, pipelines, quality tools"
-  - id: AG-DEVOPS
-    scope: "Deployment, dependencies, technical debt, release process"
-  - id: EPIC-PLANNER
-    scope: "Epic/story decomposition"
-  - id: ADR-WRITER
-    scope: "Architecture decisions"
-  - id: RESEARCH
-    scope: "Technical research"
-  - id: MENTOR
-    scope: "End-to-end guidance (babysit)"
+# Agent roster: AG-UI, AG-API, AG-CI, AG-DEVOPS, EPIC-PLANNER, ADR-WRITER, RESEARCH, MENTOR
+# (details in babysit.md delegation framework - omitted here)
 
-# Learned from AgileFlow codebase exploration
+# Learnings (trimmed - keep 2 most actionable)
 learnings:
   - date: 2025-12-21
-    context: "Analyzed babysit workflow"
-    insight: "Babysit command guides from 'What to work on?' through story creation, agent spawning, verification, and commit"
-    source: "packages/cli/src/core/commands/babysit.md"
+    context: "Babysit workflow"
+    insight: "Guides from task selection through story creation, agent spawning, verification, and commit. Status.json tracks epics + stories."
 
   - date: 2025-12-21
-    context: "Analyzed status.json structure"
-    insight: "Tracks epics (title, status, completed, summary) and stories (owner, status, priority, estimate, depends_on, test_status)"
-    source: "docs/09-agents/status.json"
-
-  - date: 2025-12-21
-    context: "Analyzed Agent Expert system"
-    insight: "25 domain experts with expertise.yaml, question.md, self-improve.md, workflow.md; agents load expertise first before tasks"
-    source: "packages/cli/src/core/experts/"
-
-  - date: 2025-12-21
-    context: "Analyzed auto-archival system"
-    insight: "scripts/archive-completed-stories.sh moves done stories >7 days old to archive/YYYY-MM.json; runs on session start"
-    source: "CLAUDE.md, scripts/archive-completed-stories.sh"
+    context: "Agent Expert system"
+    insight: "26 domain experts with expertise.yaml, question.md, self-improve.md, workflow.md. Agents load expertise first before tasks."

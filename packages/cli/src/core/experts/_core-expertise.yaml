@@ -1,0 +1,105 @@
+# Core Expertise - Always-Loaded AgileFlow Knowledge
+# These 3 curated modules contain high-value cross-cutting patterns.
+# Loaded by all agents. Domain-specific files are reference-only (loaded on demand).
+
+version: 1.0
+last_updated: 2026-02-26
+
+# Module 1: CLI Architecture Patterns
+cli_architecture:
+  structure:
+    source: packages/cli/src/core/
+    commands: "src/core/commands/*.md - Slash commands with frontmatter"
+    agents: "src/core/agents/*.md - Spawnable agents with frontmatter"
+    experts: "src/core/experts/*/expertise.yaml - Domain knowledge"
+    skills: "src/core/skills/ - Skill learnings and marketplace (browse via /skill:recommend)"
+
+  content_injection:
+    description: "Source files use placeholders replaced at install time"
+    placeholders:
+      - "<!-- {{AGENT_LIST}} --> - Current agent list"
+      - "<!-- {{COMMAND_LIST}} --> - Current command list"
+      - "<!-- {{SKILL_LIST}} --> - Current skill list"
+    pipeline: "content-injector.js -> content-transformer.js -> IDE installer"
+
+  installers:
+    core: "tools/cli/installers/core/installer.js - Copies agents, commands, scripts"
+    ide_base: "tools/cli/installers/ide/_base-ide.js - Shared IDE setup logic"
+    claude_code: "tools/cli/installers/ide/claude-code.js - Claude Code specific (hooks, agents)"
+
+  key_conventions:
+    - "Commands: frontmatter with description, optional argument-hint"
+    - "Agents: frontmatter with name, description, tools, model (no agileflow- prefix in filename)"
+    - "Scripts in packages/cli/scripts/ are PUBLISHED (copied to user projects)"
+    - "Scripts in root scripts/ are dev-only (NOT published)"
+    - "Dynamic counts: run npm run sync-counts after adding commands/agents"
+
+# Module 2: Testing Conventions
+testing:
+  framework:
+    runner: "Jest (packages/cli/__tests__/)"
+    command: "npm test from packages/cli/"
+    total_tests: "~4373+ tests across 161+ suites"
+
+  patterns:
+    - "Tests mirror source structure: __tests__/lib/ for tools/cli/lib/"
+    - "Use jest.mock() for fs, child_process dependencies"
+    - "Expertise validation: scripts/validate-expertise.sh"
+    - "Story test tracking: status.json test_status field (passing/failing/not_run)"
+
+  quality_gates:
+    - "All tests must pass before commit"
+    - "Session Harness: /agileflow:verify runs tests for current story"
+    - "/agileflow:baseline marks verified state"
+    - "Logic audit: 5 analyzers check edge cases, race conditions, type bugs"
+
+  known_issues:
+    - "api-server port 3456 conflict causes ~10 test failures (pre-existing)"
+    - "--legacy-peer-deps required for TensorFlow.js version conflicts"
+
+# Module 3: Security Guidelines
+security:
+  commit_policy:
+    - "NO AI attribution in commits (forbidden: Co-Authored-By AI, emoji robots)"
+    - "Clean conventional commits only (feat/fix/chore/docs)"
+
+  secrets:
+    gitignored: [".npmrc", "CLAUDE.md"]
+    storage: "NPM_TOKEN in GitHub Secrets, never committed"
+
+  code_patterns:
+    - "Use execFileSync(cmd, [args]) not execSync(`cmd ${var}`) to prevent injection"
+    - "Validate PIDs are numeric, ports are numbers, paths don't traverse"
+    - "Damage control hooks guard Bash/Edit/Write via PreToolUse"
+    - "patterns.yaml defines blocked commands, read-only paths, zero-access paths"
+
+  hooks:
+    exit_codes: "0=allow, 1=error (fail-open), 2=block"
+    files:
+      - "damage-control/bash-tool-damage-control.js"
+      - "damage-control/edit-tool-damage-control.js"
+      - "damage-control/write-tool-damage-control.js"
+      - "lib/damage-control-utils.js - Shared validation logic"
+
+# Data Stores (cross-cutting knowledge)
+data_stores:
+  status_json:
+    path: "docs/09-agents/status.json"
+    schema: "epics (EP-ID keys), stories (US-ID keys)"
+    operations: "Read-modify-write with updated timestamp"
+  session_state:
+    path: "docs/09-agents/session-state.json"
+    purpose: "Active command, loop state, smart-detect results"
+  archive:
+    path: "docs/09-agents/archive/YYYY-MM.json"
+    policy: "Completed stories >7 days auto-archived"
+  metadata:
+    path: "docs/00-meta/agileflow-metadata.json"
+    purpose: "Config schema version, feature toggles, profiles"
+
+# Release Process
+release:
+  command: "./scripts/release.sh <version> <title>"
+  version_files: ["packages/cli/package.json", "package.json"]
+  ci: ".github/workflows/npm-publish.yml triggered by v*.*.* tags"
+  brand_color: "#e8683a"

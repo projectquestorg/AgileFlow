@@ -91,25 +91,7 @@ patterns:
     location: Component file top
     convention: "interface ComponentNameProps"
 
-  - name: "forwardRef"
-    description: "Forward refs for DOM access and composition"
-    location: Base components
-    use_case: "When component wraps native element"
-
-  - name: "Styling with Tailwind"
-    description: "Utility-first CSS with Tailwind classes"
-    location: className prop
-    helper: "cn() for conditional classes"
-
-  - name: "Class Variance Authority (CVA)"
-    description: "Type-safe component variants"
-    location: src/components/ui/
-    use_case: "Components with multiple variants"
-
-  - name: "Accessibility"
-    description: "WCAG 2.1 AA compliance, ARIA attributes"
-    location: Interactive components
-    requirements: [keyboard-nav, screen-reader, focus-visible]
+  # Generic React patterns (forwardRef, Tailwind, CVA, a11y) omitted - models know these
 
   - name: "CLI Colored Output"
     description: "Use chalk for terminal colors with semantic meaning"
@@ -140,24 +122,12 @@ conventions:
   - "CLI colors: chalk with semantic colors (green=success, red=error, yellow=warn)"
   - "CLI prompts: inquirer with validation functions"
 
-# Learned from AgileFlow codebase exploration
+# Learnings (trimmed - keep 2 most actionable)
 learnings:
   - date: 2025-12-21
-    context: "Analyzed AgileFlow CLI UI patterns"
-    insight: "CLI uses chalk for colored output with brand color #e8683a; semantic colors: green=success, yellow=warning, red=error, dim=info"
-    source: "packages/cli/tools/cli/lib/ui.js"
+    context: "CLI UI patterns"
+    insight: "chalk for colors (brand #e8683a, green=success, yellow=warning, red=error, dim=info). inquirer for prompts (input, checkbox, confirm)."
 
   - date: 2025-12-21
-    context: "Analyzed CLI interactive prompts"
-    insight: "Uses inquirer.prompt() with input, checkbox, confirm types; includes validation functions for user input"
-    source: "packages/cli/tools/cli/lib/ui.js"
-
-  - date: 2025-12-21
-    context: "Analyzed ASCII logo pattern"
-    insight: "displayLogo() renders Unicode block-style ASCII art with brand color; shows version from package.json"
-    source: "packages/cli/tools/cli/lib/ui.js"
-
-  - date: 2025-12-21
-    context: "Analyzed IDE choices UI"
-    insight: "IDE_CHOICES array with name, value, checked, configDir, description for checkbox prompts"
-    source: "packages/cli/tools/cli/lib/ui.js"
+    context: "CLI logo and IDE choices"
+    insight: "displayLogo() renders brand art with version. IDE_CHOICES array for checkbox prompts with name, value, checked, configDir."

@@ -119,56 +119,14 @@ conventions:
   - "Set retention policies for logs and metrics"
   - "Test alerts in staging before production"
 
-log_levels:
-  ERROR: "Service unavailable, data loss, requires immediate attention"
-  WARN: "Degraded behavior, unexpected but handled, investigate soon"
-  INFO: "Important state changes, deployments, audit events"
-  DEBUG: "Detailed diagnostic info, development only"
+# Log levels, metric types, SLO targets: generic observability knowledge (models know - omitted)
 
-metric_types:
-  counter: "Cumulative value (requests_total, errors_total)"
-  gauge: "Current value (active_connections, queue_size)"
-  histogram: "Distribution (request_duration, response_size)"
-  summary: "Quantiles (p50, p90, p99 latency)"
-
-slo_targets:
-  availability: "99.9% (8.7 hours downtime/year)"
-  latency_p50: "<100ms"
-  latency_p95: "<200ms"
-  latency_p99: "<500ms"
-  error_rate: "<0.1%"
-
-# Learnings are AUTO-UPDATED by self-improve.md
-# Do not edit manually - let the agent learn from experience
+# Learnings (trimmed - keep 2 most actionable)
 learnings:
   - date: 2025-12-21
-    context: "AgileFlow monitoring patterns"
-    learning: |
-      Session hooks run on SessionStart via .claude/settings.json hooks configuration.
-      The default SessionStart hook executes 'node .agileflow/scripts/get-env.js' to display
-      project info, git status, and system details at session start. This provides
-      immediate context about the development environment.
+    context: "Session hooks and status line"
+    insight: "SessionStart hooks in .claude/settings.json. Status line via agileflow-statusline.sh shows git branch, current story, WIP count, completion %."
 
   - date: 2025-12-21
-    context: "AgileFlow status line implementation"
-    learning: |
-      Status line shows real-time project context in Claude Code status bar via
-      scripts/agileflow-statusline.sh. Components include: git branch (color-coded),
-      current story from status.json, WIP count (yellow if >1, red if >3), and
-      completion percentage. This provides at-a-glance project health visibility.
-
-  - date: 2025-12-21
-    context: "AgileFlow agent activity logging"
-    learning: |
-      Agent communication is logged to docs/09-agents/bus/log.jsonl in append-only
-      format. Each entry is a JSON line with timestamp, agent_id, message_type, and
-      payload. This enables audit trails and debugging of multi-agent workflows
-      without corrupting the log file with concurrent writes.
-
-  - date: 2025-12-21
-    context: "AgileFlow validation script patterns"
-    learning: |
-      Validation scripts (e.g., scripts/validate-*.sh) output PASS/WARN/FAIL status
-      codes with colored output for health checks. Scripts validate configuration,
-      file structure, and dependencies. Exit code 0 = all checks passed, non-zero =
-      failures detected. This standardized format enables automated CI/CD integration.
+    context: "Agent activity logging"
+    insight: "docs/09-agents/bus/log.jsonl: append-only JSON Lines with timestamp, agent_id, message_type, payload. Never edit existing lines."

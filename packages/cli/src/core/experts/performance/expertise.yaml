@@ -35,36 +35,11 @@ relationships:
     target: "<50ms p95"
     measurement: "Query profiling"
 
-patterns:
-  - name: N+1 Query Fix
-    description: "Batch queries instead of loop"
-    detection: "Multiple similar queries in sequence"
-  - name: Caching Layer
-    description: "Cache expensive computations"
-    types: [memory, redis, cdn]
-  - name: Lazy Loading
-    description: "Load resources on demand"
-    applies_to: [images, modules, routes]
-  - name: Database Indexing
-    description: "Add indexes for slow queries"
-    detection: "EXPLAIN shows table scan"
+# Generic perf patterns (N+1, caching, lazy loading, indexing) omitted - models know these
 
 conventions:
   - "Profile before optimizing (no premature optimization)"
   - "Measure before and after every change"
-  - "Set performance budgets in CI"
-  - "Document performance trade-offs"
-  - "Monitor production performance continuously"
-  - "Alert on performance regressions"
-
-bottlenecks:
-  common:
-    - "Unindexed database queries"
-    - "N+1 query patterns"
-    - "Large bundle sizes"
-    - "Unoptimized images"
-    - "Missing caching"
-    - "Synchronous operations"
 
 learnings:
   - date: 2025-12-21

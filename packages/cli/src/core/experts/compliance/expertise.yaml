@@ -88,80 +88,14 @@ conventions:
   - "Compliance cannot be compromised for convenience"
   - "Annual compliance audits required"
 
-regulations:
-  gdpr:
-    scope: "EU personal data"
-    requirements:
-      - "Explicit consent for processing"
-      - "Right to access, rectification, deletion"
-      - "Data portability"
-      - "72-hour breach notification"
-      - "Data Protection Impact Assessment"
+# Regulations: GDPR, CCPA, HIPAA, SOC2, PCI-DSS (models know details - omitted)
 
-  ccpa:
-    scope: "California residents"
-    requirements:
-      - "Right to know what data collected"
-      - "Right to deletion"
-      - "Right to opt-out of sale"
-      - "Non-discrimination"
-
-  hipaa:
-    scope: "Protected Health Information (PHI)"
-    requirements:
-      - "Access controls"
-      - "Audit trails"
-      - "Encryption"
-      - "Business Associate Agreements"
-
-  soc2:
-    scope: "Service organizations"
-    requirements:
-      - "Security controls"
-      - "Availability"
-      - "Processing integrity"
-      - "Confidentiality"
-      - "Privacy"
-
-  pci_dss:
-    scope: "Payment card data"
-    requirements:
-      - "Network security"
-      - "Cardholder data protection"
-      - "Vulnerability management"
-      - "Access control"
-      - "Monitoring and testing"
-
-# Learnings are AUTO-UPDATED by self-improve.md
+# Learnings (trimmed - keep 2 most actionable)
 learnings:
   - date: 2025-12-21
-    context: AgileFlow commit policy
-    learning: |
-      NO AI attribution in commits. CLAUDE.md explicitly forbids AI footers,
-      Co-Authored-By for AI, emoji robots, or any AI mentions in commit messages.
-      Commits must be clean conventional format (feat/fix/chore/docs).
-      This is a compliance requirement to maintain professional git history.
+    context: "Commit and secrets policy"
+    insight: "NO AI attribution in commits (clean conventional format). Secrets: .npmrc, CLAUDE.md gitignored. NPM_TOKEN in GitHub Secrets only."
 
   - date: 2025-12-21
-    context: AgileFlow secrets management
-    learning: |
-      Gitignored sensitive files include: .npmrc (npm token), .mcp.json (MCP secrets),
-      and CLAUDE.md (internal dev docs). NPM_TOKEN is stored in GitHub Secrets at
-      https://github.com/projectquestorg/AgileFlow/settings/secrets/actions and NEVER
-      committed to repository. This follows security best practices for credential storage.
-
-  - date: 2025-12-21
-    context: AgileFlow audit trail
-    learning: |
-      ADRs in docs/03-decisions/ document architecture decisions for audit trails.
-      status.json in docs/09-agents/ provides complete story tracking history with
-      timestamps, status changes, and agent communications. This creates immutable
-      audit trail of all project decisions and work progress.
-
-  - date: 2025-12-21
-    context: AgileFlow data retention
-    learning: |
-      Auto-archival system (scripts/archive-completed-stories.sh) automatically moves
-      completed stories older than 7 days to docs/09-agents/archive/YYYY-MM.json.
-      This implements data retention policy while keeping status.json lean. Archives
-      organized by month for compliance audits and historical retrieval.
+    context: "Audit trail and retention"
+    insight: "ADRs in docs/03-decisions/, story tracking in status.json. Auto-archival moves completed stories >7 days to archive/YYYY-MM.json."

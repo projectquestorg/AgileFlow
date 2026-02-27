@@ -89,79 +89,10 @@ query_types:
       - input: "utils dependencies"
         translation: '--deps="src/lib/utils.js"'
 
-# Available tags (auto-detected from paths)
-available_tags:
-  api:
-    patterns: ["/api/", "/routes/", "/endpoints/", "/controllers/"]
-    description: "API endpoints and routes"
-  ui:
-    patterns: ["/components/", "/ui/", "/views/", "/pages/"]
-    description: "UI components and views"
-  database:
-    patterns: ["/db/", "/database/", "/models/", "/schema/", "/migrations/"]
-    description: "Database models and migrations"
-  auth:
-    patterns: ["/auth/", "/login/", "/session/", "/jwt/", "/oauth/"]
-    description: "Authentication logic"
-  test:
-    patterns: ["/test/", "/tests/", "/__tests__/", "/spec/", "/specs/"]
-    description: "Test files"
-  config:
-    patterns: ["/config/", "/settings/", "/env/"]
-    description: "Configuration files"
-  lib:
-    patterns: ["/lib/", "/utils/", "/helpers/", "/shared/"]
-    description: "Utility libraries"
-  docs:
-    patterns: ["/docs/", "/documentation/"]
-    description: "Documentation files"
-  scripts:
-    patterns: ["/scripts/", "/bin/", "/tools/"]
-    description: "Build and utility scripts"
-  types:
-    patterns: ["/types/", "/typings/", "/interfaces/"]
-    description: "Type definitions"
+# 10 auto-detected tags: api, ui, database, auth, test, config, lib, docs, scripts, types
+# Tag patterns defined in codebase-indexer.js:TAG_PATTERNS
 
-# Natural language patterns
-nl_patterns:
-  - pattern: "where is * defined"
-    query_type: export
-    extraction: "symbol from *"
-  - pattern: "what files use *"
-    query_type: export
-    extraction: "symbol from *"
-  - pattern: "* files"
-    query_type: query
-    extraction: "keyword from *"
-  - pattern: "files with *"
-    query_type: content
-    extraction: "regex from *"
-  - pattern: "* in the codebase"
-    query_type: query
-    extraction: "keyword from *"
-  - pattern: "dependencies of *"
-    query_type: deps
-    extraction: "file path from *"
-  - pattern: "what depends on *"
-    query_type: deps
-    extraction: "file path from *"
-
-# Fallback strategies
-fallbacks:
-  index_unavailable:
-    description: "When index cannot be built or is corrupted"
-    strategy:
-      - "Use Glob tool for file pattern matching"
-      - "Use Grep tool for content searching"
-      - "Combine results manually"
-
-  no_results:
-    description: "When query returns no matches"
-    strategy:
-      - "Try broader search terms"
-      - "Check for typos in symbol names"
-      - "Try content search instead of export search"
-      - "Suggest related tags"
+# NL patterns and fallback strategies handled by agent prompt (omitted for brevity)
 
 # Conventions
 conventions:
