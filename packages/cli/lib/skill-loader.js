@@ -126,7 +126,6 @@ function loadSkill(skillDir) {
       path: skillDir,
       hasReferences: fs.existsSync(path.join(skillDir, 'references.md')),
       hasCookbook: fs.existsSync(path.join(skillDir, 'cookbook')),
-      hasMcp: fs.existsSync(path.join(skillDir, '.mcp.json')),
       metadata,
     };
   } catch {

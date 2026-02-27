@@ -9,20 +9,18 @@ El sistema Habilidades le permite crear y administrar indicaciones de IA persona
 
 ## Inicio rápido
 
-Crea tu primera habilidad en 30 segundos:
+Descubre habilidades disponibles en el marketplace:
 
 ```bash
-/agileflow:skill:create
+/agileflow:skill:list
 ```
 
-Responda algunas preguntas sobre lo que necesita y Claude investigará las mejores prácticas y generará una habilidad lista para usar.
+Explore las habilidades instaladas y obtenga recomendaciones del marketplace basadas en su stack tecnológico.
 
-Entonces úsalo:
+Obtenga recomendaciones personalizadas:
 
 ```bash
-/agileflow:skill:list              # See all your skills
-/agileflow:skill:test my-skill     # Verify it works
-/agileflow:skill:upgrade my-skill  # Add learning capability
+/agileflow:skill:recommend
 ```
 
 ## ¿Qué son las habilidades?
@@ -32,7 +30,7 @@ A **skill** es una plantilla de indicaciones estructurada que le enseña a Claud
 - **Research-backed** - Generado a partir de documentos web, documentación local y su código base.
 - **Self-improving** - Aprenda de sus correcciones y refine automáticamente
 - **Cookbook-based** - Múltiples flujos de trabajo de casos de uso en una sola habilidad
-- **Integrable** - Puede incluir servidores Model Context Protocol (MCP) para acceder a las herramientas
+- **Marketplace-powered** - Explore e instale habilidades desde el marketplace skills.sh
 
 ### Habilidades de ejemplo
 
@@ -84,50 +82,33 @@ Cada archivo de aprendizaje rastrea:
 - **Anti-patterns** - Qué evitar
 - **Examples** - Buenos y malos ejemplos de correcciones.
 
-## Creando habilidades
+## Encontrar habilidades
 
-### Inicio rápido
+### Explorar el marketplace
 
-Crea una habilidad con investigación inteligente:
-
-```bash
-/agileflow:skill:create
-```
-
-O proporcione una pista:
+Descubre habilidades en el marketplace skills.sh:
 
 ```bash
-/agileflow:skill:create supabase-swift
+/agileflow:skill:list
 ```
 
-### Cómo funciona la creación
+Este comando muestra sus habilidades instaladas y recomienda nuevas habilidades basadas en el stack tecnológico de su proyecto.
 
-El `/agileflow:skill:create` El comando realiza una investigación exhaustiva:
+### Obtener recomendaciones
 
-**Phase 1: Requirements**
-- Describes lo que necesitas (tecnología, casos de uso, marco)
+Obtenga recomendaciones personalizadas de habilidades:
 
-**Phase 2: Research**
-- **Web documentation** - Documentos oficiales, referencias de API, tutoriales.
-- **Local documentation** - Los documentos, decisiones arquitectónicas y prácticas de su proyecto.
-- **Codebase patterns** - Ejemplos de código y convenciones existentes.
-- **MCP servers** - Herramientas disponibles para la tecnología.
+```bash
+/agileflow:skill:recommend
+```
 
-**Phase 3: Generation**
-El comando genera:
-- **SKILL.md** - Habilidad principal con activadores de activación y libro de cocina.
-- **references.md** - Enlaces de documentación y patrones de código.
-- **cookbook/** - Flujos de trabajo para diferentes casos de uso.
-- **.mcp.json** - Configuración del servidor (si corresponde)
-
-**Phase 4: Confirmation**
-Verá la estructura generada y podrá crearla, editarla o cancelarla.
+Analiza las tecnologías de su proyecto y sugiere habilidades relevantes del marketplace.
 
 ## Gestión de habilidades
 
 ### Listar todas las habilidades
 
-Vea sus habilidades instaladas:
+Vea sus habilidades instaladas y recomendaciones del marketplace:
 
 ```bash
 /agileflow:skill:list
@@ -136,61 +117,8 @@ Vea sus habilidades instaladas:
 Muestra:
 - Nombres y descripciones de habilidades
 - Casos de uso admitidos
-- Estado de integración de MCP
+- Recomendaciones del marketplace basadas en su stack tecnológico
 - Recuento de archivos
-
-### Editar habilidades
-
-Modificar una habilidad existente:
-
-```bash
-/agileflow:skill:edit <skill-name>
-```
-
-Puede:
-- Actualizar las instrucciones de SKILL.md
-- Agregar nuevas entradas de libros de cocina
-- Actualizar referencias y enlaces de documentación.
-- Cambiar el nombre de la habilidad
-- Haga una reescritura completa con nuevas investigaciones
-
-### Habilidades de prueba
-
-Verificar que una habilidad funcione correctamente:
-
-```bash
-/agileflow:skill:test <skill-name>
-```
-
-Pruebas:
-- **Structure validation** - Todos los archivos requeridos presentes
-- **Content validation** - Formato y tamaño adecuados
-- **Activation test** - La habilidad se activa con indicaciones de muestra.
-- **MCP configuration** - Configuración de servidor válida
-
-### Eliminar habilidades
-
-Eliminar una habilidad cuando ya no sea necesaria:
-
-```bash
-/agileflow:skill:delete <skill-name>
-```
-
-### Actualizar habilidades
-
-Agregue capacidad de aprendizaje a habilidades más antiguas:
-
-```bash
-/agileflow:skill:upgrade <skill-name>
-```
-
-O actualice todo a la vez:
-
-```bash
-/agileflow:skill:upgrade --all
-```
-
-Crea un archivo de aprendizaje que rastrea las correcciones y mejoras.
 
 ## El sistema de aprendizajes
 
@@ -263,7 +191,7 @@ metadata:
 
 ### Mantener habilidades
 
-1. **Test regularly** - Usar `/agileflow:skill:test` para verificar la calidad
+1. **Test regularly** - Verifique regularmente la calidad de sus habilidades
 2. **Review learnings** - Verifique lo que la habilidad aprendió de las correcciones.
 3. **Update references** - Mantener los enlaces de documentación actualizados
 4. **Archive unused skills** - Limpiar habilidades que ya no usas
@@ -328,52 +256,14 @@ Agregue entradas de libros de cocina cuando:
 - La configuración difiere entre escenarios
 - Los usuarios solicitan con frecuencia orientación paso a paso.
 
-## Integración MCP
-
-Las habilidades pueden integrarse con servidores de Model Context Protocol para acceder a las herramientas.
-
-### ¿Qué es MCP?
-
-Los servidores MCP amplían las capacidades de Claude al proporcionar:
-- Acceso a datos en tiempo real
-- Ejecución de herramientas (operaciones de archivos, llamadas de red)
-- Integración de sistemas (API, bases de datos)
-- Conocimientos especializados (documentación, herramientas de código)
-
-### Usando MCP en habilidades
-
-Si se encuentra un servidor MCP durante la creación, la habilidad incluye `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": ["@supabase/mcp-server"],
-      "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_KEY": "${SUPABASE_KEY}"
-      }
-    }
-  }
-}
-```
-
-Luego, la habilidad documenta:
-- Herramientas proporcionadas por el servidor.
-- Instrucciones de configuración
-- Variables ambientales necesarias
-- Ejemplos de integración
-
 ## Ciclo de vida de las habilidades
 
-### Creación
+### Descubrimiento
 
-1. Correr `/agileflow:skill:create`
-2. Describe lo que necesitas
-3. Command investiga las mejores prácticas
-4. Revisar la habilidad generada
-5. Crea la habilidad
+1. Ejecutar `/agileflow:skill:list` para explorar el marketplace
+2. Ejecutar `/agileflow:skill:recommend` para obtener sugerencias personalizadas
+3. Instalar habilidades desde el marketplace skills.sh
+4. Revisar la habilidad
 
 ### Uso
 
@@ -387,7 +277,6 @@ Luego, la habilidad documenta:
 1. Cuando al resultado de Claude le falta algo, corríjalo
 2. La habilidad aprende de la corrección.
 3. La próxima vez, la habilidad proporciona una mejor orientación.
-4. Usar `/agileflow:skill:upgrade` para permitir el aprendizaje
 
 ### Evolución
 
@@ -435,54 +324,25 @@ Los miembros del equipo obtienen automáticamente las habilidades y los aprendiz
 **Solution**:
 1. Consulte la sección "Cuándo utilizar" en SKILL.md
 2. Asegúrese de que su pregunta coincida con los factores desencadenantes de activación
-3. Usar `/agileflow:skill:test` para verificar la estructura de habilidades
-4. Edite la habilidad para agregar más palabras clave si es necesario
-
-### Servidor MCP no encontrado
-
-**Problem**: Durante la creación, aparece "Servidor MCP no encontrado".
-
-**Solution**:
-1. Puedes crear la habilidad sin MCP y agregarla más tarde.
-2. Configurar manualmente `.mcp.json` después de la creación
-3. Compruebe si el servidor está publicado (npm, GitHub, etc.)
+3. Edite la habilidad para agregar más palabras clave si es necesario
 
 ### Falta el archivo de aprendizajes
 
 **Problem**: La habilidad no mejora incluso después de las correcciones.
 
 **Solution**:
-1. Correr `/agileflow:skill:upgrade <skill-name>`
-2. Esto crea el archivo de aprendizajes.
-3. Se realizará un seguimiento de las correcciones futuras.
-
-### La validación de habilidades falla
-
-**Problem**: `/agileflow:skill:test` muestra fracasos.
-
-**Solution**:
-1. Lea el informe de validación para problemas específicos.
-2. Usar `/agileflow:skill:edit` para solucionar problemas
-3. Pruebe nuevamente para verificar las correcciones
+1. Cree manualmente un archivo de aprendizajes en `.agileflow/skills/_learnings/<skill>.yaml`
+2. Se realizará un seguimiento de las correcciones futuras.
 
 ## Uso avanzado
 
-### Crear habilidades específicas de dominio
+### Encontrar habilidades específicas de dominio
 
-Cree múltiples habilidades especializadas para dominios complejos:
+Explore el marketplace en busca de habilidades especializadas para dominios complejos:
 
 ```bash
-# Data layer skills
-/agileflow:skill:create postgresql-queries
-/agileflow:skill:create database-migrations
-
-# API layer skills
-/agileflow:skill:create rest-error-handling
-/agileflow:skill:create graphql-schema-design
-
-# UI layer skills
-/agileflow:skill:create accessibility-wcag
-/agileflow:skill:create react-performance
+# Ver recomendaciones del marketplace para su proyecto
+/agileflow:skill:recommend
 ```
 
 ### Composición de habilidades
@@ -510,17 +370,13 @@ Agregue convenciones específicas del proyecto que no requieran correcciones.
 
 ## Comandos relacionados
 
-- [`/habilidad:crear`](/commands/skill-create) - Generar una nueva habilidad con la investigación.
-- [`/habilidad:lista`](/commands/skill-list) - Ver todas las habilidades instaladas
-- [`/ habilidad: editar`](/commands/skill-edit) - Modificar una habilidad existente
-- [`/habilidad:prueba`](/commands/skill-test) - Verificar que una habilidad funcione correctamente
-- [`/habilidad:eliminar`](/commands/skill-delete) - Eliminar una habilidad
-- [`/habilidad:actualizar`](/commands/skill-upgrade) - Agregar capacidad de mejora personal
+- [`/skill:list`](/commands/skill-list) - Listar habilidades instaladas y explorar recomendaciones del marketplace
+- `/skill:recommend` - Obtener recomendaciones de habilidades basadas en el stack tecnológico de su proyecto
 
 ## Próximos pasos
 
-1. **Create your first skill** - Comience con una tecnología que utilice con frecuencia
-2. **Test it** - Usar `/agileflow:skill:test` para verificar que funciona
+1. **Browse the marketplace** - Use `/agileflow:skill:list` para descubrir habilidades disponibles
+2. **Get recommendations** - Use `/agileflow:skill:recommend` para obtener sugerencias personalizadas
 3. **Use it** - Trabaja en tareas y deja que la habilidad se active.
 4. **Improve it** - Corregir la salida de Claude para enseñar la habilidad.
 5. **Share it** - Comprométete con git y los miembros del equipo lo obtienen.

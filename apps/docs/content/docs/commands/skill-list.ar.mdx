@@ -1,11 +1,11 @@
 ---
 title: "/المهارة:قائمة"
-description: قم بإدراج كافة المهارات المثبتة مع أوصافها وحالتها
+description: عرض المهارات المثبتة وتصفح توصيات السوق
 ---
 
 # /المهارة:قائمة
 
-عرض كافة المهارات المثبتة في `.claude/skills/` مع البيانات الوصفية ومعلومات الملف.
+عرض المهارات المثبتة وتوصيات السوق بناءً على مجموعة التقنيات الخاصة بمشروعك.
 
 ## بداية سريعة
 
@@ -13,7 +13,7 @@ description: قم بإدراج كافة المهارات المثبتة مع أ�
 /agileflow:skill:list
 ```
 
-يعرض جميع المهارات المثبتة مع الأوصاف وعدد الملفات وحالة MCP.
+يعرض جميع المهارات المثبتة مع الأوصاف وعدد الملفات وتوصيات السوق.
 
 ## ماذا يفعل
 
@@ -23,7 +23,7 @@ description: قم بإدراج كافة المهارات المثبتة مع أ�
 - **Descriptions** - الغرض وحالات الاستخدام
 - **File count** - كم عدد الملفات في كل مهارة
 - **Cookbook entries** - تم تضمين سير عمل حالة الاستخدام
-- **MCP status** - ما إذا تم تكوين MCP
+- **Marketplace recommendations** - ما إذا تم تكوين MCP
 - **Action recommendations** - ماذا تفعل بعد ذلك
 
 ## حدود
@@ -46,7 +46,7 @@ supabase-swift
   Supabase database operations for Swift iOS apps
   └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
      cookbook/crud.md, .mcp.json
-  MCP: ✓ Configured
+  Marketplace: recommended
 
 ui-components
   React component patterns with accessibility
@@ -128,7 +128,7 @@ react-hooks
 📦 No skills installed yet.
 
 Skills are stored in .claude/skills/ and can be created with:
-  /agileflow:skill:create
+  /agileflow:skill:recommend
 
 This will research best practices and generate a contextual skill.
 ```
@@ -160,10 +160,9 @@ What would you like to do?
 
 اختر خيارًا من أجل:
 
-- **Create new skill** → `/agileflow:skill:create`
-- **Edit a skill** → `/agileflow:skill:edit`
-- **Delete a skill** → `/agileflow:skill:delete`
-- **Test a skill** → `/agileflow:skill:test`
+- **Create new skill** → `/agileflow:skill:recommend`
+
+
 - **Done** → خروج
 
 ## هيكل المهارات
@@ -190,16 +189,16 @@ What would you like to do?
 
 ```bash
 # Edit the skill to view/modify
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Test the skill to validate
-/agileflow:skill:test <skill-name>
+
 
 # View SKILL.md directly
 cat .claude/skills/<skill-name>/SKILL.md
 ```
 
-## حالة MCP
+## توصيات السوق
 
 يوضح مؤشر MCP ما إذا تم تكوين المهارة للوصول إلى الأداة:
 
@@ -210,10 +209,10 @@ cat .claude/skills/<skill-name>/SKILL.md
 
 ```bash
 # Edit the skill
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Or upgrade it
-/agileflow:skill:upgrade <skill-name>
+
 ```
 
 ## أفضل الممارسات
@@ -241,7 +240,7 @@ cat .claude/skills/<skill-name>/SKILL.md
 احذف المهارات التي لم تعد تستخدمها:
 
 ```bash
-/agileflow:skill:delete old-skill-name
+
 ```
 
 وهذا يحافظ على تركيز دليل مهاراتك ويسهل إدارته.
@@ -269,8 +268,8 @@ cat .claude/skills/<skill-name>/SKILL.md
 إذا أظهرت المهارة بيانات تعريف غير مكتملة:
 
 1. قد يحتوي الملف SKILL.md على مادة أمامية تالفة
-2. يجري `/agileflow:skill:test` لتشخيص
-3. تحرير مع `/agileflow:skill:edit` لإصلاح
+
+3. تحرير مع `/agileflow:skill:recommend` لإصلاح
 
 ### MCP لا يظهر
 
@@ -286,15 +285,10 @@ cat .claude/skills/<skill-name>/SKILL.md
 
 ## الأوامر ذات الصلة
 
-- [`/المهارة: إنشاء`](/commands/skill-create) - توليد مهارة جديدة
-- [`/المهارة: تحرير`](/commands/skill-edit) - تعديل مهارة موجودة
-- [`/المهارة:اختبار`](/commands/skill-test) - التحقق من عمل المهارة
-- [`/المهارة:حذف`](/commands/skill-delete) - إزالة المهارة
-- [`/المهارة:ترقية`](/commands/skill-upgrade) - إضافة القدرة على التعلم
+- `/skill:recommend` - الحصول على توصيات المهارات بناءً على مجموعة التقنيات الخاصة بمشروعك
 
 ## الخطوات التالية
 
-1. **List your skills**: `/agileflow:skill:list`
-2. **Create more skills**: `/agileflow:skill:create`
-3. **Test a skill**: `/agileflow:skill:test <skill-name>`
-4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`
+1. **عرض المهارات**: `/agileflow:skill:list`
+2. **الحصول على توصيات**: `/agileflow:skill:recommend`
+3. **تصفح السوق**: قم بزيارة skills.sh للمزيد من المهارات

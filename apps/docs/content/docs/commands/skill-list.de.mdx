@@ -1,11 +1,11 @@
 ---
 title: "/skill:list"
-description: Listen Sie alle installierten Fähigkeiten mit ihrer Beschreibung und ihrem Status auf
+description: Installierte Fähigkeiten auflisten und Marketplace-Empfehlungen durchsuchen
 ---
 
 # /skill:list
 
-Alle installierten Fähigkeiten anzeigen `.claude/skills/` mit ihren Metadaten und Dateiinformationen.
+Installierte Skills und Marketplace-Empfehlungen basierend auf dem Tech-Stack Ihres Projekts anzeigen.
 
 ## Schnellstart
 
@@ -13,7 +13,7 @@ Alle installierten Fähigkeiten anzeigen `.claude/skills/` mit ihren Metadaten u
 /agileflow:skill:list
 ```
 
-Zeigt alle installierten Fähigkeiten mit Beschreibungen, Dateianzahl und MCP-Status an.
+Zeigt alle installierten Fähigkeiten mit Beschreibungen, Dateianzahl und Marketplace-Empfehlungen an.
 
 ## Was es tut
 
@@ -23,7 +23,7 @@ Scannt Ihre installierten Fähigkeiten und zeigt Folgendes an:
 - **Descriptions** - Zweck und Anwendungsfälle
 - **File count** - Wie viele Dateien in jedem Skill
 - **Cookbook entries** - Use-case workflows included
-- **MCP status** – Ob MCP konfiguriert ist
+- **Marketplace recommendations** – Marketplace-Empfehlungen für Ihren Tech-Stack
 - **Action recommendations** - Was als nächstes zu tun ist
 
 ## Parameter
@@ -46,7 +46,7 @@ supabase-swift
   Supabase database operations for Swift iOS apps
   └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
      cookbook/crud.md, .mcp.json
-  MCP: ✓ Configured
+  Marketplace: recommended
 
 ui-components
   React component patterns with accessibility
@@ -128,7 +128,7 @@ Wenn Sie noch keine Fähigkeiten erstellt haben:
 📦 No skills installed yet.
 
 Skills are stored in .claude/skills/ and can be created with:
-  /agileflow:skill:create
+  /agileflow:skill:recommend
 
 This will research best practices and generate a contextual skill.
 ```
@@ -160,10 +160,9 @@ What would you like to do?
 
 Wählen Sie eine Option, um:
 
-- **Create new skill** → `/agileflow:skill:create`
-- **Edit a skill** → `/agileflow:skill:edit`
-- **Delete a skill** → `/agileflow:skill:delete`
-- **Test a skill** → `/agileflow:skill:test`
+- **Create new skill** → `/agileflow:skill:recommend`
+
+
 - **Done** → Beenden
 
 ## Fähigkeitsstruktur
@@ -190,10 +189,10 @@ Um weitere Details zu einer bestimmten Fähigkeit anzuzeigen:
 
 ```bash
 # Edit the skill to view/modify
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Test the skill to validate
-/agileflow:skill:test <skill-name>
+
 
 # View SKILL.md directly
 cat .claude/skills/<skill-name>/SKILL.md
@@ -210,10 +209,10 @@ So fügen Sie MCP zu einem Skill hinzu:
 
 ```bash
 # Edit the skill
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Or upgrade it
-/agileflow:skill:upgrade <skill-name>
+
 ```
 
 ## Best Practices
@@ -241,7 +240,7 @@ Regelmäßig ausführen `/skill:list` Zu:
 Löschen Sie Fähigkeiten, die Sie nicht mehr verwenden:
 
 ```bash
-/agileflow:skill:delete old-skill-name
+
 ```
 
 Dadurch bleibt Ihr Kompetenzverzeichnis fokussiert und einfacher zu verwalten.
@@ -269,8 +268,8 @@ Wenn Sie „Noch keine Fertigkeiten installiert“ und erwartete Fertigkeiten se
 Wenn ein Skill unvollständige Metadaten aufweist:
 
 1. Die Datei SKILL.md enthält möglicherweise beschädigte Frontmatter
-2. Laufen `/agileflow:skill:test` zu diagnostizieren
-3. Bearbeiten mit `/agileflow:skill:edit` reparieren
+
+3. Bearbeiten mit `/agileflow:skill:recommend` reparieren
 
 ### MCP wird nicht angezeigt
 
@@ -286,15 +285,10 @@ Wenn Sie MCP erwarten, aber „ ✓ Konfiguriert“ nicht sehen:
 
 ## Verwandte Befehle
 
-- [`/skill:create`](/commands/skill-create) - Generieren Sie eine neue Fähigkeit
-- [`/skill:edit`](/commands/skill-edit) - Ändern Sie eine vorhandene Fertigkeit
-- [`/skill:test`](/commands/skill-test) - Überprüfen Sie, ob eine Fertigkeit funktioniert
-- [`/skill:delete`](/commands/skill-delete) - Eine Fertigkeit entfernen
-- [`/skill:upgrade`](/commands/skill-upgrade) - Lernfähigkeit hinzufügen
+- `/skill:recommend` - Skill-Empfehlungen basierend auf dem Tech-Stack Ihres Projekts erhalten
 
 ## Nächste Schritte
 
-1. **List your skills**: `/agileflow:skill:list`
-2. **Create more skills**: `/agileflow:skill:create`
-3. **Test a skill**: `/agileflow:skill:test <skill-name>`
-4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`
+1. **Fähigkeiten auflisten**: `/agileflow:skill:list`
+2. **Empfehlungen erhalten**: `/agileflow:skill:recommend`
+3. **Marketplace durchsuchen**: Besuchen Sie skills.sh für weitere Skills

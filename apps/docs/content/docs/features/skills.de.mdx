@@ -9,20 +9,18 @@ Mit dem Skills-System können Sie benutzerdefinierte KI-Eingabeaufforderungen er
 
 ## Schnellstart
 
-Erstelle deinen ersten Skill in 30 Sekunden:
+Entdecken Sie verfügbare Skills im Marketplace:
 
 ```bash
-/agileflow:skill:create
+/agileflow:skill:list
 ```
 
-Beantworten Sie ein paar Fragen zu Ihren Anforderungen und Claude recherchiert Best Practices und erstellt einen gebrauchsfertigen Skill.
+Durchsuchen Sie installierte Skills und erhalten Sie Marketplace-Empfehlungen basierend auf Ihrem Tech-Stack.
 
-Dann nutzen Sie es:
+Erhalten Sie personalisierte Empfehlungen:
 
 ```bash
-/agileflow:skill:list              # See all your skills
-/agileflow:skill:test my-skill     # Verify it works
-/agileflow:skill:upgrade my-skill  # Add learning capability
+/agileflow:skill:recommend
 ```
 
 ## Was sind Fähigkeiten?
@@ -32,7 +30,7 @@ A **skill** ist eine strukturierte Eingabeaufforderungsvorlage, die Claude beibr
 - **Research-backed** – Generiert aus Webdokumenten, lokaler Dokumentation und Ihrer Codebasis
 - **Self-improving** - Lernen Sie aus Ihren Korrekturen und verfeinern Sie sie automatisch
 - **Cookbook-based** - Mehrere Anwendungsfall-Workflows in einem einzigen Skill
-- **Integrable** - Kann Model Context Protocol (MCP)-Server für den Werkzeugzugriff umfassen
+- **Marketplace-powered** - Durchsuchen und installieren Sie Skills aus dem skills.sh-Marktplatz
 
 ### Beispielfähigkeiten
 
@@ -84,50 +82,33 @@ Jede Lerndatei verfolgt Folgendes:
 - **Anti-patterns** - Was Sie vermeiden sollten
 - **Examples** - Gute und schlechte Beispiele aus Korrekturen
 
-## Fähigkeiten schaffen
+## Skills finden
 
-### Schnellstart
+### Im Marketplace stöbern
 
-Schaffen Sie eine Fähigkeit mit intelligenter Forschung:
-
-```bash
-/agileflow:skill:create
-```
-
-Oder geben Sie einen Hinweis:
+Entdecken Sie Skills im skills.sh-Marktplatz:
 
 ```bash
-/agileflow:skill:create supabase-swift
+/agileflow:skill:list
 ```
 
-### Wie die Schöpfung funktioniert
+Dieser Befehl zeigt Ihre installierten Skills an und empfiehlt neue Skills basierend auf dem Tech-Stack Ihres Projekts.
 
-Der `/agileflow:skill:create` Das Kommando führt umfassende Untersuchungen durch:
+### Empfehlungen erhalten
 
-**Phase 1: Requirements**
-- Sie beschreiben, was Sie benötigen (Technologie, Anwendungsfälle, Framework)
+Erhalten Sie personalisierte Skill-Empfehlungen:
 
-**Phase 2: Research**
-- **Web documentation** – Offizielle Dokumente, API-Referenzen, Tutorials
-- **Local documentation** - Die Dokumente, Architekturentscheidungen und Praktiken Ihres Projekts
-- **Codebase patterns** - Vorhandene Codebeispiele und Konventionen
-- **MCP servers** - Verfügbare Werkzeuge für die Technologie
+```bash
+/agileflow:skill:recommend
+```
 
-**Phase 3: Generation**
-Der Befehl generiert:
-- **SKILL.md** - Hauptfertigkeit mit Aktivierungsauslösern und Kochbuch
-- **references.md** - Dokumentationslinks und Codemuster
-- **cookbook/** - Workflows für verschiedene Anwendungsfälle
-- **.mcp.json** - Serverkonfiguration (falls zutreffend)
-
-**Phase 4: Confirmation**
-Sie sehen die generierte Struktur und können diese erstellen, bearbeiten oder abbrechen.
+Analysiert die Technologien Ihres Projekts und schlägt relevante Skills aus dem Marketplace vor.
 
 ## Fähigkeiten verwalten
 
 ### Listen Sie alle Fähigkeiten auf
 
-Sehen Sie sich Ihre installierten Fähigkeiten an:
+Sehen Sie sich Ihre installierten Fähigkeiten und Marketplace-Empfehlungen an:
 
 ```bash
 /agileflow:skill:list
@@ -136,61 +117,8 @@ Sehen Sie sich Ihre installierten Fähigkeiten an:
 Zeigt:
 - Namen und Beschreibungen der Fertigkeiten
 - Unterstützte Anwendungsfälle
-- MCP-Integrationsstatus
+- Marketplace-Empfehlungen basierend auf Ihrem Tech-Stack
 - Anzahl der Dateien
-
-### Fertigkeiten bearbeiten
-
-Ändern Sie eine vorhandene Fertigkeit:
-
-```bash
-/agileflow:skill:edit <skill-name>
-```
-
-Du kannst:
-- Aktualisieren Sie die SKILL.md-Anweisungen
-- Neue Kochbucheinträge hinzufügen
-- Aktualisieren Sie Referenzen und Dokumentationslinks
-- Benennen Sie die Fertigkeit um
-- Führen Sie eine vollständige Neufassung mit neuer Recherche durch
-
-### Testfähigkeiten
-
-Überprüfen Sie, ob ein Skill ordnungsgemäß funktioniert:
-
-```bash
-/agileflow:skill:test <skill-name>
-```
-
-Tests:
-- **Structure validation** - Alle erforderlichen Dateien vorhanden
-- **Content validation** - Richtige Formatierung und Größe
-- **Activation test** - Die Fertigkeit wird bei Beispielaufforderungen aktiviert
-- **MCP configuration** - Gültiges Server-Setup
-
-### Fertigkeiten löschen
-
-Entfernen Sie eine Fertigkeit, wenn Sie sie nicht mehr benötigen:
-
-```bash
-/agileflow:skill:delete <skill-name>
-```
-
-### Fähigkeiten verbessern
-
-Erweitern Sie ältere Fähigkeiten um Lernfähigkeit:
-
-```bash
-/agileflow:skill:upgrade <skill-name>
-```
-
-Oder upgraden Sie alles auf einmal:
-
-```bash
-/agileflow:skill:upgrade --all
-```
-
-Erstellt eine Lerndatei, die Korrekturen und Verbesserungen verfolgt.
 
 ## Das Lernsystem
 
@@ -263,7 +191,7 @@ metadata:
 
 ### Fähigkeiten erhalten
 
-1. **Test regularly** - Verwenden `/agileflow:skill:test` Qualität zu überprüfen
+1. **Test regularly** - Überprüfen Sie regelmäßig die Qualität Ihrer Fähigkeiten
 2. **Review learnings** - Überprüfen Sie, was der Skill aus Korrekturen gelernt hat
 3. **Update references** - Halten Sie die Dokumentationslinks aktuell
 4. **Archive unused skills** - Bereinigen Sie Fähigkeiten, die Sie nicht mehr verwenden
@@ -328,52 +256,14 @@ Fügen Sie Kochbucheinträge hinzu, wenn:
 - Die Einrichtung unterscheidet sich je nach Szenario
 - Benutzer fragen häufig nach einer Schritt-für-Schritt-Anleitung
 
-## MCP-Integration
-
-Skills können für den Werkzeugzugriff in Model Context Protocol-Server integriert werden.
-
-### Was ist MCP?
-
-MCP-Server erweitern Claudes Fähigkeiten durch Folgendes:
-- Datenzugriff in Echtzeit
-- Tool-Ausführung (Dateioperationen, Netzwerkaufrufe)
-- Systemintegration (APIs, Datenbanken)
-- Fachwissen (Dokumentation, Code-Tools)
-
-### Verwendung von MCP in Skills
-
-Wenn während der Erstellung ein MCP-Server gefunden wird, umfasst der Skill `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": ["@supabase/mcp-server"],
-      "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_KEY": "${SUPABASE_KEY}"
-      }
-    }
-  }
-}
-```
-
-Der Skill dokumentiert dann:
-- Vom Server bereitgestellte Tools
-- Einrichtungsanweisungen
-- Umgebungsvariablen erforderlich
-- Integrationsbeispiele
-
 ## Skill-Lebenszyklus
 
-### Schaffung
+### Entdeckung
 
-1. Laufen `/agileflow:skill:create`
-2. Beschreiben Sie, was Sie brauchen
-3. Command erforscht Best Practices
-4. Überprüfen Sie den generierten Skill
-5. Erstellen Sie die Fertigkeit
+1. Ausführen `/agileflow:skill:list` um den Marketplace zu durchsuchen
+2. Ausführen `/agileflow:skill:recommend` für personalisierte Vorschläge
+3. Skills aus dem skills.sh-Marktplatz installieren
+4. Die Fertigkeit überprüfen
 
 ### Verwendung
 
@@ -387,7 +277,6 @@ Der Skill dokumentiert dann:
 1. Wenn Claudes Ausgabe etwas übersieht, korrigieren Sie es
 2. Geschicklichkeit lernt aus der Korrektur
 3. Das nächste Mal bietet Geschicklichkeit eine bessere Orientierung
-4. Verwenden `/agileflow:skill:upgrade` Lernen zu ermöglichen
 
 ### Evolution
 
@@ -433,56 +322,27 @@ Team members automatically get the skill and learnings.
 **Problem**: Du fragst nach dem Thema des Skills, aber Claude aktiviert ihn nicht.
 
 **Solution**:
-1. Sehen Sie sich den Abschnitt „Wann zu verwenden“ in SKILL.md an
+1. Sehen Sie sich den Abschnitt „Wann zu verwenden” in SKILL.md an
 2. Stellen Sie sicher, dass Ihre Frage mit den Aktivierungsauslösern übereinstimmt
-3. Verwenden `/agileflow:skill:test` um die Fähigkeitsstruktur zu überprüfen
-4. Bearbeiten Sie den Skill, um bei Bedarf weitere Schlüsselwörter hinzuzufügen
-
-### MCP-Server nicht gefunden
-
-**Problem**: Während der Erstellung wird „MCP-Server nicht gefunden“ angezeigt.
-
-**Solution**:
-1. You can create the skill without MCP and add it later
-2. Manuell eingerichtet `.mcp.json` nach der Schöpfung
-3. Überprüfen Sie, ob der Server veröffentlicht ist (npm, GitHub usw.)
+3. Bearbeiten Sie den Skill, um bei Bedarf weitere Schlüsselwörter hinzuzufügen
 
 ### Lerndatei fehlt
 
 **Problem**: Die Fähigkeit verbessert sich auch nach Korrekturen nicht.
 
 **Solution**:
-1. Laufen `/agileflow:skill:upgrade <skill-name>`
-2. Dadurch wird die Lerndatei erstellt
-3. Zukünftige Korrekturen werden nachverfolgt
-
-### Die Fähigkeitsvalidierung schlägt fehl
-
-**Problem**: `/agileflow:skill:test` zeigt Misserfolge.
-
-**Solution**:
-1. Lesen Sie den Validierungsbericht für bestimmte Probleme
-2. Verwenden `/agileflow:skill:edit` um Probleme zu beheben
-3. Testen Sie erneut, um die Korrekturen zu überprüfen
+1. Erstellen Sie manuell eine Lerndatei unter `.agileflow/skills/_learnings/<skill>.yaml`
+2. Zukünftige Korrekturen werden nachverfolgt
 
 ## Erweiterte Nutzung
 
-### Erstellen domänenspezifischer Fähigkeiten
+### Domänenspezifische Skills finden
 
-Schaffen Sie mehrere Spezialfähigkeiten für komplexe Domänen:
+Durchsuchen Sie den Marketplace nach spezialisierten Skills für komplexe Domänen:
 
 ```bash
-# Data layer skills
-/agileflow:skill:create postgresql-queries
-/agileflow:skill:create database-migrations
-
-# API layer skills
-/agileflow:skill:create rest-error-handling
-/agileflow:skill:create graphql-schema-design
-
-# UI layer skills
-/agileflow:skill:create accessibility-wcag
-/agileflow:skill:create react-performance
+# Marketplace-Empfehlungen für Ihr Projekt anzeigen
+/agileflow:skill:recommend
 ```
 
 ### Fertigkeitskomposition
@@ -510,17 +370,13 @@ Fügen Sie projektspezifische Konventionen hinzu, die keine Korrekturen erforder
 
 ## Verwandte Befehle
 
-- [`/skill:create`](/commands/skill-create) - Entwickeln Sie durch Forschung eine neue Fähigkeit
-- [`/skill:list`](/commands/skill-list) - Alle installierten Fähigkeiten anzeigen
-- [`/skill:edit`](/commands/skill-edit) - Ändern Sie eine vorhandene Fertigkeit
-- [`/skill:test`](/commands/skill-test) - Überprüfen Sie, ob ein Skill ordnungsgemäß funktioniert
-- [`/skill:delete`](/commands/skill-delete) - Eine Fertigkeit entfernen
-- [`/skill:upgrade`](/commands/skill-upgrade) - Fügen Sie die Fähigkeit zur Selbstverbesserung hinzu
+- [`/skill:list`](/commands/skill-list) - Installierte Skills auflisten und Marketplace-Empfehlungen durchsuchen
+- `/skill:recommend` - Skill-Empfehlungen basierend auf dem Tech-Stack Ihres Projekts erhalten
 
 ## Nächste Schritte
 
-1. **Create your first skill** - Beginnen Sie mit einer Technologie, die Sie häufig verwenden
-2. **Test it** - Verwenden `/agileflow:skill:test` um zu überprüfen, ob es funktioniert
+1. **Browse the marketplace** - Verwenden Sie `/agileflow:skill:list` um verfügbare Skills zu entdecken
+2. **Get recommendations** - Verwenden Sie `/agileflow:skill:recommend` für personalisierte Vorschläge
 3. **Use it** - Arbeiten Sie an Aufgaben und lassen Sie die Fähigkeit aktivieren
 4. **Improve it** - Korrigieren Sie Claudes Ausgabe, um die Fertigkeit zu erlernen
 5. **Share it** - Verpflichten Sie sich zu Git und die Teammitglieder bekommen es

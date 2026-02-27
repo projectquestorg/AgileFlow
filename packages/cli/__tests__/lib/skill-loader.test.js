@@ -160,12 +160,10 @@ A test skill for database operations.`
       fs.mkdirSync(path.join(skillDir, 'cookbook'));
       fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: full\n---\n# Full');
       fs.writeFileSync(path.join(skillDir, 'references.md'), '# Refs');
-      fs.writeFileSync(path.join(skillDir, '.mcp.json'), '{}');
 
       const skill = loadSkill(skillDir);
       expect(skill.hasReferences).toBe(true);
       expect(skill.hasCookbook).toBe(true);
-      expect(skill.hasMcp).toBe(true);
     });
 
     it('returns null for non-existent directory', () => {

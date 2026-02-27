@@ -9,20 +9,18 @@ Le système de compétences vous permet de créer et de gérer des invites d'IA 
 
 ## Démarrage rapide
 
-Créez votre première compétence en 30 secondes :
+Découvrez les compétences disponibles sur le marketplace :
 
 ```bash
-/agileflow:skill:create
+/agileflow:skill:list
 ```
 
-Répondez à quelques questions sur vos besoins et Claude recherchera les meilleures pratiques et générera une compétence prête à l'emploi.
+Parcourez les compétences installées et obtenez des recommandations du marketplace basées sur votre stack technique.
 
-Alors utilisez-le :
+Obtenez des recommandations personnalisées :
 
 ```bash
-/agileflow:skill:list              # See all your skills
-/agileflow:skill:test my-skill     # Verify it works
-/agileflow:skill:upgrade my-skill  # Add learning capability
+/agileflow:skill:recommend
 ```
 
 ## Que sont les compétences ?
@@ -32,7 +30,7 @@ A **skill** est un modèle d'invite structuré qui apprend à Claude comment gé
 - **Research-backed** - Généré à partir de documents Web, de la documentation locale et de votre base de code
 - **Self-improving** - Apprenez de vos corrections et affinez automatiquement
 - **Cookbook-based** - Plusieurs workflows de cas d'utilisation dans une seule compétence
-- **Integrable** - Peut inclure des serveurs MCP (Model Context Protocol) pour l'accès aux outils
+- **Marketplace-powered** - Parcourez et installez des compétences depuis le marketplace skills.sh
 
 ### Exemples de compétences
 
@@ -84,113 +82,43 @@ Chaque fichier d'apprentissage suit :
 - **Anti-patterns** - Ce qu'il faut éviter
 - **Examples** - Bons et mauvais exemples de corrections
 
-## Créer des compétences
+## Trouver des compétences
 
-### Démarrage rapide
+### Parcourir le marketplace
 
-Créez une compétence avec une recherche intelligente :
-
-```bash
-/agileflow:skill:create
-```
-
-Ou donnez un indice :
-
-```bash
-/agileflow:skill:create supabase-swift
-```
-
-### Comment fonctionne la création
-
-Le `/agileflow:skill:create` la commande effectue des recherches approfondies :
-
-**Phase 1: Requirements**
-- Vous décrivez ce dont vous avez besoin (technologie, cas d'utilisation, framework)
-
-**Phase 2: Research**
-- **Web documentation** - Documents officiels, références API, tutoriels
-- **Local documentation** - Les documents de votre projet, les décisions d'architecture, les pratiques
-- **Codebase patterns** - Exemples de codes et conventions existants
-- **MCP servers** - Outils disponibles pour la technologie
-
-**Phase 3: Generation**
-La commande génère :
-- **SKILL.md** - Compétence principale avec déclencheurs d'activation et livre de recettes
-- **references.md** - Liens de documentation et modèles de code
-- **cookbook/** - Workflows pour différents cas d'utilisation
-- **.mcp.json** - Configuration du serveur (le cas échéant)
-
-**Phase 4: Confirmation**
-Vous voyez la structure générée et pouvez créer, modifier ou annuler.
-
-## Gestion des compétences
-
-### Lister toutes les compétences
-
-Visualisez vos compétences installées :
+Découvrez des compétences sur le marketplace skills.sh :
 
 ```bash
 /agileflow:skill:list
 ```
 
-Spectacles :
+Cette commande affiche vos compétences installées et recommande de nouvelles compétences basées sur le stack technique de votre projet.
+
+### Obtenir des recommandations
+
+Obtenez des recommandations de compétences personnalisées :
+
+```bash
+/agileflow:skill:recommend
+```
+
+Analyse les technologies de votre projet et suggère des compétences pertinentes du marketplace.
+
+## Gestion des compétences
+
+### Lister toutes les compétences
+
+Visualisez vos compétences installées et les recommandations du marketplace :
+
+```bash
+/agileflow:skill:list
+```
+
+Affiche :
 - Noms et descriptions des compétences
-- Cas d'utilisation pris en charge
-- Statut d'intégration MCP
+- Cas d’utilisation pris en charge
+- Recommandations du marketplace basées sur votre stack technique
 - Nombre de fichiers
-
-### Modifier les compétences
-
-Modifier une compétence existante :
-
-```bash
-/agileflow:skill:edit <skill-name>
-```
-
-Tu peux:
-- Mettre à jour les instructions de SKILL.md
-- Ajouter de nouvelles entrées de livre de recettes
-- Mettre à jour les références et les liens de documentation
-- Renommer la compétence
-- Effectuez une réécriture complète avec de nouvelles recherches
-
-### Tester les compétences
-
-Vérifiez qu'une compétence fonctionne correctement :
-
-```bash
-/agileflow:skill:test <skill-name>
-```
-
-Essais :
-- **Structure validation** -Tous les fichiers requis sont présents
-- **Content validation** - Formatage et taille appropriés
-- **Activation test** - La compétence s'active sur des exemples d'invites
-- **MCP configuration** - Configuration du serveur valide
-
-### Supprimer les compétences
-
-Supprimez une compétence lorsqu’elle n’est plus nécessaire :
-
-```bash
-/agileflow:skill:delete <skill-name>
-```
-
-### Améliorer les compétences
-
-Ajoutez une capacité d’apprentissage aux compétences plus anciennes :
-
-```bash
-/agileflow:skill:upgrade <skill-name>
-```
-
-Ou effectuez une mise à niveau d'un seul coup :
-
-```bash
-/agileflow:skill:upgrade --all
-```
-
-Crée un fichier d'apprentissage qui suit les corrections et les améliorations.
 
 ## Le système d'apprentissage
 
@@ -263,7 +191,7 @@ metadata:
 
 ### Maintenir les compétences
 
-1. **Test regularly** - Utiliser `/agileflow:skill:test` pour vérifier la qualité
+1. **Test regularly** - Vérifiez régulièrement la qualité de vos compétences
 2. **Review learnings** - Vérifiez ce que la compétence a appris des corrections
 3. **Update references** - Garder les liens de documentation à jour
 4. **Archive unused skills** - Nettoyer les compétences que vous n'utilisez plus
@@ -328,52 +256,14 @@ Ajoutez des entrées de livre de recettes lorsque :
 - La configuration diffère selon les scénarios
 - Les utilisateurs demandent fréquemment des conseils étape par étape
 
-## Intégration MCP
-
-Les compétences peuvent s'intégrer aux serveurs Model Context Protocol pour accéder aux outils.
-
-### Qu’est-ce que MCP ?
-
-Les serveurs MCP étendent les capacités de Claude en fournissant :
-- Accès aux données en temps réel
-- Exécution d'outils (opérations sur fichiers, appels réseau)
-- Intégration système (API, bases de données)
-- Connaissances spécialisées (documentation, outils de code)
-
-### Utiliser MCP dans les compétences
-
-Si un serveur MCP est trouvé lors de la création, la compétence inclut `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": ["@supabase/mcp-server"],
-      "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_KEY": "${SUPABASE_KEY}"
-      }
-    }
-  }
-}
-```
-
-La compétence documente ensuite :
-- Outils fournis par le serveur
-- Instructions de configuration
-- Variables d'environnement nécessaires
-- Exemples d'intégration
-
 ## Cycle de vie des compétences
 
-### Création
+### Découverte
 
-1. Courir `/agileflow:skill:create`
-2. Décrivez ce dont vous avez besoin
-3. Le commandement recherche les meilleures pratiques
-4. Examiner la compétence générée
-5. Créer la compétence
+1. Exécuter `/agileflow:skill:list` pour parcourir le marketplace
+2. Exécuter `/agileflow:skill:recommend` pour des suggestions personnalisées
+3. Installer des compétences depuis le marketplace skills.sh
+4. Examiner la compétence
 
 ### Usage
 
@@ -387,7 +277,6 @@ La compétence documente ensuite :
 1. Lorsque la sortie de Claude manque quelque chose, corrigez-le
 2. La compétence apprend de la correction
 3. La prochaine fois, les compétences fourniront un meilleur guidage
-4. Utiliser `/agileflow:skill:upgrade` pour permettre l'apprentissage
 
 ### Évolution
 
@@ -428,61 +317,32 @@ Les membres de l’équipe acquièrent automatiquement les compétences et les a
 
 ## Dépannage
 
-### Skill Not Activating
+### Compétence non activée
 
-**Problem**: Vous posez des questions sur le sujet de la compétence mais Claude ne l'active pas.
-
-**Solution**:
-1. Consultez la section « Quand utiliser » dans SKILL.md.
-2. Assurez-vous que votre question correspond aux déclencheurs d'activation
-3. Utiliser `/agileflow:skill:test` vérifier la structure des compétences
-4. Modifiez la compétence pour ajouter plus de mots-clés si nécessaire
-
-### Serveur MCP introuvable
-
-**Problem**: Lors de la création, "Serveur MCP introuvable" apparaît.
+**Problem**: Vous posez des questions sur le sujet de la compétence mais Claude ne l’active pas.
 
 **Solution**:
-1. You can create the skill without MCP and add it later
-2. Configurer manuellement `.mcp.json` après la création
-3. Vérifiez si le serveur est publié (npm, GitHub, etc.)
+1. Consultez la section « Quand utiliser » dans SKILL.md.
+2. Assurez-vous que votre question correspond aux déclencheurs d’activation
+3. Modifiez la compétence pour ajouter plus de mots-clés si nécessaire
 
-### Fichier d'apprentissage manquant
+### Fichier d’apprentissage manquant
 
-**Problem**: La compétence ne s'améliore pas même après les corrections.
-
-**Solution**:
-1. Courir `/agileflow:skill:upgrade <skill-name>`
-2. Cela crée le fichier d'apprentissages
-3. Les corrections futures seront suivies
-
-### La validation des compétences échoue
-
-**Problem**: `/agileflow:skill:test` montre des échecs.
+**Problem**: La compétence ne s’améliore pas même après les corrections.
 
 **Solution**:
-1. Lire le rapport de validation pour des problèmes spécifiques
-2. Utiliser `/agileflow:skill:edit` pour résoudre des problèmes
-3. Testez à nouveau pour vérifier les correctifs
+1. Créez manuellement un fichier d’apprentissage dans `.agileflow/skills/_learnings/<skill>.yaml`
+2. Les corrections futures seront suivies
 
 ## Utilisation avancée
 
-### Créer des compétences spécifiques à un domaine
+### Trouver des compétences spécifiques à un domaine
 
-Créez plusieurs compétences spécialisées pour des domaines complexes :
+Parcourez le marketplace pour des compétences spécialisées dans des domaines complexes :
 
 ```bash
-# Data layer skills
-/agileflow:skill:create postgresql-queries
-/agileflow:skill:create database-migrations
-
-# API layer skills
-/agileflow:skill:create rest-error-handling
-/agileflow:skill:create graphql-schema-design
-
-# UI layer skills
-/agileflow:skill:create accessibility-wcag
-/agileflow:skill:create react-performance
+# Voir les recommandations du marketplace pour votre projet
+/agileflow:skill:recommend
 ```
 
 ### Composition des compétences
@@ -510,17 +370,13 @@ Ajoutez des conventions spécifiques au projet qui ne nécessitent pas de correc
 
 ## Commandes associées
 
-- [`/compétence : créer`](/commands/skill-create) - Générer une nouvelle compétence avec la recherche
-- [`/compétence :liste`](/commands/skill-list) - Afficher toutes les compétences installées
-- [`/compétence : modifier`](/commands/skill-edit) - Modifier une compétence existante
-- [`/compétence :test`](/commands/skill-test) - Vérifier qu'une compétence fonctionne correctement
-- [`/compétence : supprimer`](/commands/skill-delete) - Supprimer une compétence
-- [`/compétence : mise à niveau`](/commands/skill-upgrade) - Ajouter une capacité d'auto-amélioration
+- [`/skill:list`](/commands/skill-list) - Lister les compétences installées et parcourir les recommandations du marketplace
+- `/skill:recommend` - Obtenir des recommandations de compétences basées sur le stack technique de votre projet
 
 ## Prochaines étapes
 
-1. **Create your first skill** - Commencez par une technologie que vous utilisez fréquemment
-2. **Test it** - Utiliser `/agileflow:skill:test` pour vérifier que ça marche
+1. **Browse the marketplace** - Utilisez `/agileflow:skill:list` pour découvrir les compétences disponibles
+2. **Get recommendations** - Utilisez `/agileflow:skill:recommend` pour des suggestions personnalisées
 3. **Use it** - Travaillez sur des tâches et laissez la compétence s'activer
 4. **Improve it** - Corriger le résultat de Claude pour enseigner la compétence
 5. **Share it** - S'engager sur git et les membres de l'équipe l'obtiendront

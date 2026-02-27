@@ -1,11 +1,11 @@
 ---
 title: "/habilidade:lista"
-description: Liste todas as habilidades instaladas com suas descrições e status
+description: Listar habilidades instaladas e navegar pelas recomendações do marketplace
 ---
 
 # /habilidade:lista
 
-Exibir todas as habilidades instaladas em `.claude/skills/` com seus metadados e informações de arquivo.
+Exibir habilidades instaladas e recomendações do marketplace com base no stack tecnológico do seu projeto.
 
 ## Início rápido
 
@@ -13,7 +13,7 @@ Exibir todas as habilidades instaladas em `.claude/skills/` com seus metadados e
 /agileflow:skill:list
 ```
 
-Mostra todas as habilidades instaladas com descrições, contagens de arquivos e status do MCP.
+Mostra todas as habilidades instaladas com descrições, contagens de arquivos e recomendações do marketplace.
 
 ## O que isso faz
 
@@ -23,7 +23,7 @@ Verifica suas habilidades instaladas e exibe:
 - **Descriptions** - Finalidade e casos de uso
 - **File count** - Quantos arquivos em cada habilidade
 - **Cookbook entries** - Fluxos de trabalho de casos de uso incluídos
-- **MCP status** - Se o MCP está configurado
+- **Marketplace recommendations** - Recomendações do marketplace para seu stack
 - **Action recommendations** - O que fazer a seguir
 
 ## Parâmetros
@@ -46,7 +46,7 @@ supabase-swift
   Supabase database operations for Swift iOS apps
   └─ 5 files: SKILL.md, references.md, cookbook/auth.md,
      cookbook/crud.md, .mcp.json
-  MCP: ✓ Configured
+  Marketplace: recommended
 
 ui-components
   React component patterns with accessibility
@@ -128,7 +128,7 @@ Se você ainda não criou nenhuma habilidade:
 📦 No skills installed yet.
 
 Skills are stored in .claude/skills/ and can be created with:
-  /agileflow:skill:create
+  /agileflow:skill:recommend
 
 This will research best practices and generate a contextual skill.
 ```
@@ -160,10 +160,9 @@ What would you like to do?
 
 Escolha uma opção para:
 
-- **Create new skill** → `/agileflow:skill:create`
-- **Edit a skill** → `/agileflow:skill:edit`
-- **Delete a skill** → `/agileflow:skill:delete`
-- **Test a skill** → `/agileflow:skill:test`
+- **Create new skill** → `/agileflow:skill:recommend`
+
+
 - **Done** → Sair
 
 ## Estrutura de habilidades
@@ -190,10 +189,10 @@ Para ver mais detalhes sobre uma habilidade específica:
 
 ```bash
 # Edit the skill to view/modify
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Test the skill to validate
-/agileflow:skill:test <skill-name>
+
 
 # View SKILL.md directly
 cat .claude/skills/<skill-name>/SKILL.md
@@ -210,10 +209,10 @@ Para adicionar MCP a uma habilidade:
 
 ```bash
 # Edit the skill
-/agileflow:skill:edit <skill-name>
+/agileflow:skill:recommend <skill-name>
 
 # Or upgrade it
-/agileflow:skill:upgrade <skill-name>
+
 ```
 
 ## Melhores Práticas
@@ -241,7 +240,7 @@ Execute periodicamente `/skill:list` para:
 Exclua habilidades que você não usa mais:
 
 ```bash
-/agileflow:skill:delete old-skill-name
+
 ```
 
 Isso mantém seu diretório de habilidades focado e mais fácil de gerenciar.
@@ -269,8 +268,8 @@ Se você vir "Nenhuma habilidade instalada ainda" e as habilidades esperadas:
 Se uma habilidade mostrar metadados incompletos:
 
 1. O arquivo SKILL.md pode ter frontmatter corrompido
-2. Correr `/agileflow:skill:test` diagnosticar
-3. Editar com `/agileflow:skill:edit` consertar
+
+3. Editar com `/agileflow:skill:recommend` consertar
 
 ### MCP não aparece
 
@@ -286,15 +285,10 @@ Se você espera o MCP, mas não vê "✓ Configurado":
 
 ## Comandos Relacionados
 
-- [`/habilidade:criar`](/commands/skill-create) - Gerar uma nova habilidade
-- [`/habilidade:editar`](/commands/skill-edit) - Modificar uma habilidade existente
-- [`/habilidade:teste`](/commands/skill-test) - Verifique se uma habilidade funciona
-- [`/habilidade:excluir`](/commands/skill-delete) - Remover uma habilidade
-- [`/habilidade:atualizar`](/commands/skill-upgrade) - Adicionar capacidade de aprendizagem
+- `/skill:recommend` - Obter recomendações de habilidades com base no stack tecnológico do seu projeto
 
 ## Próximas etapas
 
-1. **List your skills**: `/agileflow:skill:list`
-2. **Create more skills**: `/agileflow:skill:create`
-3. **Test a skill**: `/agileflow:skill:test <skill-name>`
-4. **Enable learning**: `/agileflow:skill:upgrade <skill-name>`
+1. **Listar habilidades**: `/agileflow:skill:list`
+2. **Obter recomendações**: `/agileflow:skill:recommend`
+3. **Navegar marketplace**: Visite skills.sh para mais habilidades

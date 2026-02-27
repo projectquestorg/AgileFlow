@@ -1,283 +1,139 @@
 ---
-description: List all installed skills with their descriptions and status
+description: List installed skills and browse recommended skills from the marketplace
 argument-hint: "(no arguments)"
 compact_context:
   priority: medium
   preserve_rules:
-    - "ACTIVE COMMAND: /agileflow:skill:list - Shows installed skills inventory"
-    - "MUST scan .claude/skills/ directory for all skill subdirectories"
+    - "ACTIVE COMMAND: /agileflow:skill:list - Shows installed + recommended skills"
+    - "MUST scan .claude/skills/ directory for installed skill subdirectories"
     - "MUST extract name/description from each SKILL.md frontmatter"
-    - "MUST count supporting files (cookbook/*, references.md, .mcp.json)"
-    - "MUST show MCP status indicator if .mcp.json exists"
-    - "MUST offer skill management actions after listing"
+    - "MUST show recommended skills based on detected tech stack"
+    - "MUST provide install commands for marketplace skills"
+    - "MUST offer actions: recommend more, browse marketplace, done"
   state_fields:
     - skills_found_count
-    - has_mcp_skills
+    - recommendations_shown
 ---
 
 # /agileflow:skill:list
 
-Display all skills installed in `.claude/skills/` with their metadata.
+Display installed skills and recommended skills from the skills.sh marketplace.
 
 ---
 
 <!-- COMPACT_SUMMARY_START -->
 
-## 🚨 COMPACT SUMMARY - /agileflow:skill:list IS ACTIVE
+## COMPACT SUMMARY - /agileflow:skill:list IS ACTIVE
 
-**CRITICAL**: This command inventories all installed skills and their metadata.
+**CRITICAL**: This command shows installed skills AND marketplace recommendations.
 
-### 🚨 RULE #1: Check Directory Exists
-```bash
-ls -la .claude/skills/ 2>/dev/null
-```
-If directory missing or empty, show helpful message to create a skill.
+### RULE #1: Show Installed Skills
+Scan `.claude/skills/` for subdirectories with SKILL.md. For each:
+- Extract name/description from frontmatter
+- Count files (cookbook/*, references.md)
+- Display in clean format
 
-### 🚨 RULE #2: Scan Each Skill
-For EACH subdirectory in `.claude/skills/`:
-1. Read SKILL.md frontmatter for `name:` and `description:`
-2. Count supporting files:
-   - cookbook/*.md (all files)
-   - references.md (if exists)
-   - .mcp.json (if exists)
-3. Check for MCP: If `.mcp.json` exists, mark "MCP: ✓"
+### RULE #2: Show Recommended Skills
+Based on the project's tech stack (from package.json and project files):
+- Detect frameworks, databases, testing, styling
+- Match against curated skills catalog
+- Show top matches with install commands
 
-### 🚨 RULE #3: Format Output
-Display in clean table format:
-```
-📦 Installed Skills (N total)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-skill-name              Description here     MCP: ✓
-  └─ X files: file1, file2, file3
-```
+### RULE #3: Provide Install Commands
+Each recommended skill shows: `npx skills add owner/repo`
 
-### 🚨 RULE #4: Show File Count
-- Total files per skill (SKILL.md + references.md + cookbook/*.md + .mcp.json)
-- List cookbook files by name (only cookbook/, not full path)
-- Note MCP configuration status
-
-### 🚨 RULE #5: Offer Actions After Listing
-After showing all skills, ask:
-```
-What would you like to do?
-- Create new skill
-- Edit a skill
-- Delete a skill
-- Test a skill
-- Done
-```
-
-### Critical Output Elements
-| Element | Shows |
-|---------|-------|
-| Total count | "N total" in header |
-| Skill names | From SKILL.md `name:` field |
-| Description | From SKILL.md `description:` field |
-| File count | Total files in skill directory |
-| MCP status | "✓" if .mcp.json exists, nothing otherwise |
-
-### Anti-Patterns
-- ❌ DON'T fail if directory doesn't exist (create helpful message)
-- ❌ DON'T list hidden files or system files
-- ❌ DON'T show full file paths (just filenames)
-- ❌ DON'T try to parse corrupt SKILL.md (skip with warning)
-- ❌ DON'T forget to offer next actions
-
-### REMEMBER AFTER COMPACTION
-- List is inventory-only, no modifications
-- Always scan .claude/skills/ directory
-- Extract metadata from SKILL.md frontmatter
-- Show file counts and MCP status indicators
-- Offer management actions after listing
+### RULE #4: Offer Actions
+After listing, offer: Get more recommendations, Browse marketplace, Done
 
 <!-- COMPACT_SUMMARY_END -->
 
 ---
 
-## Output Format
-
-```
-📦 Installed Skills (X total)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-SKILL NAME              DESCRIPTION                           FILES
-─────────────────────────────────────────────────────────────────────
-supabase-swift          Supabase database operations          4 files
-  └─ cookbook/crud-operations.md, cookbook/auth.md
-
-ui-components           React component patterns              3 files
-  └─ cookbook/create-component.md
-
-api-integration         REST API client patterns              2 files
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
----
-
 ## Workflow
 
-### STEP 1: Check for skills directory
+### STEP 1: Show installed skills
+
+Scan `.claude/skills/` for subdirectories:
 
 ```bash
 ls -la .claude/skills/ 2>/dev/null
 ```
 
-If directory doesn't exist or is empty:
+For each subdirectory with SKILL.md:
+1. Read frontmatter for `name:` and `description:`
+2. Count supporting files (cookbook/*, references.md)
+
+Display format:
+```
+Installed Skills (N total)
+
+  skill-name - Description here
+    Files: SKILL.md, references.md, cookbook/use-case.md
+
+  another-skill - Another description
+    Files: SKILL.md, cookbook/workflow.md
+```
+
+If no skills installed:
 ```
 No skills installed yet.
-
-To create a skill, run: /agileflow:skill:create
+Install from the marketplace with: npx skills add owner/repo
+Or browse recommendations: /agileflow:skill:recommend
 ```
 
-### STEP 2: Scan each skill directory
+### STEP 2: Detect tech stack
 
-For each subdirectory in `.claude/skills/`:
+Read `package.json` dependencies and scan project files to detect:
+- **Frameworks**: React, Next.js, Vue, Svelte, Express, FastAPI, etc.
+- **Databases**: Prisma, Supabase, MongoDB, PostgreSQL, Redis, etc.
+- **Testing**: Jest, Vitest, Playwright, Cypress, pytest, etc.
+- **Styling**: Tailwind, styled-components, Sass, etc.
+- **Languages**: TypeScript, Python, Go, PHP, etc.
 
-1. **Read SKILL.md frontmatter** to extract:
-   - `name` - skill identifier
-   - `description` - skill purpose
+### STEP 3: Show top recommendations
 
-2. **Count supporting files**:
-   - cookbook/*.md
-   - tools/*
-   - .mcp.json (if present)
-   - references.md (if present)
-
-3. **Check for MCP integration**:
-   - If `.mcp.json` exists, note "MCP: ✓"
-
-### STEP 3: Format output
+Based on detected stack, show top 3-5 matching skills:
 
 ```
-📦 Installed Skills (3 total)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Recommended for Your Stack
 
-supabase-swift                                        MCP: ✓
-  Supabase database operations for Swift apps
-  └─ 4 files: cookbook/crud.md, cookbook/auth.md, references.md, .mcp.json
+  Detected: React, Next.js, TypeScript, Tailwind, Prisma, Jest
 
-ui-components
-  React component patterns with accessibility
-  └─ 3 files: cookbook/create.md, cookbook/styling.md, references.md
+  Frontend:
+    next-best-practices (95% match) - Next.js App Router, RSC, and data fetching
+      Install: npx skills add vercel/next-skills
 
-api-integration
-  REST API client patterns with error handling
-  └─ 2 files: SKILL.md, references.md
+    react-best-practices (90% match) - React patterns, hooks, and components
+      Install: npx skills add vercel/agent-skills
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Database:
+    prisma-orm (85% match) - Prisma schema design and query patterns
+      Install: npx skills add mcpmarket/skills
+
+  Testing:
+    jest-testing (80% match) - Jest unit and integration testing patterns
+      Install: npx skills add anthropics/skills
 ```
 
-### STEP 4: Offer next actions
+### STEP 4: Offer actions
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
   "question": "What would you like to do?",
-  "header": "Skill Actions",
+  "header": "Skills",
   "multiSelect": false,
   "options": [
-    {"label": "Create new skill", "description": "Generate a new skill with research"},
-    {"label": "Edit a skill", "description": "Modify an existing skill"},
-    {"label": "Delete a skill", "description": "Remove a skill"},
-    {"label": "Test a skill", "description": "Verify a skill works correctly"},
-    {"label": "Done", "description": "Exit skill management"}
+    {"label": "Get more recommendations", "description": "Run /agileflow:skill:recommend for full results"},
+    {"label": "Browse marketplace", "description": "Run npx skills find to browse all skills"},
+    {"label": "Done", "description": "Exit skill listing"}
   ]
 }]</parameter>
 </invoke>
 ```
-
----
-
-## Skill Metadata Parsing
-
-**SKILL.md Frontmatter Example:**
-```yaml
----
-name: supabase-swift
-description: Use when building Swift apps with Supabase database operations
----
-```
-
-**Parse with:**
-```bash
-head -10 .claude/skills/<skill>/SKILL.md | grep -E "^(name|description):"
-```
-
----
-
-## Error Handling
-
-### No Skills Directory
-```
-📦 No skills installed yet.
-
-Skills are stored in .claude/skills/ and can be created with:
-  /agileflow:skill:create
-
-This will research best practices and generate a contextual skill.
-```
-
-### Invalid Skill (Missing SKILL.md)
-Skip directories without SKILL.md and note:
-```
-⚠️ Skipped: <dirname>/ (missing SKILL.md)
-```
-
-### Corrupted Frontmatter
-If frontmatter can't be parsed:
-```
-⚠️ <skill>: Could not parse frontmatter
-```
-
----
-
-## Usage
-
-```bash
-# List all installed skills
-/agileflow:skill:list
-```
-
----
-
-## POST-LISTING ACTIONS
-
-After displaying the skill inventory, offer actions:
-
-```xml
-<invoke name="AskUserQuestion">
-<parameter name="questions">[{
-  "question": "What would you like to do?",
-  "header": "Actions",
-  "multiSelect": false,
-  "options": [
-    {"label": "Create new skill", "description": "Build a research-backed custom skill"},
-    {"label": "Test a skill", "description": "Verify a skill works correctly"},
-    {"label": "Edit a skill", "description": "Modify an existing skill"},
-    {"label": "Done", "description": "Exit"}
-  ]
-}]</parameter>
-</invoke>
-```
-
-**If "Create new skill"**:
-- Run `/agileflow:skill:create`
-
-**If "Test a skill"**:
-- Ask which skill to test
-- Run `/agileflow:skill:test SKILL=<selected>`
-
-**If "Edit a skill"**:
-- Ask which skill to edit
-- Run `/agileflow:skill:edit SKILL=<selected>`
 
 ---
 
 ## Related Commands
 
-- `/agileflow:skill:create` - Build new research-backed skill
-- `/agileflow:skill:test` - Test a skill with sample inputs
-- `/agileflow:skill:edit` - Modify an existing skill
-- `/agileflow:skill:delete` - Remove a skill
-- `/agileflow:skill:upgrade` - Update skill with new patterns
+- `/agileflow:skill:recommend` - Full recommendation engine with detailed matching
