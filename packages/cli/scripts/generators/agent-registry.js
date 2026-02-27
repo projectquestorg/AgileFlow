@@ -15,6 +15,19 @@ const path = require('path');
 const { extractFrontmatter, normalizeTools } = require('../lib/frontmatter-parser');
 const { getCached, setCached } = require('../../lib/registry-cache');
 
+// Lazy-load model-profiles to avoid circular deps and missing-module crashes
+let _resolveModel;
+function getResolveModel() {
+  if (_resolveModel === undefined) {
+    try {
+      _resolveModel = require('../lib/model-profiles').resolveModel;
+    } catch (_) {
+      _resolveModel = null;
+    }
+  }
+  return _resolveModel;
+}
+
 // Debug mode: set DEBUG_REGISTRY=1 to see why files are skipped
 const DEBUG = process.env.DEBUG_REGISTRY === '1';
 
@@ -110,7 +123,7 @@ async function scanAgents(agentsDir) {
       displayName: frontmatter.name || name,
       description: frontmatter.description || '',
       tools,
-      model: frontmatter.model || 'haiku',
+      model: (getResolveModel() || ((_, fm) => fm || 'haiku'))(null, frontmatter.model),
       color: frontmatter.color || 'blue',
       category: categorizeAgent(name, frontmatter.description || ''),
     });

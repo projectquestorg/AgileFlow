@@ -440,6 +440,137 @@ describe('messaging-bridge.js', () => {
     });
   });
 
+  describe('sendTeamMessage()', () => {
+    test('writes team_message to JSONL with trace_id', () => {
+      messagingBridge.sendTeamMessage(
+        testDir,
+        'AG-API',
+        'AG-UI',
+        'Schema updated, please refresh types',
+        'trace-msg-001'
+      );
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n');
+      const entry = JSON.parse(lines[0]);
+
+      expect(entry.type).toBe('team_message');
+      expect(entry.from).toBe('AG-API');
+      expect(entry.to).toBe('AG-UI');
+      expect(entry.content).toBe('Schema updated, please refresh types');
+      expect(entry.trace_id).toBe('trace-msg-001');
+    });
+
+    test('omits trace_id when not provided', () => {
+      messagingBridge.sendTeamMessage(testDir, 'AG-API', 'AG-UI', 'Hello from API');
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const lines = fs.readFileSync(logPath, 'utf8').trim().split('\n');
+      const entry = JSON.parse(lines[0]);
+
+      expect(entry.type).toBe('team_message');
+      expect(entry.from).toBe('AG-API');
+      expect(entry.to).toBe('AG-UI');
+      expect(entry.content).toBe('Hello from API');
+      expect(entry.trace_id).toBeUndefined();
+    });
+
+    test('tracks team_message in session-state when native mode enabled', () => {
+      // isAgentTeamsEnabled is mocked to return true (native mode)
+      // sendTeamMessage should also call trackEvent for session-state
+      const teamEvents = require('../../scripts/lib/team-events');
+      const trackSpy = jest.spyOn(teamEvents, 'trackEvent').mockReturnValue({ ok: true });
+
+      messagingBridge.sendTeamMessage(
+        testDir,
+        'AG-API',
+        'AG-UI',
+        'Native mode message',
+        'trace-native-001'
+      );
+
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_message',
+        expect.objectContaining({
+          from: 'AG-API',
+          to: 'AG-UI',
+          trace_id: 'trace-native-001',
+        })
+      );
+
+      trackSpy.mockRestore();
+    });
+
+    test('tracks in session-state even when native mode disabled (observability parity)', () => {
+      // Override feature flag to disable native mode
+      const featureFlags = require('../../lib/feature-flags');
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(false);
+
+      const teamEvents = require('../../scripts/lib/team-events');
+      const trackSpy = jest.spyOn(teamEvents, 'trackEvent').mockReturnValue({ ok: true });
+
+      messagingBridge.sendTeamMessage(testDir, 'AG-API', 'AG-UI', 'Subagent mode message');
+
+      // trackEvent should be called regardless of mode for observability parity
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_message',
+        expect.objectContaining({
+          from: 'AG-API',
+          to: 'AG-UI',
+        })
+      );
+
+      trackSpy.mockRestore();
+      // Restore flag for other tests
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(true);
+    });
+  });
+
+  describe('sendTeamCompleted()', () => {
+    test('writes team_completed to JSONL with trace_id', () => {
+      messagingBridge.sendTeamCompleted(testDir, 'code-review', 'trace-comp-001', {
+        duration_ms: 12000,
+        tasks_completed: 3,
+      });
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+
+      expect(entry.type).toBe('team_completed');
+      expect(entry.from).toBe('team-manager');
+      expect(entry.to).toBe('system');
+      expect(entry.template).toBe('code-review');
+      expect(entry.trace_id).toBe('trace-comp-001');
+      expect(entry.duration_ms).toBe(12000);
+      expect(entry.tasks_completed).toBe(3);
+    });
+
+    test('works without traceId or summary', () => {
+      messagingBridge.sendTeamCompleted(testDir, 'simple-team');
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+
+      expect(entry.type).toBe('team_completed');
+      expect(entry.template).toBe('simple-team');
+      expect(entry.trace_id).toBeUndefined();
+    });
+
+    test('includes agent_teams flag in JSONL entry', () => {
+      messagingBridge.sendTeamCompleted(testDir, 'flagged-team', 'trace-flag-001', {
+        duration_ms: 5000,
+      });
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+
+      // agent_teams flag is added by sendMessage based on feature flag
+      expect(entry.agent_teams).toBe(true);
+    });
+  });
+
   describe('sendValidationResult()', () => {
     test('sends validation approved message', () => {
       messagingBridge.sendValidationResult(
@@ -473,6 +604,151 @@ describe('messaging-bridge.js', () => {
       const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
 
       expect(entry.status).toBe('rejected');
+    });
+  });
+
+  describe('dual-write native logging (US-0348)', () => {
+    let trackSpy;
+
+    beforeEach(() => {
+      const teamEvents = require('../../scripts/lib/team-events');
+      trackSpy = jest.spyOn(teamEvents, 'trackEvent').mockReturnValue({ ok: true });
+    });
+
+    afterEach(() => {
+      trackSpy.mockRestore();
+      // Restore feature flag to default (true) in case any test changed it
+      const featureFlags = require('../../lib/feature-flags');
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(true);
+    });
+
+    test('logNativeSend writes to JSONL bus with trace_id', () => {
+      messagingBridge.logNativeSend(testDir, 'AG-API', 'AG-UI', 'Schema ready', 'trace-ns-001');
+
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+
+      expect(entry.type).toBe('native_send');
+      expect(entry.from).toBe('AG-API');
+      expect(entry.to).toBe('AG-UI');
+      expect(entry.content).toBe('Schema ready');
+      expect(entry.trace_id).toBe('trace-ns-001');
+    });
+
+    test('logNativeSend calls trackEvent for session-state', () => {
+      messagingBridge.logNativeSend(testDir, 'AG-API', 'AG-UI', 'Native message', 'trace-ns-002');
+
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_message',
+        expect.objectContaining({
+          from: 'AG-API',
+          to: 'AG-UI',
+          trace_id: 'trace-ns-002',
+          native: true,
+        })
+      );
+    });
+
+    test('logNativeTeamCreate calls trackEvent with correct data', () => {
+      const result = messagingBridge.logNativeTeamCreate(testDir, 'code-review', 'trace-tc-001', 3);
+
+      expect(result.ok).toBe(true);
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_created',
+        expect.objectContaining({
+          template: 'code-review',
+          trace_id: 'trace-tc-001',
+          teammate_count: 3,
+          native: true,
+        })
+      );
+
+      // Also check JSONL entry
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+      expect(entry.type).toBe('native_team_create');
+      expect(entry.template).toBe('code-review');
+      expect(entry.teammate_count).toBe(3);
+    });
+
+    test('logNativeTeamCompleted calls trackEvent with correct data', () => {
+      const result = messagingBridge.logNativeTeamCompleted(
+        testDir,
+        'code-review',
+        'trace-tc-002',
+        'All tasks done'
+      );
+
+      expect(result.ok).toBe(true);
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_completed',
+        expect.objectContaining({
+          template: 'code-review',
+          trace_id: 'trace-tc-002',
+          summary: 'All tasks done',
+          native: true,
+        })
+      );
+
+      // Also check JSONL entry
+      const logPath = path.join(testDir, 'docs', '09-agents', 'bus', 'log.jsonl');
+      const entry = JSON.parse(fs.readFileSync(logPath, 'utf8'));
+      expect(entry.type).toBe('native_team_completed');
+      expect(entry.template).toBe('code-review');
+      expect(entry.summary).toBe('All tasks done');
+    });
+
+    test('sendTeamMessage tracks in session-state in both native and subagent modes', () => {
+      // Test native mode (default mock is true)
+      messagingBridge.sendTeamMessage(testDir, 'AG-API', 'AG-UI', 'Native msg', 'trace-parity-001');
+      expect(trackSpy).toHaveBeenCalledTimes(1);
+
+      trackSpy.mockClear();
+
+      // Test subagent mode
+      const featureFlags = require('../../lib/feature-flags');
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(false);
+
+      messagingBridge.sendTeamMessage(
+        testDir,
+        'AG-API',
+        'AG-UI',
+        'Subagent msg',
+        'trace-parity-002'
+      );
+      expect(trackSpy).toHaveBeenCalledTimes(1);
+      expect(trackSpy).toHaveBeenCalledWith(
+        testDir,
+        'team_message',
+        expect.objectContaining({
+          from: 'AG-API',
+          to: 'AG-UI',
+          trace_id: 'trace-parity-002',
+        })
+      );
+    });
+
+    test('observability parity: same event structure in native vs subagent mode', () => {
+      const featureFlags = require('../../lib/feature-flags');
+
+      // Native mode
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(true);
+      messagingBridge.sendTeamMessage(testDir, 'AG-API', 'AG-DB', 'Test native', 'trace-eq-001');
+      const nativeCall = trackSpy.mock.calls[0];
+
+      trackSpy.mockClear();
+
+      // Subagent mode
+      featureFlags.isAgentTeamsEnabled.mockReturnValue(false);
+      messagingBridge.sendTeamMessage(testDir, 'AG-API', 'AG-DB', 'Test subagent', 'trace-eq-002');
+      const subagentCall = trackSpy.mock.calls[0];
+
+      // Both calls should have same structure (event type, keys)
+      expect(nativeCall[1]).toBe(subagentCall[1]); // same event type
+      expect(Object.keys(nativeCall[2]).sort()).toEqual(Object.keys(subagentCall[2]).sort());
     });
   });
 });

@@ -1,6 +1,6 @@
 ---
 description: Multi-agent logic analysis with consensus voting for finding logic bugs
-argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=edge|invariant|flow|type|race|all]"
+argument-hint: "[file|directory] [DEPTH=quick|deep|ultradeep] [FOCUS=edge|invariant|flow|type|race|all] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: high
   preserve_rules:
@@ -8,7 +8,7 @@ compact_context:
     - "CRITICAL: Deploy analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
-    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep), FOCUS (edge/invariant/flow/type/race/all)"
+    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep/ultradeep), FOCUS (edge/invariant/flow/type/race/all)"
     - "Pass consensus all analyzer outputs, let it synthesize the final report"
   state_fields:
     - target_path
@@ -31,6 +31,8 @@ Deploy multiple specialized logic analyzers in parallel to find bugs, then synth
 /agileflow:code:logic src/ DEPTH=deep                 # Deep analysis of directory
 /agileflow:code:logic . FOCUS=race,type               # Focus on race conditions and type issues
 /agileflow:code:logic src/cart.js DEPTH=quick         # Quick scan of specific file
+/agileflow:code:logic . DEPTH=ultradeep               # Each analyzer in its own tmux session
+/agileflow:code:logic src/ MODEL=sonnet               # Use Sonnet for all analyzers
 ```
 
 ---
@@ -69,8 +71,9 @@ Deploy multiple specialized logic analyzers in parallel to find bugs, then synth
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | TARGET | file/directory | `.` | What to analyze |
-| DEPTH | quick, deep | quick | quick = high-impact only, deep = comprehensive |
+| DEPTH | quick, deep, ultradeep | quick | quick = high-impact only, deep = comprehensive, ultradeep = separate tmux sessions |
 | FOCUS | edge,invariant,flow,type,race,all | all | Which analyzers to deploy |
+| MODEL | haiku, sonnet, opus | haiku | Model for analyzer subagents. Default preserves existing behavior. |
 
 ---
 
@@ -80,9 +83,17 @@ Deploy multiple specialized logic analyzers in parallel to find bugs, then synth
 
 ```
 TARGET = first argument or current directory
-DEPTH = quick (default) or deep
+DEPTH = quick (default), deep, or ultradeep
 FOCUS = all (default) or comma-separated list
 ```
+
+**ULTRADEEP mode** (DEPTH=ultradeep):
+1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=logic --target=TARGET --focus=FOCUS --model=MODEL --dry-run`
+2. Confirm with user before launching
+3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=logic --target=TARGET --focus=FOCUS --model=MODEL`
+4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
+5. Collect all findings and run consensus coordinator (same as deep mode)
+6. If tmux unavailable, fall back to `DEPTH=deep` with warning
 
 **Analyzer Selection by FOCUS**:
 

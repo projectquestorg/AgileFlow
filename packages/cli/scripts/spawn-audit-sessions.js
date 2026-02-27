@@ -1,0 +1,434 @@
+#!/usr/bin/env node
+
+/**
+ * spawn-audit-sessions.js - Spawn ULTRADEEP audit analyzer sessions in tmux
+ *
+ * Spawns each analyzer as a separate Claude Code session in tmux,
+ * with sentinel files for coordination and tab grouping for visual organization.
+ *
+ * Key differences from spawn-parallel.js:
+ *   - No worktrees: audits are read-only, all sessions share the same repo
+ *   - Piped prompts: each session gets analyzer-specific prompt via echo | claude
+ *   - Sentinel files: each writes findings to docs/09-agents/ultradeep/{trace_id}/
+ *   - Tab grouping: applies colors from tmux-group-colors.js
+ *
+ * Usage:
+ *   node scripts/spawn-audit-sessions.js --audit=security --target=src/ --focus=all --trace-id=abc123
+ *   node scripts/spawn-audit-sessions.js --audit=logic --target=. --depth=ultradeep
+ *
+ * Options:
+ *   --audit=TYPE       Audit type: logic|security|performance|test|completeness|legal
+ *   --target=PATH      Target file or directory to analyze
+ *   --focus=AREAS      Comma-separated focus areas, or 'all'
+ *   --trace-id=ID      Unique trace ID (auto-generated if not provided)
+ *   --timeout=MINUTES  Completion timeout (default: 30)
+ *   --dry-run          Show what would be spawned without executing
+ */
+
+const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const { getAuditType, getAnalyzersForAudit } = require('./lib/audit-registry');
+const { getColorForAudit } = require('./lib/tmux-group-colors');
+const { resolveModel, estimateCost } = require('./lib/model-profiles');
+
+/**
+ * Parse CLI arguments.
+ * @returns {object} Parsed options
+ */
+function parseArgs() {
+  const args = process.argv.slice(2);
+  const options = {
+    audit: null,
+    target: '.',
+    focus: ['all'],
+    model: null,
+    traceId: null,
+    timeout: 30,
+    dryRun: false,
+  };
+
+  for (const arg of args) {
+    if (arg.startsWith('--audit=')) options.audit = arg.split('=')[1];
+    else if (arg.startsWith('--target=')) options.target = arg.split('=')[1];
+    else if (arg.startsWith('--focus=')) options.focus = arg.split('=')[1].split(',');
+    else if (arg.startsWith('--model=')) options.model = arg.split('=')[1];
+    else if (arg.startsWith('--trace-id=')) options.traceId = arg.split('=')[1];
+    else if (arg.startsWith('--timeout=')) {
+      const parsed = parseInt(arg.split('=')[1], 10);
+      options.timeout = isNaN(parsed) ? 30 : parsed;
+    } else if (arg === '--dry-run') options.dryRun = true;
+  }
+
+  if (!options.traceId) {
+    options.traceId = crypto.randomBytes(6).toString('hex');
+  }
+
+  return options;
+}
+
+/**
+ * Check if tmux is available and we're in a tmux session.
+ * @returns {{ available: boolean, inSession: boolean }}
+ */
+function checkTmux() {
+  try {
+    execFileSync('which', ['tmux'], { stdio: 'pipe' });
+    const inSession = !!process.env.TMUX;
+    return { available: true, inSession };
+  } catch (_) {
+    return { available: false, inSession: false };
+  }
+}
+
+/**
+ * Create the sentinel directory for a trace.
+ * @param {string} rootDir - Project root
+ * @param {string} traceId - Unique trace ID
+ * @returns {string} Path to sentinel directory
+ */
+function createSentinelDir(rootDir, traceId) {
+  const sentinelDir = path.join(rootDir, 'docs', '09-agents', 'ultradeep', traceId);
+  fs.mkdirSync(sentinelDir, { recursive: true });
+  return sentinelDir;
+}
+
+/**
+ * Write initial status file for the trace.
+ * @param {string} sentinelDir - Sentinel directory path
+ * @param {string} auditType - Audit type key
+ * @param {Array} analyzers - Array of analyzer configs
+ */
+function writeStatusFile(sentinelDir, auditType, analyzers) {
+  const status = {
+    started_at: new Date().toISOString(),
+    audit_type: auditType,
+    analyzers: analyzers.map(a => a.key),
+    completed: [],
+    failed: [],
+  };
+  fs.writeFileSync(path.join(sentinelDir, '_status.json'), JSON.stringify(status, null, 2) + '\n');
+}
+
+/**
+ * Build the prompt for an individual analyzer session.
+ * @param {object} analyzer - Analyzer config { key, subagent_type, label }
+ * @param {string} target - Target path to analyze
+ * @param {string} traceId - Trace ID
+ * @param {string} sentinelDir - Sentinel directory for output
+ * @param {string} auditType - Audit type key
+ * @returns {string} Prompt text
+ */
+function buildAnalyzerPrompt(analyzer, target, traceId, sentinelDir, auditType) {
+  const findingsFile = path.join(sentinelDir, `${analyzer.key}.findings.json`);
+
+  return `You are the ${analyzer.label} analyzer for an ULTRADEEP ${auditType} audit.
+
+TARGET: ${target}
+TRACE_ID: ${traceId}
+ANALYZER: ${analyzer.key} (${analyzer.label})
+
+## Instructions
+
+1. Analyze the target path thoroughly for ${analyzer.label}-related issues
+2. Search all relevant files recursively
+3. Document every finding with: file path, line number, severity (P0-P3), description, and evidence
+4. When complete, write your findings as JSON to: ${findingsFile}
+
+## Output Format
+
+Write a JSON file with this structure:
+{
+  "analyzer": "${analyzer.key}",
+  "audit_type": "${auditType}",
+  "trace_id": "${traceId}",
+  "target": "${target}",
+  "completed_at": "<ISO timestamp>",
+  "findings": [
+    {
+      "id": "${analyzer.key}-001",
+      "severity": "P0|P1|P2|P3",
+      "title": "Short description",
+      "file": "path/to/file.js",
+      "line": 42,
+      "description": "Detailed explanation",
+      "evidence": "Code snippet or reasoning",
+      "recommendation": "How to fix"
+    }
+  ],
+  "summary": {
+    "files_scanned": 0,
+    "total_findings": 0,
+    "by_severity": { "P0": 0, "P1": 0, "P2": 0, "P3": 0 }
+  }
+}
+
+IMPORTANT: You MUST write the findings JSON file when complete. This is how the orchestrator knows you're done.
+Start analyzing now.`;
+}
+
+/**
+ * Spawn audit analyzer sessions in tmux.
+ * @param {object} options - Parsed CLI options
+ * @returns {{ ok: boolean, traceId: string, sentinelDir: string, sessions: string[] }}
+ */
+function spawnAuditInTmux(options) {
+  const rootDir = process.cwd();
+  const auditType = getAuditType(options.audit);
+
+  if (!auditType) {
+    console.error(`Unknown audit type: ${options.audit}`);
+    console.error(`Valid types: logic, security, performance, test, completeness, legal`);
+    process.exit(1);
+  }
+
+  const result = getAnalyzersForAudit(options.audit, 'ultradeep', options.focus);
+  if (!result || result.analyzers.length === 0) {
+    console.error(`No analyzers found for ${options.audit} with focus: ${options.focus.join(',')}`);
+    process.exit(1);
+  }
+
+  // Enforce session limit
+  if (result.analyzers.length > 20) {
+    console.error(`Too many analyzers (${result.analyzers.length}). Maximum is 20.`);
+    process.exit(1);
+  }
+
+  const sentinelDir = createSentinelDir(rootDir, options.traceId);
+  writeStatusFile(sentinelDir, options.audit, result.analyzers);
+
+  const groupColor = getColorForAudit(options.audit);
+  const sessions = [];
+
+  if (options.dryRun) {
+    console.log(`\nDry run - would spawn ${result.analyzers.length} sessions:`);
+    for (const analyzer of result.analyzers) {
+      const model = resolveModel(options.model, 'haiku');
+      console.log(`  ${auditType.prefix}:${analyzer.key} (${model}) → ${analyzer.label}`);
+    }
+    console.log(`\nSentinel dir: ${sentinelDir}`);
+    console.log(`Group color: ${groupColor}`);
+    return { ok: true, traceId: options.traceId, sentinelDir, sessions: [], dryRun: true };
+  }
+
+  const tmux = checkTmux();
+  if (!tmux.available) {
+    console.error('tmux is not available. ULTRADEEP mode requires tmux.');
+    console.error('Falling back to DEPTH=deep mode.');
+    return { ok: false, traceId: options.traceId, sentinelDir, sessions: [], fallback: 'deep' };
+  }
+
+  // Create tmux session for this audit
+  const sessionName = `audit-${options.audit}-${options.traceId.slice(0, 8)}`;
+
+  for (let i = 0; i < result.analyzers.length; i++) {
+    const analyzer = result.analyzers[i];
+    const windowName = `${auditType.prefix}:${analyzer.key}`;
+    const model = resolveModel(options.model, 'haiku');
+    const prompt = buildAnalyzerPrompt(
+      analyzer,
+      options.target,
+      options.traceId,
+      sentinelDir,
+      options.audit
+    );
+
+    // Escape prompt for shell
+    const escapedPrompt = prompt.replace(/'/g, "'\\''");
+
+    try {
+      if (i === 0) {
+        // Create new session with first window
+        execFileSync(
+          'tmux',
+          ['new-session', '-d', '-s', sessionName, '-n', windowName, '-c', rootDir],
+          { stdio: 'pipe' }
+        );
+      } else {
+        // Add window to existing session
+        execFileSync('tmux', ['new-window', '-t', sessionName, '-n', windowName, '-c', rootDir], {
+          stdio: 'pipe',
+        });
+      }
+
+      // Set group color on window
+      execFileSync(
+        'tmux',
+        ['set-option', '-w', '-t', `${sessionName}:${windowName}`, '@group_color', groupColor],
+        { stdio: 'pipe' }
+      );
+
+      // Send the claude command with piped prompt
+      const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} 2>&1; echo "AUDIT_COMPLETE: ${analyzer.key}"`;
+      execFileSync(
+        'tmux',
+        ['send-keys', '-t', `${sessionName}:${windowName}`, claudeCmd, 'Enter'],
+        { stdio: 'pipe' }
+      );
+
+      sessions.push(windowName);
+    } catch (err) {
+      console.error(`Failed to spawn ${windowName}: ${err.message}`);
+    }
+  }
+
+  // Apply group color styling to the session
+  try {
+    const activeFormat = `#[fg=#1a1b26 bg=${groupColor} bold] #I #[fg=${groupColor} bg=#2d2f3a]#[fg=#e0e0e0] #{window_name} #[bg=#1a1b26 fg=#2d2f3a]`;
+    const inactiveFormat = `#[fg=${groupColor}]#[fg=#8a8a8a] #I:#{window_name} `;
+
+    execFileSync(
+      'tmux',
+      ['set-option', '-t', sessionName, 'window-status-current-format', activeFormat],
+      { stdio: 'pipe' }
+    );
+
+    execFileSync(
+      'tmux',
+      ['set-option', '-t', sessionName, 'window-status-format', inactiveFormat],
+      { stdio: 'pipe' }
+    );
+  } catch (_) {
+    // Non-critical styling failure
+  }
+
+  console.log(`\nSpawned ${sessions.length} analyzer sessions in tmux session: ${sessionName}`);
+  console.log(`Sentinel dir: ${sentinelDir}`);
+  console.log(`Attach with: tmux attach -t ${sessionName}`);
+
+  return { ok: true, traceId: options.traceId, sentinelDir, sessions, sessionName };
+}
+
+/**
+ * Poll sentinel directory for completion.
+ * @param {string} sentinelDir - Sentinel directory path
+ * @param {string[]} expected - Expected analyzer keys
+ * @param {number} timeoutMinutes - Timeout in minutes
+ * @returns {Promise<{ complete: boolean, results: object[], missing: string[] }>}
+ */
+async function pollForCompletion(sentinelDir, expected, timeoutMinutes) {
+  const timeoutMs = timeoutMinutes * 60 * 1000;
+  const startTime = Date.now();
+  const pollIntervalMs = 5000;
+
+  while (Date.now() - startTime < timeoutMs) {
+    const completed = [];
+    const missing = [];
+
+    for (const key of expected) {
+      const findingsFile = path.join(sentinelDir, `${key}.findings.json`);
+      if (fs.existsSync(findingsFile)) {
+        completed.push(key);
+      } else {
+        missing.push(key);
+      }
+    }
+
+    // Update status file
+    try {
+      const statusPath = path.join(sentinelDir, '_status.json');
+      const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      status.completed = completed;
+      status.last_checked = new Date().toISOString();
+      fs.writeFileSync(statusPath, JSON.stringify(status, null, 2) + '\n');
+    } catch (_) {
+      // Non-critical
+    }
+
+    if (missing.length === 0) {
+      return { complete: true, results: collectResults(sentinelDir, expected), missing: [] };
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+  }
+
+  // Timeout
+  const results = collectResults(sentinelDir, expected);
+  const completedKeys = results.map(r => r.analyzer);
+  const missing = expected.filter(k => !completedKeys.includes(k));
+  return { complete: false, results, missing };
+}
+
+/**
+ * Collect all findings from sentinel directory.
+ * @param {string} sentinelDir - Sentinel directory path
+ * @param {string[]} expected - Expected analyzer keys
+ * @returns {object[]} Array of parsed findings
+ */
+function collectResults(sentinelDir, expected) {
+  const results = [];
+
+  for (const key of expected) {
+    const findingsFile = path.join(sentinelDir, `${key}.findings.json`);
+    try {
+      if (fs.existsSync(findingsFile)) {
+        const data = JSON.parse(fs.readFileSync(findingsFile, 'utf8'));
+        results.push(data);
+      }
+    } catch (err) {
+      results.push({
+        analyzer: key,
+        error: `Failed to parse findings: ${err.message}`,
+        findings: [],
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Show cost estimation before launching.
+ * @param {string} auditType - Audit type key
+ * @param {number} analyzerCount - Number of analyzers to spawn
+ * @param {string} [model] - Explicit model override
+ */
+function showCostEstimate(auditType, analyzerCount, model) {
+  const resolved = resolveModel(model, 'haiku');
+  const estimate = estimateCost(resolved, analyzerCount);
+
+  console.log(`\nCost estimate for ULTRADEEP ${auditType} audit:`);
+  console.log(`  Model: ${estimate.model}`);
+  console.log(`  Analyzers: ${analyzerCount}`);
+  console.log(`  Cost multiplier vs haiku: ${estimate.multiplier}x`);
+  console.log(`  Per-analyzer estimate: ${estimate.perAnalyzerCost}`);
+  console.log(`  Total estimate: ${estimate.totalEstimate}`);
+  console.log(`  Each analyzer runs as a full Claude Code session`);
+}
+
+// Main
+if (require.main === module) {
+  const options = parseArgs();
+
+  if (!options.audit) {
+    console.error(
+      'Usage: node spawn-audit-sessions.js --audit=TYPE --target=PATH [--focus=AREAS] [--model=MODEL] [--trace-id=ID]'
+    );
+    console.error('Types: logic, security, performance, test, completeness, legal');
+    process.exit(1);
+  }
+
+  const result = getAnalyzersForAudit(options.audit, 'ultradeep', options.focus);
+  if (result) {
+    showCostEstimate(options.audit, result.analyzers.length, options.model);
+  }
+
+  const spawnResult = spawnAuditInTmux(options);
+  if (!spawnResult.ok && spawnResult.fallback) {
+    process.exit(2); // Signal fallback to caller
+  }
+}
+
+module.exports = {
+  parseArgs,
+  checkTmux,
+  createSentinelDir,
+  writeStatusFile,
+  buildAnalyzerPrompt,
+  spawnAuditInTmux,
+  pollForCompletion,
+  collectResults,
+  showCostEstimate,
+};

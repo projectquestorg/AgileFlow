@@ -49,6 +49,18 @@ function getFeatureFlags() {
   return _featureFlags;
 }
 
+let _teamEvents;
+function getTeamEvents() {
+  if (!_teamEvents) {
+    try {
+      _teamEvents = require('./lib/team-events');
+    } catch (e) {
+      return null;
+    }
+  }
+  return _teamEvents;
+}
+
 let _busUtils;
 function getBusUtils() {
   if (!_busUtils) {
@@ -278,6 +290,168 @@ function sendPlanDecision(rootDir, from, to, taskId, approved, reason, traceId) 
 }
 
 /**
+ * Send an inter-agent team message to the JSONL bus.
+ * Logs communication between teammates with optional trace_id for correlation.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} from - Sending agent name
+ * @param {string} to - Receiving agent name
+ * @param {string} content - Message content
+ * @param {string} [traceId] - Trace ID for team lifecycle correlation
+ * @returns {{ ok: boolean, native?: boolean }}
+ */
+function sendTeamMessage(rootDir, from, to, content, traceId) {
+  const msg = { from, to, type: 'team_message', content };
+  if (traceId) msg.trace_id = traceId;
+  const result = sendMessage(rootDir, msg);
+
+  // Always track in session-state for observability parity (both native and subagent modes)
+  try {
+    const teamEvents = getTeamEvents();
+    if (teamEvents) {
+      teamEvents.trackEvent(rootDir, 'team_message', {
+        from,
+        to,
+        trace_id: traceId,
+      });
+    }
+  } catch (e) {
+    // Non-critical
+  }
+
+  return result;
+}
+
+/**
+ * Send a team_completed event to the JSONL bus.
+ * Signals that a team run has finished all work.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} templateName - Team template name
+ * @param {string} [traceId] - Trace ID for team lifecycle correlation
+ * @param {object} [summary] - Optional summary data (duration_ms, tasks_completed, etc.)
+ * @returns {{ ok: boolean, native?: boolean }}
+ */
+function sendTeamCompleted(rootDir, templateName, traceId, summary) {
+  const msg = {
+    from: 'team-manager',
+    to: 'system',
+    type: 'team_completed',
+    template: templateName,
+    ...summary,
+  };
+  if (traceId) msg.trace_id = traceId;
+  return sendMessage(rootDir, msg);
+}
+
+/**
+ * Log a native SendMessage tool call to the JSONL bus.
+ * Used by agents to record native API calls for observability parity.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} from - Sending agent name
+ * @param {string} to - Receiving agent name
+ * @param {string} content - Message content
+ * @param {string} [traceId] - Trace ID for correlation
+ * @returns {{ ok: boolean }}
+ */
+function logNativeSend(rootDir, from, to, content, traceId) {
+  const msg = { from, to, type: 'native_send', content };
+  if (traceId) msg.trace_id = traceId;
+  const result = sendMessage(rootDir, msg);
+
+  try {
+    const teamEvents = getTeamEvents();
+    if (teamEvents) {
+      teamEvents.trackEvent(rootDir, 'team_message', {
+        from,
+        to,
+        trace_id: traceId,
+        native: true,
+      });
+    }
+  } catch (e) {
+    // Non-critical
+  }
+
+  return { ok: result.ok };
+}
+
+/**
+ * Log a native TeamCreate tool call to the JSONL bus.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} templateName - Team template name
+ * @param {string} [traceId] - Trace ID for correlation
+ * @param {number} [teammateCount] - Number of teammates created
+ * @returns {{ ok: boolean }}
+ */
+function logNativeTeamCreate(rootDir, templateName, traceId, teammateCount) {
+  const msg = {
+    from: 'team-manager',
+    to: 'system',
+    type: 'native_team_create',
+    template: templateName,
+  };
+  if (traceId) msg.trace_id = traceId;
+  if (typeof teammateCount === 'number') msg.teammate_count = teammateCount;
+  const result = sendMessage(rootDir, msg);
+
+  try {
+    const teamEvents = getTeamEvents();
+    if (teamEvents) {
+      teamEvents.trackEvent(rootDir, 'team_created', {
+        template: templateName,
+        trace_id: traceId,
+        teammate_count: teammateCount,
+        native: true,
+      });
+    }
+  } catch (e) {
+    // Non-critical
+  }
+
+  return { ok: result.ok };
+}
+
+/**
+ * Log a native team completion to the JSONL bus.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} templateName - Team template name
+ * @param {string} [traceId] - Trace ID for correlation
+ * @param {string} [summary] - Summary of completed work
+ * @returns {{ ok: boolean }}
+ */
+function logNativeTeamCompleted(rootDir, templateName, traceId, summary) {
+  const msg = {
+    from: 'team-manager',
+    to: 'system',
+    type: 'native_team_completed',
+    template: templateName,
+  };
+  if (traceId) msg.trace_id = traceId;
+  if (summary) msg.summary = summary;
+  const result = sendMessage(rootDir, msg);
+
+  try {
+    const teamEvents = getTeamEvents();
+    if (teamEvents) {
+      teamEvents.trackEvent(rootDir, 'team_completed', {
+        template: templateName,
+        trace_id: traceId,
+        summary,
+        native: true,
+      });
+    }
+  } catch (e) {
+    // Non-critical
+  }
+
+  return { ok: result.ok };
+}
+
+/**
  * Send a validation result message.
  */
 function sendValidationResult(rootDir, from, taskId, status, details, traceId) {
@@ -324,10 +498,39 @@ function main() {
       break;
     }
 
+    case 'log-native-send': {
+      const [, from, to, ...contentParts] = args;
+      const content = contentParts.filter(p => !p.startsWith('--')).join(' ');
+      const traceArg = args.find(a => a.startsWith('--trace-id='));
+      const traceId = traceArg ? traceArg.slice(11) : undefined;
+      result = logNativeSend(rootDir, from, to, content, traceId);
+      break;
+    }
+
+    case 'log-native-create': {
+      const [, templateName] = args;
+      const traceArg = args.find(a => a.startsWith('--trace-id='));
+      const traceId = traceArg ? traceArg.slice(11) : undefined;
+      const countArg = args.find(a => a.startsWith('--count='));
+      const teammateCount = countArg ? parseInt(countArg.slice(8), 10) : undefined;
+      result = logNativeTeamCreate(rootDir, templateName, traceId, teammateCount);
+      break;
+    }
+
+    case 'log-native-completed': {
+      const [, templateName] = args;
+      const traceArg = args.find(a => a.startsWith('--trace-id='));
+      const traceId = traceArg ? traceArg.slice(11) : undefined;
+      const summaryArg = args.find(a => a.startsWith('--summary='));
+      const summary = summaryArg ? summaryArg.slice(10) : undefined;
+      result = logNativeTeamCompleted(rootDir, templateName, traceId, summary);
+      break;
+    }
+
     default:
       result = {
         ok: false,
-        error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context>`,
+        error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context|log-native-send|log-native-create|log-native-completed>`,
       };
   }
 
@@ -343,7 +546,12 @@ module.exports = {
   sendTaskAssignment,
   sendPlanProposal,
   sendPlanDecision,
+  sendTeamMessage,
+  sendTeamCompleted,
   sendValidationResult,
+  logNativeSend,
+  logNativeTeamCreate,
+  logNativeTeamCompleted,
   getBusLogPath,
   formatForNative,
 };

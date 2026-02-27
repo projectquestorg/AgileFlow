@@ -1,6 +1,6 @@
 ---
 description: Multi-agent analysis for forgotten features, dead handlers, stub code, and incomplete implementations
-argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=handlers|routes|api|stubs|state|imports|conditional|all]"
+argument-hint: "[file|directory] [DEPTH=quick|deep|ultradeep] [FOCUS=handlers|routes|api|stubs|state|imports|conditional|all] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: high
   preserve_rules:
@@ -9,7 +9,7 @@ compact_context:
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Severity scale: BROKEN > INCOMPLETE > PLACEHOLDER > DORMANT"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), INVESTIGATE (1 weak)"
-    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep), FOCUS (handlers|routes|api|stubs|state|imports|conditional|all)"
+    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep/ultradeep), FOCUS (handlers|routes|api|stubs|state|imports|conditional|all)"
     - "Pass consensus all analyzer outputs, let it synthesize the final report"
   state_fields:
     - target_path
@@ -74,8 +74,9 @@ Deploy multiple specialized completeness analyzers in parallel to find forgotten
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | TARGET | file/directory | `.` | What to analyze |
-| DEPTH | quick, deep | quick | quick = core 5 analyzers, deep = all 7 |
+| DEPTH | quick, deep, ultradeep | quick | quick = core 5, deep = all 7, ultradeep = separate tmux sessions |
 | FOCUS | handlers,routes,api,stubs,state,imports,conditional,all | all | Which analyzers to deploy |
+| MODEL | haiku, sonnet, opus | haiku | Model for analyzer subagents. Default preserves existing behavior. |
 
 ---
 
@@ -118,6 +119,15 @@ FOCUS = all (default) or comma-separated list
 **DEPTH behavior**:
 - `quick` (default): Deploy core 5 analyzers. Focus on BROKEN/INCOMPLETE issues only.
 - `deep`: Deploy all 7 analyzers. Include PLACEHOLDER/DORMANT findings.
+- `ultradeep`: Spawn each analyzer as a separate Claude Code session in tmux. Requires tmux. Uses model profiles from metadata. Falls back to `deep` if tmux unavailable.
+
+**ULTRADEEP mode** (DEPTH=ultradeep):
+1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=completeness --target=TARGET --focus=FOCUS --model=MODEL --dry-run`
+2. Confirm with user before launching
+3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=completeness --target=TARGET --focus=FOCUS --model=MODEL`
+4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
+5. Collect all findings and run consensus coordinator (same as deep mode)
+6. If tmux unavailable, fall back to `DEPTH=deep` with warning
 
 ### STEP 2: Deploy Analyzers in Parallel
 

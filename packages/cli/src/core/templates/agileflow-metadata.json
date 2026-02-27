@@ -127,5 +127,16 @@
   "security": {
     "mcpJsonGitignored": false,
     "envGitignored": false
+  },
+  "models": {
+    "default_audit_model": null,
+    "description": "Override via MODEL=haiku|sonnet|opus in audit command arguments. null = use agent defaults."
+  },
+  "ultradeep": {
+    "tab_naming": "prefix:name",
+    "custom_colors": null,
+    "auto_attach": true,
+    "completion_timeout_minutes": 30,
+    "max_sessions_per_audit": 20
   }
 }
