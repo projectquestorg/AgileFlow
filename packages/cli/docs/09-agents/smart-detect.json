@@ -1,5 +1,5 @@
 {
-  "detected_at": "2026-02-26T20:59:30.196Z",
+  "detected_at": "2026-02-27T16:41:00.648Z",
   "lifecycle_phase": "pre-story",
   "phase_confidence": 0.9,
   "phase_reason": "No active story",
@@ -237,8 +237,8 @@
   ],
   "signals_summary": {
     "story": "none",
-    "files_changed": 82,
-    "core_files": 41,
+    "files_changed": 4,
+    "core_files": 0,
     "tests_passing": null,
     "on_feature_branch": false,
     "story_counts": {}

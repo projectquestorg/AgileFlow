@@ -1,20 +1,20 @@
 {
   "hook_metrics": {
-    "last_updated": "2026-02-20T18:40:29.603Z",
-    "session_total_ms": 660,
+    "last_updated": "2026-02-27T11:33:05.525Z",
+    "session_total_ms": 490,
     "hooks": {
       "SessionStart": {
         "welcome": {
-          "duration_ms": 302,
+          "duration_ms": 97,
           "status": "success",
-          "at": "2026-02-20T18:40:29.603Z"
+          "at": "2026-02-27T11:33:05.525Z"
         }
       },
       "PreCompact": {
         "context": {
-          "duration_ms": 358,
+          "duration_ms": 393,
           "status": "success",
-          "at": "2026-02-20T18:38:45.674Z"
+          "at": "2026-02-27T11:31:42.662Z"
         }
       }
     }
@@ -23,7 +23,7 @@
     {
       "name": "test",
       "type": "interactive",
-      "activated_at": "2026-02-25T23:26:58.274Z",
+      "activated_at": "2026-02-27T16:41:00.577Z",
       "state": {},
       "active_sections": [],
       "params": {}
@@ -31,7 +31,7 @@
   ],
   "tmux_available": true,
   "update_cache": {
-    "checked_at": "2026-02-15T16:38:13.866Z",
+    "checked_at": "2026-02-27T11:33:05.657Z",
     "result": {
       "available": false,
       "installed": null,
@@ -44,13 +44,13 @@
   "scale_detection": {
     "scale": "large",
     "metrics": {
-      "files": 413,
+      "files": 426,
       "stories": 0,
-      "commits": 1074,
+      "commits": 1089,
       "dependencies": 19
     },
-    "detected_at": "2026-02-25T23:26:57.767Z",
-    "detection_ms": 60,
+    "detected_at": "2026-02-27T16:41:00.176Z",
+    "detection_ms": 29,
     "fromCache": false
   }
 }

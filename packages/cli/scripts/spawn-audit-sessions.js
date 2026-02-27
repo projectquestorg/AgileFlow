@@ -261,7 +261,8 @@ function spawnAuditInTmux(options) {
       );
 
       // Send the claude command with piped prompt
-      const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} 2>&1; echo "AUDIT_COMPLETE: ${analyzer.key}"`;
+      // Analyzers need Read/Glob/Grep for analysis and Write for findings file
+      const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} --allowedTools 'Read Glob Grep Write' 2>&1; echo "AUDIT_COMPLETE: ${analyzer.key}"`;
       execFileSync(
         'tmux',
         ['send-keys', '-t', `${sessionName}:${windowName}`, claudeCmd, 'Enter'],
