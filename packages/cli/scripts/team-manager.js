@@ -81,6 +81,19 @@ function getMessagingBridge() {
   return _messagingBridge;
 }
 
+// Lazy-load team events for dual-write (session-state + JSONL bus)
+let _teamEvents;
+function getTeamEvents() {
+  if (!_teamEvents) {
+    try {
+      _teamEvents = require('./lib/team-events');
+    } catch (e) {
+      _teamEvents = null;
+    }
+  }
+  return _teamEvents;
+}
+
 /**
  * Find the teams directory
  */
@@ -344,17 +357,14 @@ function startTeam(rootDir, templateName) {
     // Non-critical - team can still function without state tracking
   }
 
-  // Log team_created event to bus
+  // Log team_created event to session-state + JSONL bus (dual-write)
   try {
-    const bridge = getMessagingBridge();
-    if (bridge) {
-      bridge.sendMessage(rootDir, {
-        from: 'team-manager',
-        to: 'team-lead',
-        type: 'team_created',
+    const teamEvents = getTeamEvents();
+    if (teamEvents) {
+      teamEvents.trackEvent(rootDir, 'team_created', {
+        trace_id: traceId,
         template: templateName,
         mode,
-        trace_id: traceId,
         teammate_count: template.teammates.length,
       });
     }
@@ -439,21 +449,32 @@ function stopTeam(rootDir) {
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
 
-    // Log team_stopped event
+    // Log team_stopped event to session-state + JSONL bus (dual-write)
     try {
-      const bridge = getMessagingBridge();
-      if (bridge) {
-        bridge.sendMessage(rootDir, {
-          from: 'team-manager',
-          to: 'system',
-          type: 'team_stopped',
+      const teamEvents = getTeamEvents();
+      if (teamEvents) {
+        teamEvents.trackEvent(rootDir, 'team_stopped', {
+          trace_id: team.trace_id,
           template: team.template,
           mode: team.mode,
-          trace_id: team.trace_id,
           duration_ms: duration,
           tasks_completed: state.team_metrics ? state.team_metrics.tasks_completed : 0,
         });
       }
+    } catch (e) {
+      // Non-critical
+    }
+
+    // Log team_completed event for observability parity (AC3)
+    try {
+      const teamEvents = require('./lib/team-events');
+      teamEvents.trackEvent(rootDir, 'team_completed', {
+        trace_id: team.trace_id,
+        template: team.template,
+        mode: team.mode,
+        duration_ms: duration,
+        tasks_completed: state.team_metrics ? state.team_metrics.tasks_completed : 0,
+      });
     } catch (e) {
       // Non-critical
     }

@@ -27,7 +27,7 @@ describe('inject-help.js', () => {
   // ===========================================================================
 
   describe('generateCommandList', () => {
-    it('generates command list grouped by category', () => {
+    it('generates compact category summary with counts', () => {
       const commands = [
         {
           name: 'status',
@@ -45,11 +45,10 @@ describe('inject-help.js', () => {
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('**Story Management:**');
-      expect(result).toContain('**Development:**');
-      expect(result).toContain('`/agileflow:status STORY=<id>`');
-      expect(result).toContain('Show story status');
-      expect(result).toContain('`/agileflow:verify`');
+      expect(result).toContain('**2 commands** across 2 categories:');
+      expect(result).toContain('**Story Management** (1): status');
+      expect(result).toContain('**Development** (1): verify');
+      expect(result).toContain('Browse all:');
     });
 
     it('handles commands without argument hints', () => {
@@ -64,11 +63,11 @@ describe('inject-help.js', () => {
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('`/agileflow:help`');
-      expect(result).not.toContain('`/agileflow:help `'); // No trailing space
+      expect(result).toContain('help');
+      expect(result).toContain('**System** (1)');
     });
 
-    it('handles commands with complex argument hints', () => {
+    it('handles commands with complex argument hints (names still appear as examples)', () => {
       const commands = [
         {
           name: 'sprint',
@@ -80,12 +79,10 @@ describe('inject-help.js', () => {
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain(
-        '`/agileflow:sprint [SPRINT=<id>] [DURATION=<days>] [MODE=suggest|commit]`'
-      );
+      expect(result).toContain('**Planning** (1): sprint');
     });
 
-    it('groups multiple commands in same category', () => {
+    it('groups multiple commands in same category with count', () => {
       const commands = [
         {
           name: 'story',
@@ -109,20 +106,21 @@ describe('inject-help.js', () => {
 
       const result = generateCommandList(commands);
 
-      // Should have single Story Management header
-      const categoryCount = (result.match(/\*\*Story Management:\*\*/g) || []).length;
+      // Should have single Story Management header with count
+      const categoryCount = (result.match(/\*\*Story Management\*\*/g) || []).length;
       expect(categoryCount).toBe(1);
+      expect(result).toContain('**Story Management** (3)');
 
-      // All commands should be under it
-      expect(result).toContain('/agileflow:story');
-      expect(result).toContain('/agileflow:epic');
-      expect(result).toContain('/agileflow:assign');
+      // All commands should appear as examples
+      expect(result).toContain('story');
+      expect(result).toContain('epic');
+      expect(result).toContain('assign');
     });
 
-    it('generates empty string for empty command array', () => {
+    it('generates summary header for empty command array', () => {
       const result = generateCommandList([]);
 
-      expect(result).toBe('');
+      expect(result).toContain('**0 commands**');
     });
 
     it('handles many categories', () => {
@@ -135,34 +133,25 @@ describe('inject-help.js', () => {
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('**Category A:**');
-      expect(result).toContain('**Category B:**');
-      expect(result).toContain('**Category C:**');
-      expect(result).toContain('**Category D:**');
+      expect(result).toContain('**4 commands** across 4 categories:');
+      expect(result).toContain('**Category A** (1)');
+      expect(result).toContain('**Category B** (1)');
+      expect(result).toContain('**Category C** (1)');
+      expect(result).toContain('**Category D** (1)');
     });
 
-    it('adds blank lines between categories', () => {
+    it('truncates to 3 examples and shows +N more for large categories', () => {
       const commands = [
-        { name: 'a', description: 'A', argumentHint: '', category: 'First' },
-        { name: 'b', description: 'B', argumentHint: '', category: 'Second' },
+        { name: 'a', description: 'A', argumentHint: '', category: 'Big' },
+        { name: 'b', description: 'B', argumentHint: '', category: 'Big' },
+        { name: 'c', description: 'C', argumentHint: '', category: 'Big' },
+        { name: 'd', description: 'D', argumentHint: '', category: 'Big' },
+        { name: 'e', description: 'E', argumentHint: '', category: 'Big' },
       ];
 
       const result = generateCommandList(commands);
-      const lines = result.split('\n');
 
-      // Find the blank line between categories
-      let foundBlankBetweenCategories = false;
-      for (let i = 1; i < lines.length - 1; i++) {
-        if (
-          lines[i] === '' &&
-          lines[i - 1].includes('/agileflow:') &&
-          lines[i + 1].includes('**')
-        ) {
-          foundBlankBetweenCategories = true;
-          break;
-        }
-      }
-      expect(foundBlankBetweenCategories).toBe(true);
+      expect(result).toContain('**Big** (5): a, b, c, +2 more');
     });
   });
 
@@ -260,7 +249,7 @@ original
   // ===========================================================================
 
   describe('edge cases', () => {
-    it('handles command with special characters in description', () => {
+    it('handles command with special characters in category name', () => {
       const commands = [
         {
           name: 'special',
@@ -272,14 +261,14 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('Handles "quotes", <tags>, & ampersands');
+      expect(result).toContain('**Test** (1): special');
     });
 
     it('handles command with unicode description', () => {
       const commands = [
         {
           name: 'unicode',
-          description: 'Supports émojis 🎉 and ünïcödé',
+          description: 'Supports émojis and ünïcödé',
           argumentHint: '',
           category: 'Test',
         },
@@ -287,7 +276,7 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('émojis 🎉 and ünïcödé');
+      expect(result).toContain('unicode');
     });
 
     it('handles very long command name', () => {
@@ -302,7 +291,7 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('/agileflow:very-long-command-name-that-exceeds-normal-length');
+      expect(result).toContain('very-long-command-name-that-exceeds-normal-length');
     });
 
     it('handles namespaced commands (e.g., story:view)', () => {
@@ -323,8 +312,8 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('/agileflow:story:view');
-      expect(result).toContain('/agileflow:story:list');
+      expect(result).toContain('story:view');
+      expect(result).toContain('story:list');
     });
 
     it('handles content with Windows line endings', () => {
@@ -348,7 +337,7 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('`/agileflow:nodesc` - ');
+      expect(result).toContain('nodesc');
     });
 
     it('handles category with special characters', () => {
@@ -363,7 +352,7 @@ original
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('**Quality & Testing:**');
+      expect(result).toContain('**Quality & Testing** (1)');
     });
   });
 
@@ -406,8 +395,9 @@ placeholder
 
       // Read back and verify
       const final = fs.readFileSync(testFile, 'utf-8');
-      expect(final).toContain('/agileflow:help');
-      expect(final).toContain('/agileflow:status STORY=<id>');
+      expect(final).toContain('help');
+      expect(final).toContain('status');
+      expect(final).toContain('**2 commands**');
       expect(final).toContain('# AgileFlow Help');
       expect(final).toContain('## Getting Started');
       expect(final).not.toContain('placeholder');
@@ -462,12 +452,11 @@ More content.
 
       const result = generateCommandList(commands);
 
-      // Should be a valid markdown list item
-      expect(result).toMatch(/^- `/m);
-      expect(result).toContain('` - ');
+      // Should contain a markdown list item for the category
+      expect(result).toMatch(/^- \*\*/m);
     });
 
-    it('command entries follow consistent format', () => {
+    it('command names appear as examples in category', () => {
       const commands = [
         { name: 'cmd1', description: 'Description 1', argumentHint: 'A=<a>', category: 'Cat' },
         { name: 'cmd2', description: 'Description 2', argumentHint: '', category: 'Cat' },
@@ -475,17 +464,17 @@ More content.
 
       const result = generateCommandList(commands);
 
-      // Both should follow pattern: - `/agileflow:name [args]` - description
-      expect(result).toMatch(/- `\/agileflow:cmd1 A=<a>` - Description 1/);
-      expect(result).toMatch(/- `\/agileflow:cmd2` - Description 2/);
+      expect(result).toContain('cmd1');
+      expect(result).toContain('cmd2');
+      expect(result).toContain('**Cat** (2)');
     });
 
-    it('categories are bold formatted', () => {
+    it('categories are bold formatted with counts', () => {
       const commands = [{ name: 'x', description: 'X', argumentHint: '', category: 'My Category' }];
 
       const result = generateCommandList(commands);
 
-      expect(result).toContain('**My Category:**');
+      expect(result).toContain('**My Category** (1)');
     });
   });
 });

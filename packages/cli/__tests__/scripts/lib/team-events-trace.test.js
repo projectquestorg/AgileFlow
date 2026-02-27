@@ -20,12 +20,14 @@ jest.mock('../../../lib/feature-flags');
 jest.mock('../../../lib/paths');
 jest.mock('../../../scripts/lib/file-lock');
 jest.mock('../../../scripts/messaging-bridge');
+jest.mock('../../../scripts/lib/team-events');
 
 const teamManager = require('../../../scripts/team-manager');
 const featureFlags = require('../../../lib/feature-flags');
 const paths = require('../../../lib/paths');
 const fileLock = require('../../../scripts/lib/file-lock');
 const messagingBridge = require('../../../scripts/messaging-bridge');
+const teamEvents = require('../../../scripts/lib/team-events');
 
 describe('trace_id propagation', () => {
   const testRootDir = '/home/test/project';
@@ -48,6 +50,11 @@ describe('trace_id propagation', () => {
 
     featureFlags.getAgentTeamsMode.mockReturnValue('subagent');
     messagingBridge.sendMessage.mockReturnValue({ ok: true });
+
+    // Mock team events for dual-write (US-0348)
+    teamEvents.trackEvent.mockReturnValue({ ok: true });
+    teamEvents.aggregateTeamMetrics.mockReturnValue({ ok: true });
+    teamEvents.saveAggregatedMetrics.mockReturnValue({ ok: true });
   });
 
   function makeTemplate(name) {
@@ -130,10 +137,10 @@ describe('trace_id propagation', () => {
 
       const result = teamManager.startTeam(testRootDir, 'event-test');
 
-      expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
         testRootDir,
+        'team_created',
         expect.objectContaining({
-          type: 'team_created',
           trace_id: result.trace_id,
         })
       );
@@ -160,10 +167,10 @@ describe('trace_id propagation', () => {
 
       teamManager.stopTeam(testRootDir);
 
-      expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
         testRootDir,
+        'team_stopped',
         expect.objectContaining({
-          type: 'team_stopped',
           trace_id: traceId,
         })
       );
@@ -186,10 +193,10 @@ describe('trace_id propagation', () => {
 
       expect(result.ok).toBe(true);
       // trace_id will be undefined, which is fine
-      expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
         testRootDir,
+        'team_stopped',
         expect.objectContaining({
-          type: 'team_stopped',
           trace_id: undefined,
         })
       );
@@ -198,6 +205,8 @@ describe('trace_id propagation', () => {
 });
 
 // --- team-events.js trace_id filter tests ---
+// Use jest.requireActual to get the real module (file-level jest.mock overrides it)
+const realTeamEvents = jest.requireActual('../../../scripts/lib/team-events');
 
 describe('getTeamEvents trace_id filter', () => {
   const testRootDir = '/home/test/project';
@@ -212,7 +221,7 @@ describe('getTeamEvents trace_id filter', () => {
   });
 
   it('filters events by trace_id', () => {
-    const { getTeamEvents } = require('../../../scripts/lib/team-events');
+    const { getTeamEvents } = realTeamEvents;
 
     const traceA = 'trace-111-aaa';
     const traceB = 'trace-222-bbb';
@@ -240,7 +249,7 @@ describe('getTeamEvents trace_id filter', () => {
   });
 
   it('returns empty when trace_id matches nothing', () => {
-    const { getTeamEvents } = require('../../../scripts/lib/team-events');
+    const { getTeamEvents } = realTeamEvents;
 
     const state = {
       hook_metrics: {
@@ -262,7 +271,7 @@ describe('getTeamEvents trace_id filter', () => {
   });
 
   it('combines trace_id filter with other filters', () => {
-    const { getTeamEvents } = require('../../../scripts/lib/team-events');
+    const { getTeamEvents } = realTeamEvents;
 
     const traceA = 'trace-111-aaa';
 
@@ -304,7 +313,7 @@ describe('trackEvent trace_id passthrough', () => {
   });
 
   it('preserves trace_id in event data via spread', () => {
-    const { trackEvent } = require('../../../scripts/lib/team-events');
+    const { trackEvent } = realTeamEvents;
 
     const traceId = 'trace-999-xyz';
     let capturedState;
@@ -323,6 +332,163 @@ describe('trackEvent trace_id passthrough', () => {
     expect(events).toHaveLength(1);
     expect(events[0].trace_id).toBe(traceId);
     expect(events[0].type).toBe('task_assigned');
+  });
+});
+
+// --- EVENT_TYPES completeness ---
+
+describe('EVENT_TYPES', () => {
+  it('includes team_completed', () => {
+    const { EVENT_TYPES } = realTeamEvents;
+    expect(EVENT_TYPES).toContain('team_completed');
+  });
+
+  it('includes team_message', () => {
+    const { EVENT_TYPES } = realTeamEvents;
+    expect(EVENT_TYPES).toContain('team_message');
+  });
+});
+
+// --- aggregateTeamMetrics team_message + team_completed tests ---
+
+describe('aggregateTeamMetrics dual-write observability', () => {
+  const testRootDir = '/home/test/project';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    paths.getSessionStatePath.mockReturnValue(
+      path.join(testRootDir, 'docs/00-meta/session-state.json')
+    );
+    fs.existsSync.mockReturnValue(true);
+  });
+
+  it('counts team_message events per agent in messages_sent', () => {
+    const { aggregateTeamMetrics } = realTeamEvents;
+
+    const traceId = 'trace-msg-agg';
+    const state = {
+      hook_metrics: {
+        teams: {
+          events: [
+            { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00Z' },
+            {
+              type: 'team_message',
+              trace_id: traceId,
+              from: 'AG-API',
+              to: 'AG-UI',
+              at: '2026-01-01T00:01:00Z',
+            },
+            {
+              type: 'team_message',
+              trace_id: traceId,
+              from: 'AG-API',
+              to: 'AG-DB',
+              at: '2026-01-01T00:02:00Z',
+            },
+            {
+              type: 'team_message',
+              trace_id: traceId,
+              from: 'AG-UI',
+              to: 'AG-API',
+              at: '2026-01-01T00:03:00Z',
+            },
+            { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:10:00Z' },
+          ],
+          summary: {},
+        },
+      },
+    };
+
+    fs.readFileSync.mockReturnValue(JSON.stringify(state));
+
+    const result = aggregateTeamMetrics(testRootDir, traceId);
+
+    expect(result.ok).toBe(true);
+    expect(result.total_messages_sent).toBe(3);
+    expect(result.per_agent['AG-API'].messages_sent).toBe(2);
+    expect(result.per_agent['AG-UI'].messages_sent).toBe(1);
+  });
+
+  it('uses team_completed for timing over team_stopped', () => {
+    const { aggregateTeamMetrics } = realTeamEvents;
+
+    const traceId = 'trace-timing';
+    const state = {
+      hook_metrics: {
+        teams: {
+          events: [
+            { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00Z' },
+            { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:05:00Z' },
+            { type: 'team_completed', trace_id: traceId, at: '2026-01-01T00:10:00Z' },
+          ],
+          summary: {},
+        },
+      },
+    };
+
+    fs.readFileSync.mockReturnValue(JSON.stringify(state));
+
+    const result = aggregateTeamMetrics(testRootDir, traceId);
+
+    expect(result.ok).toBe(true);
+    // team_completed (10 min) should be preferred over team_stopped (5 min)
+    expect(result.team_completion_ms).toBe(10 * 60 * 1000);
+  });
+
+  it('falls back to team_stopped when no team_completed', () => {
+    const { aggregateTeamMetrics } = realTeamEvents;
+
+    const traceId = 'trace-fallback';
+    const state = {
+      hook_metrics: {
+        teams: {
+          events: [
+            { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00Z' },
+            { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:05:00Z' },
+          ],
+          summary: {},
+        },
+      },
+    };
+
+    fs.readFileSync.mockReturnValue(JSON.stringify(state));
+
+    const result = aggregateTeamMetrics(testRootDir, traceId);
+
+    expect(result.ok).toBe(true);
+    expect(result.team_completion_ms).toBe(5 * 60 * 1000);
+  });
+
+  it('returns total_messages_sent of 0 when no team_message events', () => {
+    const { aggregateTeamMetrics } = realTeamEvents;
+
+    const traceId = 'trace-no-msgs';
+    const state = {
+      hook_metrics: {
+        teams: {
+          events: [
+            { type: 'team_created', trace_id: traceId, at: '2026-01-01T00:00:00Z' },
+            {
+              type: 'task_completed',
+              trace_id: traceId,
+              agent: 'AG-API',
+              duration_ms: 100,
+              at: '2026-01-01T00:01:00Z',
+            },
+            { type: 'team_stopped', trace_id: traceId, at: '2026-01-01T00:05:00Z' },
+          ],
+          summary: {},
+        },
+      },
+    };
+
+    fs.readFileSync.mockReturnValue(JSON.stringify(state));
+
+    const result = aggregateTeamMetrics(testRootDir, traceId);
+
+    expect(result.ok).toBe(true);
+    expect(result.total_messages_sent).toBe(0);
   });
 });
 

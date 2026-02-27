@@ -82,15 +82,18 @@ class BaseIdeSetup {
    * Uses content-transformer module for consistent injection
    * @param {string} content - Template file content
    * @param {string} agileflowDir - AgileFlow installation directory
+   * @param {Object} [options] - Additional injection options
+   * @param {boolean} [options.minimal] - When true, skip full list injection (use discovery pointers)
    * @returns {string} Content with placeholders replaced
    */
-  injectDynamicContent(content, agileflowDir) {
+  injectDynamicContent(content, agileflowDir, options = {}) {
     // agileflowDir is the user's .agileflow installation directory
     // which has agents/, commands/, skills/ at the root level
     return injectDynamicContentHelper(content, {
       coreDir: agileflowDir,
       agileflowFolder: this.agileflowFolder,
       version: this.getVersion(),
+      minimal: options.minimal || false,
     });
   }
 
@@ -104,6 +107,30 @@ class BaseIdeSetup {
       return packageJson.version || 'unknown';
     } catch {
       return 'unknown';
+    }
+  }
+
+  /**
+   * Detect minimal context mode from project metadata.
+   * Reads the contextVerbosity setting from /configure.
+   * @param {string} projectDir - Project directory
+   * @returns {boolean} True if minimal mode should be used
+   */
+  _detectMinimalMode(projectDir) {
+    try {
+      const metadataPath = path.join(
+        projectDir,
+        this.docsFolder,
+        '00-meta',
+        'agileflow-metadata.json'
+      );
+      if (!fs.existsSync(metadataPath)) return false;
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+      const mode = metadata?.features?.contextVerbosity?.mode;
+      if (mode === 'minimal') return true;
+      return false;
+    } catch {
+      return false;
     }
   }
 
@@ -128,6 +155,7 @@ class BaseIdeSetup {
    * @param {string} config.agileflowFolder - AgileFlow folder name (e.g., 'agileflow', 'AgileFlow')
    * @param {string} [config.commandLabel='commands'] - Label for commands in output (e.g., 'workflows')
    * @param {string} [config.agentLabel='agents'] - Label for agents in output
+   * @param {boolean} [config.minimal=false] - When true, skip full agent/command list injection. Auto-detected from metadata if not set.
    * @returns {Promise<{success: boolean, commands: number, agents: number}>}
    */
   async setupStandard(projectDir, agileflowDir, config) {
@@ -136,7 +164,11 @@ class BaseIdeSetup {
       agileflowFolder,
       commandLabel = 'commands',
       agentLabel = 'agents',
+      minimal: explicitMinimal,
     } = config;
+
+    // Auto-detect minimal mode from /configure context verbosity setting
+    const minimal = explicitMinimal ?? this._detectMinimalMode(projectDir);
 
     console.log(chalk.hex('#e8683a')(`  Setting up ${this.displayName}...`));
 
@@ -154,7 +186,9 @@ class BaseIdeSetup {
       commandsSource,
       agileflowTargetDir,
       agileflowDir,
-      true // Inject dynamic content
+      true, // Inject dynamic content
+      null, // No IDE transform
+      { minimal } // Pass minimal flag for content injection
     );
 
     // Install agents as subdirectory
@@ -379,6 +413,7 @@ class BaseIdeSetup {
    * @param {string} agileflowDir - AgileFlow installation directory (for dynamic content)
    * @param {boolean} injectDynamic - Whether to inject dynamic content (only for top-level commands)
    * @param {Function} [ideTransform] - Optional IDE transformation function: (content, filename) => string
+   * @param {Object} [injectionOptions] - Options passed to injectDynamicContent (e.g., { minimal: true })
    * @returns {Promise<{commands: number, subdirs: number}>} Count of installed items
    * @throws {CommandInstallationError} If command installation fails
    * @throws {FilePermissionError} If permission denied
@@ -402,7 +437,8 @@ class BaseIdeSetup {
     targetDir,
     agileflowDir,
     injectDynamic = false,
-    ideTransform = null
+    ideTransform = null,
+    injectionOptions = {}
   ) {
     let commandCount = 0;
     let subdirCount = 0;
@@ -434,7 +470,7 @@ class BaseIdeSetup {
           // Inject dynamic content if enabled (for top-level commands)
           if (injectDynamic) {
             try {
-              content = this.injectDynamicContent(content, agileflowDir);
+              content = this.injectDynamicContent(content, agileflowDir, injectionOptions);
             } catch (injectionError) {
               throw new ContentInjectionError(this.displayName, sourcePath, injectionError.message);
             }
@@ -467,7 +503,8 @@ class BaseIdeSetup {
           targetPath,
           agileflowDir,
           false, // Don't inject dynamic content in subdirectories
-          ideTransform // Pass ideTransform to recursive calls
+          ideTransform, // Pass ideTransform to recursive calls
+          injectionOptions // Pass injection options to recursive calls
         );
         commandCount += subResult.commands;
         subdirCount += 1 + subResult.subdirs;

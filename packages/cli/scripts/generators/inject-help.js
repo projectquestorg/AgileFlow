@@ -13,9 +13,11 @@ const path = require('path');
 const { scanCommands } = require('./command-registry');
 
 /**
- * Generate command list content grouped by category
+ * Generate command list content as category summary with counts and examples.
+ * Uses compact format with discovery pointer instead of listing every command.
+ * Research (arXiv:2602.11988): Full lists increase context cost without improving performance.
  * @param {Array} commands - Array of command metadata
- * @returns {string} Formatted command list
+ * @returns {string} Formatted command category summary
  */
 function generateCommandList(commands) {
   const lines = [];
@@ -29,15 +31,23 @@ function generateCommandList(commands) {
     categories[cmd.category].push(cmd);
   }
 
-  // Generate markdown for each category
+  lines.push(
+    `**${commands.length} commands** across ${Object.keys(categories).length} categories:`
+  );
+  lines.push('');
+
+  // Generate compact category summary with examples
   for (const [category, cmds] of Object.entries(categories)) {
-    lines.push(`**${category}:**`);
-    for (const cmd of cmds) {
-      const hint = cmd.argumentHint ? ` ${cmd.argumentHint}` : '';
-      lines.push(`- \`/agileflow:${cmd.name}${hint}\` - ${cmd.description}`);
-    }
-    lines.push(''); // Blank line between categories
+    const examples = cmds
+      .slice(0, 3)
+      .map(c => c.name)
+      .join(', ');
+    const more = cmds.length > 3 ? `, +${cmds.length - 3} more` : '';
+    lines.push(`- **${category}** (${cmds.length}): ${examples}${more}`);
   }
+
+  lines.push('');
+  lines.push('Browse all: `ls .agileflow/commands/` or run `/agileflow:help`');
 
   return lines.join('\n');
 }

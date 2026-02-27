@@ -17,12 +17,14 @@ jest.mock('../../lib/feature-flags');
 jest.mock('../../lib/paths');
 jest.mock('../../scripts/lib/file-lock');
 jest.mock('../../scripts/messaging-bridge');
+jest.mock('../../scripts/lib/team-events');
 
 const teamManager = require('../../scripts/team-manager');
 const featureFlags = require('../../lib/feature-flags');
 const paths = require('../../lib/paths');
 const fileLock = require('../../scripts/lib/file-lock');
 const messagingBridge = require('../../scripts/messaging-bridge');
+const teamEvents = require('../../scripts/lib/team-events');
 
 describe('team-manager native Agent Teams', () => {
   let testRootDir;
@@ -46,6 +48,11 @@ describe('team-manager native Agent Teams', () => {
       const state = updateFn({});
       // This simulates what the real function would do
     });
+
+    // Mock team events for dual-write tracking
+    teamEvents.trackEvent.mockReturnValue({ ok: true });
+    teamEvents.aggregateTeamMetrics.mockReturnValue({ ok: true });
+    teamEvents.saveAggregatedMetrics.mockReturnValue({ ok: true });
   });
 
   describe('buildNativeTeamPayload', () => {
@@ -414,9 +421,8 @@ describe('team-manager native Agent Teams', () => {
   });
 
   describe('startTeam messaging', () => {
-    it('sends team_created event to messaging bridge', () => {
+    it('sends team_created event via trackEvent for dual-write', () => {
       featureFlags.getAgentTeamsMode.mockReturnValue('native');
-      messagingBridge.sendMessage.mockImplementation(() => {});
 
       const template = {
         name: 'Message Team',
@@ -437,23 +443,46 @@ describe('team-manager native Agent Teams', () => {
 
       teamManager.startTeam(testRootDir, 'message-team');
 
-      expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
         testRootDir,
+        'team_created',
         expect.objectContaining({
-          from: 'team-manager',
-          to: 'team-lead',
-          type: 'team_created',
           template: 'message-team',
           mode: 'native',
           teammate_count: 2,
+          trace_id: expect.any(String),
         })
       );
     });
 
-    it('handles messaging bridge errors gracefully', () => {
+    it('includes trace_id in team_created trackEvent call', () => {
       featureFlags.getAgentTeamsMode.mockReturnValue('native');
-      messagingBridge.sendMessage.mockImplementation(() => {
-        throw new Error('Bridge error');
+
+      const template = {
+        name: 'Trace Team',
+        lead: 'AG-LEAD',
+        teammates: [{ agent: 'AG-WORKER', role: 'worker', domain: 'work' }],
+        quality_gates: {},
+      };
+
+      fs.readFileSync.mockImplementation(filePath => {
+        if (filePath.includes('trace-team.json')) {
+          return JSON.stringify(template);
+        }
+        return JSON.stringify({});
+      });
+
+      const result = teamManager.startTeam(testRootDir, 'trace-team');
+
+      const trackCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_created');
+      expect(trackCall).toBeDefined();
+      expect(trackCall[2].trace_id).toBe(result.trace_id);
+    });
+
+    it('handles trackEvent errors gracefully', () => {
+      featureFlags.getAgentTeamsMode.mockReturnValue('native');
+      teamEvents.trackEvent.mockImplementation(() => {
+        throw new Error('Track error');
       });
 
       const template = {
@@ -477,14 +506,13 @@ describe('team-manager native Agent Teams', () => {
   });
 
   describe('stopTeam', () => {
-    it('logs team_stopped event to messaging bridge', () => {
-      messagingBridge.sendMessage.mockImplementation(() => {});
-
+    it('logs team_stopped event via trackEvent for dual-write', () => {
       const now = new Date();
       const sessionState = {
         active_team: {
           template: 'test-team',
           mode: 'native',
+          trace_id: 'trace-stop-001',
           started_at: new Date(now.getTime() - 5000).toISOString(),
         },
         team_metrics: {
@@ -497,12 +525,11 @@ describe('team-manager native Agent Teams', () => {
 
       teamManager.stopTeam(testRootDir);
 
-      expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
         testRootDir,
+        'team_stopped',
         expect.objectContaining({
-          from: 'team-manager',
-          to: 'system',
-          type: 'team_stopped',
+          trace_id: 'trace-stop-001',
           template: 'test-team',
           mode: 'native',
           duration_ms: expect.any(Number),
@@ -511,9 +538,7 @@ describe('team-manager native Agent Teams', () => {
       );
     });
 
-    it('calculates duration correctly', () => {
-      messagingBridge.sendMessage.mockImplementation(() => {});
-
+    it('calculates duration correctly in trackEvent', () => {
       const startTime = new Date();
       const stopTime = new Date(startTime.getTime() + 12345);
 
@@ -521,6 +546,7 @@ describe('team-manager native Agent Teams', () => {
         active_team: {
           template: 'timed-team',
           mode: 'native',
+          trace_id: 'trace-dur-002',
           started_at: startTime.toISOString(),
         },
         team_metrics: {
@@ -531,19 +557,15 @@ describe('team-manager native Agent Teams', () => {
       fs.readFileSync.mockReturnValue(JSON.stringify(sessionState));
       fs.existsSync.mockReturnValue(true);
 
-      // Mock Date.now() to return stopTime
       const originalDateNow = Date.now;
       Date.now = jest.fn(() => stopTime.getTime());
 
       try {
         teamManager.stopTeam(testRootDir);
 
-        expect(messagingBridge.sendMessage).toHaveBeenCalledWith(
-          testRootDir,
-          expect.objectContaining({
-            duration_ms: expect.any(Number),
-          })
-        );
+        const stoppedCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_stopped');
+        expect(stoppedCall).toBeDefined();
+        expect(stoppedCall[2].duration_ms).toBe(12345);
       } finally {
         Date.now = originalDateNow;
       }
@@ -616,6 +638,67 @@ describe('team-manager native Agent Teams', () => {
 
       expect(result.ok).toBe(false);
       expect(result.error).toContain('No active team');
+    });
+
+    it('emits team_completed event via trackEvent', () => {
+      const traceId = 'trace-123-abc';
+      const sessionState = {
+        active_team: {
+          template: 'completed-team',
+          mode: 'native',
+          trace_id: traceId,
+          started_at: new Date(Date.now() - 8000).toISOString(),
+        },
+        team_metrics: {
+          tasks_completed: 4,
+        },
+      };
+
+      fs.readFileSync.mockReturnValue(JSON.stringify(sessionState));
+      fs.existsSync.mockReturnValue(true);
+
+      teamManager.stopTeam(testRootDir);
+
+      const completedCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_completed');
+
+      expect(completedCall).toBeDefined();
+      expect(completedCall[2].trace_id).toBe(traceId);
+      expect(completedCall[2].template).toBe('completed-team');
+      expect(completedCall[2].mode).toBe('native');
+      expect(completedCall[2].duration_ms).toEqual(expect.any(Number));
+      expect(completedCall[2].tasks_completed).toBe(4);
+    });
+
+    it('emits team_completed with correct duration_ms', () => {
+      const startTime = new Date();
+      const stopTime = new Date(startTime.getTime() + 15000);
+
+      const sessionState = {
+        active_team: {
+          template: 'duration-team',
+          mode: 'native',
+          trace_id: 'trace-dur-001',
+          started_at: startTime.toISOString(),
+        },
+        team_metrics: { tasks_completed: 0 },
+      };
+
+      fs.readFileSync.mockReturnValue(JSON.stringify(sessionState));
+      fs.existsSync.mockReturnValue(true);
+
+      const originalDateNow = Date.now;
+      Date.now = jest.fn(() => stopTime.getTime());
+
+      try {
+        teamManager.stopTeam(testRootDir);
+
+        const completedCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_completed');
+
+        expect(completedCall).toBeDefined();
+        expect(completedCall[2].duration_ms).toBe(15000);
+      } finally {
+        Date.now = originalDateNow;
+      }
     });
   });
 
@@ -699,6 +782,98 @@ describe('team-manager native Agent Teams', () => {
       // Should still succeed
       expect(result.ok).toBe(true);
       expect(result.mode).toBe('subagent');
+    });
+  });
+
+  describe('dual-write consistency (US-0348)', () => {
+    it('startTeam uses trackEvent instead of direct bridge.sendMessage', () => {
+      featureFlags.getAgentTeamsMode.mockReturnValue('native');
+
+      const template = {
+        name: 'Dual Write Team',
+        lead: 'AG-LEAD',
+        teammates: [{ agent: 'AG-WORKER', role: 'worker', domain: 'work' }],
+        quality_gates: {},
+      };
+
+      fs.readFileSync.mockImplementation(filePath => {
+        if (filePath.includes('dual-write.json')) {
+          return JSON.stringify(template);
+        }
+        return JSON.stringify({});
+      });
+
+      teamManager.startTeam(testRootDir, 'dual-write');
+
+      // trackEvent should be called for team_created (handles both session-state + JSONL)
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
+        testRootDir,
+        'team_created',
+        expect.objectContaining({
+          template: 'dual-write',
+        })
+      );
+
+      // bridge.sendMessage should NOT be called directly for team_created
+      const bridgeCalls = messagingBridge.sendMessage.mock.calls;
+      const directCreated = bridgeCalls.find(c => c[1] && c[1].type === 'team_created');
+      expect(directCreated).toBeUndefined();
+    });
+
+    it('stopTeam uses trackEvent for both team_stopped and team_completed', () => {
+      const sessionState = {
+        active_team: {
+          template: 'dual-stop',
+          mode: 'native',
+          trace_id: 'trace-dual-001',
+          started_at: new Date(Date.now() - 3000).toISOString(),
+        },
+        team_metrics: { tasks_completed: 2 },
+      };
+
+      fs.readFileSync.mockReturnValue(JSON.stringify(sessionState));
+      fs.existsSync.mockReturnValue(true);
+
+      teamManager.stopTeam(testRootDir);
+
+      // Both team_stopped and team_completed go through trackEvent
+      const stoppedCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_stopped');
+      const completedCall = teamEvents.trackEvent.mock.calls.find(c => c[1] === 'team_completed');
+
+      expect(stoppedCall).toBeDefined();
+      expect(completedCall).toBeDefined();
+
+      // Both carry the same trace_id
+      expect(stoppedCall[2].trace_id).toBe('trace-dual-001');
+      expect(completedCall[2].trace_id).toBe('trace-dual-001');
+    });
+
+    it('subagent mode also uses trackEvent for team_created', () => {
+      featureFlags.getAgentTeamsMode.mockReturnValue('subagent');
+
+      const template = {
+        name: 'Subagent Dual',
+        lead: 'AG-LEAD',
+        teammates: [{ agent: 'AG-WORKER', role: 'worker', domain: 'work' }],
+        quality_gates: {},
+      };
+
+      fs.readFileSync.mockImplementation(filePath => {
+        if (filePath.includes('subagent-dual.json')) {
+          return JSON.stringify(template);
+        }
+        return JSON.stringify({});
+      });
+
+      teamManager.startTeam(testRootDir, 'subagent-dual');
+
+      expect(teamEvents.trackEvent).toHaveBeenCalledWith(
+        testRootDir,
+        'team_created',
+        expect.objectContaining({
+          mode: 'subagent',
+        })
+      );
     });
   });
 

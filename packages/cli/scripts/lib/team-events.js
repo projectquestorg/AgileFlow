@@ -73,6 +73,8 @@ function getPaths() {
 const EVENT_TYPES = [
   'team_created',
   'team_stopped',
+  'team_completed',
+  'team_message',
   'task_assigned',
   'task_completed',
   'agent_error',
@@ -171,9 +173,19 @@ function checkCostThreshold(rootDir, traceId, totalCostUsd, threshold) {
  * @returns {{ ok: boolean, error?: string }}
  */
 function trackEvent(rootDir, eventType, data = {}) {
+  // Detect native Agent Teams mode for metrics equivalence (AC4)
+  let isNative = false;
+  try {
+    const ff = require('../../lib/feature-flags');
+    isNative = ff.isAgentTeamsEnabled({ rootDir });
+  } catch (e) {
+    // Non-critical - default to false
+  }
+
   const event = {
     type: eventType,
     at: new Date().toISOString(),
+    agent_teams: isNative,
     ...data,
   };
 
@@ -380,12 +392,30 @@ function aggregateTeamMetrics(rootDir, traceId) {
     perGate[gate].pass_rate = total > 0 ? perGate[gate].passed / total : 0;
   }
 
-  // Team completion time from team_created → team_stopped
+  // Count team_message events per agent for message-level observability
+  const messagesSent = {};
+  let totalMessagesSent = 0;
+  for (const e of events) {
+    if (e.type === 'team_message' && e.from) {
+      if (!messagesSent[e.from]) messagesSent[e.from] = 0;
+      messagesSent[e.from]++;
+      totalMessagesSent++;
+    }
+  }
+  // Merge messages_sent into per-agent metrics
+  for (const [agent, count] of Object.entries(messagesSent)) {
+    ensureAgent(agent);
+    perAgent[agent].messages_sent = count;
+  }
+
+  // Team completion time from team_created → team_completed (or team_stopped as fallback)
   let teamCompletionMs = null;
   const created = events.find(e => e.type === 'team_created');
+  const completed = events.find(e => e.type === 'team_completed');
   const stopped = events.find(e => e.type === 'team_stopped');
-  if (created && stopped) {
-    teamCompletionMs = new Date(stopped.at).getTime() - new Date(created.at).getTime();
+  const endEvent = completed || stopped;
+  if (created && endEvent) {
+    teamCompletionMs = new Date(endEvent.at).getTime() - new Date(created.at).getTime();
   }
 
   return {
@@ -395,6 +425,7 @@ function aggregateTeamMetrics(rootDir, traceId) {
     per_gate: perGate,
     all_files_modified: allFilesModified,
     team_completion_ms: teamCompletionMs,
+    total_messages_sent: totalMessagesSent,
     total_cost_usd: Math.round(totalCostUsd * 1_000_000) / 1_000_000,
     computed_at: new Date().toISOString(),
   };

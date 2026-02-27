@@ -14,9 +14,11 @@ const { scanAgents } = require('./agent-registry');
 const { scanCommands } = require('./command-registry');
 
 /**
- * Generate agent list content with details
+ * Generate agent list content as category summary with counts.
+ * Uses compact format with discovery pointer instead of listing every agent name.
+ * Research (arXiv:2602.11988): Full lists increase context cost without improving performance.
  * @param {Array} agents - Array of agent metadata
- * @returns {string} Formatted agent list
+ * @returns {string} Formatted agent category summary
  */
 function generateAgentList(agents) {
   const lines = [];
@@ -24,15 +26,26 @@ function generateAgentList(agents) {
   lines.push(`**AVAILABLE AGENTS** (${agents.length} total):`);
   lines.push('');
 
-  let count = 1;
+  // Group agents by category for compact output (counts only, not full names)
+  const categories = {};
   for (const agent of agents) {
-    lines.push(`${count}. **${agent.name}** (model: ${agent.model})`);
-    lines.push(`   - **Purpose**: ${agent.description}`);
-    lines.push(`   - **Tools**: ${agent.tools.join(', ')}`);
-    lines.push(`   - **Category**: ${agent.category}`);
-    lines.push('');
-    count++;
+    const cat = agent.category || 'Other';
+    if (!categories[cat]) categories[cat] = { count: 0, examples: [] };
+    categories[cat].count++;
+    // Keep first 3 names as examples
+    if (categories[cat].examples.length < 3) {
+      categories[cat].examples.push(agent.name);
+    }
   }
+
+  for (const [category, data] of Object.entries(categories)) {
+    const examples = data.examples.join(', ');
+    const more = data.count > 3 ? `, +${data.count - 3} more` : '';
+    lines.push(`**${category}** (${data.count}): ${examples}${more}`);
+  }
+
+  lines.push('');
+  lines.push('Browse all: `ls .agileflow/agents/` or run `/agileflow:help agents`');
 
   return lines.join('\n');
 }

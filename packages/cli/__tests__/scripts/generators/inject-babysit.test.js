@@ -75,7 +75,7 @@ model: sonnet
   // ===========================================================================
 
   describe('generateAgentList', () => {
-    it('generates agent list with single agent fixture', () => {
+    it('generates compact agent category summary', () => {
       const agents = [
         {
           name: 'test-agent',
@@ -89,13 +89,11 @@ model: sonnet
       const result = generateAgentList(agents);
 
       expect(result).toContain('**AVAILABLE AGENTS** (1 total):');
-      expect(result).toContain('1. **test-agent** (model: sonnet)');
-      expect(result).toContain('**Purpose**: A test agent');
-      expect(result).toContain('**Tools**: Read, Write, Bash');
-      expect(result).toContain('**Category**: Core Development');
+      expect(result).toContain('**Core Development** (1): test-agent');
+      expect(result).toContain('Browse all:');
     });
 
-    it('generates agent list with multiple agents in correct order', () => {
+    it('groups multiple agents by category with counts', () => {
       const agents = [
         {
           name: 'zebra-agent',
@@ -116,8 +114,7 @@ model: sonnet
       const result = generateAgentList(agents);
 
       expect(result).toContain('**AVAILABLE AGENTS** (2 total):');
-      expect(result).toContain('1. **zebra-agent**');
-      expect(result).toContain('2. **alpha-agent**');
+      expect(result).toContain('**Other** (2): zebra-agent, alpha-agent');
     });
 
     it('generates empty list for empty agent array', () => {
@@ -126,39 +123,46 @@ model: sonnet
       expect(result).toContain('**AVAILABLE AGENTS** (0 total):');
     });
 
-    it('handles agents with many tools', () => {
+    it('groups agents into separate categories with counts', () => {
       const agents = [
         {
-          name: 'full-agent',
-          description: 'Full access agent',
+          name: 'db-agent',
+          description: 'Database agent',
           tools: ['Read', 'Write', 'Edit', 'Bash', 'Glob', 'Grep', 'Task'],
           model: 'opus',
           category: 'Core Development',
         },
-      ];
-
-      const result = generateAgentList(agents);
-
-      expect(result).toContain('**Tools**: Read, Write, Edit, Bash, Glob, Grep, Task');
-    });
-
-    it('handles agents with empty tools array', () => {
-      const agents = [
         {
-          name: 'no-tools-agent',
-          description: 'Agent without tools',
-          tools: [],
+          name: 'test-runner',
+          description: 'Test runner',
+          tools: ['Read', 'Bash'],
           model: 'haiku',
-          category: 'Other',
+          category: 'Testing',
         },
       ];
 
       const result = generateAgentList(agents);
 
-      expect(result).toContain('**Tools**: ');
+      expect(result).toContain('**Core Development** (1): db-agent');
+      expect(result).toContain('**Testing** (1): test-runner');
     });
 
-    it('handles agents with empty description', () => {
+    it('uses Other category when category is missing', () => {
+      const agents = [
+        {
+          name: 'no-cat-agent',
+          description: 'Agent without category',
+          tools: [],
+          model: 'haiku',
+        },
+      ];
+
+      const result = generateAgentList(agents);
+
+      expect(result).toContain('**Other** (1): no-cat-agent');
+    });
+
+    it('includes agent names as examples in category line', () => {
       const agents = [
         {
           name: 'silent-agent',
@@ -171,7 +175,7 @@ model: sonnet
 
       const result = generateAgentList(agents);
 
-      expect(result).toContain('**Purpose**: ');
+      expect(result).toContain('silent-agent');
     });
 
     it('generates properly formatted output structure', () => {
@@ -187,14 +191,25 @@ model: sonnet
 
       const result = generateAgentList(agents);
 
-      // Verify structure
+      // Verify compact structure
       const lines = result.split('\n');
       expect(lines[0]).toBe('**AVAILABLE AGENTS** (1 total):');
       expect(lines[1]).toBe('');
-      expect(lines[2]).toContain('1. **structured-agent** (model: sonnet)');
-      expect(lines[3]).toContain('   - **Purpose**:');
-      expect(lines[4]).toContain('   - **Tools**:');
-      expect(lines[5]).toContain('   - **Category**:');
+      expect(lines[2]).toBe('**Testing** (1): structured-agent');
+    });
+
+    it('truncates to 3 examples and shows +N more for large categories', () => {
+      const agents = Array.from({ length: 5 }, (_, i) => ({
+        name: `agent-${i + 1}`,
+        description: `Agent ${i + 1}`,
+        tools: ['Read'],
+        model: 'haiku',
+        category: 'Core',
+      }));
+
+      const result = generateAgentList(agents);
+
+      expect(result).toContain('**Core** (5): agent-1, agent-2, agent-3, +2 more');
     });
   });
 
@@ -409,7 +424,7 @@ But no end marker section.`;
   // ===========================================================================
 
   describe('edge cases', () => {
-    it('handles agent with special characters in description', () => {
+    it('handles agent with special characters in name', () => {
       const agents = [
         {
           name: 'special-agent',
@@ -422,10 +437,10 @@ But no end marker section.`;
 
       const result = generateAgentList(agents);
 
-      expect(result).toContain('Handles "quotes" and <tags> and & symbols');
+      expect(result).toContain('special-agent');
     });
 
-    it('handles agent with unicode in name/description', () => {
+    it('handles agent with unicode in name', () => {
       const agents = [
         {
           name: 'emoji-agent',
@@ -439,25 +454,20 @@ But no end marker section.`;
       const result = generateAgentList(agents);
 
       expect(result).toContain('emoji-agent');
-      expect(result).toContain('émojis and ünïcödé ✨');
     });
 
-    it('handles very long tool list gracefully', () => {
-      const manyTools = Array.from({ length: 20 }, (_, i) => `Tool${i + 1}`);
-      const agents = [
-        {
-          name: 'mega-agent',
-          description: 'Has many tools',
-          tools: manyTools,
-          model: 'opus',
-          category: 'Core',
-        },
-      ];
+    it('handles many agents in same category with truncation', () => {
+      const agents = Array.from({ length: 20 }, (_, i) => ({
+        name: `agent-${i + 1}`,
+        description: `Agent ${i + 1}`,
+        tools: ['Read'],
+        model: 'opus',
+        category: 'Core',
+      }));
 
       const result = generateAgentList(agents);
 
-      expect(result).toContain('Tool1, Tool2');
-      expect(result).toContain('Tool20');
+      expect(result).toContain('**Core** (20): agent-1, agent-2, agent-3, +17 more');
     });
 
     it('handles content with Windows line endings', () => {

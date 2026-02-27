@@ -70,9 +70,46 @@ function isPathSafe(filePath, baseDir) {
 }
 
 /**
- * Scan agents directory and generate formatted agent list
+ * Derive agent category from name for compact grouping.
+ * @param {string} name - Agent name
+ * @returns {string} Category name
+ */
+function categorizeAgent(name) {
+  // Audit analyzer families
+  const analyzerMatch = name.match(/^(logic|security|perf|test|completeness|legal)-analyzer-/);
+  if (analyzerMatch) {
+    const familyNames = {
+      logic: 'Logic',
+      security: 'Security',
+      perf: 'Performance',
+      test: 'Tests',
+      completeness: 'Completeness',
+      legal: 'Legal',
+    };
+    return `Audit - ${familyNames[analyzerMatch[1]] || analyzerMatch[1]}`;
+  }
+  // Consensus coordinators for audit families
+  const consensusMatch = name.match(/^(logic|security|perf|test|completeness|legal)-consensus$/);
+  if (consensusMatch) {
+    const familyNames = {
+      logic: 'Logic',
+      security: 'Security',
+      perf: 'Performance',
+      test: 'Tests',
+      completeness: 'Completeness',
+      legal: 'Legal',
+    };
+    return `Audit - ${familyNames[consensusMatch[1]] || consensusMatch[1]}`;
+  }
+  if (name.startsWith('council-')) return 'Council';
+  if (name.endsWith('-validator')) return 'Validation';
+  return 'Domain';
+}
+
+/**
+ * Scan agents directory and generate compact category-grouped agent list
  * @param {string} agentsDir - Path to agents directory
- * @returns {string} Formatted agent list
+ * @returns {string} Formatted agent list grouped by category
  */
 function generateAgentList(agentsDir) {
   if (!fs.existsSync(agentsDir)) return '';
@@ -117,16 +154,20 @@ function generateAgentList(agentsDir) {
 
   // Sanitize the count value
   const safeCount = sanitize.count(agents.length);
+
+  // Group by category for compact output
+  const categories = {};
+  for (const agent of agents) {
+    const cat = categorizeAgent(agent.name);
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(agent.name);
+  }
+
   let output = `**AVAILABLE AGENTS (${safeCount} total)**:\n\n`;
 
-  agents.forEach((agent, index) => {
-    // All values are already sanitized by sanitizeAgentData
-    output += `${index + 1}. **${agent.name}** (model: ${agent.model})\n`;
-    output += `   - **Purpose**: ${agent.description}\n`;
-    output += `   - **Tools**: ${agent.tools.join(', ')}\n`;
-    output += `   - **Usage**: \`subagent_type: "agileflow-${agent.name}"\`\n`;
-    output += `\n`;
-  });
+  for (const [category, names] of Object.entries(categories)) {
+    output += `**${category}**: ${names.join(', ')}\n`;
+  }
 
   return output;
 }
@@ -233,6 +274,94 @@ function generateCommandList(commandsDir) {
   });
 
   return output;
+}
+
+/**
+ * Generate a compact category summary for agents (no individual names).
+ * Used by minimal mode and generators that want a discovery-oriented summary.
+ * @param {string} agentsDir - Path to agents directory
+ * @returns {string} Compact category summary with counts
+ */
+function generateAgentSummary(agentsDir) {
+  if (!fs.existsSync(agentsDir)) return '';
+
+  const files = fs.readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+  const agents = [];
+
+  for (const file of files) {
+    const filePath = path.join(agentsDir, file);
+    if (!isPathSafe(filePath, agentsDir)) continue;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    const frontmatter = parseFrontmatter(content);
+    if (!frontmatter || Object.keys(frontmatter).length === 0) continue;
+
+    const name = frontmatter.name || path.basename(file, '.md');
+    agents.push(name);
+  }
+
+  // Group by category, count per category
+  const categories = {};
+  for (const name of agents) {
+    const cat = categorizeAgent(name);
+    if (!categories[cat]) categories[cat] = 0;
+    categories[cat]++;
+  }
+
+  const safeCount = sanitize.count(agents.length);
+  let output = `**${safeCount} agents** across ${Object.keys(categories).length} categories:\n`;
+  for (const [category, count] of Object.entries(categories)) {
+    output += `- **${category}**: ${count} agents\n`;
+  }
+  output += `\nRun \`/agileflow:help agents\` or browse \`.agileflow/agents/\` for the full list.`;
+  return output;
+}
+
+/**
+ * Generate a compact category summary for commands (no individual names).
+ * Used by minimal mode and generators that want a discovery-oriented summary.
+ * @param {string} commandsDir - Path to commands directory
+ * @returns {string} Compact category summary with counts
+ */
+function generateCommandSummary(commandsDir) {
+  if (!fs.existsSync(commandsDir)) return '';
+
+  const commands = [];
+
+  // Count main command files
+  const mainFiles = fs.readdirSync(commandsDir).filter(f => f.endsWith('.md'));
+  for (const file of mainFiles) {
+    const filePath = path.join(commandsDir, file);
+    if (!isPathSafe(filePath, commandsDir)) continue;
+
+    const content = fs.readFileSync(filePath, 'utf8');
+    const frontmatter = parseFrontmatter(content);
+    if (!frontmatter || Object.keys(frontmatter).length === 0) continue;
+    commands.push(path.basename(file, '.md'));
+  }
+
+  // Count subdirectory command files
+  const entries = fs.readdirSync(commandsDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory()) {
+      const subDir = path.join(commandsDir, entry.name);
+      if (!isPathSafe(subDir, commandsDir)) continue;
+
+      const subFiles = fs.readdirSync(subDir).filter(f => f.endsWith('.md'));
+      for (const file of subFiles) {
+        const filePath = path.join(subDir, file);
+        if (!isPathSafe(filePath, commandsDir)) continue;
+
+        const content = fs.readFileSync(filePath, 'utf8');
+        const frontmatter = parseFrontmatter(content);
+        if (!frontmatter || Object.keys(frontmatter).length === 0) continue;
+        commands.push(`${entry.name}:${path.basename(file, '.md')}`);
+      }
+    }
+  }
+
+  const safeCount = sanitize.count(commands.length);
+  return `**${safeCount} commands** available. Run \`/agileflow:help\` for the full list with descriptions.`;
 }
 
 // =============================================================================
@@ -480,6 +609,8 @@ function clearPreserveRulesCache() {
  * @param {string} context.agileflowFolder - AgileFlow folder name
  * @param {string} context.docsFolder - Docs folder name (default: 'docs')
  * @param {string} context.version - AgileFlow version
+ * @param {boolean} context.minimal - When true, skip AGENT_LIST and COMMAND_LIST injection
+ *   (replaces with discovery pointers). Keeps session harness, quality gates, preserve_rules.
  * @returns {string} Content with all placeholders replaced
  */
 function injectContent(content, context = {}) {
@@ -488,6 +619,7 @@ function injectContent(content, context = {}) {
     agileflowFolder = '.agileflow',
     docsFolder = 'docs',
     version = 'unknown',
+    minimal = false,
   } = context;
 
   let result = content;
@@ -541,7 +673,13 @@ function injectContent(content, context = {}) {
   // List generation already includes sanitization via sanitizeAgentData/sanitizeCommandData
   if (coreDir && fs.existsSync(coreDir)) {
     if (result.includes('{{AGENT_LIST}}')) {
-      const agentList = generateAgentList(path.join(coreDir, 'agents'));
+      let agentList;
+      if (minimal) {
+        // Minimal mode: replace with compact discovery pointer
+        agentList = `**Agents**: ${safeAgentCount} available. Run \`/agileflow:help agents\` or \`ls .agileflow/agents/\` to browse.`;
+      } else {
+        agentList = generateAgentList(path.join(coreDir, 'agents'));
+      }
       result = replaceInBodyOnly(result, body => {
         let updated = body.replace(/<!-- \{\{AGENT_LIST\}\} -->/g, agentList);
         updated = updated.replace(/\{\{AGENT_LIST\}\}/g, agentList);
@@ -550,7 +688,13 @@ function injectContent(content, context = {}) {
     }
 
     if (result.includes('{{COMMAND_LIST}}')) {
-      const commandList = generateCommandList(path.join(coreDir, 'commands'));
+      let commandList;
+      if (minimal) {
+        // Minimal mode: replace with compact discovery pointer
+        commandList = `**Commands**: ${safeCommandCount} available. Run \`/agileflow:help\` or \`ls .agileflow/commands/\` to browse.`;
+      } else {
+        commandList = generateCommandList(path.join(coreDir, 'commands'));
+      }
       result = replaceInBodyOnly(result, body => {
         let updated = body.replace(/<!-- \{\{COMMAND_LIST\}\} -->/g, commandList);
         updated = updated.replace(/\{\{COMMAND_LIST\}\}/g, commandList);
@@ -797,6 +941,10 @@ module.exports = {
   // List generation
   generateAgentList,
   generateCommandList,
+
+  // Summary generation (compact, for minimal mode)
+  generateAgentSummary,
+  generateCommandSummary,
 
   // Template generation
   generateSessionHarnessContent,

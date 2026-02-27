@@ -11,6 +11,8 @@ const os = require('os');
 const {
   generateAgentList,
   generateCommandList,
+  generateAgentSummary,
+  generateCommandSummary,
   injectContent,
   extractSectionNames,
   filterSections,
@@ -34,7 +36,7 @@ describe('content-injector', () => {
   });
 
   describe('generateAgentList', () => {
-    it('generates formatted agent list from directory', () => {
+    it('generates compact category-grouped agent list from directory', () => {
       const agentsDir = path.join(tempDir, 'agents');
       fs.mkdirSync(agentsDir);
 
@@ -60,10 +62,8 @@ Agent content here.
       const result = generateAgentList(agentsDir);
 
       expect(result).toContain('**AVAILABLE AGENTS (1 total)**');
-      expect(result).toContain('**test-agent** (model: sonnet)');
-      expect(result).toContain('**Purpose**: A test agent for unit testing');
-      expect(result).toContain('**Tools**: Read, Write, Bash');
-      expect(result).toContain('`subagent_type: "agileflow-test-agent"`');
+      expect(result).toContain('test-agent');
+      expect(result).toContain('**Domain**: test-agent');
     });
 
     it('handles multiple agents and sorts alphabetically', () => {
@@ -121,7 +121,7 @@ model: haiku
 
       const result = generateAgentList(agentsDir);
 
-      expect(result).toContain('**Tools**: Read, Write, Edit');
+      expect(result).toContain('string-tools');
     });
 
     it('uses defaults for missing fields', () => {
@@ -138,9 +138,7 @@ name: minimal
 
       const result = generateAgentList(agentsDir);
 
-      expect(result).toContain('**minimal** (model: haiku)');
-      expect(result).toContain('**Purpose**: ');
-      expect(result).toContain('**Tools**: ');
+      expect(result).toContain('minimal');
     });
 
     it('uses filename as name when name not in frontmatter', () => {
@@ -157,7 +155,7 @@ description: Uses filename as name
 
       const result = generateAgentList(agentsDir);
 
-      expect(result).toContain('**filename-only**');
+      expect(result).toContain('filename-only');
     });
 
     it('skips files without frontmatter', () => {
@@ -1367,6 +1365,307 @@ compact_context:
 
       expect(result).toContain('- "Delegate complex work"');
       expect(result).toContain('- "Simple task -> do yourself"');
+    });
+  });
+
+  // ==========================================================================
+  // Minimal Mode Tests
+  // ==========================================================================
+
+  describe('minimal mode', () => {
+    it('replaces agent list with discovery pointer when minimal=true', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(agentsDir);
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(agentsDir, 'test-agent.md'),
+        `---
+name: test-agent
+description: A test agent
+tools:
+  - Read
+---
+`
+      );
+
+      const template = `# Agents
+
+<!-- {{AGENT_LIST}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('**Agents**: 1 available');
+      expect(result).toContain('/agileflow:help agents');
+      expect(result).not.toContain('**AVAILABLE AGENTS');
+      expect(result).not.toContain('test-agent');
+    });
+
+    it('replaces command list with discovery pointer when minimal=true', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(agentsDir);
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(commandsDir, 'status.md'),
+        `---
+description: Show status
+---
+`
+      );
+
+      const template = `# Commands
+
+<!-- {{COMMAND_LIST}} -->
+
+## Footer
+`;
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('**Commands**: 1 available');
+      expect(result).toContain('/agileflow:help');
+      expect(result).not.toContain('Available commands');
+      expect(result).not.toContain('/agileflow:status');
+    });
+
+    it('still injects session harness in minimal mode', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'session-harness-protocol.md'),
+        'Protocol for {AGENT_ID}'
+      );
+
+      const template = `---
+name: agileflow-api
+---
+
+<!-- {{SESSION_HARNESS}} -->
+`;
+
+      const { clearSessionHarnessCache } = require('../../tools/cli/lib/content-injector');
+      clearSessionHarnessCache();
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('Protocol for AG-API');
+    });
+
+    it('still injects quality gate priorities in minimal mode', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      const { clearQualityGatePrioritiesCache } = require('../../tools/cli/lib/content-injector');
+      clearQualityGatePrioritiesCache();
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'quality-gate-priorities.md'),
+        'Quality gates for {AGENT_ID}'
+      );
+
+      const template = `---
+name: agileflow-ui
+---
+
+<!-- {{QUALITY_GATE_PRIORITIES}} -->
+`;
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('Quality gates for AG-UI');
+    });
+
+    it('still expands preserve rules in minimal mode', () => {
+      const templatesDir = path.join(tempDir, 'templates');
+      fs.mkdirSync(templatesDir);
+
+      clearPreserveRulesCache();
+
+      fs.writeFileSync(
+        path.join(templatesDir, 'preserve-rules.json'),
+        JSON.stringify({
+          json_operations: ['Use Edit tool for JSON'],
+        })
+      );
+
+      const template = `---
+compact_context:
+  preserve_rules:
+    - "{{RULES:json_operations}}"
+---
+
+Content here.
+`;
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('Use Edit tool for JSON');
+    });
+
+    it('still replaces count placeholders in minimal mode', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(agentsDir);
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(agentsDir, 'a.md'),
+        `---
+name: a
+---
+`
+      );
+
+      const template = 'Agents: {{AGENT_COUNT}}, Commands: {{COMMAND_COUNT}}';
+
+      const result = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      expect(result).toContain('Agents: 1');
+      expect(result).toContain('Commands: 0');
+    });
+
+    it('minimal mode produces significantly less output than full mode', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(agentsDir);
+      fs.mkdirSync(commandsDir);
+
+      // Create multiple agents and commands to make the difference visible
+      for (let i = 0; i < 10; i++) {
+        fs.writeFileSync(
+          path.join(agentsDir, `agent-${i}.md`),
+          `---
+name: agent-${i}
+description: Agent number ${i}
+tools:
+  - Read
+  - Write
+---
+`
+        );
+        fs.writeFileSync(
+          path.join(commandsDir, `cmd-${i}.md`),
+          `---
+description: Command number ${i}
+---
+`
+        );
+      }
+
+      const template = `# Full
+<!-- {{AGENT_LIST}} -->
+<!-- {{COMMAND_LIST}} -->
+`;
+
+      const fullResult = injectContent(template, { coreDir: tempDir, minimal: false });
+      const minimalResult = injectContent(template, { coreDir: tempDir, minimal: true });
+
+      // Minimal should be significantly smaller
+      expect(minimalResult.length).toBeLessThan(fullResult.length);
+      // With 10 agents and 10 commands, full mode should be at least 2x longer
+      expect(fullResult.length).toBeGreaterThan(minimalResult.length * 1.5);
+    });
+
+    it('defaults to full mode when minimal flag not provided', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(agentsDir);
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(agentsDir, 'test.md'),
+        `---
+name: test-agent
+description: Test
+tools:
+  - Read
+---
+`
+      );
+
+      const template = '<!-- {{AGENT_LIST}} -->';
+
+      const result = injectContent(template, { coreDir: tempDir });
+
+      // Default should be full mode with agent names
+      expect(result).toContain('**AVAILABLE AGENTS (1 total)**');
+      expect(result).toContain('test-agent');
+    });
+  });
+
+  // ==========================================================================
+  // Summary Generation Tests
+  // ==========================================================================
+
+  describe('generateAgentSummary', () => {
+    it('generates compact category summary with counts', () => {
+      const agentsDir = path.join(tempDir, 'agents');
+      fs.mkdirSync(agentsDir);
+
+      fs.writeFileSync(
+        path.join(agentsDir, 'api.md'),
+        `---
+name: api
+description: API agent
+tools:
+  - Read
+---
+`
+      );
+
+      fs.writeFileSync(
+        path.join(agentsDir, 'ui.md'),
+        `---
+name: ui
+description: UI agent
+tools:
+  - Read
+---
+`
+      );
+
+      const result = generateAgentSummary(agentsDir);
+
+      expect(result).toContain('**2 agents**');
+      expect(result).toContain('categories');
+      expect(result).toContain('/agileflow:help agents');
+    });
+
+    it('returns empty string for non-existent directory', () => {
+      const result = generateAgentSummary('/nonexistent/path');
+      expect(result).toBe('');
+    });
+  });
+
+  describe('generateCommandSummary', () => {
+    it('generates compact summary with count', () => {
+      const commandsDir = path.join(tempDir, 'commands');
+      fs.mkdirSync(commandsDir);
+
+      fs.writeFileSync(
+        path.join(commandsDir, 'status.md'),
+        `---
+description: Show status
+---
+`
+      );
+
+      const result = generateCommandSummary(commandsDir);
+
+      expect(result).toContain('**1 commands**');
+      expect(result).toContain('/agileflow:help');
+    });
+
+    it('returns empty string for non-existent directory', () => {
+      const result = generateCommandSummary('/nonexistent/path');
+      expect(result).toBe('');
     });
   });
 });
