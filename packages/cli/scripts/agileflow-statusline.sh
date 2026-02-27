@@ -88,6 +88,7 @@ SHOW_SESSION_TIME=false
 SHOW_COST=false
 SHOW_GIT=true
 SHOW_SCALE=true
+SHOW_ULTRADEEP=true
 
 # Check agileflow-metadata.json for component settings
 if [ -f "docs/00-meta/agileflow-metadata.json" ]; then
@@ -106,6 +107,7 @@ if [ -f "docs/00-meta/agileflow-metadata.json" ]; then
     SHOW_COST=$(echo "$COMPONENTS" | jq -r '.cost | if . == null then true else . end')
     SHOW_GIT=$(echo "$COMPONENTS" | jq -r '.git | if . == null then true else . end')
     SHOW_SCALE=$(echo "$COMPONENTS" | jq -r '.scale | if . == null then true else . end')
+    SHOW_ULTRADEEP=$(echo "$COMPONENTS" | jq -r '.ultradeep | if . == null then true else . end')
   fi
 fi
 
@@ -670,6 +672,79 @@ if [ "$SHOW_SCALE" = "true" ] && [ -f "docs/09-agents/session-state.json" ]; the
 fi
 
 # ============================================================================
+# Ultradeep Audit Progress Detection
+# ============================================================================
+ULTRADEEP_DISPLAY=""
+if [ "$SHOW_ULTRADEEP" = "true" ]; then
+  ULTRADEEP_DIR="docs/09-agents/ultradeep"
+  if [ -d "$ULTRADEEP_DIR" ]; then
+    # Find most recent trace directory by modification time
+    LATEST_TRACE=$(ls -td "$ULTRADEEP_DIR"/*/ 2>/dev/null | head -1)
+    if [ -n "$LATEST_TRACE" ]; then
+      ULTRA_STATUS_FILE="${LATEST_TRACE}_status.json"
+      if [ -f "$ULTRA_STATUS_FILE" ]; then
+        ULTRA_STATUS=$(cat "$ULTRA_STATUS_FILE" 2>/dev/null)
+        ULTRA_AUDIT_TYPE=$(echo "$ULTRA_STATUS" | jq -r '.audit_type // empty' 2>/dev/null)
+        ULTRA_TOTAL=$(echo "$ULTRA_STATUS" | jq -r '.analyzers | length' 2>/dev/null)
+        ULTRA_COMPLETED=$(echo "$ULTRA_STATUS" | jq -r '.completed | length' 2>/dev/null)
+        ULTRA_STARTED=$(echo "$ULTRA_STATUS" | jq -r '.started_at // empty' 2>/dev/null)
+        ULTRA_LAST_CHECKED=$(echo "$ULTRA_STATUS" | jq -r '.last_checked // empty' 2>/dev/null)
+
+        # Validate we got numeric values
+        [[ "$ULTRA_TOTAL" =~ ^[0-9]+$ ]] || ULTRA_TOTAL=0
+        [[ "$ULTRA_COMPLETED" =~ ^[0-9]+$ ]] || ULTRA_COMPLETED=0
+
+        if [ "$ULTRA_TOTAL" -gt 0 ] && [ -n "$ULTRA_AUDIT_TYPE" ]; then
+          # Staleness check: skip if started >60 min ago and no recent activity
+          ULTRA_STALE=false
+          if [ -n "$ULTRA_STARTED" ]; then
+            ULTRA_START_EPOCH=$(to_epoch "$ULTRA_STARTED" 2>/dev/null)
+            ULTRA_NOW=$(date +%s)
+            if [ -n "$ULTRA_START_EPOCH" ] && [ $((ULTRA_NOW - ULTRA_START_EPOCH)) -gt 3600 ]; then
+              # Started over 60 min ago - check last_checked
+              if [ -n "$ULTRA_LAST_CHECKED" ] && [ "$ULTRA_LAST_CHECKED" != "null" ]; then
+                ULTRA_LC_EPOCH=$(to_epoch "$ULTRA_LAST_CHECKED" 2>/dev/null)
+                if [ -n "$ULTRA_LC_EPOCH" ] && [ $((ULTRA_NOW - ULTRA_LC_EPOCH)) -gt 120 ]; then
+                  ULTRA_STALE=true
+                fi
+              else
+                # No last_checked at all and started >60 min ago
+                ULTRA_STALE=true
+              fi
+            fi
+          fi
+
+          if [ "$ULTRA_STALE" = "false" ]; then
+            # Map audit type to color and prefix
+            case "$ULTRA_AUDIT_TYPE" in
+              logic)        ULTRA_COLOR="\033[38;2;122;162;247m"; ULTRA_PREFIX="Logic" ;;
+              security)     ULTRA_COLOR="\033[38;2;247;118;142m"; ULTRA_PREFIX="Sec" ;;
+              performance)  ULTRA_COLOR="\033[38;2;115;218;202m"; ULTRA_PREFIX="Perf" ;;
+              test)         ULTRA_COLOR="\033[38;2;224;175;104m"; ULTRA_PREFIX="Test" ;;
+              completeness) ULTRA_COLOR="\033[38;2;187;154;247m"; ULTRA_PREFIX="Comp" ;;
+              legal)        ULTRA_COLOR="\033[38;2;158;206;106m"; ULTRA_PREFIX="Legal" ;;
+              *)            ULTRA_COLOR="$DIM";                   ULTRA_PREFIX="Audit" ;;
+            esac
+
+            # Build display with progress coloring
+            if [ "$ULTRA_COMPLETED" -eq "$ULTRA_TOTAL" ]; then
+              # All complete - green checkmark
+              ULTRADEEP_DISPLAY="${ULTRA_COLOR}${ULTRA_PREFIX}${RESET} ${GREEN}${ULTRA_COMPLETED}/${ULTRA_TOTAL}✓${RESET}"
+            elif [ "$ULTRA_COMPLETED" -gt 0 ]; then
+              # In progress
+              ULTRADEEP_DISPLAY="${ULTRA_COLOR}${ULTRA_PREFIX}${RESET} ${ULTRA_COLOR}${ULTRA_COMPLETED}/${ULTRA_TOTAL}${RESET}"
+            else
+              # Just started (0 complete) - dim the fraction
+              ULTRADEEP_DISPLAY="${ULTRA_COLOR}${ULTRA_PREFIX}${RESET} ${DIM}${ULTRA_COMPLETED}/${ULTRA_TOTAL}${RESET}"
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
+fi
+
+# ============================================================================
 # Build Status Line
 # ============================================================================
 OUTPUT=""
@@ -757,6 +832,12 @@ fi
 if [ "$SHOW_SCALE" = "true" ] && [ -n "$SCALE_DISPLAY" ]; then
   [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
   OUTPUT="${OUTPUT}${SCALE_DISPLAY}"
+fi
+
+# Add ultradeep audit progress (if enabled and active)
+if [ "$SHOW_ULTRADEEP" = "true" ] && [ -n "$ULTRADEEP_DISPLAY" ]; then
+  [ -n "$OUTPUT" ] && OUTPUT="${OUTPUT}${SEP}"
+  OUTPUT="${OUTPUT}${ULTRADEEP_DISPLAY}"
 fi
 
 # Session health indicator (next to git branch)

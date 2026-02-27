@@ -71,7 +71,8 @@
           "wip": true,
           "context": true,
           "cost": true,
-          "git": true
+          "git": true,
+          "ultradeep": true
         }
       },
       "mcp": {
