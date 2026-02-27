@@ -192,19 +192,24 @@ build_tab_format() {
   # ── Inactive tab: gray text ─────────────────────────────────────────────
   # "  I:" prefix = 4 visible chars (wide); " I:" = 3 chars (narrow)
   # Width = prefix + pN(name) + 1(space)
-  local i0='#[fg=#8a8a8a]  #I:#{p35:#{=35:window_name}} '
-  local i1='#[fg=#8a8a8a]  #I:#{p22:#{=22:window_name}} '
-  local i2='#[fg=#8a8a8a]  #I:#{p15:#{=15:window_name}} '
-  local i3='#[fg=#8a8a8a] #I:#{p12:#{=12:window_name}} '
-  local i4='#[fg=#8a8a8a] #I:#{p9:#{=9:window_name}} '
-  local i5='#[fg=#8a8a8a] #I:#{p7:#{=7:window_name}} '
-  local i6='#[fg=#8a8a8a] #I:#{p6:#{=6:window_name}} '
-  local i7='#[fg=#8a8a8a] #I:#{p5:#{=5:window_name}} '
-  local i8='#[fg=#8a8a8a] #I:#{p4:#{=4:window_name}} '
-  local i9='#[fg=#8a8a8a] #I:#{p3:#{=3:window_name}} '
-  local i10='#[fg=#8a8a8a] #I:#{p2:#{=2:window_name}} '
-  local i11='#[fg=#8a8a8a] #I:#{p1:#{=1:window_name}} '
-  local i12='#[fg=#8a8a8a] #I '
+  #
+  # Group color support: when @group_color is set on a window (e.g. by
+  # spawn-audit-sessions.js), show a colored dot prefix to visually
+  # identify grouped windows (ULTRADEEP audit tabs in main session).
+  local gc='#{?#{@group_color},#[fg=#{@group_color}]•,}'
+  local i0="${gc}"'#[fg=#8a8a8a]  #I:#{p35:#{=35:window_name}} '
+  local i1="${gc}"'#[fg=#8a8a8a]  #I:#{p22:#{=22:window_name}} '
+  local i2="${gc}"'#[fg=#8a8a8a]  #I:#{p15:#{=15:window_name}} '
+  local i3="${gc}"'#[fg=#8a8a8a] #I:#{p12:#{=12:window_name}} '
+  local i4="${gc}"'#[fg=#8a8a8a] #I:#{p9:#{=9:window_name}} '
+  local i5="${gc}"'#[fg=#8a8a8a] #I:#{p7:#{=7:window_name}} '
+  local i6="${gc}"'#[fg=#8a8a8a] #I:#{p6:#{=6:window_name}} '
+  local i7="${gc}"'#[fg=#8a8a8a] #I:#{p5:#{=5:window_name}} '
+  local i8="${gc}"'#[fg=#8a8a8a] #I:#{p4:#{=4:window_name}} '
+  local i9="${gc}"'#[fg=#8a8a8a] #I:#{p3:#{=3:window_name}} '
+  local i10="${gc}"'#[fg=#8a8a8a] #I:#{p2:#{=2:window_name}} '
+  local i11="${gc}"'#[fg=#8a8a8a] #I:#{p1:#{=1:window_name}} '
+  local i12="${gc}"'#[fg=#8a8a8a] #I '
   local i13='#[fg=#565a6e]#I'
 
   # ── Tier selection: budget = width / windows ─────────────────────────────
