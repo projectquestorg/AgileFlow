@@ -89,7 +89,7 @@ expect(userId).toBeGreaterThan(0);
 - Use specific matchers: `toBe(value)`, `toEqual(object)`, `toMatch(pattern)` instead of `toBeTruthy()`
 - For every success test, add a negative test with invalid input
 - Verify both error type AND message: `toThrow(ValidationError)`, `toThrow('Input required')`
-- Keep snapshots small (<50 lines) and review changes carefully
+- Keep snapshots small (\<50 lines) and review changes carefully
 - Assert on outcomes, not implementation: `expect(result.total).toBe(100)` not `expect(calculateTotal).toHaveBeenCalled()`
 - Test error cases: null, undefined, empty array, invalid type, missing required field, max value exceeded
 - Document what each assertion verifies
