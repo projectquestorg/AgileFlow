@@ -1,0 +1,83 @@
+---
+title: Analizador de estado no utilizado
+description: Analizador de declaración de estado no utilizado para useState nunca leído, useReducer nunca enviado, proveedores de contexto huérfanos y sectores de almacenamiento inactivos
+---
+
+# Analizador de estado no utilizado
+
+El Analizador de integridad: el agente de estado no utilizado es un analizador especializado centrado en **dead state declarations and unused context**. Encuentra ganchos de React (useState, useReducer) que están declarados pero nunca se leen, proveedores de contexto huérfanos que ningún componente consume y porciones de tienda Redux/Zustand inactivas.
+
+## Cuando usar
+
+Utilice este agente cuando:
+- Necesita encontrar declaraciones de useState que nunca se usaron en render
+- Quiere identificar los ganchos useReducer que nunca se enviaron
+- Estás buscando proveedores de contexto huérfanos
+- Necesitas encontrar porciones muertas de la tienda Redux o Zustand.
+- Estás limpiando el código de administración de estado no utilizado.
+
+## Cómo funciona
+
+1. **Scans state declarations** - Encuentra todas las llamadas useState, useReducer, useContext
+2. **Tracks reads** - Mapas donde los valores de estado se leen realmente en el renderizado.
+3. **Tracks writes** - Mapas donde se llama setState/dispatch
+4. **Identifies unused** - Encuentra estado declarado pero nunca leído o escrito
+5. **Checks contexts** - Verifica que los proveedores de contexto se consuman realmente
+6. **Analyzes stores** - Comprueba los cortes de Redux/Zustand para el uso real del selector.
+7. **Reports findings** - Muestra el estado muerto con contexto y sugerencias de eliminación.
+
+## Áreas de enfoque
+
+- **useState never read**: `const [value, setValue] = useState()` dónde `value` nunca se hace referencia
+- **useReducer never dispatched**: Ganchos reductores sin llamadas de despacho a ninguna parte
+- **Orphaned context providers**: Contextos creados pero ningún componente los consume.
+- **Dead store slices**: Rebanadas Redux/Zustand sin selectores ni envíos
+- **Unused setters**: Los emisores estatales declarados pero nunca llamados
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Read, Glob, Grep
+
+## Análisis de ejemplo
+
+Dado el código de React con estado no utilizado:
+```jsx
+export function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);    // Never read
+  const [theme, setTheme] = useState('light');       // Never used
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return (
+    <div>
+      <h1>{user?.name}</h1>
+      {/* loading and theme are never referenced */}
+    </div>
+  );
+}
+```
+
+El analizador de estados no utilizados identificaría:
+
+- **INCOMPLETE**: `loading` estado declarado pero nunca leído en render o condicionales
+- **DORMANT**: `theme` estado declarado, inicializado, pero nunca leído o actualizado
+
+## Uso de ejemplo
+
+```text
+Task(
+  description: "Find unused React state and context",
+  prompt: "Scan src/components/ for unused useState, useReducer, useContext, and orphaned context providers. Check src/store/ for unused Redux/Zustand slices.",
+  subagent_type: "agileflow-completeness-analyzer-state"
+)
+```
+
+## Agentes Relacionados
+
+- [`controladores-analizadores-de-integridad`](/agents/completeness-analyzer-handlers) - Analizador de manejador muerto
+- [`analizador-de-integridad-condicional`](/agents/completeness-analyzer-conditional) - Analizador de ramas de características muertas
+- [`importaciones-analizador-de-integridad`](/agents/completeness-analyzer-imports) - Analizador de exportación muerta
+- [`consenso-integridad`](/agents/completeness-consensus) - Coordinador de consenso de exhaustividad

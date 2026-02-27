@@ -1,0 +1,207 @@
+---
+title: Analisador de manipulador morto
+description: Analisador de manipulador de eventos mortos/vazios para onClick/onSubmit/onChange vazios, manipuladores somente de console, manipuladores parciais e retornos de chamada noop
+---
+
+# Analisador de manipulador morto
+
+O agente Completeness Analyzer: Dead Handler é um analisador especializado focado em **empty and stub event handlers**. Ele encontra manipuladores onClick/onSubmit/onChange que não fazem nada, manipuladores que apenas registram no console, manipuladores parciais sem implementação e retornos de chamada noop deixados para trás durante o desenvolvimento.
+
+## Quando usar
+
+Use este agente quando:
+- Você precisa encontrar manipuladores onClick/onSubmit/onChange vazios
+- Você deseja identificar manipuladores que registram apenas no console
+- Você está procurando manipuladores de stub com comentários TODO/FIXME
+- Você precisa encontrar retornos de chamada noop deixados para trás durante o desenvolvimento
+- Você está limpando implementações de recursos incompletas
+
+## Como funciona
+
+1. **Scans event handlers** - Encontra todos os retornos de chamada onClick, onSubmit, onChange, onError, etc.
+2. **Checks body content** - Identifica manipuladores com corpos vazios, somente console ou stub
+3. **Detects patterns** - Procura por () => {}, () => console.log(), noop(), etc.
+4. **Finds TODOs** - Identifica manipuladores com comentários TODO/FIXME não implementados
+5. **Checks call chains** - Verifica se os manipuladores parciais realmente fazem alguma coisa
+6. **Reports findings** - Lista manipuladores mortos com contexto e correções sugeridas
+
+## Áreas de foco
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: manipuladores que iniciam, mas não concluem o trabalho
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## Ferramentas disponíveis
+
+Este agente tem acesso a: Read, Glob, Grep
+
+## Análise de exemplo
+
+Dados os componentes do React com manipuladores mortos:
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+O analisador Dead Handler identificaria:
+
+### Descoberta: manipulador de botão de exclusão vazio
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (recurso quebrado)
+**Confidence**: ALTO
+
+**Issue**: O botão Excluir tem um manipulador vazio `() => {}`. O clique do botão não faz nada. O usuário espera que o item seja excluído.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: os usuários não podem excluir itens. O recurso parece funcionar, mas não tem efeito.
+
+**Suggested Fix**: Implemente o manipulador de exclusão
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### Descoberta: manipulador de entrada de pesquisa somente do console
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (implementação parcial)
+**Confidence**: ALTO
+
+**Issue**: pesquisa apenas registros de entrada no console. Na verdade, a pesquisa não filtra os resultados.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: a pesquisa parece funcionar (os registros mostram atividade), mas os usuários não veem os resultados filtrados.
+
+**Suggested Fix**: Conecte o manipulador ao estado e filtre a lógica
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### Descoberta: esboço TODO no formulário de pagamento
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (crítico - o pagamento não funciona)
+**Confidence**: ALTO
+
+**Issue**: o manipulador de envio tem comentário TODO e nenhuma implementação. Os usuários que clicam em "Pagar agora" são cobrados, mas o pagamento nunca é processado.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: O recurso de pagamento do usuário não funciona. O dinheiro pode ser perdido.
+
+**Suggested Fix**: Implementar processamento de pagamento
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### Descoberta: Manipulador de atualização parcial sem persistência
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (resultado errado)
+**Confidence**: ALTO
+
+**Issue**: o botão Atualizar mostra uma mensagem de sucesso, mas na verdade não atualiza o item. As alterações ocorrem apenas na IU, não são persistentes.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: os usuários pensam que o item foi atualizado, mas as alterações são perdidas quando a página é atualizada.
+
+**Suggested Fix**: Chame a API antes de mostrar sucesso
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## Melhores Práticas
+
+- Todo manipulador de eventos deve ter implementação real (sem manipuladores vazios)
+- Evite manipuladores somente de console no código de produção
+- Conclua os manipuladores TODO/FIXME antes de confirmar
+- Use TypeScript para capturar manipuladores não implementados
+- Teste todos os cliques em botões e envios de formulários
+- Documente a lógica do manipulador complexo com comentários
+
+## Formato de saída
+
+Para cada descoberta, o agente fornece:
+- **Location**: Caminho do arquivo e número da linha
+- **Type**: manipulador vazio, somente console, parcial ou stub
+- **Severity**: P0 (recurso quebrado), P1 (recurso incompleto) ou P2 (problema menor)
+- **Confidence**: ALTO, MÉDIO ou BAIXO
+- **Code**: Código exato do manipulador
+- **Issue**: O que não funciona e o impacto no usuário
+- **Suggested Fix**: Como implementar corretamente
+
+## Exemplo de uso
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## Agentes Relacionados
+
+- [`estado do analisador de completude`](/agents/completeness-analyzer-state) - Analisador de estado não utilizado
+- [`completude-analisador-condicional`](/agents/completeness-analyzer-conditional) - Analisador de ramificação de recurso morto
+- [`rotas do analisador de completude`](/agents/completeness-analyzer-routes) - Analisador de rota morta
+- [`consenso de completude`](/agents/completeness-consensus) - Coordenador de consenso de completude

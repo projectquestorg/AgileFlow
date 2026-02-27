@@ -1,0 +1,83 @@
+---
+title: Unbenutzter Zustandsanalysator
+description: Nicht verwendeter Zustandsdeklarationsanalysator für useState wird nie gelesen, useReducer wird nie gesendet, verwaiste Kontextanbieter und tote Speicherbereiche
+---
+
+# Unbenutzter Zustandsanalysator
+
+Der Vollständigkeitsanalysator: Unused State-Agent ist ein spezialisierter Analysator, der sich auf Folgendes konzentriert: **dead state declarations and unused context**. Es findet React-Hooks (useState, useReducer), die deklariert, aber nie gelesen werden, verwaiste Kontextanbieter, die keine Komponente nutzt, und tote Redux/Zustand-Store-Slices.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen useState-Deklarationen finden, die beim Rendern nie verwendet werden
+- Sie möchten nie versendete useReducer-Hooks identifizieren
+- Sie suchen nach verwaisten Kontextanbietern
+- Sie müssen tote Redux- oder Zustand-Store-Slices finden
+- Sie bereinigen ungenutzten Zustandsverwaltungscode
+
+## Wie es funktioniert
+
+1. **Scans state declarations** – Findet alle useState-, useReducer- und useContext-Aufrufe
+2. **Tracks reads** – Karten, bei denen Zustandswerte tatsächlich beim Rendern gelesen werden
+3. **Tracks writes** – Karten, wo setState/dispatch aufgerufen wird
+4. **Identifies unused** – Findet den erklärten, aber nie gelesenen oder geschriebenen Zustand
+5. **Checks contexts** – Überprüft, ob Kontextanbieter tatsächlich genutzt werden
+6. **Analyzes stores** – Überprüft Redux/Zustand-Slices auf tatsächliche Selektornutzung
+7. **Reports findings** – Listet den toten Zustand mit Kontext und Entfernungsvorschlägen auf
+
+## Schwerpunktbereiche
+
+- **useState never read**: `const [value, setValue] = useState()` Wo `value` wird nie referenziert
+- **useReducer never dispatched**: Reduzierer-Hooks ohne Dispatch-Aufrufe irgendwo
+- **Orphaned context providers**: Kontexte wurden erstellt, aber keine Komponenten verbrauchen sie
+- **Dead store slices**: Redux/Zustand-Slices ohne Selektoren oder Dispatches
+- **Unused setters**: State-Setter deklariert, aber nie aufgerufen
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Read, Glob, Grep
+
+## Beispielanalyse
+
+Gegebener React-Code mit unbenutztem Status:
+```jsx
+export function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);    // Never read
+  const [theme, setTheme] = useState('light');       // Never used
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return (
+    <div>
+      <h1>{user?.name}</h1>
+      {/* loading and theme are never referenced */}
+    </div>
+  );
+}
+```
+
+Der Unused State-Analysator würde Folgendes identifizieren:
+
+- **INCOMPLETE**: `loading` Zustand deklariert, aber nie in Rendering oder Bedingungen gelesen
+- **DORMANT**: `theme` Zustand deklariert, initialisiert, aber nie gelesen oder aktualisiert
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Find unused React state and context",
+  prompt: "Scan src/components/ for unused useState, useReducer, useContext, and orphaned context providers. Check src/store/ for unused Redux/Zustand slices.",
+  subagent_type: "agileflow-completeness-analyzer-state"
+)
+```
+
+## Verwandte Agenten
+
+- [„Vollständigkeitsanalysator-Handler“.](/agents/completeness-analyzer-handlers) - Dead-Handler-Analysator
+- [„Vollständigkeitsanalysator-bedingt“.](/agents/completeness-analyzer-conditional) - Dead-Feature-Branch-Analysator
+- [„Vollständigkeitsanalysator-Importe“.](/agents/completeness-analyzer-imports) - Dead-Export-Analysator
+- [„Vollständigkeitskonsens“.](/agents/completeness-consensus) - Vollständigkeitskonsenskoordinator

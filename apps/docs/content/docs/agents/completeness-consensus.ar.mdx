@@ -1,0 +1,105 @@
+---
+title: منسق إجماع الاكتمال
+description: منسق الإجماع لتدقيق الاكتمال - التحقق من صحة النتائج، والتصويت على الثقة، والتصفية حسب نوع المشروع، وتقييم تأثير المستخدم، وإنشاء تقرير تدقيق الاكتمال ذي الأولوية
+---
+
+# منسق إجماع الاكتمال
+
+يقوم منسق إجماع الاكتمال بجمع النتائج من جميع محللي الاكتمال، وتطبيق تصفية النية، والتصويت على الثقة، وتصنيف تأثير المستخدم، والتصفية حسب نوع المشروع، وإنتاج تقرير تدقيق الاكتمال النهائي ذي الأولوية.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى دمج النتائج من محللي الاكتمال المتعددين في تقرير واحد
+- تريد تصفية النتائج الإيجابية الخاطئة والأنماط المتعمدة (بذرة الاختبار، والأساليب المجردة)
+- تحتاج إلى تصنيف النتائج حسب تأثير المستخدم (الحجب، والارتباك، وفقدان البيانات الصامت)
+- تريد اكتشاف نوع المشروع واستبعاد النتائج غير ذات الصلة
+- أنت بحاجة إلى قائمة مرجعية ذات أولوية "الإكمال أو الإزالة".
+
+## كيف يعمل
+
+1. **Detects project type** - تحديد ما إذا كانت واجهة سطر الأوامر (CLI) أو واجهة برمجة التطبيقات (API) فقط أو SPA أو Library أو Full-stack أو Mobile أو Microservice
+2. **Collects findings** - يوزع جميع مخرجات المحلل في هيكل طبيعي
+3. **Applies intentionality filtering** - لا يشمل بذرة الاختبار، والأساليب المجردة، والتعليمات البرمجية التي تم إنشاؤها، ونقاط الامتداد
+4. **Votes on confidence** - يشير العديد من المحللين إلى نفس المشكلة = ثقة أعلى
+5. **Classifies user impact** - يصنف كل نتيجة حسب مدى تأثيرها على المستخدمين النهائيين
+6. **Filters by project type** - يستبعد النتائج التي لا علاقة لها بنوع المشروع المكتشف
+7. **Generates report** - إنتاج تقرير تدقيق الاكتمال ذي الأولوية والقابل للتنفيذ
+
+## عملية الإجماع
+
+### التصويت على الثقة
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same location or related issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak or circumstantial evidence | Low priority, needs manual review |
+| **INTENTIONAL** | Analyzer flags it but intentionality filter applies | Exclude from report with note |
+
+### تصنيف تأثير المستخدم
+
+| Impact | Definition | Examples |
+|--------|-----------|---------|
+| **user-blocking** | User cannot complete a core workflow | Empty form handler, broken checkout, dead navigation |
+| **user-confusing** | UI element exists but does nothing | Button with no action, link to nowhere |
+| **data-silent** | Data loss happens silently | State set but never persisted, API response ignored |
+| **developer-only** | Maintenance burden, no user-visible impact | Dead exports, unused dependencies |
+
+### مصفوفة الأولوية
+
+الخطورة × الثقة تحدد الأولوية:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|:---------:|:------:|:-----------:|
+| **BROKEN** | Ship Blocker | Fix Before Release | Fix This Sprint |
+| **INCOMPLETE** | Fix Before Release | Fix This Sprint | Backlog |
+| **PLACEHOLDER** | Fix Before Release | Fix This Sprint | Backlog |
+| **DORMANT** | Fix This Sprint | Backlog | Info |
+
+## تصفية نوع المشروع
+
+| Project Type | Irrelevant Findings |
+|-------------|-------------------|
+| **CLI** | Dead UI handlers, dead routes, unused React state |
+| **API-only** | Empty onClick, dead navigation links, unused React state |
+| **SPA** | Orphaned backend endpoints, server-side stubs |
+| **Library** | Dead routes, API mismatches (but dead exports are HIGHER severity) |
+| **Full-stack** | None excluded - all findings potentially relevant |
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: القراءة والكتابة والتحرير وGlob وGrep
+
+## تنسيق الإخراج
+
+يتضمن تقرير تدقيق الاكتمال النهائي ما يلي:
+
+- **Summary**: التهم حسب الخطورة مع فئات تأثير المستخدم
+- **Ship Blockers**: نتائج مكسورة + مؤكدة لإصلاحها على الفور
+- **Fix Before Release**: ميزات غير مكتملة ذات الأولوية العالية
+- **Fix This Sprint**: العناصر ذات الأولوية المتوسطة
+- **Backlog/Info**: رمز خامل ذو أولوية منخفضة
+- **Intentional Exclusions**: النتائج المستبعدة مع التعليل
+- **Analyzer Agreement Matrix**: ما المحللون الذين وضعوا علامة على المواقع
+- **Complete or Remove Checklist**: العناصر القابلة للتنفيذ مع كلا مساري الإصلاح
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Run completeness audit consensus",
+  prompt: "Consolidate findings from all 7 completeness analyzers. Detect project type, apply intentionality filtering, vote on confidence, classify user impact, and generate the prioritized Completeness Audit Report.",
+  subagent_type: "agileflow-completeness-consensus"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["واجهة برمجة تطبيقات محلل الاكتمال".](/agents/completeness-analyzer-api) - محلل عدم تطابق API
+- ["محلل الاكتمال المشروط".](/agents/completeness-analyzer-conditional) - محلل فرع الميزة الميتة
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["واردات محلل الاكتمال".](/agents/completeness-analyzer-imports) - محلل التصدير الميت
+- [""مسارات محلل الاكتمال"."](/agents/completeness-analyzer-routes) - محلل الطريق الميت
+- ["حالة محلل الاكتمال".](/agents/completeness-analyzer-state) - محلل الحالة غير المستخدمة
+- ["بذرة محلل الاكتمال".](/agents/completeness-analyzer-stubs) - محلل رمز كعب الروتين

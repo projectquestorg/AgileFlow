@@ -1,0 +1,105 @@
+---
+title: Coordonnateur du consensus sur l’exhaustivité
+description: Coordinateur de consensus pour l'audit d'exhaustivité : valide les résultats, vote sur la confiance, filtre par type de projet, évalue l'impact des utilisateurs et génère un rapport d'audit d'exhaustivité hiérarchisé.
+---
+
+# Coordonnateur du consensus sur l’exhaustivité
+
+Le coordinateur du consensus d'exhaustivité collecte les résultats de tous les analyseurs d'exhaustivité, applique un filtrage d'intentionnalité, vote sur la confiance, classe l'impact des utilisateurs, filtre par type de projet et produit le rapport final d'audit d'exhaustivité hiérarchisé.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez consolider les résultats de plusieurs analyseurs d'exhaustivité dans un seul rapport.
+- Vous souhaitez filtrer les faux positifs et les modèles intentionnels (bouts de test, méthodes abstraites)
+- Vous devez classer les résultats par impact sur l'utilisateur (blocage, confusion, perte de données silencieuse)
+- Vous souhaitez détecter le type de projet et exclure les résultats non pertinents
+- Vous avez besoin d'une liste de contrôle prioritaire « Compléter ou supprimer »
+
+## Comment ça marche
+
+1. **Detects project type** - Détermine si CLI, API uniquement, SPA, Bibliothèque, Full-stack, Mobile ou Microservice
+2. **Collects findings** - Analyse toutes les sorties de l'analyseur dans une structure normalisée
+3. **Applies intentionality filtering** - Exclut les talons de test, les méthodes abstraites, le code généré, les points d'extension
+4. **Votes on confidence** - Plusieurs analyseurs signalant le même problème = confiance plus élevée
+5. **Classifies user impact** - Catégorise chaque résultat en fonction de la façon dont il affecte les utilisateurs finaux
+6. **Filters by project type** - Exclut les résultats non pertinents pour le type de projet détecté
+7. **Generates report** - Produit un rapport d'audit d'exhaustivité hiérarchisé et exploitable
+
+## Processus de consensus
+
+### Vote de confiance
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same location or related issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak or circumstantial evidence | Low priority, needs manual review |
+| **INTENTIONAL** | Analyzer flags it but intentionality filter applies | Exclude from report with note |
+
+### Classification de l'impact sur les utilisateurs
+
+| Impact | Definition | Examples |
+|--------|-----------|---------|
+| **user-blocking** | User cannot complete a core workflow | Empty form handler, broken checkout, dead navigation |
+| **user-confusing** | UI element exists but does nothing | Button with no action, link to nowhere |
+| **data-silent** | Data loss happens silently | State set but never persisted, API response ignored |
+| **developer-only** | Maintenance burden, no user-visible impact | Dead exports, unused dependencies |
+
+### Matrice des priorités
+
+La gravité x la confiance détermine la priorité :
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|:---------:|:------:|:-----------:|
+| **BROKEN** | Ship Blocker | Fix Before Release | Fix This Sprint |
+| **INCOMPLETE** | Fix Before Release | Fix This Sprint | Backlog |
+| **PLACEHOLDER** | Fix Before Release | Fix This Sprint | Backlog |
+| **DORMANT** | Fix This Sprint | Backlog | Info |
+
+## Filtrage par type de projet
+
+| Project Type | Irrelevant Findings |
+|-------------|-------------------|
+| **CLI** | Dead UI handlers, dead routes, unused React state |
+| **API-only** | Empty onClick, dead navigation links, unused React state |
+| **SPA** | Orphaned backend endpoints, server-side stubs |
+| **Library** | Dead routes, API mismatches (but dead exports are HIGHER severity) |
+| **Full-stack** | None excluded - all findings potentially relevant |
+
+## Outils disponibles
+
+Cet agent a accès à : Lecture, Écriture, Modification, Glob, Grep
+
+## Format de sortie
+
+Le rapport final d’audit d’exhaustivité comprend :
+
+- **Summary**: compte par gravité avec catégories d'impact sur les utilisateurs
+- **Ship Blockers**: Résultats CASSÉS + CONFIRMÉS à corriger immédiatement
+- **Fix Before Release**: Fonctionnalités incomplètes de haute priorité
+- **Fix This Sprint**: Articles de priorité moyenne
+- **Backlog/Info**: Code dormant de faible priorité
+- **Intentional Exclusions**: Résultats exclus avec raisonnement
+- **Analyzer Agreement Matrix**: Quels analyseurs ont signalé quels emplacements
+- **Complete or Remove Checklist**: éléments exploitables avec les deux chemins de remédiation
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Run completeness audit consensus",
+  prompt: "Consolidate findings from all 7 completeness analyzers. Detect project type, apply intentionality filtering, vote on confidence, classify user impact, and generate the prioritized Completeness Audit Report.",
+  subagent_type: "agileflow-completeness-consensus"
+)
+```
+
+## Agents associés
+
+- [`complétude-analyseur-api`](/agents/completeness-analyzer-api) - Analyseur d'incompatibilité d'API
+- [`analyseur d'exhaustivité-conditionnel`](/agents/completeness-analyzer-conditional) - Analyseur de branches de fonctionnalités mortes
+- [`gestionnaires d'analyseurs d'exhaustivité`](/agents/completeness-analyzer-handlers) - Analyseur de gestionnaire mort
+- [`importations d'analyseur d'exhaustivité`](/agents/completeness-analyzer-imports) - Analyseur d'exportation morte
+- [`itinéraires-analyseur-complétude`](/agents/completeness-analyzer-routes) - Analyseur d'itinéraire mort
+- [`état d’analyse d’exhaustivité`](/agents/completeness-analyzer-state) - Analyseur d'état inutilisé
+- [`stubs d'analyseur d'intégralité`](/agents/completeness-analyzer-stubs) - Analyseur de code de stub

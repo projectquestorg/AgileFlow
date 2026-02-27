@@ -1,0 +1,191 @@
+---
+title: Analizador de ramas de características muertas
+description: Analizador de ramas de características inactivas para condiciones falsas codificadas, indicadores de características inactivas, código inalcanzable después de regresar/lanzar y grandes bloques comentados
+---
+
+# Analizador de ramas de características muertas
+
+El analizador de integridad: el agente Dead Feature Branch es un analizador especializado centrado en **dead conditional logic and feature branches**. Encuentra condiciones falsas codificadas que desactivan funciones, indicadores de funciones inactivas que nunca cambian, código inalcanzable después de declaraciones de retorno/lanzamiento y grandes bloques de código comentados que deben eliminarse.
+
+## Cuando usar
+
+Utilice este agente cuando:
+- Debe identificar condiciones falsas codificadas que siempre omiten el código
+- Quiere encontrar indicadores de funciones inactivas que quedaron en el código base
+- Estás buscando un código inalcanzable después de las declaraciones de devolución/lanzamiento.
+- Necesita identificar y eliminar bloques comentados
+- Estás limpiando la deuda técnica derivada de la implementación de funciones
+
+## Cómo funciona
+
+1. **Reads conditional code** - Escanea todo if/else, ternario, && y || operadores
+2. **Evaluates constants** - Comprueba si las condiciones dependen sólo de constantes.
+3. **Identifies dead branches** - Encuentra ramas que nunca podrán ejecutarse
+4. **Finds feature flags** - Busca variables tipo bandera que estén codificadas
+5. **Detects unreachable code** - Encuentra el código después de regresar/lanzar/romper
+6. **Finds dead comments** - Identifica grandes bloques comentados
+7. **Reports findings** - Enumera el código inactivo con contexto y sugerencia de eliminación
+
+## Áreas de enfoque
+
+- **Hardcoded false conditions**: `if (false)`, `if (FEATURE_ENABLED === false)` donde FEATURE_ENABLED nunca es cierto
+- **Dead feature flags**: Banderas que quedaron con valores codificados después del lanzamiento
+- **Unreachable code**: Código después de declaraciones de retorno, lanzamiento o interrupción
+- **Large commented-out blocks**: Código comentado que debe eliminarse
+- **Unreachable branches**: De lo contrario, cláusulas que nunca podrán ejecutarse.
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Read, Glob, Grep
+
+## Análisis de ejemplo
+
+Código dado como:
+```javascript
+// Hardcoded false condition
+if (false) {
+  logErrorToService();
+}
+
+// Dead feature flag
+if (BETA_UI === false) {
+  // Old UI code that will never run
+  return <LegacyUI />;
+}
+
+// Unreachable code
+if (user) {
+  return user.name;
+}
+// Code below never executes
+const fallback = 'Guest';
+
+// Commented-out block
+/*
+function deprecatedApiCall() {
+  return fetch('/old-api-endpoint').then(r => r.json());
+}
+*/
+```
+
+El analizador de rama de características muertas identificaría:
+
+### Hallazgo: Condición falsa codificada en el registro de errores
+
+**Location**: `src/lib/logger.js:45`
+**Severity**: P2 (código muerto)
+**Confidence**: ALTO
+
+**Issue**: La condición `if (false)` en la línea 45 siempre es falso. El código de registro de errores interno nunca se ejecuta. Esto debería habilitarse (eliminar falso) o eliminarse.
+
+**Suggested Fix**: Retire la rama muerta
+
+```javascript
+// Before
+if (false) {
+  logErrorToService();
+}
+
+// After
+logErrorToService(); // Enabled and always runs
+```
+
+### Hallazgo: Indicador de función inactiva después del lanzamiento
+
+**Location**: `src/App.tsx:28`
+**Severity**: P1 (código engañoso)
+**Confidence**: ALTO
+
+**Issue**: `BETA_UI` está codificado para `false`, haciendo que toda la rama if sea inalcanzable. La bandera de función quedó atrás después de que se deshabilitó la versión beta. Debería eliminarse.
+
+**Code**:
+```javascript
+const BETA_UI = false;
+if (BETA_UI) {
+  // This code path never executes
+  return <BetaUI />;
+}
+```
+
+**Suggested Fix**: Elimina la bandera muerta y su rama.
+
+```javascript
+return <ProductionUI />;
+```
+
+### Hallazgo: Código inalcanzable después de la devolución
+
+**Location**: `src/utils/validators.js:120`
+**Severity**: P2 (código muerto)
+**Confidence**: ALTO
+
+**Issue**: Código después de la línea 122 (`const fallback = 'Guest'`) es inalcanzable porque todos los caminos regresan.
+
+**Code**:
+```javascript
+if (user) {
+  return user.name;
+}
+const fallback = 'Guest'; // ← Unreachable
+return fallback;
+```
+
+**Suggested Fix**: Mover la asignación dentro de la condición o reestructurar
+
+```javascript
+// Option 1: Move into condition
+const fallback = 'Guest';
+if (user) {
+  return user.name;
+}
+return fallback;
+
+// Option 2: Use ternary
+return user?.name ?? 'Guest';
+```
+
+### Hallazgo: bloque de código grande comentado
+
+**Location**: `src/api/clients/user.js:200`
+**Severity**: P2 (deuda técnica)
+**Confidence**: ALTO
+
+**Issue**: bloque comentado de 47 líneas de código API antiguo. Debe eliminarse o migrarse al control de versiones.
+
+**Suggested Action**: elimine y use el historial de git para recuperarlo si es necesario
+
+## Mejores prácticas
+
+- Elimine las condiciones falsas codificadas: indican una limpieza incompleta
+- Eliminar indicadores de funciones una vez finalizada la implementación
+- Utilice el control de fuente en lugar de comentar el código
+- Eliminar el código inalcanzable inmediatamente después de la refactorización
+- Documente por qué existen sucursales si son intencionalmente inalcanzables
+
+## Formato de salida
+
+Para cada hallazgo, el agente proporciona:
+- **Location**: Ruta del archivo y número de línea
+- **Type**: Falso codificado, indicador inactivo, código inalcanzable o bloque comentado
+- **Severity**: P0 (comportamiento incorrecto), P1 (engañoso) o P2 (código muerto)
+- **Confidence**: ALTO, MEDIO o BAJO
+- **Code**: Fragmento de código exacto
+- **Issue**: Por qué está muerto y por qué es importante
+- **Suggested Fix**: Cómo eliminar o reestructurar
+
+## Uso de ejemplo
+
+```text
+Task(
+  description: "Find dead feature branches in user service",
+  prompt: "Scan src/ for dead conditional logic including hardcoded false conditions, dead feature flags, unreachable code after return/throw, and large commented-out blocks.",
+  subagent_type: "agileflow-completeness-analyzer-conditional"
+)
+```
+
+## Agentes Relacionados
+
+- [`estado-analizador-de-integridad`](/agents/completeness-analyzer-state) - Analizador de estado no utilizado
+- [`controladores-analizadores-de-integridad`](/agents/completeness-analyzer-handlers) - Analizador de manejador muerto
+- [`importaciones-analizador-de-integridad`](/agents/completeness-analyzer-imports) - Analizador de exportación muerta
+- [`consenso-integridad`](/agents/completeness-consensus) - Coordinador de consenso de exhaustividad

@@ -1,0 +1,124 @@
+---
+title: وكيل ضمان الجودة للمتصفح
+description: أتمتة المتصفح الوكيل لاختبار واجهة المستخدم الاستكشافية باستخدام Playwright CLI. ينفذ سيناريوهات اختبار YAML، ويلتقط أدلة لقطة الشاشة، ويبلغ النتائج بمعدلات نجاح محتملة.
+---
+
+# وكيل ضمان الجودة للمتصفح
+
+يوفر وكيل ضمان الجودة للمتصفح (AG-BROWSER-QA). **agentic browser automation** للاختبار الاستكشافي لواجهة المستخدم. فهو ينفذ سيناريوهات اختبار محددة بواسطة YAML مقابل تشغيل تطبيقات الويب باستخدام Playwright CLI، ويلتقط أدلة لقطة الشاشة في كل خطوة، ويبلغ النتائج بمعدلات نجاح احتمالية.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى التحقق من صحة سلوك واجهة المستخدم في تطبيق قيد التشغيل
+- تريد دليلاً آليًا للقطة الشاشة للتحقق البصري
+- تحتاج إلى تشغيل التحقق من سير عمل المستخدم متعدد الخطوات
+- تريد التحقق من إمكانية الوصول عبر شجرة إمكانية الوصول الخاصة بالكاتب المسرحي
+- تحتاج إلى التحقق من رموز التصميم في التطبيق المباشر
+- تريد اختبارًا استكشافيًا يتجاوز اختبارات الوحدة الحتمية
+
+## كيف يعمل
+
+1. **Loads test scenario** - يقرأ مواصفات اختبار YAML مع الخطوات والمحددات والتأكيدات
+2. **Verifies prerequisites** - التحقق من إمكانية الوصول إلى عنوان URL المستهدف وتثبيت الكاتب المسرحي
+3. **Executes steps** - التنقل والنقر وملء النماذج وتأكيد الشروط
+4. **Captures evidence** - يأخذ لقطات شاشة في الخطوات الرئيسية للتحقق البصري
+5. **Handles failures** - يصنف الأخطاء (المهلة، التأكيد، خطأ الوكيل) وإعادة المحاولة
+6. **Generates report** - ينتج results.json بمعدلات النجاح ومسارات الأدلة
+7. **Updates status** - وضع علامة على القصة على أنها تم التحقق من صحتها من قبل الوكيل إذا كان معدل النجاح يلبي الحد الأدنى
+
+## المفاهيم الأساسية
+
+### عتبة معدل النجاح
+
+اختبارات المتصفح هي **probabilistic**، وليس حتمية. من المتوقع عدم الحتمية وليس خطأ.
+
+| Pass Rate | Status | Action |
+|-----------|--------|--------|
+| \>= 80% | VALIDATED | Mark story as agentic-validated |
+| 70-79% | WARNING | Investigate, document concerns |
+| \< 70% | FAILED | Report as potential bug |
+
+### تصنيف الخطأ
+
+| Type | Action | Example |
+|------|--------|---------|
+| Timeout | Retry (up to 2x) | Page didn't load in 30s |
+| Assertion | Report as bug | Expected text not found |
+| Agent error | Skip with warning | Playwright crashed |
+| Infrastructure | Skip entire run | No browser available |
+
+### تنسيق مواصفات اختبار YAML
+
+```yaml
+test_id: AGENTIC-001
+story_id: US-0050
+name: User Login Flow
+url: http://localhost:3000/login
+timeout: 60s
+max_retries: 2
+pass_rate_threshold: 0.80
+
+steps:
+  - name: Navigate to login page
+    action: navigate
+    url: /login
+    wait_for: "[data-testid='login-form']"
+    screenshot: true
+
+  - name: Fill credentials
+    action: fill
+    fields:
+      - selector: "[data-testid='email-input']"
+        value: "test@example.com"
+
+  - name: Submit form
+    action: click
+    selector: "[data-testid='login-button']"
+    screenshot: true
+
+  - name: Verify dashboard
+    action: assert
+    assertion: "User sees dashboard"
+    wait_for: "[data-testid='dashboard']"
+    screenshot: true
+```
+
+## تخزين الأدلة
+
+يتم تخزين الأدلة في: `.agileflow/ui-review/runs/{timestamp}/{test_id}/`
+
+كل شوط ينتج:
+- ملفات لقطة الشاشة لكل خطوة (`step-1-navigate.png`, `step-3-submit.png`)
+- لقطات الشاشة الفاشلة مع `_FAILED` لاحقة
+- `results.json` مع بيانات معدل النجاح الكامل والتوقيت
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: القراءة، الكتابة، التحرير، Bash، Glob، Grep
+
+## الاختلافات عن الوكلاء ذوي الصلة
+
+| Agent | Focus | Approach |
+|-------|-------|----------|
+| **browser-qa** | Runtime UI behavior | Playwright against live app |
+| **testing** | Deterministic tests | Jest unit/integration tests |
+| **qa** | Test strategy | Planning and release readiness |
+| **ui-validator** | Code quality | Static analysis of components |
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Run browser QA on login flow",
+  prompt: "Execute the YAML test scenario at .agileflow/ui-review/specs/login-flow.yaml against http://localhost:3000. Capture screenshot evidence and report pass rate.",
+  subagent_type: "agileflow-browser-qa"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["الاختبار".](/agents/testing) - استراتيجية الاختبار الحتمي وتنفيذها
+- ["qa".](/agents/qa) - تخطيط الاختبار والاستعداد للإصدار
+- ["مدقق واجهة المستخدم".](/agents/ui-validator) - التحقق من صحة رمز واجهة المستخدم الثابتة
+- ["سي".](/agents/ci) - تكامل خط أنابيب CI/CD

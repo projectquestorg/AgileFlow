@@ -1,0 +1,125 @@
+---
+title: Analyseur de non-concordance d'API
+description: Analyseur d'inadéquation des points de terminaison frontend-backend pour les gestionnaires d'API manquants, les points de terminaison orphelins, les incompatibilités de méthodes et la mise en œuvre partielle de CRUD
+---
+
+# Analyseur de non-concordance d'API
+
+L'analyseur d'intégralité : l'agent API Mismatch est un analyseur spécialisé axé sur **frontend-backend API mismatches**. Il identifie les gestionnaires d'API manquants attendus par le code frontend, les points de terminaison backend orphelins sans appelants, les incompatibilités de méthodes HTTP, les implémentations partielles de CRUD et les incohérences de forme de réponse.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez identifier les gestionnaires backend manquants attendus par le code frontend
+- Vous souhaitez rechercher des points de terminaison backend orphelins sans appels de code frontend
+- Vous recherchez des incompatibilités de méthode HTTP (frontend POST mais backend GET)
+- Vous devez vérifier les implémentations complètes de CRUD (Créer, Lire, Mettre à jour, Supprimer)
+- Vous analysez les inadéquations de forme de réponse entre le frontend et le backend
+
+## Comment ça marche
+
+1. **Reads frontend code** - Analyse le code client API pour tous les appels de point de terminaison (fetch, axios, etc.)
+2. **Reads backend code** - Analyse les routes/gestionnaires backend pour tous les points de terminaison enregistrés
+3. **Identifies mismatches** - Recherche les appels frontend sans gestionnaires backend, les points de terminaison backend sans appelants frontend
+4. **Checks methods** - Vérifie la correspondance des méthodes HTTP entre le frontend et le backend
+5. **Analyzes CRUD** - Identifie les implémentations partielles (par exemple, Créer + Lire mais pas de Mise à jour/Suppression)
+6. **Reports shapes** - Indicateurs lorsque les objets de réponse diffèrent entre attendus et réels
+
+## Domaines d'intervention
+
+- **Missing backend handlers**: Le code frontend appelle des points de terminaison qui n'existent pas
+- **Orphaned backend endpoints**: Points de terminaison backend sans appels de code frontend
+- **HTTP method mismatches**: Le frontend utilise POST mais le backend n'accepte que GET
+- **Partial CRUD**: Opérations de mise à jour, de suppression ou de création manquantes
+- **Response shape mismatches**: Le frontend attend des champs différents de ceux fournis par le backend
+
+## Outils disponibles
+
+Cet agent a accès à : Read, Glob, Grep
+
+## Exemple d'analyse
+
+Étant donné un client API frontend :
+```javascript
+// frontend/api/users.js
+export const getUser = (id) => fetch(`/api/users/${id}`);
+export const createUser = (data) => fetch(`/api/users`, { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) => fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => fetch(`/api/users/${id}`, { method: 'DELETE' });
+```
+
+Et un backend avec seulement :
+```javascript
+// backend/routes/users.js
+app.get('/api/users/:id', getUserHandler);
+app.post('/api/users', createUserHandler);
+// Missing PUT and DELETE
+```
+
+L'analyseur de non-concordance d'API identifierait :
+
+### Résultat : gestionnaire DELETE manquant pour la suppression de l'utilisateur
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (le frontend appelle un point de terminaison inexistant)
+**Confidence**: HAUT
+
+**Issue**: Appels de code frontend `DELETE /api/users/:id` mais le backend n'a pas de gestionnaire DELETE enregistré. Cela provoque des erreurs 404 lorsque les utilisateurs tentent de supprimer des éléments.
+
+**Impact**: Fonctionnalité de suppression d'utilisateur interrompue en production
+**Suggested Fix**: Ajouter le gestionnaire DELETE à la route des utilisateurs
+
+```javascript
+app.delete('/api/users/:id', deleteUserHandler);
+```
+
+### Résultat : gestionnaire PUT manquant pour les mises à jour utilisateur
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (le frontend appelle un point de terminaison inexistant)
+**Confidence**: HAUT
+
+**Issue**: Appels de code frontend `PUT /api/users/:id` mais le backend n'a que POST. Les mises à jour utilisateur sont interrompues.
+
+**Suggested Fix**: Ajouter un gestionnaire PUT
+
+```javascript
+app.put('/api/users/:id', updateUserHandler);
+```
+
+## Meilleures pratiques
+
+- Synchronisez les schémas API entre le frontend et le backend
+- Utiliser la génération de code (OpenAPI, tRPC) pour synchroniser les schémas
+- Testez tous les appels d'API frontend par rapport au backend dans les tests d'intégration
+- Documentez tous les points de terminaison requis dans la spécification de l'API
+- Utiliser les types TypeScript pour la validation des requêtes/réponses
+
+## Format de sortie
+
+Pour chaque non-concordance, l'agent fournit :
+- **Location**: Chemin du fichier et numéro de ligne
+- **Type**: Gestionnaire manquant, point de terminaison orphelin, incompatibilité de méthode, opération CRUD manquante ou incompatibilité de forme
+- **Severity**: P0 (fonctionnalité cassée), P1 (fonctionnalité partielle) ou P2 (problème mineur)
+- **Confidence**: ÉLEVÉ, MOYEN ou FAIBLE
+- **Frontend Code**: Code exact effectuant l'appel
+- **Backend Code**: Gestionnaire backend exact (ou manquant)
+- **Impact**: Ce que vivent les utilisateurs
+- **Suggested Fix**: Code à ajouter/modifier
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Find API mismatches in user service",
+  prompt: "Analyze frontend code in src/api/ and backend handlers in src/routes/ for endpoint mismatches. Check for missing handlers, orphaned endpoints, and method mismatches.",
+  subagent_type: "agileflow-completeness-analyzer-api"
+)
+```
+
+## Agents associés
+
+- [`importations d'analyseur d'exhaustivité`](/agents/completeness-analyzer-imports) - Analyseur d'exportation morte
+- [`gestionnaires d'analyseurs d'exhaustivité`](/agents/completeness-analyzer-handlers) - Analyseur de gestionnaire mort
+- [`itinéraires-analyseur-complétude`](/agents/completeness-analyzer-routes) - Analyseur d'itinéraire mort
+- [« exhaustivité-consensus »](/agents/completeness-consensus) - Coordinateur du consensus d'exhaustivité

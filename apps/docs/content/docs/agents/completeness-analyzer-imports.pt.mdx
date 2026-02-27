@@ -1,0 +1,201 @@
+---
+title: Analisador de Exportação Morto
+description: Exportação morta e analisador de módulo para funções exportadas nunca importadas, arquivos de origem órfãos, dependências não utilizadas e reexportações mortas
+---
+
+# Analisador de Exportação Morto
+
+O agente Completeness Analyzer: Dead Export é um analisador especializado focado em **unused exports and module bloat**. Ele encontra funções exportadas que nenhum outro código importa, arquivos de origem órfãos sem chamadores, dependências não utilizadas em package.json e reexportações inoperantes em arquivos de índice.
+
+## Quando usar
+
+Use este agente quando:
+- Você precisa identificar funções exportadas que nunca foram importadas para lugar nenhum
+- Você deseja encontrar arquivos de origem órfãos sem chamadores
+- Você está limpando dependências não utilizadas de package.json
+- Você precisa identificar reexportações de barril morto
+- Você está reduzindo a área de superfície do módulo e o débito técnico
+
+## Como funciona
+
+1. **Scans exports** - Encontra tudo `export` instruções em toda a base de código
+2. **Tracks imports** - Mapas de onde cada exportação é importada
+3. **Identifies unused** - Encontra exportações com zero importações
+4. **Finds orphaned files** - Arquivos sem importadores em qualquer lugar
+5. **Analyzes dependencies** - Verifica se os pacotes node_modules são realmente usados
+6. **Reports findings** - Lista código morto com sugestões de remoção
+
+## Áreas de foco
+
+- **Exported functions never imported**: `export function unused() {}` sem chamadores
+- **Orphaned source files**: Arquivos que existem, mas nenhum código é importado deles
+- **Unused dependencies**: Pacotes em package.json nunca referenciados no código
+- **Dead barrel re-exports**: Indexar arquivos reexportando coisas não utilizadas
+- **Legacy exports**: Funções mantidas para compatibilidade com versões anteriores, mas não utilizadas
+
+## Ferramentas disponíveis
+
+Este agente tem acesso a: Read, Glob, Grep
+
+## Análise de exemplo
+
+Dada uma estrutura de módulo:
+```javascript
+// src/lib/utils.ts
+export function formatDate(d) { /* ... */ }       // Used
+export function deprecatedHelper() { /* ... */ }  // NOT USED
+export function oldValidation() { /* ... */ }     // NOT USED
+
+// src/lib/index.ts (barrel export)
+export * from './utils.ts';  // Re-exports everything, including unused
+
+// src/components/unused-component.tsx
+// This file exists but nothing imports it
+
+// package.json
+{
+  "dependencies": {
+    "lodash": "^4.17.0",     // NOT USED
+    "axios": "^1.0.0"        // Used
+  }
+}
+```
+
+O analisador Dead Export identificaria:
+
+### Descoberta: Função exportada nunca importada
+
+**Location**: `src/lib/utils.ts:23`
+**Severity**: P2 (exportação morta)
+**Confidence**: ALTO
+
+**Issue**: Função `deprecatedHelper` é exportado, mas nunca importado em qualquer lugar da base de código. É um código morto ocupando espaço.
+
+**Code**:
+```javascript
+export function deprecatedHelper() {
+  // Not called from anywhere
+  return 'This is never used';
+}
+```
+
+**Search**: pesquisou toda a base de código por `deprecatedHelper` - 0 partidas
+**Suggested Fix**: Exclua a função ou mova-a para um arquivo obsoleto se estiver mantendo a compatibilidade com versões anteriores
+
+```javascript
+// Remove this line:
+export function deprecatedHelper() { /* ... */ }
+```
+
+### Descoberta: arquivo de origem órfão
+
+**Location**: `src/components/unused-component.tsx`
+**Severity**: P2 (código morto)
+**Confidence**: ALTO
+
+**Issue**: o arquivo existe, mas nenhum código é importado dele. Todo o componente fica órfão.
+
+**File Stats**:
+- Criado: há 3 meses
+- Última modificação: 2 meses atrás
+- Importações: 0
+- Exportações**: Componente nunca usado em lugar nenhum
+
+**Suggested Fix**: Exclua o arquivo ou verifique se ele deveria ser usado
+
+```javascript
+// Delete src/components/unused-component.tsx
+```
+
+### Descoberta: Dependência não utilizada em package.json
+
+**Location**: `package.json:15`
+**Severity**: P2 (inchaço)
+**Confidence**: MÉDIO
+
+**Issue**: `lodash` está em dependências, mas nunca importado no código. Aumenta o tamanho do pacote e a contagem de dependências.
+
+**Search Results**:
+- Grep para `import.*lodash` - 0 partidas
+- Grep para `require.*lodash` - 0 partidas
+- Impacto do pacote: +30 KB (descompactado)
+
+**Suggested Fix**: Remover dependência não utilizada
+
+```bash
+npm uninstall lodash
+```
+
+E remova do package.json:
+```json
+// Before
+"dependencies": {
+  "lodash": "^4.17.0",
+  "axios": "^1.0.0"
+}
+
+// After
+"dependencies": {
+  "axios": "^1.0.0"
+}
+```
+
+### Descoberta: reexportação de barril morto
+
+**Location**: `src/lib/index.ts:2`
+**Severity**: P1 (API enganosa)
+**Confidence**: ALTO
+
+**Issue**: Exportação de barril `export * from './utils'` reexporta funções não utilizadas, tornando a superfície da API pública maior do que o necessário.
+
+**Code**:
+```javascript
+// src/lib/index.ts
+export * from './utils';  // Re-exports 3 items, 2 are unused
+```
+
+**Suggested Fix**: Somente importações explícitas
+
+```javascript
+// src/lib/index.ts
+export { formatDate } from './utils';
+// Remove unused: deprecatedHelper, oldValidation
+```
+
+## Melhores práticas
+
+- Auditar regularmente as exportações (mensalmente em grandes projetos)
+- Manter as exportações de barris pequenas e intencionais
+- Exclua arquivos órfãos imediatamente
+- Remova dependências não utilizadas após cada refatoração importante
+- Usar `npm ls` e ferramentas como `depcheck` para encontrar pacotes não utilizados
+- Marque as descontinuações claramente se estiver mantendo a compatibilidade com versões anteriores
+
+## Formato de saída
+
+Para cada descoberta, o agente fornece:
+- **Location**: caminho do arquivo e número da linha (ou package.json)
+- **Type**: Exportação não utilizada, arquivo órfão, dependência não utilizada ou reexportação inoperante
+- **Severity**: P0 (API incorreta), P1 (enganoso) ou P2 (código morto)
+- **Confidence**: ALTO, MÉDIO ou BAIXO
+- **Code/Details**: Exportação ou arquivo exato
+- **Usage**: Quantos locais o importam (0 para código morto)
+- **Impact**: Aumento do tamanho do pacote, carga de manutenção
+- **Suggested Fix**: Como remover ou o que fazer
+
+## Exemplo de uso
+
+```text
+Task(
+  description: "Find unused exports and orphaned modules",
+  prompt: "Scan src/ for exported functions never imported, orphaned source files, unused node_modules packages, and dead barrel re-exports. Check package.json dependencies for unused packages.",
+  subagent_type: "agileflow-completeness-analyzer-imports"
+)
+```
+
+## Agentes Relacionados
+
+- [`manipuladores de analisadores de completude`](/agents/completeness-analyzer-handlers) - Analisador de manipulador morto
+- [`estado do analisador de completude`](/agents/completeness-analyzer-state) - Analisador de estado não utilizado
+- [`rotas do analisador de completude`](/agents/completeness-analyzer-routes) - Analisador de rota morta
+- [`consenso de completude`](/agents/completeness-consensus) - Coordenador de consenso de completude

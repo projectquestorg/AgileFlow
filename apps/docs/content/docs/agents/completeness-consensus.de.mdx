@@ -1,0 +1,105 @@
+---
+title: Koordinator für Vollständigkeitskonsens
+description: Konsenskoordinator für die Vollständigkeitsprüfung – validiert Ergebnisse, stimmt über das Vertrauen ab, filtert nach Projekttyp, bewertet die Benutzerauswirkungen und erstellt einen priorisierten Vollständigkeitsprüfungsbericht
+---
+
+# Koordinator für Vollständigkeitskonsens
+
+Der Vollständigkeitskonsenskoordinator sammelt Ergebnisse aller Vollständigkeitsanalysatoren, wendet Intentionalitätsfilterung an, stimmt über das Vertrauen ab, klassifiziert die Benutzerauswirkungen, filtert nach Projekttyp und erstellt den endgültigen, priorisierten Vollständigkeitsprüfungsbericht.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen die Ergebnisse mehrerer Vollständigkeitsanalysatoren in einem Bericht zusammenfassen
+- Sie möchten Fehlalarme und absichtliche Muster (Test-Stubs, abstrakte Methoden) herausfiltern.
+- Sie müssen die Ergebnisse nach Auswirkungen auf den Benutzer klassifizieren (Blockierung, Verwirrung, stiller Datenverlust).
+- Sie möchten den Projekttyp erkennen und irrelevante Erkenntnisse ausschließen
+- Sie benötigen eine priorisierte „Complete or Remove“-Checkliste
+
+## Wie es funktioniert
+
+1. **Detects project type** – Bestimmt, ob CLI, API-only, SPA, Library, Full-Stack, Mobile oder Microservice
+2. **Collects findings** - Analysiert alle Analysatorausgaben in eine normalisierte Struktur
+3. **Applies intentionality filtering** – Ausgenommen sind Test-Stubs, abstrakte Methoden, generierter Code und Erweiterungspunkte
+4. **Votes on confidence** - Mehrere Analysatoren melden dasselbe Problem = höheres Vertrauen
+5. **Classifies user impact** - Kategorisiert jedes Ergebnis danach, wie es sich auf Endbenutzer auswirkt
+6. **Filters by project type** - Schließt Ergebnisse aus, die für den erkannten Projekttyp irrelevant sind
+7. **Generates report** - Erstellt einen priorisierten, umsetzbaren Vollständigkeitsprüfungsbericht
+
+## Konsensprozess
+
+### Vertrauensabstimmung
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same location or related issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak or circumstantial evidence | Low priority, needs manual review |
+| **INTENTIONAL** | Analyzer flags it but intentionality filter applies | Exclude from report with note |
+
+### Klassifizierung der Benutzerauswirkungen
+
+| Impact | Definition | Examples |
+|--------|-----------|---------|
+| **user-blocking** | User cannot complete a core workflow | Empty form handler, broken checkout, dead navigation |
+| **user-confusing** | UI element exists but does nothing | Button with no action, link to nowhere |
+| **data-silent** | Data loss happens silently | State set but never persisted, API response ignored |
+| **developer-only** | Maintenance burden, no user-visible impact | Dead exports, unused dependencies |
+
+### Prioritätsmatrix
+
+Schweregrad x Vertrauen bestimmt die Priorität:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|:---------:|:------:|:-----------:|
+| **BROKEN** | Ship Blocker | Fix Before Release | Fix This Sprint |
+| **INCOMPLETE** | Fix Before Release | Fix This Sprint | Backlog |
+| **PLACEHOLDER** | Fix Before Release | Fix This Sprint | Backlog |
+| **DORMANT** | Fix This Sprint | Backlog | Info |
+
+## Filterung nach Projekttyp
+
+| Project Type | Irrelevant Findings |
+|-------------|-------------------|
+| **CLI** | Dead UI handlers, dead routes, unused React state |
+| **API-only** | Empty onClick, dead navigation links, unused React state |
+| **SPA** | Orphaned backend endpoints, server-side stubs |
+| **Library** | Dead routes, API mismatches (but dead exports are HIGHER severity) |
+| **Full-stack** | None excluded - all findings potentially relevant |
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Lesen, Schreiben, Bearbeiten, Glob, Grep
+
+## Ausgabeformat
+
+Der endgültige Vollständigkeitsauditbericht enthält:
+
+- **Summary**: Zählt nach Schweregrad mit Benutzerauswirkungskategorien
+- **Ship Blockers**: KAPUTT + BESTÄTIGT. Befunde, die sofort behoben werden müssen
+- **Fix Before Release**: Unvollständige Funktionen mit hoher Priorität
+- **Fix This Sprint**: Elemente mittlerer Priorität
+- **Backlog/Info**: Ruhender Code mit niedriger Priorität
+- **Intentional Exclusions**: Feststellungen mit Begründung ausgeschlossen
+- **Analyzer Agreement Matrix**: Welche Analysegeräte haben welche Standorte markiert
+- **Complete or Remove Checklist**: Umsetzbare Elemente mit beiden Behebungspfaden
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Run completeness audit consensus",
+  prompt: "Consolidate findings from all 7 completeness analyzers. Detect project type, apply intentionality filtering, vote on confidence, classify user impact, and generate the prioritized Completeness Audit Report.",
+  subagent_type: "agileflow-completeness-consensus"
+)
+```
+
+## Verwandte Agenten
+
+- [„Vollständigkeitsanalysator-API“.](/agents/completeness-analyzer-api) - API-Mismatch-Analysator
+- [„Vollständigkeitsanalysator-bedingt“.](/agents/completeness-analyzer-conditional) - Dead-Feature-Branch-Analysator
+- [„Vollständigkeitsanalysator-Handler“.](/agents/completeness-analyzer-handlers) - Dead-Handler-Analysator
+- [„Vollständigkeitsanalysator-Importe“.](/agents/completeness-analyzer-imports) - Dead-Export-Analysator
+- [„Vollständigkeitsanalysator-Routen“.](/agents/completeness-analyzer-routes) - Dead-Route-Analysator
+- [„Vollständigkeitsanalysator-Zustand“.](/agents/completeness-analyzer-state) - Unbenutzter Zustandsanalysator
+- [„Vollständigkeitsanalysator-Stubs“.](/agents/completeness-analyzer-stubs) - Stub-Code-Analysator

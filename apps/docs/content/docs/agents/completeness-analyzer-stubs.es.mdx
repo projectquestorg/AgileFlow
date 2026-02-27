@@ -1,0 +1,96 @@
+---
+title: Analizador de código auxiliar
+description: Analizador de código de marcador de posición para comentarios TODO/FIXME, cuerpos de funciones vacíos, NotImplementedError, datos simulados codificados y texto "próximamente"
+---
+
+# Analizador de código auxiliar
+
+El analizador de integridad: el agente Stub Code es un analizador especializado centrado en **placeholder and stub code in production files**. Encuentra comentarios TODO/FIXME, cuerpos de funciones vacíos, lanzamientos de NotImplementedError, datos simulados codificados que deberían provenir de una base de datos o API y texto "próximamente" que indica funciones sin terminar.
+
+## Cuando usar
+
+Utilice este agente cuando:
+- Necesita encontrar comentarios TODO/FIXME/HACK en el código de producción
+- Quiere identificar cuerpos funcionales vacíos que silenciosamente no hacen nada
+- estas buscando `throw new Error('Not implemented')` patrones
+- Necesita encontrar datos simulados codificados que deberían ser dinámicos
+- Estás auditando el texto de la interfaz de usuario de marcador de posición antes del lanzamiento.
+
+## Cómo funciona
+
+1. **Scans comments** - Encuentra marcadores TODO, FIXME, HACK, XXX, BUG
+2. **Checks functions** - Identifica funciones no triviales con cuerpos vacíos.
+3. **Finds throws** - Localiza NotImplementedError y lanzamientos similares
+4. **Detects mock data** - Identifica matrices/objetos codificados que deberían ser dinámicos
+5. **Checks UI text** - Encuentra "próximamente", "en construcción", "lorem ipsum"
+6. **Finds temp returns** - Funciones que devuelven valores codificados como marcadores de posición
+7. **Reports findings** - Enumera resguardos con gravedad y rutas de remediación
+
+## Áreas de enfoque
+
+- **TODO/FIXME/HACK comments**: Marcadores de trabajo incompleto en el código de producción.
+- **Empty function bodies**: Funciones que existen pero no hacen nada cuando se llaman
+- **NotImplementedError throws**: Marcadores explícitos "no implementados" que fallan en tiempo de ejecución
+- **Hardcoded mock data**: Matrices/objetos de datos falsos que deberían provenir de DB o API
+- **Placeholder UI text**: "Próximamente", "En construcción", "Lorem ipsum" en producción
+- **Temporary return values**: Funciones que devuelven valores codificados en lugar de lógica real
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Read, Glob, Grep
+
+## Análisis de ejemplo
+
+Código de producción dado con resguardos:
+```javascript
+// TODO: implement actual validation
+function validateInput(input) {
+  return true; // Always passes
+}
+
+class PaymentService {
+  async processPayment(amount, currency) {
+    throw new Error('Not implemented');
+  }
+}
+
+const users = [
+  { id: 1, name: 'John Doe', email: 'john@example.com' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+];
+// Should come from database
+```
+
+El analizador de código Stub identificaría:
+
+- **PLACEHOLDER**: comentario TODO con validación siempre verdadera (riesgo de seguridad)
+- **BROKEN**: `processPayment` lanza NotImplementedError (se bloquea en tiempo de ejecución)
+- **INCOMPLETE**: La matriz de usuarios codificada debe recuperarse de la base de datos
+
+## Guía de gravedad
+
+| Pattern | Severity | Rationale |
+|---------|----------|-----------|
+| Empty function body (called in production) | BROKEN | Feature silently fails |
+| NotImplementedError throw | BROKEN | Feature crashes |
+| Hardcoded mock data (user-visible) | INCOMPLETE | Users see fake data |
+| TODO/FIXME in critical path | PLACEHOLDER | Known incomplete work |
+| "Coming soon" text in UI | INCOMPLETE | Feature advertised but missing |
+| Temporary return value | PLACEHOLDER | Logic bypassed |
+
+## Uso de ejemplo
+
+```text
+Task(
+  description: "Find placeholder code in production",
+  prompt: "Scan src/ for TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data, and placeholder UI text. Exclude test files and examples.",
+  subagent_type: "agileflow-completeness-analyzer-stubs"
+)
+```
+
+## Agentes Relacionados
+
+- [`controladores-analizadores-de-integridad`](/agents/completeness-analyzer-handlers) - Analizador de manejador muerto
+- [`api-analizador-de-integridad`](/agents/completeness-analyzer-api) - Analizador de discrepancias de API
+- [`analizador-de-integridad-condicional`](/agents/completeness-analyzer-conditional) - Analizador de ramas de características muertas
+- [`consenso-integridad`](/agents/completeness-consensus) - Coordinador de consenso de exhaustividad

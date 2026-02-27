@@ -1,0 +1,83 @@
+---
+title: محلل الطريق الميت
+description: التنقل الميت ومحلل الروابط المعطلة للعناصر النائبة href وأهداف المسار المفقودة وعناصر التنقل المعزولة
+---
+
+# محلل الطريق الميت
+
+محلل الاكتمال: وكيل Dead Routes هو محلل متخصص يركز على **dead navigation and broken links**. يتم العثور على hrefs للعنصر النائب (`#`)، الروابط التي تشير إلى مسارات غير موجودة، وعناصر التنقل المعزولة، والروابط الداخلية الميتة التي قد تؤدي إلى أخطاء 404.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى العثور على روابط التنقل الداخلية المعطلة
+- تريد تحديد العنصر النائب `#` hrefs التي لم يتم ملؤها مطلقًا
+- أنت تبحث عن عناصر تنقل معزولة تشير إلى الصفحات المفقودة
+- تحتاج إلى التحقق من أن جميع المسارات تحتوي على مكونات الصفحة المقابلة
+- أنت تقوم بتدقيق سلامة الارتباط قبل الإصدار
+
+## كيف يعمل
+
+1. **Scans navigation** - يجد كل شيء `<a>`, `<Link>`ومكالمات التنقل لجهاز التوجيه
+2. **Maps routes** - يبني خريطة لجميع الطرق المحددة في التطبيق
+3. **Cross-references** - التحقق من كل هدف رابط مقابل خريطة الطريق
+4. **Identifies placeholders** - يجد `href="#"`, `href=""`، و `href="javascript:void(0)"`
+5. **Finds orphaned items** - إدخالات التنقل التي تشير إلى طرق غير محددة
+6. **Reports findings** - يسرد الروابط المعطلة مع الموقع والإصلاحات المقترحة
+
+## مجالات التركيز
+
+- **Placeholder hrefs**: `href="#"`, `href=""`, `href="javascript:void(0)"` في الإنتاج
+- **Missing route targets**: روابط ل `/dashboard` عندما لا `/dashboard` الطريق موجود
+- **Orphaned nav items**: إدخالات الشريط الجانبي أو القائمة التي تشير إلى الصفحات الميتة
+- **Dead internal links**: `<Link to="/old-page">` حيث تمت إزالة الصفحة
+- **Route-component mismatches**: تم تعريف المسار ولكن المكون يُرجع قيمة فارغة أو عنصرًا نائبًا
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+نظرًا للتنقل مع الروابط الميتة:
+```jsx
+// Navigation component with broken links
+<nav>
+  <Link to="/dashboard">Dashboard</Link>        {/* Route exists */}
+  <Link to="/settings">Settings</Link>          {/* Route exists */}
+  <Link to="/analytics">Analytics</Link>        {/* NO ROUTE - 404 */}
+  <a href="#">Reports</a>                       {/* Placeholder */}
+  <Link to="/admin/users">User Management</Link> {/* NO ROUTE - 404 */}
+</nav>
+
+// Router definition
+<Routes>
+  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/settings" element={<Settings />} />
+  {/* No /analytics route */}
+  {/* No /admin/users route */}
+</Routes>
+```
+
+سيحدد محلل Dead Route ما يلي:
+
+- **BROKEN**: رابط ل `/analytics` لا يوجد لديه مسار مطابق (404 للمستخدمين)
+- **BROKEN**: رابط ل `/admin/users` لا يوجد لديه مسار مطابق (404 للمستخدمين)
+- **PLACEHOLDER**: `href="#"` على رابط التقارير (ينقر المستخدم، لا يحدث شيء)
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find broken navigation links",
+  prompt: "Scan src/components/ and src/pages/ for dead navigation links, placeholder hrefs, and routes pointing to missing pages.",
+  subagent_type: "agileflow-completeness-analyzer-routes"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["واجهة برمجة تطبيقات محلل الاكتمال".](/agents/completeness-analyzer-api) - محلل عدم تطابق API
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["بذرة محلل الاكتمال".](/agents/completeness-analyzer-stubs) - محلل رمز كعب الروتين
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

@@ -1,0 +1,96 @@
+---
+title: Analyseur de code de souche
+description: Analyseur de code d'espace réservé pour les commentaires TODO/FIXME, les corps de fonction vides, NotImplementedError, les données fictives codées en dur et le texte « à venir »
+---
+
+# Analyseur de code de souche
+
+L'agent Completeness Analyzer: Stub Code est un analyseur spécialisé axé sur **placeholder and stub code in production files**. Il trouve les commentaires TODO/FIXME, les corps de fonction vides, les lancements de NotImplementedError, les données fictives codées en dur qui devraient provenir d'une base de données ou d'une API, et le texte « à venir » qui indique des fonctionnalités inachevées.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez trouver les commentaires TODO/FIXME/HACK dans le code de production
+- Vous souhaitez identifier les corps de fonctions vides qui ne font rien en silence
+- Vous cherchez `throw new Error('Not implemented')` motifs
+- Vous devez trouver des données fictives codées en dur qui doivent être dynamiques
+- Vous effectuez un audit pour le texte fictif de l'interface utilisateur avant la publication
+
+## Comment ça marche
+
+1. **Scans comments** - Trouve les marqueurs TODO, FIXME, HACK, XXX, BUG
+2. **Checks functions** - Identifie les fonctions non triviales avec des corps vides
+3. **Finds throws** - Localise NotImplementedError et des lancers similaires
+4. **Detects mock data** - Identifie les tableaux/objets codés en dur qui doivent être dynamiques
+5. **Checks UI text** - Trouve "à venir", "en construction", "lorem ipsum"
+6. **Finds temp returns** - Fonctions renvoyant des valeurs codées en dur comme espaces réservés
+7. **Reports findings** - Répertorie les stubs avec les chemins de gravité et de remédiation
+
+## Domaines d'intervention
+
+- **TODO/FIXME/HACK comments**: Marqueurs de travail incomplet dans le code de production
+- **Empty function bodies**: Fonctions qui existent mais ne font rien lorsqu'elles sont appelées
+- **NotImplementedError throws**: Marqueurs explicites "non implémentés" qui plantent au moment de l'exécution
+- **Hardcoded mock data**: Faux tableaux/objets de données qui devraient provenir d'une base de données ou d'une API
+- **Placeholder UI text**: "Prochainement", "En construction", "Lorem ipsum" en production
+- **Temporary return values**: Fonctions renvoyant des valeurs codées en dur au lieu d'une logique réelle
+
+## Outils disponibles
+
+Cet agent a accès à : Read, Glob, Grep
+
+## Exemple d'analyse
+
+Étant donné le code de production avec les stubs :
+```javascript
+// TODO: implement actual validation
+function validateInput(input) {
+  return true; // Always passes
+}
+
+class PaymentService {
+  async processPayment(amount, currency) {
+    throw new Error('Not implemented');
+  }
+}
+
+const users = [
+  { id: 1, name: 'John Doe', email: 'john@example.com' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+];
+// Should come from database
+```
+
+L'analyseur de code Stub identifierait :
+
+- **PLACEHOLDER**: commentaire TODO avec validation toujours vraie (risque de sécurité)
+- **BROKEN**: `processPayment` lance NotImplementedError (plante au moment de l'exécution)
+- **INCOMPLETE**: Le tableau utilisateur codé en dur doit être récupéré de la base de données
+
+## Guide de gravité
+
+| Pattern | Severity | Rationale |
+|---------|----------|-----------|
+| Empty function body (called in production) | BROKEN | Feature silently fails |
+| NotImplementedError throw | BROKEN | Feature crashes |
+| Hardcoded mock data (user-visible) | INCOMPLETE | Users see fake data |
+| TODO/FIXME in critical path | PLACEHOLDER | Known incomplete work |
+| "Coming soon" text in UI | INCOMPLETE | Feature advertised but missing |
+| Temporary return value | PLACEHOLDER | Logic bypassed |
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Find placeholder code in production",
+  prompt: "Scan src/ for TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data, and placeholder UI text. Exclude test files and examples.",
+  subagent_type: "agileflow-completeness-analyzer-stubs"
+)
+```
+
+## Agents associés
+
+- [`gestionnaires d'analyseurs d'exhaustivité`](/agents/completeness-analyzer-handlers) - Analyseur de gestionnaire mort
+- [`complétude-analyseur-api`](/agents/completeness-analyzer-api) - Analyseur d'incompatibilité d'API
+- [`analyseur d'exhaustivité-conditionnel`](/agents/completeness-analyzer-conditional) - Analyseur de branches de fonctionnalités mortes
+- [« exhaustivité-consensus »](/agents/completeness-consensus) - Coordinateur du consensus d'exhaustivité

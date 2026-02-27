@@ -1,0 +1,191 @@
+---
+title: Analyseur de branches de fonctionnalités mortes
+description: Analyseur de branches de fonctionnalités mortes pour les fausses conditions codées en dur, les indicateurs de fonctionnalités mortes, le code inaccessible après retour/lancement et les gros blocs commentés
+---
+
+# Analyseur de branches de fonctionnalités mortes
+
+L'agent Completeness Analyzer: Dead Feature Branch est un analyseur spécialisé axé sur **dead conditional logic and feature branches**. Il trouve les fausses conditions codées en dur qui désactivent les fonctionnalités, les indicateurs de fonctionnalités mortes qui ne changent jamais, le code inaccessible après les instructions return/throw et les gros blocs de code commentés qui doivent être supprimés.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez identifier les fausses conditions codées en dur qui sautent toujours du code
+- Vous souhaitez rechercher les indicateurs de fonctionnalités mortes qui ont été laissés dans la base de code
+- Vous recherchez du code inaccessible après les instructions return/throw
+- Vous devez identifier et supprimer les blocs commentés
+- Vous nettoyez la dette technique liée au déploiement de fonctionnalités
+
+## Comment ça marche
+
+1. **Reads conditional code** - Analyse tous les if/else, ternaires, && et || opérateurs
+2. **Evaluates constants** - Vérifie si les conditions dépendent uniquement des constantes
+3. **Identifies dead branches** - Trouve les branches qui ne peuvent jamais s'exécuter
+4. **Finds feature flags** - Recherche les variables de type drapeau codées en dur
+5. **Detects unreachable code** - Trouve le code après retour/lancement/pause
+6. **Finds dead comments** - Identifie les gros blocs commentés
+7. **Reports findings** - Répertorie le code mort avec contexte et suggestion de suppression
+
+## Domaines d'intervention
+
+- **Hardcoded false conditions**: `if (false)`, `if (FEATURE_ENABLED === false)` où FEATURE_ENABLED n'est jamais vrai
+- **Dead feature flags**: indicateurs qui ont conservé des valeurs codées en dur après le déploiement
+- **Unreachable code**: Code après les instructions return, throw ou break
+- **Large commented-out blocks**: Code commenté à supprimer
+- **Unreachable branches**: Autres clauses qui ne peuvent jamais être exécutées
+
+## Outils disponibles
+
+Cet agent a accès à : Read, Glob, Grep
+
+## Exemple d'analyse
+
+Étant donné un code comme :
+```javascript
+// Hardcoded false condition
+if (false) {
+  logErrorToService();
+}
+
+// Dead feature flag
+if (BETA_UI === false) {
+  // Old UI code that will never run
+  return <LegacyUI />;
+}
+
+// Unreachable code
+if (user) {
+  return user.name;
+}
+// Code below never executes
+const fallback = 'Guest';
+
+// Commented-out block
+/*
+function deprecatedApiCall() {
+  return fetch('/old-api-endpoint').then(r => r.json());
+}
+*/
+```
+
+L’analyseur Dead Feature Branch identifierait :
+
+### Résultat : fausse condition codée en dur dans la journalisation des erreurs
+
+**Location**: `src/lib/logger.js:45`
+**Severity**: P2 (code mort)
+**Confidence**: HAUT
+
+**Issue**: L'état `if (false)` à la ligne 45 est toujours faux. Le code de journalisation des erreurs à l’intérieur ne s’exécute jamais. Cela doit être activé (supprimer false) ou supprimé.
+
+**Suggested Fix**: Supprimez la branche morte
+
+```javascript
+// Before
+if (false) {
+  logErrorToService();
+}
+
+// After
+logErrorToService(); // Enabled and always runs
+```
+
+### Constat : indicateur de fonctionnalité morte après le déploiement
+
+**Location**: `src/App.tsx:28`
+**Severity**: P1 (code trompeur)
+**Confidence**: HAUT
+
+**Issue**: `BETA_UI` est codé en dur sur `false`, rendant toute la branche if inaccessible. L’indicateur de fonctionnalité a été laissé après la désactivation de la version bêta. Doit être supprimé.
+
+**Code**:
+```javascript
+const BETA_UI = false;
+if (BETA_UI) {
+  // This code path never executes
+  return <BetaUI />;
+}
+```
+
+**Suggested Fix**: Supprimez le drapeau mort et sa branche
+
+```javascript
+return <ProductionUI />;
+```
+
+### Constatation : Code inaccessible après le retour
+
+**Location**: `src/utils/validators.js:120`
+**Severity**: P2 (code mort)
+**Confidence**: HAUT
+
+**Issue**: Code après la ligne 122 (`const fallback = 'Guest'`) est inaccessible car tous les chemins reviennent.
+
+**Code**:
+```javascript
+if (user) {
+  return user.name;
+}
+const fallback = 'Guest'; // ← Unreachable
+return fallback;
+```
+
+**Suggested Fix**: Déplacer l'affectation à l'intérieur d'une condition ou d'une restructuration
+
+```javascript
+// Option 1: Move into condition
+const fallback = 'Guest';
+if (user) {
+  return user.name;
+}
+return fallback;
+
+// Option 2: Use ternary
+return user?.name ?? 'Guest';
+```
+
+### Constatation : grand bloc de code commenté
+
+**Location**: `src/api/clients/user.js:200`
+**Severity**: P2 (dette technique)
+**Confidence**: HAUT
+
+**Issue**: Bloc commenté de 47 lignes de l'ancien code API. Doit être supprimé ou migré vers le contrôle de version.
+
+**Suggested Action**: Supprimez et utilisez l'historique git pour récupérer si nécessaire
+
+## Meilleures pratiques
+
+- Supprimez les fausses conditions codées en dur : elles indiquent un nettoyage incomplet
+- Supprimer les indicateurs de fonctionnalité une fois le déploiement terminé
+- Utilisez le contrôle de code source au lieu de commenter le code
+- Supprimez le code inaccessible immédiatement après la refactorisation
+- Documentez pourquoi les branches existent si elles sont intentionnellement inaccessibles
+
+## Format de sortie
+
+Pour chaque constat, l'agent fournit :
+- **Location**: Chemin du fichier et numéro de ligne
+- **Type**: Faux codé en dur, indicateur mort, code inaccessible ou bloc commenté
+- **Severity**: P0 (comportement incorrect), P1 (trompeur) ou P2 (code mort)
+- **Confidence**: ÉLEVÉ, MOYEN ou FAIBLE
+- **Code**: Extrait de code exact
+- **Issue**: Pourquoi c'est mort et pourquoi c'est important
+- **Suggested Fix**: Comment supprimer ou restructurer
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Find dead feature branches in user service",
+  prompt: "Scan src/ for dead conditional logic including hardcoded false conditions, dead feature flags, unreachable code after return/throw, and large commented-out blocks.",
+  subagent_type: "agileflow-completeness-analyzer-conditional"
+)
+```
+
+## Agents associés
+
+- [`état d’analyse d’exhaustivité`](/agents/completeness-analyzer-state) - Analyseur d'état inutilisé
+- [`gestionnaires d'analyseurs d'exhaustivité`](/agents/completeness-analyzer-handlers) - Analyseur de gestionnaire mort
+- [`importations d'analyseur d'exhaustivité`](/agents/completeness-analyzer-imports) - Analyseur d'exportation morte
+- [« exhaustivité-consensus »](/agents/completeness-consensus) - Coordinateur du consensus d'exhaustivité

@@ -1,0 +1,83 @@
+---
+title: Analyseur d'itinéraire mort
+description: Navigation morte et analyseur de liens rompus pour les hrefs d'espace réservé, les cibles d'itinéraire manquantes et les éléments de navigation orphelins
+---
+
+# Analyseur d'itinéraire mort
+
+L'agent Completeness Analyzer: Dead Routes est un analyseur spécialisé axé sur **dead navigation and broken links**. Il trouve des hrefs d'espace réservé (`#`), des liens pointant vers des itinéraires qui n'existent pas, des éléments de navigation orphelins et des liens internes morts qui entraîneraient des erreurs 404.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez trouver les liens de navigation internes rompus
+- Vous souhaitez identifier un espace réservé `#` hrefs qui n'ont jamais été remplis
+- Vous recherchez des éléments de navigation orphelins pointant vers des pages manquantes
+- Vous devez vérifier que tous les itinéraires ont des composants de page correspondants
+- Vous auditez l'intégrité des liens avant une publication
+
+## Comment ça marche
+
+1. **Scans navigation** - Trouve tout `<a>`, `<Link>`et les appels de navigation du routeur
+2. **Maps routes** - Construit une carte de tous les itinéraires définis dans l'application
+3. **Cross-references** - Vérifie chaque cible de lien par rapport à la feuille de route
+4. **Identifies placeholders** - Trouve `href="#"`, `href=""`, et `href="javascript:void(0)"`
+5. **Finds orphaned items** - Entrées de navigation pointant vers des itinéraires non définis
+6. **Reports findings** - Répertorie les liens rompus avec l'emplacement et les correctifs suggérés
+
+## Domaines d'intervention
+
+- **Placeholder hrefs**: `href="#"`, `href=""`, `href="javascript:void(0)"` en production
+- **Missing route targets**: Liens vers `/dashboard` quand non `/dashboard` l'itinéraire existe
+- **Orphaned nav items**: Entrée de la barre latérale ou du menu pointant vers des pages mortes
+- **Dead internal links**: `<Link to="/old-page">` où la page a été supprimée
+- **Route-component mismatches**: Route définie mais le composant renvoie null ou un espace réservé
+
+## Outils disponibles
+
+Cet agent a accès à : Read, Glob, Grep
+
+## Exemple d'analyse
+
+Étant donné la navigation avec des liens morts :
+```jsx
+// Navigation component with broken links
+<nav>
+  <Link to="/dashboard">Dashboard</Link>        {/* Route exists */}
+  <Link to="/settings">Settings</Link>          {/* Route exists */}
+  <Link to="/analytics">Analytics</Link>        {/* NO ROUTE - 404 */}
+  <a href="#">Reports</a>                       {/* Placeholder */}
+  <Link to="/admin/users">User Management</Link> {/* NO ROUTE - 404 */}
+</nav>
+
+// Router definition
+<Routes>
+  <Route path="/dashboard" element={<Dashboard />} />
+  <Route path="/settings" element={<Settings />} />
+  {/* No /analytics route */}
+  {/* No /admin/users route */}
+</Routes>
+```
+
+L’analyseur Dead Route identifierait :
+
+- **BROKEN**: Lien vers `/analytics` n'a pas d'itinéraire correspondant (404 pour les utilisateurs)
+- **BROKEN**: Lien vers `/admin/users` n'a pas d'itinéraire correspondant (404 pour les utilisateurs)
+- **PLACEHOLDER**: `href="#"` sur le lien Rapports (l'utilisateur clique, rien ne se passe)
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Find broken navigation links",
+  prompt: "Scan src/components/ and src/pages/ for dead navigation links, placeholder hrefs, and routes pointing to missing pages.",
+  subagent_type: "agileflow-completeness-analyzer-routes"
+)
+```
+
+## Agents associés
+
+- [`complétude-analyseur-api`](/agents/completeness-analyzer-api) - Analyseur d'incompatibilité d'API
+- [`gestionnaires d'analyseurs d'exhaustivité`](/agents/completeness-analyzer-handlers) - Analyseur de gestionnaire mort
+- [`stubs d'analyseur d'intégralité`](/agents/completeness-analyzer-stubs) - Analyseur de code de stub
+- [« exhaustivité-consensus »](/agents/completeness-consensus) - Coordinateur du consensus d'exhaustivité

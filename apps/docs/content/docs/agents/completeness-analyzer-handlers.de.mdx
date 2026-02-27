@@ -1,0 +1,207 @@
+---
+title: Dead Handler-Analysator
+description: Dead/empty-Ereignishandleranalysator für leere onClick/onSubmit/onChange-Handler, Nur-Konsolen-Handler, Teilhandler und Noop-Rückrufe
+---
+
+# Dead Handler-Analysator
+
+Der Completeness Analyzer: Dead Handler-Agent ist ein spezialisierter Analysator, der sich auf Folgendes konzentriert **empty and stub event handlers**. Es findet onClick/onSubmit/onChange-Handler, die nichts tun, Handler, die sich nur an der Konsole anmelden, Teilhandler, denen die Implementierung fehlt, und Noop-Rückrufe, die während der Entwicklung zurückgeblieben sind.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen leere onClick/onSubmit/onChange-Handler finden
+- Sie möchten Handler identifizieren, die sich nur an der Konsole anmelden
+- Sie suchen Stub-Handler mit TODO/FIXME-Kommentaren
+- Sie müssen Noop-Rückrufe finden, die während der Entwicklung zurückgeblieben sind
+- Sie bereinigen unvollständige Funktionsimplementierungen
+
+## Wie es funktioniert
+
+1. **Scans event handlers** – Findet alle onClick-, onSubmit-, onChange-, onError- usw. Rückrufe
+2. **Checks body content** – Identifiziert Handler mit leeren, Nur-Konsolen- oder Stub-Körpern
+3. **Detects patterns** - Sucht nach () => {}, () => console.log(), noop() usw.
+4. **Finds TODOs** – Identifiziert Handler mit nicht implementierten TODO/FIXME-Kommentaren
+5. **Checks call chains** – Überprüft, ob Teilhandler tatsächlich etwas tun
+6. **Reports findings** – Listet tote Handler mit Kontext und vorgeschlagenen Korrekturen auf
+
+## Schwerpunktbereiche
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: Handler, die die Arbeit starten, aber nicht abschließen
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Read, Glob, Grep
+
+## Beispielanalyse
+
+Gegebene React-Komponenten mit toten Handlern:
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+Der Dead Handler-Analysator würde Folgendes identifizieren:
+
+### Ergebnis: Leerer Löschschaltflächen-Handler
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (Funktion defekt)
+**Confidence**: HOCH
+
+**Issue**: Die Schaltfläche „Löschen“ hat einen leeren Handler `() => {}`. Das Klicken auf die Schaltfläche bewirkt nichts. Der Benutzer erwartet, dass das Element gelöscht wird.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: Benutzer können keine Elemente löschen. Die Funktion scheint zu funktionieren, hat aber keine Auswirkung.
+
+**Suggested Fix**: Implementieren Sie den Löschhandler
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### Gefunden: Sucheingabehandler nur für die Konsole
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (teilweise Implementierung)
+**Confidence**: HOCH
+
+**Issue**: Durchsucht nur Eingabeprotokolle in der Konsole. Die Suche filtert die Ergebnisse nicht wirklich.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: Die Suche scheint zu funktionieren (Protokolle zeigen Aktivität), aber Benutzern werden keine gefilterten Ergebnisse angezeigt.
+
+**Suggested Fix**: Handler mit Status- und Filterlogik verbinden
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### Ergebnis: TODO-Stub im Zahlungsformular
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (kritisch – Zahlung funktioniert nicht)
+**Confidence**: HOCH
+
+**Issue**: Submit-Handler hat TODO-Kommentar und keine Implementierung. Benutzern, die auf „Jetzt bezahlen“ klicken, wird eine Gebühr berechnet, die Zahlung wird jedoch nie verarbeitet.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: Die Benutzerzahlungsfunktion ist nicht funktionsfähig. Es könnte Geld verloren gehen.
+
+**Suggested Fix**: Zahlungsabwicklung implementieren
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### Ergebnis: Teilweiser Update-Handler ohne Persistenz
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (falsches Ergebnis)
+**Confidence**: HOCH
+
+**Issue**: Die Schaltfläche „Aktualisieren“ zeigt eine Erfolgsmeldung an, aktualisiert das Element jedoch nicht tatsächlich. Änderungen erfolgen nur in der Benutzeroberfläche und werden nicht beibehalten.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: Benutzer gehen davon aus, dass das Element aktualisiert wurde, aber die Änderungen gehen verloren, wenn die Seite aktualisiert wird.
+
+**Suggested Fix**: API aufrufen, bevor Erfolg angezeigt wird
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## Best Practices
+
+- Jeder Event-Handler sollte eine echte Implementierung haben (keine leeren Handler)
+- Vermeiden Sie reine Konsolenhandler im Produktionscode
+- Vervollständigen Sie die TODO/FIXME-Handler vor dem Festschreiben
+- Verwenden Sie TypeScript, um nicht implementierte Handler abzufangen
+- Testen Sie alle Schaltflächenklicks und Formularübermittlungen
+- Komplexe Handlerlogik mit Kommentaren dokumentieren
+
+## Ausgabeformat
+
+Für jeden Befund stellt der Agent Folgendes bereit:
+- **Location**: Dateipfad und Zeilennummer
+- **Type**: Leerer, nur Konsolen-, Teil- oder Stub-Handler
+- **Severity**: P0 (Funktion defekt), P1 (unvollständige Funktion) oder P2 (geringfügiges Problem)
+- **Confidence**: HOCH, MITTEL oder NIEDRIG
+- **Code**: Exakter Handlercode
+- **Issue**: Was nicht funktioniert und Auswirkungen auf den Benutzer
+- **Suggested Fix**: Wie man richtig umsetzt
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## Verwandte Agenten
+
+- [„Vollständigkeitsanalysator-Zustand“.](/agents/completeness-analyzer-state) - Unbenutzter Zustandsanalysator
+- [„Vollständigkeitsanalysator-bedingt“.](/agents/completeness-analyzer-conditional) - Dead-Feature-Branch-Analysator
+- [„Vollständigkeitsanalysator-Routen“.](/agents/completeness-analyzer-routes) - Dead-Route-Analysator
+- [„Vollständigkeitskonsens“.](/agents/completeness-consensus) - Vollständigkeitskonsenskoordinator

@@ -1,0 +1,207 @@
+---
+title: Analizador de manejadores muertos
+description: Analizador de controlador de eventos inactivo/vacío para onClick/onSubmit/onChange vacío, controladores solo de consola, controladores parciales y devoluciones de llamada noop
+---
+
+# Analizador de manejadores muertos
+
+El analizador de integridad: el agente Dead Handler es un analizador especializado centrado en **empty and stub event handlers**. Encuentra controladores onClick/onSubmit/onChange que no hacen nada, controladores que solo inician sesión en la consola, controladores parciales a los que les falta implementación y devoluciones de llamadas noop que se dejan atrás durante el desarrollo.
+
+## Cuando usar
+
+Utilice este agente cuando:
+- Necesita encontrar controladores vacíos onClick/onSubmit/onChange
+- Quiere identificar controladores que solo inician sesión en la consola
+- Estás buscando controladores de código auxiliar con comentarios TODO/FIXME
+- Necesita encontrar las devoluciones de llamadas de noop que quedaron durante el desarrollo
+- Estás limpiando implementaciones de funciones incompletas
+
+## Cómo funciona
+
+1. **Scans event handlers** - Encuentra todas las devoluciones de llamadas onClick, onSubmit, onChange, onError, etc.
+2. **Checks body content** - Identifica controladores con cuerpos vacíos, solo de consola o de resguardo
+3. **Detects patterns** - Busca () => {}, () => console.log(), noop(), etc.
+4. **Finds TODOs** - Identifica controladores con comentarios TODO/FIXME no implementados
+5. **Checks call chains** - Verifica que los manejadores parciales realmente hagan algo.
+6. **Reports findings** - Enumera los controladores muertos con contexto y correcciones sugeridas.
+
+## Áreas de enfoque
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: Controladores que comienzan pero no completan el trabajo.
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Read, Glob, Grep
+
+## Análisis de ejemplo
+
+Dados componentes de React con controladores muertos:
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+El analizador Dead Handler identificaría:
+
+### Hallazgo: controlador de botón de eliminación vacío
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (función rota)
+**Confidence**: ALTO
+
+**Issue**: El botón Eliminar tiene un controlador vacío `() => {}`. El clic en el botón no hace nada. El usuario espera que se elimine el elemento.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: Los usuarios no pueden eliminar elementos. La característica parece funcionar pero no tiene ningún efecto.
+
+**Suggested Fix**: Implementar el controlador de eliminación
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### Hallazgo: controlador de entrada de búsqueda solo para consola
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (implementación parcial)
+**Confidence**: ALTO
+
+**Issue**: La entrada de búsqueda solo registra registros en la consola. La búsqueda en realidad no filtra los resultados.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: La búsqueda parece funcionar (los registros muestran actividad) pero los usuarios no ven resultados filtrados.
+
+**Suggested Fix**: Conecte el controlador al estado y filtre la lógica
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### Hallazgo: talón TODO en el formulario de pago
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (crítico - el pago no funciona)
+**Confidence**: ALTO
+
+**Issue**: El controlador de envío tiene comentario TODO y no tiene implementación. A los usuarios que hacen clic en "Pagar ahora" se les cobra, pero el pago nunca se procesa.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: La función de pago del usuario no es funcional. Podría perderse dinero.
+
+**Suggested Fix**: Implementar procesamiento de pagos
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### Hallazgo: Controlador de actualización parcial sin persistencia
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (resultado incorrecto)
+**Confidence**: ALTO
+
+**Issue**: El botón Actualizar muestra un mensaje de éxito pero en realidad no actualiza el elemento. Los cambios solo se realizan en la interfaz de usuario, no persisten.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: Los usuarios piensan que el elemento está actualizado, pero los cambios se pierden cuando se actualiza la página.
+
+**Suggested Fix**: Llame a la API antes de mostrar éxito
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## Mejores prácticas
+
+- Cada controlador de eventos debe tener una implementación real (sin controladores vacíos)
+- Evite controladores solo de consola en el código de producción
+- Complete los controladores TODO/FIXME antes de comprometerse
+- Utilice TypeScript para detectar controladores no implementados
+- Pruebe todos los clics en botones y envíos de formularios
+- Documentar la lógica compleja del controlador con comentarios
+
+## Formato de salida
+
+Para cada hallazgo, el agente proporciona:
+- **Location**: Ruta del archivo y número de línea
+- **Type**: controlador vacío, solo de consola, parcial o de código auxiliar
+- **Severity**: P0 (función rota), P1 (función incompleta) o P2 (problema menor)
+- **Confidence**: ALTO, MEDIO o BAJO
+- **Code**: Código de controlador exacto
+- **Issue**: Lo que no funciona y el impacto en el usuario
+- **Suggested Fix**: Cómo implementar correctamente
+
+## Uso de ejemplo
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## Agentes Relacionados
+
+- [`estado-analizador-de-integridad`](/agents/completeness-analyzer-state) - Analizador de estado no utilizado
+- [`analizador-de-integridad-condicional`](/agents/completeness-analyzer-conditional) - Analizador de ramas de características muertas
+- [`rutas-analizador-de-integridad`](/agents/completeness-analyzer-routes) - Analizador de ruta muerta
+- [`consenso-integridad`](/agents/completeness-consensus) - Coordinador de consenso de exhaustividad

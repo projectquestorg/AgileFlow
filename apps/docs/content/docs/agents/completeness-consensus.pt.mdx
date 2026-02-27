@@ -1,0 +1,105 @@
+---
+title: Coordenador de Consenso de Completude
+description: Coordenador de consenso para auditoria de integridade - valida descobertas, vota na confiança, filtra por tipo de projeto, avalia o impacto do usuário e gera relatório de auditoria de integridade priorizado
+---
+
+# Coordenador de Consenso de Completude
+
+O Coordenador de Consenso de Integralidade coleta descobertas de todos os analisadores de integridade, aplica filtragem de intencionalidade, vota na confiança, classifica o impacto do usuário, filtra por tipo de projeto e produz o Relatório de Auditoria de Integralidade final priorizado.
+
+## Quando usar
+
+Use este agente quando:
+- Você precisa consolidar as descobertas de vários analisadores de integridade em um único relatório
+- Você deseja filtrar falsos positivos e padrões intencionais (stubs de teste, métodos abstratos)
+- Você precisa classificar as descobertas por impacto no usuário (bloqueio, confusão, perda silenciosa de dados)
+- Você deseja detectar o tipo de projeto e excluir descobertas irrelevantes
+- Você precisa de uma lista de verificação priorizada "Concluir ou Remover"
+
+## Como funciona
+
+1. **Detects project type** - Determina se CLI, somente API, SPA, biblioteca, pilha completa, móvel ou microsserviço
+2. **Collects findings** - Analisa todas as saídas do analisador em estrutura normalizada
+3. **Applies intentionality filtering** - Exclui stubs de teste, métodos abstratos, código gerado, pontos de extensão
+4. **Votes on confidence** - Vários analisadores sinalizando o mesmo problema = maior confiança
+5. **Classifies user impact** - Categoriza cada descoberta de acordo com a forma como ela afeta os usuários finais
+6. **Filters by project type** - Exclui descobertas irrelevantes para o tipo de projeto detectado
+7. **Generates report** - Produz relatório de auditoria de integridade priorizado e acionável
+
+## Processo de consenso
+
+### Votação de confiança
+
+| Confidence | Criteria | Action |
+|------------|----------|--------|
+| **CONFIRMED** | 2+ analyzers flag same location or related issue | High priority, include in report |
+| **LIKELY** | 1 analyzer with strong evidence | Medium priority, include |
+| **INVESTIGATE** | 1 analyzer, weak or circumstantial evidence | Low priority, needs manual review |
+| **INTENTIONAL** | Analyzer flags it but intentionality filter applies | Exclude from report with note |
+
+### Classificação de impacto do usuário
+
+| Impact | Definition | Examples |
+|--------|-----------|---------|
+| **user-blocking** | User cannot complete a core workflow | Empty form handler, broken checkout, dead navigation |
+| **user-confusing** | UI element exists but does nothing | Button with no action, link to nowhere |
+| **data-silent** | Data loss happens silently | State set but never persisted, API response ignored |
+| **developer-only** | Maintenance burden, no user-visible impact | Dead exports, unused dependencies |
+
+### Matriz Prioritária
+
+Gravidade x Confiança determina a prioridade:
+
+| | CONFIRMED | LIKELY | INVESTIGATE |
+|--|:---------:|:------:|:-----------:|
+| **BROKEN** | Ship Blocker | Fix Before Release | Fix This Sprint |
+| **INCOMPLETE** | Fix Before Release | Fix This Sprint | Backlog |
+| **PLACEHOLDER** | Fix Before Release | Fix This Sprint | Backlog |
+| **DORMANT** | Fix This Sprint | Backlog | Info |
+
+## Filtragem de tipo de projeto
+
+| Project Type | Irrelevant Findings |
+|-------------|-------------------|
+| **CLI** | Dead UI handlers, dead routes, unused React state |
+| **API-only** | Empty onClick, dead navigation links, unused React state |
+| **SPA** | Orphaned backend endpoints, server-side stubs |
+| **Library** | Dead routes, API mismatches (but dead exports are HIGHER severity) |
+| **Full-stack** | None excluded - all findings potentially relevant |
+
+## Ferramentas disponíveis
+
+Este agente tem acesso a: Ler, Escrever, Editar, Glob, Grep
+
+## Formato de saída
+
+O Relatório de Auditoria de Integralidade final inclui:
+
+- **Summary**: conta por gravidade com categorias de impacto do usuário
+- **Ship Blockers**: Resultados QUEBRADOS + CONFIRMADOS para correção imediata
+- **Fix Before Release**: Recursos incompletos de alta prioridade
+- **Fix This Sprint**: Itens de prioridade média
+- **Backlog/Info**: Código inativo de baixa prioridade
+- **Intentional Exclusions**: Resultados excluídos com raciocínio
+- **Analyzer Agreement Matrix**: quais analisadores sinalizaram quais locais
+- **Complete or Remove Checklist**: itens acionáveis ​​com ambos os caminhos de correção
+
+## Exemplo de uso
+
+```text
+Task(
+  description: "Run completeness audit consensus",
+  prompt: "Consolidate findings from all 7 completeness analyzers. Detect project type, apply intentionality filtering, vote on confidence, classify user impact, and generate the prioritized Completeness Audit Report.",
+  subagent_type: "agileflow-completeness-consensus"
+)
+```
+
+## Agentes Relacionados
+
+- [`completude-analisador-api`](/agents/completeness-analyzer-api) - Analisador de incompatibilidade de API
+- [`completude-analisador-condicional`](/agents/completeness-analyzer-conditional) - Analisador de ramificação de recurso morto
+- [`manipuladores de analisadores de completude`](/agents/completeness-analyzer-handlers) - Analisador de manipulador morto
+- [`importações do analisador de completude`](/agents/completeness-analyzer-imports) - Analisador de exportação morto
+- [`rotas do analisador de completude`](/agents/completeness-analyzer-routes) - Analisador de rota morta
+- [`estado do analisador de completude`](/agents/completeness-analyzer-state) - Analisador de estado não utilizado
+- [`stubs do analisador de completude`](/agents/completeness-analyzer-stubs) - Analisador de código stub

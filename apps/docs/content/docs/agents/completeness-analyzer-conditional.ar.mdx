@@ -1,0 +1,191 @@
+---
+title: محلل فرع الميزة الميتة
+description: محلل فرعي للميزات الميتة للشروط الخاطئة المشفرة، وإشارات الميزات الميتة، والتعليمات البرمجية التي لا يمكن الوصول إليها بعد الإرجاع/الرمي، والكتل الكبيرة التي تم التعليق عليها
+---
+
+# محلل فرع الميزة الميتة
+
+محلل الاكتمال: وكيل Dead Features Branch هو محلل متخصص يركز على **dead conditional logic and feature branches**. فهو يعثر على شروط كاذبة مضمنة تعمل على تعطيل الميزات، وإشارات الميزات الميتة التي لا تتغير أبدًا، والتعليمات البرمجية التي لا يمكن الوصول إليها بعد عبارات الإرجاع/الرمي، وكتل التعليمات البرمجية الكبيرة التي تم التعليق عليها والتي يجب إزالتها.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى تحديد الشروط الخاطئة المشفرة والتي تتخطى التعليمات البرمجية دائمًا
+- تريد العثور على علامات الميزات الميتة التي تم تركها في قاعدة التعليمات البرمجية
+- أنت تبحث عن رمز لا يمكن الوصول إليه بعد عبارات الإرجاع/الرمي
+- تحتاج إلى تحديد وإزالة الكتل التي تم التعليق عليها
+- أنت تقوم بمسح الديون الفنية من عمليات طرح الميزات
+
+## كيف يعمل
+
+1. **Reads conditional code** - يقوم بمسح كافة إذا/آخر، الثلاثي، && و || مشغلي
+2. **Evaluates constants** - يتحقق إذا كانت الشروط تعتمد على الثوابت فقط
+3. **Identifies dead branches** - يجد الفروع التي لا يمكن تنفيذها أبدا
+4. **Finds feature flags** - يبحث عن المتغيرات الشبيهة بالعلم والتي تم ترميزها بشكل ثابت
+5. **Detects unreachable code** - يجد الكود بعد العودة/الرمي/الاستراحة
+6. **Finds dead comments** - يحدد الكتل الكبيرة التي تم التعليق عليها
+7. **Reports findings** - يسرد التعليمات البرمجية الميتة مع السياق والإزالة المقترحة
+
+## مجالات التركيز
+
+- **Hardcoded false conditions**: `if (false)`, `if (FEATURE_ENABLED === false)` حيث FEATURE_ENABLED لا يكون صحيحًا أبدًا
+- **Dead feature flags**: العلامات التي تُركت بقيم مشفرة بعد الطرح
+- **Unreachable code**: الكود بعد عبارات الإرجاع أو الرمي أو الكسر
+- **Large commented-out blocks**: رمز التعليق الذي يجب حذفه
+- **Unreachable branches**: الجمل الأخرى التي لا يمكن تنفيذها أبدًا
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+رمز معين مثل:
+```javascript
+// Hardcoded false condition
+if (false) {
+  logErrorToService();
+}
+
+// Dead feature flag
+if (BETA_UI === false) {
+  // Old UI code that will never run
+  return <LegacyUI />;
+}
+
+// Unreachable code
+if (user) {
+  return user.name;
+}
+// Code below never executes
+const fallback = 'Guest';
+
+// Commented-out block
+/*
+function deprecatedApiCall() {
+  return fetch('/old-api-endpoint').then(r => r.json());
+}
+*/
+```
+
+سيحدد محلل فرع الميزات الميتة ما يلي:
+
+### النتيجة: حالة خاطئة مضمنة في تسجيل الأخطاء
+
+**Location**: `src/lib/logger.js:45`
+**Severity**: P2 (الرمز الميت)
+**Confidence**: عالي
+
+**Issue**: الشرط `if (false)` على السطر 45 دائمًا خطأ. لا يتم تنفيذ رمز تسجيل الأخطاء الموجود بالداخل مطلقًا. يجب إما تمكين هذا (إزالة الخطأ) أو حذفه.
+
+**Suggested Fix**: إزالة الفرع الميت
+
+```javascript
+// Before
+if (false) {
+  logErrorToService();
+}
+
+// After
+logErrorToService(); // Enabled and always runs
+```
+
+### النتيجة: علامة الميزة الميتة بعد الطرح
+
+**Location**: `src/App.tsx:28`
+**Severity**: P1 (رمز مضلل)
+**Confidence**: عالي
+
+**Issue**: `BETA_UI` مشفر ل `false`، مما يجعل فرع if بأكمله غير قابل للوصول. تم ترك علامة الميزة بعد تعطيل النسخة التجريبية. ينبغي إزالتها.
+
+**Code**:
+```javascript
+const BETA_UI = false;
+if (BETA_UI) {
+  // This code path never executes
+  return <BetaUI />;
+}
+```
+
+**Suggested Fix**: إزالة العلم الميت وفرعه
+
+```javascript
+return <ProductionUI />;
+```
+
+### العثور على: رمز لا يمكن الوصول إليه بعد العودة
+
+**Location**: `src/utils/validators.js:120`
+**Severity**: P2 (الرمز الميت)
+**Confidence**: عالي
+
+**Issue**: الكود بعد السطر 122 (`const fallback = 'Guest'`) لا يمكن الوصول إليه لأن كافة المسارات تعود.
+
+**Code**:
+```javascript
+if (user) {
+  return user.name;
+}
+const fallback = 'Guest'; // ← Unreachable
+return fallback;
+```
+
+**Suggested Fix**: نقل المهمة داخل الحالة أو إعادة الهيكلة
+
+```javascript
+// Option 1: Move into condition
+const fallback = 'Guest';
+if (user) {
+  return user.name;
+}
+return fallback;
+
+// Option 2: Use ternary
+return user?.name ?? 'Guest';
+```
+
+### النتيجة: كتلة تعليمات برمجية كبيرة تم التعليق عليها
+
+**Location**: `src/api/clients/user.js:200`
+**Severity**: P2 (الدين الفني)
+**Confidence**: عالي
+
+**Issue**: كتلة معلقة مكونة من 47 سطرًا من كود API القديم. يجب حذفها أو ترحيلها إلى التحكم في الإصدار.
+
+**Suggested Action**: احذف سجل git واستخدمه لاسترداده إذا لزم الأمر
+
+## أفضل الممارسات
+
+- قم بإزالة الشروط الخاطئة المشفرة - فهي تشير إلى عدم اكتمال التنظيف
+- حذف علامات الميزات بعد اكتمال الطرح
+- استخدم التحكم بالمصادر بدلاً من التعليق على التعليمات البرمجية
+- قم بإزالة التعليمات البرمجية التي لا يمكن الوصول إليها مباشرة بعد إعادة البناء
+- قم بتوثيق سبب وجود الفروع إذا كان يتعذر الوصول إليها عمدًا
+
+## تنسيق الإخراج
+
+لكل نتيجة، يوفر الوكيل ما يلي:
+- **Location**: مسار الملف ورقم السطر
+- **Type**: خطأ مضمن، أو علامة ميتة، أو رمز لا يمكن الوصول إليه، أو حظر تم التعليق عليه
+- **Severity**: P0 (سلوك غير صحيح)، P1 (مضلل)، أو P2 (رمز ميت)
+- **Confidence**: عالية، متوسطة، أو منخفضة
+- **Code**: مقتطف الشفرة الدقيق
+- **Issue**: لماذا مات ولماذا يهم
+- **Suggested Fix**: كيفية إزالة أو إعادة الهيكلة
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find dead feature branches in user service",
+  prompt: "Scan src/ for dead conditional logic including hardcoded false conditions, dead feature flags, unreachable code after return/throw, and large commented-out blocks.",
+  subagent_type: "agileflow-completeness-analyzer-conditional"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["حالة محلل الاكتمال".](/agents/completeness-analyzer-state) - محلل الحالة غير المستخدمة
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["واردات محلل الاكتمال".](/agents/completeness-analyzer-imports) - محلل التصدير الميت
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

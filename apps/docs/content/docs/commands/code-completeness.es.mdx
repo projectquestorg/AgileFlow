@@ -1,0 +1,197 @@
+---
+title: /código:integridad
+description: Análisis de múltiples agentes para funciones olvidadas, controladores inactivos, códigos auxiliares e implementaciones incompletas
+---
+
+# /código:integridad
+
+Implemente múltiples analizadores de integridad especializados en paralelo para encontrar características olvidadas, controladores inactivos, códigos auxiliares e implementaciones incompletas, luego sintetice los resultados mediante votación por consenso en un Informe de auditoría de integridad priorizado.
+
+## Inicio rápido
+
+```bash
+/agileflow:code:completeness app/
+/agileflow:code:completeness . DEPTH=deep
+/agileflow:code:completeness src/ FOCUS=handlers,routes
+```
+
+## Argumentos
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep, ultradeep | quick | Analysis depth: quick = core 5 analyzers, deep = all 7 analyzers, ultradeep = separate tmux sessions |
+| `FOCUS` | handlers, routes, api, stubs, state, imports, conditional, all | all | Which analyzers to deploy (comma-separated) |
+| `MODEL` | haiku, sonnet, opus | haiku | Model for analyzer subagents |
+
+## Cómo funciona
+
+1. **Parse arguments** - Determinar el objetivo, la profundidad y las áreas de enfoque.
+2. **Deploy analyzers in parallel** - 5-7 agentes especializados dependiendo de la profundidad
+3. **Collect all findings** - Espere a que se completen todos los analizadores.
+4. **Run consensus coordinator** - Validar los hallazgos y priorizar por gravedad.
+5. **Generate Completeness Audit Report** - Recomendaciones prácticas guardadas en `docs/08-project/completeness-audits/`
+
+## Analizadores principales (modo rápido - 5)
+
+| Analyzer | Finds |
+|----------|-------|
+| **Handlers** | Dead/empty event handlers, console-only handlers |
+| **Routes** | Dead navigation, broken links, missing pages |
+| **API** | Frontend-backend endpoint mismatches, orphaned endpoints |
+| **Stubs** | TODO/FIXME comments, empty function bodies, mock data in production |
+| **State** | Unused useState/useReducer, orphaned context providers |
+
+## Analizadores de modo profundo (2 adicionales)
+
+| Analyzer | Finds |
+|----------|-------|
+| **Imports** | Dead exports, unused dependencies, orphaned modules |
+| **Conditional** | Dead feature flags, unreachable code, commented-out features |
+
+## Escala de gravedad
+
+| Level | Definition | Example |
+|-------|-----------|---------|
+| **BROKEN** | Visibly broken in production - user encounters crash or non-functional element | Empty onClick handler, API call to non-existent endpoint |
+| **INCOMPLETE** | Feature exists but silently does nothing or loses data | Form submits but handler is noop, state set but never read |
+| **PLACEHOLDER** | Development stub shipped to production | `TODO: implement`, `throw new Error('Not implemented')`, hardcoded mock data |
+| **DORMANT** | Unused code that should be alive or removed | Dead export, hardcoded false feature flag, commented-out feature |
+
+## Niveles de confianza
+
+| Level | Definition | Priority |
+|-------|-----------|----------|
+| **CONFIRMED** | 2+ analyzers agree on finding | High |
+| **LIKELY** | 1 analyzer with strong evidence | Medium |
+| **INVESTIGATE** | 1 analyzer with weak evidence | Low |
+
+## Ejemplos
+
+```bash
+# Quick audit of app directory (core 5 analyzers)
+/agileflow:code:completeness app/
+
+# Deep audit with all 7 analyzers
+/agileflow:code:completeness . DEPTH=deep
+
+# Focus on specific incomplete features
+/agileflow:code:completeness src/ FOCUS=handlers,routes
+
+# Check for stubs and unused state only
+/agileflow:code:completeness components/ FOCUS=stubs,state
+
+# Comprehensive full audit with deep model
+/agileflow:code:completeness . DEPTH=deep FOCUS=all MODEL=sonnet
+```
+
+## Salida de ejemplo
+
+```
+🔍 Completeness Audit: app/
+══════════════════════════════════════════════════════════════
+
+Deploying 5 completeness analyzers (quick mode)...
+✓ Handlers Analyzer
+✓ Routes Analyzer
+✓ API Analyzer
+✓ Stubs Analyzer
+✓ State Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: Full-stack Web Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 COMPLETENESS SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Severity    | Count | User Impact            |
+|-------------|-------|------------------------|
+| Broken      | 2     | user-blocking          |
+| Incomplete  | 3     | user-confusing         |
+| Placeholder | 1     | data-silent            |
+| Dormant     | 4     | developer-only         |
+
+Total: 10 findings (3 intentional exclusions)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 SHIP BLOCKERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Empty onClick handler on "Delete Account" button [CONFIRMED]
+   Location: components/Settings.tsx:45
+   Severity: BROKEN | Impact: user-blocking
+   Remediation: Implement delete API call or hide button
+
+2. fetch('/api/payments') but route doesn't exist [CONFIRMED]
+   Location: pages/checkout.tsx:28
+   Severity: BROKEN | Impact: user-blocking
+   Remediation: Create API route or disable checkout
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX BEFORE RELEASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. Form onSubmit only sets loading state, never calls API [LIKELY]
+   Location: components/ContactForm.tsx:22
+   Severity: INCOMPLETE | Impact: user-confusing
+
+4. useState for searchResults setter called but value never rendered [LIKELY]
+   Location: pages/search.tsx:8
+   Severity: INCOMPLETE | Impact: data-silent
+
+[Full report saved to docs/08-project/completeness-audits/]
+```
+
+## Comparación rápida de profundidad
+
+| Aspect | quick | deep | ultradeep |
+|--------|-------|------|-----------|
+| **Analyzers** | 5 (core) | 7 (all) | 7 (all, parallel tmux) |
+| **Execution** | Sequential | Sequential | Parallel sessions |
+| **Severity Focus** | BROKEN/INCOMPLETE | All 4 levels | All 4 levels |
+| **Time** | \<5min | 5-10min | 5-10min (parallel) |
+| **Cost** | Low | Medium | Medium (parallelized) |
+
+## Para qué NO usar esto
+
+Este comando se centra en **incomplete/missing/stub code**. Utilice otros comandos para:
+
+- **Security issues** - Usar `/code:security` para vulnerabilidades, XSS, inyección, omisión de autenticación
+- **Logic bugs** - Usar `/code:logic` para condiciones de carrera, errores de tipo, casos extremos, flujo de control
+- **Performance** - Usar `/code:performance` para consultas lentas, pérdidas de memoria, tamaño del paquete
+- **Test gaps** - Usar `/code:test` para pruebas faltantes, afirmaciones débiles, patrones de prueba
+- **Compliance** - Usar `/code:legal` para GDPR, licencias, requisitos regulatorios
+
+## Modo ultraprofundo
+
+Para auditorías de alto riesgo, utilice `DEPTH=ultradeep` para generar cada analizador en una sesión tmux de Claude Code separada:
+
+```bash
+# Show cost estimate before launching
+/agileflow:code:completeness . DEPTH=ultradeep --dry-run
+
+# Launch parallel sessions
+/agileflow:code:completeness . DEPTH=ultradeep
+```
+
+El comando:
+1. Mostrar el costo estimado y el uso de tokens
+2. Confirmar contigo antes de las sesiones de generación.
+3. Monitorear el progreso a través de archivos centinela en `docs/09-agents/ultradeep/`
+4. Recopile todos los hallazgos y ejecute el consenso.
+5. Generar informe final
+
+Si tmux no está disponible, automáticamente vuelve a `DEPTH=deep`.
+
+## Comandos relacionados
+
+| Command | Purpose |
+|---------|---------|
+| [`/code:logic`](/docs/commands/code-logic) | Find logic bugs and edge cases |
+| [`/code:security`](/docs/commands/code-security) | Detect security vulnerabilities |
+| [`/code:performance`](/docs/commands/code-performance) | Find performance bottlenecks |
+| [`/code:test`](/docs/commands/code-test) | Analyze test coverage and quality |
+| [`/code:legal`](/docs/commands/code-legal) | Check compliance and licensing |
+| [`/review`](/docs/commands/review) | AI-powered code review |

@@ -1,0 +1,207 @@
+---
+title: محلل المعالج الميت
+description: محلل معالج الأحداث الميتة/الفارغة لمعالجات onClick/onSubmit/onChange الفارغة، ومعالجات وحدة التحكم فقط، والمعالجات الجزئية، وعمليات رد الاتصال noop
+---
+
+# محلل المعالج الميت
+
+محلل الاكتمال: وكيل Dead Handler هو محلل متخصص يركز على **empty and stub event handlers**. يعثر على معالجات onClick/onSubmit/onChange التي لا تفعل شيئًا، والمعالجات التي تسجل الدخول إلى وحدة التحكم فقط، والمعالجات الجزئية التي تفتقد التنفيذ، وعمليات رد الاتصال noop التي تم تركها أثناء التطوير.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى العثور على معالجات onClick/onSubmit/onChange الفارغة
+- تريد تحديد المعالجات التي تقوم بتسجيل الدخول إلى وحدة التحكم فقط
+- أنت تبحث عن معالجات كعب الروتين مع تعليقات TODO/FIXME
+- تحتاج إلى العثور على عمليات الاسترجاعات noop التي تم تركها أثناء التطوير
+- أنت تقوم بتنظيف تطبيقات الميزات غير المكتملة
+
+## كيف يعمل
+
+1. **Scans event handlers** - البحث عن جميع عمليات الاسترجاعات عند النقر، وonSubmit، وonChange، وonError، وما إلى ذلك
+2. **Checks body content** - يحدد المعالجات ذات الأجسام الفارغة أو وحدة التحكم فقط أو كعب الروتين
+3. **Detects patterns** - يبحث عن () => {}، () => console.log()، noop()، إلخ.
+4. **Finds TODOs** - يحدد المعالجات التي تحتوي على تعليقات TODO/FIXME غير المنفذة
+5. **Checks call chains** - التحقق من أن المعالجات الجزئية تفعل شيئًا ما بالفعل
+6. **Reports findings** - يسرد المعالجات الميتة مع السياق والإصلاحات المقترحة
+
+## مجالات التركيز
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: المعالجات التي تبدأ ولكن لا تكمل العمل
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+بالنظر إلى مكونات React ذات المعالجات الميتة:
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+سيحدد محلل Dead Handler ما يلي:
+
+### العثور على: معالج زر الحذف الفارغ
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (الميزة مكسورة)
+**Confidence**: عالي
+
+**Issue**: يحتوي زر الحذف على معالج فارغ `() => {}`. النقر على الزر لا يفعل شيئًا. يتوقع المستخدم حذف العنصر.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: لا يمكن للمستخدمين حذف العناصر. يبدو أن الميزة تعمل ولكن ليس لها أي تأثير.
+
+**Suggested Fix**: تنفيذ معالج الحذف
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### البحث: معالج إدخال البحث لوحدة التحكم فقط
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (التنفيذ الجزئي)
+**Confidence**: عالي
+
+**Issue**: إدخال البحث يسجل فقط إلى وحدة التحكم. لا يقوم البحث فعليًا بتصفية النتائج.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: يبدو أن البحث يعمل (تعرض السجلات النشاط) ولكن المستخدمين لا يرون النتائج التي تمت تصفيتها.
+
+**Suggested Fix**: قم بتوصيل المعالج بمنطق الحالة والتصفية
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### العثور على: كعب TODO في نموذج الدفع
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (حرج - الدفع لا يعمل)
+**Confidence**: عالي
+
+**Issue**: معالج الإرسال لديه تعليق TODO ولا يوجد تنفيذ. يتم فرض رسوم على المستخدمين الذين ينقرون على "الدفع الآن"، ولكن لا تتم معالجة الدفع مطلقًا.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: ميزة الدفع بواسطة المستخدم غير فعالة. قد يتم فقدان المال.
+
+**Suggested Fix**: تنفيذ معالجة الدفع
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### العثور على: معالج التحديث الجزئي دون استمرار
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (نتيجة خاطئة)
+**Confidence**: عالي
+
+**Issue**: يعرض زر التحديث رسالة النجاح ولكنه لا يقوم بتحديث العنصر فعليًا. التغييرات موجودة فقط في واجهة المستخدم، وليست مستمرة.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: يعتقد المستخدمون أن العنصر قد تم تحديثه، ولكن يتم فقدان التغييرات عند تحديث الصفحة.
+
+**Suggested Fix**: اتصل بـ API قبل إظهار النجاح
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## أفضل الممارسات
+
+- يجب أن يكون لكل معالج حدث تنفيذ حقيقي (بدون معالجات فارغة)
+- تجنب معالجات وحدة التحكم فقط في كود الإنتاج
+- أكمل معالجات TODO/FIXME قبل الالتزام
+- استخدم TypeScript للقبض على المعالجات غير المنفذة
+- اختبار جميع نقرات الأزرار وعمليات إرسال النماذج
+- توثيق منطق المعالج المعقد مع التعليقات
+
+## تنسيق الإخراج
+
+لكل نتيجة، يوفر الوكيل ما يلي:
+- **Location**: مسار الملف ورقم السطر
+- **Type**: معالج فارغ أو وحدة تحكم فقط أو جزئي أو كعب روتين
+- **Severity**: P0 (ميزة معطلة)، P1 (ميزة غير مكتملة)، أو P2 (مشكلة بسيطة)
+- **Confidence**: عالية، متوسطة، أو منخفضة
+- **Code**: رمز المعالج الدقيق
+- **Issue**: ما لا يعمل وتأثير المستخدم
+- **Suggested Fix**: كيفية التنفيذ بشكل صحيح
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["حالة محلل الاكتمال".](/agents/completeness-analyzer-state) - محلل الحالة غير المستخدمة
+- ["محلل الاكتمال المشروط".](/agents/completeness-analyzer-conditional) - محلل فرع الميزة الميتة
+- [""مسارات محلل الاكتمال"."](/agents/completeness-analyzer-routes) - محلل الطريق الميت
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

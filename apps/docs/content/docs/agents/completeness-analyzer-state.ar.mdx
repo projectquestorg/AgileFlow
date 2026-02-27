@@ -1,0 +1,83 @@
+---
+title: محلل الحالة غير المستخدمة
+description: لم تتم قراءة محلل إعلان الحالة غير المستخدم لـ useState مطلقًا، ولم يتم إرسال useReducer مطلقًا، وموفري السياق المعزولين، وشرائح المتجر الميتة
+---
+
+# محلل الحالة غير المستخدمة
+
+محلل الاكتمال: وكيل الدولة غير المستخدم هو محلل متخصص يركز على **dead state declarations and unused context**. يعثر على خطافات React (useState، useReducer) التي تم الإعلان عنها ولكن لم يتم قراءتها مطلقًا، وموفري السياق المعزولين الذين لا يستهلكهم أي مكون، وشرائح تخزين Redux/Zustand الميتة.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- أنت بحاجة إلى العثور على إعلانات useState التي لم يتم استخدامها مطلقًا في العرض
+- تريد تحديد خطافات useReducer التي لم يتم إرسالها مطلقًا
+- أنت تبحث عن موفري السياق المعزولين
+- تحتاج إلى العثور على شرائح متجر Redux أو Zustand الميتة
+- أنت تقوم بتنظيف رمز إدارة الحالة غير المستخدم
+
+## كيف يعمل
+
+1. **Scans state declarations** - يجد جميع مكالمات useState وuseReducer وuseContext
+2. **Tracks reads** - الخرائط التي تتم فيها قراءة قيم الحالة فعليًا في العرض
+3. **Tracks writes** - خرائط يتم فيها استدعاء setState/dispatch
+4. **Identifies unused** - يجد الحالة المعلنة ولكن لم يتم قراءتها أو كتابتها مطلقًا
+5. **Checks contexts** - التحقق من استهلاك موفري السياق فعليًا
+6. **Analyzes stores** - التحقق من شرائح Redux/Zustand للاستخدام الفعلي للمحدد
+7. **Reports findings** - قوائم الحالة الميتة مع اقتراحات السياق والإزالة
+
+## مجالات التركيز
+
+- **useState never read**: `const [value, setValue] = useState()` أين `value` لا يتم الرجوع إليها أبدًا
+- **useReducer never dispatched**: خطافات مخفض مع عدم وجود مكالمات إرسال في أي مكان
+- **Orphaned context providers**: تم إنشاء السياقات ولكن لا توجد مكونات تستهلكها
+- **Dead store slices**: شرائح Redux/Zustand بدون محددات أو إرساليات
+- **Unused setters**: أعلن واضعو الدولة ولكن لم يتم الاتصال بهم مطلقًا
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+رمز React المحدد بحالة غير مستخدمة:
+```jsx
+export function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);    // Never read
+  const [theme, setTheme] = useState('light');       // Never used
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return (
+    <div>
+      <h1>{user?.name}</h1>
+      {/* loading and theme are never referenced */}
+    </div>
+  );
+}
+```
+
+سيحدد محلل الحالة غير المستخدمة ما يلي:
+
+- **INCOMPLETE**: `loading` تم الإعلان عن الحالة ولكن لم تتم قراءتها مطلقًا في العرض أو الشروط
+- **DORMANT**: `theme` تم الإعلان عن الحالة وتهيئتها ولكن لم تتم قراءتها أو تحديثها مطلقًا
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find unused React state and context",
+  prompt: "Scan src/components/ for unused useState, useReducer, useContext, and orphaned context providers. Check src/store/ for unused Redux/Zustand slices.",
+  subagent_type: "agileflow-completeness-analyzer-state"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["محلل الاكتمال المشروط".](/agents/completeness-analyzer-conditional) - محلل فرع الميزة الميتة
+- ["واردات محلل الاكتمال".](/agents/completeness-analyzer-imports) - محلل التصدير الميت
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

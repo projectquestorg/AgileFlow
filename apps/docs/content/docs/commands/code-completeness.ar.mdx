@@ -1,0 +1,197 @@
+---
+title: / الكود: الاكتمال
+description: تحليل متعدد الوكلاء للميزات المنسية، والمعالجات الميتة، ورمز كعب الروتين، والتطبيقات غير المكتملة
+---
+
+# / الكود: الاكتمال
+
+قم بنشر العديد من أدوات تحليل الاكتمال المتخصصة بالتوازي للعثور على الميزات المنسية، والمعالجات الميتة، والتعليمات البرمجية الأساسية، والتطبيقات غير المكتملة، ثم قم بتجميع النتائج من خلال التصويت بالإجماع في تقرير تدقيق الاكتمال ذي الأولوية.
+
+## بداية سريعة
+
+```bash
+/agileflow:code:completeness app/
+/agileflow:code:completeness . DEPTH=deep
+/agileflow:code:completeness src/ FOCUS=handlers,routes
+```
+
+## الحجج
+
+| Argument | Values | Default | Description |
+|----------|--------|---------|-------------|
+| `[file\|directory]` | file or directory | `.` | What to analyze |
+| `DEPTH` | quick, deep, ultradeep | quick | Analysis depth: quick = core 5 analyzers, deep = all 7 analyzers, ultradeep = separate tmux sessions |
+| `FOCUS` | handlers, routes, api, stubs, state, imports, conditional, all | all | Which analyzers to deploy (comma-separated) |
+| `MODEL` | haiku, sonnet, opus | haiku | Model for analyzer subagents |
+
+## كيف يعمل
+
+1. **Parse arguments** - تحديد الهدف والعمق ومجالات التركيز
+2. **Deploy analyzers in parallel** - 5-7 عوامل متخصصة حسب العمق
+3. **Collect all findings** - انتظر حتى يكتمل جميع المحللين
+4. **Run consensus coordinator** - التحقق من صحة النتائج وتحديد الأولويات حسب الخطورة
+5. **Generate Completeness Audit Report** - حفظ توصيات قابلة للتنفيذ ل `docs/08-project/completeness-audits/`
+
+## المحللون الأساسيون (الوضع السريع - 5)
+
+| Analyzer | Finds |
+|----------|-------|
+| **Handlers** | Dead/empty event handlers, console-only handlers |
+| **Routes** | Dead navigation, broken links, missing pages |
+| **API** | Frontend-backend endpoint mismatches, orphaned endpoints |
+| **Stubs** | TODO/FIXME comments, empty function bodies, mock data in production |
+| **State** | Unused useState/useReducer, orphaned context providers |
+
+## محللات الوضع العميق (2 إضافيان)
+
+| Analyzer | Finds |
+|----------|-------|
+| **Imports** | Dead exports, unused dependencies, orphaned modules |
+| **Conditional** | Dead feature flags, unreachable code, commented-out features |
+
+## مقياس الخطورة
+
+| Level | Definition | Example |
+|-------|-----------|---------|
+| **BROKEN** | Visibly broken in production - user encounters crash or non-functional element | Empty onClick handler, API call to non-existent endpoint |
+| **INCOMPLETE** | Feature exists but silently does nothing or loses data | Form submits but handler is noop, state set but never read |
+| **PLACEHOLDER** | Development stub shipped to production | `TODO: implement`, `throw new Error('Not implemented')`, hardcoded mock data |
+| **DORMANT** | Unused code that should be alive or removed | Dead export, hardcoded false feature flag, commented-out feature |
+
+## مستويات الثقة
+
+| Level | Definition | Priority |
+|-------|-----------|----------|
+| **CONFIRMED** | 2+ analyzers agree on finding | High |
+| **LIKELY** | 1 analyzer with strong evidence | Medium |
+| **INVESTIGATE** | 1 analyzer with weak evidence | Low |
+
+## أمثلة
+
+```bash
+# Quick audit of app directory (core 5 analyzers)
+/agileflow:code:completeness app/
+
+# Deep audit with all 7 analyzers
+/agileflow:code:completeness . DEPTH=deep
+
+# Focus on specific incomplete features
+/agileflow:code:completeness src/ FOCUS=handlers,routes
+
+# Check for stubs and unused state only
+/agileflow:code:completeness components/ FOCUS=stubs,state
+
+# Comprehensive full audit with deep model
+/agileflow:code:completeness . DEPTH=deep FOCUS=all MODEL=sonnet
+```
+
+## إخراج المثال
+
+```
+🔍 Completeness Audit: app/
+══════════════════════════════════════════════════════════════
+
+Deploying 5 completeness analyzers (quick mode)...
+✓ Handlers Analyzer
+✓ Routes Analyzer
+✓ API Analyzer
+✓ Stubs Analyzer
+✓ State Analyzer
+
+Running consensus...
+✓ Consensus complete
+✓ Project type detected: Full-stack Web Application
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 COMPLETENESS SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+| Severity    | Count | User Impact            |
+|-------------|-------|------------------------|
+| Broken      | 2     | user-blocking          |
+| Incomplete  | 3     | user-confusing         |
+| Placeholder | 1     | data-silent            |
+| Dormant     | 4     | developer-only         |
+
+Total: 10 findings (3 intentional exclusions)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 SHIP BLOCKERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Empty onClick handler on "Delete Account" button [CONFIRMED]
+   Location: components/Settings.tsx:45
+   Severity: BROKEN | Impact: user-blocking
+   Remediation: Implement delete API call or hide button
+
+2. fetch('/api/payments') but route doesn't exist [CONFIRMED]
+   Location: pages/checkout.tsx:28
+   Severity: BROKEN | Impact: user-blocking
+   Remediation: Create API route or disable checkout
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  FIX BEFORE RELEASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3. Form onSubmit only sets loading state, never calls API [LIKELY]
+   Location: components/ContactForm.tsx:22
+   Severity: INCOMPLETE | Impact: user-confusing
+
+4. useState for searchResults setter called but value never rendered [LIKELY]
+   Location: pages/search.tsx:8
+   Severity: INCOMPLETE | Impact: data-silent
+
+[Full report saved to docs/08-project/completeness-audits/]
+```
+
+## مقارنة العمق السريع
+
+| Aspect | quick | deep | ultradeep |
+|--------|-------|------|-----------|
+| **Analyzers** | 5 (core) | 7 (all) | 7 (all, parallel tmux) |
+| **Execution** | Sequential | Sequential | Parallel sessions |
+| **Severity Focus** | BROKEN/INCOMPLETE | All 4 levels | All 4 levels |
+| **Time** | \<5min | 5-10min | 5-10min (parallel) |
+| **Cost** | Low | Medium | Medium (parallelized) |
+
+## ما لا يجب استخدام هذا من أجله
+
+يركز هذا الأمر على **incomplete/missing/stub code**. استخدم أوامر أخرى من أجل:
+
+- **Security issues** - يستخدم `/code:security` لنقاط الضعف، XSS، الحقن، تجاوز المصادقة
+- **Logic bugs** - يستخدم `/code:logic` لظروف السباق، اكتب الأخطاء، وحالات الحافة، وتدفق التحكم
+- **Performance** - يستخدم `/code:performance` للاستعلامات البطيئة، وتسرب الذاكرة، وحجم الحزمة
+- **Test gaps** - يستخدم `/code:test` للاختبارات المفقودة، والتأكيدات الضعيفة، وأنماط الاختبار
+- **Compliance** - يستخدم `/code:legal` للائحة العامة لحماية البيانات والترخيص والمتطلبات التنظيمية
+
+## وضع فائق العمق
+
+بالنسبة لعمليات التدقيق عالية المخاطر، استخدم `DEPTH=ultradeep` لإنتاج كل محلل في جلسة Claude Code tmux منفصلة:
+
+```bash
+# Show cost estimate before launching
+/agileflow:code:completeness . DEPTH=ultradeep --dry-run
+
+# Launch parallel sessions
+/agileflow:code:completeness . DEPTH=ultradeep
+```
+
+الأمر سوف:
+1. عرض التكلفة المقدرة واستخدام الرمز المميز
+2. أكد معك قبل جلسات التفريخ
+3. مراقبة التقدم عبر ملفات الحارس في `docs/09-agents/ultradeep/`
+4. جمع كافة النتائج وتشغيل الإجماع
+5. إنشاء التقرير النهائي
+
+إذا لم يكن tmux متاحًا، فسيتم الرجوع إليه تلقائيًا `DEPTH=deep`.
+
+## الأوامر ذات الصلة
+
+| Command | Purpose |
+|---------|---------|
+| [`/code:logic`](/docs/commands/code-logic) | Find logic bugs and edge cases |
+| [`/code:security`](/docs/commands/code-security) | Detect security vulnerabilities |
+| [`/code:performance`](/docs/commands/code-performance) | Find performance bottlenecks |
+| [`/code:test`](/docs/commands/code-test) | Analyze test coverage and quality |
+| [`/code:legal`](/docs/commands/code-legal) | Check compliance and licensing |
+| [`/review`](/docs/commands/review) | AI-powered code review |

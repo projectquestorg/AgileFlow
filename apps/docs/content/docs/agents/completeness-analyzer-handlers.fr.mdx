@@ -1,0 +1,207 @@
+---
+title: Analyseur de gestionnaire mort
+description: Analyseur de gestionnaire d'événements mort/vide pour onClick/onSubmit/onChange vide, gestionnaires de console uniquement, gestionnaires partiels et rappels noop
+---
+
+# Analyseur de gestionnaire mort
+
+L'agent Completeness Analyzer: Dead Handler est un analyseur spécialisé axé sur **empty and stub event handlers**. Il trouve les gestionnaires onClick/onSubmit/onChange qui ne font rien, les gestionnaires qui se connectent uniquement à la console, les gestionnaires partiels manquant d'implémentation et les rappels noop laissés pendant le développement.
+
+## Quand utiliser
+
+Utilisez cet agent lorsque :
+- Vous devez trouver des gestionnaires onClick/onSubmit/onChange vides
+- Vous souhaitez identifier les gestionnaires qui se connectent uniquement à la console
+- Vous recherchez des gestionnaires de stub avec des commentaires TODO/FIXME
+- Vous devez trouver les rappels noop laissés pendant le développement
+- Vous nettoyez les implémentations de fonctionnalités incomplètes
+
+## Comment ça marche
+
+1. **Scans event handlers** - Trouve tous les rappels onClick, onSubmit, onChange, onError, etc.
+2. **Checks body content** - Identifie les gestionnaires avec des corps vides, console uniquement ou stub
+3. **Detects patterns** - Recherche () => {}, () => console.log(), noop(), etc.
+4. **Finds TODOs** - Identifie les gestionnaires avec des commentaires TODO/FIXME non implémentés
+5. **Checks call chains** - Vérifie que les gestionnaires partiels font réellement quelque chose
+6. **Reports findings** - Répertorie les gestionnaires morts avec le contexte et les correctifs suggérés
+
+## Domaines d'intervention
+
+- **Empty handlers**: `onClick={() => {}}`, `onClick={noop}`
+- **Console-only handlers**: `onChange={e => console.log(e)}`
+- **Partial handlers**: Gestionnaires qui démarrent mais ne terminent pas le travail
+- **Noop callbacks**: `() => null`, `() => undefined`, `() => {}`
+- **TODO stub handlers**: `onClick={() => { // TODO: implement }}`
+
+## Outils disponibles
+
+Cet agent a accès à : Read, Glob, Grep
+
+## Exemple d'analyse
+
+Étant donné les composants React avec des gestionnaires morts :
+```jsx
+// Empty handler
+<button onClick={() => {}}>Delete User</button>
+
+// Console-only handler
+<input onChange={e => console.log(e.target.value)} placeholder="Search..." />
+
+// TODO stub handler
+<form onSubmit={() => { // TODO: implement payment processing }}>
+  <button>Pay Now</button>
+</form>
+
+// Partial handler
+<button onClick={async () => {
+  // Missing implementation - only shows success message
+  showSuccessMessage("Item updated!");
+  // But doesn't actually update anything
+}}>
+  Update Item
+</button>
+```
+
+L’analyseur Dead Handler identifierait :
+
+### Résultat : gestionnaire de bouton de suppression vide
+
+**Location**: `src/components/UserList.tsx:145`
+**Severity**: P1 (fonctionnalité cassée)
+**Confidence**: HAUT
+
+**Issue**: Le bouton Supprimer a un gestionnaire vide `() => {}`. Le clic sur le bouton ne fait rien. L'utilisateur s'attend à ce que l'élément soit supprimé.
+
+**Code**:
+```jsx
+<button onClick={() => {}}>Delete User</button>
+```
+
+**Impact**: Les utilisateurs ne peuvent pas supprimer des éléments. La fonctionnalité semble fonctionner mais n'a aucun effet.
+
+**Suggested Fix**: Implémentez le gestionnaire de suppression
+
+```jsx
+<button onClick={() => deleteUser(user.id)}>Delete User</button>
+```
+
+### Résultat : gestionnaire d'entrée de recherche sur console uniquement
+
+**Location**: `src/components/SearchBar.tsx:32`
+**Severity**: P2 (implémentation partielle)
+**Confidence**: HAUT
+
+**Issue**: Rechercher uniquement les journaux d'entrée dans la console. La recherche ne filtre pas réellement les résultats.
+
+**Code**:
+```jsx
+<input
+  onChange={e => console.log(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+**Impact**: La recherche semble fonctionner (les journaux affichent l'activité), mais les utilisateurs ne voient pas les résultats filtrés.
+
+**Suggested Fix**: Connecter le gestionnaire à l'état et à la logique de filtrage
+
+```jsx
+<input
+  onChange={e => setSearchTerm(e.target.value)}
+  placeholder="Search..."
+/>
+```
+
+### Résultat : talon TODO dans le formulaire de paiement
+
+**Location**: `src/components/PaymentForm.tsx:78`
+**Severity**: P0 (critique - le paiement ne fonctionne pas)
+**Confidence**: HAUT
+
+**Issue**: Le gestionnaire de soumission a un commentaire TODO et aucune implémentation. Les utilisateurs qui cliquent sur « Payer maintenant » sont facturés mais le paiement n'est jamais traité.
+
+**Code**:
+```jsx
+<form onSubmit={() => {
+  // TODO: implement payment processing
+}}>
+```
+
+**Impact**: La fonctionnalité de paiement de l'utilisateur n'est pas fonctionnelle. L'argent pourrait être perdu.
+
+**Suggested Fix**: Implémenter le traitement des paiements
+
+```jsx
+<form onSubmit={async (e) => {
+  e.preventDefault();
+  const result = await processPayment(formData);
+  // Handle success/error
+}}>
+```
+
+### Résultat : gestionnaire de mise à jour partielle sans persistance
+
+**Location**: `src/components/EditItem.tsx:92`
+**Severity**: P1 (mauvais résultat)
+**Confidence**: HAUT
+
+**Issue**: Le bouton Mettre à jour affiche un message de réussite mais ne met pas réellement à jour l'élément. Les modifications concernent uniquement l'interface utilisateur et ne sont pas conservées.
+
+**Code**:
+```jsx
+<button onClick={async () => {
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+**Impact**: les utilisateurs pensent que l'élément est mis à jour, mais les modifications sont perdues lors de l'actualisation de la page.
+
+**Suggested Fix**: Appelez l'API avant d'afficher le succès
+
+```jsx
+<button onClick={async () => {
+  await updateItem(itemId, formData);
+  showSuccessMessage("Item updated!");
+}}>
+  Update Item
+</button>
+```
+
+## Meilleures pratiques
+
+- Chaque gestionnaire d'événements doit avoir une véritable implémentation (pas de gestionnaires vides)
+- Évitez les gestionnaires de console uniquement dans le code de production
+- Complétez les gestionnaires TODO/FIXME avant de vous engager
+- Utilisez TypeScript pour détecter les gestionnaires non implémentés
+- Testez tous les clics sur les boutons et les soumissions de formulaires
+- Documenter la logique du gestionnaire complexe avec des commentaires
+
+## Format de sortie
+
+Pour chaque constat, l'agent fournit :
+- **Location**: Chemin du fichier et numéro de ligne
+- **Type**: Vide, console uniquement, partiel ou gestionnaire de stub
+- **Severity**: P0 (fonctionnalité cassée), P1 (fonctionnalité incomplète) ou P2 (problème mineur)
+- **Confidence**: ÉLEVÉ, MOYEN ou FAIBLE
+- **Code**: Code exact du gestionnaire
+- **Issue**: Ce qui ne fonctionne pas et impact sur l'utilisateur
+- **Suggested Fix**: Comment mettre en œuvre correctement
+
+## Exemple d'utilisation
+
+```text
+Task(
+  description: "Find empty event handlers in checkout flow",
+  prompt: "Scan src/components/ for event handlers with empty bodies, console-only implementations, or TODO comments. Focus on onClick, onSubmit, onChange handlers.",
+  subagent_type: "agileflow-completeness-analyzer-handlers"
+)
+```
+
+## Agents associés
+
+- [`état d’analyse d’exhaustivité`](/agents/completeness-analyzer-state) - Analyseur d'état inutilisé
+- [`analyseur d'exhaustivité-conditionnel`](/agents/completeness-analyzer-conditional) - Analyseur de branches de fonctionnalités mortes
+- [`itinéraires-analyseur-complétude`](/agents/completeness-analyzer-routes) - Analyseur d'itinéraire mort
+- [« exhaustivité-consensus »](/agents/completeness-consensus) - Coordinateur du consensus d'exhaustivité

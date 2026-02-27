@@ -1,0 +1,201 @@
+---
+title: محلل التصدير الميت
+description: التصدير الميت ومحلل الوحدة النمطية للوظائف المصدرة لم يتم استيرادها مطلقًا، وملفات المصدر المعزولة، والتبعيات غير المستخدمة، وإعادة تصدير البراميل الميتة
+---
+
+# محلل التصدير الميت
+
+محلل الاكتمال: وكيل Dead Export هو محلل متخصص يركز على **unused exports and module bloat**. يعثر على الوظائف المصدرة التي لا يستوردها أي كود آخر، وملفات المصدر المعزولة بدون أي متصلين، والتبعيات غير المستخدمة في package.json، وإعادة تصدير البراميل الميتة في ملفات الفهرس.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى تحديد الوظائف المصدرة التي لم يتم استيرادها مطلقًا إلى أي مكان
+- تريد البحث عن ملفات المصدر المعزولة بدون أي متصلين
+- أنت تقوم بتنظيف التبعيات غير المستخدمة من package.json
+- أنت بحاجة إلى تحديد إعادة تصدير البراميل الميتة
+- أنت تقوم بتقليل مساحة سطح الوحدة والديون الفنية
+
+## كيف يعمل
+
+1. **Scans exports** - يجد كل شيء `export` البيانات عبر قاعدة التعليمات البرمجية
+2. **Tracks imports** - الخرائط التي يتم استيراد كل تصدير منها
+3. **Identifies unused** - يجد الصادرات مع الواردات صفر
+4. **Finds orphaned files** - الملفات بدون مستوردين في أي مكان
+5. **Analyzes dependencies** - التحقق من استخدام حزمNode_modules بالفعل
+6. **Reports findings** - يسرد التعليمات البرمجية الميتة مع اقتراحات الإزالة
+
+## مجالات التركيز
+
+- **Exported functions never imported**: `export function unused() {}` مع عدم وجود المتصلين
+- **Orphaned source files**: الملفات الموجودة ولكن لا يتم استيراد التعليمات البرمجية منها
+- **Unused dependencies**: لم تتم الإشارة إلى الحزم الموجودة في package.json مطلقًا في التعليمات البرمجية
+- **Dead barrel re-exports**: فهرسة ملفات إعادة تصدير الأشياء غير المستخدمة
+- **Legacy exports**: تم الاحتفاظ بالوظائف للتوافق مع الإصدارات السابقة ولكنها غير مستخدمة
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+نظرا لهيكل الوحدة النمطية:
+```javascript
+// src/lib/utils.ts
+export function formatDate(d) { /* ... */ }       // Used
+export function deprecatedHelper() { /* ... */ }  // NOT USED
+export function oldValidation() { /* ... */ }     // NOT USED
+
+// src/lib/index.ts (barrel export)
+export * from './utils.ts';  // Re-exports everything, including unused
+
+// src/components/unused-component.tsx
+// This file exists but nothing imports it
+
+// package.json
+{
+  "dependencies": {
+    "lodash": "^4.17.0",     // NOT USED
+    "axios": "^1.0.0"        // Used
+  }
+}
+```
+
+سيحدد محلل التصدير الميت:
+
+### البحث: لم يتم استيراد الوظيفة المصدرة مطلقًا
+
+**Location**: `src/lib/utils.ts:23`
+**Severity**: P2 (تصدير ميت)
+**Confidence**: عالي
+
+**Issue**: وظيفة `deprecatedHelper` يتم تصديره ولكن لا يتم استيراده أبدًا في أي مكان في قاعدة التعليمات البرمجية. إنه رمز ميت يشغل مساحة.
+
+**Code**:
+```javascript
+export function deprecatedHelper() {
+  // Not called from anywhere
+  return 'This is never used';
+}
+```
+
+**Search**: بحثت في قاعدة التعليمات البرمجية بأكملها عن `deprecatedHelper` - 0 مباريات
+**Suggested Fix**: احذف الوظيفة أو انقلها إلى ملف مهمل في حالة الاحتفاظ بالتوافق مع الإصدارات السابقة
+
+```javascript
+// Remove this line:
+export function deprecatedHelper() { /* ... */ }
+```
+
+### البحث: ملف المصدر المعزول
+
+**Location**: `src/components/unused-component.tsx`
+**Severity**: P2 (الرمز الميت)
+**Confidence**: عالي
+
+**Issue**: الملف موجود ولكن لا يتم استيراد أي تعليمات برمجية منه. المكون بأكمله يتيم.
+
+**File Stats**:
+- تاريخ الإنشاء: منذ 3 أشهر
+- آخر تعديل: منذ شهرين
+- الواردات: 0
+- الصادرات**: لم يتم استخدام المكون مطلقًا في أي مكان
+
+**Suggested Fix**: احذف الملف أو تحقق مما إذا كان مخصصًا للاستخدام
+
+```javascript
+// Delete src/components/unused-component.tsx
+```
+
+### البحث: التبعية غير المستخدمة في package.json
+
+**Location**: `package.json:15`
+**Severity**: P2 (سخام)
+**Confidence**: واسطة
+
+**Issue**: `lodash` موجود في التبعيات ولكن لم يتم استيراده مطلقًا في التعليمات البرمجية. يزيد من حجم الحزمة وعدد التبعيات.
+
+**Search Results**:
+- جريب ل `import.*lodash` - 0 مباريات
+- جريب ل `require.*lodash` - 0 مباريات
+- تأثير الحزمة: +30 كيلو بايت (غير مضغوط)
+
+**Suggested Fix**: إزالة التبعية غير المستخدمة
+
+```bash
+npm uninstall lodash
+```
+
+وقم بإزالته من package.json:
+```json
+// Before
+"dependencies": {
+  "lodash": "^4.17.0",
+  "axios": "^1.0.0"
+}
+
+// After
+"dependencies": {
+  "axios": "^1.0.0"
+}
+```
+
+### النتيجة: إعادة تصدير البراميل الميتة
+
+**Location**: `src/lib/index.ts:2`
+**Severity**: P1 (واجهة برمجة التطبيقات المضللة)
+**Confidence**: عالي
+
+**Issue**: تصدير البرميل `export * from './utils'` يعيد تصدير الوظائف غير المستخدمة، مما يجعل سطح واجهة برمجة التطبيقات العامة أكبر من اللازم.
+
+**Code**:
+```javascript
+// src/lib/index.ts
+export * from './utils';  // Re-exports 3 items, 2 are unused
+```
+
+**Suggested Fix**: الواردات الصريحة فقط
+
+```javascript
+// src/lib/index.ts
+export { formatDate } from './utils';
+// Remove unused: deprecatedHelper, oldValidation
+```
+
+## أفضل الممارسات
+
+- تدقيق الصادرات بشكل دوري (شهرياً في المشاريع الكبيرة)
+- إبقاء صادرات البراميل صغيرة ومتعمدة
+- حذف الملفات المعزولة على الفور
+- قم بإزالة التبعيات غير المستخدمة بعد كل عملية إعادة هيكلة رئيسية
+- يستخدم `npm ls` وأدوات مثل `depcheck` للعثور على الحزم غير المستخدمة
+- ضع علامة على حالات الإهمال بوضوح في حالة الاحتفاظ بالتوافق مع الإصدارات السابقة
+
+## تنسيق الإخراج
+
+لكل نتيجة، يوفر الوكيل ما يلي:
+- **Location**: مسار الملف ورقم السطر (أو package.json)
+- **Type**: تصدير غير مستخدم، أو ملف معزول، أو تبعية غير مستخدمة، أو إعادة تصدير ميتة
+- **Severity**: P0 (واجهة برمجة التطبيقات غير الصحيحة)، P1 (مضلل)، أو P2 (رمز ميت)
+- **Confidence**: عالية، متوسطة، أو منخفضة
+- **Code/Details**: التصدير الدقيق أو الملف
+- **Usage**: كم عدد الأماكن التي تستوردها (0 للرمز الميت)
+- **Impact**: زيادة حجم الحزمة، وعبء الصيانة
+- **Suggested Fix**: كيفية إزالة أو ماذا تفعل
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find unused exports and orphaned modules",
+  prompt: "Scan src/ for exported functions never imported, orphaned source files, unused node_modules packages, and dead barrel re-exports. Check package.json dependencies for unused packages.",
+  subagent_type: "agileflow-completeness-analyzer-imports"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["حالة محلل الاكتمال".](/agents/completeness-analyzer-state) - محلل الحالة غير المستخدمة
+- [""مسارات محلل الاكتمال"."](/agents/completeness-analyzer-routes) - محلل الطريق الميت
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

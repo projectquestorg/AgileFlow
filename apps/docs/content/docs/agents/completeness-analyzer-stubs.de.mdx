@@ -1,0 +1,96 @@
+---
+title: Stub-Code-Analysator
+description: Platzhaltercode-Analysator für TODO/FIXME-Kommentare, leere Funktionskörper, NotImplementedError, hartcodierte Scheindaten und „Coming Soon“-Text
+---
+
+# Stub-Code-Analysator
+
+Der Vollständigkeitsanalysator: Stub-Code-Agent ist ein spezialisierter Analysator, der sich auf Folgendes konzentriert: **placeholder and stub code in production files**. Es findet TODO/FIXME-Kommentare, leere Funktionskörper, NotImplementedError-Auslösungen, hartcodierte Scheindaten, die aus einer Datenbank oder API stammen sollten, und „Coming Soon“-Text, der auf unvollendete Funktionen hinweist.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen TODO/FIXME/HACK-Kommentare im Produktionscode finden
+- Sie möchten leere Funktionskörper identifizieren, die stillschweigend nichts tun
+- Sie suchen `throw new Error('Not implemented')` Muster
+- Sie müssen hartcodierte Scheindaten finden, die dynamisch sein sollten
+- Sie prüfen vor der Veröffentlichung den Platzhalter-UI-Text
+
+## Wie es funktioniert
+
+1. **Scans comments** - Findet TODO-, FIXME-, HACK-, XXX- und BUG-Marker
+2. **Checks functions** - Identifiziert nicht-triviale Funktionen mit leeren Körpern
+3. **Finds throws** – Findet NotImplementedError und ähnliche Auslöser
+4. **Detects mock data** – Identifiziert hartcodierte Arrays/Objekte, die dynamisch sein sollten
+5. **Checks UI text** - Findet „demnächst“, „im Aufbau“, „lorem ipsum“
+6. **Finds temp returns** – Funktionen, die fest codierte Werte als Platzhalter zurückgeben
+7. **Reports findings** – Listet Stubs mit Schweregrad und Korrekturpfaden auf
+
+## Schwerpunktbereiche
+
+- **TODO/FIXME/HACK comments**: Markierungen für unvollständige Arbeit im Produktionscode
+- **Empty function bodies**: Funktionen, die existieren, aber beim Aufruf nichts bewirken
+- **NotImplementedError throws**: Explizite „nicht implementierte“ Markierungen, die zur Laufzeit abstürzen
+- **Hardcoded mock data**: Gefälschte Datenarrays/Objekte, die aus der Datenbank oder API stammen sollten
+- **Placeholder UI text**: „In Kürze verfügbar“, „Im Aufbau“, „Lorem ipsum“ in Produktion
+- **Temporary return values**: Funktionen, die fest codierte Werte anstelle echter Logik zurückgeben
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Read, Glob, Grep
+
+## Beispielanalyse
+
+Gegebener Produktionscode mit Stubs:
+```javascript
+// TODO: implement actual validation
+function validateInput(input) {
+  return true; // Always passes
+}
+
+class PaymentService {
+  async processPayment(amount, currency) {
+    throw new Error('Not implemented');
+  }
+}
+
+const users = [
+  { id: 1, name: 'John Doe', email: 'john@example.com' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+];
+// Should come from database
+```
+
+Der Stub-Code-Analysator würde Folgendes identifizieren:
+
+- **PLACEHOLDER**: TODO-Kommentar mit immer wahrer Validierung (Sicherheitsrisiko)
+- **BROKEN**: `processPayment` löst NotImplementedError aus (stürzt zur Laufzeit ab)
+- **INCOMPLETE**: Hartcodiertes Benutzerarray sollte aus der Datenbank abgerufen werden
+
+## Leitfaden zum Schweregrad
+
+| Pattern | Severity | Rationale |
+|---------|----------|-----------|
+| Empty function body (called in production) | BROKEN | Feature silently fails |
+| NotImplementedError throw | BROKEN | Feature crashes |
+| Hardcoded mock data (user-visible) | INCOMPLETE | Users see fake data |
+| TODO/FIXME in critical path | PLACEHOLDER | Known incomplete work |
+| "Coming soon" text in UI | INCOMPLETE | Feature advertised but missing |
+| Temporary return value | PLACEHOLDER | Logic bypassed |
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Find placeholder code in production",
+  prompt: "Scan src/ for TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data, and placeholder UI text. Exclude test files and examples.",
+  subagent_type: "agileflow-completeness-analyzer-stubs"
+)
+```
+
+## Verwandte Agenten
+
+- [„Vollständigkeitsanalysator-Handler“.](/agents/completeness-analyzer-handlers) - Dead-Handler-Analysator
+- [„Vollständigkeitsanalysator-API“.](/agents/completeness-analyzer-api) - API-Mismatch-Analysator
+- [„Vollständigkeitsanalysator-bedingt“.](/agents/completeness-analyzer-conditional) - Dead-Feature-Branch-Analysator
+- [„Vollständigkeitskonsens“.](/agents/completeness-consensus) - Vollständigkeitskonsenskoordinator

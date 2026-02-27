@@ -1,0 +1,125 @@
+---
+title: API-Mismatch-Analysator
+description: Frontend-Backend-Endpunkt-Konfliktanalysator für fehlende API-Handler, verwaiste Endpunkte, Methodenkonflikte und teilweise CRUD-Implementierung
+---
+
+# API-Mismatch-Analysator
+
+Der Agent „Completeness Analyzer: API Mismatch“ ist ein spezialisierter Analysator, der sich auf Folgendes konzentriert: **frontend-backend API mismatches**. Es identifiziert fehlende API-Handler, die der Frontend-Code erwartet, verwaiste Backend-Endpunkte ohne Aufrufer, nicht übereinstimmende HTTP-Methoden, teilweise CRUD-Implementierungen und nicht übereinstimmende Antwortformen.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen fehlende Backend-Handler identifizieren, die der Frontend-Code erwartet
+- Sie möchten verwaiste Backend-Endpunkte ohne Frontend-Codeaufrufe finden
+- Sie suchen nach HTTP-Methodenkonflikten (Frontend-POST, aber Backend-GET).
+- Sie müssen vollständige CRUD-Implementierungen überprüfen (Erstellen, Lesen, Aktualisieren, Löschen).
+- Sie analysieren Nichtübereinstimmungen der Antwortformen zwischen Front-End und Backend
+
+## Wie es funktioniert
+
+1. **Reads frontend code** - Scannt den API-Client-Code für alle Endpunktaufrufe (Abruf, Axios usw.)
+2. **Reads backend code** – Durchsucht Backend-Routen/Handler nach allen registrierten Endpunkten
+3. **Identifies mismatches** - Findet Frontend-Aufrufe ohne Backend-Handler und Backend-Endpunkte ohne Frontend-Aufrufer
+4. **Checks methods** – Überprüft die Übereinstimmung der HTTP-Methoden zwischen Frontend und Backend
+5. **Analyzes CRUD** - Identifiziert Teilimplementierungen (z. B. Erstellen + Lesen, aber kein Aktualisieren/Löschen)
+6. **Reports shapes** – Flags, wenn Antwortobjekte zwischen erwartet und tatsächlich abweichen
+
+## Schwerpunktbereiche
+
+- **Missing backend handlers**: Frontend-Code ruft Endpunkte auf, die nicht vorhanden sind
+- **Orphaned backend endpoints**: Backend-Endpunkte keine Frontend-Codeaufrufe
+- **HTTP method mismatches**: Frontend verwendet POST, aber Backend akzeptiert nur GET
+- **Partial CRUD**: Fehlende Aktualisierungs-, Lösch- oder Erstellungsvorgänge
+- **Response shape mismatches**: Das Frontend erwartet andere Felder als das Backend bereitstellt
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Read, Glob, Grep
+
+## Beispielanalyse
+
+Gegeben ein Frontend-API-Client:
+```javascript
+// frontend/api/users.js
+export const getUser = (id) => fetch(`/api/users/${id}`);
+export const createUser = (data) => fetch(`/api/users`, { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) => fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => fetch(`/api/users/${id}`, { method: 'DELETE' });
+```
+
+Und ein Backend mit nur:
+```javascript
+// backend/routes/users.js
+app.get('/api/users/:id', getUserHandler);
+app.post('/api/users', createUserHandler);
+// Missing PUT and DELETE
+```
+
+Der API-Mismatch-Analysator würde Folgendes identifizieren:
+
+### Ergebnis: Fehlender DELETE-Handler zum Löschen des Benutzers
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (Frontend ruft nicht vorhandenen Endpunkt auf)
+**Confidence**: HOCH
+
+**Issue**: Frontend-Codeaufrufe `DELETE /api/users/:id` aber im Backend ist kein DELETE-Handler registriert. Dies führt zu 404-Fehlern, wenn Benutzer versuchen, Elemente zu löschen.
+
+**Impact**: Die Funktion zum Löschen von Benutzern ist in der Produktion fehlerhaft
+**Suggested Fix**: DELETE-Handler zur Route des Benutzers hinzufügen
+
+```javascript
+app.delete('/api/users/:id', deleteUserHandler);
+```
+
+### Ergebnis: Fehlender PUT-Handler für Benutzeraktualisierungen
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (Frontend ruft nicht vorhandenen Endpunkt auf)
+**Confidence**: HOCH
+
+**Issue**: Frontend-Codeaufrufe `PUT /api/users/:id` aber das Backend hat nur POST. Benutzeraktualisierungen sind fehlerhaft.
+
+**Suggested Fix**: PUT-Handler hinzufügen
+
+```javascript
+app.put('/api/users/:id', updateUserHandler);
+```
+
+## Best Practices
+
+- Synchronisieren Sie API-Schemata zwischen Frontend und Backend
+- Verwenden Sie Codegenerierung (OpenAPI, tRPC), um Schemata synchron zu halten
+- Testen Sie in Integrationstests alle Frontend-API-Aufrufe mit dem Backend
+- Dokumentieren Sie alle erforderlichen Endpunkte in der API-Spezifikation
+- Verwenden Sie TypeScript-Typen für die Anforderungs-/Antwortvalidierung
+
+## Ausgabeformat
+
+Für jede Nichtübereinstimmung stellt der Agent Folgendes bereit:
+- **Location**: Dateipfad und Zeilennummer
+- **Type**: Fehlender Handler, verwaister Endpunkt, Methodenkonflikt, fehlender CRUD-Vorgang oder Formkonflikt
+- **Severity**: P0 (Funktion defekt), P1 (Teilfunktion) oder P2 (geringfügiges Problem)
+- **Confidence**: HOCH, MITTEL oder NIEDRIG
+- **Frontend Code**: Genauer Code für den Anruf
+- **Backend Code**: Genauer Backend-Handler (oder fehlt)
+- **Impact**: Was Benutzer erleben
+- **Suggested Fix**: Code zum Hinzufügen/Ändern
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Find API mismatches in user service",
+  prompt: "Analyze frontend code in src/api/ and backend handlers in src/routes/ for endpoint mismatches. Check for missing handlers, orphaned endpoints, and method mismatches.",
+  subagent_type: "agileflow-completeness-analyzer-api"
+)
+```
+
+## Verwandte Agenten
+
+- [„Vollständigkeitsanalysator-Importe“.](/agents/completeness-analyzer-imports) - Dead-Export-Analysator
+- [„Vollständigkeitsanalysator-Handler“.](/agents/completeness-analyzer-handlers) - Dead-Handler-Analysator
+- [„Vollständigkeitsanalysator-Routen“.](/agents/completeness-analyzer-routes) - Dead-Route-Analysator
+- [„Vollständigkeitskonsens“.](/agents/completeness-consensus) - Vollständigkeitskonsenskoordinator

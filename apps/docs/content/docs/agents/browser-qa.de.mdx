@@ -1,0 +1,124 @@
+---
+title: Browser QA Agent
+description: Agentische Browserautomatisierung für explorative UI-Tests mit Playwright CLI. Führt YAML-Testszenarien aus, erfasst Screenshot-Beweise und meldet Ergebnisse mit probabilistischen Erfolgsquoten.
+---
+
+# Browser-QA-Agent
+
+Der Browser-QA-Agent (AG-BROWSER-QA) stellt bereit **agentic browser automation** für explorative UI-Tests. Es führt YAML-definierte Testszenarien für laufende Webanwendungen mithilfe der Playwright-CLI aus, erfasst bei jedem Schritt Screenshot-Beweise und meldet Ergebnisse mit probabilistischen Erfolgsquoten.
+
+## Wann zu verwenden
+
+Verwenden Sie dieses Mittel, wenn:
+- Sie müssen das UI-Verhalten in einer laufenden Anwendung validieren
+- Sie möchten einen automatisierten Screenshot-Beweis zur visuellen Überprüfung
+- Sie müssen eine mehrstufige Benutzer-Workflow-Validierung durchführen
+- Sie möchten Barrierefreiheitsprüfungen über den Barrierefreiheitsbaum von Playwright durchführen
+- Sie müssen Design-Tokens in einer Live-Anwendung überprüfen
+- Sie möchten explorative Tests, die über deterministische Unit-Tests hinausgehen
+
+## Wie es funktioniert
+
+1. **Loads test scenario** – Liest die YAML-Testspezifikation mit Schritten, Selektoren und Behauptungen
+2. **Verifies prerequisites** - Überprüft die Zugänglichkeit der Ziel-URL und die Playwright-Installation
+3. **Executes steps** - Navigiert, klickt, füllt Formulare aus und setzt Bedingungen durch
+4. **Captures evidence** - Macht Screenshots bei wichtigen Schritten zur visuellen Überprüfung
+5. **Handles failures** – Klassifiziert Fehler (Timeout, Assertion, Agent-Fehler) und Wiederholungsversuche
+6. **Generates report** – Erstellt results.json mit Erfolgsquoten und Beweispfaden
+7. **Updates status** – Markiert die Story als vom Agenten validiert, wenn die Erfolgsquote den Schwellenwert erreicht
+
+## Schlüsselkonzepte
+
+### Schwellenwert für die Erfolgsquote
+
+Browsertests sind **probabilistic**, nicht deterministisch. Nichtdeterminismus wird erwartet und ist kein Fehler.
+
+| Pass Rate | Status | Action |
+|-----------|--------|--------|
+| \>= 80% | VALIDATED | Mark story as agentic-validated |
+| 70-79% | WARNING | Investigate, document concerns |
+| \< 70% | FAILED | Report as potential bug |
+
+### Fehlerklassifizierung
+
+| Type | Action | Example |
+|------|--------|---------|
+| Timeout | Retry (up to 2x) | Page didn't load in 30s |
+| Assertion | Report as bug | Expected text not found |
+| Agent error | Skip with warning | Playwright crashed |
+| Infrastructure | Skip entire run | No browser available |
+
+### YAML-Testspezifikationsformat
+
+```yaml
+test_id: AGENTIC-001
+story_id: US-0050
+name: User Login Flow
+url: http://localhost:3000/login
+timeout: 60s
+max_retries: 2
+pass_rate_threshold: 0.80
+
+steps:
+  - name: Navigate to login page
+    action: navigate
+    url: /login
+    wait_for: "[data-testid='login-form']"
+    screenshot: true
+
+  - name: Fill credentials
+    action: fill
+    fields:
+      - selector: "[data-testid='email-input']"
+        value: "test@example.com"
+
+  - name: Submit form
+    action: click
+    selector: "[data-testid='login-button']"
+    screenshot: true
+
+  - name: Verify dashboard
+    action: assert
+    assertion: "User sees dashboard"
+    wait_for: "[data-testid='dashboard']"
+    screenshot: true
+```
+
+## Aufbewahrung von Beweismitteln
+
+Die Beweismittel werden aufbewahrt bei: `.agileflow/ui-review/runs/{timestamp}/{test_id}/`
+
+Jeder Lauf erzeugt:
+- Screenshot-Dateien für jeden Schritt (`step-1-navigate.png`, `step-3-submit.png`)
+- Fehler-Screenshots mit `_FAILED` Suffix
+- `results.json` mit vollständigen Pass-Rate-Daten und Timing
+
+## Verfügbare Werkzeuge
+
+Dieser Agent hat Zugriff auf: Lesen, Schreiben, Bearbeiten, Bash, Glob, Grep
+
+## Unterschiede zu verwandten Agenten
+
+| Agent | Focus | Approach |
+|-------|-------|----------|
+| **browser-qa** | Runtime UI behavior | Playwright against live app |
+| **testing** | Deterministic tests | Jest unit/integration tests |
+| **qa** | Test strategy | Planning and release readiness |
+| **ui-validator** | Code quality | Static analysis of components |
+
+## Beispielverwendung
+
+```text
+Task(
+  description: "Run browser QA on login flow",
+  prompt: "Execute the YAML test scenario at .agileflow/ui-review/specs/login-flow.yaml against http://localhost:3000. Capture screenshot evidence and report pass rate.",
+  subagent_type: "agileflow-browser-qa"
+)
+```
+
+## Verwandte Agenten
+
+- [„Testen“.](/agents/testing) - Deterministische Teststrategie und -implementierung
+- [`qa`](/agents/qa) - Testplanung und Release-Bereitschaft
+- [`UI-Validator`](/agents/ui-validator) - Statische UI-Code-Validierung
+- [„ci“.](/agents/ci) - CI/CD-Pipeline-Integration

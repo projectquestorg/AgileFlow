@@ -1,0 +1,125 @@
+---
+title: محلل عدم تطابق API
+description: محلل عدم تطابق نقطة النهاية للواجهة الأمامية والخلفية لمعالجات واجهة برمجة التطبيقات المفقودة ونقاط النهاية المعزولة وعدم تطابق الأساليب والتنفيذ الجزئي لـ CRUD
+---
+
+# محلل عدم تطابق API
+
+محلل الاكتمال: وكيل API Mismatch هو محلل متخصص يركز على **frontend-backend API mismatches**. فهو يحدد معالجات API المفقودة التي يتوقعها كود الواجهة الأمامية، ونقاط النهاية الخلفية المعزولة بدون أي متصلين، وعدم تطابق أسلوب HTTP، وتطبيقات CRUD الجزئية، وعدم تطابق شكل الاستجابة.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى تحديد معالجات الواجهة الخلفية المفقودة التي يتوقعها كود الواجهة الأمامية
+- تريد العثور على نقاط نهاية خلفية معزولة دون الحاجة إلى مكالمات رمز الواجهة الأمامية
+- أنت تتحقق من عدم تطابق أسلوب HTTP (الواجهة الأمامية POST ولكن الواجهة الخلفية GET)
+- تحتاج إلى التحقق من تنفيذ CRUD الكامل (إنشاء، قراءة، تحديث، حذف)
+- أنت تقوم بتحليل عدم تطابق شكل الاستجابة بين الواجهة الأمامية والخلفية
+
+## كيف يعمل
+
+1. **Reads frontend code** - يقوم بمسح رمز عميل API لجميع مكالمات نقطة النهاية (الجلب، المحور، إلخ.)
+2. **Reads backend code** - يقوم بمسح المسارات/المعالجات الخلفية لجميع نقاط النهاية المسجلة
+3. **Identifies mismatches** - يجد مكالمات الواجهة الأمامية بدون معالجات الواجهة الخلفية ونقاط النهاية الخلفية بدون متصلي الواجهة الأمامية
+4. **Checks methods** - التحقق من تطابق أساليب HTTP بين الواجهة الأمامية والخلفية
+5. **Analyzes CRUD** - يحدد عمليات التنفيذ الجزئية (على سبيل المثال، إنشاء + قراءة ولكن بدون تحديث/حذف)
+6. **Reports shapes** - علامات عند اختلاف كائنات الاستجابة بين المتوقع والفعلي
+
+## مجالات التركيز
+
+- **Missing backend handlers**: كود الواجهة الأمامية يستدعي نقاط النهاية غير الموجودة
+- **Orphaned backend endpoints**: نقاط النهاية الخلفية لا توجد مكالمات رمز الواجهة الأمامية
+- **HTTP method mismatches**: تستخدم الواجهة الأمامية POST لكن الواجهة الخلفية لا تقبل سوى GET
+- **Partial CRUD**: عمليات التحديث أو الحذف أو الإنشاء مفقودة
+- **Response shape mismatches**: تتوقع الواجهة الأمامية حقولًا مختلفة عما توفره الواجهة الخلفية
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+نظرًا لعميل واجهة برمجة التطبيقات للواجهة الأمامية:
+```javascript
+// frontend/api/users.js
+export const getUser = (id) => fetch(`/api/users/${id}`);
+export const createUser = (data) => fetch(`/api/users`, { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) => fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => fetch(`/api/users/${id}`, { method: 'DELETE' });
+```
+
+والواجهة الخلفية تحتوي فقط على:
+```javascript
+// backend/routes/users.js
+app.get('/api/users/:id', getUserHandler);
+app.post('/api/users', createUserHandler);
+// Missing PUT and DELETE
+```
+
+سيحدد محلل عدم تطابق API ما يلي:
+
+### البحث: معالج DELETE مفقود لحذف المستخدم
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (استدعاءات الواجهة الأمامية لنقطة النهاية غير الموجودة)
+**Confidence**: عالي
+
+**Issue**: مكالمات رمز الواجهة الأمامية `DELETE /api/users/:id` لكن الواجهة الخلفية لا تحتوي على معالج DELETE مسجل. يؤدي هذا إلى حدوث أخطاء 404 عندما يحاول المستخدمون حذف العناصر.
+
+**Impact**: ميزة حذف المستخدم معطلة في الإنتاج
+**Suggested Fix**: إضافة معالج DELETE إلى مسار المستخدمين
+
+```javascript
+app.delete('/api/users/:id', deleteUserHandler);
+```
+
+### البحث: معالج PUT مفقود لتحديثات المستخدم
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (استدعاءات الواجهة الأمامية لنقطة النهاية غير الموجودة)
+**Confidence**: عالي
+
+**Issue**: مكالمات رمز الواجهة الأمامية `PUT /api/users/:id` لكن الواجهة الخلفية تحتوي فقط على POST. تحديثات المستخدم معطلة.
+
+**Suggested Fix**: إضافة معالج PUT
+
+```javascript
+app.put('/api/users/:id', updateUserHandler);
+```
+
+## أفضل الممارسات
+
+- مزامنة مخططات API بين الواجهة الأمامية والخلفية
+- استخدم إنشاء التعليمات البرمجية (OpenAPI، tRPC) للحفاظ على مزامنة المخططات
+- اختبر جميع استدعاءات واجهة برمجة التطبيقات للواجهة الأمامية مقابل الواجهة الخلفية في اختبارات التكامل
+- قم بتوثيق جميع نقاط النهاية المطلوبة في مواصفات واجهة برمجة التطبيقات (API).
+- استخدم أنواع TypeScript للتحقق من صحة الطلب/الاستجابة
+
+## تنسيق الإخراج
+
+لكل عدم تطابق، يوفر الوكيل ما يلي:
+- **Location**: مسار الملف ورقم السطر
+- **Type**: معالج مفقود، نقطة نهاية معزولة، عدم تطابق الطريقة، عملية CRUD مفقودة، أو عدم تطابق الشكل
+- **Severity**: P0 (ميزة معطلة)، P1 (ميزة جزئية)، أو P2 (مشكلة بسيطة)
+- **Confidence**: عالية، متوسطة، أو منخفضة
+- **Frontend Code**: الرمز الدقيق لإجراء المكالمة
+- **Backend Code**: معالج الواجهة الخلفية الدقيق (أو مفقود)
+- **Impact**: ما تجربة المستخدمين
+- **Suggested Fix**: كود الإضافة/التغيير
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find API mismatches in user service",
+  prompt: "Analyze frontend code in src/api/ and backend handlers in src/routes/ for endpoint mismatches. Check for missing handlers, orphaned endpoints, and method mismatches.",
+  subagent_type: "agileflow-completeness-analyzer-api"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["واردات محلل الاكتمال".](/agents/completeness-analyzer-imports) - محلل التصدير الميت
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- [""مسارات محلل الاكتمال"."](/agents/completeness-analyzer-routes) - محلل الطريق الميت
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال

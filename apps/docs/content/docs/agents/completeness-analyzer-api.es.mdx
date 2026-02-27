@@ -1,0 +1,125 @@
+---
+title: Analizador de discrepancias de API
+description: Analizador de discrepancias de puntos finales frontend-backend para controladores de API faltantes, puntos finales huérfanos, discrepancias de métodos e implementación CRUD parcial
+---
+
+# Analizador de discrepancias de API
+
+El analizador de integridad: el agente API Mismatch es un analizador especializado centrado en **frontend-backend API mismatches**. Identifica controladores de API faltantes que espera el código de frontend, puntos finales de backend huérfanos sin llamadores, discrepancias en métodos HTTP, implementaciones CRUD parciales y discrepancias en la forma de respuesta.
+
+## Cuando usar
+
+Utilice este agente cuando:
+- Debe identificar los controladores de backend faltantes que espera el código de frontend
+- Quiere encontrar puntos finales de backend huérfanos sin llamadas de código de frontend
+- Estás comprobando si hay discrepancias en los métodos HTTP (POST del frontend pero GET del backend)
+- Debe verificar las implementaciones CRUD completas (Crear, Leer, Actualizar, Eliminar)
+- Estás analizando discrepancias en la forma de la respuesta entre el frontend y el backend.
+
+## Cómo funciona
+
+1. **Reads frontend code** - Escanea el código del cliente API para todas las llamadas a puntos finales (fetch, axios, etc.)
+2. **Reads backend code** - Escanea rutas/controladores de backend para todos los puntos finales registrados
+3. **Identifies mismatches** - Encuentra llamadas de frontend sin controladores de backend, puntos finales de backend sin llamantes de frontend
+4. **Checks methods** - Verifica que los métodos HTTP coincidan entre el frontend y el backend.
+5. **Analyzes CRUD** - Identifica implementaciones parciales (por ejemplo, Crear + Leer pero no Actualizar/Eliminar)
+6. **Reports shapes** - Indicadores cuando los objetos de respuesta difieren entre lo esperado y lo real
+
+## Áreas de enfoque
+
+- **Missing backend handlers**: El código frontend llama a puntos finales que no existen
+- **Orphaned backend endpoints**: Puntos finales de backend sin llamadas de código de frontend
+- **HTTP method mismatches**: El frontend usa POST pero el backend solo acepta GET
+- **Partial CRUD**: Faltan operaciones de actualización, eliminación o creación
+- **Response shape mismatches**: El frontend espera campos diferentes a los que proporciona el backend
+
+## Herramientas disponibles
+
+Este agente tiene acceso a: Read, Glob, Grep
+
+## Análisis de ejemplo
+
+Dado un cliente API frontend:
+```javascript
+// frontend/api/users.js
+export const getUser = (id) => fetch(`/api/users/${id}`);
+export const createUser = (data) => fetch(`/api/users`, { method: 'POST', body: JSON.stringify(data) });
+export const updateUser = (id, data) => fetch(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteUser = (id) => fetch(`/api/users/${id}`, { method: 'DELETE' });
+```
+
+Y un backend con solo:
+```javascript
+// backend/routes/users.js
+app.get('/api/users/:id', getUserHandler);
+app.post('/api/users', createUserHandler);
+// Missing PUT and DELETE
+```
+
+El analizador API Mismatch identificaría:
+
+### Hallazgo: Falta el controlador DELETE para la eliminación de usuarios
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (la interfaz llama a un punto final inexistente)
+**Confidence**: ALTO
+
+**Issue**: llamadas de código frontend `DELETE /api/users/:id` pero el backend no tiene ningún controlador DELETE registrado. Esto provoca errores 404 cuando los usuarios intentan eliminar elementos.
+
+**Impact**: La función de eliminación de usuarios no funciona en producción.
+**Suggested Fix**: Agregue el controlador DELETE a la ruta de los usuarios
+
+```javascript
+app.delete('/api/users/:id', deleteUserHandler);
+```
+
+### Hallazgo: Falta el controlador PUT para las actualizaciones de usuarios
+
+**Location**: `backend/routes/users.js`
+**Severity**: P1 (la interfaz llama a un punto final inexistente)
+**Confidence**: ALTO
+
+**Issue**: llamadas de código frontend `PUT /api/users/:id` pero el backend solo tiene POST. Las actualizaciones de usuario no funcionan.
+
+**Suggested Fix**: Agregar controlador PUT
+
+```javascript
+app.put('/api/users/:id', updateUserHandler);
+```
+
+## Mejores prácticas
+
+- Sincronizar esquemas API entre frontend y backend
+- Utilice la generación de código (OpenAPI, tRPC) para mantener los esquemas sincronizados
+- Pruebe todas las llamadas API de frontend contra backend en pruebas de integración
+- Documente todos los puntos finales requeridos en la especificación API
+- Utilice tipos de TypeScript para la validación de solicitudes/respuestas
+
+## Formato de salida
+
+Para cada desajuste, el agente proporciona:
+- **Location**: Ruta del archivo y número de línea
+- **Type**: Falta un controlador, un punto final huérfano, un método no coincide, falta una operación CRUD o una forma no coincide
+- **Severity**: P0 (función rota), P1 (función parcial) o P2 (problema menor)
+- **Confidence**: ALTO, MEDIO o BAJO
+- **Frontend Code**: Código exacto al realizar la llamada
+- **Backend Code**: Controlador de backend exacto (o falta)
+- **Impact**: Qué experimentan los usuarios
+- **Suggested Fix**: Código para agregar/cambiar
+
+## Uso de ejemplo
+
+```text
+Task(
+  description: "Find API mismatches in user service",
+  prompt: "Analyze frontend code in src/api/ and backend handlers in src/routes/ for endpoint mismatches. Check for missing handlers, orphaned endpoints, and method mismatches.",
+  subagent_type: "agileflow-completeness-analyzer-api"
+)
+```
+
+## Agentes Relacionados
+
+- [`importaciones-analizador-de-integridad`](/agents/completeness-analyzer-imports) - Analizador de exportación muerta
+- [`controladores-analizadores-de-integridad`](/agents/completeness-analyzer-handlers) - Analizador de manejador muerto
+- [`rutas-analizador-de-integridad`](/agents/completeness-analyzer-routes) - Analizador de ruta muerta
+- [`consenso-integridad`](/agents/completeness-consensus) - Coordinador de consenso de exhaustividad

@@ -1,0 +1,96 @@
+---
+title: محلل رمز كعب الروتين
+description: محلل رمز العنصر النائب لتعليقات TODO/FIXME، ونصوص الوظائف الفارغة، وNotImplementedError، والبيانات الوهمية المشفرة، والنص "قريبًا"
+---
+
+# محلل رمز كعب الروتين
+
+محلل الاكتمال: وكيل Stub Code هو محلل متخصص يركز على **placeholder and stub code in production files**. يعثر على تعليقات TODO/FIXME، ونصوص الوظائف الفارغة، ورميات NotImplementedError، والبيانات الوهمية المشفرة التي يجب أن تأتي من قاعدة بيانات أو واجهة برمجة التطبيقات، والنص "قريبًا" الذي يشير إلى ميزات غير مكتملة.
+
+## متى تستخدم
+
+استخدم هذا الوكيل عندما:
+- تحتاج إلى العثور على تعليقات TODO/FIXME/HACK في كود الإنتاج
+- تريد تحديد الأجسام الوظيفية الفارغة التي لا تفعل شيئًا بصمت
+- كنت تبحث عن `throw new Error('Not implemented')` أنماط
+- أنت بحاجة إلى العثور على بيانات وهمية مشفرة والتي يجب أن تكون ديناميكية
+- أنت تقوم بمراجعة نص العنصر النائب لواجهة المستخدم قبل الإصدار
+
+## كيف يعمل
+
+1. **Scans comments** - يجد علامات TODO، FIXME، HACK، XXX، BUG
+2. **Checks functions** - يحدد الوظائف غير التافهة ذات الأجسام الفارغة
+3. **Finds throws** - يحدد موقع NotImplementedError والرميات المشابهة
+4. **Detects mock data** - يحدد المصفوفات/الكائنات المشفرة التي يجب أن تكون ديناميكية
+5. **Checks UI text** - البحث عن "قريبًا"، "قيد الإنشاء"، "لوريم إيبسوم"
+6. **Finds temp returns** - تقوم الوظائف بإرجاع القيم المشفرة كعناصر نائبة
+7. **Reports findings** - قوائم بذرة مع خطورة ومسارات العلاج
+
+## مجالات التركيز
+
+- **TODO/FIXME/HACK comments**: علامات العمل غير المكتمل في كود الإنتاج
+- **Empty function bodies**: الوظائف الموجودة ولكن لا تفعل شيئا عند استدعائها
+- **NotImplementedError throws**: علامات "لم يتم تنفيذها" الصريحة التي تتعطل أثناء التشغيل
+- **Hardcoded mock data**: صفائف/كائنات البيانات المزيفة التي يجب أن تأتي من قاعدة البيانات أو واجهة برمجة التطبيقات
+- **Placeholder UI text**: "قريبا"، "تحت الإنشاء"، "لوريم إيبسوم" قيد الإنتاج
+- **Temporary return values**: تقوم الوظائف بإرجاع قيم مشفرة بدلاً من المنطق الحقيقي
+
+## الأدوات المتاحة
+
+هذا الوكيل لديه حق الوصول إلى: Read، Glob، Grep
+
+## تحليل المثال
+
+نظرا لرمز الإنتاج مع بذرة:
+```javascript
+// TODO: implement actual validation
+function validateInput(input) {
+  return true; // Always passes
+}
+
+class PaymentService {
+  async processPayment(amount, currency) {
+    throw new Error('Not implemented');
+  }
+}
+
+const users = [
+  { id: 1, name: 'John Doe', email: 'john@example.com' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+];
+// Should come from database
+```
+
+سيحدد محلل كود Stub:
+
+- **PLACEHOLDER**: تعليق TODO مع التحقق من الصحة دائمًا (مخاطر أمنية)
+- **BROKEN**: `processPayment` يلقي NotImplementedError (يتعطل في وقت التشغيل)
+- **INCOMPLETE**: يجب جلب مجموعة المستخدم المضمنة من قاعدة البيانات
+
+## دليل الشدة
+
+| Pattern | Severity | Rationale |
+|---------|----------|-----------|
+| Empty function body (called in production) | BROKEN | Feature silently fails |
+| NotImplementedError throw | BROKEN | Feature crashes |
+| Hardcoded mock data (user-visible) | INCOMPLETE | Users see fake data |
+| TODO/FIXME in critical path | PLACEHOLDER | Known incomplete work |
+| "Coming soon" text in UI | INCOMPLETE | Feature advertised but missing |
+| Temporary return value | PLACEHOLDER | Logic bypassed |
+
+## مثال الاستخدام
+
+```text
+Task(
+  description: "Find placeholder code in production",
+  prompt: "Scan src/ for TODO/FIXME comments, empty function bodies, NotImplementedError throws, hardcoded mock data, and placeholder UI text. Exclude test files and examples.",
+  subagent_type: "agileflow-completeness-analyzer-stubs"
+)
+```
+
+## الوكلاء ذوو الصلة
+
+- ["معالجات محلل الاكتمال".](/agents/completeness-analyzer-handlers) - محلل المعالج الميت
+- ["واجهة برمجة تطبيقات محلل الاكتمال".](/agents/completeness-analyzer-api) - محلل عدم تطابق API
+- ["محلل الاكتمال المشروط".](/agents/completeness-analyzer-conditional) - محلل فرع الميزة الميتة
+- ["الإجماع التام".](/agents/completeness-consensus) - منسق إجماع الاكتمال
