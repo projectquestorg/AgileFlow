@@ -1,0 +1,82 @@
+---
+title: Ads Audit Compliance
+description: Cross-platform advertising compliance and performance benchmarks analyzer with 18 checks for policy adherence, regulatory requirements, and industry-standard KPIs
+---
+
+# Ads Audit Compliance
+
+Compliance auditor that analyzes advertising accounts for policy compliance, regulatory requirements, and performance against industry benchmarks, applying 18 deterministic checks.
+
+## When to Use
+
+Use this agent when:
+
+- Auditing account for policy violations or disapprovals
+- Ensuring regulatory compliance (GDPR, CCPA, COPPA)
+- Checking performance against industry benchmarks
+- Verifying special ad category declarations (housing, employment, credit)
+- Assessing account health and payment status
+- Identifying legal risk in ad campaigns
+
+## How It Works
+
+1. **Parses Account Data**: Campaign data, ad copy, targeting, regulatory context
+2. **Applies 18 Checks**: Across 4 categories (Platform Policy, Regulatory, Benchmarks, Account Health)
+3. **Identifies Legal Risk**: Flags findings that carry legal liability
+4. **Benchmarks Performance**: Compares against industry standards
+5. **Generates Compliance Report**: With severity levels and remediation steps
+
+## Focus Areas
+
+- **Platform Policy Compliance (35%)** - 6 checks on ad disapprovals, trademarks, landing pages
+- **Regulatory Compliance (30%)** - 5 checks on GDPR, CCPA, FTC, COPPA requirements
+- **Performance Benchmarks (20%)** - 4 checks on CTR, CPA, CVR vs industry standards
+- **Account Health (15%)** - 3 checks on quality score, payment status, access controls
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Compliance audit for housing ads campaign",
+  prompt: "We're running ads for rental properties across Google and Meta. Need to verify housing policy compliance and GDPR consent implementation.",
+  subagent_type: "ads-audit-compliance"
+)
+```
+
+## Key Capabilities
+
+- **Policy compliance checking** across 6 major ad platforms
+- **Special Ad Category verification** (housing, employment, credit, political)
+- **Regulatory requirement validation** (GDPR, CCPA, COPPA, FTC)
+- **Industry benchmark comparison** across 8 verticals
+- **Legal risk identification** and severity flagging
+- **Remediation recommendations** with timelines
+
+## Special Ad Categories
+
+| Category | Google | Meta | LinkedIn | TikTok |
+|----------|--------|------|----------|--------|
+| Housing | Required | Required | N/A | Limited |
+| Employment | Required | Required | Built-in | Limited |
+| Credit/Financial | Required | Required | N/A | Limited |
+| Political | Required | Required | Prohibited | Prohibited |
+| Alcohol | Restricted | Restricted | Restricted | 21+ targeting |
+| Pharmaceuticals | Certification | Restricted | Restricted | Prohibited |
+| Gambling | Certification | Certification | Prohibited | Prohibited |
+
+## Quality Gates
+
+- **Ad disapprovals** are emergencies - Fix immediately to restore serving
+- **Special categories** are legal requirements - Non-compliance = suspension risk
+- **GDPR/CCPA violations** are legal liability - Failure = financial penalties
+- **COPPA violations** are most serious - Up to $50K per violation
+
+## Related Agents
+
+- [Ads Google Audit](/agents/ads-audit-google) - Platform-specific compliance
+- [Ads Meta Audit](/agents/ads-audit-meta) - Meta policy enforcement
+- [Ads Consensus](/agents/ads-consensus) - Overall compliance scoring

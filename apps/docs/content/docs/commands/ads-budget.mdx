@@ -1,0 +1,141 @@
+---
+title: /ads:budget
+description: Budget allocation and bidding strategy optimizer with industry benchmarks, platform minimums, scaling rules, and reallocation recommendations
+---
+
+# /ads:budget
+
+Run a budget allocation and bidding strategy audit using 24 checks to analyze spend efficiency, identify wasted budget, validate bidding strategies, and provide specific reallocation recommendations.
+
+## Quick Start
+
+```bash
+/agileflow:ads:budget <account-data>                  # Full budget audit
+```
+
+## What It Checks
+
+The audit applies 24 deterministic checks across 4 categories:
+
+| Category | Weight | Checks | Focus |
+|----------|--------|--------|-------|
+| Budget Allocation | 35% | 8 | Spend distribution, top-performer focus, funnel stages |
+| Bidding Strategy | 30% | 8 | Strategy alignment, conversion data, target metrics |
+| Scaling & Pacing | 20% | 4 | Budget growth rates, pacing consistency, learning phase |
+| Platform Mix | 15% | 4 | Diversification, attribution, platform strength alignment |
+
+## Output
+
+You receive:
+- **Budget Score** (0-100)
+- **Category breakdown** with individual scores
+- **Specific findings** with severity levels
+- **Dollar reallocation recommendations** - Not just "move budget" but "move $X from Campaign A to Campaign B"
+- **Industry benchmarks** for your business type
+- **Platform minimum validation** across 6 platforms
+- **Scaling rule compliance** check
+
+## Account Data Needed
+
+Provide:
+- Monthly spend by platform
+- Campaign-level budgets
+- Performance metrics (CPA, ROAS, conversions)
+- Bid strategies in use
+- Industry and target metrics
+
+Example format:
+```
+Google Ads: $6K/month
+- Brand campaign: $2K, CPA $30
+- Non-brand: $3K, CPA $45
+- Performance Max: $1K, ROAS 1.8:1
+
+Meta Ads: $4K/month
+- Prospecting: $2.5K, CPA $40
+- Retargeting: $1.5K, ROAS 2.5:1
+```
+
+## Platform Budget Minimums
+
+These minimums MUST be enforced:
+
+| Platform | Campaign Minimum | Ad Set/Group Minimum |
+|----------|-----------------|---------------------|
+| Google Ads | $10/day | $5/day |
+| Meta Ads | $20/day | $10/day |
+| LinkedIn | $50/day | $25/day |
+| TikTok | $50/day campaign | $20/day ad group |
+| Microsoft | $10/day | $5/day |
+
+## Scaling Rules
+
+1. **Max 20% budget increase per week** - Gradual scaling prevents budget waste
+2. **Only scale after learning phase exits** - Campaigns need 2-4 weeks of optimization
+3. **3x Kill Rule** - Pause campaigns with CPA > 3x target immediately
+4. **Minimum 2 weeks data** before making major changes
+
+## Industry Benchmarks
+
+### SaaS
+| Metric | Good | Average | Poor |
+|--------|------|---------|------|
+| CPA (Lead) | <$50 | $50-150 | >$150 |
+| ROAS | >5:1 | 3:1-5:1 | <3:1 |
+
+### E-commerce
+| Metric | Good | Average | Poor |
+|--------|------|---------|------|
+| ROAS | >4:1 | 2:1-4:1 | <2:1 |
+| CPA (Purchase) | <$30 | $30-80 | >$80 |
+
+### Local Services
+| Metric | Good | Average | Poor |
+|--------|------|---------|------|
+| CPL | <$25 | $25-75 | >$75 |
+| CPC | <$3 | $3-8 | >$8 |
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:budget "Spending $10K/month. Google $6K (CPA $40), Meta $4K (ROAS 2:1). Google is doing better, allocate more there."
+# Returns: Budget Score with specific reallocation recommendations
+```
+
+### With Detailed Data
+```bash
+/agileflow:ads:budget
+# Paste detailed monthly breakdown with all campaign performance data
+# Returns: Full budget audit with dollar-specific recommendations
+```
+
+## Expected Improvements
+
+By following the reallocation recommendations:
+- **5-15% improvement** in overall ROAS/CPA within 2-4 weeks
+- **Elimination of budget waste** on underperforming campaigns
+- **Faster scaling** of top performers while respecting platform limits
+- **Better platform mix** based on actual performance, not assumptions
+
+## When to Run
+
+- **Monthly** - Monitor budget health and allocation efficiency
+- **After campaign launches** - First 3-4 weeks after new campaigns
+- **When metrics change** - If CPA or ROAS shifts significantly
+- **Quarterly review** - Comprehensive budget strategy review
+- **Before budget increases** - Ensure current allocation is optimal before adding spend
+
+## Tips
+
+- **Bring real numbers** - Use actual CPA/ROAS data for accurate recommendations
+- **Include all platforms** - Full picture gives better recommendations
+- **Track conversions** - Budget audit needs conversion data to be accurate
+- **Follow 70/20/10 rule** - 70% proven campaigns, 20% testing, 10% experimental
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit (includes budget)
+- [`/ads:google`](/commands/ads-google) - Google-specific budget checks
+- [`/ads:meta`](/commands/ads-meta) - Meta-specific budget checks
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning with budget allocation

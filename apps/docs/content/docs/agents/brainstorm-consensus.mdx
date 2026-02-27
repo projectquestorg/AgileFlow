@@ -1,0 +1,81 @@
+---
+title: Brainstorm Consensus Coordinator
+description: Consensus coordinator for brainstorm audit - validates findings, votes on value, detects app category, deduplicates ideas, and generates prioritized Feature Brainstorm Report
+---
+
+# Brainstorm Consensus Coordinator
+
+The Brainstorm Consensus Coordinator is the **lead orchestrator for the Brainstorm Audit system**. It collects feature suggestions from all brainstorm analyzers, detects the app category, deduplicates overlapping suggestions, votes on value, and produces a final prioritized Feature Brainstorm Report.
+
+## When to Use
+
+Use this agent when:
+- You want to run a complete brainstorm audit across multiple analyzers
+- You need to synthesize findings from all 5 brainstorm analyzers into one prioritized report
+- You want to detect your app's category and filter irrelevant suggestions
+- You need to identify quick wins (high value, low effort features)
+- You're planning feature prioritization and roadmapping
+- You want a consensus-driven approach to product planning
+
+## How It Works
+
+1. **Detects app category** - Determines what kind of app this is (SaaS, E-commerce, Blog, Tool, etc.) from code analysis
+2. **Collects all findings** - Gathers feature suggestions from Features, UX, Market, Growth, and Integration analyzers
+3. **Deduplicates suggestions** - Merges overlapping ideas from different analyzers
+4. **Votes on value** - Multiple analyzers suggesting the same feature increases confidence
+5. **Filters by relevance** - Excludes features that don't fit the app category
+6. **Prioritizes by value/effort** - Ranks features using a priority matrix
+7. **Generates report** - Produces actionable Feature Brainstorm Report with quick wins first
+
+## Focus Areas
+
+- **App category detection**: Infers from code what kind of app this is
+- **Finding normalization**: Converts all analyzer outputs to a standard format
+- **Deduplication**: Merges overlapping suggestions from multiple analyzers
+- **Confidence scoring**: HIGH (2+ analyzers agree), MEDIUM (strong justification), LOW (speculative)
+- **Category filtering**: Excludes irrelevant features for the app type
+- **Priority matrix**: Ranks by value vs effort (quick wins, strategic, easy adds, consider later)
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Report Output Format
+
+The Brainstorm Consensus Coordinator produces:
+- **Executive Summary** - Total findings, after deduplication, confidence breakdown
+- **Quick Wins** - High value, low effort (do these first)
+- **Strategic Features** - High value, higher effort (worth investing in)
+- **Easy Additions** - Medium value, low effort (nice improvements)
+- **Consider Later** - Lower priority items
+- **Excluded** - Features filtered as irrelevant to app category
+- **Summary by Category** - Breakdown by feature type
+- **Recommended Next Steps** - Specific action items
+
+## Example Usage
+
+```text
+Task(
+  description: "Run complete brainstorm audit and generate prioritized report",
+  prompt: "Analyze the codebase with all brainstorm analyzers (features, ux, market, growth, integration). Detect the app category, deduplicate findings, and generate a prioritized Feature Brainstorm Report with quick wins first.",
+  subagent_type: "agileflow-brainstorm-consensus"
+)
+```
+
+## Key Responsibilities
+
+1. **Detect app category** - Classify as SaaS, E-commerce, Blog, Developer Tool, Portfolio, AI/ML, Social, Dashboard, or Marketplace
+2. **Collect findings** - Parse all 5 analyzer outputs into normalized structure
+3. **Deduplicate aggressively** - Merge similar findings from multiple analyzers
+4. **Confidence voting** - Mark findings confirmed (2+ analyzers), likely (strong justification), or speculative
+5. **Filter irrelevant features** - Exclude features that don't fit the detected category
+6. **Prioritize ruthlessly** - Use value/effort matrix to rank by impact
+7. **Generate actionable report** - Produce report with clear next steps
+
+## Related Agents
+
+- [`brainstorm-analyzer-features`](/agents/brainstorm-analyzer-features) - Feature gaps
+- [`brainstorm-analyzer-growth`](/agents/brainstorm-analyzer-growth) - Growth and engagement
+- [`brainstorm-analyzer-market`](/agents/brainstorm-analyzer-market) - Market-driven features
+- [`brainstorm-analyzer-ux`](/agents/brainstorm-analyzer-ux) - UX improvements
+- [`brainstorm-analyzer-integration`](/agents/brainstorm-analyzer-integration) - Integration opportunities

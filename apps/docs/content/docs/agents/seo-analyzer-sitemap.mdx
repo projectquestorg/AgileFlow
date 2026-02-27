@@ -1,0 +1,164 @@
+---
+title: Sitemap
+description: XML sitemap analyzer for structure validation, URL coverage assessment, missing page detection, quality gate enforcement, and sitemap generation
+---
+
+# Sitemap
+
+The Sitemap agent is a specialized SEO analyzer focused on **XML sitemap validation and optimization**. It validates sitemap structure, assesses URL coverage, detects missing pages, enforces quality gates, and ensures proper robots.txt references.
+
+## When to Use
+
+Use this agent when:
+- You need to audit your XML sitemap
+- You want to validate sitemap structure and syntax
+- You're concerned about URL coverage or missing important pages
+- You need to check if sitemap is declared in robots.txt
+- You want to ensure all sitemaps are under Google's size limits
+
+## How It Works
+
+1. **Locates the sitemap** - Checks robots.txt for Sitemap: directive, tries /sitemap.xml, /sitemap_index.xml
+2. **Validates structure** - Checks XML syntax, namespace, element correctness
+3. **Assesses URL quality** - Verifies URLs return 200, match canonicals, aren't noindexed
+4. **Analyzes coverage** - Compares sitemap URLs against discovered pages
+5. **Enforces quality gates** - Flags non-200 URLs, stale lastmod dates, duplicates
+6. **Checks robots.txt** - Verifies sitemap is declared and discoverable
+
+## Focus Areas
+
+- **Existence**: Does the site have an XML sitemap?
+- **Structure**: Valid XML, proper namespace, sitemap index if needed
+- **Coverage**: Are all important pages included?
+- **Quality**: Correct URLs, valid lastmod dates, appropriate priorities
+- **Size Limits**: Under 50,000 URLs and 50MB per sitemap file
+- **robots.txt Reference**: Is the sitemap declared in robots.txt?
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## XML Sitemap Structure
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/page</loc>
+    <lastmod>2026-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
+```
+
+For large sites with many URLs, use Sitemap Index:
+
+```xml
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://example.com/sitemap-pages.xml</loc>
+    <lastmod>2026-01-15</lastmod>
+  </sitemap>
+</sitemapindex>
+```
+
+## Validation Checklist
+
+| Check | Pass | Fail |
+|-------|------|------|
+| Valid XML | Parses without errors | Syntax errors |
+| Correct namespace | `http://www.sitemaps.org/schemas/sitemap/0.9` | Missing or wrong |
+| `<loc>` present for each URL | Yes | Missing |
+| URLs are absolute | `https://example.com/page` | Relative paths |
+| URLs match site domain | Same domain | Cross-domain URLs |
+| Under 50,000 URLs | Yes | Over limit |
+| Under 50MB | Yes | Over limit |
+| UTF-8 encoding | Yes | Other encoding |
+
+## Quality Gates
+
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| Non-200 URLs | > 5% | > 15% |
+| Missing lastmod | > 20% | > 50% |
+| Stale lastmod (> 1 year) | > 30% | > 60% |
+| Not in robots.txt | Always flag | - |
+| No sitemap found | - | Always flag |
+
+## Example Usage
+
+```text
+Task(
+  description: "Validate XML sitemap",
+  prompt: "Audit the XML sitemap for https://example.com. Check structure validity, URL coverage, quality gates, and robots.txt reference. Report any missing pages or issues.",
+  subagent_type: "agileflow-seo-analyzer-sitemap"
+)
+```
+
+## Output Format
+
+```markdown
+FINDING-1: Sitemap not declared in robots.txt
+
+Category: Coverage Gap
+URL: https://example.com/robots.txt
+Severity: MEDIUM
+Confidence: HIGH
+
+Issue: Sitemap found at /sitemap.xml but not referenced in robots.txt.
+
+Evidence:
+robots.txt has no "Sitemap:" directive
+
+Impact: Googlebot may not discover your sitemap efficiently.
+
+Remediation:
+Add to robots.txt:
+Sitemap: https://example.com/sitemap.xml
+```
+
+## Important Page Types to Include
+
+These page types should always be in your sitemap:
+- Homepage
+- Main category/section pages
+- Key content pages (blog posts, articles)
+- Product/service pages
+- Location pages
+- Pillar/cornerstone content
+
+## Scoring Guide
+
+| Aspect | Weight | Deductions |
+|--------|--------|-----------|
+| Sitemap exists | 25% | -25 if no sitemap at all |
+| Valid structure | 20% | -20 for invalid XML, -5 per structural issue |
+| URL quality | 25% | -3 per non-200 URL, -2 per noindexed URL |
+| Coverage | 20% | -5 per important missing page type |
+| robots.txt reference | 10% | -10 if not declared in robots.txt |
+
+## Important Rules
+
+1. **Fetch the actual sitemap** - Use WebFetch to retrieve and parse it
+2. **Sample URLs for validation** - For large sitemaps, check a representative sample
+3. **Check robots.txt first** - It may declare the sitemap location
+4. **Note sitemap index** - Large sites use sitemap index files
+5. **Be practical** - Not every page needs to be in the sitemap, focus on important pages
+
+## Common Issues Found
+
+- Sitemap not declared in robots.txt
+- Non-200 URLs in sitemap (404s, redirects)
+- URLs with noindex directive
+- Missing lastmod dates
+- Stale lastmod dates (older than 1 year)
+- Duplicate URLs in sitemap
+- URLs outside your primary domain
+- Sitemap over size limits (>50MB or >50k URLs)
+
+## Related Agents
+
+- [`seo-analyzer-technical`](/agents/seo-analyzer-technical) - robots.txt and crawlability
+- [`seo-analyzer-content`](/agents/seo-analyzer-content) - Content quality for indexed pages
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis

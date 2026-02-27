@@ -1,0 +1,137 @@
+---
+title: /ads:audit
+description: Full multi-platform paid advertising audit with 6 parallel analyzers, industry detection, weighted Ads Health Score 0-100, and prioritized action plan
+---
+
+# /ads:audit
+
+Deploy 6 specialized advertising analyzers in parallel to audit ad accounts across all platforms, then synthesize results through consensus into a weighted Ads Health Score (0-100) with prioritized action plan.
+
+## Quick Start
+
+```bash
+/agileflow:ads:audit <account-data>                       # Full audit (all platforms detected)
+/agileflow:ads:audit <account-data> PLATFORMS=google,meta  # Specific platforms only
+```
+
+## How It Works
+
+1. **Parse account data** - From pasted text, file, or description
+2. **Detect industry** - Identifies SaaS, E-commerce, Local Services, B2B, Healthcare, etc.
+3. **Deploy 6 analyzers in parallel** - Google, Meta, Budget, Creative, Tracking, Compliance
+4. **Collect results** - Waits for all analyzer outputs
+5. **Run consensus** - Weights and aggregates into Ads Health Score
+6. **Generate report** - Creates Ads Audit Report with prioritized action plan
+
+## The 6 Analyzers
+
+| Analyzer | Checks | Focuses On |
+|----------|--------|-----------|
+| Google Ads | 74 | Conversion tracking, wasted spend, account structure, keywords, ad copy, settings |
+| Meta Ads | 46 | Pixel/CAPI, creative strategy, account structure, audience targeting |
+| Budget & Bidding | 24 | Budget allocation, bidding strategy, scaling, platform mix |
+| Creative Quality | 21 | Ad copy, visuals, platform requirements, performance testing |
+| Conversion Tracking | 7 | Tags, events, deduplication, attribution, privacy, data quality |
+| Compliance | 18 | Policy, regulatory, benchmarks, account health |
+
+**Total: 190 checks applied in parallel**
+
+## Category Weights
+
+The analyzers' findings are weighted for your final score:
+
+- **Conversion Tracking (25%)** - Foundation of all optimization
+- **Wasted Spend (20%)** - Money being burned inefficiently
+- **Account Structure (15%)** - Campaign organization and setup
+- **Creative Quality (15%)** - Ad asset effectiveness
+- **Budget & Bidding (15%)** - Spend allocation and strategy
+- **Compliance (10%)** - Policy and regulatory adherence
+
+## Output
+
+You receive:
+- **Ads Health Score** (0-100 with grade A-F)
+- **Category breakdown** with individual scores
+- **Critical issues** requiring immediate attention
+- **High priority fixes** for this week
+- **Medium priority optimizations** for backlog
+- **Low priority items** to consider later
+- **Platform summaries** (scores for each platform)
+- **Budget reallocation recommendations**
+- **Action plan** with quick wins and estimated impact
+
+## Ads Health Score Grades
+
+| Grade | Score | Meaning |
+|-------|-------|---------|
+| A | 90-100 | Excellent - well-optimized accounts |
+| B | 80-89 | Good - minor optimization opportunities |
+| C | 70-79 | Needs Work - significant improvements available |
+| D | 60-69 | Poor - major issues affecting performance |
+| F | <60 | Critical - fundamental problems, likely losing money |
+
+## Account Data Format
+
+Paste or describe your account data. Include:
+- Campaign types and objectives
+- Budget and monthly spend
+- Conversion tracking setup
+- Ad platform breakdown (Google, Meta, LinkedIn, etc.)
+- Ad performance metrics (CPA, ROAS, CTR, CVR)
+- Targeting and audience setup
+- Creative details (number of ads, formats used)
+
+## Example Usage
+
+### Full Audit (Recommended)
+```bash
+/agileflow:ads:audit
+# Interactive: will ask for account data
+# Returns: Ads Health Score with action plan
+```
+
+### With Account Data
+```bash
+/agileflow:ads:audit "Google Ads: $10K/month, 8 campaigns, avg CPC $3, CPA $50. Meta: $5K/month, 6 campaigns, ROAS 2.5:1. Using Broad Match, some tracking issues."
+# Returns: Immediate analysis and scoring
+```
+
+### Specific Platforms Only
+```bash
+/agileflow:ads:audit <data> PLATFORMS=google,meta
+# Only analyzes Google and Meta, skips LinkedIn/TikTok/etc.
+```
+
+## Quality Gates (Critical Rules)
+
+These rules override the scoring and must be addressed first:
+
+1. **Conversion tracking required** - No optimization recommendations without verified tracking
+2. **No Broad Match without Smart Bidding** - Critical waste generator
+3. **3x Kill Rule** - Campaigns with CPA > 3x target must be paused immediately
+4. **Compliance first** - Legal violations trump optimization opportunities
+5. **Learning phase protected** - Never change during learning windows
+
+## When to Run
+
+- **Monthly** - Monitor account health and prioritize optimization
+- **After major changes** - New campaigns, platform setup, budget changes
+- **Quarterly** - Comprehensive review of overall strategy
+- **Before scaling** - Ensure account is optimized before increasing budget
+
+## Next Steps After Audit
+
+The audit report suggests next actions:
+
+1. **Fix Critical Issues** - Address any tracking problems, compliance violations, or legal risks
+2. **Implement Quick Wins** - Fast, high-impact improvements (usually 1-2 hours each)
+3. **This Week Items** - Medium-effort, significant-impact fixes
+4. **This Month Items** - Larger optimization projects
+5. **Ongoing Items** - Monitoring and testing cadence
+
+## Related Commands
+
+- [`/ads:google`](/commands/ads-google) - Google Ads deep-dive
+- [`/ads:meta`](/commands/ads-meta) - Meta Ads deep-dive
+- [`/ads:budget`](/commands/ads-budget) - Budget optimization
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning

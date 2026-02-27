@@ -1,0 +1,295 @@
+---
+title: /seo:programmatic
+description: Programmatic SEO quality gates - validate bulk-generated pages for uniqueness, thin content, duplicate titles, and scale limits
+---
+
+# /seo:programmatic
+
+Quality gate enforcement for programmatic SEO. Validate bulk-generated pages for uniqueness, thin content, duplicate elements, and scale safety limits.
+
+## Quick Start
+
+```bash
+/agileflow:seo:programmatic https://example.com               # Sample 20 pages for QA
+/agileflow:seo:programmatic https://example.com MAX_SAMPLE=50  # Larger sample
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Site with programmatic pages |
+| `MAX_SAMPLE` | No | 20 | Number of pages to sample (5-100) |
+
+## What is Programmatic SEO?
+
+Programmatic SEO creates dozens to thousands of pages from a template + data:
+
+**Examples**:
+- **Location pages**: `/cities/new-york`, `/cities/los-angeles` (template + city data)
+- **Product pages**: `/products/item-1`, `/products/item-2` (template + product data)
+- **Topic pages**: `/guides/topic-1`, `/guides/topic-2` (template + topic data)
+- **Comparison pages**: `/compare/a-vs-b` (template + pair data)
+
+**Risk**: Easy to create scale, but easy to create "thin" content that gets penalized.
+
+## Quality Gates
+
+| Metric | Warning | Hard Stop |
+|--------|---------|-----------|
+| **Pages without audit** | 100+ | 500+ |
+| **Unique content %** | < 40% | < 20% |
+| **Thin pages (< 300w)** | 10+ | 50+ |
+| **Duplicate titles** | 5+ | 20+ |
+| **Duplicate meta descriptions** | 10+ | 30+ |
+| **Pages with no inbound links** | 5+ | 20+ |
+| **404 errors** | 5+ | 20+ |
+
+If you hit a Hard Stop threshold, major issues need immediate fixing.
+
+## Example Usage
+
+### Standard Audit (20 pages)
+```bash
+/agileflow:seo:programmatic https://example.com
+```
+
+Sample 20 representative pages from programmatic patterns.
+
+### Deeper Sample (50 pages)
+```bash
+/agileflow:seo:programmatic https://example.com MAX_SAMPLE=50
+```
+
+Sample 50 pages for more statistically significant results.
+
+## Output Format
+
+```markdown
+# Programmatic SEO QA: https://example.com
+
+## Pages Sampled
+
+Found ~1,200 estimated location pages
+Sampled: 20 pages (representative)
+
+---
+
+## Quality Gate Results
+
+| Gate | Status | Value | Threshold | Issues |
+|------|--------|-------|-----------|--------|
+| **Unique content** | WARNING | 35% | ≥ 40% | Too much template boilerplate |
+| **Thin content** | WARNING | 8 pages | < 10 | Some location pages under 300w |
+| **Duplicate titles** | PASS | 0 duplicates | < 5 | All titles unique ✓ |
+| **Duplicate descriptions** | PASS | 2 duplicates | < 10 | Minimal duplication ✓ |
+| **Orphan pages** | PASS | 1 page | < 5 | One location missing internal links |
+| **404 errors** | PASS | 0 | < 5 | All pages live ✓ |
+
+**Overall**: ⚠️ WARNING - Content uniqueness too low, some thin pages
+
+---
+
+## Detailed Analysis
+
+### Content Uniqueness
+
+| Page | Template % | Unique % | Status |
+|------|-----------|----------|--------|
+| /locations/new-york | 67% | 33% | Below 40% ⚠️ |
+| /locations/los-angeles | 71% | 29% | Below 40% ⚠️ |
+| /locations/chicago | 64% | 36% | Below 40% ⚠️ |
+| /locations/houston | 62% | 38% | Close to threshold ⚠️ |
+| /locations/phoenix | 58% | 42% | Meets standard ✓ |
+
+**Pattern**: First 4 pages reuse too much boilerplate text.
+Only Phoenix page has enough unique content.
+
+**Fix**: Add location-specific content:
+- Local history or unique aspects
+- Specific services available in that location
+- Local partnerships or case studies
+- Community highlights
+
+### Thin Content Detection
+
+| Page | Words | Status | Issue |
+|------|-------|--------|-------|
+| /locations/new-york | 520 | OK | Min 300, at acceptable |
+| /locations/los-angeles | 480 | OK | Minimal for location page |
+| /locations/chicago | 290 | THIN | Below 300w ✗ |
+| /locations/houston | 310 | OK | Borderline |
+| /locations/phoenix | 680 | Good | Well above minimum |
+
+**Pattern**: Inconsistent content depth. Some pages meet minimum, others fall short.
+
+**Recommendation**: Ensure all location pages > 350 words:
+- /chicago needs +60 words minimum
+- /houston could use +40 words
+- /new-york and /los-angeles should add 100+ for strength
+
+### Title/Description Quality
+
+**Duplicate titles**: None detected ✓
+- All 20 pages have unique titles
+- Example variation: "Services in [City]"
+
+**Duplicate descriptions**: 2 detected ⚠️
+- /locations/los-angeles and /locations/austin both use same generic description
+- Should be location-specific
+
+### Internal Linking
+
+| Page | Inbound Links | Status |
+|------|---------------|--------|
+| /locations/new-york | 3 | Good |
+| /locations/los-angeles | 0 | Orphan ⚠️ |
+| /locations/chicago | 1 | Minimal |
+| /locations/houston | 2 | OK |
+| /locations/phoenix | 4 | Excellent |
+
+**Issue**: Los Angeles page is orphaned (not linked from homepage/nav).
+
+**Fix**: Add to location listing page or main navigation.
+
+---
+
+## Recommendations
+
+### Immediate (Critical)
+1. **Add location-specific content**
+   - Impact: Improves from 35% unique → target 50%+
+   - Effort: 2-3 hours per page, 40-60 total hours
+   - Priority: HIGH
+
+2. **Fix Los Angeles orphan page**
+   - Impact: Page now crawlable and indexable
+   - Effort: 10 minutes
+   - Priority: HIGH
+
+### High Priority (This week)
+1. **Expand thin content pages**
+   - Chicago and Houston need +50-100 words each
+   - Effort: 1 hour per page, 10 total hours
+
+2. **Fix duplicate meta descriptions**
+   - Los Angeles and Austin need unique descriptions
+   - Effort: 30 minutes
+
+3. **Create location content best practices guide**
+   - Ensure future pages meet quality gates
+   - Effort: 2 hours
+
+### Medium Priority (This month)
+1. **Audit full set of 1,200 location pages**
+   - This sample extrapolates to ~400+ pages under 40% unique
+   - Effort: Vary by automation approach
+
+2. **Consider content enhancement strategy**
+   - Add location-specific data (weather, population, attractions)
+   - Partner with local sources
+   - Effort: Depends on scale
+
+---
+
+## Quality Gate Status
+
+**Content Uniqueness**: WARNING ⚠️
+- Target: ≥ 40% unique per page
+- Current: 35% average
+- Action needed: Yes
+
+**Thin Content**: WARNING ⚠️
+- Target: < 10 pages under 300 words
+- Current: 1 under 300, 3 under 350
+- Action needed: Yes
+
+**Duplicates**: PASS ✓
+- Title duplicates: 0
+- Description duplicates: 2 (monitor)
+
+**Orphans**: PASS ✓
+- Pages with no inbound links: 1
+- Action: Fix Los Angeles
+
+**Overall Assessment**: ⚠️ NEEDS WORK
+- Not at hard stop yet (500+ thin pages)
+- But clear issues before scaling to 1,200 pages
+- Recommend fixing sample before scaling
+
+---
+
+## Extrapolated Results
+
+Based on 20-page sample:
+
+| Metric | Sampled (20) | Extrapolated (1,200) |
+|--------|--------------|----------------------|
+| Below 40% unique | 4 pages (20%) | ~240 pages |
+| Under 300 words | 1 page (5%) | ~60 pages |
+| Duplicate titles | 0 pages (0%) | ~0 pages |
+| Duplicate descriptions | 2 pages (10%) | ~120 pages |
+| Orphan pages | 1 page (5%) | ~60 pages |
+
+**Extrapolation caveat**: Sample may not be fully representative. Audit more pages if concerns.
+
+---
+
+## Best Practices for Programmatic SEO
+
+### Content Uniqueness
+1. **Minimum 40% unique per page** - Don't over-template
+2. **Add location/topic-specific data** - Local info, statistics
+3. **Vary content structure** - Don't use identical paragraph order
+4. **Include original insights** - Case studies, interviews, data
+5. **Update regularly** - Keep content fresh, not stale template
+
+### Thin Content Avoidance
+1. **Minimum 300 words** for product/location pages
+2. **Minimum 500 words** for competitive service pages
+3. **Include substantive content** - Not just keywords + CTA
+4. **Add supporting elements** - Images, tables, FAQs
+5. **Answer user questions** - Real depth, not surface-level
+
+### Technical SEO
+1. **Ensure all pages crawlable** - From main navigation
+2. **Avoid orphan pages** - No inbound links = not indexed
+3. **Include all in sitemap** - Discoverable by search engines
+4. **Unique title + meta** - Per page, not templated
+5. **Proper canonical tags** - No duplication issues
+
+### Scale Safely
+1. **Audit samples regularly** - Before major scale increases
+2. **Set quality gates** - Document minimum standards
+3. **Automate uniqueness checks** - Tools can help detect boilerplate
+4. **Monitor rankings** - Watch for thin content penalties
+5. **Get ready for review** - Manual review may come from Google
+
+---
+
+## Tools for Programmatic SEO QA
+
+- **Content analysis**: Screaming Frog, Sitebulb
+- **Uniqueness detection**: Copyscape, Grammarly
+- **Bulk auditing**: GSC, Ahrefs Site Explorer
+- **Template testing**: Manual sampling like this audit
+- **Ranking tracking**: SEMrush, Ahrefs for bulk tracking
+
+---
+
+## When to Scale
+
+Only scale to 1,000+ pages when:
+- ✓ Sample passes all quality gates (or close)
+- ✓ No "Hard Stop" thresholds exceeded
+- ✓ You have a process to keep content unique
+- ✓ All pages are crawlable and linkable
+- ✓ You have monitoring in place
+
+---
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - Full-site audit including programmatic
+- [`/seo:page`](/commands/seo-page) - Deep-dive into individual page
+- [`/seo`](/commands/seo) - SEO toolkit overview

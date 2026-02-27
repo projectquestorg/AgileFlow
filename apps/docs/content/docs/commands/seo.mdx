@@ -1,0 +1,276 @@
+---
+title: /seo
+description: SEO analysis toolkit - comprehensive website audits, page analysis, schema validation, AI search optimization, and more
+---
+
+# /seo
+
+SEO analysis toolkit for comprehensive website optimization. Routes to specialized sub-commands for audits, page analysis, schema validation, and more.
+
+## Quick Reference
+
+```bash
+/agileflow:seo:audit https://example.com                  # Full site audit (6 analyzers)
+/agileflow:seo:page https://example.com/about              # Single page deep analysis
+/agileflow:seo:schema https://example.com                  # Schema/structured data validation
+/agileflow:seo:geo https://example.com                     # AI search optimization
+/agileflow:seo:technical https://example.com               # Technical SEO deep-dive
+/agileflow:seo:content https://example.com                 # E-E-A-T & content quality
+/agileflow:seo:images https://example.com                  # Image optimization analysis
+/agileflow:seo:sitemap https://example.com                 # Sitemap validation
+/agileflow:seo:hreflang https://example.com                # Multi-language SEO
+/agileflow:seo:plan https://example.com                    # Strategic SEO planning
+/agileflow:seo:programmatic https://example.com            # Programmatic SEO quality gates
+/agileflow:seo:competitor https://you.com https://comp.com # Competitor comparison
+```
+
+## Sub-Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| **audit** | Full site audit with health score (0-100) | Starting point for any site |
+| **page** | Single page analysis (6 dimensions) | Optimize a specific page |
+| **schema** | Structured data validation + generation | Rich results optimization |
+| **geo** | AI search platform optimization | Optimize for ChatGPT, AI Overviews |
+| **technical** | Crawlability, indexing, security | Technical foundation issues |
+| **content** | E-E-A-T scoring + content quality | Content strategy improvement |
+| **images** | Alt text, sizing, formats, lazy loading | Image-heavy pages |
+| **sitemap** | XML sitemap validation | Crawl coverage concerns |
+| **hreflang** | Multi-language/region SEO | International sites |
+| **plan** | Strategic SEO roadmap | Planning SEO improvements |
+| **programmatic** | Bulk page quality gates | Programmatic SEO at scale |
+| **competitor** | Comparison page generation | Competitive positioning |
+
+## Routing Logic
+
+If you provide a URL without a sub-command, the system determines intent:
+
+- **"audit my site"** → `/agileflow:seo:audit`
+- **"check this page"** → `/agileflow:seo:page`
+- **"structured data" / "schema"** → `/agileflow:seo:schema`
+- **"AI search" / "ChatGPT"** → `/agileflow:seo:geo`
+- **"technical" / "crawl"** → `/agileflow:seo:technical`
+- **"content quality" / "E-E-A-T"** → `/agileflow:seo:content`
+- **"images" / "alt text"** → `/agileflow:seo:images`
+- **"sitemap"** → `/agileflow:seo:sitemap`
+- **"international" / "hreflang"** → `/agileflow:seo:hreflang`
+- **"strategy" / "plan"** → `/agileflow:seo:plan`
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<subcommand>` | Yes | The specific SEO analysis to run |
+| `<URL>` | Yes | Website URL to analyze |
+
+## Usage Examples
+
+### Start with Full Audit
+
+```bash
+/agileflow:seo:audit https://example.com
+```
+
+Runs all 6 analyzers in parallel and produces a weighted health score (0-100).
+
+### Analyze a Specific Page
+
+```bash
+/agileflow:seo:page https://example.com/about
+```
+
+Deep-dive into one page across 6 dimensions: On-Page SEO, Content, Technical, Schema, Images, Performance.
+
+### Validate Schema Markup
+
+```bash
+/agileflow:seo:schema https://example.com GENERATE=true
+```
+
+Detect existing schema, validate, flag deprecated types, and optionally generate ready-to-use JSON-LD.
+
+### Check Core Web Vitals Indicators
+
+```bash
+/agileflow:seo:technical https://example.com
+```
+
+Analyze crawlability, indexability, security, URL structure, mobile-friendliness, and performance.
+
+### Optimize for AI Search
+
+```bash
+/agileflow:seo:geo https://example.com
+```
+
+Analyze content citability, structure, multimodal content, authority, and AI bot access.
+
+### Review Images
+
+```bash
+/agileflow:seo:images https://example.com
+```
+
+Audit alt text, image sizing (CLS prevention), modern formats, lazy loading, and LCP optimization.
+
+### Validate Sitemap
+
+```bash
+/agileflow:seo:sitemap https://example.com
+```
+
+Check XML structure, URL coverage, quality gates, and robots.txt declaration.
+
+### Multi-Language Checking
+
+```bash
+/agileflow:seo:hreflang https://example.com
+```
+
+Validate hreflang tags, reciprocity, language codes, and x-default fallback.
+
+### Create SEO Plan
+
+```bash
+/agileflow:seo:plan https://example.com TIMEFRAME=6mo
+```
+
+Generate strategic SEO roadmap with phases, content strategy, and KPIs.
+
+### QA Programmatic Content
+
+```bash
+/agileflow:seo:programmatic https://example.com
+```
+
+Enforce quality gates on bulk-generated pages: uniqueness, thin content, duplicates.
+
+### Compare with Competitors
+
+```bash
+/agileflow:seo:competitor https://you.com https://competitor.com
+```
+
+Analyze competing pages and generate SEO-optimized comparison content.
+
+## How It Works
+
+1. **Parse your request** - Determine which sub-command you need
+2. **Route to specialist** - Deploy the appropriate analyzer or orchestrator
+3. **Return focused analysis** - Get actionable findings for your specific need
+
+## When to Use Each Command
+
+### `/agileflow:seo:audit` (Starting Point)
+- Comprehensive health check
+- Baseline for any SEO project
+- Business type detection
+- Weighted scoring across 6 categories
+- Prioritized action plan
+- **Time**: 2-5 minutes
+
+### `/agileflow:seo:page` (Targeted Optimization)
+- Optimize one specific page
+- 6-dimension report card
+- Quick fixes prioritized
+- Deep-dive per dimension available
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:schema` (Rich Results)
+- Unlock rich result opportunities
+- Validate existing schema
+- Generate ready-to-use JSON-LD
+- Flag deprecated types
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:content` (Content Strategy)
+- E-E-A-T assessment
+- Content depth analysis
+- AI content detection
+- Citation readiness
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:technical` (Foundation)
+- Crawlability issues
+- Security headers
+- Mobile readiness
+- URL structure
+- **Time**: 2-3 minutes
+
+### `/agileflow:seo:geo` (AI Search)
+- ChatGPT, Claude, Perplexity visibility
+- Citability score
+- AI bot access status
+- llms.txt optimization
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:images` (Performance)
+- Alt text audit
+- CLS prevention (sizing)
+- Modern format adoption
+- Responsive images
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:sitemap` (Crawl Coverage)
+- Existence and structure
+- URL quality gates
+- Coverage analysis
+- robots.txt reference
+- **Time**: 1 minute
+
+### `/agileflow:seo:hreflang` (International)
+- Multi-language validation
+- Reciprocity checks
+- Language code correctness
+- x-default fallback
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:plan` (Strategic)
+- Industry-specific template
+- Phased roadmap
+- Content strategy
+- KPI framework
+- **Time**: 2-3 minutes
+
+### `/agileflow:seo:programmatic` (Quality Gates)
+- Bulk page validation
+- Content uniqueness
+- Thin content detection
+- Scale safety limits
+- **Time**: 1-2 minutes
+
+### `/agileflow:seo:competitor` (Positioning)
+- Feature matrix
+- SEO comparison
+- Comparison content draft
+- Schema markup
+- **Time**: 2-3 minutes
+
+## Output Formats
+
+- **audit**: SEO Audit Report with health score 0-100, category scores, critical/high/medium/low findings, action plan
+- **page**: Report card per dimension + prioritized fixes
+- **schema**: Existing schema validation + deprecated type warnings + generated JSON-LD
+- **content**: E-E-A-T breakdown with scoring and signal analysis
+- **technical**: 8-category assessment with security, mobile, crawl findings
+- **geo**: AI search readiness score with bot access status and citation analysis
+- **images**: Image-by-image findings with alt text, sizing, format issues
+- **sitemap**: Sitemap validation report with coverage and quality gates
+- **hreflang**: Reciprocity matrix and language configuration issues
+- **plan**: Multi-phase roadmap with KPIs and content calendar
+- **programmatic**: Quality gate results with sample analysis
+- **competitor**: Feature matrix, SEO comparison, comparison page draft, schema
+
+## Best Practices
+
+1. **Start with audit** - Get baseline health score and business type classification
+2. **Fix critical issues first** - Address ranking/indexing blockers immediately
+3. **Then optimize** - Work through high and medium priority findings
+4. **Monitor progress** - Re-run audit monthly to track improvements
+5. **Use specific commands** - Once audit identifies weak areas, use focused commands (e.g., `/seo:content` if E-E-A-T is low)
+
+## Related Documentation
+
+- [`/audit`](/commands/audit) - General code audit
+- [`/research`](/commands/research) - Research commands
+- [`/adr`](/commands/adr) - Architecture Decision Records

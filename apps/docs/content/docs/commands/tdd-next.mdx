@@ -1,0 +1,303 @@
+---
+title: /tdd-next
+description: Advance TDD phase (RED→GREEN→REFACTOR→COMPLETE)
+---
+
+# /tdd-next
+
+Advance to the next TDD phase with gate validation. Automatically detects current phase and validates that test conditions are met before advancing.
+
+## Quick Start
+
+```bash
+/agileflow:tdd-next
+```
+
+Advance the current active TDD workflow to the next phase (auto-detects story).
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<US-ID>` | No | Story ID to advance (auto-detects if omitted) |
+
+## Usage Examples
+
+### Auto-detect and advance
+
+```bash
+/agileflow:tdd-next
+```
+
+Finds the active TDD story and advances from RED → GREEN → REFACTOR → COMPLETE.
+
+### Advance specific story
+
+```bash
+/agileflow:tdd-next US-0042
+```
+
+Explicitly specify which story's TDD phase to advance.
+
+## Phase Transitions
+
+### RED → GREEN
+
+```
+Current: 🔴 RED phase
+Target:  🟢 GREEN phase
+Gate:    test_status must be "failing"
+```
+
+**Requirements**:
+- Tests must FAIL (verified by `/agileflow:verify`)
+- Cannot advance if tests pass or have errors
+
+**What happens**:
+- Phase updates to GREEN
+- You can now write implementation code
+- Test files remain read-only (don't modify them)
+
+### GREEN → REFACTOR
+
+```
+Current: 🟢 GREEN phase
+Target:  🔵 REFACTOR phase
+Gate:    test_status must be "passing"
+```
+
+**Requirements**:
+- All tests must PASS (verified by `/agileflow:verify`)
+- Cannot advance if tests fail
+
+**What happens**:
+- Phase updates to REFACTOR
+- You can now clean up and optimize code
+- Keep all tests passing while refactoring
+
+### REFACTOR → Complete or New Cycle
+
+```
+Current: 🔵 REFACTOR phase
+Target:  ✅ COMPLETE or 🔴 RED (new cycle)
+Gate:    test_status must be "passing"
+```
+
+**Requirements**:
+- All tests must PASS (verified by `/agileflow:verify`)
+- Cannot advance if tests fail
+
+**Options**:
+1. **Complete TDD** - All features done, code is clean, ready for review
+2. **Start new cycle** - More features to add, return to RED phase
+3. **Cancel TDD** - Exit workflow, keep changes
+
+## How It Works
+
+```
+┌─────────────────────────────────────────┐
+│   /agileflow:tdd-next                 │
+│   1. Find active TDD story             │
+│   2. Check current phase               │
+│   3. Validate gate conditions          │
+│   4. If valid: advance phase           │
+│   5. If invalid: block and explain     │
+└─────────────────────────────────────────┘
+```
+
+## Gate Validation
+
+Each phase transition checks `test_status` from the story's last `/agileflow:verify` run:
+
+| Transition | Required Status | Reason |
+|-----------|-----------------|--------|
+| RED → GREEN | `"failing"` | Ensure tests actually fail before implementing |
+| GREEN → REFACTOR | `"passing"` | Ensure implementation passes tests |
+| REFACTOR → COMPLETE | `"passing"` | Ensure refactored code still passes |
+| REFACTOR → RED (cycle 2) | `"passing"` | Ensure code is stable before new features |
+
+## Gate Blocked Example
+
+If trying to advance RED → GREEN but tests are passing:
+
+```
+Current: 🔴 RED phase
+Target:  🟢 GREEN phase
+Gate:    test_status must be "failing"
+Status:  test_status = "passing" ❌
+
+🚫 Cannot advance: Tests must FAIL before moving to GREEN.
+
+This means either:
+  1. You haven't written tests yet (write failing tests first)
+  2. Your tests pass because they don't test real behavior
+  3. The implementation already exists
+
+Action: Write tests that verify behavior not yet implemented.
+Then run /agileflow:verify to confirm they fail.
+```
+
+## Checking Status
+
+To see current TDD phase and test status:
+
+```bash
+/agileflow:status US-0042
+```
+
+Shows:
+- Current `tdd_phase`
+- Latest `test_status`
+- Number of completed cycles
+- Timestamp of last transition
+
+## Before Advancing
+
+Always run `/agileflow:verify` first to check test status:
+
+```bash
+/agileflow:verify
+/agileflow:tdd-next
+```
+
+This ensures:
+1. Tests are actually run (not just assumed)
+2. Test status is current
+3. Gates can validate correctly
+
+## Successful Advancement Example
+
+### RED → GREEN Success
+
+```
+🟢 TDD GREEN PHASE - US-0042: Add user authentication
+══════════════════════════════════════════════════════
+
+RED → GREEN transition complete! ✅
+
+Write MINIMAL code to make tests pass. Rules:
+  • Write the simplest implementation that passes tests
+  • Do NOT refactor yet - ugly code is fine
+  • Do NOT add features beyond what tests require
+  • Do NOT modify test files (except removing .skip())
+  • Run tests frequently
+
+Next steps:
+  1. Implement code to pass the failing tests
+  2. Run /agileflow:verify to confirm tests PASS
+  3. Run /agileflow:tdd-next to advance to REFACTOR
+```
+
+### GREEN → REFACTOR Success
+
+```
+🔵 TDD REFACTOR PHASE - US-0042: Add user authentication
+═════════════════════════════════════════════════════════
+
+GREEN → REFACTOR transition complete! ✅
+
+Clean up while keeping tests GREEN. Rules:
+  • Extract common patterns into helpers
+  • Improve naming and readability
+  • Reduce duplication
+  • Run tests after every change
+
+Next steps:
+  1. Refactor code to be clean and maintainable
+  2. Run /agileflow:verify to confirm tests still PASS
+  3. Run /agileflow:tdd-next to COMPLETE or cycle
+```
+
+### REFACTOR Completion Options
+
+```
+Current: 🔵 REFACTOR phase
+Target:  ? (Choose next step)
+Gate:    test_status must be "passing" ✓
+
+What would you like to do?
+
+  ✓ Complete TDD (Recommended)
+    All tests pass, code is clean - ready for review
+
+  ✓ Start new RED→GREEN cycle
+    More features to add with TDD discipline
+
+  ✓ Cancel TDD
+    Exit TDD workflow, keep changes
+```
+
+## Error Handling
+
+### No Active TDD Story
+
+```
+❌ No active TDD workflow found.
+
+Start TDD with: /agileflow:tdd US-0042
+```
+
+### Multiple Active TDD Stories
+
+```
+⚠️ Multiple active TDD stories found:
+  🔴 US-0042: Add auth middleware (RED phase)
+  🟢 US-0043: User settings API (GREEN phase)
+
+Specify which story: /agileflow:tdd-next US-0042
+```
+
+### No Test Results
+
+```
+🚫 Cannot advance: No test results found.
+
+Run /agileflow:verify first to execute tests and record status.
+Then try /agileflow:tdd-next again.
+```
+
+## Status Update Details
+
+When phase advances successfully, `docs/09-agents/status.json` is updated:
+
+```json
+{
+  "US-0042": {
+    "tdd_phase": "green",
+    "tdd_last_transition": "2026-02-25T14:30:00Z",
+    "test_status": "failing"
+  }
+}
+```
+
+Updates:
+- `tdd_phase`: New phase (green, refactor, complete)
+- `tdd_last_transition`: ISO timestamp of transition
+- `test_status`: From last verify run
+
+## Integration Points
+
+**Uses**:
+- `docs/09-agents/status.json` - Story TDD data
+- `/agileflow:verify` - Test status verification
+
+**Used by**:
+- `/agileflow:tdd` - Initial TDD setup
+- `/agileflow:babysit` - Implementation workflow
+- `/agileflow:review` - Post-TDD code review
+
+## Best Practices
+
+1. **Always run `/agileflow:verify` before advancing** - Ensures gates work correctly
+2. **Fix failing tests before advancing** - Don't skip gate checks
+3. **Commit after each phase** - Create good version history
+4. **Run logic audit after GREEN** - Before refactoring, check edge cases
+5. **Use REFACTOR wisely** - Only clean code, don't add features
+
+## Related Commands
+
+- [`/tdd`](/commands/tdd) - Start TDD workflow
+- [`/verify`](/commands/verify) - Run tests and update test_status
+- [`/review`](/commands/review) - Code review after TDD complete
+- [`/babysit`](/commands/babysit) - Main implementation workflow
+- [`/tests`](/commands/tests) - Set up testing infrastructure

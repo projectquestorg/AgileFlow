@@ -1,0 +1,257 @@
+---
+title: /seo:audit
+description: Full website SEO audit with 6 parallel analyzers, business type detection, weighted health score 0-100, and prioritized action plan
+---
+
+# /seo:audit
+
+Deploy 6 specialized SEO analyzers in parallel to audit a website, then synthesize results into a weighted health score (0-100) with prioritized action plan.
+
+## Quick Start
+
+```bash
+/agileflow:seo:audit https://example.com                     # Quick audit (all 6 analyzers)
+/agileflow:seo:audit https://example.com DEPTH=deep           # Deep audit (more thorough)
+/agileflow:seo:audit https://example.com MAX_PAGES=100        # Audit up to 100 pages
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Homepage URL to audit |
+| `DEPTH` | No | quick | quick (standard) or deep (comprehensive) |
+| `MAX_PAGES` | No | 50 | Maximum pages to analyze (1-500) |
+
+## How It Works
+
+```
+1. Parse arguments (URL, depth, max_pages)
+2. Fetch homepage → detect business type
+3. Fetch robots.txt + sitemap.xml
+4. Deploy 6 analyzers IN PARALLEL
+5. Collect all results
+6. Run consensus → weighted health score
+7. Generate SEO Audit Report + action plan
+```
+
+## 6 Parallel Analyzers
+
+The audit deploys these analyzers simultaneously:
+
+1. **Technical SEO Analyzer** - Crawlability, indexability, security, URLs, mobile
+2. **Content Quality Analyzer** - E-E-A-T scoring, readability, depth
+3. **Schema Analyzer** - JSON-LD detection, validation, deprecated types
+4. **Image Analyzer** - Alt text, sizing, formats, lazy loading
+5. **Performance Analyzer** - LCP, INP, CLS, resource loading
+6. **Sitemap Analyzer** - XML validation, coverage, quality gates
+
+## Business Type Detection
+
+The audit automatically detects your business type:
+
+| Type | Indicators |
+|------|-----------|
+| SaaS | Login, pricing, docs, API references |
+| Local Business | Address, phone, map, service areas |
+| E-commerce | Products, cart, checkout, reviews |
+| Publisher | Articles, blog, news, bylines |
+| Agency | Portfolio, services, team, cases |
+
+Business type affects which findings are prioritized in the report.
+
+## Category Weights
+
+Each category contributes to the final health score:
+
+| Category | Weight | Analyzer |
+|----------|--------|----------|
+| Technical SEO | 20% | seo-analyzer-technical |
+| Content Quality | 20% | seo-analyzer-content |
+| Schema / Structured Data | 15% | seo-analyzer-schema |
+| Performance (Core Web Vitals) | 15% | seo-analyzer-performance |
+| Image Optimization | 15% | seo-analyzer-images |
+| Sitemap | 15% | seo-analyzer-sitemap |
+
+## Example Usage
+
+### Quick Audit
+```bash
+/agileflow:seo:audit https://example.com
+```
+
+Standard analysis of homepage and key pages. Takes 2-3 minutes.
+
+### Deep Audit
+```bash
+/agileflow:seo:audit https://example.com DEPTH=deep
+```
+
+More thorough per-analyzer analysis. Takes 5+ minutes.
+
+### Large Site Audit
+```bash
+/agileflow:seo:audit https://example.com MAX_PAGES=200
+```
+
+Analyze more pages for comprehensive coverage. For sites with 100+ pages.
+
+## Output
+
+The audit generates a **SEO Audit Report** with:
+
+```markdown
+# SEO Audit Report
+
+Target: https://example.com
+Business Type: E-commerce
+Depth: quick
+
+---
+
+## Health Score: 72/100 (Good)
+
+| Category | Score | Weight | Weighted |
+|----------|-------|--------|----------|
+| Technical SEO | 85/100 | 20% | 17.0 |
+| Content Quality | 68/100 | 20% | 13.6 |
+| Schema | 45/100 | 15% | 6.8 |
+| Performance | 78/100 | 15% | 11.7 |
+| Images | 82/100 | 15% | 12.3 |
+| Sitemap | 75/100 | 15% | 11.3 |
+
+---
+
+## Critical Issues (Fix Immediately)
+
+### 1. Missing Product Schema
+Impact: No rich results for product pages
+Effort: Low
+[Remediation details]
+
+---
+
+## High Priority (Fix This Sprint)
+
+### 2. Missing alt text on hero images
+### 3. Render-blocking CSS in <head>
+
+---
+
+## Medium Priority (Optimization Backlog)
+
+### 4. Thin content on service pages
+### 5. Images not responsive
+
+---
+
+## Low Priority (Nice to Have)
+
+[Brief list]
+
+---
+
+## Action Plan
+
+### Quick Wins (< 1 hour each)
+- [ ] Add missing alt text (15 images)
+- [ ] Fix 3 broken 404s in sitemap
+
+### This Week
+- [ ] Generate Product schema for all products
+- [ ] Optimize hero image LCP
+
+### This Month
+- [ ] Expand thin service pages (under 800w)
+- [ ] Implement lazy loading for below-fold
+```
+
+The report is saved to: `docs/08-project/seo-audits/seo-audit-{YYYYMMDD}.md`
+
+## Health Score Scale
+
+| Score | Rating | Status |
+|-------|--------|--------|
+| 90-100 | Excellent | Well-optimized, minor opportunities |
+| 70-89 | Good | Solid foundation, clear improvements |
+| 50-69 | Needs Work | Significant issues to address |
+| 0-49 | Critical | Major SEO problems blocking growth |
+
+## Next Steps
+
+After the audit, you can:
+
+1. **Fix critical issues** - Follow the Critical Issues section
+2. **Deep-dive into weak categories** - Run focused commands:
+   - Low content score? → `/agileflow:seo:content {url}`
+   - Low performance? → `/agileflow:seo:technical {url}` or `/agileflow:seo:images {url}`
+   - No schema? → `/agileflow:seo:schema {url} GENERATE=true`
+3. **Create a strategic plan** - `/agileflow:seo:plan {url} TIMEFRAME=6mo`
+4. **Re-audit monthly** - Track progress toward 100
+
+## What Each Analyzer Checks
+
+### Technical SEO (20% weight)
+- robots.txt rules and crawlability
+- Canonical tags and redirects
+- HTTPS, HSTS, security headers
+- URL structure and consistency
+- Mobile viewport and responsive design
+- Crawl depth and sitemap coverage
+
+### Content Quality (20% weight)
+- Trustworthiness signals (HTTPS, contact, privacy)
+- Expertise (author credentials, citations)
+- Authoritativeness (brand signals, testimonials)
+- Experience (first-person, original content)
+- Word count vs page type minimums
+- AI content red flags
+
+### Schema (15% weight)
+- Existing JSON-LD, Microdata, RDFa detection
+- Validation against Google standards
+- Required properties present
+- Deprecated type flagging (HowTo, SpecialAnnouncement)
+- Missing schema opportunities
+- Rich result eligibility
+
+### Performance (15% weight)
+- LCP (Largest Contentful Paint) optimization
+- INP (Interaction to Next Paint) responsiveness
+- CLS (Cumulative Layout Shift) risk factors
+- Render-blocking CSS/JS
+- Third-party script impact
+- Resource loading and compression
+
+### Images (15% weight)
+- Alt text quality and descriptiveness
+- Image sizing (width/height for CLS)
+- Modern formats (WebP/AVIF) adoption
+- Lazy loading on below-fold images
+- LCP image priority (`fetchpriority="high"`)
+- Responsive images (srcset/sizes)
+
+### Sitemap (15% weight)
+- Sitemap existence and XML validity
+- URL coverage and important pages
+- URLs returning 200 status
+- lastmod dates (present and recent)
+- Sitemap declared in robots.txt
+- Size compliance (<50k URLs, <50MB)
+
+## Tips for Success
+
+1. **Be specific with URLs** - Use homepage for full-site audit
+2. **Start shallow** - DEPTH=quick for first pass, deep later
+3. **Increase pages if needed** - MAX_PAGES=200 for large sites
+4. **Don't skip critical issues** - Fix them before optimizing
+5. **Monitor category gaps** - Lowest scores indicate improvement areas
+6. **Track progress** - Re-audit every 2-4 weeks while improving
+
+## Related Commands
+
+- [`/seo:page`](/commands/seo-page) - Deep-dive into specific page
+- [`/seo:schema`](/commands/seo-schema) - Generate schema markup
+- [`/seo:content`](/commands/seo-content) - E-E-A-T analysis
+- [`/seo:plan`](/commands/seo-plan) - Strategic planning
+- [`/seo`](/commands/seo) - SEO toolkit overview

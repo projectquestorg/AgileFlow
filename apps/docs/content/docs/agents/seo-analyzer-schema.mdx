@@ -1,0 +1,154 @@
+---
+title: Schema / Structured Data
+description: Schema markup analyzer for JSON-LD detection, validation against Google standards, deprecated type flagging, and ready-to-use structured data generation
+---
+
+# Schema / Structured Data
+
+The Schema/Structured Data agent is a specialized SEO analyzer focused on **schema markup and structured data optimization**. It detects existing structured data on web pages, validates it against current Google standards, flags deprecated or restricted types, and identifies opportunities for new schema markup to unlock rich results.
+
+## When to Use
+
+Use this agent when:
+- You need to audit schema markup on your pages
+- You want to validate JSON-LD against Google standards
+- You're working toward rich results (rich snippets, knowledge panels)
+- You need to detect deprecated schema types
+- You want to generate ready-to-use schema markup for your pages
+
+## How It Works
+
+1. **Detects existing schema** - Finds JSON-LD, Microdata, and RDFa on the page
+2. **Validates format** - Checks valid JSON, correct @context (https://schema.org), recognized @types
+3. **Checks required properties** - Validates type-specific required fields are present
+4. **Flags deprecated types** - Warns about types Google no longer supports (HowTo, SpecialAnnouncement, etc.)
+5. **Identifies restricted types** - Notes types with limited eligibility (FAQPage, ClaimReview)
+6. **Finds missing opportunities** - Recommends schema based on page content and type
+7. **Generates ready-to-use snippets** - Creates copy-paste JSON-LD for missing schema
+
+## Focus Areas
+
+- **Detection**: Find existing JSON-LD, Microdata, and RDFa
+- **Validation**: Check required properties, format correctness, Google compliance
+- **Deprecated Types**: Flag types no longer supported (HowTo, SpecialAnnouncement, CourseInfo)
+- **Restricted Types**: Warn about types with limited eligibility (FAQPage, ClaimReview)
+- **Missing Opportunities**: Identify schema that should be present based on page content
+- **Rich Result Eligibility**: Assess which rich results the page could unlock
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## Common Schema Types & Requirements
+
+| Type | Required Properties | Rich Result |
+|------|-------------------|-------------|
+| Organization | name, url, logo | Knowledge panel |
+| LocalBusiness | name, address, telephone | Local pack |
+| Product | name, image, offers (price, availability) | Product rich results |
+| Article | headline, image, datePublished, author | Article rich results |
+| BlogPosting | headline, image, datePublished, author | Article snippet |
+| Event | name, startDate, location | Event listing |
+| JobPosting | title, description, datePosted | Job card |
+| BreadcrumbList | itemListElement (position, name, item) | Breadcrumb trail |
+| VideoObject | name, description, thumbnailUrl, uploadDate | Video rich results |
+| WebSite | name, url | Sitelinks search box |
+
+## Deprecated Types (Remove)
+
+These types are no longer supported and should be removed:
+- HowTo (removed August 2023)
+- SpecialAnnouncement (COVID-era, sunset)
+- CourseInfo, EstimatedSalary, LearningVideo
+- ClaimReview (limited to approved fact-checkers)
+- VehicleListing (Merchant API only)
+- PracticeProblem, Dataset
+
+## Restricted Types (Use with Caution)
+
+- **FAQPage**: Only generates rich results for government/healthcare sites (since August 2023)
+- **ClaimReview**: Only for Google-approved fact-checking organizations
+
+## Example Usage
+
+```text
+Task(
+  description: "Detect and validate schema markup",
+  prompt: "Analyze schema markup on https://example.com/product. Detect existing JSON-LD, validate against Google standards, flag deprecated types, and recommend missing opportunities.",
+  subagent_type: "agileflow-seo-analyzer-schema"
+)
+```
+
+## Output Format
+
+```markdown
+FINDING-1: Missing Product returnPolicyCountry
+
+Category: Validation Error
+URL: https://example.com/product
+Severity: HIGH
+Confidence: HIGH
+
+Existing Schema:
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Laptop",
+  "offers": {
+    "@type": "Offer",
+    "price": "999",
+    "priceCurrency": "USD"
+  }
+}
+
+Issue: Product schema missing mandatory returnPolicyCountry (required as of March 2025).
+
+Remediation:
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Laptop",
+  "offers": {
+    "@type": "Offer",
+    "price": "999",
+    "priceCurrency": "USD",
+    "returnPolicyCountry": "US"
+  }
+}
+```
+
+## Scoring Guide
+
+| Aspect | Weight | Deductions |
+|--------|--------|-----------|
+| Has relevant schema | 30% | -30 if no schema at all |
+| Validation passes | 25% | -5 per validation error |
+| No deprecated types | 15% | -15 per deprecated type |
+| Required properties present | 20% | -5 per missing property |
+| Format correctness | 10% | -10 for Microdata, -5 for minor issues |
+
+## Important Rules
+
+1. **Parse actual JSON-LD** - Extract real schema from the page, don't guess
+2. **Validate against current standards** - Use 2025-2026 Google documentation
+3. **Generate working snippets** - Remediation code should be copy-paste ready
+4. **Note business type** - Schema recommendations depend on site purpose
+5. **Prioritize rich results** - Focus on schema that unlocks search features
+
+## Rich Results Opportunities
+
+| Page Type | Recommended Schema | Potential Rich Result |
+|-----------|-------------------|----------------------|
+| Blog article | Article/BlogPosting | Article snippet in SERP |
+| Product page | Product with Offer | Product rich results, ratings |
+| Recipe | Recipe | Recipe card with ratings |
+| Events page | Event | Event listing |
+| Job posting | JobPosting | Job card |
+| Navigation | BreadcrumbList | Breadcrumb trail |
+| Business homepage | Organization/LocalBusiness | Knowledge panel |
+
+## Related Agents
+
+- [`seo-analyzer-technical`](/agents/seo-analyzer-technical) - Technical SEO foundation
+- [`seo-analyzer-content`](/agents/seo-analyzer-content) - Content quality signals
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis

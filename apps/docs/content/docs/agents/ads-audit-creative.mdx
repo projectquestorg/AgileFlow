@@ -1,0 +1,78 @@
+---
+title: Ads Audit Creative
+description: Cross-platform creative quality analyzer with 21 checks for ad copy effectiveness, visual compliance, format coverage, and performance benchmarks
+---
+
+# Ads Audit Creative
+
+Creative quality auditor that analyzes ad creatives across platforms, applying 21 deterministic checks for copy effectiveness, visual compliance, format coverage, and performance testing.
+
+## When to Use
+
+Use this agent when:
+
+- Auditing ad creative for quality and compliance
+- Reviewing ad copy effectiveness and CTAs
+- Checking visual design compliance across platforms
+- Analyzing creative performance and testing methodology
+- Ensuring platform-specific format requirements
+- Identifying creative fatigue and refresh needs
+
+## How It Works
+
+1. **Analyzes Creative Assets**: Ad copy, images, videos, text overlays, CTAs
+2. **Applies 21 Checks**: Across 4 categories (Ad Copy, Visual & Format, Platform Requirements, Performance)
+3. **Validates Platform Compliance**: Safe zones, character limits, restricted content
+4. **Evaluates Testing Methodology**: Creative diversity, refresh cadence, A/B testing
+5. **Scores Creative Quality**: Outputs Creative Score out of 100
+
+## Focus Areas
+
+- **Ad Copy Effectiveness (30%)** - 7 checks on value proposition, CTAs, social proof, keyword alignment
+- **Visual & Format Compliance (25%)** - 6 checks on resolution, text overlay, mobile-first design
+- **Platform-Specific Requirements (25%)** - 4 checks on format coverage, character limits, restricted content
+- **Performance & Testing (20%)** - 4 checks on creative diversity, winner identification, refresh cadence
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Review creative quality for SaaS campaign",
+  prompt: "We have 12 ads across Google and Meta. Headlines: 'Try Free', 'See Demo', 'Start Today'. Images are mostly product screenshots. Need creative audit.",
+  subagent_type: "ads-audit-creative"
+)
+```
+
+## Key Capabilities
+
+- **Copy effectiveness analysis** with value prop and CTA review
+- **Visual compliance checking** for all major platforms
+- **Safe zone validation** (TikTok, Meta Stories, YouTube)
+- **Character limit verification** across platforms
+- **Mobile-first design assessment**
+- **Creative fatigue detection** based on frequency and age
+- **Testing methodology evaluation** for A/B testing best practices
+
+## Platform Safe Zones
+
+**TikTok**: Top 130px (username), Bottom 170px (CTA), Right 100px (engagement buttons)
+
+**Meta Stories/Reels**: Top 250px (header), Bottom 280px (CTA area)
+
+**YouTube**: Skip button overlay (bottom-right), Info cards (top-right)
+
+## Quality Gates
+
+- **Restricted content** triggers CRITICAL - Prohibited content = immediate failure
+- **No creative = no campaign** - Must have at least 1 compliant creative per ad set
+- **Ad fatigue** requires refresh - Frequency > 3.0 with declining CTR = mandatory new creatives
+
+## Related Agents
+
+- [Ads Google Audit](/agents/ads-audit-google) - Ad copy quality specifics
+- [Ads Meta Audit](/agents/ads-audit-meta) - Meta creative strategy
+- [Ads Consensus](/agents/ads-consensus) - Overall creative scoring

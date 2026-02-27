@@ -1,0 +1,247 @@
+---
+title: /seo:page
+description: Deep single-page SEO analysis across 6 dimensions - on-page, content, technical, schema, images, and performance
+---
+
+# /seo:page
+
+Deep analysis of a single page across 6 SEO dimensions. More thorough than the full-site audit for individual pages.
+
+## Quick Start
+
+```bash
+/agileflow:seo:page https://example.com/about              # Full 6-dimension analysis
+/agileflow:seo:page https://example.com/blog/post FOCUS=content   # Content quality only
+/agileflow:seo:page https://example.com/product FOCUS=schema      # Schema markup only
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Page to analyze |
+| `FOCUS` | No | all | all, on-page, content, technical, schema, images, or performance |
+
+## 6 Analysis Dimensions
+
+### 1. On-Page SEO
+Fundamental elements that Google and users see:
+- Title tag (30-60 chars, keyword-forward)
+- Meta description (120-160 chars, has CTA)
+- H1 tag (exactly 1, unique per page)
+- Heading hierarchy (H2-H6 logical structure)
+- Internal links (2-10 per page, descriptive anchors)
+- External links (authoritative sources)
+- URL structure (clean, keyword-relevant)
+- Canonical tag (self-referencing or correct target)
+- Open Graph tags (og:title, og:description, og:image)
+
+### 2. Content Quality
+Using the E-E-A-T framework:
+- Word count vs page type minimum
+- Content uniqueness (not boilerplate)
+- Readability level and structure
+- Author attribution and credentials
+- E-E-A-T signals present
+- AI citation readiness (134-167 word blocks)
+
+### 3. Technical
+Page-level technical checks:
+- HTTP status code
+- TTFB (server response time)
+- HTTPS enabled
+- Mobile viewport meta tag
+- Canonical tag correctness
+- Robots directives (index/noindex)
+- Structured data presence
+- Language declaration
+
+### 4. Schema
+Structured data for rich results:
+- Existing JSON-LD/Microdata/RDFa
+- Validation against Google standards
+- Missing schema opportunities for page type
+- Rich result eligibility
+- Deprecated type flagging
+
+### 5. Images
+All images on the page:
+- Alt text quality (descriptive, 10-125 chars)
+- Width/height attributes (CLS prevention)
+- Format (WebP/AVIF vs legacy JPEG/PNG)
+- Lazy loading (below-fold images)
+- LCP image optimization
+- Responsive images (srcset/sizes)
+
+### 6. Performance
+Page-level performance indicators:
+- Render-blocking resources
+- Script loading (async/defer)
+- Image optimization
+- Third-party resource impact
+- Font loading strategy
+- Estimated Core Web Vitals impact
+
+## Example Usage
+
+### Full Analysis
+```bash
+/agileflow:seo:page https://example.com/about
+```
+
+Complete report card across all 6 dimensions.
+
+### Content Only
+```bash
+/agileflow:seo:page https://example.com/services FOCUS=content
+```
+
+Deep-dive into content quality and E-E-A-T signals.
+
+### Schema Only
+```bash
+/agileflow:seo:page https://example.com/product FOCUS=schema
+```
+
+Check what schema is present and what's missing.
+
+### On-Page Elements
+```bash
+/agileflow:seo:page https://example.com/blog/post FOCUS=on-page
+```
+
+Review title, meta description, H1, internal links, etc.
+
+## Output Format
+
+```markdown
+# Page SEO Report: https://example.com/about
+
+## Report Card
+
+| Dimension | Score | Key Finding |
+|-----------|-------|-------------|
+| On-Page SEO | 85/100 | Meta description could be more compelling |
+| Content Quality | 72/100 | Content depth good, but E-E-A-T signals weak |
+| Technical | 90/100 | All good |
+| Schema | 45/100 | Missing LocalBusiness schema |
+| Images | 88/100 | One image missing alt text |
+| Performance | 78/100 | LCP image needs fetchpriority="high" |
+
+**Page Score: 76/100**
+
+---
+
+## Detailed Findings
+
+### On-Page SEO (85/100)
+
+| Element | Status | Details |
+|---------|--------|---------|
+| Title | Pass | "About Us | Company" (24 chars) - could add keyword |
+| Meta Description | Fail | "Learn about our company and mission." (38 chars) - too short |
+| H1 | Pass | "About Our Company" - clear, unique |
+| Heading Hierarchy | Pass | H2→H3 structure is logical |
+| Internal Links | Pass | 5 links to relevant pages |
+| External Links | Pass | 3 links to authoritative sources |
+| URL | Pass | /about/ is clean and descriptive |
+| Canonical | Pass | Self-referencing |
+| Open Graph | Fail | Missing og:image |
+
+### Content Quality (72/100)
+
+- Word count: 820 words (good for service page)
+- Uniqueness: 75% (mostly original)
+- Readability: Grade 8 (accessible)
+- Author: No author attribution
+- E-E-A-T: Trust signals present, but expertise unverified
+- AI Citation Readiness: 2 of 6 paragraphs in 134-167 word range
+
+### Technical (90/100)
+
+- HTTP Status: 200 OK
+- TTFB: 250ms (good)
+- HTTPS: Yes
+- Viewport: Yes
+- Robots: index, follow
+- Language: en (declared)
+- Schema: Organization only
+
+### Schema (45/100)
+
+- Existing: Organization schema
+- Valid: Yes
+- Missing: LocalBusiness (if regional office)
+- Missing: BreadcrumbList (for navigation context)
+- Rich Result Eligible: Knowledge panel
+
+### Images (88/100)
+
+| Image | Alt Text | Width/Height | Format | Issue |
+|-------|----------|-------------|--------|-------|
+| hero.jpg | Present (good) | Yes | JPEG | Offer WebP |
+| team.jpg | Present (good) | Yes | JPEG | OK |
+| office.jpg | Missing | Yes | PNG | Add alt text |
+
+### Performance (78/100)
+
+- Render-blocking: 1 CSS file
+- Scripts: All async
+- Third-party: Google Analytics only
+- CWV Indicators: Likely good
+
+---
+
+## Quick Fixes
+
+1. **Add missing alt text to office.jpg** (5 min)
+   - Suggested: "Modern office space with open layout"
+
+2. **Expand meta description to 150+ chars** (10 min)
+   - Current: "Learn about our company and mission."
+   - Better: "Learn about [Company Name]'s mission, values, and team. Founded in [year], we've [key achievement]."
+
+3. **Add og:image tag** (5 min)
+   - Use your company logo or team photo
+
+4. **Add LocalBusiness schema** (15 min)
+   - If you have a physical location
+
+5. **Add BreadcrumbList schema** (10 min)
+   - Document the navigation: Home > About
+
+---
+
+## Next Steps
+
+- **High score?** Page is well-optimized, minor tweaks only
+- **Medium score?** Address the "Fail" items and low dimension scores
+- **Low score?** Focus on the highest-impact fixes first
+- **Run full audit** - `/agileflow:seo:audit {domain}` to see if this is typical
+- **Analyze other pages** - Run this command on key pages (homepage, main services, blog)
+```
+
+## Score Interpretation
+
+| Dimension Score | Status | Action |
+|-----------------|--------|--------|
+| 85-100 | Excellent | Minor optimizations only |
+| 70-84 | Good | Fix "Fail" items |
+| 50-69 | Needs Work | Address multiple issues |
+| 0-49 | Critical | Major overhaul needed |
+
+## Tips for Success
+
+1. **Start with audit** - Run `/seo:audit` to find which pages need attention
+2. **Analyze key pages** - Check homepage, top landing pages, top blog posts
+3. **Focus on highest impact** - On-page SEO and content quality affect most users
+4. **Fix systematically** - Start with "Fail" items, then low scores
+5. **Compare similar pages** - Run this on 2-3 similar pages to identify patterns
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - Full site audit
+- [`/seo:content`](/commands/seo-content) - E-E-A-T deep-dive
+- [`/seo:schema`](/commands/seo-schema) - Schema markup generation
+- [`/seo:images`](/commands/seo-images) - Image optimization
+- [`/seo`](/commands/seo) - SEO toolkit overview

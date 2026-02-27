@@ -1,0 +1,69 @@
+---
+title: Market-Driven Features
+description: Market-driven feature analyzer that infers app category and suggests competitive features, industry-standard patterns, and differentiators
+---
+
+# Market-Driven Features
+
+The Brainstorm Analyzer: Market-Driven Features agent is a specialized market analyzer focused on **identifying features that similar apps in the market typically have**. It infers the app's category from its code, then suggests features that are standard in that category but missing from this app.
+
+## When to Use
+
+Use this agent when:
+- You want to identify table-stakes features for your app category
+- You need to understand what competitors typically offer
+- You're looking for industry-standard patterns
+- You want to find features that build trust and credibility
+- You need to identify competitive differentiators
+- You're planning monetization features
+
+## How It Works
+
+1. **Infers app category** - Determines app type from code signals (e.g., E-commerce, SaaS, Blog, Developer Tool, Social)
+2. **Defines expected features** - Lists what features are standard in that category
+3. **Checks what's missing** - Compares expected features against what's actually implemented
+4. **Prioritizes by category** - Filters suggestions to be relevant to the app's market position
+5. **Provides market context** - Explains why features matter in the app's category
+
+## Focus Areas
+
+- **Category inference**: Determine app type from code signals (E-commerce, SaaS, Blog, etc.)
+- **Table-stakes features**: Features users EXPECT in this category of app
+- **Competitive features**: Features that differentiate good apps from basic ones
+- **Industry patterns**: Standard patterns for this domain (dashboards for SaaS, wishlists for e-commerce)
+- **Monetization features**: If applicable, features needed for a viable business model
+- **Trust/credibility features**: Features that build user confidence
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Output Format
+
+For each market-driven feature suggestion, the agent provides:
+- **App Category**: Detected category (E-commerce, SaaS, Blog, Developer Tool, etc.)
+- **Category**: TABLE_STAKES, COMPETITIVE, or DIFFERENTIATOR
+- **Value**: HIGH_VALUE, MEDIUM_VALUE, or NICE_TO_HAVE
+- **Effort**: SMALL (hours), MEDIUM (days), or LARGE (weeks)
+- **Market Context**: Why apps in this category typically have this feature
+- **Missing Feature**: What should be added
+- **User Expectation**: What users expect from similar apps, why they're missing this feature
+- **Implementation Hint**: Brief approach
+
+## Example Usage
+
+```text
+Task(
+  description: "Identify market-driven features for e-commerce platform",
+  prompt: "Analyze the codebase to identify what category of app this is, then suggest table-stakes features, competitive features, and industry patterns that are missing.",
+  subagent_type: "agileflow-brainstorm-analyzer-market"
+)
+```
+
+## Related Agents
+
+- [`brainstorm-analyzer-features`](/agents/brainstorm-analyzer-features) - Feature gaps
+- [`brainstorm-analyzer-growth`](/agents/brainstorm-analyzer-growth) - Growth and engagement
+- [`brainstorm-analyzer-ux`](/agents/brainstorm-analyzer-ux) - UX improvements
+- [`brainstorm-analyzer-integration`](/agents/brainstorm-analyzer-integration) - Integration opportunities
+- [`brainstorm-consensus`](/agents/brainstorm-consensus) - Brainstorm audit coordinator

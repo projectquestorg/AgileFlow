@@ -1,0 +1,264 @@
+---
+title: /seo:content
+description: E-E-A-T content quality analysis - trustworthiness, expertise, authoritativeness, experience scoring with AI content detection
+---
+
+# /seo:content
+
+Analyze content quality using the E-E-A-T framework (Experience, Expertise, Authoritativeness, Trustworthiness). Includes AI content detection and citation readiness assessment.
+
+## Quick Start
+
+```bash
+/agileflow:seo:content https://example.com                    # Homepage content analysis
+/agileflow:seo:content https://example.com/blog/post TYPE=blog # Blog post analysis
+/agileflow:seo:content https://example.com/services TYPE=service # Service page analysis
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Page to analyze |
+| `TYPE` | No | Auto-detect | Page type: homepage, service, blog, product, location |
+
+## E-E-A-T Scoring Framework
+
+Google's ranking factors include E-E-A-T signals. This command scores each:
+
+| Factor | Weight | Key Signals |
+|--------|--------|------------|
+| **Trustworthiness (T)** | 30% | HTTPS, contact info, privacy, transparency, no deception |
+| **Expertise (E)** | 25% | Author credentials, citations, technical depth, accuracy |
+| **Authoritativeness (A)** | 25% | Brand identity, testimonials, certifications, media mentions |
+| **Experience (E)** | 20% | First-person accounts, original media, specific data |
+
+## Content Minimums by Page Type
+
+Thin content (below minimums) gets flagged:
+
+| Page Type | Min Words | Min Unique % |
+|-----------|-----------|-------------|
+| Homepage | 500 | 100% |
+| Service | 800 | 60% |
+| Blog | 1,500 | 100% |
+| Product | 300 | 40% |
+| Location | 500 | 40% |
+
+## Example Usage
+
+### Homepage Content
+```bash
+/agileflow:seo:content https://example.com
+```
+
+Analyze your homepage for E-E-A-T signals and content quality.
+
+### Blog Post
+```bash
+/agileflow:seo:content https://example.com/blog/seo-tips TYPE=blog
+```
+
+Deep-dive into blog post quality, authorship, and uniqueness.
+
+### Service Page
+```bash
+/agileflow:seo:content https://example.com/services/web-design TYPE=service
+```
+
+Evaluate service page trustworthiness and expertise signals.
+
+## Output Format
+
+```markdown
+# E-E-A-T Content Analysis: https://example.com/blog/post
+
+## E-E-A-T Summary
+
+| Factor | Score | Key Signals |
+|--------|-------|------------|
+| Trustworthiness (30%) | 25/30 | HTTPS ✓, Contact ✓, Privacy ✓, No deceptive patterns ✓ |
+| Expertise (25%) | 18/25 | Author credentials missing, citations ✓, depth ✓ |
+| Authoritativeness (25%) | 20/25 | Brand signals ✓, testimonials ✓, certifications - |
+| Experience (20%) | 14/20 | First-person account ✓, original photos ✓, data partial |
+
+**E-E-A-T Score: 77/100 (Good)**
+
+---
+
+## Content Quality Details
+
+**Page Type**: Blog Post
+**Word Count**: 2,100 words (above 1,500 minimum ✓)
+**Uniqueness**: 88% (very good ✓)
+**Readability**: Grade 8 (accessible ✓)
+**Publication Date**: 2026-01-15 (current ✓)
+
+---
+
+## Trustworthiness Assessment (25/30)
+
+| Signal | Points | Evidence |
+|--------|--------|----------|
+| HTTPS | +5 | URL starts with https:// ✓ |
+| Contact page link | +5 | Footer contact link present ✓ |
+| Privacy policy | +3 | Footer link to privacy policy ✓ |
+| Editorial policy | +4 | About page explains editorial standards ✓ |
+| Physical address | +3 | Office address in footer ✓ |
+| No deceptive patterns | +5 | Clean UX, no dark patterns ✓ |
+| **Subtotal** | **25** | |
+
+---
+
+## Expertise Assessment (18/25)
+
+| Signal | Points | Evidence |
+|--------|--------|----------|
+| Author bylines | +5 | Author: Jane Doe, SEO Manager ✓ |
+| Cited sources | +4 | 8 external links to authoritative sites ✓ |
+| Technical accuracy | +5 | Content spot-checked, accurate ✓ |
+| Depth of coverage | +4 | Addresses nuances, not surface-level ✓ |
+| Industry terminology | +2 | Appropriate use of domain terms ✓ |
+| Editorial review | -2 | No "reviewed by" mention ✗ |
+| **Subtotal** | **18** | |
+
+---
+
+## Authoritativeness Assessment (20/25)
+
+| Signal | Points | Evidence |
+|--------|--------|----------|
+| Brand identity | +5 | Clear company branding, logo ✓ |
+| Testimonials | +3 | Client testimonial included ✓ |
+| Certifications | +2 | HubSpot Certified Partner badge ✓ |
+| Media mentions | +3 | "As seen in Forbes, TechCrunch" listed ✓ |
+| NAP consistency | +2 | Name/Address/Phone consistent ✓ |
+| Social proof | +3 | 5 social media links in footer ✓ |
+| **Subtotal** | **20** | |
+
+---
+
+## Experience Assessment (14/20)
+
+| Signal | Points | Evidence |
+|--------|--------|----------|
+| First-person accounts | +5 | "We tested this feature..." mentioned ✓ |
+| Original media | +4 | Custom screenshot of tool included ✓ |
+| Specific data | +3 | "Our analysis of 1,000 websites..." ✓ |
+| User testimonials | +2 | One named reviewer quoted - |
+| Step-by-step guides | +0 | Not applicable for this content |
+| **Subtotal** | **14** | |
+
+---
+
+## AI Content Red Flags
+
+✓ No red flags detected
+- Content has original insights and personal experience
+- Language is specific and natural, not generic
+- No fabricated claims or statistics
+
+---
+
+## AI Citation Readiness
+
+**Self-contained answer blocks**: 3 out of 6 paragraphs
+**Target**: 4+ paragraphs in 134-167 word range
+
+Example of citation-ready paragraph:
+> "Core Web Vitals are Google's three ranking factors that measure page speed: LCP (Largest Contentful Paint) measures how fast the main content appears, typically targeting under 2.5 seconds. INP (Interaction to Next Paint) measures responsiveness to user interactions, targeting under 200 milliseconds. CLS (Cumulative Layout Shift) measures visual stability, targeting a score below 0.1. Optimizing these metrics improves both user experience and SEO rankings."
+
+---
+
+## Recommendations
+
+1. **Add "Reviewed by" attribution** (+2 points)
+   - Add "Reviewed by: [Editor Name], Editorial Director"
+   - Increases expertise score
+
+2. **Add step-by-step examples** (+5 points)
+   - Include a practical guide to implementing the concept
+   - Improves experience and citation readiness
+
+3. **Expand citation-ready blocks** (+3 points)
+   - Restructure 3 more paragraphs into 134-167 word format
+   - Improves AI search visibility
+
+4. **Add original data** (+2 points)
+   - Reference a proprietary study or survey
+   - Strengthens experience signals
+
+---
+
+## Content Quality Score: 77/100
+
+- E-E-A-T: Good foundation
+- Depth: Comprehensive coverage
+- Uniqueness: Excellent (88% original)
+- Optimization: Minor improvements available
+- AI Ready: Good, with room for improvement
+```
+
+## Key Insights
+
+### Trustworthiness (T)
+- Is the site secure (HTTPS)?
+- Can users contact you?
+- Is there a privacy policy?
+- Are you transparent about who owns the site?
+
+### Expertise (E)
+- Does the author have credentials?
+- Are claims cited from authoritative sources?
+- Is the content technically accurate?
+- Does it go deep enough?
+
+### Authoritativeness (A)
+- Is your brand clear and consistent?
+- Do you have testimonials or social proof?
+- Are you certified in your industry?
+- Have you been mentioned in trusted publications?
+
+### Experience (E)
+- Does the author write from personal experience?
+- Are there original photos/screenshots/data?
+- Does the content describe what actually happened?
+- Are there real examples or case studies?
+
+## Tips for Higher E-E-A-T Scores
+
+1. **Add author credentials** - Include author bio with expertise
+2. **Cite authoritative sources** - Link to trusted, well-known sites
+3. **Show your brand** - Clear company identity, consistent branding
+4. **Use original media** - Custom screenshots, photos, data
+5. **Write from experience** - "We did this..." not just "Do this..."
+6. **Add testimonials** - Real customer feedback with names
+7. **Get editorial review** - "Reviewed by..." mentions
+8. **Be transparent** - Contact page, privacy policy, about page
+
+## AI Content Red Flags
+
+This command detects common AI content indicators:
+- Generic phrasing without original insights
+- No first-person experience mentioned
+- Vague or fabricated statistics
+- Lack of specific examples
+- Keywords unnaturally crammed in
+- All paragraphs similar length and structure
+
+## When Content Fails E-E-A-T
+
+Google may rank your content lower if:
+- **YMYL (Your Money Your Life) topic** - Legal, medical, financial advice needs high E-E-A-T
+- **No author attribution** - Readers and Google can't verify expertise
+- **Low trustworthiness** - Missing contact, privacy, HTTPS
+- **Thin content** - Below page type minimums
+- **Boilerplate heavy** - More template than original
+- **No citations** - Claims without sources
+
+## Related Commands
+
+- [`/seo:page`](/commands/seo-page) - Content quality is one dimension of page analysis
+- [`/seo:audit`](/commands/seo-audit) - Content quality is 20% of full audit
+- [`/seo:geo`](/commands/seo-geo) - AI citation readiness for ChatGPT, Claude
+- [`/seo`](/commands/seo) - SEO toolkit overview

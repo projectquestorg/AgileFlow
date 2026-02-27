@@ -1,0 +1,183 @@
+---
+title: /ads:tiktok
+description: TikTok Ads audit with 8 checks for learning phase management, budget minimums, creative safe zones, and platform-specific optimization
+---
+
+# /ads:tiktok
+
+Run an inline audit on a TikTok Ads account with 8 focused checks. TikTok requires creative-first strategy and strict learning phase management.
+
+## Quick Start
+
+```bash
+/agileflow:ads:tiktok <account-data>                  # TikTok Ads audit
+```
+
+## The 8 Checks
+
+| # | Check | Severity | Pass Criteria |
+|---|-------|----------|---------------|
+| TT-1 | TikTok Pixel installed | CRITICAL | Pixel on all pages, Events API preferred |
+| TT-2 | Learning phase management | CRITICAL | 50 conversions in 7 days per ad group |
+| TT-3 | Budget meets minimum | CRITICAL | $50/day campaign, $20/day ad group |
+| TT-4 | Creative safe zones | HIGH | Key content within center 720x900px |
+| TT-5 | Video-first creatives | HIGH | All ads are video (no static images) |
+| TT-6 | UGC/authentic style | HIGH | Native-feeling content (not polished ads) |
+| TT-7 | Sound-on design | MEDIUM | Audio is integral, not optional |
+| TT-8 | Creative refresh cadence | HIGH | New creatives every 1-2 weeks |
+
+## Output
+
+You receive:
+- **TikTok Score** (0-100)
+- **Check results** - Pass/fail for all 8 checks
+- **Key recommendations** - Top priorities
+- **TikTok-specific tips** - Platform best practices
+- **Creative guidance** - How to create TikTok-native ads
+
+## Account Data Needed
+
+Provide details about your TikTok Ads:
+- Pixel installation status
+- Campaign budget and daily spend
+- Learning phase status (conversions/week)
+- Creative types and refresh frequency
+- Video specs (duration, style)
+- Audio strategy
+- Campaign objectives
+
+Example format:
+```
+TikTok Ads Setup
+- Pixel installed, no Events API
+- 2 campaigns, $30/day each
+- 5 video ads, 2 weeks old
+- Learning phase: 15 conversions/week (need 50)
+- Videos are polished product demos
+```
+
+## TikTok-Specific Context
+
+**Learning Phase is Critical**:
+- TikTok needs 50 conversions in 7 days per ad group to exit learning
+- At $20/day minimum: $140/week = 50 conversions needed
+- That requires CPA < $2.80 - often unrealistic for cold audience
+- **Solution**: Optimize for upper-funnel events (View Content, Add to Cart) until volume builds
+
+**Creative Safe Zones Diagram**:
+```
++---------------------------+
+|      Username (130px)     |
+|                           |
+|    +----------------+     |
+|    |                |     |
+|    |   SAFE ZONE    |     |
+|    |  720 x 900px   |     |
+|    |                |     |
+|    +----------------+     |
+|                     |btns |
+|   CTA + Nav (170px) |     |
++---------------------------+
+```
+
+## Creative Best Practices
+
+### Hook (First 3 Seconds)
+- **Pattern interrupt** - Grab attention immediately
+- Don't spend time on branding/intro
+- Hook = success (3-second swipe threshold)
+
+### Duration
+- **15-30 seconds** - Sweet spot for most objectives
+- **Avoid 60+ seconds** - Drop-off increases
+- Test 15s and 30s versions
+
+### Format
+- **Vertical 9:16 only** - No landscape videos
+- **High contrast** - Ensure visibility on small screens
+- **Keep safe zone clear** - Key content in center
+
+### Audio Strategy
+- **Sound-ON by default** - Design assuming sound is on
+- **Captions/text overlay** - For sound-off viewing (subways, etc.)
+- **Trending audio** - TikTok algorithm favors trending sounds
+- **Original audio** - Sometimes outperforms trending sounds
+
+### Creative Style
+- **Authentic > polished** - Trend-aware content outperforms ads
+- **Native TikTok style** - Looks like user content, not corporate
+- **Influencer/UGC** - Often outperforms brand content
+- **Behind-the-scenes** - Humanizes brand
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:tiktok "TikTok: Pixel installed, $30/day, 3 video ads, polished style, only 10 conversions/week. No audio strategy."
+# Returns: TikTok Score with key improvements
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:tiktok
+# Paste detailed campaign and creative data
+# Returns: Full 8-check audit with TikTok-specific recommendations
+```
+
+## Expected Improvements
+
+By implementing recommendations:
+- **10-20% improvement** in CTR through better hooks
+- **Exit learning phase** faster with proper creative
+- **Creative fatigue** reduced through regular refresh
+- **Audience reach** expanded as TikTok algorithm learns
+- **3-5x improvement** possible with authentic UGC content
+
+## Learning Phase Strategy
+
+**Problem**: Need 50 conversions/week to exit learning
+
+**Solutions**:
+1. **Optimize for upper-funnel** - Track "View Content" or "Add to Cart" instead of "Purchase"
+2. **Combine multiple ad groups** - Aggregate conversions across groups
+3. **Start with engaged audiences** - Website visitors, email list (warmer than cold)
+4. **Increase budget temporarily** - Get past learning faster (then optimize)
+5. **Extend timeline** - Plan for 3-4 weeks in learning phase
+
+## Platform-Specific Advantages
+
+**Why TikTok?**
+- 1.5B monthly active users
+- Younger demographic (Gen Z, millennials)
+- Highest engagement rates of any platform
+- Algorithm discovers new content (not just follower-based)
+- Lower CPCs than Meta or Google (for young audiences)
+
+**Best For**:
+- Consumer products (especially youth-focused)
+- E-commerce (apparel, accessories, beauty)
+- Entertainment content
+- Viral/trendy products
+- Apps targeting under-35 demographic
+
+## Tips
+
+- **"Don't make ads, make TikToks"** - Native content outperforms ads
+- **Spark Ads** - Boosting organic content often outperforms traditional ads
+- **Creative fatigue hits fast** - 7-14 days vs 30 on Meta
+- **Use Creative Center** - TikTok's tool for trending sounds and formats
+- **Test UGC** - User-generated or influencer content often wins
+- **Audio matters** - Trending audio gets algorithmic boost
+
+## When to Run
+
+- **Monthly** - Monitor creative health and learning phase
+- **After creative changes** - Ensure new content is TikTok-native
+- **Performance decline** - Diagnose creative fatigue
+- **Quarterly review** - Comprehensive strategy assessment
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning
+- [`/ads:creative`](/commands/ads-creative) - Creative quality deep-dive

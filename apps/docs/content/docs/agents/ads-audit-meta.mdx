@@ -1,0 +1,78 @@
+---
+title: Ads Audit Meta
+description: Meta/Facebook Ads audit analyzer with 46 deterministic checks across Pixel/CAPI tracking, creative strategy, account structure, and audience targeting
+---
+
+# Ads Audit Meta
+
+Meta Ads auditor that analyzes Meta/Facebook Ads account data and scores it across 46 deterministic checks in 4 weighted categories to identify optimization opportunities and compliance issues.
+
+## When to Use
+
+Use this agent when:
+
+- Running comprehensive Meta/Facebook Ads audit
+- Verifying Pixel and Conversions API (CAPI) setup
+- Analyzing creative strategy and testing methodology
+- Reviewing account structure and campaign organization
+- Auditing audience targeting and segmentation
+- Checking learning phase compliance
+- Validating special ad category declarations
+
+## How It Works
+
+1. **Accepts Account Data**: Campaign structure, tracking setup, audience targeting, creative details
+2. **Applies 46 Checks**: Across 4 weighted categories
+3. **Enforces Quality Gates**: Pixel required, domain verified, learning phase, Special Ad Categories
+4. **Identifies Issues**: Tags each finding with severity level
+5. **Scores Overall Health**: Outputs Meta Ads Score out of 100
+
+## Focus Areas
+
+- **Pixel & CAPI Tracking (30%)** - 12 checks on Pixel, CAPI, EMQ, AEM, deduplication, privacy
+- **Creative Strategy (25%)** - 14 checks on diversity, video, formats, refresh, DCO, fatigue
+- **Account Structure (25%)** - 10 checks on CBO, objectives, consolidation, learning phase
+- **Audience Targeting (20%)** - 10 checks on LAL, custom, overlap, retargeting, exclusions
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Meta Ads account audit",
+  prompt: "Meta account: Pixel installed but no CAPI. 15 ad sets across 4 campaigns. LAL audiences and website retargeting. Budget $8K/month. Few creative variations.",
+  subagent_type: "ads-audit-meta"
+)
+```
+
+## Key Capabilities
+
+- **Pixel and CAPI tracking verification** - Installation, configuration, deduplication
+- **Creative strategy assessment** - Diversity, video inclusion, refresh cadence, fatigue detection
+- **Account structure evaluation** - CBO usage, objective alignment, ad set consolidation
+- **Audience targeting analysis** - LAL quality, custom audience freshness, overlap detection
+- **Learning phase monitoring** - Conversion volume tracking, exit criteria validation
+- **Privacy compliance checking** - iOS 14.5+ support, consent mode configuration
+
+## Quality Gates
+
+1. **No optimization without Pixel** - Pixel installation is CRITICAL blocker
+2. **Domain verification required** - Needed for Aggregated Event Measurement
+3. **Learning phase protection** - Never scale during 50 conversions/week ramp-up
+4. **Special Ad Categories** - Legal requirement, non-negotiable
+
+## Learning Phase Requirements
+
+- **50 conversions per week** to exit learning phase
+- **No major changes** during learning (7-14 days typical)
+- **Audience overlap** < 20% between ad sets to prevent cannibalization
+- **Sufficient budget** for platforms to optimize effectively
+
+## Related Agents
+
+- [Ads Google Audit](/agents/ads-audit-google) - Google Ads comparison
+- [Ads Creative Audit](/agents/ads-audit-creative) - Creative quality details
+- [Ads Consensus](/agents/ads-consensus) - Multi-platform scoring

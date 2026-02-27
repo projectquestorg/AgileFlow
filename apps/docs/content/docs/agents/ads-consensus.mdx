@@ -1,0 +1,106 @@
+---
+title: Ads Consensus
+description: Paid advertising audit consensus coordinator that aggregates analyzer outputs into a weighted Ads Health Score (0-100), categorizes findings by priority, and generates the final Ads Audit Report
+---
+
+# Ads Consensus
+
+Consensus coordinator for the Paid Advertising Audit system that collects findings from all ads analyzers, weights them by category, aggregates into an Ads Health Score (0-100), classifies by industry, and produces the final prioritized Ads Audit Report.
+
+## When to Use
+
+Use this agent when:
+
+- Running a full multi-platform advertising audit via `/agileflow:ads:audit`
+- You need to synthesize findings from multiple analyzers
+- You want a weighted Ads Health Score across all platforms
+- You need to prioritize which issues to fix first
+- You want industry-specific recommendations
+- You need to identify cross-platform issues flagged by multiple analyzers
+
+## How It Works
+
+1. **Classifies Industry Type**: Detects SaaS, E-commerce, Local Services, B2B, Healthcare, etc.
+2. **Collects Findings**: Parses all 6 analyzer outputs into normalized structure
+3. **Calculates Category Scores**: Applies severity deductions (CRITICAL -15, HIGH -8, MEDIUM -4, LOW -2)
+4. **Weights by Category**: Tracking 25%, Wasted Spend 20%, Structure 15%, Creative 15%, Budget 15%, Compliance 10%
+5. **Enforces Quality Gates**: Non-negotiable rules that override scoring
+6. **Cross-References Issues**: Identifies problems flagged by multiple analyzers
+7. **Prioritizes by Impact**: Critical → High → Medium → Low
+8. **Generates Report**: Final Ads Audit Report with action plan
+
+## Focus Areas
+
+**Category Weights in Overall Score**:
+- **Conversion Tracking (25%)** - Foundation of all optimization
+- **Wasted Spend (20%)** - Money being burned inefficiently
+- **Account Structure (15%)** - Organization and campaign setup
+- **Creative Quality (15%)** - Ad asset effectiveness
+- **Budget & Bidding (15%)** - Spend allocation and strategy
+- **Compliance (10%)** - Policy and regulatory adherence
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Ads audit consensus and final report",
+  prompt: "CONSOLIDATE all 6 analyzer outputs. Industry: SaaS. Google score: 72, Meta score: 68, Budget: 65, Creative: 78, Tracking: 55, Compliance: 92. Generate final Ads Health Score with prioritized action plan.",
+  subagent_type: "ads-consensus"
+)
+```
+
+## Key Capabilities
+
+- **Industry detection** - Automatically classifies business type
+- **Weighted scoring** - Applies category weights for overall health score
+- **Quality gate enforcement** - Applies critical rules (tracking required, no Broad Match without Smart Bidding, etc.)
+- **Cross-reference detection** - Identifies issues flagged by multiple analyzers
+- **Priority classification** - Ranks findings by impact, effort, and urgency
+- **Report generation** - Creates final actionable Ads Audit Report
+- **Budget recommendations** - Suggests platform allocation changes
+
+## Ads Health Score Grades
+
+| Grade | Score | Meaning |
+|-------|-------|---------|
+| A | 90-100 | Excellent - well-optimized accounts |
+| B | 80-89 | Good - minor optimization opportunities |
+| C | 70-79 | Needs Work - significant improvements available |
+| D | 60-69 | Poor - major issues affecting performance |
+| F | <60 | Critical - fundamental problems, likely losing money |
+
+## Quality Gates (Override Scoring)
+
+1. **No tracking** - Caps score at 30, adds CRITICAL banner
+2. **No conversion data** - Flags automated bidding as unreliable
+3. **Broad without Smart Bidding** - Flags as CRITICAL waste
+4. **3x Kill Rule** - Campaigns with CPA > 3x target flagged for immediate pause
+5. **Compliance violation** - Flagged as CRITICAL regardless of score
+6. **Learning phase violations** - Flagged as HIGH risk
+
+## Report Includes
+
+- **Overall Ads Health Score** (0-100 with grade)
+- **Category breakdown** with individual scores and weights
+- **Quality gate status** (pass/fail)
+- **Critical issues** requiring immediate attention
+- **High priority items** to fix this week
+- **Medium priority optimizations** for backlog
+- **Low priority nice-to-haves**
+- **Platform summaries** (Google, Meta, LinkedIn, etc.)
+- **Budget reallocation recommendations**
+- **Action plan** with quick wins and timelines
+- **Industry-specific recommendations**
+
+## Related Agents
+
+- [Ads Google Audit](/agents/ads-audit-google) - 74 checks, Google Ads deep-dive
+- [Ads Meta Audit](/agents/ads-audit-meta) - 46 checks, Meta Ads deep-dive
+- [Ads Budget Audit](/agents/ads-audit-budget) - 24 checks, budget optimization
+- [Ads Creative Audit](/agents/ads-audit-creative) - 21 checks, creative quality
+- [Ads Tracking Audit](/agents/ads-audit-tracking) - 7 checks, conversion tracking
+- [Ads Compliance Audit](/agents/ads-audit-compliance) - 18 checks, compliance

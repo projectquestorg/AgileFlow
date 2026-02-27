@@ -1,0 +1,68 @@
+---
+title: UX Improvements
+description: UX improvement analyzer for missing feedback states, accessibility gaps, navigation issues, and user experience friction points
+---
+
+# UX Improvements
+
+The Brainstorm Analyzer: UX Improvements agent is a specialized UX analyzer focused on **identifying user experience improvements the app should have**. It analyzes the UI code and finds missing UX patterns, feedback gaps, accessibility issues, and interaction improvements that would make the app feel more polished and user-friendly.
+
+## When to Use
+
+Use this agent when:
+- You need to identify missing feedback states (loading, error, success)
+- You want to find navigation gaps and information hierarchy issues
+- You're looking for missing interactions (keyboard shortcuts, drag-and-drop, undo)
+- You need to assess accessibility gaps (ARIA labels, focus management, contrast)
+- You want to find missing responsive design patterns
+- You're checking for missing user guidance (onboarding, tooltips, help text)
+
+## How It Works
+
+1. **Understands UI stack** - Identifies the UI framework and component libraries used
+2. **Analyzes UX patterns** - Finds missing feedback states, empty states, confirmations, keyboard support, responsive design, accessibility
+3. **Assesses user impact** - Describes what users FEEL, not just code issues
+4. **Suggests specific improvements** - Recommends concrete UX enhancements with implementation hints
+
+## Focus Areas
+
+- **Missing feedback states**: No loading spinners, no success/error toasts, no empty states
+- **Navigation gaps**: No breadcrumbs, no back buttons, no clear information hierarchy
+- **Missing interactions**: No keyboard shortcuts, no drag-and-drop where expected, no undo
+- **Accessibility gaps**: Missing ARIA labels, no skip links, poor color contrast, no focus management
+- **Missing responsive patterns**: No mobile layout, no touch targets, no responsive navigation
+- **Missing user guidance**: No onboarding, no tooltips, no help text, no empty state guidance
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Output Format
+
+For each UX improvement found, the agent provides:
+- **Location**: File, component name, or page where issue exists
+- **Category**: FEEDBACK_GAP, EMPTY_STATE, NAVIGATION, INTERACTION, ACCESSIBILITY, RESPONSIVE, or GUIDANCE
+- **Value**: HIGH_VALUE, MEDIUM_VALUE, or NICE_TO_HAVE
+- **Effort**: SMALL (hours), MEDIUM (days), or LARGE (weeks)
+- **Current Experience**: What users see/feel today
+- **Suggested Improvement**: What should be added
+- **User Impact**: Specific frustration or confusion, how experience improves
+- **Implementation Hint**: Specific approach (e.g., component recommendation, pattern)
+
+## Example Usage
+
+```text
+Task(
+  description: "Audit UX improvements needed in React application",
+  prompt: "Review the UI code for missing feedback states, accessibility issues, navigation gaps, and interaction patterns. Identify all UX improvements that would make the app feel more polished and user-friendly.",
+  subagent_type: "agileflow-brainstorm-analyzer-ux"
+)
+```
+
+## Related Agents
+
+- [`brainstorm-analyzer-features`](/agents/brainstorm-analyzer-features) - Feature gaps
+- [`brainstorm-analyzer-growth`](/agents/brainstorm-analyzer-growth) - Growth and engagement
+- [`brainstorm-analyzer-market`](/agents/brainstorm-analyzer-market) - Market-driven features
+- [`brainstorm-analyzer-integration`](/agents/brainstorm-analyzer-integration) - Integration opportunities
+- [`brainstorm-consensus`](/agents/brainstorm-consensus) - Brainstorm audit coordinator

@@ -1,0 +1,115 @@
+---
+title: /ads
+description: Paid advertising audit & planning toolkit - multi-platform account audits, campaign planning, budget optimization, and competitive intelligence
+---
+
+# /ads
+
+Paid advertising audit and planning toolkit for multi-platform account optimization. Routes to specialized sub-commands for comprehensive ad account analysis.
+
+## Quick Start
+
+```bash
+/agileflow:ads:audit <account-data>                    # Full multi-platform audit (6 analyzers)
+/agileflow:ads:plan                                     # Campaign planning with templates
+/agileflow:ads:google <account-data>                    # Google Ads deep-dive (74 checks)
+/agileflow:ads:meta <account-data>                      # Meta/Facebook audit (46 checks)
+/agileflow:ads:creative <account-data>                  # Creative quality review (21 checks)
+/agileflow:ads:budget <account-data>                    # Budget & bidding optimization
+/agileflow:ads:landing <URL>                            # Landing page optimization
+/agileflow:ads:competitor <industry>                    # Competitive intelligence
+/agileflow:ads:linkedin <account-data>                  # LinkedIn Ads audit (9 checks)
+/agileflow:ads:tiktok <account-data>                    # TikTok Ads audit (8 checks)
+/agileflow:ads:microsoft <account-data>                 # Microsoft Ads audit (7 checks)
+/agileflow:ads:youtube <account-data>                   # YouTube Ads audit (8 checks)
+```
+
+## Sub-Commands
+
+| Command | Purpose | Best For |
+|---------|---------|----------|
+| **audit** | Full multi-platform audit with Ads Health Score | Starting point for any account |
+| **plan** | Campaign planning with industry templates | New campaigns or restructuring |
+| **google** | Google Ads deep-dive (74 checks) | Google-specific optimization |
+| **meta** | Meta/Facebook audit (46 checks) | Meta-specific optimization |
+| **creative** | Cross-platform creative quality audit (21 checks) | Improving ad creatives |
+| **budget** | Budget allocation and bidding strategy (24 checks) | Spend optimization |
+| **landing** | Landing page optimization for ads (15 checks) | Conversion rate improvement |
+| **competitor** | Competitive intelligence and positioning | Market analysis |
+| **linkedin** | LinkedIn Ads audit (9 checks) | LinkedIn campaign optimization |
+| **tiktok** | TikTok Ads audit (8 checks) | TikTok campaign optimization |
+| **microsoft** | Microsoft Ads audit (7 checks) | Bing/Microsoft Ads optimization |
+| **youtube** | YouTube Ads audit (8 checks) | Video campaign optimization |
+
+## Account Data Formats
+
+The ads commands accept account data in multiple formats:
+
+1. **Pasted text** - Copy/paste from ad platform exports (CSV, tables)
+2. **File path** - Point to exported CSV/JSON files
+3. **Structured description** - Describe your account setup in plain text
+4. **Screenshots** - Describe what you see in platform dashboards
+
+For best results, include:
+- Campaign names, types, and objectives
+- Budget and spend data
+- Conversion tracking setup
+- Targeting settings
+- Ad creative details
+- Performance metrics (CPA, ROAS, CTR, CVR)
+
+## When to Use Each Command
+
+**Use `/audit`** if you want a complete assessment across all platforms with a single Ads Health Score (0-100).
+
+**Use `/plan`** if you're setting up a new campaign or restructuring your existing account strategy.
+
+**Use platform-specific commands** (`/google`, `/meta`, `/linkedin`, etc.) for deep dives into specific platforms.
+
+**Use `/creative`** to improve your ad assets and creative strategy.
+
+**Use `/budget`** to optimize spend allocation and bidding strategy.
+
+**Use `/landing`** to improve conversion rates on your landing pages.
+
+**Use `/competitor`** to understand competitive positioning and find market gaps.
+
+## Example Workflows
+
+### Complete Account Audit
+```bash
+/agileflow:ads:audit <paste account data>
+# Returns: Ads Health Score 0-100 with prioritized action plan
+```
+
+### New SaaS Campaign
+```bash
+/agileflow:ads:plan INDUSTRY=saas BUDGET=10000 GOAL=lead-gen
+# Returns: Full campaign plan with platform allocation and timeline
+```
+
+### Fix Specific Platform
+```bash
+/agileflow:ads:meta <Meta Ads Manager data>
+# Returns: Meta Ads score with specific findings and fixes
+```
+
+### Optimize Budget Allocation
+```bash
+/agileflow:ads:budget <monthly spend by platform>
+# Returns: Budget score with specific dollar reallocation recommendations
+```
+
+## Tips
+
+- **Start with audit** if unsure - Gives you an overall health score and priorities
+- **Use multiple checks** - Running `audit` is faster than individual platform commands
+- **Bring real data** - Copy/paste actual campaign data for most accurate results
+- **Follow the action plan** - Audit reports prioritize by impact and effort
+- **Check monthly** - Advertising changes quickly; rerun audits monthly
+
+## Related Commands
+
+- [`/ideate:plan`](/commands/plan) - General business planning
+- [`/code:review`](/commands/review) - Code review for tracking implementation
+- [`/content:write`](/commands/write) - Content creation for ad copy

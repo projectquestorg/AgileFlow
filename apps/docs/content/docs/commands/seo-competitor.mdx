@@ -1,0 +1,328 @@
+---
+title: /seo:competitor
+description: SEO competitor comparison - analyze competing pages, generate feature matrices, and create comparison content with schema markup
+---
+
+# /seo:competitor
+
+Analyze competitor pages and generate SEO-optimized comparison content with feature matrices and structured data.
+
+## Quick Start
+
+```bash
+/agileflow:seo:competitor https://you.com https://competitor.com          # 1v1 comparison
+/agileflow:seo:competitor https://you.com https://comp1.com https://comp2.com  # Multi-competitor
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `YOUR_URL` | Yes | - | Your product/service page |
+| `COMPETITOR_URL` | Yes | - | Competitor page(s) to compare (1-3) |
+
+## How It Works
+
+1. **Fetch all pages** - Extract content, features, pricing, schema
+2. **Build feature matrix** - Compare side-by-side features
+3. **SEO comparison** - Analyze titles, descriptions, structure, schema
+4. **Generate content** - Create draft comparison page
+5. **Generate schema** - Ready-to-use JSON-LD with Product types
+
+## Example Usage
+
+### One Competitor
+```bash
+/agileflow:seo:competitor https://myproduct.com/pricing https://competitor.com/pricing
+```
+
+Compare your pricing page with one competitor.
+
+### Multiple Competitors
+```bash
+/agileflow:seo:competitor https://myproduct.com https://comp1.com https://comp2.com
+```
+
+Compare against 2 competitors side-by-side.
+
+## Output Format
+
+```markdown
+# Competitor Analysis: MyProduct vs Competitor
+
+---
+
+## SEO Comparison
+
+### Meta Elements
+
+| Element | MyProduct | Competitor A | Competitor B |
+|---------|-----------|-------------|-------------|
+| Title | 58 chars - includes keyword | 52 chars - keyword present | 48 chars - weak |
+| Meta Description | 156 chars - has CTA | 142 chars - descriptive | 135 chars - generic |
+| H1 | "MyProduct vs Competitor" | "Why Choose Us" | "Comparison" |
+
+### Schema Markup
+
+| Type | You | Competitor A | Competitor B |
+|------|-----|-------------|-------------|
+| Product | Present | Missing | Missing |
+| Organization | Present | Present | Present |
+| Review/Rating | Missing | Present | Missing |
+
+**Insight**: Competitor A has Review schema with 4.8 stars - opportunity for you.
+
+### Content Metrics
+
+| Metric | You | Competitor A | Competitor B |
+|--------|-----|-------------|-------------|
+| Word count | 2,100 | 1,850 | 2,400 |
+| Images | 3 | 5 | 2 |
+| Tables | 1 | 2 | 1 |
+| Internal links | 4 | 8 | 3 |
+
+---
+
+## Feature Matrix
+
+| Feature | MyProduct | Competitor A | Competitor B |
+|---------|-----------|-------------|-------------|
+| **Core Features** | | | |
+| Basic dashboard | Yes | Yes | Yes |
+| Advanced analytics | Yes | Yes | No |
+| Custom reports | Yes | No | Yes |
+| Team collaboration | Yes | Yes | Yes |
+| API access | Yes | Yes | No |
+| **Support** | | | |
+| 24/7 support | Yes | Business hours | 24/7 |
+| Chat support | Yes | No | Yes |
+| Phone support | Yes | Yes | Yes |
+| **Pricing** | | | |
+| Free trial | 14 days | 7 days | 30 days |
+| Starting price | $99/mo | $149/mo | $79/mo |
+| Annual discount | 20% | 15% | 10% |
+
+---
+
+## Content Gaps
+
+| Feature | Competitor Has | You Missing | Opportunity |
+|---------|----------------|------------|-------------|
+| Video tutorials | Comp A | ✗ | Create tutorial video |
+| Customer reviews | Comp A (4.8★) | Only text testimonials | Add review schema + star rating |
+| Bulk import | Comp B | ✗ | Document bulk import feature |
+| Mobile app | Comp B | ✗ | Mention mobile compatibility |
+
+---
+
+## Generated Comparison Page
+
+```markdown
+# MyProduct vs Competitor: 2026 Detailed Comparison
+
+## Overview
+
+MyProduct and Competitor A are both popular solutions for [use case].
+MyProduct excels in [area] with advanced analytics, while Competitor A
+offers lower cost with strong [feature]. Competitor B falls short with
+limited API access but offers the longest free trial (30 days).
+
+This guide compares their features, pricing, and suitability for
+different use cases, so you can make the best choice.
+
+## Feature Comparison
+
+[Feature matrix table from above]
+
+## Pricing Breakdown
+
+| Plan | MyProduct | Competitor A | Competitor B |
+|------|-----------|-------------|-------------|
+| Starter | $99/mo (14-day free) | $149/mo (7-day free) | $79/mo (30-day free) |
+| Professional | $299/mo | $299/mo | $199/mo |
+| Enterprise | Custom quote | Custom quote | Custom quote |
+
+MyProduct offers best value for teams needing advanced analytics.
+Competitor B has lowest baseline price but lacks key features.
+
+## MyProduct Advantages
+
+1. **Advanced Analytics Dashboard** - Deeper insights than competitors
+2. **Team Collaboration** - Real-time sharing and commenting
+3. **Custom Reports** - Export exactly what you need
+4. **14-day Free Trial** - Longer than Competitor A (7 days)
+
+## When to Choose Competitor A
+
+If your primary needs are:
+- Strong Google integration
+- Lower base price ($149 vs $99)
+- Established brand with large user base
+
+## When to Choose Competitor B
+
+If you prioritize:
+- Absolute lowest cost ($79/mo)
+- Longest free trial (30 days)
+- Simplest interface for basic needs
+
+## Verdict
+
+**MyProduct is best for**: Teams needing advanced analytics and collaboration
+**Competitor A is best for**: Budget-conscious single users with basic needs
+**Competitor B is best for**: Organizations wanting to try longest before committing
+
+---
+
+## Comparison Matrix Summary
+
+**MyProduct**: 8/10 features, $99/mo, most comprehensive
+**Competitor A**: 7/10 features, $149/mo, established
+**Competitor B**: 5/10 features, $79/mo, simplest
+```
+
+---
+
+## Generated Schema Markup
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "MyProduct vs Competitor A: Detailed Comparison",
+  "description": "Compare MyProduct and Competitor A features, pricing, and suitability",
+  "url": "https://myproduct.com/vs-competitor",
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "Product",
+        "position": 1,
+        "name": "MyProduct",
+        "url": "https://myproduct.com",
+        "description": "Advanced analytics and collaboration platform",
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "USD",
+          "lowPrice": "99",
+          "highPrice": "299"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.7",
+          "reviewCount": "245"
+        }
+      },
+      {
+        "@type": "Product",
+        "position": 2,
+        "name": "Competitor A",
+        "url": "https://competitor-a.com",
+        "description": "Budget-friendly analytics solution",
+        "offers": {
+          "@type": "AggregateOffer",
+          "priceCurrency": "USD",
+          "lowPrice": "149",
+          "highPrice": "349"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "reviewCount": "1,200"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+## SEO Recommendations
+
+### Quick Wins
+1. **Add Review/Rating schema** - Competitor A shows 4.8 stars
+   - Collect and add customer reviews to your page
+   - Use Review schema to display in SERPs
+   - Impact: +30-50% CTR from star ratings
+
+2. **Improve title tag**
+   - Current: 58 chars (good length)
+   - Better: Include keyword + benefit
+   - Example: "MyProduct vs Competitor A: Features, Pricing, & Comparison 2026"
+
+3. **Add customer testimonials**
+   - Competitor A has advantages from social proof
+   - Add named, specific testimonials
+   - Include star ratings and reviewer credentials
+
+### Medium Priority
+1. **Add embedded comparison video**
+   - 156% more citations for video content
+   - Show features side-by-side
+   - Walk through pricing comparison
+
+2. **Expand internal linking**
+   - You: 4 links, Competitor A: 8 links
+   - Add 4 more contextual links to related pages
+   - Link to feature deep-dives and pricing
+
+3. **Add FAQ schema**
+   - Common questions: "Why MyProduct vs Competitor?"
+   - Include detailed answers
+   - FAQ schema can trigger rich results
+
+### Long Term
+1. **Ongoing competitor monitoring**
+   - Track when competitors change features
+   - Update your comparison regularly
+   - Monitor their ranking progress
+
+2. **Build original research**
+   - Conduct surveys comparing products
+   - Include statistics in comparison page
+   - Link to full research methodology
+
+3. **Case study comparison**
+   - Showcase customer success stories
+   - How MyProduct outperformed competitors
+   - Quantified results with metrics
+
+---
+
+## Best Practices
+
+1. **Be fair and accurate** - Correct info only, no exaggeration
+2. **Update regularly** - Competitors change features; stay current
+3. **Link to competitors** - Shows confidence, helps user decision
+4. **Highlight unique strengths** - Don't just list features
+5. **Answer key questions** - "Why choose you?" directly
+6. **Include pricing openly** - Users research this most
+7. **Add social proof** - Reviews, ratings, testimonials
+8. **Use schema markup** - Rich results improve CTR
+9. **Optimize for long tail** - "X vs Y" keywords have high intent
+10. **Monitor rankings** - These pages often rank well, track position
+
+---
+
+## Comparison Page Keywords
+
+These high-intent keywords work well for comparison pages:
+- "[Your product] vs [Competitor]"
+- "[Competitor] vs [Your product]"
+- "[Product] comparison"
+- "[Product] vs [Competitor]: which is better"
+- "[Competitor] alternative"
+- "Best [category]"
+- "[Competitor] vs [Alternative 1] vs [Alternative 2]"
+
+Users searching these are ready to decide - high conversion intent.
+
+---
+
+## Related Commands
+
+- [`/seo:page`](/commands/seo-page) - Optimize your comparison page
+- [`/seo:schema`](/commands/seo-schema) - Generate schema for rich results
+- [`/seo:content`](/commands/seo-content) - Content quality assessment
+- [`/seo`](/commands/seo) - SEO toolkit overview

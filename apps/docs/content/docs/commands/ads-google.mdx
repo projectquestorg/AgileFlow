@@ -1,0 +1,205 @@
+---
+title: /ads:google
+description: Google Ads deep-dive audit with 74 deterministic checks across conversion tracking, spend efficiency, account structure, keywords, ad copy, and settings
+---
+
+# /ads:google
+
+Run a comprehensive Google Ads account audit using 74 deterministic checks across 6 categories to identify optimization opportunities and compliance issues.
+
+## Quick Start
+
+```bash
+/agileflow:ads:google <account-data>                  # Full Google Ads audit
+```
+
+## What It Checks
+
+The audit applies 74 checks across 6 weighted categories:
+
+| Category | Weight | Checks | Focus |
+|----------|--------|--------|-------|
+| Conversion Tracking | 25% | 12 | Tag, enhanced conversions, CAPI, consent mode |
+| Wasted Spend | 25% | 15 | Negatives, search terms, 3x rule, quality scores |
+| Account Structure | 15% | 12 | Naming, ad groups, PMax isolation, experiments |
+| Keyword Strategy | 15% | 14 | Match types, quality scores, intent alignment |
+| Ad Copy Quality | 10% | 11 | RSAs, headlines, CTAs, extensions, testing |
+| Campaign Settings | 10% | 10 | Bidding, location, auto-apply, remarketing |
+
+## Output
+
+You receive:
+- **Google Ads Score** (0-100)
+- **Category breakdown** with individual scores and deductions
+- **Detailed findings** categorized by severity (CRITICAL, HIGH, MEDIUM, LOW)
+- **Evidence** - Actual account data that triggered each finding
+- **Business impact** - Estimated wasted spend or missed conversions
+- **Specific remediation steps** - Exactly how to fix each issue
+- **Quality gate status** - Conversion tracking, 3x Kill Rule, Broad Match checks
+
+## Account Data Needed
+
+Provide details about your Google Ads setup:
+- Campaign types and objectives (Search, Display, Shopping, Performance Max)
+- Budget and monthly spend
+- Number of campaigns, ad groups, keywords
+- Conversion tracking setup (Google Tag, Enhanced Conversions, etc.)
+- Bid strategies in use
+- Keyword match types (Exact, Phrase, Broad)
+- Average Quality Scores
+- Performance metrics (CTR, CPC, CPA, ROAS, conversions)
+- Ad copy style (Responsive Search Ads, Expanded Text Ads)
+- Extensions in use
+
+Example format:
+```
+Google Ads Account Summary
+- 8 campaigns, 40 ad groups, 500+ keywords
+- Monthly spend: $15,000
+- Mostly Broad Match keywords with manual bidding
+- CTR: 2%, CPC: $3, CPA: $50 (target $40)
+- Conversion tracking: Google Tag only, no CAPI
+- Ad extensions: Basic only (sitelinks, callouts)
+```
+
+## The 74 Checks Explained
+
+### Conversion Tracking (12 checks - 25% weight)
+- Google Tag installed on all landing pages
+- Enhanced conversions enabled
+- Conversion actions properly defined
+- Conversion values assigned (for purchases/leads)
+- Attribution model set (data-driven preferred)
+- Conversion window appropriate (30-90 days)
+- Consent Mode v2 active (for EU traffic)
+- Offline conversions imported (if applicable)
+- Server-side tagging planned/deployed
+- Micro-conversions tracked
+- Conversion tags firing correctly
+
+### Wasted Spend (15 checks - 25% weight)
+- Negative keyword coverage across campaigns
+- Search term report reviewed regularly
+- 3x Kill Rule - No campaigns with CPA > 3x target
+- Low Quality Score keywords (< 4) paused
+- Display/Search network properly separated
+- Search partner performance optimized
+- Geographic targeting refined
+- Ad schedule optimized with bid adjustments
+- Device bid adjustments configured
+- Audience exclusions applied
+- Placement exclusions on Display
+- Brand vs non-brand campaigns separated
+- Budget pacing healthy
+- Broad Match not used without Smart Bidding
+- Keyword cannibalization prevented
+
+### Account Structure (12 checks - 15% weight)
+- Campaign naming convention consistent
+- Ad group theme consistency (< 20 keywords each)
+- Single Keyword Ad Groups (SKAGs) for top keywords
+- Campaign count appropriate (not over-segmented)
+- Labels applied for organization
+- Shared budgets used appropriately
+- Campaign type matches objective
+- Ad group count per campaign (5-20 range)
+- Landing page relevance per ad group
+- Account-level settings (auto-tagging, tracking)
+- Performance Max isolation
+- Experiment campaigns running
+
+### Keyword Strategy (14 checks - 15% weight)
+- Match type distribution (mix of Exact/Phrase)
+- Long-tail keyword coverage
+- Keyword to ad group relevance
+- Negative keyword conflicts avoided
+- Quality Score distribution (70%+ at QS 6+)
+- Impression share > 70% for top campaigns
+- Keyword bid strategy aligned with goals
+- Competitor keywords in separate campaigns
+- Keyword status issues resolved
+- Keyword count per ad group appropriate
+- Dynamic Search Ads for gap coverage
+- Seasonal keyword planning
+- Keyword intent matches funnel stage
+- Keyword performance reviewed regularly
+
+### Ad Copy Quality (11 checks - 10% weight)
+- Responsive Search Ads (RSA) count per ad group
+- Headline count (10+ unique)
+- Description count (3+ per RSA)
+- Strategic pinning (not over-pinned)
+- Ad strength "Good" or "Excellent"
+- Dynamic Keyword Insertion used appropriately
+- Call-to-action in descriptions
+- Unique value proposition highlighted
+- Ad extensions active (4+ types)
+- Landing page relevance to ad copy
+- Ad testing cadence (monthly variants)
+
+### Campaign Settings (10 checks - 10% weight)
+- Bid strategy appropriate with data
+- Budget allocation reflects performance
+- Location targeting method correct ("Presence" for local)
+- Language targeting matches audience
+- Ad rotation set to "Optimize"
+- IP exclusions configured
+- Audience targeting layers applied
+- Conversion goal aligned per campaign
+- Remarketing lists applied to search
+- Auto-apply recommendations reviewed
+
+## Quality Gates (Critical Rules)
+
+These override the scoring and must be fixed first:
+
+1. **Conversion tracking required** - No optimization recommendations without tracking
+2. **No Broad Match without Smart Bidding** - CRITICAL waste generator
+3. **3x Kill Rule** - Campaigns with CPA > 3x target must pause immediately
+4. **Brand/non-brand separation** - Required for accurate measurement
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:google "Google Ads: 5 campaigns, mostly Broad Match, manual bidding, 2% CTR, $50 CPA. No Enhanced Conversions set up."
+# Returns: Google Ads Score with specific issues
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:google
+# Paste full account setup and performance data
+# Returns: Comprehensive 74-check audit with remediation steps
+```
+
+## Expected Improvements
+
+By implementing the recommendations:
+- **10-25% reduction in cost per conversion** through waste elimination
+- **Quality Score improvements** of 1-2 points on average
+- **20-40% better click-through rate** through ad copy optimization
+- **Faster conversion attribution** with proper tracking setup
+- **Reduced wasted spend** through Smart Bidding and negative keywords
+
+## When to Run
+
+- **Monthly** - Monitor account health and optimization opportunities
+- **After major changes** - New campaigns, bid strategy changes, structure changes
+- **Quarterly review** - Comprehensive account assessment
+- **Before scaling budget** - Ensure account is optimized before increasing spend
+- **When performance declines** - Diagnose why metrics are degrading
+
+## Tips
+
+- **Conversion tracking first** - Fix tracking before any other optimization
+- **Quality Score matters** - Improving QS reduces CPC more than bid changes
+- **Search terms gold mine** - Spend 30 mins/week reviewing search term reports
+- **Test, don't guess** - Use experiments for major changes
+- **Keep negative keywords updated** - Monthly search term review = less waste
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:meta`](/commands/ads-meta) - Meta Ads comparison
+- [`/ads:budget`](/commands/ads-budget) - Budget optimization

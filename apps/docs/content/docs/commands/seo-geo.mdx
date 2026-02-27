@@ -1,0 +1,362 @@
+---
+title: /seo:geo
+description: Generative Engine Optimization (GEO) - analyze and optimize content for AI search platforms like ChatGPT, Google AI Overviews, and Perplexity
+---
+
+# /seo:geo
+
+Analyze and optimize content for AI search platforms (Generative Engine Optimization). Ensure your content gets cited by ChatGPT, Google AI Overviews, Perplexity, and Claude.
+
+## Quick Start
+
+```bash
+/agileflow:seo:geo https://example.com                      # Full GEO analysis
+/agileflow:seo:geo https://example.com/blog/guide            # Analyze specific content page
+```
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<URL>` | Yes | Page or site to analyze |
+
+## Background: What is GEO?
+
+**GEO (Generative Engine Optimization)** optimizes content for AI-powered search:
+- Google AI Overviews
+- ChatGPT (with Browse/Search)
+- Perplexity
+- Claude
+- Microsoft Copilot
+- Other generative AI platforms
+
+**Key insight**: Brand correlation is 3x stronger than backlinks for AI visibility. 92% of AI citations come from pages ranking in top 10 traditional search results.
+
+## 5 GEO Dimensions
+
+| Dimension | Weight | Focus |
+|-----------|--------|-------|
+| **Citability** | 25% | Self-contained, quotable answer blocks |
+| **Structure** | 20% | Organized content easy for AI to parse |
+| **Multimodal** | 15% | Mix of text, images, video, tables |
+| **Authority** | 20% | Credibility signals (author, sources, dates) |
+| **Technical Access** | 20% | AI bots can access and parse content |
+
+## 1. Citability (25%)
+
+AI platforms cite content with self-contained, quotable blocks:
+
+```markdown
+BAD (too long, not self-contained):
+Web performance is important for user experience.
+There are many metrics to measure web performance
+including page load time, time to interactive, and
+various other metrics that browsers track. Among
+these metrics, Core Web Vitals are important for
+Google rankings because they measure how users
+actually experience pages in the real world with
+real devices on real networks, and they encompass
+key aspects of what we think of as a good web
+experience today. There are three Core Web Vitals:
+LCP, which measures the time it takes for the
+largest piece of content to show up on the page,
+INP which measures how responsive a page is to
+user interactions like clicks and keyboard presses,
+and CLS which measures how stable the page is visually.
+
+GOOD (134-167 words, self-contained, quotable):
+Core Web Vitals are Google's three ranking factors
+that measure page speed and usability. LCP (Largest
+Contentful Paint) measures how fast the main content
+appears, typically targeting under 2.5 seconds. INP
+(Interaction to Next Paint) measures responsiveness
+to user interactions, targeting under 200
+milliseconds. CLS (Cumulative Layout Shift) measures
+visual stability, targeting a score below 0.1. These
+metrics directly impact user experience and SEO
+rankings, making optimization essential for modern
+web performance.
+```
+
+**Check for**:
+- Paragraphs in 134-167 word range
+- Self-contained facts that work standalone
+- Specific data points, dates, numbers
+- Clear definitions ("X is Y")
+- Proper attribution ("According to...")
+
+## 2. Structure (20%)
+
+AI platforms parse structured content more effectively:
+
+```markdown
+GOOD STRUCTURE:
+# Main Topic
+
+## What is X?
+[Self-contained paragraph explaining X]
+
+## How does X work?
+1. Step 1 description
+2. Step 2 description
+3. Step 3 description
+
+## Key Benefits
+- Benefit 1: Specific advantage with numbers
+- Benefit 2: Specific advantage
+- Benefit 3: Specific advantage
+
+| Feature | Your Product | Alternative |
+|---------|-------------|-------------|
+| Price | $99/month | $149/month |
+| Support | 24/7 | Business hours |
+
+## Summary
+[TL;DR of main points]
+
+BAD STRUCTURE:
+Long paragraphs without clear headers
+- No question-based headings
+- All information buried in prose
+- No step-by-step guides
+- No tables or comparisons
+```
+
+**Check for**:
+- H2/H3 headers as questions (Who, What, How, Why)
+- Short paragraphs (2-4 sentences)
+- Numbered or bulleted lists
+- Tables for comparisons
+- TL;DR or summary sections
+
+## 3. Multimodal Content (15%)
+
+Pages with multiple content types get 156% higher AI citation rates:
+
+| Content Type | Impact | Example |
+|--------------|--------|---------|
+| **Text** | Base | Written explanation |
+| **+ Images** | +40% citations | Diagrams, screenshots, photos |
+| **+ Video** | +156% citations | Embedded tutorials, demos |
+| **+ Tables** | +60% citations | Data comparisons |
+| **+ Interactive** | +89% citations | Calculators, tools, assessments |
+
+**Check for**:
+- Informative images with good alt text
+- Embedded videos with transcripts
+- Data in table format
+- Interactive elements (calculators, quizzes)
+- Infographics or diagrams
+
+## 4. Authority (20%)
+
+AI platforms prioritize authoritative sources:
+
+| Signal | Good | Poor |
+|--------|------|------|
+| **Author credentials** | Named author with bio/expertise | No attribution |
+| **Publication date** | Recent, prominently displayed | No dates or very old |
+| **Primary sources** | Original data, research, case studies | Only secondary sources |
+| **Citations** | Links to authoritative references | No outbound links |
+| **Brand presence** | Mentioned on Wikipedia, trusted sites | No cross-platform presence |
+
+**Check for**:
+- Author name and credentials
+- Publication date clearly visible
+- References to authoritative sources
+- Bylines with expertise description
+- Brand mentions in trusted publications
+
+## 5. Technical Access (20%)
+
+AI bots must be able to access your content:
+
+| Check | Good | Poor |
+|-------|------|------|
+| **GPTBot allowed** | Not blocked | Blocked in robots.txt |
+| **ClaudeBot allowed** | Not blocked | Blocked |
+| **PerplexityBot allowed** | Not blocked | Blocked |
+| **Google-Extended** | Not blocked | Blocked |
+| **/llms.txt present** | Exists at root | Missing |
+| **Server-side rendering** | Content in HTML | JS-only rendering |
+| **Fast response** | Quick TTFB < 800ms | Slow or rate-limited |
+
+**robots.txt Example** (allows AI bots):
+```
+User-agent: GPTBot
+Disallow:
+
+User-agent: ClaudeBot
+Disallow:
+
+User-agent: PerplexityBot
+Disallow:
+
+User-agent: Google-Extended
+Disallow:
+```
+
+## Example Usage
+
+### Full GEO Analysis
+```bash
+/agileflow:seo:geo https://example.com/blog/seo-guide
+```
+
+Get AI Search Readiness Score (0-100) across all 5 dimensions.
+
+## Output Format
+
+```markdown
+# GEO Analysis: https://example.com/blog/seo-guide
+
+## AI Search Readiness Score: 72/100 (Good)
+
+| Dimension | Score | Weight | Weighted | Key Finding |
+|-----------|-------|--------|----------|-------------|
+| Citability | 68/100 | 25% | 17.0 | 2 of 6 paragraphs in 134-167 word range |
+| Structure | 75/100 | 20% | 15.0 | Question headers present, short paragraphs |
+| Multimodal | 65/100 | 15% | 9.8 | Text + images, but no video |
+| Authority | 80/100 | 20% | 16.0 | Named author, publication date visible |
+| Technical Access | 75/100 | 20% | 15.0 | All AI bots allowed, TTFB 650ms |
+
+---
+
+## AI Bot Access Status
+
+| Bot | Status | robots.txt |
+|-----|--------|-----------|
+| GPTBot (ChatGPT) | Allowed | No rule (default allow) |
+| ClaudeBot (Claude) | Allowed | No rule (default allow) |
+| PerplexityBot | Allowed | No rule (default allow) |
+| Google-Extended | Allowed | No rule (default allow) |
+
+**llms.txt**: Missing ⚠️
+
+---
+
+## Citability Analysis
+
+- Citation-ready blocks found: 2/6 paragraphs
+- Average paragraph length: 182 words
+- Self-contained answers: Partial
+
+Example citation-ready paragraph found:
+> "Core Web Vitals are Google's three ranking factors that measure page speed:
+> LCP (Largest Contentful Paint) measures when the main content appears, targeting
+> under 2.5 seconds. INP (Interaction to Next Paint) measures responsiveness,
+> targeting under 200 milliseconds. CLS (Cumulative Layout Shift) measures visual
+> stability, targeting a score below 0.1. Optimizing these metrics improves both
+> user experience and SEO rankings."
+> (Length: 156 words - perfect citation size!)
+
+---
+
+## Structure Assessment
+
+**Headers**: ✓ Question-based headers present
+**Paragraphs**: ✓ Short, mostly 2-4 sentences
+**Lists**: ✓ Bulleted benefits section
+**Tables**: ✗ No comparison tables
+**TL;DR**: ✗ No summary section
+
+---
+
+## Multimodal Content
+
+- Text: 2,100 words ✓
+- Images: 3 (blog header, icon, screenshot) ✓
+- Video: None ✗
+- Tables: None ✗
+- Interactive: None ✗
+
+---
+
+## Authority Signals
+
+- Author: "Jane Doe, SEO Manager" ✓
+- Publication date: "Jan 15, 2026" ✓
+- Updates: "Last updated: Feb 1, 2026" ✓
+- Sources: 8 external links to authoritative sites ✓
+- Brand: Company mentioned on industry sites ✓
+
+---
+
+## Recommendations
+
+### Quick Wins (< 1 hour)
+1. **Create /llms.txt** (5 min)
+   - Machine-readable description of your site
+   - Helps AI platforms understand your content
+
+2. **Expand citation-ready blocks** (20 min)
+   - Restructure 2 more paragraphs into 134-167 word format
+   - Add specific data points to make them quotable
+
+3. **Add TL;DR section** (10 min)
+   - Summarize key takeaways at top or bottom
+   - Helps AI platforms quickly extract main points
+
+### Content Improvements (2-4 hours)
+1. **Add embedded video** with transcript
+   - Video content gets cited 156% more
+
+2. **Add comparison table**
+   - Convert prose comparisons to table format
+
+3. **Improve paragraph structure**
+   - Break long paragraphs into shorter ones
+   - Ensure multiple 134-167 word self-contained blocks
+
+### Technical Changes (30 min)
+1. **Create /llms.txt**
+   ```
+   User-Agent: *
+   Allow: /
+
+   Crawl-delay: 0
+   Request-rate: unlimited
+
+   Disallow: /admin/
+   Disallow: /private/
+   ```
+
+2. **Verify robots.txt allows all AI bots**
+   - No Disallow rules for GPTBot, ClaudeBot, etc.
+   - Default allow is fine
+```
+
+## Target Platforms
+
+- **Google AI Overviews** - Integrated into search results
+- **ChatGPT** - With Browse and Search capabilities
+- **Claude** - With web browsing
+- **Perplexity** - Dedicated AI search engine
+- **Microsoft Copilot** - Windows integrated
+
+## Key Insights
+
+- AI visibility correlates with traditional SEO (92% from top 10)
+- Brand correlation is 3x stronger than backlinks for AI
+- Citation-ready blocks (134-167 words) are optimal for AI
+- Multimodal content (text + images + video) gets cited more
+- Clear author credentials matter for AI trust
+- AI bots must be allowed in robots.txt
+- Fast server response helps AI crawling
+
+## Tips for Higher GEO Scores
+
+1. **Restructure for citability** - Create 134-167 word self-contained paragraphs
+2. **Use question headers** - "What is..." / "How to..." / "Why matters..."
+3. **Add multimodal content** - Embed images, videos, tables
+4. **Show authority** - Author credentials, publication dates, sources
+5. **Allow AI bots** - Don't block in robots.txt
+6. **Create llms.txt** - Machine-readable site description
+7. **Optimize TTFB** - Keep server response < 800ms
+8. **Server-side render** - Content visible in HTML, not JS-only
+
+## Related Commands
+
+- [`/seo:content`](/commands/seo-content) - Content quality and E-E-A-T
+- [`/seo:audit`](/commands/seo-audit) - GEO is part of content assessment
+- [`/seo`](/commands/seo) - SEO toolkit overview

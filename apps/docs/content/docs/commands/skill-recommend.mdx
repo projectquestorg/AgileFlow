@@ -1,0 +1,230 @@
+---
+title: /skill:recommend
+description: Get skill recommendations based on your project's tech stack
+---
+
+# /skill:recommend
+
+Get personalized skill recommendations based on your project's detected tech stack. Matches against a curated catalog of vetted skills, with optional live marketplace search.
+
+## Quick Start
+
+```bash
+/agileflow:skill:recommend
+```
+
+Detect your tech stack and show recommended skills from the curated catalog.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<keyword>` | No | Filter recommendations by keyword (optional) |
+
+## Usage Examples
+
+### View all recommendations
+
+```bash
+/agileflow:skill:recommend
+```
+
+Analyze your project dependencies and show matching skills by category.
+
+### Filter by keyword
+
+```bash
+/agileflow:skill:recommend react
+```
+
+Show recommended skills matching "react" in name, description, or tags.
+
+### Search for specific technology
+
+```bash
+/agileflow:skill:recommend testing
+```
+
+Find skills related to testing frameworks and tools.
+
+## How It Works
+
+```
+┌─────────────────────────────────────┐
+│   /agileflow:skill:recommend       │
+│                                    │
+│ 1. Detect tech stack              │
+│ 2. Match against skill catalog    │
+│ 3. Filter already-installed       │
+│ 4. Rank by relevance              │
+│ 5. Show install commands          │
+└─────────────────────────────────────┘
+```
+
+### Step 1: Tech Stack Detection
+
+Reads `package.json` and scans for project files:
+
+- **Node/JavaScript**: package.json dependencies
+- **Python**: requirements.txt, pyproject.toml
+- **Go**: go.mod
+- **PHP**: composer.json
+- **DevOps**: Dockerfile, terraform/, k8s/
+- **CI/CD**: .github/workflows/
+
+### Step 2: Skill Matching
+
+Scores each skill in the curated catalog based on how many of the skill's tags match your detected stack.
+
+### Step 3: Filter Installed
+
+Checks `.claude/skills/` and excludes skills already installed.
+
+### Step 4: Display by Category
+
+Shows recommendations grouped by category with relevance percentage.
+
+### Step 5: Install Commands
+
+Each skill shows the exact `npx skills add` command for installation.
+
+## Skill Categories
+
+The curated catalog (~60 skills) is organized in 6 categories:
+
+| Category | Count | Examples |
+|----------|-------|----------|
+| **Frontend** | 13 | React, Next.js, Vue, Svelte, Angular, Tailwind, TypeScript |
+| **Backend** | 11 | GraphQL, Express, FastAPI, Node.js, Go, microservices |
+| **Database** | 8 | Prisma, Supabase, MongoDB, PostgreSQL, Redis, Drizzle |
+| **Testing** | 10 | TDD, Jest, Playwright, Cypress, pytest, Vitest |
+| **DevOps** | 9 | GitHub Actions, Docker, Kubernetes, Terraform, Vercel |
+| **Security** | 8 | OWASP, code review, auth, input validation |
+
+## Example Output
+
+```
+Detected Tech Stack
+═══════════════════════════════════════
+  Frameworks: react, next, typescript
+  Databases: prisma, postgresql
+  Testing: jest, playwright
+  Styling: tailwind
+  DevOps: github-actions, docker
+
+Recommended Skills (12 matches)
+═══════════════════════════════════════
+
+Frontend
+  ✓ next-best-practices (95% match)
+    Next.js App Router, RSC, and data fetching
+    Install: npx skills add vercel/next-skills
+
+  ✓ react-best-practices (90% match)
+    React patterns, hooks, and component architecture
+    Install: npx skills add vercel/agent-skills
+
+  ✓ tailwind-mastery (85% match)
+    Tailwind CSS utility patterns and custom configurations
+    Install: npx skills add anthropics/skills
+
+Database
+  ✓ prisma-orm (90% match)
+    Prisma schema design, migrations, and query patterns
+    Install: npx skills add mcpmarket/skills
+
+  ✓ postgresql-advanced (75% match)
+    PostgreSQL advanced queries and performance
+    Install: npx skills add anthropics/skills
+
+Testing
+  ✓ jest-testing (85% match)
+    Jest unit and integration testing patterns
+    Install: npx skills add anthropics/skills
+
+  ✓ playwright-automation (80% match)
+    Playwright e2e testing and browser automation
+    Install: npx skills add anthropics/skills
+
+DevOps
+  ✓ github-actions (75% match)
+    GitHub Actions workflow design and optimization
+    Install: npx skills add anthropics/skills
+```
+
+## When to Use
+
+Use skill recommendations for:
+
+- Discovering skills matching your tech stack
+- Finding best practices for frameworks you use
+- Learning patterns for testing tools
+- Setting up DevOps automation
+- Finding security audit skills
+
+## Error Handling
+
+### No package.json Found
+
+```
+Could not detect tech stack (no package.json found).
+You can still browse the marketplace:
+  npx skills find
+  npx skills search <your-technology>
+```
+
+### No Matches Found
+
+```
+No curated skills match your tech stack.
+Try searching the marketplace:
+  npx skills search <your-technology>
+  npx skills find
+```
+
+## Installing a Skill
+
+Once you see a recommended skill, install it with:
+
+```bash
+npx skills add vercel/next-skills
+```
+
+After installation, the skill appears in `.claude/skills/` and is automatically excluded from future recommendations.
+
+## Broader Search
+
+For skills beyond the curated catalog, use the live marketplace:
+
+```bash
+npx skills search <keyword>
+```
+
+Or browse all available skills:
+
+```bash
+npx skills find
+```
+
+## Tech Stack Mapping
+
+Common framework-to-tag mappings:
+
+| Dependency | Tags |
+|-----------|------|
+| `next` | next, nextjs, react, app-router |
+| `react` | react, jsx, hooks |
+| `vue` | vue, vuejs, vue3 |
+| `@angular/core` | angular, rxjs |
+| `express` | express, expressjs, node |
+| `tailwindcss` | tailwind, tailwindcss, css |
+| `prisma` | prisma, orm, database |
+| `@supabase/supabase-js` | supabase, postgres, auth |
+| `jest` | jest, testing, javascript |
+| `playwright` | playwright, e2e, testing |
+| `typescript` | typescript, ts |
+
+## Related Commands
+
+- [`/skill:list`](/commands/skill-list) - View installed skills
+- [`/skill:delete`](/commands/skill-delete) - Remove a skill

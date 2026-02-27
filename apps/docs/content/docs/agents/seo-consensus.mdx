@@ -1,0 +1,252 @@
+---
+title: SEO Consensus Coordinator
+description: SEO audit consensus coordinator that aggregates analyzer outputs into a weighted health score (0-100), categorizes findings by priority, and generates the final SEO Audit Report
+---
+
+# SEO Consensus Coordinator
+
+The SEO Consensus Coordinator is the **lead agent for SEO audits**. It collects findings from all specialized SEO analyzers, weighs them by category, aggregates into a health score (0-100), classifies findings by business type, and produces the final prioritized SEO Audit Report.
+
+## When to Use
+
+Use this agent when:
+- You've completed a full SEO audit with multiple analyzers
+- You need to synthesize findings from 6+ analyzers into a single score
+- You want a weighted, business-aware SEO health score
+- You need a prioritized action plan from audit findings
+- You want to generate the final SEO Audit Report
+
+## How It Works
+
+1. **Classifies business type** - Determines SaaS, Local Business, E-commerce, Publisher, or Agency
+2. **Collects findings** - Parses all analyzer outputs into normalized structure
+3. **Calculates category scores** - Applies deductions from each analyzer's findings
+4. **Weights by category** - Applies category weights to compute overall health score
+5. **Cross-references** - Finds issues flagged by multiple analyzers (higher confidence)
+6. **Prioritizes** - Ranks findings by impact × effort
+7. **Generates report** - Produces actionable SEO Audit Report with health score
+
+## Tools Available
+
+This agent has access to: Read, Write, Edit, Glob, Grep
+
+## Business Type Classification
+
+| Type | Indicators | SEO Emphasis |
+|------|-----------|-------------|
+| **SaaS** | Login, pricing, docs, API | Technical, content marketing, schema |
+| **Local Business** | Address, phone, map, hours | Local schema, NAP, Google Business Profile |
+| **E-commerce** | Products, cart, checkout, prices | Product schema, structure, CWV, images |
+| **Publisher** | Articles, blog, news, bylines | Content quality, E-E-A-T, Article schema |
+| **Agency** | Portfolio, services, team, cases | Content, authority, service schema |
+
+## Category Weights
+
+| Category | Weight | Analyzer |
+|----------|--------|----------|
+| Technical SEO | 20% | seo-analyzer-technical |
+| Content Quality | 20% | seo-analyzer-content |
+| Schema / Structured Data | 15% | seo-analyzer-schema |
+| Performance (CWV) | 15% | seo-analyzer-performance |
+| Image Optimization | 15% | seo-analyzer-images |
+| Sitemap | 15% | seo-analyzer-sitemap |
+
+## Health Score Interpretation
+
+| Score | Rating | Status |
+|-------|--------|--------|
+| 90-100 | Excellent | Well-optimized site |
+| 70-89 | Good | Some optimization opportunities |
+| 50-69 | Needs Work | Significant issues to address |
+| 0-49 | Critical | Major SEO problems blocking growth |
+
+## Severity-Based Deductions
+
+| Severity | Deduction |
+|----------|-----------|
+| CRITICAL | -15 to -25 per finding |
+| HIGH | -8 to -15 per finding |
+| MEDIUM | -3 to -8 per finding |
+| LOW | -1 to -3 per finding |
+
+## Scoring Example
+
+```
+Technical (85 × 0.20) = 17.0
+Content   (72 × 0.20) = 14.4
+Schema    (60 × 0.15) =  9.0
+Performance(78 × 0.15) = 11.7
+Images    (90 × 0.15) = 13.5
+Sitemap   (95 × 0.15) = 14.3
+                       ------
+Health Score          = 79.9 → 80/100
+```
+
+## Example Usage
+
+```text
+Task(
+  description: "SEO audit consensus and synthesis",
+  prompt: "You are the SEO Consensus Coordinator.
+
+TARGET URL: https://example.com
+BUSINESS TYPE: E-commerce
+
+Aggregate these analyzer outputs:
+- Technical: [findings]
+- Content: [findings]
+- Schema: [findings]
+- Images: [findings]
+- Performance: [findings]
+- Sitemap: [findings]
+
+Calculate weighted health score, cross-reference findings, prioritize issues, and generate final SEO audit report.",
+  subagent_type: "agileflow-seo-consensus"
+)
+```
+
+## Output Format
+
+The final SEO Audit Report includes:
+
+```markdown
+# SEO Audit Report
+
+**Target**: {URL}
+**Business Type**: {detected type}
+**Generated**: {date}
+
+---
+
+## Health Score: {X}/100 {rating}
+
+| Category | Score | Weight | Weighted |
+|----------|-------|--------|----------|
+| Technical | 85/100 | 20% | 17.0 |
+| Content | 72/100 | 20% | 14.4 |
+| Schema | 60/100 | 15% |  9.0 |
+| Performance | 78/100 | 15% | 11.7 |
+| Images | 90/100 | 15% | 13.5 |
+| Sitemap | 95/100 | 15% | 14.3 |
+
+---
+
+## Critical Issues (Fix Immediately)
+
+### 1. {Title} [{analyzer(s)}]
+
+**Impact**: {ranking/indexing/traffic impact}
+**Effort**: {Low/Medium/High}
+
+**Details**: {explanation}
+
+**Fix**: {specific remediation}
+
+---
+
+## High Priority (Fix This Sprint)
+
+[Similar structure]
+
+---
+
+## Medium Priority (Optimization Backlog)
+
+[Abbreviated format]
+
+---
+
+## Action Plan
+
+### Quick Wins (< 1 hour each)
+- [ ] {Action item}
+- [ ] {Action item}
+
+### This Week
+- [ ] {Action item}
+
+### This Month
+- [ ] {Action item}
+
+---
+
+## Recommendations by Business Type: {type}
+
+1. {Business-type-specific recommendation}
+2. {Next priority}
+3. {Next priority}
+```
+
+## Priority Criteria
+
+| Priority | Criteria | Examples |
+|----------|----------|----------|
+| **Critical** | Blocks indexing, causes penalties | noindex on key pages, not crawlable |
+| **High** | Direct ranking impact, easy fix | Missing titles, broken canonicals, no schema |
+| **Medium** | Ranking opportunity, moderate effort | Thin content, image optimization, CWV |
+| **Low** | Nice-to-have, significant effort | Minor URL cleanup, additional schema |
+
+## Cross-Reference Examples
+
+Issues flagged by multiple analyzers get higher priority:
+- **Image without alt + CLS from unsized** → Confirmed critical
+- **Missing schema + low E-E-A-T** → Related, higher confidence
+- **Render-blocking + slow load** → Confirmed high priority
+
+## Business Type Emphasis
+
+### SaaS
+- Content marketing strategy (blog, guides, docs)
+- Technical SEO foundation (crawlability, indexability)
+- Organization and Product schema
+- Performance optimization (fast TTFB, Core Web Vitals)
+
+### Local Business
+- Local schema (LocalBusiness, address, phone)
+- NAP (Name, Address, Phone) consistency across pages
+- Google Business Profile optimization
+- Review signals and testimonials
+
+### E-commerce
+- Product schema with structured data
+- Site structure (category, product pages)
+- Image optimization (product photos)
+- Core Web Vitals (LCP, CLS for product pages)
+- Programmatic content quality gates
+
+### Publisher
+- E-E-A-T signals (author credentials, expertise)
+- Article/BlogPosting schema with dates
+- Content depth and originality
+- Freshness signals (recent publication dates)
+- Topic authority and clusters
+
+### Agency
+- Authority signals (portfolio, case studies)
+- Service schema for service pages
+- Team expertise signals
+- Testimonials and client logos
+
+## Important Rules
+
+1. **Show your math** - Make scoring transparent with category breakdowns
+2. **Be actionable** - Every finding must have a specific fix
+3. **Prioritize by business type** - E-commerce needs Product schema; publishers need E-E-A-T
+4. **Cross-reference findings** - Issues by multiple analyzers = higher confidence
+5. **Quick wins first** - Lead action plan with easy, high-impact fixes
+6. **Save the report** - Write to `docs/08-project/seo-audits/seo-audit-{YYYYMMDD}.md`
+7. **No false urgency** - Score honestly, not everything is critical
+
+## Edge Cases
+
+- **No findings from an analyzer** → Category score = 100
+- **Only one analyzer** → Report that category, no overall score
+- **Completely broken site** → Report Critical findings, score 0-20
+- **Already well-optimized** → Score 85+, focus on incremental improvements
+
+## Related Agents & Commands
+
+- All 6 analyzer agents (technical, content, schema, images, performance, sitemap)
+- `/agileflow:seo:audit` - Orchestrates all 6 analyzers and calls this agent
+- `/agileflow:seo:page` - Single-page analysis
+- `/agileflow:seo:plan` - Strategic planning based on audit findings

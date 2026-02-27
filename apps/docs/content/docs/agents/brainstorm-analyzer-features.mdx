@@ -1,0 +1,67 @@
+---
+title: Feature Gaps
+description: Core feature gap analyzer for missing CRUD operations, half-built features, absent common patterns, and incomplete user workflows
+---
+
+# Feature Gaps
+
+The Brainstorm Analyzer: Feature Gaps agent is a specialized feature analyzer focused on **identifying missing features and incomplete user workflows**. It analyzes the app's existing code to find features it SHOULD have but doesn't — not code quality issues, but product-level gaps.
+
+## When to Use
+
+Use this agent when:
+- You need to identify missing CRUD operations (create, read, update, delete)
+- You want to find half-built features (UI without backend, or vice versa)
+- You're looking for missing common patterns (search, pagination, filtering)
+- You need to detect incomplete user workflows
+- You want to find missing data features (export, import, backup, history)
+- You're checking for absent admin/settings features
+
+## How It Works
+
+1. **Understands the app** - Analyzes project structure to determine app type, domain, core entities, routes, and pages
+2. **Maps existing features** - Builds a mental model of what CRUD operations and user flows exist
+3. **Identifies gaps** - Finds incomplete CRUD, UI without backend, missing common patterns, dead-end workflows, missing data features
+4. **Reports findings** - Generates structured findings with locations, categories, value assessments, and user impact
+
+## Focus Areas
+
+- **Missing CRUD operations**: App has create but not edit/delete, or list but no detail view
+- **Half-built features**: UI exists with no backend, API endpoint exists with no frontend
+- **Missing common patterns**: No search, no pagination, no sorting, no filtering where expected
+- **Incomplete user workflows**: Flow starts but dead-ends (create account but can't change password)
+- **Missing data features**: No export, no import, no backup, no history/audit trail
+- **Absent admin/settings**: No configuration, no admin panel, no user preferences
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Output Format
+
+For each feature gap found, the agent provides:
+- **Location**: Relevant file(s) showing the gap
+- **Category**: CRUD_GAP, HALF_BUILT, MISSING_PATTERN, DEAD_END, DATA_GAP, or CONFIG_GAP
+- **Value**: HIGH_VALUE, MEDIUM_VALUE, or NICE_TO_HAVE
+- **Effort**: SMALL (hours), MEDIUM (days), or LARGE (weeks)
+- **Current State**: What exists today
+- **Missing Feature**: What should be added
+- **User Impact**: How users are affected without the feature
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze feature gaps in project management dashboard",
+  prompt: "Review the codebase for missing CRUD operations, incomplete workflows, and missing common patterns. Identify all feature gaps that would impact users.",
+  subagent_type: "agileflow-brainstorm-analyzer-features"
+)
+```
+
+## Related Agents
+
+- [`brainstorm-analyzer-growth`](/agents/brainstorm-analyzer-growth) - Growth and engagement features
+- [`brainstorm-analyzer-market`](/agents/brainstorm-analyzer-market) - Market-driven features
+- [`brainstorm-analyzer-ux`](/agents/brainstorm-analyzer-ux) - UX improvements
+- [`brainstorm-analyzer-integration`](/agents/brainstorm-analyzer-integration) - Integration opportunities
+- [`brainstorm-consensus`](/agents/brainstorm-consensus) - Brainstorm audit coordinator

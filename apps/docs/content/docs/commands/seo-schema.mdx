@@ -1,0 +1,240 @@
+---
+title: /seo:schema
+description: Schema markup validation, deprecated type detection, and ready-to-use JSON-LD generation for rich results
+---
+
+# /seo:schema
+
+Detect, validate, and generate schema markup (structured data) for rich results in Google Search.
+
+## Quick Start
+
+```bash
+/agileflow:seo:schema https://example.com                    # Detect and validate existing schema
+/agileflow:seo:schema https://example.com GENERATE=true       # Also generate missing JSON-LD
+/agileflow:seo:schema https://example.com/product             # Analyze product page schema
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Page to analyze |
+| `GENERATE` | No | false | Generate ready-to-use JSON-LD for missing schema |
+
+## How It Works
+
+1. **Detects existing schema** - Finds JSON-LD, Microdata, RDFa on the page
+2. **Validates format** - Checks valid JSON, correct @context, recognized types
+3. **Checks required properties** - Validates type-specific fields
+4. **Flags deprecated types** - Warns about unsupported types
+5. **Identifies missing opportunities** - Recommends schema for page type
+6. **Generates JSON-LD** - Creates copy-paste ready code if GENERATE=true
+
+## Example Usage
+
+### Validate Existing Schema
+```bash
+/agileflow:seo:schema https://example.com
+```
+
+See what schema exists and identify issues.
+
+### Generate Missing Schema
+```bash
+/agileflow:seo:schema https://example.com/product GENERATE=true
+```
+
+Get ready-to-use JSON-LD code for missing schema types.
+
+## Output
+
+```markdown
+# Schema Analysis: https://example.com/product
+
+## Existing Schema
+
+| # | Type | Format | Valid | Issues |
+|---|------|--------|-------|--------|
+| 1 | Product | JSON-LD | Yes | Missing returnPolicyCountry |
+| 2 | Organization | JSON-LD | Yes | None |
+
+---
+
+## Validation Results
+
+### Schema 1: Product
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Wireless Headphones",
+  "image": "https://example.com/image.jpg",
+  "offers": {
+    "@type": "Offer",
+    "price": "99.99",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  }
+}
+```
+
+**Issue**: Missing mandatory `returnPolicyCountry` (required as of March 2025)
+
+**Fix**:
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Wireless Headphones",
+  "image": "https://example.com/image.jpg",
+  "returnPolicyCountry": "US",
+  "offers": {
+    "@type": "Offer",
+    "price": "99.99",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  }
+}
+```
+
+### Schema 2: Organization
+All required properties present. Valid.
+
+---
+
+## Missing Schema Opportunities
+
+| Type | Why | Rich Result |
+|------|-----|-------------|
+| BreadcrumbList | Page has breadcrumb navigation | Breadcrumb trail in SERP |
+
+---
+
+## Generated JSON-LD (if requested)
+
+### BreadcrumbList
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://example.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Products",
+      "item": "https://example.com/products"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Wireless Headphones",
+      "item": "https://example.com/products/headphones"
+    }
+  ]
+}
+```
+
+---
+
+## Schema Score: 75/100
+
+- Existing schema: 2 types ✓
+- Validation errors: 1 (fixable)
+- Deprecated types: 0 ✓
+- Missing opportunities: 1
+- Rich results eligible: Product, Knowledge Panel
+```
+
+## Common Schema Types by Page Type
+
+| Page Type | Recommended Schema | Purpose |
+|-----------|-------------------|---------|
+| Homepage | Organization, WebSite | Knowledge panel, sitelinks search |
+| Blog Article | Article, BlogPosting | Article snippet, rich snippet |
+| Product Page | Product with Offer | Product rich results |
+| Service Page | Service, LocalBusiness | Service snippet |
+| Event | Event | Event listing, rich results |
+| Job Posting | JobPosting | Job card, rich results |
+| Review | Review, Rating | Star rating in SERP |
+| FAQ | FAQPage | FAQ rich results (limited) |
+
+## Required Properties by Type
+
+| Type | Required Properties |
+|------|-------------------|
+| Organization | name, url, logo |
+| LocalBusiness | name, address, telephone |
+| Product | name, image, offers.price, offers.priceCurrency, offers.availability |
+| Article | headline, image, datePublished, author |
+| Event | name, startDate, location |
+| JobPosting | title, description, datePosted, hiringOrganization |
+| BreadcrumbList | itemListElement[position, name, item] |
+
+## Deprecated Types (Remove Immediately)
+
+These types no longer generate rich results:
+- **HowTo** - Removed August 2023
+- **SpecialAnnouncement** - COVID-era, sunset
+- **CourseInfo, EstimatedSalary, LearningVideo**
+- **VehicleListing** - Merchant API only
+- **PracticeProblem, Dataset**
+
+If you're using these, remove them.
+
+## Restricted Types (Use with Caution)
+
+- **FAQPage** - Only generates rich results for government/healthcare sites (as of August 2023)
+- **ClaimReview** - Only for Google-approved fact-checking organizations
+
+## Rich Results Opportunities
+
+Running this command shows which rich results your page could qualify for:
+
+- **Knowledge Panel** - Organization/LocalBusiness schema
+- **Product Rich Results** - Product schema with reviews
+- **Article Snippet** - Article/BlogPosting schema
+- **Event Listing** - Event schema
+- **Job Card** - JobPosting schema
+- **FAQ Rich Results** - FAQPage (limited, government/healthcare only)
+- **Breadcrumb Trail** - BreadcrumbList schema
+- **Sitelinks Search Box** - WebSite schema with SearchAction
+
+## Testing Your Schema
+
+After generating schema:
+
+1. **Copy the JSON-LD** - From the output
+2. **Add to your page** - In the `<head>` or `<body>`
+3. **Test at Google Rich Results Test** - https://search.google.com/test/rich-results
+4. **Validate at Schema.org** - https://schema.org/docs/
+5. **Monitor in Google Search Console** - Enhancement reports
+
+## Common Issues Found
+
+- Missing required properties (e.g., returnPolicyCountry for Products)
+- Wrong @context URL (http instead of https)
+- Deprecated types still in use (HowTo, SpecialAnnouncement)
+- Invalid JSON syntax in JSON-LD
+- Wrong schema type for page content
+- Restricted types on ineligible sites (FAQPage on commercial sites)
+
+## Next Steps
+
+1. **If valid schema exists** - Expand to other pages
+2. **If issues found** - Fix validation errors (easy wins)
+3. **If missing opportunities** - Add recommended schema for your page type
+4. **Test all schema** - Use Rich Results Test before publishing
+5. **Monitor in Search Console** - Track rich result performance
+
+## Related Commands
+
+- [`/seo:page`](/commands/seo-page) - Check schema as part of full page analysis
+- [`/seo:audit`](/commands/seo-audit) - Schema is part of full audit
+- [`/seo`](/commands/seo) - SEO toolkit overview

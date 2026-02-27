@@ -1,0 +1,68 @@
+---
+title: Growth & Engagement
+description: Growth and engagement feature analyzer for retention hooks, sharing mechanics, notification systems, onboarding flows, and user activation features
+---
+
+# Growth & Engagement
+
+The Brainstorm Analyzer: Growth & Engagement agent is a specialized growth analyzer focused on **identifying features that drive user engagement, retention, and growth**. It analyzes the app and suggests features that would help acquire users, keep them active, and encourage them to invite others.
+
+## When to Use
+
+Use this agent when:
+- You want to improve user onboarding and activation
+- You need to identify notification and communication gaps
+- You're looking for sharing and virality features
+- You want to find personalization opportunities
+- You need to identify retention hooks (streaks, reminders, digests)
+- You're analyzing user management and account features
+
+## How It Works
+
+1. **Maps user lifecycle** - Analyzes acquisition, activation, retention, revenue, and referral stages
+2. **Identifies missing growth features** - Finds gaps in onboarding, notifications, sharing, personalization, retention hooks, and user management
+3. **Assesses growth metrics** - Determines what metric each feature would improve
+4. **Provides implementation hints** - Suggests technical approaches for each growth feature
+
+## Focus Areas
+
+- **Onboarding & activation**: Getting new users to their "aha moment" quickly
+- **Notifications & communication**: Keeping users informed and engaged
+- **Sharing & virality**: Letting users share content and invite others
+- **Personalization**: Making the experience feel tailored to each user
+- **Retention hooks**: Features that bring users back (streaks, reminders, digests)
+- **User management**: Account features that reduce friction (SSO, multi-account, teams)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Output Format
+
+For each growth feature suggestion, the agent provides:
+- **Location**: Relevant file(s) or area
+- **Category**: ONBOARDING, NOTIFICATIONS, SHARING, PERSONALIZATION, RETENTION, or USER_MGMT
+- **Value**: HIGH_VALUE, MEDIUM_VALUE, or NICE_TO_HAVE
+- **Effort**: SMALL (hours), MEDIUM (days), or LARGE (weeks)
+- **Growth Metric**: What metric this improves (activation rate, DAU, retention, referrals)
+- **Current State**: What exists today
+- **Missing Feature**: What should be added
+- **Growth Impact**: How the feature improves user engagement
+
+## Example Usage
+
+```text
+Task(
+  description: "Identify growth and engagement opportunities",
+  prompt: "Analyze the app for missing onboarding, notification, sharing, personalization, and retention features. Focus on features that would improve user activation and retention.",
+  subagent_type: "agileflow-brainstorm-analyzer-growth"
+)
+```
+
+## Related Agents
+
+- [`brainstorm-analyzer-features`](/agents/brainstorm-analyzer-features) - Feature gaps
+- [`brainstorm-analyzer-market`](/agents/brainstorm-analyzer-market) - Market-driven features
+- [`brainstorm-analyzer-ux`](/agents/brainstorm-analyzer-ux) - UX improvements
+- [`brainstorm-analyzer-integration`](/agents/brainstorm-analyzer-integration) - Integration opportunities
+- [`brainstorm-consensus`](/agents/brainstorm-consensus) - Brainstorm audit coordinator

@@ -1,0 +1,241 @@
+---
+title: /ads:plan
+description: Campaign planning with industry-specific templates, multi-step discovery, budget allocation, and platform recommendations
+---
+
+# /ads:plan
+
+Generate a comprehensive paid advertising campaign plan with industry-specific templates, platform recommendations, budget allocation, and timeline.
+
+## Quick Start
+
+```bash
+/agileflow:ads:plan                                     # Interactive planning (recommended)
+/agileflow:ads:plan INDUSTRY=saas BUDGET=5000           # Direct with parameters
+/agileflow:ads:plan INDUSTRY=ecommerce GOAL=roas        # E-commerce with ROAS goal
+```
+
+## How It Works
+
+1. **Discover your business** - Interactive questions about industry, goal, budget
+2. **Select platforms** - Recommendations based on industry and budget
+3. **Generate campaign plan** - Industry-specific structure with allocation
+4. **Create timeline** - Week-by-week launch schedule
+5. **Define KPIs** - Metrics to track and targets to hit
+6. **Set scaling rules** - How to grow budget without wasting spend
+
+## Step 1: Interactive Discovery
+
+If you don't provide parameters, the plan will ask:
+
+**Industry**: SaaS, E-commerce, Local Services, B2B, Healthcare, Education, Finance, Real Estate
+
+**Goal**: Lead generation, ROAS/Sales, Brand awareness, App installs
+
+**Budget**: $1K-$5K, $5K-$20K, $20K-$100K, $100K+
+
+## Step 2: Platform Selection
+
+Based on your industry and budget, the plan recommends specific platforms:
+
+| Industry | Recommended (Primary) | Secondary | Avoid |
+|----------|----------------------|-----------|-------|
+| SaaS | Google + Meta | LinkedIn | TikTok |
+| E-commerce | Google + Meta | TikTok | LinkedIn |
+| Local Services | Google + Meta | Microsoft | LinkedIn |
+| B2B | LinkedIn + Google | Meta | TikTok |
+| Healthcare | Google + Meta | LinkedIn | TikTok |
+
+## Step 3: Campaign Structure
+
+Each industry gets a customized template:
+
+### SaaS Structure
+**Google Ads (40%)** - Capture high-intent buyers
+- Brand campaigns (protect owned terms)
+- Non-brand high-intent ("buy", "pricing", "vs")
+- Non-brand research ("how to", "what is")
+- Performance Max (with product feed)
+
+**Meta Ads (35%)** - Reach prospecting audiences
+- Lookalike from free trial signups
+- Interest targeting (job titles, competitors)
+- Website retargeting (30/60/90 days)
+- Engagement audiences (video viewers)
+
+**LinkedIn Ads (25%)** - Thought leadership
+- Sponsored Content (case studies, whitepapers)
+- Lead Gen Forms (direct capture)
+- Retargeting (website visitors)
+
+### E-commerce Structure
+**Google Ads (50%)** - Product discovery
+- Shopping campaigns (product feed)
+- Performance Max (automated)
+- Brand campaigns
+- Dynamic Search Ads
+
+**Meta Ads (40%)** - Conversion + retargeting
+- Advantage+ Shopping (automated)
+- Lookalike from purchasers
+- Dynamic product ads (retargeting)
+- Cart abandonment sequences
+
+**TikTok (10%)** - Younger audience
+- Spark Ads (boosted organic)
+- Collection Ads (catalog-driven)
+
+### Local Services Structure
+**Google Ads (60%)** - Search intent
+- Service keywords ("[service] near me")
+- Brand campaigns
+- Local Service Ads (if eligible)
+- Call-only campaigns
+
+**Meta Ads (30%)** - Geographic targeting
+- Radius targeting (15-30 miles)
+- Website retargeting
+- Lead Gen Forms
+
+**Microsoft (10%)** - Extended reach
+- Search import from Google
+- Lower CPCs
+
+### B2B Structure
+**LinkedIn (40%)** - Decision-maker targeting
+- Sponsored Content
+- Lead Gen Forms
+- Account-Based Marketing lists
+- Retargeting
+
+**Google (35%)** - Intent capture
+- High-intent keywords
+- Competitor alternatives
+- Display remarketing
+- YouTube demos
+
+**Meta (25%)** - Support
+- Lookalike from customer list
+- Retargeting
+- Content distribution
+
+## Step 4: Budget Allocation Matrix
+
+| Monthly Budget | Platform Allocation | Breakdown |
+|---------------|-------------------|-----------|
+| $1K-5K | 1-2 platforms | 70% primary / 30% secondary |
+| $5K-20K | 2-3 platforms | 50% / 30% / 20% |
+| $20K-100K | 3-4 platforms | 40% / 25% / 20% / 15% |
+| $100K+ | 4-6 platforms | Proportional to ROAS |
+
+Within each platform:
+- **70%** - Proven campaigns (known performers)
+- **20%** - Testing (new audiences, creatives)
+- **10%** - Experimental (new platforms, formats)
+
+## Step 5: Launch Timeline
+
+### Week 1-2: Foundation
+- [ ] Set up conversion tracking on all platforms
+- [ ] Create audiences and upload customer lists
+- [ ] Build campaign structures (campaigns, ad groups, ad sets)
+- [ ] Design landing pages (or prepare Lead Gen Forms)
+
+### Week 3-4: Launch
+- [ ] Launch brand campaigns first (low risk, baseline traffic)
+- [ ] Activate retargeting (from any existing traffic)
+- [ ] Begin prospecting with proven audiences
+- [ ] Monitor for technical issues (tracking, etc.)
+
+### Month 2: Optimize
+- [ ] Review search terms, add negatives
+- [ ] Identify winning and losing creatives
+- [ ] Adjust bids based on early data
+- [ ] Pause underperformers
+
+### Month 3: Scale
+- [ ] Scale winners (max 20% budget increase/week)
+- [ ] Pause underperformers (3x Kill Rule)
+- [ ] Test new audiences and creatives
+- [ ] Set up automated rules and alerts
+
+## Step 6: KPIs & Targets
+
+Example KPIs by industry:
+
+### SaaS
+| Metric | Target |
+|--------|--------|
+| CPL (MQL) | $50-150 |
+| CPL (SQL) | $150-400 |
+| Trial-to-Paid | 15-25% |
+| ROAS (12mo LTV) | 5:1+ |
+
+### E-commerce
+| Metric | Target |
+|--------|--------|
+| ROAS | 3:1-5:1 |
+| CPA (Purchase) | <$30-80 |
+| AOV:CPA | >3:1 |
+| Cart abandonment recovery | 10-15% |
+
+### Local Services
+| Metric | Target |
+|--------|--------|
+| CPL | $15-50 |
+| Cost per call | $20-60 |
+| Booking rate | 25-40% |
+| Customer LTV:CPA | >5:1 |
+
+## Step 7: Scaling Rules
+
+1. **Only scale proven campaigns** - 3+ weeks of data minimum
+2. **Max 20% increase per week** - Gradual growth prevents waste
+3. **3x Kill Rule** - Pause if CPA > 3x target
+4. **Don't scale and test simultaneously** - Separate concerns
+5. **Monitor learning phase** - No changes during ramp-up
+
+## Example Usage
+
+### Interactive Planning
+```bash
+/agileflow:ads:plan
+# Answers: SaaS, Lead gen goal, $10K budget
+# Returns: Full SaaS campaign plan with timeline
+```
+
+### SaaS Campaign
+```bash
+/agileflow:ads:plan INDUSTRY=saas BUDGET=10000 GOAL=lead-gen
+# Returns: SaaS-specific plan with all templates
+```
+
+### E-commerce Campaign
+```bash
+/agileflow:ads:plan INDUSTRY=ecommerce BUDGET=20000 GOAL=roas
+# Returns: E-commerce plan focused on ROAS optimization
+```
+
+## Expected Outcomes
+
+Following this plan typically delivers:
+- **Solid foundation** - Tracking, audiences, structure in place
+- **Quick wins** - Early traffic from brand campaigns
+- **Data for optimization** - First month provides optimization insights
+- **Scalable structure** - Can grow 50-100% month 2-3 with good results
+- **Professional execution** - Follows best practices for your industry
+
+## Tips
+
+- **Start simple** - Don't launch on all platforms simultaneously
+- **Tracking first** - Fix tracking before scaling
+- **Document assumptions** - Note your KPI targets and rationale
+- **Weekly reviews** - Spend 30 mins/week on optimization
+- **Monthly deep dives** - 2-3 hours/month for major changes
+- **Rerun quarterly** - Refresh strategy as results come in
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Audit existing account
+- [`/ads:budget`](/commands/ads-budget) - Optimize budget allocation
+- [`/ads:competitor`](/commands/ads-competitor) - Competitive research

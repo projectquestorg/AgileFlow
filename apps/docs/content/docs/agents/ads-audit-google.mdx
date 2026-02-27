@@ -1,0 +1,82 @@
+---
+title: Ads Audit Google
+description: Google Ads audit analyzer with 74 deterministic checks across conversion tracking, wasted spend, account structure, keyword strategy, ad copy quality, and campaign settings
+---
+
+# Ads Audit Google
+
+Google Ads auditor that analyzes Google Ads account data and scores it across 74 deterministic checks in 6 weighted categories to identify optimization opportunities and compliance issues.
+
+## When to Use
+
+Use this agent when:
+
+- Running comprehensive Google Ads account audit
+- Identifying conversion tracking issues
+- Analyzing wasted spend and optimization opportunities
+- Reviewing account structure and organization
+- Auditing keyword strategy and quality scores
+- Checking ad copy quality and performance
+- Validating campaign settings and configurations
+
+## How It Works
+
+1. **Accepts Account Data**: Export CSV, screenshots, or structured text descriptions
+2. **Applies 74 Checks**: Across 6 weighted categories
+3. **Enforces Quality Gates**: Conversion tracking required, no Broad Match without Smart Bidding, 3x Kill Rule
+4. **Identifies Issues**: Tags each finding with severity (CRITICAL, HIGH, MEDIUM, LOW)
+5. **Scores Overall Health**: Outputs Google Ads Score out of 100
+
+## Focus Areas
+
+- **Conversion Tracking (25%)** - 12 checks on tag installation, conversion actions, attribution
+- **Wasted Spend (25%)** - 15 checks on negative keywords, search terms, quality scores
+- **Account Structure (15%)** - 12 checks on naming conventions, ad groups, campaign organization
+- **Keyword Strategy (15%)** - 14 checks on match types, quality scores, intent alignment
+- **Ad Copy Quality (10%)** - 11 checks on RSAs, headlines, CTAs, extensions
+- **Campaign Settings (10%)** - 10 checks on bidding, location targeting, remarketing
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Comprehensive Google Ads audit",
+  prompt: "Google Ads account: 8 campaigns, 40 ad groups, 500+ keywords. Monthly spend $15K. Using mostly Broad Match keywords with manual bids. CTR 2%, CPC $3, CPA $50 target.",
+  subagent_type: "ads-audit-google"
+)
+```
+
+## Key Capabilities
+
+- **Conversion tracking validation** - Tag, enhanced conversions, consent mode
+- **Wasted spend identification** - Negative keywords, search terms, low QS
+- **Account structure assessment** - Naming, ad group organization, PMax isolation
+- **Keyword strategy evaluation** - Match types, quality score distribution, intent alignment
+- **Ad copy quality review** - RSA count, headline quality, extension usage
+- **Campaign settings validation** - Bidding strategy, location targeting, audience exclusions
+
+## Quality Gates
+
+1. **Conversion tracking required** - No optimization recommendations without tracking
+2. **No Broad Match without Smart Bidding** - Critical gate prevents wasted spend
+3. **3x Kill Rule** - Campaigns with CPA > 3x target must be flagged CRITICAL
+4. **Brand/non-brand separation** - Must be separate for accurate measurement
+
+## Industry Benchmarks
+
+| Industry | Avg CTR (Search) | Avg CPA | Avg ROAS |
+|----------|-----------------|---------|----------|
+| SaaS | 3.0% | $75 | 5:1 |
+| E-commerce | 2.5% | $45 | 4:1 |
+| Healthcare | 3.2% | $85 | 3:1 |
+| Local Services | 4.0% | $35 | 5:1 |
+
+## Related Agents
+
+- [Ads Meta Audit](/agents/ads-audit-meta) - Meta/Facebook comparison
+- [Ads Budget Audit](/agents/ads-audit-budget) - Budget allocation
+- [Ads Consensus](/agents/ads-consensus) - Multi-platform scoring

@@ -1,0 +1,96 @@
+---
+title: Ads Audit Tracking
+description: Cross-platform conversion tracking analyzer with 7 critical checks for tag implementation, data quality, and attribution integrity
+---
+
+# Ads Audit Tracking
+
+Conversion tracking auditor that analyzes tracking implementation across all ad platforms, applying 7 critical checks that form the foundation of all paid advertising optimization.
+
+## When to Use
+
+Use this agent when:
+
+- Verifying conversion tracking is properly implemented
+- Checking tag installation across platforms
+- Validating event deduplication and attribution
+- Auditing privacy compliance (consent mode, ATT)
+- Assessing data freshness and quality
+- Setting up server-side tracking backup
+- Diagnosing why ad optimization isn't working
+
+## How It Works
+
+1. **Audits Tag Installation**: All platform tags firing on correct pages
+2. **Validates Event Setup**: Conversion events properly configured
+3. **Checks Deduplication**: No double-counting between browser and server events
+4. **Verifies Attribution**: Consistent attribution model across platforms
+5. **Confirms Data Freshness**: Conversion data flowing within 24 hours
+6. **Validates Privacy**: Consent mode and privacy framework implementation
+7. **Checks Server-Side Backup**: At least one platform using server-side tracking
+
+## Focus Areas
+
+The 7 critical checks:
+
+1. **Platform tags installed** - All active platform tags fire on all landing pages
+2. **Conversion events defined** - Primary conversion actions configured per platform
+3. **Event deduplication** - No double-counting between Pixel + CAPI or similar
+4. **Cross-platform attribution** - Consistent attribution model across all platforms
+5. **Data freshness** - Conversion data flowing within last 24 hours
+6. **Privacy compliance** - Consent mode/ATT framework implemented
+7. **Server-side backup** - At least one platform with server-side tracking (CAPI, offline import)
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Verify conversion tracking setup",
+  prompt: "We're running ads on Google and Meta but seeing discrepancies in reported conversions. Google shows 150 conversions, Meta shows 200. Need tracking audit.",
+  subagent_type: "ads-audit-tracking"
+)
+```
+
+## Key Capabilities
+
+- **Platform-specific tag verification** (Google, Meta, LinkedIn, TikTok, Microsoft, YouTube)
+- **Event configuration validation** with proper conversion mapping
+- **Deduplication checking** for browser + server-side events
+- **Attribution model consistency** across platforms
+- **Data freshness monitoring** with real-time validation
+- **Privacy compliance verification** (GDPR, CCPA, iOS ATT)
+- **Server-side tracking assessment** (CAPI, offline import, sGTM)
+
+## Platform Tags Required
+
+| Platform | Tag Name | Primary Event |
+|----------|----------|---------------|
+| Google | gtag.js or GTM | Conversion |
+| Meta | Meta Pixel (fbq) | Purchase or Lead |
+| LinkedIn | Insight Tag | Conversion or Lead |
+| TikTok | TikTok Pixel | Purchase or Lead |
+| Microsoft | UET Tag | Conversion |
+
+## Quality Gates (Absolute Rules)
+
+1. **If T-1 fails for ANY platform → entire audit gets CRITICAL flag** - "You cannot optimize what you cannot measure"
+2. **If T-2 fails → no bidding strategy recommendations are valid** - Block all automated bidding recommendations until fixed
+3. **Never recommend optimization without verified tracking** - This overrides ALL other findings
+
+## Why Tracking Matters
+
+Without accurate tracking:
+- Automated bidding algorithms optimize toward noise
+- ROAS/CPA reporting is unreliable
+- Budget allocation decisions are based on bad data
+- Every other optimization is built on sand
+
+## Related Agents
+
+- [Ads Google Audit](/agents/ads-audit-google) - Google tracking specifics
+- [Ads Meta Audit](/agents/ads-audit-meta) - Meta tracking specifics
+- [Ads Consensus](/agents/ads-consensus) - Overall tracking scoring

@@ -1,0 +1,69 @@
+---
+title: Integration Opportunities
+description: Integration opportunity analyzer for missing third-party services, API extensibility, import/export features, and webhook capabilities
+---
+
+# Integration Opportunities
+
+The Brainstorm Analyzer: Integration Opportunities agent is a specialized integration analyzer focused on **identifying third-party integrations, API extensibility, and data portability features the app should have**. It analyzes what services and data flows are missing that would make the app more useful and connected.
+
+## When to Use
+
+Use this agent when:
+- You need to identify missing auth providers (Google, GitHub, etc.)
+- You're looking for missing service integrations (email, storage, analytics)
+- You want to check for missing data import/export features
+- You need to find missing API or webhook extensibility
+- You're analyzing payment/billing integration gaps
+- You want to identify missing communication channel integrations
+
+## How It Works
+
+1. **Audits current integrations** - Scans package.json, environment files, and configuration for existing integrations
+2. **Determines missing integrations** - Identifies which integrations would be valuable based on what the app does
+3. **Assesses integration value** - Evaluates which integrations would have the most impact
+4. **Provides specific recommendations** - Suggests exact services and implementation approaches
+
+## Focus Areas
+
+- **Missing auth providers**: No Google/GitHub/Apple sign-in where expected
+- **Missing service integrations**: No email (SendGrid), no storage (S3), no analytics (Mixpanel)
+- **Missing data portability**: No import from competitors, no export to common formats
+- **Missing API/webhook extensibility**: No public API, no webhooks, no plugin system
+- **Missing payment/billing**: No Stripe/PayPal where monetization is implied
+- **Missing communication channels**: No Slack/Discord/email integrations
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Output Format
+
+For each integration opportunity, the agent provides:
+- **Location**: Relevant file(s) showing where integration would connect
+- **Category**: AUTH_PROVIDER, SERVICE, DATA_PORTABILITY, API_EXTENSIBILITY, PAYMENT, or COMMUNICATION
+- **Value**: HIGH_VALUE, MEDIUM_VALUE, or NICE_TO_HAVE
+- **Effort**: SMALL (hours), MEDIUM (days), or LARGE (weeks)
+- **Current State**: What integration exists today, if any
+- **Missing Integration**: What service/feature should be added
+- **User Impact**: How users are affected without the integration
+- **Suggested Service**: Specific service recommendation with rationale
+- **Implementation Hint**: Brief approach and relevant libraries/SDKs
+
+## Example Usage
+
+```text
+Task(
+  description: "Identify integration opportunities for SaaS application",
+  prompt: "Analyze the codebase for missing third-party integrations. Check for missing auth providers, email services, payment processing, webhooks, and data portability features.",
+  subagent_type: "agileflow-brainstorm-analyzer-integration"
+)
+```
+
+## Related Agents
+
+- [`brainstorm-analyzer-features`](/agents/brainstorm-analyzer-features) - Feature gaps
+- [`brainstorm-analyzer-growth`](/agents/brainstorm-analyzer-growth) - Growth and engagement
+- [`brainstorm-analyzer-market`](/agents/brainstorm-analyzer-market) - Market-driven features
+- [`brainstorm-analyzer-ux`](/agents/brainstorm-analyzer-ux) - UX improvements
+- [`brainstorm-consensus`](/agents/brainstorm-consensus) - Brainstorm audit coordinator

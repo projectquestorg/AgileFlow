@@ -1,0 +1,171 @@
+---
+title: Technical SEO
+description: Technical SEO analyzer for crawlability, indexability, security headers, URL structure, mobile-friendliness, and Core Web Vitals indicators
+---
+
+# Technical SEO
+
+The Technical SEO agent is a specialized analyzer focused on **technical SEO foundations**. It assesses a website's technical foundation by analyzing crawlability, indexability, security, URL structure, mobile readiness, JavaScript rendering, and performance indicators.
+
+## When to Use
+
+Use this agent when:
+- You need to audit your site's technical SEO foundation
+- You're troubleshooting indexing or crawling issues
+- You want to verify security headers are properly configured
+- You need to check mobile-friendliness signals
+- You want to ensure proper canonical tags and redirect handling
+
+## How It Works
+
+1. **Fetches target pages** - Analyzes HTTP headers and HTML structure
+2. **Checks crawlability** - Reviews robots.txt, meta robots directives, canonicals, redirects
+3. **Assesses indexability** - Looks for noindex directives, orphan pages, sitemap coverage
+4. **Verifies security** - Checks HTTPS, HSTS, CSP, security headers
+5. **Analyzes URL structure** - Evaluates cleanliness, hierarchy, parameters, consistency
+6. **Reviews mobile readiness** - Checks viewport, responsive design, tap targets
+7. **Detects JS rendering** - Identifies client-side content and rendering patterns
+8. **Checks international signals** - Looks for hreflang, language declarations
+
+## Focus Areas
+
+- **Crawlability**: robots.txt rules, meta robots, canonicals, redirect chains
+- **Indexability**: noindex directives, orphan pages, crawl depth, XML sitemap
+- **Security**: HTTPS enforcement, HSTS headers, CSP, mixed content
+- **URL Structure**: Clean URLs, hierarchy, parameters, trailing slash consistency
+- **Mobile-Friendliness**: Viewport meta, responsive design, tap targets, readability
+- **Core Web Vitals Indicators**: Resource loading, render-blocking resources, CLS risk
+- **International**: hreflang tags, language declarations, geo-targeting
+- **JavaScript Rendering**: Client-side rendering detection, hydration
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## 8 Assessment Categories
+
+| Category | Weight | Key Checks |
+|----------|--------|-----------|
+| Crawlability | 25% | robots.txt, canonicals, redirects, crawl depth |
+| Indexability | 20% | noindex directives, orphans, sitemap coverage |
+| Security | 15% | HTTPS, HSTS, CSP, security headers |
+| URL Structure | 15% | Cleanliness, hierarchy, consistency |
+| Mobile | 15% | Viewport, responsive, tap targets |
+| JS Rendering | 5% | Client-side content visibility |
+| International | 3% | hreflang, language declarations |
+| Performance | 2% | TTFB, resource hints, compression |
+
+## Security Headers Checklist
+
+| Header | Expected | Severity if Missing |
+|--------|----------|-------------------|
+| Strict-Transport-Security | max-age=31536000 | HIGH |
+| X-Content-Type-Options | nosniff | MEDIUM |
+| X-Frame-Options | DENY or SAMEORIGIN | MEDIUM |
+| Content-Security-Policy | Present | MEDIUM |
+| Referrer-Policy | strict-origin-when-cross-origin | LOW |
+| Permissions-Policy | Present | LOW |
+
+## Example Usage
+
+```text
+Task(
+  description: "Deep technical SEO analysis",
+  prompt: "Perform comprehensive technical SEO analysis of https://example.com. Check crawlability, indexability, security headers, URL structure, mobile-friendliness, and performance indicators.",
+  subagent_type: "agileflow-seo-analyzer-technical"
+)
+```
+
+## Output Format
+
+```markdown
+FINDING-1: Missing Strict-Transport-Security header
+
+Category: Security
+URL: https://example.com
+Severity: HIGH
+Confidence: HIGH
+
+Issue: HSTS header not configured. Site is vulnerable to SSL downgrade attacks.
+
+Evidence:
+HTTP response headers missing Strict-Transport-Security
+
+Impact: Browsers won't force HTTPS on subsequent visits. Reduces security.
+
+Remediation:
+Add to your web server config:
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+## Mobile Readiness Checks
+
+```html
+<!-- Essential viewport meta tag -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Check for responsive design indicators -->
+<!-- Media queries in CSS -->
+<!-- Flexible layouts (not fixed widths) -->
+
+<!-- Touch-friendly sizing -->
+<!-- Min 48x48px tap targets -->
+<!-- Base font size: 16px minimum -->
+```
+
+## Canonical Tag Best Practices
+
+| Good | Bad |
+|------|-----|
+| `<link rel="canonical" href="https://example.com/page">` | Relative paths |
+| Self-referencing on unique pages | Missing entirely |
+| Cross-domain canonicals when needed | Canonicals to different domain without reason |
+| HTTPS matching page protocol | HTTP on HTTPS page |
+
+## URL Structure Best Practices
+
+- Use lowercase (consistency)
+- Hyphens for word separation (not underscores)
+- No special characters or encoded spaces
+- Reasonable depth (max 3-4 levels)
+- Consistent trailing slash usage
+- Canonical tags for parameterized URLs
+
+## Scoring Guide
+
+| Category | Weight | Scoring |
+|----------|--------|---------|
+| Crawlability | 25% | Deduct for blocked resources, broken canonicals |
+| Indexability | 20% | Deduct for noindex, orphans, missing sitemap |
+| Security | 15% | Deduct for missing HTTPS, missing headers |
+| URL Structure | 15% | Deduct for messy URLs, inconsistencies |
+| Mobile | 15% | Deduct for missing viewport, non-responsive |
+| Performance | 10% | Deduct for render-blocking, missing hints |
+
+## Important Rules
+
+1. **Use WebFetch** - Retrieve actual page content, check HTTP headers
+2. **Check headers** - Many technical SEO issues are in HTTP response headers
+3. **Follow redirects** - Note redirect chains and their types (301 vs 302)
+4. **Be specific** - Include exact URLs and header values in findings
+5. **Score conservatively** - Only deduct for confirmed issues, not theoretical ones
+
+## Common Issues Found
+
+- Missing HTTPS or mixed content
+- robots.txt blocking important resources
+- Broken canonical tags (self-referencing needed)
+- Redirect chains (should be direct)
+- Duplicate content without canonicals
+- Missing viewport meta tag
+- Non-responsive design on mobile
+- Orphan pages not linked from navigation
+- Missing XML sitemap
+- Crawl depth too deep (>4 levels)
+
+## Related Agents
+
+- [`seo-analyzer-content`](/agents/seo-analyzer-content) - Content quality and E-E-A-T
+- [`seo-analyzer-performance`](/agents/seo-analyzer-performance) - Core Web Vitals
+- [`seo-analyzer-sitemap`](/agents/seo-analyzer-sitemap) - Sitemap validation
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis

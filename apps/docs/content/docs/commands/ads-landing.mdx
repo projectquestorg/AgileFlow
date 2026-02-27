@@ -1,0 +1,160 @@
+---
+title: /ads:landing
+description: Landing page optimization audit for ad campaigns - Core Web Vitals, CTA effectiveness, trust signals, mobile experience, and message match
+---
+
+# /ads:landing
+
+Audit a landing page for paid advertising effectiveness. Analyzes the page for conversion rate optimization factors that directly impact ad campaign performance.
+
+## Quick Start
+
+```bash
+/agileflow:ads:landing https://example.com/offer           # Audit landing page
+```
+
+## What It Checks
+
+The audit applies 15 checks focused on paid advertising conversion optimization:
+
+| Check | Severity | What It Tests |
+|-------|----------|---------------|
+| Page load speed | HIGH | LCP < 2.5s, FCP < 1.8s |
+| Single clear CTA | HIGH | One primary CTA visible above fold |
+| Headline match | CRITICAL | H1 reflects the ad's promise |
+| Mobile responsive | HIGH | Viewport meta + responsive design |
+| Form friction | HIGH | < 5 form fields for lead gen |
+| Trust signals | MEDIUM | Testimonials, reviews, badges, logos |
+| Navigation minimalism | MEDIUM | Minimal or no distracting top navigation |
+| Social proof | MEDIUM | Customer count, ratings, case studies |
+| Urgency element | LOW | Deadline, limited availability |
+| Phone visibility | MEDIUM | Click-to-call for service businesses |
+| Privacy policy | HIGH | Privacy link required for compliance |
+| SSL certificate | CRITICAL | HTTPS required |
+| Resource loading | HIGH | All images and links load correctly |
+| Thank you page | MEDIUM | Post-conversion confirmation page |
+| Tracking pixels | CRITICAL | GTM/Pixel/tag detected on page |
+
+## Output
+
+You receive:
+- **Landing Page Score** (0-100)
+- **Category breakdown** - What's working, what needs improvement
+- **Critical issues** - Must-fix problems blocking conversions
+- **Quick wins** - Easy improvements with high impact
+- **Message match analysis** - Does page deliver on ad promise
+- **CRO suggestions** - Specific improvements with expected lift
+- **Mobile analysis** - Mobile-specific experience assessment
+
+## Account Data Needed
+
+Just provide the URL:
+```bash
+/agileflow:ads:landing https://example.com/landing-page
+```
+
+The tool will fetch and analyze the actual page content.
+
+## Performance Expectations
+
+Core Web Vitals targets (Google's ranking factors):
+- **LCP (Largest Contentful Paint)**: < 2.5 seconds
+- **FCP (First Contentful Paint)**: < 1.8 seconds
+- **CLS (Cumulative Layout Shift)**: < 0.1
+
+## Conversion Optimization Checklist
+
+### Above the Fold (Immediate)
+- [ ] Clear headline that matches ad copy
+- [ ] Single, prominent CTA button
+- [ ] No scroll required to see primary offer
+- [ ] Mobile-responsive on all devices
+
+### Trust & Credibility
+- [ ] Customer testimonials or reviews
+- [ ] Trust badges or certifications
+- [ ] Customer logos or press mentions
+- [ ] Clear company/contact information
+
+### Form Optimization (If Applicable)
+- [ ] Minimal fields (< 5 for lead gen, < 8 for signups)
+- [ ] Progress indicator for multi-step forms
+- [ ] Clear error messaging
+- [ ] Mobile-optimized form fields
+
+### Message Alignment
+- [ ] Ad headline matches page H1
+- [ ] Ad promise reflected in body copy
+- [ ] Ad value proposition stated prominently
+- [ ] No discrepancies between ad and page
+
+### Technical Performance
+- [ ] Page loads in < 3 seconds
+- [ ] Images optimized and lazy-loaded
+- [ ] No broken links or 404 errors
+- [ ] SSL certificate active (HTTPS)
+
+## Example Usage
+
+### Analyze Offer Page
+```bash
+/agileflow:ads:landing https://example.com/free-trial
+# Returns: Score with CRO recommendations
+```
+
+### Compare Multiple Pages
+```bash
+/agileflow:ads:landing https://example.com/offer1
+/agileflow:ads:landing https://example.com/offer2
+# Returns: Scores for both pages to identify best performer
+```
+
+## Expected Improvements
+
+By implementing the recommendations:
+- **10-25% improvement** in conversion rate from optimization
+- **Faster load times** improve both conversions and Google ranking
+- **Better message match** reduces bounce rate
+- **Trust signals** increase conversion confidence
+- **Mobile experience** improves mobile conversion rate (typically <30% of conversions currently)
+
+## A/B Testing Recommendations
+
+Based on the audit, you might want to test:
+1. **CTA placement** - Above fold vs after scroll
+2. **Form fields** - Reduce from current count by 1-2 fields
+3. **Headline clarity** - Make value prop more prominent
+4. **Trust signals** - Add/remove social proof elements
+5. **Mobile layout** - Optimize specifically for mobile
+
+## Performance Impact by Fix
+
+| Optimization | Typical Lift | Effort |
+|---------------|-------------|--------|
+| Load time improvement | +5-15% | Medium |
+| CTA above fold | +10-20% | Low |
+| Form field reduction | +15-30% | Low |
+| Trust signals added | +5-10% | Low |
+| Message match fix | +10-25% | Low |
+
+## When to Run
+
+- **Before launching ad campaign** - Ensure landing page is optimized before spending
+- **After A/B testing** - Audit winning variation
+- **Performance decline** - If conversions drop, landing page may be issue
+- **Monthly** - Keep pages optimized as standards evolve
+- **Before scaling budget** - Don't scale until landing page optimized
+
+## Tips
+
+- **Mobile first** - 70%+ of traffic is mobile, optimize for phones
+- **Speed matters** - Every 1 second of load time = 7% conversion drop
+- **Message match is critical** - If ad says "free trial" but page says "demo", you lose conversions
+- **Trust signals work** - Testimonials and badges increase conversion 5-10%
+- **Test, don't guess** - Use actual data to decide what matters
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full ads audit (includes landing page analysis)
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning with landing page strategy
+- [`/code:review`](/commands/review) - Technical review of page implementation

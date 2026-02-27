@@ -1,0 +1,218 @@
+---
+title: /ideate:features
+description: Multi-agent feature brainstorming audit - analyzes your app and suggests new features, UX improvements, integrations, and growth opportunities
+---
+
+# /ideate:features
+
+Deploy multiple specialized brainstorm analyzers in parallel to find missing features, UX improvements, market-standard patterns, growth opportunities, and integration gaps. Then synthesize results through consensus into a prioritized Feature Brainstorm Report.
+
+**Key difference from `/ideate:new`**: Ideation finds technical improvements to existing code (refactoring, security fixes, performance). Brainstorm audit finds **new product features** the app should have — what to build, not what to fix.
+
+## Quick Start
+
+```bash
+/agileflow:ideate:features app/
+```
+
+Analyze app for missing features using the core 3 brainstorm analyzers (Features, UX, Market).
+
+## Parameters
+
+| Parameter | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `TARGET` | file/directory | `.` | What to analyze |
+| `DEPTH` | `quick`, `deep` | `quick` | quick = core 3 analyzers, deep = all 5 |
+| `FOCUS` | `features,ux,market,growth,integration,all` | `all` | Which analyzers to deploy |
+
+## Usage Examples
+
+### Quick scan (default)
+
+```bash
+/agileflow:ideate:features app/
+```
+
+Analyze app quickly using core 3 analyzers (Features, UX, Market). Focus on HIGH_VALUE and MEDIUM_VALUE ideas only.
+
+### Deep comprehensive analysis
+
+```bash
+/agileflow:ideate:features . DEPTH=deep
+```
+
+Deploy all 5 analyzers for comprehensive brainstorming (adds Growth and Integration analyzers).
+
+### Focus on specific areas
+
+```bash
+/agileflow:ideate:features src/ FOCUS=features,ux
+```
+
+Deploy only specific analyzers (Features and UX in this case).
+
+### All features with deep analysis
+
+```bash
+/agileflow:ideate:features . DEPTH=deep FOCUS=all
+```
+
+Comprehensive brainstorm audit with all analyzers and value levels.
+
+## Brainstorm Analyzers
+
+### Core 3 (Quick Mode)
+
+- **Features Analyzer** - Missing CRUD, half-built features, incomplete workflows, missing data features
+- **UX Analyzer** - Missing feedback states, accessibility, navigation gaps, responsive design issues
+- **Market Analyzer** - Table-stakes features for the app's category, competitive gaps
+
+### Additional 2 (Deep Mode Only)
+
+- **Growth Analyzer** - Onboarding flows, notifications, sharing mechanics, retention hooks, user management
+- **Integration Analyzer** - Auth providers, third-party services, data portability, API extensibility, webhooks
+
+## Value Scale (Feature Priority)
+
+| Value | Definition | Example |
+|-------|-----------|---------|
+| **HIGH_VALUE** | Users actively need this or will leave without it | Missing search on a list of 100+ items |
+| **MEDIUM_VALUE** | Improves the experience significantly | Export to CSV for data portability |
+| **NICE_TO_HAVE** | Polish that delights users | Dark mode, keyboard shortcuts |
+| **SPECULATIVE** | Might be useful, needs validation | AI-powered suggestions |
+
+## How It Works
+
+```
+┌──────────────────────────────────────────────┐
+│      /agileflow:ideate:features             │
+│      1. Parse arguments (target, depth)      │
+│      2. Deploy analyzers IN PARALLEL         │
+│      3. Collect all suggestions              │
+│      4. Run consensus coordinator            │
+│      5. Generate prioritized report          │
+└──────────────────────────────────────────────┘
+              │
+    ┌─────────┼─────────┐
+    ▼         ▼         ▼
+┌────────┐ ┌──────┐ ┌────────┐
+│ Features│ │ UX  │ │ Market │
+└────────┘ └──────┘ └────────┘
+    │        │        │
+    └────────┼────────┘
+            ▼
+┌──────────────────────────┐
+│ Consensus Coordinator    │
+│ (dedup, vote, prioritize)│
+└──────────────────────────┘
+```
+
+## When to Use
+
+Use feature brainstorming when:
+
+- You want to find what features should be built next
+- You've finished core functionality and want to improve
+- You need to identify gaps relative to market standards
+- You want structured feature discovery from multiple perspectives
+- You're planning next quarter's roadmap
+
+## Output Example
+
+```
+💡 Feature Brainstorm Audit: app/
+══════════════════════════════════════════════════════════════
+
+Deploying 3 brainstorm analyzers (quick mode)...
+✓ Features Analyzer
+✓ UX Analyzer
+✓ Market Analyzer
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 BRAINSTORM SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+18 raw suggestions → 12 unique features
+
+★ QUICK WINS (High Value, Low Effort)
+
+1. Add loading spinner during processing [CONFIRMED by Features, UX]
+   Value: HIGH | Effort: SMALL
+   Users see frozen UI — think the app is broken
+
+2. Add drag-and-drop upload [CONFIRMED by UX, Market]
+   Value: HIGH | Effort: SMALL
+   Users expect drag-and-drop in 2026 — file input feels dated
+
+3. Show result confidence explanation [LIKELY - UX]
+   Value: MEDIUM | Effort: SMALL
+   Users don't understand what "73%" means in context
+
+🎯 STRATEGIC FEATURES
+
+4. Batch analysis [CONFIRMED by Features, Market]
+   Value: HIGH | Effort: MEDIUM
+   Analyze multiple items at once — market standard
+
+5. Result history with comparison [LIKELY - Features]
+   Value: HIGH | Effort: MEDIUM
+   Users can't review past analyses or compare
+
+[Full report saved to docs/08-project/brainstorm-audits/brainstorm-audit-20260226.md]
+```
+
+## Confidence Levels
+
+- **CONFIRMED** - 2+ analyzers agree → High priority
+- **LIKELY** - 1 analyzer with strong evidence → Medium priority
+- **SPECULATIVE** - 1 analyzer, weak evidence → Lower priority
+
+## Results Location
+
+Feature Brainstorm Report saved to:
+
+```
+docs/08-project/brainstorm-audits/brainstorm-audit-{YYYYMMDD}.md
+```
+
+Each report includes:
+- App category detection
+- Feature suggestions by analyzer
+- Deduplication and confidence voting
+- Prioritized Quick Wins and Strategic Features
+- Implementation hints for each feature
+
+## Integration with Other Commands
+
+After brainstorm audit:
+
+- **Create stories**: `npx agileflow story` to turn ideas into work
+- **Create epic**: `npx agileflow epic` to group related features
+- **Re-analyze**: Run again with `DEPTH=deep` for more detail
+- **Document decision**: `npx agileflow adr` if rejecting features
+
+## Best Practices
+
+1. **Start with quick depth** - 3 analyzers are usually sufficient
+2. **Review with team** - Share report with product team
+3. **Prioritize quick wins** - Implement high-value, low-effort features first
+4. **Use FOCUS to zoom in** - Analyze specific areas in depth
+5. **Archive completed reports** - Keep for roadmap history
+
+## Boundary Rules
+
+This command does NOT cover:
+
+- **Code quality issues** (use `/ideate:new` for refactoring)
+- **Security vulnerabilities** (use `/code:security`)
+- **Performance problems** (use `/code:performance`)
+- **Test gaps** (use `/code:test`)
+- **Bug fixes** (use `/code:completeness`)
+
+## Related Commands
+
+- [`/ideate:new`](/commands/ideate-new) - Technical improvement ideation
+- [`/code:completeness`](/commands/code-completeness) - Find broken/incomplete features
+- [`/story`](/commands/story) - Create user stories from brainstorm findings
+- [`/epic`](/commands/epic) - Create epic for grouped features
+- [`/adr`](/commands/adr) - Document feature decisions

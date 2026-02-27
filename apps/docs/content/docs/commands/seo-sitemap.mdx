@@ -1,0 +1,282 @@
+---
+title: /seo:sitemap
+description: XML sitemap validation, URL coverage analysis, quality gate enforcement, and sitemap generation assistance
+---
+
+# /seo:sitemap
+
+Validate XML sitemap structure, assess URL coverage, enforce quality gates, and optionally generate or fix sitemaps.
+
+## Quick Start
+
+```bash
+/agileflow:seo:sitemap https://example.com                   # Validate existing sitemap
+/agileflow:seo:sitemap https://example.com GENERATE=true      # Also generate improvements
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Site domain to analyze |
+| `GENERATE` | No | false | Generate or fix sitemap XML |
+
+## What Gets Checked
+
+1. **Sitemap Existence** - Does the site have sitemap.xml?
+2. **XML Structure** - Valid XML, correct namespace, proper elements
+3. **URL Quality** - Status codes, canonical matches, not noindexed, HTTPS
+4. **Coverage** - Important pages included, no orphans
+5. **Quality Gates** - lastmod dates present and recent, size limits
+6. **robots.txt** - Sitemap declared and discoverable
+
+## Quality Gates
+
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| **Non-200 URLs** | > 5% | > 15% |
+| **Missing lastmod** | > 20% | > 50% |
+| **Stale lastmod (>1 year)** | > 30% | > 60% |
+| **Sitemap not in robots.txt** | Always flag | - |
+| **No sitemap found** | - | Always flag |
+| **Duplicate URLs** | Any | > 10 |
+
+## XML Sitemap Structure
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/page</loc>
+    <lastmod>2026-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://example.com/another-page</loc>
+    <lastmod>2026-02-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
+```
+
+For large sites (>50,000 URLs), use Sitemap Index:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://example.com/sitemap-pages.xml</loc>
+    <lastmod>2026-01-15</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://example.com/sitemap-products.xml</loc>
+    <lastmod>2026-02-01</lastmod>
+  </sitemap>
+</sitemapindex>
+```
+
+## Example Usage
+
+### Validate Existing Sitemap
+```bash
+/agileflow:seo:sitemap https://example.com
+```
+
+Check structure, coverage, quality, and issues.
+
+### Generate Improvements
+```bash
+/agileflow:seo:sitemap https://example.com GENERATE=true
+```
+
+Get recommendations for fixing or improving your sitemap.
+
+## Output Format
+
+```markdown
+# Sitemap Analysis: https://example.com
+
+## Status
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Sitemap found | Yes | https://example.com/sitemap.xml |
+| In robots.txt | Yes | Declared ✓ |
+| Format | XML | Valid ✓ |
+| Total URLs | 450 | Within limits ✓ |
+| File size | 18MB | Within 50MB ✓ |
+
+---
+
+## URL Quality Assessment
+
+| Status | Count | % | Severity |
+|--------|-------|---|----------|
+| Live (200) | 422 | 93.8% | Good |
+| Moved (301/302) | 15 | 3.3% | Warning |
+| Not Found (404) | 10 | 2.2% | Warning |
+| Forbidden (403) | 2 | 0.4% | Warning |
+| Server Error (5xx) | 1 | 0.2% | Warning |
+
+**Quality Score**: 418 live URLs = 92.9% (Good)
+
+---
+
+## Critical Issue: 10 Non-200 URLs
+
+| URL | Status | Issue |
+|-----|--------|-------|
+| /products/old-item | 404 | Product discontinued |
+| /blog/draft-post | 404 | Draft not published |
+| /legacy/page | 301 | Redirect in place |
+| ... | ... | ... |
+
+**Fix**: Remove 404 URLs or ensure redirects are in place
+
+---
+
+## lastmod Quality
+
+| Category | Count | Status |
+|----------|-------|--------|
+| With lastmod | 380 | 84.4% |
+| Without lastmod | 70 | 15.6% | Warning |
+| Recent (< 3 months) | 220 | 49% | Good |
+| Moderate (3-12 months) | 160 | 35.6% | OK |
+| Stale (> 1 year) | 70 | 15.6% | Warning |
+
+**Recommendation**: Add lastmod to pages without it, update stale dates
+
+---
+
+## Coverage Analysis
+
+| Page Type | Required | In Sitemap | Missing |
+|-----------|----------|-----------|---------|
+| Homepage | 1 | 1 | 0 |
+| Main categories | 8 | 8 | 0 |
+| Products | 350 | 340 | 10 |
+| Blog posts | 85 | 85 | 0 |
+
+**Missing products**: 10 products not in sitemap
+- /products/clearance-items (not yet published)
+- /products/pre-order-items (restricted)
+
+---
+
+## Sitemap Score: 75/100
+
+- Structure: ✓ Valid XML
+- Coverage: ⚠️ 97% of discovered pages
+- Quality: ⚠️ 3% non-200 URLs
+- robots.txt: ✓ Declared
+- Size: ✓ Within limits
+
+---
+
+## Recommendations
+
+### High Priority
+1. **Fix 10 non-200 URLs**
+   - Remove dead URLs from sitemap
+   - Or redirect them to live pages
+   - Impact: Improves crawl efficiency
+
+2. **Add lastmod to 70 pages**
+   - Use last modified date
+   - Helps Google understand update frequency
+   - Impact: Better crawl scheduling
+
+### Medium Priority
+1. **Update stale lastmod dates**
+   - Pages with lastmod > 1 year old
+   - Even if just republished unchanged
+   - Impact: Better freshness signals
+
+2. **Add missing product pages**
+   - 10 products not in sitemap but discoverable
+   - Include via link or direct addition
+   - Impact: Better crawl coverage
+
+### Low Priority
+1. **Optimize priorities**
+   - Currently all 0.5-0.8, could be more granular
+   - Prioritize highest-converting pages
+   - Impact: Subtle crawl optimization
+
+---
+
+## Tools to Help
+
+- **Sitemap Generator**: Screaming Frog, Moz, SEMrush
+- **Validator**: Google Search Console, XML sitemap validator
+- **Monitoring**: Google Search Console Sitemaps report
+- **Testing**: https://www.xml-sitemaps.com/validate-xml-sitemap.html
+```
+
+## Pages That Should Be in Sitemap
+
+These page types should always be included:
+- Homepage
+- Main category/section pages
+- Key content pages (blog posts, articles)
+- Product/service pages
+- Location pages
+- Cornerstone/pillar content
+- Important internal pages
+
+## Pages That Shouldn't Be in Sitemap
+
+- Login/authentication pages
+- Thank you pages (after form submission)
+- Search results pages
+- Duplicate or canonical targets
+- Pages with noindex directive
+- Admin/internal-only pages
+- Print-friendly versions
+
+## Common Sitemap Issues
+
+1. **Sitemap not declared in robots.txt**
+   - Fix: Add `Sitemap: https://example.com/sitemap.xml`
+
+2. **Non-200 URLs in sitemap**
+   - Fix: Remove dead URLs or redirect them
+
+3. **Missing lastmod dates**
+   - Fix: Add last modified dates to pages
+
+4. **Stale lastmod dates**
+   - Fix: Update dates for recently modified pages
+
+5. **Sitemap over size limits**
+   - Limit: 50,000 URLs per file, 50MB per file
+   - Fix: Split into multiple sitemaps with sitemap index
+
+6. **Missing important pages**
+   - Fix: Add to sitemap or ensure they're discoverable
+
+7. **Duplicate URLs in sitemap**
+   - Fix: Remove duplicates
+
+8. **Wrong protocol (HTTP vs HTTPS)**
+   - Fix: Ensure all URLs use HTTPS
+
+## Best Practices
+
+1. **Declare in robots.txt** - `Sitemap: https://example.com/sitemap.xml`
+2. **Include lastmod dates** - helps with crawl scheduling
+3. **Update regularly** - especially for frequently changing content
+4. **Quality over quantity** - only include important pages
+5. **Use correct priority** - should reflect business importance
+6. **Check validity** - validate XML regularly
+7. **Monitor in Search Console** - track indexing success
+8. **Keep URLs current** - remove or redirect deleted pages
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - Sitemap is 15% of full audit
+- [`/seo:technical`](/commands/seo-technical) - robots.txt and crawlability
+- [`/seo`](/commands/seo) - SEO toolkit overview

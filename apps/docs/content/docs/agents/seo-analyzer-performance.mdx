@@ -1,0 +1,126 @@
+---
+title: Performance & Core Web Vitals
+description: Core Web Vitals performance analyzer for LCP, INP, CLS assessment, resource loading patterns, render-blocking detection, and field vs lab data interpretation
+---
+
+# Performance & Core Web Vitals
+
+The Performance & Core Web Vitals agent is a specialized SEO analyzer focused on **web performance and ranking signals**. It assesses a website's performance characteristics by analyzing page structure, resource loading patterns, and identifying factors that impact LCP (Largest Contentful Paint), INP (Interaction to Next Paint), and CLS (Cumulative Layout Shift).
+
+## When to Use
+
+Use this agent when:
+- You need to identify Core Web Vitals performance issues
+- You're optimizing for LCP (page paint speed)
+- You want to reduce Cumulative Layout Shift (CLS)
+- You're analyzing Interaction to Next Paint (INP) responsiveness
+- You need to find render-blocking resources slowing your page
+
+## How It Works
+
+1. **Fetches the target page** - Analyzes HTML structure for performance indicators
+2. **Analyzes LCP** - Identifies the largest contentful paint element (hero image, text, video)
+3. **Checks INP Performance** - Looks for main-thread blocking JavaScript and long tasks
+4. **Assesses CLS Risk** - Identifies layout shift sources (unsized images, web fonts, dynamic content)
+5. **Reviews Resource Loading** - Detects render-blocking CSS/JS, compression, preload/preconnect hints
+6. **Evaluates Third-Party Impact** - Assesses external scripts impact on performance
+7. **Checks Caching Headers** - Reviews cache strategy and CDN indicators
+
+## Focus Areas
+
+- **LCP (Largest Contentful Paint)**: ≤ 2.5s (Good), optimize hero images, resource priorities, server response
+- **INP (Interaction to Next Paint)**: ≤ 200ms (Good), minimize JS execution, event handler efficiency
+- **CLS (Cumulative Layout Shift)**: ≤ 0.1 (Good), image/ad sizing, font loading, dynamic content
+- **Resource Loading**: Render-blocking CSS/JS, preload/preconnect hints, compression
+- **Third-Party Impact**: External scripts, fonts, analytics, ads blocking performance
+- **Caching**: Cache headers, static asset versioning, CDN usage
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## Core Web Vitals Targets
+
+| Vital | Good | Needs Improvement | Poor |
+|-------|------|------------------|------|
+| **LCP** | ≤ 2.5s | 2.5-4.0s | > 4.0s |
+| **INP** | ≤ 200ms | 200-500ms | > 500ms |
+| **CLS** | ≤ 0.1 | 0.1-0.25 | > 0.25 |
+
+## LCP Optimization Checklist
+
+| Factor | Good | Issue |
+|--------|------|-------|
+| LCP image has `fetchpriority="high"` | Yes | Missing priority hint |
+| LCP image is preloaded | `<link rel="preload">` | No preload |
+| LCP image format | WebP/AVIF | Legacy JPEG/PNG |
+| No lazy loading on LCP | `loading="eager"` or none | `loading="lazy"` on LCP ❌ |
+| Server response | Fast TTFB indicators | Slow server (>800ms) |
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze Core Web Vitals performance",
+  prompt: "Assess performance characteristics of https://example.com. Analyze LCP, INP, CLS, render-blocking resources, third-party impact, and identify optimization opportunities.",
+  subagent_type: "agileflow-seo-analyzer-performance"
+)
+```
+
+## Output Format
+
+```markdown
+FINDING-1: Render-blocking CSS in <head>
+
+Category: Resource Loading
+URL: https://example.com
+Severity: HIGH
+Confidence: HIGH
+CWV Impact: LCP
+
+Issue: Large CSS file blocks rendering until downloaded and parsed.
+
+Evidence:
+<link rel="stylesheet" href="/styles/main.css"> (45KB)
+
+Impact: Delays LCP by estimated 300-500ms
+
+Remediation:
+1. Inline critical CSS: Move above-fold styles to <style> tag
+2. Defer non-critical: Add media="print" or async CSS loading
+3. Consider CSS-in-JS: Dynamic loading for component styles
+```
+
+## Scoring Guide
+
+| Aspect | Weight | Deductions |
+|--------|--------|-----------|
+| LCP optimization | 30% | -10 per critical LCP issue |
+| INP optimization | 25% | -10 per main-thread blocking |
+| CLS prevention | 25% | -5 per layout shift risk |
+| Resource loading | 10% | -3 per render-blocking resource |
+| Third-party management | 10% | -2 per unmanaged third-party |
+
+## Important Rules
+
+1. **Analyze HTML structure** - Performance issues visible in page source
+2. **Estimate, don't measure** - Without running Lighthouse, estimate based on patterns
+3. **Prioritize CWV** - LCP, INP, CLS are Google's ranking signals
+4. **Note field vs lab** - Recommend CrUX data for real-world metrics
+5. **Be specific** - Point to exact elements and resources causing issues
+
+## Common Issues Found
+
+- Render-blocking JavaScript in `<head>`
+- Large hero images without optimization
+- Missing `fetchpriority="high"` on LCP image
+- Unsized images causing layout shift
+- Synchronous third-party scripts
+- Web fonts blocking text rendering
+- Uncompressed text resources
+
+## Related Agents
+
+- [`seo-analyzer-images`](/agents/seo-analyzer-images) - Image optimization and CLS
+- [`seo-analyzer-technical`](/agents/seo-analyzer-technical) - Technical SEO foundation
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis

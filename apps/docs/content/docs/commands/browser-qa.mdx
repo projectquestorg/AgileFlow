@@ -1,0 +1,209 @@
+---
+title: /browser-qa
+description: Run agentic browser tests against a running web application using YAML test scenarios
+---
+
+# /browser-qa
+
+Run agentic browser tests using the Bowser four-layer pattern. Discovers YAML test specs, executes them via Playwright, captures screenshot evidence, and reports results.
+
+## Quick Start
+
+```bash
+/agileflow:browser-qa SCENARIO=specs/login-flow.yaml URL=http://localhost:3000
+```
+
+Execute browser test scenarios, capture screenshots, report with pass rates.
+
+## Parameters
+
+| Parameter | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `SCENARIO` | No | Path to YAML test spec | Auto-discover |
+| `URL` | No | Base URL override | From spec file |
+| `STORY` | No | Filter by story ID | All scenarios |
+| `RETRIES` | No | Max retries per scenario (1-3) | 2 |
+
+## Usage Examples
+
+### Single scenario with URL override
+
+```bash
+/agileflow:browser-qa SCENARIO=specs/login-flow.yaml URL=http://localhost:3000
+```
+
+Execute a specific test scenario against a running application.
+
+### Auto-discover and run all scenarios
+
+```bash
+/agileflow:browser-qa
+```
+
+Search for YAML specs in `.agileflow/ui-review/specs/` and `docs/07-testing/agentic/`.
+
+### Filter by story
+
+```bash
+/agileflow:browser-qa STORY=US-0050
+```
+
+Only run scenarios associated with story US-0050.
+
+### With retries
+
+```bash
+/agileflow:browser-qa SCENARIO=specs/checkout.yaml RETRIES=3
+```
+
+Retry failing tests up to 3 times before marking as failed.
+
+## How It Works
+
+```
+┌─────────────────────────────────────┐
+│   /agileflow:browser-qa            │
+│                                    │
+│ 1. Verify Playwright installed     │
+│ 2. Discover YAML test specs        │
+│ 3. Create evidence directory       │
+│ 4. Execute scenarios in parallel   │
+│ 5. Capture screenshot evidence     │
+│ 6. Synthesize results report       │
+│ 7. Update story status             │
+└─────────────────────────────────────┘
+```
+
+## When to Use
+
+Use browser-qa for:
+
+- Validate user stories with real browser interaction
+- Capture visual evidence for UAT sign-off
+- Run exploratory tests on complex multi-step workflows
+- Check accessibility in a running application
+- Verify design tokens in computed styles
+
+## Prerequisites
+
+Playwright must be installed:
+
+```bash
+npm install --save-optional playwright
+npx playwright install chromium
+```
+
+## Test Scenario Format
+
+Create YAML test specs with the structure:
+
+```yaml
+test_id: agentic-001
+name: Login Flow
+story_id: US-0050
+steps:
+  - action: navigate
+    url: /login
+    screenshot: true
+  - action: fill
+    selector: input[name="email"]
+    value: user@example.com
+  - action: fill
+    selector: input[name="password"]
+    value: password123
+  - action: click
+    selector: button[type="submit"]
+    screenshot: true
+  - action: assert
+    selector: h1
+    text: Dashboard
+    screenshot: true
+```
+
+## Expected Output
+
+### Success - All Scenarios Pass
+
+```
+Browser QA Complete
+====================================
+
+Run: 2026-02-16 14:30:00
+Evidence: .agileflow/ui-review/runs/2026-02-16_14-30-00/
+
+Results:
+  VALIDATED  Login Flow (87% pass rate) - US-0050
+  VALIDATED  Signup Flow (93% pass rate) - US-0051
+  VALIDATED  Dashboard Nav (80% pass rate) - US-0052
+
+Overall: 3/3 scenarios validated
+Status: docs/09-agents/status.json updated
+```
+
+### Partial - Some Scenarios Fail
+
+```
+Browser QA Complete (with warnings)
+====================================
+
+Results:
+  VALIDATED  Login Flow (87% pass rate)
+  WARNING    Signup Flow (73% pass rate) - investigate
+  FAILED     Checkout (50% pass rate) - potential bug
+
+Overall: 1/3 validated, 1 warning, 1 failed
+Action: Review failed scenarios in evidence directory
+```
+
+## Results and Evidence
+
+Each test execution stores:
+
+- **Screenshot evidence**: `.agileflow/ui-review/runs/{timestamp}/{test_id}/`
+- **Results JSON**: Contains pass/fail for each step with timing
+- **Status updates**: Adds `agentic_test_status` to story in `docs/09-agents/status.json`
+
+## Integration with Stories
+
+When scenarios have `story_id` fields:
+
+- Results automatically link to the story
+- Story status updated with `agentic_test_status: "validated"`, `"warning"`, or `"failed"`
+- Evidence directory path recorded for review
+
+## Pass Rate Calculation
+
+Pass rate is determined by step success:
+
+```
+Pass Rate = (Passed Steps / Total Steps) × 100
+```
+
+Pass rates by threshold:
+
+- **80-100%**: VALIDATED - ready for merge
+- **60-79%**: WARNING - review needed
+- **Below 60%**: FAILED - needs investigation
+
+## Evidence Cleanup
+
+Evidence older than 30 days is automatically removed to save space:
+
+```bash
+find .agileflow/ui-review/runs/ -maxdepth 1 -type d -mtime +30 -exec rm -rf {} +
+```
+
+## Important Notes
+
+- Results are informational - never blocks CI merge
+- Screenshots captured at steps marked `screenshot: true`
+- If URL not reachable, reported as infrastructure error
+- All evidence stored in `.agileflow/ui-review/runs/{timestamp}/`
+- 80% pass rate is the validation threshold
+
+## Related Commands
+
+- [`/verify`](/commands/verify) - Run deterministic tests (Jest)
+- [`/multi-expert`](/commands/multi-expert) - Multi-expert analysis
+- [`/review`](/commands/review) - Code review
+- [`/status`](/commands/status) - Update story status

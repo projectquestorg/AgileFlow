@@ -1,0 +1,208 @@
+---
+title: /ads:youtube
+description: YouTube Ads audit for video campaign types, ad formats, targeting strategy, bidding optimization, and creative effectiveness
+---
+
+# /ads:youtube
+
+Run an inline audit on YouTube advertising campaigns (managed through Google Ads) focusing on video-specific optimization.
+
+## Quick Start
+
+```bash
+/agileflow:ads:youtube <account-data>                 # YouTube Ads audit
+```
+
+## The 8 Checks
+
+| # | Check | Severity | Pass Criteria |
+|---|-------|----------|---------------|
+| YT-1 | Campaign type alignment | HIGH | Correct campaign type for objective |
+| YT-2 | Video format coverage | HIGH | Multiple formats tested (skippable, bumper, shorts) |
+| YT-3 | Targeting strategy | HIGH | Audience targeting refined beyond demographics |
+| YT-4 | Bidding strategy | HIGH | CPV/CPM/tCPA based on objective |
+| YT-5 | Creative hook in 5 seconds | CRITICAL | First 5 seconds grab attention (before skip) |
+| YT-6 | Companion banner | MEDIUM | Companion banner uploaded for desktop |
+| YT-7 | Frequency capping | HIGH | Frequency cap set (3-5 per week recommended) |
+| YT-8 | Conversion tracking | CRITICAL | YouTube conversions tracked in Google Ads |
+
+## Output
+
+You receive:
+- **YouTube Score** (0-100)
+- **Check results** - Pass/fail for all 8 checks
+- **Key recommendations** - Top priorities
+- **YouTube-specific tips** - Platform best practices
+- **Creative guidance** - How to create YouTube-effective ads
+
+## Account Data Needed
+
+Provide details about your YouTube campaigns:
+- Campaign types in use
+- Video formats tested
+- Targeting strategy
+- Bidding approach
+- Video specs (duration, hook style)
+- Frequency caps set
+- Conversion tracking setup
+
+Example format:
+```
+YouTube Ads Setup
+- 2 campaigns (Video Reach, Video Action)
+- Mostly skippable in-stream ads (30s)
+- Demographics targeting only
+- Manual CPV bidding
+- No custom intent audiences
+- No frequency caps set
+```
+
+## Campaign Types Explained
+
+| Type | Best For | Format | Bidding | Duration |
+|------|---------|--------|---------|----------|
+| Video Reach | Awareness | Bumper (6s) + In-stream | CPM | 6-120s |
+| Video Views | Consideration | Skippable in-stream + in-feed | CPV | 12-120s |
+| Video Action | Conversions | Skippable in-stream | tCPA/CPV | 12-120s |
+| Shorts Ads | Awareness + young | Vertical 60s max | CPM | Up to 60s |
+| Demand Gen | Full-funnel | YouTube + Discover + Gmail | CPV/CPC | 15-60s |
+
+## Creative Best Practices for YouTube
+
+### The 5-Second Hook (Critical)
+- **First 5 seconds determine skip rate** - Many viewers skip at 5s
+- **Brand logo early** - Don't wait to reveal brand
+- **Value prop immediately** - Why should they care?
+- **Avoid slow intros** - Get to the point fast
+- **Pattern interrupt** - Grab attention with visual or audio
+
+### Video Duration
+- **15-30 seconds optimal** - Best for action campaigns
+- **Mobile-first** - 70%+ watching on mobile
+- **Captions/subtitles essential** - Many watch without sound
+- **Keep viewers engaged** - Reduce drop-off rate
+
+### Format Variations to Test
+- **Skippable in-stream (6s intro + 15s message)** - Most versatile
+- **Bumper ads (6s)** - Remarketing, brand awareness
+- **YouTube Shorts (up to 60s)** - Shorter, snackable content
+- **In-feed ads (thumbnail + 30s video)** - Discovery-based
+
+### Targeting Options on YouTube
+
+**Custom Intent** (YouTube's secret weapon):
+- Based on Google search behavior
+- People searching for your keywords
+- High intent audience
+- Excellent for conversion
+
+**Affinity**:
+- Interest-based broad reach
+- "People interested in running shoes"
+- Good for awareness
+
+**In-Market**:
+- Active purchase intent
+- "People researching car insurance"
+- Great for conversions
+
+**Remarketing**:
+- Website visitors
+- Video viewers
+- YouTube engagement
+- Highest conversion potential
+
+**Customer Match**:
+- Upload customer lists
+- Target existing customers
+- Used for upsell/retention
+
+**Topic/Placement**:
+- Specific YouTube channels/videos
+- "Ads on fitness channels"
+- Contextual targeting
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:youtube "YouTube: 2 campaigns (Video Reach, Video Action). 30-second skippable ads. Demographics targeting only. 25% skip rate. No frequency caps."
+# Returns: YouTube Score with improvements
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:youtube
+# Paste detailed campaign and creative data
+# Returns: Full 8-check audit with YouTube-specific recommendations
+```
+
+## Expected Improvements
+
+By implementing recommendations:
+- **10-15% improvement** in CTR through better hooks
+- **Lower CPV** through proper bid strategy
+- **Better targeting** with Custom Intent audiences
+- **Reduced frequency fatigue** through frequency capping
+- **Higher conversion rate** with proper format selection
+
+## YouTube-Specific Strategies
+
+### Video Action Campaigns (Conversions)
+- Skippable in-stream (most effective for conversions)
+- 15-30 second duration optimal
+- Strong CTA throughout video (not just end)
+- Custom Intent audience essential
+- Frequency cap at 3-5/week
+
+### Video Reach Campaigns (Awareness)
+- Bumper ads (6s) excellent for remarketing
+- Cost-efficient for brand building
+- Frequency cap important (avoid fatigue)
+- Works well with email/retargeting combo
+
+### YouTube Shorts (New Format)
+- Vertical 9:16 format only
+- Authentic, native style
+- Younger demographic
+- Good for brand awareness
+
+## Bidding Strategy
+
+| Objective | Best Bidding | Why |
+|-----------|-------------|-----|
+| Conversions | tCPA (target CPA) | Automated optimization |
+| Views | CPV (cost per view) | Simple, predictable |
+| Awareness | CPM (cost per 1000) | Reach-focused |
+| Clicks | CPC | Drive to landing page |
+
+## Frequency Capping Recommendations
+
+- **Brand awareness**: 1-2 per week
+- **Consideration**: 2-3 per week
+- **Conversion**: 3-5 per week (higher frequency OK since recent engagement)
+- **Remarketing**: 5-7 per week (engaged audience tolerates more)
+
+## Tips
+
+- **Hook in 5 seconds** - Your most important creative element
+- **Custom Intent is powerful** - Use search-based audiences
+- **Test Shorts versions** - Create vertical versions of successful long-form
+- **Bumper ads cheap** - Use for frequency capping after initial videos
+- **Conversion tracking required** - Set up properly before scaling
+- **Video Action campaigns drive ROI** - Best for conversions
+
+## When to Run
+
+- **Monthly** - Monitor creative performance
+- **After new creative launch** - Verify creative is optimized
+- **Performance decline** - Diagnose hook or targeting issues
+- **Quarterly review** - Comprehensive strategy assessment
+- **Before scaling** - Ensure setup correct before budget increase
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning
+- [`/ads:google`](/commands/ads-google) - Google Ads including YouTube
+- [`/ads:creative`](/commands/ads-creative) - Creative quality deep-dive

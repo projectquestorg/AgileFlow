@@ -1,0 +1,143 @@
+---
+title: /ads:linkedin
+description: LinkedIn Ads audit with 9 checks for lead gen forms, audience targeting, budget efficiency, and CRM integration
+---
+
+# /ads:linkedin
+
+Run an inline audit on a LinkedIn Ads account with 9 focused checks. LinkedIn has the highest CPCs in paid social, so efficiency is critical.
+
+## Quick Start
+
+```bash
+/agileflow:ads:linkedin <account-data>                # LinkedIn Ads audit
+```
+
+## The 9 Checks
+
+| # | Check | Severity | Pass Criteria |
+|---|-------|----------|---------------|
+| LI-1 | Insight Tag installed | CRITICAL | LinkedIn Insight Tag on all pages |
+| LI-2 | Lead Gen Forms vs landing | HIGH | Lead Gen Forms tested (typically 2-5x better CVR) |
+| LI-3 | Audience size appropriate | HIGH | 50K-500K for Sponsored Content |
+| LI-4 | Targeting precision | HIGH | By job title or function, not just industry |
+| LI-5 | Budget minimum met | CRITICAL | Minimum $50/day per campaign |
+| LI-6 | CRM integration | HIGH | Leads syncing to CRM within 24 hours |
+| LI-7 | Content type mix | MEDIUM | Single image + carousel + video tested |
+| LI-8 | Matched Audiences | MEDIUM | Website retargeting + company list + LAL active |
+| LI-9 | ABM alignment | LOW | Account-Based Marketing lists for enterprise |
+
+## Output
+
+You receive:
+- **LinkedIn Score** (0-100)
+- **Check results** - Pass/fail for all 9 checks
+- **Key recommendations** - Top priorities to improve
+- **LinkedIn-specific tips** - Platform best practices
+
+## Account Data Needed
+
+Provide details about your LinkedIn Ads:
+- Insight Tag installation status
+- Campaign objectives and budget
+- Audience targeting (industry, job title, company size)
+- Lead Gen Form usage vs landing page
+- CRM integration status
+- Content types tested (image, carousel, video)
+- Performance metrics
+
+Example format:
+```
+LinkedIn Ads Setup
+- Campaigns: 3 (lead gen focus)
+- Daily budget: $100/campaign ($300 total)
+- Audience: Job titles "Product Manager, VP Product"
+- Using landing pages, no Lead Gen Forms
+- No CRM integration set up
+```
+
+## LinkedIn-Specific Context
+
+LinkedIn has unique characteristics that matter for optimization:
+
+**Budget Reality**:
+- CPCs: $5-15 for Sponsored Content
+- At $50/day minimum: ~3-10 clicks/day
+- Monthly: ~100-300 clicks
+- At 5% conversion rate: ~5-15 leads/month
+- **Minimum viable budget for lead gen: $100/day recommended**
+
+**Lead Gen Forms vs Landing Pages**:
+- Lead Gen Forms: 10-30% conversion rate (pre-filled data)
+- Landing Pages: 2-5% conversion rate
+- **Always test Lead Gen Forms first on LinkedIn**
+
+**Audience Targeting**:
+- Industry alone is too broad (millions of people)
+- Always layer with job title or function
+- Company size matters (Enterprise vs SMB)
+- Seniority levels (Director+) vs individual contributors
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:linkedin "LinkedIn: 3 campaigns, $50/day each. Using Lead Gen Forms. Job title targeting: 'VP Sales', 'Sales Director'. No CRM integration yet."
+# Returns: LinkedIn Score with key recommendations
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:linkedin
+# Paste detailed account setup and performance metrics
+# Returns: Full 9-check audit with recommendations
+```
+
+## Expected Improvements
+
+By implementing recommendations:
+- **2-3x improvement** in conversion rate using Lead Gen Forms vs landing pages
+- **15-25% improvement** in conversion rate with tighter audience targeting
+- **Automatic lead routing** through CRM integration
+- **Better ABM results** with company-targeted campaigns
+
+## LinkedIn Best Practices
+
+### Lead Gen Forms (Recommended)
+- LinkedIn pre-fills with profile data (first name, email, company)
+- Conversion rate 10-30% vs 2-5% for landing pages
+- Form abandonment much lower
+- Data quality excellent (LinkedIn verified)
+- Lead time-to-CRM: minutes vs hours for landing pages
+
+### Content Types
+- **Single Image**: Highest CTR, lowest engagement
+- **Carousel**: Good engagement, good form fills
+- **Video**: Highest engagement, good CTR
+
+### Audience Targeting Best Practices
+- Always combine industry + job title (not just one)
+- Start with 50K-500K audience size (not smaller)
+- Test Lookalike audiences from customer list
+- Layer with company targeting for B2B
+- Matched audiences work well for retargeting
+
+### CRM Integration
+- Leads should sync within minutes, not hours
+- Zapier if native integration not available
+- Real-time sync prevents manual export
+- Enables lead scoring and nurturing
+
+## Tips
+
+- **Lead Gen Forms > Landing Pages** - Always test Lead Gen Forms first
+- **Audience precision matters** - LinkedIn is expensive, target tightly
+- **Budget for 2-4 weeks ramp** - Need data before scaling
+- **Test content types** - Video often performs best but takes more effort
+- **CRM integration mandatory** - Leads are only valuable if they reach sales
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning for B2B
+- [`/ads:budget`](/commands/ads-budget) - LinkedIn budget optimization

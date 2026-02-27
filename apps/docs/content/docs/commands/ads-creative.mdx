@@ -1,0 +1,162 @@
+---
+title: /ads:creative
+description: Cross-platform creative quality review with 21 checks for ad copy effectiveness, visual compliance, format coverage, and performance testing
+---
+
+# /ads:creative
+
+Run a creative quality audit across all ad platforms using 21 deterministic checks for ad copy effectiveness, visual compliance, format coverage, and performance testing.
+
+## Quick Start
+
+```bash
+/agileflow:ads:creative <account-data>                # Cross-platform creative review
+```
+
+## What It Checks
+
+The audit applies 21 checks across 4 categories:
+
+| Category | Weight | Checks | Focus |
+|----------|--------|--------|-------|
+| Ad Copy Effectiveness | 30% | 7 | Value prop, CTA, social proof, keyword alignment |
+| Visual & Format Compliance | 25% | 6 | Resolution, text overlay, brand, mobile-first |
+| Platform Requirements | 25% | 4 | Format coverage, native style, char limits, compliance |
+| Performance & Testing | 20% | 4 | Diversity, winner ID, refresh cadence, A/B testing |
+
+## Output
+
+You receive:
+- **Creative Score** (0-100)
+- **Category breakdown** with individual scores
+- **Specific findings** - What's working, what isn't
+- **Compliance issues** - Format, character limit, restricted content violations
+- **Performance assessment** - Creative diversity, refresh needs, testing methodology
+- **Actionable improvements** - Specific creative enhancements
+
+## Account Data Needed
+
+Provide:
+- Ad copy (headlines, descriptions, primary text)
+- Creative assets (image specs, video details)
+- Platform-specific formatting used
+- Performance metrics (CTR, CPC, frequency)
+- How often creatives are refreshed
+
+Example format:
+```
+Google Ads Headlines:
+- "Buy Our Product Today" (15 headlines total)
+- "Free Trial for 30 Days"
+
+Meta Ads Copy:
+- 6 ad sets, 3 creatives each
+- Images: 1200x628 all static
+- Videos: None tested yet
+
+Performance: CTR declining, frequency >3.5
+```
+
+## The 21 Checks Explained
+
+### Ad Copy Effectiveness (7 checks)
+- Clear value proposition in first headline
+- Specific, compelling CTA (not just "Learn More")
+- Social proof (numbers, testimonials, reviews)
+- Urgency/scarcity for time-sensitive offers
+- Keyword alignment in search ads
+- Benefits emphasized over features
+- Platform-appropriate length
+
+### Visual & Format Compliance (6 checks)
+- Image resolution meets platform minimums (1080x1080+)
+- Text overlay < 20% of image area
+- Brand consistency across ads
+- Mobile-first design (80%+ impressions are mobile)
+- Key elements within safe zones
+- Video specs (duration, aspect ratio, file size)
+
+### Platform-Specific Requirements (4 checks)
+- Format coverage - All required formats (1:1, 4:5, 9:16, 16:9)
+- Platform-native style - Doesn't look repurposed
+- Character limits respected - All text within platform limits
+- Restricted content compliance - No before/after, claims, etc.
+
+### Performance & Testing (4 checks)
+- Creative diversity - 3+ distinct concepts active
+- Winner/loser identification - Clear thresholds to pause/scale
+- Refresh cadence - New creatives within last 30 days
+- A/B testing methodology - Controlled tests with one variable
+
+## Example Usage
+
+### Basic Creative Audit
+```bash
+/agileflow:ads:creative "Google Ads: 4 campaigns, 12 ad sets, 30 ads total. Mostly text ads, static images only. Using 'Click Here' CTAs. No video tested."
+# Returns: Creative Score with specific improvement recommendations
+```
+
+### With Detailed Creative Data
+```bash
+/agileflow:ads:creative
+# Paste detailed creative inventory with copy, specs, and performance
+# Returns: Full creative audit with compliance and testing recommendations
+```
+
+## Expected Improvements
+
+By implementing the recommendations:
+- **10-20% improvement** in CTR through better copy and design
+- **Reduced ad fatigue** through strategic refresh
+- **Compliance** with all platform requirements
+- **Better testing** with proper A/B methodology
+- **Creative reusability** across platforms through format coverage
+
+## Platform-Specific Tips
+
+### Google Ads
+- Responsive Search Ads (RSAs) need 10+ headlines and 3+ descriptions
+- Use dynamic keyword insertion for relevance
+- Ad extensions boost CTR (sitelinks, callouts, structured snippets)
+- Test headline variations more than copy variations
+
+### Meta
+- Video outperforms static images (2-3x better CTR)
+- 1:1 (square) format most common, but test 4:5 and 9:16 too
+- UGC-style content often beats polished ads
+- Native-feeling ads perform better than overly designed ones
+
+### LinkedIn
+- Longer copy (600 chars) gets more engagement than short
+- Document Ads for thought leadership perform well
+- Test professional vs casual tone
+- B2B audiences respond to credibility signals
+
+### TikTok
+- Video-only (no static images)
+- First 3 seconds critical (before scroll)
+- Native TikTok style beats polished ads
+- Captions essential (80%+ watch without sound)
+
+## When to Run
+
+- **Monthly** - Monitor creative health and refresh needs
+- **After hypothesis testing** - Validate what's working before scaling
+- **Before scaling budget** - Ensure creatives are strong before spending more
+- **Quarterly review** - Comprehensive creative strategy assessment
+- **After performance decline** - If CTR/CVR dropping, creative may be fatigued
+
+## Tips
+
+- **Fresh beats perfect** - A decent new creative often outperforms an old high performer
+- **Test, don't guess** - Use data to decide what works, not assumptions
+- **Platform matters** - What works on Meta won't work on LinkedIn
+- **Mobile first** - Design for phones first, desktop second
+- **Compliance first** - No amount of performance matters if ad disapproved
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit (includes creative)
+- [`/ads:google`](/commands/ads-google) - Google-specific creative checks
+- [`/ads:meta`](/commands/ads-meta) - Meta-specific creative checks
+- [`/content:write`](/commands/write) - Generate new ad copy ideas

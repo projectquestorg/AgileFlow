@@ -1,0 +1,126 @@
+---
+title: /ads:competitor
+description: Competitive intelligence for paid advertising - market positioning, messaging gaps, ad copy analysis, and strategic recommendations
+---
+
+# /ads:competitor
+
+Analyze your competitive landscape for paid advertising. Identify competitor ad strategies, messaging positioning, market gaps you can exploit, and strategic recommendations.
+
+## Quick Start
+
+```bash
+/agileflow:ads:competitor "SaaS project management"      # Industry research
+/agileflow:ads:competitor "Asana, Monday.com, Jira"      # Specific competitors
+```
+
+## What It Analyzes
+
+For each competitor, analyzes:
+
+| Factor | What We Look For | Why It Matters |
+|--------|-----------------|----------------|
+| Ad copy themes | Headlines, CTAs, value props | Reveals messaging they're testing |
+| Landing pages | Page structure, offers, forms | Shows conversion optimization strategy |
+| Platforms active | Google, Meta, LinkedIn, etc. | Tells you where they're investing |
+| Offer positioning | Free trial, discount, demo | Reveals their go-to-market strategy |
+| Audience signals | Targeting demographics, interests | Shows who they prioritize |
+| Creative style | Video, UGC, professional | Indicates what resonates with their audience |
+
+## Output
+
+You receive:
+- **Competitor overview table** - Platforms, key messages, offers, ad style
+- **Messaging gaps** - Where competitors are NOT messaging (opportunities for you)
+- **Ad format gaps** - Ad types/platforms competitors aren't using
+- **Positioning recommendations** - How to differentiate from competitors
+- **Suggested ad copy angles** - Specific headlines exploiting competitive gaps
+- **Underserved keywords** - Keyword areas competitors miss
+
+## Account Data Needed
+
+Specify either:
+- **Industry keyword** - "SaaS project management", "e-commerce platform", "local plumber software"
+- **Competitor names** - "Asana, Monday.com, Jira", "Shopify, BigCommerce, WooCommerce"
+- **Combination** - "project management tools like Asana and Monday.com"
+
+## Example Output Structure
+
+```markdown
+## Competitive Intelligence Report
+
+### Competitor Overview
+| Competitor | Platforms | Key Message | Offer | Ad Style |
+| Asana | Google, Meta, LinkedIn | Enterprise work OS | Free trial | Professional |
+| Monday | Google, Meta | Visual project management | Demo | Energetic/playful |
+
+### Messaging Gaps
+- Nobody emphasizes quick setup (opportunity)
+- No one focuses on small team affordability
+- None highlight integration ecosystem heavily
+
+### Ad Format Gaps
+- YouTube video ads barely used (opportunity)
+- TikTok not present (audience mismatch)
+- LinkedIn document ads rare
+
+### Positioning Recommendations
+1. **Differentiate on**: Quick 5-minute setup (vs complex onboarding)
+2. **Counter-position**: For small teams (<10 people) vs enterprise
+3. **Underserved keywords**: "project management for remote teams", "no-code alternatives"
+
+### Suggested Ad Copy Angles
+- "Set up in 5 minutes, not 5 weeks" - Why: competitors emphasize features, not speed
+- "For small teams that outgrew email" - Why: nobody targeting SMBs specifically
+- "Integrates with your existing tools" - Why: emphasize ecosystem lock-in
+```
+
+## When to Use
+
+- **New product launch** - Understand competitive positioning before market entry
+- **Campaign planning** - Use gaps to inform strategy
+- **Messaging testing** - Test competitive angles before running ads
+- **Market entry** - Understand positioning before expanding to new vertical
+- **Quarterly review** - Monitor competitor strategy changes
+
+## Example Usage
+
+### Industry Research
+```bash
+/agileflow:ads:competitor "SaaS project management tools"
+# Returns: Top competitors, their strategies, and positioning gaps
+```
+
+### Specific Competitors
+```bash
+/agileflow:ads:competitor "Asana, Monday.com, Jira Cloud"
+# Returns: Detailed comparison of these three competitors
+```
+
+### Market Positioning
+```bash
+/agileflow:ads:competitor "e-commerce platform for restaurants"
+# Returns: Who's advertising in this space and what messages work
+```
+
+## Next Steps After Analysis
+
+1. **Review findings** - Understand competitive positioning
+2. **Identify your angle** - Pick one or two gaps to exploit
+3. **Test messaging** - A/B test ad copy exploiting gaps
+4. **Build campaigns** - Use `/agileflow:ads:plan` with competitive insights
+5. **Monitor competitors** - Rerun quarterly to track strategy changes
+
+## Tips
+
+- **Focus on 3-5 competitors** - Too many dilutes the analysis
+- **Look for patterns** - What are ALL competitors saying? (probably table stakes)
+- **Find the opposite** - Underserved angles beat doing what competitors do
+- **Combine with your strengths** - Gaps + your unique value = winning positioning
+- **Test first** - Validate positioning with ads before major campaigns
+
+## Related Commands
+
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning using competitive insights
+- [`/ads:audit`](/commands/ads-audit) - Audit your own ads after competitor analysis
+- [`/content:write`](/commands/write) - Create ad copy based on findings

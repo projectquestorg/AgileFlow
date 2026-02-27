@@ -1,0 +1,288 @@
+---
+title: /tdd
+description: Start TDD workflow with RED→GREEN→REFACTOR phases
+---
+
+# /tdd
+
+Start a Test-Driven Development workflow for a story, enforcing RED→GREEN→REFACTOR phase discipline.
+
+## Quick Start
+
+```bash
+/agileflow:tdd US-0042
+```
+
+Initialize TDD workflow for story US-0042 in the RED phase.
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<US-ID>` | Yes | Story ID to start TDD for |
+
+## Usage Examples
+
+### Start TDD for a story
+
+```bash
+/agileflow:tdd US-0042
+```
+
+Initialize RED phase for story US-0042. Write failing tests first.
+
+### Resume existing TDD
+
+```bash
+/agileflow:tdd US-0042
+```
+
+If TDD is already active for US-0042, resumes from current phase instead of restarting.
+
+## TDD Phases
+
+### Phase 1: RED
+
+```
+🔴 RED PHASE
+═════════════════════════
+Write FAILING tests first
+```
+
+Rules:
+- Write test files ONLY - no implementation code yet
+- Tests should cover the acceptance criteria
+- Tests MUST fail when run (they test code that doesn't exist)
+- Focus on the public API - what should the code DO?
+
+When ready:
+1. Write your failing tests
+2. Run `/agileflow:verify` to confirm tests FAIL
+3. Run `/agileflow:tdd-next` to advance to GREEN
+
+### Phase 2: GREEN
+
+```
+🟢 GREEN PHASE
+═════════════════════════
+Write MINIMAL code to pass tests
+```
+
+Rules:
+- Write the simplest possible implementation to pass tests
+- Resist the urge to over-engineer or optimize
+- If a test needs a complex solution, the test may be too broad
+- Do NOT modify test files (except removing .skip())
+- Run tests frequently during implementation
+
+When ready:
+1. Implement code to pass the failing tests
+2. Run `/agileflow:verify` to confirm tests PASS
+3. Run `/agileflow:tdd-next` to advance to REFACTOR
+
+### Phase 3: REFACTOR
+
+```
+🔵 REFACTOR PHASE
+═════════════════════════
+Clean up while keeping tests GREEN
+```
+
+Rules:
+- Extract common patterns into helper functions
+- Improve naming and readability
+- Reduce duplication
+- Run tests after every change - any failure means rollback
+- Code should be production-quality
+
+When ready:
+1. Refactor code to be clean and maintainable
+2. Run `/agileflow:verify` to confirm tests still PASS
+3. Run `/agileflow:tdd-next` to COMPLETE or start new cycle
+
+### Phase 4: COMPLETE
+
+```
+✅ COMPLETE
+═════════════════════════
+All tests pass, code is clean, ready for review
+```
+
+Actions:
+- Run code review before committing
+- Commit changes with reference to tests
+- Or start new RED→GREEN→REFACTOR cycle for more features
+
+## How It Works
+
+The TDD workflow enforces strict phase gates:
+
+```
+RED              GREEN            REFACTOR         COMPLETE
+─────────────────────────────────────────────────────────────
+
+Write failing  →  Tests FAIL?  →  Failing → Green  →  Clean?
+tests            (gate check)      tests transition    ✓ Done
+
+                 Cannot advance without test_status = "failing"
+                 Cannot advance without test_status = "passing"
+```
+
+## Allowed File Types
+
+In each phase, you can modify:
+
+- **Test files**: `**/*.test.*`, `**/*.spec.*`, `**/tests/**`, `**/fixtures/**`
+- **Implementation**: Source files (after RED phase)
+- **Config**: tsconfig.json, jest.config.js, etc.
+
+## Integration with Commands
+
+### Related Commands
+
+- **`/agileflow:tdd-next`** - Advance to next phase (GREEN/REFACTOR/COMPLETE)
+- **`/agileflow:verify`** - Run tests and update test status
+- **`/agileflow:tests`** - Set up testing infrastructure
+- **`/agileflow:review`** - Code review before commit
+- **`/agileflow:babysit`** - Main implementation workflow (can integrate TDD)
+
+## Status Tracking
+
+TDD status is stored in `docs/09-agents/status.json`:
+
+```json
+{
+  "US-0042": {
+    "title": "Add user authentication",
+    "status": "in_progress",
+    "tdd_phase": "red",
+    "tdd_started_at": "2026-02-25T10:30:00Z",
+    "tdd_cycles": 1,
+    "test_status": "failing"
+  }
+}
+```
+
+Fields updated:
+- `tdd_phase`: Current phase (red, green, refactor, complete)
+- `test_status`: Test execution result (failing, passing, error)
+- `tdd_cycles`: Number of RED→GREEN→REFACTOR cycles completed
+
+## Common Workflow
+
+### Typical TDD Session
+
+1. **Start TDD**
+   ```bash
+   /agileflow:tdd US-0042
+   ```
+
+2. **RED Phase** - Write failing tests
+   ```bash
+   # Create test file: src/auth.test.js
+   # Write tests that verify auth behavior
+   ```
+
+3. **Verify Tests Fail**
+   ```bash
+   /agileflow:verify
+   ```
+
+4. **Advance to GREEN**
+   ```bash
+   /agileflow:tdd-next
+   ```
+
+5. **GREEN Phase** - Implement
+   ```bash
+   # Create src/auth.js with minimal implementation
+   # Focus only on passing the tests
+   ```
+
+6. **Verify Tests Pass**
+   ```bash
+   /agileflow:verify
+   ```
+
+7. **Advance to REFACTOR**
+   ```bash
+   /agileflow:tdd-next
+   ```
+
+8. **REFACTOR Phase** - Clean up
+   ```bash
+   # Extract helpers, improve naming, reduce duplication
+   # Keep tests passing at all times
+   ```
+
+9. **Verify and Complete**
+   ```bash
+   /agileflow:verify
+   /agileflow:tdd-next
+   ```
+
+10. **Code Review**
+    ```bash
+    /agileflow:review
+    ```
+
+## Error Handling
+
+### Story Not Found
+
+```
+❌ Story US-0099 not found in status.json
+
+Available stories:
+- US-0042: Add user authentication (ready)
+- US-0043: Implement settings page (in_progress)
+```
+
+### Already in TDD
+
+```
+🔴 Resuming TDD for US-0042 (RED phase, cycle 1)
+
+You're already in TDD mode. Current phase: RED
+Write failing tests, then run /agileflow:tdd-next to advance.
+```
+
+### No Test Framework
+
+```
+⚠️ No test framework detected for this project.
+
+Run /agileflow:tests first to set up testing infrastructure,
+then restart TDD with /agileflow:tdd US-0042.
+```
+
+## Best Practices
+
+1. **Write focused tests** - One thing per test
+2. **Test behavior, not implementation** - Tests should verify what the code does, not how
+3. **Keep tests simple** - If you struggle to write a test, the requirement may be unclear
+4. **Refactor tests too** - Test code should be as clean as production code
+5. **Commit after each phase** - Creates good commit history of progress
+6. **Don't skip phases** - The discipline is the benefit
+
+## When TDD Helps Most
+
+- **Complex algorithms** - Tests help you think through edge cases
+- **Critical features** - High reliability requirements
+- **Maintainability** - Good test suite = confident refactoring
+- **Team coordination** - Tests document expected behavior
+- **Regression prevention** - Tests catch breaking changes
+
+## When TDD is Less Applicable
+
+- **UI implementation** - Hard to test, better with manual verification
+- **Exploratory code** - Spike/POC work may have different process
+- **Configuration** - Hard to test, easier to verify manually
+
+## Related Commands
+
+- [`/tdd-next`](/commands/tdd-next) - Advance TDD phase
+- [`/verify`](/commands/verify) - Run tests and update status
+- [`/tests`](/commands/tests) - Set up testing infrastructure
+- [`/review`](/commands/review) - Code review
+- [`/babysit`](/commands/babysit) - Main workflow orchestrator

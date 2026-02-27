@@ -1,0 +1,373 @@
+---
+title: /seo:plan
+description: Strategic SEO planning with industry-specific templates, competitive positioning, and prioritized roadmap generation
+---
+
+# /seo:plan
+
+Generate a strategic SEO plan with industry-specific templates, competitive positioning analysis, and a prioritized improvement roadmap.
+
+## Quick Start
+
+```bash
+/agileflow:seo:plan https://example.com                      # 6-month SEO plan (default)
+/agileflow:seo:plan https://example.com TIMEFRAME=3mo         # 3-month sprint plan
+/agileflow:seo:plan https://example.com TIMEFRAME=12mo        # Annual SEO strategy
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Site to plan for |
+| `TIMEFRAME` | No | 6mo | Planning horizon: 3mo, 6mo, or 12mo |
+
+## Planning Phases by Timeframe
+
+### 3-Month Plan
+- **Month 1**: Critical fixes (blocking issues)
+- **Month 2**: Foundation (technical + schema)
+- **Month 3**: Content optimization
+
+### 6-Month Plan
+- **Month 1-2**: Critical fixes + technical foundation
+- **Month 3-4**: Content strategy + schema implementation
+- **Month 5-6**: Authority building + performance optimization
+
+### 12-Month Plan
+- **Q1**: Foundation (technical + critical fixes)
+- **Q2**: Content + schema
+- **Q3**: Authority + link building
+- **Q4**: Advanced optimization + monitoring
+
+## Business Type Templates
+
+Each business type gets industry-specific recommendations:
+
+### SaaS
+**Priority Areas**: Content marketing, technical SEO, schema
+- Build blog strategy (industry insights, how-tos, case studies)
+- Implement structured data (Organization, Product, FAQPage)
+- Optimize documentation pages for search
+- Create topic clusters around core features
+
+### Local Business
+**Priority Areas**: Local SEO, Google Business, reviews
+- Optimize Google Business Profile
+- Ensure NAP consistency across web
+- Build location pages if multi-location
+- Generate and manage reviews
+
+### E-commerce
+**Priority Areas**: Product SEO, site structure, Core Web Vitals
+- Implement Product schema on all products
+- Optimize faceted navigation
+- Improve Core Web Vitals (LCP, CLS)
+- Create category pages with unique content
+
+### Publisher
+**Priority Areas**: Content quality, E-E-A-T, freshness
+- Establish author credentials/bios
+- Create topic authority with clusters
+- Implement Article schema
+- Focus on original research/data
+
+### Agency
+**Priority Areas**: Authority, portfolio, expertise
+- Showcase case studies with metrics
+- Build expertise/author pages
+- Implement Service schema
+- Generate testimonials and social proof
+
+## Example Usage
+
+### 6-Month Plan
+```bash
+/agileflow:seo:plan https://example.com
+```
+
+Default timeframe, business type auto-detected.
+
+### 3-Month Sprint
+```bash
+/agileflow:seo:plan https://example.com TIMEFRAME=3mo
+```
+
+Quick wins and critical fixes prioritized.
+
+### Annual Strategy
+```bash
+/agileflow:seo:plan https://example.com TIMEFRAME=12mo
+```
+
+Comprehensive multi-quarter strategy with phased approach.
+
+## Output Format
+
+```markdown
+# SEO Strategy: https://example.com
+
+**Business Type**: E-commerce
+**Timeframe**: 6 months
+**Current Maturity**: Intermediate
+**Audit Score**: 72/100
+
+---
+
+## Executive Summary
+
+Your e-commerce site has a solid technical foundation (85/100) and
+good images (82/100), but needs work on schema implementation (45/100)
+and content depth (68/100). Over 6 months, we'll add rich results to
+all products, expand category content, and build authority.
+
+Expected impact: 30-50% increase in organic traffic, improved rich
+result eligibility.
+
+---
+
+## Phase 1: Foundation (Months 1-2)
+
+### Goals
+- Add Product schema to all 350+ products
+- Fix 10 broken URLs in sitemap
+- Establish content standards
+
+### Actions
+
+#### Month 1: Schema Implementation
+- [ ] Generate Product schema for all products (estimated 40 hours)
+  - Include price, availability, reviews
+  - Set returnPolicyCountry (required March 2025)
+  - Expected impact: Enable product rich results
+- [ ] Add Organization schema to homepage
+  - Expected impact: Knowledge panel
+- [ ] Test all schema in Rich Results Test
+  - Expected impact: Verify implementation
+
+#### Month 2: Content Standards
+- [ ] Audit category pages for depth
+  - Minimum 500 words per category
+  - Add competitive differentiators
+  - Expected impact: Better category rankings
+- [ ] Update stale product descriptions
+  - Min 100 words, unique per product
+  - Include use cases and benefits
+  - Expected impact: Improved CTR and conversion
+
+### KPIs to Track
+- Schema coverage: 0% → 100% (products)
+- Average product description length: 45w → 120w
+- Broken URLs in sitemap: 10 → 0
+
+---
+
+## Phase 2: Content & Authority (Months 3-4)
+
+### Goals
+- Build content authority
+- Improve E-E-A-T signals
+- Expand content beyond product pages
+
+### Actions
+
+#### Month 3: Blog Strategy
+- [ ] Create 4 pillar content pieces
+  - Topics: "Best [category] for [use case]"
+  - Minimum 2,000 words each
+  - Include comparisons, expert tips, data
+  - Expected impact: Brand authority, organic traffic +15%
+
+#### Month 4: Link Building & Authority
+- [ ] Identify 20 relevant industry publications
+  - Pitch guest posts or features
+  - Expected impact: Backlinks + brand awareness
+- [ ] Create expert bios for team members
+  - LinkedIn profiles, author pages
+  - Expected impact: E-E-A-T + YMYL trust signals
+
+### KPIs to Track
+- Organic traffic: Baseline → +20%
+- Branded search volume: Monitor growth
+- Backlinks: Document new links from outreach
+
+---
+
+## Phase 3: Optimization (Months 5-6)
+
+### Goals
+- Performance optimization
+- Advanced schema implementation
+- Competitive advantage
+
+### Actions
+
+#### Month 5: Core Web Vitals
+- [ ] Optimize LCP image on homepage
+  - Implement fetchpriority="high"
+  - Generate WebP version
+  - Expected impact: LCP < 2.5s
+- [ ] Implement lazy loading for below-fold images
+  - All product gallery images
+  - Expected impact: Faster page load
+
+#### Month 6: Advanced Schema & Measurement
+- [ ] Implement Product Review schema
+  - Aggregate reviews from customers
+  - Enable star rating rich results
+  - Expected impact: +5-10% CTR from search
+- [ ] Set up reporting dashboard
+  - Weekly ranking tracking
+  - Monthly traffic trends
+  - Quarterly audit cycles
+
+### KPIs to Track
+- Page Speed Score: 72 → 85+
+- Product CTR: Track in Search Console
+- Indexed pages: Monitor growth
+
+---
+
+## Content Calendar
+
+| Month | Content Type | Topic | Goal |
+|-------|-------------|-------|------|
+| 1 | Product schema | All 350+ products | Rich results |
+| 2 | Category content | Refresh 8 categories | Depth/uniqueness |
+| 3 | Blog post | "Best [category]" guide | Authority |
+| 3 | Blog post | How-to content | Long tail keywords |
+| 4 | Guest post | Industry publication | Backlinks |
+| 4 | Team bios | Expert pages | E-E-A-T |
+| 5 | Case studies | Customer success | Social proof |
+| 6 | Monthly updates | Recent additions | Freshness signals |
+
+---
+
+## Technical Priorities
+
+Based on audit, focus on:
+
+1. **Critical** (Weeks 1-2)
+   - Add missing Product schema
+   - Remove 404s from sitemap
+   - Fix non-200 redirects
+
+2. **High** (Weeks 3-8)
+   - Implement lazy loading
+   - Optimize hero images
+   - Add Review schema
+
+3. **Medium** (Weeks 9-24)
+   - Expand category content
+   - Build authority signals
+   - Monitor Core Web Vitals
+
+4. **Low** (Ongoing)
+   - Minor UX improvements
+   - Link optimization
+   - Continuous monitoring
+
+---
+
+## Competitive Positioning
+
+Top competitor: CompetitorA.com
+- Strong product schema ✓
+- Thinner category content
+- Opportunity: Deeper, more unique category pages
+
+---
+
+## Measurement Framework
+
+| KPI | Current | Target (6mo) | Measure |
+|-----|---------|--------------|---------|
+| Organic traffic | 15,000/mo | 22,500/mo | Analytics |
+| Product impressions | 450,000/mo | 600,000/mo | Search Console |
+| Avg ranking position | #12 | #8 | Rank tracker |
+| Product CTR | 2.1% | 2.8% | Search Console |
+| Core Web Vitals | LCP 3.2s | LCP 2.2s | PageSpeed |
+| Indexed pages | 380 | 400+ | Search Console |
+| Backlinks | 45 | 65+ | Link checker |
+
+---
+
+## Success Metrics
+
+### Quick Wins (by Month 2)
+- ✓ All products have schema
+- ✓ Sitemap fully valid
+- ✓ Category pages 500+ words
+
+### Medium Term (by Month 4)
+- ✓ Product rich results live
+- ✓ 4 pillar content pieces published
+- ✓ 10+ backlinks from outreach
+
+### Long Term (by Month 6)
+- ✓ 20-30% organic traffic increase
+- ✓ 5+ high-authority backlinks
+- ✓ Core Web Vitals: All Green
+
+---
+
+## Budget & Resource Allocation
+
+| Task | Effort | Owner | Timeline |
+|------|--------|-------|----------|
+| Product schema | 40 hrs | Dev team | Month 1 |
+| Category content | 80 hrs | Copywriter | Month 2 |
+| Blog posts | 120 hrs | Content manager | Months 3-4 |
+| Link building | 60 hrs | Outreach | Months 4-6 |
+| Technical SEO | 40 hrs | Dev team | Months 5-6 |
+| **Total** | **340 hrs** | | |
+
+**Estimated cost**: $340k-680k (at $100-200/hr)
+
+---
+
+## Quarterly Review Points
+
+- **End of Month 2**: Schema implementation complete?
+- **End of Month 4**: Content strategy showing results?
+- **End of Month 6**: Traffic targets on track?
+
+---
+
+## Next Steps
+
+1. **Approve this plan** - Confirm timeframe and priorities
+2. **Assign owners** - Who owns each phase?
+3. **Weekly syncs** - 30-min check-ins on progress
+4. **Monthly dashboards** - Track KPIs
+5. **Quarterly deep-dives** - Assess and adjust
+```
+
+## Tips for Success
+
+1. **Start with quick wins** - Schema, broken links, freshness
+2. **Content takes time** - Plan content calendar 1-2 months ahead
+3. **Link building is slow** - Start pitches early in the plan
+4. **Monitor continuously** - Weekly check-ins help catch issues
+5. **Be flexible** - Adjust based on what's working
+6. **Document learnings** - Share insights across the team
+
+## Budget Considerations
+
+- **DIY (your team)**: 300-400 hours @ $50-100/hr = $15k-40k
+- **Agency (full service)**: $5k-20k/month = $30k-120k for 6 months
+- **Hybrid**: In-house team + agency for specialist work = $20k-60k
+
+## Tools for Execution
+
+- **Analytics**: Google Analytics, Search Console
+- **Ranking tracking**: SEMrush, Ahrefs, Moz
+- **Content planning**: Monday.com, Asana
+- **SEO auditing**: Screaming Frog, Sitebulb
+- **Schema testing**: Google Rich Results Test
+- **Link monitoring**: Ahrefs, Moz Link Explorer
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - Baseline assessment before planning
+- [`/seo`](/commands/seo) - SEO toolkit overview

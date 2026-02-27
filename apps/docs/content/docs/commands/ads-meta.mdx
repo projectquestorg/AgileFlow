@@ -1,0 +1,203 @@
+---
+title: /ads:meta
+description: Meta/Facebook Ads deep-dive audit with 46 deterministic checks across Pixel/CAPI tracking, creative strategy, account structure, and audience targeting
+---
+
+# /ads:meta
+
+Run a comprehensive Meta/Facebook Ads account audit using 46 deterministic checks across 4 categories to identify optimization opportunities and compliance issues.
+
+## Quick Start
+
+```bash
+/agileflow:ads:meta <account-data>                    # Full Meta Ads audit
+```
+
+## What It Checks
+
+The audit applies 46 checks across 4 weighted categories:
+
+| Category | Weight | Checks | Focus |
+|----------|--------|--------|-------|
+| Pixel & CAPI Tracking | 30% | 12 | Pixel, CAPI, EMQ, AEM, dedup, privacy |
+| Creative Strategy | 25% | 14 | Diversity, video, formats, refresh, DCO, fatigue |
+| Account Structure | 25% | 10 | CBO, objectives, consolidation, learning phase |
+| Audience Targeting | 20% | 10 | LAL, custom, overlap, retargeting, exclusions |
+
+## Output
+
+You receive:
+- **Meta Ads Score** (0-100)
+- **Category breakdown** with individual scores
+- **Detailed findings** organized by severity
+- **Evidence** - Actual account data triggering findings
+- **Business impact** - Wasted spend or missed conversions
+- **Remediation steps** - Exactly how to fix each issue
+- **Quality gate status** - Pixel, domain verification, learning phase
+
+## Account Data Needed
+
+Provide details about your Meta Ads setup:
+- Pixel and Conversions API (CAPI) setup status
+- Campaign objectives and structure
+- Number of campaigns, ad sets, ads
+- Audience targeting (LAL, custom, interest)
+- Creative assets (image, video, carousel)
+- Budget and monthly spend
+- Performance metrics (CPA, ROAS, conversions)
+- Learning phase status
+
+Example format:
+```
+Meta Ads Account Summary
+- 4 campaigns, 12 ad sets, 30+ creatives
+- Monthly spend: $5,000
+- Pixel installed but no CAPI
+- Using mostly LAL and website retargeting
+- Few creative variations tested
+- Some ads showing fatigue (frequency > 3.0)
+```
+
+## The 46 Checks Explained
+
+### Pixel & CAPI Tracking (12 checks - 30% weight)
+- Meta Pixel installed on all pages
+- Conversions API (CAPI) configured
+- Event Match Quality (EMQ) >= 6.0
+- Standard events configured (Purchase, Lead, AddToCart)
+- Custom conversions defined
+- Aggregated Event Measurement configured
+- Event deduplication working (with event_id)
+- Business domain verified
+- Purchase values passed for optimization
+- Advanced matching enabled
+- Pixel health validated
+- Attribution settings (7-day click / 1-day view)
+
+### Creative Strategy (14 checks - 25% weight)
+- 3+ distinct creative concepts per ad set
+- At least 1 video ad per campaign
+- Aspect ratio coverage (1:1, 4:5, 9:16)
+- 3+ copy variations per concept
+- Multiple headlines tested
+- UGC-style content tested
+- New creatives within last 30 days
+- No ads with frequency > 3.0 in cold audiences
+- Text overlay < 20% of image
+- Appropriate CTA button selected
+- Landing page matches creative message
+- Dynamic Creative Optimization tested
+- Advantage+ creative features enabled
+- Winners/losers identified with thresholds
+
+### Account Structure (10 checks - 25% weight)
+- Campaign Budget Optimization (CBO) used
+- Campaign objective aligned with goal
+- Ad set consolidation (< 5 per campaign)
+- Advantage+ Shopping tested (e-commerce)
+- Learning phase healthy (50 conversions/week)
+- Consistent naming conventions
+- Budget follows 70/20/10 rule
+- No micro-campaigns (< $20/day)
+- Special Ad Categories declared (if applicable)
+- Spending limits set as safety net
+
+### Audience Targeting (10 checks - 20% weight)
+- Lookalike audiences from quality data
+- Custom audience freshness (updated 30 days)
+- Audience overlap < 20% between ad sets
+- Retargeting funnel (30/60/90+ day segments)
+- Purchasers excluded from acquisition
+- Audience size appropriate (1M-10M for prospecting)
+- Advantage+ with broad targeting tested
+- Interest stacking vs separation optimized
+- Geographic targeting precise (for local)
+- Age/gender performance analyzed
+
+## Quality Gates (Critical Rules)
+
+These override scoring and must be fixed first:
+
+1. **Pixel required** - No optimization without Pixel installed
+2. **Domain verification** - Needed for Aggregated Event Measurement
+3. **Learning phase protection** - Never scale during 50 conversions/week ramp
+4. **Special Ad Categories** - Legal requirement for housing, employment, credit
+
+## Learning Phase Requirements
+
+To exit learning phase:
+- **50 conversions per week** required
+- **7-14 days typical duration**
+- **No major changes** during learning (bid changes, audience edits, creative swaps)
+- **Consistent budget** during learning phase
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:meta "Meta Ads: 4 campaigns, Pixel installed no CAPI, LAL audiences, few creative variations, frequency high (3.5+), no CBO yet."
+# Returns: Meta Ads Score with key issues
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:meta
+# Paste detailed campaign structure, audience, and performance data
+# Returns: Comprehensive 46-check audit with remediation steps
+```
+
+## Expected Improvements
+
+By implementing the recommendations:
+- **10-15% reduction** in cost per conversion through waste elimination
+- **20-30% improvement** in conversion rate from creative refresh
+- **Better learning phase** with proper budget and audience setup
+- **Reduced ad fatigue** through strategic creative rotation
+- **20-40% improvement** in attribution accuracy with CAPI
+
+## Meta-Specific Tips
+
+### Pixel vs CAPI
+- Pixel: Browser-based, loses 20-40% of conversions on iOS 14.5+
+- CAPI: Server-side, captures conversions Pixel misses
+- Deploy BOTH for best coverage
+
+### Creative Strategy
+- Video ads: 2-3x better than static images
+- 1:1 (square) most common, but always test 4:5 and 9:16
+- UGC-style often beats polished ads
+- Test new creative every 2-3 weeks (before fatigue)
+
+### Audiences
+- LAL (Lookalike) from purchase data outperforms interest audiences
+- Broad targeting with Advantage+ tests well
+- Always exclude converters from acquisition campaigns
+- Retargeting funnel: 7/14/30/60/90+ days
+
+### Learning Phase
+- Needs 50 conversions/week to exit
+- Don't scale during learning (patience required)
+- CBO auto-optimizes, more stable than ABO
+- Need minimum $20/day per ad set to reach 50 conversions/week
+
+## When to Run
+
+- **Monthly** - Monitor health and creative fatigue
+- **After major changes** - New audiences, budget adjustments, structure changes
+- **Quarterly review** - Comprehensive account assessment
+- **Before scaling** - Ensure account is optimized before increasing budget
+- **Performance decline** - Diagnose why metrics degrading
+
+## Tips
+
+- **Pixel first, everything else second** - Accurate tracking is foundation
+- **CAPI essential** - Add server-side tracking for iOS reliability
+- **Creative is king** - Spend 40% of energy on testing creatives
+- **Learning phase sacred** - Don't change during ramp-up
+- **Frequency cap it** - Avoid frequency > 3.0 in cold audiences
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:google`](/commands/ads-google) - Google Ads comparison
+- [`/ads:creative`](/commands/ads-creative) - Creative quality details

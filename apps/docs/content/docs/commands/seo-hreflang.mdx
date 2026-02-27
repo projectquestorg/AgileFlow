@@ -1,0 +1,253 @@
+---
+title: /seo:hreflang
+description: Multi-language SEO validation - hreflang tag correctness, reciprocity checks, language code validation, and international targeting
+---
+
+# /seo:hreflang
+
+Validate multi-language SEO implementation: hreflang tags, reciprocity, language codes, x-default, and international targeting.
+
+## Quick Start
+
+```bash
+/agileflow:seo:hreflang https://example.com                  # Check hreflang implementation
+/agileflow:seo:hreflang https://example.com/es/              # Check from Spanish version
+```
+
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<URL>` | Yes | Page to check hreflang |
+
+## What Is Hreflang?
+
+Hreflang tells search engines that your content is available in multiple languages and/or regions:
+
+```html
+<!-- English -->
+<link rel="alternate" hreflang="en" href="https://example.com/">
+<!-- Spanish -->
+<link rel="alternate" hreflang="es" href="https://example.com/es/">
+<!-- French in France -->
+<link rel="alternate" hreflang="fr-FR" href="https://example.com/fr/">
+<!-- Default/fallback -->
+<link rel="alternate" hreflang="x-default" href="https://example.com/">
+```
+
+## Language Code Format
+
+| Format | Example | Use When |
+|--------|---------|----------|
+| **Language only** | `en`, `es`, `fr` | Serves all regions |
+| **Language-Region** | `en-US`, `es-MX`, `fr-FR` | Specific region variant |
+| **x-default** | `x-default` | Fallback for unmatched users |
+
+Common language codes:
+- `en` = English
+- `es` = Spanish
+- `fr` = French
+- `de` = German
+- `pt` = Portuguese
+- `pt-BR` = Portuguese (Brazil)
+- `pt-PT` = Portuguese (Portugal)
+- `zh` = Chinese
+- `zh-CN` = Simplified Chinese
+- `zh-TW` = Traditional Chinese
+
+## Common Issues
+
+| Issue | Severity | Example |
+|-------|----------|---------|
+| Missing x-default | HIGH | Pages don't define fallback |
+| Broken reciprocity | HIGH | Page A→B but B doesn't→A |
+| Invalid language code | MEDIUM | "eng" instead of "en" |
+| hreflang to redirect | MEDIUM | Points to 301 instead of final URL |
+| hreflang to noindex | HIGH | Alternate is noindexed |
+| Mixed implementation | LOW | Some tags in HTML, some in headers |
+
+## Example Output
+
+```markdown
+# Hreflang Analysis: https://example.com
+
+## Language Versions Found
+
+| Language | Region | URL | Status |
+|----------|--------|-----|--------|
+| en | - | https://example.com/ | 200 ✓ |
+| es | - | https://example.com/es/ | 200 ✓ |
+| fr | FR | https://example.com/fr/ | 200 ✓ |
+| de | - | https://example.com/de/ | 200 ✓ |
+| x-default | - | https://example.com/ | 200 ✓ |
+
+---
+
+## Reciprocity Matrix
+
+All versions should reference each other:
+
+| Page | → en | → es | → fr | → de | → x-default |
+|------|------|------|------|------|-------------|
+| /en/ | self ✓ | yes ✓ | yes ✓ | yes ✓ | yes ✓ |
+| /es/ | yes ✓ | self ✓ | yes ✓ | yes ✓ | yes ✓ |
+| /fr/ | yes ✓ | yes ✓ | self ✓ | NO ✗ | yes ✓ |
+| /de/ | yes ✓ | yes ✓ | NO ✗ | self ✓ | yes ✓ |
+
+**Issue**: French and German pages don't reference each other!
+
+---
+
+## Critical Issues
+
+### 1. Missing Reciprocity
+**Pages**: /fr/ and /de/
+**Issue**: French page should link to German, German should link to French
+**Fix**: Add missing hreflang tags in both pages
+
+Current (French /fr/):
+```html
+<link rel="alternate" hreflang="en" href="https://example.com/">
+<link rel="alternate" hreflang="es" href="https://example.com/es/">
+<link rel="alternate" hreflang="fr" href="https://example.com/fr/">
+<link rel="alternate" hreflang="x-default" href="https://example.com/">
+<!-- MISSING German! -->
+```
+
+Should be:
+```html
+<link rel="alternate" hreflang="en" href="https://example.com/">
+<link rel="alternate" hreflang="es" href="https://example.com/es/">
+<link rel="alternate" hreflang="fr" href="https://example.com/fr/">
+<link rel="alternate" hreflang="de" href="https://example.com/de/">
+<link rel="alternate" hreflang="x-default" href="https://example.com/">
+```
+
+---
+
+## Validation Results
+
+**Format Correctness**: ✓ Valid
+- Language codes: All ISO 639-1 ✓
+- Region codes: All ISO 3166-1 ✓
+- URLs: Absolute URLs with HTTPS ✓
+
+**Self-References**: ✓ Present
+- Each page references itself ✓
+
+**x-default**: ✓ Present
+- Fallback for unmatched users ✓
+
+**URL Status**: Mostly ✓
+- All URLs return 200 ✓
+- One redirect (es-MX → es) - OK
+
+---
+
+## Hreflang Score: 70/100 (Good)
+
+- Structure: ✓ Valid hreflang tags
+- Reciprocity: ✗ Broken (2 missing links)
+- Language codes: ✓ Correct ISO codes
+- Self-references: ✓ Present
+- x-default: ✓ Present
+- URL validity: ✓ All 200 OK
+
+---
+
+## Recommendations
+
+### Critical (Fix Now)
+1. **Fix reciprocity** - Add French↔German hreflang links
+2. Estimated impact: Proper search result allocation
+
+### High Priority
+1. **Review all hreflang** - Ensure complete coverage
+2. **Test with Google Search Console** - Validate implementation
+
+### Medium Priority
+1. **Consider region variants** - en-US, en-GB if different content
+2. **Document hreflang strategy** - For maintenance
+
+---
+
+## Best Practices
+
+1. **Use x-default** - Always include for unmatched users
+2. **Ensure reciprocity** - If A→B, then B→A
+3. **Self-reference** - Each page links to itself
+4. **Use correct codes** - ISO 639-1 (language) + ISO 3166-1 (region)
+5. **Use absolute URLs** - Full https:// URLs, not relative
+6. **Consistency** - Use one implementation method (HTML, XML, HTTP headers)
+7. **Test regularly** - Verify with Search Console
+8. **Update together** - Change all versions together
+
+## Implementation Methods
+
+### 1. HTML Head (Most Common)
+```html
+<head>
+  <link rel="alternate" hreflang="en" href="https://example.com/">
+  <link rel="alternate" hreflang="es" href="https://example.com/es/">
+  <link rel="alternate" hreflang="x-default" href="https://example.com/">
+</head>
+```
+
+### 2. HTTP Headers
+```
+Link: <https://example.com/>; rel="alternate"; hreflang="en",
+      <https://example.com/es/>; rel="alternate"; hreflang="es",
+      <https://example.com/>; rel="alternate"; hreflang="x-default"
+```
+
+### 3. XML Sitemap
+```xml
+<url>
+  <loc>https://example.com/</loc>
+  <xhtml:link rel="alternate" hreflang="en" href="https://example.com/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://example.com/es/"/>
+  <xhtml:link rel="alternate" hreflang="x-default" href="https://example.com/"/>
+</url>
+```
+
+## Region-Specific Variants
+
+Use region codes for region-specific content:
+
+```html
+<!-- Portuguese: different content for Brazil vs Portugal -->
+<link rel="alternate" hreflang="pt-BR" href="https://example.com/pt-br/">
+<link rel="alternate" hreflang="pt-PT" href="https://example.com/pt-pt/">
+<link rel="alternate" hreflang="pt" href="https://example.com/pt/"> <!-- fallback -->
+
+<!-- English: different for US, UK, Australia -->
+<link rel="alternate" hreflang="en-US" href="https://example.com/en-us/">
+<link rel="alternate" hreflang="en-GB" href="https://example.com/en-gb/">
+<link rel="alternate" hreflang="en-AU" href="https://example.com/en-au/">
+<link rel="alternate" hreflang="en" href="https://example.com/en/"> <!-- fallback -->
+```
+
+## Testing Your Hreflang
+
+1. **Check with URL Inspection Tool** - Google Search Console
+2. **View page source** - Look for hreflang tags in HTML
+3. **Check HTTP headers** - If using header method
+4. **Validate sitemap** - Check XML sitemaps
+5. **Monitor Search Console** - Coverage and international targeting
+
+## Common Mistakes
+
+- Missing x-default fallback
+- Broken reciprocity (one-way links)
+- Invalid language codes ("eng" instead of "en")
+- hreflang pointing to redirects instead of final URLs
+- hreflang pointing to noindex pages
+- Relative URLs instead of absolute
+- Mixing implementation methods
+- Incorrect region codes
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - International is part of technical assessment
+- [`/seo:technical`](/commands/seo-technical) - International signals are checked
+- [`/seo`](/commands/seo) - SEO toolkit overview

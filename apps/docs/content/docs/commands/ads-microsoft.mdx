@@ -1,0 +1,169 @@
+---
+title: /ads:microsoft
+description: Microsoft Ads audit with 7 checks for search partner management, UET tag, LinkedIn targeting, and import quality from Google Ads
+---
+
+# /ads:microsoft
+
+Run an inline audit on a Microsoft Ads (formerly Bing Ads) account with 7 focused checks. Microsoft Ads often runs as a Google import—verify it's optimized for the platform.
+
+## Quick Start
+
+```bash
+/agileflow:ads:microsoft <account-data>               # Microsoft Ads audit
+```
+
+## The 7 Checks
+
+| # | Check | Severity | Pass Criteria |
+|---|-------|----------|---------------|
+| MS-1 | UET tag installed | CRITICAL | Universal Event Tracking tag on all pages |
+| MS-2 | Search partner performance | HIGH | Syndication partners monitored, poor ones disabled |
+| MS-3 | Import quality from Google | HIGH | No broken bid strategies or unsupported features |
+| MS-4 | Bid adjustments set | MEDIUM | Microsoft-specific bids (not just Google copy) |
+| MS-5 | LinkedIn targeting | HIGH | LinkedIn demographics used for B2B targeting |
+| MS-6 | Audience Ads opt-in reviewed | MEDIUM | Microsoft Audience Network reviewed for performance |
+| MS-7 | Conversion goals | HIGH | Microsoft-native conversion tracking active |
+
+## Output
+
+You receive:
+- **Microsoft Score** (0-100)
+- **Check results** - Pass/fail for all 7 checks
+- **Key recommendations** - Top priorities to improve
+- **Microsoft-specific tips** - Platform best practices
+- **Import quality assessment** - If imported from Google
+
+## Account Data Needed
+
+Provide details about your Microsoft Ads:
+- UET tag installation status
+- Import source (native or imported from Google)
+- Budget and spend
+- Campaign structure
+- Bid adjustments configured
+- LinkedIn targeting usage
+- Conversion goal setup
+- Search partner performance
+
+Example format:
+```
+Microsoft Ads Setup
+- Imported from Google 6 months ago
+- 5 campaigns, $200/month total
+- No bid adjustments beyond Google import
+- Mostly default settings, not Microsoft-optimized
+- No LinkedIn targeting used
+```
+
+## Microsoft Ads Context
+
+**Why Microsoft?**
+- Lower CPCs than Google (5-10% less typical)
+- Older, higher-income demographic
+- Better for B2B (access to LinkedIn targeting)
+- Less competitive keywords
+- Smaller audience, but valuable
+
+**Who Uses It:**
+- B2B companies targeting decision-makers
+- Local services in underserved markets
+- E-commerce with higher-value customers
+- Businesses wanting lower CPA than Google
+
+## Import Quality Issues
+
+If you imported from Google, common problems:
+
+| Issue | Impact | Solution |
+|-------|--------|----------|
+| Unsupported bid strategies | Won't work on Microsoft | Switch to supported strategies |
+| Negative keyword list conflicts | Blocking good traffic | Re-import negative lists carefully |
+| Campaign structure mismatch | Suboptimal targeting | Restructure for Microsoft |
+| Device bid adjustments | May not transfer | Reconfigure for Microsoft |
+| Audience targeting mismatch | Won't reach intended audience | Reset targeting for platform |
+
+## LinkedIn Targeting Advantage
+
+Microsoft's unique advantage: **LinkedIn profile targeting**
+
+This lets you target by:
+- Company name
+- Industry
+- Job function
+- Job title
+- Seniority level
+
+For B2B, this is extremely powerful. Example:
+```
+Target: Software developers at Fortune 500 companies
+Google: Target keyword "Python developer", broad reach
+Microsoft: Target LinkedIn "Software Developer" + "Fortune 500" = precise
+```
+
+## Example Usage
+
+### Basic Audit
+```bash
+/agileflow:ads:microsoft "Microsoft: Imported from Google 3 months ago. No changes made since. Using same bid strategies and audiences as Google."
+# Returns: Microsoft Score with import quality assessment
+```
+
+### Detailed Audit
+```bash
+/agileflow:ads:microsoft
+# Paste detailed account setup and performance data
+# Returns: Full 7-check audit with optimization recommendations
+```
+
+## Expected Improvements
+
+By implementing recommendations:
+- **Proper import optimization** - Fix broken strategies from Google import
+- **5-10% CPA improvement** - Microsoft Ads typically cheaper than Google
+- **Better audience targeting** - LinkedIn profile targeting for B2B
+- **Search partner optimization** - 2-5% improvement by disabling poor partners
+
+## Microsoft-Specific Strategies
+
+### B2B Targeting
+LinkedIn targeting + keyword matching = powerful combo
+```
+Campaign: Target "VP Sales" at "Tech Companies"
+Keywords: "sales enablement software"
+Audiences: LinkedIn profile targeting
+Result: Highly relevant, high-quality leads
+```
+
+### Search Partner Optimization
+- Microsoft Audience Network: Yahoo, AOL, DuckDuckGo
+- Performance varies by partner
+- Monitor individually, disable underperformers
+- Start with all partners, disable low-ROI ones
+
+### Bid Adjustments
+- Don't just copy from Google
+- Microsoft's scale is different
+- Often lower bids work here
+- Monitor CPA carefully during transition
+
+## Tips
+
+- **Don't just "set and forget" imports** - Google imports need Microsoft optimization
+- **LinkedIn targeting is differentiator** - Use it for B2B campaigns
+- **Search partners matter** - Monthly review and optimization
+- **Audience demographic older/higher income** - Adjust messaging if needed
+- **Lower CPCs** - Don't use Google bids, test lower Microsoft bids
+
+## When to Run
+
+- **After Google import** - Verify import quality and optimize
+- **Monthly** - Monitor search partner performance
+- **Performance decline** - Diagnose optimization issues
+- **Quarterly review** - Comprehensive strategy assessment
+
+## Related Commands
+
+- [`/ads:audit`](/commands/ads-audit) - Full multi-platform audit
+- [`/ads:plan`](/commands/ads-plan) - Campaign planning
+- [`/ads:google`](/commands/ads-google) - Google Ads for comparison

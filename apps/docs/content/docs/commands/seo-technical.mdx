@@ -1,0 +1,319 @@
+---
+title: /seo:technical
+description: Deep technical SEO analysis - crawlability, indexability, security headers, URL structure, mobile-friendliness, and rendering
+---
+
+# /seo:technical
+
+Deep technical SEO analysis covering crawlability, indexability, security headers, URL structure, mobile-friendliness, JavaScript rendering, and international signals.
+
+## Quick Start
+
+```bash
+/agileflow:seo:technical https://example.com                 # Full 8-category assessment
+/agileflow:seo:technical https://example.com FOCUS=crawl      # Crawlability only
+/agileflow:seo:technical https://example.com FOCUS=security   # Security headers only
+/agileflow:seo:technical https://example.com FOCUS=mobile     # Mobile-friendliness only
+```
+
+## Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `<URL>` | Yes | - | Site to analyze |
+| `FOCUS` | No | all | crawl, index, security, urls, mobile, rendering, international, all |
+
+## 8 Assessment Categories
+
+| Category | Weight | Key Checks |
+|----------|--------|-----------|
+| **Crawlability** | 25% | robots.txt, canonicals, redirects, crawl depth |
+| **Indexability** | 20% | noindex directives, orphans, sitemap coverage |
+| **Security** | 15% | HTTPS, HSTS, CSP, security headers |
+| **URL Structure** | 15% | Cleanliness, hierarchy, consistency |
+| **Mobile** | 15% | Viewport, responsive, tap targets |
+| **JS Rendering** | 5% | Client-side content visibility |
+| **International** | 3% | hreflang, language declarations |
+| **Performance** | 2% | TTFB, resource hints, compression |
+
+## Example Usage
+
+### Full Assessment
+```bash
+/agileflow:seo:technical https://example.com
+```
+
+Analyze all 8 categories and get a Technical SEO Score.
+
+### Crawlability Focus
+```bash
+/agileflow:seo:technical https://example.com FOCUS=crawl
+```
+
+Deep-dive into robots.txt, canonicals, redirects, and crawl accessibility.
+
+### Security Focus
+```bash
+/agileflow:seo:technical https://example.com FOCUS=security
+```
+
+Check HTTPS, HSTS, CSP, and other security headers.
+
+### Mobile Focus
+```bash
+/agileflow:seo:technical https://example.com FOCUS=mobile
+```
+
+Verify viewport meta, responsive design, and tap target sizing.
+
+## Key Concepts
+
+### Crawlability
+Can Googlebot access and crawl your site?
+- robots.txt rules (allow/disallow)
+- Meta robots directives
+- Canonical tags (correct, not broken)
+- Redirect chains (should be direct)
+- Crawl depth (reasonable URL hierarchy)
+
+### Indexability
+Will Google index your important pages?
+- noindex directives (should only be on non-critical pages)
+- Orphan pages (unreachable from navigation)
+- Sitemap coverage (important pages included)
+- Duplicate content (needs canonical tags)
+- Nofollow links (don't pass authority)
+
+### Security
+Is your site secure from attacks?
+- HTTPS (encrypted, required)
+- HSTS header (enforce HTTPS)
+- X-Content-Type-Options (prevent MIME sniffing)
+- X-Frame-Options (prevent clickjacking)
+- Content-Security-Policy (prevent XSS)
+- Referrer-Policy (control referrer info)
+
+### URL Structure
+Are your URLs clean and consistent?
+- Lowercase (e.g., `/about` not `/About`)
+- Hyphens (e.g., `my-product` not `my_product`)
+- No special characters or spaces
+- Reasonable depth (max 3-4 levels)
+- Consistent trailing slashes (either all or none)
+- Canonical tags for parameterized URLs
+
+### Mobile
+Is your site mobile-friendly?
+- Viewport meta tag: `<meta name="viewport" content="width=device-width, initial-scale=1">`
+- Responsive design (flexible layouts, media queries)
+- Touch-friendly (48x48px minimum tap targets)
+- Font size readability (16px base minimum)
+- No horizontal scrolling
+
+### JavaScript Rendering
+Is client-side content visible to search engines?
+- Server-side rendering (content in HTML source)
+- Client-side rendering (content loaded via JS)
+- Hydration issues
+- Dynamically loaded content visibility
+
+### International
+Are multi-language sites properly configured?
+- hreflang tags (for language alternatives)
+- Language meta tags or HTML lang attribute
+- Geo-targeting in Search Console
+- Content localization (not just translation)
+- x-default fallback
+
+### Performance
+How fast is your site?
+- TTFB (Time to First Byte) < 800ms
+- Resource hints (preconnect, preload, prefetch)
+- Compression (gzip/brotli enabled)
+- Caching headers set
+
+## Output Format
+
+```markdown
+# Technical SEO Analysis: https://example.com
+
+## Overall Technical SEO Score: 78/100 (Good)
+
+---
+
+## Category Scores
+
+| Category | Score | Status |
+|----------|-------|--------|
+| Crawlability | 85/100 | Good |
+| Indexability | 75/100 | Good |
+| Security | 65/100 | Needs Work |
+| URL Structure | 90/100 | Excellent |
+| Mobile | 80/100 | Good |
+| JS Rendering | 85/100 | Good |
+| International | N/A | Not applicable |
+| Performance | 70/100 | Needs Work |
+
+---
+
+## Critical Issues
+
+### 1. Missing HSTS header
+**Category**: Security
+**Severity**: HIGH
+**Issue**: Site not protected against SSL downgrade attacks
+
+**Fix**: Add to web server:
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+### 2. Multiple 404s in sitemap
+**Category**: Indexability
+**Severity**: HIGH
+**Issue**: 15 URLs in sitemap return 404 Not Found
+
+**Fix**: Remove dead URLs from sitemap or redirect them to live pages
+
+---
+
+## High Priority
+
+### 3. Slow TTFB (> 2 seconds)
+**Category**: Performance
+**Impact**: Delays entire page load
+**Fix**: Investigate server performance, consider CDN, optimize backend
+
+---
+
+## Mobile Checklist
+
+- [ ] Viewport meta tag present
+- [ ] Responsive CSS (media queries present)
+- [ ] Tap targets 48x48px minimum
+- [ ] Font size 16px base minimum
+- [ ] No horizontal scrolling
+- [ ] Touch-friendly form inputs
+
+---
+
+## Security Headers Checklist
+
+| Header | Present | Status |
+|--------|---------|--------|
+| Strict-Transport-Security | No | Missing ❌ |
+| X-Content-Type-Options | Yes | Present ✓ |
+| X-Frame-Options | Yes | SAMEORIGIN ✓ |
+| Content-Security-Policy | No | Missing ⚠️ |
+| Referrer-Policy | Yes | strict-origin ✓ |
+| Permissions-Policy | No | Missing ⚠️ |
+
+---
+
+## Crawlability Assessment
+
+**robots.txt**: `/robots.txt` (present)
+- Blocks: /admin/, /private/ (appropriate)
+- Sitemap declared: Yes
+- Crawl delay: None
+
+**Canonicals**: Present on all pages
+- Self-referencing: Yes ✓
+- Consistent pattern: Yes ✓
+- No cross-domain: Yes ✓
+
+**Redirects**: Found 3 redirects
+- All 301 (permanent) ✓
+- No chains (all direct) ✓
+- Https://example.com → https://www.example.com ✓
+
+---
+
+## Indexability Assessment
+
+**Noindex directives**: None on content pages ✓
+**Orphan pages**: None detected ✓
+**Sitemap**: `/sitemap.xml` (present)
+- URLs: 450 total
+- Coverage: 95% of discovered pages
+
+**Duplicate content**:
+- Pagination handled with rel="next/prev" ✓
+- Parameterized URLs have canonicals ✓
+
+---
+
+## URL Structure Assessment
+
+**Format**: All lowercase ✓
+**Word separation**: Hyphens used ✓
+**Depth**: Max 3 levels ✓
+**Trailing slashes**: Consistent (no slashes) ✓
+**Parameters**: Minimal, canonical tags present ✓
+**Length**: Average 45 chars (good) ✓
+
+Example URLs:
+- https://example.com/
+- https://example.com/blog/
+- https://example.com/blog/post-title/
+
+---
+
+## Mobile Friendliness Assessment
+
+**Viewport tag**: Present ✓
+**Responsive indicators**: Yes ✓
+**Tap target sizing**: 48x48px minimum ✓
+**Font readability**: 16px base minimum ✓
+**No horizontal scroll**: Confirmed ✓
+
+---
+
+## Recommendations
+
+### Critical (Fix immediately)
+1. Add HSTS header (security)
+2. Remove 404 URLs from sitemap (indexability)
+
+### High Priority (This week)
+1. Optimize TTFB (< 800ms target)
+2. Add Content-Security-Policy header
+
+### Medium Priority (This month)
+1. Add Permissions-Policy header
+2. Implement service worker caching
+
+### Low Priority
+1. Consider preconnect hints for CDN
+2. Monitor crawl budget
+```
+
+## Common Technical SEO Issues
+
+- Missing HTTPS or mixed content warnings
+- robots.txt blocking important resources
+- Broken canonical tags
+- Redirect chains (A→B→C instead of A→C)
+- Duplicate content without canonicals
+- Missing or broken sitemap
+- Pages with noindex but important
+- Slow server response (TTFB > 800ms)
+- Missing viewport meta tag
+- Non-responsive design on mobile
+- Orphan pages not linked from navigation
+- Crawl depth too deep (>4 levels)
+
+## Quick Wins
+
+1. Add HTTPS (if not already) - Use free Let's Encrypt
+2. Add security headers - Configure in web server
+3. Add viewport meta tag - Single line of HTML
+4. Fix crawl depth - Restructure URL hierarchy
+5. Add sitemap declaration to robots.txt - 1 line
+
+## Related Commands
+
+- [`/seo:audit`](/commands/seo-audit) - Technical SEO is 20% of full audit
+- [`/seo:page`](/commands/seo-page) - Technical is one dimension of page analysis
+- [`/seo:sitemap`](/commands/seo-sitemap) - Deep-dive into sitemap validation
+- [`/seo`](/commands/seo) - SEO toolkit overview

@@ -1,0 +1,117 @@
+---
+title: Image Optimization
+description: Image optimization analyzer for alt text quality, image sizing, modern format usage (WebP/AVIF), lazy loading, CLS prevention, and file size optimization
+---
+
+# Image Optimization
+
+The Image Optimization agent is a specialized SEO analyzer focused on **image optimization for SEO and performance**. It evaluates images on web pages for alt text quality, sizing attributes, modern formats, lazy loading, Largest Contentful Paint (LCP) optimization, and file size efficiency.
+
+## When to Use
+
+Use this agent when:
+- You need to audit images for SEO best practices
+- You're optimizing images for Core Web Vitals (CLS, LCP)
+- You want to improve image alt text for accessibility and search
+- You're checking for Cumulative Layout Shift (CLS) caused by unsized images
+- You need to modernize image formats (WebP/AVIF adoption)
+
+## How It Works
+
+1. **Fetches the target page** - Extracts all `<img>` elements, CSS background images, `<picture>` elements
+2. **Audits Alt Text** - Evaluates descriptiveness, length (10-125 chars), relevance, and flags missing alt text
+3. **Checks Image Sizing** - Verifies width/height attributes present to prevent layout shift
+4. **Analyzes Image Formats** - Identifies modern formats (WebP/AVIF) vs legacy (JPEG/PNG/GIF)
+5. **Assesses Lazy Loading** - Checks if below-fold images use `loading="lazy"` for performance
+6. **Verifies LCP Optimization** - Ensures hero/above-fold images have `fetchpriority="high"`
+7. **Reviews Responsive Images** - Checks for `srcset` and `sizes` attributes for device adaptation
+
+## Focus Areas
+
+- **Alt Text Quality**: Descriptive, contextually relevant, natural keywords, 10-125 characters
+- **Image Sizing**: Explicit width/height attributes to prevent Cumulative Layout Shift (CLS)
+- **Modern Formats**: WebP and AVIF adoption vs legacy PNG/JPEG only
+- **Lazy Loading**: Below-fold images using `loading="lazy"` to defer loading
+- **LCP Optimization**: Hero image priority with `fetchpriority="high"`
+- **File Size**: Oversized images impacting page load time
+- **Responsive Images**: `srcset` and `sizes` for responsive delivery across devices
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## Alt Text Quality Levels
+
+| Quality | Criteria | Examples |
+|---------|----------|----------|
+| Good | Descriptive, 10-125 chars, contextually relevant | "Woman typing on laptop at desk" |
+| Acceptable | Present but generic | "image", "photo" |
+| Poor | Filename-based | "IMG_001.jpg", "screenshot-2024-01-15" |
+| Missing | No alt attribute | ❌ |
+| Decorative | Empty alt="" | Correct for purely decorative images |
+| Keyword-stuffed | Excessive keywords crammed in | ❌ |
+
+## Scoring Guide
+
+| Aspect | Weight | Scoring |
+|--------|--------|---------|
+| Alt text quality | 30% | -3 per missing, -2 per poor quality |
+| Sizing (CLS) | 20% | -3 per image without width/height |
+| Modern formats | 15% | -2 per legacy-only image |
+| Lazy loading | 15% | -2 per below-fold image without lazy |
+| LCP optimization | 10% | -10 if LCP image missing priority |
+| Responsive images | 10% | -2 per large image without srcset |
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze image optimization",
+  prompt: "Audit all images on https://example.com for SEO and performance. Check alt text, sizing, formats, lazy loading, and LCP optimization.",
+  subagent_type: "agileflow-seo-analyzer-images"
+)
+```
+
+## Output Format
+
+```markdown
+FINDING-1: Missing alt text on hero image
+
+Category: Alt Text
+URL: https://example.com
+Image: /images/hero.jpg
+Severity: CRITICAL
+Confidence: HIGH
+
+Issue: Hero image has no alt attribute, missing accessibility and search optimization.
+
+Current:
+<img src="hero.jpg">
+
+Remediation:
+<img src="hero.jpg" alt="Professional team collaborating in modern office">
+```
+
+## Important Rules
+
+1. **Fetch actual page** - Use WebFetch to see real image tags, don't guess
+2. **Don't penalize decorative images** - Empty `alt=""` is correct for purely decorative images
+3. **Prioritize by impact** - Large hero images matter more than tiny icons
+4. **Consider context** - Alt text should match the page's content context
+5. **Estimate above/below fold** - First 2-3 images are likely above-fold
+
+## Common Issues Found
+
+- Missing alt text on images
+- Filename-based alt text (IMG_001.jpg)
+- Missing width/height causing CLS
+- Only legacy formats (JPEG/PNG) without WebP/AVIF
+- Missing lazy loading on below-fold images
+- Hero image lacking fetchpriority="high"
+- Images without responsive srcset on image-heavy pages
+
+## Related Agents
+
+- [`seo-analyzer-performance`](/agents/seo-analyzer-performance) - Core Web Vitals and CLS analysis
+- [`seo-analyzer-technical`](/agents/seo-analyzer-technical) - Technical SEO foundation
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis

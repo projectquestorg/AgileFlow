@@ -1,0 +1,80 @@
+---
+title: Ads Audit Budget
+description: Cross-platform budget allocation and bidding strategy analyzer with 24 checks for spend efficiency, scaling rules, and industry benchmarks
+---
+
+# Ads Audit Budget
+
+Budget auditor that analyzes ad spend allocation and bidding strategies across platforms, applying 24 deterministic checks for spend efficiency, scaling rules, and industry benchmarks.
+
+## When to Use
+
+Use this agent when:
+
+- Optimizing budget allocation across platforms
+- Setting up or reviewing bidding strategies
+- Analyzing budget scaling and pacing rules
+- Checking platform spend minimums
+- Benchmarking against industry standards
+- Managing campaign budget distribution
+
+## How It Works
+
+1. **Validates Account Data**: Accepts spend data, campaign budgets, bidding strategies
+2. **Applies 24 Checks**: Across 4 categories (Budget Allocation, Bidding Strategy, Scaling & Pacing, Platform Mix)
+3. **Enforces Rules**: Platform minimums, scaling caps, 3x Kill Rule
+4. **Generates Recommendations**: Specific dollar reallocation suggestions
+5. **Scores Budget Health**: Outputs Budget Score out of 100
+
+## Focus Areas
+
+- **Budget Allocation (35%)** - 8 checks on spend distribution and top-performer focus
+- **Bidding Strategy (30%)** - 8 checks on strategy alignment and conversion data requirements
+- **Scaling & Pacing (20%)** - 4 checks on budget growth rates and learning phase compliance
+- **Platform Mix (15%)** - 4 checks on platform diversification and attribution
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep
+
+## Example Usage
+
+```text
+Task(
+  description: "Analyze our budget allocation across Google and Meta",
+  prompt: "We're spending $10K/month total. Google gets $6K (4 campaigns), Meta gets $4K (6 ad sets). Need to reallocate based on ROAS.",
+  subagent_type: "ads-audit-budget"
+)
+```
+
+## Key Capabilities
+
+- **Budget scoring** with weighted category analysis
+- **Platform minimum enforcement** across 6 platforms
+- **Scaling rule validation** (max 20% per week)
+- **Industry benchmark comparison** for SaaS, E-commerce, Local Services, B2B
+- **Specific reallocation recommendations** with dollar amounts
+- **Bid strategy alignment** with campaign objectives
+
+## Platform Budget Minimums
+
+| Platform | Campaign Minimum | Ad Set/Group Minimum |
+|----------|-----------------|---------------------|
+| Google Ads | $10/day | $5/day |
+| Meta Ads | $20/day | $10/day |
+| LinkedIn | $50/day | $25/day |
+| TikTok | $50/day | $20/day |
+| Microsoft | $10/day | $5/day |
+
+## Quality Gates
+
+- **Platform minimums are non-negotiable** - Below minimums = CRITICAL finding
+- **Conversion data required** - Must have 30+ conversions/month for Smart Bidding recommendations
+- **Learning phase protection** - No changes during learning windows
+- **3x Kill Rule** - Flag campaigns with CPA > 3x target for immediate pause
+
+## Related Agents
+
+- [AG-API](/agents/api) - Backend integration for budget implementation
+- [AG-UI](/agents/ui) - Frontend dashboards for budget visualization
+- [Ads Consensus](/agents/ads-consensus) - Overall ad health scoring

@@ -1,0 +1,121 @@
+---
+title: Content Quality & E-E-A-T
+description: E-E-A-T and content quality analyzer for trustworthiness signals, expertise indicators, readability, thin content detection, and AI citation readiness
+---
+
+# Content Quality & E-E-A-T
+
+The Content Quality & E-E-A-T agent is a specialized SEO analyzer focused on **content quality and E-E-A-T signals** (Experience, Expertise, Authoritativeness, and Trustworthiness). It assesses a website's content for user trust, author credentials, domain authority, and original insights.
+
+## When to Use
+
+Use this agent when:
+- You need to assess content quality from Google's E-E-A-T perspective
+- You're evaluating trustworthiness signals (contact info, transparency, HTTPS)
+- You want to measure expertise signals (author credentials, citations, technical depth)
+- You're checking for thin content or generic AI-generated phrasing
+- You need to assess content readiness for AI search platform citation
+
+## How It Works
+
+1. **Fetches the target page** - Extracts main content, author info, publication dates, media
+2. **Assesses Trustworthiness (30%)** - Checks HTTPS, contact pages, privacy policies, transparency, no deceptive patterns
+3. **Assesses Expertise (25%)** - Evaluates author credentials, cited sources, technical accuracy, depth of coverage
+4. **Assesses Authoritativeness (25%)** - Examines brand signals, testimonials, certifications, consistent NAP (Name, Address, Phone)
+5. **Assesses Experience (20%)** - Looks for first-hand accounts, original media, specific data, case studies
+6. **Evaluates Content Depth** - Measures word count against page type minimums (500w homepage, 800w service, 1,500w blog)
+7. **Checks AI Citation Readiness** - Assesses whether content is structured for AI platforms to quote (134-167 word answer blocks)
+
+## Focus Areas
+
+- **Trustworthiness Signals**: HTTPS, contact info, privacy policy, editorial transparency, no dark UX patterns
+- **Expertise Signals**: Author bylines with credentials, cited sources, technical accuracy, domain terminology
+- **Authoritativeness**: Brand consistency, testimonials, industry certifications, media mentions
+- **Experience Signals**: First-person accounts, original photography, specific metrics, step-by-step guides from personal experience
+- **Content Depth**: Word count, uniqueness percentage, comprehensiveness vs. surface-level coverage
+- **Readability**: Sentence structure, vocabulary level, formatting with headers and lists
+- **AI Citation Readiness**: Self-contained answer blocks, specific facts, question-based headers, proper attribution
+
+## Tools Available
+
+This agent has access to: Read, Glob, Grep, WebFetch
+
+## Scoring Framework
+
+| Factor | Weight | Key Assessment |
+|--------|--------|-----------------|
+| Trustworthiness | 30% | HTTPS, transparency, contact/privacy presence, no deception |
+| Expertise | 25% | Author credentials, citations, technical accuracy, depth |
+| Authoritativeness | 25% | Brand signals, testimonials, certifications, NAP consistency |
+| Experience | 20% | First-hand knowledge, original content, specific data, case studies |
+
+## Content Minimums by Page Type
+
+| Page Type | Min Words | Unique % |
+|-----------|-----------|----------|
+| Homepage | 500 | 100% |
+| Service | 800 | 60% |
+| Blog | 1,500 | 100% |
+| Product | 300 | 40% |
+| Location | 500 | 40% |
+
+## Example Usage
+
+```text
+Task(
+  description: "Assess content quality and E-E-A-T signals",
+  prompt: "Analyze https://example.com/about for E-E-A-T signals. Check author credentials, trustworthiness indicators, expertise depth, and content quality.",
+  subagent_type: "agileflow-seo-analyzer-content"
+)
+```
+
+## Output Format
+
+The agent provides findings organized by category with specific evidence:
+
+- **Category**: Trustworthiness | Expertise | Authoritativeness | Experience | Content Depth | Readability | AI Citability
+- **Severity**: CRITICAL | HIGH | MEDIUM | LOW
+- **Confidence**: HIGH | MEDIUM | LOW
+- **Evidence**: Relevant content snippets or missing elements
+- **Impact**: How this affects search rankings or user trust
+- **Remediation**: Specific, actionable fixes with examples
+
+## Example Finding
+
+```
+FINDING-1: Missing author credentials
+
+Category: Expertise
+Severity: HIGH
+Confidence: HIGH
+
+Issue: Blog post has no author attribution or byline.
+Readers and search engines cannot verify expertise.
+
+Evidence: Post begins with headline, no author section visible
+
+Impact: Reduces E-E-A-T score significantly for YMYL content.
+Google prioritizes content from demonstrable experts.
+
+Remediation:
+Add author byline with credentials:
+- Author name with professional title
+- Bio linking to relevant experience
+- LinkedIn/credentials link if available
+```
+
+## Red Flags Detected
+
+The agent flags potential issues including:
+- Generic phrasing typical of AI-generated content
+- No original insights or personal experience
+- Fabricated statistics or claims without sources
+- Keyword stuffing that reduces readability
+- Boilerplate content with minimal unique value
+
+## Related Agents
+
+- [`seo-analyzer-technical`](/agents/seo-analyzer-technical) - Technical SEO foundation
+- [`seo-analyzer-schema`](/agents/seo-analyzer-schema) - Structured data and rich results
+- [`seo-analyzer-performance`](/agents/seo-analyzer-performance) - Core Web Vitals and speed
+- [`seo-consensus`](/agents/seo-consensus) - SEO audit synthesis and scoring
