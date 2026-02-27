@@ -56,7 +56,7 @@ Traditional project management tools create friction between planning and execut
 |-----------|-------|-------------|
 | [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 99 | Slash commands for agile workflows |
 | [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 91 | Specialized agents with self-improving knowledge bases |
-| [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Generated on-demand with `/agileflow:skill:create` |
+| [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Browse and install from skills.sh marketplace via `/agileflow:skill:recommend` |
 
 ---
 
