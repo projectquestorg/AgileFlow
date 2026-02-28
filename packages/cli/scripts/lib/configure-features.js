@@ -393,6 +393,25 @@ function enableFeature(feature, options = {}, version) {
   if (feature === 'agentteams') {
     settings.env = settings.env || {};
     settings.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1';
+
+    // Register PostToolUse hooks for native team observability
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.PostToolUse) settings.hooks.PostToolUse = [];
+    const observerCmd = 'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/native-team-observer.js';
+    for (const matcher of ['TeamCreate', 'SendMessage', 'ListTeams']) {
+      const exists = settings.hooks.PostToolUse.some(
+        h =>
+          h.matcher === matcher &&
+          h.hooks?.some(hk => hk.command && hk.command.includes('native-team-observer'))
+      );
+      if (!exists) {
+        settings.hooks.PostToolUse.push({
+          matcher,
+          hooks: [{ type: 'command', command: observerCmd, timeout: 5000 }],
+        });
+      }
+    }
+
     writeJSON('.claude/settings.json', settings);
     updateMetadata(
       {
@@ -408,6 +427,7 @@ function enableFeature(feature, options = {}, version) {
     );
     success('Native Agent Teams enabled');
     info('Set CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in .claude/settings.json');
+    info('Registered PostToolUse hooks for native team observability');
     info('Claude Code will use native TeamCreate/SendMessage tools');
     info('Fallback: subagent mode (Task/TaskOutput) when native is unavailable');
     return true;
@@ -954,6 +974,20 @@ function disableFeature(feature, version) {
         delete settings.env;
       }
     }
+
+    // Remove PostToolUse hooks for native team observer
+    if (settings.hooks?.PostToolUse) {
+      settings.hooks.PostToolUse = settings.hooks.PostToolUse.filter(
+        h => !h.hooks?.some(hk => hk.command && hk.command.includes('native-team-observer'))
+      );
+      if (settings.hooks.PostToolUse.length === 0) {
+        delete settings.hooks.PostToolUse;
+      }
+      if (Object.keys(settings.hooks).length === 0) {
+        delete settings.hooks;
+      }
+    }
+
     writeJSON('.claude/settings.json', settings);
     updateMetadata(
       {
@@ -969,6 +1003,7 @@ function disableFeature(feature, version) {
     );
     success('Native Agent Teams disabled');
     info('Removed CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS from .claude/settings.json');
+    info('Removed PostToolUse hooks for native team observer');
     info('AgileFlow will use subagent mode (Task/TaskOutput) for multi-agent orchestration');
     return true;
   }

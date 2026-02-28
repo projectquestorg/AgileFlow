@@ -64,6 +64,9 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     // Claude Code specific: Setup SessionStart hooks (welcome, archive, context-loader)
     await this.setupSessionStartHooks(projectDir, agileflowDir, ideDir, options);
 
+    // Claude Code specific: Setup PostToolUse hooks (native team observer)
+    await this.setupPostToolUseHooks(projectDir, agileflowDir, ideDir, options);
+
     return result;
   }
 
@@ -294,6 +297,71 @@ class ClaudeCodeSetup extends BaseIdeSetup {
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
     console.log(
       chalk.dim(`    - SessionStart hooks: babysit-restore, welcome, archive, context-loader`)
+    );
+  }
+
+  /**
+   * Setup PostToolUse hooks for native Agent Teams observability.
+   * Registers native-team-observer.js for TeamCreate, SendMessage, ListTeams.
+   * @param {string} projectDir - Project directory
+   * @param {string} agileflowDir - AgileFlow installation directory
+   * @param {string} claudeDir - .claude directory path
+   * @param {Object} options - Setup options
+   */
+  async setupPostToolUseHooks(projectDir, agileflowDir, claudeDir, options = {}) {
+    const settingsPath = path.join(claudeDir, 'settings.json');
+    let settings = {};
+
+    if (fs.existsSync(settingsPath)) {
+      try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      } catch (e) {
+        settings = {};
+      }
+    }
+
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.PostToolUse) settings.hooks.PostToolUse = [];
+
+    const observerCommand = 'node $CLAUDE_PROJECT_DIR/.agileflow/scripts/native-team-observer.js';
+
+    const postToolUseHooks = [
+      {
+        matcher: 'TeamCreate',
+        hooks: [{ type: 'command', command: observerCommand, timeout: 5000 }],
+      },
+      {
+        matcher: 'SendMessage',
+        hooks: [{ type: 'command', command: observerCommand, timeout: 5000 }],
+      },
+      {
+        matcher: 'ListTeams',
+        hooks: [{ type: 'command', command: observerCommand, timeout: 5000 }],
+      },
+    ];
+
+    // Merge with existing hooks (don't duplicate)
+    for (const newHook of postToolUseHooks) {
+      const existingIdx = settings.hooks.PostToolUse.findIndex(h => h.matcher === newHook.matcher);
+      if (existingIdx === -1) {
+        settings.hooks.PostToolUse.push(newHook);
+      } else {
+        const existing = settings.hooks.PostToolUse[existingIdx];
+        if (!existing.hooks) existing.hooks = [];
+        const hasObserver = existing.hooks.some(
+          h => h.type === 'command' && h.command && h.command.includes('native-team-observer')
+        );
+        if (!hasObserver) {
+          existing.hooks.push(newHook.hooks[0]);
+        }
+      }
+    }
+
+    await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
+    console.log(
+      chalk.dim(
+        `    - PostToolUse hooks: native team observer (TeamCreate, SendMessage, ListTeams)`
+      )
     );
   }
 
