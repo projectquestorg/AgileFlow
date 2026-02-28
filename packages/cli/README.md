@@ -3,8 +3,8 @@
 </p>
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
-[![Commands](https://img.shields.io/badge/commands-99-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-91-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
+[![Commands](https://img.shields.io/badge/commands-124-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
+[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-111-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
 [![Skills](https://img.shields.io/badge/skills-dynamic-purple)](https://docs.agileflow.projectquestorg.com/docs/features/skills)
 
 **AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
@@ -54,8 +54,8 @@ Traditional project management tools create friction between planning and execut
 
 | Component | Count | Description |
 |-----------|-------|-------------|
-| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 99 | Slash commands for agile workflows |
-| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 91 | Specialized agents with self-improving knowledge bases |
+| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 124 | Slash commands for agile workflows |
+| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 111 | Specialized agents with self-improving knowledge bases |
 | [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Browse and install from skills.sh marketplace via `/agileflow:skill:recommend` |
 
 ---
@@ -66,7 +66,7 @@ Traditional project management tools create friction between planning and execut
 |---------|-------------|------|
 | Agent Expertise | Self-improving agents that maintain domain knowledge | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-expertise-system) |
 | Agent Teams | Multi-domain expert coordination with quality gates | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-teams) |
-| Skills System | Custom AI prompts that learn from your feedback | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/skills) |
+| Skills System | Browse and install skills from the skills.sh marketplace | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/skills) |
 | Parallel Sessions | Isolated workspaces with boundary protection | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/parallel-sessions) |
 | Loop Mode | Autonomous story execution until epic completion | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/loop-mode) |
 | AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/council) |

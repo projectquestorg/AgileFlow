@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-02-28
+
+### Added
+- Ads audit system, SEO analysis, ultradeep concurrency controls, and domain-first command naming
+
 ## [3.3.0] - 2026-02-24
 
 ### Added
