@@ -65,9 +65,9 @@ When Claude Code compresses context, it preserves these rules and state fields f
 ### Agent Priority Distribution
 
 - **Critical** (4 agents): mentor, api, ui, database
-- **High** (12 agents): ci, devops, testing, security, documentation, performance, codebase-query, orchestrator, team-coordinator, error-analyzer, code-reviewer, multi-expert
-- **Medium** (30 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, logic-analyzer-*, council-*, rlm-subcore, legal-analyzer-*, legal-consensus
-- **Low** (10 agents): epic-planner, api-validator, schema-validator, ui-validator, configuration-*
+- **High** (14 agents): ci, devops, testing, security, documentation, performance, codebase-query, orchestrator, team-coordinator, team-lead, error-analyzer, code-reviewer, multi-expert, browser-qa
+- **Medium** (27 agents): datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, rlm-subcore, council-*, *-consensus (9 consensus coordinators)
+- **Low** (66 agents): logic-analyzer-*, legal-analyzer-*, security-analyzer-*, perf-analyzer-*, test-analyzer-*, completeness-analyzer-*, seo-analyzer-*, ads-audit-*, brainstorm-analyzer-*, epic-planner, api-validator, schema-validator, ui-validator
 
 This tiered approach ensures the most critical agents always maintain focus while others gracefully degrade context when needed.
 

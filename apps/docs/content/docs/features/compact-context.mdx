@@ -38,15 +38,15 @@ compact_context:
 - `critical` (4 agents): Always preserved even in aggressive compaction
   - Mentor, API, UI, Database
   - Handle orchestration and core implementation
-- `high` (12 agents): Preserved in most compactions
-  - CI, DevOps, Testing, Security, Documentation, Performance, Codebase-Query, Orchestrator, Team-Coordinator, Error-Analyzer, Code-Reviewer, Multi-Expert
+- `high` (14 agents): Preserved in most compactions
+  - CI, DevOps, Testing, Security, Documentation, Performance, Codebase-Query, Orchestrator, Team-Coordinator, Team-Lead, Error-Analyzer, Code-Reviewer, Multi-Expert, Browser-QA
   - Run long-duration work with sustained focus
-- `medium` (30 agents): Preserved when possible
-  - Specialized agents (analytics, integrations, mobile, etc.) plus logic/legal/security/perf/test analyzers
+- `medium` (27 agents): Preserved when possible
+  - Standalone specialists (analytics, integrations, mobile, etc.) plus council and consensus coordinators
   - Handle domain-specific tasks
-- `low` (10 agents): First to be removed
-  - Validators, configuration agents, epic-planner
-  - Only included if room allows
+- `low` (66 agents): First to be removed
+  - Sub-analyzers (logic-*, legal-*, security-*, perf-*, test-*, completeness-*, seo-*, ads-*, brainstorm-*), validators, epic-planner
+  - Ephemeral audit pipeline agents, only included if room allows
 
 ### 2. Preserve Rules
 
@@ -223,9 +223,9 @@ state_fields:
 
 **ci, devops, security, documentation, performance** also use `priority: high` with domain-specific rules and state fields.
 
-### Medium Priority (30 agents)
+### Medium Priority (27 agents)
 
-Specialized agents for analytics, integrations, mobile, compliance, design, datamigration, qa, accessibility, monitoring, adr-writer, research, refactor, readme-updater.
+Standalone specialists (datamigration, qa, accessibility, monitoring, research, adr-writer, analytics, integrations, mobile, design, compliance, refactor, product, readme-updater, rlm-subcore), council agents, and consensus coordinators.
 
 All use `priority: medium` with domain-specific preserve rules and state fields.
 
