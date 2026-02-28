@@ -138,6 +138,8 @@
     "custom_colors": null,
     "auto_attach": true,
     "completion_timeout_minutes": 30,
-    "max_sessions_per_audit": 20
+    "max_sessions_per_audit": 20,
+    "stagger_seconds": 3,
+    "max_concurrent": 0
   }
 }

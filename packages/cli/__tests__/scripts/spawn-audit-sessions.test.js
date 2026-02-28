@@ -12,6 +12,10 @@ const {
   buildAnalyzerPrompt,
   collectResults,
   checkTmux,
+  parseArgs,
+  getUltradeepConfig,
+  pollWaveCompletion,
+  sleep,
 } = require('../../scripts/spawn-audit-sessions');
 
 describe('spawn-audit-sessions', () => {
@@ -150,6 +154,173 @@ describe('spawn-audit-sessions', () => {
       expect(result).toHaveProperty('inSession');
       expect(typeof result.available).toBe('boolean');
       expect(typeof result.inSession).toBe('boolean');
+    });
+  });
+
+  describe('parseArgs - stagger and concurrency flags', () => {
+    const originalArgv = process.argv;
+
+    afterEach(() => {
+      process.argv = originalArgv;
+    });
+
+    it('parses --stagger=5 correctly', () => {
+      process.argv = ['node', 'script.js', '--audit=logic', '--stagger=5'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBe(5);
+    });
+
+    it('parses --stagger=0 correctly', () => {
+      process.argv = ['node', 'script.js', '--audit=logic', '--stagger=0'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBe(0);
+    });
+
+    it('parses --stagger=1.5 as float', () => {
+      process.argv = ['node', 'script.js', '--audit=logic', '--stagger=1.5'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBe(1.5);
+    });
+
+    it('returns null stagger for invalid value', () => {
+      process.argv = ['node', 'script.js', '--audit=logic', '--stagger=abc'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBeNull();
+    });
+
+    it('parses --concurrency=3 correctly', () => {
+      process.argv = ['node', 'script.js', '--audit=security', '--concurrency=3'];
+      const opts = parseArgs();
+      expect(opts.concurrency).toBe(3);
+    });
+
+    it('returns null concurrency for invalid value', () => {
+      process.argv = ['node', 'script.js', '--audit=security', '--concurrency=abc'];
+      const opts = parseArgs();
+      expect(opts.concurrency).toBeNull();
+    });
+
+    it('defaults stagger and concurrency to null', () => {
+      process.argv = ['node', 'script.js', '--audit=logic'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBeNull();
+      expect(opts.concurrency).toBeNull();
+    });
+
+    it('parses both flags together', () => {
+      process.argv = ['node', 'script.js', '--audit=logic', '--stagger=2', '--concurrency=4'];
+      const opts = parseArgs();
+      expect(opts.stagger).toBe(2);
+      expect(opts.concurrency).toBe(4);
+    });
+  });
+
+  describe('getUltradeepConfig', () => {
+    it('returns defaults when no metadata file exists', () => {
+      const originalCwd = process.cwd;
+      process.cwd = () => '/nonexistent/path';
+      try {
+        const config = getUltradeepConfig();
+        expect(config).toEqual({ stagger_seconds: 3, max_concurrent: 0 });
+      } finally {
+        process.cwd = originalCwd;
+      }
+    });
+
+    it('reads config from metadata file when available', () => {
+      const metaDir = path.join(tmpDir, 'docs', '00-meta');
+      fs.mkdirSync(metaDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(metaDir, 'agileflow-metadata.json'),
+        JSON.stringify({
+          ultradeep: { stagger_seconds: 5, max_concurrent: 3 },
+        })
+      );
+
+      const originalCwd = process.cwd;
+      process.cwd = () => tmpDir;
+      try {
+        const config = getUltradeepConfig();
+        expect(config.stagger_seconds).toBe(5);
+        expect(config.max_concurrent).toBe(3);
+      } finally {
+        process.cwd = originalCwd;
+      }
+    });
+
+    it('uses defaults for missing ultradeep keys', () => {
+      const metaDir = path.join(tmpDir, 'docs', '00-meta');
+      fs.mkdirSync(metaDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(metaDir, 'agileflow-metadata.json'),
+        JSON.stringify({
+          ultradeep: { tab_naming: 'prefix:name' },
+        })
+      );
+
+      const originalCwd = process.cwd;
+      process.cwd = () => tmpDir;
+      try {
+        const config = getUltradeepConfig();
+        expect(config.stagger_seconds).toBe(3);
+        expect(config.max_concurrent).toBe(0);
+      } finally {
+        process.cwd = originalCwd;
+      }
+    });
+  });
+
+  describe('writeStatusFile - stagger and concurrency fields', () => {
+    it('includes stagger_ms and max_concurrent in status', () => {
+      const dir = createSentinelDir(tmpDir, 'stagger-test');
+      const analyzers = [{ key: 'injection', subagent_type: 'x', label: 'Injection' }];
+
+      writeStatusFile(dir, 'security', analyzers, 3000, 4);
+
+      const status = JSON.parse(fs.readFileSync(path.join(dir, '_status.json'), 'utf8'));
+      expect(status.stagger_ms).toBe(3000);
+      expect(status.max_concurrent).toBe(4);
+    });
+
+    it('writes null for stagger_ms and max_concurrent when not provided', () => {
+      const dir = createSentinelDir(tmpDir, 'no-stagger-test');
+      const analyzers = [{ key: 'auth', subagent_type: 'x', label: 'Auth' }];
+
+      writeStatusFile(dir, 'security', analyzers);
+
+      const status = JSON.parse(fs.readFileSync(path.join(dir, '_status.json'), 'utf8'));
+      expect(status.stagger_ms).toBeNull();
+      expect(status.max_concurrent).toBeNull();
+    });
+  });
+
+  describe('pollWaveCompletion', () => {
+    it('resolves true when all findings files exist', async () => {
+      const dir = createSentinelDir(tmpDir, 'wave-done');
+      fs.writeFileSync(path.join(dir, 'a.findings.json'), '{}');
+      fs.writeFileSync(path.join(dir, 'b.findings.json'), '{}');
+
+      const result = await pollWaveCompletion(dir, ['a', 'b'], 1);
+      expect(result).toBe(true);
+    });
+
+    it('resolves false on timeout when files are missing', async () => {
+      const dir = createSentinelDir(tmpDir, 'wave-timeout');
+      // Only create one of two expected files
+      fs.writeFileSync(path.join(dir, 'a.findings.json'), '{}');
+
+      // Use a very short timeout (0.001 minutes = 60ms) to avoid long test
+      const result = await pollWaveCompletion(dir, ['a', 'b'], 0.001);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('sleep', () => {
+    it('resolves after the specified delay', async () => {
+      const start = Date.now();
+      await sleep(50);
+      const elapsed = Date.now() - start;
+      expect(elapsed).toBeGreaterThanOrEqual(40);
     });
   });
 });
