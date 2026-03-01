@@ -352,12 +352,26 @@ Parse the input arguments:
 
 **If `DEPTH=ultradeep`**, use tmux-based session spawning instead of in-process Task calls:
 
-1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL --dry-run`
+1. Show cost estimate:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL --dry-run
+   ```
 2. Confirm with user before launching
-3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL`
-4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
-5. Collect all findings from sentinel files and proceed to STEP 4 (Synthesis)
-6. If tmux unavailable, fall back to `DEPTH=deep` with warning
+3. Spawn sessions (use `--json` to capture trace ID):
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL --json
+   ```
+   Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
+4. Wait for all analyzers to complete:
+   ```bash
+   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   ```
+   - Exit 0 = all complete (JSON results on stdout)
+   - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
+   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+5. Parse `results` array from the JSON output and proceed to STEP 4 (Synthesis).
+6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
 
 **FOCUS_KEYS mapping from SCOPE**:
 
@@ -480,12 +494,15 @@ node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focu
 node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus
 ```
 
-Each expert gets its own Claude Code tmux session with full context window. Sentinel files are written to `docs/09-agents/ultradeep/{trace_id}/`. Monitor with:
+Each expert gets its own Claude Code tmux session with full context window. Use the monitor script to track progress:
 
 ```bash
 # Check completion status
-ls docs/09-agents/ultradeep/{trace_id}/
-cat docs/09-agents/ultradeep/{trace_id}/_status.json
+node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID
+# Wait for all to complete (blocks until done or timeout)
+node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+# Collect whatever results are ready
+node .agileflow/scripts/lib/tmux-audit-monitor.js collect TRACE_ID
 ```
 
 **For SCOPE-filtered ultradeep** (e.g., SCOPE=security):

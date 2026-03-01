@@ -70,6 +70,7 @@ function parseArgs() {
     traceId: null,
     timeout: 30,
     dryRun: false,
+    json: false,
     stagger: null,
     concurrency: null,
   };
@@ -90,6 +91,7 @@ function parseArgs() {
       const parsed = parseInt(arg.split('=')[1], 10);
       options.concurrency = isNaN(parsed) ? null : parsed;
     } else if (arg === '--dry-run') options.dryRun = true;
+    else if (arg === '--json') options.json = true;
   }
 
   if (!options.traceId) {
@@ -133,7 +135,7 @@ function createSentinelDir(rootDir, traceId) {
  * @param {number} [staggerMs] - Stagger delay in milliseconds
  * @param {number} [maxConcurrent] - Max concurrent sessions (0 = unlimited)
  */
-function writeStatusFile(sentinelDir, auditType, analyzers, staggerMs, maxConcurrent) {
+function writeStatusFile(sentinelDir, auditType, analyzers, staggerMs, maxConcurrent, extra) {
   const status = {
     started_at: new Date().toISOString(),
     audit_type: auditType,
@@ -143,6 +145,12 @@ function writeStatusFile(sentinelDir, auditType, analyzers, staggerMs, maxConcur
     stagger_ms: staggerMs != null ? staggerMs : null,
     max_concurrent: maxConcurrent || null,
   };
+  // Store extra fields for retry support
+  if (extra) {
+    if (extra.target != null) status.target = extra.target;
+    if (extra.model != null) status.model = extra.model;
+    if (extra.timeout_minutes != null) status.timeout_minutes = extra.timeout_minutes;
+  }
   fs.writeFileSync(path.join(sentinelDir, '_status.json'), JSON.stringify(status, null, 2) + '\n');
 }
 
@@ -315,24 +323,31 @@ async function spawnAuditInTmux(options) {
     ((options.stagger != null ? options.stagger : config.stagger_seconds) || 0) * 1000;
   const maxConcurrent = options.concurrency != null ? options.concurrency : config.max_concurrent;
 
-  writeStatusFile(sentinelDir, options.audit, result.analyzers, staggerMs, maxConcurrent);
+  writeStatusFile(sentinelDir, options.audit, result.analyzers, staggerMs, maxConcurrent, {
+    target: options.target,
+    model: options.model,
+    timeout_minutes: options.timeout,
+  });
 
   const groupColor = getColorForAudit(options.audit);
   const sessions = [];
 
+  // Use stderr for human output when --json mode is active
+  const log = options.json ? console.error : console.log;
+
   if (options.dryRun) {
-    console.log(`\nDry run - would spawn ${result.analyzers.length} sessions:`);
-    console.log(`  Stagger: ${staggerMs / 1000}s between launches`);
+    log(`\nDry run - would spawn ${result.analyzers.length} sessions:`);
+    log(`  Stagger: ${staggerMs / 1000}s between launches`);
     if (maxConcurrent > 0) {
       const waveCount = Math.ceil(result.analyzers.length / maxConcurrent);
-      console.log(`  Concurrency: ${maxConcurrent}/wave (${waveCount} waves)`);
+      log(`  Concurrency: ${maxConcurrent}/wave (${waveCount} waves)`);
     }
     for (const analyzer of result.analyzers) {
       const model = resolveModel(options.model, 'haiku');
-      console.log(`  ${auditType.prefix}:${analyzer.key} (${model}) → ${analyzer.label}`);
+      log(`  ${auditType.prefix}:${analyzer.key} (${model}) → ${analyzer.label}`);
     }
-    console.log(`\nSentinel dir: ${sentinelDir}`);
-    console.log(`Group color: ${groupColor}`);
+    log(`\nSentinel dir: ${sentinelDir}`);
+    log(`Group color: ${groupColor}`);
     return { ok: true, traceId: options.traceId, sentinelDir, sessions: [], dryRun: true };
   }
 
@@ -400,9 +415,9 @@ async function spawnAuditInTmux(options) {
     // Non-critical styling failure — audit session still works with default theme
   }
 
-  console.log(`\nSpawned ${sessions.length} analyzer sessions in tmux session: ${sessionName}`);
-  console.log(`Sentinel dir: ${sentinelDir}`);
-  console.log(`Attach with: tmux attach -t ${sessionName}`);
+  log(`\nSpawned ${sessions.length} analyzer sessions in tmux session: ${sessionName}`);
+  log(`Sentinel dir: ${sentinelDir}`);
+  log(`Attach with: tmux attach -t ${sessionName}`);
 
   return { ok: true, traceId: options.traceId, sentinelDir, sessions, sessionName };
 }
@@ -490,18 +505,21 @@ function collectResults(sentinelDir, expected) {
  * @param {string} auditType - Audit type key
  * @param {number} analyzerCount - Number of analyzers to spawn
  * @param {string} [model] - Explicit model override
+ * @param {object} [opts] - Options
+ * @param {boolean} [opts.json] - If true, route output to stderr to keep stdout clean for JSON
  */
-function showCostEstimate(auditType, analyzerCount, model) {
+function showCostEstimate(auditType, analyzerCount, model, opts) {
   const resolved = resolveModel(model, 'haiku');
   const estimate = estimateCost(resolved, analyzerCount);
+  const log = opts && opts.json ? console.error : console.log;
 
-  console.log(`\nCost estimate for ULTRADEEP ${auditType} audit:`);
-  console.log(`  Model: ${estimate.model}`);
-  console.log(`  Analyzers: ${analyzerCount}`);
-  console.log(`  Cost multiplier vs haiku: ${estimate.multiplier}x`);
-  console.log(`  Per-analyzer estimate: ${estimate.perAnalyzerCost}`);
-  console.log(`  Total estimate: ${estimate.totalEstimate}`);
-  console.log(`  Each analyzer runs as a full Claude Code session`);
+  log(`\nCost estimate for ULTRADEEP ${auditType} audit:`);
+  log(`  Model: ${estimate.model}`);
+  log(`  Analyzers: ${analyzerCount}`);
+  log(`  Cost multiplier vs haiku: ${estimate.multiplier}x`);
+  log(`  Per-analyzer estimate: ${estimate.perAnalyzerCost}`);
+  log(`  Total estimate: ${estimate.totalEstimate}`);
+  log(`  Each analyzer runs as a full Claude Code session`);
 }
 
 // Main
@@ -519,10 +537,26 @@ if (require.main === module) {
 
     const result = getAnalyzersForAudit(options.audit, 'ultradeep', options.focus);
     if (result) {
-      showCostEstimate(options.audit, result.analyzers.length, options.model);
+      showCostEstimate(options.audit, result.analyzers.length, options.model, {
+        json: options.json,
+      });
     }
 
     const spawnResult = await spawnAuditInTmux(options);
+
+    if (options.json) {
+      const jsonOut = {
+        ok: spawnResult.ok,
+        traceId: spawnResult.traceId,
+        sentinelDir: spawnResult.sentinelDir,
+        sessionName: spawnResult.sessionName || null,
+        sessions: spawnResult.sessions,
+        dryRun: spawnResult.dryRun || false,
+        fallback: spawnResult.fallback || null,
+      };
+      console.log(JSON.stringify(jsonOut));
+    }
+
     if (!spawnResult.ok && spawnResult.fallback) {
       process.exit(2); // Signal fallback to caller
     }

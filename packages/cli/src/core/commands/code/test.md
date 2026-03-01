@@ -111,12 +111,26 @@ FOCUS = all (default) or comma-separated list
 - `ultradeep`: Spawn each analyzer as a separate Claude Code session in tmux. Requires tmux. Uses model profiles from metadata. Falls back to `deep` if tmux unavailable.
 
 **ULTRADEEP mode** (DEPTH=ultradeep):
-1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=test --target=TARGET --focus=FOCUS --model=MODEL --dry-run`
+1. Show cost estimate:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=test --target=TARGET --focus=FOCUS --model=MODEL --dry-run
+   ```
 2. Confirm with user before launching
-3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=test --target=TARGET --focus=FOCUS --model=MODEL`
-4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
-5. Collect all findings and run consensus coordinator (same as deep mode)
-6. If tmux unavailable, fall back to `DEPTH=deep` with warning
+3. Spawn sessions (use `--json` to capture trace ID):
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=test --target=TARGET --focus=FOCUS --model=MODEL --json
+   ```
+   Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
+4. Wait for all analyzers to complete:
+   ```bash
+   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   ```
+   - Exit 0 = all complete (JSON results on stdout)
+   - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
+   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator (same as deep mode).
+6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
 
 ### STEP 2: Deploy Analyzers in Parallel
 
