@@ -1,0 +1,308 @@
+---
+title: /seo:imagens
+description: Análise de otimização de imagem – qualidade de texto alternativo, dimensionamento para CLS, detecção de formato WebP/AVIF, carregamento lento e imagens responsivas
+---
+
+# /seo:imagens
+
+Analise a otimização de imagens em uma página: qualidade de texto alternativo, dimensionamento explícito para prevenção de CLS, formatos modernos (WebP/AVIF), carregamento lento, prioridade de imagem LCP e imagens responsivas.
+
+## Início rápido
+
+```bash
+/agileflow:seo:images https://example.com                    # Image audit for homepage
+/agileflow:seo:images https://example.com/products/item       # Product page images
+```
+
+## Parâmetros
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<URL>` | Yes | Page to analyze |
+
+## O que é verificado
+
+| Aspect | Weight | Impact |
+|--------|--------|--------|
+| Alt text quality | 30% | Accessibility + image search rankings |
+| Image sizing (CLS) | 20% | Core Web Vitals - layout stability |
+| Modern formats | 15% | Page speed + LCP |
+| Lazy loading | 15% | Page speed |
+| LCP optimization | 10% | Core Web Vitals - largest paint |
+| Responsive images | 10% | Mobile performance |
+
+## Pontuação de texto alternativo
+
+| Quality | Criteria | Score Impact |
+|---------|----------|------------|
+| **Good** | Descriptive, 10-125 chars, contextual keyword | +points |
+| **Acceptable** | Present but generic ("image", "photo") | Neutral |
+| **Poor** | Filename-based ("IMG_001.jpg", "screenshot") | -2 points |
+| **Missing** | No alt attribute at all | -3 points (HIGH severity) |
+| **Decorative** | Empty alt="" on decorative images | Correct (no deduction) |
+| **Keyword-stuffed** | Excessive keywords crammed in | -2 points |
+
+## Diretrizes de texto alternativo
+
+Bom texto alternativo:
+- Descreve o que a imagem mostra
+- 10-125 caracteres recomendados
+- Inclui palavras-chave relevantes naturalmente
+- Não diz "imagem de" ou "imagem de"
+- Para imagens decorativas, use `alt=""`
+
+Exemplo de bom texto alternativo:
+- "Mulher profissional digitando no laptop na mesa de escritório moderna"
+- "Captura de tela do painel do Google Search Console mostrando métricas de tráfego"
+- "Foto do produto: Fones de ouvido sem fio azuis com cancelamento de ruído"
+
+Exemplo de texto alternativo ruim:
+- "IMG_001.jpg" ❌
+- "imagem" ❌
+- "foto de coisas" ❌
+- "blue-headphones-wireless-noise-cancelling-buy-now" (recheio de palavras-chave) ❌
+
+## Recomendações de formato de imagem
+
+| Format | Use When | Not When |
+|--------|----------|----------|
+| WebP | Modern format, wide support | Supporting very old browsers |
+| AVIF | Best compression, growing support | Older browser support needed |
+| JPEG | Photos, realistic images | Transparency needed |
+| PNG | Transparency needed | Photos (use JPEG) |
+| GIF | Animations | Use MP4 video instead |
+| SVG | Icons, illustrations, logos | Photos |
+| BMP/TIFF | Never | Never |
+
+## Imagens responsivas
+
+Para uma entrega ideal em dispositivos móveis e desktop:
+
+```html
+<!-- Good: Responsive with srcset and sizes -->
+<img
+  src="image-800.jpg"
+  srcset="image-400.jpg 400w, image-800.jpg 800w, image-1200.jpg 1200w"
+  sizes="(max-width: 600px) 400px, (max-width: 900px) 800px, 1200px"
+  width="800"
+  height="600"
+  alt="Descriptive alt text"
+  loading="lazy"
+>
+
+<!-- Better: Format alternatives with <picture> -->
+<picture>
+  <source type="image/avif" srcset="image.avif">
+  <source type="image/webp" srcset="image.webp">
+  <img src="image.jpg" alt="Descriptive alt text" width="800" height="600">
+</picture>
+```
+
+## Otimização de imagem LCP
+
+Para o seu herói/imagem maior:
+
+```html
+<!-- Good: LCP image gets priority -->
+<img
+  src="hero.jpg"
+  alt="Hero section describing main benefit"
+  width="1200"
+  height="600"
+  fetchpriority="high"
+  loading="eager"
+/>
+
+<!-- With preload for extra speed -->
+<link rel="preload" as="image" href="hero.jpg">
+<img src="hero.jpg" alt="..." width="1200" height="600">
+```
+
+## Exemplo de saída
+
+```markdown
+# Image Optimization Report: https://example.com
+
+## Images Found: 12
+
+### Summary
+
+| Metric | Count | Status |
+|--------|-------|--------|
+| Total images | 12 | |
+| Missing alt text | 2 | High severity |
+| Poor alt text | 1 | Medium |
+| Missing width/height | 3 | High severity (CLS risk) |
+| Legacy format only | 7 | Medium |
+| Missing lazy loading | 4 | Medium |
+| No LCP priority | 1 | High severity |
+
+**Image Optimization Score: 68/100 (Needs Work)**
+
+---
+
+## Critical Issues
+
+### 1. Missing alt text on hero image
+- Image: `/img/hero.jpg`
+- Position: Above-fold
+- Severity: CRITICAL
+- Fix: Add alt="Main benefit statement"
+
+### 2. Three images missing width/height
+- Risk: Cumulative Layout Shift (CLS)
+- Severity: HIGH
+- Fix: Add width and height attributes
+
+### 3. Hero image missing fetchpriority
+- Impact: Slower Largest Contentful Paint (LCP)
+- Severity: HIGH
+- Fix: Add fetchpriority="high"
+
+---
+
+## High Priority
+
+### 4. All product images legacy format only
+- Current: All JPEG
+- Better: Offer WebP/AVIF
+- Impact: 30-40% smaller file size
+- Fix: Generate WebP versions and use `<picture>` element
+
+### 5. Below-fold images not lazy loading
+- Images: /img/testimonial-1.jpg, /img/testimonial-2.jpg
+- Impact: Delays page load
+- Fix: Add loading="lazy" to `<img>` tags
+
+---
+
+## Medium Priority
+
+### 6. Alt text on product image generic
+- Current: "product"
+- Better: "Blue wireless headphones with noise canceling - side view"
+- Impact: Image search visibility
+- Fix: Improve alt text
+
+---
+
+## Image-by-Image Audit
+
+| Image | Alt Text | Size | Format | Lazy | LCP | Issues |
+|-------|----------|------|--------|------|-----|--------|
+| hero.jpg | Missing | Y | JPEG | N | Yes | 2 issues |
+| product-1.jpg | Generic | Y | JPEG | N | N | Format |
+| product-2.jpg | Good | Missing | JPEG | Y | N | Size + Format |
+| testimonial-1.jpg | Good | Y | JPEG | Missing | N | Format |
+| testimonial-2.jpg | Good | Y | JPEG | Missing | N | Format |
+| icon-1.svg | N/A | Y | SVG | N | N | OK |
+| icon-2.svg | N/A | Y | SVG | N | N | OK |
+
+---
+
+## Remediation Examples
+
+### Fix Missing Alt Text
+```html
+<!-- Antes -->
+<img src="hero.jpg">
+
+<!-- Depois -->
+<img src="hero.jpg" alt="Team collaborating on project strategy in modern office">
+```
+
+### Fix Missing Width/Height
+```html
+<!-- Antes (risco CLS) -->
+<img src="photo.jpg" alt="...">
+
+<!-- Depois (evita mudança) -->
+<img src="photo.jpg" alt="..." width="800" height="600">
+```
+
+### Add Lazy Loading
+```html
+<!-- Antes -->
+<img src="below-fold.jpg" alt="...">
+
+<!-- Depois -->
+<img src="below-fold.jpg" alt="..." loading="lazy">
+```
+
+### Add Format Alternatives
+```html
+<!-- Antes -->
+<img src="image.jpg" alt="..." width="800" height="600">
+
+<!-- Depois (40% menor em navegadores modernos) -->
+<picture>
+  <source type="image/webp" srcset="image.webp">
+  <img src="image.jpg" alt="..." width="800" height="600">
+</picture>
+```
+
+### Add LCP Priority
+```html
+<!-- Antes -->
+<img src="hero.jpg" alt="..." width="1200" height="600">
+
+<!-- Depois (pintura mais rápida) -->
+<img src="hero.jpg" alt="..." width="1200" height="600" fetchpriority="high">
+```
+
+---
+
+## Quick Wins (< 1 hour)
+
+1. Add missing alt text to hero image (5 min)
+2. Add width/height to 3 unsized images (10 min)
+3. Add loading="lazy" to 4 below-fold images (10 min)
+4. Add fetchpriority="high" to hero (2 min)
+5. Improve generic "product" alt texts (15 min)
+
+---
+
+## Longer Term (1-2 hours)
+
+1. Generate WebP versions of all JPEG images
+2. Create responsive `<picture>` elements with multiple sizes
+3. Add srcset and sizes attributes
+4. Add preload link for LCP image
+5. Generate AVIF versions for cutting-edge browsers
+
+---
+
+## Tools for Image Optimization
+
+- **Image Compression**: TinyPNG, ImageOptim, Squoosh
+- **Format Conversion**: FFmpeg, ImageMagick, Squoosh
+- **Testing**: Google PageSpeed Insights, WebPageTest
+- **Monitoring**: Core Web Vitals in Search Console
+```
+
+## Impacto no desempenho
+
+A otimização de imagens pode melhorar:
+- **Core Web Vitals**
+  - LCP: entrega mais rápida de imagens hero
+  - CLS: Impede a mudança de layout de imagens não dimensionadas
+- **Page Speed**: Carregamento 20-40% mais rápido com formatos modernos
+- **User Experience**: Carregamento de página mais rápido, melhor desempenho percebido
+- **SEO**: Melhor pontuação do Core Web Vitals → potencial aumento de classificação
+
+## Resumo das melhores práticas
+
+1. **Always include alt text** - Acessibilidade + pesquisa de imagens
+2. **Always include width/height** - Impede mudança de layout (CLS)
+3. **Use modern formats** - WebP para 30% menor, AVIF para 50%+
+4. **Lazy load below-fold** - `loading="lazy"` adia imagens não críticas
+5. **Prioritize LCP image** - `fetchpriority="high"` no herói
+6. **Make responsive** - `srcset` e `sizes` para tamanhos apropriados ao dispositivo
+7. **Test before publish** - Use o PageSpeed ​​​​Insights para verificar melhorias
+
+## Comandos Relacionados
+
+- [`/seo:página`](/commands/seo-page) - As imagens são uma dimensão da análise da página
+- [`/seo:auditoria`](/commands/seo-audit) - As imagens representam 15% da auditoria completa
+- [`/seo:técnico`](/commands/seo-technical) - Core Web Vitals e CLS
+- [`/seo`](/commands/seo) - Visão geral do kit de ferramentas de SEO
