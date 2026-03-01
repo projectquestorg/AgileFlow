@@ -41,6 +41,7 @@ SHOW_HELP=false
 ATTACH_ONLY=false
 FORCE_NEW=false
 REFRESH_CONFIG=false
+CONFIGURE_SESSION=""
 USE_RESUME=false
 RESUME_SESSION_ID=""
 
@@ -72,6 +73,10 @@ for arg in "$@"; do
       ;;
     --refresh)
       REFRESH_CONFIG=true
+      shift
+      ;;
+    --configure-session=*)
+      CONFIGURE_SESSION="${arg#*=}"
       shift
       ;;
     --help|-h)
@@ -128,7 +133,6 @@ FREEZE RECOVERY:
   Alt+R            Respawn pane (fresh shell)
 
 OTHER:
-  Alt+b            Scroll mode (browse history)
   Alt+h            Show keybind help panel
 EOF
   exit 0
@@ -347,40 +351,6 @@ configure_tmux_session() {
   # Alt+z to zoom/unzoom pane (fullscreen toggle)
   tmux bind-key -n M-z resize-pane -Z
 
-  # Alt+b to enter copy mode (for scrolling / browsing history)
-  # NOTE: Do NOT use Alt+[ here — \e[ is the CSI prefix for arrow keys and
-  # function keys. Binding M-[ in the root table causes accidental copy-mode
-  # entry whenever an escape sequence is split by network latency, making the
-  # terminal appear to "lose focus" until Escape is pressed.
-  tmux bind-key -n M-b copy-mode
-
-  # Disable ALL command-prompt bindings in copy mode — they open a text input
-  # in the status bar which intercepts keystrokes and confuses the workflow.
-  # Navigation (arrows, scroll, mouse, PgUp/PgDn) and exit (q/Escape) still work.
-  #
-  # Emacs copy-mode: goto-line, search, jump-to-char, repeat-count
-  tmux unbind-key -T copy-mode g
-  tmux unbind-key -T copy-mode C-r
-  tmux unbind-key -T copy-mode C-s
-  tmux unbind-key -T copy-mode f
-  tmux unbind-key -T copy-mode F
-  tmux unbind-key -T copy-mode t
-  tmux unbind-key -T copy-mode T
-  for i in 1 2 3 4 5 6 7 8 9; do
-    tmux unbind-key -T copy-mode "M-$i"
-  done
-  # Vi copy-mode: goto-line, search, jump-to-char, repeat-count
-  tmux unbind-key -T copy-mode-vi :
-  tmux unbind-key -T copy-mode-vi /
-  tmux unbind-key -T copy-mode-vi ?
-  tmux unbind-key -T copy-mode-vi f
-  tmux unbind-key -T copy-mode-vi F
-  tmux unbind-key -T copy-mode-vi t
-  tmux unbind-key -T copy-mode-vi T
-  for i in 1 2 3 4 5 6 7 8 9; do
-    tmux unbind-key -T copy-mode-vi "$i"
-  done
-
   # ─── Session Creation Keybindings ──────────────────────────────────────────
   # Alt+s to create a new Claude window (starts fresh, future re-runs in same pane resume)
   # Window gets sequential name (claude-2, claude-3, ...) so windows are distinguishable
@@ -438,12 +408,18 @@ configure_tmux_session() {
     printf '  Alt+R      Respawn pane (fresh)\\n';\
     printf '\\n';\
     printf '  \\033[1;38;5;208mOTHER\\033[0m\\n';\
-    printf '  Alt+b      Scroll mode\\n';\
     printf '  Alt+k      Unfreeze (Ctrl+C x2)\\n';\
     printf '  Alt+h      This help\\n';\
     printf '\\n';\
     read -n 1 -s -r -p '  Press any key to close'"
 }
+
+# Handle --configure-session flag — apply theme to a specific session and exit
+# Used by spawn-audit-sessions.js to give audit sessions the same status bar
+if [ -n "$CONFIGURE_SESSION" ]; then
+  configure_tmux_session "$CONFIGURE_SESSION"
+  exit 0
+fi
 
 # Handle --refresh flag — re-apply config to all existing claude-* sessions
 if [ "$REFRESH_CONFIG" = true ]; then
