@@ -1,6 +1,6 @@
 ---
 description: Multi-agent feature brainstorming audit - analyzes your app and suggests new features, UX improvements, integrations, and growth opportunities
-argument-hint: "[file|directory] [DEPTH=quick|deep] [FOCUS=features|ux|market|growth|integration|all]"
+argument-hint: "[file|directory] [DEPTH=quick|deep|ultradeep] [FOCUS=features|ux|market|growth|integration|all] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: high
   preserve_rules:
@@ -9,12 +9,13 @@ compact_context:
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Value scale: HIGH_VALUE > MEDIUM_VALUE > NICE_TO_HAVE > SPECULATIVE"
     - "CRITICAL: Confidence scoring: CONFIRMED (2+ agree), LIKELY (1 with evidence), SPECULATIVE (1 weak)"
-    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep), FOCUS (features|ux|market|growth|integration|all)"
+    - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep/ultradeep), FOCUS (features|ux|market|growth|integration|all), MODEL (haiku/sonnet/opus)"
     - "Pass consensus all analyzer outputs, let it synthesize the final report"
   state_fields:
     - target_path
     - depth
     - focus_areas
+    - model
     - analyzers_deployed
     - findings_collected
 ---
@@ -35,6 +36,9 @@ Deploy multiple specialized brainstorm analyzers in parallel to find missing fea
 /agileflow:ideate:features src/ FOCUS=features,ux                # Focus on feature gaps and UX
 /agileflow:ideate:features . DEPTH=deep FOCUS=all                # Comprehensive brainstorm
 /agileflow:ideate:features components/ FOCUS=ux                  # UX-only audit of components
+/agileflow:ideate:features . DEPTH=ultradeep                     # Each analyzer in its own tmux session
+/agileflow:ideate:features src/ MODEL=sonnet                     # Use Sonnet for all analyzers
+/agileflow:ideate:features . DEPTH=ultradeep MODEL=opus          # Ultradeep with Opus
 ```
 
 ---
@@ -76,8 +80,9 @@ Deploy multiple specialized brainstorm analyzers in parallel to find missing fea
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | TARGET | file/directory | `.` | What to analyze |
-| DEPTH | quick, deep | quick | quick = core 3 analyzers, deep = all 5 |
+| DEPTH | quick, deep, ultradeep | quick | quick = core 3, deep = all 5, ultradeep = separate tmux sessions |
 | FOCUS | features,ux,market,growth,integration,all | all | Which analyzers to deploy |
+| MODEL | haiku, sonnet, opus | haiku | Model for analyzer subagents. Passed to Task calls or tmux sessions. |
 
 ---
 
@@ -118,10 +123,28 @@ FOCUS = all (default) or comma-separated list
 **DEPTH behavior**:
 - `quick` (default): Deploy core 3 analyzers (features, ux, market). Focus on HIGH_VALUE and MEDIUM_VALUE ideas only.
 - `deep`: Deploy all 5 analyzers. Include NICE_TO_HAVE and SPECULATIVE ideas.
+- `ultradeep`: Spawn each analyzer as a separate Claude Code session in tmux. Uses all 5 analyzers. Requires tmux. Falls back to `deep` if tmux unavailable.
+
+**MODEL** (default: haiku):
+- `haiku`: Fast and cost-effective.
+- `sonnet`: Balanced quality and speed.
+- `opus`: Maximum quality. Recommended for ultradeep.
+
+**ULTRADEEP mode** (DEPTH=ultradeep):
+1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=brainstorm --target=TARGET --focus=FOCUS --model=MODEL --dry-run`
+2. Confirm with user before launching
+3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=brainstorm --target=TARGET --focus=FOCUS --model=MODEL`
+4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
+5. Collect all findings and run consensus coordinator (same as deep mode)
+6. If tmux unavailable, fall back to `DEPTH=deep` with warning
+
+> **Skip to STEP 4** after ultradeep collection. Steps 2-3 are only for quick/deep modes.
 
 ### STEP 2: Deploy Analyzers in Parallel
 
-**CRITICAL**: Deploy ALL selected analyzers in a SINGLE message with multiple Task calls.
+**For quick/deep modes only** (ultradeep uses tmux sessions above).
+
+**CRITICAL**: Deploy ALL selected analyzers in a SINGLE message with multiple Task calls. **If MODEL is specified**, pass it to each Task call via the `model` parameter.
 
 **Prompt template for each analyzer**:
 
@@ -362,6 +385,7 @@ Running consensus...
 /agileflow:ideate:features app/                           # Quick scan (core 3 analyzers)
 /agileflow:ideate:features . DEPTH=deep                   # All 5 analyzers
 /agileflow:ideate:features src/ FOCUS=features,ux         # Specific areas
+/agileflow:ideate:features . DEPTH=ultradeep MODEL=opus   # Ultradeep with Opus in tmux
 ```
 
 **What It Does**: Deploy brainstorm analyzers in parallel -> Each finds different feature opportunities -> Consensus coordinator deduplicates, filters by app type, prioritizes -> Actionable Feature Brainstorm Report

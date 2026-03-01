@@ -1,6 +1,6 @@
 ---
 description: Run structured discovery workflow - brainstorm, research, and generate a Product Brief
-argument-hint: "TOPIC=<text> [DEPTH=quick|guided|deep]"
+argument-hint: "TOPIC=<text> [DEPTH=quick|guided|deep] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -10,11 +10,12 @@ compact_context:
     - "Phase 2: Research via /agileflow:research:ask (optional in quick mode)"
     - "Phase 3: Generate Product Brief via /agileflow:ideate:brief"
     - "Output: docs/08-project/briefs/{date}-{topic-slug}-brief.md"
-    - "MUST parse TOPIC (required) and DEPTH (default: guided)"
+    - "MUST parse TOPIC (required), DEPTH (default: guided), and MODEL (default: haiku, passed to ideate:new)"
     - "After brief generation, offer: create epic, refine brief, or done"
   state_fields:
     - topic
     - depth
+    - model
     - brainstorm_complete
     - research_complete
     - brief_generated
@@ -57,6 +58,7 @@ node .agileflow/scripts/obtain-context.js ideate:discover
 /agileflow:ideate:discover TOPIC="Mobile time tracking app"
 /agileflow:ideate:discover TOPIC="AI code review tool" DEPTH=deep
 /agileflow:ideate:discover TOPIC="Internal dashboard" DEPTH=quick
+/agileflow:ideate:discover TOPIC="Enterprise CRM" MODEL=opus
 ```
 
 **Phases**:
@@ -142,6 +144,7 @@ Parse the user's input:
 |----------|----------|---------|-------------|
 | TOPIC | Yes | - | The product/feature idea to explore |
 | DEPTH | No | guided | Discovery depth: quick, guided, or deep |
+| MODEL | No | haiku | Model for expert subagents (haiku, sonnet, opus). Passed through to ideate:new brainstorm phase. |
 
 **If TOPIC is missing**, ask the user:
 
@@ -191,7 +194,7 @@ From your {DOMAIN} perspective, generate 3-5 ideas covering:
 Be specific and actionable. Reference real-world examples where helpful.
 ```
 
-Deploy all experts with `run_in_background: true`, then collect results with TaskOutput.
+Deploy all experts with `run_in_background: true`, then collect results with TaskOutput. **If MODEL is specified**, pass it to each Task call via the `model` parameter.
 
 #### Guided Mode
 Same as Quick, but after collecting results:
@@ -343,6 +346,7 @@ Present the completed brief and ask what to do next:
 |----------|--------|---------|-------------|
 | TOPIC | Free text | (required) | The product/feature idea to explore |
 | DEPTH | quick, guided, deep | guided | Discovery depth level |
+| MODEL | haiku, sonnet, opus | haiku | Model for expert subagents. Passed to brainstorm phase Task calls. |
 
 {{argument}}
 

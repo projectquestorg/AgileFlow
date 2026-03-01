@@ -12,15 +12,17 @@ const {
 
 describe('audit-registry', () => {
   describe('AUDIT_TYPES', () => {
-    it('defines all 6 audit types', () => {
+    it('defines all 8 audit types', () => {
       const keys = Object.keys(AUDIT_TYPES);
       expect(keys).toContain('logic');
       expect(keys).toContain('security');
       expect(keys).toContain('performance');
       expect(keys).toContain('test');
       expect(keys).toContain('completeness');
+      expect(keys).toContain('brainstorm');
+      expect(keys).toContain('ideate');
       expect(keys).toContain('legal');
-      expect(keys).toHaveLength(6);
+      expect(keys).toHaveLength(8);
     });
 
     it('each type has required fields', () => {
@@ -30,8 +32,11 @@ describe('audit-registry', () => {
         expect(type.color).toMatch(/^#[0-9a-f]{6}$/i);
         expect(type.command).toBeTruthy();
         expect(type.analyzers).toBeTruthy();
-        expect(type.consensus).toBeTruthy();
-        expect(type.consensus.subagent_type).toBeTruthy();
+        // ideate has no consensus coordinator (synthesis is done inline)
+        if (key !== 'ideate') {
+          expect(type.consensus).toBeTruthy();
+          expect(type.consensus.subagent_type).toBeTruthy();
+        }
         expect(Array.isArray(type.quick_analyzers)).toBe(true);
         expect(Array.isArray(type.deep_analyzers)).toBe(true);
       }
@@ -72,11 +77,13 @@ describe('audit-registry', () => {
   });
 
   describe('getAuditTypeKeys', () => {
-    it('returns all 6 type keys', () => {
+    it('returns all 8 type keys', () => {
       const keys = getAuditTypeKeys();
-      expect(keys).toHaveLength(6);
+      expect(keys).toHaveLength(8);
       expect(keys).toContain('logic');
       expect(keys).toContain('security');
+      expect(keys).toContain('brainstorm');
+      expect(keys).toContain('ideate');
     });
   });
 
@@ -163,8 +170,9 @@ describe('audit-registry', () => {
   });
 
   describe('agent name validation', () => {
-    it('all subagent_types follow naming convention', () => {
+    it('audit analyzer subagent_types follow naming convention', () => {
       for (const [typeKey, type] of Object.entries(AUDIT_TYPES)) {
+        if (typeKey === 'ideate') continue; // ideate uses agileflow-* domain experts
         for (const [key, analyzer] of Object.entries(type.analyzers)) {
           // Should match pattern: type-analyzer-name (allows alphanumeric in name)
           expect(analyzer.subagent_type).toMatch(/^[a-z]+-[a-z]+-[a-z0-9]+$/);
@@ -172,6 +180,65 @@ describe('audit-registry', () => {
         // Consensus should match pattern
         expect(type.consensus.subagent_type).toMatch(/^[a-z]+-consensus$/);
       }
+    });
+
+    it('ideate subagent_types follow agileflow-* convention', () => {
+      const ideate = AUDIT_TYPES.ideate;
+      for (const [key, analyzer] of Object.entries(ideate.analyzers)) {
+        expect(analyzer.subagent_type).toMatch(/^agileflow-[a-z]+$/);
+      }
+      // ideate has no consensus coordinator
+      expect(ideate.consensus).toBeNull();
+    });
+  });
+
+  describe('brainstorm audit type', () => {
+    it('has 3 quick and 5 deep analyzers', () => {
+      const counts = getAnalyzerCounts('brainstorm');
+      expect(counts.quick).toBe(3);
+      expect(counts.deep).toBe(5);
+      expect(counts.total).toBe(5);
+    });
+
+    it('returns correct analyzers for brainstorm', () => {
+      const result = getAnalyzersForAudit('brainstorm', 'quick');
+      expect(result.analyzers).toHaveLength(3);
+      expect(result.analyzers.map(a => a.key)).toContain('features');
+      expect(result.analyzers.map(a => a.key)).toContain('ux');
+      expect(result.analyzers.map(a => a.key)).toContain('market');
+    });
+
+    it('has brainstorm-consensus coordinator', () => {
+      const result = getAnalyzersForAudit('brainstorm', 'quick');
+      expect(result.consensus.subagent_type).toBe('brainstorm-consensus');
+    });
+  });
+
+  describe('ideate audit type', () => {
+    it('has 6 quick and 13 deep analyzers', () => {
+      const counts = getAnalyzerCounts('ideate');
+      expect(counts.quick).toBe(6);
+      expect(counts.deep).toBe(13);
+      expect(counts.total).toBe(13);
+    });
+
+    it('returns correct experts for ideation', () => {
+      const result = getAnalyzersForAudit('ideate', 'quick');
+      expect(result.analyzers).toHaveLength(6);
+      expect(result.analyzers.map(a => a.key)).toContain('security');
+      expect(result.analyzers.map(a => a.key)).toContain('performance');
+    });
+
+    it('ultradeep returns all 13 experts', () => {
+      const result = getAnalyzersForAudit('ideate', 'ultradeep');
+      expect(result.analyzers).toHaveLength(13);
+      expect(result.analyzers.map(a => a.key)).toContain('accessibility');
+      expect(result.analyzers.map(a => a.key)).toContain('documentation');
+    });
+
+    it('supports focus filtering', () => {
+      const result = getAnalyzersForAudit('ideate', 'deep', ['security', 'api', 'testing']);
+      expect(result.analyzers).toHaveLength(3);
     });
   });
 });

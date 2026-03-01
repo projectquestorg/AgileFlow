@@ -132,6 +132,62 @@ const AUDIT_TYPES = {
     deep_analyzers: ['handlers', 'routes', 'api', 'stubs', 'state', 'imports', 'conditional'],
   },
 
+  brainstorm: {
+    name: 'Feature Brainstorm',
+    prefix: 'Brain',
+    color: '#c0caf5', // lavender
+    command: 'ideate/features',
+    analyzers: {
+      features: { subagent_type: 'brainstorm-analyzer-features', label: 'Feature Gaps' },
+      ux: { subagent_type: 'brainstorm-analyzer-ux', label: 'UX Improvements' },
+      market: { subagent_type: 'brainstorm-analyzer-market', label: 'Market Features' },
+      growth: { subagent_type: 'brainstorm-analyzer-growth', label: 'Growth & Engagement' },
+      integration: { subagent_type: 'brainstorm-analyzer-integration', label: 'Integrations' },
+    },
+    consensus: { subagent_type: 'brainstorm-consensus', label: 'Brainstorm Consensus' },
+    quick_analyzers: ['features', 'ux', 'market'],
+    deep_analyzers: ['features', 'ux', 'market', 'growth', 'integration'],
+  },
+
+  ideate: {
+    name: 'Ideation',
+    prefix: 'Idea',
+    color: '#ff9e64', // orange
+    command: 'ideate/new',
+    analyzers: {
+      security: { subagent_type: 'agileflow-security', label: 'Security' },
+      performance: { subagent_type: 'agileflow-performance', label: 'Performance' },
+      refactor: { subagent_type: 'agileflow-refactor', label: 'Code Quality' },
+      ui: { subagent_type: 'agileflow-ui', label: 'UX/Design' },
+      testing: { subagent_type: 'agileflow-testing', label: 'Testing' },
+      api: { subagent_type: 'agileflow-api', label: 'API/Architecture' },
+      accessibility: { subagent_type: 'agileflow-accessibility', label: 'Accessibility' },
+      compliance: { subagent_type: 'agileflow-compliance', label: 'Compliance' },
+      database: { subagent_type: 'agileflow-database', label: 'Database' },
+      monitoring: { subagent_type: 'agileflow-monitoring', label: 'Monitoring' },
+      qa: { subagent_type: 'agileflow-qa', label: 'QA' },
+      analytics: { subagent_type: 'agileflow-analytics', label: 'Analytics' },
+      documentation: { subagent_type: 'agileflow-documentation', label: 'Documentation' },
+    },
+    consensus: null, // ideation does its own synthesis (no consensus coordinator)
+    quick_analyzers: ['security', 'performance', 'refactor', 'ui', 'testing', 'api'],
+    deep_analyzers: [
+      'security',
+      'performance',
+      'refactor',
+      'ui',
+      'testing',
+      'api',
+      'accessibility',
+      'compliance',
+      'database',
+      'monitoring',
+      'qa',
+      'analytics',
+      'documentation',
+    ],
+  },
+
   legal: {
     name: 'Legal Risk',
     prefix: 'Legal',
@@ -167,7 +223,7 @@ const AUDIT_TYPES = {
 /**
  * Get audit type configuration.
  *
- * @param {string} type - Audit type key (logic, security, performance, test, completeness, legal)
+ * @param {string} type - Audit type key (logic, security, performance, test, completeness, legal, ideate)
  * @returns {object|null} Audit type config or null if invalid
  */
 function getAuditType(type) {

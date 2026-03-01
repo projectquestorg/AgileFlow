@@ -1,6 +1,6 @@
 ---
 description: Generate categorized improvement ideas using multi-expert analysis
-argument-hint: "[SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false] [FOCUS=IDEA-XXXX]"
+argument-hint: "[SCOPE=all|security|perf|code|ux] [DEPTH=quick|deep|ultradeep] [OUTPUT=report|stories|both] [HISTORY=true|false] [FOCUS=IDEA-XXXX] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: high
   preserve_rules:
@@ -9,7 +9,7 @@ compact_context:
     - "CRITICAL: Wait for all results before synthesis (use TaskOutput with block=true)"
     - "CRITICAL: Confidence scoring varies by depth: quick/deep (HIGH=2+ agree) | ultradeep (HIGH=3+ agree)"
     - "CRITICAL: Check ideation index for duplicates - show NEW vs RECURRING vs IMPLEMENTED"
-    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both) | HISTORY (true/false) | FOCUS (IDEA-XXXX)"
+    - "MUST parse arguments: SCOPE (all/security/perf/code/ux) | DEPTH (quick/deep/ultradeep) | OUTPUT (report/stories/both) | HISTORY (true/false) | FOCUS (IDEA-XXXX) | MODEL (haiku/sonnet/opus)"
     - "FOCUS mode: All experts analyze the same recurring idea - generate Implementation Brief"
     - "MUST categorize by domain: Security, Performance, Code Quality, UX, Testing, API/Architecture"
     - "MUST estimate effort for each idea: High/Medium/Low impact"
@@ -21,6 +21,7 @@ compact_context:
     - output_mode
     - history_enabled
     - focus_idea
+    - model
     - selected_experts
     - ideas_generated
     - new_ideas
@@ -194,25 +195,34 @@ Be SPECIFIC - reference actual file paths, function names, and code patterns.
 ```
 /agileflow:ideate:new SCOPE=all DEPTH=quick OUTPUT=report
 /agileflow:ideate:new FOCUS=IDEA-0023   # Deep dive into specific idea
+/agileflow:ideate:new DEPTH=ultradeep MODEL=opus   # Ultradeep with Opus in tmux sessions
 ```
 
 **What It Does**: Deploy 4-15 domain experts → Each generates 3-5 ideas → Synthesize with confidence scoring → Categorized report
 
 **Arguments**:
 - `SCOPE=all|security|perf|code|ux` (default: all)
-- `DEPTH=quick|deep|ultradeep` (default: quick) — ultradeep uses 13 experts for ~65 ideas
+- `DEPTH=quick|deep|ultradeep` (default: quick) — ultradeep spawns 13 experts as tmux sessions
 - `OUTPUT=report|stories|both` (default: report)
+- `MODEL=haiku|sonnet|opus` (default: haiku) — model for expert subagents
 
 ### Tool Usage Examples
 
-**Task** (deploy expert in parallel):
+**Task** (deploy expert in parallel - include `model` if MODEL specified):
 ```xml
 <invoke name="Task">
 <parameter name="description">Security ideation analysis</parameter>
 <parameter name="prompt">Generate 3-5 specific improvement ideas for this codebase from a SECURITY perspective...</parameter>
 <parameter name="subagent_type">agileflow-security</parameter>
+<parameter name="model">opus</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
+```
+
+**Ultradeep** (spawn tmux sessions):
+```bash
+node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus --dry-run
+node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus
 ```
 
 **TaskOutput** (collect results):
@@ -255,40 +265,46 @@ Be SPECIFIC - reference actual file paths, function names, and code patterns.
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              IDEATION ORCHESTRATOR                          │
-│  1. Parse SCOPE to determine which experts                  │
-│  2. Deploy 4-13 experts IN PARALLEL (13 for ultradeep)      │
+│  1. Parse SCOPE, DEPTH, MODEL                               │
+│  2a. quick/deep: Deploy 4-13 experts via Task (in-process)  │
+│  2b. ultradeep: Spawn 13 tmux sessions via spawn-audit      │
 │  3. Each expert generates 3-5 improvement ideas             │
 │  4. Collect and synthesize with confidence scoring          │
 │  5. Generate categorized report                             │
 └─────────────────────────────────────────────────────────────┘
                             │
-        ┌───────────────────┼───────────────────┐
-        ▼                   ▼                   ▼
-┌───────────┐       ┌───────────┐       ┌───────────┐
-│  Security │       │Performance│       │  Refactor │
-│  Expert   │       │  Expert   │       │  Expert   │
-│           │       │           │       │           │
-│ 3-5 ideas │       │ 3-5 ideas │       │ 3-5 ideas │
-└───────────┘       └───────────┘       └───────────┘
-        │                   │                   │
-        └───────────────────┼───────────────────┘
-                            ▼
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+     [quick/deep]                  [ultradeep]
+   Task calls (in-proc)        tmux sessions (isolated)
+        ┌───────┼───────┐        ┌───────┼───────┐
+        ▼       ▼       ▼        ▼       ▼       ▼
+┌───────────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
+│  Security │ │Perf │ │ ... │ │ Sec │ │Perf │ │ ... │ x13
+│ MODEL=X   │ │     │ │     │ │     │ │     │ │     │
+│ 3-5 ideas │ │     │ │     │ │     │ │     │ │     │
+└───────────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘
+        │         │       │        │       │       │
+        └─────────┴───────┘        └───────┴───────┘
+                  │                        │
+                  └────────────┬───────────┘
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   SYNTHESIS ENGINE                          │
-│  • Find overlapping ideas (HIGH CONFIDENCE)                 │
-│  • Flag unique insights with evidence (MEDIUM)              │
-│  • Discard vague suggestions (excluded)                     │
-│  • Categorize by domain                                     │
-│  • Estimate effort for each idea                            │
+│  - Find overlapping ideas (HIGH CONFIDENCE)                 │
+│  - Flag unique insights with evidence (MEDIUM)              │
+│  - Discard vague suggestions (excluded)                     │
+│  - Categorize by domain                                     │
+│  - Estimate effort for each idea                            │
 └─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   IDEATION REPORT                           │
-│  📊 Total Ideas: X (High: Y, Medium: Z)                     │
-│  🎯 High-Confidence Improvements (agreed by 2+ experts)     │
-│  💡 Medium-Confidence Opportunities (single expert)         │
-│  📋 Suggested Stories (if OUTPUT=stories)                   │
+│  Total Ideas: X (High: Y, Medium: Z)                        │
+│  High-Confidence Improvements (agreed by 2+/3+ experts)     │
+│  Medium-Confidence Opportunities (single expert)            │
+│  Suggested Stories (if OUTPUT=stories)                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -316,18 +332,54 @@ Parse the input arguments:
 **DEPTH**:
 - `quick` (default): Each expert generates 3 ideas, focuses on high-impact only
 - `deep`: Each expert generates 5 ideas, includes lower-priority items
-- `ultradeep`: Deploy 13 experts (SCOPE=all) with 5 ideas each (~65 ideas), comprehensive coverage
+- `ultradeep`: Spawn each expert as a separate Claude Code session in tmux. Uses 13 experts (SCOPE=all) with 5 ideas each (~65 ideas). Requires tmux. Falls back to `deep` if tmux unavailable.
 
-> **Note**: `DEPTH=ultradeep` is recommended for comprehensive audits, pre-release reviews, or quarterly codebase assessments. It deploys significantly more experts and takes longer to complete.
+> **Note**: `DEPTH=ultradeep` is recommended for comprehensive audits, pre-release reviews, or quarterly codebase assessments. Each expert gets its own Claude session with full context, producing higher-quality analysis than in-process subagents.
+
+**MODEL** (default: haiku):
+- `haiku`: Fast and cost-effective. Good for quick/deep ideation.
+- `sonnet`: Balanced quality and speed. Good default for deep analysis.
+- `opus`: Maximum quality. Recommended for ultradeep or high-stakes ideation.
+
+> The MODEL parameter is passed to each expert subagent. For quick/deep depths, it sets the `model` parameter on Task calls. For ultradeep, it's passed to `spawn-audit-sessions.js` which sets `--model` on each tmux Claude session.
 
 **OUTPUT**:
 - `report` (default): Generate ideation report only
 - `stories`: Generate stories for high-confidence items
 - `both`: Report + stories
 
+### STEP 1.5: ULTRADEEP MODE (DEPTH=ultradeep)
+
+**If `DEPTH=ultradeep`**, use tmux-based session spawning instead of in-process Task calls:
+
+1. Show cost estimate: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL --dry-run`
+2. Confirm with user before launching
+3. Spawn sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=FOCUS_KEYS --model=MODEL`
+4. Monitor sentinel files in `docs/09-agents/ultradeep/{trace_id}/` for completion
+5. Collect all findings from sentinel files and proceed to STEP 4 (Synthesis)
+6. If tmux unavailable, fall back to `DEPTH=deep` with warning
+
+**FOCUS_KEYS mapping from SCOPE**:
+
+| SCOPE | FOCUS_KEYS for spawn-audit-sessions.js |
+|-------|---------------------------------------|
+| `all` | `all` (uses all 13 experts) |
+| `security` | `security,api,testing,compliance,monitoring` |
+| `perf` | `performance,database,api,monitoring,analytics` |
+| `code` | `refactor,testing,api,documentation,qa` |
+| `ux` | `ui,accessibility,api,analytics` |
+
+> **Skip to STEP 4** after ultradeep collection. Steps 2-3 are only for quick/deep modes.
+
+---
+
 ### STEP 2: DEPLOY EXPERTS IN PARALLEL
 
+**For quick/deep modes only** (ultradeep uses tmux sessions above).
+
 **CRITICAL**: Deploy ALL experts in a SINGLE message with multiple Task tool calls.
+
+**If MODEL is specified**, pass it to each Task call via the `model` parameter.
 
 Use this prompt template for each expert:
 
@@ -364,13 +416,14 @@ FORMAT each idea as:
 ---
 ```
 
-**Example deployment for SCOPE=all**:
+**Example deployment for SCOPE=all** (add `<parameter name="model">{MODEL}</parameter>` if MODEL is specified):
 
 ```xml
 <invoke name="Task">
 <parameter name="description">Security ideation</parameter>
 <parameter name="prompt">[prompt with domain=security]</parameter>
 <parameter name="subagent_type">agileflow-security</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 
@@ -378,6 +431,7 @@ FORMAT each idea as:
 <parameter name="description">Performance ideation</parameter>
 <parameter name="prompt">[prompt with domain=performance]</parameter>
 <parameter name="subagent_type">agileflow-performance</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 
@@ -385,6 +439,7 @@ FORMAT each idea as:
 <parameter name="description">Code quality ideation</parameter>
 <parameter name="prompt">[prompt with domain=refactor/code quality]</parameter>
 <parameter name="subagent_type">agileflow-refactor</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 
@@ -392,6 +447,7 @@ FORMAT each idea as:
 <parameter name="description">UX ideation</parameter>
 <parameter name="prompt">[prompt with domain=ui/ux]</parameter>
 <parameter name="subagent_type">agileflow-ui</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 
@@ -399,6 +455,7 @@ FORMAT each idea as:
 <parameter name="description">Testing ideation</parameter>
 <parameter name="prompt">[prompt with domain=testing]</parameter>
 <parameter name="subagent_type">agileflow-testing</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 
@@ -406,106 +463,38 @@ FORMAT each idea as:
 <parameter name="description">API/Architecture ideation</parameter>
 <parameter name="prompt">[prompt with domain=api/architecture]</parameter>
 <parameter name="subagent_type">agileflow-api</parameter>
+<parameter name="model">{MODEL}</parameter>
 <parameter name="run_in_background">true</parameter>
 </invoke>
 ```
 
-**Example deployment for SCOPE=all DEPTH=ultradeep** (13 experts):
+> **Note**: Only include the `<parameter name="model">` line if MODEL was explicitly specified. If not specified, omit it to use the default model.
 
-```xml
-<!-- Deploy ALL 13 experts in a SINGLE message -->
-<invoke name="Task">
-<parameter name="description">Security ideation</parameter>
-<parameter name="prompt">[prompt with domain=security]</parameter>
-<parameter name="subagent_type">agileflow-security</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
+**Example deployment for SCOPE=all DEPTH=ultradeep** (13 experts via tmux):
 
-<invoke name="Task">
-<parameter name="description">Performance ideation</parameter>
-<parameter name="prompt">[prompt with domain=performance]</parameter>
-<parameter name="subagent_type">agileflow-performance</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
+```bash
+# 1. Dry run to show cost estimate
+node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus --dry-run
 
-<invoke name="Task">
-<parameter name="description">Code quality ideation</parameter>
-<parameter name="prompt">[prompt with domain=refactor]</parameter>
-<parameter name="subagent_type">agileflow-refactor</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">UX ideation</parameter>
-<parameter name="prompt">[prompt with domain=ui]</parameter>
-<parameter name="subagent_type">agileflow-ui</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Testing ideation</parameter>
-<parameter name="prompt">[prompt with domain=testing]</parameter>
-<parameter name="subagent_type">agileflow-testing</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">API/Architecture ideation</parameter>
-<parameter name="prompt">[prompt with domain=api]</parameter>
-<parameter name="subagent_type">agileflow-api</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<!-- Additional ultradeep experts (7 more) -->
-<invoke name="Task">
-<parameter name="description">Accessibility ideation</parameter>
-<parameter name="prompt">[prompt with domain=accessibility]</parameter>
-<parameter name="subagent_type">agileflow-accessibility</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Compliance ideation</parameter>
-<parameter name="prompt">[prompt with domain=compliance]</parameter>
-<parameter name="subagent_type">agileflow-compliance</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Database ideation</parameter>
-<parameter name="prompt">[prompt with domain=database]</parameter>
-<parameter name="subagent_type">agileflow-database</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Monitoring ideation</parameter>
-<parameter name="prompt">[prompt with domain=monitoring]</parameter>
-<parameter name="subagent_type">agileflow-monitoring</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">QA ideation</parameter>
-<parameter name="prompt">[prompt with domain=qa]</parameter>
-<parameter name="subagent_type">agileflow-qa</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Analytics ideation</parameter>
-<parameter name="prompt">[prompt with domain=analytics]</parameter>
-<parameter name="subagent_type">agileflow-analytics</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
-
-<invoke name="Task">
-<parameter name="description">Documentation ideation</parameter>
-<parameter name="prompt">[prompt with domain=documentation]</parameter>
-<parameter name="subagent_type">agileflow-documentation</parameter>
-<parameter name="run_in_background">true</parameter>
-</invoke>
+# 2. After user confirms, spawn sessions
+node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus
 ```
+
+Each expert gets its own Claude Code tmux session with full context window. Sentinel files are written to `docs/09-agents/ultradeep/{trace_id}/`. Monitor with:
+
+```bash
+# Check completion status
+ls docs/09-agents/ultradeep/{trace_id}/
+cat docs/09-agents/ultradeep/{trace_id}/_status.json
+```
+
+**For SCOPE-filtered ultradeep** (e.g., SCOPE=security):
+
+```bash
+node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=security,api,testing,compliance,monitoring --model=sonnet
+```
+
+> **Fallback**: If tmux is unavailable, fall back to DEPTH=deep with in-process Task calls (6 experts). Warn the user: "tmux not available, falling back to DEPTH=deep with 6 in-process experts"
 
 ### STEP 3: COLLECT RESULTS
 
@@ -745,13 +734,17 @@ After generating output, present options:
 
 ### Example: Ultradeep Execution
 
-**User**: `/agileflow:ideate:new SCOPE=all DEPTH=ultradeep OUTPUT=both`
+**User**: `/agileflow:ideate:new SCOPE=all DEPTH=ultradeep MODEL=opus OUTPUT=both`
 
-**Step 1**: Parse → SCOPE=all (13 experts), DEPTH=ultradeep (5 ideas each), OUTPUT=both
+**Step 1**: Parse → SCOPE=all (13 experts), DEPTH=ultradeep, MODEL=opus, OUTPUT=both
 
-**Step 2**: Deploy 13 experts in parallel (security, performance, refactor, ui, testing, api, accessibility, compliance, database, monitoring, qa, analytics, documentation)
+**Step 1.5**: Ultradeep mode detected:
+- Run dry-run: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus --dry-run`
+- Show cost estimate to user, confirm before launching
+- Spawn 13 tmux sessions: `node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=. --focus=all --model=opus`
+- Monitor `docs/09-agents/ultradeep/{trace_id}/` for sentinel files
 
-**Step 3**: Collect results (~65 raw ideas)
+**Step 3**: Collect results from sentinel files (~65 raw ideas)
 
 **Step 4**: Synthesize with ultradeep thresholds:
 - 8 ideas mentioned by 3+ experts → HIGH confidence
@@ -771,11 +764,12 @@ After generating output, present options:
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | SCOPE | all, security, perf, code, ux | all | Which domains to analyze |
-| DEPTH | quick, deep, ultradeep | quick | quick (3 ideas, 6 experts), deep (5 ideas, 6 experts), ultradeep (5 ideas, 13 experts) |
+| DEPTH | quick, deep, ultradeep | quick | quick (3 ideas, 6 experts), deep (5 ideas, 6 experts), ultradeep (5 ideas, 13 experts via tmux) |
 | OUTPUT | report, stories, both | report | What to generate |
 | HISTORY | true, false | true | Enable deduplication and history tracking. Set to false for faster runs without history analysis |
 | SHOW_IMPLEMENTED | true, false | false | Include already-implemented ideas in report (useful for tracking) |
 | FOCUS | IDEA-XXXX | - | Focus on a specific recurring idea (activates Implementation Brief mode) |
+| MODEL | haiku, sonnet, opus | haiku | Model for expert subagents. Passed to Task calls (quick/deep) or tmux sessions (ultradeep). |
 
 {{argument}}
 
