@@ -109,6 +109,71 @@ describe('spawn-audit-sessions', () => {
       expect(prompt).toContain('"findings"');
       expect(prompt).toContain('"severity"');
     });
+
+    it('includes Agent tool usage instructions with subagent_type', () => {
+      const prompt = buildAnalyzerPrompt(
+        { key: 'injection', subagent_type: 'security-analyzer-injection', label: 'Injection' },
+        'src/',
+        'trace123',
+        '/tmp/sentinel',
+        'security'
+      );
+
+      expect(prompt).toContain('Agent tool');
+      expect(prompt).toContain('subagent_type');
+      expect(prompt).toContain('security-analyzer-injection');
+    });
+
+    it('includes correct subagent_type for each analyzer', () => {
+      const prompt = buildAnalyzerPrompt(
+        { key: 'edge', subagent_type: 'logic-analyzer-edge', label: 'Edge Cases' },
+        '.',
+        'abc',
+        '/tmp/s',
+        'logic'
+      );
+
+      expect(prompt).toContain('logic-analyzer-edge');
+      expect(prompt).toContain('Agent tool');
+    });
+
+    it('describes coordinator role, not direct analysis', () => {
+      const prompt = buildAnalyzerPrompt(
+        { key: 'auth', subagent_type: 'security-analyzer-auth', label: 'Auth' },
+        'src/',
+        'xyz',
+        '/tmp/s',
+        'security'
+      );
+
+      expect(prompt).toContain('coordinator');
+      expect(prompt).toContain('sub-agent');
+    });
+
+    it('includes explicit model when provided', () => {
+      const prompt = buildAnalyzerPrompt(
+        { key: 'injection', subagent_type: 'security-analyzer-injection', label: 'Injection' },
+        'src/',
+        'trace123',
+        '/tmp/sentinel',
+        'security',
+        'opus'
+      );
+
+      expect(prompt).toContain('model: "opus"');
+    });
+
+    it('omits model line when not provided', () => {
+      const prompt = buildAnalyzerPrompt(
+        { key: 'injection', subagent_type: 'security-analyzer-injection', label: 'Injection' },
+        'src/',
+        'trace123',
+        '/tmp/sentinel',
+        'security'
+      );
+
+      expect(prompt).not.toContain('model:');
+    });
   });
 
   describe('collectResults', () => {

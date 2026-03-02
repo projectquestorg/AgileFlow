@@ -161,32 +161,47 @@ function writeStatusFile(sentinelDir, auditType, analyzers, staggerMs, maxConcur
  * @param {string} traceId - Trace ID
  * @param {string} sentinelDir - Sentinel directory for output
  * @param {string} auditType - Audit type key
+ * @param {string} [model] - Resolved model name for sub-agent
  * @returns {string} Prompt text
  */
-function buildAnalyzerPrompt(analyzer, target, traceId, sentinelDir, auditType) {
+function buildAnalyzerPrompt(analyzer, target, traceId, sentinelDir, auditType, model) {
   const findingsFile = path.join(sentinelDir, `${analyzer.key}.findings.json`);
 
-  return `You are the ${analyzer.label} analyzer for an ULTRADEEP ${auditType} audit.
+  // Sanitize fields that get interpolated into double-quoted prompt sections
+  const safeLabel = String(analyzer.label || '').replace(/["\\]/g, '');
+  const safeTarget = String(target || '').replace(/["\\]/g, '');
+  const safeSubagentType = String(analyzer.subagent_type || '').replace(/["\\]/g, '');
 
-TARGET: ${target}
-TRACE_ID: ${traceId}
-ANALYZER: ${analyzer.key} (${analyzer.label})
+  return `You are an ULTRADEEP audit session coordinator.
 
-## Instructions
+## Task
 
-1. Analyze the target path thoroughly for ${analyzer.label}-related issues
-2. Search all relevant files recursively
-3. Document every finding with: file path, line number, severity (P0-P3), description, and evidence
-4. When complete, write your findings as JSON to: ${findingsFile}
+1. Use the Agent tool to spawn a sub-agent for analysis
+2. After the sub-agent completes, parse its output and write findings as JSON to the sentinel file
 
-## Output Format
+## Agent Configuration
 
-Write a JSON file with this structure:
+Use the Agent tool with these parameters:
+- subagent_type: "${safeSubagentType}"
+- description: "${safeLabel} analysis of ${safeTarget}"${model ? `\n- model: "${model}"` : ''}
+- prompt: |
+    Analyze the target path ${safeTarget} thoroughly for ${safeLabel}-related issues.
+    Search all relevant files recursively. Be thorough.
+    Return a JSON object with this structure:
+    {"findings": [{"id": "${analyzer.key}-NNN", "severity": "P0|P1|P2|P3", "title": "Short description", "file": "path/to/file.js", "line": 42, "description": "Detailed explanation", "evidence": "Code snippet or reasoning", "recommendation": "How to fix"}], "summary": {"files_scanned": 0, "total_findings": 0, "by_severity": {"P0": 0, "P1": 0, "P2": 0, "P3": 0}}}
+    TRACE_ID: ${traceId}
+    ANALYZER: ${analyzer.key}
+
+## Output
+
+After the Agent tool returns its analysis, write a JSON file to: ${findingsFile}
+
+Use this structure:
 {
   "analyzer": "${analyzer.key}",
   "audit_type": "${auditType}",
   "trace_id": "${traceId}",
-  "target": "${target}",
+  "target": "${safeTarget}",
   "completed_at": "<ISO timestamp>",
   "findings": [
     {
@@ -208,7 +223,8 @@ Write a JSON file with this structure:
 }
 
 IMPORTANT: You MUST write the findings JSON file when complete. This is how the orchestrator knows you're done.
-Start analyzing now.`;
+If the Agent tool is unavailable or returns an error, perform the analysis directly using Read, Glob, and Grep tools.
+Start by spawning the Agent now.`;
 }
 
 /**
@@ -233,7 +249,8 @@ function spawnOneSession({
     options.target,
     options.traceId,
     sentinelDir,
-    options.audit
+    options.audit,
+    model
   );
   const escapedPrompt = prompt.replace(/'/g, "'\\''");
 
@@ -256,7 +273,7 @@ function spawnOneSession({
       { stdio: 'pipe' }
     );
 
-    const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} --allowedTools 'Read Glob Grep Write' 2>&1; echo "AUDIT_COMPLETE: ${analyzer.key}"`;
+    const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} --allowedTools 'Read Glob Grep Write Agent' 2>&1; echo "AUDIT_COMPLETE: ${analyzer.key}"`;
     execFileSync('tmux', ['send-keys', '-t', `${sessionName}:${windowName}`, claudeCmd, 'Enter'], {
       stdio: 'pipe',
     });
