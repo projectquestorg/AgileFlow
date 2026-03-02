@@ -10,6 +10,8 @@ const {
   createSentinelDir,
   writeStatusFile,
   buildAnalyzerPrompt,
+  buildExtremePrompt,
+  partitionSlug,
   collectResults,
   checkTmux,
   parseArgs,
@@ -386,6 +388,137 @@ describe('spawn-audit-sessions', () => {
       await sleep(50);
       const elapsed = Date.now() - start;
       expect(elapsed).toBeGreaterThanOrEqual(40);
+    });
+  });
+
+  describe('partitionSlug', () => {
+    it('converts directory path to slug', () => {
+      expect(partitionSlug('src/auth')).toBe('src-auth');
+    });
+
+    it('strips leading ./ and trailing /', () => {
+      expect(partitionSlug('./src/api/')).toBe('src-api');
+    });
+
+    it('handles root path', () => {
+      expect(partitionSlug('.')).toBe('root');
+      expect(partitionSlug('./')).toBe('root');
+    });
+
+    it('handles deeply nested paths', () => {
+      expect(partitionSlug('packages/cli/src/core')).toBe('packages-cli-src-core');
+    });
+
+    it('sanitizes special characters to underscores', () => {
+      expect(partitionSlug("src/it's-bad")).toBe('src-it_s-bad');
+      expect(partitionSlug('src/auth; rm -rf /')).toBe('src-auth__rm_-rf_');
+    });
+
+    it('sanitizes colons (Windows drive letters)', () => {
+      expect(partitionSlug('C:\\src\\auth')).toBe('C_-src-auth');
+    });
+
+    it('sanitizes spaces and backticks', () => {
+      expect(partitionSlug('src/my dir')).toBe('src-my_dir');
+      expect(partitionSlug('src/`whoami`')).toBe('src-_whoami_');
+    });
+  });
+
+  describe('parseArgs - depth and partitions flags', () => {
+    const originalArgv = process.argv;
+
+    afterEach(() => {
+      process.argv = originalArgv;
+    });
+
+    it('parses --depth=extreme correctly', () => {
+      process.argv = ['node', 'script.js', '--audit=security', '--depth=extreme'];
+      const opts = parseArgs();
+      expect(opts.depth).toBe('extreme');
+    });
+
+    it('parses --partitions=a,b,c correctly', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--audit=security',
+        '--depth=extreme',
+        '--partitions=src/auth,src/api,lib',
+      ];
+      const opts = parseArgs();
+      expect(opts.partitions).toEqual(['src/auth', 'src/api', 'lib']);
+    });
+
+    it('defaults depth and partitions to null', () => {
+      process.argv = ['node', 'script.js', '--audit=logic'];
+      const opts = parseArgs();
+      expect(opts.depth).toBeNull();
+      expect(opts.partitions).toBeNull();
+    });
+
+    it('filters empty partition strings', () => {
+      process.argv = ['node', 'script.js', '--audit=security', '--partitions=src/auth,,src/api'];
+      const opts = parseArgs();
+      expect(opts.partitions).toEqual(['src/auth', 'src/api']);
+    });
+  });
+
+  describe('buildExtremePrompt', () => {
+    const analyzers = [
+      { key: 'injection', subagent_type: 'security-analyzer-injection', label: 'Injection' },
+      { key: 'auth', subagent_type: 'security-analyzer-auth', label: 'Authentication' },
+      { key: 'authz', subagent_type: 'security-analyzer-authz', label: 'Authorization' },
+    ];
+
+    it('includes the partition path', () => {
+      const prompt = buildExtremePrompt('src/auth', analyzers, 'trace1', '/tmp/s', 'security');
+      expect(prompt).toContain('src/auth');
+      expect(prompt).toContain('EXTREME audit session coordinator');
+    });
+
+    it('includes all analyzer subagent_types', () => {
+      const prompt = buildExtremePrompt('src/api', analyzers, 'trace2', '/tmp/s', 'security');
+      expect(prompt).toContain('security-analyzer-injection');
+      expect(prompt).toContain('security-analyzer-auth');
+      expect(prompt).toContain('security-analyzer-authz');
+    });
+
+    it('includes model when provided', () => {
+      const prompt = buildExtremePrompt('src/', analyzers, 'trace3', '/tmp/s', 'security', 'opus');
+      expect(prompt).toContain('model: "opus"');
+    });
+
+    it('omits model line when not provided', () => {
+      const prompt = buildExtremePrompt('src/', analyzers, 'trace4', '/tmp/s', 'security');
+      expect(prompt).not.toContain('model:');
+    });
+
+    it('includes partition slug in findings file path', () => {
+      const prompt = buildExtremePrompt(
+        'src/auth',
+        analyzers,
+        'trace5',
+        '/tmp/sentinel',
+        'security'
+      );
+      expect(prompt).toContain(path.join('/tmp/sentinel', 'src-auth.findings.json'));
+    });
+
+    it('includes the analyzer count', () => {
+      const prompt = buildExtremePrompt('src/', analyzers, 'trace6', '/tmp/s', 'security');
+      expect(prompt).toContain('3 analyzers');
+    });
+
+    it('instructs parallel deployment', () => {
+      const prompt = buildExtremePrompt('src/', analyzers, 'trace7', '/tmp/s', 'security');
+      expect(prompt).toContain('in parallel');
+      expect(prompt).toContain('Agent tool');
+    });
+
+    it('does not contain literal placeholder text [key] or [analyzer domain]', () => {
+      const prompt = buildExtremePrompt('src/', analyzers, 'trace8', '/tmp/s', 'security');
+      expect(prompt).not.toContain('[key]');
+      expect(prompt).not.toContain('[analyzer domain]');
     });
   });
 });

@@ -251,7 +251,7 @@ function getAnalyzersForAudit(type, depth, focus) {
   const audit = AUDIT_TYPES[type];
   if (!audit) return null;
 
-  const effectiveDepth = depth === 'ultradeep' ? 'deep' : depth || 'quick';
+  const effectiveDepth = depth === 'ultradeep' || depth === 'extreme' ? 'deep' : depth || 'quick';
   const analyzerKeys = effectiveDepth === 'deep' ? audit.deep_analyzers : audit.quick_analyzers;
 
   // Filter by focus if specified

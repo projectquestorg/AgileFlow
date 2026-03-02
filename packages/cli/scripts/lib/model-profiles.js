@@ -60,9 +60,10 @@ function isValidModel(model) {
  *
  * @param {string} model - Model name
  * @param {number} [analyzerCount=5] - Number of analyzers
- * @returns {{ multiplier: number, model: string, perAnalyzerCost: string }}
+ * @param {number} [partitions=1] - Number of partitions (extreme mode)
+ * @returns {{ multiplier: number, model: string, perAnalyzerCost: string, totalEstimate: string, partitions?: number, totalSessions?: number }}
  */
-function estimateCost(model, analyzerCount) {
+function estimateCost(model, analyzerCount, partitions) {
   let MODEL_PRICING;
   try {
     MODEL_PRICING = require('./team-events').MODEL_PRICING;
@@ -75,19 +76,38 @@ function estimateCost(model, analyzerCount) {
   }
 
   const count = analyzerCount || 5;
+  const partCount = typeof partitions === 'number' && partitions > 1 ? partitions : 1;
   const resolved = resolveModel(model);
   const pricing = MODEL_PRICING[resolved] || MODEL_PRICING.haiku;
   const haikuPricing = MODEL_PRICING.haiku;
 
   const multiplier = pricing.output / haikuPricing.output;
-  const perAnalyzer = `$${((pricing.input * 50000) / 1_000_000 + (pricing.output * 10000) / 1_000_000).toFixed(3)}`;
+  const perAnalyzerCostNum =
+    (pricing.input * 50000) / 1_000_000 + (pricing.output * 10000) / 1_000_000;
+  const perAnalyzer = `$${perAnalyzerCostNum.toFixed(3)}`;
 
-  return {
+  // For extreme mode: each partition has a coordinator + all analyzers as sub-agents
+  // Estimated cost per partition coordinator session in USD (~10k input + 2k output at haiku rates)
+  const coordinatorCostUSD = 0.05;
+  const totalSessions = partCount * count;
+  const totalCost =
+    partCount > 1
+      ? partCount * coordinatorCostUSD + totalSessions * perAnalyzerCostNum
+      : count * perAnalyzerCostNum;
+
+  const result = {
     multiplier: Math.round(multiplier * 100) / 100,
     model: resolved,
     perAnalyzerCost: perAnalyzer,
-    totalEstimate: `~$${(count * ((pricing.input * 50000) / 1_000_000 + (pricing.output * 10000) / 1_000_000)).toFixed(2)}`,
+    totalEstimate: `~$${totalCost.toFixed(2)}`,
   };
+
+  if (partCount > 1) {
+    result.partitions = partCount;
+    result.totalSessions = totalSessions;
+  }
+
+  return result;
 }
 
 module.exports = {

@@ -1,6 +1,6 @@
 ---
 description: Multi-agent logic analysis with consensus voting for finding logic bugs
-argument-hint: "[file|directory] [DEPTH=quick|deep|ultradeep] [FOCUS=edge|invariant|flow|type|race|all] [MODEL=haiku|sonnet|opus]"
+argument-hint: "[file|directory] [DEPTH=quick|deep|ultradeep|extreme] [FOCUS=edge|invariant|flow|type|race|all] [MODEL=haiku|sonnet|opus]"
 compact_context:
   priority: high
   preserve_rules:
@@ -108,6 +108,29 @@ FOCUS = all (default) or comma-separated list
    - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
 5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator (same as deep mode).
 6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
+
+**EXTREME mode** (DEPTH=extreme):
+Partition-based multi-agent audit. Instead of 1 analyzer per tmux window, the codebase is split into partitions and each partition runs ALL analyzers.
+1. Scan the target directory to understand the codebase structure:
+   - Use Glob to find top-level source directories
+   - Group related directories into 3-7 logical partitions (coherent domains: auth, api, ui, etc.)
+   - If user provided PARTITIONS=N (a number), split into exactly N partitions
+   - If user provided PARTITIONS=dir1,dir2,dir3, use those exact directories
+2. Show the partition plan and agent count to the user, confirm before launching:
+   Example: "5 partitions x 5 analyzers = 25 agents. Estimated cost: $X. Proceed?"
+3. Spawn sessions with partitions:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=logic --target=TARGET --depth=extreme --partitions=dir1,dir2,dir3 --model=MODEL --json
+   ```
+4. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+5. Run consensus on combined results from all partitions
+
+**PARTITIONS argument** (only used with DEPTH=extreme):
+| Value | Behavior |
+|-------|----------|
+| Not set | AI decides partitions (3-7 based on codebase size) |
+| `PARTITIONS=5` | AI creates exactly 5 partitions |
+| `PARTITIONS=src/auth,src/api,lib` | Use these exact directories |
 
 **Analyzer Selection by FOCUS**:
 

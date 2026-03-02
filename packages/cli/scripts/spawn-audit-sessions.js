@@ -73,6 +73,8 @@ function parseArgs() {
     json: false,
     stagger: null,
     concurrency: null,
+    depth: null,
+    partitions: null,
   };
 
   for (const arg of args) {
@@ -90,7 +92,10 @@ function parseArgs() {
     } else if (arg.startsWith('--concurrency=')) {
       const parsed = parseInt(arg.split('=')[1], 10);
       options.concurrency = isNaN(parsed) ? null : parsed;
-    } else if (arg === '--dry-run') options.dryRun = true;
+    } else if (arg.startsWith('--depth=')) options.depth = arg.split('=')[1];
+    else if (arg.startsWith('--partitions='))
+      options.partitions = arg.split('=')[1].split(',').filter(Boolean);
+    else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--json') options.json = true;
   }
 
@@ -228,6 +233,105 @@ Start by spawning the Agent now.`;
 }
 
 /**
+ * Create a slug from a partition path for use in window names and filenames.
+ * Only allows alphanumeric, hyphens, and underscores — safe for tmux window
+ * names, shell interpolation, and filesystem paths.
+ * @param {string} partition - Partition path (e.g. 'src/auth')
+ * @returns {string} Slug (e.g. 'src-auth')
+ */
+function partitionSlug(partition) {
+  return (
+    partition
+      .replace(/^\.?\/?/, '')
+      .replace(/\/+$/g, '')
+      .replace(/[/\\]/g, '-')
+      .replace(/[^a-zA-Z0-9_\-]/g, '_') || 'root'
+  );
+}
+
+/**
+ * Build the prompt for an extreme-mode partition coordinator session.
+ * This coordinator runs ALL analyzers on a single partition using the Agent tool.
+ * @param {string} partition - Partition path to analyze
+ * @param {Array<{ key: string, subagent_type: string, label: string }>} analyzers - All analyzers to run
+ * @param {string} traceId - Trace ID
+ * @param {string} sentinelDir - Sentinel directory for output
+ * @param {string} auditType - Audit type key
+ * @param {string} [model] - Resolved model name for sub-agents
+ * @returns {string} Prompt text
+ */
+function buildExtremePrompt(partition, analyzers, traceId, sentinelDir, auditType, model) {
+  const slug = partitionSlug(partition);
+  const findingsFile = path.join(sentinelDir, `${slug}.findings.json`);
+
+  const safePartition = String(partition || '').replace(/["\\]/g, '');
+
+  const analyzerList = analyzers
+    .map((a, i) => `${i + 1}. subagent_type: "${a.subagent_type}" — ${a.label} (key: ${a.key})`)
+    .join('\n');
+
+  const modelLine = model ? `\n- model: "${model}"` : '';
+
+  return `You are an EXTREME audit session coordinator for partition: ${safePartition}
+
+## Task
+
+Run ALL of the following analyzers on your partition using the Agent tool.
+Deploy them in parallel (multiple Agent calls in one message) where possible.
+
+## Analyzers to Run
+${analyzerList}
+
+## Agent Configuration for Each Analyzer
+
+Use the Agent tool with these parameters for each analyzer:
+- subagent_type: (from the list above)
+- description: "[Analyzer label] analysis of ${safePartition}"${modelLine}
+- prompt: |
+    Analyze the target path ${safePartition} thoroughly for issues relevant to your analyzer domain.
+    Search all relevant files recursively. Be thorough.
+    Use the analyzer key from your subagent_type as the ID prefix (e.g., for "security-analyzer-injection" use "injection").
+    Return a JSON object with this structure:
+    {"findings": [{"id": "<analyzer-key>-NNN", "severity": "P0|P1|P2|P3", "title": "Short description", "file": "path/to/file.js", "line": 42, "description": "Detailed explanation", "evidence": "Code snippet or reasoning", "recommendation": "How to fix"}], "summary": {"files_scanned": 0, "total_findings": 0, "by_severity": {"P0": 0, "P1": 0, "P2": 0, "P3": 0}}}
+    TRACE_ID: ${traceId}
+
+## After All Analyzers Complete
+
+Combine ALL findings from ALL analyzers into a single JSON file: ${findingsFile}
+
+Use this structure:
+{
+  "partition": "${safePartition}",
+  "audit_type": "${auditType}",
+  "trace_id": "${traceId}",
+  "completed_at": "<ISO timestamp>",
+  "analyzer_count": ${analyzers.length},
+  "analyzers_run": [${analyzers.map(a => `"${a.key}"`).join(', ')}],
+  "findings": [
+    {
+      "id": "<analyzer_key>-001",
+      "analyzer": "<analyzer_key>",
+      "severity": "P0|P1|P2|P3",
+      "title": "Short description",
+      "file": "path/to/file.js",
+      "line": 42,
+      "description": "Detailed explanation",
+      "evidence": "Code snippet or reasoning",
+      "recommendation": "How to fix"
+    }
+  ],
+  "summary": {
+    "files_scanned": 0,
+    "total_findings": 0,
+    "by_severity": { "P0": 0, "P1": 0, "P2": 0, "P3": 0 }
+  }
+}
+
+IMPORTANT: You MUST write the findings JSON file when complete. This is how the orchestrator knows you're done.
+Start by spawning ALL ${analyzers.length} analyzers now, in parallel.`;
+}
+
+/**
  * Spawn a single analyzer session in tmux.
  * @param {object} params - Session parameters
  * @returns {string|null} Window name if successful, null on failure
@@ -320,19 +424,173 @@ async function spawnAuditInTmux(options) {
     process.exit(1);
   }
 
-  const result = getAnalyzersForAudit(options.audit, 'ultradeep', options.focus);
+  const isExtreme = options.depth === 'extreme';
+  const depthForRegistry = isExtreme ? 'extreme' : 'ultradeep';
+  const result = getAnalyzersForAudit(options.audit, depthForRegistry, options.focus);
   if (!result || result.analyzers.length === 0) {
     console.error(`No analyzers found for ${options.audit} with focus: ${options.focus.join(',')}`);
     process.exit(1);
   }
+
+  const sentinelDir = createSentinelDir(rootDir, options.traceId);
+
+  // Use stderr for human output when --json mode is active
+  const log = options.json ? console.error : console.log;
+
+  // --- EXTREME MODE: partition-based multi-agent ---
+  if (isExtreme) {
+    if (!options.partitions || options.partitions.length === 0) {
+      console.error('EXTREME mode requires --partitions=dir1,dir2,...');
+      process.exit(1);
+    }
+
+    const partitions = options.partitions;
+    const partitionSlugs = partitions.map(p => partitionSlug(p));
+
+    // Write status file with partition info
+    const statusData = {
+      started_at: new Date().toISOString(),
+      audit_type: options.audit,
+      mode: 'extreme',
+      partitions: partitions,
+      analyzers: partitionSlugs,
+      analyzers_per_partition: result.analyzers.map(a => a.key),
+      completed: [],
+      failed: [],
+      target: options.target,
+      model: options.model,
+      timeout_minutes: options.timeout,
+    };
+    fs.writeFileSync(
+      path.join(sentinelDir, '_status.json'),
+      JSON.stringify(statusData, null, 2) + '\n'
+    );
+
+    const groupColor = getColorForAudit(options.audit);
+    const totalSessions = partitions.length * result.analyzers.length;
+
+    if (options.dryRun) {
+      log(`\nDry run - EXTREME mode would spawn ${partitions.length} partition coordinators:`);
+      log(`  Partitions: ${partitions.join(', ')}`);
+      log(`  Analyzers per partition: ${result.analyzers.length}`);
+      log(`  Total agent sessions: ${totalSessions}`);
+      const model = resolveModel(options.model, 'haiku');
+      for (const p of partitions) {
+        const slug = partitionSlug(p);
+        log(
+          `  ${auditType.prefix}:${slug} (${model}) → ALL ${result.analyzers.length} analyzers on ${p}`
+        );
+      }
+      log(`\nSentinel dir: ${sentinelDir}`);
+      log(`Group color: ${groupColor}`);
+      return {
+        ok: true,
+        traceId: options.traceId,
+        sentinelDir,
+        sessions: [],
+        dryRun: true,
+        mode: 'extreme',
+        partitions,
+      };
+    }
+
+    const tmux = checkTmux();
+    if (!tmux.available) {
+      console.error('tmux is not available. EXTREME mode requires tmux.');
+      console.error('Falling back to DEPTH=deep mode.');
+      return { ok: false, traceId: options.traceId, sentinelDir, sessions: [], fallback: 'deep' };
+    }
+
+    const sessionName = `audit-${options.audit}-${options.traceId.slice(0, 8)}`;
+    const sessions = [];
+    const config = getUltradeepConfig();
+    const staggerMs =
+      ((options.stagger != null ? options.stagger : config.stagger_seconds) || 0) * 1000;
+
+    for (let i = 0; i < partitions.length; i++) {
+      if (i > 0 && staggerMs > 0) await sleep(staggerMs);
+
+      const partition = partitions[i];
+      const slug = partitionSlug(partition);
+      const windowName = `${auditType.prefix}:${slug}`;
+      const model = resolveModel(options.model, 'haiku');
+      const prompt = buildExtremePrompt(
+        partition,
+        result.analyzers,
+        options.traceId,
+        sentinelDir,
+        options.audit,
+        model
+      );
+      const escapedPrompt = prompt.replace(/'/g, "'\\''");
+
+      try {
+        if (i === 0) {
+          execFileSync(
+            'tmux',
+            ['new-session', '-d', '-s', sessionName, '-n', windowName, '-c', rootDir],
+            { stdio: 'pipe' }
+          );
+        } else {
+          execFileSync('tmux', ['new-window', '-t', sessionName, '-n', windowName, '-c', rootDir], {
+            stdio: 'pipe',
+          });
+        }
+
+        execFileSync(
+          'tmux',
+          ['set-option', '-w', '-t', `${sessionName}:${windowName}`, '@group_color', groupColor],
+          { stdio: 'pipe' }
+        );
+
+        const claudeCmd = `echo '${escapedPrompt}' | claude --model ${model} --allowedTools 'Read Glob Grep Write Agent' 2>&1; echo "AUDIT_COMPLETE: ${slug}"`;
+        execFileSync(
+          'tmux',
+          ['send-keys', '-t', `${sessionName}:${windowName}`, claudeCmd, 'Enter'],
+          {
+            stdio: 'pipe',
+          }
+        );
+
+        sessions.push(windowName);
+      } catch (err) {
+        console.error(`Failed to spawn ${windowName}: ${err.message}`);
+      }
+    }
+
+    // Apply status bar theme
+    try {
+      const tmuxScript = path.join(__dirname, 'claude-tmux.sh');
+      execFileSync(tmuxScript, [`--configure-session=${sessionName}`], { stdio: 'pipe' });
+    } catch (_) {
+      // Non-critical
+    }
+
+    log(`\nSpawned ${sessions.length} partition coordinators in tmux session: ${sessionName}`);
+    log(`  Partitions: ${partitions.join(', ')}`);
+    log(`  Analyzers per partition: ${result.analyzers.length}`);
+    log(`  Total agent sessions: ${totalSessions}`);
+    log(`Sentinel dir: ${sentinelDir}`);
+    log(`Attach with: tmux attach -t ${sessionName}`);
+
+    return {
+      ok: true,
+      traceId: options.traceId,
+      sentinelDir,
+      sessions,
+      sessionName,
+      mode: 'extreme',
+      partitions,
+    };
+  }
+
+  // --- ULTRADEEP MODE (existing behavior) ---
 
   // Enforce session limit
   if (result.analyzers.length > 20) {
     console.error(`Too many analyzers (${result.analyzers.length}). Maximum is 20.`);
     process.exit(1);
   }
-
-  const sentinelDir = createSentinelDir(rootDir, options.traceId);
 
   // Resolve stagger and concurrency from CLI flags or config
   const config = getUltradeepConfig();
@@ -348,9 +606,6 @@ async function spawnAuditInTmux(options) {
 
   const groupColor = getColorForAudit(options.audit);
   const sessions = [];
-
-  // Use stderr for human output when --json mode is active
-  const log = options.json ? console.error : console.log;
 
   if (options.dryRun) {
     log(`\nDry run - would spawn ${result.analyzers.length} sessions:`);
@@ -492,7 +747,9 @@ async function pollForCompletion(sentinelDir, expected, timeoutMinutes) {
 /**
  * Collect all findings from sentinel directory.
  * @param {string} sentinelDir - Sentinel directory path
- * @param {string[]} expected - Expected analyzer keys
+ * @param {string[]} expected - Expected keys. In ultradeep mode these are analyzer keys
+ *   (e.g. 'injection', 'auth'). In extreme mode these are partition slugs
+ *   (e.g. 'src-auth', 'src-api') — matches the `analyzers` array in `_status.json`.
  * @returns {object[]} Array of parsed findings
  */
 function collectResults(sentinelDir, expected) {
@@ -524,19 +781,32 @@ function collectResults(sentinelDir, expected) {
  * @param {string} [model] - Explicit model override
  * @param {object} [opts] - Options
  * @param {boolean} [opts.json] - If true, route output to stderr to keep stdout clean for JSON
+ * @param {number} [opts.partitions] - Number of partitions (extreme mode)
  */
 function showCostEstimate(auditType, analyzerCount, model, opts) {
   const resolved = resolveModel(model, 'haiku');
-  const estimate = estimateCost(resolved, analyzerCount);
+  const partCount =
+    opts && typeof opts.partitions === 'number' && opts.partitions > 1 ? opts.partitions : 1;
+  const estimate = estimateCost(resolved, analyzerCount, partCount);
   const log = opts && opts.json ? console.error : console.log;
 
-  log(`\nCost estimate for ULTRADEEP ${auditType} audit:`);
-  log(`  Model: ${estimate.model}`);
-  log(`  Analyzers: ${analyzerCount}`);
-  log(`  Cost multiplier vs haiku: ${estimate.multiplier}x`);
-  log(`  Per-analyzer estimate: ${estimate.perAnalyzerCost}`);
-  log(`  Total estimate: ${estimate.totalEstimate}`);
-  log(`  Each analyzer runs as a full Claude Code session`);
+  if (partCount > 1) {
+    log(`\nCost estimate for EXTREME ${auditType} audit:`);
+    log(`  Model: ${estimate.model}`);
+    log(`  Partitions: ${partCount}`);
+    log(`  Analyzers per partition: ${analyzerCount}`);
+    log(`  Total agent sessions: ${estimate.totalSessions}`);
+    log(`  Per-agent estimate: ${estimate.perAnalyzerCost}`);
+    log(`  Total estimate: ${estimate.totalEstimate}`);
+  } else {
+    log(`\nCost estimate for ULTRADEEP ${auditType} audit:`);
+    log(`  Model: ${estimate.model}`);
+    log(`  Analyzers: ${analyzerCount}`);
+    log(`  Cost multiplier vs haiku: ${estimate.multiplier}x`);
+    log(`  Per-analyzer estimate: ${estimate.perAnalyzerCost}`);
+    log(`  Total estimate: ${estimate.totalEstimate}`);
+    log(`  Each analyzer runs as a full Claude Code session`);
+  }
 }
 
 // Main
@@ -552,10 +822,13 @@ if (require.main === module) {
       process.exit(1);
     }
 
-    const result = getAnalyzersForAudit(options.audit, 'ultradeep', options.focus);
+    const isExtreme = options.depth === 'extreme';
+    const depthForCost = isExtreme ? 'extreme' : 'ultradeep';
+    const result = getAnalyzersForAudit(options.audit, depthForCost, options.focus);
     if (result) {
       showCostEstimate(options.audit, result.analyzers.length, options.model, {
         json: options.json,
+        partitions: isExtreme && options.partitions ? options.partitions.length : 1,
       });
     }
 
@@ -570,6 +843,8 @@ if (require.main === module) {
         sessions: spawnResult.sessions,
         dryRun: spawnResult.dryRun || false,
         fallback: spawnResult.fallback || null,
+        mode: spawnResult.mode || 'ultradeep',
+        partitions: spawnResult.partitions || null,
       };
       console.log(JSON.stringify(jsonOut));
     }
@@ -589,6 +864,8 @@ module.exports = {
   createSentinelDir,
   writeStatusFile,
   buildAnalyzerPrompt,
+  buildExtremePrompt,
+  partitionSlug,
   spawnOneSession,
   spawnAuditInTmux,
   pollForCompletion,
