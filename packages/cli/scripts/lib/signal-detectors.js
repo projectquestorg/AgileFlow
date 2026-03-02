@@ -517,6 +517,29 @@ const FEATURE_DETECTORS = {
     });
   },
 
+  'ac-verify': signals => {
+    const { story, tests } = signals;
+    if (!story || story.status !== 'in-progress') return null;
+    if (!tests || tests.passing !== true) return null; // Only after tests pass
+    if (!storyHasAC(story)) return null;
+    // Check if AC already verified (count by index to avoid extra keys)
+    const acStatus = story.ac_status || {};
+    const acList = story.acceptance_criteria || story.ac || [];
+    const verifiedCount = acList.filter(
+      (_, i) =>
+        acStatus[i] === 'verified' || acStatus[i] === 'auto-verified' || acStatus[i] === true
+    ).length;
+    if (verifiedCount === acList.length) return null;
+    const unverifiedCount = acList.length - verifiedCount;
+    return recommend('ac-verify', {
+      priority: 'high',
+      trigger: `Tests pass but ${unverifiedCount}/${acList.length} AC unverified`,
+      action: 'suggest',
+      command: '/agileflow:audit',
+      phase: 'post-impl',
+    });
+  },
+
   // =========================================================================
   // POST-IMPLEMENTATION PHASE
   // =========================================================================
@@ -728,6 +751,7 @@ const PHASE_MAP = {
     'serve',
   ],
   'post-impl': [
+    'ac-verify',
     'review',
     'logic-audit',
     'docs',

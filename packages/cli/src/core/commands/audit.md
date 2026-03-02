@@ -162,25 +162,61 @@ Parse results:
 
 ### Step 3: Verify Acceptance Criteria
 
-Display each AC from status.json and ask user to verify:
+**3a. Run AC-to-Test Matcher (automated pre-check)**
+
+Before asking the user to verify AC manually, run the automated AC-to-test matcher:
+
+```bash
+node -e "
+const { matchACToTests } = require('./.agileflow/scripts/lib/ac-test-matcher');
+const result = matchACToTests('{{STORY_ID}}');
+console.log(JSON.stringify(result, null, 2));
+"
+```
+
+This returns matched/unmatched AC with confidence levels. Use the results to pre-populate the checklist.
+
+**3b. Display AC checklist with auto-matched items**
+
+Show each AC with auto-match status. High-confidence matches are pre-checked:
 
 ```xml
 <invoke name="AskUserQuestion">
 <parameter name="questions">[{
-  "question": "Verify each acceptance criterion is met for {{STORY_ID}}:",
+  "question": "Verify acceptance criteria for {{STORY_ID}} ({{matched}}/{{total}} auto-matched to tests):",
   "header": "AC Check",
   "multiSelect": true,
   "options": [
-    {"label": "{{AC_1}}", "description": "Mark if complete"},
-    {"label": "{{AC_2}}", "description": "Mark if complete"},
-    {"label": "{{AC_3}}", "description": "Mark if complete"}
+    {"label": "AC1: {{AC_1}} [auto-verified]", "description": "Matched to {{test_file}} (high confidence)"},
+    {"label": "AC2: {{AC_2}} [auto-verified]", "description": "Matched to {{test_file}} (medium confidence)"},
+    {"label": "AC3: {{AC_3}} [needs manual check]", "description": "No matching tests found - verify manually"}
   ]
 }]</parameter>
 </invoke>
 ```
 
+Auto-matched AC (high/medium confidence) should be pre-selected. Unmatched AC require manual verification.
+
+**3c. Write ac_status to status.json**
+
+After verification, write structured `ac_status` to the story in status.json:
+
+```json
+{
+  "ac_status": {
+    "0": "auto-verified",
+    "1": "auto-verified",
+    "2": "verified",
+    "3": "unverified"
+  },
+  "ac_coverage": 0.75
+}
+```
+
+Values: `auto-verified` (test match), `verified` (manual confirm), `likely-covered` (medium confidence), `unverified` (not confirmed)
+
 Calculate verification rate:
-- Count selected (verified) vs total AC
+- Count verified + auto-verified vs total AC
 - 100% = All verified
 - <100% = Partial
 

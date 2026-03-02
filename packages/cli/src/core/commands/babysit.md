@@ -1,6 +1,6 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>] [STRICT=true|false] [TDD=true|false]"
+argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>] [STRICT=true|false] [TDD=true|false] [VERIFY=suggest|recommend|require|block]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -18,6 +18,7 @@ compact_context:
     - "OBTAIN-CONTEXT: NEVER pipe obtain-context.js through head/tail/truncation - run it bare, it has built-in smart output limits"
     - "STRICT MODE: When STRICT=true, enforce gates - hide commit option until tests pass, auto-trigger code review for 5+ files, remove skip options"
     - "TDD MODE: When TDD=true, start stories in RED phase via /agileflow:tdd. Follow RED→GREEN→REFACTOR phases."
+    - "VERIFY MODE: suggest=current behavior, recommend=show AC summary + (Recommended) framing, require=auto-run verify + AC checklist + gate commit, block=require + browser QA for UI stories. STRICT=true implies VERIFY=require."
   state_fields:
     - current_story
     - current_epic
@@ -25,6 +26,7 @@ compact_context:
     - claimed_story_id
     - strict_mode
     - tdd_mode
+    - verify_mode
 ---
 
 # /agileflow-babysit
@@ -56,13 +58,16 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 | `COVERAGE` | auto | `80` | Test coverage threshold (%). Set `0` to disable |
 | `STRICT` | `false` | `true` | Enforce workflow gates (tests required before commit, code review for 5+ files) |
 | `TDD` | `false` | `true` | Enable TDD mode (RED→GREEN→REFACTOR phases) for each story |
+| `VERIFY` | `recommend` | `require` | AC verification enforcement level (see VERIFY MODE below) |
 
-**Auto-detection**: When `EPIC` is specified with 3+ ready stories, `MODE=loop` is auto-enabled. `VISUAL` auto-enables for UI-tagged stories. `COVERAGE` auto-enables when a coverage baseline exists.
+**Auto-detection**: When `EPIC` is specified with 3+ ready stories, `MODE=loop` is auto-enabled. `VISUAL` auto-enables for UI-tagged stories. `COVERAGE` auto-enables when a coverage baseline exists. `STRICT=true` implies `VERIFY=require` unless explicitly overridden.
 
 ```
 /agileflow:babysit EPIC=EP-0042                    # Auto-detect everything
 /agileflow:babysit EPIC=EP-0042 MODE=once          # Single story only
 /agileflow:babysit STRICT=true TDD=true            # Full discipline: TDD + strict gates
+/agileflow:babysit VERIFY=require                  # Enforce AC verification before commit
+/agileflow:babysit STRICT=true VERIFY=suggest      # Strict gates but relaxed AC verification
 ```
 
 ---
@@ -111,6 +116,55 @@ Track gate state:
 ### Strict + TDD Mode (`STRICT=true TDD=true`)
 
 When both enabled: stories start in TDD RED phase, phase gates enforced (RED needs failing tests, GREEN needs passing), after TDD COMPLETE strict gates also apply.
+
+---
+
+## VERIFY MODE (AC Verification Enforcement)
+
+Graduated verification of acceptance criteria before story completion.
+
+| Level | Behavior | Use Case |
+|-------|----------|----------|
+| `suggest` | Current behavior - AC verification available but not prompted | Exploratory work |
+| `recommend` (default) | Show AC summary after tests pass, (Recommended) framing for verify | Normal development |
+| `require` | Auto-run ac-test-matcher, show AC checklist, gate commit on AC verification | Team/production |
+| `block` | All of `require` + browser QA for UI stories | Critical/regulated |
+
+`STRICT=true` implies `VERIFY=require` unless explicitly overridden.
+
+### How It Works
+
+1. After tests pass, run `ac-test-matcher.js` to find test-covered AC
+2. Auto-verified AC (high confidence match) are pre-checked
+3. Unmatched AC require manual confirmation via AskUserQuestion
+4. At `require`/`block` level, commit option hidden until all AC confirmed
+
+### AC Summary in AskUserQuestion
+
+After tests pass with `VERIFY=recommend` or higher:
+```json
+[
+  {"label": "Verify AC for US-0042 (Recommended)", "description": "3/5 AC auto-matched to tests, 2 need manual check"},
+  {"label": "Commit: 'feat: add session tracking'", "description": "Tests pass, skip AC verification"},
+  {"label": "🔍 Run logic audit", "description": "5 analyzers catch edge cases tests miss"}
+]
+```
+
+At `require` level, the "Commit" option is hidden until AC verified:
+```json
+[
+  {"label": "Verify AC for US-0042 (Required)", "description": "3/5 AC auto-matched, 2 need manual confirmation"},
+  {"label": "🔍 Run logic audit", "description": "5 analyzers catch edge cases tests miss"}
+]
+```
+
+Track verification state:
+```
+⬜ tests_passed    → Run /agileflow:verify
+⬜ ac_verified     → Run ac-test-matcher + manual check
+⬜ review_done     → Auto-triggered at 5+ files
+⬜ logic_audit     → Optional (advisory)
+```
 
 ---
 
@@ -170,7 +224,8 @@ User parameters override smart detection (`MODE=once` overrides loop, `VISUAL=fa
 | After context | Most impactful ready story |
 | After plan approval | "Start implementing now" |
 | After code written | "Run tests (Recommended)" + logic audit option |
-| After tests pass | "🔍 Run logic audit (Recommended)" or "Commit" |
+| After tests pass | "Verify AC (Recommended)" if VERIFY>=recommend, else "🔍 Run logic audit (Recommended)" or "Commit" |
+| After AC verified | "🔍 Run logic audit (Recommended)" or "Commit" |
 | After logic audit | "Commit: '[type]: [summary]' (Recommended)" |
 | After error | "Try [specific alternative]" |
 
@@ -263,9 +318,9 @@ Don't wait for smart-detect. Auto-trigger based on these rules:
 10. Verify tests pass
 
 **Phase 4: Review & Completion**
-11. Offer via AskUserQuestion: tests, logic audit, code review (5+ files), docs sync (API changes), multi-expert (10+ files), ADR (if arch decision)
-12. STRICT gate check: hide commit until gates pass
-13. Update status.json, release story claim: `node .agileflow/scripts/lib/story-claiming.js release <id>`
+11. Offer via AskUserQuestion: tests, AC verification (VERIFY mode), logic audit, code review (5+ files), docs sync (API changes), multi-expert (10+ files), ADR (if arch decision)
+12. STRICT/VERIFY gate check: hide commit until gates pass (tests + AC at require/block level)
+13. Update status.json (including ac_status), release story claim: `node .agileflow/scripts/lib/story-claiming.js release <id>`
 
 ---
 

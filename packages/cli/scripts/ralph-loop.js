@@ -279,15 +279,40 @@ const DISCRETION_CONDITIONS = {
     if (!Array.isArray(ac) || ac.length === 0) {
       return { passed: true, message: 'No AC defined (assuming complete)' };
     }
-    // Check for ac_status field or assume AC are verified if tests pass
+    // Check for ac_status field (supports auto-verified and likely-covered from ac-test-matcher)
     const acStatus = story.ac_status || {};
-    const allVerified = ac.every((_, i) => acStatus[i] === 'verified' || acStatus[i] === true);
+    const verifiedStatuses = ['verified', 'auto-verified', 'likely-covered'];
+    const verifiedCount = ac.filter(
+      (_, i) => verifiedStatuses.includes(acStatus[i]) || acStatus[i] === true
+    ).length;
+    const allVerified = verifiedCount === ac.length;
     return {
       passed: allVerified,
-      message: allVerified
-        ? 'All AC verified'
-        : `${Object.values(acStatus).filter(v => v === 'verified' || v === true).length}/${ac.length} AC verified`,
+      message: allVerified ? 'All AC verified' : `${verifiedCount}/${ac.length} AC verified`,
     };
+  },
+
+  // AC test coverage condition (uses ac-test-matcher for automated checks)
+  'ac test coverage sufficient': (rootDir, ctx) => {
+    const storyId = ctx.currentStoryId;
+    if (!storyId) {
+      return { passed: false, message: 'No story ID in context' };
+    }
+    try {
+      const { matchACToTests } = require(path.join(__dirname, 'lib', 'ac-test-matcher'));
+      const result = matchACToTests(storyId, rootDir);
+      if (result.error) {
+        return { passed: false, message: result.error };
+      }
+      const threshold = ctx.coverageThreshold || 0.5;
+      const passed = result.coverage >= threshold;
+      return {
+        passed,
+        message: `AC test coverage: ${Math.round(result.coverage * 100)}% (${result.matched.length}/${result.total} matched, threshold: ${Math.round(threshold * 100)}%)`,
+      };
+    } catch (e) {
+      return { passed: false, message: `AC matcher error: ${e.message}` };
+    }
   },
 };
 

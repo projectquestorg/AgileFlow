@@ -259,7 +259,32 @@ Record test verification in current session:
 }
 ```
 
-### 7. Generate Report
+### 7. AC Coverage Report (Optional)
+
+After tests pass, if the current story has acceptance criteria, run the AC-to-test matcher to show coverage:
+
+```bash
+node -e "
+const { matchACToTests } = require('./.agileflow/scripts/lib/ac-test-matcher');
+const result = matchACToTests('{{STORY_ID}}');
+console.log(JSON.stringify(result, null, 2));
+"
+```
+
+Append AC coverage to the verification report:
+
+```
+AC Coverage: 3/5 (60%)
+  ✅ AC1: "Create audit command" → matched to audit.test.js (high)
+  ✅ AC2: "Accept story ID" → matched to audit.test.js (high)
+  ✅ AC3: "Run tests" → matched to verify.test.js (medium)
+  ⬜ AC4: "Check AC met" → no matching tests
+  ⬜ AC5: "Prompt for learnings" → no matching tests
+```
+
+If no story is specified or story has no AC, skip this section.
+
+### 8. Generate Report
 
 **Success Report**:
 ```
