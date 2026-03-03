@@ -297,26 +297,26 @@ describe('setup command', () => {
   });
 
   describe('display sections', () => {
-    it('displays setup section with target directory', async () => {
+    it('displays setup section with step numbers and target directory', async () => {
       await setupCommand.action({ yes: true, selfUpdate: false });
 
       expect(displaySection).toHaveBeenCalledWith(
-        'Setting Up AgileFlow',
+        expect.stringContaining('Installing Core Content'),
         expect.stringContaining('Target:')
       );
     });
 
-    it('displays IDE configuration section', async () => {
+    it('displays IDE configuration section with step number', async () => {
       await setupCommand.action({ yes: true, selfUpdate: false });
 
-      expect(displaySection).toHaveBeenCalledWith('Configuring IDEs');
+      expect(displaySection).toHaveBeenCalledWith(expect.stringContaining('Configuring IDEs'));
     });
 
-    it('displays documentation structure section', async () => {
+    it('displays documentation structure section with step number', async () => {
       await setupCommand.action({ yes: true, selfUpdate: false });
 
       expect(displaySection).toHaveBeenCalledWith(
-        'Creating Documentation Structure',
+        expect.stringContaining('Creating Documentation Structure'),
         expect.stringContaining('Folder:')
       );
     });

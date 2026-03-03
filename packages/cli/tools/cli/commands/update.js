@@ -230,6 +230,48 @@ module.exports = {
 
       console.log(chalk.green(`\n✨ Update complete! (${status.version} → ${latestVersion})\n`));
 
+      // Show changelog diff between old and new version
+      try {
+        const fs = require('node:fs');
+        const changelogPath = path.join(status.path, 'CHANGELOG.md');
+        if (fs.existsSync(changelogPath)) {
+          const changelog = fs.readFileSync(changelogPath, 'utf8');
+          const oldVer = status.version.replace(/^v/, '');
+          const newVer = latestVersion.replace(/^v/, '');
+
+          // Extract sections between old and new version headers
+          const versionPattern = /^##\s+\[?\d+\.\d+\.\d+\]?/m;
+          const lines = changelog.split('\n');
+          const relevantLines = [];
+          let capturing = false;
+
+          for (const line of lines) {
+            if (versionPattern.test(line)) {
+              if (line.includes(oldVer)) {
+                break; // Stop at old version
+              }
+              capturing = true;
+            }
+            if (capturing) {
+              relevantLines.push(line);
+            }
+          }
+
+          if (relevantLines.length > 0) {
+            const maxLines = 20;
+            const display = relevantLines.slice(0, maxLines);
+            console.log(chalk.hex('#e8683a').bold(`  What's New in v${newVer}:\n`));
+            display.forEach(l => console.log(chalk.dim(`  ${l}`)));
+            if (relevantLines.length > maxLines) {
+              console.log(chalk.dim(`  ... and ${relevantLines.length - maxLines} more lines`));
+            }
+            console.log(chalk.dim(`\n  Run /agileflow:whats-new for full changelog\n`));
+          }
+        }
+      } catch {
+        // Changelog display is non-critical
+      }
+
       // If running from outdated global installation, remind user to update it
       if (
         npmLatestVersion &&

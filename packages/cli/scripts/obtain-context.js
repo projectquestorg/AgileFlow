@@ -158,6 +158,20 @@ function executeQueryMode(query) {
 // =============================================================================
 
 async function main() {
+  // Guard: Check .agileflow directory exists (covers all 94+ commands)
+  if (!fs.existsSync('.agileflow') && !fs.existsSync('docs/09-agents/status.json')) {
+    const red = '\x1b[38;5;203m';
+    const bold = '\x1b[1m';
+    const reset = '\x1b[0m';
+    const dim = '\x1b[2m';
+    console.error(`${red}${bold}AgileFlow is not initialized in this directory.${reset}`);
+    console.error(`${dim}Run: ${reset}${bold}npx agileflow setup${reset}`);
+    console.error(
+      `${dim}This will create the .agileflow/ directory with commands, hooks, and configuration.${reset}`
+    );
+    process.exit(1);
+  }
+
   // Register command for PreCompact
   registerCommand();
 

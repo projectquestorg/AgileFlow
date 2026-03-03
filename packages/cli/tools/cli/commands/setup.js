@@ -89,7 +89,14 @@ module.exports = {
         config = await promptInstall();
       }
 
-      displaySection('Setting Up AgileFlow', `Target: ${config.directory}`);
+      const totalSteps = 5;
+      let currentStep = 0;
+      const step = label => {
+        currentStep++;
+        return `[${currentStep}/${totalSteps}] ${label}`;
+      };
+
+      displaySection(step('Installing Core Content'), `Target: ${config.directory}`);
 
       // Run core installation
       const coreResult = await installer.install(config);
@@ -104,17 +111,81 @@ module.exports = {
       success(`Installed ${coreResult.counts.skills} skills`);
 
       // Setup IDE configurations
-      displaySection('Configuring IDEs');
+      displaySection(step('Configuring IDEs'));
 
       ideManager.setAgileflowFolder(config.agileflowFolder);
       ideManager.setDocsFolder(config.docsFolder);
+
+      // Check for existing IDE configs before overwriting
+      if (!options.yes) {
+        const existingConfigs = [];
+        const ideConfigDirs = {
+          'claude-code': '.claude',
+          cursor: '.cursor',
+          windsurf: '.windsurf',
+        };
+
+        for (const ide of config.ides) {
+          const configDir = ideConfigDirs[ide];
+          if (configDir) {
+            const fullPath = path.join(config.directory, configDir);
+            if (fs.existsSync(fullPath)) {
+              existingConfigs.push({ ide, dir: configDir });
+            }
+          }
+        }
+
+        if (existingConfigs.length > 0) {
+          const { confirmOverwrite } = require('inquirer');
+          const configList = existingConfigs.map(c => `  ${c.dir}/`).join('\n');
+          console.log(chalk.yellow(`\n  Existing IDE configs detected:\n${configList}\n`));
+          console.log(
+            chalk.dim(
+              '  AgileFlow will add commands and hooks to these directories.\n' +
+                '  Existing settings will be merged (not replaced).\n'
+            )
+          );
+
+          let proceed = true;
+          try {
+            const inquirer = require('inquirer');
+            const answer = await inquirer.prompt([
+              {
+                type: 'confirm',
+                name: 'proceed',
+                message: 'Continue with IDE configuration?',
+                default: true,
+              },
+            ]);
+            proceed = answer.proceed;
+          } catch {
+            // If inquirer not available or stdin not interactive, proceed
+            proceed = true;
+          }
+
+          if (!proceed) {
+            info('Skipping IDE configuration. Core installation is complete.');
+            console.log(chalk.dim('  Run setup again to configure IDEs later.\n'));
+            // Skip to docs structure
+            displaySection('Creating Documentation Structure', `Folder: ${config.docsFolder}/`);
+            const docsResult = await createDocsStructure(config.directory, config.docsFolder, {
+              updateGitignore: config.updateGitignore,
+            });
+            if (!docsResult.success) {
+              error('Failed to create docs structure');
+            }
+            console.log(chalk.green('\n✨ Setup complete (without IDE configs)!\n'));
+            return;
+          }
+        }
+      }
 
       for (const ide of config.ides) {
         await ideManager.setup(ide, config.directory, coreResult.path);
       }
 
       // Create docs structure
-      displaySection('Creating Documentation Structure', `Folder: ${config.docsFolder}/`);
+      displaySection(step('Creating Documentation Structure'), `Folder: ${config.docsFolder}/`);
       const docsResult = await createDocsStructure(config.directory, config.docsFolder, {
         updateGitignore: config.updateGitignore,
       });
@@ -127,6 +198,7 @@ module.exports = {
       }
 
       // Update metadata with config tracking
+      displaySection(step('Updating Configuration'));
       try {
         const metadataPath = path.join(
           config.directory,
@@ -149,6 +221,16 @@ module.exports = {
       }
 
       // Final summary
+      displaySection(step('Verifying Installation'));
+      const { counts } = coreResult;
+      const totalItems = (counts.commands || 0) + (counts.agents || 0) + (counts.skills || 0);
+      console.log(
+        chalk.green(
+          `  Setup complete: ${counts.commands} commands, ${counts.agents} agents, ${counts.skills} skills installed`
+        )
+      );
+      console.log(chalk.dim(`  IDEs configured: ${config.ides.join(', ')}`));
+
       console.log(chalk.green('\n✨ Setup complete!\n'));
 
       console.log(chalk.bold('Get started:'));

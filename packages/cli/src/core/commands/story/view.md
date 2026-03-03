@@ -6,6 +6,8 @@ compact_context:
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:story:view - Views story with context-aware actions"
     - "MUST read story file and status.json entry"
+    - "MUST parse AC items and cross-reference with test files for verified/pending status"
+    - "MUST display AC Progress: X/Y verified with visual progress bar"
     - "MUST display full story: AC (with checkboxes), tests, dependencies, blockers"
     - "MUST offer CONTEXT-AWARE actions based on story status"
     - "STATUS=ready → Start work, validate, view research"
@@ -51,13 +53,15 @@ node .agileflow/scripts/obtain-context.js story:view
 
 ### Flow
 1. Read story file and status.json entry
-2. Display full story details (AC, tests, progress)
-3. Offer actions based on current status
-4. Execute selected action
+2. Parse AC items and cross-reference with test files
+3. Display full story details (AC progress, tests, dependencies)
+4. Offer actions based on current status
+5. Execute selected action
 
 ### Critical Rules
+- **AC progress**: Parse AC items, cross-reference with tests, show X/Y verified with progress bar
 - **Context-aware actions**: Different options based on story status
-- **Show everything**: AC, test status, dependencies, blockers
+- **Show everything**: AC progress, test status, dependencies, blockers
 - **Always offer next steps**: End with relevant AskUserQuestion
 <!-- COMPACT_SUMMARY_END -->
 
@@ -109,7 +113,22 @@ cat docs/09-agents/status.json | jq '.stories["<STORY>"]'
 cat docs/07-testing/test-cases/<STORY>.md
 ```
 
-### Step 3: Display Story Details
+### Step 3: Parse AC and Compute Progress
+
+Before displaying, count acceptance criteria completion:
+
+1. **Parse AC from status.json**: Read the `ac` array from the story entry (string list of AC items)
+2. **Parse AC from story file** (if exists): Look for Given/When/Then patterns or `- [ ]`/`- [x]` checkboxes
+3. **Cross-reference with tests**: Check `docs/07-testing/test-cases/<STORY>.md` and `__tests__/<STORY>.test.*` for matching test descriptions
+4. **Compute progress**: Count verified (has matching test OR `[x]` checkbox) vs total AC items
+5. **Build ac_status**: `{ total: N, verified: M, items: [{text, verified, test_match}] }`
+
+**Matching rules:**
+- AC is "verified" if: story file has `[x]` checkbox for it, OR a test file has a describe/it/test matching the AC text
+- Use fuzzy substring matching (lowercase, strip "given/when/then" prefixes)
+- If no test files found, fall back to checkbox status only
+
+### Step 4: Display Story Details
 
 ```markdown
 ## US-0042: User Login Form
@@ -124,11 +143,14 @@ cat docs/07-testing/test-cases/<STORY>.md
 
 ---
 
-### Acceptance Criteria
+### AC Progress: 1/3 verified
+
+[==========....................] 33%
 
 - [x] Given a user on the login page
       When they enter valid credentials
       Then they are redirected to dashboard
+      (matched: LoginForm.test.tsx > "redirects on valid credentials")
 
 - [ ] Given a user on the login page
       When they enter invalid credentials
@@ -143,7 +165,7 @@ cat docs/07-testing/test-cases/<STORY>.md
 ### Dependencies
 
 - US-0040: API authentication endpoint (done)
-- US-0041: Session management (ready) ⚠️ Not started yet
+- US-0041: Session management (ready) - Not started yet
 
 ---
 
