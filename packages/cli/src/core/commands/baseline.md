@@ -1,5 +1,6 @@
 ---
 description: Mark current state as verified baseline
+phase: planning
 argument-hint: "[<message>]"
 compact_context:
   priority: critical

@@ -1,5 +1,6 @@
 ---
 description: Bootstrap CI/CD workflow with testing and quality checks
+phase: implementation
 argument-hint: "(no arguments)"
 compact_context:
   priority: high

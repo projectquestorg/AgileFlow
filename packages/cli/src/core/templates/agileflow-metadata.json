@@ -133,6 +133,11 @@
     "default_audit_model": null,
     "description": "Override via MODEL=haiku|sonnet|opus in audit command arguments. null = use agent defaults."
   },
+  "ci_feedback_loops": {
+    "enabled": true,
+    "max_rounds": 3,
+    "description": "Auto-retry agent work when CI/tests fail, up to max_rounds before escalating to human"
+  },
   "ultradeep": {
     "tab_naming": "prefix:name",
     "custom_colors": null,

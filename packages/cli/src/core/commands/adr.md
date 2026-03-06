@@ -1,5 +1,6 @@
 ---
 description: Create an Architecture Decision Record
+phase: planning
 argument-hint: "NUMBER=<number> TITLE=<text> CONTEXT=<text> DECISION=<text> CONSEQUENCES=<text> [LINKS=<text>]"
 compact_context:
   priority: medium

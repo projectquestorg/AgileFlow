@@ -1,6 +1,7 @@
 ---
 description: Interactive mentor for end-to-end feature implementation
-argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>] [STRICT=true|false] [TDD=true|false] [VERIFY=suggest|recommend|require|block]"
+phase: implementation
+argument-hint: "[EPIC=<EP-ID>] [MODE=loop|once] [VISUAL=true|false] [COVERAGE=<percent>] [MAX=<iterations>] [STRICT=true|false] [TDD=true|false] [VERIFY=suggest|recommend|require|block] [CI_ROUNDS=<N>]"
 compact_context:
   priority: critical
   preserve_rules:
@@ -19,6 +20,7 @@ compact_context:
     - "STRICT MODE: When STRICT=true, enforce gates - hide commit option until tests pass, auto-trigger code review for 5+ files, remove skip options"
     - "TDD MODE: When TDD=true, start stories in RED phase via /agileflow:tdd. Follow RED→GREEN→REFACTOR phases."
     - "VERIFY MODE: suggest=current behavior, recommend=show AC summary + (Recommended) framing, require=auto-run verify + AC checklist + gate commit, block=require + browser QA for UI stories. STRICT=true implies VERIFY=require."
+    - "CI FEEDBACK LOOP: When tests fail, auto-retry up to CI_ROUNDS (default 3) before escalating. Uses executeCIFeedbackLoop() from quality-gates.js."
   state_fields:
     - current_story
     - current_epic
@@ -27,6 +29,7 @@ compact_context:
     - strict_mode
     - tdd_mode
     - verify_mode
+    - ci_rounds
 ---
 
 # /agileflow-babysit
@@ -59,6 +62,7 @@ All parameters are optional. Most are auto-detected by the Contextual Feature Ro
 | `STRICT` | `false` | `true` | Enforce workflow gates (tests required before commit, code review for 5+ files) |
 | `TDD` | `false` | `true` | Enable TDD mode (RED→GREEN→REFACTOR phases) for each story |
 | `VERIFY` | `recommend` | `require` | AC verification enforcement level (see VERIFY MODE below) |
+| `CI_ROUNDS` | `3` | `5` | Max auto-retry rounds when tests fail before escalating to human |
 
 **Auto-detection**: When `EPIC` is specified with 3+ ready stories, `MODE=loop` is auto-enabled. `VISUAL` auto-enables for UI-tagged stories. `COVERAGE` auto-enables when a coverage baseline exists. `STRICT=true` implies `VERIFY=require` unless explicitly overridden.
 
@@ -164,6 +168,31 @@ Track verification state:
 ⬜ ac_verified     → Run ac-test-matcher + manual check
 ⬜ review_done     → Auto-triggered at 5+ files
 ⬜ logic_audit     → Optional (advisory)
+```
+
+---
+
+## CI FEEDBACK LOOP (`CI_ROUNDS=<N>`)
+
+Auto-retry when tests fail, inspired by Stripe's Blueprint Engine pattern. Instead of immediately escalating to the human when tests fail, the agent gets structured CI feedback and retries up to N rounds.
+
+| Round | What Happens |
+|-------|-------------|
+| 1..N-1 | Tests fail → agent receives failure output → fixes and retries |
+| N | Tests fail → escalate to human with full failure context |
+| Any | Tests pass → proceed to next workflow step |
+
+**Configuration**: Set `ci_feedback_loops.max_rounds` in `docs/00-meta/agileflow-metadata.json` (default: 3). Override per-session with `CI_ROUNDS=N`.
+
+**Integration with quality-gates.js**: Uses `executeCIFeedbackLoop()` which wraps `executeGates()` with round tracking and structured agent feedback.
+
+**When active**: After implementation, instead of asking the user about test failures, automatically re-attempt fixes. After exhausting rounds, present:
+```json
+[
+  {"label": "Review CI failures manually (Recommended)", "description": "3/3 auto-fix rounds exhausted, 2 tests still failing"},
+  {"label": "Run /agileflow:research:ask with failure context", "description": "Get external guidance on persistent failures"},
+  {"label": "Skip failing tests and commit", "description": "Tests may be flaky or unrelated"}
+]
 ```
 
 ---

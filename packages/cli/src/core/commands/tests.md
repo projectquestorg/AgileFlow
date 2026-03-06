@@ -1,5 +1,6 @@
 ---
 description: Set up automated testing infrastructure
+phase: implementation
 argument-hint: "(no arguments)"
 compact_context:
   priority: high

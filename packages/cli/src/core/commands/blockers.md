@@ -1,5 +1,6 @@
 ---
 description: Track and resolve blockers with actionable suggestions
+phase: pre-story
 argument-hint: "[AGENT=<id>] [SHOW_RESOLVED=true|false] [DETAILED=true|false]"
 model: haiku
 compact_context:

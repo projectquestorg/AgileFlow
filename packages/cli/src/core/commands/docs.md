@@ -1,5 +1,6 @@
 ---
 description: Synchronize documentation with code changes
+phase: post-impl
 argument-hint: "[BRANCH=<name>] [BASE=<branch>] [AUTO_CREATE=true|false]"
 compact_context:
   priority: high

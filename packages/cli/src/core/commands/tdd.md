@@ -1,5 +1,6 @@
 ---
 description: Start TDD workflow with RED→GREEN→REFACTOR phases
+phase: implementation
 argument-hint: "<US-ID>"
 compact_context:
   priority: high

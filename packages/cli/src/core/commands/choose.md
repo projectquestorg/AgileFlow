@@ -1,5 +1,6 @@
 ---
 description: AI-directed decision making with structured options
+phase: pre-story
 argument-hint: "<decision> [<context>]"
 compact_context:
   priority: normal

@@ -1,5 +1,6 @@
 ---
 description: Generate pull request description from story
+phase: pre-pr
 argument-hint: "STORY=<US-ID> [TITLE=<text>] [TEST_EVIDENCE=<text>]"
 compact_context:
   priority: high

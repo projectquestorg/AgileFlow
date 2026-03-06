@@ -24,6 +24,7 @@ const path = require('path');
 const { detectLifecyclePhase, getRelevantPhases } = require('./lib/lifecycle-detector');
 const { runDetectorsForPhases } = require('./lib/signal-detectors');
 const { buildCatalogWithStatus } = require('./lib/feature-catalog');
+const { detectScale, getScaleRecommendations } = require('./lib/scale-detector');
 
 let safeReadJSON, safeWriteJSON, tryOptional;
 try {
@@ -158,6 +159,24 @@ function extractSignals(prefetched, sessionState, metadata) {
   // Thresholds from metadata
   const thresholds = metadata?.smart_detect?.thresholds || {};
 
+  // Scale detection (cached, <200ms)
+  let scale = null;
+  try {
+    const scaleResult = detectScale({
+      rootDir: process.cwd(),
+      statusJson,
+      sessionState,
+    });
+    scale = {
+      tier: scaleResult.scale,
+      metrics: scaleResult.metrics,
+      recommendations: getScaleRecommendations(scaleResult.scale),
+      fromCache: scaleResult.fromCache,
+    };
+  } catch {
+    // Scale detection failure is non-critical
+  }
+
   return {
     statusJson,
     sessionState,
@@ -178,6 +197,7 @@ function extractSignals(prefetched, sessionState, metadata) {
     counts,
     storyCount,
     thresholds,
+    scale,
     session: {
       planModeActive,
       activeCommands: sessionState?.active_commands || [],
@@ -300,6 +320,7 @@ function analyze(prefetched, sessionState, metadata) {
     tests_passing: signals.tests.passing,
     on_feature_branch: signals.git.onFeatureBranch,
     story_counts: signals.counts,
+    scale: signals.scale ? signals.scale.tier : null,
   };
 
   return {

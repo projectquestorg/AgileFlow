@@ -1,5 +1,6 @@
 ---
 description: Run project tests and update story test status
+phase: implementation
 argument-hint: "[<US-ID>]"
 compact_context:
   priority: critical

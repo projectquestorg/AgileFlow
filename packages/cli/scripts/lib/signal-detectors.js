@@ -233,6 +233,24 @@ const FEATURE_DETECTORS = {
     });
   },
 
+  'scale-adaptive': signals => {
+    const { scale } = signals;
+    if (!scale || !scale.tier) return null;
+    // Only trigger when scale info provides actionable guidance
+    const rec = scale.recommendations;
+    if (!rec) return null;
+    // Suggest scale-adaptive workflow when project is not medium (the default)
+    if (scale.tier === 'medium') return null;
+    const label = scale.tier.charAt(0).toUpperCase() + scale.tier.slice(1);
+    return recommend('scale-adaptive', {
+      priority: scale.tier === 'enterprise' || scale.tier === 'large' ? 'medium' : 'low',
+      trigger: `${label} project detected (${scale.metrics.files} files, ${scale.metrics.stories} stories) — ${rec.description}`,
+      action: 'suggest',
+      command: '/agileflow:workflow',
+      phase: 'pre-story',
+    });
+  },
+
   // =========================================================================
   // PLANNING PHASE
   // =========================================================================
@@ -727,6 +745,7 @@ const PHASE_MAP = {
     'workflow',
     'template',
     'configure',
+    'scale-adaptive',
   ],
   planning: [
     'impact',

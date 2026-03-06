@@ -562,6 +562,164 @@ function createValidationReport(gateResults, options = {}) {
 }
 
 // ============================================================================
+// CI Feedback Loop
+// ============================================================================
+
+/**
+ * Default CI feedback loop configuration
+ */
+const CI_FEEDBACK_DEFAULTS = {
+  enabled: true,
+  max_rounds: 3,
+};
+
+/**
+ * Load CI feedback loop config from agileflow-metadata.json
+ * @param {string} projectRoot - Project root directory
+ * @returns {Object} CI feedback loop config
+ */
+function loadCIFeedbackConfig(projectRoot) {
+  const metadataPath = path.join(projectRoot, 'docs', '00-meta', 'agileflow-metadata.json');
+  try {
+    if (fs.existsSync(metadataPath)) {
+      const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+      if (metadata.ci_feedback_loops) {
+        return {
+          ...CI_FEEDBACK_DEFAULTS,
+          ...metadata.ci_feedback_loops,
+        };
+      }
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  return { ...CI_FEEDBACK_DEFAULTS };
+}
+
+/**
+ * Execute a CI feedback loop - runs gates, and if they fail, returns
+ * structured feedback for the agent to retry (up to max_rounds).
+ *
+ * This implements the Stripe "Minions" pattern: deterministic CI check
+ * followed by agent retry, with a hard iteration limit.
+ *
+ * @param {Object[]} gates - Quality gate definitions to check
+ * @param {Object} options - Loop options
+ * @param {string} [options.projectRoot] - Project root directory
+ * @param {number} [options.maxRounds] - Override max retry rounds (default: from config)
+ * @param {number} [options.currentRound] - Current round number (1-based, default: 1)
+ * @param {string} [options.cwd] - Working directory for gate execution
+ * @returns {Object} Loop result with status and agent feedback
+ */
+function executeCIFeedbackLoop(gates, options = {}) {
+  const { projectRoot = process.cwd(), maxRounds, currentRound = 1, cwd } = options;
+
+  const config = loadCIFeedbackConfig(projectRoot);
+
+  if (!config.enabled) {
+    return {
+      status: 'disabled',
+      message: 'CI feedback loops are disabled in agileflow-metadata.json',
+      should_retry: false,
+      round: currentRound,
+      max_rounds: 0,
+    };
+  }
+
+  const effectiveMaxRounds = maxRounds || config.max_rounds || CI_FEEDBACK_DEFAULTS.max_rounds;
+
+  // Execute all gates
+  const gateResults = executeGates(gates, { cwd, stopOnFailure: false });
+
+  if (gateResults.passed) {
+    return {
+      status: 'passed',
+      message: `All ${gateResults.passed_count} gates passed on round ${currentRound}`,
+      should_retry: false,
+      round: currentRound,
+      max_rounds: effectiveMaxRounds,
+      gate_results: gateResults,
+    };
+  }
+
+  // Gates failed - determine if we should retry
+  const hasRoundsLeft = currentRound < effectiveMaxRounds;
+
+  if (!hasRoundsLeft) {
+    return {
+      status: 'exhausted',
+      message: `Gates failed after ${currentRound}/${effectiveMaxRounds} rounds. Escalating to human.`,
+      should_retry: false,
+      round: currentRound,
+      max_rounds: effectiveMaxRounds,
+      gate_results: gateResults,
+      failures: gateResults.results
+        .filter(r => r.status === GATE_STATUS.FAILED || r.status === GATE_STATUS.ERROR)
+        .map(r => ({
+          gate: r.gate,
+          message: r.message,
+          output: r.output,
+          error: r.error,
+        })),
+    };
+  }
+
+  // Build structured feedback for agent retry
+  const failures = gateResults.results.filter(
+    r => r.status === GATE_STATUS.FAILED || r.status === GATE_STATUS.ERROR
+  );
+
+  const feedbackLines = [
+    `## CI Feedback Loop - Round ${currentRound}/${effectiveMaxRounds}`,
+    '',
+    `**${failures.length} gate(s) failed.** ${effectiveMaxRounds - currentRound} retry round(s) remaining.`,
+    '',
+    '### Failures',
+    '',
+  ];
+
+  for (const failure of failures) {
+    feedbackLines.push(`#### ${failure.gate} (${failure.type})`);
+    feedbackLines.push(`- **Status**: ${failure.status}`);
+    feedbackLines.push(`- **Message**: ${failure.message}`);
+    if (failure.output) {
+      feedbackLines.push('- **Output**:');
+      feedbackLines.push('```');
+      feedbackLines.push(failure.output);
+      feedbackLines.push('```');
+    }
+    if (failure.error) {
+      feedbackLines.push('- **Error**:');
+      feedbackLines.push('```');
+      feedbackLines.push(failure.error);
+      feedbackLines.push('```');
+    }
+    feedbackLines.push('');
+  }
+
+  feedbackLines.push('### Action Required');
+  feedbackLines.push('');
+  feedbackLines.push('Fix the failing gates above, then re-run verification.');
+
+  return {
+    status: 'retry',
+    message: `Round ${currentRound}/${effectiveMaxRounds} failed. Agent should fix and retry.`,
+    should_retry: true,
+    round: currentRound,
+    max_rounds: effectiveMaxRounds,
+    next_round: currentRound + 1,
+    gate_results: gateResults,
+    agent_feedback: feedbackLines.join('\n'),
+    failures: failures.map(r => ({
+      gate: r.gate,
+      message: r.message,
+      output: r.output,
+      error: r.error,
+    })),
+  };
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -595,4 +753,9 @@ module.exports = {
 
   // Reporting
   createValidationReport,
+
+  // CI Feedback Loop
+  CI_FEEDBACK_DEFAULTS,
+  loadCIFeedbackConfig,
+  executeCIFeedbackLoop,
 };

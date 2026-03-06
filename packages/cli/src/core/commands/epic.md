@@ -1,5 +1,6 @@
 ---
 description: Create a new epic with stories
+phase: pre-story
 argument-hint: "EPIC=<EP-ID> TITLE=<text> OWNER=<id> GOAL=<text> [STORIES=<list>] [RESEARCH=<file>]"
 compact_context:
   priority: high

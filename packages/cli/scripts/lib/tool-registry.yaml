@@ -1,0 +1,241 @@
+# Tool Shed Registry - MCP Tool Definitions
+#
+# Central registry of MCP tools and their capabilities.
+# Used by tool-shed.js to recommend relevant tools per task.
+#
+# Format:
+#   - name: Tool name as exposed by MCP server
+#     server: MCP server name
+#     category: Grouping category
+#     description: What the tool does
+#     keywords: Search terms for matching tasks to tools
+#     cost: token cost estimate (low/medium/high)
+#     requires_auth: Whether the tool needs credentials
+
+# =============================================================================
+# GitHub Tools (via @anthropic/mcp-server-github or similar)
+# =============================================================================
+github:
+  - name: create_issue
+    description: Create a new GitHub issue
+    keywords: [issue, bug, feature request, ticket, report]
+    cost: low
+    requires_auth: true
+
+  - name: list_issues
+    description: List and search GitHub issues
+    keywords: [issues, bugs, search, filter, backlog]
+    cost: low
+    requires_auth: true
+
+  - name: create_pull_request
+    description: Create a pull request
+    keywords: [pr, pull request, merge, review, code review]
+    cost: low
+    requires_auth: true
+
+  - name: get_pull_request
+    description: Get pull request details and diff
+    keywords: [pr, pull request, diff, changes, review]
+    cost: medium
+    requires_auth: true
+
+  - name: list_pull_requests
+    description: List pull requests with filters
+    keywords: [prs, pull requests, open, merged, review]
+    cost: low
+    requires_auth: true
+
+  - name: create_branch
+    description: Create a new git branch
+    keywords: [branch, feature branch, git]
+    cost: low
+    requires_auth: true
+
+  - name: search_code
+    description: Search code across repositories
+    keywords: [search, find, code, grep, pattern]
+    cost: medium
+    requires_auth: true
+
+  - name: get_file_contents
+    description: Get file contents from a repository
+    keywords: [read, file, contents, source]
+    cost: low
+    requires_auth: true
+
+# =============================================================================
+# Filesystem Tools (via @anthropic/mcp-server-filesystem)
+# =============================================================================
+filesystem:
+  - name: read_file
+    description: Read contents of a file
+    keywords: [read, file, contents, view]
+    cost: low
+    requires_auth: false
+
+  - name: write_file
+    description: Write contents to a file
+    keywords: [write, file, create, save]
+    cost: low
+    requires_auth: false
+
+  - name: list_directory
+    description: List directory contents
+    keywords: [list, directory, files, ls, find]
+    cost: low
+    requires_auth: false
+
+  - name: search_files
+    description: Search for files by name pattern
+    keywords: [search, find, glob, pattern, files]
+    cost: low
+    requires_auth: false
+
+# =============================================================================
+# Database Tools (via various MCP servers)
+# =============================================================================
+database:
+  - name: query
+    description: Execute a SQL query
+    keywords: [sql, query, select, database, table, join]
+    cost: medium
+    requires_auth: true
+
+  - name: list_tables
+    description: List database tables
+    keywords: [tables, schema, database, structure]
+    cost: low
+    requires_auth: true
+
+  - name: describe_table
+    description: Get table schema and columns
+    keywords: [schema, columns, table, types, structure]
+    cost: low
+    requires_auth: true
+
+# =============================================================================
+# Browser / Web Tools
+# =============================================================================
+browser:
+  - name: navigate
+    description: Navigate browser to a URL
+    keywords: [browse, navigate, url, page, website]
+    cost: medium
+    requires_auth: false
+
+  - name: screenshot
+    description: Take a screenshot of the current page
+    keywords: [screenshot, capture, visual, image, qa]
+    cost: medium
+    requires_auth: false
+
+  - name: click
+    description: Click an element on the page
+    keywords: [click, interact, button, link]
+    cost: low
+    requires_auth: false
+
+  - name: fill
+    description: Fill in a form field
+    keywords: [fill, input, form, type, text]
+    cost: low
+    requires_auth: false
+
+# =============================================================================
+# Slack / Communication Tools
+# =============================================================================
+slack:
+  - name: send_message
+    description: Send a message to a Slack channel
+    keywords: [slack, message, notify, channel, team]
+    cost: low
+    requires_auth: true
+
+  - name: search_messages
+    description: Search Slack message history
+    keywords: [slack, search, messages, history, find]
+    cost: medium
+    requires_auth: true
+
+# =============================================================================
+# Notion / Documentation Tools
+# =============================================================================
+notion:
+  - name: search
+    description: Search Notion pages and databases
+    keywords: [notion, search, wiki, docs, knowledge]
+    cost: medium
+    requires_auth: true
+
+  - name: create_page
+    description: Create a new Notion page
+    keywords: [notion, create, page, document, wiki]
+    cost: low
+    requires_auth: true
+
+  - name: update_page
+    description: Update an existing Notion page
+    keywords: [notion, update, edit, page, wiki]
+    cost: low
+    requires_auth: true
+
+# =============================================================================
+# Memory / Knowledge Tools
+# =============================================================================
+memory:
+  - name: store
+    description: Store a key-value pair in persistent memory
+    keywords: [remember, store, save, memory, persist]
+    cost: low
+    requires_auth: false
+
+  - name: retrieve
+    description: Retrieve a value from persistent memory
+    keywords: [recall, retrieve, get, memory, remember]
+    cost: low
+    requires_auth: false
+
+  - name: search_memory
+    description: Search across stored memories
+    keywords: [search, memory, find, recall]
+    cost: low
+    requires_auth: false
+
+# =============================================================================
+# Sentry / Error Tracking Tools
+# =============================================================================
+sentry:
+  - name: list_issues
+    description: List Sentry error issues
+    keywords: [errors, bugs, sentry, tracking, crashes, exceptions]
+    cost: medium
+    requires_auth: true
+
+  - name: get_issue
+    description: Get details of a specific Sentry issue
+    keywords: [error, bug, sentry, stack trace, crash]
+    cost: medium
+    requires_auth: true
+
+# =============================================================================
+# Linear / Project Management Tools
+# =============================================================================
+linear:
+  - name: create_issue
+    description: Create a Linear issue
+    keywords: [ticket, issue, task, linear, project]
+    cost: low
+    requires_auth: true
+
+  - name: list_issues
+    description: List Linear issues with filters
+    keywords: [tickets, issues, tasks, linear, backlog, sprint]
+    cost: low
+    requires_auth: true
+
+  - name: update_issue
+    description: Update a Linear issue status or details
+    keywords: [update, ticket, status, assign, linear]
+    cost: low
+    requires_auth: true

@@ -1,5 +1,6 @@
 ---
 description: AI-powered code review with quality suggestions
+phase: post-impl
 argument-hint: "[BRANCH=<name>] [BASE=<branch>] [FOCUS=all|security|performance|style]"
 compact_context:
   priority: critical

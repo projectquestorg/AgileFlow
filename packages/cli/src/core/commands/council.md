@@ -1,5 +1,6 @@
 ---
 description: Convene AI Council for strategic decisions with three perspectives (Optimist, Advocate, Analyst)
+phase: planning
 argument-hint: "<question> [--mode parallel|debate] [--rounds N]"
 compact_context:
   priority: high

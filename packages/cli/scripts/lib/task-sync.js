@@ -28,6 +28,19 @@ function getPaths() {
   return _paths;
 }
 
+// Lazy-load status-writer for canonical writes
+let _statusWriter;
+function getStatusWriter() {
+  if (_statusWriter === undefined) {
+    try {
+      _statusWriter = require('./status-writer');
+    } catch (e) {
+      _statusWriter = null;
+    }
+  }
+  return _statusWriter;
+}
+
 /**
  * Map AgileFlow story status to native task status.
  */
@@ -75,6 +88,7 @@ function readStatusStories(rootDir) {
 
 /**
  * Write status.json stories back.
+ * @deprecated Use status-writer.updateStory() for individual story mutations instead.
  */
 function writeStatusStories(rootDir, stories) {
   try {
@@ -105,34 +119,12 @@ function writeStatusStories(rootDir, stories) {
  * @returns {{ ok: boolean }}
  */
 function syncToStatus(rootDir, storyId, updates) {
-  try {
-    const paths = getPaths();
-    const statusPath = paths
-      ? paths.getStatusPath(rootDir)
-      : path.join(rootDir, 'docs', '09-agents', 'status.json');
-
-    if (!fs.existsSync(statusPath)) {
-      return { ok: false, error: 'status.json not found' };
-    }
-
-    const data = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-    if (!data.stories) data.stories = {};
-
-    if (!data.stories[storyId]) {
-      return { ok: false, error: `Story ${storyId} not found` };
-    }
-
-    // Apply updates
-    Object.assign(data.stories[storyId], updates);
-
-    // Update timestamp
-    data.stories[storyId].updated_at = new Date().toISOString();
-
-    fs.writeFileSync(statusPath, JSON.stringify(data, null, 2) + '\n');
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e.message };
+  const statusWriter = getStatusWriter();
+  if (statusWriter) {
+    return statusWriter.updateStory(rootDir, storyId, updates, { skipValidation: true });
   }
+
+  return { ok: false, error: 'status-writer module not available' };
 }
 
 /**
@@ -184,6 +176,7 @@ function syncFromStatus(rootDir, filters = {}) {
  */
 function reconcile(rootDir, nativeTasks) {
   let updated = 0;
+  const statusWriter = getStatusWriter();
 
   try {
     const paths = getPaths();
@@ -195,6 +188,7 @@ function reconcile(rootDir, nativeTasks) {
       return { ok: false, error: 'status.json not found', updated: 0 };
     }
 
+    // Pre-read current data to check which stories actually changed
     const data = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
     if (!data.stories) data.stories = {};
 
@@ -203,20 +197,20 @@ function reconcile(rootDir, nativeTasks) {
       if (!data.stories[storyId]) continue;
 
       const newStatus = taskStatusToStoryStatus(task.status);
-      if (data.stories[storyId].status !== newStatus) {
-        data.stories[storyId].status = newStatus;
-        data.stories[storyId].updated_at = new Date().toISOString();
+      if (data.stories[storyId].status === newStatus) continue;
 
-        if (newStatus === 'completed') {
-          data.stories[storyId].completed_at = new Date().toISOString();
-        }
-
-        updated++;
+      const storyUpdates = { status: newStatus };
+      if (newStatus === 'completed') {
+        storyUpdates.completed_at = new Date().toISOString();
       }
-    }
 
-    if (updated > 0) {
-      fs.writeFileSync(statusPath, JSON.stringify(data, null, 2) + '\n');
+      if (statusWriter) {
+        const result = statusWriter.updateStory(rootDir, storyId, storyUpdates, {
+          skipValidation: true,
+        });
+        if (result.ok) updated++;
+      }
+      // If no status-writer, skip this story (no fallback direct write)
     }
 
     return { ok: true, updated };

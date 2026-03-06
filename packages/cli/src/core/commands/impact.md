@@ -1,5 +1,6 @@
 ---
 description: Analyze change impact across codebase
+phase: planning
 argument-hint: "[FILES=<paths>] [BASE=<branch>] [RUN_TESTS=true|false]"
 compact_context:
   priority: high

@@ -1,5 +1,6 @@
 ---
 description: System health diagnostics
+phase: post-impl
 argument-hint: "(no arguments)"
 compact_context:
   priority: high

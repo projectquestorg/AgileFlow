@@ -22,6 +22,10 @@ Paid advertising audit & planning toolkit for multi-platform account optimizatio
 
 ```
 /agileflow:ads:audit <account-data>                    # Full multi-platform audit (6 parallel analyzers)
+/agileflow:ads:health <data+url>                        # Unified marketing health scorecard (ads+SEO+landing)
+/agileflow:ads:generate <product-description>           # Bulk ad copy generation (40+ variants)
+/agileflow:ads:test-plan                                # CPC-first test planning with decision criteria
+/agileflow:ads:track <performance-csv>                  # Performance tracking with winner detection
 /agileflow:ads:plan                                     # Campaign planning with industry templates
 /agileflow:ads:google <account-data>                    # Google Ads deep-dive (74 checks)
 /agileflow:ads:meta <account-data>                      # Meta/Facebook audit (46 checks)
@@ -42,6 +46,10 @@ Paid advertising audit & planning toolkit for multi-platform account optimizatio
 | Command | Purpose | When to Use |
 |---------|---------|-------------|
 | **audit** | Full multi-platform audit with Ads Health Score | Starting point for any account |
+| **health** | Unified marketing scorecard (ads+SEO+landing+tracking) | Executive overview of full marketing funnel |
+| **generate** | Bulk ad copy generation (40+ variants) | Creating new ad creative at scale |
+| **test-plan** | CPC-first test planning with decision criteria | Structuring A/B tests with winner/kill rules |
+| **track** | Performance tracking with winner detection | Ongoing campaign monitoring and optimization |
 | **plan** | Campaign planning with industry templates | New campaigns or restructuring |
 | **google** | Google Ads deep-dive (74 checks) | Google-specific optimization |
 | **meta** | Meta/Facebook audit (46 checks) | Meta-specific optimization |
@@ -80,18 +88,22 @@ For best results, include:
 If the user provides data without a sub-command, determine intent:
 
 1. **"audit my ads"** -> `/agileflow:ads:audit`
-2. **"plan a campaign"** -> `/agileflow:ads:plan`
-3. **"check my Google Ads"** -> `/agileflow:ads:google`
-4. **"Meta" / "Facebook ads"** -> `/agileflow:ads:meta`
-5. **"creative review"** -> `/agileflow:ads:creative`
-6. **"budget" / "spend" / "bidding"** -> `/agileflow:ads:budget`
-7. **"landing page"** -> `/agileflow:ads:landing`
-8. **"competitor" / "competitive"** -> `/agileflow:ads:competitor`
-9. **"LinkedIn"** -> `/agileflow:ads:linkedin`
-10. **"TikTok"** -> `/agileflow:ads:tiktok`
-11. **"Microsoft" / "Bing"** -> `/agileflow:ads:microsoft`
-12. **"YouTube" / "video ads"** -> `/agileflow:ads:youtube`
-13. **Unclear** -> Show the quick reference and ask which analysis they want
+2. **"health check" / "marketing score" / "full scorecard"** -> `/agileflow:ads:health`
+3. **"generate ad copy" / "write ads" / "bulk ads" / "ad variants"** -> `/agileflow:ads:generate`
+4. **"test plan" / "A/B test" / "split test" / "CPC test"** -> `/agileflow:ads:test-plan`
+5. **"track performance" / "dashboard" / "winners" / "KPIs"** -> `/agileflow:ads:track`
+6. **"plan a campaign"** -> `/agileflow:ads:plan`
+7. **"check my Google Ads"** -> `/agileflow:ads:google`
+8. **"Meta" / "Facebook ads"** -> `/agileflow:ads:meta`
+9. **"creative review"** -> `/agileflow:ads:creative`
+10. **"budget" / "spend" / "bidding"** -> `/agileflow:ads:budget`
+11. **"landing page"** -> `/agileflow:ads:landing`
+12. **"competitor" / "competitive"** -> `/agileflow:ads:competitor`
+13. **"LinkedIn"** -> `/agileflow:ads:linkedin`
+14. **"TikTok"** -> `/agileflow:ads:tiktok`
+15. **"Microsoft" / "Bing"** -> `/agileflow:ads:microsoft`
+16. **"YouTube" / "video ads"** -> `/agileflow:ads:youtube`
+17. **Unclear** -> Show the quick reference and ask which analysis they want
 
 ---
 
@@ -107,9 +119,9 @@ Show the quick reference table above and ask:
   "multiSelect": false,
   "options": [
     {"label": "Full multi-platform audit (Recommended)", "description": "Comprehensive 6-analyzer audit with Ads Health Score 0-100"},
-    {"label": "Campaign planning", "description": "Industry-specific campaign templates with budget allocation"},
-    {"label": "Platform-specific audit", "description": "Deep-dive into Google, Meta, LinkedIn, TikTok, Microsoft, or YouTube"},
-    {"label": "Budget & bidding strategy", "description": "Optimize spend allocation and bidding across platforms"}
+    {"label": "Marketing health scorecard", "description": "Unified score across ads + SEO + landing pages + tracking"},
+    {"label": "Generate ad copy (40+ variants)", "description": "Bulk ad copy from product description with ICP angles + platform CSV"},
+    {"label": "Create A/B test plan", "description": "CPC-first testing with budget allocation and winner/kill rules"}
   ]
 }]</parameter>
 </invoke>
@@ -122,7 +134,7 @@ Show the quick reference table above and ask:
 
 **Command**: `/agileflow:ads` - Paid advertising audit & planning router
 
-**Sub-commands**: audit, plan, google, meta, creative, budget, landing, competitor, linkedin, tiktok, microsoft, youtube
+**Sub-commands**: audit, health, generate, test-plan, track, plan, google, meta, creative, budget, landing, competitor, linkedin, tiktok, microsoft, youtube
 
 **Quick start**: `/agileflow:ads:audit <account-data>` for full analysis
 <!-- COMPACT_SUMMARY_END -->

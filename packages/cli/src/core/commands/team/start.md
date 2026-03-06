@@ -43,12 +43,16 @@ node -e "console.log(JSON.stringify({ agentTeams: !!process.env.CLAUDE_CODE_EXPE
 
 The argument specifies which team template to use. Available templates are in `.agileflow/teams/`:
 
-| Template | Description |
-|----------|-------------|
-| `fullstack` | API + UI + Testing specialists |
-| `code-review` | Code reviewer + Security + Performance |
-| `builder-validator` | Paired builders with validators |
-| `logic-audit` | Multi-perspective logic analysis |
+| Template | Description | Best For |
+|----------|-------------|----------|
+| `fullstack` | API + UI + Testing specialists | Full-stack feature development |
+| `backend` | API + Database + Security specialists | Backend/API work |
+| `frontend` | UI + Accessibility + Testing specialists | Frontend/component work |
+| `solo` | Mentor + Testing (lightweight) | Solo developers, learning |
+| `qa` | QA Strategy + Testing + Browser QA | Test coverage, regression |
+| `code-review` | Code reviewer + Security + Performance | Pre-PR quality gates |
+| `builder-validator` | Paired builders with validators | High-reliability features |
+| `logic-audit` | Multi-perspective logic analysis | Complex business logic |
 
 If no argument given, use AskUserQuestion to let user choose.
 

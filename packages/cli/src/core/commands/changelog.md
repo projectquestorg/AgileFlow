@@ -1,5 +1,6 @@
 ---
 description: Auto-generate changelog from commit history
+phase: post-impl
 argument-hint: "(no arguments)"
 compact_context:
   priority: high

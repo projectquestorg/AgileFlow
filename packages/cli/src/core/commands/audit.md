@@ -1,5 +1,6 @@
 ---
 description: Audit story completion - tests + acceptance criteria verification (GSD pattern)
+phase: post-impl
 argument-hint: "STORY=<US-ID>"
 compact_context:
   priority: high

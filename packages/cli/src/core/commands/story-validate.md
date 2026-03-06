@@ -1,5 +1,6 @@
 ---
 description: Validate story completeness before development
+phase: pre-story
 argument-hint: "STORY=<US-ID>"
 compact_context:
   priority: high

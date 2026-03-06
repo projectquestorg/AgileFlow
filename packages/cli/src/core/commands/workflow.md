@@ -1,5 +1,6 @@
 ---
 description: Define and run parameterized workflow templates
+phase: implementation
 argument-hint: "<template> [<arguments>]"
 compact_context:
   priority: normal
@@ -228,6 +229,7 @@ docs/08-project/workflows/
 ---
 name: deploy-staging
 description: Deploy to staging environment
+phase: implementation
 arguments:
   - name: version
     required: true

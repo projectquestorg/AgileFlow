@@ -492,6 +492,25 @@ function stopTeam(rootDir) {
       // Non-critical - metrics aggregation is best-effort
     }
 
+    // Reconcile teammate final states to status.json (AC2/AC3)
+    try {
+      const taskSync = require('./lib/task-sync');
+      const nativeTasks = (team.teammates || [])
+        .filter(t => t.status === 'completed' || t.status === 'done')
+        .map(t => ({
+          id: t.agent,
+          status: 'completed',
+          metadata: { story_id: t.story_id },
+        }))
+        .filter(t => t.metadata.story_id);
+
+      if (nativeTasks.length > 0) {
+        taskSync.reconcile(rootDir, nativeTasks);
+      }
+    } catch (e) {
+      // Non-critical - reconciliation is best-effort
+    }
+
     return {
       ok: true,
       template: team.template,

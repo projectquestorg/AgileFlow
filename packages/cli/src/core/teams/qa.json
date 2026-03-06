@@ -1,0 +1,41 @@
+{
+  "name": "qa",
+  "description": "QA-focused team with test strategy, coverage analysis, and regression testing",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": false
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-qa",
+      "role": "strategist",
+      "domain": "test-strategy",
+      "description": "Defines test strategy, identifies coverage gaps, and plans regression suites"
+    },
+    {
+      "agent": "agileflow-testing",
+      "role": "builder",
+      "domain": "test-implementation",
+      "description": "Implements unit, integration, and end-to-end tests"
+    },
+    {
+      "agent": "agileflow-browser-qa",
+      "role": "validator",
+      "domain": "ui-testing",
+      "description": "Runs exploratory UI tests with browser automation and screenshot validation"
+    }
+  ],
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": true,
+      "lint": false,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": true
+    }
+  },
+  "tags": ["qa", "testing", "quality", "regression"]
+}

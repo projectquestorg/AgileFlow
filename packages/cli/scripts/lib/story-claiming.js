@@ -28,6 +28,19 @@ const { c } = require('../../lib/colors');
 // Default claim expiration: 4 hours
 const DEFAULT_CLAIM_TTL_HOURS = 4;
 
+// Canonical status-writer (lazy-loaded)
+let _statusWriter;
+function getStatusWriter() {
+  if (_statusWriter === undefined) {
+    try {
+      _statusWriter = require('./status-writer');
+    } catch (e) {
+      _statusWriter = null;
+    }
+  }
+  return _statusWriter;
+}
+
 // Agent Teams integration (lazy-loaded)
 let _featureFlags, _taskSync;
 function getFeatureFlags() {
@@ -209,9 +222,57 @@ function isStoryClaimed(story, currentSessionId) {
 function claimStory(storyId, options = {}) {
   const { force = false, rootDir } = options;
   const root = rootDir || getProjectRoot();
-  const statusPath = getStatusPath(root);
 
-  // Load status.json
+  // Pre-check: read story and validate claim eligibility
+  const statusWriter = getStatusWriter();
+  if (statusWriter) {
+    const readResult = statusWriter.readStory(root, storyId);
+    if (!readResult.ok) {
+      return { ok: false, error: readResult.error };
+    }
+
+    // Check if already claimed by someone else
+    const claimCheck = isStoryClaimed(readResult.story);
+    if (claimCheck.claimed && !force) {
+      return {
+        ok: false,
+        claimed: true,
+        claimedBy: claimCheck.claimedBy,
+        error: `Story ${storyId} is claimed by session ${claimCheck.claimedBy.session_id}`,
+      };
+    }
+
+    // Get current session info
+    const currentSession = getCurrentSession(root);
+    if (!currentSession) {
+      return { ok: false, error: 'Could not determine current session' };
+    }
+
+    // Build claim object
+    const claimObj = {
+      session_id: currentSession.session_id,
+      pid: currentSession.pid,
+      path: currentSession.path,
+      claimed_at: new Date().toISOString(),
+      claim_type: isTeamSessionActive(root) ? 'team' : 'worktree',
+    };
+
+    // Write via status-writer (atomic, validated)
+    const writeResult = statusWriter.updateStory(
+      root,
+      storyId,
+      { claimed_by: claimObj },
+      { skipValidation: true }
+    );
+    if (!writeResult.ok) {
+      return { ok: false, error: writeResult.error };
+    }
+
+    return { ok: true, claimed: true };
+  }
+
+  // Fallback: direct safeWriteJSON if status-writer unavailable
+  const statusPath = getStatusPath(root);
   const result = safeReadJSON(statusPath, { defaultValue: null });
   if (!result.ok || !result.data) {
     return { ok: false, error: result.error || 'Could not load status.json' };
@@ -224,7 +285,6 @@ function claimStory(storyId, options = {}) {
     return { ok: false, error: `Story ${storyId} not found` };
   }
 
-  // Check if already claimed by someone else
   const claimCheck = isStoryClaimed(story);
   if (claimCheck.claimed && !force) {
     return {
@@ -235,13 +295,11 @@ function claimStory(storyId, options = {}) {
     };
   }
 
-  // Get current session info
   const currentSession = getCurrentSession(root);
   if (!currentSession) {
     return { ok: false, error: 'Could not determine current session' };
   }
 
-  // Set the claim
   story.claimed_by = {
     session_id: currentSession.session_id,
     pid: currentSession.pid,
@@ -250,21 +308,10 @@ function claimStory(storyId, options = {}) {
     claim_type: isTeamSessionActive(root) ? 'team' : 'worktree',
   };
 
-  // Save status.json
   status.updated = new Date().toISOString();
   const writeResult = safeWriteJSON(statusPath, status);
   if (!writeResult.ok) {
     return { ok: false, error: writeResult.error };
-  }
-
-  // Sync claim to native task list when team session is active
-  if (isTeamSessionActive(root)) {
-    const taskSync = getTaskSync();
-    if (taskSync) {
-      taskSync.syncToStatus(root, storyId, {
-        claimed_by: story.claimed_by,
-      });
-    }
   }
 
   return { ok: true, claimed: true };
@@ -281,9 +328,41 @@ function claimStory(storyId, options = {}) {
 function releaseStory(storyId, options = {}) {
   const { rootDir } = options;
   const root = rootDir || getProjectRoot();
-  const statusPath = getStatusPath(root);
 
-  // Load status.json
+  const statusWriter = getStatusWriter();
+  if (statusWriter) {
+    // Pre-check: verify ownership
+    const readResult = statusWriter.readStory(root, storyId);
+    if (!readResult.ok) {
+      return { ok: false, error: readResult.error };
+    }
+
+    const currentSession = getCurrentSession(root);
+    const mySessionId = currentSession ? currentSession.session_id : null;
+
+    if (readResult.story.claimed_by && readResult.story.claimed_by.session_id !== mySessionId) {
+      return {
+        ok: false,
+        error: `Story ${storyId} is claimed by session ${readResult.story.claimed_by.session_id}, not you`,
+      };
+    }
+
+    // Remove claim via status-writer (null deletes the field)
+    const writeResult = statusWriter.updateStory(
+      root,
+      storyId,
+      { claimed_by: null },
+      { skipValidation: true }
+    );
+    if (!writeResult.ok) {
+      return { ok: false, error: writeResult.error };
+    }
+
+    return { ok: true, released: true };
+  }
+
+  // Fallback: direct safeWriteJSON if status-writer unavailable
+  const statusPath = getStatusPath(root);
   const result = safeReadJSON(statusPath, { defaultValue: null });
   if (!result.ok || !result.data) {
     return { ok: false, error: result.error || 'Could not load status.json' };
@@ -296,11 +375,9 @@ function releaseStory(storyId, options = {}) {
     return { ok: false, error: `Story ${storyId} not found` };
   }
 
-  // Get current session info
   const currentSession = getCurrentSession(root);
   const mySessionId = currentSession ? currentSession.session_id : null;
 
-  // Check if we own this claim
   if (story.claimed_by && story.claimed_by.session_id !== mySessionId) {
     return {
       ok: false,
@@ -308,24 +385,12 @@ function releaseStory(storyId, options = {}) {
     };
   }
 
-  // Remove the claim
   delete story.claimed_by;
 
-  // Save status.json
   status.updated = new Date().toISOString();
   const writeResult = safeWriteJSON(statusPath, status);
   if (!writeResult.ok) {
     return { ok: false, error: writeResult.error };
-  }
-
-  // Sync release to native task list when team session is active
-  if (isTeamSessionActive(root)) {
-    const taskSync = getTaskSync();
-    if (taskSync) {
-      taskSync.syncToStatus(root, storyId, {
-        claimed_by: null,
-      });
-    }
   }
 
   return { ok: true, released: true };
@@ -432,35 +497,53 @@ function cleanupStaleClaims(options = {}) {
   const root = rootDir || getProjectRoot();
   const statusPath = getStatusPath(root);
 
-  // Load status.json
+  // Load status.json to find stale claims
   const result = safeReadJSON(statusPath, { defaultValue: null });
   if (!result.ok || !result.data) {
     return { ok: false, error: result.error || 'Could not load status.json' };
   }
 
   const status = result.data;
-  let cleanedCount = 0;
+  const staleStoryIds = [];
 
   for (const [id, story] of Object.entries(status.stories || {})) {
     if (!story.claimed_by) continue;
-
-    // Check if claim is stale
     if (!isClaimValid(story.claimed_by)) {
-      delete story.claimed_by;
-      cleanedCount++;
+      staleStoryIds.push(id);
     }
   }
 
-  // Save if anything was cleaned
-  if (cleanedCount > 0) {
-    status.updated = new Date().toISOString();
-    const writeResult = safeWriteJSON(statusPath, status);
-    if (!writeResult.ok) {
-      return { ok: false, error: writeResult.error };
-    }
+  if (staleStoryIds.length === 0) {
+    return { ok: true, cleaned: 0 };
   }
 
-  return { ok: true, cleaned: cleanedCount };
+  // Use status-writer for each stale claim if available
+  const statusWriter = getStatusWriter();
+  if (statusWriter) {
+    let cleanedCount = 0;
+    for (const id of staleStoryIds) {
+      const writeResult = statusWriter.updateStory(
+        root,
+        id,
+        { claimed_by: null },
+        { skipValidation: true }
+      );
+      if (writeResult.ok) cleanedCount++;
+    }
+    return { ok: true, cleaned: cleanedCount };
+  }
+
+  // Fallback: bulk write via safeWriteJSON
+  for (const id of staleStoryIds) {
+    delete status.stories[id].claimed_by;
+  }
+  status.updated = new Date().toISOString();
+  const writeResult = safeWriteJSON(statusPath, status);
+  if (!writeResult.ok) {
+    return { ok: false, error: writeResult.error };
+  }
+
+  return { ok: true, cleaned: staleStoryIds.length };
 }
 
 /**

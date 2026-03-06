@@ -733,4 +733,118 @@ describe('getDetectorsForPhase', () => {
   it('should return empty for invalid phase', () => {
     expect(getDetectorsForPhase('nonexistent')).toEqual([]);
   });
+
+  it('should include scale-adaptive in pre-story phase', () => {
+    const detectors = getDetectorsForPhase('pre-story');
+    expect(detectors).toContain('scale-adaptive');
+  });
+});
+
+// =============================================================================
+// Scale-Adaptive Detector Tests
+// =============================================================================
+
+describe('scale-adaptive detector', () => {
+  it('should trigger for micro projects', () => {
+    const signals = makeSignals({
+      scale: {
+        tier: 'micro',
+        metrics: { files: 5, stories: 2, commits: 10, dependencies: 3 },
+        recommendations: {
+          planningDepth: 'minimal',
+          skipArchival: true,
+          skipEpicPlanning: true,
+          description: 'Quick specs, direct implementation. Skip epics and full planning.',
+        },
+      },
+    });
+    const result = runDetector('scale-adaptive', signals);
+    expect(result).not.toBeNull();
+    expect(result.feature).toBe('scale-adaptive');
+    expect(result.priority).toBe('low');
+    expect(result.trigger).toContain('Micro');
+    expect(result.trigger).toContain('5 files');
+  });
+
+  it('should trigger for enterprise projects with medium priority', () => {
+    const signals = makeSignals({
+      scale: {
+        tier: 'enterprise',
+        metrics: { files: 5000, stories: 500, commits: 10000, dependencies: 200 },
+        recommendations: {
+          planningDepth: 'comprehensive',
+          description: 'Comprehensive planning with council review and full documentation.',
+        },
+      },
+    });
+    const result = runDetector('scale-adaptive', signals);
+    expect(result).not.toBeNull();
+    expect(result.priority).toBe('medium');
+    expect(result.trigger).toContain('Enterprise');
+  });
+
+  it('should trigger for large projects with medium priority', () => {
+    const signals = makeSignals({
+      scale: {
+        tier: 'large',
+        metrics: { files: 1500, stories: 100, commits: 3000, dependencies: 80 },
+        recommendations: {
+          planningDepth: 'thorough',
+          description: 'Thorough planning with architecture review and multi-expert analysis.',
+        },
+      },
+    });
+    const result = runDetector('scale-adaptive', signals);
+    expect(result).not.toBeNull();
+    expect(result.priority).toBe('medium');
+  });
+
+  it('should NOT trigger for medium projects (default tier)', () => {
+    const signals = makeSignals({
+      scale: {
+        tier: 'medium',
+        metrics: { files: 300, stories: 30, commits: 500, dependencies: 40 },
+        recommendations: {
+          planningDepth: 'standard',
+          description: 'Full story workflow with epics and planning.',
+        },
+      },
+    });
+    const result = runDetector('scale-adaptive', signals);
+    expect(result).toBeNull();
+  });
+
+  it('should NOT trigger when scale is null', () => {
+    const signals = makeSignals({ scale: null });
+    expect(runDetector('scale-adaptive', signals)).toBeNull();
+  });
+
+  it('should NOT trigger when scale has no tier', () => {
+    const signals = makeSignals({ scale: {} });
+    expect(runDetector('scale-adaptive', signals)).toBeNull();
+  });
+
+  it('should NOT trigger when no recommendations', () => {
+    const signals = makeSignals({
+      scale: { tier: 'micro', metrics: { files: 5, stories: 2, commits: 10 } },
+    });
+    expect(runDetector('scale-adaptive', signals)).toBeNull();
+  });
+
+  it('should reference workflow command', () => {
+    const signals = makeSignals({
+      scale: {
+        tier: 'small',
+        metrics: { files: 50, stories: 10, commits: 100, dependencies: 15 },
+        recommendations: {
+          planningDepth: 'light',
+          description: 'Light stories, optional epics. Streamlined workflow.',
+        },
+      },
+    });
+    const result = runDetector('scale-adaptive', signals);
+    expect(result).not.toBeNull();
+    expect(result.command).toBe('/agileflow:workflow');
+    expect(result.phase).toBe('pre-story');
+  });
 });

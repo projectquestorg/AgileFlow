@@ -1,5 +1,6 @@
 ---
 description: Data-driven sprint planning with velocity forecasting
+phase: pre-story
 argument-hint: "[SPRINT=<id>] [DURATION=<number>] [AGENTS=<list>] [MODE=suggest|commit] [FOCUS_EPIC=<EP-ID>]"
 model: haiku
 compact_context:

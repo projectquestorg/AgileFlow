@@ -1,5 +1,6 @@
 ---
 description: Create a user story with acceptance criteria
+phase: pre-story
 argument-hint: "EPIC=<EP-ID> STORY=<US-ID> TITLE=<text> OWNER=<id> [ESTIMATE=<pts>] [AC=<list>] [TDD=true]"
 compact_context:
   priority: high

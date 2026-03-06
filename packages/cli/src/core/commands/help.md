@@ -87,7 +87,22 @@ Print a concise, one-screen overview:
 - What Epics, Stories, ADRs are; how docs/09-agents/status.json + bus/log.jsonl work
 - Daily flow: Pick story → Implement to AC → Tests → PR → Update status
 - WIP limit: max 2 stories/agent
-- List ALL available commands with one-line examples
+- List ALL available commands grouped by lifecycle phase
+- Show the current detected phase (from smart-detect.json) to highlight relevant commands
+
+### Lifecycle Phases
+
+Commands are organized by the project phase where they're most useful:
+
+| Phase | Description | Key Commands |
+|-------|------------|--------------|
+| **Pre-Story** | Story selection and project setup | epic, story, board, sprint, choose, configure |
+| **Planning** | Architecture and research decisions | adr, impact, council, multi-expert, baseline |
+| **Implementation** | Active development work | babysit, tdd, tests, verify, ci, workflow |
+| **Post-Impl** | Review, docs, and quality checks | audit, review, docs, changelog, diagnose |
+| **Pre-PR** | Final checks before pull request | pr, compress |
+
+**Tip**: Commands have a `phase` tag in their frontmatter. Run the command most relevant to your current phase.
 
 <!-- {{COMMAND_LIST}} -->
 

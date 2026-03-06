@@ -1,5 +1,6 @@
 ---
 description: Deploy multiple domain experts on the same problem for higher confidence
+phase: planning
 argument-hint: "<question>"
 compact_context:
   priority: high

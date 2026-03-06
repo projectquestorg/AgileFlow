@@ -1320,6 +1320,49 @@ function getExpertiseCountFast(rootDir) {
   return result;
 }
 
+/**
+ * Check if installed commands are in sync with source.
+ * Counts .md files in three directories:
+ * - .agileflow/commands/ (core install)
+ * - .claude/commands/agileflow/ excluding agents/ (IDE install)
+ * - packages/cli/src/core/commands/ (dogfooding source, if exists)
+ * Returns { sourceCount, coreCount, ideCount, stale, staleCoreInstall } or null on error.
+ */
+function checkCommandSync(rootDir) {
+  try {
+    const countMdFiles = dir => {
+      if (!fs.existsSync(dir)) return 0;
+      return fs.readdirSync(dir, { recursive: true }).filter(f => String(f).endsWith('.md')).length;
+    };
+
+    const agileflowDir = getAgileflowDir(rootDir);
+    const coreCount = countMdFiles(path.join(agileflowDir, 'commands'));
+
+    // IDE install: .claude/commands/agileflow/ excluding agents/ subdir
+    const ideDir = path.join(rootDir, '.claude', 'commands', 'agileflow');
+    let ideCount = 0;
+    if (fs.existsSync(ideDir)) {
+      ideCount = fs.readdirSync(ideDir, { recursive: true }).filter(f => {
+        const s = String(f);
+        return s.endsWith('.md') && !s.startsWith('agents/') && !s.startsWith('agents\\');
+      }).length;
+    }
+
+    // Dogfooding source (only exists in the AgileFlow repo itself)
+    const sourceDir = path.join(rootDir, 'packages', 'cli', 'src', 'core', 'commands');
+    const sourceCount = countMdFiles(sourceDir);
+
+    // Determine staleness
+    const referenceCount = sourceCount > 0 ? sourceCount : coreCount;
+    const stale = referenceCount > 0 && ideCount < referenceCount;
+    const staleCoreInstall = sourceCount > 0 && coreCount < sourceCount;
+
+    return { sourceCount, coreCount, ideCount, stale, staleCoreInstall };
+  } catch (e) {
+    return null;
+  }
+}
+
 // Full validation function (kept for /agileflow:validate-expertise command)
 function validateExpertise(rootDir) {
   const result = { total: 0, passed: 0, warnings: 0, failed: 0, issues: [] };
@@ -1894,6 +1937,9 @@ function main() {
   }
   _mark('expertise');
 
+  const commandSync = checkCommandSync(rootDir);
+  _mark('cmdSync');
+
   const damageControl = checkDamageControl(rootDir, cache);
   _mark('damageCtl');
 
@@ -2057,6 +2103,21 @@ function main() {
     );
   }
 
+  // Show command sync staleness notification
+  if (commandSync && commandSync.stale) {
+    const ref = commandSync.sourceCount > 0 ? commandSync.sourceCount : commandSync.coreCount;
+    console.log('');
+    console.log(
+      `${c.amber}⚠️  ${ref - commandSync.ideCount} command(s) out of sync${c.reset} ${c.dim}(IDE has ${commandSync.ideCount}/${ref})${c.reset}`
+    );
+    if (commandSync.staleCoreInstall) {
+      console.log(
+        `   ${c.dim}Core install also stale: ${commandSync.coreCount}/${commandSync.sourceCount}${c.reset}`
+      );
+    }
+    console.log(`   ${c.slate}Auto-syncing in background...${c.reset}`);
+  }
+
   // Show tmux installation notice if tmux auto-spawn is enabled but tmux not installed
   if (tmuxAutoSpawnEnabled && !tmuxCheck.available) {
     console.log('');
@@ -2140,6 +2201,24 @@ function main() {
   }
 
   _mark('deferred');
+
+  // Spawn background command sync if stale
+  if (commandSync && commandSync.stale) {
+    try {
+      const isDogfooding = commandSync.sourceCount > 0;
+      if (isDogfooding) {
+        const cliPath = path.join(rootDir, 'packages', 'cli', 'tools', 'cli', 'agileflow-cli.js');
+        if (fs.existsSync(cliPath)) {
+          spawnBackground('node', [cliPath, 'update', '--force', '-d', rootDir], { cwd: rootDir });
+        }
+      } else {
+        spawnBackground('npx', ['agileflow', 'update', '--force'], { cwd: rootDir });
+      }
+    } catch (e) {
+      // Command sync spawn failed, non-critical
+    }
+  }
+  _mark('cmdSyncSpawn');
 
   // Record hook metrics
   if (timer && hookMetrics) {

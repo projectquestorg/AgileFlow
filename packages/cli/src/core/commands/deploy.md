@@ -1,5 +1,6 @@
 ---
 description: Set up automated deployment pipeline
+phase: implementation
 argument-hint: "(no arguments)"
 compact_context:
   priority: high
