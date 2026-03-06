@@ -245,7 +245,7 @@ function partitionSlug(partition) {
       .replace(/^\.?\/?/, '')
       .replace(/\/+$/g, '')
       .replace(/[/\\]/g, '-')
-      .replace(/[^a-zA-Z0-9_\-]/g, '_') || 'root'
+      .replace(/[^a-zA-Z0-9_-]/g, '_') || 'root'
   );
 }
 
