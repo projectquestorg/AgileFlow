@@ -12,6 +12,8 @@ compact_context:
     - "MUST detect industry type before deploying analyzers"
     - "Pass all analyzer outputs to ads-consensus for final report"
     - "Quality Gates: No optimization without tracking, 3x Kill Rule, Broad Match needs Smart Bidding"
+    - "DEPTH GATE: ultradeep/extreme MUST spawn tmux sessions via spawn-audit-sessions.js — NEVER deploy in-process"
+    - "Use check-sessions.js to monitor spawned tmux sessions — NEVER write custom polling scripts"
   state_fields:
     - depth
     - platforms
@@ -112,7 +114,7 @@ PLATFORMS = all detected (default) or comma-separated list
    Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
 4. Wait for all analyzers to complete:
    ```bash
-   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   node .agileflow/scripts/check-sessions.js wait TRACE_ID --timeout=1800
    ```
    - Exit 0 = all complete (JSON results on stdout)
    - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
@@ -131,7 +133,7 @@ Partition-based multi-agent audit. Instead of auditing all platforms together, e
    ```bash
    node .agileflow/scripts/spawn-audit-sessions.js --audit=ads --target=account-data --depth=extreme --partitions=google,meta,linkedin --model=MODEL --json
    ```
-5. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+5. Wait and collect results (same as ultradeep - use check-sessions.js)
 6. Run consensus on combined results from all platform partitions
 
 **PARTITIONS argument** (only used with DEPTH=extreme):
@@ -140,6 +142,20 @@ Partition-based multi-agent audit. Instead of auditing all platforms together, e
 | Not set | AI decides partitions (1 per detected platform) |
 | `PARTITIONS=3` | AI merges into 3 platform groups |
 | `PARTITIONS=google,meta` | Use these exact platforms |
+
+---
+
+### DEPTH ROUTING GATE
+
+| DEPTH | Route |
+|-------|-------|
+| `quick` or `deep` | Continue to STEP 2 below |
+| `ultradeep` | STOP. Follow ULTRADEEP instructions above. Do NOT proceed to STEP 2. |
+| `extreme` | STOP. Follow EXTREME instructions above. Do NOT proceed to STEP 2. |
+
+**CRITICAL**: STEPs 2-4 are for `quick`/`deep` ONLY. For `ultradeep`/`extreme`, the analyzers run in separate tmux sessions — NOT in-process via Task calls. If you deploy Task calls for ultradeep/extreme, you are doing it wrong. Follow the spawn-audit-sessions.js workflow above, then skip to the consensus step with the collected results.
+
+---
 
 Accept data in any format:
 - **Pasted CSV/text** - Parse columns and metrics
@@ -170,7 +186,7 @@ From the account data, identify:
 - **Active platforms**: Which ad platforms have campaigns
 - **Account maturity**: New (< 3 months), Growing (3-12 months), Mature (12+ months)
 
-### STEP 3: Deploy 6 Analyzers in Parallel
+### STEP 3: Deploy 6 Analyzers in Parallel (quick/deep ONLY)
 
 **CRITICAL**: Deploy ALL 6 analyzers in a SINGLE message with multiple Task calls.
 

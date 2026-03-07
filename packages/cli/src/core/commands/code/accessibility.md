@@ -10,6 +10,8 @@ compact_context:
     - "CRITICAL: Severity scale: BLOCKER | MAJOR | MINOR | ENHANCEMENT"
     - "MUST parse arguments: TARGET (file/dir), DEPTH (quick/deep/ultradeep), FOCUS (semantic|aria|visual|keyboard|forms|all)"
     - "Pass consensus all analyzer outputs, let it synthesize the final report"
+    - "DEPTH GATE: ultradeep/extreme MUST spawn tmux sessions via spawn-audit-sessions.js — NEVER deploy in-process"
+    - "Use check-sessions.js to monitor spawned tmux sessions — NEVER write custom polling scripts"
   state_fields:
     - target_path
     - depth
@@ -70,7 +72,7 @@ Deploy multiple specialized WCAG accessibility analyzers in parallel to find a11
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | TARGET | file/directory | `.` | What to analyze |
-| DEPTH | quick, deep, ultradeep | quick | quick = focus on BLOCKER/MAJOR, deep = all severities, ultradeep = separate tmux |
+| DEPTH | quick, deep, ultradeep, extreme | quick | quick = focus on BLOCKER/MAJOR, deep = all severities, ultradeep = separate tmux, extreme = partitioned tmux |
 | FOCUS | semantic,aria,visual,keyboard,forms,all | all | Which analyzers to deploy |
 | MODEL | haiku, sonnet, opus | haiku | Model for analyzer subagents |
 
@@ -116,12 +118,12 @@ FOCUS = all (default) or comma-separated list
    Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
 4. Wait for all analyzers to complete:
    ```bash
-   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   node .agileflow/scripts/check-sessions.js wait TRACE_ID --timeout=1800
    ```
    - Exit 0 = all complete (JSON results on stdout)
    - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
-   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
-   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+   - To check progress without blocking: `node .agileflow/scripts/check-sessions.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/check-sessions.js retry TRACE_ID`
 5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator (same as deep mode).
 6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
 
@@ -138,7 +140,7 @@ Partition-based multi-agent audit. Instead of 1 analyzer per tmux window, the co
    ```bash
    node .agileflow/scripts/spawn-audit-sessions.js --audit=accessibility --target=TARGET --depth=extreme --partitions=dir1,dir2,dir3 --model=MODEL --json
    ```
-4. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+4. Wait and collect results (same as ultradeep - use check-sessions.js)
 5. Run consensus on combined results from all partitions
 
 **PARTITIONS argument** (only used with DEPTH=extreme):
@@ -148,7 +150,21 @@ Partition-based multi-agent audit. Instead of 1 analyzer per tmux window, the co
 | `PARTITIONS=5` | AI creates exactly 5 partitions |
 | `PARTITIONS=src/auth,src/api,lib` | Use these exact directories |
 
-### STEP 2: Deploy Analyzers in Parallel
+---
+
+### DEPTH ROUTING GATE
+
+| DEPTH | Route |
+|-------|-------|
+| `quick` or `deep` | Continue to STEP 2 below |
+| `ultradeep` | STOP. Follow ULTRADEEP instructions above. Do NOT proceed to STEP 2. |
+| `extreme` | STOP. Follow EXTREME instructions above. Do NOT proceed to STEP 2. |
+
+**CRITICAL**: STEP 2 is for `quick`/`deep` ONLY. For `ultradeep`/`extreme`, the analyzers run in separate tmux sessions — NOT in-process via Task calls. If you deploy Task calls for ultradeep/extreme, you are doing it wrong. Follow the spawn-audit-sessions.js workflow above, then skip to the consensus step with the collected results.
+
+---
+
+### STEP 2: Deploy Analyzers in Parallel (quick/deep ONLY)
 
 **CRITICAL**: Deploy ALL selected analyzers in a SINGLE message with multiple Task calls.
 

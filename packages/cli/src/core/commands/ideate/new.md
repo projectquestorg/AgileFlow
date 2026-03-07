@@ -15,6 +15,7 @@ compact_context:
     - "MUST estimate effort for each idea: High/Medium/Low impact"
     - "MUST assign IDEA-XXXX identifiers to all ideas and update ideation index"
     - "Optional: Generate stories for HIGH-confidence items (if OUTPUT=stories or both)"
+    - "Use check-sessions.js to monitor spawned tmux sessions — NEVER write custom polling scripts"
   state_fields:
     - scope
     - depth
@@ -364,12 +365,12 @@ Parse the input arguments:
    Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
 4. Wait for all analyzers to complete:
    ```bash
-   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   node .agileflow/scripts/check-sessions.js wait TRACE_ID --timeout=1800
    ```
    - Exit 0 = all complete (JSON results on stdout)
    - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
-   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
-   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+   - To check progress without blocking: `node .agileflow/scripts/check-sessions.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/check-sessions.js retry TRACE_ID`
 5. Parse `results` array from the JSON output and proceed to STEP 4 (Synthesis).
 6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
 
@@ -386,7 +387,7 @@ Partition-based multi-agent audit. Instead of 1 expert per tmux window, the code
    ```bash
    node .agileflow/scripts/spawn-audit-sessions.js --audit=ideate --target=TARGET --depth=extreme --partitions=dir1,dir2,dir3 --focus=FOCUS_KEYS --model=MODEL --json
    ```
-4. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+4. Wait and collect results (same as ultradeep - use check-sessions.js)
 5. Run synthesis on combined results from all partitions (proceed to STEP 4)
 
 **PARTITIONS argument** (only used with DEPTH=extreme):
@@ -521,11 +522,11 @@ Each expert gets its own Claude Code tmux session with full context window. Use 
 
 ```bash
 # Check completion status
-node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID
+node .agileflow/scripts/check-sessions.js status TRACE_ID
 # Wait for all to complete (blocks until done or timeout)
-node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+node .agileflow/scripts/check-sessions.js wait TRACE_ID --timeout=1800
 # Collect whatever results are ready
-node .agileflow/scripts/lib/tmux-audit-monitor.js collect TRACE_ID
+node .agileflow/scripts/check-sessions.js collect TRACE_ID
 ```
 
 **For SCOPE-filtered ultradeep** (e.g., SCOPE=security):

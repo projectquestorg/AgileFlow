@@ -520,7 +520,8 @@ function parseSubcommandArgs(args) {
       const val = arg.split('=')[1];
       if (val) parsed.analyzer = val;
     } else if (arg.startsWith('--model=')) {
-      parsed.model = arg.split('=')[1];
+      const val = arg.split('=')[1];
+      if (val) parsed.model = val;
     } else if (arg === '--keep-files') {
       parsed.keepFiles = true;
     }

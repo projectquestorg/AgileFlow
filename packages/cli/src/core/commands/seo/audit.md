@@ -11,6 +11,8 @@ compact_context:
     - "MUST parse arguments: URL (required), DEPTH (quick/deep/ultradeep/extreme), MAX_PAGES (default 50)"
     - "Fetch homepage FIRST to detect business type before deploying analyzers"
     - "Pass all analyzer outputs to seo-consensus for final report"
+    - "DEPTH GATE: ultradeep/extreme MUST spawn tmux sessions via spawn-audit-sessions.js — NEVER deploy in-process"
+    - "Use check-sessions.js to monitor spawned tmux sessions — NEVER write custom polling scripts"
   state_fields:
     - target_url
     - depth
@@ -112,12 +114,12 @@ MAX_PAGES = 50 (default)
    Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
 4. Wait for all analyzers to complete:
    ```bash
-   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   node .agileflow/scripts/check-sessions.js wait TRACE_ID --timeout=1800
    ```
    - Exit 0 = all complete (JSON results on stdout)
    - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
-   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
-   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+   - To check progress without blocking: `node .agileflow/scripts/check-sessions.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/check-sessions.js retry TRACE_ID`
 5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator (same as deep mode).
 6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
 
@@ -134,7 +136,7 @@ Partition-based multi-agent audit. Instead of auditing the entire site as one un
    ```bash
    node .agileflow/scripts/spawn-audit-sessions.js --audit=seo --target=URL --depth=extreme --partitions=/blog,/docs,/products --model=MODEL --json
    ```
-4. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+4. Wait and collect results (same as ultradeep - use check-sessions.js)
 5. Run consensus on combined results from all partitions
 
 **PARTITIONS argument** (only used with DEPTH=extreme):
@@ -143,6 +145,20 @@ Partition-based multi-agent audit. Instead of auditing the entire site as one un
 | Not set | AI decides partitions (3-7 based on site structure) |
 | `PARTITIONS=5` | AI creates exactly 5 page groups |
 | `PARTITIONS=/blog,/docs,/products` | Use these exact URL path prefixes |
+
+---
+
+### DEPTH ROUTING GATE
+
+| DEPTH | Route |
+|-------|-------|
+| `quick` or `deep` | Continue to STEP 2 below |
+| `ultradeep` | STOP. Follow ULTRADEEP instructions above. Do NOT proceed to STEP 2. |
+| `extreme` | STOP. Follow EXTREME instructions above. Do NOT proceed to STEP 2. |
+
+**CRITICAL**: STEPs 2-4 are for `quick`/`deep` ONLY. For `ultradeep`/`extreme`, the analyzers run in separate tmux sessions — NOT in-process via Task calls. If you deploy Task calls for ultradeep/extreme, you are doing it wrong. Follow the spawn-audit-sessions.js workflow above, then skip to the consensus step with the collected results.
+
+---
 
 If URL is missing, ask:
 ```xml
@@ -174,7 +190,7 @@ Also fetch:
 - `{URL}/robots.txt` - crawl rules, sitemap location
 - `{URL}/sitemap.xml` - page inventory
 
-### STEP 3: Deploy 6 Analyzers in Parallel
+### STEP 3: Deploy 6 Analyzers in Parallel (quick/deep ONLY)
 
 **CRITICAL**: Deploy ALL 6 analyzers in a SINGLE message with multiple Task calls.
 
