@@ -26,17 +26,9 @@ const crypto = require('crypto');
 const { c } = require('../lib/colors');
 const { getProjectRoot } = require('../lib/paths');
 const { safeReadJSON, safeWriteJSON, debugLog } = require('../lib/errors');
-const { validateCommand, buildSpawnArgs } = require('../lib/validate-commands');
-const {
-  initializeForProject,
-  injectCorrelation,
-  startSpan,
-  getContext,
-} = require('../lib/correlation');
-
-const ROOT = getProjectRoot();
-const LOOPS_DIR = path.join(ROOT, '.agileflow', 'sessions', 'agent-loops');
-const BUS_PATH = path.join(ROOT, 'docs', '09-agents', 'bus', 'log.jsonl');
+const { buildSpawnArgs } = require('../lib/validate-commands');
+const { initializeForProject, injectCorrelation } = require('../lib/correlation');
+const qualityGates = require('./lib/quality-gates');
 
 // ============================================================================
 // CONSTANTS
@@ -46,6 +38,7 @@ const MAX_ITERATIONS_HARD_LIMIT = 5;
 const MAX_AGENTS_HARD_LIMIT = 3;
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes per loop
 const STALL_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes without progress
+const REPEATED_FAILURE_LIMIT = 3; // Abort after 3 identical failures
 
 const GATES = {
   tests: { name: 'Tests', metric: 'pass/fail' },
@@ -55,39 +48,65 @@ const GATES = {
   types: { name: 'TypeScript', metric: 'pass/fail' },
 };
 
+// Map agent-loop gate names to quality-gates GATE_TYPES
+const GATE_TYPE_MAP = {
+  tests: qualityGates.GATE_TYPES.TESTS,
+  coverage: qualityGates.GATE_TYPES.COVERAGE,
+  lint: qualityGates.GATE_TYPES.LINT,
+  types: qualityGates.GATE_TYPES.TYPES,
+};
+
+// ============================================================================
+// ROOT RESOLUTION (lazy for testability)
+// ============================================================================
+
+function _getRoot(rootDir) {
+  return rootDir || getProjectRoot();
+}
+
+function _loopsDir(rootDir) {
+  return path.join(_getRoot(rootDir), '.agileflow', 'sessions', 'agent-loops');
+}
+
+function _busPath(rootDir) {
+  return path.join(_getRoot(rootDir), 'docs', '09-agents', 'bus', 'log.jsonl');
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function ensureLoopsDir() {
-  if (!fs.existsSync(LOOPS_DIR)) {
-    fs.mkdirSync(LOOPS_DIR, { recursive: true });
+function ensureLoopsDir(rootDir) {
+  const dir = _loopsDir(rootDir);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
-function getLoopPath(loopId) {
-  return path.join(LOOPS_DIR, `${loopId}.json`);
+function getLoopPath(loopId, rootDir) {
+  return path.join(_loopsDir(rootDir), `${loopId}.json`);
 }
 
 function generateLoopId() {
   return crypto.randomUUID().split('-')[0]; // Short UUID (8 chars)
 }
 
-function loadLoop(loopId) {
-  const loopPath = getLoopPath(loopId);
+function loadLoop(loopId, rootDir) {
+  const loopPath = getLoopPath(loopId, rootDir);
   const result = safeReadJSON(loopPath, { defaultValue: null });
   return result.ok ? result.data : null;
 }
 
-function saveLoop(loopId, state) {
-  ensureLoopsDir();
-  const loopPath = getLoopPath(loopId);
+function saveLoop(loopId, state, rootDir) {
+  ensureLoopsDir(rootDir);
+  const loopPath = getLoopPath(loopId, rootDir);
   state.updated_at = new Date().toISOString();
   safeWriteJSON(loopPath, state, { createDir: true });
 }
 
-function emitEvent(event) {
-  const busDir = path.dirname(BUS_PATH);
+function emitEvent(event, rootDir) {
+  const busPath = _busPath(rootDir);
+  const busDir = path.dirname(busPath);
   if (!fs.existsSync(busDir)) {
     fs.mkdirSync(busDir, { recursive: true });
   }
@@ -100,49 +119,22 @@ function emitEvent(event) {
 
   const line = JSON.stringify(correlatedEvent) + '\n';
 
-  fs.appendFileSync(BUS_PATH, line);
+  fs.appendFileSync(busPath, line);
 }
 
 // ============================================================================
-// QUALITY GATE CHECKS
+// QUALITY GATE INTEGRATION
 // ============================================================================
-
-function getTestCommand() {
-  const metadataPath = path.join(ROOT, 'docs/00-meta/agileflow-metadata.json');
-  const result = safeReadJSON(metadataPath, { defaultValue: {} });
-
-  if (result.ok && result.data?.ralph_loop?.test_command) {
-    return result.data.ralph_loop.test_command;
-  }
-  return 'npm test';
-}
-
-function getCoverageCommand() {
-  const metadataPath = path.join(ROOT, 'docs/00-meta/agileflow-metadata.json');
-  const result = safeReadJSON(metadataPath, { defaultValue: {} });
-
-  if (result.ok && result.data?.ralph_loop?.coverage_command) {
-    return result.data.ralph_loop.coverage_command;
-  }
-  return 'npm run test:coverage || npm test -- --coverage';
-}
-
-function getCoverageReportPath() {
-  const metadataPath = path.join(ROOT, 'docs/00-meta/agileflow-metadata.json');
-  const result = safeReadJSON(metadataPath, { defaultValue: {} });
-
-  if (result.ok && result.data?.ralph_loop?.coverage_report_path) {
-    return result.data.ralph_loop.coverage_report_path;
-  }
-  return 'coverage/coverage-summary.json';
-}
 
 /**
  * Run a command safely using spawn with validated arguments
  * @param {string} cmd - Command string to run
+ * @param {string} [rootDir] - Project root directory
  * @returns {{ passed: boolean, exitCode: number, error?: string, blocked?: boolean }}
  */
-function runCommand(cmd) {
+function runCommand(cmd, rootDir) {
+  const root = _getRoot(rootDir);
+
   // Validate command against allowlist
   const validation = buildSpawnArgs(cmd, { strict: true, logBlocked: true });
 
@@ -165,7 +157,7 @@ function runCommand(cmd) {
   try {
     // Use spawnSync with array arguments (no shell injection possible)
     const result = spawnSync(file, args, {
-      cwd: ROOT,
+      cwd: root,
       stdio: 'inherit',
       shell: false, // CRITICAL: Do not use shell to prevent injection
     });
@@ -185,50 +177,33 @@ function runCommand(cmd) {
   }
 }
 
-function checkTestsGate() {
-  const cmd = getTestCommand();
-  console.log(`${c.dim}Running: ${cmd}${c.reset}`);
-  const result = runCommand(cmd);
-  return {
-    passed: result.passed,
-    value: result.passed ? 100 : 0,
-    message: result.passed ? 'All tests passing' : 'Tests failing',
+/**
+ * Get custom command from project metadata for a gate
+ * @param {string} gateName - Gate name (tests, coverage)
+ * @param {string} rootDir - Project root
+ * @returns {string|undefined} Custom command or undefined
+ */
+function getCommandFromMetadata(gateName, rootDir) {
+  const metadataPath = path.join(rootDir, 'docs/00-meta/agileflow-metadata.json');
+  const result = safeReadJSON(metadataPath, { defaultValue: {} });
+
+  if (!result.ok || !result.data?.ralph_loop) return undefined;
+
+  const metaKey = {
+    tests: 'test_command',
+    coverage: 'coverage_command',
   };
+
+  return result.data.ralph_loop[metaKey[gateName]] || undefined;
 }
 
-function checkCoverageGate(threshold) {
-  // Run coverage command
-  const cmd = getCoverageCommand();
-  console.log(`${c.dim}Running: ${cmd}${c.reset}`);
-  runCommand(cmd);
-
-  // Parse coverage report
-  const reportPath = path.join(ROOT, getCoverageReportPath());
-  const report = safeReadJSON(reportPath, { defaultValue: null });
-
-  if (!report.ok || !report.data) {
-    return {
-      passed: false,
-      value: 0,
-      message: `Coverage report not found at ${getCoverageReportPath()}`,
-    };
-  }
-
-  const total = report.data.total;
-  const coverage = total?.lines?.pct || total?.statements?.pct || 0;
-  const passed = coverage >= threshold;
-
-  return {
-    passed,
-    value: coverage,
-    message: passed
-      ? `Coverage ${coverage.toFixed(1)}% >= ${threshold}%`
-      : `Coverage ${coverage.toFixed(1)}% < ${threshold}% (need ${(threshold - coverage).toFixed(1)}% more)`,
-  };
-}
-
-function checkVisualGate() {
-  const screenshotsDir = path.join(ROOT, 'screenshots');
+/**
+ * Check visual gate (filesystem-based, not command-based)
+ * @param {string} rootDir - Project root
+ * @returns {{ passed: boolean, value: number, message: string }}
+ */
+function checkVisualGate(rootDir) {
+  const screenshotsDir = path.join(rootDir, 'screenshots');
 
   if (!fs.existsSync(screenshotsDir)) {
     return {
@@ -262,41 +237,41 @@ function checkVisualGate() {
   };
 }
 
-function checkLintGate() {
-  console.log(`${c.dim}Running: npm run lint${c.reset}`);
-  const result = runCommand('npm run lint');
-  return {
-    passed: result.passed,
-    value: result.passed ? 100 : 0,
-    message: result.passed ? 'Lint passing' : 'Lint errors found',
-  };
-}
-
-function checkTypesGate() {
-  console.log(`${c.dim}Running: npx tsc --noEmit${c.reset}`);
-  const result = runCommand('npx tsc --noEmit');
-  return {
-    passed: result.passed,
-    value: result.passed ? 100 : 0,
-    message: result.passed ? 'No type errors' : 'Type errors found',
-  };
-}
-
-function checkGate(gate, threshold) {
-  switch (gate) {
-    case 'tests':
-      return checkTestsGate();
-    case 'coverage':
-      return checkCoverageGate(threshold);
-    case 'visual':
-      return checkVisualGate();
-    case 'lint':
-      return checkLintGate();
-    case 'types':
-      return checkTypesGate();
-    default:
-      return { passed: false, value: 0, message: `Unknown gate: ${gate}` };
+/**
+ * Run a quality gate check using quality-gates.js integration
+ * @param {string} gateName - Gate name from GATES
+ * @param {number} threshold - Threshold value (for coverage)
+ * @param {string} rootDir - Project root directory
+ * @returns {{ passed: boolean, value: number, message: string }}
+ */
+function runGateCheck(gateName, threshold, rootDir) {
+  // Visual gate is filesystem-based, not command-based
+  if (gateName === 'visual') {
+    return checkVisualGate(rootDir);
   }
+
+  const gateType = GATE_TYPE_MAP[gateName];
+  if (!gateType) {
+    return { passed: false, value: 0, message: `Unknown gate: ${gateName}` };
+  }
+
+  // Get custom command from metadata if available
+  const command = getCommandFromMetadata(gateName, rootDir);
+
+  const gate = qualityGates.createGate({
+    type: gateType,
+    name: GATES[gateName].name,
+    command: command,
+    threshold: threshold || undefined,
+  });
+
+  const result = qualityGates.executeGate(gate, { cwd: rootDir });
+
+  // Map quality-gates result to agent-loop format
+  const passed = result.status === qualityGates.GATE_STATUS.PASSED;
+  const value = result.value !== undefined ? result.value : passed ? 100 : 0;
+
+  return { passed, value, message: result.message };
 }
 
 // ============================================================================
@@ -311,10 +286,13 @@ function initLoop(options) {
     maxIterations = MAX_ITERATIONS_HARD_LIMIT,
     agentType = 'unknown',
     parentId = null,
+    rootDir,
   } = options;
 
+  const root = _getRoot(rootDir);
+
   // Initialize correlation context (trace_id, session_id)
-  const { traceId, sessionId } = initializeForProject(ROOT);
+  const { traceId, sessionId } = initializeForProject(root);
 
   // Validate gate
   if (!GATES[gate]) {
@@ -327,12 +305,13 @@ function initLoop(options) {
   const maxIter = Math.min(maxIterations, MAX_ITERATIONS_HARD_LIMIT);
 
   // Check if we're under the agent limit
-  ensureLoopsDir();
+  ensureLoopsDir(rootDir);
+  const loopsDir = _loopsDir(rootDir);
   const existingLoops = fs
-    .readdirSync(LOOPS_DIR)
+    .readdirSync(loopsDir)
     .filter(f => f.endsWith('.json'))
     .map(f => {
-      const loop = safeReadJSON(path.join(LOOPS_DIR, f), { defaultValue: null });
+      const loop = safeReadJSON(path.join(loopsDir, f), { defaultValue: null });
       return loop.ok ? loop.data : null;
     })
     .filter(l => l && l.status === 'running');
@@ -357,22 +336,27 @@ function initLoop(options) {
     current_value: 0,
     status: 'running',
     regression_count: 0,
+    failure_streak: 0,
+    last_failure_message: null,
     started_at: new Date().toISOString(),
     last_progress_at: new Date().toISOString(),
     events: [],
   };
 
-  saveLoop(loopId, state);
+  saveLoop(loopId, state, rootDir);
 
-  emitEvent({
-    type: 'agent_loop',
-    event: 'init',
-    loop_id: loopId,
-    agent: agentType,
-    gate,
-    threshold,
-    max_iterations: maxIter,
-  });
+  emitEvent(
+    {
+      type: 'agent_loop',
+      event: 'init',
+      loop_id: loopId,
+      agent: agentType,
+      gate,
+      threshold,
+      max_iterations: maxIter,
+    },
+    rootDir
+  );
 
   console.log(`${c.green}${c.bold}Agent Loop Initialized${c.reset}`);
   console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
@@ -386,8 +370,10 @@ function initLoop(options) {
   return loopId;
 }
 
-function checkLoop(loopId) {
-  const state = loadLoop(loopId);
+function checkLoop(loopId, options = {}) {
+  const { rootDir } = options;
+  const root = _getRoot(rootDir);
+  const state = loadLoop(loopId, rootDir);
 
   if (!state) {
     console.error(`${c.red}Loop not found: ${loopId}${c.reset}`);
@@ -404,16 +390,19 @@ function checkLoop(loopId) {
   if (elapsed > TIMEOUT_MS) {
     state.status = 'aborted';
     state.stopped_reason = 'timeout';
-    saveLoop(loopId, state);
+    saveLoop(loopId, state, rootDir);
 
-    emitEvent({
-      type: 'agent_loop',
-      event: 'abort',
-      loop_id: loopId,
-      agent: state.agent_type,
-      reason: 'timeout',
-      iteration: state.iteration,
-    });
+    emitEvent(
+      {
+        type: 'agent_loop',
+        event: 'abort',
+        loop_id: loopId,
+        agent: state.agent_type,
+        reason: 'timeout',
+        iteration: state.iteration,
+      },
+      rootDir
+    );
 
     console.log(`${c.red}Loop aborted: timeout (${Math.round(elapsed / 1000)}s)${c.reset}`);
     return state;
@@ -426,16 +415,19 @@ function checkLoop(loopId) {
   if (state.iteration > state.max_iterations) {
     state.status = 'failed';
     state.stopped_reason = 'max_iterations';
-    saveLoop(loopId, state);
+    saveLoop(loopId, state, rootDir);
 
-    emitEvent({
-      type: 'agent_loop',
-      event: 'failed',
-      loop_id: loopId,
-      agent: state.agent_type,
-      reason: 'max_iterations',
-      final_value: state.current_value,
-    });
+    emitEvent(
+      {
+        type: 'agent_loop',
+        event: 'failed',
+        loop_id: loopId,
+        agent: state.agent_type,
+        reason: 'max_iterations',
+        final_value: state.current_value,
+      },
+      rootDir
+    );
 
     console.log(`${c.red}Loop failed: max iterations (${state.max_iterations}) reached${c.reset}`);
     return state;
@@ -446,8 +438,8 @@ function checkLoop(loopId) {
   );
   console.log(`${c.dim}${'─'.repeat(40)}${c.reset}`);
 
-  // Run gate check
-  const result = checkGate(state.quality_gate, state.threshold);
+  // Run gate check via quality-gates integration
+  const result = runGateCheck(state.quality_gate, state.threshold, root);
   const previousValue = state.current_value;
   state.current_value = result.value;
 
@@ -456,21 +448,63 @@ function checkLoop(loopId) {
     iter: state.iteration,
     value: result.value,
     passed: result.passed,
+    message: result.message,
     at: new Date().toISOString(),
   });
 
   // Emit progress
-  emitEvent({
-    type: 'agent_loop',
-    event: 'iteration',
-    loop_id: loopId,
-    agent: state.agent_type,
-    gate: state.quality_gate,
-    iter: state.iteration,
-    value: result.value,
-    threshold: state.threshold,
-    passed: result.passed,
-  });
+  emitEvent(
+    {
+      type: 'agent_loop',
+      event: 'iteration',
+      loop_id: loopId,
+      agent: state.agent_type,
+      gate: state.quality_gate,
+      iter: state.iteration,
+      value: result.value,
+      threshold: state.threshold,
+      passed: result.passed,
+    },
+    rootDir
+  );
+
+  // Check for repeated failure (same failure message 3+ times)
+  if (!result.passed) {
+    if (result.message === state.last_failure_message) {
+      state.failure_streak++;
+    } else {
+      state.failure_streak = 1;
+      state.last_failure_message = result.message;
+    }
+
+    if (state.failure_streak >= REPEATED_FAILURE_LIMIT) {
+      state.status = 'failed';
+      state.stopped_reason = 'repeated_failure';
+      saveLoop(loopId, state, rootDir);
+
+      emitEvent(
+        {
+          type: 'agent_loop',
+          event: 'failed',
+          loop_id: loopId,
+          agent: state.agent_type,
+          reason: 'repeated_failure',
+          final_value: result.value,
+          failure_message: result.message,
+        },
+        rootDir
+      );
+
+      console.log(
+        `${c.red}Loop failed: same failure repeated ${state.failure_streak} times${c.reset}`
+      );
+      return state;
+    }
+  } else {
+    // Reset failure streak on success
+    state.failure_streak = 0;
+    state.last_failure_message = null;
+  }
 
   // Check for regression
   if (state.iteration > 1 && result.value < previousValue) {
@@ -482,16 +516,19 @@ function checkLoop(loopId) {
     if (state.regression_count >= 2) {
       state.status = 'failed';
       state.stopped_reason = 'regression_detected';
-      saveLoop(loopId, state);
+      saveLoop(loopId, state, rootDir);
 
-      emitEvent({
-        type: 'agent_loop',
-        event: 'failed',
-        loop_id: loopId,
-        agent: state.agent_type,
-        reason: 'regression_detected',
-        final_value: result.value,
-      });
+      emitEvent(
+        {
+          type: 'agent_loop',
+          event: 'failed',
+          loop_id: loopId,
+          agent: state.agent_type,
+          reason: 'regression_detected',
+          final_value: result.value,
+        },
+        rootDir
+      );
 
       console.log(`${c.red}Loop failed: regression detected 2+ times${c.reset}`);
       return state;
@@ -499,6 +536,9 @@ function checkLoop(loopId) {
   } else if (result.value > previousValue) {
     state.last_progress_at = new Date().toISOString();
     state.regression_count = 0; // Reset on progress
+  } else {
+    // Value held steady (no regression, no progress) - reset regression count
+    state.regression_count = 0;
   }
 
   // Check for stall
@@ -506,16 +546,19 @@ function checkLoop(loopId) {
   if (timeSinceProgress > STALL_THRESHOLD_MS) {
     state.status = 'failed';
     state.stopped_reason = 'stalled';
-    saveLoop(loopId, state);
+    saveLoop(loopId, state, rootDir);
 
-    emitEvent({
-      type: 'agent_loop',
-      event: 'failed',
-      loop_id: loopId,
-      agent: state.agent_type,
-      reason: 'stalled',
-      final_value: result.value,
-    });
+    emitEvent(
+      {
+        type: 'agent_loop',
+        event: 'failed',
+        loop_id: loopId,
+        agent: state.agent_type,
+        reason: 'stalled',
+        final_value: result.value,
+      },
+      rootDir
+    );
 
     console.log(`${c.red}Loop failed: stalled (no progress for 5+ minutes)${c.reset}`);
     return state;
@@ -533,27 +576,30 @@ function checkLoop(loopId) {
       // Confirmed pass
       state.status = 'passed';
       state.completed_at = new Date().toISOString();
-      saveLoop(loopId, state);
+      saveLoop(loopId, state, rootDir);
 
-      emitEvent({
-        type: 'agent_loop',
-        event: 'passed',
-        loop_id: loopId,
-        agent: state.agent_type,
-        gate: state.quality_gate,
-        final_value: result.value,
-        iterations: state.iteration,
-      });
+      emitEvent(
+        {
+          type: 'agent_loop',
+          event: 'passed',
+          loop_id: loopId,
+          agent: state.agent_type,
+          gate: state.quality_gate,
+          final_value: result.value,
+          iterations: state.iteration,
+        },
+        rootDir
+      );
 
       console.log(`\n${c.green}${c.bold}Loop PASSED${c.reset} after ${state.iteration} iterations`);
       console.log(`Final value: ${result.value}${state.threshold > 0 ? '%' : ''}`);
     } else {
       // Need confirmation iteration
       console.log(`${c.dim}Gate passed - need 1 more iteration to confirm${c.reset}`);
-      saveLoop(loopId, state);
+      saveLoop(loopId, state, rootDir);
     }
   } else {
-    saveLoop(loopId, state);
+    saveLoop(loopId, state, rootDir);
     console.log(`${c.dim}Continue iterating...${c.reset}`);
   }
 
@@ -562,8 +608,9 @@ function checkLoop(loopId) {
   return state;
 }
 
-function getStatus(loopId) {
-  const state = loadLoop(loopId);
+function getStatus(loopId, options = {}) {
+  const { rootDir } = options;
+  const state = loadLoop(loopId, rootDir);
 
   if (!state) {
     console.error(`${c.red}Loop not found: ${loopId}${c.reset}`);
@@ -599,8 +646,9 @@ function getStatus(loopId) {
   return state;
 }
 
-function abortLoop(loopId, reason = 'manual') {
-  const state = loadLoop(loopId);
+function abortLoop(loopId, reason = 'manual', options = {}) {
+  const { rootDir } = options;
+  const state = loadLoop(loopId, rootDir);
 
   if (!state) {
     console.error(`${c.red}Loop not found: ${loopId}${c.reset}`);
@@ -615,25 +663,30 @@ function abortLoop(loopId, reason = 'manual') {
   state.status = 'aborted';
   state.stopped_reason = reason;
   state.completed_at = new Date().toISOString();
-  saveLoop(loopId, state);
+  saveLoop(loopId, state, rootDir);
 
-  emitEvent({
-    type: 'agent_loop',
-    event: 'abort',
-    loop_id: loopId,
-    agent: state.agent_type,
-    reason,
-    final_value: state.current_value,
-  });
+  emitEvent(
+    {
+      type: 'agent_loop',
+      event: 'abort',
+      loop_id: loopId,
+      agent: state.agent_type,
+      reason,
+      final_value: state.current_value,
+    },
+    rootDir
+  );
 
   console.log(`${c.yellow}Loop aborted: ${reason}${c.reset}`);
   return state;
 }
 
-function listLoops() {
-  ensureLoopsDir();
+function listLoops(options = {}) {
+  const { rootDir } = options;
+  const loopsDir = _loopsDir(rootDir);
+  ensureLoopsDir(rootDir);
 
-  const files = fs.readdirSync(LOOPS_DIR).filter(f => f.endsWith('.json'));
+  const files = fs.readdirSync(loopsDir).filter(f => f.endsWith('.json'));
 
   if (files.length === 0) {
     console.log(`${c.dim}No agent loops found${c.reset}`);
@@ -642,7 +695,7 @@ function listLoops() {
 
   const loops = files
     .map(f => {
-      const result = safeReadJSON(path.join(LOOPS_DIR, f), { defaultValue: null });
+      const result = safeReadJSON(path.join(loopsDir, f), { defaultValue: null });
       return result.ok ? result.data : null;
     })
     .filter(Boolean);
@@ -665,16 +718,19 @@ function listLoops() {
   return loops;
 }
 
-function cleanupLoops() {
-  ensureLoopsDir();
+function cleanupLoops(options = {}) {
+  const { rootDir } = options;
+  const loopsDir = _loopsDir(rootDir);
+  ensureLoopsDir(rootDir);
 
-  const files = fs.readdirSync(LOOPS_DIR).filter(f => f.endsWith('.json'));
+  const files = fs.readdirSync(loopsDir).filter(f => f.endsWith('.json'));
   let cleaned = 0;
 
   files.forEach(f => {
-    const result = safeReadJSON(path.join(LOOPS_DIR, f), { defaultValue: null });
+    const filePath = path.join(loopsDir, f);
+    const result = safeReadJSON(filePath, { defaultValue: null });
     if (result.ok && result.data && result.data.status !== 'running') {
-      fs.unlinkSync(path.join(LOOPS_DIR, f));
+      fs.unlinkSync(filePath);
       cleaned++;
     }
   });
@@ -808,9 +864,13 @@ module.exports = {
   listLoops,
   cleanupLoops,
   loadLoop,
+  runCommand,
+  runGateCheck,
   GATES,
+  GATE_TYPE_MAP,
   MAX_ITERATIONS_HARD_LIMIT,
   MAX_AGENTS_HARD_LIMIT,
+  REPEATED_FAILURE_LIMIT,
 };
 
 // Run CLI if executed directly

@@ -219,6 +219,16 @@ function executeGate(gate, options = {}) {
         shell: false,
         maxBuffer: 10 * 1024 * 1024, // 10MB
       });
+      // If spawn failed (e.g., shell builtin, command not found), fall back to shell
+      if (result.error) {
+        result = spawnSync('sh', ['-c', gate.command], {
+          cwd,
+          env,
+          timeout: gate.timeout,
+          encoding: 'utf8',
+          maxBuffer: 10 * 1024 * 1024, // 10MB
+        });
+      }
     } else {
       // Fallback for complex commands (pipes, shell builtins, etc.)
       result = spawnSync('sh', ['-c', gate.command], {
@@ -235,7 +245,7 @@ function executeGate(gate, options = {}) {
     // Check exit code
     if (result.status === 0) {
       // Check threshold if applicable
-      if (gate.type === GATE_TYPES.COVERAGE && gate.threshold) {
+      if (gate.type === GATE_TYPES.COVERAGE && gate.threshold != null) {
         const coverage = parseCoverageOutput(result.stdout + result.stderr);
         if (coverage !== null && coverage < gate.threshold) {
           return {
@@ -336,6 +346,7 @@ function executeGates(gates, options = {}) {
  * @returns {number|null} Coverage percentage or null
  */
 function parseCoverageOutput(output) {
+  if (!output || typeof output !== 'string') return null;
   // Common coverage patterns
   const patterns = [
     /All files[^|]*\|[^|]*\|\s*([\d.]+)/,
