@@ -5,7 +5,7 @@
  * as hooks. When these scripts eagerly require() npm dependencies at module
  * load time, they crash if the dependency isn't resolvable from the user's
  * project directory. This utility standardizes the lazy-loading pattern used
- * ad-hoc in yaml-utils.js and dashboard-server.js.
+ * ad-hoc in yaml-utils.js.
  *
  * Usage:
  *   const { lazyRequire } = require('./lazy-require');

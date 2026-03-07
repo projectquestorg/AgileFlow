@@ -482,7 +482,7 @@ function saveAggregatedMetrics(rootDir, metrics) {
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
 
-    // Notify listeners (e.g., dashboard server) that metrics were saved
+    // Notify listeners that metrics were saved
     try {
       teamMetricsEmitter.emit('metrics_saved', { trace_id: metrics.trace_id });
     } catch (_) {

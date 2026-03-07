@@ -1,17 +1,13 @@
 /**
  * Security Hardening EP-0034 Integration Tests
  *
- * Covers: path traversal prevention, WebSocket auth, CORS, ReDoS prevention,
- * rate limiting, session lifecycle, DashboardSession security
+ * Covers: path traversal prevention, CORS, ReDoS prevention,
+ * error message sanitization
  *
  * Test Categories:
  * 1. Path Traversal Guards (api-routes.js ID validation)
- * 2. WebSocket Authentication (dashboard-server.js)
- * 3. CORS and Security Headers (api-server.js)
- * 4. Rate Limiting (DashboardSession)
- * 5. Session Expiry (DashboardSession)
- * 6. Error Message Sanitization
- * 7. ReDoS Prevention (damage-control-utils.js)
+ * 2. Error Message Sanitization
+ * 3. ReDoS Prevention (damage-control-utils.js)
  */
 
 jest.mock('fs');
@@ -22,7 +18,6 @@ jest.mock('readline');
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
 const { getApiRoutes } = require('../../lib/api-routes');
 const {
@@ -35,14 +30,6 @@ const {
 } = require('../../lib/paths');
 const { SessionRegistry } = require('../../lib/session-registry');
 const { getTaskRegistry } = require('../../scripts/lib/task-registry');
-const {
-  DashboardSession,
-  DEFAULT_HOST,
-  SESSION_TIMEOUT_MS,
-  RATE_LIMIT_TOKENS,
-  SENSITIVE_ENV_PATTERNS,
-} = require('../../lib/dashboard-server');
-const { DEFAULT_HOST: API_DEFAULT_HOST } = require('../../lib/api-server');
 const { validatePattern } = require('../../scripts/lib/damage-control-utils');
 
 // Test constants
@@ -250,217 +237,6 @@ describe('Path Traversal Prevention (Dynamic Route ID Validation)', () => {
 
       expect(result).not.toHaveProperty('error');
     });
-  });
-});
-
-// =============================================================================
-// 2. WEBSOCKET AUTHENTICATION TESTS (dashboard-server.js)
-// =============================================================================
-
-describe('WebSocket Security (dashboard-server.js)', () => {
-  describe('DEFAULT_HOST Configuration', () => {
-    it('DEFAULT_HOST is 127.0.0.1 (localhost only, not 0.0.0.0)', () => {
-      expect(DEFAULT_HOST).toBe('127.0.0.1');
-      expect(DEFAULT_HOST).not.toBe('0.0.0.0');
-    });
-
-    it('DEFAULT_HOST is different from API_DEFAULT_HOST behavior', () => {
-      expect(API_DEFAULT_HOST).toBe('127.0.0.1');
-      // Both should be localhost-only for security
-    });
-  });
-
-  describe('SENSITIVE_ENV_PATTERNS Regex', () => {
-    it('matches SECRET keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('MY_SECRET')).toBe(true);
-    });
-
-    it('matches TOKEN keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('API_TOKEN')).toBe(true);
-    });
-
-    it('matches PASSWORD keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('DATABASE_PASSWORD')).toBe(true);
-    });
-
-    it('matches CREDENTIAL keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('AWS_CREDENTIAL')).toBe(true);
-    });
-
-    it('matches API_KEY keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('API_KEY')).toBe(true);
-    });
-
-    it('matches PRIVATE_KEY keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('PRIVATE_KEY')).toBe(true);
-    });
-
-    it('matches AUTH keyword', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('AUTH_TOKEN')).toBe(true);
-    });
-
-    it('is case-insensitive', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('my_secret')).toBe(true);
-      expect(SENSITIVE_ENV_PATTERNS.test('MY_SECRET')).toBe(true);
-    });
-
-    it('does not match safe variable names', () => {
-      expect(SENSITIVE_ENV_PATTERNS.test('NODE_ENV')).toBe(false);
-      expect(SENSITIVE_ENV_PATTERNS.test('APP_NAME')).toBe(false);
-    });
-  });
-
-  describe('SESSION_TIMEOUT_MS Configuration', () => {
-    it('SESSION_TIMEOUT_MS is 4 hours (14400000 ms)', () => {
-      expect(SESSION_TIMEOUT_MS).toBe(4 * 60 * 60 * 1000);
-      expect(SESSION_TIMEOUT_MS).toBe(14400000);
-    });
-
-    it('SESSION_TIMEOUT_MS is reasonable timeout', () => {
-      expect(SESSION_TIMEOUT_MS).toBeGreaterThan(0);
-      expect(SESSION_TIMEOUT_MS).toBeLessThan(24 * 60 * 60 * 1000); // Less than 1 day
-    });
-  });
-
-  describe('RATE_LIMIT_TOKENS Configuration', () => {
-    it('RATE_LIMIT_TOKENS is 100', () => {
-      expect(RATE_LIMIT_TOKENS).toBe(100);
-    });
-
-    it('RATE_LIMIT_TOKENS is reasonable number', () => {
-      expect(RATE_LIMIT_TOKENS).toBeGreaterThan(0);
-      expect(RATE_LIMIT_TOKENS).toBeLessThan(10000);
-    });
-  });
-});
-
-// =============================================================================
-// 3. DASHBOARD SESSION RATE LIMITING TESTS
-// =============================================================================
-
-describe('DashboardSession Rate Limiting', () => {
-  let session;
-
-  beforeEach(() => {
-    session = new DashboardSession('test-session-id', null, '/test/project');
-  });
-
-  it('allows messages up to RATE_LIMIT_TOKENS per second', () => {
-    let allowedCount = 0;
-
-    for (let i = 0; i < RATE_LIMIT_TOKENS; i++) {
-      if (session.checkRateLimit()) {
-        allowedCount++;
-      }
-    }
-
-    expect(allowedCount).toBe(RATE_LIMIT_TOKENS);
-  });
-
-  it('blocks when exceeding RATE_LIMIT_TOKENS', () => {
-    // Use up all tokens
-    for (let i = 0; i < RATE_LIMIT_TOKENS; i++) {
-      session.checkRateLimit();
-    }
-
-    // Next call should be blocked
-    const result = session.checkRateLimit();
-
-    expect(result).toBe(false);
-  });
-
-  it('blocks (RATE_LIMIT_TOKENS + 1) consecutive calls', () => {
-    const results = [];
-
-    for (let i = 0; i < RATE_LIMIT_TOKENS + 1; i++) {
-      results.push(session.checkRateLimit());
-    }
-
-    // Last result should be false
-    expect(results[RATE_LIMIT_TOKENS]).toBe(false);
-  });
-
-  it('refills tokens after time interval', done => {
-    // Use all tokens
-    for (let i = 0; i < RATE_LIMIT_TOKENS; i++) {
-      session.checkRateLimit();
-    }
-
-    // Next should be blocked
-    expect(session.checkRateLimit()).toBe(false);
-
-    // Wait for refill (rate limit refill is 1 second based on implementation)
-    setTimeout(() => {
-      // After refill, should allow again
-      const result = session.checkRateLimit();
-      expect(result).toBe(true);
-      done();
-    }, 1100);
-  });
-
-  it('does not allow tokens to exceed RATE_LIMIT_TOKENS', () => {
-    // Use some tokens
-    session.checkRateLimit();
-    session.checkRateLimit();
-
-    // Wait for refill
-    setTimeout(() => {
-      // Should refill to RATE_LIMIT_TOKENS, not add on top
-      expect(session._rateTokens).toBeLessThanOrEqual(RATE_LIMIT_TOKENS);
-    }, 1100);
-  });
-});
-
-// =============================================================================
-// 4. DASHBOARD SESSION EXPIRY TESTS
-// =============================================================================
-
-describe('DashboardSession Expiry', () => {
-  let session;
-
-  beforeEach(() => {
-    session = new DashboardSession('test-session-id', null, '/test/project');
-  });
-
-  it('new session is not expired immediately', () => {
-    expect(session.isExpired()).toBe(false);
-  });
-
-  it('session expires after SESSION_TIMEOUT_MS of inactivity', done => {
-    // Set lastActivity to far past
-    session.lastActivity = new Date(Date.now() - SESSION_TIMEOUT_MS - 1000);
-
-    expect(session.isExpired()).toBe(true);
-    done();
-  });
-
-  it('session is not expired if lastActivity is within timeout', () => {
-    // Set lastActivity to recent
-    session.lastActivity = new Date(Date.now() - SESSION_TIMEOUT_MS + 1000);
-
-    expect(session.isExpired()).toBe(false);
-  });
-
-  it('activity updates lastActivity timestamp', done => {
-    const originalTime = session.lastActivity.getTime();
-
-    // Wait a bit to ensure timestamp difference
-    setTimeout(() => {
-      // Simulate activity by adding message
-      session.addMessage('user', 'test');
-
-      const newTime = session.lastActivity.getTime();
-
-      expect(newTime).toBeGreaterThanOrEqual(originalTime);
-      done();
-    }, 10);
-  });
-
-  it('session age is tracked from createdAt', () => {
-    const createdTime = session.createdAt.getTime();
-    const currentTime = Date.now();
-
-    expect(currentTime).toBeGreaterThanOrEqual(createdTime);
   });
 });
 
@@ -726,22 +502,6 @@ describe('Security Hardening Integration', () => {
     }
   });
 
-  it('DashboardSession maintains independent rate limits per session', () => {
-    const session1 = new DashboardSession('session-1', null, '/test');
-    const session2 = new DashboardSession('session-2', null, '/test');
-
-    // Use tokens in session1
-    for (let i = 0; i < RATE_LIMIT_TOKENS; i++) {
-      session1.checkRateLimit();
-    }
-
-    // session1 should be rate-limited
-    expect(session1.checkRateLimit()).toBe(false);
-
-    // session2 should still have tokens
-    expect(session2.checkRateLimit()).toBe(true);
-  });
-
   it('security mechanisms do not interfere with legitimate usage', () => {
     // Valid ID passes validation
     fs.existsSync.mockReturnValue(true);
@@ -752,96 +512,5 @@ describe('Security Hardening Integration', () => {
 
     expect(result).not.toHaveProperty('error');
     expect(result).toHaveProperty('id', 'EP-0001');
-
-    // Rate limiting allows normal traffic
-    const session = new DashboardSession('test', null, '/test');
-    for (let i = 0; i < 50; i++) {
-      expect(session.checkRateLimit()).toBe(true);
-    }
-
-    // Session expiry allows normal sessions
-    const freshSession = new DashboardSession('fresh', null, '/test');
-    expect(freshSession.isExpired()).toBe(false);
-  });
-});
-
-// =============================================================================
-// 8. SENSITIVE ENVIRONMENT VARIABLE FILTERING
-// =============================================================================
-
-describe('Sensitive Environment Variable Filtering', () => {
-  it('SENSITIVE_ENV_PATTERNS identifies all sensitive keywords', () => {
-    const sensitiveVars = [
-      'DATABASE_SECRET',
-      'API_TOKEN',
-      'JWT_PASSWORD',
-      'AWS_CREDENTIAL_ID',
-      'SSH_PRIVATE_KEY',
-      'AUTH_SECRET',
-      'OAUTH_TOKEN',
-      'STRIPE_SECRET_KEY',
-      'DATABASE_PASSWORD',
-    ];
-
-    for (const varName of sensitiveVars) {
-      expect(SENSITIVE_ENV_PATTERNS.test(varName)).toBe(true);
-    }
-  });
-
-  it('SENSITIVE_ENV_PATTERNS allows safe environment variables', () => {
-    const safeVars = [
-      'NODE_ENV',
-      'APP_NAME',
-      'APP_VERSION',
-      'LOG_LEVEL',
-      'PORT',
-      'HOST',
-      'PUBLIC_URL',
-      'ENVIRONMENT',
-      'DEBUG',
-    ];
-
-    for (const varName of safeVars) {
-      expect(SENSITIVE_ENV_PATTERNS.test(varName)).toBe(false);
-    }
-  });
-});
-
-// =============================================================================
-// 9. IDEMPOTENT SECURITY CONFIGURATION TESTS
-// =============================================================================
-
-describe('Security Configuration Idempotency', () => {
-  it('DashboardSession can be created and destroyed multiple times', () => {
-    const ids = ['session-1', 'session-2', 'session-3'];
-
-    for (const id of ids) {
-      const session = new DashboardSession(id, null, '/test/project');
-
-      expect(session.id).toBe(id);
-      expect(session.state).toBe('connected');
-      expect(session.isExpired()).toBe(false);
-    }
-  });
-
-  it('Rate limiting state is consistent across multiple checks', () => {
-    const session = new DashboardSession('test', null, '/test');
-
-    // First batch of checks
-    const results1 = [];
-    for (let i = 0; i < 20; i++) {
-      results1.push(session.checkRateLimit());
-    }
-
-    // Should all pass
-    expect(results1.every(r => r === true)).toBe(true);
-
-    // Use remaining tokens
-    for (let i = 0; i < RATE_LIMIT_TOKENS - 20; i++) {
-      session.checkRateLimit();
-    }
-
-    // Next check should fail
-    expect(session.checkRateLimit()).toBe(false);
   });
 });

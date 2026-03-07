@@ -8,7 +8,7 @@
  * - checkCostThreshold: logs warning when exceeded
  * - checkCostThreshold: no warning when under threshold
  * - Edge cases: missing tokens, unknown model
- * - Dashboard protocol: cost fields in createTeamMetrics
+ * - Cost fields in team metrics
  */
 
 const fs = require('fs');
@@ -385,43 +385,5 @@ describe('aggregateTeamMetrics with cost tracking', () => {
     expect(result.per_agent['worker'].input_tokens).toBe(10000);
     expect(result.per_agent['worker'].output_tokens).toBe(5000);
     expect(result.per_agent['worker'].cost_usd).toBeDefined();
-  });
-});
-
-describe('createTeamMetrics with cost fields', () => {
-  const { createTeamMetrics } = require('../../../lib/dashboard-protocol');
-
-  it('includes total_cost_usd in message', () => {
-    const metrics = {
-      per_agent: { a: { cost_usd: 1.5 } },
-      per_gate: {},
-      team_completion_ms: 5000,
-      total_cost_usd: 1.5,
-      computed_at: '2026-01-01T00:00:00Z',
-    };
-    const msg = createTeamMetrics('trace-cost', metrics);
-
-    expect(msg.total_cost_usd).toBe(1.5);
-  });
-
-  it('defaults total_cost_usd to 0 when missing', () => {
-    const msg = createTeamMetrics('trace-no-cost', {});
-    expect(msg.total_cost_usd).toBe(0);
-  });
-
-  it('defaults total_cost_usd to 0 when metrics is null', () => {
-    const msg = createTeamMetrics('trace-null', null);
-    expect(msg.total_cost_usd).toBe(0);
-  });
-
-  it('includes total_cost_usd in message fields list', () => {
-    const metrics = {
-      per_agent: {},
-      per_gate: {},
-      total_cost_usd: 2.5,
-      computed_at: '2026-01-01T00:00:00Z',
-    };
-    const msg = createTeamMetrics('trace-fields', metrics);
-    expect(Object.keys(msg)).toContain('total_cost_usd');
   });
 });

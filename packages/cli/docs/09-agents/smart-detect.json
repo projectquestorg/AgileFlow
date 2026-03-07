@@ -1,11 +1,19 @@
 {
-  "detected_at": "2026-02-27T16:41:00.648Z",
+  "detected_at": "2026-03-07T02:46:27.944Z",
   "lifecycle_phase": "pre-story",
   "phase_confidence": 0.9,
   "phase_reason": "No active story",
   "recommendations": {
     "immediate": [],
     "available": [
+      {
+        "feature": "scale-adaptive",
+        "priority": "medium",
+        "trigger": "Large project detected (415 files, 0 stories) — Thorough planning with architecture review and multi-expert analysis.",
+        "action": "suggest",
+        "command": "/agileflow:workflow",
+        "phase": "pre-story"
+      },
       {
         "feature": "configure",
         "priority": "low",
@@ -237,10 +245,11 @@
   ],
   "signals_summary": {
     "story": "none",
-    "files_changed": 4,
-    "core_files": 0,
+    "files_changed": 175,
+    "core_files": 11,
     "tests_passing": null,
     "on_feature_branch": false,
-    "story_counts": {}
+    "story_counts": {},
+    "scale": "large"
   }
 }

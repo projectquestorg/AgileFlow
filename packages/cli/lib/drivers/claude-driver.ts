@@ -266,7 +266,7 @@ export class ClaudeDriver implements Driver {
 }
 
 // ============================================================================
-// Claude Native Message Types (from dashboard-protocol.js)
+// Claude Native Message Types
 // ============================================================================
 
 export interface ClaudeNativeMessage {

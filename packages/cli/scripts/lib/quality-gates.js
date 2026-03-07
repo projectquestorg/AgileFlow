@@ -20,6 +20,7 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { buildSpawnArgs } = require('../../lib/validate-commands');
 
 // ============================================================================
 // Constants
@@ -206,13 +207,28 @@ function executeGate(gate, options = {}) {
   }
 
   try {
-    const result = spawnSync('sh', ['-c', gate.command], {
-      cwd,
-      env,
-      timeout: gate.timeout,
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024, // 10MB
-    });
+    // Try safe spawn first (no shell injection possible)
+    const validation = buildSpawnArgs(gate.command, { strict: false });
+    let result;
+    if (validation.ok) {
+      result = spawnSync(validation.data.file, validation.data.args, {
+        cwd,
+        env,
+        timeout: gate.timeout,
+        encoding: 'utf8',
+        shell: false,
+        maxBuffer: 10 * 1024 * 1024, // 10MB
+      });
+    } else {
+      // Fallback for complex commands (pipes, shell builtins, etc.)
+      result = spawnSync('sh', ['-c', gate.command], {
+        cwd,
+        env,
+        timeout: gate.timeout,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024, // 10MB
+      });
+    }
 
     const duration = Date.now() - startTime;
 

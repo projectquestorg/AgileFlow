@@ -523,18 +523,6 @@ const FEATURE_DETECTORS = {
     return null;
   },
 
-  serve: signals => {
-    const { metadata } = signals;
-    const dashboardEnabled = metadata?.features?.dashboard?.enabled;
-    if (!dashboardEnabled) return null;
-    return recommend('serve', {
-      priority: 'low',
-      trigger: 'Dashboard server available',
-      action: 'offer',
-      phase: 'implementation',
-    });
-  },
-
   'ac-verify': signals => {
     const { story, tests } = signals;
     if (!story || story.status !== 'in-progress') return null;

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Auto-sync installed commands when core source files change.
+# Only relevant in the AgileFlow repo itself (dogfooding).
+# Runs in background so it never blocks commits.
+
+if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^packages/cli/src/core/'; then
+  CLI_PATH="packages/cli/tools/cli/agileflow-cli.js"
+  if [ -f "$CLI_PATH" ]; then
+    node "$CLI_PATH" update --force -d "$(pwd)" >/dev/null 2>&1 &
+  fi
+fi
