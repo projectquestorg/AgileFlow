@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.3] - 2026-03-07
+
+### Added
+- Session monitor wrapper and quality-gates integration
+
 ## [3.4.2] - 2026-03-07
 
 ### Added
