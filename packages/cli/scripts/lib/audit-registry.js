@@ -188,6 +188,42 @@ const AUDIT_TYPES = {
     ],
   },
 
+  seo: {
+    name: 'SEO Audit',
+    prefix: 'SEO',
+    color: '#ff9e64', // rose/orange
+    command: 'seo/audit',
+    analyzers: {
+      technical: { subagent_type: 'seo-analyzer-technical', label: 'Technical SEO' },
+      content: { subagent_type: 'seo-analyzer-content', label: 'Content Quality' },
+      schema: { subagent_type: 'seo-analyzer-schema', label: 'Schema Markup' },
+      images: { subagent_type: 'seo-analyzer-images', label: 'Image Optimization' },
+      performance: { subagent_type: 'seo-analyzer-performance', label: 'Core Web Vitals' },
+      sitemap: { subagent_type: 'seo-analyzer-sitemap', label: 'Sitemap' },
+    },
+    consensus: { subagent_type: 'seo-consensus', label: 'SEO Consensus' },
+    quick_analyzers: ['technical', 'content', 'schema', 'images', 'performance', 'sitemap'],
+    deep_analyzers: ['technical', 'content', 'schema', 'images', 'performance', 'sitemap'],
+  },
+
+  ads: {
+    name: 'Ads Audit',
+    prefix: 'Ads',
+    color: '#89ddff', // ice
+    command: 'ads/audit',
+    analyzers: {
+      google: { subagent_type: 'ads-audit-google', label: 'Google Ads' },
+      meta: { subagent_type: 'ads-audit-meta', label: 'Meta Ads' },
+      budget: { subagent_type: 'ads-audit-budget', label: 'Budget & Bidding' },
+      creative: { subagent_type: 'ads-audit-creative', label: 'Creative Quality' },
+      tracking: { subagent_type: 'ads-audit-tracking', label: 'Conversion Tracking' },
+      compliance: { subagent_type: 'ads-audit-compliance', label: 'Compliance' },
+    },
+    consensus: { subagent_type: 'ads-consensus', label: 'Ads Consensus' },
+    quick_analyzers: ['google', 'meta', 'budget', 'creative', 'tracking', 'compliance'],
+    deep_analyzers: ['google', 'meta', 'budget', 'creative', 'tracking', 'compliance'],
+  },
+
   legal: {
     name: 'Legal Risk',
     prefix: 'Legal',

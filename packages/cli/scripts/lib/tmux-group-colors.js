@@ -23,8 +23,8 @@ const GROUP_PALETTE = [
   { name: 'amber', hex: '#e0af68', audit: 'test' },
   { name: 'violet', hex: '#bb9af7', audit: 'completeness' },
   { name: 'lime', hex: '#9ece6a', audit: 'legal' },
-  { name: 'rose', hex: '#ff9e64', audit: null },
-  { name: 'ice', hex: '#89ddff', audit: null },
+  { name: 'rose', hex: '#ff9e64', audit: 'seo' },
+  { name: 'ice', hex: '#89ddff', audit: 'ads' },
 ];
 
 /**

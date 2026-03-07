@@ -420,7 +420,7 @@ async function spawnAuditInTmux(options) {
 
   if (!auditType) {
     console.error(`Unknown audit type: ${options.audit}`);
-    console.error(`Valid types: logic, security, performance, test, completeness, legal`);
+    console.error(`Valid types: logic, security, performance, test, completeness, legal, seo, ads`);
     process.exit(1);
   }
 

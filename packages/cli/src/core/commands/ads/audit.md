@@ -1,6 +1,6 @@
 ---
 description: Full multi-platform paid advertising audit with 6 parallel analyzers, industry detection, weighted Ads Health Score 0-100, and prioritized action plan
-argument-hint: "<account-data> [PLATFORMS=all]"
+argument-hint: "<account-data> [DEPTH=quick|deep|ultradeep|extreme] [PLATFORMS=all]"
 compact_context:
   priority: high
   preserve_rules:
@@ -8,10 +8,12 @@ compact_context:
     - "CRITICAL: Deploy 6 analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Weighted scoring - Tracking 25%, Wasted Spend 20%, Structure 15%, Creative 15%, Budget 15%, Compliance 10%"
+    - "MUST parse DEPTH argument: quick (default), deep, ultradeep, extreme"
     - "MUST detect industry type before deploying analyzers"
     - "Pass all analyzer outputs to ads-consensus for final report"
     - "Quality Gates: No optimization without tracking, 3x Kill Rule, Broad Match needs Smart Bidding"
   state_fields:
+    - depth
     - platforms
     - industry_type
     - analyzers_deployed
@@ -27,7 +29,10 @@ Deploy 6 specialized advertising analyzers in parallel to audit ad accounts, the
 ## Quick Reference
 
 ```
-/agileflow:ads:audit <account-data>                       # Full audit (all platforms detected)
+/agileflow:ads:audit <account-data>                       # Quick audit (all platforms detected)
+/agileflow:ads:audit <account-data> DEPTH=deep             # Deep audit (more thorough)
+/agileflow:ads:audit <account-data> DEPTH=ultradeep        # Each analyzer in its own tmux session
+/agileflow:ads:audit <account-data> DEPTH=extreme          # Platform-partitioned audit
 /agileflow:ads:audit <account-data> PLATFORMS=google,meta  # Specific platforms only
 ```
 
@@ -74,13 +79,67 @@ Deploy 6 specialized advertising analyzers in parallel to audit ad accounts, the
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | account-data | Text, file path, or description | Required | Account data to audit |
+| DEPTH | quick, deep, ultradeep, extreme | quick | quick = standard, deep = comprehensive, ultradeep = tmux sessions, extreme = platform partitions |
 | PLATFORMS | google,meta,linkedin,tiktok,microsoft,youtube | all detected | Limit to specific platforms |
 
 ---
 
 ## Step-by-Step Process
 
-### STEP 1: Parse Account Data
+### STEP 1: Parse Arguments & Account Data
+
+```
+DEPTH = quick (default), deep, ultradeep, or extreme
+PLATFORMS = all detected (default) or comma-separated list
+```
+
+**DEPTH behavior**:
+- `quick` (default): Deploy all 6 analyzers in-process. Standard analysis.
+- `deep`: Deploy all 6 analyzers in-process. More thorough, includes lower-priority findings.
+- `ultradeep`: Spawn each analyzer as a separate Claude Code session in tmux. Requires tmux. Falls back to `deep` if tmux unavailable.
+- `extreme`: Partition-based multi-agent audit. Account data is split by platform and each platform runs ALL analyzers.
+
+**ULTRADEEP mode** (DEPTH=ultradeep):
+1. Show cost estimate:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=ads --target=account-data --model=MODEL --dry-run
+   ```
+2. Confirm with user before launching
+3. Spawn sessions (use `--json` to capture trace ID):
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=ads --target=account-data --model=MODEL --json
+   ```
+   Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
+4. Wait for all analyzers to complete:
+   ```bash
+   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   ```
+   - Exit 0 = all complete (JSON results on stdout)
+   - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
+5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator.
+6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
+
+**EXTREME mode** (DEPTH=extreme):
+Partition-based multi-agent audit. Instead of auditing all platforms together, each platform runs ALL 6 analyzers independently.
+1. Identify active platforms from account data (Google, Meta, LinkedIn, TikTok, etc.)
+2. Group into partitions by platform (each platform = 1 partition)
+   - If user provided PARTITIONS=N (a number), merge smaller platforms into N groups
+   - If user provided PARTITIONS=google,meta, use those exact platforms
+3. Show the partition plan and agent count to the user, confirm before launching:
+   Example: "3 platforms x 6 analyzers = 18 agents. Estimated cost: $X. Proceed?"
+4. Spawn sessions with partitions:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=ads --target=account-data --depth=extreme --partitions=google,meta,linkedin --model=MODEL --json
+   ```
+5. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+6. Run consensus on combined results from all platform partitions
+
+**PARTITIONS argument** (only used with DEPTH=extreme):
+| Value | Behavior |
+|-------|----------|
+| Not set | AI decides partitions (1 per detected platform) |
+| `PARTITIONS=3` | AI merges into 3 platform groups |
+| `PARTITIONS=google,meta` | Use these exact platforms |
 
 Accept data in any format:
 - **Pasted CSV/text** - Parse columns and metrics
@@ -355,8 +414,11 @@ After consensus completes, show summary and offer next steps:
 
 **Quick Usage**:
 ```
-/agileflow:ads:audit <account-data>                # Full audit
-/agileflow:ads:audit <data> PLATFORMS=google,meta   # Specific platforms
+/agileflow:ads:audit <account-data>                       # Quick audit
+/agileflow:ads:audit <account-data> DEPTH=deep             # Deep audit
+/agileflow:ads:audit <account-data> DEPTH=ultradeep        # Tmux sessions
+/agileflow:ads:audit <account-data> DEPTH=extreme          # Platform partition audit
+/agileflow:ads:audit <data> PLATFORMS=google,meta           # Specific platforms
 ```
 
 **What It Does**: Parse data -> Detect industry -> Deploy 6 analyzers in parallel -> Consensus weights scores -> Ads Health Score 0-100 -> Prioritized action plan

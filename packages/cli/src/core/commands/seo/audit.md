@@ -1,6 +1,6 @@
 ---
 description: Full website SEO audit with 6 parallel analyzers, business type detection, weighted health score 0-100, and prioritized action plan
-argument-hint: "URL [DEPTH=quick|deep] [MAX_PAGES=50]"
+argument-hint: "URL [DEPTH=quick|deep|ultradeep|extreme] [MAX_PAGES=50]"
 compact_context:
   priority: high
   preserve_rules:
@@ -8,7 +8,7 @@ compact_context:
     - "CRITICAL: Deploy 6 analyzers IN PARALLEL in ONE message with multiple Task calls"
     - "CRITICAL: Wait for all results before running consensus (use TaskOutput with block=true)"
     - "CRITICAL: Weighted scoring - Technical 20%, Content 20%, Schema 15%, Performance 15%, Images 15%, Sitemap 15%"
-    - "MUST parse arguments: URL (required), DEPTH (quick/deep), MAX_PAGES (default 50)"
+    - "MUST parse arguments: URL (required), DEPTH (quick/deep/ultradeep/extreme), MAX_PAGES (default 50)"
     - "Fetch homepage FIRST to detect business type before deploying analyzers"
     - "Pass all analyzer outputs to seo-consensus for final report"
   state_fields:
@@ -31,6 +31,8 @@ Deploy 6 specialized SEO analyzers in parallel to audit a website, then synthesi
 ```
 /agileflow:seo:audit https://example.com                     # Quick audit (all 6 analyzers)
 /agileflow:seo:audit https://example.com DEPTH=deep           # Deep audit (more thorough per-analyzer)
+/agileflow:seo:audit https://example.com DEPTH=ultradeep      # Each analyzer in its own tmux session
+/agileflow:seo:audit https://example.com DEPTH=extreme        # Multi-page partition audit
 /agileflow:seo:audit https://example.com MAX_PAGES=100        # Audit up to 100 pages
 ```
 
@@ -76,7 +78,7 @@ Deploy 6 specialized SEO analyzers in parallel to audit a website, then synthesi
 | Argument | Values | Default | Description |
 |----------|--------|---------|-------------|
 | URL | Any valid URL | Required | Homepage URL to audit |
-| DEPTH | quick, deep | quick | quick = standard analysis, deep = comprehensive |
+| DEPTH | quick, deep, ultradeep, extreme | quick | quick = standard, deep = comprehensive, ultradeep = tmux sessions, extreme = page partitions |
 | MAX_PAGES | 1-500 | 50 | Maximum pages to analyze |
 
 ---
@@ -87,9 +89,60 @@ Deploy 6 specialized SEO analyzers in parallel to audit a website, then synthesi
 
 ```
 URL = first argument (required - ask if missing)
-DEPTH = quick (default) or deep
+DEPTH = quick (default), deep, ultradeep, or extreme
 MAX_PAGES = 50 (default)
 ```
+
+**DEPTH behavior**:
+- `quick` (default): Deploy all 6 analyzers in-process. Standard analysis.
+- `deep`: Deploy all 6 analyzers in-process. More thorough per-analyzer, includes lower-priority findings.
+- `ultradeep`: Spawn each analyzer as a separate Claude Code session in tmux. Requires tmux. Falls back to `deep` if tmux unavailable.
+- `extreme`: Partition-based multi-agent audit. Site pages are split into groups and each group runs ALL analyzers.
+
+**ULTRADEEP mode** (DEPTH=ultradeep):
+1. Show cost estimate:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=seo --target=URL --model=MODEL --dry-run
+   ```
+2. Confirm with user before launching
+3. Spawn sessions (use `--json` to capture trace ID):
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=seo --target=URL --model=MODEL --json
+   ```
+   Parse the JSON output to get `traceId`. Example: `{"ok":true,"traceId":"abc123ef",...}`
+4. Wait for all analyzers to complete:
+   ```bash
+   node .agileflow/scripts/lib/tmux-audit-monitor.js wait TRACE_ID --timeout=1800
+   ```
+   - Exit 0 = all complete (JSON results on stdout)
+   - Exit 1 = timeout (partial results on stdout, `missing` array shows what's left)
+   - To check progress without blocking: `node .agileflow/scripts/lib/tmux-audit-monitor.js status TRACE_ID`
+   - To retry stalled analyzers: `node .agileflow/scripts/lib/tmux-audit-monitor.js retry TRACE_ID`
+5. Parse `results` array from the JSON output. Pass all findings to consensus coordinator (same as deep mode).
+6. If tmux unavailable (spawn exits code 2), fall back to `DEPTH=deep` with warning
+
+**EXTREME mode** (DEPTH=extreme):
+Partition-based multi-agent audit. Instead of auditing the entire site as one unit, pages are split into groups and each group runs ALL 6 analyzers.
+1. Fetch sitemap or crawl to discover pages. Group pages into 3-7 logical partitions:
+   - By section: `/blog/`, `/docs/`, `/products/`, `/about/`
+   - By priority: high-traffic landing pages, content pages, utility pages
+   - If user provided PARTITIONS=N (a number), split into exactly N groups
+   - If user provided PARTITIONS=/blog,/docs,/products, use those URL path prefixes
+2. Show the partition plan and agent count to the user, confirm before launching:
+   Example: "4 page groups x 6 analyzers = 24 agents. Estimated cost: $X. Proceed?"
+3. Spawn sessions with partitions:
+   ```bash
+   node .agileflow/scripts/spawn-audit-sessions.js --audit=seo --target=URL --depth=extreme --partitions=/blog,/docs,/products --model=MODEL --json
+   ```
+4. Wait and collect results (same as ultradeep - use tmux-audit-monitor.js)
+5. Run consensus on combined results from all partitions
+
+**PARTITIONS argument** (only used with DEPTH=extreme):
+| Value | Behavior |
+|-------|----------|
+| Not set | AI decides partitions (3-7 based on site structure) |
+| `PARTITIONS=5` | AI creates exactly 5 page groups |
+| `PARTITIONS=/blog,/docs,/products` | Use these exact URL path prefixes |
 
 If URL is missing, ask:
 ```xml
@@ -343,8 +396,10 @@ CRITICAL: 1 | HIGH: 3 | MEDIUM: 5 | LOW: 2
 
 **Quick Usage**:
 ```
-/agileflow:seo:audit https://example.com                # Quick audit
-/agileflow:seo:audit https://example.com DEPTH=deep      # Deep audit
+/agileflow:seo:audit https://example.com                     # Quick audit
+/agileflow:seo:audit https://example.com DEPTH=deep           # Deep audit
+/agileflow:seo:audit https://example.com DEPTH=ultradeep      # Tmux sessions
+/agileflow:seo:audit https://example.com DEPTH=extreme        # Page partition audit
 ```
 
 **What It Does**: Fetch homepage → Detect business type → Deploy 6 analyzers in parallel → Consensus weights scores → Health Score 0-100 → Prioritized action plan
