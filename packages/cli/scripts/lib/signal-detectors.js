@@ -755,7 +755,6 @@ const PHASE_MAP = {
     'maintain',
     'packages',
     'deploy',
-    'serve',
   ],
   'post-impl': [
     'ac-verify',
