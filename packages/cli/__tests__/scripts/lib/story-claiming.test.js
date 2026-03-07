@@ -44,6 +44,14 @@ jest.mock('fs', () => ({
   writeFileSync: jest.fn(),
 }));
 
+// Mock status-writer for canonical write path
+const mockUpdateStory = jest.fn();
+const mockReadStory = jest.fn();
+jest.mock('../../../scripts/lib/status-writer', () => ({
+  updateStory: (...args) => mockUpdateStory(...args),
+  readStory: (...args) => mockReadStory(...args),
+}));
+
 const fs = require('fs');
 const { safeReadJSON, safeWriteJSON } = require('../../../lib/errors');
 const { getProjectRoot, getStatusPath } = require('../../../lib/paths');
@@ -69,6 +77,9 @@ describe('story-claiming', () => {
     safeReadJSON.mockReturnValue({ ok: true, data: { stories: {} } });
     safeWriteJSON.mockReturnValue({ ok: true });
     fs.existsSync.mockReturnValue(false);
+    // Default status-writer mocks
+    mockUpdateStory.mockReturnValue({ ok: true });
+    mockReadStory.mockReturnValue({ ok: false, error: 'not found' });
   });
 
   describe('isPidAlive', () => {
@@ -229,43 +240,45 @@ describe('story-claiming', () => {
 
   describe('claimStory', () => {
     beforeEach(() => {
-      // Default: empty stories
-      safeReadJSON.mockReturnValue({
+      // Default: status-writer readStory returns the story
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          stories: {
-            'US-0001': { title: 'Test Story' },
-          },
-        },
+        story: { title: 'Test Story' },
       });
+      mockUpdateStory.mockReturnValue({ ok: true });
     });
 
-    it('successfully claims unclaimed story', () => {
+    it('successfully claims unclaimed story via status-writer', () => {
       const result = claimStory('US-0001');
       expect(result.ok).toBe(true);
       expect(result.claimed).toBe(true);
-      expect(safeWriteJSON).toHaveBeenCalled();
+      expect(mockUpdateStory).toHaveBeenCalledWith(
+        expect.any(String),
+        'US-0001',
+        expect.objectContaining({
+          claimed_by: expect.objectContaining({ session_id: expect.any(String) }),
+        }),
+        { skipValidation: true }
+      );
     });
 
     it('returns error for non-existent story', () => {
+      mockReadStory.mockReturnValue({ ok: false, error: 'Story US-9999 not found' });
+
       const result = claimStory('US-9999');
       expect(result.ok).toBe(false);
       expect(result.error).toContain('not found');
     });
 
     it('rejects claim on story claimed by another session', () => {
-      safeReadJSON.mockReturnValue({
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: 'other-session',
-                pid: process.pid, // Alive PID
-                claimed_at: new Date().toISOString(),
-              },
-            },
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: 'other-session',
+            pid: process.pid, // Alive PID
+            claimed_at: new Date().toISOString(),
           },
         },
       });
@@ -277,40 +290,37 @@ describe('story-claiming', () => {
     });
 
     it('allows force claim', () => {
-      safeReadJSON.mockReturnValue({
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: 'other-session',
-                pid: process.pid,
-                claimed_at: new Date().toISOString(),
-              },
-            },
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: 'other-session',
+            pid: process.pid,
+            claimed_at: new Date().toISOString(),
           },
         },
       });
 
       const result = claimStory('US-0001', { force: true });
       expect(result.ok).toBe(true);
+      expect(mockUpdateStory).toHaveBeenCalled();
     });
 
-    it('returns error when status.json cannot be loaded', () => {
-      safeReadJSON.mockReturnValue({ ok: false, error: 'File not found' });
+    it('returns error when readStory fails', () => {
+      mockReadStory.mockReturnValue({ ok: false, error: 'status.json not found' });
 
       const result = claimStory('US-0001');
       expect(result.ok).toBe(false);
       expect(result.error).toBeDefined();
     });
 
-    it('returns error when status.json cannot be written', () => {
-      safeWriteJSON.mockReturnValue({ ok: false, error: 'Write failed' });
+    it('returns error when updateStory fails', () => {
+      mockUpdateStory.mockReturnValue({ ok: false, error: 'Atomic write failed' });
 
       const result = claimStory('US-0001');
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Write failed');
+      expect(result.error).toContain('Atomic write failed');
     });
   });
 
@@ -321,43 +331,47 @@ describe('story-claiming', () => {
       fs.readFileSync.mockReturnValue(`pid=${process.pid}`);
     });
 
-    it('successfully releases owned claim', () => {
-      safeReadJSON.mockReturnValue({
+    it('successfully releases owned claim via status-writer', () => {
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: '1',
-                pid: process.pid,
-              },
-            },
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: '1',
+            pid: process.pid,
           },
         },
+      });
+      safeReadJSON.mockReturnValue({
+        ok: true,
+        data: { sessions: { 1: { path: process.cwd() } } },
       });
 
       const result = releaseStory('US-0001');
       expect(result.ok).toBe(true);
       expect(result.released).toBe(true);
+      expect(mockUpdateStory).toHaveBeenCalledWith(
+        expect.any(String),
+        'US-0001',
+        { claimed_by: null },
+        { skipValidation: true }
+      );
     });
 
     it('returns error when releasing claim owned by another session', () => {
-      safeReadJSON.mockReturnValue({
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: 'other-session',
-                pid: 1234,
-              },
-            },
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: 'other-session',
+            pid: 1234,
           },
         },
+      });
+      safeReadJSON.mockReturnValue({
+        ok: true,
+        data: { sessions: { 1: { path: process.cwd() } } },
       });
 
       const result = releaseStory('US-0001');
@@ -366,10 +380,7 @@ describe('story-claiming', () => {
     });
 
     it('returns error for non-existent story', () => {
-      safeReadJSON.mockReturnValue({
-        ok: true,
-        data: { stories: {} },
-      });
+      mockReadStory.mockReturnValue({ ok: false, error: 'Story US-9999 not found' });
 
       const result = releaseStory('US-9999');
       expect(result.ok).toBe(false);
@@ -378,7 +389,7 @@ describe('story-claiming', () => {
   });
 
   describe('cleanupStaleClaims', () => {
-    it('cleans up claims with dead PIDs', () => {
+    it('cleans up claims with dead PIDs via status-writer', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
@@ -406,7 +417,12 @@ describe('story-claiming', () => {
       const result = cleanupStaleClaims();
       expect(result.ok).toBe(true);
       expect(result.cleaned).toBe(1);
-      expect(safeWriteJSON).toHaveBeenCalled();
+      expect(mockUpdateStory).toHaveBeenCalledWith(
+        expect.any(String),
+        'US-0001',
+        { claimed_by: null },
+        { skipValidation: true }
+      );
     });
 
     it('cleans up expired claims', () => {
@@ -454,7 +470,7 @@ describe('story-claiming', () => {
       const result = cleanupStaleClaims();
       expect(result.ok).toBe(true);
       expect(result.cleaned).toBe(0);
-      expect(safeWriteJSON).not.toHaveBeenCalled();
+      expect(mockUpdateStory).not.toHaveBeenCalled();
     });
   });
 
@@ -607,23 +623,16 @@ describe('story-claiming', () => {
     beforeEach(() => {
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockReturnValue(`pid=${process.pid}`);
-      safeWriteJSON.mockReturnValue({ ok: true });
+      mockUpdateStory.mockReturnValue({ ok: true });
     });
 
     it('returns error when current session cannot be determined', () => {
-      // Make safeReadJSON return different values based on file path
-      safeReadJSON.mockImplementation(filePath => {
-        if (filePath.includes('status.json')) {
-          return {
-            ok: true,
-            data: {
-              stories: { 'US-0001': { title: 'Test Story' } },
-            },
-          };
-        }
-        // For registry.json - return failure to make getCurrentSession return null
-        return { ok: false, error: 'Not found' };
+      mockReadStory.mockReturnValue({
+        ok: true,
+        story: { title: 'Test Story' },
       });
+      // For registry.json - return failure to make getCurrentSession return null
+      safeReadJSON.mockReturnValue({ ok: false, error: 'Not found' });
 
       const result = claimStory('US-0001');
       expect(result.ok).toBe(false);
@@ -635,15 +644,16 @@ describe('story-claiming', () => {
         ok: true,
         data: {
           sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: '1', // Same as current session
-                pid: process.pid,
-                claimed_at: new Date().toISOString(),
-              },
-            },
+        },
+      });
+      mockReadStory.mockReturnValue({
+        ok: true,
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: '1', // Same as current session
+            pid: process.pid,
+            claimed_at: new Date().toISOString(),
           },
         },
       });
@@ -658,15 +668,16 @@ describe('story-claiming', () => {
         ok: true,
         data: {
           sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test Story',
-              claimed_by: {
-                session_id: '2',
-                pid: 9999999, // Dead PID
-                claimed_at: staleDate,
-              },
-            },
+        },
+      });
+      mockReadStory.mockReturnValue({
+        ok: true,
+        story: {
+          title: 'Test Story',
+          claimed_by: {
+            session_id: '2',
+            pid: 9999999, // Dead PID
+            claimed_at: staleDate,
           },
         },
       });
@@ -689,28 +700,23 @@ describe('story-claiming', () => {
       });
     });
 
-    it('returns error when status.json cannot be loaded', () => {
-      safeReadJSON.mockReturnValue({ ok: false, error: 'Load failed' });
+    it('returns error when readStory fails', () => {
+      mockReadStory.mockReturnValue({ ok: false, error: 'status.json not found' });
 
       const result = releaseStory('US-0001');
       expect(result.ok).toBe(false);
       expect(result.error).toBeDefined();
     });
 
-    it('returns error when status.json cannot be written', () => {
-      safeReadJSON.mockReturnValue({
+    it('returns error when updateStory fails', () => {
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test',
-              claimed_by: { session_id: '1', pid: process.pid },
-            },
-          },
+        story: {
+          title: 'Test',
+          claimed_by: { session_id: '1', pid: process.pid },
         },
       });
-      safeWriteJSON.mockReturnValue({ ok: false, error: 'Write failed' });
+      mockUpdateStory.mockReturnValue({ ok: false, error: 'Write failed' });
 
       const result = releaseStory('US-0001');
       expect(result.ok).toBe(false);
@@ -718,16 +724,11 @@ describe('story-claiming', () => {
     });
 
     it('returns success when story has no claim', () => {
-      safeReadJSON.mockReturnValue({
+      mockReadStory.mockReturnValue({
         ok: true,
-        data: {
-          sessions: { 1: { path: process.cwd() } },
-          stories: {
-            'US-0001': {
-              title: 'Test',
-              // No claimed_by
-            },
-          },
+        story: {
+          title: 'Test',
+          // No claimed_by
         },
       });
 
@@ -745,7 +746,7 @@ describe('story-claiming', () => {
       expect(result.error).toBeDefined();
     });
 
-    it('returns error when status.json cannot be written', () => {
+    it('reports 0 cleaned when updateStory fails', () => {
       safeReadJSON.mockReturnValue({
         ok: true,
         data: {
@@ -757,11 +758,11 @@ describe('story-claiming', () => {
           },
         },
       });
-      safeWriteJSON.mockReturnValue({ ok: false, error: 'Write failed' });
+      mockUpdateStory.mockReturnValue({ ok: false, error: 'Write failed' });
 
       const result = cleanupStaleClaims();
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain('Write failed');
+      expect(result.ok).toBe(true);
+      expect(result.cleaned).toBe(0);
     });
   });
 
