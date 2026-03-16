@@ -562,6 +562,233 @@ async function addWindow(args) {
 }
 
 /**
+ * Spawn sessions across multiple workspace projects
+ */
+async function workspaceSpawn(args) {
+  const workspaceRoot = args.workspace;
+  const projectNames = args.projects ? args.projects.split(',').map(p => p.trim()) : null;
+  const parsedCount = parseInt(args.count, 10);
+  const count = Number.isInteger(parsedCount) && parsedCount > 0 ? parsedCount : 1;
+  const noTmux = args['no-tmux'] || args.noTmux;
+  const dangerous = args.dangerous || false;
+  const prompt = args.prompt || null;
+  const claudeArgs = args['claude-args'] || args.claudeArgs || null;
+  const noClaude = args['no-claude'] || args.noClaude || false;
+  const noInherit = args['no-inherit'] || args.noInherit || false;
+
+  if (!projectNames || projectNames.length === 0) {
+    console.error(error('Must specify --projects "project1,project2"'));
+    process.exit(1);
+  }
+
+  // Load workspace discovery and registry (lazy)
+  let wsDiscovery, WorkspaceRegistry;
+  try {
+    wsDiscovery = require('./lib/workspace-discovery');
+    ({ WorkspaceRegistry } = require('./lib/workspace-registry'));
+  } catch (e) {
+    console.error(
+      error(
+        'Workspace modules not found. Ensure workspace-discovery.js and workspace-registry.js exist.'
+      )
+    );
+    process.exit(1);
+  }
+
+  // Find workspace root
+  const wsRoot = workspaceRoot || wsDiscovery.findWorkspaceRoot(process.cwd());
+  if (!wsRoot) {
+    console.error(error('Not in a workspace. Run /agileflow:workspace:init first.'));
+    process.exit(1);
+  }
+
+  // Load workspace config
+  const configResult = wsDiscovery.getWorkspaceConfig(wsRoot);
+  if (!configResult.ok) {
+    console.error(error(configResult.error));
+    process.exit(1);
+  }
+
+  const config = configResult.config;
+  const availableProjects = config.projects.map(p => p.name);
+
+  // Validate requested projects
+  const invalidProjects = projectNames.filter(p => !availableProjects.includes(p));
+  if (invalidProjects.length > 0) {
+    console.error(error(`Projects not found in workspace: ${invalidProjects.join(', ')}`));
+    console.log(`${c.cyan}Available projects: ${availableProjects.join(', ')}${c.reset}`);
+    process.exit(1);
+  }
+
+  console.log(bold(`\n🌐 Workspace: ${wsRoot}`));
+  console.log(
+    `${c.cyan}Spawning ${count} session(s) in ${projectNames.length} project(s)${c.reset}\n`
+  );
+
+  const timestamp = Date.now();
+  const tmuxSessionName = `workspace-parallel-${timestamp}`;
+  const allSessions = [];
+  const wsRegistry = new WorkspaceRegistry(wsRoot);
+
+  // Detect inherited flags
+  let inheritedFlagsInfo = null;
+  if (!dangerous && !claudeArgs && !noInherit) {
+    const { detectParentSessionFlags } = require('../lib/flag-detection');
+    const detection = detectParentSessionFlags();
+    if (detection.flags) {
+      inheritedFlagsInfo = detection;
+      console.log(`${c.cyan}📋 Inheriting flags:${c.reset} ${detection.flags}\n`);
+    }
+  }
+
+  const sessionTimestamp = Date.now().toString(36);
+
+  for (const projectName of projectNames) {
+    const project = config.projects.find(p => p.name === projectName);
+    const projectRoot = project.path;
+
+    console.log(bold(`📁 ${projectName}/`));
+
+    for (let i = 1; i <= count; i++) {
+      const nickname = count === 1 ? projectName : `${projectName}-${i}`;
+      const branchName = `workspace/${nickname}`;
+
+      // Build claude command that cd's into the project
+      const claudeCmd = buildClaudeCommand(projectRoot, {
+        dangerous,
+        prompt,
+        claudeArgs,
+        noClaude,
+        inheritFlags: !noInherit,
+      });
+
+      allSessions.push({
+        project: projectName,
+        projectRoot,
+        nickname,
+        branch: branchName,
+        path: projectRoot,
+        command: claudeCmd,
+        sessionId: `${sessionTimestamp}-${i}`,
+      });
+
+      console.log(`  ${c.cyan}${nickname}${c.reset} → ${dim(projectRoot)}`);
+    }
+
+    console.log('');
+  }
+
+  if (noTmux) {
+    // Manual mode
+    console.log(bold('\n📋 Commands to run manually:\n'));
+    for (const session of allSessions) {
+      console.log(dim(`# ${session.nickname} (${session.project})`));
+      console.log(session.command);
+      console.log('');
+    }
+  } else if (hasTmux()) {
+    // Create one tmux session with windows per project-session
+    const createResult = spawnSync('tmux', ['new-session', '-d', '-s', tmuxSessionName], {
+      encoding: 'utf8',
+    });
+
+    if (createResult.status !== 0) {
+      console.error(error(`Failed to create tmux session: ${createResult.stderr}`));
+      process.exit(1);
+    }
+
+    // Configure tmux
+    const tmuxOpts = (opt, value) => {
+      spawnSync('tmux', ['set-option', '-t', tmuxSessionName, opt, value], { encoding: 'utf8' });
+    };
+    tmuxOpts('status', 'on');
+    tmuxOpts('status-position', 'bottom');
+    tmuxOpts('status-style', 'bg=#282c34,fg=#abb2bf');
+    tmuxOpts('status-left', '#[fg=#e8683a,bold] Workspace ');
+    tmuxOpts('status-left-length', '15');
+    tmuxOpts('status-right', '#[fg=#98c379] Alt+1/2/3 to switch | q=quit ');
+    tmuxOpts('status-right-length', '45');
+    tmuxOpts('window-status-format', '#[fg=#5c6370] [#I] #W ');
+    tmuxOpts('window-status-current-format', '#[fg=#61afef,bold,bg=#3e4452] [#I] #W ');
+
+    // Keybindings
+    for (let w = 1; w <= 9; w++) {
+      spawnSync('tmux', ['bind-key', '-n', `M-${w}`, 'select-window', '-t', `:${w - 1}`], {
+        encoding: 'utf8',
+      });
+    }
+    spawnSync('tmux', ['bind-key', '-n', 'q', 'detach-client'], { encoding: 'utf8' });
+
+    // Create windows
+    for (let i = 0; i < allSessions.length; i++) {
+      const session = allSessions[i];
+      const windowName = session.nickname;
+
+      if (i === 0) {
+        spawnSync('tmux', ['rename-window', '-t', `${tmuxSessionName}:0`, windowName], {
+          encoding: 'utf8',
+        });
+        spawnSync('tmux', ['send-keys', '-t', tmuxSessionName, session.command, 'Enter'], {
+          encoding: 'utf8',
+        });
+      } else {
+        spawnSync('tmux', ['new-window', '-t', tmuxSessionName, '-n', windowName], {
+          encoding: 'utf8',
+        });
+        spawnSync(
+          'tmux',
+          ['send-keys', '-t', `${tmuxSessionName}:${windowName}`, session.command, 'Enter'],
+          {
+            encoding: 'utf8',
+          }
+        );
+      }
+    }
+
+    console.log(success(`✅ Tmux session created: ${tmuxSessionName}`));
+    console.log(
+      `${c.cyan}   ${allSessions.length} windows across ${projectNames.length} projects${c.reset}\n`
+    );
+    console.log(bold('📺 Controls:'));
+    console.log(`   ${c.cyan}tmux attach -t ${tmuxSessionName}${c.reset}  - Attach`);
+    console.log(`   ${dim('Alt+1/2/3')}  Switch to window 1, 2, 3`);
+    console.log(`   ${dim('q')}          Quit (sessions keep running)`);
+    console.log('');
+  } else {
+    console.log(error('\n❌ tmux is required but not installed.\n'));
+    console.log(bold('Install tmux:'));
+    console.log(`  ${c.cyan}macOS:${c.reset}        brew install tmux`);
+    console.log(`  ${c.cyan}Ubuntu/Debian:${c.reset} sudo apt install tmux`);
+    console.log('');
+    console.log(dim('Or use --no-tmux to get manual commands instead.'));
+  }
+
+  // Register sessions in workspace registry (after successful spawn)
+  for (const session of allSessions) {
+    wsRegistry.registerSession(session.project, {
+      sessionId: session.sessionId,
+      path: session.path,
+      branch: session.branch,
+      nickname: session.nickname,
+    });
+  }
+
+  // Summary
+  console.log(bold('\n📊 Workspace Session Summary:'));
+  console.log(dim('─'.repeat(60)));
+  let currentProject = '';
+  for (const session of allSessions) {
+    if (session.project !== currentProject) {
+      currentProject = session.project;
+      console.log(`  ${bold(currentProject + '/')}`);
+    }
+    console.log(`    ${c.cyan}${session.nickname}${c.reset} │ ${dim(session.path)}`);
+  }
+  console.log(dim('─'.repeat(60)));
+  console.log(`${c.cyan}Use /agileflow:workspace:status to view all sessions.${c.reset}\n`);
+}
+
+/**
  * Kill all tmux claude-parallel sessions
  */
 function killAll() {
@@ -607,10 +834,11 @@ ${c.cyan}USAGE:${c.reset}
   node scripts/spawn-parallel.js <command> [options]
 
 ${c.cyan}COMMANDS:${c.reset}
-  spawn       Create worktrees and optionally spawn Claude instances
-  add-window  Add a new window to current tmux session (when in tmux)
-  list        List all parallel sessions
-  kill-all    Kill all claude-parallel tmux sessions
+  spawn            Create worktrees and optionally spawn Claude instances
+  workspace-spawn  Spawn sessions across multiple workspace projects
+  add-window       Add a new window to current tmux session (when in tmux)
+  list             List all parallel sessions
+  kill-all         Kill all claude-parallel tmux sessions
 
 ${c.cyan}SPAWN OPTIONS:${c.reset}
   --count N           Create N worktrees with auto-generated names
@@ -643,6 +871,23 @@ ${c.cyan}EXAMPLES:${c.reset}
 
   ${dim('# Just output commands (no tmux)')}
   node scripts/spawn-parallel.js spawn --count 4 --no-tmux
+
+${c.cyan}WORKSPACE-SPAWN OPTIONS:${c.reset}
+  --workspace PATH      Workspace root (auto-detected if omitted)
+  --projects "a,b,c"    Project names to spawn sessions in (required)
+  --count N             Sessions per project (default: 1)
+  --prompt "TEXT"        Initial prompt for each session
+  --dangerous            Use --dangerously-skip-permissions
+  --no-tmux              Output commands without spawning in tmux
+  --no-claude            Create worktrees but don't start claude
+  --no-inherit           Don't inherit flags from parent session
+
+${c.cyan}WORKSPACE-SPAWN EXAMPLES:${c.reset}
+  ${dim('# Spawn one session per project')}
+  node scripts/spawn-parallel.js workspace-spawn --projects "frontend,backend"
+
+  ${dim('# Two sessions per project with prompt')}
+  node scripts/spawn-parallel.js workspace-spawn --projects "frontend,backend" --count 2 --prompt "/agileflow:babysit"
 
 ${c.cyan}ADD-WINDOW OPTIONS:${c.reset}
   --name NAME         Name for the new session/window
@@ -708,6 +953,10 @@ async function main() {
     case 'spawn':
       await spawn(args);
       break;
+    case 'workspace-spawn':
+    case 'ws-spawn':
+      await workspaceSpawn(args);
+      break;
     case 'add-window':
     case 'add':
       await addWindow(args);
@@ -740,6 +989,7 @@ if (require.main === module) {
 // Export for testing
 module.exports = {
   spawn,
+  workspaceSpawn,
   addWindow,
   list,
   killAll,
