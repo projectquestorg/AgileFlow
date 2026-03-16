@@ -12,6 +12,8 @@ const os = require('os');
 const {
   CI_FEEDBACK_DEFAULTS,
   loadCIFeedbackConfig,
+  loadDefaultGates,
+  executePreGateCommands,
   executeCIFeedbackLoop,
   createGate,
   GATE_TYPES,
@@ -26,6 +28,14 @@ describe('CI_FEEDBACK_DEFAULTS', () => {
   it('has expected default values', () => {
     expect(CI_FEEDBACK_DEFAULTS.enabled).toBe(true);
     expect(CI_FEEDBACK_DEFAULTS.max_rounds).toBe(3);
+  });
+
+  it('includes default_gates with tests, lint, types', () => {
+    expect(CI_FEEDBACK_DEFAULTS.default_gates).toEqual(['tests', 'lint', 'types']);
+  });
+
+  it('includes empty pre_gate_commands by default', () => {
+    expect(CI_FEEDBACK_DEFAULTS.pre_gate_commands).toEqual({});
   });
 });
 
@@ -344,5 +354,81 @@ describe('executeCIFeedbackLoop', () => {
     });
     expect(r2.status).toBe('exhausted');
     expect(r2.should_retry).toBe(false);
+  });
+
+  it('runs pre-gate commands when configured', () => {
+    setupConfig({
+      enabled: true,
+      max_rounds: 3,
+      pre_gate_commands: {
+        lint: 'echo lint-autofix',
+      },
+    });
+
+    const gates = [
+      createGate({
+        type: GATE_TYPES.LINT,
+        name: 'Lint',
+        command: 'true',
+      }),
+    ];
+
+    const result = executeCIFeedbackLoop(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    expect(result.status).toBe('passed');
+    expect(result.pre_gate_results).toHaveLength(1);
+    expect(result.pre_gate_results[0].command).toBe('echo lint-autofix');
+    expect(result.pre_gate_results[0].exit_code).toBe(0);
+  });
+
+  it('pre-gate auto-fix failure does not block gates', () => {
+    setupConfig({
+      enabled: true,
+      max_rounds: 3,
+      pre_gate_commands: {
+        custom: 'false', // pre-gate fails
+      },
+    });
+
+    const gates = [
+      createGate({
+        type: GATE_TYPES.CUSTOM,
+        name: 'Custom Gate',
+        command: 'true', // gate itself passes
+      }),
+    ];
+
+    const result = executeCIFeedbackLoop(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    // Gate should still pass even though pre-gate command failed
+    expect(result.status).toBe('passed');
+    expect(result.pre_gate_results).toHaveLength(1);
+    expect(result.pre_gate_results[0].exit_code).toBe(1);
+  });
+
+  it('returns empty pre_gate_results when none configured', () => {
+    setupConfig({ enabled: true, max_rounds: 3 });
+
+    const gates = [
+      createGate({
+        type: GATE_TYPES.CUSTOM,
+        name: 'Pass',
+        command: 'true',
+      }),
+    ];
+
+    const result = executeCIFeedbackLoop(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    expect(result.status).toBe('passed');
+    expect(result.pre_gate_results).toEqual([]);
   });
 });

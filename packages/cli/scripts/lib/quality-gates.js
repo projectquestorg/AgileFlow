@@ -36,6 +36,7 @@ const GATE_TYPES = {
   TYPES: 'types',
   VISUAL: 'visual',
   CUSTOM: 'custom',
+  EXPERTISE_STALENESS: 'expertise_staleness',
 };
 
 /**
@@ -194,6 +195,14 @@ function executeGate(gate, options = {}) {
       message: 'Dry run - gate not executed',
       duration_ms: 0,
     };
+  }
+
+  // Expertise staleness gates use file checks, not shell commands
+  if (gate.type === GATE_TYPES.EXPERTISE_STALENESS) {
+    return checkExpertiseStaleness({
+      expertiseDir: gate.expertiseDir,
+      thresholdDays: gate.threshold || DEFAULT_STALENESS_DAYS,
+    });
   }
 
   if (!gate.command) {
@@ -375,6 +384,136 @@ function truncateOutput(output, maxLength = 2000) {
   if (!output) return '';
   if (output.length <= maxLength) return output;
   return output.slice(0, maxLength) + '\n... (truncated)';
+}
+
+// ============================================================================
+// Expertise Staleness Check
+// ============================================================================
+
+/**
+ * Default staleness threshold in days
+ */
+const DEFAULT_STALENESS_DAYS = 30;
+
+/**
+ * Check expertise files for staleness
+ * @param {Object} options - Check options
+ * @param {string} [options.expertiseDir] - Directory containing expertise YAML files
+ * @param {number} [options.thresholdDays] - Max age in days before considered stale (default: 30)
+ * @returns {Object} Staleness check result compatible with gate result format
+ */
+function checkExpertiseStaleness(options = {}) {
+  const { expertiseDir, thresholdDays = DEFAULT_STALENESS_DAYS } = options;
+
+  // Find expertise directory
+  const searchPaths = expertiseDir
+    ? [expertiseDir]
+    : [
+        path.join(process.cwd(), '.agileflow', 'expertise'),
+        path.join(process.cwd(), 'packages', 'cli', 'src', 'core', 'experts'),
+      ];
+
+  let targetDir = null;
+  for (const dir of searchPaths) {
+    if (fs.existsSync(dir)) {
+      targetDir = dir;
+      break;
+    }
+  }
+
+  if (!targetDir) {
+    return {
+      gate: 'Expertise Staleness',
+      type: GATE_TYPES.EXPERTISE_STALENESS,
+      status: GATE_STATUS.SKIPPED,
+      message: 'No expertise directory found',
+      duration_ms: 0,
+    };
+  }
+
+  const startTime = Date.now();
+  const now = new Date();
+  const thresholdMs = thresholdDays * 24 * 60 * 60 * 1000;
+  const staleFiles = [];
+  const freshFiles = [];
+
+  try {
+    // Find all YAML files recursively
+    const yamlFiles = findYamlFiles(targetDir);
+
+    for (const filePath of yamlFiles) {
+      const stat = fs.statSync(filePath);
+      const ageMs = now.getTime() - stat.mtime.getTime();
+      const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+      const relativePath = path.relative(targetDir, filePath);
+
+      if (ageMs > thresholdMs) {
+        staleFiles.push({ path: relativePath, ageDays });
+      } else {
+        freshFiles.push({ path: relativePath, ageDays });
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    const totalFiles = staleFiles.length + freshFiles.length;
+
+    if (staleFiles.length === 0) {
+      return {
+        gate: 'Expertise Staleness',
+        type: GATE_TYPES.EXPERTISE_STALENESS,
+        status: GATE_STATUS.PASSED,
+        message: `All ${totalFiles} expertise file(s) are fresh (< ${thresholdDays} days)`,
+        duration_ms: duration,
+        value: { fresh: freshFiles.length, stale: 0, total: totalFiles },
+      };
+    }
+
+    const staleList = staleFiles
+      .sort((a, b) => b.ageDays - a.ageDays)
+      .map(f => `  ${f.path} (${f.ageDays} days old)`)
+      .join('\n');
+
+    return {
+      gate: 'Expertise Staleness',
+      type: GATE_TYPES.EXPERTISE_STALENESS,
+      status: GATE_STATUS.FAILED,
+      message: `${staleFiles.length}/${totalFiles} expertise file(s) are stale (> ${thresholdDays} days)`,
+      duration_ms: duration,
+      output: `Stale expertise files:\n${staleList}`,
+      value: { fresh: freshFiles.length, stale: staleFiles.length, total: totalFiles, staleFiles },
+    };
+  } catch (e) {
+    return {
+      gate: 'Expertise Staleness',
+      type: GATE_TYPES.EXPERTISE_STALENESS,
+      status: GATE_STATUS.ERROR,
+      message: e.message,
+      duration_ms: Date.now() - startTime,
+    };
+  }
+}
+
+/**
+ * Recursively find YAML files in a directory
+ * @param {string} dir - Directory to search
+ * @returns {string[]} Array of absolute file paths
+ */
+function findYamlFiles(dir) {
+  const results = [];
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        results.push(...findYamlFiles(fullPath));
+      } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml')) {
+        results.push(fullPath);
+      }
+    }
+  } catch {
+    // Skip unreadable directories
+  }
+  return results;
 }
 
 // ============================================================================
@@ -593,12 +732,100 @@ function createValidationReport(gateResults, options = {}) {
 // ============================================================================
 
 /**
+ * Reverse map from gate name strings to GATE_TYPES constants
+ */
+const GATE_NAME_TO_TYPE = {
+  tests: GATE_TYPES.TESTS,
+  coverage: GATE_TYPES.COVERAGE,
+  lint: GATE_TYPES.LINT,
+  types: GATE_TYPES.TYPES,
+  visual: GATE_TYPES.VISUAL,
+  custom: GATE_TYPES.CUSTOM,
+  expertise_staleness: GATE_TYPES.EXPERTISE_STALENESS,
+};
+
+/**
+ * Default gate metadata for loadDefaultGates
+ */
+const GATE_DEFAULTS = {
+  tests: { name: 'Unit Tests', description: 'All tests must pass' },
+  lint: { name: 'Lint', description: 'No lint errors' },
+  types: { name: 'Type Check', description: 'TypeScript types must compile' },
+  coverage: { name: 'Code Coverage', description: 'Coverage meets threshold' },
+  expertise_staleness: {
+    name: 'Expertise Staleness',
+    description: 'Expertise files must be fresh',
+  },
+};
+
+/**
  * Default CI feedback loop configuration
  */
 const CI_FEEDBACK_DEFAULTS = {
   enabled: true,
   max_rounds: 3,
+  default_gates: ['tests', 'lint', 'types'],
+  pre_gate_commands: {},
 };
+
+/**
+ * Load default quality gates from config (or built-in defaults).
+ * Used by executeCIFeedbackLoop when no explicit gates are provided.
+ *
+ * @param {string} [projectRoot=process.cwd()] - Project root directory
+ * @returns {Object[]} Array of gate definitions
+ */
+function loadDefaultGates(projectRoot) {
+  const config = loadCIFeedbackConfig(projectRoot || process.cwd());
+  const gateNames = config.default_gates || CI_FEEDBACK_DEFAULTS.default_gates;
+
+  return gateNames.map(name => {
+    const type = GATE_NAME_TO_TYPE[name] || GATE_TYPES.CUSTOM;
+    const meta = GATE_DEFAULTS[name] || {};
+    return createGate({
+      type,
+      name: meta.name || name,
+      description: meta.description || `Default gate: ${name}`,
+    });
+  });
+}
+
+/**
+ * Execute pre-gate auto-fix commands before gate validation.
+ * Runs configured commands (e.g. eslint --fix) that can auto-fix
+ * trivially fixable issues before gates check for them.
+ * Errors in pre-gate commands never block gate execution.
+ *
+ * @param {Object[]} gates - Gate definitions
+ * @param {Object} [options={}] - Options
+ * @param {string} [options.projectRoot] - Project root for config
+ * @param {string} [options.cwd] - Working directory for commands
+ * @returns {Object[]} Results for each pre-gate command executed
+ */
+function executePreGateCommands(gates, options = {}) {
+  const { projectRoot = process.cwd(), cwd = process.cwd() } = options;
+  const config = loadCIFeedbackConfig(projectRoot);
+  const preCommands = config.pre_gate_commands || {};
+  const results = [];
+
+  for (const gate of gates) {
+    const cmd = preCommands[gate.type];
+    if (!cmd) continue;
+
+    try {
+      const validation = buildSpawnArgs(cmd, { strict: false });
+      const spawnOpts = { cwd, timeout: 30000, encoding: 'utf8' };
+      const result = validation.ok
+        ? spawnSync(validation.data.file, validation.data.args, { ...spawnOpts, shell: false })
+        : spawnSync('sh', ['-c', cmd], spawnOpts);
+      results.push({ gate: gate.name, command: cmd, exit_code: result.status });
+    } catch (e) {
+      results.push({ gate: gate.name, command: cmd, error: e.message });
+    }
+  }
+
+  return results;
+}
 
 /**
  * Load CI feedback loop config from agileflow-metadata.json
@@ -655,6 +882,9 @@ function executeCIFeedbackLoop(gates, options = {}) {
 
   const effectiveMaxRounds = maxRounds || config.max_rounds || CI_FEEDBACK_DEFAULTS.max_rounds;
 
+  // Run pre-gate auto-fix commands (errors don't block)
+  const preGateResults = executePreGateCommands(gates, { projectRoot, cwd });
+
   // Execute all gates
   const gateResults = executeGates(gates, { cwd, stopOnFailure: false });
 
@@ -666,6 +896,7 @@ function executeCIFeedbackLoop(gates, options = {}) {
       round: currentRound,
       max_rounds: effectiveMaxRounds,
       gate_results: gateResults,
+      pre_gate_results: preGateResults,
     };
   }
 
@@ -680,6 +911,7 @@ function executeCIFeedbackLoop(gates, options = {}) {
       round: currentRound,
       max_rounds: effectiveMaxRounds,
       gate_results: gateResults,
+      pre_gate_results: preGateResults,
       failures: gateResults.results
         .filter(r => r.status === GATE_STATUS.FAILED || r.status === GATE_STATUS.ERROR)
         .map(r => ({
@@ -736,6 +968,7 @@ function executeCIFeedbackLoop(gates, options = {}) {
     max_rounds: effectiveMaxRounds,
     next_round: currentRound + 1,
     gate_results: gateResults,
+    pre_gate_results: preGateResults,
     agent_feedback: feedbackLines.join('\n'),
     failures: failures.map(r => ({
       gate: r.gate,
@@ -770,6 +1003,11 @@ module.exports = {
   parseCoverageOutput,
   truncateOutput,
 
+  // Expertise staleness
+  DEFAULT_STALENESS_DAYS,
+  checkExpertiseStaleness,
+  findYamlFiles,
+
   // Builder/Validator framework
   isBuilderAgent,
   isValidatorAgent,
@@ -784,5 +1022,7 @@ module.exports = {
   // CI Feedback Loop
   CI_FEEDBACK_DEFAULTS,
   loadCIFeedbackConfig,
+  loadDefaultGates,
+  executePreGateCommands,
   executeCIFeedbackLoop,
 };

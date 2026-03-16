@@ -2,6 +2,10 @@
  * Tests for quality-gates.js - Builder/Validator Quality Gate Framework
  */
 
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+
 const {
   // Constants
   GATE_TYPES,
@@ -32,6 +36,15 @@ const {
 
   // Reporting
   createValidationReport,
+
+  // Expertise staleness
+  DEFAULT_STALENESS_DAYS,
+  checkExpertiseStaleness,
+  findYamlFiles,
+
+  // Default gates & pre-gate commands
+  loadDefaultGates,
+  executePreGateCommands,
 } = require('../../../scripts/lib/quality-gates');
 
 // ============================================================================
@@ -47,6 +60,7 @@ describe('Constants', () => {
       expect(GATE_TYPES.TYPES).toBe('types');
       expect(GATE_TYPES.VISUAL).toBe('visual');
       expect(GATE_TYPES.CUSTOM).toBe('custom');
+      expect(GATE_TYPES.EXPERTISE_STALENESS).toBe('expertise_staleness');
     });
   });
 
@@ -383,6 +397,135 @@ describe('Helper Functions', () => {
 });
 
 // ============================================================================
+// Expertise Staleness Tests
+// ============================================================================
+
+describe('Expertise Staleness', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'expertise-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  describe('DEFAULT_STALENESS_DAYS', () => {
+    it('is 30 days', () => {
+      expect(DEFAULT_STALENESS_DAYS).toBe(30);
+    });
+  });
+
+  describe('findYamlFiles', () => {
+    it('finds yaml files in directory', () => {
+      fs.writeFileSync(path.join(tmpDir, 'test.yaml'), 'content: true');
+      fs.writeFileSync(path.join(tmpDir, 'test.yml'), 'content: true');
+      fs.writeFileSync(path.join(tmpDir, 'test.txt'), 'not yaml');
+
+      const files = findYamlFiles(tmpDir);
+      expect(files).toHaveLength(2);
+      expect(files.every(f => f.endsWith('.yaml') || f.endsWith('.yml'))).toBe(true);
+    });
+
+    it('finds yaml files recursively', () => {
+      const subDir = path.join(tmpDir, 'sub');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(tmpDir, 'root.yaml'), 'content: true');
+      fs.writeFileSync(path.join(subDir, 'nested.yaml'), 'content: true');
+
+      const files = findYamlFiles(tmpDir);
+      expect(files).toHaveLength(2);
+    });
+
+    it('returns empty array for empty directory', () => {
+      const files = findYamlFiles(tmpDir);
+      expect(files).toEqual([]);
+    });
+  });
+
+  describe('checkExpertiseStaleness', () => {
+    it('returns SKIPPED when directory does not exist', () => {
+      const result = checkExpertiseStaleness({ expertiseDir: '/nonexistent/path' });
+      expect(result.status).toBe('skipped');
+      expect(result.message).toContain('No expertise directory');
+    });
+
+    it('returns PASSED when all files are fresh', () => {
+      fs.writeFileSync(path.join(tmpDir, 'test.yaml'), 'content: true');
+
+      const result = checkExpertiseStaleness({ expertiseDir: tmpDir, thresholdDays: 30 });
+      expect(result.status).toBe('passed');
+      expect(result.value.fresh).toBe(1);
+      expect(result.value.stale).toBe(0);
+    });
+
+    it('returns FAILED when files are stale', () => {
+      const filePath = path.join(tmpDir, 'old.yaml');
+      fs.writeFileSync(filePath, 'content: true');
+      // Set mtime to 60 days ago
+      const oldTime = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+      fs.utimesSync(filePath, oldTime, oldTime);
+
+      const result = checkExpertiseStaleness({ expertiseDir: tmpDir, thresholdDays: 30 });
+      expect(result.status).toBe('failed');
+      expect(result.value.stale).toBe(1);
+      expect(result.output).toContain('old.yaml');
+    });
+
+    it('respects configurable threshold', () => {
+      const filePath = path.join(tmpDir, 'recent.yaml');
+      fs.writeFileSync(filePath, 'content: true');
+      // Set mtime to 5 days ago
+      const recentTime = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+      fs.utimesSync(filePath, recentTime, recentTime);
+
+      // Should pass with 30-day threshold
+      const result30 = checkExpertiseStaleness({ expertiseDir: tmpDir, thresholdDays: 30 });
+      expect(result30.status).toBe('passed');
+
+      // Should fail with 3-day threshold
+      const result3 = checkExpertiseStaleness({ expertiseDir: tmpDir, thresholdDays: 3 });
+      expect(result3.status).toBe('failed');
+    });
+
+    it('reports mixed fresh and stale files', () => {
+      // Fresh file
+      fs.writeFileSync(path.join(tmpDir, 'fresh.yaml'), 'content: true');
+
+      // Stale file
+      const stalePath = path.join(tmpDir, 'stale.yaml');
+      fs.writeFileSync(stalePath, 'content: true');
+      const oldTime = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+      fs.utimesSync(stalePath, oldTime, oldTime);
+
+      const result = checkExpertiseStaleness({ expertiseDir: tmpDir, thresholdDays: 30 });
+      expect(result.status).toBe('failed');
+      expect(result.value.fresh).toBe(1);
+      expect(result.value.stale).toBe(1);
+      expect(result.value.total).toBe(2);
+    });
+  });
+
+  describe('executeGate with expertise staleness', () => {
+    it('executes expertise staleness gate via executeGate', () => {
+      fs.writeFileSync(path.join(tmpDir, 'test.yaml'), 'content: true');
+
+      const gate = createGate({
+        type: GATE_TYPES.EXPERTISE_STALENESS,
+        name: 'Expertise Freshness',
+        threshold: 30,
+      });
+      gate.expertiseDir = tmpDir;
+
+      const result = executeGate(gate);
+      expect(result.type).toBe('expertise_staleness');
+      expect(result.status).toBe('passed');
+    });
+  });
+});
+
+// ============================================================================
 // Builder/Validator Framework Tests
 // ============================================================================
 
@@ -565,5 +708,208 @@ describe('Reporting', () => {
       expect(report).toContain('72');
       expect(report).toContain('80');
     });
+  });
+});
+
+// ============================================================================
+// loadDefaultGates Tests
+// ============================================================================
+
+describe('loadDefaultGates', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'default-gates-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns tests+lint+types by default', () => {
+    const gates = loadDefaultGates(tmpDir);
+
+    expect(gates).toHaveLength(3);
+    const types = gates.map(g => g.type);
+    expect(types).toContain(GATE_TYPES.TESTS);
+    expect(types).toContain(GATE_TYPES.LINT);
+    expect(types).toContain(GATE_TYPES.TYPES);
+  });
+
+  it('returns gates with proper names', () => {
+    const gates = loadDefaultGates(tmpDir);
+
+    const names = gates.map(g => g.name);
+    expect(names).toContain('Unit Tests');
+    expect(names).toContain('Lint');
+    expect(names).toContain('Type Check');
+  });
+
+  it('respects metadata override', () => {
+    const metaDir = path.join(tmpDir, 'docs', '00-meta');
+    fs.mkdirSync(metaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(metaDir, 'agileflow-metadata.json'),
+      JSON.stringify({
+        ci_feedback_loops: {
+          default_gates: ['tests'],
+        },
+      })
+    );
+
+    const gates = loadDefaultGates(tmpDir);
+
+    expect(gates).toHaveLength(1);
+    expect(gates[0].type).toBe(GATE_TYPES.TESTS);
+  });
+
+  it('handles unknown gate names as custom type', () => {
+    const metaDir = path.join(tmpDir, 'docs', '00-meta');
+    fs.mkdirSync(metaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(metaDir, 'agileflow-metadata.json'),
+      JSON.stringify({
+        ci_feedback_loops: {
+          default_gates: ['tests', 'custom'],
+        },
+      })
+    );
+
+    const gates = loadDefaultGates(tmpDir);
+
+    expect(gates).toHaveLength(2);
+    expect(gates[1].type).toBe(GATE_TYPES.CUSTOM);
+  });
+
+  it('each gate has a command from DEFAULT_COMMANDS', () => {
+    const gates = loadDefaultGates(tmpDir);
+
+    for (const gate of gates) {
+      expect(gate.command).toBeDefined();
+    }
+  });
+});
+
+// ============================================================================
+// executePreGateCommands Tests
+// ============================================================================
+
+describe('executePreGateCommands', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pre-gate-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function setupConfig(config) {
+    const metaDir = path.join(tmpDir, 'docs', '00-meta');
+    fs.mkdirSync(metaDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(metaDir, 'agileflow-metadata.json'),
+      JSON.stringify({
+        ci_feedback_loops: config,
+      })
+    );
+  }
+
+  it('runs configured pre-gate commands', () => {
+    setupConfig({
+      pre_gate_commands: {
+        lint: 'echo lint-fix',
+      },
+    });
+
+    const gates = [createGate({ type: GATE_TYPES.LINT, name: 'Lint' })];
+
+    const results = executePreGateCommands(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].gate).toBe('Lint');
+    expect(results[0].command).toBe('echo lint-fix');
+    expect(results[0].exit_code).toBe(0);
+  });
+
+  it('skips gates with no pre-command configured', () => {
+    setupConfig({
+      pre_gate_commands: {
+        lint: 'echo lint-fix',
+      },
+    });
+
+    const gates = [
+      createGate({ type: GATE_TYPES.TESTS, name: 'Tests' }),
+      createGate({ type: GATE_TYPES.LINT, name: 'Lint' }),
+      createGate({ type: GATE_TYPES.TYPES, name: 'Types' }),
+    ];
+
+    const results = executePreGateCommands(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    // Only lint has a pre-command
+    expect(results).toHaveLength(1);
+    expect(results[0].gate).toBe('Lint');
+  });
+
+  it('returns empty array when no pre-commands configured', () => {
+    // No config file at all
+    const gates = [createGate({ type: GATE_TYPES.TESTS, name: 'Tests' })];
+
+    const results = executePreGateCommands(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    expect(results).toEqual([]);
+  });
+
+  it('handles command errors gracefully', () => {
+    setupConfig({
+      pre_gate_commands: {
+        lint: 'false', // exit 1
+      },
+    });
+
+    const gates = [createGate({ type: GATE_TYPES.LINT, name: 'Lint' })];
+
+    const results = executePreGateCommands(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    // Should still return a result, not throw
+    expect(results).toHaveLength(1);
+    expect(results[0].exit_code).toBe(1);
+  });
+
+  it('runs multiple pre-gate commands for different gate types', () => {
+    setupConfig({
+      pre_gate_commands: {
+        lint: 'echo lint-fix',
+        types: 'echo types-fix',
+      },
+    });
+
+    const gates = [
+      createGate({ type: GATE_TYPES.LINT, name: 'Lint' }),
+      createGate({ type: GATE_TYPES.TYPES, name: 'Types' }),
+    ];
+
+    const results = executePreGateCommands(gates, {
+      projectRoot: tmpDir,
+      cwd: tmpDir,
+    });
+
+    expect(results).toHaveLength(2);
+    expect(results[0].command).toBe('echo lint-fix');
+    expect(results[1].command).toBe('echo types-fix');
   });
 });
