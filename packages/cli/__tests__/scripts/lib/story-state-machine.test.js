@@ -334,7 +334,7 @@ describe('story-state-machine', () => {
 
     it('filters by toStatus', () => {
       transition({ id: 'US-001', status: 'ready' }, 'in_progress');
-      transition({ id: 'US-002', status: 'in_review' }, 'completed');
+      transition({ id: 'US-002', status: 'in_review' }, 'completed', { skipGates: true });
 
       const trail = getAuditTrail({ toStatus: 'completed' });
       expect(trail).toHaveLength(1);
@@ -378,6 +378,89 @@ describe('story-state-machine', () => {
     });
   });
 
+  describe('quality gate enforcement', () => {
+    const passingGateResults = {
+      passed: true,
+      total: 2,
+      passed_count: 2,
+      failed_count: 0,
+      results: [
+        { gate: 'Unit Tests', status: 'passed', message: 'All tests pass' },
+        { gate: 'Lint', status: 'passed', message: 'No errors' },
+      ],
+    };
+
+    const failingGateResults = {
+      passed: false,
+      total: 2,
+      passed_count: 1,
+      failed_count: 1,
+      results: [
+        { gate: 'Unit Tests', status: 'passed', message: 'All tests pass' },
+        { gate: 'Lint', status: 'failed', message: '3 lint errors found' },
+      ],
+    };
+
+    it('blocks completion without gateResults', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Quality gates required');
+    });
+
+    it('blocks completion with failing gates', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed', { gateResults: failingGateResults });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Quality gates failed');
+      expect(result.error).toContain('Lint');
+    });
+
+    it('allows completion with passing gates', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed', { gateResults: passingGateResults });
+
+      expect(result.success).toBe(true);
+      expect(result.story.status).toBe('completed');
+    });
+
+    it('adds validated_by field on completion', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed', { gateResults: passingGateResults });
+
+      expect(result.story.validated_by).toBeDefined();
+      expect(result.story.validated_by.gates_passed).toBe(2);
+      expect(result.story.validated_by.gates_total).toBe(2);
+      expect(result.story.validated_by.gate_names).toEqual(['Unit Tests', 'Lint']);
+      expect(result.story.validated_by.validated_at).toBeDefined();
+    });
+
+    it('allows forced completion without gates', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed', { force: true });
+
+      expect(result.success).toBe(true);
+      expect(result.story.status).toBe('completed');
+    });
+
+    it('allows completion with skipGates option', () => {
+      const story = { id: 'US-001', status: 'in_review' };
+      const result = transition(story, 'completed', { skipGates: true });
+
+      expect(result.success).toBe(true);
+      expect(result.story.status).toBe('completed');
+    });
+
+    it('does not enforce gates for non-completion transitions', () => {
+      const story = { id: 'US-001', status: 'ready' };
+      const result = transition(story, 'in_progress');
+
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('integration: full workflow', () => {
     it('completes happy path workflow', () => {
       let story = { id: 'US-001', status: 'ready', history: [] };
@@ -392,8 +475,15 @@ describe('story-state-machine', () => {
       expect(result.success).toBe(true);
       story = result.story;
 
-      // in_review → completed
-      result = transition(story, 'completed', { actor: 'reviewer1' });
+      // in_review → completed (with passing gates)
+      const gateResults = {
+        passed: true,
+        total: 1,
+        passed_count: 1,
+        failed_count: 0,
+        results: [{ gate: 'Tests', status: 'passed', message: 'Pass' }],
+      };
+      result = transition(story, 'completed', { actor: 'reviewer1', gateResults });
       expect(result.success).toBe(true);
       story = result.story;
 

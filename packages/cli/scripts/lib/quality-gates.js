@@ -98,7 +98,7 @@ function createGate(config) {
     type,
     name: name || type,
     command: command || DEFAULT_COMMANDS[type],
-    threshold: threshold || null,
+    threshold: threshold != null ? Number(threshold) : null,
     description: description || `Quality gate: ${type}`,
     required,
     timeout,

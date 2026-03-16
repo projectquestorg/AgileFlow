@@ -55,7 +55,11 @@
     "react-dom": "19.2.4"
   },
   "lint-staged": {
-    "packages/cli/**/*.{js,jsx,ts,tsx,json,css}": [
+    "packages/cli/**/*.js": [
+      "prettier --write --config packages/cli/.prettierrc --ignore-path packages/cli/.prettierignore",
+      "eslint --config packages/cli/eslint.config.js --no-error-on-unmatched-pattern --max-warnings 50"
+    ],
+    "packages/cli/**/*.{jsx,ts,tsx,json,css}": [
       "prettier --write --config packages/cli/.prettierrc --ignore-path packages/cli/.prettierignore"
     ]
   },

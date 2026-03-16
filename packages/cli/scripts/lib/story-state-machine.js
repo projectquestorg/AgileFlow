@@ -28,6 +28,10 @@ const VALID_STATUSES = ['ready', 'in_progress', 'in_review', 'blocked', 'complet
 // Statuses that indicate a story is "done" (for metrics and epic completion checks)
 const COMPLETED_STATUSES = ['completed', 'archived'];
 
+// Legacy status values accepted for backward compatibility
+// These map to canonical values but are tolerated during validation
+const LEGACY_STATUSES = ['pending', 'done', 'in-progress', 'in-review'];
+
 // Define valid state transitions
 // Key = from state, Value = array of valid "to" states
 const TRANSITIONS = {
@@ -151,10 +155,18 @@ function clearAuditTrail() {
  * @param {string} [options.actor] - Who is making the transition
  * @param {string} [options.reason] - Reason for transition
  * @param {boolean} [options.force=false] - Force transition even if invalid
+ * @param {Object} [options.gateResults] - Quality gate results (required for completing stories)
+ * @param {boolean} [options.skipGates=false] - Skip quality gate enforcement
  * @returns {{ success: boolean, story: Object, error: string | null, auditEntry: Object | null }}
  */
 function transition(story, toStatus, options = {}) {
-  const { actor = 'system', reason = null, force = false } = options;
+  const {
+    actor = 'system',
+    reason = null,
+    force = false,
+    gateResults = null,
+    skipGates = false,
+  } = options;
 
   // Validate inputs
   if (!story || typeof story !== 'object') {
@@ -200,6 +212,32 @@ function transition(story, toStatus, options = {}) {
     };
   }
 
+  // Quality gate enforcement for completion transitions
+  if (toStatus === 'completed' && !force && !skipGates) {
+    if (!gateResults) {
+      return {
+        success: false,
+        story,
+        error:
+          'Quality gates required to mark story as completed. Provide gateResults option with passing gate results, or use force: true to bypass.',
+        auditEntry: null,
+      };
+    }
+
+    if (!gateResults.passed) {
+      const failedGates = (gateResults.results || [])
+        .filter(r => r.status === 'failed' || r.status === 'error')
+        .map(r => `${r.gate}: ${r.message}`)
+        .join('; ');
+      return {
+        success: false,
+        story,
+        error: `Quality gates failed: ${failedGates || 'unknown failures'}. Fix failing gates or use force: true to bypass.`,
+        auditEntry: null,
+      };
+    }
+  }
+
   // Create audit entry
   const auditEntry = createAuditEntry(storyId, fromStatus, toStatus, {
     actor,
@@ -217,6 +255,16 @@ function transition(story, toStatus, options = {}) {
     transitioned_at: auditEntry.transitioned_at,
     transitioned_by: auditEntry.transitioned_by,
   };
+
+  // Record quality gate validation for completed stories
+  if (toStatus === 'completed' && gateResults) {
+    updatedStory.validated_by = {
+      gates_passed: gateResults.passed_count || 0,
+      gates_total: gateResults.total || 0,
+      validated_at: auditEntry.transitioned_at,
+      gate_names: (gateResults.results || []).filter(r => r.status === 'passed').map(r => r.gate),
+    };
+  }
 
   // Add history entry if story has history array
   if (Array.isArray(story.history)) {
@@ -409,6 +457,7 @@ module.exports = {
   // Constants
   VALID_STATUSES,
   COMPLETED_STATUSES,
+  LEGACY_STATUSES,
   TRANSITIONS,
 
   // Validation
