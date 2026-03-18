@@ -715,6 +715,59 @@ const FEATURE_DETECTORS = {
       phase: 'pre-pr',
     });
   },
+
+  workspace: signals => {
+    // Detect if current project is inside a multi-project workspace
+    let wsDiscovery;
+    try {
+      wsDiscovery = require('./workspace-discovery');
+    } catch (e) {
+      return null; // Workspace module not available
+    }
+
+    const workspaceRoot = wsDiscovery.findWorkspaceRoot(process.cwd());
+    if (!workspaceRoot) return null;
+
+    const projects = wsDiscovery.discoverProjects(workspaceRoot);
+    if (projects.length < 2) return null;
+
+    // Check for active sessions via workspace registry
+    let activeSessionCount = 0;
+    try {
+      const { WorkspaceRegistry } = require('./workspace-registry');
+      const reg = new WorkspaceRegistry(workspaceRoot);
+      const allSessions = reg.getAllSessionsFlat();
+      activeSessionCount = allSessions.length;
+    } catch (e) {
+      // Non-critical
+    }
+
+    const { story } = signals;
+
+    if (!story || !story.id) {
+      // Pre-story: suggest dashboard/status
+      return recommend('workspace', {
+        priority: 'medium',
+        trigger: `Workspace with ${projects.length} projects${activeSessionCount > 0 ? `, ${activeSessionCount} session(s)` : ''}`,
+        action: 'offer',
+        command: '/agileflow:workspace:dashboard',
+        phase: 'pre-story',
+      });
+    }
+
+    // Implementation phase: suggest spawn if no active sessions
+    if (activeSessionCount === 0) {
+      return recommend('workspace', {
+        priority: 'medium',
+        trigger: `Workspace with ${projects.length} projects - no cross-project sessions active`,
+        action: 'suggest',
+        command: '/agileflow:workspace:spawn',
+        phase: 'implementation',
+      });
+    }
+
+    return null;
+  },
 };
 
 // =============================================================================
@@ -734,6 +787,7 @@ const PHASE_MAP = {
     'template',
     'configure',
     'scale-adaptive',
+    'workspace',
   ],
   planning: [
     'impact',
@@ -755,6 +809,7 @@ const PHASE_MAP = {
     'maintain',
     'packages',
     'deploy',
+    'workspace',
   ],
   'post-impl': [
     'ac-verify',
