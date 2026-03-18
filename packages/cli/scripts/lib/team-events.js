@@ -22,13 +22,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { EventEmitter } = require('events');
-
-/**
- * Module-level event emitter for cross-module notifications.
- * Emits 'metrics_saved' after saveAggregatedMetrics() succeeds.
- */
-const teamMetricsEmitter = new EventEmitter();
 
 // Lazy-load dependencies
 let _fileLock;
@@ -482,13 +475,6 @@ function saveAggregatedMetrics(rootDir, metrics) {
       fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
     }
 
-    // Notify listeners that metrics were saved
-    try {
-      teamMetricsEmitter.emit('metrics_saved', { trace_id: metrics.trace_id });
-    } catch (_) {
-      // Non-critical
-    }
-
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -506,5 +492,4 @@ module.exports = {
   computeAgentCost,
   checkCostThreshold,
   getModifiedFiles,
-  teamMetricsEmitter,
 };

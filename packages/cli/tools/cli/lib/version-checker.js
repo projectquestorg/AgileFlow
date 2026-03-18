@@ -4,54 +4,13 @@
  * Checks for updates from npm registry.
  */
 
-const https = require('node:https');
 const semver = require('semver');
 const path = require('node:path');
+const { getLatestVersion } = require('./npm-utils');
 
 // Load package.json for current version
 const packageJsonPath = path.join(__dirname, '..', '..', '..', 'package.json');
 const packageJson = require(packageJsonPath);
-
-/**
- * Get the latest version from npm registry
- * @param {string} packageName - Package name
- * @returns {Promise<string|null>} Latest version or null
- */
-async function getLatestVersion(packageName = 'agileflow') {
-  return new Promise(resolve => {
-    const url = `https://registry.npmjs.org/${packageName}/latest`;
-
-    const req = https.get(url, { timeout: 5000 }, res => {
-      if (res.statusCode !== 200) {
-        resolve(null);
-        return;
-      }
-
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk;
-      });
-
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          resolve(json.version || null);
-        } catch {
-          resolve(null);
-        }
-      });
-    });
-
-    req.on('error', () => {
-      resolve(null);
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      resolve(null);
-    });
-  });
-}
 
 /**
  * Check if an update is available
@@ -89,7 +48,6 @@ function getCurrentVersion() {
 }
 
 module.exports = {
-  getLatestVersion,
   checkForUpdate,
   getCurrentVersion,
 };

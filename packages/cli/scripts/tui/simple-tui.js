@@ -13,9 +13,6 @@
  *
  * Key bindings:
  *   q - Quit TUI
- *   s - Start loop on current story
- *   p - Pause active loop
- *   r - Resume paused loop
  *   t - Toggle trace panel
  *   1-9 - Switch session focus
  */
@@ -257,18 +254,6 @@ class SimpleTUI {
       case 't':
         this.showTrace = !this.showTrace;
         this.addMessage('TUI', `Trace panel ${this.showTrace ? 'shown' : 'hidden'}`);
-        this.render();
-        break;
-      case 's':
-        this.addMessage('TUI', 'Start loop requested (not implemented)');
-        this.render();
-        break;
-      case 'p':
-        this.addMessage('TUI', 'Pause requested (not implemented)');
-        this.render();
-        break;
-      case 'r':
-        this.addMessage('TUI', 'Resume requested (not implemented)');
         this.render();
         break;
       case 'c':
