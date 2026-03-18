@@ -198,6 +198,9 @@ function getStatus(rootDir, cache) {
 /**
  * GET /api/tasks - List tasks
  *
+ * Note: getTaskRegistry() is called per cache-miss (not per-request).
+ * The ApiCache 2s TTL prevents excessive disk reads during IDE polling.
+ *
  * Query params:
  * - state: Filter by state (queued, running, completed, failed, blocked)
  * - story_id: Filter by story ID

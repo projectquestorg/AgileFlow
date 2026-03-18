@@ -1183,43 +1183,6 @@ function getChangelogEntries(version) {
   return entries;
 }
 
-// Run auto-update if enabled (quiet mode - minimal output)
-// DEPRECATED: Use spawnAutoUpdateInBackground() instead for non-blocking updates
-async function runAutoUpdate(rootDir, fromVersion, toVersion) {
-  const runUpdate = () => {
-    return executeCommandSync('npx', ['agileflow@latest', 'update', '--force'], {
-      cwd: rootDir,
-      timeout: 120000,
-    });
-  };
-
-  console.log(
-    `${c.skyBlue}Updating AgileFlow${c.reset} ${c.dim}v${fromVersion} → v${toVersion}${c.reset}`
-  );
-  const result = runUpdate();
-  if (result.ok) {
-    console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
-    return true;
-  }
-
-  // Check if this is a stale npm cache issue (ETARGET = version not found)
-  if (result.error && (result.error.includes('ETARGET') || result.error.includes('notarget'))) {
-    console.log(`${c.dim}  Clearing npm cache and retrying...${c.reset}`);
-    executeCommandSync('npm', ['cache', 'clean', '--force'], { timeout: 30000 });
-    const retryResult = runUpdate();
-    if (retryResult.ok) {
-      console.log(`${c.mintGreen}✓ Update complete${c.reset}`);
-      return true;
-    }
-    console.log(`${c.peach}Auto-update failed after cache clean${c.reset}`);
-    console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
-    return false;
-  }
-  console.log(`${c.peach}Auto-update failed${c.reset}`);
-  console.log(`${c.dim}  Run manually: npx agileflow update${c.reset}`);
-  return false;
-}
-
 /**
  * Spawn auto-update in a detached background process
  * This allows the welcome hook to return immediately while the update runs

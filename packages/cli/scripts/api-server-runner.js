@@ -126,13 +126,7 @@ async function main() {
 │  Press Ctrl+C to stop                      │
 ╰────────────────────────────────────────────╯
 
-Endpoints:
-  ${url}/api           - API info
-  ${url}/api/health    - Health check
-  ${url}/api/status    - Story/epic state
-  ${url}/api/sessions  - Active sessions
-  ${url}/api/tasks     - Task registry
-  ${url}/api/metrics   - Aggregated metrics
+Endpoints: ${url}/api (lists all available routes)
 `);
   } catch (error) {
     console.error(`Failed to start API server: ${error.message}`);

@@ -10,6 +10,7 @@ const chalk = require('chalk');
 const ora = require('ora');
 const { safeLoad, safeDump } = require('../../../../lib/yaml-utils');
 const { injectContent } = require('../../lib/content-injector');
+const { assemblePrompt } = require('../../lib/prompt-assembler');
 const { sha256Hex, toPosixPath, safeTimestampForPath } = require('../../lib/utils');
 const { validatePath, PathValidationError } = require('../../../../lib/validate');
 const {
@@ -309,6 +310,11 @@ class Installer {
     if (TEXT_EXTENSIONS.has(ext)) {
       let content = await fs.readFile(source, 'utf8');
 
+      // Assemble prompts (resolve extends/mixins) for agent .md files
+      if (ext === '.md' && source.includes(path.join('core', 'agents'))) {
+        content = assemblePrompt(content, this.coreDir);
+      }
+
       // Use content injector for all placeholder replacements
       content = injectContent(content, {
         coreDir: this.coreDir,
@@ -354,6 +360,12 @@ class Installer {
     let newContent;
     if (isText) {
       let content = await fs.readFile(source, 'utf8');
+
+      // Assemble prompts (resolve extends/mixins) for agent .md files
+      if (ext === '.md' && source.includes(path.join('core', 'agents'))) {
+        content = assemblePrompt(content, this.coreDir);
+      }
+
       // Use content injector for all placeholder replacements
       content = injectContent(content, {
         coreDir: this.coreDir,
@@ -805,14 +817,8 @@ class Installer {
         // Copy file
         const destExists = await fs.pathExists(destPath);
 
-        // If destination exists and not forcing, check if identical
+        // If destination exists and not forcing, skip to preserve user changes
         if (destExists && !force) {
-          const srcContent = await fs.readFile(srcPath);
-          const destContent = await fs.readFile(destPath);
-          if (srcContent.equals(destContent)) {
-            continue; // Identical, skip
-          }
-          // Different content but not forcing, skip to preserve user changes
           continue;
         }
 
