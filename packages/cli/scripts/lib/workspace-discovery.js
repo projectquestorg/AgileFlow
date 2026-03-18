@@ -187,8 +187,12 @@ function initWorkspace(workspaceRoot, options = {}) {
     return { ok: false, error: `Failed to create workspace directory: ${e.message}` };
   }
 
+  // Detect or use explicit mode
+  const mode = options.mode || detectWorkspaceMode(workspaceRoot, discovered);
+
   const config = {
     schema_version: '1.0.0',
+    mode,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     projects: discovered.map(p => ({
@@ -249,6 +253,52 @@ function getWorkspacePaths(workspaceRoot) {
   };
 }
 
+/**
+ * Detect workspace mode: 'monorepo' or 'multi-repo'.
+ *
+ * Monorepo: all projects share a single .git root (e.g., pnpm workspaces, yarn workspaces).
+ * Multi-repo: each project has its own .git directory.
+ *
+ * Detection logic:
+ * 1. If explicit `mode` in workspace.json, use that
+ * 2. If workspaceRoot has .git AND no projects have their own .git, it's monorepo
+ * 3. If workspaceRoot has package.json with `workspaces` field, it's monorepo
+ * 4. If pnpm-workspace.yaml exists at workspaceRoot, it's monorepo
+ * 5. Otherwise, multi-repo
+ *
+ * @param {string} workspaceRoot - Workspace root directory
+ * @param {object[]} projects - Discovered projects
+ * @returns {'monorepo' | 'multi-repo'}
+ */
+function detectWorkspaceMode(workspaceRoot, projects) {
+  // Check for monorepo indicators at workspace root
+  const rootHasGit = fs.existsSync(path.join(workspaceRoot, '.git'));
+  const hasPnpmWorkspace = fs.existsSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'));
+
+  // Check if root package.json has workspaces field
+  let hasPackageWorkspaces = false;
+  const rootPkgPath = path.join(workspaceRoot, 'package.json');
+  if (fs.existsSync(rootPkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+      hasPackageWorkspaces =
+        Array.isArray(pkg.workspaces) || (pkg.workspaces && pkg.workspaces.packages);
+    } catch (e) {
+      // Non-critical
+    }
+  }
+
+  if (hasPnpmWorkspace || hasPackageWorkspaces) return 'monorepo';
+
+  // If root has .git but projects don't have their own .git, it's monorepo
+  if (rootHasGit && projects.length > 0) {
+    const projectsWithOwnGit = projects.filter(p => p.hasGit);
+    if (projectsWithOwnGit.length === 0) return 'monorepo';
+  }
+
+  return 'multi-repo';
+}
+
 module.exports = {
   // Constants
   WORKSPACE_DIR,
@@ -261,6 +311,7 @@ module.exports = {
   isWorkspaceRoot,
   findWorkspaceRoot,
   discoverProjects,
+  detectWorkspaceMode,
 
   // Configuration
   getWorkspaceConfig,

@@ -11,6 +11,7 @@ const {
   isWorkspaceRoot,
   findWorkspaceRoot,
   discoverProjects,
+  detectWorkspaceMode,
   getWorkspaceConfig,
   initWorkspace,
   getWorkspacePaths,
@@ -137,6 +138,45 @@ describe('discoverProjects', () => {
   });
 });
 
+describe('detectWorkspaceMode', () => {
+  test('detects multi-repo when projects have own .git', () => {
+    const projects = [
+      { name: 'a', path: path.join(tmpDir, 'a'), hasGit: true },
+      { name: 'b', path: path.join(tmpDir, 'b'), hasGit: true },
+    ];
+    expect(detectWorkspaceMode(tmpDir, projects)).toBe('multi-repo');
+  });
+
+  test('detects monorepo when root has .git but projects do not', () => {
+    fs.mkdirSync(path.join(tmpDir, '.git'), { recursive: true });
+    const projects = [
+      { name: 'a', path: path.join(tmpDir, 'a'), hasGit: false },
+      { name: 'b', path: path.join(tmpDir, 'b'), hasGit: false },
+    ];
+    expect(detectWorkspaceMode(tmpDir, projects)).toBe('monorepo');
+  });
+
+  test('detects monorepo when pnpm-workspace.yaml exists', () => {
+    fs.writeFileSync(path.join(tmpDir, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n');
+    const projects = [{ name: 'a', path: path.join(tmpDir, 'a'), hasGit: true }];
+    expect(detectWorkspaceMode(tmpDir, projects)).toBe('monorepo');
+  });
+
+  test('detects monorepo when package.json has workspaces', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({ workspaces: ['packages/*'] })
+    );
+    const projects = [{ name: 'a', path: path.join(tmpDir, 'a'), hasGit: true }];
+    expect(detectWorkspaceMode(tmpDir, projects)).toBe('monorepo');
+  });
+
+  test('defaults to multi-repo when no indicators', () => {
+    const projects = [{ name: 'a', path: path.join(tmpDir, 'a'), hasGit: false }];
+    expect(detectWorkspaceMode(tmpDir, projects)).toBe('multi-repo');
+  });
+});
+
 describe('initWorkspace', () => {
   test('creates workspace directory and config', () => {
     fs.mkdirSync(path.join(tmpDir, 'frontend', '.agileflow'), { recursive: true });
@@ -165,6 +205,25 @@ describe('initWorkspace', () => {
     expect(result.ok).toBe(true);
     expect(result.config.projects).toHaveLength(1);
     expect(result.config.projects[0].name).toBe('myapp');
+  });
+
+  test('stores detected mode in config', () => {
+    fs.mkdirSync(path.join(tmpDir, 'frontend', '.agileflow'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'frontend', '.git'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'backend', '.agileflow'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'backend', '.git'), { recursive: true });
+
+    const result = initWorkspace(tmpDir);
+    expect(result.ok).toBe(true);
+    expect(result.config.mode).toBe('multi-repo');
+  });
+
+  test('accepts explicit mode override', () => {
+    fs.mkdirSync(path.join(tmpDir, 'pkg', '.agileflow'), { recursive: true });
+
+    const result = initWorkspace(tmpDir, { projects: ['pkg'], mode: 'monorepo' });
+    expect(result.ok).toBe(true);
+    expect(result.config.mode).toBe('monorepo');
   });
 });
 

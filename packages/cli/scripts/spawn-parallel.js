@@ -620,7 +620,11 @@ async function workspaceSpawn(args) {
     process.exit(1);
   }
 
-  console.log(bold(`\n🌐 Workspace: ${wsRoot}`));
+  // Detect workspace mode (monorepo uses worktrees, multi-repo uses cd)
+  const workspaceMode = config.mode || 'multi-repo';
+  const isMonorepo = workspaceMode === 'monorepo';
+
+  console.log(bold(`\n🌐 Workspace: ${wsRoot} (${workspaceMode})`));
   console.log(
     `${c.cyan}Spawning ${count} session(s) in ${projectNames.length} project(s)${c.reset}\n`
   );
@@ -653,8 +657,26 @@ async function workspaceSpawn(args) {
       const nickname = count === 1 ? projectName : `${projectName}-${i}`;
       const branchName = `workspace/${nickname}`;
 
-      // Build claude command that cd's into the project
-      const claudeCmd = buildClaudeCommand(projectRoot, {
+      let sessionPath = projectRoot;
+
+      // Monorepo mode: create worktrees for isolation
+      if (isMonorepo) {
+        try {
+          const result = await sessionManager.createSession({
+            nickname,
+            branch: branchName,
+          });
+          if (result.success) {
+            sessionPath = result.path;
+          }
+        } catch (e) {
+          console.log(`  ${error(`Failed to create worktree for ${nickname}: ${e.message}`)}`);
+          continue;
+        }
+      }
+
+      // Build claude command
+      const claudeCmd = buildClaudeCommand(sessionPath, {
         dangerous,
         prompt,
         claudeArgs,
@@ -667,12 +689,14 @@ async function workspaceSpawn(args) {
         projectRoot,
         nickname,
         branch: branchName,
-        path: projectRoot,
+        path: sessionPath,
         command: claudeCmd,
         sessionId: `${sessionTimestamp}-${i}`,
+        isWorktree: isMonorepo,
       });
 
-      console.log(`  ${c.cyan}${nickname}${c.reset} → ${dim(projectRoot)}`);
+      const pathLabel = isMonorepo ? sessionPath : projectRoot;
+      console.log(`  ${c.cyan}${nickname}${c.reset} → ${dim(pathLabel)}`);
     }
 
     console.log('');
