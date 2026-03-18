@@ -1,0 +1,52 @@
+---
+title: /workspace:init
+description: Initialize a multi-project workspace for cross-repo orchestration
+---
+
+# /workspace:init
+
+Initialize a multi-project workspace for cross-repo orchestration. Creates a `.agileflow-workspace/` directory in a parent directory that contains multiple AgileFlow-enabled projects.
+
+## Quick Start
+
+```bash
+/agileflow:workspace:init
+```
+
+## What It Creates
+
+```
+parent-dir/
+  .agileflow-workspace/        # Created by this command
+    workspace.json              # Project manifest & config
+    workspace-registry.json     # Cross-repo session tracking
+    workspace-bus/log.jsonl     # Federated message bus
+  frontend/.agileflow/          # Existing project
+  backend/.agileflow/           # Existing project
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `[path]` | Parent directory path (defaults to `..` from current project) |
+
+## How It Works
+
+1. Scans parent directory for child directories with `.agileflow/`
+2. Auto-detects workspace mode: **monorepo** (shared `.git`) or **multi-repo** (separate repos)
+3. Creates `workspace.json` with project manifest
+4. Initializes empty session registry and message bus
+
+## Workspace Modes
+
+| Mode | Detection | Session Strategy |
+|------|-----------|-----------------|
+| **multi-repo** | Each project has its own `.git` | `cd` into project directory |
+| **monorepo** | Root has `.git`, or `pnpm-workspace.yaml`, or `package.json` workspaces | Git worktrees for isolation |
+
+## Related Commands
+
+- [/workspace:status](/docs/commands/workspace-status) — View cross-project sessions
+- [/workspace:spawn](/docs/commands/workspace-spawn) — Spawn sessions across projects
+- [/workspace:dashboard](/docs/commands/workspace-dashboard) — Unified workspace view

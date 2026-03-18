@@ -1,0 +1,60 @@
+---
+title: /workspace:spawn
+description: Spawn parallel sessions across multiple workspace projects
+---
+
+# /workspace:spawn
+
+Spawn parallel Claude Code sessions across multiple workspace projects simultaneously. Creates tmux windows named `{project}-{nickname}` for easy navigation.
+
+## Quick Start
+
+```bash
+/agileflow:workspace:spawn --projects "frontend,backend"
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--projects "a,b"` | Comma-separated project names (**required**) |
+| `--count N` | Sessions per project (default: 1) |
+| `--prompt TEXT` | Initial prompt for each session |
+
+## Flags
+
+| Flag | Description |
+|------|-------------|
+| `--dangerous` | Use `--dangerouslySkipPermissions` |
+| `--no-tmux` | Output commands without spawning |
+| `--no-claude` | Create worktrees but don't start Claude |
+
+## How It Works
+
+### Multi-Repo Mode
+1. For each project, `cd` into the project directory
+2. Spawn Claude Code with the project as working directory
+3. Create tmux windows named `{project}-{n}`
+
+### Monorepo Mode
+1. For each project, create a git worktree for isolation
+2. Spawn Claude Code in the worktree
+3. Create tmux windows named `{project}-{n}`
+
+## Examples
+
+### One session per project
+```bash
+/agileflow:workspace:spawn --projects "frontend,backend"
+```
+
+### Two sessions per project with initial prompt
+```bash
+/agileflow:workspace:spawn --projects "frontend,backend" --count 2 --prompt "/agileflow:babysit"
+```
+
+## Related Commands
+
+- [/workspace:init](/docs/commands/workspace-init) — Initialize the workspace
+- [/workspace:status](/docs/commands/workspace-status) — View cross-project sessions
+- [/session:spawn](/docs/commands/session-spawn) — Spawn sessions in a single project

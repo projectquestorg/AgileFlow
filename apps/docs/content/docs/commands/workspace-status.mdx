@@ -1,0 +1,46 @@
+---
+title: /workspace:status
+description: View cross-repo session status across workspace projects
+---
+
+# /workspace:status
+
+View cross-project session status across all workspace projects. Federates each project's session registry into a unified display.
+
+## Quick Start
+
+```bash
+/agileflow:workspace:status
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--project name` | Filter to a specific project |
+
+## Example Output
+
+```
+Workspace: /home/user/myworkspace (3 projects)
+
+frontend/ (2 sessions)
+  ID        Branch            Status    Story
+  front-1   feature/auth      active    US-0042
+  front-2   feature/nav       inactive  US-0045
+
+backend/ (1 session)
+  ID        Branch            Status    Story
+  back-1    main              active    -
+
+shared-lib/ (0 sessions)
+  No active sessions
+
+Total: 3 sessions across 3 projects
+```
+
+## Related Commands
+
+- [/workspace:init](/docs/commands/workspace-init) — Initialize the workspace
+- [/workspace:spawn](/docs/commands/workspace-spawn) — Spawn sessions across projects
+- [/session:status](/docs/commands/session-status) — View single-project sessions

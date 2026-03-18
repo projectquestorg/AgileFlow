@@ -1,0 +1,71 @@
+---
+title: /workspace:dashboard
+description: Unified workspace dashboard with sessions, stories, and quality gates
+---
+
+# /workspace:dashboard
+
+Unified workspace dashboard showing sessions, stories, and quality gates across all projects.
+
+## Quick Start
+
+```bash
+/agileflow:workspace:dashboard
+```
+
+## Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--gates` | Run cross-project quality gates |
+
+## Dashboard View
+
+```
+Workspace: /home/user/myworkspace
+Projects: 3 | Sessions: 4 | Stories: 12
+
+frontend/
+  Stories: 2 WIP, 3 ready, 5 done
+  Sessions (2):
+    frontend-1  feature/auth
+    frontend-2  feature/nav
+
+backend/
+  Stories: 1 WIP, 0 ready, 8 done
+  Sessions (1):
+    backend-1  main
+
+shared-lib/
+  Stories: 0 WIP, 1 ready, 2 done
+  No active sessions
+```
+
+## Quality Gates (`--gates`)
+
+When `--gates` is specified, runs cross-project validation:
+
+| Gate | What It Checks |
+|------|---------------|
+| **projects-exist** | All workspace projects exist on disk |
+| **dependency-alignment** | Shared deps have consistent versions across projects |
+| **test-status** | All projects have passing tests |
+| **git-status** | All projects have clean git status |
+
+```
+Workspace Quality Gates
+--------------------------------------------------
+[PASS] frontend exists
+[PASS] backend exists
+[PASS] All shared dependencies are version-aligned
+[PASS] frontend: tests passing
+[FAIL] backend: tests failing
+--------------------------------------------------
+Passed: 4 | Failed: 1 | Skipped: 0
+```
+
+## Related Commands
+
+- [/workspace:init](/docs/commands/workspace-init) — Initialize the workspace
+- [/workspace:status](/docs/commands/workspace-status) — Session-only view
+- [/workspace:spawn](/docs/commands/workspace-spawn) — Spawn sessions across projects
