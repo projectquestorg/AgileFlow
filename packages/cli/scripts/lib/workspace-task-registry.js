@@ -26,6 +26,9 @@ const path = require('path');
 const { TaskRegistry } = require('./task-registry');
 const { WORKSPACE_DIR } = require('./workspace-discovery');
 
+// INVARIANT: These must remain relative paths. TaskRegistry joins them with
+// rootDir via path.join(rootDir, statePath). An absolute path here would
+// silently ignore rootDir on POSIX systems.
 const WORKSPACE_STATE_DIR = 'state';
 const WORKSPACE_TASKS_FILE = 'workspace-tasks.json';
 

@@ -148,6 +148,15 @@ describe('WorkspaceBus', () => {
       expect(result.ok).toBe(true);
       expect(result.messages).toEqual([]);
     });
+
+    test('returns error for invalid since filter', () => {
+      const bus = new WorkspaceBus(tmpDir);
+      bus.send('frontend', { type: 'a' });
+
+      const result = bus.read({ since: 'not-a-date' });
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Invalid 'since'");
+    });
   });
 
   describe('getMessageCounts', () => {

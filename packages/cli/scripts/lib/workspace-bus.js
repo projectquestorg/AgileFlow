@@ -22,6 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const { WORKSPACE_DIR, WORKSPACE_BUS_DIR, getWorkspaceConfig } = require('./workspace-discovery');
+const { atomicWrite } = require('./task-registry');
 
 const MAX_BUS_LINES = 2000;
 const KEEP_RECENT = 200;
@@ -135,6 +136,9 @@ class WorkspaceBus {
       }
       if (filters.since) {
         const sinceTime = new Date(filters.since).getTime();
+        if (isNaN(sinceTime)) {
+          return { ok: false, messages: [], error: `Invalid 'since' value: ${filters.since}` };
+        }
         messages = messages.filter(m => new Date(m.at).getTime() >= sinceTime);
       }
       if (filters.limit && filters.limit > 0) {
@@ -176,7 +180,7 @@ class WorkspaceBus {
       const lines = content.split('\n').filter(l => l.trim());
       if (lines.length > MAX_BUS_LINES) {
         const kept = lines.slice(-KEEP_RECENT);
-        fs.writeFileSync(logPath, kept.join('\n') + '\n');
+        atomicWrite(logPath, kept.join('\n') + '\n');
       }
     } catch (e) {
       // Non-critical

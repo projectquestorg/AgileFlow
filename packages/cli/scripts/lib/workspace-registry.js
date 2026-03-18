@@ -138,10 +138,11 @@ class WorkspaceRegistry {
     const result = [];
 
     for (const project of projects) {
+      const projectExists = fs.existsSync(project.path);
       const registryPath = path.join(project.path, '.agileflow', 'sessions', 'registry.json');
       let sessions = {};
 
-      if (fs.existsSync(registryPath)) {
+      if (projectExists && fs.existsSync(registryPath)) {
         try {
           const data = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
           sessions = data.sessions || {};
@@ -160,6 +161,7 @@ class WorkspaceRegistry {
       result.push({
         project: project.name,
         projectPath: project.path,
+        stale: !projectExists,
         sessions: sessionList,
       });
     }

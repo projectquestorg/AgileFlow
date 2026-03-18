@@ -104,6 +104,26 @@ describe('discoverProjects', () => {
     expect(discoverProjects(tmpDir)).toEqual([]);
   });
 
+  test('follows symlinked project directories', () => {
+    // Create a real project
+    const realProject = path.join(tmpDir, 'real-project');
+    fs.mkdirSync(path.join(realProject, '.agileflow'), { recursive: true });
+
+    // Create a symlink to it
+    const symlinkPath = path.join(tmpDir, 'linked-project');
+    try {
+      fs.symlinkSync(realProject, symlinkPath, 'dir');
+    } catch (e) {
+      // Skip test if symlinks not supported (e.g., Windows without admin)
+      return;
+    }
+
+    const projects = discoverProjects(tmpDir);
+    const names = projects.map(p => p.name);
+    expect(names).toContain('linked-project');
+    expect(names).toContain('real-project');
+  });
+
   test('detects git presence', () => {
     fs.mkdirSync(path.join(tmpDir, 'with-git', '.agileflow'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, 'with-git', '.git'), { recursive: true });

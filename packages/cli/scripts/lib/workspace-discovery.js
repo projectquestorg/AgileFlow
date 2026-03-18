@@ -71,11 +71,10 @@ function findWorkspaceRoot(startDir) {
 
   // Walk up looking for .agileflow-workspace/
   let current = path.dirname(dir);
-  while (current !== root && current !== dir) {
+  while (current !== root) {
     if (isWorkspaceRoot(current)) {
       return current;
     }
-    dir = current;
     current = path.dirname(current);
   }
 
@@ -100,9 +99,21 @@ function discoverProjects(workspaceRoot) {
   }
 
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    // Skip hidden dirs and workspace dir itself
+    // Follow symlinks: check both isDirectory() and isSymbolicLink()
+    const isDir = entry.isDirectory() || entry.isSymbolicLink();
+    if (!isDir) continue;
+    // Skip hidden dirs (includes .agileflow-workspace itself)
     if (entry.name.startsWith('.')) continue;
+
+    // For symlinks, verify the target is actually a directory
+    if (entry.isSymbolicLink()) {
+      try {
+        const stat = fs.statSync(path.join(workspaceRoot, entry.name));
+        if (!stat.isDirectory()) continue;
+      } catch (e) {
+        continue; // Broken symlink
+      }
+    }
 
     const projectPath = path.join(workspaceRoot, entry.name);
 
