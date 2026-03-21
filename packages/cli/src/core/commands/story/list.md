@@ -1,12 +1,12 @@
 ---
 description: List all stories with status and filters
-argument-hint: "[EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>]"
+argument-hint: "[EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>] [SEARCH=<text>] [PRIORITY=<level>]"
 compact_context:
   priority: medium
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:story:list - Lists stories with filters and quick actions"
     - "MUST read status.json for story data"
-    - "MUST support filters: EPIC, STATUS, OWNER (combinable)"
+    - "MUST support filters: EPIC, STATUS, OWNER, SEARCH, PRIORITY (combinable, AND-combined)"
     - "MUST group stories by epic in output table"
     - "MUST show: story ID, title, status, phase, owner, estimate"
     - "MUST offer actions: view details, start work, create new"
@@ -15,6 +15,8 @@ compact_context:
     - epic_filter
     - status_filter
     - owner_filter
+    - search_query
+    - priority_filter
     - story_count
 ---
 
@@ -47,13 +49,13 @@ node .agileflow/scripts/obtain-context.js story:list
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:story:list [EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>]`
+**Command**: `/agileflow:story:list [EPIC=<EP-ID>] [STATUS=<status>] [OWNER=<id>] [SEARCH=<text>] [PRIORITY=<level>]`
 **Purpose**: Display stories with filters and offer quick actions
 
 ### Flow
 1. Read status.json
-2. Apply filters (epic, status, owner)
-3. Display formatted table
+2. Apply filters (epic, status, owner, search, priority — AND-combined)
+3. Display formatted table with active filters header and result count
 4. Offer actions: view details, start work, create new
 
 ### Critical Rules
@@ -71,6 +73,8 @@ node .agileflow/scripts/obtain-context.js story:list
 | EPIC | No | Filter by epic (e.g., EP-0001) |
 | STATUS | No | Filter by status (ready, in_progress, blocked, done) |
 | OWNER | No | Filter by owner |
+| SEARCH | No | Full-text search on story title (case-insensitive substring match) |
+| PRIORITY | No | Filter by priority level (high, medium, low) |
 
 ---
 
@@ -86,17 +90,29 @@ cat docs/09-agents/status.json
 
 ### Step 2: Apply Filters
 
-If filters provided:
+If filters provided (all filters are AND-combined — all must match):
 - EPIC: Show only stories in that epic
 - STATUS: Show only stories with that status
 - OWNER: Show only stories assigned to that owner
+- SEARCH: Show only stories whose title contains the search text (case-insensitive substring match)
+- PRIORITY: Show only stories with that priority level
 
 ### Step 3: Display Stories
+
+If any filters are active, show a header line before the table:
+
+```markdown
+**Showing N of M stories** (EPIC=EP-0001, STATUS=ready)
+```
+
+Only list the filters that are actually active. Omit this header when no filters are applied.
 
 Format output as table grouped by epic:
 
 ```markdown
 ## Stories
+
+**Showing 5 of 12 stories** (STATUS=ready)
 
 ### EP-0001: Authentication System
 | Story | Title | Status | Phase | Owner | Estimate |
@@ -175,8 +191,16 @@ Invoke: `/agileflow:story`
 # List stories assigned to specific owner
 /agileflow:story:list OWNER=AG-UI
 
-# Combined filters
+# Search stories by title
+/agileflow:story:list SEARCH=auth
+
+# Filter by priority
+/agileflow:story:list PRIORITY=high
+
+# Combined filters (AND-combined)
 /agileflow:story:list EPIC=EP-0001 STATUS=ready
+/agileflow:story:list SEARCH=login PRIORITY=high STATUS=ready
+/agileflow:story:list OWNER=AG-API SEARCH=session
 ```
 
 ---

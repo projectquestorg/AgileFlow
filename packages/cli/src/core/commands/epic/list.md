@@ -1,17 +1,21 @@
 ---
 description: List all epics with status and progress
-argument-hint: "[STATUS=<status>]"
+argument-hint: "[STATUS=<status>] [OWNER=<id>] [SEARCH=<text>]"
 compact_context:
   priority: medium
   preserve_rules:
     - "ACTIVE COMMAND: /agileflow:epic:list - Lists all epics with progress tracking"
     - "MUST read status.json for epic data"
+    - "MUST support filters: STATUS, OWNER, SEARCH (combinable, AND-combined)"
     - "MUST calculate story progress (completed/total) for each epic"
     - "MUST display table with status, progress percentage, owner"
+    - "MUST show active filters header with result count when filtered"
     - "MUST offer actions: view details, add story, create new epic"
     - "This is READ-ONLY - no file writes"
   state_fields:
     - status_filter
+    - owner_filter
+    - search_query
     - epic_count
 ---
 
@@ -44,14 +48,15 @@ node .agileflow/scripts/obtain-context.js epic:list
 <!-- COMPACT_SUMMARY_START -->
 ## Compact Summary
 
-**Command**: `/agileflow:epic:list [STATUS=<status>]`
+**Command**: `/agileflow:epic:list [STATUS=<status>] [OWNER=<id>] [SEARCH=<text>]`
 **Purpose**: Display epics with progress and offer quick actions
 
 ### Flow
 1. Read status.json for epics
 2. Calculate story progress for each epic
-3. Display formatted table
-4. Offer actions: view details, add story, create new
+3. Apply filters (status, owner, search — AND-combined)
+4. Display formatted table with active filters header and result count
+5. Offer actions: view details, add story, create new
 
 ### Critical Rules
 - **Read-only**: No file writes
@@ -66,6 +71,8 @@ node .agileflow/scripts/obtain-context.js epic:list
 | Argument | Required | Description |
 |----------|----------|-------------|
 | STATUS | No | Filter by status (active, complete, on-hold) |
+| OWNER | No | Filter by owner |
+| SEARCH | No | Full-text search on epic title (case-insensitive substring match) |
 
 ---
 
@@ -88,14 +95,27 @@ For each epic:
 
 ### Step 3: Apply Filters
 
-If STATUS provided, show only epics with that status.
+If filters provided (all filters are AND-combined — all must match):
+- STATUS: Show only epics with that status
+- OWNER: Show only epics assigned to that owner
+- SEARCH: Show only epics whose title contains the search text (case-insensitive substring match)
 
 ### Step 4: Display Epics
+
+If any filters are active, show a header line before the table:
+
+```markdown
+**Showing N of M epics** (STATUS=active, OWNER=AG-UI)
+```
+
+Only list the filters that are actually active. Omit this header when no filters are applied.
 
 Format output as table sorted by status then number:
 
 ```markdown
 ## Epics
+
+**Showing 2 of 3 epics** (STATUS=active)
 
 | Epic | Title | Status | Progress | Owner |
 |------|-------|--------|----------|-------|
@@ -168,6 +188,16 @@ Invoke: `/agileflow:epic`
 
 # List completed epics
 /agileflow:epic:list STATUS=complete
+
+# Filter by owner
+/agileflow:epic:list OWNER=AG-DEVOPS
+
+# Search epics by title
+/agileflow:epic:list SEARCH=auth
+
+# Combined filters (AND-combined)
+/agileflow:epic:list STATUS=active OWNER=AG-API
+/agileflow:epic:list SEARCH=dashboard STATUS=active
 ```
 
 ---
