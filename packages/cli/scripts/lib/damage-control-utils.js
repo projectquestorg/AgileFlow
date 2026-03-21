@@ -56,7 +56,7 @@ const STDIN_TIMEOUT_MS = 4000;
  */
 function findProjectRoot() {
   let dir = process.cwd();
-  while (dir !== '/') {
+  while (dir !== '/' && dir !== path.parse(dir).root) {
     if (fs.existsSync(path.join(dir, '.agileflow'))) {
       return dir;
     }
@@ -438,8 +438,81 @@ function validatePathAgainstPatterns(filePath, config, operation = 'access') {
     };
   }
 
+  // Check story scope enforcement (if enabled via env)
+  const scopeResult = checkStoryScope(filePath);
+  if (scopeResult.action === 'block') {
+    return scopeResult;
+  }
+
   // Allow by default
   return { action: 'allow' };
+}
+
+/**
+ * Check if a file path is within the allowed story scope.
+ *
+ * Story scopes are defined per-story in status.json via the file_scopes field.
+ * When AGILEFLOW_STORY_ID and AGILEFLOW_FILE_SCOPES are set in the environment
+ * (by spawn-parallel or team-manager), edits outside the scope are blocked.
+ *
+ * @param {string} filePath - File path to check
+ * @returns {object} Validation result { action, reason?, detail? }
+ */
+function checkStoryScope(filePath) {
+  const scopesEnv = process.env.AGILEFLOW_FILE_SCOPES;
+  const storyId = process.env.AGILEFLOW_STORY_ID;
+
+  // No scope enforcement if env vars not set
+  if (!scopesEnv || !storyId) {
+    return { action: 'allow' };
+  }
+
+  try {
+    const scopes = scopesEnv
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (scopes.length === 0) {
+      return { action: 'allow' };
+    }
+
+    const normalizedPath = path.resolve(filePath);
+    const relativePath = path.relative(process.cwd(), normalizedPath);
+
+    // Check if file matches any scope pattern
+    for (const scope of scopes) {
+      // Directory scope: "packages/cli/scripts/"
+      if (scope.endsWith('/')) {
+        if (relativePath.startsWith(scope) || normalizedPath.includes(scope)) {
+          return { action: 'allow' };
+        }
+        continue;
+      }
+
+      // Extension scope: "*.test.js"
+      if (scope.startsWith('*')) {
+        const ext = scope.slice(1);
+        if (relativePath.endsWith(ext) || normalizedPath.endsWith(ext)) {
+          return { action: 'allow' };
+        }
+        continue;
+      }
+
+      // Exact path or prefix match
+      if (relativePath.startsWith(scope) || normalizedPath.includes(scope)) {
+        return { action: 'allow' };
+      }
+    }
+
+    return {
+      action: 'block',
+      reason: `File outside story scope for ${storyId}`,
+      detail: `Allowed scopes: ${scopes.join(', ')}`,
+    };
+  } catch (e) {
+    // Fail open on scope check errors
+    return { action: 'allow' };
+  }
 }
 
 /**
@@ -612,6 +685,7 @@ module.exports = {
   parsePathPatterns,
   validatePathAgainstPatterns,
   validatePattern,
+  checkStoryScope,
   createPathHook,
   createBashHook,
   CONFIG_PATHS,

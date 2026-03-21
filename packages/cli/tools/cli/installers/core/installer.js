@@ -112,7 +112,14 @@ class Installer {
       // Clean up existing content directories to remove stale files
       // This happens AFTER backup so we can restore if needed
       spinner.text = 'Cleaning up old content...';
-      await this.cleanup(agileflowDir);
+      try {
+        await this.cleanup(agileflowDir);
+      } catch (cleanupErr) {
+        const restoreHint = backupPath ? ` Restore from backup: ${backupPath}` : '';
+        throw Object.assign(new Error(`Cleanup failed: ${cleanupErr.message}.${restoreHint}`), {
+          code: 'CLEANUP_FAILED',
+        });
+      }
 
       // Reset file index since we removed all content - start fresh
       const fileIndex = { schema: 1, files: {} };

@@ -399,6 +399,74 @@ class FileLock {
 }
 
 // ============================================================================
+// File Modification Tracking Helpers
+// ============================================================================
+
+/**
+ * Get current git HEAD commit hash.
+ * @param {string} rootDir - Project root directory
+ * @returns {string|null} Commit hash or null on error (fail-open)
+ */
+function _getGitHead(rootDir) {
+  try {
+    const { execFileSync } = require('child_process');
+    return (
+      execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).trim() || null
+    );
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Get files modified since a git reference.
+ * @param {string} rootDir - Project root directory
+ * @param {string|null} sinceRef - Git ref to diff against
+ * @returns {string[]} Sorted deduplicated file list, or [] on error (fail-open)
+ */
+function _getModifiedFiles(rootDir, sinceRef) {
+  if (!sinceRef) return [];
+  try {
+    const { execFileSync } = require('child_process');
+    const output = execFileSync('git', ['diff', '--name-only', sinceRef], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    return output ? [...new Set(output.split('\n'))].sort() : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Emit task_completed event to team-events for aggregation.
+ * @param {string} rootDir - Project root directory
+ * @param {Object} task - Completed task object
+ */
+function _emitTaskCompleted(rootDir, task) {
+  try {
+    const { trackEvent } = require('./team-events');
+    const startedAt = task.metadata && task.metadata.started_at;
+    const durationMs = startedAt ? Date.now() - new Date(startedAt).getTime() : null;
+    trackEvent(rootDir, 'task_completed', {
+      agent: task.subagent_type || 'unknown',
+      task_id: task.id,
+      story_id: task.story_id || null,
+      trace_id: (task.metadata && task.metadata.trace_id) || null,
+      files_modified: (task.metadata && task.metadata.files_modified) || [],
+      duration_ms: durationMs,
+    });
+  } catch (e) {
+    // fail-open: don't break task state transitions
+  }
+}
+
+// ============================================================================
 // Task Registry
 // ============================================================================
 
@@ -689,9 +757,17 @@ class TaskRegistry extends EventEmitter {
       if (changedFields.length > 0) {
         task.updated_at = new Date().toISOString();
 
+        // Capture git HEAD when task starts running (for file tracking)
+        if (changedFields.includes('state') && task.state === 'running') {
+          task.metadata.start_ref = _getGitHead(this.rootDir);
+          task.metadata.started_at = new Date().toISOString();
+        }
+
         // If transitioning to completed, unblock dependent tasks AFTER state is applied
         if (changedFields.includes('state') && task.state === 'completed') {
           this._unblockDependents(state, taskId);
+          task.metadata.files_modified = _getModifiedFiles(this.rootDir, task.metadata.start_ref);
+          _emitTaskCompleted(this.rootDir, task);
         }
 
         this._dirty = true;
@@ -854,7 +930,21 @@ class TaskRegistry extends EventEmitter {
       blockedBy.push(blockerId);
     }
 
-    return this.update(taskId, { blockedBy });
+    const result = this.update(taskId, { blockedBy });
+
+    // Maintain bidirectional: add taskId to blocker's blocks array
+    if (result.success) {
+      const blocker = this.get(blockerId);
+      if (blocker) {
+        const blocks = [...(blocker.blocks || [])];
+        if (!blocks.includes(taskId)) {
+          blocks.push(taskId);
+          this.update(blockerId, { blocks });
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -870,7 +960,18 @@ class TaskRegistry extends EventEmitter {
     }
 
     const blockedBy = (task.blockedBy || []).filter(id => id !== blockerId);
-    return this.update(taskId, { blockedBy });
+    const result = this.update(taskId, { blockedBy });
+
+    // Maintain bidirectional: remove taskId from blocker's blocks array
+    if (result.success) {
+      const blocker = this.get(blockerId);
+      if (blocker) {
+        const blocks = (blocker.blocks || []).filter(id => id !== taskId);
+        this.update(blockerId, { blocks });
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -1184,6 +1285,11 @@ module.exports = {
   // Classes
   TaskRegistry,
   FileLock,
+
+  // File tracking helpers
+  _getGitHead,
+  _getModifiedFiles,
+  _emitTaskCompleted,
 
   // Factory
   getTaskRegistry,

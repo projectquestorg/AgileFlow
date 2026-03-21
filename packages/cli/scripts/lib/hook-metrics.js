@@ -63,7 +63,7 @@ try {
  */
 function findProjectRoot() {
   let dir = process.cwd();
-  while (dir !== '/') {
+  while (dir !== '/' && dir !== path.parse(dir).root) {
     if (fs.existsSync(path.join(dir, '.agileflow'))) {
       return dir;
     }

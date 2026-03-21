@@ -206,6 +206,7 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
 
   const branchName = session.branch;
   const mainBranch = getMainBranch();
+  const originalBranch = getCurrentBranch();
 
   // Ensure we're on main branch in ROOT
   const checkoutMain = spawnSync('git', ['checkout', mainBranch], {
@@ -217,125 +218,136 @@ function integrateSession(sessionId, options = {}, loadRegistry, saveRegistry, r
     return { success: false, error: `Failed to checkout ${mainBranch}: ${checkoutMain.stderr}` };
   }
 
-  // Pull latest main (optional, for safety) - ignore errors for local-only repos
-  spawnSync('git', ['pull', '--ff-only'], { cwd: ROOT, encoding: 'utf8' });
+  try {
+    // Pull latest main (optional, for safety) - ignore errors for local-only repos
+    spawnSync('git', ['pull', '--ff-only'], { cwd: ROOT, encoding: 'utf8' });
 
-  // Build commit message
-  const commitMessage =
-    message ||
-    `Merge session ${sessionId}${session.nickname ? ` "${session.nickname}"` : ''}: ${branchName}`;
+    // Build commit message
+    const commitMessage =
+      message ||
+      `Merge session ${sessionId}${session.nickname ? ` "${session.nickname}"` : ''}: ${branchName}`;
 
-  // Execute merge based on strategy
-  let mergeResult;
+    // Execute merge based on strategy
+    let mergeResult;
 
-  if (strategy === 'squash') {
-    mergeResult = spawnSync('git', ['merge', '--squash', branchName], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-
-    if (mergeResult.status === 0) {
-      // Create the squash commit
-      const commitResult = spawnSync('git', ['commit', '-m', commitMessage], {
+    if (strategy === 'squash') {
+      mergeResult = spawnSync('git', ['merge', '--squash', branchName], {
         cwd: ROOT,
         encoding: 'utf8',
       });
 
-      if (commitResult.status !== 0) {
-        return { success: false, error: `Failed to create squash commit: ${commitResult.stderr}` };
-      }
-    }
-  } else {
-    // Regular merge commit
-    mergeResult = spawnSync('git', ['merge', '--no-ff', '-m', commitMessage, branchName], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-  }
-
-  if (mergeResult.status !== 0) {
-    // Abort if merge failed
-    spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
-    return { success: false, error: `Merge failed: ${mergeResult.stderr}`, hasConflicts: true };
-  }
-
-  const result = {
-    success: true,
-    merged: true,
-    strategy,
-    branchName,
-    mainBranch,
-    commitMessage,
-    mainPath: ROOT,
-  };
-
-  // Write merge notification for other sessions to pick up
-  try {
-    const notifyDir = path.join(getAgileflowDir(ROOT), 'sessions');
-    if (!fs.existsSync(notifyDir)) {
-      fs.mkdirSync(notifyDir, { recursive: true });
-    }
-    const notifyPath = path.join(notifyDir, 'last-merge.json');
-    fs.writeFileSync(
-      notifyPath,
-      JSON.stringify(
-        {
-          merged_at: new Date().toISOString(),
-          session_id: sessionId,
-          branch: branchName,
-          strategy,
-          commit_message: commitMessage,
-        },
-        null,
-        2
-      )
-    );
-  } catch (e) {
-    /* ignore notification write failures */
-  }
-
-  // Delete worktree first (before branch, as worktree holds ref)
-  if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
-    try {
-      execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
-      result.worktreeDeleted = true;
-    } catch (e) {
-      try {
-        execFileSync('git', ['worktree', 'remove', '--force', session.path], {
+      if (mergeResult.status === 0) {
+        // Create the squash commit
+        const commitResult = spawnSync('git', ['commit', '-m', commitMessage], {
           cwd: ROOT,
           encoding: 'utf8',
         });
-        result.worktreeDeleted = true;
-      } catch (e2) {
-        result.worktreeDeleted = false;
-        result.worktreeError = e2.message;
-      }
-    }
-  }
 
-  // Delete branch if requested
-  if (deleteBranch) {
-    const deleteBranchResult = spawnSync('git', ['branch', '-d', branchName], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-    result.branchDeleted = deleteBranchResult.status === 0;
-    if (!result.branchDeleted) {
-      // Try force delete if normal delete fails
-      const forceDelete = spawnSync('git', ['branch', '-D', branchName], {
+        if (commitResult.status !== 0) {
+          return {
+            success: false,
+            error: `Failed to create squash commit: ${commitResult.stderr}`,
+          };
+        }
+      }
+    } else {
+      // Regular merge commit
+      mergeResult = spawnSync('git', ['merge', '--no-ff', '-m', commitMessage, branchName], {
         cwd: ROOT,
         encoding: 'utf8',
       });
-      result.branchDeleted = forceDelete.status === 0;
+    }
+
+    if (mergeResult.status !== 0) {
+      // Abort if merge failed
+      spawnSync('git', ['merge', '--abort'], { cwd: ROOT, encoding: 'utf8' });
+      return { success: false, error: `Merge failed: ${mergeResult.stderr}`, hasConflicts: true };
+    }
+
+    const result = {
+      success: true,
+      merged: true,
+      strategy,
+      branchName,
+      mainBranch,
+      commitMessage,
+      mainPath: ROOT,
+    };
+
+    // Write merge notification for other sessions to pick up
+    try {
+      const notifyDir = path.join(getAgileflowDir(ROOT), 'sessions');
+      if (!fs.existsSync(notifyDir)) {
+        fs.mkdirSync(notifyDir, { recursive: true });
+      }
+      const notifyPath = path.join(notifyDir, 'last-merge.json');
+      fs.writeFileSync(
+        notifyPath,
+        JSON.stringify(
+          {
+            merged_at: new Date().toISOString(),
+            session_id: sessionId,
+            branch: branchName,
+            strategy,
+            commit_message: commitMessage,
+          },
+          null,
+          2
+        )
+      );
+    } catch (e) {
+      /* ignore notification write failures */
+    }
+
+    // Delete worktree first (before branch, as worktree holds ref)
+    if (deleteWorktree && session.path !== ROOT && fs.existsSync(session.path)) {
+      try {
+        execFileSync('git', ['worktree', 'remove', session.path], { cwd: ROOT, encoding: 'utf8' });
+        result.worktreeDeleted = true;
+      } catch (e) {
+        try {
+          execFileSync('git', ['worktree', 'remove', '--force', session.path], {
+            cwd: ROOT,
+            encoding: 'utf8',
+          });
+          result.worktreeDeleted = true;
+        } catch (e2) {
+          result.worktreeDeleted = false;
+          result.worktreeError = e2.message;
+        }
+      }
+    }
+
+    // Delete branch if requested
+    if (deleteBranch) {
+      const deleteBranchResult = spawnSync('git', ['branch', '-d', branchName], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+      result.branchDeleted = deleteBranchResult.status === 0;
+      if (!result.branchDeleted) {
+        // Try force delete if normal delete fails
+        const forceDelete = spawnSync('git', ['branch', '-D', branchName], {
+          cwd: ROOT,
+          encoding: 'utf8',
+        });
+        result.branchDeleted = forceDelete.status === 0;
+      }
+    }
+
+    // Remove from registry
+    removeLock(sessionId);
+    delete registry.sessions[sessionId];
+    saveRegistry(registry);
+
+    return result;
+  } finally {
+    // Restore original branch if we're still on main and came from elsewhere
+    const currentBranch = getCurrentBranch();
+    if (originalBranch && currentBranch === mainBranch && originalBranch !== mainBranch) {
+      spawnSync('git', ['checkout', originalBranch], { cwd: ROOT, encoding: 'utf8' });
     }
   }
-
-  // Remove from registry
-  removeLock(sessionId);
-  delete registry.sessions[sessionId];
-  saveRegistry(registry);
-
-  return result;
 }
 
 /**
@@ -719,6 +731,7 @@ function resolveConflict(resolution) {
 
 /**
  * Save merge log for audit trail.
+ * Writes to both the legacy JSON log and the new JSONL append-only log.
  * @param {Object} log - Merge log entry
  */
 function saveMergeLog(log) {
@@ -741,6 +754,20 @@ function saveMergeLog(log) {
   }
 
   fs.writeFileSync(logPath, JSON.stringify(logs, null, 2));
+
+  // Dual-write to JSONL append-only history
+  try {
+    const mergeHistory = require('../scripts/lib/merge-history');
+    mergeHistory.appendEntry({
+      sessionId: log.session,
+      success: true,
+      strategy: log.strategy || 'smart',
+      filesAutoResolved: log.files_auto_resolved,
+      commitsMerged: log.commits_merged,
+    });
+  } catch (e) {
+    // JSONL write failure is not critical
+  }
 }
 
 /**

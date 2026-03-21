@@ -314,6 +314,9 @@ function atomicReadModifyWrite(filePath, modifyFn, options = {}) {
         };
       }
 
+      // Declare tempPath before try so catch block can clean up the correct file
+      const tempPath = filePath + '.tmp.' + generateRandomSuffix();
+
       try {
         // Read current data
         if (!fs.existsSync(filePath)) {
@@ -331,7 +334,6 @@ function atomicReadModifyWrite(filePath, modifyFn, options = {}) {
 
         // Write atomically
         const dir = path.dirname(filePath);
-        const tempPath = filePath + '.tmp.' + generateRandomSuffix();
 
         // Ensure directory exists
         if (!fs.existsSync(dir)) {
@@ -347,8 +349,7 @@ function atomicReadModifyWrite(filePath, modifyFn, options = {}) {
 
         return { success: true, data: modifiedData };
       } catch (e) {
-        // Clean up temp file if it exists
-        const tempPath = filePath + '.tmp.' + generateRandomSuffix();
+        // Clean up the temp file created in the try block
         if (fs.existsSync(tempPath)) {
           try {
             fs.unlinkSync(tempPath);
@@ -357,7 +358,9 @@ function atomicReadModifyWrite(filePath, modifyFn, options = {}) {
           }
         }
 
-        throw e;
+        retries++;
+        if (retries >= maxRetries) throw e;
+        // Otherwise loop to retry
       } finally {
         // Release lock
         if (lock && lock.acquired) {

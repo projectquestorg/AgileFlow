@@ -1036,7 +1036,7 @@ function getSessionGitInfo(sessionPath) {
  * Handle history subcommand - display merge history
  */
 async function handleHistory(options) {
-  const limit = parseInt(options.limit) || 20;
+  const limit = parseInt(options.limit, 10) || 20;
 
   // Get merge history from session manager
   const historyResult = sessionManager.getMergeHistory();

@@ -24,6 +24,7 @@ const path = require('path');
 const { getProjectRoot, getStatusPath, getSessionStatePath } = require('../../lib/paths');
 const { safeReadJSON, safeWriteJSON } = require('../../lib/errors');
 const { c } = require('../../lib/colors');
+const { atomicReadModifyWrite } = require('./file-lock');
 
 // Default claim expiration: 4 hours
 const DEFAULT_CLAIM_TTL_HOURS = 4;
@@ -271,47 +272,48 @@ function claimStory(storyId, options = {}) {
     return { ok: true, claimed: true };
   }
 
-  // Fallback: direct safeWriteJSON if status-writer unavailable
+  // Fallback: use atomicReadModifyWrite to prevent multi-process race
   const statusPath = getStatusPath(root);
-  const result = safeReadJSON(statusPath, { defaultValue: null });
-  if (!result.ok || !result.data) {
-    return { ok: false, error: result.error || 'Could not load status.json' };
-  }
-
-  const status = result.data;
-  const story = status.stories?.[storyId];
-
-  if (!story) {
-    return { ok: false, error: `Story ${storyId} not found` };
-  }
-
-  const claimCheck = isStoryClaimed(story);
-  if (claimCheck.claimed && !force) {
-    return {
-      ok: false,
-      claimed: true,
-      claimedBy: claimCheck.claimedBy,
-      error: `Story ${storyId} is claimed by session ${claimCheck.claimedBy.session_id}`,
-    };
-  }
-
   const currentSession = getCurrentSession(root);
   if (!currentSession) {
     return { ok: false, error: 'Could not determine current session' };
   }
 
-  story.claimed_by = {
-    session_id: currentSession.session_id,
-    pid: currentSession.pid,
-    path: currentSession.path,
-    claimed_at: new Date().toISOString(),
-    claim_type: isTeamSessionActive(root) ? 'team' : 'worktree',
-  };
+  const atomicResult = atomicReadModifyWrite(statusPath, status => {
+    const story = status.stories?.[storyId];
+    if (!story) {
+      throw new Error(`Story ${storyId} not found`);
+    }
 
-  status.updated = new Date().toISOString();
-  const writeResult = safeWriteJSON(statusPath, status);
-  if (!writeResult.ok) {
-    return { ok: false, error: writeResult.error };
+    const claimCheck = isStoryClaimed(story);
+    if (claimCheck.claimed && !force) {
+      throw new Error(`CLAIMED:${claimCheck.claimedBy.session_id}`);
+    }
+
+    story.claimed_by = {
+      session_id: currentSession.session_id,
+      pid: currentSession.pid,
+      path: currentSession.path,
+      claimed_at: new Date().toISOString(),
+      claim_type: isTeamSessionActive(root) ? 'team' : 'worktree',
+    };
+
+    status.updated = new Date().toISOString();
+    return status;
+  });
+
+  if (!atomicResult.success) {
+    const err = atomicResult.error || '';
+    if (err.startsWith('CLAIMED:')) {
+      const sessionId = err.slice('CLAIMED:'.length);
+      return {
+        ok: false,
+        claimed: true,
+        claimedBy: { session_id: sessionId },
+        error: `Story ${storyId} is claimed by session ${sessionId}`,
+      };
+    }
+    return { ok: false, error: err };
   }
 
   return { ok: true, claimed: true };
