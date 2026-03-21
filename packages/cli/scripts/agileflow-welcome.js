@@ -268,7 +268,7 @@ function getProjectInfo(rootDir, cache = null) {
       }
     }
   } catch (e) {
-    // Silently fail - version will remain 'unknown'
+    log.debug('getVersion:', e?.message || String(e));
   }
 
   // Get git info (batched into single command for performance)
@@ -843,7 +843,7 @@ function checkConfigStaleness(rootDir, currentVersion, cache = null) {
       }
     }
   } catch (e) {
-    // Silently fail - config check is non-critical
+    log.debug('checkConfigStaleness:', e?.message || String(e));
   }
 
   return result;
@@ -949,7 +949,7 @@ ${marker}
       }
       // Add more option handlers here as new options are added
     } catch (e) {
-      // Silently fail individual options
+      log.debug('autoApplyConfigOption:', e?.message || String(e));
     }
   }
 
@@ -991,7 +991,7 @@ ${marker}
         fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2) + '\n');
       }
     } catch (e) {
-      // Silently fail metadata update
+      log.debug('autoApplyMetadataUpdate:', e?.message || String(e));
     }
   }
 
@@ -1102,7 +1102,7 @@ function displayDeferredWarnings(rootDir) {
     delete state.deferred_warnings;
     fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
   } catch (e) {
-    // Display failed, non-critical
+    log.debug('displayDeferredWarnings:', e?.message || String(e));
   }
 }
 
@@ -1135,7 +1135,7 @@ async function checkUpdates() {
       result.changelog = getChangelogEntries(result.installed);
     }
   } catch (e) {
-    // Silently fail - update check is non-critical
+    log.debug('checkUpdates:', e?.message || String(e));
   }
 
   return result;
@@ -1177,7 +1177,7 @@ function getChangelogEntries(version) {
       }
     }
   } catch (e) {
-    // Silently fail
+    log.debug('getChangelogEntries:', e?.message || String(e));
   }
 
   return entries;
@@ -1206,7 +1206,7 @@ function spawnAutoUpdateInBackground(rootDir, fromVersion, toVersion) {
     };
     fs.writeFileSync(sessionStatePath, JSON.stringify(state, null, 2) + '\n');
   } catch (e) {
-    // Silently continue - tracking is optional
+    log.debug('autoUpdate tracking:', e?.message || String(e));
   }
 
   // Create detached subprocess that survives parent exit
@@ -1277,7 +1277,7 @@ function getExpertiseCountFast(rootDir) {
       }
     }
   } catch (e) {
-    // Silently fail
+    log.debug('getExpertiseCountFast:', e?.message || String(e));
   }
 
   return result;
@@ -1401,7 +1401,7 @@ function validateExpertise(rootDir) {
       }
     }
   } catch (e) {
-    // Silently fail
+    log.debug('validateExpertise:', e?.message || String(e));
   }
 
   return result;
