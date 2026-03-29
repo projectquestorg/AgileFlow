@@ -12,7 +12,7 @@ const {
 
 describe('audit-registry', () => {
   describe('AUDIT_TYPES', () => {
-    it('defines all 8 audit types', () => {
+    it('defines all 11 audit types', () => {
       const keys = Object.keys(AUDIT_TYPES);
       expect(keys).toContain('logic');
       expect(keys).toContain('security');
@@ -21,8 +21,11 @@ describe('audit-registry', () => {
       expect(keys).toContain('completeness');
       expect(keys).toContain('brainstorm');
       expect(keys).toContain('ideate');
+      expect(keys).toContain('seo');
+      expect(keys).toContain('ads');
+      expect(keys).toContain('quality');
       expect(keys).toContain('legal');
-      expect(keys).toHaveLength(8);
+      expect(keys).toHaveLength(11);
     });
 
     it('each type has required fields', () => {
@@ -77,13 +80,14 @@ describe('audit-registry', () => {
   });
 
   describe('getAuditTypeKeys', () => {
-    it('returns all 8 type keys', () => {
+    it('returns all 11 type keys', () => {
       const keys = getAuditTypeKeys();
-      expect(keys).toHaveLength(8);
+      expect(keys).toHaveLength(11);
       expect(keys).toContain('logic');
       expect(keys).toContain('security');
       expect(keys).toContain('brainstorm');
       expect(keys).toContain('ideate');
+      expect(keys).toContain('quality');
     });
   });
 
@@ -211,6 +215,28 @@ describe('audit-registry', () => {
     it('has brainstorm-consensus coordinator', () => {
       const result = getAnalyzersForAudit('brainstorm', 'quick');
       expect(result.consensus.subagent_type).toBe('brainstorm-consensus');
+    });
+  });
+
+  describe('quality audit type', () => {
+    it('has 3 quick and 3 deep analyzers', () => {
+      const counts = getAnalyzerCounts('quality');
+      expect(counts.quick).toBe(3);
+      expect(counts.deep).toBe(3);
+      expect(counts.total).toBe(3);
+    });
+
+    it('returns correct analyzers for quality', () => {
+      const result = getAnalyzersForAudit('quality', 'quick');
+      expect(result.analyzers).toHaveLength(3);
+      expect(result.analyzers.map(a => a.key)).toContain('naming');
+      expect(result.analyzers.map(a => a.key)).toContain('duplication');
+      expect(result.analyzers.map(a => a.key)).toContain('comments');
+    });
+
+    it('has quality-consensus coordinator', () => {
+      const result = getAnalyzersForAudit('quality', 'quick');
+      expect(result.consensus.subagent_type).toBe('quality-consensus');
     });
   });
 

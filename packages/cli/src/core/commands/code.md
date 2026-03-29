@@ -17,6 +17,7 @@ Multi-agent code analysis suite. Each analyzer deploys specialized agents in par
 | `/agileflow:code:architecture` | Architecture health (coupling, complexity, layers) |
 | `/agileflow:code:performance` | Performance bottleneck detection |
 | `/agileflow:code:test` | Test quality and coverage analysis |
+| `/agileflow:code:quality` | Code quality health scorecard (naming, duplication, comments + cross-audits) |
 | `/agileflow:code:completeness` | Forgotten features, dead handlers, stub code |
 | `/agileflow:code:accessibility` | WCAG compliance and a11y analysis |
 | `/agileflow:code:legal` | Legal compliance (GDPR, licensing, terms) |
@@ -26,7 +27,9 @@ Multi-agent code analysis suite. Each analyzer deploys specialized agents in par
 ```
 /agileflow:code:security src/                    # Quick security scan
 /agileflow:code:logic . DEPTH=deep               # Deep logic analysis
-/agileflow:code:completeness . DEPTH=extreme      # Extreme completeness audit
+/agileflow:code:quality src/                       # Quick style scan (3 analyzers)
+/agileflow:code:quality . DEPTH=deep               # Full quality scorecard with cross-audits
+/agileflow:code:completeness . DEPTH=extreme       # Extreme completeness audit
 ```
 
 Each analyzer supports `DEPTH=quick|deep|ultradeep|extreme` and `MODEL=haiku|sonnet|opus`.

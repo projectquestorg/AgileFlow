@@ -224,6 +224,21 @@ const AUDIT_TYPES = {
     deep_analyzers: ['google', 'meta', 'budget', 'creative', 'tracking', 'compliance'],
   },
 
+  quality: {
+    name: 'Code Quality',
+    prefix: 'Quality',
+    color: '#c3e88d', // green
+    command: 'code/quality',
+    analyzers: {
+      naming: { subagent_type: 'quality-analyzer-naming', label: 'Naming Conventions' },
+      duplication: { subagent_type: 'quality-analyzer-duplication', label: 'Code Duplication' },
+      comments: { subagent_type: 'quality-analyzer-comments', label: 'Comment Quality' },
+    },
+    consensus: { subagent_type: 'quality-consensus', label: 'Quality Consensus' },
+    quick_analyzers: ['naming', 'duplication', 'comments'],
+    deep_analyzers: ['naming', 'duplication', 'comments'],
+  },
+
   legal: {
     name: 'Legal Risk',
     prefix: 'Legal',
