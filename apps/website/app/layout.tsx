@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon-16x16.png',
-    apple: '/logo.png',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'AgileFlow',
     description:
       'Agile delivery, in your repo—powered by AI. Scrum + Kanban + ADRs + docs-as-code.',
     type: 'website',
-    images: ['/logo.png'],
+    images: ['/opengraph-image.png'],
   },
   robots: {
     index: true,
