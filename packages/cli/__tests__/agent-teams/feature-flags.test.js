@@ -25,11 +25,17 @@ delete require.cache[require.resolve('../../lib/feature-flags')];
 describe('feature-flags.js', () => {
   let testDir;
   let originalEnv;
+  let originalChannelsEnv;
+  let originalChannelsDisabledEnv;
 
   beforeEach(() => {
     // Save original environment
     originalEnv = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    originalChannelsEnv = process.env.AGILEFLOW_CHANNELS;
+    originalChannelsDisabledEnv = process.env.AGILEFLOW_CHANNELS_DISABLED;
     delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    delete process.env.AGILEFLOW_CHANNELS;
+    delete process.env.AGILEFLOW_CHANNELS_DISABLED;
 
     // Create temp directory
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agileflow-feature-flags-test-'));
@@ -47,6 +53,16 @@ describe('feature-flags.js', () => {
       process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = originalEnv;
     } else {
       delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
+    }
+    if (originalChannelsEnv !== undefined) {
+      process.env.AGILEFLOW_CHANNELS = originalChannelsEnv;
+    } else {
+      delete process.env.AGILEFLOW_CHANNELS;
+    }
+    if (originalChannelsDisabledEnv !== undefined) {
+      process.env.AGILEFLOW_CHANNELS_DISABLED = originalChannelsDisabledEnv;
+    } else {
+      delete process.env.AGILEFLOW_CHANNELS_DISABLED;
     }
 
     // Clean up test directory
@@ -408,6 +424,160 @@ describe('feature-flags.js', () => {
       const featureFlags = require('../../lib/feature-flags');
       const result = featureFlags.isAgentTeamsEnabled({ metadata: null });
       expect(result).toBe(false);
+    });
+  });
+
+  // ========================================================================
+  // Channels Feature (EP-0049)
+  // ========================================================================
+
+  describe('isChannelsEnabled()', () => {
+    test('returns false when env var not set and metadata not present', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      const result = featureFlags.isChannelsEnabled({ rootDir: testDir });
+      expect(result).toBe(false);
+    });
+
+    test('returns true when AGILEFLOW_CHANNELS=1', () => {
+      process.env.AGILEFLOW_CHANNELS = '1';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled()).toBe(true);
+    });
+
+    test('returns true when AGILEFLOW_CHANNELS=true', () => {
+      process.env.AGILEFLOW_CHANNELS = 'true';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled()).toBe(true);
+    });
+
+    test('returns false when AGILEFLOW_CHANNELS=0', () => {
+      process.env.AGILEFLOW_CHANNELS = '0';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled()).toBe(false);
+    });
+
+    test('kill switch overrides everything', () => {
+      process.env.AGILEFLOW_CHANNELS = '1';
+      process.env.AGILEFLOW_CHANNELS_DISABLED = 'true';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled()).toBe(false);
+    });
+
+    test('reads from metadata as fallback', () => {
+      const metadata = { features: { channels: { enabled: true } } };
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled({ metadata })).toBe(true);
+    });
+
+    test('returns false when metadata channels.enabled is false', () => {
+      const metadata = { features: { channels: { enabled: false } } };
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.isChannelsEnabled({ metadata })).toBe(false);
+    });
+  });
+
+  describe('getChannelTrustLevel()', () => {
+    test('defaults to observe when no config', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.getChannelTrustLevel({ rootDir: testDir })).toBe('observe');
+    });
+
+    test('reads default trust level from metadata', () => {
+      const metadata = { features: { channels: { trustLevel: 'suggest' } } };
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.getChannelTrustLevel({ metadata })).toBe('suggest');
+    });
+
+    test('reads per-channel trust level override', () => {
+      const metadata = {
+        features: {
+          channels: {
+            trustLevel: 'observe',
+            channelConfigs: {
+              ci: { trustLevel: 'react' },
+            },
+          },
+        },
+      };
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.getChannelTrustLevel({ metadata, channelName: 'ci' })).toBe('react');
+    });
+
+    test('falls back to default when channel has no override', () => {
+      const metadata = {
+        features: {
+          channels: {
+            trustLevel: 'suggest',
+            channelConfigs: {},
+          },
+        },
+      };
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.getChannelTrustLevel({ metadata, channelName: 'telegram' })).toBe(
+        'suggest'
+      );
+    });
+  });
+
+  describe('getChannelsDisplayInfo()', () => {
+    test('returns disabled when channels not enabled', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      const info = featureFlags.getChannelsDisplayInfo({ rootDir: testDir });
+      expect(info.status).toBe('disabled');
+      expect(info.value).toBe('not configured');
+    });
+
+    test('returns active when channels with configs exist', () => {
+      const metadata = {
+        features: {
+          channels: {
+            enabled: true,
+            trustLevel: 'observe',
+            channelConfigs: {
+              ci: { enabled: true },
+              telegram: { enabled: true },
+            },
+          },
+        },
+      };
+
+      process.env.AGILEFLOW_CHANNELS = '1';
+      delete require.cache[require.resolve('../../lib/feature-flags')];
+
+      const featureFlags = require('../../lib/feature-flags');
+      const info = featureFlags.getChannelsDisplayInfo({ metadata });
+      expect(info.status).toBe('active');
+      expect(info.value).toContain('2 active');
+      expect(info.value).toContain('ci');
+      expect(info.value).toContain('telegram');
+    });
+  });
+
+  describe('CHANNEL_TRUST_LEVELS', () => {
+    test('exports expected trust levels', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      expect(featureFlags.CHANNEL_TRUST_LEVELS).toEqual({
+        OBSERVE: 'observe',
+        SUGGEST: 'suggest',
+        REACT: 'react',
+      });
+    });
+  });
+
+  describe('getFeatureFlags() includes channels', () => {
+    test('includes channels flag', () => {
+      const featureFlags = require('../../lib/feature-flags');
+      const flags = featureFlags.getFeatureFlags({ rootDir: testDir });
+      expect(flags).toHaveProperty('channels');
+      expect(typeof flags.channels).toBe('boolean');
     });
   });
 });

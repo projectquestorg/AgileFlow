@@ -82,6 +82,24 @@ const BLOCKED_MESSAGE_PATTERNS = [
   /\bdrop\s+table\b/i,
 ];
 
+// Secret patterns - shared between Task and SendMessage validation
+// If multi-model support is ever added, secrets in inter-agent messages
+// would leak to external providers. Scan all message content.
+const SECRET_PATTERNS = [
+  /\b(?:API_KEY|SECRET|PASSWORD|TOKEN|CREDENTIALS)\s*[:=]\s*\S+/i,
+  /\bsk-[a-zA-Z0-9]{20,}/, // API keys starting with sk-
+  /\bghp_[a-zA-Z0-9]{36}/, // GitHub personal access tokens
+  /\bnpm_[a-zA-Z0-9]{36}/, // npm tokens
+  /\bAIza[a-zA-Z0-9_-]{35}/, // Google API keys
+  /\bxox[bpors]-[a-zA-Z0-9-]+/, // Slack tokens
+  /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/, // Private keys
+  // Channel tokens (EP-0049)
+  /\b\d{8,10}:[a-zA-Z0-9_-]{35}\b/, // Telegram bot tokens
+  /\b[MN][A-Za-z\d]{23,}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27,}/, // Discord bot tokens
+  /https:\/\/hooks\.(?:slack|discord)\.com\/[^\s]+/, // Webhook URLs with embedded tokens
+  /\bwhsec_[a-zA-Z0-9]+/, // Webhook signing secrets
+];
+
 /**
  * Validate a TeamCreate operation
  */
@@ -109,7 +127,8 @@ function validateTeamCreate(input) {
 }
 
 /**
- * Validate a SendMessage operation
+ * Validate a SendMessage operation.
+ * Checks for: size limits, blocked patterns, secrets, and channel ACLs.
  */
 function validateSendMessage(input) {
   const toolInput = input.tool_input || input;
@@ -134,6 +153,34 @@ function validateSendMessage(input) {
     }
   }
 
+  // Check for secrets in message content (prevents leaking to external providers)
+  for (const pattern of SECRET_PATTERNS) {
+    if (pattern.test(content)) {
+      return {
+        action: 'block',
+        reason: 'Message appears to contain secrets or credentials',
+        detail: 'Never pass secrets in inter-agent messages. Use environment variables instead.',
+      };
+    }
+  }
+
+  // Check channel ACLs if agent has restricted channels
+  const allowedChannels = process.env.AGILEFLOW_AGENT_CHANNELS;
+  const targetChannel = toolInput.channel;
+  if (allowedChannels && targetChannel) {
+    const allowed = allowedChannels
+      .split(',')
+      .map(c => c.trim())
+      .filter(Boolean);
+    if (allowed.length > 0 && !allowed.includes(targetChannel)) {
+      return {
+        action: 'block',
+        reason: `Agent not authorized for channel '${targetChannel}'`,
+        detail: `Allowed channels: ${allowed.join(', ')}`,
+      };
+    }
+  }
+
   return { action: 'allow' };
 }
 
@@ -144,15 +191,8 @@ function validateTaskOperation(input) {
   const toolInput = input.tool_input || input;
   const description = toolInput.description || toolInput.prompt || '';
 
-  // Check for secrets in task descriptions
-  const secretPatterns = [
-    /\b(?:API_KEY|SECRET|PASSWORD|TOKEN|CREDENTIALS)\s*[:=]\s*\S+/i,
-    /\bsk-[a-zA-Z0-9]{20,}/, // API keys starting with sk-
-    /\bghp_[a-zA-Z0-9]{36}/, // GitHub personal access tokens
-    /\bnpm_[a-zA-Z0-9]{36}/, // npm tokens
-  ];
-
-  for (const pattern of secretPatterns) {
+  // Check for secrets in task descriptions (uses shared SECRET_PATTERNS)
+  for (const pattern of SECRET_PATTERNS) {
     if (pattern.test(description)) {
       return {
         action: 'block',

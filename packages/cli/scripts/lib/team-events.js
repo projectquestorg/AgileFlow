@@ -76,6 +76,11 @@ const EVENT_TYPES = [
   'gate_failed',
   'model_usage',
   'cost_warning',
+  // Channel events (EP-0049)
+  'channel_event_received',
+  'channel_registered',
+  'channel_removed',
+  'channel_error',
 ];
 
 /**

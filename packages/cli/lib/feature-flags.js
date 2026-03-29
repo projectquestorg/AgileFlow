@@ -17,6 +17,16 @@ const fs = require('fs');
  */
 const AGENT_TEAMS_TOOLS = Object.freeze(['TeamCreate', 'SendMessage', 'ListTeams']);
 
+/**
+ * Trust levels for external event channels.
+ * Controls how Claude reacts to incoming channel events.
+ */
+const CHANNEL_TRUST_LEVELS = Object.freeze({
+  OBSERVE: 'observe', // See events, no action unless asked
+  SUGGEST: 'suggest', // See events, propose actions, wait for approval
+  REACT: 'react', // Auto-act on events (with damage control still active)
+});
+
 // Lazy-load paths to avoid circular dependency issues
 let _paths;
 function getPaths() {
@@ -51,7 +61,7 @@ function isAgentTeamsEnabled(options = {}) {
     if (metadata?.features?.agentTeams?.enabled === true) {
       return true;
     }
-  } catch (e) {
+  } catch {
     // Silently fail - feature not enabled
   }
 
@@ -92,6 +102,118 @@ function getAvailableTools(options = {}) {
 }
 
 /**
+ * Check if Claude Code Channels (external event integration) is enabled.
+ *
+ * Detection order:
+ *   1. AGILEFLOW_CHANNELS env var (truthy = enabled)
+ *   2. agileflow-metadata.json features.channels.enabled
+ *
+ * @param {object} [options] - Options
+ * @param {string} [options.rootDir] - Project root directory
+ * @param {object} [options.metadata] - Pre-loaded metadata
+ * @returns {boolean} True if Channels is enabled
+ */
+function isChannelsEnabled(options = {}) {
+  // Kill switch takes absolute priority
+  const disabled = process.env.AGILEFLOW_CHANNELS_DISABLED;
+  if (disabled === '1' || disabled === 'true') {
+    return false;
+  }
+
+  // 1. Environment variable
+  const envVar = process.env.AGILEFLOW_CHANNELS;
+  if (envVar !== undefined) {
+    return envVar === '1' || envVar === 'true' || envVar === 'yes';
+  }
+
+  // 2. Check agileflow-metadata.json
+  try {
+    const metadata = options.metadata || loadMetadata(options.rootDir);
+    if (metadata?.features?.channels?.enabled === true) {
+      return true;
+    }
+  } catch {
+    // Silently fail - feature not enabled
+  }
+
+  return false;
+}
+
+/**
+ * Get the trust level for a specific channel or the default.
+ *
+ * @param {object} [options] - Options
+ * @param {string} [options.rootDir] - Project root directory
+ * @param {string} [options.channelName] - Specific channel name
+ * @returns {'observe'|'suggest'|'react'} Trust level
+ */
+function getChannelTrustLevel(options = {}) {
+  try {
+    const metadata = options.metadata || loadMetadata(options.rootDir);
+    const channels = metadata?.features?.channels;
+    if (!channels) return CHANNEL_TRUST_LEVELS.OBSERVE;
+
+    // Per-channel override
+    if (options.channelName && channels.channelConfigs?.[options.channelName]?.trustLevel) {
+      return channels.channelConfigs[options.channelName].trustLevel;
+    }
+
+    // Default trust level
+    return channels.trustLevel || CHANNEL_TRUST_LEVELS.OBSERVE;
+  } catch {
+    return CHANNEL_TRUST_LEVELS.OBSERVE;
+  }
+}
+
+/**
+ * Get display info for Channels feature (used by welcome script).
+ *
+ * @param {object} [options] - Options
+ * @param {string} [options.rootDir] - Project root directory
+ * @returns {object} Display info { label, value, status }
+ */
+function getChannelsDisplayInfo(options = {}) {
+  const enabled = isChannelsEnabled(options);
+
+  if (!enabled) {
+    return {
+      label: 'Channels',
+      value: 'not configured',
+      status: 'disabled',
+    };
+  }
+
+  try {
+    const metadata = options.metadata || loadMetadataSafe(options.rootDir);
+    const channels = metadata?.features?.channels;
+    const configs = channels?.channelConfigs || {};
+    const activeChannels = Object.entries(configs).filter(([, v]) => v.enabled !== false);
+    const trustLevel = channels?.trustLevel || 'observe';
+
+    if (activeChannels.length === 0) {
+      return {
+        label: 'Channels',
+        value: `enabled (${trustLevel}, no channels added)`,
+        status: 'enabled',
+      };
+    }
+
+    const names = activeChannels.map(([name]) => name).join(', ');
+    return {
+      label: 'Channels',
+      value: `${activeChannels.length} active (${names}) [${trustLevel}]`,
+      status: 'active',
+    };
+  } catch {
+    return {
+      label: 'Channels',
+      value: 'enabled',
+      status: 'enabled',
+    };
+  }
+}
+
+/**
  * Get all feature flags as an object.
  *
  * @param {object} [options] - Options
@@ -107,6 +229,7 @@ function getFeatureFlags(options = {}) {
     agentTeams: isAgentTeamsEnabled(opts),
     agentTeamsMode: getAgentTeamsMode(opts),
     availableTools: getAvailableTools(opts),
+    channels: isChannelsEnabled(opts),
   };
 }
 
@@ -156,16 +279,20 @@ function loadMetadata(rootDir) {
 function loadMetadataSafe(rootDir) {
   try {
     return loadMetadata(rootDir);
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
 module.exports = {
   AGENT_TEAMS_TOOLS,
+  CHANNEL_TRUST_LEVELS,
   isAgentTeamsEnabled,
   getAgentTeamsMode,
   getAvailableTools,
   getFeatureFlags,
   getAgentTeamsDisplayInfo,
+  isChannelsEnabled,
+  getChannelTrustLevel,
+  getChannelsDisplayInfo,
 };

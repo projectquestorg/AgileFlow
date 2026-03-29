@@ -42,6 +42,9 @@ const ScheduleType = {
   MONTHLY: 'monthly',
   INTERVAL: 'interval', // Custom interval in hours
   ON_SESSION: 'on_session', // Every session start
+  // Channel-triggered types (EP-0049)
+  ON_EVENT: 'on_event', // Triggered by a specific channel event type
+  ON_CHANNEL: 'on_channel', // Triggered by any message on a channel
 };
 
 // Day names for weekly scheduling
@@ -306,6 +309,15 @@ class AutomationRegistry extends EventEmitter {
         return hoursSinceLastRun >= intervalHours;
       }
 
+      case ScheduleType.ON_EVENT:
+        // Never "due" via polling - triggered by channel events externally
+        // Use matchesChannelEvent() to check if an event matches
+        return false;
+
+      case ScheduleType.ON_CHANNEL:
+        // Never "due" via polling - triggered by any message on the channel
+        return false;
+
       default:
         return false;
     }
@@ -320,6 +332,50 @@ class AutomationRegistry extends EventEmitter {
       .sort((a, b) => new Date(b.at) - new Date(a.at));
 
     return runs.length > 0 ? new Date(runs[0].at) : null;
+  }
+
+  /**
+   * Find automations that match a channel event.
+   *
+   * Checks ON_EVENT (matches specific event type on a channel) and
+   * ON_CHANNEL (matches any event on a channel) automations.
+   *
+   * @param {object} event - Channel event { source, event_type, channel }
+   * @returns {object[]} Matching automation definitions
+   */
+  getEventTriggered(event) {
+    if (!event) return [];
+
+    const schedule = this.load();
+    const automations = schedule.automations || {};
+    const matches = [];
+
+    for (const [id, automation] of Object.entries(automations)) {
+      if (!automation.enabled) continue;
+
+      const schedType = automation.schedule?.type;
+
+      if (schedType === ScheduleType.ON_EVENT) {
+        // Match specific event type on a specific channel
+        const matchEvent = automation.schedule?.event;
+        const matchChannel = automation.schedule?.channel;
+        if (
+          matchEvent &&
+          matchEvent === event.event_type &&
+          (!matchChannel || matchChannel === event.channel)
+        ) {
+          matches.push({ id, ...automation });
+        }
+      } else if (schedType === ScheduleType.ON_CHANNEL) {
+        // Match any event on a specific channel
+        const matchChannel = automation.schedule?.channel;
+        if (matchChannel && matchChannel === event.channel) {
+          matches.push({ id, ...automation });
+        }
+      }
+    }
+
+    return matches;
   }
 
   /**
@@ -487,6 +543,14 @@ class AutomationRegistry extends EventEmitter {
         schedule: { type: ScheduleType.ON_SESSION },
         timeout: 30000, // 30 seconds
         enabled: false, // Disabled by default
+      },
+      'weekly-skill-research': {
+        name: 'Weekly Skill Research',
+        description: 'Run auto-research on skills with eval data every Friday (opt-in)',
+        command: '/agileflow:skill:research ACTION=auto',
+        schedule: { type: ScheduleType.WEEKLY, day: 'friday' },
+        timeout: 600000, // 10 minutes
+        enabled: false, // Opt-in only
       },
     };
   }

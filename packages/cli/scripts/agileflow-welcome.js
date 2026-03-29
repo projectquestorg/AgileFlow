@@ -1491,7 +1491,8 @@ function formatTable(
   expertise = {},
   damageControl = {},
   agentTeamsInfo = {},
-  scaleDetection = {}
+  scaleDetection = {},
+  channelsInfo = null
 ) {
   const W = 58; // inner width (total table = W + 2 = 60)
   const R = W - 25; // right column width (33 chars) to match total of 60
@@ -1722,6 +1723,13 @@ function formatTable(
     lines.push(row('Agent Teams', `${agentTeamsInfo.value}`, c.lavender, c.dim));
   }
 
+  // Channels status (EP-0049)
+  if (channelsInfo && channelsInfo.status === 'active') {
+    lines.push(row('Channels', channelsInfo.value, c.lavender, c.mintGreen));
+  } else if (channelsInfo && channelsInfo.status === 'enabled') {
+    lines.push(row('Channels', channelsInfo.value, c.lavender, c.dim));
+  }
+
   // Scale detection (EP-0033)
   if (scaleDetection && scaleDetection.scale) {
     const scaleColors = {
@@ -1923,6 +1931,31 @@ function main() {
   }
   _mark('agentTeams');
 
+  // Channels status (EP-0049): Read from metadata cache
+  let channelsInfo = null;
+  const envChannelsDisabled =
+    process.env.AGILEFLOW_CHANNELS_DISABLED === '1' ||
+    process.env.AGILEFLOW_CHANNELS_DISABLED === 'true';
+  const envChannels = process.env.AGILEFLOW_CHANNELS;
+  const envChannelsEnabled = envChannels === '1' || envChannels === 'true' || envChannels === 'yes';
+  const metaChannelsEnabled = cache?.metadata?.features?.channels?.enabled === true;
+  if (!envChannelsDisabled && (envChannelsEnabled || metaChannelsEnabled)) {
+    const channelConfigs = cache?.metadata?.features?.channels?.channelConfigs || {};
+    const activeChannels = Object.entries(channelConfigs).filter(([, v]) => v.enabled !== false);
+    const trustLevel = cache?.metadata?.features?.channels?.trustLevel || 'observe';
+    if (activeChannels.length > 0) {
+      const names = activeChannels.map(([name]) => name).join(', ');
+      channelsInfo = {
+        label: 'Channels',
+        value: `${activeChannels.length} active (${names}) [${trustLevel}]`,
+        status: 'active',
+      };
+    } else {
+      channelsInfo = { label: 'Channels', value: `enabled [${trustLevel}]`, status: 'enabled' };
+    }
+  }
+  _mark('channels');
+
   // Check if a previous background update completed successfully
   // This allows us to show "just updated" even for background updates
   let updateInfo = {};
@@ -2011,7 +2044,8 @@ function main() {
       expertise,
       damageControl,
       agentTeamsInfo,
-      scaleDetection
+      scaleDetection,
+      channelsInfo
     )
   );
 

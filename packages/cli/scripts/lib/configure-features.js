@@ -28,7 +28,7 @@ const {
 
 const FEATURES = {
   sessionstart: { hook: 'SessionStart', script: 'agileflow-welcome.js', type: 'node' },
-  precompact: { hook: 'PreCompact', script: 'precompact-context.sh', type: 'bash' },
+  precompact: { hook: 'PreCompact', script: 'precompact-context.js', type: 'node' },
   ralphloop: { hook: 'Stop', script: 'ralph-loop.js', type: 'node' },
   selfimprove: { hook: 'Stop', script: 'auto-self-improve.js', type: 'node' },
   archival: { script: 'archive-completed-stories.sh', requiresHook: 'sessionstart' },
@@ -72,9 +72,24 @@ const FEATURES = {
     description:
       'Agentic browser testing with Playwright (Bowser four-layer pattern). Screenshot evidence, 80% pass rate threshold.',
   },
+  visualfeedback: {
+    metadataOnly: false,
+    description:
+      'Development-time visual feedback loops for UI agents. Browser MCP + Playwright screenshot capture with quality gate integration.',
+  },
+  channels: {
+    metadataOnly: false,
+    description:
+      'External event channels via Claude Code Channels MCP. Receive CI alerts, webhook events, Telegram/Discord messages in warm sessions. Progressive trust: observe/suggest/react.',
+  },
   contextverbosity: {
     metadataOnly: true,
     description: 'Control how much context is loaded per command (full/lite/minimal)',
+  },
+  hierarchicalcompaction: {
+    metadataOnly: true,
+    description:
+      'Compaction tree with telescoping context and cross-session search over compaction history',
   },
 };
 
@@ -149,6 +164,7 @@ const PROFILES = {
       'askuserquestion',
       'tmuxautospawn',
       'noaiattribution',
+      'hierarchicalcompaction',
     ],
     archivalDays: 30,
     experimental: {
@@ -349,6 +365,28 @@ function enableFeature(feature, options = {}, version) {
     return true;
   }
 
+  // Handle hierarchical compaction (metadata only)
+  if (feature === 'hierarchicalcompaction') {
+    updateMetadata(
+      {
+        features: {
+          hierarchicalCompaction: {
+            enabled: true,
+            maxAncestors: 5,
+            pruneKeep: 20,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Hierarchical compaction enabled');
+    info('Compaction tree will track context across compaction events');
+    info('Telescoping output gives progressively less detail for older compactions');
+    return true;
+  }
+
   // Handle claude flags (e.g., --dangerously-skip-permissions)
   // Also sets permissions.defaultMode in .claude/settings.json
   if (feature === 'claudeflags') {
@@ -508,6 +546,11 @@ function enableFeature(feature, options = {}, version) {
   // Handle browser QA (agentic browser testing)
   if (feature === 'browserqa') {
     return enableBrowserQa(version);
+  }
+
+  // Handle visual feedback (dev-time visual checks)
+  if (feature === 'visualfeedback') {
+    return enableVisualFeedback(version);
   }
 
   // Handle context verbosity (metadata only)
@@ -940,6 +983,25 @@ function disableFeature(feature, version) {
     return true;
   }
 
+  // Disable hierarchical compaction
+  if (feature === 'hierarchicalcompaction') {
+    updateMetadata(
+      {
+        features: {
+          hierarchicalCompaction: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Hierarchical compaction disabled');
+    info('PreCompact will produce standard output without compaction history');
+    return true;
+  }
+
   // Disable claude flags - also reset permissions.defaultMode in settings.json
   if (feature === 'claudeflags') {
     if (settings.permissions?.defaultMode) {
@@ -1108,6 +1170,25 @@ function disableFeature(feature, version) {
     );
     success('Browser QA disabled');
     info('Agentic browser testing deactivated');
+    return true;
+  }
+
+  // Disable visual feedback
+  if (feature === 'visualfeedback') {
+    updateMetadata(
+      {
+        features: {
+          visualFeedback: {
+            enabled: false,
+            version,
+            at: new Date().toISOString(),
+          },
+        },
+      },
+      version
+    );
+    success('Visual feedback disabled');
+    info('Development-time visual checks deactivated');
     return true;
   }
 
@@ -1810,6 +1891,89 @@ function enableBrowserQa(version) {
   return true;
 }
 
+// ============================================================================
+// VISUAL FEEDBACK
+// ============================================================================
+
+/**
+ * Enable visual feedback (development-time visual checks)
+ * Reuses browserQa directory structure, adds visual-checks subdir,
+ * deploys MCP browser config template, updates metadata
+ */
+function enableVisualFeedback(version) {
+  // Reuse browserQa directory setup
+  const dirs = [
+    '.agileflow/ui-review',
+    '.agileflow/ui-review/runs',
+    '.agileflow/ui-review/runs/visual-checks',
+    'screenshots',
+  ];
+  for (const dir of dirs) {
+    ensureDir(dir);
+  }
+
+  // Deploy MCP browser config template
+  const mcpTemplateSrc = path.join(process.cwd(), '.agileflow', 'templates', 'mcp-browser.json');
+  const mcpDest = path.join(process.cwd(), '.mcp.json');
+
+  if (fs.existsSync(mcpTemplateSrc) && !fs.existsSync(mcpDest)) {
+    try {
+      fs.copyFileSync(mcpTemplateSrc, mcpDest);
+      success('Deployed browser MCP config to .mcp.json');
+      info('Edit .mcp.json to swap MCP server implementation if needed');
+    } catch {
+      info(
+        'Could not deploy .mcp.json - create manually from .agileflow/templates/mcp-browser.json'
+      );
+    }
+  } else if (fs.existsSync(mcpDest)) {
+    info('.mcp.json already exists - browser MCP config not overwritten');
+  }
+
+  // Check for Playwright
+  let playwrightAvailable = false;
+  try {
+    require.resolve('playwright');
+    playwrightAvailable = true;
+  } catch {
+    // Not installed
+  }
+
+  if (!playwrightAvailable) {
+    warn('Playwright not found - install for screenshot capture fallback:');
+    info('  npm install --save-optional playwright');
+    info('  npx playwright install chromium');
+  }
+
+  // Update gitignore
+  updateGitignore();
+
+  updateMetadata(
+    {
+      features: {
+        visualFeedback: {
+          enabled: true,
+          version,
+          at: new Date().toISOString(),
+          playwright_detected: playwrightAvailable,
+        },
+      },
+    },
+    version
+  );
+
+  success('Visual feedback enabled (development-time visual checks)');
+  info('Evidence directory: .agileflow/ui-review/runs/visual-checks/');
+  info('Screenshots directory: screenshots/ (for verified- prefix workflow)');
+  info('MCP config: .mcp.json (browser MCP server for screenshot capture)');
+  info('Snippet: Use <!-- {{VISUAL_CHECK}} --> in agent files for instructions');
+  if (playwrightAvailable) {
+    info('Playwright: detected');
+  }
+
+  return true;
+}
+
 const CLAUDE_MD_MARKER = '<!-- AGILEFLOW_BABYSIT_RULES -->';
 const CLAUDE_MD_CONTENT = `
 
@@ -1924,4 +2088,6 @@ module.exports = {
   // CLAUDE.md reinforcement
   enableClaudeMdReinforcement,
   disableClaudeMdReinforcement,
+  // Visual feedback
+  enableVisualFeedback,
 };

@@ -15,14 +15,29 @@
  * - Only AgileFlow bus is used (existing behavior)
  * - No native messaging integration
  *
+ * Channels:
+ * - Messages can be scoped to a channel (e.g., 'frontend', 'backend', 'security-review')
+ * - Messages without a channel default to 'general' for backward compatibility
+ * - readMessages() supports channel filtering
+ * - Agents can be restricted to specific channels via AGILEFLOW_AGENT_CHANNELS env var
+ *
+ * Message Budget:
+ * - Each team session has a global message budget (default 50)
+ * - Sequence numbers are monotonically increasing per trace_id
+ * - Budget enforcement prevents cross-agent infinite loops (A->B->C->A)
+ *
  * Usage:
- *   node messaging-bridge.js send <from> <to> <type> <message>
- *   node messaging-bridge.js read [--from=agent] [--type=type] [--limit=N]
+ *   node messaging-bridge.js send <from> <to> <type> <message> [--channel=ch]
+ *   node messaging-bridge.js read [--from=agent] [--type=type] [--limit=N] [--channel=ch]
  *   node messaging-bridge.js context <agent>  // Get relevant context for agent
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// Channel & budget constants
+const DEFAULT_CHANNEL = 'general';
+const MESSAGE_BUDGET_PER_SESSION = 50;
 
 // Lazy-load modules
 let _paths;
@@ -96,17 +111,85 @@ function ensureBusDir(rootDir) {
 }
 
 /**
+ * Get the next sequence number for a given trace_id.
+ * Reads existing messages to find the highest seq for this trace.
+ *
+ * @param {string} logPath - Path to JSONL bus log
+ * @param {string} traceId - Trace ID for the team session
+ * @returns {number} Next sequence number
+ */
+function getNextSequence(logPath, traceId) {
+  if (!traceId || !fs.existsSync(logPath)) return 1;
+
+  try {
+    const content = fs.readFileSync(logPath, 'utf8').trim();
+    if (!content) return 1;
+
+    let maxSeq = 0;
+    for (const line of content.split('\n')) {
+      try {
+        const msg = JSON.parse(line);
+        if (msg.trace_id === traceId && typeof msg.seq === 'number') {
+          maxSeq = Math.max(maxSeq, msg.seq);
+        }
+      } catch (e) {
+        // Skip malformed lines
+      }
+    }
+    return maxSeq + 1;
+  } catch (e) {
+    return 1;
+  }
+}
+
+/**
+ * Check if a team session has exceeded its message budget.
+ *
+ * @param {string} logPath - Path to JSONL bus log
+ * @param {string} traceId - Trace ID for the team session
+ * @returns {{ exceeded: boolean, count: number, limit: number }}
+ */
+function checkMessageBudget(logPath, traceId) {
+  const limit = MESSAGE_BUDGET_PER_SESSION;
+  if (!traceId || !fs.existsSync(logPath)) {
+    return { exceeded: false, count: 0, limit };
+  }
+
+  try {
+    const content = fs.readFileSync(logPath, 'utf8').trim();
+    if (!content) return { exceeded: false, count: 0, limit };
+
+    let count = 0;
+    for (const line of content.split('\n')) {
+      try {
+        const msg = JSON.parse(line);
+        if (msg.trace_id === traceId) count++;
+      } catch (e) {
+        // Skip malformed lines
+      }
+    }
+    return { exceeded: count >= limit, count, limit };
+  } catch (e) {
+    // Fail open - don't block on budget check errors
+    return { exceeded: false, count: 0, limit };
+  }
+}
+
+/**
  * Send a message to the AgileFlow bus.
  *
  * When Agent Teams is enabled (native mode), the message is formatted for
  * both the JSONL bus AND the native SendMessage channel. The JSONL bus
  * remains the source of truth; native messaging is supplementary.
  *
+ * Messages are assigned to a channel (default: 'general') and given a
+ * monotonically increasing sequence number per trace_id.
+ *
  * Also triggers log rotation when the bus exceeds 1000 lines.
  *
  * @param {string} rootDir - Project root
- * @param {object} message - Message object { from, to, type, ... }
- * @returns {{ ok: boolean, native?: boolean }}
+ * @param {object} message - Message object { from, to, type, channel?, ... }
+ * @returns {{ ok: boolean, native?: boolean, seq?: number, budget_remaining?: number }}
  */
 function sendMessage(rootDir, message) {
   try {
@@ -114,11 +197,31 @@ function sendMessage(rootDir, message) {
     const logPath = getBusLogPath(rootDir);
     const isNative = getFeatureFlags().isAgentTeamsEnabled({ rootDir });
 
+    // Enforce message budget per team session
+    if (message.trace_id) {
+      const budget = checkMessageBudget(logPath, message.trace_id);
+      if (budget.exceeded) {
+        return {
+          ok: false,
+          error: `Message budget exceeded for session (${budget.count}/${budget.limit}). Prevent cross-agent infinite loops.`,
+          budget_exceeded: true,
+        };
+      }
+    }
+
+    // Assign sequence number for trace correlation
+    const seq = message.trace_id ? getNextSequence(logPath, message.trace_id) : undefined;
+
     const entry = {
       ...message,
+      channel: message.channel || DEFAULT_CHANNEL,
       at: new Date().toISOString(),
       agent_teams: isNative,
     };
+
+    if (typeof seq === 'number') {
+      entry.seq = seq;
+    }
 
     // When native Agent Teams is enabled, also format for native SendMessage
     if (isNative) {
@@ -142,7 +245,12 @@ function sendMessage(rootDir, message) {
       // Rotation failure is non-critical
     }
 
-    return { ok: true, native: isNative };
+    const result = { ok: true, native: isNative };
+    if (typeof seq === 'number') result.seq = seq;
+    if (message.trace_id) {
+      result.budget_remaining = MESSAGE_BUDGET_PER_SESSION - (seq || 0);
+    }
+    return result;
   } catch (e) {
     return { ok: false, error: e.message };
   }
@@ -171,7 +279,7 @@ function formatForNative(message) {
  * Read messages from the AgileFlow bus.
  *
  * @param {string} rootDir - Project root
- * @param {object} [filters] - Filters { from, to, type, limit, since }
+ * @param {object} [filters] - Filters { from, to, type, channel, limit, since }
  * @returns {{ ok: boolean, messages: Array }}
  */
 function readMessages(rootDir, filters = {}) {
@@ -205,6 +313,9 @@ function readMessages(rootDir, filters = {}) {
     if (filters.type) {
       messages = messages.filter(m => m.type === filters.type);
     }
+    if (filters.channel) {
+      messages = messages.filter(m => (m.channel || DEFAULT_CHANNEL) === filters.channel);
+    }
     if (filters.since) {
       const sinceTime = new Date(filters.since).getTime();
       messages = messages.filter(m => new Date(m.at).getTime() >= sinceTime);
@@ -224,22 +335,31 @@ function readMessages(rootDir, filters = {}) {
 /**
  * Get relevant context for a teammate agent.
  * Returns recent messages relevant to this agent's domain.
+ * When channels are specified, only messages from those channels are included.
  *
  * @param {string} rootDir - Project root
  * @param {string} agentName - Agent name
+ * @param {object} [options] - Options { channels?: string[] }
  * @returns {{ ok: boolean, context: Array }}
  */
-function getAgentContext(rootDir, agentName) {
+function getAgentContext(rootDir, agentName, options = {}) {
+  const { channels } = options;
+
   // Get messages TO this agent + recent coordination messages
   const toAgent = readMessages(rootDir, { to: agentName, limit: 20 });
   const coordination = readMessages(rootDir, { type: 'coordination', limit: 10 });
   const assignments = readMessages(rootDir, { type: 'task_assignment', limit: 10 });
 
-  const context = [
+  let context = [
     ...(toAgent.messages || []),
     ...(coordination.messages || []),
     ...(assignments.messages || []),
   ];
+
+  // Filter by allowed channels if specified
+  if (channels && channels.length > 0) {
+    context = context.filter(m => channels.includes(m.channel || DEFAULT_CHANNEL));
+  }
 
   // Deduplicate by timestamp
   const seen = new Set();
@@ -298,11 +418,13 @@ function sendPlanDecision(rootDir, from, to, taskId, approved, reason, traceId) 
  * @param {string} to - Receiving agent name
  * @param {string} content - Message content
  * @param {string} [traceId] - Trace ID for team lifecycle correlation
+ * @param {string} [channel] - Channel to scope this message to (default: 'general')
  * @returns {{ ok: boolean, native?: boolean }}
  */
-function sendTeamMessage(rootDir, from, to, content, traceId) {
+function sendTeamMessage(rootDir, from, to, content, traceId, channel) {
   const msg = { from, to, type: 'team_message', content };
   if (traceId) msg.trace_id = traceId;
+  if (channel) msg.channel = channel;
   const result = sendMessage(rootDir, msg);
 
   // Always track in session-state for observability parity (both native and subagent modes)
@@ -452,6 +574,37 @@ function logNativeTeamCompleted(rootDir, templateName, traceId, summary) {
 }
 
 /**
+ * Send an external channel event to the JSONL bus.
+ *
+ * Uses channel-adapter for normalization, dedup, and rate limiting,
+ * then writes to the bus via sendMessage(). Channel events use a
+ * separate budget from inter-agent messages.
+ *
+ * @param {string} rootDir - Project root
+ * @param {string} source - Source type (ci, webhook, telegram, discord, file-watcher, etc.)
+ * @param {string} eventType - Event type (ci_failure, message, file_change, etc.)
+ * @param {object} [payload] - Event-specific data
+ * @param {object} [options] - Additional options
+ * @param {string} [options.sender] - Who/what sent the event
+ * @param {string} [options.sourceId] - Unique ID from source for deduplication
+ * @returns {{ ok: boolean, error?: string, deduplicated?: boolean, budget_exceeded?: boolean }}
+ */
+function sendChannelEvent(rootDir, source, eventType, payload, options = {}) {
+  try {
+    const channelAdapter = require('./lib/channel-adapter');
+    return channelAdapter.processEvent(rootDir, {
+      source,
+      type: eventType,
+      payload,
+      sender: options.sender,
+      sourceId: options.sourceId,
+    });
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+/**
  * Send a validation result message.
  */
 function sendValidationResult(rootDir, from, taskId, status, details, traceId) {
@@ -471,8 +624,10 @@ function main() {
   switch (command) {
     case 'send': {
       const [, from, to, type, ...messageParts] = args;
-      const message = messageParts.join(' ');
-      result = sendMessage(rootDir, { from, to, type, message });
+      const message = messageParts.filter(p => !p.startsWith('--')).join(' ');
+      const channelArg = args.find(a => a.startsWith('--channel='));
+      const channel = channelArg ? channelArg.slice(10) : undefined;
+      result = sendMessage(rootDir, { from, to, type, message, channel });
       break;
     }
 
@@ -482,6 +637,7 @@ function main() {
         if (arg.startsWith('--from=')) filters.from = arg.slice(7);
         else if (arg.startsWith('--to=')) filters.to = arg.slice(5);
         else if (arg.startsWith('--type=')) filters.type = arg.slice(7);
+        else if (arg.startsWith('--channel=')) filters.channel = arg.slice(10);
         else if (arg.startsWith('--limit=')) filters.limit = parseInt(arg.slice(8), 10);
       }
       result = readMessages(rootDir, filters);
@@ -527,10 +683,37 @@ function main() {
       break;
     }
 
+    case 'channel-event': {
+      const [, source, eventType, ...payloadParts] = args;
+      if (!source || !eventType) {
+        result = {
+          ok: false,
+          error: 'Usage: messaging-bridge.js channel-event <source> <event-type> [payload-json]',
+        };
+      } else {
+        let payload = {};
+        const payloadStr = payloadParts.filter(p => !p.startsWith('--')).join(' ');
+        if (payloadStr) {
+          try {
+            payload = JSON.parse(payloadStr);
+          } catch (e) {
+            payload = { message: payloadStr };
+          }
+        }
+        const senderArg = args.find(a => a.startsWith('--sender='));
+        const idArg = args.find(a => a.startsWith('--source-id='));
+        result = sendChannelEvent(rootDir, source, eventType, payload, {
+          sender: senderArg ? senderArg.slice(9) : undefined,
+          sourceId: idArg ? idArg.slice(12) : undefined,
+        });
+      }
+      break;
+    }
+
     default:
       result = {
         ok: false,
-        error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context|log-native-send|log-native-create|log-native-completed>`,
+        error: `Unknown command: ${command}\nUsage: messaging-bridge.js <send|read|context|channel-event|log-native-send|log-native-create|log-native-completed>`,
       };
   }
 
@@ -548,12 +731,17 @@ module.exports = {
   sendPlanDecision,
   sendTeamMessage,
   sendTeamCompleted,
+  sendChannelEvent,
   sendValidationResult,
   logNativeSend,
   logNativeTeamCreate,
   logNativeTeamCompleted,
   getBusLogPath,
   formatForNative,
+  checkMessageBudget,
+  getNextSequence,
+  DEFAULT_CHANNEL,
+  MESSAGE_BUDGET_PER_SESSION,
 };
 
 if (require.main === module) {
