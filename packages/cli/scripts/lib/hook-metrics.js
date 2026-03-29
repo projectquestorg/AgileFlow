@@ -57,23 +57,7 @@ try {
   };
 }
 
-/**
- * Find the project root directory
- * @returns {string} Project root path
- */
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== '/' && dir !== path.parse(dir).root) {
-    if (fs.existsSync(path.join(dir, '.agileflow'))) {
-      return dir;
-    }
-    if (fs.existsSync(path.join(dir, 'docs', '09-agents'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
+const { findProjectRoot } = require('./damage-control-utils');
 
 /**
  * Start a timer for hook execution

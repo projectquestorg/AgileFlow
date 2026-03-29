@@ -23,7 +23,24 @@ const fs = require('fs');
 const path = require('path');
 
 // Import status constants from single source of truth
-const { VALID_STATUSES } = require('../lib/story-state-machine');
+const { VALID_STATUSES, LEGACY_STATUSES } = require('../lib/story-state-machine');
+
+// Import centralized ID validators
+let _validateNames;
+function getValidateNames() {
+  if (!_validateNames) {
+    try {
+      _validateNames = require('../../lib/validate-names');
+    } catch (e) {
+      // Fallback: inline patterns matching centralized module
+      _validateNames = {
+        isValidTicketId: id => typeof id === 'string' && /^(US|EP|TECH|BUG)-\d{4,5}$/.test(id),
+        isValidEpicId: id => typeof id === 'string' && /^EP-\d{4,5}$/.test(id),
+      };
+    }
+  }
+  return _validateNames;
+}
 
 let input = '';
 process.stdin.on('data', chunk => (input += chunk));
@@ -78,11 +95,18 @@ function validateStoryFormat(filePath) {
         issues.push(...storyIssues);
       });
 
-      // Check for duplicate IDs
+      // Check for duplicate IDs (O(n) using Set)
       const ids = data.stories.map(s => s.id).filter(Boolean);
-      const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
-      if (duplicates.length > 0) {
-        issues.push(`Duplicate story IDs: ${duplicates.join(', ')}`);
+      const seen = new Set();
+      const duplicates = new Set();
+      for (const id of ids) {
+        if (seen.has(id)) {
+          duplicates.add(id);
+        }
+        seen.add(id);
+      }
+      if (duplicates.size > 0) {
+        issues.push(`Duplicate story IDs: ${[...duplicates].join(', ')}`);
       }
     }
 
@@ -132,10 +156,10 @@ function validateSingleStory(story, index) {
   if (!story.id) {
     issues.push(`Story at ${storyRef}: missing 'id' field`);
   } else {
-    // ID format validation (US-XXXX or EP-XXXX)
-    if (!/^(US|EP|TECH|BUG)-\d{4}$/.test(story.id)) {
+    // ID format validation using centralized validator (supports 4-5 digit IDs)
+    if (!getValidateNames().isValidTicketId(story.id)) {
       issues.push(
-        `Story ${storyRef}: ID should match pattern US-XXXX, EP-XXXX, TECH-XXXX, or BUG-XXXX`
+        `Story ${storyRef}: ID should match pattern US-XXXX, EP-XXXX, TECH-XXXX, or BUG-XXXX (4-5 digits)`
       );
     }
   }
@@ -146,8 +170,7 @@ function validateSingleStory(story, index) {
 
   // Status validation (using canonical values from story-state-machine.js)
   // Also accept legacy formats for backward compatibility
-  const legacyStatuses = ['pending', 'in-progress', 'in-review'];
-  const allAcceptedStatuses = [...VALID_STATUSES, ...legacyStatuses];
+  const allAcceptedStatuses = [...VALID_STATUSES, ...LEGACY_STATUSES];
   if (story.status && !allAcceptedStatuses.includes(story.status)) {
     issues.push(
       `Story ${storyRef}: invalid status "${story.status}". Valid: ${VALID_STATUSES.join(', ')}`
@@ -188,8 +211,8 @@ function validateSingleStory(story, index) {
 
   // Epic reference validation
   if (story.epic_id) {
-    if (!/^EP-\d{4}$/.test(story.epic_id)) {
-      issues.push(`Story ${storyRef}: epic_id should match pattern EP-XXXX`);
+    if (!getValidateNames().isValidEpicId(story.epic_id)) {
+      issues.push(`Story ${storyRef}: epic_id should match pattern EP-XXXX (4-5 digits)`);
     }
   }
 

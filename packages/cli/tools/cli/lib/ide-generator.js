@@ -258,6 +258,7 @@ function generateAgentForIde(content, agentName, targetIde, options = {}) {
  * @private
  */
 function formatAgentForCodex(content, agentName, description) {
+  if (!agentName) return content || '';
   const yaml = require('../../../lib/yaml-utils').yaml;
 
   const bodyContent = stripFrontmatter(content);
@@ -289,6 +290,7 @@ ${codexHeader}${bodyContent}`;
  * @private
  */
 function formatAgentForWindsurf(content, agentName, description) {
+  if (!agentName) return content || '';
   const yaml = require('../../../lib/yaml-utils').yaml;
 
   const bodyContent = stripFrontmatter(content);
@@ -320,6 +322,7 @@ ${windsurfHeader}${bodyContent}`;
  * @private
  */
 function formatAgentForCursor(content, agentName, description) {
+  if (!agentName) return content || '';
   const yaml = require('../../../lib/yaml-utils').yaml;
 
   // Extract frontmatter from source

@@ -112,7 +112,6 @@ async function handleSelfUpdate(command, options) {
   if (versionInfo.needed) {
     const exitCode = performSelfUpdate(command, options, versionInfo);
     process.exit(exitCode);
-    return true; // Never reached, but for type safety
   }
 
   return false;
@@ -130,7 +129,6 @@ function selfUpdateMiddleware(command) {
     if (versionInfo.needed) {
       const exitCode = performSelfUpdate(command, ctx.options, versionInfo);
       process.exit(exitCode);
-      return; // Never reached
     }
 
     // Store version info in context for later use

@@ -26,7 +26,7 @@ class LRUCache {
    */
   constructor(options = {}) {
     this.maxSize = options.maxSize || 100;
-    this.ttlMs = options.ttlMs || 30000;
+    this.ttlMs = options.ttlMs > 0 ? options.ttlMs : 30000;
     this.cache = new Map();
     this.stats = {
       hits: 0,

@@ -82,20 +82,7 @@ function generateTaskId() {
   return `task-${timestamp}-${random}`;
 }
 
-/**
- * Find project root by looking for .agileflow directory
- * @returns {string} Project root path or current working directory
- */
-function findProjectRoot() {
-  let dir = process.cwd();
-  while (dir !== '/' && dir !== path.parse(dir).root) {
-    if (fs.existsSync(path.join(dir, '.agileflow'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
-  }
-  return process.cwd();
-}
+const { findProjectRoot } = require('./damage-control-utils');
 
 /**
  * Atomic file write using temp file + rename

@@ -171,9 +171,7 @@ describe('Channel Security', () => {
     it('detects Discord bot tokens', () => {
       const discordPattern = /\b[MN][A-Za-z\d]{23,}\.[A-Za-z\d_-]{6}\.[A-Za-z\d_-]{27,}/;
       expect(
-        discordPattern.test(
-          'test0discord0fake0token0placeholder.ABCdef.test0fake0token0placeholder0000'
-        )
+        discordPattern.test('Mtest0discord0fake0token00.ABCdef.test0fake0token0placeholder0000')
       ).toBe(true);
       expect(discordPattern.test('normal text')).toBe(false);
     });

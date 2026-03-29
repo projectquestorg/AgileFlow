@@ -23,20 +23,7 @@ const { executeCommandSync } = require('../../lib/process-executor');
 const KILL_GRACE_PERIOD_MS = 5000; // Wait before SIGKILL
 const MAX_PROCESSES_TO_KILL = 5; // Safety limit
 
-/**
- * Check if a PID is alive using signal 0
- * @param {number} pid - Process ID
- * @returns {boolean}
- */
-function isPidAlive(pid) {
-  if (!pid || typeof pid !== 'number') return false;
-  try {
-    process.kill(pid, 0); // Signal 0 = test without killing
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+const { _isPidAlive: isPidAlive } = require('./file-lock');
 
 /**
  * Parse /proc cmdline format (null-separated args)
@@ -300,7 +287,7 @@ function findClaudeProcesses() {
       });
       if (lsofResult.data) {
         const cwdLine = lsofResult.data.split('\n').find(l => l.includes('cwd'));
-        cwd = cwdLine ? cwdLine.split(/\s+/).pop().trim() : null;
+        cwd = cwdLine ? cwdLine.split(/\s+/).pop()?.trim() || null : null;
       }
 
       processes.push({

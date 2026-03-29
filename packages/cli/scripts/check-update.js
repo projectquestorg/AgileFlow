@@ -172,8 +172,8 @@ async function fetchLatestVersion() {
 // Compare semantic versions: returns -1 if a < b, 0 if equal, 1 if a > b
 function compareVersions(a, b) {
   if (!a || !b) return 0;
-  const partsA = a.split('.').map(Number);
-  const partsB = b.split('.').map(Number);
+  const partsA = a.replace(/-.*$/, '').split('.').map(Number);
+  const partsB = b.replace(/-.*$/, '').split('.').map(Number);
   for (let i = 0; i < 3; i++) {
     const numA = partsA[i] || 0;
     const numB = partsB[i] || 0;
@@ -245,6 +245,9 @@ async function main() {
       } else {
         console.log(`Marked version ${version} as seen`);
       }
+    } else {
+      console.error('Error: --mark-seen requires a version argument (e.g., --mark-seen 3.4.0)');
+      process.exitCode = 1;
     }
     return;
   }

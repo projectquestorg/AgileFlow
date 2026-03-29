@@ -42,8 +42,8 @@ function safeTimestampForPath(date = new Date()) {
  * @returns {number} -1 if v1 < v2, 0 if equal, 1 if v1 > v2
  */
 function compareVersions(v1, v2) {
-  const parts1 = v1.replace(/^v/, '').split('.').map(Number);
-  const parts2 = v2.replace(/^v/, '').split('.').map(Number);
+  const parts1 = v1.replace(/^v/, '').replace(/-.*$/, '').split('.').map(Number);
+  const parts2 = v2.replace(/^v/, '').replace(/-.*$/, '').split('.').map(Number);
 
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const p1 = parts1[i] || 0;

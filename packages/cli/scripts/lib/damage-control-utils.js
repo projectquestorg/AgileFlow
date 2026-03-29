@@ -60,6 +60,9 @@ function findProjectRoot() {
     if (fs.existsSync(path.join(dir, '.agileflow'))) {
       return dir;
     }
+    if (fs.existsSync(path.join(dir, 'docs', '09-agents'))) {
+      return dir;
+    }
     dir = path.dirname(dir);
   }
   return process.cwd();

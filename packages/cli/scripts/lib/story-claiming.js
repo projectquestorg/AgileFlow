@@ -77,22 +77,7 @@ function isTeamSessionActive(rootDir) {
   return !!(state.active_team && state.active_team.status === 'running');
 }
 
-/**
- * Check if a PID is alive.
- * Uses signal 0 which checks process existence without sending a signal.
- *
- * @param {number} pid - Process ID to check
- * @returns {boolean} True if PID is alive
- */
-function isPidAlive(pid) {
-  if (!pid || typeof pid !== 'number') return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+const { _isPidAlive: isPidAlive } = require('./file-lock');
 
 /**
  * Get the current session info from session-manager registry.
