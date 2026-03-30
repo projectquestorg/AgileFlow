@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-03-30
+
+### Added
+- Workspace orchestration, flow integrity audit, and quality scorecard
+
+## [3.5.0] - 2026-03-30
+
+### Added
+- Workspace orchestration, flow integrity audit, and quality scorecard
+
 ## [3.4.3] - 2026-03-07
 
 ### Added
