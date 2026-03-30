@@ -616,7 +616,7 @@ const FEATURE_DETECTORS = {
     if (doneCount < 5) return null;
     return recommend('metrics', {
       priority: 'low',
-      trigger: `${doneCount} completed stories - metrics dashboard available`,
+      trigger: `${doneCount} completed stories - metrics available`,
       action: 'offer',
       phase: 'post-impl',
     });
@@ -745,12 +745,12 @@ const FEATURE_DETECTORS = {
     const { story } = signals;
 
     if (!story || !story.id) {
-      // Pre-story: suggest dashboard/status
+      // Pre-story: suggest status
       return recommend('workspace', {
         priority: 'medium',
         trigger: `Workspace with ${projects.length} projects${activeSessionCount > 0 ? `, ${activeSessionCount} session(s)` : ''}`,
         action: 'offer',
-        command: '/agileflow:workspace:dashboard',
+        command: '/agileflow:workspace:status',
         phase: 'pre-story',
       });
     }

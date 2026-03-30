@@ -8,12 +8,6 @@ import { ScrollArea, ScrollBar } from "@/registry/new-york-v4/ui/scroll-area"
 
 const examples = [
   {
-    name: "Dashboard",
-    href: "/examples/dashboard",
-    code: "https://github.com/projectquestorg/AgileFlow/tree/main/apps/docs/app/(app)/examples/dashboard",
-    hidden: false,
-  },
-  {
     name: "Tasks",
     href: "/examples/tasks",
     code: "https://github.com/projectquestorg/AgileFlow/tree/main/apps/docs/app/(app)/examples/tasks",

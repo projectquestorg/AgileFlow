@@ -15,6 +15,7 @@ compact_context:
     - "PLAN FILE CONTEXT: Handled automatically by babysit-clear-restore.js SessionStart hook - no manual plan file editing needed"
     - "STORY CLAIMING: claim after selection, release after completion, check others before suggesting"
     - "LOGIC AUDIT: ALWAYS suggest '🔍 Run logic audit' after ANY implementation (plan or direct) - it's a standard post-impl step, not optional"
+    - "FLOW AUDIT: ALWAYS include '/agileflow:code:flows' as a verification step in plans. After implementation, suggest 'Run flow audit' to confirm user journeys work end-to-end. Traces UI→API→DB→response chains."
     - "PROACTIVE FEATURES: Impact analysis before plan mode (3+ files). Council for arch decisions. Code review for 5+ source files. Multi-expert for 10+ files. ADR for arch decisions. Research proactively for unfamiliar patterns. Docs sync when API/interface/exports change."
     - "OBTAIN-CONTEXT: NEVER pipe obtain-context.js through head/tail/truncation - run it bare, it has built-in smart output limits"
     - "STRICT MODE: When STRICT=true, enforce gates - hide commit option until tests pass, auto-trigger code review for 5+ files, remove skip options"
@@ -115,6 +116,7 @@ Track gate state:
 ⬜ tests_passed    → Run /agileflow:verify
 ⬜ review_done     → Auto-triggered at 5+ files
 ⬜ logic_audit     → Optional (advisory)
+⬜ flow_audit      → Optional (advisory) - /agileflow:code:flows
 ```
 
 ### Strict + TDD Mode (`STRICT=true TDD=true`)
@@ -168,6 +170,7 @@ Track verification state:
 ⬜ ac_verified     → Run ac-test-matcher + manual check
 ⬜ review_done     → Auto-triggered at 5+ files
 ⬜ logic_audit     → Optional (advisory)
+⬜ flow_audit      → Optional (advisory) - /agileflow:code:flows on modified paths
 ```
 
 ---
@@ -254,8 +257,9 @@ User parameters override smart detection (`MODE=once` overrides loop, `VISUAL=fa
 | After plan approval | "Start implementing now" |
 | After code written | "Run tests (Recommended)" + logic audit option |
 | After tests pass | "Verify AC (Recommended)" if VERIFY>=recommend, else "🔍 Run logic audit (Recommended)" or "Commit" |
-| After AC verified | "🔍 Run logic audit (Recommended)" or "Commit" |
-| After logic audit | "Commit: '[type]: [summary]' (Recommended)" |
+| After AC verified | "🔍 Run logic audit (Recommended)" or "Run flow audit" or "Commit" |
+| After logic audit | "Run flow audit (Recommended)" or "Commit: '[type]: [summary]'" |
+| After flow audit | "Commit: '[type]: [summary]' (Recommended)" |
 | After error | "Try [specific alternative]" |
 
 **BAD:** `[{"label": "Continue", "description": "Keep going"}]`
@@ -323,6 +327,7 @@ Don't wait for smart-detect. Auto-trigger based on these rules:
 | 5+ source files modified | Spawn `code-reviewer` agent |
 | API/exports/interfaces changed | `/agileflow:docs` to sync documentation |
 | 10+ files or 300+ lines changed | `/agileflow:multi-expert` review |
+| Implementation touches user-facing flows | `/agileflow:code:flows` to verify journeys work end-to-end |
 | User asks "right approach?" | Convene council (don't answer yourself) |
 | Ambiguous technical question | Deploy multi-expert (not single analysis) |
 
@@ -347,7 +352,7 @@ Don't wait for smart-detect. Auto-trigger based on these rules:
 10. Verify tests pass
 
 **Phase 4: Review & Completion**
-11. Offer via AskUserQuestion: tests, AC verification (VERIFY mode), logic audit, code review (5+ files), docs sync (API changes), multi-expert (10+ files), ADR (if arch decision)
+11. Offer via AskUserQuestion: tests, AC verification (VERIFY mode), logic audit, flow audit (`/agileflow:code:flows`), code review (5+ files), docs sync (API changes), multi-expert (10+ files), ADR (if arch decision)
 12. STRICT/VERIFY gate check: hide commit until gates pass (tests + AC at require/block level)
 13. Update status.json (including ac_status), release story claim: `node .agileflow/scripts/lib/story-claiming.js release <id>`
 
@@ -399,6 +404,36 @@ After tests pass (audit not yet run), suggest as (Recommended):
 ```
 
 When selected: run `/agileflow:code:logic <modified-files> DEPTH=quick`, review findings, offer to fix P0/P1.
+
+---
+
+### FLOW AUDIT
+
+**ALWAYS include in plans as a verification step.** After implementation, suggest running flow audit to confirm user journeys work end-to-end (UI handler → API call → backend logic → DB → response).
+
+**When to suggest:**
+- After implementation of any feature touching user-facing flows (forms, navigation, auth, CRUD operations)
+- In plans: always add a "Verify flows" step after the implementation steps
+- After logic audit completes (as next verification option)
+
+After logic audit (or tests pass if logic audit skipped):
+```json
+[
+  {"label": "🔄 Run flow audit on modified paths (Recommended)", "description": "Traces user journeys end-to-end — catches broken wiring, missing error handling, dead navigation"},
+  {"label": "Commit: 'feat: add session tracking'", "description": "All tests + logic audit pass, skip flow audit"},
+  {"label": "Continue to US-0044", "description": "EP-0018 is 85% done"}
+]
+```
+
+When selected: run `/agileflow:code:flows <target-path> DEPTH=quick`, review per-journey verdicts, offer to fix BROKEN/DEGRADED findings.
+
+**In plans:** Every plan for non-trivial features MUST include a verification step:
+```
+Step N: Verify flow integrity
+  - Run /agileflow:code:flows on modified paths
+  - Confirm user journeys (signup, checkout, etc.) work end-to-end
+  - Fix any BROKEN or DEGRADED findings before commit
+```
 
 ---
 
@@ -529,9 +564,22 @@ Common: Database → API → UI → Tests
 
 1. **Enter** - Call `EnterPlanMode`
 2. **Explore** - Glob, Grep, Read (3-5 files: patterns, dependencies, conventions)
-3. **Design** - Write plan: steps, files, decisions, testing approach
+3. **Design** - Write plan: steps, files, decisions, testing approach, **flow verification step**
 4. **Approve** - Call `ExitPlanMode` (babysit rules auto-restored after context clear)
 5. **Execute** - Implement immediately after approval
+
+### Plan Template (non-trivial features)
+
+Every plan for non-trivial features MUST include a flow verification step:
+```
+Step 1-N: Implementation steps...
+Step N+1: Run tests
+Step N+2: Verify flow integrity
+  - Run /agileflow:code:flows on modified paths
+  - Confirm user journeys work end-to-end
+  - Fix any BROKEN or DEGRADED findings
+Step N+3: Commit
+```
 
 ### Example
 

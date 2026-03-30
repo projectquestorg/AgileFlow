@@ -7,7 +7,7 @@
  *
  * Usage:
  *   node scripts/spawn-parallel.js spawn --count 4
- *   node scripts/spawn-parallel.js spawn --branches "auth,dashboard,api"
+ *   node scripts/spawn-parallel.js spawn --branches "auth,payments,api"
  *   node scripts/spawn-parallel.js spawn --from-epic EP-0025
  *   node scripts/spawn-parallel.js list
  *   node scripts/spawn-parallel.js kill-all
@@ -885,7 +885,7 @@ ${c.cyan}EXAMPLES:${c.reset}
   node scripts/spawn-parallel.js spawn --count 4
 
   ${dim('# Create sessions for specific features')}
-  node scripts/spawn-parallel.js spawn --branches "auth,dashboard,api"
+  node scripts/spawn-parallel.js spawn --branches "auth,payments,api"
 
   ${dim('# Create sessions from epic stories')}
   node scripts/spawn-parallel.js spawn --from-epic EP-0025

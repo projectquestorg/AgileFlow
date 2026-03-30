@@ -1031,65 +1031,6 @@ export const Index: Record<string, Record<string, any>> = {
       categories: undefined,
       meta: undefined,
     },
-    "dashboard-01": {
-      name: "dashboard-01",
-      title: "undefined",
-      description: "A dashboard with sidebar, charts and data table.",
-      type: "registry:block",
-      registryDependencies: ["sidebar","breadcrumb","separator","label","chart","card","select","tabs","table","toggle-group","badge","button","checkbox","dropdown-menu","drawer","input","avatar","sheet","sonner"],
-      files: [{
-        path: "registry/new-york-v4/blocks/dashboard-01/page.tsx",
-        type: "registry:page",
-        target: "app/dashboard/page.tsx"
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/data.json",
-        type: "registry:file",
-        target: "app/dashboard/data.json"
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/app-sidebar.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/chart-area-interactive.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/data-table.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/nav-documents.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/nav-main.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/nav-secondary.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/nav-user.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/section-cards.tsx",
-        type: "registry:component",
-        target: ""
-      },{
-        path: "registry/new-york-v4/blocks/dashboard-01/components/site-header.tsx",
-        type: "registry:component",
-        target: ""
-      }],
-      component: React.lazy(async () => {
-        const mod = await import("@/registry/new-york-v4/blocks/dashboard-01/page.tsx")
-        const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
-        return { default: mod.default || mod[exportName] }
-      }),
-      categories: ["dashboard"],
-      meta: {"iframeHeight":"1000px"},
-    },
     "sidebar-01": {
       name: "sidebar-01",
       title: "undefined",
@@ -1118,7 +1059,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-02": {
@@ -1149,7 +1090,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-03": {
@@ -1172,7 +1113,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-04": {
@@ -1195,7 +1136,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-05": {
@@ -1222,7 +1163,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-06": {
@@ -1253,7 +1194,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-07": {
@@ -1292,7 +1233,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-08": {
@@ -1331,7 +1272,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-09": {
@@ -1358,7 +1299,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-10": {
@@ -1405,7 +1346,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-11": {
@@ -1428,7 +1369,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-12": {
@@ -1463,7 +1404,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-13": {
@@ -1486,7 +1427,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-14": {
@@ -1509,7 +1450,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-15": {
@@ -1568,7 +1509,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "sidebar-16": {
@@ -1615,7 +1556,7 @@ export const Index: Record<string, Record<string, any>> = {
         const exportName = Object.keys(mod).find(key => typeof mod[key] === 'function' || typeof mod[key] === 'object') || item.name
         return { default: mod.default || mod[exportName] }
       }),
-      categories: ["sidebar","dashboard"],
+      categories: ["sidebar"],
       meta: undefined,
     },
     "login-01": {

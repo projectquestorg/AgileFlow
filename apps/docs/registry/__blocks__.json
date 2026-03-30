@@ -1,10 +1,5 @@
 [
   {
-    "name": "dashboard-01",
-    "description": "A dashboard with sidebar, charts and data table.",
-    "categories": ["dashboard"]
-  },
-  {
     "name": "sidebar-01",
     "description": "A simple sidebar with navigation grouped by section.",
     "categories": ["sidebar", "dashboard"]

@@ -3,7 +3,7 @@
  *
  * Provides a lightweight Express-based REST API to expose AgileFlow's
  * existing state (sessions, status, tasks, bus messages) for external
- * GUI integrations like dashboards.
+ * external integrations.
  *
  * Design Principles:
  * - READ-ONLY: API exposes state but never mutates it (writes go through CLI)

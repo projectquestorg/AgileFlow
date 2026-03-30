@@ -135,7 +135,7 @@ function showHelp() {
   console.log('  npx agileflow session end 2');
   console.log('  npx agileflow session end 2 --merge --strategy squash');
   console.log('  npx agileflow session spawn --count 4');
-  console.log('  npx agileflow session spawn --branches auth,dashboard,api');
+  console.log('  npx agileflow session spawn --branches auth,payments,api');
   console.log('  npx agileflow session spawn --from-epic EP-0001');
   console.log('  npx agileflow session spawn --count 2 --no-tmux');
   console.log('  npx agileflow session status 2');

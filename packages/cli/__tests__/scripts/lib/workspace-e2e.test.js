@@ -7,8 +7,7 @@
  * 3. Register sessions via WorkspaceRegistry
  * 4. Send and read events via WorkspaceBus
  * 5. Run quality gates via WorkspaceQualityGates
- * 6. Aggregate data via WorkspaceDashboard
- * 7. Track tasks via WorkspaceTaskRegistry with cross-project deps
+ * 6. Track tasks via WorkspaceTaskRegistry with cross-project deps
  */
 
 const fs = require('fs');
@@ -26,7 +25,6 @@ const {
 const { WorkspaceRegistry } = require('../../../scripts/lib/workspace-registry');
 const { WorkspaceBus } = require('../../../scripts/lib/workspace-bus');
 const { WorkspaceQualityGates } = require('../../../scripts/lib/workspace-quality-gates');
-const { WorkspaceDashboard } = require('../../../scripts/lib/workspace-dashboard');
 const {
   WorkspaceTaskRegistry,
   resetWorkspaceTaskRegistry,
@@ -80,7 +78,7 @@ afterEach(() => {
 });
 
 describe('Workspace E2E: Full Lifecycle', () => {
-  test('complete workspace lifecycle from init to dashboard', () => {
+  test('complete workspace lifecycle from init to tasks', () => {
     // === Step 1: Create projects ===
     createWorkspace([
       {
@@ -176,20 +174,7 @@ describe('Workspace E2E: Full Lifecycle', () => {
     const fullResults = gates.runAll();
     expect(fullResults.summary.passed).toBeGreaterThan(0);
 
-    // === Step 6: Dashboard ===
-    const dashboard = new WorkspaceDashboard(tmpDir);
-    const dashData = dashboard.getData();
-    expect(dashData.ok).toBe(true);
-    expect(dashData.data.summary.totalProjects).toBe(2);
-    expect(dashData.data.summary.totalStories).toBe(3);
-    expect(dashData.data.summary.inProgressStories).toBe(2);
-
-    const cliOutput = dashboard.formatForCLI();
-    expect(cliOutput).toContain('frontend/');
-    expect(cliOutput).toContain('backend/');
-    expect(cliOutput).toContain('Workspace:');
-
-    // === Step 7: Cross-project tasks ===
+    // === Step 6: Cross-project tasks ===
     const taskReg = new WorkspaceTaskRegistry(tmpDir);
 
     const dbTask = taskReg.create({

@@ -136,6 +136,9 @@ process.stdin.on('end', () => {
       console.log(
         '5. ALWAYS suggest logic audit post-implementation (after tests pass, make Recommended)'
       );
+      console.log(
+        '6. ALWAYS include flow audit in plans and post-implementation (/agileflow:code:flows to verify user journeys end-to-end)'
+      );
     }
   } catch (e) {
     // Parse failed or other error - fail open

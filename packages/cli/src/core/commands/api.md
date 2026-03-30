@@ -21,7 +21,7 @@ Start, stop, or check status of the AgileFlow REST API server.
 
 ## Overview
 
-The API server exposes AgileFlow state (sessions, status, tasks, bus messages) via REST endpoints for external GUI integrations like dashboards.
+The API server exposes AgileFlow state (sessions, status, tasks, bus messages) via REST endpoints for external integrations.
 
 **Key Principles**:
 - **READ-ONLY**: API exposes state but never mutates it (writes go through CLI)
