@@ -53,21 +53,23 @@ export function Pricing() {
   );
 
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [copied, setCopied] = useState(false);
 
   async function submitLead() {
-    if (!email.trim()) return;
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('error'); return; }
     setStatus('sending');
-    trackEvent('lead_submit', { email_domain: email.split('@')[1] ?? '' });
+    void trackEvent('lead_submit', { email_domain: email.split('@')[1] ?? '' });
     try {
-      await fetch('/api/lead', {
+      const res = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, source: 'pricing' }),
       });
+      if (!res.ok) throw new Error('Request failed');
       setStatus('sent');
     } catch {
-      setStatus('idle');
+      setStatus('error');
     }
   }
 
@@ -135,13 +137,15 @@ export function Pricing() {
                       onClick={async () => {
                         try {
                           await navigator.clipboard.writeText(tier.cta.value ?? '');
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 1400);
                         } catch {
                           // ignore
                         }
                       }}
                       className="w-full"
                     >
-                      {tier.cta.label}
+                      {copied ? 'Copied' : tier.cta.label}
                     </Button>
                   ) : tier.cta.action === 'link' ? (
                     <Button
@@ -179,7 +183,12 @@ export function Pricing() {
                       >
                         {status === 'sent' ? 'Added' : status === 'sending' ? 'Sending…' : tier.cta.label}
                       </Button>
-                      <div className="text-xs text-muted">No spam. Just release notes.</div>
+                      {status === 'error' && (
+                        <div className="text-xs text-red-600">Please enter a valid email address.</div>
+                      )}
+                      {status !== 'error' && (
+                        <div className="text-xs text-muted">No spam. Just release notes.</div>
+                      )}
                     </div>
                   )}
                 </div>

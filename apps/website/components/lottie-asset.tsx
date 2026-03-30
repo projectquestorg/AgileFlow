@@ -46,6 +46,7 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
   const [inView, setInView] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -72,7 +73,7 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
       .then((json) => {
         if (!cancelled) setAnimationData(json);
       })
-      .catch(() => {});
+      .catch(() => { if (!cancelled) setLoadFailed(true); });
     return () => {
       cancelled = true;
     };
@@ -112,6 +113,8 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
           rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
           style={{ width: '100%', height: '100%' }}
         />
+      ) : loadFailed ? (
+        <div className="flex h-full w-full items-center justify-center rounded-[10px] border border-[var(--border-subtle)] bg-white/40 text-xs text-[var(--text-muted)]"><span className="sr-only">Animation failed to load</span></div>
       ) : (
         <div className="h-full w-full rounded-[10px] border border-[var(--border-subtle)] bg-white/40" />
       )}

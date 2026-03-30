@@ -50,7 +50,7 @@ export function Button({
         target={target}
         rel={rel}
         onClick={() => {
-          if (eventName) trackEvent(eventName, eventProps);
+          if (eventName) void trackEvent(eventName, eventProps);
           onClick?.();
         }}
       >
@@ -63,7 +63,7 @@ export function Button({
     <button
       type="button"
       onClick={() => {
-        if (eventName) trackEvent(eventName, eventProps);
+        if (eventName) void trackEvent(eventName, eventProps);
         onClick?.();
       }}
       className={cls}
