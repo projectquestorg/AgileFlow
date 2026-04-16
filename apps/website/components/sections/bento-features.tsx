@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Modal } from "@/components/ui/Modal";
-import { LottieAsset } from "@/components/lottie-asset";
+import { CardMotionScene } from "@/components/ui/card-motion-scene";
 import type { LandingContent } from "@/lib/landing-content";
 import { cn } from "@/lib/cn";
 import { MOTION } from "@/lib/motion";
@@ -31,7 +31,6 @@ export function BentoFeatures({
 }) {
   const prefersReducedMotion = useReducedMotion();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const active = useMemo(
     () => tiles.tiles.find((t) => t.id === activeId) ?? null,
@@ -77,12 +76,6 @@ export function BentoFeatures({
                         }
                   }
                   transition={MOTION.hover}
-                  onHoverStart={() => setHoveredId(tile.id)}
-                  onHoverEnd={() =>
-                    setHoveredId((current) =>
-                      current === tile.id ? null : current,
-                    )
-                  }
                   onClick={() => {
                     setActiveId(tile.id);
                     track("feature_modal_open", {
@@ -123,23 +116,14 @@ export function BentoFeatures({
                     </div>
                   </div>
 
-                  <motion.div
+                  <div
                     className="mt-5 rounded-card border border-[var(--border-subtle)] bg-white/60 p-2 sm:p-3 [transform:translateZ(18px)]"
-                    animate={{ y: [0, -10, 0], scale: [1, 1.025, 1] }}
-                    transition={{
-                      duration: tile.size === "large" ? 3.8 : 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: idx * 0.12,
-                    }}
                   >
-                    <LottieAsset
+                    <CardMotionScene
                       src={tile.lottieSrc}
                       className={cn("w-full", lottieHeight(tile.size))}
-                      speed={hoveredId === tile.id ? 1.2 : 1}
-                      posterFrame={30}
                     />
-                  </motion.div>
+                  </div>
                 </motion.button>
               </Reveal>
             ))}

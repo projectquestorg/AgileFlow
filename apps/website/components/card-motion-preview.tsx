@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LottieAsset } from "@/components/lottie-asset";
+import { CardMotionScene } from "@/components/ui/card-motion-scene";
 
 const steps = [
   {
@@ -128,7 +128,10 @@ export function CardMotionPreview() {
                     delay: idx * 0.2,
                   }}
                 >
-                  <LottieAsset src={step.src} className="h-[220px] w-full" />
+                  <CardMotionScene
+                    src={step.src}
+                    className="h-[220px] w-full"
+                  />
                 </motion.div>
               </div>
             </motion.div>
@@ -172,7 +175,7 @@ export function CardMotionPreview() {
                     delay: idx * 0.12,
                   }}
                 >
-                  <LottieAsset
+                  <CardMotionScene
                     src={feature.src}
                     className={`w-full ${animHeight(feature.size as "large" | "small")}`}
                   />

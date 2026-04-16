@@ -1,6 +1,6 @@
 import { Container } from '@/components/ui/container';
 import { Reveal } from '@/components/ui/reveal';
-import { LottieAsset } from '@/components/lottie-asset';
+import { DocsTreeSceneSvg } from '@/components/ui/animated-svg-scenes';
 import { LINKS } from '@/lib/links';
 import type { LandingContent } from '@/lib/landing-content';
 
@@ -57,7 +57,9 @@ export function DocsPreview({ content }: { content: LandingContent['docsPreview'
                 </div>
                 <div className="p-5 sm:p-6">
                   <div className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-4">
-                    <LottieAsset src={content.lottieSrc} className="h-[320px] w-full" posterFrame={20} />
+                    <div className="h-[320px] w-full">
+                      <DocsTreeSceneSvg />
+                    </div>
                   </div>
                   <p className="mt-4 text-xs leading-5 text-[var(--text-muted)]">
                     docs/09-agents/ is designed to stay auditable.

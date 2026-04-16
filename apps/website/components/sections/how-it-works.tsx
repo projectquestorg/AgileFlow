@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
-import { LottieAsset } from "@/components/lottie-asset";
+import { CardMotionScene } from "@/components/ui/card-motion-scene";
 import type { LandingContent } from "@/lib/landing-content";
 
 export function HowItWorks({ steps }: { steps: LandingContent["howItWorks"] }) {
@@ -52,21 +52,12 @@ export function HowItWorks({ steps }: { steps: LandingContent["howItWorks"] }) {
                     </p>
                   </div>
                   <div className="p-5">
-                    <motion.div
-                      className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-3 [transform:translateZ(18px)]"
-                      animate={{ y: [0, -8, 0], scale: [1, 1.02, 1] }}
-                      transition={{
-                        duration: 3.2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: idx * 0.2,
-                      }}
-                    >
-                      <LottieAsset
+                    <div className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-3 [transform:translateZ(18px)]">
+                      <CardMotionScene
                         src={step.lottieSrc}
                         className="h-[200px] w-full"
                       />
-                    </motion.div>
+                    </div>
                   </div>
                 </motion.div>
               </Reveal>
