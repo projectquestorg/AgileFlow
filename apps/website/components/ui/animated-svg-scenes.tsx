@@ -1,1019 +1,840 @@
-import type { CSSProperties } from "react";
+// Premium ambient SVG scenes. Pure SVG + CSS keyframes.
+// Design principles:
+//   - Monochrome slate base with a single #e8683a accent
+//   - One focal animation per scene (slow, cubic easing)
+//   - Grid / gradient texture for depth, soft glow filters
+//   - Top-fade mask (~55% height) so the composition melts into card text
 
-// Shared tokens
 const C = {
   accent: "#e8683a",
   accentDeep: "#c15f3c",
-  accentSoft: "#f5a584",
+  accentSoft: "rgba(232,104,58,0.22)",
   ink: "#0b0d10",
-  text: "#4b5563",
-  muted: "#6b7280",
-  border: "#e5e7eb",
-  subtle: "#f1f5f9",
-  codeBg: "#0f172a",
-  codeLine: "#1e293b",
-  surface: "#ffffff",
-  surfaceSoft: "#f8fafc",
-  green: "#22c55e",
-  red: "#ef4444",
-  amber: "#f59e0b",
-  blue: "#3b82f6",
-  purple: "#8b5cf6",
+  slate900: "#0f172a",
+  slate700: "#334155",
+  slate500: "#64748b",
+  slate400: "#94a3b8",
+  slate300: "#cbd5e1",
+  slate200: "#e2e8f0",
+  slate100: "#f1f5f9",
+  slate50: "#f8fafc",
+  white: "#ffffff",
 };
+
+const sharedDefs = (id: string) => `
+<defs>
+  <pattern id="${id}-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+    <path d="M16 0H0V16" fill="none" stroke="${C.slate200}" stroke-width="0.5" opacity="0.6"/>
+  </pattern>
+  <pattern id="${id}-dots" width="14" height="14" patternUnits="userSpaceOnUse">
+    <circle cx="1" cy="1" r="0.9" fill="${C.slate300}" opacity="0.65"/>
+  </pattern>
+  <radialGradient id="${id}-glow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="${C.accent}" stop-opacity="0.35"/>
+    <stop offset="60%" stop-color="${C.accent}" stop-opacity="0.08"/>
+    <stop offset="100%" stop-color="${C.accent}" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="${id}-fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+    <stop offset="35%" stop-color="#ffffff" stop-opacity="0.6"/>
+    <stop offset="65%" stop-color="#ffffff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="${id}-accent" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="${C.accentDeep}"/>
+    <stop offset="100%" stop-color="${C.accent}"/>
+  </linearGradient>
+  <filter id="${id}-soft" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur stdDeviation="3"/>
+  </filter>
+  <filter id="${id}-glow2" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+    <feMerge>
+      <feMergeNode in="coloredBlur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+`;
 
 const baseRules = `
 .svg-root { width: 100%; height: 100%; display: block; }
-.svg-float { animation: svgFloat 5.2s ease-in-out infinite; transform-origin: center; }
-@keyframes svgFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
 @media (prefers-reduced-motion: reduce) {
   .svg-root * { animation: none !important; transition: none !important; }
 }
 `;
 
-function SvgShell({
+type SceneProps = { id?: string };
+
+// Shared scene wrapper with embedded defs + style tag
+function Scene({
+  id,
   viewBox,
-  children,
   styles,
-  className,
   ariaLabel,
+  children,
+  fade = true,
 }: {
+  id: string;
   viewBox: string;
-  children: React.ReactNode;
   styles: string;
-  className?: string;
   ariaLabel: string;
+  children: React.ReactNode;
+  fade?: boolean;
 }) {
   return (
     <svg
       viewBox={viewBox}
       role="img"
       aria-label={ariaLabel}
-      preserveAspectRatio="xMidYMid meet"
-      className={"svg-root " + (className ?? "")}
+      preserveAspectRatio="xMidYMid slice"
+      className="svg-root"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <style>{baseRules + styles}</style>
+      <style dangerouslySetInnerHTML={{ __html: baseRules + styles }} />
+      <g dangerouslySetInnerHTML={{ __html: sharedDefs(id) }} />
       {children}
+      {fade && (
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="50%"
+          fill={`url(#${id}-fade)`}
+          pointerEvents="none"
+        />
+      )}
     </svg>
   );
 }
 
-// ---------- TERMINAL ----------
+// =============== 1. TERMINAL ===============
 export function TerminalSceneSvg() {
+  const id = "sc-term";
   const css = `
-.t-window { filter: drop-shadow(0 20px 30px rgba(15,23,42,0.18)); }
-.t-prompt { font: 600 13px ui-monospace, Menlo, monospace; fill: ${C.accent}; }
-.t-text   { font: 400 11px ui-monospace, Menlo, monospace; fill: #cbd5e1; }
-.t-mask { animation: tType 4.8s steps(24, end) infinite; }
-@keyframes tType {
-  0%   { width: 0; }
-  35%  { width: 210px; }
-  70%  { width: 210px; }
-  100% { width: 0; }
+.term-panel { filter: drop-shadow(0 20px 35px rgba(15,23,42,0.25)); }
+.term-caret { animation: termBlink 1.2s steps(1,end) infinite; }
+@keyframes termBlink { 0%,55% { opacity: 1 } 55.01%,100% { opacity: 0 } }
+.term-line { stroke-dasharray: 320; stroke-dashoffset: 320; animation: termLine 5.5s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes termLine {
+  0%,8%   { stroke-dashoffset: 320; }
+  45%     { stroke-dashoffset: 0; }
+  85%,100%{ stroke-dashoffset: 0; }
 }
-.t-bar-fill { transform-origin: 0 50%; animation: tFill 4.8s cubic-bezier(.22,.61,.36,1) infinite; }
-@keyframes tFill {
-  0%   { transform: scaleX(0); }
-  45%  { transform: scaleX(1); }
-  95%  { transform: scaleX(1); }
-  100% { transform: scaleX(0); }
-}
-.t-check { stroke-dasharray: 14; stroke-dashoffset: 14; animation: tCheck 4.8s ease-in-out infinite; }
-@keyframes tCheck {
-  0%,50% { stroke-dashoffset: 14; opacity: 0; }
-  60%    { stroke-dashoffset: 0;  opacity: 1; }
-  95%    { opacity: 1; }
-  100%   { opacity: 0; stroke-dashoffset: 14; }
-}
-.t-folder { opacity: 0; transform: translateY(6px); animation: tFolder 4.8s ease-out infinite; }
-.t-folder.f1 { animation-delay: 1.7s; }
-.t-folder.f2 { animation-delay: 2.0s; }
-.t-folder.f3 { animation-delay: 2.3s; }
-@keyframes tFolder {
-  0%,30%  { opacity: 0; transform: translateY(6px); }
-  40%,85% { opacity: 1; transform: translateY(0); }
-  100%    { opacity: 0; transform: translateY(-2px); }
-}
-.t-cursor { animation: tBlink 1s steps(1, end) infinite; }
-@keyframes tBlink { 0%,50% { opacity:1 } 50.01%,100% { opacity: 0 } }
-.t-dot-r { fill: #ff5f57 } .t-dot-y { fill: #febc2e } .t-dot-g { fill: #28c840 }
+.term-glow { animation: termGlow 5.5s ease-in-out infinite; transform-origin: 240px 160px; }
+@keyframes termGlow { 0%,100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.08); } }
+.term-dot { animation: termPulse 2.2s ease-in-out infinite; transform-origin: center; }
+.term-dot.d2 { animation-delay: 0.25s; } .term-dot.d3 { animation-delay: 0.5s; }
+@keyframes termPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
 `;
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Terminal boot animation">
-      <g className="t-window">
-        <rect x="12" y="12" width="336" height="216" rx="14" fill="#0b0d10" />
-        <rect x="12" y="12" width="336" height="26" rx="14" fill="#1e293b" />
-        <rect x="12" y="30" width="336" height="8" fill="#1e293b" />
-      </g>
-      <circle className="t-dot-r" cx="28" cy="25" r="4" />
-      <circle className="t-dot-y" cx="44" cy="25" r="4" />
-      <circle className="t-dot-g" cx="60" cy="25" r="4" />
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Terminal">
+      {/* Background */}
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-dots)`} opacity="0.5" />
+      {/* Accent glow orb */}
+      <ellipse cx="240" cy="160" rx="220" ry="90" fill={`url(#${id}-glow)`} className="term-glow" />
 
-      {/* Command line */}
-      <text x="28" y="64" className="t-prompt">$ npx agileflow setup</text>
-      <clipPath id="t-mask-clip">
-        <rect x="28" y="50" width="0" height="18" className="t-mask">
-          <animate attributeName="width" values="0;210;210;0" dur="4.8s" repeatCount="indefinite" />
-        </rect>
-      </clipPath>
+      {/* Terminal panel */}
+      <g className="term-panel" transform="translate(60,70)">
+        <rect width="360" height="170" rx="14" fill={C.slate900} />
+        <rect width="360" height="28" rx="14" fill="#1a2332" />
+        <rect y="24" width="360" height="4" fill="#1a2332" />
+        {/* Window dots */}
+        <circle cx="18" cy="14" r="4" fill="#ff5f57" />
+        <circle cx="34" cy="14" r="4" fill="#febc2e" />
+        <circle cx="50" cy="14" r="4" fill="#28c840" />
 
-      {/* Progress bar */}
-      <rect x="28" y="78" width="304" height="6" rx="3" fill="#1e293b" />
-      <rect x="28" y="78" width="304" height="6" rx="3" fill="url(#t-grad)" className="t-bar-fill" />
-      <defs>
-        <linearGradient id="t-grad" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor={C.accentDeep} />
-          <stop offset="100%" stopColor={C.accent} />
-        </linearGradient>
-      </defs>
+        {/* Prompt line */}
+        <line
+          className="term-line"
+          x1="28"
+          y1="70"
+          x2="330"
+          y2="70"
+          stroke={C.accent}
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <text x="28" y="58" fontFamily="ui-monospace, Menlo, monospace" fontSize="11" fill={C.slate400} opacity="0.9">
+          ~/project
+        </text>
 
-      {/* Checkmark */}
-      <g transform="translate(320,72)">
-        <circle r="10" fill={C.green} opacity="0.15" />
-        <path d="M-4 0 L-1 3 L5 -3" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="t-check" />
-      </g>
+        {/* Command text */}
+        <text x="28" y="110" fontFamily="ui-monospace, Menlo, monospace" fontSize="14" fontWeight="600" fill={C.slate300}>
+          <tspan fill={C.accent}>$</tspan> npx agileflow setup
+        </text>
 
-      {/* Folders */}
-      <g transform="translate(28,110)">
-        <g className="t-folder f1">
-          <rect x="0" y="0" width="14" height="10" rx="2" fill={C.accent} />
-          <rect x="2" y="-2" width="6" height="3" fill={C.accent} />
-          <text x="20" y="9" className="t-text">docs/</text>
-        </g>
-        <g className="t-folder f2" transform="translate(0,22)">
-          <rect x="0" y="0" width="14" height="10" rx="2" fill={C.blue} />
-          <rect x="2" y="-2" width="6" height="3" fill={C.blue} />
-          <text x="20" y="9" className="t-text">.claude/commands/</text>
-        </g>
-        <g className="t-folder f3" transform="translate(0,44)">
-          <rect x="0" y="0" width="14" height="10" rx="2" fill={C.green} />
-          <rect x="2" y="-2" width="6" height="3" fill={C.green} />
-          <text x="20" y="9" className="t-text">scripts/</text>
+        {/* Caret */}
+        <rect className="term-caret" x="230" y="98" width="2.5" height="16" fill={C.accent} />
+
+        {/* Loading dots */}
+        <g transform="translate(28,140)" fill={C.accent}>
+          <circle className="term-dot"    cx="0"  cy="0" r="2.5" />
+          <circle className="term-dot d2" cx="10" cy="0" r="2.5" />
+          <circle className="term-dot d3" cx="20" cy="0" r="2.5" />
         </g>
       </g>
-
-      {/* Cursor */}
-      <rect x="28" y="192" width="8" height="14" fill={C.accent} className="t-cursor" />
-      <text x="42" y="204" className="t-text" opacity="0.65">ready.</text>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- FOLDERS ----------
+// =============== 2. FOLDERS ===============
 export function FoldersSceneSvg() {
+  const id = "sc-fold";
   const css = `
-.f-tree   { stroke: ${C.border}; stroke-width: 1.5; fill: none; }
-.f-label  { font: 500 11px ui-monospace, Menlo, monospace; fill: ${C.text}; }
-.f-card   { fill: ${C.surface}; stroke: ${C.border}; stroke-width: 1; }
-.f-root   { fill: ${C.accent}; }
-.f-dot    { r: 3.2; }
-.f-dot-1  { fill: ${C.blue}; }
-.f-dot-2  { fill: ${C.purple}; }
-.f-dot-3  { fill: ${C.accent}; }
-.f-dot-4  { fill: ${C.green}; }
-.f-dot-5  { fill: ${C.accentDeep}; }
-.f-pulse  { animation: fPulse 2.8s ease-in-out infinite; transform-origin: center; }
-.f-pulse.p2 { animation-delay: 0.35s; }
-.f-pulse.p3 { animation-delay: 0.7s; }
-.f-pulse.p4 { animation-delay: 1.05s; }
-.f-pulse.p5 { animation-delay: 1.4s; }
-@keyframes fPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.45); } }
-.f-lens   { animation: fLens 6s ease-in-out infinite; }
-@keyframes fLens {
-  0%,20%   { transform: translate(140px, 52px); }
-  40%,60%  { transform: translate(140px, 100px); }
-  80%,100% { transform: translate(140px, 148px); }
+.fold-card { filter: drop-shadow(0 8px 18px rgba(15,23,42,0.08)); }
+.fold-stack { animation: foldDrift 8s ease-in-out infinite; transform-origin: center; }
+@keyframes foldDrift {
+  0%,100% { transform: translateX(0) translateY(0); }
+  50%     { transform: translateX(-6px) translateY(-3px); }
 }
-.f-glow { animation: fLens 6s ease-in-out infinite; }
-.f-tooltip { animation: fTip 6s ease-in-out infinite; }
-@keyframes fTip {
-  0%,20%   { transform: translate(180px, 48px); }
-  40%,60%  { transform: translate(180px, 96px); }
-  80%,100% { transform: translate(180px, 144px); }
-}
+.fold-accent { animation: foldGlow 4s ease-in-out infinite; }
+@keyframes foldGlow { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+.fold-dot { animation: foldPulse 3s ease-in-out infinite; transform-origin: center; }
+.fold-dot.d2 { animation-delay: 0.4s } .fold-dot.d3 { animation-delay: 0.8s } .fold-dot.d4 { animation-delay: 1.2s }
+@keyframes foldPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 `;
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Folder tree animation">
-      <rect x="12" y="12" width="336" height="216" rx="16" fill={C.surface} stroke={C.border} />
-      {/* Root folder */}
-      <g transform="translate(48,30)">
-        <rect className="f-card" width="88" height="28" rx="8" />
-        <rect className="f-root" x="8" y="8" width="14" height="12" rx="2" />
-        <rect className="f-root" x="10" y="5" width="6" height="4" />
-        <text x="30" y="19" className="f-label">docs/</text>
-      </g>
-      {/* Tree connectors */}
-      <path className="f-tree" d="M60 66 L60 196 M60 80 L96 80 M60 112 L96 112 M60 144 L96 144 M60 176 L96 176" />
-      {/* Child rows */}
-      {[
-        { y: 72, label: "00-meta/", dot: 1 },
-        { y: 104, label: "03-decisions/", dot: 2 },
-        { y: 136, label: "05-epics/", dot: 3 },
-        { y: 168, label: "06-stories/", dot: 4 },
-        { y: 200, label: "09-agents/", dot: 5 },
-      ].map((row, i) => (
-        <g key={row.label} transform={`translate(96,${row.y - 12})`}>
-          <rect className="f-card" width="160" height="22" rx="6" />
-          <circle className={`f-pulse p${i + 1}`} cx="14" cy="11" r="3.2" fill={
-            row.dot === 1 ? C.blue : row.dot === 2 ? C.purple : row.dot === 3 ? C.accent : row.dot === 4 ? C.green : C.accentDeep
-          } />
-          <text x="28" y="15" className="f-label">{row.label}</text>
-        </g>
-      ))}
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Folder stack">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-grid)`} />
 
-      {/* Magnifying glass spotlight */}
-      <g className="f-glow" opacity="0.35">
-        <circle r="30" fill={C.accent} opacity="0.18" />
+      {/* Accent glow behind */}
+      <ellipse cx="260" cy="180" rx="180" ry="80" fill={`url(#${id}-glow)`} className="fold-accent" />
+
+      <g className="fold-stack" transform="translate(0,30)">
+        {/* Stack of layered folder cards */}
+        {[
+          { y: 180, w: 300, o: 0.35, accent: false },
+          { y: 150, w: 320, o: 0.55, accent: false },
+          { y: 120, w: 340, o: 0.78, accent: false },
+          { y: 90,  w: 360, o: 1,    accent: true },
+        ].map((row, i) => (
+          <g key={i} className="fold-card" transform={`translate(${(480 - row.w) / 2},${row.y})`}>
+            <rect
+              width={row.w}
+              height="36"
+              rx="10"
+              fill={C.white}
+              stroke={row.accent ? C.accent : C.slate200}
+              strokeWidth={row.accent ? "1.5" : "1"}
+              opacity={row.o}
+            />
+            {/* Folder mini-icon on left */}
+            <rect x="16" y="12" width="16" height="12" rx="2" fill={row.accent ? C.accent : C.slate300} opacity={row.o} />
+            <rect x="18" y="9" width="8" height="4" rx="1" fill={row.accent ? C.accent : C.slate300} opacity={row.o} />
+            {/* Text line */}
+            <rect x="44" y="15" width={row.w * 0.35} height="6" rx="3" fill={row.accent ? C.slate700 : C.slate300} opacity={row.o} />
+            <rect x="44" y="25" width={row.w * 0.22} height="4" rx="2" fill={C.slate300} opacity={row.o * 0.7} />
+            {/* Right chevron */}
+            {row.accent && (
+              <g transform={`translate(${row.w - 28},18)`} className="fold-dot">
+                <circle r="4" fill={C.accent} />
+                <circle r="8" fill="none" stroke={C.accent} strokeWidth="1" opacity="0.35" />
+              </g>
+            )}
+          </g>
+        ))}
       </g>
-      <g className="f-lens">
-        <circle r="12" fill="none" stroke={C.accent} strokeWidth="2" />
-        <circle r="8" fill={C.accent} opacity="0.08" />
-        <line x1="9" y1="9" x2="18" y2="18" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" />
-      </g>
-      {/* Floating tooltip */}
-      <g className="f-tooltip">
-        <rect x="0" y="-8" width="84" height="16" rx="8" fill={C.ink} />
-        <text x="10" y="3" font-family="ui-monospace, Menlo, monospace" font-size="9" fill="#fff">/agileflow:help</text>
-      </g>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- FLOW ----------
+// =============== 3. FLOW ===============
 export function FlowSceneSvg() {
+  const id = "sc-flow";
   const css = `
-.fl-arrow { stroke: ${C.border}; stroke-width: 1.8; fill: none; stroke-dasharray: 4 4; animation: flDash 1.6s linear infinite; }
-@keyframes flDash { to { stroke-dashoffset: -16; } }
-.fl-pill  { stroke: ${C.border}; stroke-width: 1; }
-.fl-pill-text { font: 600 11px ui-sans-serif, system-ui; fill: #fff; }
-.fl-particle { animation: flPath 5.5s cubic-bezier(.6,.05,.4,.95) infinite; }
-@keyframes flPath {
-  0%   { transform: translate(56px, 120px); opacity: 0; }
-  5%   { opacity: 1; }
-  24%  { transform: translate(132px, 120px); }
-  50%  { transform: translate(208px, 120px); }
-  76%  { transform: translate(284px, 120px); }
-  95%  { opacity: 1; }
-  100% { transform: translate(304px, 120px); opacity: 0; }
+.flow-trail { stroke-dasharray: 400; stroke-dashoffset: 400; animation: flowTrail 5.5s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes flowTrail {
+  0%,5%   { stroke-dashoffset: 400; }
+  55%,75% { stroke-dashoffset: 0; }
+  100%    { stroke-dashoffset: -400; }
 }
-.fl-trail { animation: flTrail 5.5s cubic-bezier(.6,.05,.4,.95) infinite; }
-.fl-trail.t1 { animation-delay: -0.1s; }
-.fl-trail.t2 { animation-delay: -0.2s; }
-.fl-trail.t3 { animation-delay: -0.3s; }
-@keyframes flTrail {
-  0%,5%   { opacity: 0; }
-  10%,95% { opacity: 0.28; }
-  100%    { opacity: 0; }
+.flow-node { animation: flowNode 5.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.flow-node.n2 { animation-delay: 0.4s } .flow-node.n3 { animation-delay: 0.8s } .flow-node.n4 { animation-delay: 1.2s }
+@keyframes flowNode {
+  0%,12%   { transform: scale(1); opacity: 0.6; }
+  20%,30%  { transform: scale(1.2); opacity: 1; }
+  40%,100% { transform: scale(1); opacity: 1; }
 }
-.fl-bob { animation: flBob 5.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.fl-bob.b2 { animation-delay: 1.38s; }
-.fl-bob.b3 { animation-delay: 2.75s; }
-.fl-bob.b4 { animation-delay: 4.12s; }
-@keyframes flBob {
-  0%,10%,100% { transform: translateY(0) scale(1); }
-  14%,20%     { transform: translateY(-4px) scale(1.06); }
-  30%         { transform: translateY(0) scale(1); }
+.flow-ball { animation: flowBall 5.5s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes flowBall {
+  0%,5%    { transform: translateX(0); opacity: 0; }
+  10%      { opacity: 1; }
+  90%      { transform: translateX(320px); opacity: 1; }
+  100%     { transform: translateX(320px); opacity: 0; }
 }
+.flow-ball-glow { filter: blur(6px); opacity: 0.6; }
 `;
-  const pills = [
-    { label: "Plan", x: 28, fill: C.blue, cls: "b1" },
-    { label: "Record", x: 104, fill: C.green, cls: "b2" },
-    { label: "Verify", x: 180, fill: C.accent, cls: "b3" },
-    { label: "Ship", x: 256, fill: C.ink, cls: "b4" },
+  const nodes = [
+    { x: 80,  accent: true,  cls: "" },
+    { x: 180, accent: false, cls: "n2" },
+    { x: 280, accent: false, cls: "n3" },
+    { x: 380, accent: false, cls: "n4" },
   ];
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Workflow pipeline animation">
-      <rect x="12" y="12" width="336" height="216" rx="16" fill={C.surface} stroke={C.border} />
-      {/* Header */}
-      <text x="28" y="46" font-family="ui-sans-serif, system-ui" font-size="11" fontWeight="500" fill={C.muted}>
-        plan → record → verify → ship
-      </text>
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Workflow">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-dots)`} opacity="0.4" />
 
-      {/* Arrows */}
-      {pills.slice(0, -1).map((p, i) => (
-        <path
-          key={i}
-          className="fl-arrow"
-          d={`M${p.x + 56} 120 L${pills[i + 1].x} 120`}
-          markerEnd="url(#fl-head)"
-        />
-      ))}
-      <defs>
-        <marker id="fl-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" fill={C.border} />
-        </marker>
-      </defs>
+      {/* Base line */}
+      <line x1="60" y1="160" x2="420" y2="160" stroke={C.slate200} strokeWidth="2" strokeLinecap="round" />
+      {/* Active trail */}
+      <line
+        className="flow-trail"
+        x1="60"
+        y1="160"
+        x2="420"
+        y2="160"
+        stroke={`url(#${id}-accent)`}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
 
-      {/* Pills */}
-      {pills.map((p) => (
-        <g key={p.label} className={`fl-bob ${p.cls}`}>
-          <rect className="fl-pill" x={p.x} y="102" width="56" height="36" rx="18" fill={p.fill} />
-          <text className="fl-pill-text" x={p.x + 28} y="124" textAnchor="middle">
-            {p.label}
-          </text>
+      {/* Nodes */}
+      {nodes.map((n, i) => (
+        <g key={i} transform={`translate(${n.x},160)`}>
+          <circle
+            className={`flow-node ${n.cls}`}
+            r="8"
+            fill={C.white}
+            stroke={n.accent ? C.accent : C.slate400}
+            strokeWidth="2"
+          />
+          {n.accent && <circle r="4" fill={C.accent} />}
         </g>
       ))}
 
-      {/* Trail + particle */}
-      <circle className="fl-trail t3" r="3" fill={C.accent} opacity="0.12" />
-      <circle className="fl-trail t2" r="3.5" fill={C.accent} opacity="0.2" />
-      <circle className="fl-trail t1" r="4" fill={C.accent} opacity="0.3" />
-      <circle className="fl-particle" r="5" fill={C.accent}>
-        <animate attributeName="opacity" values="0;1;1;0" dur="5.5s" repeatCount="indefinite" />
-      </circle>
-    </SvgShell>
+      {/* Traveling ball */}
+      <g className="flow-ball" transform="translate(60,160)">
+        <circle className="flow-ball-glow" r="10" fill={C.accent} />
+        <circle r="5" fill={C.accent} />
+      </g>
+
+      {/* Abstract labels above nodes - minimal bars */}
+      {nodes.map((n, i) => (
+        <rect
+          key={`lbl${i}`}
+          x={n.x - 16}
+          y="130"
+          width="32"
+          height="3"
+          rx="1.5"
+          fill={n.accent ? C.slate700 : C.slate300}
+        />
+      ))}
+    </Scene>
   );
 }
 
-// ---------- KANBAN ----------
+// =============== 4. KANBAN ===============
 export function KanbanSceneSvg() {
+  const id = "sc-kan";
   const css = `
-.k-col   { fill: ${C.surfaceSoft}; stroke: ${C.border}; stroke-width: 1; }
-.k-col-h { font: 600 10px ui-sans-serif, system-ui; fill: ${C.text}; letter-spacing: 0.04em; }
-.k-card  { fill: ${C.surface}; stroke: ${C.border}; stroke-width: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.04)); }
-.k-bar   { fill: ${C.border}; }
-.k-pulse { animation: kDot 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-.k-pulse.p2 { animation-delay: 0.4s; }
-.k-pulse.p3 { animation-delay: 0.8s; }
-.k-pulse.p4 { animation-delay: 1.2s; }
-.k-pulse.p5 { animation-delay: 1.6s; }
-@keyframes kDot { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
-.k-drag { animation: kDrag 5.6s cubic-bezier(.44,.1,.25,1) infinite; }
-@keyframes kDrag {
-  0%, 10%  { transform: translate(0, 0) rotate(0); opacity: 1; }
-  30%, 45% { transform: translate(110px, -6px) rotate(-3deg); opacity: 1; }
-  55%      { transform: translate(220px, -2px) rotate(-3deg); opacity: 1; }
-  70%, 100%{ transform: translate(220px, 0) rotate(0); opacity: 1; }
+.kan-col { filter: drop-shadow(0 4px 12px rgba(15,23,42,0.04)); }
+.kan-card-move { animation: kanMove 6.5s cubic-bezier(.44,.1,.25,1) infinite; }
+@keyframes kanMove {
+  0%, 8%   { transform: translate(0, 0) rotate(0); }
+  32%, 42% { transform: translate(122px, -6px) rotate(-2deg); }
+  50%, 60% { transform: translate(244px, -3px) rotate(-2deg); }
+  72%,100% { transform: translate(244px, 0) rotate(0); }
 }
-.k-check { stroke-dasharray: 10; stroke-dashoffset: 10; animation: kCheck 5.6s ease-in-out infinite; animation-delay: 0.6s; }
-@keyframes kCheck {
-  0%,60%     { stroke-dashoffset: 10; opacity: 0; }
-  75%,100%   { stroke-dashoffset: 0;  opacity: 1; }
+.kan-card-glow { filter: blur(10px); opacity: 0; animation: kanGlow 6.5s ease-in-out infinite; }
+@keyframes kanGlow {
+  0%,10%   { opacity: 0; }
+  30%,65%  { opacity: 0.5; }
+  80%,100% { opacity: 0; }
 }
+.kan-check { stroke-dasharray: 12; stroke-dashoffset: 12; animation: kanCheck 6.5s ease-in-out infinite; animation-delay: 1s; }
+@keyframes kanCheck {
+  0%,72%   { stroke-dashoffset: 12; opacity: 0; }
+  85%,100% { stroke-dashoffset: 0;  opacity: 1; }
+}
+.kan-drift { animation: kanDrift 6.5s ease-in-out infinite; }
+.kan-drift.d2 { animation-delay: 0.4s } .kan-drift.d3 { animation-delay: 0.8s }
+@keyframes kanDrift { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 `;
 
-  const Card = ({
-    x,
-    y,
-    dotColor,
-    barW,
-    extra,
-  }: {
-    x: number;
-    y: number;
-    dotColor: string;
-    barW: number;
-    extra?: string;
-  }) => (
-    <g transform={`translate(${x},${y})`} className={extra ?? ""}>
-      <rect className="k-card" width="96" height="28" rx="6" />
-      <circle cx="12" cy="14" r="3.5" fill={dotColor} />
-      <rect x="22" y="12" width={barW} height="4" rx="2" className="k-bar" />
+  const Card = ({ x, y, accent, className }: { x: number; y: number; accent?: boolean; className?: string }) => (
+    <g transform={`translate(${x},${y})`} className={className}>
+      <rect width="96" height="28" rx="6" fill={C.white} stroke={accent ? C.accent : C.slate200} />
+      <rect x="10" y="10" width="4" height="8" rx="2" fill={accent ? C.accent : C.slate400} />
+      <rect x="20" y="10" width="58" height="3" rx="1.5" fill={accent ? C.slate700 : C.slate300} />
+      <rect x="20" y="17" width="40" height="3" rx="1.5" fill={C.slate300} />
     </g>
   );
 
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Kanban board animation">
-      <rect x="12" y="12" width="336" height="216" rx="16" fill={C.surface} stroke={C.border} />
-      {/* Columns */}
-      <g transform="translate(24,30)">
-        <rect className="k-col" width="104" height="196" rx="10" />
-        <text className="k-col-h" x="12" y="18">READY</text>
-      </g>
-      <g transform="translate(134,30)">
-        <rect className="k-col" width="104" height="196" rx="10" />
-        <text className="k-col-h" x="12" y="18">IN PROGRESS</text>
-      </g>
-      <g transform="translate(244,30)">
-        <rect className="k-col" width="104" height="196" rx="10" />
-        <text className="k-col-h" x="12" y="18">DONE</text>
-      </g>
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Kanban">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-grid)`} />
+      <ellipse cx="240" cy="200" rx="200" ry="70" fill={`url(#${id}-glow)`} />
 
-      {/* Ready cards */}
-      <g transform="translate(28,64)">
-        <Card x={0} y={0} dotColor={C.amber} barW={54} />
-        <Card x={0} y={40} dotColor={C.green} barW={64} />
-      </g>
+      {/* Columns (minimal) */}
+      {[0, 1, 2].map((i) => (
+        <g key={i} className="kan-col" transform={`translate(${54 + i * 128},60)`}>
+          <rect width="120" height="180" rx="12" fill={C.white} fillOpacity="0.6" stroke={C.slate200} />
+          <rect x="12" y="14" width="32" height="4" rx="2" fill={C.slate400} opacity="0.7" />
+          <rect x="12" y="24" width="18" height="3" rx="1.5" fill={C.slate300} />
+        </g>
+      ))}
 
-      {/* In-progress cards */}
-      <g transform="translate(138,64)">
-        <Card x={0} y={0} dotColor={C.red} barW={62} />
-        <Card x={0} y={80} dotColor={C.amber} barW={50} />
+      {/* Static cards in Ready */}
+      <g transform="translate(66,102)">
+        <Card className="kan-drift" x={0} y={0} />
+        <Card className="kan-drift d2" x={0} y={40} />
       </g>
-
-      {/* Done cards with checkmarks */}
-      <g transform="translate(248,64)">
+      {/* Static cards in In Progress */}
+      <g transform="translate(194,102)">
+        <Card className="kan-drift d3" x={0} y={80} />
+      </g>
+      {/* Static cards in Done */}
+      <g transform="translate(322,102)">
         <g>
-          <Card x={0} y={0} dotColor={C.green} barW={56} />
+          <Card x={0} y={0} />
           <path
-            className="k-check"
-            d="M74 14 l3 3 l7 -7"
+            className="kan-check"
+            d="M76 14 l3 3 l7 -7"
             fill="none"
-            stroke={C.green}
+            stroke={C.accent}
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </g>
-        <g>
-          <Card x={0} y={40} dotColor={C.green} barW={62} />
-          <path
-            className="k-check"
-            d="M74 54 l3 3 l7 -7"
-            fill="none"
-            stroke={C.green}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ animationDelay: "1s" }}
-          />
+      </g>
+
+      {/* Moving accent card */}
+      <g transform="translate(66,142)">
+        <g className="kan-card-glow">
+          <rect width="96" height="28" rx="6" fill={C.accent} />
         </g>
       </g>
-
-      {/* Dragging card */}
-      <g className="k-drag" transform="translate(28,144)">
-        <Card x={0} y={0} dotColor={C.accent} barW={58} />
+      <g transform="translate(66,142)" className="kan-card-move">
+        <rect width="96" height="28" rx="6" fill={C.white} stroke={C.accent} strokeWidth="1.5" filter="drop-shadow(0 6px 16px rgba(232,104,58,0.22))" />
+        <rect x="10" y="10" width="4" height="8" rx="2" fill={C.accent} />
+        <rect x="20" y="10" width="58" height="3" rx="1.5" fill={C.slate700} />
+        <rect x="20" y="17" width="40" height="3" rx="1.5" fill={C.accent} opacity="0.5" />
       </g>
-
-      {/* Column count badges */}
-      <g>
-        <circle cx="112" cy="34" r="7" fill={C.border} />
-        <text x="112" y="38" font-family="ui-sans-serif" font-size="9" fontWeight="600" fill={C.text} textAnchor="middle">3</text>
-        <circle cx="222" cy="34" r="7" fill={C.accent} opacity="0.2" />
-        <text x="222" y="38" font-family="ui-sans-serif" font-size="9" fontWeight="600" fill={C.accentDeep} textAnchor="middle">2</text>
-        <circle cx="332" cy="34" r="7" fill={C.green} opacity="0.2" />
-        <text x="332" y="38" font-family="ui-sans-serif" font-size="9" fontWeight="600" fill={C.green} textAnchor="middle">2</text>
-      </g>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- DECISION ----------
+// =============== 5. DECISION ===============
 export function DecisionSceneSvg() {
+  const id = "sc-dec";
   const css = `
-.d-doc   { fill: ${C.surface}; stroke: ${C.border}; stroke-width: 1; }
-.d-title { font: 600 11px ui-monospace, Menlo, monospace; fill: ${C.ink}; }
-.d-label { font: 500 10px ui-sans-serif, system-ui; fill: ${C.muted}; }
-.d-path-rej { stroke: ${C.border}; stroke-width: 1.5; fill: none; stroke-dasharray: 140; stroke-dashoffset: 140; animation: dDraw 4.8s ease-out infinite; }
-.d-path-rej.r2 { animation-delay: 0.3s; }
-.d-path-chosen { stroke: ${C.green}; stroke-width: 2.5; fill: none; stroke-dasharray: 140; stroke-dashoffset: 140; animation: dDraw 4.8s ease-out infinite; animation-delay: 0.55s; filter: drop-shadow(0 0 6px rgba(34,197,94,0.35)); }
-@keyframes dDraw {
-  0%,5%    { stroke-dashoffset: 140; opacity: 0; }
-  25%      { stroke-dashoffset: 0;   opacity: 1; }
-  95%      { stroke-dashoffset: 0;   opacity: 1; }
-  100%     { stroke-dashoffset: 0;   opacity: 0; }
+.dec-path { fill: none; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; animation: decDraw 6s cubic-bezier(.4,0,.2,1) infinite; }
+.dec-path.p1 { stroke: ${C.slate300}; stroke-width: 1.5; animation-delay: 0.1s; }
+.dec-path.p2 { stroke: url(#${id}-accent); stroke-width: 2.5; animation-delay: 0.25s; }
+.dec-path.p3 { stroke: ${C.slate300}; stroke-width: 1.5; animation-delay: 0.4s; }
+@keyframes decDraw {
+  0%,8%    { stroke-dashoffset: 220; }
+  45%,88%  { stroke-dashoffset: 0; }
+  100%     { stroke-dashoffset: -220; }
 }
-.d-stamp { animation: dStamp 4.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-@keyframes dStamp {
-  0%,40%  { transform: scale(0); opacity: 0; }
-  55%     { transform: scale(1.15); opacity: 1; }
-  65%     { transform: scale(0.95); opacity: 1; }
-  75%,92% { transform: scale(1); opacity: 1; }
-  100%    { transform: scale(1); opacity: 0; }
+.dec-center { animation: decPulse 4s ease-in-out infinite; transform-origin: center; }
+@keyframes decPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.dec-chosen { animation: decGlow 6s ease-in-out infinite; }
+@keyframes decGlow {
+  0%,30%   { opacity: 0; transform: scale(0.6); }
+  55%,85%  { opacity: 1; transform: scale(1); }
+  100%     { opacity: 0; transform: scale(0.8); }
 }
-.d-x { opacity: 0; animation: dX 4.8s ease-in-out infinite; }
-.d-x.x1 { animation-delay: 0.7s; }
-.d-x.x2 { animation-delay: 0.95s; }
-@keyframes dX {
-  0%,50%   { opacity: 0; }
-  70%,92%  { opacity: 1; }
-  100%     { opacity: 0; }
+.dec-end { animation: decEnd 6s ease-in-out infinite; }
+.dec-end.e1 { animation-delay: 0.3s; } .dec-end.e3 { animation-delay: 0.7s; }
+@keyframes decEnd {
+  0%,40%   { opacity: 0; transform: scale(0); }
+  55%,88%  { opacity: 0.55; transform: scale(1); }
+  100%     { opacity: 0; transform: scale(0.9); }
 }
 `;
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Decision record animation">
-      <rect x="12" y="12" width="336" height="216" rx="16" fill={C.surface} stroke={C.border} />
-      {/* ADR header */}
-      <g transform="translate(138,28)">
-        <rect className="d-doc" width="84" height="24" rx="6" />
-        <text x="42" y="16" className="d-title" textAnchor="middle">ADR-0042</text>
-      </g>
-      {/* Branch from single point */}
-      <path className="d-path-rej"    d="M180 56 Q 120 90 80 140" />
-      <path className="d-path-chosen" d="M180 56 Q 180 110 180 146" />
-      <path className="d-path-rej r2" d="M180 56 Q 240 90 280 140" />
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Decision branches">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-dots)`} opacity="0.35" />
+      <ellipse cx="240" cy="180" rx="180" ry="70" fill={`url(#${id}-glow)`} />
 
-      {/* Labels */}
-      <text x="76"  y="156" className="d-label" textAnchor="middle">Option A</text>
-      <text x="180" y="156" className="d-label" textAnchor="middle" fill={C.ink} fontWeight="600">Option B</text>
-      <text x="284" y="156" className="d-label" textAnchor="middle">Option C</text>
-
-      {/* Rejected endpoints */}
-      <g className="d-x x1">
-        <circle cx="80" cy="138" r="10" fill={C.surface} stroke={C.border} />
-        <path d="M76 134 l8 8 M84 134 l-8 8" stroke={C.muted} strokeWidth="1.5" strokeLinecap="round" />
-      </g>
-      <g className="d-x x2">
-        <circle cx="280" cy="138" r="10" fill={C.surface} stroke={C.border} />
-        <path d="M276 134 l8 8 M284 134 l-8 8" stroke={C.muted} strokeWidth="1.5" strokeLinecap="round" />
+      {/* Origin node */}
+      <g transform="translate(240,100)" className="dec-center">
+        <circle r="22" fill={C.white} stroke={C.slate300} />
+        <circle r="6" fill={C.slate700} />
       </g>
 
-      {/* Chosen stamp */}
-      <g className="d-stamp" transform="translate(180,178)">
-        <circle r="22" fill={C.green} opacity="0.12" />
-        <circle r="16" fill="none" stroke={C.green} strokeWidth="2" />
-        <text y="3" textAnchor="middle" font-family="ui-sans-serif" font-size="9" fontWeight="700" fill={C.green}>DECIDED</text>
+      {/* Diverging paths */}
+      <path className="dec-path p1" d="M226 112 Q 160 150 100 210" />
+      <path className="dec-path p2" d="M240 122 Q 240 170 240 220" />
+      <path className="dec-path p3" d="M254 112 Q 320 150 380 210" />
+
+      {/* Endpoints */}
+      <g transform="translate(100,210)" className="dec-end e1" style={{ transformOrigin: "100px 210px", transformBox: "fill-box" }}>
+        <circle r="10" fill={C.white} stroke={C.slate300} />
+        <circle r="3" fill={C.slate400} />
+      </g>
+      <g transform="translate(380,210)" className="dec-end e3" style={{ transformOrigin: "380px 210px", transformBox: "fill-box" }}>
+        <circle r="10" fill={C.white} stroke={C.slate300} />
+        <circle r="3" fill={C.slate400} />
       </g>
 
-      {/* Diff indicator */}
-      <g transform="translate(24,208)">
-        <rect width="80" height="18" rx="9" fill={C.surfaceSoft} stroke={C.border} />
-        <text x="12" y="12" font-family="ui-monospace" font-size="10" fontWeight="600" fill={C.green}>+12</text>
-        <text x="36" y="12" font-family="ui-monospace" font-size="10" fontWeight="600" fill={C.muted}>-0</text>
-        <path d="M60 6 v6 M60 12 l4 2 M60 12 l-4 2" stroke={C.muted} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      {/* Chosen endpoint - stamp */}
+      <g transform="translate(240,220)" className="dec-chosen" style={{ transformOrigin: "240px 220px", transformBox: "fill-box" }}>
+        <circle r="20" fill={C.accentSoft} filter={`url(#${id}-glow2)`} />
+        <circle r="14" fill={C.white} stroke={C.accent} strokeWidth="2" />
+        <path d="M-5 0 L-1 4 L6 -4" fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </g>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- DOCS (skyline) ----------
+// =============== 6. DOCS SKYLINE ===============
 export function DocsSceneSvg() {
+  const id = "sc-docs";
   const css = `
-.ds-block { transition: transform 400ms cubic-bezier(.22,.61,.36,1); transform-box: fill-box; transform-origin: 50% 100%; }
-.ds-block { animation: dsWave 6s ease-in-out infinite; }
-.ds-block.b1 { animation-delay: 0s; }
-.ds-block.b2 { animation-delay: 0.06s; }
-.ds-block.b3 { animation-delay: 0.12s; }
-.ds-block.b4 { animation-delay: 0.18s; }
-.ds-block.b5 { animation-delay: 0.24s; }
-.ds-block.b6 { animation-delay: 0.3s; }
-.ds-block.b7 { animation-delay: 0.36s; }
-.ds-block.b8 { animation-delay: 0.42s; }
-.ds-block.b9 { animation-delay: 0.48s; }
-.ds-block.b10 { animation-delay: 0.54s; }
-.ds-block.b11 { animation-delay: 0.6s; }
-@keyframes dsWave { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-.ds-dash { stroke: ${C.border}; stroke-dasharray: 2 4; stroke-width: 1; animation: dsMarch 2.4s linear infinite; fill: none; }
-@keyframes dsMarch { to { stroke-dashoffset: -16; } }
-.ds-git { animation: dsSpin 14s linear infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes dsSpin { to { transform: rotate(360deg); } }
-.ds-msg { font: 500 8px ui-monospace, Menlo, monospace; fill: ${C.muted}; }
+.ds-bar { transform-box: fill-box; transform-origin: 50% 100%; animation: dsWave 7s ease-in-out infinite; }
+${Array.from({ length: 12 }).map((_, i) => `.ds-bar.b${i + 1} { animation-delay: ${i * 0.08}s; }`).join("\n")}
+@keyframes dsWave { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
+.ds-accent-bar { animation: dsAccent 4.2s ease-in-out infinite; }
+@keyframes dsAccent { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
 `;
-
-  // Block heights for skyline effect
-  const blocks = [
-    { x: 22,  h: 34,  accent: false },
-    { x: 50,  h: 50,  accent: false },
-    { x: 78,  h: 64,  accent: false },
-    { x: 106, h: 82,  accent: true },  // epics
-    { x: 134, h: 74,  accent: false },
-    { x: 162, h: 96,  accent: false },
-    { x: 190, h: 66,  accent: false },
-    { x: 218, h: 54,  accent: false },
-    { x: 246, h: 88,  accent: true }, // agents
-    { x: 274, h: 60,  accent: false },
-    { x: 302, h: 40,  accent: false },
+  const bars = [
+    { h: 28 }, { h: 48 }, { h: 64 }, { h: 90 }, { h: 72 },
+    { h: 96, accent: true },
+    { h: 78 }, { h: 58 }, { h: 92 }, { h: 64 }, { h: 44 }, { h: 32 },
   ];
-
   return (
-    <SvgShell viewBox="0 0 360 240" styles={css} ariaLabel="Docs folder skyline">
-      <rect x="12" y="12" width="336" height="216" rx="16" fill={C.surface} stroke={C.border} />
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Docs structure">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-grid)`} />
 
-      {/* Ground line */}
-      <line x1="12" y1="196" x2="348" y2="196" stroke={C.border} strokeWidth="1" />
+      {/* Soft ground glow */}
+      <ellipse cx="240" cy="220" rx="200" ry="30" fill={`url(#${id}-glow)`} />
 
-      {/* Skyline blocks */}
-      {blocks.map((b, i) => {
-        const top = 196 - b.h;
-        const fill = b.accent ? C.accent : i % 3 === 0 ? "#94a3b8" : i % 3 === 1 ? "#cbd5e1" : "#e2e8f0";
-        const side = b.accent ? C.accentDeep : "#64748b";
+      {/* Bars */}
+      {bars.map((b, i) => {
+        const x = 60 + i * 30;
+        const y = 220 - b.h;
         return (
-          <g key={i} className={`ds-block b${i + 1}`}>
-            {/* Front face */}
-            <rect x={b.x} y={top} width="22" height={b.h} fill={fill} opacity={b.accent ? 0.9 : 0.85} />
-            {/* Top */}
-            <polygon
-              points={`${b.x},${top} ${b.x + 6},${top - 6} ${b.x + 28},${top - 6} ${b.x + 22},${top}`}
-              fill={fill}
+          <g key={i} className={`ds-bar b${i + 1}${b.accent ? " ds-accent-bar" : ""}`}>
+            <rect
+              x={x}
+              y={y}
+              width="22"
+              height={b.h}
+              rx="3"
+              fill={b.accent ? `url(#${id}-accent)` : C.white}
+              stroke={b.accent ? "none" : C.slate200}
+              strokeWidth="1"
             />
-            {/* Side */}
-            <polygon
-              points={`${b.x + 22},${top} ${b.x + 28},${top - 6} ${b.x + 28},${196 - 6} ${b.x + 22},196`}
-              fill={side}
-              opacity="0.7"
-            />
-            {/* Dashed connector */}
-            <line className="ds-dash" x1={b.x + 11} y1={top} x2={b.x + 11} y2="60" />
+            {/* Top accent strip */}
+            {!b.accent && <rect x={x} y={y} width="22" height="3" fill={C.slate300} />}
           </g>
         );
       })}
 
-      {/* Git icon */}
-      <g transform="translate(180,42)" className="ds-git">
-        <circle r="12" fill={C.surface} stroke={C.border} />
-        <circle r="3" cx="-5" cy="-3" fill={C.accent} />
-        <circle r="3" cx="5"  cy="-3" fill={C.accent} />
-        <circle r="3" cx="0"  cy="5"  fill={C.accent} />
-        <path d="M-5 -3 L0 5 L5 -3" stroke={C.accentDeep} strokeWidth="1.4" fill="none" strokeLinecap="round" />
-      </g>
-
-      {/* Commit message */}
-      <g transform="translate(212,38)">
-        <rect width="124" height="16" rx="8" fill={C.surfaceSoft} stroke={C.border} />
-        <text x="10" y="11" className="ds-msg">docs: add architecture</text>
-      </g>
-    </SvgShell>
+      {/* Baseline */}
+      <line x1="50" y1="220" x2="430" y2="220" stroke={C.slate300} strokeWidth="1" />
+    </Scene>
   );
 }
 
-// ---------- BUS ----------
+// =============== 7. BUS ===============
 export function BusSceneSvg() {
+  const id = "sc-bus";
   const css = `
-.b-bus    { stroke: url(#b-grad); stroke-width: 3; fill: none; filter: drop-shadow(0 0 6px rgba(232,104,58,0.35)); }
-.b-node   { fill: ${C.surface}; stroke: ${C.border}; stroke-width: 1; }
-.b-label  { font: 600 10px ui-sans-serif, system-ui; fill: ${C.text}; }
-.b-conn   { stroke: ${C.border}; stroke-width: 1; }
-.b-packet { animation: bPacket 2.4s ease-in-out infinite; }
-.b-packet.p1 { animation-delay: 0s; }
-.b-packet.p2 { animation-delay: 0.4s; }
-.b-packet.p3 { animation-delay: 0.8s; }
-.b-packet.p4 { animation-delay: 1.2s; }
-.b-packet.p5 { animation-delay: 1.6s; }
-@keyframes bPacket {
-  0%,100% { transform: translateY(var(--start,0)); opacity: 0; }
-  15%     { opacity: 1; }
-  50%     { transform: translateY(var(--mid,50%)); opacity: 1; }
-  85%     { opacity: 1; }
+.bus-line { filter: drop-shadow(0 0 8px rgba(232,104,58,0.35)); }
+.bus-node { animation: busNode 3.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.bus-node.n2 { animation-delay: 0.3s } .bus-node.n3 { animation-delay: 0.6s } .bus-node.n4 { animation-delay: 0.9s } .bus-node.n5 { animation-delay: 1.2s }
+@keyframes busNode { 0%,100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } }
+.bus-ring { animation: busRing 3.5s ease-out infinite; transform-origin: center; opacity: 0; }
+.bus-ring.r2 { animation-delay: 0.3s } .bus-ring.r3 { animation-delay: 0.6s } .bus-ring.r4 { animation-delay: 0.9s } .bus-ring.r5 { animation-delay: 1.2s }
+@keyframes busRing { 0% { transform: scale(0.6); opacity: 0.7; } 100% { transform: scale(2); opacity: 0; } }
+.bus-packet { animation: busPacket 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes busPacket {
+  0%   { transform: translateX(0); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { transform: translateX(360px); opacity: 1; }
+  100% { transform: translateX(360px); opacity: 0; }
 }
-.b-node-pulse { transform-box: fill-box; transform-origin: center; animation: bPulse 2.6s ease-in-out infinite; }
-.b-node-pulse.n2 { animation-delay: 0.4s; }
-.b-node-pulse.n3 { animation-delay: 0.8s; }
-.b-node-pulse.n4 { animation-delay: 1.2s; }
-.b-node-pulse.n5 { animation-delay: 1.6s; }
-@keyframes bPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.bus-packet-glow { filter: blur(8px); opacity: 0.5; }
 `;
-
-  const topAgents = [
-    { x: 54,  letter: "M" },
-    { x: 130, letter: "U" },
-    { x: 206, letter: "A" },
-  ];
-  const bottomAgents = [
-    { x: 92,  letter: "C" },
-    { x: 168, letter: "S" },
+  const nodes = [
+    { x: 60 },
+    { x: 150 },
+    { x: 240 },
+    { x: 330 },
+    { x: 420 },
   ];
   return (
-    <SvgShell viewBox="0 0 260 200" styles={css} ariaLabel="Message bus animation">
-      <defs>
-        <linearGradient id="b-grad" x1="0" x2="1">
-          <stop offset="0%" stopColor={C.accentDeep} />
-          <stop offset="100%" stopColor={C.accent} />
-        </linearGradient>
-      </defs>
-      <rect x="6" y="6" width="248" height="188" rx="14" fill={C.surface} stroke={C.border} />
-      {/* Bus */}
-      <line className="b-bus" x1="24" y1="100" x2="236" y2="100" strokeLinecap="round" />
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Message bus">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-dots)`} opacity="0.35" />
+      <ellipse cx="240" cy="160" rx="210" ry="70" fill={`url(#${id}-glow)`} />
 
-      {/* Top agents */}
-      {topAgents.map((a, i) => (
-        <g key={`t${i}`}>
-          <line className="b-conn" x1={a.x} y1="48" x2={a.x} y2="100" />
-          <g className={`b-node-pulse n${i + 1}`} style={{ transformOrigin: `${a.x}px 40px` }}>
-            <circle className="b-node" cx={a.x} cy="40" r="12" />
-            <text x={a.x} y="44" className="b-label" textAnchor="middle">{a.letter}</text>
-          </g>
-          <rect className={`b-packet p${i + 1}`} x={a.x - 4} y="54" width="8" height="4" rx="1" fill={C.accent} style={{ "--start": "0px", "--mid": "36px" } as CSSProperties} />
+      {/* Bus line */}
+      <line className="bus-line" x1="60" y1="160" x2="420" y2="160" stroke={`url(#${id}-accent)`} strokeWidth="3" strokeLinecap="round" />
+
+      {/* Nodes + rings */}
+      {nodes.map((n, i) => (
+        <g key={i} transform={`translate(${n.x},160)`}>
+          <circle className={`bus-ring ${i ? "r" + (i + 1) : ""}`} r="8" fill="none" stroke={C.accent} strokeWidth="1.5" />
+          <circle className={`bus-node ${i ? "n" + (i + 1) : ""}`} r="6" fill={C.white} stroke={C.accent} strokeWidth="2" />
+          <circle r="2.5" fill={C.accent} />
         </g>
       ))}
 
-      {/* Bottom agents */}
-      {bottomAgents.map((a, i) => (
-        <g key={`b${i}`}>
-          <line className="b-conn" x1={a.x} y1="100" x2={a.x} y2="152" />
-          <g className={`b-node-pulse n${i + 4}`} style={{ transformOrigin: `${a.x}px 160px` }}>
-            <circle className="b-node" cx={a.x} cy="160" r="12" />
-            <text x={a.x} y="164" className="b-label" textAnchor="middle">{a.letter}</text>
-          </g>
-          <rect className={`b-packet p${i + 4}`} x={a.x - 4} y="108" width="8" height="4" rx="1" fill={C.accent} style={{ "--start": "0px", "--mid": "36px" } as CSSProperties} />
-        </g>
-      ))}
-    </SvgShell>
+      {/* Traveling packet */}
+      <g className="bus-packet" transform="translate(60,160)">
+        <circle className="bus-packet-glow" r="12" fill={C.accent} />
+        <circle r="5" fill={C.accent} />
+      </g>
+    </Scene>
   );
 }
 
-// ---------- VELOCITY ----------
+// =============== 8. VELOCITY ===============
 export function VelocitySceneSvg() {
+  const id = "sc-vel";
   const css = `
-.v-axis  { stroke: ${C.border}; stroke-width: 1; }
-.v-grid  { stroke: ${C.subtle}; stroke-width: 1; stroke-dasharray: 2 3; }
-.v-line  { stroke: ${C.accent}; stroke-width: 2.5; fill: none; stroke-dasharray: 260; stroke-dashoffset: 260; animation: vDraw 4.6s ease-in-out infinite; }
-@keyframes vDraw {
-  0%,5%    { stroke-dashoffset: 260; }
-  30%,85%  { stroke-dashoffset: 0; }
-  100%     { stroke-dashoffset: 260; }
-}
-.v-area  { fill: url(#v-grad); opacity: 0; animation: vArea 4.6s ease-in-out infinite; animation-delay: 0.6s; }
-@keyframes vArea {
+.vel-area { opacity: 0; animation: velArea 6s ease-in-out infinite; }
+@keyframes velArea {
   0%,15%   { opacity: 0; }
-  40%,85%  { opacity: 0.9; }
+  45%,85%  { opacity: 1; }
   100%     { opacity: 0; }
 }
-.v-dot   { fill: ${C.accent}; opacity: 0; animation: vDot 4.6s ease-in-out infinite; }
-.v-dot.d2 { animation-delay: 0.25s; }
-.v-dot.d3 { animation-delay: 0.45s; }
-.v-dot.d4 { animation-delay: 0.65s; }
-.v-dot.d5 { animation-delay: 0.85s; }
-.v-dot.d6 { animation-delay: 1.05s; }
-@keyframes vDot {
-  0%,30%    { opacity: 0; transform: scale(0.3); }
-  45%,85%   { opacity: 1; transform: scale(1); }
-  100%      { opacity: 0; transform: scale(0.3); }
+.vel-line { stroke-dasharray: 420; stroke-dashoffset: 420; animation: velLine 6s cubic-bezier(.4,0,.2,1) infinite; }
+@keyframes velLine {
+  0%,5%   { stroke-dashoffset: 420; }
+  45%,88% { stroke-dashoffset: 0; }
+  100%    { stroke-dashoffset: -420; }
 }
-.v-wip   { fill: ${C.subtle}; }
-.v-wip-fill { fill: ${C.green}; animation: vWipPulse 2.4s ease-in-out infinite; }
-.v-wip-fill.w2 { animation-delay: 0.2s; }
-.v-wip-fill.w3 { animation-delay: 0.4s; }
-.v-wip-fill.over { fill: ${C.red}; animation-delay: 0.6s; }
-@keyframes vWipPulse { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
-.v-trend { animation: vTrend 1.8s ease-in-out infinite; }
-@keyframes vTrend { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-.v-label { font: 500 9px ui-sans-serif, system-ui; fill: ${C.muted}; }
+.vel-peak { animation: velPeak 6s ease-in-out infinite; transform-origin: center; }
+@keyframes velPeak {
+  0%,40%   { transform: scale(0); opacity: 0; }
+  55%,88%  { transform: scale(1); opacity: 1; }
+  100%     { transform: scale(0.8); opacity: 0; }
+}
+.vel-peak-halo { animation: velHalo 6s ease-in-out infinite; transform-origin: center; }
+@keyframes velHalo {
+  0%,45%   { transform: scale(0); opacity: 0; }
+  55%      { transform: scale(0.6); opacity: 0.8; }
+  100%     { transform: scale(2.2); opacity: 0; }
+}
+.vel-grid-line { stroke: ${C.slate200}; stroke-width: 1; stroke-dasharray: 3 4; }
 `;
-  const points = [
-    { x: 30,  y: 145 },
-    { x: 66,  y: 128 },
-    { x: 102, y: 132 },
-    { x: 138, y: 108 },
-    { x: 174, y: 92 },
-    { x: 210, y: 78 },
+  // Smooth curve
+  const pts = [
+    { x: 60, y: 200 }, { x: 120, y: 170 }, { x: 180, y: 175 },
+    { x: 240, y: 140 }, { x: 300, y: 110 }, { x: 360, y: 80 }, { x: 420, y: 60 },
   ];
-  const pathD = `M${points.map((p) => `${p.x},${p.y}`).join(" L")}`;
-  const areaD = `${pathD} L210,170 L30,170 Z`;
-
+  const smooth = (points: typeof pts) => {
+    let d = `M${points[0].x},${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i];
+      const p1 = points[i + 1];
+      const cpx = (p0.x + p1.x) / 2;
+      d += ` Q ${cpx} ${p0.y}, ${cpx} ${(p0.y + p1.y) / 2}`;
+      d += ` T ${p1.x} ${p1.y}`;
+    }
+    return d;
+  };
+  const lineD = smooth(pts);
+  const areaD = `${lineD} L 420 220 L 60 220 Z`;
   return (
-    <SvgShell viewBox="0 0 260 200" styles={css} ariaLabel="Velocity chart animation">
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Velocity">
       <defs>
-        <linearGradient id="v-grad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={C.accent} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={C.accent} stopOpacity="0.02" />
+        <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={C.accent} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={C.accent} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect x="6" y="6" width="248" height="188" rx="14" fill={C.surface} stroke={C.border} />
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-grid)`} />
 
-      {/* WIP Limit Bar header */}
-      <text x="18" y="30" className="v-label">WIP</text>
-      <text x="220" y="30" className="v-label" textAnchor="end">3/5</text>
-      {/* WIP bar: 5 segments */}
-      {[0,1,2,3,4].map((i) => (
-        <rect
-          key={i}
-          x={18 + i * 44}
-          y="38"
-          width="40"
-          height="8"
-          rx="4"
-          className={
-            i < 3 ? `v-wip-fill ${i === 0 ? "" : i === 1 ? "w2" : "w3"}` :
-            i === 3 ? "v-wip-fill over" :
-            "v-wip"
-          }
-        />
-      ))}
+      {/* Grid lines */}
+      <line className="vel-grid-line" x1="60" y1="100" x2="420" y2="100" />
+      <line className="vel-grid-line" x1="60" y1="150" x2="420" y2="150" />
+      <line className="vel-grid-line" x1="60" y1="200" x2="420" y2="200" />
+      <line x1="60" y1="220" x2="420" y2="220" stroke={C.slate300} />
 
-      {/* Chart grid */}
-      <line className="v-grid" x1="18" y1="72"  x2="242" y2="72"  />
-      <line className="v-grid" x1="18" y1="108" x2="242" y2="108" />
-      <line className="v-grid" x1="18" y1="144" x2="242" y2="144" />
-      {/* Axis */}
-      <line className="v-axis" x1="18" y1="170" x2="242" y2="170" />
+      {/* Area */}
+      <path className="vel-area" d={areaD} fill={`url(#${id}-fill)`} />
+      {/* Line */}
+      <path className="vel-line" d={lineD} fill="none" stroke={`url(#${id}-accent)`} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-      {/* Chart area + line */}
-      <path className="v-area" d={areaD} />
-      <path className="v-line" d={pathD} />
-
-      {/* Dots */}
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3.2" className={`v-dot ${i ? "d" + (i + 1) : ""}`} style={{ transformBox: "fill-box", transformOrigin: "center" }} />
-      ))}
-
-      {/* Trend label */}
-      <g className="v-trend" transform="translate(220,82)">
-        <rect x="-4" y="-10" width="28" height="20" rx="4" fill={C.green} opacity="0.1" />
-        <path d="M0 4 L8 -4 L6 -4 M8 -4 L8 -2" stroke={C.green} strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        <text x="10" y="5" className="v-label" fill={C.green} fontWeight="700">+12%</text>
+      {/* Peak dot */}
+      <g transform="translate(420,60)" style={{ transformOrigin: "420px 60px", transformBox: "fill-box" }}>
+        <circle className="vel-peak-halo" r="10" fill={C.accent} opacity="0.25" />
+        <circle className="vel-peak" r="5" fill={C.accent} stroke={C.white} strokeWidth="2" />
       </g>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- QUALITY ----------
+// =============== 9. QUALITY ===============
 export function QualitySceneSvg() {
+  const id = "sc-q";
   const css = `
-.q-ring-bg { stroke: ${C.subtle}; stroke-width: 5; fill: none; }
-.q-ring    { stroke: ${C.green}; stroke-width: 5; fill: none; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; animation: qRing 4.6s ease-out infinite; }
-@keyframes qRing {
-  0%,10%   { stroke-dashoffset: 220; }
-  40%,85%  { stroke-dashoffset: 34; }
-  100%     { stroke-dashoffset: 220; }
-}
-.q-shield { transform-origin: center; transform-box: fill-box; animation: qFlip 4.6s ease-in-out infinite; }
-@keyframes qFlip {
-  0%,40%   { transform: rotateY(0deg); }
-  55%      { transform: rotateY(180deg); }
-  70%      { transform: rotateY(360deg); }
-  100%     { transform: rotateY(360deg); }
-}
-.q-check  { stroke-dasharray: 18; stroke-dashoffset: 18; animation: qCheck 4.6s ease-in-out infinite; }
+.q-shield { animation: qBreathe 5s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes qBreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+.q-check { stroke-dasharray: 22; stroke-dashoffset: 22; animation: qCheck 5s ease-in-out infinite; }
 @keyframes qCheck {
-  0%,40%   { stroke-dashoffset: 18; opacity: 0; }
-  55%,95%  { stroke-dashoffset: 0;  opacity: 1; }
-  100%     { stroke-dashoffset: 18; opacity: 0; }
+  0%,25%   { stroke-dashoffset: 22; opacity: 0; }
+  50%,88%  { stroke-dashoffset: 0;  opacity: 1; }
+  100%     { stroke-dashoffset: 22; opacity: 0; }
 }
-.q-pill   { opacity: 0; transform: translateY(4px); animation: qPill 4.6s ease-out infinite; }
-.q-pill.p2 { animation-delay: 0.15s; }
-.q-pill.p3 { animation-delay: 0.3s; }
-.q-pill.p4 { animation-delay: 0.45s; }
-@keyframes qPill {
-  0%,30%   { opacity: 0; transform: translateY(4px); }
-  42%,90%  { opacity: 1; transform: translateY(0); }
-  100%     { opacity: 0; transform: translateY(-2px); }
+.q-ring { animation: qRing 4.5s ease-out infinite; transform-origin: center; opacity: 0; }
+.q-ring.r2 { animation-delay: 0.5s; }
+.q-ring.r3 { animation-delay: 1s; }
+@keyframes qRing {
+  0%    { transform: scale(0.8); opacity: 0.6; }
+  100%  { transform: scale(2.2); opacity: 0; }
 }
-.q-spin   { transform-origin: center; transform-box: fill-box; animation: qSpin 1.2s linear infinite; }
-@keyframes qSpin { to { transform: rotate(360deg); } }
-.q-label  { font: 600 9px ui-sans-serif, system-ui; fill: ${C.green}; }
-.q-label.amber { fill: ${C.amber}; }
 `;
   return (
-    <SvgShell viewBox="0 0 260 200" styles={css} ariaLabel="Verification harness animation">
-      <rect x="6" y="6" width="248" height="188" rx="14" fill={C.surface} stroke={C.border} />
-      {/* Progress ring */}
-      <circle className="q-ring-bg" cx="130" cy="78" r="38" />
-      <circle className="q-ring" cx="130" cy="78" r="38" transform="rotate(-90 130 78)" />
+    <Scene id={id} viewBox="0 0 480 260" styles={css} ariaLabel="Verification">
+      <rect width="480" height="260" fill={C.slate50} />
+      <rect width="480" height="260" fill={`url(#${id}-dots)`} opacity="0.35" />
+      <ellipse cx="240" cy="150" rx="180" ry="90" fill={`url(#${id}-glow)`} />
+
+      {/* Sonar rings */}
+      <g transform="translate(240,150)" style={{ transformOrigin: "240px 150px", transformBox: "fill-box" }}>
+        <circle className="q-ring" r="40" fill="none" stroke={C.accent} strokeWidth="1.2" />
+        <circle className="q-ring r2" r="40" fill="none" stroke={C.accent} strokeWidth="1.2" />
+        <circle className="q-ring r3" r="40" fill="none" stroke={C.accent} strokeWidth="1.2" />
+      </g>
 
       {/* Shield */}
-      <g className="q-shield" transform="translate(130,78)">
+      <g transform="translate(240,150)" className="q-shield">
         <path
-          d="M0 -22 L14 -16 L14 4 Q14 18 0 22 Q-14 18 -14 4 L-14 -16 Z"
-          fill={C.surface}
+          d="M0 -52 L34 -38 L34 8 Q34 40 0 56 Q-34 40 -34 8 L-34 -38 Z"
+          fill={C.white}
           stroke={C.ink}
-          strokeWidth="1.8"
+          strokeWidth="2"
           strokeLinejoin="round"
+          filter="drop-shadow(0 12px 24px rgba(15,23,42,0.15))"
+        />
+        <path
+          d="M0 -48 L30 -36 L30 6 Q30 34 0 48 Q-30 34 -30 6 L-30 -36 Z"
+          fill={`url(#${id}-glow)`}
+          opacity="0.8"
         />
         <path
           className="q-check"
-          d="M-6 0 L-2 4 L7 -5"
+          d="M-14 -2 L-4 10 L16 -14"
           fill="none"
-          stroke={C.green}
-          strokeWidth="2.5"
+          stroke={C.accent}
+          strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </g>
-
-      {/* Status pills */}
-      <g transform="translate(32,140)">
-        <g className="q-pill">
-          <rect width="44" height="20" rx="10" fill="#f0fdf4" stroke="#bbf7d0" />
-          <circle cx="10" cy="10" r="2.5" fill={C.green} />
-          <text x="18" y="14" className="q-label">lint</text>
-        </g>
-        <g className="q-pill p2" transform="translate(52,0)">
-          <rect width="44" height="20" rx="10" fill="#f0fdf4" stroke="#bbf7d0" />
-          <circle cx="10" cy="10" r="2.5" fill={C.green} />
-          <text x="18" y="14" className="q-label">type</text>
-        </g>
-        <g className="q-pill p3" transform="translate(104,0)">
-          <rect width="44" height="20" rx="10" fill="#f0fdf4" stroke="#bbf7d0" />
-          <circle cx="10" cy="10" r="2.5" fill={C.green} />
-          <text x="18" y="14" className="q-label">test</text>
-        </g>
-        <g className="q-pill p4" transform="translate(156,0)">
-          <rect width="44" height="20" rx="10" fill="#fefce8" stroke="#fef08a" />
-          <g className="q-spin" transform="translate(10,10)">
-            <path d="M-4 0 A 4 4 0 1 1 0 -4" stroke={C.amber} strokeWidth="1.6" fill="none" strokeLinecap="round" />
-          </g>
-          <text x="18" y="14" className="q-label amber">build</text>
-        </g>
-      </g>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// ---------- DOCS TREE (editor panel) ----------
+// =============== 10. DOCS TREE (big) ===============
 export function DocsTreeSceneSvg() {
+  const id = "sc-dt";
   const css = `
-.dt-shell { fill: #0f172a; }
-.dt-sidebar { fill: #1e1e2e; }
-.dt-pane    { fill: #1a1b26; }
-.dt-header  { font: 600 9px ui-monospace, Menlo, monospace; fill: #6b7280; letter-spacing: 0.08em; }
-.dt-folder-label { font: 500 10px ui-monospace, Menlo, monospace; fill: #cbd5e1; }
-.dt-key     { font: 500 10px ui-monospace, Menlo, monospace; fill: #7aa2f7; }
-.dt-str     { font: 500 10px ui-monospace, Menlo, monospace; fill: #9ece6a; }
-.dt-punct   { font: 500 10px ui-monospace, Menlo, monospace; fill: #565f89; }
-.dt-status  { font: 500 8px ui-monospace, Menlo, monospace; fill: #6b7280; }
-.dt-row { opacity: 0; transform: translateX(-6px); animation: dtIn 9s ease-out infinite; }
-.dt-row.r1 { animation-delay: 0.0s; }
-.dt-row.r2 { animation-delay: 0.18s; }
-.dt-row.r3 { animation-delay: 0.36s; }
-.dt-row.r4 { animation-delay: 0.54s; }
-.dt-row.r5 { animation-delay: 0.72s; }
-.dt-row.r6 { animation-delay: 0.9s; }
-.dt-row.r7 { animation-delay: 1.08s; }
-.dt-row.r8 { animation-delay: 1.26s; }
-.dt-row.r9 { animation-delay: 1.44s; }
-.dt-row.r10 { animation-delay: 1.62s; }
-.dt-row.r11 { animation-delay: 1.8s; }
-@keyframes dtIn {
-  0%,5%     { opacity: 0; transform: translateX(-8px); }
-  20%,85%   { opacity: 1; transform: translateX(0); }
-  100%      { opacity: 0; transform: translateX(4px); }
+.dt-panel { filter: drop-shadow(0 30px 50px rgba(15,23,42,0.25)); }
+.dt-row { opacity: 0; transform: translateX(-10px); animation: dtRow 9s ease-out infinite; }
+${Array.from({ length: 11 }).map((_, i) => `.dt-row.r${i + 1} { animation-delay: ${i * 0.12}s; }`).join("\n")}
+@keyframes dtRow {
+  0%,3%      { opacity: 0; transform: translateX(-10px); }
+  12%,85%    { opacity: 1; transform: translateX(0); }
+  100%       { opacity: 0; transform: translateX(6px); }
 }
-.dt-cursor { animation: dtBlink 1s steps(1) infinite; }
-@keyframes dtBlink { 50% { opacity: 0; } }
-.dt-pulse { animation: dtPulse 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes dtPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
-.dt-highlight { fill: #c15f3c22; }
+.dt-caret { animation: dtBlink 1.2s steps(1, end) infinite; }
+@keyframes dtBlink { 0%,50% { opacity: 1 } 50.01%,100% { opacity: 0 } }
+.dt-highlight { animation: dtHighlight 9s ease-in-out infinite; animation-delay: 1.4s; }
+@keyframes dtHighlight {
+  0%,10%   { opacity: 0; }
+  20%,85%  { opacity: 1; }
+  100%     { opacity: 0; }
+}
+.dt-dot { transform-box: fill-box; transform-origin: center; }
+.dt-dot.accent { animation: dtPulse 2.4s ease-in-out infinite; }
+@keyframes dtPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
 `;
   const folders = [
-    { name: "docs/", color: C.accent, indent: 0, highlight: false },
-    { name: "00-meta/", color: C.blue, indent: 12, highlight: false },
-    { name: "01-brainstorming/", color: C.purple, indent: 12, highlight: false },
-    { name: "02-practices/", color: C.green, indent: 12, highlight: false },
-    { name: "03-decisions/", color: C.amber, indent: 12, highlight: false },
-    { name: "04-architecture/", color: "#22d3ee", indent: 12, highlight: false },
-    { name: "05-epics/", color: C.accent, indent: 12, highlight: false },
-    { name: "06-stories/", color: C.accent, indent: 12, highlight: false },
-    { name: "07-testing/", color: C.green, indent: 12, highlight: false },
-    { name: "08-project/", color: C.blue, indent: 12, highlight: false },
-    { name: "09-agents/", color: C.accentDeep, indent: 12, highlight: true },
+    { name: "docs/",              color: C.accent,     bold: true  },
+    { name: "00-meta/",            color: "#3b82f6"                },
+    { name: "01-brainstorming/",   color: "#8b5cf6"                },
+    { name: "02-practices/",       color: "#22c55e"                },
+    { name: "03-decisions/",       color: "#f59e0b"                },
+    { name: "04-architecture/",    color: "#06b6d4"                },
+    { name: "05-epics/",           color: C.accent                 },
+    { name: "06-stories/",         color: C.accent                 },
+    { name: "07-testing/",         color: "#22c55e"                },
+    { name: "08-project/",         color: "#3b82f6"                },
+    { name: "09-agents/",          color: C.accentDeep,  accent: true },
   ];
-
   return (
-    <SvgShell viewBox="0 0 480 320" styles={css} ariaLabel="Docs folder tree and JSON preview">
-      {/* Outer shell */}
-      <rect className="dt-shell" x="8" y="8" width="464" height="304" rx="12" />
-      {/* Sidebar */}
-      <rect className="dt-sidebar" x="8" y="8" width="180" height="304" />
-      {/* Title area divider */}
-      <rect x="8" y="8" width="464" height="24" fill="#0f172a" />
-      <text x="20" y="22" className="dt-header">EXPLORER</text>
-      <text x="200" y="22" className="dt-header">status.json</text>
+    <Scene id={id} viewBox="0 0 560 380" styles={css} ariaLabel="Docs folder tree">
+      <rect width="560" height="380" fill={C.slate50} />
+      <rect width="560" height="380" fill={`url(#${id}-grid)`} />
+      <ellipse cx="280" cy="230" rx="280" ry="130" fill={`url(#${id}-glow)`} opacity="0.8" />
 
-      {/* Folder list */}
-      <g transform="translate(20,48)">
-        {folders.map((f, i) => (
-          <g key={f.name} className={`dt-row r${i + 1}`} transform={`translate(${f.indent},${i * 22})`}>
-            {f.highlight && <rect x="-8" y="-4" width="156" height="20" rx="3" className="dt-highlight" />}
-            <g>
-              <rect x="0" y="0" width="10" height="8" rx="1" fill={f.color} />
-              <rect x="2" y="-2" width="5" height="3" fill={f.color} />
+      {/* Panel */}
+      <g className="dt-panel" transform="translate(80,50)">
+        <rect width="400" height="290" rx="16" fill={C.slate900} />
+        {/* Top bar */}
+        <rect width="400" height="36" rx="16" fill="#1a2332" />
+        <rect y="30" width="400" height="6" fill="#1a2332" />
+        <circle cx="20" cy="18" r="4" fill="#ff5f57" />
+        <circle cx="36" cy="18" r="4" fill="#febc2e" />
+        <circle cx="52" cy="18" r="4" fill="#28c840" />
+        <text x="200" y="22" fontFamily="ui-monospace, Menlo, monospace" fontSize="10" fill={C.slate400} textAnchor="middle">
+          docs/
+        </text>
+
+        {/* Folder rows */}
+        <g transform="translate(32,60)">
+          {folders.map((f, i) => (
+            <g key={f.name} className={`dt-row r${i + 1}`} transform={`translate(${f.bold ? 0 : 16},${i * 20})`}>
+              {f.accent && (
+                <rect
+                  x="-10"
+                  y="-5"
+                  width="350"
+                  height="18"
+                  rx="4"
+                  fill={C.accent}
+                  opacity="0.18"
+                  className="dt-highlight"
+                />
+              )}
+              <rect width="10" height="8" rx="1.5" fill={f.color} />
+              <rect x="1" y="-2" width="6" height="3" rx="0.5" fill={f.color} />
+              <text
+                x="18"
+                y="8"
+                fontFamily="ui-monospace, Menlo, monospace"
+                fontSize="11"
+                fontWeight={f.bold ? "600" : "400"}
+                fill={f.accent ? "#fff" : C.slate300}
+              >
+                {f.name}
+              </text>
+              <circle
+                cx="330"
+                cy="4"
+                r="2.5"
+                fill={f.color}
+                className={`dt-dot${f.accent ? " accent" : ""}`}
+              />
             </g>
-            <text x="16" y="8" className="dt-folder-label">{f.name}</text>
-            <circle cx={150} cy="4" r="2.5" fill={f.color} className={i === 10 ? "dt-pulse" : ""} />
-          </g>
-        ))}
-      </g>
+          ))}
+        </g>
 
-      {/* Main JSON pane */}
-      <g transform="translate(200,48)">
-        <g className="dt-row r1">
-          <text className="dt-punct">{"{"}</text>
-        </g>
-        <g className="dt-row r2" transform="translate(12,20)">
-          <text className="dt-key">&quot;stories&quot;</text>
-          <text x="60" className="dt-punct">:</text>
-          <text x="68" className="dt-punct">{"{"}</text>
-        </g>
-        <g className="dt-row r3" transform="translate(24,40)">
-          <text className="dt-key">&quot;US-0123&quot;</text>
-          <text x="64" className="dt-punct">:</text>
-          <text x="72" className="dt-punct">{"{"}</text>
-        </g>
-        <g className="dt-row r4" transform="translate(36,60)">
-          <text className="dt-key">&quot;status&quot;</text>
-          <text x="56" className="dt-punct">:</text>
-          <text x="64" className="dt-str">&quot;in_progress&quot;</text>
-        </g>
-        <g className="dt-row r5" transform="translate(36,80)">
-          <text className="dt-key">&quot;owner&quot;</text>
-          <text x="48" className="dt-punct">:</text>
-          <text x="56" className="dt-str">&quot;AG-UI&quot;</text>
-        </g>
-        <g className="dt-row r6" transform="translate(24,100)">
-          <text className="dt-punct">{"}"}</text>
-        </g>
-        <g className="dt-row r7" transform="translate(12,120)">
-          <text className="dt-punct">{"}"}</text>
-        </g>
-        <g className="dt-row r8" transform="translate(0,140)">
-          <text className="dt-punct">{"}"}</text>
-          <rect x="10" y="-10" width="2" height="12" fill={C.accent} className="dt-cursor" />
-        </g>
+        {/* Caret at bottom */}
+        <rect x="40" y="270" width="2" height="10" fill={C.accent} className="dt-caret" />
       </g>
-
-      {/* Status bar */}
-      <rect x="8" y="288" width="464" height="24" fill="#1e1e2e" />
-      <text x="20" y="302" className="dt-status">docs/09-agents/status.json</text>
-      <circle cx="420" cy="300" r="3" fill={C.green} className="dt-pulse" />
-      <text x="430" y="304" className="dt-status">main</text>
-    </SvgShell>
+    </Scene>
   );
 }
 
-// Scene resolver
+// =============== Router ===============
 export type SceneName =
   | "terminal"
   | "folders"
@@ -1027,8 +848,7 @@ export type SceneName =
   | "docsTree";
 
 export function sceneFromSrc(src: string): SceneName {
-  if (src.includes("terminal-typing") || src.includes("hero-system-boot"))
-    return "terminal";
+  if (src.includes("terminal-typing") || src.includes("hero-system-boot")) return "terminal";
   if (src.includes("folder-scaffold")) return "folders";
   if (src.includes("command-flow")) return "flow";
   if (src.includes("kanban-markdown")) return "kanban";
@@ -1040,29 +860,18 @@ export function sceneFromSrc(src: string): SceneName {
   return "quality";
 }
 
-export function SvgSceneByName({ scene }: { scene: SceneName }) {
+export function SvgSceneByName({ scene }: { scene: SceneName } & SceneProps) {
   switch (scene) {
-    case "terminal":
-      return <TerminalSceneSvg />;
-    case "folders":
-      return <FoldersSceneSvg />;
-    case "flow":
-      return <FlowSceneSvg />;
-    case "kanban":
-      return <KanbanSceneSvg />;
-    case "decision":
-      return <DecisionSceneSvg />;
-    case "docs":
-      return <DocsSceneSvg />;
-    case "bus":
-      return <BusSceneSvg />;
-    case "velocity":
-      return <VelocitySceneSvg />;
-    case "quality":
-      return <QualitySceneSvg />;
-    case "docsTree":
-      return <DocsTreeSceneSvg />;
-    default:
-      return <QualitySceneSvg />;
+    case "terminal":  return <TerminalSceneSvg />;
+    case "folders":   return <FoldersSceneSvg />;
+    case "flow":      return <FlowSceneSvg />;
+    case "kanban":    return <KanbanSceneSvg />;
+    case "decision":  return <DecisionSceneSvg />;
+    case "docs":      return <DocsSceneSvg />;
+    case "bus":       return <BusSceneSvg />;
+    case "velocity":  return <VelocitySceneSvg />;
+    case "quality":   return <QualitySceneSvg />;
+    case "docsTree":  return <DocsTreeSceneSvg />;
+    default:          return <QualitySceneSvg />;
   }
 }

@@ -29,7 +29,7 @@ export function HowItWorks({ steps }: { steps: LandingContent["howItWorks"] }) {
             {steps.steps.map((step, idx) => (
               <Reveal key={step.title} delay={idx * 0.08}>
                 <motion.div
-                  className="surface rounded-card shadow-tile transition-shadow hover:shadow-tileHover"
+                  className="surface group relative overflow-hidden rounded-card shadow-tile transition-shadow hover:shadow-tileHover"
                   style={{ transformStyle: "preserve-3d", perspective: 1000 }}
                   whileHover={{
                     y: -4,
@@ -38,25 +38,27 @@ export function HowItWorks({ steps }: { steps: LandingContent["howItWorks"] }) {
                   }}
                   transition={{ duration: 0.24, ease: "easeOut" }}
                 >
-                  <div className="border-b border-[var(--border-subtle)] p-5">
-                    <div className="flex items-baseline justify-between gap-4">
-                      <div className="text-sm font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
-                        {step.title}
-                      </div>
-                      <div className="font-mono text-xs text-[var(--text-muted)]">
-                        0{step.step}
-                      </div>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                      {step.description}
-                    </p>
+                  {/* Ambient SVG background */}
+                  <div className="pointer-events-none absolute inset-0">
+                    <CardMotionScene
+                      src={step.lottieSrc}
+                      className="h-full w-full"
+                    />
                   </div>
-                  <div className="p-5">
-                    <div className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-3 [transform:translateZ(18px)]">
-                      <CardMotionScene
-                        src={step.lottieSrc}
-                        className="h-[200px] w-full"
-                      />
+                  {/* Text content layered on top */}
+                  <div className="relative z-10 flex h-full min-h-[280px] flex-col justify-between p-6">
+                    <div>
+                      <div className="flex items-baseline justify-between gap-4">
+                        <div className="text-sm font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
+                          {step.title}
+                        </div>
+                        <div className="font-mono text-xs text-[var(--text-muted)]">
+                          0{step.step}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                        {step.description}
+                      </p>
                     </div>
                   </div>
                 </motion.div>

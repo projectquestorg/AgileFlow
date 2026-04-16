@@ -18,10 +18,10 @@ function sizeClasses(size: "large" | "medium" | "small") {
   return "col-span-12 sm:col-span-6 md:col-span-3";
 }
 
-function lottieHeight(size: "large" | "medium" | "small") {
-  if (size === "large") return "h-[200px] sm:h-[220px] md:h-[240px]";
-  if (size === "medium") return "h-[140px] sm:h-[160px]";
-  return "h-[110px] sm:h-[120px]";
+function minHeight(size: "large" | "medium" | "small") {
+  if (size === "large") return "min-h-[360px] sm:min-h-[400px] md:min-h-[440px]";
+  if (size === "medium") return "min-h-[240px] sm:min-h-[260px]";
+  return "min-h-[200px] sm:min-h-[220px]";
 }
 
 export function BentoFeatures({
@@ -62,8 +62,9 @@ export function BentoFeatures({
                 <motion.button
                   type="button"
                   className={cn(
-                    "surface group relative flex h-full w-full flex-col rounded-card p-4 text-left shadow-tile sm:p-5",
+                    "surface group relative flex h-full w-full flex-col overflow-hidden rounded-card text-left shadow-tile",
                     "transition-shadow transition-colors hover:border-[#D1D5DB] hover:shadow-tileHover",
+                    minHeight(tile.size),
                   )}
                   style={{ transformStyle: "preserve-3d", perspective: 1200 }}
                   whileHover={
@@ -85,44 +86,46 @@ export function BentoFeatures({
                   }}
                   aria-haspopup="dialog"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium tracking-wide text-[var(--text-muted)]">
-                        {tile.tag}
-                      </div>
-                      <div className="mt-2 text-[18px] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
-                        {tile.title}
-                      </div>
-                      <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                        {tile.description}
-                      </p>
-                    </div>
-                    <div className="hidden h-10 w-10 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-white/60 text-[var(--text-muted)] sm:flex">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M9 18l6-6-6-6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div
-                    className="mt-5 rounded-card border border-[var(--border-subtle)] bg-white/60 p-2 sm:p-3 [transform:translateZ(18px)]"
-                  >
+                  {/* Ambient SVG background */}
+                  <div className="pointer-events-none absolute inset-0">
                     <CardMotionScene
                       src={tile.lottieSrc}
-                      className={cn("w-full", lottieHeight(tile.size))}
+                      className="h-full w-full"
                     />
+                  </div>
+
+                  {/* Layered content on top */}
+                  <div className="relative z-10 flex h-full w-full flex-col p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium tracking-wide text-[var(--text-muted)]">
+                          {tile.tag}
+                        </div>
+                        <div className="mt-2 text-[18px] font-semibold tracking-[-0.01em] text-[var(--text-primary)]">
+                          {tile.title}
+                        </div>
+                        <p className="mt-2 max-w-[32ch] text-sm leading-6 text-[var(--text-secondary)]">
+                          {tile.description}
+                        </p>
+                      </div>
+                      <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-white/70 text-[var(--text-muted)] backdrop-blur-sm sm:flex">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M9 18l6-6-6-6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </motion.button>
               </Reveal>

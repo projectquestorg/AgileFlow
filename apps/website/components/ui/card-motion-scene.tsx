@@ -12,16 +12,19 @@ export function CardMotionScene({
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden rounded-[18px] border border-[rgba(15,23,42,0.06)]",
-        "bg-[radial-gradient(circle_at_top,rgba(232,104,58,0.12),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))]",
+        "relative h-full w-full overflow-hidden",
         className,
       )}
       aria-hidden="true"
     >
-      <div className="absolute inset-x-6 top-3 h-px bg-[linear-gradient(90deg,transparent,rgba(232,104,58,0.3),transparent)]" />
-      <div className="relative h-full w-full p-3 sm:p-4">
+      <div className="absolute inset-0">
         <SvgSceneByName scene={scene} />
       </div>
+      {/* Top-edge fade so composition melts into card text above */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/90 via-white/30 to-transparent" />
+      {/* Side vignette */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white/40 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white/40 to-transparent" />
     </div>
   );
 }
