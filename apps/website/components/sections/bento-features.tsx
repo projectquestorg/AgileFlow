@@ -123,14 +123,23 @@ export function BentoFeatures({
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-card border border-[var(--border-subtle)] bg-white/60 p-2 sm:p-3 [transform:translateZ(18px)]">
+                  <motion.div
+                    className="mt-5 rounded-card border border-[var(--border-subtle)] bg-white/60 p-2 sm:p-3 [transform:translateZ(18px)]"
+                    animate={{ y: [0, -10, 0], scale: [1, 1.025, 1] }}
+                    transition={{
+                      duration: tile.size === "large" ? 3.8 : 3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: idx * 0.12,
+                    }}
+                  >
                     <LottieAsset
                       src={tile.lottieSrc}
                       className={cn("w-full", lottieHeight(tile.size))}
                       speed={hoveredId === tile.id ? 1.2 : 1}
                       posterFrame={30}
                     />
-                  </div>
+                  </motion.div>
                 </motion.button>
               </Reveal>
             ))}

@@ -52,12 +52,21 @@ export function HowItWorks({ steps }: { steps: LandingContent["howItWorks"] }) {
                     </p>
                   </div>
                   <div className="p-5">
-                    <div className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-3 [transform:translateZ(18px)]">
+                    <motion.div
+                      className="rounded-card border border-[var(--border-subtle)] bg-white/60 p-3 [transform:translateZ(18px)]"
+                      animate={{ y: [0, -8, 0], scale: [1, 1.02, 1] }}
+                      transition={{
+                        duration: 3.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: idx * 0.2,
+                      }}
+                    >
                       <LottieAsset
                         src={step.lottieSrc}
                         className="h-[200px] w-full"
                       />
-                    </div>
+                    </motion.div>
                   </div>
                 </motion.div>
               </Reveal>
