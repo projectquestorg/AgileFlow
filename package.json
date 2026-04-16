@@ -24,7 +24,7 @@
     "validate": "npm run sync-counts:check && npm run validate-docs:ci",
     "check": "bash packages/cli/scripts/pre-push-check.sh",
     "precheck": "cd packages/cli && npm run lint && npm test",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "repository": {
     "type": "git",
