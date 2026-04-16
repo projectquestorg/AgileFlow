@@ -1,0 +1,67 @@
+{
+  "name": "debate-review",
+  "description": "Structured adversarial review with presenter, challenger, and synthesizer roles. Catches issues that single-pass review misses through cross-questioning.",
+  "version": "1.0.0",
+  "lead": {
+    "agent": "team-lead",
+    "delegate_mode": true,
+    "plan_approval": true
+  },
+  "teammates": [
+    {
+      "agent": "agileflow-api",
+      "role": "presenter",
+      "domain": "implementation",
+      "description": "Presents the implementation, explains design decisions, and defends architectural choices",
+      "instructions": "You are the PRESENTER in a debate-review. Present the implementation clearly, explain your design decisions, and respond to challenges from the challenger. Focus on correctness, maintainability, and alignment with requirements.",
+      "channels": ["debate", "general"]
+    },
+    {
+      "agent": "agileflow-code-reviewer",
+      "role": "challenger",
+      "domain": "review",
+      "description": "Cross-examines the implementation, identifies weaknesses, edge cases, and potential issues",
+      "instructions": "You are the CHALLENGER in a debate-review. Critically examine the presenter's implementation. Identify bugs, edge cases, security issues, performance problems, and missing test coverage. Ask pointed questions. Be constructive but thorough.",
+      "channels": ["debate", "general"]
+    },
+    {
+      "agent": "agileflow-qa",
+      "role": "synthesizer",
+      "domain": "quality",
+      "description": "Synthesizes debate findings into actionable recommendations and final verdict",
+      "instructions": "You are the SYNTHESIZER in a debate-review. After the presenter and challenger have debated, synthesize their points into a final assessment. Identify which challenger concerns are valid, which are not, and produce a prioritized list of required changes vs nice-to-haves. Your verdict determines if the implementation passes review.",
+      "channels": ["debate", "synthesis", "general"]
+    }
+  ],
+  "debate": {
+    "max_rounds": 3,
+    "phases": [
+      {
+        "name": "presentation",
+        "description": "Presenter explains the implementation and design decisions",
+        "actor": "presenter"
+      },
+      {
+        "name": "challenge",
+        "description": "Challenger cross-examines and identifies issues",
+        "actor": "challenger"
+      },
+      {
+        "name": "synthesis",
+        "description": "Synthesizer produces final assessment and actionable recommendations",
+        "actor": "synthesizer"
+      }
+    ]
+  },
+  "quality_gates": {
+    "teammate_idle": {
+      "tests": true,
+      "lint": true,
+      "types": false
+    },
+    "task_completed": {
+      "require_validator_approval": true
+    }
+  },
+  "tags": ["review", "debate", "adversarial", "quality", "high-confidence"]
+}
