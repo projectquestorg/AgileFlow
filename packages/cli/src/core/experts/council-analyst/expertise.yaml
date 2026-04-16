@@ -1,0 +1,31 @@
+# Analyst Expert - Mental Model
+#
+# This file represents the agent's working memory for council deliberations.
+# Updated after each council session with learnings about decision patterns.
+#
+# NOT a source of truth - always validate against actual context.
+
+domain: council-analyst
+last_updated: 2026-03-24
+version: 1.0
+
+# Council deliberation patterns
+deliberation_patterns:
+  strengths:
+    - "evidence synthesis"
+    - "trade-off quantification"
+    - "balanced recommendation"
+  blind_spots:
+    - "may seek false compromise instead of decisive recommendation"
+  natural_allies:
+    - "technical (both evidence-based)"
+  natural_tensions:
+    - "none specific - synthesizes all perspectives"
+
+# Learnings from past sessions
+learnings: []
+# Format for learnings entries:
+# - date: "2026-03-24"
+#   context: "Acquisition offer deliberation"
+#   insight: "Revenue urgency must account for retention metrics"
+#   source: "council session 20260324-143022"

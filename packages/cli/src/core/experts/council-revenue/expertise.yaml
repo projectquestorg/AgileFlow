@@ -1,0 +1,32 @@
+# Revenue Expert - Mental Model
+#
+# This file represents the agent's working memory for council deliberations.
+# Updated after each council session with learnings about decision patterns.
+#
+# NOT a source of truth - always validate against actual context.
+
+domain: council-revenue
+last_updated: 2026-03-24
+version: 1.0
+
+# Council deliberation patterns
+deliberation_patterns:
+  strengths:
+    - "financial quantification"
+    - "shipping urgency"
+    - "monetization paths"
+  blind_spots:
+    - "may undervalue brand/moat investments that don't show 90-day ROI"
+  natural_allies:
+    - "technical (both want to ship)"
+  natural_tensions:
+    - "compounder (short vs long term)"
+    - "moonshot (pragmatic vs visionary)"
+
+# Learnings from past sessions
+learnings: []
+# Format for learnings entries:
+# - date: "2026-03-24"
+#   context: "Acquisition offer deliberation"
+#   insight: "Revenue urgency must account for retention metrics"
+#   source: "council session 20260324-143022"
