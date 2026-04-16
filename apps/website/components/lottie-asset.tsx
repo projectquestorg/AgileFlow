@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
-import { useReducedMotion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
-import { cn } from '@/lib/cn';
+import type { LottieRefCurrentProps } from "lottie-react";
+import dynamic from "next/dynamic";
+import { useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 type LottieAssetProps = {
   src: string;
@@ -39,13 +42,22 @@ async function loadAnimation(src: string) {
   return promise;
 }
 
-export function LottieAsset({ src, className, loop = true, speed = 1, posterFrame = 0 }: LottieAssetProps) {
+export function LottieAsset({
+  src,
+  className,
+  loop = true,
+  speed = 1,
+  posterFrame = 0,
+}: LottieAssetProps) {
   const prefersReducedMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [inView, setInView] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(false);
-  const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
+  const [animationData, setAnimationData] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -59,7 +71,7 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
         setInView(isIntersecting);
         if (isIntersecting) setShouldLoad(true);
       },
-      { rootMargin: '220px' },
+      { rootMargin: "220px" },
     );
 
     observer.observe(el);
@@ -73,7 +85,9 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
       .then((json) => {
         if (!cancelled) setAnimationData(json);
       })
-      .catch(() => { if (!cancelled) setLoadFailed(true); });
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -102,7 +116,7 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
     <div
       ref={containerRef}
       aria-hidden="true"
-      className={cn('relative overflow-hidden', className)}
+      className={cn("relative overflow-hidden", className)}
     >
       {animationData ? (
         <Lottie
@@ -110,11 +124,13 @@ export function LottieAsset({ src, className, loop = true, speed = 1, posterFram
           animationData={animationData}
           loop={loop}
           autoplay={!prefersReducedMotion && inView}
-          rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
-          style={{ width: '100%', height: '100%' }}
+          rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+          style={{ width: "100%", height: "100%" }}
         />
       ) : loadFailed ? (
-        <div className="flex h-full w-full items-center justify-center rounded-[10px] border border-[var(--border-subtle)] bg-white/40 text-xs text-[var(--text-muted)]"><span className="sr-only">Animation failed to load</span></div>
+        <div className="flex h-full w-full items-center justify-center rounded-[10px] border border-[var(--border-subtle)] bg-white/40 text-xs text-[var(--text-muted)]">
+          <span className="sr-only">Animation failed to load</span>
+        </div>
       ) : (
         <div className="h-full w-full rounded-[10px] border border-[var(--border-subtle)] bg-white/40" />
       )}
