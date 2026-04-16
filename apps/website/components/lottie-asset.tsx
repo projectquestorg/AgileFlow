@@ -52,8 +52,8 @@ export function LottieAsset({
   const prefersReducedMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const [inView, setInView] = useState(false);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [inView, setInView] = useState(true);
+  const [shouldLoad, setShouldLoad] = useState(true);
   const [animationData, setAnimationData] = useState<Record<
     string,
     unknown
@@ -69,7 +69,6 @@ export function LottieAsset({
         const entry = entries[0];
         const isIntersecting = Boolean(entry?.isIntersecting);
         setInView(isIntersecting);
-        if (isIntersecting) setShouldLoad(true);
       },
       { rootMargin: "220px" },
     );

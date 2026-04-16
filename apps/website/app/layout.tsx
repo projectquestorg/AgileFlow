@@ -21,16 +21,16 @@ export const metadata: Metadata = {
     "AgileFlow turns your repo into an AI-friendly agile system with commands, agents, ADRs, and docs-as-code — built for Claude Code, Cursor, Windsurf, and more.",
   metadataBase: new URL("https://agileflow.dev"),
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/banner.png",
+    shortcut: "/banner.png",
+    apple: "/banner.png",
   },
   openGraph: {
     title: "AgileFlow",
     description:
       "Agile delivery, in your repo—powered by AI. Scrum + Kanban + ADRs + docs-as-code.",
     type: "website",
-    images: ["/opengraph-image.png"],
+    images: ["/banner.png"],
   },
   robots: {
     index: true,
