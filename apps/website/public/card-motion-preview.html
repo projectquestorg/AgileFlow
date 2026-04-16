@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgileFlow Card Motion Preview</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f3ef;
+        --surface: rgba(255, 255, 255, 0.9);
+        --border: rgba(15, 23, 42, 0.1);
+        --text: #111827;
+        --muted: #6b7280;
+        --accent: #e8683a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(232, 104, 58, 0.12),
+            transparent 30%
+          ),
+          linear-gradient(180deg, #faf7f4 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 40px 20px 64px;
+      }
+
+      .hero {
+        margin-bottom: 28px;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 54px);
+        line-height: 1.04;
+      }
+
+      .hero p {
+        margin: 12px 0 0;
+        max-width: 72ch;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .section-title {
+        margin: 34px 0 14px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .grid-three {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .grid-bento {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(255, 255, 255, 0.88)
+        );
+        box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+        transform-style: preserve-3d;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        background: linear-gradient(
+          135deg,
+          rgba(232, 104, 58, 0.16),
+          transparent 38%,
+          transparent 65%,
+          rgba(17, 24, 39, 0.06)
+        );
+        pointer-events: none;
+      }
+
+      .card:hover {
+        transform: translateY(-8px) rotateX(6deg) rotateY(-6deg);
+        box-shadow: 0 26px 80px rgba(15, 23, 42, 0.14);
+      }
+
+      .card-inner {
+        position: relative;
+        z-index: 1;
+        padding: 22px;
+      }
+
+      .tag {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .title {
+        margin-top: 10px;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .desc {
+        margin-top: 10px;
+        color: var(--muted);
+        line-height: 1.65;
+        font-size: 14px;
+      }
+
+      .anim-shell {
+        margin-top: 18px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.75);
+        padding: 12px;
+        transform: translateZ(24px);
+        animation: float 3.2s ease-in-out infinite;
+      }
+
+      .anim-shell.large {
+        animation-duration: 4s;
+      }
+
+      .anim {
+        width: 100%;
+        height: 220px;
+      }
+
+      .anim.medium {
+        height: 170px;
+      }
+
+      .anim.small {
+        height: 130px;
+      }
+
+      .step-card .anim {
+        height: 200px;
+      }
+
+      .col-6 {
+        grid-column: span 6;
+      }
+
+      .col-3 {
+        grid-column: span 3;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateZ(24px) translateY(0) scale(1);
+        }
+        50% {
+          transform: translateZ(24px) translateY(-10px) scale(1.025);
+        }
+      }
+
+      @media (max-width: 960px) {
+        .grid-three,
+        .grid-bento {
+          grid-template-columns: 1fr;
+        }
+
+        .col-6,
+        .col-3 {
+          grid-column: span 1;
+        }
+
+        .card:hover {
+          transform: translateY(-4px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <h1>AgileFlow Card Motion Preview</h1>
+        <p>
+          This file renders the actual Lottie JSON assets used by the website
+          cards. If you can see motion here, the assets are real and working. If
+          the deployed site still looks static after this, the issue is in the
+          app wiring or caching path, not the animations themselves.
+        </p>
+      </div>
+
+      <div class="section-title">How It Works</div>
+      <div class="grid-three" id="steps"></div>
+
+      <div class="section-title">Systematic By Default</div>
+      <div class="grid-bento" id="features"></div>
+    </div>
+
+    <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+    <script>
+      const steps = [
+        {
+          tag: "01",
+          title: "Setup",
+          desc: "npx agileflow@latest setup",
+          src: "/lottie/terminal-typing.json",
+          size: "step-card",
+        },
+        {
+          tag: "02",
+          title: "Explore",
+          desc: "Run /agileflow:help to see all commands",
+          src: "/lottie/folder-scaffold.json",
+          size: "step-card",
+        },
+        {
+          tag: "03",
+          title: "Work",
+          desc: "Use commands to plan, record, verify, and ship",
+          src: "/lottie/command-flow.json",
+          size: "step-card",
+        },
+      ];
+
+      const features = [
+        {
+          tag: "Planning",
+          title: "Epics and stories",
+          desc: "Turn ideas into testable increments with acceptance criteria.",
+          src: "/lottie/kanban-markdown.json",
+          shell: "large",
+          anim: "large",
+          span: "col-6",
+        },
+        {
+          tag: "Decisions",
+          title: "Decision records",
+          desc: "Stop re-deciding. Record decisions once, in markdown.",
+          src: "/lottie/adr-decision.json",
+          shell: "medium",
+          anim: "medium",
+          span: "col-6",
+        },
+        {
+          tag: "Structure",
+          title: "Docs-as-code structure",
+          desc: "11 folders with clear hierarchy. Versioned and reviewable.",
+          src: "/lottie/docs-tree-growth.json",
+          shell: "small",
+          anim: "small",
+          span: "col-3",
+        },
+        {
+          tag: "Agents",
+          title: "Multi-agent coordination",
+          desc: "144 agents coordinate via an append-only message bus.",
+          src: "/lottie/message-bus-pulse.json",
+          shell: "small",
+          anim: "small",
+          span: "col-3",
+        },
+        {
+          tag: "Planning",
+          title: "Planning and WIP",
+          desc: "Track velocity and WIP limits with explicit status.",
+          src: "/lottie/velocity-chart.json",
+          shell: "small",
+          anim: "small",
+          span: "col-3",
+        },
+        {
+          tag: "Quality",
+          title: "Verification harness",
+          desc: "Keep a clean baseline with repeatable verification.",
+          src: "/lottie/test-badge-flip.json",
+          shell: "small",
+          anim: "small",
+          span: "col-3",
+        },
+      ];
+
+      function renderCard(item, container, extraClass = "") {
+        const card = document.createElement("div");
+        card.className = `card ${item.span || ""} ${extraClass}`.trim();
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="tag">${item.tag}</div>
+            <div class="title">${item.title}</div>
+            <div class="desc">${item.desc}</div>
+            <div class="anim-shell ${item.shell || ""}">
+              <div class="anim ${item.anim || ""}"></div>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        lottie.loadAnimation({
+          container: card.querySelector(".anim"),
+          renderer: "svg",
+          loop: true,
+          autoplay: true,
+          path: item.src,
+          rendererSettings: {
+            preserveAspectRatio: "xMidYMid meet",
+          },
+        });
+      }
+
+      const stepRoot = document.getElementById("steps");
+      const featureRoot = document.getElementById("features");
+      steps.forEach((item) => renderCard(item, stepRoot, "step-card"));
+      features.forEach((item) => renderCard(item, featureRoot));
+    </script>
+  </body>
+</html>
