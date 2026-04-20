@@ -48,6 +48,16 @@ Logic audit (5 analyzers: edge / flow / invariant / race / type) on the hardened
 - **`loader.js`**: eliminated the `existsSync`→`readFileSync` TOCTOU window. We now read directly and treat `ENOENT` as "no config → defaults"; any other read error surfaces as before. Simpler code, no race.
 - Test suite grew **40 → 46 passing**.
 
+### Phase 2b slice 1 — Sync engine port
+
+Ported the v3 SHA256-based safe-update engine from `installer.js:349-455` into `apps/cli/src/runtime/installer/`. Each scenario has dedicated test coverage.
+
+- **`src/lib/hash.js`** — `sha256Hex(Buffer|string)` (UTF-8 deterministic) and `sha256File(path)` helpers.
+- **`src/runtime/installer/file-index.js`** — read/write `_cfg/files.json` (schema v1); atomic writes (temp+rename); rejects arrays-masquerading-as-objects at both levels.
+- **`src/runtime/installer/stash.js`** — writes conflicting upstream content to `_cfg/updates/<timestamp>/<relativePath>` for manual merge.
+- **`src/runtime/installer/sync-engine.js`** — `syncFile({ content, dest, relativePath, fileIndex, cfgDir, timestamp, force, ops })` handles the 5-scenario decision tree: CREATED, UPDATED (via force), UPDATED (via baseline match), UNCHANGED (3 variants — baseline noop, protected auto-converge, unknown auto-adopt), PRESERVED (stash+keep-user, for protected-mismatch and locally-modified cases). Works for both text content (strings) and binary (Buffers).
+- **27 new tests** covering every branch of the decision tree plus index round-trips and deterministic hashing. Suite: **46 → 73 passing**.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
