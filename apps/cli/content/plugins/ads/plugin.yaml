@@ -1,0 +1,14 @@
+id: ads
+name: Ads
+description: Meta, Google, TikTok, LinkedIn, YouTube, Microsoft ad audits + /ads:* suite.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands: []
+  skills: []
+  agents: []
+  hooks: []
+  templates: []

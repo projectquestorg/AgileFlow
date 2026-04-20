@@ -16,6 +16,15 @@ v4 Phase 1 skeleton. Not yet publishable.
 - Vitest test infrastructure with `tests/unit/config/loader.test.js` (8 passing tests).
 - `@clack/prompts` as the TUI library for the setup wizard — matches the skills.sh/vercel-labs/skills UX (clean step indicators, multiselect, search). Replaces the Ink 5 direction from the original plan.
 
+### Phase 2a — Setup wizard
+
+- Plugin registry (`src/runtime/plugins/registry.js`) — discovers `plugin.yaml` manifests under `content/plugins/*`, sorts required-first, enforces unique ids.
+- Config writer (`src/runtime/config/writer.js`) — serializes user-facing fields to `agileflow.config.json` with schema pointer, stable 2-space formatting.
+- Clack wizard (`src/cli/wizard/plugin-picker.js`, `src/cli/wizard/personalization.js`) — multiselect plugin picker (core always on) + 3 enum selects (tone, ask_level, verbosity). Cancellation cleanly exits.
+- Stub plugin manifests for `core` / `ads` / `seo` / `audit` / `council` in `content/plugins/*/plugin.yaml` (content bodies land in Phase 4).
+- Non-interactive path: `agileflow setup --yes --plugins core,seo,audit` writes config without prompts.
+- 14 new tests (`plugins/registry.test.js`, `config/writer.test.js`); total suite: 22 passing.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

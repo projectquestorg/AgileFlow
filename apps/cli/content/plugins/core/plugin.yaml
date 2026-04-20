@@ -1,0 +1,18 @@
+# Core plugin — essential AgileFlow workflow.
+# Always enabled; cannot be disabled.
+# Content (skills, commands, agents, hooks) lands in Phase 4.
+id: core
+name: Core
+description: Epic, Story, Status, Babysit — essential agile workflow.
+version: 1.0.0
+enabledByDefault: true
+cannotDisable: true
+
+depends: []
+
+provides:
+  commands: []
+  skills: []
+  agents: []
+  hooks: []
+  templates: []

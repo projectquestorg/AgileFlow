@@ -22,7 +22,7 @@ async function status(options = {}) {
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id),
     personalization: result.config.personalization,
-    phase: 'Phase 1 skeleton — installer/hooks/content pending',
+    phase: 'Phase 2a — wizard ready; installer sync engine + hooks + content pending (Phase 2b+)',
   };
 
   if (options.json) {

@@ -1,0 +1,14 @@
+id: council
+name: AI Council
+description: Six-perspective strategic decision framework (optimist, contrarian, technical, revenue, etc.).
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands: []
+  skills: []
+  agents: []
+  hooks: []
+  templates: []

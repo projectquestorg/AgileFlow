@@ -1,0 +1,14 @@
+id: seo
+name: SEO
+description: Technical SEO, schema, content, GEO, images, and sitemap audits.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands: []
+  skills: []
+  agents: []
+  hooks: []
+  templates: []

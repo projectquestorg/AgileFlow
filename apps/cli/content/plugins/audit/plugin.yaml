@@ -1,0 +1,14 @@
+id: audit
+name: Code Audit
+description: Multi-agent audits for quality, security, logic, perf, tests, a11y, arch, API, flows, completeness.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands: []
+  skills: []
+  agents: []
+  hooks: []
+  templates: []
