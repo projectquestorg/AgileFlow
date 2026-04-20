@@ -1,0 +1,67 @@
+{
+  "name": "agileflow",
+  "version": "4.0.0-alpha.1",
+  "description": "AI-driven agile development toolkit for Claude Code — skills-first architecture with opt-in plugins (v4)",
+  "keywords": [
+    "agile",
+    "ai",
+    "claude",
+    "claude-code",
+    "cli",
+    "agents",
+    "skills",
+    "plugins",
+    "workflows"
+  ],
+  "homepage": "https://github.com/projectquestorg/AgileFlow#readme",
+  "bugs": {
+    "url": "https://github.com/projectquestorg/AgileFlow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/projectquestorg/AgileFlow.git",
+    "directory": "apps/cli"
+  },
+  "license": "MIT",
+  "author": "AgileFlow Contributors",
+  "type": "commonjs",
+  "main": "src/cli/index.js",
+  "bin": {
+    "agileflow": "bin/agileflow.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "content/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "node bin/agileflow.js",
+    "setup": "node bin/agileflow.js setup",
+    "status": "node bin/agileflow.js status",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.8.2",
+    "ajv": "^8.17.1",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  }
+}

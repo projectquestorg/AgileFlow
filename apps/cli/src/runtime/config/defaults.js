@@ -1,0 +1,45 @@
+/**
+ * Default user config.
+ *
+ * Returned when `agileflow.config.json` is absent. Also merged into
+ * user-supplied config so missing sections get sensible defaults.
+ *
+ * @typedef {Object} Personalization
+ * @property {'concise'|'detailed'|'teaching'} tone
+ * @property {'none'|'decision_points'|'always'} ask_level
+ * @property {'low'|'medium'|'high'} verbosity
+ *
+ * @typedef {Object} PluginEntry
+ * @property {boolean} enabled
+ * @property {Record<string, unknown>} [settings]
+ *
+ * @typedef {Object} AgileflowConfig
+ * @property {1} version
+ * @property {Record<string, PluginEntry>} plugins
+ * @property {Record<string, { enabled?: boolean, timeout?: number, skipOnError?: boolean }>} hooks
+ * @property {Personalization} personalization
+ * @property {{ primary: 'claude-code'|'cursor'|'windsurf'|'codex' }} ide
+ * @property {string} language
+ */
+
+/** @returns {AgileflowConfig} */
+function defaultConfig() {
+  return {
+    version: 1,
+    plugins: {
+      core: { enabled: true },
+    },
+    hooks: {},
+    personalization: {
+      tone: 'concise',
+      ask_level: 'decision_points',
+      verbosity: 'medium',
+    },
+    ide: {
+      primary: 'claude-code',
+    },
+    language: 'en',
+  };
+}
+
+module.exports = { defaultConfig };

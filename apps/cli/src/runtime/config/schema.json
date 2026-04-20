@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/projectquestorg/AgileFlow/apps/cli/config.schema.json",
+  "title": "AgileFlow v4 user config",
+  "description": "User-facing configuration for AgileFlow v4. Lives at agileflow.config.json in project root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Config schema version. Bumped on breaking changes."
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Map of plugin-id -> { enabled: bool, settings?: object }. core is always enabled.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "settings": { "type": "object", "additionalProperties": true }
+        },
+        "required": ["enabled"]
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Per-hook-id user overrides applied on top of plugin-supplied defaults.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "timeout": { "type": "integer", "minimum": 0, "maximum": 60000 },
+          "skipOnError": { "type": "boolean" }
+        }
+      }
+    },
+    "personalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {
+          "type": "string",
+          "enum": ["concise", "detailed", "teaching"]
+        },
+        "ask_level": {
+          "type": "string",
+          "enum": ["none", "decision_points", "always"]
+        },
+        "verbosity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    },
+    "ide": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["claude-code", "cursor", "windsurf", "codex"]
+        }
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "IETF BCP 47 language tag (e.g. 'en', 'es', 'pt-BR').",
+      "pattern": "^[a-z]{2}(-[A-Z][a-zA-Z0-9]+)?$"
+    }
+  }
+}

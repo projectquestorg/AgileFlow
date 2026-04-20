@@ -1,7 +1,7 @@
 {
-  "name": "agileflow",
+  "name": "agileflow-v3-legacy",
   "version": "3.5.0",
-  "description": "AI-driven agile development system for Claude Code, Cursor, Windsurf, and more",
+  "description": "AgileFlow v3 (legacy) — retained on v4 branch under a legacy name to avoid workspace collision with apps/cli. v3 patches happen on main only; this workspace is read-only on v4 branch until v4 ships.",
   "keywords": [
     "agile",
     "ai",
