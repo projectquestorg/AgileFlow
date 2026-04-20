@@ -1,13 +1,42 @@
 /**
  * Plugin picker — Clack multiselect driven by the plugin registry.
  *
- * Shows required plugins (core) as informational, then asks the user to
- * multiselect opt-ins. Matches the skills.sh/vercel-labs UX.
+ * Exports a pure `buildPluginsMap()` helper used by both the interactive
+ * wizard and the non-interactive `--yes` path. The helper:
+ *   - forces cannotDisable plugins (core) to enabled
+ *   - marks the user-picked opt-ins as enabled
+ *   - marks the rest of discovered opt-ins as disabled
+ *   - PRESERVES any custom (non-discovered) plugin entries from the
+ *     existing config, so wizard reruns don't silently drop user edits
  *
- * Cancellation (Ctrl+C or Esc) calls prompts.cancel and exits cleanly.
+ * Cancellation (Ctrl+C / Esc) exits with code 1 (not 0) so CI can tell
+ * the difference between success and user abort.
  */
 const prompts = require('@clack/prompts');
 const { discoverPlugins } = require('../../runtime/plugins/registry.js');
+
+/**
+ * @param {Array<{id:string, cannotDisable?:boolean}>} discovered
+ * @param {Set<string>} selectedOptionalIds
+ * @param {Record<string, {enabled:boolean, settings?:any}>} [existingPluginsMap]
+ * @returns {Record<string, { enabled: boolean, settings?: any }>}
+ */
+function buildPluginsMap(discovered, selectedOptionalIds, existingPluginsMap = {}) {
+  /** @type {Record<string, { enabled: boolean, settings?: any }>} */
+  const result = {};
+  for (const p of discovered) {
+    result[p.id] = {
+      enabled: Boolean(p.cannotDisable) || selectedOptionalIds.has(p.id),
+    };
+  }
+  // Preserve unknown (custom / user-added) plugin entries from existing config.
+  for (const [id, entry] of Object.entries(existingPluginsMap || {})) {
+    if (!(id in result) && entry && typeof entry === 'object') {
+      result[id] = entry;
+    }
+  }
+  return result;
+}
 
 /**
  * @param {import('../../runtime/config/defaults.js').AgileflowConfig} currentConfig
@@ -28,7 +57,7 @@ async function pickPlugins(currentConfig) {
     .filter((p) => {
       const existing = (currentConfig.plugins || {})[p.id];
       if (existing && typeof existing.enabled === 'boolean') return existing.enabled;
-      return p.enabledByDefault;
+      return Boolean(p.enabledByDefault);
     })
     .map((p) => p.id);
 
@@ -44,21 +73,12 @@ async function pickPlugins(currentConfig) {
   });
 
   if (prompts.isCancel(picked)) {
-    prompts.cancel('Setup cancelled.');
-    process.exit(0);
+    prompts.cancel('Setup cancelled. No changes made.');
+    process.exit(1);
   }
 
-  const enabled = new Set([
-    ...required.map((p) => p.id),
-    ...(/** @type {string[]} */ (picked)),
-  ]);
-
-  /** @type {Record<string, { enabled: boolean }>} */
-  const result = {};
-  for (const p of all) {
-    result[p.id] = { enabled: enabled.has(p.id) };
-  }
-  return result;
+  const selectedOptionalIds = new Set(/** @type {string[]} */ (picked));
+  return buildPluginsMap(all, selectedOptionalIds, currentConfig.plugins || {});
 }
 
-module.exports = { pickPlugins };
+module.exports = { pickPlugins, buildPluginsMap };

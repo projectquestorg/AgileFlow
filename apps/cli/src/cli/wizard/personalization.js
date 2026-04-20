@@ -22,8 +22,8 @@ async function personalizationPrompts(current) {
     initialValue: current.tone,
   });
   if (prompts.isCancel(tone)) {
-    prompts.cancel('Setup cancelled.');
-    process.exit(0);
+    prompts.cancel('Setup cancelled. No changes made.');
+    process.exit(1);
   }
 
   const askLevel = await prompts.select({
@@ -36,8 +36,8 @@ async function personalizationPrompts(current) {
     initialValue: current.ask_level,
   });
   if (prompts.isCancel(askLevel)) {
-    prompts.cancel('Setup cancelled.');
-    process.exit(0);
+    prompts.cancel('Setup cancelled. No changes made.');
+    process.exit(1);
   }
 
   const verbosity = await prompts.select({
@@ -50,8 +50,8 @@ async function personalizationPrompts(current) {
     initialValue: current.verbosity,
   });
   if (prompts.isCancel(verbosity)) {
-    prompts.cancel('Setup cancelled.');
-    process.exit(0);
+    prompts.cancel('Setup cancelled. No changes made.');
+    process.exit(1);
   }
 
   return {

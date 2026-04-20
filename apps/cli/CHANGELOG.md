@@ -25,6 +25,19 @@ v4 Phase 1 skeleton. Not yet publishable.
 - Non-interactive path: `agileflow setup --yes --plugins core,seo,audit` writes config without prompts.
 - 14 new tests (`plugins/registry.test.js`, `config/writer.test.js`); total suite: 22 passing.
 
+### Phase 2a — hardening (flow audit fixes)
+
+Flow audit (wiring / errors / persistence / feedback) ran against Phase 2a and flagged 3 P0 + 5 P1 gaps. All addressed:
+
+- **writeConfig now atomic**: temp file (`.agileflow.config.json.tmp-<pid>`) + rename. Same-directory rename is atomic on POSIX and same-volume Windows. Readers always see either old or new content — never a truncated half-write. Temp file is cleaned up on failure.
+- **writeConfig errors surface as friendly messages**: EPERM / ENOSPC / EACCES no longer leak stack traces. Interactive path shows `prompts.log.error` + recovery hint; non-interactive path writes to stderr with exit 1.
+- **Plugin discovery errors handled in interactive path**: malformed `plugin.yaml` or duplicate ids no longer crash before the wizard starts. Wizard shows "Failed to load plugins: {msg}" and exits.
+- **Unknown `--plugins` ids now error loudly**: `agileflow setup --yes --plugins core,typo` exits 1 with the typo listed and all available plugin ids printed.
+- **Custom plugin entries preserved on wizard rerun**: user-added entries in `plugins.mycustom` survive every wizard invocation (interactive and `--yes`). Extracted `buildPluginsMap()` pure helper to unit-test this guarantee.
+- **Cancellation semantics fixed**: Ctrl+C / Esc in any prompt now says "Setup cancelled. No changes made." and exits 1 (was exit 0). CI can now distinguish user abort from success.
+- **Round-trip tests expanded per schema field**: hooks, ide.primary, language, plugin settings sub-objects, and personalization each tested independently. A writer-forgets-a-field regression can't hide behind the loader's default-merge.
+- **Test suite grew 22 → 40 passing** across 5 test files.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
