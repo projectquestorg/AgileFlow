@@ -82,6 +82,32 @@ describe('loadPlugin (error paths)', () => {
     fs.writeFileSync(path.join(scratch, 'plugin.yaml'), 'null');
     expect(() => loadPlugin(scratch)).toThrow(/Empty or non-object/);
   });
+
+  it('throws when depends is a string (common authoring mistake)', () => {
+    fs.writeFileSync(
+      path.join(scratch, 'plugin.yaml'),
+      'id: ok\nname: Ok\ndescription: test\nversion: 1.0.0\ndepends: core\n',
+    );
+    expect(() => loadPlugin(scratch)).toThrow(
+      /'depends' must be an array/,
+    );
+  });
+
+  it('accepts depends when omitted (defaults to empty array)', () => {
+    fs.writeFileSync(
+      path.join(scratch, 'plugin.yaml'),
+      'id: ok\nname: Ok\ndescription: test\nversion: 1.0.0\n',
+    );
+    expect(loadPlugin(scratch).depends).toEqual([]);
+  });
+
+  it('accepts depends as an array', () => {
+    fs.writeFileSync(
+      path.join(scratch, 'plugin.yaml'),
+      'id: ok\nname: Ok\ndescription: test\nversion: 1.0.0\ndepends:\n  - core\n  - seo\n',
+    );
+    expect(loadPlugin(scratch).depends).toEqual(['core', 'seo']);
+  });
 });
 
 describe('discoverPlugins (custom root, duplicate detection)', () => {

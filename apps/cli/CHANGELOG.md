@@ -38,6 +38,16 @@ Flow audit (wiring / errors / persistence / feedback) ran against Phase 2a and f
 - **Round-trip tests expanded per schema field**: hooks, ide.primary, language, plugin settings sub-objects, and personalization each tested independently. A writer-forgets-a-field regression can't hide behind the loader's default-merge.
 - **Test suite grew 22 → 40 passing** across 5 test files.
 
+### Phase 2a — logic audit fixes
+
+Logic audit (5 analyzers: edge / flow / invariant / race / type) on the hardened Phase 2a code. Verdicts: **CLEAN** (control flow), **HOLDS** (invariants), **ACCEPTABLE** (edge + race), **LOOSE** (type). 4 P1 fixes applied:
+
+- **`registry.js`**: `depends` is now strictly validated. A plugin author writing `depends: core` (string, common YAML authoring mistake) used to be silently coerced to `[]`; now it throws a clear error. Empty/absent `depends` still defaults to `[]`.
+- **`plugin-picker.js::buildPluginsMap`**: added `!Array.isArray(entry)` guard for the custom-plugin preservation branch. Arrays pass `typeof === 'object'` but would break any downstream code reading `entry.enabled` as a property.
+- **`plugin-picker.js::buildPluginsMap`**: discovered plugins now preserve their `settings` sub-object across wizard reruns. Previously the picker would strip `plugins.seo.settings.crawlDepth` every time it ran; now settings travel with the plugin entry (including when enable=false).
+- **`loader.js`**: eliminated the `existsSync`→`readFileSync` TOCTOU window. We now read directly and treat `ENOENT` as "no config → defaults"; any other read error surfaces as before. Simpler code, no race.
+- Test suite grew **40 → 46 passing**.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

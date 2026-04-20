@@ -67,18 +67,21 @@ function formatSchemaErrors(errors) {
 async function loadConfig(cwd) {
   const configPath = path.join(cwd, CONFIG_FILENAME);
 
-  if (!fs.existsSync(configPath)) {
-    return Object.freeze({
-      config: Object.freeze(defaultConfig()),
-      path: null,
-      source: 'defaults',
-    });
-  }
-
+  // Read directly and treat ENOENT as "no config → use defaults". This
+  // eliminates the existsSync-then-readFileSync TOCTOU window; between
+  // the two calls another process could delete the file and the user
+  // would get a misleading "Failed to read" error instead of defaults.
   let raw;
   try {
     raw = fs.readFileSync(configPath, 'utf8');
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      return Object.freeze({
+        config: Object.freeze(defaultConfig()),
+        path: null,
+        source: 'defaults',
+      });
+    }
     throw new Error(`Failed to read ${configPath}: ${err.message}`);
   }
 

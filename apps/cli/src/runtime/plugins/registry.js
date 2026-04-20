@@ -63,6 +63,17 @@ function loadPlugin(pluginDir) {
       `Plugin ${path.basename(pluginDir)} missing required fields: ${missing.join(', ')}`,
     );
   }
+  // `depends` is optional, but if present it MUST be an array — silently
+  // coercing `depends: "core"` to `[]` would drop the author's intent.
+  let depends = [];
+  if (parsed.depends != null) {
+    if (!Array.isArray(parsed.depends)) {
+      throw new Error(
+        `Plugin ${path.basename(pluginDir)}: 'depends' must be an array of plugin ids (got ${typeof parsed.depends})`,
+      );
+    }
+    depends = parsed.depends;
+  }
   return {
     id: parsed.id,
     name: parsed.name,
@@ -70,7 +81,7 @@ function loadPlugin(pluginDir) {
     version: parsed.version,
     enabledByDefault: Boolean(parsed.enabledByDefault),
     cannotDisable: Boolean(parsed.cannotDisable),
-    depends: Array.isArray(parsed.depends) ? parsed.depends : [],
+    depends,
     provides: parsed.provides || {
       commands: [],
       skills: [],

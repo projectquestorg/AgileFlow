@@ -25,13 +25,35 @@ function buildPluginsMap(discovered, selectedOptionalIds, existingPluginsMap = {
   /** @type {Record<string, { enabled: boolean, settings?: any }>} */
   const result = {};
   for (const p of discovered) {
-    result[p.id] = {
+    /** @type {{ enabled: boolean, settings?: any }} */
+    const entry = {
       enabled: Boolean(p.cannotDisable) || selectedOptionalIds.has(p.id),
     };
+    // Preserve `settings` sub-object across wizard reruns: enable/disable
+    // is recomputed each time from the user's picker choices, but any
+    // per-plugin settings (e.g. seo.settings.crawlDepth) are keyed by
+    // plugin id and should survive untouched.
+    const existing = (existingPluginsMap || {})[p.id];
+    if (
+      existing &&
+      typeof existing === 'object' &&
+      !Array.isArray(existing) &&
+      existing.settings
+    ) {
+      entry.settings = existing.settings;
+    }
+    result[p.id] = entry;
   }
   // Preserve unknown (custom / user-added) plugin entries from existing config.
+  // Arrays are rejected — they pass `typeof === 'object'` but would break any
+  // downstream code that reads `entry.enabled` as a property.
   for (const [id, entry] of Object.entries(existingPluginsMap || {})) {
-    if (!(id in result) && entry && typeof entry === 'object') {
+    if (
+      !(id in result) &&
+      entry &&
+      typeof entry === 'object' &&
+      !Array.isArray(entry)
+    ) {
       result[id] = entry;
     }
   }

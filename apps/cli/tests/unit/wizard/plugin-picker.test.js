@@ -57,15 +57,48 @@ describe('buildPluginsMap', () => {
     expect(Object.keys(result).sort()).toEqual(['ads', 'audit', 'core', 'seo']);
   });
 
-  it('skips invalid existing entries (null / non-object)', () => {
+  it('skips invalid existing entries (null / non-object / array)', () => {
     const existing = {
       broken: null,
       alsoBroken: 'not an object',
+      arrayMasqueradingAsObject: [true],
       okCustom: { enabled: true },
     };
     const result = buildPluginsMap(discovered, new Set(), /** @type {any} */ (existing));
     expect(result.broken).toBeUndefined();
     expect(result.alsoBroken).toBeUndefined();
+    // Arrays pass `typeof === 'object'` but are not valid plugin entries.
+    expect(result.arrayMasqueradingAsObject).toBeUndefined();
     expect(result.okCustom).toEqual({ enabled: true });
+  });
+
+  it('preserves settings on discovered plugins across reruns', () => {
+    const existing = {
+      core: { enabled: true },
+      seo: { enabled: true, settings: { crawlDepth: 3, baseUrl: 'https://x.com' } },
+    };
+    const result = buildPluginsMap(discovered, new Set(['seo']), existing);
+    expect(result.seo).toEqual({
+      enabled: true,
+      settings: { crawlDepth: 3, baseUrl: 'https://x.com' },
+    });
+  });
+
+  it('does not attach settings when existing entry has no settings sub-object', () => {
+    const existing = { seo: { enabled: true } };
+    const result = buildPluginsMap(discovered, new Set(['seo']), existing);
+    expect(result.seo).toEqual({ enabled: true });
+    expect('settings' in result.seo).toBe(false);
+  });
+
+  it('preserves settings even when the plugin is now disabled', () => {
+    // User deselects seo in the wizard, but had previously configured settings.
+    // The enabled flag flips to false; settings stay in case they re-enable.
+    const existing = {
+      seo: { enabled: true, settings: { crawlDepth: 5 } },
+    };
+    const result = buildPluginsMap(discovered, new Set() /* seo NOT selected */, existing);
+    expect(result.seo.enabled).toBe(false);
+    expect(result.seo.settings).toEqual({ crawlDepth: 5 });
   });
 });
