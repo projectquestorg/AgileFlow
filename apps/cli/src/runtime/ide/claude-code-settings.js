@@ -121,7 +121,15 @@ async function writeMerged(settingsPath, settings) {
  */
 function mergeManagedHooks(existing) {
   const next = { ...existing };
-  const hooks = { ...(existing.hooks && typeof existing.hooks === 'object' ? existing.hooks : {}) };
+  // Reject array-shaped `hooks`: spreading an array into a plain object
+  // produces numeric-keyed garbage. Treat it as missing instead.
+  const baseHooks =
+    existing.hooks &&
+    typeof existing.hooks === 'object' &&
+    !Array.isArray(existing.hooks)
+      ? existing.hooks
+      : {};
+  const hooks = { ...baseHooks };
 
   for (const event of MANAGED_EVENTS) {
     const prior = Array.isArray(hooks[event]) ? hooks[event] : [];
@@ -144,7 +152,13 @@ function mergeManagedHooks(existing) {
  */
 function unmanageHooks(existing) {
   const next = { ...existing };
-  if (!existing.hooks || typeof existing.hooks !== 'object') return next;
+  if (
+    !existing.hooks ||
+    typeof existing.hooks !== 'object' ||
+    Array.isArray(existing.hooks)
+  ) {
+    return next;
+  }
   const hooks = { ...existing.hooks };
   for (const event of MANAGED_EVENTS) {
     if (!Array.isArray(hooks[event])) continue;
@@ -188,12 +202,11 @@ async function writeClaudeCodeSettings(projectRoot) {
  */
 async function removeClaudeCodeSettings(projectRoot) {
   const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
-  let existing;
-  try {
-    existing = await readExisting(settingsPath);
-  } catch {
-    return { removed: false, settingsPath: null };
-  }
+  // readExisting already converts ENOENT and SyntaxError to {} — any
+  // exception here means a real filesystem problem (EACCES / EIO).
+  // Do NOT swallow: a silent success would lie about successfully
+  // removing entries that are still in an unreadable file.
+  const existing = await readExisting(settingsPath);
   const next = unmanageHooks(existing);
   if (Object.keys(next).length === 0) {
     try {

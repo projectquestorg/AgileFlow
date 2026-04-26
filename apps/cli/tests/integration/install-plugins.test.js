@@ -369,6 +369,32 @@ describe('installPlugins integration', () => {
     expect(fs.existsSync(path.join(scratch, '.claude/skills/agileflow-story-writer'))).toBe(false);
   });
 
+  it('rejects an invalid hook manifest before settings.json is touched', async () => {
+    // Build a fake plugin set that would produce an invalid manifest:
+    // a hook whose event is unknown.
+    const real = discoverPlugins().find((p) => p.id === 'core');
+    const broken = {
+      ...real,
+      id: 'broken',
+      provides: {
+        ...real.provides,
+        hooks: [{ id: 'bad', event: 'NotAnEvent', script: 'hooks/x.js' }],
+      },
+    };
+    await expect(
+      installPlugins({
+        discovered: [real, broken],
+        userSelected: ['broken'],
+        agileflowDir,
+        cliVersion: '4.0.0-alpha.1',
+        ide: 'claude-code',
+      }),
+    ).rejects.toThrow(/Hook manifest validation failed/);
+
+    // Settings.json was NOT written (validation happened first).
+    expect(fs.existsSync(path.join(scratch, '.claude', 'settings.json'))).toBe(false);
+  });
+
   it('throws on dependency cycles', async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {

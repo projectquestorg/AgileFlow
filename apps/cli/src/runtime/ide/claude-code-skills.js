@@ -20,6 +20,7 @@ const path = require('path');
  * @typedef {Object} MirrorResult
  * @property {string[]} mirrored - skill ids written to .claude/skills/
  * @property {string[]} pruned - skill ids removed from .claude/skills/ (orphans)
+ * @property {Array<{ skillId: string, error: string }>} skipped - skills whose source was missing
  */
 
 /**
@@ -28,8 +29,12 @@ const path = require('path');
  * @param {string} dest
  */
 async function copyDir(src, dest) {
-  await fs.promises.mkdir(dest, { recursive: true });
+  // Read the source listing FIRST. If src is missing (ENOENT), the
+  // error propagates BEFORE we create dest, so a missing source can't
+  // leave behind an empty destination dir for the caller to mistake
+  // for a successful copy.
   const entries = await fs.promises.readdir(src, { withFileTypes: true });
+  await fs.promises.mkdir(dest, { recursive: true });
   for (const e of entries) {
     const s = path.join(src, e.name);
     const d = path.join(dest, e.name);
@@ -65,7 +70,18 @@ function collectPluginSkills(orderedPlugins) {
         ? plugin.provides.skills
         : [];
     for (const s of skills) {
-      if (!s || typeof s.id !== 'string' || typeof s.dir !== 'string') continue;
+      // Reject missing-or-empty id/dir. An empty `dir: ""` would
+      // pass `typeof === 'string'` but path.join silently treats it as
+      // the plugin root, which is never what the author intended.
+      if (
+        !s ||
+        typeof s.id !== 'string' ||
+        !s.id ||
+        typeof s.dir !== 'string' ||
+        !s.dir
+      ) {
+        continue;
+      }
       out.push({
         skillId: s.id,
         sourceDir: path.join(plugin.dir, s.dir),
@@ -103,13 +119,29 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
 
   /** @type {string[]} */
   const mirrored = [];
+  /** @type {Array<{ skillId: string, error: string }>} */
+  const skipped = [];
   for (const { skillId, sourceDir } of want) {
     const dest = path.join(claudeSkills, skillId);
-    // Replace the destination wholesale so removed files in source
-    // don't linger in the user's .claude/skills/.
-    await rmDir(dest);
-    await copyDir(sourceDir, dest);
-    mirrored.push(skillId);
+    try {
+      // Replace the destination wholesale so removed files in source
+      // don't linger in the user's .claude/skills/.
+      await rmDir(dest);
+      await copyDir(sourceDir, dest);
+      mirrored.push(skillId);
+    } catch (err) {
+      // A missing source dir (ENOENT) shouldn't crash the entire
+      // install — log and continue so other skills still mirror. A
+      // permission error or unrelated failure still propagates.
+      if (err && err.code === 'ENOENT') {
+        skipped.push({
+          skillId,
+          error: `source not found: ${sourceDir}`,
+        });
+        continue;
+      }
+      throw err;
+    }
   }
 
   /** @type {string[]} */
@@ -133,7 +165,7 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
     pruned.push(e.name);
   }
 
-  return { mirrored, pruned };
+  return { mirrored, pruned, skipped };
 }
 
 /**

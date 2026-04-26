@@ -35,7 +35,9 @@ const {
 const {
   writeAggregatedManifest,
   removeAggregatedManifest,
+  buildHookManifest,
 } = require('../hooks/aggregator.js');
+const { normalizeManifest } = require('../hooks/manifest-loader.js');
 const { capabilitiesFor } = require('../ide/capabilities.js');
 const {
   writeClaudeCodeSettings,
@@ -65,6 +67,12 @@ const {
  * @property {string} agileflowDir
  * @property {string} indexPath
  * @property {string} timestamp
+ * @property {string|null} hookManifestPath - path of the written hook manifest, or null
+ * @property {string|null} settingsPath - path of the written .claude/settings.json, or null
+ * @property {string[]} skillsMirrored - skill ids copied into .claude/skills/
+ * @property {string[]} skillsPruned - skill ids removed from .claude/skills/
+ * @property {Array<{skillId:string, error:string}>} [skillsSkipped] - skills with missing source
+ * @property {string} ide - the target IDE for this install
  */
 
 /**
@@ -234,22 +242,27 @@ async function installPlugins(options) {
     await writeFileIndex(indexPath, fileIndex);
   }
 
-  // 7. Write or remove the aggregated hook manifest based on IDE
-  //    capabilities. Hooks are Claude Code only today; switching to a
-  //    non-hook IDE removes any stale manifest so the orchestrator
-  //    never runs hooks that won't fire from the IDE.
+  // 7. Validate-before-write: build the manifest in memory and run
+  //    the loader's normalizer against it. Surfacing an invalid plugin
+  //    contribution NOW prevents step 8 from registering hook
+  //    dispatchers in settings.json that point at an unparseable
+  //    manifest.
   const caps = capabilitiesFor(ide);
   let hookManifestPath = null;
   if (caps.hooks) {
+    const manifestObj = buildHookManifest(ordered);
+    try {
+      normalizeManifest(manifestObj);
+    } catch (err) {
+      throw new Error(`Hook manifest validation failed: ${err.message}`);
+    }
     hookManifestPath = await writeAggregatedManifest(ordered, agileflowDir);
   } else {
     await removeAggregatedManifest(agileflowDir);
   }
 
   // 8. Register or unregister our hook dispatchers in
-  //    `.claude/settings.json` so Claude Code actually invokes them.
-  //    Only when ide=claude-code; other IDEs get their stale entries
-  //    cleaned up.
+  //    `.claude/settings.json`. Only when ide=claude-code.
   const projectRoot = path.dirname(agileflowDir);
   let settingsPath = null;
   if (ide === 'claude-code') {
@@ -258,17 +271,17 @@ async function installPlugins(options) {
     await removeClaudeCodeSettings(projectRoot);
   }
 
-  // 9. Mirror skills into `.claude/skills/<id>/` so Claude Code
-  //    discovers them. Plugin-source skills live under
-  //    `.agileflow/plugins/<id>/skills/...` (sync-engine-managed) but
-  //    Claude Code's discovery mechanism uses `.claude/skills/`. We
-  //    copy (not symlink) for Windows portability.
+  // 9. Mirror skills into `.claude/skills/<id>/`. Copy (not symlink)
+  //    for Windows portability. Missing skill sources are skipped
+  //    gracefully; non-ENOENT errors propagate.
   let skillsMirrored = [];
   let skillsPruned = [];
+  let skillsSkipped = [];
   if (caps.skills) {
     const r = await mirrorClaudeCodeSkills(ordered, projectRoot);
     skillsMirrored = r.mirrored;
     skillsPruned = r.pruned;
+    skillsSkipped = r.skipped || [];
   } else {
     skillsPruned = await unmirrorClaudeCodeSkills(projectRoot);
   }
@@ -285,6 +298,7 @@ async function installPlugins(options) {
     settingsPath,
     skillsMirrored,
     skillsPruned,
+    skillsSkipped,
     ide,
   };
 }

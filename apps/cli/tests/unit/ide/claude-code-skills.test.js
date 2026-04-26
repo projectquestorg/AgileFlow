@@ -65,6 +65,19 @@ describe('collectPluginSkills', () => {
     expect(out[0].skillId).toBe('agileflow-story-writer');
     expect(out[0].sourceDir).toBe(path.join(p.dir, 'skills', 'agileflow-story-writer'));
   });
+
+  it('rejects skill specs with empty-string id or dir', () => {
+    const p = makePlugin(scratch, 'core', []);
+    // Inject malformed entries directly into the manifest after the
+    // helper built valid skill dirs.
+    p.provides.skills = [
+      { id: '', dir: 'skills/x' },
+      { id: 'ok', dir: '' },
+      { id: 'real', dir: 'skills/real' },
+    ];
+    const out = collectPluginSkills([p]);
+    expect(out.map((s) => s.skillId)).toEqual(['real']);
+  });
 });
 
 describe('mirrorClaudeCodeSkills', () => {
@@ -116,6 +129,23 @@ describe('mirrorClaudeCodeSkills', () => {
 
     expect(result.pruned).toEqual(['agileflow-old']);
     expect(fs.existsSync(path.join(projectRoot, '.claude/skills/agileflow-old'))).toBe(false);
+  });
+
+  it('skips skills whose source dir is missing without crashing the install', async () => {
+    const p = makePlugin(scratch, 'core', [{ id: 'agileflow-real' }]);
+    // Add a phantom skill whose source dir does NOT exist on disk.
+    p.provides.skills.push({ id: 'agileflow-phantom', dir: 'skills/agileflow-phantom' });
+    const projectRoot = path.join(scratch, 'project');
+    fs.mkdirSync(projectRoot, { recursive: true });
+
+    const result = await mirrorClaudeCodeSkills([p], projectRoot);
+    expect(result.mirrored).toEqual(['agileflow-real']);
+    expect(result.skipped).toHaveLength(1);
+    expect(result.skipped[0].skillId).toBe('agileflow-phantom');
+    expect(result.skipped[0].error).toMatch(/source not found/);
+    // The real skill landed; the phantom did not.
+    expect(fs.existsSync(path.join(projectRoot, '.claude/skills/agileflow-real'))).toBe(true);
+    expect(fs.existsSync(path.join(projectRoot, '.claude/skills/agileflow-phantom'))).toBe(false);
   });
 
   it('does NOT prune third-party skill dirs without the agileflow- prefix', async () => {

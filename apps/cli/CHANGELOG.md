@@ -195,6 +195,21 @@ The first real user-visible content lands in v4. After install, a Claude Code se
 - **10 new tests across mirror module + 2 integration tests**: collect-skills, mirror to fresh dir, replace stale content, prune orphans, leave third-party alone, unmirror, ENOENT-safe; integration: install puts skill in `.claude/skills/`, IDE switch removes it. Suite: **251 → 261 passing across 20 files**.
 - **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands `agileflow-story-writer` at `.claude/skills/agileflow-story-writer/SKILL.md` with the v4 frontmatter intact. Switching to `--ide cursor` removes it.
 
+### Phase 3+4 logic-audit fixes
+
+5 logic analyzers (edge / flow / invariant / race / type) on Phase 3 and Phase 4 code surfaced 7 actionable findings. All addressed before more skills land.
+
+- **`mirrorClaudeCodeSkills`** — wrapped per-skill copy in try/catch. ENOENT (missing source dir) is now reported as `result.skipped` and the install continues; other errors still propagate. `copyDir` was also reordered to read source before creating dest, so a missing source no longer leaves an empty mirror dir behind.
+- **`installPlugins` validate-before-write**: step 7 now builds the hook manifest in memory and runs it through `normalizeManifest` BEFORE writing. A plugin contributing an invalid hook (unknown event, missing matcher on a non-tool event, etc.) now errors at install time with `Hook manifest validation failed: ...` instead of silently registering hook dispatchers in `.claude/settings.json` against an unparseable manifest.
+- **`mergeManagedHooks` / `unmanageHooks`** — added `!Array.isArray(existing.hooks)` guard so an array-shaped `hooks: []` in user settings.json doesn't get spread into an object with numeric keys (which would corrupt the file). Treats it as missing and rebuilds clean.
+- **`agileflow hook` subcommand** — validates the event name against `VALID_EVENTS` and requires `--matcher` for tool-related events. Misspellings (`SesionStart`) and missing matchers now exit 1 with a clear error and the list of valid events. Previously these silently no-op'd the entire hook chain.
+- **`removeClaudeCodeSettings`** — no longer swallows arbitrary read errors. ENOENT and SyntaxError are still tolerated by the inner `readExisting` (treated as empty), but EACCES / EIO now propagate so we don't lie about removing entries from an unreadable file.
+- **`InstallResult` JSDoc** — extended typedef from 7 to 12 properties to match the actual return shape (`hookManifestPath`, `settingsPath`, `skillsMirrored`, `skillsPruned`, `skillsSkipped`, `ide`).
+- **`collectPluginSkills`** — rejects entries with empty-string `id` or `dir`. An empty `dir: ""` would previously path-join to the plugin root and produce wrong copies.
+- **5 new tests** + 2 modified for new return shapes: array-shaped hooks treated correctly, empty-string skill specs filtered, missing-source mirror reports skipped without crashing, validate-before-write rejects malformed manifest before settings.json is touched. Suite: **261 → 266 passing**.
+
+End-to-end verified: `npx agileflow hook SesionStart` (typo) prints `unknown event "SesionStart"` with the full valid list and exits 1; `npx agileflow hook PreToolUse` (no `--matcher`) prints `event "PreToolUse" requires --matcher` and exits 1; the valid case still exits 0.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

@@ -84,6 +84,16 @@ describe('mergeManagedHooks', () => {
     expect(second.hooks.SessionStart).toHaveLength(1);
   });
 
+  it('treats hooks=[] (array) as missing instead of spreading garbage keys', () => {
+    const merged = mergeManagedHooks({ hooks: [] });
+    // Plain object with our managed events; no numeric keys.
+    expect(Array.isArray(merged.hooks)).toBe(false);
+    expect(Object.keys(merged.hooks).sort()).toEqual([...MANAGED_EVENTS].sort());
+    for (const k of Object.keys(merged.hooks)) {
+      expect(/^\d+$/.test(k)).toBe(false);
+    }
+  });
+
   it('preserves non-hook fields (permissions, env, etc.)', () => {
     const existing = {
       permissions: { allow: ['Bash(npm test)'] },
@@ -134,6 +144,11 @@ describe('unmanageHooks', () => {
     const stripped = unmanageHooks(existing);
     expect(stripped.hooks.PreToolUse).toHaveLength(1);
     expect(stripped.hooks.PreToolUse[0].matcher).toBe('Notebook');
+  });
+
+  it('treats hooks=[] (array) as no-op input (no garbage keys)', () => {
+    const stripped = unmanageHooks({ hooks: [] });
+    expect(stripped.hooks).toEqual([]);
   });
 
   it('preserves entries on unmanaged events', () => {
