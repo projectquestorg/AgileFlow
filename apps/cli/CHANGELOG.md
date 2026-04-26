@@ -58,6 +58,22 @@ Ported the v3 SHA256-based safe-update engine from `installer.js:349-455` into `
 - **`src/runtime/installer/sync-engine.js`** — `syncFile({ content, dest, relativePath, fileIndex, cfgDir, timestamp, force, ops })` handles the 5-scenario decision tree: CREATED, UPDATED (via force), UPDATED (via baseline match), UNCHANGED (3 variants — baseline noop, protected auto-converge, unknown auto-adopt), PRESERVED (stash+keep-user, for protected-mismatch and locally-modified cases). Works for both text content (strings) and binary (Buffers).
 - **27 new tests** covering every branch of the decision tree plus index round-trips and deterministic hashing. Suite: **46 → 73 passing**.
 
+### Phase 2b slice 2 — Plugin resolver + strict validator
+
+- **`src/runtime/plugins/resolver.js`** — `resolvePlugins(discovered, userSelected)` computes the transitive closure (auto-enabling dependencies of user-selected plugins), produces a topologically-sorted install order, and detects cycles via DFS three-color marking with full cycle-path reporting (e.g. `a -> b -> c -> a`). `cannotDisable` plugins (currently just `core`) are always included.
+- **`src/runtime/plugins/validator.js`** — strict per-plugin validation:
+  - `id` matches `^[a-z0-9][a-z0-9-]{0,63}$` (kebab-case)
+  - `version` is valid semver including pre-release / build-metadata tags
+  - `description` is non-empty and ≥ 16 chars (warning under that)
+  - `enabledByDefault` and `cannotDisable` are real booleans (not coerced strings)
+  - `cannotDisable: true` implies `enabledByDefault: true`
+  - `depends` entries are valid plugin ids; self-dependency rejected; duplicates flagged as warnings
+  - `provides` is an object with array-typed sub-keys; unknown keys flagged as warnings
+  - `validatePluginSet()` adds cross-plugin checks (duplicate ids, unresolved depends)
+  - `hasErrors(issues)` for gating commits / CI
+- **37 new tests** (resolver: 12, validator: 25) covering diamond dependencies, 3-node cycles, semver edge cases, kebab-case rejections, and cross-plugin invariants. Suite: **73 → 110 passing**.
+- All 5 bundled plugin manifests pass strict validation with zero issues.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
