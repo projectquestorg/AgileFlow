@@ -10,20 +10,14 @@
   "scripts": {
     "dev:website": "npm run dev -w apps/website",
     "dev:docs": "npm run dev -w apps/docs",
-    "dev:cli": "npm run agileflow -w packages/cli",
+    "dev:cli": "npm run start -w apps/cli",
     "build:website": "npm run build -w apps/website",
     "build:docs": "npm run build -w apps/docs",
-    "build:cli": "npm run build -w packages/cli",
     "build:all": "npm run build --workspaces --if-present",
     "lint:all": "npm run lint --workspaces --if-present",
+    "test:cli": "npm run test -w apps/cli",
     "test:all": "npm run test --workspaces --if-present",
-    "sync-counts": "node scripts/sync-counts.js",
-    "sync-counts:check": "node scripts/sync-counts.js --check",
-    "validate-docs": "node scripts/validate-docs.js",
-    "validate-docs:ci": "node scripts/validate-docs.js --ci",
-    "validate": "npm run sync-counts:check && npm run validate-docs:ci",
-    "check": "bash packages/cli/scripts/pre-push-check.sh",
-    "precheck": "cd packages/cli && npm run lint && npm test",
+    "doctor": "npm run doctor -w apps/cli",
     "prepare": "husky || true"
   },
   "repository": {
@@ -55,12 +49,8 @@
     "react-dom": "19.2.4"
   },
   "lint-staged": {
-    "packages/cli/**/*.js": [
-      "prettier --write --config packages/cli/.prettierrc --ignore-path packages/cli/.prettierignore",
-      "eslint --config packages/cli/eslint.config.js --no-error-on-unmatched-pattern --max-warnings 50"
-    ],
-    "packages/cli/**/*.{jsx,ts,tsx,json,css}": [
-      "prettier --write --config packages/cli/.prettierrc --ignore-path packages/cli/.prettierignore"
+    "apps/cli/**/*.{js,json,md,yaml,yml}": [
+      "prettier --write --ignore-unknown"
     ]
   },
   "overrides": {
