@@ -56,12 +56,22 @@ const REQUIRED_FIELDS = ['name', 'version', 'category', 'description', 'triggers
  * Split a SKILL.md text into `{ frontmatter, body }`. Frontmatter is
  * the YAML between the first two `---` lines.
  *
+ * Handles two real-world wrinkles that vanilla regex would miss:
+ *   - Windows CRLF line endings (`\r?\n` instead of `\n`) — common
+ *     when authors edit files on Windows and commit them.
+ *   - UTF-8 BOM (`\uFEFF` prefix) — some editors (Notepad, VS Code on
+ *     Windows by default) write a BOM that would otherwise prevent
+ *     `^---` from matching at the start of the file.
+ *
  * @param {string} text
  * @returns {{ frontmatterText: string|null, body: string }}
  */
 function splitFrontmatter(text) {
-  const match = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match) return { frontmatterText: null, body: text };
+  // Strip a leading BOM if present so the file looks like it starts
+  // with `---` to the regex engine.
+  const cleaned = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+  const match = cleaned.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) return { frontmatterText: null, body: cleaned };
   return { frontmatterText: match[1], body: match[2] };
 }
 

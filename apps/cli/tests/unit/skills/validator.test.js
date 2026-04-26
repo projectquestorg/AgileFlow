@@ -57,6 +57,24 @@ describe('splitFrontmatter', () => {
     expect(r.frontmatterText).toBeNull();
     expect(r.body).toBe('# Just a body\n');
   });
+
+  it('handles Windows CRLF line endings', () => {
+    const r = splitFrontmatter('---\r\nname: x\r\n---\r\n# Body\r\n');
+    expect(r.frontmatterText).toBe('name: x');
+    expect(r.body).toBe('# Body\r\n');
+  });
+
+  it('strips a UTF-8 BOM prefix before matching', () => {
+    const r = splitFrontmatter('\uFEFF---\nname: x\n---\n# Body\n');
+    expect(r.frontmatterText).toBe('name: x');
+    expect(r.body).toBe('# Body\n');
+  });
+
+  it('handles BOM + CRLF together', () => {
+    const r = splitFrontmatter('\uFEFF---\r\nname: x\r\n---\r\n# Body\r\n');
+    expect(r.frontmatterText).toBe('name: x');
+    expect(r.body).toBe('# Body\r\n');
+  });
 });
 
 describe('validateSkill (per-skill)', () => {
