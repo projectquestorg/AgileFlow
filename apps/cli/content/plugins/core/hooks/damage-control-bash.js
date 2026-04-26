@@ -49,8 +49,16 @@ async function main() {
   try {
     const parsed = yaml.load(fs.readFileSync(patternsPath, "utf8"));
     patterns = Array.isArray(parsed && parsed.patterns) ? parsed.patterns : [];
-  } catch {
-    process.exit(0); // No patterns file, fail open.
+  } catch (err) {
+    // Fail open, but warn loudly: a missing/unreadable patterns file
+    // means every dangerous command will go through unblocked, and
+    // the user MUST notice. Repeated warnings on every Bash call are
+    // intentional — they signal "damageControl is broken, fix it or
+    // disable the preset in agileflow.config.json".
+    process.stderr.write(
+      `agileflow damage-control: WARNING — patterns file unreadable (${err.code || err.name}: ${patternsPath}). Bash safety guards are DISABLED until this is fixed.\n`,
+    );
+    process.exit(0);
   }
 
   for (const p of patterns) {

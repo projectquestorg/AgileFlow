@@ -3,6 +3,57 @@
 All notable changes to `agileflow` v4 are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [4.0.0-alpha.3] — 2026-04-20
+
+Flow audit fixes for the alpha.2 wizard + install path. Wiring/persistence
+came back PASS; this patch closes the test gap and fixes the safety +
+feedback gaps the audit surfaced.
+
+### Fixed
+
+- **P0 test gap** (`tests/unit/config/writer.test.js`): the per-field
+  round-trip block tests every other config field but skipped
+  `behaviors`. A future PR that drops the `behaviors:` line from
+  `writer.js`'s payload would have shipped silently. Added explicit
+  mixed-shape round-trip test (not all-true, not all-false) so the
+  serializer-loader pair is contractually pinned.
+- **P1 damage-control silent fail-open**
+  (`damage-control-bash.js`/`-edit.js`/`-write.js`): when
+  `damage-control-patterns.yaml` is missing or unreadable, all three
+  hooks used to `process.exit(0)` silently — guards disabled, no
+  signal to the user. Now emit a stderr WARNING with the error code
+  and the path. Repeated warnings on every Bash/Edit/Write are
+  intentional: they signal "fix this or disable the preset". Hooks
+  still fail-open (the contract is "block dangerous things, don't
+  block legit work just because we can't read our own config").
+- **P1 missing behaviors visibility**:
+  - `setup --yes` console output now prints `behaviors enabled: ...`
+    after the plugin list, gated on `caps.hooks` so non-Claude-Code
+    IDEs don't see a noisy line. Listed-as-CSV in the order: any
+    `loadContext, babysitDefault, damageControl, preCompactState`
+    that are `true`.
+  - Interactive `prompts.outro` now includes `behaviors active: ...`
+    or `behaviors active: (none — no hooks will run; re-run setup to
+enable)`. A user who deselected all four behaviors no longer
+    finishes the wizard celebrating "X plugins enabled" while
+    actually getting zero hooks.
+  - `agileflow update` console output mirrors the same pattern.
+  - Install spinner message changed from `Installing N plugin(s)` to
+    `Installing N plugin(s) — writing hooks, skills, mirrors` so
+    first-time users have a clearer mental model of what `.agileflow/`
+    will contain.
+- **P2 fresh-project context-loader / pre-compact-state**: when
+  `docs/09-agents/status.json` is absent (brand new project), both
+  hooks used to silently omit the stories section. Now emit
+  `(no story tracker yet — docs/09-agents/status.json not found)` so
+  Claude knows the section was reached, not skipped due to error. Also
+  surfaces `(none in progress, none ready)` when status.json exists
+  but is empty.
+
+### Tests
+
+- 305 passing (+1 from alpha.2's 304).
+
 ## [4.0.0-alpha.2] — 2026-04-20
 
 Curated behavior presets — first hooks ship, but never as a free-for-all.

@@ -18,6 +18,7 @@ const pkg = require("../../../package.json");
 const { loadConfig } = require("../../runtime/config/loader.js");
 const { discoverPlugins } = require("../../runtime/plugins/registry.js");
 const { installPlugins } = require("../../runtime/installer/install.js");
+const { capabilitiesFor } = require("../../runtime/ide/capabilities.js");
 
 /**
  * @param {{ force?: boolean }} options
@@ -68,6 +69,18 @@ async function update(options = {}) {
 
   // eslint-disable-next-line no-console
   console.log(`✓ Updated ${enabled.length} plugin(s): ${enabled.join(", ")}`);
+
+  const caps = capabilitiesFor(existing.config.ide.primary);
+  if (caps.hooks) {
+    const activeBehaviors = Object.entries(existing.config.behaviors || {})
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    // eslint-disable-next-line no-console
+    console.log(
+      `  behaviors enabled: ${activeBehaviors.length ? activeBehaviors.join(", ") : "(none — no hooks will run)"}`,
+    );
+  }
+
   // eslint-disable-next-line no-console
   console.log(
     `  created=${result.ops.created} updated=${result.ops.updated} unchanged=${result.ops.unchanged} preserved=${result.ops.preserved} removed=${result.ops.removed}`,

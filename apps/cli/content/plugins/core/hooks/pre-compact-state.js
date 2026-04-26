@@ -43,13 +43,22 @@ out.push("## Pre-compaction state preservation");
 out.push("");
 
 const status = readJSON(path.join(projectDir, "docs/09-agents/status.json"));
-if (status && status.stories) {
+if (!status) {
+  // Fresh project — no story tracker yet. Say so explicitly so the
+  // post-compaction prompt knows the section was reached, not silently
+  // skipped due to an error.
+  out.push("Active stories: (none yet — docs/09-agents/status.json not found)");
+  out.push("");
+} else if (status.stories) {
   const inProgress = Object.entries(status.stories)
     .filter(([, s]) => s && s.status === "in_progress")
     .map(([id, s]) => `${id} ${s.title || ""}`);
   if (inProgress.length) {
     out.push("Active stories:");
     for (const s of inProgress) out.push(`  - ${s}`);
+    out.push("");
+  } else {
+    out.push("Active stories: (none in progress)");
     out.push("");
   }
 }

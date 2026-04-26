@@ -42,7 +42,10 @@ async function main() {
   try {
     const parsed = yaml.load(fs.readFileSync(patternsPath, "utf8"));
     patterns = Array.isArray(parsed && parsed.patterns) ? parsed.patterns : [];
-  } catch {
+  } catch (err) {
+    process.stderr.write(
+      `agileflow damage-control: WARNING — patterns file unreadable (${err.code || err.name}: ${patternsPath}). Write safety guards are DISABLED until this is fixed.\n`,
+    );
     process.exit(0);
   }
 

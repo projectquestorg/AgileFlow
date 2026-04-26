@@ -87,7 +87,13 @@ out("");
 
 // 2. Active story / epic
 const status = readJSON(path.join(projectDir, "docs/09-agents/status.json"));
-if (status && status.stories) {
+if (!status) {
+  // Fresh project — no story tracker yet. Tell Claude explicitly so it
+  // knows the section was reached, not silently skipped due to error.
+  out("## Stories");
+  out("  (no story tracker yet — docs/09-agents/status.json not found)");
+  out("");
+} else if (status.stories) {
   const inProgress = Object.entries(status.stories)
     .filter(([, s]) => s && s.status === "in_progress")
     .map(([id, s]) => ({ id, ...s }));
@@ -119,6 +125,12 @@ if (status && status.stories) {
         `  ${s.id} [${s.priority || "P?"} · ${s.estimate || "?"}pts] ${s.title || ""}`,
       );
     }
+    out("");
+  }
+
+  if (!inProgress.length && !ready.length) {
+    out("## Stories");
+    out("  (none in progress, none ready)");
     out("");
   }
 }

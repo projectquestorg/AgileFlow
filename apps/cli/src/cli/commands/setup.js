@@ -203,6 +203,15 @@ async function setup(options = {}) {
     );
     // eslint-disable-next-line no-console
     console.log(`  plugins enabled: ${enabled.join(", ")}`);
+    if (caps.hooks) {
+      const activeBehaviors = Object.entries(next.behaviors || {})
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      // eslint-disable-next-line no-console
+      console.log(
+        `  behaviors enabled: ${activeBehaviors.length ? activeBehaviors.join(", ") : "(none — no hooks will run)"}`,
+      );
+    }
     // eslint-disable-next-line no-console
     console.log(
       `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
@@ -262,7 +271,9 @@ async function setup(options = {}) {
     .map(([id]) => id);
 
   const installSpinner = prompts.spinner();
-  installSpinner.start(`Installing ${enabledList.length} plugin(s)`);
+  installSpinner.start(
+    `Installing ${enabledList.length} plugin(s) — writing hooks, skills, mirrors`,
+  );
   const installResult = await runInstallWithFeedback(
     enabledList,
     cwd,
@@ -274,14 +285,27 @@ async function setup(options = {}) {
     `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
   );
 
+  // Surface behaviors state in the outro. With behaviors gated, a user
+  // who deselected all four ends up with zero hooks running — they
+  // need to know that explicitly, not infer it from "X plugins enabled".
+  const activeBehaviors = ideCaps.hooks
+    ? Object.entries(behaviors || {})
+        .filter(([, v]) => v)
+        .map(([k]) => k)
+    : [];
+  const behaviorsLine = ideCaps.hooks
+    ? activeBehaviors.length
+      ? `behaviors active: ${activeBehaviors.join(", ")}`
+      : "behaviors active: (none — no hooks will run; re-run setup to enable)"
+    : `hooks not supported by ${ide} — behaviors skipped`;
+
   prompts.outro(
     [
       `${enabledList.length} plugin(s) enabled: ${enabledList.join(", ")}`,
+      behaviorsLine,
       installResult.ops.preserved
         ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
         : "",
-      "",
-      "Phase 3+ will land hooks, Core content, and the publish pipeline.",
     ]
       .filter(Boolean)
       .join("\n"),
