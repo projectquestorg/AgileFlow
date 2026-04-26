@@ -14,18 +14,22 @@
  *   - Custom plugin entries in the existing config are preserved across
  *     wizard reruns.
  */
-const path = require('path');
-const prompts = require('@clack/prompts');
-const pkg = require('../../../package.json');
-const { loadConfig } = require('../../runtime/config/loader.js');
-const { writeConfig } = require('../../runtime/config/writer.js');
-const { defaultConfig } = require('../../runtime/config/defaults.js');
-const { discoverPlugins } = require('../../runtime/plugins/registry.js');
-const { installPlugins } = require('../../runtime/installer/install.js');
-const { pickPlugins, buildPluginsMap } = require('../wizard/plugin-picker.js');
-const { personalizationPrompts } = require('../wizard/personalization.js');
-const { pickIde } = require('../wizard/ide-picker.js');
-const { SUPPORTED_IDES, capabilitiesFor } = require('../../runtime/ide/capabilities.js');
+const path = require("path");
+const prompts = require("@clack/prompts");
+const pkg = require("../../../package.json");
+const { loadConfig } = require("../../runtime/config/loader.js");
+const { writeConfig } = require("../../runtime/config/writer.js");
+const { defaultConfig } = require("../../runtime/config/defaults.js");
+const { discoverPlugins } = require("../../runtime/plugins/registry.js");
+const { installPlugins } = require("../../runtime/installer/install.js");
+const { pickPlugins, buildPluginsMap } = require("../wizard/plugin-picker.js");
+const { personalizationPrompts } = require("../wizard/personalization.js");
+const { pickIde } = require("../wizard/ide-picker.js");
+const { pickBehaviors } = require("../wizard/behaviors-picker.js");
+const {
+  SUPPORTED_IDES,
+  capabilitiesFor,
+} = require("../../runtime/ide/capabilities.js");
 
 /**
  * Parse a CSV of plugin ids, apply it over the discovered+existing plugin
@@ -37,7 +41,10 @@ const { SUPPORTED_IDES, capabilitiesFor } = require('../../runtime/ide/capabilit
  */
 function pluginsFromCsv(csv, existingPlugins = {}) {
   const requested = new Set(
-    (csv || '').split(',').map((s) => s.trim()).filter(Boolean),
+    (csv || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   );
   const discovered = discoverPlugins();
   const discoveredIds = new Set(discovered.map((p) => p.id));
@@ -65,14 +72,16 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
     return await writeConfig(cwd, config);
   } catch (err) {
     if (ctx.interactive) {
-      if (ctx.spinner) ctx.spinner.stop('Config write failed');
+      if (ctx.spinner) ctx.spinner.stop("Config write failed");
       prompts.log.error(`Could not write config: ${err.message}`);
-      prompts.log.info('Check permissions and disk space, then run `agileflow setup` again.');
+      prompts.log.info(
+        "Check permissions and disk space, then run `agileflow setup` again.",
+      );
     } else {
       // eslint-disable-next-line no-console
       console.error(`agileflow setup: failed to write config: ${err.message}`);
       // eslint-disable-next-line no-console
-      console.error('Check permissions and disk space, then retry.');
+      console.error("Check permissions and disk space, then retry.");
     }
     process.exit(1);
   }
@@ -83,23 +92,25 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
  * @param {string[]} enabledIds
  * @param {string} cwd
  * @param {string} ide - target IDE id (gates hook manifest writing)
+ * @param {import('../../runtime/config/defaults.js').Behaviors} behaviors - hook preset toggles
  * @param {{ interactive: boolean, spinner?: any }} ctx
  */
-async function runInstallWithFeedback(enabledIds, cwd, ide, ctx) {
+async function runInstallWithFeedback(enabledIds, cwd, ide, behaviors, ctx) {
   // userSelected is "everything except core" — core is always-on via
   // cannotDisable, the resolver will pull it in.
-  const userSelected = enabledIds.filter((id) => id !== 'core');
+  const userSelected = enabledIds.filter((id) => id !== "core");
   try {
     return await installPlugins({
       discovered: discoverPlugins(),
       userSelected,
-      agileflowDir: path.join(cwd, '.agileflow'),
+      agileflowDir: path.join(cwd, ".agileflow"),
       cliVersion: pkg.version,
       ide,
+      behaviors,
     });
   } catch (err) {
     if (ctx.interactive) {
-      if (ctx.spinner) ctx.spinner.stop('Install failed');
+      if (ctx.spinner) ctx.spinner.stop("Install failed");
       prompts.log.error(`Install failed: ${err.message}`);
     } else {
       // eslint-disable-next-line no-console
@@ -127,31 +138,37 @@ async function setup(options = {}) {
     }
     prompts.intro(`agileflow v${pkg.version} setup`);
     prompts.log.error(err.message);
-    prompts.log.info('Fix or delete agileflow.config.json and re-run `agileflow setup`.');
+    prompts.log.info(
+      "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
+    );
     process.exit(1);
   }
 
-  const base = existing.source === 'file' ? existing.config : defaultConfig();
+  const base = existing.source === "file" ? existing.config : defaultConfig();
 
   if (options.yes) {
     // Resolve IDE: --ide flag wins, then existing config, then default.
-    const requestedIde = options.ide || base.ide.primary || 'claude-code';
+    const requestedIde = options.ide || base.ide.primary || "claude-code";
     if (!SUPPORTED_IDES.includes(requestedIde)) {
       // eslint-disable-next-line no-console
       console.error(
-        `agileflow setup: unknown IDE "${requestedIde}". Supported: ${SUPPORTED_IDES.join(', ')}`,
+        `agileflow setup: unknown IDE "${requestedIde}". Supported: ${SUPPORTED_IDES.join(", ")}`,
       );
       process.exit(1);
     }
 
     const { plugins, unknownPlugins } = pluginsFromCsv(
-      options.plugins || 'core',
+      options.plugins || "core",
       base.plugins,
     );
     if (unknownPlugins.length) {
-      const known = discoverPlugins().map((p) => p.id).join(', ');
+      const known = discoverPlugins()
+        .map((p) => p.id)
+        .join(", ");
       // eslint-disable-next-line no-console
-      console.error(`agileflow setup: unknown plugin(s): ${unknownPlugins.join(', ')}`);
+      console.error(
+        `agileflow setup: unknown plugin(s): ${unknownPlugins.join(", ")}`,
+      );
       // eslint-disable-next-line no-console
       console.error(`Available plugins: ${known}`);
       process.exit(1);
@@ -162,22 +179,30 @@ async function setup(options = {}) {
       plugins,
       ide: { primary: /** @type {any} */ (requestedIde) },
     };
-    const file = await writeConfigWithFeedback(cwd, next, { interactive: false });
+    const file = await writeConfigWithFeedback(cwd, next, {
+      interactive: false,
+    });
     const enabled = Object.entries(plugins)
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id);
 
-    const installResult = await runInstallWithFeedback(enabled, cwd, requestedIde, {
-      interactive: false,
-    });
+    const installResult = await runInstallWithFeedback(
+      enabled,
+      cwd,
+      requestedIde,
+      next.behaviors,
+      { interactive: false },
+    );
 
     const caps = capabilitiesFor(requestedIde);
     // eslint-disable-next-line no-console
     console.log(`✓ Wrote ${file}`);
     // eslint-disable-next-line no-console
-    console.log(`  ide: ${requestedIde} (hooks=${caps.hooks ? 'on' : 'off'}, skills=${caps.skills ? 'on' : 'off'})`);
+    console.log(
+      `  ide: ${requestedIde} (hooks=${caps.hooks ? "on" : "off"}, skills=${caps.skills ? "on" : "off"})`,
+    );
     // eslint-disable-next-line no-console
-    console.log(`  plugins enabled: ${enabled.join(', ')}`);
+    console.log(`  plugins enabled: ${enabled.join(", ")}`);
     // eslint-disable-next-line no-console
     console.log(
       `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
@@ -187,10 +212,12 @@ async function setup(options = {}) {
 
   prompts.intro(`agileflow v${pkg.version} setup`);
 
-  if (existing.source === 'file') {
-    prompts.log.info(`Existing config found at ${existing.path} — re-running wizard to update.`);
+  if (existing.source === "file") {
+    prompts.log.info(
+      `Existing config found at ${existing.path} — re-running wizard to update.`,
+    );
   } else {
-    prompts.log.info('No existing config — starting from defaults.');
+    prompts.log.info("No existing config — starting from defaults.");
   }
 
   // Ask the IDE first — affects which features end up enabled later.
@@ -201,21 +228,29 @@ async function setup(options = {}) {
     plugins = await pickPlugins(base);
   } catch (err) {
     prompts.log.error(`Failed to load plugins: ${err.message}`);
-    prompts.cancel('Setup cannot continue. Fix plugin manifests and retry.');
+    prompts.cancel("Setup cannot continue. Fix plugin manifests and retry.");
     process.exit(1);
   }
   const personalization = await personalizationPrompts(base.personalization);
+
+  // Behavior presets only apply when the target IDE supports hooks.
+  // Non-claude-code IDEs would ignore the toggles, so don't ask.
+  const ideCaps = capabilitiesFor(ide);
+  const behaviors = ideCaps.hooks
+    ? await pickBehaviors(base.behaviors)
+    : base.behaviors;
 
   /** @type {import('../../runtime/config/defaults.js').AgileflowConfig} */
   const next = {
     ...base,
     plugins,
     personalization,
+    behaviors,
     ide: { primary: /** @type {any} */ (ide) },
   };
 
   const writeSpinner = prompts.spinner();
-  writeSpinner.start('Writing agileflow.config.json');
+  writeSpinner.start("Writing agileflow.config.json");
   const file = await writeConfigWithFeedback(cwd, next, {
     interactive: true,
     spinner: writeSpinner,
@@ -228,25 +263,28 @@ async function setup(options = {}) {
 
   const installSpinner = prompts.spinner();
   installSpinner.start(`Installing ${enabledList.length} plugin(s)`);
-  const installResult = await runInstallWithFeedback(enabledList, cwd, ide, {
-    interactive: true,
-    spinner: installSpinner,
-  });
+  const installResult = await runInstallWithFeedback(
+    enabledList,
+    cwd,
+    ide,
+    behaviors,
+    { interactive: true, spinner: installSpinner },
+  );
   installSpinner.stop(
     `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
   );
 
   prompts.outro(
     [
-      `${enabledList.length} plugin(s) enabled: ${enabledList.join(', ')}`,
+      `${enabledList.length} plugin(s) enabled: ${enabledList.join(", ")}`,
       installResult.ops.preserved
         ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
-        : '',
-      '',
-      'Phase 3+ will land hooks, Core content, and the publish pipeline.',
+        : "",
+      "",
+      "Phase 3+ will land hooks, Core content, and the publish pipeline.",
     ]
       .filter(Boolean)
-      .join('\n'),
+      .join("\n"),
   );
 }
 

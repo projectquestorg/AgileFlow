@@ -1,0 +1,100 @@
+# Damage control pattern library.
+#
+# The pre-Bash / pre-Edit / pre-Write hooks load this file and reject
+# tool invocations whose payload matches any pattern below. Each entry
+# explains WHY it's blocked so the error message can cite the rule.
+#
+# Pattern syntax:
+#   - `regex`: JS RegExp source (used with `new RegExp(pattern, 'i')`)
+#   - `kind`:  one of bash | edit | write — which hook applies the rule
+#   - `severity`: error (block, exit 2) | warn (allow but log warning)
+#   - `reason`: human-readable rationale shown in the block message
+#
+# Adding a pattern: keep it surgical. False positives are worse than
+# missed catches because they train users to bypass the guard.
+
+patterns:
+  # --- Catastrophic filesystem operations ---
+  - regex: 'rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(/|~|\$HOME)\b'
+    kind: bash
+    severity: error
+    reason: rm -rf on / or $HOME is almost certainly a mistake — refuse outright
+
+  - regex: 'rm\s+-[a-zA-Z]*[rfRF][a-zA-Z]*\s+/\*'
+    kind: bash
+    severity: error
+    reason: rm -rf /* deletes the entire filesystem
+
+  - regex: '\bdd\s+if=.*\s+of=/dev/(sd|nvme|hd)'
+    kind: bash
+    severity: error
+    reason: dd to a raw block device wipes the disk
+
+  - regex: '\bmkfs\.\w+\s+/dev/'
+    kind: bash
+    severity: error
+    reason: mkfs on a device formats it — destroys all data
+
+  - regex: '>\s*/dev/(sd|nvme|hd)\w+'
+    kind: bash
+    severity: error
+    reason: writing directly to a block device corrupts the disk
+
+  - regex: ':\(\)\{\s*:\|:\&\s*\};:'
+    kind: bash
+    severity: error
+    reason: classic fork bomb
+
+  # --- Risky git operations ---
+  - regex: 'git\s+push\s+.*--force(\s|$)'
+    kind: bash
+    severity: warn
+    reason: force push can rewrite shared history — confirm intent
+
+  - regex: 'git\s+(reset|checkout)\s+.*--hard'
+    kind: bash
+    severity: warn
+    reason: --hard discards uncommitted work — confirm before running
+
+  - regex: 'git\s+clean\s+-[a-zA-Z]*[fdx]+'
+    kind: bash
+    severity: warn
+    reason: git clean -fdx removes untracked files including .gitignored — confirm
+
+  # --- Edit / Write path scope ---
+  # The edit/write hooks evaluate the file_path payload, not the command.
+  - regex: "^/etc/(passwd|shadow|sudoers)$"
+    kind: edit
+    severity: error
+    reason: editing system credential files would compromise the host
+
+  - regex: "^/etc/(passwd|shadow|sudoers)$"
+    kind: write
+    severity: error
+    reason: writing to system credential files would compromise the host
+
+  - regex: '\.ssh/(id_[a-z]+|authorized_keys|known_hosts)$'
+    kind: edit
+    severity: warn
+    reason: editing SSH credentials — confirm this is intentional
+
+  - regex: '\.ssh/(id_[a-z]+|authorized_keys|known_hosts)$'
+    kind: write
+    severity: warn
+    reason: writing to SSH credentials — confirm this is intentional
+
+  - regex: '\.env(\.|$)'
+    kind: write
+    severity: warn
+    reason: writing to a .env file — confirm it does not commit secrets
+
+  # --- npm / pnpm risk ---
+  - regex: 'npm\s+publish(\s|$)'
+    kind: bash
+    severity: warn
+    reason: npm publish ships to a public registry — confirm version + auth
+
+  - regex: 'rm\s+-rf?\s+(node_modules|\.git)\b'
+    kind: bash
+    severity: warn
+    reason: nuking node_modules / .git is recoverable but slow — confirm

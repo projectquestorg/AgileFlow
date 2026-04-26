@@ -13,11 +13,11 @@
  * Always non-interactive. Exits non-zero on validation / install
  * failure.
  */
-const path = require('path');
-const pkg = require('../../../package.json');
-const { loadConfig } = require('../../runtime/config/loader.js');
-const { discoverPlugins } = require('../../runtime/plugins/registry.js');
-const { installPlugins } = require('../../runtime/installer/install.js');
+const path = require("path");
+const pkg = require("../../../package.json");
+const { loadConfig } = require("../../runtime/config/loader.js");
+const { discoverPlugins } = require("../../runtime/plugins/registry.js");
+const { installPlugins } = require("../../runtime/installer/install.js");
 
 /**
  * @param {{ force?: boolean }} options
@@ -34,10 +34,10 @@ async function update(options = {}) {
     process.exit(1);
   }
 
-  if (existing.source === 'defaults') {
+  if (existing.source === "defaults") {
     // eslint-disable-next-line no-console
     console.error(
-      'agileflow update: no agileflow.config.json found. Run `agileflow setup` first.',
+      "agileflow update: no agileflow.config.json found. Run `agileflow setup` first.",
     );
     process.exit(1);
   }
@@ -47,16 +47,17 @@ async function update(options = {}) {
     .map(([id]) => id);
 
   // userSelected excludes core (cannotDisable handles it).
-  const userSelected = enabled.filter((id) => id !== 'core');
+  const userSelected = enabled.filter((id) => id !== "core");
 
   let result;
   try {
     result = await installPlugins({
       discovered: discoverPlugins(),
       userSelected,
-      agileflowDir: path.join(cwd, '.agileflow'),
+      agileflowDir: path.join(cwd, ".agileflow"),
       cliVersion: pkg.version,
       ide: existing.config.ide.primary,
+      behaviors: existing.config.behaviors,
       force: Boolean(options.force),
     });
   } catch (err) {
@@ -66,7 +67,7 @@ async function update(options = {}) {
   }
 
   // eslint-disable-next-line no-console
-  console.log(`✓ Updated ${enabled.length} plugin(s): ${enabled.join(', ')}`);
+  console.log(`✓ Updated ${enabled.length} plugin(s): ${enabled.join(", ")}`);
   // eslint-disable-next-line no-console
   console.log(
     `  created=${result.ops.created} updated=${result.ops.updated} unchanged=${result.ops.unchanged} preserved=${result.ops.preserved} removed=${result.ops.removed}`,

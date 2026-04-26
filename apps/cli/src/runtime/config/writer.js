@@ -10,12 +10,12 @@
  * Serializes only the user-facing fields (drops internal loader metadata
  * like `source`/`path`). Adds `$schema` pointer for editor validation.
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const { CONFIG_FILENAME } = require('./loader.js');
+const { CONFIG_FILENAME } = require("./loader.js");
 
-const SCHEMA_REF = './node_modules/agileflow/src/runtime/config/schema.json';
+const SCHEMA_REF = "./node_modules/agileflow/src/runtime/config/schema.json";
 
 /**
  * @param {string} cwd - project root
@@ -30,14 +30,15 @@ async function writeConfig(cwd, config) {
     version: 1,
     plugins: config.plugins,
     hooks: config.hooks,
+    behaviors: config.behaviors,
     personalization: config.personalization,
     ide: config.ide,
     language: config.language,
   };
-  const content = JSON.stringify(payload, null, 2) + '\n';
+  const content = JSON.stringify(payload, null, 2) + "\n";
 
   try {
-    await fs.promises.writeFile(tmp, content, 'utf8');
+    await fs.promises.writeFile(tmp, content, "utf8");
     await fs.promises.rename(tmp, file);
   } catch (err) {
     // Best-effort cleanup of the temp file on failure. Ignore cleanup errors.

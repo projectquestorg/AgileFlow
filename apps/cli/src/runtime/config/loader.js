@@ -8,14 +8,14 @@
  * Invalid JSON → throws with the file path.
  * Schema violation → throws with a JSON Pointer to the offending field.
  */
-const fs = require('fs');
-const path = require('path');
-const Ajv = require('ajv');
+const fs = require("fs");
+const path = require("path");
+const Ajv = require("ajv");
 
-const schema = require('./schema.json');
-const { defaultConfig } = require('./defaults.js');
+const schema = require("./schema.json");
+const { defaultConfig } = require("./defaults.js");
 
-const CONFIG_FILENAME = 'agileflow.config.json';
+const CONFIG_FILENAME = "agileflow.config.json";
 
 const ajv = new Ajv({ allErrors: true, useDefaults: false, strict: false });
 const validate = ajv.compile(schema);
@@ -34,6 +34,7 @@ function mergeConfig(defaults, user) {
     version: user.version ?? defaults.version,
     plugins: { ...defaults.plugins, ...(user.plugins || {}) },
     hooks: { ...defaults.hooks, ...(user.hooks || {}) },
+    behaviors: { ...defaults.behaviors, ...(user.behaviors || {}) },
     personalization: {
       ...defaults.personalization,
       ...(user.personalization || {}),
@@ -50,8 +51,8 @@ function mergeConfig(defaults, user) {
  */
 function formatSchemaErrors(errors) {
   return errors
-    .map((e) => `  • ${e.instancePath || '/'} ${e.message}`)
-    .join('\n');
+    .map((e) => `  • ${e.instancePath || "/"} ${e.message}`)
+    .join("\n");
 }
 
 /**
@@ -73,13 +74,13 @@ async function loadConfig(cwd) {
   // would get a misleading "Failed to read" error instead of defaults.
   let raw;
   try {
-    raw = fs.readFileSync(configPath, 'utf8');
+    raw = fs.readFileSync(configPath, "utf8");
   } catch (err) {
-    if (err.code === 'ENOENT') {
+    if (err.code === "ENOENT") {
       return Object.freeze({
         config: Object.freeze(defaultConfig()),
         path: null,
-        source: 'defaults',
+        source: "defaults",
       });
     }
     throw new Error(`Failed to read ${configPath}: ${err.message}`);
@@ -94,9 +95,7 @@ async function loadConfig(cwd) {
 
   if (!validate(parsed)) {
     const details = formatSchemaErrors(validate.errors || []);
-    throw new Error(
-      `Config validation failed for ${configPath}:\n${details}`,
-    );
+    throw new Error(`Config validation failed for ${configPath}:\n${details}`);
   }
 
   const merged = mergeConfig(defaultConfig(), parsed);
@@ -106,7 +105,7 @@ async function loadConfig(cwd) {
   return Object.freeze({
     config: Object.freeze(merged),
     path: configPath,
-    source: 'file',
+    source: "file",
   });
 }
 

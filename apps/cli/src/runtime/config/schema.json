@@ -39,6 +39,29 @@
         }
       }
     },
+    "behaviors": {
+      "type": "object",
+      "description": "Curated behavior presets. Each maps to one or more hooks the installer wires up. Disabling a behavior excludes its hooks from the generated hook-manifest.yaml.",
+      "additionalProperties": false,
+      "properties": {
+        "loadContext": {
+          "type": "boolean",
+          "description": "SessionStart: print project context (stories, dirty files, recent commits) for Claude to consume."
+        },
+        "babysitDefault": {
+          "type": "boolean",
+          "description": "SessionStart: inject the babysit-mentor pattern so Claude defaults to mentor mode without explicit invocation."
+        },
+        "damageControl": {
+          "type": "boolean",
+          "description": "PreToolUse: block dangerous Bash commands and risky Edit/Write paths via the patterns library."
+        },
+        "preCompactState": {
+          "type": "boolean",
+          "description": "PreCompact: capture story IDs, active command, and dirty git state so they survive Claude's compaction summary."
+        }
+      }
+    },
     "personalization": {
       "type": "object",
       "additionalProperties": false,

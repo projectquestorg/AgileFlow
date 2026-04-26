@@ -18,35 +18,32 @@
  * Side effects only on the destination project. The bundled `content/`
  * source tree is read-only.
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const { syncFile, emptyCounters } = require('./sync-engine.js');
+const { syncFile, emptyCounters } = require("./sync-engine.js");
 const {
   emptyIndex,
   readFileIndex,
   writeFileIndex,
-} = require('./file-index.js');
-const { resolvePlugins } = require('../plugins/resolver.js');
-const {
-  validatePluginSet,
-  hasErrors,
-} = require('../plugins/validator.js');
+} = require("./file-index.js");
+const { resolvePlugins } = require("../plugins/resolver.js");
+const { validatePluginSet, hasErrors } = require("../plugins/validator.js");
 const {
   writeAggregatedManifest,
   removeAggregatedManifest,
   buildHookManifest,
-} = require('../hooks/aggregator.js');
-const { normalizeManifest } = require('../hooks/manifest-loader.js');
-const { capabilitiesFor } = require('../ide/capabilities.js');
+} = require("../hooks/aggregator.js");
+const { normalizeManifest } = require("../hooks/manifest-loader.js");
+const { capabilitiesFor } = require("../ide/capabilities.js");
 const {
   writeClaudeCodeSettings,
   removeClaudeCodeSettings,
-} = require('../ide/claude-code-settings.js');
+} = require("../ide/claude-code-settings.js");
 const {
   mirrorClaudeCodeSkills,
   unmirrorClaudeCodeSkills,
-} = require('../ide/claude-code-skills.js');
+} = require("../ide/claude-code-skills.js");
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -57,6 +54,7 @@ const {
  * @property {string} agileflowDir - target install root (typically `<cwd>/.agileflow`)
  * @property {string} cliVersion - written into the file index header
  * @property {string} [ide='claude-code'] - target IDE for capability gating
+ * @property {Record<string, boolean>} [behaviors] - behavior preset toggles
  * @property {boolean} [force=false] - overwrite user modifications
  *
  * @typedef {Object} InstallResult
@@ -80,12 +78,12 @@ const {
  * @returns {string}
  */
 function makeTimestamp() {
-  return new Date().toISOString().replace(/[:.]/g, '-');
+  return new Date().toISOString().replace(/[:.]/g, "-");
 }
 
 /** @param {string} p */
 function toPosix(p) {
-  return p.split(path.sep).join('/');
+  return p.split(path.sep).join("/");
 }
 
 /**
@@ -115,9 +113,16 @@ async function* walkFiles(dir) {
  * @param {string} timestamp
  * @param {boolean} force
  */
-async function installOnePlugin(plugin, agileflowDir, fileIndex, ops, timestamp, force) {
-  const cfgDir = path.join(agileflowDir, '_cfg');
-  const pluginRoot = path.join(agileflowDir, 'plugins', plugin.id);
+async function installOnePlugin(
+  plugin,
+  agileflowDir,
+  fileIndex,
+  ops,
+  timestamp,
+  force,
+) {
+  const cfgDir = path.join(agileflowDir, "_cfg");
+  const pluginRoot = path.join(agileflowDir, "plugins", plugin.id);
 
   for await (const sourcePath of walkFiles(plugin.dir)) {
     const relInPlugin = path.relative(plugin.dir, sourcePath);
@@ -151,15 +156,21 @@ async function installOnePlugin(plugin, agileflowDir, fileIndex, ops, timestamp,
  * @param {import('./sync-engine.js').FileOpsCounters} ops
  * @returns {Promise<string[]>} the plugin ids that were removed
  */
-async function removeDisabledPlugins(enabledIds, knownIds, agileflowDir, fileIndex, ops) {
-  const pluginsRoot = path.join(agileflowDir, 'plugins');
+async function removeDisabledPlugins(
+  enabledIds,
+  knownIds,
+  agileflowDir,
+  fileIndex,
+  ops,
+) {
+  const pluginsRoot = path.join(agileflowDir, "plugins");
   /** @type {string[]} */
   const removed = [];
   let entries;
   try {
     entries = await fs.promises.readdir(pluginsRoot, { withFileTypes: true });
   } catch (err) {
-    if (err.code === 'ENOENT') return removed;
+    if (err.code === "ENOENT") return removed;
     throw err;
   }
   for (const e of entries) {
@@ -190,7 +201,8 @@ async function installPlugins(options) {
     userSelected,
     agileflowDir,
     cliVersion,
-    ide = 'claude-code',
+    ide = "claude-code",
+    behaviors,
     force = false,
   } = options;
 
@@ -198,9 +210,9 @@ async function installPlugins(options) {
   const issues = validatePluginSet(discovered);
   if (hasErrors(issues)) {
     const errors = issues
-      .filter((i) => i.severity === 'error')
+      .filter((i) => i.severity === "error")
       .map((i) => `  ${i.pluginId}: ${i.message}`)
-      .join('\n');
+      .join("\n");
     throw new Error(`Plugin validation failed:\n${errors}`);
   }
 
@@ -208,8 +220,8 @@ async function installPlugins(options) {
   const { ordered, autoEnabled } = resolvePlugins(discovered, userSelected);
 
   // 3. Read or seed the file index.
-  const cfgDir = path.join(agileflowDir, '_cfg');
-  const indexPath = path.join(cfgDir, 'files.json');
+  const cfgDir = path.join(agileflowDir, "_cfg");
+  const indexPath = path.join(cfgDir, "files.json");
   const fileIndex = (await readFileIndex(indexPath)) || emptyIndex(cliVersion);
 
   // 4-6 wrapped in try/finally so the file index is ALWAYS persisted,
@@ -224,7 +236,14 @@ async function installPlugins(options) {
   try {
     // 4. Sync each plugin in order.
     for (const plugin of ordered) {
-      await installOnePlugin(plugin, agileflowDir, fileIndex, ops, timestamp, force);
+      await installOnePlugin(
+        plugin,
+        agileflowDir,
+        fileIndex,
+        ops,
+        timestamp,
+        force,
+      );
     }
 
     // 5. Remove disabled plugin directories.
@@ -250,13 +269,17 @@ async function installPlugins(options) {
   const caps = capabilitiesFor(ide);
   let hookManifestPath = null;
   if (caps.hooks) {
-    const manifestObj = buildHookManifest(ordered);
+    const manifestObj = buildHookManifest(ordered, behaviors);
     try {
       normalizeManifest(manifestObj);
     } catch (err) {
       throw new Error(`Hook manifest validation failed: ${err.message}`);
     }
-    hookManifestPath = await writeAggregatedManifest(ordered, agileflowDir);
+    hookManifestPath = await writeAggregatedManifest(
+      ordered,
+      agileflowDir,
+      behaviors,
+    );
   } else {
     await removeAggregatedManifest(agileflowDir);
   }
@@ -265,7 +288,7 @@ async function installPlugins(options) {
   //    `.claude/settings.json`. Only when ide=claude-code.
   const projectRoot = path.dirname(agileflowDir);
   let settingsPath = null;
-  if (ide === 'claude-code') {
+  if (ide === "claude-code") {
     settingsPath = await writeClaudeCodeSettings(projectRoot);
   } else {
     await removeClaudeCodeSettings(projectRoot);

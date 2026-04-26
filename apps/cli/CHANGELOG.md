@@ -3,6 +3,34 @@
 All notable changes to `agileflow` v4 are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [4.0.0-alpha.2] — 2026-04-20
+
+Curated behavior presets — first hooks ship, but never as a free-for-all.
+
+### Added
+
+- **Behavior presets in `agileflow.config.json`** (`behaviors: { loadContext, babysitDefault, damageControl, preCompactState }`). Each preset maps 1:N to hooks declared in plugin manifests via a new `behavior: <key>` field. Disabling a preset excludes its hooks from the generated `.agileflow/hook-manifest.yaml` — the script literally does not run.
+- **Wizard step**: `pickBehaviors()` (`src/cli/wizard/behaviors-picker.js`) — Clack multiselect with all four presets pre-checked. Only shown for IDEs that support hooks (claude-code today; cursor/windsurf/codex skip it).
+- **Six behavior-gated hooks in the `core` plugin**:
+  - `context-loader` (SessionStart, gated by `loadContext`) — lean v4 replacement for v3's 79KB welcome banner. Prints stories, dirty files, and recent commits.
+  - `babysit-mentor-injector` (SessionStart, gated by `babysitDefault`) — HARD mode mentor injection. Claude defaults to the `/agileflow:babysit` mentor pattern without explicit invocation.
+  - `damage-control-bash` / `-edit` / `-write` (PreToolUse, gated by `damageControl`, `skipOnError: false`) — pattern-driven safety net (`damage-control-patterns.yaml`). Blocks `rm -rf /`, `dd to /dev/sda`, fork bombs, writes to `.env`/`.ssh/`, and similar.
+  - `pre-compact-state` (PreCompact, gated by `preCompactState`) — dumps active stories, current command, and dirty git state so they survive Claude's compaction summary.
+- **Schema + loader + writer updates**: `behaviors` is now a first-class config section. `mergeConfig` deep-merges across one level so partial user overrides don't wipe defaults.
+- **Aggregator behavior gating**: `buildHookManifest(orderedPlugins, behaviors)` filters hooks where `behaviors[entry.behavior] === false`. Missing keys treated as enabled (preserves intent of partial configs).
+- **15 new tests** covering behaviors filtering in the aggregator, behaviors-picker pure helpers, and the install-time integration test that asserts the manifest reflects the toggle map. Total: **304 passing** (+15 from alpha.1).
+
+### Changed
+
+- `installPlugins(options)` accepts a `behaviors` option threaded through to `writeAggregatedManifest`.
+- `agileflow setup` now includes a behaviors step after personalization for hook-capable IDEs.
+- `agileflow update` re-reads `behaviors` from the saved config so manual edits to `agileflow.config.json` propagate without re-running the wizard.
+- `defaultConfig()` ships with all four behaviors enabled. Users opt **out** at the wizard, never opt in.
+
+### Why curated, not free configuration
+
+Per user feedback in alpha.1: "I don't want it to be super customizable. Users would be able to customize pretty much anything." Free hook configuration (declare any event + any matcher + any script) is technically possible via the `hooks:` map, but the wizard surface is restricted to four presets. This keeps the install path predictable and prevents the v3-era anti-pattern of every plugin author shipping their own SessionStart welcome banner.
+
 ## [4.0.0-alpha.1] — Unreleased
 
 v4 Phase 1 skeleton. Not yet publishable.
@@ -254,6 +282,7 @@ The path from "green test suite" to "user can `npm i agileflow@alpha`" closes he
 - **Verified `npm pack --dry-run`** from `apps/cli/`: ships 52 files (bin/, src/, content/, README.md, LICENSE, CHANGELOG.md) — 65 KB tarball, 210 KB unpacked. Tests + vitest config + node_modules excluded.
 
 **To ship `4.0.0-alpha.1` now**:
+
 ```bash
 cd apps/cli && npm version 4.0.0-alpha.1 --no-git-tag-version
 git commit -am "release(v4): 4.0.0-alpha.1"

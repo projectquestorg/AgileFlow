@@ -1,6 +1,6 @@
 {
   "name": "agileflow",
-  "version": "4.0.0-alpha.1",
+  "version": "4.0.0-alpha.2",
   "description": "AI-driven agile development toolkit for Claude Code — skills-first architecture with opt-in plugins (v4)",
   "keywords": [
     "agile",

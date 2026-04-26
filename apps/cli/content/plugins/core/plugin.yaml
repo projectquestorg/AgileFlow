@@ -1,7 +1,10 @@
 # Core plugin — essential AgileFlow workflow.
 # Always enabled; cannot be disabled.
-# Phase 4: skills land here. ADR / sprint-planner / retro etc. live in
-# their own opt-in plugins later.
+#
+# Hooks declared here are CANDIDATES — the install-time aggregator
+# filters them by the user's `behaviors:` map in agileflow.config.json.
+# A hook ID that maps to a disabled behavior never enters the
+# generated hook-manifest.yaml. See apps/cli/src/runtime/hooks/aggregator.js.
 id: core
 name: Core
 description: Epic, Story, Status, Babysit — essential agile workflow.
@@ -26,9 +29,54 @@ provides:
       dir: skills/agileflow-babysit-mentor
   agents: []
   hooks:
-    - id: session-welcome
+    # SessionStart — context loading + (optional) mentor injection.
+    - id: context-loader
       event: SessionStart
-      script: hooks/session-welcome.js
+      script: hooks/context-loader.js
       timeout: 5000
       skipOnError: true
+      behavior: loadContext
+
+    - id: babysit-mentor-injector
+      event: SessionStart
+      script: hooks/babysit-mentor-injector.js
+      timeout: 2000
+      skipOnError: true
+      runAfter: [context-loader]
+      behavior: babysitDefault
+
+    # PreToolUse — damage control. skipOnError false: errors should
+    # block dangerous operations rather than be tolerated.
+    - id: damage-control-bash
+      event: PreToolUse
+      matcher: Bash
+      script: hooks/damage-control-bash.js
+      timeout: 3000
+      skipOnError: false
+      behavior: damageControl
+
+    - id: damage-control-edit
+      event: PreToolUse
+      matcher: Edit
+      script: hooks/damage-control-edit.js
+      timeout: 3000
+      skipOnError: false
+      behavior: damageControl
+
+    - id: damage-control-write
+      event: PreToolUse
+      matcher: Write
+      script: hooks/damage-control-write.js
+      timeout: 3000
+      skipOnError: false
+      behavior: damageControl
+
+    # PreCompact — preserve state across compaction.
+    - id: pre-compact-state
+      event: PreCompact
+      script: hooks/pre-compact-state.js
+      timeout: 5000
+      skipOnError: true
+      behavior: preCompactState
+
   templates: []
