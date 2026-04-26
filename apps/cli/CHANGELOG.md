@@ -102,6 +102,12 @@ Logic audit (5 analyzers: edge / flow / invariant / race / type) on Phase 2b run
 - **Random suffix on temp filenames** in `writeFileIndex` (PID alone could collide in same-process concurrent calls — rare but possible in tests).
 - **14 new tests**: stash path-traversal (4), atomic writes (2), resolver unknown ids (2), null hash inputs (2), partial-install index persistence (1), plus existing test fixed for absolute-path rejection. Suite: **117 → 131 passing**.
 
+### Phase 2c — Wire installer into CLI (setup + update)
+
+- **`agileflow setup` now triggers an actual install**: after writing `agileflow.config.json`, both the interactive and `--yes` paths call `installPlugins()`. The interactive path shows a Clack spinner ("Installing N plugin(s)") with a per-counter summary on completion. The `--yes` path prints a single-line counter summary.
+- **New `agileflow update` command**: re-runs `installPlugins()` against the currently-enabled plugin set in the config, no prompts. Use cases: applying manual edits to `agileflow.config.json`, picking up new bundled plugin content without re-prompting, CI sync. Supports `--force` to overwrite local modifications instead of preserving them.
+- **Verified end-to-end**: `agileflow setup --yes --plugins core,seo,audit` in a scratch dir writes config, installs 3 `plugin.yaml` files into `.agileflow/plugins/{core,audit,seo}/`, and produces a valid SHA256-indexed `_cfg/files.json`. Subsequent `agileflow update` reports 3 unchanged (idempotent).
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

@@ -1,24 +1,27 @@
 /**
  * `agileflow setup` — interactive install wizard.
  *
- * Phase 2a (hardened): real wizard that writes agileflow.config.json.
+ * After Phase 2b: the wizard not only writes `agileflow.config.json` but
+ * also runs `installPlugins()` so the user ends up with a working
+ * `.agileflow/` tree. Use `agileflow update` to re-install without
+ * re-prompting (e.g. after manually editing the config).
+ *
  *   - Plugin multiselect via @clack/prompts (skills.sh-style UX)
  *   - Personalization prompts (tone, ask_level, verbosity)
  *   - Non-interactive path: --yes --plugins <ids>
- *   - Error handling: write failures, plugin discovery failures, and
- *     unknown plugin ids all produce actionable user messages.
- *   - Custom (non-discovered) plugin entries in the existing config are
- *     preserved across wizard reruns — we only rewrite the bundled-plugin
- *     section of the plugins map.
- *
- * Does NOT perform installation yet (sync engine lands in Phase 2b).
+ *   - Errors (write failure, plugin discovery failure, unknown plugin
+ *     ids) produce actionable messages instead of stack traces.
+ *   - Custom plugin entries in the existing config are preserved across
+ *     wizard reruns.
  */
+const path = require('path');
 const prompts = require('@clack/prompts');
 const pkg = require('../../../package.json');
 const { loadConfig } = require('../../runtime/config/loader.js');
 const { writeConfig } = require('../../runtime/config/writer.js');
 const { defaultConfig } = require('../../runtime/config/defaults.js');
 const { discoverPlugins } = require('../../runtime/plugins/registry.js');
+const { installPlugins } = require('../../runtime/installer/install.js');
 const { pickPlugins, buildPluginsMap } = require('../wizard/plugin-picker.js');
 const { personalizationPrompts } = require('../wizard/personalization.js');
 
@@ -51,10 +54,6 @@ function pluginsFromCsv(csv, existingPlugins = {}) {
 }
 
 /**
- * Write the config and surface failures as actionable messages, not stack
- * traces. Shared between the interactive and --yes paths so both get the
- * same UX.
- *
  * @param {string} cwd
  * @param {import('../../runtime/config/defaults.js').AgileflowConfig} config
  * @param {{ interactive: boolean, spinner?: any }} ctx
@@ -72,6 +71,35 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
       console.error(`agileflow setup: failed to write config: ${err.message}`);
       // eslint-disable-next-line no-console
       console.error('Check permissions and disk space, then retry.');
+    }
+    process.exit(1);
+  }
+}
+
+/**
+ * Run the installer for the given enabled plugin ids and surface failures.
+ * @param {string[]} enabledIds
+ * @param {string} cwd
+ * @param {{ interactive: boolean, spinner?: any }} ctx
+ */
+async function runInstallWithFeedback(enabledIds, cwd, ctx) {
+  // userSelected is "everything except core" — core is always-on via
+  // cannotDisable, the resolver will pull it in.
+  const userSelected = enabledIds.filter((id) => id !== 'core');
+  try {
+    return await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected,
+      agileflowDir: path.join(cwd, '.agileflow'),
+      cliVersion: pkg.version,
+    });
+  } catch (err) {
+    if (ctx.interactive) {
+      if (ctx.spinner) ctx.spinner.stop('Install failed');
+      prompts.log.error(`Install failed: ${err.message}`);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error(`agileflow setup: install failed: ${err.message}`);
     }
     process.exit(1);
   }
@@ -120,10 +148,19 @@ async function setup(options = {}) {
     const enabled = Object.entries(plugins)
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id);
+
+    const installResult = await runInstallWithFeedback(enabled, cwd, {
+      interactive: false,
+    });
+
     // eslint-disable-next-line no-console
     console.log(`✓ Wrote ${file}`);
     // eslint-disable-next-line no-console
     console.log(`  plugins enabled: ${enabled.join(', ')}`);
+    // eslint-disable-next-line no-console
+    console.log(
+      `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
+    );
     return;
   }
 
@@ -152,24 +189,39 @@ async function setup(options = {}) {
     personalization,
   };
 
-  const spinner = prompts.spinner();
-  spinner.start('Writing agileflow.config.json');
+  const writeSpinner = prompts.spinner();
+  writeSpinner.start('Writing agileflow.config.json');
   const file = await writeConfigWithFeedback(cwd, next, {
     interactive: true,
-    spinner,
+    spinner: writeSpinner,
   });
-  spinner.stop(`Config written → ${file}`);
+  writeSpinner.stop(`Config written → ${file}`);
 
   const enabledList = Object.entries(plugins)
     .filter(([, v]) => v && v.enabled)
     .map(([id]) => id);
 
+  const installSpinner = prompts.spinner();
+  installSpinner.start(`Installing ${enabledList.length} plugin(s)`);
+  const installResult = await runInstallWithFeedback(enabledList, cwd, {
+    interactive: true,
+    spinner: installSpinner,
+  });
+  installSpinner.stop(
+    `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
+  );
+
   prompts.outro(
     [
-      `${enabledList.length} plugins enabled: ${enabledList.join(', ')}`,
+      `${enabledList.length} plugin(s) enabled: ${enabledList.join(', ')}`,
+      installResult.ops.preserved
+        ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
+        : '',
       '',
-      'Next: Phase 2b will land the installer and materialize .claude/* content.',
-    ].join('\n'),
+      'Phase 3+ will land hooks, Core content, and the publish pipeline.',
+    ]
+      .filter(Boolean)
+      .join('\n'),
   );
 }
 

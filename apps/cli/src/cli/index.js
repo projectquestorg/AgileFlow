@@ -9,6 +9,7 @@ const pkg = require('../../package.json');
 
 const status = require('./commands/status.js');
 const setup = require('./commands/setup.js');
+const update = require('./commands/update.js');
 const doctor = require('./commands/doctor.js');
 
 /**
@@ -32,10 +33,16 @@ function buildProgram() {
 
   program
     .command('setup')
-    .description('run interactive install wizard (Phase 2)')
+    .description('run interactive install wizard')
     .option('--yes', 'skip prompts, install with defaults')
     .option('--plugins <ids>', 'comma-separated plugin list to enable')
     .action(setup);
+
+  program
+    .command('update')
+    .description('re-install plugins from the current agileflow.config.json (no prompts)')
+    .option('--force', 'overwrite local modifications instead of preserving them')
+    .action(update);
 
   program
     .command('doctor')
