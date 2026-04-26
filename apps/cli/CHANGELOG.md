@@ -164,6 +164,19 @@ The install pipeline now produces a working `.agileflow/hook-manifest.yaml` auto
 - **17 new tests across aggregator + integration**: pure aggregator unit tests (build, atomic write, header comment, cleanup on failure, remove), 3 integration tests (manifest written for claude-code, NOT written for cursor, stale manifest removed on IDE switch). Suite: **213 → 227 passing across 18 files**.
 - **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` writes hook-manifest.yaml with `session-welcome` registered for SessionStart; switching to `--ide cursor` removes the manifest. The orchestrator (slice A) reads the same file at runtime; the loop is closed.
 
+### Phase 3 slice C — Claude Code settings.json registration
+
+The final piece. When `ide=claude-code`, the installer registers our 6 hook entry points in `.claude/settings.json` so Claude Code actually invokes our orchestrator. The orchestrator → manifest loader → chain executor → dispatcher loop now closes against a real Claude Code session.
+
+- **`src/runtime/ide/claude-code-settings.js`** — read/merge/write of `.claude/settings.json`. Critical correctness property: NEVER clobbers the user's other settings.json content (permissions, env, non-managed hooks). AgileFlow-owned entries are identified by the literal `agileflow hook` substring in their command and replaced atomically; everything else is preserved.
+- **`src/cli/commands/hook.js`** + new `agileflow hook <event> [--matcher <name>]` CLI subcommand: a unified hook dispatcher that resolves through the npm bin entry. Settings.json registers `npx --no-install agileflow hook <Event>` so the path works regardless of how the package is installed (local node_modules, global, npx).
+- **6 registrations across 4 events**: 1 SessionStart + 3 PreToolUse (Bash / Edit / Write matchers) + 1 PreCompact + 1 Stop. Each entry uses `type: command`, `timeout: 30` (seconds, per Claude Code docs), and the unified `agileflow hook ...` invocation.
+- **`installPlugins`** now calls `writeClaudeCodeSettings(projectRoot)` when `ide=claude-code` and `removeClaudeCodeSettings(projectRoot)` otherwise. Switching IDEs cleans up stale entries; if AgileFlow was the only owner, the settings.json file is removed entirely.
+- **24 new tests** for the settings.json writer (entry detection, merge, unmerge, file lifecycle, malformed input handling, idempotency, atomicity) plus 2 integration tests for ide-gated registration. Suite: **227 → 251 passing across 19 files**.
+- **End-to-end verified**: `agileflow setup --yes --ide claude-code` writes `.claude/settings.json` with all 6 entries; `npx agileflow hook SessionStart` invokes the orchestrator; switching to `--ide cursor` deletes the settings file. **Phase 3 is functionally complete** — a fresh Claude Code session in a v4-installed project now actually invokes our hooks.
+
+The 6 standalone dispatchers under `bin/hooks/*.js` are now legacy. The unified `agileflow hook` subcommand replaces them for production use; they're kept as direct-invocation aliases (useful for testing without npx). A future cleanup can prune them.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

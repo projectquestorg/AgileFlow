@@ -11,6 +11,7 @@ const status = require('./commands/status.js');
 const setup = require('./commands/setup.js');
 const update = require('./commands/update.js');
 const doctor = require('./commands/doctor.js');
+const hook = require('./commands/hook.js');
 
 /**
  * Build the commander program. Exported so tests can construct it without
@@ -49,6 +50,12 @@ function buildProgram() {
     .command('doctor')
     .description('validate config, plugins, skills, and hook manifest (Phase 5)')
     .action(doctor);
+
+  program
+    .command('hook <event>')
+    .description('internal: dispatch a Claude Code hook event (used by settings.json)')
+    .option('--matcher <name>', 'tool name for tool-related events (Bash / Edit / Write / etc.)')
+    .action(hook);
 
   return program;
 }

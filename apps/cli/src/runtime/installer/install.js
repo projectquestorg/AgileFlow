@@ -37,6 +37,10 @@ const {
   removeAggregatedManifest,
 } = require('../hooks/aggregator.js');
 const { capabilitiesFor } = require('../ide/capabilities.js');
+const {
+  writeClaudeCodeSettings,
+  removeClaudeCodeSettings,
+} = require('../ide/claude-code-settings.js');
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -238,6 +242,18 @@ async function installPlugins(options) {
     await removeAggregatedManifest(agileflowDir);
   }
 
+  // 8. Register or unregister our hook dispatchers in
+  //    `.claude/settings.json` so Claude Code actually invokes them.
+  //    Only when ide=claude-code; other IDEs get their stale entries
+  //    cleaned up.
+  const projectRoot = path.dirname(agileflowDir);
+  let settingsPath = null;
+  if (ide === 'claude-code') {
+    settingsPath = await writeClaudeCodeSettings(projectRoot);
+  } else {
+    await removeClaudeCodeSettings(projectRoot);
+  }
+
   return {
     ordered: ordered.map((p) => p.id),
     autoEnabled,
@@ -247,6 +263,7 @@ async function installPlugins(options) {
     indexPath,
     timestamp,
     hookManifestPath,
+    settingsPath,
     ide,
   };
 }

@@ -293,6 +293,47 @@ describe('installPlugins integration', () => {
     expect(fs.existsSync(path.join(agileflowDir, 'hook-manifest.yaml'))).toBe(false);
   });
 
+  it('writes .claude/settings.json with our hook registrations when ide=claude-code', async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    expect(result.settingsPath).toBe(path.join(scratch, '.claude', 'settings.json'));
+    const parsed = JSON.parse(fs.readFileSync(result.settingsPath, 'utf8'));
+    expect(parsed.hooks.SessionStart).toHaveLength(1);
+    expect(parsed.hooks.PreToolUse).toHaveLength(3);
+    expect(parsed.hooks.PreCompact).toHaveLength(1);
+    expect(parsed.hooks.Stop).toHaveLength(1);
+  });
+
+  it('does NOT touch .claude/settings.json when ide is not claude-code (and removes our entries on switch)', async () => {
+    // First install with claude-code.
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    const settingsPath = path.join(scratch, '.claude', 'settings.json');
+    expect(fs.existsSync(settingsPath)).toBe(true);
+
+    // Switch to cursor.
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'cursor',
+    });
+    expect(result.settingsPath).toBeNull();
+    // Our entries are gone (file removed since AgileFlow owned all of it).
+    expect(fs.existsSync(settingsPath)).toBe(false);
+  });
+
   it('throws on dependency cycles', async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {
