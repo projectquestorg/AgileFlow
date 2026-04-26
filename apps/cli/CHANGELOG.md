@@ -108,6 +108,19 @@ Logic audit (5 analyzers: edge / flow / invariant / race / type) on Phase 2b run
 - **New `agileflow update` command**: re-runs `installPlugins()` against the currently-enabled plugin set in the config, no prompts. Use cases: applying manual edits to `agileflow.config.json`, picking up new bundled plugin content without re-prompting, CI sync. Supports `--force` to overwrite local modifications instead of preserving them.
 - **Verified end-to-end**: `agileflow setup --yes --plugins core,seo,audit` in a scratch dir writes config, installs 3 `plugin.yaml` files into `.agileflow/plugins/{core,audit,seo}/`, and produces a valid SHA256-indexed `_cfg/files.json`. Subsequent `agileflow update` reports 3 unchanged (idempotent).
 
+### Phase 3 slice A — Hook meta-orchestrator core
+
+The fix for v3's cascading SessionStart failures lands. Six thin Claude Code dispatchers delegate to a single orchestrator that reads a project-side manifest, topologically orders hooks by `runAfter`, runs them with per-hook timeout + skipOnError semantics, and writes a JSONL log to `.agileflow/logs/hook-execution.jsonl`.
+
+- **`src/runtime/hooks/manifest-loader.js`** — reads/normalizes `.agileflow/hook-manifest.yaml` (schema v1). Strict validation: rejects unknown events, non-array `runAfter`, negative `timeout`, non-boolean `enabled`/`skipOnError`, duplicate ids. Six valid Claude Code events recognized: `SessionStart`, `PreCompact`, `Stop`, `PreToolUse:{Bash,Edit,Write}`. Returns null for missing manifest.
+- **`src/runtime/hooks/chain.js`** — `orderChain(hooks)` topologically sorts by `runAfter` via DFS three-color marking; cycles throw with the full path (`a -> b -> c -> a`); unresolved `runAfter` targets throw with the offending hook id; declaration order preserved within topo layers.
+- **`src/runtime/hooks/logger.js`** — `appendHookLog(logPath, entry)` writes one JSON object per line. `truncate()` caps stdout/stderr at 4 KB per stream with a `…[truncated]` marker. Drops `undefined` keys for compact lines. Auto-creates the log directory.
+- **`src/runtime/hooks/orchestrator.js`** — `runEvent({ event, agileflowDir, stdin, overrides, runHook? })` orchestrates a chain: load manifest → filter to event → apply user `overrides` from `agileflow.config.json.hooks` → topo sort → run each hook (via injectable `runHook`, defaulting to a child-process spawner with AbortController-enforced timeouts) → log every step → continue on `skipOnError: true` failures, abort with exit 1 on `skipOnError: false` failures. Default child-process runner picks the interpreter by extension (`.js`→node, `.sh`→bash, else direct), forwards stdin, captures stdout/stderr/exitCode/timedOut, sets `AGILEFLOW_DIR` env.
+- **`bin/hooks/{session-start,pre-bash,pre-edit,pre-write,pre-compact,stop}.js`** — six executable thin dispatchers (~30 lines each). Each forwards stdin to `runEvent` and exits with the chain's resolved code. `pre-compact` and `stop` always exit 0 even on chain failure (these events must never block). All catch top-level errors and fail open.
+- **`HOOK_LOG`** schema: `{ timestamp, event, hookId, status: 'ok'|'error'|'timeout'|'skipped', exitCode, durationMs, stdout?, stderr?, skippedByOnError? }`.
+- **44+ new tests across 4 files**: manifest schema (15), chain ordering + cycles (9), JSONL logger + truncation (8), orchestrator with stubbed runHook (12) including timeout, skipOnError, runAfter ordering, override application, multi-hook logging. Suite: **131 → 184 passing**.
+- **End-to-end smoke verified**: a manifest with `welcome` (ok) and `flaky` (exits 1, skipOnError: true) runs both in topo order, logs each, and the dispatcher exits 0 — the exact v3 cascade-failure case that previously broke session start now degrades gracefully.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
