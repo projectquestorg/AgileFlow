@@ -46,6 +46,7 @@ const { writeStash } = require('./stash.js');
  * @property {number} preserved
  * @property {number} unchanged
  * @property {number} stashed
+ * @property {number} removed
  * @property {string|null} updatesPath
  *
  * @typedef {Object} SyncOptions
@@ -69,6 +70,7 @@ function emptyCounters() {
     preserved: 0,
     unchanged: 0,
     stashed: 0,
+    removed: 0,
     updatesPath: null,
   };
 }

@@ -314,7 +314,13 @@ describe('emptyCounters', () => {
   it('starts all counters at zero', () => {
     const c = emptyCounters();
     expect(c).toEqual({
-      created: 0, updated: 0, preserved: 0, unchanged: 0, stashed: 0, updatesPath: null,
+      created: 0,
+      updated: 0,
+      preserved: 0,
+      unchanged: 0,
+      stashed: 0,
+      removed: 0,
+      updatesPath: null,
     });
   });
 });

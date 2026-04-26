@@ -74,6 +74,22 @@ Ported the v3 SHA256-based safe-update engine from `installer.js:349-455` into `
 - **37 new tests** (resolver: 12, validator: 25) covering diamond dependencies, 3-node cycles, semver edge cases, kebab-case rejections, and cross-plugin invariants. Suite: **73 → 110 passing**.
 - All 5 bundled plugin manifests pass strict validation with zero issues.
 
+### Phase 2b slice 4 — End-to-end install orchestrator + integration tests
+
+- **`src/runtime/installer/install.js`** — `installPlugins({ discovered, userSelected, agileflowDir, cliVersion, force })` wires every layer: strict-validate → resolve transitive deps + topo sort → read or seed file index → walk each plugin's source dir → `syncFile` every file under `<agileflowDir>/plugins/<id>/...` → remove directories of plugins no longer enabled (and prune their index entries) → atomically write the index. Throws on validation errors (zero partial install) and dependency cycles.
+- **`removeDisabledPlugins`** — only blasts directories whose ids are in the discovered set. Unknown user-placed dirs under `<agileflowDir>/plugins/` are left alone.
+- **`FileOpsCounters`** gained a `removed` field for plugin-level removal accounting.
+- **`tests/integration/install-plugins.test.js`** (7 tests) covers:
+  - First install with selected opt-ins → `core` first in topo order, file index records every file, disabled plugins absent.
+  - Idempotency: second run reports zero writes, all `unchanged`.
+  - User-modified file → `preserved` + stash written under `_cfg/updates/<timestamp>/<relativePath>` containing the upstream version.
+  - Disabled plugin removal → directory rm'd + index entries pruned.
+  - User-placed unknown directory under `plugins/` is preserved.
+  - Validation errors abort with a flat report, zero filesystem side effects.
+  - Cycle detection trips before any writes.
+- Suite: **110 → 117 passing** (1 unit test updated for the new `removed` counter; 7 new integration tests).
+- **Phase 2b "done when" criteria all met**: SHA256 round-trip passes, disabled-plugin removal works, integration test installs into a scratch dir end-to-end. The content injector port (slice 3) is deferred to Phase 4 — it's only needed once skills/commands with `<!-- {{TOKEN}} -->` placeholders ship.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
