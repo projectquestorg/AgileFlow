@@ -41,9 +41,11 @@
     "start": "node bin/agileflow.js",
     "setup": "node bin/agileflow.js setup",
     "status": "node bin/agileflow.js status",
+    "doctor": "node bin/agileflow.js doctor",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "vitest run && node bin/agileflow.js doctor"
   },
   "dependencies": {
     "@clack/prompts": "^0.8.2",

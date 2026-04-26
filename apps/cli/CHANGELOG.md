@@ -240,6 +240,28 @@ The skills-only direction makes activation triggers load-bearing. Typos in descr
 - **Doctor output against bundled content**: `Plugin manifests: ok`, `Skills: 4 warnings (missing _learnings files — created on first correction)`, `Hook manifest (aggregated): ok`, `Hook manifest (installed): ok`. All 5 Core skills pass strict validation.
 - **20 new tests** across `validator.test.js`: per-field validation, semver, body-length, collision detection (positive case, no-collision case, different priorities, case-insensitive), the validateSkillsAtRoot loader (missing dir → empty, broken skill → captured issue, multi-skill → cross-check). Suite: **266 → 286 passing across 21 files**.
 
+### Phase 5 slices 2 + 3 — CI + publish setup
+
+The path from "green test suite" to "user can `npm i agileflow@alpha`" closes here.
+
+- **`.github/workflows/v4-ci.yml`** — runs on push or PR that touches `apps/cli/**` on the `v4` branch. Steps: `npm install --legacy-peer-deps` (works around the v3 apps/docs peer-dep conflict), `npx vitest run` in `apps/cli/`, `node bin/agileflow.js doctor`, plus two scratch-dir smoke tests (`setup --yes --ide claude-code` lands `.claude/{settings.json,skills/agileflow-story-writer/SKILL.md}` + `hook-manifest.yaml` + file index; `setup --yes --ide cursor` correctly does NOT write any of those).
+- **`.github/workflows/v4-publish.yml`** — triggered by tags matching `agileflow-v4.*`. Re-runs tests + doctor, verifies the tag version matches `apps/cli/package.json`, and publishes with `npm publish --access public --tag alpha`. Uses the `NPM_TOKEN` secret. Tag prefix `agileflow-v4-` keeps v4 tags distinct from any v3 tags that may still land on `main`.
+- **`apps/cli/package.json`** gained:
+  - `prepublishOnly` script that runs `vitest run && node bin/agileflow.js doctor` so a red doctor blocks `npm publish` locally too.
+  - `doctor` script (alias for `node bin/agileflow.js doctor`).
+- **`apps/cli/LICENSE`** copied from repo root so the published tarball is self-contained per the `files: [..., "LICENSE", ...]` declaration.
+- **`apps/cli/PUBLISHING.md`** — quick-reference for shipping a release. Covers prerequisites, versioning convention (`4.0.0-alpha.N` → `4.0.0-beta.N` → `4.0.0-rc.N` → `4.0.0`), local dry-run, CI tag-push flow, manual emergency flow, alpha → latest promotion, and rollback (`npm deprecate` / `npm unpublish`).
+- **Verified `npm pack --dry-run`** from `apps/cli/`: ships 52 files (bin/, src/, content/, README.md, LICENSE, CHANGELOG.md) — 65 KB tarball, 210 KB unpacked. Tests + vitest config + node_modules excluded.
+
+**To ship `4.0.0-alpha.1` now**:
+```bash
+cd apps/cli && npm version 4.0.0-alpha.1 --no-git-tag-version
+git commit -am "release(v4): 4.0.0-alpha.1"
+git tag agileflow-v4.0.0-alpha.1
+git push origin v4 agileflow-v4.0.0-alpha.1
+# .github/workflows/v4-publish.yml does the rest.
+```
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

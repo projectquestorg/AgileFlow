@@ -1,0 +1,56 @@
+name: v4 publish to npm
+
+# Triggered when a tag matching `agileflow-v4.*.*` is pushed to the
+# repo. Publishes apps/cli to npm with `--tag alpha`. Tag format keeps
+# v4 prereleases distinct from any v3 tags that may still land on
+# main. Example tags: agileflow-v4.0.0-alpha.1, agileflow-v4.0.0-rc.1.
+
+on:
+  push:
+    tags:
+      - 'agileflow-v4.*'
+
+jobs:
+  publish:
+    name: npm publish (--tag alpha)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20 with npm registry auth
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install workspace deps
+        run: npm install --legacy-peer-deps
+
+      - name: Run tests
+        working-directory: apps/cli
+        run: npx vitest run
+
+      - name: Run doctor
+        working-directory: apps/cli
+        run: node bin/agileflow.js doctor
+
+      - name: Verify tag matches package.json version
+        working-directory: apps/cli
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION=${GITHUB_REF#refs/tags/agileflow-v}
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)" >&2
+            exit 1
+          fi
+          echo "Publishing version $PKG_VERSION"
+
+      - name: Publish to npm with --tag alpha
+        working-directory: apps/cli
+        run: npm publish --access public --tag alpha
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,67 @@
+name: v4 CI
+
+# Runs on every push or PR that touches the v4 branch (or apps/cli/).
+# Validates the apps/cli package: type-safe loaders, plugin manifests,
+# skills, and the aggregated hook manifest. Mirrors what
+# `prepublishOnly` runs locally before npm publish.
+
+on:
+  push:
+    branches: [v4]
+    paths:
+      - apps/cli/**
+      - .github/workflows/v4-ci.yml
+  pull_request:
+    branches: [v4]
+    paths:
+      - apps/cli/**
+      - .github/workflows/v4-ci.yml
+
+jobs:
+  test:
+    name: vitest + agileflow doctor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Pre-existing v3 peer-dep conflict in apps/docs requires
+      # --legacy-peer-deps at the workspace root. Tracked separately;
+      # not blocking v4.
+      - name: Install workspace deps
+        run: npm install --legacy-peer-deps
+        env:
+          npm_config_loglevel: error
+
+      - name: Run apps/cli tests
+        working-directory: apps/cli
+        run: npx vitest run
+
+      - name: Run agileflow doctor against bundled content
+        working-directory: apps/cli
+        run: node bin/agileflow.js doctor
+
+      - name: Smoke test: setup --yes in a scratch dir (claude-code)
+        run: |
+          mkdir -p /tmp/af-ci-smoke
+          cd /tmp/af-ci-smoke
+          node ${GITHUB_WORKSPACE}/apps/cli/bin/agileflow.js setup --yes --plugins core --ide claude-code
+          test -f .claude/settings.json
+          test -f .claude/skills/agileflow-story-writer/SKILL.md
+          test -f .agileflow/hook-manifest.yaml
+          test -f .agileflow/_cfg/files.json
+
+      - name: Smoke test: setup --yes in a scratch dir (cursor — no hooks)
+        run: |
+          mkdir -p /tmp/af-ci-smoke-cursor
+          cd /tmp/af-ci-smoke-cursor
+          node ${GITHUB_WORKSPACE}/apps/cli/bin/agileflow.js setup --yes --plugins core --ide cursor
+          # Cursor does not get hooks/skills materialized.
+          test ! -f .claude/settings.json
+          test ! -f .agileflow/hook-manifest.yaml
+          test -f .agileflow/_cfg/files.json
