@@ -36,6 +36,7 @@ function buildProgram() {
     .description('run interactive install wizard')
     .option('--yes', 'skip prompts, install with defaults')
     .option('--plugins <ids>', 'comma-separated plugin list to enable')
+    .option('--ide <id>', 'target IDE / CLI: claude-code | cursor | windsurf | codex', 'claude-code')
     .action(setup);
 
   program

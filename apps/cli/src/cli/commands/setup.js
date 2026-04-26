@@ -24,6 +24,8 @@ const { discoverPlugins } = require('../../runtime/plugins/registry.js');
 const { installPlugins } = require('../../runtime/installer/install.js');
 const { pickPlugins, buildPluginsMap } = require('../wizard/plugin-picker.js');
 const { personalizationPrompts } = require('../wizard/personalization.js');
+const { pickIde } = require('../wizard/ide-picker.js');
+const { SUPPORTED_IDES, capabilitiesFor } = require('../../runtime/ide/capabilities.js');
 
 /**
  * Parse a CSV of plugin ids, apply it over the discovered+existing plugin
@@ -130,6 +132,16 @@ async function setup(options = {}) {
   const base = existing.source === 'file' ? existing.config : defaultConfig();
 
   if (options.yes) {
+    // Resolve IDE: --ide flag wins, then existing config, then default.
+    const requestedIde = options.ide || base.ide.primary || 'claude-code';
+    if (!SUPPORTED_IDES.includes(requestedIde)) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `agileflow setup: unknown IDE "${requestedIde}". Supported: ${SUPPORTED_IDES.join(', ')}`,
+      );
+      process.exit(1);
+    }
+
     const { plugins, unknownPlugins } = pluginsFromCsv(
       options.plugins || 'core',
       base.plugins,
@@ -143,7 +155,11 @@ async function setup(options = {}) {
       process.exit(1);
     }
 
-    const next = { ...base, plugins };
+    const next = {
+      ...base,
+      plugins,
+      ide: { primary: /** @type {any} */ (requestedIde) },
+    };
     const file = await writeConfigWithFeedback(cwd, next, { interactive: false });
     const enabled = Object.entries(plugins)
       .filter(([, v]) => v && v.enabled)
@@ -153,8 +169,11 @@ async function setup(options = {}) {
       interactive: false,
     });
 
+    const caps = capabilitiesFor(requestedIde);
     // eslint-disable-next-line no-console
     console.log(`✓ Wrote ${file}`);
+    // eslint-disable-next-line no-console
+    console.log(`  ide: ${requestedIde} (hooks=${caps.hooks ? 'on' : 'off'}, skills=${caps.skills ? 'on' : 'off'})`);
     // eslint-disable-next-line no-console
     console.log(`  plugins enabled: ${enabled.join(', ')}`);
     // eslint-disable-next-line no-console
@@ -172,6 +191,9 @@ async function setup(options = {}) {
     prompts.log.info('No existing config — starting from defaults.');
   }
 
+  // Ask the IDE first — affects which features end up enabled later.
+  const ide = await pickIde(base.ide.primary);
+
   let plugins;
   try {
     plugins = await pickPlugins(base);
@@ -187,6 +209,7 @@ async function setup(options = {}) {
     ...base,
     plugins,
     personalization,
+    ide: { primary: /** @type {any} */ (ide) },
   };
 
   const writeSpinner = prompts.spinner();

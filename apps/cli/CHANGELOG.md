@@ -133,6 +133,25 @@ A read of the official Claude Code hooks docs revealed our event schema was wron
 - **21 new tests** for the schema + matcher routing: 9 manifest-loader (matcher field validation, expanded event list), 5 orchestrator (matcher filtering across exact / pipe-list / regex / no-matcher), 7 `matcherMatches` cases. Suite: **184 → 205 passing**.
 - **End-to-end re-verified**: a manifest with `welcome` (SessionStart, no matcher), `dc-bash` (PreToolUse, matcher: Bash), and `dc-edit` (PreToolUse, matcher: Edit) routes correctly. SessionStart fires welcome only; `pre-bash.js` invoking the orchestrator with `matcher: 'Bash'` fires only `dc-bash`, filtering out `dc-edit`.
 
+### IDE / CLI awareness — install gates by target
+
+Different agentic IDEs / CLIs support different feature subsets. Hooks are Claude Code only (the entire orchestrator we just shipped is Claude-Code-specific). Cursor / Windsurf / Codex don't have an equivalent hook API. The installer now picks an IDE up front and gates feature install on its capabilities.
+
+- **`src/runtime/ide/capabilities.js`** declares an `IDE_CAPABILITIES` map for the four supported targets: `claude-code` (full feature set), `cursor` (commands + MCP), `windsurf` (commands), `codex` (very limited). Each entry lists `hooks` / `skills` / `commands` / `agents` / `mcp` booleans plus a `settingsFile` path.
+- **`src/cli/wizard/ide-picker.js`** adds a Clack `select` prompt asking which IDE the user is targeting. Default is Claude Code. Selecting a non-full target prints a warning listing which features won't be installed (`cursor: hooks, skills, agents won't be installed (not supported by this IDE)`).
+- **`agileflow setup --yes --ide <id>`** flag for the non-interactive path. Unknown IDE ids are rejected with the supported list. Default is `claude-code`.
+- **Status output** now shows the IDE selection: `ide: claude-code (hooks=on, skills=on)`.
+- **Future install gating**: the IDE choice is captured in `agileflow.config.json` at `ide.primary`; subsequent slices (Phase 3 slice C / Phase 4 install gating) consult `capabilitiesFor(ide).hooks` etc. before writing IDE-specific files.
+
+### v4 direction lock — skills-only (no slash commands)
+
+User directive 2026-04-26: AgileFlow ships **skills only**. No slash commands at all in the runtime. (Distinction: `npx agileflow setup` and friends are CLI subcommands and stay — the directive applies to in-IDE `/agileflow:*` slash commands.)
+
+- **Plugin manifest `provides.commands`**: schema retained for backward compat but bundled plugins all ship `commands: []`. Phase 4 content authoring must NOT create command `.md` files.
+- **Plan §C overlap table** at `/home/bk/.claude/plans/fizzy-stirring-kahan.md` is now wholly "retire in favor of skill" — every former "Kept" command becomes "Retired".
+- **Skill design implication**: with no slash command for deterministic invocation, every skill must use the v2 frontmatter `triggers.keywords` + `priority` + `exclude` fields rigorously so Claude reliably picks the right skill.
+- **IDE capability map**: the `commands: true/false` field stays informational. AgileFlow itself ships no commands regardless.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
