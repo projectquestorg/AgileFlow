@@ -14,6 +14,8 @@ depends: []
 provides:
   commands: []
   skills:
+    - id: agileflow-adr
+      dir: skills/agileflow-adr
     - id: agileflow-epic-planner
       dir: skills/agileflow-epic-planner
     - id: agileflow-story-writer

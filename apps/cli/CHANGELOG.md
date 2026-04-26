@@ -223,6 +223,12 @@ The Core plugin now ships every skill its name promised: Epic, Story, Status, Ba
 
 **Phase 4 Core scope**: complete. Phase 5 (skill validator + CI + alpha.1 publish) is next. Other plugins (`audit`, `ads`, `seo`, `council`, etc.) populate after the validator is wired so they ship through a quality gate.
 
+### Phase 4 — Core gains a 5th skill: agileflow-adr
+
+- **`agileflow-adr`** — ported from v3 to v4 frontmatter v2. Captures architectural / technical decisions as MADR-format ADRs in `docs/03-decisions/`. Triggers on `architecture decision`, `which database`, `rest vs graphql`, `sql vs nosql`, `which framework`, `record this decision`, `trade-off between`, `adr for`. Excludes `decision tree` (algorithmic) and `decisive moment`. Self-improving learnings enabled. Bundled directly in Core because architectural decisions surface constantly during implementation; making the user remember to enable a separate plugin is friction at exactly the wrong moment.
+- **`content/plugins/core/plugin.yaml`** updated to declare 5 skills.
+- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands all 5 skills under `.claude/skills/`. 7 files created (5 × SKILL.md + plugin.yaml + session-welcome.js). Suite still 266 passing.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
