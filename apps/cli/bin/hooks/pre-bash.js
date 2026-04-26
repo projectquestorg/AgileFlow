@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Claude Code hook dispatcher: PreToolUse:Bash.
+ * Claude Code hook dispatcher: PreToolUse for the Bash tool.
  *
- * Runs the chain of hooks registered for `event: PreToolUse:Bash`.
- * Hooks here typically validate Bash commands against allow/block lists
- * (`damage-control-bash`). If any hook with `skipOnError: false` exits
- * non-zero, this dispatcher exits 1 (which Claude Code treats as
- * "block this Bash invocation"). Otherwise exits 0.
+ * Registered in `.claude/settings.json` as a `PreToolUse` hook with
+ * `matcher: "Bash"`. Claude Code only invokes this dispatcher when a
+ * Bash tool call is about to fire. We pass `matcher: "Bash"` through to
+ * the orchestrator so manifest hooks with their own matcher field can
+ * filter further (e.g. an MCP-tool-only hook will not run here).
  */
 const path = require('path');
 const { runEvent } = require('../../src/runtime/hooks/orchestrator.js');
@@ -20,7 +20,8 @@ async function main() {
   const stdin = Buffer.concat(chunks);
 
   const result = await runEvent({
-    event: 'PreToolUse:Bash',
+    event: 'PreToolUse',
+    matcher: 'Bash',
     agileflowDir,
     stdin,
   });

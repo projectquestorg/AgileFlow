@@ -121,6 +121,18 @@ The fix for v3's cascading SessionStart failures lands. Six thin Claude Code dis
 - **44+ new tests across 4 files**: manifest schema (15), chain ordering + cycles (9), JSONL logger + truncation (8), orchestrator with stubbed runHook (12) including timeout, skipOnError, runAfter ordering, override application, multi-hook logging. Suite: **131 → 184 passing**.
 - **End-to-end smoke verified**: a manifest with `welcome` (ok) and `flaky` (exits 1, skipOnError: true) runs both in topo order, logs each, and the dispatcher exits 0 — the exact v3 cascade-failure case that previously broke session start now degrades gracefully.
 
+### Phase 3 schema fix — align with Claude Code hooks reference
+
+A read of the official Claude Code hooks docs revealed our event schema was wrong on two counts: incomplete (6 of 28 real events) and synthetic (`PreToolUse:Bash` is not a real event — it's `PreToolUse` + a separate `matcher: "Bash"` config field). Fixed before slices B/C build on the schema.
+
+- **`VALID_EVENTS` expanded to all 28 events** in the Claude Code reference: `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `UserPromptExpansion`, `PreToolUse`, `PermissionRequest`, `PermissionDenied`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch`, `PreCompact`, `PostCompact`, `Stop`, `StopFailure`, `SubagentStart`, `SubagentStop`, `TaskCreated`, `TaskCompleted`, `TeammateIdle`, `InstructionsLoaded`, `ConfigChange`, `CwdChanged`, `FileChanged`, `WorktreeCreate`, `WorktreeRemove`, `Notification`, `Elicitation`, `ElicitationResult`.
+- **`matcher` is now a separate optional field** on hook manifest entries, only valid on tool-related events (`PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionRequest`, `PermissionDenied`). Manifest schema rejects matcher on non-tool events with a clear error.
+- **`matcherMatches(pattern, actual)`** helper implements Claude Code's matcher semantics: empty/`*` → match-all; alphanumeric+`_`+`|` → exact-or-pipe-list (`Bash`, `Edit|Write`); anything else → JS regex (`^Notebook`, `mcp__memory__.*`); invalid regex returns false instead of throwing.
+- **Orchestrator's `runEvent` accepts a `matcher` parameter**: hooks with a manifest matcher only fire when their pattern accepts the runtime-supplied matcher; hooks without a manifest matcher fire for every value.
+- **PreToolUse dispatchers** (`pre-bash.js`, `pre-edit.js`, `pre-write.js`) hardcode their respective matcher (`Bash`, `Edit`, `Write`) and pass it to `runEvent`. They register in `.claude/settings.json` (slice C) as `PreToolUse` hooks with the matching `matcher` field, so Claude Code routes correctly.
+- **21 new tests** for the schema + matcher routing: 9 manifest-loader (matcher field validation, expanded event list), 5 orchestrator (matcher filtering across exact / pipe-list / regex / no-matcher), 7 `matcherMatches` cases. Suite: **184 → 205 passing**.
+- **End-to-end re-verified**: a manifest with `welcome` (SessionStart, no matcher), `dc-bash` (PreToolUse, matcher: Bash), and `dc-edit` (PreToolUse, matcher: Edit) routes correctly. SessionStart fires welcome only; `pre-bash.js` invoking the orchestrator with `matcher: 'Bash'` fires only `dc-bash`, filtering out `dc-edit`.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

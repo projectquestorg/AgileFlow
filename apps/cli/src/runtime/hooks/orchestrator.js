@@ -46,8 +46,11 @@ const { appendHookLog } = require('./logger.js');
  * @property {boolean} [skipOnError]
  *
  * @typedef {Object} RunEventOptions
- * @property {string} event - e.g. "SessionStart"
+ * @property {string} event - e.g. "SessionStart" or "PreToolUse"
  * @property {string} agileflowDir - absolute path to .agileflow/
+ * @property {string} [matcher] - the actual tool name (e.g. "Bash") for
+ *           tool-related events. Used to filter manifest hooks whose
+ *           own `matcher` pattern selects this tool.
  * @property {Buffer|string} [stdin] - data forwarded to each hook on stdin
  * @property {Record<string, HookOverride>} [overrides] - from agileflow.config.json.hooks
  * @property {(hook: HookEntry, ctx: { stdin: Buffer|string, agileflowDir: string }) => Promise<RunHookResult>} [runHook]
@@ -131,6 +134,32 @@ async function defaultRunHook(hook, ctx) {
 }
 
 /**
+ * Match a manifest matcher pattern against a tool name (or any actual
+ * value). Mirrors Claude Code's matcher semantics:
+ *
+ *   - empty/null/undefined/`'*'` → match all
+ *   - alphanumeric + `_` + `|` only → exact match against any pipe-
+ *     separated alternative (`'Bash'` or `'Edit|Write'`)
+ *   - anything else → JavaScript regex (`'^Notebook'`, `'mcp__memory__.*'`)
+ *
+ * @param {string|null|undefined} pattern
+ * @param {string|null|undefined} actual
+ * @returns {boolean}
+ */
+function matcherMatches(pattern, actual) {
+  if (!pattern || pattern === '*') return true;
+  if (typeof actual !== 'string' || actual.length === 0) return false;
+  if (/^[A-Za-z0-9_|]+$/.test(pattern)) {
+    return pattern.split('|').includes(actual);
+  }
+  try {
+    return new RegExp(pattern).test(actual);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Apply per-hook overrides from user config to a hook entry. Returns a
  * new normalized HookEntry without mutating the input.
  * @param {HookEntry} hook
@@ -174,6 +203,7 @@ async function runEvent(options) {
   const {
     event,
     agileflowDir,
+    matcher,
     stdin = '',
     overrides = {},
     runHook = defaultRunHook,
@@ -200,9 +230,13 @@ async function runEvent(options) {
   }
   if (!manifest) return { exitCode: 0, steps: [] };
 
-  // Filter to this event, apply user overrides, then enabled gate.
+  // Filter to this event, then by matcher (a manifest hook with no
+  // matcher matches all; a manifest hook with a matcher only matches
+  // when the runtime supplied a matcher that satisfies it). Then
+  // apply user overrides and the enabled gate.
   const eventHooks = manifest.hooks
     .filter((h) => h.event === event)
+    .filter((h) => !h.matcher || matcherMatches(h.matcher, matcher))
     .map((h) => applyOverride(h, overrides[h.id]))
     .filter((h) => h.enabled);
 
@@ -284,4 +318,5 @@ module.exports = {
   defaultRunHook,
   applyOverride,
   resolveScriptPath,
+  matcherMatches,
 };

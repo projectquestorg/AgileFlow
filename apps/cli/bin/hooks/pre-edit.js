@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Claude Code hook dispatcher: PreToolUse:Edit.
+ * Claude Code hook dispatcher: PreToolUse for the Edit tool.
  *
- * Mirror of pre-bash.js but for the Edit tool. Hooks here typically
- * gate which paths can be edited (session-boundary, damage-control-edit).
+ * Registered in `.claude/settings.json` as a `PreToolUse` hook with
+ * `matcher: "Edit"`. Mirror of pre-bash.js for the Edit tool.
  */
 const path = require('path');
 const { runEvent } = require('../../src/runtime/hooks/orchestrator.js');
@@ -17,7 +17,8 @@ async function main() {
   const stdin = Buffer.concat(chunks);
 
   const result = await runEvent({
-    event: 'PreToolUse:Edit',
+    event: 'PreToolUse',
+    matcher: 'Edit',
     agileflowDir,
     stdin,
   });

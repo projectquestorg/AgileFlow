@@ -34,6 +34,7 @@ describe('normalizeHook', () => {
     expect(h).toEqual({
       id: 'a',
       event: 'SessionStart',
+      matcher: null,
       script: 'hooks/a.js',
       runAfter: ['b'],
       timeout: 3000,
@@ -70,13 +71,64 @@ describe('normalizeHook', () => {
     ).toThrow(/event must be one of/);
   });
 
-  it.each(['SessionStart', 'PreCompact', 'Stop', 'PreToolUse:Bash', 'PreToolUse:Edit', 'PreToolUse:Write'])(
-    'accepts known event %s',
-    (event) => {
-      const h = normalizeHook({ id: 'a', event, script: 'a.js' }, 0);
-      expect(h.event).toBe(event);
-    },
-  );
+  it.each([
+    'SessionStart',
+    'SessionEnd',
+    'UserPromptSubmit',
+    'PreToolUse',
+    'PostToolUse',
+    'PreCompact',
+    'PostCompact',
+    'Stop',
+    'SubagentStop',
+    'TaskCreated',
+    'FileChanged',
+    'Notification',
+  ])('accepts known event %s', (event) => {
+    const h = normalizeHook({ id: 'a', event, script: 'a.js' }, 0);
+    expect(h.event).toBe(event);
+  });
+
+  describe('matcher field', () => {
+    it('accepts a matcher on PreToolUse', () => {
+      const h = normalizeHook(
+        { id: 'a', event: 'PreToolUse', matcher: 'Bash', script: 'a.js' },
+        0,
+      );
+      expect(h.matcher).toBe('Bash');
+    });
+
+    it('accepts a matcher on PostToolUse', () => {
+      const h = normalizeHook(
+        { id: 'a', event: 'PostToolUse', matcher: 'Bash|Edit', script: 'a.js' },
+        0,
+      );
+      expect(h.matcher).toBe('Bash|Edit');
+    });
+
+    it('rejects a matcher on non-tool events', () => {
+      expect(() =>
+        normalizeHook(
+          { id: 'a', event: 'SessionStart', matcher: 'Bash', script: 'a.js' },
+          0,
+        ),
+      ).toThrow(/matcher is not allowed on event "SessionStart"/);
+    });
+
+    it('rejects non-string matcher', () => {
+      expect(() =>
+        normalizeHook(
+          { id: 'a', event: 'PreToolUse', matcher: 42, script: 'a.js' },
+          0,
+        ),
+      ).toThrow(/matcher must be a string/);
+    });
+
+    it('defaults matcher to null when omitted', () => {
+      const h = normalizeHook({ id: 'a', event: 'PreToolUse', script: 'a.js' }, 0);
+      expect(h.matcher).toBeNull();
+    });
+  });
 
   it('rejects non-array runAfter', () => {
     expect(() =>
@@ -170,13 +222,19 @@ describe('loadHookManifest', () => {
 });
 
 describe('VALID_EVENTS', () => {
-  it('includes all six Claude Code hook entry points', () => {
-    expect(VALID_EVENTS.size).toBe(6);
+  it('matches the official Claude Code hooks reference (28 events)', () => {
+    expect(VALID_EVENTS.size).toBe(28);
     expect(VALID_EVENTS.has('SessionStart')).toBe(true);
-    expect(VALID_EVENTS.has('PreToolUse:Bash')).toBe(true);
-    expect(VALID_EVENTS.has('PreToolUse:Edit')).toBe(true);
-    expect(VALID_EVENTS.has('PreToolUse:Write')).toBe(true);
+    expect(VALID_EVENTS.has('SessionEnd')).toBe(true);
+    expect(VALID_EVENTS.has('UserPromptSubmit')).toBe(true);
+    expect(VALID_EVENTS.has('PreToolUse')).toBe(true);
+    expect(VALID_EVENTS.has('PostToolUse')).toBe(true);
     expect(VALID_EVENTS.has('PreCompact')).toBe(true);
     expect(VALID_EVENTS.has('Stop')).toBe(true);
+    expect(VALID_EVENTS.has('SubagentStop')).toBe(true);
+    expect(VALID_EVENTS.has('TaskCreated')).toBe(true);
+    expect(VALID_EVENTS.has('FileChanged')).toBe(true);
+    // Synthetic event names from the previous schema must be rejected.
+    expect(VALID_EVENTS.has('PreToolUse:Bash')).toBe(false);
   });
 });

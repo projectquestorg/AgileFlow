@@ -6,18 +6,23 @@
  *
  *   version: 1
  *   hooks:
- *     - id: babysit-clear-restore
- *       event: SessionStart
- *       script: .agileflow/plugins/core/hooks/babysit-clear-restore.js
+ *     - id: damage-control-bash
+ *       event: PreToolUse              # one of VALID_EVENTS
+ *       matcher: Bash                  # optional; only meaningful on tool events
+ *       script: .agileflow/plugins/core/hooks/damage-control-bash.js
  *       runAfter: []                   # optional, default []
- *       timeout: 5000                  # optional, default 10000 ms
- *       skipOnError: true              # optional, default true
+ *       timeout: 3000                  # optional, default 10000 ms
+ *       skipOnError: false             # optional, default true
  *       enabled: true                  # optional, default true
  *
  * Returns null when the file does not exist (treated as "no hooks
  * registered" by callers). Throws with a clear message on invalid
- * YAML or schema violations — partial/silent acceptance is the
- * v3 anti-pattern that caused the cascade failures we're fixing.
+ * YAML or schema violations — partial/silent acceptance is the v3
+ * anti-pattern that caused the cascade failures we're fixing.
+ *
+ * Event list mirrors the official Claude Code hooks reference
+ * (https://code.claude.com/docs/en/hooks); kept in sync manually.
+ * The docs grow over time — when a new event lands, add it here.
  */
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -25,11 +30,46 @@ const yaml = require('js-yaml');
 /** @type {ReadonlySet<string>} */
 const VALID_EVENTS = new Set([
   'SessionStart',
+  'SessionEnd',
+  'UserPromptSubmit',
+  'UserPromptExpansion',
+  'PreToolUse',
+  'PermissionRequest',
+  'PermissionDenied',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'PostToolBatch',
   'PreCompact',
+  'PostCompact',
   'Stop',
-  'PreToolUse:Bash',
-  'PreToolUse:Edit',
-  'PreToolUse:Write',
+  'StopFailure',
+  'SubagentStart',
+  'SubagentStop',
+  'TaskCreated',
+  'TaskCompleted',
+  'TeammateIdle',
+  'InstructionsLoaded',
+  'ConfigChange',
+  'CwdChanged',
+  'FileChanged',
+  'WorktreeCreate',
+  'WorktreeRemove',
+  'Notification',
+  'Elicitation',
+  'ElicitationResult',
+]);
+
+/**
+ * Events that support a `matcher` field (per the Claude Code docs).
+ * Specifying a `matcher` on any other event is a manifest error.
+ * @type {ReadonlySet<string>}
+ */
+const MATCHER_EVENTS = new Set([
+  'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'PermissionRequest',
+  'PermissionDenied',
 ]);
 
 const MANIFEST_VERSION = 1;
@@ -39,6 +79,7 @@ const DEFAULT_TIMEOUT_MS = 10000;
  * @typedef {Object} HookEntry
  * @property {string} id
  * @property {string} event
+ * @property {string|null} matcher
  * @property {string} script
  * @property {string[]} runAfter
  * @property {number} timeout
@@ -51,9 +92,8 @@ const DEFAULT_TIMEOUT_MS = 10000;
  */
 
 /**
- * Validate one raw hook entry from YAML.
  * @param {*} raw
- * @param {number} index - position in the manifest, used for error messages
+ * @param {number} index
  * @returns {HookEntry}
  */
 function normalizeHook(raw, index) {
@@ -65,8 +105,21 @@ function normalizeHook(raw, index) {
   }
   if (typeof raw.event !== 'string' || !VALID_EVENTS.has(raw.event)) {
     throw new Error(
-      `hook[${index} (${raw.id})].event must be one of: ${[...VALID_EVENTS].join(', ')}`,
+      `hook[${index} (${raw.id})].event must be one of: ${[...VALID_EVENTS].sort().join(', ')}`,
     );
+  }
+  /** @type {string|null} */
+  let matcher = null;
+  if (raw.matcher != null) {
+    if (typeof raw.matcher !== 'string') {
+      throw new Error(`hook[${raw.id}].matcher must be a string`);
+    }
+    if (!MATCHER_EVENTS.has(raw.event)) {
+      throw new Error(
+        `hook[${raw.id}].matcher is not allowed on event "${raw.event}"; matcher is only valid on tool-related events: ${[...MATCHER_EVENTS].join(', ')}`,
+      );
+    }
+    matcher = raw.matcher;
   }
   if (typeof raw.script !== 'string' || !raw.script) {
     throw new Error(`hook[${index} (${raw.id})].script must be a non-empty string`);
@@ -104,14 +157,19 @@ function normalizeHook(raw, index) {
     }
     enabled = raw.enabled;
   }
-  return { id: raw.id, event: raw.event, script: raw.script, runAfter, timeout, skipOnError, enabled };
+  return {
+    id: raw.id,
+    event: raw.event,
+    matcher,
+    script: raw.script,
+    runAfter,
+    timeout,
+    skipOnError,
+    enabled,
+  };
 }
 
 /**
- * Parse a manifest object from any source (YAML string, parsed object).
- * Used both by `loadHookManifest` and by the installer when aggregating
- * plugin-supplied hooks at install time.
- *
  * @param {*} parsed
  * @returns {HookManifest}
  */
@@ -127,9 +185,7 @@ function normalizeManifest(parsed) {
   if (!Array.isArray(parsed.hooks)) {
     throw new Error('hook manifest `hooks` must be an array');
   }
-  /** @type {HookEntry[]} */
   const hooks = parsed.hooks.map(normalizeHook);
-  // Reject duplicate ids — uniqueness is required for runAfter resolution.
   const seen = new Set();
   for (const h of hooks) {
     if (seen.has(h.id)) {
@@ -142,7 +198,7 @@ function normalizeManifest(parsed) {
 
 /**
  * @param {string} manifestPath
- * @returns {Promise<HookManifest|null>} null when the file does not exist
+ * @returns {Promise<HookManifest|null>}
  */
 async function loadHookManifest(manifestPath) {
   let raw;
@@ -166,6 +222,7 @@ module.exports = {
   normalizeManifest,
   normalizeHook,
   VALID_EVENTS,
+  MATCHER_EVENTS,
   MANIFEST_VERSION,
   DEFAULT_TIMEOUT_MS,
 };

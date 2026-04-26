@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import orchestratorModule from '../../../src/runtime/hooks/orchestrator.js';
 
-const { runEvent, applyOverride, resolveScriptPath } = orchestratorModule;
+const { runEvent, applyOverride, resolveScriptPath, matcherMatches } = orchestratorModule;
 
 /**
  * Build a manifest YAML on disk and return the agileflowDir for runEvent.
@@ -133,13 +133,14 @@ describe('runEvent', () => {
     const agileflowDir = writeManifest(scratch, {
       version: 1,
       hooks: [
-        { id: 'critical', event: 'PreToolUse:Bash', script: 'c.js', skipOnError: false },
-        { id: 'never-runs', event: 'PreToolUse:Bash', script: 'n.js', runAfter: ['critical'] },
+        { id: 'critical', event: 'PreToolUse', matcher: 'Bash', script: 'c.js', skipOnError: false },
+        { id: 'never-runs', event: 'PreToolUse', matcher: 'Bash', script: 'n.js', runAfter: ['critical'] },
       ],
     });
     const calls = [];
     const result = await runEvent({
-      event: 'PreToolUse:Bash',
+      event: 'PreToolUse',
+      matcher: 'Bash',
       agileflowDir,
       runHook: async (h) => {
         calls.push(h.id);
@@ -149,6 +150,89 @@ describe('runEvent', () => {
     expect(result.exitCode).toBe(1);
     expect(calls).toEqual(['critical']);
     expect(result.steps).toHaveLength(1);
+  });
+
+  describe('matcher filtering', () => {
+    it('runs hooks whose matcher accepts the supplied tool', async () => {
+      const agileflowDir = writeManifest(scratch, {
+        version: 1,
+        hooks: [
+          { id: 'bash-only', event: 'PreToolUse', matcher: 'Bash', script: 'a.js' },
+          { id: 'edit-only', event: 'PreToolUse', matcher: 'Edit', script: 'b.js' },
+        ],
+      });
+      const calls = [];
+      await runEvent({
+        event: 'PreToolUse',
+        matcher: 'Bash',
+        agileflowDir,
+        runHook: async (h) => {
+          calls.push(h.id);
+          return { exitCode: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false };
+        },
+      });
+      expect(calls).toEqual(['bash-only']);
+    });
+
+    it('runs matcherless manifest hooks regardless of supplied matcher', async () => {
+      const agileflowDir = writeManifest(scratch, {
+        version: 1,
+        hooks: [
+          { id: 'all-tools', event: 'PreToolUse', script: 'a.js' },
+        ],
+      });
+      const calls = [];
+      await runEvent({
+        event: 'PreToolUse',
+        matcher: 'Edit',
+        agileflowDir,
+        runHook: async (h) => {
+          calls.push(h.id);
+          return { exitCode: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false };
+        },
+      });
+      expect(calls).toEqual(['all-tools']);
+    });
+
+    it('runs hooks whose matcher is a `|`-separated list', async () => {
+      const agileflowDir = writeManifest(scratch, {
+        version: 1,
+        hooks: [
+          { id: 'editish', event: 'PreToolUse', matcher: 'Edit|Write', script: 'a.js' },
+        ],
+      });
+      const calls = [];
+      await runEvent({
+        event: 'PreToolUse',
+        matcher: 'Write',
+        agileflowDir,
+        runHook: async (h) => {
+          calls.push(h.id);
+          return { exitCode: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false };
+        },
+      });
+      expect(calls).toEqual(['editish']);
+    });
+
+    it('runs hooks whose matcher is a regex', async () => {
+      const agileflowDir = writeManifest(scratch, {
+        version: 1,
+        hooks: [
+          { id: 'mcp', event: 'PreToolUse', matcher: 'mcp__memory__.*', script: 'a.js' },
+        ],
+      });
+      const calls = [];
+      await runEvent({
+        event: 'PreToolUse',
+        matcher: 'mcp__memory__create_entity',
+        agileflowDir,
+        runHook: async (h) => {
+          calls.push(h.id);
+          return { exitCode: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false };
+        },
+      });
+      expect(calls).toEqual(['mcp']);
+    });
   });
 
   it('ignores hooks for other events', async () => {
@@ -238,6 +322,41 @@ describe('runEvent', () => {
     expect(result.steps[0].exitCode).toBeNull();
     // skipOnError defaults true, so chain still exits 0
     expect(result.exitCode).toBe(0);
+  });
+});
+
+describe('matcherMatches', () => {
+  it('matches all when pattern is empty / null / undefined / "*"', () => {
+    expect(matcherMatches(null, 'Bash')).toBe(true);
+    expect(matcherMatches(undefined, 'Bash')).toBe(true);
+    expect(matcherMatches('', 'Bash')).toBe(true);
+    expect(matcherMatches('*', 'Bash')).toBe(true);
+  });
+
+  it('does exact match for simple patterns', () => {
+    expect(matcherMatches('Bash', 'Bash')).toBe(true);
+    expect(matcherMatches('Bash', 'Edit')).toBe(false);
+  });
+
+  it('does pipe-separated alternatives for simple patterns', () => {
+    expect(matcherMatches('Bash|Edit|Write', 'Edit')).toBe(true);
+    expect(matcherMatches('Bash|Edit|Write', 'Read')).toBe(false);
+  });
+
+  it('treats patterns with non-simple chars as regex', () => {
+    expect(matcherMatches('^Notebook', 'NotebookEdit')).toBe(true);
+    expect(matcherMatches('^Notebook', 'TextEditor')).toBe(false);
+    expect(matcherMatches('mcp__memory__.*', 'mcp__memory__create')).toBe(true);
+  });
+
+  it('returns false on actual=null/undefined/empty (when pattern is non-empty)', () => {
+    expect(matcherMatches('Bash', null)).toBe(false);
+    expect(matcherMatches('Bash', undefined)).toBe(false);
+    expect(matcherMatches('Bash', '')).toBe(false);
+  });
+
+  it('returns false on invalid regex without throwing', () => {
+    expect(matcherMatches('[unclosed', 'Bash')).toBe(false);
   });
 });
 

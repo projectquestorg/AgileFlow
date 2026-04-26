@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Claude Code hook dispatcher: PreToolUse:Write.
+ * Claude Code hook dispatcher: PreToolUse for the Write tool.
  *
- * Mirror of pre-bash.js but for the Write tool. Same path-validation
- * use case as pre-edit.js — Claude Code differentiates the matchers,
- * but the hook chain semantics are identical.
+ * Registered in `.claude/settings.json` as a `PreToolUse` hook with
+ * `matcher: "Write"`. Mirror of pre-bash.js for the Write tool.
  */
 const path = require('path');
 const { runEvent } = require('../../src/runtime/hooks/orchestrator.js');
@@ -18,7 +17,8 @@ async function main() {
   const stdin = Buffer.concat(chunks);
 
   const result = await runEvent({
-    event: 'PreToolUse:Write',
+    event: 'PreToolUse',
+    matcher: 'Write',
     agileflowDir,
     stdin,
   });
