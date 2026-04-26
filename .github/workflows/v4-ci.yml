@@ -46,7 +46,7 @@ jobs:
         working-directory: apps/cli
         run: node bin/agileflow.js doctor
 
-      - name: Smoke test: setup --yes in a scratch dir (claude-code)
+      - name: 'Smoke test: setup --yes in a scratch dir (claude-code)'
         run: |
           mkdir -p /tmp/af-ci-smoke
           cd /tmp/af-ci-smoke
@@ -56,7 +56,7 @@ jobs:
           test -f .agileflow/hook-manifest.yaml
           test -f .agileflow/_cfg/files.json
 
-      - name: Smoke test: setup --yes in a scratch dir (cursor — no hooks)
+      - name: 'Smoke test: setup --yes in a scratch dir (cursor — no hooks)'
         run: |
           mkdir -p /tmp/af-ci-smoke-cursor
           cd /tmp/af-ci-smoke-cursor
