@@ -41,6 +41,10 @@ const {
   writeClaudeCodeSettings,
   removeClaudeCodeSettings,
 } = require('../ide/claude-code-settings.js');
+const {
+  mirrorClaudeCodeSkills,
+  unmirrorClaudeCodeSkills,
+} = require('../ide/claude-code-skills.js');
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -254,6 +258,21 @@ async function installPlugins(options) {
     await removeClaudeCodeSettings(projectRoot);
   }
 
+  // 9. Mirror skills into `.claude/skills/<id>/` so Claude Code
+  //    discovers them. Plugin-source skills live under
+  //    `.agileflow/plugins/<id>/skills/...` (sync-engine-managed) but
+  //    Claude Code's discovery mechanism uses `.claude/skills/`. We
+  //    copy (not symlink) for Windows portability.
+  let skillsMirrored = [];
+  let skillsPruned = [];
+  if (caps.skills) {
+    const r = await mirrorClaudeCodeSkills(ordered, projectRoot);
+    skillsMirrored = r.mirrored;
+    skillsPruned = r.pruned;
+  } else {
+    skillsPruned = await unmirrorClaudeCodeSkills(projectRoot);
+  }
+
   return {
     ordered: ordered.map((p) => p.id),
     autoEnabled,
@@ -264,6 +283,8 @@ async function installPlugins(options) {
     timestamp,
     hookManifestPath,
     settingsPath,
+    skillsMirrored,
+    skillsPruned,
     ide,
   };
 }

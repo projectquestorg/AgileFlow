@@ -334,6 +334,41 @@ describe('installPlugins integration', () => {
     expect(fs.existsSync(settingsPath)).toBe(false);
   });
 
+  it('mirrors plugin skills to .claude/skills/<id>/ when ide=claude-code', async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    expect(result.skillsMirrored).toContain('agileflow-story-writer');
+    const skillFile = path.join(scratch, '.claude/skills/agileflow-story-writer/SKILL.md');
+    expect(fs.existsSync(skillFile)).toBe(true);
+    expect(fs.readFileSync(skillFile, 'utf8')).toContain('name: agileflow-story-writer');
+  });
+
+  it('removes mirrored skills when switching to a non-skill IDE', async () => {
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    expect(fs.existsSync(path.join(scratch, '.claude/skills/agileflow-story-writer'))).toBe(true);
+
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'cursor',
+    });
+    expect(result.skillsPruned).toContain('agileflow-story-writer');
+    expect(fs.existsSync(path.join(scratch, '.claude/skills/agileflow-story-writer'))).toBe(false);
+  });
+
   it('throws on dependency cycles', async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {

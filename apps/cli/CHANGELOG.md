@@ -177,6 +177,24 @@ The final piece. When `ide=claude-code`, the installer registers our 6 hook entr
 
 The 6 standalone dispatchers under `bin/hooks/*.js` are now legacy. The unified `agileflow hook` subcommand replaces them for production use; they're kept as direct-invocation aliases (useful for testing without npx). A future cleanup can prune them.
 
+### Phase 4 first slice — agileflow-story-writer skill
+
+The first real user-visible content lands in v4. After install, a Claude Code session in the user's project will discover `agileflow-story-writer` and activate it on prompts about features / user stories / acceptance criteria.
+
+- **`content/plugins/core/skills/agileflow-story-writer/SKILL.md`** — ported from v3 to the v4 frontmatter v2 schema:
+  - `description` follows the `Use when...` policy
+  - explicit `triggers.keywords` (`user story`, `as a user, i want`, `feature request`, `implement this`, etc.)
+  - `triggers.exclude` keywords damp false activations on `bedtime story` / `tell me a story`
+  - `triggers.priority: 50` for collision resolution
+  - `learns.enabled: true` with `_learnings/story-writer.yaml` for self-improvement
+  - `<!-- {{PERSONALIZATION_BLOCK}} -->` placeholder for future personalization injection (Phase 5)
+  - Body kept ≤ 200 lines per the §G validator policy
+- **`content/plugins/core/plugin.yaml`** updated to declare the skill in `provides.skills`.
+- **`src/runtime/ide/claude-code-skills.js`** — mirror logic that copies enabled plugin skills from `.agileflow/plugins/<id>/skills/<skill>/` into `.claude/skills/<skill>/` (Claude Code's canonical discovery location). Pruning is conservative: only `agileflow-*` prefixed dirs are removed when orphaned, leaving third-party skill dirs alone. Copy (not symlink) for Windows portability.
+- **`installPlugins`** now mirrors skills when `ide=claude-code` AND `capabilities.skills`, and unmirrors them on switch-away. Result object gains `skillsMirrored` and `skillsPruned` arrays.
+- **10 new tests across mirror module + 2 integration tests**: collect-skills, mirror to fresh dir, replace stale content, prune orphans, leave third-party alone, unmirror, ENOENT-safe; integration: install puts skill in `.claude/skills/`, IDE switch removes it. Suite: **251 → 261 passing across 20 files**.
+- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands `agileflow-story-writer` at `.claude/skills/agileflow-story-writer/SKILL.md` with the v4 frontmatter intact. Switching to `--ide cursor` removes it.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
