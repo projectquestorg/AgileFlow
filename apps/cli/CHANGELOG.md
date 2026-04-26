@@ -152,6 +152,18 @@ User directive 2026-04-26: AgileFlow ships **skills only**. No slash commands at
 - **Skill design implication**: with no slash command for deterministic invocation, every skill must use the v2 frontmatter `triggers.keywords` + `priority` + `exclude` fields rigorously so Claude reliably picks the right skill.
 - **IDE capability map**: the `commands: true/false` field stays informational. AgileFlow itself ships no commands regardless.
 
+### Phase 3 slice B — Hook manifest aggregation at install (IDE-gated)
+
+The install pipeline now produces a working `.agileflow/hook-manifest.yaml` automatically when the target IDE supports hooks. The 6 dispatchers + orchestrator from slice A finally have something to read.
+
+- **`src/runtime/hooks/aggregator.js`** — `buildHookManifest(orderedPlugins)` walks each plugin's `provides.hooks` array, rewrites script paths from plugin-relative (`hooks/welcome.js`) to project-root-relative (`.agileflow/plugins/core/hooks/welcome.js`), and produces a `{ version: 1, hooks: [...] }` object. Defensive: skips invalid entries silently. Pure / no I/O.
+- **`writeAggregatedManifest(plugins, agileflowDir)`** — atomically writes the YAML manifest with a `# Auto-generated …` header so users know not to hand-edit. Temp+rename pattern matching the rest of the runtime; cleans up the temp file on rename failure.
+- **`removeAggregatedManifest(agileflowDir)`** — removes a stale manifest cleanly when the user switches to a non-hook IDE.
+- **`installPlugins` now takes an `ide` parameter** and calls `writeAggregatedManifest` only when `capabilitiesFor(ide).hooks === true`. Switching from claude-code to cursor automatically removes the previously-written manifest. Result object grows a `hookManifestPath` field (path or null).
+- **`setup` and `update` commands** thread `ide` through from `agileflow.config.json.ide.primary`. The bundled core plugin gained a stub `session-welcome.js` hook so aggregation has real content to test against.
+- **17 new tests across aggregator + integration**: pure aggregator unit tests (build, atomic write, header comment, cleanup on failure, remove), 3 integration tests (manifest written for claude-code, NOT written for cursor, stale manifest removed on IDE switch). Suite: **213 → 227 passing across 18 files**.
+- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` writes hook-manifest.yaml with `session-welcome` registered for SessionStart; switching to `--ide cursor` removes the manifest. The orchestrator (slice A) reads the same file at runtime; the loop is closed.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

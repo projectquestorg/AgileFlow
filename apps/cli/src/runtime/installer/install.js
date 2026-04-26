@@ -32,6 +32,11 @@ const {
   validatePluginSet,
   hasErrors,
 } = require('../plugins/validator.js');
+const {
+  writeAggregatedManifest,
+  removeAggregatedManifest,
+} = require('../hooks/aggregator.js');
+const { capabilitiesFor } = require('../ide/capabilities.js');
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -41,6 +46,7 @@ const {
  * @property {Iterable<string>} userSelected
  * @property {string} agileflowDir - target install root (typically `<cwd>/.agileflow`)
  * @property {string} cliVersion - written into the file index header
+ * @property {string} [ide='claude-code'] - target IDE for capability gating
  * @property {boolean} [force=false] - overwrite user modifications
  *
  * @typedef {Object} InstallResult
@@ -168,6 +174,7 @@ async function installPlugins(options) {
     userSelected,
     agileflowDir,
     cliVersion,
+    ide = 'claude-code',
     force = false,
   } = options;
 
@@ -219,6 +226,18 @@ async function installPlugins(options) {
     await writeFileIndex(indexPath, fileIndex);
   }
 
+  // 7. Write or remove the aggregated hook manifest based on IDE
+  //    capabilities. Hooks are Claude Code only today; switching to a
+  //    non-hook IDE removes any stale manifest so the orchestrator
+  //    never runs hooks that won't fire from the IDE.
+  const caps = capabilitiesFor(ide);
+  let hookManifestPath = null;
+  if (caps.hooks) {
+    hookManifestPath = await writeAggregatedManifest(ordered, agileflowDir);
+  } else {
+    await removeAggregatedManifest(agileflowDir);
+  }
+
   return {
     ordered: ordered.map((p) => p.id),
     autoEnabled,
@@ -227,6 +246,8 @@ async function installPlugins(options) {
     agileflowDir,
     indexPath,
     timestamp,
+    hookManifestPath,
+    ide,
   };
 }
 

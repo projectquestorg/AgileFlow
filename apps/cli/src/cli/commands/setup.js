@@ -82,9 +82,10 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
  * Run the installer for the given enabled plugin ids and surface failures.
  * @param {string[]} enabledIds
  * @param {string} cwd
+ * @param {string} ide - target IDE id (gates hook manifest writing)
  * @param {{ interactive: boolean, spinner?: any }} ctx
  */
-async function runInstallWithFeedback(enabledIds, cwd, ctx) {
+async function runInstallWithFeedback(enabledIds, cwd, ide, ctx) {
   // userSelected is "everything except core" — core is always-on via
   // cannotDisable, the resolver will pull it in.
   const userSelected = enabledIds.filter((id) => id !== 'core');
@@ -94,6 +95,7 @@ async function runInstallWithFeedback(enabledIds, cwd, ctx) {
       userSelected,
       agileflowDir: path.join(cwd, '.agileflow'),
       cliVersion: pkg.version,
+      ide,
     });
   } catch (err) {
     if (ctx.interactive) {
@@ -165,7 +167,7 @@ async function setup(options = {}) {
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id);
 
-    const installResult = await runInstallWithFeedback(enabled, cwd, {
+    const installResult = await runInstallWithFeedback(enabled, cwd, requestedIde, {
       interactive: false,
     });
 
@@ -226,7 +228,7 @@ async function setup(options = {}) {
 
   const installSpinner = prompts.spinner();
   installSpinner.start(`Installing ${enabledList.length} plugin(s)`);
-  const installResult = await runInstallWithFeedback(enabledList, cwd, {
+  const installResult = await runInstallWithFeedback(enabledList, cwd, ide, {
     interactive: true,
     spinner: installSpinner,
   });

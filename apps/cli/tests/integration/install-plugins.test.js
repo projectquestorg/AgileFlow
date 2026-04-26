@@ -243,6 +243,56 @@ describe('installPlugins integration', () => {
     expect(idx.files['plugins/core/plugin.yaml']).toBeDefined();
   });
 
+  it('aggregates plugin hooks into hook-manifest.yaml when ide=claude-code', async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    expect(result.hookManifestPath).toBe(path.join(agileflowDir, 'hook-manifest.yaml'));
+    const text = fs.readFileSync(result.hookManifestPath, 'utf8');
+    expect(text).toMatch(/^# Auto-generated/);
+    // The bundled core plugin contributes one SessionStart hook.
+    expect(text).toMatch(/id: session-welcome/);
+    expect(text).toMatch(/script: \.agileflow\/plugins\/core\/hooks\/session-welcome\.js/);
+  });
+
+  it('does NOT write hook-manifest.yaml when the IDE has hooks disabled', async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'cursor',
+    });
+    expect(result.hookManifestPath).toBeNull();
+    expect(fs.existsSync(path.join(agileflowDir, 'hook-manifest.yaml'))).toBe(false);
+  });
+
+  it('removes a stale hook-manifest.yaml when switching to a non-hook IDE', async () => {
+    // First install with claude-code: manifest gets written.
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'claude-code',
+    });
+    expect(fs.existsSync(path.join(agileflowDir, 'hook-manifest.yaml'))).toBe(true);
+
+    // Re-install with cursor: stale manifest is removed.
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ['seo'],
+      agileflowDir,
+      cliVersion: '4.0.0-alpha.1',
+      ide: 'cursor',
+    });
+    expect(fs.existsSync(path.join(agileflowDir, 'hook-manifest.yaml'))).toBe(false);
+  });
+
   it('throws on dependency cycles', async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {

@@ -56,6 +56,7 @@ async function update(options = {}) {
       userSelected,
       agileflowDir: path.join(cwd, '.agileflow'),
       cliVersion: pkg.version,
+      ide: existing.config.ide.primary,
       force: Boolean(options.force),
     });
   } catch (err) {
