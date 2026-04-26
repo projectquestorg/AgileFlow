@@ -1,6 +1,7 @@
 # Core plugin — essential AgileFlow workflow.
 # Always enabled; cannot be disabled.
-# Phase 4: skills land here. Epic / Status / Babysit skills follow.
+# Phase 4: skills land here. ADR / sprint-planner / retro etc. live in
+# their own opt-in plugins later.
 id: core
 name: Core
 description: Epic, Story, Status, Babysit — essential agile workflow.
@@ -13,8 +14,14 @@ depends: []
 provides:
   commands: []
   skills:
+    - id: agileflow-epic-planner
+      dir: skills/agileflow-epic-planner
     - id: agileflow-story-writer
       dir: skills/agileflow-story-writer
+    - id: agileflow-status-updater
+      dir: skills/agileflow-status-updater
+    - id: agileflow-babysit-mentor
+      dir: skills/agileflow-babysit-mentor
   agents: []
   hooks:
     - id: session-welcome

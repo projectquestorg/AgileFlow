@@ -210,6 +210,19 @@ The first real user-visible content lands in v4. After install, a Claude Code se
 
 End-to-end verified: `npx agileflow hook SesionStart` (typo) prints `unknown event "SesionStart"` with the full valid list and exits 1; `npx agileflow hook PreToolUse` (no `--matcher`) prints `event "PreToolUse" requires --matcher` and exits 1; the valid case still exits 0.
 
+### Phase 4 — Core scope content-complete (4 skills)
+
+The Core plugin now ships every skill its name promised: Epic, Story, Status, Babysit. After install on `claude-code`, a fresh Claude Code session discovers and activates all four through their explicit triggers.
+
+- **`agileflow-epic-planner`** — ported from v3. Breaks large features into milestoned epics with success metrics, dependencies, and risks. Triggers on `epic`, `initiative`, `multi-month project`, `break this down`, `phased rollout`. Excludes `epic fail` / `epic novel` / `mythological epic`. Writes `docs/05-epics/EP-####-<slug>.md`. Self-improving learnings enabled.
+- **`agileflow-story-writer`** — already shipped in the previous slice. v2.0.0, learns enabled.
+- **`agileflow-status-updater`** — NEW for v4 (no v3 source). Applies status mutations (story `ready` → `in_progress` → `review` → `complete` / `blocked`; epic `PLANNING` → `ACTIVE` → `COMPLETED` / `ON_HOLD`) from natural-language progress updates. Strict transition table; diff-first / YES-NO confirmation; mutates `docs/09-agents/status.json` + the relevant story / epic file frontmatter. Triggers on `mark this story`, `i finished`, `i'm blocked on`, `move to in progress`. Excludes `status quo` / `status report`.
+- **`agileflow-babysit-mentor`** — NEW for v4, the v3 `/agileflow:babysit` command reincarnated as a skill. End-to-end mentor pattern: pick → plan → delegate → verify → commit. Codifies the 6 operating rules (smart `AskUserQuestion`, plan mode, expert delegation, task tracking, logic audit, flow audit). Triggers on `walk me through`, `help me ship this`, `mentor mode`, `babysit`. Excludes `babysit my kid`. Self-improving learnings enabled.
+- **`content/plugins/core/plugin.yaml`** updated to declare all 4 skills.
+- **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands all 4 skills under `.claude/skills/`. Each carries v4 frontmatter v2 (name, version, category, description with "Use when…", explicit triggers with priority + exclude). Suite still **266 passing** (skills are content, not new code paths — covered by existing integration tests).
+
+**Phase 4 Core scope**: complete. Phase 5 (skill validator + CI + alpha.1 publish) is next. Other plugins (`audit`, `ads`, `seo`, `council`, etc.) populate after the validator is wired so they ship through a quality gate.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
