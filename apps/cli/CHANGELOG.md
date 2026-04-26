@@ -229,6 +229,17 @@ The Core plugin now ships every skill its name promised: Epic, Story, Status, Ba
 - **`content/plugins/core/plugin.yaml`** updated to declare 5 skills.
 - **End-to-end verified**: `agileflow setup --yes --plugins core --ide claude-code` lands all 5 skills under `.claude/skills/`. 7 files created (5 × SKILL.md + plugin.yaml + session-welcome.js). Suite still 266 passing.
 
+### Phase 5 slice 1 — Skill validator + `agileflow doctor`
+
+The skills-only direction makes activation triggers load-bearing. Typos in descriptions, missing required fields, and (worst) keyword collisions across skills silently degrade reliability. The validator catches all of those before alpha.1 ships.
+
+- **`src/runtime/skills/validator.js`** — per-skill checks: YAML frontmatter parses; required fields present (`name`, `version`, `category`, `description`, `triggers`); `description` starts with `Use when …` (forces activation-trigger framing); `triggers.keywords` is non-empty array of strings; `triggers.priority` is integer in [0, 100]; `triggers.exclude` (if present) is array of strings; `version` is valid semver; SKILL.md body ≤ 400 lines; if `learns.enabled === true`, the `_learnings/<id>.yaml` file should exist (warning, not error — created on first correction); skills-only policy: warn if `provides.command` is set.
+- **Cross-skill collision detection** — `(keyword, priority)` pairs must be unique across the loaded skill set. Case-insensitive; trims whitespace. Two skills sharing `('story', 50)` will both be flagged with the offending keyword and priority and the colliding ids listed.
+- **`validateSkillsAtRoot(dir)`** — walks every immediate-child directory looking for `SKILL.md`, runs per-skill validation, then cross-skill collision detection across the loaded set. Failed-load errors are captured as issues per skill, not as fatal exceptions, so one broken SKILL.md doesn't blow up a doctor pass.
+- **`agileflow doctor`** — replaces the Phase 1 stub with a real validator that runs four sections in order: plugin manifests (validatePluginSet), skills (validateSkillsAtRoot for every bundled plugin + cross-plugin collision), aggregated hook manifest (the same validate-before-write check installPlugins does), installed hook manifest (if `.agileflow/hook-manifest.yaml` exists in cwd). Each section prints `ok` or a list of `ERROR`/`WARN` lines with the skill/plugin id. Exit 0 on green, exit 1 if any errors.
+- **Doctor output against bundled content**: `Plugin manifests: ok`, `Skills: 4 warnings (missing _learnings files — created on first correction)`, `Hook manifest (aggregated): ok`, `Hook manifest (installed): ok`. All 5 Core skills pass strict validation.
+- **20 new tests** across `validator.test.js`: per-field validation, semver, body-length, collision detection (positive case, no-collision case, different priorities, case-insensitive), the validateSkillsAtRoot loader (missing dir → empty, broken skill → captured issue, multi-skill → cross-check). Suite: **266 → 286 passing across 21 files**.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).
