@@ -189,26 +189,35 @@ async function installPlugins(options) {
   const indexPath = path.join(cfgDir, 'files.json');
   const fileIndex = (await readFileIndex(indexPath)) || emptyIndex(cliVersion);
 
-  // 4. Sync each plugin in order.
+  // 4-6 wrapped in try/finally so the file index is ALWAYS persisted,
+  // even if a sync fails mid-loop. Otherwise on-disk files would exist
+  // without index entries and the next run would misclassify them as
+  // "user-modified" and stash them.
   const ops = emptyCounters();
   const timestamp = makeTimestamp();
-  for (const plugin of ordered) {
-    await installOnePlugin(plugin, agileflowDir, fileIndex, ops, timestamp, force);
+  /** @type {string[]} */
+  let removed = [];
+
+  try {
+    // 4. Sync each plugin in order.
+    for (const plugin of ordered) {
+      await installOnePlugin(plugin, agileflowDir, fileIndex, ops, timestamp, force);
+    }
+
+    // 5. Remove disabled plugin directories.
+    const enabledIds = new Set(ordered.map((p) => p.id));
+    const knownIds = new Set(discovered.map((p) => p.id));
+    removed = await removeDisabledPlugins(
+      enabledIds,
+      knownIds,
+      agileflowDir,
+      fileIndex,
+      ops,
+    );
+  } finally {
+    // 6. Persist the file index. Always.
+    await writeFileIndex(indexPath, fileIndex);
   }
-
-  // 5. Remove disabled plugin directories.
-  const enabledIds = new Set(ordered.map((p) => p.id));
-  const knownIds = new Set(discovered.map((p) => p.id));
-  const removed = await removeDisabledPlugins(
-    enabledIds,
-    knownIds,
-    agileflowDir,
-    fileIndex,
-    ops,
-  );
-
-  // 6. Persist the file index.
-  await writeFileIndex(indexPath, fileIndex);
 
   return {
     ordered: ordered.map((p) => p.id),

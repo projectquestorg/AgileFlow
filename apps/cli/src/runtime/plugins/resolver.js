@@ -61,6 +61,18 @@ function resolvePlugins(discovered, userSelected) {
   assertDependsExist(discovered, byId);
 
   const userSet = new Set(userSelected);
+  // Reject unknown user-selected ids loudly so callers don't silently
+  // drop a typo. The wizard's pluginsFromCsv layer also surfaces this,
+  // but direct callers of resolvePlugins (CI, programmatic install)
+  // get the same protection here.
+  for (const id of userSet) {
+    if (!byId.has(id)) {
+      const known = [...byId.keys()].sort().join(', ');
+      throw new Error(
+        `User-selected plugin "${id}" was not discovered. Available: ${known || '(none)'}`,
+      );
+    }
+  }
   // Initial target set: cannotDisable (core) + user-selected.
   /** @type {Set<string>} */
   const target = new Set();

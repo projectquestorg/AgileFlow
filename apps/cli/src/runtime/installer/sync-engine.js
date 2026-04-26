@@ -76,15 +76,35 @@ function emptyCounters() {
 }
 
 /**
+ * Write `content` to `dest` atomically: write a temp file in the same
+ * directory, then `rename` it into place. Crashes mid-`writeFile`
+ * cannot leave a truncated `dest` — readers always see either the old
+ * content or the new content, never a half-write.
+ *
+ * Temp filename uses pid + random suffix so two concurrent calls in
+ * the same process (rare but possible in tests / cluster setups) don't
+ * collide on each other's temp file.
+ *
  * @param {Buffer|string} content
  * @param {string} dest
  */
 async function writeContent(content, dest) {
   await fs.promises.mkdir(path.dirname(dest), { recursive: true });
-  if (typeof content === 'string') {
-    await fs.promises.writeFile(dest, content, 'utf8');
-  } else {
-    await fs.promises.writeFile(dest, content);
+  const tmp = `${dest}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    if (typeof content === 'string') {
+      await fs.promises.writeFile(tmp, content, 'utf8');
+    } else {
+      await fs.promises.writeFile(tmp, content);
+    }
+    await fs.promises.rename(tmp, dest);
+  } catch (err) {
+    try {
+      await fs.promises.unlink(tmp);
+    } catch {
+      /* swallow */
+    }
+    throw err;
   }
 }
 

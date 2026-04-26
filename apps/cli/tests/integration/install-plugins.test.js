@@ -212,6 +212,37 @@ describe('installPlugins integration', () => {
     expect(fs.existsSync(agileflowDir)).toBe(false);
   });
 
+  it('persists the file index even when sync fails mid-loop (try/finally)', async () => {
+    // Build a fake plugin set: one valid, one whose dir does not exist.
+    const real = discoverPlugins().find((p) => p.id === 'core');
+    const phantom = {
+      id: 'phantom',
+      name: 'Phantom',
+      description: 'Plugin whose dir was deleted before install',
+      version: '1.0.0',
+      enabledByDefault: false,
+      cannotDisable: false,
+      depends: [],
+      provides: { commands: [], skills: [], agents: [], hooks: [], templates: [] },
+      dir: path.join(scratch, 'no-such-dir'),
+    };
+    await expect(
+      installPlugins({
+        discovered: [real, phantom],
+        userSelected: ['phantom'],
+        agileflowDir,
+        cliVersion: '4.0.0-alpha.1',
+      }),
+    ).rejects.toThrow();
+
+    // Despite the failure, the file index was persisted with whatever
+    // got synced before the throw (at minimum, core's plugin.yaml).
+    const idxPath = path.join(agileflowDir, '_cfg/files.json');
+    expect(fs.existsSync(idxPath)).toBe(true);
+    const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'));
+    expect(idx.files['plugins/core/plugin.yaml']).toBeDefined();
+  });
+
   it('throws on dependency cycles', async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {

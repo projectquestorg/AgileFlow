@@ -90,6 +90,18 @@ Ported the v3 SHA256-based safe-update engine from `installer.js:349-455` into `
 - Suite: **110 → 117 passing** (1 unit test updated for the new `removed` counter; 7 new integration tests).
 - **Phase 2b "done when" criteria all met**: SHA256 round-trip passes, disabled-plugin removal works, integration test installs into a scratch dir end-to-end. The content injector port (slice 3) is deferred to Phase 4 — it's only needed once skills/commands with `<!-- {{TOKEN}} -->` placeholders ship.
 
+### Phase 2b — logic audit fixes
+
+Logic audit (5 analyzers: edge / flow / invariant / race / type) on Phase 2b runtime. Verdicts: **HOLDS** (invariants), **CLEAN** (control flow), **SAFE** (race for CLI), **RISKY** (edge — path traversal flagged), **ACCEPTABLE** (type). 5 P0/P1 fixes applied:
+
+- **`writeStash` path-traversal guard**: rejects absolute paths up front (`/etc/passwd` would otherwise be silently joined as a relative segment) AND verifies the resolved stash path is inside the resolved updates root. Defensive against malicious or buggy `relativePath` values escaping `_cfg/updates/<timestamp>/`.
+- **`installPlugins` try/finally around sync + remove**: the file index is now written even when `installOnePlugin` throws mid-loop. Previously a transient EACCES/ENOSPC could leave on-disk files without index entries → next run would misclassify them as user-modified and stash them. Integration test confirms partial-install case persists the index.
+- **Atomic `syncFile` writes**: `writeContent` ports the temp+rename pattern from `writeFileIndex`. Mid-write crashes can no longer leave a truncated dest file. Temp filename is `<dest>.tmp-<pid>-<random>` to avoid collisions in same-process concurrent installs.
+- **Resolver rejects unknown `userSelected` ids loudly**: `resolvePlugins(discovered, ['typo'])` now throws with a clear message listing available plugin ids. Direct callers (CI / programmatic install) get the same protection the wizard already had via `pluginsFromCsv`.
+- **`sha256Hex` null guard**: throws a `TypeError` with a clear message instead of the cryptic Buffer-internal error when called with `null`/`undefined`.
+- **Random suffix on temp filenames** in `writeFileIndex` (PID alone could collide in same-process concurrent calls — rare but possible in tests).
+- **14 new tests**: stash path-traversal (4), atomic writes (2), resolver unknown ids (2), null hash inputs (2), partial-install index persistence (1), plus existing test fixed for absolute-path rejection. Suite: **117 → 131 passing**.
+
 ### Not yet implemented
 
 - Plugin registry & loader (Phase 2).

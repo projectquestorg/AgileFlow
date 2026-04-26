@@ -34,6 +34,16 @@ describe('sha256Hex', () => {
       'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     );
   });
+
+  it('throws TypeError on null with a clear message', () => {
+    expect(() => sha256Hex(null)).toThrow(TypeError);
+    expect(() => sha256Hex(null)).toThrow(/got null/);
+  });
+
+  it('throws TypeError on undefined with a clear message', () => {
+    expect(() => sha256Hex(undefined)).toThrow(TypeError);
+    expect(() => sha256Hex(undefined)).toThrow(/got undefined/);
+  });
 });
 
 describe('sha256File', () => {

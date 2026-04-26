@@ -116,6 +116,20 @@ describe('resolvePlugins — error paths', () => {
       /invalid entry in 'depends'/,
     );
   });
+
+  it('throws when userSelected references an unknown plugin id', () => {
+    const plugins = [p('core', { cannotDisable: true }), p('seo')];
+    expect(() => resolvePlugins(plugins, ['typo'])).toThrow(
+      /User-selected plugin "typo" was not discovered/,
+    );
+  });
+
+  it('lists the available plugins in the unknown-id error', () => {
+    const plugins = [p('core', { cannotDisable: true }), p('seo'), p('ads')];
+    expect(() => resolvePlugins(plugins, ['oops'])).toThrow(
+      /Available: ads, core, seo/,
+    );
+  });
 });
 
 describe('resolvePlugins — non-trivial topology', () => {

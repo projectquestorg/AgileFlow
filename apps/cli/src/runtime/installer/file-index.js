@@ -87,7 +87,10 @@ async function readFileIndex(indexPath) {
 async function writeFileIndex(indexPath, index) {
   const dir = path.dirname(indexPath);
   await fs.promises.mkdir(dir, { recursive: true });
-  const tmp = path.join(dir, `${path.basename(indexPath)}.tmp-${process.pid}`);
+  const tmp = path.join(
+    dir,
+    `${path.basename(indexPath)}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 10)}`,
+  );
   const payload = {
     ...index,
     generated_at: new Date().toISOString(),

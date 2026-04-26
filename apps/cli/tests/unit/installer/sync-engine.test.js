@@ -310,6 +310,48 @@ describe('syncFile — binary content (Buffer)', () => {
   });
 });
 
+describe('syncFile — atomic writes (temp+rename)', () => {
+  /** @type {string} */ let scratch;
+  beforeEach(() => { scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'af-sync-')); });
+  afterEach(() => { fs.rmSync(scratch, { recursive: true, force: true }); });
+
+  it('cleans up temp files on success — only the final dest remains', async () => {
+    const ctx = setup(scratch);
+    const dest = path.join(ctx.destDir, 'a.md');
+    await syncFile({
+      content: 'hello',
+      dest,
+      relativePath: 'plugins/core/a.md',
+      fileIndex: ctx.fileIndex,
+      cfgDir: ctx.cfgDir,
+      timestamp: ctx.timestamp,
+      ops: ctx.ops,
+    });
+    const siblings = fs.readdirSync(ctx.destDir);
+    expect(siblings).toContain('a.md');
+    expect(siblings.filter((s) => s.includes('.tmp-'))).toEqual([]);
+  });
+
+  it('cleans up temp file on rename failure (dest is a directory)', async () => {
+    const ctx = setup(scratch);
+    const dest = path.join(ctx.destDir, 'collides');
+    fs.mkdirSync(dest); // dest is a directory; rename of file → dir fails
+    await expect(
+      syncFile({
+        content: 'x',
+        dest,
+        relativePath: 'plugins/core/collides',
+        fileIndex: ctx.fileIndex,
+        cfgDir: ctx.cfgDir,
+        timestamp: ctx.timestamp,
+        ops: ctx.ops,
+      }),
+    ).rejects.toThrow();
+    const siblings = fs.readdirSync(ctx.destDir);
+    expect(siblings.filter((s) => s.startsWith('collides.tmp-'))).toEqual([]);
+  });
+});
+
 describe('emptyCounters', () => {
   it('starts all counters at zero', () => {
     const c = emptyCounters();

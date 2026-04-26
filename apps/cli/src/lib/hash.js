@@ -11,8 +11,14 @@ const fs = require('fs');
 /**
  * @param {Buffer|string} content
  * @returns {string} lowercase hex digest
+ * @throws {TypeError} if content is null or undefined
  */
 function sha256Hex(content) {
+  if (content == null) {
+    throw new TypeError(
+      `sha256Hex: content must be Buffer or string, got ${content === null ? 'null' : 'undefined'}`,
+    );
+  }
   const buf = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
   return crypto.createHash('sha256').update(buf).digest('hex');
 }
