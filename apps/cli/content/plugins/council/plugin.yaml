@@ -1,14 +1,38 @@
 id: council
 name: AI Council
-description: Six-perspective strategic decision framework (optimist, contrarian, technical, revenue, etc.).
+description: Council review skill pack.
 version: 1.0.0
 enabledByDefault: false
 
 depends: []
 
 provides:
-  commands: []
-  skills: []
-  agents: []
+  commands:
+    - id: council
+      path: commands/council.md
+    - id: multi-expert
+      path: commands/multi-expert.md
+  skills:
+    - id: agileflow-council
+      dir: skills/agileflow-council
+  agents:
+    - id: council-advocate
+      path: agents/council-advocate.md
+    - id: council-analyst
+      path: agents/council-analyst.md
+    - id: council-compounder
+      path: agents/council-compounder.md
+    - id: council-contrarian
+      path: agents/council-contrarian.md
+    - id: council-moonshot
+      path: agents/council-moonshot.md
+    - id: council-optimist
+      path: agents/council-optimist.md
+    - id: council-revenue
+      path: agents/council-revenue.md
+    - id: council-technical
+      path: agents/council-technical.md
+    - id: multi-expert
+      path: agents/multi-expert.md
   hooks: []
   templates: []

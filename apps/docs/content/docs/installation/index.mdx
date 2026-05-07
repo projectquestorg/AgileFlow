@@ -10,7 +10,7 @@ AgileFlow is distributed as an npm package that installs directly into your proj
 ## Prerequisites
 
 - **Node.js** 18.0 or higher
-- **Claude Code**, **Cursor**, **Windsurf**, or **OpenAI Codex CLI**
+- **Claude Code**, **Cursor**, **Windsurf**, **OpenAI Codex CLI**, or **Antigravity**
 - A Git repository for your project
 
 ## Quick Install
@@ -90,7 +90,8 @@ AgileFlow works with multiple AI-powered IDEs:
 | Claude Code | Supported | `.claude/commands/agileflow/` |
 | Cursor | Supported | `.cursor/commands/agileflow/` |
 | Windsurf | Supported | `.windsurf/workflows/agileflow/` |
-| OpenAI Codex CLI | Supported | `.codex/skills/` and `~/.codex/prompts/` |
+| OpenAI Codex CLI | Supported | `.codex/config.toml`, `.codex/skills/`, and `~/.codex/prompts/` |
+| Antigravity | Supported | `.antigravity/skills/` |
 
 ### IDE-Specific Setup
 
@@ -106,6 +107,9 @@ agileflow setup --ide windsurf
 
 # OpenAI Codex CLI
 agileflow setup --ide codex
+
+# Antigravity
+agileflow setup --ide antigravity
 ```
 
 ## Configuration
@@ -130,7 +134,7 @@ See [Configuration](/configuration) for all options.
 To update AgileFlow to the latest version:
 
 ```bash
-npx agileflow@latest setup
+npx agileflow@latest update
 ```
 
 Your existing project data (epics, stories, status) is preserved.

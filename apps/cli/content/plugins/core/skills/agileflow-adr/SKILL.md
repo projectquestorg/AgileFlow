@@ -34,8 +34,6 @@ depends:
   plugins: [core]
 ---
 
-<!-- {{PERSONALIZATION_BLOCK}} -->
-
 # AgileFlow ADR Writer
 
 Captures architectural / technical decisions as formal Architecture
@@ -66,6 +64,7 @@ and link the chain.
 ## Self-improving learnings
 
 `.agileflow/skills/_learnings/adr.yaml` records preferences:
+
 - Default `Status:` value (Proposed vs Accepted)
 - Whether to require all four MADR sections or allow brief mode
 - Preferred date format
@@ -82,14 +81,17 @@ and link the chain.
 **Tags**: architecture, database, api, …
 
 ## Context and Problem Statement
+
 [Describe the context and problem. What are we trying to solve? Why now?]
 
 ## Decision Drivers
+
 - [e.g., Performance requirements]
 - [e.g., Team expertise]
 - [e.g., Cost constraints]
 
 ## Considered Options
+
 - [Option 1]
 - [Option 2]
 - [Option 3]
@@ -101,24 +103,29 @@ and link the chain.
 **Justification**: [Why this option best satisfies the drivers]
 
 ### Positive Consequences
+
 - [Good outcome 1]
 - [Good outcome 2]
 
 ### Negative Consequences
+
 - [Bad outcome 1] — Mitigation: [plan, if any]
 - [Bad outcome 2]
 
 ## Pros and Cons of the Options
 
 ### [Option 1]
+
 **Pros**: …
 **Cons**: …
 
 ### [Option 2]
+
 **Pros**: …
 **Cons**: …
 
 ## Links
+
 - [Related ADRs]
 - [Relevant documentation]
 - [External resources]
@@ -134,10 +141,12 @@ and link the chain.
 ## When to write the ADR vs ask first
 
 Write it now (with `Status: Accepted`):
+
 - The user has already made a clear decision and wants to record it
 - The user explicitly asks for the ADR
 
 Ask first (then write with `Status: Proposed` or `Accepted`):
+
 - Multiple options are still in play
 - Drivers / constraints aren't clear yet
 - The chosen option's justification is one-line ("we like it more")
@@ -177,3 +186,19 @@ Ask first (then write with `Status: Proposed` or `Accepted`):
   knowing who to ask.
 - Date the ADR — context erodes; the date is the timestamp on the
   thinking, not just the file.
+
+## References
+
+Load these files when you need deeper context for the relevant task:
+
+| File                              | When to load                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `references/madr-format-guide.md` | Writing or reviewing an ADR — MADR format, required sections, common mistakes, numbering conventions |
+
+## Workflows
+
+Follow these step-by-step when the user initiates the matching action:
+
+| File                     | When to follow                                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `workflows/write-adr.md` | User wants to record a decision or is comparing options — gathers context, drafts ADR, gets confirmation, writes file |

@@ -34,8 +34,6 @@ depends:
   plugins: [core]
 ---
 
-<!-- {{PERSONALIZATION_BLOCK}} -->
-
 # AgileFlow Epic Planner
 
 Turns a large feature or initiative into a properly-scoped epic — with
@@ -86,39 +84,48 @@ confidence (`high` / `medium` / `low`) per the standard pattern.
 **Business Value**: High | Medium | Low
 
 ## Problem Statement
+
 [What problem does this epic solve? Why now?]
 
 ## Goals
+
 - [Specific, measurable outcome]
 - [Business or user metric to improve]
 
 ## Success Metrics
+
 - [e.g., 20% increase in retention]
 - [e.g., Reduce support tickets by 30%]
 
 ## User Stories
 
 ### Milestone 1: MVP (Target: YYYY-MM-DD)
+
 - [ ] [US-####: Title](../06-stories/US-####.md) — 5 pts
 - [ ] [US-####: Title](../06-stories/US-####.md) — 8 pts
-**Total: 13 story points**
+      **Total: 13 story points**
 
 ### Milestone 2: Feature Complete (Target: YYYY-MM-DD)
+
 - [ ] [US-####: Title](../06-stories/US-####.md) — 5 pts
-**Total: 5 story points**
+      **Total: 5 story points**
 
 ## Dependencies
+
 - [What blocks the start of this epic]
 - [External team dependencies]
 
 ## Risks
+
 - **Risk**: [What could go wrong] · **Impact**: [High/Med/Low] · **Mitigation**: [Plan]
 
 ## Out of Scope
+
 - [Explicitly NOT in this epic]
 - [Deferred to a future epic]
 
 ## Progress
+
 **Overall**: X / Y stories completed (Z%)
 **Last Updated**: YYYY-MM-DD
 ```
@@ -126,12 +133,14 @@ confidence (`high` / `medium` / `low`) per the standard pattern.
 ## Epic vs. story heuristic
 
 **Epic** when ALL of:
+
 - > 13 story points total
 - Spans 2+ sprints
 - Touches multiple owners (UI + API + DevOps)
 - Has distinct phases that each deliver value
 
 **Story** when any of:
+
 - ≤ 13 story points
 - One owner can complete it
 - Single sprint
@@ -177,3 +186,19 @@ confidence (`high` / `medium` / `low`) per the standard pattern.
   and let `agileflow-story-writer` fill them in as work begins.
 - Celebrate milestone completions — the epic file is the canonical
   place to record what shipped.
+
+## References
+
+Load these files when you need deeper context for the relevant task:
+
+| File                              | When to load                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `references/epic-sizing-guide.md` | Deciding if work is epic-scale, sizing milestones, estimating total effort, structuring dependencies |
+
+## Workflows
+
+Follow these step-by-step when the user initiates the matching action:
+
+| File                     | When to follow                                                                                                               |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `workflows/plan-epic.md` | User describes a large feature or asks to break down an initiative — clarifies, designs milestones, drafts epic, writes file |

@@ -1,14 +1,234 @@
 id: audit
-name: Code Audit
-description: Multi-agent audits for quality, security, logic, perf, tests, a11y, arch, API, flows, completeness.
+name: Audit
+description: Code audit skill pack.
 version: 1.0.0
 enabledByDefault: false
 
 depends: []
 
 provides:
-  commands: []
-  skills: []
-  agents: []
+  commands:
+    - id: audit
+      path: commands/audit.md
+    - id: browser-qa
+      path: commands/browser-qa.md
+    - id: code
+      path: commands/code.md
+    - id: code-accessibility
+      path: commands/code/accessibility.md
+    - id: code-api
+      path: commands/code/api.md
+    - id: code-architecture
+      path: commands/code/architecture.md
+    - id: code-completeness
+      path: commands/code/completeness.md
+    - id: code-flows
+      path: commands/code/flows.md
+    - id: code-legal
+      path: commands/code/legal.md
+    - id: code-logic
+      path: commands/code/logic.md
+    - id: code-performance
+      path: commands/code/performance.md
+    - id: code-quality
+      path: commands/code/quality.md
+    - id: code-security
+      path: commands/code/security.md
+    - id: code-test
+      path: commands/code/test.md
+    - id: review
+      path: commands/review.md
+    - id: tdd-next
+      path: commands/tdd-next.md
+    - id: tdd
+      path: commands/tdd.md
+    - id: tests
+      path: commands/tests.md
+    - id: verify
+      path: commands/verify.md
+  skills:
+    - id: agileflow-audit
+      dir: skills/agileflow-audit
+  agents:
+    - id: a11y-analyzer-aria
+      path: agents/a11y-analyzer-aria.md
+    - id: a11y-analyzer-forms
+      path: agents/a11y-analyzer-forms.md
+    - id: a11y-analyzer-keyboard
+      path: agents/a11y-analyzer-keyboard.md
+    - id: a11y-analyzer-semantic
+      path: agents/a11y-analyzer-semantic.md
+    - id: a11y-analyzer-visual
+      path: agents/a11y-analyzer-visual.md
+    - id: a11y-consensus
+      path: agents/a11y-consensus.md
+    - id: accessibility
+      path: agents/accessibility.md
+    - id: api-quality-analyzer-conventions
+      path: agents/api-quality-analyzer-conventions.md
+    - id: api-quality-analyzer-docs
+      path: agents/api-quality-analyzer-docs.md
+    - id: api-quality-analyzer-errors
+      path: agents/api-quality-analyzer-errors.md
+    - id: api-quality-analyzer-pagination
+      path: agents/api-quality-analyzer-pagination.md
+    - id: api-quality-analyzer-versioning
+      path: agents/api-quality-analyzer-versioning.md
+    - id: api-quality-consensus
+      path: agents/api-quality-consensus.md
+    - id: api-validator
+      path: agents/api-validator.md
+    - id: arch-analyzer-circular
+      path: agents/arch-analyzer-circular.md
+    - id: arch-analyzer-complexity
+      path: agents/arch-analyzer-complexity.md
+    - id: arch-analyzer-coupling
+      path: agents/arch-analyzer-coupling.md
+    - id: arch-analyzer-layering
+      path: agents/arch-analyzer-layering.md
+    - id: arch-analyzer-patterns
+      path: agents/arch-analyzer-patterns.md
+    - id: arch-consensus
+      path: agents/arch-consensus.md
+    - id: browser-qa
+      path: agents/browser-qa.md
+    - id: code-reviewer
+      path: agents/code-reviewer.md
+    - id: completeness-analyzer-api
+      path: agents/completeness-analyzer-api.md
+    - id: completeness-analyzer-conditional
+      path: agents/completeness-analyzer-conditional.md
+    - id: completeness-analyzer-handlers
+      path: agents/completeness-analyzer-handlers.md
+    - id: completeness-analyzer-imports
+      path: agents/completeness-analyzer-imports.md
+    - id: completeness-analyzer-routes
+      path: agents/completeness-analyzer-routes.md
+    - id: completeness-analyzer-state
+      path: agents/completeness-analyzer-state.md
+    - id: completeness-analyzer-stubs
+      path: agents/completeness-analyzer-stubs.md
+    - id: completeness-consensus
+      path: agents/completeness-consensus.md
+    - id: error-analyzer
+      path: agents/error-analyzer.md
+    - id: flow-analyzer-authorization
+      path: agents/flow-analyzer-authorization.md
+    - id: flow-analyzer-discovery
+      path: agents/flow-analyzer-discovery.md
+    - id: flow-analyzer-errors
+      path: agents/flow-analyzer-errors.md
+    - id: flow-analyzer-feedback
+      path: agents/flow-analyzer-feedback.md
+    - id: flow-analyzer-navigation
+      path: agents/flow-analyzer-navigation.md
+    - id: flow-analyzer-persistence
+      path: agents/flow-analyzer-persistence.md
+    - id: flow-analyzer-wiring
+      path: agents/flow-analyzer-wiring.md
+    - id: flow-consensus
+      path: agents/flow-consensus.md
+    - id: legal-analyzer-a11y
+      path: agents/legal-analyzer-a11y.md
+    - id: legal-analyzer-ai
+      path: agents/legal-analyzer-ai.md
+    - id: legal-analyzer-consumer
+      path: agents/legal-analyzer-consumer.md
+    - id: legal-analyzer-content
+      path: agents/legal-analyzer-content.md
+    - id: legal-analyzer-international
+      path: agents/legal-analyzer-international.md
+    - id: legal-analyzer-licensing
+      path: agents/legal-analyzer-licensing.md
+    - id: legal-analyzer-privacy
+      path: agents/legal-analyzer-privacy.md
+    - id: legal-analyzer-security
+      path: agents/legal-analyzer-security.md
+    - id: legal-analyzer-terms
+      path: agents/legal-analyzer-terms.md
+    - id: legal-consensus
+      path: agents/legal-consensus.md
+    - id: logic-analyzer-edge
+      path: agents/logic-analyzer-edge.md
+    - id: logic-analyzer-flow
+      path: agents/logic-analyzer-flow.md
+    - id: logic-analyzer-invariant
+      path: agents/logic-analyzer-invariant.md
+    - id: logic-analyzer-race
+      path: agents/logic-analyzer-race.md
+    - id: logic-analyzer-type
+      path: agents/logic-analyzer-type.md
+    - id: logic-consensus
+      path: agents/logic-consensus.md
+    - id: perf-analyzer-assets
+      path: agents/perf-analyzer-assets.md
+    - id: perf-analyzer-bundle
+      path: agents/perf-analyzer-bundle.md
+    - id: perf-analyzer-caching
+      path: agents/perf-analyzer-caching.md
+    - id: perf-analyzer-compute
+      path: agents/perf-analyzer-compute.md
+    - id: perf-analyzer-memory
+      path: agents/perf-analyzer-memory.md
+    - id: perf-analyzer-network
+      path: agents/perf-analyzer-network.md
+    - id: perf-analyzer-queries
+      path: agents/perf-analyzer-queries.md
+    - id: perf-analyzer-rendering
+      path: agents/perf-analyzer-rendering.md
+    - id: perf-consensus
+      path: agents/perf-consensus.md
+    - id: qa
+      path: agents/qa.md
+    - id: quality-analyzer-comments
+      path: agents/quality-analyzer-comments.md
+    - id: quality-analyzer-duplication
+      path: agents/quality-analyzer-duplication.md
+    - id: quality-analyzer-naming
+      path: agents/quality-analyzer-naming.md
+    - id: quality-consensus
+      path: agents/quality-consensus.md
+    - id: schema-validator
+      path: agents/schema-validator.md
+    - id: security-analyzer-api
+      path: agents/security-analyzer-api.md
+    - id: security-analyzer-auth
+      path: agents/security-analyzer-auth.md
+    - id: security-analyzer-authz
+      path: agents/security-analyzer-authz.md
+    - id: security-analyzer-deps
+      path: agents/security-analyzer-deps.md
+    - id: security-analyzer-infra
+      path: agents/security-analyzer-infra.md
+    - id: security-analyzer-injection
+      path: agents/security-analyzer-injection.md
+    - id: security-analyzer-input
+      path: agents/security-analyzer-input.md
+    - id: security-analyzer-secrets
+      path: agents/security-analyzer-secrets.md
+    - id: security-consensus
+      path: agents/security-consensus.md
+    - id: test-analyzer-assertions
+      path: agents/test-analyzer-assertions.md
+    - id: test-analyzer-coverage
+      path: agents/test-analyzer-coverage.md
+    - id: test-analyzer-fragility
+      path: agents/test-analyzer-fragility.md
+    - id: test-analyzer-integration
+      path: agents/test-analyzer-integration.md
+    - id: test-analyzer-maintenance
+      path: agents/test-analyzer-maintenance.md
+    - id: test-analyzer-mocking
+      path: agents/test-analyzer-mocking.md
+    - id: test-analyzer-patterns
+      path: agents/test-analyzer-patterns.md
+    - id: test-analyzer-structure
+      path: agents/test-analyzer-structure.md
+    - id: test-consensus
+      path: agents/test-consensus.md
+    - id: testing
+      path: agents/testing.md
+    - id: ui-validator
+      path: agents/ui-validator.md
   hooks: []
   templates: []

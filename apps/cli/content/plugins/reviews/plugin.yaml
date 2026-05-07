@@ -1,0 +1,15 @@
+id: reviews
+name: PR Reviews
+description: Structured pull request review covering security, logic, tests, and style.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-pr-reviewer
+      dir: skills/agileflow-pr-reviewer
+  agents: []
+  hooks: []
+  templates: []

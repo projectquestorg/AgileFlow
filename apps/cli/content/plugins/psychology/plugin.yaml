@@ -1,0 +1,15 @@
+id: psychology
+name: Psychology & Retention
+description: Apply behavioral psychology and UX research to improve user retention.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-retention
+      dir: skills/agileflow-retention
+  agents: []
+  hooks: []
+  templates: []

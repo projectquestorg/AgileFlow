@@ -80,10 +80,25 @@ const enabledPlugins = Object.entries(config.plugins || {})
 out(`cwd:      ${projectDir}`);
 out(`ide:      ${(config.ide && config.ide.primary) || "claude-code"}`);
 out(`plugins:  ${enabledPlugins.join(", ") || "(none)"}`);
-out(
-  `tone:     ${(config.personalization && config.personalization.tone) || "concise"}`,
-);
 out("");
+
+// Skill learnings hint — only injected when the global toggle is on so
+// disabled installs don't carry a stale instruction in every session.
+const learningsOn = Boolean(
+  config.learnings && config.learnings.enabled !== false,
+);
+if (learningsOn) {
+  out("## Skill learnings");
+  out("  Skill learnings are ON. When the user corrects a skill's output,");
+  out("  record the correction so the skill improves next time:");
+  out(
+    '    Bash: npx agileflow learn append <skill-id> "<correction>" --confidence high',
+  );
+  out(
+    "  Confidence: high (explicit correction) | medium (accepted pattern) | low (observation).",
+  );
+  out("");
+}
 
 // 2. Active story / epic
 const status = readJSON(path.join(projectDir, "docs/09-agents/status.json"));

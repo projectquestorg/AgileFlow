@@ -32,8 +32,6 @@ depends:
   plugins: [core]
 ---
 
-<!-- {{PERSONALIZATION_BLOCK}} -->
-
 # AgileFlow Status Updater
 
 Single source of truth for the project's agile state lives at
@@ -74,23 +72,23 @@ progress updates without the user editing JSON by hand.
 
 ### Story states
 
-| From | To | Notes |
-|---|---|---|
-| `ready` | `in_progress` | when someone picks it up |
-| `in_progress` | `review` | tests pass, ready for review |
-| `review` | `complete` | reviewer signs off |
-| `*` | `blocked` | with required `blocked_reason` |
-| `blocked` | (previous) | resume on unblock |
-| `*` | `ready` | reset / rollback (asks for confirmation) |
+| From          | To            | Notes                                    |
+| ------------- | ------------- | ---------------------------------------- |
+| `ready`       | `in_progress` | when someone picks it up                 |
+| `in_progress` | `review`      | tests pass, ready for review             |
+| `review`      | `complete`    | reviewer signs off                       |
+| `*`           | `blocked`     | with required `blocked_reason`           |
+| `blocked`     | (previous)    | resume on unblock                        |
+| `*`           | `ready`       | reset / rollback (asks for confirmation) |
 
 ### Epic states
 
-| From | To | Notes |
-|---|---|---|
-| `PLANNING` | `ACTIVE` | first story moves to `in_progress` |
-| `ACTIVE` | `ON_HOLD` | pause; record reason |
-| `ON_HOLD` | `ACTIVE` | resume |
-| `ACTIVE` | `COMPLETED` | all stories `complete`; auto-prompt confirm |
+| From       | To          | Notes                                       |
+| ---------- | ----------- | ------------------------------------------- |
+| `PLANNING` | `ACTIVE`    | first story moves to `in_progress`          |
+| `ACTIVE`   | `ON_HOLD`   | pause; record reason                        |
+| `ON_HOLD`  | `ACTIVE`    | resume                                      |
+| `ACTIVE`   | `COMPLETED` | all stories `complete`; auto-prompt confirm |
 
 ## Diff format (shown before write)
 
@@ -130,3 +128,19 @@ docs/06-stories/US-0042-login-form.md (frontmatter)
   confirmation explicitly rather than just showing the diff.
 - Roll back any disallowed transition with a one-line explanation
   ("`complete` → `in_progress` isn't allowed; reset to `ready` first").
+
+## References
+
+Load these files when you need deeper context for the relevant task:
+
+| File                               | When to load                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------- |
+| `references/status-transitions.md` | Validating a transition, checking required fields, understanding the story/epic state machine |
+
+## Workflows
+
+Follow these step-by-step when the user initiates the matching action:
+
+| File                         | When to follow                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `workflows/update-status.md` | User reports progress ("I finished", "I'm blocked") — identifies target, validates transition, shows diff, confirms, writes |

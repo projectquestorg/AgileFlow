@@ -1,57 +1,69 @@
 /**
- * IDE / CLI picker — Clack select prompt.
+ * IDE / CLI picker — Clack multiselect prompt.
  *
- * Asks the user which agentic IDE or CLI they're targeting. Defaults to
- * Claude Code (the full-feature target). The choice is persisted to
- * `agileflow.config.json` at `ide.primary` and gates which plugin
- * content the installer writes (hooks, skills, etc. — see
- * `runtime/ide/capabilities.js`).
+ * Asks the user which agentic IDEs / CLIs to install AgileFlow into.
+ * Multiple selections are supported (space toggles); the result is
+ * persisted to `agileflow.config.json` at `ide.targets`. The installer
+ * mirrors skills into each selected IDE's dotdir and writes hooks /
+ * settings only into IDEs whose capability map declares them.
  */
-const prompts = require('@clack/prompts');
+const prompts = require("@clack/prompts");
 const {
   IDE_CAPABILITIES,
   SUPPORTED_IDES,
   capabilitiesFor,
-} = require('../../runtime/ide/capabilities.js');
+} = require("../../runtime/ide/capabilities.js");
+const { questionMessage } = require("../../lib/brand.js");
 
 /**
- * @param {string} currentIde - existing config's ide.primary
- * @returns {Promise<string>} selected ide id
+ * @param {string[]} currentTargets - existing config's ide.targets
+ * @returns {Promise<string[]>} selected ide ids (>=1)
  */
-async function pickIde(currentIde) {
-  const initialValue = SUPPORTED_IDES.includes(currentIde) ? currentIde : 'claude-code';
+async function pickIdes(currentTargets) {
+  const valid = (currentTargets || []).filter((id) =>
+    SUPPORTED_IDES.includes(id),
+  );
+  const initialValues = valid.length ? valid : ["claude-code"];
 
-  const choice = await prompts.select({
-    message: 'Which IDE / CLI are you using?',
+  const choice = await prompts.multiselect({
+    message: questionMessage(
+      "Which IDEs / CLIs should AgileFlow install into?",
+    ),
     options: SUPPORTED_IDES.map((id) => {
       const caps = IDE_CAPABILITIES[id];
-      const featureList = ['hooks', 'skills', 'commands', 'agents', 'mcp']
+      const features = ["hooks", "skills", "agents"]
         .filter((f) => caps[f])
-        .join(', ');
+        .join(", ");
       return {
         value: id,
         label: caps.description,
-        hint: featureList ? `enables: ${featureList}` : '(very limited support)',
+        hint: features || "(limited)",
       };
     }),
-    initialValue,
+    initialValues,
+    required: true,
   });
 
   if (prompts.isCancel(choice)) {
-    prompts.cancel('Setup cancelled. No changes made.');
+    prompts.cancel("Setup cancelled. No changes made.");
     process.exit(1);
   }
 
-  const caps = capabilitiesFor(/** @type {string} */ (choice));
-  const disabled = ['hooks', 'skills', 'commands', 'agents']
-    .filter((f) => !caps[f]);
-  if (disabled.length) {
-    prompts.log.warn(
-      `${choice}: ${disabled.join(', ')} won't be installed (not supported by this IDE).`,
-    );
+  const targets = /** @type {string[]} */ (choice);
+
+  // Surface what each target won't get — so a user picking only Cursor
+  // isn't surprised that hooks/agents weren't installed.
+  for (const id of targets) {
+    const caps = capabilitiesFor(id);
+    const disabled = ["hooks", "skills", "agents"].filter((f) => !caps[f]);
+    if (disabled.length) {
+      prompts.log.warn(
+        `${caps.description}: ${disabled.join(", ")} are not available here.`,
+      );
+    }
   }
 
-  return /** @type {string} */ (choice);
+  return targets;
 }
 
-module.exports = { pickIde };
+module.exports = { pickIdes };

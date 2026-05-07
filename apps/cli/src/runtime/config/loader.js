@@ -21,9 +21,57 @@ const ajv = new Ajv({ allErrors: true, useDefaults: false, strict: false });
 const validate = ajv.compile(schema);
 
 /**
- * Shallow-merge user config on top of defaults. `plugins`, `hooks`, and
- * `personalization` sub-objects are deep-merged at one level so that
- * partial user configs don't wipe defaults.
+ * Migrate older config shapes into the current schema before validation.
+ * This keeps `agileflow setup` usable across alpha bumps even when a
+ * project already has an older config checked in.
+ *
+ * @param {any} parsed
+ * @returns {any}
+ */
+function migrateLegacyConfig(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return parsed;
+  }
+
+  const migrated = { ...parsed };
+
+  if (
+    migrated.behaviors &&
+    typeof migrated.behaviors === "object" &&
+    !Array.isArray(migrated.behaviors)
+  ) {
+    const behaviors = { ...migrated.behaviors };
+    if (Object.prototype.hasOwnProperty.call(behaviors, "damageControl")) {
+      const damageControl = Boolean(behaviors.damageControl);
+      delete behaviors.damageControl;
+      behaviors.damageControlBash = damageControl;
+      behaviors.damageControlEdit = damageControl;
+      behaviors.damageControlWrite = damageControl;
+    }
+    migrated.behaviors = behaviors;
+  }
+
+  if (
+    migrated.ide &&
+    typeof migrated.ide === "object" &&
+    !Array.isArray(migrated.ide)
+  ) {
+    const ide = { ...migrated.ide };
+    if (!Array.isArray(ide.targets) || ide.targets.length === 0) {
+      if (typeof ide.primary === "string") {
+        ide.targets = [ide.primary];
+      }
+    }
+    migrated.ide = ide;
+  }
+
+  return migrated;
+}
+
+/**
+ * Shallow-merge user config on top of defaults. `plugins` and `hooks`
+ * sub-objects are deep-merged at one level so that partial user configs
+ * don't wipe defaults.
  *
  * @param {import('./defaults.js').AgileflowConfig} defaults
  * @param {Partial<import('./defaults.js').AgileflowConfig>} user
@@ -34,14 +82,33 @@ function mergeConfig(defaults, user) {
     version: user.version ?? defaults.version,
     plugins: { ...defaults.plugins, ...(user.plugins || {}) },
     hooks: { ...defaults.hooks, ...(user.hooks || {}) },
+    install: { ...defaults.install, ...(user.install || {}) },
     behaviors: { ...defaults.behaviors, ...(user.behaviors || {}) },
-    personalization: {
-      ...defaults.personalization,
-      ...(user.personalization || {}),
-    },
-    ide: { ...defaults.ide, ...(user.ide || {}) },
+    learnings: { ...defaults.learnings, ...(user.learnings || {}) },
+    ide: mergeIde(defaults.ide, user.ide),
     language: user.language ?? defaults.language,
   };
+}
+
+/**
+ * Merge user `ide` block onto defaults, normalizing legacy `primary` into
+ * `targets`. Old configs (alpha.1 / alpha.2) shipped only `primary`; we
+ * migrate them in-memory so a single re-install moves them onto the new
+ * shape without forcing the user to hand-edit JSON.
+ *
+ * @param {{ targets: string[], primary?: string }} defaultsIde
+ * @param {{ targets?: string[], primary?: string } | undefined} userIde
+ * @returns {{ targets: string[], primary?: string }}
+ */
+function mergeIde(defaultsIde, userIde) {
+  const merged = { ...defaultsIde, ...(userIde || {}) };
+  if (!Array.isArray(merged.targets) || merged.targets.length === 0) {
+    merged.targets =
+      typeof merged.primary === "string"
+        ? [merged.primary]
+        : [...defaultsIde.targets];
+  }
+  return merged;
 }
 
 /**
@@ -92,6 +159,8 @@ async function loadConfig(cwd) {
   } catch (err) {
     throw new Error(`Invalid JSON in ${configPath}: ${err.message}`);
   }
+
+  parsed = migrateLegacyConfig(parsed);
 
   if (!validate(parsed)) {
     const details = formatSchemaErrors(validate.errors || []);

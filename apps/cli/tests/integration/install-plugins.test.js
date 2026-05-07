@@ -54,6 +54,28 @@ describe("installPlugins integration", () => {
       expect(fs.existsSync(yamlPath)).toBe(true);
       expect(fs.readFileSync(yamlPath, "utf8")).toContain(`id: ${id}`);
     }
+    expect(
+      fs.existsSync(
+        path.join(scratch, ".claude/commands/agileflow/seo/audit.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(scratch, ".claude/commands/agileflow/code/security.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(scratch, ".claude/agents/agileflow/seo-consensus.md"),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(scratch, ".claude/agents/agileflow/security-consensus.md"),
+      ),
+    ).toBe(true);
+    expect(result.commandsMirrored).toContain("seo-audit");
+    expect(result.agentsMirrored).toContain("seo-consensus");
 
     // Disabled plugins did NOT install.
     expect(fs.existsSync(path.join(agileflowDir, "plugins/ads"))).toBe(false);
@@ -130,9 +152,7 @@ describe("installPlugins integration", () => {
       "plugins/seo/plugin.yaml",
     );
     expect(fs.existsSync(stashedYaml)).toBe(true);
-    expect(fs.readFileSync(stashedYaml, "utf8")).toContain(
-      "description: Technical SEO",
-    );
+    expect(fs.readFileSync(stashedYaml, "utf8")).toContain("description: SEO");
 
     expect(result.ops.preserved).toBeGreaterThan(0);
     expect(result.ops.stashed).toBeGreaterThan(0);
@@ -288,7 +308,7 @@ describe("installPlugins integration", () => {
       /script: \.agileflow\/plugins\/core\/hooks\/context-loader\.js/,
     );
     expect(text).toMatch(/id: damage-control-bash/);
-    expect(text).toMatch(/id: pre-compact-state/);
+    expect(text).toMatch(/id: post-compact-state/);
   });
 
   it("filters hooks by the supplied behaviors map", async () => {
@@ -301,13 +321,15 @@ describe("installPlugins integration", () => {
       behaviors: {
         loadContext: true,
         babysitDefault: false,
-        damageControl: false,
+        damageControlBash: false,
+        damageControlEdit: false,
+        damageControlWrite: false,
         preCompactState: false,
       },
     });
     const text = fs.readFileSync(result.hookManifestPath, "utf8");
     expect(text).toMatch(/id: context-loader/);
-    expect(text).not.toMatch(/id: babysit-mentor-injector/);
+    expect(text).not.toMatch(/id: preferences-injector/);
     expect(text).not.toMatch(/id: damage-control-bash/);
     expect(text).not.toMatch(/id: damage-control-edit/);
     expect(text).not.toMatch(/id: damage-control-write/);
@@ -368,7 +390,7 @@ describe("installPlugins integration", () => {
     const parsed = JSON.parse(fs.readFileSync(result.settingsPath, "utf8"));
     expect(parsed.hooks.SessionStart).toHaveLength(1);
     expect(parsed.hooks.PreToolUse).toHaveLength(3);
-    expect(parsed.hooks.PreCompact).toHaveLength(1);
+    expect(parsed.hooks.PostCompact).toHaveLength(1);
     expect(parsed.hooks.Stop).toHaveLength(1);
   });
 
@@ -397,6 +419,51 @@ describe("installPlugins integration", () => {
     expect(fs.existsSync(settingsPath)).toBe(false);
   });
 
+  it("writes .codex/config.toml with our hook registrations when ide=codex", async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ["seo"],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      ide: "codex",
+    });
+    expect(result.codexConfigPath).toBe(
+      path.join(scratch, ".codex", "config.toml"),
+    );
+    const text = fs.readFileSync(result.codexConfigPath, "utf8");
+    expect(text).toContain("codex_hooks = true");
+    expect(text).toContain("SessionStart");
+    expect(text).toContain("PreToolUse");
+    expect(text).toContain("Stop");
+  });
+
+  it("removes Codex hooks on switch-away while preserving full-access defaults", async () => {
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ["seo"],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      ide: "codex",
+    });
+    const configPath = path.join(scratch, ".codex", "config.toml");
+    expect(fs.existsSync(configPath)).toBe(true);
+
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ["seo"],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      ide: "cursor",
+    });
+    expect(result.codexConfigPath).toBeNull();
+    expect(fs.existsSync(configPath)).toBe(true);
+    const text = fs.readFileSync(configPath, "utf8");
+    expect(text).toContain('approval_policy = "never"');
+    expect(text).toContain('sandbox_mode = "danger-full-access"');
+    expect(text).not.toContain("codex_hooks = true");
+    expect(text).not.toContain("agileflow hook");
+  });
+
   it("mirrors plugin skills to .claude/skills/<id>/ when ide=claude-code", async () => {
     const result = await installPlugins({
       discovered: discoverPlugins(),
@@ -416,7 +483,7 @@ describe("installPlugins integration", () => {
     );
   });
 
-  it("removes mirrored skills when switching to a non-skill IDE", async () => {
+  it("mirrors skills into the per-IDE skills dir when switching IDEs", async () => {
     await installPlugins({
       discovered: discoverPlugins(),
       userSelected: [],
@@ -437,12 +504,50 @@ describe("installPlugins integration", () => {
       cliVersion: "4.0.0-alpha.1",
       ide: "cursor",
     });
-    expect(result.skillsPruned).toContain("agileflow-story-writer");
+    // Cursor now also supports skills, so the mirror lands under .cursor/skills.
+    expect(result.skillsMirrored).toContain("agileflow-story-writer");
     expect(
       fs.existsSync(
-        path.join(scratch, ".claude/skills/agileflow-story-writer"),
+        path.join(scratch, ".cursor/skills/agileflow-story-writer/SKILL.md"),
       ),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it("mirrors skills into the Antigravity skills dir", async () => {
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      ide: "antigravity",
+    });
+    expect(result.skillsMirrored).toContain("agileflow-story-writer");
+    expect(
+      fs.existsSync(
+        path.join(
+          scratch,
+          ".antigravity/skills/agileflow-story-writer/SKILL.md",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("renders the babysit mentor skill differently for Codex", async () => {
+    await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      ide: "codex",
+    });
+    const skillFile = path.join(
+      scratch,
+      ".codex/skills/agileflow-babysit-mentor/SKILL.md",
+    );
+    expect(fs.existsSync(skillFile)).toBe(true);
+    const text = fs.readFileSync(skillFile, "utf8");
+    expect(text).not.toContain("AskUserQuestion");
+    expect(text).toContain("numbered choice list");
   });
 
   it("rejects an invalid hook manifest before settings.json is touched", async () => {

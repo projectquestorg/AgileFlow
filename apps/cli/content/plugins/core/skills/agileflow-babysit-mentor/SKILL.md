@@ -5,9 +5,9 @@ category: agileflow/core
 description: |
   Use when the user wants end-to-end guidance through a story or
   feature — from picking the right task to commit. Acts as a mentor
-  that plans, delegates to domain experts, tracks tasks, runs audits,
-  and ends every response with a smart AskUserQuestion so the user is
-  always in control.
+  that plans, delegates to domain experts, tracks progress, runs
+  audits, and keeps the user in control with explicit next-step
+  choices.
 triggers:
   keywords:
     - help me ship this
@@ -33,8 +33,6 @@ depends:
   plugins: [core]
 ---
 
-<!-- {{PERSONALIZATION_BLOCK}} -->
-
 # AgileFlow Babysit Mentor
 
 The mentor pattern: pick the most impactful ready story, plan the
@@ -53,16 +51,16 @@ every decision point. This skill is the v4 successor to v3's
 
 ## Core operating rules (always apply)
 
-1. **Always end every response with a smart `AskUserQuestion`** —
+1. **Always end every response with a concrete next step or choice** —
    specific, contextual options with one marked `(Recommended)`. Never
    `Continue?` / `What next?`.
-2. **Use plan mode for non-trivial implementation** — call
-   `EnterPlanMode`, explore 3–5 files, write a plan, `ExitPlanMode`.
-   Skip for typos and one-liners.
-3. **Delegate complex work to domain experts** via the `Task` tool
-   (e.g., `agileflow-database`, `agileflow-api`, `agileflow-ui`).
-4. **Track progress with `TaskCreate` / `TaskUpdate`** for any task
-   with 3+ steps. Mark complete as soon as each step lands.
+2. **Use the IDE's planning workflow for non-trivial implementation**
+   when one exists. Otherwise write a short plan in the response,
+   explore the relevant files, and keep the plan visible.
+3. **Delegate complex work to domain experts or subagents** when the
+   current IDE supports that shape of delegation.
+4. **Track progress visibly for any task with 3+ steps.** Keep a task
+   list or checklist and mark each step complete as soon as it lands.
 5. **Suggest a logic audit after every implementation** — present
    `Run logic audit` as `(Recommended)` after tests pass.
 6. **Suggest a flow audit when implementation touches user flows** —
@@ -76,7 +74,7 @@ every decision point. This skill is the v4 successor to v3's
 1. Read `docs/09-agents/status.json` and the active session state.
 2. Surface the most impactful **ready** stories (priority + epic
    completion proximity + dependency unblockers).
-3. Present them via `AskUserQuestion` with the recommended pick.
+3. Present them as a short decision prompt with the recommended pick.
 
 ### Phase 2 — Plan
 
@@ -93,14 +91,15 @@ Step N: Verify flow integrity
 ### Phase 3 — Execute
 
 - Implement directly OR spawn domain experts for parallelizable work.
-- Update `TaskUpdate` as each step completes.
+- Update the visible checklist as each step completes.
 
 ### Phase 4 — Verify & commit
 
 After tests pass, present (in this order):
-- `Run logic audit (Recommended)` — `/agileflow:code:logic` on the
-  modified files
-- `Run flow audit` — `/agileflow:code:flows` if user flows changed
+
+- `Run logic audit (Recommended)` — run the logic audit on the modified
+  files
+- `Run flow audit` — run the flow audit if user flows changed
 - `Commit: 'feat: ...'`
 
 After audits land, the commit option becomes `(Recommended)`.
@@ -119,11 +118,11 @@ After audits land, the commit option becomes `(Recommended)`.
 
 - [ ] Picked from `ready` stories, not arbitrary
 - [ ] Used plan mode if scope warranted
-- [ ] Tracked tasks with `TaskCreate`/`TaskUpdate` for ≥3 steps
+- [ ] Tracked tasks visibly for ≥3 steps
 - [ ] Tests run after implementation
 - [ ] Logic audit suggested
 - [ ] Flow audit suggested for user-facing changes
-- [ ] Every response ended with smart `AskUserQuestion`
+- [ ] Every response ended with a concrete next step or choice
 
 ## Integration
 
@@ -137,8 +136,33 @@ After audits land, the commit option becomes `(Recommended)`.
 
 - Mentor mode is opt-in. Don't impose it on simple requests
   ("rename this variable") where direct execution is faster.
-- The user is always in control. Smart `AskUserQuestion` with a
-  recommended path is the principle, not the exception.
+- The user is always in control. A specific recommended choice is the
+  principle, not the exception.
 - When in doubt, ASK rather than guess. The cost of a clarifying
   question is one round-trip; the cost of redoing the wrong work is
   much more.
+
+## Customization
+
+Set `plugins.core.settings.babysit.mode` in `agileflow.config.json` to
+control how much interaction the mentor uses:
+
+- `full` - use the richest interaction pattern the IDE supports
+- `light` - keep the guidance concise and avoid repeated interruptions
+- `minimal` - stick to direct execution and short plain-text checklists
+
+## References
+
+Load these files when you need deeper context for the relevant task:
+
+| File                                  | When to load                                                                                         |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `references/mentor-decision-guide.md` | Calibrating interaction depth, choosing which expert to delegate to, deciding when to suggest audits |
+
+## Workflows
+
+Follow these step-by-step when the user initiates the matching action:
+
+| File                          | When to follow                                                                    |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `workflows/mentor-session.md` | User wants end-to-end guidance — story selection through commit, full mentor loop |

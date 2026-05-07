@@ -1,0 +1,32 @@
+id: research
+name: Research
+description: Research skill pack.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands:
+    - id: research-analyze
+      path: commands/research/analyze.md
+    - id: research-ask
+      path: commands/research/ask.md
+    - id: research-import
+      path: commands/research/import.md
+    - id: research-list
+      path: commands/research/list.md
+    - id: research-synthesize
+      path: commands/research/synthesize.md
+    - id: research-view
+      path: commands/research/view.md
+    - id: skill-research
+      path: commands/skill/research.md
+  skills:
+    - id: agileflow-research
+      dir: skills/agileflow-research
+  agents:
+    - id: research
+      path: agents/research.md
+  hooks: []
+  templates: []

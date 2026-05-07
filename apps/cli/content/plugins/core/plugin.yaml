@@ -1,13 +1,6 @@
-# Core plugin — essential AgileFlow workflow.
-# Always enabled; cannot be disabled.
-#
-# Hooks declared here are CANDIDATES — the install-time aggregator
-# filters them by the user's `behaviors:` map in agileflow.config.json.
-# A hook ID that maps to a disabled behavior never enters the
-# generated hook-manifest.yaml. See apps/cli/src/runtime/hooks/aggregator.js.
 id: core
 name: Core
-description: Epic, Story, Status, Babysit — essential agile workflow.
+description: Essential AgileFlow skills.
 version: 1.0.0
 enabledByDefault: true
 cannotDisable: true
@@ -15,7 +8,125 @@ cannotDisable: true
 depends: []
 
 provides:
-  commands: []
+  commands:
+    - id: adr
+      path: commands/adr.md
+    - id: adr-list
+      path: commands/adr/list.md
+    - id: adr-update
+      path: commands/adr/update.md
+    - id: adr-view
+      path: commands/adr/view.md
+    - id: agent
+      path: commands/agent.md
+    - id: assign
+      path: commands/assign.md
+    - id: auto
+      path: commands/auto.md
+    - id: babysit
+      path: commands/babysit.md
+    - id: baseline
+      path: commands/baseline.md
+    - id: batch
+      path: commands/batch.md
+    - id: blockers
+      path: commands/blockers.md
+    - id: board
+      path: commands/board.md
+    - id: channels
+      path: commands/channels.md
+    - id: choose
+      path: commands/choose.md
+    - id: compact-search
+      path: commands/compact/search.md
+    - id: compress
+      path: commands/compress.md
+    - id: configure
+      path: commands/configure.md
+    - id: context-export
+      path: commands/context/export.md
+    - id: context-full
+      path: commands/context/full.md
+    - id: context-note
+      path: commands/context/note.md
+    - id: debt
+      path: commands/debt.md
+    - id: epic
+      path: commands/epic.md
+    - id: epic-edit
+      path: commands/epic/edit.md
+    - id: epic-list
+      path: commands/epic/list.md
+    - id: epic-view
+      path: commands/epic/view.md
+    - id: handoff
+      path: commands/handoff.md
+    - id: help
+      path: commands/help.md
+    - id: install
+      path: commands/install.md
+    - id: maintain
+      path: commands/maintain.md
+    - id: retro
+      path: commands/retro.md
+    - id: session-cleanup
+      path: commands/session/cleanup.md
+    - id: session-end
+      path: commands/session/end.md
+    - id: session-history
+      path: commands/session/history.md
+    - id: session-init
+      path: commands/session/init.md
+    - id: session-new
+      path: commands/session/new.md
+    - id: session-resume
+      path: commands/session/resume.md
+    - id: session-spawn
+      path: commands/session/spawn.md
+    - id: session-status
+      path: commands/session/status.md
+    - id: status
+      path: commands/status.md
+    - id: status-undo
+      path: commands/status/undo.md
+    - id: story-validate
+      path: commands/story-validate.md
+    - id: story
+      path: commands/story.md
+    - id: story-edit
+      path: commands/story/edit.md
+    - id: story-list
+      path: commands/story/list.md
+    - id: story-view
+      path: commands/story/view.md
+    - id: team-guide
+      path: commands/team/guide.md
+    - id: team-list
+      path: commands/team/list.md
+    - id: team-start
+      path: commands/team/start.md
+    - id: team-status
+      path: commands/team/status.md
+    - id: team-stop
+      path: commands/team/stop.md
+    - id: template
+      path: commands/template.md
+    - id: update
+      path: commands/update.md
+    - id: validate-expertise
+      path: commands/validate-expertise.md
+    - id: whats-new
+      path: commands/whats-new.md
+    - id: workflow
+      path: commands/workflow.md
+    - id: workspace
+      path: commands/workspace.md
+    - id: workspace-init
+      path: commands/workspace/init.md
+    - id: workspace-spawn
+      path: commands/workspace/spawn.md
+    - id: workspace-status
+      path: commands/workspace/status.md
   skills:
     - id: agileflow-adr
       dir: skills/agileflow-adr
@@ -27,56 +138,60 @@ provides:
       dir: skills/agileflow-status-updater
     - id: agileflow-babysit-mentor
       dir: skills/agileflow-babysit-mentor
-  agents: []
+  agents:
+    - id: adr-writer
+      path: agents/adr-writer.md
+    - id: epic-planner
+      path: agents/epic-planner.md
+    - id: mentor
+      path: agents/mentor.md
+    - id: orchestrator
+      path: agents/orchestrator.md
+    - id: team-coordinator
+      path: agents/team-coordinator.md
+    - id: team-lead
+      path: agents/team-lead.md
+    - id: workspace-orchestrator
+      path: agents/workspace-orchestrator.md
   hooks:
-    # SessionStart — context loading + (optional) mentor injection.
     - id: context-loader
       event: SessionStart
       script: hooks/context-loader.js
       timeout: 5000
       skipOnError: true
       behavior: loadContext
-
-    - id: babysit-mentor-injector
+    - id: preferences-injector
       event: SessionStart
-      script: hooks/babysit-mentor-injector.js
+      script: hooks/preferences-injector.js
       timeout: 2000
       skipOnError: true
       runAfter: [context-loader]
       behavior: babysitDefault
-
-    # PreToolUse — damage control. skipOnError false: errors should
-    # block dangerous operations rather than be tolerated.
     - id: damage-control-bash
       event: PreToolUse
       matcher: Bash
       script: hooks/damage-control-bash.js
       timeout: 3000
       skipOnError: false
-      behavior: damageControl
-
+      behavior: damageControlBash
     - id: damage-control-edit
       event: PreToolUse
       matcher: Edit
       script: hooks/damage-control-edit.js
       timeout: 3000
       skipOnError: false
-      behavior: damageControl
-
+      behavior: damageControlEdit
     - id: damage-control-write
       event: PreToolUse
       matcher: Write
       script: hooks/damage-control-write.js
       timeout: 3000
       skipOnError: false
-      behavior: damageControl
-
-    # PreCompact — preserve state across compaction.
-    - id: pre-compact-state
-      event: PreCompact
-      script: hooks/pre-compact-state.js
+      behavior: damageControlWrite
+    - id: post-compact-state
+      event: PostCompact
+      script: hooks/post-compact-state.js
       timeout: 5000
       skipOnError: true
       behavior: preCompactState
-
   templates: []

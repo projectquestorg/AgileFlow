@@ -1,0 +1,44 @@
+id: ideation
+name: Ideation
+description: Product ideation skill pack.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands:
+    - id: ideate
+      path: commands/ideate.md
+    - id: ideate-brief
+      path: commands/ideate/brief.md
+    - id: ideate-discover
+      path: commands/ideate/discover.md
+    - id: ideate-features
+      path: commands/ideate/features.md
+    - id: ideate-history
+      path: commands/ideate/history.md
+    - id: ideate-new
+      path: commands/ideate/new.md
+  skills:
+    - id: agileflow-ideation
+      dir: skills/agileflow-ideation
+  agents:
+    - id: brainstorm-analyzer-features
+      path: agents/brainstorm-analyzer-features.md
+    - id: brainstorm-analyzer-growth
+      path: agents/brainstorm-analyzer-growth.md
+    - id: brainstorm-analyzer-integration
+      path: agents/brainstorm-analyzer-integration.md
+    - id: brainstorm-analyzer-market
+      path: agents/brainstorm-analyzer-market.md
+    - id: brainstorm-analyzer-ux
+      path: agents/brainstorm-analyzer-ux.md
+    - id: brainstorm-consensus
+      path: agents/brainstorm-consensus.md
+    - id: design
+      path: agents/design.md
+    - id: product
+      path: agents/product.md
+  hooks: []
+  templates: []

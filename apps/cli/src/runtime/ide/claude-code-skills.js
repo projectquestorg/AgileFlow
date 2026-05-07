@@ -1,25 +1,22 @@
 /**
- * Claude Code skill mirror.
+ * Skill mirror for IDEs that discover skills from a dotdir.
  *
  * Plugin skills are sourced under `apps/cli/content/plugins/<id>/skills/<skill-id>/`
- * and copied into `.agileflow/plugins/<id>/skills/<skill-id>/` by the
- * sync engine. But Claude Code discovers skills from `.claude/skills/<skill-id>/`,
- * so this module mirrors enabled plugin skills to that canonical
- * location and prunes orphaned skills when plugins are disabled.
- *
+ * and copied into the target IDE's skill directory by the installer.
  * We use copy (not symlink) for portability — Windows symlink behavior
- * is inconsistent and Claude Code itself runs there. The duplication
- * cost is negligible at v4-alpha skill counts.
+ * is inconsistent and the supported IDEs run on mixed platforms.
+ * The duplication cost is negligible at v4-alpha skill counts.
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
+const { renderSkillForTarget } = require("./babysit-skill.js");
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
  *
  * @typedef {Object} MirrorResult
- * @property {string[]} mirrored - skill ids written to .claude/skills/
- * @property {string[]} pruned - skill ids removed from .claude/skills/ (orphans)
+ * @property {string[]} mirrored - skill ids written to the target skills dir
+ * @property {string[]} pruned - skill ids removed from the target skills dir (orphans)
  * @property {Array<{ skillId: string, error: string }>} skipped - skills whose source was missing
  */
 
@@ -28,7 +25,7 @@ const path = require('path');
  * @param {string} src
  * @param {string} dest
  */
-async function copyDir(src, dest) {
+async function copyDir(src, dest, context = {}) {
   // Read the source listing FIRST. If src is missing (ENOENT), the
   // error propagates BEFORE we create dest, so a missing source can't
   // leave behind an empty destination dir for the caller to mistake
@@ -39,9 +36,19 @@ async function copyDir(src, dest) {
     const s = path.join(src, e.name);
     const d = path.join(dest, e.name);
     if (e.isDirectory()) {
-      await copyDir(s, d);
+      await copyDir(s, d, context);
     } else if (e.isFile()) {
-      await fs.promises.copyFile(s, d);
+      if (e.name === "SKILL.md" && context.skillId) {
+        const sourceText = await fs.promises.readFile(s, "utf8");
+        const rendered = renderSkillForTarget(
+          context.skillId,
+          sourceText,
+          context,
+        );
+        await fs.promises.writeFile(d, rendered, "utf8");
+      } else {
+        await fs.promises.copyFile(s, d);
+      }
     }
   }
 }
@@ -75,9 +82,9 @@ function collectPluginSkills(orderedPlugins) {
       // the plugin root, which is never what the author intended.
       if (
         !s ||
-        typeof s.id !== 'string' ||
+        typeof s.id !== "string" ||
         !s.id ||
-        typeof s.dir !== 'string' ||
+        typeof s.dir !== "string" ||
         !s.dir
       ) {
         continue;
@@ -92,8 +99,8 @@ function collectPluginSkills(orderedPlugins) {
 }
 
 /**
- * Mirror enabled plugin skills into `<projectRoot>/.claude/skills/<skill-id>/`
- * and remove any `.claude/skills/<id>/` whose id is not in the current
+ * Mirror enabled plugin skills into `<projectRoot>/<skillsDirRel>/<skill-id>/`
+ * and remove any `<skillsDirRel>/<id>/` whose id is not in the current
  * enabled set.
  *
  * Only AgileFlow-tracked skills are pruned: a skill is "tracked" iff
@@ -101,7 +108,7 @@ function collectPluginSkills(orderedPlugins) {
  * appears in any plugin's `provides.skills` (i.e., we recognize it).
  * To stay safe, we limit pruning to skills we've seen previously by
  * recording the install set in the file index — but for v4-alpha
- * simplicity, we prune every dir under `.claude/skills/` whose name
+ * simplicity, we prune every dir under the skills dir whose name
  * matches an `agileflow-*` convention OR is in the previously-mirrored
  * set on disk. Unknown user-placed skill dirs without that prefix are
  * left alone.
@@ -110,8 +117,13 @@ function collectPluginSkills(orderedPlugins) {
  * @param {string} projectRoot
  * @returns {Promise<MirrorResult>}
  */
-async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
-  const claudeSkills = path.join(projectRoot, '.claude', 'skills');
+async function mirrorClaudeCodeSkills(
+  orderedPlugins,
+  projectRoot,
+  skillsDirRel = ".claude/skills",
+  context = {},
+) {
+  const claudeSkills = path.join(projectRoot, skillsDirRel);
   await fs.promises.mkdir(claudeSkills, { recursive: true });
 
   const want = collectPluginSkills(orderedPlugins);
@@ -127,13 +139,13 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
       // Replace the destination wholesale so removed files in source
       // don't linger in the user's .claude/skills/.
       await rmDir(dest);
-      await copyDir(sourceDir, dest);
+      await copyDir(sourceDir, dest, { ...context, skillId });
       mirrored.push(skillId);
     } catch (err) {
       // A missing source dir (ENOENT) shouldn't crash the entire
       // install — log and continue so other skills still mirror. A
       // permission error or unrelated failure still propagates.
-      if (err && err.code === 'ENOENT') {
+      if (err && err.code === "ENOENT") {
         skipped.push({
           skillId,
           error: `source not found: ${sourceDir}`,
@@ -150,7 +162,7 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
   try {
     entries = await fs.promises.readdir(claudeSkills, { withFileTypes: true });
   } catch (err) {
-    if (err.code === 'ENOENT') return { mirrored, pruned };
+    if (err.code === "ENOENT") return { mirrored, pruned };
     throw err;
   }
   for (const e of entries) {
@@ -160,7 +172,7 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
     // avoids blasting a user-placed third-party skill whose id we
     // don't manage. A dedicated prune-from-index approach can replace
     // this heuristic in a later phase.
-    if (!e.name.startsWith('agileflow-')) continue;
+    if (!e.name.startsWith("agileflow-")) continue;
     await rmDir(path.join(claudeSkills, e.name));
     pruned.push(e.name);
   }
@@ -169,26 +181,29 @@ async function mirrorClaudeCodeSkills(orderedPlugins, projectRoot) {
 }
 
 /**
- * Remove all AgileFlow-mirrored skills from `.claude/skills/`. Used
- * when switching to a non-skill IDE.
+ * Remove all AgileFlow-mirrored skills from the target skills dir.
+ * Used when switching to a non-skill IDE.
  *
  * @param {string} projectRoot
  * @returns {Promise<string[]>} ids that were removed
  */
-async function unmirrorClaudeCodeSkills(projectRoot) {
-  const claudeSkills = path.join(projectRoot, '.claude', 'skills');
+async function unmirrorClaudeCodeSkills(
+  projectRoot,
+  skillsDirRel = ".claude/skills",
+) {
+  const claudeSkills = path.join(projectRoot, skillsDirRel);
   /** @type {string[]} */
   const removed = [];
   let entries;
   try {
     entries = await fs.promises.readdir(claudeSkills, { withFileTypes: true });
   } catch (err) {
-    if (err.code === 'ENOENT') return removed;
+    if (err.code === "ENOENT") return removed;
     throw err;
   }
   for (const e of entries) {
     if (!e.isDirectory()) continue;
-    if (!e.name.startsWith('agileflow-')) continue;
+    if (!e.name.startsWith("agileflow-")) continue;
     await rmDir(path.join(claudeSkills, e.name));
     removed.push(e.name);
   }

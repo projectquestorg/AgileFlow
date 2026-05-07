@@ -14,21 +14,34 @@
  * failure.
  */
 const path = require("path");
+const os = require("os");
 const pkg = require("../../../package.json");
 const { loadConfig } = require("../../runtime/config/loader.js");
 const { discoverPlugins } = require("../../runtime/plugins/registry.js");
 const { installPlugins } = require("../../runtime/installer/install.js");
-const { capabilitiesFor } = require("../../runtime/ide/capabilities.js");
+const {
+  capabilitiesFor,
+  hookEventsForIdes,
+} = require("../../runtime/ide/capabilities.js");
+const {
+  normalizeBehaviorsForEvents,
+} = require("../wizard/behaviors-picker.js");
 
 /**
  * @param {{ force?: boolean }} options
  */
 async function update(options = {}) {
   const cwd = process.cwd();
+  const scope = options.scope === "global" ? "global" : "project";
+  const agileflowDir =
+    scope === "global"
+      ? path.join(os.homedir(), ".agileflow")
+      : path.join(cwd, ".agileflow");
+  const configRoot = scope === "global" ? agileflowDir : cwd;
 
   let existing;
   try {
-    existing = await loadConfig(cwd);
+    existing = await loadConfig(configRoot);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(`agileflow update: ${err.message}`);
@@ -52,14 +65,23 @@ async function update(options = {}) {
 
   let result;
   try {
+    const supportedHookEvents = hookEventsForIdes(existing.config.ide.targets);
+    const normalizedBehaviors = normalizeBehaviorsForEvents(
+      existing.config.behaviors,
+      supportedHookEvents,
+    );
     result = await installPlugins({
       discovered: discoverPlugins(),
       userSelected,
-      agileflowDir: path.join(cwd, ".agileflow"),
+      agileflowDir,
       cliVersion: pkg.version,
-      ide: existing.config.ide.primary,
-      behaviors: existing.config.behaviors,
+      ides: existing.config.ide.targets,
+      behaviors: normalizedBehaviors,
+      learningsEnabled: Boolean(
+        existing.config.learnings && existing.config.learnings.enabled,
+      ),
       force: Boolean(options.force),
+      config: existing.config,
     });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -68,11 +90,21 @@ async function update(options = {}) {
   }
 
   // eslint-disable-next-line no-console
-  console.log(`✓ Updated ${enabled.length} plugin(s): ${enabled.join(", ")}`);
+  console.log(
+    `✓ Updated ${enabled.length} skill pack(s): ${enabled.join(", ")}`,
+  );
+  // eslint-disable-next-line no-console
+  console.log(`  scope: ${scope}`);
 
-  const caps = capabilitiesFor(existing.config.ide.primary);
-  if (caps.hooks) {
-    const activeBehaviors = Object.entries(existing.config.behaviors || {})
+  const targets = existing.config.ide.targets || [];
+  const anyHooks = targets.some((id) => capabilitiesFor(id).hooks);
+  if (anyHooks) {
+    const activeBehaviors = Object.entries(
+      normalizeBehaviorsForEvents(
+        existing.config.behaviors,
+        hookEventsForIdes(targets),
+      ),
+    )
       .filter(([, v]) => v)
       .map(([k]) => k);
     // eslint-disable-next-line no-console

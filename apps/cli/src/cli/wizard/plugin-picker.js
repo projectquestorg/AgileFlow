@@ -12,8 +12,9 @@
  * Cancellation (Ctrl+C / Esc) exits with code 1 (not 0) so CI can tell
  * the difference between success and user abort.
  */
-const prompts = require('@clack/prompts');
-const { discoverPlugins } = require('../../runtime/plugins/registry.js');
+const prompts = require("@clack/prompts");
+const { discoverPlugins } = require("../../runtime/plugins/registry.js");
+const { questionMessage } = require("../../lib/brand.js");
 
 /**
  * @param {Array<{id:string, cannotDisable?:boolean}>} discovered
@@ -21,7 +22,11 @@ const { discoverPlugins } = require('../../runtime/plugins/registry.js');
  * @param {Record<string, {enabled:boolean, settings?:any}>} [existingPluginsMap]
  * @returns {Record<string, { enabled: boolean, settings?: any }>}
  */
-function buildPluginsMap(discovered, selectedOptionalIds, existingPluginsMap = {}) {
+function buildPluginsMap(
+  discovered,
+  selectedOptionalIds,
+  existingPluginsMap = {},
+) {
   /** @type {Record<string, { enabled: boolean, settings?: any }>} */
   const result = {};
   for (const p of discovered) {
@@ -36,7 +41,7 @@ function buildPluginsMap(discovered, selectedOptionalIds, existingPluginsMap = {
     const existing = (existingPluginsMap || {})[p.id];
     if (
       existing &&
-      typeof existing === 'object' &&
+      typeof existing === "object" &&
       !Array.isArray(existing) &&
       existing.settings
     ) {
@@ -51,13 +56,25 @@ function buildPluginsMap(discovered, selectedOptionalIds, existingPluginsMap = {
     if (
       !(id in result) &&
       entry &&
-      typeof entry === 'object' &&
+      typeof entry === "object" &&
       !Array.isArray(entry)
     ) {
       result[id] = entry;
     }
   }
   return result;
+}
+
+/**
+ * Keep plugin rows compact. AgileFlow exposes these as skill packs in
+ * the wizard, even when the plugin carries legacy command/agent source
+ * files internally for IDE compatibility.
+ *
+ * @param {import('../../runtime/plugins/registry.js').PluginManifest} p
+ * @returns {string}
+ */
+function pluginHint(p) {
+  return p.description || "Skill pack";
 }
 
 /**
@@ -71,31 +88,32 @@ async function pickPlugins(currentConfig) {
 
   if (required.length) {
     prompts.log.info(
-      `Always on: ${required.map((p) => `${p.name} (${p.id})`).join(', ')}`,
+      `Always on: ${required.map((p) => `${p.name} (${p.id})`).join(", ")}`,
     );
   }
 
   const initialValues = optional
     .filter((p) => {
       const existing = (currentConfig.plugins || {})[p.id];
-      if (existing && typeof existing.enabled === 'boolean') return existing.enabled;
+      if (existing && typeof existing.enabled === "boolean")
+        return existing.enabled;
       return Boolean(p.enabledByDefault);
     })
     .map((p) => p.id);
 
   const picked = await prompts.multiselect({
-    message: 'Select optional plugins to enable:',
+    message: questionMessage("Choose optional skill packs:"),
     options: optional.map((p) => ({
       value: p.id,
       label: p.name,
-      hint: p.description,
+      hint: pluginHint(p),
     })),
     initialValues,
     required: false,
   });
 
   if (prompts.isCancel(picked)) {
-    prompts.cancel('Setup cancelled. No changes made.');
+    prompts.cancel("Setup cancelled. No changes made.");
     process.exit(1);
   }
 
@@ -103,4 +121,4 @@ async function pickPlugins(currentConfig) {
   return buildPluginsMap(all, selectedOptionalIds, currentConfig.plugins || {});
 }
 
-module.exports = { pickPlugins, buildPluginsMap };
+module.exports = { pickPlugins, buildPluginsMap, pluginHint };

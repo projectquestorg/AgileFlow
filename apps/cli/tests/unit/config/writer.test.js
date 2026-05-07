@@ -33,11 +33,6 @@ describe("config writer", () => {
     const file = await writeConfig(scratch, {
       ...defaultConfig(),
       plugins: { core: { enabled: true }, seo: { enabled: true } },
-      personalization: {
-        tone: "detailed",
-        ask_level: "always",
-        verbosity: "high",
-      },
     });
 
     expect(file).toBe(path.join(scratch, CONFIG_FILENAME));
@@ -50,8 +45,6 @@ describe("config writer", () => {
     const loaded = await loadConfig(scratch);
     expect(loaded.source).toBe("file");
     expect(loaded.config.plugins.seo.enabled).toBe(true);
-    expect(loaded.config.personalization.tone).toBe("detailed");
-    expect(loaded.config.personalization.verbosity).toBe("high");
   });
 
   it("produces stable JSON formatting (2-space indent + trailing newline)", async () => {
@@ -87,6 +80,15 @@ describe("config writer", () => {
       expect(config.hooks["damage-control-bash"].timeout).toBe(3000);
       expect(config.hooks["damage-control-bash"].skipOnError).toBe(true);
       expect(config.hooks["archive-stories"].enabled).toBe(false);
+    });
+
+    it("preserves install scope", async () => {
+      await writeConfig(scratch, {
+        ...defaultConfig(),
+        install: { scope: "global" },
+      });
+      const { config } = await loadConfig(scratch);
+      expect(config.install.scope).toBe("global");
     });
 
     it("preserves ide.primary", async () => {
@@ -129,41 +131,21 @@ describe("config writer", () => {
       expect(config.plugins.seo.settings.include).toEqual(["a", "b"]);
     });
 
-    it("preserves personalization tone=teaching", async () => {
-      await writeConfig(scratch, {
-        ...defaultConfig(),
-        personalization: {
-          tone: "teaching",
-          ask_level: "always",
-          verbosity: "low",
-        },
-      });
-      const { config } = await loadConfig(scratch);
-      expect(config.personalization.tone).toBe("teaching");
-      expect(config.personalization.ask_level).toBe("always");
-      expect(config.personalization.verbosity).toBe("low");
-    });
-
-    it("preserves all four behavior toggles independently", async () => {
+    it("preserves every behavior toggle independently", async () => {
       // Mixed shape (not all-true, not all-false) catches a writer that
       // accidentally serializes only truthy keys or replaces user values
       // with defaults.
-      await writeConfig(scratch, {
-        ...defaultConfig(),
-        behaviors: {
-          loadContext: false,
-          babysitDefault: true,
-          damageControl: false,
-          preCompactState: true,
-        },
-      });
-      const { config } = await loadConfig(scratch);
-      expect(config.behaviors).toEqual({
+      const behaviors = {
         loadContext: false,
         babysitDefault: true,
-        damageControl: false,
+        damageControlBash: true,
+        damageControlEdit: false,
+        damageControlWrite: true,
         preCompactState: true,
-      });
+      };
+      await writeConfig(scratch, { ...defaultConfig(), behaviors });
+      const { config } = await loadConfig(scratch);
+      expect(config.behaviors).toEqual(behaviors);
     });
   });
 

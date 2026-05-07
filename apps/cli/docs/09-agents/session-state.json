@@ -1,0 +1,46 @@
+{
+  "hook_metrics": {
+    "last_updated": "2026-05-07T04:06:02.043Z",
+    "session_total_ms": 29,
+    "hooks": {
+      "SessionStart": {
+        "welcome": {
+          "duration_ms": 29,
+          "status": "success",
+          "at": "2026-05-07T04:06:02.043Z"
+        }
+      }
+    }
+  },
+  "update_cache": {
+    "checked_at": "2026-05-07T04:06:02.072Z",
+    "result": {
+      "available": false,
+      "installed": null,
+      "latest": null,
+      "autoUpdate": true,
+      "justUpdated": false,
+      "previousVersion": null
+    }
+  },
+  "scale_detection": {
+    "scale": "large",
+    "metrics": {
+      "files": 81,
+      "stories": 0,
+      "commits": 1086,
+      "dependencies": 10
+    },
+    "detected_at": "2026-05-07T04:06:02.035Z",
+    "detection_ms": 12,
+    "fromCache": false
+  },
+  "tmux_available": true,
+  "deferred_warnings": [
+    {
+      "type": "process_cleanup",
+      "lines": ["4 other Claude process(es) in same directory"],
+      "at": "2026-05-07T04:06:02.086Z"
+    }
+  ]
+}

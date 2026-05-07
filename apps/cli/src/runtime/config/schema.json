@@ -39,6 +39,18 @@
         }
       }
     },
+    "install": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Where AgileFlow is installed. Project installs write into the current repository; global installs write under the user's home directory.",
+      "properties": {
+        "scope": {
+          "type": "string",
+          "enum": ["project", "global"],
+          "description": "Install scope for config, AgileFlow state, and IDE mirrors."
+        }
+      }
+    },
     "behaviors": {
       "type": "object",
       "description": "Curated behavior presets. Each maps to one or more hooks the installer wires up. Disabling a behavior excludes its hooks from the generated hook-manifest.yaml.",
@@ -52,9 +64,17 @@
           "type": "boolean",
           "description": "SessionStart: inject the babysit-mentor pattern so Claude defaults to mentor mode without explicit invocation."
         },
-        "damageControl": {
+        "damageControlBash": {
           "type": "boolean",
-          "description": "PreToolUse: block dangerous Bash commands and risky Edit/Write paths via the patterns library."
+          "description": "PreToolUse: block dangerous Bash commands (rm -rf /, fork bombs, etc.)."
+        },
+        "damageControlEdit": {
+          "type": "boolean",
+          "description": "PreToolUse: block risky Edit operations on sensitive paths (.env, .ssh/, etc.)."
+        },
+        "damageControlWrite": {
+          "type": "boolean",
+          "description": "PreToolUse: block risky Write operations on sensitive paths (.env, .ssh/, etc.)."
         },
         "preCompactState": {
           "type": "boolean",
@@ -62,22 +82,12 @@
         }
       }
     },
-    "personalization": {
+    "learnings": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Global on/off for the skill self-improvement system. When false, install-time scaffolding is skipped and no learnings hint is injected into the session prompt.",
       "properties": {
-        "tone": {
-          "type": "string",
-          "enum": ["concise", "detailed", "teaching"]
-        },
-        "ask_level": {
-          "type": "string",
-          "enum": ["none", "decision_points", "always"]
-        },
-        "verbosity": {
-          "type": "string",
-          "enum": ["low", "medium", "high"]
-        }
+        "enabled": { "type": "boolean" }
       }
     },
     "ide": {
@@ -86,7 +96,24 @@
       "properties": {
         "primary": {
           "type": "string",
-          "enum": ["claude-code", "cursor", "windsurf", "codex"]
+          "enum": ["claude-code", "cursor", "windsurf", "codex", "antigravity"],
+          "description": "Deprecated alias for targets[0]; kept for back-compat with prior alphas."
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "claude-code",
+              "cursor",
+              "windsurf",
+              "codex",
+              "antigravity"
+            ]
+          },
+          "description": "IDEs / CLIs to install AgileFlow surface into (skills, hooks, settings)."
         }
       }
     },

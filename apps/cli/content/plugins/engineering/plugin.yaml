@@ -1,0 +1,38 @@
+id: engineering
+name: Engineering
+description: Engineering skill pack.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands: []
+  skills:
+    - id: agileflow-engineering
+      dir: skills/agileflow-engineering
+  agents:
+    - id: api
+      path: agents/api.md
+    - id: codebase-query
+      path: agents/codebase-query.md
+    - id: compliance
+      path: agents/compliance.md
+    - id: database
+      path: agents/database.md
+    - id: integrations
+      path: agents/integrations.md
+    - id: mobile
+      path: agents/mobile.md
+    - id: monitoring
+      path: agents/monitoring.md
+    - id: performance
+      path: agents/performance.md
+    - id: refactor
+      path: agents/refactor.md
+    - id: security
+      path: agents/security.md
+    - id: ui
+      path: agents/ui.md
+  hooks: []
+  templates: []

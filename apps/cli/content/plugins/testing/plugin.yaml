@@ -1,0 +1,17 @@
+id: testing
+name: Testing
+description: Write comprehensive test suites from acceptance criteria and increase code coverage.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+
+depends: []
+
+provides:
+  commands: []
+  skills:
+    - id: agileflow-test-writer
+      dir: skills/agileflow-test-writer
+  agents: []
+  hooks: []
+  templates: []

@@ -1,116 +1,113 @@
 /**
  * Unit tests for behaviors-picker pure helpers.
  *
- * The interactive `pickBehaviors` runs Clack and needs a TTY — same
- * pattern as plugin-picker: business logic is factored out so it's
- * unit-testable.
+ * The interactive `pickBehaviors` runs Clack and needs a TTY — only the
+ * pure pieces (`buildBehaviorsMap`, the option lists) are unit-tested.
  */
 import { describe, it, expect } from "vitest";
 
 import behaviorsPicker from "../../../src/cli/wizard/behaviors-picker.js";
 
-const { buildBehaviorsMap, initialSelectedKeys, BEHAVIOR_OPTIONS } =
+const { buildBehaviorsMap, BEHAVIOR_OPTIONS, DAMAGE_CONTROL_TOOLS } =
   behaviorsPicker;
 
 describe("buildBehaviorsMap", () => {
-  it("returns all-false when no keys are selected", () => {
-    expect(buildBehaviorsMap([])).toEqual({
+  it("returns all-false when input is empty", () => {
+    expect(buildBehaviorsMap({})).toEqual({
       loadContext: false,
       babysitDefault: false,
-      damageControl: false,
+      damageControlBash: false,
+      damageControlEdit: false,
+      damageControlWrite: false,
       preCompactState: false,
     });
   });
 
-  it("enables only the keys present in the selection set", () => {
-    expect(buildBehaviorsMap(["loadContext", "damageControl"])).toEqual({
-      loadContext: true,
-      babysitDefault: false,
-      damageControl: true,
-      preCompactState: false,
-    });
-  });
-
-  it("returns all-true when every key is selected", () => {
+  it("preserves only truthy keys, coerces the rest to false", () => {
     expect(
-      buildBehaviorsMap([
-        "loadContext",
-        "babysitDefault",
-        "damageControl",
-        "preCompactState",
-      ]),
+      buildBehaviorsMap({
+        loadContext: true,
+        damageControlBash: true,
+        damageControlEdit: false,
+      }),
     ).toEqual({
       loadContext: true,
-      babysitDefault: true,
-      damageControl: true,
-      preCompactState: true,
+      babysitDefault: false,
+      damageControlBash: true,
+      damageControlEdit: false,
+      damageControlWrite: false,
+      preCompactState: false,
     });
+  });
+
+  it("returns all-true when every key is set", () => {
+    const all = {
+      loadContext: true,
+      babysitDefault: true,
+      damageControlBash: true,
+      damageControlEdit: true,
+      damageControlWrite: true,
+      preCompactState: true,
+    };
+    expect(buildBehaviorsMap(all)).toEqual(all);
   });
 
   it("ignores unknown keys silently (defensive)", () => {
-    expect(buildBehaviorsMap(["loadContext", "unknownKey"])).toEqual({
+    expect(
+      buildBehaviorsMap({ loadContext: true, somethingElse: true }),
+    ).toEqual({
       loadContext: true,
       babysitDefault: false,
-      damageControl: false,
+      damageControlBash: false,
+      damageControlEdit: false,
+      damageControlWrite: false,
       preCompactState: false,
     });
   });
 
-  it("always returns a Behaviors-shaped object, even when fed an iterable", () => {
-    const result = buildBehaviorsMap(new Set(["loadContext"]));
+  it("returns a complete Behaviors-shaped object every time", () => {
+    const result = buildBehaviorsMap({});
     expect(Object.keys(result).sort()).toEqual([
       "babysitDefault",
-      "damageControl",
+      "damageControlBash",
+      "damageControlEdit",
+      "damageControlWrite",
       "loadContext",
       "preCompactState",
     ]);
   });
 });
 
-describe("initialSelectedKeys", () => {
-  it("returns every option when no current behaviors are passed", () => {
-    expect(initialSelectedKeys()).toEqual(BEHAVIOR_OPTIONS.map((o) => o.key));
-  });
-
-  it("returns every option when current is an empty object (treats missing as enabled)", () => {
-    // Missing key is undefined → undefined !== false → counted as enabled.
-    // This matches the aggregator's "missing means included" semantics.
-    expect(initialSelectedKeys({})).toEqual(BEHAVIOR_OPTIONS.map((o) => o.key));
-  });
-
-  it("omits keys that are explicitly disabled", () => {
-    const result = initialSelectedKeys({
-      loadContext: true,
-      babysitDefault: false,
-      damageControl: true,
-      preCompactState: false,
-    });
-    expect(result).toEqual(["loadContext", "damageControl"]);
-  });
-
-  it("preserves option order (display order, not config-key order)", () => {
-    const result = initialSelectedKeys({
-      preCompactState: true,
-      loadContext: true,
-      babysitDefault: true,
-      damageControl: true,
-    });
-    expect(result).toEqual(BEHAVIOR_OPTIONS.map((o) => o.key));
-  });
-});
-
 describe("BEHAVIOR_OPTIONS", () => {
-  it("exposes exactly the four documented behavior keys in order", () => {
+  it("exposes the three top-level behavior keys (damage control split out)", () => {
     expect(BEHAVIOR_OPTIONS.map((o) => o.key)).toEqual([
       "loadContext",
       "babysitDefault",
-      "damageControl",
       "preCompactState",
     ]);
   });
 
   it("every entry has a label and a hint string", () => {
     for (const o of BEHAVIOR_OPTIONS) {
+      expect(typeof o.label).toBe("string");
+      expect(o.label.length).toBeGreaterThan(0);
+      expect(typeof o.hint).toBe("string");
+      expect(o.hint.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("DAMAGE_CONTROL_TOOLS", () => {
+  it("exposes the three per-tool damage-control keys", () => {
+    expect(DAMAGE_CONTROL_TOOLS.map((o) => o.key)).toEqual([
+      "damageControlBash",
+      "damageControlEdit",
+      "damageControlWrite",
+    ]);
+  });
+
+  it("every entry has a label and a hint string", () => {
+    for (const o of DAMAGE_CONTROL_TOOLS) {
       expect(typeof o.label).toBe("string");
       expect(o.label.length).toBeGreaterThan(0);
       expect(typeof o.hint).toBe("string");

@@ -1,0 +1,42 @@
+id: planning
+name: Planning
+description: Planning and metrics skill pack.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands:
+    - id: api
+      path: commands/api.md
+    - id: automate
+      path: commands/automate.md
+    - id: diagnose
+      path: commands/diagnose.md
+    - id: export
+      path: commands/export.md
+    - id: feedback
+      path: commands/feedback.md
+    - id: impact
+      path: commands/impact.md
+    - id: metrics
+      path: commands/metrics.md
+    - id: rlm
+      path: commands/rlm.md
+    - id: roadmap-analyze
+      path: commands/roadmap/analyze.md
+    - id: rpi
+      path: commands/rpi.md
+    - id: velocity
+      path: commands/velocity.md
+  skills:
+    - id: agileflow-planning
+      dir: skills/agileflow-planning
+  agents:
+    - id: analytics
+      path: agents/analytics.md
+    - id: rlm-subcore
+      path: agents/rlm-subcore.md
+  hooks: []
+  templates: []

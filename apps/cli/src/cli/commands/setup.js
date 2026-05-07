@@ -7,7 +7,6 @@
  * re-prompting (e.g. after manually editing the config).
  *
  *   - Plugin multiselect via @clack/prompts (skills.sh-style UX)
- *   - Personalization prompts (tone, ask_level, verbosity)
  *   - Non-interactive path: --yes --plugins <ids>
  *   - Errors (write failure, plugin discovery failure, unknown plugin
  *     ids) produce actionable messages instead of stack traces.
@@ -15,20 +14,25 @@
  *     wizard reruns.
  */
 const path = require("path");
+const os = require("os");
 const prompts = require("@clack/prompts");
 const pkg = require("../../../package.json");
+const { logoBanner } = require("../../lib/brand.js");
 const { loadConfig } = require("../../runtime/config/loader.js");
 const { writeConfig } = require("../../runtime/config/writer.js");
 const { defaultConfig } = require("../../runtime/config/defaults.js");
 const { discoverPlugins } = require("../../runtime/plugins/registry.js");
 const { installPlugins } = require("../../runtime/installer/install.js");
 const { pickPlugins, buildPluginsMap } = require("../wizard/plugin-picker.js");
-const { personalizationPrompts } = require("../wizard/personalization.js");
-const { pickIde } = require("../wizard/ide-picker.js");
+const { pickInstallScope } = require("../wizard/install-scope-picker.js");
+const { pickIdes } = require("../wizard/ide-picker.js");
 const { pickBehaviors } = require("../wizard/behaviors-picker.js");
+const { pickBabysitMode } = require("../wizard/babysit-mode-picker-clean.js");
+const { pickLearnings } = require("../wizard/learnings-picker.js");
 const {
   SUPPORTED_IDES,
   capabilitiesFor,
+  hookEventsForIdes,
 } = require("../../runtime/ide/capabilities.js");
 
 /**
@@ -63,6 +67,63 @@ function pluginsFromCsv(csv, existingPlugins = {}) {
 }
 
 /**
+ * Normalize requested IDE targets from `--ide`.
+ *
+ * Accepts a comma-separated list and the special alias `all`.
+ *
+ * @param {string | undefined} ideOption
+ * @param {string[]} fallback
+ * @returns {string[]}
+ */
+function resolveIdeTargets(ideOption, fallback) {
+  const raw = ideOption
+    ? String(ideOption)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : fallback;
+
+  if (raw.length === 1 && raw[0] === "all") {
+    return [...SUPPORTED_IDES];
+  }
+
+  return raw;
+}
+
+/**
+ * @param {string | undefined} scopeOption
+ * @returns {'project' | 'global'}
+ */
+function resolveInstallScope(scopeOption) {
+  if (scopeOption === "global") return "global";
+  return "project";
+}
+
+/**
+ * @param {'project' | 'global'} scope
+ * @param {string} cwd
+ * @returns {{ scope: 'project' | 'global', configRoot: string, agileflowDir: string, ideRoot: string }}
+ */
+function installPathsForScope(scope, cwd) {
+  if (scope === "global") {
+    const home = os.homedir();
+    const agileflowDir = path.join(home, ".agileflow");
+    return {
+      scope,
+      configRoot: agileflowDir,
+      agileflowDir,
+      ideRoot: home,
+    };
+  }
+  return {
+    scope,
+    configRoot: cwd,
+    agileflowDir: path.join(cwd, ".agileflow"),
+    ideRoot: cwd,
+  };
+}
+
+/**
  * @param {string} cwd
  * @param {import('../../runtime/config/defaults.js').AgileflowConfig} config
  * @param {{ interactive: boolean, spinner?: any }} ctx
@@ -90,12 +151,22 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
 /**
  * Run the installer for the given enabled plugin ids and surface failures.
  * @param {string[]} enabledIds
- * @param {string} cwd
- * @param {string} ide - target IDE id (gates hook manifest writing)
+ * @param {{ agileflowDir: string }} roots
+ * @param {string[]} ides - target IDE ids (gates hook manifest + per-IDE skill mirrors)
  * @param {import('../../runtime/config/defaults.js').Behaviors} behaviors - hook preset toggles
+ * @param {boolean} learningsEnabled - global skill learnings toggle
+ * @param {import('../../runtime/config/defaults.js').AgileflowConfig} config - merged config passed through to installers
  * @param {{ interactive: boolean, spinner?: any }} ctx
  */
-async function runInstallWithFeedback(enabledIds, cwd, ide, behaviors, ctx) {
+async function runInstallWithFeedback(
+  enabledIds,
+  roots,
+  ides,
+  behaviors,
+  learningsEnabled,
+  config,
+  ctx,
+) {
   // userSelected is "everything except core" — core is always-on via
   // cannotDisable, the resolver will pull it in.
   const userSelected = enabledIds.filter((id) => id !== "core");
@@ -103,10 +174,12 @@ async function runInstallWithFeedback(enabledIds, cwd, ide, behaviors, ctx) {
     return await installPlugins({
       discovered: discoverPlugins(),
       userSelected,
-      agileflowDir: path.join(cwd, ".agileflow"),
+      agileflowDir: roots.agileflowDir,
       cliVersion: pkg.version,
-      ide,
+      ides,
       behaviors,
+      learningsEnabled,
+      config,
     });
   } catch (err) {
     if (ctx.interactive) {
@@ -121,22 +194,32 @@ async function runInstallWithFeedback(enabledIds, cwd, ide, behaviors, ctx) {
 }
 
 /**
- * @param {{ yes?: boolean, plugins?: string }} options
+ * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
  */
 async function setup(options = {}) {
   const cwd = process.cwd();
+  const initialScope = resolveInstallScope(options.scope);
+  let scope = initialScope;
+  let roots = installPathsForScope(scope, cwd);
+
+  if (!options.yes) {
+    // eslint-disable-next-line no-console
+    console.log("\n" + logoBanner(pkg.version) + "\n");
+    prompts.intro("agileflow setup");
+    scope = await pickInstallScope(initialScope);
+    roots = installPathsForScope(scope, cwd);
+  }
 
   /** @type {Awaited<ReturnType<typeof loadConfig>>} */
   let existing;
   try {
-    existing = await loadConfig(cwd);
+    existing = await loadConfig(roots.configRoot);
   } catch (err) {
     if (options.yes) {
       // eslint-disable-next-line no-console
       console.error(`agileflow setup: ${err.message}`);
       process.exit(1);
     }
-    prompts.intro(`agileflow v${pkg.version} setup`);
     prompts.log.error(err.message);
     prompts.log.info(
       "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
@@ -145,14 +228,34 @@ async function setup(options = {}) {
   }
 
   const base = existing.source === "file" ? existing.config : defaultConfig();
+  const rawBaseBabysit =
+    base.plugins &&
+    base.plugins.core &&
+    base.plugins.core.settings &&
+    base.plugins.core.settings.babysit;
+  const baseBabysit =
+    rawBaseBabysit && typeof rawBaseBabysit === "object"
+      ? rawBaseBabysit
+      : { mode: typeof rawBaseBabysit === "string" ? rawBaseBabysit : "light" };
+  const baseBabysitMode =
+    typeof baseBabysit.mode === "string" ? baseBabysit.mode : "light";
 
   if (options.yes) {
-    // Resolve IDE: --ide flag wins, then existing config, then default.
-    const requestedIde = options.ide || base.ide.primary || "claude-code";
-    if (!SUPPORTED_IDES.includes(requestedIde)) {
+    // Resolve IDE targets: --ide flag (csv) wins, then existing config, then default.
+    /** @type {string[]} */
+    const requestedIdes = resolveIdeTargets(
+      options.ide,
+      Array.isArray(base.ide.targets) && base.ide.targets.length
+        ? base.ide.targets
+        : ["claude-code"],
+    );
+    const unknownIdes = requestedIdes.filter(
+      (id) => !SUPPORTED_IDES.includes(id),
+    );
+    if (unknownIdes.length) {
       // eslint-disable-next-line no-console
       console.error(
-        `agileflow setup: unknown IDE "${requestedIde}". Supported: ${SUPPORTED_IDES.join(", ")}`,
+        `agileflow setup: unknown IDE(s) "${unknownIdes.join(", ")}". Supported: ${SUPPORTED_IDES.join(", ")}`,
       );
       process.exit(1);
     }
@@ -177,9 +280,15 @@ async function setup(options = {}) {
     const next = {
       ...base,
       plugins,
-      ide: { primary: /** @type {any} */ (requestedIde) },
+      install: { scope },
+      ide: { targets: /** @type {any} */ (requestedIdes) },
     };
-    const file = await writeConfigWithFeedback(cwd, next, {
+    next.plugins.core = next.plugins.core || { enabled: true };
+    next.plugins.core.settings = {
+      ...(next.plugins.core.settings || {}),
+      babysit: baseBabysit,
+    };
+    const file = await writeConfigWithFeedback(roots.configRoot, next, {
       interactive: false,
     });
     const enabled = Object.entries(plugins)
@@ -188,22 +297,26 @@ async function setup(options = {}) {
 
     const installResult = await runInstallWithFeedback(
       enabled,
-      cwd,
-      requestedIde,
+      roots,
+      requestedIdes,
       next.behaviors,
+      Boolean(next.learnings && next.learnings.enabled),
+      next,
       { interactive: false },
     );
 
-    const caps = capabilitiesFor(requestedIde);
+    const anyHooks = requestedIdes.some((id) => capabilitiesFor(id).hooks);
     // eslint-disable-next-line no-console
     console.log(`✓ Wrote ${file}`);
     // eslint-disable-next-line no-console
-    console.log(
-      `  ide: ${requestedIde} (hooks=${caps.hooks ? "on" : "off"}, skills=${caps.skills ? "on" : "off"})`,
-    );
+    console.log(`  scope: ${scope}`);
     // eslint-disable-next-line no-console
-    console.log(`  plugins enabled: ${enabled.join(", ")}`);
-    if (caps.hooks) {
+    console.log(`  ides: ${requestedIdes.join(", ")}`);
+    // eslint-disable-next-line no-console
+    console.log(`  skill packs enabled: ${enabled.join(", ")}`);
+    // eslint-disable-next-line no-console
+    console.log(`  babysit mode: ${baseBabysitMode}`);
+    if (anyHooks) {
       const activeBehaviors = Object.entries(next.behaviors || {})
         .filter(([, v]) => v)
         .map(([k]) => k);
@@ -219,8 +332,6 @@ async function setup(options = {}) {
     return;
   }
 
-  prompts.intro(`agileflow v${pkg.version} setup`);
-
   if (existing.source === "file") {
     prompts.log.info(
       `Existing config found at ${existing.path} — re-running wizard to update.`,
@@ -229,8 +340,8 @@ async function setup(options = {}) {
     prompts.log.info("No existing config — starting from defaults.");
   }
 
-  // Ask the IDE first — affects which features end up enabled later.
-  const ide = await pickIde(base.ide.primary);
+  // Ask the IDE targets first — affects which features end up enabled later.
+  const ides = await pickIdes(base.ide.targets);
 
   let plugins;
   try {
@@ -240,27 +351,46 @@ async function setup(options = {}) {
     prompts.cancel("Setup cannot continue. Fix plugin manifests and retry.");
     process.exit(1);
   }
-  const personalization = await personalizationPrompts(base.personalization);
-
-  // Behavior presets only apply when the target IDE supports hooks.
-  // Non-claude-code IDEs would ignore the toggles, so don't ask.
-  const ideCaps = capabilitiesFor(ide);
-  const behaviors = ideCaps.hooks
-    ? await pickBehaviors(base.behaviors)
+  // Behavior presets only apply when AT LEAST ONE selected IDE supports
+  // hooks. Cursor/Windsurf/Codex would ignore the toggles, so skip if
+  // none of the targets accept them.
+  const targetCaps = ides.map((id) => capabilitiesFor(id));
+  const anyHooks = targetCaps.some((c) => c.hooks);
+  const supportedHookEvents = hookEventsForIdes(ides);
+  const anySkills = targetCaps.some((c) => c.skills);
+  const behaviors = anyHooks
+    ? await pickBehaviors(base.behaviors, supportedHookEvents)
     : base.behaviors;
+
+  const babysit = await pickBabysitMode(
+    base.plugins &&
+      base.plugins.core &&
+      base.plugins.core.settings &&
+      base.plugins.core.settings.babysit,
+  );
+
+  const learnings = anySkills
+    ? await pickLearnings(base.learnings)
+    : base.learnings;
 
   /** @type {import('../../runtime/config/defaults.js').AgileflowConfig} */
   const next = {
     ...base,
     plugins,
-    personalization,
+    install: { scope },
     behaviors,
-    ide: { primary: /** @type {any} */ (ide) },
+    learnings,
+    ide: { targets: /** @type {any} */ (ides) },
+  };
+  next.plugins.core = next.plugins.core || { enabled: true };
+  next.plugins.core.settings = {
+    ...(next.plugins.core.settings || {}),
+    babysit,
   };
 
   const writeSpinner = prompts.spinner();
   writeSpinner.start("Writing agileflow.config.json");
-  const file = await writeConfigWithFeedback(cwd, next, {
+  const file = await writeConfigWithFeedback(roots.configRoot, next, {
     interactive: true,
     spinner: writeSpinner,
   });
@@ -271,14 +401,14 @@ async function setup(options = {}) {
     .map(([id]) => id);
 
   const installSpinner = prompts.spinner();
-  installSpinner.start(
-    `Installing ${enabledList.length} plugin(s) — writing hooks, skills, mirrors`,
-  );
+  installSpinner.start(`Installing ${enabledList.length} skill pack(s)`);
   const installResult = await runInstallWithFeedback(
     enabledList,
-    cwd,
-    ide,
+    roots,
+    ides,
     behaviors,
+    Boolean(learnings && learnings.enabled),
+    next,
     { interactive: true, spinner: installSpinner },
   );
   installSpinner.stop(
@@ -288,20 +418,22 @@ async function setup(options = {}) {
   // Surface behaviors state in the outro. With behaviors gated, a user
   // who deselected all four ends up with zero hooks running — they
   // need to know that explicitly, not infer it from "X plugins enabled".
-  const activeBehaviors = ideCaps.hooks
+  const activeBehaviors = anyHooks
     ? Object.entries(behaviors || {})
         .filter(([, v]) => v)
         .map(([k]) => k)
     : [];
-  const behaviorsLine = ideCaps.hooks
+  const behaviorsLine = anyHooks
     ? activeBehaviors.length
       ? `behaviors active: ${activeBehaviors.join(", ")}`
       : "behaviors active: (none — no hooks will run; re-run setup to enable)"
-    : `hooks not supported by ${ide} — behaviors skipped`;
+    : `hooks not supported by ${ides.join(", ")} — behaviors skipped`;
 
   prompts.outro(
     [
-      `${enabledList.length} plugin(s) enabled: ${enabledList.join(", ")}`,
+      `${enabledList.length} skill pack(s) enabled: ${enabledList.join(", ")}`,
+      `scope: ${scope}`,
+      `babysit mode: ${babysit.mode}`,
       behaviorsLine,
       installResult.ops.preserved
         ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
@@ -314,3 +446,6 @@ async function setup(options = {}) {
 
 module.exports = setup;
 module.exports.pluginsFromCsv = pluginsFromCsv;
+module.exports.resolveIdeTargets = resolveIdeTargets;
+module.exports.resolveInstallScope = resolveInstallScope;
+module.exports.installPathsForScope = installPathsForScope;

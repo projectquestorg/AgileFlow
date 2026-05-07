@@ -13,6 +13,36 @@
   "hooks": {
     "PreToolUse": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook PreToolUse --matcher Bash",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook PreToolUse --matcher Edit",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Edit"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook PreToolUse --matcher Write",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Write"
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -50,6 +80,15 @@
     ],
     "SessionStart": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook SessionStart",
+            "timeout": 30
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
@@ -80,6 +119,15 @@
     ],
     "PreCompact": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook PreCompact",
+            "timeout": 30
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
@@ -90,6 +138,15 @@
       }
     ],
     "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx --no-install agileflow hook Stop",
+            "timeout": 30
+          }
+        ]
+      },
       {
         "matcher": "",
         "hooks": [

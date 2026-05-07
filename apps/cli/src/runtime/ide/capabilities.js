@@ -3,9 +3,12 @@
  *
  * Different agentic IDEs and CLIs support different subsets of the
  * AgileFlow surface. Claude Code is the full-feature target — hooks,
- * skills, slash commands, subagents, MCP. Cursor / Windsurf / Codex
- * support only a subset (mostly slash commands and MCP, with no
- * formalized hook system).
+ * skills, subagents, MCP. Cursor / Windsurf support only a subset
+ * (mostly MCP, with no formalized hook system). Codex now supports
+ * hooks through its experimental config.toml / hooks.json surface, but
+ * with a smaller event set than Claude Code. Antigravity appears to
+ * support skills and agent workflows, but we have not verified a hook
+ * surface yet, so it stays skill/agent-only for now.
  *
  * The installer reads this map to gate plugin content: a plugin's
  * hooks won't be written into a `cursor` install because Cursor has
@@ -25,53 +28,88 @@
 
 /**
  * @typedef {Object} IdeCapabilities
- * @property {boolean} hooks - SessionStart / PreToolUse / etc. hooks
+ * @property {boolean} hooks - whether this IDE can run any AgileFlow hooks
+ * @property {string[]} hookEvents - supported lifecycle events
  * @property {boolean} skills - skill discovery + invocation
- * @property {boolean} commands - slash commands
- * @property {boolean} agents - subagents
- * @property {boolean} mcp - MCP server registration
+ * @property {boolean} agents - subagents (Task tool / multi-agent spawning)
+ * @property {boolean} interactivePrompts - AskUserQuestion renders as interactive UI
+ * @property {boolean} multiAgent - parallel agent spawning via Task tool
+ * @property {boolean} sessionRestore - PostCompact hook fires to re-inject context
  * @property {string} settingsFile - path the installer writes IDE config to
  *           (relative to project root)
+ * @property {string} skillsDir - path the installer mirrors SKILL.md files
+ *           into (relative to project root). Convention: <ide-dotdir>/skills.
  * @property {string} description - human-readable label for the picker
  */
 
 /** @type {Record<string, IdeCapabilities>} */
 const IDE_CAPABILITIES = {
-  'claude-code': {
+  "claude-code": {
     hooks: true,
+    hookEvents: ["SessionStart", "PreToolUse", "PostCompact", "Stop"],
     skills: true,
-    commands: true,
     agents: true,
-    mcp: true,
-    settingsFile: '.claude/settings.json',
-    description: 'Anthropic Claude Code (full feature set)',
+    interactivePrompts: true,
+    multiAgent: true,
+    sessionRestore: true,
+    settingsFile: ".claude/settings.json",
+    skillsDir: ".claude/skills",
+    description: "Claude Code",
   },
   cursor: {
     hooks: false,
-    skills: false,
-    commands: true,
+    hookEvents: [],
+    skills: true,
     agents: false,
-    mcp: true,
-    settingsFile: '.cursor/settings.json',
-    description: 'Cursor IDE (slash commands + MCP only)',
+    interactivePrompts: false,
+    multiAgent: false,
+    sessionRestore: false,
+    settingsFile: ".cursor/settings.json",
+    skillsDir: ".cursor/skills",
+    description: "Cursor",
   },
   windsurf: {
     hooks: false,
-    skills: false,
-    commands: true,
+    hookEvents: [],
+    skills: true,
     agents: false,
-    mcp: false,
-    settingsFile: '.windsurf/settings.json',
-    description: 'Windsurf (slash commands only)',
+    interactivePrompts: false,
+    multiAgent: false,
+    sessionRestore: false,
+    settingsFile: ".windsurf/settings.json",
+    skillsDir: ".windsurf/skills",
+    description: "Windsurf",
   },
   codex: {
+    hooks: true,
+    hookEvents: [
+      "SessionStart",
+      "PreToolUse",
+      "PermissionRequest",
+      "PostToolUse",
+      "UserPromptSubmit",
+      "Stop",
+    ],
+    skills: true,
+    agents: true,
+    interactivePrompts: false,
+    multiAgent: true,
+    sessionRestore: false,
+    settingsFile: ".codex/config.toml",
+    skillsDir: ".codex/skills",
+    description: "Codex",
+  },
+  antigravity: {
     hooks: false,
-    skills: false,
-    commands: false,
-    agents: false,
-    mcp: false,
-    settingsFile: '.codex/settings.json',
-    description: 'OpenAI Codex CLI (limited integration)',
+    hookEvents: [],
+    skills: true,
+    agents: true,
+    interactivePrompts: false,
+    multiAgent: true,
+    sessionRestore: false,
+    settingsFile: ".antigravity/settings.json",
+    skillsDir: ".antigravity/skills",
+    description: "Antigravity",
   },
 };
 
@@ -86,7 +124,7 @@ function capabilitiesFor(ide) {
   const caps = IDE_CAPABILITIES[ide];
   if (!caps) {
     throw new Error(
-      `Unknown IDE "${ide}". Supported: ${SUPPORTED_IDES.join(', ')}`,
+      `Unknown IDE "${ide}". Supported: ${SUPPORTED_IDES.join(", ")}`,
     );
   }
   return caps;
@@ -103,9 +141,26 @@ function supports(ide, feature) {
   return Boolean(caps[feature]);
 }
 
+/**
+ * @param {string[]} ides
+ * @returns {Set<string>}
+ */
+function hookEventsForIdes(ides) {
+  const events = new Set();
+  for (const ide of ides || []) {
+    const caps = IDE_CAPABILITIES[ide];
+    if (!caps || !Array.isArray(caps.hookEvents)) continue;
+    for (const event of caps.hookEvents) {
+      events.add(event);
+    }
+  }
+  return events;
+}
+
 module.exports = {
   IDE_CAPABILITIES,
   SUPPORTED_IDES,
   capabilitiesFor,
   supports,
+  hookEventsForIdes,
 };

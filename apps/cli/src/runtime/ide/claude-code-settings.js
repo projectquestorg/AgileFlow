@@ -16,10 +16,10 @@
  * On a non-claude-code switch, `removeManagedHooks` strips our entries
  * but leaves the rest of the file alone.
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const HOOK_COMMAND_MARKER = 'agileflow hook';
+const HOOK_COMMAND_MARKER = "agileflow hook";
 const HOOK_TIMEOUT_SECONDS = 30;
 
 /**
@@ -27,12 +27,36 @@ const HOOK_TIMEOUT_SECONDS = 30;
  * The `command` is what gets baked into settings.json.
  */
 const MANAGED_HOOKS = [
-  { event: 'SessionStart', matcher: null, command: 'npx --no-install agileflow hook SessionStart' },
-  { event: 'PreToolUse', matcher: 'Bash', command: 'npx --no-install agileflow hook PreToolUse --matcher Bash' },
-  { event: 'PreToolUse', matcher: 'Edit', command: 'npx --no-install agileflow hook PreToolUse --matcher Edit' },
-  { event: 'PreToolUse', matcher: 'Write', command: 'npx --no-install agileflow hook PreToolUse --matcher Write' },
-  { event: 'PreCompact', matcher: null, command: 'npx --no-install agileflow hook PreCompact' },
-  { event: 'Stop', matcher: null, command: 'npx --no-install agileflow hook Stop' },
+  {
+    event: "SessionStart",
+    matcher: null,
+    command: "npx --no-install agileflow hook SessionStart",
+  },
+  {
+    event: "PreToolUse",
+    matcher: "Bash",
+    command: "npx --no-install agileflow hook PreToolUse --matcher Bash",
+  },
+  {
+    event: "PreToolUse",
+    matcher: "Edit",
+    command: "npx --no-install agileflow hook PreToolUse --matcher Edit",
+  },
+  {
+    event: "PreToolUse",
+    matcher: "Write",
+    command: "npx --no-install agileflow hook PreToolUse --matcher Write",
+  },
+  {
+    event: "PostCompact",
+    matcher: null,
+    command: "npx --no-install agileflow hook PostCompact",
+  },
+  {
+    event: "Stop",
+    matcher: null,
+    command: "npx --no-install agileflow hook Stop",
+  },
 ];
 
 const MANAGED_EVENTS = new Set(MANAGED_HOOKS.map((h) => h.event));
@@ -42,13 +66,14 @@ const MANAGED_EVENTS = new Set(MANAGED_HOOKS.map((h) => h.event));
  * @param {*} entry
  */
 function isAgileflowEntry(entry) {
-  if (!entry || typeof entry !== 'object' || !Array.isArray(entry.hooks)) return false;
+  if (!entry || typeof entry !== "object" || !Array.isArray(entry.hooks))
+    return false;
   return entry.hooks.some(
     (h) =>
       h &&
-      typeof h === 'object' &&
-      h.type === 'command' &&
-      typeof h.command === 'string' &&
+      typeof h === "object" &&
+      h.type === "command" &&
+      typeof h.command === "string" &&
       h.command.includes(HOOK_COMMAND_MARKER),
   );
 }
@@ -60,9 +85,7 @@ function isAgileflowEntry(entry) {
 function buildEntry({ matcher, command }) {
   /** @type {{ matcher?: string, hooks: object[] }} */
   const out = {
-    hooks: [
-      { type: 'command', command, timeout: HOOK_TIMEOUT_SECONDS },
-    ],
+    hooks: [{ type: "command", command, timeout: HOOK_TIMEOUT_SECONDS }],
   };
   if (matcher) out.matcher = matcher;
   return out;
@@ -75,12 +98,13 @@ function buildEntry({ matcher, command }) {
  */
 async function readExisting(settingsPath) {
   try {
-    const raw = await fs.promises.readFile(settingsPath, 'utf8');
+    const raw = await fs.promises.readFile(settingsPath, "utf8");
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      return {};
     return parsed;
   } catch (err) {
-    if (err.code === 'ENOENT') return {};
+    if (err.code === "ENOENT") return {};
     if (err instanceof SyntaxError) return {};
     throw err;
   }
@@ -97,9 +121,9 @@ async function writeMerged(settingsPath, settings) {
     path.dirname(settingsPath),
     `.${path.basename(settingsPath)}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 10)}`,
   );
-  const text = JSON.stringify(settings, null, 2) + '\n';
+  const text = JSON.stringify(settings, null, 2) + "\n";
   try {
-    await fs.promises.writeFile(tmp, text, 'utf8');
+    await fs.promises.writeFile(tmp, text, "utf8");
     await fs.promises.rename(tmp, settingsPath);
   } catch (err) {
     try {
@@ -125,7 +149,7 @@ function mergeManagedHooks(existing) {
   // produces numeric-keyed garbage. Treat it as missing instead.
   const baseHooks =
     existing.hooks &&
-    typeof existing.hooks === 'object' &&
+    typeof existing.hooks === "object" &&
     !Array.isArray(existing.hooks)
       ? existing.hooks
       : {};
@@ -154,7 +178,7 @@ function unmanageHooks(existing) {
   const next = { ...existing };
   if (
     !existing.hooks ||
-    typeof existing.hooks !== 'object' ||
+    typeof existing.hooks !== "object" ||
     Array.isArray(existing.hooks)
   ) {
     return next;
@@ -185,7 +209,7 @@ function unmanageHooks(existing) {
  * @returns {Promise<string>} absolute path of the written settings file
  */
 async function writeClaudeCodeSettings(projectRoot) {
-  const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+  const settingsPath = path.join(projectRoot, ".claude", "settings.json");
   const existing = await readExisting(settingsPath);
   const merged = mergeManagedHooks(existing);
   await writeMerged(settingsPath, merged);
@@ -201,7 +225,7 @@ async function writeClaudeCodeSettings(projectRoot) {
  * @returns {Promise<{ removed: boolean, settingsPath: string|null }>}
  */
 async function removeClaudeCodeSettings(projectRoot) {
-  const settingsPath = path.join(projectRoot, '.claude', 'settings.json');
+  const settingsPath = path.join(projectRoot, ".claude", "settings.json");
   // readExisting already converts ENOENT and SyntaxError to {} — any
   // exception here means a real filesystem problem (EACCES / EIO).
   // Do NOT swallow: a silent success would lie about successfully
@@ -213,7 +237,7 @@ async function removeClaudeCodeSettings(projectRoot) {
       await fs.promises.unlink(settingsPath);
       return { removed: true, settingsPath };
     } catch (err) {
-      if (err.code === 'ENOENT') return { removed: false, settingsPath: null };
+      if (err.code === "ENOENT") return { removed: false, settingsPath: null };
       throw err;
     }
   }

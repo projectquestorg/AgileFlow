@@ -49,6 +49,8 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.8.2",
+    "@iarna/toml": "^2.2.5",
+    "agileflow": "^4.0.0-alpha.3",
     "ajv": "^8.17.1",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",

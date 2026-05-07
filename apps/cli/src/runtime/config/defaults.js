@@ -4,28 +4,26 @@
  * Returned when `agileflow.config.json` is absent. Also merged into
  * user-supplied config so missing sections get sensible defaults.
  *
- * @typedef {Object} Personalization
- * @property {'concise'|'detailed'|'teaching'} tone
- * @property {'none'|'decision_points'|'always'} ask_level
- * @property {'low'|'medium'|'high'} verbosity
- *
  * @typedef {Object} PluginEntry
  * @property {boolean} enabled
  * @property {Record<string, unknown>} [settings]
  *
  * @typedef {Object} Behaviors
- * @property {boolean} loadContext       - SessionStart context dump
- * @property {boolean} babysitDefault    - HARD mentor mode at SessionStart
- * @property {boolean} damageControl     - PreToolUse guards on Bash/Edit/Write
- * @property {boolean} preCompactState   - PreCompact state preservation
+ * @property {boolean} loadContext         - SessionStart context dump
+ * @property {boolean} babysitDefault      - HARD mentor mode at SessionStart
+ * @property {boolean} damageControlBash   - PreToolUse guard on Bash
+ * @property {boolean} damageControlEdit   - PreToolUse guard on Edit
+ * @property {boolean} damageControlWrite  - PreToolUse guard on Write
+ * @property {boolean} preCompactState     - PreCompact state preservation
  *
  * @typedef {Object} AgileflowConfig
  * @property {1} version
  * @property {Record<string, PluginEntry>} plugins
  * @property {Record<string, { enabled?: boolean, timeout?: number, skipOnError?: boolean }>} hooks
+ * @property {{ scope: 'project' | 'global' }} install
  * @property {Behaviors} behaviors
- * @property {Personalization} personalization
- * @property {{ primary: 'claude-code'|'cursor'|'windsurf'|'codex' }} ide
+ * @property {{ enabled: boolean }} learnings
+ * @property {{ primary?: string, targets: Array<'claude-code'|'cursor'|'windsurf'|'codex'|'antigravity'> }} ide
  * @property {string} language
  */
 
@@ -37,22 +35,29 @@ function defaultConfig() {
       core: { enabled: true },
     },
     hooks: {},
+    install: {
+      scope: "project",
+    },
     behaviors: {
       // Behaviors are presets that map to one or more hooks. The
       // wizard surfaces these as a curated multiselect; advanced
       // users can override individual hooks via the `hooks:` map.
       loadContext: true,
       babysitDefault: true,
-      damageControl: true,
+      damageControlBash: true,
+      damageControlEdit: true,
+      damageControlWrite: true,
       preCompactState: true,
     },
-    personalization: {
-      tone: "concise",
-      ask_level: "decision_points",
-      verbosity: "medium",
+    learnings: {
+      // Global on/off for the skill self-improvement system. When false,
+      // install-time scaffolding is skipped and no learnings hint is
+      // injected into the session prompt — the `agileflow learn` CLI
+      // still works for users who want to manually append signals.
+      enabled: true,
     },
     ide: {
-      primary: "claude-code",
+      targets: ["claude-code"],
     },
     language: "en",
   };

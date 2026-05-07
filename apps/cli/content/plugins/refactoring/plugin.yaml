@@ -1,0 +1,15 @@
+id: refactoring
+name: Refactoring
+description: Safe refactoring with impact analysis and test-first verification.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-refactor
+      dir: skills/agileflow-refactor
+  agents: []
+  hooks: []
+  templates: []

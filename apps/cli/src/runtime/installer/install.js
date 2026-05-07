@@ -35,15 +35,27 @@ const {
   buildHookManifest,
 } = require("../hooks/aggregator.js");
 const { normalizeManifest } = require("../hooks/manifest-loader.js");
-const { capabilitiesFor } = require("../ide/capabilities.js");
+const { capabilitiesFor, SUPPORTED_IDES } = require("../ide/capabilities.js");
 const {
   writeClaudeCodeSettings,
   removeClaudeCodeSettings,
 } = require("../ide/claude-code-settings.js");
 const {
+  writeCodexConfig,
+  removeCodexConfig,
+} = require("../ide/codex-config.js");
+const {
   mirrorClaudeCodeSkills,
   unmirrorClaudeCodeSkills,
 } = require("../ide/claude-code-skills.js");
+const {
+  mirrorClaudeCodeCommands,
+  mirrorClaudeCodeAgents,
+  unmirrorClaudeCodeCommands,
+  unmirrorClaudeCodeAgents,
+} = require("../ide/claude-code-content.js");
+const { loadSkill } = require("../skills/validator.js");
+const { scaffoldLearnings } = require("../skills/learnings.js");
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -53,9 +65,12 @@ const {
  * @property {Iterable<string>} userSelected
  * @property {string} agileflowDir - target install root (typically `<cwd>/.agileflow`)
  * @property {string} cliVersion - written into the file index header
- * @property {string} [ide='claude-code'] - target IDE for capability gating
+ * @property {string} [ide='claude-code'] - DEPRECATED single-target shorthand (use `ides`)
+ * @property {string[]} [ides] - target IDEs for capability gating; takes precedence over `ide`
  * @property {Record<string, boolean>} [behaviors] - behavior preset toggles
+ * @property {boolean} [learningsEnabled=true] - global learnings on/off
  * @property {boolean} [force=false] - overwrite user modifications
+ * @property {import('../config/defaults.js').AgileflowConfig} [config] - merged config used for skill rendering
  *
  * @typedef {Object} InstallResult
  * @property {string[]} ordered - plugin ids in install order
@@ -67,10 +82,16 @@ const {
  * @property {string} timestamp
  * @property {string|null} hookManifestPath - path of the written hook manifest, or null
  * @property {string|null} settingsPath - path of the written .claude/settings.json, or null
- * @property {string[]} skillsMirrored - skill ids copied into .claude/skills/
- * @property {string[]} skillsPruned - skill ids removed from .claude/skills/
+ * @property {string|null} codexConfigPath - path of the written .codex/config.toml, or null
+ * @property {string[]} skillsMirrored - skill ids copied across all skill-supporting IDEs
+ * @property {string[]} skillsPruned - skill ids removed from skill dirs
  * @property {Array<{skillId:string, error:string}>} [skillsSkipped] - skills with missing source
- * @property {string} ide - the target IDE for this install
+ * @property {string[]} commandsMirrored - Claude Code slash commands mirrored from enabled plugins
+ * @property {string[]} agentsMirrored - Claude Code subagents mirrored from enabled plugins
+ * @property {Array<{id:string, error:string}>} [commandsSkipped] - commands with missing source
+ * @property {Array<{id:string, error:string}>} [agentsSkipped] - agents with missing source
+ * @property {string[]} learningsScaffolded - skill ids whose learnings file was newly created
+ * @property {string[]} ides - the target IDEs for this install
  */
 
 /**
@@ -192,6 +213,43 @@ async function removeDisabledPlugins(
 }
 
 /**
+ * Scaffold `_learnings/<file>.yaml` files for every skill in the ordered
+ * plugin set whose frontmatter declares `learns.enabled: true`. Idempotent:
+ * existing files are left untouched.
+ *
+ * @param {PluginManifest[]} ordered
+ * @param {string} projectRoot
+ * @returns {Promise<string[]>} skill ids whose learnings file was newly created
+ */
+async function scaffoldSkillLearnings(ordered, projectRoot) {
+  /** @type {string[]} */
+  const created = [];
+  for (const plugin of ordered) {
+    const skills = (plugin.provides && plugin.provides.skills) || [];
+    for (const s of skills) {
+      const skillDir = s && s.dir ? path.join(plugin.dir, s.dir) : null;
+      if (!skillDir) continue;
+      const skillPath = path.join(skillDir, "SKILL.md");
+      let manifest;
+      try {
+        manifest = await loadSkill(skillPath);
+      } catch {
+        continue; // validator will surface the load failure separately
+      }
+      const fm = manifest.frontmatter;
+      if (!fm || !fm.learns || fm.learns.enabled !== true) continue;
+      const file =
+        typeof fm.learns.file === "string" && fm.learns.file
+          ? fm.learns.file
+          : `_learnings/${manifest.skillId}.yaml`;
+      const r = await scaffoldLearnings(projectRoot, manifest.skillId, file);
+      if (r.created) created.push(manifest.skillId);
+    }
+  }
+  return created;
+}
+
+/**
  * @param {InstallOptions} options
  * @returns {Promise<InstallResult>}
  */
@@ -201,10 +259,26 @@ async function installPlugins(options) {
     userSelected,
     agileflowDir,
     cliVersion,
-    ide = "claude-code",
+    ide,
+    ides,
     behaviors,
+    learningsEnabled = true,
     force = false,
+    config,
   } = options;
+
+  // Resolve the multi-target list. Prefer `ides` (new); fall back to
+  // `ide` (legacy single-target callers — including current tests).
+  /** @type {string[]} */
+  const targetIdes =
+    Array.isArray(ides) && ides.length
+      ? ides
+      : typeof ide === "string" && ide
+        ? [ide]
+        : ["claude-code"];
+  // Per-target capabilities; first target is the "primary" used to
+  // decide hook-manifest / settings.json writes.
+  const primaryIde = targetIdes[0];
 
   // 1. Strict-validate. Errors abort; warnings are surfaced elsewhere.
   const issues = validatePluginSet(discovered);
@@ -266,9 +340,18 @@ async function installPlugins(options) {
   //    contribution NOW prevents step 8 from registering hook
   //    dispatchers in settings.json that point at an unparseable
   //    manifest.
-  const caps = capabilitiesFor(ide);
+  //
+  //    Hook manifest is a global artifact (only one .agileflow/
+  //    hook-manifest.yaml exists per project). We write it whenever ANY
+  //    selected target supports hooks; otherwise we remove any stale
+  //    manifest from a prior hook-capable install.
+  const targetCaps = targetIdes.map((id) => ({
+    id,
+    caps: capabilitiesFor(id),
+  }));
+  const anyHooks = targetCaps.some(({ caps }) => caps.hooks);
   let hookManifestPath = null;
-  if (caps.hooks) {
+  if (anyHooks) {
     const manifestObj = buildHookManifest(ordered, behaviors);
     try {
       normalizeManifest(manifestObj);
@@ -284,30 +367,89 @@ async function installPlugins(options) {
     await removeAggregatedManifest(agileflowDir);
   }
 
-  // 8. Register or unregister our hook dispatchers in
-  //    `.claude/settings.json`. Only when ide=claude-code.
+  // 8. Register hook dispatchers in `.claude/settings.json` iff
+  //    claude-code is in the target set; otherwise remove any prior
+  //    registration we may have written.
   const projectRoot = path.dirname(agileflowDir);
   let settingsPath = null;
-  if (ide === "claude-code") {
+  let commandsMirrored = [];
+  let agentsMirrored = [];
+  let commandsSkipped = [];
+  let agentsSkipped = [];
+  if (targetIdes.includes("claude-code")) {
     settingsPath = await writeClaudeCodeSettings(projectRoot);
+    const commandMirror = await mirrorClaudeCodeCommands(ordered, projectRoot);
+    const agentMirror = await mirrorClaudeCodeAgents(ordered, projectRoot);
+    commandsMirrored = commandMirror.mirrored;
+    agentsMirrored = agentMirror.mirrored;
+    commandsSkipped = commandMirror.skipped;
+    agentsSkipped = agentMirror.skipped;
   } else {
     await removeClaudeCodeSettings(projectRoot);
+    await unmirrorClaudeCodeCommands(projectRoot);
+    await unmirrorClaudeCodeAgents(projectRoot);
   }
 
-  // 9. Mirror skills into `.claude/skills/<id>/`. Copy (not symlink)
-  //    for Windows portability. Missing skill sources are skipped
-  //    gracefully; non-ENOENT errors propagate.
-  let skillsMirrored = [];
-  let skillsPruned = [];
-  let skillsSkipped = [];
-  if (caps.skills) {
-    const r = await mirrorClaudeCodeSkills(ordered, projectRoot);
-    skillsMirrored = r.mirrored;
-    skillsPruned = r.pruned;
-    skillsSkipped = r.skipped || [];
+  let codexConfigPath = null;
+  if (targetIdes.includes("codex")) {
+    codexConfigPath = await writeCodexConfig(projectRoot);
   } else {
-    skillsPruned = await unmirrorClaudeCodeSkills(projectRoot);
+    await removeCodexConfig(projectRoot);
   }
+
+  // 9. Mirror skills into EACH selected IDE's skills dir. For IDEs that
+  //    don't support skills, unmirror so a previous install doesn't
+  //    leave stale files behind.
+  /** @type {Set<string>} */
+  const mirroredSet = new Set();
+  /** @type {Set<string>} */
+  const prunedSet = new Set();
+  /** @type {Array<{skillId:string, error:string}>} */
+  let skillsSkipped = [];
+  for (const target of targetCaps) {
+    const { caps } = target;
+    if (caps.skills) {
+      const r = await mirrorClaudeCodeSkills(
+        ordered,
+        projectRoot,
+        caps.skillsDir,
+        {
+          targetIde: target.id,
+          config,
+        },
+      );
+      r.mirrored.forEach((s) => mirroredSet.add(s));
+      r.pruned.forEach((s) => prunedSet.add(s));
+      if (r.skipped) skillsSkipped = skillsSkipped.concat(r.skipped);
+    } else {
+      const removed = await unmirrorClaudeCodeSkills(
+        projectRoot,
+        caps.skillsDir,
+      );
+      removed.forEach((s) => prunedSet.add(s));
+    }
+  }
+  // Also unmirror from any *unselected* IDE's skills dir so a
+  // re-install with a narrower target set actually removes the old
+  // mirrors. Cheap belt-and-suspenders — unmirror is a no-op when the
+  // dir doesn't exist.
+  for (const id of SUPPORTED_IDES) {
+    if (targetIdes.includes(id)) continue;
+    const caps = capabilitiesFor(id);
+    const removed = await unmirrorClaudeCodeSkills(projectRoot, caps.skillsDir);
+    removed.forEach((s) => prunedSet.add(s));
+  }
+  const skillsMirrored = [...mirroredSet];
+  const skillsPruned = [...prunedSet];
+  const anySkills = targetCaps.some(({ caps }) => caps.skills);
+
+  // 10. Scaffold persistent learnings files for skills that opt in.
+  //     Lives in .agileflow/skills/_learnings/ — outside the mirror wipe
+  //     zone so re-installs never destroy accumulated signals.
+  const learningsScaffolded =
+    anySkills && learningsEnabled
+      ? await scaffoldSkillLearnings(ordered, projectRoot)
+      : [];
 
   return {
     ordered: ordered.map((p) => p.id),
@@ -319,10 +461,19 @@ async function installPlugins(options) {
     timestamp,
     hookManifestPath,
     settingsPath,
+    codexConfigPath,
     skillsMirrored,
     skillsPruned,
     skillsSkipped,
-    ide,
+    commandsMirrored,
+    agentsMirrored,
+    commandsSkipped,
+    agentsSkipped,
+    learningsScaffolded,
+    ides: targetIdes,
+    // Back-compat: keep `ide` as the primary so existing callers /
+    // test assertions keep working without a sweep.
+    ide: primaryIde,
   };
 }
 

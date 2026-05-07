@@ -4,9 +4,9 @@
  * Phase 1 stub: prints version + config summary if present. Hook health,
  * plugin state beyond `enabled` flag, and integrity counts land in Phase 5.
  */
-const path = require('path');
-const pkg = require('../../../package.json');
-const { loadConfig } = require('../../runtime/config/loader.js');
+const path = require("path");
+const pkg = require("../../../package.json");
+const { loadConfig } = require("../../runtime/config/loader.js");
 
 /** @param {{ json?: boolean }} options */
 async function status(options = {}) {
@@ -21,8 +21,8 @@ async function status(options = {}) {
     plugins: Object.entries(result.config.plugins || {})
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id),
-    personalization: result.config.personalization,
-    phase: 'Phase 2a — wizard ready; installer sync engine + hooks + content pending (Phase 2b+)',
+    phase:
+      "Phase 2a — wizard ready; installer sync engine + hooks + content pending (Phase 2b+)",
   };
 
   if (options.json) {
@@ -34,14 +34,12 @@ async function status(options = {}) {
   const lines = [
     `agileflow v${summary.version}`,
     `cwd:      ${summary.cwd}`,
-    `config:   ${summary.configPath ? path.relative(cwd, summary.configPath) : '(defaults — no agileflow.config.json found)'}`,
-    `plugins:  ${summary.plugins.length ? summary.plugins.join(', ') : '(none enabled — core is default)'}`,
-    `tone:     ${summary.personalization.tone}`,
-    `ask:      ${summary.personalization.ask_level}`,
+    `config:   ${summary.configPath ? path.relative(cwd, summary.configPath) : "(defaults — no agileflow.config.json found)"}`,
+    `plugins:  ${summary.plugins.length ? summary.plugins.join(", ") : "(none enabled — core is default)"}`,
     `phase:    ${summary.phase}`,
   ];
   // eslint-disable-next-line no-console
-  console.log(lines.join('\n'));
+  console.log(lines.join("\n"));
 }
 
 module.exports = status;

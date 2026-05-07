@@ -12,12 +12,12 @@
  * stdin, calls the orchestrator's `runEvent`, and exits with the
  * chain's resolved code. Always fails open on internal errors.
  */
-const path = require('path');
-const { runEvent } = require('../../runtime/hooks/orchestrator.js');
+const path = require("path");
+const { runEvent } = require("../../runtime/hooks/orchestrator.js");
 const {
   VALID_EVENTS,
   MATCHER_EVENTS,
-} = require('../../runtime/hooks/manifest-loader.js');
+} = require("../../runtime/hooks/manifest-loader.js");
 
 /**
  * @param {string} event
@@ -29,7 +29,7 @@ async function hook(event, options = {}) {
   if (!VALID_EVENTS.has(event)) {
     // eslint-disable-next-line no-console
     console.error(
-      `agileflow hook: unknown event "${event}". Valid events: ${[...VALID_EVENTS].sort().join(', ')}`,
+      `agileflow hook: unknown event "${event}". Valid events: ${[...VALID_EVENTS].sort().join(", ")}`,
     );
     process.exit(1);
   }
@@ -45,7 +45,7 @@ async function hook(event, options = {}) {
   }
 
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const agileflowDir = path.join(projectDir, '.agileflow');
+  const agileflowDir = path.join(projectDir, ".agileflow");
 
   /** @type {Buffer[]} */
   const chunks = [];
@@ -70,8 +70,8 @@ async function hook(event, options = {}) {
     process.exit(0);
   }
 
-  // PreCompact and Stop must NOT block, regardless of chain outcome.
-  if (event === 'PreCompact' || event === 'Stop') {
+  // PostCompact and Stop must NOT block, regardless of chain outcome.
+  if (event === "PostCompact" || event === "Stop") {
     process.exit(0);
   }
   process.exit(result.exitCode);

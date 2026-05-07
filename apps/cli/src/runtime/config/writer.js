@@ -30,14 +30,16 @@ async function writeConfig(cwd, config) {
     version: 1,
     plugins: config.plugins,
     hooks: config.hooks,
+    install: config.install,
     behaviors: config.behaviors,
-    personalization: config.personalization,
+    learnings: config.learnings,
     ide: config.ide,
     language: config.language,
   };
   const content = JSON.stringify(payload, null, 2) + "\n";
 
   try {
+    await fs.promises.mkdir(cwd, { recursive: true });
     await fs.promises.writeFile(tmp, content, "utf8");
     await fs.promises.rename(tmp, file);
   } catch (err) {

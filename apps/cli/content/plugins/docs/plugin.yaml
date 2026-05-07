@@ -1,0 +1,38 @@
+id: docs
+name: Documentation
+description: Documentation skill pack.
+version: 1.0.0
+enabledByDefault: false
+
+depends: []
+
+provides:
+  commands:
+    - id: docs
+      path: commands/docs.md
+    - id: learn
+      path: commands/learn.md
+    - id: learn-explain
+      path: commands/learn/explain.md
+    - id: learn-glossary
+      path: commands/learn/glossary.md
+    - id: learn-patterns
+      path: commands/learn/patterns.md
+    - id: learn-tour
+      path: commands/learn/tour.md
+    - id: readme-sync
+      path: commands/readme-sync.md
+    - id: skill-list
+      path: commands/skill/list.md
+    - id: skill-recommend
+      path: commands/skill/recommend.md
+  skills:
+    - id: agileflow-docs
+      dir: skills/agileflow-docs
+  agents:
+    - id: documentation
+      path: agents/documentation.md
+    - id: readme-updater
+      path: agents/readme-updater.md
+  hooks: []
+  templates: []

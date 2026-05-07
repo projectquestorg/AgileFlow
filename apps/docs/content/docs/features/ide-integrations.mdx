@@ -1,6 +1,6 @@
 ---
 title: IDE Integrations
-description: Install and configure AgileFlow for Claude Code, Cursor, Windsurf, or Codex CLI.
+description: Install and configure AgileFlow for Claude Code, Cursor, Windsurf, Codex CLI, or Antigravity.
 ---
 
 # IDE Integrations
@@ -9,14 +9,15 @@ AgileFlow supports multiple IDEs through a unified installation system. Each IDE
 
 ## Supported IDEs
 
-AgileFlow currently supports four IDEs:
+AgileFlow currently supports five IDEs:
 
 | IDE | Config Dir | Type | Status | Recommended |
 |-----|------------|------|--------|-------------|
 | **Claude Code** | `.claude/` | AI Code Editor | Fully supported | Yes |
 | **Cursor** | `.cursor/` | VSCode fork | Fully supported | Yes |
 | **Windsurf** | `.windsurf/` | VSCode fork | Fully supported | Yes |
-| **OpenAI Codex CLI** | `.codex/` | CLI tool | Fully supported | - |
+| **OpenAI Codex CLI** | `.codex/` | CLI tool | Supported | - |
+| **Antigravity** | `.antigravity/` | Agentic dev platform | Supported | - |
 
 ## Quick Start
 
@@ -126,10 +127,7 @@ task = Task(
 
 Claude Code includes optional **Damage Control** hooks for safety:
 
-```bash
-# Enable damage control during setup
-npx agileflow setup --damage-control
-```
+Damage control is enabled during interactive setup when you choose the hook options.
 
 This creates:
 - `.claude/hooks/damage-control/` - Safety validation scripts
@@ -292,6 +290,11 @@ Codex CLI uses a different model than other IDEs:
    - Provides context about available skills
    - References project structure
 
+4. **Hooks** (project-level): Codex lifecycle hooks in `.codex/config.toml`
+   - Enabled with `codex_hooks = true`
+   - Uses `hooks.json` or inline `[hooks]` tables
+   - Supports the same AgileFlow session, tool, and stop dispatchers Codex exposes
+
 #### Skill Format
 
 Codex skills are converted from AgileFlow agents:
@@ -346,12 +349,12 @@ The generated `AGENTS.md` file provides:
 
 ## Security Recommendations
 
-Configure Codex with approval requirements:
+Configure Codex for full access:
 
 ```toml
 # ~/.codex/config.toml
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
 ```
 ```
 
@@ -670,11 +673,11 @@ AgileFlow uses dynamic content injection to keep command lists current:
 
 **Problem**: Dangerous commands aren't being blocked.
 
-**Solution**:
-1. Check hooks are configured: `ls .claude/hooks/damage-control/`
-2. Verify settings.json has PreToolUse hooks
-3. Restart Claude Code completely
-4. See [Damage Control troubleshooting](/features/damage-control#troubleshooting)
+  **Solution**:
+  1. Check hooks are configured: `ls .claude/hooks/damage-control/`
+  2. Verify `.claude/settings.json` has PreToolUse hooks
+  3. Restart Claude Code completely
+  4. See [Damage Control troubleshooting](/features/damage-control#troubleshooting)
 
 ### Codex CLI Not Finding Skills
 
