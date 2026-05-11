@@ -1,10 +1,9 @@
 /**
  * Codex config.toml writer.
  *
- * Codex hooks are still experimental, but the official docs now expose a
- * project-local hooks surface through `config.toml` / `hooks.json`. AgileFlow
- * uses the project-local `config.toml` path because we need both the
- * `codex_hooks = true` feature flag and the inline lifecycle hook tables.
+ * Codex hooks require the `[features].hooks = true` flag in config.toml.
+ * AgileFlow uses the project-local `config.toml` path because we need both
+ * the feature flag and the inline lifecycle hook tables.
  *
  * The writer is non-destructive:
  *   - it preserves unrelated top-level Codex config
@@ -136,7 +135,7 @@ function mergeManagedHooks(existing) {
       : {};
   next.features = {
     ...existingFeatures,
-    codex_hooks: true,
+    hooks: true,
     collaboration_modes: true,
   };
   next.approval_policy = DEFAULT_APPROVAL_POLICY;
@@ -184,7 +183,7 @@ function unmanageHooks(existing) {
     !Array.isArray(next.features)
   ) {
     const features = { ...next.features };
-    delete features.codex_hooks;
+    delete features.hooks;
     delete features.collaboration_modes;
     if (Object.keys(features).length) next.features = features;
     else delete next.features;

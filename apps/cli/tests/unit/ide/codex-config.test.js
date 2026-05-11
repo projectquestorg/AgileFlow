@@ -2,7 +2,7 @@
  * Unit tests for the Codex config.toml writer.
  *
  * The writer needs to preserve unrelated config while managing just the
- * AgileFlow hook registrations and the codex_hooks feature flag.
+ * AgileFlow hook registrations and the hooks feature flag.
  */
 import fs from "fs";
 import os from "os";
@@ -45,11 +45,11 @@ describe("isAgileflowEntry", () => {
 });
 
 describe("mergeManagedHooks", () => {
-  it("adds codex_hooks and managed hook registrations", () => {
+  it("adds hooks and managed hook registrations", () => {
     const merged = mergeManagedHooks({});
     expect(merged.approval_policy).toBe(DEFAULT_APPROVAL_POLICY);
     expect(merged.sandbox_mode).toBe(DEFAULT_SANDBOX_MODE);
-    expect(merged.features.codex_hooks).toBe(true);
+    expect(merged.features.hooks).toBe(true);
     expect(Object.keys(merged.hooks).sort()).toEqual([
       "PreToolUse",
       "SessionStart",
@@ -91,7 +91,7 @@ describe("mergeManagedHooks", () => {
 });
 
 describe("unmanageHooks", () => {
-  it("removes managed hooks and codex_hooks but leaves user content", () => {
+  it("removes managed hooks and hooks but leaves user content", () => {
     const stripped = unmanageHooks(
       mergeManagedHooks({
         features: { preserve_me: true },
@@ -129,7 +129,7 @@ describe("writeCodexConfig + removeCodexConfig", () => {
     const text = fs.readFileSync(out, "utf8");
     expect(text).toContain('approval_policy = "never"');
     expect(text).toContain('sandbox_mode = "danger-full-access"');
-    expect(text).toContain("codex_hooks = true");
+    expect(text).toContain("hooks = true");
     expect(text).toContain("SessionStart");
     expect(text).toContain("PreToolUse");
     expect(text).toContain("Stop");
@@ -158,7 +158,7 @@ describe("writeCodexConfig + removeCodexConfig", () => {
     await removeCodexConfig(scratch);
     const text = fs.readFileSync(configPath, "utf8");
     expect(text).toContain("preserve_me = true");
-    expect(text).not.toContain("codex_hooks = true");
+    expect(text).not.toContain("hooks = true");
     expect(text).toContain("Notebook");
     expect(text).not.toContain("agileflow hook");
   });

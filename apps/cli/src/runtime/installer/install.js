@@ -55,7 +55,10 @@ const {
   unmirrorClaudeCodeAgents,
 } = require("../ide/claude-code-content.js");
 const { loadSkill } = require("../skills/validator.js");
-const { scaffoldLearnings } = require("../skills/learnings.js");
+const {
+  resolveSkillsDir,
+  resolveLearnFile,
+} = require("../skills/learnings.js");
 
 /**
  * @typedef {import('../plugins/registry.js').PluginManifest} PluginManifest
@@ -224,6 +227,7 @@ async function removeDisabledPlugins(
 async function scaffoldSkillLearnings(ordered, projectRoot) {
   /** @type {string[]} */
   const created = [];
+  const skillsDir = resolveSkillsDir(projectRoot);
   for (const plugin of ordered) {
     const skills = (plugin.provides && plugin.provides.skills) || [];
     for (const s of skills) {
@@ -238,12 +242,20 @@ async function scaffoldSkillLearnings(ordered, projectRoot) {
       }
       const fm = manifest.frontmatter;
       if (!fm || !fm.learns || fm.learns.enabled !== true) continue;
-      const file =
+      const learnFile =
         typeof fm.learns.file === "string" && fm.learns.file
           ? fm.learns.file
-          : `_learnings/${manifest.skillId}.yaml`;
-      const r = await scaffoldLearnings(projectRoot, manifest.skillId, file);
-      if (r.created) created.push(manifest.skillId);
+          : undefined;
+      const p = resolveLearnFile(skillsDir, manifest.skillId, learnFile);
+      await fs.promises.mkdir(path.dirname(p), { recursive: true });
+      try {
+        await fs.promises.access(p);
+      } catch (err) {
+        if (err.code !== "ENOENT") throw err;
+        const header = `# AgileFlow skill learnings — ${manifest.skillId}\n# Append-only signals; oldest trimmed when count exceeds maxEntries.\nentries: []\n`;
+        await fs.promises.writeFile(p, header, "utf8");
+        created.push(manifest.skillId);
+      }
     }
   }
   return created;

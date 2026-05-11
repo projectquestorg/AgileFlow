@@ -34,7 +34,7 @@ The `npx` command always fetches the latest version.
 | Claude Code | Supported | `.claude/commands/agileflow/` |
 | Cursor | Supported | `.cursor/commands/agileflow/` |
 | Windsurf | Supported | `.windsurf/workflows/agileflow/` |
-| OpenAI Codex | Supported | `.codex/skills/` and `~/.codex/prompts/` |
+| OpenAI Codex | Supported | `.codex/config.toml`, `.codex/skills/`, and `~/.codex/prompts/` |
 
 ---
 

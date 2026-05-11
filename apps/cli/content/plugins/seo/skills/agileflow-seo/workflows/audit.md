@@ -2,61 +2,97 @@
 
 **Triggers:** "run an SEO audit", "audit my website for SEO", "what are my SEO issues", "SEO health score", "check SEO for example.com", "full SEO review"
 
-**Goal:** Deploy 6 SEO analyzers in parallel against a website, synthesize results into a weighted health score (0–100), and produce a prioritized action plan.
+**Goal:** Deploy 6 SEO analyzers in parallel against a website, synthesize results into a weighted health score (0–100), and produce a prioritized action plan with specific, actionable fixes.
 
 ## Inputs needed
 
-| Input     | Required | How to get it                            |
-| --------- | -------- | ---------------------------------------- |
-| URL       | Yes      | Ask: "Which website URL should I audit?" |
-| depth     | No       | Default: quick. Options: quick, deep     |
-| max pages | No       | Default: 50                              |
+| Input     | Required | How to get it                                                         |
+| --------- | -------- | --------------------------------------------------------------------- |
+| URL       | Yes      | Ask for it if not provided                                            |
+| site type | No       | Auto-detect from homepage, or already captured in opening flow        |
+| context   | No       | Traffic level, recent changes, target keywords — ask conversationally |
 
 ## Steps
 
-1. Ask for the URL if not provided.
+1. **If URL is not provided**, ask: _"What's the URL? I'll fetch your site and start the analysis."_ Accept homepage or any page. Don't offer fake options for this — just ask for the URL.
 
-2. Fetch the homepage to detect the business type (e-commerce, B2B SaaS, local services, publisher, portfolio, etc.). Also fetch `robots.txt` and `sitemap.xml`.
+2. **Gather context** (2-3 questions, conversational not interrogation):
+   - _"Roughly how much organic traffic does the site get per month? And have you made any big changes recently — migration, redesign, new CMS?"_ — traffic level affects prioritization, recent changes are the #1 cause of drops
+   - If they have target keywords: _"Any specific pages or keywords you want me to focus on?"_
+   - Skip these if they already answered in the opening flow
 
-3. Ask: "Depth?" Options: [A] Quick — 6 analyzers, standard depth, fast results (recommended), [B] Deep — more thorough checks per analyzer.
+3. **Fetch the homepage** to detect site type (e-commerce, SaaS, local business, publisher, etc.) if not already known. Also fetch `robots.txt` and `sitemap.xml`.
 
-4. Deploy all 6 analyzers simultaneously:
-   - **Technical analyzer** — crawlability, indexability, HTTPS, redirects, canonical tags, Core Web Vitals indicators, mobile viewport
-   - **Content analyzer** — title tags, meta descriptions, heading structure, content quality, E-E-A-T signals, word count by page type
-   - **Schema analyzer** — structured data presence, correct schema types for business type, markup validity
-   - **Performance analyzer** — page speed signals, LCP, CLS, FID, render-blocking resources
-   - **Images analyzer** — alt text coverage, file sizes, next-gen formats, lazy loading
-   - **Sitemap analyzer** — sitemap presence, coverage, freshness, robots.txt consistency
+4. **Deploy all 6 analyzers simultaneously** — default to quick depth, no need to ask:
+   - **Technical** — crawlability, indexability, HTTPS, redirects, canonical tags, mobile viewport, Core Web Vitals indicators
+   - **Content** — title tags, meta descriptions, heading structure, content quality, E-E-A-T signals, word count by page type
+   - **Schema** — structured data presence, correct schema types for detected business type, markup validity
+   - **Performance** — page speed signals, LCP, CLS, FID, render-blocking resources
+   - **Images** — alt text coverage, file sizes, next-gen formats (WebP/AVIF), lazy loading
+   - **Sitemap** — presence, coverage, freshness, consistency with robots.txt
 
-5. Collect all outputs. Apply weighted scoring: Technical 20%, Content 20%, Schema 15%, Performance 15%, Images 15%, Sitemap 15%.
+5. **Apply business-type-specific benchmarks.** E-commerce needs Product schema; local business needs LocalBusiness schema; publisher needs Article schema and E-E-A-T signals.
 
-6. Apply business-type-specific benchmarks. An e-commerce site needs Product schema; a local business needs LocalBusiness schema; a publisher needs Article schema.
+6. **Weighted scoring:** Technical 20%, Content 20%, Schema 15%, Performance 15%, Images 15%, Sitemap 15%.
 
-7. Generate the SEO Health Score (0–100) with category breakdown and prioritized action plan:
-   - **P0** (0–59 score): Blocking issues — fix immediately
-   - **P1** (60–74): High-impact improvements
-   - **P2** (75–89): Medium-impact optimizations
-   - **P3** (90–100): Fine-tuning
+7. **Present the SEO Health Score (0–100)** with category breakdown:
 
-8. Ask: [A] Walk me through fixing the P0 issues, [B] Analyze a specific page in depth (use the page analysis workflow), [C] Show full findings per analyzer, [D] Save the audit report.
+   ```
+   Site: example.com
+   Business type: SaaS
+
+   Category       Score   Top Issue
+   Technical       61      12 pages missing canonical tags
+   Content         74      Meta descriptions missing on 8 pages
+   Schema          45      No structured data found — rich results blocked
+   Performance     82      LCP 3.1s — above 2.5s threshold
+   Images          58      31 images missing alt text
+   Sitemap         90      —
+
+   Overall: 68/100 — needs work
+   ```
+
+8. **Prioritized action plan:**
+   - **P0** (score < 60 or blocking issue): Fix immediately — indexing, canonical, noindex errors
+   - **P1** (quick wins): High ROI, low effort — missing schema, alt text, meta descriptions
+   - **P2** (structural): Performance, content depth, E-E-A-T signals
+   - **P3** (fine-tuning): Sitemap freshness, internal linking optimization
+
+9. **Guide next step with AskUserQuestion** — make it specific to actual findings:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "Audit complete. {site} scored {X}/100 — {critical} critical issues, {high} high. Biggest blocker: {top_issue}.",
+  "header": "What to tackle",
+  "multiSelect": false,
+  "options": [
+    {"label": "Fix {top_p0_issue} now (Recommended)", "description": "{specific fix + expected impact, e.g. 'Add canonical tags to 12 pages — prevents Google from choosing the wrong version to rank'}"},
+    {"label": "Generate {missing_schema_type} JSON-LD markup", "description": "I'll produce copy-paste structured data for your {page_type} — takes 2 minutes to add"},
+    {"label": "Deep-dive into {lowest_category} ({score}/100)", "description": "Worst area — I'll give you implementation-ready fixes for every finding"},
+    {"label": "Analyze a specific page in depth", "description": "6-dimension report card on your most important page — homepage, pricing, or top landing page"}
+  ]
+}]</parameter>
+</invoke>
+```
+
+Customize every option — don't show schema option if schema scored 90+. Don't show the page analysis if they specifically said they want site-wide fixes.
 
 ## Output
 
-SEO Health Score (0–100) with weighted category scores. Prioritized action plan. Business-type-specific recommendations. Baseline for tracking improvement over time.
+SEO Health Score (0–100) with per-category scores. Prioritized action plan (P0–P3). Business-type-specific recommendations. Baseline for tracking improvement over time.
 
 ## Fallbacks
 
-**If interactive prompts (AskUserQuestion) are unavailable:**
-Present options as a numbered list in your response. Ask the user to reply with a number. Example:
+**If AskUserQuestion is unavailable:**
+Present options as a numbered list. Example:
 
 ```
-How would you like to proceed?
-1. Fix the P0 findings now
-2. Review full findings first
-3. Export report only
+What would you like to tackle first?
+1. Fix the P0 issues now
+2. Generate missing schema markup
+3. Deep-dive into the lowest-scoring category
 ```
 
-**If agent spawning (Task tool / multi-agent) is unavailable:**
-Perform each analysis inline and sequentially instead of spawning parallel agents.
-Work through the key checks for each domain yourself using the reference files in `references/`.
-Consolidate findings into the same structured output format — the user gets the same result, just slower.
+**If agent spawning is unavailable:**
+Run each analysis inline sequentially using the reference files in `references/`. Consolidate into the same output format — same result, just slower.

@@ -41,41 +41,6 @@
           }
         ],
         "matcher": "Write"
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-bash.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-edit.js"
-          },
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/session-boundary.js"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/damage-control-write.js"
-          },
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/session-boundary.js"
-          }
-        ]
       }
     ],
     "SessionStart": [
@@ -85,34 +50,6 @@
             "type": "command",
             "command": "npx --no-install agileflow hook SessionStart",
             "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/babysit-clear-restore.js",
-            "timeout": 5000
-          },
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/agileflow-welcome.js"
-          },
-          {
-            "type": "command",
-            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/archive-completed-stories.sh --quiet"
-          },
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-welcome.js 2>/dev/null || true",
-            "timeout": 10000
-          },
-          {
-            "type": "command",
-            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/tmux-task-watcher.sh 2>/dev/null || true",
-            "timeout": 5000
           }
         ]
       }
@@ -126,15 +63,6 @@
             "timeout": 30
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/precompact-context.sh"
-          }
-        ]
       }
     ],
     "Stop": [
@@ -144,23 +72,6 @@
             "type": "command",
             "command": "npx --no-install agileflow hook Stop",
             "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/ralph-loop.js 2>/dev/null || true"
-          },
-          {
-            "type": "command",
-            "command": "node /home/coder/AgileFlow/.agileflow/scripts/auto-self-improve.js 2>/dev/null || true"
-          },
-          {
-            "type": "command",
-            "command": "bash /home/coder/AgileFlow/.agileflow/scripts/tmux-task-watcher.sh stop 2>/dev/null || true"
           }
         ]
       }
@@ -200,7 +111,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash /home/coder/AgileFlow/.agileflow/scripts/agileflow-statusline.sh",
+    "command": "bash $CLAUDE_PROJECT_DIR/.agileflow/scripts/agileflow-statusline.sh",
     "padding": 0
   }
 }

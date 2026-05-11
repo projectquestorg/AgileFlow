@@ -6,48 +6,79 @@
 
 ## Inputs needed
 
-| Input               | Required | How to get it                                                                 |
-| ------------------- | -------- | ----------------------------------------------------------------------------- |
-| product description | Yes      | Ask: "Paste your product description, landing page URL, or existing ad copy." |
-| target platform     | No       | Default: all. Options: meta, google, linkedin, tiktok                         |
-| variant count       | No       | Default: 40                                                                   |
-| ICP angles          | No       | Default: auto-detect 5 angles from product description                        |
+| Input               | Required | How to get it                                                       |
+| ------------------- | -------- | ------------------------------------------------------------------- |
+| product description | Yes      | Ask for it if not provided                                          |
+| target platform     | No       | Already captured in opening flow — use that. Ask only if not known. |
+| variant count       | No       | Default: 40. Ask only if they want a different number.              |
+| ICP angles          | No       | Auto-detect 5 from product description, then confirm                |
 
 ## Steps
 
-1. If product description is not provided, ask: "What are you advertising? Paste a product description, landing page URL, or existing ad copy." Accept any format.
+1. **If product description is not provided**, ask: _"What are you advertising? Paste your product description, landing page URL, or existing ad copy — I'll work from any of those."_ Accept any format.
 
-2. Ask the user: "Which platform are you targeting?" Options: [A] All platforms (recommended — I'll optimize format per platform), [B] Meta only, [C] Google Ads only, [D] LinkedIn, [E] TikTok.
+2. **Don't re-ask about platform** if already captured in the opening flow. Use what you know. Only ask if platform is genuinely unknown:
 
-3. If the user didn't specify variant count, default to 40. If they want more, ask: "How many variants? (20–100)"
+   _"Which platform should I optimize the format for? (or I can generate for all)"_
 
-4. Auto-detect the ideal customer profile (ICP) angles from the product description. Identify 5 angles by default, for example: pain-point-led, outcome-focused, social-proof, urgency/FOMO, feature-differentiated. Ask the user: "I detected these 5 ICP angles: [list]. Approve these or would you like to add/change any?"
+3. **Auto-detect 5 ICP angles** from the product description. Common angles:
+   - Pain-point-led: leads with the problem they're experiencing
+   - Outcome-focused: leads with the transformation or result
+   - Social-proof: authority, users, case studies
+   - Urgency/FOMO: time limit, scarcity, risk of inaction
+   - Feature-differentiated: specific capability competitors don't have
 
-5. Generate variants for each angle × each format:
-   - **Headlines** (Google: max 30 chars; Meta: up to 40 chars): problem-aware, solution-aware, benefit-led
-   - **Body copy** (short: 1–2 sentences; long: 3–4 sentences): matches each headline angle
-   - **CTAs** (6–8 variants): action-oriented, urgency, curiosity
+   Show the angles and ask: _"I detected these 5 angles: [list]. Any you want to add or swap out?"_ Keep it conversational — if they say "looks good", move on immediately.
 
-6. Display the variants as structured markdown organized by angle and format. Show counts per angle.
+4. **Generate variants for each angle × each format:**
 
-7. Generate a platform-ready CSV for the user's selected platform(s):
-   - Meta bulk upload format (Campaign/Ad Set/Ad columns)
-   - Google Ads Editor format (Campaign/Ad Group/Headline1–15/Description1–4)
+   **Headlines:**
+   - Google: max 30 characters — problem-aware, solution-aware, benefit-led variants
+   - Meta: up to 40 characters — hook-first, curiosity-driven variants
+   - LinkedIn: professional tone, outcome-focused
 
-8. Ask the user: [A] Download/save the CSV (recommended), [B] Regenerate a specific angle, [C] Swap out underperforming formulas, [D] Generate A/B test pairs from the top variants.
+   **Body copy:**
+   - Short (1–2 sentences): matches headline angle, drives to CTA
+   - Long (3–4 sentences): expands on the angle with a proof point
+
+   **CTAs** (6–8 variants): action-oriented, urgency, curiosity — varied by platform norms
+
+5. **Show the variants** as structured markdown organized by angle and format, with counts. Make them scannable — the user needs to read and react quickly.
+
+6. **Generate platform-ready export files:**
+   - **Meta bulk upload CSV**: Campaign / Ad Set / Ad columns with all variants
+   - **Google Ads Editor format**: Campaign / Ad Group / Headline1–15 / Description1–4
+
+7. **Guide next step with AskUserQuestion** — specific to what was generated:
+
+```xml
+<invoke name="AskUserQuestion">
+<parameter name="questions">[{
+  "question": "{N} variants generated across {angle_count} ICP angles. Top recommended variants to test first: {top_3_variants}.",
+  "header": "What's next",
+  "multiSelect": false,
+  "options": [
+    {"label": "Save the platform CSV and wrap up (Recommended)", "description": "Export is ready — {platform} format with all {N} variants"},
+    {"label": "Regenerate the {weakest_angle} angle", "description": "That angle produced the weakest variants — I'll try different formulas"},
+    {"label": "Create A/B test pairs from the top 5 variants", "description": "Pair your strongest variants for head-to-head testing — one variable changed per pair"},
+    {"label": "Audit existing campaigns before launching these", "description": "Make sure tracking is working before investing in new copy — /agileflow:ads:track"}
+  ]
+}]</parameter>
+</invoke>
+```
 
 ## Output
 
-Structured markdown with all variants organized by angle. Platform-ready CSV file(s). Total variant count across all formats. Recommended top 5 variants to test first based on formula strength.
+Structured markdown with all variants organized by angle and format. Platform-ready CSV file(s). Total variant count. Recommended top 5 variants to test first based on formula strength.
 
 ## Fallbacks
 
-**If interactive prompts (AskUserQuestion) are unavailable:**
-Present options as a numbered list in your response. Ask the user to reply with a number. Example:
+**If AskUserQuestion is unavailable:**
+Present options as a numbered list. Example:
 
 ```
-How would you like to proceed?
-1. Save and continue
-2. Review before saving
-3. Discard
+What would you like to do next?
+1. Save the CSV and wrap up
+2. Regenerate a specific angle
+3. Create A/B test pairs
 ```

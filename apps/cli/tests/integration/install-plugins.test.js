@@ -431,7 +431,7 @@ describe("installPlugins integration", () => {
       path.join(scratch, ".codex", "config.toml"),
     );
     const text = fs.readFileSync(result.codexConfigPath, "utf8");
-    expect(text).toContain("codex_hooks = true");
+    expect(text).toContain("hooks = true");
     expect(text).toContain("SessionStart");
     expect(text).toContain("PreToolUse");
     expect(text).toContain("Stop");
@@ -460,7 +460,7 @@ describe("installPlugins integration", () => {
     const text = fs.readFileSync(configPath, "utf8");
     expect(text).toContain('approval_policy = "never"');
     expect(text).toContain('sandbox_mode = "danger-full-access"');
-    expect(text).not.toContain("codex_hooks = true");
+    expect(text).not.toContain("hooks = true");
     expect(text).not.toContain("agileflow hook");
   });
 

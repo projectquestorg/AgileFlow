@@ -299,6 +299,8 @@ module.exports = {
   readLearnings,
   appendLearning,
   formatLearningsBlock,
+  resolveSkillsDir,
+  resolveLearnFile,
   // Legacy (install.js compat)
   scaffoldLearnings,
   learningsPath,

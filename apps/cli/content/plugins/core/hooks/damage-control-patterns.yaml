@@ -15,7 +15,7 @@
 
 patterns:
   # --- Catastrophic filesystem operations ---
-  - regex: 'rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(/|~|\$HOME)\b'
+  - regex: 'rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(/|~|\$HOME)(\s|$)'
     kind: bash
     severity: error
     reason: rm -rf on / or $HOME is almost certainly a mistake — refuse outright
