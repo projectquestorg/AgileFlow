@@ -1,0 +1,15 @@
+id: database
+name: Database
+description: Schema design, query optimization, indexing strategy, and safe migrations.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-database
+      dir: skills/agileflow-database
+  agents: []
+  hooks: []
+  templates: []

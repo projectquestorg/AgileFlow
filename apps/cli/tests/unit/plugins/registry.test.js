@@ -14,16 +14,19 @@ describe("plugin registry (bundled content)", () => {
   it("discovers all bundled plugins", () => {
     const plugins = discoverPlugins();
     expect(plugins.map((p) => p.id).sort()).toEqual([
+      "accessibility",
       "ads",
       "audit",
       "core",
       "council",
+      "database",
       "debugging",
       "delivery",
       "docs",
       "engineering",
       "ideation",
       "migration",
+      "performance",
       "planning",
       "psychology",
       "refactoring",

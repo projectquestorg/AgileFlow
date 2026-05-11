@@ -1,0 +1,15 @@
+id: accessibility
+name: Accessibility
+description: WCAG 2.2 compliance, screen reader support, keyboard navigation, and a11y testing.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-accessibility
+      dir: skills/agileflow-accessibility
+  agents: []
+  hooks: []
+  templates: []

@@ -1,0 +1,15 @@
+id: performance
+name: Performance
+description: Profiling and optimization for speed, memory, and Core Web Vitals.
+version: 1.0.0
+enabledByDefault: false
+cannotDisable: false
+depends: []
+provides:
+  commands: []
+  skills:
+    - id: agileflow-performance
+      dir: skills/agileflow-performance
+  agents: []
+  hooks: []
+  templates: []
