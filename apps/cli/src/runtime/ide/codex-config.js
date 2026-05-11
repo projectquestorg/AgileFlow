@@ -27,31 +27,31 @@ const MANAGED_HOOKS = [
   {
     event: "SessionStart",
     matcher: null,
-    command: "npx --no-install agileflow hook SessionStart",
+    command: "npx agileflow hook SessionStart",
     statusMessage: "Loading AgileFlow session context",
   },
   {
     event: "PreToolUse",
     matcher: "Bash",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Bash",
+    command: "npx agileflow hook PreToolUse --matcher Bash",
     statusMessage: "Checking Bash command",
   },
   {
     event: "PreToolUse",
     matcher: "Edit",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Edit",
+    command: "npx agileflow hook PreToolUse --matcher Edit",
     statusMessage: "Checking Edit command",
   },
   {
     event: "PreToolUse",
     matcher: "Write",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Write",
+    command: "npx agileflow hook PreToolUse --matcher Write",
     statusMessage: "Checking Write command",
   },
   {
     event: "Stop",
     matcher: null,
-    command: "npx --no-install agileflow hook Stop",
+    command: "npx agileflow hook Stop",
     statusMessage: "Saving AgileFlow state",
   },
 ];

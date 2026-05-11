@@ -13,8 +13,8 @@ const {
 } = pickerModule;
 
 describe("initialBabysitMode", () => {
-  it("defaults to light", () => {
-    expect(initialBabysitMode(undefined)).toBe("light");
+  it("defaults to full", () => {
+    expect(initialBabysitMode(undefined)).toBe("full");
   });
 
   it("keeps a valid existing mode", () => {
@@ -24,7 +24,7 @@ describe("initialBabysitMode", () => {
   });
 
   it("ignores invalid values", () => {
-    expect(initialBabysitMode({ mode: "something-else" })).toBe("light");
+    expect(initialBabysitMode({ mode: "something-else" })).toBe("full");
   });
 });
 

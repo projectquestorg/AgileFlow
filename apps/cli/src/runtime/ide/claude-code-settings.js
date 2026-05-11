@@ -3,9 +3,10 @@
  *
  * When the target IDE is `claude-code`, the installer registers our 6
  * hook entry points in `.claude/settings.json` so Claude Code actually
- * invokes them at runtime. We use the unified `npx --no-install
- * agileflow hook <event> [--matcher <m>]` command so the path resolves
- * regardless of how the package is installed.
+ * invokes them at runtime. We use `npx agileflow hook <event>` so npx
+ * resolves the project-local binary from node_modules first. --no-install is
+ * intentionally omitted: it skips local node_modules and falls back to the
+ * npm cache, which can pick up a stale older version.
  *
  * The writer is **non-destructive**: it merges with any existing
  * settings.json. Only AgileFlow-owned hook entries (identified by the
@@ -30,32 +31,32 @@ const MANAGED_HOOKS = [
   {
     event: "SessionStart",
     matcher: null,
-    command: "npx --no-install agileflow hook SessionStart",
+    command: "npx agileflow hook SessionStart",
   },
   {
     event: "PreToolUse",
     matcher: "Bash",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Bash",
+    command: "npx agileflow hook PreToolUse --matcher Bash",
   },
   {
     event: "PreToolUse",
     matcher: "Edit",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Edit",
+    command: "npx agileflow hook PreToolUse --matcher Edit",
   },
   {
     event: "PreToolUse",
     matcher: "Write",
-    command: "npx --no-install agileflow hook PreToolUse --matcher Write",
+    command: "npx agileflow hook PreToolUse --matcher Write",
   },
   {
     event: "PostCompact",
     matcher: null,
-    command: "npx --no-install agileflow hook PostCompact",
+    command: "npx agileflow hook PostCompact",
   },
   {
     event: "Stop",
     matcher: null,
-    command: "npx --no-install agileflow hook Stop",
+    command: "npx agileflow hook Stop",
   },
 ];
 

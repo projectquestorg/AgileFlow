@@ -101,6 +101,24 @@ async function pickPlugins(currentConfig) {
     })
     .map((p) => p.id);
 
+  const enableAll = await prompts.confirm({
+    message: questionMessage(
+      "Enable all skill packs?",
+      "Turn on every optional plugin at once.",
+    ),
+    initialValue: false,
+  });
+
+  if (prompts.isCancel(enableAll)) {
+    prompts.cancel("Setup cancelled. No changes made.");
+    process.exit(1);
+  }
+
+  if (enableAll) {
+    const allIds = new Set(optional.map((p) => p.id));
+    return buildPluginsMap(all, allIds, currentConfig.plugins || {});
+  }
+
   const picked = await prompts.multiselect({
     message: questionMessage("Choose optional skill packs:"),
     options: optional.map((p) => ({

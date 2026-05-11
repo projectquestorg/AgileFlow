@@ -145,7 +145,7 @@ function initialBabysitMode(current) {
   ) {
     return currentMode;
   }
-  return "light";
+  return "full";
 }
 
 /**
