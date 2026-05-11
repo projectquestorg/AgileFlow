@@ -166,12 +166,13 @@ Ask first (then write with `Status: Proposed` or `Accepted`):
 
 ## Integration
 
-- **agileflow-story-writer** — completed ADRs inform Technical Notes
-  in stories
-- **agileflow-epic-planner** — major epics often spawn one or more
-  ADRs at planning time
-- **agileflow-status-updater** — flipping an ADR from Proposed to
-  Accepted is a status mutation through that skill
+- **agileflow-story-writer** — completed ADRs inform Technical Notes in stories; reference the ADR number in the story's context section
+- **agileflow-epic-planner** — major epics often spawn one or more ADRs at planning time; create the ADR before writing stories so implementation decisions are settled
+- **agileflow-status-updater** — flipping an ADR from Proposed to Accepted is a status mutation; route through status-updater to keep `status.json` accurate
+- **agileflow-council** — council sessions are the primary source of ADR content; after a council reaches a decision, create an ADR to record it formally
+- **agileflow-research** — research provides the factual foundation for ADRs (benchmarks, library comparisons, community precedent); always link or summarise the research in the ADR body
+- **agileflow-planning** — use planning's impact analysis output as the context section of an ADR when the decision involves scope or delivery trade-offs
+- **agileflow-delivery** — for breaking API changes or major dependency upgrades, create an ADR before the delivery cycle begins so the rationale is documented before merge
 
 ## Notes
 

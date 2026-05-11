@@ -73,6 +73,16 @@ then the analyst synthesizes into a ranked recommendation.
 - **Council** — strategic decisions, architectural choices, "what should we build"
 - **Multi-expert** (`/agileflow:multi-expert`) — analysis questions, "is this correct", code review
 
+## Integration
+
+- **agileflow-research** — run before convening the council when the decision domain is unfamiliar; facts sharpen the perspectives and reduce speculation
+- **agileflow-adr** — after council reaches a decision, create an ADR to record the rationale, alternatives, and trade-offs; council generates the content, adr structures and stores it
+- **agileflow-story-writer** — once the council chooses a direction, the next step is usually to write the stories that implement it
+- **agileflow-epic-planner** — if the chosen direction is large, route to epic-planner to break it into milestones before any coding begins
+- **agileflow-planning** — use alongside council for prioritisation decisions (what to build next, what to defer) that require both strategic input and delivery metrics
+- **agileflow-ideation** — use ideation first when options haven't been generated yet; convene the council after ideation produces the candidate ideas to evaluate
+- **agileflow-babysit-mentor** — mentor triggers council automatically when the user asks "right approach?" during implementation; council resolves the ambiguity, mentor resumes execution
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

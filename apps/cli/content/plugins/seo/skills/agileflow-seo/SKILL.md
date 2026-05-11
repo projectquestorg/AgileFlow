@@ -154,6 +154,18 @@ Never dump findings without guidance. After any command completes, present next 
 5. **E-E-A-T matters most for YMYL** — health, finance, legal pages need strong author signals, expertise indicators, and trust signals. For a blog about recipes, E-E-A-T is lower priority.
 6. **Recent changes = first suspect** — if rankings dropped recently, ask about migrations, redesigns, URL changes, or CMS switches before running any analyzers. That's the most common root cause.
 
+## Integration
+
+- **agileflow-engineering** — delegate SEO fixes that require code changes: canonical tags, hreflang implementation, structured data injection, performance optimisation, sitemap generation
+- **agileflow-performance** — Core Web Vitals are a direct Google ranking factor; use performance for LCP, INP, and CLS remediation after the SEO audit flags them
+- **agileflow-docs** — after writing SEO-optimised content, sync it through docs to ensure it follows content structure and formatting conventions
+- **agileflow-ads** — align organic and paid keyword strategy; high-performing organic keywords are candidates for paid amplification, and vice versa
+- **agileflow-ideation** — use ideation to generate content ideas grounded in search intent and keyword gaps identified during SEO research
+- **agileflow-research** — gather keyword data, competitor SERP analysis, and industry benchmark data before running the SEO audit or content strategy
+- **agileflow-migration** — URL migrations and site restructuring are the most common cause of ranking drops; coordinate with migration for zero-ranking-loss URL changes
+- **agileflow-delivery** — include SEO validation (canonical correctness, sitemap update, no new 404s) as a delivery gate for any release touching public-facing routes
+- **agileflow-accessibility** — overlaps with SEO: semantic HTML, alt text, and heading hierarchy improve both search and screen reader performance; do both together
+
 ## References
 
 Load these when you need deeper knowledge for the relevant task:

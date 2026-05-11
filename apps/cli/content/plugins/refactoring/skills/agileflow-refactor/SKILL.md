@@ -209,6 +209,17 @@ After refactoring:
 - Patterns the team uses (e.g. repository pattern, service layer)
 - Previous refactoring outcomes — what was improved and how
 
+## Integration
+
+- **agileflow-test-writer** — write or verify tests before any refactor begins; tests are the safety net that lets refactoring proceed without fear
+- **agileflow-audit** — use the audit skill to identify what needs refactoring; audit finds the code quality, duplication, and complexity issues, refactor fixes them
+- **agileflow-engineering** — when refactoring is part of a feature story, coordinate with engineering so the feature lands in already-cleaned code
+- **agileflow-pr-reviewer** — invoke after refactoring to confirm the changes preserved observable behaviour and meet style standards
+- **agileflow-performance** — when a refactor is performance-motivated (N+1 queries, blocking renders), pair with performance to measure before and after
+- **agileflow-debug** — if a refactor introduces a regression, hand off immediately to debug rather than reverting blindly
+- **agileflow-adr** — document significant refactoring decisions (module boundary changes, pattern migrations) as ADRs before executing them on large codebases
+- **agileflow-migration** — when a refactor involves a library upgrade or API migration alongside the structural cleanup, use migration to handle the version-specific steps
+
 ## References
 
 | File                                 | When to load                                                               |

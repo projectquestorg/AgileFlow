@@ -382,6 +382,11 @@ Follow these step-by-step when the user initiates the matching action:
 
 ## Integration
 
-- **agileflow-test-writer** — add axe-core tests alongside unit tests for every new component
-- **agileflow-story-writer** — include accessibility acceptance criteria in user stories
-- **agileflow:code:accessibility** — automated a11y flow audit across the full codebase
+- **agileflow-test-writer** — add axe-core and keyboard navigation tests alongside unit tests for every new component; accessibility fixes need regression coverage
+- **agileflow-story-writer** — include WCAG-level accessibility acceptance criteria in user stories before implementation begins, not as an afterthought
+- **agileflow-engineering** — delegate the implementation of accessibility fixes (ARIA attributes, focus management, semantic HTML corrections) to engineering
+- **agileflow-audit** — the accessibility dimension of a full audit feeds into this skill for WCAG-specific remediation and severity prioritisation
+- **agileflow-pr-reviewer** — invoke accessibility checks as part of PR review for any story touching UI components or interactive elements; it's a merge gate, not optional
+- **agileflow-delivery** — accessibility review is required before shipping user-facing features; delivery should block on unresolved P0/P1 WCAG violations
+- **agileflow-seo** — semantic HTML, alt text quality, and heading hierarchy improvements benefit both accessibility and search ranking simultaneously
+- **agileflow-research** — use when implementing complex patterns (data tables, multi-step forms, modals with focus traps) to verify correct ARIA patterns before coding

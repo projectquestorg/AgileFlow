@@ -106,6 +106,16 @@ The skill maintains preferences in
 - Always show the proposed story diff and wait for explicit `YES` /
   `NO` before writing.
 
+## Integration
+
+- **agileflow-ideation** — ideation produces feature ideas; story-writer gives them the AC and structure needed to enter the backlog
+- **agileflow-epic-planner** — when a story grows beyond one sprint of effort, suggest splitting via epic-planner before writing individual stories
+- **agileflow-status-updater** — after writing a story, flip its status to `ready` in `status.json` via status-updater
+- **agileflow-adr** — if writing a story reveals a technology or architecture decision, spawn adr to document it before implementation begins
+- **agileflow-planning** — use for estimation guidance, sprint capacity checks, or INVEST criteria validation before finalising a story
+- **agileflow-babysit-mentor** — babysit-mentor is the primary consumer of stories produced here; a well-written story is the input that makes mentor-guided execution reliable
+- **agileflow-council** — convene before writing a story if the scope or approach is genuinely ambiguous and a multi-perspective input would sharpen the AC
+
 ## Workflows
 
 Follow these step-by-step when the user initiates the matching action:

@@ -210,6 +210,17 @@ After identifying the root cause:
 - False leads to avoid (previous hypotheses that turned out to be wrong)
 - Areas of the codebase that are frequently buggy
 
+## Integration
+
+- **agileflow-research** — when stuck after 2 attempts with different fixes, escalate to research before trying a third approach; craft a 200+ line prompt with full context
+- **agileflow-test-writer** — after finding and fixing the root cause, spawn test-writer to add a regression test that prevents the bug from returning
+- **agileflow-refactor** — if the bug was caused by structural problems (deep coupling, unclear state), suggest a refactor pass after the fix lands
+- **agileflow-pr-reviewer** — invoke before merging a bug fix, especially for security-related bugs or fixes touching multiple modules
+- **agileflow-engineering** — delegate the implementation of the fix when it's non-trivial or spans multiple domains
+- **agileflow-audit** — if a bug suggests a systemic problem (repeated null checks, race conditions in multiple files), run an audit to find related issues
+- **agileflow-performance** — hand off if the bug is a performance regression: slow queries, memory leaks, or blocking operations
+- **agileflow-adr** — if fixing the bug requires a design change, document the new approach as an ADR before implementing it
+
 ## References
 
 | File                                 | When to load                                                                         |

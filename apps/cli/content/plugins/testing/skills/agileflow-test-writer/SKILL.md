@@ -231,9 +231,15 @@ Before delivering a test suite:
 
 ## Integration
 
-- **agileflow-story-writer** — provides the source acceptance criteria
-- **agileflow-pr-reviewer** — checks test coverage as part of PR review
-- **agileflow-refactor** — refactored code should have tests updated in the same pass
+- **agileflow-story-writer** — provides the source acceptance criteria; test-writer maps each AC to one or more test cases and coverage type
+- **agileflow-pr-reviewer** — checks test coverage as part of PR review; test-writer is invoked when the reviewer flags missing coverage
+- **agileflow-refactor** — refactored code must have its tests updated in the same pass; spawn test-writer before a refactor begins to ensure the safety net exists
+- **agileflow-engineering** — spawn test-writer after implementation completes to cover the new code with unit, integration, and E2E tests
+- **agileflow-debug** — after a bug is fixed, spawn test-writer to add a regression test that prevents it from returning; the fix isn't done without the test
+- **agileflow-accessibility** — generate axe-core and keyboard navigation tests alongside functional tests for any UI story
+- **agileflow-performance** — generate benchmark tests to lock in performance gains; test-writer provides the measurement harness, performance provides the thresholds
+- **agileflow-database** — generate migration validation tests and repository-layer integration tests that hit a real database, not mocks
+- **agileflow-delivery** — test-writer is a delivery gate; delivery should confirm coverage thresholds are met before shipping
 
 ## References
 

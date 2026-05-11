@@ -79,6 +79,18 @@ scores, and prioritizes findings.
 
 The TDD workflow enforces RED → GREEN → REFACTOR phases with hard phase gates. See `workflows/tdd.md` for the step-by-step process.
 
+## Integration
+
+- **agileflow-engineering** — delegate fixing P0/P1 findings after an audit completes; don't leave findings as a list, route them to the right implementor
+- **agileflow-refactor** — route code quality, duplication, and naming findings here; audit identifies, refactor executes
+- **agileflow-test-writer** — route missing test coverage findings here; audit flags the gaps, test-writer fills them
+- **agileflow-accessibility** — the accessibility dimension of the audit feeds into this skill for WCAG-specific remediation guidance
+- **agileflow-performance** — the performance dimension feeds into this skill for profiling, bundle analysis, and optimization work
+- **agileflow-pr-reviewer** — invoke before a PR merge as a lighter alternative to a full audit; use audit for pre-release or milestone sweeps
+- **agileflow-debug** — if an audit finding is unclear or non-reproducible, hand off to debug for root cause analysis
+- **agileflow-delivery** — run the audit as a quality gate before shipping; findings above P1 should block the release
+- **agileflow-adr** — if an audit reveals an architectural problem (circular dependencies, layering violations), document the fix decision as an ADR
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

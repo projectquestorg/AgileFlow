@@ -84,6 +84,31 @@ Unknown codebase pattern    → /agileflow:codebase-query first
 2. `agileflow-testing` (tests)
 3. Accessibility audit if interactive elements added
 
+## Integration
+
+### Before implementation
+
+- **agileflow-planning** — run an impact analysis before touching existing code; understand blast radius before writing anything
+- **agileflow-research** — activate when the story requires an unfamiliar library, API, or integration pattern; research resolves the unknowns before coding starts
+- **agileflow-council** — convene for architectural decisions that emerge mid-implementation: database choice, API design, service boundaries
+- **agileflow-adr** — create an ADR when a meaningful architecture or technology decision is made during implementation
+
+### During implementation
+
+- **agileflow-database** — delegate schema design, index planning, migration scripts, and query optimisation; engineering owns the feature, database owns the storage layer
+- **agileflow-debug** — hand off when hitting a persistent error after two different fix attempts; don't guess a third time
+- **agileflow-refactor** — use alongside implementation when the story explicitly involves cleaning up existing code before adding new functionality
+- **agileflow-migration** — use when the story involves upgrading a framework, library, or schema alongside the new feature work
+
+### After implementation
+
+- **agileflow-test-writer** — spawn to generate unit, integration, and E2E tests from the acceptance criteria after implementation completes
+- **agileflow-accessibility** — required after any UI or interactive element changes; invoke before marking the story done
+- **agileflow-performance** — invoke when the implementation touches query paths, renders, or data processing; confirm no regressions
+- **agileflow-audit** — run after implementation for P0/P1 sweep before merging into main
+- **agileflow-docs** — sync API docs, README, or configuration docs after any public-facing change
+- **agileflow-pr-reviewer** — invoke before creating the PR, especially for changes touching 5+ files
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

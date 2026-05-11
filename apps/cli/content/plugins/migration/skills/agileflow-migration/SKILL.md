@@ -73,6 +73,18 @@ For database schema migrations, use `agileflow-datamigration` which covers:
 - For framework upgrades: check for behavioral changes, not just syntax
 - Always generate a rollback plan before executing
 
+## Integration
+
+- **agileflow-research** — run before planning a migration to gather release notes, breaking change logs, and community-documented gotchas for the specific version jump
+- **agileflow-adr** — document the migration decision (why this version, why this strategy, what was rejected) before executing; ADR is the runbook preface
+- **agileflow-planning** — use for impact analysis to understand which files, tests, and APIs are affected before generating the migration plan
+- **agileflow-database** — delegate schema-level migration steps (column renames, index changes, foreign key adjustments) to database expert
+- **agileflow-test-writer** — generate pre/post migration tests and data validation scripts to confirm row counts and aggregate consistency
+- **agileflow-audit** — run after migration completes to catch regressions introduced by the version change (API contracts, security headers, deprecated patterns)
+- **agileflow-engineering** — delegate the actual codemods and file changes when the migration scope is large; migration plans, engineering executes
+- **agileflow-delivery** — coordinate migration execution with deployment; zero-downtime migrations require delivery-level orchestration (feature flags, blue/green)
+- **agileflow-docs** — update installation guides, API docs, and README after the migration changes public-facing interfaces or configuration
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

@@ -75,6 +75,17 @@ Suggest `/agileflow:docs` after implementation when:
 - Are all public APIs documented with examples?
 - Are new configuration options listed with their defaults?
 
+## Integration
+
+- **agileflow-engineering** — trigger docs after any implementation that changes public APIs, exports, or user-facing configuration; docs-sync is the last step of a well-run feature story
+- **agileflow-story-writer** — when writing a story, include "update docs" as an explicit acceptance criterion for API-changing work
+- **agileflow-seo** — after writing or updating public content, pass through seo for title, meta, heading, and structured data optimisation
+- **agileflow-delivery** — docs update is a delivery gate for API changes; delivery should block if docs are stale
+- **agileflow-pr-reviewer** — pr-reviewer checks that docs were updated alongside code; docs generates what the reviewer verifies
+- **agileflow-audit** — the completeness dimension of the audit flags missing docs; docs fills those gaps
+- **agileflow-research** — if writing technical docs for an unfamiliar pattern or library, use research first to gather authoritative source material
+- **agileflow-migration** — migration plans should be documented as runbooks; docs generates the runbook format after the migration plan is finalised
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

@@ -77,6 +77,18 @@ generate changelog entries, plan sprints, and coordinate deployment.
 ⬜ Dependencies up to date
 ```
 
+## Integration
+
+- **agileflow-pr-reviewer** — invoke before creating the PR; delivery orchestrates the end-to-end release, pr-reviewer handles the code quality gate within it
+- **agileflow-audit** — run a quick audit sweep before shipping; P0/P1 findings should block the release
+- **agileflow-test-writer** — ensure test coverage meets the threshold before delivery starts; delegate missing tests here
+- **agileflow-accessibility** — run accessibility checks before any user-facing release; required for UI stories
+- **agileflow-docs** — sync documentation as part of the delivery flow; API changes require docs update before or alongside release
+- **agileflow-status-updater** — flip story and epic statuses to done as delivery completes each unit of work
+- **agileflow-seo** — check SEO impact before releasing public-facing page changes, especially new routes or content restructuring
+- **agileflow-ads** — coordinate ad campaign launch with product delivery when releasing a feature tied to a campaign
+- **agileflow-planning** — use for sprint finalisation and velocity capture after a delivery cycle completes
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

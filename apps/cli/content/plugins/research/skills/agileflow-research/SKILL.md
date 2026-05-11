@@ -79,6 +79,17 @@ Trigger research automatically when:
 - Cryptic library error with no obvious cause
 - OAuth, SSO, or payment provider integration errors
 
+## Integration
+
+- **agileflow-engineering** — research is the input; engineering is the output; always resolve unknowns via research before delegating implementation
+- **agileflow-planning** — use research findings to sharpen impact analysis and estimation; concrete technical knowledge produces more reliable effort estimates
+- **agileflow-council** — feed research output into a council session when the decision involves real strategic trade-offs beyond a single technical question
+- **agileflow-adr** — after research produces a clear answer, document the chosen approach as an ADR so the decision is recorded and doesn't need to be re-researched
+- **agileflow-debug** — the primary stuck-detection escape hatch; when debug attempts fail twice, escalate to research with a 200+ line prompt including full context
+- **agileflow-migration** — run research before planning any major library or framework migration; version-specific gotchas and community patterns are exactly what research surfaces
+- **agileflow-ideation** — use research during ideation to validate ideas against market data, competitor analysis, and user research before committing to build them
+- **agileflow-ads** — research competitor ad strategies and platform benchmarks before planning or auditing ad campaigns
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

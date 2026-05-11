@@ -77,6 +77,17 @@ The full `/agileflow:ideate` runs 5 analyzers in parallel:
 
 Then a consensus agent deduplicates and ranks by confidence × impact.
 
+## Integration
+
+- **agileflow-research** — use before or during ideation to gather competitive intelligence, industry benchmarks, or customer research that sharpens the brainstorm
+- **agileflow-story-writer** — after ideation produces ranked ideas, route the top candidates here to become properly structured user stories with AC
+- **agileflow-epic-planner** — when a cluster of related ideas emerges from ideation, route them to epic-planner to become a sequenced epic with milestones
+- **agileflow-council** — after ideation generates options, convene the council to evaluate strategic trade-offs before committing to a direction
+- **agileflow-planning** — use for scoring and prioritising the ideas from ideation against delivery metrics (velocity, sprint capacity, RICE score)
+- **agileflow-retention** — ideation frequently surfaces engagement and retention opportunities; use retention skill to design the behavioural mechanics for the top ideas
+- **agileflow-ads** — when ideation surfaces a new product angle or audience, use ads to explore how it would position in paid channels
+- **agileflow-seo** — check whether top ideas align with organic search demand before committing to build them
+
 ## References
 
 Load these files when you need deeper context for the relevant task:

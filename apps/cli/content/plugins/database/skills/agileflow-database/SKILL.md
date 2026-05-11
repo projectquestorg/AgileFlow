@@ -255,9 +255,14 @@ Before delivering any schema or migration:
 
 ## Integration
 
-- **agileflow-test-writer** — generate tests for migration scripts and data access layers
-- **agileflow-story-writer** — acceptance criteria for data-model changes drive schema decisions
-- **agileflow-adr** — document significant schema decisions (UUID vs BIGSERIAL, multi-tenancy strategy)
+- **agileflow-test-writer** — generate tests for migration scripts, data access layers, and repository functions; DB changes without tests are untested contracts
+- **agileflow-story-writer** — acceptance criteria for data-model changes drive schema decisions; always read the AC before designing the schema
+- **agileflow-adr** — document significant schema decisions (UUID vs BIGSERIAL, multi-tenancy strategy, soft-delete vs hard-delete) before implementing
+- **agileflow-migration** — use for zero-downtime schema migrations, large backfills, and framework-level ORM upgrades; database handles design, migration handles execution
+- **agileflow-engineering** — engineering owns the feature; database is the specialist for the storage layer; coordinate so schema and API land together
+- **agileflow-performance** — query optimisation, index analysis, and connection pool tuning overlap between both skills; use database for schema-level fixes, performance for application-level profiling
+- **agileflow-audit** — the query performance and security dimensions of the audit surface DB issues; database fixes what the audit finds
+- **agileflow-refactor** — when a schema has grown organically and needs restructuring (column renames, table splits, normalisation), coordinate with refactor for the application-layer changes
 
 ## References
 

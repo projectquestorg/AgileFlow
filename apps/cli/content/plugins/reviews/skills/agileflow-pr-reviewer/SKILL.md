@@ -214,6 +214,18 @@ After addressing P0 and P1, this is ready to merge.
 - Preferred fix patterns when issues are found
 - Merge criteria the team has established
 
+## Integration
+
+- **agileflow-audit** — use audit for pre-release sweeps or milestone quality gates; use pr-reviewer for individual PR merge gates; they're complementary not duplicates
+- **agileflow-debug** — when the reviewer finds a bug, hand off to debug for root cause analysis rather than patching inline
+- **agileflow-refactor** — when the review surfaces structural problems (long files, poor naming, deep coupling), route a follow-up story to refactor
+- **agileflow-test-writer** — when review finds missing test coverage, spawn test-writer to fill the gaps before approving the merge
+- **agileflow-accessibility** — when review touches UI components or interactive elements, accessibility check is part of the review criteria
+- **agileflow-performance** — when review touches query paths, rendering logic, or data processing, flag for performance review alongside the code review
+- **agileflow-docs** — if the PR changes public APIs or exports, verify docs were updated; pr-reviewer flags the gap, docs fills it
+- **agileflow-delivery** — pr-reviewer is a delivery gate; delivery orchestrates the overall release, pr-reviewer is one of its quality checkpoints
+- **agileflow-security** — invoke agileflow-audit with security dimension for auth changes, permission logic, or data handling code that warrants deeper security review
+
 ## References
 
 | File                              | When to load                                                                 |

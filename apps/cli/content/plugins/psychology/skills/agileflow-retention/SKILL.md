@@ -222,9 +222,15 @@ Apply on invocation; update on correction with confidence (high / medium / low).
 
 ## Integration
 
-- **agileflow-epic-planner** — retention initiative becomes an epic with measurable success metrics
-- **agileflow-story-writer** — individual retention mechanics become user stories with ACs tied to the retention metric
-- **agileflow-pr-reviewer** — notifications and behavioral triggers get a second review for dark patterns
+- **agileflow-epic-planner** — a retention initiative becomes an epic with measurable success metrics (D1/D7/D30 retention, streak rate, notification CTR)
+- **agileflow-story-writer** — individual retention mechanics become user stories with acceptance criteria tied to specific behavioural metrics
+- **agileflow-pr-reviewer** — notifications, behavioural triggers, and urgency patterns get a second review to confirm they don't cross into dark patterns
+- **agileflow-ideation** — use ideation before retention design to surface engagement feature opportunities; retention applies behavioural psychology to the top ideas
+- **agileflow-research** — gather evidence-based engagement patterns, platform benchmark DAU/MAU ratios, and competitor onboarding flows before designing retention mechanics
+- **agileflow-engineering** — delegate implementation of habit loops, notification systems, streak tracking, and progress visualisation
+- **agileflow-ads** — align retention campaign strategy (win-back emails, re-engagement ads) with in-product retention mechanics for a coherent lifecycle
+- **agileflow-planning** — use planning to prioritise retention initiatives against acquisition work; retention ROI (lower CAC payback) is a planning input
+- **agileflow-council** — convene before designing controversial retention mechanics (social pressure, FOMO triggers) to evaluate ethical trade-offs
 
 ## References
 

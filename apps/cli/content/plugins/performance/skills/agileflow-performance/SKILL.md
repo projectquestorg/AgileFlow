@@ -194,9 +194,16 @@ Before delivering any optimization:
 
 ## Integration
 
-- **agileflow-test-writer** — write benchmark tests to lock in performance gains
-- **agileflow-adr** — document architecture decisions made in the name of performance (caching layer, CDN, query redesign)
-- **agileflow-code** — code review after optimization to confirm correctness and readability are preserved
+- **agileflow-test-writer** — write benchmark and load tests to lock in performance gains; a gain without a test can silently regress
+- **agileflow-adr** — document architecture decisions made in the name of performance (caching layer, CDN, query redesign, data structure changes)
+- **agileflow-pr-reviewer** — code review after optimisation to confirm correctness and readability are preserved alongside the performance improvement
+- **agileflow-database** — query performance, index analysis, and connection pooling overlap; coordinate for storage-layer bottlenecks (N+1 queries, missing indexes)
+- **agileflow-engineering** — delegate implementation of performance fixes (memoisation, code splitting, lazy loading, worker threads) to engineering
+- **agileflow-refactor** — when performance problems stem from structural issues (deep coupling, repeated computation), pair with refactor to fix the root cause cleanly
+- **agileflow-audit** — the performance dimension of the full audit surfaces bundle size, render, query, and asset issues; performance fixes what audit finds
+- **agileflow-debug** — use debug when a performance regression appears suddenly and the cause is unclear; systematic root cause analysis before optimising
+- **agileflow-seo** — Core Web Vitals (LCP, INP, CLS) directly affect search rankings; performance improvements here feed directly into SEO gains
+- **agileflow-delivery** — include a performance budget check as a delivery gate for any feature touching render paths or large data payloads
 
 ## References
 

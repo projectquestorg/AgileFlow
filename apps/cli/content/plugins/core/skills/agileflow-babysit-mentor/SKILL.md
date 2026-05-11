@@ -126,11 +126,54 @@ After audits land, the commit option becomes `(Recommended)`.
 
 ## Integration
 
-- **agileflow-story-writer** — when a discovered task isn't already a
-  story, propose creating one before starting work
-- **agileflow-status-updater** — flip story status as work progresses
-- **agileflow-epic-planner** — when scope creeps past one story, propose
-  splitting into an epic
+Use the skill that best matches the phase of work. When in doubt, the trigger keywords in each skill's `SKILL.md` are the canonical guide.
+
+### Task & story management
+
+- **agileflow-story-writer** — when a task isn't yet a proper story, propose creating one before starting work; handles AC, estimation, and story formatting
+- **agileflow-status-updater** — flip story status as work progresses (ready → in-progress → done → blocked); call whenever state changes
+- **agileflow-epic-planner** — when scope creeps past one story or a theme emerges, propose splitting into an epic with sequenced stories
+- **agileflow-adr** — surface when implementation involves a meaningful technology or architecture trade-off that deserves a recorded decision
+- **agileflow-planning** — use for impact analysis, velocity tracking, RPI scoring, metrics dashboards, or sprint planning; ideal when the user asks about prioritisation
+
+### Strategy & ideation
+
+- **agileflow-council** — convene for architectural or strategic decisions with significant trade-offs; brings multiple perspectives (optimist, advocate, contrarian, technical) instead of a single opinion
+- **agileflow-ideation** — use when the user wants to explore what to build next, validate a product direction, discover feature opportunities, or generate a product brief before writing stories
+- **agileflow-retention** — suggest when stories involve engagement, habit-forming features, onboarding flows, or growth mechanics; applies behavioural psychology patterns
+
+### Research
+
+- **agileflow-research** — activate before coding begins when the story requires external knowledge: unfamiliar libraries, API integrations, architectural patterns, or comparative analysis; pairs with `research:ask` for stuck moments
+
+### Implementation
+
+- **agileflow-engineering** — delegate hands-on coding: API endpoints, DB schema, UI components, mobile, security hardening, and general feature implementation
+- **agileflow-database** — delegate schema design, index selection, migration planning, or query-optimisation work; covers relational and NoSQL
+- **agileflow-migration** — use when the story involves upgrading a framework, library, or data schema; plans zero-downtime migrations and generates rollback scripts
+- **agileflow-refactor** — suggest when existing code needs cleanup before or after a feature lands; applies safe refactoring patterns without changing observable behaviour
+- **agileflow-debug** — hand off immediately when the user reports a bug or unexpected behaviour; applies structured debugging methodology
+- **agileflow-performance** — suggest when a feature is slow, memory-heavy, bundle-size-constrained, or Core Web Vitals need improvement
+- **agileflow-accessibility** — suggest for any user-facing change; invoke before commit when the story touches UI; covers WCAG, ARIA, keyboard navigation, and screen reader compatibility
+
+### Testing
+
+- **agileflow-test-writer** — spawn after implementation to generate test suites from acceptance criteria; covers unit, integration, and E2E patterns
+
+### Verification & audits
+
+- **agileflow-audit** — broad multi-dimensional sweep (logic, security, accessibility, legal, test coverage, architecture, performance, completeness, API quality, SEO); offer after implementation when no specific audit is targeted
+- **agileflow-pr-reviewer** — invoke before opening a PR to catch logic correctness, security vulnerabilities, and style issues; required for stories touching 5+ source files
+- **agileflow-delivery** — use when the user is ready to ship: CI checks, changelog generation, dependency audit, release notes, and sprint finalisation
+
+### Documentation & discoverability
+
+- **agileflow-docs** — generate or sync API docs, README files, learning content, or skill recommendations after implementation; required when public APIs or exports change
+- **agileflow-seo** — suggest for any story touching public-facing pages or content discoverability; covers technical SEO, Core Web Vitals, structured data, and content quality
+
+### Advertising & growth
+
+- **agileflow-ads** — use when stories involve advertising campaigns (Google, Meta, LinkedIn, TikTok); covers tracking, creative, budget allocation, and audit
 
 ## Notes
 

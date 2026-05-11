@@ -186,6 +186,17 @@ Never dump findings without a clear path forward. After any command completes:
 5. **No optimization without data** — minimum 2 weeks and 50+ conversions before making structural changes. Flag this if the data is too thin.
 6. **Budget before creative** — a great creative with wrong targeting wastes money. Check audience + bidding before recommending new ad copy.
 
+## Integration
+
+- **agileflow-research** — run before competitor analysis or entering a new ad platform; gather market benchmarks and audience insights before spending
+- **agileflow-seo** — cross-reference paid and organic strategy; a page that performs well organically signals strong landing page quality for ads
+- **agileflow-ideation** — use when brainstorming new campaign angles, product positioning, or untapped audience segments before writing ad copy
+- **agileflow-retention** — align ad campaigns with retention mechanics; acquisition ads should funnel into onboarding flows designed for habit formation
+- **agileflow-docs** — document campaign strategy, budget rationale, and tracking setup so the team can replicate or audit later
+- **agileflow-delivery** — coordinate ad launch with product release; ensure tracking pixels and conversion events are deployed before campaigns go live
+- **agileflow-engineering** — delegate pixel implementation, server-side conversion API, or tracking tag deployment work
+- **agileflow-planning** — use for quarterly ad budget planning, ROI projections, or prioritising which campaigns to run first
+
 ## References
 
 Load these when you need deeper context:

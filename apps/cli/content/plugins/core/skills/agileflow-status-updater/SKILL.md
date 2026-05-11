@@ -115,10 +115,12 @@ docs/06-stories/US-0042-login-form.md (frontmatter)
 
 ## Integration
 
-- **agileflow-story-writer** — creates new stories (status = ready)
-- **agileflow-epic-planner** — creates new epics (status = PLANNING)
-- **agileflow-babysit-mentor** — drives status changes during the
-  end-to-end workflow
+- **agileflow-story-writer** — creates new stories (status = ready); status-updater is called immediately after to register the story in `status.json`
+- **agileflow-epic-planner** — creates new epics (status = PLANNING); status-updater tracks milestone transitions as stories complete
+- **agileflow-babysit-mentor** — babysit-mentor is the primary driver of status changes during end-to-end workflow; it calls status-updater at each phase transition
+- **agileflow-delivery** — delivery triggers status-updater to mark stories done after successful release; never mark done before the feature is shipped
+- **agileflow-planning** — sprint planning reads status to determine capacity; planning and status-updater are used together at sprint boundaries
+- **agileflow-adr** — ADR transitions (Proposed → Accepted → Deprecated) are tracked through status-updater alongside story and epic state
 
 ## Notes
 

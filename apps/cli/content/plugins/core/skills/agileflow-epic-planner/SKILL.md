@@ -174,9 +174,14 @@ confidence (`high` / `medium` / `low`) per the standard pattern.
 
 ## Integration
 
-- **agileflow-story-writer** — creates the individual stories under each milestone
-- **agileflow-status-updater** — flips the epic between PLANNING / ACTIVE / COMPLETED
-- **agileflow-adr** — links major technical decisions made during the epic
+- **agileflow-story-writer** — creates the individual stories under each milestone; epic-planner defines the skeleton, story-writer fills in AC and estimates
+- **agileflow-status-updater** — flips the epic between PLANNING / ACTIVE / COMPLETED as milestones land
+- **agileflow-adr** — links major technical decisions made during the epic; create ADRs for database choice, API design, or architecture decisions before writing stories
+- **agileflow-council** — convene before planning a large or ambiguous epic to resolve strategic direction; council output shapes the epic's goal and milestone structure
+- **agileflow-research** — use before planning to gather technical context for unfamiliar problem domains; avoids planning stories around incorrect assumptions
+- **agileflow-planning** — use for capacity planning and sprint allocation after the epic is defined; epic-planner sets the scope, planning fits it into delivery windows
+- **agileflow-ideation** — large ideas produced by ideation become epics; route the top-ranked ideation output here to give it structure and milestones
+- **agileflow-babysit-mentor** — mentor is the primary executor of planned epics; a well-structured epic with ready stories makes mentor-guided execution reliable
 
 ## Notes
 

@@ -79,6 +79,18 @@ For unfamiliar technical territory:
 2. **Plan** — EnterPlanMode with research findings
 3. **Implement** — delegate to domain experts
 
+## Integration
+
+- **agileflow-council** — convene before planning when the strategic direction is ambiguous; council resolves "what to build", planning resolves "how to sequence it"
+- **agileflow-research** — use to gather technical benchmarks, dependency risk data, or competitive context that informs the impact analysis or sprint priorities
+- **agileflow-story-writer** — planning produces a prioritised backlog; story-writer gives each item the structure and AC needed to enter that backlog
+- **agileflow-epic-planner** — when planning reveals a large theme, route to epic-planner to break it into sequenced milestones before estimating sprint capacity
+- **agileflow-status-updater** — use to reflect sprint state changes (planning → active → completed) in `status.json` as planning decisions are made
+- **agileflow-babysit-mentor** — mentor is the primary consumer of the planned work; a well-scoped sprint is the input that makes mentor-guided execution efficient
+- **agileflow-delivery** — delivery closes the planning loop; use planning to define the sprint and delivery to close it
+- **agileflow-adr** — planning often surfaces architectural decisions (scope trade-offs, dependency choices); document them as ADRs rather than leaving them implicit
+- **agileflow-retention** — use retention metrics alongside velocity data when planning engagement-focused sprints; retention informs what to prioritise, planning determines when
+
 ## References
 
 Load these files when you need deeper context for the relevant task:
