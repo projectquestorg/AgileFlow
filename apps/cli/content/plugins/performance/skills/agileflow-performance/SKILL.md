@@ -22,7 +22,6 @@ triggers:
     - INP
     - FID
     - lighthouse
-    - N+1
     - query slow
     - too large
     - loading time

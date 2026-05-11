@@ -12,9 +12,7 @@ triggers:
     - build api
     - database schema
     - ui component
-    - refactor
     - security hardening
-    - optimize
     - integration
     - mobile
     - compliance
