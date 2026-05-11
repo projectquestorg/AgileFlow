@@ -169,7 +169,7 @@ async function checkInstallHealth(cwd) {
       const skillsDir = path.join(cwd, caps.skillsDir);
       if (!fs.existsSync(skillsDir)) {
         issues.push({
-          severity: "error",
+          severity: "warn",
           message: `[${ide}] Skills not installed — ${caps.skillsDir}/ missing. Run \`agileflow setup\``,
         });
       } else {
