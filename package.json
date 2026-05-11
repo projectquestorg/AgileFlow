@@ -1,6 +1,6 @@
 {
   "name": "agileflow-monorepo",
-  "version": "3.5.0",
+  "version": "4.0.0-alpha.8",
   "private": true,
   "description": "AgileFlow monorepo - CLI, website, and documentation",
   "workspaces": [
