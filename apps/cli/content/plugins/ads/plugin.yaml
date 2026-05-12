@@ -7,41 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: ads
-      path: commands/ads.md
-    - id: ads-audit
-      path: commands/ads/audit.md
-    - id: ads-budget
-      path: commands/ads/budget.md
-    - id: ads-competitor
-      path: commands/ads/competitor.md
-    - id: ads-creative
-      path: commands/ads/creative.md
-    - id: ads-generate
-      path: commands/ads/generate.md
-    - id: ads-google
-      path: commands/ads/google.md
-    - id: ads-health
-      path: commands/ads/health.md
-    - id: ads-landing
-      path: commands/ads/landing.md
-    - id: ads-linkedin
-      path: commands/ads/linkedin.md
-    - id: ads-meta
-      path: commands/ads/meta.md
-    - id: ads-microsoft
-      path: commands/ads/microsoft.md
-    - id: ads-plan
-      path: commands/ads/plan.md
-    - id: ads-test-plan
-      path: commands/ads/test-plan.md
-    - id: ads-tiktok
-      path: commands/ads/tiktok.md
-    - id: ads-track
-      path: commands/ads/track.md
-    - id: ads-youtube
-      path: commands/ads/youtube.md
   skills:
     - id: agileflow-ads
       dir: skills/agileflow-ads

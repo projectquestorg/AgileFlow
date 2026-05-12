@@ -7,11 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: council
-      path: commands/council.md
-    - id: multi-expert
-      path: commands/multi-expert.md
   skills:
     - id: agileflow-council
       dir: skills/agileflow-council

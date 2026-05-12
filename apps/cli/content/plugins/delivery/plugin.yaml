@@ -7,21 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: changelog
-      path: commands/changelog.md
-    - id: ci
-      path: commands/ci.md
-    - id: deploy
-      path: commands/deploy.md
-    - id: deps
-      path: commands/deps.md
-    - id: packages
-      path: commands/packages.md
-    - id: pr
-      path: commands/pr.md
-    - id: sprint
-      path: commands/sprint.md
   skills:
     - id: agileflow-delivery
       dir: skills/agileflow-delivery

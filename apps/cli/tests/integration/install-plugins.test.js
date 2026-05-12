@@ -56,16 +56,6 @@ describe("installPlugins integration", () => {
     }
     expect(
       fs.existsSync(
-        path.join(scratch, ".claude/commands/agileflow/seo/audit.md"),
-      ),
-    ).toBe(true);
-    expect(
-      fs.existsSync(
-        path.join(scratch, ".claude/commands/agileflow/code/security.md"),
-      ),
-    ).toBe(true);
-    expect(
-      fs.existsSync(
         path.join(scratch, ".claude/agents/agileflow/seo-consensus.md"),
       ),
     ).toBe(true);
@@ -74,8 +64,11 @@ describe("installPlugins integration", () => {
         path.join(scratch, ".claude/agents/agileflow/security-consensus.md"),
       ),
     ).toBe(true);
-    expect(result.commandsMirrored).toContain("seo-audit");
     expect(result.agentsMirrored).toContain("seo-consensus");
+    // v4 is skills-only — no slash commands should be mirrored.
+    expect(
+      fs.existsSync(path.join(scratch, ".claude/commands/agileflow")),
+    ).toBe(false);
 
     // Disabled plugins did NOT install.
     expect(fs.existsSync(path.join(agileflowDir, "plugins/ads"))).toBe(false);
@@ -99,6 +92,23 @@ describe("installPlugins integration", () => {
     expect(result.ops.created).toBeGreaterThan(0);
     expect(result.ops.updated).toBe(0);
     expect(result.ops.preserved).toBe(0);
+
+    // Docs scaffold created on first install.
+    expect(result.docsScaffolded.length).toBeGreaterThan(0);
+    expect(fs.existsSync(path.join(scratch, "docs/09-agents"))).toBe(true);
+    expect(
+      fs.existsSync(path.join(scratch, "docs/09-agents/status.json")),
+    ).toBe(true);
+    expect(fs.existsSync(path.join(scratch, "docs/06-stories"))).toBe(true);
+
+    // Second install does not re-create existing docs dirs.
+    const result2 = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: ["seo", "audit"],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+    });
+    expect(result2.docsScaffolded).toEqual([]);
   });
 
   it("is idempotent: a second run reports zero writes and unchanged counters", async () => {

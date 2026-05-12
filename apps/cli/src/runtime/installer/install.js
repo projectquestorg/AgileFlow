@@ -49,9 +49,7 @@ const {
   unmirrorClaudeCodeSkills,
 } = require("../ide/claude-code-skills.js");
 const {
-  mirrorClaudeCodeCommands,
   mirrorClaudeCodeAgents,
-  unmirrorClaudeCodeCommands,
   unmirrorClaudeCodeAgents,
 } = require("../ide/claude-code-content.js");
 const { loadSkill } = require("../skills/validator.js");
@@ -89,10 +87,9 @@ const {
  * @property {string[]} skillsMirrored - skill ids copied across all skill-supporting IDEs
  * @property {string[]} skillsPruned - skill ids removed from skill dirs
  * @property {Array<{skillId:string, error:string}>} [skillsSkipped] - skills with missing source
- * @property {string[]} commandsMirrored - Claude Code slash commands mirrored from enabled plugins
  * @property {string[]} agentsMirrored - Claude Code subagents mirrored from enabled plugins
- * @property {Array<{id:string, error:string}>} [commandsSkipped] - commands with missing source
  * @property {Array<{id:string, error:string}>} [agentsSkipped] - agents with missing source
+ * @property {string[]} docsScaffolded - doc dirs created on first install
  * @property {string[]} learningsScaffolded - skill ids whose learnings file was newly created
  * @property {string[]} ides - the target IDEs for this install
  */
@@ -262,6 +259,78 @@ async function scaffoldSkillLearnings(ordered, projectRoot) {
 }
 
 /**
+ * Standard docs folder layout that AgileFlow expects at the project root.
+ * Only created on first install (dirs that already exist are skipped).
+ */
+const DOCS_DIRS = [
+  "docs/00-meta",
+  "docs/01-brainstorming",
+  "docs/02-practices",
+  "docs/03-decisions",
+  "docs/04-architecture",
+  "docs/05-epics",
+  "docs/06-stories",
+  "docs/07-testing",
+  "docs/08-project",
+  "docs/09-agents",
+  "docs/10-research",
+];
+
+/**
+ * Scaffold the project docs folder on first install.
+ * Returns the list of dirs that were newly created.
+ * @param {string} projectRoot
+ * @returns {Promise<string[]>}
+ */
+async function scaffoldDocs(projectRoot) {
+  const created = [];
+  for (const rel of DOCS_DIRS) {
+    const dir = path.join(projectRoot, rel);
+    try {
+      await fs.promises.access(dir);
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
+      await fs.promises.mkdir(dir, { recursive: true });
+      created.push(rel);
+    }
+  }
+
+  // Seed docs/09-agents/status.json only when newly created.
+  if (created.includes("docs/09-agents")) {
+    const statusPath = path.join(projectRoot, "docs/09-agents/status.json");
+    const seed = JSON.stringify(
+      { updated: new Date().toISOString(), epics: {}, stories: {} },
+      null,
+      2,
+    );
+    await fs.promises.writeFile(statusPath, seed + "\n", "utf8");
+  }
+
+  // Seed docs/00-meta/agileflow-metadata.json only when newly created.
+  if (created.includes("docs/00-meta")) {
+    const metaPath = path.join(
+      projectRoot,
+      "docs/00-meta/agileflow-metadata.json",
+    );
+    const seed = JSON.stringify(
+      {
+        version: "4.0.0",
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        docsFolder: "docs",
+        archival: { threshold_days: 30, enabled: true },
+        features: {},
+      },
+      null,
+      2,
+    );
+    await fs.promises.writeFile(metaPath, seed + "\n", "utf8");
+  }
+
+  return created;
+}
+
+/**
  * @param {InstallOptions} options
  * @returns {Promise<InstallResult>}
  */
@@ -384,21 +453,15 @@ async function installPlugins(options) {
   //    registration we may have written.
   const projectRoot = path.dirname(agileflowDir);
   let settingsPath = null;
-  let commandsMirrored = [];
   let agentsMirrored = [];
-  let commandsSkipped = [];
   let agentsSkipped = [];
   if (targetIdes.includes("claude-code")) {
     settingsPath = await writeClaudeCodeSettings(projectRoot);
-    const commandMirror = await mirrorClaudeCodeCommands(ordered, projectRoot);
     const agentMirror = await mirrorClaudeCodeAgents(ordered, projectRoot);
-    commandsMirrored = commandMirror.mirrored;
     agentsMirrored = agentMirror.mirrored;
-    commandsSkipped = commandMirror.skipped;
     agentsSkipped = agentMirror.skipped;
   } else {
     await removeClaudeCodeSettings(projectRoot);
-    await unmirrorClaudeCodeCommands(projectRoot);
     await unmirrorClaudeCodeAgents(projectRoot);
   }
 
@@ -455,7 +518,10 @@ async function installPlugins(options) {
   const skillsPruned = [...prunedSet];
   const anySkills = targetCaps.some(({ caps }) => caps.skills);
 
-  // 10. Scaffold persistent learnings files for skills that opt in.
+  // 10. Scaffold the project docs folder on first install.
+  const docsScaffolded = await scaffoldDocs(projectRoot);
+
+  // 11. Scaffold persistent learnings files for skills that opt in.
   //     Lives in .agileflow/skills/_learnings/ — outside the mirror wipe
   //     zone so re-installs never destroy accumulated signals.
   const learningsScaffolded =
@@ -477,10 +543,9 @@ async function installPlugins(options) {
     skillsMirrored,
     skillsPruned,
     skillsSkipped,
-    commandsMirrored,
     agentsMirrored,
-    commandsSkipped,
     agentsSkipped,
+    docsScaffolded,
     learningsScaffolded,
     ides: targetIdes,
     // Back-compat: keep `ide` as the primary so existing callers /

@@ -7,19 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: ideate
-      path: commands/ideate.md
-    - id: ideate-brief
-      path: commands/ideate/brief.md
-    - id: ideate-discover
-      path: commands/ideate/discover.md
-    - id: ideate-features
-      path: commands/ideate/features.md
-    - id: ideate-history
-      path: commands/ideate/history.md
-    - id: ideate-new
-      path: commands/ideate/new.md
   skills:
     - id: agileflow-ideation
       dir: skills/agileflow-ideation

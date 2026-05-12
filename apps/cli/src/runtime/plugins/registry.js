@@ -5,13 +5,20 @@
  * (depends resolution, cycle detection, command/skill cross-refs) lands
  * with the full validator in Phase 2b.
  */
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
+const fs = require("fs");
+const path = require("path");
+const yaml = require("js-yaml");
 
-const PLUGINS_DIR = path.join(__dirname, '..', '..', '..', 'content', 'plugins');
+const PLUGINS_DIR = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "content",
+  "plugins",
+);
 
-const REQUIRED_FIELDS = ['id', 'name', 'description', 'version'];
+const REQUIRED_FIELDS = ["id", "name", "description", "version"];
 
 /**
  * @typedef {Object} PluginManifest
@@ -23,7 +30,6 @@ const REQUIRED_FIELDS = ['id', 'name', 'description', 'version'];
  * @property {boolean} [cannotDisable]
  * @property {string[]} [depends]
  * @property {{
- *   commands?: object[],
  *   skills?: object[],
  *   agents?: object[],
  *   hooks?: object[],
@@ -38,13 +44,13 @@ const REQUIRED_FIELDS = ['id', 'name', 'description', 'version'];
  * @returns {PluginManifest}
  */
 function loadPlugin(pluginDir) {
-  const manifestPath = path.join(pluginDir, 'plugin.yaml');
+  const manifestPath = path.join(pluginDir, "plugin.yaml");
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Missing plugin.yaml at ${pluginDir}`);
   }
   let raw;
   try {
-    raw = fs.readFileSync(manifestPath, 'utf8');
+    raw = fs.readFileSync(manifestPath, "utf8");
   } catch (err) {
     throw new Error(`Cannot read ${manifestPath}: ${err.message}`);
   }
@@ -54,13 +60,13 @@ function loadPlugin(pluginDir) {
   } catch (err) {
     throw new Error(`Invalid YAML in ${manifestPath}: ${err.message}`);
   }
-  if (!parsed || typeof parsed !== 'object') {
+  if (!parsed || typeof parsed !== "object") {
     throw new Error(`Empty or non-object plugin.yaml at ${manifestPath}`);
   }
   const missing = REQUIRED_FIELDS.filter((k) => parsed[k] == null);
   if (missing.length) {
     throw new Error(
-      `Plugin ${path.basename(pluginDir)} missing required fields: ${missing.join(', ')}`,
+      `Plugin ${path.basename(pluginDir)} missing required fields: ${missing.join(", ")}`,
     );
   }
   // `depends` is optional, but if present it MUST be an array — silently
@@ -83,7 +89,6 @@ function loadPlugin(pluginDir) {
     cannotDisable: Boolean(parsed.cannotDisable),
     depends,
     provides: parsed.provides || {
-      commands: [],
       skills: [],
       agents: [],
       hooks: [],

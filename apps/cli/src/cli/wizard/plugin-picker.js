@@ -101,31 +101,22 @@ async function pickPlugins(currentConfig) {
     })
     .map((p) => p.id);
 
-  const enableAll = await prompts.confirm({
-    message: questionMessage(
-      "Enable all skill packs?",
-      "Turn on every optional plugin at once.",
-    ),
-    initialValue: false,
-  });
-
-  if (prompts.isCancel(enableAll)) {
-    prompts.cancel("Setup cancelled. No changes made.");
-    process.exit(1);
-  }
-
-  if (enableAll) {
-    const allIds = new Set(optional.map((p) => p.id));
-    return buildPluginsMap(all, allIds, currentConfig.plugins || {});
-  }
+  const SELECT_ALL = "__select_all__";
 
   const picked = await prompts.multiselect({
     message: questionMessage("Choose optional skill packs:"),
-    options: optional.map((p) => ({
-      value: p.id,
-      label: p.name,
-      hint: pluginHint(p),
-    })),
+    options: [
+      {
+        value: SELECT_ALL,
+        label: "Enable all",
+        hint: "Turn on every skill pack at once.",
+      },
+      ...optional.map((p) => ({
+        value: p.id,
+        label: p.name,
+        hint: pluginHint(p),
+      })),
+    ],
     initialValues,
     required: false,
   });
@@ -135,7 +126,11 @@ async function pickPlugins(currentConfig) {
     process.exit(1);
   }
 
-  const selectedOptionalIds = new Set(/** @type {string[]} */ (picked));
+  const pickedSet = new Set(/** @type {string[]} */ (picked));
+  const selectedOptionalIds = pickedSet.has(SELECT_ALL)
+    ? new Set(optional.map((p) => p.id))
+    : new Set([...pickedSet].filter((id) => id !== SELECT_ALL));
+
   return buildPluginsMap(all, selectedOptionalIds, currentConfig.plugins || {});
 }
 

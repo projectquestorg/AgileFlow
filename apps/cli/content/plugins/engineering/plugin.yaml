@@ -7,7 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands: []
   skills:
     - id: agileflow-engineering
       dir: skills/agileflow-engineering

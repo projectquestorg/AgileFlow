@@ -7,17 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: migrate
-      path: commands/migrate.md
-    - id: migrate-codemods
-      path: commands/migrate/codemods.md
-    - id: migrate-plan
-      path: commands/migrate/plan.md
-    - id: migrate-scan
-      path: commands/migrate/scan.md
-    - id: migrate-validate
-      path: commands/migrate/validate.md
   skills:
     - id: agileflow-migration
       dir: skills/agileflow-migration

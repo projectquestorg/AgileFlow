@@ -6,7 +6,6 @@ enabledByDefault: false
 cannotDisable: false
 depends: []
 provides:
-  commands: []
   skills:
     - id: agileflow-database
       dir: skills/agileflow-database

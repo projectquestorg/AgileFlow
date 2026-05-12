@@ -7,45 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: audit
-      path: commands/audit.md
-    - id: browser-qa
-      path: commands/browser-qa.md
-    - id: code
-      path: commands/code.md
-    - id: code-accessibility
-      path: commands/code/accessibility.md
-    - id: code-api
-      path: commands/code/api.md
-    - id: code-architecture
-      path: commands/code/architecture.md
-    - id: code-completeness
-      path: commands/code/completeness.md
-    - id: code-flows
-      path: commands/code/flows.md
-    - id: code-legal
-      path: commands/code/legal.md
-    - id: code-logic
-      path: commands/code/logic.md
-    - id: code-performance
-      path: commands/code/performance.md
-    - id: code-quality
-      path: commands/code/quality.md
-    - id: code-security
-      path: commands/code/security.md
-    - id: code-test
-      path: commands/code/test.md
-    - id: review
-      path: commands/review.md
-    - id: tdd-next
-      path: commands/tdd-next.md
-    - id: tdd
-      path: commands/tdd.md
-    - id: tests
-      path: commands/tests.md
-    - id: verify
-      path: commands/verify.md
   skills:
     - id: agileflow-audit
       dir: skills/agileflow-audit

@@ -7,41 +7,6 @@ enabledByDefault: false
 depends: []
 
 provides:
-  commands:
-    - id: seo
-      path: commands/seo.md
-    - id: seo-audit
-      path: commands/seo/audit.md
-    - id: seo-competitor
-      path: commands/seo/competitor.md
-    - id: seo-content
-      path: commands/seo/content.md
-    - id: seo-geo
-      path: commands/seo/geo.md
-    - id: seo-hreflang
-      path: commands/seo/hreflang.md
-    - id: seo-images
-      path: commands/seo/images.md
-    - id: seo-page
-      path: commands/seo/page.md
-    - id: seo-plan
-      path: commands/seo/plan.md
-    - id: seo-programmatic
-      path: commands/seo/programmatic.md
-    - id: seo-references-cwv-thresholds
-      path: commands/seo/references/cwv-thresholds.md
-    - id: seo-references-eeat-framework
-      path: commands/seo/references/eeat-framework.md
-    - id: seo-references-quality-gates
-      path: commands/seo/references/quality-gates.md
-    - id: seo-references-schema-types
-      path: commands/seo/references/schema-types.md
-    - id: seo-schema
-      path: commands/seo/schema.md
-    - id: seo-sitemap
-      path: commands/seo/sitemap.md
-    - id: seo-technical
-      path: commands/seo/technical.md
   skills:
     - id: agileflow-seo
       dir: skills/agileflow-seo

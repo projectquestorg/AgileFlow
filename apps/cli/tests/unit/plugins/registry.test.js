@@ -60,7 +60,7 @@ describe("plugin registry (bundled content)", () => {
   it("assigns provides defaults when the key is absent", () => {
     const core = getPlugin("core");
     expect(core.provides).toBeDefined();
-    expect(Array.isArray(core.provides.commands)).toBe(true);
+    expect(Array.isArray(core.provides.skills)).toBe(true);
   });
 });
 

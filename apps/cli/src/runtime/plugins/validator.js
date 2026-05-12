@@ -26,13 +26,7 @@ const SEMVER_PATTERN =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /** @type {ReadonlySet<string>} */
-const VALID_PROVIDES_KEYS = new Set([
-  'commands',
-  'skills',
-  'agents',
-  'hooks',
-  'templates',
-]);
+const VALID_PROVIDES_KEYS = new Set(["skills", "agents", "hooks", "templates"]);
 
 /**
  * Validate a single plugin manifest. Pure: no I/O.
@@ -43,18 +37,26 @@ const VALID_PROVIDES_KEYS = new Set([
 function validatePlugin(plugin) {
   /** @type {Issue[]} */
   const issues = [];
-  const id = plugin && typeof plugin.id === 'string' ? plugin.id : '<unknown>';
+  const id = plugin && typeof plugin.id === "string" ? plugin.id : "<unknown>";
 
-  const error = (msg) => issues.push({ severity: 'error', pluginId: id, message: msg });
-  const warn = (msg) => issues.push({ severity: 'warning', pluginId: id, message: msg });
+  const error = (msg) =>
+    issues.push({ severity: "error", pluginId: id, message: msg });
+  const warn = (msg) =>
+    issues.push({ severity: "warning", pluginId: id, message: msg });
 
-  if (!plugin || typeof plugin !== 'object') {
-    return [{ severity: 'error', pluginId: id, message: 'Plugin manifest is not an object.' }];
+  if (!plugin || typeof plugin !== "object") {
+    return [
+      {
+        severity: "error",
+        pluginId: id,
+        message: "Plugin manifest is not an object.",
+      },
+    ];
   }
 
   // id format
-  if (typeof plugin.id !== 'string') {
-    error('`id` must be a string.');
+  if (typeof plugin.id !== "string") {
+    error("`id` must be a string.");
   } else if (!ID_PATTERN.test(plugin.id)) {
     error(
       `\`id\` "${plugin.id}" must match /^[a-z0-9][a-z0-9-]{0,63}$/ (lowercase, kebab-case, max 64 chars).`,
@@ -62,52 +64,60 @@ function validatePlugin(plugin) {
   }
 
   // name
-  if (typeof plugin.name !== 'string' || !plugin.name.trim()) {
-    error('`name` must be a non-empty string.');
+  if (typeof plugin.name !== "string" || !plugin.name.trim()) {
+    error("`name` must be a non-empty string.");
   }
 
   // description
-  if (typeof plugin.description !== 'string' || !plugin.description.trim()) {
-    error('`description` must be a non-empty string.');
+  if (typeof plugin.description !== "string" || !plugin.description.trim()) {
+    error("`description` must be a non-empty string.");
   } else if (plugin.description.length < 16) {
-    warn('`description` is very short — aim for at least one meaningful sentence.');
+    warn(
+      "`description` is very short — aim for at least one meaningful sentence.",
+    );
   }
 
   // version
-  if (typeof plugin.version !== 'string') {
-    error('`version` must be a string (semver).');
+  if (typeof plugin.version !== "string") {
+    error("`version` must be a string (semver).");
   } else if (!SEMVER_PATTERN.test(plugin.version)) {
-    error(`\`version\` "${plugin.version}" must be a valid semver (MAJOR.MINOR.PATCH).`);
+    error(
+      `\`version\` "${plugin.version}" must be a valid semver (MAJOR.MINOR.PATCH).`,
+    );
   }
 
   // booleans
-  if (typeof plugin.enabledByDefault !== 'boolean') {
-    error('`enabledByDefault` must be a boolean.');
+  if (typeof plugin.enabledByDefault !== "boolean") {
+    error("`enabledByDefault` must be a boolean.");
   }
-  if (typeof plugin.cannotDisable !== 'boolean') {
-    error('`cannotDisable` must be a boolean.');
+  if (typeof plugin.cannotDisable !== "boolean") {
+    error("`cannotDisable` must be a boolean.");
   }
 
   // cannotDisable implies enabledByDefault
   if (plugin.cannotDisable === true && plugin.enabledByDefault === false) {
-    error('A plugin with `cannotDisable: true` must also have `enabledByDefault: true`.');
+    error(
+      "A plugin with `cannotDisable: true` must also have `enabledByDefault: true`.",
+    );
   }
 
   // depends
   if (!Array.isArray(plugin.depends)) {
-    error('`depends` must be an array of plugin ids.');
+    error("`depends` must be an array of plugin ids.");
   } else {
     for (const dep of plugin.depends) {
-      if (typeof dep !== 'string' || !ID_PATTERN.test(dep)) {
-        error(`\`depends\` entry ${JSON.stringify(dep)} must be a valid plugin id.`);
+      if (typeof dep !== "string" || !ID_PATTERN.test(dep)) {
+        error(
+          `\`depends\` entry ${JSON.stringify(dep)} must be a valid plugin id.`,
+        );
       }
-      if (typeof dep === 'string' && dep === plugin.id) {
-        error('A plugin cannot depend on itself.');
+      if (typeof dep === "string" && dep === plugin.id) {
+        error("A plugin cannot depend on itself.");
       }
     }
     const seen = new Set();
     for (const dep of plugin.depends) {
-      if (typeof dep === 'string') {
+      if (typeof dep === "string") {
         if (seen.has(dep)) {
           warn(`Duplicate dependency "${dep}" in \`depends\` (deduplicate).`);
         }
@@ -118,12 +128,16 @@ function validatePlugin(plugin) {
 
   // provides — allowed shape
   if (plugin.provides != null) {
-    if (typeof plugin.provides !== 'object' || Array.isArray(plugin.provides)) {
-      error('`provides` must be an object with arrays of commands/skills/agents/hooks/templates.');
+    if (typeof plugin.provides !== "object" || Array.isArray(plugin.provides)) {
+      error(
+        "`provides` must be an object with arrays of skills/agents/hooks/templates.",
+      );
     } else {
       for (const key of Object.keys(plugin.provides)) {
         if (!VALID_PROVIDES_KEYS.has(key)) {
-          warn(`\`provides.${key}\` is not a recognized key — expected one of: ${[...VALID_PROVIDES_KEYS].join(', ')}.`);
+          warn(
+            `\`provides.${key}\` is not a recognized key — expected one of: ${[...VALID_PROVIDES_KEYS].join(", ")}.`,
+          );
         }
       }
       for (const key of VALID_PROVIDES_KEYS) {
@@ -154,10 +168,10 @@ function validatePluginSet(plugins) {
   }
   const ids = new Set();
   for (const p of plugins) {
-    if (typeof p.id === 'string') {
+    if (typeof p.id === "string") {
       if (ids.has(p.id)) {
         issues.push({
-          severity: 'error',
+          severity: "error",
           pluginId: p.id,
           message: `Duplicate plugin id "${p.id}".`,
         });
@@ -167,9 +181,9 @@ function validatePluginSet(plugins) {
   }
   for (const p of plugins) {
     for (const dep of p.depends || []) {
-      if (typeof dep === 'string' && !ids.has(dep)) {
+      if (typeof dep === "string" && !ids.has(dep)) {
         issues.push({
-          severity: 'error',
+          severity: "error",
           pluginId: p.id,
           message: `Depends on unknown plugin "${dep}".`,
         });
@@ -184,7 +198,7 @@ function validatePluginSet(plugins) {
  * @returns {boolean}
  */
 function hasErrors(issues) {
-  return issues.some((i) => i.severity === 'error');
+  return issues.some((i) => i.severity === "error");
 }
 
 module.exports = {
