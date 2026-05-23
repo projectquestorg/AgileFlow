@@ -63,6 +63,18 @@ const MANAGED_HOOKS = [
 const MANAGED_EVENTS = new Set(MANAGED_HOOKS.map((h) => h.event));
 
 /**
+ * Events AgileFlow wrote in previous versions but no longer manages.
+ * Used by `doctor` to detect stale entries that update wouldn't sweep
+ * (mergeManagedHooks only touches MANAGED_EVENTS). Add the OLD name
+ * here whenever a hook event is renamed or retired so old installs
+ * surface the leftover.
+ *
+ *   - PreCompact   → renamed to PostCompact in v4.0.0-alpha.6
+ *   - PostToolUse  → retired in v4 (was v3-era damage-control hook)
+ */
+const LEGACY_MANAGED_EVENTS = new Set(["PreCompact", "PostToolUse"]);
+
+/**
  * Detect whether a settings.json hook entry belongs to AgileFlow.
  * @param {*} entry
  */
@@ -254,6 +266,7 @@ module.exports = {
   isAgileflowEntry,
   MANAGED_HOOKS,
   MANAGED_EVENTS,
+  LEGACY_MANAGED_EVENTS,
   HOOK_COMMAND_MARKER,
   HOOK_TIMEOUT_SECONDS,
 };
