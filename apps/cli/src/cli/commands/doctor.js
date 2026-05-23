@@ -97,6 +97,40 @@ function readdirSafe(p) {
 }
 
 /**
+ * Expand env vars and ~ in a hook command's script path, then check if
+ * that file exists. Returns the resolved path if it's broken (file
+ * referenced but doesn't exist), or null otherwise (no path, or path
+ * exists, or path is opaque).
+ *
+ * Recognizes paths ending in common script extensions; conservative on
+ * purpose so we don't false-positive on shell builtins or commands
+ * that just happen to have a slash.
+ *
+ * @param {string} command
+ * @param {string} cwd
+ * @returns {string|null}
+ */
+function brokenScriptInCommand(command, cwd) {
+  if (typeof command !== "string") return null;
+  // Skip our own dispatcher — handled by other detection kinds.
+  if (command.includes(HOOK_COMMAND_MARKER)) return null;
+  // Extract path-like tokens with a known script extension.
+  const tokens = command.match(
+    /[\w$~/.\-\\]+\.(?:js|sh|py|ts|mjs|cjs|bash|zsh|rb)\b/g,
+  );
+  if (!tokens) return null;
+  for (const tok of tokens) {
+    let p = tok
+      .replace(/\$CLAUDE_PROJECT_DIR/g, cwd)
+      .replace(/\$HOME/g, require("os").homedir())
+      .replace(/^~(?=\/|$)/, require("os").homedir());
+    if (!path.isAbsolute(p)) p = path.join(cwd, p);
+    if (!fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
  * Walk `content/plugins/<plugin>/skills/<skill>/SKILL.md` for every
  * plugin and run the validator. Returns issues + the loaded skill set.
  */
@@ -335,21 +369,48 @@ async function checkStaleArtifacts(cwd) {
       else if (isPlainObject(raw)) entries = [raw];
       else entries = [];
       const ours = entries.filter(isAgileflowEntry);
-      if (ours.length === 0) continue;
-      if (LEGACY_MANAGED_EVENTS.has(event)) {
-        issues.push({
-          severity: "warn",
-          kind: "legacy-hook-event",
-          path: `${settingsPath}#hooks.${event}`,
-          message: `Legacy hook event "${event}" in .claude/settings.json — AgileFlow used to write this, no longer does. Safe to remove ${ours.length} entry/entries.`,
-        });
-      } else if (!MANAGED_EVENTS.has(event)) {
-        issues.push({
-          severity: "warn",
-          kind: "orphan-hook-event",
-          path: `${settingsPath}#hooks.${event}`,
-          message: `Unknown event "${event}" in .claude/settings.json contains \`${HOOK_COMMAND_MARKER}\` command — not a current AgileFlow event. Probably from a much older install.`,
-        });
+      if (ours.length > 0) {
+        if (LEGACY_MANAGED_EVENTS.has(event)) {
+          issues.push({
+            severity: "warn",
+            kind: "legacy-hook-event",
+            path: `${settingsPath}#hooks.${event}`,
+            message: `Legacy hook event "${event}" in .claude/settings.json — AgileFlow used to write this, no longer does. Safe to remove ${ours.length} entry/entries.`,
+          });
+        } else if (!MANAGED_EVENTS.has(event)) {
+          issues.push({
+            severity: "warn",
+            kind: "orphan-hook-event",
+            path: `${settingsPath}#hooks.${event}`,
+            message: `Unknown event "${event}" in .claude/settings.json contains \`${HOOK_COMMAND_MARKER}\` command — not a current AgileFlow event. Probably from a much older install.`,
+          });
+        }
+      }
+
+      // (F) Broken hook commands — entries whose `command` references a
+      // file path that no longer exists on disk. Catches v3-era hooks
+      // that called node/bash directly (e.g. `node .agileflow/scripts/
+      // X.js`) and got orphaned when the script's directory was
+      // removed. We skip entries containing the `agileflow hook` marker
+      // because those are handled by the legacy/orphan event kinds.
+      for (const entry of entries) {
+        if (!entry || !Array.isArray(entry.hooks)) continue;
+        for (const h of entry.hooks) {
+          if (!h || h.type !== "command" || typeof h.command !== "string") {
+            continue;
+          }
+          const missingPath = brokenScriptInCommand(h.command, cwd);
+          if (!missingPath) continue;
+          issues.push({
+            severity: "error",
+            kind: "broken-hook-command",
+            path: `${settingsPath}#hooks.${event}`,
+            event,
+            command: h.command,
+            missingPath,
+            message: `Hook in .claude/settings.json#hooks.${event} references missing file: ${missingPath} (command: \`${h.command}\`)`,
+          });
+        }
       }
     }
   }
@@ -586,6 +647,44 @@ function applyStaleFix(issue, cwd) {
           "Cannot auto-fix — the script file is gone. Run `agileflow update` to reinstall plugin scripts.",
       };
     }
+    case "broken-hook-command": {
+      // Remove the specific entry whose hooks include this command,
+      // preserving siblings in the same event.
+      const hashIdx = (issue.path || "").lastIndexOf("#hooks.");
+      if (hashIdx < 0 || !issue.command) {
+        return {
+          ok: false,
+          message: "Malformed issue — expected path and command",
+        };
+      }
+      const settingsPath = issue.path.slice(0, hashIdx);
+      const event = issue.path.slice(hashIdx + "#hooks.".length);
+      const settings = readJSONSafe(settingsPath);
+      if (!settings || !isPlainObject(settings.hooks)) {
+        return { ok: false, message: `No hooks object in ${settingsPath}` };
+      }
+      const raw = settings.hooks[event];
+      const entries = Array.isArray(raw)
+        ? raw
+        : isPlainObject(raw)
+          ? [raw]
+          : [];
+      const kept = entries.filter((e) => {
+        if (!e || !Array.isArray(e.hooks)) return true;
+        // Drop entry if ANY of its hooks matches the broken command.
+        return !e.hooks.some(
+          (h) => h && h.type === "command" && h.command === issue.command,
+        );
+      });
+      if (kept.length === 0) delete settings.hooks[event];
+      else settings.hooks[event] = kept;
+      if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+      return {
+        ok: true,
+        message: `Removed broken hook from .claude/settings.json#hooks.${event} (command: ${issue.command})`,
+      };
+    }
     default:
       return { ok: false, message: `Unknown issue kind: ${issue.kind}` };
   }
@@ -695,7 +794,7 @@ async function doctor(opts = {}) {
     }
     // eslint-disable-next-line no-console
     console.log(
-      `\n  ${staleIssues.length} stale artifact(s). Auto-fix is not yet available — review and remove manually for now.`,
+      `\n  ${staleIssues.length} stale artifact(s). Run \`agileflow doctor --fix\` to preview removal, or \`--fix --yes\` to apply.`,
     );
   }
 

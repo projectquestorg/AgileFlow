@@ -151,6 +151,37 @@ describe("applyStaleFix", () => {
     expect(fs.existsSync(dir)).toBe(false);
   });
 
+  it("removes broken-hook-command entry but preserves working siblings", () => {
+    const workingEntry = {
+      hooks: [{ type: "command", command: "echo hi", timeout: 5 }],
+    };
+    const brokenCommand = "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/gone.js";
+    writeRawSettings(cwd, {
+      hooks: {
+        PostToolUse: [
+          {
+            hooks: [{ type: "command", command: brokenCommand, timeout: 30 }],
+          },
+          workingEntry,
+        ],
+      },
+    });
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const r = applyStaleFix(
+      {
+        kind: "broken-hook-command",
+        path: `${settingsPath}#hooks.PostToolUse`,
+        event: "PostToolUse",
+        command: brokenCommand,
+        message: "x",
+      },
+      cwd,
+    );
+    expect(r.ok).toBe(true);
+    const after = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    expect(after.hooks.PostToolUse).toEqual([workingEntry]);
+  });
+
   it("returns ok:false for broken-hook-script (cannot auto-fix)", () => {
     const r = applyStaleFix(
       {

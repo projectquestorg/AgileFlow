@@ -252,6 +252,89 @@ describe("checkStaleArtifacts", () => {
     expect(Array.isArray(issues)).toBe(true);
   });
 
+  // ---- broken-hook-command detection (section F) ----
+
+  it("flags hook entry whose command references a missing $CLAUDE_PROJECT_DIR script", async () => {
+    writeRawSettings(cwd, {
+      hooks: {
+        PostToolUse: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/gone.js",
+                timeout: 30,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const issues = await checkStaleArtifacts(cwd);
+    const broken = issues.filter((i) => i.kind === "broken-hook-command");
+    expect(broken).toHaveLength(1);
+    expect(broken[0].severity).toBe("error");
+    expect(broken[0].missingPath).toContain(".agileflow/scripts/gone.js");
+  });
+
+  it("does NOT flag hook command whose script exists", async () => {
+    // Create a real script
+    fs.mkdirSync(path.join(cwd, "bin"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, "bin", "ok.js"), "");
+    writeRawSettings(cwd, {
+      hooks: {
+        PostToolUse: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: "node bin/ok.js",
+                timeout: 30,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const issues = await checkStaleArtifacts(cwd);
+    expect(issues.filter((i) => i.kind === "broken-hook-command")).toEqual([]);
+  });
+
+  it("does NOT flag agileflow hook dispatcher invocations", async () => {
+    // These are covered by legacy/orphan-hook-event kinds, not this one.
+    writeRawSettings(cwd, {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: "npx agileflow hook SessionStart",
+                timeout: 30,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const issues = await checkStaleArtifacts(cwd);
+    expect(issues.filter((i) => i.kind === "broken-hook-command")).toEqual([]);
+  });
+
+  it("does NOT flag commands without any path-like token", async () => {
+    writeRawSettings(cwd, {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [{ type: "command", command: "echo hello", timeout: 30 }],
+          },
+        ],
+      },
+    });
+    const issues = await checkStaleArtifacts(cwd);
+    expect(issues.filter((i) => i.kind === "broken-hook-command")).toEqual([]);
+  });
+
   it("does not push duplicate core when config already enables it", async () => {
     // This is a behavior contract — the detector shouldn't error or
     // produce different output based on whether core was explicitly
