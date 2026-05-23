@@ -54,17 +54,6 @@
         ]
       }
     ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx agileflow hook PreCompact",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -72,38 +61,6 @@
             "type": "command",
             "command": "npx agileflow hook Stop",
             "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "TeamCreate",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/native-team-observer.js",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "SendMessage",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/native-team-observer.js",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "ListTeams",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.agileflow/scripts/native-team-observer.js",
-            "timeout": 5000
           }
         ]
       }
