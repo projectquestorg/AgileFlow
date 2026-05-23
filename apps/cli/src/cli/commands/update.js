@@ -26,6 +26,11 @@ const {
 const {
   normalizeBehaviorsForEvents,
 } = require("../wizard/behaviors-picker.js");
+const {
+  MissingFileError,
+  OperationFailedError,
+  fail,
+} = require("../../lib/errors.js");
 
 /**
  * @param {{ force?: boolean }} options
@@ -43,17 +48,23 @@ async function update(options = {}) {
   try {
     existing = await loadConfig(configRoot);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(`agileflow update: ${err.message}`);
-    process.exit(1);
+    fail(
+      new OperationFailedError(err.message, {
+        suggestion:
+          "fix or delete agileflow.config.json and re-run `agileflow setup`",
+        cause: err,
+      }),
+      { command: "update" },
+    );
   }
 
   if (existing.source === "defaults") {
-    // eslint-disable-next-line no-console
-    console.error(
-      "agileflow update: no agileflow.config.json found. Run `agileflow setup` first.",
+    fail(
+      new MissingFileError("no agileflow.config.json found", {
+        suggestion: "run `npx agileflow setup` first",
+      }),
+      { command: "update" },
     );
-    process.exit(1);
   }
 
   const enabled = Object.entries(existing.config.plugins || {})
@@ -84,9 +95,14 @@ async function update(options = {}) {
       config: existing.config,
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(`agileflow update: install failed: ${err.message}`);
-    process.exit(1);
+    fail(
+      new OperationFailedError(`install failed: ${err.message}`, {
+        suggestion:
+          "check the error above; re-run with DEBUG=1 for a full stack trace",
+        cause: err,
+      }),
+      { command: "update" },
+    );
   }
 
   // eslint-disable-next-line no-console

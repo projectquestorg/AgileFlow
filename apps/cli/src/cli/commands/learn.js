@@ -17,6 +17,11 @@ const {
 } = require("../../runtime/skills/learnings.js");
 const { discoverPlugins } = require("../../runtime/plugins/registry.js");
 const { loadSkill } = require("../../runtime/skills/validator.js");
+const {
+  InvalidArgumentError,
+  OperationFailedError,
+  fail,
+} = require("../../lib/errors.js");
 
 const CONFIDENCE_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -39,8 +44,11 @@ async function resolveLearnsConfig(skillId) {
       const manifest = await loadSkill(path.join(skillDir, "SKILL.md"));
       const learns = manifest.frontmatter && manifest.frontmatter.learns;
       if (!learns || learns.enabled !== true) {
-        throw new Error(
+        throw new InvalidArgumentError(
           `skill "${skillId}" does not have learns.enabled: true`,
+          {
+            suggestion: `set \`learns.enabled: true\` in the skill's SKILL.md frontmatter`,
+          },
         );
       }
       const file =
@@ -54,7 +62,9 @@ async function resolveLearnsConfig(skillId) {
       return { file, maxEntries };
     }
   }
-  throw new Error(`unknown skill: "${skillId}"`);
+  throw new InvalidArgumentError(`unknown skill: "${skillId}"`, {
+    suggestion: `run \`agileflow skills list\` to see installed skills`,
+  });
 }
 
 /**
@@ -70,18 +80,18 @@ async function learn(action, skillId, observation, options = {}) {
   try {
     cfg = await resolveLearnsConfig(skillId);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(`agileflow learn: ${err.message}`);
-    process.exit(1);
+    fail(err, { command: "learn" });
   }
 
   if (action === "append") {
     if (!observation || !observation.trim()) {
-      // eslint-disable-next-line no-console
-      console.error(
-        'agileflow learn append: usage — agileflow learn append <skill-id> "<observation>" [--confidence high|medium|low] [--source correction|confirmation|observation]',
+      fail(
+        new InvalidArgumentError("append requires an observation", {
+          suggestion:
+            'agileflow learn append <skill-id> "<observation>" [--confidence high|medium|low] [--source correction|confirmation|observation]',
+        }),
+        { command: "learn" },
       );
-      process.exit(1);
     }
     try {
       await appendLearning(
@@ -95,9 +105,13 @@ async function learn(action, skillId, observation, options = {}) {
         { maxEntries: cfg.maxEntries },
       );
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(`agileflow learn: ${err.message}`);
-      process.exit(1);
+      fail(
+        new OperationFailedError(`could not append learning: ${err.message}`, {
+          suggestion: "check write permissions on the skill directory",
+          cause: err,
+        }),
+        { command: "learn" },
+      );
     }
     const { entries } = await readLearnings(skillId, projectDir);
     // eslint-disable-next-line no-console
@@ -124,11 +138,12 @@ async function learn(action, skillId, observation, options = {}) {
     return;
   }
 
-  // eslint-disable-next-line no-console
-  console.error(
-    `agileflow learn: unknown action "${action}" — use append or list`,
+  fail(
+    new InvalidArgumentError(`unknown action "${action}"`, {
+      suggestion: "use `agileflow learn append` or `agileflow learn list`",
+    }),
+    { command: "learn" },
   );
-  process.exit(1);
 }
 
 module.exports = learn;

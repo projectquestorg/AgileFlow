@@ -88,7 +88,9 @@ describe("agileflow learn command", () => {
 
   it("append rejects blank observation", async () => {
     await learn("append", "agileflow-epic-planner", "   ", {}).catch(() => {});
-    expect(consoleOutput.some((l) => l.includes("usage"))).toBe(true);
+    expect(
+      consoleOutput.some((l) => l.includes("requires an observation")),
+    ).toBe(true);
   });
 
   it("append rejects invalid confidence", async () => {

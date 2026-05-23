@@ -14,6 +14,7 @@
 const path = require("path");
 const { loadConfig } = require("../../runtime/config/loader.js");
 const { discoverPlugins } = require("../../runtime/plugins/registry.js");
+const { InvalidArgumentError, fail } = require("../../lib/errors.js");
 
 /**
  * @param {string} action - 'list'
@@ -21,9 +22,12 @@ const { discoverPlugins } = require("../../runtime/plugins/registry.js");
  */
 async function plugins(action, options = {}) {
   if (action !== "list") {
-    // eslint-disable-next-line no-console
-    console.error(`agileflow plugins: unknown action "${action}" — use list`);
-    process.exit(1);
+    fail(
+      new InvalidArgumentError(`unknown action "${action}"`, {
+        suggestion: "agileflow plugins list",
+      }),
+      { command: "plugins" },
+    );
   }
 
   const cwd = process.cwd();

@@ -18,6 +18,7 @@ const {
   VALID_EVENTS,
   MATCHER_EVENTS,
 } = require("../../runtime/hooks/manifest-loader.js");
+const { InvalidArgumentError, fail } = require("../../lib/errors.js");
 
 /**
  * @param {string} event
@@ -27,21 +28,23 @@ async function hook(event, options = {}) {
   // Validate event name BEFORE doing any I/O. A typo like "SesionStart"
   // would otherwise produce a silent empty-chain no-op.
   if (!VALID_EVENTS.has(event)) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow hook: unknown event "${event}". Valid events: ${[...VALID_EVENTS].sort().join(", ")}`,
+    fail(
+      new InvalidArgumentError(`unknown event "${event}"`, {
+        suggestion: `use one of: ${[...VALID_EVENTS].sort().join(", ")}`,
+      }),
+      { command: "hook" },
     );
-    process.exit(1);
   }
   // Tool-related events MUST come with a matcher (Claude Code passes
   // tool_name in stdin, but we register matcher-keyed entries in
   // settings.json so each tool gets its own dispatcher invocation).
   if (MATCHER_EVENTS.has(event) && !options.matcher) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow hook: event "${event}" requires --matcher (e.g. --matcher Bash)`,
+    fail(
+      new InvalidArgumentError(`event "${event}" requires --matcher`, {
+        suggestion: `add a tool name, e.g. --matcher Bash`,
+      }),
+      { command: "hook" },
     );
-    process.exit(1);
   }
 
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();

@@ -31,6 +31,12 @@ const { installPlugins } = require("../../runtime/installer/install.js");
 const {
   normalizeBehaviorsForEvents,
 } = require("../wizard/behaviors-picker.js");
+const {
+  InvalidArgumentError,
+  MissingFileError,
+  OperationFailedError,
+  fail,
+} = require("../../lib/errors.js");
 
 /**
  * Read and parse SKILL.md frontmatter from an installed skill directory.
@@ -206,28 +212,31 @@ async function togglePlugin(action, pluginId, options) {
   const plugin = all.find((p) => p.id === pluginId);
   if (!plugin) {
     const ids = all.map((p) => p.id).join(", ");
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow skills ${action}: unknown plugin "${pluginId}". Available: ${ids}`,
+    fail(
+      new InvalidArgumentError(`unknown plugin "${pluginId}"`, {
+        suggestion: `available: ${ids}`,
+      }),
+      { command: `skills ${action}` },
     );
-    process.exit(1);
   }
   if (plugin.cannotDisable && !enable) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow skills disable: "${pluginId}" cannot be disabled (it is always active).`,
+    fail(
+      new InvalidArgumentError(
+        `"${pluginId}" cannot be disabled (it is always active)`,
+      ),
+      { command: "skills disable" },
     );
-    process.exit(1);
   }
 
   // Load current config
   const { config, source } = await loadConfig(cwd);
   if (source === "defaults") {
-    // eslint-disable-next-line no-console
-    console.error(
-      "agileflow skills: no agileflow.config.json found — run `agileflow setup` first.",
+    fail(
+      new MissingFileError("no agileflow.config.json found", {
+        suggestion: "run `npx agileflow setup` first",
+      }),
+      { command: "skills" },
     );
-    process.exit(1);
   }
 
   // Patch the plugin entry
@@ -268,11 +277,14 @@ async function togglePlugin(action, pluginId, options) {
       config,
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow skills ${action}: install sync failed: ${err.message}`,
+    fail(
+      new OperationFailedError(`install sync failed: ${err.message}`, {
+        suggestion:
+          "config was saved but install failed — re-run `agileflow update` or fix the underlying error",
+        cause: err,
+      }),
+      { command: `skills ${action}` },
     );
-    process.exit(1);
   }
 
   // eslint-disable-next-line no-console
@@ -292,17 +304,21 @@ async function skills(action, pluginOrSkillId, options = {}) {
   }
   if (action === "enable" || action === "disable") {
     if (!pluginOrSkillId) {
-      // eslint-disable-next-line no-console
-      console.error(`agileflow skills ${action}: plugin name required`);
-      process.exit(1);
+      fail(
+        new InvalidArgumentError("plugin name required", {
+          suggestion: `agileflow skills ${action} <plugin-id>  (e.g. \`agileflow skills ${action} ads\`)`,
+        }),
+        { command: `skills ${action}` },
+      );
     }
     return togglePlugin(action, pluginOrSkillId, options);
   }
-  // eslint-disable-next-line no-console
-  console.error(
-    `agileflow skills: unknown action "${action}" — use list, enable, or disable`,
+  fail(
+    new InvalidArgumentError(`unknown action "${action}"`, {
+      suggestion: "use `list`, `enable`, or `disable`",
+    }),
+    { command: "skills" },
   );
-  process.exit(1);
 }
 
 module.exports = skills;

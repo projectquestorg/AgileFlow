@@ -34,6 +34,12 @@ const {
   capabilitiesFor,
   hookEventsForIdes,
 } = require("../../runtime/ide/capabilities.js");
+const {
+  InvalidArgumentError,
+  MissingFileError,
+  OperationFailedError,
+  fail,
+} = require("../../lib/errors.js");
 
 /**
  * Parse a CSV of plugin ids, apply it over the discovered+existing plugin
@@ -139,10 +145,13 @@ async function writeConfigWithFeedback(cwd, config, ctx) {
         "Check permissions and disk space, then run `agileflow setup` again.",
       );
     } else {
-      // eslint-disable-next-line no-console
-      console.error(`agileflow setup: failed to write config: ${err.message}`);
-      // eslint-disable-next-line no-console
-      console.error("Check permissions and disk space, then retry.");
+      fail(
+        new OperationFailedError(`could not write config: ${err.message}`, {
+          suggestion: "check permissions and disk space, then retry",
+          cause: err,
+        }),
+        { command: "setup" },
+      );
     }
     process.exit(1);
   }
@@ -186,8 +195,14 @@ async function runInstallWithFeedback(
       if (ctx.spinner) ctx.spinner.stop("Install failed");
       prompts.log.error(`Install failed: ${err.message}`);
     } else {
-      // eslint-disable-next-line no-console
-      console.error(`agileflow setup: install failed: ${err.message}`);
+      fail(
+        new OperationFailedError(`install failed: ${err.message}`, {
+          suggestion:
+            "check the error above; re-run with DEBUG=1 for a full stack trace",
+          cause: err,
+        }),
+        { command: "setup" },
+      );
     }
     process.exit(1);
   }
@@ -216,9 +231,14 @@ async function setup(options = {}) {
     existing = await loadConfig(roots.configRoot);
   } catch (err) {
     if (options.yes) {
-      // eslint-disable-next-line no-console
-      console.error(`agileflow setup: ${err.message}`);
-      process.exit(1);
+      fail(
+        new OperationFailedError(err.message, {
+          suggestion:
+            "fix or delete agileflow.config.json and re-run `agileflow setup`",
+          cause: err,
+        }),
+        { command: "setup" },
+      );
     }
     prompts.log.error(err.message);
     prompts.log.info(
@@ -253,11 +273,12 @@ async function setup(options = {}) {
       (id) => !SUPPORTED_IDES.includes(id),
     );
     if (unknownIdes.length) {
-      // eslint-disable-next-line no-console
-      console.error(
-        `agileflow setup: unknown IDE(s) "${unknownIdes.join(", ")}". Supported: ${SUPPORTED_IDES.join(", ")}`,
+      fail(
+        new InvalidArgumentError(`unknown IDE(s): ${unknownIdes.join(", ")}`, {
+          suggestion: `use one of: ${SUPPORTED_IDES.join(", ")}`,
+        }),
+        { command: "setup" },
       );
-      process.exit(1);
     }
 
     const { plugins, unknownPlugins } = pluginsFromCsv(
@@ -268,13 +289,13 @@ async function setup(options = {}) {
       const known = discoverPlugins()
         .map((p) => p.id)
         .join(", ");
-      // eslint-disable-next-line no-console
-      console.error(
-        `agileflow setup: unknown plugin(s): ${unknownPlugins.join(", ")}`,
+      fail(
+        new InvalidArgumentError(
+          `unknown plugin(s): ${unknownPlugins.join(", ")}`,
+          { suggestion: `available plugins: ${known}` },
+        ),
+        { command: "setup" },
       );
-      // eslint-disable-next-line no-console
-      console.error(`Available plugins: ${known}`);
-      process.exit(1);
     }
 
     const next = {
