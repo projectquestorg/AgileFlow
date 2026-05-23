@@ -491,7 +491,157 @@ async function checkStaleArtifacts(cwd) {
   return issues;
 }
 
-async function doctor() {
+/**
+ * Apply a single stale-artifact fix. Per-kind: hook-event entries are
+ * stripped from settings.json (preserving user entries in that event),
+ * filesystem artifacts are removed. Broken hook scripts cannot be
+ * auto-fixed — the script file itself is gone.
+ *
+ * @param {{kind: string, path?: string, message: string}} issue
+ * @param {string} cwd
+ * @returns {{ok: boolean, message: string}}
+ */
+function applyStaleFix(issue, cwd) {
+  switch (issue.kind) {
+    case "legacy-hook-event":
+    case "orphan-hook-event": {
+      // path shape: "<settingsPath>#hooks.<eventName>"
+      const hashIdx = (issue.path || "").lastIndexOf("#hooks.");
+      if (hashIdx < 0) {
+        return {
+          ok: false,
+          message: "Malformed issue.path; expected #hooks.<event>",
+        };
+      }
+      const settingsPath = issue.path.slice(0, hashIdx);
+      const event = issue.path.slice(hashIdx + "#hooks.".length);
+      const settings = readJSONSafe(settingsPath);
+      if (!settings || !isPlainObject(settings.hooks)) {
+        return { ok: false, message: `No hooks object in ${settingsPath}` };
+      }
+      const raw = settings.hooks[event];
+      const entries = Array.isArray(raw)
+        ? raw
+        : isPlainObject(raw)
+          ? [raw]
+          : [];
+      const userEntries = entries.filter((e) => !isAgileflowEntry(e));
+      if (userEntries.length === 0) {
+        delete settings.hooks[event];
+      } else {
+        settings.hooks[event] = userEntries;
+      }
+      // Drop the hooks key entirely if nothing's left, to keep the file tidy.
+      if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+      return {
+        ok: true,
+        message: `Removed AgileFlow entries from .claude/settings.json#hooks.${event}`,
+      };
+    }
+    case "legacy-agileflow-subdir":
+    case "orphan-skill-dir": {
+      if (!issue.path || !fs.existsSync(issue.path)) {
+        return { ok: false, message: `Path missing: ${issue.path}` };
+      }
+      fs.rmSync(issue.path, { recursive: true, force: true });
+      return { ok: true, message: `Removed ${path.relative(cwd, issue.path)}` };
+    }
+    case "legacy-agileflow-file": {
+      if (!issue.path || !fs.existsSync(issue.path)) {
+        return { ok: false, message: `Path missing: ${issue.path}` };
+      }
+      fs.unlinkSync(issue.path);
+      return { ok: true, message: `Removed ${path.relative(cwd, issue.path)}` };
+    }
+    case "legacy-claude-subdir": {
+      // Only delete agileflow-* entries; leave user files alone. After
+      // cleanup, remove the dir itself only if it's empty.
+      if (!issue.path || !fs.existsSync(issue.path)) {
+        return { ok: false, message: `Path missing: ${issue.path}` };
+      }
+      let removed = 0;
+      for (const entry of readdirSafe(issue.path)) {
+        if (!entry.startsWith("agileflow") && !entry.startsWith("AgileFlow"))
+          continue;
+        const p = path.join(issue.path, entry);
+        fs.rmSync(p, { recursive: true, force: true });
+        removed += 1;
+      }
+      // Empty-dir cleanup — fail silently if dir has other content.
+      try {
+        fs.rmdirSync(issue.path);
+      } catch {
+        /* dir not empty (user files present); leave it */
+      }
+      return {
+        ok: true,
+        message: `Removed ${removed} AgileFlow item(s) from ${path.relative(cwd, issue.path)}`,
+      };
+    }
+    case "broken-hook-script": {
+      return {
+        ok: false,
+        message:
+          "Cannot auto-fix — the script file is gone. Run `agileflow update` to reinstall plugin scripts.",
+      };
+    }
+    default:
+      return { ok: false, message: `Unknown issue kind: ${issue.kind}` };
+  }
+}
+
+/**
+ * `agileflow doctor --fix` body. Detects stale artifacts (same as
+ * `doctor`), then either previews removal (`--fix` alone) or executes
+ * (`--fix --yes`). Returns counts for testing.
+ *
+ * @param {string} cwd
+ * @param {{yes?: boolean, log?: (msg: string) => void}} [opts]
+ * @returns {Promise<{detected: number, fixed: number, failed: number, dryRun: boolean}>}
+ */
+async function doctorFix(cwd, opts = {}) {
+  const log = opts.log || ((m) => console.log(m)); // eslint-disable-line no-console
+  const issues = await checkStaleArtifacts(cwd);
+  if (issues.length === 0) {
+    log("Stale artifacts: ok — nothing to fix.");
+    return { detected: 0, fixed: 0, failed: 0, dryRun: !opts.yes };
+  }
+  if (!opts.yes) {
+    log(
+      `\n${issues.length} stale artifact(s) — dry-run preview (use --yes to actually remove):\n`,
+    );
+    for (const issue of issues) {
+      log(`  • [${issue.kind}] ${issue.message}`);
+      if (issue.path) log(`    ${issue.path}`);
+    }
+    log("\n  Re-run with `agileflow doctor --fix --yes` to apply.");
+    return { detected: issues.length, fixed: 0, failed: 0, dryRun: true };
+  }
+  let fixed = 0;
+  let failed = 0;
+  log(`\nApplying fixes for ${issues.length} stale artifact(s):\n`);
+  for (const issue of issues) {
+    const r = applyStaleFix(issue, cwd);
+    if (r.ok) {
+      fixed += 1;
+      log(`  ✓ ${r.message}`);
+    } else {
+      failed += 1;
+      log(`  ✗ [${issue.kind}] ${r.message}`);
+    }
+  }
+  log(`\n  ${fixed} fixed, ${failed} skipped/failed.`);
+  return { detected: issues.length, fixed, failed, dryRun: false };
+}
+
+async function doctor(opts = {}) {
+  if (opts && opts.fix) {
+    const cwd = process.cwd();
+    const r = await doctorFix(cwd, { yes: !!opts.yes });
+    if (r.failed > 0) process.exit(1);
+    return;
+  }
   const cwd = process.cwd();
   let totalErrors = 0;
 
@@ -586,3 +736,5 @@ async function doctor() {
 
 module.exports = doctor;
 module.exports.checkStaleArtifacts = checkStaleArtifacts;
+module.exports.applyStaleFix = applyStaleFix;
+module.exports.doctorFix = doctorFix;

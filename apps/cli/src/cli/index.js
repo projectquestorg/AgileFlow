@@ -66,6 +66,11 @@ function buildProgram() {
     .description(
       "validate config, plugins, skills, and hook manifest (Phase 5)",
     )
+    .option(
+      "--fix",
+      "preview removal of detected stale artifacts (dry-run unless --yes)",
+    )
+    .option("--yes", "with --fix, actually apply removals without confirmation")
     .action(doctor);
 
   program
