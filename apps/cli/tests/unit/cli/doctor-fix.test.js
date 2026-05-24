@@ -203,6 +203,32 @@ describe("applyStaleFix", () => {
     expect(r.ok).toBe(false);
     expect(r.message).toContain("Unknown issue kind");
   });
+
+  // Registry-completeness guard: if a future detector adds a new
+  // issue.kind but forgets to register a fixer for it, the dispatch
+  // will fall through to "Unknown issue kind" and silently skip the
+  // fix. This test asserts every documented kind is reachable.
+  it("dispatches to a handler for every documented stale-artifact kind", () => {
+    const documentedKinds = [
+      "legacy-hook-event",
+      "orphan-hook-event",
+      "broken-hook-command",
+      "legacy-agileflow-subdir",
+      "legacy-agileflow-file",
+      "legacy-claude-subdir",
+      "broken-hook-script",
+      "orphan-skill-dir",
+    ];
+    for (const kind of documentedKinds) {
+      // Use minimal inputs — fixers may fail on missing path / hook
+      // event, but the failure message must never be "Unknown issue
+      // kind" (that would mean dispatch missed the kind entirely).
+      const r = applyStaleFix({ kind, message: "x" }, cwd);
+      expect(r.message, `kind="${kind}" should be registered`).not.toContain(
+        "Unknown issue kind",
+      );
+    }
+  });
 });
 
 describe("doctorFix", () => {
