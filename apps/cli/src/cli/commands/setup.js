@@ -29,6 +29,7 @@ const { pickIdes } = require("../wizard/ide-picker.js");
 const { pickBehaviors } = require("../wizard/behaviors-picker.js");
 const { pickBabysitMode } = require("../wizard/babysit-mode-picker.js");
 const { pickLearnings } = require("../wizard/learnings-picker.js");
+const { checkStaleArtifacts, applyStaleFix } = require("./doctor.js");
 const {
   SUPPORTED_IDES,
   capabilitiesFor,
@@ -211,6 +212,69 @@ async function runInstallWithFeedback(
 /**
  * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
  */
+/**
+ * Detect stale v3 artifacts left behind from older installs and offer
+ * cleanup. Runs after the main install completes so the user sees the
+ * findings in context.
+ *
+ * Interactive (no --yes): print the list, ask y/N (default no), apply
+ * if confirmed. Non-interactive (--yes): detect but never auto-fix —
+ * scripted installs shouldn't surprise users with destructive ops.
+ *
+ * The `deps` parameter exists for test injection — production callers
+ * leave it empty and pick up the real @clack/prompts module.
+ *
+ * @param {string} cwd
+ * @param {{interactive: boolean}} ctx
+ * @param {{prompts?: any, checkStaleArtifacts?: any, applyStaleFix?: any}} [deps]
+ * @returns {Promise<{summary: string | null}>}
+ */
+async function runPostInstallCleanup(cwd, ctx, deps = {}) {
+  const p = deps.prompts || prompts;
+  const check = deps.checkStaleArtifacts || checkStaleArtifacts;
+  const apply = deps.applyStaleFix || applyStaleFix;
+
+  const issues = await check(cwd);
+  if (issues.length === 0) return { summary: null };
+
+  if (!ctx.interactive) {
+    return {
+      summary: `! ${issues.length} stale artifact(s) detected — run \`agileflow doctor --fix\` to clean up`,
+    };
+  }
+
+  p.log.warn(
+    `Found ${issues.length} stale artifact(s) from a previous install:`,
+  );
+  for (const issue of issues) {
+    p.log.message(`  • [${issue.kind}] ${issue.message}`);
+  }
+
+  const confirmed = await p.confirm({
+    message: `Clean up ${issues.length} stale artifact(s)?`,
+    initialValue: false,
+  });
+  if (p.isCancel(confirmed) || !confirmed) {
+    return {
+      summary: `! ${issues.length} stale artifact(s) left in place — run \`agileflow doctor --fix\` later`,
+    };
+  }
+
+  let fixed = 0;
+  let failed = 0;
+  for (const issue of issues) {
+    const r = apply(issue, cwd);
+    if (r.ok) fixed += 1;
+    else failed += 1;
+  }
+  if (failed === 0) {
+    return { summary: `✓ Cleaned up ${fixed} stale artifact(s)` };
+  }
+  return {
+    summary: `Cleaned ${fixed}/${issues.length}; ${failed} could not be auto-fixed (run \`agileflow doctor --fix\` for details)`,
+  };
+}
+
 async function setup(options = {}) {
   const cwd = process.cwd();
   const initialScope = resolveInstallScope(options.scope);
@@ -350,6 +414,11 @@ async function setup(options = {}) {
     console.log(
       `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
     );
+    const cleanup = await runPostInstallCleanup(cwd, { interactive: false });
+    if (cleanup.summary) {
+      // eslint-disable-next-line no-console
+      console.log(`  ${cleanup.summary}`);
+    }
     return;
   }
 
@@ -436,6 +505,14 @@ async function setup(options = {}) {
     `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
   );
 
+  // Stale-artifact check — fires after a successful install so users
+  // get prompted at the moment they're paying attention to their
+  // install state. Non-interactive runs only get a warning, never an
+  // unprompted destructive op.
+  const cleanup = await runPostInstallCleanup(cwd, {
+    interactive: !options.yes,
+  });
+
   // Surface behaviors state in the outro. With behaviors gated, a user
   // who deselected all four ends up with zero hooks running — they
   // need to know that explicitly, not infer it from "X plugins enabled".
@@ -459,6 +536,7 @@ async function setup(options = {}) {
       installResult.ops.preserved
         ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
         : "",
+      cleanup.summary || "",
     ]
       .filter(Boolean)
       .join("\n"),
@@ -470,3 +548,4 @@ module.exports.pluginsFromCsv = pluginsFromCsv;
 module.exports.resolveIdeTargets = resolveIdeTargets;
 module.exports.resolveInstallScope = resolveInstallScope;
 module.exports.installPathsForScope = installPathsForScope;
+module.exports.runPostInstallCleanup = runPostInstallCleanup;
