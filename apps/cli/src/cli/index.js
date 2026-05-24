@@ -16,6 +16,7 @@ const hook = require("./commands/hook.js");
 const learn = require("./commands/learn.js");
 const skills = require("./commands/skills.js");
 const plugins = require("./commands/plugins.js");
+const launch = require("./commands/launch.js");
 
 /**
  * Build the commander program. Exported so tests can construct it without
@@ -101,6 +102,13 @@ function buildProgram() {
     .description("inspect the plugin registry (action: list)")
     .option("--json", "output as JSON")
     .action(plugins);
+
+  program
+    .command("launch [sub]")
+    .description(
+      "multi-CLI tmux wrapper (slice 1: prefs only; sub=setup to (re)configure)",
+    )
+    .action(launch);
 
   program
     .command("hook <event>")
