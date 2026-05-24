@@ -263,9 +263,16 @@ async function runPostInstallCleanup(cwd, ctx, deps = {}) {
   let fixed = 0;
   let failed = 0;
   for (const issue of issues) {
-    const r = apply(issue, cwd);
-    if (r.ok) fixed += 1;
-    else failed += 1;
+    // fs.rmSync / unlinkSync can throw on Windows EPERM, EBUSY, or
+    // race-deleted paths — guard so a mid-loop throw doesn't bypass
+    // the outro with a raw stack trace.
+    try {
+      const r = apply(issue, cwd);
+      if (r.ok) fixed += 1;
+      else failed += 1;
+    } catch {
+      failed += 1;
+    }
   }
   if (failed === 0) {
     return { summary: `✓ Cleaned up ${fixed} stale artifact(s)` };
@@ -414,7 +421,11 @@ async function setup(options = {}) {
     console.log(
       `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
     );
-    const cleanup = await runPostInstallCleanup(cwd, { interactive: false });
+    // Scan the resolved install root — for global scope this is
+    // ~/.agileflow, not process.cwd().
+    const cleanup = await runPostInstallCleanup(roots.ideRoot, {
+      interactive: false,
+    });
     if (cleanup.summary) {
       // eslint-disable-next-line no-console
       console.log(`  ${cleanup.summary}`);
@@ -508,8 +519,9 @@ async function setup(options = {}) {
   // Stale-artifact check — fires after a successful install so users
   // get prompted at the moment they're paying attention to their
   // install state. Non-interactive runs only get a warning, never an
-  // unprompted destructive op.
-  const cleanup = await runPostInstallCleanup(cwd, {
+  // unprompted destructive op. Scan the resolved install root so a
+  // global-scope install checks ~/.agileflow, not cwd.
+  const cleanup = await runPostInstallCleanup(roots.ideRoot, {
     interactive: !options.yes,
   });
 

@@ -821,13 +821,21 @@ async function doctorFix(cwd, opts = {}) {
   let failed = 0;
   log(`\nApplying fixes for ${issues.length} stale artifact(s):\n`);
   for (const issue of issues) {
-    const r = applyStaleFix(issue, cwd);
-    if (r.ok) {
-      fixed += 1;
-      log(`  ✓ ${r.message}`);
-    } else {
+    // Guard against synchronous throws from fs.rmSync / unlinkSync on
+    // EPERM/EBUSY/race-deleted paths — otherwise a mid-loop throw
+    // bypasses the final summary log line.
+    try {
+      const r = applyStaleFix(issue, cwd);
+      if (r.ok) {
+        fixed += 1;
+        log(`  ✓ ${r.message}`);
+      } else {
+        failed += 1;
+        log(`  ✗ [${issue.kind}] ${r.message}`);
+      }
+    } catch (err) {
       failed += 1;
-      log(`  ✗ [${issue.kind}] ${r.message}`);
+      log(`  ✗ [${issue.kind}] threw: ${err.message}`);
     }
   }
   log(`\n  ${fixed} fixed, ${failed} skipped/failed.`);

@@ -130,4 +130,44 @@ describe("runPostInstallCleanup", () => {
     expect(promptsStub.log.warn).toHaveBeenCalledTimes(1);
     expect(promptsStub.log.message).toHaveBeenCalledTimes(3);
   });
+
+  // Regression guard for the throw-safety P1 from the flow audit:
+  // fs.rmSync can throw on Windows EPERM / EBUSY / race-deleted paths.
+  // The loop must count those as failed (and report a partial-success
+  // summary) instead of letting the exception bypass the outro.
+  it("counts a throwing fixer as failed and still returns a summary", async () => {
+    seedStaleArtifacts(cwd);
+    const promptsStub = makePromptsStub({ confirmResult: true });
+    const stubCheck = async () => [
+      {
+        kind: "legacy-agileflow-subdir",
+        path: path.join(cwd, ".agileflow", "experts"),
+        severity: "warn",
+        message: "x",
+      },
+      {
+        kind: "legacy-agileflow-subdir",
+        path: path.join(cwd, ".agileflow", "commands"),
+        severity: "warn",
+        message: "y",
+      },
+    ];
+    const stubApply = (issue) => {
+      if (issue.path.endsWith("commands")) {
+        throw new Error("EPERM: simulated lock");
+      }
+      return { ok: true, message: "removed" };
+    };
+    const r = await runPostInstallCleanup(
+      cwd,
+      { interactive: true },
+      {
+        prompts: promptsStub,
+        checkStaleArtifacts: stubCheck,
+        applyStaleFix: stubApply,
+      },
+    );
+    expect(r.summary).toMatch(/Cleaned 1\/2/);
+    expect(r.summary).toMatch(/doctor --fix/);
+  });
 });
