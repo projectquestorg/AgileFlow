@@ -332,13 +332,431 @@ async function checkInstallHealth(cwd) {
 }
 
 /**
+ * Build the shared input bundle every detector / fixer needs. Reading
+ * once here avoids the duplicate settings.json parse the old monolith
+ * did (once for hook-event detection, once for broken-command).
+ *
+ * @param {string} cwd
+ * @returns {{
+ *   cwd: string,
+ *   settingsPath: string,
+ *   settings: any,
+ *   agileflowDir: string,
+ *   claudeDir: string,
+ *   configPath: string,
+ *   config: any,
+ *   manifestPath: string,
+ * }}
+ */
+function buildContext(cwd) {
+  const settingsPath = path.join(cwd, ".claude", "settings.json");
+  const configPath = path.join(cwd, "agileflow.config.json");
+  return {
+    cwd,
+    settingsPath,
+    settings: fs.existsSync(settingsPath) ? readJSONSafe(settingsPath) : null,
+    agileflowDir: path.join(cwd, ".agileflow"),
+    claudeDir: path.join(cwd, ".claude"),
+    configPath,
+    config: fs.existsSync(configPath) ? readJSONSafe(configPath) : null,
+    manifestPath: path.join(cwd, ".agileflow", "hook-manifest.yaml"),
+  };
+}
+
+/**
+ * Walk `.claude/settings.json` hooks, coerce malformed shapes, and yield
+ * `[event, entries]` pairs every hook-related detector / fixer iterates.
+ * Returns [] when settings or hooks are missing / wrong-shape.
+ *
+ * @param {any} settings
+ * @returns {Array<[string, Array<any>]>}
+ */
+function iterHookEvents(settings) {
+  if (!settings || !isPlainObject(settings.hooks)) return [];
+  return Object.keys(settings.hooks).map((event) => {
+    const raw = settings.hooks[event];
+    let entries;
+    if (Array.isArray(raw)) entries = raw;
+    else if (isPlainObject(raw)) entries = [raw];
+    else entries = [];
+    return [event, entries];
+  });
+}
+
+/** (A) Legacy / orphan hook events — AgileFlow entries in events we no longer manage. */
+function detectLegacyHookEvents(ctx) {
+  const issues = [];
+  for (const [event, entries] of iterHookEvents(ctx.settings)) {
+    const ours = entries.filter(isAgileflowEntry);
+    if (ours.length === 0) continue;
+    if (LEGACY_MANAGED_EVENTS.has(event)) {
+      issues.push({
+        severity: "warn",
+        kind: "legacy-hook-event",
+        path: `${ctx.settingsPath}#hooks.${event}`,
+        message: `Legacy hook event "${event}" in .claude/settings.json — AgileFlow used to write this, no longer does. Safe to remove ${ours.length} entry/entries.`,
+      });
+    } else if (!MANAGED_EVENTS.has(event)) {
+      issues.push({
+        severity: "warn",
+        kind: "orphan-hook-event",
+        path: `${ctx.settingsPath}#hooks.${event}`,
+        message: `Unknown event "${event}" in .claude/settings.json contains \`${HOOK_COMMAND_MARKER}\` command — not a current AgileFlow event. Probably from a much older install.`,
+      });
+    }
+  }
+  return issues;
+}
+
+/** (F) Broken hook commands — entries whose `command` references a missing file. */
+function detectBrokenHookCommands(ctx) {
+  const issues = [];
+  for (const [event, entries] of iterHookEvents(ctx.settings)) {
+    for (const entry of entries) {
+      if (!entry || !Array.isArray(entry.hooks)) continue;
+      for (const h of entry.hooks) {
+        if (!h || h.type !== "command" || typeof h.command !== "string") {
+          continue;
+        }
+        const missingPath = brokenScriptInCommand(h.command, ctx.cwd);
+        if (!missingPath) continue;
+        issues.push({
+          severity: "error",
+          kind: "broken-hook-command",
+          path: `${ctx.settingsPath}#hooks.${event}`,
+          event,
+          command: h.command,
+          missingPath,
+          message: `Hook in .claude/settings.json#hooks.${event} references missing file: ${missingPath} (command: \`${h.command}\`)`,
+        });
+      }
+    }
+  }
+  return issues;
+}
+
+/** (B) v3-era directories and files under `.agileflow/`. */
+function detectLegacyAgileflowPaths(ctx) {
+  const issues = [];
+  if (!fs.existsSync(ctx.agileflowDir)) return issues;
+  for (const name of LEGACY_AGILEFLOW_SUBDIRS) {
+    const p = path.join(ctx.agileflowDir, name);
+    if (fs.existsSync(p)) {
+      issues.push({
+        severity: "warn",
+        kind: "legacy-agileflow-subdir",
+        path: p,
+        message: `v3 directory \`.agileflow/${name}/\` present — v4 (skills-first) doesn't use this. Safe to delete unless you've kept custom content.`,
+      });
+    }
+  }
+  for (const name of LEGACY_AGILEFLOW_FILES) {
+    const p = path.join(ctx.agileflowDir, name);
+    if (fs.existsSync(p)) {
+      issues.push({
+        severity: "warn",
+        kind: "legacy-agileflow-file",
+        path: p,
+        message: `v3 file \`.agileflow/${name}\` present — not written by v4.`,
+      });
+    }
+  }
+  return issues;
+}
+
+/** (C) v3-era directories under `.claude/` — flagged only if they hold agileflow-* entries. */
+function detectLegacyClaudeSubdirs(ctx) {
+  const issues = [];
+  if (!fs.existsSync(ctx.claudeDir)) return issues;
+  for (const name of LEGACY_CLAUDE_SUBDIRS) {
+    const p = path.join(ctx.claudeDir, name);
+    if (!fs.existsSync(p)) continue;
+    const agileflowOwned = readdirSafe(p).filter(
+      (e) => e.startsWith("agileflow") || e.startsWith("AgileFlow"),
+    );
+    if (agileflowOwned.length === 0) continue;
+    issues.push({
+      severity: "warn",
+      kind: "legacy-claude-subdir",
+      path: p,
+      message: `v3 \`.claude/${name}/\` contains ${agileflowOwned.length} AgileFlow item(s) — v4 ships skills only; this dir isn't used.`,
+    });
+  }
+  return issues;
+}
+
+/**
+ * (D) Broken hook-manifest script references. YAML parse failures fall
+ * through silently — they're reported separately by
+ * `validateInstalledManifest()`, so we just skip the walk on parse fail.
+ */
+async function detectBrokenHookScripts(ctx) {
+  const issues = [];
+  if (!fs.existsSync(ctx.manifestPath)) return issues;
+  /** @type {{ hooks?: Array<{id: string, event: string, script: string}> } | null} */
+  let manifest = null;
+  try {
+    manifest = await loadHookManifest(ctx.manifestPath);
+  } catch {
+    return issues;
+  }
+  if (!manifest || !Array.isArray(manifest.hooks)) return issues;
+  for (const h of manifest.hooks) {
+    if (!h || typeof h.script !== "string") continue;
+    const scriptPath = path.isAbsolute(h.script)
+      ? h.script
+      : path.join(ctx.cwd, h.script);
+    if (!fs.existsSync(scriptPath)) {
+      issues.push({
+        severity: "error",
+        kind: "broken-hook-script",
+        path: scriptPath,
+        message: `Hook "${h.id}" (${h.event}) points at missing script ${h.script}`,
+      });
+    }
+  }
+  return issues;
+}
+
+/** (E) Orphan skill dirs — installed agileflow-* skills not claimed by an enabled plugin. */
+async function detectOrphanSkillDirs(ctx) {
+  const issues = [];
+  // Guard against malformed plugins fields: string, array, primitive.
+  // Object.entries on a string returns char-indexed entries; on an
+  // array it returns numeric-indexed ones — both produce garbage.
+  if (!ctx.config || !isPlainObject(ctx.config.plugins)) return issues;
+  const enabled = Object.entries(ctx.config.plugins)
+    .filter(([, v]) => v && v.enabled !== false)
+    .map(([k]) => k);
+  // De-dupe: don't push "core" if config already has it enabled.
+  if (!enabled.includes("core")) enabled.push("core");
+  /** @type {Set<string>} */
+  const expectedSkillIds = new Set();
+  for (const p of discoverPlugins()) {
+    if (!enabled.includes(p.id)) continue;
+    const skillsRoot = path.join(p.dir, "skills");
+    if (!fs.existsSync(skillsRoot)) continue;
+    for (const entry of readdirSafe(skillsRoot)) {
+      const skillFile = path.join(skillsRoot, entry, "SKILL.md");
+      if (!fs.existsSync(skillFile)) continue;
+      // loadSkill returns { skillId, frontmatter, body, ... } or throws.
+      // Either way, claim the dir name so we don't false-positive on a
+      // bundled skill.
+      let id = entry;
+      try {
+        const s = await loadSkill(skillFile);
+        id = (s && s.frontmatter && s.frontmatter.name) || s.skillId || entry;
+      } catch {
+        // unparseable bundled skill — still treat dir as owned
+      }
+      expectedSkillIds.add(id);
+    }
+  }
+  const skillsDir = path.join(ctx.claudeDir, "skills");
+  if (!fs.existsSync(skillsDir)) return issues;
+  for (const entry of readdirSafe(skillsDir)) {
+    if (!entry.startsWith("agileflow")) continue;
+    if (expectedSkillIds.has(entry)) continue;
+    issues.push({
+      severity: "warn",
+      kind: "orphan-skill-dir",
+      path: path.join(skillsDir, entry),
+      message: `Orphan skill \`.claude/skills/${entry}/\` — not owned by any enabled plugin. Likely from a disabled or removed plugin.`,
+    });
+  }
+  return issues;
+}
+
+/**
+ * Parse a `<settingsPath>#hooks.<event>` issue.path. Returns null if
+ * the marker is missing.
+ *
+ * @param {string} issuePath
+ * @returns {{settingsPath: string, event: string} | null}
+ */
+function parseHookEventPath(issuePath) {
+  const hashIdx = (issuePath || "").lastIndexOf("#hooks.");
+  if (hashIdx < 0) return null;
+  return {
+    settingsPath: issuePath.slice(0, hashIdx),
+    event: issuePath.slice(hashIdx + "#hooks.".length),
+  };
+}
+
+/**
+ * Persist a filtered hooks object back to settings.json, deleting the
+ * event entirely if no entries remain and dropping the hooks key if
+ * empty. Returns the relative .claude/settings.json#hooks.<event>
+ * string for use in success messages.
+ */
+function writeFilteredHooks(settings, settingsPath, event, kept) {
+  if (kept.length === 0) delete settings.hooks[event];
+  else settings.hooks[event] = kept;
+  if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
+}
+
+/** Fix: strip AgileFlow entries from a hook event, preserving user entries. */
+function fixHookEventEntry(issue) {
+  const parsed = parseHookEventPath(issue.path);
+  if (!parsed) {
+    return {
+      ok: false,
+      message: "Malformed issue.path; expected #hooks.<event>",
+    };
+  }
+  const { settingsPath, event } = parsed;
+  const settings = readJSONSafe(settingsPath);
+  if (!settings || !isPlainObject(settings.hooks)) {
+    return { ok: false, message: `No hooks object in ${settingsPath}` };
+  }
+  const raw = settings.hooks[event];
+  const entries = Array.isArray(raw) ? raw : isPlainObject(raw) ? [raw] : [];
+  const userEntries = entries.filter((e) => !isAgileflowEntry(e));
+  writeFilteredHooks(settings, settingsPath, event, userEntries);
+  return {
+    ok: true,
+    message: `Removed AgileFlow entries from .claude/settings.json#hooks.${event}`,
+  };
+}
+
+/** Fix: recursively remove a directory artifact. */
+function fixDirectoryRemoval(issue, ctx) {
+  if (!issue.path || !fs.existsSync(issue.path)) {
+    return { ok: false, message: `Path missing: ${issue.path}` };
+  }
+  fs.rmSync(issue.path, { recursive: true, force: true });
+  return { ok: true, message: `Removed ${path.relative(ctx.cwd, issue.path)}` };
+}
+
+/** Fix: unlink a file artifact. */
+function fixFileRemoval(issue, ctx) {
+  if (!issue.path || !fs.existsSync(issue.path)) {
+    return { ok: false, message: `Path missing: ${issue.path}` };
+  }
+  fs.unlinkSync(issue.path);
+  return { ok: true, message: `Removed ${path.relative(ctx.cwd, issue.path)}` };
+}
+
+/**
+ * Fix: delete agileflow-* children of a legacy .claude/ subdir, leaving
+ * user files alone. Empty parent dir is cleaned up best-effort.
+ */
+function fixClaudeSubdirSelective(issue, ctx) {
+  if (!issue.path || !fs.existsSync(issue.path)) {
+    return { ok: false, message: `Path missing: ${issue.path}` };
+  }
+  let removed = 0;
+  for (const entry of readdirSafe(issue.path)) {
+    if (!entry.startsWith("agileflow") && !entry.startsWith("AgileFlow"))
+      continue;
+    const p = path.join(issue.path, entry);
+    fs.rmSync(p, { recursive: true, force: true });
+    removed += 1;
+  }
+  // Empty-dir cleanup — fail silently if dir has other content.
+  try {
+    fs.rmdirSync(issue.path);
+  } catch {
+    /* dir not empty (user files present); leave it */
+  }
+  return {
+    ok: true,
+    message: `Removed ${removed} AgileFlow item(s) from ${path.relative(ctx.cwd, issue.path)}`,
+  };
+}
+
+/** Fix: broken hook script — not auto-fixable; the script file itself is gone. */
+function fixBrokenHookScriptStub() {
+  return {
+    ok: false,
+    message:
+      "Cannot auto-fix — the script file is gone. Run `agileflow update` to reinstall plugin scripts.",
+  };
+}
+
+/** Fix: strip a hook entry whose command matches a missing path, preserving siblings. */
+function fixBrokenHookCommand(issue) {
+  const parsed = parseHookEventPath(issue.path);
+  if (!parsed || !issue.command) {
+    return {
+      ok: false,
+      message: "Malformed issue — expected path and command",
+    };
+  }
+  const { settingsPath, event } = parsed;
+  const settings = readJSONSafe(settingsPath);
+  if (!settings || !isPlainObject(settings.hooks)) {
+    return { ok: false, message: `No hooks object in ${settingsPath}` };
+  }
+  const raw = settings.hooks[event];
+  const entries = Array.isArray(raw) ? raw : isPlainObject(raw) ? [raw] : [];
+  const kept = entries.filter((e) => {
+    if (!e || !Array.isArray(e.hooks)) return true;
+    // Drop entry if ANY of its hooks matches the broken command.
+    return !e.hooks.some(
+      (h) => h && h.type === "command" && h.command === issue.command,
+    );
+  });
+  writeFilteredHooks(settings, settingsPath, event, kept);
+  return {
+    ok: true,
+    message: `Removed broken hook from .claude/settings.json#hooks.${event} (command: ${issue.command})`,
+  };
+}
+
+/**
+ * Registry of stale-artifact handlers. Adding a new kind: append one
+ * entry with a detect function returning issues and a fix function
+ * returning {ok, message}. `handles` lists every issue.kind this entry
+ * accepts (most singular; a pair when one fix covers two kinds).
+ */
+const STALE_DETECTORS = [
+  {
+    detect: detectLegacyHookEvents,
+    fix: fixHookEventEntry,
+    handles: new Set(["legacy-hook-event", "orphan-hook-event"]),
+  },
+  {
+    detect: detectBrokenHookCommands,
+    fix: fixBrokenHookCommand,
+    handles: new Set(["broken-hook-command"]),
+  },
+  {
+    detect: detectLegacyAgileflowPaths,
+    // Split between two fixers based on issue.kind; the runner picks
+    // by handles, so we declare them separately below for clarity.
+    fix: (issue, ctx) =>
+      issue.kind === "legacy-agileflow-file"
+        ? fixFileRemoval(issue, ctx)
+        : fixDirectoryRemoval(issue, ctx),
+    handles: new Set(["legacy-agileflow-subdir", "legacy-agileflow-file"]),
+  },
+  {
+    detect: detectLegacyClaudeSubdirs,
+    fix: fixClaudeSubdirSelective,
+    handles: new Set(["legacy-claude-subdir"]),
+  },
+  {
+    detect: detectBrokenHookScripts,
+    fix: fixBrokenHookScriptStub,
+    handles: new Set(["broken-hook-script"]),
+  },
+  {
+    detect: detectOrphanSkillDirs,
+    fix: fixDirectoryRemoval,
+    handles: new Set(["orphan-skill-dir"]),
+  },
+];
+
+/**
  * Detect stale AgileFlow artifacts left over from older versions, plugin
  * renames, or aborted installs. Each issue identifies a path or hook
  * entry that update wouldn't currently sweep.
  *
- * Diagnose-only: this function never modifies anything. Always returns
- * an array — IO failures are caught and either yield an issue or are
- * skipped (never thrown to the caller).
+ * Diagnose-only: never modifies anything. Always returns an array — IO
+ * failures are caught and either yield an issue or are skipped (never
+ * thrown to the caller).
  *
  * Issue shape: { severity: "warn"|"error", kind: string, path?: string, message: string }
  *
@@ -346,348 +764,30 @@ async function checkInstallHealth(cwd) {
  * @returns {Promise<Array<{severity: string, kind: string, path?: string, message: string}>>}
  */
 async function checkStaleArtifacts(cwd) {
-  /** @type {Array<{severity: string, kind: string, path?: string, message: string}>} */
+  const ctx = buildContext(cwd);
   const issues = [];
-
-  // (A) Legacy hook events in .claude/settings.json — events AgileFlow
-  // used to write but no longer manages. mergeManagedHooks() never
-  // touches these, so they linger forever without explicit cleanup.
-  const settingsPath = path.join(cwd, ".claude", "settings.json");
-  if (fs.existsSync(settingsPath)) {
-    const settings = readJSONSafe(settingsPath);
-    // Reject array-shaped or non-object `hooks` outright — same guard
-    // mergeManagedHooks uses (claude-code-settings.js:147).
-    const hooks =
-      settings && isPlainObject(settings.hooks) ? settings.hooks : {};
-    for (const event of Object.keys(hooks)) {
-      // Tolerate the wrong shape: a single hook-entry object instead of
-      // the expected array. Coerce to a single-element list so we still
-      // see AgileFlow's command rather than silently dropping it.
-      const raw = hooks[event];
-      let entries;
-      if (Array.isArray(raw)) entries = raw;
-      else if (isPlainObject(raw)) entries = [raw];
-      else entries = [];
-      const ours = entries.filter(isAgileflowEntry);
-      if (ours.length > 0) {
-        if (LEGACY_MANAGED_EVENTS.has(event)) {
-          issues.push({
-            severity: "warn",
-            kind: "legacy-hook-event",
-            path: `${settingsPath}#hooks.${event}`,
-            message: `Legacy hook event "${event}" in .claude/settings.json — AgileFlow used to write this, no longer does. Safe to remove ${ours.length} entry/entries.`,
-          });
-        } else if (!MANAGED_EVENTS.has(event)) {
-          issues.push({
-            severity: "warn",
-            kind: "orphan-hook-event",
-            path: `${settingsPath}#hooks.${event}`,
-            message: `Unknown event "${event}" in .claude/settings.json contains \`${HOOK_COMMAND_MARKER}\` command — not a current AgileFlow event. Probably from a much older install.`,
-          });
-        }
-      }
-
-      // (F) Broken hook commands — entries whose `command` references a
-      // file path that no longer exists on disk. Catches v3-era hooks
-      // that called node/bash directly (e.g. `node .agileflow/scripts/
-      // X.js`) and got orphaned when the script's directory was
-      // removed. We skip entries containing the `agileflow hook` marker
-      // because those are handled by the legacy/orphan event kinds.
-      for (const entry of entries) {
-        if (!entry || !Array.isArray(entry.hooks)) continue;
-        for (const h of entry.hooks) {
-          if (!h || h.type !== "command" || typeof h.command !== "string") {
-            continue;
-          }
-          const missingPath = brokenScriptInCommand(h.command, cwd);
-          if (!missingPath) continue;
-          issues.push({
-            severity: "error",
-            kind: "broken-hook-command",
-            path: `${settingsPath}#hooks.${event}`,
-            event,
-            command: h.command,
-            missingPath,
-            message: `Hook in .claude/settings.json#hooks.${event} references missing file: ${missingPath} (command: \`${h.command}\`)`,
-          });
-        }
-      }
-    }
+  for (const entry of STALE_DETECTORS) {
+    issues.push(...(await entry.detect(ctx)));
   }
-
-  // (B) v3-era directories and files under .agileflow/.
-  const aflowDir = path.join(cwd, ".agileflow");
-  if (fs.existsSync(aflowDir)) {
-    for (const name of LEGACY_AGILEFLOW_SUBDIRS) {
-      const p = path.join(aflowDir, name);
-      if (fs.existsSync(p)) {
-        issues.push({
-          severity: "warn",
-          kind: "legacy-agileflow-subdir",
-          path: p,
-          message: `v3 directory \`.agileflow/${name}/\` present — v4 (skills-first) doesn't use this. Safe to delete unless you've kept custom content.`,
-        });
-      }
-    }
-    for (const name of LEGACY_AGILEFLOW_FILES) {
-      const p = path.join(aflowDir, name);
-      if (fs.existsSync(p)) {
-        issues.push({
-          severity: "warn",
-          kind: "legacy-agileflow-file",
-          path: p,
-          message: `v3 file \`.agileflow/${name}\` present — not written by v4.`,
-        });
-      }
-    }
-  }
-
-  // (C) v3-era directories under .claude/. Only flag if they contain
-  // agileflow-* entries (user-owned content in the same dir is fine).
-  const claudeDir = path.join(cwd, ".claude");
-  if (fs.existsSync(claudeDir)) {
-    for (const name of LEGACY_CLAUDE_SUBDIRS) {
-      const p = path.join(claudeDir, name);
-      if (!fs.existsSync(p)) continue;
-      const entries = readdirSafe(p);
-      const agileflowOwned = entries.filter(
-        (e) => e.startsWith("agileflow") || e.startsWith("AgileFlow"),
-      );
-      if (agileflowOwned.length === 0) continue;
-      issues.push({
-        severity: "warn",
-        kind: "legacy-claude-subdir",
-        path: p,
-        message: `v3 \`.claude/${name}/\` contains ${agileflowOwned.length} AgileFlow item(s) — v4 ships skills only; this dir isn't used.`,
-      });
-    }
-  }
-
-  // (D) Broken hook-manifest script references. Split parse from walk
-  // so a YAML error doesn't hide all broken-script detection: even if
-  // parse fails, we don't pretend the section ran cleanly. Parse errors
-  // are reported separately by validateInstalledManifest, so we just
-  // skip the walk here.
-  const manifestPath = path.join(aflowDir, "hook-manifest.yaml");
-  if (fs.existsSync(manifestPath)) {
-    /** @type {{ hooks?: Array<{id: string, event: string, script: string}> } | null} */
-    let manifest = null;
-    try {
-      manifest = await loadHookManifest(manifestPath);
-    } catch {
-      manifest = null;
-    }
-    if (manifest && Array.isArray(manifest.hooks)) {
-      for (const h of manifest.hooks) {
-        if (!h || typeof h.script !== "string") continue;
-        const scriptPath = path.isAbsolute(h.script)
-          ? h.script
-          : path.join(cwd, h.script);
-        if (!fs.existsSync(scriptPath)) {
-          issues.push({
-            severity: "error",
-            kind: "broken-hook-script",
-            path: scriptPath,
-            message: `Hook "${h.id}" (${h.event}) points at missing script ${h.script}`,
-          });
-        }
-      }
-    }
-  }
-
-  // (E) Orphan skill directories — skills installed in .claude/skills/
-  // whose owning plugin isn't enabled in agileflow.config.json.
-  const cfgPath = path.join(cwd, "agileflow.config.json");
-  if (fs.existsSync(cfgPath)) {
-    const cfg = readJSONSafe(cfgPath);
-    // Guard against malformed plugins fields: string, array, primitive.
-    // Object.entries on a string returns char-indexed entries; on an
-    // array it returns numeric-indexed ones — both produce garbage.
-    if (cfg && isPlainObject(cfg.plugins)) {
-      const enabled = Object.entries(cfg.plugins)
-        .filter(([, v]) => v && v.enabled !== false)
-        .map(([k]) => k);
-      // De-dupe: don't push "core" if config already has it enabled.
-      if (!enabled.includes("core")) enabled.push("core");
-      /** @type {Set<string>} */
-      const expectedSkillIds = new Set();
-      const plugins = discoverPlugins();
-      for (const p of plugins) {
-        if (!enabled.includes(p.id)) continue;
-        const skillsRoot = path.join(p.dir, "skills");
-        if (!fs.existsSync(skillsRoot)) continue;
-        for (const entry of readdirSafe(skillsRoot)) {
-          const skillFile = path.join(skillsRoot, entry, "SKILL.md");
-          if (!fs.existsSync(skillFile)) continue;
-          // loadSkill returns { skillId, frontmatter, body, ... } or
-          // throws on unreadable files. Either way, claim the dir name
-          // so we don't false-positive flag a bundled skill.
-          let id = entry;
-          try {
-            const s = await loadSkill(skillFile);
-            id =
-              (s && s.frontmatter && s.frontmatter.name) || s.skillId || entry;
-          } catch {
-            // unparseable bundled skill — still treat dir as owned
-          }
-          expectedSkillIds.add(id);
-        }
-      }
-      const skillsDir = path.join(cwd, ".claude", "skills");
-      if (fs.existsSync(skillsDir)) {
-        for (const entry of readdirSafe(skillsDir)) {
-          if (!entry.startsWith("agileflow")) continue;
-          if (expectedSkillIds.has(entry)) continue;
-          issues.push({
-            severity: "warn",
-            kind: "orphan-skill-dir",
-            path: path.join(skillsDir, entry),
-            message: `Orphan skill \`.claude/skills/${entry}/\` — not owned by any enabled plugin. Likely from a disabled or removed plugin.`,
-          });
-        }
-      }
-    }
-  }
-
   return issues;
 }
 
 /**
- * Apply a single stale-artifact fix. Per-kind: hook-event entries are
- * stripped from settings.json (preserving user entries in that event),
- * filesystem artifacts are removed. Broken hook scripts cannot be
- * auto-fixed — the script file itself is gone.
+ * Apply a single stale-artifact fix. Hook-event entries are stripped
+ * from settings.json (preserving user entries in that event); fs
+ * artifacts are removed. Broken hook scripts cannot be auto-fixed —
+ * the script file itself is gone.
  *
  * @param {{kind: string, path?: string, message: string}} issue
  * @param {string} cwd
  * @returns {{ok: boolean, message: string}}
  */
 function applyStaleFix(issue, cwd) {
-  switch (issue.kind) {
-    case "legacy-hook-event":
-    case "orphan-hook-event": {
-      // path shape: "<settingsPath>#hooks.<eventName>"
-      const hashIdx = (issue.path || "").lastIndexOf("#hooks.");
-      if (hashIdx < 0) {
-        return {
-          ok: false,
-          message: "Malformed issue.path; expected #hooks.<event>",
-        };
-      }
-      const settingsPath = issue.path.slice(0, hashIdx);
-      const event = issue.path.slice(hashIdx + "#hooks.".length);
-      const settings = readJSONSafe(settingsPath);
-      if (!settings || !isPlainObject(settings.hooks)) {
-        return { ok: false, message: `No hooks object in ${settingsPath}` };
-      }
-      const raw = settings.hooks[event];
-      const entries = Array.isArray(raw)
-        ? raw
-        : isPlainObject(raw)
-          ? [raw]
-          : [];
-      const userEntries = entries.filter((e) => !isAgileflowEntry(e));
-      if (userEntries.length === 0) {
-        delete settings.hooks[event];
-      } else {
-        settings.hooks[event] = userEntries;
-      }
-      // Drop the hooks key entirely if nothing's left, to keep the file tidy.
-      if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
-      return {
-        ok: true,
-        message: `Removed AgileFlow entries from .claude/settings.json#hooks.${event}`,
-      };
-    }
-    case "legacy-agileflow-subdir":
-    case "orphan-skill-dir": {
-      if (!issue.path || !fs.existsSync(issue.path)) {
-        return { ok: false, message: `Path missing: ${issue.path}` };
-      }
-      fs.rmSync(issue.path, { recursive: true, force: true });
-      return { ok: true, message: `Removed ${path.relative(cwd, issue.path)}` };
-    }
-    case "legacy-agileflow-file": {
-      if (!issue.path || !fs.existsSync(issue.path)) {
-        return { ok: false, message: `Path missing: ${issue.path}` };
-      }
-      fs.unlinkSync(issue.path);
-      return { ok: true, message: `Removed ${path.relative(cwd, issue.path)}` };
-    }
-    case "legacy-claude-subdir": {
-      // Only delete agileflow-* entries; leave user files alone. After
-      // cleanup, remove the dir itself only if it's empty.
-      if (!issue.path || !fs.existsSync(issue.path)) {
-        return { ok: false, message: `Path missing: ${issue.path}` };
-      }
-      let removed = 0;
-      for (const entry of readdirSafe(issue.path)) {
-        if (!entry.startsWith("agileflow") && !entry.startsWith("AgileFlow"))
-          continue;
-        const p = path.join(issue.path, entry);
-        fs.rmSync(p, { recursive: true, force: true });
-        removed += 1;
-      }
-      // Empty-dir cleanup — fail silently if dir has other content.
-      try {
-        fs.rmdirSync(issue.path);
-      } catch {
-        /* dir not empty (user files present); leave it */
-      }
-      return {
-        ok: true,
-        message: `Removed ${removed} AgileFlow item(s) from ${path.relative(cwd, issue.path)}`,
-      };
-    }
-    case "broken-hook-script": {
-      return {
-        ok: false,
-        message:
-          "Cannot auto-fix — the script file is gone. Run `agileflow update` to reinstall plugin scripts.",
-      };
-    }
-    case "broken-hook-command": {
-      // Remove the specific entry whose hooks include this command,
-      // preserving siblings in the same event.
-      const hashIdx = (issue.path || "").lastIndexOf("#hooks.");
-      if (hashIdx < 0 || !issue.command) {
-        return {
-          ok: false,
-          message: "Malformed issue — expected path and command",
-        };
-      }
-      const settingsPath = issue.path.slice(0, hashIdx);
-      const event = issue.path.slice(hashIdx + "#hooks.".length);
-      const settings = readJSONSafe(settingsPath);
-      if (!settings || !isPlainObject(settings.hooks)) {
-        return { ok: false, message: `No hooks object in ${settingsPath}` };
-      }
-      const raw = settings.hooks[event];
-      const entries = Array.isArray(raw)
-        ? raw
-        : isPlainObject(raw)
-          ? [raw]
-          : [];
-      const kept = entries.filter((e) => {
-        if (!e || !Array.isArray(e.hooks)) return true;
-        // Drop entry if ANY of its hooks matches the broken command.
-        return !e.hooks.some(
-          (h) => h && h.type === "command" && h.command === issue.command,
-        );
-      });
-      if (kept.length === 0) delete settings.hooks[event];
-      else settings.hooks[event] = kept;
-      if (Object.keys(settings.hooks).length === 0) delete settings.hooks;
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n");
-      return {
-        ok: true,
-        message: `Removed broken hook from .claude/settings.json#hooks.${event} (command: ${issue.command})`,
-      };
-    }
-    default:
-      return { ok: false, message: `Unknown issue kind: ${issue.kind}` };
+  const entry = STALE_DETECTORS.find((d) => d.handles.has(issue.kind));
+  if (!entry) {
+    return { ok: false, message: `Unknown issue kind: ${issue.kind}` };
   }
+  return entry.fix(issue, buildContext(cwd));
 }
 
 /**
