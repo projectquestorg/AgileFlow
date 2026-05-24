@@ -45,6 +45,14 @@ CLAUDE.md
 # AgileFlow installed files (created by /agileflow:setup)
 .agileflow/
 
+# AgileFlow v4 dogfooding artifacts (generated when this repo runs its own CLI)
+agileflow.config.json
+.codex/
+
+# Build/transient artifacts
+*.tmp
+*.json.tmp
+
 # Internal development docs (not for public repo)
 /docs/
 
