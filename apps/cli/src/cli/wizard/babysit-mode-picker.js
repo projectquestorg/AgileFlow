@@ -1,21 +1,20 @@
 /**
- * Babysit mode picker — choose how opinionated the mentor skill should be.
- *
- * This maps to `plugins.core.settings.babysit.mode` in agileflow.config.json.
- * The installer reads that setting when rendering the babysit skill for each
- * target IDE.
+ * Babysit mode picker with plain labels and short hints.
  */
 const prompts = require("@clack/prompts");
+const chalk = require("chalk");
 const { optionLabel, questionMessage } = require("../../lib/brand.js");
 
-const MODE_OPTIONS = [
+const MODES = [
   {
     value: "full",
     label: optionLabel(
       "Full guidance",
       "Uses the most interactive flow available for the selected IDEs.",
     ),
-    hint: "Use the richest interaction style the IDE supports.",
+    hint: chalk.dim(
+      "Uses the most interactive flow available for the selected IDEs.",
+    ),
   },
   {
     value: "light",
@@ -23,7 +22,7 @@ const MODE_OPTIONS = [
       "Guided mode",
       "Keeps prompts short and only interrupts when needed.",
     ),
-    hint: "Keeps prompts short and only interrupts when needed.",
+    hint: "Keeps the mentor flow on, but asks less often.",
   },
   {
     value: "minimal",
@@ -36,11 +35,11 @@ const MODE_OPTIONS = [
       "Customize",
       "Choose exactly which mentor behaviors are enabled.",
     ),
-    hint: "Pick plan mode, questions, tracking, delegation, and updates.",
+    hint: "Pick the behaviors you want.",
   },
 ];
 
-const CUSTOM_FEATURE_OPTIONS = [
+const CUSTOM_FEATURES = [
   {
     value: "askQuestions",
     label: "Ask questions",
@@ -49,7 +48,7 @@ const CUSTOM_FEATURE_OPTIONS = [
   {
     value: "planMode",
     label: "Plan mode",
-    hint: "Use plan mode before non-trivial implementation.",
+    hint: "Plan before non-trivial implementation.",
   },
   {
     value: "delegation",
@@ -59,7 +58,7 @@ const CUSTOM_FEATURE_OPTIONS = [
   {
     value: "taskTracking",
     label: "Task tracking",
-    hint: "Use a visible task list for multi-step work.",
+    hint: "Use visible task lists for multi-step work.",
   },
   {
     value: "progressUpdates",
@@ -131,64 +130,40 @@ const DEFAULT_CUSTOM_FEATURES = {
 };
 
 /**
- * @param {{ mode?: string } | undefined} current
- * @returns {'full' | 'light' | 'minimal' | 'custom'}
- */
-function initialBabysitMode(current) {
-  const currentMode =
-    current && typeof current.mode === "string" ? current.mode : null;
-  if (
-    currentMode === "full" ||
-    currentMode === "light" ||
-    currentMode === "minimal" ||
-    currentMode === "custom"
-  ) {
-    return currentMode;
-  }
-  return "full";
-}
-
-/**
- * @param {{ features?: Record<string, boolean> } | undefined} current
- * @returns {Record<string, boolean>}
- */
-function initialCustomFeatures(current) {
-  return {
-    ...DEFAULT_CUSTOM_FEATURES,
-    ...((current && current.features) || {}),
-  };
-}
-
-/**
- * @param {{ mode?: string } | undefined} current
+ * @param {string | { mode?: string, features?: Record<string, boolean> } | undefined} current
  * @returns {Promise<{ mode: 'full' | 'light' | 'minimal' | 'custom', features?: Record<string, boolean> }>}
  */
-async function pickBabysitMode(current) {
-  const choice = await prompts.select({
-    message: questionMessage(
-      "Babysit mode",
-      "Choose how opinionated the mentor should be.",
-    ),
-    options: MODE_OPTIONS,
-    initialValue: initialBabysitMode(current),
+async function pickBabysitMode(current = "light") {
+  const currentMode =
+    typeof current === "string" ? current : current && current.mode;
+  const option = await prompts.select({
+    message: questionMessage("How should AgileFlow guide babysit work?"),
+    options: MODES,
+    initialValue: MODES.some((m) => m.value === currentMode)
+      ? currentMode
+      : "light",
   });
 
-  if (prompts.isCancel(choice)) {
+  if (prompts.isCancel(option)) {
     prompts.cancel("Setup cancelled. No changes made.");
     process.exit(1);
   }
 
-  if (choice !== "custom") {
-    return { mode: /** @type {'full' | 'light' | 'minimal'} */ (choice) };
+  if (option !== "custom") {
+    return { mode: /** @type {'full' | 'light' | 'minimal'} */ (option) };
   }
 
-  const initialFeatures = initialCustomFeatures(current);
+  const currentFeatures =
+    current && typeof current === "object" && current.features
+      ? current.features
+      : {};
+  const initialFeatures = { ...DEFAULT_CUSTOM_FEATURES, ...currentFeatures };
   const picked = await prompts.multiselect({
     message: questionMessage("Customize guidance behaviors"),
-    options: CUSTOM_FEATURE_OPTIONS,
-    initialValues: CUSTOM_FEATURE_OPTIONS.filter(
-      (o) => initialFeatures[o.value],
-    ).map((o) => o.value),
+    options: CUSTOM_FEATURES,
+    initialValues: CUSTOM_FEATURES.filter((f) => initialFeatures[f.value]).map(
+      (f) => f.value,
+    ),
     required: false,
   });
 
@@ -201,19 +176,17 @@ async function pickBabysitMode(current) {
   return {
     mode: "custom",
     features: Object.fromEntries(
-      CUSTOM_FEATURE_OPTIONS.map((option) => [
-        option.value,
-        selected.has(option.value),
+      CUSTOM_FEATURES.map((feature) => [
+        feature.value,
+        selected.has(feature.value),
       ]),
     ),
   };
 }
 
 module.exports = {
-  pickBabysitMode,
-  MODE_OPTIONS,
-  CUSTOM_FEATURE_OPTIONS,
+  MODES,
+  CUSTOM_FEATURES,
   DEFAULT_CUSTOM_FEATURES,
-  initialBabysitMode,
-  initialCustomFeatures,
+  pickBabysitMode,
 };

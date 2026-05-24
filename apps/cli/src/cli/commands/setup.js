@@ -27,7 +27,7 @@ const { pickPlugins, buildPluginsMap } = require("../wizard/plugin-picker.js");
 const { pickInstallScope } = require("../wizard/install-scope-picker.js");
 const { pickIdes } = require("../wizard/ide-picker.js");
 const { pickBehaviors } = require("../wizard/behaviors-picker.js");
-const { pickBabysitMode } = require("../wizard/babysit-mode-picker-clean.js");
+const { pickBabysitMode } = require("../wizard/babysit-mode-picker.js");
 const { pickLearnings } = require("../wizard/learnings-picker.js");
 const {
   SUPPORTED_IDES,

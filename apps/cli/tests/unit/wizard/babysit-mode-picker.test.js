@@ -5,32 +5,11 @@ import { describe, it, expect } from "vitest";
 
 import pickerModule from "../../../src/cli/wizard/babysit-mode-picker.js";
 
-const {
-  initialBabysitMode,
-  initialCustomFeatures,
-  MODE_OPTIONS,
-  CUSTOM_FEATURE_OPTIONS,
-} = pickerModule;
+const { MODES, CUSTOM_FEATURES, DEFAULT_CUSTOM_FEATURES } = pickerModule;
 
-describe("initialBabysitMode", () => {
-  it("defaults to full", () => {
-    expect(initialBabysitMode(undefined)).toBe("full");
-  });
-
-  it("keeps a valid existing mode", () => {
-    expect(initialBabysitMode({ mode: "full" })).toBe("full");
-    expect(initialBabysitMode({ mode: "minimal" })).toBe("minimal");
-    expect(initialBabysitMode({ mode: "custom" })).toBe("custom");
-  });
-
-  it("ignores invalid values", () => {
-    expect(initialBabysitMode({ mode: "something-else" })).toBe("full");
-  });
-});
-
-describe("MODE_OPTIONS", () => {
+describe("MODES", () => {
   it("offers the supported modes plus customization", () => {
-    expect(MODE_OPTIONS.map((o) => o.value)).toEqual([
+    expect(MODES.map((o) => o.value)).toEqual([
       "full",
       "light",
       "minimal",
@@ -39,9 +18,9 @@ describe("MODE_OPTIONS", () => {
   });
 });
 
-describe("custom features", () => {
+describe("CUSTOM_FEATURES", () => {
   it("offers the expected custom behavior toggles", () => {
-    expect(CUSTOM_FEATURE_OPTIONS.map((o) => o.value)).toEqual([
+    expect(CUSTOM_FEATURES.map((o) => o.value)).toEqual([
       "askQuestions",
       "planMode",
       "delegation",
@@ -58,27 +37,36 @@ describe("custom features", () => {
       "tddMode",
     ]);
   });
+});
 
-  it("preserves existing custom feature choices", () => {
-    expect(
-      initialCustomFeatures({
-        features: { planMode: false, delegation: false },
-      }),
-    ).toMatchObject({
+describe("DEFAULT_CUSTOM_FEATURES", () => {
+  it("enables core mentor behaviors by default", () => {
+    expect(DEFAULT_CUSTOM_FEATURES).toMatchObject({
       askQuestions: true,
-      planMode: false,
-      delegation: false,
+      planMode: true,
+      delegation: true,
       taskTracking: true,
       progressUpdates: true,
-      auditAll: false,
       logicAudit: true,
       flowAudit: true,
       securityAudit: true,
+    });
+  });
+
+  it("leaves opt-in audits and strict gates disabled by default", () => {
+    expect(DEFAULT_CUSTOM_FEATURES).toMatchObject({
+      auditAll: false,
       performanceAudit: false,
       accessibilityAudit: false,
       legalAudit: false,
       strictMode: false,
       tddMode: false,
     });
+  });
+
+  it("covers every value listed in CUSTOM_FEATURES", () => {
+    for (const feature of CUSTOM_FEATURES) {
+      expect(DEFAULT_CUSTOM_FEATURES).toHaveProperty(feature.value);
+    }
   });
 });
