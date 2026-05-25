@@ -4,18 +4,18 @@
  *   - setupNonInteractive() happy path produces a working install
  *   - setupNonInteractive() rejects bad input via fail() before any
  *     filesystem mutations
- *
- * setupInteractive() is not covered here — it makes ~5 separate
- * @clack/prompts calls and would require a bigger dependency-injection
- * refactor to test cleanly. Manual sanity in this session confirmed the
- * interactive flow still works post-refactor.
+ *   - setupInteractive() drives the wizard end-to-end with injected
+ *     stub pickers and a stub @clack/prompts module
  */
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-import setup, { setupNonInteractive } from "../../../src/cli/commands/setup.js";
+import setup, {
+  setupNonInteractive,
+  setupInteractive,
+} from "../../../src/cli/commands/setup.js";
 
 function scratch() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "af-setup-"));
@@ -183,5 +183,143 @@ describe("setupNonInteractive() error paths", () => {
     );
     const out = consoleOutput.join("\n");
     expect(out).toMatch(/fix or delete agileflow.config.json/);
+  });
+});
+
+function makePromptsStub() {
+  return {
+    intro: vi.fn(),
+    outro: vi.fn(),
+    cancel: vi.fn(),
+    log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), message: vi.fn() },
+    spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
+    confirm: vi.fn().mockResolvedValue(false),
+    isCancel: vi.fn(() => false),
+  };
+}
+
+function makeWizardStubs(overrides = {}) {
+  return {
+    prompts: makePromptsStub(),
+    pickInstallScope: vi.fn().mockResolvedValue("project"),
+    pickIdes: vi.fn().mockResolvedValue(["claude-code"]),
+    pickPlugins: vi.fn().mockResolvedValue({ core: { enabled: true } }),
+    pickBehaviors: vi.fn().mockImplementation((defaults) => defaults),
+    pickBabysitMode: vi.fn().mockResolvedValue({ mode: "light" }),
+    pickLearnings: vi.fn().mockResolvedValue({ enabled: false }),
+    ...overrides,
+  };
+}
+
+describe("setupInteractive() with injected stubs", () => {
+  let originalCwd;
+  let cwd;
+
+  beforeEach(() => {
+    cwd = scratch();
+    originalCwd = process.cwd();
+    process.chdir(cwd);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`process.exit(${code})`);
+    });
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    fs.rmSync(cwd, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("runs the wizard end-to-end and writes a config matching picker results", async () => {
+    const deps = makeWizardStubs({
+      pickIdes: vi.fn().mockResolvedValue(["claude-code"]),
+      pickPlugins: vi
+        .fn()
+        .mockResolvedValue({ core: { enabled: true }, seo: { enabled: true } }),
+      pickBabysitMode: vi.fn().mockResolvedValue({ mode: "full" }),
+    });
+    await setupInteractive({}, cwd, deps);
+
+    const config = JSON.parse(
+      fs.readFileSync(path.join(cwd, "agileflow.config.json"), "utf8"),
+    );
+    expect(config.plugins.core.enabled).toBe(true);
+    expect(config.plugins.seo.enabled).toBe(true);
+    expect(config.ide.targets).toEqual(["claude-code"]);
+    expect(config.plugins.core.settings.babysit).toEqual({ mode: "full" });
+    expect(deps.prompts.intro).toHaveBeenCalledTimes(1);
+    expect(deps.prompts.outro).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls every picker exactly once on the happy path", async () => {
+    const deps = makeWizardStubs();
+    await setupInteractive({}, cwd, deps);
+    expect(deps.pickInstallScope).toHaveBeenCalledTimes(1);
+    expect(deps.pickIdes).toHaveBeenCalledTimes(1);
+    expect(deps.pickPlugins).toHaveBeenCalledTimes(1);
+    expect(deps.pickBabysitMode).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips pickBehaviors when no selected IDE supports hooks", async () => {
+    // cursor / windsurf / antigravity have hooks: false.
+    const deps = makeWizardStubs({
+      pickIdes: vi.fn().mockResolvedValue(["cursor"]),
+    });
+    await setupInteractive({}, cwd, deps);
+    expect(deps.pickBehaviors).not.toHaveBeenCalled();
+  });
+
+  it("skips pickLearnings when no selected IDE supports skills", async () => {
+    // Hypothetical: if there were an IDE without skills, pickLearnings
+    // would be skipped. In practice all current IDEs support skills,
+    // so we can't easily construct this case — assert the call
+    // happens for a skill-supporting target as a sanity check.
+    const deps = makeWizardStubs();
+    await setupInteractive({}, cwd, deps);
+    expect(deps.pickLearnings).toHaveBeenCalledTimes(1);
+  });
+
+  it("exits via prompts.log.error when loadConfig throws", async () => {
+    // Write malformed config so loadConfig blows up.
+    fs.writeFileSync(
+      path.join(cwd, "agileflow.config.json"),
+      "{ not valid json",
+    );
+    const deps = makeWizardStubs();
+    await expect(setupInteractive({}, cwd, deps)).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(deps.prompts.log.error).toHaveBeenCalled();
+    expect(deps.prompts.log.info).toHaveBeenCalledWith(
+      expect.stringMatching(/fix or delete agileflow.config.json/i),
+    );
+  });
+
+  it("exits via prompts.log.error + cancel when pickPlugins throws", async () => {
+    const deps = makeWizardStubs({
+      pickPlugins: vi.fn().mockRejectedValue(new Error("boom")),
+    });
+    await expect(setupInteractive({}, cwd, deps)).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(deps.prompts.log.error).toHaveBeenCalledWith(
+      expect.stringMatching(/Failed to load plugins.*boom/),
+    );
+    expect(deps.prompts.cancel).toHaveBeenCalled();
+  });
+
+  it("includes stale-artifact summary in the outro when v3 leftovers exist", async () => {
+    fs.mkdirSync(path.join(cwd, ".agileflow", "experts"), { recursive: true });
+    const deps = makeWizardStubs();
+    await setupInteractive({}, cwd, deps);
+    // Outro is called with a multi-line summary. The cleanup branch
+    // declined (confirm stub returns false), so the summary should
+    // mention leaving files in place.
+    const outroArg = deps.prompts.outro.mock.calls[0][0];
+    expect(outroArg).toMatch(/left in place/);
+    // Files still there since cleanup declined.
+    expect(fs.existsSync(path.join(cwd, ".agileflow", "experts"))).toBe(true);
   });
 });

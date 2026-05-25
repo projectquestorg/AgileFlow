@@ -444,24 +444,45 @@ async function setupNonInteractive(options, cwd) {
  * Errors are surfaced via prompts.log.* with a graceful process.exit(1)
  * — no thrown stack traces.
  *
+ * The `deps` parameter exists for test injection — production callers
+ * leave it empty and pick up the real @clack/prompts module plus the
+ * real picker implementations.
+ *
  * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
  * @param {string} cwd
+ * @param {{
+ *   prompts?: any,
+ *   pickInstallScope?: any,
+ *   pickIdes?: any,
+ *   pickPlugins?: any,
+ *   pickBehaviors?: any,
+ *   pickBabysitMode?: any,
+ *   pickLearnings?: any,
+ * }} [deps]
  */
-async function setupInteractive(options, cwd) {
+async function setupInteractive(options, cwd, deps = {}) {
+  const p = deps.prompts || prompts;
+  const doScope = deps.pickInstallScope || pickInstallScope;
+  const doIdes = deps.pickIdes || pickIdes;
+  const doPlugins = deps.pickPlugins || pickPlugins;
+  const doBehaviors = deps.pickBehaviors || pickBehaviors;
+  const doBabysit = deps.pickBabysitMode || pickBabysitMode;
+  const doLearnings = deps.pickLearnings || pickLearnings;
+
   const initialScope = resolveInstallScope(options.scope);
 
   // eslint-disable-next-line no-console
   console.log("\n" + logoBanner(pkg.version) + "\n");
-  prompts.intro("agileflow setup");
-  const scope = await pickInstallScope(initialScope);
+  p.intro("agileflow setup");
+  const scope = await doScope(initialScope);
   const roots = installPathsForScope(scope, cwd);
 
   let existing;
   try {
     existing = await loadConfig(roots.configRoot);
   } catch (err) {
-    prompts.log.error(err.message);
-    prompts.log.info(
+    p.log.error(err.message);
+    p.log.info(
       "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
     );
     process.exit(1);
@@ -470,22 +491,22 @@ async function setupInteractive(options, cwd) {
   const { base } = deriveBaseFromExisting(existing);
 
   if (existing.source === "file") {
-    prompts.log.info(
+    p.log.info(
       `Existing config found at ${existing.path} — re-running wizard to update.`,
     );
   } else {
-    prompts.log.info("No existing config — starting from defaults.");
+    p.log.info("No existing config — starting from defaults.");
   }
 
   // Ask the IDE targets first — affects which features end up enabled later.
-  const ides = await pickIdes(base.ide.targets);
+  const ides = await doIdes(base.ide.targets);
 
   let plugins;
   try {
-    plugins = await pickPlugins(base);
+    plugins = await doPlugins(base);
   } catch (err) {
-    prompts.log.error(`Failed to load plugins: ${err.message}`);
-    prompts.cancel("Setup cannot continue. Fix plugin manifests and retry.");
+    p.log.error(`Failed to load plugins: ${err.message}`);
+    p.cancel("Setup cannot continue. Fix plugin manifests and retry.");
     process.exit(1);
   }
   // Behavior presets only apply when AT LEAST ONE selected IDE supports
@@ -496,10 +517,10 @@ async function setupInteractive(options, cwd) {
   const supportedHookEvents = hookEventsForIdes(ides);
   const anySkills = targetCaps.some((c) => c.skills);
   const behaviors = anyHooks
-    ? await pickBehaviors(base.behaviors, supportedHookEvents)
+    ? await doBehaviors(base.behaviors, supportedHookEvents)
     : base.behaviors;
 
-  const babysit = await pickBabysitMode(
+  const babysit = await doBabysit(
     base.plugins &&
       base.plugins.core &&
       base.plugins.core.settings &&
@@ -507,7 +528,7 @@ async function setupInteractive(options, cwd) {
   );
 
   const learnings = anySkills
-    ? await pickLearnings(base.learnings)
+    ? await doLearnings(base.learnings)
     : base.learnings;
 
   /** @type {import('../../runtime/config/defaults.js').AgileflowConfig} */
@@ -525,7 +546,7 @@ async function setupInteractive(options, cwd) {
     babysit,
   };
 
-  const writeSpinner = prompts.spinner();
+  const writeSpinner = p.spinner();
   writeSpinner.start("Writing agileflow.config.json");
   const file = await writeConfigWithFeedback(roots.configRoot, next, {
     interactive: true,
@@ -537,7 +558,7 @@ async function setupInteractive(options, cwd) {
     .filter(([, v]) => v && v.enabled)
     .map(([id]) => id);
 
-  const installSpinner = prompts.spinner();
+  const installSpinner = p.spinner();
   installSpinner.start(`Installing ${enabledList.length} skill pack(s)`);
   const installResult = await runInstallWithFeedback(
     enabledList,
@@ -555,10 +576,13 @@ async function setupInteractive(options, cwd) {
   // Stale-artifact check — fires after a successful install so users
   // get prompted at the moment they're paying attention to their
   // install state. Scan the resolved install root so a global-scope
-  // install checks ~/.agileflow, not cwd.
-  const cleanup = await runPostInstallCleanup(roots.ideRoot, {
-    interactive: true,
-  });
+  // install checks ~/.agileflow, not cwd. Forward the injected
+  // prompts stub so tests don't hit the real interactive confirm.
+  const cleanup = await runPostInstallCleanup(
+    roots.ideRoot,
+    { interactive: true },
+    { prompts: p },
+  );
 
   // Surface behaviors state in the outro. With behaviors gated, a user
   // who deselected all four ends up with zero hooks running — they
@@ -574,7 +598,7 @@ async function setupInteractive(options, cwd) {
       : "behaviors active: (none — no hooks will run; re-run setup to enable)"
     : `hooks not supported by ${ides.join(", ")} — behaviors skipped`;
 
-  prompts.outro(
+  p.outro(
     [
       `${enabledList.length} skill pack(s) enabled: ${enabledList.join(", ")}`,
       `scope: ${scope}`,
