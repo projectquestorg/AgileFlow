@@ -293,11 +293,8 @@ async function runSetup() {
   const summary = [
     `preferred CLI: ${cli.preferred}`,
     `fallback order: ${cli.fallbackOrder.join(" → ")}`,
-    // Honest framing: status-position IS applied; the keybind preset is
-    // saved but not yet wired up. Naming the deferred bit prevents
-    // "I picked default keybinds and Alt+q does nothing" confusion.
     tmuxAndKeybinds.tmux.enabled
-      ? `tmux: on (status ${tmuxAndKeybinds.tmux.statusPosition}; keybinds "${tmuxAndKeybinds.keybinds.preset}" saved, applied in a future release)`
+      ? `tmux: on (status ${tmuxAndKeybinds.tmux.statusPosition}, keybinds ${tmuxAndKeybinds.keybinds.preset})`
       : "tmux: off",
     ...aliasSummary,
   ];
@@ -356,6 +353,7 @@ async function runEngine(prefs) {
           bin: resolved.bin,
           args: [],
           statusPosition: prefs.tmux.statusPosition,
+          keybindPreset: prefs.keybinds.preset,
         });
         process.exit(result.exitCode);
       } catch (err) {

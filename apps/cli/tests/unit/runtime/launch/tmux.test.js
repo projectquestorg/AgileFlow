@@ -21,6 +21,8 @@ const {
   launchInTmux,
   listSessionsForCli,
   killSession,
+  applyKeybindPreset,
+  KEYBIND_PRESET_BINDINGS,
 } = tmuxModule;
 
 // Pass to launchInTmux tests so narration doesn't pollute test output.
@@ -356,6 +358,78 @@ describe("launchInTmux", () => {
     expect(logs).toEqual(["agileflow launch: starting new session claude-app"]);
   });
 
+  it("applies the keybind preset after creating a new session", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 1, stdout: "", stderr: "" }, // probe: nope
+        { status: 0, stdout: "", stderr: "" }, // new-session
+        { status: 0, stdout: "", stderr: "" }, // set-option statusPosition
+        { status: 0, stdout: "", stderr: "" }, // bind-key (minimal preset = 1 binding)
+      ],
+      0,
+    );
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      statusPosition: "bottom",
+      keybindPreset: "minimal",
+      runner,
+      log: noopLog,
+    });
+    // The bind-key call should appear after new-session + set-option,
+    // before the attach.
+    const bindCall = runner.calls.find((c) => c[0] === "bind-key");
+    expect(bindCall).toEqual([
+      "bind-key",
+      "-T",
+      "root",
+      "M-q",
+      "detach-client",
+    ]);
+  });
+
+  it("applies the keybind preset on reattach as well (prefs change without recreate)", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 0, stdout: "", stderr: "" }, // probe: exists
+        { status: 0, stdout: "", stderr: "" }, // set-option statusPosition
+        { status: 0, stdout: "", stderr: "" }, // bind-key
+      ],
+      0,
+    );
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      statusPosition: "top",
+      keybindPreset: "minimal",
+      runner,
+      log: noopLog,
+    });
+    const bindCall = runner.calls.find((c) => c[0] === "bind-key");
+    expect(bindCall).toBeDefined();
+  });
+
+  it("skips keybind step entirely when preset is 'none'", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 1, stdout: "", stderr: "" }, // probe: nope
+        { status: 0, stdout: "", stderr: "" }, // new-session
+        { status: 0, stdout: "", stderr: "" }, // set-option
+      ],
+      0,
+    );
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      statusPosition: "bottom",
+      keybindPreset: "none",
+      runner,
+      log: noopLog,
+    });
+    const bindCall = runner.calls.find((c) => c[0] === "bind-key");
+    expect(bindCall).toBeUndefined();
+  });
+
   it("narrates 'race-recovered' when the create-fails-but-exists path fires", async () => {
     const runner = queuedRunner(
       [
@@ -447,5 +521,126 @@ describe("killSession", () => {
       runAttach: vi.fn(),
     };
     expect(killSession("missing", runner)).toBe(false);
+  });
+});
+
+describe("KEYBIND_PRESET_BINDINGS", () => {
+  it("declares default/minimal/none presets", () => {
+    expect(Object.keys(KEYBIND_PRESET_BINDINGS).sort()).toEqual([
+      "default",
+      "minimal",
+      "none",
+    ]);
+  });
+
+  it("'none' preset has no bindings", () => {
+    expect(KEYBIND_PRESET_BINDINGS.none).toEqual([]);
+  });
+
+  it("'minimal' preset includes Alt+q detach", () => {
+    const keys = KEYBIND_PRESET_BINDINGS.minimal.map((b) => b.key);
+    expect(keys).toContain("M-q");
+  });
+
+  it("'default' preset includes Alt+q + Alt+k + Alt+Shift+k + Alt+r", () => {
+    const keys = KEYBIND_PRESET_BINDINGS.default.map((b) => b.key);
+    expect(keys).toEqual(["M-q", "M-k", "M-K", "M-r"]);
+  });
+
+  it("every binding has key, action[], and hint fields", () => {
+    for (const preset of Object.values(KEYBIND_PRESET_BINDINGS)) {
+      for (const b of preset) {
+        expect(typeof b.key).toBe("string");
+        expect(Array.isArray(b.action)).toBe(true);
+        expect(b.action.length).toBeGreaterThan(0);
+        expect(typeof b.hint).toBe("string");
+      }
+    }
+  });
+});
+
+describe("applyKeybindPreset", () => {
+  it("issues a bind-key per entry under -T root (global table, no prefix)", () => {
+    const calls = [];
+    const runner = {
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+    const result = applyKeybindPreset("minimal", runner);
+    expect(result.applied).toBe(1);
+    expect(result.failures).toEqual([]);
+    expect(calls[0]).toEqual([
+      "bind-key",
+      "-T",
+      "root",
+      "M-q",
+      "detach-client",
+    ]);
+  });
+
+  it("issues all four bindings for the default preset", () => {
+    const calls = [];
+    const runner = {
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+    const result = applyKeybindPreset("default", runner);
+    expect(result.applied).toBe(4);
+    expect(calls).toHaveLength(4);
+    expect(calls.map((c) => c[3])).toEqual(["M-q", "M-k", "M-K", "M-r"]);
+  });
+
+  it("issues no commands for the 'none' preset", () => {
+    const calls = [];
+    const runner = {
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+    const result = applyKeybindPreset("none", runner);
+    expect(result.applied).toBe(0);
+    expect(calls).toEqual([]);
+  });
+
+  it("collects failures into the result without throwing", () => {
+    let firstCall = true;
+    const runner = {
+      runSync: () => {
+        if (firstCall) {
+          firstCall = false;
+          return { status: 0, stdout: "", stderr: "", error: null };
+        }
+        return {
+          status: 1,
+          stdout: "",
+          stderr: "invalid key",
+          error: null,
+        };
+      },
+      runAttach: vi.fn(),
+    };
+    const result = applyKeybindPreset("default", runner);
+    expect(result.applied).toBe(1);
+    expect(result.failures.length).toBe(3);
+    expect(result.failures[0].stderr).toBe("invalid key");
+  });
+
+  it("treats an unknown preset name as 'none' (defensive)", () => {
+    const runner = {
+      runSync: vi.fn(),
+      runAttach: vi.fn(),
+    };
+    // @ts-expect-error intentional bad input
+    const result = applyKeybindPreset("vim-mode", runner);
+    expect(result.applied).toBe(0);
+    expect(runner.runSync).not.toHaveBeenCalled();
   });
 });

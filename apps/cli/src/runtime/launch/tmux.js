@@ -209,6 +209,102 @@ async function attachSession(name, runner) {
 }
 
 /**
+ * Keybinds to install per preset. Each entry is the argv suffix passed
+ * to `tmux bind-key`, expanded with `-T root -t <session>` at apply
+ * time. The `-T root` table means keys fire WITHOUT the tmux prefix
+ * (typically Ctrl+B), so users get the v3 `af` script's "tap Alt+q
+ * to detach" feel rather than the stock tmux "prefix then bind".
+ *
+ * Keep this list narrow: every binding has to work with stock tmux,
+ * no external helper scripts. Worktree / same-dir spawn shortcuts
+ * (the old Alt+N / Alt+S) require shell helpers that don't exist in
+ * v4 yet; they'll come in a follow-up slice.
+ *
+ * @typedef {Object} KeybindEntry
+ * @property {string} key      - tmux key spec, e.g. "M-q" (Alt+q)
+ * @property {string[]} action - tmux command args, e.g. ["detach-client"]
+ * @property {string} hint     - human description; surfaced in errors if a bind fails
+ */
+
+/** @type {Record<string, KeybindEntry[]>} */
+const KEYBIND_PRESET_BINDINGS = {
+  default: [
+    {
+      key: "M-q",
+      action: ["detach-client"],
+      hint: "Alt+q → detach",
+    },
+    {
+      // Soft interrupt — send Ctrl+C twice to the foreground pane.
+      // Mirrors v3 `af`'s "if Claude is hung, gently nudge it" behavior.
+      key: "M-k",
+      action: ["send-keys", "C-c", "C-c"],
+      hint: "Alt+k → send Ctrl+C twice (soft interrupt)",
+    },
+    {
+      key: "M-K",
+      action: ["kill-pane"],
+      hint: "Alt+Shift+k → force kill the current pane",
+    },
+    {
+      key: "M-r",
+      action: ["respawn-pane", "-k"],
+      hint: "Alt+r → respawn the current pane",
+    },
+  ],
+  minimal: [
+    {
+      key: "M-q",
+      action: ["detach-client"],
+      hint: "Alt+q → detach",
+    },
+  ],
+  none: [],
+};
+
+/**
+ * Install the chosen keybind preset. tmux `bind-key` is server-wide
+ * (the command doesn't accept `-t <session>`), so applying a preset
+ * affects every tmux client on the same server, not just sessions
+ * created by `agileflow launch`. This mirrors the v3 `af` script and is
+ * the standard tmux config pattern — users who want isolation pick the
+ * "none" preset.
+ *
+ * Bindings go in the `root` table so keys fire without the tmux prefix
+ * (typically Ctrl+B), giving the v3 "tap Alt+q to detach" feel.
+ *
+ * Failures are not fatal: `tmux bind-key` either succeeds or the caller
+ * gets a `failures` list to surface as a warning. Returning a
+ * structured result keeps the function pure-ish — no console output
+ * inside tmux.js.
+ *
+ * @param {string} preset      - one of "default" | "minimal" | "none"
+ * @param {TmuxRunner} runner
+ * @returns {{ applied: number, failures: { hint: string, stderr: string }[] }}
+ */
+function applyKeybindPreset(preset, runner) {
+  const bindings = KEYBIND_PRESET_BINDINGS[preset] || [];
+  let applied = 0;
+  /** @type {{ hint: string, stderr: string }[]} */
+  const failures = [];
+  for (const b of bindings) {
+    const result = runner.runSync([
+      "bind-key",
+      "-T",
+      "root",
+      b.key,
+      ...b.action,
+    ]);
+    if (result.status === 0) {
+      applied++;
+    } else {
+      failures.push({ hint: b.hint, stderr: result.stderr || "" });
+    }
+  }
+  return { applied, failures };
+}
+
+/**
  * List existing session names belonging to a specific CLI.
  *
  * Uses `tmux ls -F '#{session_name}'` and filters by the `<cli>-`
@@ -256,6 +352,7 @@ function killSession(name, runner) {
  *   args?: string[],
  *   cwd?: string,
  *   statusPosition?: string,
+ *   keybindPreset?: string,
  *   runner?: TmuxRunner,
  *   log?: (msg: string) => void,
  * }} opts
@@ -293,6 +390,12 @@ async function launchInTmux(opts) {
         "status-position",
         opts.statusPosition,
       ]);
+    }
+    if (opts.keybindPreset && opts.keybindPreset !== "none") {
+      const result = applyKeybindPreset(opts.keybindPreset, runner);
+      for (const f of result.failures) {
+        log(`agileflow launch: keybind skipped — ${f.hint}`);
+      }
     }
     log(`agileflow launch: resuming session ${base}`);
     return attachSession(base, runner);
@@ -335,6 +438,12 @@ async function launchInTmux(opts) {
     throw err;
   }
 
+  if (opts.keybindPreset && opts.keybindPreset !== "none") {
+    const result = applyKeybindPreset(opts.keybindPreset, runner);
+    for (const f of result.failures) {
+      log(`agileflow launch: keybind skipped — ${f.hint}`);
+    }
+  }
   log(`agileflow launch: starting new session ${name}`);
   return attachSession(name, runner);
 }
@@ -350,5 +459,7 @@ module.exports = {
   launchInTmux,
   listSessionsForCli,
   killSession,
+  applyKeybindPreset,
+  KEYBIND_PRESET_BINDINGS,
   defaultRunner,
 };
