@@ -251,6 +251,29 @@ const KEYBIND_PRESET_BINDINGS = {
       action: ["respawn-pane", "-k"],
       hint: "Alt+r → respawn the current pane",
     },
+    {
+      // Spawn a parallel same-dir session and switch to it. The bound CLI
+      // runs `agileflow launch new` which creates the session detached
+      // and calls tmux switch-client — so the user's pane swaps to it.
+      key: "M-s",
+      action: ["run-shell", "agileflow launch new"],
+      hint: "Alt+s → spawn a same-dir parallel session",
+    },
+    {
+      // Prompt for a worktree name, then spawn. tmux's command-prompt
+      // substitutes %% with the user's input. Single-quoting the
+      // run-shell command keeps the shell parser happy when the name
+      // contains odd characters; the inner double-quotes around %%
+      // protect against shell word-splitting.
+      key: "M-n",
+      action: [
+        "command-prompt",
+        "-p",
+        "worktree name:",
+        "run-shell 'agileflow launch new \"%%\"'",
+      ],
+      hint: "Alt+n → prompt for a name, create a worktree, spawn there",
+    },
   ],
   minimal: [
     {

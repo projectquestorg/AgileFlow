@@ -1,0 +1,162 @@
+/**
+ * Spawn a parallel tmux session — same-dir or worktree-backed — and
+ * switch the user's existing client to it.
+ *
+ * Used by `agileflow launch new [name]`, which the default keybind
+ * preset binds to Alt+s (no name → same-dir) and Alt+n (prompts for a
+ * name → worktree). The caller has already verified we're inside a
+ * tmux client; this module assumes that and uses `switch-client` to
+ * swap rather than `attach-session`.
+ *
+ * No-name vs name flow:
+ *   - No name: target dir is `process.cwd()`. New session uses
+ *     `nextFreeSessionName(<cli>-<dir>, ...)` so it gets a `-2`, `-3`
+ *     suffix when the canonical name is taken.
+ *   - Name: `createWorktree({ name })` first, then the same fresh-name
+ *     spawn against the worktree dir.
+ */
+const path = require("path");
+const {
+  baseSessionName,
+  nextFreeSessionName,
+  sessionExists,
+  createSession,
+  applyKeybindPreset,
+  defaultRunner,
+} = require("./tmux.js");
+const { createWorktree } = require("./worktree.js");
+
+/**
+ * @typedef {Object} ParallelSpawnResult
+ * @property {string} sessionName  - the new session's tmux name
+ * @property {string} cwd          - the directory the session was created in (cwd or worktree path)
+ * @property {{ path: string, branch: string, base: string }} [worktree]
+ *                                 - only set when `name` was supplied
+ */
+
+/**
+ * Build a typed error so callers can branch on `err.code`. Mirrors the
+ * pattern used elsewhere in the launch runtime.
+ *
+ * @param {string} message
+ * @param {string} code
+ * @returns {Error}
+ */
+function makeSpawnError(message, code) {
+  const err = new Error(message);
+  /** @type {any} */ (err).code = code;
+  return err;
+}
+
+/**
+ * Resolve the directory for the new session. With `name`, create a
+ * worktree first and use its path. Pure logic so tests can verify the
+ * branching without spawning anything.
+ *
+ * @param {{
+ *   name?: string,
+ *   cwd: string,
+ *   createWorktreeImpl?: typeof createWorktree,
+ * }} opts
+ * @returns {{ cwd: string, worktree?: { path: string, branch: string, base: string } }}
+ */
+function resolveSpawnDir(opts) {
+  if (!opts.name) {
+    return { cwd: opts.cwd };
+  }
+  const impl = opts.createWorktreeImpl || createWorktree;
+  const wt = impl({ name: opts.name });
+  return { cwd: wt.path, worktree: wt };
+}
+
+/**
+ * Spawn a new tmux session and switch the user's client to it.
+ *
+ * @param {{
+ *   bin: string,
+ *   name?: string,
+ *   prefs: import("./defaults.js").LaunchPrefs,
+ *   cwd?: string,
+ *   runner?: ReturnType<typeof defaultRunner>,
+ *   log?: (msg: string) => void,
+ *   createWorktreeImpl?: typeof createWorktree,
+ * }} opts
+ * @returns {Promise<ParallelSpawnResult>}
+ */
+async function runParallelSpawn(opts) {
+  const runner = opts.runner || defaultRunner();
+  const log =
+    typeof opts.log === "function"
+      ? opts.log
+      : (msg) => {
+          // eslint-disable-next-line no-console
+          console.error(msg);
+        };
+
+  const { cwd: targetCwd, worktree } = resolveSpawnDir({
+    name: opts.name,
+    cwd: opts.cwd || process.cwd(),
+    createWorktreeImpl: opts.createWorktreeImpl,
+  });
+
+  if (worktree) {
+    log(
+      `agileflow launch: created worktree at ${worktree.path} on branch ${worktree.branch}`,
+    );
+  }
+
+  const base = baseSessionName(path.basename(opts.bin), targetCwd);
+  // Always pick a fresh name. `new` semantics are "I want a parallel
+  // session" — never "reattach". `nextFreeSessionName` walks
+  // base, base-2, base-3, ... until it finds an unused slot.
+  const sessionName = nextFreeSessionName(base, (n) =>
+    sessionExists(n, runner),
+  );
+
+  const create = createSession(
+    {
+      name: sessionName,
+      bin: opts.bin,
+      args: [],
+      cwd: targetCwd,
+      statusPosition: opts.prefs.tmux.statusPosition,
+    },
+    runner,
+  );
+  if (create.status !== 0) {
+    if (create.error) throw create.error;
+    const stderr = create.stderr.trim() || "tmux new-session failed";
+    throw makeSpawnError(`tmux: ${stderr}`, "ETMUX_CREATE");
+  }
+
+  // Apply the user's keybind preset to the (server-wide) bindings table.
+  // Same call the engine makes on every launch, so the new session
+  // inherits the same Alt+q etc. as the parent.
+  if (opts.prefs.keybinds && opts.prefs.keybinds.preset) {
+    const result = applyKeybindPreset(opts.prefs.keybinds.preset, runner);
+    for (const f of result.failures) {
+      log(`agileflow launch: keybind skipped — ${f.hint}`);
+    }
+  }
+
+  // Swap the user's tmux client to the new session. If switch-client
+  // fails the session is still alive — surface its name so the user
+  // can attach manually.
+  const sw = runner.runSync(["switch-client", "-t", sessionName]);
+  if (sw.status !== 0) {
+    throw makeSpawnError(
+      `switch-client failed: ${sw.stderr.trim() || "unknown error"}; ` +
+        `session "${sessionName}" is still running — \`tmux attach -t ${sessionName}\` to enter it.`,
+      "ETMUX_SWITCH",
+    );
+  }
+
+  log(`agileflow launch: switched to new session ${sessionName}`);
+  return { sessionName, cwd: targetCwd, worktree };
+}
+
+module.exports = {
+  runParallelSpawn,
+  resolveSpawnDir,
+  makeSpawnError,
+};

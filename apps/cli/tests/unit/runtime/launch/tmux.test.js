@@ -578,9 +578,24 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
     expect(keys).toContain("M-q");
   });
 
-  it("'default' preset includes Alt+q + Alt+k + Alt+Shift+k + Alt+r", () => {
+  it("'default' preset includes detach/freeze + parallel-spawn shortcuts", () => {
     const keys = KEYBIND_PRESET_BINDINGS.default.map((b) => b.key);
-    expect(keys).toEqual(["M-q", "M-k", "M-K", "M-r"]);
+    expect(keys).toEqual(["M-q", "M-k", "M-K", "M-r", "M-s", "M-n"]);
+  });
+
+  it("'default' Alt+s invokes `agileflow launch new` via run-shell", () => {
+    const altS = KEYBIND_PRESET_BINDINGS.default.find((b) => b.key === "M-s");
+    expect(altS && altS.action).toEqual(["run-shell", "agileflow launch new"]);
+  });
+
+  it("'default' Alt+n prompts for a name and forwards it to `launch new`", () => {
+    const altN = KEYBIND_PRESET_BINDINGS.default.find((b) => b.key === "M-n");
+    expect(altN && altN.action).toEqual([
+      "command-prompt",
+      "-p",
+      "worktree name:",
+      "run-shell 'agileflow launch new \"%%\"'",
+    ]);
   });
 
   it("every binding has key, action[], and hint fields", () => {
@@ -612,14 +627,14 @@ describe("applyKeybindPreset", () => {
     const unbinds = calls.filter((c) => c[0] === "unbind-key");
     expect(unbinds.length).toBeGreaterThan(0);
     expect(unbinds.map((c) => c[3]).sort()).toEqual(
-      ["M-K", "M-k", "M-q", "M-r"].sort(),
+      ["M-K", "M-k", "M-n", "M-q", "M-r", "M-s"].sort(),
     );
     // Then: the chosen preset's binds.
     const binds = calls.filter((c) => c[0] === "bind-key");
     expect(binds).toEqual([["bind-key", "-T", "root", "M-q", "detach-client"]]);
   });
 
-  it("issues all four bindings for the default preset", () => {
+  it("issues all six bindings for the default preset", () => {
     const calls = [];
     const runner = {
       runSync: (args) => {
@@ -629,9 +644,16 @@ describe("applyKeybindPreset", () => {
       runAttach: vi.fn(),
     };
     const result = applyKeybindPreset("default", runner);
-    expect(result.applied).toBe(4);
+    expect(result.applied).toBe(6);
     const binds = calls.filter((c) => c[0] === "bind-key");
-    expect(binds.map((c) => c[3])).toEqual(["M-q", "M-k", "M-K", "M-r"]);
+    expect(binds.map((c) => c[3])).toEqual([
+      "M-q",
+      "M-k",
+      "M-K",
+      "M-r",
+      "M-s",
+      "M-n",
+    ]);
   });
 
   it("for 'none' still sweeps unbinds (so switching from default→none clears the old keys)", () => {
@@ -653,13 +675,13 @@ describe("applyKeybindPreset", () => {
   });
 
   it("collects failures into the result without throwing", () => {
-    // Unbinds always 'succeed' (we ignore their status anyway); make the
-    // last 3 bind-key calls fail.
+    // Unbinds always 'succeed' (we ignore their status anyway); the first
+    // bind-key succeeds and the rest fail. Default preset is now 6 binds,
+    // so we expect 1 applied + 5 failures.
     const runner = {
       runSync: (args) => {
         if (args[0] === "unbind-key")
           return { status: 0, stdout: "", stderr: "", error: null };
-        // bind-key path: first succeeds, rest fail.
         runner._bindCount = (runner._bindCount || 0) + 1;
         if (runner._bindCount === 1)
           return { status: 0, stdout: "", stderr: "", error: null };
@@ -674,7 +696,7 @@ describe("applyKeybindPreset", () => {
     };
     const result = applyKeybindPreset("default", runner);
     expect(result.applied).toBe(1);
-    expect(result.failures.length).toBe(3);
+    expect(result.failures.length).toBe(5);
     expect(result.failures[0].stderr).toBe("invalid key");
   });
 

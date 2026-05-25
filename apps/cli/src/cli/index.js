@@ -104,9 +104,9 @@ function buildProgram() {
     .action(plugins);
 
   program
-    .command("launch [sub]")
+    .command("launch [sub] [name]")
     .description(
-      "multi-CLI tmux wrapper (slice 1: prefs only; sub=setup to (re)configure)",
+      "multi-CLI tmux wrapper: sub=setup to (re)configure, sub=new [name] to spawn a parallel session (same-dir or worktree-backed)",
     )
     .action(launch);
 

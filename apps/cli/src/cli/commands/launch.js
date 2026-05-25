@@ -39,6 +39,9 @@ const {
   defaultRunner: defaultTmuxRunner,
 } = require("../../runtime/launch/tmux.js");
 const {
+  runParallelSpawn,
+} = require("../../runtime/launch/parallel-session.js");
+const {
   installAfAlias,
   uninstallAfAlias,
 } = require("../../runtime/launch/alias-installer.js");
@@ -378,21 +381,125 @@ async function runEngine(prefs) {
 }
 
 /**
- * Commander action for `agileflow launch [sub]`.
+ * `agileflow launch new [name]` — spawn a parallel session (same-dir or
+ * worktree-backed) and switch the user's tmux client to it. Bound by
+ * default to Alt+s (no name) and Alt+n (prompts for a name) via the
+ * default keybind preset.
+ *
+ * Pre-conditions:
+ *   - prefs file must exist (no auto-setup here — `new` only makes sense
+ *     after the user has already configured launch)
+ *   - we must be inside a tmux client (switch-client needs a current
+ *     client; outside tmux there is no session to swap from)
+ *   - the user's preferred CLI must be installed
+ *   - tmux must be on PATH (it's a prerequisite for being "inside tmux"
+ *     so this should always hold, but we guard defensively)
+ *
+ * @param {string | undefined} name  - worktree name; omit for same-dir
+ * @returns {Promise<never>}
+ */
+async function runNew(name) {
+  if (!(await prefsExist())) {
+    fail(
+      new OperationFailedError("agileflow launch new requires prefs first", {
+        suggestion: "run `agileflow launch setup` to create launch-prefs.json",
+      }),
+      { command: "launch" },
+    );
+  }
+
+  if (!isInsideTmux()) {
+    fail(
+      new OperationFailedError(
+        "agileflow launch new only works inside an existing tmux session",
+        {
+          suggestion:
+            "run `agileflow launch` first to start a session, then use Alt+s / Alt+n inside it",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+
+  if (!tmuxAvailable()) {
+    fail(
+      new OperationFailedError(
+        "tmux is not available — required for `launch new`",
+        { suggestion: "install tmux and try again" },
+      ),
+      { command: "launch" },
+    );
+  }
+
+  const { prefs } = await loadPrefsOrFail();
+  const { resolved, tried } = resolveCli(prefs);
+  if (!resolved) {
+    fail(
+      new OperationFailedError(
+        `no configured AI CLI is installed (tried ${tried.join(", ")})`,
+        {
+          suggestion:
+            "install one of the supported CLIs (claude, codex, cursor-agent, aider), " +
+            "or run `agileflow launch setup` to update your fallback order",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+
+  try {
+    await runParallelSpawn({
+      bin: resolved.bin,
+      name,
+      prefs,
+    });
+  } catch (err) {
+    fail(
+      new OperationFailedError(
+        `launch new failed: ${err && err.message ? err.message : String(err)}`,
+        {
+          suggestion:
+            err && err.code === "EWT_DIR_EXISTS"
+              ? "remove the existing worktree directory or pick a different name"
+              : err && err.code === "EWT_BRANCH_EXISTS"
+                ? "the branch already exists — pick a different name"
+                : err && err.code === "EWT_NOT_REPO"
+                  ? "run from inside a git repository, or omit the name for a same-dir session"
+                  : "re-run with DEBUG=1 for a stack trace",
+          cause: err,
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+  // runParallelSpawn returns normally after switch-client. We don't
+  // process.exit — the user is now inside the new session and the
+  // current invocation finishes cleanly.
+  return /** @type {never} */ (undefined);
+}
+
+/**
+ * Commander action for `agileflow launch [sub] [name]`.
  *
  * Commander v12 invokes action with positional args first, options last:
- * `action((sub, options) => ...)` for `.command("launch [sub]")`. Keeping
- * the signature explicit so we don't accidentally swap them.
+ * `action((sub, name, options) => ...)` for `.command("launch [sub] [name]")`.
+ * The `name` is only meaningful when `sub === "new"`; ignored otherwise.
  *
  * @param {string | undefined} sub
+ * @param {string | undefined} nameArg
  * @param {Record<string, unknown>} [_options]
  */
-async function launch(sub, _options) {
+async function launch(sub, nameArg, _options) {
   try {
+    if (sub === "new") {
+      await runNew(nameArg);
+      return;
+    }
     if (sub && sub !== "setup") {
       fail(
         new OperationFailedError(`unknown launch subcommand: ${sub}`, {
-          suggestion: "use `agileflow launch` or `agileflow launch setup`",
+          suggestion:
+            "use `agileflow launch`, `agileflow launch setup`, or `agileflow launch new [name]`",
         }),
         { command: "launch" },
       );
@@ -472,4 +579,5 @@ module.exports = launch;
 module.exports.decideFlow = decideFlow;
 module.exports.runSetup = runSetup;
 module.exports.runEngine = runEngine;
+module.exports.runNew = runNew;
 module.exports.shouldOfferOrphanCleanup = shouldOfferOrphanCleanup;
