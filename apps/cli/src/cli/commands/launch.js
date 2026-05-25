@@ -5,9 +5,12 @@
  *   - `agileflow launch setup`  — always runs the prefs wizard.
  *   - `agileflow launch`         — runs setup on first invocation
  *                                  (no prefs file); otherwise loads
- *                                  prefs and spawns the user's
- *                                  preferred AI CLI (slice 2a; tmux
- *                                  wrapper lands in slice 2b).
+ *                                  prefs, resolves the user's preferred
+ *                                  AI CLI, and either wraps it in a
+ *                                  per-cwd tmux session (if tmux is
+ *                                  installed and enabled in prefs) or
+ *                                  plain-spawns it as a foreground
+ *                                  child.
  *
  * Errors here go through the typed-error / `fail()` plumbing in
  * `src/lib/errors.js` so messages stay consistent with `setup` /
@@ -27,6 +30,11 @@ const { pickTmux } = require("../wizard/launch-tmux-picker.js");
 const { pickAliases } = require("../wizard/launch-alias-picker.js");
 const { resolveCli } = require("../../runtime/launch/resolve-cli.js");
 const { runCli } = require("../../runtime/launch/spawn.js");
+const {
+  isInsideTmux,
+  tmuxAvailable,
+  launchInTmux,
+} = require("../../runtime/launch/tmux.js");
 const {
   installAfAlias,
   uninstallAfAlias,
@@ -212,8 +220,11 @@ async function runSetup() {
   const summary = [
     `preferred CLI: ${cli.preferred}`,
     `fallback order: ${cli.fallbackOrder.join(" → ")}`,
+    // Honest framing: status-position IS applied; the keybind preset is
+    // saved but not yet wired up. Naming the deferred bit prevents
+    // "I picked default keybinds and Alt+q does nothing" confusion.
     tmuxAndKeybinds.tmux.enabled
-      ? `tmux: on (status ${tmuxAndKeybinds.tmux.statusPosition}, keybinds ${tmuxAndKeybinds.keybinds.preset})`
+      ? `tmux: on (status ${tmuxAndKeybinds.tmux.statusPosition}; keybinds "${tmuxAndKeybinds.keybinds.preset}" saved, applied in a future release)`
       : "tmux: off",
     ...aliasSummary,
   ];
@@ -228,9 +239,11 @@ async function runSetup() {
  * Exits the parent with the child's exit code so shell pipelines see
  * the right status.
  *
- * Slice 2a: plain spawn only. When `prefs.tmux.enabled === true` we
- * log a one-line notice that the tmux wrapper is deferred and fall
- * through to plain spawn — so the user gets a working CLI today.
+ * Slice 2b: when `prefs.tmux.enabled === true` AND tmux is on PATH AND
+ * we're not already inside a tmux client, wrap the CLI in a per-cwd
+ * tmux session via `launchInTmux`. Otherwise — including the
+ * "tmux=true but unavailable / nested" fallback paths — plain-spawn the
+ * CLI (slice 2a behavior).
  *
  * @param {import('../../runtime/launch/defaults.js').LaunchPrefs} prefs
  * @returns {Promise<never>}
@@ -252,10 +265,41 @@ async function runEngine(prefs) {
   }
 
   if (prefs.tmux.enabled) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow launch: tmux session management isn't available yet — launching ${resolved.bin} directly.`,
-    );
+    if (isInsideTmux()) {
+      // Nesting tmux sessions is allowed but confusing — and the v3 `af`
+      // explicitly avoided it. Plain-spawn in the current pane.
+      // eslint-disable-next-line no-console
+      console.error(
+        `agileflow launch: already inside a tmux session — launching ${resolved.bin} in the current pane.`,
+      );
+    } else if (!tmuxAvailable()) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `agileflow launch: tmux is not installed — launching ${resolved.bin} directly. Install tmux to enable session management.`,
+      );
+    } else {
+      try {
+        const result = await launchInTmux({
+          bin: resolved.bin,
+          args: [],
+          statusPosition: prefs.tmux.statusPosition,
+        });
+        process.exit(result.exitCode);
+      } catch (err) {
+        fail(
+          new OperationFailedError(
+            `tmux launch failed: ${err && err.message ? err.message : String(err)}`,
+            {
+              suggestion:
+                "verify tmux works (`tmux new-session -d -s test && tmux kill-session -t test`), " +
+                "or disable tmux via `agileflow launch setup`",
+              cause: err,
+            },
+          ),
+          { command: "launch" },
+        );
+      }
+    }
   }
 
   const result = await runCli(resolved.bin, []);
