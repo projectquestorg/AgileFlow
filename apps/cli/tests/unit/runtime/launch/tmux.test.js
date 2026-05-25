@@ -22,6 +22,7 @@ const {
   listSessionsForCli,
   killSession,
   applyKeybindPreset,
+  substituteBinding,
   KEYBIND_PRESET_BINDINGS,
 } = tmuxModule;
 
@@ -583,9 +584,12 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
     expect(keys).toEqual(["M-q", "M-k", "M-K", "M-r", "M-s", "M-n"]);
   });
 
-  it("'default' Alt+s invokes `agileflow launch new` via run-shell", () => {
+  it("'default' Alt+s carries a %AGILEFLOW% placeholder for run-time substitution", () => {
     const altS = KEYBIND_PRESET_BINDINGS.default.find((b) => b.key === "M-s");
-    expect(altS && altS.action).toEqual(["run-shell", "agileflow launch new"]);
+    expect(altS && altS.action).toEqual([
+      "run-shell",
+      "%AGILEFLOW% launch new",
+    ]);
   });
 
   it("'default' Alt+n prompts for a name and forwards it to `launch new`", () => {
@@ -594,7 +598,7 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
       "command-prompt",
       "-p",
       "worktree name:",
-      "run-shell 'agileflow launch new \"%%\"'",
+      "run-shell '%AGILEFLOW% launch new \"%%\"'",
     ]);
   });
 
@@ -607,6 +611,29 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
         expect(typeof b.hint).toBe("string");
       }
     }
+  });
+});
+
+describe("substituteBinding", () => {
+  it("replaces %AGILEFLOW% with the resolved binary path", () => {
+    expect(
+      substituteBinding(
+        ["run-shell", "%AGILEFLOW% launch new"],
+        "/usr/bin/agileflow",
+      ),
+    ).toEqual(["run-shell", "/usr/bin/agileflow launch new"]);
+  });
+
+  it("substitutes multiple occurrences in a single arg", () => {
+    expect(
+      substituteBinding(["echo %AGILEFLOW% and %AGILEFLOW%"], "af"),
+    ).toEqual(["echo af and af"]);
+  });
+
+  it("leaves args without the placeholder untouched", () => {
+    expect(substituteBinding(["detach-client"], "/usr/bin/agileflow")).toEqual([
+      "detach-client",
+    ]);
   });
 });
 
@@ -632,6 +659,27 @@ describe("applyKeybindPreset", () => {
     // Then: the chosen preset's binds.
     const binds = calls.filter((c) => c[0] === "bind-key");
     expect(binds).toEqual([["bind-key", "-T", "root", "M-q", "detach-client"]]);
+  });
+
+  it("substitutes %AGILEFLOW% with the agileflowBin option in bind actions", () => {
+    const calls = [];
+    const runner = {
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+    applyKeybindPreset("default", runner, { agileflowBin: "/opt/af/bin" });
+    const altS = calls.find((c) => c[0] === "bind-key" && c[3] === "M-s");
+    expect(altS).toEqual([
+      "bind-key",
+      "-T",
+      "root",
+      "M-s",
+      "run-shell",
+      "/opt/af/bin launch new",
+    ]);
   });
 
   it("issues all six bindings for the default preset", () => {

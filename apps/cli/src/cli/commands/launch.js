@@ -454,20 +454,38 @@ async function runNew(name) {
       prefs,
     });
   } catch (err) {
+    const code = err && err.code;
+    let suggestion = "re-run with DEBUG=1 for a stack trace";
+    if (code === "EWT_DIR_EXISTS") {
+      suggestion =
+        "remove the existing worktree directory or pick a different name";
+    } else if (code === "EWT_BRANCH_EXISTS") {
+      suggestion = "the branch already exists — pick a different name";
+    } else if (code === "EWT_NOT_REPO") {
+      suggestion =
+        "run from inside a git repository, or omit the name for a same-dir session";
+    } else if (code === "EWT_NO_HEAD") {
+      suggestion =
+        "check out a branch first (HEAD is detached), or pass an explicit base via prefs";
+    } else if (code === "EWT_BAD_NAME") {
+      suggestion =
+        "pick a name with letters, digits, dot, underscore, or hyphen";
+    } else if (code === "EWT_CREATE") {
+      suggestion =
+        "git worktree add failed; inspect the repo state and try again, or omit the name for a same-dir session";
+    } else if (code === "ETMUX_CREATE") {
+      suggestion =
+        "tmux session creation failed; verify tmux works (`tmux new-session -d -s test && tmux kill-session -t test`)";
+    } else if (code === "ETMUX_SWITCH") {
+      // The session is alive but switch-client didn't take. Tell the user
+      // exactly how to attach to it manually.
+      suggestion =
+        "switch-client failed but the new session is still running — attach with `tmux attach -t <session-name>` (see error message above for the name)";
+    }
     fail(
       new OperationFailedError(
         `launch new failed: ${err && err.message ? err.message : String(err)}`,
-        {
-          suggestion:
-            err && err.code === "EWT_DIR_EXISTS"
-              ? "remove the existing worktree directory or pick a different name"
-              : err && err.code === "EWT_BRANCH_EXISTS"
-                ? "the branch already exists — pick a different name"
-                : err && err.code === "EWT_NOT_REPO"
-                  ? "run from inside a git repository, or omit the name for a same-dir session"
-                  : "re-run with DEBUG=1 for a stack trace",
-          cause: err,
-        },
+        { suggestion, cause: err },
       ),
       { command: "launch" },
     );

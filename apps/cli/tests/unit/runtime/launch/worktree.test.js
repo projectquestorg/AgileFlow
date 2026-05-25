@@ -190,4 +190,79 @@ describe("createWorktree", () => {
       expect(err.code).toBe("EWT_DIR_EXISTS");
     }
   });
+
+  it("throws EWT_NOT_REPO when repository root has no basename (e.g. '/')", () => {
+    const q = queuedExec([{ status: 0, stdout: "/\n", stderr: "" }]);
+    expect(() =>
+      createWorktree({
+        name: "feature1",
+        exec: q.exec,
+        fsExists: () => false,
+      }),
+    ).toThrow(/repository root has no name/);
+  });
+
+  it("throws EWT_NO_HEAD when HEAD is detached (rev-parse returns 'HEAD')", () => {
+    const q = queuedExec([
+      { status: 0, stdout: "/repo\n", stderr: "" }, // show-toplevel
+      { status: 0, stdout: "HEAD\n", stderr: "" }, // abbrev-ref HEAD on detached HEAD
+    ]);
+    expect(() =>
+      createWorktree({
+        name: "feature1",
+        exec: q.exec,
+        fsExists: () => false,
+      }),
+    ).toThrow(/detached HEAD/);
+  });
+
+  it("maps git's 'already exists' branch error from worktree add to EWT_BRANCH_EXISTS", () => {
+    // TOCTOU: branch was created between our show-ref check and the
+    // worktree add call.
+    const q = queuedExec([
+      { status: 0, stdout: "/repo\n", stderr: "" },
+      { status: 0, stdout: "main\n", stderr: "" },
+      { status: 1, stdout: "", stderr: "" }, // show-ref: branch missing at check time
+      {
+        status: 128,
+        stdout: "",
+        stderr: "fatal: a branch named 'refs/heads/feat1' already exists",
+      },
+    ]);
+    try {
+      createWorktree({
+        name: "feat1",
+        exec: q.exec,
+        fsExists: () => false,
+      });
+      throw new Error("expected createWorktree to throw");
+    } catch (err) {
+      expect(err.code).toBe("EWT_BRANCH_EXISTS");
+    }
+  });
+
+  it("maps git's 'already exists' dir error from worktree add to EWT_DIR_EXISTS", () => {
+    // TOCTOU: dir was created between our fsExists check and the
+    // worktree add call.
+    const q = queuedExec([
+      { status: 0, stdout: "/repo\n", stderr: "" },
+      { status: 0, stdout: "main\n", stderr: "" },
+      { status: 1, stdout: "", stderr: "" },
+      {
+        status: 128,
+        stdout: "",
+        stderr: "fatal: '/repo-feat1' already exists",
+      },
+    ]);
+    try {
+      createWorktree({
+        name: "feat1",
+        exec: q.exec,
+        fsExists: () => false,
+      });
+      throw new Error("expected createWorktree to throw");
+    } catch (err) {
+      expect(err.code).toBe("EWT_DIR_EXISTS");
+    }
+  });
 });

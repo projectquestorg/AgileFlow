@@ -101,6 +101,15 @@ function createWorktree(opts) {
     );
   }
   const repoName = path.basename(repoRoot);
+  if (!repoName) {
+    // path.basename("/") is "" — degenerate setup (repo at filesystem
+    // root). Worktree path would resolve to "/-<name>" which is
+    // never what the user wants.
+    throw makeWorktreeError(
+      `repository root has no name (got "${repoRoot}") — cannot derive worktree path`,
+      "EWT_NOT_REPO",
+    );
+  }
 
   // 2. Sanitize.
   const safe = sanitizeName(opts.name || "");
@@ -131,6 +140,16 @@ function createWorktree(opts) {
       );
     }
     base = head.stdout.trim();
+    if (base === "HEAD") {
+      // `git rev-parse --abbrev-ref HEAD` returns the literal string
+      // "HEAD" when the working tree is in a detached-HEAD state.
+      // Passing that to `git worktree add -b` would fail with a less
+      // helpful "fatal: invalid reference: HEAD" — fail clearly here.
+      throw makeWorktreeError(
+        "cannot create worktree from a detached HEAD — check out a branch first",
+        "EWT_NO_HEAD",
+      );
+    }
   }
 
   // 5. New branch must not already exist (otherwise `git worktree add -b`
@@ -151,8 +170,27 @@ function createWorktree(opts) {
   // 6. Create it.
   const wt = exec(["worktree", "add", "-b", safe, wtPath, base]);
   if (wt.status !== 0) {
+    const stderr = wt.stderr.trim();
+    // Map git's "already exists" failures back to the typed codes our
+    // pre-check would have thrown — covers the TOCTOU window where
+    // another process created the dir or branch between our checks
+    // and `git worktree add`. The caller already has actionable hints
+    // wired up for EWT_DIR_EXISTS / EWT_BRANCH_EXISTS, but only the
+    // generic "re-run with DEBUG=1" for EWT_CREATE.
+    if (/refs\/heads\/.*already exists/i.test(stderr)) {
+      throw makeWorktreeError(
+        `branch '${safe}' already exists`,
+        "EWT_BRANCH_EXISTS",
+      );
+    }
+    if (/already exists/i.test(stderr)) {
+      throw makeWorktreeError(
+        `worktree directory already exists: ${wtPath}`,
+        "EWT_DIR_EXISTS",
+      );
+    }
     throw makeWorktreeError(
-      `git worktree add failed: ${wt.stderr.trim() || "unknown error"}`,
+      `git worktree add failed: ${stderr || "unknown error"}`,
       "EWT_CREATE",
     );
   }

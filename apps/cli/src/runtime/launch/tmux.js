@@ -23,6 +23,7 @@ const child_process = require("child_process");
 
 const { commandExists: realCommandExists } = require("../../lib/path-check.js");
 const { signalToExitCode } = require("./spawn.js");
+const { resolveAgileflowBin } = require("./alias-installer.js");
 
 /**
  * @typedef {Object} TmuxLaunchResult
@@ -255,8 +256,11 @@ const KEYBIND_PRESET_BINDINGS = {
       // Spawn a parallel same-dir session and switch to it. The bound CLI
       // runs `agileflow launch new` which creates the session detached
       // and calls tmux switch-client — so the user's pane swaps to it.
+      // `%AGILEFLOW%` is substituted at apply time with the actual binary
+      // path so this works for dogfooded `node bin/agileflow.js` as well
+      // as PATH-installed `agileflow`.
       key: "M-s",
-      action: ["run-shell", "agileflow launch new"],
+      action: ["run-shell", "%AGILEFLOW% launch new"],
       hint: "Alt+s → spawn a same-dir parallel session",
     },
     {
@@ -270,7 +274,7 @@ const KEYBIND_PRESET_BINDINGS = {
         "command-prompt",
         "-p",
         "worktree name:",
-        "run-shell 'agileflow launch new \"%%\"'",
+        "run-shell '%AGILEFLOW% launch new \"%%\"'",
       ],
       hint: "Alt+n → prompt for a name, create a worktree, spawn there",
     },
@@ -320,11 +324,36 @@ const ALL_PRESET_KEYS = (() => {
   return [...set];
 })();
 
-function applyKeybindPreset(preset, runner) {
+/**
+ * Substitute `%AGILEFLOW%` in a key binding's action with the actual
+ * binary path. Pure helper so tests can pin the substitution result.
+ *
+ * @param {string[]} action
+ * @param {string} agileflowBin
+ * @returns {string[]}
+ */
+function substituteBinding(action, agileflowBin) {
+  return action.map((arg) =>
+    typeof arg === "string" ? arg.replace(/%AGILEFLOW%/g, agileflowBin) : arg,
+  );
+}
+
+/**
+ * @param {string} preset
+ * @param {TmuxRunner} runner
+ * @param {{ agileflowBin?: string }} [opts]
+ * @returns {{ applied: number, failures: { hint: string, stderr: string }[] }}
+ */
+function applyKeybindPreset(preset, runner, opts = {}) {
   const bindings = KEYBIND_PRESET_BINDINGS[preset] || [];
   let applied = 0;
   /** @type {{ hint: string, stderr: string }[]} */
   const failures = [];
+
+  // Resolve the agileflow binary path once per preset apply. Falls back
+  // to the literal string "agileflow" if argv[1] isn't a real file
+  // (matches the alias-installer convention).
+  const agileflowBin = opts.agileflowBin || resolveAgileflowBin();
 
   // Idempotent reset: unbind every key any preset could install BEFORE
   // applying the new set. Without this, switching default → minimal
@@ -337,13 +366,8 @@ function applyKeybindPreset(preset, runner) {
   }
 
   for (const b of bindings) {
-    const result = runner.runSync([
-      "bind-key",
-      "-T",
-      "root",
-      b.key,
-      ...b.action,
-    ]);
+    const action = substituteBinding(b.action, agileflowBin);
+    const result = runner.runSync(["bind-key", "-T", "root", b.key, ...action]);
     if (result.status === 0) {
       applied++;
     } else {
@@ -516,6 +540,7 @@ module.exports = {
   listSessionsForCli,
   killSession,
   applyKeybindPreset,
+  substituteBinding,
   KEYBIND_PRESET_BINDINGS,
   defaultRunner,
 };
