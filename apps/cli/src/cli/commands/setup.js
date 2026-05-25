@@ -282,42 +282,12 @@ async function runPostInstallCleanup(cwd, ctx, deps = {}) {
   };
 }
 
-async function setup(options = {}) {
-  const cwd = process.cwd();
-  const initialScope = resolveInstallScope(options.scope);
-  let scope = initialScope;
-  let roots = installPathsForScope(scope, cwd);
-
-  if (!options.yes) {
-    // eslint-disable-next-line no-console
-    console.log("\n" + logoBanner(pkg.version) + "\n");
-    prompts.intro("agileflow setup");
-    scope = await pickInstallScope(initialScope);
-    roots = installPathsForScope(scope, cwd);
-  }
-
-  /** @type {Awaited<ReturnType<typeof loadConfig>>} */
-  let existing;
-  try {
-    existing = await loadConfig(roots.configRoot);
-  } catch (err) {
-    if (options.yes) {
-      fail(
-        new OperationFailedError(err.message, {
-          suggestion:
-            "fix or delete agileflow.config.json and re-run `agileflow setup`",
-          cause: err,
-        }),
-        { command: "setup" },
-      );
-    }
-    prompts.log.error(err.message);
-    prompts.log.info(
-      "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
-    );
-    process.exit(1);
-  }
-
+/**
+ * Pull base + babysit out of the loaded config. Shared by both flows.
+ *
+ * @param {Awaited<ReturnType<typeof loadConfig>>} existing
+ */
+function deriveBaseFromExisting(existing) {
   const base = existing.source === "file" ? existing.config : defaultConfig();
   const rawBaseBabysit =
     base.plugins &&
@@ -330,108 +300,174 @@ async function setup(options = {}) {
       : { mode: typeof rawBaseBabysit === "string" ? rawBaseBabysit : "light" };
   const baseBabysitMode =
     typeof baseBabysit.mode === "string" ? baseBabysit.mode : "light";
+  return { base, baseBabysit, baseBabysitMode };
+}
 
-  if (options.yes) {
-    // Resolve IDE targets: --ide flag (csv) wins, then existing config, then default.
-    /** @type {string[]} */
-    const requestedIdes = resolveIdeTargets(
-      options.ide,
-      Array.isArray(base.ide.targets) && base.ide.targets.length
-        ? base.ide.targets
-        : ["claude-code"],
-    );
-    const unknownIdes = requestedIdes.filter(
-      (id) => !SUPPORTED_IDES.includes(id),
-    );
-    if (unknownIdes.length) {
-      fail(
-        new InvalidArgumentError(`unknown IDE(s): ${unknownIdes.join(", ")}`, {
-          suggestion: `use one of: ${SUPPORTED_IDES.join(", ")}`,
-        }),
-        { command: "setup" },
-      );
-    }
+/**
+ * Non-interactive (`--yes`) setup. Resolves scope/IDEs/plugins entirely
+ * from CLI flags or existing config, writes the new config, runs the
+ * installer, and surfaces stale-artifact warnings without prompting.
+ *
+ * Fails fast on bad input (unknown IDE / unknown plugin / unreadable
+ * config) — no prompts to fall back to.
+ *
+ * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
+ * @param {string} cwd
+ */
+async function setupNonInteractive(options, cwd) {
+  const scope = resolveInstallScope(options.scope);
+  const roots = installPathsForScope(scope, cwd);
 
-    const { plugins, unknownPlugins } = pluginsFromCsv(
-      options.plugins || "core",
-      base.plugins,
+  let existing;
+  try {
+    existing = await loadConfig(roots.configRoot);
+  } catch (err) {
+    fail(
+      new OperationFailedError(err.message, {
+        suggestion:
+          "fix or delete agileflow.config.json and re-run `agileflow setup`",
+        cause: err,
+      }),
+      { command: "setup" },
     );
-    if (unknownPlugins.length) {
-      const known = discoverPlugins()
-        .map((p) => p.id)
-        .join(", ");
-      fail(
-        new InvalidArgumentError(
-          `unknown plugin(s): ${unknownPlugins.join(", ")}`,
-          { suggestion: `available plugins: ${known}` },
-        ),
-        { command: "setup" },
-      );
-    }
-
-    const next = {
-      ...base,
-      plugins,
-      install: { scope },
-      ide: { targets: /** @type {any} */ (requestedIdes) },
-    };
-    next.plugins.core = next.plugins.core || { enabled: true };
-    next.plugins.core.settings = {
-      ...(next.plugins.core.settings || {}),
-      babysit: baseBabysit,
-    };
-    const file = await writeConfigWithFeedback(roots.configRoot, next, {
-      interactive: false,
-    });
-    const enabled = Object.entries(plugins)
-      .filter(([, v]) => v && v.enabled)
-      .map(([id]) => id);
-
-    const installResult = await runInstallWithFeedback(
-      enabled,
-      roots,
-      requestedIdes,
-      next.behaviors,
-      Boolean(next.learnings && next.learnings.enabled),
-      next,
-      { interactive: false },
-    );
-
-    const anyHooks = requestedIdes.some((id) => capabilitiesFor(id).hooks);
-    // eslint-disable-next-line no-console
-    console.log(`✓ Wrote ${file}`);
-    // eslint-disable-next-line no-console
-    console.log(`  scope: ${scope}`);
-    // eslint-disable-next-line no-console
-    console.log(`  ides: ${requestedIdes.join(", ")}`);
-    // eslint-disable-next-line no-console
-    console.log(`  skill packs enabled: ${enabled.join(", ")}`);
-    // eslint-disable-next-line no-console
-    console.log(`  babysit mode: ${baseBabysitMode}`);
-    if (anyHooks) {
-      const activeBehaviors = Object.entries(next.behaviors || {})
-        .filter(([, v]) => v)
-        .map(([k]) => k);
-      // eslint-disable-next-line no-console
-      console.log(
-        `  behaviors enabled: ${activeBehaviors.length ? activeBehaviors.join(", ") : "(none — no hooks will run)"}`,
-      );
-    }
-    // eslint-disable-next-line no-console
-    console.log(
-      `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
-    );
-    // Scan the resolved install root — for global scope this is
-    // ~/.agileflow, not process.cwd().
-    const cleanup = await runPostInstallCleanup(roots.ideRoot, {
-      interactive: false,
-    });
-    if (cleanup.summary) {
-      // eslint-disable-next-line no-console
-      console.log(`  ${cleanup.summary}`);
-    }
     return;
   }
+
+  const { base, baseBabysit, baseBabysitMode } =
+    deriveBaseFromExisting(existing);
+
+  // Resolve IDE targets: --ide flag (csv) wins, then existing config, then default.
+  /** @type {string[]} */
+  const requestedIdes = resolveIdeTargets(
+    options.ide,
+    Array.isArray(base.ide.targets) && base.ide.targets.length
+      ? base.ide.targets
+      : ["claude-code"],
+  );
+  const unknownIdes = requestedIdes.filter(
+    (id) => !SUPPORTED_IDES.includes(id),
+  );
+  if (unknownIdes.length) {
+    fail(
+      new InvalidArgumentError(`unknown IDE(s): ${unknownIdes.join(", ")}`, {
+        suggestion: `use one of: ${SUPPORTED_IDES.join(", ")}`,
+      }),
+      { command: "setup" },
+    );
+  }
+
+  const { plugins, unknownPlugins } = pluginsFromCsv(
+    options.plugins || "core",
+    base.plugins,
+  );
+  if (unknownPlugins.length) {
+    const known = discoverPlugins()
+      .map((p) => p.id)
+      .join(", ");
+    fail(
+      new InvalidArgumentError(
+        `unknown plugin(s): ${unknownPlugins.join(", ")}`,
+        { suggestion: `available plugins: ${known}` },
+      ),
+      { command: "setup" },
+    );
+  }
+
+  const next = {
+    ...base,
+    plugins,
+    install: { scope },
+    ide: { targets: /** @type {any} */ (requestedIdes) },
+  };
+  next.plugins.core = next.plugins.core || { enabled: true };
+  next.plugins.core.settings = {
+    ...(next.plugins.core.settings || {}),
+    babysit: baseBabysit,
+  };
+  const file = await writeConfigWithFeedback(roots.configRoot, next, {
+    interactive: false,
+  });
+  const enabled = Object.entries(plugins)
+    .filter(([, v]) => v && v.enabled)
+    .map(([id]) => id);
+
+  const installResult = await runInstallWithFeedback(
+    enabled,
+    roots,
+    requestedIdes,
+    next.behaviors,
+    Boolean(next.learnings && next.learnings.enabled),
+    next,
+    { interactive: false },
+  );
+
+  const anyHooks = requestedIdes.some((id) => capabilitiesFor(id).hooks);
+  // eslint-disable-next-line no-console
+  console.log(`✓ Wrote ${file}`);
+  // eslint-disable-next-line no-console
+  console.log(`  scope: ${scope}`);
+  // eslint-disable-next-line no-console
+  console.log(`  ides: ${requestedIdes.join(", ")}`);
+  // eslint-disable-next-line no-console
+  console.log(`  skill packs enabled: ${enabled.join(", ")}`);
+  // eslint-disable-next-line no-console
+  console.log(`  babysit mode: ${baseBabysitMode}`);
+  if (anyHooks) {
+    const activeBehaviors = Object.entries(next.behaviors || {})
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    // eslint-disable-next-line no-console
+    console.log(
+      `  behaviors enabled: ${activeBehaviors.length ? activeBehaviors.join(", ") : "(none — no hooks will run)"}`,
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.log(
+    `  installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
+  );
+  // Scan the resolved install root — for global scope this is
+  // ~/.agileflow, not process.cwd().
+  const cleanup = await runPostInstallCleanup(roots.ideRoot, {
+    interactive: false,
+  });
+  if (cleanup.summary) {
+    // eslint-disable-next-line no-console
+    console.log(`  ${cleanup.summary}`);
+  }
+}
+
+/**
+ * Interactive (wizard) setup. Walks the user through scope, IDEs,
+ * plugins, behaviors, babysit mode, and learnings, then writes config,
+ * installs, and prompts for stale-artifact cleanup before the outro.
+ *
+ * Errors are surfaced via prompts.log.* with a graceful process.exit(1)
+ * — no thrown stack traces.
+ *
+ * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
+ * @param {string} cwd
+ */
+async function setupInteractive(options, cwd) {
+  const initialScope = resolveInstallScope(options.scope);
+
+  // eslint-disable-next-line no-console
+  console.log("\n" + logoBanner(pkg.version) + "\n");
+  prompts.intro("agileflow setup");
+  const scope = await pickInstallScope(initialScope);
+  const roots = installPathsForScope(scope, cwd);
+
+  let existing;
+  try {
+    existing = await loadConfig(roots.configRoot);
+  } catch (err) {
+    prompts.log.error(err.message);
+    prompts.log.info(
+      "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
+    );
+    process.exit(1);
+  }
+
+  const { base } = deriveBaseFromExisting(existing);
 
   if (existing.source === "file") {
     prompts.log.info(
@@ -518,11 +554,10 @@ async function setup(options = {}) {
 
   // Stale-artifact check — fires after a successful install so users
   // get prompted at the moment they're paying attention to their
-  // install state. Non-interactive runs only get a warning, never an
-  // unprompted destructive op. Scan the resolved install root so a
-  // global-scope install checks ~/.agileflow, not cwd.
+  // install state. Scan the resolved install root so a global-scope
+  // install checks ~/.agileflow, not cwd.
   const cleanup = await runPostInstallCleanup(roots.ideRoot, {
-    interactive: !options.yes,
+    interactive: true,
   });
 
   // Surface behaviors state in the outro. With behaviors gated, a user
@@ -555,7 +590,22 @@ async function setup(options = {}) {
   );
 }
 
+/**
+ * Dispatcher: pick the interactive wizard or the non-interactive
+ * `--yes` path based on the options flag. Both flows are
+ * self-contained; this function carries no shared state.
+ *
+ * @param {{ yes?: boolean, plugins?: string, ide?: string, scope?: string }} options
+ */
+async function setup(options = {}) {
+  const cwd = process.cwd();
+  if (options.yes) return setupNonInteractive(options, cwd);
+  return setupInteractive(options, cwd);
+}
+
 module.exports = setup;
+module.exports.setupInteractive = setupInteractive;
+module.exports.setupNonInteractive = setupNonInteractive;
 module.exports.pluginsFromCsv = pluginsFromCsv;
 module.exports.resolveIdeTargets = resolveIdeTargets;
 module.exports.resolveInstallScope = resolveInstallScope;
