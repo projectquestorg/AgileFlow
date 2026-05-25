@@ -395,8 +395,12 @@ async function runEngine(prefs) {
  *   - tmux must be on PATH (it's a prerequisite for being "inside tmux"
  *     so this should always hold, but we guard defensively)
  *
+ * Returns void on success (user is now inside the new session via
+ * switch-client; the parent process exits cleanly with status 0). All
+ * failure paths call `fail()` which calls `process.exit(1)`.
+ *
  * @param {string | undefined} name  - worktree name; omit for same-dir
- * @returns {Promise<never>}
+ * @returns {Promise<void>}
  */
 async function runNew(name) {
   if (!(await prefsExist())) {
@@ -491,9 +495,8 @@ async function runNew(name) {
     );
   }
   // runParallelSpawn returns normally after switch-client. We don't
-  // process.exit — the user is now inside the new session and the
-  // current invocation finishes cleanly.
-  return /** @type {never} */ (undefined);
+  // process.exit — the user is now inside the new session and this
+  // invocation finishes cleanly with exit code 0.
 }
 
 /**

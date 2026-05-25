@@ -198,8 +198,62 @@ function createWorktree(opts) {
   return { path: wtPath, branch: safe, base };
 }
 
+/**
+ * Roll back a worktree created by `createWorktree`. Removes both the
+ * worktree directory (via `git worktree remove`) and the branch (via
+ * `git branch -D`). Used by `parallel-session.js` to keep the repo
+ * clean when a tmux session creation fails after the worktree was
+ * already established.
+ *
+ * Best-effort: surfaces partial failures via `removed`/`branchRemoved`
+ * flags so the caller can warn the user about what's left behind.
+ * Doesn't throw on individual git failures — the goal is rollback,
+ * not perfect cleanup.
+ *
+ * @param {{
+ *   path: string,
+ *   branch?: string,
+ *   exec?: GitExec,
+ * }} opts
+ * @returns {{
+ *   removed: boolean,
+ *   branchRemoved: boolean,
+ *   stderr: string,
+ * }}
+ */
+function removeWorktree(opts) {
+  const exec = opts.exec || defaultGitExec;
+  let removed = false;
+  let branchRemoved = false;
+  const stderrParts = [];
+
+  // `git worktree remove -f` so locked / dirty worktrees still get
+  // cleaned up — rollback is a "we just created this, take it back"
+  // operation so force is appropriate.
+  const wt = exec(["worktree", "remove", "-f", opts.path]);
+  if (wt.status === 0) {
+    removed = true;
+  } else if (wt.stderr) {
+    stderrParts.push(`worktree remove: ${wt.stderr.trim()}`);
+  }
+
+  // Branch removal: only attempted if a branch name was supplied.
+  // `git branch -D` force-deletes regardless of merge state.
+  if (opts.branch) {
+    const br = exec(["branch", "-D", opts.branch]);
+    if (br.status === 0) {
+      branchRemoved = true;
+    } else if (br.stderr) {
+      stderrParts.push(`branch -D: ${br.stderr.trim()}`);
+    }
+  }
+
+  return { removed, branchRemoved, stderr: stderrParts.join("; ") };
+}
+
 module.exports = {
   createWorktree,
+  removeWorktree,
   sanitizeName,
   defaultGitExec,
   makeWorktreeError,

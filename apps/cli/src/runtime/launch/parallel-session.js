@@ -24,7 +24,7 @@ const {
   applyKeybindPreset,
   defaultRunner,
 } = require("./tmux.js");
-const { createWorktree } = require("./worktree.js");
+const { createWorktree, removeWorktree } = require("./worktree.js");
 
 /**
  * @typedef {Object} ParallelSpawnResult
@@ -80,11 +80,13 @@ function resolveSpawnDir(opts) {
  *   runner?: ReturnType<typeof defaultRunner>,
  *   log?: (msg: string) => void,
  *   createWorktreeImpl?: typeof createWorktree,
+ *   removeWorktreeImpl?: typeof removeWorktree,
  * }} opts
  * @returns {Promise<ParallelSpawnResult>}
  */
 async function runParallelSpawn(opts) {
   const runner = opts.runner || defaultRunner();
+  const removeWt = opts.removeWorktreeImpl || removeWorktree;
   const log =
     typeof opts.log === "function"
       ? opts.log
@@ -105,54 +107,104 @@ async function runParallelSpawn(opts) {
     );
   }
 
-  const base = baseSessionName(path.basename(opts.bin), targetCwd);
-  // Always pick a fresh name. `new` semantics are "I want a parallel
-  // session" — never "reattach". `nextFreeSessionName` walks
-  // base, base-2, base-3, ... until it finds an unused slot.
-  const sessionName = nextFreeSessionName(base, (n) =>
-    sessionExists(n, runner),
-  );
-
-  const create = createSession(
-    {
-      name: sessionName,
-      bin: opts.bin,
-      args: [],
-      cwd: targetCwd,
-      statusPosition: opts.prefs.tmux.statusPosition,
-    },
-    runner,
-  );
-  if (create.status !== 0) {
-    if (create.error) throw create.error;
-    const stderr = create.stderr.trim() || "tmux new-session failed";
-    throw makeSpawnError(`tmux: ${stderr}`, "ETMUX_CREATE");
-  }
-
-  // Apply the user's keybind preset to the (server-wide) bindings table.
-  // Same call the engine makes on every launch, so the new session
-  // inherits the same Alt+q etc. as the parent.
-  if (opts.prefs.keybinds && opts.prefs.keybinds.preset) {
-    const result = applyKeybindPreset(opts.prefs.keybinds.preset, runner);
-    for (const f of result.failures) {
-      log(`agileflow launch: keybind skipped — ${f.hint}`);
-    }
-  }
-
-  // Swap the user's tmux client to the new session. If switch-client
-  // fails the session is still alive — surface its name so the user
-  // can attach manually.
-  const sw = runner.runSync(["switch-client", "-t", sessionName]);
-  if (sw.status !== 0) {
-    throw makeSpawnError(
-      `switch-client failed: ${sw.stderr.trim() || "unknown error"}; ` +
-        `session "${sessionName}" is still running — \`tmux attach -t ${sessionName}\` to enter it.`,
-      "ETMUX_SWITCH",
+  // Once we've created the worktree we OWN it — if any of the tmux steps
+  // below fail, roll it back so the user isn't left with an orphan dir
+  // + branch they have to clean up by hand. The rollback helper itself
+  // is best-effort; on failure we surface a warning but still re-throw
+  // the original tmux error.
+  try {
+    const base = baseSessionName(path.basename(opts.bin), targetCwd);
+    // Always pick a fresh name. `new` semantics are "I want a parallel
+    // session" — never "reattach". `nextFreeSessionName` walks
+    // base, base-2, base-3, ... until it finds an unused slot.
+    const sessionName = nextFreeSessionName(base, (n) =>
+      sessionExists(n, runner),
     );
-  }
 
-  log(`agileflow launch: switched to new session ${sessionName}`);
-  return { sessionName, cwd: targetCwd, worktree };
+    const create = createSession(
+      {
+        name: sessionName,
+        bin: opts.bin,
+        args: [],
+        cwd: targetCwd,
+        statusPosition: opts.prefs.tmux.statusPosition,
+      },
+      runner,
+    );
+    if (create.status !== 0) {
+      if (create.error) throw create.error;
+
+      // Race recovery: in the same-dir (no-name) case, another
+      // `agileflow launch new` invocation could have grabbed our
+      // candidate name between the nextFreeSessionName probe and the
+      // new-session call. If the session is alive now, treat this as
+      // "user got what they wanted" and switch-client to it. We don't
+      // do this for the worktree path because the worktree dir is
+      // freshly created and unique, so the name collision shouldn't
+      // happen — if it does, something weirder is going on and the
+      // user should see the original error.
+      if (!opts.name && sessionExists(sessionName, runner)) {
+        log(
+          `agileflow launch: race-recovered, attaching to session ${sessionName}`,
+        );
+      } else {
+        const stderr = create.stderr.trim() || "tmux new-session failed";
+        throw makeSpawnError(`tmux: ${stderr}`, "ETMUX_CREATE");
+      }
+    }
+
+    // Apply the user's keybind preset to the (server-wide) bindings table.
+    // Same call the engine makes on every launch, so the new session
+    // inherits the same Alt+q etc. as the parent.
+    if (opts.prefs.keybinds && opts.prefs.keybinds.preset) {
+      const result = applyKeybindPreset(opts.prefs.keybinds.preset, runner);
+      for (const f of result.failures) {
+        log(`agileflow launch: keybind skipped — ${f.hint}`);
+      }
+    }
+
+    // Swap the user's tmux client to the new session. If switch-client
+    // fails the session is still alive — surface its name so the user
+    // can attach manually.
+    const sw = runner.runSync(["switch-client", "-t", sessionName]);
+    if (sw.status !== 0) {
+      throw makeSpawnError(
+        `switch-client failed: ${sw.stderr.trim() || "unknown error"}; ` +
+          `session "${sessionName}" is still running — \`tmux attach -t ${sessionName}\` to enter it.`,
+        "ETMUX_SWITCH",
+      );
+    }
+
+    log(`agileflow launch: switched to new session ${sessionName}`);
+    return { sessionName, cwd: targetCwd, worktree };
+  } catch (err) {
+    // Rollback path. Worktree got created but a subsequent step (tmux
+    // create / keybind apply / switch-client) failed — remove the
+    // worktree dir + branch so the repo state matches the launch state
+    // (i.e., as if the user had never pressed Alt+n).
+    if (worktree) {
+      try {
+        const result = removeWt({
+          path: worktree.path,
+          branch: worktree.branch,
+        });
+        if (result.removed && result.branchRemoved) {
+          log(
+            `agileflow launch: rolled back worktree ${worktree.path} + branch ${worktree.branch}`,
+          );
+        } else {
+          log(
+            `agileflow launch: worktree rollback partial — manual cleanup may be needed (${result.stderr})`,
+          );
+        }
+      } catch (rollbackErr) {
+        log(
+          `agileflow launch: rollback failed — leftover at ${worktree.path}: ${rollbackErr.message}`,
+        );
+      }
+    }
+    throw err;
+  }
 }
 
 module.exports = {

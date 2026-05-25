@@ -125,10 +125,11 @@ describe("runParallelSpawn — same-dir path", () => {
     ).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  it("throws ETMUX_CREATE when new-session returns non-zero", async () => {
+  it("throws ETMUX_CREATE when new-session returns non-zero AND no race-recovery is possible", async () => {
     const runner = queuedRunner([
-      { status: 1, stdout: "", stderr: "" }, // probe: free
+      { status: 1, stdout: "", stderr: "" }, // nextFreeSessionName probe: free
       { status: 1, stdout: "", stderr: "tmux server died" }, // new-session fails
+      { status: 1, stdout: "", stderr: "" }, // race-recovery probe: still not there
     ]);
     await expect(
       runParallelSpawn({
@@ -231,5 +232,152 @@ describe("runParallelSpawn — worktree path", () => {
     ).rejects.toMatchObject({ code: "EWT_DIR_EXISTS" });
     // No tmux work happened.
     expect(runner.calls).toEqual([]);
+  });
+
+  it("rolls back the worktree when tmux session creation fails", async () => {
+    const runner = queuedRunner([
+      { status: 1, stdout: "", stderr: "" }, // probe: free
+      { status: 1, stdout: "", stderr: "tmux server died" }, // new-session fails
+    ]);
+    const createWorktreeImpl = vi.fn(() => ({
+      path: "/home/me/app-feat1",
+      branch: "feat1",
+      base: "main",
+    }));
+    const removeWorktreeImpl = vi.fn(() => ({
+      removed: true,
+      branchRemoved: true,
+      stderr: "",
+    }));
+    const logs = [];
+
+    await expect(
+      runParallelSpawn({
+        bin: "claude",
+        name: "feat1",
+        prefs: basePrefs,
+        cwd: "/home/me/app",
+        runner,
+        log: (msg) => logs.push(msg),
+        createWorktreeImpl,
+        removeWorktreeImpl,
+      }),
+    ).rejects.toMatchObject({ code: "ETMUX_CREATE" });
+
+    // Rollback fired with the correct path + branch.
+    expect(removeWorktreeImpl).toHaveBeenCalledWith({
+      path: "/home/me/app-feat1",
+      branch: "feat1",
+    });
+    expect(logs.some((l) => l.includes("rolled back worktree"))).toBe(true);
+  });
+
+  it("surfaces a partial-rollback warning when removeWorktree fails", async () => {
+    const runner = queuedRunner([
+      { status: 1, stdout: "", stderr: "" },
+      { status: 1, stdout: "", stderr: "tmux died" },
+    ]);
+    const createWorktreeImpl = vi.fn(() => ({
+      path: "/home/me/app-feat1",
+      branch: "feat1",
+      base: "main",
+    }));
+    const removeWorktreeImpl = vi.fn(() => ({
+      removed: false,
+      branchRemoved: false,
+      stderr: "worktree remove: refused to remove dirty checkout",
+    }));
+    const logs = [];
+
+    await expect(
+      runParallelSpawn({
+        bin: "claude",
+        name: "feat1",
+        prefs: basePrefs,
+        cwd: "/home/me/app",
+        runner,
+        log: (msg) => logs.push(msg),
+        createWorktreeImpl,
+        removeWorktreeImpl,
+      }),
+    ).rejects.toMatchObject({ code: "ETMUX_CREATE" });
+
+    expect(logs.some((l) => l.includes("worktree rollback partial"))).toBe(
+      true,
+    );
+  });
+});
+
+describe("runParallelSpawn — race recovery for Alt+s", () => {
+  it("attaches to the racing session when same-dir spawn loses the create race", async () => {
+    let probeCount = 0;
+    const calls = [];
+    const runner = {
+      calls,
+      runSync(args) {
+        calls.push(args);
+        if (args[0] === "has-session") {
+          probeCount++;
+          // First probe (nextFreeSessionName): say free.
+          // Second probe (post-create-failure recheck): say it exists now.
+          return probeCount === 1
+            ? { status: 1, stdout: "", stderr: "", error: null }
+            : { status: 0, stdout: "", stderr: "", error: null };
+        }
+        if (args[0] === "new-session") {
+          return {
+            status: 1,
+            stdout: "",
+            stderr: "duplicate session: claude-app",
+            error: null,
+          };
+        }
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+
+    const result = await runParallelSpawn({
+      bin: "claude",
+      prefs: basePrefs,
+      cwd: "/home/me/app",
+      runner,
+      log: () => {},
+    });
+
+    // Race-recovered → still ends in switch-client to the same name.
+    const sw = calls.find((c) => c[0] === "switch-client");
+    expect(sw).toEqual(["switch-client", "-t", "claude-app"]);
+    expect(result.sessionName).toBe("claude-app");
+  });
+
+  it("does NOT race-recover when a worktree name is supplied (worktree dir is unique)", async () => {
+    const runner = queuedRunner([
+      { status: 1, stdout: "", stderr: "" }, // probe
+      { status: 1, stdout: "", stderr: "duplicate" }, // new-session fails
+    ]);
+    const createWorktreeImpl = vi.fn(() => ({
+      path: "/home/me/app-feat1",
+      branch: "feat1",
+      base: "main",
+    }));
+    const removeWorktreeImpl = vi.fn(() => ({
+      removed: true,
+      branchRemoved: true,
+      stderr: "",
+    }));
+
+    await expect(
+      runParallelSpawn({
+        bin: "claude",
+        name: "feat1",
+        prefs: basePrefs,
+        cwd: "/home/me/app",
+        runner,
+        log: () => {},
+        createWorktreeImpl,
+        removeWorktreeImpl,
+      }),
+    ).rejects.toMatchObject({ code: "ETMUX_CREATE" });
   });
 });

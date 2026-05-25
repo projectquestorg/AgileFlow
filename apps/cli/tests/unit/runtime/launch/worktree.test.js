@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 
 import worktreeModule from "../../../../src/runtime/launch/worktree.js";
 
-const { createWorktree, sanitizeName } = worktreeModule;
+const { createWorktree, removeWorktree, sanitizeName } = worktreeModule;
 
 /**
  * Build an exec that returns queued responses in order, recording every
@@ -264,5 +264,71 @@ describe("createWorktree", () => {
     } catch (err) {
       expect(err.code).toBe("EWT_DIR_EXISTS");
     }
+  });
+});
+
+describe("removeWorktree", () => {
+  it("issues git worktree remove -f + git branch -D when both succeed", () => {
+    const q = queuedExec([
+      { status: 0, stdout: "", stderr: "" }, // worktree remove
+      { status: 0, stdout: "", stderr: "" }, // branch -D
+    ]);
+    const result = removeWorktree({
+      path: "/repo-feat1",
+      branch: "feat1",
+      exec: q.exec,
+    });
+    expect(result).toEqual({
+      removed: true,
+      branchRemoved: true,
+      stderr: "",
+    });
+    expect(q.calls).toEqual([
+      ["worktree", "remove", "-f", "/repo-feat1"],
+      ["branch", "-D", "feat1"],
+    ]);
+  });
+
+  it("only attempts branch deletion when a branch is supplied", () => {
+    const q = queuedExec([{ status: 0, stdout: "", stderr: "" }]);
+    const result = removeWorktree({ path: "/repo-feat1", exec: q.exec });
+    expect(result.removed).toBe(true);
+    expect(result.branchRemoved).toBe(false);
+    expect(q.calls).toEqual([["worktree", "remove", "-f", "/repo-feat1"]]);
+  });
+
+  it("surfaces partial failures via stderr without throwing", () => {
+    const q = queuedExec([
+      {
+        status: 1,
+        stdout: "",
+        stderr: "fatal: worktree is dirty, refusing to remove",
+      },
+      { status: 0, stdout: "", stderr: "" }, // branch -D still runs
+    ]);
+    const result = removeWorktree({
+      path: "/repo-feat1",
+      branch: "feat1",
+      exec: q.exec,
+    });
+    expect(result.removed).toBe(false);
+    expect(result.branchRemoved).toBe(true);
+    expect(result.stderr).toMatch(/worktree remove.*dirty/);
+  });
+
+  it("returns all-false when both git operations fail", () => {
+    const q = queuedExec([
+      { status: 1, stdout: "", stderr: "remove failed" },
+      { status: 1, stdout: "", stderr: "branch not fully merged" },
+    ]);
+    const result = removeWorktree({
+      path: "/repo-feat1",
+      branch: "feat1",
+      exec: q.exec,
+    });
+    expect(result.removed).toBe(false);
+    expect(result.branchRemoved).toBe(false);
+    expect(result.stderr).toMatch(/remove failed/);
+    expect(result.stderr).toMatch(/branch not fully merged/);
   });
 });
