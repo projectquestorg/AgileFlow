@@ -21,7 +21,7 @@ describe("launch.decideFlow", () => {
     );
   });
 
-  it("bare launch with prefs prints the placeholder", () => {
-    expect(decideFlow({ sub: undefined, hasPrefs: true })).toBe("placeholder");
+  it("bare launch with prefs routes to the engine", () => {
+    expect(decideFlow({ sub: undefined, hasPrefs: true })).toBe("engine");
   });
 });

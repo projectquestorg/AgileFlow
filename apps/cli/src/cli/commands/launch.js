@@ -1,13 +1,13 @@
 /**
- * `agileflow launch` — slice 1: prefs-only.
+ * `agileflow launch`.
  *
  * Two surfaces:
  *   - `agileflow launch setup`  — always runs the prefs wizard.
  *   - `agileflow launch`         — runs setup on first invocation
  *                                  (no prefs file); otherwise loads
- *                                  prefs and prints a placeholder. The
- *                                  tmux engine that actually starts
- *                                  sessions lands in slice 2.
+ *                                  prefs and spawns the user's
+ *                                  preferred AI CLI (slice 2a; tmux
+ *                                  wrapper lands in slice 2b).
  *
  * Errors here go through the typed-error / `fail()` plumbing in
  * `src/lib/errors.js` so messages stay consistent with `setup` /
@@ -25,6 +25,8 @@ const {
 const { pickCli } = require("../wizard/launch-cli-picker.js");
 const { pickTmux } = require("../wizard/launch-tmux-picker.js");
 const { pickAliases } = require("../wizard/launch-alias-picker.js");
+const { resolveCli } = require("../../runtime/launch/resolve-cli.js");
+const { runCli } = require("../../runtime/launch/spawn.js");
 const {
   installAfAlias,
   uninstallAfAlias,
@@ -40,12 +42,12 @@ const {
  * subcommand name and whether a prefs file exists.
  *
  * @param {{ sub?: string, hasPrefs: boolean }} input
- * @returns {'setup' | 'placeholder' | 'first-run-setup'}
+ * @returns {'setup' | 'engine' | 'first-run-setup'}
  */
 function decideFlow({ sub, hasPrefs }) {
   if (sub === "setup") return "setup";
   if (!hasPrefs) return "first-run-setup";
-  return "placeholder";
+  return "engine";
 }
 
 /**
@@ -76,7 +78,13 @@ async function loadPrefsOrFail() {
  * Run the interactive setup wizard. Used by both explicit `launch setup`
  * and first-run from bare `launch`.
  *
- * @returns {Promise<void>}
+ * Returns the prefs object that was just persisted so the first-run path
+ * can hand it straight to runEngine without re-reading from disk — which
+ * avoids surfacing a misleading "fix or delete the prefs file" hint in
+ * the rare case where the file becomes unreadable immediately after a
+ * successful write.
+ *
+ * @returns {Promise<import('../../runtime/launch/defaults.js').LaunchPrefs>}
  */
 async function runSetup() {
   // eslint-disable-next-line no-console
@@ -211,31 +219,47 @@ async function runSetup() {
   ];
 
   prompts.outro(summary.join("\n"));
+
+  return next;
 }
 
 /**
- * Print the slice-1 placeholder ("engine landing in slice 2") plus a
- * one-line summary of the loaded prefs so the user can confirm they're
- * being read correctly.
+ * Resolve the AI CLI from prefs and launch it as a foreground child.
+ * Exits the parent with the child's exit code so shell pipelines see
+ * the right status.
+ *
+ * Slice 2a: plain spawn only. When `prefs.tmux.enabled === true` we
+ * log a one-line notice that the tmux wrapper is deferred and fall
+ * through to plain spawn — so the user gets a working CLI today.
  *
  * @param {import('../../runtime/launch/defaults.js').LaunchPrefs} prefs
- * @param {string} prefsFile
+ * @returns {Promise<never>}
  */
-function printPlaceholder(prefs, prefsFile) {
-  const lines = [
-    "agileflow launch — slice 1",
-    `prefs: ${prefsFile}`,
-    `preferred CLI: ${prefs.cli.preferred} (fallback ${prefs.cli.fallbackOrder.join(" → ")})`,
-    prefs.tmux.enabled
-      ? `tmux: on (status ${prefs.tmux.statusPosition}, keybinds ${prefs.keybinds.preset})`
-      : "tmux: off",
-    `af alias: ${prefs.aliases.af.enabled ? "enabled" : "disabled"}`,
-    "",
-    "Session engine ships in slice 2.",
-    "Re-run with `agileflow launch setup` to update prefs.",
-  ];
-  // eslint-disable-next-line no-console
-  console.log(lines.join("\n"));
+async function runEngine(prefs) {
+  const { resolved, tried } = resolveCli(prefs);
+  if (!resolved) {
+    fail(
+      new OperationFailedError(
+        `no configured AI CLI is installed (tried ${tried.join(", ")})`,
+        {
+          suggestion:
+            "install one of the supported CLIs (claude, codex, cursor-agent, aider), " +
+            "or run `agileflow launch setup` to update your fallback order",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+
+  if (prefs.tmux.enabled) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch: tmux session management isn't available yet — launching ${resolved.bin} directly.`,
+    );
+  }
+
+  const result = await runCli(resolved.bin, []);
+  process.exit(result.exitCode);
 }
 
 /**
@@ -262,27 +286,63 @@ async function launch(sub, _options) {
     const hasPrefs = await prefsExist();
     const flow = decideFlow({ sub, hasPrefs });
 
-    if (flow === "setup" || flow === "first-run-setup") {
+    if (flow === "setup") {
       await runSetup();
-      if (flow === "first-run-setup") {
-        // After first-run setup, also print the placeholder so the user
-        // sees what the bare `launch` invocation would do next time.
-        const { prefs, path: prefsFile } = await loadPrefsOrFail();
-        // eslint-disable-next-line no-console
-        console.log("");
-        printPlaceholder(prefs, prefsFile);
-      }
       return;
     }
 
-    const { prefs, path: prefsFile } = await loadPrefsOrFail();
-    printPlaceholder(prefs, prefsFile);
+    if (flow === "first-run-setup") {
+      // Walk the user through setup, then immediately launch — they
+      // expect `agileflow launch` to do something on first invocation,
+      // not just configure and exit. Use the prefs returned from
+      // runSetup directly so a failed reload can't tell the user to
+      // "re-run setup" when they just finished doing exactly that.
+      const prefs = await runSetup();
+      // eslint-disable-next-line no-console
+      console.log("");
+      await runEngine(prefs);
+      return;
+    }
+
+    const { prefs } = await loadPrefsOrFail();
+    await runEngine(prefs);
   } catch (err) {
     // Preserve typed AgileflowError subclasses (OperationFailedError,
     // InvalidArgumentError, MissingFileError) with their `suggestion`
     // intact. A `name` string compare would miss subclasses — they each
     // override `name` to their own class name.
     if (err instanceof AgileflowError) throw err;
+
+    // TOCTOU: the PATH probe in resolveCli passed, but the binary was
+    // removed before spawn. Surface the same actionable hint as the
+    // no-CLI-installed path, not the generic "re-run with DEBUG=1".
+    if (err && err.code === "ENOENT") {
+      fail(
+        new OperationFailedError(
+          `AI CLI not found at launch time: ${err.message}`,
+          {
+            suggestion:
+              "install one of the supported CLIs (claude, codex, cursor-agent, aider), " +
+              "or run `agileflow launch setup` to update your fallback order",
+            cause: err,
+          },
+        ),
+        { command: "launch" },
+      );
+    }
+
+    // Binary exists but is not executable — distinct fix from "install".
+    if (err && err.code === "EACCES") {
+      fail(
+        new OperationFailedError(`AI CLI is not executable: ${err.message}`, {
+          suggestion:
+            "check file permissions on the CLI binary, or re-install it",
+          cause: err,
+        }),
+        { command: "launch" },
+      );
+    }
+
     fail(
       new OperationFailedError(
         `launch failed: ${err && err.message ? err.message : String(err)}`,
@@ -296,4 +356,4 @@ async function launch(sub, _options) {
 module.exports = launch;
 module.exports.decideFlow = decideFlow;
 module.exports.runSetup = runSetup;
-module.exports.printPlaceholder = printPlaceholder;
+module.exports.runEngine = runEngine;
