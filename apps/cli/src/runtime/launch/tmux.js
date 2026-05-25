@@ -209,6 +209,42 @@ async function attachSession(name, runner) {
 }
 
 /**
+ * List existing session names belonging to a specific CLI.
+ *
+ * Uses `tmux ls -F '#{session_name}'` and filters by the `<cli>-`
+ * prefix our `baseSessionName` produces. Returns an empty array if no
+ * tmux server is running (tmux ls exits non-zero), the call fails, or
+ * no sessions match.
+ *
+ * @param {string} cli
+ * @param {TmuxRunner} runner
+ * @returns {string[]}
+ */
+function listSessionsForCli(cli, runner) {
+  const result = runner.runSync(["ls", "-F", "#{session_name}"]);
+  if (result.status !== 0 || !result.stdout) return [];
+  const prefix = `${cli}-`;
+  return result.stdout
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s.startsWith(prefix));
+}
+
+/**
+ * Kill a tmux session by name. Returns true on success, false on any
+ * tmux error (already gone, permission, etc.) — caller decides whether
+ * to surface the failure.
+ *
+ * @param {string} name
+ * @param {TmuxRunner} runner
+ * @returns {boolean}
+ */
+function killSession(name, runner) {
+  const result = runner.runSync(["kill-session", "-t", `=${name}`]);
+  return result.status === 0;
+}
+
+/**
  * Top-level orchestrator: pick a session name, ensure it exists with
  * the user's CLI running inside it, then attach. If the canonical name
  * is already attached elsewhere, spawn a numbered sibling.
@@ -221,6 +257,7 @@ async function attachSession(name, runner) {
  *   cwd?: string,
  *   statusPosition?: string,
  *   runner?: TmuxRunner,
+ *   log?: (msg: string) => void,
  * }} opts
  * @returns {Promise<TmuxLaunchResult>}
  */
@@ -228,6 +265,17 @@ async function launchInTmux(opts) {
   const runner = opts.runner || defaultRunner();
   const cwd = opts.cwd || process.cwd();
   const base = baseSessionName(path.basename(opts.bin), cwd);
+  // Narration: tells the user whether they're resuming an existing
+  // session (their context survives) or starting fresh. Defaults to
+  // stderr so it doesn't pollute scripts that pipe stdout. Injectable
+  // for tests; pass a no-op `log` to silence.
+  const log =
+    typeof opts.log === "function"
+      ? opts.log
+      : (msg) => {
+          // eslint-disable-next-line no-console
+          console.error(msg);
+        };
 
   // Reattach to the canonical session if it exists. tmux's `attach-session`
   // is the right command for both "exists detached" and "exists attached"
@@ -246,6 +294,7 @@ async function launchInTmux(opts) {
         opts.statusPosition,
       ]);
     }
+    log(`agileflow launch: resuming session ${base}`);
     return attachSession(base, runner);
   }
 
@@ -276,6 +325,7 @@ async function launchInTmux(opts) {
     // wanted; just attach to it instead of surfacing a misleading
     // "duplicate session" error.
     if (sessionExists(name, runner)) {
+      log(`agileflow launch: resuming session ${name} (race-recovered)`);
       return attachSession(name, runner);
     }
 
@@ -285,6 +335,7 @@ async function launchInTmux(opts) {
     throw err;
   }
 
+  log(`agileflow launch: starting new session ${name}`);
   return attachSession(name, runner);
 }
 
@@ -297,5 +348,7 @@ module.exports = {
   createSession,
   attachSession,
   launchInTmux,
+  listSessionsForCli,
+  killSession,
   defaultRunner,
 };

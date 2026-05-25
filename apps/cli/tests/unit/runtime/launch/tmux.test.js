@@ -19,7 +19,12 @@ const {
   createSession,
   attachSession,
   launchInTmux,
+  listSessionsForCli,
+  killSession,
 } = tmuxModule;
+
+// Pass to launchInTmux tests so narration doesn't pollute test output.
+const noopLog = () => {};
 
 /**
  * Build a runner where `runSync` calls a queued handler per invocation.
@@ -194,6 +199,7 @@ describe("launchInTmux", () => {
       cwd: "/home/me/app",
       statusPosition: "top",
       runner,
+      log: noopLog,
     });
     expect(result.exitCode).toBe(0);
     // First call: existence probe; second: set-option on the existing session;
@@ -223,6 +229,7 @@ describe("launchInTmux", () => {
       cwd: "/home/me/app",
       statusPosition: "bottom",
       runner,
+      log: noopLog,
     });
     expect(runner.calls[0]).toEqual(["has-session", "-t", "=claude-app"]);
     expect(runner.calls[1].slice(0, 5)).toEqual([
@@ -246,7 +253,12 @@ describe("launchInTmux", () => {
       { status: 1, stdout: "", stderr: "" }, // race-recheck: still nope
     ]);
     await expect(
-      launchInTmux({ bin: "claude", cwd: "/home/me/app", runner }),
+      launchInTmux({
+        bin: "claude",
+        cwd: "/home/me/app",
+        runner,
+        log: noopLog,
+      }),
     ).rejects.toMatchObject({ code: "ETMUX_CREATE" });
     expect(runner.runAttach).not.toHaveBeenCalled();
   });
@@ -263,7 +275,12 @@ describe("launchInTmux", () => {
       0,
     );
     await expect(
-      launchInTmux({ bin: "claude", cwd: "/home/me/app", runner }),
+      launchInTmux({
+        bin: "claude",
+        cwd: "/home/me/app",
+        runner,
+        log: noopLog,
+      }),
     ).rejects.toMatchObject({ code: "ENOENT" });
     expect(runner.runAttach).not.toHaveBeenCalled();
   });
@@ -281,6 +298,7 @@ describe("launchInTmux", () => {
       bin: "claude",
       cwd: "/home/me/app",
       runner,
+      log: noopLog,
     });
     expect(result.exitCode).toBe(0);
     expect(runner.runAttach).toHaveBeenCalledWith([
@@ -297,5 +315,137 @@ describe("launchInTmux", () => {
     };
     const result = await attachSession("claude-app", runner);
     expect(result).toEqual({ exitCode: 130, signal: "SIGINT" });
+  });
+
+  it("narrates 'resuming session' when an existing session is found", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 0, stdout: "", stderr: "" }, // exists
+        { status: 0, stdout: "", stderr: "" }, // set-option
+      ],
+      0,
+    );
+    const logs = [];
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      statusPosition: "top",
+      runner,
+      log: (msg) => logs.push(msg),
+    });
+    expect(logs).toEqual(["agileflow launch: resuming session claude-app"]);
+  });
+
+  it("narrates 'starting new session' when creating fresh", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 1, stdout: "", stderr: "" }, // probe: nope
+        { status: 0, stdout: "", stderr: "" }, // new-session
+        { status: 0, stdout: "", stderr: "" }, // set-option
+      ],
+      0,
+    );
+    const logs = [];
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      statusPosition: "bottom",
+      runner,
+      log: (msg) => logs.push(msg),
+    });
+    expect(logs).toEqual(["agileflow launch: starting new session claude-app"]);
+  });
+
+  it("narrates 'race-recovered' when the create-fails-but-exists path fires", async () => {
+    const runner = queuedRunner(
+      [
+        { status: 1, stdout: "", stderr: "" }, // probe miss
+        { status: 1, stdout: "", stderr: "duplicate session" }, // create loses race
+        { status: 0, stdout: "", stderr: "" }, // re-probe: exists now
+      ],
+      0,
+    );
+    const logs = [];
+    await launchInTmux({
+      bin: "claude",
+      cwd: "/home/me/app",
+      runner,
+      log: (msg) => logs.push(msg),
+    });
+    expect(logs).toEqual([
+      "agileflow launch: resuming session claude-app (race-recovered)",
+    ]);
+  });
+});
+
+describe("listSessionsForCli", () => {
+  it("filters tmux ls output to sessions for the given cli", () => {
+    const runner = {
+      runSync: () => ({
+        status: 0,
+        stdout: "claude-app\nclaude-blog\ncodex-api\nother\n",
+        stderr: "",
+        error: null,
+      }),
+      runAttach: vi.fn(),
+    };
+    expect(listSessionsForCli("claude", runner)).toEqual([
+      "claude-app",
+      "claude-blog",
+    ]);
+  });
+
+  it("returns [] when tmux ls fails (e.g., no server running)", () => {
+    const runner = {
+      runSync: () => ({
+        status: 1,
+        stdout: "",
+        stderr: "no server running",
+        error: null,
+      }),
+      runAttach: vi.fn(),
+    };
+    expect(listSessionsForCli("claude", runner)).toEqual([]);
+  });
+
+  it("returns [] when no sessions match", () => {
+    const runner = {
+      runSync: () => ({
+        status: 0,
+        stdout: "codex-api\nother\n",
+        stderr: "",
+        error: null,
+      }),
+      runAttach: vi.fn(),
+    };
+    expect(listSessionsForCli("claude", runner)).toEqual([]);
+  });
+});
+
+describe("killSession", () => {
+  it("calls tmux kill-session with the =name target", () => {
+    const calls = [];
+    const runner = {
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
+      runAttach: vi.fn(),
+    };
+    expect(killSession("claude-app", runner)).toBe(true);
+    expect(calls[0]).toEqual(["kill-session", "-t", "=claude-app"]);
+  });
+
+  it("returns false on failure", () => {
+    const runner = {
+      runSync: () => ({
+        status: 1,
+        stdout: "",
+        stderr: "no such session",
+        error: null,
+      }),
+      runAttach: vi.fn(),
+    };
+    expect(killSession("missing", runner)).toBe(false);
   });
 });

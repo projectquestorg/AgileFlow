@@ -19,7 +19,7 @@
 const path = require("path");
 const prompts = require("@clack/prompts");
 const pkg = require("../../../package.json");
-const { logoBanner } = require("../../lib/brand.js");
+const { logoBanner, questionMessage } = require("../../lib/brand.js");
 const {
   loadPrefs,
   writePrefs,
@@ -34,6 +34,9 @@ const {
   isInsideTmux,
   tmuxAvailable,
   launchInTmux,
+  listSessionsForCli,
+  killSession,
+  defaultRunner: defaultTmuxRunner,
 } = require("../../runtime/launch/tmux.js");
 const {
   installAfAlias,
@@ -80,6 +83,31 @@ async function loadPrefsOrFail() {
       { command: "launch" },
     );
   }
+}
+
+/**
+ * Pure helper: decide whether to offer orphan cleanup, given the prior
+ * preferred CLI, the new one, and whether tmux is available. Extracted
+ * so unit tests can cover the decision matrix without spinning up tmux.
+ *
+ * @param {{
+ *   oldPreferred: string | undefined,
+ *   newPreferred: string,
+ *   tmuxAvailable: boolean,
+ *   existingSource: 'file' | 'defaults',
+ * }} input
+ * @returns {boolean}
+ */
+function shouldOfferOrphanCleanup({
+  oldPreferred,
+  newPreferred,
+  tmuxAvailable: tmuxOk,
+  existingSource,
+}) {
+  if (existingSource !== "file") return false; // first-time setup has no orphans
+  if (!tmuxOk) return false;
+  if (!oldPreferred || oldPreferred === newPreferred) return false;
+  return true;
 }
 
 /**
@@ -131,6 +159,51 @@ async function runSetup() {
     aliases,
     pinned: base.pinned,
   };
+
+  // Orphan cleanup: when the user switches their preferred CLI, the old
+  // `<old-cli>-<dir>` sessions stop being reachable through `launch` but
+  // keep occupying the tmux server. Offer to kill them while we have the
+  // user's attention — declining is fine, they can clean up manually later.
+  if (
+    shouldOfferOrphanCleanup({
+      oldPreferred: base.cli.preferred,
+      newPreferred: cli.preferred,
+      tmuxAvailable: tmuxAvailable(),
+      existingSource: existing.source,
+    })
+  ) {
+    const runner = defaultTmuxRunner();
+    const orphans = listSessionsForCli(base.cli.preferred, runner);
+    if (orphans.length > 0) {
+      const choice = await prompts.confirm({
+        message: questionMessage(
+          `Kill ${orphans.length} stale tmux session(s) from your previous CLI (${base.cli.preferred})?`,
+          orphans.join(", "),
+        ),
+        initialValue: true,
+      });
+      if (prompts.isCancel(choice)) {
+        prompts.cancel("Setup cancelled. No changes made.");
+        process.exit(1);
+      }
+      if (choice) {
+        let killed = 0;
+        let failed = 0;
+        for (const name of orphans) {
+          if (killSession(name, runner)) killed++;
+          else failed++;
+        }
+        if (killed > 0) {
+          prompts.log.info(`Killed ${killed} orphaned session(s).`);
+        }
+        if (failed > 0) {
+          prompts.log.warn(
+            `${failed} session(s) could not be killed — check \`tmux ls\`.`,
+          );
+        }
+      }
+    }
+  }
 
   // Apply the alias side-effect BEFORE writing prefs. Writing first
   // risks recording `aliases.af.enabled = true` to disk when the symlink
@@ -401,3 +474,4 @@ module.exports = launch;
 module.exports.decideFlow = decideFlow;
 module.exports.runSetup = runSetup;
 module.exports.runEngine = runEngine;
+module.exports.shouldOfferOrphanCleanup = shouldOfferOrphanCleanup;
