@@ -359,15 +359,30 @@ describe("launchInTmux", () => {
   });
 
   it("applies the keybind preset after creating a new session", async () => {
+    // queuedRunner: any extra calls past the handler queue get a default
+    // "no handler" stub, which is fine for the unbind sweep — we only care
+    // about WHICH calls were made, not exact ordering. Default the missing
+    // ones to success so failures don't get logged.
     const runner = queuedRunner(
       [
         { status: 1, stdout: "", stderr: "" }, // probe: nope
         { status: 0, stdout: "", stderr: "" }, // new-session
         { status: 0, stdout: "", stderr: "" }, // set-option statusPosition
-        { status: 0, stdout: "", stderr: "" }, // bind-key (minimal preset = 1 binding)
+        // Then: ALL_PRESET_KEYS unbind sweep + the minimal preset's bind-key.
       ],
       0,
     );
+    // Override runSync default handler so the unbind sweep + bind don't
+    // get the "no handler" 1-status (which would surface as failures).
+    const origRunSync = runner.runSync.bind(runner);
+    runner.runSync = (args) => {
+      const queued = origRunSync(args);
+      if (queued && queued.stderr === "no handler") {
+        return { status: 0, stdout: "", stderr: "", error: null };
+      }
+      return queued;
+    };
+
     await launchInTmux({
       bin: "claude",
       cwd: "/home/me/app",
@@ -376,8 +391,6 @@ describe("launchInTmux", () => {
       runner,
       log: noopLog,
     });
-    // The bind-key call should appear after new-session + set-option,
-    // before the attach.
     const bindCall = runner.calls.find((c) => c[0] === "bind-key");
     expect(bindCall).toEqual([
       "bind-key",
@@ -386,6 +399,9 @@ describe("launchInTmux", () => {
       "M-q",
       "detach-client",
     ]);
+    // Confirm the unbind sweep ran before the bind.
+    const unbinds = runner.calls.filter((c) => c[0] === "unbind-key");
+    expect(unbinds.length).toBeGreaterThan(0);
   });
 
   it("applies the keybind preset on reattach as well (prefs change without recreate)", async () => {
@@ -393,10 +409,18 @@ describe("launchInTmux", () => {
       [
         { status: 0, stdout: "", stderr: "" }, // probe: exists
         { status: 0, stdout: "", stderr: "" }, // set-option statusPosition
-        { status: 0, stdout: "", stderr: "" }, // bind-key
       ],
       0,
     );
+    const origRunSync = runner.runSync.bind(runner);
+    runner.runSync = (args) => {
+      const queued = origRunSync(args);
+      if (queued && queued.stderr === "no handler") {
+        return { status: 0, stdout: "", stderr: "", error: null };
+      }
+      return queued;
+    };
+
     await launchInTmux({
       bin: "claude",
       cwd: "/home/me/app",
@@ -409,7 +433,7 @@ describe("launchInTmux", () => {
     expect(bindCall).toBeDefined();
   });
 
-  it("skips keybind step entirely when preset is 'none'", async () => {
+  it("preset 'none' still runs the unbind sweep so switching from default→none clears the old keys", async () => {
     const runner = queuedRunner(
       [
         { status: 1, stdout: "", stderr: "" }, // probe: nope
@@ -418,6 +442,15 @@ describe("launchInTmux", () => {
       ],
       0,
     );
+    const origRunSync = runner.runSync.bind(runner);
+    runner.runSync = (args) => {
+      const queued = origRunSync(args);
+      if (queued && queued.stderr === "no handler") {
+        return { status: 0, stdout: "", stderr: "", error: null };
+      }
+      return queued;
+    };
+
     await launchInTmux({
       bin: "claude",
       cwd: "/home/me/app",
@@ -426,8 +459,11 @@ describe("launchInTmux", () => {
       runner,
       log: noopLog,
     });
+    // No bind-key — but the unbind sweep DID run to clear any prior preset.
     const bindCall = runner.calls.find((c) => c[0] === "bind-key");
+    const unbinds = runner.calls.filter((c) => c[0] === "unbind-key");
     expect(bindCall).toBeUndefined();
+    expect(unbinds.length).toBeGreaterThan(0);
   });
 
   it("narrates 'race-recovered' when the create-fails-but-exists path fires", async () => {
@@ -560,7 +596,7 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
 });
 
 describe("applyKeybindPreset", () => {
-  it("issues a bind-key per entry under -T root (global table, no prefix)", () => {
+  it("clears stale binds first, then issues a bind-key per entry under -T root", () => {
     const calls = [];
     const runner = {
       runSync: (args) => {
@@ -572,13 +608,15 @@ describe("applyKeybindPreset", () => {
     const result = applyKeybindPreset("minimal", runner);
     expect(result.applied).toBe(1);
     expect(result.failures).toEqual([]);
-    expect(calls[0]).toEqual([
-      "bind-key",
-      "-T",
-      "root",
-      "M-q",
-      "detach-client",
-    ]);
+    // First: unbind every key any preset could install.
+    const unbinds = calls.filter((c) => c[0] === "unbind-key");
+    expect(unbinds.length).toBeGreaterThan(0);
+    expect(unbinds.map((c) => c[3]).sort()).toEqual(
+      ["M-K", "M-k", "M-q", "M-r"].sort(),
+    );
+    // Then: the chosen preset's binds.
+    const binds = calls.filter((c) => c[0] === "bind-key");
+    expect(binds).toEqual([["bind-key", "-T", "root", "M-q", "detach-client"]]);
   });
 
   it("issues all four bindings for the default preset", () => {
@@ -592,11 +630,11 @@ describe("applyKeybindPreset", () => {
     };
     const result = applyKeybindPreset("default", runner);
     expect(result.applied).toBe(4);
-    expect(calls).toHaveLength(4);
-    expect(calls.map((c) => c[3])).toEqual(["M-q", "M-k", "M-K", "M-r"]);
+    const binds = calls.filter((c) => c[0] === "bind-key");
+    expect(binds.map((c) => c[3])).toEqual(["M-q", "M-k", "M-K", "M-r"]);
   });
 
-  it("issues no commands for the 'none' preset", () => {
+  it("for 'none' still sweeps unbinds (so switching from default→none clears the old keys)", () => {
     const calls = [];
     const runner = {
       runSync: (args) => {
@@ -607,17 +645,24 @@ describe("applyKeybindPreset", () => {
     };
     const result = applyKeybindPreset("none", runner);
     expect(result.applied).toBe(0);
-    expect(calls).toEqual([]);
+    // No binds, but ALL unbinds happen so old presets are cleared.
+    const binds = calls.filter((c) => c[0] === "bind-key");
+    const unbinds = calls.filter((c) => c[0] === "unbind-key");
+    expect(binds).toEqual([]);
+    expect(unbinds.length).toBeGreaterThan(0);
   });
 
   it("collects failures into the result without throwing", () => {
-    let firstCall = true;
+    // Unbinds always 'succeed' (we ignore their status anyway); make the
+    // last 3 bind-key calls fail.
     const runner = {
-      runSync: () => {
-        if (firstCall) {
-          firstCall = false;
+      runSync: (args) => {
+        if (args[0] === "unbind-key")
           return { status: 0, stdout: "", stderr: "", error: null };
-        }
+        // bind-key path: first succeeds, rest fail.
+        runner._bindCount = (runner._bindCount || 0) + 1;
+        if (runner._bindCount === 1)
+          return { status: 0, stdout: "", stderr: "", error: null };
         return {
           status: 1,
           stdout: "",
@@ -634,13 +679,19 @@ describe("applyKeybindPreset", () => {
   });
 
   it("treats an unknown preset name as 'none' (defensive)", () => {
+    const calls = [];
     const runner = {
-      runSync: vi.fn(),
+      runSync: (args) => {
+        calls.push(args);
+        return { status: 0, stdout: "", stderr: "", error: null };
+      },
       runAttach: vi.fn(),
     };
     // @ts-expect-error intentional bad input
     const result = applyKeybindPreset("vim-mode", runner);
     expect(result.applied).toBe(0);
-    expect(runner.runSync).not.toHaveBeenCalled();
+    // Still sweeps unbinds for consistency, but issues no binds.
+    const binds = calls.filter((c) => c[0] === "bind-key");
+    expect(binds).toEqual([]);
   });
 });

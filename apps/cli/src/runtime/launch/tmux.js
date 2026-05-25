@@ -282,11 +282,37 @@ const KEYBIND_PRESET_BINDINGS = {
  * @param {TmuxRunner} runner
  * @returns {{ applied: number, failures: { hint: string, stderr: string }[] }}
  */
+/**
+ * Union of all keys touched by any preset. Used to clear stale binds
+ * before installing the chosen preset, so switching from "default" to
+ * "minimal" doesn't leave Alt+k/Alt+K/Alt+r from the previous run
+ * still active in the tmux server. Recomputed once at module load so
+ * adding a binding to a preset automatically extends the unbind sweep.
+ */
+const ALL_PRESET_KEYS = (() => {
+  const set = new Set();
+  for (const list of Object.values(KEYBIND_PRESET_BINDINGS)) {
+    for (const b of list) set.add(b.key);
+  }
+  return [...set];
+})();
+
 function applyKeybindPreset(preset, runner) {
   const bindings = KEYBIND_PRESET_BINDINGS[preset] || [];
   let applied = 0;
   /** @type {{ hint: string, stderr: string }[]} */
   const failures = [];
+
+  // Idempotent reset: unbind every key any preset could install BEFORE
+  // applying the new set. Without this, switching default → minimal
+  // leaves Alt+k/Alt+K/Alt+r from the previous run still bound (tmux's
+  // `bind-key` is server-wide and persists across sessions). Unbinding
+  // a key that wasn't bound is harmless — tmux exits non-zero with a
+  // "key not found" but we don't care; the post-state is the same.
+  for (const key of ALL_PRESET_KEYS) {
+    runner.runSync(["unbind-key", "-T", "root", key]);
+  }
+
   for (const b of bindings) {
     const result = runner.runSync([
       "bind-key",
@@ -391,7 +417,11 @@ async function launchInTmux(opts) {
         opts.statusPosition,
       ]);
     }
-    if (opts.keybindPreset && opts.keybindPreset !== "none") {
+    if (opts.keybindPreset) {
+      // Always invoke applyKeybindPreset — even for "none" — so the
+      // unbind sweep runs and clears any leftover binds from a previous
+      // "default" or "minimal" run. Without this, switching default → none
+      // leaves Alt+k/Alt+K/Alt+r still bound in the tmux server.
       const result = applyKeybindPreset(opts.keybindPreset, runner);
       for (const f of result.failures) {
         log(`agileflow launch: keybind skipped — ${f.hint}`);
@@ -438,7 +468,10 @@ async function launchInTmux(opts) {
     throw err;
   }
 
-  if (opts.keybindPreset && opts.keybindPreset !== "none") {
+  if (opts.keybindPreset) {
+    // Always invoke applyKeybindPreset — even for "none" — so the unbind
+    // sweep runs and clears any prior preset's binds. Same reasoning as
+    // the reattach branch above.
     const result = applyKeybindPreset(opts.keybindPreset, runner);
     for (const f of result.failures) {
       log(`agileflow launch: keybind skipped — ${f.hint}`);
