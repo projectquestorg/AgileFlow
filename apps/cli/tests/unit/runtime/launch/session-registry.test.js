@@ -4,6 +4,7 @@
  * Uses a temp HOME so the real ~/.agileflow/launch-sessions.json is
  * never touched. Every helper accepts an explicit `home` override.
  */
+import { spawn } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -216,4 +217,117 @@ describe("session registry", () => {
     updateSession("a", { uuid: "second" }, scratch);
     expect(findSession("a", scratch).uuid).toBe("second");
   });
+
+  // The sequential-update test above runs inside a single process, so
+  // the lock's job is trivial there (nothing else competes). The race
+  // this slice actually exists to prevent is across processes — two
+  // __exec wrappers finishing claude at the same time. These two tests
+  // spawn real concurrent Node processes against the same registry to
+  // prove the file lock holds the read-modify-write contract.
+  const REGISTRY_MODULE = path.resolve(
+    __dirname,
+    "../../../../src/runtime/launch/session-registry.js",
+  );
+
+  /**
+   * Fork `count` child processes that each run `script` with HOME=home.
+   * Returns once they've all exited. Throws if any failed.
+   *
+   * @param {number} count
+   * @param {string} home
+   * @param {(i: number) => string} script
+   */
+  function spawnConcurrent(count, home, script) {
+    const procs = [];
+    for (let i = 0; i < count; i++) {
+      procs.push(
+        spawn(process.execPath, ["-e", script(i)], {
+          env: { ...process.env, HOME: home },
+          stdio: ["ignore", "pipe", "pipe"],
+        }),
+      );
+    }
+    return Promise.all(
+      procs.map(
+        (p, i) =>
+          new Promise((resolve, reject) => {
+            let stderr = "";
+            p.stderr.on("data", (chunk) => {
+              stderr += chunk.toString();
+            });
+            p.on("exit", (code) => {
+              if (code === 0) resolve(undefined);
+              else
+                reject(
+                  new Error(`child ${i} exited ${code}: ${stderr.trim()}`),
+                );
+            });
+            p.on("error", reject);
+          }),
+      ),
+    );
+  }
+
+  it("preserves every entry when N processes recordSession in parallel", async () => {
+    const N = 12;
+    await spawnConcurrent(
+      N,
+      scratch,
+      (i) => `
+      const reg = require(${JSON.stringify(REGISTRY_MODULE)});
+      reg.recordSession(
+        { name: "w-${i}", cli: "claude", cwd: "/w/${i}", uuid: "u-${i}" },
+        ${JSON.stringify(scratch)},
+      );
+    `,
+    );
+
+    const reg = loadRegistry(scratch);
+    expect(reg.sessions).toHaveLength(N);
+    const names = reg.sessions.map((s) => s.name).sort();
+    const expected = Array.from({ length: N }, (_, i) => `w-${i}`).sort();
+    expect(names).toEqual(expected);
+    // Every entry's uuid should match its name (no cross-pollution from
+    // partially-written reg files).
+    for (const s of reg.sessions) {
+      expect(s.uuid).toBe(`u-${s.name.slice(2)}`);
+    }
+    // No leftover lock file after all writers finish.
+    expect(fs.existsSync(registryPath(scratch) + ".lock")).toBe(false);
+    // No leftover .tmp- files from interrupted atomic renames.
+    const dir = path.join(scratch, ".agileflow");
+    const leftover = fs.readdirSync(dir).filter((f) => f.includes(".tmp-"));
+    expect(leftover).toEqual([]);
+  }, 20_000);
+
+  it("under N concurrent updateSession calls, exactly one uuid wins and no entry is corrupted", async () => {
+    recordSession(
+      { name: "shared", cli: "claude", cwd: "/shared", uuid: "initial" },
+      scratch,
+    );
+    const N = 12;
+    await spawnConcurrent(
+      N,
+      scratch,
+      (i) => `
+      const reg = require(${JSON.stringify(REGISTRY_MODULE)});
+      reg.updateSession(
+        "shared",
+        { uuid: "u-${i}" },
+        ${JSON.stringify(scratch)},
+      );
+    `,
+    );
+
+    const entry = findSession("shared", scratch);
+    expect(entry).not.toBeNull();
+    // Whichever process wrote last wins, but the entry must have a
+    // valid uuid from ONE of the writers (not garbage, not "initial",
+    // not null from a torn write).
+    const validUuids = Array.from({ length: N }, (_, i) => `u-${i}`);
+    expect(validUuids).toContain(entry.uuid);
+    // Single entry — no duplication from racing writes.
+    expect(loadRegistry(scratch).sessions).toHaveLength(1);
+    expect(fs.existsSync(registryPath(scratch) + ".lock")).toBe(false);
+  }, 20_000);
 });

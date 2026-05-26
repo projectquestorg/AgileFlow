@@ -9,6 +9,7 @@ import resumeModule from "../../../../src/runtime/launch/cli-resume.js";
 const {
   getResumeStrategy,
   captureClaudeUuid,
+  captureCodexUuid,
   encodeClaudeProjectDir,
   RESUME_STRATEGIES,
 } = resumeModule;
@@ -104,8 +105,117 @@ describe("codex strategy", () => {
     expect(s.resumeArgs("uuid-abc")).toEqual(["resume", "uuid-abc"]);
   });
 
-  it("captureUuid is a no-op for codex (UUID indexing deferred)", () => {
-    expect(getResumeStrategy("codex").captureUuid("/anything")).toBeNull();
+  it("captureUuid scans ~/.codex/sessions for a matching cwd and returns its payload.id", () => {
+    // Mock ~/.codex/sessions/YYYY/MM/DD/rollout-...UUID.jsonl tree.
+    const tree = {
+      "/fake/.codex/sessions": [
+        { name: "2026", isDirectory: () => true, isFile: () => false },
+      ],
+      "/fake/.codex/sessions/2026": [
+        { name: "05", isDirectory: () => true, isFile: () => false },
+      ],
+      "/fake/.codex/sessions/2026/05": [
+        { name: "10", isDirectory: () => true, isFile: () => false },
+      ],
+      "/fake/.codex/sessions/2026/05/10": [
+        {
+          name: "rollout-old-uuid-1.jsonl",
+          isDirectory: () => false,
+          isFile: () => true,
+        },
+        {
+          name: "rollout-new-uuid-2.jsonl",
+          isDirectory: () => false,
+          isFile: () => true,
+        },
+        {
+          name: "rollout-other-cwd.jsonl",
+          isDirectory: () => false,
+          isFile: () => true,
+        },
+      ],
+    };
+    const readdirSync = vi.fn((p) => tree[p] || []);
+    const mtimes = {
+      "/fake/.codex/sessions/2026/05/10/rollout-old-uuid-1.jsonl": 1000,
+      "/fake/.codex/sessions/2026/05/10/rollout-new-uuid-2.jsonl": 5000,
+      "/fake/.codex/sessions/2026/05/10/rollout-other-cwd.jsonl": 9999,
+    };
+    const statSync = vi.fn((p) => ({ mtimeMs: mtimes[p] || 0 }));
+    const contents = {
+      "/fake/.codex/sessions/2026/05/10/rollout-old-uuid-1.jsonl":
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "uuid-old", cwd: "/home/me/app" },
+        }) + "\n...",
+      "/fake/.codex/sessions/2026/05/10/rollout-new-uuid-2.jsonl":
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "uuid-new", cwd: "/home/me/app" },
+        }) + "\n...",
+      "/fake/.codex/sessions/2026/05/10/rollout-other-cwd.jsonl":
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "uuid-other", cwd: "/somewhere/else" },
+        }) + "\n...",
+    };
+    const readFileSync = vi.fn((p) => contents[p] || "");
+
+    const uuid = captureCodexUuid("/home/me/app", {
+      home: "/fake",
+      readdirSync,
+      statSync,
+      readFileSync,
+    });
+    // Newest among matching-cwd files: uuid-new (mtime 5000) wins over
+    // uuid-old (1000). uuid-other has the highest mtime but a different
+    // cwd so it's skipped.
+    expect(uuid).toBe("uuid-new");
+  });
+
+  it("captureUuid returns null when nothing matches the cwd", () => {
+    const tree = {
+      "/fake/.codex/sessions": [
+        { name: "2026", isDirectory: () => true, isFile: () => false },
+      ],
+      "/fake/.codex/sessions/2026": [
+        {
+          name: "rollout-x.jsonl",
+          isDirectory: () => false,
+          isFile: () => true,
+        },
+      ],
+    };
+    const readdirSync = vi.fn((p) => tree[p] || []);
+    const statSync = vi.fn(() => ({ mtimeMs: 1 }));
+    const readFileSync = vi.fn(() =>
+      JSON.stringify({
+        type: "session_meta",
+        payload: { id: "x", cwd: "/other" },
+      }),
+    );
+    expect(
+      captureCodexUuid("/no-match", {
+        home: "/fake",
+        readdirSync,
+        statSync,
+        readFileSync,
+      }),
+    ).toBeNull();
+  });
+
+  it("captureUuid returns null when ~/.codex/sessions doesn't exist", () => {
+    const readdirSync = vi.fn(() => {
+      const err = new Error("ENOENT");
+      err.code = "ENOENT";
+      throw err;
+    });
+    expect(
+      captureCodexUuid("/cwd", {
+        home: "/fake",
+        readdirSync,
+      }),
+    ).toBeNull();
   });
 });
 

@@ -100,6 +100,90 @@ function captureClaudeUuid(cwd, opts = {}) {
 }
 
 /**
+ * Find the newest codex session whose first-line `payload.cwd` matches
+ * the given working directory.
+ *
+ * Codex stores sessions under
+ * `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-<timestamp>-<UUID>.jsonl`.
+ * The first JSONL line is a `session_meta` record containing
+ * `payload.cwd` and `payload.id`. Walking that tree once per launch
+ * isn't free, but it's still a few dozen files even for active users
+ * and only runs after a session exits — so the cost is amortized.
+ *
+ * @param {string} cwd
+ * @param {{
+ *   home?: string,
+ *   readdirSync?: typeof fs.readdirSync,
+ *   statSync?: typeof fs.statSync,
+ *   readFileSync?: typeof fs.readFileSync,
+ * }} [opts]
+ * @returns {string | null}
+ */
+function captureCodexUuid(cwd, opts = {}) {
+  const home = opts.home || os.homedir();
+  const readdirSync = opts.readdirSync || fs.readdirSync;
+  const statSync = opts.statSync || fs.statSync;
+  const readFileSync = opts.readFileSync || fs.readFileSync;
+
+  const sessionsRoot = path.join(home, ".codex", "sessions");
+  /** @type {string[]} */
+  const jsonlFiles = [];
+
+  // Recurse year → month → day → files. Tree depth is fixed at 3.
+  /** @param {string} dir */
+  function collect(dir) {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const ent of entries) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        collect(full);
+      } else if (ent.isFile() && ent.name.endsWith(".jsonl")) {
+        jsonlFiles.push(full);
+      }
+    }
+  }
+  collect(sessionsRoot);
+
+  let bestUuid = null;
+  let bestMtime = -Infinity;
+  for (const file of jsonlFiles) {
+    let stat;
+    try {
+      stat = statSync(file);
+    } catch {
+      continue;
+    }
+    const mtime = typeof stat.mtimeMs === "number" ? stat.mtimeMs : 0;
+    if (mtime <= bestMtime) continue;
+    // Cheap match: read just the first line.
+    let head;
+    try {
+      head = readFileSync(file, "utf8").split("\n", 1)[0];
+    } catch {
+      continue;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(head);
+    } catch {
+      continue;
+    }
+    const payload = parsed && parsed.payload;
+    if (!payload || typeof payload !== "object") continue;
+    if (payload.cwd !== cwd) continue;
+    if (typeof payload.id !== "string" || !payload.id) continue;
+    bestUuid = payload.id;
+    bestMtime = mtime;
+  }
+  return bestUuid;
+}
+
+/**
  * @typedef {Object} ResumeStrategy
  * @property {(uuid: string | null) => string[]} resumeArgs
  * @property {(cwd: string, opts?: any) => string | null} captureUuid
@@ -112,17 +196,17 @@ const RESUME_STRATEGIES = {
     captureUuid: captureClaudeUuid,
   },
   codex: {
-    // `codex resume --last` continues the most recently recorded codex
-    // session. Codex tracks sessions globally (not per-cwd) so this is
-    // close-enough for parallel-session reboot scenarios — when you
-    // restore session N in cwd X, it picks up whatever you were last
-    // doing in codex which is usually the right thing. UUID-targeted
-    // resume is a follow-up.
+    // With a stored UUID we resume that specific session, which is
+    // critical when the user has multiple parallel codex sessions
+    // across different cwds — `resume --last` would pick whichever
+    // they touched most recently, not the one tied to THIS session.
+    // Without a UUID (first launch in a cwd, or capture failed) we
+    // fall back to `--last`.
     resumeArgs: (uuid) => {
       if (uuid) return ["resume", uuid];
       return ["resume", "--last"];
     },
-    captureUuid: () => null, // codex UUID parsing deferred
+    captureUuid: captureCodexUuid,
   },
   "cursor-agent": {
     resumeArgs: () => [],
@@ -155,5 +239,6 @@ module.exports = {
   RESUME_STRATEGIES,
   getResumeStrategy,
   captureClaudeUuid,
+  captureCodexUuid,
   encodeClaudeProjectDir,
 };
