@@ -344,9 +344,35 @@ function applyTabFormat(sessionName, runner, opts = {}) {
  */
 function installSessionHooks(sessionName, runner, opts = {}) {
   const agileflowBin = opts.agileflowBin || resolveAgileflowBin();
-  const snapshotCmd = `run-shell -b '${agileflowBin} launch __snapshot-session ${sessionName}'`;
+  // Double-quote the binary path and session name so paths with
+  // spaces (e.g., /Users/x with space/agileflow) work. The shell
+  // command is itself wrapped in double quotes for run-shell to
+  // accept it as a single argument.
+  const shellCmd = `"${agileflowBin}" launch __snapshot-session "${sessionName}"`;
+  const snapshotCmd = `run-shell -b "${shellCmd.replace(/"/g, '\\"')}"`;
+  /** @type {Array<{ event: string, stderr: string }>} */
+  const failures = [];
   for (const event of ["window-linked", "window-unlinked", "window-renamed"]) {
-    runner.runSync(["set-hook", "-t", sessionName, event, snapshotCmd]);
+    const r = runner.runSync([
+      "set-hook",
+      "-t",
+      sessionName,
+      event,
+      snapshotCmd,
+    ]);
+    if (r.status !== 0) {
+      failures.push({ event, stderr: (r.stderr || "").trim() });
+    }
+  }
+  if (failures.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch: tab persistence — ${failures.length} of 3 tmux hooks failed to install:`,
+    );
+    for (const f of failures) {
+      // eslint-disable-next-line no-console
+      console.error(`  ${f.event}: ${f.stderr || "(no error message)"}`);
+    }
   }
 }
 

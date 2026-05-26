@@ -1155,6 +1155,11 @@ async function runInternalSnapshotSession(sessionName, deps = {}) {
   const runner = deps.runner || defaultTmuxRunner();
   const DELIM = "\x1f";
   const fmt = `#{window_index}${DELIM}#{window_name}${DELIM}#{pane_current_path}`;
+  // Capture timestamp BEFORE list-windows so concurrent subprocesses
+  // produce a stable ordering. The registry rejects writes whose
+  // capturedAt is older than what's already stored — without this,
+  // out-of-order lock acquisition can clobber newer state with older.
+  const capturedAt = Date.now();
   const result = runner.runSync(["list-windows", "-t", sessionName, "-F", fmt]);
   if (result.status !== 0) return;
   const lines = (result.stdout || "")
@@ -1177,7 +1182,7 @@ async function runInternalSnapshotSession(sessionName, deps = {}) {
     const {
       updateSession,
     } = require("../../runtime/launch/session-registry.js");
-    updateSession(sessionName, { windows });
+    updateSession(sessionName, { windows, windowsCapturedAt: capturedAt });
   } catch {
     // Registry might not exist or session might have been forgotten;
     // either way we can't usefully recover. Stay silent.

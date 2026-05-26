@@ -137,6 +137,10 @@ function withRegistryLock(home, fn) {
  *                                           by tmux hooks; replayed on
  *                                           restore so reboots bring back
  *                                           every tab in its original cwd
+ * @property {number} [windowsCapturedAt]  - epoch ms when `windows` was
+ *                                           captured. Newer captures
+ *                                           always win when concurrent
+ *                                           hook subprocesses race.
  *
  * @typedef {Object} RegistryShape
  * @property {1} version
@@ -233,6 +237,8 @@ function loadRegistry(home) {
             }
           : undefined,
       windows,
+      windowsCapturedAt:
+        typeof s.windowsCapturedAt === "number" ? s.windowsCapturedAt : 0,
     });
   }
   return { version: 1, sessions: sane };
@@ -369,7 +375,22 @@ function updateSession(name, patch, home) {
         if (patch.worktree !== undefined) s.worktree = patch.worktree;
         if (patch.pinned !== undefined) s.pinned = patch.pinned === true;
         if (patch.windows !== undefined) {
-          s.windows = Array.isArray(patch.windows) ? patch.windows : undefined;
+          // Stale-snapshot guard: hooks fire on every tab change, so
+          // when the user spams Alt+t multiple subprocesses can race.
+          // Lock acquisition isn't FIFO so an older capture can be
+          // committed after a newer one. Reject any update whose
+          // capturedAt timestamp is older than what's already stored.
+          const incomingTs =
+            typeof patch.windowsCapturedAt === "number"
+              ? patch.windowsCapturedAt
+              : Date.now();
+          if (!s.windowsCapturedAt || incomingTs >= s.windowsCapturedAt) {
+            s.windows = Array.isArray(patch.windows)
+              ? patch.windows
+              : undefined;
+            s.windowsCapturedAt = incomingTs;
+          }
+          // else: silently drop the stale write
         }
         updated = true;
       }
