@@ -16,6 +16,7 @@
  * `src/lib/errors.js` so messages stay consistent with `setup` /
  * `doctor` / etc.
  */
+const fs = require("fs");
 const path = require("path");
 const prompts = require("@clack/prompts");
 const pkg = require("../../../package.json");
@@ -45,8 +46,20 @@ const { runExec } = require("../../runtime/launch/exec-wrapper.js");
 const { runRestore } = require("../../runtime/launch/restore.js");
 const { loadRegistry } = require("../../runtime/launch/session-registry.js");
 const {
+  listSessions,
+  killBySessionName,
+  attachByName,
+  pruneCandidates,
+  applyPrune,
+} = require("../../runtime/launch/session-lifecycle.js");
+const {
+  runDoctorChecks,
+  anyFailed,
+} = require("../../runtime/launch/doctor.js");
+const {
   installAfAlias,
   uninstallAfAlias,
+  resolveAgileflowBin,
 } = require("../../runtime/launch/alias-installer.js");
 const {
   AgileflowError,
@@ -557,6 +570,270 @@ async function runRestoreCommand() {
 }
 
 /**
+ * `agileflow launch ls` — print a one-line-per-session table of every
+ * known session with its current state. Read-only; no prefs required.
+ *
+ * @returns {Promise<void>}
+ */
+async function runLs() {
+  const rows = listSessions();
+  if (rows.length === 0) {
+    // eslint-disable-next-line no-console
+    console.log("No saved sessions. Run `agileflow launch` to create one.");
+    return;
+  }
+  // Column widths sized to the longest value, capped to keep wide cwds
+  // from blowing past the terminal.
+  const nameW = Math.max(4, ...rows.map((r) => r.name.length));
+  const cliW = Math.max(3, ...rows.map((r) => r.cli.length));
+  const stateW = "missing-cwd".length;
+  const fmt = (r) =>
+    `${r.name.padEnd(nameW)}  ${r.cli.padEnd(cliW)}  ${r.state.padEnd(stateW)}  ${r.cwd}${
+      r.worktree && r.worktree.branch ? ` [wt ${r.worktree.branch}]` : ""
+    }`;
+  // eslint-disable-next-line no-console
+  console.log(
+    `${"NAME".padEnd(nameW)}  ${"CLI".padEnd(cliW)}  ${"STATE".padEnd(stateW)}  CWD`,
+  );
+  for (const r of rows) {
+    // eslint-disable-next-line no-console
+    console.log(fmt(r));
+  }
+}
+
+/**
+ * `agileflow launch kill <name>` — kill the tmux session if alive,
+ * forget the registry entry, and optionally remove its git worktree.
+ *
+ * @param {string | undefined} name
+ * @returns {Promise<void>}
+ */
+async function runKill(name) {
+  if (!name) {
+    fail(
+      new OperationFailedError(
+        "agileflow launch kill requires a session name",
+        {
+          suggestion: "run `agileflow launch ls` to see available names",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+  const reg = loadRegistry();
+  const entry = reg.sessions.find((s) => s.name === name);
+  if (!entry) {
+    fail(
+      new OperationFailedError(`no session named "${name}" in the registry`, {
+        suggestion: "run `agileflow launch ls` to see available names",
+      }),
+      { command: "launch" },
+    );
+  }
+  // Surface the worktree question only when there's something to remove —
+  // missing worktree dirs don't need a prompt, just forget the entry.
+  let removeWorktreeFlag = false;
+  if (
+    entry.worktree &&
+    entry.worktree.path &&
+    fs.existsSync(entry.worktree.path)
+  ) {
+    const choice = await prompts.confirm({
+      message: questionMessage(
+        `Also remove the worktree at ${entry.worktree.path}?`,
+        `branch: ${entry.worktree.branch} — this runs \`git worktree remove -f\` and \`git branch -D\`.`,
+      ),
+      initialValue: true,
+    });
+    if (prompts.isCancel(choice)) {
+      prompts.cancel("Kill cancelled.");
+      process.exit(0);
+    }
+    removeWorktreeFlag = !!choice;
+  }
+  const result = killBySessionName({
+    name,
+    removeWorktree: removeWorktreeFlag,
+  });
+  if (!result.ok) {
+    fail(
+      new OperationFailedError(
+        `could not kill "${name}": ${result.reason || "unknown reason"}`,
+        { suggestion: "run `agileflow launch ls` to confirm the name" },
+      ),
+      { command: "launch" },
+    );
+  }
+  /** @type {string[]} */
+  const summary = [];
+  summary.push(
+    result.wasAlive
+      ? `Killed tmux session "${name}" and forgot it.`
+      : `Forgot dormant session "${name}".`,
+  );
+  if (result.worktree) {
+    if (result.worktree.removed && result.worktree.branchRemoved) {
+      summary.push(`Removed worktree + branch.`);
+    } else if (result.worktree.removed) {
+      summary.push(`Removed worktree (branch removal failed).`);
+    } else {
+      summary.push(`Worktree removal failed: ${result.worktree.stderr}`);
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.log(summary.join("\n"));
+}
+
+/**
+ * `agileflow launch attach <name>` — attach to a named session, lazily
+ * restoring it from the registry if the tmux server doesn't have it.
+ *
+ * @param {string | undefined} name
+ * @returns {Promise<void>}
+ */
+async function runAttachByName(name) {
+  if (!name) {
+    fail(
+      new OperationFailedError(
+        "agileflow launch attach requires a session name",
+        {
+          suggestion: "run `agileflow launch ls` to see available names",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+  if (!tmuxAvailable()) {
+    fail(
+      new OperationFailedError(
+        "tmux is not available — required for `launch attach`",
+        { suggestion: "install tmux and try again" },
+      ),
+      { command: "launch" },
+    );
+  }
+  const { prefs } = await loadPrefsOrFail();
+  const result = await attachByName({
+    name,
+    prefs,
+    agileflowBin: resolveAgileflowBin(),
+  });
+  if (!result.ok) {
+    /** @type {string} */
+    let suggestion;
+    if (result.reason === "not in registry") {
+      suggestion = "run `agileflow launch ls` to see available names";
+    } else if (result.reason === "cwd missing") {
+      suggestion = `the original directory has been deleted — run \`agileflow launch kill ${name}\` to forget it`;
+    } else {
+      suggestion = "check tmux state and the registry file";
+    }
+    fail(
+      new OperationFailedError(
+        `could not attach "${name}": ${result.reason || "unknown reason"}`,
+        { suggestion },
+      ),
+      { command: "launch" },
+    );
+  }
+  // Always exit with the attach's exit code so shell pipelines see the
+  // right status. Defensive default of 0 covers the unlikely case where
+  // the attach result doesn't carry a numeric exitCode — better to exit
+  // cleanly than leave the parent process hung in the terminal.
+  const exitCode =
+    result.attach &&
+    typeof result.attach === "object" &&
+    typeof result.attach.exitCode === "number"
+      ? result.attach.exitCode
+      : 0;
+  process.exit(exitCode);
+}
+
+/**
+ * `agileflow launch prune` — interactive cleanup of dormant entries
+ * whose original directory has been deleted, or whose worktree path no
+ * longer exists.
+ *
+ * @returns {Promise<void>}
+ */
+async function runPrune() {
+  const candidates = pruneCandidates();
+  if (candidates.length === 0) {
+    // eslint-disable-next-line no-console
+    console.log(
+      "Nothing to prune — every registered session still has a live cwd.",
+    );
+    return;
+  }
+  const options = candidates.map((c) => ({
+    value: c.name,
+    label: c.name,
+    hint: `${c.cli} — ${c.reason}`,
+  }));
+  const selection = await prompts.multiselect({
+    message: questionMessage(
+      `Select session(s) to forget (${candidates.length} candidate(s))`,
+      "Forgetting drops the registry entry; worktree dirs are only removed if they still exist.",
+    ),
+    options,
+    initialValues: options.map((o) => o.value),
+    required: false,
+  });
+  if (prompts.isCancel(selection)) {
+    prompts.cancel("Prune cancelled.");
+    process.exit(0);
+  }
+  if (!Array.isArray(selection) || selection.length === 0) {
+    // eslint-disable-next-line no-console
+    console.log("No sessions selected. Nothing to do.");
+    return;
+  }
+  const result = applyPrune({
+    selections: selection.map((name) => ({ name })),
+    // Worktree removal is skipped here: the candidates that surface ARE
+    // the ones whose dirs are already missing OR whose cwd is missing.
+    // For "dir missing" entries there's no worktree to remove; for
+    // "cwd missing" the worktree path may still exist as a stranded
+    // directory. We surface it but don't auto-rm to avoid surprising
+    // users — they can `launch kill <name>` for targeted removal.
+    removeWorktrees: false,
+  });
+  // eslint-disable-next-line no-console
+  console.log(
+    `Forgot ${result.forgotten} session(s), removed ${result.worktreesRemoved} worktree(s).`,
+  );
+  if (result.errors.length > 0) {
+    for (const e of result.errors) {
+      // eslint-disable-next-line no-console
+      console.error(`  ${e.name}: ${e.error}`);
+    }
+  }
+}
+
+/**
+ * `agileflow launch doctor` — read-only health check. Exits 1 if any
+ * check fails (tmux missing, preferred CLI missing, registry malformed).
+ * Warnings don't fail the doctor.
+ *
+ * @returns {Promise<void>}
+ */
+async function runDoctor() {
+  const report = await runDoctorChecks();
+  for (const c of report.checks) {
+    const symbol = c.status === "pass" ? "✓" : c.status === "warn" ? "⚠" : "✗";
+    // eslint-disable-next-line no-console
+    console.log(`${symbol} ${c.id}: ${c.message}`);
+    if (c.fix) {
+      // eslint-disable-next-line no-console
+      console.log(`  fix: ${c.fix}`);
+    }
+  }
+  if (anyFailed(report)) {
+    process.exit(1);
+  }
+}
+
+/**
  * Auto-restore check on bare `agileflow launch`. Fires only when:
  *   - tmux is available (we use sessionExists to count alive sessions)
  *   - the registry has entries
@@ -661,11 +938,31 @@ async function launch(sub, nameArg, _options) {
       await runRestoreCommand();
       return;
     }
+    if (sub === "ls") {
+      await runLs();
+      return;
+    }
+    if (sub === "kill") {
+      await runKill(nameArg);
+      return;
+    }
+    if (sub === "attach") {
+      await runAttachByName(nameArg);
+      return;
+    }
+    if (sub === "prune") {
+      await runPrune();
+      return;
+    }
+    if (sub === "doctor") {
+      await runDoctor();
+      return;
+    }
     if (sub && sub !== "setup") {
       fail(
         new OperationFailedError(`unknown launch subcommand: ${sub}`, {
           suggestion:
-            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, or `agileflow launch restore`",
+            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, `agileflow launch restore`, `agileflow launch ls`, `agileflow launch kill <name>`, `agileflow launch attach <name>`, `agileflow launch prune`, or `agileflow launch doctor`",
         }),
         { command: "launch" },
       );
@@ -752,4 +1049,9 @@ module.exports.decideFlow = decideFlow;
 module.exports.runSetup = runSetup;
 module.exports.runEngine = runEngine;
 module.exports.runNew = runNew;
+module.exports.runLs = runLs;
+module.exports.runKill = runKill;
+module.exports.runAttachByName = runAttachByName;
+module.exports.runPrune = runPrune;
+module.exports.runDoctor = runDoctor;
 module.exports.shouldOfferOrphanCleanup = shouldOfferOrphanCleanup;
