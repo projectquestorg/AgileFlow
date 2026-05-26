@@ -223,11 +223,15 @@ function applyTabFormat(sessionName, runner, opts = {}) {
   const ACCENT = theme.activeBg;
   const FG = theme.activeNameFg;
 
-  const inactiveFormat = ` #I#[fg=${ACCENT}]:#[fg=default]#W `;
+  // Active tab uses the BRAND ACCENT (orange) as its pill background
+  // with the strip's dark color as text — maximum contrast against
+  // the muted inactive tabs so the user always knows which tab is
+  // focused after Alt+1..9 / Alt+Tab.
+  const inactiveFormat = ` #I:#W `;
   const activeFormat =
-    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_OPEN}` +
-    `#[bg=${PILL_BG},fg=${FG},bold]#I#[fg=${ACCENT}]:#[fg=${FG},nobold]#W` +
-    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_CLOSE}`;
+    `#[fg=${ACCENT},bg=${BG}]${HALF_ROUND_OPEN}` +
+    `#[bg=${ACCENT},fg=${theme.activeFg},bold] #I:#W ` +
+    `#[fg=${ACCENT},bg=${BG}]${HALF_ROUND_CLOSE}`;
   const statusLeft =
     `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_OPEN}` +
     `#[bg=${PILL_BG},fg=${ACCENT}] #S ` +
