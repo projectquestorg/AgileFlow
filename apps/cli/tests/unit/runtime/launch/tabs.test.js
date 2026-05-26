@@ -167,12 +167,27 @@ describe("TAB_KEYBINDS", () => {
     expect(actionStr).toContain("%AGILEFLOW% launch __close-window");
   });
 
+  it("Alt+w passes #{session_name} and #{window_index} so the callback targets the exact tab", () => {
+    // Regression guard: without these positional args, the callback
+    // re-probes display-message and can close the wrong tab if focus
+    // shifts during the confirmation prompt.
+    const entry = TAB_KEYBINDS.find((b) => b.key === "M-w");
+    const actionStr = entry.action.join(" ");
+    expect(actionStr).toContain("#{session_name}");
+    expect(actionStr).toContain("#{window_index}");
+  });
+
   it("Alt+T action references the restore-window callback", () => {
     const entry = TAB_KEYBINDS.find((b) => b.key === "M-T");
     expect(entry).toBeTruthy();
     expect(entry.action.join(" ")).toContain(
       "%AGILEFLOW% launch __restore-window",
     );
+  });
+
+  it("Alt+T passes #{session_name} so restore targets the correct session", () => {
+    const entry = TAB_KEYBINDS.find((b) => b.key === "M-T");
+    expect(entry.action.join(" ")).toContain("#{session_name}");
   });
 
   it("every entry has a non-empty hint string", () => {

@@ -980,17 +980,40 @@ async function runWhere() {
 async function runInternalCloseWindow(deps = {}) {
   const runner = deps.runner || defaultTmuxRunner();
   const pushClosedImpl = deps.pushClosedImpl || closedWindows.pushClosed;
+  const exit = deps.exit || ((code) => process.exit(code));
   // ASCII Unit Separator — never appears in a session/window name or
   // filesystem path, so splitting on it is unambiguous.
   const DELIM = "\x1f";
-  const fmt = `#S${DELIM}#I${DELIM}#W${DELIM}#{pane_current_path}`;
-  const probe = runner.runSync(["display-message", "-p", "-F", fmt]);
+  // When the tmux keybind passes session+index positionally, target
+  // that exact window. This avoids a wrong-window kill if focus shifts
+  // between Alt+w being pressed and this subprocess starting.
+  const argSession = (deps.targetSession || "").trim();
+  const argIndex = (deps.targetIndex || "").trim();
+  let probeArgs;
+  if (argSession && argIndex) {
+    probeArgs = [
+      "display-message",
+      "-p",
+      "-t",
+      `${argSession}:${argIndex}`,
+      "-F",
+      `#S${DELIM}#I${DELIM}#W${DELIM}#{pane_current_path}`,
+    ];
+  } else {
+    probeArgs = [
+      "display-message",
+      "-p",
+      "-F",
+      `#S${DELIM}#I${DELIM}#W${DELIM}#{pane_current_path}`,
+    ];
+  }
+  const probe = runner.runSync(probeArgs);
   if (probe.status !== 0) {
     // eslint-disable-next-line no-console
     console.error(
       `agileflow launch __close-window: tmux display-message failed: ${probe.stderr || "unknown"}`,
     );
-    return;
+    return exit(1);
   }
   const parts = (probe.stdout || "").trimEnd().split(DELIM);
   if (parts.length !== 4) {
@@ -998,7 +1021,7 @@ async function runInternalCloseWindow(deps = {}) {
     console.error(
       `agileflow launch __close-window: unexpected display-message output (got ${parts.length} fields)`,
     );
-    return;
+    return exit(1);
   }
   const [sessionName, windowIndex, windowName, cwd] = parts;
   if (!sessionName || !windowIndex || !cwd) {
@@ -1006,7 +1029,7 @@ async function runInternalCloseWindow(deps = {}) {
     console.error(
       "agileflow launch __close-window: missing session/index/cwd; skipping kill",
     );
-    return;
+    return exit(1);
   }
   // Kill first with the explicit target captured above. If this fails
   // we abort without touching the log — the window is still alive and
@@ -1021,7 +1044,7 @@ async function runInternalCloseWindow(deps = {}) {
     console.error(
       `agileflow launch __close-window: kill-window failed: ${kill.stderr || "unknown"}`,
     );
-    return;
+    return exit(1);
   }
   try {
     pushClosedImpl({ sessionName, name: windowName || "", cwd });
@@ -1053,16 +1076,23 @@ async function runInternalRestoreWindow(deps = {}) {
   const runner = deps.runner || defaultTmuxRunner();
   const popClosedImpl = deps.popClosedImpl || closedWindows.popClosed;
   const pushClosedImpl = deps.pushClosedImpl || closedWindows.pushClosed;
-  const probe = runner.runSync(["display-message", "-p", "-F", "#S"]);
-  if (probe.status !== 0) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `agileflow launch __restore-window: tmux display-message failed: ${probe.stderr || "unknown"}`,
-    );
-    return;
+  const exit = deps.exit || ((code) => process.exit(code));
+  // Keybind passes #{session_name} so the restore targets the session
+  // the user actually pressed Alt+T from. Fall back to display-message
+  // for manual invocations (which only works inside tmux).
+  let sessionName = (deps.targetSession || "").trim();
+  if (!sessionName) {
+    const probe = runner.runSync(["display-message", "-p", "-F", "#S"]);
+    if (probe.status !== 0) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `agileflow launch __restore-window: tmux display-message failed: ${probe.stderr || "unknown"}`,
+      );
+      return exit(1);
+    }
+    sessionName = (probe.stdout || "").trim();
   }
-  const sessionName = (probe.stdout || "").trim();
-  if (!sessionName) return;
+  if (!sessionName) return exit(1);
   /** @type {ReturnType<typeof closedWindows.popClosed>} */
   let entry;
   try {
@@ -1072,7 +1102,7 @@ async function runInternalRestoreWindow(deps = {}) {
     console.error(
       `agileflow launch __restore-window: log pop failed: ${err && err.message ? err.message : err}`,
     );
-    return;
+    return exit(1);
   }
   if (!entry) {
     // Empty stack — silent. The user pressed Alt+T with nothing to undo.
@@ -1102,6 +1132,7 @@ async function runInternalRestoreWindow(deps = {}) {
         `agileflow launch __restore-window: failed to re-push entry after new-window failure: ${pushErr && pushErr.message ? pushErr.message : pushErr}`,
       );
     }
+    return exit(1);
   }
 }
 
@@ -1269,19 +1300,24 @@ async function launch(sub, nameArg, _options) {
       return;
     }
     if (sub === "__close-window") {
-      // Hidden subcommand invoked from tmux keybind (Alt+w). Captures
-      // the current window's name + pane cwd, pushes onto the
-      // closed-windows log, then issues kill-window so Alt+T can
-      // resurrect it later. No UI; failures are silent.
-      await runInternalCloseWindow();
+      // Hidden subcommand invoked from tmux keybind (Alt+w). The keybind
+      // passes session name + window index as positional args so we
+      // target the exact tab the user pressed Alt+w on, regardless of
+      // any focus shift during the confirmation prompt. nameArg is the
+      // session name; we read the window index from raw argv since
+      // commander's signature only declares two positionals.
+      const targetSession = nameArg || "";
+      const targetIndex = (process.argv && process.argv[5]) || "";
+      await runInternalCloseWindow({ targetSession, targetIndex });
       return;
     }
     if (sub === "__restore-window") {
       // Hidden subcommand invoked from tmux keybind (Alt+T). Pops the
-      // most recent closed entry for the current session and spawns
-      // a new window in that cwd with the original name. No-op when
-      // the log is empty for this session.
-      await runInternalRestoreWindow();
+      // most recent closed entry for the session the user pressed
+      // Alt+T from (passed positionally via #{session_name}) and
+      // spawns a new window in that cwd with the original name. No-op
+      // when the log is empty for this session.
+      await runInternalRestoreWindow({ targetSession: nameArg || "" });
       return;
     }
     if (sub && sub !== "setup") {

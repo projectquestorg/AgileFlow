@@ -272,14 +272,16 @@ const TAB_KEYBINDS = [
   },
   {
     // confirm-before runs the command on `y` and does nothing on `n`.
-    // The bookkeeping happens server-side via the agileflow callback —
-    // it captures #W + cwd, pushes onto the closed log, then kill-windows.
+    // We pass session+index as positional args so the callback targets
+    // the exact window the user pressed Alt+w on — without this, the
+    // callback would re-probe display-message and could close the
+    // wrong tab if focus moved during the confirmation prompt.
     key: "M-w",
     action: [
       "confirm-before",
       "-p",
       "kill tab #W? (y/n)",
-      "run-shell '%AGILEFLOW% launch __close-window'",
+      "run-shell '%AGILEFLOW% launch __close-window #{session_name} #{window_index}'",
     ],
     hint: "Alt+w → close current tab (with confirm)",
   },
@@ -291,8 +293,14 @@ const TAB_KEYBINDS = [
     hint: "Alt+W → tab picker",
   },
   {
+    // Pass session name explicitly so the callback restores into the
+    // session the user actually triggered from — works even if the
+    // active session shifts before run-shell fires.
     key: "M-T",
-    action: ["run-shell", "%AGILEFLOW% launch __restore-window"],
+    action: [
+      "run-shell",
+      "%AGILEFLOW% launch __restore-window #{session_name}",
+    ],
     hint: "Alt+T → reopen last closed tab",
   },
   // Numeric switchers Alt+1..Alt+9 → select-window -t :N
