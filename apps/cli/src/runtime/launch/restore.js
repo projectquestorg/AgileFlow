@@ -19,6 +19,8 @@ const {
   sessionExists,
   createSession,
   applyKeybindPreset,
+  applyTabFormat,
+  detectTmuxVersion,
 } = require("./tmux.js");
 const { loadRegistry } = require("./session-registry.js");
 const { resolveAgileflowBin } = require("./alias-installer.js");
@@ -117,6 +119,14 @@ function runRestore(opts) {
       log(`agileflow launch: failed to restore ${entry.name} — ${stderr}`);
       continue;
     }
+    // Apply the same per-session styling launchInTmux does for fresh
+    // sessions so the tab strip looks consistent on restore. Without
+    // this, restored sessions show tmux's default green status bar
+    // instead of the AgileFlow dark strip.
+    runner.runSync(["set-option", "-t", entry.name, "status", "1"]);
+    applyTabFormat(entry.name, runner, {
+      tmuxVersion: detectTmuxVersion(runner),
+    });
     result.restored++;
     log(`agileflow launch: restored session ${entry.name} (${entry.cwd})`);
   }

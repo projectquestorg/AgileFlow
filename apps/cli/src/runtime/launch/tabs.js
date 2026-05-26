@@ -273,17 +273,15 @@ const TAB_KEYBINDS = [
     hint: "Alt+, → rename current tab",
   },
   {
-    // Direct close — no confirm-before. The earlier confirm-before
-    // path was brittle under tmux's bind-key parsing (deferred-command
-    // quoting issues caused the keybind to silently no-op on some
-    // tmux builds). Alt+Shift+T (Alt+T) restores the last closed
-    // tab in the same cwd, so the close is effectively reversible —
-    // matches Chrome's instant-close + Ctrl+Shift+T undo.
+    // Direct kill-window — no CLI roundtrip. The previous
+    // run-shell-to-agileflow approach added Node-startup latency
+    // (150ms+) and could no-op silently if the binary path resolution
+    // returned stale state (e.g. after npx cache cleanup). Killing
+    // via tmux directly is instant and bulletproof. Undo is provided
+    // by Alt+Shift+T (which reads the closed-windows log populated by
+    // the window-unlinked hook installed in applyTabFormat).
     key: "M-w",
-    action: [
-      "run-shell",
-      "%AGILEFLOW% launch __close-window #{session_name} #{window_index}",
-    ],
+    action: ["kill-window"],
     hint: "Alt+w → close current tab (Alt+Shift+T to undo)",
   },
   {

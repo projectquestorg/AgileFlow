@@ -1182,11 +1182,28 @@ async function maybeOfferAutoRestore(prefs) {
     if (ap !== bp) return bp - ap;
     return 0;
   });
-  const options = sorted.map((s) => ({
+  // Synthetic toggles at the top of the picker for users with many
+  // saved sessions — checking one of them rewrites the selection in
+  // bulk after submit (clack's multiselect doesn't natively support
+  // a "select all" shortcut, but synthetic entries are the lightest
+  // path and stay accessible via keyboard).
+  const SELECT_ALL = "__select_all__";
+  const DESELECT_ALL = "__deselect_all__";
+  const allNames = sorted.map((s) => s.name);
+  const sessionOptions = sorted.map((s) => ({
     value: s.name,
     label: `${s.pinned ? "★ " : "  "}${s.name}`,
     hint: `${s.cli} — ${s.cwd}${s.worktree && s.worktree.branch ? ` [wt ${s.worktree.branch}]` : ""}`,
   }));
+  const options = [
+    { value: SELECT_ALL, label: "✅ Select all", hint: "check every session" },
+    {
+      value: DESELECT_ALL,
+      label: "⬜ Deselect all",
+      hint: "uncheck every session",
+    },
+    ...sessionOptions,
+  ];
   const anyPinned = sorted.some((s) => s.pinned === true);
   const initial = anyPinned
     ? sorted.filter((s) => s.pinned === true).map((s) => s.name)
@@ -1210,7 +1227,15 @@ async function maybeOfferAutoRestore(prefs) {
     process.exit(0);
   }
   /** @type {string[]} */
-  const chosen = Array.isArray(selection) ? selection : [];
+  let chosen = Array.isArray(selection) ? selection : [];
+  // Resolve the synthetic select-all / deselect-all toggles. If both
+  // were checked, select-all wins (the safer "do more" interpretation);
+  // either way, strip the synthetic entries from the final list.
+  const wantSelectAll = chosen.includes(SELECT_ALL);
+  const wantDeselectAll = chosen.includes(DESELECT_ALL);
+  chosen = chosen.filter((v) => v !== SELECT_ALL && v !== DESELECT_ALL);
+  if (wantSelectAll) chosen = [...allNames];
+  else if (wantDeselectAll) chosen = [];
   if (chosen.length === 0) {
     prompts.outro(
       "Skipped. Run `agileflow launch restore` later to bring them back.",
