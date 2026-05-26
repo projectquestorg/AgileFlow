@@ -244,9 +244,16 @@ function applyTabFormat(sessionName, runner, opts = {}) {
   // Reduce escape-time so pressing Esc inside command-prompt (Alt+n
   // worktree-name prompt, etc.) cancels immediately. tmux's default
   // is 500ms — it waits for a follow-up key in case Esc is the start
-  // of an Alt+key sequence. 25ms is the common "snappy Esc" value used
-  // by tmux power-user configs (Oh My Tmux, gpakosz/.tmux, etc.).
-  runner.runSync(["set-option", "-sg", "escape-time", "25"]);
+  // of an Alt+key sequence. 0ms is "treat Esc as Esc immediately"
+  // and matches what most modern terminals support.
+  runner.runSync(["set-option", "-sg", "escape-time", "0"]);
+  // Force emacs key bindings in the command-prompt so Esc cancels
+  // the prompt instead of entering vi-normal mode (which makes the
+  // prompt look like it changed color but never closes). If the
+  // user's .tmux.conf set status-keys vi globally, our per-session
+  // override wins for AgileFlow sessions.
+  runner.runSync(["set-option", "-g", "status-keys", "emacs"]);
+  runner.runSync(["set-option", "-g", "mode-keys", "emacs"]);
 
   // Apply each option with the correct tmux scope. Session-scope opts
   // (status-style, status-left/right, status-justify) take
