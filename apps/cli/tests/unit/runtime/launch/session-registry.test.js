@@ -20,6 +20,7 @@ const {
   updateSession,
   findSession,
   forgetSession,
+  pinSession,
 } = registryModule;
 
 describe("session registry", () => {
@@ -159,6 +160,36 @@ describe("session registry", () => {
     expect(findSession("missing", scratch)).toBeNull();
   });
 
+  it("recordSession defaults pinned to false when not provided", () => {
+    recordSession({ name: "a", cli: "claude", cwd: "/a", uuid: null }, scratch);
+    expect(findSession("a", scratch).pinned).toBe(false);
+  });
+
+  it("recordSession preserves pinned across re-records when not explicitly set", () => {
+    recordSession(
+      { name: "a", cli: "claude", cwd: "/a", uuid: null, pinned: true },
+      scratch,
+    );
+    expect(findSession("a", scratch).pinned).toBe(true);
+    // Re-record without specifying pinned — the previous value must survive.
+    recordSession(
+      { name: "a", cli: "claude", cwd: "/a-new", uuid: "x" },
+      scratch,
+    );
+    const entry = findSession("a", scratch);
+    expect(entry.cwd).toBe("/a-new");
+    expect(entry.pinned).toBe(true);
+  });
+
+  it("pinSession flips the flag and returns true; false for unknown names", () => {
+    recordSession({ name: "a", cli: "claude", cwd: "/a", uuid: null }, scratch);
+    expect(pinSession("a", true, scratch)).toBe(true);
+    expect(findSession("a", scratch).pinned).toBe(true);
+    expect(pinSession("a", false, scratch)).toBe(true);
+    expect(findSession("a", scratch).pinned).toBe(false);
+    expect(pinSession("missing", true, scratch)).toBe(false);
+  });
+
   it("forgetSession removes the entry; returns false when nothing to remove", () => {
     recordSession(
       { name: "claude-myapp", cli: "claude", cwd: "/app", uuid: null },
@@ -252,17 +283,28 @@ describe("session registry", () => {
         (p, i) =>
           new Promise((resolve, reject) => {
             let stderr = "";
+            // Guard against double-settle: 'error' and 'exit' can both
+            // fire (spawn-failure path emits error then a non-zero exit).
+            // Without this flag, a real spawn failure would be masked by
+            // the no-op second reject.
+            let settled = false;
+            const done = (err) => {
+              if (settled) return;
+              settled = true;
+              if (err) reject(err);
+              else resolve(undefined);
+            };
+            // Attach error first so a synchronous spawn failure can't
+            // escape between construction and listener attachment.
+            p.on("error", done);
             p.stderr.on("data", (chunk) => {
               stderr += chunk.toString();
             });
             p.on("exit", (code) => {
-              if (code === 0) resolve(undefined);
+              if (code === 0) done();
               else
-                reject(
-                  new Error(`child ${i} exited ${code}: ${stderr.trim()}`),
-                );
+                done(new Error(`child ${i} exited ${code}: ${stderr.trim()}`));
             });
-            p.on("error", reject);
           }),
       ),
     );

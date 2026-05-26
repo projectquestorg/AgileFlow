@@ -400,6 +400,36 @@ describe("session-lifecycle", () => {
       expect(map["wt-gone"]).toMatch(/worktree dir missing/);
     });
 
+    it("never surfaces pinned sessions, even when their cwd is missing", () => {
+      recordSession(
+        {
+          name: "pinned-no-cwd",
+          cli: "claude",
+          cwd: "/gone",
+          uuid: null,
+          pinned: true,
+        },
+        scratch,
+      );
+      recordSession(
+        {
+          name: "regular-no-cwd",
+          cli: "claude",
+          cwd: "/also-gone",
+          uuid: null,
+        },
+        scratch,
+      );
+      const candidates = pruneCandidates({
+        home: scratch,
+        runner: silentRunner(),
+        sessionExistsFn: () => false,
+        existsSync: () => false,
+      });
+      const names = candidates.map((c) => c.name);
+      expect(names).toEqual(["regular-no-cwd"]);
+    });
+
     it("never surfaces alive sessions", () => {
       recordSession(
         {

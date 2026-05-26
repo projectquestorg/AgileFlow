@@ -123,6 +123,10 @@ function withRegistryLock(home, fn) {
  * @property {string} cwd
  * @property {string | null} uuid          - null until the first __exec capture
  * @property {string} lastSeen             - ISO timestamp
+ * @property {boolean} [pinned]            - user-marked as "always keep";
+ *                                           pinned entries skip prune and
+ *                                           are pre-selected in the auto-
+ *                                           restore picker
  * @property {WorktreeMeta} [worktree]
  *
  * @typedef {Object} RegistryShape
@@ -194,6 +198,7 @@ function loadRegistry(home) {
       cwd: s.cwd,
       uuid: typeof s.uuid === "string" ? s.uuid : null,
       lastSeen: typeof s.lastSeen === "string" ? s.lastSeen : "",
+      pinned: s.pinned === true,
       worktree:
         s.worktree && typeof s.worktree === "object"
           ? {
@@ -273,12 +278,23 @@ function recordSession(entry, home) {
   withRegistryLock(home, () => {
     const reg = loadRegistry(home);
     const filtered = reg.sessions.filter((s) => s.name !== entry.name);
+    // Preserve `pinned` across re-records (the restore flow re-records
+    // every session it brings back from disk; without this carry-over a
+    // restored pinned session would silently un-pin itself).
+    const previous = reg.sessions.find((s) => s.name === entry.name);
+    const pinned =
+      typeof entry.pinned === "boolean"
+        ? entry.pinned
+        : previous
+          ? previous.pinned === true
+          : false;
     filtered.push({
       name: entry.name,
       cli: entry.cli,
       cwd: entry.cwd,
       uuid: entry.uuid || null,
       lastSeen: entry.lastSeen || new Date().toISOString(),
+      pinned,
       worktree: entry.worktree,
     });
     writeRegistry({ version: 1, sessions: filtered }, home);
@@ -314,6 +330,7 @@ function updateSession(name, patch, home) {
         if (patch.lastSeen !== undefined) s.lastSeen = patch.lastSeen;
         if (patch.cwd !== undefined) s.cwd = patch.cwd;
         if (patch.worktree !== undefined) s.worktree = patch.worktree;
+        if (patch.pinned !== undefined) s.pinned = patch.pinned === true;
         updated = true;
       }
     }
@@ -332,6 +349,21 @@ function updateSession(name, patch, home) {
 function findSession(name, home) {
   const reg = loadRegistry(home);
   return reg.sessions.find((s) => s.name === name) || null;
+}
+
+/**
+ * Set the pinned flag on a session. Convenience wrapper around
+ * updateSession that exists so callers don't have to remember the patch
+ * shape. Returns true when the entry was found and updated, false when
+ * the name isn't in the registry.
+ *
+ * @param {string} name
+ * @param {boolean} pinned
+ * @param {string} [home]
+ * @returns {boolean}
+ */
+function pinSession(name, pinned, home) {
+  return updateSession(name, { pinned: pinned === true }, home);
 }
 
 /**
@@ -365,4 +397,5 @@ module.exports = {
   updateSession,
   findSession,
   forgetSession,
+  pinSession,
 };

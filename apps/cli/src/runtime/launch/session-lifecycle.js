@@ -228,6 +228,10 @@ function pruneCandidates(deps = {}) {
   const out = [];
   for (const c of classified) {
     if (c.state === "alive") continue;
+    // Pinned entries are explicit "always keep" — never surface them as
+    // prune candidates, even if their cwd disappeared. The user has to
+    // unpin first if they really want to forget.
+    if (c.pinned) continue;
     if (c.state === "missing-cwd") {
       out.push({ ...c, reason: `cwd missing: ${c.cwd}` });
       continue;

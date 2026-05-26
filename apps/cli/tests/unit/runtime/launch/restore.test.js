@@ -176,6 +176,56 @@ describe("runRestore", () => {
     expect(result.notes[0].reason).toMatch(/no server running/);
   });
 
+  it("onlyNames restores a subset of entries by name in one call", () => {
+    recordSession(
+      { name: "claude-a", cli: "claude", cwd: "/a", uuid: null },
+      scratch,
+    );
+    recordSession(
+      { name: "claude-b", cli: "claude", cwd: "/b", uuid: null },
+      scratch,
+    );
+    recordSession(
+      { name: "claude-c", cli: "claude", cwd: "/c", uuid: null },
+      scratch,
+    );
+    const runner = queuedRunner();
+    const result = runRestore({
+      prefs: basePrefs,
+      runner,
+      home: scratch,
+      agileflowBin: "/usr/bin/agileflow",
+      existsSync: () => true,
+      log: () => {},
+      onlyNames: ["claude-a", "claude-c"],
+    });
+    expect(result.restored).toBe(2);
+    const news = runner.calls
+      .filter((c) => c[0] === "new-session")
+      .map((c) => c[3])
+      .sort();
+    expect(news).toEqual(["claude-a", "claude-c"]);
+  });
+
+  it("onlyNames with an empty array restores nothing", () => {
+    recordSession(
+      { name: "claude-a", cli: "claude", cwd: "/a", uuid: null },
+      scratch,
+    );
+    const runner = queuedRunner();
+    const result = runRestore({
+      prefs: basePrefs,
+      runner,
+      home: scratch,
+      agileflowBin: "/usr/bin/agileflow",
+      existsSync: () => true,
+      log: () => {},
+      onlyNames: [],
+    });
+    expect(result.restored).toBe(0);
+    expect(runner.calls.find((c) => c[0] === "new-session")).toBeUndefined();
+  });
+
   it("onlyName restores a single entry from a multi-entry registry", () => {
     recordSession(
       { name: "claude-a", cli: "claude", cwd: "/a", uuid: null },

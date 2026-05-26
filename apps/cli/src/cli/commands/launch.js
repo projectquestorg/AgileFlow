@@ -44,7 +44,10 @@ const {
 } = require("../../runtime/launch/parallel-session.js");
 const { runExec } = require("../../runtime/launch/exec-wrapper.js");
 const { runRestore } = require("../../runtime/launch/restore.js");
-const { loadRegistry } = require("../../runtime/launch/session-registry.js");
+const {
+  loadRegistry,
+  pinSession,
+} = require("../../runtime/launch/session-registry.js");
 const {
   listSessions,
   killBySessionName,
@@ -582,18 +585,26 @@ async function runLs() {
     console.log("No saved sessions. Run `agileflow launch` to create one.");
     return;
   }
+  // Pinned entries float to the top so the user sees their "always keep"
+  // sessions first. Within each group, original registry order is
+  // preserved (which is roughly creation order).
+  rows.sort(
+    (a, b) => (b.pinned === true ? 1 : 0) - (a.pinned === true ? 1 : 0),
+  );
   // Column widths sized to the longest value, capped to keep wide cwds
-  // from blowing past the terminal.
+  // from blowing past the terminal. Leading column reserves a glyph for
+  // the pin marker so pinned/unpinned rows align.
   const nameW = Math.max(4, ...rows.map((r) => r.name.length));
   const cliW = Math.max(3, ...rows.map((r) => r.cli.length));
   const stateW = "missing-cwd".length;
+  const pinMark = (r) => (r.pinned ? "★" : " ");
   const fmt = (r) =>
-    `${r.name.padEnd(nameW)}  ${r.cli.padEnd(cliW)}  ${r.state.padEnd(stateW)}  ${r.cwd}${
+    `${pinMark(r)} ${r.name.padEnd(nameW)}  ${r.cli.padEnd(cliW)}  ${r.state.padEnd(stateW)}  ${r.cwd}${
       r.worktree && r.worktree.branch ? ` [wt ${r.worktree.branch}]` : ""
     }`;
   // eslint-disable-next-line no-console
   console.log(
-    `${"NAME".padEnd(nameW)}  ${"CLI".padEnd(cliW)}  ${"STATE".padEnd(stateW)}  CWD`,
+    `  ${"NAME".padEnd(nameW)}  ${"CLI".padEnd(cliW)}  ${"STATE".padEnd(stateW)}  CWD`,
   );
   for (const r of rows) {
     // eslint-disable-next-line no-console
@@ -834,6 +845,39 @@ async function runDoctor() {
 }
 
 /**
+ * `agileflow launch pin <name>` / `unpin <name>` — flip the pinned flag
+ * on a registry entry. Pinned entries skip `prune` and arrive pre-
+ * selected in the auto-restore picker.
+ *
+ * @param {string | undefined} name
+ * @param {boolean} pinned
+ * @returns {Promise<void>}
+ */
+async function runPin(name, pinned) {
+  const action = pinned ? "pin" : "unpin";
+  if (!name) {
+    fail(
+      new OperationFailedError(
+        `agileflow launch ${action} requires a session name`,
+        { suggestion: "run `agileflow launch ls` to see available names" },
+      ),
+      { command: "launch" },
+    );
+  }
+  const ok = pinSession(name, pinned);
+  if (!ok) {
+    fail(
+      new OperationFailedError(`no session named "${name}" in the registry`, {
+        suggestion: "run `agileflow launch ls` to see available names",
+      }),
+      { command: "launch" },
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.log(`${pinned ? "Pinned" : "Unpinned"} "${name}".`);
+}
+
+/**
  * Auto-restore check on bare `agileflow launch`. Fires only when:
  *   - tmux is available (we use sessionExists to count alive sessions)
  *   - the registry has entries
@@ -867,28 +911,54 @@ async function maybeOfferAutoRestore(prefs) {
   prompts.log.info(
     `Found ${reg.sessions.length} saved session(s) from before this tmux server started.`,
   );
-  const choice = await prompts.confirm({
-    message: questionMessage(
-      "Restore all saved sessions now?",
-      "Each session re-creates in its original directory, resuming the conversation where possible.",
-    ),
-    initialValue: true,
+
+  // Multi-select picker: every session is an option, pinned entries
+  // (and entries with worktrees — these are usually intentional Alt+n
+  // work-in-progress) come pre-selected. Default-selecting nothing
+  // would surprise users coming from v3 (which restored all), so when
+  // no session is pinned we default-select everything.
+  const sorted = reg.sessions.slice().sort((a, b) => {
+    const ap = a.pinned === true ? 1 : 0;
+    const bp = b.pinned === true ? 1 : 0;
+    if (ap !== bp) return bp - ap;
+    return 0;
   });
-  // Distinguish Ctrl+C ("cancel everything") from explicit "No" ("skip
-  // restore but keep going"). The two used to be one branch and both
-  // fell through to runEngine — surprising for users who pressed Ctrl+C
-  // expecting nothing further to happen.
-  if (prompts.isCancel(choice)) {
+  const options = sorted.map((s) => ({
+    value: s.name,
+    label: `${s.pinned ? "★ " : "  "}${s.name}`,
+    hint: `${s.cli} — ${s.cwd}${s.worktree && s.worktree.branch ? ` [wt ${s.worktree.branch}]` : ""}`,
+  }));
+  const anyPinned = sorted.some((s) => s.pinned === true);
+  const initial = anyPinned
+    ? sorted.filter((s) => s.pinned === true).map((s) => s.name)
+    : sorted.map((s) => s.name);
+
+  const selection = await prompts.multiselect({
+    message: questionMessage(
+      "Pick which sessions to restore",
+      "Pinned (★) entries are pre-selected. Space toggles, Enter confirms, Ctrl+C cancels everything.",
+    ),
+    options,
+    initialValues: initial,
+    required: false,
+  });
+  // Distinguish Ctrl+C ("cancel everything") from explicit "no selections"
+  // ("skip restore but keep going"). The two used to be one branch and
+  // both fell through to runEngine — surprising for users who pressed
+  // Ctrl+C expecting nothing further to happen.
+  if (prompts.isCancel(selection)) {
     prompts.cancel("Launch cancelled. No sessions restored.");
     process.exit(0);
   }
-  if (!choice) {
+  /** @type {string[]} */
+  const chosen = Array.isArray(selection) ? selection : [];
+  if (chosen.length === 0) {
     prompts.outro(
       "Skipped. Run `agileflow launch restore` later to bring them back.",
     );
     return;
   }
-  const result = runRestore({ prefs });
+  const result = runRestore({ prefs, onlyNames: chosen });
   prompts.outro(
     `Restored ${result.restored} session(s). Continuing into the current directory's session...`,
   );
@@ -958,11 +1028,19 @@ async function launch(sub, nameArg, _options) {
       await runDoctor();
       return;
     }
+    if (sub === "pin") {
+      await runPin(nameArg, true);
+      return;
+    }
+    if (sub === "unpin") {
+      await runPin(nameArg, false);
+      return;
+    }
     if (sub && sub !== "setup") {
       fail(
         new OperationFailedError(`unknown launch subcommand: ${sub}`, {
           suggestion:
-            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, `agileflow launch restore`, `agileflow launch ls`, `agileflow launch kill <name>`, `agileflow launch attach <name>`, `agileflow launch prune`, or `agileflow launch doctor`",
+            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, `agileflow launch restore`, `agileflow launch ls`, `agileflow launch kill <name>`, `agileflow launch attach <name>`, `agileflow launch prune`, `agileflow launch doctor`, `agileflow launch pin <name>`, or `agileflow launch unpin <name>`",
         }),
         { command: "launch" },
       );
@@ -1054,4 +1132,5 @@ module.exports.runKill = runKill;
 module.exports.runAttachByName = runAttachByName;
 module.exports.runPrune = runPrune;
 module.exports.runDoctor = runDoctor;
+module.exports.runPin = runPin;
 module.exports.shouldOfferOrphanCleanup = shouldOfferOrphanCleanup;

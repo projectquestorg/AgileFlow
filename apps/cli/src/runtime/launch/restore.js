@@ -41,6 +41,7 @@ const { resolveAgileflowBin } = require("./alias-installer.js");
  *   existsSync?: (p: string) => boolean,
  *   log?: (msg: string) => void,
  *   onlyName?: string,
+ *   onlyNames?: string[],
  * }} opts
  * @returns {RestoreResult}
  */
@@ -66,9 +67,18 @@ function runRestore(opts) {
     notes: [],
   };
 
-  const entries = opts.onlyName
-    ? reg.sessions.filter((s) => s.name === opts.onlyName)
-    : reg.sessions.slice();
+  /** @type {import("./session-registry.js").SessionEntry[]} */
+  let entries;
+  if (opts.onlyName) {
+    entries = reg.sessions.filter((s) => s.name === opts.onlyName);
+  } else if (Array.isArray(opts.onlyNames)) {
+    // Use a Set for O(1) lookup so a 100-entry registry restoring a
+    // 20-entry subset stays linear, not quadratic.
+    const wanted = new Set(opts.onlyNames);
+    entries = reg.sessions.filter((s) => wanted.has(s.name));
+  } else {
+    entries = reg.sessions.slice();
+  }
 
   for (const entry of entries) {
     if (sessionExists(entry.name, runner)) {
