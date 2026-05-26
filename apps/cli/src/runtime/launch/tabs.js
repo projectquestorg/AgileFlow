@@ -308,6 +308,14 @@ const TAB_KEYBINDS = [
     action: ["select-window", "-t", `:${n}`],
     hint: `Alt+${n} → switch to tab ${n}`,
   })),
+  // Alt+0 jumps to the LAST tab — matches Chrome's Ctrl+9 muscle
+  // memory (the 0 key sits naturally to the right of 9). tmux's
+  // `:$` is the alias for the last window in the session.
+  {
+    key: "M-0",
+    action: ["select-window", "-t", ":$"],
+    hint: "Alt+0 → switch to last tab",
+  },
   // Browser-style cycling. Bind M-S-Tab AND M-BTab — terminals split
   // on which escape sequence they emit for Shift+Tab, so binding both
   // covers either path. Note: some window managers (GNOME, KDE)

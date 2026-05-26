@@ -241,6 +241,13 @@ function applyTabFormat(sessionName, runner, opts = {}) {
     `#[bg=${PILL_BG},fg=${ACCENT}] #h ` +
     `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_CLOSE}`;
 
+  // Reduce escape-time so pressing Esc inside command-prompt (Alt+n
+  // worktree-name prompt, etc.) cancels immediately. tmux's default
+  // is 500ms — it waits for a follow-up key in case Esc is the start
+  // of an Alt+key sequence. 25ms is the common "snappy Esc" value used
+  // by tmux power-user configs (Oh My Tmux, gpakosz/.tmux, etc.).
+  runner.runSync(["set-option", "-sg", "escape-time", "25"]);
+
   // Apply each option with the correct tmux scope. Session-scope opts
   // (status-style, status-left/right, status-justify) take
   // `-t <session>`. Window-scope opts (window-status-format,
