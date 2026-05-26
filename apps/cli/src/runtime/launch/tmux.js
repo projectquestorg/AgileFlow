@@ -478,16 +478,30 @@ async function launchInTmux(opts) {
     return attachSession(base, runner);
   }
 
-  // No existing session — create fresh with the AI CLI as its command.
-  // We already confirmed `base` is free above, so no need to walk
-  // `nextFreeSessionName`; that helper is reserved for the upcoming
-  // `--new` flag where the user explicitly wants a parallel sibling.
+  // No existing session — create fresh. Run the agileflow `__exec`
+  // wrapper instead of the raw CLI so the per-CLI resume strategy
+  // fires (claude `--resume <uuid>` etc.) and so the session is
+  // recorded in the cross-reboot registry. The wrapper reads the
+  // session name from argv to look itself up in the registry.
+  // `base` is confirmed free above; no `nextFreeSessionName` walk needed.
+  // Lazy-load to avoid a require cycle (session-registry → tmux is fine,
+  // but record-on-create wants the registry which depends on this module
+  // transitively via parallel-session).
+  const { recordSession } = require("./session-registry.js");
+  const agileflowBin = resolveAgileflowBin();
   const name = base;
+  const cliId = path.basename(opts.bin);
+  recordSession({
+    name,
+    cli: cliId,
+    cwd,
+    uuid: null,
+  });
   const create = createSession(
     {
       name,
-      bin: opts.bin,
-      args: opts.args || [],
+      bin: agileflowBin,
+      args: ["launch", "__exec", name],
       cwd,
       statusPosition: opts.statusPosition,
     },

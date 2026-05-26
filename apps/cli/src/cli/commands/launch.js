@@ -41,6 +41,9 @@ const {
 const {
   runParallelSpawn,
 } = require("../../runtime/launch/parallel-session.js");
+const { runExec } = require("../../runtime/launch/exec-wrapper.js");
+const { runRestore } = require("../../runtime/launch/restore.js");
+const { loadRegistry } = require("../../runtime/launch/session-registry.js");
 const {
   installAfAlias,
   uninstallAfAlias,
@@ -500,6 +503,119 @@ async function runNew(name) {
 }
 
 /**
+ * `agileflow launch restore` — bulk-restore every session in the
+ * registry that isn't currently alive on the tmux server. Used after a
+ * reboot (or `tmux kill-server`) to bring back the tabs the user had
+ * before. Idempotent.
+ *
+ * @returns {Promise<void>}
+ */
+async function runRestoreCommand() {
+  if (!(await prefsExist())) {
+    fail(
+      new OperationFailedError(
+        "agileflow launch restore requires prefs first",
+        {
+          suggestion:
+            "run `agileflow launch setup` to create launch-prefs.json",
+        },
+      ),
+      { command: "launch" },
+    );
+  }
+  if (!tmuxAvailable()) {
+    fail(
+      new OperationFailedError(
+        "tmux is not available — required for `launch restore`",
+        { suggestion: "install tmux and try again" },
+      ),
+      { command: "launch" },
+    );
+  }
+  const { prefs } = await loadPrefsOrFail();
+  const reg = loadRegistry();
+  if (reg.sessions.length === 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "agileflow launch: no saved sessions to restore (registry is empty).",
+    );
+    return;
+  }
+
+  const result = runRestore({ prefs });
+  // eslint-disable-next-line no-console
+  console.error(
+    `agileflow launch: restored ${result.restored}, already-alive ${result.alreadyAlive}, ` +
+      `skipped ${result.skipped}, failed ${result.failed}`,
+  );
+  if (result.failed > 0 || result.skipped > 0) {
+    for (const note of result.notes) {
+      // eslint-disable-next-line no-console
+      console.error(`  ${note.name}: ${note.reason}`);
+    }
+  }
+}
+
+/**
+ * Auto-restore check on bare `agileflow launch`. Fires only when:
+ *   - tmux is available (we use sessionExists to count alive sessions)
+ *   - the registry has entries
+ *   - none of those entries' sessions are currently alive on the
+ *     server (typical post-reboot state — tmux server is brand-new)
+ *
+ * Prompts the user yes/no. On yes, calls runRestore and falls through
+ * so the normal engine flow attaches to (or creates) the cwd's session
+ * afterwards.
+ *
+ * @param {import("../../runtime/launch/defaults.js").LaunchPrefs} prefs
+ * @returns {Promise<void>}
+ */
+async function maybeOfferAutoRestore(prefs) {
+  if (!tmuxAvailable()) return;
+  const reg = loadRegistry();
+  if (reg.sessions.length === 0) return;
+
+  // If ANY registered session is alive, the server isn't fresh — skip
+  // the bulk-restore prompt. The user is likely just launching a new
+  // window in an already-running server.
+  const runner = defaultTmuxRunner();
+  const { sessionExists } = require("../../runtime/launch/tmux.js");
+  for (const s of reg.sessions) {
+    if (sessionExists(s.name, runner)) return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log("\n" + logoBanner(pkg.version) + "\n");
+  prompts.intro("agileflow launch — saved sessions detected");
+  prompts.log.info(
+    `Found ${reg.sessions.length} saved session(s) from before this tmux server started.`,
+  );
+  const choice = await prompts.confirm({
+    message: questionMessage(
+      "Restore all saved sessions now?",
+      "Each session re-creates in its original directory, resuming the conversation where possible.",
+    ),
+    initialValue: true,
+  });
+  if (prompts.isCancel(choice) || !choice) {
+    prompts.outro(
+      "Skipped. Run `agileflow launch restore` later to bring them back.",
+    );
+    return;
+  }
+  const result = runRestore({ prefs });
+  prompts.outro(
+    `Restored ${result.restored} session(s). Continuing into the current directory's session...`,
+  );
+  if (result.failed > 0 || result.skipped > 0) {
+    for (const note of result.notes) {
+      // eslint-disable-next-line no-console
+      console.error(`  ${note.name}: ${note.reason}`);
+    }
+  }
+}
+
+/**
  * Commander action for `agileflow launch [sub] [name]`.
  *
  * Commander v12 invokes action with positional args first, options last:
@@ -516,11 +632,32 @@ async function launch(sub, nameArg, _options) {
       await runNew(nameArg);
       return;
     }
+    if (sub === "__exec") {
+      // Hidden subcommand invoked by tmux itself when a session boots.
+      // `nameArg` is the registry key. runExec loads the entry, spawns
+      // the right CLI with its resume args, captures the new UUID after
+      // exit, and process.exits with the CLI's status.
+      if (!nameArg) {
+        fail(
+          new OperationFailedError(
+            "agileflow launch __exec requires a session name",
+            { suggestion: "this command is invoked by tmux internally" },
+          ),
+          { command: "launch" },
+        );
+      }
+      await runExec(nameArg);
+      return;
+    }
+    if (sub === "restore") {
+      await runRestoreCommand();
+      return;
+    }
     if (sub && sub !== "setup") {
       fail(
         new OperationFailedError(`unknown launch subcommand: ${sub}`, {
           suggestion:
-            "use `agileflow launch`, `agileflow launch setup`, or `agileflow launch new [name]`",
+            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, or `agileflow launch restore`",
         }),
         { command: "launch" },
       );
@@ -548,6 +685,12 @@ async function launch(sub, nameArg, _options) {
     }
 
     const { prefs } = await loadPrefsOrFail();
+    // Auto-restore prompt before engine: if tmux is up, the registry
+    // has entries, and none of them are currently alive on the server,
+    // ask the user whether to bulk-restore. After they choose, the
+    // engine still runs and either attaches to (or creates) the cwd's
+    // canonical session.
+    await maybeOfferAutoRestore(prefs);
     await runEngine(prefs);
   } catch (err) {
     // Preserve typed AgileflowError subclasses (OperationFailedError,

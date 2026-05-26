@@ -25,6 +25,8 @@ const {
   defaultRunner,
 } = require("./tmux.js");
 const { createWorktree, removeWorktree } = require("./worktree.js");
+const { recordSession, forgetSession } = require("./session-registry.js");
+const { resolveAgileflowBin } = require("./alias-installer.js");
 
 /**
  * @typedef {Object} ParallelSpawnResult
@@ -112,20 +114,40 @@ async function runParallelSpawn(opts) {
   // + branch they have to clean up by hand. The rollback helper itself
   // is best-effort; on failure we surface a warning but still re-throw
   // the original tmux error.
+  // Track the session name across the try/catch boundary so the
+  // rollback path can also forget the registry entry we added.
+  /** @type {string | null} */
+  let registeredName = null;
   try {
-    const base = baseSessionName(path.basename(opts.bin), targetCwd);
+    const cliId = path.basename(opts.bin);
+    const base = baseSessionName(cliId, targetCwd);
     // Always pick a fresh name. `new` semantics are "I want a parallel
     // session" — never "reattach". `nextFreeSessionName` walks
     // base, base-2, base-3, ... until it finds an unused slot.
     const sessionName = nextFreeSessionName(base, (n) =>
       sessionExists(n, runner),
     );
+    registeredName = sessionName;
 
+    // Record the session in the cross-reboot registry BEFORE spawning
+    // so the __exec wrapper can find its entry. If the spawn fails we
+    // unrecord in the catch block below.
+    recordSession({
+      name: sessionName,
+      cli: cliId,
+      cwd: targetCwd,
+      uuid: null,
+      worktree: worktree
+        ? { path: worktree.path, branch: worktree.branch, base: worktree.base }
+        : undefined,
+    });
+
+    const agileflowBin = resolveAgileflowBin();
     const create = createSession(
       {
         name: sessionName,
-        bin: opts.bin,
-        args: [],
+        bin: agileflowBin,
+        args: ["launch", "__exec", sessionName],
         cwd: targetCwd,
         statusPosition: opts.prefs.tmux.statusPosition,
       },
@@ -178,6 +200,17 @@ async function runParallelSpawn(opts) {
     log(`agileflow launch: switched to new session ${sessionName}`);
     return { sessionName, cwd: targetCwd, worktree };
   } catch (err) {
+    // Forget the registry entry we added — the spawn didn't succeed
+    // so there's nothing to restore later. Worst case: a tmux session
+    // exists but isn't in the registry (cosmetic; user can attach
+    // manually via `tmux attach -t <name>`).
+    if (registeredName) {
+      try {
+        forgetSession(registeredName);
+      } catch {
+        /* swallow */
+      }
+    }
     // Rollback path. Worktree got created but a subsequent step (tmux
     // create / keybind apply / switch-client) failed — remove the
     // worktree dir + branch so the repo state matches the launch state
