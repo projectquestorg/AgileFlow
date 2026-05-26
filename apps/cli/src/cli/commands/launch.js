@@ -64,6 +64,7 @@ const {
   uninstallAfAlias,
   resolveAgileflowBin,
 } = require("../../runtime/launch/alias-installer.js");
+const { loadCascadedPrefs } = require("../../runtime/launch/project-prefs.js");
 const {
   AgileflowError,
   OperationFailedError,
@@ -94,7 +95,30 @@ function decideFlow({ sub, hasPrefs }) {
  */
 async function loadPrefsOrFail() {
   try {
-    return await loadPrefs();
+    // Cascade: defaults ← global ~/.agileflow ← project .agileflow.
+    // Returns the same shape as loadPrefs() (prefs + source path) plus
+    // a `sources` audit trail consumed by `agileflow launch where`.
+    const cascaded = await loadCascadedPrefs();
+    // Preserve the loadPrefs() shape so existing callers that destructure
+    // { prefs } keep working. The extra `sources` field is silently
+    // ignored by destructures that don't ask for it.
+    return {
+      prefs: cascaded.prefs,
+      // `source` here reflects the HIGHEST-precedence layer that
+      // contributed, since downstream messages like "fix or delete the
+      // prefs file" need a single concrete path to point at. If the
+      // project file is present, that's the most-recently-edited file.
+      source: cascaded.sources.some((s) => s.layer === "project")
+        ? "file"
+        : cascaded.sources.some((s) => s.layer === "global")
+          ? "file"
+          : "defaults",
+      path:
+        (cascaded.sources.find((s) => s.layer === "project") || {}).path ||
+        (cascaded.sources.find((s) => s.layer === "global") || {}).path ||
+        "",
+      sources: cascaded.sources,
+    };
   } catch (err) {
     fail(
       new OperationFailedError(err.message, {
@@ -878,6 +902,51 @@ async function runPin(name, pinned) {
 }
 
 /**
+ * `agileflow launch where` — show which prefs files contributed to the
+ * effective config in this directory. Useful for debugging "why is this
+ * repo picking codex when my global says claude?" surprises.
+ *
+ * @returns {Promise<void>}
+ */
+async function runWhere() {
+  const cascaded = await loadCascadedPrefs();
+  // eslint-disable-next-line no-console
+  console.log(
+    "Active launch prefs in this directory (lowest → highest precedence):",
+  );
+  for (const s of cascaded.sources) {
+    const label =
+      s.layer === "defaults"
+        ? "built-in defaults"
+        : s.layer === "global"
+          ? `global   ${s.path}`
+          : `project  ${s.path}`;
+    // eslint-disable-next-line no-console
+    console.log(`  ${label}`);
+  }
+  // eslint-disable-next-line no-console
+  console.log("");
+  // eslint-disable-next-line no-console
+  console.log("Effective values:");
+  // eslint-disable-next-line no-console
+  console.log(`  cli.preferred       ${cascaded.prefs.cli.preferred}`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `  cli.fallbackOrder   ${cascaded.prefs.cli.fallbackOrder.join(" → ")}`,
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  tmux                ${cascaded.prefs.tmux.enabled ? "on" : "off"} (status ${cascaded.prefs.tmux.statusPosition})`,
+  );
+  // eslint-disable-next-line no-console
+  console.log(`  keybinds            ${cascaded.prefs.keybinds.preset}`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `  af alias            ${cascaded.prefs.aliases.af.enabled ? "on" : "off"}`,
+  );
+}
+
+/**
  * Auto-restore check on bare `agileflow launch`. Fires only when:
  *   - tmux is available (we use sessionExists to count alive sessions)
  *   - the registry has entries
@@ -1036,11 +1105,15 @@ async function launch(sub, nameArg, _options) {
       await runPin(nameArg, false);
       return;
     }
+    if (sub === "where") {
+      await runWhere();
+      return;
+    }
     if (sub && sub !== "setup") {
       fail(
         new OperationFailedError(`unknown launch subcommand: ${sub}`, {
           suggestion:
-            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, `agileflow launch restore`, `agileflow launch ls`, `agileflow launch kill <name>`, `agileflow launch attach <name>`, `agileflow launch prune`, `agileflow launch doctor`, `agileflow launch pin <name>`, or `agileflow launch unpin <name>`",
+            "use `agileflow launch`, `agileflow launch setup`, `agileflow launch new [name]`, `agileflow launch restore`, `agileflow launch ls`, `agileflow launch kill <name>`, `agileflow launch attach <name>`, `agileflow launch prune`, `agileflow launch doctor`, `agileflow launch pin <name>`, `agileflow launch unpin <name>`, or `agileflow launch where`",
         }),
         { command: "launch" },
       );
@@ -1133,4 +1206,5 @@ module.exports.runAttachByName = runAttachByName;
 module.exports.runPrune = runPrune;
 module.exports.runDoctor = runDoctor;
 module.exports.runPin = runPin;
+module.exports.runWhere = runWhere;
 module.exports.shouldOfferOrphanCleanup = shouldOfferOrphanCleanup;
