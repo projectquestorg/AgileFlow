@@ -203,47 +203,76 @@ function applyTabFormat(sessionName, runner, opts = {}) {
   // ignores invalid status-format expressions on some versions, which
   // makes overrides hard to debug. window-status-format works on every
   // tmux 2.0+.
-  const inactiveFormat = `#[fg=${theme.inactiveFg} bg=${theme.stripBg}] #I:#W `;
+  // jakobwesthoff/tmux-from-scratch inspired styling: active tab is a
+  // rounded "pill" (Powerline half-round glyphs) over a lighter
+  // background, with brand-orange accent on the index:name separator
+  // colon. Inactive tabs are plain text with the same accent colon.
+  // Session name appears as a rounded pill on the left, hostname as
+  // a rounded pill on the right.
+  //
+  // Requires a Nerd Font / Powerline-patched font in the user's
+  // terminal. Without one the glyphs render as tofu boxes; users on
+  // a vanilla font can switch back via a future `tabStyle: "flat"`
+  // pref.
+  const HALF_ROUND_OPEN = ""; //
+  const HALF_ROUND_CLOSE = ""; //
+  const TRIANGLE_OPEN = ""; //
+  const TRIANGLE_CLOSE = ""; //
+  const BG = theme.stripBg;
+  const PILL_BG = theme.activeNameBg;
+  const ACCENT = theme.activeBg;
+  const FG = theme.activeNameFg;
+
+  const inactiveFormat = ` #I#[fg=${ACCENT}]:#[fg=default]#W `;
   const activeFormat =
-    `#[fg=${theme.activeFg} bg=${theme.activeBg} bold] #I ` +
-    `#[fg=${theme.activeBg} bg=${theme.activeNameBg}]` +
-    `#[fg=${theme.activeNameFg} bg=${theme.activeNameBg}] #W ` +
-    `#[fg=${theme.activeNameBg} bg=${theme.stripBg}]`;
-  // status-style sets the row's base background so empty space between
-  // chips matches the strip color (no green leak from tmux's default).
-  runner.runSync([
-    "set-option",
-    "-t",
-    sessionName,
-    "status-style",
-    `bg=${theme.stripBg} fg=${theme.inactiveFg}`,
-  ]);
-  runner.runSync(["set-option", "-t", sessionName, "status-left", ""]);
-  runner.runSync(["set-option", "-t", sessionName, "status-right", ""]);
-  runner.runSync([
-    "set-option",
-    "-t",
-    sessionName,
-    "window-status-separator",
-    "",
-  ]);
-  runner.runSync([
-    "set-option",
-    "-t",
-    sessionName,
-    "window-status-format",
-    inactiveFormat,
-  ]);
-  const result = runner.runSync([
-    "set-option",
-    "-t",
-    sessionName,
-    "window-status-current-format",
-    activeFormat,
-  ]);
+    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_OPEN}` +
+    `#[bg=${PILL_BG},fg=${FG},bold]#I#[fg=${ACCENT}]:#[fg=${FG},nobold]#W` +
+    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_CLOSE}`;
+  const statusLeft =
+    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_OPEN}` +
+    `#[bg=${PILL_BG},fg=${ACCENT}] #S ` +
+    `#[fg=${PILL_BG},bg=${BG}]${TRIANGLE_CLOSE}`;
+  const statusRight =
+    `#[fg=${PILL_BG},bg=${BG}]${TRIANGLE_OPEN}` +
+    `#[bg=${PILL_BG},fg=${ACCENT}] #h ` +
+    `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_CLOSE}`;
+
+  // Apply each option and collect failures. If ANYTHING fails we surface
+  // it on stderr so users debugging "why doesn't my tab strip look right"
+  // can see the tmux complaint instead of staring at default formatting.
+  const ops = [
+    ["status-style", `bg=${BG},fg=${theme.inactiveFg}`],
+    ["status-justify", "centre"],
+    ["status-left", statusLeft],
+    ["status-left-length", "100"],
+    ["status-right", statusRight],
+    ["status-right-length", "100"],
+    ["window-status-separator", ""],
+    ["window-status-format", inactiveFormat],
+    ["window-status-current-format", activeFormat],
+  ];
+  let lastResult = { status: 0, stderr: "" };
+  const failures = [];
+  for (const [option, value] of ops) {
+    const r = runner.runSync(["set-option", "-t", sessionName, option, value]);
+    lastResult = r;
+    if (r.status !== 0) {
+      failures.push({ option, stderr: (r.stderr || "").trim() });
+    }
+  }
+  if (failures.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch: tab strip styling — ${failures.length} of ${ops.length} options rejected by tmux:`,
+    );
+    for (const f of failures) {
+      // eslint-disable-next-line no-console
+      console.error(`  ${f.option}: ${f.stderr || "(no error message)"}`);
+    }
+  }
   return {
-    applied: result.status === 0,
-    stderr: result.stderr || "",
+    applied: lastResult.status === 0,
+    stderr: lastResult.stderr || "",
   };
 }
 
@@ -349,15 +378,15 @@ const KEYBIND_PRESET_BINDINGS = {
     },
     {
       // Prompt for a worktree name, then spawn. tmux's command-prompt
-      // substitutes %% with the user's input. Single-quoting the
-      // run-shell command keeps the shell parser happy when the name
-      // contains odd characters; the inner double-quotes around %%
-      // protect against shell word-splitting.
+      // natively cancels on Escape (or Ctrl+G) without firing the
+      // deferred command — the prompt label calls that out so users
+      // know they can back out. The agileflow CLI also bails cleanly
+      // if `%%` came in empty (user hit Enter with no input).
       key: "M-n",
       action: [
         "command-prompt",
         "-p",
-        "worktree name:",
+        "worktree name (esc to cancel):",
         "run-shell '%AGILEFLOW% launch new \"%%\"'",
       ],
       hint: "Alt+n → prompt for a name, create a worktree, spawn there",

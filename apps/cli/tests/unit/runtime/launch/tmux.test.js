@@ -655,7 +655,7 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
     expect(altN && altN.action).toEqual([
       "command-prompt",
       "-p",
-      "worktree name:",
+      "worktree name (esc to cancel):",
       "run-shell '%AGILEFLOW% launch new \"%%\"'",
     ]);
   });
