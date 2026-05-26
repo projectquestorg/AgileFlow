@@ -140,6 +140,10 @@ async function runParallelSpawn(opts) {
       cli: cliId,
       cwd: targetCwd,
       uuid: null,
+      // Same as the engine path: new-session puts the wrapper at
+      // window-index 0 before our base-index=1 setting takes effect
+      // on subsequently-created windows. Restore skips this index.
+      wrapperWindowIndex: 0,
       worktree: worktree
         ? { path: worktree.path, branch: worktree.branch, base: worktree.base }
         : undefined,

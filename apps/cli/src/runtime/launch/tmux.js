@@ -727,6 +727,10 @@ async function launchInTmux(opts) {
     cli: cliId,
     cwd,
     uuid: null,
+    // new-session creates the wrapper at index 0 (default base-index
+    // before we change it). Restore replay skips this index so we
+    // don't duplicate the wrapper window.
+    wrapperWindowIndex: 0,
   });
   const create = createSession(
     {

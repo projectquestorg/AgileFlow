@@ -141,6 +141,13 @@ function withRegistryLock(home, fn) {
  *                                           captured. Newer captures
  *                                           always win when concurrent
  *                                           hook subprocesses race.
+ * @property {number} [wrapperWindowIndex] - tmux window index that holds
+ *                                           the agileflow __exec wrapper
+ *                                           (the window created by
+ *                                           new-session). Replay skips
+ *                                           THIS index so the user's
+ *                                           tabs don't get a duplicate
+ *                                           wrapper. Defaults to 0.
  *
  * @typedef {Object} RegistryShape
  * @property {1} version
@@ -239,6 +246,8 @@ function loadRegistry(home) {
       windows,
       windowsCapturedAt:
         typeof s.windowsCapturedAt === "number" ? s.windowsCapturedAt : 0,
+      wrapperWindowIndex:
+        typeof s.wrapperWindowIndex === "number" ? s.wrapperWindowIndex : 0,
     });
   }
   return { version: 1, sessions: sane };
@@ -330,6 +339,16 @@ function recordSession(entry, home) {
         : previous
           ? previous.windows
           : undefined;
+    // Preserve wrapperWindowIndex across re-records. It's set once at
+    // session creation (when new-session puts the wrapper at index 0
+    // before we change base-index) and never changes for the life of
+    // the session entry.
+    const wrapperWindowIndex =
+      typeof entry.wrapperWindowIndex === "number"
+        ? entry.wrapperWindowIndex
+        : previous && typeof previous.wrapperWindowIndex === "number"
+          ? previous.wrapperWindowIndex
+          : 0;
     filtered.push({
       name: entry.name,
       cli: entry.cli,
@@ -339,6 +358,7 @@ function recordSession(entry, home) {
       pinned,
       worktree: entry.worktree,
       windows,
+      wrapperWindowIndex,
     });
     writeRegistry({ version: 1, sessions: filtered }, home);
   });

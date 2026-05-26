@@ -12,6 +12,7 @@
  * Returns counts so the caller can show a "restored N of M" summary.
  */
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 const {
@@ -25,6 +26,63 @@ const {
 } = require("./tmux.js");
 const { loadRegistry } = require("./session-registry.js");
 const { resolveAgileflowBin } = require("./alias-installer.js");
+
+const RESTORE_LOCK_FILE = "launch-restore.lock";
+const RESTORE_LOCK_STALE_MS = 30000;
+
+/**
+ * O_EXCL lock around the entire restore operation so two concurrent
+ * `agileflow launch restore` invocations don't race on createSession
+ * and produce duplicate-session errors plus wasted hook installation
+ * work. Same pattern as the registry lock but on a separate file so
+ * it doesn't block snapshot writes from running sessions.
+ *
+ * @template T
+ * @param {string | undefined} home
+ * @param {() => T} fn
+ * @returns {T}
+ */
+function withRestoreLock(home, fn) {
+  const dir = path.join(home || os.homedir(), ".agileflow");
+  fs.mkdirSync(dir, { recursive: true });
+  const lockFile = path.join(dir, RESTORE_LOCK_FILE);
+  let lockFd = null;
+  try {
+    lockFd = fs.openSync(lockFile, "wx");
+  } catch (err) {
+    if (err && err.code === "EEXIST") {
+      // Check for stale lock (process crashed mid-restore).
+      try {
+        const stat = fs.statSync(lockFile);
+        if (Date.now() - (stat.mtimeMs || 0) > RESTORE_LOCK_STALE_MS) {
+          fs.unlinkSync(lockFile);
+          lockFd = fs.openSync(lockFile, "wx");
+        }
+      } catch {
+        /* fall through to throw */
+      }
+    }
+    if (lockFd === null) {
+      throw new Error(
+        "another `agileflow launch restore` is already in progress",
+      );
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    try {
+      fs.closeSync(lockFd);
+    } catch {
+      /* swallow */
+    }
+    try {
+      fs.unlinkSync(lockFile);
+    } catch {
+      /* swallow */
+    }
+  }
+}
 
 /**
  * @typedef {Object} RestoreResult
@@ -49,6 +107,11 @@ const { resolveAgileflowBin } = require("./alias-installer.js");
  * @returns {RestoreResult}
  */
 function runRestore(opts) {
+  return withRestoreLock(opts.home, () => runRestoreInner(opts));
+}
+
+/** @param {Parameters<typeof runRestore>[0]} opts */
+function runRestoreInner(opts) {
   const runner = opts.runner || defaultRunner();
   const existsSync = opts.existsSync || ((p) => fs.existsSync(p));
   const log =
@@ -141,17 +204,26 @@ function runRestore(opts) {
       const sorted = entry.windows
         .slice()
         .sort((a, b) => (a.index || 0) - (b.index || 0));
-      // Skip the first — already created by new-session.
-      for (let i = 1; i < sorted.length; i++) {
-        const w = sorted[i];
+      // Skip the wrapper window specifically — new-session already
+      // recreated it. Tracked by wrapperWindowIndex (set at session-
+      // creation time, defaults to 0) so a user who reordered windows
+      // doesn't lose a real tab to "first index = wrapper" assumption.
+      const wrapperIdx =
+        typeof entry.wrapperWindowIndex === "number"
+          ? entry.wrapperWindowIndex
+          : 0;
+      let replayed = 0;
+      for (const w of sorted) {
+        if (w.index === wrapperIdx) continue;
         if (!existsSync(w.cwd)) continue;
         const args = ["new-window", "-t", entry.name, "-c", w.cwd];
         if (w.name) args.push("-n", w.name);
         runner.runSync(args);
+        replayed++;
       }
-      log(
-        `agileflow launch: replayed ${sorted.length - 1} tab(s) for ${entry.name}`,
-      );
+      if (replayed > 0) {
+        log(`agileflow launch: replayed ${replayed} tab(s) for ${entry.name}`);
+      }
     }
     // Install hooks AFTER replay so the new-window calls above don't
     // each fire window-linked and overwrite the saved snapshot with
