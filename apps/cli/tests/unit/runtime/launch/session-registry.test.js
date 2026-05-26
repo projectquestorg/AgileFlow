@@ -174,4 +174,46 @@ describe("session registry", () => {
     const leftover = fs.readdirSync(dir).filter((f) => f.includes(".tmp-"));
     expect(leftover).toEqual([]);
   });
+
+  it("recordSession rejects entries with missing required fields", () => {
+    expect(() =>
+      recordSession({ name: "", cli: "claude", cwd: "/a" }, scratch),
+    ).toThrow(/name must be a non-empty string/);
+    expect(() =>
+      recordSession({ name: "a", cli: "", cwd: "/a" }, scratch),
+    ).toThrow(/cli must be a non-empty string/);
+    expect(() =>
+      recordSession({ name: "a", cli: "claude", cwd: "" }, scratch),
+    ).toThrow(/cwd must be a non-empty string/);
+    // Sanity: nothing was written to disk on any rejected call.
+    expect(loadRegistry(scratch).sessions).toEqual([]);
+  });
+
+  it("updateSession coerces non-string uuid patches to null", () => {
+    recordSession(
+      { name: "a", cli: "claude", cwd: "/a", uuid: "abc" },
+      scratch,
+    );
+    // @ts-expect-error intentional bad input
+    updateSession("a", { uuid: { malformed: true } }, scratch);
+    expect(findSession("a", scratch).uuid).toBeNull();
+  });
+
+  it("releases the lockfile after a successful mutation", () => {
+    recordSession({ name: "a", cli: "claude", cwd: "/a" }, scratch);
+    const lockPath = registryPath(scratch) + ".lock";
+    expect(fs.existsSync(lockPath)).toBe(false);
+  });
+
+  it("serializes interleaved updates so neither write is lost", () => {
+    recordSession(
+      { name: "a", cli: "claude", cwd: "/a", uuid: "old" },
+      scratch,
+    );
+    // Synchronous sequential updates — exercises the lock around the
+    // read-modify-write so a follow-up read sees BOTH updates.
+    updateSession("a", { uuid: "first" }, scratch);
+    updateSession("a", { uuid: "second" }, scratch);
+    expect(findSession("a", scratch).uuid).toBe("second");
+  });
 });

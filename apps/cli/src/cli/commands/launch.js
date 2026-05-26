@@ -597,7 +597,15 @@ async function maybeOfferAutoRestore(prefs) {
     ),
     initialValue: true,
   });
-  if (prompts.isCancel(choice) || !choice) {
+  // Distinguish Ctrl+C ("cancel everything") from explicit "No" ("skip
+  // restore but keep going"). The two used to be one branch and both
+  // fell through to runEngine — surprising for users who pressed Ctrl+C
+  // expecting nothing further to happen.
+  if (prompts.isCancel(choice)) {
+    prompts.cancel("Launch cancelled. No sessions restored.");
+    process.exit(0);
+  }
+  if (!choice) {
     prompts.outro(
       "Skipped. Run `agileflow launch restore` later to bring them back.",
     );

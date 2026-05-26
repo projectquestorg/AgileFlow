@@ -35,9 +35,13 @@ const os = require("os");
  * @returns {string}
  */
 function encodeClaudeProjectDir(cwd) {
-  // Strip a leading `/` and convert remaining `/` to `-`. Claude itself
-  // produces names like `-home-user-myproject` for `/home/user/myproject`.
-  const normalized = cwd.replace(/^\/+/, "");
+  // Normalize backslashes to forward slashes first so Windows paths
+  // (`C:\Users\me\app`) and POSIX paths (`/home/me/app`) hit the same
+  // encoding path. Then strip leading slashes and convert any remaining
+  // separator to `-`. Claude itself produces names like
+  // `-home-user-myproject` for `/home/user/myproject`.
+  const slashed = cwd.replace(/\\/g, "/");
+  const normalized = slashed.replace(/^\/+/, "");
   return "-" + normalized.replace(/\//g, "-");
 }
 

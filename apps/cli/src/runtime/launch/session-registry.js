@@ -22,6 +22,94 @@ const os = require("os");
 const path = require("path");
 
 const FILENAME = "launch-sessions.json";
+const LOCK_SUFFIX = ".lock";
+const LOCK_STALE_MS = 5000;
+const LOCK_MAX_ATTEMPTS = 100;
+const LOCK_RETRY_MS = 10;
+
+/**
+ * Busy-wait sleep for `ms` milliseconds. Used inside the lock-acquire
+ * retry loop to back off briefly between attempts without bringing in
+ * any async / Atomics machinery (the rest of the registry API is sync,
+ * so async sleep would force every caller through Promise plumbing).
+ *
+ * @param {number} ms
+ */
+function busyWait(ms) {
+  const target = Date.now() + ms;
+  while (Date.now() < target) {
+    /* spin */
+  }
+}
+
+/**
+ * Acquire an exclusive write lock on the registry via an O_EXCL lock
+ * file, run `fn`, then release. Used by recordSession / updateSession /
+ * forgetSession so two concurrent `__exec` processes finishing claude
+ * at the same time don't lose each other's UUID updates (read-modify-
+ * write race).
+ *
+ * @template T
+ * @param {string | undefined} home
+ * @param {() => T} fn
+ * @returns {T}
+ */
+function withRegistryLock(home, fn) {
+  const lockFile = registryPath(home) + LOCK_SUFFIX;
+  fs.mkdirSync(path.dirname(lockFile), { recursive: true });
+
+  /** @type {number | null} */
+  let lockFd = null;
+  for (let attempt = 0; attempt < LOCK_MAX_ATTEMPTS; attempt++) {
+    try {
+      // `wx` is the Node.js shorthand for O_CREAT | O_EXCL — fails with
+      // EEXIST when someone else already holds the lock.
+      lockFd = fs.openSync(lockFile, "wx");
+      break;
+    } catch (err) {
+      if (!err || err.code !== "EEXIST") throw err;
+      // Stale-lock detection: if the lockfile's mtime is older than
+      // LOCK_STALE_MS the holder probably crashed without unlinking.
+      // Best-effort takeover. The race here is benign: even if two
+      // processes both decide it's stale, only one O_EXCL open will
+      // succeed and the other loops again.
+      try {
+        const stat = fs.statSync(lockFile);
+        if (Date.now() - (stat.mtimeMs || 0) > LOCK_STALE_MS) {
+          try {
+            fs.unlinkSync(lockFile);
+          } catch {
+            /* swallow */
+          }
+          continue;
+        }
+      } catch {
+        /* lockfile vanished between EEXIST and stat — loop and retry */
+      }
+      busyWait(LOCK_RETRY_MS);
+    }
+  }
+  if (lockFd === null) {
+    throw new Error(
+      `could not acquire launch-sessions registry lock after ${LOCK_MAX_ATTEMPTS} attempts`,
+    );
+  }
+
+  try {
+    return fn();
+  } finally {
+    try {
+      fs.closeSync(lockFd);
+    } catch {
+      /* swallow */
+    }
+    try {
+      fs.unlinkSync(lockFile);
+    } catch {
+      /* swallow */
+    }
+  }
+}
 
 /**
  * @typedef {Object} WorktreeMeta
@@ -71,7 +159,16 @@ function loadRegistry(home) {
     raw = fs.readFileSync(file, "utf8");
   } catch (err) {
     if (err && err.code === "ENOENT") return emptyRegistry();
-    // Permission or I/O error — treat as empty, log later via caller.
+    // Permission / I/O errors should NOT silently become an empty
+    // registry — that would tell a subsequent write to wipe out the
+    // user's whole session list. Surface a warning on stderr (so it
+    // shows up next to other launch chatter) and still return empty so
+    // the rest of the launch flow keeps working.
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch: could not read ${file} (${err && err.code ? err.code : err && err.message ? err.message : "I/O error"}). ` +
+        "Saved sessions may not appear in `agileflow launch restore` until the file is readable.",
+    );
     return emptyRegistry();
   }
   let parsed;
@@ -149,18 +246,43 @@ function writeRegistry(reg, home) {
  * @param {Omit<SessionEntry, "lastSeen"> & { lastSeen?: string }} entry
  * @param {string} [home]
  */
+/**
+ * Reject entries that loadRegistry would silently drop on the next
+ * read. Validates the same required-string fields the load-side filter
+ * checks, so writes and reads agree.
+ *
+ * @param {Partial<SessionEntry>} entry
+ */
+function validateEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    throw new TypeError("recordSession: entry must be an object");
+  }
+  if (typeof entry.name !== "string" || !entry.name) {
+    throw new TypeError("recordSession: entry.name must be a non-empty string");
+  }
+  if (typeof entry.cli !== "string" || !entry.cli) {
+    throw new TypeError("recordSession: entry.cli must be a non-empty string");
+  }
+  if (typeof entry.cwd !== "string" || !entry.cwd) {
+    throw new TypeError("recordSession: entry.cwd must be a non-empty string");
+  }
+}
+
 function recordSession(entry, home) {
-  const reg = loadRegistry(home);
-  const filtered = reg.sessions.filter((s) => s.name !== entry.name);
-  filtered.push({
-    name: entry.name,
-    cli: entry.cli,
-    cwd: entry.cwd,
-    uuid: entry.uuid || null,
-    lastSeen: entry.lastSeen || new Date().toISOString(),
-    worktree: entry.worktree,
+  validateEntry(entry);
+  withRegistryLock(home, () => {
+    const reg = loadRegistry(home);
+    const filtered = reg.sessions.filter((s) => s.name !== entry.name);
+    filtered.push({
+      name: entry.name,
+      cli: entry.cli,
+      cwd: entry.cwd,
+      uuid: entry.uuid || null,
+      lastSeen: entry.lastSeen || new Date().toISOString(),
+      worktree: entry.worktree,
+    });
+    writeRegistry({ version: 1, sessions: filtered }, home);
   });
-  writeRegistry({ version: 1, sessions: filtered }, home);
 }
 
 /**
@@ -174,19 +296,30 @@ function recordSession(entry, home) {
  * @returns {boolean} - true if a row was updated
  */
 function updateSession(name, patch, home) {
-  const reg = loadRegistry(home);
-  let updated = false;
-  for (const s of reg.sessions) {
-    if (s.name === name) {
-      if (patch.uuid !== undefined) s.uuid = patch.uuid;
-      if (patch.lastSeen !== undefined) s.lastSeen = patch.lastSeen;
-      if (patch.cwd !== undefined) s.cwd = patch.cwd;
-      if (patch.worktree !== undefined) s.worktree = patch.worktree;
-      updated = true;
+  return withRegistryLock(home, () => {
+    // Re-read under the lock so concurrent __exec processes finishing
+    // claude at the same time don't lose each other's UUID updates.
+    // Without the lock: A loads, B loads, A writes, B writes → A's
+    // change clobbered.
+    const reg = loadRegistry(home);
+    let updated = false;
+    for (const s of reg.sessions) {
+      if (s.name === name) {
+        if (patch.uuid !== undefined) {
+          // Accept string-or-null only; coerce anything else to null
+          // to keep the on-disk shape consistent with what the load
+          // side validates.
+          s.uuid = typeof patch.uuid === "string" ? patch.uuid : null;
+        }
+        if (patch.lastSeen !== undefined) s.lastSeen = patch.lastSeen;
+        if (patch.cwd !== undefined) s.cwd = patch.cwd;
+        if (patch.worktree !== undefined) s.worktree = patch.worktree;
+        updated = true;
+      }
     }
-  }
-  if (updated) writeRegistry(reg, home);
-  return updated;
+    if (updated) writeRegistry(reg, home);
+    return updated;
+  });
 }
 
 /**
@@ -210,14 +343,16 @@ function findSession(name, home) {
  * @returns {boolean}
  */
 function forgetSession(name, home) {
-  const reg = loadRegistry(home);
-  const before = reg.sessions.length;
-  reg.sessions = reg.sessions.filter((s) => s.name !== name);
-  if (reg.sessions.length !== before) {
-    writeRegistry(reg, home);
-    return true;
-  }
-  return false;
+  return withRegistryLock(home, () => {
+    const reg = loadRegistry(home);
+    const before = reg.sessions.length;
+    reg.sessions = reg.sessions.filter((s) => s.name !== name);
+    if (reg.sessions.length !== before) {
+      writeRegistry(reg, home);
+      return true;
+    }
+    return false;
+  });
 }
 
 module.exports = {

@@ -23,6 +23,18 @@ describe("encodeClaudeProjectDir", () => {
   it("encodes a single root-level dir", () => {
     expect(encodeClaudeProjectDir("/app")).toBe("-app");
   });
+
+  it("normalizes Windows-style backslash paths to the same shape", () => {
+    expect(encodeClaudeProjectDir("C:\\Users\\me\\app")).toBe(
+      "-C:-Users-me-app",
+    );
+  });
+
+  it("handles mixed separators on Windows-ish paths", () => {
+    expect(encodeClaudeProjectDir("C:\\Users/me\\app")).toBe(
+      "-C:-Users-me-app",
+    );
+  });
 });
 
 describe("claude strategy", () => {

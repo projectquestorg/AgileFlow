@@ -83,17 +83,25 @@ async function runExec(sessionName) {
   // Best-effort UUID capture. Failures here are NEVER fatal — the user
   // ran their CLI fine; we just don't get to update the registry. Worst
   // case: next __exec resumes the same UUID we had before.
+  //
+  // CRITICAL: only persist a new UUID when the CLI exited cleanly. If
+  // claude crashed mid-conversation the newest .jsonl is an incomplete
+  // snapshot, and resuming into it later would land the user in a
+  // corrupted state. On non-zero exit we still bump lastSeen so the
+  // registry shows the session was alive recently, but the UUID
+  // pointer stays at whatever the last successful capture wrote.
   try {
-    const newUuid = strategy.captureUuid(entry.cwd);
-    if (newUuid) {
-      updateSession(sessionName, {
-        uuid: newUuid,
-        lastSeen: new Date().toISOString(),
-      });
+    if (result.exitCode === 0) {
+      const newUuid = strategy.captureUuid(entry.cwd);
+      if (newUuid) {
+        updateSession(sessionName, {
+          uuid: newUuid,
+          lastSeen: new Date().toISOString(),
+        });
+      } else {
+        updateSession(sessionName, { lastSeen: new Date().toISOString() });
+      }
     } else {
-      // No UUID for this strategy (codex/cursor-agent/aider, or claude
-      // with no jsonl yet) — still bump lastSeen so the registry shows
-      // the session is alive.
       updateSession(sessionName, { lastSeen: new Date().toISOString() });
     }
   } catch {
