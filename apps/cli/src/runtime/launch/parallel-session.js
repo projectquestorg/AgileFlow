@@ -22,6 +22,8 @@ const {
   sessionExists,
   createSession,
   applyKeybindPreset,
+  applyTabFormat,
+  detectTmuxVersion,
   defaultRunner,
 } = require("./tmux.js");
 const { createWorktree, removeWorktree } = require("./worktree.js");
@@ -184,6 +186,14 @@ async function runParallelSpawn(opts) {
         log(`agileflow launch: keybind skipped — ${f.hint}`);
       }
     }
+
+    // Apply the tab strip styling to the new session — without this,
+    // Alt+s and Alt+n spawn sessions with tmux's default green status
+    // bar. Same call the engine does on every fresh-launch session.
+    runner.runSync(["set-option", "-t", sessionName, "status", "1"]);
+    applyTabFormat(sessionName, runner, {
+      tmuxVersion: detectTmuxVersion(runner),
+    });
 
     // Swap the user's tmux client to the new session. If switch-client
     // fails the session is still alive — surface its name so the user
