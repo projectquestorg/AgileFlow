@@ -145,7 +145,7 @@ describe("buildTabFormat", () => {
 describe("TAB_KEYBINDS", () => {
   it("includes the core named keybinds", () => {
     const keys = TAB_KEYBINDS.map((b) => b.key);
-    expect(keys).toContain("M-c");
+    expect(keys).toContain("M-t");
     expect(keys).toContain("M-,");
     expect(keys).toContain("M-w");
     expect(keys).toContain("M-W");

@@ -56,7 +56,12 @@ function queuedRunner(handlers, attachExit = 0) {
       if (
         Array.isArray(args) &&
         args[0] === "set-option" &&
-        (args.includes("status-format[1]") || args.includes("status"))
+        (args.includes("status-format[0]") ||
+          args.includes("status-format[1]") ||
+          args.includes("status") ||
+          args.includes("status-style") ||
+          args.includes("status-left") ||
+          args.includes("status-right"))
       ) {
         return { status: 0, stdout: "", stderr: "", error: null };
       }
@@ -629,7 +634,7 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
     const keys = KEYBIND_PRESET_BINDINGS.default.map((b) => b.key);
     // Tab operations: new / rename / close / picker / restore.
     expect(keys).toEqual(
-      expect.arrayContaining(["M-c", "M-,", "M-w", "M-W", "M-T"]),
+      expect.arrayContaining(["M-t", "M-,", "M-w", "M-W", "M-T"]),
     );
     // Numeric switchers Alt+1..Alt+9.
     for (let n = 1; n <= 9; n++) {

@@ -197,15 +197,29 @@ function detectTmuxVersion(runner) {
  * @returns {{ applied: boolean, stderr: string }}
  */
 function applyTabFormat(sessionName, runner, opts = {}) {
+  const theme = { ...tabs.DEFAULT_TAB_THEME, ...(opts.theme || {}) };
   const format = tabs.buildTabFormat({
     tmuxVersion: opts.tmuxVersion,
     theme: opts.theme,
   });
+  // Override tmux's default green status-style so the strip's dark
+  // background isn't broken up by tmux's stock green bar. Also clear
+  // status-left / status-right — they default to session info + clock
+  // on green; the tab strip already shows what the user needs.
+  runner.runSync([
+    "set-option",
+    "-t",
+    sessionName,
+    "status-style",
+    `bg=${theme.stripBg} fg=${theme.inactiveFg}`,
+  ]);
+  runner.runSync(["set-option", "-t", sessionName, "status-left", ""]);
+  runner.runSync(["set-option", "-t", sessionName, "status-right", ""]);
   const result = runner.runSync([
     "set-option",
     "-t",
     sessionName,
-    "status-format[1]",
+    "status-format[0]",
     format,
   ]);
   return {
@@ -538,8 +552,9 @@ async function launchInTmux(opts) {
     // Re-apply the tab strip every attach so prefs / theme changes
     // since session creation take effect (and so a session created by
     // an older agileflow without a strip picks one up on reattach).
-    // Requires status lines = 2 so the tab strip on line[1] renders.
-    runner.runSync(["set-option", "-t", base, "status", "2"]);
+    // Single dark status line — the tab strip on line[0] replaces
+    // tmux's default green status bar entirely.
+    runner.runSync(["set-option", "-t", base, "status", "1"]);
     applyTabFormat(base, runner, { tmuxVersion });
     log(`agileflow launch: resuming session ${base}`);
     return attachSession(base, runner);
@@ -604,7 +619,7 @@ async function launchInTmux(opts) {
           log(`agileflow launch: keybind skipped — ${f.hint}`);
         }
       }
-      runner.runSync(["set-option", "-t", name, "status", "2"]);
+      runner.runSync(["set-option", "-t", name, "status", "1"]);
       applyTabFormat(name, runner, { tmuxVersion });
       return attachSession(name, runner);
     }
@@ -624,11 +639,11 @@ async function launchInTmux(opts) {
       log(`agileflow launch: keybind skipped — ${f.hint}`);
     }
   }
-  // Two-line status so the tab strip on status-format[1] is visible.
-  // Per-session so other tmux clients are unaffected. Then write the
-  // tab format itself. Both are best-effort; failure shouldn't block
-  // the attach.
-  runner.runSync(["set-option", "-t", name, "status", "2"]);
+  // Single dark status line — the tab strip on status-format[0]
+  // replaces tmux's default green status bar entirely. Per-session
+  // so other tmux clients are unaffected. Then write the tab format
+  // itself. Both are best-effort; failure shouldn't block the attach.
+  runner.runSync(["set-option", "-t", name, "status", "1"]);
   applyTabFormat(name, runner, { tmuxVersion });
   log(`agileflow launch: starting new session ${name}`);
   return attachSession(name, runner);

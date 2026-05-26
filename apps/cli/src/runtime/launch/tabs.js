@@ -259,9 +259,11 @@ function buildTabFormat(opts = {}) {
  */
 const TAB_KEYBINDS = [
   {
-    key: "M-c",
+    // Alt+t = new tab. Matches Chrome/Safari's Ctrl+T / Cmd+T —
+    // browser muscle memory carries straight over.
+    key: "M-t",
     action: ["new-window"],
-    hint: "Alt+c → new tab",
+    hint: "Alt+t → new tab",
   },
   {
     // -I prefills the prompt with the current name so the user can
