@@ -311,6 +311,26 @@ const TAB_KEYBINDS = [
     action: ["select-window", "-t", `:${n}`],
     hint: `Alt+${n} → switch to tab ${n}`,
   })),
+  // Browser-style cycling. Bind M-S-Tab AND M-BTab — terminals split
+  // on which escape sequence they emit for Shift+Tab, so binding both
+  // covers either path. Note: some window managers (GNOME, KDE)
+  // intercept Alt+Tab before it reaches tmux; works fine in fullscreen
+  // terminals on macOS and most tiling WMs.
+  {
+    key: "M-Tab",
+    action: ["next-window"],
+    hint: "Alt+Tab → next tab",
+  },
+  {
+    key: "M-S-Tab",
+    action: ["previous-window"],
+    hint: "Alt+Shift+Tab → previous tab",
+  },
+  {
+    key: "M-BTab",
+    action: ["previous-window"],
+    hint: "Alt+Shift+Tab → previous tab (alt encoding)",
+  },
 ];
 
 module.exports = {
