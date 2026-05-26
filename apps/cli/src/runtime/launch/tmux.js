@@ -198,14 +198,19 @@ function detectTmuxVersion(runner) {
  */
 function applyTabFormat(sessionName, runner, opts = {}) {
   const theme = { ...tabs.DEFAULT_TAB_THEME, ...(opts.theme || {}) };
-  const format = tabs.buildTabFormat({
-    tmuxVersion: opts.tmuxVersion,
-    theme: opts.theme,
-  });
-  // Override tmux's default green status-style so the strip's dark
-  // background isn't broken up by tmux's stock green bar. Also clear
-  // status-left / status-right — they default to session info + clock
-  // on green; the tab strip already shows what the user needs.
+  // Use the standard per-window formats instead of overriding the full
+  // status-format[0] — broader tmux compatibility, and tmux silently
+  // ignores invalid status-format expressions on some versions, which
+  // makes overrides hard to debug. window-status-format works on every
+  // tmux 2.0+.
+  const inactiveFormat = `#[fg=${theme.inactiveFg} bg=${theme.stripBg}] #I:#W `;
+  const activeFormat =
+    `#[fg=${theme.activeFg} bg=${theme.activeBg} bold] #I ` +
+    `#[fg=${theme.activeBg} bg=${theme.activeNameBg}]` +
+    `#[fg=${theme.activeNameFg} bg=${theme.activeNameBg}] #W ` +
+    `#[fg=${theme.activeNameBg} bg=${theme.stripBg}]`;
+  // status-style sets the row's base background so empty space between
+  // chips matches the strip color (no green leak from tmux's default).
   runner.runSync([
     "set-option",
     "-t",
@@ -215,12 +220,26 @@ function applyTabFormat(sessionName, runner, opts = {}) {
   ]);
   runner.runSync(["set-option", "-t", sessionName, "status-left", ""]);
   runner.runSync(["set-option", "-t", sessionName, "status-right", ""]);
+  runner.runSync([
+    "set-option",
+    "-t",
+    sessionName,
+    "window-status-separator",
+    "",
+  ]);
+  runner.runSync([
+    "set-option",
+    "-t",
+    sessionName,
+    "window-status-format",
+    inactiveFormat,
+  ]);
   const result = runner.runSync([
     "set-option",
     "-t",
     sessionName,
-    "status-format[0]",
-    format,
+    "window-status-current-format",
+    activeFormat,
   ]);
   return {
     applied: result.status === 0,

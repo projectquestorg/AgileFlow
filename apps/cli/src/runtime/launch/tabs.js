@@ -273,19 +273,18 @@ const TAB_KEYBINDS = [
     hint: "Alt+, → rename current tab",
   },
   {
-    // confirm-before runs the command on `y` and does nothing on `n`.
-    // We pass session+index as positional args so the callback targets
-    // the exact window the user pressed Alt+w on — without this, the
-    // callback would re-probe display-message and could close the
-    // wrong tab if focus moved during the confirmation prompt.
+    // Direct close — no confirm-before. The earlier confirm-before
+    // path was brittle under tmux's bind-key parsing (deferred-command
+    // quoting issues caused the keybind to silently no-op on some
+    // tmux builds). Alt+Shift+T (Alt+T) restores the last closed
+    // tab in the same cwd, so the close is effectively reversible —
+    // matches Chrome's instant-close + Ctrl+Shift+T undo.
     key: "M-w",
     action: [
-      "confirm-before",
-      "-p",
-      "kill tab #W? (y/n)",
-      "run-shell '%AGILEFLOW% launch __close-window #{session_name} #{window_index}'",
+      "run-shell",
+      "%AGILEFLOW% launch __close-window #{session_name} #{window_index}",
     ],
-    hint: "Alt+w → close current tab (with confirm)",
+    hint: "Alt+w → close current tab (Alt+Shift+T to undo)",
   },
   {
     // tmux's built-in window picker. -Z zooms (full-screen the picker),
