@@ -65,6 +65,7 @@ const {
   resolveAgileflowBin,
 } = require("../../runtime/launch/alias-installer.js");
 const { loadCascadedPrefs } = require("../../runtime/launch/project-prefs.js");
+const closedWindows = require("../../runtime/launch/closed-windows.js");
 const {
   AgileflowError,
   OperationFailedError,
@@ -947,6 +948,164 @@ async function runWhere() {
 }
 
 /**
+ * Hidden subcommand wired to the `Alt+w` tab close keybind. Captures
+ * the current tmux window's name + pane cwd via `tmux display-message`,
+ * pushes onto the closed-windows log, then `kill-window`s. Designed to
+ * be called from a tmux `run-shell` action — no UI, no exceptions
+ * propagated to the user (failures only log to stderr so they appear in
+ * the tmux pane error overlay if the user surfaces it).
+ *
+ * Ordering: kill-window FIRST (with an explicit `-t session:index`
+ * target captured atomically from display-message), then push to the
+ * log only on kill success. This is the inverse of the obvious order
+ * but it avoids two real bugs caught in pre-commit audit:
+ *   (a) Phantom log entry — if kill fails (permission, race) we'd
+ *       otherwise leave a "closed" record pointing at a still-alive
+ *       window, and Alt+T would duplicate it.
+ *   (b) Wrong-window kill — a bare `kill-window` with no target acts
+ *       on whatever window has focus at that instant, which can drift
+ *       between display-message and the kill if the user switches
+ *       windows in another pane. Explicit `-t` pins it.
+ *
+ * Trade-off: if push fails (lock contention etc.) the window is gone
+ * but Alt+T can't undo it — acceptable, since the inverse failure
+ * (logged but alive) is worse.
+ *
+ * @param {{
+ *   runner?: ReturnType<typeof defaultTmuxRunner>,
+ *   pushClosedImpl?: typeof closedWindows.pushClosed,
+ * }} [deps]
+ * @returns {Promise<void>}
+ */
+async function runInternalCloseWindow(deps = {}) {
+  const runner = deps.runner || defaultTmuxRunner();
+  const pushClosedImpl = deps.pushClosedImpl || closedWindows.pushClosed;
+  // ASCII Unit Separator — never appears in a session/window name or
+  // filesystem path, so splitting on it is unambiguous.
+  const DELIM = "\x1f";
+  const fmt = `#S${DELIM}#I${DELIM}#W${DELIM}#{pane_current_path}`;
+  const probe = runner.runSync(["display-message", "-p", "-F", fmt]);
+  if (probe.status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __close-window: tmux display-message failed: ${probe.stderr || "unknown"}`,
+    );
+    return;
+  }
+  const parts = (probe.stdout || "").trimEnd().split(DELIM);
+  if (parts.length !== 4) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __close-window: unexpected display-message output (got ${parts.length} fields)`,
+    );
+    return;
+  }
+  const [sessionName, windowIndex, windowName, cwd] = parts;
+  if (!sessionName || !windowIndex || !cwd) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "agileflow launch __close-window: missing session/index/cwd; skipping kill",
+    );
+    return;
+  }
+  // Kill first with the explicit target captured above. If this fails
+  // we abort without touching the log — the window is still alive and
+  // a phantom entry would mislead Alt+T into resurrecting a duplicate.
+  const kill = runner.runSync([
+    "kill-window",
+    "-t",
+    `${sessionName}:${windowIndex}`,
+  ]);
+  if (kill.status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __close-window: kill-window failed: ${kill.stderr || "unknown"}`,
+    );
+    return;
+  }
+  try {
+    pushClosedImpl({ sessionName, name: windowName || "", cwd });
+  } catch (err) {
+    // Window is already gone; push failure means Alt+T can't undo
+    // this particular close. Surface for visibility but don't throw —
+    // a tmux keybind run-shell can't usefully recover.
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __close-window: log push failed (window already closed): ${err && err.message ? err.message : err}`,
+    );
+  }
+}
+
+/**
+ * Hidden subcommand wired to the `Alt+T` restore keybind. Pops the
+ * most recent closed entry for the current tmux session and spawns a
+ * new window in its cwd with the original name. No-op when the log is
+ * empty for this session — quieter than printing a "nothing to undo"
+ * message, since the user just sees their layout unchanged.
+ *
+ * @param {{
+ *   runner?: ReturnType<typeof defaultTmuxRunner>,
+ *   popClosedImpl?: typeof closedWindows.popClosed,
+ * }} [deps]
+ * @returns {Promise<void>}
+ */
+async function runInternalRestoreWindow(deps = {}) {
+  const runner = deps.runner || defaultTmuxRunner();
+  const popClosedImpl = deps.popClosedImpl || closedWindows.popClosed;
+  const pushClosedImpl = deps.pushClosedImpl || closedWindows.pushClosed;
+  const probe = runner.runSync(["display-message", "-p", "-F", "#S"]);
+  if (probe.status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __restore-window: tmux display-message failed: ${probe.stderr || "unknown"}`,
+    );
+    return;
+  }
+  const sessionName = (probe.stdout || "").trim();
+  if (!sessionName) return;
+  /** @type {ReturnType<typeof closedWindows.popClosed>} */
+  let entry;
+  try {
+    entry = popClosedImpl(sessionName);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __restore-window: log pop failed: ${err && err.message ? err.message : err}`,
+    );
+    return;
+  }
+  if (!entry) {
+    // Empty stack — silent. The user pressed Alt+T with nothing to undo.
+    return;
+  }
+  const args = ["new-window", "-t", sessionName, "-c", entry.cwd];
+  if (entry.name) args.push("-n", entry.name);
+  const create = runner.runSync(args);
+  if (create.status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `agileflow launch __restore-window: new-window failed: ${create.stderr || "unknown"}`,
+    );
+    // Re-push so the user doesn't lose their undo entry — pop already
+    // mutated the log, so a failed new-window without re-push means
+    // pressing Alt+T again would skip THIS entry and pop the NEXT one,
+    // double-losing data.
+    try {
+      pushClosedImpl({
+        sessionName,
+        name: entry.name,
+        cwd: entry.cwd,
+      });
+    } catch (pushErr) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `agileflow launch __restore-window: failed to re-push entry after new-window failure: ${pushErr && pushErr.message ? pushErr.message : pushErr}`,
+      );
+    }
+  }
+}
+
+/**
  * Auto-restore check on bare `agileflow launch`. Fires only when:
  *   - tmux is available (we use sessionExists to count alive sessions)
  *   - the registry has entries
@@ -1107,6 +1266,22 @@ async function launch(sub, nameArg, _options) {
     }
     if (sub === "where") {
       await runWhere();
+      return;
+    }
+    if (sub === "__close-window") {
+      // Hidden subcommand invoked from tmux keybind (Alt+w). Captures
+      // the current window's name + pane cwd, pushes onto the
+      // closed-windows log, then issues kill-window so Alt+T can
+      // resurrect it later. No UI; failures are silent.
+      await runInternalCloseWindow();
+      return;
+    }
+    if (sub === "__restore-window") {
+      // Hidden subcommand invoked from tmux keybind (Alt+T). Pops the
+      // most recent closed entry for the current session and spawns
+      // a new window in that cwd with the original name. No-op when
+      // the log is empty for this session.
+      await runInternalRestoreWindow();
       return;
     }
     if (sub && sub !== "setup") {

@@ -24,6 +24,7 @@ const child_process = require("child_process");
 const { commandExists: realCommandExists } = require("../../lib/path-check.js");
 const { signalToExitCode } = require("./spawn.js");
 const { resolveAgileflowBin } = require("./alias-installer.js");
+const tabs = require("./tabs.js");
 
 /**
  * @typedef {Object} TmuxLaunchResult
@@ -164,6 +165,56 @@ function sessionExists(name, runner) {
 }
 
 /**
+ * Detect the running tmux's version via `tmux -V`. Returns null when
+ * tmux isn't on PATH or its output is unparseable. Pure (no caching);
+ * `launchInTmux` calls it once per invocation and threads the result.
+ *
+ * @param {TmuxRunner} runner
+ * @returns {{ major: number, minor: number } | null}
+ */
+function detectTmuxVersion(runner) {
+  const result = runner.runSync(["-V"]);
+  if (result.status !== 0) return null;
+  return tabs.parseTmuxVersion(result.stdout || "");
+}
+
+/**
+ * Apply the tab-strip status-format for `sessionName`. Per-session
+ * (status-format is one of the options that accepts `-t <session>`),
+ * so the user's other tmux sessions are unaffected.
+ *
+ * On tmux >= 3.2 emits the cascading 5-tier compaction format; on
+ * older tmux falls back to a single-tier themed format. Failure is
+ * non-fatal — returns `{ applied: false, stderr }` so the caller can
+ * surface a warning without aborting the launch.
+ *
+ * @param {string} sessionName
+ * @param {TmuxRunner} runner
+ * @param {{
+ *   tmuxVersion?: { major: number, minor: number } | null,
+ *   theme?: Partial<typeof tabs.DEFAULT_TAB_THEME>,
+ * }} [opts]
+ * @returns {{ applied: boolean, stderr: string }}
+ */
+function applyTabFormat(sessionName, runner, opts = {}) {
+  const format = tabs.buildTabFormat({
+    tmuxVersion: opts.tmuxVersion,
+    theme: opts.theme,
+  });
+  const result = runner.runSync([
+    "set-option",
+    "-t",
+    sessionName,
+    "status-format[1]",
+    format,
+  ]);
+  return {
+    applied: result.status === 0,
+    stderr: result.stderr || "",
+  };
+}
+
+/**
  * Create a new detached tmux session that immediately runs `bin args...`.
  * Returns the runner's exit status (0 on success).
  *
@@ -278,6 +329,11 @@ const KEYBIND_PRESET_BINDINGS = {
       ],
       hint: "Alt+n → prompt for a name, create a worktree, spawn there",
     },
+    // v3-equivalent tab (tmux window) keybinds. Living in a separate
+    // module so the format builder + keybind table stay testable in
+    // isolation; spread into the default preset so they participate in
+    // the same apply / unbind sweep as everything else.
+    ...tabs.TAB_KEYBINDS,
   ],
   minimal: [
     {
@@ -451,6 +507,11 @@ async function launchInTmux(opts) {
   // is the right command for both "exists detached" and "exists attached"
   // — the latter steals or shares the session, mirroring v3 `af` behavior.
   // If the user wants a fresh parallel session, they use `launch --new` (slice 2c).
+  // Detect tmux version once per invocation; threaded into the tab
+  // format builder so we can degrade to a single-tier format on tmux
+  // < 3.2 instead of emitting `#{e|...}` operators it doesn't understand.
+  const tmuxVersion = detectTmuxVersion(runner);
+
   const existsSync = (name) => sessionExists(name, runner);
   if (existsSync(base)) {
     // Apply prefs on every attach — cheap, and keeps the session in sync
@@ -474,6 +535,12 @@ async function launchInTmux(opts) {
         log(`agileflow launch: keybind skipped — ${f.hint}`);
       }
     }
+    // Re-apply the tab strip every attach so prefs / theme changes
+    // since session creation take effect (and so a session created by
+    // an older agileflow without a strip picks one up on reattach).
+    // Requires status lines = 2 so the tab strip on line[1] renders.
+    runner.runSync(["set-option", "-t", base, "status", "2"]);
+    applyTabFormat(base, runner, { tmuxVersion });
     log(`agileflow launch: resuming session ${base}`);
     return attachSession(base, runner);
   }
@@ -517,9 +584,28 @@ async function launchInTmux(opts) {
     // cwd created the session between our existsSync probe and our
     // new-session call. The session exists now and is what the user
     // wanted; just attach to it instead of surfacing a misleading
-    // "duplicate session" error.
+    // "duplicate session" error. Apply the same setup the non-racey
+    // reattach path does (keybinds + status height + tab format) so
+    // the race-recovered user gets the same UX as everyone else.
     if (sessionExists(name, runner)) {
       log(`agileflow launch: resuming session ${name} (race-recovered)`);
+      if (opts.statusPosition) {
+        runner.runSync([
+          "set-option",
+          "-t",
+          name,
+          "status-position",
+          opts.statusPosition,
+        ]);
+      }
+      if (opts.keybindPreset) {
+        const result = applyKeybindPreset(opts.keybindPreset, runner);
+        for (const f of result.failures) {
+          log(`agileflow launch: keybind skipped — ${f.hint}`);
+        }
+      }
+      runner.runSync(["set-option", "-t", name, "status", "2"]);
+      applyTabFormat(name, runner, { tmuxVersion });
       return attachSession(name, runner);
     }
 
@@ -538,6 +624,12 @@ async function launchInTmux(opts) {
       log(`agileflow launch: keybind skipped — ${f.hint}`);
     }
   }
+  // Two-line status so the tab strip on status-format[1] is visible.
+  // Per-session so other tmux clients are unaffected. Then write the
+  // tab format itself. Both are best-effort; failure shouldn't block
+  // the attach.
+  runner.runSync(["set-option", "-t", name, "status", "2"]);
+  applyTabFormat(name, runner, { tmuxVersion });
   log(`agileflow launch: starting new session ${name}`);
   return attachSession(name, runner);
 }
@@ -555,6 +647,8 @@ module.exports = {
   killSession,
   applyKeybindPreset,
   substituteBinding,
+  detectTmuxVersion,
+  applyTabFormat,
   KEYBIND_PRESET_BINDINGS,
   defaultRunner,
 };

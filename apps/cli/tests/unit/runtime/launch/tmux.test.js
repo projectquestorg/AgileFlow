@@ -40,6 +40,26 @@ function queuedRunner(handlers, attachExit = 0) {
     calls,
     runSync(args) {
       calls.push(args);
+      // Short-circuit `tmux -V` (version probe) and the per-session
+      // status-format / status-lines writes added when tab support
+      // landed. These were not part of the queue handler list before;
+      // returning a sensible default here means slice-3 tests don't
+      // need to bake the new calls into every queue.
+      if (Array.isArray(args) && args.length === 1 && args[0] === "-V") {
+        return {
+          status: 0,
+          stdout: "tmux 3.3a\n",
+          stderr: "",
+          error: null,
+        };
+      }
+      if (
+        Array.isArray(args) &&
+        args[0] === "set-option" &&
+        (args.includes("status-format[1]") || args.includes("status"))
+      ) {
+        return { status: 0, stdout: "", stderr: "", error: null };
+      }
       const handler = queue.shift();
       if (!handler)
         return { status: 1, stdout: "", stderr: "no handler", error: null };
@@ -112,7 +132,13 @@ describe("sessionExists", () => {
   it("returns true when tmux has-session exits 0", () => {
     const runner = queuedRunner([{ status: 0, stdout: "", stderr: "" }]);
     expect(sessionExists("claude-app", runner)).toBe(true);
-    expect(runner.calls[0]).toEqual(["has-session", "-t", "=claude-app"]);
+    // First substantive call is `has-session`. `tmux -V` (the version
+    // probe added when tab support landed) is short-circuited inside
+    // queuedRunner; we filter it out before asserting call order.
+    const substantive = runner.calls.filter(
+      (c) => !(c.length === 1 && c[0] === "-V"),
+    );
+    expect(substantive[0]).toEqual(["has-session", "-t", "=claude-app"]);
   });
   it("returns false when tmux has-session exits non-zero", () => {
     const runner = queuedRunner([
@@ -207,8 +233,14 @@ describe("launchInTmux", () => {
     expect(result.exitCode).toBe(0);
     // First call: existence probe; second: set-option on the existing session;
     // then attach.
-    expect(runner.calls[0]).toEqual(["has-session", "-t", "=claude-app"]);
-    expect(runner.calls[1]).toEqual([
+    // First substantive call is `has-session`. `tmux -V` (the version
+    // probe added when tab support landed) is short-circuited inside
+    // queuedRunner; we filter it out before asserting call order.
+    const substantive = runner.calls.filter(
+      (c) => !(c.length === 1 && c[0] === "-V"),
+    );
+    expect(substantive[0]).toEqual(["has-session", "-t", "=claude-app"]);
+    expect(substantive[1]).toEqual([
       "set-option",
       "-t",
       "claude-app",
@@ -234,8 +266,14 @@ describe("launchInTmux", () => {
       runner,
       log: noopLog,
     });
-    expect(runner.calls[0]).toEqual(["has-session", "-t", "=claude-app"]);
-    expect(runner.calls[1].slice(0, 5)).toEqual([
+    // First substantive call is `has-session`. `tmux -V` (the version
+    // probe added when tab support landed) is short-circuited inside
+    // queuedRunner; we filter it out before asserting call order.
+    const substantive = runner.calls.filter(
+      (c) => !(c.length === 1 && c[0] === "-V"),
+    );
+    expect(substantive[0]).toEqual(["has-session", "-t", "=claude-app"]);
+    expect(substantive[1].slice(0, 5)).toEqual([
       "new-session",
       "-d",
       "-s",
@@ -581,7 +619,22 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
 
   it("'default' preset includes detach/freeze + parallel-spawn shortcuts", () => {
     const keys = KEYBIND_PRESET_BINDINGS.default.map((b) => b.key);
-    expect(keys).toEqual(["M-q", "M-k", "M-K", "M-r", "M-s", "M-n"]);
+    // The original six.
+    expect(keys).toEqual(
+      expect.arrayContaining(["M-q", "M-k", "M-K", "M-r", "M-s", "M-n"]),
+    );
+  });
+
+  it("'default' preset includes v3-equivalent tab keybinds", () => {
+    const keys = KEYBIND_PRESET_BINDINGS.default.map((b) => b.key);
+    // Tab operations: new / rename / close / picker / restore.
+    expect(keys).toEqual(
+      expect.arrayContaining(["M-c", "M-,", "M-w", "M-W", "M-T"]),
+    );
+    // Numeric switchers Alt+1..Alt+9.
+    for (let n = 1; n <= 9; n++) {
+      expect(keys).toContain(`M-${n}`);
+    }
   });
 
   it("'default' Alt+s carries a %AGILEFLOW% placeholder for run-time substitution", () => {
@@ -650,12 +703,16 @@ describe("applyKeybindPreset", () => {
     const result = applyKeybindPreset("minimal", runner);
     expect(result.applied).toBe(1);
     expect(result.failures).toEqual([]);
-    // First: unbind every key any preset could install.
+    // First: unbind every key any preset could install. The set is
+    // derived from KEYBIND_PRESET_BINDINGS so adding tab keybinds
+    // automatically extends the sweep — verify by union, not literal.
     const unbinds = calls.filter((c) => c[0] === "unbind-key");
     expect(unbinds.length).toBeGreaterThan(0);
-    expect(unbinds.map((c) => c[3]).sort()).toEqual(
-      ["M-K", "M-k", "M-n", "M-q", "M-r", "M-s"].sort(),
-    );
+    const expectedUnbinds = new Set();
+    for (const preset of Object.values(KEYBIND_PRESET_BINDINGS)) {
+      for (const b of preset) expectedUnbinds.add(b.key);
+    }
+    expect(new Set(unbinds.map((c) => c[3]))).toEqual(expectedUnbinds);
     // Then: the chosen preset's binds.
     const binds = calls.filter((c) => c[0] === "bind-key");
     expect(binds).toEqual([["bind-key", "-T", "root", "M-q", "detach-client"]]);
@@ -682,7 +739,7 @@ describe("applyKeybindPreset", () => {
     ]);
   });
 
-  it("issues all six bindings for the default preset", () => {
+  it("issues a bind-key for every entry in the default preset (in order)", () => {
     const calls = [];
     const runner = {
       runSync: (args) => {
@@ -692,16 +749,15 @@ describe("applyKeybindPreset", () => {
       runAttach: vi.fn(),
     };
     const result = applyKeybindPreset("default", runner);
-    expect(result.applied).toBe(6);
+    // Default preset's size is data-driven — read it from the source
+    // so adding/removing keybinds doesn't desync this test from the
+    // preset table. As of slice 3 it's the 6 base + 14 tab keybinds.
+    const expectedCount = KEYBIND_PRESET_BINDINGS.default.length;
+    expect(result.applied).toBe(expectedCount);
     const binds = calls.filter((c) => c[0] === "bind-key");
-    expect(binds.map((c) => c[3])).toEqual([
-      "M-q",
-      "M-k",
-      "M-K",
-      "M-r",
-      "M-s",
-      "M-n",
-    ]);
+    expect(binds.map((c) => c[3])).toEqual(
+      KEYBIND_PRESET_BINDINGS.default.map((b) => b.key),
+    );
   });
 
   it("for 'none' still sweeps unbinds (so switching from default→none clears the old keys)", () => {
@@ -724,8 +780,8 @@ describe("applyKeybindPreset", () => {
 
   it("collects failures into the result without throwing", () => {
     // Unbinds always 'succeed' (we ignore their status anyway); the first
-    // bind-key succeeds and the rest fail. Default preset is now 6 binds,
-    // so we expect 1 applied + 5 failures.
+    // bind-key succeeds and the rest fail. Test runs against the actual
+    // default preset size so future keybind additions don't break it.
     const runner = {
       runSync: (args) => {
         if (args[0] === "unbind-key")
@@ -743,8 +799,9 @@ describe("applyKeybindPreset", () => {
       runAttach: vi.fn(),
     };
     const result = applyKeybindPreset("default", runner);
+    const expectedFailures = KEYBIND_PRESET_BINDINGS.default.length - 1;
     expect(result.applied).toBe(1);
-    expect(result.failures.length).toBe(5);
+    expect(result.failures.length).toBe(expectedFailures);
     expect(result.failures[0].stderr).toBe("invalid key");
   });
 
