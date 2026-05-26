@@ -241,24 +241,53 @@ function applyTabFormat(sessionName, runner, opts = {}) {
     `#[bg=${PILL_BG},fg=${ACCENT}] #h ` +
     `#[fg=${PILL_BG},bg=${BG}]${HALF_ROUND_CLOSE}`;
 
-  // Apply each option and collect failures. If ANYTHING fails we surface
-  // it on stderr so users debugging "why doesn't my tab strip look right"
-  // can see the tmux complaint instead of staring at default formatting.
+  // Apply each option with the correct tmux scope. Session-scope opts
+  // (status-style, status-left/right, status-justify) take
+  // `-t <session>`. Window-scope opts (window-status-format,
+  // window-status-current-format, window-status-separator) take
+  // `-wg` so every window in every session picks them up. Earlier
+  // code applied ALL options with `-t session`, which made tmux
+  // silently ignore the window-scope ones — the visible symptom
+  // was tmux's default green status bar surviving on every session.
   const ops = [
-    ["status-style", `bg=${BG},fg=${theme.inactiveFg}`],
-    ["status-justify", "centre"],
-    ["status-left", statusLeft],
-    ["status-left-length", "100"],
-    ["status-right", statusRight],
-    ["status-right-length", "100"],
-    ["window-status-separator", ""],
-    ["window-status-format", inactiveFormat],
-    ["window-status-current-format", activeFormat],
+    {
+      scope: "session",
+      option: "status-style",
+      value: `bg=${BG},fg=${theme.inactiveFg}`,
+    },
+    { scope: "session", option: "status-justify", value: "centre" },
+    { scope: "session", option: "status-left", value: statusLeft },
+    { scope: "session", option: "status-left-length", value: "100" },
+    { scope: "session", option: "status-right", value: statusRight },
+    { scope: "session", option: "status-right-length", value: "100" },
+    // Number windows from 1 so Alt+1 maps to the first tab (matches
+    // Chrome's Ctrl+1 mental model). Tmux default is base-index 0,
+    // which means Alt+1 with no other tabs open does nothing.
+    { scope: "session", option: "base-index", value: "1" },
+    // Keep tab indices contiguous after a close — without this,
+    // closing window 2 leaves indices 1, 3, 4 and Alt+2 becomes
+    // dead. tmux renumbers on close so Alt+1..N always works.
+    { scope: "session", option: "renumber-windows", value: "on" },
+    { scope: "window-global", option: "window-status-separator", value: "" },
+    {
+      scope: "window-global",
+      option: "window-status-format",
+      value: inactiveFormat,
+    },
+    {
+      scope: "window-global",
+      option: "window-status-current-format",
+      value: activeFormat,
+    },
   ];
   let lastResult = { status: 0, stderr: "" };
   const failures = [];
-  for (const [option, value] of ops) {
-    const r = runner.runSync(["set-option", "-t", sessionName, option, value]);
+  for (const { scope, option, value } of ops) {
+    const args =
+      scope === "session"
+        ? ["set-option", "-t", sessionName, option, value]
+        : ["set-option", "-wg", option, value];
+    const r = runner.runSync(args);
     lastResult = r;
     if (r.status !== 0) {
       failures.push({ option, stderr: (r.stderr || "").trim() });

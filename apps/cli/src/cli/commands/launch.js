@@ -1182,25 +1182,29 @@ async function maybeOfferAutoRestore(prefs) {
     if (ap !== bp) return bp - ap;
     return 0;
   });
-  // Synthetic toggles at the top of the picker for users with many
-  // saved sessions — checking one of them rewrites the selection in
-  // bulk after submit (clack's multiselect doesn't natively support
-  // a "select all" shortcut, but synthetic entries are the lightest
-  // path and stay accessible via keyboard).
-  const SELECT_ALL = "__select_all__";
-  const DESELECT_ALL = "__deselect_all__";
+  // Smart toggle at the top of the picker: one entry that flips the
+  // current selection state. If everything's selected, checking it
+  // deselects all; if anything's unselected, checking it selects all.
+  // Visually separated from session entries by a dash divider line
+  // so it doesn't blend in with real options.
+  const TOGGLE_ALL = "__toggle_all__";
+  const DIVIDER = "__divider__";
   const allNames = sorted.map((s) => s.name);
   const sessionOptions = sorted.map((s) => ({
     value: s.name,
-    label: `${s.pinned ? "★ " : "  "}${s.name}`,
+    label: `${s.pinned ? "* " : "  "}${s.name}`,
     hint: `${s.cli} — ${s.cwd}${s.worktree && s.worktree.branch ? ` [wt ${s.worktree.branch}]` : ""}`,
   }));
   const options = [
-    { value: SELECT_ALL, label: "✅ Select all", hint: "check every session" },
     {
-      value: DESELECT_ALL,
-      label: "⬜ Deselect all",
-      hint: "uncheck every session",
+      value: TOGGLE_ALL,
+      label: "[ select all / deselect all ]",
+      hint: "toggles every session below",
+    },
+    {
+      value: DIVIDER,
+      label: "─────────────────────────────",
+      hint: "",
     },
     ...sessionOptions,
   ];
@@ -1228,14 +1232,18 @@ async function maybeOfferAutoRestore(prefs) {
   }
   /** @type {string[]} */
   let chosen = Array.isArray(selection) ? selection : [];
-  // Resolve the synthetic select-all / deselect-all toggles. If both
-  // were checked, select-all wins (the safer "do more" interpretation);
-  // either way, strip the synthetic entries from the final list.
-  const wantSelectAll = chosen.includes(SELECT_ALL);
-  const wantDeselectAll = chosen.includes(DESELECT_ALL);
-  chosen = chosen.filter((v) => v !== SELECT_ALL && v !== DESELECT_ALL);
-  if (wantSelectAll) chosen = [...allNames];
-  else if (wantDeselectAll) chosen = [];
+  // Strip the synthetic divider always (it's never a real choice).
+  // Resolve the toggle: if the user checked it, flip the current
+  // selection state — everything selected goes to nothing, anything
+  // partial or empty goes to everything.
+  const toggled = chosen.includes(TOGGLE_ALL);
+  chosen = chosen.filter((v) => v !== TOGGLE_ALL && v !== DIVIDER);
+  if (toggled) {
+    const allSelected =
+      chosen.length === allNames.length &&
+      allNames.every((n) => chosen.includes(n));
+    chosen = allSelected ? [] : [...allNames];
+  }
   if (chosen.length === 0) {
     prompts.outro(
       "Skipped. Run `agileflow launch restore` later to bring them back.",
