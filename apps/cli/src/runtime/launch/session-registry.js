@@ -117,6 +117,11 @@ function withRegistryLock(home, fn) {
  * @property {string} branch
  * @property {string} base
  *
+ * @typedef {Object} WindowSnapshot
+ * @property {number} index               - tmux window index at snapshot time
+ * @property {string} name                - tmux #W (window name)
+ * @property {string} cwd                 - pane's cwd
+ *
  * @typedef {Object} SessionEntry
  * @property {string} name
  * @property {string} cli
@@ -128,6 +133,10 @@ function withRegistryLock(home, fn) {
  *                                           are pre-selected in the auto-
  *                                           restore picker
  * @property {WorktreeMeta} [worktree]
+ * @property {WindowSnapshot[]} [windows]  - last-known tab layout, written
+ *                                           by tmux hooks; replayed on
+ *                                           restore so reboots bring back
+ *                                           every tab in its original cwd
  *
  * @typedef {Object} RegistryShape
  * @property {1} version
@@ -192,6 +201,22 @@ function loadRegistry(home) {
     if (typeof s.name !== "string" || !s.name) continue;
     if (typeof s.cli !== "string" || !s.cli) continue;
     if (typeof s.cwd !== "string" || !s.cwd) continue;
+    /** @type {WindowSnapshot[] | undefined} */
+    let windows;
+    if (Array.isArray(s.windows)) {
+      windows = [];
+      for (const w of s.windows) {
+        if (!w || typeof w !== "object") continue;
+        if (typeof w.name !== "string") continue;
+        if (typeof w.cwd !== "string" || !w.cwd) continue;
+        windows.push({
+          index: Number.isFinite(w.index) ? Number(w.index) : 0,
+          name: w.name,
+          cwd: w.cwd,
+        });
+      }
+      if (windows.length === 0) windows = undefined;
+    }
     sane.push({
       name: s.name,
       cli: s.cli,
@@ -207,6 +232,7 @@ function loadRegistry(home) {
               base: String(s.worktree.base || ""),
             }
           : undefined,
+      windows,
     });
   }
   return { version: 1, sessions: sane };
@@ -288,6 +314,16 @@ function recordSession(entry, home) {
         : previous
           ? previous.pinned === true
           : false;
+    // Preserve the last-known windows snapshot across re-records.
+    // Restore re-records sessions on the way back from disk and we
+    // don't want the windows array to be silently dropped before
+    // we get a chance to replay it.
+    const windows =
+      entry.windows !== undefined
+        ? entry.windows
+        : previous
+          ? previous.windows
+          : undefined;
     filtered.push({
       name: entry.name,
       cli: entry.cli,
@@ -296,6 +332,7 @@ function recordSession(entry, home) {
       lastSeen: entry.lastSeen || new Date().toISOString(),
       pinned,
       worktree: entry.worktree,
+      windows,
     });
     writeRegistry({ version: 1, sessions: filtered }, home);
   });
@@ -331,6 +368,9 @@ function updateSession(name, patch, home) {
         if (patch.cwd !== undefined) s.cwd = patch.cwd;
         if (patch.worktree !== undefined) s.worktree = patch.worktree;
         if (patch.pinned !== undefined) s.pinned = patch.pinned === true;
+        if (patch.windows !== undefined) {
+          s.windows = Array.isArray(patch.windows) ? patch.windows : undefined;
+        }
         updated = true;
       }
     }

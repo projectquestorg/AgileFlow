@@ -20,6 +20,7 @@ const {
   createSession,
   applyKeybindPreset,
   applyTabFormat,
+  installSessionHooks,
   detectTmuxVersion,
 } = require("./tmux.js");
 const { loadRegistry } = require("./session-registry.js");
@@ -126,7 +127,36 @@ function runRestore(opts) {
     runner.runSync(["set-option", "-t", entry.name, "status", "1"]);
     applyTabFormat(entry.name, runner, {
       tmuxVersion: detectTmuxVersion(runner),
+      agileflowBin,
     });
+    // Replay saved tabs (windows) if we have any from the last hook
+    // snapshot. The first window already exists (createSession opened
+    // it running __exec), so we skip it. Each restored window is
+    // opened with `new-window -t session -c cwd -n name` and only
+    // gets a shell — restoring the original CLI is out of scope (we
+    // don't know what command was running, and respawning Claude in
+    // every tab would be surprising). Users can re-run agileflow in
+    // any tab manually.
+    if (Array.isArray(entry.windows) && entry.windows.length > 1) {
+      const sorted = entry.windows
+        .slice()
+        .sort((a, b) => (a.index || 0) - (b.index || 0));
+      // Skip the first — already created by new-session.
+      for (let i = 1; i < sorted.length; i++) {
+        const w = sorted[i];
+        if (!existsSync(w.cwd)) continue;
+        const args = ["new-window", "-t", entry.name, "-c", w.cwd];
+        if (w.name) args.push("-n", w.name);
+        runner.runSync(args);
+      }
+      log(
+        `agileflow launch: replayed ${sorted.length - 1} tab(s) for ${entry.name}`,
+      );
+    }
+    // Install hooks AFTER replay so the new-window calls above don't
+    // each fire window-linked and overwrite the saved snapshot with
+    // a partial mid-replay state.
+    installSessionHooks(entry.name, runner, { agileflowBin });
     result.restored++;
     log(`agileflow launch: restored session ${entry.name} (${entry.cwd})`);
   }

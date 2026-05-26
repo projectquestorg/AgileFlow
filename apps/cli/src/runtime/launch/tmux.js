@@ -193,6 +193,7 @@ function detectTmuxVersion(runner) {
  * @param {{
  *   tmuxVersion?: { major: number, minor: number } | null,
  *   theme?: Partial<typeof tabs.DEFAULT_TAB_THEME>,
+ *   agileflowBin?: string,
  * }} [opts]
  * @returns {{ applied: boolean, stderr: string }}
  */
@@ -321,6 +322,32 @@ function applyTabFormat(sessionName, runner, opts = {}) {
     applied: lastResult.status === 0,
     stderr: lastResult.stderr || "",
   };
+}
+
+/**
+ * Install per-session tmux hooks that fire whenever the window layout
+ * changes (new tab, close, rename). Each hook invokes the
+ * `__snapshot-session` callback so the registry's `windows` array
+ * stays current — that's what restore replays after a reboot.
+ *
+ * Kept separate from `applyTabFormat` so the restore path can replay
+ * the saved windows BEFORE installing hooks (otherwise the new-window
+ * calls during replay would fire window-linked, clobbering the saved
+ * snapshot with a partial mid-replay state).
+ *
+ * Scoped per-session via `-t` so non-AgileFlow sessions on the same
+ * tmux server aren't touched.
+ *
+ * @param {string} sessionName
+ * @param {TmuxRunner} runner
+ * @param {{ agileflowBin?: string }} [opts]
+ */
+function installSessionHooks(sessionName, runner, opts = {}) {
+  const agileflowBin = opts.agileflowBin || resolveAgileflowBin();
+  const snapshotCmd = `run-shell -b '${agileflowBin} launch __snapshot-session ${sessionName}'`;
+  for (const event of ["window-linked", "window-unlinked", "window-renamed"]) {
+    runner.runSync(["set-hook", "-t", sessionName, event, snapshotCmd]);
+  }
 }
 
 /**
@@ -651,6 +678,7 @@ async function launchInTmux(opts) {
     // tmux's default green status bar entirely.
     runner.runSync(["set-option", "-t", base, "status", "1"]);
     applyTabFormat(base, runner, { tmuxVersion });
+    installSessionHooks(base, runner);
     log(`agileflow launch: resuming session ${base}`);
     return attachSession(base, runner);
   }
@@ -716,6 +744,7 @@ async function launchInTmux(opts) {
       }
       runner.runSync(["set-option", "-t", name, "status", "1"]);
       applyTabFormat(name, runner, { tmuxVersion });
+      installSessionHooks(name, runner);
       return attachSession(name, runner);
     }
 
@@ -759,6 +788,7 @@ module.exports = {
   substituteBinding,
   detectTmuxVersion,
   applyTabFormat,
+  installSessionHooks,
   KEYBIND_PRESET_BINDINGS,
   defaultRunner,
 };

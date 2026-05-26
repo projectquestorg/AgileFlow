@@ -23,6 +23,7 @@ const {
   createSession,
   applyKeybindPreset,
   applyTabFormat,
+  installSessionHooks,
   detectTmuxVersion,
   defaultRunner,
 } = require("./tmux.js");
@@ -194,6 +195,7 @@ async function runParallelSpawn(opts) {
     applyTabFormat(sessionName, runner, {
       tmuxVersion: detectTmuxVersion(runner),
     });
+    installSessionHooks(sessionName, runner);
 
     // Swap the user's tmux client to the new session. If switch-client
     // fails the session is still alive — surface its name so the user

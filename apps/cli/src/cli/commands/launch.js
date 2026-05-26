@@ -1137,6 +1137,54 @@ async function runInternalRestoreWindow(deps = {}) {
 }
 
 /**
+ * Hidden subcommand wired to tmux's window-linked / window-unlinked /
+ * window-renamed hooks. Queries the named session's current window
+ * layout and patches the registry's `windows` array so restore can
+ * later replay every tab in its original cwd.
+ *
+ * Silent on every failure path: this runs in the background on every
+ * tab change, so noise here would clutter the user's terminal. If the
+ * session no longer exists or tmux is gone, we just no-op.
+ *
+ * @param {string} sessionName
+ * @param {{ runner?: ReturnType<typeof defaultTmuxRunner> }} [deps]
+ * @returns {Promise<void>}
+ */
+async function runInternalSnapshotSession(sessionName, deps = {}) {
+  if (!sessionName) return;
+  const runner = deps.runner || defaultTmuxRunner();
+  const DELIM = "\x1f";
+  const fmt = `#{window_index}${DELIM}#{window_name}${DELIM}#{pane_current_path}`;
+  const result = runner.runSync(["list-windows", "-t", sessionName, "-F", fmt]);
+  if (result.status !== 0) return;
+  const lines = (result.stdout || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  /** @type {import("../../runtime/launch/session-registry.js").WindowSnapshot[]} */
+  const windows = [];
+  for (const line of lines) {
+    const parts = line.split(DELIM);
+    if (parts.length !== 3) continue;
+    const index = Number(parts[0]);
+    if (!Number.isFinite(index)) continue;
+    const name = parts[1];
+    const cwd = parts[2];
+    if (!cwd) continue;
+    windows.push({ index, name, cwd });
+  }
+  try {
+    const {
+      updateSession,
+    } = require("../../runtime/launch/session-registry.js");
+    updateSession(sessionName, { windows });
+  } catch {
+    // Registry might not exist or session might have been forgotten;
+    // either way we can't usefully recover. Stay silent.
+  }
+}
+
+/**
  * Auto-restore check on bare `agileflow launch`. Fires only when:
  *   - tmux is available (we use sessionExists to count alive sessions)
  *   - the registry has entries
@@ -1351,6 +1399,14 @@ async function launch(sub, nameArg, _options) {
       // spawns a new window in that cwd with the original name. No-op
       // when the log is empty for this session.
       await runInternalRestoreWindow({ targetSession: nameArg || "" });
+      return;
+    }
+    if (sub === "__snapshot-session") {
+      // Hidden subcommand invoked from tmux hooks (window-linked,
+      // window-unlinked, window-renamed). Queries the current window
+      // layout for the named session and writes it to the registry's
+      // `windows` field so restore can replay every tab.
+      await runInternalSnapshotSession(nameArg || "");
       return;
     }
     if (sub && sub !== "setup") {
