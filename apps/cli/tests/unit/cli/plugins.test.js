@@ -115,4 +115,144 @@ describe("agileflow plugins list command", () => {
     await pluginsCmd("install", {}).catch(() => {});
     expect(consoleOutput.some((l) => l.includes("unknown action"))).toBe(true);
   });
+
+  it("list --enabled filters to only enabled and always plugins", async () => {
+    writeConfig(scratch, {
+      ads: { enabled: true },
+      audit: { enabled: false },
+    });
+    await pluginsCmd("list", undefined, { enabled: true, json: true });
+    const jsonLine = consoleOutput.find((l) => l.startsWith("{"));
+    const parsed = JSON.parse(jsonLine);
+    const ids = parsed.plugins.map((p) => p.id);
+    expect(ids).toContain("core"); // always
+    expect(ids).toContain("ads"); // enabled
+    expect(ids).not.toContain("audit"); // disabled — excluded
+  });
+
+  it("list --disabled filters to only disabled plugins (excludes always)", async () => {
+    writeConfig(scratch, {
+      ads: { enabled: true },
+      audit: { enabled: false },
+    });
+    await pluginsCmd("list", undefined, { disabled: true, json: true });
+    const jsonLine = consoleOutput.find((l) => l.startsWith("{"));
+    const parsed = JSON.parse(jsonLine);
+    const ids = parsed.plugins.map((p) => p.id);
+    expect(ids).not.toContain("core"); // always — excluded
+    expect(ids).not.toContain("ads"); // enabled — excluded
+    expect(ids).toContain("audit"); // disabled
+  });
+
+  it("list rejects --enabled + --disabled used together", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("list", undefined, {
+      enabled: true,
+      disabled: true,
+    }).catch(() => {});
+    expect(consoleOutput.some((l) => l.includes("mutually exclusive"))).toBe(
+      true,
+    );
+  });
+
+  it("search matches plugin id substring", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "audit", { json: true });
+    const jsonLine = consoleOutput.find((l) => l.startsWith("{"));
+    const parsed = JSON.parse(jsonLine);
+    expect(parsed.query).toBe("audit");
+    expect(parsed.plugins.some((p) => p.id === "audit")).toBe(true);
+  });
+
+  it("search is case-insensitive", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "CORE", { json: true });
+    const jsonLine = consoleOutput.find((l) => l.startsWith("{"));
+    const parsed = JSON.parse(jsonLine);
+    expect(parsed.plugins.some((p) => p.id === "core")).toBe(true);
+  });
+
+  it("search prints empty message when nothing matches", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "zzz-no-such-plugin", {});
+    expect(
+      consoleOutput.some((l) =>
+        l.includes('No plugins match "zzz-no-such-plugin"'),
+      ),
+    ).toBe(true);
+  });
+
+  it("search rejects empty query", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "", {}).catch(() => {});
+    expect(consoleOutput.some((l) => l.includes("requires a query"))).toBe(
+      true,
+    );
+  });
+
+  it("search rejects whitespace-only query", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "   ", {}).catch(() => {});
+    expect(consoleOutput.some((l) => l.includes("requires a query"))).toBe(
+      true,
+    );
+  });
+
+  it("search rejects when options object is passed instead of query", async () => {
+    writeConfig(scratch);
+    // Legacy two-arg call style with options bag in arg position — the
+    // normalization branch should hoist it to options and then the empty
+    // query check should fire.
+    await pluginsCmd("search", { json: true }).catch(() => {});
+    expect(consoleOutput.some((l) => l.includes("requires a query"))).toBe(
+      true,
+    );
+  });
+
+  it("search human output does not double-print the header", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("search", "audit", {});
+    const all = consoleOutput.join("\n");
+    expect(all).toContain('Plugins matching "audit":');
+    expect(all).not.toContain("Available plugins:");
+  });
+
+  it("show prints plugin detail with provides breakdown", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("show", "core", {});
+    const all = consoleOutput.join("\n");
+    expect(all).toContain("core");
+    expect(all).toContain("Version:");
+    expect(all).toContain("Status:");
+    expect(all).toContain("Depends:");
+    expect(all).toContain("Provides:");
+    expect(all).toContain("Skills");
+  });
+
+  it("show --json returns full plugin structure", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("show", "core", { json: true });
+    const jsonLine = consoleOutput.find((l) => l.startsWith("{"));
+    const parsed = JSON.parse(jsonLine);
+    expect(parsed.plugin.id).toBe("core");
+    expect(parsed.plugin.cannotDisable).toBe(true);
+    expect(parsed.plugin.provides).toBeDefined();
+    expect(Array.isArray(parsed.plugin.provides.skills)).toBe(true);
+  });
+
+  it("show exits 1 for unknown plugin id", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("show", "nonexistent", {}).catch(() => {});
+    expect(
+      consoleOutput.some((l) => l.includes('plugin "nonexistent" not found')),
+    ).toBe(true);
+  });
+
+  it("show rejects empty id", async () => {
+    writeConfig(scratch);
+    await pluginsCmd("show", "", {}).catch(() => {});
+    expect(consoleOutput.some((l) => l.includes("requires a plugin id"))).toBe(
+      true,
+    );
+  });
 });

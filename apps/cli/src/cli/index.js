@@ -98,9 +98,13 @@ function buildProgram() {
     .action(skills);
 
   program
-    .command("plugins <action>")
-    .description("inspect the plugin registry (action: list)")
+    .command("plugins <action> [arg]")
+    .description(
+      "inspect the plugin registry (actions: list, search <query>, show <id>)",
+    )
     .option("--json", "output as JSON")
+    .option("--enabled", "list: show only enabled plugins")
+    .option("--disabled", "list: show only disabled plugins")
     .action(plugins);
 
   program
