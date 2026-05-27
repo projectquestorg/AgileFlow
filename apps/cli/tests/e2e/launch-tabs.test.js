@@ -1089,6 +1089,170 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
     });
   });
 
+  describe("attachByName", () => {
+    it("returns ok:false reason:not-in-registry for unknown name", async () => {
+      const { attachByName } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      const result = await attachByName({
+        name: "ghost-session-never-existed",
+        runner: ourRunner,
+        home: testHome,
+        prefs: {
+          tmux: { statusPosition: "bottom" },
+          keybinds: { preset: "default" },
+        },
+        agileflowBin: AGILEFLOW_BIN,
+        // Mock attach to avoid trying to interactively attach during the test.
+        attachSessionFn: () => Promise.resolve({ exitCode: 0, signal: null }),
+      });
+      expect(result.ok).toBe(false);
+      expect(result.reason).toBe("not in registry");
+    });
+
+    it("returns ok:false reason:cwd-missing when registry cwd is gone", async () => {
+      registryLib.recordSession(
+        {
+          name: "attach-bad-cwd",
+          cli: "test",
+          cwd: path.join(testHome, "deleted-permanently"),
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { attachByName } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      const result = await attachByName({
+        name: "attach-bad-cwd",
+        runner: ourRunner,
+        home: testHome,
+        prefs: {
+          tmux: { statusPosition: "bottom" },
+          keybinds: { preset: "default" },
+        },
+        agileflowBin: AGILEFLOW_BIN,
+        attachSessionFn: () => Promise.resolve({ exitCode: 0, signal: null }),
+      });
+      expect(result.ok).toBe(false);
+      expect(result.reason).toBe("cwd missing");
+    });
+
+    it("attaches directly when session is alive (no restore needed)", async () => {
+      tmuxCmd("kill-server");
+      sleep(100);
+      const cwd = fs.mkdtempSync(path.join(testHome, "attach-alive-"));
+      tmuxCmd("new-session", "-d", "-s", "attach-alive", "-c", cwd, "bash");
+      registryLib.recordSession(
+        {
+          name: "attach-alive",
+          cli: "bash",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { attachByName } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      let attachCalledWith = null;
+      const result = await attachByName({
+        name: "attach-alive",
+        runner: ourRunner,
+        home: testHome,
+        prefs: {
+          tmux: { statusPosition: "bottom" },
+          keybinds: { preset: "default" },
+        },
+        agileflowBin: AGILEFLOW_BIN,
+        attachSessionFn: (name) => {
+          attachCalledWith = name;
+          return Promise.resolve({ exitCode: 0, signal: null });
+        },
+      });
+      expect(result.ok).toBe(true);
+      expect(result.restored).toBe(false); // session was already alive
+      expect(attachCalledWith).toBe("attach-alive");
+    });
+  });
+
+  describe("doctor", () => {
+    it("returns a checks array with expected entries", async () => {
+      const { runDoctorChecks } = require(
+        path.join(SRC, "runtime/launch/doctor.js"),
+      );
+      const report = await runDoctorChecks({});
+      expect(Array.isArray(report.checks)).toBe(true);
+      expect(report.checks.length).toBeGreaterThan(0);
+      const ids = report.checks.map((c) => c.id);
+      // The doctor exercises at least these surfaces.
+      expect(ids).toContain("tmux-installed");
+      expect(ids).toContain("tmux-version");
+    });
+
+    it("each check has an id + status field in the expected enum", async () => {
+      const { runDoctorChecks } = require(
+        path.join(SRC, "runtime/launch/doctor.js"),
+      );
+      const report = await runDoctorChecks({});
+      for (const check of report.checks) {
+        expect(["pass", "warn", "fail"]).toContain(check.status);
+        expect(typeof check.id).toBe("string");
+      }
+    });
+
+    it("anyFailed predicate correctly reflects check statuses", async () => {
+      const { runDoctorChecks, anyFailed } = require(
+        path.join(SRC, "runtime/launch/doctor.js"),
+      );
+      const report = await runDoctorChecks({});
+      const hasAFail = report.checks.some((c) => c.status === "fail");
+      expect(anyFailed(report)).toBe(hasAFail);
+    });
+  });
+
+  describe("loadCascadedPrefs (where)", () => {
+    it("with no global and no project file, sources is just [defaults]", async () => {
+      const isolatedHome = fs.mkdtempSync(path.join(testHome, "where-empty-"));
+      const { loadCascadedPrefs } = require(
+        path.join(SRC, "runtime/launch/project-prefs.js"),
+      );
+      const result = await loadCascadedPrefs({
+        home: isolatedHome,
+        cwd: isolatedHome, // no .agileflow.json or similar here
+      });
+      expect(result.sources).toHaveLength(1);
+      expect(result.sources[0].layer).toBe("defaults");
+      expect(result.prefs).toBeDefined();
+    });
+
+    it("with a project prefs file, sources includes the project layer", async () => {
+      const projectDir = fs.mkdtempSync(path.join(testHome, "where-proj-"));
+      // Project prefs live in .agileflow/launch-prefs.json or similar.
+      // Check which file the loader recognizes.
+      const { loadCascadedPrefs, PROJECT_DIR, PROJECT_FILENAME } = require(
+        path.join(SRC, "runtime/launch/project-prefs.js"),
+      );
+      const projDir = path.join(projectDir, PROJECT_DIR);
+      fs.mkdirSync(projDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(projDir, PROJECT_FILENAME),
+        JSON.stringify({ version: 1, tmux: { statusPosition: "top" } }),
+      );
+      const result = await loadCascadedPrefs({
+        home: fs.mkdtempSync(path.join(testHome, "where-home-")),
+        cwd: projectDir,
+      });
+      const projectSource = result.sources.find((s) => s.layer === "project");
+      expect(projectSource).toBeDefined();
+      expect(projectSource.path).toMatch(new RegExp(`${PROJECT_FILENAME}$`));
+      // The project file's statusPosition should override defaults.
+      expect(result.prefs.tmux.statusPosition).toBe("top");
+    });
+  });
+
   describe("concurrent restore lock", () => {
     it("throws when another restore is already running", () => {
       const lockFile = path.join(testHome, ".agileflow", "launch-restore.lock");
