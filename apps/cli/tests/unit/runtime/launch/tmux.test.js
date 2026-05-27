@@ -61,8 +61,25 @@ function queuedRunner(handlers, attachExit = 0) {
           args.includes("status") ||
           args.includes("status-style") ||
           args.includes("status-left") ||
-          args.includes("status-right"))
+          args.includes("status-right") ||
+          args.includes("status-justify") ||
+          args.includes("status-left-length") ||
+          args.includes("status-right-length") ||
+          args.includes("status-keys") ||
+          args.includes("mode-keys") ||
+          args.includes("escape-time") ||
+          args.includes("base-index") ||
+          args.includes("renumber-windows") ||
+          args.includes("window-status-separator") ||
+          args.includes("window-status-format") ||
+          args.includes("window-status-current-format"))
       ) {
+        return { status: 0, stdout: "", stderr: "", error: null };
+      }
+      // Absorb set-hook calls — installSessionHooks fires three of them
+      // per session, but the unit tests don't care about the exact
+      // commands stored; they only verify the keybind + format setup.
+      if (Array.isArray(args) && args[0] === "set-hook") {
         return { status: 0, stdout: "", stderr: "", error: null };
       }
       const handler = queue.shift();
