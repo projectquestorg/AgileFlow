@@ -667,13 +667,17 @@ describe("KEYBIND_PRESET_BINDINGS", () => {
     ]);
   });
 
-  it("'default' Alt+n prompts for a name and forwards it to `launch new`", () => {
+  it("'default' Alt+n opens a tmux window running `launch new --prompt`", () => {
+    // Regression guard: a previous iteration used `command-prompt -p
+    // '...' "run-shell '<bin> launch new \"%%\"'"` which substituted
+    // user input INTO a shell command before shell parsing — allowing
+    // injection like `name"; rm -rf ~; #`. The new design routes input
+    // through Clack reading stdin in a fresh TTY (new-window), so
+    // shell injection is impossible.
     const altN = KEYBIND_PRESET_BINDINGS.default.find((b) => b.key === "M-n");
     expect(altN && altN.action).toEqual([
-      "command-prompt",
-      "-p",
-      "worktree name (esc to cancel):",
-      "run-shell '%AGILEFLOW% launch new \"%%\"'",
+      "new-window",
+      "%AGILEFLOW% launch new --prompt",
     ]);
   });
 

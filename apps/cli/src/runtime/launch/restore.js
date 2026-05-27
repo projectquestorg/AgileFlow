@@ -213,16 +213,34 @@ function runRestoreInner(opts) {
           ? entry.wrapperWindowIndex
           : 0;
       let replayed = 0;
+      let replayFailures = 0;
       for (const w of sorted) {
         if (w.index === wrapperIdx) continue;
         if (!existsSync(w.cwd)) continue;
         const args = ["new-window", "-t", entry.name, "-c", w.cwd];
         if (w.name) args.push("-n", w.name);
-        runner.runSync(args);
-        replayed++;
+        const r = runner.runSync(args);
+        // Only count tabs that actually got created. tmux can refuse
+        // new-window on resource limits, permission errors, or if the
+        // session got killed between createSession and this call —
+        // surface those so the user knows the restore was partial,
+        // instead of a misleading green-check log.
+        if (r.status === 0) {
+          replayed++;
+        } else {
+          replayFailures++;
+          log(
+            `agileflow launch: failed to replay tab ${
+              w.name || `(index ${w.index})`
+            } for ${entry.name} — ${(r.stderr || "unknown").trim()}`,
+          );
+        }
       }
-      if (replayed > 0) {
-        log(`agileflow launch: replayed ${replayed} tab(s) for ${entry.name}`);
+      if (replayed > 0 || replayFailures > 0) {
+        log(
+          `agileflow launch: replayed ${replayed} tab(s) for ${entry.name}` +
+            (replayFailures > 0 ? ` (${replayFailures} failed)` : ""),
+        );
       }
     }
     // Install hooks AFTER replay so the new-window calls above don't

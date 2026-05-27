@@ -309,6 +309,12 @@ function clearOlderThan(maxAgeMs, home) {
     const log = loadLog(home);
     const cutoff = Date.now() - maxAgeMs;
     let removed = 0;
+    // Collect keys to delete in a separate pass — mutating an object
+    // during Object.entries iteration works in current V8 (entries
+    // returns a snapshot of keys) but is fragile and silently breaks
+    // if a maintainer swaps to `for (const k in log.sessions)`.
+    /** @type {string[]} */
+    const toDelete = [];
     for (const [sessionName, list] of Object.entries(log.sessions)) {
       const kept = list.filter((e) => {
         const t = Date.parse(e.closedAt || "");
@@ -316,9 +322,13 @@ function clearOlderThan(maxAgeMs, home) {
         return t >= cutoff;
       });
       removed += list.length - kept.length;
-      if (kept.length === 0) delete log.sessions[sessionName];
-      else log.sessions[sessionName] = kept;
+      if (kept.length === 0) {
+        toDelete.push(sessionName);
+      } else {
+        log.sessions[sessionName] = kept;
+      }
     }
+    for (const k of toDelete) delete log.sessions[k];
     if (removed > 0) writeLog(log, home);
     return removed;
   });

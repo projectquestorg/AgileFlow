@@ -47,6 +47,20 @@ function sleep(ms) {
   while (Date.now() < end) {}
 }
 
+// Poll tmux until the server on our socket is genuinely down. Avoids the
+// race where a fixed `sleep(100)` after `kill-server` returns before the
+// socket teardown completes — under CPU contention (parallel test files)
+// the next `new-session` then lands on a half-killed server.
+function waitForServerGone(timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const r = tmuxCmd("list-sessions");
+    // Either non-zero status or the "no server running" stderr means down.
+    if (r.status !== 0) return;
+    sleep(20);
+  }
+}
+
 const ourRunner = {
   runSync(args) {
     return tmuxCmd(...args);
@@ -582,7 +596,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
   describe("restore edge cases (gap-fill)", () => {
     it("restore tolerates a session whose windows array is empty/missing", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       registryLib.recordSession(
         {
           name: "no-windows-test",
@@ -624,7 +638,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
 
     it("restore skips windows whose cwd no longer exists", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       const goodCwd = fs.mkdtempSync(path.join(testHome, "good-"));
       const badCwd = path.join(testHome, "deleted-dir-that-does-not-exist");
       registryLib.recordSession(
@@ -688,7 +702,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
   describe("hooks actually fire and update the registry", () => {
     it("after-rename-window triggers a snapshot that writes to registry", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       const session = "hook-fire-test";
       tmuxCmd("new-session", "-d", "-s", session, "-c", testHome, "bash");
       registryLib.recordSession(
@@ -754,7 +768,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
   describe("Alt+s parallel same-dir session spawn", () => {
     it("runParallelSpawn (no name) creates a parallel session in same cwd", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       // Use a fixed cwd basename so baseSessionName is predictable.
       const initialCwd = path.join(testHome, "alts-project");
       fs.mkdirSync(initialCwd, { recursive: true });
@@ -830,7 +844,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
   describe("Alt+n worktree-backed session spawn", () => {
     it("runParallelSpawn (with name) creates worktree + records metadata", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
 
       // Set up a real git repo so createWorktree has something to work with.
       const repoDir = fs.mkdtempSync(path.join(testHome, "alt-n-repo-"));
@@ -911,7 +925,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
   describe("management subcommands", () => {
     it("listSessions returns registry entries with alive status", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-ls-"));
       tmuxCmd("new-session", "-d", "-s", "alive-sess", "-c", cwd, "bash");
       registryLib.recordSession(
@@ -951,7 +965,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
 
     it("killBySessionName kills tmux session + forgets from registry", () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-kill-"));
       tmuxCmd("new-session", "-d", "-s", "to-kill", "-c", cwd, "bash");
       registryLib.recordSession(
@@ -1141,7 +1155,7 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
 
     it("attaches directly when session is alive (no restore needed)", async () => {
       tmuxCmd("kill-server");
-      sleep(100);
+      waitForServerGone();
       const cwd = fs.mkdtempSync(path.join(testHome, "attach-alive-"));
       tmuxCmd("new-session", "-d", "-s", "attach-alive", "-c", cwd, "bash");
       registryLib.recordSession(
@@ -1250,6 +1264,128 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
       expect(projectSource.path).toMatch(new RegExp(`${PROJECT_FILENAME}$`));
       // The project file's statusPosition should override defaults.
       expect(result.prefs.tmux.statusPosition).toBe("top");
+    });
+  });
+
+  describe("restore reports accurate replay counts on partial failure", () => {
+    it("logs separate succeeded/failed counts when some new-windows fail", () => {
+      tmuxCmd("kill-server");
+      sleep(200);
+      const goodCwd = fs.mkdtempSync(path.join(testHome, "partial-good-"));
+      registryLib.recordSession(
+        {
+          name: "partial-replay-test",
+          cli: "test",
+          cwd: testHome,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      registryLib.updateSession(
+        "partial-replay-test",
+        {
+          windows: [
+            { index: 0, name: "wrapper", cwd: testHome },
+            { index: 1, name: "good", cwd: goodCwd },
+          ],
+          windowsCapturedAt: Date.now(),
+        },
+        testHome,
+      );
+      tmuxCmd(
+        "new-session",
+        "-d",
+        "-s",
+        "partial-replay-test",
+        "-c",
+        testHome,
+        "bash",
+      );
+      const logs = [];
+      const lookupRunner = {
+        runSync(args) {
+          // Force the new-window to fail by targeting a session that
+          // doesn't exist. Other commands flow through normally.
+          if (args[0] === "new-window") {
+            return {
+              status: 1,
+              stdout: "",
+              stderr: "can't find session: forced-fail",
+              error: null,
+            };
+          }
+          return ourRunner.runSync(args);
+        },
+        runAttach: ourRunner.runAttach,
+      };
+      const entry = registryLib
+        .loadRegistry(testHome)
+        .sessions.find((s) => s.name === "partial-replay-test");
+      const wrapperIdx = entry.wrapperWindowIndex || 0;
+      let replayed = 0;
+      let failures = 0;
+      for (const w of entry.windows) {
+        if (w.index === wrapperIdx) continue;
+        if (!fs.existsSync(w.cwd)) continue;
+        const r = lookupRunner.runSync([
+          "new-window",
+          "-t",
+          "partial-replay-test",
+          "-c",
+          w.cwd,
+          "-n",
+          w.name,
+        ]);
+        if (r.status === 0) {
+          replayed++;
+        } else {
+          failures++;
+          logs.push(`failed to replay ${w.name}: ${(r.stderr || "").trim()}`);
+        }
+      }
+      expect(replayed).toBe(0);
+      expect(failures).toBe(1);
+      expect(logs[0]).toContain("failed to replay good");
+      expect(logs[0]).toContain("can't find session");
+    });
+  });
+
+  describe("clearOlderThan handles all-stale and partial cases safely", () => {
+    it("removes session keys when all entries expire (no mutation race)", () => {
+      const tmpHome = fs.mkdtempSync(path.join(testHome, "clear-test-"));
+      fs.mkdirSync(path.join(tmpHome, ".agileflow"), { recursive: true });
+      closedLib.pushClosed(
+        { sessionName: "all-stale", name: "old", cwd: tmpHome },
+        tmpHome,
+      );
+      closedLib.pushClosed(
+        { sessionName: "mixed", name: "old-mixed", cwd: tmpHome },
+        tmpHome,
+      );
+      closedLib.pushClosed(
+        { sessionName: "mixed", name: "fresh-mixed", cwd: tmpHome },
+        tmpHome,
+      );
+
+      // Manually edit one of `mixed`'s entries to be old.
+      const logPath = closedLib.logPath(tmpHome);
+      const log = JSON.parse(fs.readFileSync(logPath, "utf8"));
+      const tenMin = 10 * 60 * 1000;
+      const oldDate = new Date(Date.now() - tenMin).toISOString();
+      log.sessions["all-stale"][0].closedAt = oldDate;
+      log.sessions["mixed"][0].closedAt = oldDate; // fresh-mixed keeps current ts
+      fs.writeFileSync(logPath, JSON.stringify(log));
+
+      const removed = closedLib.clearOlderThan(5 * 60 * 1000, tmpHome);
+      expect(removed).toBe(2);
+
+      const after = JSON.parse(fs.readFileSync(logPath, "utf8"));
+      // `all-stale` session key entirely gone (all entries pruned).
+      expect(after.sessions["all-stale"]).toBeUndefined();
+      // `mixed` still has the fresh entry.
+      expect(after.sessions["mixed"]).toHaveLength(1);
+      expect(after.sessions["mixed"][0].name).toBe("fresh-mixed");
     });
   });
 

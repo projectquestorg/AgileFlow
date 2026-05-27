@@ -486,18 +486,18 @@ const KEYBIND_PRESET_BINDINGS = {
       hint: "Alt+s → spawn a same-dir parallel session",
     },
     {
-      // Prompt for a worktree name, then spawn. tmux's command-prompt
-      // natively cancels on Escape (or Ctrl+G) without firing the
-      // deferred command — the prompt label calls that out so users
-      // know they can back out. The agileflow CLI also bails cleanly
-      // if `%%` came in empty (user hit Enter with no input).
+      // Open a fresh tmux window and run the agileflow CLI with the
+      // `--prompt` flag. The CLI uses Clack to read the worktree name
+      // from a real TTY — no shell substitution involved.
+      //
+      // Previous design used `command-prompt -p '...' "run-shell
+      // '%AGILEFLOW% launch new \"%%\"'"`, which substituted %% INTO
+      // the run-shell argument BEFORE shell parsing. A user typing
+      // `name"; rm -rf ~; #` would get arbitrary shell execution.
+      // The new design routes input through stdin to a Node process
+      // that never touches a shell, so injection is impossible.
       key: "M-n",
-      action: [
-        "command-prompt",
-        "-p",
-        "worktree name (esc to cancel):",
-        "run-shell '%AGILEFLOW% launch new \"%%\"'",
-      ],
+      action: ["new-window", "%AGILEFLOW% launch new --prompt"],
       hint: "Alt+n → prompt for a name, create a worktree, spawn there",
     },
     // v3-equivalent tab (tmux window) keybinds. Living in a separate

@@ -1341,6 +1341,31 @@ async function maybeOfferAutoRestore(prefs) {
 async function launch(sub, nameArg, _options) {
   try {
     if (sub === "new") {
+      // Alt+n triggers `agileflow launch new --prompt` (in a fresh
+      // tmux window with a real TTY) so we can use Clack to read the
+      // worktree name safely. Avoids the shell-injection vulnerability
+      // where tmux's command-prompt substitutes %% into a run-shell
+      // command BEFORE shell parsing, allowing `name"; rm -rf ~; #`
+      // to execute arbitrary commands.
+      const wantPrompt = (process.argv || []).includes("--prompt");
+      if (!nameArg && wantPrompt) {
+        const promptName = await prompts.text({
+          message: "Worktree name (Esc cancels):",
+          validate: (v) => {
+            if (!v) return "name required";
+            if (!/^[A-Za-z0-9._-]+$/.test(v)) {
+              return "letters, digits, dot, underscore, hyphen only";
+            }
+            return undefined;
+          },
+        });
+        if (prompts.isCancel(promptName)) {
+          prompts.cancel("Cancelled.");
+          process.exit(0);
+        }
+        await runNew(String(promptName));
+        return;
+      }
       await runNew(nameArg);
       return;
     }
