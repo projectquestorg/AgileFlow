@@ -352,7 +352,16 @@ function installSessionHooks(sessionName, runner, opts = {}) {
   const snapshotCmd = `run-shell -b "${shellCmd.replace(/"/g, '\\"')}"`;
   /** @type {Array<{ event: string, stderr: string }>} */
   const failures = [];
-  for (const event of ["window-linked", "window-unlinked", "window-renamed"]) {
+  // tmux 3.x hook names: `window-linked` and `window-unlinked` fire
+  // on add/remove. There is NO `window-renamed` event — that name is
+  // silently accepted by set-hook but never fires. The correct hook
+  // for rename is `after-rename-window` (the "after-<command>" family
+  // fires whenever the named command runs from any source).
+  for (const event of [
+    "window-linked",
+    "window-unlinked",
+    "after-rename-window",
+  ]) {
     const r = runner.runSync([
       "set-hook",
       "-t",

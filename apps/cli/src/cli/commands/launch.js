@@ -983,7 +983,13 @@ async function runInternalCloseWindow(deps = {}) {
   const exit = deps.exit || ((code) => process.exit(code));
   // ASCII Unit Separator — never appears in a session/window name or
   // filesystem path, so splitting on it is unambiguous.
-  const DELIM = "\x1f";
+  // tmux's format-string parser escape-encodes control bytes (0x00-0x1F)
+  // into the literal 4-char `\OOO` octal sequence in output, so a
+  // 0x1f byte delimiter comes back as the text "\037" and split()
+  // never finds it. Use TAB instead — it survives format-string
+  // processing untouched, and is impossible in tmux session/window
+  // names (tmux rejects them) and rare-to-impossible in cwd paths.
+  const DELIM = "\t";
   // When the tmux keybind passes session+index positionally, target
   // that exact window. This avoids a wrong-window kill if focus shifts
   // between Alt+w being pressed and this subprocess starting.
@@ -1153,7 +1159,13 @@ async function runInternalRestoreWindow(deps = {}) {
 async function runInternalSnapshotSession(sessionName, deps = {}) {
   if (!sessionName) return;
   const runner = deps.runner || defaultTmuxRunner();
-  const DELIM = "\x1f";
+  // tmux's format-string parser escape-encodes control bytes (0x00-0x1F)
+  // into the literal 4-char `\OOO` octal sequence in output, so a
+  // 0x1f byte delimiter comes back as the text "\037" and split()
+  // never finds it. Use TAB instead — it survives format-string
+  // processing untouched, and is impossible in tmux session/window
+  // names (tmux rejects them) and rare-to-impossible in cwd paths.
+  const DELIM = "\t";
   const fmt = `#{window_index}${DELIM}#{window_name}${DELIM}#{pane_current_path}`;
   // Capture timestamp BEFORE list-windows so concurrent subprocesses
   // produce a stable ordering. The registry rejects writes whose
