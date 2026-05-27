@@ -751,6 +751,344 @@ describe.skipIf(!HAS_TMUX)("launch tabs e2e", () => {
     });
   });
 
+  describe("Alt+s parallel same-dir session spawn", () => {
+    it("runParallelSpawn (no name) creates a parallel session in same cwd", () => {
+      tmuxCmd("kill-server");
+      sleep(100);
+      // Use a fixed cwd basename so baseSessionName is predictable.
+      const initialCwd = path.join(testHome, "alts-project");
+      fs.mkdirSync(initialCwd, { recursive: true });
+      // Set up: existing canonical session so Alt+s spawns a sibling.
+      // bin will be `bash` (see below — keeps the test session alive),
+      // so baseSessionName produces `bash-alts-project`.
+      const canonical = "bash-alts-project";
+      tmuxCmd("new-session", "-d", "-s", canonical, "-c", initialCwd, "bash");
+      registryLib.recordSession(
+        {
+          name: canonical,
+          cli: "bash",
+          cwd: initialCwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+
+      const { runParallelSpawn } = require(
+        path.join(SRC, "runtime/launch/parallel-session.js"),
+      );
+      // switch-client fails in this environment (no attached client),
+      // so wrap our runner to swallow it. Everything else is real.
+      const altSRunner = {
+        runSync(args) {
+          if (args[0] === "switch-client") {
+            return { status: 0, stdout: "", stderr: "", error: null };
+          }
+          return ourRunner.runSync(args);
+        },
+        runAttach: ourRunner.runAttach,
+      };
+
+      const result = runParallelSpawn({
+        // Use bash so the session stays alive after spawn — the real
+        // `claude` binary isn't installed in the test env and would
+        // exit immediately, killing the session before our assertions
+        // run. The session-name and registry behavior is what we're
+        // testing, not the underlying CLI invocation.
+        bin: "bash",
+        name: undefined,
+        cwd: initialCwd,
+        prefs: {
+          tmux: { statusPosition: "bottom" },
+          keybinds: { preset: "default" },
+        },
+        runner: altSRunner,
+      });
+      // Promise — wait for it.
+      return result.then((spawnInfo) => {
+        // Since the canonical name is taken, nextFreeSessionName picks
+        // the `-2` sibling. Verify the returned name and the registry.
+        // We don't assert the new session is still alive on tmux:
+        // createSession runs `bash launch __exec <name>` which exits
+        // 127 immediately (no file named "launch"), so the session
+        // dies before we can check. The registry write happens
+        // synchronously in runParallelSpawn before that — that's
+        // what we're verifying here.
+        expect(spawnInfo.sessionName).toBe(`${canonical}-2`);
+        expect(spawnInfo.cwd).toBe(initialCwd);
+        expect(spawnInfo.worktree).toBeUndefined();
+
+        const reg = registryLib.loadRegistry(testHome);
+        const entry = reg.sessions.find((s) => s.name === `${canonical}-2`);
+        expect(entry).toBeDefined();
+        expect(entry.cli).toBe("bash");
+        expect(entry.wrapperWindowIndex).toBe(0);
+      });
+    });
+  });
+
+  describe("Alt+n worktree-backed session spawn", () => {
+    it("runParallelSpawn (with name) creates worktree + records metadata", () => {
+      tmuxCmd("kill-server");
+      sleep(100);
+
+      // Set up a real git repo so createWorktree has something to work with.
+      const repoDir = fs.mkdtempSync(path.join(testHome, "alt-n-repo-"));
+      const git = (...args) => {
+        const r = spawnSync("git", args, { cwd: repoDir, encoding: "utf8" });
+        return { status: r.status, stderr: r.stderr };
+      };
+      const initR = git("init", "-b", "main");
+      if (initR.status !== 0) {
+        // Older git: -b might not exist. Use --initial-branch fallback.
+        spawnSync("git", ["init"], { cwd: repoDir });
+        spawnSync("git", ["checkout", "-b", "main"], { cwd: repoDir });
+      }
+      spawnSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: repoDir,
+      });
+      spawnSync("git", ["config", "user.name", "Test"], { cwd: repoDir });
+      fs.writeFileSync(path.join(repoDir, "README.md"), "test repo");
+      spawnSync("git", ["add", "README.md"], { cwd: repoDir });
+      const commitR = spawnSync("git", ["commit", "-m", "initial"], {
+        cwd: repoDir,
+        encoding: "utf8",
+      });
+      expect(commitR.status, `git commit failed: ${commitR.stderr}`).toBe(0);
+
+      const { runParallelSpawn } = require(
+        path.join(SRC, "runtime/launch/parallel-session.js"),
+      );
+      const altNRunner = {
+        runSync(args) {
+          if (args[0] === "switch-client") {
+            return { status: 0, stdout: "", stderr: "", error: null };
+          }
+          return ourRunner.runSync(args);
+        },
+        runAttach: ourRunner.runAttach,
+      };
+
+      // Use a timestamped branch name so retries don't collide on
+      // already-exists. Each test run gets a unique branch.
+      const branchName = `feat-${Date.now().toString(36)}`;
+      // chdir into the test repo so createWorktree's default
+      // defaultGitExec (which uses process.cwd) finds the right repo.
+      // Restored after the test.
+      const savedCwd = process.cwd();
+      process.chdir(repoDir);
+      return runParallelSpawn({
+        bin: "bash", // use bash so the session stays alive after spawn
+        name: branchName,
+        cwd: repoDir,
+        prefs: {
+          tmux: { statusPosition: "bottom" },
+          keybinds: { preset: "default" },
+        },
+        runner: altNRunner,
+      }).then((spawnInfo) => {
+        process.chdir(savedCwd);
+        // Worktree was created on disk — that's the user-visible
+        // contract. (Session-on-tmux check skipped for the same reason
+        // as Alt+s: createSession's bin invocation exits immediately
+        // in the test env.)
+        expect(spawnInfo.worktree).toBeDefined();
+        expect(spawnInfo.worktree.branch).toBe(branchName);
+        expect(fs.existsSync(spawnInfo.worktree.path)).toBe(true);
+
+        const reg = registryLib.loadRegistry(testHome);
+        const entry = reg.sessions.find(
+          (s) => s.name === spawnInfo.sessionName,
+        );
+        expect(entry).toBeDefined();
+        expect(entry.worktree).toBeDefined();
+        expect(entry.worktree.branch).toBe(branchName);
+        expect(entry.worktree.path).toBe(spawnInfo.worktree.path);
+      });
+    });
+  });
+
+  describe("management subcommands", () => {
+    it("listSessions returns registry entries with alive status", () => {
+      tmuxCmd("kill-server");
+      sleep(100);
+      const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-ls-"));
+      tmuxCmd("new-session", "-d", "-s", "alive-sess", "-c", cwd, "bash");
+      registryLib.recordSession(
+        {
+          name: "alive-sess",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      registryLib.recordSession(
+        {
+          name: "dead-sess",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { listSessions } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      const rows = listSessions({ runner: ourRunner, home: testHome });
+      const aliveRow = rows.find((r) => r.name === "alive-sess");
+      const deadRow = rows.find((r) => r.name === "dead-sess");
+      expect(aliveRow).toBeDefined();
+      expect(deadRow).toBeDefined();
+      // state is 'alive' | 'dormant' | 'missing-cwd'
+      expect(aliveRow.state).toBe("alive");
+      // dead-sess wasn't created on the tmux server, but its cwd exists,
+      // so state is 'dormant' (registry entry but no tmux session).
+      expect(deadRow.state).toBe("dormant");
+    });
+
+    it("killBySessionName kills tmux session + forgets from registry", () => {
+      tmuxCmd("kill-server");
+      sleep(100);
+      const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-kill-"));
+      tmuxCmd("new-session", "-d", "-s", "to-kill", "-c", cwd, "bash");
+      registryLib.recordSession(
+        {
+          name: "to-kill",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { killBySessionName } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      const result = killBySessionName({
+        name: "to-kill",
+        runner: ourRunner,
+        home: testHome,
+        removeWorktree: false,
+      });
+      expect(result.ok).toBe(true);
+      expect(result.wasAlive).toBe(true);
+
+      // Verify gone from tmux server.
+      const sessions = tmuxCmd("list-sessions", "-F", "#S").stdout;
+      expect(sessions).not.toContain("to-kill");
+
+      // Verify gone from registry.
+      const reg = registryLib.loadRegistry(testHome);
+      expect(reg.sessions.find((s) => s.name === "to-kill")).toBeUndefined();
+    });
+
+    it("pruneCandidates surfaces dead-cwd entries; applyPrune forgets them", () => {
+      const goodCwd = fs.mkdtempSync(path.join(testHome, "mgmt-prune-good-"));
+      const badCwd = path.join(testHome, "mgmt-prune-deleted-permanently");
+      registryLib.recordSession(
+        {
+          name: "prune-good",
+          cli: "claude",
+          cwd: goodCwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      registryLib.recordSession(
+        {
+          name: "prune-bad",
+          cli: "claude",
+          cwd: badCwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { pruneCandidates, applyPrune } = require(
+        path.join(SRC, "runtime/launch/session-lifecycle.js"),
+      );
+      const candidates = pruneCandidates({
+        runner: ourRunner,
+        home: testHome,
+        existsSync: (p) => fs.existsSync(p),
+      });
+      const badInList = candidates.find((c) => c.name === "prune-bad");
+      const goodInList = candidates.find((c) => c.name === "prune-good");
+      expect(badInList).toBeDefined();
+      expect(goodInList).toBeUndefined(); // good cwd skipped
+
+      const pruneResult = applyPrune({
+        selections: [{ name: "prune-bad" }],
+        removeWorktrees: false,
+        home: testHome,
+      });
+      expect(pruneResult.forgotten).toBe(1);
+
+      const reg = registryLib.loadRegistry(testHome);
+      expect(reg.sessions.find((s) => s.name === "prune-bad")).toBeUndefined();
+      expect(reg.sessions.find((s) => s.name === "prune-good")).toBeDefined();
+    });
+
+    it("pinSession toggles the pinned flag", () => {
+      const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-pin-"));
+      registryLib.recordSession(
+        {
+          name: "pin-me",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const { pinSession } = registryLib;
+
+      pinSession("pin-me", true, testHome);
+      let reg = registryLib.loadRegistry(testHome);
+      let entry = reg.sessions.find((s) => s.name === "pin-me");
+      expect(entry.pinned).toBe(true);
+
+      pinSession("pin-me", false, testHome);
+      reg = registryLib.loadRegistry(testHome);
+      entry = reg.sessions.find((s) => s.name === "pin-me");
+      expect(entry.pinned).toBe(false);
+    });
+
+    it("pinned flag survives re-record (restore preserves user intent)", () => {
+      const cwd = fs.mkdtempSync(path.join(testHome, "mgmt-pin-survive-"));
+      registryLib.recordSession(
+        {
+          name: "survive-pin",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      registryLib.pinSession("survive-pin", true, testHome);
+
+      // Simulate restore re-recording with pinned not passed.
+      registryLib.recordSession(
+        {
+          name: "survive-pin",
+          cli: "claude",
+          cwd,
+          uuid: null,
+          wrapperWindowIndex: 0,
+        },
+        testHome,
+      );
+      const reg = registryLib.loadRegistry(testHome);
+      const entry = reg.sessions.find((s) => s.name === "survive-pin");
+      expect(entry.pinned).toBe(true); // preserved
+    });
+  });
+
   describe("concurrent restore lock", () => {
     it("throws when another restore is already running", () => {
       const lockFile = path.join(testHome, ".agileflow", "launch-restore.lock");
