@@ -273,15 +273,18 @@ const TAB_KEYBINDS = [
     hint: "Alt+, → rename current tab",
   },
   {
-    // Direct kill-window — no CLI roundtrip. The previous
-    // run-shell-to-agileflow approach added Node-startup latency
-    // (150ms+) and could no-op silently if the binary path resolution
-    // returned stale state (e.g. after npx cache cleanup). Killing
-    // via tmux directly is instant and bulletproof. Undo is provided
-    // by Alt+Shift+T (which reads the closed-windows log populated by
-    // the window-unlinked hook installed in applyTabFormat).
+    // Routes through the agileflow callback which probes the window's
+    // name + cwd, pushes a closed-window record (for Alt+Shift+T undo),
+    // then kill-windows. The callback adds ~150ms Node-startup
+    // latency vs direct kill-window, but in exchange the user gets
+    // a working undo (Chrome's Ctrl+Shift+T pattern). We pass session
+    // and window index positionally so a focus shift between Alt+w
+    // and the subprocess running doesn't close the wrong tab.
     key: "M-w",
-    action: ["kill-window"],
+    action: [
+      "run-shell",
+      "%AGILEFLOW% launch __close-window #{session_name} #{window_index}",
+    ],
     hint: "Alt+w → close current tab (Alt+Shift+T to undo)",
   },
   {

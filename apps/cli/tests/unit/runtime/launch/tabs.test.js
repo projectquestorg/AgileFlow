@@ -160,14 +160,15 @@ describe("TAB_KEYBINDS", () => {
     }
   });
 
-  it("Alt+w binds directly to tmux kill-window (no CLI roundtrip)", () => {
-    // Regression guard: a previous iteration routed Alt+w through a
-    // run-shell agileflow callback, which silently failed when the
-    // binary path resolution returned stale state. Direct kill-window
-    // is bulletproof — tmux handles it entirely in-process.
+  it("Alt+w routes through __close-window callback (for undo support)", () => {
+    // The callback probes the window's cwd before killing so
+    // Alt+Shift+T can resurrect it later.
     const entry = TAB_KEYBINDS.find((b) => b.key === "M-w");
     expect(entry).toBeTruthy();
-    expect(entry.action).toEqual(["kill-window"]);
+    const actionStr = entry.action.join(" ");
+    expect(actionStr).toContain("%AGILEFLOW% launch __close-window");
+    expect(actionStr).toContain("#{session_name}");
+    expect(actionStr).toContain("#{window_index}");
   });
 
   it("Alt+T action references the restore-window callback", () => {
