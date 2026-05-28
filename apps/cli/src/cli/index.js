@@ -41,7 +41,10 @@ function buildProgram() {
     .command("setup")
     .description("run interactive install wizard")
     .option("--yes", "skip prompts, install with defaults")
-    .option("--plugins <ids>", "comma-separated plugin list to enable")
+    .option(
+      "--plugins <ids>",
+      "comma-separated plugin list to enable (or 'all')",
+    )
     .option(
       "--ide <id>",
       `target IDE / CLI(s): ${SUPPORTED_IDES.join(" | ")} | all`,

@@ -62,12 +62,15 @@ const LEGACY_AGILEFLOW_FILES = ["CHANGELOG.md", "config.yaml"];
 
 /**
  * v3-era directories under `.claude/` that v4 doesn't populate.
- * `agents/` and `commands/` are intentionally NOT here — v4 still
- * mirrors plugin slash-commands and subagents into them via
- * claude-code-content.js. Only flagged if they contain agileflow-*
- * entries (see section C below).
+ * `agents/` is intentionally NOT here — v4 still mirrors subagents
+ * into `.claude/agents/agileflow/` via claude-code-content.js.
+ * `commands/` IS here: v4 is skills-only and no longer mirrors slash
+ * commands (mirrorClaudeCodeCommands is dead code), so a leftover
+ * `.claude/commands/agileflow/` from a v3 upgrade is stale — and the
+ * installer no longer sweeps it, leaving doctor as the only cleanup
+ * path. Flagged only if it contains agileflow-* entries (section C).
  */
-const LEGACY_CLAUDE_SUBDIRS = ["hooks", "plans"];
+const LEGACY_CLAUDE_SUBDIRS = ["hooks", "plans", "commands"];
 
 /** Narrow a value to a plain object (not array, not null, not primitive). */
 function isPlainObject(v) {

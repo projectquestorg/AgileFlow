@@ -59,6 +59,17 @@ function pluginsFromCsv(csv, existingPlugins = {}) {
   );
   const discovered = discoverPlugins();
   const discoveredIds = new Set(discovered.map((p) => p.id));
+
+  // `all` is a convenience alias selecting every discovered plugin —
+  // mirrors `--ide all`. Expand before the unknown-id check so the
+  // literal token isn't itself rejected as an unknown plugin.
+  if (requested.has("all")) {
+    return {
+      plugins: buildPluginsMap(discovered, discoveredIds, existingPlugins),
+      unknownPlugins: [],
+    };
+  }
+
   const unknownPlugins = [...requested].filter((id) => !discoveredIds.has(id));
 
   const selectedDiscoveredIds = new Set(

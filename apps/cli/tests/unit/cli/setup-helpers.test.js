@@ -31,6 +31,16 @@ describe("pluginsFromCsv", () => {
     expect(unknownPlugins).toEqual([]);
   });
 
+  it("expands the all alias to every discovered plugin", () => {
+    const { plugins, unknownPlugins } = pluginsFromCsv("all");
+    expect(plugins.core.enabled).toBe(true);
+    expect(plugins.seo.enabled).toBe(true);
+    expect(plugins.audit.enabled).toBe(true);
+    expect(plugins.ads.enabled).toBe(true);
+    expect(Object.values(plugins).every((p) => p.enabled)).toBe(true);
+    expect(unknownPlugins).toEqual([]);
+  });
+
   it("surfaces typos / unknown plugin ids", () => {
     const { plugins, unknownPlugins } = pluginsFromCsv("seo,typo,another-typo");
     expect(plugins.seo.enabled).toBe(true);

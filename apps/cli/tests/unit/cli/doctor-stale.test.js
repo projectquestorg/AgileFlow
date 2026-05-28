@@ -147,6 +147,27 @@ describe("checkStaleArtifacts", () => {
     expect(issues.some((i) => i.kind === "legacy-claude-subdir")).toBe(true);
   });
 
+  it("flags a leftover v3 .claude/commands/agileflow/ as stale", async () => {
+    // user-owned slash command should NOT trip the detector
+    fs.mkdirSync(path.join(cwd, ".claude", "commands"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".claude", "commands", "mine.md"), "x");
+    let issues = await checkStaleArtifacts(cwd);
+    expect(issues).toEqual([]);
+
+    // v3 leftover under the agileflow/ subdir → flag it
+    fs.mkdirSync(path.join(cwd, ".claude", "commands", "agileflow"), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(cwd, ".claude", "commands", "agileflow", "babysit.md"),
+      "x",
+    );
+    issues = await checkStaleArtifacts(cwd);
+    const hit = issues.find((i) => i.kind === "legacy-claude-subdir");
+    expect(hit).toBeTruthy();
+    expect(hit.path).toBe(path.join(cwd, ".claude", "commands"));
+  });
+
   it("flags broken hook-manifest script references as errors", async () => {
     fs.mkdirSync(path.join(cwd, ".agileflow"), { recursive: true });
     fs.writeFileSync(
