@@ -342,6 +342,58 @@ async function scaffoldDocs(projectRoot) {
  * @param {InstallOptions} options
  * @returns {Promise<InstallResult>}
  */
+/**
+ * A stale install lock older than this is assumed abandoned (a crashed
+ * install) and stolen, so a single crash can't wedge every future install.
+ */
+const STALE_LOCK_MS = 60000;
+
+/**
+ * Acquire an advisory install lock so two concurrent `agileflow setup`
+ * runs against the same project can't race their read-modify-write file
+ * operations (AGENTS.md, CLAUDE.md, agent .md files, files.json) and
+ * silently clobber each other. Fails fast with a clear message when a
+ * live lock is held; steals a stale one.
+ *
+ * @param {string} cfgDir - the `.agileflow/_cfg` directory
+ * @returns {Promise<() => Promise<void>>} release function (idempotent)
+ */
+async function acquireInstallLock(cfgDir) {
+  const lockPath = path.join(cfgDir, "install.lock");
+  await fs.promises.mkdir(cfgDir, { recursive: true });
+  const payload = JSON.stringify({
+    pid: process.pid,
+    at: new Date().toISOString(),
+  });
+  try {
+    await fs.promises.writeFile(lockPath, payload, { flag: "wx" });
+  } catch (err) {
+    if (!err || err.code !== "EEXIST") throw err;
+    // Lock exists. Steal it only if it looks abandoned.
+    let stale = false;
+    try {
+      const st = await fs.promises.stat(lockPath);
+      stale = Date.now() - st.mtimeMs > STALE_LOCK_MS;
+    } catch {
+      stale = true; // vanished under us — treat as free
+    }
+    if (!stale) {
+      throw new Error(
+        `another agileflow install appears to be in progress (lock: ${lockPath}). ` +
+          `If no other install is running, delete that file and retry.`,
+      );
+    }
+    await fs.promises.writeFile(lockPath, payload, { flag: "w" });
+  }
+  return async function release() {
+    try {
+      await fs.promises.unlink(lockPath);
+    } catch {
+      /* already gone — release is best-effort */
+    }
+  };
+}
+
 async function installPlugins(options) {
   const {
     discovered,
@@ -355,6 +407,60 @@ async function installPlugins(options) {
     force = false,
     config,
   } = options;
+
+  // Validate BEFORE acquiring the lock or touching the filesystem, so a bad
+  // plugin set fails fast without creating any .agileflow artifacts. runInstall
+  // re-validates (cheap, read-only) as its own step 1.
+  const preIssues = validatePluginSet(discovered);
+  if (hasErrors(preIssues)) {
+    const errors = preIssues
+      .filter((i) => i.severity === "error")
+      .map((i) => `  ${i.pluginId}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Plugin validation failed:\n${errors}`);
+  }
+
+  // Serialize installs on this project so concurrent runs can't clobber each
+  // other's read-modify-write file operations. Released in the finally.
+  const releaseInstallLock = await acquireInstallLock(
+    path.join(agileflowDir, "_cfg"),
+  );
+  try {
+    return await runInstall(options, {
+      discovered,
+      userSelected,
+      agileflowDir,
+      cliVersion,
+      ide,
+      ides,
+      behaviors,
+      learningsEnabled,
+      force,
+      config,
+    });
+  } finally {
+    await releaseInstallLock();
+  }
+}
+
+/**
+ * The install body, run while the advisory lock is held.
+ * @param {any} options - original options (unused fields tolerated)
+ * @param {any} resolved - destructured + defaulted option values
+ */
+async function runInstall(options, resolved) {
+  const {
+    discovered,
+    userSelected,
+    agileflowDir,
+    cliVersion,
+    ide,
+    ides,
+    behaviors,
+    learningsEnabled = true,
+    force = false,
+    config,
+  } = resolved;
 
   // Resolve the multi-target list. Prefer `ides` (new); fall back to
   // `ide` (legacy single-target callers — including current tests).
@@ -447,11 +553,15 @@ async function installPlugins(options) {
     } catch (err) {
       throw new Error(`Hook manifest validation failed: ${err.message}`);
     }
-    hookManifestPath = await writeAggregatedManifest(
-      ordered,
-      agileflowDir,
-      behaviors,
-    );
+    try {
+      hookManifestPath = await writeAggregatedManifest(
+        ordered,
+        agileflowDir,
+        behaviors,
+      );
+    } catch (err) {
+      throw new Error(`hook manifest write failed: ${err.message}`);
+    }
   } else {
     await removeAggregatedManifest(agileflowDir);
   }
@@ -465,18 +575,26 @@ async function installPlugins(options) {
   let agentsSkipped = [];
   /** @type {string[]} */
   let agentsPrefsInjected = [];
+  /** @type {Array<{ file: string, error: string }>} */
+  let agentsPrefsFailed = [];
   if (targetIdes.includes("claude-code")) {
-    settingsPath = await writeClaudeCodeSettings(projectRoot);
+    try {
+      settingsPath = await writeClaudeCodeSettings(projectRoot);
+    } catch (err) {
+      throw new Error(`settings.json write failed: ${err.message}`);
+    }
     const agentMirror = await mirrorClaudeCodeAgents(ordered, projectRoot);
     agentsMirrored = agentMirror.mirrored;
     agentsSkipped = agentMirror.skipped;
     // Bake the babysit preference block into each mirrored subagent. They
     // inherit CLAUDE.md but never receive SessionStart hook output, so this
     // is the only path that reaches them. Idempotent, marker-delimited.
-    agentsPrefsInjected = await injectAgentPrefs(
+    const prefsResult = await injectAgentPrefs(
       path.join(projectRoot, ".claude", "agents", "agileflow"),
       config,
     );
+    agentsPrefsInjected = prefsResult.touched;
+    agentsPrefsFailed = prefsResult.failed;
   } else {
     await removeClaudeCodeSettings(projectRoot);
     await unmirrorClaudeCodeAgents(projectRoot);
@@ -551,13 +669,23 @@ async function installPlugins(options) {
   //     Claude Code, imports it via the @AGENTS.md line in CLAUDE.md. Both
   //     writes are idempotent and preserve user content outside the managed
   //     marker blocks.
-  const agentsMdPath = await writeAgentsMd(projectRoot, config);
+  let agentsMdPath;
+  try {
+    agentsMdPath = await writeAgentsMd(projectRoot, config);
+  } catch (err) {
+    throw new Error(`AGENTS.md write failed: ${err.message}`);
+  }
   // The CLAUDE.md @AGENTS.md bridge only matters for Claude Code — the one
   // supported tool that does not read AGENTS.md natively. Don't create a
   // CLAUDE.md for projects that never target it.
-  const claudeMdPath = targetIdes.includes("claude-code")
-    ? await ensureClaudeMdImport(projectRoot)
-    : null;
+  let claudeMdPath = null;
+  if (targetIdes.includes("claude-code")) {
+    try {
+      claudeMdPath = await ensureClaudeMdImport(projectRoot);
+    } catch (err) {
+      throw new Error(`CLAUDE.md write failed: ${err.message}`);
+    }
+  }
 
   return {
     ordered: ordered.map((p) => p.id),
@@ -576,6 +704,7 @@ async function installPlugins(options) {
     agentsMirrored,
     agentsSkipped,
     agentsPrefsInjected,
+    agentsPrefsFailed,
     agentsMdPath,
     claudeMdPath,
     docsScaffolded,

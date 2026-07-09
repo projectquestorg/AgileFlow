@@ -298,6 +298,45 @@ describe("installPlugins integration", () => {
     expect(idx.files["plugins/core/plugin.yaml"]).toBeDefined();
   });
 
+  it("fails fast when a live install lock is already held", async () => {
+    // Simulate a concurrent install by planting a fresh lock file.
+    const lockPath = path.join(agileflowDir, "_cfg", "install.lock");
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    fs.writeFileSync(
+      lockPath,
+      JSON.stringify({ pid: 999999, at: new Date().toISOString() }),
+      "utf8",
+    );
+    await expect(
+      installPlugins({
+        discovered: discoverPlugins(),
+        userSelected: [],
+        agileflowDir,
+        cliVersion: "4.0.0-alpha.1",
+      }),
+    ).rejects.toThrow(/another agileflow install/);
+    // A live lock is never stolen — the planted file stays put.
+    expect(fs.existsSync(lockPath)).toBe(true);
+  });
+
+  it("steals a stale install lock and completes", async () => {
+    const lockPath = path.join(agileflowDir, "_cfg", "install.lock");
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    fs.writeFileSync(lockPath, JSON.stringify({ pid: 1, at: "old" }), "utf8");
+    // Backdate the lock well beyond the 60s stale threshold.
+    const old = new Date(Date.now() - 120000);
+    fs.utimesSync(lockPath, old, old);
+    const result = await installPlugins({
+      discovered: discoverPlugins(),
+      userSelected: [],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+    });
+    expect(result.ordered).toContain("core");
+    // Lock is released after a successful install.
+    expect(fs.existsSync(lockPath)).toBe(false);
+  });
+
   it("aggregates plugin hooks into hook-manifest.yaml when ide=claude-code", async () => {
     const result = await installPlugins({
       discovered: discoverPlugins(),

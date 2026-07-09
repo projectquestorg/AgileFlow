@@ -217,24 +217,37 @@ async function listMarkdownFiles(dir) {
  *
  * @param {string} agentsDir - directory holding installed agent .md files
  * @param {any} config - merged AgileflowConfig (may be undefined)
- * @returns {Promise<string[]>} absolute paths of the agent files touched
+ * @returns {Promise<{ touched: string[], failed: Array<{ file: string, error: string }> }>}
+ *   `touched` = agent files written/refreshed; `failed` = files whose write
+ *   threw (a mid-loop failure no longer aborts the whole install).
  */
 async function injectAgentPrefs(agentsDir, config) {
   const prefs = buildPrefsBlock(babysitFrom(config));
   const files = await listMarkdownFiles(agentsDir);
   /** @type {string[]} */
   const touched = [];
+  /** @type {Array<{ file: string, error: string }>} */
+  const failed = [];
   for (const file of files) {
-    const existing = await readOrEmpty(file);
-    const next = prefs
-      ? upsertManagedRegion(existing, prefs)
-      : removeManagedRegion(existing);
-    if (next !== existing) {
-      await fs.promises.writeFile(file, next, "utf8");
-      touched.push(file);
+    // Per-file guard: a permission error on one agent .md must not leave the
+    // remaining agents un-injected, and the caller needs to know which failed.
+    try {
+      const existing = await readOrEmpty(file);
+      const next = prefs
+        ? upsertManagedRegion(existing, prefs)
+        : removeManagedRegion(existing);
+      if (next !== existing) {
+        await fs.promises.writeFile(file, next, "utf8");
+        touched.push(file);
+      }
+    } catch (err) {
+      failed.push({
+        file,
+        error: err && err.message ? err.message : String(err),
+      });
     }
   }
-  return touched;
+  return { touched, failed };
 }
 
 module.exports = {

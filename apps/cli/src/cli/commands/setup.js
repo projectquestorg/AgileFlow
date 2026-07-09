@@ -531,6 +531,15 @@ async function finalizeInteractiveSetup(p, roots, next, sel) {
       installResult.ops.preserved
         ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
         : "",
+      installResult.skillsSkipped && installResult.skillsSkipped.length
+        ? `! ${installResult.skillsSkipped.length} skill(s) skipped (missing source) — see errors above`
+        : "",
+      installResult.agentsSkipped && installResult.agentsSkipped.length
+        ? `! ${installResult.agentsSkipped.length} agent(s) skipped (missing source) — see errors above`
+        : "",
+      installResult.agentsPrefsFailed && installResult.agentsPrefsFailed.length
+        ? `! ${installResult.agentsPrefsFailed.length} agent(s) could not receive preferences — see errors above`
+        : "",
       cleanup.summary || "",
     ]
       .filter(Boolean)

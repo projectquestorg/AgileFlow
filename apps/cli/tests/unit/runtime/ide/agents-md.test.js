@@ -179,8 +179,9 @@ describe("injectAgentPrefs", () => {
   });
 
   it("bakes the managed prefs block into every agent .md file", async () => {
-    const touched = await injectAgentPrefs(agentsDir, fullConfig());
+    const { touched, failed } = await injectAgentPrefs(agentsDir, fullConfig());
     expect(touched.length).toBe(2);
+    expect(failed).toEqual([]);
     const expert = fs.readFileSync(path.join(agentsDir, "expert.md"), "utf8");
     expect(expert).toContain("You are an expert.");
     expect(expert).toContain(BEGIN_MARKER);
@@ -189,7 +190,10 @@ describe("injectAgentPrefs", () => {
 
   it("is idempotent — a second run does not duplicate the block", async () => {
     await injectAgentPrefs(agentsDir, fullConfig());
-    const touchedAgain = await injectAgentPrefs(agentsDir, fullConfig());
+    const { touched: touchedAgain } = await injectAgentPrefs(
+      agentsDir,
+      fullConfig(),
+    );
     expect(touchedAgain).toEqual([]);
     const expert = fs.readFileSync(path.join(agentsDir, "expert.md"), "utf8");
     expect(expert.split(BEGIN_MARKER).length - 1).toBe(1);
@@ -205,7 +209,7 @@ describe("injectAgentPrefs", () => {
   });
 
   it("returns [] when the agents directory does not exist", async () => {
-    const touched = await injectAgentPrefs(
+    const { touched } = await injectAgentPrefs(
       path.join(scratch, "missing"),
       fullConfig(),
     );
