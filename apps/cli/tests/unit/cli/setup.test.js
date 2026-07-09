@@ -361,10 +361,11 @@ describe("setupInteractive() with injected stubs", () => {
     expect(prompts.outro).toHaveBeenCalledTimes(1);
   });
 
-  it("quick start warns and defaults the confirm to no when it would overwrite an existing config", async () => {
-    // A customized config already exists on disk (codex, not the default).
+  it("quick start preserves an existing config on re-run instead of resetting", async () => {
+    // A customized config already exists on disk (codex + an opt-in pack).
     const prior = defaultConfig();
     prior.ide = { targets: ["codex"] };
+    prior.plugins = { core: { enabled: true }, seo: { enabled: true } };
     fs.writeFileSync(
       path.join(cwd, "agileflow.config.json"),
       JSON.stringify(prior, null, 2),
@@ -379,15 +380,33 @@ describe("setupInteractive() with injected stubs", () => {
 
     await setupInteractive({}, cwd, deps);
 
-    // The user is warned the existing config will be replaced...
-    expect(prompts.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("REPLACE"),
+    const config = JSON.parse(
+      fs.readFileSync(path.join(cwd, "agileflow.config.json"), "utf8"),
     );
-    // ...and the confirm defaults to "no" so an accidental Enter can't
-    // discard their settings.
+    // Existing IDE target and opt-in plugin are preserved, NOT reset to the
+    // claude-code / core-only defaults.
+    expect(config.ide.targets).toEqual(["codex"]);
+    expect(config.plugins.seo.enabled).toBe(true);
+    // A re-sync confirm defaults to "yes" (no data-loss, so no scary default).
     expect(prompts.confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ initialValue: false }),
+      expect.objectContaining({ initialValue: true }),
     );
+  });
+
+  it("quick start honours the --ide flag over detected/default targets", async () => {
+    const prompts = makePromptsStub();
+    prompts.confirm = vi.fn().mockResolvedValue(true);
+    const deps = makeWizardStubs({
+      prompts,
+      pickSetupMode: vi.fn().mockResolvedValue("quick"),
+    });
+
+    await setupInteractive({ ide: "codex" }, cwd, deps);
+
+    const config = JSON.parse(
+      fs.readFileSync(path.join(cwd, "agileflow.config.json"), "utf8"),
+    );
+    expect(config.ide.targets).toEqual(["codex"]);
   });
 
   it("quick start honours --scope global from the flag", async () => {

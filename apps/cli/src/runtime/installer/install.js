@@ -383,7 +383,26 @@ async function acquireInstallLock(cfgDir) {
           `If no other install is running, delete that file and retry.`,
       );
     }
-    await fs.promises.writeFile(lockPath, payload, { flag: "w" });
+    // Steal the stale lock ATOMICALLY: unlink it, then re-create with the
+    // exclusive `wx` flag. A plain `w` write would clobber a lock another
+    // process may have legitimately re-acquired in the meantime; if the wx
+    // create loses that race we surface the live-lock error instead.
+    try {
+      await fs.promises.unlink(lockPath);
+    } catch {
+      /* already gone — fine */
+    }
+    try {
+      await fs.promises.writeFile(lockPath, payload, { flag: "wx" });
+    } catch (err2) {
+      if (err2 && err2.code === "EEXIST") {
+        throw new Error(
+          `another agileflow install appears to be in progress (lock: ${lockPath}). ` +
+            `If no other install is running, delete that file and retry.`,
+        );
+      }
+      throw err2;
+    }
   }
   return async function release() {
     try {

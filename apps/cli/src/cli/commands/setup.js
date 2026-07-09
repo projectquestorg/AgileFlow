@@ -13,6 +13,7 @@
  *   - Custom plugin entries in the existing config are preserved across
  *     wizard reruns.
  */
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const prompts = require("@clack/prompts");
@@ -107,6 +108,32 @@ function resolveIdeTargets(ideOption, fallback) {
   }
 
   return raw;
+}
+
+/**
+ * Best-effort detection of which IDEs/agents a project already uses, so
+ * Quick start can seed sensible IDE targets instead of assuming Claude Code.
+ * Mirrors the vercel-labs/skills "detect-then-default" model. Returns the
+ * subset of SUPPORTED_IDES whose telltale files/dirs exist under `cwd`.
+ *
+ * @param {string} cwd
+ * @returns {string[]} detected IDE ids (may be empty)
+ */
+function detectIdeTargets(cwd) {
+  const has = (p) => {
+    try {
+      return fs.existsSync(path.join(cwd, p));
+    } catch {
+      return false;
+    }
+  };
+  const detected = [];
+  if (has(".claude") || has("CLAUDE.md")) detected.push("claude-code");
+  if (has(".codex") || has(".codex/config.toml")) detected.push("codex");
+  if (has(".cursor")) detected.push("cursor");
+  if (has(".windsurf")) detected.push("windsurf");
+  // Keep only ids we actually support, preserving detection order.
+  return detected.filter((id) => SUPPORTED_IDES.includes(id));
 }
 
 /**
@@ -594,23 +621,47 @@ async function setupInteractive(options, cwd, deps = {}) {
   if (mode === "quick") {
     const scope = initialScope;
     const roots = installPathsForScope(scope, cwd);
-    // Quick start applies fresh defaults. Detect an existing on-disk config
-    // so we can warn before overwriting it — silently replacing a user's
-    // customized ide/plugins/babysit settings would be data loss.
-    let existing = null;
+    // Quick start PRESERVES an existing config (re-sync without questions);
+    // on a fresh project it applies sensible defaults. Either way the base
+    // comes from deriveBaseFromExisting so we never silently discard the
+    // user's plugins / IDE targets / babysit settings.
+    let existing;
     try {
       existing = await loadConfig(roots.configRoot);
-    } catch {
-      existing = null;
+    } catch (err) {
+      p.log.error(err.message);
+      p.log.info(
+        "Fix or delete agileflow.config.json and re-run `agileflow setup`.",
+      );
+      process.exit(1);
     }
-    const willOverwrite = Boolean(existing && existing.source === "file");
-    const base = defaultConfig();
-    /** @type {string[]} */
-    const ides = ["claude-code"];
-    const plugins = base.plugins;
+    const isReSync = existing.source === "file";
+    const { base, baseBabysit } = deriveBaseFromExisting(existing);
+
+    // IDE targets: --ide flag wins; else the existing config's targets on a
+    // re-sync; else auto-detect from the project; else Claude Code.
+    const ideFallback =
+      isReSync && Array.isArray(base.ide.targets) && base.ide.targets.length
+        ? base.ide.targets
+        : detectIdeTargets(cwd).length
+          ? detectIdeTargets(cwd)
+          : ["claude-code"];
+    const ides = resolveIdeTargets(options.ide, ideFallback);
+    const unknownIdes = ides.filter((id) => !SUPPORTED_IDES.includes(id));
+    if (unknownIdes.length) {
+      p.log.error(`Unknown IDE(s): ${unknownIdes.join(", ")}`);
+      p.log.info(`Use one of: ${SUPPORTED_IDES.join(", ")}`);
+      process.exit(1);
+    }
+
+    // Plugins: --plugins flag applies over the existing set; else preserve
+    // whatever the base already had (core stays on regardless).
+    const { plugins } = options.plugins
+      ? pluginsFromCsv(options.plugins, base.plugins)
+      : { plugins: base.plugins };
     const behaviors = base.behaviors;
     const learnings = base.learnings;
-    const babysit = { mode: "light" };
+    const babysit = baseBabysit;
 
     /** @type {import('../../runtime/config/defaults.js').AgileflowConfig} */
     const next = {
@@ -631,21 +682,23 @@ async function setupInteractive(options, cwd, deps = {}) {
       .filter(([, v]) => v && v.enabled)
       .map(([id]) => id);
     p.log.info(
-      `Quick start defaults — scope: ${scope}, ide: ${ides.join(", ")}, skill packs: ${enabledList.join(", ")}, babysit: ${babysit.mode}`,
+      `Quick start — scope: ${scope}, ide: ${ides.join(", ")}, skill packs: ${enabledList.join(", ")}, babysit: ${babysit.mode || "light"}`,
     );
-    if (willOverwrite) {
-      p.log.warn(
-        `An existing config was found at ${existing.path} — Quick start will REPLACE it with these defaults. Choose Customize to keep your current settings.`,
-      );
-    }
+    // Enumerate the concrete artifacts that will be written so the confirm
+    // isn't a blind "yes".
+    const artifacts = ["agileflow.config.json", ".agileflow/"];
+    if (ides.includes("claude-code"))
+      artifacts.push(".claude/ (settings, skills, agents)");
+    if (ides.includes("codex")) artifacts.push(".codex/config.toml");
+    artifacts.push("AGENTS.md");
+    if (ides.includes("claude-code")) artifacts.push("CLAUDE.md");
+    p.log.info(`Will write: ${artifacts.join(", ")}`);
 
     const confirmed = await p.confirm({
-      message: willOverwrite
-        ? "Replace your existing config with these defaults?"
+      message: isReSync
+        ? "Re-sync AgileFlow with these settings?"
         : "Install AgileFlow with these defaults?",
-      // Default to "no" when this would overwrite an existing config so an
-      // accidental Enter can't discard the user's settings.
-      initialValue: !willOverwrite,
+      initialValue: true,
     });
     if (p.isCancel(confirmed) || !confirmed) {
       p.cancel("Setup cancelled. No changes made.");
