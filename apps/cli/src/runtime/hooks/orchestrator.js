@@ -22,13 +22,13 @@
  * injectable so unit tests can substitute a stub without touching the
  * filesystem.
  */
-const path = require('path');
-const fs = require('fs');
-const { spawn } = require('child_process');
+const path = require("path");
+const fs = require("fs");
+const { spawn } = require("child_process");
 
-const { loadHookManifest } = require('./manifest-loader.js');
-const { orderChain } = require('./chain.js');
-const { appendHookLog } = require('./logger.js');
+const { loadHookManifest } = require("./manifest-loader.js");
+const { orderChain } = require("./chain.js");
+const { appendHookLog } = require("./logger.js");
 
 /**
  * @typedef {import('./manifest-loader.js').HookEntry} HookEntry
@@ -59,6 +59,9 @@ const { appendHookLog } = require('./logger.js');
  * @typedef {Object} ChainOutcome
  * @property {number} exitCode - 0 unless a non-skipOnError hook failed
  * @property {Array<{ hook: HookEntry, status: string, exitCode: number|null, durationMs: number }>} steps
+ * @property {string} stdout - concatenated stdout of every hook that
+ *           finished with status 'ok', in chain order, joined by blank
+ *           lines. Empty string when no successful hook produced output.
  */
 
 /**
@@ -79,11 +82,11 @@ async function defaultRunHook(hook, ctx) {
   let cmd;
   /** @type {string[]} */
   let args;
-  if (ext === '.js') {
+  if (ext === ".js") {
     cmd = process.execPath;
     args = [hook.script];
-  } else if (ext === '.sh') {
-    cmd = 'bash';
+  } else if (ext === ".sh") {
+    cmd = "bash";
     args = [hook.script];
   } else {
     cmd = hook.script;
@@ -97,7 +100,7 @@ async function defaultRunHook(hook, ctx) {
   return await new Promise((resolve) => {
     const child = spawn(cmd, args, {
       cwd: path.dirname(ctx.agileflowDir),
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       signal: ac.signal,
       env: { ...process.env, AGILEFLOW_DIR: ctx.agileflowDir },
     });
@@ -105,20 +108,20 @@ async function defaultRunHook(hook, ctx) {
     const out = [];
     /** @type {string[]} */
     const err = [];
-    child.stdout.on('data', (d) => out.push(d.toString('utf8')));
-    child.stderr.on('data', (d) => err.push(d.toString('utf8')));
-    child.on('error', () => {
+    child.stdout.on("data", (d) => out.push(d.toString("utf8")));
+    child.stderr.on("data", (d) => err.push(d.toString("utf8")));
+    child.on("error", () => {
       // Spawn-level errors (ENOENT for missing script, abort signal) — we
       // surface as exitCode null + timedOut iff we triggered the abort.
     });
-    child.on('close', (code, signal) => {
+    child.on("close", (code, signal) => {
       clearTimeout(timer);
       resolve({
         exitCode: code,
-        stdout: out.join(''),
-        stderr: err.join(''),
+        stdout: out.join(""),
+        stderr: err.join(""),
         durationMs: Date.now() - start,
-        timedOut: signal === 'SIGTERM' && ac.signal.aborted,
+        timedOut: signal === "SIGTERM" && ac.signal.aborted,
       });
     });
     if (ctx.stdin != null) {
@@ -147,10 +150,10 @@ async function defaultRunHook(hook, ctx) {
  * @returns {boolean}
  */
 function matcherMatches(pattern, actual) {
-  if (!pattern || pattern === '*') return true;
-  if (typeof actual !== 'string' || actual.length === 0) return false;
+  if (!pattern || pattern === "*") return true;
+  if (typeof actual !== "string" || actual.length === 0) return false;
   if (/^[A-Za-z0-9_|]+$/.test(pattern)) {
-    return pattern.split('|').includes(actual);
+    return pattern.split("|").includes(actual);
   }
   try {
     return new RegExp(pattern).test(actual);
@@ -204,13 +207,13 @@ async function runEvent(options) {
     event,
     agileflowDir,
     matcher,
-    stdin = '',
+    stdin = "",
     overrides = {},
     runHook = defaultRunHook,
   } = options;
 
-  const manifestPath = path.join(agileflowDir, 'hook-manifest.yaml');
-  const logPath = path.join(agileflowDir, 'logs', 'hook-execution.jsonl');
+  const manifestPath = path.join(agileflowDir, "hook-manifest.yaml");
+  const logPath = path.join(agileflowDir, "logs", "hook-execution.jsonl");
 
   let manifest;
   try {
@@ -220,15 +223,15 @@ async function runEvent(options) {
     await appendHookLog(logPath, {
       timestamp: new Date().toISOString(),
       event,
-      hookId: '<orchestrator>',
-      status: 'error',
+      hookId: "<orchestrator>",
+      status: "error",
       exitCode: null,
       durationMs: 0,
       reason: `manifest load failed: ${err.message}`,
     }).catch(() => {});
-    return { exitCode: 0, steps: [] };
+    return { exitCode: 0, steps: [], stdout: "" };
   }
-  if (!manifest) return { exitCode: 0, steps: [] };
+  if (!manifest) return { exitCode: 0, steps: [], stdout: "" };
 
   // Filter to this event, then by matcher (a manifest hook with no
   // matcher matches all; a manifest hook with a matcher only matches
@@ -240,7 +243,7 @@ async function runEvent(options) {
     .map((h) => applyOverride(h, overrides[h.id]))
     .filter((h) => h.enabled);
 
-  if (!eventHooks.length) return { exitCode: 0, steps: [] };
+  if (!eventHooks.length) return { exitCode: 0, steps: [], stdout: "" };
 
   // Topo sort within the event (orderChain only sees this event's hooks
   // so cross-event runAfter is rejected as "unknown hook").
@@ -251,18 +254,24 @@ async function runEvent(options) {
     await appendHookLog(logPath, {
       timestamp: new Date().toISOString(),
       event,
-      hookId: '<orchestrator>',
-      status: 'error',
+      hookId: "<orchestrator>",
+      status: "error",
       exitCode: null,
       durationMs: 0,
       reason: `chain ordering failed: ${err.message}`,
     }).catch(() => {});
-    return { exitCode: 1, steps: [] };
+    // Fail open: an orchestrator-internal error (e.g. a runAfter cycle in a
+    // malformed manifest) must NOT surface as a non-zero dispatcher exit —
+    // that would spuriously error every hook invocation. Match the sibling
+    // manifest-load-failure path above, which also returns exitCode 0.
+    return { exitCode: 0, steps: [], stdout: "" };
   }
 
   /** @type {ChainOutcome['steps']} */
   const steps = [];
   let chainExitCode = 0;
+  /** @type {string[]} Stdout of successful hooks, in chain order. */
+  const okStdout = [];
 
   for (const hook of ordered) {
     const resolved = resolveScriptPath(hook, agileflowDir);
@@ -274,7 +283,7 @@ async function runEvent(options) {
       runError = err;
       result = {
         exitCode: null,
-        stdout: '',
+        stdout: "",
         stderr: err && err.message ? err.message : String(err),
         durationMs: 0,
         timedOut: false,
@@ -282,7 +291,7 @@ async function runEvent(options) {
     }
     const ok = result.exitCode === 0 && !runError;
     /** @type {'ok'|'error'|'timeout'|'skipped'} */
-    const status = ok ? 'ok' : result.timedOut ? 'timeout' : 'error';
+    const status = ok ? "ok" : result.timedOut ? "timeout" : "error";
     const skippedByOnError = !ok && hook.skipOnError === true;
 
     await appendHookLog(logPath, {
@@ -304,13 +313,25 @@ async function runEvent(options) {
       durationMs: result.durationMs,
     });
 
+    // Only successful hooks contribute context. Trailing whitespace is
+    // trimmed per-hook so the blank-line join stays consistent. Guard the
+    // type defensively — an injected runHook could return a non-string
+    // stdout, and .trim()/.replace() would otherwise throw.
+    if (
+      ok &&
+      typeof result.stdout === "string" &&
+      result.stdout.trim() !== ""
+    ) {
+      okStdout.push(result.stdout.replace(/\s+$/, ""));
+    }
+
     if (!ok && !hook.skipOnError) {
       chainExitCode = 1;
       break;
     }
   }
 
-  return { exitCode: chainExitCode, steps };
+  return { exitCode: chainExitCode, steps, stdout: okStdout.join("\n\n") };
 }
 
 module.exports = {

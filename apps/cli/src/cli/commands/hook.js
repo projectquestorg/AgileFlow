@@ -21,6 +21,38 @@ const {
 const { InvalidArgumentError, fail } = require("../../lib/errors.js");
 
 /**
+ * Events whose stdout Claude Code injects into the model's context. For
+ * these, a non-empty chain stdout is re-emitted as a single JSON envelope
+ * so the captured hook output actually reaches the model. Every other
+ * event emits nothing to stdout.
+ * @type {Set<string>}
+ */
+const CONTEXT_EVENTS = new Set([
+  "SessionStart",
+  "PostCompact",
+  "UserPromptSubmit",
+]);
+
+/**
+ * Emit the chain's accumulated stdout as a single Claude Code context
+ * envelope line, if the event is context-capable and there is output.
+ * Uses JSON.stringify for correct escaping. Never throws.
+ * @param {string} event
+ * @param {import('../../runtime/hooks/orchestrator.js').ChainOutcome} result
+ */
+function emitContext(event, result) {
+  if (!CONTEXT_EVENTS.has(event)) return;
+  if (typeof result.stdout !== "string" || result.stdout.length === 0) return;
+  const envelope = {
+    hookSpecificOutput: {
+      hookEventName: event,
+      additionalContext: result.stdout,
+    },
+  };
+  process.stdout.write(JSON.stringify(envelope) + "\n");
+}
+
+/**
  * @param {string} event
  * @param {{ matcher?: string }} options
  */
@@ -73,7 +105,17 @@ async function hook(event, options = {}) {
     process.exit(0);
   }
 
+  // Re-emit captured hook stdout as a context envelope for context-capable
+  // events. Guard against any internal error so the dispatcher stays
+  // fail-open — a formatting failure must never block the session.
+  try {
+    emitContext(event, result);
+  } catch {
+    /* fail open — never block on a context-emit failure */
+  }
+
   // PostCompact and Stop must NOT block, regardless of chain outcome.
+  // PostCompact still emits its additionalContext line above BEFORE exiting 0.
   if (event === "PostCompact" || event === "Stop") {
     process.exit(0);
   }

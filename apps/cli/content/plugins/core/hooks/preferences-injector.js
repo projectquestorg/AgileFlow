@@ -62,7 +62,7 @@ function buildCapabilitiesBlock(cfg) {
   const caps = IDE_CAPABILITIES[primaryIde];
   if (!caps) return null;
 
-  const tick = (v) => (v ? "✓" : "✗");
+  const tick = (v) => (v ? "yes" : "no");
 
   const lines = [
     `## Runtime Capabilities (${caps.description})`,
@@ -169,43 +169,43 @@ function buildPreferencesBlock() {
   if (on("logicAudit")) {
     prefs.push(
       always
-        ? "- **Logic audit after every implementation** — suggest 🔍 Run logic audit as (Recommended) after every implementation."
-        : "- **Logic audit after implementation** — suggest 🔍 Run logic audit as (Recommended) after implementation.",
+        ? "- **Logic audit after every implementation** — suggest Run logic audit as (Recommended) after every implementation."
+        : "- **Logic audit after implementation** — suggest Run logic audit as (Recommended) after implementation.",
     );
   }
   if (on("flowAudit")) {
     prefs.push(
       always
-        ? "- **Flow audit after every implementation** — suggest 🔄 Run flow audit after every implementation. Include a Verify flow integrity step in plans."
-        : "- **Flow audit after implementation** — when user-facing flows were touched (forms, navigation, auth, CRUD), suggest 🔄 Run flow audit after implementation. Include a Verify flow integrity step in plans.",
+        ? "- **Flow audit after every implementation** — suggest Run flow audit after every implementation. Include a Verify flow integrity step in plans."
+        : "- **Flow audit after implementation** — when user-facing flows were touched (forms, navigation, auth, CRUD), suggest Run flow audit after implementation. Include a Verify flow integrity step in plans.",
     );
   }
   if (on("securityAudit")) {
     prefs.push(
       always
-        ? "- **Security audit after every implementation** — suggest 🔒 Run security audit after every implementation."
-        : "- **Security audit after implementation** — when auth, APIs, user input, file handling, or sensitive data were touched, suggest 🔒 Run security audit after implementation.",
+        ? "- **Security audit after every implementation** — suggest Run security audit after every implementation."
+        : "- **Security audit after implementation** — when auth, APIs, user input, file handling, or sensitive data were touched, suggest Run security audit after implementation.",
     );
   }
   if (on("performanceAudit")) {
     prefs.push(
       always
-        ? "- **Performance audit after every implementation** — suggest ⚡ Run performance audit after every implementation."
-        : "- **Performance audit after implementation** — when database queries, rendering, large data, or caching were touched, suggest ⚡ Run performance audit after implementation.",
+        ? "- **Performance audit after every implementation** — suggest Run performance audit after every implementation."
+        : "- **Performance audit after implementation** — when database queries, rendering, large data, or caching were touched, suggest Run performance audit after implementation.",
     );
   }
   if (on("accessibilityAudit")) {
     prefs.push(
       always
-        ? "- **Accessibility audit after every implementation** — suggest ♿ Run accessibility audit after every implementation."
-        : "- **Accessibility audit after implementation** — when UI components, forms, or interactive elements were changed, suggest ♿ Run accessibility audit after implementation.",
+        ? "- **Accessibility audit after every implementation** — suggest Run accessibility audit after every implementation."
+        : "- **Accessibility audit after implementation** — when UI components, forms, or interactive elements were changed, suggest Run accessibility audit after implementation.",
     );
   }
   if (on("legalAudit")) {
     prefs.push(
       always
-        ? "- **Legal audit after every implementation** — suggest ⚖️ Run legal audit after every implementation."
-        : "- **Legal audit after implementation** — when data collection, privacy, user consent, or compliance-sensitive code was touched, suggest ⚖️ Run legal audit after implementation.",
+        ? "- **Legal audit after every implementation** — suggest Run legal audit after every implementation."
+        : "- **Legal audit after implementation** — when data collection, privacy, user consent, or compliance-sensitive code was touched, suggest Run legal audit after implementation.",
     );
   }
   if (on("strictMode")) {
