@@ -35,6 +35,10 @@
  * @property {boolean} interactivePrompts - AskUserQuestion renders as interactive UI
  * @property {boolean} multiAgent - parallel agent spawning via Task tool
  * @property {boolean} sessionRestore - PostCompact hook fires to re-inject context
+ * @property {boolean} agentsMd - reads a root AGENTS.md file (portable
+ *           cross-IDE preference surface). Every supported IDE either reads
+ *           AGENTS.md directly or, for Claude Code, imports it from CLAUDE.md,
+ *           so this is `true` everywhere.
  * @property {string} settingsFile - path the installer writes IDE config to
  *           (relative to project root)
  * @property {string} skillsDir - path the installer mirrors SKILL.md files
@@ -52,6 +56,7 @@ const IDE_CAPABILITIES = {
     interactivePrompts: true,
     multiAgent: true,
     sessionRestore: true,
+    agentsMd: true,
     settingsFile: ".claude/settings.json",
     skillsDir: ".claude/skills",
     description: "Claude Code",
@@ -64,6 +69,7 @@ const IDE_CAPABILITIES = {
     interactivePrompts: false,
     multiAgent: false,
     sessionRestore: false,
+    agentsMd: true,
     settingsFile: ".cursor/settings.json",
     skillsDir: ".cursor/skills",
     description: "Cursor",
@@ -76,6 +82,7 @@ const IDE_CAPABILITIES = {
     interactivePrompts: false,
     multiAgent: false,
     sessionRestore: false,
+    agentsMd: true,
     settingsFile: ".windsurf/settings.json",
     skillsDir: ".windsurf/skills",
     description: "Windsurf",
@@ -95,6 +102,7 @@ const IDE_CAPABILITIES = {
     interactivePrompts: false,
     multiAgent: true,
     sessionRestore: false,
+    agentsMd: true,
     settingsFile: ".codex/config.toml",
     skillsDir: ".codex/skills",
     description: "Codex",
@@ -107,6 +115,7 @@ const IDE_CAPABILITIES = {
     interactivePrompts: false,
     multiAgent: true,
     sessionRestore: false,
+    agentsMd: true,
     settingsFile: ".antigravity/settings.json",
     skillsDir: ".antigravity/skills",
     description: "Antigravity",

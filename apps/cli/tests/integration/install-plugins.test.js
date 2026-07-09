@@ -588,6 +588,65 @@ describe("installPlugins integration", () => {
     );
   });
 
+  it("emits AGENTS.md, the CLAUDE.md import, and per-agent prefs idempotently", async () => {
+    const opts = {
+      discovered: discoverPlugins(),
+      userSelected: ["seo"],
+      agileflowDir,
+      cliVersion: "4.0.0-alpha.1",
+      config: {
+        plugins: {
+          core: { enabled: true, settings: { babysit: { mode: "full" } } },
+        },
+      },
+    };
+
+    const result = await installPlugins(opts);
+
+    // AGENTS.md written at the project root with the managed block + prefs.
+    const agentsMdPath = path.join(scratch, "AGENTS.md");
+    expect(result.agentsMdPath).toBe(agentsMdPath);
+    const agentsText = fs.readFileSync(agentsMdPath, "utf8");
+    expect(agentsText).toContain("BEGIN AGILEFLOW MANAGED BLOCK");
+    expect(agentsText).toContain("## User Preferences (agileflow full mode)");
+
+    // CLAUDE.md carries the @AGENTS.md import.
+    const claudeMdPath = path.join(scratch, "CLAUDE.md");
+    expect(result.claudeMdPath).toBe(claudeMdPath);
+    expect(fs.readFileSync(claudeMdPath, "utf8")).toContain("@AGENTS.md");
+
+    // Each mirrored subagent got the managed prefs block.
+    expect(result.agentsPrefsInjected.length).toBeGreaterThan(0);
+    const seoAgent = path.join(
+      scratch,
+      ".claude/agents/agileflow/seo-consensus.md",
+    );
+    const seoText = fs.readFileSync(seoAgent, "utf8");
+    expect(seoText).toContain("BEGIN AGILEFLOW MANAGED BLOCK");
+    expect(seoText).toContain("## User Preferences (agileflow full mode)");
+
+    // User content added outside the AGENTS.md markers survives a re-install.
+    fs.writeFileSync(
+      agentsMdPath,
+      "# Hand-written\nkeep me\n\n" + agentsText,
+      "utf8",
+    );
+    await installPlugins(opts);
+    const agentsText2 = fs.readFileSync(agentsMdPath, "utf8");
+    expect(agentsText2).toContain("# Hand-written");
+    expect(agentsText2).toContain("keep me");
+    // Managed block still appears exactly once.
+    expect(agentsText2.split("BEGIN AGILEFLOW MANAGED BLOCK").length - 1).toBe(
+      1,
+    );
+
+    // Re-install does not duplicate the @AGENTS.md import or the agent block.
+    const claudeText2 = fs.readFileSync(claudeMdPath, "utf8");
+    expect(claudeText2.split("@AGENTS.md").length - 1).toBe(1);
+    const seoText2 = fs.readFileSync(seoAgent, "utf8");
+    expect(seoText2.split("BEGIN AGILEFLOW MANAGED BLOCK").length - 1).toBe(1);
+  });
+
   it("throws on dependency cycles", async () => {
     // Build a fake plugin set with an a -> b -> a cycle.
     const a = {

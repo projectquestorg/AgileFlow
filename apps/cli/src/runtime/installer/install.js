@@ -52,6 +52,11 @@ const {
   mirrorClaudeCodeAgents,
   unmirrorClaudeCodeAgents,
 } = require("../ide/claude-code-content.js");
+const {
+  writeAgentsMd,
+  ensureClaudeMdImport,
+  injectAgentPrefs,
+} = require("../ide/agents-md.js");
 const { loadSkill } = require("../skills/validator.js");
 const {
   resolveSkillsDir,
@@ -89,6 +94,9 @@ const {
  * @property {Array<{skillId:string, error:string}>} [skillsSkipped] - skills with missing source
  * @property {string[]} agentsMirrored - Claude Code subagents mirrored from enabled plugins
  * @property {Array<{id:string, error:string}>} [agentsSkipped] - agents with missing source
+ * @property {string[]} [agentsPrefsInjected] - agent .md files that had the managed prefs block written/refreshed
+ * @property {string} [agentsMdPath] - absolute path of the written canonical AGENTS.md
+ * @property {string} [claudeMdPath] - absolute path of the CLAUDE.md carrying the @AGENTS.md import
  * @property {string[]} docsScaffolded - doc dirs created on first install
  * @property {string[]} learningsScaffolded - skill ids whose learnings file was newly created
  * @property {string[]} ides - the target IDEs for this install
@@ -455,11 +463,20 @@ async function installPlugins(options) {
   let settingsPath = null;
   let agentsMirrored = [];
   let agentsSkipped = [];
+  /** @type {string[]} */
+  let agentsPrefsInjected = [];
   if (targetIdes.includes("claude-code")) {
     settingsPath = await writeClaudeCodeSettings(projectRoot);
     const agentMirror = await mirrorClaudeCodeAgents(ordered, projectRoot);
     agentsMirrored = agentMirror.mirrored;
     agentsSkipped = agentMirror.skipped;
+    // Bake the babysit preference block into each mirrored subagent. They
+    // inherit CLAUDE.md but never receive SessionStart hook output, so this
+    // is the only path that reaches them. Idempotent, marker-delimited.
+    agentsPrefsInjected = await injectAgentPrefs(
+      path.join(projectRoot, ".claude", "agents", "agileflow"),
+      config,
+    );
   } else {
     await removeClaudeCodeSettings(projectRoot);
     await unmirrorClaudeCodeAgents(projectRoot);
@@ -529,6 +546,19 @@ async function installPlugins(options) {
       ? await scaffoldSkillLearnings(ordered, projectRoot)
       : [];
 
+  // 12. Emit the portable AGENTS.md and bridge it into CLAUDE.md. AGENTS.md
+  //     is universal — every supported IDE either reads it directly or, for
+  //     Claude Code, imports it via the @AGENTS.md line in CLAUDE.md. Both
+  //     writes are idempotent and preserve user content outside the managed
+  //     marker blocks.
+  const agentsMdPath = await writeAgentsMd(projectRoot, config);
+  // The CLAUDE.md @AGENTS.md bridge only matters for Claude Code — the one
+  // supported tool that does not read AGENTS.md natively. Don't create a
+  // CLAUDE.md for projects that never target it.
+  const claudeMdPath = targetIdes.includes("claude-code")
+    ? await ensureClaudeMdImport(projectRoot)
+    : null;
+
   return {
     ordered: ordered.map((p) => p.id),
     autoEnabled,
@@ -545,6 +575,9 @@ async function installPlugins(options) {
     skillsSkipped,
     agentsMirrored,
     agentsSkipped,
+    agentsPrefsInjected,
+    agentsMdPath,
+    claudeMdPath,
     docsScaffolded,
     learningsScaffolded,
     ides: targetIdes,
