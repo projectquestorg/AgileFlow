@@ -29,6 +29,7 @@ const { pickIdes } = require("../wizard/ide-picker.js");
 const { pickBehaviors } = require("../wizard/behaviors-picker.js");
 const { pickBabysitMode } = require("../wizard/babysit-mode-picker.js");
 const { pickLearnings } = require("../wizard/learnings-picker.js");
+const { pickSetupMode } = require("../wizard/setup-mode-picker.js");
 const { checkStaleArtifacts, applyStaleFix } = require("./doctor.js");
 const {
   SUPPORTED_IDES,
@@ -448,6 +449,96 @@ async function setupNonInteractive(options, cwd) {
 }
 
 /**
+ * Shared tail for both interactive paths (Quick start and Customize):
+ * write the config, run the installer, offer stale-artifact cleanup, and
+ * print the outro. Both paths reach the same end state so the summary and
+ * install feedback stay identical.
+ *
+ * @param {any} p - resolved @clack/prompts module (real or injected stub)
+ * @param {{ scope: 'project' | 'global', configRoot: string, agileflowDir: string, ideRoot: string }} roots
+ * @param {import('../../runtime/config/defaults.js').AgileflowConfig} next - merged config to write
+ * @param {{
+ *   scope: 'project' | 'global',
+ *   ides: string[],
+ *   plugins: Record<string, { enabled: boolean }>,
+ *   behaviors: import('../../runtime/config/defaults.js').Behaviors,
+ *   learnings: { enabled: boolean },
+ *   babysit: { mode: string, features?: Record<string, boolean> },
+ *   anyHooks: boolean,
+ * }} sel
+ */
+async function finalizeInteractiveSetup(p, roots, next, sel) {
+  const { scope, ides, plugins, behaviors, learnings, babysit, anyHooks } = sel;
+
+  const writeSpinner = p.spinner();
+  writeSpinner.start("Writing agileflow.config.json");
+  const file = await writeConfigWithFeedback(roots.configRoot, next, {
+    interactive: true,
+    spinner: writeSpinner,
+  });
+  writeSpinner.stop(`Config written → ${file}`);
+
+  const enabledList = Object.entries(plugins)
+    .filter(([, v]) => v && v.enabled)
+    .map(([id]) => id);
+
+  const installSpinner = p.spinner();
+  installSpinner.start(`Installing ${enabledList.length} skill pack(s)`);
+  const installResult = await runInstallWithFeedback(
+    enabledList,
+    roots,
+    ides,
+    behaviors,
+    Boolean(learnings && learnings.enabled),
+    next,
+    { interactive: true, spinner: installSpinner },
+  );
+  installSpinner.stop(
+    `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
+  );
+
+  // Stale-artifact check — fires after a successful install so users
+  // get prompted at the moment they're paying attention to their
+  // install state. Scan the resolved install root so a global-scope
+  // install checks ~/.agileflow, not cwd. Forward the injected
+  // prompts stub so tests don't hit the real interactive confirm.
+  const cleanup = await runPostInstallCleanup(
+    roots.ideRoot,
+    { interactive: true },
+    { prompts: p },
+  );
+
+  // Surface behaviors state in the outro. With behaviors gated, a user
+  // who deselected all four ends up with zero hooks running — they
+  // need to know that explicitly, not infer it from "X plugins enabled".
+  const activeBehaviors = anyHooks
+    ? Object.entries(behaviors || {})
+        .filter(([, v]) => v)
+        .map(([k]) => k)
+    : [];
+  const behaviorsLine = anyHooks
+    ? activeBehaviors.length
+      ? `behaviors active: ${activeBehaviors.join(", ")}`
+      : "behaviors active: (none — no hooks will run; re-run setup to enable)"
+    : `hooks not supported by ${ides.join(", ")} — behaviors skipped`;
+
+  p.outro(
+    [
+      `${enabledList.length} skill pack(s) enabled: ${enabledList.join(", ")}`,
+      `scope: ${scope}`,
+      `babysit mode: ${babysit.mode}`,
+      behaviorsLine,
+      installResult.ops.preserved
+        ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
+        : "",
+      cleanup.summary || "",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  );
+}
+
+/**
  * Interactive (wizard) setup. Walks the user through scope, IDEs,
  * plugins, behaviors, babysit mode, and learnings, then writes config,
  * installs, and prompts for stale-artifact cleanup before the outro.
@@ -463,6 +554,7 @@ async function setupNonInteractive(options, cwd) {
  * @param {string} cwd
  * @param {{
  *   prompts?: any,
+ *   pickSetupMode?: any,
  *   pickInstallScope?: any,
  *   pickIdes?: any,
  *   pickPlugins?: any,
@@ -473,6 +565,7 @@ async function setupNonInteractive(options, cwd) {
  */
 async function setupInteractive(options, cwd, deps = {}) {
   const p = deps.prompts || prompts;
+  const doSetupMode = deps.pickSetupMode || pickSetupMode;
   const doScope = deps.pickInstallScope || pickInstallScope;
   const doIdes = deps.pickIdes || pickIdes;
   const doPlugins = deps.pickPlugins || pickPlugins;
@@ -485,6 +578,84 @@ async function setupInteractive(options, cwd, deps = {}) {
   // eslint-disable-next-line no-console
   console.log("\n" + logoBanner(pkg.version) + "\n");
   p.intro("agileflow setup");
+
+  // Two-path entry: a one-confirm Quick start for the common case, or the
+  // full Customize wizard. Quick start never runs the individual pickers.
+  const mode = await doSetupMode({ prompts: p });
+  if (mode === "quick") {
+    const scope = initialScope;
+    const roots = installPathsForScope(scope, cwd);
+    // Quick start applies fresh defaults. Detect an existing on-disk config
+    // so we can warn before overwriting it — silently replacing a user's
+    // customized ide/plugins/babysit settings would be data loss.
+    let existing = null;
+    try {
+      existing = await loadConfig(roots.configRoot);
+    } catch {
+      existing = null;
+    }
+    const willOverwrite = Boolean(existing && existing.source === "file");
+    const base = defaultConfig();
+    /** @type {string[]} */
+    const ides = ["claude-code"];
+    const plugins = base.plugins;
+    const behaviors = base.behaviors;
+    const learnings = base.learnings;
+    const babysit = { mode: "light" };
+
+    /** @type {import('../../runtime/config/defaults.js').AgileflowConfig} */
+    const next = {
+      ...base,
+      plugins,
+      install: { scope },
+      behaviors,
+      learnings,
+      ide: { targets: /** @type {any} */ (ides) },
+    };
+    next.plugins.core = next.plugins.core || { enabled: true };
+    next.plugins.core.settings = {
+      ...(next.plugins.core.settings || {}),
+      babysit,
+    };
+
+    const enabledList = Object.entries(plugins)
+      .filter(([, v]) => v && v.enabled)
+      .map(([id]) => id);
+    p.log.info(
+      `Quick start defaults — scope: ${scope}, ide: ${ides.join(", ")}, skill packs: ${enabledList.join(", ")}, babysit: ${babysit.mode}`,
+    );
+    if (willOverwrite) {
+      p.log.warn(
+        `An existing config was found at ${existing.path} — Quick start will REPLACE it with these defaults. Choose Customize to keep your current settings.`,
+      );
+    }
+
+    const confirmed = await p.confirm({
+      message: willOverwrite
+        ? "Replace your existing config with these defaults?"
+        : "Install AgileFlow with these defaults?",
+      // Default to "no" when this would overwrite an existing config so an
+      // accidental Enter can't discard the user's settings.
+      initialValue: !willOverwrite,
+    });
+    if (p.isCancel(confirmed) || !confirmed) {
+      p.cancel("Setup cancelled. No changes made.");
+      process.exit(1);
+    }
+
+    const anyHooks = ides.some((id) => capabilitiesFor(id).hooks);
+    await finalizeInteractiveSetup(p, roots, next, {
+      scope,
+      ides,
+      plugins,
+      behaviors,
+      learnings,
+      babysit,
+      anyHooks,
+    });
+    return;
+  }
+
   const scope = await doScope(initialScope);
   const roots = installPathsForScope(scope, cwd);
 
@@ -557,72 +728,15 @@ async function setupInteractive(options, cwd, deps = {}) {
     babysit,
   };
 
-  const writeSpinner = p.spinner();
-  writeSpinner.start("Writing agileflow.config.json");
-  const file = await writeConfigWithFeedback(roots.configRoot, next, {
-    interactive: true,
-    spinner: writeSpinner,
-  });
-  writeSpinner.stop(`Config written → ${file}`);
-
-  const enabledList = Object.entries(plugins)
-    .filter(([, v]) => v && v.enabled)
-    .map(([id]) => id);
-
-  const installSpinner = p.spinner();
-  installSpinner.start(`Installing ${enabledList.length} skill pack(s)`);
-  const installResult = await runInstallWithFeedback(
-    enabledList,
-    roots,
+  await finalizeInteractiveSetup(p, roots, next, {
+    scope,
     ides,
+    plugins,
     behaviors,
-    Boolean(learnings && learnings.enabled),
-    next,
-    { interactive: true, spinner: installSpinner },
-  );
-  installSpinner.stop(
-    `Installed: created=${installResult.ops.created} updated=${installResult.ops.updated} unchanged=${installResult.ops.unchanged} preserved=${installResult.ops.preserved} removed=${installResult.ops.removed}`,
-  );
-
-  // Stale-artifact check — fires after a successful install so users
-  // get prompted at the moment they're paying attention to their
-  // install state. Scan the resolved install root so a global-scope
-  // install checks ~/.agileflow, not cwd. Forward the injected
-  // prompts stub so tests don't hit the real interactive confirm.
-  const cleanup = await runPostInstallCleanup(
-    roots.ideRoot,
-    { interactive: true },
-    { prompts: p },
-  );
-
-  // Surface behaviors state in the outro. With behaviors gated, a user
-  // who deselected all four ends up with zero hooks running — they
-  // need to know that explicitly, not infer it from "X plugins enabled".
-  const activeBehaviors = anyHooks
-    ? Object.entries(behaviors || {})
-        .filter(([, v]) => v)
-        .map(([k]) => k)
-    : [];
-  const behaviorsLine = anyHooks
-    ? activeBehaviors.length
-      ? `behaviors active: ${activeBehaviors.join(", ")}`
-      : "behaviors active: (none — no hooks will run; re-run setup to enable)"
-    : `hooks not supported by ${ides.join(", ")} — behaviors skipped`;
-
-  p.outro(
-    [
-      `${enabledList.length} skill pack(s) enabled: ${enabledList.join(", ")}`,
-      `scope: ${scope}`,
-      `babysit mode: ${babysit.mode}`,
-      behaviorsLine,
-      installResult.ops.preserved
-        ? `${installResult.ops.preserved} file(s) preserved (your edits) — review .agileflow/_cfg/updates/`
-        : "",
-      cleanup.summary || "",
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  );
+    learnings,
+    babysit,
+    anyHooks,
+  });
 }
 
 /**

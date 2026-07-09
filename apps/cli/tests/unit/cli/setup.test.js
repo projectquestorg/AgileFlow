@@ -16,6 +16,7 @@ import setup, {
   setupNonInteractive,
   setupInteractive,
 } from "../../../src/cli/commands/setup.js";
+import { defaultConfig } from "../../../src/runtime/config/defaults.js";
 
 function scratch() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "af-setup-"));
@@ -193,6 +194,7 @@ function makePromptsStub() {
     cancel: vi.fn(),
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), message: vi.fn() },
     spinner: () => ({ start: vi.fn(), stop: vi.fn() }),
+    select: vi.fn().mockResolvedValue("customize"),
     confirm: vi.fn().mockResolvedValue(false),
     isCancel: vi.fn(() => false),
   };
@@ -201,6 +203,7 @@ function makePromptsStub() {
 function makeWizardStubs(overrides = {}) {
   return {
     prompts: makePromptsStub(),
+    pickSetupMode: vi.fn().mockResolvedValue("customize"),
     pickInstallScope: vi.fn().mockResolvedValue("project"),
     pickIdes: vi.fn().mockResolvedValue(["claude-code"]),
     pickPlugins: vi.fn().mockResolvedValue({ core: { enabled: true } }),
@@ -321,5 +324,121 @@ describe("setupInteractive() with injected stubs", () => {
     expect(outroArg).toMatch(/left in place/);
     // Files still there since cleanup declined.
     expect(fs.existsSync(path.join(cwd, ".agileflow", "experts"))).toBe(true);
+  });
+
+  it("quick start writes a default config, installs, and skips the other pickers", async () => {
+    const prompts = makePromptsStub();
+    // User confirms the one-line Quick start summary.
+    prompts.confirm = vi.fn().mockResolvedValue(true);
+    const deps = makeWizardStubs({
+      prompts,
+      pickSetupMode: vi.fn().mockResolvedValue("quick"),
+    });
+
+    await setupInteractive({}, cwd, deps);
+
+    const config = JSON.parse(
+      fs.readFileSync(path.join(cwd, "agileflow.config.json"), "utf8"),
+    );
+    // Recommended defaults applied.
+    expect(config.plugins.core.enabled).toBe(true);
+    expect(config.ide.targets).toEqual(["claude-code"]);
+    expect(config.install.scope).toBe("project");
+    expect(config.plugins.core.settings.babysit).toEqual({ mode: "light" });
+    expect(config.behaviors.loadContext).toBe(true);
+    expect(config.learnings.enabled).toBe(true);
+
+    // Quick start must NOT run any of the individual pickers.
+    expect(deps.pickSetupMode).toHaveBeenCalledTimes(1);
+    expect(deps.pickInstallScope).not.toHaveBeenCalled();
+    expect(deps.pickIdes).not.toHaveBeenCalled();
+    expect(deps.pickPlugins).not.toHaveBeenCalled();
+    expect(deps.pickBehaviors).not.toHaveBeenCalled();
+    expect(deps.pickBabysitMode).not.toHaveBeenCalled();
+    expect(deps.pickLearnings).not.toHaveBeenCalled();
+    // Shared tail still runs (single confirm + outro).
+    expect(prompts.confirm).toHaveBeenCalledTimes(1);
+    expect(prompts.outro).toHaveBeenCalledTimes(1);
+  });
+
+  it("quick start warns and defaults the confirm to no when it would overwrite an existing config", async () => {
+    // A customized config already exists on disk (codex, not the default).
+    const prior = defaultConfig();
+    prior.ide = { targets: ["codex"] };
+    fs.writeFileSync(
+      path.join(cwd, "agileflow.config.json"),
+      JSON.stringify(prior, null, 2),
+      "utf8",
+    );
+    const prompts = makePromptsStub();
+    prompts.confirm = vi.fn().mockResolvedValue(true);
+    const deps = makeWizardStubs({
+      prompts,
+      pickSetupMode: vi.fn().mockResolvedValue("quick"),
+    });
+
+    await setupInteractive({}, cwd, deps);
+
+    // The user is warned the existing config will be replaced...
+    expect(prompts.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("REPLACE"),
+    );
+    // ...and the confirm defaults to "no" so an accidental Enter can't
+    // discard their settings.
+    expect(prompts.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ initialValue: false }),
+    );
+  });
+
+  it("quick start honours --scope global from the flag", async () => {
+    const prompts = makePromptsStub();
+    prompts.confirm = vi.fn().mockResolvedValue(true);
+    const home = scratch();
+    const deps = makeWizardStubs({
+      prompts,
+      pickSetupMode: vi.fn().mockResolvedValue("quick"),
+    });
+    const spy = vi.spyOn(os, "homedir").mockReturnValue(home);
+    try {
+      await setupInteractive({ scope: "global" }, cwd, deps);
+      const config = JSON.parse(
+        fs.readFileSync(
+          path.join(home, ".agileflow", "agileflow.config.json"),
+          "utf8",
+        ),
+      );
+      expect(config.install.scope).toBe("global");
+    } finally {
+      spy.mockRestore();
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it("quick start aborts when the user declines the confirm", async () => {
+    const prompts = makePromptsStub();
+    prompts.confirm = vi.fn().mockResolvedValue(false);
+    const deps = makeWizardStubs({
+      prompts,
+      pickSetupMode: vi.fn().mockResolvedValue("quick"),
+    });
+    await expect(setupInteractive({}, cwd, deps)).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(prompts.cancel).toHaveBeenCalled();
+    expect(fs.existsSync(path.join(cwd, "agileflow.config.json"))).toBe(false);
+  });
+
+  it("customize path runs the full picker flow", async () => {
+    const deps = makeWizardStubs({
+      pickSetupMode: vi.fn().mockResolvedValue("customize"),
+    });
+    await setupInteractive({}, cwd, deps);
+    expect(deps.pickSetupMode).toHaveBeenCalledTimes(1);
+    expect(deps.pickInstallScope).toHaveBeenCalledTimes(1);
+    expect(deps.pickIdes).toHaveBeenCalledTimes(1);
+    expect(deps.pickPlugins).toHaveBeenCalledTimes(1);
+    expect(deps.pickBehaviors).toHaveBeenCalledTimes(1);
+    expect(deps.pickBabysitMode).toHaveBeenCalledTimes(1);
+    expect(deps.pickLearnings).toHaveBeenCalledTimes(1);
   });
 });
