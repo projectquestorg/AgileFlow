@@ -1,0 +1,54 @@
+---
+title: Updates and conflicts
+description: "How AgileFlow updates skills without ever silently overwriting your edits."
+---
+
+Every managed skill is recorded in `agileflow.lock` with `baseHash`, the hash of the directory exactly as AgileFlow installed it. When you run `agileflow update`:
+
+- If the current files still match `baseHash`, the skill is **clean** and is replaced with the new version.
+- If they differ, the skill has **local modifications** and is never overwritten without your choice.
+
+There is no stash directory and no hidden "protected" state.
+
+## Interactive
+
+```text
+diagnosing-bugs has local modifications.
+Upstream:
+  1.0.0 -> 1.1.0
+Choose:
+  Fork   keep your customized skill and stop tracking upstream
+  Reset  discard local edits and install 1.1.0
+  Skip   leave this skill unchanged for now
+  Diff   compare your copy with the installed base and new upstream
+```
+
+**Diff** prints two diffs (your changes against the installed base, and upstream's changes between the two versions) and asks again.
+
+## Non-interactive (CI)
+
+```bash
+agileflow update --non-interactive
+```
+
+Modified skills are skipped, never overwritten:
+
+```text
+SKIPPED diagnosing-bugs
+Reason: local modifications
+Run locally:
+  agileflow diff diagnosing-bugs
+  agileflow fork diagnosing-bugs
+or
+  agileflow update --reset diagnosing-bugs
+```
+
+The command exits with status **3** when it skipped a modified skill, so CI can notice.
+
+## Other cases
+
+- **Removed from `agileflow.yaml`:** `update` removes the skill if it is clean. If it was modified, its files stay as an unmanaged skill.
+- **Source changed** (for example from the registry to a git URL): treated as an update from the new source, with the same modified-skill rules.
+- **Forks** are never updated; `update` tells you when upstream has a newer version.
+- **Skills that disappear from the lockfile** after `git pull`: `sync` removes them from your machine only if they are unmodified.
+- **Manual `agileflow.yaml` edits** that need new versions: `sync` refuses and tells you to run `agileflow update`.

@@ -1,326 +1,65 @@
 ---
-title: /configure
-description: Configure AgileFlow features with hierarchical menus, profiles, and hooks
+title: agileflow configure
+description: "Change skill activation, enable or disable skills and providers, question preferences, and the optional Codex structured-questions setting."
 ---
 
-# /configure
+Run `agileflow configure` for an interactive menu (Skills, Providers, Structured questions, Personal defaults, Project defaults), or use the direct forms below. Changes are applied immediately (skills are re-rendered and links updated).
 
-Manage AgileFlow features with preset profiles, enable/disable individual options, and configure project infrastructure with interactive hierarchical menus.
-
-## Quick Start
+## Skills
 
 ```bash
-/agileflow:configure
+agileflow configure skill interviewing-requirements --activation manual
+agileflow configure skill reviewing-changes --disable
+agileflow configure skill reviewing-changes --enable
 ```
 
-This opens an interactive configuration menu with 5 main categories: Profiles, Features, Sessions, Infrastructure, and Maintenance.
+- **Activation:** `auto` lets the provider load the skill when relevant; `manual` limits it to explicit invocation. See [Providers](/concepts/providers#manual-skills) for how each provider enforces manual skills.
+- **Disable:** removes the skill's files and links but keeps it in `agileflow.yaml` and the lockfile, so re-enabling restores the same version. A modified skill's files are kept.
 
-You can also run with specific options:
+Locally owned skills (forks) are never rewritten; add or remove the manual-only flags in their `SKILL.md` yourself.
+
+## Providers
 
 ```bash
-/agileflow:configure --profile=full
-/agileflow:configure --enable=sessionstart,precompact
-/agileflow:configure --detect
+agileflow configure provider claude off    # remove AgileFlow-created Claude links
+agileflow configure provider claude on     # always create them
+agileflow configure provider claude auto   # only when Claude Code is detected (default)
 ```
 
-## Workflow
-
-The configure command follows this workflow:
-
-1. **Detect** - Check current configuration status and any issues
-2. **Handle Issues** - If format problems detected, offer migration
-3. **Main Menu** - Choose from 5 categories (max 4 options per menu)
-4. **Sub-Menu** - Select specific feature or configuration
-5. **Apply** - Changes are applied and tracked
-
-## Parameters
-
-| Parameter | Description |
-|-----------|-------------|
-| `--detect` | Check current configuration status (run this first) |
-| `--profile=<name>` | Apply preset profile: `full`, `basic`, `minimal`, `experimental`, or `none` |
-| `--enable=<features>` | Comma-separated features to enable |
-| `--disable=<features>` | Comma-separated features to disable |
-| `--migrate` | Fix format issues in existing configuration |
-| `--upgrade` | Update scripts to latest AgileFlow version |
-| `--repair` | Restore accidentally deleted scripts |
-| `--list-profiles` | List all saved custom profiles |
-| `--save-profile=<name>` | Save current settings as reusable profile |
-| `--archival-days=<N>` | Days before archiving completed stories (default: 7) |
-
-## Configuration Profiles
-
-Choose a preset profile or create custom ones:
-
-| Profile | SessionStart | PreCompact | RalphLoop | SelfImprove | Archival | StatusLine | Full Injection |
-|---------|-------------|------------|-----------|-------------|----------|------------|----------------|
-| `full` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `basic` | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `minimal` | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `experimental` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ YES |
-| `none` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-
-**Experimental Profile**: Enables all features like `full`, but injects **entire command files** during context compaction (~2000-5000 tokens) instead of compact summaries (~200-500 tokens). Use when commands aren't being followed well after compaction, or if you have plenty of context budget.
-
-## Available Features
-
-### Hooks (Event-Driven Automation)
-
-- **SessionStart**: Display project info and context on session start
-- **PreCompact**: Preserve important context when conversation compacts
-- **RalphLoop**: Stop hook - run tests automatically, loop until epic complete
-- **SelfImprove**: Stop hook - auto-update agent expertise from your work
-
-### Other Features
-
-- **Archival**: Auto-archive completed stories older than threshold (default: 7 days)
-- **StatusLine**: Custom Claude Code status bar showing current story and progress
-- **AskUserQuestion**: End all commands with guided options instead of text questions
-- **Tmux Auto-Spawn**: Auto-start Claude in tmux session with `af` / `agileflow` commands
-- **Shell Aliases**: Add `af` and `agileflow` commands to ~/.bashrc and ~/.zshrc
-- **Auto-Update**: Automatically update AgileFlow when new version available
-- **CLAUDE.md Rules**: Add /babysit context preservation rules to CLAUDE.md
-
-## Preset Profiles
-
-### Quick Setup
-
-Apply a preset profile with one command:
+## Question preference
 
 ```bash
-# Full - all features enabled (Recommended)
-/agileflow:configure --profile=full
-
-# Basic - core hooks + archival
-/agileflow:configure --profile=basic
-
-# Minimal - just welcome message and archival
-/agileflow:configure --profile=minimal
-
-# Experimental - all features + full command file injection
-/agileflow:configure --profile=experimental
-
-# None - disable all features
-/agileflow:configure --profile=none
+agileflow configure question-preference prefer             # this project
+agileflow configure question-preference minimize --global  # personal default for new projects
 ```
 
-### Custom Profiles
+| Value | Effect |
+| --- | --- |
+| `provider-default` | Nothing special (default). |
+| `prefer` | Skills that interact with you get one line asking the agent to use structured questions for decisions that materially change the result. |
+| `minimize` | Those skills get one line asking the agent to assume reasonably and ask only when blocked. |
 
-Save your current settings as a reusable profile:
+It is a single line added to interactive skills (such as `interviewing-requirements`), not a global prompt.
+
+## Codex structured questions
 
 ```bash
-# Save current setup
-/agileflow:configure --save-profile=my-backend-setup --description="Backend dev setup"
-
-# Apply custom profile
-/agileflow:configure --profile=my-backend-setup
-
-# List all custom profiles
-/agileflow:configure --list-profiles --verbose
-
-# Export profile to share
-/agileflow:configure --export-profile=my-backend-setup --output=profile.json
-
-# Import profile from file
-/agileflow:configure --import-profile=profile.json
+agileflow configure codex-questions status
+agileflow configure codex-questions enable
+agileflow configure codex-questions disable
 ```
 
-## Interactive Menu System
+Codex can expose `request_user_input` during normal (Default mode) work through an experimental feature flag. AgileFlow does not need it and never enables it on its own.
 
-Run without parameters to open the interactive menu:
-
-```bash
-/agileflow:configure
-```
-
-The menu has **5 main categories** with hierarchical sub-menus (max 4 options per level):
-
-1. **Profiles** - Apply preset, apply custom, save current, manage
-2. **Features** - Enable/disable hooks and other features
-3. **Sessions** - Configure default startup mode for new sessions
-4. **Infrastructure** - Set up Visual E2E, Damage Control, CI/CD, quality gates
-5. **Maintenance** - Fix format issues, upgrade scripts, repair missing files
-
-## Maintenance Commands
-
-### Check Status (Always Run First)
-
-```bash
-/agileflow:configure --detect
-```
-
-Shows current configuration, installed version, and any issues (format problems, outdated scripts).
-
-### Fix Format Issues
-
-```bash
-/agileflow:configure --migrate
-```
-
-Automatically converts old configuration formats to new Claude Code format. Creates backup at `.claude/settings.json.backup`.
-
-### Update Scripts
-
-```bash
-/agileflow:configure --upgrade
-```
-
-Re-deploy all enabled features with latest AgileFlow version scripts.
-
-### Repair Missing Scripts
-
-```bash
-/agileflow:configure --repair
-```
-
-Restore accidentally deleted scripts. Use after accidental deletions or corrupted installations.
-
-### List Installed Scripts
-
-```bash
-/agileflow:configure --list-scripts
-```
-
-Shows all scripts with status: present, modified, or missing.
-
-## Examples
-
-### Enable Specific Features
-
-```bash
-/agileflow:configure --enable=sessionstart,precompact,archival
-```
-
-### Disable Feature
-
-```bash
-/agileflow:configure --disable=statusline
-```
-
-### Custom Archival Threshold
-
-```bash
-/agileflow:configure --enable=archival --archival-days=14
-```
-
-Archive completed stories after 14 days instead of the default 7 days.
-
-### Add Shell Aliases
-
-```bash
-/agileflow:configure --enable=shellaliases
-```
-
-Adds `af` and `agileflow` commands to ~/.bashrc and ~/.zshrc for faster access.
-
-### Troubleshoot Configuration
-
-```bash
-# 1. Check current status
-/agileflow:configure --detect
-
-# 2. If issues found, migrate
-/agileflow:configure --migrate
-
-# 3. List all scripts
-/agileflow:configure --list-scripts
-
-# 4. Repair if needed
-/agileflow:configure --repair
-
-# 5. Open menu for manual config
-/agileflow:configure
-```
-
-## Hooks System
-
-Each hook automates specific events in your development workflow:
-
-| Hook | Trigger | What It Does |
-|------|---------|-------------|
-| **SessionStart** | Session begins | Display project status, recent commits, active stories |
-| **PreCompact** | Conversation compacts | Preserve important context, rules, current state |
-| **RalphLoop** | Claude stops (Stop hook) | Run tests → if pass, mark story done & load next; if fail, show errors |
-| **SelfImprove** | Claude stops (Stop hook) | Analyze git changes, detect domain, update agent expertise |
-
-## Storage Locations
-
-Configuration is tracked in two files:
-
-1. **`.claude/settings.json`** - Hooks and features in Claude Code format
-   - SessionStart hook
-   - PreCompact hook
-   - Other feature configuration
-
-2. **`docs/00-meta/agileflow-metadata.json`** - Project-level metadata
-   - Feature versions and timestamps
-   - Archival settings (enabled, threshold_days)
-   - Custom profiles
-   - Quality gate configuration
-
-## Output After Configuration
+`enable` shows exactly what will change and asks first:
 
 ```text
-✅ Configuration Complete!
-
-Enabled:
-  ✅ sessionstart (v2.94.1)
-  ✅ precompact (v2.94.1)
-  ✅ archival (v2.94.1)
-
-Disabled:
-  ❌ statusline
-
-═══════════════════════════════════════════════════════
-🔴 RESTART CLAUDE CODE NOW!
-   Quit completely, wait 5 seconds, restart
-═══════════════════════════════════════════════════════
+Only this setting will change:
+~/.codex/config.toml
+[features]
+default_mode_request_user_input = true
 ```
 
-**Important**: You must completely quit and restart Claude Code for changes to take effect.
+Only that one line changes; comments and every other setting in the file stay byte-for-byte identical. AgileFlow records the previous state (not set, `false`, or `true`) in `~/.config/agileflow/state.yaml`. `disable` restores exactly that previous state, including removing the `[features]` table or the file if AgileFlow created them. If you set the flag yourself, `disable` leaves it alone.
 
-## Troubleshooting
-
-### Format Issues Detected
-
-If you see `⚠️ INVALID FORMAT` warnings:
-
-```bash
-/agileflow:configure --migrate
-```
-
-Automatically fixes format issues and creates backup at `.claude/settings.json.backup`.
-
-### Outdated Scripts
-
-If you see `🔄 OUTDATED` warnings:
-
-```bash
-/agileflow:configure --upgrade
-```
-
-Re-deploys all enabled features with latest versions.
-
-### Missing Scripts
-
-If scripts are accidentally deleted:
-
-```bash
-/agileflow:configure --repair
-```
-
-Restores all missing scripts. Use `--repair=<feature>` to repair specific feature only.
-
-## Best Practices
-
-1. **Always run --detect first** - See current state before making changes
-2. **Use profiles for team setup** - Save and share custom profiles with teammates
-3. **Enable incrementally** - Start with `basic` profile, add features as needed
-4. **Backup before major changes** - Migration automatically creates backups
-5. **Restart after changes** - Don't skip the restart step, it's critical
-
-## Related Commands
-
-- [`/diagnose`](/commands/diagnose) - Check system health and configuration
-- [`/validate-expertise`](/commands/validate-expertise) - Validate expertise files
-- [`/help`](/commands/help) - View all available commands
+AgileFlow never changes Codex `approval_policy`, `sandbox_mode`, model, reasoning effort, or permissions.

@@ -1,0 +1,78 @@
+---
+title: Providers
+description: "How each coding agent sees AgileFlow skills, support levels, and what has been verified."
+---
+
+AgileFlow does not replace or wrap your coding agent. Each provider discovers skills its own way; AgileFlow puts them where the provider looks and adapts only where providers differ.
+
+## Support levels
+
+| Provider | Support | How it sees the skills |
+| --- | --- | --- |
+| Codex | native | Reads `.agents/skills` and `~/.agents/skills`. |
+| Cursor | native | Reads `.agents/skills`. |
+| OpenCode | native | Reads `.agents/skills`. |
+| Gemini CLI | native | Reads `.agents/skills` as an alias of its skill location. |
+| Claude Code | adapted | Reads `.claude/skills`; AgileFlow adds per-skill links there. |
+| Grok, Antigravity | experimental | No adapter; not verified. |
+
+**T3 Code** is a host that runs the providers above. When T3 starts Codex or Claude Code in your project, that provider reads the same skills; there is no T3-specific setup. T3's own skill picker may not list every skill the provider can use.
+
+## What has been verified
+
+AgileFlow's conformance tests ask each installed provider CLI which skills it sees, without a model call, after `init`, `update`, and `remove`:
+
+| Provider | Verified with | Method |
+| --- | --- | --- |
+| Codex | codex-cli 0.128.0 | `codex debug prompt-input` lists auto skills from `.agents/skills`, omits manual skills, and reflects updates and removals. `codex features list` reflects the structured-questions setting. |
+| OpenCode | 1.4.6 | `opencode debug skill` lists the skills from `.agents/skills` and reflects removal. |
+| Claude Code | 2.1.280 | The startup `init` event lists the skills through per-skill links and through generated mirrors. |
+| Gemini CLI | 0.60.0 | `gemini skills list` lists the skills from `.agents/skills` in a trusted folder and reflects removal. |
+| Cursor | not verified | Cursor has no headless command to list skills; support is based on Cursor's documented `.agents/skills` support. |
+| T3 Code | not verified directly | T3 runs the provider CLIs above in the project directory. |
+
+Activation behavior (which prompts load which skill) has been measured with Claude Code evals. Live model evals for the other providers depend on those CLIs being signed in and are run separately.
+
+## Manual skills
+
+`activation: manual` is written into each skill for every provider:
+
+| Provider | Mechanism | Enforcement |
+| --- | --- | --- |
+| Claude Code, Cursor | `disable-model-invocation: true` in `SKILL.md` | provider-enforced |
+| OpenCode | `metadata.opencode/autoinvoke: false` in `SKILL.md` | provider-enforced |
+| Codex | `agents/openai.yaml`: `policy.allow_implicit_invocation: false` | provider-enforced (verified: Codex leaves the skill out of implicit invocation) |
+| Gemini CLI | none available | semantic only: the description says to use the skill only when asked. `check` reports "manual-only enforcement: semantic". |
+
+## Claude Code links and mirrors
+
+Claude Code reads `.claude/skills/`, not `.agents/skills/`. The Claude adapter makes each skill visible there without creating a second copy to edit:
+
+1. **Symlink** (preferred): `.claude/skills/diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs`
+2. **Junction** on Windows when symlinks are not permitted.
+3. **Generated mirror** as a last resort: a copy containing `.agileflow-mirror.json`, which records where it came from and a hash of its content. AgileFlow refreshes mirrors when the canonical skill changes.
+
+AgileFlow owns only the links and mirrors it created, never the `.claude/skills` directory itself:
+
+- A Claude-only skill with the same name is left alone; `check` reports that it shadows the AgileFlow skill.
+- If `.claude/skills` is itself a link to `.agents/skills`, nothing is created.
+- If you edit a mirror directly, `check` warns and names the canonical copy to edit instead; the mirror is not overwritten.
+- `agileflow configure provider claude off` removes AgileFlow's links; `on` or `auto` (the default: only when Claude Code is detected) creates them.
+
+AgileFlow never modifies `.claude/settings.json`.
+
+Claude Code is detected by `claude` on PATH, `~/.claude`, or `.claude/` or `CLAUDE.md` in the project. Force the mirror fallback with `AGILEFLOW_LINK_MODE=mirror`.
+
+## Gemini CLI folder trust
+
+Gemini CLI loads project skills only in folders you have trusted. Until then `gemini skills list` shows nothing from `.agents/skills`, and `agileflow check` says so.
+
+## Codex structured questions
+
+Codex has an experimental `default_mode_request_user_input` feature that lets skills ask structured questions during normal work. It is optional, off unless you opt in, and changed only through [`agileflow configure codex-questions enable`](/commands/configure#codex-structured-questions), which records the previous value so `disable` can restore it exactly.
+
+Skills that ask questions work either way: when a provider offers structured question UI they may use it, otherwise they ask in plain text.
+
+## What AgileFlow never changes
+
+Provider permissions, sandbox mode, approval policy, model, reasoning effort, memory, or progress-update behavior. Provider defaults stay in charge.

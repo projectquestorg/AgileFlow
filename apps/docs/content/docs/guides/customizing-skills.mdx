@@ -1,0 +1,63 @@
+---
+title: Customizing skills
+description: "Edit, fork, disable, or write your own skills."
+---
+
+## Edit a managed skill
+
+You can edit files in `.agents/skills/<skill>/` directly. AgileFlow notices the change (`list` shows `modified`, `check` warns) and will not overwrite it during updates. But a modified managed skill is stuck between two owners: every future update asks you to fork, reset, or skip.
+
+## Fork to own it
+
+If you want to keep your version, fork it:
+
+```bash
+agileflow fork filing-pr
+```
+
+The skill becomes locally owned: `agileflow.yaml` points at `.agents/skills/filing-pr` with `provenance.forkedFrom`, updates never touch it, and `agileflow diff filing-pr --upstream` shows what upstream changed since. See [fork and diff](/commands/fork-and-diff).
+
+Forking is a feature, not a failure. If many people fork a skill to delete half of it, the official skill is too prescriptive, and that feedback goes back into it.
+
+## Change how a skill activates
+
+```bash
+agileflow configure skill filing-pr --activation manual
+```
+
+AgileFlow writes each provider's manual-only flag into the installed skill. For forks, edit the flags yourself (see [Providers](/concepts/providers#manual-skills)).
+
+## Disable without removing
+
+```bash
+agileflow configure skill reviewing-changes --disable
+```
+
+## Write your own
+
+Create `.agents/skills/my-release-flow/SKILL.md`:
+
+```markdown
+---
+name: my-release-flow
+description: Cut a release of this service. Use when the user asks to release, tag, or publish a version.
+---
+
+1. Update CHANGELOG.md from merged PRs.
+2. Run `make release-check`.
+3. Tag and push.
+
+## Done when
+
+The tag is pushed and the release workflow is green.
+```
+
+Every provider sees it immediately; Claude Code sees it once it is linked. AgileFlow leaves unmanaged skills alone. To have AgileFlow track it (for Claude Code links and `check`), register it in place:
+
+```bash
+agileflow add ./.agents/skills/my-release-flow
+```
+
+To share a skill across repositories, keep it in its own git repository and `agileflow add git+https://...`.
+
+Guidance that pays off: the `description` is routing logic, so say what the skill does and **when** to use it. Keep the body short and write down only what the model cannot infer: repository-specific steps, constraints, and failure modes you have actually seen.

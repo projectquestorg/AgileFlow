@@ -1,0 +1,71 @@
+---
+title: add, remove, list
+description: "Add skills, packs, git and local sources; remove only what AgileFlow owns; see what is installed."
+---
+
+## agileflow add
+
+```bash
+agileflow add diagnosing-bugs            # official skill (@agileflow/diagnosing-bugs)
+agileflow add diagnosing-bugs@^1         # with a version range
+agileflow add @agileflow/github          # a pack: adds each skill in it
+agileflow add git+https://github.com/example/skills.git#skills/release-notes
+agileflow add ./skills/my-release-flow   # a local directory
+agileflow add                            # interactive: pick from the registry catalog
+```
+
+Options:
+
+| Option | Meaning |
+| --- | --- |
+| `--global` | Add to personal skills (`~/.agents/skills`). |
+| `--yes` | Skip the confirmation. |
+| `--activation auto\|manual` | Override the skill's default activation. |
+| `--skill <name>` | Pick a skill from a source that contains several (repeatable). |
+
+Before installing, `add` shows what the skill contains: source, version, activation, reference files, **executable scripts** (listed by name), and requirements such as `gh` on PATH or network access. Third-party content is labeled "Installing external skill" with "Review source before installing untrusted skills." Scripts are never executed during installation.
+
+Registry skills get a caret range by default (for example `^1.0.0`), so a new major version is never installed without you changing the range.
+
+`add` refuses to overwrite a directory in `.agents/skills` that AgileFlow does not manage. See [Skill sources](/concepts/sources) for git and local skills.
+
+## agileflow remove
+
+```bash
+agileflow remove babysitting-pr
+agileflow remove babysitting-pr --force   # discard local modifications
+agileflow remove --all                    # stop using AgileFlow here
+```
+
+`remove` deletes only what the lockfile says AgileFlow owns: `.agents/skills/<skill>` and the Claude Code link or mirror it created. Skills AgileFlow does not manage are never touched, whatever their name.
+
+- A **modified** managed skill is not removed without `--force` (or `agileflow fork` first to keep your changes).
+- A **locally owned** skill (a fork or a skill you registered from `.agents/skills`) is removed from `agileflow.yaml` and `agileflow.lock`, but its files are kept.
+
+### Removing AgileFlow from a project
+
+`agileflow remove --all` (same as `agileflow migrate --detach`) removes `agileflow.yaml` and `agileflow.lock`. It asks whether to keep installed skills as standalone Agent Skills. The default is yes: the managed notice is removed, Claude Code links stay, and every provider keeps seeing the skills. `--delete-skills` deletes unmodified AgileFlow skills instead; modified and locally owned skills are kept.
+
+## agileflow list
+
+```bash
+agileflow list           # project and personal skills, plus providers
+agileflow list --global  # personal skills only
+agileflow list --json
+```
+
+```text
+Project skills
+  NAME                       VERSION  MODE    SOURCE    STATUS
+  diagnosing-bugs            1.0.0    auto    official  clean
+  interviewing-requirements  1.0.0    manual  official  clean
+  release-notes              local    auto    local     clean
+  Not managed by AgileFlow (left untouched): my-team-release
+
+Providers
+  Codex     native .agents/skills
+  Claude    linked .claude/skills
+  Cursor    native .agents/skills (not detected)
+```
+
+Status is one of `clean`, `modified`, `missing`, `local` (locally owned), or `disabled`.

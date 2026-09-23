@@ -8,9 +8,10 @@ const footerLinks = {
   product: {
     title: "Product",
     links: [
-      { label: "Installation", href: "/installation" },
-      { label: "Commands", href: "/commands" },
-      { label: "Agents", href: "/agents" },
+      { label: "Quick start", href: "/quick-start" },
+      { label: "Commands", href: "/commands/init" },
+      { label: "Official skills", href: "/reference/official-skills" },
+      { label: "Legacy v4 docs", href: "https://github.com/projectquestorg/AgileFlow/tree/v4", external: true },
     ],
   },
   resources: {

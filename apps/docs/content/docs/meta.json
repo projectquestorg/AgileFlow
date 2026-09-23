@@ -4,11 +4,14 @@
   "pages": [
     "index",
     "installation",
-    "getting-started",
-    "---Getting Started---",
-    "features",
+    "quick-start",
+    "---Commands---",
+    "...commands",
+    "---Concepts---",
+    "...concepts",
+    "---Guides---",
+    "...guides",
     "---Reference---",
-    "commands",
-    "agents"
+    "...reference"
   ]
 }

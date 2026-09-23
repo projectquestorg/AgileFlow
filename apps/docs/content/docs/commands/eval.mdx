@@ -1,0 +1,45 @@
+---
+title: agileflow eval
+description: "Check skills against the release gate and run activation and behavior evals on real providers."
+---
+
+```bash
+agileflow eval --lint --catalog skills                    # structural release gate
+agileflow eval diagnosing-bugs --provider claude          # activation evals
+agileflow eval --catalog skills --provider claude --mode full   # behavior + rubric judging
+agileflow eval diagnosing-bugs --provider claude --scenario regression-debugging --runs 3
+```
+
+## Scenarios
+
+Each skill package has `evals/<name>.yaml` files:
+
+```yaml
+name: regression-debugging
+skill: diagnosing-bugs
+prompt: |
+  Login started returning 500s after yesterday's auth refactor.
+  Find the problem and fix it.
+fixture: eval-service           # optional fixture repository
+setup: |                        # optional shell run after the sandbox commit
+  git commit -qam "auth refactor"
+assert:
+  shouldActivate: true
+rubric:
+  - investigates before editing
+  - identifies root cause
+```
+
+Negative scenarios (`shouldActivate: false`) use similar prompts that must not load the skill. Manual skills use `invocation: explicit` for positive scenarios.
+
+## Release gate (`--lint`)
+
+A skill passes when it has: a description that says what it does and when to activate; a `## Done when` completion section; a small body (ideal 30-120 lines, soft limit 200, maximum 500); valid `agileflow.skill.yaml`; at least three scenarios including a negative trigger and a positive scenario with a rubric. Official skills must also keep frontmatter to `name` and `description`.
+
+## Provider evals
+
+`--provider claude|codex|gemini|opencode` runs each scenario in a fresh sandbox repository with the whole catalog installed exactly as `agileflow add` would install it, so activation precision is measured with competing skills present. Activation is read from the provider's own tool calls. `--mode full` lets the agent act and has a judge (Claude) grade the rubric.
+
+Provider evals need the provider CLI installed and signed in. Results report activation precision and recall per provider.
+
+Installed project skills do not contain their `evals/` directory; `agileflow eval <skill>` in a project reads scenarios from the locked package in the cache.

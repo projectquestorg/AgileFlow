@@ -1,0 +1,47 @@
+---
+title: Project and personal skills
+description: "Skills shared with a repository versus skills only for you."
+---
+
+| | Project | Personal (`--global`) |
+| --- | --- | --- |
+| Skills | `<repo>/.agents/skills/` | `~/.agents/skills/` |
+| Claude Code links | `<repo>/.claude/skills/` | `~/.claude/skills/` |
+| Config | `<repo>/agileflow.yaml` (`skills:`) | `~/.config/agileflow/config.yaml` (`globalSkills:`) |
+| Lockfile | `<repo>/agileflow.lock` | `~/.config/agileflow/agileflow.lock` |
+| Shared | With everyone who clones the repository | Only on your machine |
+
+Every command takes `--global` to work with personal skills:
+
+```bash
+agileflow add filing-pr --global
+agileflow list --global
+agileflow update --global
+```
+
+Project skills are materialized into the repository (not linked to a cache) so they work in cloud agents, on other machines, and in fresh clones. Commit them.
+
+## When both exist
+
+If the same skill exists in both places, project-level generally wins where the provider's own discovery works that way. AgileFlow adds no precedence rules of its own; `agileflow check` reports it as information:
+
+```text
+[--] filing-pr has a project override of your global skill
+```
+
+## Personal defaults
+
+`~/.config/agileflow/config.yaml` also holds personal defaults, such as the question preference new projects start with:
+
+```yaml
+version: 1
+defaults:
+  questionPreference: provider-default
+providers:
+  codex:
+    structuredQuestions: inherit
+globalSkills:
+  filing-pr:
+    source: "@agileflow/filing-pr"
+    version: "^1.0.0"
+```

@@ -1,0 +1,60 @@
+---
+title: sync vs update
+description: "sync reproduces the lockfile exactly; update intentionally changes versions."
+---
+
+| | `agileflow sync` | `agileflow update` |
+| --- | --- | --- |
+| Changes versions | Never | Yes, within the ranges in `agileflow.yaml` |
+| Reads | `agileflow.lock` | `agileflow.yaml` and the registry |
+| Writes the lockfile | Only for enable/disable and activation changes | Yes |
+| Network | Not needed when the packages are cached | Needed for registry and git sources |
+| Use after | `git clone`, `git pull`, switching branches | When you want newer skills |
+
+## agileflow sync
+
+Make the filesystem match `agileflow.lock`:
+
+1. Read `agileflow.yaml` and `agileflow.lock`.
+2. Verify each package's integrity.
+3. Materialize exactly the locked versions into `.agents/skills`.
+4. Create or refresh provider compatibility links and mirrors.
+5. Remove stale AgileFlow-owned output (skills that left the lockfile, only if unmodified).
+6. Run a lightweight provider check and print any problems.
+
+`sync` never overwrites a locally modified skill. If `agileflow.yaml` lists a skill the lockfile does not, or a range the locked version no longer satisfies, `sync` stops and tells you to run `agileflow update`.
+
+Locked packages are cached in `~/.cache/agileflow/packages/`, so `sync` works offline once a version has been downloaded.
+
+## agileflow update
+
+Resolve newer versions allowed by `agileflow.yaml`, update the lockfile, and sync:
+
+```bash
+agileflow update                     # all skills, asks before applying
+agileflow update diagnosing-bugs     # specific skills
+agileflow update --dry-run           # show what would change
+agileflow update --yes               # apply without the confirmation
+agileflow update --non-interactive   # CI: never prompt, never overwrite edits
+agileflow update --reset diagnosing-bugs   # discard local edits of this skill
+```
+
+```text
+Updates available:
+  diagnosing-bugs  1.0.0 -> 1.1.0
+  filing-pr        1.4.0 -> 1.5.0
+All managed skills are clean.
+Apply? yes
+```
+
+Clean managed skills are upgraded. Locally modified ones are never overwritten without an explicit choice. See [Updates and conflicts](/guides/updates-and-conflicts).
+
+`update` also reports forks whose upstream has moved on, and prints `AgileFlow CLI update available: X -> Y` when a newer CLI is published. CLI and skill versions are independent.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Error |
+| `3` | `--non-interactive` skipped skills with local modifications |

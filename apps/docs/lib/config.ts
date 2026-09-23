@@ -3,23 +3,23 @@ export const siteConfig = {
   url: "https://agileflow.dev",
   ogImage: "https://agileflow.dev/og.jpg",
   description:
-    "The AI-powered project management framework for Claude Code. Streamline your development workflow with intelligent agents, automated planning, and seamless team collaboration.",
+    "Portable workflows for coding agents. Install a skill once and use it with Codex, Claude Code, Cursor, OpenCode, and Gemini CLI.",
   links: {
     twitter: "https://twitter.com/agileflow",
     github: "https://github.com/projectquestorg/AgileFlow",
   },
   navItems: [
     {
-      href: "/installation",
+      href: "/",
       label: "Docs",
     },
     {
-      href: "/commands",
+      href: "/commands/init",
       label: "Commands",
     },
     {
-      href: "/agents",
-      label: "Agents",
+      href: "/reference/official-skills",
+      label: "Skills",
     },
   ],
 }

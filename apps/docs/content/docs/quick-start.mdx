@@ -1,0 +1,47 @@
+---
+title: Quick start
+description: "Set up AgileFlow in a repository and keep skills current."
+---
+
+```bash
+cd my-project
+agileflow init
+
+# Add individual workflows
+agileflow add diagnosing-bugs
+agileflow add filing-pr
+
+# Keep them current
+agileflow update
+```
+
+Then open Codex, Claude Code, Cursor, OpenCode, or Gemini CLI as usual. When a request matches a skill's description (for example, "the profile page crashes when I upload a big image"), the provider loads the skill by itself. Manual skills load only when you invoke them by name.
+
+## What `init` creates
+
+```text
+repo/
+├── agileflow.yaml
+├── agileflow.lock
+├── .agents/
+│   └── skills/
+│       ├── diagnosing-bugs/
+│       ├── checking-blast-radius/
+│       └── verifying-changes/
+└── .claude/
+    └── skills/            # only if Claude Code is detected
+        ├── diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs
+        └── ...
+```
+
+That is all. AgileFlow does not create a `docs/` hierarchy, does not change `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md`, installs no hooks, and changes no provider settings.
+
+## Share with your team
+
+Commit `agileflow.yaml`, `agileflow.lock`, and `.agents/skills/`. Teammates get the skills with the repository. After `git pull` or switching branches, `agileflow sync` makes their files match the lockfile exactly.
+
+## Next steps
+
+- [Skills and packs](/concepts/skills-and-packs)
+- [Updates and conflicts](/guides/updates-and-conflicts)
+- [`agileflow check`](/commands/check)

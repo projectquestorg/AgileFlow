@@ -1,0 +1,29 @@
+---
+title: agileflow init
+description: "Set up AgileFlow in a repository, or set up personal skills."
+---
+
+```bash
+agileflow init            # interactive
+agileflow init --yes      # non-interactive: installs the core pack only
+agileflow init --skills diagnosing-bugs,filing-pr
+agileflow init --global   # personal skills in ~/.agents/skills
+```
+
+## What it does
+
+1. **Detects** basic repository facts (git, GitHub remote, languages, package manager) and which providers are present (Codex, Claude Code, Cursor, OpenCode, Gemini CLI).
+2. **Reports** existing instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) and leaves them unchanged.
+3. **Asks where to install** (interactive only): *Project* (`.agents/skills`, shared with the repository) or *Personal* (`~/.agents/skills`, only for you).
+4. **Recommends skills.** `diagnosing-bugs`, `checking-blast-radius`, and `verifying-changes` are preselected; `filing-pr` and `babysitting-pr` are also preselected when the repository has a GitHub remote. Everything else is optional.
+5. **Resolves every package first**, then writes `agileflow.yaml`, `agileflow.lock`, `.agents/skills/<skill>/`, and Claude Code links if Claude Code is detected. If the registry is unreachable, nothing is written.
+
+`init --yes` installs only the [core pack](/reference/official-skills#packs) and never changes provider configuration.
+
+If the project already has an `agileflow.yaml`, `init` says so and changes nothing. Use `add`, `sync`, or `update` instead.
+
+If AgileFlow v4 files are detected, `init` points you to [`agileflow migrate v4 --preview`](/guides/migrating-from-v4) and still changes nothing about them.
+
+## Where the project root is
+
+`init` uses the nearest directory containing `agileflow.yaml`, otherwise the git repository root, otherwise the current directory. Other commands look for the nearest `agileflow.yaml` in the current directory or its parents.

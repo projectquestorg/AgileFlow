@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL(APP_URL),
   description: siteConfig.description,
-  keywords: ["Next.js", "React", "Tailwind CSS", "Components", "AgileFlow"],
+  keywords: ["AgileFlow", "Agent Skills", "SKILL.md", "Codex", "Claude Code", "Cursor", "OpenCode", "Gemini CLI"],
   authors: [
     {
       name: "AgileFlow",

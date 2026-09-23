@@ -1,0 +1,65 @@
+---
+title: agileflow.yaml
+description: "Project configuration: which skills a repository uses."
+---
+
+`agileflow.yaml` records intent. Edit it by hand or with `add`, `remove`, `fork`, and `configure`; AgileFlow preserves your comments. After editing it by hand, run `agileflow update` (or `agileflow sync` if no new versions are needed).
+
+```yaml
+version: 1
+skills:
+  diagnosing-bugs:
+    source: "@agileflow/diagnosing-bugs"
+    version: "^1"
+  interviewing-requirements:
+    source: "@agileflow/interviewing-requirements"
+    version: "^1"
+    activation: manual
+  release-notes:
+    source: "git+https://github.com/example/skills.git#skills/release-notes"
+    ref: main
+  my-release-flow:
+    source: ./skills/my-release-flow
+  filing-pr:
+    source: .agents/skills/filing-pr
+    provenance:
+      forkedFrom: "@agileflow/filing-pr@1.0.0"
+providers:
+  claude:
+    enabled: auto
+  codex:
+    enabled: auto
+    structuredQuestions: inherit
+interaction:
+  questionPreference: provider-default
+```
+
+## skills
+
+The key is the skill id: the directory name in `.agents/skills` (lowercase letters, digits, and single hyphens).
+
+| Field | Meaning |
+| --- | --- |
+| `source` | `@scope/name` (registry), `git+<url>[#path]`, or a path. A path to `.agents/skills/<id>` itself means locally owned. See [Skill sources](/concepts/sources). |
+| `version` | Semver range for registry skills, for example `^1`. |
+| `ref` | Branch, tag, or commit for git sources. |
+| `activation` | `auto` or `manual`; overrides the package default. |
+| `enabled` | `false` disables the skill (files removed, entry kept). |
+| `provenance.forkedFrom` | Set by `agileflow fork`. |
+
+## providers
+
+| Field | Values |
+| --- | --- |
+| `enabled` | `auto` (default: when detected), `true`, or `false`. For Claude Code this controls the compatibility links. |
+| `structuredQuestions` | Codex only: `inherit` (default), `enabled`, or `disabled`. Records intent; the Codex setting itself changes only through `agileflow configure codex-questions`. |
+
+## interaction
+
+`questionPreference`: `provider-default` (default), `prefer`, or `minimize`. See [configure](/commands/configure#question-preference).
+
+## registry
+
+Optional. A registry URL or directory to use instead of the official one.
+
+A JSON Schema is published in the repository at `schemas/agileflow.schema.json`.

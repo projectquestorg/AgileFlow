@@ -1,0 +1,64 @@
+---
+title: Migrating from v4
+description: "Remove AgileFlow v4 residue safely and set up v5."
+---
+
+AgileFlow v5 is a clean break from v4. v4's plugins, agents, hook runtime, slash commands, status tracking, and docs scaffolding no longer exist. `agileflow migrate v4` removes what v4 installed, but only where it can prove AgileFlow owns it, and never deletes your data.
+
+```bash
+agileflow migrate v4 --preview   # see exactly what would change
+agileflow migrate v4             # apply
+```
+
+## What it detects
+
+- `agileflow.config.json`
+- the `.agileflow/` runtime directory
+- AgileFlow hook entries in `.claude/settings.json`, `.claude/settings.local.json`, `~/.claude/settings.json`, and `.codex/config.toml`
+- `.claude/agents/agileflow` and `.claude/commands/agileflow`
+- v4 skill copies in `.claude/skills`, `.cursor/skills`, `.windsurf/skills`, `.codex/skills`, `.antigravity/skills`
+- AgileFlow managed blocks in `AGENTS.md` and `CLAUDE.md`
+- the legacy `docs/00-meta` ... `docs/10-research` directories
+
+## What it removes, and how ownership is proven
+
+| Item | Removed when |
+| --- | --- |
+| Hook entries | The command contains a v4/v3 AgileFlow marker (`agileflow hook`, `.agileflow/scripts/`). Your other hooks stay. |
+| Status line | It runs a script from `.agileflow/scripts/`. |
+| `.agileflow/` files | They are listed in v4's own file index with an unchanged hash, or are v4-generated runtime files (logs, manifests). Anything else stays. |
+| Skill copies | The directory name is an exact v4 catalog skill id and its `SKILL.md` name matches. Unknown `agileflow-*` directories stay. |
+| `AGENTS.md` / `CLAUDE.md` | Only the text between v4's managed-block markers. A file that contained nothing else is removed. |
+| `agileflow.config.json`, `.claude/agents/agileflow`, `.claude/commands/agileflow` | Always (v4-generated), backed up first. |
+
+## What it keeps
+
+- your own hooks, permissions, and settings
+- your skills, including ones that start with `agileflow-` but are not v4's
+- recorded v4 learnings (`_learnings/*.yaml` with entries) and other files it cannot prove are AgileFlow's
+- **all docs directories**; `agileflow migrate v4 --report-docs` lists which are empty or unchanged seeds you may delete yourself
+
+## Codex security settings
+
+v4 may have written `approval_policy = "never"` and `sandbox_mode = "danger-full-access"` to `.codex/config.toml`. The previous values are unknown, so migration does not guess: it reports them and leaves them for you to review.
+
+## Backup
+
+Everything migration changes is copied to `.agileflow-v4-backup-<timestamp>/` first (skip with `--no-backup`).
+
+## After cleanup
+
+If the project has no `agileflow.yaml`, migration offers v5 skills, preselecting those that cover what you used in v4:
+
+| You used in v4 | v5 skills |
+| --- | --- |
+| debugging | `diagnosing-bugs` |
+| PR review / audit | `reviewing-changes` |
+| delivery | `filing-pr`, `babysitting-pr` |
+| refactoring / migration | `checking-blast-radius` |
+| testing | `verifying-changes` |
+| babysit mentor | `interviewing-requirements`, `verifying-changes`, `filing-pr`, `babysitting-pr` |
+
+v4 agent prompts are not carried over. Restart open agent sessions afterwards so they stop running old hooks.
+
+If you run the v5 CLI while old hook entries still exist, `agileflow hook` prints a pointer to `agileflow migrate v4` and exits with status 1 (a non-blocking hook error).

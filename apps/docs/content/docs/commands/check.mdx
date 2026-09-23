@@ -1,0 +1,49 @@
+---
+title: agileflow check
+description: "Check configuration, skills, and provider visibility. Repair only AgileFlow-owned artifacts."
+---
+
+```bash
+agileflow check             # project (and personal skills, if configured)
+agileflow check --global    # personal skills only
+agileflow check --verbose   # paths, link types, provider versions, lock hashes, registry
+agileflow check --fix       # repair AgileFlow-owned artifacts
+agileflow check --json
+```
+
+```text
+Configuration
+  [ok] agileflow.yaml valid
+  [ok] agileflow.lock valid
+  [ok] lockfile matches config
+Skills
+  [ok] 4 managed skills present
+  [ok] integrity verified
+  [ok] descriptions valid
+  [ok] no duplicate names
+  [ok] no unexpected local modifications
+Providers
+  [ok] Codex reads .agents/skills
+  [ok] Claude compatibility links valid
+Optional features
+  [--] Codex structured questions (Default mode request_user_input) disabled
+       This is optional. Enable with `agileflow configure`.
+Result: healthy
+```
+
+## What it checks
+
+- **Configuration:** `agileflow.yaml` and `agileflow.lock` parse and validate, and the lockfile matches the config.
+- **Skills:** every locked skill is present; cached packages match their locked integrity; every `SKILL.md` has valid frontmatter (name matching its directory, a description of at most 1024 characters); no duplicate names; which managed skills have local modifications. Unmanaged skills are listed as "left untouched" and are never errors.
+- **Providers:** for each detected provider, whether it can see the skills. For Claude Code: links present and pointing at the canonical skills, mirrors not edited directly or out of date, Claude-only skills that shadow an AgileFlow skill. For manual skills: whether each provider's manual-only flag is present, and "manual-only enforcement: semantic" for Gemini CLI. For Gemini CLI: a reminder that project skills load only in trusted folders.
+- **Project overrides:** "`filing-pr` has a project override of your global skill" (informational).
+- **Legacy files:** AgileFlow v4 residue, with a pointer to `agileflow migrate v4 --preview`.
+- **T3 Code:** when detected, a note that T3 runs the providers above and that T3's own skill picker may not list every provider-visible skill.
+
+`check` exits `1` when it finds an error, `0` otherwise (warnings do not fail it).
+
+## --fix
+
+`--fix` repairs only artifacts AgileFlow owns: it restores missing locked skills, recreates missing Claude Code links or mirrors, refreshes stale mirrors, and removes stale AgileFlow-owned links. It never rewrites `AGENTS.md`, changes provider permissions or sandbox settings, enables experimental provider features, or discards your edits.
+
+`agileflow doctor` still runs `check` during the transition from v4.

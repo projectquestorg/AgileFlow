@@ -1,141 +1,33 @@
 ---
-title: Introduction
-description: The AI-powered project management framework for Claude Code. Streamline your development workflow with intelligent agents, automated planning, and seamless collaboration.
+title: AgileFlow
+description: "Portable workflows for coding agents. Install a skill once and use it with Codex, Claude Code, Cursor, OpenCode, and Gemini CLI."
 ---
 
-# AgileFlow
+**Portable workflows for coding agents.**
 
-AgileFlow is an **AI-powered project management framework** designed specifically for [Claude Code](https://claude.ai/code). It brings structured agile workflows, intelligent agents, and docs-as-code project management directly into your development environment.
+Install a skill once. Use it with Codex, Claude Code, Cursor, OpenCode, Gemini CLI, and the tools built on top of them. Small, versioned workflows. No agent runtime. No repository takeover.
 
-## Why AgileFlow?
+## What AgileFlow is
 
-Traditional project management tools create friction between planning and execution. AgileFlow eliminates this gap by embedding project management directly into your AI-assisted coding workflow.
+AgileFlow is a **skill manager, compatibility layer, and evaluation system** for coding agents.
 
-- **No context switching** - Manage epics, stories, and status without leaving your terminal
-- **AI-native workflows** - Purpose-built for Claude Code's capabilities
-- **Docs-as-code** - All project artifacts live in your repository
-- **Intelligent agents** - Specialized AI agents for different domains
+- It installs standard [Agent Skills](https://agentskills.io) (`SKILL.md` directories) into `.agents/skills`, the location Codex, Cursor, OpenCode, and Gemini CLI read natively.
+- It makes the same skills visible to Claude Code through per-skill links in `.claude/skills`.
+- It records exact versions and hashes in `agileflow.lock`, so updates are deterministic and your edits are never silently overwritten.
+- It lets you fork any skill and own it permanently.
+- It ships evals so skill descriptions and instructions improve because measured behavior improved.
 
-## Key Features
+## What AgileFlow is not
 
-### 155 Slash Commands
+AgileFlow is not an agent framework, a multi-agent runtime, a hook runtime, a project-management system, or a repository scaffolder. Your coding agent keeps doing the reasoning, planning, delegation, tool use, and permissions.
 
-AgileFlow provides a comprehensive command library for every aspect of project management:
+Once skills are installed, **nothing from AgileFlow runs while your agent works**: no hook, no background process, no AgileFlow agent. If you uninstall the CLI, your skills keep working because they are standard `SKILL.md` files in provider-native locations.
 
-| Category | Commands |
-|----------|----------|
-| **Planning** | `/epic`, `/story`, `/sprint`, `/deps` |
-| **Tracking** | `/status`, `/board`, `/blockers`, `/metrics` |
-| **Development** | `/babysit`, `/verify`, `/review`, `/pr` |
-| **Operations** | `/ci`, `/deploy`, `/changelog`, `/packages`, `/automate`, `/api` |
-| **Research** | `/research:ask`, `/research:import`, `/context:full`, `/context:export`, `/multi-expert` |
-| **Advanced** | `/council`, `/rpi`, `/rlm`, `/workflow`, `/batch`, `/choose` |
-| **Advertising** | `/ads:audit`, `/ads:plan`, `/ads:google`, `/ads:meta`, `/ads:creative`, `/ads:budget` |
-| **Code Audits** | `/code:logic`, `/code:security`, `/code:performance`, `/code:test`, `/code:completeness`, `/code:legal` |
+## Where to start
 
-### 149 Specialized Agents
+- [Installation](/installation)
+- [Quick start](/quick-start)
+- [Providers](/concepts/providers): which coding agents are supported and how
+- [Migrating from v4](/guides/migrating-from-v4)
 
-Each agent is an expert in their domain, ready to help with specific tasks:
-
-- **mentor** - End-to-end implementation guidance
-- **epic-planner** - Break down features into stories
-- **database** - Schema design and migrations
-- **api** - Backend services and data layer
-- **ui** - Frontend components and styling
-- **security** - Vulnerability analysis and compliance
-- **testing** - Test strategy and coverage
-- **devops** - CI/CD and deployment
-- **team-lead** - Native Agent Teams coordination
-- **orchestrator** - Multi-domain expert orchestration
-
-### Docs-as-Code Architecture
-
-All project management artifacts are stored as structured files in your repository:
-
-<FileTree>
-  <Folder name="docs">
-    <Folder name="05-epics">
-      <File name="EP-0001.md" comment="Epic definitions" />
-    </Folder>
-    <Folder name="06-stories">
-      <File name="US-0001.md" comment="User stories" />
-    </Folder>
-    <Folder name="09-agents">
-      <File name="status.json" comment="Real-time project status" />
-      <Folder name="bus">
-        <File name="log.jsonl" comment="Agent communication" />
-      </Folder>
-    </Folder>
-    <Folder name="03-decisions">
-      <File name="ADR-0001.md" comment="Architecture Decision Records" />
-    </Folder>
-  </Folder>
-</FileTree>
-
-### Visual Kanban Board
-
-```text
-View your project status at a glance with the /board command:
-
-/agileflow:board
-
-┌────────────────────────────────────────────────────────────────┐
-│                         KANBAN BOARD                          │
-├──────────────┬──────────────┬──────────────┬──────────────────┤
-│   BACKLOG    │  IN PROGRESS │   REVIEW     │    COMPLETED     │
-├──────────────┼──────────────┼──────────────┼──────────────────┤
-│ US-0012      │ US-0015      │ US-0014      │ US-0001 ✓       │
-│ Add auth     │ API layer    │ Unit tests   │ US-0002 ✓       │
-│              │              │              │ US-0003 ✓       │
-└──────────────┴──────────────┴──────────────┴──────────────────┘
-```
-
-## Quick Example
-
-Here's how a typical AgileFlow workflow looks:
-
-```bash
-# 1. Create an epic for a new feature
-/epic EPIC=EP-0001 TITLE="User Authentication" GOAL="Secure user login system"
-
-# 2. Break it down into stories
-/story EPIC=EP-0001 STORY=US-0001 TITLE="Login form" OWNER=AG-UI
-
-# 3. Start working on a story
-/status STORY=US-0001 STATUS=in-progress
-
-# 4. Get AI-guided implementation
-/babysit
-
-# 5. Verify your implementation
-/verify US-0001
-
-# 6. Generate a PR
-/pr STORY=US-0001
-```
-
-## How It Works
-
-1. **Install AgileFlow** - One command adds all capabilities to your project
-2. **Plan with AI** - Use agents to break down features into actionable stories
-3. **Track Progress** - Real-time status updates in `status.json`
-4. **Collaborate** - Agents communicate via the message bus
-5. **Ship** - Automated PR generation and changelog updates
-
-## Philosophy
-
-AgileFlow is built on these principles:
-
-- **Convention over configuration** - Sensible defaults that just work
-- **Transparency** - All data is plain text, version-controlled
-- **Composable** - Use only what you need
-- **AI-first** - Designed for human-AI collaboration
-- **Internationalization** - Available in 5 languages (Spanish, French, German, Portuguese, Arabic)
-
-## Next Steps
-
-Ready to get started?
-
-1. **Quick setup**: Run `npx agileflow@latest setup` to install
-2. **Interactive tutorial**: Follow our [Getting Started](/getting-started) wizard
-3. **Deep dive**: Check the [Installation](/installation) guide for all options
+> **Looking for AgileFlow v4?** v4 (plugins, agents, hooks, slash commands, docs scaffolding) is superseded by v5. Its documentation is archived with the source on the [`v4` branch on GitHub](https://github.com/projectquestorg/AgileFlow/tree/v4). Nothing in that archive describes current behavior.

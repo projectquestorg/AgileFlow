@@ -1,0 +1,18 @@
+---
+title: agileflow migrate
+description: "Clean up an AgileFlow v4 project, or detach AgileFlow from a project."
+---
+
+```bash
+agileflow migrate v4 --preview       # report only
+agileflow migrate v4                 # apply (asks first)
+agileflow migrate v4 --yes           # apply non-interactively
+agileflow migrate v4 --no-backup
+agileflow migrate v4 --skills diagnosing-bugs,filing-pr
+agileflow migrate v4 --report-docs   # legacy docs directories report
+agileflow migrate --detach           # stop using AgileFlow; keep skills working
+```
+
+See [Migrating from v4](/guides/migrating-from-v4) for what is detected, removed, and kept.
+
+Non-interactively, `migrate v4` refuses to change files unless you pass `--yes`.

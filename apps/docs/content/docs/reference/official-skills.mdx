@@ -1,0 +1,34 @@
+---
+title: Official skills and packs
+description: "The nine official AgileFlow skills and the three official packs."
+---
+
+Every official skill is small (30 to 45 lines), ends with an explicit "Done when" completion condition, stays provider-neutral, and ships with at least four eval scenarios including prompts that must not trigger it.
+
+## Skills
+
+| Skill | Activation | Requires | What it does |
+| --- | --- | --- | --- |
+| `diagnosing-bugs` | auto | | Reproduce, separate symptoms from the root cause, make the smallest fix that explains the evidence, verify the original failure is gone. |
+| `checking-blast-radius` | auto | | Find what a change could break elsewhere, and prove or disprove the one or two assumptions it depends on. Includes a checklist of surfaces where changes leak. |
+| `verifying-changes` | auto | | Produce the smallest meaningful proof that a changed behavior works, rather than running everything. |
+| `reviewing-changes` | auto | `git` | Review the actual diff for correctness, regressions, missing behavior, scope mistakes, and security where relevant, with a location and failure scenario for every finding. |
+| `filing-pr` | auto | `git`, `gh`, network | Check for an existing PR, follow title conventions, lead with the problem, include verification evidence, open the PR, return its URL. |
+| `babysitting-pr` | auto | `git`, `gh`, network | Monitor CI and review feedback, fix verified issues, keep scope, and stop at a defined done state (required checks green, feedback resolved, no merge blocker). |
+| `resolving-conflicts` | auto | `git` | Resolve merge/rebase conflicts by understanding both sides' intent, then verify and finish the operation. |
+| `interviewing-requirements` | manual | | Ask a few high-value questions (after checking the repository first) until there is a shared, actionable plan. Uses structured questions when the provider offers them, plain text otherwise. |
+| `simplifying-explanations` | manual | | Re-explain code, an error, or a previous answer at a simpler level. |
+
+Invoke manual skills by name, for example "use the interviewing-requirements skill and grill me about the onboarding redesign", `/interviewing-requirements` in Claude Code, or `$interviewing-requirements` in Codex.
+
+## Packs
+
+| Pack | Skills | Notes |
+| --- | --- | --- |
+| `@agileflow/core` | `diagnosing-bugs`, `checking-blast-radius`, `verifying-changes`, `reviewing-changes` | Installed by `agileflow init --yes`. |
+| `@agileflow/github` | `filing-pr`, `babysitting-pr`, `resolving-conflicts` | Pull request workflows through `gh` or your provider's GitHub tooling. |
+| `@agileflow/communication` | `interviewing-requirements`, `simplifying-explanations` | Manually invoked interaction styles. |
+
+```bash
+agileflow add @agileflow/github
+```

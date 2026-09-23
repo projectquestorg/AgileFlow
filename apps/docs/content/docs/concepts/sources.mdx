@@ -1,0 +1,68 @@
+---
+title: Skill sources
+description: "Registry, git, and local skills, including third-party content."
+---
+
+`source` in `agileflow.yaml` can be one of three kinds.
+
+## Registry
+
+```yaml
+diagnosing-bugs:
+  source: "@agileflow/diagnosing-bugs"
+  version: "^1"
+```
+
+The official registry is a static site served from the AgileFlow repository (`https://raw.githubusercontent.com/projectquestorg/AgileFlow/main/registry`). Every download is checked against the integrity published in the registry and, for locked versions, against `agileflow.lock` before anything is written. Published versions are immutable.
+
+Use another registry with `registry:` in `agileflow.yaml` (or personal `config.yaml`), or the `AGILEFLOW_REGISTRY` environment variable. It can be an HTTPS URL or a local directory with the same layout:
+
+```text
+v1/skills/index.json                 list of skills
+v1/skills/<name>/index.json          versions of a skill
+v1/skills/<name>/<version>.json      one version: integrity, package URL, metadata
+v1/packs/<name>.json                 a pack
+packages/<name>/<version>.json       the package
+```
+
+## Git
+
+```yaml
+release-notes:
+  source: "git+https://github.com/example/skills.git#skills/release-notes"
+  ref: main        # optional branch, tag, or commit
+```
+
+The fragment after `#` is the skill's path inside the repository. The lockfile records the exact commit, and `sync` checks out that commit (from the local cache when possible). `update` moves to the newest commit of `ref`. If a repository contains several skills and you omit the path, `add` asks which to install (or use `--skill <name>`).
+
+Only standard git transports are allowed, and git options cannot be smuggled in through the URL.
+
+## Local paths
+
+```yaml
+my-release-flow:
+  source: ./skills/my-release-flow
+```
+
+A local directory is copied into `.agents/skills` and managed like any other skill. If the source directory changes, `sync` reports that it no longer matches the lockfile and `update` picks up the change.
+
+A path that points at the skill's own install directory (`.agents/skills/<id>`) registers a **locally owned** skill: nothing is copied and AgileFlow never rewrites it. Forks work this way.
+
+## Third-party content
+
+Skills contain instructions and can contain executable scripts, so they are part of your trust boundary. For anything outside the official `@agileflow` scope, `add` shows:
+
+```text
+Installing external skill:
+Skill: deployer
+Source: /path/to/third/deployer
+Contains:
+  SKILL.md
+  1 reference file
+  1 executable script
+Scripts:
+  scripts/deploy.sh
+Review source before installing untrusted skills.
+```
+
+Installing and running are separate trust events: AgileFlow never executes a skill's scripts during installation. Skill names are validated, so a hostile `SKILL.md` name cannot write outside `.agents/skills`.

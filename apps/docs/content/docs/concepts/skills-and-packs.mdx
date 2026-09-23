@@ -1,0 +1,77 @@
+---
+title: Skills and packs
+description: "What an AgileFlow skill is, how it is installed, and what packs are."
+---
+
+## Skills
+
+An AgileFlow skill is a standard Agent Skill: a directory with a `SKILL.md` whose frontmatter has a `name` and a `description`. Providers read the name and description up front and load the body only when the skill is relevant (or when you invoke it by name).
+
+```text
+diagnosing-bugs/
+├── SKILL.md                 # required: frontmatter + instructions
+├── references/              # optional: loaded only when needed
+├── scripts/                 # optional: deterministic helpers
+├── evals/                   # AgileFlow eval scenarios (not installed into projects)
+└── agileflow.skill.yaml     # AgileFlow packaging metadata
+```
+
+`agileflow.skill.yaml` holds packaging metadata that providers ignore:
+
+```yaml
+schema: 1
+package:
+  name: "@agileflow/diagnosing-bugs"
+  version: "1.0.0"
+activation:
+  mode: auto            # or manual
+requirements:
+  commands: []          # e.g. [git, gh]
+  network: none         # none | optional | required
+capabilities:
+  modifiesFiles: possible
+  longRunning: false
+  userInteraction: none # none | optional | required
+compatibility:
+  agentSkills: true
+```
+
+### How a skill is installed
+
+When AgileFlow writes a skill to `.agents/skills/<id>`, it:
+
+1. leaves out `evals/`;
+2. sets the frontmatter `name` to the install id;
+3. adds a notice after the frontmatter: `<!-- Managed by AgileFlow. Run agileflow fork <id> before customizing this copy. -->`;
+4. adds one line for [question preference](/commands/configure#question-preference) to interactive skills, when set;
+5. translates `activation: manual` for every provider (see [Providers](/concepts/providers#manual-skills)).
+
+The result is deterministic, so AgileFlow can tell exactly whether you edited a skill: the hash of the directory is compared with `baseHash` in the lockfile.
+
+### Automatic and manual skills
+
+- **auto:** the provider may load the skill when a request matches its description (for example `diagnosing-bugs` for "the login page crashes").
+- **manual:** the skill changes the style of the interaction (for example `interviewing-requirements`), so it loads only when you invoke it by name, such as `/interviewing-requirements` in Claude Code or `$interviewing-requirements` in Codex.
+
+### Versions
+
+Skills use semantic versioning independently of the CLI: patch for wording and eval improvements, minor for new optional capability, major for a behavioral contract change. `agileflow.yaml` holds a range such as `^1`, so major changes are never installed by surprise.
+
+## Packs
+
+A pack is a named list of skills with version ranges. It has no runtime, hooks, or agents. `agileflow add @agileflow/github` adds each skill in the pack to `agileflow.yaml` individually; after that, the pack plays no further role.
+
+```yaml
+name: github
+version: 1
+skills:
+  - "@agileflow/filing-pr@^1"
+  - "@agileflow/babysitting-pr@^1"
+  - "@agileflow/resolving-conflicts@^1"
+```
+
+The official skills and packs are listed in [Official skills](/reference/official-skills).
+
+## Unmanaged skills
+
+Skills you write yourself in `.agents/skills/` without adding them to `agileflow.yaml` are unmanaged. AgileFlow never modifies or deletes them, and `list` and `check` show them as "left untouched". To track one, register it in place with `agileflow add ./.agents/skills/<name>`; it becomes locally owned.

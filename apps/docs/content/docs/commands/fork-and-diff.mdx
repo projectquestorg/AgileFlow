@@ -1,0 +1,54 @@
+---
+title: fork and diff
+description: "Own a skill permanently, and compare skills with their installed base or upstream."
+---
+
+## agileflow fork
+
+```bash
+agileflow fork filing-pr
+```
+
+```text
+filing-pr is now locally owned.
+Upstream:
+  @agileflow/filing-pr@1.0.0
+Local source:
+  .agents/skills/filing-pr
+AgileFlow will no longer overwrite this skill during updates.
+```
+
+Forking removes the "Managed by AgileFlow" notice, keeps any edits you already made, and changes `agileflow.yaml` from:
+
+```yaml
+filing-pr:
+  source: "@agileflow/filing-pr"
+  version: "^1.0.0"
+```
+
+to:
+
+```yaml
+filing-pr:
+  source: .agents/skills/filing-pr
+  provenance:
+    forkedFrom: "@agileflow/filing-pr@1.0.0"
+```
+
+The skill is now yours: `update` never modifies it, and Claude Code links and `check` keep working. When upstream moves on, `update` tells you:
+
+```text
+Your fork filing-pr originated from @agileflow/filing-pr@1.0.0.
+Upstream is now 1.1.0.
+Run:
+  agileflow diff filing-pr --upstream
+```
+
+## agileflow diff
+
+```bash
+agileflow diff filing-pr              # installed base vs your current files
+agileflow diff filing-pr --upstream   # your copy vs the latest upstream version
+```
+
+`diff` prints unified diffs per file. For a managed skill, the base is the exact package version in the lockfile rendered the way AgileFlow installed it, so the diff shows only your edits.
