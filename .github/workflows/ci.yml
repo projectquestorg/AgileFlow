@@ -1,0 +1,82 @@
+name: CI
+
+# Typecheck, tests, registry/schema freshness, the official skill release
+# gate, and a smoke test of the built CLI.
+on:
+  push:
+    branches: [main, v5]
+  pull_request:
+    paths:
+      - apps/cli/**
+      - packages/**
+      - skills/**
+      - packs/**
+      - registry/**
+      - schemas/**
+      - fixtures/**
+      - package.json
+      - tsconfig.json
+      - vitest.config.ts
+      - .github/workflows/ci.yml
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # apps/docs has a pre-existing peer-dependency conflict.
+      - name: Install workspace dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit and integration tests
+        run: npx vitest run
+      - name: Registry is up to date with skills/ and packs/
+        run: npm run registry:check
+      - name: Schemas are up to date
+        working-directory: apps/cli
+        run: npx tsx scripts/build-schemas.ts --check
+      - name: Official skills pass the release gate
+        working-directory: apps/cli
+        run: npx tsx src/index.ts eval --lint --catalog ../../skills
+      - name: Build
+        run: npm run build:cli
+      - name: 'Smoke test: init --yes in a clean repository'
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: |
+          set -e
+          dir=$(mktemp -d)
+          cd "$dir"
+          git init -q
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" init --yes
+          test -f agileflow.yaml
+          test -f agileflow.lock
+          test -f .agents/skills/diagnosing-bugs/SKILL.md
+          test ! -e docs
+          test ! -e .agileflow
+          node "$GITHUB_WORKSPACE/apps/cli/bin/agileflow.js" check
+      - name: 'Published package: install from tarball, audit runtime deps, run it'
+        env:
+          AGILEFLOW_REGISTRY: ${{ github.workspace }}/registry
+          AGILEFLOW_NO_UPDATE_NOTIFIER: '1'
+        run: |
+          set -e
+          dir=$(mktemp -d)
+          tarball=$(cd apps/cli && npm pack --silent --pack-destination "$dir")
+          cd "$dir"
+          npm init -y >/dev/null
+          npm install "./$tarball" --no-fund
+          npm audit --omit=dev --audit-level=high
+          mkdir project && cd project && git init -q
+          ../node_modules/.bin/agileflow init --yes
+          ../node_modules/.bin/agileflow check

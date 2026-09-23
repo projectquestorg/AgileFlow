@@ -1,0 +1,35 @@
+name: Publish to npm
+
+# Triggered by tags created with scripts/release.sh (e.g. v5.0.0, v5.1.0-alpha.1).
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Install workspace dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Release gate (typecheck, tests, registry, skills)
+        run: npm run release-gate
+      - name: Build
+        run: npm run build:cli
+      - name: Publish
+        working-directory: apps/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" == *-* ]]; then tag=next; else tag=latest; fi
+          npm publish --access public --provenance --tag "$tag"

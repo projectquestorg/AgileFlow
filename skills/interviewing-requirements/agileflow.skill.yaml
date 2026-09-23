@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/interviewing-requirements"
+  version: "1.0.0"
+activation:
+  mode: manual
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: no
+  longRunning: false
+  userInteraction: required
+compatibility:
+  agentSkills: true

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "@agileflow/diagnosing-bugs",
+  "description": "Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Do not use for general conceptual questions or new feature work.",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "@agileflow/diagnosing-bugs",
+      "version": "1.0.0",
+      "integrity": "sha256-XsFe6rTBc7rDhel0MbeYm9LdIcQPRyfsdAqwOlnTQvE=",
+      "url": "packages/@agileflow/diagnosing-bugs/1.0.0.json",
+      "metadata": {
+        "description": "Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Do not use for general conceptual questions or new feature work.",
+        "activation": "auto",
+        "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    }
+  }
+}

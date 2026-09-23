@@ -1,229 +1,119 @@
 #!/bin/bash
 #
-# AgileFlow Automated Release Script
+# AgileFlow v5 release script.
 #
 # Usage: ./scripts/release.sh <version> <release-title>
-# Example: ./scripts/release.sh 2.32.0 "Dynamic Content Injection System"
+# Example: ./scripts/release.sh 5.0.0-alpha.1 "Portable skill manager MVP"
 #
-# This script automates the entire release process:
-# 1. Syncs README from root to packages/cli/
-# 2. Updates CHANGELOG.md with commits since last tag (auto-parsed)
-# 3. Bumps version in packages/cli/package.json
-# 4. Bumps version in root package.json
-# 5. Commits and pushes all changes
-# 6. Pushes to GitHub
-# 7. Creates and pushes git tag
-# 8. Creates GitHub release
-# → GitHub Actions automatically publishes to npm
+# 1. Preflight: on main, clean tree, tag unused, release gate green, no high
+#    npm audit findings in the published package's dependencies.
+# 2. Moves CHANGELOG "Unreleased" notes under the new version.
+# 3. Bumps apps/cli/package.json and the root package.json together.
+# 4. Syncs the npm README (apps/cli/README.md) from the root README.
+# 5. Commits, tags v<version>, pushes, and creates the GitHub release.
+#    .github/workflows/publish.yml publishes to npm on the tag
+#    (prerelease versions go to the `next` dist-tag).
 #
+# Skills are NOT released here: they are versioned independently in skills/
+# and served from registry/ on main (see apps/cli/PUBLISHING.md).
 
-set -e  # Exit on error
+set -euo pipefail
 
-VERSION=$1
-TITLE=$2
+VERSION=${1:-}
+TITLE=${2:-}
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
+CLI="$ROOT/apps/cli"
+CHANGELOG="$CLI/CHANGELOG.md"
 
-# Validate arguments
-if [ -z "$VERSION" ]; then
-  echo "Error: Version number required"
+usage() {
   echo "Usage: ./scripts/release.sh <version> <release-title>"
-  echo "Example: ./scripts/release.sh 2.32.0 \"Dynamic Content Injection\""
+  echo "Example: ./scripts/release.sh 5.0.0-alpha.1 \"Portable skill manager MVP\""
+  exit 1
+}
+
+[ -z "$VERSION" ] && usage
+[ -z "$TITLE" ] && usage
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+  echo "Error: '$VERSION' is not a semver version (X.Y.Z or X.Y.Z-pre.N)"
   exit 1
 fi
 
-# Validate version format (semver: X.Y.Z where X, Y, Z are numbers)
-if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: Invalid version format '$VERSION'"
-  echo "Version must be in semver format: X.Y.Z (e.g., 2.32.0)"
+cd "$ROOT"
+
+echo "Preflight"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" != "main" ]; then
+  echo "Error: releases are cut from main (current branch: $BRANCH)."
+  echo "The skill registry is served from main, so merge first."
+  exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Error: working tree is not clean."
+  exit 1
+fi
+if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+  echo "Error: tag v$VERSION already exists."
+  exit 1
+fi
+CURRENT=$(node -p "require('$CLI/package.json').version")
+if ! node -e "const s=require('$ROOT/node_modules/semver');process.exit(s.gt('$VERSION','$CURRENT')?0:1)"; then
+  echo "Error: $VERSION is not greater than the current version $CURRENT."
   exit 1
 fi
 
-if [ -z "$TITLE" ]; then
-  echo "Error: Release title required"
-  echo "Usage: ./scripts/release.sh <version> <release-title>"
-  echo "Example: ./scripts/release.sh 2.32.0 \"Dynamic Content Injection\""
-  exit 1
-fi
+echo "Release gate (typecheck, tests, registry, schemas, skill lint)"
+npm run release-gate
 
-echo "Starting release process for v$VERSION - $TITLE"
-echo ""
+echo "npm audit of the published package, installed the way users install it"
+# A workspace-level audit also reports website/test tooling; audit only what ships.
+(cd "$CLI" && npm run build >/dev/null)
+AUDIT_DIR=$(mktemp -d)
+TARBALL=$(cd "$CLI" && npm pack --silent --pack-destination "$AUDIT_DIR")
+(cd "$AUDIT_DIR" && npm init -y >/dev/null && npm install "./$TARBALL" --no-fund >/dev/null \
+  && npm audit --omit=dev --audit-level=high \
+  && ./node_modules/.bin/agileflow --version >/dev/null)
+rm -rf "$AUDIT_DIR"
 
-# Step 0: Sync documentation counts
-echo "Step 0: Syncing component counts across documentation..."
-node scripts/sync-counts.js
-echo ""
-
-# Step 0.5: Validate documentation
-echo "Step 0.5: Validating documentation..."
-node scripts/validate-docs.js
-if [ $? -ne 0 ]; then
-  echo ""
-  echo "⚠️  Documentation has staleness issues. Review above and fix before releasing."
-  echo "   (Continuing anyway - these are warnings, not blockers)"
-fi
-echo ""
-
-# Step 0.6: Run format and lint checks BEFORE making any changes
-echo "Step 0.6: Running format and lint checks..."
-cd packages/cli
-if ! npm run format:check 2>/dev/null; then
-  echo ""
-  echo "❌ Formatting issues found. Running prettier --write to fix..."
-  npm run format 2>/dev/null || npx prettier --write .
-  echo "✅ Formatting fixed. Files will be included in release commit."
-fi
-if ! npm run lint 2>/dev/null; then
-  echo ""
-  echo "❌ Linting errors found. Please fix before releasing."
-  exit 1
-fi
-cd ../..
-echo "✅ Format and lint checks passed"
-echo ""
-
-# Step 0.7: Check for npm audit vulnerabilities (high severity) in CLI package only
-echo "Step 0.7: Checking for high-severity npm vulnerabilities in packages/cli..."
-cd packages/cli
-if ! npm audit --audit-level=high --omit=dev 2>/dev/null; then
-  echo ""
-  echo "❌ High-severity vulnerabilities found in packages/cli!"
-  echo "   Run 'cd packages/cli && npm audit fix' to resolve before releasing."
-  echo "   If fixes require breaking changes, consider addressing manually."
-  cd ../..
-  exit 1
-fi
-cd ../..
-echo "✅ No high-severity vulnerabilities in published package"
-echo ""
-
-# Step 0.8: Run test suite
-echo "Step 0.8: Running test suite..."
-cd packages/cli
-if ! npm test 2>&1 | tail -5; then
-  echo ""
-  echo "❌ Tests failed! Fix failing tests before releasing."
-  cd ../..
-  exit 1
-fi
-cd ../..
-echo "✅ All tests passed"
-echo ""
-
-# Step 1: Sync README from root to CLI (root is source of truth)
-echo "Step 1: Syncing README.md from root to packages/cli/..."
-cp README.md packages/cli/README.md
-
-# Step 2: Update CHANGELOG.md
-echo "Step 2: Updating CHANGELOG.md..."
-CHANGELOG_FILE="packages/cli/CHANGELOG.md"
+echo "Changelog"
 DATE=$(date +%Y-%m-%d)
+node - "$CHANGELOG" "$VERSION" "$DATE" "$TITLE" <<'NODE'
+const fs = require('fs');
+const [file, version, date, title] = process.argv.slice(2);
+const text = fs.readFileSync(file, 'utf8');
+const marker = '## [Unreleased]';
+const at = text.indexOf(marker);
+if (at === -1) throw new Error(`${file} has no "${marker}" section`);
+const body = text.slice(at + marker.length);
+const next = body.search(/\n## \[/);
+const notes = (next === -1 ? body : body.slice(0, next)).trim();
+const rest = next === -1 ? '' : body.slice(next);
+const section = `## [${version}] - ${date}\n\n${title}.\n${notes ? `\n${notes}\n` : ''}`;
+fs.writeFileSync(file, `${text.slice(0, at)}${marker}\n\n${section}${rest}`);
+NODE
 
-# Get the last tag
-LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+echo "Version bump: $CURRENT -> $VERSION"
+for f in "$CLI/package.json" "$ROOT/package.json"; do
+  node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('$f','utf8'));p.version='$VERSION';fs.writeFileSync('$f',JSON.stringify(p,null,2)+'\n')"
+done
+npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund >/dev/null
 
-# Get commits since last tag, parse conventional commits
-if [ -n "$LAST_TAG" ]; then
-  COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --no-merges 2>/dev/null || echo "")
-else
-  COMMITS=$(git log --pretty=format:"%s" --no-merges -20 2>/dev/null || echo "")
-fi
+echo "npm README"
+sed -e 's#(ARCHITECTURE.md)#(https://github.com/projectquestorg/AgileFlow/blob/main/ARCHITECTURE.md)#' \
+    -e 's#src="assets/banner.png"#src="https://raw.githubusercontent.com/projectquestorg/AgileFlow/main/assets/banner.png"#' \
+    README.md > "$CLI/README.md"
 
-# Determine category from commits (for section header)
-HAS_FEAT=false
-HAS_FIX=false
-HAS_CHANGE=false
-
-while IFS= read -r commit; do
-  [ -z "$commit" ] && continue
-  [[ "$commit" == *"bump version"* ]] && continue
-  [[ "$commit" == *"chore: bump"* ]] && continue
-
-  if [[ "$commit" == feat:* ]] || [[ "$commit" == feat\(*\):* ]]; then
-    HAS_FEAT=true
-  elif [[ "$commit" == fix:* ]] || [[ "$commit" == fix\(*\):* ]]; then
-    HAS_FIX=true
-  elif [[ "$commit" == refactor:* ]] || [[ "$commit" == perf:* ]] || [[ "$commit" == chore:* ]] || [[ "$commit" == docs:* ]]; then
-    HAS_CHANGE=true
-  fi
-done <<< "$COMMITS"
-
-# Build the new changelog section using TITLE as main description
-NEW_SECTION="## [${VERSION}] - ${DATE}\n\n"
-
-# Determine the appropriate category based on commits
-if [ "$HAS_FEAT" = true ]; then
-  NEW_SECTION="${NEW_SECTION}### Added\n- ${TITLE}\n"
-elif [ "$HAS_FIX" = true ]; then
-  NEW_SECTION="${NEW_SECTION}### Fixed\n- ${TITLE}\n"
-elif [ "$HAS_CHANGE" = true ]; then
-  NEW_SECTION="${NEW_SECTION}### Changed\n- ${TITLE}\n"
-else
-  # Default to Added if no conventional commits found
-  NEW_SECTION="${NEW_SECTION}### Added\n- ${TITLE}\n"
-fi
-
-# Insert new section after ## [Unreleased]
-if [ -f "$CHANGELOG_FILE" ]; then
-  # Create temp file with new content
-  awk -v section="$NEW_SECTION" '
-    /^## \[Unreleased\]/ {
-      print
-      print ""
-      printf section
-      next
-    }
-    { print }
-  ' "$CHANGELOG_FILE" > "${CHANGELOG_FILE}.tmp"
-  mv "${CHANGELOG_FILE}.tmp" "$CHANGELOG_FILE"
-  echo "  Updated $CHANGELOG_FILE with v$VERSION changes"
-else
-  echo "  Warning: $CHANGELOG_FILE not found, skipping changelog update"
-fi
-
-# Step 3: Bump version in packages/cli/package.json (using jq for safe JSON update)
-echo "Step 3: Bumping version in packages/cli/package.json..."
-jq --arg v "$VERSION" '.version = $v' packages/cli/package.json > packages/cli/package.json.tmp && mv packages/cli/package.json.tmp packages/cli/package.json
-
-# Step 4: Bump version in root package.json (using jq for safe JSON update)
-echo "Step 4: Bumping version in root package.json..."
-jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
-
-# Step 5: Commit changes
-echo ""
-echo "Step 5: Committing changes..."
-# Add core release files
-git add README.md packages/cli/README.md packages/cli/package.json package.json packages/cli/CHANGELOG.md
-# Add files potentially updated by sync-counts.js
-git add docs/04-architecture/*.md 2>/dev/null || true
-git add CLAUDE.md 2>/dev/null || true
-git add apps/docs/content/docs/index.mdx 2>/dev/null || true
-git add apps/docs/content/docs/agents/index.mdx 2>/dev/null || true
-git add apps/docs/content/docs/commands/index.mdx 2>/dev/null || true
-git add apps/website/lib/landing-content.ts 2>/dev/null || true
-git commit -m "chore: bump version to v${VERSION}"
-
-# Step 6: Push to GitHub
-echo "Step 6: Pushing to GitHub..."
+echo "Commit, tag, push"
+git add package.json package-lock.json "$CLI/package.json" "$CHANGELOG" "$CLI/README.md"
+git commit -m "chore: release v${VERSION}"
+git tag -a "v${VERSION}" -m "Release v${VERSION} - ${TITLE}"
 git push origin main
+git push origin "v${VERSION}"
 
-# Step 7: Create and push git tag
-echo "Step 7: Creating and pushing git tag v${VERSION}..."
-git tag -a v${VERSION} -m "Release v${VERSION} - ${TITLE}"
-git push origin v${VERSION}
-
-# Step 8: Create GitHub release with editor for notes
-echo "Step 8: Creating GitHub release..."
-echo ""
-echo "Enter release notes (opens editor)..."
-gh release create v${VERSION} \
-  --title "v${VERSION} - ${TITLE}" \
-  --generate-notes \
-  --latest
+PRERELEASE=()
+if [[ "$VERSION" == *-* ]]; then PRERELEASE=(--prerelease); else PRERELEASE=(--latest); fi
+gh release create "v${VERSION}" --title "v${VERSION} - ${TITLE}" --generate-notes "${PRERELEASE[@]}"
 
 echo ""
-echo "Release complete!"
-echo ""
-echo "Next steps:"
-echo "   1. GitHub Actions is now publishing to npm"
-echo "   2. Check: https://github.com/projectquestorg/AgileFlow/actions"
-echo "   3. Verify: npm view agileflow version"
-echo ""
+echo "Released v${VERSION}. publish.yml is publishing to npm:"
+echo "  https://github.com/projectquestorg/AgileFlow/actions"
+echo "  npm view agileflow@${VERSION} version"

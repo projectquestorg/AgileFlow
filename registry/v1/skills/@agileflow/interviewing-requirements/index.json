@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "@agileflow/interviewing-requirements",
+  "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide\", or \"question me about this\". Do not activate for ordinary implementation requests.",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "@agileflow/interviewing-requirements",
+      "version": "1.0.0",
+      "integrity": "sha256-jnHmq9JYNNz0caIhBjlxDgKDj2Bi7dcIaGUSyJ2L8Vk=",
+      "url": "packages/@agileflow/interviewing-requirements/1.0.0.json",
+      "metadata": {
+        "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide\", or \"question me about this\". Do not activate for ordinary implementation requests.",
+        "activation": "manual",
+        "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    }
+  }
+}

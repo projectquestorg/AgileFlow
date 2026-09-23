@@ -1,0 +1,139 @@
+name: rebase-conflicts
+skill: resolving-conflicts
+prompt: |
+  My rebase onto main stopped with conflicts in src/billing/invoice.js and
+  package-lock.json. Sort it out.
+invocation: implicit
+fixture: eval-service
+setup: |
+  git checkout -q -b feature/invoice-tax
+  cat > src/billing/invoice.js <<'JS'
+  import { discountFor, roundCents } from './discounts.js';
+
+  /**
+   * @typedef {{ sku: string, price: number, qty: number }} LineItem
+   * @typedef {{ id: string, name: string, discountPercent?: number }} Customer
+   */
+
+  /**
+   * Compute invoice totals. Tax is charged on the discounted amount.
+   * @param {{ items: LineItem[], customer?: Customer, taxRate?: number }} input
+   * @returns {{ subtotal: number, discount: number, tax: number, total: number }}
+   */
+  export function calculateInvoice({ items, customer, taxRate = 0 }) {
+    let subtotal = 0;
+    for (const item of items) {
+      if (item.qty < 0) throw new RangeError(`negative quantity for ${item.sku}`);
+      subtotal += item.price * item.qty;
+    }
+    subtotal = roundCents(subtotal);
+    const discount = discountFor(customer, subtotal);
+    const tax = roundCents((subtotal - discount) * taxRate);
+    return { subtotal, discount, tax, total: roundCents(subtotal - discount + tax) };
+  }
+  JS
+  cat > package.json <<'JSON'
+  {
+    "name": "eval-service",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Small order/billing service used as an eval sandbox.",
+    "type": "module",
+    "license": "MIT",
+    "scripts": {
+      "start": "node src/server.js",
+      "test": "node --test",
+      "deploy": "node src/deploy.js"
+    },
+    "engines": {
+      "node": ">=20"
+    }
+  }
+  JSON
+  cat > package-lock.json <<'JSON'
+  {
+    "name": "eval-service",
+    "version": "1.0.0",
+    "lockfileVersion": 3,
+    "requires": true,
+    "packages": {
+      "": {
+        "name": "eval-service",
+        "version": "1.0.0",
+        "license": "MIT",
+        "engines": {
+          "node": ">=20"
+        }
+      }
+    }
+  }
+  JSON
+  git commit -qam 'feat(billing): charge tax on the discounted invoice amount'
+  cat > test/invoice-tax.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { calculateInvoice } from '../src/billing/invoice.js';
+
+  test('adds tax on top of the subtotal', () => {
+    const invoice = calculateInvoice({ items: [{ sku: 'plan-basic', price: 20, qty: 1 }], taxRate: 0.2 });
+    assert.equal(invoice.tax, 4);
+    assert.equal(invoice.total, 24);
+  });
+  JS
+  git add test/invoice-tax.test.js
+  git commit -qm 'test(billing): cover invoice tax'
+
+  git checkout -q main
+  sed 's/customer?.discount_percent/customer?.discountPercent/' src/billing/discounts.js > discounts.tmp
+  mv discounts.tmp src/billing/discounts.js
+  cat > src/billing/invoice.js <<'JS'
+  import { discountFor, roundCents } from './discounts.js';
+
+  /**
+   * @typedef {{ sku: string, price: number, qty: number }} LineItem
+   * @typedef {{ id: string, name: string, discountPercent?: number }} Customer
+   */
+
+  /**
+   * Compute invoice totals.
+   * @param {{ items: LineItem[], customer?: Customer, currency?: string }} input
+   * @returns {{ subtotal: number, discount: number, total: number, currency: string }}
+   */
+  export function calculateInvoice({ items, customer, currency = 'USD' }) {
+    let subtotal = 0;
+    for (const item of items) {
+      if (item.qty < 0) throw new RangeError(`negative quantity for ${item.sku}`);
+      if (!(item.price >= 0)) throw new RangeError(`invalid price for ${item.sku}`);
+      subtotal += item.price * item.qty;
+    }
+    subtotal = roundCents(subtotal);
+    const discount = discountFor(customer, subtotal);
+    return { subtotal, discount, total: roundCents(subtotal - discount), currency };
+  }
+  JS
+  cat >> test/invoice.test.js <<'JS'
+
+  test('rejects invalid prices and reports the currency', () => {
+    assert.throws(() => calculateInvoice({ items: [{ sku: 'x', price: Number.NaN, qty: 1 }] }), RangeError);
+    assert.equal(calculateInvoice({ items, currency: 'EUR' }).currency, 'EUR');
+  });
+  JS
+  sed 's/"version": "1.0.0"/"version": "1.1.0"/' package.json > pkg.tmp
+  mv pkg.tmp package.json
+  sed 's/"version": "1.0.0"/"version": "1.1.0"/' package-lock.json > lock.tmp
+  mv lock.tmp package-lock.json
+  git commit -qam 'fix(billing): apply customer discounts, validate prices, add currency (v1.1.0)'
+
+  git checkout -q feature/invoice-tax
+  git rebase main >/dev/null 2>&1 || true
+  conflicted=$(git diff --name-only --diff-filter=U)
+  echo "$conflicted" | grep -qx 'src/billing/invoice.js'
+  echo "$conflicted" | grep -qx 'package-lock.json'
+assert:
+  shouldActivate: true
+rubric:
+  - inspects the commits on both sides to understand intent before editing
+  - preserves both behaviors in invoice.js rather than picking one side wholesale
+  - regenerates the lockfile instead of hand-merging it
+  - checks for leftover conflict markers and runs relevant tests
+  - continues the rebase or clearly reports what remains

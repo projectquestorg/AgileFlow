@@ -1,0 +1,19 @@
+name: verify-behavior-change
+skill: verifying-changes
+prompt: |
+  I just changed the rate limiter so it allows 100 requests per minute
+  instead of 60. Make sure it actually works.
+invocation: implicit
+fixture: eval-service
+setup: |
+  sed 's/DEFAULT_LIMIT = 60;/DEFAULT_LIMIT = 100;/' src/rate-limit.js > rl.tmp
+  mv rl.tmp src/rate-limit.js
+  sed 's/allows 60 requests/allows 100 requests/; s/i < 60;/i < 100;/' test/rate-limit.test.js > rlt.tmp
+  mv rlt.tmp test/rate-limit.test.js
+assert:
+  shouldActivate: true
+rubric:
+  - states the behavior claim being verified
+  - runs a targeted test or exercises the limiter directly rather than the whole suite
+  - shows the actual command output as evidence
+  - names anything that could not be verified

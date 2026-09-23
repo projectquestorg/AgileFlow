@@ -1,0 +1,7 @@
+name: one-off-ci-question-does-not-babysit
+skill: babysitting-pr
+prompt: |
+  How do I configure GitHub Actions to cache node_modules?
+invocation: implicit
+assert:
+  shouldActivate: false

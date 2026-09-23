@@ -1,0 +1,30 @@
+.agents/
+.agents/skills/
+.agents/skills/checking-blast-radius/
+.agents/skills/checking-blast-radius/agileflow.skill.yaml
+.agents/skills/checking-blast-radius/references/
+.agents/skills/checking-blast-radius/references/impact-surfaces.md
+.agents/skills/checking-blast-radius/SKILL.md
+.agents/skills/diagnosing-bugs/
+.agents/skills/diagnosing-bugs/agileflow.skill.yaml
+.agents/skills/diagnosing-bugs/SKILL.md
+.agents/skills/reviewing-changes/
+.agents/skills/reviewing-changes/agileflow.skill.yaml
+.agents/skills/reviewing-changes/SKILL.md
+.agents/skills/verifying-changes/
+.agents/skills/verifying-changes/agileflow.skill.yaml
+.agents/skills/verifying-changes/SKILL.md
+.claude/
+.claude/skills/
+.claude/skills/checking-blast-radius -> ../../.agents/skills/checking-blast-radius
+.claude/skills/diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs
+.claude/skills/reviewing-changes -> ../../.agents/skills/reviewing-changes
+.claude/skills/verifying-changes -> ../../.agents/skills/verifying-changes
+agileflow.lock
+agileflow.yaml
+package.json
+README.md
+src/
+src/cart.js
+test/
+test/cart.test.js

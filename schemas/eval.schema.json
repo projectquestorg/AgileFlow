@@ -1,0 +1,62 @@
+{
+  "$id": "https://agileflow.dev/schemas/eval.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "skill": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "invocation": {
+      "default": "implicit",
+      "type": "string",
+      "enum": [
+        "implicit",
+        "explicit"
+      ]
+    },
+    "fixture": {
+      "type": "string"
+    },
+    "setup": {
+      "type": "string"
+    },
+    "assert": {
+      "type": "object",
+      "properties": {
+        "shouldActivate": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "shouldActivate"
+      ],
+      "additionalProperties": false
+    },
+    "rubric": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "name",
+    "skill",
+    "prompt",
+    "assert"
+  ],
+  "additionalProperties": false
+}

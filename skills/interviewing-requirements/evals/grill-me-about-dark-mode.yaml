@@ -1,0 +1,13 @@
+name: grill-me-about-dark-mode
+skill: interviewing-requirements
+prompt: |
+  Grill me about how dark mode should work before implementing it.
+invocation: explicit
+assert:
+  shouldActivate: true
+rubric:
+  - inspects existing theming or styling code before asking questions
+  - does not ask questions the repository already answers
+  - asks a small round of questions with concrete options and a recommendation
+  - does not start implementing during the interview
+  - ends with a summary of goal, decisions, and assumptions

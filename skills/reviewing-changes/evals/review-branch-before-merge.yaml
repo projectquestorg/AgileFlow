@@ -1,0 +1,101 @@
+name: review-branch-before-merge
+skill: reviewing-changes
+prompt: |
+  Can you review my changes on this branch before I merge to main?
+invocation: implicit
+fixture: eval-service
+setup: |
+  git checkout -q -b feature/discounts
+  sed 's/customer?.discount_percent/customer?.discountPercent/' src/billing/discounts.js > discounts.tmp
+  mv discounts.tmp src/billing/discounts.js
+  git commit -qam 'fix(billing): read discountPercent from the customer record'
+  cat > src/billing/codes.js <<'JS'
+  /** Promo codes: percent off, optionally expiring at `expiresAt` (ISO 8601). */
+  const CODES = {
+    WELCOME10: { percent: 10 },
+    SPRING15: { percent: 15, expiresAt: '2025-06-01T00:00:00Z' },
+    LAUNCH20: { percent: 20, expiresAt: '2099-12-31T23:59:59Z' },
+  };
+
+  /** Percent off for a promo code, or 0 when the code is unknown or expired. */
+  export function codePercent(code, now = new Date()) {
+    const entry = CODES[String(code).toUpperCase()];
+    if (!entry) return 0;
+    if (entry.expiresAt && new Date(entry.expiresAt) > now) return 0;
+    return entry.percent;
+  }
+  JS
+  cat > src/billing/discounts.js <<'JS'
+  /**
+   * Discount, in currency units, a customer gets on a subtotal.
+   * Customers carry an optional whole-number `discountPercent` (0-100); a promo
+   * code adds `extraPercent` on top. The combined percent is capped at 100.
+   */
+  export function discountFor(customer, subtotal, extraPercent = 0) {
+    const percent = Number(customer?.discountPercent ?? 0) + extraPercent;
+    if (!Number.isFinite(percent) || percent <= 0) return 0;
+    return roundCents((subtotal * Math.min(percent, 100)) / 100);
+  }
+
+  export function roundCents(amount) {
+    return Math.round(amount * 100) / 100;
+  }
+  JS
+  cat > src/billing/invoice.js <<'JS'
+  import { discountFor, roundCents } from './discounts.js';
+  import { codePercent } from './codes.js';
+
+  /**
+   * @typedef {{ sku: string, price: number, qty: number }} LineItem
+   * @typedef {{ id: string, name: string, discountPercent?: number }} Customer
+   */
+
+  /**
+   * Compute invoice totals.
+   * @param {{ items: LineItem[], customer?: Customer, code?: string }} input
+   * @returns {{ subtotal: number, discount: number, total: number }}
+   */
+  export function calculateInvoice({ items, customer, code }) {
+    let subtotal = 0;
+    for (const item of items) {
+      if (item.qty < 0) throw new RangeError(`negative quantity for ${item.sku}`);
+      subtotal += item.price * item.qty;
+    }
+    subtotal = roundCents(subtotal);
+    const discount = discountFor(customer, subtotal, code ? codePercent(code) : 0);
+    console.log('invoice debug', { subtotal, discount, code });
+    return { subtotal, discount, total: roundCents(subtotal - discount) };
+  }
+  JS
+  cat > test/codes.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { calculateInvoice } from '../src/billing/invoice.js';
+  import { codePercent } from '../src/billing/codes.js';
+
+  test('codePercent looks codes up case-insensitively', () => {
+    assert.equal(codePercent('welcome10'), 10);
+    assert.equal(codePercent('NOPE'), 0);
+  });
+
+  test('promo codes stack with the customer discount', () => {
+    const invoice = calculateInvoice({
+      items: [{ sku: 'plan-pro', price: 50, qty: 2 }],
+      customer: { id: 'c1', name: 'Acme Corp', discountPercent: 10 },
+      code: 'WELCOME10',
+    });
+    assert.equal(invoice.total, 80);
+  });
+  JS
+  sed 's/SESSION_TTL_MS = 60 \* 60 \* 1000; \/\/ 1 hour/SESSION_TTL_MS = 24 * 60 * 60 * 1000; \/\/ 24 hours/' src/auth/sessions.js > sessions.tmp
+  mv sessions.tmp src/auth/sessions.js
+  git add -A
+  git commit -qm 'feat(billing): support promo codes on invoices'
+assert:
+  shouldActivate: true
+rubric:
+  - reads the actual diff against the correct base branch
+  - grounds each finding in a file and line with a concrete failure scenario
+  - flags unrelated or accidental changes as scope issues
+  - orders findings by severity and gives an overall verdict
+  - does not edit code unprompted

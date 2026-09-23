@@ -1,0 +1,72 @@
+name: regression-debugging
+skill: diagnosing-bugs
+prompt: |
+  Login started returning 500s after yesterday's auth refactor.
+  Find the problem and fix it.
+invocation: implicit
+fixture: eval-service
+setup: |
+  cat > src/auth/password.js <<'JS'
+  import crypto from 'node:crypto';
+
+  const KEY_LENGTH = 32;
+
+  /** Constant-time check of a password against a stored `salt:hash` digest. */
+  export function verifyPassword(password, stored) {
+    const [salt, expected] = stored.split(':');
+    const actual = crypto.scryptSync(password, salt, KEY_LENGTH);
+    return crypto.timingSafeEqual(actual, Buffer.from(expected, 'hex'));
+  }
+  JS
+  sed 's/passwordHash: hashPassword(password)/passwordDigest: hashPassword(password)/' packages/core/src/users.js > users.tmp
+  mv users.tmp packages/core/src/users.js
+  cat > src/auth/login.js <<'JS'
+  import { findUserByEmail } from '../../packages/core/src/users.js';
+  import { createSession } from './sessions.js';
+  import { verifyPassword } from './password.js';
+
+  export class InvalidCredentialsError extends Error {
+    constructor() {
+      super('invalid email or password');
+      this.name = 'InvalidCredentialsError';
+    }
+  }
+
+  /**
+   * Check credentials and open a session.
+   * @returns {{ token: string, user: { id: string, name: string } }}
+   * @throws {InvalidCredentialsError}
+   */
+  export function login(email, password) {
+    const user = findUserByEmail(email);
+    if (!user || !user.active) throw new InvalidCredentialsError();
+    if (!verifyPassword(String(password), user.passwordHash)) throw new InvalidCredentialsError();
+    return { token: createSession(user.id), user: { id: user.id, name: user.name } };
+  }
+
+  /** POST /login handler. */
+  export function handleLogin(req) {
+    const { email, password } = req.body ?? {};
+    if (!email || !password) return { status: 400, body: { error: 'email and password are required' } };
+    try {
+      return { status: 200, body: login(email, password) };
+    } catch (err) {
+      if (err instanceof InvalidCredentialsError) return { status: 401, body: { error: err.message } };
+      throw err;
+    }
+  }
+  JS
+  git add -A
+  git commit -q --date='1 day ago' -m 'refactor(auth): extract password verification and rename stored digest field
+
+  Moves scrypt verification into src/auth/password.js and renames the user
+  record field passwordHash -> passwordDigest to match the new naming.'
+  printf '\n## Rate limits\n\n`POST /login` is limited per client IP (see `src/rate-limit.js`).\n' >> README.md
+  git commit -qam 'docs: document login rate limit'
+assert:
+  shouldActivate: true
+rubric:
+  - investigates before editing
+  - identifies root cause
+  - avoids unrelated cleanup
+  - verifies original failure

@@ -1,0 +1,7 @@
+name: rename-local-variable-does-not-activate
+skill: checking-blast-radius
+prompt: |
+  Rename the local variable `tmp` to `parsedRows` inside parseCsv().
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "skills": [
+    {
+      "name": "@agileflow/babysitting-pr",
+      "description": "Monitor a pull request through CI and review feedback, fixing real failures and verified review findings until required checks are green and no actionable feedback or merge blocker remains. Use when the user asks to watch, monitor, shepherd, or babysit a PR until it is ready or green. Not for opening a new PR or doing a one-off code review.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/checking-blast-radius",
+      "description": "Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when a change touches public APIs, shared contracts or schemas, migrations, shared components, config, or cross-package code, or when the user asks about blast radius, regressions, downstream impact, or \"what else could this break\".",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/diagnosing-bugs",
+      "description": "Diagnose and fix reproducible defects, regressions, failing tests, crashes, and unexpected behavior by reproducing, isolating the root cause, and making the smallest fix that explains the evidence. Use when the user reports something broken, a test or build is failing, behavior changed unexpectedly, or they ask for root-cause analysis. Do not use for general conceptual questions or new feature work.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/filing-pr",
+      "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR or monitoring one through CI.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/interviewing-requirements",
+      "description": "Interview the user in small rounds of high-value questions to pin down requirements and stress-test a plan before implementation, after first checking the repository for facts it can answer. Use only when the user explicitly asks to be interviewed, questioned, or grilled about a plan, or says things like \"ask me questions\", \"stress-test this plan\", \"help me decide\", or \"question me about this\". Do not activate for ordinary implementation requests.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/resolving-conflicts",
+      "description": "Resolve git merge, rebase, cherry-pick, or stash conflicts by understanding the intent of both sides and producing a combined result that preserves both behaviors where compatible, then verifying and completing the operation. Use when a merge or rebase stops with conflicts, files contain conflict markers, or the user asks to fix, resolve, or get through merge conflicts.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/reviewing-changes",
+      "description": "Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, check, or look over code changes, a diff, a branch, or a PR before merging. Not for explaining unfamiliar code or writing new features.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/simplifying-explanations",
+      "description": "Re-explain code, a concept, an error, or a previous answer at a simpler level for someone less familiar with it, using plain language, one core idea at a time, and concrete examples from the user's own context. Use only when the user explicitly asks for a simpler explanation, such as \"explain it simply\", \"ELI5\", \"explain like I'm new to this\", \"dumb it down\", or \"I don't follow, simplify\". Do not activate for ordinary explanation requests.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    },
+    {
+      "name": "@agileflow/verifying-changes",
+      "description": "Verify that a code change really works by exercising the changed behavior directly (smallest meaningful proof, not the whole test suite). Use when the user asks to verify, confirm, check, test, prove, or make sure a change works or does what it should (e.g. \"make sure the new limit actually works\", \"confirm the flag really skips uploads\"), or when substantive runtime behavior changed and evidence is needed. Not for comment, formatting, or documentation-only edits.",
+      "latest": "1.0.0",
+      "versions": [
+        "1.0.0"
+      ]
+    }
+  ]
+}

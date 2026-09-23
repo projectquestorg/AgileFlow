@@ -1,0 +1,13 @@
+name: stress-test-migration-plan
+skill: interviewing-requirements
+prompt: |
+  Interview me about my plan to move our job queue from cron scripts to
+  a Redis-backed worker. Stress-test it before we write any code.
+invocation: explicit
+assert:
+  shouldActivate: true
+rubric:
+  - reads the existing cron scripts and job code first
+  - focuses questions on decisions that change the design such as retries, ordering, and failure handling
+  - names specific risks with evidence rather than generic caution
+  - asks only another round if material uncertainty remains

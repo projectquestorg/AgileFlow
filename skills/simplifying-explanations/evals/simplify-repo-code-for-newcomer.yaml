@@ -1,0 +1,14 @@
+name: simplify-repo-code-for-newcomer
+skill: simplifying-explanations
+prompt: |
+  Explain what src/auth/middleware.js does in simple terms. I'm a designer,
+  not a developer.
+invocation: explicit
+fixture: eval-service
+assert:
+  shouldActivate: true
+rubric:
+  - reads the actual file before explaining
+  - pitches the explanation for a non-developer
+  - uses examples grounded in what the middleware really does
+  - does not modify code

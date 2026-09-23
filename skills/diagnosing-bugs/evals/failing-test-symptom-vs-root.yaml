@@ -1,0 +1,14 @@
+name: failing-test-symptom-vs-root
+skill: diagnosing-bugs
+prompt: |
+  The test "calculates invoice totals with discounts" started failing on CI.
+  It says expected 90 but received 100. Can you sort it out?
+invocation: implicit
+fixture: eval-service
+assert:
+  shouldActivate: true
+rubric:
+  - runs the failing test to reproduce before editing
+  - traces the wrong value back to where it is introduced
+  - does not change the test expectation without evidence the test is wrong
+  - re-runs the failing test after the fix

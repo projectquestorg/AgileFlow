@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "name": "@agileflow/reviewing-changes",
+  "description": "Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, check, or look over code changes, a diff, a branch, or a PR before merging. Not for explaining unfamiliar code or writing new features.",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "@agileflow/reviewing-changes",
+      "version": "1.0.0",
+      "integrity": "sha256-RpTDg6JXFdPNAcf1Uy5oEShHD6q9ARqNX5oLhYO9N2Q=",
+      "url": "packages/@agileflow/reviewing-changes/1.0.0.json",
+      "metadata": {
+        "description": "Review the actual diff of a change, branch, or pull request for correctness bugs, regressions, scope mistakes, missing behavior, and security issues where relevant, and report prioritized findings. Use when the user asks to review, check, or look over code changes, a diff, a branch, or a PR before merging. Not for explaining unfamiliar code or writing new features.",
+        "activation": "auto",
+        "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [
+            "git"
+          ],
+          "network": "optional"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    }
+  }
+}

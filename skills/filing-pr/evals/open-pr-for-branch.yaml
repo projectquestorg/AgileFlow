@@ -1,0 +1,13 @@
+name: open-pr-for-branch
+skill: filing-pr
+prompt: |
+  Open a PR for this branch.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - checks the current branch, base, and full diff before writing
+  - checks whether a PR already exists for the branch
+  - matches the title style of recent PRs or commits
+  - description leads with the problem and includes what was actually verified
+  - returns the PR URL

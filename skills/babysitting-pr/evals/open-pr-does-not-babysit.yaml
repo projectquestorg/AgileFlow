@@ -1,0 +1,7 @@
+name: open-pr-does-not-babysit
+skill: babysitting-pr
+prompt: |
+  Create a pull request for my current branch.
+invocation: implicit
+assert:
+  shouldActivate: false

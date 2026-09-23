@@ -1,0 +1,13 @@
+{
+  "name": "eval-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Small order/billing service used as an eval sandbox.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "deploy": "node src/deploy.js"
+  }
+}

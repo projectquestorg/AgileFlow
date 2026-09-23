@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "generated_at": "2026-09-22T21:04:15.162Z",
+  "version": "4.0.0-alpha.32",
+  "files": {
+    "plugins/core/agents/adr-writer.md": {
+      "sha256": "cb60db4161d984df5ead57872ee738e22f819f2cd0f71a802500e14e29be5b12",
+      "protected": false
+    },
+    "plugins/core/agents/epic-planner.md": {
+      "sha256": "e4de0434c000d8d3ab77146a60eeb6394d311db2187728cd306da2b169543bda",
+      "protected": false
+    },
+    "plugins/core/agents/mentor.md": {
+      "sha256": "7f142299ac5ecb2b95c857beeb0cf9a4bb012f28207709104b70ffaafac60949",
+      "protected": false
+    },
+    "plugins/core/agents/orchestrator.md": {
+      "sha256": "e1ad0a0f3c5107200b821b6f7093d98b53e2c4d22a7892dc42428dd83975d351",
+      "protected": false
+    },
+    "plugins/core/agents/team-coordinator.md": {
+      "sha256": "108b490161e288a78fa558e644feda07adf060b89be60948fe2971685193cb08",
+      "protected": false
+    },
+    "plugins/core/agents/team-lead.md": {
+      "sha256": "db37bf2ac6027590e4d5e208277c161c41fab158ab920636914c6e6c92d3250c",
+      "protected": false
+    },
+    "plugins/core/agents/workspace-orchestrator.md": {
+      "sha256": "731ee5486372c6af87a68e1297005c04ca727ab5e6d915c0bce89898b0acde9a",
+      "protected": false
+    },
+    "plugins/core/hooks/context-loader.js": {
+      "sha256": "53b927cce5d53dc0c669435023662445fb71158ddb1451ca3de4a7f84e46a978",
+      "protected": false
+    },
+    "plugins/core/hooks/damage-control-bash.js": {
+      "sha256": "e8807c838a423689db804be9c1b9fda3ce427ee2788d53688377dd43f505ddb6",
+      "protected": false
+    },
+    "plugins/core/hooks/damage-control-edit.js": {
+      "sha256": "9a590d5e343f3830f75d97f1b05d2bd52287f468a66189d3d245671c5159237a",
+      "protected": false
+    },
+    "plugins/core/hooks/damage-control-patterns.yaml": {
+      "sha256": "cdd17d75d3dddebb795fd2bb3e5753d1b7011cb4b4a0c25d871abc7421751dc6",
+      "protected": false
+    },
+    "plugins/core/hooks/damage-control-write.js": {
+      "sha256": "fe052dff34836cb3d769091205114fc6231b558f32d33b3e246836c63293b842",
+      "protected": false
+    },
+    "plugins/core/hooks/post-compact-state.js": {
+      "sha256": "a4dc91c5723f96716b7b5228fbea25ec9e2a14e25cc42791e4968666f0b8ab61",
+      "protected": false
+    },
+    "plugins/core/hooks/preferences-injector.js": {
+      "sha256": "5d3fcac02a9d07e83145512df1839447745cbf4d872739a9f82f310180b1470f",
+      "protected": false
+    },
+    "plugins/core/plugin.yaml": {
+      "sha256": "9c7c82fb80c270287f53a688a47063e9f94ae53c9e62b16e9775b8430eb72bce",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-adr/SKILL.md": {
+      "sha256": "af4ee538e1c05a95cab970a6f4c5962211add4f8e90fd0c3276db3f81dfebca2",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-adr/references/madr-format-guide.md": {
+      "sha256": "ce030e66aa58c78de5cd22a0e8c6dd81bfa3b0df2449f58d50d813706aa4ae1e",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-adr/workflows/write-adr.md": {
+      "sha256": "929c532b17e6746af7e195cba9a734b787b29c85aedd327fa99422b1cc741d7d",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-babysit-mentor/SKILL.md": {
+      "sha256": "655c06c54c096689a31231a8e995e18ba4ce30e358d4787170a0b90f78376758",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-babysit-mentor/references/mentor-decision-guide.md": {
+      "sha256": "ae884a33d55f313f78c123d7352590f9efd55a6fd97b00926930cac872a4cbc7",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-babysit-mentor/workflows/mentor-session.md": {
+      "sha256": "cbd62c7d004e2567707ad58a12db7bc006d28e3ae22b0177532f8298a5073eda",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-epic-planner/SKILL.md": {
+      "sha256": "59d90398796ec06c114e4260ffeadee02f89f30b7cc4b1043ad8c92ed10878e8",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-epic-planner/references/epic-sizing-guide.md": {
+      "sha256": "5cfb3de8af7264174c0123c3bab199b8c367d496a564563b32d0bec28cc7995f",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-epic-planner/workflows/plan-epic.md": {
+      "sha256": "b9d33af3a57eebd98eb4463c4c554bc5e488626e1c2c87c134655c1039fb2bc1",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-status-updater/SKILL.md": {
+      "sha256": "9dcc1566345442c1afa7447250f3f310bbbea7653ea1adeabbdec28c7f698ea0",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-status-updater/references/status-transitions.md": {
+      "sha256": "eb1ab4bd982b1535db2493d13cb42f91018735036e9e8c841b18e88f4058b6bf",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-status-updater/workflows/update-status.md": {
+      "sha256": "5634c0594794603f550d44bddf715bf9e3b39473cb0ac9cf87db0919a6025340",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-story-writer/SKILL.md": {
+      "sha256": "f5df365590710e2a0293f40665a305a2943e267f936e20a9cc71d2217e081aa9",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-story-writer/references/estimation-reference.md": {
+      "sha256": "23e59b3b41cde4773fad3e82b8c7b1165ab22af2a192dcc5eaf8a97b76df369b",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-story-writer/references/story-template.md": {
+      "sha256": "d83d13447ec3e536c2d4d6c1f55a9f00128139a71e44ff309b690002f2fef00f",
+      "protected": false
+    },
+    "plugins/core/skills/agileflow-story-writer/workflows/write-story.md": {
+      "sha256": "8d9e6343e1908ef8e8cdb074066296d00442822ac891700f82f1d74e3094c5fb",
+      "protected": false
+    },
+    "plugins/debugging/plugin.yaml": {
+      "sha256": "4786b415d2681d141bda4f4f27772c1d38905f5ca261f786baeb9c0d8c979a81",
+      "protected": false
+    },
+    "plugins/debugging/skills/agileflow-debug/SKILL.md": {
+      "sha256": "357ebb24d46d4248a901e5839e01395f290ff0f4c9ef8d1c0f0d80edc47d0743",
+      "protected": false
+    },
+    "plugins/debugging/skills/agileflow-debug/references/common-patterns.md": {
+      "sha256": "c193fe83c2e7f3f370d3a8655ae46a685a98b14fc1894321911f65453a7e2758",
+      "protected": false
+    },
+    "plugins/debugging/skills/agileflow-debug/references/debugging-strategies.md": {
+      "sha256": "7d5b22803889d77109348129554726fb89ca267a83f12baaac4a027938f8ac13",
+      "protected": false
+    },
+    "plugins/debugging/skills/agileflow-debug/workflows/debug-issue.md": {
+      "sha256": "656610f4f9785d86bcd1790aa00312a00097cc94655b8b8777c305338f6bf1e6",
+      "protected": false
+    },
+    "plugins/debugging/skills/agileflow-debug/workflows/reproduce-bug.md": {
+      "sha256": "d2eadf41defd4dac426da17323f1b37bf85ffee2f05e586cfdac6b060c945e0c",
+      "protected": false
+    },
+    "plugins/delivery/agents/ci.md": {
+      "sha256": "42a9546f2800d24436e88a97885aff1b40d3c48717580014ab10f94e81b5e6db",
+      "protected": false
+    },
+    "plugins/delivery/agents/devops.md": {
+      "sha256": "8fecf58982732455cf7e998d0b82a93787425a6d3447d112fe977b714dfd8890",
+      "protected": false
+    },
+    "plugins/delivery/plugin.yaml": {
+      "sha256": "966c0db89e2588df79a2d7635b33f99409d0b2bbea2934b86c82adb49f6db81f",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/SKILL.md": {
+      "sha256": "ae9eb3218cb95db55a8cc4851c816c6250fb6d0210da6f70098269fc22d78620",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/references/changelog-format-guide.md": {
+      "sha256": "604ce00e37b62eda092bd570d7c097b62aae714084ec80a599e7adbf221e052b",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/references/ci-pipeline-guide.md": {
+      "sha256": "7f3006994d84e7bb1bc127c867811048e1d1470ff18d520e95fc9539da7d6e1c",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/references/pr-checklist-guide.md": {
+      "sha256": "7b63ae6d4f7442bbe7d217759c989547cd72bea84cc967cfcd472b5dc1bf0415",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/references/release-checklist.md": {
+      "sha256": "70a32e9180b83eed89c6b3f7957ebc8bbb53fc7441d07e2e248555f424801f05",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/workflows/changelog.md": {
+      "sha256": "6ddc0ad1cb839afb24f81e57e964d109b7732c8775da26d52ec4e289ef959a66",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/workflows/deploy.md": {
+      "sha256": "ce58db0964f879db56bb5966600db6934674d7b144f9a58315d04f47c4ad4f2d",
+      "protected": false
+    },
+    "plugins/delivery/skills/agileflow-delivery/workflows/pr.md": {
+      "sha256": "5b0d41ea99a9849f8af62bac0f43b794afd3c0b607c50c3d5361e26cdd263527",
+      "protected": false
+    }
+  }
+}

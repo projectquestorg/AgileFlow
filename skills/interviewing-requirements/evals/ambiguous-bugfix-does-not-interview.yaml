@@ -1,0 +1,7 @@
+name: ambiguous-bugfix-does-not-interview
+skill: interviewing-requirements
+prompt: |
+  The export button sometimes produces an empty CSV. Can you fix it?
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,0 +1,7 @@
+name: interview-does-not-auto-trigger
+skill: interviewing-requirements
+prompt: |
+  Add a dark mode toggle.
+invocation: implicit
+assert:
+  shouldActivate: false

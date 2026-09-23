@@ -1,0 +1,7 @@
+name: simplify-code-refactor-does-not-activate
+skill: simplifying-explanations
+prompt: |
+  Simplify this function, it has too many nested if statements.
+invocation: implicit
+assert:
+  shouldActivate: false

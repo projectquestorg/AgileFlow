@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/simplifying-explanations"
+  version: "1.0.0"
+activation:
+  mode: manual
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: no
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

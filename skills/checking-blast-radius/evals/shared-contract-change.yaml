@@ -1,0 +1,14 @@
+name: shared-contract-change
+skill: checking-blast-radius
+prompt: |
+  I'm changing getUser() in packages/core to return undefined instead of
+  throwing when the user isn't found. What else could this break?
+invocation: implicit
+fixture: eval-service
+assert:
+  shouldActivate: true
+rubric:
+  - searches for callers across all packages, not only the current one
+  - identifies the load-bearing assumption about callers relying on the throw
+  - proves or disproves it by reading call sites or running tests
+  - labels findings as verified or inferred

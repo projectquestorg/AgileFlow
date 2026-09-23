@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "name": "@agileflow/filing-pr",
+  "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR or monitoring one through CI.",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "@agileflow/filing-pr",
+      "version": "1.0.0",
+      "integrity": "sha256-aKfF1XHH5V46vO9mckaoMAIi6Uz15CPHtHV2rsdQD2U=",
+      "url": "packages/@agileflow/filing-pr/1.0.0.json",
+      "metadata": {
+        "description": "Open a pull request for the current branch with a title that follows repository conventions and a description that leads with the problem, summarizes the solution, and includes verification evidence, then return the PR URL. Use when the user asks to file, open, create, raise, or submit a pull request (PR). Not for reviewing an existing PR or monitoring one through CI.",
+        "activation": "auto",
+        "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [
+            "git",
+            "gh"
+          ],
+          "network": "required"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    }
+  }
+}

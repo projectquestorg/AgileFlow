@@ -1,0 +1,7 @@
+name: create-branch-does-not-activate
+skill: resolving-conflicts
+prompt: |
+  Create a new branch called feature/search and switch to it.
+invocation: implicit
+assert:
+  shouldActivate: false

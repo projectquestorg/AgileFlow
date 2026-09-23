@@ -1,0 +1,7 @@
+name: git-concept-question-does-not-activate
+skill: resolving-conflicts
+prompt: |
+  Should our team use merge commits or rebase when updating feature branches?
+invocation: implicit
+assert:
+  shouldActivate: false

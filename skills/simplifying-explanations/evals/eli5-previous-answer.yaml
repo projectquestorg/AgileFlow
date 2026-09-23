@@ -1,0 +1,14 @@
+name: eli5-previous-answer
+skill: simplifying-explanations
+prompt: |
+  I didn't follow that explanation of the event loop at all.
+  Explain it like I'm five.
+invocation: explicit
+assert:
+  shouldActivate: true
+rubric:
+  - leads with a one-sentence plain-language summary
+  - builds up one idea at a time with a concrete example or fitting analogy
+  - defines or removes jargon
+  - stays accurate and notes where a simplification hides an exception
+  - stays shorter than a full technical explanation

@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/babysitting-pr"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: [git, gh]
+  network: required
+capabilities:
+  modifiesFiles: possible
+  longRunning: true
+  userInteraction: optional
+compatibility:
+  agentSkills: true

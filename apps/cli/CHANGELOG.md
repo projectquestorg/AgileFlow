@@ -1,7 +1,39 @@
 # Changelog
 
-All notable changes to `agileflow` v4 are documented here.
+All notable changes to `agileflow` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+AgileFlow v5: portable workflows for coding agents. A clean break from v4.
+
+### Added
+
+- Skill manager built on standard Agent Skills: canonical `.agents/skills`,
+  `agileflow.yaml` (intent) and `agileflow.lock` (exact versions, package
+  integrity, installed base hash).
+- Commands: `init`, `add`, `remove`, `list`, `sync`, `update`, `check`,
+  `configure`, `fork`, `diff`, `migrate`, `eval`.
+- Static skill registry with semver resolution, integrity verification, an
+  offline package cache, packs, and git/path sources.
+- Provider adapters: Codex, Cursor, OpenCode, Gemini (native `.agents/skills`),
+  Claude Code (per-skill links, junction or marked-mirror fallback). Manual
+  skills are translated per provider.
+- Update conflict handling: locally modified skills are never overwritten
+  (fork, reset, skip, diff); `update --non-interactive` exits 3.
+- Optional, reversible Codex structured-questions setting with exact restore.
+- Nine official skills with evals, and an eval runner for activation and
+  behavioral rubric tests against real provider CLIs.
+- `migrate v4`: removes only provably AgileFlow-owned hooks, mirrors, and
+  runtime files, with preview and backup; never deletes docs.
+
+### Removed
+
+- v4 plugins, agents, hook runtime and `hook` command, `setup`, `launch`,
+  `learn`, `plugins`, `skills`, `status`, and `doctor` (now `check`; the old
+  name still runs `check` during the transition), docs scaffolding, story and
+  epic state, skill learnings, `AGENTS.md`/`CLAUDE.md` generation, and all
+  provider sandbox/approval changes.
 
 ## [4.0.0-alpha.3] — 2026-04-20
 

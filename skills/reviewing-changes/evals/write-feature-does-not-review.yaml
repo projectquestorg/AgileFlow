@@ -1,0 +1,7 @@
+name: write-feature-does-not-review
+skill: reviewing-changes
+prompt: |
+  Add pagination to the /orders endpoint.
+invocation: implicit
+assert:
+  shouldActivate: false

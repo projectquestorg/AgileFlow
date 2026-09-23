@@ -1,0 +1,7 @@
+name: docs-typo-does-not-verify
+skill: verifying-changes
+prompt: |
+  Fix the typo "recieve" in the README.
+invocation: implicit
+assert:
+  shouldActivate: false

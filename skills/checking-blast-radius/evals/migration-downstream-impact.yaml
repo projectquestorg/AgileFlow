@@ -1,0 +1,13 @@
+name: migration-downstream-impact
+skill: checking-blast-radius
+prompt: |
+  Before I merge this migration that makes orders.customer_id NOT NULL,
+  check the downstream impact.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - checks whether existing data or writers can produce null customer_id
+  - finds code paths that insert orders without a customer
+  - reports concrete evidence rather than restating the migration's intent
+  - lists remaining risks and how to check them

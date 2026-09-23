@@ -1,0 +1,7 @@
+name: review-pr-does-not-file
+skill: filing-pr
+prompt: |
+  Review PR #482 and tell me if it's safe to merge.
+invocation: implicit
+assert:
+  shouldActivate: false

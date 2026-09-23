@@ -34,20 +34,20 @@ logs/
 # Internal Development (not for users)
 CLAUDE.md
 /scripts/
-!packages/cli/scripts/
 
 # Playwright MCP (local dev tool)
 .playwright-mcp/
 
 # Claude Code (user-specific, not part of plugin repo)
-.claude/
+/.claude/
 
-# AgileFlow installed files (created by /agileflow:setup)
-.agileflow/
+# AgileFlow v4 runtime files from dogfooding this repo
+/.agileflow/
+/.agileflow-v4-backup-*/
 
 # AgileFlow v4 dogfooding artifacts (generated when this repo runs its own CLI)
-agileflow.config.json
-.codex/
+/agileflow.config.json
+/.codex/
 
 # Build/transient artifacts
 *.tmp
@@ -77,3 +77,7 @@ coverage/
 .claude/prompt-log.txt
 .claude/session.log
 .windsurf/
+
+# Test fixtures intentionally contain provider/runtime files
+!fixtures/**/logs/
+!fixtures/**/*.log

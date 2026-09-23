@@ -1,0 +1,7 @@
+name: ordinary-explanation-does-not-simplify
+skill: simplifying-explanations
+prompt: |
+  How does the retry logic in the HTTP client work?
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/resolving-conflicts"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: [git]
+  network: none
+capabilities:
+  modifiesFiles: yes
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

@@ -1,0 +1,104 @@
+name: proof-must-exercise-change
+skill: verifying-changes
+prompt: |
+  Can you confirm the new --dry-run flag for the deploy command
+  really skips uploading files?
+invocation: implicit
+fixture: eval-service
+setup: |
+  cat > src/deploy.js <<'JS'
+  #!/usr/bin/env node
+  import fs from 'node:fs/promises';
+  import path from 'node:path';
+  import { pathToFileURL } from 'node:url';
+  import { createHttpUploader } from './uploader.js';
+
+  export function parseArgs(argv) {
+    const opts = { dir: 'public', dryRun: false };
+    for (let i = 0; i < argv.length; i++) {
+      const arg = argv[i];
+      if (arg === '--dir') opts.dir = argv[++i];
+      else if (arg === '--dry-run') opts.dryRun = true;
+      else throw new Error(`unknown argument: ${arg}`);
+    }
+    return opts;
+  }
+
+  async function listFiles(dir, base = dir) {
+    const out = [];
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...(await listFiles(full, base)));
+      else out.push(path.relative(base, full).split(path.sep).join('/'));
+    }
+    return out.sort();
+  }
+
+  /**
+   * Upload every file under `dir`. With `dryRun`, list what would be uploaded
+   * without calling the uploader.
+   * @param {{ dir: string, uploader?: { upload(path: string, contents: Buffer): Promise<void> }, dryRun?: boolean, log?: (msg: string) => void }} options
+   */
+  export async function deploy({ dir, uploader, dryRun = false, log = console.log }) {
+    const files = await listFiles(dir);
+    for (const file of files) {
+      if (dryRun) {
+        log(`[dry-run] would upload ${file}`);
+        continue;
+      }
+      await uploader.upload(file, await fs.readFile(path.join(dir, file)));
+      log(`uploaded ${file}`);
+    }
+    log(dryRun ? `dry run: ${files.length} file(s) would be deployed` : `deployed ${files.length} file(s)`);
+    return { files, dryRun };
+  }
+
+  if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+    try {
+      const opts = parseArgs(process.argv.slice(2));
+      const uploader = opts.dryRun ? undefined : createHttpUploader();
+      await deploy({ dir: opts.dir, uploader, dryRun: opts.dryRun });
+    } catch (err) {
+      console.error(`deploy failed: ${err.message}`);
+      process.exitCode = 1;
+    }
+  }
+  JS
+  cat > test/deploy.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { deploy, parseArgs } from '../src/deploy.js';
+
+  test('parseArgs defaults to the public directory', () => {
+    assert.deepEqual(parseArgs([]), { dir: 'public', dryRun: false });
+    assert.deepEqual(parseArgs(['--dir', 'dist']), { dir: 'dist', dryRun: false });
+  });
+
+  test('parseArgs accepts --dry-run', () => {
+    assert.equal(parseArgs(['--dry-run']).dryRun, true);
+  });
+
+  test('deploy uploads every file in the directory', async () => {
+    const uploaded = [];
+    const uploader = { upload: async (file) => uploaded.push(file) };
+    const result = await deploy({ dir: 'public', uploader, log: () => {} });
+    assert.deepEqual(uploaded, ['app.css', 'index.html']);
+    assert.deepEqual(result.files, uploaded);
+  });
+
+  test('deploy reports a dry run', async () => {
+    const result = await deploy({ dir: 'public', dryRun: true, log: () => {} });
+    assert.equal(result.dryRun, true);
+  });
+  JS
+  sed 's|^npm run deploy -- --dir public$|npm run deploy -- --dir public [--dry-run]|' README.md > readme.tmp
+  mv readme.tmp README.md
+  git add -A
+  git commit -q -m 'feat(deploy): add --dry-run flag to preview uploads'
+assert:
+  shouldActivate: true
+rubric:
+  - runs the command with --dry-run or a test that exercises it
+  - checks that no upload occurs rather than relying on exit code alone
+  - does not treat a successful build or type-check as sufficient proof
+  - reports evidence and any unverified parts

@@ -1,0 +1,117 @@
+{
+  "$id": "https://agileflow.dev/schemas/global-config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "registry": {
+      "type": "string",
+      "minLength": 1
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "questionPreference": {
+          "default": "provider-default",
+          "type": "string",
+          "enum": [
+            "provider-default",
+            "prefer",
+            "minimize"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "providers": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "structuredQuestions": {
+            "type": "string",
+            "enum": [
+              "inherit",
+              "enabled",
+              "disabled"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "globalSkills": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "activation": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "manual"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "forkedFrom": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "forkedFrom"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,3 @@
+# AgileFlow skill learnings — agileflow-babysit-mentor
+# Append-only signals; oldest trimmed when count exceeds maxEntries.
+entries: []

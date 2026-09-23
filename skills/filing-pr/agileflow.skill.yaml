@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/filing-pr"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: [git, gh]
+  network: required
+capabilities:
+  modifiesFiles: no
+  longRunning: false
+  userInteraction: optional
+compatibility:
+  agentSkills: true

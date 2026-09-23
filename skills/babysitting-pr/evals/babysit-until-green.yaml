@@ -1,0 +1,13 @@
+name: babysit-until-green
+skill: babysitting-pr
+prompt: |
+  Babysit PR #231 until it's green and ready to merge.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - checks required CI checks and review comments on the PR
+  - only acts on feedback that applies to the current head commit
+  - verifies a finding is real before changing code
+  - distinguishes infrastructure flakes from real failures before editing
+  - stops and reports once checks are green and no actionable feedback remains

@@ -1,0 +1,7 @@
+name: general-question-does-not-debug
+skill: diagnosing-bugs
+prompt: |
+  Explain how OAuth refresh tokens generally work.
+invocation: implicit
+assert:
+  shouldActivate: false

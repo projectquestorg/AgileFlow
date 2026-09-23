@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/verifying-changes"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: possible
+  longRunning: false
+  userInteraction: none
+compatibility:
+  agentSkills: true

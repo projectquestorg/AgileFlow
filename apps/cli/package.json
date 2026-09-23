@@ -1,16 +1,16 @@
 {
   "name": "agileflow",
-  "version": "4.0.0-alpha.32",
-  "description": "AI-driven agile development toolkit for Claude Code — skills-first architecture with opt-in plugins (v4)",
+  "version": "5.0.0-alpha.0",
+  "description": "Portable workflows for coding agents: install, update, fork, and evaluate Agent Skills across Codex, Claude Code, Cursor, OpenCode, and Gemini CLI",
   "keywords": [
-    "agile",
-    "ai",
-    "claude",
-    "claude-code",
-    "cli",
-    "agents",
+    "agent-skills",
     "skills",
-    "plugins",
+    "codex",
+    "claude-code",
+    "cursor",
+    "opencode",
+    "gemini-cli",
+    "cli",
     "workflows"
   ],
   "homepage": "https://github.com/projectquestorg/AgileFlow#readme",
@@ -24,46 +24,51 @@
   },
   "license": "MIT",
   "author": "AgileFlow Contributors",
-  "type": "commonjs",
-  "main": "src/cli/index.js",
+  "type": "module",
   "bin": {
     "agileflow": "bin/agileflow.js"
   },
   "files": [
     "bin/",
-    "src/",
-    "content/",
+    "dist/",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
   ],
   "scripts": {
     "start": "node bin/agileflow.js",
-    "setup": "node bin/agileflow.js setup",
-    "status": "node bin/agileflow.js status",
-    "doctor": "node bin/agileflow.js doctor",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "prepublishOnly": "vitest run && node bin/agileflow.js doctor"
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -p ../../tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts",
+    "test:watch": "vitest --config ../../vitest.config.ts",
+    "registry:build": "tsx scripts/build-registry.ts",
+    "registry:check": "tsx scripts/build-registry.ts --check",
+    "schemas:build": "tsx scripts/build-schemas.ts",
+    "release-gate": "npm run typecheck && npm test && npm run registry:check && npm run schemas:check && tsx src/index.ts eval --lint --catalog ../../skills",
+    "prepublishOnly": "npm run release-gate && npm run build",
+    "schemas:check": "tsx scripts/build-schemas.ts --check"
   },
   "dependencies": {
     "@clack/prompts": "^0.8.2",
     "@iarna/toml": "^2.2.5",
-    "ajv": "^8.17.1",
-    "chalk": "^4.1.2",
     "commander": "^12.1.0",
-    "js-yaml": "^4.1.0"
+    "diff": "^8.0.3",
+    "semver": "^7.7.3",
+    "yaml": "^2.9.1",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^2.1.0",
-    "vitest": "^2.1.0"
+    "@types/node": "^20.19.25",
+    "@types/semver": "^7.7.1",
+    "esbuild": "^0.25.12",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "publishConfig": {
-    "access": "public",
-    "tag": "alpha"
+    "access": "public"
   }
 }

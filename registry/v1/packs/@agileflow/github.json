@@ -1,0 +1,10 @@
+{
+  "name": "@agileflow/github",
+  "version": 1,
+  "description": "Pull request workflows using gh or the provider's GitHub tooling.",
+  "skills": [
+    "@agileflow/filing-pr@^1",
+    "@agileflow/babysitting-pr@^1",
+    "@agileflow/resolving-conflicts@^1"
+  ]
+}

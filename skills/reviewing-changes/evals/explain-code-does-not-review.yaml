@@ -1,0 +1,7 @@
+name: explain-code-does-not-review
+skill: reviewing-changes
+prompt: |
+  Walk me through how the caching layer in src/cache works.
+invocation: implicit
+assert:
+  shouldActivate: false

@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "@agileflow/simplifying-explanations",
+  "description": "Re-explain code, a concept, an error, or a previous answer at a simpler level for someone less familiar with it, using plain language, one core idea at a time, and concrete examples from the user's own context. Use only when the user explicitly asks for a simpler explanation, such as \"explain it simply\", \"ELI5\", \"explain like I'm new to this\", \"dumb it down\", or \"I don't follow, simplify\". Do not activate for ordinary explanation requests.",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "name": "@agileflow/simplifying-explanations",
+      "version": "1.0.0",
+      "integrity": "sha256-yUbr6fzm1uN+iNJ7KICznHGKE6lkR0j8P0pMp9gO15A=",
+      "url": "packages/@agileflow/simplifying-explanations/1.0.0.json",
+      "metadata": {
+        "description": "Re-explain code, a concept, an error, or a previous answer at a simpler level for someone less familiar with it, using plain language, one core idea at a time, and concrete examples from the user's own context. Use only when the user explicitly asks for a simpler explanation, such as \"explain it simply\", \"ELI5\", \"explain like I'm new to this\", \"dumb it down\", or \"I don't follow, simplify\". Do not activate for ordinary explanation requests.",
+        "activation": "manual",
+        "files": 6,
+        "references": [],
+        "scripts": [],
+        "requirements": {
+          "commands": [],
+          "network": "none"
+        }
+      },
+      "compatibility": {
+        "agentSkills": true,
+        "bundleFormat": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@agileflow/communication",
+  "version": 1,
+  "description": "Manually invoked interaction styles (interviews, simpler explanations).",
+  "skills": [
+    "@agileflow/interviewing-requirements@^1",
+    "@agileflow/simplifying-explanations@^1"
+  ]
+}

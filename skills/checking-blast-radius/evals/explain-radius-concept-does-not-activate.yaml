@@ -1,0 +1,7 @@
+name: explain-radius-concept-does-not-activate
+skill: checking-blast-radius
+prompt: |
+  What does the term "blast radius" mean in site reliability engineering?
+invocation: implicit
+assert:
+  shouldActivate: false

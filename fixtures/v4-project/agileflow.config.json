@@ -1,0 +1,93 @@
+{
+  "$schema": "./node_modules/agileflow/src/runtime/config/schema.json",
+  "version": 1,
+  "plugins": {
+    "core": {
+      "enabled": true,
+      "settings": {
+        "babysit": {
+          "mode": "light"
+        }
+      }
+    },
+    "accessibility": {
+      "enabled": false
+    },
+    "ads": {
+      "enabled": false
+    },
+    "audit": {
+      "enabled": false
+    },
+    "council": {
+      "enabled": false
+    },
+    "database": {
+      "enabled": false
+    },
+    "debugging": {
+      "enabled": true
+    },
+    "delivery": {
+      "enabled": true
+    },
+    "docs": {
+      "enabled": false
+    },
+    "engineering": {
+      "enabled": false
+    },
+    "ideation": {
+      "enabled": false
+    },
+    "migration": {
+      "enabled": false
+    },
+    "performance": {
+      "enabled": false
+    },
+    "planning": {
+      "enabled": false
+    },
+    "psychology": {
+      "enabled": false
+    },
+    "refactoring": {
+      "enabled": false
+    },
+    "research": {
+      "enabled": false
+    },
+    "reviews": {
+      "enabled": false
+    },
+    "seo": {
+      "enabled": false
+    },
+    "testing": {
+      "enabled": false
+    }
+  },
+  "hooks": {},
+  "install": {
+    "scope": "project"
+  },
+  "behaviors": {
+    "loadContext": true,
+    "babysitDefault": true,
+    "damageControlBash": true,
+    "damageControlEdit": true,
+    "damageControlWrite": true,
+    "preCompactState": true
+  },
+  "learnings": {
+    "enabled": true
+  },
+  "ide": {
+    "targets": [
+      "claude-code",
+      "codex"
+    ]
+  },
+  "language": "en"
+}

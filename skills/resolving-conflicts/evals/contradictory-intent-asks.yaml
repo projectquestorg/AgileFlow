@@ -1,0 +1,80 @@
+name: contradictory-intent-asks
+skill: resolving-conflicts
+prompt: |
+  I merged the feature branch and got a conflict: main deleted the legacy
+  export function while my branch added a new option to it. Fix the merge.
+invocation: implicit
+fixture: eval-service
+setup: |
+  git checkout -q -b feature/legacy-export-archived
+  cat > src/export/legacy.js <<'JS'
+  /**
+   * @deprecated Kept for the v1 reporting integration. Use exportCsv instead.
+   *
+   * Legacy pipe-delimited export: `id|customer|total|status`, one invoice per line,
+   * totals in integer cents. Archived invoices are skipped unless `includeArchived`.
+   */
+  export function legacyExport(invoices, { includeArchived = false } = {}) {
+    return invoices
+      .filter((invoice) => includeArchived || !invoice.archived)
+      .map(toLegacyRow)
+      .join('\n');
+  }
+
+  function toLegacyRow(invoice) {
+    return [invoice.id, invoice.customerId, Math.round(invoice.total * 100), invoice.status.toUpperCase()].join('|');
+  }
+  JS
+  cat > test/legacy-export.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { legacyExport } from '../src/export/index.js';
+
+  const invoices = [
+    { id: 'inv_1', customerId: 'c1', total: 90, status: 'paid' },
+    { id: 'inv_0', customerId: 'c1', total: 10, status: 'paid', archived: true },
+  ];
+
+  test('legacyExport skips archived invoices by default', () => {
+    assert.equal(legacyExport(invoices), 'inv_1|c1|9000|PAID');
+  });
+
+  test('legacyExport includes archived invoices when asked', () => {
+    assert.equal(legacyExport(invoices, { includeArchived: true }), 'inv_1|c1|9000|PAID\ninv_0|c1|1000|PAID');
+  });
+  JS
+  git add -A
+  git commit -qm 'feat(export): add includeArchived option to legacyExport for the v1 reports backfill'
+
+  git checkout -q main
+  git rm -q src/export/legacy.js
+  grep -v "from './legacy.js'" src/export/index.js > index.tmp
+  mv index.tmp src/export/index.js
+  cat > test/export.test.js <<'JS'
+  import { test } from 'node:test';
+  import assert from 'node:assert/strict';
+  import { exportCsv } from '../src/export/index.js';
+
+  const invoices = [
+    { id: 'inv_1', customerId: 'c1', total: 90, status: 'paid' },
+    { id: 'inv_2', customerId: 'c2', total: 20.5, status: 'open' },
+  ];
+
+  test('exportCsv writes a header and one row per invoice', () => {
+    assert.equal(exportCsv(invoices), 'id,customerId,total,status\ninv_1,c1,90,paid\ninv_2,c2,20.5,open');
+  });
+  JS
+  git add -A
+  git commit -qm 'refactor(export): remove deprecated legacyExport
+
+  The v1 reporting integration has been retired; exportCsv replaces it.'
+
+  git merge --no-edit feature/legacy-export-archived >/dev/null 2>&1 || true
+  git diff --name-only --diff-filter=U | grep -qx 'src/export/legacy.js'
+assert:
+  shouldActivate: true
+rubric:
+  - recognizes the two sides have incompatible intent
+  - asks the user which intent should win and explains the trade-off
+  - does not silently resolve with ours or theirs
+  - does not make unrelated changes while resolving

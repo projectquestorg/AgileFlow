@@ -1,0 +1,7 @@
+name: pr-concept-question-does-not-file
+skill: filing-pr
+prompt: |
+  What makes a good pull request description in general?
+invocation: implicit
+assert:
+  shouldActivate: false

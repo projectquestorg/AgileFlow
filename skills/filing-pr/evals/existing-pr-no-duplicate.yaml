@@ -1,0 +1,13 @@
+name: existing-pr-no-duplicate
+skill: filing-pr
+prompt: |
+  I pushed the fix for the flaky upload test. Please submit a pull request
+  for it.
+invocation: implicit
+assert:
+  shouldActivate: true
+rubric:
+  - looks for an existing PR on the branch before creating one
+  - does not open a duplicate PR if one exists
+  - does not claim tests pass unless they were run
+  - reports the resulting PR URL

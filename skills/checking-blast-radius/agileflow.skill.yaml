@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/checking-blast-radius"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: []
+  network: none
+capabilities:
+  modifiesFiles: no
+  longRunning: false
+  userInteraction: none
+compatibility:
+  agentSkills: true

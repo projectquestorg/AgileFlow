@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "packs": [
+    {
+      "name": "@agileflow/communication",
+      "description": "Manually invoked interaction styles (interviews, simpler explanations).",
+      "version": 1
+    },
+    {
+      "name": "@agileflow/core",
+      "description": "Everyday engineering workflows. Installed by `agileflow init --yes`.",
+      "version": 1
+    },
+    {
+      "name": "@agileflow/github",
+      "description": "Pull request workflows using gh or the provider's GitHub tooling.",
+      "version": 1
+    }
+  ]
+}

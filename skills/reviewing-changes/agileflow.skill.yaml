@@ -1,0 +1,15 @@
+schema: 1
+package:
+  name: "@agileflow/reviewing-changes"
+  version: "1.0.0"
+activation:
+  mode: auto
+requirements:
+  commands: [git]
+  network: optional
+capabilities:
+  modifiesFiles: no
+  longRunning: false
+  userInteraction: none
+compatibility:
+  agentSkills: true

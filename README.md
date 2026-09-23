@@ -3,127 +3,210 @@
 </p>
 
 [![npm version](https://img.shields.io/npm/v/agileflow?color=brightgreen)](https://www.npmjs.com/package/agileflow)
-[![Commands](https://img.shields.io/badge/commands-155-blue)](https://docs.agileflow.projectquestorg.com/docs/commands)
-[![Agents/Experts](https://img.shields.io/badge/agents%2Fexperts-149-orange)](https://docs.agileflow.projectquestorg.com/docs/agents)
-[![Skills](https://img.shields.io/badge/skills-dynamic-purple)](https://docs.agileflow.projectquestorg.com/docs/features/skills)
 
-**AI-driven agile development for Claude Code, Cursor, Windsurf, OpenAI Codex, and more.** Combining Scrum, Kanban, ADRs, and docs-as-code principles into one framework-agnostic system.
+# AgileFlow
+
+**Portable workflows for coding agents.**
+
+Install a skill once. Use it with Codex, Claude, Cursor, OpenCode, Gemini, and the tools built on top of them.
+
+Small, versioned workflows. No agent runtime. No repository takeover. Build your own toolbox instead of installing 500 prompts.
+
+Documentation: https://docs.agileflow.projectquestorg.com
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
-npx agileflow@latest setup
+npm install -g agileflow
+cd my-project
+agileflow init
+
+# Add individual workflows
+agileflow add diagnosing-bugs
+agileflow add filing-pr
+
+# Keep them current
+agileflow update
 ```
 
-The `npx` command always fetches the latest version.
+Then open Codex, Claude, Cursor, OpenCode, or Gemini as usual. That's the important part: AgileFlow is not involved while your agent works. No hook runs, no AgileFlow process starts, no AgileFlow agent is spawned.
 
-**Updates:** `npx agileflow@latest update`
+## What AgileFlow is
+
+AgileFlow is a **skill manager, compatibility layer, and evaluation system** for coding agents. It installs standard [Agent Skills](https://agentskills.io) (`SKILL.md` files), keeps them versioned and updatable, makes them visible to every provider you use, and lets you customize them without fighting updates.
+
+It is not an agent framework, a multi-agent runtime, a hook runtime, a project-management methodology, or a repository scaffolder. Your coding agent keeps doing the reasoning, planning, delegation, tool use, and permissions.
+
+## What `init` creates
+
+```text
+repo/
+├── agileflow.yaml          # which skills this repo uses (you edit this)
+├── agileflow.lock          # exact resolved versions + hashes (generated)
+├── .agents/
+│   └── skills/             # canonical skills: standard SKILL.md directories
+│       ├── diagnosing-bugs/
+│       ├── checking-blast-radius/
+│       └── verifying-changes/
+└── .claude/
+    └── skills/             # only if Claude Code is detected: per-skill links
+        ├── diagnosing-bugs -> ../../.agents/skills/diagnosing-bugs
+        └── ...
+```
+
+That is it. No `docs/` hierarchy, no `.agileflow/` runtime directory, no hooks, no changes to `AGENTS.md`, `CLAUDE.md`, or provider settings. Commit these files to share the workflows with your team.
+
+## Providers
+
+| Provider    | Support      | How it sees the skills                                        |
+| ----------- | ------------ | ------------------------------------------------------------- |
+| Codex       | native       | reads `.agents/skills` (manual skills get `agents/openai.yaml`) |
+| Cursor      | native       | reads `.agents/skills`                                        |
+| OpenCode    | native       | reads `.agents/skills`                                        |
+| Gemini CLI  | native       | reads `.agents/skills` (manual-only is description-based)     |
+| Claude Code | adapted      | per-skill links in `.claude/skills` (marked mirrors if links are unavailable) |
+| Grok, Antigravity | experimental | not verified yet                                       |
+
+**T3 Code** and other hosts run these providers, so the providers read the same skills. There is no T3-specific setup.
+
+## Official skills
+
+| Skill                       | Activation | What it does |
+| --------------------------- | ---------- | ------------ |
+| `diagnosing-bugs`           | auto   | Reproduce, isolate the root cause, make the smallest fix, verify. |
+| `checking-blast-radius`     | auto   | Find what a change could break and prove the load-bearing assumptions. |
+| `verifying-changes`         | auto   | Smallest meaningful proof that changed behavior works. |
+| `reviewing-changes`         | auto   | Review the actual diff for correctness, regressions, scope, security. |
+| `filing-pr`                 | auto   | Open a PR with a problem-first description and verification evidence. |
+| `babysitting-pr`            | auto   | Drive a PR through CI and review feedback to a defined done state. |
+| `resolving-conflicts`       | auto   | Resolve merge/rebase conflicts by intent, then verify. |
+| `interviewing-requirements` | manual | Ask a few high-value questions before building (only when asked). |
+| `simplifying-explanations`  | manual | Re-explain something at a simpler level (only when asked). |
+
+Packs are named collections: `core` (the first four), `github` (PR workflows), `communication` (the manual skills). `agileflow init --yes` installs `core`.
+
+Skills also come from anywhere else:
 
 ```bash
-/agileflow:help              # View all commands
-/agileflow:babysit           # Interactive mentor for implementation
-/agileflow:configure         # Configure hooks, status line, etc.
+agileflow add @agileflow/github                                  # a pack
+agileflow add git+https://github.com/example/skills.git#skills/x # a git repository
+agileflow add ./skills/my-release-flow                           # a local directory
 ```
 
-### Supported IDEs
+Before installing third-party content, `add` shows the source, files, executable scripts, and requirements. Scripts are never run during installation.
 
-| IDE | Status | Config Location |
-|-----|--------|-----------------|
-| Claude Code | Supported | `.claude/commands/agileflow/` |
-| Cursor | Supported | `.cursor/commands/agileflow/` |
-| Windsurf | Supported | `.windsurf/workflows/agileflow/` |
-| OpenAI Codex | Supported | `.codex/config.toml`, `.codex/skills/`, and `~/.codex/prompts/` |
+## Commands
 
----
+Everyday: `init`, `add`, `remove`, `list`, `sync`, `update`, `check`, `configure`
+Power users: `fork`, `diff`, `migrate`, `eval`
 
-## Why AgileFlow?
+| Command | Meaning |
+| ------- | ------- |
+| `agileflow sync` | Make the filesystem match `agileflow.lock`. No version changes. Run after `git clone`, `git pull`, or switching branches. Works offline from the package cache. |
+| `agileflow update` | Resolve newer versions allowed by `agileflow.yaml`, update the lockfile, and sync. |
+| `agileflow check` | Report configuration, skill, and provider problems. `--fix` repairs only AgileFlow-owned artifacts; `--verbose` adds paths, link types, and versions. |
+| `agileflow remove <skill>` | Remove a skill AgileFlow manages. Unknown skills are never touched. `remove --all` stops using AgileFlow and keeps your skills working. |
 
-Traditional project management tools create friction between planning and execution. AgileFlow eliminates this gap by embedding project management directly into your AI-assisted coding workflow.
+Add `--global` to work with personal skills in `~/.agents/skills` (config in `~/.config/agileflow/`).
 
-- **No context switching** - Manage epics, stories, and status without leaving your terminal
-- **AI-native workflows** - Purpose-built for Claude Code's capabilities
-- **Docs-as-code** - All project artifacts live in your repository as plain text
-- **Intelligent agents** - 55 specialized AI agents for different domains
-- **Framework-agnostic** - Works with any tech stack
+## Updates, customization, and forks
 
----
+Every managed skill is recorded in `agileflow.lock` with the hash of what was installed. If you edit a managed skill and a new version arrives, AgileFlow never overwrites your change. It asks:
 
-## Core Components
+```text
+diagnosing-bugs has local modifications.
+Upstream:
+  1.0.0 -> 1.1.0
+Choose:
+  Fork   keep your customized skill and stop tracking upstream
+  Reset  discard local edits and install 1.1.0
+  Skip   leave this skill unchanged for now
+  Diff   compare your copy with the installed base and new upstream
+```
 
-| Component | Count | Description |
-|-----------|-------|-------------|
-| [Commands](https://docs.agileflow.projectquestorg.com/docs/commands) | 155 | Slash commands for agile workflows |
-| [Agents/Experts](https://docs.agileflow.projectquestorg.com/docs/agents) | 149 | Specialized agents with self-improving knowledge bases |
-| [Skills](https://docs.agileflow.projectquestorg.com/docs/features/skills) | Dynamic | Browse and install from skills.sh marketplace via `/agileflow:skill:recommend` |
+In CI, `agileflow update --non-interactive` skips modified skills and exits with status 3.
 
----
+`agileflow fork <skill>` makes a skill yours permanently. `agileflow diff <skill> --upstream` shows what changed upstream since you forked.
 
-## Features
+## Configuration
 
-| Feature | Description | Docs |
-|---------|-------------|------|
-| Agent Expertise | Self-improving agents that maintain domain knowledge | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-expertise-system) |
-| Agent Teams | Multi-domain expert coordination with quality gates | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/agent-teams) |
-| Skills System | Browse and install skills from the skills.sh marketplace | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/skills) |
-| Parallel Sessions | Isolated workspaces with boundary protection | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/parallel-sessions) |
-| Loop Mode | Autonomous story execution until epic completion | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/loop-mode) |
-| AI Council | Three-perspective strategic decision analysis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/council) |
-| Logic Audit | Multi-agent logic bug detection with consensus voting | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/logic-audit) |
-| Damage Control | Block destructive commands with PreToolUse hooks | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/damage-control) |
-| Smart Detection | Contextual feature recommendations with 42 detectors | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/smart-detect) |
-| Visual Mode | Screenshot verification for UI development | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/visual-mode) |
-| Context Preservation | Preserve state during automatic context compaction | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/compact-context) |
-| Research Pipeline | Structured research workflow with synthesis | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/research) |
-| Automations | Scheduled recurring tasks without a daemon | [Learn more](https://docs.agileflow.projectquestorg.com/docs/commands/automate) |
-| Tmux Integration | Multi-window terminal sessions with keybindings and status bar | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/tmux-keybindings) |
-| IDE Integrations | Claude Code, Cursor, Windsurf, OpenAI Codex support | [Learn more](https://docs.agileflow.projectquestorg.com/docs/features/ide-integrations) |
+```yaml
+# agileflow.yaml
+version: 1
+skills:
+  diagnosing-bugs:
+    source: "@agileflow/diagnosing-bugs"
+    version: "^1"
+  interviewing-requirements:
+    source: "@agileflow/interviewing-requirements"
+    version: "^1"
+    activation: manual
+providers:
+  claude:
+    enabled: auto
+  codex:
+    enabled: auto
+    structuredQuestions: inherit
+interaction:
+  questionPreference: provider-default   # or: prefer, minimize
+```
 
-See the [full features overview](https://docs.agileflow.projectquestorg.com/docs/features) for details.
+`agileflow configure` changes skills (enabled, automatic or manual activation), providers, and defaults without editing files. AgileFlow never changes provider permissions, sandbox, model, or effort settings. The only provider setting it can change is Codex's optional Default-mode structured questions, and only when you ask. It records the previous value so it can be restored exactly.
 
----
+## Zero lock-in
 
-## Examples
+Everything AgileFlow installs is a standard `SKILL.md` in a provider-native location. Uninstall the CLI and your skills keep working. `agileflow remove --all` removes AgileFlow's files and leaves the skills as standalone Agent Skills.
+
+## Migrating from v4
 
 ```bash
-# Create an epic
-/agileflow:epic EPIC=EP-0001 TITLE="User Authentication" OWNER=AG-API GOAL="Secure login"
-
-# Work on a story
-/agileflow:babysit
-
-# Multi-expert analysis
-/agileflow:multi-expert Is this authentication implementation secure?
-
-# AI Council for strategic decisions
-/agileflow:council Should we use microservices or a monolith?
-
-# Parallel sessions
-/agileflow:session:new
+agileflow migrate v4 --preview   # report only
+agileflow migrate v4             # apply (backs up everything it changes)
 ```
 
----
+Migration removes AgileFlow-owned hooks, generated mirrors, and runtime files only when ownership can be proven. Your own hooks, skills, learnings, and docs stay. Legacy `docs/` directories are never deleted (`--report-docs` lists them). Codex `approval_policy`/`sandbox_mode` values that v4 may have written are reported, not guessed back.
 
-## Documentation
+## Evals
 
-Full documentation at **[docs.agileflow.projectquestorg.com](https://docs.agileflow.projectquestorg.com)**.
+Every official skill ships with at least three eval scenarios, including one that must not trigger the skill.
 
-| Section | Link |
-|---------|------|
-| Getting Started | [docs.agileflow.projectquestorg.com/docs/getting-started](https://docs.agileflow.projectquestorg.com/docs/getting-started) |
-| Installation | [docs.agileflow.projectquestorg.com/docs/installation](https://docs.agileflow.projectquestorg.com/docs/installation) |
-| Commands | [docs.agileflow.projectquestorg.com/docs/commands](https://docs.agileflow.projectquestorg.com/docs/commands) |
-| Agents | [docs.agileflow.projectquestorg.com/docs/agents](https://docs.agileflow.projectquestorg.com/docs/agents) |
-| Features | [docs.agileflow.projectquestorg.com/docs/features](https://docs.agileflow.projectquestorg.com/docs/features) |
+```bash
+agileflow eval --catalog skills --lint                  # structural release gate
+agileflow eval diagnosing-bugs --provider claude        # real activation evals
+agileflow eval --catalog skills --provider codex --mode full   # behavior + rubric judging
+```
 
----
+## Exit codes
+
+`0` success, `1` error or problems found by `check`, `3` `update --non-interactive` skipped skills with local modifications.
+
+## Developing AgileFlow
+
+```text
+apps/cli/            the agileflow CLI (TypeScript, bundled with esbuild)
+packages/core/       config, lockfile, skills, installer, updater, ownership, diagnostics, migration
+packages/providers/  provider adapters (Codex, Claude, Cursor, OpenCode, Gemini)
+packages/registry/   static registry client, git/path sources, integrity, registry builder
+packages/evals/      eval scenarios, lint (release gate), provider drivers, runner
+skills/              official skills (source of the registry)
+packs/               official packs
+registry/            generated static registry (served over HTTPS)
+schemas/             JSON schemas generated from the validators
+fixtures/            test and eval fixture repositories, golden trees
+```
+
+```bash
+npm install --legacy-peer-deps
+npm run typecheck && npm test          # unit + integration tests
+npm run test:conformance               # real provider binaries (opt-in)
+npm run registry:build                 # after changing skills/ or packs/
+npm run release-gate                   # everything CI checks before publishing
+```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the design rules.
 
 ## License
 
 MIT
-
-## Support
-
-- [Documentation](https://docs.agileflow.projectquestorg.com) - Full docs site
-- [GitHub Issues](https://github.com/projectquestorg/AgileFlow/issues) - Bug reports and feature requests

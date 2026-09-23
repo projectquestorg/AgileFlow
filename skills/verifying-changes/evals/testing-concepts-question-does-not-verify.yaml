@@ -1,0 +1,7 @@
+name: testing-concepts-question-does-not-verify
+skill: verifying-changes
+prompt: |
+  What's the difference between unit tests and integration tests?
+invocation: implicit
+assert:
+  shouldActivate: false

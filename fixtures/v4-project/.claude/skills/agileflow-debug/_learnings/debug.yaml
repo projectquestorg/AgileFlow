@@ -1,0 +1,6 @@
+# AgileFlow skill learnings — agileflow-debug
+# Append-only signals; oldest trimmed when count exceeds maxEntries.
+entries:
+  - at: "2026-05-02T10:00:00Z"
+    confidence: high
+    text: Always run the failing test with --runInBand before bisecting.

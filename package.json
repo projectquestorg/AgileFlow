@@ -1,8 +1,8 @@
 {
   "name": "agileflow-monorepo",
-  "version": "4.0.0-alpha.32",
+  "version": "5.0.0-alpha.0",
   "private": true,
-  "description": "AgileFlow monorepo - CLI, website, and documentation",
+  "description": "AgileFlow monorepo: portable workflows for coding agents (CLI, skills, registry, website, docs)",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -10,14 +10,17 @@
   "scripts": {
     "dev:website": "npm run dev -w apps/website",
     "dev:docs": "npm run dev -w apps/docs",
-    "dev:cli": "npm run start -w apps/cli",
     "build:website": "npm run build -w apps/website",
     "build:docs": "npm run build -w apps/docs",
-    "build:all": "npm run build --workspaces --if-present",
-    "lint:all": "npm run lint --workspaces --if-present",
+    "build:cli": "npm run build -w apps/cli",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
     "test:cli": "npm run test -w apps/cli",
-    "test:all": "npm run test --workspaces --if-present",
-    "doctor": "npm run doctor -w apps/cli",
+    "test:conformance": "AGILEFLOW_CONFORMANCE=1 vitest run apps/cli/test/conformance",
+    "registry:build": "npm run registry:build -w apps/cli",
+    "registry:check": "npm run registry:check -w apps/cli",
+    "schemas:build": "npm run schemas:build -w apps/cli",
+    "release-gate": "npm run release-gate -w apps/cli",
     "prepare": "husky || true"
   },
   "repository": {
@@ -41,10 +44,6 @@
     "tailwindcss": "3.4.1"
   },
   "dependencies": {
-    "agileflow": "^4.0.0-alpha.3",
-    "ink": "^5.0.1",
-    "ink-spinner": "^5.0.0",
-    "ink-text-input": "^6.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

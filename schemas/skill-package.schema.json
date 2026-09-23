@@ -1,0 +1,108 @@
+{
+  "$id": "https://agileflow.dev/schemas/skill-package.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "number",
+      "const": 1
+    },
+    "package": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "activation": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "default": "auto",
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "requirements": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "network": {
+          "default": "none",
+          "type": "string",
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "modifiesFiles": {
+          "default": "possible",
+          "type": "string",
+          "enum": [
+            "no",
+            "possible",
+            "yes"
+          ]
+        },
+        "longRunning": {
+          "default": false,
+          "type": "boolean"
+        },
+        "userInteraction": {
+          "default": "none",
+          "type": "string",
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "agentSkills": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "package"
+  ],
+  "additionalProperties": false
+}

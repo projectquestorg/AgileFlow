@@ -1,0 +1,23 @@
+{
+  "name": "@agileflow/checking-blast-radius",
+  "version": "1.0.0",
+  "integrity": "sha256-VyIb+9zFN1mOS1WY2E4T6rc2J7/b0WOri5tV7Cm+aN8=",
+  "url": "packages/@agileflow/checking-blast-radius/1.0.0.json",
+  "metadata": {
+    "description": "Identify what a proposed or completed code change could break elsewhere by tracing its consumers and proving the load-bearing assumptions. Use when a change touches public APIs, shared contracts or schemas, migrations, shared components, config, or cross-package code, or when the user asks about blast radius, regressions, downstream impact, or \"what else could this break\".",
+    "activation": "auto",
+    "files": 7,
+    "references": [
+      "references/impact-surfaces.md"
+    ],
+    "scripts": [],
+    "requirements": {
+      "commands": [],
+      "network": "none"
+    }
+  },
+  "compatibility": {
+    "agentSkills": true,
+    "bundleFormat": 1
+  }
+}

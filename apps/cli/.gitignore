@@ -4,3 +4,10 @@ dist/
 .DS_Store
 *.log
 .vitest/
+
+# Local dogfooding artifacts
+.agileflow/
+.claude/
+.agents/
+agileflow.yaml
+agileflow.lock

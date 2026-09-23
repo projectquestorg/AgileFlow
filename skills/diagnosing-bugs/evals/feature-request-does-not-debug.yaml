@@ -1,0 +1,7 @@
+name: feature-request-does-not-debug
+skill: diagnosing-bugs
+prompt: |
+  Add an error message to the signup form when the email field is empty.
+invocation: implicit
+assert:
+  shouldActivate: false
