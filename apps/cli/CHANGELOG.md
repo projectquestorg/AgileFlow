@@ -259,7 +259,7 @@ Different agentic IDEs / CLIs support different feature subsets. Hooks are Claud
 User directive 2026-04-26: AgileFlow ships **skills only**. No slash commands at all in the runtime. (Distinction: `npx agileflow setup` and friends are CLI subcommands and stay — the directive applies to in-IDE `/agileflow:*` slash commands.)
 
 - **Plugin manifest `provides.commands`**: schema retained for backward compat but bundled plugins all ship `commands: []`. Phase 4 content authoring must NOT create command `.md` files.
-- **Plan §C overlap table** at `/home/bk/.claude/plans/fizzy-stirring-kahan.md` is now wholly "retire in favor of skill" — every former "Kept" command becomes "Retired".
+- **Plan §C overlap table** in the internal v4 plan is now wholly "retire in favor of skill" — every former "Kept" command becomes "Retired".
 - **Skill design implication**: with no slash command for deterministic invocation, every skill must use the v2 frontmatter `triggers.keywords` + `priority` + `exclude` fields rigorously so Claude reliably picks the right skill.
 - **IDE capability map**: the `commands: true/false` field stays informational. AgileFlow itself ships no commands regardless.
 
